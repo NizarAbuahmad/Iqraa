@@ -46,10 +46,9 @@ import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { narrowToSelection } from '@/services/teacherCatalogFilter';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { MAX_SOURCE_CHARS, foldAnswersIntoPrompt, foldSourceIntoPrompt } from '@/services/promptSlidesAnswers';
-import { attachDrawnVisuals, attachSearchedMedia, deckSearchQueries } from '@/services/promptSlidesMedia';
+import { applyDeckMedia, attachDrawnVisuals, deckSearchQueries, searchDeckMedia } from '@/services/promptSlidesMedia';
 import { polishDeck } from '@/services/promptSlidesPolish';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
-import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
 import { normalizeSlideCountText, slideCountFromText } from '@/services/slideCountInput';
@@ -60,6 +59,7 @@ import { useSlideEditor } from '@/hooks/useSlideEditor';
 import { DeckOutline } from '@/components/slides/DeckOutline';
 import { DeckActions } from '@/components/slides/DeckActions';
 import { SlideEditModal } from '@/components/slides/SlideEditModal';
+import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -304,15 +304,17 @@ export default function PromptSlidesScreen() {
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
 
       // Photos and video arrive afterwards, exactly as the older Slides Maker
-      // does it: never blocking the deck, and dropped entirely if the teacher
-      // has regenerated in the meantime — the identity check is on the first
-      // slide object, which a regeneration replaces.
+      // does it: never blocking the deck. They come back as a patch keyed by
+      // slide and are merged into the deck as it stands THEN — this used to
+      // swap in a whole enriched copy of `built`, which threw away any edit or
+      // deletion the teacher made during the wait. A regenerated deck shares
+      // no slide with `built` and is left alone (see `applyDeckMedia`).
       void (async () => {
         try {
           const { searchDeckPhoto } = await import('@/services/unsplashImage');
           const { searchDeckVideos } = await import('@/services/youtubeVideo');
           const { deckPhotoQueries } = await import('@/services/classMedia');
-          const enriched = await attachSearchedMedia(built, {
+          const patch = await searchDeckMedia(built, {
             isAr,
             topic: trimmed,
             // The deck's own topic first, and the teacher's subject only as a
@@ -331,7 +333,7 @@ export default function PromptSlidesScreen() {
             searchPhoto: searchDeckPhoto,
             searchVideos: searchDeckVideos,
           });
-          setDeck(cur => (cur && cur.slides[0] === built.slides[0] ? enriched : cur));
+          setDeck(cur => (cur ? applyDeckMedia(cur, patch) : cur));
         } catch {
           // A deck without photos is still a deck.
         }
@@ -373,9 +375,7 @@ export default function PromptSlidesScreen() {
           end={{ x: 0.9, y: 1 }}
           style={[styles.header, { paddingTop: topPad + 12 }]}
         >
-          <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-          </Pressable>
+          <BackButton color="#fff" style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
           <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 12 }}>
             <View style={styles.heroIcon}>
               <Ionicons name="sparkles" size={22} color="#fff" />

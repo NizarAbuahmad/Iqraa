@@ -22,6 +22,7 @@ import {
   samplePlot,
   visualForSlide,
   visualToSvg,
+  chartGeometry,
   type VisualBlock,
 } from '../deckVisuals.ts';
 
@@ -487,5 +488,42 @@ describe('visualForSlide — what the projector draws', () => {
       values: [1, 2, 3],
     };
     assert.equal(visualForSlide({ graphCommands: ['f(x)=x^2'], visual: chart }), chart);
+  });
+});
+
+describe('chartGeometry — one layout for the projector and the PDF', () => {
+  // The presenter used to carry its own bar loop: it ignored `chartType`, so a
+  // pie projected as unlabeled bars, and it drew no category labels at all —
+  // a different picture from the PDF of the same deck. Found 2026-10-08.
+  it('lays a pie out as one slice per value, with a legend naming each share', () => {
+    const g = chartGeometry({ kind: 'chart', chartType: 'pie', categories: ['سكن', 'طعام', 'نقل'], values: [50, 30, 20] }, 640, 320);
+    assert.ok(g && g.kind === 'pie');
+    assert.equal(g.slices.length, 3);
+    assert.deepEqual(g.legend.map(l => l.label), ['سكن 50%', 'طعام 30%', 'نقل 20%']);
+    assert.equal(new Set(g.slices.map(s => s.fill)).size, 3);
+  });
+
+  it('draws a single-category pie as a full circle, not a collapsed arc', () => {
+    const g = chartGeometry({ kind: 'chart', chartType: 'pie', categories: ['كل شيء'], values: [7] }, 640, 320);
+    assert.ok(g && g.kind === 'pie');
+    assert.equal((g.slices[0]!.d.match(/ A /g) ?? []).length, 2);
+  });
+
+  it('labels every bar under it', () => {
+    const g = chartGeometry({ kind: 'chart', chartType: 'bar', categories: ['a', 'b'], values: [2, 1] }, 640, 320);
+    assert.ok(g && g.kind === 'bars');
+    assert.deepEqual(g.bars.map(b => b.label), ['a', 'b']);
+    assert.ok(g.bars[0]!.h > g.bars[1]!.h);
+    assert.ok(g.bars.every(b => b.labelY > b.y + b.h));
+  });
+
+  it('refuses mismatched or empty data', () => {
+    assert.equal(chartGeometry({ kind: 'chart', chartType: 'bar', categories: ['a'], values: [1, 2] }, 640, 320), null);
+    assert.equal(chartGeometry({ kind: 'chart', chartType: 'pie', categories: ['a'], values: [0] }, 640, 320), null);
+  });
+
+  it('puts the pie legend into the SVG too', () => {
+    const svg = visualToSvg({ kind: 'chart', chartType: 'pie', categories: ['سكن', 'طعام', 'نقل'], values: [50, 30, 20] });
+    assert.match(svg, /سكن 50%/);
   });
 });

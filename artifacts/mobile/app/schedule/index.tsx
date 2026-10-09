@@ -46,10 +46,10 @@ import { listClasses, type ClassGroup } from '@/services/roster';
 import { classSubjectIds, periodClassLabel, subjectLabel } from '@/services/classSubjects';
 import { confirm } from '@/services/confirm';
 import type { TranslationKey } from '@/services/i18n';
-import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { LoadError } from '@/components/ui/LoadError';
 import { toLatinDigits } from '@/services/latinDigits';
+import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -916,9 +916,7 @@ export default function ScheduleScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
         <View style={{ flexDirection: row, justifyContent: 'space-between', alignItems: 'center' }}>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={12}>
-            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-          </Pressable>
+          <BackButton color="#fff" />
           <View style={{ flexDirection: row, gap: 18 }}>
             <Pressable onPress={() => router.push('/calendar')} hitSlop={12} accessibilityLabel={t('scheduleOpenCalendar')}>
               <Ionicons name="calendar-outline" size={22} color="#fff" />

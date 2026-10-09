@@ -18,6 +18,7 @@ import { listAttempts, type AttemptListRow, type AttemptStatus } from '@/service
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
+import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -68,7 +69,7 @@ export default function PickStudentScreen() {
     try {
       setClasses(await listClasses());
     } catch (err) {
-      setError(err instanceof RosterError ? err.message : t('rosterLoadFailed'));
+      setError(t('rosterLoadFailed'));
     } finally {
       setLoading(false);
     }
@@ -88,7 +89,7 @@ export default function PickStudentScreen() {
       setStudents(roster);
       setClassId(id_);
     } catch (err) {
-      setError(err instanceof RosterError ? err.message : t('rosterLoadFailed'));
+      setError(t('rosterLoadFailed'));
     } finally {
       setLoading(false);
     }
@@ -108,14 +109,7 @@ export default function PickStudentScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
         <View style={styles.heroNav}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('back')}
-            onPress={() => (classId ? setClassId(null) : goBack())}
-            hitSlop={12}
-          >
-            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-          </Pressable>
+          <BackButton color="#fff" onPress={() => (classId ? setClassId(null) : goBack())} />
         </View>
         <Text style={[styles.heroTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
           {classId ? t('pickStudentTitle') : t('pickClassFirst')}
@@ -158,7 +152,7 @@ export default function PickStudentScreen() {
             const status = attempt?.status ?? 'not_started';
             return (
               <Pressable
-                onPress={() => router.push({ pathname: '/evaluations/[id]/answers/[studentId]', params: { id: id as string, studentId: item.id } })}
+                onPress={() => router.push({ pathname: '/evaluations/[id]/answers/[studentId]', params: { id: id as string, studentId: item.id, classId: classId ?? '' } })}
                 style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
               >
                 <View style={{ flex: 1 }}>

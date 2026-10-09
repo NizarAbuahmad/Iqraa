@@ -19,10 +19,11 @@ import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { EvaluationError, listEvaluations, type Evaluation } from '@/services/evaluations';
 import { bookLabel, formatListDate } from '@/services/evaluationRow';
 import type { TranslationKey } from '@/services/i18n';
-import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { LoadError } from '@/components/ui/LoadError';
 import { Button } from '@/components/ui/Button';
+import { BackButton } from '@/components/ui/BackButton';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -82,15 +83,7 @@ export default function EvaluationsScreen() {
   const centered = { width: '100%' as const, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' as const };
 
   const backButton = (
-    <Pressable
-      onPress={() => goBack()}
-      hitSlop={12}
-      accessibilityRole="button"
-      accessibilityLabel={t('back')}
-      style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}
-    >
-      <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={isDesktop ? colors.foreground : '#fff'} />
-    </Pressable>
+    <BackButton color={isDesktop ? colors.foreground : '#fff'} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }} />
   );
 
   const header = isDesktop ? (
@@ -153,21 +146,7 @@ export default function EvaluationsScreen() {
           }
           ListEmptyComponent={
             error ? null : (
-              <View style={styles.empty}>
-                <Ionicons name="clipboard-outline" size={40} color={colors.mutedForeground} />
-                <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
-                  {t('noEvaluationsYet')}
-                </Text>
-                <Text
-                  style={[
-                    styles.emptyText,
-                    { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' },
-                  ]}
-                >
-                  {t('noEvaluationsDesc')}
-                </Text>
-                <Button label={t('newEvaluation')} onPress={() => router.push('/evaluations/new')} style={{ marginTop: 8 }} />
-              </View>
+              <EmptyState icon="clipboard-outline" title={t('noEvaluationsYet')} body={t('noEvaluationsDesc')} action={{ label: t('newEvaluation'), onPress: () => router.push('/evaluations/new') }} />
             )
           }
           renderItem={({ item }) => (
@@ -276,8 +255,5 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 16, flex: 1 },
   cardMeta: { fontSize: 15, lineHeight: 24, marginTop: 4 },
   statusPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
-  empty: { alignItems: 'center', gap: 10, paddingTop: 80 },
-  emptyTitle: { fontSize: 17 },
-  emptyText: { fontSize: 15, maxWidth: 280, lineHeight: 21 },
   fab: { position: 'absolute', alignSelf: 'center', width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
 });

@@ -11,7 +11,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { attachDrawnVisuals, attachSearchedMedia, deckSearchQueries } from '../promptSlidesMedia.ts';
+import { applyDeckMedia, attachDrawnVisuals, attachSearchedMedia, deckSearchQueries, searchDeckMedia } from '../promptSlidesMedia.ts';
 import type { ActivitySlide, ClassroomActivity } from '../ai/AIService.ts';
 
 const slide = (over: Partial<ActivitySlide> = {}): ActivitySlide => ({
@@ -217,5 +217,48 @@ describe('attachSearchedMedia — photos and video', () => {
       slide({ type: 'summary' }),
     ]), opts);
     assert.equal(out.slides[0]!.sideImageUrl, 'https://kept/photo.jpg');
+  });
+});
+
+describe('searchDeckMedia + applyDeckMedia — edits made while the lookups ran survive', () => {
+  // prompt-slides.tsx used to swap in a whole enriched copy of the deck when
+  // the photos came back, so an edit or a deletion made during the wait was
+  // silently thrown away. Found 2026-10-08.
+  const opts = { isAr: true, topic: 'المستقيمات', searchPhoto: photo, searchVideos: videos };
+  const built = () => deck([
+    slide({ slideNumber: 1, title: 'الغلاف', content: 'سطر' }),
+    slide({ slideNumber: 2, type: 'divider', title: 'فاصل', content: '' }),
+    slide({ slideNumber: 3, title: 'فكرة', mediaPrompt: 'river delta' }),
+    slide({ slideNumber: 4, title: 'سأُحذف' }),
+    slide({ slideNumber: 5, type: 'challenge', title: 'مثال', content: 'مسألة' }),
+    slide({ slideNumber: 6, type: 'summary', title: 'الخلاصة' }),
+  ]);
+
+  it('keeps an edit, keeps a deletion, and still illustrates the untouched slides', async () => {
+    const b = built();
+    const patch = await searchDeckMedia(b, opts);
+    // Meanwhile the teacher edited slide 3 (a new object) and deleted slide 4.
+    const edited = { ...b.slides[2]!, content: 'نص معدّل' };
+    const cur = { ...b, slides: [b.slides[0]!, b.slides[1]!, edited, b.slides[4]!, b.slides[5]!] };
+    const out = applyDeckMedia(cur, patch);
+    assert.equal(out.slides.find(s => s.title === 'فكرة')?.content, 'نص معدّل');
+    assert.ok(!out.slides.some(s => s.title === 'سأُحذف'));
+    assert.ok(out.slides[0]!.mediaUrl, 'cover photo');
+    assert.ok(out.slides.find(s => s.type === 'divider')?.mediaUrl, 'divider photo');
+    assert.ok(out.slides.some(s => s.type === 'media' && s.mediaKind === 'video'), 'video inserted');
+    assert.deepEqual(out.slides.map(s => s.slideNumber), out.slides.map((_, i) => i + 1));
+  });
+
+  it('leaves a regenerated deck alone — it shares no slide with the searched one', async () => {
+    const patch = await searchDeckMedia(built(), opts);
+    const fresh = built();
+    assert.equal(applyDeckMedia(fresh, patch), fresh);
+  });
+
+  it('attachSearchedMedia is the two steps in one', async () => {
+    const b = built();
+    const out = await attachSearchedMedia(b, opts);
+    assert.ok(out.slides[0]!.mediaUrl);
+    assert.ok(out.slides.find(s => s.title === 'فكرة')?.sideImageUrl);
   });
 });

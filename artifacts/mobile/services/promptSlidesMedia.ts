@@ -21,7 +21,6 @@
  */
 import type { ActivitySlide, ClassroomActivity } from './ai/AIService.ts';
 import {
-  attachBackgroundImage,
   buildChartSlide,
   buildGraphSlide,
   buildMediaSlide,
@@ -191,21 +190,57 @@ function renumber(slides: readonly ActivitySlide[]): ActivitySlide[] {
 }
 
 /**
+ * What the network passes found, expressed against the slides they ran over.
+ *
+ * Keyed by slide OBJECT rather than returned as a finished deck, because the
+ * lookups take seconds and the teacher can edit or delete slides meanwhile.
+ * Swapping in a whole enriched deck when they came back silently threw those
+ * edits away (`prompt-slides.tsx` did exactly that until 2026-10-08). A patch
+ * is merged into whatever the deck is NOW by `applyDeckMedia`: an edited
+ * slide is a new object and simply keeps its edit and forgoes its photo, a
+ * deleted slide stays deleted, and a regenerated deck — which shares no slide
+ * with `from` — is left alone.
+ */
+export type DeckMediaPatch = {
+  /** The slides the search ran over, for the same-deck check. */
+  from: readonly ActivitySlide[];
+  /** Fields to merge into a slide, keyed by the slide they were found for. */
+  slides: Map<ActivitySlide, Partial<ActivitySlide>>;
+  /** The explainer video slide to insert, when one was found. */
+  video?: ActivitySlide;
+};
+
+/** Merge a patch into the deck as it stands now. See `DeckMediaPatch`. */
+export function applyDeckMedia(deck: ClassroomActivity, patch: DeckMediaPatch): ClassroomActivity {
+  if (!deck.slides.some(s => patch.from.includes(s))) return deck;
+  let slides = deck.slides.map(s => {
+    const extra = patch.slides.get(s);
+    return extra ? { ...s, ...extra } : s;
+  });
+  if (patch.video) slides = insertVideoSlide(slides, patch.video);
+  return { ...deck, slides: renumber(slides) };
+}
+
+/**
  * The network passes: a hero photo, a section photo, per-slide photos, and one
- * explainer video.
+ * explainer video — as a patch, applied by `applyDeckMedia`.
  *
  * Every lookup is allowed to fail. A deck with no pictures is worse than one
  * with pictures, but far better than an error where a deck should be — so
  * nothing in here rejects, and a `null` result simply leaves the slide as the
  * model wrote it.
  */
-export async function attachSearchedMedia(
+export async function searchDeckMedia(
   deck: ClassroomActivity,
   opts: EnrichOptions,
-): Promise<ClassroomActivity> {
+): Promise<DeckMediaPatch> {
   const { isAr, topic, searchPhoto, searchVideos } = opts;
   const lang = isAr ? 'ar' : 'en';
-  let slides: ActivitySlide[] = [...deck.slides];
+  const slides = deck.slides;
+  const patch: DeckMediaPatch = { from: slides, slides: new Map() };
+  const add = (slide: ActivitySlide, extra: Partial<ActivitySlide>) => {
+    patch.slides.set(slide, { ...patch.slides.get(slide), ...extra });
+  };
 
   // Slides the model itself flagged as wanting a picture, capped.
   //
@@ -237,37 +272,43 @@ export async function attachSearchedMedia(
     opts.wantVideo === false ? Promise.resolve([]) : safeVideos(searchVideos, videoQuery(deck, topic, isAr), lang),
   ]);
 
-  wantPhotos.forEach(({ index }, i) => {
+  wantPhotos.forEach(({ slide }, i) => {
     const photo = sidePhotos[i];
     if (!photo) return;
     // Beside the text, not instead of it — and the credit rides along, which
     // is both the Unsplash licence requirement and the thing three renderers
     // have dropped before (see the attribution note in CLAUDE.md's neighbours).
-    slides[index] = {
-      ...slides[index],
-      sideImageUrl: photo.url,
-      sideImageCaption: photoCredit(photo.photographer, isAr),
-    };
+    add(slide, { sideImageUrl: photo.url, sideImageCaption: photoCredit(photo.photographer, isAr) });
   });
 
-  if (hero) {
-    slides = attachBackgroundImage(slides, 0, hero.url, photoCredit(hero.photographer, isAr));
+  // The title slide and the divider render `mediaUrl` as a full-bleed
+  // background — the same fields `attachBackgroundImage` sets.
+  if (hero && slides[0]) {
+    add(slides[0], { mediaUrl: hero.url, mediaCaption: photoCredit(hero.photographer, isAr) });
   }
-  const dividerIdx = slides.findIndex(s => s.type === 'divider');
-  if (section && dividerIdx >= 0) {
-    slides = attachBackgroundImage(slides, dividerIdx, section.url, photoCredit(section.photographer, isAr));
+  const divider = slides.find(s => s.type === 'divider');
+  if (section && divider) {
+    add(divider, { mediaUrl: section.url, mediaCaption: photoCredit(section.photographer, isAr) });
   }
 
   const video = videos[0];
   if (video) {
     const slide = buildMediaSlide('video', video.url, videoCaption(video), isAr, 0);
-    slides = insertVideoSlide(slides, {
+    patch.video = {
       ...slide,
       content: isAr ? 'فيديو خارجي — راجعه قبل العرض' : 'External video — preview before class',
-    });
+    };
   }
 
-  return { ...deck, slides: renumber(slides) };
+  return patch;
+}
+
+/** The two steps in one, for a caller that holds no edits in between. */
+export async function attachSearchedMedia(
+  deck: ClassroomActivity,
+  opts: EnrichOptions,
+): Promise<ClassroomActivity> {
+  return applyDeckMedia(deck, await searchDeckMedia(deck, opts));
 }
 
 function videoQuery(deck: ClassroomActivity, topic: string, isAr: boolean): string {
