@@ -189,6 +189,15 @@ export async function setEvaluationClass(
   return data.evaluation;
 }
 
+/** Who a group check is for (support groups). Only while it is a draft. */
+export async function setEvaluationAudience(evaluationId: string, studentIds: string[]): Promise<string[]> {
+  const res = await apiFetch(`/evaluations/${evaluationId}/audience`, {
+    method: 'PUT',
+    body: JSON.stringify({ studentIds }),
+  });
+  return (await readJson<{ audience: string[] }>(res, 'Choosing the group')).audience;
+}
+
 export async function createEvaluation(input: {
   bookId: string;
   objectiveIds: string[];
@@ -204,7 +213,7 @@ export async function createEvaluation(input: {
 
 export async function getEvaluation(
   id: string,
-): Promise<{ evaluation: Evaluation; questions: EvaluationQuestion[] }> {
+): Promise<{ evaluation: Evaluation; questions: EvaluationQuestion[]; audience: string[] | null }> {
   const res = await apiFetch(`/evaluations/${id}`);
   return readJson(res, 'Loading evaluation');
 }
