@@ -49,7 +49,6 @@ import { MAX_SOURCE_CHARS, foldAnswersIntoPrompt, foldSourceIntoPrompt } from '@
 import { applyDeckMedia, attachDrawnVisuals, deckSearchQueries, searchDeckMedia } from '@/services/promptSlidesMedia';
 import { polishDeck } from '@/services/promptSlidesPolish';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
-import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
 import { normalizeSlideCountText, slideCountFromText } from '@/services/slideCountInput';
@@ -60,6 +59,7 @@ import { useSlideEditor } from '@/hooks/useSlideEditor';
 import { DeckOutline } from '@/components/slides/DeckOutline';
 import { DeckActions } from '@/components/slides/DeckActions';
 import { SlideEditModal } from '@/components/slides/SlideEditModal';
+import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -375,9 +375,7 @@ export default function PromptSlidesScreen() {
           end={{ x: 0.9, y: 1 }}
           style={[styles.header, { paddingTop: topPad + 12 }]}
         >
-          <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-          </Pressable>
+          <BackButton color="#fff" style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
           <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 12 }}>
             <View style={styles.heroIcon}>
               <Ionicons name="sparkles" size={22} color="#fff" />

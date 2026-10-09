@@ -63,6 +63,8 @@ export interface ChatMessage {
   /** Time-limited signed R2 URL, or null if there's no attachment (or R2 couldn't presign it right now). */
   attachmentUrl: string | null;
   createdAt: string;
+  /** Own messages only: someone else's screen has shown it. Absent on others' messages and on older API builds. */
+  seen?: boolean;
 }
 
 export interface ChatThreadSummary {

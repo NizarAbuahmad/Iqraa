@@ -200,9 +200,10 @@ async function storeRefreshToken(
   tokenValue: string,
   origin: string | undefined,
   familyId?: string,
+  executor: Pick<typeof db, "insert"> = db,
 ): Promise<void> {
   const expiresAt = new Date(Date.now() + refreshTokenTtlMs(origin));
-  await db.insert(refreshTokens).values({
+  await executor.insert(refreshTokens).values({
     userId,
     tokenHash: hashRefreshToken(tokenValue),
     expiresAt,
@@ -789,24 +790,28 @@ router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
-    await db.update(users).set({
-      passwordHash,
-      // Reading a code sent to that address is the same proof registration
-      // asks for, so a reset settles verification too. Without this, someone
-      // who reset their password could still be refused at login for an
-      // address they just demonstrably control.
-      emailVerified: true,
-    }).where(eq(users.id, user.id));
+    // One transaction, so the user row stays locked until the sessions are
+    // gone — the lock `/refresh` takes before rotating a token.
+    await db.transaction(async tx => {
+      await tx.update(users).set({
+        passwordHash,
+        // Reading a code sent to that address is the same proof registration
+        // asks for, so a reset settles verification too. Without this, someone
+        // who reset their password could still be refused at login for an
+        // address they just demonstrably control.
+        emailVerified: true,
+      }).where(eq(users.id, user.id));
 
-    await db
-      .update(passwordResetTokens)
-      .set({ used: true })
-      .where(eq(passwordResetTokens.id, stored.id));
+      await tx
+        .update(passwordResetTokens)
+        .set({ used: true })
+        .where(eq(passwordResetTokens.id, stored.id));
 
-    // Every existing session dies with the old password. If this reset was
-    // someone taking their account back, the sessions worth ending are exactly
-    // the ones already open.
-    await db.delete(refreshTokens).where(eq(refreshTokens.userId, user.id));
+      // Every existing session dies with the old password. If this reset was
+      // someone taking their account back, the sessions worth ending are exactly
+      // the ones already open.
+      await tx.delete(refreshTokens).where(eq(refreshTokens.userId, user.id));
+    });
 
     logger.info({ userId: user.id }, "password reset completed");
     res.json({ ok: true });
@@ -1555,7 +1560,12 @@ router.post("/refresh", async (req, res) => {
        * signs the real user out, which is the point: they sign back in with a
        * password we still trust, and the thief cannot.
        */
-      await db.delete(refreshTokens).where(eq(refreshTokens.familyId, outcome.familyId));
+      // Under the user's row lock, so a sibling refresh of the family's live
+      // token cannot commit a successor this delete's snapshot misses.
+      await db.transaction(async tx => {
+        await tx.select({ id: users.id }).from(users).where(eq(users.id, stored!.userId)).for("update");
+        await tx.delete(refreshTokens).where(eq(refreshTokens.familyId, outcome.familyId));
+      });
       logger.warn(
         { userId: stored!.userId, familyId: outcome.familyId },
         "refresh token reuse detected — session family revoked",
@@ -1586,21 +1596,32 @@ router.post("/refresh", async (req, res) => {
     // winner — the loser updates nothing, and its own next attempt reads a
     // retired row and trips the branch above, which is the correct reading of
     // two callers holding one token.
-    const [retired] = await db
-      .update(refreshTokens)
-      .set({ rotatedAt: new Date() })
-      .where(and(eq(refreshTokens.id, stored!.id), isNull(refreshTokens.rotatedAt)))
-      .returning({ id: refreshTokens.id });
+    //
+    // Retire and successor in one transaction holding a share lock on the user
+    // row. Every revocation (password reset, admin reset, family revoke) takes
+    // that row for update first, so it either finishes before this — and the
+    // retire finds no row — or waits for this to commit and then deletes the
+    // successor too. Two separate statements let a reset land between them and
+    // leave a session minted after the password changed.
+    const { accessToken, refreshTokenValue } = generateTokens(user.id, user.email, user.role);
+    const rotated = await db.transaction(async tx => {
+      await tx.select({ id: users.id }).from(users).where(eq(users.id, user.id)).for("share");
+      const [retired] = await tx
+        .update(refreshTokens)
+        .set({ rotatedAt: new Date() })
+        .where(and(eq(refreshTokens.id, stored!.id), isNull(refreshTokens.rotatedAt)))
+        .returning({ id: refreshTokens.id });
+      if (!retired) return false;
+      // Same family: this is the same sign-in continuing, and a fresh family
+      // would put the successor beyond the reach of the revocation above.
+      await storeRefreshToken(user.id, refreshTokenValue, req.headers.origin, outcome.familyId, tx);
+      return true;
+    });
 
-    if (!retired) {
+    if (!rotated) {
       res.status(401).json({ error: "Invalid or expired refresh token" });
       return;
     }
-
-    const { accessToken, refreshTokenValue } = generateTokens(user.id, user.email, user.role);
-    // Same family: this is the same sign-in continuing, and a fresh family
-    // would put the successor beyond the reach of the revocation above.
-    await storeRefreshToken(user.id, refreshTokenValue, req.headers.origin, outcome.familyId);
     pruneExpiredRefreshTokens(user.id);
 
     res.json({ accessToken, refreshToken: refreshTokenValue });
@@ -1892,26 +1913,40 @@ router.delete(
       }
 
       // A password account proves itself with its password. A Google-only
-      // account has no hash to check, so it retypes its own email address:
-      // weaker, but it is the strongest thing that account actually holds,
-      // and it still stops deletion by token alone.
-      const { password, confirmEmail } = req.body as {
-        password?: string;
-        confirmEmail?: string;
+      // account signs in with Google again and sends the fresh ID token: it
+      // used to retype its email, but the email sits in plain text inside every
+      // access token, so that proved nothing a stolen token did not already hold.
+      const { password, googleCredential } = req.body as {
+        password?: unknown;
+        googleCredential?: unknown;
       };
       if (account.passwordHash) {
-        const ok = password
+        const ok = typeof password === "string" && password
           ? await bcrypt.compare(password, account.passwordHash)
           : false;
         if (!ok) {
           res.status(401).json({ error: "Password is incorrect", code: "password_incorrect" });
           return;
         }
-      } else if (
-        confirmEmail?.trim().toLowerCase() !== account.email.toLowerCase()
-      ) {
-        res.status(401).json({ error: "Email confirmation does not match", code: "email_mismatch" });
-        return;
+      } else {
+        let sub: string | undefined;
+        if (typeof googleCredential === "string" && googleCredential && googleClient) {
+          try {
+            const ticket = await googleClient.verifyIdToken({
+              idToken: googleCredential,
+              audience: googleClientIdList,
+            });
+            sub = ticket.getPayload()?.sub;
+          } catch (err) {
+            logger.warn({ err: (err as Error).message }, "account deletion: Google re-auth token rejected");
+          }
+        }
+        // The token must be for THIS account's Google identity, not any Google
+        // account the caller can sign in to.
+        if (!sub || !account.googleId || sub !== account.googleId) {
+          res.status(401).json({ error: "Sign in with Google again to confirm", code: "google_reauth_required" });
+          return;
+        }
       }
 
       const media = await db

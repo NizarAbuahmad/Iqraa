@@ -178,6 +178,7 @@ test('isCapError recognises a cap by code, not by class', () => {
   assert.equal(isCapError({ code: 'user_quota_exceeded' }), true);
   assert.equal(isCapError({ code: 'budget_exceeded' }), true);
   assert.equal(isCapError({ code: 'live_mode_off' }), true);
+  assert.equal(isCapError({ code: 'generation_in_flight' }), true);
   // A failure that is genuinely a failure must still fall back.
   assert.equal(isCapError({ code: 'email_not_verified' }), false);
   assert.equal(isCapError(new Error('HTTP 500')), false);

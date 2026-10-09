@@ -19,7 +19,7 @@ import { useStudentAccountsStatus } from '@/services/features';
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { emailNotSent } from '@/services/emailDelivery';
 import { Ionicons } from '@expo/vector-icons';
-import { goBack } from '@/services/navigation';
+import { BackButton } from '@/components/ui/BackButton';
 
 type SignupRole = 'teacher' | 'parent' | 'student';
 
@@ -149,14 +149,7 @@ export default function RegisterScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.topRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <Pressable
-            onPress={() => goBack()} hitSlop={10}
-            style={styles.back}
-            accessibilityRole="button"
-            accessibilityLabel={t('back')}
-          >
-            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
-          </Pressable>
+          <BackButton color={colors.foreground} style={styles.back} />
         </View>
 
         <AuthModeSwitch

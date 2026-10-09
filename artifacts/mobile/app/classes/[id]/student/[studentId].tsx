@@ -9,13 +9,13 @@ import { useLanguage } from '@/context/LanguageContext';
 import { getStudentRecord, RosterError, updateStudent } from '@/services/roster';
 import { classQueryKey } from '@/services/rosterQueryKeys';
 import { trackEvent } from '@/services/analytics';
-import { goBack } from '@/services/navigation';
 import { formatListDate } from '@/services/evaluationRow';
 import { palette } from '@/constants/colors';
 import {
   WEAK_PERCENT, displayPercent, examStatusKey, focusObjectives, lessonAction, paperAction, recheckAction,
   sittingsLine, worksheetAction, type StudentRecordObjective,
 } from '@/services/studentRecord';
+import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = palette.primary;
 const ACCENT_FILL = palette.hero;
@@ -141,9 +141,7 @@ export default function StudentRecordScreen() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}>
       <View style={[styles.header, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
-        <Pressable onPress={() => goBack()} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('back')}>
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-        </Pressable>
+        <BackButton color="#fff" style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }} />
         <Text style={[styles.headerTitle, { textAlign: align }]}>{data?.student.displayName ?? t('studentRecordTitle')}</Text>
         {data ? (
           <Text style={[styles.headerSub, { textAlign: align }]}>

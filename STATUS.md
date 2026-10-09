@@ -828,6 +828,48 @@ reopened, still selected; the PDF handed to the print iframe carried the
 picked style (colour first, then large print). Both styles were also rendered
 to A4 in Chromium and read by eye. **Not checked:** expo-print on a device,
 and a real black-and-white photocopy.
+## The chat streams its reply and can be stopped, 2026-10-09
+
+`POST /chat` answers in Server-Sent Events when the request carries
+`Accept: text/event-stream`, and in the old `{ content }` JSON otherwise —
+the API deploys ahead of the web bundle and days ahead of any binary, so
+both shapes stay. The pure half (`lib/chatStream.ts`) is tested. A mid-stream
+upstream error comes back from it alongside the text generated so far rather
+than thrown. The route aborts the OpenAI call when the client disconnects, and
+records the spend whenever the usage chunk never came — the client left, or
+the upstream failed mid-reply — as an estimate that errs high: the prompt at 3
+chars/token plus `CHAT_MAX_TOKENS` completion tokens (the model's own output
+ceiling, reasoning included, so a reasoning model cannot be undercounted).
+Those rows are logged `estimated: true` ("chat spend estimated") to tell them
+from measured ones; usage that arrived before a Stop is recorded as measured.
+
+In the app, `RemoteAIService.chat` streams over `expo/fetch` (React
+Native's own fetch has no readable body) through `apiFetch`'s new
+`fetchImpl` option, so auth and the 401 retry are unchanged. The screen
+keeps the thinking footer up until the first text arrives, then streams into
+a bubble (Copy and Export stay hidden on it until the reply is done), and
+swaps Send for **Stop** while a remote reply is in flight. Stop keeps the
+text that arrived and runs the same lesson bookkeeping as a finished reply;
+before the first word there is no bubble and the question is restored. A
+connection lost mid-reply keeps the real text
+and shows the error as a toast — never a local answer in the model's place.
+A stream that ends without its `done` frame counts as lost, whatever the
+cause, and Stop is told apart from a timeout by state, not by error name.
+
+**Reaches native builds and OTA updates only.** Production web still ships
+`DEMO_MODE` on (deploy.yml), so web chat is the local teaching assistant
+and never streams; nothing about that decision changed here.
+
+Not done: the generators still return whole JSON; the list still scrolls
+to the end on every content change (it follows the growing bubble, which
+is wanted while streaming, and still yanks a teacher who scrolled up).
+
+Not run: the Android device check (text arriving incrementally, Stop
+working) and the live-key route checks were not run from the implementing
+session, which had neither a device nor a live key; they are the owner's to
+run before relying on this on a phone. Also not run: whether Cloud Run
+propagates a client disconnect to the container, which decides whether Stop
+halts upstream generation (spend is recorded either way).
 
 ## The printed worksheet reads as a student's paper, 2026-10-09
 
@@ -1415,6 +1457,22 @@ than read as 1.
 it ships over the air. No table, no native module, no `app.json` version bump,
 no schema push.
 
+**Servier Medical Art, grade 10 biology (2026-10-08).** Four images from
+smart.servier.com (CC BY 4.0, commercial use allowed with credit; their FAQ names
+mobile apps and e-learning, and bars only selling them as a standalone image
+library) are filed on real biology lessons: bacteriophage and influenza virus on
+«الفيروسات» (`u2_l1`), a rod-shaped bacterium on «البكتيريا والأثريات» (`u3_l2`),
+Aspergillus mycelium on «الفطريات» (`u3_l4`). Provider `servier` is new in
+`external.ts`. Each Arabic title is a term the lesson itself lists (tested), and
+the credit line is the one Servier asks for, verbatim; the image is unmodified, so
+it says «provided by», and **an edited copy (cropped, recoloured, Arabic labels
+added) must say «adapted from»**. `LabExternalCard` now shows an image that has an
+`ingest` block, with the credit under it. Chosen for fit, not volume: the grade 10
+biology book is evolution, viruses, taxonomy and ecology, so Servier's human-body
+sets do not apply, and plant, animal-kingdom and ecology lessons got nothing. The
+PNGs are small (368–900 px wide), fine on a phone, soft on a projector.
+`licenseCheckedAt` is 2026-10-08 and goes stale after 180 days.
+
 ### What does not work
 
 - **Nothing in this feature has been seen by a person in a browser.** Every
@@ -1506,10 +1564,26 @@ Spec `docs/superpowers/specs/2026-10-07-lab-class-workflow-design.md`, plan
   `labSlides.test.ts` runs every shipped law through the real helpers. (Inside
   «a — Acceleration (m/s²)» the raw unit does not stack; the conversion is
   defence, and the per-unit test is what fails if it regresses.)
+- **Latin text on an Arabic page (found 2026-10-09 by rendering, not by a test).**
+  The HTML export of a real lab deck, rendered in headless Chromium, printed
+  «Rx, Ry» as «Ry ,Rx», «m·s⁻²» as «s⁻²·m» and the licence credit
+  «2012rc, CC BY 3.0, via Wikimedia Commons» backwards: `isolateForeignRuns`
+  leaves «,» and «·» outside a run and cuts at «—», and the pieces then lay out
+  right to left. Every unit test passed, because they checked whole equation
+  lines and never the bullets or the credit. A quantity line and a credit are now
+  each one explicit left-to-right isolate (`ltr` in `labSlides.ts`), which keeps
+  the text exactly as written; the tests count top-level isolates, which is what
+  would have caught it.
 
 **Not seen, not done.**
-- Nothing here has been seen in a browser, and the PDF and PowerPoint output of
-  lab slides has not been looked at by a person.
+- The HTML export (the source of the PDF) of every shipped lab slide was
+  rendered in headless Chromium on 2026-10-09 and looked at, in both languages.
+  Not seen: the PDF's page breaks, the PowerPoint export (it does not apply
+  `isolateForeignRuns` at all, so the same reversals may exist there, and it
+  now also receives the isolate marks), the on-screen presenter, and the class
+  screens (add sheet, picker, shelf row, deck picker) on any device. One
+  Wikimedia image failed to load in the sandbox (network), so image slides were
+  judged on layout and credit, not on the picture.
 - The POST route's lab branch has no database test (tests have no database); it
   is covered by typecheck and build only.
 - ~~The slide editor's `applyMediaEdit` can strip a lab slide's credit when its
@@ -1711,14 +1785,17 @@ not-found screen. Left for piece 2 on the owner's say-so.
 to the class screen (2026-10-05). A shelf row carries no subject (the table
 has none, and it is already in production), so a Library item shows under every
 subject filter, not just its own; the teacher's saved materials still follow the
-filter. The picker offers the focused subject's items, or the class's first
-subject on «الكل», so a second subject's items are reached by focusing it first.
-Driven in Chromium on a two-subject class (maths + chemistry, local database):
-the chips showed; a maths sheet added from the picker on «الكل» stayed on the
-shelf under the chemistry focus; the chemistry-focused picker did not list that
-sheet (this local Library has no chemistry items, so it showed its empty
-message); the console was clean. Adding a chemistry item under the focus was
-not exercised, for want of one.
+filter. The picker offers the focused subject's items, or on «كل المواد» the
+items of every subject the class teaches (plus any that name no subject). Since
+#885 (2026-10-07); until then «كل المواد» offered only the class's first
+subject, so a second subject's items were reached only by focusing it first.
+Driven in Chromium on a two-subject class (maths + chemistry, local database),
+**before #885**: the chips showed; a maths sheet added from the picker on
+«كل المواد» stayed on the shelf under the chemistry focus; the chemistry-focused
+picker did not list that sheet (this local Library has no chemistry items, so it
+showed its empty message); the console was clean. Adding a chemistry item under
+the focus was not exercised, for want of one, and #885's change to «كل المواد»
+was not re-driven here.
 
 **Not in this change.** Teacher-pasted links (no schema change) and device
 uploads (one more push, private storage, no video under the 8 MB cap) are

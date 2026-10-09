@@ -15,8 +15,8 @@ import {
   getSemesterLabel,
   getUnitsForBook,
 } from '@/services/curriculumData';
-import { goBack } from '@/services/navigation';
 import { readableOn } from '@/services/readableColor';
+import { BackButton } from '@/components/ui/BackButton';
 
 function DownloadChip({ label, url, icon, color }: {
   label: string; url: string; icon: 'download-outline' | 'school-outline' | 'clipboard-outline'; color: string;
@@ -81,9 +81,7 @@ export default function SubjectsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.hero, { backgroundColor: colorFill, paddingTop: insets.top + 12 }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-        </Pressable>
+        <BackButton color="#fff" style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
         <View style={[styles.heroContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Text style={[styles.heroGrade, { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('jordanCurriculum')} · {gradeName}

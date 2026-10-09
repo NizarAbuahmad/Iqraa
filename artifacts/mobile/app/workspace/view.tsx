@@ -48,6 +48,7 @@ import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { allPremade } from '@workspace/curriculum/premade';
 import { GRADES, SUBJECTS } from '@workspace/curriculum';
+import { BackButton } from '@/components/ui/BackButton';
 
 export default function WorkspaceViewScreen() {
   const colors = useColors();
@@ -235,14 +236,7 @@ export default function WorkspaceViewScreen() {
     >
       {/* Header */}
       <View style={[styles.header, { backgroundColor: MATERIAL_FILL[kind as keyof typeof MATERIAL_FILL] ?? colors.hero, paddingTop: topPad + 12 }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('back')}
-          onPress={() => goBack()} hitSlop={10}
-          style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
-        >
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-        </Pressable>
+        <BackButton color="#fff" style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
         <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {item.title}
         </Text>

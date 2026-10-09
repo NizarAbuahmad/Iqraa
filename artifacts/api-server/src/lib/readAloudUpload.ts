@@ -17,6 +17,17 @@ export const MAX_AUDIO_SECONDS = 120;
 export const MAX_TAKES_PER_QUESTION = 3;
 
 /**
+ * The client's `durationMs` is a claim, not a measurement, so the bytes bound
+ * both the size and the bill. 128 kbps is the app recorder's own rate
+ * (expo-audio HIGH_QUALITY), so a real recording bills at its real length.
+ * ponytail: a deliberately low-bitrate file is still under-billed, by at most
+ * the byte cap; read the container's duration if that ever shows up in spend.
+ */
+const BILLING_BYTES_PER_SECOND = 16_000;
+/** 256 kbps — double the recorder's rate — for the compressed formats. */
+const MAX_COMPRESSED_BYTES_PER_SECOND = 32_000;
+
+/**
  * Audio only, and only what `speechToText` accepts directly.
  *
  * The shared `EXTENSION_BY_MIME` in `lessonMediaUpload.ts` also covers images
@@ -49,6 +60,8 @@ export interface AcceptedRecording {
   extension: string;
   transcribeAs: "wav" | "mp3" | "webm";
   durationMs: number;
+  /** What to bill: the longer of the claimed length and the bytes' length. */
+  billedSeconds: number;
 }
 
 /**
@@ -111,7 +124,18 @@ export function checkRecording(input: {
     };
   }
 
-  return { mime: input.mime, extension: type.extension, transcribeAs: type.transcribeAs, durationMs };
+  // Base64 carries 3 bytes per 4 characters; the `data:…;base64,` prefix is noise.
+  const approxBytes = Math.floor((input.dataUrlLength * 3) / 4);
+  if (type.transcribeAs !== "wav" && approxBytes > MAX_AUDIO_SECONDS * MAX_COMPRESSED_BYTES_PER_SECOND) {
+    return {
+      status: 413,
+      error: `Recordings are limited to ${MAX_AUDIO_SECONDS} seconds`,
+      code: "audio_too_long",
+    };
+  }
+  const billedSeconds = Math.max(durationMs / 1000, approxBytes / BILLING_BYTES_PER_SECOND);
+
+  return { mime: input.mime, extension: type.extension, transcribeAs: type.transcribeAs, durationMs, billedSeconds };
 }
 
 export function isRejection(r: RecordingRejection | AcceptedRecording): r is RecordingRejection {

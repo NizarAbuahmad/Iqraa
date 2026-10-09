@@ -36,11 +36,12 @@ import { classSubjectIds, classSubjectsLabel, inOptionOrder, resolveSelectedIds,
 import { RosterConsentGate } from '@/components/RosterConsentGate';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
-import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { LoadError } from '@/components/ui/LoadError';
 import { CLASSES_QUERY_KEY } from '@/services/rosterQueryKeys';
 import { Button } from '@/components/ui/Button';
+import { BackButton } from '@/components/ui/BackButton';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -281,9 +282,7 @@ function ClassesList() {
           >
             <Ionicons name="add" size={20} color="#fff" />
           </Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={12}>
-            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-          </Pressable>
+          <BackButton color="#fff" />
         </View>
         <View style={{ alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
           <Text style={[styles.heroTitle, { fontFamily: 'ReadexPro_700Bold' }]}>
@@ -317,30 +316,7 @@ function ClassesList() {
           }
           ListEmptyComponent={
             displayError ? null : (
-              <View style={styles.empty}>
-                <Ionicons name="people-outline" size={40} color={colors.mutedForeground} />
-                <Text
-                  style={[
-                    styles.emptyTitle,
-                    { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' },
-                  ]}
-                >
-                  {t('noClassesYet')}
-                </Text>
-                <Text
-                  style={[
-                    styles.emptyText,
-                    {
-                      color: colors.mutedForeground,
-                      fontFamily: 'Almarai_400Regular',
-                      textAlign: 'center',
-                    },
-                  ]}
-                >
-                  {t('noClassesDesc')}
-                </Text>
-                <Button label={t('newClass')} onPress={() => setShowNew(true)} style={{ marginTop: 8 }} />
-              </View>
+              <EmptyState icon="people-outline" title={t('noClassesYet')} body={t('noClassesDesc')} action={{ label: t('newClass'), onPress: () => setShowNew(true) }} />
             )
           }
           renderItem={({ item }) => (
@@ -545,9 +521,6 @@ const styles = StyleSheet.create({
   },
   cardTitle: { fontSize: 16 },
   cardMeta: { fontSize: 15, lineHeight: 24, marginTop: 4 },
-  empty: { alignItems: 'center', gap: 10, paddingTop: 80 },
-  emptyTitle: { fontSize: 17 },
-  emptyText: { fontSize: 15, maxWidth: 280, lineHeight: 21 },
   fab: {
     position: 'absolute',
     alignSelf: 'center',
