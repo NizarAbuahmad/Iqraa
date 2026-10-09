@@ -29,6 +29,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -118,10 +119,11 @@ export function AddReadAloudModal({
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <KeyboardSafeView>
       <View style={styles.backdrop}>
         <View style={[styles.sheet, { backgroundColor: colors.background }]}>
           <View style={[styles.header, { flexDirection: isRTL ? 'row-reverse' : 'row', borderColor: colors.border }]}>
-            <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 17 }}>
+            <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 17 }}>
               {t('readAloudAddTitle')}
             </Text>
             <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={t('close')}>
@@ -195,7 +197,7 @@ export function AddReadAloudModal({
                         styles.choice,
                         {
                           borderColor: objectiveId === id ? ACCENT : colors.border,
-                          backgroundColor: objectiveId === id ? ACCENT + '12' : colors.card,
+                          backgroundColor: objectiveId === id ? palette.selected : colors.card,
                           flexDirection: isRTL ? 'row-reverse' : 'row',
                         },
                       ]}
@@ -207,7 +209,7 @@ export function AddReadAloudModal({
                       />
                       <Text
                         numberOfLines={2}
-                        style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, flex: 1, textAlign: isRTL ? 'right' : 'left' }}
+                        style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, flex: 1, textAlign: isRTL ? 'right' : 'left' }}
                       >
                         {objectiveLabel(id, lang) ?? t('readAloudObjectiveN', String(i + 1))}
                       </Text>
@@ -230,7 +232,7 @@ export function AddReadAloudModal({
                       styles.choice,
                       {
                         borderColor: competency === c.key ? ACCENT : colors.border,
-                        backgroundColor: competency === c.key ? ACCENT + '12' : colors.card,
+                        backgroundColor: competency === c.key ? palette.selected : colors.card,
                         flexDirection: isRTL ? 'row-reverse' : 'row',
                       },
                     ]}
@@ -240,7 +242,7 @@ export function AddReadAloudModal({
                       size={18}
                       color={competency === c.key ? ACCENT : colors.mutedForeground}
                     />
-                    <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22 }}>
+                    <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 }}>
                       {t(c.label)}
                     </Text>
                   </Pressable>
@@ -258,7 +260,7 @@ export function AddReadAloudModal({
               {busy ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+                <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
                   {t('readAloudAddBtn')}
                 </Text>
               )}
@@ -266,6 +268,7 @@ export function AddReadAloudModal({
           </ScrollView>
         </View>
       </View>
+      </KeyboardSafeView>
     </Modal>
   );
 }
@@ -280,8 +283,8 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
   },
-  label: { fontFamily: 'Cairo_600SemiBold', fontSize: 14 },
-  hint: { fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 20 },
+  label: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 },
+  hint: { fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 22 },
   passageInput: {
     borderWidth: 1,
     borderRadius: 12,

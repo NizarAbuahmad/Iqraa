@@ -149,20 +149,6 @@ const DURING_CLASS_ALL: ToolDef[] = [
     externalAction: 'geogebra-graphing',
     mathOnly: true,
   },
-  // The retired home screen, now named for the only two things it still
-  // uniquely does: attaching media to the current lesson (which becomes deck
-  // slides in Class Mode) and Smart Templates. It used to hide behind a card
-  // labelled "أدوات إضافية / useful when you need them", which told a teacher
-  // nothing and quietly dropped them onto an old screen.
-  {
-    id: 'lesson-media',
-    hidden: true,
-    titleKey: 'toolLessonMediaTitle',
-    descKey: 'toolLessonMediaDesc',
-    icon: 'images-outline',
-    color: '#6366F1',
-    route: '/home',
-  },
 ];
 
 const AFTER_CLASS_ALL: ToolDef[] = [
@@ -222,21 +208,6 @@ export const AFTER_CLASS: ToolDef[] = visible(AFTER_CLASS_ALL);
 // a disclosure a teacher had no reason to open. Everything moved into the stage
 // where it is actually used; the stub became a real screen.
 
-/**
- * The per-grade resources library. Not a generator, so it is not in a
- * workflow stage or ALL_TOOLS; the Tools tab and the chat "+" menu each put it
- * first in their flat list. It lives under /curriculum so students can reach
- * it too.
- */
-export const LIBRARY_TOOL: ToolDef = {
-  id: 'library',
-  titleKey: 'toolLibraryTitle',
-  descKey: 'toolLibraryDesc',
-  icon: 'library-outline',
-  color: '#7C3AED',
-  route: '/curriculum/resources',
-};
-
 export const WORKFLOW: WorkflowSection[] = [
   { id: 'before', titleKey: 'toolsBeforeClass', tools: BEFORE_CLASS },
   { id: 'during', titleKey: 'toolsDuringClass', tools: DURING_CLASS },
@@ -250,3 +221,28 @@ export const ALL_TOOLS: ToolDef[] = [
   ...DURING_CLASS,
   ...AFTER_CLASS,
 ];
+
+/**
+ * The tools the chat can carry out itself: tapping one sends a prompt and the
+ * answer lands in the thread. Value is the artifact type chat generates.
+ * `homework` is generable but parked in the catalog, so it never reaches the
+ * menu — see `CHAT_MENU_TOOLS`.
+ */
+export const CHAT_NATIVE_TOOLS: Record<
+  string,
+  'lesson-plan' | 'worksheet' | 'quiz' | 'homework' | 'activity'
+> = {
+  'lesson-plan': 'lesson-plan',
+  worksheet: 'worksheet',
+  quiz: 'quiz',
+  activity: 'activity',
+  homework: 'homework',
+};
+
+/**
+ * The chat composer's "+" menu. A "+" reads as "add something to this
+ * message", so it lists only what the conversation answers itself. Everything
+ * that opens another screen (slides, the class hub, the library, evaluations…)
+ * lives on the Tools tab and the lesson card instead.
+ */
+export const CHAT_MENU_TOOLS: ToolDef[] = ALL_TOOLS.filter(t => CHAT_NATIVE_TOOLS[t.id]);

@@ -17,6 +17,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { ClassPickerSheet, type ClassPick } from '@/components/ui/ClassPickerSheet';
@@ -25,6 +26,7 @@ import { describeAttachResult } from '@/services/classAttach';
 import type { Lang } from '@/services/i18n';
 import { listClasses } from '@/services/roster';
 import { classNameFor } from '@/services/materialClass';
+import { classIdFromParam } from '@/services/classToolParams';
 
 export function MaterialClassField({
   materialId,
@@ -43,6 +45,11 @@ export function MaterialClassField({
 }) {
   const colors = useColors();
   const { t, isRTL, lang } = useLanguage();
+  // Set when the teacher started from a class's الموارد tab. They already
+  // answered "which class" by starting there, so a first save files the
+  // material into it without asking again. See `classToolParams`.
+  const routeParams = useLocalSearchParams<{ classId?: string | string[] }>();
+  const forClassId = classIdFromParam(routeParams.classId);
   const [open, setOpen] = useState(false);
   const [classId, setClassId] = useState<string | null>(null);
   const [name, setName] = useState<string | null>(null);
@@ -94,22 +101,6 @@ export function MaterialClassField({
     return () => { cancelled = true; };
   }, [materialId, lang]);
 
-  useEffect(() => {
-    if (!promptOnNew || !materialId) return;
-    // Wait for the read-back on THIS id. `loading` alone is not enough: it
-    // starts false, so on the render where the id first appears this effect
-    // would run before the fetch effect had set it — and open the sheet on a
-    // `classId` that is still null only because nothing had looked yet. That
-    // put the sheet in front of a material already filed under a class, which
-    // is exactly the interrogation this guard exists to prevent.
-    if (resolvedFor !== materialId) return;
-    // Opened on an existing material rather than freshly saved — already asked.
-    if (openedWithRef.current === materialId) return;
-    if (promptedRef.current.has(materialId)) return;
-    promptedRef.current.add(materialId);
-    if (!classId) setOpen(true);
-  }, [promptOnNew, materialId, resolvedFor, classId]);
-
   const pick = useCallback(async (picks: ClassPick[]) => {
     if (!materialId || picks.length === 0) return;
     setOpen(false);
@@ -131,6 +122,40 @@ export function MaterialClassField({
       setSaving(false);
     }
   }, [materialId, onToast, t, lang]);
+
+  useEffect(() => {
+    if (!promptOnNew || !materialId) return;
+    // Wait for the read-back on THIS id. `loading` alone is not enough: it
+    // starts false, so on the render where the id first appears this effect
+    // would run before the fetch effect had set it — and open the sheet on a
+    // `classId` that is still null only because nothing had looked yet. That
+    // put the sheet in front of a material already filed under a class, which
+    // is exactly the interrogation this guard exists to prevent.
+    if (resolvedFor !== materialId) return;
+    // Opened on an existing material rather than freshly saved — already asked.
+    if (openedWithRef.current === materialId) return;
+    if (promptedRef.current.has(materialId)) return;
+    promptedRef.current.add(materialId);
+    if (classId) return;
+    if (!forClassId) {
+      setOpen(true);
+      return;
+    }
+    // Started from a class: file it there without asking. Only when that
+    // class can actually be read back — a deleted class, or an offline roster,
+    // falls through to the sheet rather than claiming a filing nobody could
+    // confirm (the same rule `pick` follows for the toast).
+    void (async () => {
+      let resolved: string | null = null;
+      try {
+        resolved = classNameFor(await listClasses(), forClassId, lang as 'ar' | 'en');
+      } catch {
+        // Offline — see above.
+      }
+      if (resolved) await pick([{ id: forClassId, name: resolved }]);
+      else setOpen(true);
+    })();
+  }, [promptOnNew, materialId, resolvedFor, classId, forClassId, lang, pick]);
 
   const clear = useCallback(async () => {
     if (!materialId) return;
@@ -205,6 +230,23 @@ export function MaterialClassField({
         )}
       </Pressable>
 
+      {/* Only while the material is in the class the teacher came from. Moving
+          it elsewhere removes the button: "back to صف أ" would be a lie. */}
+      {forClassId && classId === forClassId && name ? (
+        <Pressable
+          onPress={() => router.dismissTo({ pathname: '/classes/[id]', params: { id: forClassId } })}
+          style={({ pressed }) => [
+            styles.back,
+            { flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.7 : 1 },
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel={t('backToClass', name)}
+        >
+          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={16} color={colors.primary} />
+          <Text style={[styles.backLabel, { color: colors.primary }]}>{t('backToClass', name)}</Text>
+        </Pressable>
+      ) : null}
+
       <ClassPickerSheet
         visible={open}
         selectedClassId={classId}
@@ -225,6 +267,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderWidth: 1,
   },
-  label: { flex: 1, fontSize: 13, fontFamily: 'Cairo_500Medium' },
-  action: { fontSize: 12, fontFamily: 'Cairo_600SemiBold' },
+  label: { flex: 1, fontSize: 13, fontFamily: 'ReadexPro_500Medium' },
+  action: { fontSize: 12, fontFamily: 'ReadexPro_600SemiBold' },
+  back: { alignItems: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 4 },
+  backLabel: { fontSize: 13, fontFamily: 'ReadexPro_600SemiBold' },
 });

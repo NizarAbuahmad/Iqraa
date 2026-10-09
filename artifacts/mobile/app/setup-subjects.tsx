@@ -26,8 +26,7 @@
  */
 import React, { useState } from 'react';
 import {
-  KeyboardAvoidingView,
-  Platform,
+  
   Pressable,
   ScrollView,
   StyleSheet,
@@ -73,9 +72,11 @@ function initialAssignments(user: { teachingAssignments?: TeachingAssignment[]; 
   return [];
 }
 
-function Chip({ label, selected, onPress, colors, accent }: {
+function Chip({ label, selected, onPress, colors, accent, oneLine }: {
   label: string; selected: boolean; onPress: () => void;
   colors: ReturnType<typeof useColors>; accent: string;
+  /** A short label that must never wrap — see the grade chips below. */
+  oneLine?: boolean;
 }) {
   return (
     <Pressable
@@ -89,9 +90,12 @@ function Chip({ label, selected, onPress, colors, accent }: {
       ]}
     >
       <Text
+        numberOfLines={oneLine ? 1 : undefined}
+        adjustsFontSizeToFit={oneLine}
+        minimumFontScale={0.85}
         style={[
           styles.chipText,
-          { color: selected ? colors.primaryForeground : colors.foreground, fontFamily: 'Cairo_500Medium' },
+          { color: selected ? colors.primaryForeground : colors.foreground, fontFamily: 'ReadexPro_500Medium' },
         ]}
       >
         {label}
@@ -135,7 +139,9 @@ export default function SetupSubjectsScreen() {
   const align = isRTL ? 'right' : 'left';
   const grades = getPickerGrades();
   const addedGradeIds = new Set(assignments.map(a => a.gradeId));
-  const remainingGrades = grades.filter(g => !addedGradeIds.has(g.id));
+  // Highest grade first. The picker's own order is persisted state (grade-1 and
+  // grade-2 were appended after grade-3, so it reads ...3, 1, 2), so sort a copy.
+  const remainingGrades = grades.filter(g => !addedGradeIds.has(g.id)).sort((x, y) => y.level - x.level);
   // A grade card with no subjects picked isn't a valid entry, so it's dropped
   // at save time instead of blocking the whole form — see handleSubmit.
   const canSubmit = assignments.some(a => a.subjectIds.length > 0) && !saving;
@@ -152,6 +158,12 @@ export default function SetupSubjectsScreen() {
 
   const toggleSubject = (gradeId: string, subjectId: string) => {
     setAssignments(prev => prev.map(a => (a.gradeId === gradeId ? { ...a, subjectIds: toggle(a.subjectIds, subjectId) } : a)));
+  };
+
+  const setAllSubjects = (gradeId: string, all: boolean) => {
+    Haptics.selectionAsync();
+    const ids = all ? getSubjectsForGrade(gradeId).map(s => s.id) : [];
+    setAssignments(prev => prev.map(a => (a.gradeId === gradeId ? { ...a, subjectIds: ids } : a)));
   };
 
   const handleSubmit = async () => {
@@ -171,9 +183,8 @@ export default function SetupSubjectsScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
+    <View
       style={{ flex: 1, backgroundColor: colors.background }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
         contentContainerStyle={[
@@ -184,6 +195,8 @@ export default function SetupSubjectsScreen() {
       >
         {editMode ? (
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('back')}
             onPress={() => goBack()} hitSlop={10}
             style={[styles.back, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
           >
@@ -213,7 +226,7 @@ export default function SetupSubjectsScreen() {
           />
         ) : null}
 
-        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: align }]}>
+        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
           {editMode ? t('editTeachingTitle') : t('teacherSetupTitle')}
         </Text>
         <Text style={[styles.desc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
@@ -224,15 +237,21 @@ export default function SetupSubjectsScreen() {
           const grade = grades.find(g => g.id === a.gradeId);
           if (!grade) return null;
           const gradeName = lang === 'ar' ? grade.nameAr : grade.name;
+          const allSelected = getSubjectsForGrade(a.gradeId).every(s => a.subjectIds.includes(s.id));
           return (
             <View
               key={a.gradeId}
               style={[styles.gradeCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}
             >
               <View style={[styles.gradeCardHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                <Text style={[styles.gradeCardTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align, flex: 1 }]}>
+                <Text style={[styles.gradeCardTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align, flex: 1 }]}>
                   {gradeName}
                 </Text>
+                <Pressable onPress={() => setAllSubjects(a.gradeId, !allSelected)} hitSlop={8}>
+                  <Text style={[styles.selectAll, { color: colors.primary, fontFamily: 'ReadexPro_600SemiBold' }]}>
+                    {allSelected ? t('teacherSetupDeselectAll') : t('teacherSetupSelectAll')}
+                  </Text>
+                </Pressable>
                 <Pressable
                   onPress={() => removeGrade(a.gradeId)}
                   hitSlop={8}
@@ -264,7 +283,7 @@ export default function SetupSubjectsScreen() {
 
         {remainingGrades.length > 0 ? (
           <>
-            <Text style={[styles.sectionLabel, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align, marginTop: assignments.length > 0 ? 8 : 20 }]}>
+            <Text style={[styles.sectionLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align, marginTop: assignments.length > 0 ? 8 : 20 }]}>
               {t('teacherSetupAddGrade')}
             </Text>
             <View style={[styles.chips, isRTL && { flexDirection: 'row-reverse' }]}>
@@ -272,6 +291,7 @@ export default function SetupSubjectsScreen() {
                 <Chip
                   key={g.id}
                   label={lang === 'ar' ? g.nameAr : g.name}
+                  oneLine
                   selected={false}
                   onPress={() => addGrade(g.id)}
                   colors={colors}
@@ -306,7 +326,7 @@ export default function SetupSubjectsScreen() {
           style={{ marginTop: 24 }}
         />
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -315,16 +335,17 @@ const styles = StyleSheet.create({
   back: { marginBottom: 12, width: 40 },
   icon: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginBottom: 20 },
   title: { fontSize: 22, marginBottom: 8, lineHeight: 30 },
-  desc: { fontSize: 14, lineHeight: 22, marginBottom: 20 },
+  desc: { fontSize: 15, lineHeight: 24, marginBottom: 20 },
   sectionLabel: { fontSize: 14, marginBottom: 10 },
   gradeCard: { borderWidth: 1, padding: 14, marginBottom: 12 },
   gradeCardHeader: { alignItems: 'center', marginBottom: 12, gap: 8 },
   gradeCardTitle: { fontSize: 15 },
-  gradeCardHint: { fontSize: 12, lineHeight: 18, marginTop: 10 },
+  selectAll: { fontSize: 13 },
+  gradeCardHint: { fontSize: 13, lineHeight: 20, marginTop: 10 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1 },
   chipText: { fontSize: 13 },
-  hint: { fontSize: 12, lineHeight: 19, marginTop: 10 },
+  hint: { fontSize: 13, lineHeight: 21, marginTop: 10 },
   errorBanner: { alignItems: 'center', gap: 8, padding: 12, borderWidth: 1, marginTop: 16 },
-  errorText: { flex: 1, fontSize: 13, lineHeight: 21 },
+  errorText: { flex: 1, fontSize: 15, lineHeight: 24 },
 });

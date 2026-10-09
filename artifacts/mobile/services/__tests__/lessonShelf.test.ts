@@ -208,8 +208,10 @@ describe('subject isolation', () => {
       // and the g9- form appear.
       'civic-education': /^(civ-s[12]|g9-civ-s[12])$/,
       // Grade 9 predates Grade 7 here (no Grade 8 PE book exists at all).
-      // Grade 7 joined 2026-09-12.
-      'physical-education': /^g\d+-pe-s[12]$/,
+      // Grade 7 joined 2026-09-12. Grade 10 joined 2026-10-06 — grade-10 is
+      // `IMPLICIT_GRADE_ID` in curriculumIds.ts, so it carries the bare
+      // `pe-s1` form with no `g10-` prefix, same as arts-s1 below.
+      'physical-education': /^(pe-s[12]|g\d+-pe-s[12])$/,
       // The combined «العلوم» books at Grades 1, 3, 4, 5, 6, 7 and 8, the
       // only ones this subject has. No grade-10 alternative here: Grade 10
       // splits science into the four subjects above, so there is no bare
@@ -289,6 +291,39 @@ describe('external resources on the shelf', () => {
       r.lessonIds.filter(id => !known.has(id)).map(id => `${r.id} -> ${id}`),
     );
     assert.deepEqual(orphans, [], 'these resources name lessons that do not exist');
+  });
+
+  it('never lists a simulation — the virtual lab card is the one place a sim link shows', () => {
+    // A PhET link on the shelf bypassed `releasedVirtualLab`, so production
+    // showed tappable simulations nobody had reviewed, and in dev the same sim
+    // appeared twice (shelf row and card). The card is gated; the shelf is not.
+    const sims = EXTERNAL_RESOURCES.filter(r => r.kind === 'simulation');
+    assert.ok(sims.length > 0, 'no simulation in the catalog — this test proves nothing');
+    for (const sim of sims) {
+      for (const lessonId of sim.lessonIds) {
+        const shelf = buildLessonShelf(lessonId);
+        assert.ok(shelf, `no lesson found for ${lessonId}`);
+        assert.equal(
+          shelf.external.some(r => r.kind === 'simulation'),
+          false,
+          `${lessonId} lists ${sim.id} on the shelf`,
+        );
+      }
+    }
+    // The chemistry equations lab holds only a simulation, so its shelf has
+    // no external material left to show.
+    assert.deepEqual(buildLessonShelf('kbl-chem-s2-nccd-u4_lab')!.external, []);
+  });
+
+  it('keeps the other kinds on a lesson that also carries a simulation', () => {
+    // The hydrogen-spectrum lab has an image, a video and a simulation filed.
+    const lessonId = 'kbl-chem-s1-nccd-u1_lab';
+    const expected = EXTERNAL_RESOURCES
+      .filter(r => r.lessonIds.includes(lessonId) && r.kind !== 'simulation')
+      .map(r => r.id);
+    assert.ok(expected.length >= 2, 'fixture lesson lost its image/video — pick another');
+    const shelf = buildLessonShelf(lessonId)!;
+    assert.deepEqual(shelf.external.map(r => r.id).sort(), expected.sort());
   });
 
   it('gives a lesson with no curated material an empty list, not a missing one', () => {

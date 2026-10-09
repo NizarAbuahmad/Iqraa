@@ -30,7 +30,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { useAuth } from '@/context/AuthContext';
+import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import {
   KBLesson,
   getBookForLesson,
@@ -42,8 +42,9 @@ import {
   searchKBSemantic,
 } from '@/services/knowledgeBase';
 import { getPickerGrades, getPickerSubjects, hasCurriculumForSubjectGrade } from '@/services/curriculumData';
+import { AR_LATIN } from '@/services/dateLabels';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
-import { loadLessonPick, loadPrepSkips, saveLessonPick, setPrepSkip, timetableWins, type HomeLessonPick } from '@/services/lessonContext';
+import { loadLessonPick, loadPrepBoardOpen, loadPrepSkips, saveLessonPick, savePrepBoardOpen, setPrepSkip, timetableWins, type HomeLessonPick } from '@/services/lessonContext';
 import {
   buildResponse,
   deduplicateByUnit,
@@ -69,6 +70,7 @@ import {
   buildPrepProgressView,
   buildTeachingAssistantReply,
   emptyChatSessionMemory,
+  reviewFollowUp,
   isReferentialQuery,
   artifactFromQuery,
   recordGeneratedResource,
@@ -80,16 +82,19 @@ import {
   resolveCurriculumContext,
 } from '@/services/ai/teachingAssistant';
 import { classifyChatIntent, leavesClarificationStanding } from '@/services/ai/intentRouter';
+import { unansweredEventProps, type UnansweredKind } from '@/services/chatUnanswered';
 import { IqraaMark } from '@/components/ui/IqraaMark';
 import { CHAT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
+import { useKeyboardVisible } from '@/hooks/useKeyboardVisible';
+import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { MaterialCanvas } from '@/components/ui/MaterialCanvas';
 import { LessonPrepBoard } from '@/components/ui/LessonPrepBoard';
-import { buildPrepBoard, prepLessonKey, type PrepRow } from '@/services/lessonBoard';
+import { buildPrepBoard, prepLessonKey, savedDeckFor, savedPrepArtifacts, type PrepRow } from '@/services/lessonBoard';
 import { getAllItems, type SavedMaterial } from '@/services/workspace';
 import { MathParagraph } from '@/components/ui/MathParagraph';
-import { hasRenderableMath, isolateForeignRuns } from '@/services/mathRender';
+import { hasRenderableMath, isLatinProseLine, isolateForeignRuns } from '@/services/mathRender';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { CurrentLessonCard } from '@/components/ui/CurrentLessonCard';
 import { NotificationBell } from '@/components/ui/NotificationBell';
@@ -98,12 +103,12 @@ import { DOCUMENT_UPLOAD_ENABLED } from '@/services/features';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { ComposerToolsMenu, type MenuAction, type MenuSection } from '@/components/ui/ComposerToolsMenu';
 import {
-  ALL_TOOLS,
-  LIBRARY_TOOL,
+  CHAT_MENU_TOOLS,
+  CHAT_NATIVE_TOOLS,
   type ToolDef,
 } from '@/services/toolCatalog';
-import { openGeogebraGraphing } from '@/services/geogebra';
 import { trackEvent } from '@/services/analytics';
+import { hasLabSheetMessage, virtualLabChatMessage, virtualLabFor } from '@/services/virtualLab';
 import {
   addAndProcessFiles,
   clearSessionDocuments,
@@ -116,14 +121,15 @@ import {
   type SessionDocument,
 } from '@/services/documents';
 import { lessonPickerParams, resolveLessonPrepContext, subjectPickerLabels, topicPickerParams } from '@/services/lessonPrep';
-import { loadNextPeriod } from '@/services/schedule';
+import { loadNextPeriod, loadTimetable } from '@/services/schedule';
 import { formatNextPeriod } from '@/services/scheduleCalendar';
 import { todayISO } from '@/services/planEntries';
 import { listClasses, type ClassGroup } from '@/services/roster';
 import { classNameFor } from '@/services/materialClass';
+import { periodClassLabel } from '@/services/classSubjects';
 import { answerAppHelp } from '@/services/appHelp';
 import { TOOL_ASK_TARGETS, toolAskFromQuery, toolAskReply } from '@/services/chatToolAsk';
-import { formatInfographicText, isInfographicAsk } from '@/services/ai/infographic';
+import { isInfographicAsk } from '@/services/ai/infographic';
 import { topicFromQuery } from '@/services/ai/artifactTopic';
 import { InfographicView } from '@/components/ui/InfographicView';
 import type { TranslationKey } from '@/services/i18n';
@@ -132,6 +138,8 @@ import { pinnedResourceNote } from '@/services/mathSupportResources';
 import {
   buildCurrentLessonView,
   buildLessonSuggestions,
+  nextStepActions,
+  withActiveLesson,
   extractQueryGradeId,
   extractQuerySubjectId,
   stripSubjectNames,
@@ -141,6 +149,7 @@ import {
   pinLesson,
   resolvePickedLesson,
   resourceRoute,
+  defaultLessonIdFor,
   seedDefaultLessonMemory,
   softPinIfUnpinned,
   shouldReuseActiveLesson,
@@ -158,25 +167,25 @@ import {
   type DrillConfig,
 } from '@/services/publicGames/mathDrill';
 import {
-  formatActivityText,
-  formatLessonPlanText,
-  formatQuizText,
-  formatWorksheetText,
   copyToClipboard,
   exportAsPDF,
   exportAsWord,
+  exportBuiltWord,
   shareAsText,
 } from '@/services/share';
+import { quizExports, type QuizCopy } from '@/services/quizExport';
+import { worksheetExports } from '@/services/worksheetExport';
 import { buildClassDeck } from '@/services/startClass';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { ClassPickerSheet, type ClassPick } from '@/components/ui/ClassPickerSheet';
 import { describeAttachResult } from '@/services/classAttach';
-import type { Lang } from '@/services/i18n';
+import { getT, type Lang } from '@/services/i18n';
 import { attachToClasses, getItem, saveItem, updateItem } from '@/services/workspace';
 import {
   canPresentArtifact,
   canSaveArtifact,
+  chatDocumentText,
   deckForArtifact,
   materialContentFor,
   materialFormStateFor,
@@ -256,7 +265,7 @@ interface Message {
   /** Conversation around a rendered document — shown instead of the full text. */
   artifactProse?: string;
   /** Heading + context, so an edited document exports as edited. */
-  artifactMeta?: { title: string; subject: string; grade: string; duration?: number };
+  artifactMeta?: { title: string; subject: string; grade: string; duration?: number; lang?: 'ar' | 'en' };
   /**
    * Workspace id, once this material has been saved from chat. Held on the
    * message so a second tap updates the same material instead of filing a
@@ -385,6 +394,7 @@ function ContextBanner({
   const [modalOpen, setModalOpen] = useState(false);
   // Only the grades/subjects this teacher picked on /setup-subjects are offered.
   const teacherScope = useTeacherScope();
+  const { user } = useAuth();
   const [subjIdx, setSubjIdx] = useState(teacherScope.defaultScope.subjectIdx);
   const [gradeId, setGradeId] = useState(teacherScope.defaultIds.gradeId);
   const topic = currentTopic;
@@ -515,7 +525,7 @@ function ContextBanner({
               numberOfLines={1}
               style={[ctxStyles.pillText, {
                 color: topic ? colors.primary : colors.mutedForeground,
-                fontFamily: topic ? 'Cairo_500Medium' : 'Almarai_400Regular',
+                fontFamily: topic ? 'ReadexPro_500Medium' : 'Almarai_400Regular',
                 textAlign: isRTL ? 'right' : 'left',
                 flex: 1,
               }]}
@@ -540,6 +550,7 @@ function ContextBanner({
         presentationStyle="pageSheet"
         onRequestClose={handleCancel}
       >
+        <KeyboardSafeView>
         <View style={[ctxStyles.modal, { backgroundColor: colors.background }]}>
           {/* Modal header */}
           <View style={[ctxStyles.modalHeader, { borderBottomColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -548,7 +559,7 @@ function ContextBanner({
                 {t('cancel')}
               </Text>
             </Pressable>
-            <Text style={[ctxStyles.modalTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold' }]}>
+            <Text style={[ctxStyles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold' }]}>
               {t('setTeachingContext')}
             </Text>
             <View style={{ width: 60 }} />
@@ -564,7 +575,7 @@ function ContextBanner({
             {/* Grade pills — only worth showing once there is a real choice. */}
             {CONTEXT_GRADES.filter(g => teacherScope.isGradeShown(g.id)).length > 1 ? (
               <>
-                <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+                <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
                   {t('grade')}
                 </Text>
                 <View style={[ctxStyles.subjRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -587,7 +598,7 @@ function ContextBanner({
                     >
                       <Text style={[ctxStyles.subjText, {
                         color: draftGradeId === g.id ? colors.primaryForeground : colors.mutedForeground,
-                        fontFamily: draftGradeId === g.id ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                        fontFamily: draftGradeId === g.id ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
                       }]}>
                         {lang === 'ar' ? g.nameAr : g.name}
                       </Text>
@@ -598,7 +609,7 @@ function ContextBanner({
             ) : null}
 
             {/* Subject pills */}
-            <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left', marginTop: CONTEXT_GRADES.filter(g => teacherScope.isGradeShown(g.id)).length > 1 ? 18 : 0 }]}>
+            <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left', marginTop: CONTEXT_GRADES.filter(g => teacherScope.isGradeShown(g.id)).length > 1 ? 18 : 0 }]}>
               {t('subject')}
             </Text>
             <View style={[ctxStyles.subjRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -617,7 +628,7 @@ function ContextBanner({
                 >
                   <Text style={[ctxStyles.subjText, {
                     color: draftSubjIdx === i ? colors.primaryForeground : colors.mutedForeground,
-                    fontFamily: draftSubjIdx === i ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                    fontFamily: draftSubjIdx === i ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
                   }]}>
                     {subjectNames[i]}
                   </Text>
@@ -625,6 +636,27 @@ function ContextBanner({
                 );
               })}
             </View>
+
+            {/* Where to go to widen the pills above: they are masked to the
+                teacher's /setup-subjects choice, so a missing grade or subject
+                otherwise looks like a bug. Teacher-only — nobody else has a scope. */}
+            {isTeacherRole(user?.role) ? (
+              <Text style={{
+                marginTop: 14, fontSize: 12, lineHeight: 18, color: colors.mutedForeground,
+                fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left',
+              }}>
+                {t('pickerScopeNote')}{' '}
+                <Text
+                  onPress={() => {
+                    setOpen(false);
+                    router.push({ pathname: '/setup-subjects', params: { mode: 'edit' } } as any);
+                  }}
+                  style={{ color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', textDecorationLine: 'underline' }}
+                >
+                  {t('editTeachingTitle')}
+                </Text>
+              </Text>
+            ) : null}
 
             {/* Topic selector — no section header here: TopicSelector renders its
                 own «موضوع الدرس» label, so one field carried two labels. The
@@ -663,7 +695,7 @@ function ContextBanner({
               <Ionicons name="chatbubble-ellipses-outline" size={18} color={draftTopic.trim() ? colors.primaryForeground : colors.mutedForeground} />
               <Text style={[ctxStyles.askBtnText, {
                 color: draftTopic.trim() ? colors.primaryForeground : colors.mutedForeground,
-                fontFamily: 'Cairo_700Bold',
+                fontFamily: 'ReadexPro_700Bold',
               }]}>
                 {draftTopic.trim()
                   ? (lang === 'ar' ? `ابدأ التحضير: ${draftTopic}` : `Ask Iqrra about: ${draftTopic}`)
@@ -672,6 +704,7 @@ function ContextBanner({
             </Pressable>
           </View>
         </View>
+        </KeyboardSafeView>
       </Modal>
     </>
   );
@@ -802,23 +835,23 @@ const prepStyles = StyleSheet.create({
     gap: 2,
   },
   heading: {
-    fontFamily: 'Cairo_600SemiBold',
+    fontFamily: 'ReadexPro_600SemiBold',
     fontSize: 12,
     marginBottom: 2,
   },
   line: {
     fontFamily: 'Almarai_400Regular',
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 13,
+    lineHeight: 20,
   },
   recommend: {
-    fontFamily: 'Cairo_500Medium',
+    fontFamily: 'ReadexPro_500Medium',
     fontSize: 12,
     lineHeight: 18,
     marginTop: 8,
   },
   readyText: {
-    fontFamily: 'Cairo_700Bold',
+    fontFamily: 'ReadexPro_700Bold',
     fontSize: 13,
     color: '#047857',
     lineHeight: 20,
@@ -887,7 +920,7 @@ function MessageBubble({
   t: (k: any, ...a: any[]) => string;
 }) {
   const isUser = message.role === 'user';
-  const timeLabel = message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const timeLabel = message.timestamp.toLocaleTimeString(isRTL ? AR_LATIN : undefined, { hour: '2-digit', minute: '2-digit' });
   // Only the intro reads this: at 64px with 14px copy it sat in a desktop
   // window like a phone screenshot dropped into the middle of the page.
   const isWide = useViewportWidth() >= DESKTOP_BREAKPOINT;
@@ -912,7 +945,7 @@ function MessageBubble({
                   />
                   <Text
                     numberOfLines={1}
-                    style={{ color: colors.primaryForeground, fontFamily: 'Cairo_500Medium', fontSize: 12, maxWidth: 180 }}
+                    style={{ color: colors.primaryForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 12, maxWidth: 180 }}
                   >
                     {a.name}
                   </Text>
@@ -945,8 +978,8 @@ function MessageBubble({
    */
   if (message.id === 'welcome' && !isWide) {
     /*
-      Phone: the header right above already carries the mark and «اقرأ», so
-      a 64px tile and «مساعد اقرأ» under it said the name twice before the
+      Phone: the header right above already carries the mark and «إقرأ», so
+      a 64px tile and «مساعد إقرأ» under it said the name twice before the
       teacher reached anything they could do. One line of purpose, then the
       readiness board — which is the thing to do.
     */
@@ -957,7 +990,7 @@ function MessageBubble({
             styles.introCompactText,
             {
               color: colors.foreground,
-              fontFamily: 'Cairo_600SemiBold',
+              fontFamily: 'ReadexPro_600SemiBold',
               textAlign: isRTL ? 'right' : 'left',
               writingDirection: isRTL ? 'rtl' : 'ltr',
             },
@@ -975,7 +1008,7 @@ function MessageBubble({
     return (
       <View style={[styles.intro, isWide && styles.introWide]}>
         <IqraaMark size={isWide ? 84 : 64} tone="soft" />
-        <Text style={[styles.introName, isWide && styles.introNameWide, { color: colors.primary, fontFamily: 'Cairo_700Bold' }]}>
+        <Text style={[styles.introName, isWide && styles.introNameWide, { color: colors.primary, fontFamily: 'ReadexPro_700Bold' }]}>
           {introName}
         </Text>
         <Text
@@ -1006,6 +1039,11 @@ function MessageBubble({
   const inlinePlan = onCanvas ? null : planData;
   const infographic =
     message.artifactData?.kind === 'infographic' ? message.artifactData.infographic : null;
+  // The document reads in its own language — an English lesson's plan is
+  // English inside an Arabic chat.
+  const docLang = message.artifactMeta?.lang;
+  const docRTL = docLang ? docLang === 'ar' : isRTL;
+  const docT = docLang ? getT(docLang) : t;
 
   // A rendered document replaces the formatted text it was built from. Showing
   // both put the whole lesson plan on screen twice — once editable, once as the
@@ -1106,8 +1144,8 @@ function MessageBubble({
               <LessonPlanView
                 plan={inlinePlan.plan}
                 colors={colors}
-                isRTL={isRTL}
-                t={t}
+                isRTL={docRTL}
+                t={docT}
                 accent={colors.primary}
                 onEdit={
                   onEditArtifact
@@ -1123,7 +1161,7 @@ function MessageBubble({
           ) : null}
           {infographic ? (
             <View style={{ marginBottom: 8 }}>
-              <InfographicView data={infographic} colors={colors} isRTL={isRTL} />
+              <InfographicView data={infographic} colors={colors} isRTL={docRTL} />
             </View>
           ) : null}
           {lines.map((line, i) => {
@@ -1165,7 +1203,7 @@ function MessageBubble({
                   <Text style={[styles.bubbleText, { color: colors.foreground, flex: 1, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
                     {parts.map((p, pi) =>
                       pi % 2 === 1
-                        ? <Text key={pi} style={{ fontFamily: 'Cairo_600SemiBold' }}>{isolateForeignRuns(p)}</Text>
+                        ? <Text key={pi} style={{ fontFamily: 'ReadexPro_600SemiBold' }}>{isolateForeignRuns(p)}</Text>
                         : isolateForeignRuns(p)
                     )}
                   </Text>
@@ -1176,6 +1214,14 @@ function MessageBubble({
               return (
                 <Text key={i} style={[styles.sourceText, { color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
                   {isolateForeignRuns(line)}
+                </Text>
+              );
+            }
+            if (isLatinProseLine(line)) {
+              // A link or an English credit: right-to-left layout reordered it.
+              return (
+                <Text key={i} style={[styles.bubbleText, { color: colors.foreground, textAlign: isRTL ? 'right' : 'left', writingDirection: 'ltr' }]}>
+                  {line}
                 </Text>
               );
             }
@@ -1240,7 +1286,7 @@ function MessageBubble({
                     },
                   ]}
                 >
-                  <Text style={[styles.suggestionChipText, { color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }]}>
+                  <Text style={[styles.suggestionChipText, { color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }]}>
                     {label}
                   </Text>
                 </Pressable>
@@ -1265,7 +1311,7 @@ function MessageBubble({
                   },
                 ]}
               >
-                <Text style={[styles.suggestionChipText, { color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }]}>
+                <Text style={[styles.suggestionChipText, { color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }]}>
                   {candidate.title}
                 </Text>
               </Pressable>
@@ -1295,7 +1341,7 @@ function MessageBubble({
                   },
                 ]}
               >
-                <Text style={[styles.suggestionChipText, { color: colors.primaryForeground || '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 13 }]}>
+                <Text style={[styles.suggestionChipText, { color: colors.primaryForeground || '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }]}>
                   {place.label}
                 </Text>
                 <Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={14} color={colors.primaryForeground || '#fff'} />
@@ -1320,7 +1366,7 @@ function MessageBubble({
                   },
                 ]}
               >
-                <Text style={[styles.suggestionChipText, { color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }]}>
+                <Text style={[styles.suggestionChipText, { color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }]}>
                   {isRTL ? option.labelAr : option.labelEn}
                 </Text>
               </Pressable>
@@ -1341,6 +1387,7 @@ export default function IqraScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const tabBarHeight = useSafeTabBarHeight();
+  const keyboardVisible = useKeyboardVisible();
   const { t, lang, isRTL } = useLanguage();
   const { user } = useAuth();
   const params = useLocalSearchParams<{
@@ -1382,7 +1429,7 @@ export default function IqraScreen() {
   const teachingCtxRef = useRef(teachingCtx);
   /** Session memory for collaborative Demo Mode chat (active lesson + prior asks). */
   const [sessionMemory, setSessionMemory] = useState<ChatSessionMemory>(() =>
-    seedDefaultLessonMemory(emptyChatSessionMemory()),
+    seedDefaultLessonMemory(emptyChatSessionMemory(), defaultLessonIdFor(user?.teachingAssignments)),
   );
   const [sessionDocs, setSessionDocs] = useState<SessionDocument[]>(() => getSessionDocuments());
   /** Composer-only shortcuts — cleared as soon as the teacher taps one or sends a message. */
@@ -1415,10 +1462,27 @@ export default function IqraScreen() {
   const [prepMaterials, setPrepMaterials] = useState<SavedMaterial[]>([]);
   /** For the board's «جاهزة · أمس · العاشر أ» — which class a material is filed under. */
   const [prepClasses, setPrepClasses] = useState<ClassGroup[]>([]);
+  // What a new teacher still has to set up before the lesson card can follow
+  // their week: null until known, so the card never flashes on a slow load.
+  const [setupNeed, setSetupNeed] = useState<'class' | 'timetable' | null>(null);
   /** «الحصة القادمة · العاشر ب · 10:15» when the chat's lesson came from the timetable. */
   const [periodLine, setPeriodLine] = useState('');
   const [exportText, setExportText] = useState('');
   const [exportVisible, setExportVisible] = useState(false);
+  /**
+   * The quiz or worksheet behind an export, when the message holds one. Each
+   * exports as a paper (`quizExports` / `worksheetExports`) in the copy picked
+   * in the menu, rather than as `exportText` — which always carried the key.
+   */
+  const [exportDoc, setExportDoc] = useState<(
+    | { kind: 'quiz'; quiz: Extract<ChatArtifactData, { kind: 'quiz' }>['quiz'] }
+    | { kind: 'worksheet'; worksheet: Extract<ChatArtifactData, { kind: 'worksheet' }>['worksheet'] }
+  ) & {
+    title: string;
+    meta: { subject: string; grade: string };
+    isAr: boolean;
+  } | null>(null);
+  const [exportCopy, setExportCopy] = useState<QuizCopy>('student');
   /**
    * Workspace id waiting for a class, or null. Set right after a material's
    * first save — the same "which class is this for?" moment the tool screens
@@ -1454,6 +1518,8 @@ export default function IqraScreen() {
   // True while the last thing IQRA said was the clarify question. Answering it
   // with something the router still cannot classify must not re-ask it.
   const awaitingClarifyRef = useRef(false);
+  /** موادي and «غير مطلوب» for the card's lesson, read by `sendMessage` for its follow-ups. */
+  const prepForChipsRef = useRef<{ lessonId?: string; saved?: string[]; skipped?: string[] }>({});
   // The ask behind a "which lesson?" / "what topic?" reply, so the teacher's
   // answer («الصف العاشر», a lesson title, a chip) joins it instead of
   // arriving as a message of its own — see `mergeScopeReply`.
@@ -1471,7 +1537,15 @@ export default function IqraScreen() {
   */
   const loadPrepMaterials = useCallback(() => {
     getAllItems().then(setPrepMaterials).catch(() => {});
-    listClasses().then(setPrepClasses).catch(() => {});
+    listClasses()
+      .then(list => {
+        setPrepClasses(list);
+        if (list.length === 0) { setSetupNeed('class'); return; }
+        // Same rule as the desktop Today nudge: a timetable step only once
+        // there is a class to put in it.
+        return loadTimetable().then(tt => setSetupNeed(tt?.setup?.step === 'timetable' ? 'timetable' : null));
+      })
+      .catch(() => {});
   }, []);
   useFocusEffect(useCallback(() => { loadPrepMaterials(); }, [loadPrepMaterials]));
 
@@ -1509,30 +1583,13 @@ export default function IqraScreen() {
    * both complete and current — exporting `message.text` after an edit would
    * quietly ship the plan as first written.
    */
-  const documentTextFor = useCallback((message: Message): string => {
-    const data = message.artifactData;
-    const meta = message.artifactMeta;
-    if (!data || !meta) return message.text;
-    const isAr = lang === 'ar';
-    const m = { subject: meta.subject, grade: meta.grade, duration: meta.duration };
-    switch (data.kind) {
-      case 'lesson-plan':
-        return formatLessonPlanText(data.plan, meta.title, m, isAr);
-      case 'worksheet':
-        return formatWorksheetText(data.worksheet, meta.title, m, isAr);
-      case 'quiz':
-        return formatQuizText(data.quiz, meta.title, m, isAr);
-      case 'activity':
-        return formatActivityText(data.activity, meta.title, m, isAr);
-      case 'infographic':
-        return formatInfographicText(data.infographic, isAr);
-      default:
-        return message.text;
-    }
-  }, [lang]);
+  const documentTextFor = useCallback((message: Message, includeAnswers = true): string =>
+    chatDocumentText(message.artifactData, message.artifactMeta, message.text, lang, { includeAnswers }),
+  [lang]);
 
   const handleCopyMessage = useCallback(async (message: Message) => {
-    await copyToClipboard(documentTextFor(message));
+    // The one-tap copy is the student copy; the export menu offers the teacher's.
+    await copyToClipboard(documentTextFor(message, false));
     void Haptics.selectionAsync().catch(() => {});
     showToast(t('copiedToClipboard'));
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1540,8 +1597,25 @@ export default function IqraScreen() {
 
   const handleExportMessage = useCallback((message: Message) => {
     setExportText(documentTextFor(message));
+    const data = message.artifactData;
+    const meta = message.artifactMeta;
+    const common = meta && {
+      title: meta.title, meta: { subject: meta.subject, grade: meta.grade }, isAr: (meta.lang ?? lang) === 'ar',
+    };
+    setExportDoc(
+      common && data?.kind === 'quiz' ? { kind: 'quiz', quiz: data.quiz, ...common }
+        : common && data?.kind === 'worksheet' ? { kind: 'worksheet', worksheet: data.worksheet, ...common }
+          : null,
+    );
+    setExportCopy('student');
     setExportVisible(true);
-  }, [documentTextFor]);
+  }, [documentTextFor, lang]);
+
+  /** The quiz's or worksheet's paper for the export menu — built on press, not per render. */
+  const exportDocs = () => !exportDoc ? null
+    : exportDoc.kind === 'quiz'
+      ? quizExports(exportDoc.quiz, exportDoc.title, exportDoc.meta, exportDoc.isAr, exportCopy)
+      : worksheetExports(exportDoc.worksheet, exportDoc.title, exportDoc.meta, exportDoc.isAr, exportCopy);
 
   const handleEditArtifact = useCallback((messageId: string, next: ChatArtifactData) => {
     setMessages(prev =>
@@ -1573,9 +1647,9 @@ export default function IqraScreen() {
       subject: meta.subject,
       grade: meta.grade,
       topic,
-      language: lang as 'ar' | 'en',
+      language: meta.lang ?? (lang as 'ar' | 'en'),
       content: JSON.stringify(materialContentFor(data)),
-      formState: materialFormStateFor(topic),
+      formState: materialFormStateFor(topic, data, message.curriculumLessonId),
     };
     try {
       if (message.savedMaterialId) {
@@ -1682,7 +1756,7 @@ export default function IqraScreen() {
     try {
       const deck = deckForArtifact(data, {
         topic,
-        isAr: lang === 'ar',
+        isAr: (meta.lang ?? lang) === 'ar',
         lesson: message.curriculumLessonId
           ? getLessonById(message.curriculumLessonId) ?? null
           : null,
@@ -1704,7 +1778,7 @@ export default function IqraScreen() {
 
   // Welcome message on mount / language change — reset session, keep one default active lesson
   useEffect(() => {
-    setSessionMemory(seedDefaultLessonMemory(emptyChatSessionMemory()));
+    setSessionMemory(seedDefaultLessonMemory(emptyChatSessionMemory(), defaultLessonIdFor(user?.teachingAssignments)));
     clearSessionDocuments();
     setEphemeralSuggestions([]);
     setLessonCardCollapsed(true);
@@ -1734,7 +1808,7 @@ export default function IqraScreen() {
       setPeriodLine('');
       if (fromSchedule && next) {
         listClasses()
-          .then(classes => classNameFor(classes, next.classGroupId, lang as 'ar' | 'en'))
+          .then(classes => periodClassLabel(classNameFor(classes, next.classGroupId, lang as 'ar' | 'en'), next.subjectId, lang))
           .catch(() => null)
           .then(classLabel => setPeriodLine(formatNextPeriod(next, {
             classLabel, today: todayISO(), lang: lang as 'ar' | 'en',
@@ -1900,7 +1974,7 @@ export default function IqraScreen() {
       await new Promise(resolve => requestAnimationFrame(() => resolve(null)));
 
       // Demo-mode replies are near-instant, which makes the thinking bubble
-      // flash imperceptibly. A short dwell keeps the "اقرأ يكتب…" moment
+      // flash imperceptibly. A short dwell keeps the "إقرأ يكتب…" moment
       // visible; real AI latency will replace this entirely.
       if (DEMO_MODE) {
         await new Promise(resolve => setTimeout(resolve, 750));
@@ -1916,8 +1990,23 @@ export default function IqraScreen() {
         || !!ordinalLessonId
         || !!extractQuerySubjectId(q)
         || !!extractQueryGradeId(q);
-      const route = classifyChatIntent(q, lang as 'ar' | 'en', answersChat, user?.firstName);
+      // The lesson on the card, so «علمني» teaches it instead of asking «شرح
+      // مفهوم، أم مادة؟» as if nothing were open. Not a lesson the teacher left
+      // (pin 'none'): that one is no longer what a bare ask means.
+      const openLessonId = pinnedLessonId
+        ?? (sessionMemory.lessonPin !== 'none' ? sessionMemory.activeLessonId : null);
+      const openLesson = openLessonId ? getLessonById(openLessonId) : null;
+      const route = classifyChatIntent(q, lang as 'ar' | 'en', answersChat, user?.firstName, {
+        activeLessonTitle: openLesson ? (lang === 'ar' ? openLesson.titleAr : openLesson.titleEn) : null,
+      });
       awaitingClarifyRef.current = route.intent === 'ambiguous';
+      // Every turn that asks back or gives up instead of answering — so dead
+      // ends are counted, not found one screenshot at a time. Only `shown`,
+      // the teacher's own words this turn; `askSample` decides if they go.
+      const reportUnanswered = (kind: UnansweredKind) => trackEvent(
+        'chat_unanswered',
+        unansweredEventProps({ kind, query: shown, lang: lang as 'ar' | 'en', lessonOpen: !!openLesson }),
+      );
       if (route.intent === 'artifact') {
         setThinkingLabel(
           /خطة|lesson\s*plan/i.test(q) ? t('iqraGeneratingLessonPlan') : t('iqraGeneratingArtifact'),
@@ -2019,6 +2108,7 @@ export default function IqraScreen() {
       }
 
       if (!route.useTeachingPipeline) {
+        if (route.clarify) reportUnanswered(route.clarify);
         const socialMsg: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
@@ -2152,7 +2242,7 @@ export default function IqraScreen() {
           : null,
       });
       if (!pinnedLessonId && reuseActive && activeLesson) {
-        results = [activeLesson, ...results.filter(r => r.id !== activeLesson.id)].slice(0, 3);
+        results = withActiveLesson(results, activeLesson, q);
       }
 
       // With uploads + soft pin only: clear KB results so generators/TA ground on documents
@@ -2195,6 +2285,7 @@ export default function IqraScreen() {
             : 'Happy to refine — which lesson or material should I adjust?',
           timestamp: new Date(),
         };
+        reportUnanswered('refine_target');
         awaitingClarifyRef.current = true;
         setMessages(prev => [...prev, clarifyMsg]);
         return;
@@ -2279,6 +2370,7 @@ export default function IqraScreen() {
             clarificationQuery: q,
             timestamp: new Date(),
           };
+          reportUnanswered('which_subject');
           awaitingClarifyRef.current = true;
           // A typed subject («العربي») instead of a chip still joins this ask.
           pendingScopeAskRef.current = q;
@@ -2337,11 +2429,16 @@ export default function IqraScreen() {
       let teachingActions: TeachingAction[] | undefined;
       let pedagogicalClarification: ClarificationOption[] | undefined;
       let clarificationQuery: string | undefined;
+      // The explanation assumed «لأول مرة»; offer the review framing after it,
+      // pinned to the lesson it explained (its text alone would be re-searched).
+      let offerReview = false;
+      let taLessonId: string | undefined;
+      let taPatch: Partial<ChatSessionMemory> = {};
       let lessonTopic: string | undefined;
       let quickTopic: string | undefined;
 
-      const runTeachingAssistant = () =>
-        buildTeachingAssistantReply({
+      const runTeachingAssistant = () => {
+        const reply = buildTeachingAssistantReply({
           query: q,
           lessons: results,
           lang: lang as 'ar' | 'en',
@@ -2364,6 +2461,11 @@ export default function IqraScreen() {
               ? route.intent
               : 'teaching',
         });
+        offerReview = Boolean(reply.offerReview);
+        taLessonId = reply.activeLesson?.id;
+        taPatch = reply.memoryPatch;
+        return reply;
+      };
 
       const artifactType =
         artifactFromQuery(q)
@@ -2410,6 +2512,7 @@ export default function IqraScreen() {
         };
         // The `finally` on the enclosing try clears the thinking state, the
         // same way the subject-clarification branch above relies on it.
+        reportUnanswered('did_you_mean');
         awaitingClarifyRef.current = true;
         pendingScopeAskRef.current = q;
         pendingScopeLessonIdsRef.current = lessonGuess.candidates.map(c => c.id);
@@ -2427,6 +2530,7 @@ export default function IqraScreen() {
             : `Which ${scope.gradeEn} ${scope.subjectEn} lesson? Pick one or type its title.`;
           pendingScopeAskRef.current = q;
           pendingScopeLessonIdsRef.current = subjectScopeLessons.slice(0, 4).map(l => l.id);
+          reportUnanswered('which_lesson_in_scope');
           outOfScopeSuggestions = subjectScopeLessons.slice(0, 4).map(l => ({
             text: lang === 'ar' ? l.titleAr : l.titleEn,
             lessonId: l.id,
@@ -2435,15 +2539,18 @@ export default function IqraScreen() {
           // Artifact shortcuts like "خطة" must not die silently — ask for the lesson topic.
           responseText = t('iqraArtifactNeedTopic');
           pendingScopeAskRef.current = q;
+          reportUnanswered('artifact_topic');
         } else if (wasAwaitingClarify) {
           // Short / vague reply to a clarifying question — keep the dialogue open
           // rather than showing the generic out-of-scope message.
           responseText = lang === 'ar'
             ? 'وضّح لي أكثر: ما المادة والدرس الذي تريد التحضير له؟'
             : 'Tell me more — which subject and lesson would you like to prepare for?';
+          reportUnanswered('tell_more');
         } else {
           responseText = t('iqraOutOfScope');
           outOfScopeSuggestions = getTopicSuggestions(3, lang as 'ar' | 'en');
+          reportUnanswered('out_of_scope');
         }
       } else if (
         artifactType
@@ -2546,6 +2653,7 @@ export default function IqraScreen() {
             subject: generated.meta.subject,
             grade: generated.meta.grade,
             duration: generated.meta.duration,
+            lang: generated.meta.lang,
           };
           lessonTopic = generated.topic;
           quickTopic = generated.topic;
@@ -2724,8 +2832,20 @@ export default function IqraScreen() {
       // Composer shortcuts only — never persist as floating chips in the timeline
       const nextEphemeral: EphemeralSuggestion[] = [];
       if (mode === 'teacher' && teachingActions?.length && quickTopic) {
+        // Same rule as the composer chips: drop what is made or not needed,
+        // lead with the next step. موادي only counts for the card's lesson.
+        const prep = prepForChipsRef.current;
+        const replyLessonId = taLessonId ?? sessionMemory.activeLessonId;
         nextEphemeral.push(
-          ...ephemeralFromTeachingActions(teachingActions, quickTopic, lang as 'ar' | 'en'),
+          ...ephemeralFromTeachingActions(
+            nextStepActions(
+              teachingActions,
+              { ...sessionMemory, ...taPatch },
+              prep.lessonId && prep.lessonId === replyLessonId ? prep : {},
+            ),
+            quickTopic,
+            lang as 'ar' | 'en',
+          ),
         );
       }
       if (outOfScopeSuggestions?.length) {
@@ -2737,6 +2857,17 @@ export default function IqraScreen() {
             lessonId: s.lessonId,
           })),
         );
+      }
+      // Guess, then offer: the explanation went ahead as first-time, and the
+      // review framing is one tap away instead of a question asked first.
+      if (offerReview && !artifactData && taLessonId) {
+        const review = reviewFollowUp(q, lang as 'ar' | 'en');
+        nextEphemeral.unshift({
+          id: 'review-framing',
+          label: review.label,
+          prompt: review.prompt,
+          lessonId: taLessonId,
+        });
       }
       if (msgLessonId) {
         nextEphemeral.push({
@@ -2758,6 +2889,9 @@ export default function IqraScreen() {
         };
         setMessages(prev => [...prev, errMsg]);
         showToast(t('iqraChatError'));
+        // The box was cleared on send; put the question back so trying again
+        // is one tap, not retyping it. Never over something typed since.
+        if (shown) setInput(prev => prev || shown);
       } finally {
         thinkingRef.current = false;
         setIsThinking(false);
@@ -2913,12 +3047,33 @@ export default function IqraScreen() {
   );
 
   const handleLessonSuggestion = useCallback((s: LessonSuggestion) => {
+    // The lab sheet is reviewed content, not something to generate: post it.
+    if (s.action === 'virtual-lab' && s.lessonId) {
+      // The chip stays after a tap; a second one should not post it again.
+      if (hasLabSheetMessage(messages, s.lessonId)) {
+        showToast(t('virtualLabAlreadyPosted'));
+        return;
+      }
+      const lab = virtualLabFor(s.lessonId, { dev: __DEV__ });
+      const ctx = resolveLessonPrepContext(s.lessonId, 'ar');
+      if (lab && ctx) {
+        const m = virtualLabChatMessage(lab.sheet, lab.resource, ctx);
+        trackEvent('virtual_lab_opened', { lessonId: s.lessonId, surface: 'chat' });
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(), role: 'assistant', text: m.text,
+          artifactData: m.data, artifactProse: m.prose, artifactMeta: m.meta,
+          lessonTopic: ctx.topic, curriculumLessonId: s.lessonId, timestamp: new Date(),
+        }]);
+        return;
+      }
+    }
     const prompt = lang === 'ar' ? s.promptAr : s.promptEn;
     if (s.toolType) {
       // Recording happens after the reply; prompt carries the intent
     }
     sendMessage(prompt, s.lessonId ?? sessionMemory.activeLessonId ?? undefined);
-  }, [lang, sendMessage, sessionMemory.activeLessonId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang, messages, sendMessage, sessionMemory.activeLessonId, t]);
 
 
   const handleResourcePress = useCallback((type: SessionArtifact, done: boolean) => {
@@ -2951,25 +3106,12 @@ export default function IqraScreen() {
   }, [lang, sendMessage, sessionMemory]);
 
   /**
-   * The "+" menu.
-   *
-   * Tools the conversation can carry out itself run here and the result lands in
-   * the thread — that is the whole point of reaching them from the composer.
-   * Anything chat cannot produce (the projector deck, the flow editor, GeoGebra)
-   * still hands off to its own screen, carrying the current lesson with it.
+   * The "+" menu lists only tools the conversation can carry out itself, and
+   * the result lands in the thread — see `CHAT_MENU_TOOLS`. Everything that
+   * opens another screen lives on the Tools tab and the lesson card.
    */
-  const CHAT_NATIVE_TOOLS: Record<string, SessionArtifact> = {
-    'lesson-plan': 'lesson-plan',
-    worksheet: 'worksheet',
-    quiz: 'quiz',
-    activity: 'activity',
-    homework: 'homework',
-  };
-
-  // One flat list, library first — the same order as the Tools tab, which
-  // dropped its before/during/after headings on 2026-09-25.
   const toolsMenuSections: MenuSection[] = [
-    { id: 'all', title: '', tools: [LIBRARY_TOOL, ...ALL_TOOLS] },
+    { id: 'all', title: '', tools: CHAT_MENU_TOOLS },
   ];
 
   const toolsMenuActions: MenuAction[] = DOCUMENT_UPLOAD_ENABLED
@@ -3009,13 +3151,14 @@ export default function IqraScreen() {
     const topic =
       (lang === 'ar' ? sessionMemory.activeTopicAr : sessionMemory.activeTopicEn) ?? '';
 
-    if (tool.externalAction === 'geogebra-graphing') {
-      void openGeogebraGraphing();
-      return;
-    }
-
     const artifact = CHAT_NATIVE_TOOLS[tool.id];
-    if (artifact && topic) {
+    // Without a lesson there is nothing to generate about, so the tool's own
+    // screen opens instead (it has the picker).
+    //
+    // The worksheet always opens its own screen: the in-chat paper had no
+    // difficulty levels and no answer checking, so "+ → ورقة عمل" and the
+    // board's «اصنع» gave a teacher two different worksheets for one lesson.
+    if (artifact && topic && tool.id !== 'worksheet') {
       // `false` = generate rather than open: the teacher asked for the tool, not
       // for whatever was made earlier.
       handleResourcePress(artifact, false);
@@ -3037,7 +3180,15 @@ export default function IqraScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handleResourcePress, lang, sessionMemory]);
 
-  const currentLessonView = buildCurrentLessonView(sessionMemory, sessionDocs, lang as 'ar' | 'en');
+  // What موادي already holds for the lesson on the card, so the card's count
+  // and the chips say what the board says — not only what this chat made.
+  const baseLessonView = buildCurrentLessonView(sessionMemory, sessionDocs, lang as 'ar' | 'en');
+  const savedForLesson = baseLessonView
+    ? savedPrepArtifacts(prepMaterials, baseLessonView.topic, baseLessonView.lessonId)
+    : [];
+  const currentLessonView = savedForLesson.length
+    ? buildCurrentLessonView(sessionMemory, sessionDocs, lang as 'ar' | 'en', savedForLesson)
+    : baseLessonView;
 
   // «غير مطلوب» choices for the lesson on the empty-state board — the same
   // store and key as the home board, so a row skipped on one is skipped on both.
@@ -3052,6 +3203,22 @@ export default function IqraScreen() {
     if (!prepSkipKey) return;
     void setPrepSkip(prepSkipKey, row.type, !row.skipped).then(setPrepSkips);
   }, [prepSkipKey]);
+
+  // The board opens folded to one line; unfolded is remembered across launches.
+  // Keyed on `user?.id` like the lesson pick: the flag is stored per user, and
+  // a reload mounts this screen before the session is restored.
+  const [prepBoardOpen, setPrepBoardOpen] = useState(false);
+  useEffect(() => {
+    let live = true;
+    loadPrepBoardOpen().then(open => { if (live) setPrepBoardOpen(open); });
+    return () => { live = false; };
+  }, [user?.id]);
+  const togglePrepBoard = useCallback(() => {
+    setPrepBoardOpen(open => {
+      void savePrepBoardOpen(!open);
+      return !open;
+    });
+  }, []);
 
   /**
    * Class Mode entry, carried over from the retired home screen: build a deck
@@ -3070,6 +3237,15 @@ export default function IqraScreen() {
     setStartClassError('');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
+      // A «عرض الحصة» already saved for this lesson is the deck the teacher
+      // meant to teach from; build a warm-up only when there is none.
+      const saved = savedDeckFor(prepMaterials, topic, sessionMemory.activeLessonId);
+      if (saved) {
+        setPendingClassroomActivity(saved);
+        trackEvent('class_started', { source: 'chat', deck: 'saved' });
+        router.push('/ai-tools/classroom/presentation' as any);
+        return;
+      }
       // The lesson's OWN subject, not the deck builder's maths default. That
       // default was silent and wrong: `isMathContext` reads the subject name,
       // so a chemistry lesson announced as "Mathematics" came back as a deck
@@ -3086,7 +3262,7 @@ export default function IqraScreen() {
         lessonId: sessionMemory.activeLessonId,
       });
       setPendingClassroomActivity(activity);
-      trackEvent('class_started', { source: 'chat' });
+      trackEvent('class_started', { source: 'chat', deck: 'built' });
       router.push('/ai-tools/classroom/presentation' as any);
     } catch {
       // Surfacing this as a chat message would still be wrong — the teacher
@@ -3105,13 +3281,24 @@ export default function IqraScreen() {
     currentLessonView?.subjectId,
     currentLessonView?.subjectName,
     sessionMemory.activeLessonId,
+    prepMaterials,
     lang,
     t,
   ]);
+  // Saved materials and «غير مطلوب» belong to the card's lesson; they only
+  // apply when that is also the chat's own active lesson, not the default one
+  // the card falls back to.
+  const chipsShareCardLesson = !!sessionMemory.activeLessonId
+    && currentLessonView?.lessonId === sessionMemory.activeLessonId;
+  prepForChipsRef.current = currentLessonView
+    ? { lessonId: currentLessonView.lessonId, saved: savedForLesson, skipped: prepSkips }
+    : {};
   const lessonSuggestions = buildLessonSuggestions(
-      sessionMemory,
-      lang as 'ar' | 'en',
+    sessionMemory,
+    lang as 'ar' | 'en',
     sessionDocs.some(d => d.status === 'ready'),
+    chipsShareCardLesson ? { saved: savedForLesson, skipped: prepSkips } : {},
+    { dev: __DEV__ },
   );
   const suggestions = lessonSuggestions.length > 0
     ? []
@@ -3123,8 +3310,19 @@ export default function IqraScreen() {
    * composer once it isn't — the same chips either way, so "حضّر خطة الدرس"
    * does not become a different affordance halfway through a conversation.
    */
-  const starterChips = (variant: 'intro' | 'composer') => {
-    const items = lessonSuggestions.length > 0
+  // The lab chip is the lesson's own material, so it must stay reachable where
+  // the starter row is not shown: under the readiness board, and once a reply's
+  // follow-up chips have replaced the starter row.
+  const labChip = lessonSuggestions.find(s => s.action === 'virtual-lab');
+  const starterChips = (variant: 'intro' | 'composer', labOnly = false) => {
+    if (labOnly && !labChip) return null;
+    const items = labOnly && labChip
+      ? [{
+        key: labChip.id,
+        label: `${labChip.emoji} ${lang === 'ar' ? labChip.labelAr : labChip.labelEn}`,
+        onPress: () => handleLessonSuggestion(labChip),
+      }]
+      : lessonSuggestions.length > 0
       ? lessonSuggestions.map(sug => ({
         key: sug.id,
         label: `${sug.emoji} ${lang === 'ar' ? sug.labelAr : sug.labelEn}`,
@@ -3163,7 +3361,7 @@ export default function IqraScreen() {
               style={[
                 styles.chipText,
                 variant === 'intro' && isDesktop && styles.chipTextWide,
-                { color: colors.primary, fontFamily: 'Cairo_500Medium' },
+                { color: colors.primary, fontFamily: 'ReadexPro_500Medium' },
               ]}
             >
               {item.label}
@@ -3181,11 +3379,15 @@ export default function IqraScreen() {
    * repeating it here would be the same five rows twice on one window. Hidden
    * once the conversation starts — it answers "what is missing", which stops
    * being the question the moment the teacher has asked one.
+   *
+   * Folded to one line by default, and unfolded it lists only what is still
+   * missing: five full rows used to fill the phone before a word was typed.
    */
   const introPrepBoard = (() => {
     if (isDesktop || messages.length > 1) return null;
     const topic = currentLessonView?.topic?.trim() ?? '';
     const rows = buildPrepBoard(prepMaterials, topic, currentLessonView?.lessonId, prepSkips);
+    const readyCount = rows.filter(r => r.done).length;
     // The lesson's own grade and subject, never the picker's index 0 — see the
     // subjectIdx trap in CLAUDE.md. `topicPickerParams` grounds a free-typed
     // topic; both return null when the lesson is unknown, and then the tool
@@ -3196,6 +3398,35 @@ export default function IqraScreen() {
     const toolParams = { ...(topic ? { topic } : {}), ...(idx ?? {}) };
     return (
       <View style={{ width: '100%', marginTop: 14, gap: 8 }}>
+        {/* A phone was never asked to set up a class or a timetable: the
+            only prompt lived on the desktop Today screen, and Classes and
+            Schedule sit under Profile. */}
+        {setupNeed ? (
+          <View
+            style={{
+              flexDirection: isRTL ? 'row-reverse' : 'row',
+              alignItems: 'center',
+              gap: 10,
+              padding: 12,
+              borderRadius: 12,
+              backgroundColor: colors.secondary,
+            }}
+          >
+            <Ionicons name={setupNeed === 'class' ? 'people-outline' : 'calendar-outline'} size={18} color={colors.primary} />
+            <Text style={{ flex: 1, fontSize: 14, lineHeight: 22, fontFamily: 'Almarai_400Regular', color: colors.foreground, textAlign: isRTL ? 'right' : 'left' }}>
+              {t('chatSetupTitle')}
+            </Text>
+            <Pressable
+              onPress={() => router.push((setupNeed === 'class' ? '/classes' : '/schedule') as never)}
+              accessibilityRole="button"
+              style={({ pressed }) => ({ backgroundColor: colors.primary, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, opacity: pressed ? 0.85 : 1 })}
+            >
+              <Text style={{ color: colors.primaryForeground, fontSize: 13, fontFamily: 'ReadexPro_600SemiBold' }}>
+                {t(setupNeed === 'class' ? 'chatSetupClass' : 'chatSetupSchedule')}
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
         {periodLine ? (
           <View
             style={{
@@ -3210,7 +3441,7 @@ export default function IqraScreen() {
             }}
           >
             <Ionicons name="time-outline" size={13} color={colors.primary} />
-            <Text style={{ fontSize: 12.5, fontFamily: 'Cairo_600SemiBold', color: colors.primary }}>{periodLine}</Text>
+            <Text style={{ fontSize: 13, fontFamily: 'ReadexPro_600SemiBold', color: colors.primary }}>{periodLine}</Text>
           </View>
         ) : null}
         <LessonPrepBoard
@@ -3239,13 +3470,21 @@ export default function IqraScreen() {
           classLabelFor={(id) => classNameFor(prepClasses, id, lang as 'ar' | 'en')}
           onOpenAll={() => router.push({ pathname: '/workspace', params: { q: topic } })}
           allCopiesLabel={t('homePrepAllCopies')}
+          fold={{
+            open: prepBoardOpen,
+            onToggle: togglePrepBoard,
+            toggleLabel: t('homePrepFoldHint'),
+            allReadyLabel: t('homePrepAllReady'),
+            showReadyLabel: topic ? t('homePrepShowReady', readyCount) : '',
+            onShowReady: () => router.push({ pathname: '/workspace', params: { q: topic } }),
+          }}
         />
       </View>
     );
   })();
 
   const livePrepProgress = DEMO_MODE
-    ? buildPrepProgressView(sessionMemory, lang as 'ar' | 'en')
+    ? buildPrepProgressView(sessionMemory, lang as 'ar' | 'en', chipsShareCardLesson ? savedForLesson : [])
     : null;
   const lastPrepMessageId = (() => {
     for (let i = messages.length - 1; i >= 0; i--) {
@@ -3521,9 +3760,12 @@ export default function IqraScreen() {
             // Only while the thread is still just the intro — otherwise the
             // same three chips appear twice on one screen.
             // Nor the lesson chips under the readiness board: its rows already are
-            // «حضّر خطة الدرس» / «أنشئ ورقة عمل», the same actions twice.
+            // «حضّر خطة الدرس» / «أنشئ ورقة عمل», the same actions twice — but
+            // the lab chip is not one of those rows, so it stays, alone.
             introActions={
-              item.id === 'welcome' && messages.length <= 1 && !(introPrepBoard && lessonSuggestions.length > 0) ? starterChips('intro') : null
+              item.id === 'welcome' && messages.length <= 1
+                ? (introPrepBoard && lessonSuggestions.length > 0 ? starterChips('intro', true) : starterChips('intro'))
+                : null
             }
             introBoard={item.id === 'welcome' ? introPrepBoard : null}
             t={t}
@@ -3600,6 +3842,24 @@ export default function IqraScreen() {
             { flexDirection: isRTL ? 'row-reverse' : 'row' },
           ]}
         >
+          {labChip ? (
+            <Pressable
+              key={labChip.id}
+              onPress={() => handleLessonSuggestion(labChip)}
+              style={({ pressed }) => [
+                styles.docActionChip,
+                {
+                  borderColor: colors.primary + '55',
+                  backgroundColor: colors.secondary,
+                  opacity: pressed ? 0.85 : 1,
+                },
+              ]}
+            >
+              <Text style={{ fontFamily: 'ReadexPro_500Medium', fontSize: 12, color: colors.foreground }}>
+                {`${labChip.emoji} ${lang === 'ar' ? labChip.labelAr : labChip.labelEn}`}
+              </Text>
+            </Pressable>
+          ) : null}
           {ephemeralSuggestions.map(suggestion => (
             <Pressable
               key={suggestion.id}
@@ -3613,7 +3873,7 @@ export default function IqraScreen() {
                 },
               ]}
             >
-              <Text style={{ fontFamily: 'Cairo_500Medium', fontSize: 12, color: colors.foreground }}>
+              <Text style={{ fontFamily: 'ReadexPro_500Medium', fontSize: 12, color: colors.foreground }}>
                 {suggestion.label}
               </Text>
             </Pressable>
@@ -3631,7 +3891,10 @@ export default function IqraScreen() {
             // The tab bar is display:none on desktop but still measures 84px,
             // which is the band of dead space that sat under the composer.
             borderTopWidth: isDesktop ? 0 : 1,
-            paddingBottom: isDesktop ? 22 : tabBarHeight + Math.max(insets.bottom, 8),
+            // With the keyboard open the tab bar is hidden and the screen ends
+            // at the keyboard's top edge, so neither the tab bar's height nor
+            // the home-indicator inset belongs under the composer any more.
+            paddingBottom: isDesktop ? 22 : keyboardVisible ? 8 : tabBarHeight + Math.max(insets.bottom, 8),
             paddingHorizontal: isDesktop ? 16 : 12,
           },
         ]}
@@ -3764,8 +4027,8 @@ export default function IqraScreen() {
           data={canvasMessage.artifactData}
           text={documentTextFor(canvasMessage)}
           colors={colors}
-          isRTL={isRTL}
-          t={t}
+          isRTL={canvasMessage.artifactMeta?.lang ? canvasMessage.artifactMeta.lang === 'ar' : isRTL}
+          t={canvasMessage.artifactMeta?.lang ? getT(canvasMessage.artifactMeta.lang) : t}
           closeLabel={t('canvasClose')}
           onClose={() => setCanvasMessageId(null)}
           onEditPlan={
@@ -3829,19 +4092,21 @@ export default function IqraScreen() {
         isRTL={isRTL}
         loadingPDF={loadingPDF}
         loadingWord={loadingWord}
+        copyChoice={exportDoc ? { value: exportCopy, onChange: setExportCopy } : undefined}
         onShare={async () => {
           setExportVisible(false);
-          await shareAsText(exportText, currentLessonView?.topic ?? 'Iqrra');
+          await shareAsText(exportDocs()?.text ?? exportText, currentLessonView?.topic ?? 'Iqrra');
         }}
         onCopy={async () => {
           setExportVisible(false);
-          await copyToClipboard(exportText);
+          await copyToClipboard(exportDocs()?.text ?? exportText);
           showToast(t('copiedToClipboard'));
         }}
         onPDF={async () => {
           setLoadingPDF(true);
           try {
-            const html = `<html><body dir="${isRTL ? 'rtl' : 'ltr'}" style="font-family: sans-serif; padding: 24px; white-space: pre-wrap;">${exportText.replace(/</g, '&lt;')}</body></html>`;
+            const html = exportDocs()?.html
+              ?? `<html><body dir="${isRTL ? 'rtl' : 'ltr'}" style="font-family: sans-serif; padding: 24px; white-space: pre-wrap;">${exportText.replace(/</g, '&lt;')}</body></html>`;
             await exportAsPDF(html, `iqra-${Date.now()}.pdf`);
           } finally {
             setLoadingPDF(false);
@@ -3851,7 +4116,9 @@ export default function IqraScreen() {
         onWord={async () => {
           setLoadingWord(true);
           try {
-            await exportAsWord(exportText, `iqra-${Date.now()}.docx`, isRTL);
+            const built = exportDocs();
+            if (built) await exportBuiltWord(built.word, `iqra-${Date.now()}`);
+            else await exportAsWord(exportText, `iqra-${Date.now()}`, isRTL);
           } finally {
             setLoadingWord(false);
             setExportVisible(false);
@@ -3891,7 +4158,7 @@ const styles = StyleSheet.create({
   header: { borderBottomWidth: StyleSheet.hairlineWidth, paddingBottom: 10 },
   // `center`, not `space-between`: the brand is now this row's only child, and
   // space-between would pin a lone child to the start — which is exactly where
-  // اقرأ used to sit.
+  // إقرأ used to sit.
   headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingHorizontal: 16 },
   // Replaces the old `brandRow`, which space-between pinned to the row's start.
   brandCentre: { flexDirection: 'row', alignItems: 'center', gap: 9 },
@@ -3899,7 +4166,7 @@ const styles = StyleSheet.create({
   // aligned to the start edge of the same column the thread uses.
   deskHeader: { alignItems: 'center', paddingHorizontal: 16, paddingBottom: 2 },
   lessonSlotWide: { paddingHorizontal: 16, paddingTop: 10 },
-  brandWord: { fontFamily: 'Cairo_700Bold', fontSize: 19 },
+  brandWord: { fontFamily: 'ReadexPro_700Bold', fontSize: 19 },
   chip: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
   chipWide: { paddingHorizontal: 18, paddingVertical: 12, borderRadius: 14 },
   chipText: { fontSize: 12 },
@@ -3938,33 +4205,33 @@ const styles = StyleSheet.create({
   introWide: { gap: 14, paddingTop: 8 },
   introName: { fontSize: 22, textAlign: 'center' },
   introNameWide: { fontSize: 30 },
-  introPitch: { fontSize: 14, lineHeight: 23, textAlign: 'center', maxWidth: 380 },
+  introPitch: { fontSize: 15, lineHeight: 25, textAlign: 'center', maxWidth: 380 },
   introPitchWide: { fontSize: 16, lineHeight: 28, maxWidth: 520 },
   introChips: { flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 6 },
   introChipsWide: { gap: 10, marginTop: 16 },
   composerChips: { gap: 8 },
   bubbleAssistant: { padding: 14, borderWidth: 1 },
-  bubbleBold: { fontSize: 14, fontFamily: 'Cairo_600SemiBold', marginBottom: 2 },
-  bubbleText: { fontSize: 13, lineHeight: 20, fontFamily: 'Almarai_400Regular' },
+  bubbleBold: { fontSize: 14, fontFamily: 'ReadexPro_600SemiBold', marginBottom: 2 },
+  bubbleText: { fontSize: 15, lineHeight: 23, fontFamily: 'Almarai_400Regular' },
   bulletRow: { flexDirection: 'row', alignItems: 'flex-start', marginVertical: 1 },
   sourceText: { fontSize: 11, lineHeight: 18, marginTop: 6, fontFamily: 'Almarai_400Regular', fontStyle: 'italic' },
   timestamp: { fontSize: 10, lineHeight: 16, marginTop: 6, fontFamily: 'Almarai_400Regular' },
 
   msgActions: { alignItems: 'center', flexWrap: 'wrap', columnGap: 14, rowGap: 8, marginTop: 6, paddingHorizontal: 4 },
   msgActionBtn: { alignItems: 'center', gap: 4 },
-  msgActionText: { fontSize: 11, fontFamily: 'Cairo_500Medium' },
+  msgActionText: { fontSize: 11, fontFamily: 'ReadexPro_500Medium' },
   suggestionChipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
   suggestionChip: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 14, borderWidth: 1 },
   suggestionChipText: { fontSize: 12 },
 
   thinkingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   thinkingBubble: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderWidth: 1 },
-  thinkingText: { fontSize: 13, lineHeight: 21 },
+  thinkingText: { fontSize: 15, lineHeight: 24 },
 
   inputBar: { borderTopWidth: 1, paddingHorizontal: 12, paddingTop: 10 },
   inputBarInner: { width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
   inputWrap: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 14, paddingVertical: 8, gap: 8 },
-  input: { flex: 1, fontSize: 14, maxHeight: 100, paddingVertical: 0, outlineStyle: 'none' as never },
+  input: { flex: 1, fontSize: 15, maxHeight: 100, paddingVertical: 0, outlineStyle: 'none' as never },
   inputWide: { fontSize: 15, maxHeight: 160, lineHeight: 22 },
   plusBtn: {
     width: 34,
@@ -3998,7 +4265,7 @@ const ctxStyles = StyleSheet.create({
   modal:        { flex: 1 },
   modalHeader:  { alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1 },
   modalCancel:  { width: 60 },
-  modalCancelText: { fontSize: 14 },
+  modalCancelText: { fontSize: 15 },
   modalTitle:   { fontSize: 16 },
   modalBody:    { padding: 20, paddingBottom: 40 },
   modalSectionLabel: { fontSize: 12, textTransform: 'uppercase', marginBottom: 10 },

@@ -31,6 +31,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -40,12 +41,15 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import {
   RosterError,
+  addClassResource,
   addStudents,
   generateJoinCode,
   getClass,
   getClassMastery,
   listClassParentContacts,
+  listClassResources,
   parseStudentNames,
+  removeClassResource,
   removeStudentFromClass,
   updateClass,
   updateStudent,
@@ -56,6 +60,7 @@ import {
 } from '@/services/roster';
 import { SUBJECTS, getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { narrowSubjectsForGrade } from '@/services/teacherCatalogFilter';
+import { classSubjectIds, filterBySubject, inOptionOrder, subjectIdFromName, subjectLabel, toggleId } from '@/services/classSubjects';
 import { useAuth } from '@/context/AuthContext';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { copyToClipboard, shareAsText } from '@/services/share';
@@ -72,9 +77,28 @@ import { confirm } from '@/services/confirm';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { goBack } from '@/services/navigation';
+import { ClassResourceRow } from '@/components/classes/ClassResourceRow';
+import { LibraryPickerSheet } from '@/components/classes/LibraryPickerSheet';
+import { LabPickerSheet } from '@/components/classes/LabPickerSheet';
+import {
+  addBodyFor,
+  addLabBodyFor,
+  addedKeys,
+  labItemsForClass,
+  mergeClassShelf,
+  openTargetFor,
+  withAddedResource,
+  type ClassResource,
+} from '@/services/classResources';
+import { openExternal } from '@/services/externalLinks';
+import { trackEvent } from '@/services/analytics';
+import type { ResourceItem } from '@/services/resourceCatalog';
+import { classToolParams } from '@/services/classToolParams';
 import { summarizeClassContacts, type ClassContactSummary } from '@/services/parentMessage';
 import { palette } from '@/constants/colors';
 import { CLASSES_QUERY_KEY, classQueryKey as CLASS_QUERY_KEY } from '@/services/rosterQueryKeys';
+import { AR_LATIN } from '@/services/dateLabels';
+import { Button } from '@/components/ui/Button';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -121,6 +145,12 @@ export default function ClassDetailScreen() {
   const [showAttach, setShowAttach] = useState(false);
   const [attachable, setAttachable] = useState<SavedMaterial[]>([]);
   const [attachingId, setAttachingId] = useState<string | null>(null);
+  const [resources, setResources] = useState<ClassResource[]>([]);
+  const [showLibrary, setShowLibrary] = useState(false);
+  const [showLab, setShowLab] = useState(false);
+  const [addingLabId, setAddingLabId] = useState<string | null>(null);
+  const [addingKey, setAddingKey] = useState<string | null>(null);
+  const [pickerError, setPickerError] = useState('');
   const [savedCount, setSavedCount] = useState(0);
   const [mastery, setMastery] = useState<ClassMastery | null>(null);
   /** Null until loaded, or when the log can't be read — the card then hides. */
@@ -134,7 +164,14 @@ export default function ClassDetailScreen() {
   const [showEdit, setShowEdit] = useState(false);
   const [editName, setEditName] = useState('');
   const [editGradeId, setEditGradeId] = useState('grade-10');
-  const [editSubjectId, setEditSubjectId] = useState('');
+  const [editSubjectIds, setEditSubjectIds] = useState<string[]>([]);
+  /**
+   * Which of the class's subjects the materials and exams tabs show, '' for
+   * all. One roster can take several subjects (a class teacher's section), and
+   * its arabic worksheets and maths quizzes in one undifferentiated list was
+   * the cost of not duplicating the roster.
+   */
+  const [subjectFocus, setSubjectFocus] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
 
   const {
@@ -151,6 +188,14 @@ export default function ClassDetailScreen() {
   });
   const group = data?.group ?? null;
   const students = data?.students ?? [];
+  const subjectIds = classSubjectIds(group);
+  // A focus left over from before an edit removed that subject would filter
+  // to nothing, with no pill on screen to say why.
+  const focus = subjectIds.includes(subjectFocus) ? subjectFocus : '';
+  const labGroup = { gradeId: group?.gradeId ?? '', subjectIds: focus ? [focus] : subjectIds };
+  const hasLabItems = labItemsForClass(labGroup.gradeId, labGroup.subjectIds).length > 0;
+  const shownMaterials = filterBySubject(materials, focus, m => subjectIdFromName(m.subject));
+  const shownExams = filterBySubject(exams, focus, e => e.subjectId);
 
   // The teacher's own grades (/setup-subjects), plus whatever grade this
   // class already has so editing never hides its current value.
@@ -160,7 +205,7 @@ export default function ClassDetailScreen() {
   /**
    * Subject choices for the edit sheet: what this teacher teaches to the
    * chosen grade (same narrowing as class creation), plus the class's current
-   * subject so editing never hides it. A class made before subjects were
+   * subjects so editing never hides one. A class made before subjects were
    * stored has none — this is how it gets one, which the teaching-plan
    * schedule needs to list any lessons.
    */
@@ -169,8 +214,8 @@ export default function ClassDetailScreen() {
     const narrowed = narrowSubjectsForGrade(
       getPickerSubjects(editGradeId), editGradeId, user?.teachingAssignments, user?.subjectIds,
     );
-    const current = SUBJECTS.find(x => x.id === group?.subjectId);
-    return current && !narrowed.some(x => x.id === current.id) ? [...narrowed, current] : narrowed;
+    const extra = SUBJECTS.filter(x => subjectIds.includes(x.id) && !narrowed.some(n => n.id === x.id));
+    return [...narrowed, ...extra];
   })();
 
   /** Server errors arrive in English; this screen is Arabic-first. */
@@ -201,6 +246,16 @@ export default function ClassDetailScreen() {
     // Materials are a separate store with its own offline fallback, so a
     // roster failure must not blank the materials tab and vice versa.
     setMaterials(await getItems({ classId: id }));
+    // The shelf's second source. Library items are an extra on this screen, not
+    // a reason to fail it: the server's own list already reads a missing table
+    // as an empty shelf, so a failure here is not worth a banner (which would
+    // also sit on the Students tab, in the server's English). Keep whatever was
+    // showing — an empty shelf on first load — and never blank the materials.
+    try {
+      setResources(await listClassResources(id));
+    } catch {
+      // Deliberately silent; see above.
+    }
     // The exams list has no fallback and throws on any non-2xx. Say so in the
     // banner and keep whatever was shown before rather than blanking the tab.
     try {
@@ -220,6 +275,9 @@ export default function ClassDetailScreen() {
     () => (parentContacts ? summarizeClassContacts(students, parentContacts, new Date()) : null),
     [students, parentContacts],
   );
+
+  const shelf = useMemo(() => mergeClassShelf(shownMaterials, resources), [shownMaterials, resources]);
+  const shelfKeys = useMemo(() => addedKeys(resources), [resources]);
 
   // Who has actually claimed their roster row, split out once here rather than
   // filtered inline in JSX twice (the count line and the chip row both need it).
@@ -255,10 +313,11 @@ export default function ClassDetailScreen() {
       void queryClient.invalidateQueries({ queryKey: CLASSES_QUERY_KEY });
       // Say so when names were skipped. A teacher who pastes 30 and gets 27
       // needs to know the 3 were already on the roster, not lost.
+      // Information, not a failure, so not the red banner.
       if (result.skipped.length > 0) {
-        setError(t('skippedExisting', result.skipped.join('، ')));
+        setToast(t('skippedExisting', result.skipped.join('، ')));
       } else if (result.added === 0) {
-        setError(t('noNewStudents'));
+        setToast(t('noNewStudents'));
       }
     } catch (err) {
       setError(describe(err));
@@ -306,7 +365,7 @@ export default function ClassDetailScreen() {
     if (!group) return;
     setEditName(group.name);
     setEditGradeId(group.gradeId || 'grade-10');
-    setEditSubjectId(group.subjectId || '');
+    setEditSubjectIds(classSubjectIds(group));
     setError('');
     setShowEdit(true);
   };
@@ -320,7 +379,14 @@ export default function ClassDetailScreen() {
       const updated = await updateClass(id, {
         name,
         gradeId: editGradeId,
-        ...(editSubjectId ? { subjectId: editSubjectId } : {}),
+        // Only what is still offered for the (possibly changed) grade; the
+        // first, in picker order, becomes the primary subject. A single
+        // option has no visible row, so it is submitted as class creation
+        // submits it — otherwise a grade change could clear the subject with
+        // nothing on screen to say so.
+        subjectIds: pickerSubjects.length === 1
+          ? [pickerSubjects[0]!.id]
+          : inOptionOrder(pickerSubjects, editSubjectIds.filter(x => pickerSubjects.some(o => o.id === x))),
       });
       queryClient.setQueryData<ClassQueryData>(CLASS_QUERY_KEY(id), prev =>
         prev ? { ...prev, group: { ...prev.group, ...updated } } : prev,
@@ -484,6 +550,81 @@ export default function ClassDetailScreen() {
     setMaterials(prev => prev.filter(m => m.id !== material.id));
   };
 
+  const onAddResource = async (item: ResourceItem) => {
+    if (!id || addingKey) return;
+    setAddingKey(item.key);
+    setPickerError('');
+    let added: ClassResource | null;
+    try {
+      added = await addClassResource(id, addBodyFor(item, lang));
+    } catch {
+      // Shown inside the picker: a toast on this screen would sit behind its Modal.
+      setPickerError(t('classResourceFailed'));
+      setAddingKey(null);
+      return;
+    }
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    // `null` is the 409 "already there": nothing was created, so nothing to count.
+    if (added) trackEvent('class_resource_added', { source: item.source, mediaKind: item.kind });
+    // Re-read rather than splice: the server owns the snapshot.
+    try {
+      setResources(await listClassResources(id));
+    } catch {
+      // The add landed, so this is not an error. If the re-read failed, put the
+      // row the server handed back on the shelf rather than leave the teacher
+      // looking at a shelf that seems to have ignored the tap.
+      if (added) setResources(prev => withAddedResource(prev, added));
+    }
+    setAddingKey(null);
+  };
+
+  const onAddLabItem = async (itemId: string) => {
+    if (!id || addingLabId) return;
+    setAddingLabId(itemId);
+    setPickerError('');
+    let added: ClassResource | null;
+    try {
+      added = await addClassResource(id, addLabBodyFor(itemId));
+    } catch {
+      // Shown inside the sheet: a toast on this screen would sit behind its Modal.
+      setPickerError(t('classResourceFailed'));
+      setAddingLabId(null);
+      return;
+    }
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    // `null` is the 409 "already there": nothing was created, so nothing to count.
+    if (added) trackEvent('class_resource_added', { source: 'lab', mediaKind: 'lab' });
+    try {
+      setResources(await listClassResources(id));
+    } catch {
+      if (added) setResources(prev => withAddedResource(prev, added));
+    }
+    setAddingLabId(null);
+  };
+
+  const onRemoveResource = async (resource: ClassResource) => {
+    if (!id) return;
+    try {
+      await removeClassResource(id, resource.id);
+      // Only drop it once the delete persisted, as onDetach does.
+      setResources(prev => prev.filter(r => r.id !== resource.id));
+    } catch {
+      setToast(t('classResourceFailed'));
+    }
+  };
+
+  const onOpenResource = (resource: ClassResource) => {
+    const target = openTargetFor(resource);
+    if (target.kind === 'url') void openExternal(target.url);
+    // `as never`: the typed route has no `premade` param, as in the Library screen.
+    else if (target.kind === 'premade') {
+      router.push({ pathname: '/workspace/view' as never, params: { premade: target.id } });
+    } else if (target.kind === 'lab') {
+      // `as never`: the lab routes are typed per-id, as the premade branch above is.
+      router.push(target.path as never);
+    }
+  };
+
   const align = isRTL ? 'right' : 'left';
   const title = group ? (lang === 'ar' && group.nameAr ? group.nameAr : group.name) : '';
 
@@ -507,14 +648,23 @@ export default function ClassDetailScreen() {
     </View>
   ) : null;
 
+  // The same error inside a modal: the banner sits behind the backdrop, so a
+  // failed add or note save used to look like a button that did nothing.
+  const modalError = error ? (
+    <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: align }}>
+      {error}
+    </Text>
+  ) : null;
+
   const empty = (
     icon: keyof typeof Ionicons.glyphMap,
     titleKey: 'noStudentsYet' | 'noMaterialsYet' | 'noExamsYet',
     descKey: 'noStudentsDesc' | 'noMaterialsDesc' | 'noExamsDesc',
+    action?: { label: string; onPress: () => void },
   ) => (
     <View style={styles.empty}>
       <Ionicons name={icon} size={40} color={colors.mutedForeground} />
-      <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>
+      <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
         {t(titleKey)}
       </Text>
       <Text
@@ -524,6 +674,49 @@ export default function ClassDetailScreen() {
         ]}
       >
         {t(descKey)}
+      </Text>
+      {action ? <Button label={action.label} onPress={action.onPress} style={{ marginTop: 8 }} /> : null}
+    </View>
+  );
+
+  /**
+   * «الكل» plus one pill per subject, over the materials and exams lists.
+   * Absent for a one-subject class — there is nothing to narrow.
+   */
+  const subjectFilter = subjectIds.length > 1 ? (
+    <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
+      {['', ...subjectIds].map(sid => {
+        const active = focus === sid;
+        return (
+          <Pressable
+            key={sid || 'all'}
+            onPress={() => setSubjectFocus(sid)}
+            accessibilityRole="button"
+            aria-selected={active}
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 16,
+              borderWidth: 1.5,
+              borderColor: active ? ACCENT : colors.border,
+              backgroundColor: active ? ACCENT + '16' : colors.card,
+            }}
+          >
+            <Text style={{ color: active ? ACCENT : colors.mutedForeground, fontFamily: active ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular', fontSize: 13 }}>
+              {sid ? subjectLabel(sid, lang) || sid : t('allSubjects')}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  ) : null;
+
+  /** The tab has items, just none in the focused subject — «لا موارد بعد» would be a lie. */
+  const emptyForSubject = (
+    <View style={styles.empty}>
+      <Ionicons name="filter-outline" size={36} color={colors.mutedForeground} />
+      <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
+        {t('nothingForSubject', subjectLabel(focus, lang))}
       </Text>
     </View>
   );
@@ -545,7 +738,7 @@ export default function ClassDetailScreen() {
           style={[
             styles.tabLabel,
             {
-              fontFamily: active ? 'Cairo_700Bold' : 'Cairo_500Medium',
+              fontFamily: active ? 'ReadexPro_700Bold' : 'ReadexPro_500Medium',
               color: active ? '#fff' : 'rgba(255,255,255,0.7)',
             },
           ]}
@@ -567,7 +760,7 @@ export default function ClassDetailScreen() {
             justifyContent: 'space-between',
           }}
         >
-          <Pressable onPress={() => goBack()} hitSlop={12}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={12}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
           {/* The name and grade set at creation and never editable again —
@@ -587,7 +780,7 @@ export default function ClassDetailScreen() {
           Deliberately not a fourth tab: the three tabs swap what this screen
           shows, this leaves the screen.
         */}
-        <Text style={[styles.heroTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]} numberOfLines={1}>
+        <Text style={[styles.heroTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]} numberOfLines={1}>
           {title}
         </Text>
         {/*
@@ -607,7 +800,7 @@ export default function ClassDetailScreen() {
             style={[styles.classChatPill, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="chatbubbles-outline" size={15} color="#fff" />
-            <Text style={[styles.classChatPillText, { fontFamily: 'Cairo_500Medium' }]}>
+            <Text style={[styles.classChatPillText, { fontFamily: 'ReadexPro_500Medium' }]}>
               {t('messagingClassChat')}
             </Text>
           </Pressable>
@@ -622,7 +815,7 @@ export default function ClassDetailScreen() {
               style={[styles.classChatPill, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
               <Ionicons name="key-outline" size={15} color="#fff" />
-              <Text style={[styles.classChatPillText, { fontFamily: 'Cairo_500Medium' }]}>
+              <Text style={[styles.classChatPillText, { fontFamily: 'ReadexPro_500Medium' }]}>
                 {t('joinCodeTitle')}
               </Text>
             </Pressable>
@@ -630,7 +823,7 @@ export default function ClassDetailScreen() {
         </View>
         <View style={[styles.tabs, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           {renderTab('students', t('classTabStudents'), countStudents(students.length, lang))}
-          {renderTab('materials', t('classTabMaterials'), countMaterials(materials.length, lang))}
+          {renderTab('materials', t('classTabMaterials'), countMaterials(materials.length + resources.length, lang))}
           {renderTab('exams', t('classTabExams'), t('countExams', exams.length))}
         </View>
       </View>
@@ -660,16 +853,18 @@ export default function ClassDetailScreen() {
                 />
               )}
               {students.length > 0 && (
-                <ParentContactSection summary={contactSummary} subjectId={group?.subjectId} colors={colors} isRTL={isRTL} align={align} t={t} />
+                <ParentContactSection summary={contactSummary} subjectIds={subjectIds} colors={colors} isRTL={isRTL} align={align} lang={lang} t={t} />
               )}
             </View>
           }
           ListEmptyComponent={
-            displayError ? null : empty('person-add-outline', 'noStudentsYet', 'noStudentsDesc')
+            displayError ? null : empty('person-add-outline', 'noStudentsYet', 'noStudentsDesc', { label: t('addStudents'), onPress: () => setShowAdd(true) })
           }
           renderItem={({ item }) => (
             <Pressable
-              onPress={() => openNote(item)}
+              onPress={() =>
+                router.push({ pathname: '/classes/[id]/student/[studentId]', params: { id, studentId: item.id } })
+              }
               style={[
                 styles.row,
                 {
@@ -683,7 +878,7 @@ export default function ClassDetailScreen() {
                 <Text
                   style={[
                     styles.rowName,
-                    { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align },
+                    { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align },
                   ]}
                 >
                   {item.displayName}
@@ -720,11 +915,18 @@ export default function ClassDetailScreen() {
                   </Text>
                 ) : null}
               </View>
-              <Ionicons
-                name={item.teacherNote ? 'create' : 'create-outline'}
-                size={18}
-                color={item.teacherNote ? ACCENT : colors.mutedForeground}
-              />
+              <Pressable
+                onPress={() => openNote(item)}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel={t('studentRecordNote')}
+              >
+                <Ionicons
+                  name={item.teacherNote ? 'create' : 'create-outline'}
+                  size={18}
+                  color={item.teacherNote ? ACCENT : colors.mutedForeground}
+                />
+              </Pressable>
               {/* Who has actually signed up — the question a shared join code
                   immediately creates, and the one nothing on this screen used
                   to answer. Only shown once somebody has joined: thirty grey
@@ -733,7 +935,7 @@ export default function ClassDetailScreen() {
                   student accounts are off, so it never renders in v1. */}
               {item.linked ? (
                 <View style={[styles.linkedPill, { backgroundColor: ACCENT + '18' }]}>
-                  <Text style={[styles.linkedPillText, { color: ACCENT, fontFamily: 'Cairo_500Medium' }]}>
+                  <Text style={[styles.linkedPillText, { color: ACCENT, fontFamily: 'ReadexPro_500Medium' }]}>
                     {t('rosterLinked')}
                   </Text>
                 </View>
@@ -754,7 +956,7 @@ export default function ClassDetailScreen() {
                   <Ionicons name="key-outline" size={18} color={colors.mutedForeground} />
                 </Pressable>
               ) : null}
-              <Pressable onPress={() => { void onRemove(item); }} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('remove')}>
+              <Pressable onPress={() => { void onRemove(item); }} hitSlop={10} accessibilityRole="button" accessibilityLabel={`${t('removeStudentA11y')}: ${item.displayName}`}>
                 <Ionicons name="close" size={20} color={colors.mutedForeground} />
               </Pressable>
             </Pressable>
@@ -762,12 +964,29 @@ export default function ClassDetailScreen() {
         />
       ) : tab === 'materials' ? (
         <FlatList
-          data={materials}
-          keyExtractor={m => m.id}
+          data={shelf}
+          keyExtractor={e => e.key}
           contentContainerStyle={[{ padding: 20, paddingBottom: 100, gap: 10 }, CENTERED]}
           showsVerticalScrollIndicator={false}
-          ListEmptyComponent={empty('folder-open-outline', 'noMaterialsYet', 'noMaterialsDesc')}
-          renderItem={({ item }) => (
+          ListHeaderComponent={
+            <View style={{ gap: 10 }}>
+              {errorBanner}
+              {subjectFilter}
+            </View>
+          }
+          ListEmptyComponent={materials.length > 0 ? emptyForSubject : empty('folder-open-outline', 'noMaterialsYet', 'noMaterialsDesc', { label: t('attachMaterial'), onPress: () => { void openAttach(); } })}
+          renderItem={({ item: entry }) => {
+            if (entry.type === 'resource') {
+              return (
+                <ClassResourceRow
+                  resource={entry.resource}
+                  onOpen={() => onOpenResource(entry.resource)}
+                  onRemove={() => { void onRemoveResource(entry.resource); }}
+                />
+              );
+            }
+            const item = entry.material;
+            return (
             <Pressable
               onPress={() => router.push({ pathname: '/workspace/view', params: { id: item.id } })}
               style={[
@@ -788,7 +1007,7 @@ export default function ClassDetailScreen() {
                 <Text
                   style={[
                     styles.rowName,
-                    { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align },
+                    { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align },
                   ]}
                   numberOfLines={2}
                 >
@@ -811,16 +1030,19 @@ export default function ClassDetailScreen() {
                 <Ionicons name="close" size={20} color={colors.mutedForeground} />
               </Pressable>
             </Pressable>
-          )}
+            );
+          }}
         />
       ) : (
         <FlatList
-          data={exams}
+          data={shownExams}
           keyExtractor={e => e.id}
           contentContainerStyle={[{ padding: 20, paddingBottom: 100, gap: 10 }, CENTERED]}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <View style={{ gap: 10, marginBottom: 10 }}>
+              {errorBanner}
+              {subjectFilter}
               <Pressable
                 onPress={() => router.push({ pathname: '/evaluations/mini', params: { classId: id } })}
                 style={[
@@ -836,7 +1058,7 @@ export default function ClassDetailScreen() {
               >
                 <Ionicons name="flash-outline" size={20} color={ACCENT} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: align }}>
+                  <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
                     {t('miniEvalBtn')}
                   </Text>
                   <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: align }}>
@@ -847,7 +1069,7 @@ export default function ClassDetailScreen() {
               <MasterySection mastery={mastery} colors={colors} isRTL={isRTL} align={align} lang={lang} t={t} />
             </View>
           }
-          ListEmptyComponent={empty('clipboard-outline', 'noExamsYet', 'noExamsDesc')}
+          ListEmptyComponent={exams.length > 0 ? emptyForSubject : empty('clipboard-outline', 'noExamsYet', 'noExamsDesc', { label: t('attachExam'), onPress: () => { void openAttachExam(); } })}
           renderItem={({ item }) => {
             const title = (lang === 'ar' ? item.titleAr : item.title) || t('newEvaluation');
             const draft = item.status !== 'published';
@@ -863,10 +1085,10 @@ export default function ClassDetailScreen() {
                 style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
               >
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.rowName, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]} numberOfLines={1}>
+                  <Text style={[styles.rowName, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]} numberOfLines={1}>
                     {title}
                   </Text>
-                  <Text style={[styles.rowRef, { color: draft ? '#B54708' : colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                  <Text style={[styles.rowRef, { color: draft ? palette.warning : colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
                     {draft
                       ? t('examNotPublished')
                       : t('examMarkedCount', String(item.markedCount ?? 0), String(students.length))}
@@ -902,7 +1124,7 @@ export default function ClassDetailScreen() {
       >
         <View style={styles.modalBackdrop}>
           <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
-            <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
+            <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
               {t('joinCodeTitle')}
             </Text>
             <Text style={[styles.modalHint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
@@ -911,12 +1133,12 @@ export default function ClassDetailScreen() {
 
             {group?.joinCode ? (
               <>
-                <Text style={[styles.codeText, { color: ACCENT, fontFamily: 'Cairo_700Bold' }]} selectable>
+                <Text style={[styles.codeText, { color: ACCENT, fontFamily: 'ReadexPro_700Bold' }]} selectable>
                   {group.joinCode}
                 </Text>
                 {group.joinCodeExpiresAt ? (
                   <Text style={[styles.modalHint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
-                    {t('messagingCodeExpires')}: {new Date(group.joinCodeExpiresAt).toLocaleDateString()}
+                    {t('messagingCodeExpires')}: {new Date(group.joinCodeExpiresAt).toLocaleDateString(lang === 'ar' ? AR_LATIN : undefined)}
                   </Text>
                 ) : null}
                 <View style={[styles.codeActions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -928,7 +1150,7 @@ export default function ClassDetailScreen() {
                     style={[styles.pickRow, { borderColor: colors.border, flex: 1, justifyContent: 'center', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
                   >
                     <Ionicons name="copy-outline" size={18} color={colors.mutedForeground} />
-                    <Text style={{ color: colors.foreground, fontFamily: 'Cairo_500Medium' }}>{t('messagingCopyCode')}</Text>
+                    <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium' }}>{t('messagingCopyCode')}</Text>
                   </Pressable>
                   <Pressable
                     // shareAsText falls back to the clipboard where the OS share
@@ -941,7 +1163,7 @@ export default function ClassDetailScreen() {
                     style={[styles.pickRow, { borderColor: colors.border, flex: 1, justifyContent: 'center', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
                   >
                     <Ionicons name="share-outline" size={18} color={colors.mutedForeground} />
-                    <Text style={{ color: colors.foreground, fontFamily: 'Cairo_500Medium' }}>{t('joinCodeShare')}</Text>
+                    <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium' }}>{t('joinCodeShare')}</Text>
                   </Pressable>
                 </View>
               </>
@@ -961,7 +1183,7 @@ export default function ClassDetailScreen() {
               ) : (
                 <>
                   <Ionicons name="refresh-outline" size={18} color={ACCENT} />
-                  <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold' }}>
+                  <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }}>
                     {group?.joinCode ? t('joinCodeRegenerate') : t('joinCodeGenerate')}
                   </Text>
                 </>
@@ -969,7 +1191,7 @@ export default function ClassDetailScreen() {
             </Pressable>
 
             <Pressable onPress={() => setShowJoinCode(false)} style={{ paddingVertical: 12 }}>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: 'center' }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', textAlign: 'center' }}>
                 {t('cancel')}
               </Text>
             </Pressable>
@@ -978,9 +1200,10 @@ export default function ClassDetailScreen() {
       </Modal>
 
       <Modal visible={showEdit} transparent animationType="fade" onRequestClose={() => setShowEdit(false)}>
+        <KeyboardSafeView>
         <View style={styles.modalBackdrop}>
           <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
-            <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
+            <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
               {t('editClass')}
             </Text>
             <TextInput
@@ -996,32 +1219,40 @@ export default function ClassDetailScreen() {
             />
             {/* Same grade and subject pills as class creation
                 (classes/index.tsx) — only worth showing once there is a real
-                choice. */}
+                choice. Grade is pick-one; subjects are pick-any. */}
             {([
-              [pickerGrades, editGradeId, setEditGradeId],
-              [pickerSubjects, editSubjectId, setEditSubjectId],
+              [pickerGrades, [editGradeId], setEditGradeId],
+              [pickerSubjects, editSubjectIds, (sid: string) => setEditSubjectIds(prev => toggleId(prev, sid))],
             ] as const).map(([options, selected, onSelect], row) =>
               options.length > 1 ? (
-                <View key={row} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }}>
+                <View key={row} style={{ gap: 6 }}>
+                {row === 1 ? (
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 12, textAlign: align }}>
+                    {t('classSubjects')}
+                  </Text>
+                ) : null}
+                <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }}>
                   {options.map(o => {
-                    const active = selected === o.id;
+                    const active = selected.includes(o.id);
                     return (
                       <Pressable
                         key={o.id}
                         onPress={() => onSelect(o.id)}
+                        accessibilityRole="button"
+                        aria-selected={active}
                         style={{
                           paddingHorizontal: 14,
                           paddingVertical: 7,
                           borderRadius: 18,
                           borderWidth: 1.5,
                           borderColor: active ? ACCENT : colors.border,
-                          backgroundColor: active ? ACCENT + '16' : colors.card,
+                          backgroundColor: active ? palette.selected : colors.card,
                         }}
                       >
                         <Text
                           style={{
                             color: active ? ACCENT : colors.mutedForeground,
-                            fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                            fontFamily: active ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
                             fontSize: 13,
                           }}
                         >
@@ -1031,16 +1262,17 @@ export default function ClassDetailScreen() {
                     );
                   })}
                 </View>
+                </View>
               ) : null,
             )}
             {error ? (
-              <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 20, textAlign: align }}>
+              <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: align }}>
                 {error}
               </Text>
             ) : null}
             <View style={styles.modalActions}>
               <Pressable onPress={() => setShowEdit(false)} style={styles.modalBtn}>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>
                   {t('cancel')}
                 </Text>
               </Pressable>
@@ -1056,21 +1288,23 @@ export default function ClassDetailScreen() {
                 {savingEdit ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold' }}>{t('save')}</Text>
+                  <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold' }}>{t('save')}</Text>
                 )}
               </Pressable>
             </View>
           </View>
         </View>
+        </KeyboardSafeView>
       </Modal>
 
       <Modal visible={showAdd} transparent animationType="fade" onRequestClose={() => setShowAdd(false)}>
+        <KeyboardSafeView>
         <View style={styles.modalBackdrop}>
           <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
             <Text
               style={[
                 styles.modalTitle,
-                { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align },
+                { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align },
               ]}
             >
               {t('addStudents')}
@@ -1126,9 +1360,10 @@ export default function ClassDetailScreen() {
                 {t('addStudentsCodeHint')}
               </Text>
             ) : null}
+            {modalError}
             <View style={styles.modalActions}>
               <Pressable onPress={() => setShowAdd(false)} style={styles.modalBtn}>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>
                   {t('cancel')}
                 </Text>
               </Pressable>
@@ -1147,7 +1382,7 @@ export default function ClassDetailScreen() {
                 {saving ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold' }}>
+                  <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold' }}>
                     {t('addToClass')}
                   </Text>
                 )}
@@ -1155,6 +1390,7 @@ export default function ClassDetailScreen() {
             </View>
           </View>
         </View>
+        </KeyboardSafeView>
       </Modal>
 
       <Modal
@@ -1163,12 +1399,13 @@ export default function ClassDetailScreen() {
         animationType="fade"
         onRequestClose={() => setNoteStudent(null)}
       >
+        <KeyboardSafeView>
         <View style={styles.modalBackdrop}>
           <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
             <Text
               style={[
                 styles.modalTitle,
-                { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align },
+                { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align },
               ]}
             >
               {noteStudent?.displayName}
@@ -1199,9 +1436,10 @@ export default function ClassDetailScreen() {
                 },
               ]}
             />
+            {modalError}
             <View style={styles.modalActions}>
               <Pressable onPress={() => setNoteStudent(null)} style={styles.modalBtn}>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>
                   {t('cancel')}
                 </Text>
               </Pressable>
@@ -1217,7 +1455,7 @@ export default function ClassDetailScreen() {
                 {savingNote ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold' }}>
+                  <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold' }}>
                     {t('saveNote')}
                   </Text>
                 )}
@@ -1225,6 +1463,7 @@ export default function ClassDetailScreen() {
             </View>
           </View>
         </View>
+        </KeyboardSafeView>
       </Modal>
 
       <Modal
@@ -1238,7 +1477,7 @@ export default function ClassDetailScreen() {
             <Text
               style={[
                 styles.modalTitle,
-                { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align },
+                { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align },
               ]}
             >
               {t('attachMaterial')}
@@ -1304,13 +1543,71 @@ export default function ClassDetailScreen() {
                 </Pressable>
               )}
             />
+            <Pressable
+              onPress={() => {
+                setShowAttach(false);
+                setPickerError('');
+                setShowLibrary(true);
+              }}
+              accessibilityRole="button"
+              style={[
+                styles.createRow,
+                { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' },
+              ]}
+            >
+              <Ionicons name="library-outline" size={18} color={ACCENT} />
+              <Text
+                style={{
+                  color: ACCENT,
+                  fontFamily: 'ReadexPro_600SemiBold',
+                  flex: 1,
+                  textAlign: align,
+                }}
+              >
+                {t('fromLibrary')}
+              </Text>
+            </Pressable>
+            {hasLabItems ? (
+              <Pressable
+                onPress={() => {
+                  setShowAttach(false);
+                  setPickerError('');
+                  setShowLab(true);
+                }}
+                accessibilityRole="button"
+                style={[
+                  styles.createRow,
+                  { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' },
+                ]}
+              >
+                <Ionicons name="flask-outline" size={18} color={ACCENT} />
+                <Text
+                  style={{
+                    color: ACCENT,
+                    fontFamily: 'ReadexPro_600SemiBold',
+                    flex: 1,
+                    textAlign: align,
+                  }}
+                >
+                  {t('fromLab')}
+                </Text>
+              </Pressable>
+            ) : null}
+
             {/* The sheet offered one way out — pick something that exists.
                 A teacher with nothing saved, or nothing left to attach, was
                 shown a dead end and a Cancel button. */}
             <Pressable
               onPress={() => {
                 setShowAttach(false);
-                router.push('/(tabs)/ai-tools');
+                // The class travels with the teacher: the tool opens on this
+                // class's grade and subject, and what they save is filed here.
+                router.push({
+                  pathname: '/(tabs)/ai-tools',
+                  // The subject the teacher has filtered to, on a class taking several;
+                  // otherwise the class's primary subject.
+                  params: group ? classToolParams({ ...group, subjectId: focus || group.subjectId }) : {},
+                });
               }}
               style={[
                 styles.createRow,
@@ -1321,7 +1618,7 @@ export default function ClassDetailScreen() {
               <Text
                 style={{
                   color: ACCENT,
-                  fontFamily: 'Cairo_600SemiBold',
+                  fontFamily: 'ReadexPro_600SemiBold',
                   flex: 1,
                   textAlign: align,
                 }}
@@ -1332,7 +1629,7 @@ export default function ClassDetailScreen() {
 
             <View style={styles.modalActions}>
               <Pressable onPress={() => setShowAttach(false)} style={styles.modalBtn}>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>
                   {t('cancel')}
                 </Text>
               </Pressable>
@@ -1340,6 +1637,32 @@ export default function ClassDetailScreen() {
           </View>
         </View>
       </Modal>
+
+      <LibraryPickerSheet
+        visible={showLibrary}
+        group={{ gradeId: group?.gradeId ?? '', subjectIds: focus ? [focus] : subjectIds }}
+        added={shelfKeys}
+        busyKey={addingKey}
+        error={pickerError}
+        onAdd={item => { void onAddResource(item); }}
+        onClose={() => {
+          setPickerError('');
+          setShowLibrary(false);
+        }}
+      />
+
+      <LabPickerSheet
+        visible={showLab}
+        group={labGroup}
+        added={shelfKeys}
+        busyId={addingLabId}
+        error={pickerError}
+        onAdd={itemId => { void onAddLabItem(itemId); }}
+        onClose={() => {
+          setPickerError('');
+          setShowLab(false);
+        }}
+      />
 
       <Modal
         visible={showAttachExam}
@@ -1352,7 +1675,7 @@ export default function ClassDetailScreen() {
             <Text
               style={[
                 styles.modalTitle,
-                { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align },
+                { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align },
               ]}
             >
               {t('attachExam')}
@@ -1402,7 +1725,7 @@ export default function ClassDetailScreen() {
                     style={{
                       color: colors.foreground,
                       fontFamily: 'Almarai_400Regular',
-                      fontSize: 14, lineHeight: 22,
+                      fontSize: 15, lineHeight: 24,
                       flex: 1,
                       textAlign: align,
                     }}
@@ -1436,7 +1759,7 @@ export default function ClassDetailScreen() {
               <Text
                 style={{
                   color: ACCENT,
-                  fontFamily: 'Cairo_600SemiBold',
+                  fontFamily: 'ReadexPro_600SemiBold',
                   flex: 1,
                   textAlign: align,
                 }}
@@ -1445,7 +1768,7 @@ export default function ClassDetailScreen() {
               </Text>
             </Pressable>
             <Pressable onPress={() => setShowAttachExam(false)} style={{ paddingVertical: 12 }}>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: 'center' }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', textAlign: 'center' }}>
                 {t('cancel')}
               </Text>
             </Pressable>
@@ -1489,7 +1812,7 @@ function MasterySection({
   return (
     <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, gap: 10 }]}>
       <View style={{ gap: 2 }}>
-        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: align }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
           {t('masteryTitle')}
         </Text>
         {gaps.length > 0 && (
@@ -1501,7 +1824,7 @@ function MasterySection({
 
       {gaps.length === 0 ? (
         <View style={{ gap: 2 }}>
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
             {t('masteryEmpty')}
           </Text>
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: align }}>
@@ -1512,7 +1835,7 @@ function MasterySection({
         gaps.map(o => (
           <View key={o.objectiveId} style={{ gap: 3 }}>
             <Text
-              style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}
+              style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}
               numberOfLines={2}
             >
               {(lang === 'ar' ? o.titleAr : o.title) || o.objectiveId}
@@ -1523,7 +1846,7 @@ function MasterySection({
                   style={{
                     width: `${Math.max(0, Math.min(100, o.percent))}%`,
                     height: '100%',
-                    backgroundColor: o.percent < 60 ? '#DC2626' : o.percent < 80 ? '#B54708' : '#067647',
+                    backgroundColor: o.percent < 60 ? '#DC2626' : o.percent < 80 ? palette.warning : palette.success,
                   }}
                 />
               </View>
@@ -1566,21 +1889,21 @@ function JoinStatusSection({
   return (
     <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, gap: 10, flexDirection: 'column', alignItems: 'stretch' }]}>
       <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
-        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: align, flex: 1 }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align, flex: 1 }}>
           {t('joinedCount', linked, total)}
         </Text>
         <Pressable onPress={onShareCode} hitSlop={8}>
-          <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>{t('joinStatusOpenCode')}</Text>
+          <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>{t('joinStatusOpenCode')}</Text>
         </Pressable>
       </View>
 
       {unjoined.length === 0 ? (
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
           {t('joinStatusAllJoined')}
         </Text>
       ) : (
         <View style={{ gap: 6 }}>
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
             {t('joinStatusNotJoinedLabel')}
           </Text>
           <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 6 }}>
@@ -1590,7 +1913,7 @@ function JoinStatusSection({
                 onPress={() => router.push(`/messaging/claim/${s.id}?studentName=${encodeURIComponent(s.displayName)}`)}
                 style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, borderWidth: 1, borderColor: colors.border }}
               >
-                <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>{s.displayName}</Text>
+                <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>{s.displayName}</Text>
               </Pressable>
             ))}
           </View>
@@ -1607,35 +1930,49 @@ function JoinStatusSection({
  * family it starts on «إشادة وتقدير», because that is the letter that's missing.
  */
 function ParentContactSection({
-  summary, subjectId, colors, isRTL, align, t,
+  summary, subjectIds, colors, isRTL, align, lang, t,
 }: {
   summary: ClassContactSummary | null;
-  /** The class's subject, so the letter opens naming it — the picker path seeds this from the class too. */
-  subjectId?: string;
+  /**
+   * The class's subjects, so the letter opens naming one. With one subject it
+   * is simply passed; with several the teacher is asked which — the letter is
+   * about one subject, and guessing the first would mislabel it.
+   */
+  subjectIds: string[];
   colors: ReturnType<typeof useColors>;
   isRTL: boolean;
   align: 'left' | 'right';
+  lang: string;
   t: (key: any, ...args: any[]) => string;
 }) {
+  const [pending, setPending] = useState<{ id: string; displayName: string; kind?: string } | null>(null);
   if (!summary) return null;
   const MAX_NAMES = 8;
+
+  const openLetter = (s: { id: string; displayName: string }, kind: string | undefined, subjectId: string | undefined) => {
+    router.push({
+      pathname: '/ai-tools/parent-message',
+      params: { studentId: s.id, studentName: s.displayName, ...(subjectId ? { subjectId } : {}), ...(kind ? { kind } : {}) },
+    });
+  };
+  const onName = (s: { id: string; displayName: string }, kind?: string) => {
+    if (subjectIds.length > 1) setPending({ ...s, kind });
+    else openLetter(s, kind, subjectIds[0]);
+  };
 
   const names = (list: { id: string; displayName: string }[], kind?: string) => (
     <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 6 }}>
       {list.slice(0, MAX_NAMES).map(s => (
         <Pressable
           key={s.id}
-          onPress={() => router.push({
-            pathname: '/ai-tools/parent-message',
-            params: { studentId: s.id, studentName: s.displayName, ...(subjectId ? { subjectId } : {}), ...(kind ? { kind } : {}) },
-          })}
+          onPress={() => onName(s, kind)}
           style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, borderWidth: 1, borderColor: colors.border }}
         >
-          <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>{s.displayName}</Text>
+          <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>{s.displayName}</Text>
         </Pressable>
       ))}
       {list.length > MAX_NAMES && (
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, alignSelf: 'center' }}>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, alignSelf: 'center' }}>
           {`+${list.length - MAX_NAMES}`}
         </Text>
       )}
@@ -1643,7 +1980,7 @@ function ParentContactSection({
   );
 
   const label = (text: string) => (
-    <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+    <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
       {text}
     </Text>
   );
@@ -1652,7 +1989,7 @@ function ParentContactSection({
   return (
     <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, gap: 10, flexDirection: 'column', alignItems: 'stretch' }]}>
       <View style={{ gap: 2 }}>
-        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: align }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
           {t('parentContactsTitle')}
         </Text>
         <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: align }}>
@@ -1685,6 +2022,37 @@ function ParentContactSection({
           </Text>
         </>
       )}
+
+      <Modal visible={pending !== null} transparent animationType="fade" onRequestClose={() => setPending(null)}>
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
+              {t('whichSubject')}
+            </Text>
+            {[...subjectIds, ''].map(sid => (
+              <Pressable
+                key={sid || 'none'}
+                onPress={() => {
+                  const p = pending;
+                  setPending(null);
+                  if (p) openLetter(p, p.kind, sid || undefined);
+                }}
+                accessibilityRole="button"
+                style={{ paddingVertical: 12, paddingHorizontal: 14, borderRadius: 10, borderWidth: 1, borderColor: colors.border }}
+              >
+                <Text style={{ color: sid ? colors.foreground : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 14, textAlign: align }}>
+                  {sid ? subjectLabel(sid, lang) || sid : t('noSubject')}
+                </Text>
+              </Pressable>
+            ))}
+            <Pressable onPress={() => setPending(null)} style={{ paddingVertical: 10 }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', textAlign: 'center' }}>
+                {t('cancel')}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1719,10 +2087,10 @@ const styles = StyleSheet.create({
   },
   matIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   rowName: { fontSize: 15 },
-  rowRef: { fontSize: 12, lineHeight: 19, marginTop: 2 },
+  rowRef: { fontSize: 13, lineHeight: 21, marginTop: 2 },
   empty: { alignItems: 'center', gap: 10, paddingTop: 80 },
   emptyTitle: { fontSize: 17 },
-  emptyText: { fontSize: 14, maxWidth: 280, lineHeight: 20 },
+  emptyText: { fontSize: 15, maxWidth: 280, lineHeight: 21 },
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1750,7 +2118,7 @@ const styles = StyleSheet.create({
   },
   modalCard: { width: '100%', maxWidth: 460, borderRadius: 16, padding: 20, gap: 12 },
   modalTitle: { fontSize: 18 },
-  modalHint: { fontSize: 13, lineHeight: 21 },
+  modalHint: { fontSize: 15, lineHeight: 24 },
   pickRow: {
     alignItems: 'center',
     gap: 10,
@@ -1778,7 +2146,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
-  count: { fontSize: 13, lineHeight: 21 },
+  count: { fontSize: 15, lineHeight: 24 },
   codeText: { fontSize: 28, letterSpacing: 4, textAlign: 'center', marginTop: 4 },
   codeActions: { gap: 8 },
   linkedPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },

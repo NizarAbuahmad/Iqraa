@@ -5,9 +5,11 @@
  * Same shape as `upload-figures-r2.ts`: list the bucket, do only what is
  * missing, so a run that dies half way costs nothing to repeat. `--force`
  * re-voices everything (after changing the voice or instructions — the key is
- * the word, not the recording). `--dry-run` reports and touches nothing.
+ * the word, not the recording). `--only chair,cheese` re-voices just those
+ * words, for a recording that came out wrong (the model said "share" for
+ * "chair"). `--dry-run` reports and touches nothing.
  *
- *   pnpm --filter @workspace/curriculum run english-audio [-- --dry-run | --force]
+ *   pnpm --filter @workspace/curriculum run english-audio [-- --dry-run | --force | --only a,b]
  *
  * Needs OPENAI_API_KEY and R2 credentials with write access to `iqraa-public`.
  */
@@ -28,12 +30,22 @@ const PREFIX = 'english-audio';
 const MODEL = 'gpt-4o-mini-tts';
 const VOICE = 'coral';
 // The books are British ("mum", "colourful", "trainers"), so the voice is too.
+//
+// Pitched at teenagers (Grades 9–10), not young children. The 458 Grade 1–4
+// words were voiced on 2026-09-25 with a "reading to a young child" prompt;
+// a normal run skips words that already have a file, so they keep that
+// recording, and a word both age groups share stays in its Grade 1–4 voice.
+// `--force` would re-voice ALL of them in this register — decide that on
+// purpose.
 const INSTRUCTIONS =
-  'You are reading a vocabulary card to a young child learning English. ' +
-  'Say only the given word or phrase, once, clearly and a little slowly, with a friendly British accent.';
+  'You are reading a vocabulary card to a teenage student learning English. ' +
+  'Say only the given word or phrase, once, clearly and at a natural, unhurried pace, ' +
+  'in a warm but not childish tone, with a British accent.';
 
 const force = process.argv.includes('--force');
 const dryRun = process.argv.includes('--dry-run');
+const onlyArg = process.argv[process.argv.indexOf('--only') + 1];
+const only = process.argv.includes('--only') ? new Set(onlyArg?.split(',').map(audioSlug)) : null;
 /** Set on the first auth/access refusal; every worker stops at its next word. */
 let stopped = false;
 
@@ -114,7 +126,12 @@ try {
   process.exit(2);
 }
 
-const todo = [...bySlug].filter(([slug]) => !already.has(slug));
+const unknown = [...(only ?? [])].filter(s => !bySlug.has(s));
+if (unknown.length) {
+  console.error(`not hub words: ${unknown.join(', ')}`);
+  process.exit(2);
+}
+const todo = [...bySlug].filter(([slug]) => (only ? only.has(slug) : !already.has(slug)));
 console.log(`${bySlug.size} words, ${bySlug.size - todo.length} already voiced, ${todo.length} to voice`);
 if (dryRun) {
   for (const [slug, word] of todo.slice(0, 20)) console.log(`  ${slug}.mp3  ←  ${word}`);

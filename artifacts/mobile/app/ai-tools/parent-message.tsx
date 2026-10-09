@@ -23,6 +23,7 @@ import { copyToClipboard, shareAsText } from '@/services/share';
 import { StudentPickerSheet } from '@/components/ui/StudentPickerSheet';
 import { confirm } from '@/services/confirm';
 import { SUBJECTS } from '@/services/curriculumData';
+import { classSubjectIds } from '@/services/classSubjects';
 import {
   RosterError, listParentContacts, listStudents, logParentContact, updateStudent,
   type ClassGroup, type ParentContact, type RosterStudent,
@@ -40,6 +41,7 @@ import {
 } from '@/services/parentMessage';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
+import { dateLocale } from '@/services/dateLabels';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -56,7 +58,7 @@ function Field({ label, children, colors, isRTL }: {
   return (
     <View style={{ marginBottom: 16 }}>
       <Text style={[styles.label, {
-        color: colors.foreground, fontFamily: 'Cairo_500Medium',
+        color: colors.foreground, fontFamily: 'ReadexPro_500Medium',
         textAlign: isRTL ? 'right' : 'left',
       }]}>
         {label}
@@ -86,7 +88,7 @@ function Segmented<T extends string>({ options, value, onChange, colors, isRTL }
           >
             <Text style={[styles.pillText, {
               color: active ? palette.primaryForeground : colors.mutedForeground,
-              fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+              fontFamily: active ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
             }]}>
               {o.label}
             </Text>
@@ -179,7 +181,10 @@ export default function ParentMessageScreen() {
     const known = rosterGender(student.gender);
     if (known) setStudentGender(known);
     setDetails(prev => seedDetailsFromNote(prev, student.teacherNote));
-    const classSubject = SUBJECTS.find(s => s.id === fromClass.subjectId);
+    // A class taking several subjects does not say which one this letter is
+    // about; seeding its primary subject would mislabel it.
+    const ids = classSubjectIds(fromClass);
+    const classSubject = ids.length === 1 ? SUBJECTS.find(s => s.id === ids[0]) : undefined;
     if (classSubject && !subject.trim()) setSubject(isAr ? classSubject.nameAr : classSubject.name);
   };
 
@@ -411,9 +416,8 @@ export default function ParentMessageScreen() {
     try {
       for (const [i, g] of guardians.entries()) {
         const thread = await startThread(g.userId);
-        const sent = await sendMessage(thread.id, message);
+        const sent = await sendMessage(thread.id, letter.text, attachment ?? undefined);
         sentIds.push(sent.id);
-        await sendMessage(thread.id, letter.text, attachment ?? undefined);
         reached.push(names[i]);
       }
       recordContact('in_app', sentIds);
@@ -464,7 +468,7 @@ export default function ParentMessageScreen() {
               hitSlop={6}
             >
               <Ionicons name="people-outline" size={15} color={ACCENT} />
-              <Text style={[styles.pickLinkText, { color: ACCENT, fontFamily: 'Cairo_500Medium' }]}>
+              <Text style={[styles.pickLinkText, { color: ACCENT, fontFamily: 'ReadexPro_500Medium' }]}>
                 {t('pickFromMyClasses')}
               </Text>
             </Pressable>
@@ -472,7 +476,7 @@ export default function ParentMessageScreen() {
               <View style={[styles.history, { backgroundColor: ACCENT + '10', borderRadius: colors.radius }]}>
                 <Text style={[styles.historyText, { color: colors.foreground, textAlign: isRTL ? 'right' : 'left' }]}>
                   {summary.last
-                    ? `${t('parentMsgHistoryLast')} ${kindEmoji(summary.last.kind)} ${kindLabel(summary.last.kind, isAr)} · ${new Date(summary.last.createdAt).toLocaleDateString(isAr ? 'ar-JO' : 'en-GB', { day: 'numeric', month: 'short' })}${
+                    ? `${t('parentMsgHistoryLast')} ${kindEmoji(summary.last.kind)} ${kindLabel(summary.last.kind, isAr)} · ${new Date(summary.last.createdAt).toLocaleDateString(dateLocale(isAr ? 'ar' : 'en'), { day: 'numeric', month: 'short' })}${
                       // Only in-app letters can be tracked; shared/copied ones carry read: null.
                       summary.last.read == null ? '' : ` · ${t(summary.last.read ? 'parentMsgHistoryRead' : 'parentMsgHistoryUnread')}`}`
                     : t('parentMsgHistoryNone')}
@@ -519,7 +523,7 @@ export default function ParentMessageScreen() {
                     <Text style={{ fontSize: 13 }}>{kindEmoji(k)}</Text>
                     <Text style={[styles.pillText, {
                       color: active ? palette.primaryForeground : colors.mutedForeground,
-                      fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                      fontFamily: active ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
                       marginHorizontal: 5,
                     }]}>
                       {kindLabel(k, isAr)}
@@ -602,7 +606,7 @@ export default function ParentMessageScreen() {
 
         {/* Preview */}
         <View style={{ paddingHorizontal: 20 }}>
-          <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('parentMsgPreview')}
           </Text>
           <View style={[styles.preview, {
@@ -621,13 +625,13 @@ export default function ParentMessageScreen() {
                 scrollEnabled={false}
                 onContentSizeChange={e => setLetterHeight(Math.max(120, e.nativeEvent.contentSize.height))}
                 style={{
-                  color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 26,
+                  color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 28,
                   textAlign: isRTL ? 'right' : 'left', textAlignVertical: 'top', height: letterHeight, padding: 0,
                   outlineStyle: 'none' as never,
                 }}
               />
             ) : (
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: 'center', paddingVertical: 20 }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center', paddingVertical: 20 }}>
                 {t('parentMsgNeedsName')}
               </Text>
             )}
@@ -644,7 +648,7 @@ export default function ParentMessageScreen() {
               </Text>
               {letter.edited ? (
                 <Pressable onPress={() => { setEdit(null); Haptics.selectionAsync(); }} hitSlop={6}>
-                  <Text style={[styles.pickLinkText, { color: ACCENT, fontFamily: 'Cairo_500Medium' }]}>
+                  <Text style={[styles.pickLinkText, { color: ACCENT, fontFamily: 'ReadexPro_500Medium' }]}>
                     {t('parentMsgRestore')}
                   </Text>
                 </Pressable>
@@ -665,7 +669,7 @@ export default function ParentMessageScreen() {
                   ? <Image source={{ uri: attachment }} style={styles.attachThumb} resizeMode="cover" />
                   : <Ionicons name="document-text-outline" size={22} color={ACCENT} />}
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>
+                  <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>
                     {t(attachmentKind(attachment) === 'image' ? 'parentMsgAttachedPhoto' : 'parentMsgAttachedPdf')}
                   </Text>
                   <Text style={[styles.historyText, { color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left' }]}>
@@ -679,7 +683,7 @@ export default function ParentMessageScreen() {
             ) : (
               <View style={[styles.attachRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <Ionicons name="attach-outline" size={16} color={colors.mutedForeground} />
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>{t('parentMsgAttach')}</Text>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{t('parentMsgAttach')}</Text>
                 {([['image-outline', 'parentMsgAttachPhoto', pickChatImage], ['document-outline', 'parentMsgAttachPdf', pickOnePdf]] as const).map(([icon, label, pick]) => (
                   <Pressable
                     key={label}
@@ -705,7 +709,7 @@ export default function ParentMessageScreen() {
           {/* Above the button, not under it: the teacher reads this before the
               tap — either who the letter will reach, or why it can't. */}
           {ready ? (
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 12, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 12, textAlign: isRTL ? 'right' : 'left' }}>
               {guardians.length > 0
                 ? t('parentMsgRecipients', guardians.map(g => `${g.firstName} ${g.lastName}`).join(nameSeparator))
                 : pickedStudentId ? t('parentMsgNoGuardian') : t('parentMsgPickForSend')}
@@ -724,7 +728,7 @@ export default function ParentMessageScreen() {
             {sending
               ? <ActivityIndicator size="small" color="#fff" />
               : <Ionicons name="paper-plane-outline" size={18} color="#fff" />}
-            <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 14 }}>{t('parentMsgSendInApp')}</Text>
+            <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 14 }}>{t('parentMsgSendInApp')}</Text>
           </Pressable>
 
           <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 10, marginTop: 10 }}>
@@ -739,7 +743,7 @@ export default function ParentMessageScreen() {
               }]}
             >
               <Ionicons name="share-outline" size={16} color={colors.mutedForeground} />
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>{t('parentMsgShare')}</Text>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{t('parentMsgShare')}</Text>
             </Pressable>
             <Pressable
               onPress={onCopy}
@@ -751,7 +755,7 @@ export default function ParentMessageScreen() {
               }]}
             >
               <Ionicons name="copy-outline" size={16} color={colors.mutedForeground} />
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>{t('copy')}</Text>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{t('copy')}</Text>
             </Pressable>
           </View>
         </View>
@@ -773,7 +777,7 @@ const styles = StyleSheet.create({
   pickLink: { alignItems: 'center', gap: 6, marginTop: 8 },
   pickLinkText: { fontSize: 13 },
   history: { marginTop: 10, paddingHorizontal: 12, paddingVertical: 8, gap: 2 },
-  historyText: { fontSize: 12, lineHeight: 19, fontFamily: 'Almarai_400Regular' },
+  historyText: { fontSize: 13, lineHeight: 21, fontFamily: 'Almarai_400Regular' },
   pill: { alignItems: 'center', paddingHorizontal: 13, paddingVertical: 8, borderWidth: 1.5 },
   pillText: { fontSize: 13 },
   input: { borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14 },

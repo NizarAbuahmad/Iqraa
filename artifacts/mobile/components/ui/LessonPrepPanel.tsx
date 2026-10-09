@@ -26,6 +26,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { contentLang } from '@/services/contentLanguage';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import type { LessonPlanOutput } from '@/services/ai/AIService';
 import { getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbContext';
@@ -46,11 +47,12 @@ import {
   formatLessonPlanText,
   shareAsText,
 } from '@/services/share';
+import { exportFilename } from '@/services/exportFilename';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { Button } from '@/components/ui/Button';
 import { ClassPickerSheet, type ClassPick } from '@/components/ui/ClassPickerSheet';
 import { describeAttachResult } from '@/services/classAttach';
-import type { Lang } from '@/services/i18n';
+import { getT } from '@/services/i18n';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
@@ -58,6 +60,7 @@ import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { RelatedResourcesPanel } from '@/components/ui/RelatedResourcesPanel';
 import { Toast } from '@/components/ui/Toast';
 import { textOn } from '@/services/readableColor';
+import { palette } from '@/constants/colors';
 
 /** Same ladder the lesson-plan tool offers, so a saved plan can reopen there. */
 const DURATION_VALUES = [30, 45, 60, 90];
@@ -84,9 +87,13 @@ type Props = {
 
 export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props) {
   const colors = useColors();
-  const { t, isRTL, lang } = useLanguage();
+  const { t, isRTL, lang: uiLang } = useLanguage();
+  // The lesson's own subject sets the plan's language — English is planned
+  // in English. The panel's controls stay in the UI language.
+  const lang = contentLang(resolveLessonPrepContext(lessonId, uiLang)?.subjectId, uiLang);
+  const planT = getT(lang);
 
-  const context = resolveLessonPrepContext(lessonId, lang as 'ar' | 'en');
+  const context = resolveLessonPrepContext(lessonId, lang);
 
   const [duration, setDuration] = useState<number>(context?.duration ?? 45);
   const [styleIdx, setStyleIdx] = useState(0);
@@ -165,7 +172,10 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
 
   // Prior-knowledge availability for this lesson (no fabrication)
   const priorKnowledge = (() => {
-    const g = resolveGeneratorGrounding(context.topic, lang as 'ar' | 'en');
+    const g = resolveGeneratorGrounding(context.topic, lang as 'ar' | 'en', {
+      lessonId: context.lessonId,
+      scope: { gradeId: context.gradeId, subjectId: context.subjectId },
+    });
     return g.lesson ? getUnitPriorKnowledge(g.lesson.id) : [];
   })();
   const priorReviewAvailable = priorKnowledge.length > 0;
@@ -233,7 +243,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
     try {
       await exportAsPDF(
         buildLessonPlanHTML(result, exportTitle, exportMeta, lang === 'ar'),
-        exportTitle.replace(/[^\w\s]/g, '').trim(),
+        exportFilename(exportTitle),
       );
     } catch {
       showToast(t('generationFailed'));
@@ -248,7 +258,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
     try {
       await exportAsWord(
         formatLessonPlanText(result, exportTitle, exportMeta, lang === 'ar'),
-        exportTitle.replace(/[^\w\s]/g, '').trim(),
+        exportFilename(exportTitle),
         lang === 'ar',
       );
     } catch {
@@ -264,7 +274,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
     try {
       await exportAsPDF(
         buildLessonPlanSlidesHTML(result, exportTitle, exportMeta, lang === 'ar'),
-        (exportTitle + '-slides').replace(/[^\w\s-]/g, '').trim(),
+        exportFilename(exportTitle, '-slides'),
       );
     } catch {
       showToast(t('generationFailed'));
@@ -312,7 +322,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
           <Ionicons name="sparkles" size={16} color={accent} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.headTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
+          <Text style={[styles.headTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
             {t('prepInlineTitle')}
           </Text>
           <Text style={[styles.headMeta, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
@@ -331,14 +341,14 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
         style={[styles.optionsToggle, { flexDirection: rowDir, alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
       >
         <Ionicons name={showOptions ? 'chevron-up' : 'options-outline'} size={15} color={colors.mutedForeground} />
-        <Text style={[styles.optionsToggleText, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium' }]}>
+        <Text style={[styles.optionsToggleText, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>
           {t('prepInlineOptions')}
         </Text>
       </Pressable>
 
       {showOptions && (
         <View style={styles.options}>
-          <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+          <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
             {t('durationLabel')}
           </Text>
           <View style={[styles.chips, { flexDirection: rowDir }]}>
@@ -354,7 +364,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
             ))}
           </View>
 
-          <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+          <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
             {t('teachingStyleLabel')}
           </Text>
           <View style={[styles.chips, { flexDirection: rowDir }]}>
@@ -370,7 +380,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
             ))}
           </View>
 
-          <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+          <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
             {t('adaptationsLabel')}
           </Text>
           <View style={[styles.inputBox, { backgroundColor: colors.background, borderColor: colors.border, borderRadius: colors.radius }]}>
@@ -384,7 +394,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
             />
           </View>
 
-          <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+          <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
             {t('priorTopicsLabel')}
           </Text>
           <View style={[styles.inputBox, { backgroundColor: colors.background, borderColor: colors.border, borderRadius: colors.radius }]}>
@@ -412,7 +422,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
               <Text style={{
                 color: colors.mutedForeground,
                 fontFamily: 'Almarai_400Regular',
-                fontSize: 12, lineHeight: 19,
+                fontSize: 13, lineHeight: 21,
                 marginTop: 2,
                 textAlign: align,
               }}>
@@ -466,16 +476,16 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
         <>
           <View style={[styles.readyRow, { backgroundColor: accent + '15', borderColor: accent + '30', borderRadius: colors.radius, flexDirection: rowDir }]}>
             <Ionicons name="checkmark-circle" size={18} color={accent} />
-            <Text style={[styles.readyText, { color: accent, fontFamily: 'Cairo_600SemiBold' }]}>
-              {t('lessonPlanReady')}
+            <Text style={[styles.readyText, { color: accent, fontFamily: 'ReadexPro_600SemiBold' }]}>
+              {planT('lessonPlanReady')}
             </Text>
           </View>
 
           <LessonPlanView
             plan={result}
             colors={colors}
-            isRTL={isRTL}
-            t={t}
+            isRTL={lang === 'ar'}
+            t={planT}
             accent={accent}
             onEdit={applyEdit}
             editedFields={editedFields}
@@ -503,7 +513,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
                 icon={favorited ? 'star' : 'star-outline'}
                 label={favorited ? t('inFavorites') : t('addToFavorites')}
                 onPress={handleToggleFavorite}
-                accent={favorited ? '#B54708' : colors.mutedForeground}
+                accent={favorited ? palette.warning : colors.mutedForeground}
                 colors={colors}
                 isRTL={isRTL}
               />
@@ -531,7 +541,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
       {/* The full generator, for a topic that is not this lesson */}
       <Pressable onPress={openFullTool} style={[styles.fullToolLink, { flexDirection: rowDir }]}>
         <Ionicons name="open-outline" size={14} color={accent} />
-        <Text style={[styles.fullToolText, { color: accent, fontFamily: 'Cairo_500Medium' }]}>
+        <Text style={[styles.fullToolText, { color: accent, fontFamily: 'ReadexPro_500Medium' }]}>
           {t('prepInlineOpenFullTool')}
         </Text>
       </Pressable>
@@ -568,7 +578,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
           if (!materialId || picks.length === 0) return;
           // One column, many classes: the extras become copies.
           void attachToClasses(materialId, picks.map(p => p.id))
-            .then(outcome => showToast(describeAttachResult(outcome, picks, t, lang as Lang)));
+            .then(outcome => showToast(describeAttachResult(outcome, picks, t, uiLang)));
         }}
       />
       <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
@@ -593,7 +603,7 @@ function Chip({ label, selected, accent, colors, onPress }: {
     >
       <Text style={[styles.chipText, {
         color: selected ? accent : colors.mutedForeground,
-        fontFamily: selected ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+        fontFamily: selected ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
       }]}>
         {label}
       </Text>
@@ -615,7 +625,7 @@ function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL, disabled
       <View style={[styles.checkbox, { borderColor: checked ? accent : colors.border, backgroundColor: checked ? accent : 'transparent' }]}>
         {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
       </View>
-      <Text style={[{ color: disabled ? colors.mutedForeground : colors.foreground, fontFamily: checked ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 13, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
+      <Text style={[{ color: disabled ? colors.mutedForeground : colors.foreground, fontFamily: checked ? 'ReadexPro_500Medium' : 'Almarai_400Regular', fontSize: 13, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -639,7 +649,7 @@ function ActionButton({ icon, label, onPress, accent, filled, colors, isRTL }: {
       ]}
     >
       <Ionicons name={icon} size={16} color={filled ? textOn(accent) : accent} />
-      <Text style={[styles.actionBtnText, { color: filled ? textOn(accent) : accent, fontFamily: 'Cairo_600SemiBold' }]}>
+      <Text style={[styles.actionBtnText, { color: filled ? textOn(accent) : accent, fontFamily: 'ReadexPro_600SemiBold' }]}>
         {label}
       </Text>
     </Pressable>
@@ -651,7 +661,7 @@ const styles = StyleSheet.create({
   head: { alignItems: 'center', gap: 10 },
   headIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   headTitle: { fontSize: 15 },
-  headMeta: { fontSize: 12, lineHeight: 19, marginTop: 2 },
+  headMeta: { fontSize: 13, lineHeight: 21, marginTop: 2 },
   optionsToggle: { alignItems: 'center', gap: 6, marginTop: 12 },
   optionsToggleText: { fontSize: 12 },
   options: { marginTop: 10, gap: 4 },
@@ -660,13 +670,13 @@ const styles = StyleSheet.create({
   chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, borderWidth: 1.5 },
   chipText: { fontSize: 12 },
   inputBox: { borderWidth: 1.5, padding: 12, marginTop: 2 },
-  textInput: { fontSize: 14, padding: 0, minHeight: 48 },
+  textInput: { fontSize: 15, padding: 0, minHeight: 48 },
   checkboxGroup: { borderWidth: 1.5, padding: 12, marginTop: 10, gap: 4 },
   checkRow: { alignItems: 'center', gap: 10, paddingVertical: 4 },
   checkbox: { width: 18, height: 18, borderRadius: 4, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   loadingBox: { alignItems: 'center', gap: 12, padding: 16, marginTop: 12 },
-  loadingText: { fontSize: 13, lineHeight: 21 },
-  error: { fontSize: 13, lineHeight: 21, marginTop: 10 },
+  loadingText: { fontSize: 15, lineHeight: 24 },
+  error: { fontSize: 15, lineHeight: 24, marginTop: 10 },
   readyRow: { alignItems: 'center', gap: 8, padding: 12, borderWidth: 1, marginTop: 12, marginBottom: 4 },
   readyText: { fontSize: 13 },
   actionBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, padding: 13, borderWidth: 1.5 },

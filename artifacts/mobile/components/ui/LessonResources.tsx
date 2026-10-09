@@ -82,12 +82,12 @@ export function LessonResources({ topic, onChange }: Props) {
       >
         <Ionicons name={open ? 'chevron-down' : isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.mutedForeground} />
         <Ionicons name="attach-outline" size={16} color={TEAL} />
-        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
           {t('addMediaTitle')}
         </Text>
         {items.length > 0 && (
           <View style={[styles.badge, { backgroundColor: TEAL + '1A' }]}>
-            <Text style={{ color: TEAL, fontFamily: 'Cairo_600SemiBold', fontSize: 11 }}>
+            <Text style={{ color: TEAL, fontFamily: 'ReadexPro_600SemiBold', fontSize: 11 }}>
               {items.length}
             </Text>
           </View>
@@ -110,11 +110,11 @@ export function LessonResources({ topic, onChange }: Props) {
           <Ionicons
             name={m.kind === 'video' ? 'logo-youtube' : 'image-outline'}
             size={18}
-            color={m.kind === 'video' ? '#D92D20' : TEAL}
+            color={m.kind === 'video' ? palette.destructive : TEAL}
           />
           <Text
             numberOfLines={1}
-            style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}
+            style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: isRTL ? 'right' : 'left' }}
           >
             {m.caption || m.url}
           </Text>
@@ -135,7 +135,7 @@ export function LessonResources({ topic, onChange }: Props) {
             autoCorrect={false}
             // A URL is latin text: left-aligned even in the RTL layout, or it
             // renders with the scheme at the wrong end.
-            style={[styles.input, { backgroundColor: colors.card, borderColor: error ? '#D92D20' : colors.border, borderRadius: colors.radius, color: colors.foreground, textAlign: 'left' }]}
+            style={[styles.input, { backgroundColor: colors.card, borderColor: error ? palette.destructive : colors.border, borderRadius: colors.radius, color: colors.foreground, textAlign: 'left' }]}
           />
           <TextInput
             value={caption}
@@ -145,7 +145,7 @@ export function LessonResources({ topic, onChange }: Props) {
             style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, color: colors.foreground, textAlign: isRTL ? 'right' : 'left' }]}
           />
           {error ? (
-            <Text style={{ color: '#D92D20', fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: palette.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>
               {error}
             </Text>
           ) : null}
@@ -156,7 +156,7 @@ export function LessonResources({ topic, onChange }: Props) {
             accessibilityRole="button"
           >
             <Ionicons name="add" size={16} color={url.trim() ? TEAL : colors.mutedForeground} />
-            <Text style={{ color: url.trim() ? TEAL : colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+            <Text style={{ color: url.trim() ? TEAL : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
               {t('addMediaAdd')}
             </Text>
           </Pressable>
@@ -170,8 +170,8 @@ const styles = StyleSheet.create({
   wrap: { marginTop: 4, marginBottom: 12, gap: 8 },
   header: { alignItems: 'center', gap: 8 },
   badge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999 },
-  hint: { fontSize: 12, lineHeight: 18 },
+  hint: { fontSize: 13, lineHeight: 20 },
   row: { alignItems: 'center', gap: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10 },
-  input: { borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, fontFamily: 'Almarai_400Regular' },
+  input: { borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, fontFamily: 'Almarai_400Regular' },
   addBtn: { alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, paddingVertical: 10 },
 });

@@ -1,3 +1,4 @@
+import { plainActivity } from '@/services/ai/activityText';
 import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
@@ -6,6 +7,9 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { useEnglishRefresh } from '@/hooks/useEnglishRefresh';
+import { getT } from '@/services/i18n';
+import { contentLang, topicInLang } from '@/services/contentLanguage';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { resolveGeneratorGrounding } from '@/services/kbContext';
@@ -32,7 +36,7 @@ import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
 import { useFavorite } from '@/hooks/useFavorite';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
-import { captureGenerationScope, materialScope, reopenedGenerationScope, type GenerationScope } from '@/services/generationScope';
+import { captureGenerationScope, materialScope, reopenedGenerationScope, savedIdAfterGeneration, type GenerationScope } from '@/services/generationScope';
 import { readIndexParam } from '@/services/materialParams';
 import { buildActivityRequest } from '@/services/generatorRequests';
 import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
@@ -52,7 +56,7 @@ type AType = ActivityTypeId;
 export default function ActivityScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { t, isRTL, lang } = useLanguage();
+  const { t, isRTL, lang: uiLang } = useLanguage();
   const params = useLocalSearchParams<{
     savedId?: string; topic?: string;
     gradeIdx?: string; subjectIdx?: string; activityTypeIdx?: string; durationIdx?: string; objective?: string;
@@ -61,7 +65,7 @@ export default function ActivityScreen() {
 
   const grades = getPickerGrades();
   const subjects = getPickerSubjects();
-  const gradeNames = grades.map(g => lang === 'ar' ? g.nameAr : g.name);
+  const gradeNames = grades.map(g => uiLang === 'ar' ? g.nameAr : g.name);
   const durationLabels = DURATION_VALUES.map(d => `${d} ${t('min')}`);
   const activityTypeLabels = ACTIVITY_TYPE_IDS.map(id => activityTypeLabel(id, t));
 
@@ -69,7 +73,7 @@ export default function ActivityScreen() {
   // `scopeFromParams`. Grounding the topic is what recovers the right scope.
   // Only the grades/subjects this teacher picked on /setup-subjects are offered.
   const teacherScope = useTeacherScope();
-  const [initialScope] = useState(() => scopeFromParams(params, lang as 'ar' | 'en', teacherScope.defaultScope));
+  const [initialScope] = useState(() => scopeFromParams(params, uiLang, teacherScope.defaultScope));
   const [gradeIdx, setGradeIdx] = useState(initialScope.gradeIdx);
   // Index-aligned flags rather than a pre-filtered `subjects`: these positions
   // are persisted as subjectIdx, so entries are dropped at render time only.
@@ -77,9 +81,14 @@ export default function ActivityScreen() {
   // Labels are per-grade too: Grade 6's creative-arts book has no music
   // in it, so it must not be offered under the combined name. Same
   // index alignment as the mask above.
-  const subjectNames = subjectPickerLabels(grades[gradeIdx].id, lang as 'ar' | 'en');
+  const subjectNames = subjectPickerLabels(grades[gradeIdx].id, uiLang);
   const [subjectIdx, setSubjectIdx] = useState(initialScope.subjectIdx);
-  const [topic, setTopic] = useState(params.topic ?? '');
+  // The picked subject's material language — English is taught in English.
+  const lang = contentLang(subjects[subjectIdx].id, uiLang);
+  const [topic, setTopic] = useState(() => topicInLang(
+    params.topic ?? '', uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
+    { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
+  ));
   useWarmGrounding(topic, lang);
   const [activityTypeIdx, setActivityTypeIdx] = useState(readIndexParam(params.activityTypeIdx, ACTIVITY_TYPE_IDS.length, 1));
   const [durationIdx, setDurationIdx] = useState(readIndexParam(params.durationIdx, DURATION_VALUES.length, 1));
@@ -104,13 +113,32 @@ export default function ActivityScreen() {
    * subject as «نشاط: ».
    */
   const [generated, setGenerated] = useState<GenerationScope | null>(
-    () => (params.savedId ? reopenedGenerationScope(initialScope, params.topic, lang as 'ar' | 'en') : null),
+    () => (params.savedId ? reopenedGenerationScope(initialScope, topic, lang) : null),
   );
   const scope = materialScope(generated, { gradeIdx, subjectIdx, topic });
+  // The activity on screen keeps the language it was generated in, even after
+  // the pickers move on — like everything else read off `scope`.
+  const outLang = contentLang(subjects[scope.subjectIdx].id, uiLang);
   const curriculumGrounded: boolean | null = generated ? generated.grounded : null;
   const groundedLesson: string | null = generated?.lesson
-    ? (lang === 'ar' ? generated.lesson.titleAr : generated.lesson.titleEn)
+    ? (outLang === 'ar' ? generated.lesson.titleAr : generated.lesson.titleEn)
     : null;
+  /**
+   * The type, length and objective the activity on screen was built with —
+   * frozen like `generated`, because the pickers stay editable afterwards.
+   * Save used to read them live: switch the type picker to «فردي» after
+   * generating a game, press Save, and the game was stored with a form that
+   * reopens as an individual activity — Regenerate then built a different
+   * kind of activity than the one saved. A reopened activity starts from the
+   * form it was saved with.
+   */
+  const [builtWith, setBuiltWith] = useState<{ activityTypeIdx: number; durationIdx: number; objective: string } | null>(
+    () => (params.savedId ? {
+      activityTypeIdx: readIndexParam(params.activityTypeIdx, ACTIVITY_TYPE_IDS.length, 1),
+      durationIdx: readIndexParam(params.durationIdx, DURATION_VALUES.length, 1),
+      objective: params.objective ?? '',
+    } : null),
+  );
   const [error, setError] = useState('');
   const [savedId, setSavedId] = useState<string | undefined>(params.savedId);
   const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
@@ -140,7 +168,7 @@ export default function ActivityScreen() {
     if (params.savedId) {
       getItem(params.savedId).then(item => {
         if (item) {
-          try { setResult(JSON.parse(item.content) as ActivityOutput); } catch { /* noop */ }
+          try { setResult(plainActivity(JSON.parse(item.content) as ActivityOutput)); } catch { /* noop */ }
           setFavorited(item.isFavorite);
         }
       });
@@ -167,15 +195,15 @@ export default function ActivityScreen() {
     // What a failed or cancelled run must hand back. It used to be cleared
     // up front and never restored, so a failed regenerate threw away the
     // unsaved activity the teacher was looking at.
-    const held = { result, generated };
+    const held = { result, generated, builtWith };
     if (!topic.trim()) { setError(t('topicRequired')); return; }
     // A topic that grounds to another subject's lesson cannot make an honest
     // activity — the KB serves that lesson's own content while the header
     // claims the picked subject. Refuse and name the real subject instead.
-    const missing = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
+    const missing = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, uiLang);
     if (missing) { setError(t('scopeNoCurriculum', missing.grade, missing.subject)); return; }
     const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id, grades[gradeIdx].id);
-    if (conflict) { setError(t('subjectTopicMismatch', lang === 'ar' ? conflict.nameAr : conflict.name)); return; }
+    if (conflict) { setError(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     setError(''); setCancelled(false);
     const controller = new AbortController();
     abortRef.current = controller;
@@ -189,10 +217,10 @@ export default function ActivityScreen() {
       // artifact. It also carries the localised grade name — this screen
       // sent "Grade 10" into an Arabic activity.
       const out = await aiService.generateActivity(buildActivityRequest({
-        gradeName: gradeNames[gradeIdx]!,
+        gradeName: lang === 'ar' ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
         subjectName: subjects[subjectIdx].name,
         topic,
-        lang: lang as 'ar' | 'en',
+        lang,
         activityType: ACTIVITY_TYPE_IDS[activityTypeIdx],
         durationMinutes: DURATION_VALUES[durationIdx],
         objective,
@@ -201,7 +229,12 @@ export default function ActivityScreen() {
       }, grounding), { signal: controller.signal });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setGenerated(captureGenerationScope({ gradeIdx, subjectIdx, topic }, grounding));
+      setBuiltWith({ activityTypeIdx, durationIdx, objective });
       setResult(out);
+      // A regenerated activity is a new copy: leave the saved one alone, and
+      // let «حفظ» create it. The star belonged to the saved material.
+      if (opts?.regenerate === true && savedId) setFavorited(false);
+      setSavedId(prev => savedIdAfterGeneration(prev, opts));
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
     } catch (e) {
       // A cancel is the teacher's own doing, so it is reported as a stop, not
@@ -211,6 +244,7 @@ export default function ActivityScreen() {
       if (held.result) {
         setResult(held.result);
         setGenerated(held.generated);
+        setBuiltWith(held.builtWith);
       }
     } finally {
       abortRef.current = null;
@@ -223,7 +257,7 @@ export default function ActivityScreen() {
     abortRef.current?.abort();
   };
 
-  const getExportTitle = () => lang === 'ar'
+  const getExportTitle = () => outLang === 'ar'
     ? `نشاط: ${scope.topic}`
     : `Activity: ${scope.topic}`;
 
@@ -232,22 +266,22 @@ export default function ActivityScreen() {
     // catalog put "Mathematics | Grade 10" at the top of an otherwise Arabic
     // plan — the screen showed الرياضيات and the exported file disagreed.
     // Labels are per grade, so they are read against the generated grade.
-    subject: subjectPickerLabels(grades[scope.gradeIdx].id, lang as 'ar' | 'en')[scope.subjectIdx]!,
-    grade: gradeNames[scope.gradeIdx]!,
+    subject: subjectPickerLabels(grades[scope.gradeIdx].id, outLang)[scope.subjectIdx]!,
+    grade: outLang === 'ar' ? grades[scope.gradeIdx].nameAr : grades[scope.gradeIdx].name,
   });
 
   const handleSave = async () => {
     if (!result) return;
     const title = getExportTitle();
-    const formState = { gradeIdx: scope.gradeIdx, subjectIdx: scope.subjectIdx, topic: scope.topic, activityTypeIdx, durationIdx, objective };
+    const formState = { gradeIdx: scope.gradeIdx, subjectIdx: scope.subjectIdx, topic: scope.topic, ...(builtWith ?? { activityTypeIdx, durationIdx, objective }) };
     // Built once: the two branches below used to each spell out the payload.
     // The grade is the localised name, as the lesson plan stores it.
     const payload = {
       title,
       subject: subjects[scope.subjectIdx].name,
-      grade: gradeNames[scope.gradeIdx]!,
+      grade: outLang === 'ar' ? grades[scope.gradeIdx].nameAr : grades[scope.gradeIdx].name,
       topic: scope.topic,
-      language: lang,
+      language: outLang,
       content: JSON.stringify(result),
       formState,
     };
@@ -288,7 +322,7 @@ export default function ActivityScreen() {
     result,
     topic: scope.topic,
     lessonId: scope.lesson?.id,
-    lang,
+    lang: outLang,
     getTitle: getExportTitle,
     getMeta: getExportMeta,
     formatText: formatActivityText,
@@ -296,6 +330,15 @@ export default function ActivityScreen() {
     buildSlidesHTML: buildActivitySlidesHTML,
     onError: key => showToast(t(key)),
     onCopied: key => showToast(t(key)),
+  });
+
+  // An English material saved in Arabic (before 2026-10-04) is redone in
+  // English as soon as it opens, and the English copy replaces it.
+  useEnglishRefresh({
+    savedId: params.savedId,
+    current: result,
+    generate: () => generate(),
+    save: async () => { await handleSave(); showToast(t('englishMaterialRedone')); },
   });
 
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
@@ -333,7 +376,7 @@ export default function ActivityScreen() {
           gradeId={grades[gradeIdx].id}
           value={topic}
           onChange={text => { setTopic(text); setError(''); }}
-          lang={lang as 'ar' | 'en'}
+          lang={lang}
           isRTL={isRTL}
           colors={colors}
           accent={ACCENT}
@@ -344,7 +387,7 @@ export default function ActivityScreen() {
         <PickerField label={t('activityTypeLabel')} value={activityTypeLabels[activityTypeIdx]} options={activityTypeLabels} onChange={setActivityTypeIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('durationLabel')} value={durationLabels[durationIdx]} options={durationLabels} onChange={setDurationIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
-        <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('activityObjectiveLabel')}
         </Text>
         <View style={[styles.inputBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
@@ -365,7 +408,7 @@ export default function ActivityScreen() {
           arrangement as the other generators; this screen still showed them
           above the button with neither.
         */}
-        {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
+        {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
         <Button
           label={loading ? t('generatingActivity') : t('generateActivityBtn')}
           onPress={() => generate()}
@@ -378,7 +421,7 @@ export default function ActivityScreen() {
           product rather than an unmet precondition. It says which one.
         */}
         {!topic.trim() ? (
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
             {t('needTopicHint')}
           </Text>
         ) : null}
@@ -393,7 +436,7 @@ export default function ActivityScreen() {
         onRetry={() => generate()}
         colors={colors}
         isRTL={isRTL}
-        lang={lang as 'ar' | 'en'}
+        lang={uiLang}
         accent={ACCENT}
         t={t}
       />
@@ -426,7 +469,7 @@ export default function ActivityScreen() {
         </View>
       )}
 
-      {result && <ActivityResult activity={result} colors={colors} isRTL={isRTL} t={t} lang={lang} />}
+      {result && <ActivityResult activity={result} colors={colors} isRTL={outLang === 'ar'} t={getT(outLang)} lang={outLang} />}
 
       {result && !loading && (
         <GeneratorResultActions
@@ -478,7 +521,7 @@ function ActivityResult({ activity, colors, isRTL, t, lang }: {
       {/* Success banner */}
       <View style={[styles.resultHeader, { backgroundColor: ACCENT_LOCAL + '15', borderColor: ACCENT_LOCAL + '30', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Ionicons name="checkmark-circle" size={20} color={ACCENT_LOCAL} />
-        <Text style={[styles.resultHeaderText, { color: ACCENT_LOCAL, fontFamily: 'Cairo_600SemiBold' }]}>
+        <Text style={[styles.resultHeaderText, { color: ACCENT_LOCAL, fontFamily: 'ReadexPro_600SemiBold' }]}>
           {t('activityReady')}
         </Text>
       </View>
@@ -492,10 +535,10 @@ function ActivityResult({ activity, colors, isRTL, t, lang }: {
 
       {/* Objective */}
       <View style={[styles.objectiveBox, { backgroundColor: ACCENT_LOCAL + '10', borderColor: ACCENT_LOCAL + '30', borderRadius: colors.radius }]}>
-        <Text style={[{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 11, marginBottom: 4, textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 11, marginBottom: 4, textAlign: isRTL ? 'right' : 'left' }]}>
           {lang === 'ar' ? 'الهدف' : 'Objective'}
         </Text>
-        <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: isRTL ? 'right' : 'left' }]}>
           {activity.objective}
         </Text>
       </View>
@@ -509,7 +552,7 @@ function ActivityResult({ activity, colors, isRTL, t, lang }: {
       <View style={{ marginBottom: 16 }}>
         <View style={[styles.resultSectionHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <Ionicons name="list-outline" size={15} color={ACCENT_LOCAL} />
-          <Text style={[styles.resultSectionTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.resultSectionTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('sectionActivitySteps')}
           </Text>
         </View>
@@ -540,7 +583,7 @@ function MetaPill({ icon, label, color }: { icon: keyof typeof Ionicons.glyphMap
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6 }}>
       <Ionicons name={icon} size={13} color={color} />
-      <Text style={{ fontSize: 12, color, fontFamily: 'Cairo_500Medium' }}>{label}</Text>
+      <Text style={{ fontSize: 12, color, fontFamily: 'ReadexPro_500Medium' }}>{label}</Text>
     </View>
   );
 }
@@ -553,14 +596,14 @@ function StepCard({ step, colors, isRTL, t }: {
     <View style={[styles.stepCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
       <View style={[styles.stepHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <View style={[styles.stepNum, { backgroundColor: ACCENT_LOCAL }]}>
-          <Text style={{ color: '#fff', fontSize: 12, fontFamily: 'Cairo_700Bold' }}>{step.stepNumber}</Text>
+          <Text style={{ color: '#fff', fontSize: 12, fontFamily: 'ReadexPro_700Bold' }}>{step.stepNumber}</Text>
         </View>
         <Text
           style={[
             styles.stepTitle,
             {
               color: colors.foreground,
-              fontFamily: 'Cairo_600SemiBold',
+              fontFamily: 'ReadexPro_600SemiBold',
               flex: 1,
               textAlign: isRTL ? 'right' : 'left',
               writingDirection: isRTL ? 'rtl' : 'ltr',
@@ -599,7 +642,7 @@ function ResultSection({ title, icon, isRTL, children }: {
     <View style={{ marginBottom: 16 }}>
       <View style={[styles.resultSectionHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Ionicons name={icon} size={15} color={ACCENT_LOCAL} />
-        <Text style={[styles.resultSectionTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{title}</Text>
+        <Text style={[styles.resultSectionTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{title}</Text>
       </View>
       <View style={[styles.resultSectionBody, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
         {children}
@@ -635,12 +678,12 @@ const styles = StyleSheet.create({
   resultSectionBody: { padding: 14, borderWidth: 1 },
   bulletRow: { gap: 10, marginBottom: 6, alignItems: 'flex-start' },
   bulletDot: { width: 6, height: 6, borderRadius: 3, marginTop: 7, flexShrink: 0 },
-  bulletText: { flex: 1, fontSize: 13, lineHeight: 20 },
-  bodyText: { fontSize: 13, lineHeight: 20 },
+  bulletText: { flex: 1, fontSize: 15, lineHeight: 23 },
+  bodyText: { fontSize: 15, lineHeight: 23 },
   stepCard: { borderWidth: 1, padding: 14, marginBottom: 10 },
   stepHeader: { alignItems: 'center', gap: 10, marginBottom: 8 },
   stepNum: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   stepTitle: { fontSize: 13 },
   stepDur: { fontSize: 11, lineHeight: 18 },
-  stepDesc: { fontSize: 13, lineHeight: 20 },
+  stepDesc: { fontSize: 15, lineHeight: 23 },
 });

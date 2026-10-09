@@ -31,6 +31,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import {
   BOOKS,
   getEvaluableBookIds,
+  getObjectiveById,
   getObjectivesForBook,
   type CurriculumObjective,
 } from '@/services/curriculumData';
@@ -45,6 +46,7 @@ import {
   MINI_EVAL_COUNT,
   MINI_EVAL_DIFFICULTY,
   MINI_EVAL_TYPES,
+  miniEvalPreset,
 } from '@/services/miniEval';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
@@ -58,7 +60,7 @@ export default function MiniEvalScreen() {
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
   const align = isRTL ? 'right' : 'left';
-  const { classId } = useLocalSearchParams<{ classId?: string }>();
+  const { classId, objectiveId: presetObjectiveId } = useLocalSearchParams<{ classId?: string; objectiveId?: string }>();
 
   const [loading, setLoading] = useState(true);
   const [bookId, setBookId] = useState<string | null>(null);
@@ -93,13 +95,19 @@ export default function MiniEvalScreen() {
       }
       if (cancelled) return;
       setBookChoices(candidates.map(b => ({ id: b.id, titleAr: b.titleAr, title: b.title })));
-      if (candidates.length === 1) setBookId(candidates[0]!.id);
+      const preset = miniEvalPreset(presetObjectiveId, candidates.map(b => b.id), getObjectiveById);
+      if (preset) {
+        setBookId(preset.bookId);
+        setObjectiveId(preset.objectiveId);
+      } else if (candidates.length === 1) {
+        setBookId(candidates[0]!.id);
+      }
       setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [classId]);
+  }, [classId, presetObjectiveId]);
 
   const objectives: CurriculumObjective[] = useMemo(
     () => (bookId ? getObjectivesForBook(bookId) : []),
@@ -176,13 +184,15 @@ export default function MiniEvalScreen() {
     >
       <View style={[styles.header, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('back')}
           onPress={() => goBack()}
           style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}
           hitSlop={10}
         >
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
-        <Text style={[styles.headerTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]}>
+        <Text style={[styles.headerTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
           {t('miniEvalTitle')}
         </Text>
         <Text style={[styles.headerSub, { fontFamily: 'Almarai_400Regular', textAlign: align }]}>
@@ -223,11 +233,11 @@ export default function MiniEvalScreen() {
                       styles.row,
                       {
                         borderColor: selected ? ACCENT : colors.border,
-                        backgroundColor: selected ? ACCENT + '12' : colors.card,
+                        backgroundColor: selected ? palette.selected : colors.card,
                       },
                     ]}
                   >
-                    <Text style={{ color: colors.foreground, fontFamily: 'Cairo_500Medium', fontSize: 14, textAlign: align }}>
+                    <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 14, textAlign: align }}>
                       {lang === 'ar' ? b.titleAr : b.title}
                     </Text>
                   </Pressable>
@@ -236,7 +246,7 @@ export default function MiniEvalScreen() {
             </View>
           )}
 
-          <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+          <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
             {t('miniEvalPickObjective')}
           </Text>
 
@@ -269,7 +279,7 @@ export default function MiniEvalScreen() {
                     styles.row,
                     {
                       borderColor: selected ? ACCENT : colors.border,
-                      backgroundColor: selected ? ACCENT + '12' : colors.card,
+                      backgroundColor: selected ? palette.selected : colors.card,
                       flexDirection: isRTL ? 'row-reverse' : 'row',
                       alignItems: 'center',
                       gap: 10,
@@ -281,7 +291,7 @@ export default function MiniEvalScreen() {
                     size={18}
                     color={selected ? ACCENT : colors.mutedForeground}
                   />
-                  <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, flex: 1, textAlign: align }}>
+                  <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, flex: 1, textAlign: align }}>
                     {(lang === 'ar' ? o.descriptionAr : o.description) || o.description}
                   </Text>
                 </Pressable>
@@ -310,7 +320,7 @@ export default function MiniEvalScreen() {
             ) : (
               <Ionicons name="flash-outline" size={18} color="#fff" />
             )}
-            <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+            <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
               {working ? t('miniEvalGenerating') : t('miniEvalGenerate')}
             </Text>
           </Pressable>
@@ -326,7 +336,7 @@ export default function MiniEvalScreen() {
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 14, gap: 6 },
   headerTitle: { color: '#fff', fontSize: 20 },
-  headerSub: { color: '#fff', opacity: 0.9, fontSize: 13, lineHeight: 21 },
+  headerSub: { color: '#fff', opacity: 0.9, fontSize: 15, lineHeight: 24 },
   errorBox: {
     margin: 20,
     marginBottom: 0,
@@ -337,8 +347,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   label: { fontSize: 14, marginBottom: 4 },
-  hint: { fontSize: 12, lineHeight: 19 },
-  empty: { padding: 20, fontSize: 13, lineHeight: 21 },
+  hint: { fontSize: 13, lineHeight: 21 },
+  empty: { padding: 20, fontSize: 15, lineHeight: 24 },
   row: { borderWidth: 1, borderRadius: 12, padding: 12 },
   cta: {
     borderRadius: 14,

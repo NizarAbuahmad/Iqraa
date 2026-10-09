@@ -60,7 +60,7 @@ export function BoardToolbar({
               key={b}
               onPress={() => onBackground(b)}
               accessibilityRole="button"
-              accessibilityState={{ selected: b === background }}
+              aria-selected={b === background}
               style={[styles.chip, b === background && styles.chipOn]}
             >
               <Text style={[styles.chipText, b === background && { color: DECK_ACCENT }, { fontFamily: 'Almarai_400Regular' }]}>
@@ -83,7 +83,7 @@ export function BoardToolbar({
               hitSlop={6}
               accessibilityRole="button"
               accessibilityLabel={labels.colors[i]}
-              accessibilityState={{ selected: !erase && c === color }}
+              aria-selected={!erase && c === color}
               style={[styles.swatch, { backgroundColor: c }, !erase && c === color && styles.swatchOn]}
             />
           ))}
@@ -96,7 +96,7 @@ export function BoardToolbar({
               hitSlop={6}
               accessibilityRole="button"
               accessibilityLabel={labels.widths[i]}
-              accessibilityState={{ selected: w === width }}
+              aria-selected={w === width}
               style={styles.widthSlot}
             >
               <View style={{ width: w + 6, height: w + 6, borderRadius: (w + 6) / 2, backgroundColor: w === width ? DECK_ACCENT : DECK_MUTED }} />
@@ -104,10 +104,10 @@ export function BoardToolbar({
           ))}
         </View>
         <View style={styles.group}>
-          <Pressable onPress={() => onErase(false)} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.pen} accessibilityState={{ selected: !erase }}>
+          <Pressable onPress={() => onErase(false)} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.pen} aria-selected={!erase}>
             <Ionicons name={erase ? 'brush-outline' : 'brush'} size={20} color={erase ? DECK_MUTED : DECK_ACCENT} />
           </Pressable>
-          <Pressable onPress={() => onErase(true)} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.eraser} accessibilityState={{ selected: erase }}>
+          <Pressable onPress={() => onErase(true)} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.eraser} aria-selected={erase}>
             <MaterialCommunityIcons name="eraser" size={22} color={erase ? DECK_ACCENT : DECK_MUTED} />
           </Pressable>
         </View>

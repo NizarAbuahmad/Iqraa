@@ -19,8 +19,10 @@ import {
   deleteEvaluationQuestion,
   generateEvaluation,
   getEvaluation,
+  archiveEvaluation,
   closeEvaluation,
   publishEvaluation,
+  setResultsReleased,
   setEvaluationClass,
   showBlanks,
   type Evaluation,
@@ -58,8 +60,8 @@ const STATUS_KEY: Record<Evaluation['status'], TranslationKey> = {
   closed: 'evalStatusClosed',
 };
 const STATUS_COLOR: Record<Evaluation['status'], string> = {
-  draft: '#B54708',
-  published: '#067647',
+  draft: palette.warning,
+  published: palette.success,
   closed: '#6B7280',
 };
 const TYPE_LABEL_KEY: Record<QuestionType, TranslationKey> = {
@@ -96,6 +98,8 @@ function questionText(q: EvaluationQuestion): string {
     // matching question existed but not what it asked. The left column is what
     // it asks about.
     ?? matchingLeftText(body['left'])
+    // A read-aloud body keeps its text in `passage` and printed as «—».
+    ?? (body['passage'] as string | undefined)
     // A dictation body has none of the above — the prompt is spoken, not
     // written. On the teacher's own screen the dictated text IS what the
     // question asks, and showing it here is what lets a teacher read the list
@@ -138,7 +142,7 @@ export default function EvaluationDetailScreen() {
   /** The question open in the editor; 'new' when writing one from scratch. */
   const [editing, setEditing] = useState<EvaluationQuestion | 'new' | null>(null);
   const [error, setError] = useState('');
-  const [busy, setBusy] = useState<'generate' | 'publish' | 'close' | null>(null);
+  const [busy, setBusy] = useState<'generate' | 'publish' | 'close' | 'release' | 'archive' | null>(null);
   // What the generator said while producing this paper ("2 questions removed:
   // the verifier contradicted their key"). The questions cannot show a
   // question that was dropped, so this is the only place the teacher hears it.
@@ -162,7 +166,7 @@ export default function EvaluationDetailScreen() {
   const evaluation = data?.evaluation ?? null;
   const questions = data?.questions ?? [];
   const loadError = loadFailed
-    ? (loadErrorRaw instanceof EvaluationError ? loadErrorRaw.message : t('evaluationLoadFailed'))
+    ? t('evaluationLoadFailed')
     : '';
   // Action error (delete/generate/publish/...) takes priority over a stale
   // load error — it's the more recent thing the teacher is looking at.
@@ -212,7 +216,7 @@ export default function EvaluationDetailScreen() {
       );
       setTotal(totalMarks);
     } catch (err) {
-      setError(err instanceof EvaluationError ? err.message : t('questionSaveFailed'));
+      setError(t('questionSaveFailed'));
     }
   };
 
@@ -237,7 +241,7 @@ export default function EvaluationDetailScreen() {
       setGenWarnings(gen.warnings ?? []);
       await refetch();
     } catch (err) {
-      setError(err instanceof EvaluationError ? err.message : t('evaluationGenerateFailed'));
+      setError(t('evaluationGenerateFailed'));
     } finally {
       setBusy(null);
     }
@@ -261,7 +265,63 @@ export default function EvaluationDetailScreen() {
         prev ? { ...prev, evaluation: updated } : prev,
       );
     } catch (err) {
-      setError(err instanceof EvaluationError ? err.message : t('evaluationCloseFailed'));
+      setError(t('evaluationCloseFailed'));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  // Removes the exam from the teacher's lists; marks and results are kept. Only
+  // offered on a draft or a closed exam, and the server enforces the same.
+  const onArchive = async () => {
+    if (!id || busy) return;
+    const ok = await confirm({
+      title: t('archiveEvaluationBtn'),
+      message: t('archiveEvaluationConfirm'),
+      confirmLabel: t('archiveEvaluationBtn'),
+      cancelLabel: t('cancel'),
+    });
+    if (!ok) return;
+
+    setBusy('archive');
+    setError('');
+    try {
+      await archiveEvaluation(id);
+      // Every list of exams — «تقييماتي», a class's exams, the attach sheet.
+      await queryClient.invalidateQueries({ queryKey: ['evaluations'] });
+      queryClient.removeQueries({ queryKey: evaluationQueryKey(id) });
+      goBack();
+    } catch (err) {
+      setError(t('archiveEvaluationFailed'));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  // Students see nothing of their results until this is on — see
+  // api-server/src/lib/resultsRelease.ts. Releasing asks first; taking it back
+  // does not, because hiding a result is never the harmful direction.
+  const onToggleRelease = async () => {
+    if (!id || busy || !evaluation) return;
+    const release = !evaluation.releaseResultsToStudent;
+    if (release) {
+      const ok = await confirm({
+        title: t('releaseResultsBtn'),
+        message: t('releaseResultsConfirm'),
+        confirmLabel: t('releaseResultsBtn'),
+        cancelLabel: t('cancel'),
+      });
+      if (!ok) return;
+    }
+    setBusy('release');
+    setError('');
+    try {
+      const updated = await setResultsReleased(id, release);
+      queryClient.setQueryData<EvaluationData>(evaluationQueryKey(id), prev =>
+        prev ? { ...prev, evaluation: updated } : prev,
+      );
+    } catch {
+      setError(t('releaseResultsFailed'));
     } finally {
       setBusy(null);
     }
@@ -305,23 +365,23 @@ export default function EvaluationDetailScreen() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ paddingBottom: 60 }}>
       <View style={[styles.header, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
-        <Pressable onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
-        <Text style={[styles.headerTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]} numberOfLines={2}>
+        <Text style={[styles.headerTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]} numberOfLines={2}>
           {evaluation ? (lang === 'ar' ? evaluation.titleAr : evaluation.title) || t('newEvaluation') : ''}
         </Text>
         {evaluation && (
           <View style={[styles.metaRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <View style={[styles.statusPill, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-              <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 12 }}>
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>
                 {t(STATUS_KEY[evaluation.status])}
               </Text>
             </View>
-            <Text style={{ color: 'rgba(255,255,255,0.9)', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
+            <Text style={{ color: 'rgba(255,255,255,0.9)', fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 }}>
               {t('evalQuestionCount', questions.length)}
             </Text>
-            <Text style={{ color: 'rgba(255,255,255,0.9)', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
+            <Text style={{ color: 'rgba(255,255,255,0.9)', fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 }}>
               {t('evalTotalMarks', evaluation.totalMarks)}
             </Text>
           </View>
@@ -369,7 +429,7 @@ export default function EvaluationDetailScreen() {
             await setEvaluationClass(id, classId);
             await refetch();
           } catch (err) {
-            setError(err instanceof EvaluationError ? err.message : t('saveToClassFailed'));
+            setError(t('saveToClassFailed'));
           }
         }}
       />
@@ -381,7 +441,7 @@ export default function EvaluationDetailScreen() {
             style={[styles.enterAnswersBtn, { backgroundColor: ACCENT_FILL, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="create-outline" size={18} color="#fff" />
-            <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+            <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
               {t('enterAnswersBtn')}
             </Text>
           </Pressable>
@@ -390,7 +450,7 @@ export default function EvaluationDetailScreen() {
             style={[styles.resultsBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="bar-chart-outline" size={18} color={ACCENT} />
-            <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+            <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
               {t('resultsDashboardBtn')}
             </Text>
           </Pressable>
@@ -400,16 +460,46 @@ export default function EvaluationDetailScreen() {
             style={[styles.resultsBtn, { borderColor: colors.border, opacity: busy === 'close' ? 0.6 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="lock-closed-outline" size={18} color={colors.mutedForeground} />
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, lineHeight: 24, flexShrink: 1, textAlign: 'center' }}>
               {t('closeEvaluationBtn')}
             </Text>
           </Pressable>
         </View>
       )}
 
+      {(evaluation?.status === 'published' || evaluation?.status === 'closed') && (
+        <View style={{ marginHorizontal: 20, marginTop: 10, gap: 6 }}>
+          <Pressable
+            onPress={onToggleRelease}
+            disabled={busy === 'release'}
+            accessibilityRole="button"
+            style={[
+              styles.resultsBtn,
+              {
+                borderColor: evaluation.releaseResultsToStudent ? colors.border : ACCENT,
+                opacity: busy === 'release' ? 0.6 : 1,
+                flexDirection: isRTL ? 'row-reverse' : 'row',
+              },
+            ]}
+          >
+            <Ionicons
+              name={evaluation.releaseResultsToStudent ? 'eye-off-outline' : 'megaphone-outline'}
+              size={18}
+              color={evaluation.releaseResultsToStudent ? colors.mutedForeground : ACCENT}
+            />
+            <Text style={{ color: evaluation.releaseResultsToStudent ? colors.mutedForeground : ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
+              {t(evaluation.releaseResultsToStudent ? 'hideResultsBtn' : 'releaseResultsBtn')}
+            </Text>
+          </Pressable>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+            {t(evaluation.releaseResultsToStudent ? 'resultsReleasedNote' : 'resultsNotReleasedNote')}
+          </Text>
+        </View>
+      )}
+
       {evaluation?.status === 'closed' && (
         <View style={{ marginHorizontal: 20, marginTop: 16, gap: 10 }}>
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
             {t('evaluationClosedNote')}
           </Text>
           <Pressable
@@ -417,7 +507,7 @@ export default function EvaluationDetailScreen() {
             style={[styles.resultsBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="bar-chart-outline" size={18} color={ACCENT} />
-            <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+            <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
               {t('resultsDashboardBtn')}
             </Text>
           </Pressable>
@@ -427,8 +517,24 @@ export default function EvaluationDetailScreen() {
             style={[styles.resultsBtn, { borderColor: colors.border, opacity: busy === 'publish' ? 0.6 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="lock-open-outline" size={18} color={colors.mutedForeground} />
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
               {t('publishEvaluationBtn')}
+            </Text>
+          </Pressable>
+        </View>
+      )}
+
+      {(evaluation?.status === 'draft' || evaluation?.status === 'closed') && (
+        <View style={{ marginHorizontal: 20, marginTop: 10, gap: 6 }}>
+          <Pressable
+            onPress={onArchive}
+            disabled={busy === 'archive'}
+            accessibilityRole="button"
+            style={[styles.resultsBtn, { borderColor: colors.destructive, opacity: busy === 'archive' ? 0.6 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          >
+            <Ionicons name="trash-outline" size={18} color={colors.destructive} />
+            <Text style={{ color: colors.destructive, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
+              {t('archiveEvaluationBtn')}
             </Text>
           </Pressable>
         </View>
@@ -446,7 +552,7 @@ export default function EvaluationDetailScreen() {
             <Ionicons name="information-circle-outline" size={16} color={colors.mutedForeground} />
             <View style={{ flex: 1, gap: 4 }}>
               {genWarnings.map((w, i) => (
-                <Text key={i} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+                <Text key={i} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
                   {`• ${w}`}
                 </Text>
               ))}
@@ -460,14 +566,14 @@ export default function EvaluationDetailScreen() {
           <View key={q.id} style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={[styles.qTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               <View style={[styles.qNum, { backgroundColor: ACCENT_FILL }]}>
-                <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 12 }}>{i + 1}</Text>
+                <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 12 }}>{i + 1}</Text>
               </View>
               <View style={[styles.typeBadge, { backgroundColor: ACCENT + '18' }]}>
-                <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 11 }}>
+                <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 11 }}>
                   {t(TYPE_LABEL_KEY[q.type])}
                 </Text>
               </View>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>
                 {t('marksAbbrev', q.marks)}
               </Text>
               {evaluation?.status === 'draft' && (
@@ -489,7 +595,7 @@ export default function EvaluationDetailScreen() {
             {q.verification?.verified ? (
               <View style={[styles.verifiedRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <Ionicons name="shield-checkmark" size={13} color="#067647" />
-                <Text style={{ color: '#067647', fontFamily: 'Cairo_500Medium', fontSize: 11 }}>
+                <Text style={{ color: palette.success, fontFamily: 'ReadexPro_500Medium', fontSize: 11 }}>
                   {t('keyVerifiedBadge')}
                 </Text>
               </View>
@@ -550,7 +656,7 @@ export default function EvaluationDetailScreen() {
             {busy === 'publish' ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
                 {t('publishEvaluationBtn')}
               </Text>
             )}
@@ -565,7 +671,7 @@ export default function EvaluationDetailScreen() {
             ) : (
               <>
                 <Ionicons name="refresh-outline" size={16} color={ACCENT} />
-                <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+                <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
                   {t('regenerateQuestionsBtn')}
                 </Text>
               </>
@@ -577,7 +683,7 @@ export default function EvaluationDetailScreen() {
             style={[styles.actionBtnOutline, { borderColor: ACCENT, opacity: !!busy ? 0.6 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="add-circle-outline" size={16} color={ACCENT} />
-            <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+            <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
               {t('addOwnQuestionBtn')}
             </Text>
           </Pressable>
@@ -589,7 +695,7 @@ export default function EvaluationDetailScreen() {
             style={[styles.actionBtnOutline, { borderColor: ACCENT, opacity: !!busy ? 0.6 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="mic-outline" size={16} color={ACCENT} />
-            <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+            <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
               {t('addReadAloudBtn')}
             </Text>
           </Pressable>
@@ -601,7 +707,7 @@ export default function EvaluationDetailScreen() {
             style={[styles.actionBtnOutline, { borderColor: ACCENT, opacity: !!busy ? 0.6 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="create-outline" size={16} color={ACCENT} />
-            <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+            <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
               {t('addDictationBtn')}
             </Text>
           </Pressable>
@@ -691,7 +797,7 @@ function KeyCheckNotice({
   t: (key: TranslationKey, ...args: any[]) => string;
 }) {
   const tone = summary.kind === 'verified'
-    ? { fg: '#067647', bg: '#05966912', border: '#05966933', icon: 'shield-checkmark' as const }
+    ? { fg: palette.success, bg: '#05966912', border: '#05966933', icon: 'shield-checkmark' as const }
     : summary.kind === 'verifier-down'
       ? { fg: '#B45309', bg: '#F59E0B14', border: '#F59E0B38', icon: 'cloud-offline-outline' as const }
       : { fg: colors.mutedForeground, bg: colors.card, border: colors.border, icon: 'information-circle-outline' as const };
@@ -700,23 +806,27 @@ function KeyCheckNotice({
     ? t('keysVerifiedSummary', String(summary.verified), String(summary.total))
     : summary.kind === 'verifier-down'
       ? t('keysVerifierDownTitle')
-      : t('keysNoneCheckableTitle');
+      : summary.kind === 'unlinked'
+        ? t('keysUnlinkedTitle', String(summary.unlinked))
+        : t('keysNoneCheckableTitle');
 
   const note = summary.kind === 'verified'
     ? t('keysVerifiedNote')
     : summary.kind === 'verifier-down'
       ? t('keysVerifierDownNote')
-      : t('keysNoneCheckableNote');
+      : summary.kind === 'unlinked'
+        ? t('keysUnlinkedNote')
+        : t('keysNoneCheckableNote');
 
   return (
     <View style={[styles.verifySummary, { backgroundColor: tone.bg, borderColor: tone.border }]}>
       <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
         <Ionicons name={tone.icon} size={15} color={tone.fg} />
-        <Text style={{ flex: 1, color: tone.fg, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5, textAlign: align }}>
+        <Text style={{ flex: 1, color: tone.fg, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: align }}>
           {title}
         </Text>
       </View>
-      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, marginTop: 4, textAlign: align, lineHeight: 18 }}>
+      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, marginTop: 4, textAlign: align, lineHeight: 20 }}>
         {note}
       </Text>
     </View>
@@ -745,13 +855,13 @@ function ShareLinkCard({
   return (
     <View style={{ marginHorizontal: 20, marginTop: 16 }}>
       <View style={[styles.shareCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: align }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
           {t('shareExamTitle')}
         </Text>
 
         {!attachedToClass ? (
           <>
-            <Text style={{ color: '#B54708', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 8, textAlign: align }}>
+            <Text style={{ color: palette.warning, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginTop: 8, textAlign: align }}>
               {t('shareExamNeedsClass')}
             </Text>
             {/* Naming the problem without offering the fix is what made this a
@@ -761,23 +871,23 @@ function ShareLinkCard({
               style={[styles.shareBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
               <Ionicons name="people-outline" size={16} color={ACCENT} />
-              <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>
+              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
                 {t('shareExamAttachNow')}
               </Text>
             </Pressable>
           </>
         ) : (
           <>
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 4, textAlign: align }}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 4, textAlign: align }}>
               {t('shareExamHint')}
             </Text>
             <Text
               selectable
-              style={{ color: ACCENT, fontFamily: 'Cairo_700Bold', fontSize: 34, letterSpacing: 4, textAlign: 'center', marginVertical: 12 }}
+              style={{ color: ACCENT, fontFamily: 'ReadexPro_700Bold', fontSize: 34, letterSpacing: 4, textAlign: 'center', marginVertical: 12 }}
             >
               {shareCode}
             </Text>
-            <Text selectable style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: 'center' }}>
+            <Text selectable style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: 'center' }}>
               {url}
             </Text>
             <Pressable
@@ -788,7 +898,7 @@ function ShareLinkCard({
               style={[styles.shareBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
               <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={16} color={ACCENT} />
-              <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>
+              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
                 {t(copied ? 'copiedToClipboard' : 'shareExamCopyLink')}
               </Text>
             </Pressable>
@@ -810,7 +920,7 @@ const styles = StyleSheet.create({
   qTop: { alignItems: 'center', gap: 8, marginBottom: 8 },
   qNum: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   typeBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  qText: { fontSize: 14, lineHeight: 20 },
+  qText: { fontSize: 15, lineHeight: 21 },
   verifiedRow: { alignItems: 'center', gap: 5, marginBottom: 6 },
   verifySummary: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
   actionBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 15, borderRadius: 10 },

@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import {
-  KeyboardAvoidingView, Platform, Pressable,
+  Pressable,
   ScrollView, StyleSheet, Text, View,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
@@ -24,6 +24,9 @@ export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const { login, loginWithGoogle, savedAccounts, switchAccount } = useAuth();
   const { t, lang, isRTL } = useLanguage();
+  // Arriving from a successful password reset. It used to land here with no
+  // word, so a teacher could not tell the reset had worked.
+  const justReset = useLocalSearchParams<{ reset?: string }>().reset === '1';
   const { isWide } = useAuthLayout();
 
   const [email, setEmail] = useState('');
@@ -88,7 +91,10 @@ export default function LoginScreen() {
     setError('');
     setGoogleLoading(true);
     try {
-      await loginWithGoogle(credential);
+      // Google on this screen can create an account for someone who has none,
+      // and the server refuses that without acceptance — so the notice under
+      // the button is the acceptance, and it is sent as such.
+      await loginWithGoogle(credential, { acceptedTerms: true });
     } catch (e: any) {
       setError(apiErrorMessage(e, 'errGoogleFailed', t));
     } finally {
@@ -97,9 +103,8 @@ export default function LoginScreen() {
   };
 
   const formPanel = (
-    <KeyboardAvoidingView
+    <View
       style={[styles.formPanel, isWide && styles.formPanelWide]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
         contentContainerStyle={[
@@ -128,7 +133,7 @@ export default function LoginScreen() {
               styles.cardTitle,
               {
                 color: colors.foreground,
-                fontFamily: 'Cairo_700Bold',
+                fontFamily: 'ReadexPro_700Bold',
                 textAlign: isRTL ? 'right' : 'left',
                 writingDirection: isRTL ? 'rtl' : 'ltr',
               },
@@ -150,6 +155,25 @@ export default function LoginScreen() {
             {t('signInSubtitle')}
           </Text>
         </View>
+
+        {justReset && !error ? (
+          <View
+            style={[
+              styles.errorBanner,
+              {
+                backgroundColor: colors.success + '14',
+                borderColor: colors.success + '33',
+                flexDirection: isRTL ? 'row-reverse' : 'row',
+              },
+            ]}
+            accessibilityLiveRegion="polite"
+          >
+            <Ionicons name="checkmark-circle-outline" size={16} color={colors.success} />
+            <Text style={[styles.errorText, { color: colors.success, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+              {t('passwordResetDone')}
+            </Text>
+          </View>
+        ) : null}
 
         {error ? (
           <View
@@ -180,7 +204,7 @@ export default function LoginScreen() {
 
         {savedAccounts.length > 0 && (
           <View>
-            <Text style={[styles.savedTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+            <Text style={[styles.savedTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
               {t('loginSavedTitle')}
             </Text>
             <View style={[styles.savedCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
@@ -210,6 +234,16 @@ export default function LoginScreen() {
         {isGoogleSignInAvailable() && (
           <>
             <GoogleSignInButton onCredential={handleGoogleCredential} locale={lang} />
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>
+              {t('loginGoogleTermsNotice')}{' '}
+              <Text style={{ color: colors.primary }} onPress={() => router.push('/legal/terms')}>
+                {t('termsOfService')}
+              </Text>
+              {lang === 'ar' ? ' و' : ' and '}
+              <Text style={{ color: colors.primary }} onPress={() => router.push('/legal/privacy')}>
+                {t('privacyPolicy')}
+              </Text>
+            </Text>
             {googleLoading ? (
               <Text style={[styles.googleLoadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
                 {lang === 'ar' ? 'جارٍ تسجيل الدخول…' : 'Signing in…'}
@@ -217,19 +251,19 @@ export default function LoginScreen() {
             ) : null}
             {showLastGoogle ? (
               <View style={{ gap: 6, alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
                   {t('loginGoogleLast')}
                 </Text>
                 <View style={[styles.lastGoogle, { backgroundColor: colors.primary + '14', borderColor: colors.primary + '33', flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                   <Ionicons name="logo-google" size={14} color={colors.primary} />
-                  <Text numberOfLines={1} style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13, flexShrink: 1 }}>
+                  <Text numberOfLines={1} style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, flexShrink: 1 }}>
                     {lastGoogleEmail}
                   </Text>
                   <View style={[styles.lastGoogleBadge, { backgroundColor: colors.primary + '1F' }]}>
-                    <Text style={{ color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 11 }}>{t('accountsLastUsed')}</Text>
+                    <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: 11 }}>{t('accountsLastUsed')}</Text>
                   </View>
                 </View>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
                   {t('loginGoogleChoose')}
                 </Text>
               </View>
@@ -263,10 +297,12 @@ export default function LoginScreen() {
           value={password}
           onChangeText={setPassword}
           secureTextEntry={!showPassword}
-          autoComplete="password"
+          autoComplete="current-password"
+          textContentType="password"
           leftIcon="lock-closed-outline"
           rightIcon={showPassword ? 'eye-off-outline' : 'eye-outline'}
           onRightIconPress={() => setShowPassword(v => !v)}
+          rightIconLabel={t(showPassword ? 'hidePasswordA11y' : 'showPasswordA11y')}
           isRTL={isRTL}
         />
 
@@ -279,7 +315,7 @@ export default function LoginScreen() {
           style={{ alignSelf: isRTL ? 'flex-start' : 'flex-end', paddingVertical: 4, marginTop: -24 }}
           accessibilityRole="link"
         >
-          <Text style={{ color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+          <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
             {t('forgotPasswordLink')}
           </Text>
         </Pressable>
@@ -295,7 +331,7 @@ export default function LoginScreen() {
         />
 
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 
   return (
@@ -329,15 +365,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
   },
-  errorText: { flex: 1, fontSize: 13, lineHeight: 21 },
+  errorText: { flex: 1, fontSize: 15, lineHeight: 24 },
   dividerRow: { alignItems: 'center', gap: 10, marginVertical: 2 },
   dividerLine: { flex: 1, height: 1 },
-  dividerText: { fontSize: 12, lineHeight: 19 },
+  dividerText: { fontSize: 13, lineHeight: 21 },
   savedTitle: { fontSize: 14, marginBottom: 8 },
   savedCard: { borderWidth: 1, overflow: 'hidden' },
-  savedHint: { fontSize: 12, lineHeight: 19, marginTop: 6 },
+  savedHint: { fontSize: 13, lineHeight: 21, marginTop: 6 },
   lastGoogle: { alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 1, maxWidth: '100%' },
   lastGoogleBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
-  googleLoadingText: { fontSize: 12, lineHeight: 19, textAlign: 'center', marginTop: -6 },
+  googleLoadingText: { fontSize: 13, lineHeight: 21, textAlign: 'center', marginTop: -6 },
   signInBtn: { marginTop: 12 },
 });

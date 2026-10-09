@@ -64,7 +64,7 @@ export function Button({ label, onPress, variant = 'primary', size = 'md', disab
       onHoverOut={() => setHovered(false)}
       disabled={disabled || loading}
       accessibilityRole="button"
-      accessibilityState={{ disabled: disabled || loading, busy: loading }}
+      aria-disabled={disabled || loading} aria-busy={loading}
       style={({ pressed }) => [
         styles.base,
         {
@@ -83,7 +83,7 @@ export function Button({ label, onPress, variant = 'primary', size = 'md', disab
       {loading ? (
         <ActivityIndicator size="small" color={textColor} />
       ) : (
-        <Text style={[styles.label, { color: textColor, fontSize, fontFamily: 'Cairo_600SemiBold' }]}>
+        <Text style={[styles.label, { color: textColor, fontSize, fontFamily: 'ReadexPro_600SemiBold' }]}>
           {label}
         </Text>
       )}

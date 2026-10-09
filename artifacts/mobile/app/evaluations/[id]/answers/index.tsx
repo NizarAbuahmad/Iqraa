@@ -34,11 +34,11 @@ const STATUS_KEY: Record<AttemptStatus, TranslationKey> = {
 };
 const STATUS_COLOR: Record<AttemptStatus, string> = {
   not_started: '#6B7280',
-  in_progress: '#B54708',
-  submitted: '#1D4ED8',
-  grading: '#1D4ED8',
-  graded: '#067647',
-  needs_review: '#D92D20',
+  in_progress: palette.warning,
+  submitted: palette.info,
+  grading: palette.info,
+  graded: palette.success,
+  needs_review: palette.destructive,
   abandoned: '#6B7280',
 };
 
@@ -109,13 +109,15 @@ export default function PickStudentScreen() {
       <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
         <View style={styles.heroNav}>
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('back')}
             onPress={() => (classId ? setClassId(null) : goBack())}
             hitSlop={12}
           >
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
         </View>
-        <Text style={[styles.heroTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]}>
+        <Text style={[styles.heroTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
           {classId ? t('pickStudentTitle') : t('pickClassFirst')}
         </Text>
       </View>
@@ -139,7 +141,7 @@ export default function PickStudentScreen() {
               onPress={() => openClass(item.id)}
               style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
             >
-              <Text style={[{ flex: 1, color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 16, textAlign: align }]}>
+              <Text style={[{ flex: 1, color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 16, textAlign: align }]}>
                 {lang === 'ar' && item.nameAr ? item.nameAr : item.name}
               </Text>
               <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.mutedForeground} />
@@ -160,17 +162,17 @@ export default function PickStudentScreen() {
                 style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
               >
                 <View style={{ flex: 1 }}>
-                  <Text style={[{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15, textAlign: align }]}>
+                  <Text style={[{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: align }]}>
                     {item.displayName}
                   </Text>
                   {attempt?.result && (
-                    <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 2, textAlign: align }]}>
+                    <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 2, textAlign: align }]}>
                       {t('resultPercentLabel', attempt.result.percent)}
                     </Text>
                   )}
                 </View>
                 <View style={[styles.statusPill, { backgroundColor: STATUS_COLOR[status] + '20' }]}>
-                  <Text style={{ color: STATUS_COLOR[status], fontFamily: 'Cairo_600SemiBold', fontSize: 11 }}>
+                  <Text style={{ color: STATUS_COLOR[status], fontFamily: 'ReadexPro_600SemiBold', fontSize: 11 }}>
                     {t(STATUS_KEY[status])}
                   </Text>
                 </View>

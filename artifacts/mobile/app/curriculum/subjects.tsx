@@ -81,14 +81,14 @@ export default function SubjectsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.hero, { backgroundColor: colorFill, paddingTop: insets.top + 12 }]}>
-        <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <View style={[styles.heroContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Text style={[styles.heroGrade, { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('jordanCurriculum')} · {gradeName}
           </Text>
-          <Text style={[styles.heroTitle, { color: '#fff', fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.heroTitle, { color: '#fff', fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
             {subjectName}
           </Text>
           <Text style={[styles.heroSub, { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -105,7 +105,7 @@ export default function SubjectsScreen() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Ionicons name="calendar-outline" size={40} color={colors.mutedForeground} />
-            <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>
+            <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
               {t('noSemesters')}
             </Text>
             <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
@@ -160,12 +160,12 @@ export default function SubjectsScreen() {
               ]}
             >
               <View style={[styles.semesterBadge, { backgroundColor: colorFill }]}>
-                <Text style={[styles.semesterBadgeText, { fontFamily: 'Cairo_700Bold' }]}>
+                <Text style={[styles.semesterBadgeText, { fontFamily: 'ReadexPro_700Bold' }]}>
                   {semesterNum ?? '•'}
                 </Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.semesterTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+                <Text style={[styles.semesterTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
                   {cardTitle}
                 </Text>
                 <Text style={[styles.semesterMeta, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -210,9 +210,9 @@ const styles = StyleSheet.create({
   hero: { paddingHorizontal: 20, paddingBottom: 14 },
   backBtn: { width: 40, height: 40, justifyContent: 'center' },
   heroContent: { gap: 4 },
-  heroGrade: { fontSize: 13, lineHeight: 21 },
+  heroGrade: { fontSize: 15, lineHeight: 24 },
   heroTitle: { fontSize: 28 },
-  heroSub: { fontSize: 14, lineHeight: 22, marginTop: 6 },
+  heroSub: { fontSize: 15, lineHeight: 24, marginTop: 6 },
   semesterCard: { alignItems: 'center', padding: 18, borderWidth: 1, gap: 14 },
   semesterBadge: {
     width: 48,
@@ -224,16 +224,16 @@ const styles = StyleSheet.create({
   },
   semesterBadgeText: { fontSize: 20, color: '#fff' },
   semesterTitle: { fontSize: 17, marginBottom: 4 },
-  semesterMeta: { fontSize: 13, lineHeight: 21 },
+  semesterMeta: { fontSize: 15, lineHeight: 24 },
   downloadRow: { gap: 8, flexWrap: 'wrap' },
   downloadChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 12, paddingVertical: 7,
     borderWidth: 1, borderRadius: 20,
   },
-  downloadChipText: { fontSize: 12, lineHeight: 19 },
+  downloadChipText: { fontSize: 13, lineHeight: 21 },
   downloadNote: { fontSize: 11, lineHeight: 18, paddingHorizontal: 2 },
   empty: { alignItems: 'center', paddingTop: 60, gap: 10 },
   emptyTitle: { fontSize: 18 },
-  emptyText: { fontSize: 14, lineHeight: 22 },
+  emptyText: { fontSize: 15, lineHeight: 24 },
 });

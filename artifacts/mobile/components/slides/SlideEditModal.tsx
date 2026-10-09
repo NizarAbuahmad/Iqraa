@@ -8,6 +8,7 @@
  */
 import React from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
 import { Ionicons } from '@expo/vector-icons';
 import type { SlideEditor } from '@/hooks/useSlideEditor';
 import type { TranslationKey } from '@/services/i18n';
@@ -25,7 +26,7 @@ export function SlideEditModal({ editor, onSuggestVideo, loadingSuggestion = fal
   const { editing } = editor;
   const align = isRTL ? 'right' : 'left';
   const label = (key: TranslationKey) => (
-    <Text style={[styles.modalLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+    <Text style={[styles.modalLabel, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
       {t(key)}
     </Text>
   );
@@ -36,9 +37,10 @@ export function SlideEditModal({ editor, onSuggestVideo, loadingSuggestion = fal
 
   return (
     <Modal visible={editor.editIdx !== null} transparent animationType="fade" onRequestClose={editor.close}>
+      <KeyboardSafeView>
       <View style={styles.modalOverlay}>
         <View style={[styles.modalCard, { backgroundColor: colors.card, borderRadius: colors.radius }]}>
-          <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: align }]}>
+          <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
             {t('editSlide')}
           </Text>
 
@@ -99,7 +101,7 @@ export function SlideEditModal({ editor, onSuggestVideo, loadingSuggestion = fal
                     {loadingSuggestion
                       ? <ActivityIndicator size="small" color={ACCENT} />
                       : <Ionicons name="shuffle-outline" size={16} color={ACCENT} />}
-                    <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+                    <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
                       {t('suggestAnotherVideo')}
                     </Text>
                   </Pressable>
@@ -129,17 +131,18 @@ export function SlideEditModal({ editor, onSuggestVideo, loadingSuggestion = fal
               onPress={editor.close}
               style={[styles.secondaryBtn, { borderColor: colors.border, borderRadius: colors.radius }]}
             >
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>{t('cancel')}</Text>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{t('cancel')}</Text>
             </Pressable>
             <Pressable
               onPress={editor.applyEdit}
               style={[styles.secondaryBtn, { borderColor: ACCENT, backgroundColor: ACCENT_FILL, borderRadius: colors.radius }]}
             >
-              <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>{t('save')}</Text>
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{t('save')}</Text>
             </Pressable>
           </View>
         </View>
       </View>
+      </KeyboardSafeView>
     </Modal>
   );
 }

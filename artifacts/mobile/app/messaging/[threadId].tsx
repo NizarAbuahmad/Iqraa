@@ -18,7 +18,7 @@
  */
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable,
+  ActivityIndicator, FlatList, Modal, Pressable,
   StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { Image } from 'expo-image';
@@ -28,7 +28,9 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { REPORT_REASON_KEYS } from '@/services/reportReasons';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
+import { askForPushPermission, pushAskCopy } from '@/services/pushTokens';
 import {
   addGroupMembers,
   blockUser,
@@ -48,7 +50,7 @@ import {
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { MessageBubble } from '@/components/ui/MessageBubble';
 import { Avatar } from '@/components/ui/Avatar';
-import { chatRoleLabel } from '@/services/chatRoleLabel';
+import { chatThreadSubtitle } from '@/services/chatThreadSubtitle';
 import { ParticipantPickerSheet } from '@/components/ui/ParticipantPickerSheet';
 import { mergeNewMessages } from '@/services/messageMerge';
 import { pickUnreportedReads } from '@/services/readReceipts';
@@ -56,8 +58,8 @@ import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { saveRemoteImage } from '@/services/share';
 import { goBack } from '@/services/navigation';
+import { confirm } from '@/services/confirm';
 
-const REPORT_REASON_KEYS = ['reportReasonInappropriate', 'reportReasonBullying', 'reportReasonSpam', 'reportReasonOther'] as const;
 
 export default function ThreadScreen() {
   const { threadId } = useLocalSearchParams<{ threadId: string }>();
@@ -65,7 +67,7 @@ export default function ThreadScreen() {
   const insets = useSafeAreaInsets();
   const { t, lang, isRTL } = useLanguage();
   const { user } = useAuth();
-  // Same gate as the roster's own key icon on classes/[id].tsx — see
+  // Same gate as the roster's own key icon on classes/[id]/index.tsx — see
   // services/features.ts. Both doors lead to the same v1-refused route.
   const studentAccounts = useStudentAccountsEnabled();
 
@@ -205,6 +207,10 @@ export default function ThreadScreen() {
       // and a bare prepend would show it twice.
       setMessages(prev => mergeNewMessages(prev, [message]));
       setError('');
+      // Having just written to someone is when a reply notification plainly
+      // helps — the one moment besides joining a class that offers push
+      // unasked. Quiet after the first time (services/pushPolicy.ts).
+      void askForPushPermission({ explicit: false, copy: pushAskCopy(t) });
     } catch (e) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setInput(body);
@@ -243,6 +249,13 @@ export default function ThreadScreen() {
 
   const handleRemoveMember = async (userId: string) => {
     if (!threadId || memberActionUserId) return;
+    const ok = await confirm({
+      title: t('messagingRemoveMemberConfirmTitle'),
+      confirmLabel: t('messagingRemoveMember'),
+      cancelLabel: t('cancel'),
+      destructive: true,
+    });
+    if (!ok) return;
     setMemberActionUserId(userId);
     try {
       await removeGroupMember(threadId, userId);
@@ -256,6 +269,14 @@ export default function ThreadScreen() {
 
   const handleLeaveGroup = async () => {
     if (!threadId || !user || leaving) return;
+    const ok = await confirm({
+      title: t('messagingLeaveConfirmTitle'),
+      message: t('messagingLeaveConfirmDesc'),
+      confirmLabel: t('messagingLeaveGroup'),
+      cancelLabel: t('cancel'),
+      destructive: true,
+    });
+    if (!ok) return;
     setLeaving(true);
     try {
       await removeGroupMember(threadId, user.id);
@@ -269,6 +290,17 @@ export default function ThreadScreen() {
   const toggleBlock = async () => {
     if (!thread?.otherParticipant || blocking) return;
     setMenuOpen(false);
+    // Blocking cuts a conversation off, so it asks; unblocking only restores it.
+    if (!thread.isBlocked) {
+      const ok = await confirm({
+        title: t('messagingBlockConfirmTitle'),
+        message: t('messagingBlockConfirmDesc'),
+        confirmLabel: t('messagingBlock'),
+        cancelLabel: t('cancel'),
+        destructive: true,
+      });
+      if (!ok) return;
+    }
     setBlocking(true);
     try {
       if (thread.isBlocked) await unblockUser(thread.otherParticipant.userId);
@@ -307,13 +339,14 @@ export default function ThreadScreen() {
   const headerTitle = isGroup ? (lang === 'ar' ? thread?.titleAr : thread?.title) || thread?.title : '';
   const isTeacher = isTeacherRole(user?.role);
   // The server enforces this too (see routes/messaging.ts) — hiding the
-  // composer is the courtesy, not the rule.
-  const canPost = !thread || !isGroup || isTeacher || thread.studentPostingEnabled;
+  // composer is the courtesy, not the rule. Nothing is shown until the thread
+  // has loaded: assuming "can post" meanwhile flashed a composer in every
+  // announcement-only class group before swapping it for the notice.
+  const canPost = !!thread && (!isGroup || isTeacher || thread.studentPostingEnabled);
 
   return (
-    <KeyboardAvoidingView
+    <View
       style={{ flex: 1, backgroundColor: colors.background }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View
         style={[
@@ -321,7 +354,7 @@ export default function ThreadScreen() {
           { paddingTop: topPad, backgroundColor: colors.card, borderBottomColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' },
         ]}
       >
-        <Pressable onPress={() => goBack()} hitSlop={10}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
         {isGroup ? (
@@ -330,7 +363,7 @@ export default function ThreadScreen() {
               <Ionicons name="people" size={18} color={colors.primary} />
             </View>
             <Text
-              style={[styles.headerName, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}
+              style={[styles.headerName, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}
               numberOfLines={1}
             >
               {headerTitle}
@@ -346,7 +379,7 @@ export default function ThreadScreen() {
                 name inside uses the non-flex variant. */}
             <View style={{ flex: 1 }}>
               <Text
-                style={[styles.headerNameStacked, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}
+                style={[styles.headerNameStacked, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}
                 numberOfLines={1}
               >
                 {thread.otherParticipant.firstName} {thread.otherParticipant.lastName}
@@ -355,7 +388,7 @@ export default function ThreadScreen() {
                 style={[styles.headerRole, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}
                 numberOfLines={1}
               >
-                {chatRoleLabel(thread.otherParticipant.role, t)}
+                {chatThreadSubtitle(thread.otherParticipant, t, lang)}
               </Text>
             </View>
           </>
@@ -374,12 +407,12 @@ export default function ThreadScreen() {
           hand-edited (see routes/messaging.ts's syncClassGroupThread).
         */}
         {isOwnerOfGroup ? (
-          <Pressable onPress={() => setAddMembersOpen(true)} hitSlop={10}>
+          <Pressable onPress={() => setAddMembersOpen(true)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('messagingPickMembers')}>
             <Ionicons name="person-add-outline" size={20} color={colors.foreground} />
           </Pressable>
         ) : null}
         {(!isGroup && thread?.otherParticipant) || thread?.type === 'custom_group' || (isGroup && thread?.isOwner) ? (
-          <Pressable onPress={() => setMenuOpen(true)} hitSlop={10}>
+          <Pressable onPress={() => setMenuOpen(true)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('moreOptions')}>
             <Ionicons name="ellipsis-vertical" size={20} color={colors.foreground} />
           </Pressable>
         ) : null}
@@ -449,7 +482,7 @@ export default function ThreadScreen() {
         </Text>
       ) : null}
 
-      {!canPost ? (
+      {!thread ? null : !canPost ? (
         <View style={[styles.inputBar, { backgroundColor: colors.card, borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 8) }]}>
           <View style={[styles.readOnlyNotice, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Ionicons name="megaphone-outline" size={16} color={colors.mutedForeground} />
@@ -463,13 +496,13 @@ export default function ThreadScreen() {
         {attachment ? (
           <View style={[styles.attachmentPreview, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Image source={{ uri: attachment }} style={styles.attachmentThumb} resizeMode="cover" />
-            <Pressable onPress={() => setAttachment(null)} hitSlop={10}>
+            <Pressable onPress={() => setAttachment(null)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('removeAttachment')}>
               <Ionicons name="close-circle" size={20} color={colors.mutedForeground} />
             </Pressable>
           </View>
         ) : null}
         <View style={[styles.inputWrap, { backgroundColor: colors.muted, borderRadius: 24 }, isRTL && { flexDirection: 'row-reverse' }]}>
-          <Pressable onPress={handlePickImage} hitSlop={10} style={{ paddingBottom: 6 }}>
+          <Pressable onPress={handlePickImage} hitSlop={10} style={{ paddingBottom: 6 }} accessibilityRole="button" accessibilityLabel={t('attachImage')}>
             <Ionicons name="image-outline" size={22} color={colors.mutedForeground} />
           </Pressable>
           <TextInput
@@ -484,13 +517,19 @@ export default function ThreadScreen() {
           <Pressable
             onPress={handleSend}
             disabled={(!input.trim() && !attachment) || sending}
+            accessibilityRole="button"
+            accessibilityLabel={t('iqraSend')}
             style={[styles.sendBtn, { backgroundColor: input.trim() || attachment ? colors.primary : colors.muted, borderRadius: 20 }]}
           >
+            {sending ? (
+              <ActivityIndicator size="small" color={colors.mutedForeground} />
+            ) : (
             <Ionicons
               name={isRTL ? 'arrow-back' : 'arrow-forward'}
               size={18}
               color={input.trim() || attachment ? colors.primaryForeground : colors.mutedForeground}
             />
+            )}
           </Pressable>
         </View>
       </View>
@@ -510,7 +549,7 @@ export default function ThreadScreen() {
                       size={18}
                       color={thread.studentPostingEnabled ? colors.primary : colors.mutedForeground}
                     />
-                    <Text style={[styles.menuText, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+                    <Text style={[styles.menuText, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
                       {t('messagingAllowStudentPosting')}
                     </Text>
                   </Pressable>
@@ -535,7 +574,7 @@ export default function ThreadScreen() {
                     style={styles.menuRow}
                   >
                     <Ionicons name="key-outline" size={18} color={colors.foreground} />
-                    <Text style={[styles.menuText, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+                    <Text style={[styles.menuText, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
                       {t('messagingStudentCodes')}
                     </Text>
                   </Pressable>
@@ -543,14 +582,14 @@ export default function ThreadScreen() {
                 {isOwnerOfGroup ? (
                   <Pressable onPress={() => { setMenuOpen(false); setManageOpen(true); }} style={styles.menuRow}>
                     <Ionicons name="people-outline" size={18} color={colors.foreground} />
-                    <Text style={[styles.menuText, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+                    <Text style={[styles.menuText, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
                       {t('messagingManageMembers')}
                     </Text>
                   </Pressable>
                 ) : thread?.type === 'custom_group' ? (
                   <Pressable onPress={() => { setMenuOpen(false); void handleLeaveGroup(); }} disabled={leaving} style={styles.menuRow}>
                     <Ionicons name="exit-outline" size={18} color={colors.destructive} />
-                    <Text style={[styles.menuText, { color: colors.destructive, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+                    <Text style={[styles.menuText, { color: colors.destructive, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
                       {t('messagingLeaveGroup')}
                     </Text>
                   </Pressable>
@@ -559,7 +598,7 @@ export default function ThreadScreen() {
             ) : (
               <Pressable onPress={toggleBlock} disabled={blocking} style={styles.menuRow}>
                 <Ionicons name={thread?.isBlocked ? 'checkmark-circle-outline' : 'ban-outline'} size={18} color={colors.destructive} />
-                <Text style={[styles.menuText, { color: colors.destructive, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+                <Text style={[styles.menuText, { color: colors.destructive, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
                   {thread?.isBlocked ? t('messagingUnblock') : t('messagingBlock')}
                 </Text>
               </Pressable>
@@ -573,10 +612,10 @@ export default function ThreadScreen() {
         <Pressable style={styles.newChatBackdrop} onPress={() => setManageOpen(false)}>
           <Pressable style={[styles.newChatSheet, { backgroundColor: colors.background }]} onPress={e => e.stopPropagation()}>
             <View style={[styles.newChatHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align, flex: 1 }]}>
+              <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align, flex: 1 }]}>
                 {t('messagingManageMembers')}
               </Text>
-              <Pressable onPress={() => setManageOpen(false)} hitSlop={10}>
+              <Pressable onPress={() => setManageOpen(false)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('close')}>
                 <Ionicons name="close" size={22} color={colors.mutedForeground} />
               </Pressable>
             </View>
@@ -588,11 +627,17 @@ export default function ThreadScreen() {
               renderItem={({ item }) => (
                 <View style={[styles.memberManageRow, { borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                   <Avatar firstName={item.firstName} lastName={item.lastName} size={30} colors={colors} />
-                  <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }} numberOfLines={1}>
+                  <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }} numberOfLines={1}>
                     {item.firstName} {item.lastName}
                   </Text>
                   {item.userId !== thread?.createdBy ? (
-                    <Pressable onPress={() => handleRemoveMember(item.userId)} disabled={memberActionUserId === item.userId} hitSlop={10}>
+                    <Pressable
+                      onPress={() => handleRemoveMember(item.userId)}
+                      disabled={memberActionUserId === item.userId}
+                      hitSlop={10}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${t('messagingRemoveMember')} ${item.firstName} ${item.lastName}`}
+                    >
                       <Ionicons name="close-circle" size={20} color={colors.destructive} />
                     </Pressable>
                   ) : null}
@@ -604,7 +649,7 @@ export default function ThreadScreen() {
               style={[styles.addMembersRow, { borderColor: colors.primary, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
               <Ionicons name="person-add-outline" size={18} color={colors.primary} />
-              <Text style={{ color: colors.primary, fontFamily: 'Cairo_500Medium' }}>{t('messagingPickMembers')}</Text>
+              <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_500Medium' }}>{t('messagingPickMembers')}</Text>
             </Pressable>
           </Pressable>
         </Pressable>
@@ -631,7 +676,7 @@ export default function ThreadScreen() {
       <Modal visible={!!reportTarget} transparent animationType="fade" onRequestClose={() => setReportTarget(null)}>
         <Pressable style={styles.modalBackdrop} onPress={() => setReportTarget(null)}>
           <View style={[styles.menuCard, { backgroundColor: colors.card }]}>
-            <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
+            <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
               {t('messagingReportTitle')}
             </Text>
             {REPORT_REASON_KEYS.map(key => (
@@ -649,10 +694,10 @@ export default function ThreadScreen() {
       <Modal visible={!!viewerUrl} transparent animationType="fade" onRequestClose={() => setViewerUrl(null)}>
         <View style={styles.viewerBackdrop}>
           <View style={[styles.viewerBar, { paddingTop: insets.top + 8 }]}>
-            <Pressable onPress={() => setViewerUrl(null)} hitSlop={12} style={styles.viewerBtn}>
+            <Pressable onPress={() => setViewerUrl(null)} hitSlop={12} style={styles.viewerBtn} accessibilityRole="button" accessibilityLabel={t('close')}>
               <Ionicons name="close" size={26} color="#fff" />
             </Pressable>
-            <Pressable onPress={saveViewedImage} disabled={savingImage} hitSlop={12} style={styles.viewerBtn}>
+            <Pressable onPress={saveViewedImage} disabled={savingImage} hitSlop={12} style={styles.viewerBtn} accessibilityRole="button" accessibilityLabel={t('saveImage')}>
               {savingImage ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
@@ -665,7 +710,7 @@ export default function ThreadScreen() {
           ) : null}
         </View>
       </Modal>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -677,14 +722,14 @@ const styles = StyleSheet.create({
   // below it) rather than being the row's only flexible child, unlike
   // headerName above which is shared with the group-thread branch.
   headerNameStacked: { fontSize: 16 },
-  headerRole: { fontSize: 12 },
+  headerRole: { fontSize: 13 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 80, gap: 12 },
-  emptyText: { fontSize: 14, lineHeight: 22 },
-  errorText: { fontSize: 12, lineHeight: 19, paddingHorizontal: 16, paddingBottom: 4 },
+  emptyText: { fontSize: 15, lineHeight: 24 },
+  errorText: { fontSize: 13, lineHeight: 21, paddingHorizontal: 16, paddingBottom: 4 },
   inputBar: { borderTopWidth: 1, paddingHorizontal: 12, paddingTop: 10 },
   inputWrap: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 14, paddingVertical: 8, gap: 8 },
-  input: { flex: 1, fontSize: 14, maxHeight: 100, paddingVertical: 0 },
+  input: { flex: 1, fontSize: 15, maxHeight: 100, paddingVertical: 0 },
   sendBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 24 },
   menuCard: { width: '100%', maxWidth: 340, borderRadius: 16, padding: 10, gap: 2 },
@@ -692,7 +737,7 @@ const styles = StyleSheet.create({
   menuRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 10 },
   menuText: { fontSize: 14, flex: 1 },
   readOnlyNotice: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 10, paddingHorizontal: 12 },
-  readOnlyText: { fontSize: 12.5, lineHeight: 20, flexShrink: 1 },
+  readOnlyText: { fontSize: 15, lineHeight: 23, flexShrink: 1 },
   attachmentPreview: { alignItems: 'center', gap: 8, paddingHorizontal: 4, paddingBottom: 8 },
   viewerBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)' },
   viewerBar: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 8 },

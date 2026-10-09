@@ -86,7 +86,10 @@ router.post("/teaching-plans", async (req: AuthenticatedRequest, res) => {
       classGroupId = await resolveClassGroupId(req.body?.classGroupId, req.user!.id);
       entries = parsePlanEntries(req.body?.entries);
     } catch (msg) {
-      res.status(400).json({ error: String(msg) });
+      // Only the plain-string refusals are the caller's fault; a driver error
+      // (malformed uuid, outage) goes to the 500 path, not back as raw SQL.
+      if (typeof msg !== "string") throw msg;
+      res.status(400).json({ error: msg });
       return;
     }
 
@@ -97,6 +100,7 @@ router.post("/teaching-plans", async (req: AuthenticatedRequest, res) => {
         title,
         schoolName: trimmed(req.body?.schoolName),
         classGroupId: classGroupId ?? null,
+        subjectId: trimmed(req.body?.subjectId),
         entries: entries ?? [],
         grades: trimmed(req.body?.grades),
         topics: trimmed(req.body?.topics),
@@ -116,7 +120,7 @@ router.patch("/teaching-plans/:id", async (req: AuthenticatedRequest, res) => {
   try {
     const planId = req.params["id"] as string;
     const patch: Record<string, unknown> = { updatedAt: new Date() };
-    for (const field of ["title", "schoolName", "grades", "topics", "date", "time", "notes"] as const) {
+    for (const field of ["title", "schoolName", "subjectId", "grades", "topics", "date", "time", "notes"] as const) {
       if (req.body?.[field] !== undefined) patch[field] = trimmed(req.body[field]);
     }
     if (patch["title"] === "") {
@@ -130,7 +134,10 @@ router.patch("/teaching-plans/:id", async (req: AuthenticatedRequest, res) => {
       const entries = parsePlanEntries(req.body?.entries);
       if (entries !== undefined) patch["entries"] = entries;
     } catch (msg) {
-      res.status(400).json({ error: String(msg) });
+      // Only the plain-string refusals are the caller's fault; a driver error
+      // (malformed uuid, outage) goes to the 500 path, not back as raw SQL.
+      if (typeof msg !== "string") throw msg;
+      res.status(400).json({ error: msg });
       return;
     }
 

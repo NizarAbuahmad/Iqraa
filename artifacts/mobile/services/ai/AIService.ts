@@ -167,9 +167,39 @@ export interface LessonPlanOutput {
   servedReason?: 'quota' | 'budget';
 }
 
+/**
+ * A problem solved in full at the top of a worksheet, for the class to study.
+ *
+ * Not a question and not numbered: nobody answers it. It counts toward the
+ * total the teacher picked (see `generateWorksheet`), and a worksheet may have
+ * none — a lesson with no solved item, or a model that left it out.
+ */
+export interface WorksheetWorkedExample {
+  problem: string;
+  /** One line of working per step, in order; the last states the result. */
+  steps: string[];
+  answer: string;
+  /** Asks the student to say in a sentence why the first step was valid. */
+  selfExplain?: string;
+}
+
+/**
+ * A virtual lab: the simulation the student opens on its own site. Absent on
+ * every generated worksheet.
+ */
+export interface WorksheetLab {
+  url: string;
+  simName: string;
+  attribution: string;
+  /** What to do in the simulation, one step each, in order. */
+  steps: string[];
+}
+
 export interface WorksheetOutput {
   title: string;
   instructions: string;
+  /** Solved in full before the questions; absent when there is nothing honest to show. */
+  workedExample?: WorksheetWorkedExample;
   sections: WorksheetSection[];
   answerKey: WorksheetAnswerKeyItem[];
   sources?: GroundedSource[];
@@ -178,6 +208,11 @@ export interface WorksheetOutput {
    *  `servedReason` in api-server's routes/generate.ts. The screen must say so
    *  rather than present a repeat as newly generated. */
   servedReason?: 'quota' | 'budget';
+  /** Present when the lesson's question bank ran out before the requested
+   *  count, so the paper is shorter than asked for. The screen says so — a
+   *  short paper with no explanation reads as a bug. */
+  shortfall?: { requested: number; produced: number };
+  lab?: WorksheetLab;
 }
 
 export interface WorksheetSection {
@@ -206,11 +241,20 @@ export interface WorksheetQuestion {
   options?: string[];
   answer?: string;
   points: number;
+  /**
+   * Drawn from the offline question bank, which a person wrote and checked.
+   * Set only where an item is taken from it; live-AI and template questions
+   * leave it absent, and the screens read absent as "nobody reviewed this
+   * answer" — never as «من بنك الأسئلة المُراجَع».
+   */
+  fromBank?: true;
 }
 
 export interface WorksheetAnswerKeyItem {
   num: number;
   answer: string;
+  /** The working behind `answer`, one line per step — teacher's copy only. */
+  solution?: string[];
 }
 
 export interface QuizOutput {
@@ -224,6 +268,9 @@ export interface QuizOutput {
    *  `servedReason` in api-server's routes/generate.ts. The screen must say so
    *  rather than present a repeat as newly generated. */
   servedReason?: 'quota' | 'budget';
+  /** Present when the lesson's question bank ran out before the requested
+   *  count — see `WorksheetOutput.shortfall`. */
+  shortfall?: { requested: number; produced: number };
 }
 
 export interface QuizQuestion {
@@ -234,6 +281,8 @@ export interface QuizQuestion {
   correctAnswer: string;
   points: number;
   explanation: string;
+  /** See `WorksheetQuestion.fromBank`. */
+  fromBank?: true;
 }
 
 export interface ActivityStep {
@@ -467,6 +516,8 @@ export interface ClassGameConfig {
   teamCount: number;
   /** Scoreable questions in the deck — the ledger's upper bound. */
   questionCount: number;
+  /** The deck's language, which team names follow — an English game in an Arabic UI. */
+  isAr?: boolean;
 }
 
 export interface ClassroomActivityRequest {

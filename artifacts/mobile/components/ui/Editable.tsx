@@ -221,7 +221,7 @@ export function EditableList({
             style={{
               color: colors.mutedForeground,
               fontFamily: 'Almarai_400Regular',
-              fontSize: 12.5, lineHeight: 20,
+              fontSize: 15, lineHeight: 23,
             }}
           >
             {addLabel}
@@ -245,10 +245,10 @@ function EditAffordance({ colors, edited }: { colors: Colors; edited?: boolean }
 const styles = StyleSheet.create({
   readRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
   editingRow: { alignItems: 'flex-end', gap: 6 },
-  body: { flex: 1, fontSize: 13.5, lineHeight: 22 },
+  body: { flex: 1, fontSize: 14, lineHeight: 22 },
   input: {
-    fontSize: 13.5,
-    lineHeight: 22,
+    fontSize: 15,
+    lineHeight: 24,
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 10,

@@ -10,6 +10,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import type { QuizCopy } from '@/services/quizExport';
+import { palette } from '@/constants/colors';
 
 interface ExportOption {
   id: string;
@@ -34,6 +36,12 @@ interface ExportMenuProps {
   onSlides?: () => void;
   /** The Ministry lesson-plan form — only the lesson-plan page offers it. */
   onMinistry?: () => void;
+  /** One line under the title — e.g. which copy (student/teacher) the
+   *  exports below will produce. */
+  note?: string;
+  /** Student or teacher copy, picked here — for a screen with no answers
+   *  toggle of its own to decide it (موادي, the chat). */
+  copyChoice?: { value: QuizCopy; onChange: (copy: QuizCopy) => void };
   isRTL: boolean;
   loadingPDF?: boolean;
   loadingWord?: boolean;
@@ -66,6 +74,8 @@ export function ExportMenu({
   onWord,
   onSlides,
   onMinistry,
+  note,
+  copyChoice,
   isRTL,
   loadingPDF,
   loadingWord,
@@ -81,7 +91,7 @@ export function ExportMenu({
       icon: 'share-outline',
       label: labels.shareLabel,
       sublabel: labels.shareSub,
-      color: '#1D4ED8',
+      color: palette.info,
       onPress: onShare,
     },
     {
@@ -97,7 +107,7 @@ export function ExportMenu({
       icon: 'document-outline',
       label: labels.pdfLabel,
       sublabel: labels.pdfSub,
-      color: '#D92D20',
+      color: palette.destructive,
       loading: loadingPDF,
       onPress: onPDF,
     },
@@ -142,9 +152,39 @@ export function ExportMenu({
           <View style={[styles.handle, { backgroundColor: colors.border }]} />
 
           {/* Title */}
-          <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
             {labels.title}
           </Text>
+          {copyChoice ? (
+            <View style={[styles.copyRow, { flexDirection: isRTL ? 'row-reverse' : 'row', backgroundColor: colors.muted }]}>
+              {(['student', 'teacher'] as const).map(copy => {
+                const on = copyChoice.value === copy;
+                return (
+                  <Pressable
+                    key={copy}
+                    accessibilityRole="button"
+                    aria-selected={on}
+                    onPress={() => copyChoice.onChange(copy)}
+                    style={[styles.copyOption, on && { backgroundColor: colors.card, borderColor: colors.border }]}
+                  >
+                    <Text style={[styles.copyLabel, { color: on ? colors.foreground : colors.mutedForeground, fontFamily: on ? 'ReadexPro_600SemiBold' : 'ReadexPro_500Medium' }]}>
+                      {t(copy === 'student' ? 'exportStudentCopy' : 'exportTeacherCopy')}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : null}
+          {copyChoice ? (
+            <Text style={[styles.note, { marginTop: 0, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+              {t(copyChoice.value === 'student' ? 'exportStudentCopySub' : 'exportTeacherCopySub')}
+            </Text>
+          ) : null}
+          {note ? (
+            <Text style={[styles.note, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+              {note}
+            </Text>
+          ) : null}
 
           {/* Options */}
           {options.map(opt => (
@@ -160,7 +200,7 @@ export function ExportMenu({
                 <Ionicons name={opt.icon} size={22} color={opt.color} />
               </View>
               <View style={{ flex: 1, gap: 2 }}>
-                <Text style={[styles.rowLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+                <Text style={[styles.rowLabel, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
                   {opt.label}
                 </Text>
                 <Text style={[styles.rowSub, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -179,7 +219,7 @@ export function ExportMenu({
             onPress={onClose}
             style={[styles.cancelBtn, { backgroundColor: colors.muted, borderRadius: 12 }]}
           >
-            <Text style={[styles.cancelText, { color: colors.foreground, fontFamily: 'Cairo_500Medium' }]}>
+            <Text style={[styles.cancelText, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium' }]}>
               {labels.cancel}
             </Text>
           </Pressable>
@@ -208,6 +248,10 @@ const styles = StyleSheet.create({
     alignSelf: 'center', marginBottom: 16,
   },
   title: { fontSize: 16, marginBottom: 12 },
+  note: { fontSize: 13, lineHeight: 21, marginTop: -8, marginBottom: 8 },
+  copyRow: { borderRadius: 10, padding: 3, gap: 3, marginBottom: 8 },
+  copyOption: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: 'transparent' },
+  copyLabel: { fontSize: 14 },
   row: {
     alignItems: 'center', gap: 14,
     paddingVertical: 14, borderBottomWidth: 1,
@@ -217,7 +261,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
   rowLabel: { fontSize: 15 },
-  rowSub: { fontSize: 12, lineHeight: 19 },
+  rowSub: { fontSize: 13, lineHeight: 21 },
   cancelBtn: { marginTop: 12, padding: 14, alignItems: 'center' },
   cancelText: { fontSize: 15 },
 });

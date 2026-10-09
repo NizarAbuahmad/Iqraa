@@ -16,7 +16,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { prepSummary, savedAgo, type PrepRow } from '@/services/lessonBoard';
+import { missingPrepView, prepSummary, savedAgo, type PrepRow } from '@/services/lessonBoard';
 
 type Colors = {
   card: string;
@@ -52,6 +52,7 @@ export function LessonPrepBoard({
   onOpenAll,
   allCopiesLabel,
   compact,
+  fold,
 }: {
   rows: PrepRow[];
   colors: Colors;
@@ -101,6 +102,23 @@ export function LessonPrepBoard({
   allCopiesLabel?: string;
   /** Phone: tighter rows. */
   compact?: boolean;
+  /**
+   * The chat on a phone: the board folds to its head line, and unfolded lists
+   * only the rows still to make (`missingPrepView`). Made rows are reached
+   * through `onShowReady`; skipped ones stay as small restore chips. Without
+   * it the board shows all five rows, as the desktop home does.
+   */
+  fold?: {
+    open: boolean;
+    onToggle: () => void;
+    /** Accessibility hint of the head line, e.g. «اعرض ما ينقص». */
+    toggleLabel: string;
+    /** Shown unfolded when nothing is missing. */
+    allReadyLabel: string;
+    /** «المواد الجاهزة (2)» — empty to leave the link out. */
+    showReadyLabel: string;
+    onShowReady: () => void;
+  };
 }) {
   const rowDir = isRTL ? ('row-reverse' as const) : ('row' as const);
   const align = isRTL ? ('right' as const) : ('left' as const);
@@ -113,29 +131,71 @@ export function LessonPrepBoard({
     the target) and show a quiet link.
   */
   const nextType = disabled ? null : rows.find(r => !r.done && !r.skipped)?.type ?? null;
+  const view = fold ? missingPrepView(rows) : null;
+  const shownRows = view ? view.missing : rows;
+
+  const track = (
+    <View
+      style={[styles.track, { backgroundColor: colors.border }]}
+      accessibilityRole="progressbar"
+      accessibilityValue={{ min: 0, max: total, now: done }}
+    >
+      <View
+        style={[
+          styles.fill,
+          { width: `${pct * 100}%`, backgroundColor: colors.primary },
+          isRTL ? { right: 0 } : { left: 0 },
+        ]}
+      />
+    </View>
+  );
 
   return (
     <View style={{ gap: compact ? 6 : 8, width: '100%' }}>
-      <View style={[styles.head, { flexDirection: rowDir }]}>
-        <Text style={[styles.headTitle, { color: colors.foreground }]}>{title}</Text>
-        <Text style={[styles.headCount, { color: done ? colors.primary : colors.mutedForeground }]}>{readyLabel}</Text>
-      </View>
-      <View
-        style={[styles.track, { backgroundColor: colors.border }]}
-        accessibilityRole="progressbar"
-        accessibilityValue={{ min: 0, max: total, now: done }}
-      >
-        <View
-          style={[
-            styles.fill,
-            { width: `${pct * 100}%`, backgroundColor: colors.primary },
-            isRTL ? { right: 0 } : { left: 0 },
+      {fold ? (
+        /*
+          Folded, this one line is the whole board: title, count, chevron and
+          the bar under them, one tap target that unfolds the missing rows.
+        */
+        <Pressable
+          onPress={fold.onToggle}
+          accessibilityRole="button"
+          aria-expanded={fold.open}
+          accessibilityLabel={`${title} — ${readyLabel}`}
+          accessibilityHint={fold.toggleLabel}
+          style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+            styles.foldHead,
+            { borderColor: colors.border, backgroundColor: pressed || hovered ? colors.secondary : colors.card },
           ]}
-        />
-      </View>
+        >
+          <View style={[styles.head, styles.foldHeadRow, { flexDirection: rowDir }]}>
+            <Text style={[styles.headTitle, { color: colors.foreground }]}>{title}</Text>
+            <View style={[styles.foldCount, { flexDirection: rowDir }]}>
+              <Text style={[styles.headCount, { color: done ? colors.primary : colors.mutedForeground }]}>{readyLabel}</Text>
+              <Ionicons name={fold.open ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
+            </View>
+          </View>
+          {track}
+        </Pressable>
+      ) : (
+        <>
+          <View style={[styles.head, { flexDirection: rowDir }]}>
+            <Text style={[styles.headTitle, { color: colors.foreground }]}>{title}</Text>
+            <Text style={[styles.headCount, { color: done ? colors.primary : colors.mutedForeground }]}>{readyLabel}</Text>
+          </View>
+          {track}
+        </>
+      )}
 
+      {fold && !fold.open ? null : (
       <View style={{ gap: compact ? 6 : 8, marginTop: 6 }}>
-        {rows.map(row => {
+        {view && !view.missing.length ? (
+          <View style={[styles.allReady, { flexDirection: rowDir, backgroundColor: colors.secondary }]}>
+            <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
+            <Text style={[styles.ctaText, { flex: 1, color: colors.primary, textAlign: align }]}>{fold?.allReadyLabel}</Text>
+          </View>
+        ) : null}
+        {shownRows.map(row => {
           const label = isAr ? row.labelAr : row.labelEn;
           // «جاهزة · أمس · العاشر أ» — when the newest copy was saved and the
           // class it is filed under. The count moves to its own button when
@@ -273,15 +333,50 @@ export function LessonPrepBoard({
             </View>
           );
         })}
+        {view && view.skipped.length && onToggleSkip ? (
+          <View style={[styles.chips, { flexDirection: rowDir }]}>
+            {view.skipped.map(row => {
+              const label = isAr ? row.labelAr : row.labelEn;
+              return (
+                <Pressable
+                  key={row.type}
+                  onPress={() => onToggleSkip(row)}
+                  disabled={disabled}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${label} — ${skippedLabel ?? ''} — ${restoreLabel ?? ''}`}
+                  style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+                    styles.chip,
+                    { flexDirection: rowDir, borderColor: colors.border, backgroundColor: pressed || hovered ? colors.secondary : 'transparent' },
+                  ]}
+                >
+                  <Ionicons name="refresh" size={12} color={colors.mutedForeground} />
+                  <Text style={[styles.skipText, { color: colors.mutedForeground }]}>{label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : null}
+        {view && view.readyCount && fold?.showReadyLabel ? (
+          <Pressable
+            onPress={fold.onShowReady}
+            accessibilityRole="link"
+            style={[styles.cta, styles.readyLink, { flexDirection: rowDir, alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
+          >
+            <Ionicons name="folder-open-outline" size={14} color={colors.primary} />
+            <Text style={[styles.ctaText, { color: colors.primary }]}>{fold.showReadyLabel}</Text>
+            <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={14} color={colors.primary} />
+          </Pressable>
+        ) : null}
       </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   head: { alignItems: 'baseline', justifyContent: 'space-between' },
-  headTitle: { fontSize: 15, fontFamily: 'Cairo_600SemiBold' },
-  headCount: { fontSize: 13, fontFamily: 'Cairo_600SemiBold' },
+  headTitle: { fontSize: 15, fontFamily: 'ReadexPro_600SemiBold' },
+  headCount: { fontSize: 13, fontFamily: 'ReadexPro_600SemiBold' },
   track: { height: 6, borderRadius: 3, overflow: 'hidden' },
   fill: { position: 'absolute', top: 0, bottom: 0, borderRadius: 3 },
   frame: { alignItems: 'center', borderWidth: 1, borderRadius: 14, overflow: 'hidden' },
@@ -305,16 +400,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  label: { fontSize: 14, fontFamily: 'Cairo_600SemiBold' },
-  labelCompact: { fontSize: 13.5 },
-  status: { fontSize: 12.5, lineHeight: 19, fontFamily: 'Almarai_400Regular' },
+  label: { fontSize: 14, fontFamily: 'ReadexPro_600SemiBold' },
+  labelCompact: { fontSize: 14 },
+  status: { fontSize: 15, lineHeight: 22, fontFamily: 'Almarai_400Regular' },
   cta: { alignItems: 'center', gap: 3 },
   ctaMake: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
   skip: { width: 36, height: 36, borderRadius: 18, marginHorizontal: 6, alignItems: 'center', justifyContent: 'center' },
   skipWide: { width: 'auto', height: 30, borderRadius: 15, paddingHorizontal: 9, gap: 4 },
-  skipText: { fontSize: 12, fontFamily: 'Cairo_600SemiBold' },
+  skipText: { fontSize: 12, fontFamily: 'ReadexPro_600SemiBold' },
   dim: { opacity: 0.5 },
   copies: { width: undefined, paddingHorizontal: 9, gap: 3 },
-  copiesText: { fontSize: 12.5, fontFamily: 'Cairo_600SemiBold' },
-  ctaText: { fontSize: 13, fontFamily: 'Cairo_600SemiBold' },
+  copiesText: { fontSize: 13, fontFamily: 'ReadexPro_600SemiBold' },
+  ctaText: { fontSize: 13, fontFamily: 'ReadexPro_600SemiBold' },
+  foldHead: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 12, gap: 8 },
+  foldHeadRow: { alignItems: 'center' },
+  foldCount: { alignItems: 'center', gap: 4 },
+  allReady: { alignItems: 'center', gap: 8, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
+  chips: { flexWrap: 'wrap', gap: 6 },
+  chip: { alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
+  readyLink: { paddingVertical: 4 },
 });

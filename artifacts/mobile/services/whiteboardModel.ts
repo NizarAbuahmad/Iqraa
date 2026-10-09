@@ -6,7 +6,13 @@
  * screen and `PenCanvas` render and gather touches, this decides.
  */
 
-/** One stroke. `points` is `"x,y x,y …"` (an SVG polyline), in view pixels. */
+/**
+ * One stroke. `points` is `"x,y x,y …"` (an SVG polyline) in whatever units the
+ * canvas stores — on screen they are fractions of the canvas width
+ * (`services/penInk.ts`); `width` is always in pixels. The geometry below is
+ * unit-agnostic: callers pass the touch, the eraser radius and `unit` (one pixel
+ * expressed in point units) in the same units as the points.
+ */
 export type Stroke = { color: string; points: string; /** Absent means DEFAULT_STROKE_WIDTH. */ width?: number };
 
 /** The slide pen's fixed width — what a stroke without `width` is drawn at. */
@@ -14,7 +20,7 @@ export const DEFAULT_STROKE_WIDTH = 4;
 /** Thin, medium, thick — offered on the board. */
 export const STROKE_WIDTHS = [3, 6, 12] as const;
 export const BOARD_DEFAULT_WIDTH = 6;
-/** Eraser reach in view pixels, on top of half the stroke's own width. */
+/** Eraser reach in pixels, on top of half the stroke's own width. */
 export const ERASER_RADIUS = 16;
 export const HISTORY_LIMIT = 50;
 
@@ -68,11 +74,16 @@ function parsedOf(stroke: Stroke): Parsed {
   return cached;
 }
 
-/** Does an eraser of `radius` centred on (x, y) touch this stroke? */
-export function strokeHit(stroke: Stroke, x: number, y: number, radius: number): boolean {
+/**
+ * Does an eraser of `radius` centred on (x, y) touch this stroke? `x`, `y`,
+ * `radius` and the stroke's points share one unit; `unit` is one PIXEL in that
+ * unit (default 1: points are pixels), which is what turns the stroke's pixel
+ * `width` into the right amount of reach.
+ */
+export function strokeHit(stroke: Stroke, x: number, y: number, radius: number, unit = 1): boolean {
   const { pts, minX, maxX, minY, maxY } = parsedOf(stroke);
   if (pts.length === 0) return false;
-  const reach = radius + (stroke.width ?? DEFAULT_STROKE_WIDTH) / 2;
+  const reach = radius + ((stroke.width ?? DEFAULT_STROKE_WIDTH) / 2) * unit;
   // Cheap reject: a point farther than `reach` outside the bounding box cannot
   // be within `reach` of any segment inside it.
   if (x < minX - reach || x > maxX + reach || y < minY - reach || y > maxY + reach) return false;
@@ -89,8 +100,8 @@ export function strokeHit(stroke: Stroke, x: number, y: number, radius: number):
  * Remove every stroke the eraser touches. Returns the SAME array when nothing
  * was hit, so a caller can tell "no change" by identity and skip a history step.
  */
-export function eraseAt(strokes: Stroke[], x: number, y: number, radius: number = ERASER_RADIUS): Stroke[] {
-  const kept = strokes.filter(s => !strokeHit(s, x, y, radius));
+export function eraseAt(strokes: Stroke[], x: number, y: number, radius: number = ERASER_RADIUS, unit = 1): Stroke[] {
+  const kept = strokes.filter(s => !strokeHit(s, x, y, radius, unit));
   return kept.length === strokes.length ? strokes : kept;
 }
 
@@ -98,9 +109,10 @@ export function eraseAt(strokes: Stroke[], x: number, y: number, radius: number 
  * Erase along the straight path from (x0, y0) to (x1, y1). A fast drag reports
  * positions farther apart than the eraser's reach, so testing only the end
  * points would skip any stroke lying between them; this samples the path at
- * most every half-radius, which keeps the swept area continuous. The start
- * point is NOT tested — the previous call already covered it. Returns the SAME
- * array when nothing was hit, like `eraseAt`.
+ * most every half-radius (never finer than one pixel), which keeps the swept
+ * area continuous. The start point is NOT tested — the previous call already
+ * covered it. `unit` is one pixel in the points' unit, as for `strokeHit`.
+ * Returns the SAME array when nothing was hit, like `eraseAt`.
  */
 export function eraseAlong(
   strokes: Stroke[],
@@ -109,12 +121,13 @@ export function eraseAlong(
   x1: number,
   y1: number,
   radius: number = ERASER_RADIUS,
+  unit = 1,
 ): Stroke[] {
-  const steps = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / Math.max(radius / 2, 1)));
+  const steps = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / Math.max(radius / 2, unit)));
   let current = strokes;
   for (let i = 1; i <= steps; i++) {
     const t = i / steps;
-    current = eraseAt(current, x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, radius);
+    current = eraseAt(current, x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, radius, unit);
   }
   return current;
 }

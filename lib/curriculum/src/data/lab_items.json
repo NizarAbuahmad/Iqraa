@@ -1,0 +1,185 @@
+{
+  "note": "Curated Science Lab items. Schema and rules: ../lab.ts. First-party items (origin 'original') carry no licence; 'external' items point at an entry in external_resources.json, where the licence lives. A law card's Arabic terms are copied verbatim from the lesson's own vocabulary and a test enforces it — do not write curriculum Arabic from memory.",
+  "items": [
+    {
+      "id": "lab-periodic-table",
+      "kind": "interactive",
+      "origin": "original",
+      "interactiveId": "periodic-table",
+      "gradeId": "grade-10",
+      "subjectId": "chemistry",
+      "lessonId": "kbl-chem-s1-nccd-u2_l2",
+      "titleAr": "جدول العناصر التفاعلي",
+      "titleEn": "Interactive Periodic Table"
+    },
+    {
+      "id": "lab-mole-calculator",
+      "kind": "interactive",
+      "origin": "original",
+      "interactiveId": "mole-calculator",
+      "gradeId": "grade-10",
+      "subjectId": "chemistry",
+      "lessonId": "kbl-chem-s2-nccd-u4_l2",
+      "titleAr": "حاسبة المول والكتلة المولية",
+      "titleEn": "Mole and Molar Mass Calculator"
+    },
+    {
+      "id": "lab-vector-addition",
+      "kind": "interactive",
+      "origin": "original",
+      "interactiveId": "vector-addition",
+      "gradeId": "grade-10",
+      "subjectId": "physics",
+      "lessonId": "kbl-phys-s1-nccd-u1_l2",
+      "titleAr": "جمع المتجهات تفاعليًا",
+      "titleEn": "Interactive Vector Addition"
+    },
+    {
+      "id": "law-newton-second",
+      "kind": "law",
+      "origin": "original",
+      "gradeId": "grade-10",
+      "subjectId": "physics",
+      "lessonId": "kbl-phys-s1-nccd-u2_l3",
+      "titleAr": "القانون الثاني لنيوتن",
+      "titleEn": "Newton's Second Law",
+      "formula": "F = m × a",
+      "quantities": [
+        { "symbol": "F", "nameEn": "Net force", "unit": "N" },
+        { "symbol": "m", "nameEn": "Mass", "unit": "kg" },
+        { "symbol": "a", "nameEn": "Acceleration", "unit": "m/s²" }
+      ],
+      "termsAr": ["القانون الثاني لنيوتن"]
+    },
+    {
+      "id": "law-vector-resultant",
+      "kind": "law",
+      "origin": "original",
+      "gradeId": "grade-10",
+      "subjectId": "physics",
+      "lessonId": "kbl-phys-s1-nccd-u1_l2",
+      "titleAr": "متجه المحصلة",
+      "titleEn": "Resultant Vector",
+      "formula": "Rx = Ax + Bx ,  Ry = Ay + By ,  R = √(Rx² + Ry²)",
+      "quantities": [
+        { "symbol": "R", "nameEn": "Resultant magnitude", "unit": "same as A and B" },
+        { "symbol": "Rx, Ry", "nameEn": "Components of the resultant", "unit": "same as A and B" }
+      ],
+      "termsAr": ["متجه المحصلة", "تحليل المتجهات إلى مركباتها"]
+    },
+    {
+      "id": "law-molar-mass",
+      "kind": "law",
+      "origin": "original",
+      "gradeId": "grade-10",
+      "subjectId": "chemistry",
+      "lessonId": "kbl-chem-s2-nccd-u4_l2",
+      "titleAr": "الكتلة المولية",
+      "titleEn": "Molar Mass",
+      "formula": "n = m ÷ Mr",
+      "quantities": [
+        { "symbol": "n", "nameEn": "Amount of substance", "unit": "mol" },
+        { "symbol": "m", "nameEn": "Mass", "unit": "g" },
+        { "symbol": "Mr", "nameEn": "Molar mass", "unit": "g/mol" }
+      ],
+      "termsAr": ["المول", "الكتلة المولية"]
+    },
+    {
+      "id": "law-avogadro",
+      "kind": "law",
+      "origin": "original",
+      "gradeId": "grade-10",
+      "subjectId": "chemistry",
+      "lessonId": "kbl-chem-s2-nccd-u4_l2",
+      "titleAr": "عدد أفوجادرو",
+      "titleEn": "Avogadro's Number",
+      "formula": "N = n × Nₐ",
+      "quantities": [
+        { "symbol": "N", "nameEn": "Number of particles", "unit": "particles" },
+        { "symbol": "n", "nameEn": "Amount of substance", "unit": "mol" },
+        { "symbol": "Nₐ", "nameEn": "Avogadro's number", "unit": "particles/mol" }
+      ],
+      "termsAr": ["المول", "عدد أفوجادرو"]
+    },
+    {
+      "id": "lab-ext-commons-hydrogen-emission-spectrum",
+      "kind": "external",
+      "externalId": "commons-hydrogen-emission-spectrum",
+      "gradeId": "grade-10",
+      "subjectId": "chemistry",
+      "lessonId": "kbl-chem-s1-nccd-u1_lab",
+      "titleAr": "طيف انبعاث الهيدروجين مع الأطوال الموجية",
+      "titleEn": "Hydrogen emission spectrum, with wavelengths labelled"
+    },
+    {
+      "id": "lab-ext-commons-periodic-table",
+      "kind": "external",
+      "externalId": "commons-periodic-table",
+      "gradeId": "grade-10",
+      "subjectId": "chemistry",
+      "lessonId": "kbl-chem-s1-nccd-u2_l2",
+      "titleAr": "الجدول الدوري للعناصر",
+      "titleEn": "Periodic table of the elements"
+    },
+    {
+      "id": "lab-ext-commons-force-parallelogram",
+      "kind": "external",
+      "externalId": "commons-force-parallelogram",
+      "gradeId": "grade-10",
+      "subjectId": "physics",
+      "lessonId": "kbl-phys-s1-nccd-u1_lab",
+      "titleAr": "متوازي أضلاع القوى — محصّلة قوّتين",
+      "titleEn": "Parallelogram of forces — the resultant of two forces"
+    },
+    {
+      "id": "lab-ext-commons-net-force",
+      "kind": "external",
+      "externalId": "commons-net-force",
+      "gradeId": "grade-10",
+      "subjectId": "physics",
+      "lessonId": "kbl-phys-s1-nccd-u2_l3",
+      "titleAr": "القوة المحصّلة المؤثرة في جسم",
+      "titleEn": "Net force on a body"
+    },
+    {
+      "id": "lab-ext-commons-projectile-motion",
+      "kind": "external",
+      "externalId": "commons-projectile-motion",
+      "gradeId": "grade-10",
+      "subjectId": "physics",
+      "lessonId": "kbl-phys-s1-nccd-u2_l2",
+      "titleAr": "حركة المقذوف — مسار جسم مقذوف",
+      "titleEn": "Projectile motion — the path of a thrown object"
+    },
+    {
+      "id": "lab-ext-yt-nasa-newtons-second-law",
+      "kind": "external",
+      "externalId": "yt-nasa-newtons-second-law",
+      "gradeId": "grade-10",
+      "subjectId": "physics",
+      "lessonId": "kbl-phys-s1-nccd-u2_l3",
+      "titleAr": "ناسا: قانون نيوتن الثاني للحركة",
+      "titleEn": "STEMonstrations: Newton's 2nd Law of Motion"
+    },
+    {
+      "id": "lab-ext-yt-nasa-newtons-laws-iss",
+      "kind": "external",
+      "externalId": "yt-nasa-newtons-laws-iss",
+      "gradeId": "grade-10",
+      "subjectId": "physics",
+      "lessonId": "kbl-phys-s1-nccd-u2_l1",
+      "titleAr": "قوانين نيوتن على متن محطة الفضاء الدولية",
+      "titleEn": "Launchpad: Newton's Laws on board the International Space Station"
+    },
+    {
+      "id": "lab-ext-yt-harvard-flame-tests",
+      "kind": "external",
+      "externalId": "yt-harvard-flame-tests",
+      "gradeId": "grade-10",
+      "subjectId": "chemistry",
+      "lessonId": "kbl-chem-s1-nccd-u1_lab",
+      "titleAr": "اختبار اللهب للفلزّات",
+      "titleEn": "Flame Tests of Metals"
+    }
+  ]
+}

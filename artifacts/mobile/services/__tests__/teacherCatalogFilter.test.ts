@@ -7,7 +7,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { hiddenOutsideSelection, hiddenSubjectsForGrade, narrowSubjectsForGrade, narrowToSelection, resolveSelectedId } from '../teacherCatalogFilter.ts';
+import { hiddenOutsideSelection, hiddenSubjectsForGrade, narrowSubjectsForGrade, narrowToSelection, resolveSelectedId, preferredGrade } from '../teacherCatalogFilter.ts';
 
 const CATALOG = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
 
@@ -79,5 +79,21 @@ describe('hidden masks (index-aligned pickers)', () => {
     const assignments = [{ gradeId: 'g7', subjectIds: ['a'] }, { gradeId: 'g8', subjectIds: ['c'] }];
     assert.deepEqual(hiddenSubjectsForGrade(CATALOG, 'g8', assignments, ['a', 'c']), [true, true, false]);
     assert.deepEqual(hiddenSubjectsForGrade(CATALOG, 'g9', assignments, ['a', 'c']), [false, true, false]);
+  });
+});
+describe('preferredGrade', () => {
+  const grades = [{ id: 'grade-10' }, { id: 'grade-9' }, { id: 'grade-8' }];
+
+  it("opens on the student's own grade, not the catalog's first", () => {
+    assert.equal(preferredGrade(grades, ['grade-9'])?.id, 'grade-9');
+  });
+
+  it('takes the first of their grades the catalog shows', () => {
+    assert.equal(preferredGrade(grades, ['grade-3', 'grade-8', 'grade-9'])?.id, 'grade-8');
+  });
+
+  it('leaves the default alone when none of theirs is shown', () => {
+    assert.equal(preferredGrade(grades, []), undefined);
+    assert.equal(preferredGrade(grades, ['grade-3']), undefined);
   });
 });

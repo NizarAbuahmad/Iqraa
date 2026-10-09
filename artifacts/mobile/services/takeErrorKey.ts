@@ -16,13 +16,15 @@ const BY_CODE: Record<string, string> = {
   time_up: 'takeTimeUp',
   exam_closed: 'takeExamClosed',
   not_submitted: 'takeSubmitFailed',
+  too_many_takes: 'readAloudNoTakesLeft',
 };
 
 export function takeErrorKey<K extends string>(
   err: unknown,
   fallback: K,
 ): K | 'takeLinkFailed' | 'takeNameTakenError' | 'takeExamNotReady' | 'takeAlreadySubmitted'
-  | 'takeSessionExpired' | 'takeTimeUp' | 'takeExamClosed' | 'takeSubmitFailed' | 'takeTooManyRequests' {
+  | 'takeSessionExpired' | 'takeTimeUp' | 'takeExamClosed' | 'takeSubmitFailed' | 'takeTooManyRequests'
+  | 'readAloudNoTakesLeft' {
   if (!err || typeof err !== 'object') return fallback;
   const { code, status } = err as { code?: unknown; status?: unknown };
   if (typeof code === 'string' && code in BY_CODE) return BY_CODE[code] as never;

@@ -82,3 +82,21 @@ describe('summariseKeyChecks', () => {
     assert.deepEqual(summariseKeyChecks([noKey()], undefined), { kind: 'silent' });
   });
 });
+
+describe('a checkable answer that was not the question\'s key', () => {
+  const unlinked = () => question({ verified: false, source: 'unchecked', code: 'key_unlinked' });
+
+  it('says so, with how many, instead of "nothing was checkable"', () => {
+    assert.deepEqual(summariseKeyChecks([unlinked(), unlinked(), noKey()], MATHS), { kind: 'unlinked', unlinked: 2 });
+  });
+
+  it('a verified question still wins, and an outage still wins over unlinked', () => {
+    assert.equal(summariseKeyChecks([verified(), unlinked()], MATHS).kind, 'verified');
+    assert.equal(summariseKeyChecks([down(), unlinked()], MATHS).kind, 'verifier-down');
+  });
+
+  it('an edited question carries no claim', () => {
+    const edited = question({ verified: false, source: 'unchecked', code: 'edited' });
+    assert.notEqual(summariseKeyChecks([edited], MATHS).kind, 'verified');
+  });
+});

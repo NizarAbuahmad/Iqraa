@@ -173,6 +173,69 @@ export function deckShortfalls(parsed: unknown): string[] {
 }
 
 /**
+ * The most lines a worked solution or worked example may run to.
+ *
+ * Eight is two more than the longest the offline bank carries. Past that the
+ * model is rambling or has put a whole lesson in one field, and a pooled
+ * artifact would show it to every teacher who asks for that lesson.
+ */
+const MAX_WORKING_LINES = 8;
+/** One line is an answer, not working. */
+const MIN_EXAMPLE_STEPS = 2;
+
+const isLine = (v: unknown): v is string => typeof v === "string" && v.trim() !== "";
+const isLines = (v: unknown, min: number): v is string[] =>
+  Array.isArray(v) && v.length >= min && v.length <= MAX_WORKING_LINES && v.every(isLine);
+
+/**
+ * Drop the optional teaching extras on a worksheet that are not well formed.
+ *
+ * `workedExample` and each answer-key row's `solution` are asked for by the
+ * worksheet prompt but are deliberately NOT in `REQUIRED_FIELDS`: a paper
+ * without them is still a usable paper, and refusing a paid generation over a
+ * missing extra would spend the teacher's allowance for nothing. Letting a
+ * malformed one through is worse, though — this artifact is stored in the
+ * shared pool and projected to a class, and a worked example is the one thing
+ * on the page students are told to study. So a bad extra is removed and the
+ * rest of the paper kept, rather than failing either way.
+ *
+ * Whitelists the fields it keeps, so a model that invents a sibling field does
+ * not get it stored.
+ */
+export function sanitizeWorksheetExtras<T>(kind: GenerationKind, parsed: T): T {
+  if (kind !== "worksheet" && kind !== "homework") return parsed;
+  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) return parsed;
+  const out: Record<string, unknown> = { ...(parsed as Record<string, unknown>) };
+
+  if ("workedExample" in out) {
+    const ex = out.workedExample as Record<string, unknown> | null;
+    const ok =
+      ex !== null && typeof ex === "object" && !Array.isArray(ex) &&
+      isLine(ex.problem) && isLine(ex.answer) && isLines(ex.steps, MIN_EXAMPLE_STEPS);
+    if (ok) {
+      out.workedExample = {
+        problem: ex.problem,
+        steps: ex.steps,
+        answer: ex.answer,
+        ...(isLine(ex.selfExplain) ? { selfExplain: ex.selfExplain } : {}),
+      };
+    } else {
+      delete out.workedExample;
+    }
+  }
+
+  if (Array.isArray(out.answerKey)) {
+    out.answerKey = out.answerKey.map(row => {
+      if (row === null || typeof row !== "object" || Array.isArray(row) || !("solution" in row)) return row;
+      if (isLines((row as Record<string, unknown>).solution, 1)) return row;
+      const { solution: _dropped, ...rest } = row as Record<string, unknown>;
+      return rest;
+    });
+  }
+  return out as T;
+}
+
+/**
  * Pull JSON out of a model response.
  *
  * Models wrap JSON in markdown fences, prepend "Here is the JSON:", or trail a
@@ -206,11 +269,33 @@ export function extractJSON(raw: string): unknown {
  * production 2026-09-30, one lesson plan of 32). Strict parse first, so a valid
  * reply is never touched; only on failure are the illegal escapes doubled.
  *
- * ponytail: \b \f \t \n \r are legal JSON escapes, so a LaTeX «\frac» or
- * «\theta» parses without error as a form feed / tab. That is a different
- * failure, silent, and not repaired here.
+ * The other half of the same mistake is silent: \b \f \t \n \r are legal JSON
+ * escapes, so a LaTeX «\frac» or «\theta» parses without error as a form feed
+ * or a tab and the lesson prints «rac{1}{2}». `restoreLatexEscapes` turns those
+ * back into a literal backslash, but only when the letters after the escape
+ * spell a LaTeX command — an ordinary «\n» followed by a word is left alone.
+ * The prompts also tell the model not to write LaTeX; this is the backstop.
  */
+const LATEX_AFTER: Record<string, RegExp> = {
+  f: /^(?:rac|orall)(?![a-z])/,
+  t: /^(?:heta|imes|ext|frac|ilde|riangle)(?![a-z])/,
+  n: /^(?:eq|abla)(?![a-z])/,
+  r: /^(?:ight|angle)(?![a-z])/,
+  b: /^(?:eta|inom|egin|oldsymbol)(?![a-z])/,
+};
+
+/** Exported for the test: a JSON text in, the same text with LaTeX escapes made literal. */
+export function restoreLatexEscapes(text: string): string {
+  // Pairs are consumed whole, so «\\frac» (an escaped backslash) is never touched.
+  return text.replace(/\\(["\\/]|u[0-9a-fA-F]{4}|[bfnrt]|[\s\S])/g, (m, esc: string, offset: number) => {
+    const after = LATEX_AFTER[esc];
+    if (after && after.test(text.slice(offset + 2, offset + 12))) return "\\\\" + esc;
+    return m;
+  });
+}
+
 function parseRepairing(text: string): unknown {
+  text = restoreLatexEscapes(text);
   try {
     return JSON.parse(text);
   } catch (err) {

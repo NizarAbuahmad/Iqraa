@@ -24,7 +24,7 @@
  */
 import { db } from "@workspace/db";
 import { students, classGroups, classMemberships, rosterLinks } from "@workspace/db";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, ne } from "drizzle-orm";
 import { normalizeShareCode } from "../modules/assessment/studentView.ts";
 import { decideClaim, type ClaimResolution, type ClaimRole } from "./claimDecision.ts";
 
@@ -33,7 +33,9 @@ export type { ClaimResolution, ClaimRole };
 export async function resolveClaimCode(
   rawCode: string,
   role: ClaimRole,
-  requestedStudentId?: string,
+  requestedStudentId: string | undefined,
+  /** Who is claiming, so their own existing guardian link is not mistaken for someone else's. */
+  userId: string,
 ): Promise<ClaimResolution> {
   // Both codes are minted by generateShareCode, so both are normalizable the
   // same way. Without this a parent typing what they were given — `yhfm8y`, or
@@ -87,7 +89,22 @@ export async function resolveClaimCode(
       const [row] = await db
         .select({ id: rosterLinks.id })
         .from(rosterLinks)
-        .where(and(eq(rosterLinks.studentId, studentId), eq(rosterLinks.relation, "self")))
+        .where(and(eq(rosterLinks.studentId, studentId), eq(rosterLinks.relation, "self"), ne(rosterLinks.userId, userId)))
+        .limit(1);
+      return !!row;
+    },
+
+    hasGuardianLink: async studentId => {
+      const [row] = await db
+        .select({ id: rosterLinks.id })
+        .from(rosterLinks)
+        .where(
+          and(
+            eq(rosterLinks.studentId, studentId),
+            eq(rosterLinks.relation, "guardian"),
+            ne(rosterLinks.userId, userId),
+          ),
+        )
         .limit(1);
       return !!row;
     },

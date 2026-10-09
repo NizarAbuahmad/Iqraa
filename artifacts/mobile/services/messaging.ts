@@ -41,6 +41,15 @@ export interface ChatParticipantInfo {
   firstName: string;
   lastName: string;
   role: ChatRole;
+  /**
+   * Catalog subject ids the other person teaches, and the roster students that
+   * connect the two accounts. Both optional: the API is deployed by hand while
+   * the web app deploys on merge (docs/deploying.md), so the client will meet a
+   * server that predates them. Absent reads as "unknown" — `chatThreadSubtitle`
+   * then falls back to the plain role label.
+   */
+  subjectIds?: string[];
+  aboutStudents?: string[];
 }
 
 export interface ChatMessage {
@@ -306,6 +315,12 @@ export async function sendMessage(
  * Fire-and-forget at the call site: a failed receipt must never show as an
  * error in a thread someone is reading.
  */
+/** Clears every unread badge (the bell's «علّم الكل مقروءًا»). No per-message receipts — see the server route. */
+export async function markAllThreadsRead(): Promise<void> {
+  const res = await apiFetch('/messaging/threads/read-all', { method: 'POST' });
+  await readJson<{ threads: number }>(res, 'Marking all read');
+}
+
 export async function markMessagesRead(threadId: string, messageIds: string[]): Promise<void> {
   if (messageIds.length === 0) return;
   const res = await apiFetch(`/messaging/threads/${threadId}/read`, {

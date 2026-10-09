@@ -123,13 +123,13 @@ export default function OnboardingScreen() {
             accessibilityLabel={lang === 'ar' ? 'التبديل إلى الإنجليزية' : 'Switch to Arabic'}
           >
             <Ionicons name="language-outline" size={16} color={colors.mutedForeground} />
-            <Text style={[styles.langBtnText, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium' }]}>
+            <Text style={[styles.langBtnText, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>
               {lang === 'ar' ? 'English' : 'عربي'}
             </Text>
           </Pressable>
           {!isLast && (
             <Pressable onPress={handleSkip} hitSlop={12} accessibilityRole="button">
-              <Text style={[styles.skipText, { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>
+              <Text style={[styles.skipText, { color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }]}>
                 {t('onboardingSkip')}
               </Text>
             </Pressable>
@@ -142,7 +142,7 @@ export default function OnboardingScreen() {
             eye reads it, and the order a screen reader announces it. */}
         <Text
           accessibilityRole="header"
-          style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', writingDirection: dir }]}
+          style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', writingDirection: dir }]}
         >
           {t(slide.titleKey)}
         </Text>
@@ -167,7 +167,7 @@ export default function OnboardingScreen() {
                 <View style={[styles.pointIcon, { backgroundColor: tone + '1A' }]}>
                   <Ionicons name={slide.pointIcons[i] ?? 'checkmark'} size={18} color={tone} />
                 </View>
-                <Text style={[styles.pointText, { color: colors.cardForeground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left', writingDirection: dir }]}>
+                <Text style={[styles.pointText, { color: colors.cardForeground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left', writingDirection: dir }]}>
                   {p}
                 </Text>
                 <Ionicons name="checkmark-circle" size={18} color={colors.success} />
@@ -195,7 +195,7 @@ export default function OnboardingScreen() {
               onPress={() => { Haptics.selectionAsync(); setIndex(i); }}
               accessibilityRole="button"
               accessibilityLabel={t('onboardingSlideLabel', i + 1, SLIDES.length)}
-              accessibilityState={{ selected: i === index }}
+              aria-selected={i === index}
               aria-current={i === index ? 'step' : undefined}
               style={styles.dotTarget}
             >
@@ -222,6 +222,16 @@ export default function OnboardingScreen() {
             style={styles.nextBtn}
           />
         </View>
+        {/* Students and parents sign up too, and seven slides about preparing
+            lessons are not about them. This skips to the one that is. */}
+        {index === 0 && (
+          <Button
+            label={t('onboardingStudentParentLink')}
+            onPress={() => { Haptics.selectionAsync(); setIndex(SLIDES.length - 1); }}
+            variant="ghost"
+            size="md"
+          />
+        )}
       </View>
     </View>
   );
@@ -264,7 +274,9 @@ const styles = StyleSheet.create({
   pointIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   pointText: { flex: 1, fontSize: 14, lineHeight: 22 },
 
-  title: { fontSize: 26, lineHeight: 36, maxWidth: 380, textAlign: 'center' },
+  // 24, not 26: Readex Pro runs ~10% wider than Cairo did and 26 left «أولًا»
+  // alone on a second line at phone width.
+  title: { fontSize: 24, lineHeight: 36, maxWidth: 380, textAlign: 'center' },
   desc: { fontSize: 16, lineHeight: 26, maxWidth: 380, textAlign: 'center' },
 
   footer: { gap: 20, paddingTop: 12, alignSelf: 'center', width: '100%', maxWidth: 440 },

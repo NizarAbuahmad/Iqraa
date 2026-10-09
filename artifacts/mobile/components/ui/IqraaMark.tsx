@@ -2,14 +2,14 @@
  * Iqrra's identity mark — the assistant's face in chat.
  *
  * Separate from `BrandLogo` because they solve different problems. BrandLogo is
- * the full lockup (mark + اقرأ wordmark); at 22–26px the wordmark dissolves into
+ * the full lockup (mark + إقرأ wordmark); at 22–26px the wordmark dissolves into
  * a smudge, which is why message avatars read as empty circles. A mark that has
  * to work at 20px carries one shape, so this draws just the leaf mark of the
  * logo, as vector, crisp at any size. Use BrandLogo where there is room for the
  * lockup (headers, splash, login); use this where the mark is small or repeated.
  */
 import React, { useEffect, useId, useRef } from 'react';
-import { Animated, Easing, StyleSheet, type ViewStyle } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, StyleSheet, type ViewStyle } from 'react-native';
 import Svg, { Circle, Defs, Mask, Path, Rect } from 'react-native-svg';
 import { NATIVE_DRIVER } from '@/constants/animation';
 import { BRAND_TEAL, DOT, LEAF_PATH, MARK_RADIUS, STEM_PATH } from '@/constants/brandMark';
@@ -55,8 +55,13 @@ export function IqraaMark({ size = 34, tone = 'soft', thinking = false, style }:
         }),
       ]),
     );
-    loop.start();
-    return () => loop.stop();
+    // Under Reduce Motion the mark holds still; the thinking label beside it
+    // already says what is happening.
+    let cancelled = false;
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then(reduced => { if (!cancelled && !reduced) loop.start(); })
+      .catch(() => { if (!cancelled) loop.start(); });
+    return () => { cancelled = true; loop.stop(); };
   }, [thinking, pulse]);
 
   const ground =
@@ -69,7 +74,7 @@ export function IqraaMark({ size = 34, tone = 'soft', thinking = false, style }:
     <Animated.View
       style={[styles.ground, { width: size, height: size, transform: [{ scale }] }, style]}
       accessibilityRole="image"
-      accessibilityLabel="اقرأ"
+      accessibilityLabel="إقرأ"
     >
       <Svg width={size} height={size} viewBox="0 0 48 48">
         <Defs>

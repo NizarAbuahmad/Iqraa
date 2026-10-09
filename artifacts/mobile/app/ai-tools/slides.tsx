@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { contentLang, topicInLang } from '@/services/contentLanguage';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PickerField } from '@/components/ui/PickerField';
@@ -32,9 +33,11 @@ import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generat
 import { buildLessonDeck, EXIT_TICKET_MAX, MID_LESSON_CHECK_MAX } from '@/services/lessonSlides';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import {
-  extractGraphCommands, insertLessonResources, nextVideoSuggestion,
+  extractGraphCommands, insertLabSlides, insertLessonResources, nextVideoSuggestion,
   shouldSearchForVideo, videoCaption } from '@/services/classMedia';
 import type { AttachedResource } from '@/services/classMedia';
+import { labSlidesFor } from '@/services/labSlides';
+import { LessonLabItems } from '@/components/ui/LessonLabItems';
 import { LessonResources } from '@/components/ui/LessonResources';
 import { LessonAttachments } from '@/components/ui/LessonAttachments';
 import type { LessonMediaItem } from '@/services/lessonMedia';
@@ -44,7 +47,13 @@ import { summarizeVerification } from '@/services/quizVerification';
 import { confirm } from '@/services/confirm';
 import { pooledVariantId, regenerationFields } from '@/services/ai/regeneration';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
-import { captureGenerationScope, materialScope, type GenerationScope } from '@/services/generationScope';
+import {
+  captureGenerationScope, materialScope, reopenedGenerationScope, type GenerationScope,
+} from '@/services/generationScope';
+import { parseSavedDeck } from '@/services/savedDeck';
+import { readFlagParam } from '@/services/materialParams';
+import { getItem, updateItem } from '@/services/workspace';
+import { useEnglishRefresh } from '@/hooks/useEnglishRefresh';
 import { createVerificationTracker } from '@/services/verificationTracker';
 import { useDeckWorkspace, type DeckWorkspaceSnapshot } from '@/hooks/useDeckWorkspace';
 import { useSlideEditor } from '@/hooks/useSlideEditor';
@@ -68,8 +77,7 @@ type DeckOptions = { includeExamples: boolean; includePractice: boolean; include
 export default function SlidesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { t, isRTL, lang } = useLanguage();
-  const isAr = lang === 'ar';
+  const { t, isRTL, lang: uiLang } = useLanguage();
   const scrollRef = useRef<ScrollView>(null);
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
@@ -81,12 +89,15 @@ export default function SlidesScreen() {
   // all three and default to grade 10 / mathematics / no topic.
   const params = useLocalSearchParams<{
     gradeIdx?: string; subjectIdx?: string; topic?: string;
+    // Sent by موادي's «تعديل» with the saved form state spread beside it.
+    savedId?: string;
+    includeExamples?: string; includePractice?: string; includeAttachments?: string;
   }>();
   // An index the picker list cannot honour is NOT index 0 — see
   // `scopeFromParams`. Grounding the topic is what recovers the right scope.
   // Only the grades/subjects this teacher picked on /setup-subjects are offered.
   const teacherScope = useTeacherScope();
-  const [initialScope] = useState(() => scopeFromParams(params, lang as 'ar' | 'en', teacherScope.defaultScope));
+  const [initialScope] = useState(() => scopeFromParams(params, uiLang, teacherScope.defaultScope));
   const [gradeIdx, setGradeIdx] = useState(initialScope.gradeIdx);
   // Index-aligned flags rather than a pre-filtered `subjects`: these positions
   // are persisted as subjectIdx, so entries are dropped at render time only.
@@ -94,18 +105,25 @@ export default function SlidesScreen() {
   // Labels are per-grade too: Grade 6's creative-arts book has no music in
   // it, so it must not be offered under the combined name. Same index
   // alignment as the mask above.
-  const subjectNames = subjectPickerLabels(grades[gradeIdx].id, isAr ? 'ar' : 'en');
+  const subjectNames = subjectPickerLabels(grades[gradeIdx].id, uiLang);
   const [subjectIdx, setSubjectIdx] = useState(initialScope.subjectIdx);
-  const [topic, setTopic] = useState(params.topic ?? '');
+  // The picked subject's material language — English decks are built in English.
+  const lang = contentLang(subjects[subjectIdx].id, uiLang);
+  const isAr = lang === 'ar';
+  const [topic, setTopic] = useState(() => topicInLang(
+    params.topic ?? '', uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
+    { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
+  ));
   useWarmGrounding(topic, lang);
   // Live as the teacher types, not gated behind pressing Generate — same
   // timing as `LessonResources`' own `topic` prop just below it.
   const groundedLessonId = useMemo(
-    () => resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en').lesson?.id ?? '',
+    () => resolveGeneratorGrounding(topic.trim(), lang).lesson?.id ?? '',
     [topic, lang],
   );
-  const [includeExamples, setIncludeExamples] = useState(true);
-  const [includePractice, setIncludePractice] = useState(true);
+  // A reopened deck comes back with the toggles it was built with.
+  const [includeExamples, setIncludeExamples] = useState(() => readFlagParam(params.includeExamples, true));
+  const [includePractice, setIncludePractice] = useState(() => readFlagParam(params.includePractice, true));
   /**
    * Off by default, and deliberately: a teacher's attachments are their own
    * files pinned to the lesson, not deck content. Merging them in
@@ -113,7 +131,16 @@ export default function SlidesScreen() {
    * with the same photos and voice notes re-inserted as slides, which reads
    * as the generator inventing media it did not make. They go in when asked.
    */
-  const [includeAttachments, setIncludeAttachments] = useState(false);
+  const [includeAttachments, setIncludeAttachments] = useState(() => readFlagParam(params.includeAttachments, false));
+  /**
+   * Lab items picked for this deck. Nothing is picked by default, so nothing is
+   * inserted until a teacher asks. They are built and inserted client-side after
+   * generation — never in a request body — so they cannot reach the shared
+   * generation cache. Cleared when the lesson changes: an id from another
+   * lesson's lab must not ride into this deck.
+   */
+  const [labPicks, setLabPicks] = useState<string[]>([]);
+  useEffect(() => { setLabPicks([]); }, [groundedLessonId]);
   const [loading, setLoading] = useState(false);
   /**
    * Held across renders so Cancel can reach the in-flight requests — plural
@@ -214,46 +241,86 @@ export default function SlidesScreen() {
 
   /** The scope the deck on screen was built under; the live form before any. */
   const deckScope = () => materialScope(generated?.scope ?? null, { gradeIdx, subjectIdx, topic });
+  /** A deck keeps the language of the subject it was built for, not the live picker's. */
+  const deckIsAr = (s: GenerationScope = deckScope()) => contentLang(subjects[s.subjectIdx].id, uiLang) === 'ar';
+  const outAr = deckIsAr();
 
   /**
    * What this deck is, in the terms the workspace stores. One definition, used
    * both to save and to recognise a deck that is already saved — if the two
    * ever drift the button starts lying again.
    */
-  const deckIdentity = (built: ClassroomActivity) => {
-    const s = deckScope();
+  const deckIdentity = (built: ClassroomActivity, s: GenerationScope = deckScope()) => {
+    const sAr = deckIsAr(s);
     return {
       type: 'slides' as const,
       title: built.activityName,
-      subject: isAr ? subjects[s.subjectIdx].nameAr : subjects[s.subjectIdx].name,
-      grade: isAr ? grades[s.gradeIdx].nameAr : grades[s.gradeIdx].name,
+      subject: sAr ? subjects[s.subjectIdx].nameAr : subjects[s.subjectIdx].name,
+      grade: sAr ? grades[s.gradeIdx].nameAr : grades[s.gradeIdx].name,
       topic: s.topic,
-      language: (isAr ? 'ar' : 'en') as 'ar' | 'en',
+      language: (sAr ? 'ar' : 'en') as 'ar' | 'en',
     };
   };
 
+  const deckFormState = () => {
+    const s = deckScope();
+    return {
+      gradeIdx: s.gradeIdx, subjectIdx: s.subjectIdx, topic: s.topic,
+      ...(generated?.options ?? { includeExamples, includePractice, includeAttachments }),
+    };
+  };
   const workspace = useDeckWorkspace({
     deck,
     // Not for the book-only draft: it is replaced within seconds, and its
     // content can never match a stored deck.
     lookupEnabled: !preliminary,
     identity: deckIdentity,
-    formState: () => {
-      const s = deckScope();
-      return {
-        gradeIdx: s.gradeIdx, subjectIdx: s.subjectIdx, topic: s.topic,
-        ...(generated?.options ?? { includeExamples, includePractice, includeAttachments }),
-      };
-    },
+    formState: deckFormState,
     // Named for the lesson it was built from, not whatever the topic box holds now.
     exportName: () => deckScope().topic,
-    isAr,
+    isAr: outAr,
     t,
     showToast,
     logTag: 'slides',
   });
   const forgetSaved = workspace.forget;
-  const editor = useSlideEditor({ deck, setDeck, isAr, t, showToast, mediaEditing: true });
+  const editor = useSlideEditor({ deck, setDeck, isAr: outAr, t, showToast, mediaEditing: true });
+
+  /**
+   * A deck reopened from موادي. «تعديل» sends `savedId` with the form fields,
+   * and this screen used to read only the fields — the deck the teacher had
+   * built and edited was nowhere, and the next press of Generate would have
+   * made a different one. Load the stored deck, its scope and its workspace
+   * link; an item that is gone or unreadable leaves the prefilled form and
+   * says so.
+   */
+  useEffect(() => {
+    const id = params.savedId;
+    if (!id) return;
+    let cancelled = false;
+    void (async () => {
+      const item = await getItem(id).catch(() => null);
+      if (cancelled) return;
+      // A teacher who pressed Generate before the read came back keeps theirs.
+      if (runRef.current !== 0 || deckRef.current) return;
+      const loaded = item ? parseSavedDeck(item.content) : null;
+      if (!loaded) { showToast(t('savedDeckUnreadable')); return; }
+      // `topic`/`lang` here are the first render's: the saved topic restated
+      // in the saved subject's material language.
+      const regrounded = reopenedGenerationScope(initialScope, topic, lang);
+      // Without a saved topic there is nothing to re-ground: the live form.
+      const scope = materialScope(regrounded, {
+        gradeIdx: initialScope.gradeIdx, subjectIdx: initialScope.subjectIdx, topic,
+      });
+      setGenerated({ scope, options: { includeExamples, includePractice, includeAttachments } });
+      setGrounded(scope.grounded);
+      setGroundedLesson(scope.lesson ? (deckIsAr(scope) ? scope.lesson.titleAr : scope.lesson.titleEn) : '');
+      setPreliminary(false);
+      workspace.adopt(id, loaded, deckIdentity(loaded, scope));
+      setDeck(loaded);
+    })();
+    return () => { cancelled = true; };
+  }, [params.savedId]);
 
   /**
    * Put the next search candidate into the fields — it does not save.
@@ -276,10 +343,11 @@ export default function SlidesScreen() {
         const { searchDeckVideos } = await import('@/services/youtubeVideo');
         // The deck's own grade and subject, not whatever the pickers say now.
         const s = deckScope();
-        const query = isAr
+        const sAr = deckIsAr(s);
+        const query = sAr
           ? `شرح ${deck.lesson} ${subjects[s.subjectIdx].nameAr} لطلبة ${grades[s.gradeIdx].nameAr}`
           : `${deck.lesson} ${subjects[s.subjectIdx].name} ${grades[s.gradeIdx].name} explained`;
-        options = await searchDeckVideos(query, isAr ? 'ar' : 'en');
+        options = await searchDeckVideos(query, sAr ? 'ar' : 'en');
         setVideoOptions(options);
       } finally {
         setLoadingSuggestion(false);
@@ -363,10 +431,10 @@ export default function SlidesScreen() {
     // A topic that grounds to another subject's lesson cannot make an honest
     // deck — the book serves that lesson's own content while the header claims
     // the picked subject. Refuse and name the real subject instead.
-    const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
+    const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, uiLang);
     if (scope) { refuse(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
-    const conflict = groundedSubjectConflict(trimmed, lang as 'ar' | 'en', subjects[subjectIdx].id);
-    if (conflict) { refuse(t('subjectTopicMismatch', isAr ? conflict.nameAr : conflict.name)); return; }
+    const conflict = groundedSubjectConflict(trimmed, lang, subjects[subjectIdx].id);
+    if (conflict) { refuse(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     setValidationError(''); setError(''); setCancelled(false);
     const controller = new AbortController();
     abortRef.current = controller;
@@ -396,10 +464,10 @@ export default function SlidesScreen() {
     // The grade/subject reset may have superseded this run during the frame.
     if (!isCurrent()) return;
 
-    const grounding = resolveGeneratorGrounding(trimmed, lang as 'ar' | 'en');
-    const generatorContext = buildGeneratorContext(trimmed, lang as 'ar' | 'en');
-    const unitId = generatorUnitId(trimmed, lang as 'ar' | 'en');
-    const lessonId = generatorLessonId(trimmed, lang as 'ar' | 'en');
+    const grounding = resolveGeneratorGrounding(trimmed, lang);
+    const generatorContext = buildGeneratorContext(trimmed, lang);
+    const unitId = generatorUnitId(trimmed, lang);
+    const lessonId = generatorLessonId(trimmed, lang);
     setGrounded(grounding.grounded);
     setGroundedLesson(grounding.lesson ? (isAr ? grounding.lesson.titleAr : grounding.lesson.titleEn) : '');
 
@@ -426,7 +494,13 @@ export default function SlidesScreen() {
           ].join(' \n ')),
           figureUri: bookFigureUri,
         });
-        prelim = { ...base, slides: insertLessonResources(base.slides, attachedResources, isAr) };
+        prelim = {
+          ...base,
+          slides: insertLabSlides(
+            insertLessonResources(base.slides, attachedResources, isAr),
+            labSlidesFor(labPicks, isAr),
+          ),
+        };
         setDeck(prelim);
         setPreliminary(true);
         setVerifyDone(false);
@@ -505,7 +579,7 @@ export default function SlidesScreen() {
           additionalContext: generatorContext,
           unitId,
           lessonId,
-          bookFigureCount: generatorFigureCount(trimmed, lang as 'ar' | 'en'),
+          bookFigureCount: generatorFigureCount(trimmed, lang),
           contextSource: 'curriculum',
         }, { signal: controller.signal });
       } catch (e) {
@@ -584,7 +658,10 @@ export default function SlidesScreen() {
       // nothing to wait for and no reason to make the deck flicker.
       const built = {
         ...builtBase,
-        slides: insertLessonResources(builtBase.slides, attachedResources, isAr),
+        slides: insertLabSlides(
+          insertLessonResources(builtBase.slides, attachedResources, isAr),
+          labSlidesFor(labPicks, isAr),
+        ),
       };
       builtRef.current = built;
       deckRunRef.current.begin(built);
@@ -733,6 +810,22 @@ export default function SlidesScreen() {
     }
   };
 
+  // An English deck saved in Arabic (before 2026-10-04) is rebuilt in English
+  // as soon as it opens and stored over the old one by its id — `generate`
+  // drops the workspace link, so the save toggle would add a copy instead.
+  useEnglishRefresh({
+    savedId: params.savedId,
+    current: loading ? null : deck,
+    generate: () => generate(),
+    save: async () => {
+      const id = params.savedId;
+      if (!id || !deck) return;
+      await updateItem(id, { ...deckIdentity(deck), content: JSON.stringify(deck), formState: deckFormState() });
+      workspace.adopt(id, deck, deckIdentity(deck));
+      showToast(t('englishMaterialRedone'));
+    },
+  });
+
   /**
    * Withdraw the AI-written explanation from the shared pool, then rebuild.
    *
@@ -783,7 +876,7 @@ export default function SlidesScreen() {
       onPress={() => { onChange(!value); Haptics.selectionAsync(); }}
       style={[styles.toggle, {
         borderColor: value ? ACCENT : colors.border,
-        backgroundColor: value ? ACCENT + '12' : colors.card,
+        backgroundColor: value ? palette.selected : colors.card,
         borderRadius: colors.radius,
         flexDirection: isRTL ? 'row-reverse' : 'row',
       }]}
@@ -795,7 +888,7 @@ export default function SlidesScreen() {
       />
       <Text style={[styles.toggleText, {
         color: value ? ACCENT : colors.mutedForeground,
-        fontFamily: value ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+        fontFamily: value ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
       }]}>
         {label}
       </Text>
@@ -813,7 +906,7 @@ export default function SlidesScreen() {
         <ToolHeader topPad={topPad} isRTL={isRTL} title={t('slidesTitle')} subtitle={t('slidesSubtitle')} leading="🖥️" />
 
         <View style={styles.form}>
-          <PickerField label={t('grade')} value={isAr ? grades[gradeIdx].nameAr : grades[gradeIdx].name} options={grades.map(g => (isAr ? g.nameAr : g.name))} onChange={setGradeIdx} hidden={teacherScope.gradeHidden} colors={colors} isRTL={isRTL} accent={ACCENT} maxHeight={220} selectedTint={ACCENT + '15'} />
+          <PickerField label={t('grade')} value={uiLang === 'ar' ? grades[gradeIdx].nameAr : grades[gradeIdx].name} options={grades.map(g => (uiLang === 'ar' ? g.nameAr : g.name))} onChange={setGradeIdx} hidden={teacherScope.gradeHidden} colors={colors} isRTL={isRTL} accent={ACCENT} maxHeight={220} selectedTint={ACCENT + '15'} />
           <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
           <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} hidden={subjectHidden} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} maxHeight={220} selectedTint={ACCENT + '15'} />
 
@@ -822,7 +915,7 @@ export default function SlidesScreen() {
             gradeId={grades[gradeIdx].id}
             value={topic}
             onChange={v => { setTopic(v); setError(''); setValidationError(''); }}
-            lang={lang as 'ar' | 'en'}
+            lang={lang}
             isRTL={isRTL}
             colors={colors}
             accent={ACCENT}
@@ -836,6 +929,7 @@ export default function SlidesScreen() {
               read this store all along. */}
           <LessonResources topic={topic.trim()} onChange={setAttached} />
           <LessonAttachments lessonId={groundedLessonId} onChange={setUploadedAttachments} />
+          <LessonLabItems lessonId={groundedLessonId} isAr={isAr} picks={labPicks} onChange={setLabPicks} />
 
           <View style={{ gap: 10, marginBottom: 18 }}>
             <Toggle label={t('slidesIncludeExamples')} value={includeExamples} onChange={setIncludeExamples} />
@@ -852,7 +946,7 @@ export default function SlidesScreen() {
             replace — its Retry would only fail a validation the same way.
           */}
           {validationError ? (
-            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
               {validationError}
             </Text>
           ) : null}
@@ -873,7 +967,7 @@ export default function SlidesScreen() {
             hitSlop={8}
             style={{ alignSelf: 'center', marginTop: 14 }}
           >
-            <Text style={{ color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+            <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
               {t('slidesFromPromptLink')}
             </Text>
           </Pressable>
@@ -887,7 +981,7 @@ export default function SlidesScreen() {
           onRetry={() => generate()}
           colors={colors}
           isRTL={isRTL}
-          lang={lang as 'ar' | 'en'}
+          lang={uiLang}
           accent={ACCENT}
           t={t}
         />
@@ -915,10 +1009,10 @@ export default function SlidesScreen() {
             </View>
 
             <View style={[styles.previewCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-              <Text style={[styles.previewTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+              <Text style={[styles.previewTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
                 {deck.activityName}
               </Text>
-              <Text style={[styles.previewMeta, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+              <Text style={[styles.previewMeta, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
                 {t('slideCount', deck.slides.length)}
               </Text>
 
@@ -939,10 +1033,10 @@ export default function SlidesScreen() {
                     <Ionicons
                       name={v.anySymbolic ? 'shield-checkmark' : 'library-outline'}
                       size={14}
-                      color={v.anySymbolic ? '#067647' : colors.mutedForeground}
+                      color={v.anySymbolic ? palette.success : colors.mutedForeground}
                     />
                     <Text style={[styles.verifyText, {
-                      color: v.anySymbolic ? '#067647' : colors.mutedForeground,
+                      color: v.anySymbolic ? palette.success : colors.mutedForeground,
                       textAlign: isRTL ? 'right' : 'left',
                     }]}>
                       {v.anySymbolic
@@ -979,7 +1073,7 @@ export default function SlidesScreen() {
                   ]}
                 >
                   <Ionicons name="flag-outline" size={16} color={colors.destructive} />
-                  <Text style={{ fontSize: 14, color: colors.destructive, fontFamily: 'Cairo_600SemiBold' }}>
+                  <Text style={{ fontSize: 14, color: colors.destructive, fontFamily: 'ReadexPro_600SemiBold' }}>
                     {t('reportArtifactBtn')}
                   </Text>
                 </Pressable>
@@ -1024,6 +1118,6 @@ const styles = StyleSheet.create({
   previewTitle: { fontSize: 17, marginBottom: 4 },
   previewMeta: { fontSize: 12 },
   verifyRow: { alignItems: 'center', gap: 6, marginTop: 8 },
-  verifyText: { fontSize: 12, lineHeight: 19, fontFamily: 'Almarai_400Regular', flex: 1 },
+  verifyText: { fontSize: 13, lineHeight: 21, fontFamily: 'Almarai_400Regular', flex: 1 },
   reportBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, padding: 14, borderWidth: 1.5, marginTop: 8, alignSelf: 'flex-start' },
 });

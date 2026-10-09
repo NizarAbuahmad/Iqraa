@@ -57,7 +57,7 @@ export function PickerField({ label, value, options, onChange, colors, isRTL, ac
   const [open, setOpen] = useState(false);
   return (
     <View style={{ marginBottom: 16 }}>
-      <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
+      <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
       <Pressable
         onPress={() => setOpen(o => !o)}
         style={[styles.pickerBtn, { backgroundColor: colors.card, borderColor: open ? accent : colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
@@ -76,11 +76,11 @@ export function PickerField({ label, value, options, onChange, colors, isRTL, ac
               .map(({ o, i }) => (
                 <Pressable
                   key={i}
-                  accessibilityState={{ selected: o === value }}
+                  aria-selected={o === value}
                   onPress={() => { onChange(i); setOpen(false); }}
                   style={[styles.pickerOption, { borderBottomColor: colors.border, backgroundColor: o === value ? selectedTint ?? colors.secondary : 'transparent', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
                 >
-                  <Text style={[{ color: o === value ? accent : colors.foreground, fontFamily: o === value ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{o}</Text>
+                  <Text style={[{ color: o === value ? accent : colors.foreground, fontFamily: o === value ? 'ReadexPro_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{o}</Text>
                   {o === value && <Ionicons name="checkmark" size={16} color={accent} />}
                 </Pressable>
               ))}

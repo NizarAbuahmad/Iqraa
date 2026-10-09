@@ -78,9 +78,11 @@ import {
   assertUsableGeneration,
   deckShortfalls,
   extractJSON,
+  sanitizeWorksheetExtras,
   UnusableGenerationError,
   type GenerationKind,
 } from "../lib/generationShape.ts";
+import { checkDeck } from "../lib/deckChecks.ts";
 
 const generateRouter = Router();
 
@@ -196,7 +198,10 @@ async function completeOnce(args: {
     // also guards the pool: an unusable artifact stored here would be served
     // to every teacher who asks for that lesson.
     assertUsableGeneration(args.kind, parsed);
-    return { parsed, usage: completion.usage, durationMs };
+    // Optional teaching extras (a worksheet's worked example and key working)
+    // are dropped when malformed rather than failing the generation or being
+    // stored — see `sanitizeWorksheetExtras`.
+    return { parsed: sanitizeWorksheetExtras(args.kind, parsed), usage: completion.usage, durationMs };
   } catch (err) {
     recordUsage(completion.usage, args.model, { ...args.detail, artifactId: null, durationMs });
     throw err;
@@ -809,6 +814,12 @@ generateRouter.post('/generate/prompt-slides', async (req: AuthenticatedRequest,
     const shortfalls = deckShortfalls(finalized);
     if (shortfalls.length > 0) {
       logger.warn({ shortfalls, model: getPromptSlidesModel() }, "prompt-slides deck below quality bars");
+    }
+    // The prompt's own contract read back (option count, correctIndex, teacher
+    // blocks, photo prompts). Log-only for the same reason as above.
+    const deckIssues = checkDeck(finalized);
+    if (deckIssues.length > 0) {
+      logger.warn({ deckIssues, model: getPromptSlidesModel() }, "prompt-slides deck broke its prompt contract");
     }
     res.json(
       withMeta({ ...result, content: stripUnearnedVerification(finalized) }, null),

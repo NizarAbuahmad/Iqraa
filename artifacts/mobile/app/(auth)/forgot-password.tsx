@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  KeyboardAvoidingView, Platform, Pressable, ScrollView,
+  Pressable, ScrollView,
   StyleSheet, Text, View,
 } from 'react-native';
 import { router } from 'expo-router';
@@ -61,7 +61,7 @@ export default function ForgotPasswordScreen() {
       // Straight to login rather than signing them in. The code proves they
       // control the mailbox, not that they will remember the password they
       // just chose — typing it once more is the cheapest confirmation there is.
-      router.replace('/(auth)/login');
+      router.replace({ pathname: '/(auth)/login', params: { reset: '1' } });
     } catch (e: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setError(apiErrorMessage(e, 'invalidVerificationCode', t));
@@ -74,9 +74,8 @@ export default function ForgotPasswordScreen() {
   const canReset = /^\d{6}$/.test(code) && password.length >= 8;
 
   const formPanel = (
-    <KeyboardAvoidingView
+    <View
       style={[styles.formPanel, isWide && styles.formPanelWide]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
         contentContainerStyle={[
@@ -99,7 +98,7 @@ export default function ForgotPasswordScreen() {
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
 
-        <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {step === 'email' ? t('forgotPasswordTitle') : t('resetPasswordTitle')}
         </Text>
         <Text style={[styles.sub, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -145,6 +144,8 @@ export default function ForgotPasswordScreen() {
                 onChangeText={text => setCode(toLatinDigits(text).replace(/\D/g, '').slice(0, 6))}
                 leftIcon="key-outline"
                 keyboardType="number-pad"
+                autoComplete="one-time-code"
+                textContentType="oneTimeCode"
                 maxLength={6}
                 isRTL={isRTL}
                 autoFocus
@@ -158,6 +159,9 @@ export default function ForgotPasswordScreen() {
                 secureTextEntry={!showPassword}
                 rightIcon={showPassword ? 'eye-off-outline' : 'eye-outline'}
                 onRightIconPress={() => setShowPassword(v => !v)}
+                rightIconLabel={t(showPassword ? 'hidePasswordA11y' : 'showPasswordA11y')}
+                autoComplete="new-password"
+                textContentType="newPassword"
                 autoCapitalize="none"
                 isRTL={isRTL}
               />
@@ -174,7 +178,7 @@ export default function ForgotPasswordScreen() {
                 style={styles.resendRow}
                 accessibilityRole="link"
               >
-                <Text style={[styles.resendText, { color: colors.primary, fontFamily: 'Cairo_600SemiBold' }]}>
+                <Text style={[styles.resendText, { color: colors.primary, fontFamily: 'ReadexPro_600SemiBold' }]}>
                   {t('resendCode')}
                 </Text>
               </Pressable>
@@ -182,7 +186,7 @@ export default function ForgotPasswordScreen() {
           )}
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 
   return (
@@ -200,10 +204,10 @@ const styles = StyleSheet.create({
   scroll: { flexGrow: 1, paddingHorizontal: 24, width: '100%', alignSelf: 'center' },
   back: { marginBottom: 20, width: 40 },
   heading: { fontSize: 26, marginBottom: 6 },
-  sub: { fontSize: 14, lineHeight: 22, marginBottom: 24 },
+  sub: { fontSize: 15, lineHeight: 24, marginBottom: 24 },
   card: { padding: 24, borderWidth: 1, marginBottom: 24, gap: 16 },
   banner: { alignItems: 'center', gap: 8, padding: 12, borderWidth: 1 },
-  bannerText: { flex: 1, fontSize: 13, lineHeight: 21 },
+  bannerText: { flex: 1, fontSize: 15, lineHeight: 24 },
   resendRow: { alignItems: 'center', paddingVertical: 8 },
   resendText: { fontSize: 14 },
 });

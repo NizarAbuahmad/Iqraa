@@ -135,9 +135,60 @@ jobs:
             echo "web=false" >> "$GITHUB_OUTPUT"
           fi
 
+  # Apply this commit's migrations to production before its API ships.
+  #
+  # The schema used to be pushed by hand, so a merge could ship code ahead of
+  # its DDL — 2026-08-19, 2026-09-16, 2026-09-26 and 2026-10-05 (PR #815: class
+  # creation, teaching plans and the timetable answered 503). Migrations are
+  # reviewed SQL, checked against an empty database in ci.yml, and applied here
+  # in one transaction; if one fails nothing is applied and the old revision
+  # keeps serving. Additive-first ordering is enforced in ci.yml, since the old
+  # revision serves against the new schema until `api` finishes.
+  #
+  # Same condition as `api`, since lib/db is under lib/** and the API is the
+  # only thing that reads the database. Never cancelled mid-run, like `api`.
+  migrate:
+    name: production migrations
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: deploy-migrate
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.18.0 --activate
+
+      - name: Install
+        run: pnpm install --frozen-lockfile --filter @workspace/db...
+
+      - name: Migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm --filter @workspace/db run migrate -- --from-env
+
+  # Then confirm production has every table and column this commit's code
+  # selects — the backstop for anything a migration did not cover (a table
+  # dropped by hand, a restored backup).
+  schema:
+    name: production schema
+    needs: [changes, migrate]
+    if: needs.changes.outputs.api == 'true'
+    uses: ./.github/workflows/schema-check.yml
+    secrets: inherit
+
   api:
     name: iqraa-api
-    needs: changes
+    needs: [changes, schema]
     if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -266,15 +317,20 @@ jobs:
 
   web:
     name: iqraa-web
-    needs: [changes, api, verifier]
+    needs: [changes, schema, api, verifier]
     # `always()` is load-bearing, not decorative: without it a skipped `api`
     # job would skip `web` too, and most merges do not touch the API. The
     # explicit result checks are what actually enforce server-before-client — a
     # skipped dependency is fine, a failed one is not.
+    #
+    # `schema` is checked separately because a failed schema gate leaves `api`
+    # SKIPPED, not failed — and a skipped api passes the check below, which
+    # would ship the new bundle against the old API.
     if: |
       always()
       && needs.changes.result == 'success'
       && needs.changes.outputs.web == 'true'
+      && needs.schema.result != 'failure' && needs.schema.result != 'cancelled'
       && needs.api.result != 'failure' && needs.api.result != 'cancelled'
       && needs.verifier.result != 'failure' && needs.verifier.result != 'cancelled'
     runs-on: ubuntu-latest
@@ -344,8 +400,14 @@ jobs:
       - name: Verify the deployed bundle
         run: |
           set -euo pipefail
-          sleep 15
-          SERVED=$(curl -fsS --max-time 30 https://app.iqrra.com/ | grep -o 'content="[a-f0-9]\{40\}"' | head -1 | sed 's/content="//;s/"//')
-          echo "served=$SERVED wanted=$GITHUB_SHA"
-          [ "$SERVED" = "$GITHUB_SHA" ] \
-            || { echo "::error::app.iqrra.com is serving $SERVED, not $GITHUB_SHA."; exit 1; }
+          # Pages' edge can lag the upload by more than one 15 s sleep (a green
+          # deploy once failed here and was serving the right SHA a minute later),
+          # so retry for ~2 min before calling it a failure.
+          for attempt in 1 2 3 4 5 6 7 8; do
+            sleep 15
+            SERVED=$(curl -fsS --max-time 30 https://app.iqrra.com/ | grep -o 'content="[a-f0-9]\{40\}"' | head -1 | sed 's/content="//;s/"//' || true)
+            echo "attempt=$attempt served=$SERVED wanted=$GITHUB_SHA"
+            [ "$SERVED" = "$GITHUB_SHA" ] && exit 0
+          done
+          echo "::error::app.iqrra.com is serving $SERVED, not $GITHUB_SHA."
+          exit 1

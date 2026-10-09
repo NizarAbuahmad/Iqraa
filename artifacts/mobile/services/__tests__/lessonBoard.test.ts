@@ -24,6 +24,8 @@ import {
   savedAgo,
   PREP_ROWS,
   prepSummary,
+  missingPrepView,
+  savedDeckFor,
   sameTopic,
   withoutBoardTools,
   type MaterialLike,
@@ -189,6 +191,40 @@ describe('rows marked not needed', () => {
   });
 });
 
+describe('missingPrepView — the chat board shows only what is missing', () => {
+  it('keeps the missing rows in board order and leaves out the made and the skipped', () => {
+    const rows = buildPrepBoard(
+      [material({ type: 'lesson' }), material({ type: 'activity' })],
+      TOPIC,
+      null,
+      ['slides'],
+    );
+    const view = missingPrepView(rows);
+    assert.deepEqual(view.missing.map(r => r.type), ['worksheet', 'quiz']);
+    assert.deepEqual(view.skipped.map(r => r.type), ['slides']);
+    assert.equal(view.readyCount, 2);
+  });
+
+  it('has nothing missing once every needed row is made', () => {
+    const rows = buildPrepBoard(
+      [material({ type: 'lesson' }), material({ type: 'worksheet' }), material({ type: 'quiz' })],
+      TOPIC,
+      null,
+      ['slides', 'activity'],
+    );
+    const view = missingPrepView(rows);
+    assert.equal(view.missing.length, 0);
+    assert.equal(view.readyCount, 3);
+    assert.equal(view.skipped.length, 2);
+  });
+
+  it('lists all five as missing for a lesson with nothing made', () => {
+    const view = missingPrepView(buildPrepBoard([], TOPIC));
+    assert.equal(view.missing.length, 5);
+    assert.equal(view.readyCount, 0);
+  });
+});
+
 describe('savedAgo', () => {
   const now = new Date('2026-09-27T10:00:00');
   it('says today, yesterday, or how many days ago in the local calendar', () => {
@@ -202,5 +238,44 @@ describe('savedAgo', () => {
   it('gives a date past a week, and nothing for a bad timestamp', () => {
     assert.match(savedAgo('2026-09-01T12:00:00', now, 'en'), /1/);
     assert.equal(savedAgo('not a date', now, 'ar'), '');
+  });
+});
+
+describe('savedDeckFor', () => {
+  const deck = (name: string) => JSON.stringify({ activityName: name, slides: [{ id: 's1' }] });
+  const saved = (over: Partial<MaterialLike> & { type: string; content: string }) => ({
+    ...material(over),
+    content: over.content,
+  });
+
+  it('returns the saved deck for the lesson so «ابدأ الحصة» presents it', () => {
+    const got = savedDeckFor([saved({ type: 'slides', content: deck('mine') })], TOPIC, 'L1');
+    assert.equal(got?.activityName, 'mine');
+  });
+
+  it('takes the newest deck, and counts a prompt deck as one', () => {
+    const got = savedDeckFor([
+      saved({ type: 'slides', content: deck('old'), savedAt: '2026-09-01T08:00:00.000Z' }),
+      saved({ type: 'prompt-slides', content: deck('new'), savedAt: '2026-10-01T08:00:00.000Z' }),
+    ], TOPIC);
+    assert.equal(got?.activityName, 'new');
+  });
+
+  it('skips an unreadable or empty newest deck for an older good one', () => {
+    const got = savedDeckFor([
+      saved({ type: 'slides', content: deck('good'), savedAt: '2026-09-01T08:00:00.000Z' }),
+      saved({ type: 'slides', content: '{not json', savedAt: '2026-10-02T08:00:00.000Z' }),
+      saved({ type: 'slides', content: JSON.stringify({ slides: [] }), savedAt: '2026-10-01T08:00:00.000Z' }),
+    ], TOPIC);
+    assert.equal(got?.activityName, 'good');
+  });
+
+  it('ignores other materials, other lessons, and no lesson at all', () => {
+    assert.equal(savedDeckFor([saved({ type: 'quiz', content: deck('q') })], TOPIC), null);
+    assert.equal(
+      savedDeckFor([saved({ type: 'slides', content: deck('x'), formState: { lessonId: 'L2' } })], TOPIC, 'L1'),
+      null,
+    );
+    assert.equal(savedDeckFor([saved({ type: 'slides', content: deck('x') })], ''), null);
   });
 });

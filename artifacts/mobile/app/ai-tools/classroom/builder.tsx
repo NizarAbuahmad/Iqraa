@@ -6,6 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { getT } from '@/services/i18n';
+import { contentLang } from '@/services/contentLanguage';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PillSelector } from '@/components/ui/PillSelector';
@@ -42,7 +44,7 @@ const DURATIONS = [10, 20, 30];
 export default function ClassroomBuilderScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { t, isRTL, lang } = useLanguage();
+  const { t, isRTL, lang: uiLang } = useLanguage();
   const params = useLocalSearchParams<{ activityType?: string }>();
   // Header reflects the card the teacher picked (falls back to escape-challenge).
   const selectedCard = ACTIVITY_CARDS.find(c => c.id === resolveActivityType(params));
@@ -61,8 +63,10 @@ export default function ClassroomBuilderScreen() {
   // Labels are per-grade too: Grade 6's creative-arts book has no music in
   // it, so it must not be offered under the combined name. Same index
   // alignment as the mask above.
-  const subjectNames = subjectPickerLabels(grades[gradeIdx].id, lang as 'ar' | 'en');
+  const subjectNames = subjectPickerLabels(grades[gradeIdx].id, uiLang);
   const [subjectIdx, setSubjectIdx] = useState(teacherScope.defaultScope.subjectIdx);
+  // The picked subject's material language — English is taught in English.
+  const lang = contentLang(subjects[subjectIdx].id, uiLang);
   const [topic, setTopic] = useState('');
   const [durationIdx, setDurationIdx] = useState(1); // 20 min default
   const [difficulty, setDifficulty] = useState<Difficulty>('standard');
@@ -83,6 +87,11 @@ export default function ClassroomBuilderScreen() {
   useAbortOnUnmount(abortRef);
   const [cancelled, setCancelled] = useState(false);
   const [result, setResult] = useState<ClassroomActivity | null>(null);
+  // The activity on screen keeps the language it was generated in, even after
+  // the pickers move on.
+  const [outLang, setOutLang] = useState(lang);
+  const outT = getT(outLang);
+  const outRTL = outLang === 'ar';
   const [error, setError] = useState('');
 
   const prevGradeRef = useRef(gradeIdx);
@@ -105,17 +114,17 @@ export default function ClassroomBuilderScreen() {
     // A topic that grounds to another subject's lesson cannot make an honest
     // activity — the KB serves that lesson's own content while the header
     // claims the picked subject. Refuse and name the real subject instead.
-    const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
+    const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, uiLang);
     if (scope) { setError(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
-    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id);
-    if (conflict) { setError(t('subjectTopicMismatch', lang === 'ar' ? conflict.nameAr : conflict.name)); return; }
+    const conflict = groundedSubjectConflict(topic.trim(), lang, subjects[subjectIdx].id);
+    if (conflict) { setError(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     setError(''); setCancelled(false);
     const controller = new AbortController();
     abortRef.current = controller;
     setLoading(true); setResult(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en');
+      const additionalContext = buildGeneratorContext(topic.trim(), lang);
       const out = await aiService.generateClassroomActivity({
         grade: grades[gradeIdx].name,
         subject: subjects[subjectIdx].name,
@@ -128,13 +137,14 @@ export default function ClassroomBuilderScreen() {
         classroomSetup,
         language: lang === 'ar' ? 'arabic' : 'english',
         additionalContext,
-        unitId: generatorUnitId(topic.trim(), lang as 'ar' | 'en'),
-        lessonId: generatorLessonId(topic.trim(), lang as 'ar' | 'en'),
-        bookFigureCount: generatorFigureCount(topic.trim(), lang as 'ar' | 'en'),
+        unitId: generatorUnitId(topic.trim(), lang),
+        lessonId: generatorLessonId(topic.trim(), lang),
+        bookFigureCount: generatorFigureCount(topic.trim(), lang),
         contextSource: 'curriculum',
         ...regenerationFields(opts?.regenerate === true, previous),
       }, { signal: controller.signal });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setOutLang(lang);
       setResult(out);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
     } catch (e) {
@@ -161,27 +171,27 @@ export default function ClassroomBuilderScreen() {
 
   const difficultyOpts: { value: Difficulty; label: string }[] = [
     { value: 'easy', label: t('difficultyEasy') },
-    { value: 'standard', label: lang === 'ar' ? 'متوسط' : 'Standard' },
-    { value: 'advanced', label: lang === 'ar' ? 'متقدم' : 'Advanced' },
+    { value: 'standard', label: uiLang === 'ar' ? 'متوسط' : 'Standard' },
+    { value: 'advanced', label: uiLang === 'ar' ? 'متقدم' : 'Advanced' },
   ];
   const groupOpts: { value: GroupType; label: string }[] = [
     { value: 'individual', label: t('activityTypeIndividual') },
-    { value: 'pairs', label: lang === 'ar' ? 'ثنائي' : 'Pairs' },
-    { value: 'groups', label: lang === 'ar' ? 'مجموعات' : 'Groups' },
-    { value: 'whole-class', label: lang === 'ar' ? 'كل الصف' : 'Whole class' },
+    { value: 'pairs', label: uiLang === 'ar' ? 'ثنائي' : 'Pairs' },
+    { value: 'groups', label: uiLang === 'ar' ? 'مجموعات' : 'Groups' },
+    { value: 'whole-class', label: uiLang === 'ar' ? 'كل الصف' : 'Whole class' },
   ];
   const setupOpts: { value: ClassroomSetup; label: string }[] = [
-    { value: 'screen', label: lang === 'ar' ? 'شاشة عرض' : 'Projector' },
-    { value: 'board', label: lang === 'ar' ? 'سبورة فقط' : 'Board only' },
+    { value: 'screen', label: uiLang === 'ar' ? 'شاشة عرض' : 'Projector' },
+    { value: 'board', label: uiLang === 'ar' ? 'سبورة فقط' : 'Board only' },
   ];
   // Says what the choice changes, because it does not change the questions.
   // Without this the row looked decorative: both options produce the same
   // slides, and the difference lands in «المواد اللازمة» and «تحضير المعلّم».
   const setupHint = classroomSetup === 'screen'
-    ? (lang === 'ar'
+    ? (uiLang === 'ar'
       ? 'الأسئلة تُعرض من الشرائح، فلا يُطلب منك طباعة ما تعرضه الشاشة. تتغيّر المواد اللازمة وتحضير المعلّم — لا الأسئلة نفسها.'
       : 'Questions come off the slides, so you are not asked to print what the screen shows. Changes the materials and teacher prep — not the questions themselves.')
-    : (lang === 'ar'
+    : (uiLang === 'ar'
       ? 'يُبنى النشاط للسبورة والأوراق المطبوعة، ولا يُذكر جهاز العرض ضمن المواد. تتغيّر المواد اللازمة وتحضير المعلّم — لا الأسئلة نفسها.'
       : 'The activity is built for the board and printed handouts, and no projector is listed. Changes the materials and teacher prep — not the questions themselves.');
   const goalOpts: { value: TeachingGoal; label: string }[] = [
@@ -208,7 +218,7 @@ export default function ClassroomBuilderScreen() {
         {/* Grade */}
         <PillSelector
           label={t('grade')}
-          options={grades.map((g, idx) => ({ value: idx, label: lang === 'ar' ? g.nameAr : g.name })).filter(o => !teacherScope.gradeHidden[o.value])}
+          options={grades.map((g, idx) => ({ value: idx, label: uiLang === 'ar' ? g.nameAr : g.name })).filter(o => !teacherScope.gradeHidden[o.value])}
           value={gradeIdx}
           onChange={setGradeIdx}
           colors={colors}
@@ -234,7 +244,7 @@ export default function ClassroomBuilderScreen() {
           gradeId={grades[gradeIdx].id}
           value={topic}
           onChange={v => { setTopic(v); setError(''); }}
-          lang={lang as 'ar' | 'en'}
+          lang={lang}
           isRTL={isRTL}
           colors={colors}
           accent={ACCENT}
@@ -254,10 +264,10 @@ export default function ClassroomBuilderScreen() {
         />
 
         <PillSelector label={t('difficultyLabel')} options={difficultyOpts} value={difficulty} onChange={setDifficulty} colors={colors} isRTL={isRTL} accent={ACCENT} />
-        <PillSelector label={lang === 'ar' ? 'نوع المجموعة' : 'Group type'} options={groupOpts} value={groupType} onChange={setGroupType} colors={colors} isRTL={isRTL} accent={ACCENT} />
+        <PillSelector label={uiLang === 'ar' ? 'نوع المجموعة' : 'Group type'} options={groupOpts} value={groupType} onChange={setGroupType} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PillSelector label={t('teachingGoalLabel')} options={goalOpts} value={teachingGoal} onChange={setTeachingGoal} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PillSelector
-          label={lang === 'ar' ? 'تجهيزات الصف' : 'Classroom setup'}
+          label={uiLang === 'ar' ? 'تجهيزات الصف' : 'Classroom setup'}
           options={setupOpts}
           value={classroomSetup}
           onChange={setClassroomSetup}
@@ -287,7 +297,7 @@ export default function ClassroomBuilderScreen() {
         onRetry={() => generate()}
         colors={colors}
         isRTL={isRTL}
-        lang={lang as 'ar' | 'en'}
+        lang={uiLang}
         accent={ACCENT}
         t={t}
       />
@@ -296,9 +306,9 @@ export default function ClassroomBuilderScreen() {
       {result && !loading && (
         <View style={{ marginHorizontal: 20, marginBottom: 20 }}>
           {/* Ready banner */}
-          <View style={[styles.readyBanner, { backgroundColor: ACCENT + '12', borderColor: ACCENT + '30', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <View style={[styles.readyBanner, { backgroundColor: ACCENT + '12', borderColor: ACCENT + '30', borderRadius: colors.radius, flexDirection: outRTL ? 'row-reverse' : 'row' }]}>
             <Ionicons name="checkmark-circle" size={20} color={ACCENT} />
-            <Text style={[styles.readyText, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{t('classroomReady')}</Text>
+            <Text style={[styles.readyText, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }]}>{outT('classroomReady')}</Text>
           </View>
 
           {/* Activity overview */}
@@ -308,9 +318,9 @@ export default function ClassroomBuilderScreen() {
                 styles.previewTitle,
                 {
                   color: colors.foreground,
-                  fontFamily: 'Cairo_700Bold',
-                  textAlign: isRTL ? 'right' : 'left',
-                  writingDirection: isRTL ? 'rtl' : 'ltr',
+                  fontFamily: 'ReadexPro_700Bold',
+                  textAlign: outRTL ? 'right' : 'left',
+                  writingDirection: outRTL ? 'rtl' : 'ltr',
                 },
               ]}
             >
@@ -322,8 +332,8 @@ export default function ClassroomBuilderScreen() {
                 {
                   color: colors.mutedForeground,
                   fontFamily: 'Almarai_400Regular',
-                  textAlign: isRTL ? 'right' : 'left',
-                  writingDirection: isRTL ? 'rtl' : 'ltr',
+                  textAlign: outRTL ? 'right' : 'left',
+                  writingDirection: outRTL ? 'rtl' : 'ltr',
                 },
               ]}
             >
@@ -331,22 +341,22 @@ export default function ClassroomBuilderScreen() {
             </Text>
 
             {/* Stats row */}
-            <View style={[styles.statsRow, { flexDirection: isRTL ? 'row-reverse' : 'row', borderTopColor: colors.border }]}>
-              <StatItem icon="layers-outline" label={t('slideCount', result.slides.length)} accent={ACCENT} />
-              <StatItem icon="time-outline" label={`${result.duration} ${t('min')}`} accent={ACCENT} />
-              <StatItem icon="people-outline" label={cardMetaLabel(result.groupType, lang)} accent={ACCENT} />
+            <View style={[styles.statsRow, { flexDirection: outRTL ? 'row-reverse' : 'row', borderTopColor: colors.border }]}>
+              <StatItem icon="layers-outline" label={outT('slideCount', result.slides.length)} accent={ACCENT} />
+              <StatItem icon="time-outline" label={`${result.duration} ${outT('min')}`} accent={ACCENT} />
+              <StatItem icon="people-outline" label={cardMetaLabel(result.groupType, outLang)} accent={ACCENT} />
             </View>
           </View>
 
           {/* Materials */}
           <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-            <Text style={[styles.sectionLabel, { color: ACCENT, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
-              {lang === 'ar' ? 'المواد اللازمة' : 'Materials'}
+            <Text style={[styles.sectionLabel, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', textAlign: outRTL ? 'right' : 'left' }]}>
+              {outLang === 'ar' ? 'المواد اللازمة' : 'Materials'}
             </Text>
             {result.materials.map((m, i) => (
-              <View key={i} style={[styles.bullet, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <View key={i} style={[styles.bullet, { flexDirection: outRTL ? 'row-reverse' : 'row' }]}>
                 <View style={[styles.dot, { backgroundColor: ACCENT_FILL }]} />
-                <Text style={[styles.bulletText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{m}</Text>
+                <Text style={[styles.bulletText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: outRTL ? 'right' : 'left' }]}>{m}</Text>
               </View>
             ))}
           </View>
@@ -357,10 +367,10 @@ export default function ClassroomBuilderScreen() {
               concluded the setting did nothing. */}
           {result.teacherPreparation ? (
             <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-              <Text style={[styles.sectionLabel, { color: ACCENT, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
-                {lang === 'ar' ? 'تحضير المعلّم' : 'Teacher prep'}
+              <Text style={[styles.sectionLabel, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', textAlign: outRTL ? 'right' : 'left' }]}>
+                {outLang === 'ar' ? 'تحضير المعلّم' : 'Teacher prep'}
               </Text>
-              <Text style={[styles.prepText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+              <Text style={[styles.prepText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: outRTL ? 'right' : 'left' }]}>
                 {result.teacherPreparation}
               </Text>
             </View>
@@ -372,7 +382,7 @@ export default function ClassroomBuilderScreen() {
             style={({ pressed }) => [styles.ctaBtn, { backgroundColor: ACCENT_FILL, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.88 : 1 }]}
           >
             <Ionicons name="play-circle" size={22} color="#fff" />
-            <Text style={[styles.ctaText, { fontFamily: 'Cairo_700Bold' }]}>{t('startPresentation')}</Text>
+            <Text style={[styles.ctaText, { fontFamily: 'ReadexPro_700Bold' }]}>{t('startPresentation')}</Text>
           </Pressable>
 
           <Pressable
@@ -380,7 +390,7 @@ export default function ClassroomBuilderScreen() {
             style={[styles.regenBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="refresh-outline" size={16} color={ACCENT} />
-            <Text style={[styles.regenText, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{t('regenerateBtn')}</Text>
+            <Text style={[styles.regenText, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }]}>{t('regenerateBtn')}</Text>
           </Pressable>
         </View>
       )}
@@ -393,7 +403,7 @@ function StatItem({ icon, label, accent }: { icon: keyof typeof Ionicons.glyphMa
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
       <Ionicons name={icon} size={13} color={accent} />
-      <Text style={{ fontSize: 12, color: accent, fontFamily: 'Cairo_500Medium' }}>{label}</Text>
+      <Text style={{ fontSize: 12, color: accent, fontFamily: 'ReadexPro_500Medium' }}>{label}</Text>
     </View>
   );
 }

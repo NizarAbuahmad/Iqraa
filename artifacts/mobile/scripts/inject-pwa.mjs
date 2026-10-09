@@ -82,7 +82,7 @@ const TAGS = `
     <meta name="theme-color" content="#0D2247" media="(prefers-color-scheme: dark)" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="اقرأ" />
+    <meta name="apple-mobile-web-app-title" content="إقرأ" />
     <link rel="apple-touch-icon" href="/icons/icon-maskable.png" />
     <style id="iqraa-preboot">
       /* Painted before the JS bundle boots, so the first frame is the app's own

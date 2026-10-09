@@ -1,8 +1,9 @@
 import { useCallback, useState } from 'react';
 import type { BookFigureRef } from '@/services/exportHtml';
+import { exportFilename } from '@/services/exportFilename';
 import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 import { resolveGeneratorGrounding } from '@/services/kbContext';
-import { copyToClipboard, exportAsPDF, exportAsWord, shareAsText } from '@/services/share';
+import { copyToClipboard, exportAsPDF, exportAsWord, exportBuiltWord, shareAsText } from '@/services/share';
 import type { Lang, TranslationKey } from '@/services/i18n';
 
 export type GeneratorExportMeta = { subject: string; grade: string; duration?: number };
@@ -33,10 +34,12 @@ export function useGeneratorExport<TResult, TMeta extends GeneratorExportMeta>(c
   formatText: (result: TResult, title: string, meta: TMeta, isAr: boolean) => string;
   buildHTML: (result: TResult, title: string, meta: TMeta, isAr: boolean, figures: readonly BookFigureRef[]) => string;
   buildSlidesHTML: (result: TResult, title: string, meta: TMeta, isAr: boolean, figures: readonly BookFigureRef[]) => string;
+  /** A laid-out Word document. Without it, Word gets `formatText`'s output. */
+  buildWord?: (result: TResult, title: string, meta: TMeta, isAr: boolean, docx: typeof import('docx')) => import('docx').Document;
   onError: (key: TranslationKey) => void;
   onCopied: (key: TranslationKey) => void;
 }) {
-  const { result, topic, lessonId, lang, getTitle, getMeta, formatText, buildHTML, buildSlidesHTML, onError, onCopied } = config;
+  const { result, topic, lessonId, lang, getTitle, getMeta, formatText, buildHTML, buildSlidesHTML, buildWord, onError, onCopied } = config;
   const [loadingPDF, setLoadingPDF] = useState(false);
   const [loadingWord, setLoadingWord] = useState(false);
   const [loadingSlides, setLoadingSlides] = useState(false);
@@ -46,8 +49,7 @@ export function useGeneratorExport<TResult, TMeta extends GeneratorExportMeta>(c
     return bookFigureRefsForLesson(lessonId ?? resolveGeneratorGrounding(topic.trim(), lang).lesson?.id, isAr);
   }, [lessonId, topic, lang, isAr]);
 
-  const filenameOf = (title: string, suffix = '') =>
-    (title + suffix).replace(suffix ? /[^\w\s-]/g : /[^\w\s]/g, '').trim();
+  const filenameOf = exportFilename;
 
   const handleShareText = useCallback(async () => {
     if (!result) return;
@@ -80,14 +82,18 @@ export function useGeneratorExport<TResult, TMeta extends GeneratorExportMeta>(c
     setLoadingWord(true);
     try {
       const title = getTitle();
-      const text = formatText(result, title, getMeta(), isAr);
-      await exportAsWord(text, filenameOf(title), isAr);
+      if (buildWord) {
+        const meta = getMeta();
+        await exportBuiltWord(docx => buildWord(result, title, meta, isAr, docx), filenameOf(title));
+      } else {
+        await exportAsWord(formatText(result, title, getMeta(), isAr), filenameOf(title), isAr);
+      }
     } catch {
       onError('generationFailed');
     } finally {
       setLoadingWord(false);
     }
-  }, [result, getTitle, getMeta, formatText, isAr, onError]);
+  }, [result, getTitle, getMeta, formatText, buildWord, isAr, onError]);
 
   const handleSlides = useCallback(async () => {
     if (!result) return;

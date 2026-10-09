@@ -266,3 +266,41 @@ describe('eraseAlong', () => {
     assert.deepEqual(eraseAlong([wall, far], 0, 50, 200, 50, 16), [far]);
   });
 });
+
+describe('strokes stored as fractions of the canvas width (unit = 1 / canvas width)', () => {
+  // A 800px-wide canvas: one pixel is 1/800 of a stored unit. The stroke runs
+  // across at y = 0.25 (200px) and is drawn 4px wide (the default).
+  const unit = 1 / 800;
+  const across = line('0.1,0.25 0.9,0.25');
+
+  it('counts the stroke width in PIXELS: reach = 16px eraser + 2px half-width = 18px = 0.0225', () => {
+    assert.equal(strokeHit(across, 0.5, 0.272, 16 * unit, unit), true); //  17.6px away
+    assert.equal(strokeHit(across, 0.5, 0.273, 16 * unit, unit), false); // 18.4px away
+  });
+
+  it('a thicker stroke is easier to hit, in pixels too', () => {
+    const thick = line('0.1,0.25 0.9,0.25', { width: 12 }); // reach = 16 + 6 = 22px = 0.0275
+    assert.equal(strokeHit(thick, 0.5, 0.277, 16 * unit, unit), true);
+    assert.equal(strokeHit(thick, 0.5, 0.278, 16 * unit, unit), false);
+  });
+
+  it('keeps the pixel meaning when no unit is given', () => {
+    // Same numbers as the first test but interpreted as pixels: nothing like 0.0225 away.
+    assert.equal(strokeHit(line('0,0 100,0'), 50, 17, 16), true); // 17 <= 16 + 2
+    assert.equal(strokeHit(line('0,0 100,0'), 50, 19, 16), false);
+  });
+
+  it('eraseAt removes only what the eraser reaches and returns the same array on a miss', () => {
+    const strokes = [across];
+    assert.deepEqual(eraseAt(strokes, 0.5, 0.272, 16 * unit, unit), []);
+    assert.equal(eraseAt(strokes, 0.5, 0.5, 16 * unit, unit), strokes);
+  });
+
+  it('eraseAlong still sweeps in these units (the step floor is one pixel, not one whole unit)', () => {
+    const wall = line('0.5,0.4 0.5,0.6');
+    // The pointer jumps from x = 0.1 to x = 0.9 in one event: neither end is near the wall.
+    assert.equal(eraseAt([wall], 0.1, 0.5, 16 * unit, unit).length, 1);
+    assert.equal(eraseAt([wall], 0.9, 0.5, 16 * unit, unit).length, 1);
+    assert.deepEqual(eraseAlong([wall], 0.1, 0.5, 0.9, 0.5, 16 * unit, unit), []);
+  });
+});

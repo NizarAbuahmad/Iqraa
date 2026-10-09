@@ -61,7 +61,7 @@ export default function BookPageScreen() {
           style={[styles.iconBtn, penOn && { borderColor: ACCENT + '50', backgroundColor: ACCENT + '12' }]}
           hitSlop={12}
           accessibilityRole="button"
-          accessibilityState={{ selected: penOn }}
+          aria-selected={penOn}
           accessibilityLabel={t('penTool')}
         >
           <Ionicons name={penOn ? 'brush' : 'brush-outline'} size={20} color={penOn ? ACCENT : TEXT_MUTED} />
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG },
   topBar: { alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingBottom: 8 },
   iconBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 19, backgroundColor: CARD_BG, borderWidth: 1, borderColor: BORDER },
-  title: { flex: 1, color: TEXT_PRIMARY, fontSize: 15, fontFamily: 'Cairo_700Bold', paddingHorizontal: 8 },
+  title: { flex: 1, color: TEXT_PRIMARY, fontSize: 15, fontFamily: 'ReadexPro_700Bold', paddingHorizontal: 8 },
   stage: { flex: 1 },
   pages: { gap: 12, padding: 12, alignItems: 'center' },
   // Capped so a wide projector shows a readable page, not a 4-metre-wide one.

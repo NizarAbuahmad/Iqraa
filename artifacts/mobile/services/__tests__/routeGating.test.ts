@@ -6,7 +6,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { isEntryRoute, isNonTeacherRoute, isPublicRoute, needsRosterClaim, needsTeacherSetup } from '../routeGating.ts';
+import { isEntryRoute, isNonTeacherRoute, isPublicRoute, needsGradeSetup, needsRosterClaim, needsTeacherSetup } from '../routeGating.ts';
 
 describe('isEntryRoute', () => {
   it('treats the auth and onboarding routes as entries', () => {
@@ -67,7 +67,7 @@ describe('isPublicRoute', () => {
   });
 
   it('keeps every teacher route private', () => {
-    for (const p of ['/', '/home', '/classes', '/evaluations', '/admin/dashboard', '/workspace']) {
+    for (const p of ['/', '/classes', '/evaluations', '/admin/dashboard', '/workspace']) {
       assert.equal(isPublicRoute(p), false, p);
     }
   });
@@ -116,6 +116,10 @@ describe('isNonTeacherRoute', () => {
       // pinned here so converting it to exact matching fails loudly instead of
       // quietly ejecting a student to /notifications.
       '/curriculum/resources',
+      // The Science Lab shelf and its present mode (a shareable URL). Same
+      // prefix rule as the library above.
+      '/curriculum/lab',
+      '/curriculum/lab/lab-periodic-table',
       '/settings',
       '/faq',
       '/delete-account',
@@ -133,7 +137,7 @@ describe('isNonTeacherRoute', () => {
     // and the bounce in app/_layout.tsx runs on every path change — so a parent
     // tapping «الإعدادات» was sent straight back to Messages, and could never
     // reach account deletion at all.
-    for (const p of ['/settings', '/faq', '/delete-account']) {
+    for (const p of ['/settings', '/faq', '/suggest-feature', '/delete-account']) {
       assert.equal(isNonTeacherRoute(p), true, p);
     }
   });
@@ -151,7 +155,6 @@ describe('isNonTeacherRoute', () => {
       '/evaluations',
       '/workspace',
       '/admin/dashboard',
-      '/home',
     ]) {
       assert.equal(isNonTeacherRoute(p), false, p);
     }
@@ -249,5 +252,41 @@ describe('the whiteboard route', () => {
   it('is neither a public nor a non-teacher route', () => {
     assert.equal(isPublicRoute('/ai-tools/whiteboard'), false);
     assert.equal(isNonTeacherRoute('/ai-tools/whiteboard'), false);
+  });
+});
+
+describe('needsGradeSetup', () => {
+  it('gates a parent or student who has not picked a class', () => {
+    for (const role of ['parent', 'student']) {
+      assert.equal(needsGradeSetup({ role, hasRosterLink: true }), true, role);
+      assert.equal(needsGradeSetup({ role, hasRosterLink: true, gradeIds: [] }), true, role);
+    }
+  });
+
+  it('clears once a class is picked', () => {
+    assert.equal(needsGradeSetup({ role: 'student', hasRosterLink: true, gradeIds: ['grade-10'] }), false);
+    assert.equal(needsGradeSetup({ role: 'parent', hasRosterLink: true, gradeIds: ['grade-4', 'grade-9'] }), false);
+  });
+
+  it('waits behind the claim gate — an unlinked account claims first', () => {
+    assert.equal(needsGradeSetup({ role: 'student', hasRosterLink: false }), false);
+    assert.equal(needsGradeSetup({ role: 'parent', hasRosterLink: false, gradeIds: [] }), false);
+  });
+
+  it('never gates a teacher or admin', () => {
+    for (const role of ['teacher', 'school_admin', 'system_admin']) {
+      assert.equal(needsGradeSetup({ role, hasRosterLink: true }), false, role);
+    }
+  });
+
+  it('fails open on no user', () => {
+    assert.equal(needsGradeSetup(null), false);
+    assert.equal(needsGradeSetup(undefined), false);
+  });
+});
+
+describe('the class picker route', () => {
+  it('is reachable by a parent or student, and is not a teacher route', () => {
+    assert.equal(isNonTeacherRoute('/setup-grade'), true);
   });
 });

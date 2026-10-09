@@ -27,7 +27,7 @@ import {
   splitWarmup, usableTeaching, withoutSlide,
 } from '../lessonSlides.ts';
 import { figuresForLesson } from '../bookFigures.ts';
-import { KB_LESSONS, getUnitsForSubjectGrade } from '../knowledgeBase.ts';
+import { KB_LESSONS } from '../knowledgeBase.ts';
 import type { ActivitySlide, LessonPlanOutput } from '../ai/AIService.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
 
@@ -381,6 +381,40 @@ describe('splitExample', () => {
     assert.equal(problem, 'x + 1 = 5');
     assert.equal(answer, '');
   });
+
+  // The book's own examples, as stored. The colon form used to be projected
+  // whole — answer included — and an arrow chain left its working on the wall.
+  it('hides the answer of a «givens: solution» example behind the reveal', () => {
+    assert.deepEqual(
+      splitExample('دائرة مركزها (2,−3) ونصف قطرها 5: (x−2)²+(y+3)²=25'),
+      ['دائرة مركزها (2,−3) ونصف قطرها 5', '(x−2)²+(y+3)²=25'],
+    );
+    assert.deepEqual(
+      splitExample('v = ⟨3, 4⟩: |v| = √(9+16) = √25 = 5'),
+      ['v = ⟨3, 4⟩', '|v| = √(9+16) = √25 = 5'],
+    );
+  });
+
+  it('keeps the working with the answer, not with the question', () => {
+    const [problem, answer] = splitExample("f(x) = −x² + 4x: f'(x) = −2x + 4 = 0 → x = 2، قيمة عظمى = f(2) = 4");
+    assert.equal(problem, 'f(x) = −x² + 4x');
+    assert.ok(answer.startsWith("f'(x)") && answer.includes('→ x = 2'));
+  });
+
+  it('splits at the last colon when the givens themselves contain one', () => {
+    const [problem, answer] = splitExample('مثلث قائم: الوتر=10، مقابل زاوية A = 6: sin A = 6/10 = 0.6 → A = 37°');
+    assert.equal(problem, 'مثلث قائم: الوتر=10، مقابل زاوية A = 6');
+    assert.equal(answer, 'sin A = 6/10 = 0.6 → A = 37°');
+  });
+
+  it('never hides a definition that has no working in it', () => {
+    assert.deepEqual(splitExample('الفاعل: اسم مرفوع يأتي بعد الفعل'), ['الفاعل: اسم مرفوع يأتي بعد الفعل', '']);
+    assert.deepEqual(splitExample('النسبة 3:4 بين العددين'), ['النسبة 3:4 بين العددين', '']);
+  });
+
+  it('lets an explicit label win over a colon in the answer', () => {
+    assert.deepEqual(splitExample('احسب المساحة الجواب: A = 5 × 4 = 20'), ['احسب المساحة', 'A = 5 × 4 = 20']);
+  });
 });
 
 // ── Formative checks ─────────────────────────────────────────────────────────
@@ -441,7 +475,7 @@ describe('formative checks in the lesson deck', () => {
       checks: [mcq(1), mcq(2), mcq(3), mcq(4), mcq(5)],
     });
     const summary = deck.slides.findIndex(s => s.type === 'summary');
-    const divider = deck.slides.findIndex(s => s.type === 'divider' && s.content.includes('تذكرة الخروج'));
+    const divider = deck.slides.findIndex(s => s.type === 'divider' && s.title.includes('تذكرة الخروج'));
     const firstTicket = deck.slides.findIndex(s => s.title.includes('تذكرة الخروج '));
     assert.ok(summary >= 0 && divider > summary, 'divider follows the summary');
     assert.equal(firstTicket, divider + 1);
@@ -533,8 +567,6 @@ describe('formative checks in the lesson deck', () => {
     // section title, because "تذكرة الخروج 1" is the first exit-ticket
     // question and not the first question in the deck.
     assert.ok(deck.answerKey.some(k => k.startsWith('مثال 1:')));
-    // Match on the Arabic title plus the answer rather than the whole row:
-    // an English-subject deck appends « · Quick Check 1» to the same title.
     assert.ok(deck.answerKey.some(k => k.includes('✋ تحقّق سريع 1') && k.endsWith(': ب1')));
     assert.ok(deck.answerKey.some(k => k.includes('🎫 تذكرة الخروج 1') && k.endsWith(': ب3')));
   });
@@ -824,65 +856,27 @@ describe('bookFigureCaption', () => {
   });
 });
 
-describe('bilingual chrome titles for the English subject', () => {
-  // Reported from the running app: a Grade 10 English-track deck's "مفردات
-  // الدرس" (Key Vocabulary) heading was Arabic-only even though the lesson
-  // itself teaches English — a teacher or student who does not read the
-  // Arabic label has no idea what the slide is. `opts.subject` is localised
-  // (the caller passes "English" or «اللغة الإنجليزية» depending on the app's
-  // UI language), so both spellings must trigger it.
-  const ENGLISH_PLAN: LessonPlanOutput = { ...PLAN, subject: 'English' };
-
-  // An English lesson's checks come back in English even in an Arabic deck,
-  // so its check titles must say both.
-  it('keeps the numbered check titles bilingual for the English subject', () => {
-    const deck = buildLessonDeck('Farm Equipment', true, {
-      plan: ENGLISH_PLAN, subject: 'English', checks: [mcq(1), mcq(2), mcq(3), mcq(4), mcq(5)],
-    });
-    assert.ok(deck.slides.some(s => s.title === '✋ تحقّق سريع 1 · Quick Check 1'));
-    assert.ok(deck.slides.some(s => s.title === '🎫 تذكرة الخروج 1 · Exit Ticket 1'));
-  });
-
-  it('shows every section heading in both languages when subject is English', () => {
-    const deck = buildLessonDeck('Farm Equipment', true, {
-      plan: ENGLISH_PLAN, subject: 'English',
-    });
-    const summary = deck.slides.find(s => s.type === 'summary')!;
-    assert.match(summary.title, /ملخص الدرس/);
-    assert.match(summary.title, /Lesson Summary/);
-  });
-
-  it('recognises the Arabic subject label too', () => {
-    const deck = buildLessonDeck('معدات المزرعة', true, {
-      plan: ENGLISH_PLAN, subject: 'اللغة الإنجليزية',
-    });
-    const summary = deck.slides.find(s => s.type === 'summary')!;
-    assert.match(summary.title, /Lesson Summary/);
-  });
-
-  it('trusts the lesson\'s own book over the subject string when both are present', () => {
-    // A real English-track KB lesson rather than a fabricated unitId —
-    // getBookForLesson resolves through the real KB_UNITS/KB_BOOKS tables, so
-    // a made-up id would just resolve to nothing.
-    //
-    // Named explicitly rather than taken as `getUnitsForSubjectGrade(...)[0]`,
-    // which is what this used to do. That worked only while the vocational
-    // tracks were the sole English books; general English arrived in front of
-    // them on 2026-09-05 and the [0] silently became a lesson with no key
-    // terms, so the vocabulary slide this asserts on stopped existing. The
-    // test is about bilingual chrome, not about which lesson — so it says
-    // which lesson.
+describe('one language per deck', () => {
+  // English-subject decks used to carry bilingual headings («مفردات الدرس ·
+  // Key Vocabulary») over an Arabic-UI deck. They are now built in English
+  // (`contentLang`), so the headings are English and nothing else.
+  it('builds an English-subject deck with English-only headings', () => {
+    // A real English-track KB lesson, named rather than taken as `[0]` of its
+    // unit list — general English arrived in front of the vocational tracks on
+    // 2026-09-05 and a positional pick silently became a lesson with no key
+    // terms, so the vocabulary slide asserted on stopped existing.
     const englishLesson = KB_LESSONS.find(l => l.id === 'kbl-eng-agri-s1-nccd-u1_l1')!;
     assert.ok(englishLesson, 'the agriculture-track lesson still exists');
-    const deck = buildLessonDeck(englishLesson.titleAr, true, {
-      lesson: englishLesson, plan: ENGLISH_PLAN,
-      // Deliberately wrong subject string — a mismatched caller must not
-      // suppress the bilingual heading the book itself calls for.
-      subject: 'الرياضيات',
+    const deck = buildLessonDeck(englishLesson.titleEn, false, {
+      lesson: englishLesson, subject: 'English',
+      checks: [mcq(1), mcq(2), mcq(3), mcq(4), mcq(5)],
     });
-    const vocab = deck.slides.find(s => s.title.includes('مفردات الدرس'));
+    const vocab = deck.slides.find(s => s.title.includes('Key Vocabulary'));
     assert.ok(vocab, 'the lesson has key terms, so a vocabulary slide exists');
-    assert.match(vocab!.title, /Key Vocabulary/);
+    assert.equal(vocab!.title, '📖 Key Vocabulary');
+    assert.ok(deck.slides.some(s => s.title === 'Quick Check 1'));
+    assert.ok(deck.slides.some(s => s.title === 'Exit Ticket 1'));
+    for (const s of deck.slides) assert.doesNotMatch(s.title, /[؀-ۿ]/, s.title);
   });
 
   it('leaves a non-English deck single-language, exactly as before', () => {
@@ -932,6 +926,11 @@ describe('usableTeaching', () => {
 
   it('drops a worked example whose problem already shows its answer', () => {
     const t = usableTeaching({ workedExample: { problem: 'مركزها (2,−3) ونصف قطرها 5: (x−2)²+(y+3)²=25', steps: ['عوّض'], answer: '(x−2)² + (y+3)² = 25' } });
+    assert.equal(t.workedExample, null);
+  });
+
+  it('drops a worked example whose problem already contains a short answer like x = 4', () => {
+    const t = usableTeaching({ workedExample: { problem: 'إذا كان x = 4 فما قيمة 2x + 1؟', steps: ['عوّض'], answer: 'x = 4' } });
     assert.equal(t.workedExample, null);
   });
 
@@ -1037,5 +1036,141 @@ describe('generated explanation in the deck', () => {
       const after = buildLessonDeck('x', true, { lesson: LESSON, plan: PLAN, teaching });
       assert.deepEqual(after, before);
     }
+  });
+});
+
+describe('opening order', () => {
+  const two: KBLesson = {
+    ...LESSON,
+    keyTerms: [
+      { ar: 'الجذر', en: 'Root', definitionAr: 'قيمة تحقق المعادلة', definitionEn: 'A value satisfying the equation' },
+      { ar: 'المميّز', en: 'Discriminant', definitionAr: 'b² − 4ac', definitionEn: 'b² − 4ac' },
+    ],
+  };
+  const build = (lesson: KBLesson, extra: Record<string, unknown> = {}) =>
+    buildLessonDeck('حل المعادلات التربيعية', true, { lesson, plan: PLAN, ...extra });
+  const at = (deck: { slides: ActivitySlide[] }, pick: (s: ActivitySlide) => boolean) => deck.slides.findIndex(pick);
+
+  it('runs title, outcomes, warm-up, section break, vocabulary, explanation', () => {
+    const deck = build(two, { teaching: TEACHING });
+    const outcomes = at(deck, s => s.title.includes('نتاجات'));
+    const warmup = at(deck, s => s.title.includes('تمهيد'));
+    const divider = at(deck, s => s.type === 'divider');
+    const vocab = at(deck, s => s.title.includes('مفردات'));
+    assert.equal(outcomes, 1, 'the outcomes slide teachers must show comes straight after the cover');
+    assert.ok(warmup > outcomes, 'the warm-up follows the outcomes');
+    assert.ok(divider > warmup, 'the section break follows the warm-up');
+    assert.equal(vocab, divider + 1, 'vocabulary is the first slide after the break');
+    assert.ok(at(deck, s => s.title === TEACHING.concepts[0]!.title) > vocab, 'then the explanation');
+  });
+
+  it('puts the section name on the divider and the lesson under it', () => {
+    const deck = build(two, { teaching: TEACHING });
+    const divider = deck.slides[at(deck, s => s.type === 'divider')]!;
+    assert.equal(divider.title, 'لنبدأ الشرح');
+    assert.equal(divider.content, 'حل المعادلات التربيعية');
+  });
+
+  it('gives the exit-ticket divider the same shape', () => {
+    const deck = build(two, { checks: [mcq(1), mcq(2), mcq(3), mcq(4), mcq(5)] });
+    const exit = deck.slides.filter(s => s.type === 'divider').pop()!;
+    assert.equal(exit.title, 'تذكرة الخروج');
+    assert.equal(exit.content, 'حل المعادلات التربيعية');
+  });
+
+  it('keeps a vocabulary list of two or more terms as one slide', () => {
+    const vocab = build(two).slides.find(s => s.title.includes('مفردات'))!;
+    assert.match(vocab.content, /الجذر — قيمة تحقق المعادلة/);
+    assert.match(vocab.content, /المميّز/);
+  });
+
+  it('draws a lone defined term as a titled slide, not a one-item list', () => {
+    const deck = build(LESSON);   // one key term, «الجذر», with a definition
+    assert.equal(at(deck, s => s.title.includes('مفردات')), -1);
+    const term = deck.slides.find(s => s.title === 'الجذر')!;
+    assert.ok(term, 'the term still reaches the deck');
+    assert.equal(term.content, 'قيمة تحقق المعادلة');
+  });
+
+  it('does not draw a lone term twice when the explanation already has it as a concept', () => {
+    const lesson: KBLesson = { ...LESSON, keyConceptsAr: ['الجذر', 'التحليل إلى عاملين'] };
+    assert.equal(build(lesson).slides.filter(s => s.title === 'الجذر').length, 1);
+  });
+
+  it('adds nothing for a lone term that has no definition', () => {
+    const lesson = { ...LESSON, keyTerms: [{ ar: 'الجذر', en: 'Root' }] } as unknown as KBLesson;
+    const deck = build(lesson);
+    assert.equal(at(deck, s => s.title === 'الجذر'), -1);
+    assert.equal(at(deck, s => s.title.includes('مفردات')), -1);
+  });
+
+  it('puts vocabulary straight after the warm-up when there is no explanation to break to', () => {
+    const lesson: KBLesson = { ...two, keyConceptsAr: [], keyConceptsEn: [] };
+    const deck = build(lesson, { teaching: { ...TEACHING, concepts: [] } });
+    assert.equal(at(deck, s => s.type === 'divider'), -1, 'no explanation, no break');
+    assert.equal(at(deck, s => s.title.includes('مفردات')), at(deck, s => s.title.includes('تمهيد')) + 1);
+  });
+});
+
+describe('buildLessonDeck — a rule written as a one-line procedure', () => {
+  const procedure = 'الخطوات: 1) عزل y من المعادلة الخطية 2) تعويضه في التربيعية 3) حل المعادلة الناتجة';
+  const withProcedure: KBLesson = { ...LESSON, rulesAr: [procedure] };
+
+  it('is drawn as numbered steps, one per line', () => {
+    const rule = buildLessonDeck('نظام معادلات', true, { lesson: withProcedure })
+      .slides.find(s => s.title.includes('القاعدة'))!;
+    assert.equal(rule.layout, 'steps');
+    assert.equal(rule.content, '• عزل y من المعادلة الخطية\n• تعويضه في التربيعية\n• حل المعادلة الناتجة');
+  });
+
+  it('keeps an ordinary rule exactly as before', () => {
+    const plain: KBLesson = { ...LESSON, rulesAr: ['حل النظام يكون بالتعويض', 'يمكن التحقق بيانيًا'] };
+    const rule = buildLessonDeck('نظام معادلات', true, { lesson: plain })
+      .slides.find(s => s.title.includes('القاعدة'))!;
+    assert.equal(rule.layout, undefined);
+    assert.equal(rule.content, '• حل النظام يكون بالتعويض\n• يمكن التحقق بيانيًا');
+  });
+
+  it('does not take the layout when the rule has a figure beside it', () => {
+    const figured: KBLesson = { ...withProcedure, id: 'kbl-math-s1-nccd-u1_l1' };
+    const rule = buildLessonDeck('نظام معادلات', true, {
+      lesson: figured, figureUri: (f: { file: string }) => `asset://${f.file}`,
+    }).slides.find(s => s.title.includes('القاعدة'))!;
+    assert.ok(rule.sideImageUrl, 'the fixture lesson has figures');
+    assert.equal(rule.layout, undefined);
+    assert.match(rule.content, /الخطوات: 1\)/);
+  });
+});
+
+import { resolveSlideLayout } from '../slideLayout.ts';
+
+describe('a short figure with a name', () => {
+  const lesson = (concepts: string[]): KBLesson => ({
+    ...LESSON, keyConceptsAr: concepts, keyConceptsEn: concepts, keyTerms: [], rulesAr: [], rulesEn: [],
+  });
+  const slideTitled = (concepts: string[], title: string) =>
+    buildLessonDeck('درس', true, { lesson: lesson(concepts), plan: PLAN }).slides.find(s => s.title === title);
+
+  it('is drawn as a stat — the figure large, its name beneath', () => {
+    const s = slideTitled(['الحلول الممكنة: 0 أو 1 أو 2', 'فكرة ثانية: شرح طويل لا يصلح أن يكون رقمًا'], 'الحلول الممكنة')!;
+    assert.equal(s.layout, 'stat');
+    assert.deepEqual(s.stat, { value: '0 أو 1 أو 2', label: 'الحلول الممكنة' });
+    assert.equal(resolveSlideLayout(s)?.kind, 'stat', 'every renderer can draw it');
+  });
+
+  it('also takes a short formula', () => {
+    const s = slideTitled(['معادلة الدائرة: x²+y²=r²', 'فكرة ثانية: شرح طويل لا يصلح أن يكون رقمًا'], 'معادلة الدائرة')!;
+    assert.equal(s.layout, 'stat');
+  });
+
+  it('leaves a short plain word alone — display type would be a heading with nothing to say', () => {
+    const s = slideTitled(['النوع: متغير', 'فكرة ثانية: شرح طويل لا يصلح أن يكون رقمًا'], 'النوع')!;
+    assert.equal(s.layout, undefined);
+    assert.equal(s.content, 'متغير');
+  });
+
+  it('leaves a long value alone even when it holds digits', () => {
+    const s = slideTitled(['الشرط: يجب أن يكون المميز أكبر من 0 حتى يوجد حلان', 'فكرة ثانية: شرح طويل لا يصلح أن يكون رقمًا'], 'الشرط')!;
+    assert.equal(s.layout, undefined);
   });
 });

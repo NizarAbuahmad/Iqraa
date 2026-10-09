@@ -2,6 +2,7 @@ import React, { memo, useMemo, useRef, useState } from 'react';
 import { PanResponder, Platform, Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Polyline } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
+import { appendInkPoint, scaleInkPoints } from '@/services/penInk';
 import { DECK_ACCENT, DECK_BORDER, DECK_CARD_BG, DECK_MUTED, DECK_TEXT, TIMER_RED } from '@/services/deckTheme';
 import { DEFAULT_STROKE_WIDTH, ERASER_RADIUS, eraseAlong, eraseAt, type Stroke } from '@/services/whiteboardModel';
 
@@ -10,18 +11,26 @@ import { DEFAULT_STROKE_WIDTH, ERASER_RADIUS, eraseAlong, eraseAt, type Stroke }
 // colours, undo, clear, nothing saved. The full board (eraser, widths, grid)
 // is `app/ai-tools/whiteboard.tsx`, which drives this same canvas.
 
+/**
+ * `points` are fractions of the canvas width, not pixels (`services/penInk.ts`),
+ * so a stroke follows the slide when the stage is resized instead of staying
+ * where it was drawn. `width`, when present, is in pixels.
+ */
 export type { Stroke };
 
 export const PEN_COLORS = [TIMER_RED, DECK_ACCENT, DECK_TEXT];
 
-/** Committed strokes. Memoised so a touch-move that only changes the draft never re-renders them. */
-const StrokeLines = memo(function StrokeLines({ strokes }: { strokes: Stroke[] }) {
+/**
+ * Committed strokes, drawn at the canvas's current width. Memoised so a
+ * touch-move that only changes the draft never re-renders them.
+ */
+const StrokeLines = memo(function StrokeLines({ strokes, canvasW }: { strokes: Stroke[]; canvasW: number }) {
   return (
     <>
       {strokes.map((s, i) => (
         <Polyline
           key={i}
-          points={s.points}
+          points={scaleInkPoints(s.points, canvasW)}
           fill="none"
           stroke={s.color}
           strokeWidth={s.width ?? DEFAULT_STROKE_WIDTH}
@@ -52,9 +61,12 @@ export function PenCanvas({ strokes, color, active, onChange, width = DEFAULT_ST
   /** Touches remove strokes instead of drawing. */
   erase?: boolean;
 }) {
+  // The canvas follows the slide's content box, so its width changes with the
+  // stage. Strokes are stored relative to it and drawn at whatever it is now.
+  const [canvasW, setCanvasW] = useState(0);
   // PanResponder is built once; read the latest props through a ref.
-  const latest = useRef({ strokes, color, width, erase, onChange });
-  latest.current = { strokes, color, width, erase, onChange };
+  const latest = useRef({ strokes, color, width, erase, onChange, canvasW });
+  latest.current = { strokes, color, width, erase, onChange, canvasW };
 
   const [draft, setDraft] = useState<Stroke | null>(null);
   const [erased, setErased] = useState<Stroke[] | null>(null);
@@ -62,7 +74,7 @@ export function PenCanvas({ strokes, color, active, onChange, width = DEFAULT_ST
   const erasedRef = useRef<Stroke[] | null>(null);
   /** The committed strokes at the moment the finger went down — the identity reference for "erased nothing". */
   const base = useRef<Stroke[]>([]);
-  /** Where the eraser was last applied, so a fast drag is swept rather than sampled. */
+  /** Where the eraser was last applied (in stored units), so a fast drag is swept rather than sampled. */
   const lastErase = useRef<{ x: number; y: number } | null>(null);
 
   const responder = useMemo(() => {
@@ -90,30 +102,45 @@ export function PenCanvas({ strokes, color, active, onChange, width = DEFAULT_ST
         const cur = latest.current;
         base.current = cur.strokes;
         if (cur.erase) {
-          const next = eraseAt(cur.strokes, x, y, ERASER_RADIUS);
-          lastErase.current = { x, y };
+          // Strokes are stored as fractions of the canvas width, so the touch
+          // and the eraser's reach are converted to the same units. `unit` is
+          // one pixel in those units, which is what turns a stroke's pixel
+          // width into the right reach.
+          if (!(cur.canvasW > 0)) return; // not laid out yet — nothing to erase against
+          const unit = 1 / cur.canvasW;
+          const fx = x * unit;
+          const fy = y * unit;
+          const next = eraseAt(cur.strokes, fx, fy, ERASER_RADIUS * unit, unit);
+          lastErase.current = { x: fx, y: fy };
           erasedRef.current = next;
           setErased(next);
         } else {
           // A single point would draw nothing; start with a zero-length
           // segment so a tap leaves a dot.
-          const s: Stroke = { color: cur.color, width: cur.width, points: `${x},${y} ${x},${y}` };
+          const first = appendInkPoint('', x, y, cur.canvasW);
+          if (!first) return; // not laid out yet — nothing to anchor the stroke to
+          const s: Stroke = { color: cur.color, width: cur.width, points: `${first} ${first}` };
           draftRef.current = s;
           setDraft(s);
         }
       },
       onPanResponderMove: ev => {
         const { locationX: x, locationY: y } = ev.nativeEvent;
+        const cw = latest.current.canvasW;
         if (erasedRef.current) {
-          const from = lastErase.current ?? { x, y };
-          const next = eraseAlong(erasedRef.current, from.x, from.y, x, y, ERASER_RADIUS);
-          lastErase.current = { x, y };
+          if (!(cw > 0)) return;
+          const unit = 1 / cw;
+          const fx = x * unit;
+          const fy = y * unit;
+          const from = lastErase.current ?? { x: fx, y: fy };
+          const next = eraseAlong(erasedRef.current, from.x, from.y, fx, fy, ERASER_RADIUS * unit, unit);
+          lastErase.current = { x: fx, y: fy };
           if (next !== erasedRef.current) {
             erasedRef.current = next;
             setErased(next);
           }
         } else if (draftRef.current) {
-          const s: Stroke = { ...draftRef.current, points: `${draftRef.current.points} ${x},${y}` };
+          const s: Stroke = { ...draftRef.current, points: appendInkPoint(draftRef.current.points, x, y, cw) };
           draftRef.current = s;
           setDraft(s);
         }
@@ -130,11 +157,12 @@ export function PenCanvas({ strokes, color, active, onChange, width = DEFAULT_ST
       // locationX/Y are always relative to this view (on web a child target
       // would make them relative to the polyline instead).
       pointerEvents={active ? 'box-only' : 'none'}
+      onLayout={e => setCanvasW(e.nativeEvent.layout.width)}
       style={[StyleSheet.absoluteFill, active && Platform.OS === 'web' && ({ touchAction: 'none', cursor: 'crosshair' } as any)]}
     >
       <Svg width="100%" height="100%">
-        <StrokeLines strokes={erased ?? strokes} />
-        {draft && <StrokeLines strokes={[draft]} />}
+        <StrokeLines strokes={erased ?? strokes} canvasW={canvasW} />
+        {draft && <StrokeLines strokes={[draft]} canvasW={canvasW} />}
       </Svg>
     </View>
   );
@@ -158,7 +186,7 @@ export function PenPalette({ color, onColor, onUndo, onClear, canUndo, labels }:
           hitSlop={6}
           accessibilityRole="button"
           accessibilityLabel={labels.colors[i]}
-          accessibilityState={{ selected: c === color }}
+          aria-selected={c === color}
           style={[styles.swatch, { backgroundColor: c }, c === color && styles.swatchOn]}
         />
       ))}

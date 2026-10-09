@@ -11,10 +11,11 @@
  * curated Wikimedia media left this screen on 2026-09-25: the library is for
  * ready-made resources, not a door into the tools.
  *
- * Pure on purpose — no `react-native`, no `expo-*`, and every import below is
- * `import type`, so nothing is pulled in at runtime. The mobile test runner is
- * bare `node --test` with no React Native transform.
+ * Pure on purpose — no `react-native`, no `expo-*`; the one runtime import is
+ * `normalizeArabic`, which is plain TypeScript. The mobile test runner is bare
+ * `node --test` with no React Native transform.
  */
+import { normalizeArabic } from '@workspace/curriculum/blooms';
 import type { PremadeWorksheet } from '@workspace/curriculum/premade';
 import type { QrResourceBook } from './bookQrLinks.ts';
 import type { LibraryCategory, LibraryItem } from './libraryApi.ts';
@@ -25,13 +26,17 @@ export type ResourceSource = 'uploaded' | 'premade-sheet' | 'book-qr';
 export type ResourceKind =
   | LibraryCategory
   | 'image'
-  | 'page';
+  | 'page'
+  /** A Science Lab item. Only ever a class-shelf row; the Library catalogue never produces one. */
+  | 'lab';
 
 /**
- * What a row lets a teacher do. `print` renders a frozen sheet; `open` opens
- * the file or link; `add-to-class` files a copy — see `addToClassPlan`.
+ * What a row lets a teacher do on the Library screen. `print` renders a frozen
+ * sheet; `open` opens the file or link. Putting a row on a class's shelf is not
+ * a Library-screen action: it happens from inside the class
+ * (`components/classes/LibraryPickerSheet.tsx`), as a pointer, never a copy.
  */
-export type ResourceAction = 'add-to-class' | 'print' | 'open';
+export type ResourceAction = 'print' | 'open';
 
 export interface ResourceItem {
   /** `<source>:<nativeId>`. Unique across every source by construction. */
@@ -51,10 +56,14 @@ export interface ResourceItem {
   url?: string;
   /** Cover image URL: set by admin, or auto-derived from a YouTube URL. */
   thumbnailUrl?: string;
+  /** The uploaded file's MIME type, so a picture can be its own cover. */
+  mimeType?: string;
   /** 1 or 2 when the resource covers one semester only. */
   semester?: 1 | 2;
   /** The printed page a book-QR code sits on. */
   page?: number;
+  /** The book a book-QR code is printed in, when `titleAr` names what it opens instead. */
+  bookTitle?: string;
   /** The row opens over plain http — warned per row, not once per screen. */
   insecure?: boolean;
   actions: ResourceAction[];
@@ -74,6 +83,11 @@ export interface ResourceFilter {
   gradeId?: string;
   /** Keeps rows for this subject, plus rows with no subject. */
   subjectId?: string;
+  /**
+   * Keeps rows for any of these subjects, plus rows with no subject. For a
+   * class that teaches several; empty or absent means no subject filter.
+   */
+  subjectIds?: readonly string[];
   query?: string;
 }
 
@@ -93,6 +107,7 @@ function fromUploaded(item: LibraryItem): ResourceItem | null {
     description: item.description || undefined,
     url: item.url,
     thumbnailUrl: item.thumbnailUrl ?? undefined,
+    mimeType: item.mimeType ?? undefined,
     semester: item.semester ?? undefined,
     actions: ['open'],
   };
@@ -109,7 +124,7 @@ function fromPremade(sheet: PremadeWorksheet): ResourceItem {
     lessonId: sheet.lessonId,
     gradeId: sheet.gradeId,
     subjectId: sheet.subjectId,
-    actions: ['add-to-class', 'print'],
+    actions: ['print'],
   };
 }
 
@@ -124,8 +139,11 @@ function fromQrBook(book: QrResourceBook): ResourceItem[] {
     source: 'book-qr' as const,
     nativeId: `${resource.pdfPage}:${resource.url}`,
     kind: resource.kind,
-    titleAr: book.title,
-    titleEn: book.title,
+    // A row says what it opens when we know, and which book it is from when
+    // we do not. Naming only the book left every code in it reading the same.
+    titleAr: resource.title ?? book.title,
+    titleEn: resource.title ?? book.title,
+    bookTitle: book.title,
     subjectId: book.subjectId,
     url: resource.url,
     page: resource.pdfPage,
@@ -154,15 +172,21 @@ export function buildResourceCatalog(input: ResourceCatalogInput): ResourceItem[
 
 /** Every filter narrows; passing several combines them. */
 export function filterResources(items: ResourceItem[], filter: ResourceFilter): ResourceItem[] {
-  const query = filter.query?.trim().toLowerCase();
+  // Both sides go through the same Arabic folding, so «الاقترانات» finds
+  // «الإقترانات» and a teacher's typed harakat do not defeat the match.
+  const query = normalizeArabic(filter.query);
   return items.filter(item => {
     if (filter.kinds?.length && !filter.kinds.includes(item.kind)) return false;
     if (filter.sources?.length && !filter.sources.includes(item.source)) return false;
     if (filter.lessonId && item.lessonId !== filter.lessonId) return false;
     if (filter.gradeId && item.gradeId && item.gradeId !== filter.gradeId) return false;
     if (filter.subjectId && item.subjectId && item.subjectId !== filter.subjectId) return false;
+    if (filter.subjectIds?.length && item.subjectId && !filter.subjectIds.includes(item.subjectId)) return false;
     if (query) {
-      const haystack = `${item.titleAr} ${item.titleEn}`.toLowerCase();
+      // A book code is located by its printed page, so «صفحة ٣٥», «page 35»
+      // and a bare «35» all find it; digits fold to Latin in `normalizeArabic`.
+      const page = item.page === undefined ? '' : `صفحة ${item.page} page ${item.page}`;
+      const haystack = normalizeArabic(`${item.titleAr} ${item.titleEn} ${item.description ?? ''} ${page}`);
       if (!haystack.includes(query)) return false;
     }
     return true;
@@ -172,10 +196,11 @@ export function filterResources(items: ResourceItem[], filter: ResourceFilter): 
 /**
  * A shelf is one tile on the library screen: every item of one kind, whatever
  * library it came from. Uploaded worksheets and the ready-made sheets share
- * the worksheet shelf; the book QR codes get one of their own, since they are
- * a mix of kinds grouped by book.
+ * the worksheet shelf, and a code printed in a book sits on the shelf of what
+ * it opens — a video among the videos — rather than in a «book sources» pile
+ * a teacher had to open book by book.
  */
-export type Shelf = LibraryCategory | 'book-qr';
+export type Shelf = LibraryCategory;
 
 export const SHELF_ORDER: Shelf[] = [
   'infographic',
@@ -187,12 +212,16 @@ export const SHELF_ORDER: Shelf[] = [
   'template',
   'presentation',
   'document',
-  'book-qr',
 ];
 
+/**
+ * A book code that opens a web page has no shelf of its own — 11 of the 17
+ * reachable grade 9–10 codes are exactly that — so it goes under documents,
+ * and the row's «صفحة ويب» tag says what it is.
+ */
 export function shelfOf(item: Pick<ResourceItem, 'source' | 'kind'>): Shelf | null {
-  if (item.source === 'book-qr') return 'book-qr';
-  return (SHELF_ORDER as string[]).includes(item.kind) ? (item.kind as Shelf) : null;
+  const kind = item.source === 'book-qr' && item.kind === 'page' ? 'document' : item.kind;
+  return (SHELF_ORDER as string[]).includes(kind) ? (kind as Shelf) : null;
 }
 
 /** Shelves in display order, omitting any with no items. */
@@ -201,21 +230,3 @@ export function groupIntoShelves(items: ResourceItem[]): Array<{ shelf: Shelf; i
     .filter(group => group.items.length > 0);
 }
 
-/**
- * The writes "add to class" needs, in order, for a given source. Kept here so
- * the mapping is testable. Empty means the source can't be attached: uploads
- * and book codes are shared links, not teacher-owned material.
- */
-export type AddToClassStep = 'save-material' | 'attach-material';
-
-export function addToClassPlan(item: Pick<ResourceItem, 'source'>): AddToClassStep[] {
-  switch (item.source) {
-    case 'premade-sheet':
-      // Materialise a teacher-owned copy first: attaching the shared manifest
-      // entry itself would let one teacher's edit change every teacher's sheet.
-      return ['save-material', 'attach-material'];
-    case 'uploaded':
-    case 'book-qr':
-      return [];
-  }
-}

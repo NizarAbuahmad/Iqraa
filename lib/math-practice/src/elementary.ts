@@ -13,27 +13,91 @@
  */
 import type { ConcreteItem, DiffTier } from './index.ts';
 
-export type ElementaryOp = 'add' | 'sub' | 'mul' | 'div' | 'compare' | 'place' | 'frac' | 'frac_compare' | 'dec' | 'percent';
+export type ElementaryOp =
+  | 'add' | 'sub' | 'mul' | 'div' | 'compare' | 'place'
+  | 'frac' | 'frac_sub' | 'frac_mul' | 'frac_div' | 'frac_compare'
+  | 'dec' | 'dec_sub' | 'dec_mul' | 'dec_div' | 'dec_compare'
+  | 'percent';
 
-const TASHKEEL = /[ً-ٰٟـ]/g;
+const TASHKEEL = /[ً-ٰٟـ]/g;
+
+/** Harakat off, hamza/alef, yaa and taa-marbuta folded, so one spelling matches. */
+export const fold = (s: string) =>
+  s.replace(TASHKEEL, '').replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه');
 
 /**
- * The operation a lesson is about. Early-grade titles are fully vowelled
- * («الْجَمْعُ»), so harakat are stripped first. «جمع البيانات» is collecting
- * data, not addition.
+ * Titles about a topic these generators cannot produce — each word names a
+ * lesson whose items would be about something else: estimating and rounding,
+ * remainders, multiples, properties, money, equations, powers, divisibility,
+ * skip-counting, fractions as parts or equivalents, mixed numbers, place-value
+ * of decimals, conversions, negative integers.
+ */
+const UNSERVED = new RegExp([
+  'تقدير', 'تقريب', 'خاصي', 'خصائص', 'خواص', 'باق', 'مضاعف', 'اولويات', 'نقود', 'معادلات',
+  'القوي', 'الاسس', 'قابليه', 'القفزي', 'خطه', 'كجزء', 'متكافئ', 'خط الاعداد',
+  'غير الفعلي', 'اجزاء', 'التحويل', 'صحيحه', 'المساويه', 'الحقائق', 'علاقه',
+  'الذهني', 'كسري', 'التوزيع', 'قياس',
+].join('|'));
+
+/**
+ * The operations a lesson is about, read from its TITLE — or `[]` when this
+ * lesson has nothing the generators can honestly ask.
+ *
+ * Title, not the lesson's summary: the old version read every concept and
+ * objective too, so a lesson on «الأنماط» whose summary said «جمع» served
+ * addition, and «التحويل بين الكسور والأعداد العشرية» matched «كسور» and served
+ * fraction addition. An empty list is a refusal, not a fallback — the caller
+ * says there is no bank for the lesson rather than invent one.
+ *
+ * «جمع البيانات» is collecting data, not addition.
+ */
+export function elementaryOpsForTitle(title: string): ElementaryOp[] {
+  const t = fold(title).replace(/جمع\s*البيانات|data\s*collection/gi, ' ');
+
+  if (/مقارنه|ترتيب|compar|order/i.test(t)) {
+    if (/صحيحه/.test(t)) return [];
+    if (/كسور|كسر|fraction/i.test(t)) return ['frac_compare'];
+    if (/عشري|decimal/i.test(t)) return ['dec_compare'];
+    return /الاعداد|numbers/i.test(t) ? ['compare'] : [];
+  }
+  if (/مئوي|percent/i.test(t)) return /والكسور/.test(t) ? [] : ['percent'];
+  if (UNSERVED.test(t)) return [];
+  if (/منزلي|place\s*value/i.test(t)) return ['place'];
+
+  const kind = /كسور|كسر|fraction/i.test(t) ? 'frac' : /عشري|decimal/i.test(t) ? 'dec' : 'whole';
+  const named = {
+    add: /جمع|addition|\badd/i.test(t),
+    sub: /طرح|subtract/i.test(t),
+    mul: /ضرب|multipl|times\s*table/i.test(t),
+    div: /قسم|divi/i.test(t),
+  };
+  // Regrouping in a product is a two-digit factor, which the times-table items
+  // are not.
+  if (named.mul && /اعاده/.test(t)) return [];
+
+  // «الكسور والقسمة» names a fraction and a division but is not dividing
+  // fractions: an operation only counts when it is applied to the fractions.
+  if (kind === 'frac' && !/(?:جمع|طرح|ضرب|قسم\S*)\s*(?:ال)?كسور/.test(t)) return [];
+
+  const table: Record<typeof kind, Partial<Record<keyof typeof named, ElementaryOp>>> = {
+    whole: { add: 'add', sub: 'sub', mul: 'mul', div: 'div' },
+    frac: { add: 'frac', sub: 'frac_sub', mul: 'frac_mul', div: 'frac_div' },
+    dec: { add: 'dec', sub: 'dec_sub', mul: 'dec_mul', div: 'dec_div' },
+  };
+  const ops: ElementaryOp[] = [];
+  for (const key of ['add', 'sub', 'mul', 'div'] as const) {
+    const op = table[kind][key];
+    if (named[key] && op) ops.push(op);
+  }
+  return ops;
+}
+
+/**
+ * The first operation a lesson is about, or null. Kept for callers that want
+ * one; `elementaryOpsForTitle` is the whole answer.
  */
 export function detectElementaryOp(blob: string): ElementaryOp | null {
-  const t = blob.replace(TASHKEEL, '').replace(/جمع\s*البيانات|data\s*collection/gi, ' ');
-  if (/مئوي|نسبة\s*مئوية|percent/i.test(t)) return 'percent';
-  if (/كسر|كسور|fraction/i.test(t)) return /مقارن|ترتيب|compar|order/i.test(t) ? 'frac_compare' : 'frac';
-  if (/عشري|decimal/i.test(t)) return 'dec';
-  if (/طرح|subtract/i.test(t)) return 'sub';
-  if (/قسمة|القسمة|divi/i.test(t)) return 'div';
-  if (/ضرب|multipl|times\s*table/i.test(t)) return 'mul';
-  if (/جمع|addition|\badd/i.test(t)) return 'add';
-  if (/مقارن|ترتيب|compar|order/i.test(t)) return 'compare';
-  if (/منزل|place\s*value|الآحاد|العشرات|المئات|الالوف|الألوف/i.test(t)) return 'place';
-  return null;
+  return elementaryOpsForTitle(blob)[0] ?? null;
 }
 
 /** Ops a grade can be asked when the lesson names none. */
@@ -53,8 +117,8 @@ const TABLE_MAX: Record<number, number> = { 1: 2, 2: 5, 3: 10, 4: 10, 5: 10, 6: 
 
 const TIER_SCALE: Record<DiffTier, number> = { easy: 0.1, medium: 0.5, hard: 1 };
 
-type Rng = () => number;
-const int = (rng: Rng, lo: number, hi: number) => lo + Math.floor(rng() * (hi - lo + 1));
+export type Rng = () => number;
+export const int = (rng: Rng, lo: number, hi: number) => lo + Math.floor(rng() * (hi - lo + 1));
 
 /** Three distinct plausible wrong answers around a numeric answer. */
 function numericWrongs(answer: number, rng: Rng, spread: number[]): string[] {
@@ -73,8 +137,8 @@ function numericWrongs(answer: number, rng: Rng, spread: number[]): string[] {
   return [...out].slice(0, 3);
 }
 
-const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
-const frac = (n: number, d: number) => {
+export const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
+export const frac = (n: number, d: number) => {
   const g = gcd(n, d);
   return d / g === 1 ? `${n / g}` : `${n / g}/${d / g}`;
 };
@@ -84,6 +148,63 @@ const fracValue = (s: string) => {
   const [n, d] = s.split('/').map(Number);
   return d === undefined ? n : n / d;
 };
+
+/** «12.5» from 125 at one place; trailing zeros dropped. */
+export const fixedDec = (n: number, places: number) => (n / 10 ** places).toFixed(places);
+export const fmtDec = (n: number, places: number) => fixedDec(n, places).replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
+
+/** Up to three distinct, non-negative decimals that are not the answer. */
+function distinctDecimals(answer: string, candidates: string[]): string[] {
+  const out: string[] = [];
+  const seen = new Set<number>([Number(answer)]);
+  const take = (s: string) => {
+    const v = Number(s);
+    if (!Number.isFinite(v) || v < 0 || seen.has(v)) return;
+    seen.add(v);
+    out.push(s);
+  };
+  candidates.forEach(take);
+  for (let k = 1; out.length < 3; k++) take(String(Math.round((Number(answer) + k) * 100) / 100));
+  return out.slice(0, 3);
+}
+
+function decimalItem(
+  base: Pick<ConcreteItem, 'id' | 'family' | 'diff'>, eq: string, r: number, places: number, wrongInts: number[],
+): ConcreteItem {
+  const answer = fmtDec(r, places);
+  return { ...base, eq, answer, wrongs: distinctDecimals(answer, wrongInts.map(w => fmtDec(w, places))) };
+}
+
+/**
+ * A fraction item whose three wrong options are never equal in value to the
+ * answer (or to each other) — compared by value, not text, or 4/12 sits beside
+ * the answer 1/3 as a second right option.
+ */
+function fractionItem(
+  base: Pick<ConcreteItem, 'id' | 'family' | 'diff'>, eq: string, n: number, d: number, candidates: string[],
+): ConcreteItem {
+  const answer = frac(n, d);
+  const seen = [fracValue(answer)];
+  const wrongs: string[] = [];
+  const take = (w: string) => {
+    const v = fracValue(w);
+    if (!Number.isFinite(v) || v <= 0 || seen.some(x => Math.abs(x - v) < 1e-9)) return;
+    seen.push(v);
+    wrongs.push(w);
+  };
+  candidates.forEach(take);
+  for (let k = 1; wrongs.length < 3; k++) take(frac(n + k, d));
+  return { ...base, eq, answer, wrongs: wrongs.slice(0, 3) };
+}
+
+/** a/d1 and b/d2 with different denominators — the unlike-denominator drill. */
+function unlikePair(rng: Rng): [number, number, number, number] {
+  const D = [2, 3, 4, 5, 6, 8, 10, 12];
+  const d1 = D[int(rng, 0, D.length - 1)]!;
+  let d2 = D[int(rng, 0, D.length - 1)]!;
+  if (d2 === d1) d2 = D[(D.indexOf(d1) + 1) % D.length]!;
+  return [int(rng, 1, d1 - 1), d1, int(rng, 1, d2 - 1), d2];
+}
 
 /**
  * The times table a lesson is about — «الضرب في 2», «القسمة على 5»,
@@ -176,9 +297,9 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       };
     }
     case 'frac': {
-      const d = int(rng, grade <= 3 ? 2 : 3, grade <= 3 ? 8 : 12);
       if (grade <= 3) {
         // Unit fractions: the larger denominator is the smaller part.
+        const d = int(rng, 2, 8);
         const e = int(rng, 2, 10);
         const d2 = e === d ? d + 1 : e;
         const sign = d < d2 ? '>' : '<';
@@ -189,18 +310,92 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
           promptEn: `Write the correct sign (>, < or =):\n1/${d} ___ 1/${d2}`,
         };
       }
+      if (grade >= 5) {
+        const [a, d1, b, d2] = unlikePair(rng);
+        const n = a * d2 + b * d1;
+        const d = d1 * d2;
+        return fractionItem(base, `${a}/${d1} + ${b}/${d2}`, n, d, [
+          `${a + b}/${d1 + d2}`, `${a + b}/${d}`, frac(n + 1, d), frac(n, d + 1),
+        ]);
+      }
+      const d = int(rng, 3, 12);
       const a = int(rng, 1, d - 2);
       const b = int(rng, 1, d - a - 1);
-      const answer = frac(a + b, d);
-      const seen = [fracValue(answer)];
-      const wrongs = [`${a + b}/${2 * d}`, frac(a + b + 1, d), `${a * b}/${d}`, `${a + b}/${d + 1}`, `${a + b + 2}/${d}`]
-        .filter(w => {
-          const v = fracValue(w);
-          if (seen.some(x => Math.abs(x - v) < 1e-9)) return false;
-          seen.push(v);
-          return true;
-        });
-      return { ...base, eq: `${a}/${d} + ${b}/${d}`, answer, wrongs: wrongs.slice(0, 3) };
+      return fractionItem(base, `${a}/${d} + ${b}/${d}`, a + b, d, [
+        `${a + b}/${2 * d}`, frac(a + b + 1, d), `${a * b}/${d}`, `${a + b}/${d + 1}`,
+      ]);
+    }
+    case 'frac_sub': {
+      if (grade >= 5) {
+        let [a, d1, b, d2] = unlikePair(rng);
+        if (a * d2 < b * d1) [a, d1, b, d2] = [b, d2, a, d1];
+        const n = a * d2 - b * d1;
+        const d = d1 * d2;
+        if (n > 0) {
+          return fractionItem(base, `${a}/${d1} − ${b}/${d2}`, n, d, [
+            `${a - b}/${d}`, `${a - b}/${d1 + d2}`, frac(n + 1, d), frac(n, d + 1),
+          ]);
+        }
+      }
+      const d = int(rng, 3, 12);
+      const a = int(rng, 2, d - 1);
+      const b = int(rng, 1, a - 1);
+      return fractionItem(base, `${a}/${d} − ${b}/${d}`, a - b, d, [
+        `${a - b}/${2 * d}`, frac(a - b + 1, d), `${a + b}/${d}`, `${a - b}/${d + 1}`,
+      ]);
+    }
+    case 'frac_mul': {
+      const [a, b, c, d] = [int(rng, 1, 5), int(rng, 2, 9), int(rng, 1, 5), int(rng, 2, 9)];
+      return fractionItem(base, `${a}/${b} × ${c}/${d}`, a * c, b * d, [
+        `${a * c}/${b + d}`, `${a + c}/${b * d}`, frac(a * d, b * c), frac(a * c, b * d + 1),
+      ]);
+    }
+    case 'frac_div': {
+      const [a, b, c, d] = [int(rng, 1, 5), int(rng, 2, 9), int(rng, 1, 5), int(rng, 2, 9)];
+      return fractionItem(base, `${a}/${b} ÷ ${c}/${d}`, a * d, b * c, [
+        frac(a * c, b * d), frac(b * c, a * d), `${a * d}/${b + c}`, frac(a * d + 1, b * c),
+      ]);
+    }
+    case 'dec_sub': {
+      const places = diff === 'hard' ? 2 : 1;
+      const scale = 10 ** places;
+      const A = int(rng, 2, 9 * scale);
+      const B = int(rng, 1, A - 1);
+      const r = A - B;
+      return decimalItem(base, `${fmtDec(A, places)} − ${fmtDec(B, places)}`, r, places,
+        [r + 1, r - 1, r + scale, r - scale]);
+    }
+    case 'dec_mul': {
+      // One decimal place times a whole number: the point has one place in the
+      // answer, and the classic slip is to move it.
+      const A = int(rng, 11, 99);
+      const b = int(rng, 2, 9);
+      const P = A * b;
+      return {
+        ...base, eq: `${fmtDec(A, 1)} × ${b}`, answer: fmtDec(P, 1),
+        wrongs: distinctDecimals(fmtDec(P, 1), [fmtDec(P, 2), fmtDec(P, 0), fmtDec(P + 1, 1), fmtDec(P - 1, 1)]),
+      };
+    }
+    case 'dec_div': {
+      const b = int(rng, 2, 9);
+      const Q = int(rng, 11, 99);
+      return {
+        ...base, eq: `${fmtDec(Q * b, 1)} ÷ ${b}`, answer: fmtDec(Q, 1),
+        wrongs: distinctDecimals(fmtDec(Q, 1), [fmtDec(Q, 2), fmtDec(Q, 0), fmtDec(Q + 1, 1), fmtDec(Q - 1, 1)]),
+      };
+    }
+    case 'dec_compare': {
+      // Different digit counts, so «0.5 ___ 0.45» is about place value and not
+      // about which string is longer. One draw in four is an equal pair.
+      const a = int(rng, 1, 9);
+      const b = rng() < 0.25 ? a * 10 : int(rng, 1, 99);
+      const sign = a * 10 > b ? '>' : a * 10 < b ? '<' : '=';
+      return {
+        ...base, eq: `${fixedDec(a, 1)} ___ ${fixedDec(b, 2)}`, answer: sign,
+        wrongs: ['>', '<', '='].filter(s => s !== sign),
+        promptAr: `ضع الإشارة المناسبة (> أو < أو =):\n${fixedDec(a, 1)} ___ ${fixedDec(b, 2)}`,
+        promptEn: `Write the correct sign (>, < or =):\n${fixedDec(a, 1)} ___ ${fixedDec(b, 2)}`,
+      };
     }
     case 'frac_compare': {
       // Different denominators, compared by cross-multiplying.
@@ -262,9 +457,9 @@ export function makeElementaryItem(
   rng: Rng = Math.random,
 ): ConcreteItem {
   const g = Math.min(6, Math.max(1, Math.round(grade)));
-  const named = detectElementaryOp(blob);
+  const named = elementaryOpsForTitle(blob);
   const table = lessonTable(blob);
-  const pool = named ? [named] : DEFAULT_OPS[g]!;
+  const pool = named.length > 0 ? named : DEFAULT_OPS[g]!;
   let item: ConcreteItem | null = null;
   for (let attempt = 0; attempt < 25; attempt++) {
     const op = pool[int(rng, 0, pool.length - 1)]!;

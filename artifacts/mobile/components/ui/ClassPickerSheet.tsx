@@ -133,7 +133,7 @@ export function ClassPickerSheet({
           <Text
             style={[
               styles.title,
-              { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align },
+              { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align },
             ]}
           >
             {selectedClassId ? t('changeClassTitle') : t('saveToClassTitle')}
@@ -176,12 +176,13 @@ export function ClassPickerSheet({
                     styles.row,
                     {
                       borderColor: (multiple ? on : current) ? ACCENT : colors.border,
-                      backgroundColor: (multiple ? on : current) ? ACCENT + '12' : 'transparent',
+                      backgroundColor: (multiple ? on : current) ? palette.selected : 'transparent',
                       flexDirection: isRTL ? 'row-reverse' : 'row',
                     },
                   ]}
                   accessibilityRole={multiple ? 'checkbox' : 'button'}
-                  accessibilityState={multiple ? { checked: on } : { selected: current }}
+                  aria-checked={multiple ? on : undefined}
+                  aria-selected={multiple ? undefined : current}
                 >
                   <Ionicons
                     name={multiple ? (on ? 'checkbox' : 'square-outline') : (current ? 'checkmark-circle' : 'people-outline')}
@@ -192,7 +193,7 @@ export function ClassPickerSheet({
                     <Text
                       style={{
                         color: colors.foreground,
-                        fontFamily: 'Cairo_500Medium',
+                        fontFamily: 'ReadexPro_500Medium',
                         textAlign: align,
                       }}
                       numberOfLines={1}
@@ -203,7 +204,7 @@ export function ClassPickerSheet({
                       style={{
                         color: current ? ACCENT : colors.mutedForeground,
                         fontFamily: 'Almarai_400Regular',
-                        fontSize: 12, lineHeight: 19,
+                        fontSize: 13, lineHeight: 21,
                         textAlign: align,
                       }}
                     >
@@ -232,7 +233,7 @@ export function ClassPickerSheet({
               <Text
                 style={{
                   color: colors.mutedForeground,
-                  fontFamily: 'Cairo_500Medium',
+                  fontFamily: 'ReadexPro_500Medium',
                   flex: 1,
                   textAlign: align,
                 }}
@@ -244,7 +245,7 @@ export function ClassPickerSheet({
 
           <View style={[styles.actions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Pressable onPress={onClose} style={styles.btn}>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>
                 {t('notNow')}
               </Text>
             </Pressable>
@@ -259,7 +260,7 @@ export function ClassPickerSheet({
                 if (picks.length > 0) onPick(picks);
               }}
               disabled={selected.length === 0}
-              accessibilityState={{ disabled: selected.length === 0 }}
+              aria-disabled={selected.length === 0}
               style={[
                 styles.btn,
                 styles.confirm,
@@ -269,7 +270,7 @@ export function ClassPickerSheet({
               <Text
                 style={{
                   color: selected.length === 0 ? colors.mutedForeground : '#fff',
-                  fontFamily: 'Cairo_600SemiBold',
+                  fontFamily: 'ReadexPro_600SemiBold',
                 }}
               >
                 {t('saveToClassesConfirm')}
@@ -293,7 +294,7 @@ const styles = StyleSheet.create({
   },
   card: { width: '100%', maxWidth: 440, borderRadius: 16, padding: 20, gap: 12 },
   title: { fontSize: 18 },
-  hint: { fontSize: 13, lineHeight: 21 },
+  hint: { fontSize: 15, lineHeight: 24 },
   row: {
     alignItems: 'center',
     gap: 10,

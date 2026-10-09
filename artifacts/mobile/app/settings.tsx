@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +18,10 @@ import { Button } from '@/components/ui/Button';
 import { Toast } from '@/components/ui/Toast';
 import { AccountRow } from '@/components/ui/AccountRow';
 import { confirm } from '@/services/confirm';
+import { getPickerGrades } from '@/services/curriculumData';
+import { dateLocale } from '@/services/dateLabels';
+import { askForPushPermission, getPushPermissionState, pushAskCopy, type PushPermissionState } from '@/services/pushTokens';
+import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 
 type AiUsage = { spentUsd: number | null; limitUsd: number; resetsAt: string };
 
@@ -38,6 +42,25 @@ export default function SettingsScreen() {
   const [typeError, setTypeError] = useState('');
   const [sendingTest, setSendingTest] = useState(false);
   const [toast, setToast] = useState('');
+
+  // Whether this device will get pushes at all. Re-read when the app comes
+  // back to the foreground (usePollingRefresh), which is how a user returns
+  // from system settings after changing it there.
+  const [pushState, setPushState] = useState<PushPermissionState | null>(null);
+  const loadPushState = useCallback(async () => setPushState(await getPushPermissionState()), []);
+  useEffect(() => { void loadPushState(); }, [loadPushState]);
+  usePollingRefresh(loadPushState);
+
+  // Off: our explanation, then the OS prompt — or system settings once
+  // Android no longer prompts. On: system settings, where the per-kind
+  // channels (messages, results, reminders) can be muted one by one.
+  const handlePushRow = async () => {
+    if (pushState === 'granted') {
+      void Linking.openSettings();
+      return;
+    }
+    setPushState(await askForPushPermission({ explicit: true, copy: pushAskCopy(t) }));
+  };
 
   // Verifies real Expo push delivery without a second account to message you
   // — see POST /messaging/device-tokens/test. Native only: web never
@@ -61,6 +84,11 @@ export default function SettingsScreen() {
   // to, or 'add' — one at a time, and every other row is inert meanwhile.
   const [accountBusy, setAccountBusy] = useState<string | null>(null);
   const [accountError, setAccountError] = useState('');
+  // The class(es) a parent or student picked, as the row's right-hand text.
+  const classSummary = getPickerGrades()
+    .filter(g => user?.gradeIds?.includes(g.id))
+    .map(g => (lang === 'ar' ? g.nameAr : g.name))
+    .join(lang === 'ar' ? '، ' : ', ');
   const roleLabelFor = (role: string) =>
     t(role === 'parent' ? 'roleParent'
       : role === 'student' ? 'roleStudent'
@@ -159,10 +187,10 @@ export default function SettingsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
-        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('settingsTitle')}
         </Text>
       </View>
@@ -215,17 +243,34 @@ export default function SettingsScreen() {
               />
             </View>
             {accountError ? (
-              <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 8, textAlign: isRTL ? 'right' : 'left' }}>
+              <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginTop: 8, textAlign: isRTL ? 'right' : 'left' }}>
                 {accountError}
               </Text>
             ) : null}
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 8, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 8, textAlign: isRTL ? 'right' : 'left' }}>
               {t('accountsAddNote')}{Platform.OS !== 'web' ? ` ${t('accountsPushNote')}` : ''}
             </Text>
           </>
         )}
 
         {/* Language */}
+        {/* A parent or student picks which class(es) the curriculum shows. */}
+        {user && (user.role === 'parent' || user.role === 'student') && (
+          <>
+            <SectionLabel label={t(user.role === 'parent' ? 'classSettingRowParent' : 'classSettingRow')} isRTL={isRTL} colors={colors} top />
+            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+              <SettingRow
+                icon="school-outline"
+                label={t(user.role === 'parent' ? 'classSettingRowParent' : 'classSettingRow')}
+                isRTL={isRTL}
+                colors={colors}
+                right={<Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{classSummary}</Text>}
+                onPress={() => router.push({ pathname: '/setup-grade', params: { mode: 'edit' } } as any)}
+              />
+            </View>
+          </>
+        )}
+
         <SectionLabel label={t('languageSection')} isRTL={isRTL} colors={colors} top={!!user} />
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
           <SettingRow
@@ -238,7 +283,7 @@ export default function SettingsScreen() {
                 onPress={handleToggleLanguage}
                 style={[styles.langToggle, { backgroundColor: lang === 'ar' ? colors.primary : colors.muted, borderRadius: 20 }]}
               >
-                <Text style={[{ color: lang === 'ar' ? colors.primaryForeground : colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 12 }]}>
+                <Text style={[{ color: lang === 'ar' ? colors.primaryForeground : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }]}>
                   {lang === 'ar' ? 'عربي' : 'English'}
                 </Text>
               </Pressable>
@@ -251,13 +296,28 @@ export default function SettingsScreen() {
             component state wired to nothing: no server preference, no email
             digest to opt out of, and the unread badge ignored them. They reset
             on every visit. A control that lies is worse than none, so the
-            section now holds only the row that does something, and that row is
-            native-only (web never registers a push token), so web has no
-            section at all. */}
+            section holds only rows backed by something real: the OS
+            permission (pushState) and the test send. Both are native-only
+            (web never registers a push token), so web has no section at all. */}
         {Platform.OS !== 'web' && (
           <>
             <SectionLabel label={t('notificationsSection')} isRTL={isRTL} colors={colors} top />
             <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+              <SettingRow
+                icon={pushState === 'granted' ? 'notifications-outline' : 'notifications-off-outline'}
+                label={t('pushStatusLabel')}
+                isRTL={isRTL}
+                colors={colors}
+                onPress={handlePushRow}
+                right={
+                  pushState ? (
+                    <Text style={{ color: pushState === 'granted' ? colors.primary : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
+                      {pushState === 'granted' ? t('pushStatusOn') : t('pushStatusOff')}
+                    </Text>
+                  ) : <View />
+                }
+              />
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
               <SettingRow
                 icon="paper-plane-outline"
                 label={t('sendTestNotification')}
@@ -278,7 +338,7 @@ export default function SettingsScreen() {
             label={t('version')}
             isRTL={isRTL}
             colors={colors}
-            right={<Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }]}>{buildLabel}</Text>}
+            right={<Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 }]}>{buildLabel}</Text>}
           />
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <SettingRow
@@ -310,7 +370,7 @@ export default function SettingsScreen() {
                 label={t('aiUsage')}
                 isRTL={isRTL}
                 colors={colors}
-                right={<Text style={{ color: usedPct >= 100 ? colors.destructive : colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>{usedPct}%</Text>}
+                right={<Text style={{ color: usedPct >= 100 ? colors.destructive : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{usedPct}%</Text>}
               />
               <View style={{ paddingHorizontal: 16, paddingBottom: 14, gap: 6 }}>
                 <View
@@ -320,8 +380,8 @@ export default function SettingsScreen() {
                 >
                   <View style={{ width: `${usedPct}%`, backgroundColor: usedPct >= 100 ? colors.destructive : colors.primary, borderRadius: 3 }} />
                 </View>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: isRTL ? 'right' : 'left' }}>
-                  {t('aiUsageResets')} {new Date(usage.resetsAt).toLocaleDateString(lang === 'ar' ? 'ar-JO' : 'en-GB', { day: 'numeric', month: 'long', timeZone: 'UTC' })}
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>
+                  {t('aiUsageResets')} {new Date(usage.resetsAt).toLocaleDateString(dateLocale(lang === 'ar' ? 'ar' : 'en'), { day: 'numeric', month: 'long', timeZone: 'UTC' })}
                 </Text>
               </View>
               <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -334,7 +394,7 @@ export default function SettingsScreen() {
                 label={t('accountType')}
                 isRTL={isRTL}
                 colors={colors}
-                right={<Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>{t('roleTeacher')}</Text>}
+                right={<Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{t('roleTeacher')}</Text>}
                 onPress={() => { setTypeOpen(o => !o); setNextRole(null); setTypeError(''); }}
               />
               {typeOpen && (
@@ -355,7 +415,7 @@ export default function SettingsScreen() {
                     containerStyle={{ marginBottom: 12 }}
                   />
                   {typeError ? (
-                    <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginBottom: 10, textAlign: isRTL ? 'right' : 'left' }}>
+                    <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginBottom: 10, textAlign: isRTL ? 'right' : 'left' }}>
                       {typeError}
                     </Text>
                   ) : null}
@@ -388,7 +448,7 @@ export default function SettingsScreen() {
 
 function SectionLabel({ label, isRTL, colors, top }: { label: string; isRTL: boolean; colors: ReturnType<typeof useColors>; top?: boolean }) {
   return (
-    <Text style={[styles.sectionLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', marginTop: top ? 20 : 0, textAlign: isRTL ? 'right' : 'left' }]}>
+    <Text style={[styles.sectionLabel, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', marginTop: top ? 20 : 0, textAlign: isRTL ? 'right' : 'left' }]}>
       {label}
     </Text>
   );
@@ -405,7 +465,7 @@ function SettingRow({ icon, label, colors, isRTL, right, onPress, destructive }:
   const inner = (
     <View style={[styles.settingRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
       <Ionicons name={icon} size={20} color={tint} />
-      <Text style={[styles.settingLabel, { color: destructive ? colors.destructive : colors.foreground, fontFamily: 'Cairo_500Medium', flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>
+      <Text style={[styles.settingLabel, { color: destructive ? colors.destructive : colors.foreground, fontFamily: 'ReadexPro_500Medium', flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>
         {label}
       </Text>
       <View style={{ marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>

@@ -26,6 +26,7 @@ import { useStudentAccountsEnabled } from '@/services/features';
 import { Avatar } from '@/components/ui/Avatar';
 import { Toast } from '@/components/ui/Toast';
 import { goBack } from '@/services/navigation';
+import { AR_LATIN } from '@/services/dateLabels';
 
 interface Guardian {
   userId: string;
@@ -49,7 +50,7 @@ export default function ClaimCodeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
-  // The entry point in classes/[id].tsx is hidden while this is false, but a
+  // The entry point in classes/[id]/index.tsx is hidden while this is false, but a
   // deep link, a back gesture or a stale history entry can still land here.
   const studentAccounts = useStudentAccountsEnabled();
 
@@ -180,7 +181,7 @@ export default function ClaimCodeScreen() {
 
   const topPad = insets.top + (insets.top === 0 ? 12 : 0);
   const align = isRTL ? 'right' : 'left';
-  const expiresLabel = code ? new Date(code.expiresAt).toLocaleDateString() : '';
+  const expiresLabel = code ? new Date(code.expiresAt).toLocaleDateString(lang === 'ar' ? AR_LATIN : undefined) : '';
   // An action error (generate/unlink/message) takes priority over a stale
   // load error — it's the more recent thing the teacher is looking at.
   const displayError = error || loadError;
@@ -188,10 +189,10 @@ export default function ClaimCodeScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { paddingTop: topPad, backgroundColor: colors.card, borderBottomColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        <Pressable onPress={() => goBack()} hitSlop={10}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]} numberOfLines={1}>
+        <Text style={[styles.headerTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]} numberOfLines={1}>
           {studentName ?? ''}
         </Text>
       </View>
@@ -203,7 +204,7 @@ export default function ClaimCodeScreen() {
              back-stack. Explain rather than offer a button that would 403.
              The server refusal is the boundary; this is only courtesy. */
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-            <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
+            <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
               {t('messagingStudentAccountsOffTitle')}
             </Text>
             <Text style={[styles.cardDesc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
@@ -212,7 +213,7 @@ export default function ClaimCodeScreen() {
           </View>
         ) : (
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-          <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
+          <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
             {t('messagingClaimCodeTitle')}
           </Text>
           <Text style={[styles.cardDesc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
@@ -224,7 +225,7 @@ export default function ClaimCodeScreen() {
           {!loading && code ? (
             <>
               <View style={[styles.codeRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                <Text style={[styles.codeText, { color: colors.primary, fontFamily: 'Cairo_700Bold' }]}>{code.value}</Text>
+                <Text style={[styles.codeText, { color: colors.primary, fontFamily: 'ReadexPro_700Bold' }]}>{code.value}</Text>
                 <Pressable onPress={handleCopy} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('messagingCopyCode')}>
                   <Ionicons name="copy-outline" size={20} color={colors.mutedForeground} />
                 </Pressable>
@@ -249,7 +250,7 @@ export default function ClaimCodeScreen() {
               onPress={handleShare}
               style={[styles.generateBtn, { backgroundColor: colors.primary, borderRadius: colors.radius }]}
             >
-              <Text style={{ color: colors.primaryForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+              <Text style={{ color: colors.primaryForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
                 {t('messagingShareCode')}
               </Text>
             </Pressable>
@@ -271,8 +272,8 @@ export default function ClaimCodeScreen() {
                 <Text
                   style={
                     code
-                      ? { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: 'center' }
-                      : { color: colors.primaryForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }
+                      ? { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }
+                      : { color: colors.primaryForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }
                   }
                 >
                   {code ? t('messagingRegenerateCode') : t('messagingCreateCode')}
@@ -286,7 +287,7 @@ export default function ClaimCodeScreen() {
         {/* Suppressed with the rest: "linked accounts — none yet" implies an
             account could turn up, when nothing in this build can create one. */}
         <View style={studentAccounts ? undefined : { display: 'none' }}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
             {t('messagingGuardiansTitle')}
           </Text>
           {loading ? (
@@ -304,7 +305,7 @@ export default function ClaimCodeScreen() {
                 >
                   <Avatar firstName={g.firstName} lastName={g.lastName} size={36} colors={colors} />
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.guardianName, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]} numberOfLines={1}>
+                    <Text style={[styles.guardianName, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]} numberOfLines={1}>
                       {g.firstName} {g.lastName}
                     </Text>
                     <Text style={[styles.guardianRole, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
@@ -319,7 +320,7 @@ export default function ClaimCodeScreen() {
                     {startingUserId === g.userId ? (
                       <ActivityIndicator color={colors.primary} size="small" />
                     ) : (
-                      <Text style={{ color: colors.primary, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>
+                      <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>
                         {t('messagingMessageAction')}
                       </Text>
                     )}
@@ -359,17 +360,17 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 16, flex: 1 },
   card: { padding: 18, borderWidth: 1, gap: 6 },
   cardTitle: { fontSize: 15 },
-  cardDesc: { fontSize: 13, lineHeight: 18, marginBottom: 4 },
+  cardDesc: { fontSize: 15, lineHeight: 21, marginBottom: 4 },
   codeRow: { alignItems: 'center', gap: 10, marginTop: 8 },
   codeText: { fontSize: 24, letterSpacing: 3 },
-  expiresText: { fontSize: 12, lineHeight: 19 },
+  expiresText: { fontSize: 13, lineHeight: 21 },
   regenerateBtn: { marginTop: 4, paddingVertical: 8 },
   generateBtn: { marginTop: 12, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },
   sectionTitle: { fontSize: 15 },
-  emptyGuardians: { fontSize: 13, lineHeight: 21, marginTop: 8 },
+  emptyGuardians: { fontSize: 15, lineHeight: 24, marginTop: 8 },
   guardianRow: { padding: 12, gap: 10, borderWidth: 1, alignItems: 'center' },
   guardianName: { fontSize: 14 },
   guardianRole: { fontSize: 11, lineHeight: 18, marginTop: 1 },
   messageBtn: { paddingHorizontal: 12, paddingVertical: 7, minWidth: 64, alignItems: 'center' },
-  errorText: { fontSize: 12, lineHeight: 19 },
+  errorText: { fontSize: 13, lineHeight: 21 },
 });

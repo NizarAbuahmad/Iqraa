@@ -34,7 +34,7 @@ import { apiJson } from '@/services/apiClient';
  */
 const STATEMENT = {
   ar:
-    'أُقرّ بأنّ مدرستي حصلت على موافقة وليّ الأمر اللازمة لإدخال بيانات طلبتي في «اقرأ»، ' +
+    'أُقرّ بأنّ مدرستي حصلت على موافقة وليّ الأمر اللازمة لإدخال بيانات طلبتي في «إقرأ»، ' +
     'وبأنّني لن أُدخل إلّا ما تقتضيه الحاجة التعليمية.',
   en:
     'I confirm that my school has obtained the parental or guardian consent required for me ' +
@@ -129,7 +129,7 @@ export function RosterConsentGate({ children }: { children: React.ReactNode }) {
     >
       <Ionicons name="shield-checkmark-outline" size={34} color={colors.primary} />
 
-      <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: align }]}>
+      <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
         {copy.title}
       </Text>
       <Text style={[styles.lead, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
@@ -161,7 +161,7 @@ export function RosterConsentGate({ children }: { children: React.ReactNode }) {
         {busy ? (
           <ActivityIndicator color={colors.primaryForeground} />
         ) : (
-          <Text style={{ color: colors.primaryForeground, fontFamily: 'Cairo_700Bold', fontSize: 15 }}>
+          <Text style={{ color: colors.primaryForeground, fontFamily: 'ReadexPro_700Bold', fontSize: 15 }}>
             {copy.accept}
           </Text>
         )}
@@ -174,10 +174,10 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   wrap: { padding: 24, paddingTop: 56, gap: 14 },
   title: { fontSize: 19, marginTop: 6 },
-  lead: { fontSize: 14, lineHeight: 24 },
+  lead: { fontSize: 15, lineHeight: 26 },
   statement: { borderWidth: 1, padding: 14, marginTop: 4 },
-  statementText: { fontSize: 14, lineHeight: 25 },
-  note: { fontSize: 12.5, lineHeight: 21 },
-  error: { fontSize: 13, lineHeight: 21 },
+  statementText: { fontSize: 15, lineHeight: 27 },
+  note: { fontSize: 15, lineHeight: 24 },
+  error: { fontSize: 15, lineHeight: 24 },
   button: { marginTop: 10, paddingVertical: 15, alignItems: 'center', justifyContent: 'center' },
 });

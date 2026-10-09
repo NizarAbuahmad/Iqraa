@@ -11,6 +11,8 @@
  * screen renders it, this decides it, and `node --test` can run it.
  */
 
+import type { ClassroomActivity } from './ai/AIService.ts';
+
 /** The five materials the product actually pushes, in the order a teacher prepares them. */
 export type PrepType = 'lesson-plan' | 'worksheet' | 'quiz' | 'slides' | 'activity';
 
@@ -28,8 +30,12 @@ export type MaterialLike = {
   savedAt: string;
   /** The class the material is filed under, if any (`SavedMaterial['classGroupId']`). */
   classGroupId?: string | null;
-  /** `SavedMaterial['formState']`; `lessonId` is stamped at save time by workspace.ts. */
-  formState?: { lessonId?: unknown } | null;
+  /**
+   * `SavedMaterial['formState']`; `lessonId` is stamped at save time by
+   * workspace.ts, and the worksheet screen writes `materialKind: 'homework'`
+   * for a homework, which is otherwise saved as a worksheet.
+   */
+  formState?: { lessonId?: unknown; materialKind?: unknown } | null;
 };
 
 export type PrepRowMeta = {
@@ -149,9 +155,83 @@ export function buildPrepBoard(
   });
 }
 
+/**
+ * The class deck already saved for this lesson, ready to project — or null.
+ *
+ * «ابدأ الحصة» builds a throwaway warm-up deck from the book. A teacher who has
+ * already made «عرض الحصة» for the lesson (the row the board ticks) meant to
+ * teach from THAT deck, so the button presents it instead and only builds
+ * when there is nothing saved. Newest first, and a deck whose JSON no longer
+ * parses or has no slides is skipped rather than ending in a blank projector.
+ */
+export function savedDeckFor<T extends MaterialLike & { content: string }>(
+  materials: T[],
+  topic: string,
+  lessonId?: string | null,
+): ClassroomActivity | null {
+  for (const m of materialsForTopic(materials, topic, lessonId)) {
+    if (rowTypeOf(m.type) !== 'slides') continue;
+    try {
+      const deck = JSON.parse(m.content) as ClassroomActivity;
+      if (Array.isArray(deck?.slides) && deck.slides.length > 0) return deck;
+    } catch {
+      // unreadable — fall through to the next older deck
+    }
+  }
+  return null;
+}
+
+/** What the chat calls the materials it can make (`SessionArtifact`). */
+export type ChatArtifactType = 'lesson-plan' | 'worksheet' | 'quiz' | 'activity' | 'homework';
+
+/**
+ * The chat's material types this lesson already has saved in موادي.
+ *
+ * The chat's chips and lesson card read its own session, which forgets a plan
+ * made yesterday or from the tools tab — so they offered «حضّر خطة الدرس» for a
+ * lesson whose board already counted one. This is the same saved record the
+ * board reads, in the chat's own terms: a homework is saved as a worksheet
+ * tagged `materialKind: 'homework'` and is counted as homework here (the board
+ * has no homework row and counts it as its worksheet). Slides and flows have
+ * no chat equivalent and are left out.
+ */
+export function savedPrepArtifacts(
+  materials: MaterialLike[],
+  topic: string,
+  lessonId?: string | null,
+): ChatArtifactType[] {
+  const out = new Set<ChatArtifactType>();
+  for (const m of materialsForTopic(materials, topic, lessonId)) {
+    switch (m.type) {
+      case 'lesson': out.add('lesson-plan'); break;
+      case 'worksheet': out.add(m.formState?.materialKind === 'homework' ? 'homework' : 'worksheet'); break;
+      case 'quiz': out.add('quiz'); break;
+      case 'activity': out.add('activity'); break;
+    }
+  }
+  return [...out];
+}
+
 /** Rows marked not needed leave the total, so 3 of 3 can read as ready. */
 export function prepSummary(rows: PrepRow[]): { done: number; total: number } {
   return { done: rows.filter(r => r.done).length, total: rows.filter(r => !r.skipped).length };
+}
+
+/**
+ * The chat's board, folded to what is still missing.
+ *
+ * On a phone the chat's empty state carries the board, and five full rows
+ * filled most of the screen before a word was typed — two of them often
+ * already made. There it lists only the rows still to make; a made row is
+ * reached through the library, and a skipped one stays as a small «أعِده»
+ * chip because the phone has no other board to restore it from.
+ */
+export function missingPrepView(rows: PrepRow[]): { missing: PrepRow[]; skipped: PrepRow[]; readyCount: number } {
+  return {
+    missing: rows.filter(r => !r.done && !r.skipped),
+    skipped: rows.filter(r => r.skipped),
+    readyCount: rows.filter(r => r.done).length,
+  };
 }
 
 /**

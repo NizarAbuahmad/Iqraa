@@ -95,6 +95,13 @@ const multipleChoice: TypeModule = {
     if (texts.some(t => !t)) errors.push("An option has no text");
     if (new Set(texts).size !== texts.length) errors.push("Duplicate options");
 
+    // Grading and the student's answer both go by option id. Two options
+    // sharing an id mean a student who picks the wrong one is marked as if they
+    // had picked the right one; a blank id can never be picked at all.
+    const optionIds = options.map(o => str((o as Record<string, unknown>)?.["id"]));
+    if (optionIds.some(id => !id)) errors.push("An option has no id");
+    if (new Set(optionIds).size !== optionIds.length) errors.push("Duplicate option ids");
+
     const correct = Array.isArray(q.expectedAnswer["optionIds"])
       ? (q.expectedAnswer["optionIds"] as unknown[])
       : [];
@@ -104,6 +111,7 @@ const multipleChoice: TypeModule = {
       errors.push("Single-answer question marks more than one option correct");
     }
     if (correct.some(id => !ids.has(str(id)))) errors.push("Correct option is not in the list");
+    if (new Set(correct.map(str)).size !== correct.length) errors.push("Correct option is listed twice");
     return errors;
   },
   sanitizeForStudent(q) {
@@ -172,6 +180,25 @@ const matching: TypeModule = {
     if (left.length < 2) errors.push("Matching needs at least 2 items on the left");
     if (right.length < 2) errors.push("Matching needs at least 2 items on the right");
     if (pairs.length !== left.length) errors.push("Every left item needs a matching pair");
+
+    // A pair is graded by id, so every id has to exist, be unique, and be used
+    // once. Written as {"left":"1"} against items whose ids are "l1", a pair
+    // matches nothing and every correct student answer scores zero.
+    const idsOf = (items: unknown[]) => items.map(i => str((i as Record<string, unknown>)?.["id"]));
+    const leftIds = idsOf(left);
+    const rightIds = idsOf(right);
+    if (leftIds.some(id => !id) || rightIds.some(id => !id)) errors.push("A matching item has no id");
+    if (new Set(leftIds).size !== leftIds.length || new Set(rightIds).size !== rightIds.length) {
+      errors.push("Duplicate matching item ids");
+    }
+    const pairLeft = pairs.map(p => str((p as Record<string, unknown>)?.["left"]));
+    const pairRight = pairs.map(p => str((p as Record<string, unknown>)?.["right"]));
+    if (pairLeft.some(id => !leftIds.includes(id)) || pairRight.some(id => !rightIds.includes(id))) {
+      errors.push("A pair refers to an item that is not in the question");
+    }
+    if (new Set(pairLeft).size !== pairLeft.length || new Set(pairRight).size !== pairRight.length) {
+      errors.push("An item appears in more than one pair");
+    }
     return errors;
   },
   sanitizeForStudent(q) {
@@ -193,11 +220,16 @@ const matching: TypeModule = {
 
     // Per-pair credit: getting four of five links right is not the same as
     // getting none, and an all-or-nothing mark would report it as none.
-    let hits = 0;
+    // One answer per left item (the last, as the exam screen supersedes): a
+    // response listing every left→right combination must not score them all.
+    const answer = new Map<string, string>();
     for (const p of given) {
       const pair = p as Record<string, unknown>;
-      const expected = key.get(str(pair["left"]));
-      if (expected !== undefined && expected === str(pair["right"])) hits++;
+      answer.set(str(pair["left"]), str(pair["right"]));
+    }
+    let hits = 0;
+    for (const [left, right] of answer) {
+      if (key.get(left) === right) hits++;
     }
     return scored(hits / key.size, true);
   },

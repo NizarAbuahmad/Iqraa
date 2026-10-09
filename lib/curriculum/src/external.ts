@@ -43,7 +43,7 @@ export type ExternalResourceKind =
   | 'audio'
   /** A photograph, diagram or infographic. */
   | 'image'
-  /** An interactive simulation, shown in an iframe. Never copied. */
+  /** An interactive simulation, opened as a link on its own site. Never framed, never copied. */
   | 'simulation'
   /** A video, shown in an iframe. Never copied. */
   | 'video';
@@ -254,6 +254,11 @@ export function validateExternalResources(
     }
     if (!r.sourceUrl.startsWith('https://')) {
       errors.push(`${r.id}: sourceUrl must be https`);
+    }
+    if (r.kind === 'simulation' && usePolicy(r) !== 'link-only') {
+      // A simulation is followed, never framed: every provider with one worth
+      // linking (PhET, GeoGebra) licenses it non-commercially or by agreement.
+      errors.push(`${r.id}: a simulation must be link-only (licence ${r.license})`);
     }
     if (r.readAloudPractice) {
       // Practice reproduces the passage on screen and scores a student against

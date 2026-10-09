@@ -1,11 +1,14 @@
 /**
  * The library (المكتبة) — ready-made resources per grade, in one place.
  *
- * Three shelves: what Iqrra staff upload per grade/subject/lesson, grouped by
- * category (infographics, videos, audio, games, worksheets, templates…); the
- * ready-made practice sheets; and the QR codes printed in the NCCD books.
- * Filterable by grade, subject, category and lesson, because a teacher is
- * preparing ONE lesson. Nothing here opens a generator — since 2026-09-25 the
+ * One shelf per kind of resource (infographics, videos, audio, games,
+ * worksheets, templates…), filled from three places: what Iqrra staff upload
+ * per grade/subject/lesson, the ready-made practice sheets, and the QR codes
+ * printed in the NCCD books. A book code sits on the shelf of what it opens —
+ * there is no «book sources» shelf: it hid them behind a per-book accordion,
+ * away from the grade/subject filters a teacher is already using.
+ * Filterable by grade, subject, category and lesson, and searchable, because a
+ * teacher is preparing ONE lesson. Nothing here opens a generator — since 2026-09-25 the
  * library is ready-made material only. A system_admin sees «إضافة مورد»,
  * which opens `/admin/library`.
  *
@@ -26,10 +29,12 @@
  * `services/bookQrLinks.ts` for why the ministry's own https host is unusable
  * and what that forces. The note under each insecure row says so per row: on a
  * list where one link is insecure and the rest are not, a single header note
- * tells a student nothing about the one they are about to tap.
+ * tells a student nothing about the one they are about to tap. A book row is
+ * titled by its book and located by its printed page, since a bare «صفحة ٣٥»
+ * means nothing once it sits among the other videos.
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -38,58 +43,34 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { isStudentRole, isTeacherRole, useAuth } from '@/context/AuthContext';
-import { getMyExams } from '@/services/studentExam';
+import { getMyExams, getMyGradeIds } from '@/services/studentExam';
 import { actionableCount } from '@/services/myExams';
-import { narrowSubjectsForGrade, narrowToSelection } from '@/services/teacherCatalogFilter';
+import { narrowSubjectsForGrade, narrowToSelection, preferredGrade } from '@/services/teacherCatalogFilter';
 import { listLibrary, type LibraryItem } from '@/services/libraryApi';
 import { getLessonById } from '@/services/knowledgeBase';
 import { openExternal } from '@/services/externalLinks';
 import { buildWorksheetHTML, exportAsPDF } from '@/services/share';
 import { qrResourcesForGrade } from '@/services/bookQrLinks';
 import { getVideoFrameThumbnail } from '@/services/videoThumbnail';
+import { imageCoverFromUrl, videoCoverFromUrl } from '@/services/resourceThumbnail';
 import {
   buildResourceCatalog,
   filterResources,
   groupIntoShelves,
   type ResourceItem,
-  type ResourceKind,
   type Shelf,
 } from '@/services/resourceCatalog';
 import { allPremade } from '@workspace/curriculum/premade';
 import { getSubjectsForGrade, getVisibleGrades } from '@workspace/curriculum';
+import { ENGLISH_HUB_GRADES } from '@workspace/curriculum/englishHub';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
+import { cellWidthPercent, isVisualKind, libraryColumns, previewCount } from '@/services/libraryLayout';
 import { palette } from '@/constants/colors';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
+import { RESOURCE_KIND_ICON as KIND_ICON, RESOURCE_KIND_LABEL as KIND_LABEL } from '@/constants/resourceKind';
 
-/** Two cards per row once the track is wide enough for two readable titles. */
-const GRID_MIN_WIDTH = 760;
-
-const KIND_LABEL: Record<ResourceKind, TranslationKey> = {
-  infographic: 'libraryCatInfographic',
-  video: 'libraryCatVideo',
-  audio: 'libraryCatAudio',
-  game: 'libraryCatGame',
-  worksheet: 'libraryCatWorksheet',
-  template: 'libraryCatTemplate',
-  presentation: 'libraryCatPresentation',
-  document: 'libraryCatDocument',
-  image: 'qrKindImage',
-  page: 'qrKindPage',
-};
-
-const KIND_ICON: Record<ResourceKind, React.ComponentProps<typeof Ionicons>['name']> = {
-  infographic: 'bar-chart-outline',
-  video: 'play-circle-outline',
-  audio: 'musical-notes-outline',
-  game: 'game-controller-outline',
-  worksheet: 'document-text-outline',
-  template: 'copy-outline',
-  presentation: 'easel-outline',
-  document: 'document-outline',
-  image: 'image-outline',
-  page: 'globe-outline',
-};
+type Cols = 1 | 2 | 3;
 
 /** One tile per shelf: its plural name, icon and colour. */
 const SHELF_LABEL: Record<Shelf, TranslationKey> = {
@@ -102,7 +83,6 @@ const SHELF_LABEL: Record<Shelf, TranslationKey> = {
   template: 'librarySecTemplate',
   presentation: 'librarySecPresentation',
   document: 'librarySecDocument',
-  'book-qr': 'qrLibraryTitle',
 };
 
 const SHELF_ICON: Record<Shelf, React.ComponentProps<typeof Ionicons>['name']> = {
@@ -115,7 +95,6 @@ const SHELF_ICON: Record<Shelf, React.ComponentProps<typeof Ionicons>['name']> =
   template: 'copy',
   presentation: 'easel',
   document: 'folder-open',
-  'book-qr': 'qr-code',
 };
 
 /** Icon colours, each dark enough to read on its own 12% tint. */
@@ -129,42 +108,72 @@ const SHELF_COLOR: Record<Shelf, string> = {
   template: '#4F46E5',
   presentation: '#C2410C',
   document: '#475569',
-  'book-qr': '#0369A1',
 };
 
 const ACCENT = palette.primary;
 
-/** YouTube video ID → thumbnail URL, or null for non-YouTube URLs. */
-function youtubeThumbnail(url: string): string | null {
-  const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/);
-  return m ? `https://img.youtube.com/vi/${m[1]}/mqdefault.jpg` : null;
-}
-
 function itemThumbnail(item: ResourceItem): string | null {
   if (item.thumbnailUrl) return item.thumbnailUrl;
   if (!item.url) return null;
-  if (item.kind === 'video') return youtubeThumbnail(item.url);
-  if (item.kind === 'image') return item.url;
-  return null;
+  if (item.kind === 'video') return videoCoverFromUrl(item.url);
+  // A picture file is its own cover: infographics, photos, any uploaded image.
+  return imageCoverFromUrl(item.url, item.mimeType) ?? (item.kind === 'image' ? item.url : null);
 }
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
 const ACCENT_FILL = palette.hero;
 
 /**
- * One row. `showKind` is off inside a single-kind section: a heading that
- * already says «أوراق عمل» does not need every row underneath repeating it.
+ * What a Pressable's style callback receives. React Native types only
+ * `pressed`; on the web `hovered` and `focused` arrive too, and are the whole
+ * reason a mouse or keyboard user can tell which card they are on.
+ */
+type PressState = { pressed: boolean; hovered?: boolean; focused?: boolean };
+
+/**
+ * Interaction states shared by every pressable in the library: a teal border
+ * on hover or focus, a focus ring for keyboard users, and a small press-down
+ * instead of a 25% fade. The web-only keys are cast, as the cursor already was.
+ */
+function interactionStyle(state: PressState, restBorder: string) {
+  const lit = !!(state.hovered || state.focused);
+  return {
+    borderColor: lit ? ACCENT : restBorder,
+    opacity: state.pressed ? 0.92 : 1,
+    transform: state.pressed ? [{ scale: 0.985 }] : [],
+    ...(Platform.OS === 'web'
+      ? ({
+          cursor: 'pointer',
+          transitionProperty: 'border-color, transform',
+          transitionDuration: '120ms',
+          ...(state.focused
+            ? { outlineStyle: 'solid', outlineWidth: 3, outlineColor: ACCENT, outlineOffset: 2 }
+            : {}),
+        } as object)
+      : {}),
+  };
+}
+
+/**
+ * One result. Rows always sit under a single-kind heading, so none repeats
+ * its kind: a heading that already says «أوراق عمل» does not need it again.
+ *
+ * Three shapes, by what the item is and how much room there is:
+ *  - a **card** — 16:9 cover over the text — for videos, infographics and
+ *    photos in a multi-column track, because those are things you recognise by
+ *    their picture;
+ *  - a **row with a 16:9 thumbnail** for the same kinds on a phone, where a
+ *    full-width cover per item would make a long list very long;
+ *  - the plain **row** for everything without a picture.
  */
 function ResourceRow({
   item,
   accent,
-  showKind = true,
-  grid = false,
+  cols = 1,
 }: {
   item: ResourceItem;
   accent: string;
-  showKind?: boolean;
-  /** Half-width card in a wrapping two-column track. */
-  grid?: boolean;
+  /** Cards per row in the surrounding track. */
+  cols?: Cols;
 }) {
   const thumb = itemThumbnail(item);
   // A self-hosted (non-YouTube) video has no cover of its own — extract one
@@ -202,6 +211,14 @@ function ResourceRow({
   // A sheet's note says what a teacher gets before printing; a title alone
   // does not tell «12 questions with a key» from «a blank page».
   const note = item.description ?? (sheet ? t('premadeSheetMeta', questionCount) : null);
+  // A book code reads «what it opens» (the headline, like every other row),
+  // with «which book» and «which page» underneath — the page and book are where
+  // to find the printed code. The kind is deliberately not shown: the title says
+  // what it is, and «صفحة ويب» on every row told a teacher nothing.
+  const isBook = item.source === 'book-qr';
+  // A row with no title of its own already uses the book as its headline.
+  const bookName = isBook && item.bookTitle && item.bookTitle !== title ? item.bookTitle : null;
+  const bookPage = isBook && page ? t('qrOnPage', page) : null;
 
   // A frozen sheet has no URL: it is rendered on the spot and handed to the
   // print/share sheet, the same path the worksheet generator's PDF export takes.
@@ -233,88 +250,176 @@ function ResourceRow({
     else if (printable) printSheet();
   };
 
-  const trailingIcon = item.url ? 'open-outline' : null;
+  // A picture-first kind: videos, infographics and photos are recognised by
+  // their picture.
+  const visual = isVisualKind(item.kind);
+  const asCard = visual && cols >= 2;
+  const isVideo = item.kind === 'video';
+
+  // Subject, not kind, is what tells two videos in one shelf apart.
+  const subject =
+    item.subjectId
+      ? getSubjectsForGrade(item.gradeId ?? '').find(s => s.id === item.subjectId)
+      : undefined;
+  const subjectName = subject ? (isAr ? subject.nameAr : subject.name) : null;
+
+  const noteStyle = [
+    styles.rowNote,
+    { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' } as const,
+  ];
+  const titleText = (
+    <Text
+      numberOfLines={2}
+      style={[
+        styles.rowTitle,
+        { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' },
+      ]}
+    >
+      {title}
+    </Text>
+  );
+  const notes = (
+    <>
+      {bookName ? <Text numberOfLines={2} style={noteStyle}>{bookName}</Text> : null}
+      {bookPage ? (
+        <View style={[styles.bookHeadline, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <View style={[styles.pagePill, { backgroundColor: ACCENT + '14' }]}>
+            <Text style={[styles.pageText, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }]}>{bookPage}</Text>
+          </View>
+        </View>
+      ) : null}
+      {note ? <Text numberOfLines={2} style={noteStyle}>{note}</Text> : null}
+      {item.insecure ? <Text numberOfLines={2} style={noteStyle}>{t('qrInsecureRow')}</Text> : null}
+    </>
+  );
+
+  /**
+   * The cover: the picture when there is one, otherwise a neutral tile — not a
+   * red-tinted one, which read as an error state next to the teal. A video
+   * always carries a play badge over it, so the tile says "video" once.
+   */
+  const cover = (large: boolean) => (
+    <View
+      style={[
+        large ? styles.coverLarge : styles.coverSmall,
+        { backgroundColor: colors.muted },
+      ]}
+    >
+      {showThumb ? (
+        <Image
+          source={{ uri: effectiveThumb }}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          accessibilityElementsHidden
+          onError={() => setThumbFailed(true)}
+        />
+      ) : !isVideo ? (
+        <Ionicons name={KIND_ICON[item.kind]} size={large ? 36 : 24} color={accent} />
+      ) : null}
+      {isVideo ? (
+        <View style={[styles.playBadge, large ? styles.playBadgeLarge : styles.playBadgeSmall, { backgroundColor: ACCENT_FILL }]}>
+          <Ionicons name="play" size={large ? 20 : 14} color="#fff" style={{ marginStart: large ? 2 : 1 }} />
+        </View>
+      ) : null}
+    </View>
+  );
+
+  const actionLabel = isVideo ? t('resourceActionWatch') : t('resourceActionOpen');
+  const forwardIcon = isRTL ? 'arrow-back' : 'arrow-forward';
 
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole={item.url ? 'link' : 'button'}
-      accessibilityLabel={`${t(KIND_LABEL[item.kind])} — ${page ? t('qrOnPage', page) : (title ?? '')}`}
-      style={({ pressed }) => [
+      accessibilityLabel={`${t(KIND_LABEL[item.kind])} — ${title ?? ''}${bookPage ? ` — ${bookPage}` : ''}`}
+      android_ripple={{ color: ACCENT + '22' }}
+      style={state => [
         styles.row,
-        grid && styles.gridCell,
+        cols > 1 && { width: cellWidthPercent(cols) } as const,
+        asCard && styles.card,
         {
           backgroundColor: colors.card,
-          borderColor: colors.border,
           borderRadius: colors.radius,
-          flexDirection: isRTL ? 'row-reverse' : 'row',
-          opacity: pressed ? 0.75 : 1,
-          ...(Platform.OS === 'web' && ({ cursor: 'pointer' } as object)),
+          flexDirection: asCard ? 'column' : isRTL ? 'row-reverse' : 'row',
         },
+        interactionStyle(state as PressState, colors.border),
       ]}
     >
-      <View style={[styles.kindPill, { backgroundColor: accent + '15', borderColor: accent + '30' }]}>
-        <Ionicons name={KIND_ICON[item.kind]} size={14} color={accent} />
-        {showKind ? (
-          <Text style={[styles.kindText, { color: accent, fontFamily: 'Cairo_500Medium' }]}>
-            {t(KIND_LABEL[item.kind])}
-          </Text>
-        ) : null}
-      </View>
-      {showThumb ? (
-        <Image
-          source={{ uri: effectiveThumb }}
-          style={styles.thumb}
-          resizeMode="cover"
-          accessibilityElementsHidden
-          onError={() => setThumbFailed(true)}
-        />
+      {asCard ? cover(true) : null}
+
+      {asCard ? (
+        <View style={styles.cardBody}>
+          {titleText}
+          {notes}
+          <View style={[styles.cardFooter, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            {subjectName ? (
+              <View style={[styles.subjectChip, { backgroundColor: ACCENT + '14' }]}>
+                <Text style={[styles.subjectText, { color: ACCENT, fontFamily: 'Almarai_400Regular' }]} numberOfLines={1}>
+                  {subjectName}
+                </Text>
+              </View>
+            ) : (
+              <View />
+            )}
+            {printable ? (
+              <View style={[styles.actionPill, { backgroundColor: accent, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <Ionicons name={opensSheet ? 'eye-outline' : 'print-outline'} size={14} color={palette.primaryForeground} />
+                <Text style={[styles.actionText, { color: palette.primaryForeground, fontFamily: 'ReadexPro_600SemiBold' }]}>
+                  {t(opensSheet ? 'resourceActionOpen' : 'resourceActionPrint')}
+                </Text>
+              </View>
+            ) : (
+              <View style={[styles.actionLink, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <Text style={[styles.actionLinkText, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }]}>{actionLabel}</Text>
+                <Ionicons name={isVideo ? forwardIcon : 'open-outline'} size={16} color={ACCENT} />
+              </View>
+            )}
+          </View>
+        </View>
       ) : (
-        <View style={[styles.thumb, styles.thumbFallback, { backgroundColor: accent + '15' }]}>
-          <Ionicons name={KIND_ICON[item.kind]} size={22} color={accent} />
-        </View>
+        <>
+          {visual ? (
+            cover(false)
+          ) : showThumb ? (
+            <Image
+              source={{ uri: effectiveThumb }}
+              style={styles.thumb}
+              contentFit="cover"
+              accessibilityElementsHidden
+              onError={() => setThumbFailed(true)}
+            />
+          ) : isBook ? null : (
+            <View style={[styles.thumb, styles.thumbFallback, { backgroundColor: colors.muted }]}>
+              <Ionicons name={KIND_ICON[item.kind]} size={22} color={accent} />
+            </View>
+          )}
+          <View style={{ flex: 1 }}>
+            {titleText}
+            {notes}
+            {visual && subjectName ? (
+              <Text style={[styles.rowNote, { color: ACCENT, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+                {subjectName}
+              </Text>
+            ) : null}
+          </View>
+          {printable ? (
+            <View style={[styles.actionPill, { backgroundColor: accent, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <Ionicons name={opensSheet ? 'eye-outline' : 'print-outline'} size={14} color={palette.primaryForeground} />
+              <Text style={[styles.actionText, { color: palette.primaryForeground, fontFamily: 'ReadexPro_600SemiBold' }]}>
+                {t(opensSheet ? 'resourceActionOpen' : 'resourceActionPrint')}
+              </Text>
+            </View>
+          ) : item.url ? (
+            <Ionicons
+              name={isVideo ? forwardIcon : 'open-outline'}
+              size={18}
+              color={isVideo ? ACCENT : colors.mutedForeground}
+              accessibilityElementsHidden
+              importantForAccessibility="no"
+            />
+          ) : null}
+        </>
       )}
-      <View style={{ flex: 1 }}>
-        <Text
-          numberOfLines={2}
-          style={[
-            styles.rowTitle,
-            { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' },
-          ]}
-        >
-          {page ? t('qrOnPage', page) : title}
-        </Text>
-        {note ? (
-          <Text
-            style={[
-              styles.rowNote,
-              { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' },
-            ]}
-          >
-            {note}
-          </Text>
-        ) : null}
-        {item.insecure ? (
-          <Text
-            style={[
-              styles.rowNote,
-              { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' },
-            ]}
-          >
-            {t('qrInsecureRow')}
-          </Text>
-        ) : null}
-      </View>
-      {printable ? (
-        <View style={[styles.actionPill, { backgroundColor: accent, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <Ionicons name={opensSheet ? 'eye-outline' : 'print-outline'} size={14} color={palette.primaryForeground} />
-          <Text style={[styles.actionText, { color: palette.primaryForeground, fontFamily: 'Cairo_600SemiBold' }]}>
-            {t(opensSheet ? 'resourceActionOpen' : 'resourceActionPrint')}
-          </Text>
-        </View>
-      ) : trailingIcon ? (
-        <Ionicons name={trailingIcon} size={16} color={colors.mutedForeground} accessibilityElementsHidden importantForAccessibility="no" />
-      ) : null}
     </Pressable>
   );
 }
@@ -329,12 +434,20 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
   const { user } = useAuth();
-  const grid = useWindowDimensions().width >= GRID_MIN_WIDTH;
+  // Cards per row come from the width of the content track, measured below:
+  // the window width ignores the desktop sidebar and CONTENT_MAX_WIDTH. Until
+  // the first measurement, assume the window (capped) so nothing jumps much.
+  const windowWidth = useWindowDimensions().width;
+  const [trackWidth, setTrackWidth] = useState(0);
+  const cols: Cols = libraryColumns(trackWidth || Math.min(windowWidth, CONTENT_MAX_WIDTH));
   const isTeacher = isTeacherRole(user?.role);
   // «اختباراتي» is a student's way back to their exams; the tile says how many
   // are waiting. Best-effort: a failed count shows the plain description, and
   // the screen behind the tile reports its own errors.
   const isStudent = isStudentRole(user?.role);
+  // A parent gets the same tile as «نتائج أبنائي», without the waiting count:
+  // nothing on it is theirs to start.
+  const isParent = user?.role === 'parent';
   const [waitingExams, setWaitingExams] = useState<number | null>(null);
   useFocusEffect(
     useCallback(() => {
@@ -348,17 +461,39 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
   );
   const isStaff = user?.role === 'system_admin';
   const { gradeId } = useLocalSearchParams<{ gradeId?: string; gradeName?: string }>();
-  // Opened from the Tools card there is no grade param: start on the
-  // teacher's own first grade, the same narrowing the curriculum tab does.
+  // Opened from the Tools card there is no grade param: start on the user's
+  // own first grade, the same narrowing the curriculum tab does (teachers pick
+  // on /setup-subjects, parents and students on /setup-grade).
   const grades = useMemo(
-    () => narrowToSelection(getVisibleGrades(), isTeacher ? user?.gradeIds : undefined),
-    [isTeacher, user?.gradeIds],
+    () => narrowToSelection(getVisibleGrades(), user?.gradeIds),
+    [user?.gradeIds],
   );
-  const [grade, setGrade] = useState<string>(gradeId || grades[0]?.id || '');
+  const [pickedGrade, setGrade] = useState<string>(gradeId || grades[0]?.id || '');
+  // The tab stays mounted while the teacher edits their grades on the profile
+  // page, so the initial pick can name a grade they no longer teach — and with
+  // one grade left there is no picker to move off it. Fall back to the first
+  // grade they do teach; an explicit grade param is still honoured.
+  const grade =
+    pickedGrade === gradeId || grades.some(g => g.id === pickedGrade) ? pickedGrade : (grades[0]?.id ?? '');
+  // A student has no grade picker of their own, so with no grade param the
+  // library opened on the catalog's first grade — Grade 10 for a Grade 9
+  // student. Start on the grade their class is in, unless they (or a param)
+  // already chose one.
+  useEffect(() => {
+    if (!isStudent || gradeId) return;
+    const initial = grades[0]?.id || '';
+    let cancelled = false;
+    void getMyGradeIds().then(ids => {
+      const own = preferredGrade(grades, ids);
+      if (!cancelled && own) setGrade(prev => (prev === initial ? own.id : prev));
+    });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isStudent, gradeId]);
   const [subjectId, setSubjectId] = useState<string | null>(null);
   const [shelf, setShelf] = useState<Shelf | null>(null);
   const [lessonId, setLessonId] = useState<string | null>(null);
-  const [openBook, setOpenBook] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
 
   const gradeInfo = getVisibleGrades().find(g => g.id === grade);
   const gradeName = gradeInfo ? (lang === 'ar' ? gradeInfo.nameAr : gradeInfo.name) : '';
@@ -431,52 +566,65 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
     return [...seen.entries()];
   }, [items, lang]);
 
+  // Search narrows on top of the chips, like every other filter here.
   const shown = useMemo(
-    () => filterResources(items, { lessonId: lessonId ?? undefined }),
-    [items, lessonId],
+    () => filterResources(items, { lessonId: lessonId ?? undefined, query }),
+    [items, lessonId, query],
   );
 
   const shelves = useMemo(() => groupIntoShelves(shown), [shown]);
-  // A filter can empty the open shelf; fall back to the tiles rather than a blank list.
+  // A filter can empty the open shelf; fall back to the overview rather than a blank list.
   const openShelf = shelf ? shelves.find(g => g.shelf === shelf) ?? null : null;
   const total = shown.length;
+  // As a tab, the lesson bar (or the slim bell header) above already pays for
+  // the status bar; pushed as its own route, nothing does.
+  const heroTop = asTab ? 12 : insets.top + 12;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
+      <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: heroTop }]}>
         {asTab ? null : (
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('back')}
             onPress={() => goBack()} hitSlop={10}
             style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
           >
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
         )}
-        <Text style={[styles.heroTitle, { fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
-          {t('resourcesTitle')}
-        </Text>
-        <Text style={[styles.heroMeta, { fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-          {gradeName ? `${gradeName} · ` : ''}
-          {t('resourcesCount', total)}
-        </Text>
-        {isStaff ? (
-          <Pressable
-            onPress={() => router.push({ pathname: '/admin/library' as never, params: { gradeId: grade } })}
-            accessibilityRole="button"
-            style={[styles.addBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-          >
-            <Ionicons name="add-circle-outline" size={18} color={ACCENT_FILL} />
-            <Text style={[styles.addBtnText, { color: ACCENT_FILL, fontFamily: 'Cairo_600SemiBold' }]}>
-              {t('libraryAddResource')}
+        {/* Title block and the staff button share a row: the band used to
+            stack title, meta and button, and cost ~165px to say three things. */}
+        <View style={[styles.heroRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <View style={{ flex: 1, minWidth: 160 }}>
+            <Text style={[styles.heroTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+              {t('resourcesTitle')}
             </Text>
-          </Pressable>
-        ) : null}
+            <Text style={[styles.heroMeta, { fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+              {gradeName ? `${gradeName} · ` : ''}
+              {t('resourcesCount', total)}
+            </Text>
+          </View>
+          {isStaff ? (
+            <Pressable
+              onPress={() => router.push({ pathname: '/admin/library' as never, params: { gradeId: grade } })}
+              accessibilityRole="button"
+              style={[styles.addBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            >
+              <Ionicons name="add-circle-outline" size={18} color={ACCENT_FILL} />
+              <Text style={[styles.addBtnText, { color: ACCENT_FILL, fontFamily: 'ReadexPro_600SemiBold' }]}>
+                {t('libraryAddResource')}
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
       </View>
 
       <ScrollView
         contentContainerStyle={{ paddingBottom: asTab ? 120 : 48, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}
         showsVerticalScrollIndicator={false}
       >
+        <View onLayout={e => setTrackWidth(Math.round(e.nativeEvent.layout.width))}>
         <Text
           style={[
             styles.intro,
@@ -485,6 +633,49 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
         >
           {t('resourcesIntro')}
         </Text>
+
+        <View
+          style={[
+            styles.search,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              borderRadius: colors.radius,
+              flexDirection: isRTL ? 'row-reverse' : 'row',
+            },
+          ]}
+        >
+          <Ionicons name="search" size={18} color={colors.mutedForeground} />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder={t('resourcesSearchPlaceholder')}
+            placeholderTextColor={colors.mutedForeground}
+            accessibilityLabel={t('resourcesSearchPlaceholder')}
+            returnKeyType="search"
+            autoCorrect={false}
+            style={[
+              styles.searchInput,
+              {
+                color: colors.foreground,
+                fontFamily: 'Almarai_400Regular',
+                textAlign: isRTL ? 'right' : 'left',
+                writingDirection: isRTL ? 'rtl' : 'ltr',
+              },
+              Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null,
+            ]}
+          />
+          {query ? (
+            <Pressable
+              onPress={() => setQuery('')}
+              accessibilityRole="button"
+              accessibilityLabel={t('resourcesSearchClear')}
+              hitSlop={10}
+            >
+              <Ionicons name="close-circle" size={20} color={colors.mutedForeground} />
+            </Pressable>
+          ) : null}
+        </View>
 
         {grades.length > 1 ? (
           <ChipRow
@@ -519,68 +710,36 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
             contentContainerStyle={[styles.chipRow, isRTL && { flexDirection: 'row-reverse', minWidth: '100%' }]}
           >
             {/* The KB id is what is held in state; the title is only shown. */}
-            {[null, ...lessons.map(([id]) => id)].map(id => {
-              const active = id === lessonId;
-              const label =
-                id === null ? t('resourcesAllLessons') : (lessons.find(([l]) => l === id)?.[1] ?? id);
-              return (
-                <Pressable
-                  key={id ?? 'all-lessons'}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setLessonId(id);
-                  }}
-                  style={[styles.chip, { backgroundColor: active ? ACCENT : colors.muted }]}
-                >
-                  <Text
-                    numberOfLines={1}
-                    style={[
-                      styles.chipText,
-                      {
-                        maxWidth: 200,
-                        color: active ? palette.primaryForeground : colors.mutedForeground,
-                        fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
-                      },
-                    ]}
-                  >
-                    {label}
-                  </Text>
-                </Pressable>
-              );
-            })}
+            {[null, ...lessons.map(([id]) => id)].map(id => (
+              <FilterChip
+                key={id ?? 'all-lessons'}
+                label={id === null ? t('resourcesAllLessons') : (lessons.find(([l]) => l === id)?.[1] ?? id)}
+                on={id === lessonId}
+                maxWidth={220}
+                onPress={() => setLessonId(id)}
+              />
+            ))}
           </ScrollView>
         ) : null}
 
+        {shelves.length > 0 ? (
+          <ShelfTabs
+            shelves={shelves}
+            active={openShelf ? openShelf.shelf : null}
+            total={total}
+            onPick={setShelf}
+          />
+        ) : null}
+
         {openShelf ? (
+          // The tab above already names the shelf and counts it, so the list
+          // starts straight away: there is no separate shelf page to get out of.
           <View style={styles.section}>
-            <View style={[styles.shelfHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              <Pressable
-                onPress={() => { Haptics.selectionAsync(); setShelf(null); }}
-                accessibilityRole="button"
-                hitSlop={8}
-                style={[styles.backChip, { backgroundColor: colors.muted, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-              >
-                <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={14} color={colors.mutedForeground} />
-                <Text style={[styles.chipText, { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>
-                  {t('libraryAllShelves')}
-                </Text>
-              </Pressable>
-              <View style={[styles.shelfTitleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                <Ionicons name={SHELF_ICON[openShelf.shelf]} size={18} color={SHELF_COLOR[openShelf.shelf]} />
-                <Text style={[styles.sectionTitle, { paddingHorizontal: 0, color: colors.foreground, fontFamily: 'Cairo_700Bold' }]}>
-                  {t(SHELF_LABEL[openShelf.shelf])} · {openShelf.items.length}
-                </Text>
-              </View>
+            <View style={[styles.rows, cols > 1 && styles.rowsGrid, cols > 1 && isRTL && { flexDirection: 'row-reverse' }]}>
+              {openShelf.items.map(item => (
+                <ResourceRow key={item.key} item={item} accent={SHELF_COLOR[openShelf.shelf]} cols={cols} />
+              ))}
             </View>
-            {openShelf.shelf === 'book-qr' ? (
-              <BookShelf items={openShelf.items} openBook={openBook} setOpenBook={setOpenBook} grid={grid} />
-            ) : (
-              <View style={[styles.rows, grid && styles.rowsGrid, grid && isRTL && { flexDirection: 'row-reverse' }]}>
-                {openShelf.items.map(item => (
-                  <ResourceRow key={item.key} item={item} accent={SHELF_COLOR[openShelf.shelf]} showKind={false} grid={grid} />
-                ))}
-              </View>
-            )}
           </View>
         ) : (
           <>
@@ -603,21 +762,71 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
               <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
                 <Ionicons name="book" size={26} color={ACCENT} />
               </View>
-              <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>
+              <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
                 {t('curriculumTitle')}
               </Text>
               <Text numberOfLines={2} style={[styles.tileCount, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
                 {t('libraryCurriculumDesc')}
               </Text>
             </Pressable>
-            {isStudent ? (
+            {gradeInfo && (ENGLISH_HUB_GRADES as readonly number[]).includes(gradeInfo.level) ? (
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push({ pathname: '/curriculum/english' as never, params: { grade: String(gradeInfo.level) } });
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`${t('hubTitle')}, ${t('hubListenDesc')}`}
+                style={({ pressed }) => [
+                  styles.tile,
+                  { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
+                ]}
+              >
+                <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
+                  <Ionicons name="headset" size={26} color={ACCENT} />
+                </View>
+                <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
+                  {t('hubTitle')}
+                </Text>
+                <Text numberOfLines={2} style={[styles.tileCount, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
+                  {t('hubListenDesc')}
+                </Text>
+              </Pressable>
+            ) : null}
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/curriculum/lab' as never);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`${t('labEntryTitle')}, ${t('labEntryHint')}`}
+              style={({ pressed }) => [
+                styles.tile,
+                { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
+              ]}
+            >
+              <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
+                <Ionicons name="flask-outline" size={26} color={ACCENT} />
+              </View>
+              <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
+                {t('labEntryTitle')}
+              </Text>
+              <Text numberOfLines={2} style={[styles.tileCount, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
+                {t('labEntryHint')}
+              </Text>
+            </Pressable>
+            {isStudent || isParent ? (
               <Pressable
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   router.push('/my-exams' as never);
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={`${t('myExamsTitle')}, ${waitingExams ? t('myExamsTileCount', waitingExams) : t('myExamsTileDesc')}`}
+                accessibilityLabel={
+                  isParent
+                    ? `${t('childResultsTitle')}, ${t('childResultsTileDesc')}`
+                    : `${t('myExamsTitle')}, ${waitingExams ? t('myExamsTileCount', waitingExams) : t('myExamsTileDesc')}`
+                }
                 style={({ pressed }) => [
                   styles.tile,
                   { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
@@ -626,8 +835,8 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
                 <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
                   <Ionicons name="document-text" size={26} color={ACCENT} />
                 </View>
-                <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>
-                  {t('myExamsTitle')}
+                <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
+                  {t(isParent ? 'childResultsTitle' : 'myExamsTitle')}
                 </Text>
                 <Text
                   numberOfLines={2}
@@ -635,57 +844,125 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
                     styles.tileCount,
                     {
                       color: waitingExams ? ACCENT : colors.mutedForeground,
-                      fontFamily: waitingExams ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                      fontFamily: waitingExams ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
                       textAlign: 'center',
                     },
                   ]}
                 >
-                  {waitingExams ? t('myExamsTileCount', waitingExams) : t('myExamsTileDesc')}
+                  {isParent ? t('childResultsTileDesc') : waitingExams ? t('myExamsTileCount', waitingExams) : t('myExamsTileDesc')}
                 </Text>
               </Pressable>
             ) : null}
-            {shelves.map(({ shelf: id, items: rows }) => (
-              <Pressable
-                key={id}
-                onPress={() => { Haptics.selectionAsync(); setShelf(id); }}
-                accessibilityRole="button"
-                accessibilityLabel={`${t(SHELF_LABEL[id])}, ${rows.length}`}
-                style={({ pressed }) => [
-                  styles.tile,
-                  { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
-                ]}
-              >
-                <View style={[styles.tileIcon, { backgroundColor: SHELF_COLOR[id] + '1F' }]}>
-                  <Ionicons name={SHELF_ICON[id]} size={26} color={SHELF_COLOR[id]} />
-
-                </View>
-                <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>
-                  {t(SHELF_LABEL[id])}
-                </Text>
-                <Text style={[styles.tileCount, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-                  {t('resourcesCount', rows.length)}
-                </Text>
-              </Pressable>
-            ))}
           </View>
+          {/* The overview: every shelf, a preview of each, and a way into it.
+              This replaces the grid of shelf tiles, which led to a page of its
+              own and a «back» button to get out of it. */}
+          {shelves.map(({ shelf: id, items: rows }) => {
+            const preview = rows.slice(0, previewCount(cols, isVisualKind(id)));
+            return (
+              <View key={id} style={styles.section}>
+                <View style={[styles.shelfHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                  <View style={[styles.shelfTitleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                    <Ionicons name={SHELF_ICON[id]} size={20} color={SHELF_COLOR[id]} />
+                    <Text style={[styles.sectionTitle, { paddingHorizontal: 0, color: colors.foreground, fontFamily: 'ReadexPro_700Bold' }]}>
+                      {t(SHELF_LABEL[id])} · {rows.length}
+                    </Text>
+                  </View>
+                  {rows.length > preview.length ? (
+                    <Pressable
+                      onPress={() => { Haptics.selectionAsync(); setShelf(id); }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${t('libraryViewAll')}: ${t(SHELF_LABEL[id])}`}
+                      hitSlop={8}
+                      style={[styles.viewAll, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                    >
+                      <Text style={[styles.viewAllText, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }]}>
+                        {t('libraryViewAll')}
+                      </Text>
+                      <Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={16} color={ACCENT} />
+                    </Pressable>
+                  ) : null}
+                </View>
+                {preview.length > 0 ? (
+                  <View style={[styles.rows, cols > 1 && styles.rowsGrid, cols > 1 && isRTL && { flexDirection: 'row-reverse' }]}>
+                    {preview.map(item => (
+                      <ResourceRow key={item.key} item={item} accent={SHELF_COLOR[id]} cols={cols} />
+                    ))}
+                  </View>
+                ) : null}
+              </View>
+            );
+          })}
           {shelves.length === 0 ? (
             <View style={styles.empty}>
               <Ionicons name="library-outline" size={36} color={colors.mutedForeground} />
               <Text
                 style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}
               >
-                {t('resourcesEmpty')}
+                {query.trim() ? t('resourcesSearchEmpty', query.trim()) : t('resourcesEmpty')}
               </Text>
             </View>
           ) : null}
           </>
         )}
+        </View>
       </ScrollView>
     </View>
   );
 }
 
-/** One horizontal row of filter chips; `null` is the "all" chip. */
+/**
+ * One filter chip. At least 44px tall (the touch minimum — they were ~31px),
+ * with the same hover, focus and press states as a card.
+ */
+function FilterChip({
+  label,
+  on,
+  onPress,
+  maxWidth,
+}: {
+  label: string;
+  on: boolean;
+  onPress: () => void;
+  maxWidth?: number;
+}) {
+  const colors = useColors();
+  return (
+    <Pressable
+      onPress={() => {
+        Haptics.selectionAsync();
+        onPress();
+      }}
+      accessibilityRole="button"
+      aria-selected={on}
+      style={state => [
+        styles.chip,
+        { backgroundColor: on ? ACCENT : colors.muted },
+        interactionStyle(state as PressState, on ? ACCENT : 'transparent'),
+      ]}
+    >
+      <Text
+        numberOfLines={1}
+        style={[
+          styles.chipText,
+          {
+            maxWidth,
+            color: on ? palette.primaryForeground : colors.mutedForeground,
+            fontFamily: on ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
+          },
+        ]}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+/**
+ * Filter chips that wrap onto further lines instead of scrolling sideways: a
+ * clipped row hides options, and a grade or subject list is short enough that
+ * wrapping costs one extra line at most. `null` is the "all" chip.
+ */
 function ChipRow({
   options,
   active,
@@ -697,172 +974,151 @@ function ChipRow({
   onPick: (id: string | null) => void;
   isRTL: boolean;
 }) {
-  const colors = useColors();
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={[styles.chipRow, isRTL && { flexDirection: 'row-reverse', minWidth: '100%' }]}
-    >
-      {options.map(o => {
-        const on = o.id === active;
-        return (
-          <Pressable
-            key={o.id ?? 'all'}
-            onPress={() => {
-              Haptics.selectionAsync();
-              onPick(o.id);
-            }}
-            accessibilityRole="button"
-            accessibilityState={{ selected: on }}
-            style={[styles.chip, { backgroundColor: on ? ACCENT : colors.muted }]}
-          >
-            <Text
-              numberOfLines={1}
-              style={[
-                styles.chipText,
-                {
-                  color: on ? palette.primaryForeground : colors.mutedForeground,
-                  fontFamily: on ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
-                },
-              ]}
-            >
-              {o.label}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </ScrollView>
+    <View style={[styles.chipRow, styles.chipRowWrap, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+      {options.map(o => (
+        <FilterChip key={o.id ?? 'all'} label={o.label} on={o.id === active} onPress={() => onPick(o.id)} />
+      ))}
+    </View>
   );
 }
 
 /**
- * The book shelf keeps its own grouping.
- *
- * Collapsed by default: one book can print 45 codes, and a teacher arrives
- * looking for their own subject, not a list of everything.
+ * The shelves as tabs, each with its count, above the results. The first tab
+ * is the overview. Wraps rather than scrolls, like the chips.
  */
-function BookShelf({
-  items,
-  openBook,
-  setOpenBook,
-  grid,
+function ShelfTabs({
+  shelves,
+  active,
+  total,
+  onPick,
 }: {
-  items: ResourceItem[];
-  openBook: string | null;
-  setOpenBook: (title: string | null) => void;
-  grid: boolean;
+  shelves: Array<{ shelf: Shelf; items: ResourceItem[] }>;
+  active: Shelf | null;
+  total: number;
+  onPick: (shelf: Shelf | null) => void;
 }) {
   const colors = useColors();
-  const { isRTL, lang } = useLanguage();
-
-  const books = useMemo(() => {
-    const grouped = new Map<string, ResourceItem[]>();
-    for (const item of items) {
-      const list = grouped.get(item.titleAr) ?? [];
-      list.push(item);
-      grouped.set(item.titleAr, list);
-    }
-    return [...grouped.entries()];
-  }, [items]);
-
+  const { t, isRTL, lang } = useLanguage();
+  const num = (n: number) => (lang === 'ar' ? n.toLocaleString('ar-EG') : String(n));
+  const tab = (id: Shelf | null, label: string, count: number, icon?: React.ComponentProps<typeof Ionicons>['name'], iconColor?: string) => {
+    const on = id === active;
+    return (
+      <Pressable
+        key={id ?? 'all'}
+        onPress={() => {
+          Haptics.selectionAsync();
+          onPick(id);
+        }}
+        accessibilityRole="tab"
+        aria-selected={on}
+        accessibilityLabel={`${label}, ${count}`}
+        style={state => [
+          styles.tab,
+          {
+            backgroundColor: on ? ACCENT : colors.card,
+            flexDirection: isRTL ? 'row-reverse' : 'row',
+          },
+          interactionStyle(state as PressState, on ? ACCENT : colors.border),
+        ]}
+      >
+        {icon ? <Ionicons name={icon} size={18} color={on ? palette.primaryForeground : iconColor} /> : null}
+        <Text
+          style={[
+            styles.tabText,
+            { color: on ? palette.primaryForeground : colors.foreground, fontFamily: on ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular' },
+          ]}
+        >
+          {label}
+        </Text>
+        <View style={[styles.tabCount, { backgroundColor: on ? 'rgba(255,255,255,0.22)' : colors.muted }]}>
+          <Text style={[styles.countText, { color: on ? palette.primaryForeground : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }]}>
+            {num(count)}
+          </Text>
+        </View>
+      </Pressable>
+    );
+  };
   return (
-    <>
-      {books.map(([title, rows]) => {
-        const expanded = openBook === title;
-        const count = lang === 'ar' ? rows.length.toLocaleString('ar-EG') : String(rows.length);
-        return (
-          <View key={title} style={styles.bookBlock}>
-            <Pressable
-              onPress={() => {
-                Haptics.selectionAsync();
-                setOpenBook(expanded ? null : title);
-              }}
-              accessibilityRole="button"
-              style={[
-                styles.bookHeader,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: colors.border,
-                  borderRadius: colors.radius,
-                  flexDirection: isRTL ? 'row-reverse' : 'row',
-                },
-              ]}
-            >
-              <Ionicons
-                name={expanded ? 'chevron-down' : isRTL ? 'chevron-back' : 'chevron-forward'}
-                size={16}
-                color={colors.mutedForeground}
-              />
-              <Text
-                numberOfLines={2}
-                style={[
-                  styles.bookTitle,
-                  { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' },
-                ]}
-              >
-                {title}
-              </Text>
-              <View style={[styles.countPill, { backgroundColor: ACCENT + '15' }]}>
-                <Text style={[styles.countText, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>
-                  {count}
-                </Text>
-              </View>
-            </Pressable>
-            {expanded ? (
-              <View style={[styles.rows, grid && styles.rowsGrid, grid && isRTL && { flexDirection: 'row-reverse' }]}>
-                {rows.map(row => (
-                  <ResourceRow key={row.key} item={row} accent={ACCENT} grid={grid} />
-                ))}
-              </View>
-            ) : null}
-          </View>
-        );
-      })}
-    </>
+    <View
+      accessibilityRole="tablist"
+      style={[styles.chipRow, styles.chipRowWrap, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+    >
+      {tab(null, t('libraryTabAll'), total)}
+      {shelves.map(({ shelf: id, items }) => tab(id, t(SHELF_LABEL[id]), items.length, SHELF_ICON[id], SHELF_COLOR[id]))}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  hero: { paddingHorizontal: 20, paddingBottom: 14, gap: 8 },
+  hero: { paddingHorizontal: 20, paddingBottom: 16, gap: 4 },
+  heroRow: { alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' },
   backBtn: { padding: 4 },
-  heroTitle: { color: '#fff', fontSize: 22 },
-  heroMeta: { color: 'rgba(255,255,255,0.95)', fontSize: 13, lineHeight: 21 },
+  heroTitle: { color: '#fff', fontSize: 24, lineHeight: 34 },
+  heroMeta: { color: 'rgba(255,255,255,0.95)', fontSize: 15, lineHeight: 24 },
   addBtn: {
     alignItems: 'center',
     gap: 6,
     backgroundColor: '#fff',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    marginTop: 6,
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    minHeight: 44,
+    justifyContent: 'center',
   },
-  addBtnText: { fontSize: 13 },
-  intro: { fontSize: 12.5, lineHeight: 20, paddingHorizontal: 20, paddingTop: 14 },
+  addBtnText: { fontSize: 14 },
+  intro: { fontSize: 15, lineHeight: 23, paddingHorizontal: 20, paddingTop: 14 },
+  search: { alignItems: 'center', gap: 10, borderWidth: 1, marginHorizontal: 20, marginTop: 12, paddingHorizontal: 14, minHeight: 48 },
+  searchInput: { flex: 1, fontSize: 15, paddingVertical: 10 },
   chipRow: { gap: 8, paddingHorizontal: 20, paddingVertical: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 },
-  chipText: { fontSize: 12.5 },
-  section: { paddingTop: 14, gap: 8 },
+  chipRowWrap: { flexWrap: 'wrap' },
+  chip: {
+    paddingHorizontal: 16,
+    minHeight: 44,
+    justifyContent: 'center',
+    borderRadius: 22,
+    borderWidth: 1,
+  },
+  chipText: { fontSize: 14 },
+  tab: {
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    minHeight: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+  },
+  tabText: { fontSize: 14 },
+  tabCount: { paddingHorizontal: 8, paddingVertical: 1, borderRadius: 10 },
+  viewAll: { alignItems: 'center', gap: 6, paddingVertical: 8 },
+  viewAllText: { fontSize: 14 },
+  section: { paddingTop: 14, gap: 10 },
   tiles: { flexWrap: 'wrap', gap: 12, paddingHorizontal: 20, paddingTop: 14 },
   tile: { flexGrow: 1, flexBasis: '30%', minWidth: 104, maxWidth: 220, alignItems: 'center', gap: 6, borderWidth: 1, paddingVertical: 16, paddingHorizontal: 8 },
   tileIcon: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   tileLabel: { fontSize: 14, textAlign: 'center' },
-  tileCount: { fontSize: 12 },
+  tileCount: { fontSize: 13 },
   shelfHeader: { alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingHorizontal: 20, flexWrap: 'wrap' },
-  shelfTitleRow: { alignItems: 'center', gap: 6 },
-  backChip: { alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-  sectionTitle: { fontSize: 15, paddingHorizontal: 20 },
-  bookBlock: { paddingHorizontal: 20, marginBottom: 10, gap: 8 },
-  bookHeader: { alignItems: 'center', gap: 10, borderWidth: 1, padding: 12 },
-  bookTitle: { flex: 1, fontSize: 13.5, lineHeight: 20 },
-  countPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
-  countText: { fontSize: 11.5 },
-  rows: { gap: 8, paddingHorizontal: 20 },
-  rowsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  row: { alignItems: 'center', gap: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10 },
+  shelfTitleRow: { alignItems: 'center', gap: 8 },
+  sectionTitle: { fontSize: 17, paddingHorizontal: 20 },
+  countText: { fontSize: 13 },
+  rows: { gap: 10, paddingHorizontal: 20 },
+  rowsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  row: { alignItems: 'center', gap: 12, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 12 },
+  // The card: a 16:9 cover over the text, nothing between the cover and the edge.
+  card: { flexDirection: 'column', alignItems: 'stretch', gap: 0, padding: 0, overflow: 'hidden' },
+  cardBody: { padding: 14, gap: 4 },
+  cardFooter: { alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 10 },
+  coverLarge: { width: '100%', aspectRatio: 16 / 9, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  coverSmall: { width: 112, height: 63, borderRadius: 8, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 },
+  playBadge: { alignItems: 'center', justifyContent: 'center' },
+  playBadgeLarge: { width: 48, height: 48, borderRadius: 24 },
+  playBadgeSmall: { width: 30, height: 30, borderRadius: 15 },
+  subjectChip: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999, flexShrink: 1 },
+  subjectText: { fontSize: 13 },
+  actionLink: { alignItems: 'center', gap: 6 },
+  actionLinkText: { fontSize: 14 },
   thumb: { width: 64, height: 48, borderRadius: 6, flexShrink: 0 },
   thumbFallback: { alignItems: 'center', justifyContent: 'center' },
-  gridCell: { width: '48.5%', paddingVertical: 14 },
   actionPill: {
     alignItems: 'center',
     gap: 6,
@@ -870,21 +1126,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
-  actionText: { fontSize: 12 },
-  kindPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  kindText: { fontSize: 11 },
-  rowTitle: { fontSize: 13, lineHeight: 21 },
-  rowNote: { fontSize: 11, lineHeight: 16, marginTop: 2 },
+  actionText: { fontSize: 13 },
+  rowTitle: { fontSize: 16, lineHeight: 25 },
+  bookHeadline: { alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  pagePill: { paddingHorizontal: 10, paddingVertical: 2, borderRadius: 999 },
+  pageText: { fontSize: 13 },
+  rowNote: { fontSize: 14, lineHeight: 22, marginTop: 2 },
   empty: { alignItems: 'center', gap: 10, paddingTop: 48, paddingHorizontal: 40 },
-  emptyText: { fontSize: 13, textAlign: 'center', lineHeight: 20 },
+  emptyText: { fontSize: 15, textAlign: 'center', lineHeight: 23 },
 });
 
 export default LibraryScreen;

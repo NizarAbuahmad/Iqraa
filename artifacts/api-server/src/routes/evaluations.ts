@@ -13,10 +13,12 @@ import { db } from "@workspace/db";
 import {
   attemptResults,
   attempts,
+  classMemberships,
   evaluations,
   evaluationQuestions,
   levelBands,
   levelScales,
+  masteryOverrides,
   students,
 } from "@workspace/db";
 import type { Difficulty, QuestionType } from "@workspace/db";
@@ -25,6 +27,7 @@ import {
   getBookById,
   getEvaluableBookIds,
   getObjectivesForBook,
+  lessonIdsForObjectiveIds,
   objectivesAreWithinBook,
   resolveObjectiveIds,
 } from "@workspace/curriculum";
@@ -35,14 +38,18 @@ import {
   type AuthenticatedRequest,
 } from "../middlewares/auth.js";
 import { logger } from "../lib/logger";
+import { masteryGateEnabled } from "../lib/features.js";
+import { isSchemaMissing } from "../lib/schemaMissing.js";
+import { passedLessonIds, unlockState } from "../modules/assessment/lessonProgress.ts";
 import { findLiveClass } from "../lib/classOwnership.js";
+import { archiveDecision } from "../lib/evaluationArchive";
 import {
   bankContextFor,
   generateMockEvaluation,
   type GenerationResult,
 } from "../modules/assessment/mockGenerator";
 import { validateGenerated } from "../modules/assessment/validator";
-import { verifyAnswerKeys } from "../modules/assessment/keyVerification.ts";
+import { verificationAfterEdit, verifyAnswerKeys } from "../modules/assessment/keyVerification.ts";
 import { relateAnswerKey } from "../lib/mathVerifierClient.ts";
 import { QUESTION_TYPES } from "../modules/assessment/questionTypes";
 import { COMPETENCY_KEYS, type CompetencyKey } from "../modules/assessment/competency";
@@ -74,6 +81,8 @@ import { openai } from "@workspace/integrations-openai-ai-server";
 import { recommendationsFor } from "../modules/assessment/recommend";
 import type { ObjectiveScore } from "../modules/assessment/scoring";
 
+import { resultsReleaseDecision } from "../lib/resultsRelease.ts";
+import { announceResultsRelease } from "../lib/resultsReleaseNotify.ts";
 const router = Router();
 // Path-scoped — see the note in roster.ts. Unscoped, this swallowed every
 // request reaching it, including routes belonging to later routers.
@@ -251,7 +260,8 @@ router.post("/evaluations", async (req: AuthenticatedRequest, res) => {
         difficulty,
         targetQuestionCount: count,
         assessmentTypes: requestedTypes,
-        language: trimmed(req.body?.language) || "ar",
+        // English is examined in English whatever the app's UI language.
+        language: book.subjectId === "english" ? "en" : trimmed(req.body?.language) || "ar",
         levelScaleId: defaultScale.id,
       })
       .returning();
@@ -311,6 +321,8 @@ router.get("/evaluations", async (req: AuthenticatedRequest, res) => {
       .where(
         and(
           eq(evaluations.teacherId, req.user!.id),
+          // Removed from the teacher's lists; the row and its results stay.
+          isNull(evaluations.archivedAt),
           // `?classId=` filters to one class; `?classId=none` is how the attach
           // sheet asks for exams that belong to no class yet. Without the
           // second form the sheet would have to fetch everything and filter
@@ -482,6 +494,7 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
       const runLlm = (avoidList: readonly string[], insistent: boolean) => generateWithModel(
         {
           objectives,
+          gradeId: evaluation.gradeId,
           assessmentTypes: evaluation.assessmentTypes,
           count: evaluation.targetQuestionCount,
           difficulty: evaluation.difficulty,
@@ -586,6 +599,15 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
      * verifier that cannot be reached, removes nothing.
      */
     const keyCheck = await verifyAnswerKeys(validation.accepted, relateAnswerKey);
+    // The model is asked for `count` questions and is free to send more. A
+    // paper longer than the teacher asked for changes its marks and its length.
+    const surplus = keyCheck.kept.length - evaluation.targetQuestionCount;
+    if (surplus > 0) {
+      keyCheck.kept.splice(evaluation.targetQuestionCount);
+      generationNotes.push(
+        `The generator returned ${surplus} more question${surplus === 1 ? "" : "s"} than the ${evaluation.targetQuestionCount} requested; the extra ${surplus === 1 ? "one was" : "ones were"} left out.`,
+      );
+    }
     generationParams["keysChecked"] = keyCheck.checked;
     generationParams["keysVerified"] = keyCheck.verified;
 
@@ -998,6 +1020,8 @@ router.patch(
         patch["body"] = nextBody;
         patch["expectedAnswer"] = nextAnswer;
         patch["rubric"] = nextRubric;
+        // The verdict was about the question as generated, not as edited.
+        patch["verification"] = verificationAfterEdit(existing.verification);
       }
 
       // Mark the provenance honestly: this is no longer purely AI output.
@@ -1125,6 +1149,10 @@ router.post("/evaluations/:id/publish", async (req: AuthenticatedRequest, res) =
       res.status(404).json({ error: "Evaluation not found" });
       return;
     }
+    if (evaluation.archivedAt) {
+      res.status(409).json({ error: "This evaluation was removed from your list", code: "archived" });
+      return;
+    }
     const questions = await liveQuestions(evaluation.id);
     const total = questions.reduce((s, q) => s + Number(q.marks), 0);
 
@@ -1232,6 +1260,80 @@ router.post("/evaluations/:id/close", async (req: AuthenticatedRequest, res) => 
   }
 });
 
+/**
+ * Remove an exam from the teacher's lists (soft delete — see
+ * lib/evaluationArchive.ts). Draft or closed only; students' attempts and
+ * results are untouched.
+ */
+router.delete("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
+  try {
+    const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
+    if (!evaluation) {
+      res.status(404).json({ error: "Evaluation not found" });
+      return;
+    }
+    const decision = archiveDecision(evaluation);
+    if (!decision.ok) {
+      res.status(decision.status).json({ error: decision.error, code: decision.code });
+      return;
+    }
+    if (!decision.alreadyArchived) {
+      await db
+        .update(evaluations)
+        .set({ archivedAt: new Date(), updatedAt: new Date() })
+        .where(eq(evaluations.id, evaluation.id));
+    }
+    res.json({ archived: evaluation.id });
+  } catch (err) {
+    logger.error({ err }, "archive evaluation failed");
+    res.status(500).json({ error: "Failed to remove the evaluation" });
+  }
+});
+
+/**
+ * Release (or take back) this exam's results to its students — see
+ * lib/resultsRelease.ts. The teacher's own button on the exam screen.
+ */
+router.post("/evaluations/:id/results-release", async (req: AuthenticatedRequest, res) => {
+  try {
+    const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
+    if (!evaluation) {
+      res.status(404).json({ error: "Evaluation not found" });
+      return;
+    }
+    const decision = resultsReleaseDecision(evaluation, req.body);
+    if (!decision.ok) {
+      res.status(decision.status).json({ error: decision.error, code: decision.code });
+      return;
+    }
+    // A release is announced at the moment it turns on. Conditional on the
+    // old value so two presses racing each other cannot both see "off" and
+    // announce twice; an un-release, or a release that was already on, falls
+    // through to the plain update and announces nothing.
+    const [turnedOn] = decision.released
+      ? await db
+          .update(evaluations)
+          .set({ releaseResultsToStudent: true, updatedAt: new Date() })
+          .where(and(eq(evaluations.id, evaluation.id), eq(evaluations.releaseResultsToStudent, false)))
+          .returning()
+      : [];
+    const [updated] = turnedOn
+      ? [turnedOn]
+      : await db
+          .update(evaluations)
+          .set({ releaseResultsToStudent: decision.released, updatedAt: new Date() })
+          .where(eq(evaluations.id, evaluation.id))
+          .returning();
+    res.json({ evaluation: updated });
+    if (turnedOn) {
+      announceResultsRelease(turnedOn).catch(err => logger.error({ err }, "results release announcement failed"));
+    }
+  } catch (err) {
+    logger.error({ err }, "results release failed");
+    res.status(500).json({ error: "Failed to update result release" });
+  }
+});
+
 // ─── Attempts (teacher answer entry) ────────────────────────────────────────
 // Creation lives here, under /evaluations, because starting an attempt needs
 // the evaluation's live questions and level scale. Everything after creation
@@ -1275,10 +1377,132 @@ router.get("/evaluations/:id/attempts", async (req: AuthenticatedRequest, res) =
       : [];
     const byAttempt = new Map(results.map(r => [r.attemptId, r]));
 
-    res.json({ attempts: rows.map(r => ({ ...r, result: byAttempt.get(r.id) ?? null })) });
+    // What the mastery gate lets a teacher do about each student. Only a
+    // one-lesson quiz with the gate on has anything to offer; if the unlock
+    // table has not been pushed yet, offer nothing rather than fail the screen.
+    const lessons = lessonIdsForObjectiveIds(evaluation.objectiveIds);
+    const gateLesson = masteryGateEnabled() && lessons.length === 1 ? lessons[0]! : null;
+    let granted = new Set<string>();
+    if (gateLesson && rows.length > 0) {
+      try {
+        const g = await db
+          .select({ studentId: masteryOverrides.studentId })
+          .from(masteryOverrides)
+          .where(
+            and(
+              eq(masteryOverrides.lessonId, gateLesson),
+              inArray(masteryOverrides.studentId, rows.map(r => r.studentId)),
+            ),
+          );
+        granted = new Set(g.map(x => x.studentId));
+      } catch (err) {
+        if (!isSchemaMissing(err)) throw err;
+        logger.error({ err }, "mastery_overrides is missing from this database; offering no unlocks");
+      }
+    }
+
+    res.json({
+      attempts: rows.map(r => {
+        const result = byAttempt.get(r.id) ?? null;
+        const passed =
+          result !== null &&
+          passedLessonIds([{ objectiveIds: evaluation.objectiveIds, percent: result.percent, isProvisional: result.isProvisional }], lessonIdsForObjectiveIds).length > 0;
+        return {
+          ...r,
+          result,
+          masteryUnlock: unlockState({
+            gateOn: gateLesson !== null,
+            lessonId: gateLesson,
+            passed,
+            granted: granted.has(r.studentId),
+          }),
+        };
+      }),
+    });
   } catch (err) {
     logger.error({ err }, "list attempts failed");
     res.status(500).json({ error: "Failed to load attempts" });
+  }
+});
+
+/**
+ * Let a student through (or take it back) on the lesson this quiz covers.
+ *
+ * The mastery gate holds a student behind a quiz until they pass it; this is
+ * the teacher's way out for one the quiz cannot move on — out of retakes, or
+ * stuck on a question that was wrong. It writes a `mastery_overrides` row,
+ * which `/student/progress` counts as a pass. Refused unless the exam is a
+ * one-lesson quiz, because the unlock is for a lesson, and a term test spanning
+ * six of them has no single lesson to open.
+ */
+async function masteryUnlockTarget(
+  req: AuthenticatedRequest,
+  res: Parameters<Parameters<typeof router.put>[1]>[1],
+): Promise<{ lessonId: string; studentId: string } | null> {
+  const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
+  if (!evaluation) {
+    res.status(404).json({ error: "Evaluation not found" });
+    return null;
+  }
+  const studentId = req.params["studentId"] as string;
+  const student = await ownedStudent(studentId, req.user!.id);
+  if (!student) {
+    res.status(404).json({ error: "Student not found" });
+    return null;
+  }
+  if (evaluation.classGroupId) {
+    const [member] = await db
+      .select({ id: classMemberships.studentId })
+      .from(classMemberships)
+      .where(and(eq(classMemberships.classGroupId, evaluation.classGroupId), eq(classMemberships.studentId, studentId)))
+      .limit(1);
+    if (!member) {
+      res.status(404).json({ error: "Student not found" });
+      return null;
+    }
+  }
+  const lessons = lessonIdsForObjectiveIds(evaluation.objectiveIds);
+  if (lessons.length !== 1) {
+    res.status(409).json({ code: "not_a_quiz", error: "Only a one-lesson quiz can unlock a lesson." });
+    return null;
+  }
+  return { lessonId: lessons[0]!, studentId };
+}
+
+function failMasteryUnlock(res: Parameters<Parameters<typeof router.put>[1]>[1], err: unknown): void {
+  if (isSchemaMissing(err)) {
+    logger.error({ err }, "mastery unlock failed — mastery_overrides table is missing from this database");
+    res.status(503).json({ code: "mastery_unlock_unavailable", error: "Unlocking is not set up on this server yet." });
+    return;
+  }
+  logger.error({ err }, "mastery unlock failed");
+  res.status(500).json({ error: "Failed to update this student's unlock" });
+}
+
+router.put("/evaluations/:id/students/:studentId/unlock", async (req: AuthenticatedRequest, res) => {
+  try {
+    const target = await masteryUnlockTarget(req, res);
+    if (!target) return;
+    await db
+      .insert(masteryOverrides)
+      .values({ studentId: target.studentId, lessonId: target.lessonId, teacherId: req.user!.id })
+      .onConflictDoNothing();
+    res.json({ ok: true, unlocked: true });
+  } catch (err) {
+    failMasteryUnlock(res, err);
+  }
+});
+
+router.delete("/evaluations/:id/students/:studentId/unlock", async (req: AuthenticatedRequest, res) => {
+  try {
+    const target = await masteryUnlockTarget(req, res);
+    if (!target) return;
+    await db
+      .delete(masteryOverrides)
+      .where(and(eq(masteryOverrides.studentId, target.studentId), eq(masteryOverrides.lessonId, target.lessonId)));
+    res.json({ ok: true, unlocked: false });
+  } catch (err) {
+    failMasteryUnlock(res, err);
   }
 });
 

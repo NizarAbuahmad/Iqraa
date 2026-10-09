@@ -23,16 +23,19 @@ import {
   chatThreads,
   classGroups,
   classMemberships,
+  classResources,
   evaluations,
+  libraryResources,
   parentContacts,
   rosterLinks,
   students,
   chatMessageReads,
   type ParentContactChannel,
 } from "@workspace/db";
-import { and, asc, count, desc, eq, inArray, isNull } from "drizzle-orm";
-import { resolveObjectiveIds } from "@workspace/curriculum";
-import { aggregateClass } from "../modules/assessment/classInsights.ts";
+import { and, asc, count, desc, eq, inArray, isNull, ne } from "drizzle-orm";
+import { getObjectiveById, resolveObjectiveIds } from "@workspace/curriculum";
+import { studentRecord } from "../modules/assessment/studentRecord.ts";
+import { aggregateClass, finishedAttempts } from "../modules/assessment/classInsights.ts";
 import type { ObjectiveScore } from "../modules/assessment/scoring.ts";
 import {
   authMiddleware,
@@ -51,9 +54,18 @@ import {
   archiveClassThread,
   renameClassGroupThread,
   resyncClassGroupThreadIfExists,
-  syncClassGroupThread,
+  syncClassThreadsForStudent,
 } from "../lib/classThread.js";
 import { findLiveClass } from "../lib/classOwnership.js";
+import { publicUrl } from "../lib/r2.js";
+import {
+  isUuid,
+  parseClassResourceInput,
+  presentClassResource,
+  uploadedLibraryIds,
+} from "../lib/classResource.js";
+import { labClassResourceSnapshot, parseLabClassResourceInput } from "../lib/labClassResource.js";
+import { subjectColumns, withSubjectIds } from "../lib/classSubjects.js";
 
 const router = Router();
 
@@ -113,6 +125,7 @@ router.get("/classes", async (req: AuthenticatedRequest, res) => {
         nameAr: classGroups.nameAr,
         gradeId: classGroups.gradeId,
         subjectId: classGroups.subjectId,
+        subjectIds: classGroups.subjectIds,
         academicYear: classGroups.academicYear,
         createdAt: classGroups.createdAt,
         studentCount: count(students.id),
@@ -127,7 +140,7 @@ router.get("/classes", async (req: AuthenticatedRequest, res) => {
       .groupBy(classGroups.id)
       .orderBy(asc(classGroups.createdAt));
 
-    res.json({ classes: rows });
+    res.json({ classes: rows.map(withSubjectIds) });
   } catch (err) {
     failRoster(res, err, "list classes", "Failed to load classes");
   }
@@ -148,12 +161,12 @@ router.post("/classes", async (req: AuthenticatedRequest, res) => {
         name,
         nameAr: trimmed(req.body?.nameAr),
         gradeId: trimmed(req.body?.gradeId),
-        subjectId: trimmed(req.body?.subjectId),
+        ...(subjectColumns(req.body) ?? { subjectId: "", subjectIds: [] }),
         academicYear: trimmed(req.body?.academicYear),
       })
       .returning();
 
-    res.status(201).json({ class: { ...row, studentCount: 0 } });
+    res.status(201).json({ class: { ...withSubjectIds(row!), studentCount: 0 } });
   } catch (err) {
     failRoster(res, err, "create class", "Failed to create class");
   }
@@ -191,7 +204,7 @@ router.get("/classes/:id", async (req: AuthenticatedRequest, res) => {
       .orderBy(asc(students.displayName));
 
     res.json({
-      class: group,
+      class: withSubjectIds(group),
       students: roster.map(({ linkedCount, ...s }) => ({ ...s, linked: linkedCount > 0 })),
     });
   } catch (err) {
@@ -233,6 +246,7 @@ router.get("/classes/:id/mastery", async (req: AuthenticatedRequest, res) => {
     const rows = await db
       .select({
         objectiveScores: attemptResults.objectiveScores,
+        isProvisional: attemptResults.isProvisional,
         studentId: attempts.studentId,
         evaluationId: attempts.evaluationId,
         displayName: students.displayName,
@@ -247,7 +261,9 @@ router.get("/classes/:id/mastery", async (req: AuthenticatedRequest, res) => {
     // carries an empty breakdown, and letting those in would drag the term
     // average toward zero as the roster grows — "the class is at 31%" would
     // quietly mean "you have not finished marking".
-    const marked = rows
+    // A provisional paper is scored over its machine-marked questions only,
+    // so it is held back too, as `finishedAttempts` does for the insights.
+    const marked = finishedAttempts(rows)
       .map(r => ({ ...r, objectiveScores: (r.objectiveScores as ObjectiveScore[]) ?? [] }))
       .filter(r => r.objectiveScores.length > 0);
 
@@ -298,13 +314,121 @@ router.get("/classes/:id/mastery", async (req: AuthenticatedRequest, res) => {
   }
 });
 
+/**
+ * One student's record in this class — the per-student view STATUS.md listed as
+ * "deliberately not built". Scoped to this class's evaluations, so a subject's
+ * objectives stay together. Every refusal is 404, for the reason the rest of
+ * this router gives: "exists but not yours" must not be distinguishable.
+ */
+router.get("/classes/:id/students/:studentId/record", async (req: AuthenticatedRequest, res) => {
+  try {
+    const classId = req.params["id"] as string;
+    const studentId = req.params["studentId"] as string;
+    const teacherId = req.user!.id;
+    if (!isUuid(classId) || !isUuid(studentId)) {
+      res.status(404).json({ error: "Student not found" });
+      return;
+    }
+    const group = await findLiveClass(classId, teacherId);
+    if (!group) {
+      res.status(404).json({ error: "Class not found" });
+      return;
+    }
+
+    const [student] = await db
+      .select({
+        id: students.id,
+        displayName: students.displayName,
+        teacherNote: students.teacherNote,
+        gender: students.gender,
+      })
+      .from(students)
+      .innerJoin(
+        classMemberships,
+        and(eq(classMemberships.studentId, students.id), eq(classMemberships.classGroupId, classId)),
+      )
+      .where(and(eq(students.id, studentId), eq(students.teacherId, teacherId), isNull(students.archivedAt)))
+      .limit(1);
+    if (!student) {
+      res.status(404).json({ error: "Student not found" });
+      return;
+    }
+
+    const rows = await db
+      .select({
+        evaluationId: evaluations.id,
+        title: evaluations.title,
+        titleAr: evaluations.titleAr,
+        createdAt: evaluations.createdAt,
+        archivedAt: evaluations.archivedAt,
+        attemptId: attempts.id,
+        attemptStatus: attempts.status,
+        teacherComment: attempts.teacherComment,
+        submittedAt: attempts.submittedAt,
+        earned: attemptResults.earnedMarks,
+        total: attemptResults.totalMarks,
+        percent: attemptResults.percent,
+        isProvisional: attemptResults.isProvisional,
+        objectiveScores: attemptResults.objectiveScores,
+      })
+      .from(evaluations)
+      .leftJoin(attempts, and(eq(attempts.evaluationId, evaluations.id), eq(attempts.studentId, studentId)))
+      .leftJoin(attemptResults, eq(attemptResults.attemptId, attempts.id))
+      .where(
+        and(
+          eq(evaluations.classGroupId, classId),
+          // Archived rows are kept on purpose: they still count in the
+          // objectives, as in /classes/:id/mastery (studentRecord() hides them
+          // from the exam list).
+          ne(evaluations.status, "draft"),
+        ),
+      );
+
+    const [guardian] = await db
+      .select({ id: rosterLinks.id })
+      .from(rosterLinks)
+      .where(and(eq(rosterLinks.studentId, studentId), eq(rosterLinks.relation, "guardian")))
+      .limit(1);
+
+    const [lastContact] = await db
+      .select({ kind: parentContacts.kind, channel: parentContacts.channel, at: parentContacts.createdAt })
+      .from(parentContacts)
+      .where(and(eq(parentContacts.studentId, studentId), eq(parentContacts.teacherId, teacherId)))
+      .orderBy(desc(parentContacts.createdAt))
+      .limit(1);
+
+    const record = studentRecord(rows.map(({ archivedAt, ...r }) => ({ ...r, archived: archivedAt !== null })), objectiveId => {
+      const o = getObjectiveById(objectiveId);
+      return o
+        ? { titleAr: o.descriptionAr || o.description, lessonId: o.lessonId, lessonTitleAr: o.lessonTitleAr || o.lessonTitle }
+        : null;
+    });
+
+    res.json({
+      student,
+      className: group.nameAr || group.name,
+      ...record,
+      parent: {
+        linked: Boolean(guardian),
+        lastContact: lastContact
+          ? { kind: lastContact.kind, channel: lastContact.channel, at: lastContact.at.toISOString() }
+          : null,
+      },
+    });
+  } catch (err) {
+    failRoster(res, err, "student record", "Failed to load student record");
+  }
+});
+
 router.patch("/classes/:id", async (req: AuthenticatedRequest, res) => {
   try {
     const classId = req.params["id"] as string;
     const patch: Record<string, unknown> = { updatedAt: new Date() };
-    for (const field of ["name", "nameAr", "gradeId", "subjectId", "academicYear"] as const) {
+    for (const field of ["name", "nameAr", "gradeId", "academicYear"] as const) {
       if (req.body?.[field] !== undefined) patch[field] = trimmed(req.body[field]);
     }
+    // Both columns move together, or the primary subject drifts off the list.
+    Object.assign(patch, subjectColumns(req.body));
     if (patch["name"] === "") {
       res.status(400).json({ error: "name cannot be empty" });
       return;
@@ -331,7 +455,7 @@ router.patch("/classes/:id", async (req: AuthenticatedRequest, res) => {
     if ("name" in patch || "nameAr" in patch) {
       await renameClassGroupThread(row.id, row.name, row.nameAr);
     }
-    res.json({ class: row });
+    res.json({ class: withSubjectIds(row) });
   } catch (err) {
     failRoster(res, err, "update class", "Failed to update class");
   }
@@ -596,6 +720,221 @@ router.delete("/classes/:id/students/:studentId", async (req: AuthenticatedReque
     res.json({ removed: studentId });
   } catch (err) {
     failRoster(res, err, "remove student", "Failed to remove student");
+  }
+});
+
+// ─── Class resources ─────────────────────────────────────────────────────────
+// What a teacher has put in front of a class from the Library. Rows are a
+// pointer plus a snapshot, except a staff upload's link, which the GET builds
+// from its Library row on every read; see lib/db/src/schema/classResources.ts
+// and docs/superpowers/specs/2026-10-04-class-resources-design.md.
+
+router.get("/classes/:id/resources", async (req: AuthenticatedRequest, res) => {
+  try {
+    const classId = req.params["id"] as string;
+    if (!(await findLiveClass(classId, req.user!.id))) {
+      res.status(404).json({ error: "Class not found" });
+      return;
+    }
+
+    let rows: (typeof classResources.$inferSelect)[];
+    try {
+      rows = await db
+        .select()
+        .from(classResources)
+        .where(eq(classResources.classGroupId, classId))
+        .orderBy(desc(classResources.createdAt));
+    } catch (err) {
+      // The table comes from a manual schema push. Until then an empty shelf is
+      // the truth a teacher can act on; a 503 here would blank the class screen.
+      // Say so in the log, though: this branch answers 200, so a missed push
+      // would otherwise leave no trace anywhere.
+      if (isSchemaMissing(err)) {
+        logger.warn(
+          { err },
+          "GET /classes/:id/resources: class_resources is missing from this database — " +
+            "answering an empty shelf. Run `pnpm --filter @workspace/db run push` against DATABASE_URL.",
+        );
+        res.json({ resources: [] });
+        return;
+      }
+      throw err;
+    }
+
+    // A staff upload can be deleted after a teacher added it. One query for all
+    // of them, not one per row. The same query gives each survivor's current
+    // link: it is built here, on every read, the way the POST builds it, so a
+    // moved R2_PUBLIC_BASE_URL does not strand rows stored under the old host.
+    const present = new Set<string>();
+    const liveUrls = new Map<string, string | null>();
+    const ids = uploadedLibraryIds(rows);
+    if (ids.length > 0) {
+      try {
+        const found = await db
+          .select({
+            id: libraryResources.id,
+            r2Key: libraryResources.r2Key,
+            sourceUrl: libraryResources.sourceUrl,
+          })
+          .from(libraryResources)
+          .where(inArray(libraryResources.id, ids));
+        for (const f of found) {
+          present.add(f.id);
+          liveUrls.set(f.id, f.r2Key ? publicUrl(f.r2Key) : f.sourceUrl);
+        }
+      } catch (err) {
+        // Cannot tell, so call every row available rather than all of them gone,
+        // and serve the stored links rather than none.
+        logger.error({ err }, "class resources: library lookup failed");
+        liveUrls.clear();
+        for (const id of ids) present.add(id);
+      }
+    }
+
+    res.json({ resources: rows.map(row => presentClassResource(row, present, liveUrls)) });
+  } catch (err) {
+    failRoster(res, err, "list class resources", "Failed to load class resources");
+  }
+});
+
+router.post("/classes/:id/resources", async (req: AuthenticatedRequest, res) => {
+  try {
+    const classId = req.params["id"] as string;
+    if (!(await findLiveClass(classId, req.user!.id))) {
+      res.status(404).json({ error: "Class not found" });
+      return;
+    }
+
+    // A Science Lab item: validated and titled from the catalogue, not the app.
+    if (req.body && typeof req.body === "object" && (req.body as Record<string, unknown>)["kind"] === "lab") {
+      const lab = parseLabClassResourceInput(req.body);
+      if ("error" in lab) {
+        res.status(400).json({ error: lab.error });
+        return;
+      }
+      const snap = labClassResourceSnapshot(lab.itemId)!;
+      // No unique index covers lab rows (that would be DDL), so the route checks.
+      const [existing] = await db
+        .select({ id: classResources.id })
+        .from(classResources)
+        .where(
+          and(
+            eq(classResources.classGroupId, classId),
+            eq(classResources.kind, "lab"),
+            eq(classResources.libraryNativeId, lab.itemId),
+          ),
+        )
+        .limit(1);
+      if (existing) {
+        res.status(409).json({ code: "already_added", error: "Already added to this class" });
+        return;
+      }
+      const [row] = await db
+        .insert(classResources)
+        .values({
+          classGroupId: classId,
+          teacherId: req.user!.id,
+          kind: "lab",
+          librarySource: null,
+          libraryNativeId: lab.itemId,
+          ...snap,
+        })
+        .returning();
+      res.status(201).json({ resource: presentClassResource(row!, new Set()) });
+      return;
+    }
+
+    const input = parseClassResourceInput(req.body);
+    if ("error" in input) {
+      res.status(400).json({ error: input.error });
+      return;
+    }
+
+    let snapshot: { title: string; mediaKind: string; url: string | null; thumbnailUrl: string | null };
+    if (input.source === "uploaded") {
+      // Never trust the app for a staff upload: copy it from the Library's own row.
+      const [item] = await db
+        .select()
+        .from(libraryResources)
+        .where(eq(libraryResources.id, input.nativeId))
+        .limit(1);
+      if (!item) {
+        res.status(404).json({ error: "Library item not found" });
+        return;
+      }
+      snapshot = {
+        title: item.titleAr,
+        mediaKind: item.category,
+        url: item.r2Key ? publicUrl(item.r2Key) : item.sourceUrl,
+        thumbnailUrl: item.thumbnailUrl,
+      };
+    } else {
+      snapshot = {
+        title: input.title,
+        mediaKind: input.mediaKind,
+        url: input.url,
+        thumbnailUrl: input.thumbnailUrl,
+      };
+    }
+
+    const [row] = await db
+      .insert(classResources)
+      .values({
+        classGroupId: classId,
+        teacherId: req.user!.id,
+        kind: "library",
+        librarySource: input.source,
+        libraryNativeId: input.nativeId,
+        ...snapshot,
+      })
+      .onConflictDoNothing()
+      .returning();
+
+    if (!row) {
+      // The partial unique index refused it: this item is already on the shelf.
+      res.status(409).json({ code: "already_added", error: "Already added to this class" });
+      return;
+    }
+    res.status(201).json({ resource: presentClassResource(row, new Set([input.nativeId])) });
+  } catch (err) {
+    failRoster(res, err, "add class resource", "Failed to add the resource");
+  }
+});
+
+router.delete("/classes/:id/resources/:rid", async (req: AuthenticatedRequest, res) => {
+  try {
+    const classId = req.params["id"] as string;
+    const rid = req.params["rid"] as string;
+    if (!(await findLiveClass(classId, req.user!.id))) {
+      res.status(404).json({ error: "Class not found" });
+      return;
+    }
+    // A malformed id would be a Postgres cast error (a 500); to the caller it is
+    // simply not there.
+    if (!isUuid(rid)) {
+      res.status(404).json({ error: "Resource not found" });
+      return;
+    }
+
+    const removed = await db
+      .delete(classResources)
+      .where(
+        and(
+          eq(classResources.id, rid),
+          eq(classResources.classGroupId, classId),
+          eq(classResources.teacherId, req.user!.id),
+        ),
+      )
+      .returning({ id: classResources.id });
+
+    if (removed.length === 0) {
+      res.status(404).json({ error: "Resource not found" });
+      return;
+    }
+    // Removes the class's row only; the Library item itself is never touched.
+    res.json({ removed: rid });
+  } catch (err) {
+    failRoster(res, err, "remove class resource", "Failed to remove the resource");
   }
 });
 
@@ -979,7 +1318,7 @@ router.post("/classes/:id/join-code", async (req: AuthenticatedRequest, res) => 
  *     live, so the person disappears from both immediately — no new thread or
  *     group can include them.
  *   - Class-group chat membership is derived from the roster, so
- *     syncClassGroupThread is called below to rebuild it now rather than
+ *     syncClassThreadsForStudent is called below to rebuild it now rather than
  *     leaving the wrong adult in a thread full of children until the next time
  *     somebody happens to open it.
  *   - Custom groups and any existing direct thread are NOT touched. Those
@@ -1014,23 +1353,11 @@ router.delete("/students/:id/links/:userId", async (req: AuthenticatedRequest, r
       return;
     }
 
-    // Rebuild every class thread this student sits in, so the unlinked account
-    // loses its place in them now. One derivation rule, one implementation —
-    // hand-writing the delete here would be a second copy that gets it wrong
-    // when the same user is self-linked to another child in the same class.
-    const memberships = await db
-      .select({
-        classGroupId: classMemberships.classGroupId,
-        teacherId: classGroups.teacherId,
-        name: classGroups.name,
-        nameAr: classGroups.nameAr,
-      })
-      .from(classMemberships)
-      .innerJoin(classGroups, eq(classGroups.id, classMemberships.classGroupId))
-      .where(and(eq(classMemberships.studentId, studentId), isNull(classGroups.archivedAt)));
-    for (const m of memberships) {
-      await syncClassGroupThread(m.classGroupId, m.teacherId, m.name, m.nameAr);
-    }
+    // Rebuild every existing class thread this student sits in, so the
+    // unlinked account loses its place in them now. One derivation rule, one
+    // implementation — and it is a no-op where no chat exists yet, so an
+    // unlink does not conjure empty class chats into the teacher's inbox.
+    await syncClassThreadsForStudent(studentId);
 
     res.json({ removedUserId: linkedUserId });
   } catch (err) {

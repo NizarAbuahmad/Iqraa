@@ -69,8 +69,8 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   then the web bundle, and skips the web deploy if either failed
   ([`docs/deploying.md`](./docs/deploying.md)). Between the 2026-09-05 Cloud Run
   cutover and then, only the web app auto-deployed, which is how a bundle once
-  went live against an API without the matching route. The schema is still the
-  one edit that does not deploy itself — see *Schema* in that file.
+  went live against an API without the matching route.
+  The schema deploys too, as migrations — see *Schema* in that file.
 - Arabic is the product language; the UI is RTL-first. Compute maths in latin
   `x` and convert to `س` / Arabic digits **only at display time**.
 - `DEMO_MODE = true` in `artifacts/mobile/services/ai/demoMode.ts` mocks all
@@ -158,6 +158,18 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   (`services/documents/extractMeta.ts`) or it silently exercises the ordinary
   path instead. `introduction`/`closure`/`assessment`/`homework` vary randomly
   via `pick()`, so asserting "the styles differ" on them proves nothing.
+- **A worksheet's structure lives in two places, and its count is the total.**
+  The worked example, the half-solved first question and the key's working are
+  built by `generateWorksheet` (`artifacts/mobile/services/ai/generators.ts`)
+  from `lib/math-practice/src/steps*.ts`, and asked for by
+  `worksheetPromptAr/En` (`artifacts/api-server/src/lib/prompts.ts`). Change one
+  without the other and the paper differs by whether live AI was on. The example
+  and the half-solved question count INSIDE the number the teacher picked, so
+  sections hold n−1 questions when an example is present; a test that counts
+  `sections` alone must add the example back. A new bank item needs working
+  before it can be studied, and `steps.test.ts` fails a family with fewer than
+  two solved items. Working is dropped, not kept, when a teacher edits the
+  question it belongs to (`worksheetEdits.ts`).
 - **A question's difficulty tier lives on the template, and in two prompts.**
   Every non-math question template carries its own `tier`
   (`TieredTemplate` in `artifacts/mobile/services/ai/generators.ts`), and
@@ -207,6 +219,31 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   local and EAS fingerprints never matched and every build failed at
   `CONFIGURE_EXPO_UPDATES`. In a pnpm monorepo that policy is not usable
   without excluding the very inputs it exists to watch.
+- **On Android nothing lifts content above the keyboard unless a view asks.**
+  Expo SDK 54 draws edge-to-edge and `KeyboardProvider` (root layout) forces
+  `navigationBarTranslucent`, so the window is never resized for the keyboard —
+  on screens and inside `<Modal>` windows alike. Sign-up, sign-in and chat all
+  had their lower fields (or the composer) hidden behind it, while
+  `behavior={Platform.OS === 'ios' ? 'padding' : undefined}` — the copy-pasted
+  idiom — is a no-op on Android. The fix lives in two places only: the root
+  Stack's `screenLayout` wraps **every screen** in `KeyboardSafeView`, and every
+  `<Modal>` that holds a text input wraps its own body in one (a Modal is a
+  separate window the Stack cannot reach). **Do not add a
+  `KeyboardAvoidingView` inside a screen**: both react to the same event with
+  the same stale frame and the content lifts twice. A new Modal with an input
+  needs `<KeyboardSafeView>` inside it; a new screen needs nothing. Chat's
+  composer and the tab bar are the exception that proves it — the bar hides on
+  keyboard (`tabBarHideOnKeyboard`) and the composer drops its tab-bar padding
+  (`useKeyboardVisible`), or a ~84px gap sits above the keyboard.
+  **`KeyboardSafeView` is keyboard-controller's `KeyboardAvoidingView`, not
+  React Native's (since 2026-10-08).** RN's caches the last keyboard event and
+  re-derives its padding from it on every layout, so once it was wrapping every
+  screen a lost hide left the padding in place for good — a grey band (the
+  navigator's background) under the tab bar. keyboard-controller's padding
+  follows live keyboard progress and is 0 whenever the keyboard is closed.
+  Related trap: tab screens sit *under* the tab layout's lesson bar / bell
+  header, which already pays `insets.top` — a tab screen header must not add it
+  again.
 - **Extensionless relative imports only work through esbuild.** Anything loaded
   directly by `node --test` needs an explicit `.ts` extension.
 - **The OpenAI client throws at module scope without a key**, which makes
@@ -239,26 +276,15 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   **three** places to be declared, not one: `deploy.yml` (web), `eas.json`'s
   per-profile `env` (builds), and `mobile-update.yml` (OTA — `eas update` does
   not read `eas.json`). Add a new one to all three or state why not.
-- **The production schema is not deployed by anything.** `pnpm --filter
-  @workspace/db run push` is manual, so a release that adds a table and skips
-  that push leaves endpoints answering 503. On 2026-08-19, 14 of 24 expected
-  tables were missing from production, including the entire evaluations
-  subsystem — **and it was fixed the same afternoon** (Neon query history:
-  found 1:36pm, migrated 1:41pm, re-checked 1:42pm). This entry went on
-  asserting the outage for three more days, because only the problem got
-  written down and not the fix.
-  **Verified 25/25 present on 2026-08-25**, against the real Neon database
-  (`ep-bold-bar-asvxvxjr-pooler…eu-central-1`) — every file `ok`, evaluations
-  included. The push is still manual, on purpose, but it is now *checked*: a PR
-  touching `lib/db/src/schema` must answer `schema-push:` in its description,
-  and `.github/workflows/schema-check.yml` runs `verify-schema` against
-  production daily at 06:00 UTC, on demand, and whenever a schema change
-  reaches `main`. The `DATABASE_URL` repository secret it needs is set.
-  The gap in the *process* is narrowed, not closed — nothing runs the push for
-  you. And "checked" caught the table but not the column: on 2026-09-16 a PR
-  added two columns to `refresh_tokens`, the PR body claimed `schema-push:
-  done`, and they were not actually in production — every sign-in path 500'd
-  for 36 minutes, because `verify-schema` at the time only asked whether each
-  table *name* existed. It now checks columns too. Re-check with `pnpm
-  --filter @workspace/db run verify-schema` rather than trusting this line;
-  it still does not check a column's type, nullability, or default.
+- **The schema deploys as migrations (since 2026-10-08) — don't `push` to
+  production.** Edit `lib/db/src/schema`, run `pnpm --filter @workspace/db run
+  generate`, and commit `lib/db/migrations/`. CI fails a schema edit with no
+  migration, applies all migrations to an empty Postgres, and makes destructive
+  SQL (`DROP`/`RENAME`/`SET NOT NULL`/type change) wait for
+  `destructive-migration: ok` in the PR body, because `deploy.yml` migrates
+  *before* the new API revision takes traffic. `verify-schema` still runs
+  after, as a backstop. This replaced hand-run `push`, which left production
+  behind the code on 2026-08-19 (14 of 24 tables), 2026-09-16 (sign-in 500s for
+  36 minutes), 2026-09-26 and 2026-10-05 — twice under a PR body that said
+  `schema-push: done`. A database that has tables but no migration history is
+  refused until baselined once; see *Schema* in `docs/deploying.md`.

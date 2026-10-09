@@ -66,10 +66,18 @@ export type BankUsePolicy =
   /**
    * May be pointed at, never copied. The licence permits an embed or a link
    * and grants no redistribution right, so the bytes stay on the origin's
-   * servers: PhET simulations, YouTube videos. Never reaches a model prompt —
+   * servers: YouTube videos. Never reaches a model prompt —
    * there is no text of ours to ground on.
    */
-  | 'embed-only';
+  | 'embed-only'
+  /**
+   * May be pointed at — a link the teacher or student follows — and nothing
+   * else: never framed in an iframe, never copied, never sent to a model.
+   * For non-commercial licences (PhET since 2026-03-29): classroom use of the
+   * origin site is the user's own, free use; reproducing or framing it inside
+   * a commercial product is not ours to do. Stricter than `embed-only`.
+   */
+  | 'link-only';
 
 /**
  * Licences this project has actually read, and what each one permits.
@@ -114,6 +122,11 @@ export type LicenseId =
   /** No redistribution right; the terms permit an embed or a link only. */
   | 'embed-terms'
   /**
+   * Attribution-NonCommercial. PhET's whole library since 2026-03-29. Free for
+   * a teacher or student to use; a commercial product may only link to it.
+   */
+  | 'CC-BY-NC-4.0'
+  /**
    * The NCCD's Collins-prepared series — maths and science at grades 4, 6, 9
    * and 10. «© HarperCollins Publishers Limited», prepared originally in
    * English *for* the NCCD, then translated, adapted, customised and published
@@ -148,6 +161,7 @@ const POLICY_BY_LICENSE: Record<LicenseId, BankUsePolicy> = {
   'CC-BY-SA-4.0': 'reference-only',
   'CC-BY-SA-3.0': 'reference-only',
   'embed-terms': 'embed-only',
+  'CC-BY-NC-4.0': 'link-only',
   // Quotable by Nizar's decision, 2026-09-16: Iqraa holds the right to use
   // these books. He was given the notice verbatim, the reading that the
   // copyright sits with HarperCollins, and the measured cost of restricting
@@ -392,7 +406,7 @@ export function bankStats(): {
   const usable = bankItems();
   const byKind: Record<string, number> = {};
   const bySubject: Record<string, number> = {};
-  const byPolicy: Record<BankUsePolicy, number> = { quotable: 0, 'reference-only': 0, 'embed-only': 0 };
+  const byPolicy: Record<BankUsePolicy, number> = { quotable: 0, 'reference-only': 0, 'embed-only': 0, 'link-only': 0 };
   for (const s of usable) {
     byKind[s.kind] = (byKind[s.kind] ?? 0) + 1;
     const id = appSubjectId(s.subject);

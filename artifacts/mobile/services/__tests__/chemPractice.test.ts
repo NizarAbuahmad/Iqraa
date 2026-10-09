@@ -119,20 +119,12 @@ describe('the maths path is untouched', () => {
     }
   });
 
-  it('leaves a subject with no bank on the templates, rather than serving chemistry', async () => {
-    // Biology has no bank. The templates are the correct answer for it — the
-    // wrong answer would be a chemistry item bleeding into a biology paper.
-    const quiz = await service.generateQuiz({
-      ...CHEM_REQ,
-      subject: 'Biology',
-      topic: 'الخلية ووظائفها',
-    } as AIRequest);
-
-    assert.ok(quiz.questions.length > 0);
-    const text = quiz.questions.map(q => [q.text, ...(q.options ?? [])].join(' ')).join('\n');
-    assert.ok(
-      !/الكتلة المولية|وازن المعادلة|التوزيع الإلكتروني/.test(text),
-      `a chemistry item reached a biology paper:\n${text}`,
+  it('refuses a subject with no bank, rather than serving chemistry or filler', async () => {
+    // Biology has no bank. The wrong answer would be a chemistry item bleeding
+    // into a biology paper; the second-worst is topic-templated filler.
+    await assert.rejects(
+      service.generateQuiz({ ...CHEM_REQ, subject: 'Biology', topic: 'الخلية ووظائفها' } as AIRequest),
+      (e: { code?: string }) => e.code === 'no_question_bank',
     );
   });
 });

@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { useLanguage } from '@/context/LanguageContext';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
+import { useKeyboardVisible } from '@/hooks/useKeyboardVisible';
 import { DESKTOP_BREAKPOINT } from '@/constants/layout';
 
 const NAVY = '#081B3A';
@@ -27,6 +28,12 @@ export function useAuthLayout() {
 export function AuthBrandPanel({ isWide }: { isWide: boolean }) {
   const insets = useSafeAreaInsets();
   const { t, lang, isRTL, toggleLang } = useLanguage();
+  const keyboardVisible = useKeyboardVisible();
+
+  // On a phone this panel is ~a third of the screen and sits outside the form's
+  // ScrollView, so with the keyboard open only one field was left visible.
+  // Typing is the only thing happening then; the branding can wait.
+  if (!isWide && keyboardVisible) return null;
 
   return (
     <LinearGradient
@@ -57,13 +64,13 @@ export function AuthBrandPanel({ isWide }: { isWide: boolean }) {
         accessibilityLabel={lang === 'ar' ? 'التبديل إلى الإنجليزية' : 'Switch to Arabic'}
       >
         <Ionicons name="language-outline" size={15} color="rgba(255,255,255,0.9)" />
-        <Text style={[styles.langBtnText, { fontFamily: 'Cairo_500Medium' }]}>
+        <Text style={[styles.langBtnText, { fontFamily: 'ReadexPro_500Medium' }]}>
           {lang === 'ar' ? 'English' : 'عربي'}
         </Text>
       </Pressable>
 
       <View style={[styles.brandContent, isWide ? styles.brandContentWide : styles.brandContentNarrow]}>
-        <Text style={[styles.eyebrow, { fontFamily: 'Cairo_500Medium', textAlign: 'center' }]}>
+        <Text style={[styles.eyebrow, { fontFamily: 'ReadexPro_500Medium', textAlign: 'center' }]}>
           {t('loginBrandEyebrow')}
         </Text>
 
@@ -73,7 +80,7 @@ export function AuthBrandPanel({ isWide }: { isWide: boolean }) {
           style={[
             styles.valueProp,
             {
-              fontFamily: lang === 'ar' ? 'Cairo_500Medium' : 'Almarai_400Regular',
+              fontFamily: lang === 'ar' ? 'ReadexPro_500Medium' : 'Almarai_400Regular',
               textAlign: 'center',
               writingDirection: isRTL ? 'rtl' : 'ltr',
             },

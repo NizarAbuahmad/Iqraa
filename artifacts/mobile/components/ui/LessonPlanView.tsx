@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { LessonPlanOutput } from '@/services/ai/AIService';
 import { EditableList, EditableText } from '@/components/ui/Editable';
 import { MathParagraph } from '@/components/ui/MathParagraph';
+import { displayObjective } from '@/services/objectiveDisplay';
 
 type Colors = {
   foreground: string;
@@ -68,10 +69,14 @@ export function LessonPlanView({
   const edited = editedFields ?? new Set<string>();
   const align = isRTL ? 'right' : 'left';
 
+  // Objectives are rewritten for reading only (see objectiveDisplay.ts); the
+  // plan keeps the curriculum's wording until the teacher edits the list.
+  const shown = (field: 'objectives' | 'materials') =>
+    field === 'objectives' ? plan.objectives.map(displayObjective) : plan[field];
   const list = (field: 'objectives' | 'materials') =>
     onEdit ? (
       <EditableList
-        items={plan[field]}
+        items={shown(field)}
         onChange={next => onEdit(field, next)}
         colors={colors}
         isRTL={isRTL}
@@ -80,7 +85,7 @@ export function LessonPlanView({
       />
     ) : (
       <>
-        {plan[field].map((item, i) => (
+        {shown(field).map((item, i) => (
           <View key={i} style={[styles.bulletRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <View style={[styles.bulletDot, { backgroundColor: accent }]} />
             <MathParagraph
@@ -163,7 +168,7 @@ function Section({
             styles.headerTitle,
             {
               color: colors.foreground,
-              fontFamily: 'Cairo_600SemiBold',
+              fontFamily: 'ReadexPro_600SemiBold',
               textAlign: isRTL ? 'right' : 'left',
             },
           ]}
@@ -189,6 +194,6 @@ const styles = StyleSheet.create({
   body: { borderWidth: 1, padding: 12, gap: 6 },
   bulletRow: { alignItems: 'flex-start', gap: 8 },
   bulletDot: { width: 5, height: 5, borderRadius: 3, marginTop: 8 },
-  bulletText: { flex: 1, fontSize: 13.5, lineHeight: 22 },
-  bodyText: { fontSize: 13.5, lineHeight: 22 },
+  bulletText: { flex: 1, fontSize: 14, lineHeight: 22 },
+  bodyText: { fontSize: 14, lineHeight: 22 },
 });

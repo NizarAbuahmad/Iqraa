@@ -4,42 +4,25 @@ import { desc, eq, and, gte, lt, sql } from "drizzle-orm";
 import { authMiddleware, requireRole, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
 import { parseDateRange, UUID } from "../lib/adminMetrics.js";
+import { isFeedbackRating, parseFeedbackInput } from "../lib/feedbackInput.js";
 
 const router = Router();
 
 const ADMIN_ROLES = ["school_admin", "system_admin"];
-const VALID_RATINGS = ["up", "down"];
 
-// POST /feedback — any signed-in teacher, on the content they were just shown.
+// POST /feedback — any signed-in user: a thumb on the content they were just
+// shown, or a feature idea from «اقترح ميزة» (rating 'idea'). See feedbackInput.ts.
 router.post("/feedback", authMiddleware, async (req: AuthenticatedRequest, res) => {
   try {
-    const { materialType, toolId, rating, comment } = req.body as {
-      materialType?: string;
-      toolId?: string;
-      rating?: string;
-      comment?: string;
-    };
-
-    if (!materialType?.trim()) {
-      res.status(400).json({ error: "materialType is required" });
-      return;
-    }
-    if (!rating || !VALID_RATINGS.includes(rating)) {
-      res.status(400).json({ error: "rating must be 'up' or 'down'" });
+    const parsed = parseFeedbackInput(req.body);
+    if (!parsed.ok) {
+      res.status(400).json({ error: parsed.error });
       return;
     }
 
     const [row] = await db
       .insert(feedback)
-      .values({
-        userId: req.user!.id,
-        materialType: materialType.trim(),
-        toolId: (toolId ?? "").trim(),
-        rating,
-        // A cap here isn't validation theater — it keeps one runaway paste
-        // from making a single feedback row unreasonably large in the list view.
-        comment: (comment ?? "").trim().slice(0, 2000),
-      })
+      .values({ userId: req.user!.id, ...parsed.value })
       .returning();
 
     res.status(201).json(row);
@@ -69,7 +52,7 @@ router.get("/feedback", authMiddleware, requireRole(...ADMIN_ROLES), async (req,
     }
 
     const conditions = [
-      rating && VALID_RATINGS.includes(rating) ? eq(feedback.rating, rating) : undefined,
+      isFeedbackRating(rating) ? eq(feedback.rating, rating) : undefined,
       materialType ? eq(feedback.materialType, materialType) : undefined,
       range.from ? gte(feedback.createdAt, range.from) : undefined,
       range.to ? lt(feedback.createdAt, range.to) : undefined,

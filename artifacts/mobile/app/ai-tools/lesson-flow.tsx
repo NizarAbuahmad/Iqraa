@@ -20,6 +20,8 @@ import * as Haptics from 'expo-haptics';
 
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { getT } from '@/services/i18n';
+import { contentLang, topicInLang } from '@/services/contentLanguage';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
 import { isolateForeignRuns } from '@/services/mathRender';
@@ -85,7 +87,7 @@ const INITIAL_STEP_STATE: StepState = {
 export default function LessonFlowScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { t, isRTL, lang } = useLanguage();
+  const { t, isRTL, lang: uiLang } = useLanguage();
   const scrollRef = useRef<ScrollView>(null);
   const params = useLocalSearchParams<{
     topic?: string; gradeIdx?: string; subjectIdx?: string;
@@ -95,12 +97,11 @@ export default function LessonFlowScreen() {
   const subjects = getPickerSubjects();
 
   // Form state
-  const [topic, setTopic] = useState(params.topic ?? '');
   // An index the picker list cannot honour is NOT index 0 — see
   // `scopeFromParams`. Grounding the topic is what recovers the right scope.
   // Only the grades/subjects this teacher picked on /setup-subjects are offered.
   const teacherScope = useTeacherScope();
-  const [initialScope] = useState(() => scopeFromParams(params, lang as 'ar' | 'en', teacherScope.defaultScope));
+  const [initialScope] = useState(() => scopeFromParams(params, uiLang, teacherScope.defaultScope));
   const [gradeIdx, setGradeIdx] = useState(initialScope.gradeIdx);
   // Index-aligned flags rather than a pre-filtered `subjects`: these positions
   // are persisted as subjectIdx, so entries are dropped at render time only.
@@ -108,8 +109,15 @@ export default function LessonFlowScreen() {
   // Labels are per-grade too: Grade 6's creative-arts book has no music
   // in it, so it must not be offered under the combined name. Same
   // index alignment as the mask above.
-  const subjectNames = subjectPickerLabels(grades[gradeIdx].id, lang as 'ar' | 'en');
+  const subjectNames = subjectPickerLabels(grades[gradeIdx].id, uiLang);
   const [subjectIdx, setSubjectIdx] = useState(initialScope.subjectIdx);
+  // The picked subject's material language — English is taught in English.
+  // The form is gone once building starts, so this cannot move under a flow.
+  const lang = contentLang(subjects[subjectIdx].id, uiLang);
+  const [topic, setTopic] = useState(() => topicInLang(
+    params.topic ?? '', uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
+    { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
+  ));
   const [durationIdx, setDurationIdx] = useState(0);
 
   // Generation state
@@ -146,7 +154,8 @@ export default function LessonFlowScreen() {
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
 
-  const gradeNames = grades.map(g => lang === 'ar' ? g.nameAr : g.name);
+  const gradeNames = grades.map(g => uiLang === 'ar' ? g.nameAr : g.name);
+  const contentT = getT(lang);
   const durationLabels = DURATION_VALUES.map(d => `${d} ${t('min')}`);
 
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
@@ -161,10 +170,10 @@ export default function LessonFlowScreen() {
     // A topic that grounds to another subject's lesson cannot make an honest
     // flow — the KB serves that lesson's own content while the header claims
     // the picked subject. Refuse and name the real subject instead.
-    const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
+    const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, uiLang);
     if (scope) { setError(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
-    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id);
-    if (conflict) { setError(t('subjectTopicMismatch', lang === 'ar' ? conflict.nameAr : conflict.name)); return; }
+    const conflict = groundedSubjectConflict(topic.trim(), lang, subjects[subjectIdx].id);
+    if (conflict) { setError(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setPhase('building');
     setError('');
@@ -344,7 +353,7 @@ export default function LessonFlowScreen() {
     { key: 'activity',   labelKey: 'lessonFlowStepActivity',   icon: 'flash-outline', color: '#4F46E5' },
     { key: 'guided',     labelKey: 'lessonFlowStepGuided',     icon: 'pencil-outline', color: ACCENT },
     { key: 'worksheet',  labelKey: 'lessonFlowStepWorksheet',  icon: 'document-text-outline', color: '#6D28D9' },
-    { key: 'exitTicket', labelKey: 'lessonFlowStepExitTicket', icon: 'ticket-outline', color: '#B54708' },
+    { key: 'exitTicket', labelKey: 'lessonFlowStepExitTicket', icon: 'ticket-outline', color: palette.warning },
   ];
 
   const isDone = phase === 'done';
@@ -365,6 +374,8 @@ export default function LessonFlowScreen() {
         <View style={[styles.header, { paddingTop: topPad + 8, backgroundColor: NAVY, borderBottomColor: NAVY }]}>
           <View style={[styles.headerRow, isRTL && { flexDirection: 'row-reverse' }]}>
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('back')}
               onPress={() => goBack()}
               style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.6 : 1 }]}
               hitSlop={12}
@@ -373,11 +384,11 @@ export default function LessonFlowScreen() {
             </Pressable>
             <View style={{ flex: 1 }}>
               <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }]}>
-                <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+                <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
                   {t('toolLessonFlowTitle')}
                 </Text>
                 <View style={{ backgroundColor: ACCENT_FILL, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
-                  <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 9 }}>NEW</Text>
+                  <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 9 }}>NEW</Text>
                 </View>
               </View>
               <Text style={[styles.headerSub, { color: 'rgba(255,255,255,0.8)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -398,8 +409,8 @@ export default function LessonFlowScreen() {
               </View>
               <Text style={{ color: 'rgba(255,255,255,0.8)', fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
                 {isDone
-                  ? (lang === 'ar' ? '✓ جاهز' : '✓ Ready')
-                  : `${lang === 'ar' ? 'خطوة' : 'Step'} ${completedCount + 1} ${lang === 'ar' ? 'من' : 'of'} 6`}
+                  ? (uiLang === 'ar' ? '✓ جاهز' : '✓ Ready')
+                  : `${uiLang === 'ar' ? 'خطوة' : 'Step'} ${completedCount + 1} ${uiLang === 'ar' ? 'من' : 'of'} 6`}
               </Text>
             </View>
           )}
@@ -409,15 +420,15 @@ export default function LessonFlowScreen() {
         {phase === 'form' && (
           <View style={styles.formSection}>
             {/* Topic */}
-            <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
-              {lang === 'ar' ? 'موضوع الدرس' : 'Lesson Topic'}
+            <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+              {uiLang === 'ar' ? 'موضوع الدرس' : 'Lesson Topic'}
             </Text>
             <TopicSelector
               gradeId={grades[gradeIdx]?.id ?? ''}
               subjectId={subjects[subjectIdx]?.id ?? ''}
               value={topic}
               onChange={setTopic}
-              lang={lang as 'ar' | 'en'}
+              lang={lang}
               isRTL={isRTL}
               colors={colors}
               accent={ACCENT}
@@ -425,21 +436,21 @@ export default function LessonFlowScreen() {
             />
 
             {/* Grade */}
-            <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', marginTop: 16, textAlign: isRTL ? 'right' : 'left' }]}>
+            <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', marginTop: 16, textAlign: isRTL ? 'right' : 'left' }]}>
               {t('grade')}
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', gap: 8 }}>
               {gradeNames.map((g, i) => teacherScope.gradeHidden[i] ? null : (
                 <Pressable key={i} onPress={() => setGradeIdx(i)}
                   style={[styles.chip, { flexShrink: 0, backgroundColor: gradeIdx === i ? colors.primary : colors.muted, borderColor: gradeIdx === i ? colors.primary : colors.border }]}>
-                  <Text style={[styles.chipText, { color: gradeIdx === i ? colors.primaryForeground : colors.foreground, fontFamily: 'Cairo_500Medium' }]}>{g}</Text>
+                  <Text style={[styles.chipText, { color: gradeIdx === i ? colors.primaryForeground : colors.foreground, fontFamily: 'ReadexPro_500Medium' }]}>{g}</Text>
                 </Pressable>
               ))}
             </ScrollView>
             <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
 
             {/* Subject */}
-            <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', marginTop: 16, textAlign: isRTL ? 'right' : 'left' }]}>
+            <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', marginTop: 16, textAlign: isRTL ? 'right' : 'left' }]}>
               {t('subject')}
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', gap: 8 }}>
@@ -451,30 +462,30 @@ export default function LessonFlowScreen() {
                 .map(({ s, i }) => {
                   const active = subjectIdx === i;
                   return (
-                    <Pressable key={i} accessibilityState={{ selected: active }}
+                    <Pressable key={i} aria-selected={active}
                       onPress={() => setSubjectIdx(i)}
                       style={[styles.chip, { flexShrink: 0, backgroundColor: active ? colors.primary : colors.muted, borderColor: active ? colors.primary : colors.border }]}>
-                      <Text style={[styles.chipText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: 'Cairo_500Medium' }]}>{s}</Text>
+                      <Text style={[styles.chipText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: 'ReadexPro_500Medium' }]}>{s}</Text>
                     </Pressable>
                   );
                 })}
             </ScrollView>
 
             {/* Duration */}
-            <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', marginTop: 16, textAlign: isRTL ? 'right' : 'left' }]}>
+            <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', marginTop: 16, textAlign: isRTL ? 'right' : 'left' }]}>
               {t('lessonFlowDurationLabel')}
             </Text>
             <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8 }]}>
               {durationLabels.map((d, i) => (
                 <Pressable key={i} onPress={() => setDurationIdx(i)}
-                  style={[styles.chip, { flex: 1, justifyContent: 'center', backgroundColor: durationIdx === i ? ACCENT + '22' : colors.muted, borderColor: durationIdx === i ? ACCENT : colors.border }]}>
-                  <Text style={[styles.chipText, { color: durationIdx === i ? ACCENT : colors.foreground, fontFamily: durationIdx === i ? 'Cairo_700Bold' : 'Cairo_500Medium', textAlign: 'center' }]}>{d}</Text>
+                  style={[styles.chip, { flex: 1, justifyContent: 'center', backgroundColor: durationIdx === i ? palette.selected : colors.muted, borderColor: durationIdx === i ? ACCENT : colors.border }]}>
+                  <Text style={[styles.chipText, { color: durationIdx === i ? ACCENT : colors.foreground, fontFamily: durationIdx === i ? 'ReadexPro_700Bold' : 'ReadexPro_500Medium', textAlign: 'center' }]}>{d}</Text>
                 </Pressable>
               ))}
             </View>
 
             {error ? (
-              <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 12, textAlign: isRTL ? 'right' : 'left' }}>{error}</Text>
+              <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginTop: 12, textAlign: isRTL ? 'right' : 'left' }}>{error}</Text>
             ) : null}
 
             <View style={{ marginTop: 24 }}>
@@ -488,7 +499,7 @@ export default function LessonFlowScreen() {
                 broken product rather than an unmet precondition. It says which.
               */}
               {!topic.trim() ? (
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
                   {t('needTopicHint')}
                 </Text>
               ) : null}
@@ -505,12 +516,12 @@ export default function LessonFlowScreen() {
                 <StepCard
                   key={step.key}
                   stepNum={idx + 1}
-                  label={t(step.labelKey as any)}
+                  label={contentT(step.labelKey as any)}
                   icon={step.icon}
                   color={step.color}
                   status={status}
-                  isRTL={isRTL}
-                  lang={lang}
+                  isRTL={lang === 'ar'}
+                  lang={uiLang}
                   colors={colors}
                   collapsed={collapsed[step.key]}
                   onToggleCollapse={() => setCollapsed(prev => ({ ...prev, [step.key]: !prev[step.key] }))}
@@ -524,7 +535,7 @@ export default function LessonFlowScreen() {
                       guidedPractice={guidedPractice}
                       worksheet={worksheet}
                       exitTicket={exitTicket}
-                      isRTL={isRTL}
+                      isRTL={lang === 'ar'}
                       colors={colors}
                       lang={lang}
                     />
@@ -539,15 +550,15 @@ export default function LessonFlowScreen() {
         {isBuilding && error && failedStep && (
           <View style={[styles.errorBanner, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Ionicons name="alert-circle-outline" size={16} color="#D92D20" style={{ marginTop: 1 }} />
-            <Text style={{ flex: 1, color: '#D92D20', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ flex: 1, color: palette.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' }}>
               {error}
             </Text>
             <Pressable
               onPress={handleRetry}
               style={({ pressed }) => ({ backgroundColor: '#D92D20', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, opacity: pressed ? 0.8 : 1 })}
             >
-              <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
-                {lang === 'ar' ? 'أعد المحاولة' : 'Retry'}
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
+                {uiLang === 'ar' ? 'أعد المحاولة' : 'Retry'}
               </Text>
             </Pressable>
           </View>
@@ -562,7 +573,7 @@ export default function LessonFlowScreen() {
               style={({ pressed }) => [styles.actionBtn, { backgroundColor: '#4F46E5', opacity: pressed ? 0.85 : 1, flex: 1 }]}
             >
               <Ionicons name="tv-outline" size={16} color="#fff" />
-              <Text style={[styles.actionBtnText, { fontFamily: 'Cairo_600SemiBold' }]} numberOfLines={1}>
+              <Text style={[styles.actionBtnText, { fontFamily: 'ReadexPro_600SemiBold' }]} numberOfLines={1}>
                 {t('lessonFlowLaunchClassroom')}
               </Text>
             </Pressable>
@@ -576,7 +587,7 @@ export default function LessonFlowScreen() {
               {loadingPDF
                 ? <ActivityIndicator size="small" color="#fff" />
                 : <Ionicons name="document-outline" size={16} color="#fff" />}
-              <Text style={[styles.actionBtnText, { fontFamily: 'Cairo_600SemiBold' }]} numberOfLines={1}>
+              <Text style={[styles.actionBtnText, { fontFamily: 'ReadexPro_600SemiBold' }]} numberOfLines={1}>
                 {t('lessonFlowExportAll')}
               </Text>
             </Pressable>
@@ -656,24 +667,24 @@ function StepCard({ stepNum, label, icon, color, status, isRTL, lang, colors, co
           ) : status === 'error' ? (
             <Ionicons name="warning-outline" size={18} color="#D92D20" />
           ) : (
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>{stepNum}</Text>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{stepNum}</Text>
           )}
         </View>
         <View style={{ flex: 1 }}>
           <Text style={[styles.stepLabel, {
-            color: status === 'done' ? colors.foreground : status === 'error' ? '#D92D20' : colors.mutedForeground,
-            fontFamily: 'Cairo_600SemiBold',
+            color: status === 'done' ? colors.foreground : status === 'error' ? palette.destructive : colors.mutedForeground,
+            fontFamily: 'ReadexPro_600SemiBold',
             textAlign: isRTL ? 'right' : 'left',
           }]}>
             {label}
           </Text>
           {status === 'loading' && (
-            <Text style={{ color: color, fontFamily: 'Almarai_400Regular', fontSize: 11.5, lineHeight: 18, marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: color, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>
               Generating…
             </Text>
           )}
           {status === 'error' && (
-            <Text style={{ color: '#D92D20', fontFamily: 'Almarai_400Regular', fontSize: 11.5, lineHeight: 18, marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: palette.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>
               {lang === 'ar' ? 'تعذّر إكمال الخطوة — أعد المحاولة' : 'Failed — tap Retry below'}
             </Text>
           )}
@@ -718,7 +729,7 @@ function StepContent({ stepKey, objectives, warmup, activity, guidedPractice, wo
           {(objectives ?? []).map((obj, i) => (
             <View key={i} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start' }]}>
               <View style={[styles.bullet, { backgroundColor: palette.foreground }]} />
-              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(obj)}</Text>
+              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(obj)}</Text>
             </View>
           ))}
         </View>
@@ -730,15 +741,15 @@ function StepContent({ stepKey, objectives, warmup, activity, guidedPractice, wo
       if (!act) return null;
       return (
         <View style={{ paddingHorizontal: 14, paddingBottom: 8 }}>
-          <Text style={[{ color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>{isolateForeignRuns(act.title)}</Text>
+          <Text style={[{ color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>{isolateForeignRuns(act.title)}</Text>
           {act.steps.map((step, i) => (
             <View key={i} style={[styles.activityStep, { backgroundColor: colors.muted }]}>
               <View style={[styles.stepNum, { backgroundColor: stepKey === 'warmup' ? '#C2410C' : '#4F46E5' }]}>
-                <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 10 }}>{i + 1}</Text>
+                <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(step.title)}</Text>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 2, lineHeight: 19, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(step.description)}</Text>
+                <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(step.title)}</Text>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, marginTop: 2, lineHeight: 21, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(step.description)}</Text>
               </View>
             </View>
           ))}
@@ -750,7 +761,7 @@ function StepContent({ stepKey, objectives, warmup, activity, guidedPractice, wo
       return (
         <View style={{ paddingHorizontal: 14, paddingBottom: 8 }}>
           <View style={[styles.guidedBox, { backgroundColor: ACCENT + '10', borderColor: ACCENT + '30' }]}>
-            <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' }}>
               {guidedPractice}
             </Text>
           </View>
@@ -765,9 +776,9 @@ function StepContent({ stepKey, objectives, warmup, activity, guidedPractice, wo
           {allQs.slice(0, 5).map((q, i) => (
             <View key={i} style={[styles.qBlock, { backgroundColor: colors.muted }]}>
               <View style={[styles.qNum, { backgroundColor: '#6D28D9' }]}>
-                <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 10 }}>{i + 1}</Text>
+                <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
-              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 20, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(q.text)}</Text>
+              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(q.text)}</Text>
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18 }}>{q.points}pt</Text>
             </View>
           ))}
@@ -783,9 +794,9 @@ function StepContent({ stepKey, objectives, warmup, activity, guidedPractice, wo
           {allQs.slice(0, 3).map((q, i) => (
             <View key={i} style={[styles.qBlock, { backgroundColor: colors.muted }]}>
               <View style={[styles.qNum, { backgroundColor: '#B54708' }]}>
-                <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 10 }}>{i + 1}</Text>
+                <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
-              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 20, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(q.text)}</Text>
+              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(q.text)}</Text>
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18 }}>{q.points}pt</Text>
             </View>
           ))}
@@ -817,7 +828,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
   },
   headerSub: {
-    fontSize: 11.5, lineHeight: 18,
+    fontSize: 13, lineHeight: 20,
     marginTop: 2,
   },
   progressContainer: {
@@ -836,7 +847,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   label: {
-    fontSize: 13.5,
+    fontSize: 14,
     marginBottom: 8,
   },
   chip: {

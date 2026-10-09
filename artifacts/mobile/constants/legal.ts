@@ -44,6 +44,15 @@ export const LEGAL_CONTACT_EMAIL = 'info@iqrra.com';
 /** Shown on both documents. Bump when the text below changes materially. */
 export const LEGAL_LAST_UPDATED = { ar: '6 أيلول 2026', en: '6 September 2026' };
 
+/**
+ * The same date, as the version a new account records it accepted
+ * (`users.termsVersion`, see `api-server/src/lib/termsAcceptance.ts`). Bump
+ * the two together — `legalVersion.test.ts` fails if they disagree, because
+ * an acceptance record naming a version the documents never carried is a
+ * record of nothing.
+ */
+export const LEGAL_VERSION = '2026-09-06';
+
 export type LegalSection = { heading: string; body: string[] };
 export type LegalDoc = { title: string; intro: string; sections: LegalSection[] };
 export type LegalDocId = 'privacy' | 'terms';
@@ -51,7 +60,7 @@ export type LegalDocId = 'privacy' | 'terms';
 const PRIVACY_AR: LegalDoc = {
   title: 'سياسة الخصوصية',
   intro:
-    'توضّح هذه السياسة ما الذي يجمعه تطبيق «اقرأ» من بيانات، ولماذا يجمعه، ومع من يُشارَك، وكيف يمكنك حذفه. وهي تنطبق على التطبيق وعلى نسخته على الويب وعلى الخدمات التي تقف خلفهما.',
+    'توضّح هذه السياسة ما الذي يجمعه تطبيق «إقرأ» من بيانات، ولماذا يجمعه، ومع من يُشارَك، وكيف يمكنك حذفه. وهي تنطبق على التطبيق وعلى نسخته على الويب وعلى الخدمات التي تقف خلفهما.',
   sections: [
     {
       heading: '1) البيانات التي نجمعها',
@@ -231,7 +240,7 @@ const PRIVACY_EN: LegalDoc = {
 const TERMS_AR: LegalDoc = {
   title: 'شروط الخدمة',
   intro:
-    'باستخدامك تطبيق «اقرأ» فإنك توافق على هذه الشروط. اقرأها قبل إنشاء حساب؛ فإن لم توافق عليها فلا تستخدم التطبيق.',
+    'باستخدامك تطبيق «إقرأ» فإنك توافق على هذه الشروط. اقرأها قبل إنشاء حساب؛ فإن لم توافق عليها فلا تستخدم التطبيق.',
   sections: [
     {
       heading: '1) من يستطيع استخدام التطبيق',

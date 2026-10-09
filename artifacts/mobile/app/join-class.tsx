@@ -8,8 +8,7 @@
  */
 import React, { useState } from 'react';
 import {
-  KeyboardAvoidingView,
-  Platform,
+  
   Pressable,
   ScrollView,
   StyleSheet,
@@ -28,6 +27,7 @@ import { RosterCodeClaimForm } from '@/components/RosterCodeClaimForm';
 import { RosterError, claimRosterCode } from '@/services/roster';
 import { claimErrorKey } from '@/services/claimCodeGate';
 import { goBack } from '@/services/navigation';
+import { askForPushPermission, pushAskCopy } from '@/services/pushTokens';
 
 export default function JoinClassScreen() {
   const colors = useColors();
@@ -54,6 +54,9 @@ export default function JoinClassScreen() {
       await claimRosterCode(code.trim(), roster ? studentId : undefined);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setJoined(true);
+      // A class is where the teacher's messages and released results come
+      // from — a natural moment to offer push (services/pushPolicy.ts).
+      void askForPushPermission({ explicit: false, copy: pushAskCopy(t) });
     } catch (err) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setError(t(err instanceof RosterError ? claimErrorKey(err.code) : 'joinAnotherClassFailed'));
@@ -68,7 +71,7 @@ export default function JoinClassScreen() {
         <View style={[styles.successIcon, { backgroundColor: colors.primary + '18' }]}>
           <Ionicons name="checkmark-circle" size={48} color={colors.primary} />
         </View>
-        <Text style={[styles.successTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: 'center' }]}>
+        <Text style={[styles.successTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: 'center' }]}>
           {t('joinAnotherClassSuccess')}
         </Text>
         <Button label={t('joinAnotherClassDone')} onPress={() => goBack()} fullWidth style={{ marginTop: 24 }} />
@@ -77,9 +80,8 @@ export default function JoinClassScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
+    <View
       style={{ flex: 1, backgroundColor: colors.background }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View
         style={[
@@ -88,12 +90,14 @@ export default function JoinClassScreen() {
         ]}
       >
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('back')}
           onPress={() => goBack()} hitSlop={10}
           style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
         >
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
-        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: align }]}>
+        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
           {t('joinAnotherClass')}
         </Text>
       </View>
@@ -141,7 +145,7 @@ export default function JoinClassScreen() {
           style={{ marginTop: 24 }}
         />
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -149,9 +153,9 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: StyleSheet.hairlineWidth },
   backBtn: { padding: 4, marginBottom: 8 },
   title: { fontSize: 22 },
-  desc: { fontSize: 14, lineHeight: 22, marginBottom: 20 },
+  desc: { fontSize: 15, lineHeight: 24, marginBottom: 20 },
   errorBanner: { alignItems: 'center', gap: 8, padding: 12, borderWidth: 1, marginTop: 16 },
-  errorText: { flex: 1, fontSize: 13, lineHeight: 21 },
+  errorText: { flex: 1, fontSize: 15, lineHeight: 24 },
   successWrap: { flex: 1, alignItems: 'center', paddingHorizontal: 32 },
   successIcon: { width: 88, height: 88, borderRadius: 44, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
   successTitle: { fontSize: 19, lineHeight: 27 },

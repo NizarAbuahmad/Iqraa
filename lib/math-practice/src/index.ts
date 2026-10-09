@@ -25,12 +25,17 @@
  */
 import { CHEM_BANK, detectChemFamily, type ChemFamily } from './chemistry.ts';
 import { subjectIdFromName } from './subjects.ts';
-import { makeElementaryItem } from './elementary.ts';
+import { stepsFor } from './steps.ts';
+import { elementaryOpsForTitle, makeElementaryItem } from './elementary.ts';
+import { makeTopicItem, topicFor } from './topics.ts';
 
 export { isChemContext, detectChemFamily, CHEM_BANK } from './chemistry.ts';
 export type { ChemFamily } from './chemistry.ts';
 export { subjectIdFromName } from './subjects.ts';
-export { detectElementaryOp } from './elementary.ts';
+export { stepsFor, solvedItemIds, completionSplit } from './steps.ts';
+export type { SolutionSteps } from './steps.ts';
+export { detectElementaryOp, elementaryOpsForTitle } from './elementary.ts';
+export { topicFor } from './topics.ts';
 
 export interface PracticeLesson {
   id: string;
@@ -53,6 +58,13 @@ export interface PracticeWQ {
   options?: string[];
   answer: string;
   points: number;
+  /**
+   * The checked working for this item, in the question's language — present
+   * only when a person wrote and verified it (`steps.ts`). A worksheet shows it
+   * in the teacher's key; absent means the key shows the answer alone, never a
+   * derived solution.
+   */
+  steps?: string[];
 }
 
 /**
@@ -73,12 +85,15 @@ type MathFamily =
   | 'trig'
   | 'trig_apps'
   | 'functions'
+  | 'sequences'
   | 'derivative'
   | 'vectors'
   | 'stats'
   | 'algebra'
   /** Grades 1–6, generated per lesson — see `./elementary.ts`. */
-  | 'arith';
+  | 'arith'
+  /** Computed per lesson title for the lessons neither of the above covers — see `./topics.ts`. */
+  | 'topic';
 
 /** A bank family: maths (below) or chemistry (`./chemistry.ts`). */
 export type Family = MathFamily | ChemFamily;
@@ -106,6 +121,24 @@ const usedIds = new Set<string>();
 
 export function beginMathPracticeSession(): void {
   usedIds.clear();
+}
+
+/** The lesson's name and nothing else — what routing reads. See `elementaryOpsForTitle`. */
+export function lessonTitleBlob(topic: string, kb: KBLesson | null): string {
+  return [topic, kb?.titleAr ?? '', kb?.titleEn ?? ''].join(' ');
+}
+
+/**
+ * The topic generator for a lesson. Each name is tried on its own — the
+ * generators' patterns are anchored to a whole title, which the joined blob
+ * above is not.
+ */
+function topicForLesson(topic: string, kb: KBLesson | null, grade: number) {
+  for (const t of [topic, kb?.titleAr ?? ''].filter(Boolean)) {
+    const gen = topicFor(t, grade);
+    if (gen) return gen;
+  }
+  return null;
 }
 
 export function lessonTextBlob(topic: string, kb: KBLesson | null): string {
@@ -167,21 +200,81 @@ export function isMathContext(
   return MATH_TEXT_RE.test(lessonTextBlob(topic, kb));
 }
 
+/**
+ * Which bank family a lesson belongs to, or null when none of them is about it.
+ *
+ * Routing reads the lesson's TITLE (and its catalog id for the unit-1 codes),
+ * not its summary and concepts. The old version ran one ordered list of regexes
+ * over everything, so incidental words in a lesson's body outvoted its name:
+ * «النسب المثلثية» served circles (its summary mentions a hypotenuse), «جمع
+ * المتجهات» served triangles, «أشكال الانتشار» served graph-intersection items.
+ *
+ * Each pattern names only what the family's items actually practise, so a
+ * lesson the bank has no items for — «تمثيل الاقترانات المثلثية», «قسمة كثيرات
+ * الحدود», «مقاييس التشتت» — returns null and is refused, instead of being
+ * handed «algebra».
+ */
+const FAMILY_BY_ID: Array<[RegExp, MathFamily]> = [
+  [/u1_l4/i, 'exp_eq'],
+  [/u1_lab/i, 'system_graph'],
+  [/u1_l1/i, 'linear_quad'],
+  [/u1_l2/i, 'quad_system'],
+  [/u1_l3/i, 'simplify_exp'],
+];
+
+const FAMILY_BY_TITLE: Array<[RegExp, MathFamily]> = [
+  [/معادل(?:ة|ات)\s*(?:ال)?أسية|exponential\s*equation/i, 'exp_eq'],
+  [/ميل\s*(?:ال)?منحنى|ميل\s*مماس|مماس\s*المنحنى|اشتقاق|مشتق|القيم\s*(?:ال)?(?:عظمى|صغرى)|derivative/i, 'derivative'],
+  [/خطية\s*ومعادلة\s*تربيعية|linear.*quadratic|quadratic.*linear/i, 'linear_quad'],
+  [/معادلتين\s*تربيعيتين|two\s*quadratic/i, 'quad_system'],
+  [/جيوجبرا|geogebra|بيانيا|graphically/i, 'system_graph'],
+  [/تبسيط.*أسي|مقادير\s*أسية|simplify.*exponent|rational\s*exponent/i, 'simplify_exp'],
+  [/قانون\s*الجيوب|جيب\s*التمام|law\s*of\s*(?:sines|cosines)/i, 'trig_apps'],
+  [/معادلة\s*الدائرة|الدائرة\s*ومعادلتها|الأقواس|القطاعات?|محيط\s*الدائرة|مساحة\s*الدائرة|^\s*(?:ال)?دائرة\s*$|equation\s*of\s*a\s*circle/i, 'circle'],
+  [/متجه|vector|الضرب\s*القياسي/i, 'vectors'],
+  [/النسب\s*المثلثية|المعادلات\s*المثلثية|trigonometric\s*(?:ratio|equation)/i, 'trig'],
+  [/احتمال|الوسط\s*الحسابي|الوسيط|النزعة\s*المركزية|probabilit|measures?\s*of\s*central/i, 'stats'],
+  [/المتتاليات?|sequence|series/i, 'sequences'],
+  [/الاقتران\s*العكسي|تركيب\s*الاقترانات|inverse\s*function|composition/i, 'functions'],
+  // Linear and quadratic equations, for a typed topic or an older lesson title.
+  [/المعادل(?:ة|ات)\s*(?:ال)?(?:خطية|تربيعية|من\s*الدرجة)|quadratic|linear\s*equation|حل\s*المعادلات|^\s*(?:ال)?معادل(?:ة|ات)\s*$/i, 'algebra'],
+];
+
+export function matchMathFamily(topic: string, kb: KBLesson | null): MathFamily | null {
+  const id = kb?.id ?? '';
+  for (const [re, family] of FAMILY_BY_ID) if (re.test(id)) return family;
+  // «قسمة كثيرات الحدود» is polynomial division, which no item practises.
+  const titles = [topic, kb?.titleAr ?? '', kb?.titleEn ?? ''].filter(Boolean);
+  for (const [re, family] of FAMILY_BY_TITLE) {
+    if (titles.some(t => re.test(t) && !/قسمة\s*كثيرات/.test(t))) return family;
+  }
+  return null;
+}
+
+/**
+ * Kept for callers that want a family no matter what (the premade-sheet
+ * builder); the question generators use `matchMathFamily` and refuse on null.
+ */
 export function detectMathFamily(topic: string, kb: KBLesson | null): MathFamily {
-  const blob = lessonTextBlob(topic, kb);
-  if (/u1_l4|معادلة\s*الأسية|معادلات\s*أسية|exponential\s*equation/i.test(blob)) return 'exp_eq';
-  if (/u1_lab|جيوجبرا|geogebra|بيانيا|graphically|graphical/i.test(blob)) return 'system_graph';
-  if (/u1_l1|خطية ومعادلة تربيعية|linear.*quadratic|quadratic.*linear/i.test(blob)) return 'linear_quad';
-  if (/u1_l2|معادلتين تربيعيتين|two\s*quadratic/i.test(blob)) return 'quad_system';
-  if (/u1_l3|تبسيط.*أسي|مقادير أسية|simplify.*exponent|rational\s*exponent/i.test(blob)) return 'simplify_exp';
-  if (/دائر|circle|وتر|قطاع|معادلة الدائرة/i.test(blob)) return 'circle';
-  if (/تطبيقات المثلث|bearing|قانون الجيوب|جيب التمام|ثلاثية الأبعاد/i.test(blob)) return 'trig_apps';
-  if (/مثلث|trigon|نسب مثلثية|اقترانات مثلثية/i.test(blob)) return 'trig';
-  if (/مشتق|derivative|ميل المنحنى|اشتقاق/i.test(blob)) return 'derivative';
-  if (/متجه|vector/i.test(blob)) return 'vectors';
-  if (/إحصاء|احتمال|statistic|probabilit|تكرار|انتشار/i.test(blob)) return 'stats';
-  if (/اقتران|function|كثيرات الحدود|متتالي/i.test(blob)) return 'functions';
-  return 'algebra';
+  return matchMathFamily(topic, kb) ?? 'algebra';
+}
+
+/**
+ * Does the maths bank have items that are ABOUT this lesson?
+ *
+ * Grades 1–6 are generated per lesson (`elementaryOpsForTitle`); Grade 10 has
+ * the banked families; Grades 7–9 have neither, and used to be served the
+ * Grade 10 bank — proportion got quadratics, counting outcomes got medians.
+ * `grade` is null for a free-typed topic with no lesson behind it, which can
+ * only be matched against the banked families.
+ */
+export function mathBankCovers(topic: string, kb: KBLesson | null, grade: number | null): boolean {
+  if (grade !== null && grade >= 1 && grade <= 9) {
+    const title = lessonTitleBlob(topic, kb);
+    return (grade <= 6 && elementaryOpsForTitle(title).length > 0) || topicForLesson(topic, kb, grade) !== null;
+  }
+  // Grade 10 has the banked families; a lesson none of them is about may still have a generator
+  return matchMathFamily(topic, kb) !== null || (grade === 10 && topicForLesson(topic, kb, grade) !== null);
 }
 
 function placeCorrect(correct: string, wrongs: string[]): string[] {
@@ -225,7 +318,7 @@ function levelOptionShape(
 
 // ─── Concrete banks (real solvable items — not meta prompts) ─────────────────
 
-const BANK: ConcreteItem[] = [
+export const MATH_BANK: ConcreteItem[] = [
   // ── Exponential equations ──
   { id: 'exp-e1', family: 'exp_eq', diff: 'easy', eq: '2^x = 32', answer: 'x = 5', wrongs: ['x = 4', 'x = 6', 'x = 16'] },
   { id: 'exp-e2', family: 'exp_eq', diff: 'easy', eq: '3^x = 27', answer: 'x = 3', wrongs: ['x = 2', 'x = 9', 'x = 4'] },
@@ -313,6 +406,14 @@ const BANK: ConcreteItem[] = [
   { id: 'f-m1', family: 'functions', diff: 'medium', eq: 'f(x)=x², g(x)=x+1, (f∘g)(2)', answer: '9', wrongs: ['5', '4', '3'], promptAr: 'f(x)=x² و g(x)=x+1. أوجد (f∘g)(2).', promptEn: 'f(x)=x², g(x)=x+1. Find (f∘g)(2).' },
   { id: 'f-m2', family: 'functions', diff: 'medium', eq: 'f(x)=2x−6, f⁻¹', answer: 'f⁻¹(x) = (x+6)/2', wrongs: ['2x+6', 'x/2 − 6', '6 − 2x'], promptAr: 'أوجد الاقتران العكسي لـ f(x) = 2x − 6.', promptEn: 'Find the inverse of f(x) = 2x − 6.' },
   { id: 'f-h1', family: 'functions', diff: 'hard', eq: 'a_n = 3n − 1', answer: 'a_5 = 14', wrongs: ['15', '12', '8'], promptAr: 'متتالية حسابية a_n = 3n − 1. أوجد a_5.', promptEn: 'Arithmetic sequence a_n = 3n − 1. Find a_5.' },
+  // ── Sequences ──
+  { id: 'q-e1', family: 'sequences', diff: 'easy', eq: 'a_n = 2n + 1, a_4', answer: 'a_4 = 9', wrongs: ['7', '8', '10'], promptAr: 'متتالية حدّها العام a_n = 2n + 1. أوجد a_4.', promptEn: 'A sequence has general term a_n = 2n + 1. Find a_4.' },
+  { id: 'q-e2', family: 'sequences', diff: 'easy', eq: '5, 9, 13, ...', answer: 'd = 4', wrongs: ['3', '5', '9'], promptAr: 'متتالية حسابية: 5 ، 9 ، 13 ، … ما أساسها (الفرق المشترك)؟', promptEn: 'Arithmetic sequence: 5, 9, 13, … What is the common difference?' },
+  { id: 'q-m1', family: 'sequences', diff: 'medium', eq: '3, 7, 11, ...  a_10', answer: 'a_10 = 39', wrongs: ['43', '40', '36'], promptAr: 'متتالية حسابية: 3 ، 7 ، 11 ، … أوجد الحد العاشر a_10.', promptEn: 'Arithmetic sequence: 3, 7, 11, … Find the 10th term a_10.' },
+  { id: 'q-m2', family: 'sequences', diff: 'medium', eq: '2, 6, 18, ...', answer: 'r = 3 ، الحد التالي 54', wrongs: ['r = 3 ، الحد التالي 24', 'r = 4 ، الحد التالي 72', 'r = 6 ، الحد التالي 108'], promptAr: 'متتالية هندسية: 2 ، 6 ، 18 ، … أوجد الأساس r والحد التالي.', promptEn: 'Geometric sequence: 2, 6, 18, … Find the common ratio r and the next term.' },
+  { id: 'q-m3', family: 'sequences', diff: 'medium', eq: '2, 5, 8, ...  S_5', answer: 'S_5 = 40', wrongs: ['35', '45', '38'], promptAr: 'متتالية حسابية: 2 ، 5 ، 8 ، … أوجد مجموع أول خمسة حدود S_5.', promptEn: 'Arithmetic sequence: 2, 5, 8, … Find the sum of the first five terms S_5.' },
+  { id: 'q-h1', family: 'sequences', diff: 'hard', eq: 'a_1 = 4, d = 3, a_n = 31', answer: 'n = 10', wrongs: ['9', '11', '8'], promptAr: 'متتالية حسابية فيها a_1 = 4 وأساسها d = 3. أي حدٍّ قيمته 31؟ أوجد n.', promptEn: 'Arithmetic sequence with a_1 = 4 and d = 3. Which term equals 31? Find n.' },
+  { id: 'q-h2', family: 'sequences', diff: 'hard', eq: 'a_1 = 3, r = 2, a_6', answer: 'a_6 = 96', wrongs: ['192', '48', '18'], promptAr: 'متتالية هندسية فيها a_1 = 3 وأساسها r = 2. أوجد a_6.', promptEn: 'Geometric sequence with a_1 = 3 and r = 2. Find a_6.' },
 
   // ── Derivatives ──
   { id: 'd-e1', family: 'derivative', diff: 'easy', eq: 'f(x)=x²', answer: "f'(x) = 2x", wrongs: ['x', '2', 'x²'], promptAr: 'أوجد مشتقة f(x) = x².', promptEn: "Find the derivative of f(x) = x²." },
@@ -350,6 +451,7 @@ const BANK: ConcreteItem[] = [
     wordEn: 'A quantity doubles each day from 1. After how many days is it 16? Write and solve an exponential equation.',
   },
 ];
+const BANK = MATH_BANK;
 
 /**
  * The question as a teacher would write it.
@@ -538,7 +640,8 @@ function takeFromBank(
 
   used.add(item.id);
   const formatted = formatItem(item, lang, type);
-  return { ...formatted, points };
+  const working = stepsFor(item.id);
+  return { ...formatted, ...(working ? { steps: [...working[lang]] } : {}), points };
 }
 
 /**
@@ -566,10 +669,12 @@ export function takeConcreteMath(
   /** See `takeFromBank` — false for the worksheet path, true everywhere else. */
   allowRepeat: boolean = true,
 ): PracticeWQ | null {
+  const family = matchMathFamily(topic, kb);
+  if (!family) return null;
   return takeFromBank(
     BANK,
-    detectMathFamily(topic, kb),
-    'algebra',
+    family,
+    family,
     type,
     diff,
     lang,
@@ -595,9 +700,17 @@ export function takeElementaryMath(
   lang: Lang,
   points: number,
   session?: Set<string>,
-): PracticeWQ {
-  const item = makeElementaryItem(lessonTextBlob(topic, kb), grade, diff, session ?? usedIds);
-  return { ...formatItem(item, lang, type), points };
+): PracticeWQ | null {
+  const title = lessonTitleBlob(topic, kb);
+  // A lesson none of the generators is about gets no items, not the grade's
+  // default mix of arithmetic.
+  if (grade <= 6 && elementaryOpsForTitle(title).length > 0) {
+    const item = makeElementaryItem(title, grade, diff, session ?? usedIds);
+    return { ...formatItem(item, lang, type), points };
+  }
+  const gen = topicForLesson(topic, kb, grade);
+  if (!gen) return null;
+  return { ...formatItem(makeTopicItem(gen, grade, diff, session ?? usedIds), lang, type), points };
 }
 
 /**
@@ -628,6 +741,79 @@ export function takeConcreteChem(
     session ?? usedIds,
     allowRepeat,
   );
+}
+
+/**
+ * An item with checked working, for a worksheet to study or to finish half-solved.
+ *
+ * Same bank, same family routing and same per-pass `session` set as the
+ * practice questions, so what a paper studies is spent and cannot come back as
+ * a question. Only items in `steps.ts` qualify; there is no fallback to the
+ * generic family or to a repeat, because a worked example off the lesson's
+ * topic is worse than none and the caller simply omits the section.
+ */
+export interface SolvedItem {
+  id: string;
+  /** The stem as the short-answer question would read. */
+  problem: string;
+  /** One line of working per step, in the requested language; the last states the result. */
+  steps: string[];
+  answer: string;
+  diff: DiffTier;
+}
+
+/** The requested tier first, then the nearest — a worked example leans easier before harder. */
+const TIER_ORDER: Record<DiffTier, DiffTier[]> = {
+  easy: ['easy', 'medium', 'hard'],
+  medium: ['medium', 'easy', 'hard'],
+  hard: ['hard', 'medium', 'easy'],
+};
+
+function takeSolvedFromBank(
+  bank: ConcreteItem[],
+  family: Family,
+  diff: DiffTier,
+  lang: Lang,
+  used: Set<string>,
+): SolvedItem | null {
+  for (const tier of TIER_ORDER[diff]) {
+    const pool = bank.filter(i => i.family === family && i.diff === tier && !used.has(i.id) && stepsFor(i.id));
+    if (pool.length === 0) continue;
+    const item = pool[Math.floor(Math.random() * pool.length)]!;
+    used.add(item.id);
+    return {
+      id: item.id,
+      problem: itemStem(item, lang === 'ar'),
+      steps: [...stepsFor(item.id)![lang]],
+      answer: item.answer,
+      diff: item.diff,
+    };
+  }
+  return null;
+}
+
+/** A solved Grade 10 maths item for this lesson, or null when the lesson has none left. */
+export function takeSolvedMath(
+  topic: string,
+  kb: KBLesson | null,
+  diff: DiffTier,
+  lang: Lang,
+  session?: Set<string>,
+): SolvedItem | null {
+  const family = matchMathFamily(topic, kb);
+  if (!family) return null;
+  return takeSolvedFromBank(MATH_BANK, family, diff, lang, session ?? usedIds);
+}
+
+/** A solved chemistry item for this lesson, or null when the lesson has none left. */
+export function takeSolvedChem(
+  topic: string,
+  kb: KBLesson | null,
+  diff: DiffTier,
+  lang: Lang,
+  session?: Set<string>,
+): SolvedItem | null {
+  return takeSolvedFromBank(CHEM_BANK, detectChemFamily(lessonTextBlob(topic, kb)), diff, lang, session ?? usedIds);
 }
 
 /** Peek several concrete chemistry stems for activity slides (marks them used). */

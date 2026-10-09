@@ -52,9 +52,19 @@ import { FillBlankInput, MatchingInput } from '@/components/QuestionInputs';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
+import { CHAT_MAX_WIDTH } from '@/constants/layout';
 import { toLatinDigits } from '@/services/latinDigits';
+import { playUri } from '@/services/englishAudio';
+import { isPaperQuestion } from '@/services/paperQuestion';
 
 const ACCENT = palette.primary;
+
+/** «12.50» and «12.5» are the same score; one card should not print both. */
+function tidyPercent(p: string | number | null): string {
+  if (p == null) return '—';
+  const n = Number(p);
+  return Number.isFinite(n) ? String(n) : String(p);
+}
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
 const ACCENT_FILL = palette.hero;
 
@@ -65,10 +75,10 @@ const LEVEL_KEY: Record<LevelKey, TranslationKey> = {
   advanced: 'levelAdvanced',
 };
 const LEVEL_COLOR: Record<LevelKey, string> = {
-  beginner: '#D92D20',
-  developing: '#B54708',
-  proficient: '#067647',
-  advanced: '#067647',
+  beginner: palette.destructive,
+  developing: palette.warning,
+  proficient: palette.success,
+  advanced: palette.success,
 };
 const COMPETENCY_ORDER: CompetencyKey[] = ['knowledge', 'understanding', 'application', 'critical_thinking'];
 const COMPETENCY_KEY: Record<CompetencyKey, TranslationKey> = {
@@ -80,14 +90,6 @@ const COMPETENCY_KEY: Record<CompetencyKey, TranslationKey> = {
 
 type Response = Record<string, unknown>;
 
-/**
- * A question from an exam the app never wrote: no prompt, nothing to
- * transcribe. Tested on the body rather than on `gradingMode`, so a manually
- * graded question that *does* carry its own text still renders it.
- */
-function isPaperQuestion(question: EvaluationQuestion): boolean {
-  return !((question.body?.['prompt'] as string) ?? '').trim();
-}
 
 /**
  * The mark and comment as they sit in the boxes, before they're saved.
@@ -102,6 +104,16 @@ type GradeDraft = { marks: string; note: string; saved: string; grader?: Grader 
  * that in the teacher's box would make them the author of a line they never
  * wrote the moment they saved anything else on that question.
  */
+/**
+ * A mark sitting in its box that the server has not accepted: a scan
+ * proposal, or a typed mark whose box never lost focus. Compared as numbers
+ * so «٥» against a saved "5" is not dirty.
+ */
+function isUnsavedMark(d: GradeDraft | undefined): boolean {
+  if (!d || d.marks.trim() === '') return false;
+  return d.saved === '' || Number(toLatinDigits(d.marks.trim())) !== Number(d.saved);
+}
+
 function gradeDrafts(rows: AttemptQuestionGrade[]): Record<string, GradeDraft> {
   return Object.fromEntries(
     rows.map(g => [
@@ -128,6 +140,7 @@ export default function AnswerEntryScreen() {
   const [studentName, setStudentName] = useState('');
   const [evaluationTitle, setEvaluationTitle] = useState('');
   const [answers, setAnswers] = useState<Record<string, Response>>({});
+  const [recordings, setRecordings] = useState<Record<string, string>>({});
   const [grades, setGrades] = useState<Record<string, GradeDraft>>({});
   const [comment, setComment] = useState('');
   const [result, setResult] = useState<AttemptResult | null>(null);
@@ -155,6 +168,7 @@ export default function AnswerEntryScreen() {
         setScope(data.evaluation);
         setNextSteps(data.recommendations ?? []);
         setAnswers(Object.fromEntries(data.answers.map(a => [a.questionId, a.response])));
+        setRecordings(Object.fromEntries(data.answers.flatMap(a => (a.audioUrl ? [[a.questionId, a.audioUrl]] : []))));
         setGrades(gradeDrafts(data.grades));
         setComment(data.attempt.teacherComment ?? '');
         setResult(data.result);
@@ -190,8 +204,8 @@ export default function AnswerEntryScreen() {
    */
   const commitGrade = useCallback(
     async (question: EvaluationQuestion, marks: string, note: string) => {
-      if (!attemptId) return;
-      if (marks.trim() === '') return;
+      if (!attemptId) return false;
+      if (marks.trim() === '') return true;
       const max = Number(question.marks);
       const value = Number(toLatinDigits(marks.trim()));
       if (!Number.isFinite(value) || value < 0 || value > max) {
@@ -202,15 +216,17 @@ export default function AnswerEntryScreen() {
           const current = prev[question.id];
           return current ? { ...prev, [question.id]: { ...current, marks: current.saved } } : prev;
         });
-        return;
+        return false;
       }
       try {
         const res = await setQuestionGrade(attemptId, question.id, { awardedMarks: value, note });
         setGradeField(question.id, { grader: 'teacher', saved: String(value) });
         setResult(res.result);
         setNextSteps(res.recommendations ?? []);
+        return true;
       } catch {
         showToast(t('markSaveFailed'));
+        return false;
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -293,6 +309,13 @@ export default function AnswerEntryScreen() {
     setSubmitting(true);
     setError('');
     try {
+      // Submit re-reads every mark from the server, so a mark still only in
+      // its box — every scan proposal, or a box that never lost focus — would
+      // be wiped. Save those first; if one is refused, stop with it on screen.
+      for (const q of questions) {
+        const d = grades[q.id];
+        if (isUnsavedMark(d) && !(await commitGrade(q, d!.marks, d!.note))) return;
+      }
       await submitAttempt(attemptId);
       // Re-read rather than patching state from the response: submit returns
       // only the marks it produced, and the machine may have just replaced a
@@ -308,7 +331,7 @@ export default function AnswerEntryScreen() {
       showToast(t('attemptGradedToast'));
       scrollRef.current?.scrollTo({ y: 0, animated: true });
     } catch (err) {
-      setError(err instanceof EvaluationError ? err.message : t('attemptSubmitFailed'));
+      setError(t('attemptSubmitFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -340,15 +363,19 @@ export default function AnswerEntryScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <View style={[styles.header, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
-          <Pressable onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
-          <Text style={[styles.headerTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]}>{studentName}</Text>
+          <Text style={[styles.headerTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>{studentName}</Text>
           <Text style={[styles.headerSub, { fontFamily: 'Almarai_400Regular', textAlign: align, color: 'rgba(255,255,255,0.95)' }]} numberOfLines={1}>
             {evaluationTitle}
           </Text>
         </View>
 
+        {/* The teal header spans the window; the cards under it do not. Uncapped,
+            a 1920px browser put each competency's name and its score 1,700px
+            apart. */}
+        <View style={{ width: '100%', maxWidth: CHAT_MAX_WIDTH, alignSelf: 'center' }}>
         {error ? (
           <View style={[styles.errorBox, { borderColor: colors.destructive, margin: 20, marginBottom: 0 }]}>
             <Ionicons name="alert-circle-outline" size={18} color={colors.destructive} />
@@ -393,7 +420,7 @@ export default function AnswerEntryScreen() {
             ) : (
               <Ionicons name="camera-outline" size={18} color={ACCENT} />
             )}
-            <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+            <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
               {scanning ? t('scanReading') : t('scanMarksBtn')}
             </Text>
           </Pressable>
@@ -409,6 +436,7 @@ export default function AnswerEntryScreen() {
               index={i}
               question={q}
               response={answers[q.id] ?? {}}
+              recordingUrl={recordings[q.id]}
               onChange={r => setAnswer(q.id, r)}
               onCommit={r => persist(q.id, r)}
               grade={grades[q.id]}
@@ -423,7 +451,7 @@ export default function AnswerEntryScreen() {
         </View>
 
         <View style={{ paddingHorizontal: 20, paddingBottom: 16 }}>
-          <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: align, marginBottom: 8 }}>
+          <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align, marginBottom: 8 }}>
             {t('performanceCommentLabel')}
           </Text>
           <TextInput
@@ -446,11 +474,12 @@ export default function AnswerEntryScreen() {
             {submitting ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
                 {t('submitAndGradeBtn')}
               </Text>
             )}
           </Pressable>
+        </View>
         </View>
       </ScrollView>
       <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
@@ -474,23 +503,23 @@ function ResultCard({
     <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
       <View style={[styles.resultCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={[styles.resultTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <Text style={[{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 16 }]}>
+          <Text style={[{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 16 }]}>
             {t('resultTitle')}
           </Text>
           <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 14, marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>
             <Pressable onPress={onCopy} hitSlop={8} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 4 }}>
               <Ionicons name="copy-outline" size={16} color={ACCENT} />
-              <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>{t('iqraCopyMessage')}</Text>
+              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{t('iqraCopyMessage')}</Text>
             </Pressable>
             <Pressable onPress={onShare} hitSlop={8} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 4 }}>
               <Ionicons name="share-outline" size={16} color={ACCENT} />
-              <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>{t('exportShare')}</Text>
+              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{t('exportShare')}</Text>
             </Pressable>
           </View>
         </View>
 
         {noMarks ? (
-          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 10, textAlign: align }]}>
+          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginTop: 10, textAlign: align }]}>
             {t('noGradedQuestionsYet')}
           </Text>
         ) : (
@@ -498,34 +527,47 @@ function ResultCard({
             <View style={[styles.levelRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               {result.levelKey && (
                 <View style={[styles.levelPill, { backgroundColor: LEVEL_COLOR[result.levelKey] + '20' }]}>
-                  <Text style={{ color: LEVEL_COLOR[result.levelKey], fontFamily: 'Cairo_700Bold', fontSize: 14 }}>
+                  <Text style={{ color: LEVEL_COLOR[result.levelKey], fontFamily: 'ReadexPro_700Bold', fontSize: 14 }}>
                     {t(LEVEL_KEY[result.levelKey])}
                   </Text>
                 </View>
               )}
-              <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
-                {t('resultPercentLabel', result.percent)}
+              <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
+                {t('resultPercentLabel', tidyPercent(result.percent))}
               </Text>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 }}>
                 {result.earnedMarks} / {result.totalMarks}
               </Text>
             </View>
             {result.isProvisional && (
-              <Text style={[{ color: '#B54708', fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 8, textAlign: align }]}>
+              <Text style={[{ color: palette.warning, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 8, textAlign: align }]}>
                 {t('provisionalResultNote')}
               </Text>
             )}
             <View style={{ marginTop: 12, gap: 6 }}>
               {COMPETENCY_ORDER.map(key => {
                 const c = result.competencyScores[key];
+                const scored = !!c?.sufficient;
+                const fill = Math.max(0, Math.min(100, Number(c?.percent) || 0));
                 return (
                   <View key={key} style={[styles.competencyRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                    <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, flex: 1, textAlign: align }}>
+                    <Text style={{ color: scored ? colors.foreground : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, width: 130, textAlign: align }}>
                       {t(COMPETENCY_KEY[key])}
                     </Text>
-                    <Text style={{ color: c?.sufficient ? colors.foreground : colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>
-                      {c?.sufficient ? `${c.percent}%` : t('insufficientEvidence')}
-                    </Text>
+                    {scored ? (
+                      <>
+                        <View style={[styles.competencyTrack, { backgroundColor: colors.border }]}>
+                          <View style={[styles.competencyFill, { width: `${fill}%`, backgroundColor: ACCENT }]} />
+                        </View>
+                        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 13, minWidth: 48, textAlign: isRTL ? 'left' : 'right' }}>
+                          {t('resultPercentLabel', tidyPercent(c.percent))}
+                        </Text>
+                      </>
+                    ) : (
+                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, flex: 1, textAlign: align }}>
+                        {t('insufficientEvidence')}
+                      </Text>
+                    )}
                   </View>
                 );
               })}
@@ -586,10 +628,10 @@ function NextStepsCard({
   return (
     <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
       <View style={[styles.resultCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 16, textAlign: align }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 16, textAlign: align }}>
           {t('nextStepsTitle')}
         </Text>
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: 4, textAlign: align }}>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 4, textAlign: align }}>
           {t('nextStepsSubtitle')}
         </Text>
 
@@ -603,23 +645,23 @@ function NextStepsCard({
               <View key={rec.id} style={{ gap: 6 }}>
                 <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
                   <Ionicons name={KIND_ICON[rec.kind]} size={15} color={ACCENT} />
-                  <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+                  <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
                     {t(KIND_LABEL[rec.kind])}
                   </Text>
-                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
                     {t('recEvidence', String(rec.payload.percent), String(rec.payload.marksLost))}
                   </Text>
                 </View>
-                <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
+                <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
                   {title}
                 </Text>
                 {canGenerate && rec.kind !== 'reassess' && title ? (
                   <Pressable
                     onPress={() => openWorksheet(title)}
-                    style={[styles.recBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                    style={[styles.recBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row', alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
                   >
                     <Ionicons name="document-text-outline" size={14} color={ACCENT} />
-                    <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>
+                    <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>
                       {t('recBuildWorksheet')}
                     </Text>
                   </Pressable>
@@ -634,11 +676,12 @@ function NextStepsCard({
 }
 
 function QuestionInput({
-  index, question, response, onChange, onCommit, grade, onGradeChange, onGradeCommit, colors, isRTL, align, t,
+  index, question, response, recordingUrl, onChange, onCommit, grade, onGradeChange, onGradeCommit, colors, isRTL, align, t,
 }: {
   index: number;
   question: EvaluationQuestion;
   response: Response;
+  recordingUrl?: string;
   onChange: (r: Response) => void;
   onCommit: (r: Response) => void;
   grade: GradeDraft | undefined;
@@ -655,9 +698,9 @@ function QuestionInput({
     <View style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={[styles.qTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <View style={[styles.qNum, { backgroundColor: ACCENT_FILL }]}>
-          <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 12 }}>{index + 1}</Text>
+          <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 12 }}>{index + 1}</Text>
         </View>
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
           {t('marksAbbrev', question.marks)}
         </Text>
       </View>
@@ -684,6 +727,9 @@ function QuestionInput({
         ) : (
           <OpenTextInput body={body} response={response} onChange={onChange} onCommit={onCommit} colors={colors} align={align} t={t} />
         )
+      )}
+      {question.type === 'read_aloud' && (
+        <ReadAloudReview body={body} response={response} recordingUrl={recordingUrl} colors={colors} isRTL={isRTL} align={align} t={t} />
       )}
       {isPaperQuestion(question) ? (
         // A paper exam holds no question text and no answer to transcribe —
@@ -734,11 +780,12 @@ function GradeRow({
   const marks = grade?.marks ?? '';
   const note = grade?.note ?? '';
   const byTeacher = grade?.grader === 'teacher';
+  const unsaved = isUnsavedMark(grade);
 
   return (
     <View style={[styles.gradeRow, { borderTopColor: colors.border }]}>
       <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
-        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
           {t('markLabel')}
         </Text>
         <TextInput
@@ -746,9 +793,9 @@ function GradeRow({
           onChangeText={v => onChange({ marks: v })}
           onBlur={() => onCommit(marks, note)}
           keyboardType="decimal-pad"
-          style={[styles.markInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
+          style={[styles.markInput, { color: colors.foreground, borderColor: unsaved ? colors.warning : colors.border, borderWidth: unsaved ? 2 : 1, backgroundColor: colors.background }]}
         />
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
           {t('markOutOf', question.marks)}
         </Text>
         {grade?.grader ? (
@@ -810,14 +857,14 @@ function MultipleChoiceInput({
             <Pressable
               key={o.id}
               onPress={() => toggle(o.id)}
-              style={[styles.optRow, { borderColor: selected ? ACCENT : colors.border, backgroundColor: selected ? ACCENT + '12' : 'transparent', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+              style={[styles.optRow, { borderColor: selected ? ACCENT : colors.border, backgroundColor: selected ? palette.selected : 'transparent', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
               <Ionicons name={selected ? (multi ? 'checkbox' : 'radio-button-on') : (multi ? 'square-outline' : 'radio-button-off')} size={18} color={selected ? ACCENT : colors.mutedForeground} />
               <Text
                 style={{
                   color: colors.foreground,
                   fontFamily: 'Almarai_400Regular',
-                  fontSize: 14, lineHeight: 22,
+                  fontSize: 15, lineHeight: 24,
                   flex: 1,
                   textAlign: align,
                   writingDirection: align === 'right' ? 'rtl' : 'ltr',
@@ -863,11 +910,56 @@ function TrueFalseInput({
               onPress={() => onChange({ value: opt.v })}
               style={[styles.tfBtn, { borderColor: selected ? ACCENT : colors.border, backgroundColor: selected ? ACCENT : 'transparent' }]}
             >
-              <Text style={{ color: selected ? palette.primaryForeground : colors.foreground, fontFamily: 'Cairo_500Medium', fontSize: 14 }}>{t(opt.key)}</Text>
+              <Text style={{ color: selected ? palette.primaryForeground : colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 14 }}>{t(opt.key)}</Text>
             </Pressable>
           );
         })}
       </View>
+    </View>
+  );
+}
+
+/**
+ * A read-aloud answer, for marking. The automatic mark is how many of the
+ * passage's words the transcriber heard, so the teacher gets the passage,
+ * what was heard, and the child's own voice to check it against. Read-only:
+ * the recording is the answer, and only the student can make one.
+ */
+function ReadAloudReview({
+  body, response, recordingUrl, colors, isRTL, align, t,
+}: {
+  body: Record<string, unknown>; response: Response; recordingUrl?: string;
+  colors: ReturnType<typeof useColors>; isRTL: boolean; align: 'left' | 'right'; t: (key: TranslationKey) => string;
+}) {
+  const passage = typeof body['passage'] === 'string' ? body['passage'] : '';
+  const transcript = typeof response['transcript'] === 'string' ? response['transcript'].trim() : '';
+  const recorded = typeof response['audioKey'] === 'string' && response['audioKey'].length > 0;
+  const textStyle = { fontFamily: 'Almarai_400Regular', textAlign: align, writingDirection: align === 'right' ? 'rtl' : 'ltr' } as const;
+
+  return (
+    <View style={{ gap: 8 }}>
+      <Text style={[styles.qText, textStyle, { color: colors.foreground }]}>{isolateForeignRuns(passage)}</Text>
+      {!recorded ? (
+        <Text style={[textStyle, { color: colors.mutedForeground, fontSize: 13 }]}>{t('readAloudNoRecording')}</Text>
+      ) : (
+        <>
+          <Text style={[textStyle, { color: colors.mutedForeground, fontSize: 13 }]}>
+            {t('readAloudHeard')} {transcript ? isolateForeignRuns(transcript) : '—'}
+          </Text>
+          {recordingUrl ? (
+            <Pressable
+              onPress={() => { void playUri(recordingUrl); }}
+              accessibilityRole="button"
+              style={[styles.scanBtn, { paddingHorizontal: 16, borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row', alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
+            >
+              <Ionicons name="play-circle-outline" size={18} color={ACCENT} />
+              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>{t('readAloudListen')}</Text>
+            </Pressable>
+          ) : (
+            <Text style={[textStyle, { color: colors.mutedForeground, fontSize: 12 }]}>{t('readAloudRecordingUnavailable')}</Text>
+          )}
+        </>
+      )}
     </View>
   );
 }
@@ -910,23 +1002,25 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { paddingHorizontal: 20, paddingBottom: 14, gap: 8 },
   headerTitle: { fontSize: 22, color: '#fff' },
-  headerSub: { fontSize: 13, lineHeight: 21 },
+  headerSub: { fontSize: 15, lineHeight: 24 },
   errorBox: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 12, borderWidth: 1 },
   resultCard: { borderWidth: 1, borderRadius: 14, padding: 16 },
   resultTop: { alignItems: 'center' },
   levelRow: { alignItems: 'center', gap: 12, marginTop: 12 },
   levelPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-  competencyRow: { alignItems: 'center' },
+  competencyRow: { alignItems: 'center', gap: 10 },
+  competencyTrack: { flex: 1, height: 8, borderRadius: 4, overflow: 'hidden' },
+  competencyFill: { height: 8, borderRadius: 4 },
   qCard: { borderWidth: 1, borderRadius: 12, padding: 14 },
   qTop: { alignItems: 'center', gap: 8, marginBottom: 10 },
   scanBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderRadius: 10, paddingVertical: 12 },
   recBtn: { alignSelf: 'flex-start', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
   gradeRow: { borderTopWidth: 1, marginTop: 12, paddingTop: 10, gap: 8 },
   markInput: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, minWidth: 64, textAlign: 'center', fontSize: 14 },
-  noteInput: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, minHeight: 44, fontSize: 13 },
-  commentBox: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, minHeight: 76, fontSize: 14 },
+  noteInput: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, minHeight: 44, fontSize: 15 },
+  commentBox: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, minHeight: 76, fontSize: 15 },
   qNum: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  qText: { fontSize: 14, lineHeight: 20 },
+  qText: { fontSize: 15, lineHeight: 21 },
   optRow: { alignItems: 'center', gap: 10, borderWidth: 1.5, borderRadius: 10, padding: 12 },
   tfBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderRadius: 10, paddingVertical: 12 },
   matchRow: { alignItems: 'center', gap: 8 },

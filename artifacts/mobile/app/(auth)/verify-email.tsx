@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  KeyboardAvoidingView, Platform, Pressable, ScrollView,
+  Pressable, ScrollView,
   StyleSheet, Text, View,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/Input';
 import { Ionicons } from '@expo/vector-icons';
 import { toLatinDigits } from '@/services/latinDigits';
 import { apiErrorMessage } from '@/services/apiErrorKey';
+import { emailNotSent } from '@/services/emailDelivery';
 
 /** Cooldown between resend taps — enough for the email to plausibly arrive before offering another one. */
 const RESEND_COOLDOWN_S = 30;
@@ -23,7 +24,7 @@ export default function VerifyEmailScreen() {
   const insets = useSafeAreaInsets();
   const { verifyEmail, resendVerification, changeUnverifiedEmail } = useAuth();
   const { t, isRTL } = useLanguage();
-  const params = useLocalSearchParams<{ email: string }>();
+  const params = useLocalSearchParams<{ email: string; sendFailed?: string }>();
 
   // Held in state, not read from the route param directly: changing the
   // address below has to move what this screen says the code went to, and the
@@ -33,7 +34,9 @@ export default function VerifyEmailScreen() {
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [cooldown, setCooldown] = useState(0);
-  const [error, setError] = useState('');
+  // Signup tells this screen when the server could not send the code, so the
+  // teacher is not left waiting on an email that does not exist.
+  const [error, setError] = useState(() => (params.sendFailed === '1' ? t('errEmailNotSent') : ''));
   const [notice, setNotice] = useState('');
 
   const [editingEmail, setEditingEmail] = useState(false);
@@ -85,16 +88,19 @@ export default function VerifyEmailScreen() {
     setNotice('');
     setChanging(true);
     try {
-      const { email: changed } = await changeUnverifiedEmail(email, password, newEmail);
+      const result = await changeUnverifiedEmail(email, password, newEmail);
+      const changed = result.email;
       setEmail(changed);
-      setNotice(t('emailChanged', changed));
+      if (emailNotSent(result)) setError(t('errEmailNotSent'));
+      else setNotice(t('emailChanged', changed));
       // The code that was just sent belongs to the new address, so clear the
       // one typed against the old one rather than leaving it to fail.
       setCode('');
       setEditingEmail(false);
       setNewEmail('');
       setPassword('');
-      setCooldown(RESEND_COOLDOWN_S);
+      // Nothing was sent, so there is nothing to wait for: leave resend open.
+      setCooldown(emailNotSent(result) ? 0 : RESEND_COOLDOWN_S);
     } catch (e: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setError(apiErrorMessage(e, 'errChangeEmailFailed', t));
@@ -107,9 +113,8 @@ export default function VerifyEmailScreen() {
   const canChangeEmail = newEmail.includes('@') && password.length > 0;
 
   return (
-    <KeyboardAvoidingView
+    <View
       style={{ flex: 1, backgroundColor: colors.background }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
         contentContainerStyle={[
@@ -126,7 +131,7 @@ export default function VerifyEmailScreen() {
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
 
-        <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('verifyEmailTitle')}
         </Text>
         <Text style={[styles.sub, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -155,6 +160,8 @@ export default function VerifyEmailScreen() {
             onChangeText={text => setCode(toLatinDigits(text).replace(/\D/g, '').slice(0, 6))}
             leftIcon="key-outline"
             keyboardType="number-pad"
+            autoComplete="one-time-code"
+            textContentType="oneTimeCode"
             maxLength={6}
             isRTL={isRTL}
             autoFocus
@@ -169,7 +176,7 @@ export default function VerifyEmailScreen() {
           />
 
           <Pressable onPress={handleResend} disabled={resending || cooldown > 0} style={styles.resendRow}>
-            <Text style={[styles.resendText, { color: cooldown > 0 ? colors.mutedForeground : colors.primary, fontFamily: 'Cairo_600SemiBold' }]}>
+            <Text style={[styles.resendText, { color: cooldown > 0 ? colors.mutedForeground : colors.primary, fontFamily: 'ReadexPro_600SemiBold' }]}>
               {cooldown > 0 ? `${t('resendCode')} (${cooldown}s)` : t('resendCode')}
             </Text>
           </Pressable>
@@ -183,7 +190,7 @@ export default function VerifyEmailScreen() {
         */}
         {editingEmail ? (
           <View style={[styles.card, { backgroundColor: colors.card, borderRadius: colors.radius * 1.5, borderColor: colors.border }]}>
-            <Text style={[styles.changeTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+            <Text style={[styles.changeTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
               {t('changeEmailTitle')}
             </Text>
 
@@ -194,6 +201,7 @@ export default function VerifyEmailScreen() {
               onChangeText={setNewEmail}
               leftIcon="mail-outline"
               keyboardType="email-address"
+              autoComplete="email"
               autoCapitalize="none"
               isRTL={isRTL}
             />
@@ -206,6 +214,7 @@ export default function VerifyEmailScreen() {
               onChangeText={setPassword}
               leftIcon="lock-closed-outline"
               secureTextEntry
+              autoComplete="current-password"
               isRTL={isRTL}
             />
 
@@ -221,20 +230,20 @@ export default function VerifyEmailScreen() {
               onPress={() => { setEditingEmail(false); setNewEmail(''); setPassword(''); }}
               style={styles.resendRow}
             >
-              <Text style={[styles.resendText, { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>
+              <Text style={[styles.resendText, { color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }]}>
                 {t('cancel')}
               </Text>
             </Pressable>
           </View>
         ) : (
           <Pressable onPress={() => { setEditingEmail(true); setError(''); setNotice(''); }} style={styles.resendRow}>
-            <Text style={[styles.resendText, { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>
+            <Text style={[styles.resendText, { color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }]}>
               {t('wrongEmail')}
             </Text>
           </Pressable>
         )}
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -242,10 +251,10 @@ const styles = StyleSheet.create({
   scroll: { flexGrow: 1, paddingHorizontal: 24 },
   back: { marginBottom: 20, width: 40 },
   heading: { fontSize: 26, marginBottom: 6 },
-  sub: { fontSize: 14, lineHeight: 22, marginBottom: 24 },
+  sub: { fontSize: 15, lineHeight: 24, marginBottom: 24 },
   card: { padding: 24, borderWidth: 1, marginBottom: 24, gap: 16 },
   banner: { alignItems: 'center', gap: 8, padding: 12, borderWidth: 1 },
-  bannerText: { flex: 1, fontSize: 13, lineHeight: 21 },
+  bannerText: { flex: 1, fontSize: 15, lineHeight: 24 },
   resendRow: { alignItems: 'center', paddingVertical: 8 },
   resendText: { fontSize: 14 },
   changeTitle: { fontSize: 16, marginBottom: 2 },

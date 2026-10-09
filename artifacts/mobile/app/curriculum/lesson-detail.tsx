@@ -9,12 +9,16 @@ import { useLanguage } from '@/context/LanguageContext';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import {
   getLessonById,
+  getLessonsForUnit,
   isBrowserLessonTitleOnly,
 } from '@/services/curriculumData';
+import { lockState } from '@/services/lessonLock';
+import { useMasteryProgress } from '@/hooks/useMasteryProgress';
 import { LessonPrepPanel } from '@/components/ui/LessonPrepPanel';
 import { LessonMediaPanel } from '@/components/ui/LessonMediaPanel';
 import { ReadAloudPracticePanel } from '@/components/ui/ReadAloudPracticePanel';
 import { LessonShelfPanel } from '@/components/ui/LessonShelfPanel';
+import { VirtualLabCard } from '@/components/ui/VirtualLabCard';
 import { askAboutLessonHandoff } from '@/services/lessonShelf';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { bookPagesForLesson } from '@/services/bookFigures';
@@ -23,14 +27,15 @@ import { hubLesson } from '@workspace/curriculum/englishHub';
 import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 import { goBack } from '@/services/navigation';
 import { readableOn } from '@/services/readableColor';
+import { palette } from '@/constants/colors';
 
 const BLOOMS_COLORS: Record<string, string> = {
   Remember: '#6366F1',
-  Understand: '#1D4ED8',
-  Apply: '#067647',
-  Analyze: '#B54708',
+  Understand: palette.info,
+  Apply: palette.success,
+  Analyze: palette.warning,
   Evaluate: '#F97316',
-  Create: '#D92D20',
+  Create: palette.destructive,
 };
 
 export default function LessonDetailScreen() {
@@ -68,10 +73,42 @@ export default function LessonDetailScreen() {
     if (openLessonPlan === '1' && lesson) setPrepOpen(true);
   }, [openLessonPlan, lesson]);
 
+  // A locked lesson can also be reached by a deep link or the back stack, so
+  // the lock is enforced here as well as on the unit list.
+  const masteryProgress = useMasteryProgress();
+  const lessonLocked = lesson
+    ? lockState(getLessonsForUnit(lesson.unitId).map(l => l.id), masteryProgress).locked.has(lesson.id)
+    : false;
+
   if (!lesson) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
         <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }}>{t('lessonNotFound')}</Text>
+      </View>
+    );
+  }
+
+  if (lessonLocked) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 14 }}>
+        <Ionicons name="lock-closed" size={40} color={colors.mutedForeground} />
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 17, textAlign: 'center' }}>
+          {t('masteryLockedTitle')}
+        </Text>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: 'center' }}>
+          {t('masteryLockedBody')}
+        </Text>
+        <Pressable
+          onPress={() => router.replace('/my-exams' as never)}
+          style={{ backgroundColor: colors.primary, paddingHorizontal: 22, paddingVertical: 12, borderRadius: colors.radius }}
+        >
+          <Text style={{ color: colors.primaryForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
+            {t('masteryGoToExams')}
+          </Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" onPress={() => goBack()} hitSlop={10}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14 }}>{t('masteryClose')}</Text>
+        </Pressable>
       </View>
     );
   }
@@ -88,16 +125,16 @@ export default function LessonDetailScreen() {
     >
       {/* Hero */}
       <View style={[styles.hero, { backgroundColor: colorFill, paddingTop: insets.top + 12 }]}>
-        <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
-        <Text style={[styles.heroTitle, { color: '#fff', fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.heroTitle, { color: '#fff', fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {lessonTitle}
         </Text>
         <View style={[styles.heroMeta, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           {showTitleOnly ? (
             <View style={[styles.heroPill, { backgroundColor: 'rgba(255,255,255,0.25)' }]}>
-              <Text style={[styles.heroPillText, { color: '#fff', fontFamily: 'Cairo_500Medium' }]}>
+              <Text style={[styles.heroPillText, { color: '#fff', fontFamily: 'ReadexPro_500Medium' }]}>
                 {t('curriculumTitleOnlyBadge')}
               </Text>
             </View>
@@ -143,7 +180,7 @@ export default function LessonDetailScreen() {
             style={[styles.aiBtn, { backgroundColor: colorFill, borderRadius: colors.radius, flex: 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name={prepOpen ? 'chevron-up' : 'sparkles'} size={18} color="#fff" />
-            <Text style={[styles.aiBtnText, { color: '#fff', fontFamily: 'Cairo_600SemiBold' }]}>
+            <Text style={[styles.aiBtnText, { color: '#fff', fontFamily: 'ReadexPro_600SemiBold' }]}>
               {prepOpen ? t('prepInlineHide') : t('generateAILesson')}
             </Text>
           </Pressable>
@@ -164,7 +201,7 @@ export default function LessonDetailScreen() {
             style={[styles.askIqraBtn, { backgroundColor: colors.card, borderColor: color, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="chatbubble-ellipses-outline" size={16} color={color} />
-            <Text style={[styles.askIqraBtnText, { color, fontFamily: 'Cairo_600SemiBold' }]}>
+            <Text style={[styles.askIqraBtnText, { color, fontFamily: 'ReadexPro_600SemiBold' }]}>
               {t('askIqra')}
             </Text>
           </Pressable>
@@ -179,7 +216,7 @@ export default function LessonDetailScreen() {
               style={[styles.askIqraBtn, { backgroundColor: colors.card, borderColor: color, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
               <Ionicons name="book-outline" size={16} color={color} />
-              <Text style={[styles.askIqraBtnText, { color, fontFamily: 'Cairo_600SemiBold' }]}>
+              <Text style={[styles.askIqraBtnText, { color, fontFamily: 'ReadexPro_600SemiBold' }]}>
                 {t('bookPageButton')}
               </Text>
             </Pressable>
@@ -195,6 +232,10 @@ export default function LessonDetailScreen() {
             curriculum sections because a teacher preparing tomorrow wants the
             worksheets before they want the Bloom's levels. */}
         <LessonShelfPanel lessonId={lesson.id} accent={color} />
+
+        {/* The PhET simulation for a lab lesson, with its predict–observe–explain
+            sheet. Renders nothing on a lesson with no released lab. */}
+        <VirtualLabCard lessonId={lesson.id} accent={color} />
 
         {/* Curated video and images, played and shown in place rather than
             linked. Below the shelf, which lists everything including these:
@@ -235,7 +276,7 @@ export default function LessonDetailScreen() {
             with no server call to make. Renders nothing elsewhere. */}
         <VocabularyPracticePanel lessonId={lesson.id} accent={color} />
 
-        {/* Grades 1–4 English: the same words, voiced and played with. */}
+        {/* Grades 1–4 and 9–10 English: the same words, voiced and played with. */}
         {hubLesson(lesson.id) ? (
           <Pressable
             onPress={() => router.push({ pathname: '/curriculum/english/[lessonId]', params: { lessonId: lesson.id } } as never)}
@@ -245,7 +286,7 @@ export default function LessonDetailScreen() {
             ]}
           >
             <Text style={{ fontSize: 24 }}>🎧</Text>
-            <Text style={{ flex: 1, color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 15, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ flex: 1, color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 15, textAlign: isRTL ? 'right' : 'left' }}>
               {t('hubOpenFromLesson')}
             </Text>
             <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color="#fff" />
@@ -272,7 +313,7 @@ export default function LessonDetailScreen() {
           <View style={[styles.keywords, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             {keywordsArr.map(k => (
               <View key={k} style={[styles.keyword, { backgroundColor: color + '15', borderColor: color + '30', borderRadius: 8 }]}>
-                <Text style={[styles.keywordText, { color, fontFamily: 'Cairo_500Medium' }]}>{k}</Text>
+                <Text style={[styles.keywordText, { color, fontFamily: 'ReadexPro_500Medium' }]}>{k}</Text>
               </View>
             ))}
           </View>
@@ -298,7 +339,7 @@ export default function LessonDetailScreen() {
               <View key={o.id} style={[styles.outcomeCard, { backgroundColor: colors.muted, borderRadius: colors.radius }]}>
                 <View style={[styles.outcomeTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                   <View style={[styles.bloomsBadge, { backgroundColor: bloomColor + '20' }]}>
-                    <Text style={[styles.bloomsText, { color: bloomColor, fontFamily: 'Cairo_600SemiBold' }]}>{o.bloomsLevel}</Text>
+                    <Text style={[styles.bloomsText, { color: bloomColor, fontFamily: 'ReadexPro_600SemiBold' }]}>{o.bloomsLevel}</Text>
                   </View>
                 </View>
                 <Text style={[styles.outcomeDesc, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -326,7 +367,7 @@ function Section({ title, icon, color, isRTL, children }: { title: string; icon:
     <View style={styles.section}>
       <View style={[styles.sectionHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Ionicons name={icon} size={16} color={color} />
-        <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
           {title}
         </Text>
       </View>
@@ -357,16 +398,16 @@ const styles = StyleSheet.create({
   sectionBody: { padding: 16, borderWidth: 1 },
   bullet: { gap: 10, marginBottom: 8, alignItems: 'flex-start' },
   bulletDot: { width: 6, height: 6, borderRadius: 3, marginTop: 7, flexShrink: 0 },
-  bulletText: { flex: 1, fontSize: 14, lineHeight: 21 },
+  bulletText: { flex: 1, fontSize: 15, lineHeight: 23 },
   keywords: { flexWrap: 'wrap', gap: 8 },
   keyword: { paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1 },
   keywordText: { fontSize: 12 },
-  noteText: { fontSize: 14, lineHeight: 21 },
+  noteText: { fontSize: 15, lineHeight: 23 },
   outcomeCard: { padding: 14, marginBottom: 10 },
   outcomeTop: { marginBottom: 8 },
   bloomsBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, alignSelf: 'flex-start' },
   bloomsText: { fontSize: 11 },
-  outcomeDesc: { fontSize: 14, lineHeight: 20, marginBottom: 10 },
+  outcomeDesc: { fontSize: 15, lineHeight: 21, marginBottom: 10 },
   skills: { flexWrap: 'wrap', gap: 6 },
   skillPill: { paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1 },
   skillText: { fontSize: 11, lineHeight: 18 },

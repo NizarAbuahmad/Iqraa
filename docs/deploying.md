@@ -212,6 +212,27 @@ answered `ok` from the *old* revision), and changes assumed undeployed that had
 shipped hours earlier from another session. In both cases a green health check
 looked identical to the truth and to its opposite.
 
+## A Deploy that was cancelled before it ran
+
+A Deploy can sit at "cancelled" with nothing deployed and no step ever run. It
+happened on 2026-10-05 (runs #417 and #418, 20:26 and 20:59 UTC): the first job,
+`what changed`, was cancelled after about 15 minutes with no steps recorded and no
+log, even though it has a 5-minute `timeout-minutes`. GitHub had assigned it to a
+runner that never started it, and `timeout-minutes` only counts a job that has
+started. Everything downstream was skipped, so the merge was not deployed until
+the next one.
+
+`.github/workflows/deploy-rerun-stalled.yml` re-runs such a Deploy **once**, and
+only when the run was a push to `main`, was its first attempt, is still the head
+of `main`, and had a job cancelled with no steps. Each condition is there because
+"cancelled" is also what a deliberate cancellation looks like: the `web` job
+cancels an older web deploy when a newer push arrives, and a person can cancel by
+hand. Re-running either of those would put older code live over newer code.
+
+If it does not fire (or a second attempt stalls too), re-run by hand: Actions,
+then the Deploy run, then *Re-run all jobs*; or dispatch Deploy with a `target`.
+Check the run is for the commit you want live, as above.
+
 ## Rotating a secret
 
 Same shape every time: **create the new credential, install it, prove it works
@@ -445,36 +466,66 @@ process:
 
 ## Schema
 
-**Nothing deploys the database schema.** Not the build, not the deploy:
+**The schema deploys itself, as migrations.** Change `lib/db/src/schema`, then:
 
 ```bash
-pnpm --filter @workspace/db run push
+pnpm --filter @workspace/db run generate      # writes lib/db/migrations/NNNN_*.sql
 ```
 
-run by hand against the production `DATABASE_URL`, before or with the deploy.
-Deliberately not wired into any build — drizzle-kit resolves drift by dropping
-columns, and a deploy is the wrong place to discover that. Skipping it makes
-the endpoints using the new table answer 503 "storage is not set up on this
-server".
+and commit the generated SQL with the PR — it is part of the review. On merge,
+`deploy.yml`'s `production migrations` job applies anything new to production
+in one transaction, then `production schema` (`schema-check.yml`) confirms
+every table, column and unique exists, and only then does the API deploy. A
+failed migration rolls back whole, the API and web jobs are skipped, and the
+old revision keeps serving.
 
-CI enforces the reminder, not the push: a PR touching `lib/db/src/schema` must
-say `schema-push: done` or `schema-push: n/a` in its description
-(`.github/workflows/ci.yml`), and `schema-check.yml` verifies production
-against the schema daily.
+CI (`migrations match schema` in `ci.yml`) checks every PR three ways:
 
-Two things about that line, both of which have cost a CI cycle:
+- **A schema edit without its migration fails.** `generate` runs and must
+  produce nothing new.
+- **Every migration applies to an empty Postgres**, followed by `verify-schema`.
+- **Destructive SQL needs an explicit yes.** Migrations run *before* the new
+  API revision takes traffic, so the old code serves against the new schema
+  for a few minutes. Adding a table or nullable column is safe; `DROP`,
+  `RENAME`, `SET NOT NULL` and type changes break the running revision. Ship
+  the code that stops using the old shape first, then the destructive
+  migration in a later PR whose body has a line `destructive-migration: ok`.
+  That line is matched literally at the start of a line, and editing the body
+  does not re-run the check — only a new commit does.
 
-- **It is matched literally, at the start of a line, with nothing between the
-  colon and the word.** `schema-push: **done.**` does not match — the bold
-  markers sit where the regex expects `done`, and the check fails while the
-  body appears to say the right thing. Write it bare and put any prose on the
-  following line.
-- **Editing the body does not re-run the check.** The job reads
-  `github.event.pull_request.body` from the event payload, and the workflow's
-  `on: pull_request` has no `types:`, so it fires on opened/synchronize/reopened
-  and not on edited. Re-running the job replays the stored payload with the old
-  body, so it fails identically. Only a new commit re-evaluates it — which
-  means getting this line right the first time is worth the ten seconds.
+`push` (`pnpm --filter @workspace/db run push`) is still there for a scratch
+local database. Never point it at production: drizzle-kit resolves drift by
+dropping columns, which is why production never auto-deployed before
+migrations existed.
+
+### Baseline (once per database that predates migrations)
+
+`0000_baseline.sql` is the whole schema as of 2026-10-08. Production already
+had those tables from `push`, so it must record 0000 as applied without
+running it. `migrate` refuses a database that has tables but no migration
+history, so the first deploy after this change fails safely until this runs.
+For production, run it in Actions so the URL stays in the repository secret:
+
+```bash
+gh workflow run db-baseline.yml    # verify-schema, then baseline, then migrate
+```
+
+then re-run the failed deploy. For any other database:
+
+```bash
+pnpm --filter @workspace/db run verify-schema   # must report every table/column present
+pnpm --filter @workspace/db run migrate -- --baseline
+```
+
+It is idempotent: a second run reports the history already exists. A local
+database created with `push` needs the same one-time baseline; a new one
+needs only `migrate`.
+
+What `verify-schema` cannot prove before baselining: column types,
+nullability, defaults, and non-unique indexes and foreign keys. If production
+drifted on one of those, a later migration touching it can fail — in CI it
+will pass (the empty database matches), at deploy it rolls back and names the
+statement. Fix production to match by hand, then re-run the deploy.
 
 ## Point-of-no-return changes go up as drafts
 

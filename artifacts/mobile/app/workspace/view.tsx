@@ -14,13 +14,18 @@ import {
   ActivityOutput, ActivityStep, ClassroomActivity, LessonFlowOutput, LessonPlanOutput,
   QuizOutput, WorksheetOutput,
 } from '@/services/ai/AIService';
-import { looksLikeActivityContent } from '@/services/materialShape';
+import { isEditableMaterial, looksLikeActivityContent } from '@/services/materialShape';
 import { arCountPhrase } from '@/services/arCount';
 // One map, not two. This screen kept its own copy of the same five colours;
 // adding a sixth to a private copy is exactly the drift `materialKind.ts` was
 // extracted to stop — a card in موادي and the material it opens must not
 // disagree about what colour an activity is.
-import { MATERIAL_COLOR } from '@/constants/materialKind';
+import { MATERIAL_COLOR, MATERIAL_EDIT_ROUTE, MATERIAL_FILL } from '@/constants/materialKind';
+import { materialSubjectId } from '@/services/contentLanguage';
+import { redoesInEnglish } from '@/hooks/useEnglishRefresh';
+import { getT } from '@/services/i18n';
+import { openExternal } from '@/services/externalLinks';
+import { trackEvent } from '@/services/analytics';
 import { activityTypeLabel } from '@/constants/activityType';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { normalizeQuestionOptions, optionLetter } from '@/services/optionLabels';
@@ -30,11 +35,14 @@ import { resolveGeneratorGrounding } from '@/services/kbContext';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import {
-  buildActivityHTML, buildLessonFlowHTML, buildLessonPlanHTML, buildQuizHTML, buildWorksheetHTML,
-  copyToClipboard, exportAsPDF, exportAsWord,
-  formatActivityText, formatLessonPlanText, formatQuizText, formatWorksheetText,
+  buildActivityHTML, buildLessonFlowHTML, buildLessonPlanHTML,
+  copyToClipboard, exportAsPDF, exportAsWord, exportBuiltWord,
+  formatActivityText, formatLessonPlanText,
   shareAsText,
 } from '@/services/share';
+import { exportFilename } from '@/services/exportFilename';
+import { quizExports, type QuizCopy } from '@/services/quizExport';
+import { worksheetExports } from '@/services/worksheetExport';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { allPremade } from '@workspace/curriculum/premade';
@@ -56,6 +64,9 @@ export default function WorkspaceViewScreen() {
   const [toastVisible, setToastVisible] = useState(false);
   const [loadingPDF, setLoadingPDF] = useState(false);
   const [loadingWord, setLoadingWord] = useState(false);
+  // A saved quiz is exported as the student's or the teacher's copy, picked
+  // in the export menu — this screen has no answers toggle to decide it.
+  const [docCopy, setDocCopy] = useState<QuizCopy>('student');
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
   const { favorited, setFavorited, toggle: handleToggleFavorite } =
     useFavorite(item?.id, key => showToast(t(key)));
@@ -81,6 +92,13 @@ export default function WorkspaceViewScreen() {
       setLoading(false);
     } else if (id) {
       getItem(id).then(m => {
+        // An English material saved in Arabic opens in its tool instead, which
+        // redoes it in English over this copy (see useEnglishRefresh).
+        const redo = m && redoesInEnglish(m) ? MATERIAL_EDIT_ROUTE[viewKind(m, parseContent(m.content))] : undefined;
+        if (m && redo) {
+          router.replace({ pathname: redo as any, params: { savedId: m.id, ...m.formState } });
+          return;
+        }
         setItem(m);
         setFavorited(m?.isFavorite ?? false);
         setLoading(false);
@@ -103,29 +121,23 @@ export default function WorkspaceViewScreen() {
         <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 }}>
           {t('noContentAvailable')}
         </Text>
-        <Pressable onPress={() => goBack()} hitSlop={10} style={{ padding: 12 }}>
-          <Text style={{ color: colors.primary, fontFamily: 'Cairo_500Medium' }}>{t('back')}</Text>
+        <Pressable accessibilityRole="button" onPress={() => goBack()} hitSlop={10} style={{ padding: 12 }}>
+          <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_500Medium' }}>{t('back')}</Text>
         </Pressable>
       </View>
     );
   }
 
-  let content:
+  const content = parseContent(item.content) as
     | LessonPlanOutput | WorksheetOutput | QuizOutput | ClassroomActivity | ActivityOutput
-    | null = null;
-  try { content = JSON.parse(item.content); } catch { /* noop */ }
+    | null;
 
-  /**
-   * The kind this material is rendered, exported and edited as.
-   *
-   * Normally just `item.type`. The exception is every activity saved before
-   * the workspace could render one: those went in as `'lesson'` because the
-   * honest type crashed the viewer. They are still in teachers' workspaces, so
-   * the shape decides when the stored type says lesson — see materialShape.ts.
-   */
-  const kind = item.type === 'lesson' && looksLikeActivityContent(content)
-    ? 'activity'
-    : item.type;
+  const kind = viewKind(item, content);
+  // The material reads in its own language: English is prepared in English
+  // whatever the UI, and its stored language says which copy this is.
+  const docLang = materialSubjectId(item) === 'english' ? item.language : lang;
+  const docRTL = docLang === 'ar';
+  const docT = getT(docLang);
 
   const accent = MATERIAL_COLOR[kind as keyof typeof MATERIAL_COLOR] ?? colors.primary;
 
@@ -142,16 +154,16 @@ export default function WorkspaceViewScreen() {
               : kind === 'prompt-slides' ? '/ai-tools/prompt-slides'
                 : '/ai-tools/quiz';
 
-  const isAr = lang === 'ar';
+  const isAr = docRTL;
   const getPlainText = () => {
     if (!content) return item.title;
     const meta = { subject: item.subject, grade: item.grade };
     if (kind === 'lesson') return formatLessonPlanText(content as LessonPlanOutput, item.title, meta, isAr);
     if (kind === 'activity') return formatActivityText(content as ActivityOutput, item.title, meta, isAr);
-    if (kind === 'worksheet') return formatWorksheetText(content as WorksheetOutput, item.title, meta, isAr);
+    if (kind === 'worksheet') return worksheetExports(content as WorksheetOutput, item.title, meta, isAr, docCopy).text;
     if (kind === 'flow') return item.title; // flow exports as PDF only
     if (kind === 'slides' || kind === 'prompt-slides') return formatDeckOutline(content as ClassroomActivity, isAr);
-    return formatQuizText(content as QuizOutput, item.title, meta, isAr);
+    return quizExports(content as QuizOutput, item.title, meta, isAr, docCopy).text;
   };
   /**
    * The book figures for this material's lesson, re-resolved from the saved
@@ -166,7 +178,7 @@ export default function WorkspaceViewScreen() {
    * because a saved material predates the field and would have none.
    */
   const getExportFigures = () =>
-    bookFigureRefsForLesson(resolveGeneratorGrounding(item.topic ?? '', lang).lesson?.id, isAr);
+    bookFigureRefsForLesson(resolveGeneratorGrounding(item.topic ?? '', docLang).lesson?.id, isAr);
 
   const getHTML = () => {
     if (!content) return '<p></p>';
@@ -174,22 +186,32 @@ export default function WorkspaceViewScreen() {
     const figures = getExportFigures();
     if (kind === 'lesson') return buildLessonPlanHTML(content as LessonPlanOutput, item.title, meta, isAr, figures);
     if (kind === 'activity') return buildActivityHTML(content as ActivityOutput, item.title, meta, isAr, figures);
-    if (kind === 'worksheet') return buildWorksheetHTML(content as WorksheetOutput, item.title, meta, isAr, figures);
+    if (kind === 'worksheet') return worksheetExports(content as WorksheetOutput, item.title, meta, isAr, docCopy, figures).html;
     if (kind === 'flow') return buildLessonFlowHTML(content as unknown as LessonFlowOutput, isAr, figures);
     if (kind === 'slides' || kind === 'prompt-slides') return buildDeckHTML(content as ClassroomActivity, isAr);
-    return buildQuizHTML(content as QuizOutput, item.title, meta, isAr, figures);
+    return quizExports(content as QuizOutput, item.title, meta, isAr, docCopy, figures).html;
   };
 
   const handleShareText = async () => { await shareAsText(getPlainText(), item.title); };
   const handleCopy = async () => { await copyToClipboard(getPlainText()); showToast(t('copiedToClipboard')); };
   const handlePDF = async () => {
     setLoadingPDF(true);
-    try { await exportAsPDF(getHTML(), item.title.replace(/[^\w\s]/g, '').trim()); }
+    try { await exportAsPDF(getHTML(), exportFilename(item.title)); }
     catch { showToast(t('error')); } finally { setLoadingPDF(false); }
   };
   const handleWord = async () => {
     setLoadingWord(true);
-    try { await exportAsWord(getPlainText(), item.title.replace(/[^\w\s]/g, '').trim(), isAr); }
+    try {
+      if ((kind === 'quiz' || kind === 'worksheet') && content) {
+        const meta = { subject: item.subject, grade: item.grade };
+        const built = kind === 'worksheet'
+          ? worksheetExports(content as WorksheetOutput, item.title, meta, isAr, docCopy)
+          : quizExports(content as QuizOutput, item.title, meta, isAr, docCopy);
+        await exportBuiltWord(built.word, exportFilename(item.title));
+      } else {
+        await exportAsWord(getPlainText(), exportFilename(item.title), isAr);
+      }
+    }
     catch { showToast(t('error')); } finally { setLoadingWord(false); }
   };
 
@@ -210,14 +232,16 @@ export default function WorkspaceViewScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: accent, paddingTop: topPad + 12 }]}>
+      <View style={[styles.header, { backgroundColor: MATERIAL_FILL[kind as keyof typeof MATERIAL_FILL] ?? colors.hero, paddingTop: topPad + 12 }]}>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('back')}
           onPress={() => goBack()} hitSlop={10}
           style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
         >
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
-        <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {item.title}
         </Text>
         <View style={[styles.metaRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -232,13 +256,13 @@ export default function WorkspaceViewScreen() {
 
       {/* Action bar */}
       <View style={[styles.actionBar, { backgroundColor: colors.card, borderBottomColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        {!premade && (
+        {!premade && isEditableMaterial(item) && (
         <Pressable
           onPress={() => router.push({ pathname: editRoute as any, params: { savedId: item.id, ...item.formState } })}
           style={[styles.actionBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
         >
           <Ionicons name="create-outline" size={16} color={accent} />
-          <Text style={[{ color: accent, fontFamily: 'Cairo_500Medium', fontSize: 13 }]}>{t('editItem')}</Text>
+          <Text style={[{ color: accent, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>{t('editItem')}</Text>
         </Pressable>
         )}
         {!premade && (
@@ -249,9 +273,9 @@ export default function WorkspaceViewScreen() {
           <Ionicons
             name={favorited ? 'star' : 'star-outline'}
             size={16}
-            color={favorited ? '#B54708' : colors.mutedForeground}
+            color={favorited ? palette.warning : colors.mutedForeground}
           />
-          <Text style={[{ color: favorited ? '#B54708' : colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13 }]}>
+          <Text style={[{ color: favorited ? palette.warning : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>
             {favorited ? t('inFavorites') : t('favoriteShort')}
           </Text>
         </Pressable>
@@ -261,7 +285,7 @@ export default function WorkspaceViewScreen() {
           style={[styles.actionBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
         >
           <Ionicons name="share-outline" size={16} color={colors.mutedForeground} />
-          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13 }]}>{t('exportBtn')}</Text>
+          <Text style={[{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>{t('exportBtn')}</Text>
         </Pressable>
         {/* A saved deck's whole point is being projected again — the workspace
             is where a teacher returns to it the morning of the lesson. */}
@@ -275,7 +299,7 @@ export default function WorkspaceViewScreen() {
             style={[styles.actionBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="tv-outline" size={16} color="#0369A1" />
-            <Text style={[{ color: '#0369A1', fontFamily: 'Cairo_500Medium', fontSize: 13 }]}>
+            <Text style={[{ color: '#0369A1', fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>
               {t('presentOnScreen')}
             </Text>
           </Pressable>
@@ -293,7 +317,7 @@ export default function WorkspaceViewScreen() {
             style={[styles.actionBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="tv-outline" size={16} color="#4F46E5" />
-            <Text style={[{ color: '#4F46E5', fontFamily: 'Cairo_500Medium', fontSize: 13 }]}>
+            <Text style={[{ color: '#4F46E5', fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>
               {lang === 'ar' ? 'الحصة' : 'Class screen'}
             </Text>
           </Pressable>
@@ -313,17 +337,17 @@ export default function WorkspaceViewScreen() {
             {t('noContentAvailable')}
           </Text>
         ) : kind === 'lesson' ? (
-          <LessonView plan={content as LessonPlanOutput} colors={colors} isRTL={isRTL} t={t} accent={accent} />
+          <LessonView plan={content as LessonPlanOutput} colors={colors} isRTL={docRTL} t={docT} accent={accent} />
         ) : kind === 'activity' ? (
-          <ActivityView activity={content as ActivityOutput} colors={colors} isRTL={isRTL} t={t} accent={accent} isAr={isAr} />
+          <ActivityView activity={content as ActivityOutput} colors={colors} isRTL={docRTL} t={docT} accent={accent} isAr={isAr} />
         ) : kind === 'worksheet' ? (
-          <WorksheetView ws={content as WorksheetOutput} colors={colors} isRTL={isRTL} t={t} accent={accent} />
+          <WorksheetView ws={content as WorksheetOutput} lessonId={item.formState?.lessonId} colors={colors} isRTL={docRTL} t={docT} accent={accent} />
         ) : kind === 'flow' ? (
-          <FlowView flow={content as unknown as LessonFlowOutput} colors={colors} isRTL={isRTL} lang={lang} accent={accent} />
+          <FlowView flow={content as unknown as LessonFlowOutput} colors={colors} isRTL={docRTL} lang={docLang} accent={accent} />
         ) : kind === 'slides' || kind === 'prompt-slides' ? (
-          <SlidesDeckView deck={content as ClassroomActivity} colors={colors} isRTL={isRTL} isAr={isAr} accent={accent} />
+          <SlidesDeckView deck={content as ClassroomActivity} colors={colors} isRTL={docRTL} isAr={isAr} accent={accent} />
         ) : (
-          <QuizView quiz={content as QuizOutput} colors={colors} isRTL={isRTL} t={t} accent={accent} lang={lang} />
+          <QuizView quiz={content as QuizOutput} colors={colors} isRTL={docRTL} t={docT} accent={accent} lang={docLang} />
         )}
 
         {/* The same «من الكتاب المدرسي» figures the export appendix prints,
@@ -355,6 +379,7 @@ export default function WorkspaceViewScreen() {
       onCopy={handleCopy}
       onPDF={handlePDF}
       onWord={handleWord}
+      copyChoice={(kind === 'quiz' || kind === 'worksheet') && content ? { value: docCopy, onChange: setDocCopy } : undefined}
       isRTL={isRTL}
       loadingPDF={loadingPDF}
       loadingWord={loadingWord}
@@ -363,6 +388,22 @@ export default function WorkspaceViewScreen() {
     <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
     </View>
   );
+}
+
+function parseContent(raw: string): unknown {
+  try { return JSON.parse(raw); } catch { return null; }
+}
+
+/**
+ * The kind a material is rendered, exported and edited as.
+ *
+ * Normally just `item.type`. The exception is every activity saved before
+ * the workspace could render one: those went in as `'lesson'` because the
+ * honest type crashed the viewer. They are still in teachers' workspaces, so
+ * the shape decides when the stored type says lesson — see materialShape.ts.
+ */
+function viewKind(item: SavedMaterial, content: unknown): SavedMaterial['type'] {
+  return item.type === 'lesson' && looksLikeActivityContent(content) ? 'activity' : item.type;
 }
 
 // ─── Lesson Plan renderer ─────────────────────────────────────────────────────
@@ -393,10 +434,10 @@ function LessonView({ plan, colors, isRTL, t, accent }: {
               ? val.map((item: string, i: number) => (
                 <View key={i} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, marginBottom: 6, alignItems: 'flex-start' }]}>
                   <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: accent, marginTop: 7, flexShrink: 0 }} />
-                  <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{item}</Text>
+                  <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{item}</Text>
                 </View>
               ))
-              : <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }]}>{val as string}</Text>
+              : <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: isRTL ? 'right' : 'left' }]}>{val as string}</Text>
             }
           </ContentSection>
         );
@@ -433,17 +474,17 @@ function ActivityView({ activity, colors, isRTL, t, accent, isAr }: {
           },
         ]}
       >
-        <Text style={[{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 11, marginBottom: 4, textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 11, marginBottom: 4, textAlign: isRTL ? 'right' : 'left' }]}>
           {isAr ? 'الهدف' : 'Objective'}
         </Text>
-        <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: isRTL ? 'right' : 'left' }]}>
           {activity.objective}
         </Text>
         <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 12, marginTop: 10 }]}>
           {[activity.groupSize, `${activity.totalDuration} ${t('min')}`, activityTypeLabel(activity.activityType, t)]
             .filter(Boolean)
             .map(label => (
-              <Text key={label} style={{ fontSize: 12, color: accent, fontFamily: 'Cairo_500Medium' }}>
+              <Text key={label} style={{ fontSize: 12, color: accent, fontFamily: 'ReadexPro_500Medium' }}>
                 {label}
               </Text>
             ))}
@@ -455,7 +496,7 @@ function ActivityView({ activity, colors, isRTL, t, accent, isAr }: {
           {activity.materials.map((m, i) => (
             <View key={i} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, marginBottom: 6, alignItems: 'flex-start' }]}>
               <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: accent, marginTop: 7, flexShrink: 0 }} />
-              <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{m}</Text>
+              <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{m}</Text>
             </View>
           ))}
         </ContentSection>
@@ -465,7 +506,7 @@ function ActivityView({ activity, colors, isRTL, t, accent, isAr }: {
         <View style={{ marginBottom: 16 }}>
           <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, marginBottom: 8 }]}>
             <Ionicons name="list-outline" size={15} color={accent} />
-            <Text style={[{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: isRTL ? 'right' : 'left' }]}>
+            <Text style={[{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: isRTL ? 'right' : 'left' }]}>
               {t('sectionActivitySteps')}
             </Text>
           </View>
@@ -476,16 +517,16 @@ function ActivityView({ activity, colors, isRTL, t, accent, isAr }: {
             >
               <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 10, marginBottom: 8 }]}>
                 <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: accent, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Text style={{ color: '#fff', fontSize: 12, fontFamily: 'Cairo_700Bold' }}>{step.stepNumber ?? i + 1}</Text>
+                  <Text style={{ color: '#fff', fontSize: 12, fontFamily: 'ReadexPro_700Bold' }}>{step.stepNumber ?? i + 1}</Text>
                 </View>
-                <Text style={[{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>
+                <Text style={[{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>
                   {step.title}
                 </Text>
                 <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18 }]}>
                   {step.durationMin} {t('activityMin')}
                 </Text>
               </View>
-              <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 19, textAlign: isRTL ? 'right' : 'left' }]}>
+              <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 22, textAlign: isRTL ? 'right' : 'left' }]}>
                 {step.description}
               </Text>
             </View>
@@ -498,7 +539,7 @@ function ActivityView({ activity, colors, isRTL, t, accent, isAr }: {
           {activity.teacherTips.map((tip, i) => (
             <View key={i} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, marginBottom: 6, alignItems: 'flex-start' }]}>
               <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: accent, marginTop: 7, flexShrink: 0 }} />
-              <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{tip}</Text>
+              <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{tip}</Text>
             </View>
           ))}
         </ContentSection>
@@ -506,7 +547,7 @@ function ActivityView({ activity, colors, isRTL, t, accent, isAr }: {
 
       {!!activity.differentiation && (
         <ContentSection title={t('sectionDifferentiation')} icon="layers-outline" isRTL={isRTL} accent={accent} colors={colors}>
-          <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: isRTL ? 'right' : 'left' }]}>
             {activity.differentiation}
           </Text>
         </ContentSection>
@@ -514,7 +555,7 @@ function ActivityView({ activity, colors, isRTL, t, accent, isAr }: {
 
       {!!activity.assessment && (
         <ContentSection title={t('sectionAssessment')} icon="checkmark-done-outline" isRTL={isRTL} accent={accent} colors={colors}>
-          <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: isRTL ? 'right' : 'left' }]}>
             {activity.assessment}
           </Text>
         </ContentSection>
@@ -525,29 +566,62 @@ function ActivityView({ activity, colors, isRTL, t, accent, isAr }: {
 
 // ─── Worksheet renderer ───────────────────────────────────────────────────────
 
-function WorksheetView({ ws, colors, isRTL, t, accent }: {
-  ws: WorksheetOutput; colors: any; isRTL: boolean; t: any; accent: string;
+function WorksheetView({ ws, lessonId, colors, isRTL, t, accent }: {
+  ws: WorksheetOutput; lessonId?: string; colors: any; isRTL: boolean; t: any; accent: string;
 }) {
   return (
     <>
-      <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginBottom: 16, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }]}>
+      <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 16, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }]}>
         {ws.instructions}
       </Text>
+      {ws.lab && (
+        <ContentSection title={t('virtualLabTitle')} icon="flask-outline" isRTL={isRTL} accent={accent} colors={colors}>
+          <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginBottom: 6, textAlign: isRTL ? 'right' : 'left' }}>{ws.lab.simName}</Text>
+          <Pressable
+            onPress={() => { trackEvent('virtual_lab_opened', { ...(lessonId ? { lessonId } : {}), surface: 'workspace' }); void openExternal(ws.lab!.url); }}
+            accessibilityRole="link"
+            accessibilityLabel={`${t('virtualLabOpen')} — ${ws.lab.attribution}`}
+          >
+            <Text style={{ color: accent, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textDecorationLine: 'underline', textAlign: isRTL ? 'right' : 'left' }}>{ws.lab.url}</Text>
+          </Pressable>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 6, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>{ws.lab.attribution}</Text>
+          {ws.lab.steps.map((step, i) => (
+            <View key={i} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, marginBottom: 4, alignItems: 'flex-start' }}>
+              <Text style={{ color: accent, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, width: 22 }}>{i + 1}.</Text>
+              <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>{step}</Text>
+            </View>
+          ))}
+        </ContentSection>
+      )}
+      {ws.workedExample && (
+        <ContentSection title={t('workedExampleTitle')} icon="create-outline" isRTL={isRTL} accent={accent} colors={colors}>
+          <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginBottom: 6, textAlign: isRTL ? 'right' : 'left' }}>{ws.workedExample.problem}</Text>
+          {ws.workedExample.steps.map((step, i) => (
+            <View key={i} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, marginBottom: 4, alignItems: 'flex-start' }}>
+              <Text style={{ color: accent, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, width: 22 }}>{i + 1}.</Text>
+              <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>{step}</Text>
+            </View>
+          ))}
+          {!!ws.workedExample.selfExplain && (
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>{ws.workedExample.selfExplain}</Text>
+          )}
+        </ContentSection>
+      )}
       {ws.sections.map(sec => (
         <View key={sec.title} style={{ marginBottom: 20 }}>
-          <Text style={[{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, marginBottom: 10, textAlign: isRTL ? 'right' : 'left' }]}>{sec.title}</Text>
+          <Text style={[{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, marginBottom: 10, textAlign: isRTL ? 'right' : 'left' }]}>{sec.title}</Text>
           {sec.questions.map((q, i) => (
             <View key={i} style={[{ backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1, borderRadius: colors.radius, padding: 14, marginBottom: 8, flexDirection: isRTL ? 'row-reverse' : 'row', gap: 10 }]}>
-              <Text style={[{ color: accent, fontFamily: 'Cairo_600SemiBold', fontSize: 14, width: 20 }]}>{i + 1}.</Text>
+              <Text style={[{ color: accent, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, width: 20 }]}>{i + 1}.</Text>
               <View style={{ flex: 1 }}>
-                <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 19, textAlign: isRTL ? 'right' : 'left' }]}>{q.text}</Text>
+                <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 22, textAlign: isRTL ? 'right' : 'left' }]}>{q.text}</Text>
                 {q.options?.map(o => (
                   <View key={o} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginTop: 6 }]}>
                     <View style={{ width: 14, height: 14, borderRadius: 7, borderWidth: 1.5, borderColor: colors.border, flexShrink: 0 }} />
-                    <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, flex: 1 }]}>{o}</Text>
+                    <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, flex: 1 }]}>{o}</Text>
                   </View>
                 ))}
-                <Text style={[{ color: accent, fontFamily: 'Cairo_500Medium', fontSize: 11, marginTop: 8, textAlign: isRTL ? 'right' : 'left' }]}>{q.points} {t('pts')}</Text>
+                <Text style={[{ color: accent, fontFamily: 'ReadexPro_500Medium', fontSize: 11, marginTop: 8, textAlign: isRTL ? 'right' : 'left' }]}>{q.points} {t('pts')}</Text>
               </View>
             </View>
           ))}
@@ -557,8 +631,13 @@ function WorksheetView({ ws, colors, isRTL, t, accent }: {
         <ContentSection title={t('answerKeyTitle')} icon="key-outline" isRTL={isRTL} accent={accent} colors={colors}>
           {ws.answerKey.map(item => (
             <View key={item.num} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, marginBottom: 6, alignItems: 'flex-start' }]}>
-              <Text style={{ color: accent, fontFamily: 'Cairo_600SemiBold', fontSize: 13, width: 22 }}>{item.num}.</Text>
-              <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>{item.answer}</Text>
+              <Text style={{ color: accent, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, width: 22 }}>{item.num}.</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' }}>{item.answer}</Text>
+                {item.solution?.map((line, li) => (
+                  <Text key={li} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>{`${li + 1}) ${line}`}</Text>
+                ))}
+              </View>
             </View>
           ))}
         </ContentSection>
@@ -580,15 +659,15 @@ function QuizView({ quiz, colors, isRTL, t, accent, lang }: {
   return (
     <>
       <View style={[{ backgroundColor: accent + '15', borderColor: accent + '40', borderWidth: 1, borderRadius: colors.radius, padding: 16, marginBottom: 16 }]}>
-        <Text style={[{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 16, marginBottom: 10, textAlign: isRTL ? 'right' : 'left' }]}>{quiz.title}</Text>
+        <Text style={[{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 16, marginBottom: 10, textAlign: isRTL ? 'right' : 'left' }]}>{quiz.title}</Text>
         <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: accent + '18', borderRadius: 20 }}>
             <Ionicons name="time-outline" size={12} color={accent} />
-            <Text style={{ color: accent, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>{quiz.duration} {t('min')}</Text>
+            <Text style={{ color: accent, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>{quiz.duration} {t('min')}</Text>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: accent + '18', borderRadius: 20 }}>
             <Ionicons name="star-outline" size={12} color={accent} />
-            <Text style={{ color: accent, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>{quiz.totalPoints} {t('pts')}</Text>
+            <Text style={{ color: accent, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>{quiz.totalPoints} {t('pts')}</Text>
           </View>
         </View>
       </View>
@@ -599,23 +678,23 @@ function QuizView({ quiz, colors, isRTL, t, accent, lang }: {
         <View key={q.id} style={[{ backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1, borderRadius: colors.radius, padding: 16, marginBottom: 12 }]}>
           <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginBottom: 10 }]}>
             <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: accent, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 12 }}>{i + 1}</Text>
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 12 }}>{i + 1}</Text>
             </View>
             <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: accent + '18' }}>
-              <Text style={{ color: accent, fontFamily: 'Cairo_500Medium', fontSize: 11 }}>{TYPE_LABEL[q.type] ?? q.type}</Text>
+              <Text style={{ color: accent, fontFamily: 'ReadexPro_500Medium', fontSize: 11 }}>{TYPE_LABEL[q.type] ?? q.type}</Text>
             </View>
             <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18 }}>{q.points} {t('pts')}</Text>
           </View>
-          <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, marginBottom: 10, textAlign: isRTL ? 'right' : 'left' }]}>{q.text}</Text>
+          <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginBottom: 10, textAlign: isRTL ? 'right' : 'left' }]}>{q.text}</Text>
           {q.options?.map((opt, oi) => (
             <View key={oi} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, padding: 10, marginBottom: 6, backgroundColor: colors.muted, borderRadius: 8 }]}>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, width: 20 }}>{optionLetter(oi, lang === 'ar')}.</Text>
-              <Text style={[{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }]}>{opt}</Text>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, width: 20 }}>{optionLetter(oi, lang === 'ar')}.</Text>
+              <Text style={[{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' }]}>{opt}</Text>
             </View>
           ))}
-          <View style={[{ padding: 10, marginTop: 4, backgroundColor: '#067647' + '15', borderRadius: 8, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }]}>
+          <View style={[{ padding: 10, marginTop: 4, backgroundColor: palette.success + '15', borderRadius: 8, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }]}>
             <Ionicons name="checkmark-circle" size={14} color="#067647" />
-            <Text style={[{ color: '#067647', fontFamily: 'Cairo_500Medium', fontSize: 12, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{t('answer')}: {q.correctAnswer}</Text>
+            <Text style={[{ color: palette.success, fontFamily: 'ReadexPro_500Medium', fontSize: 12, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{t('answer')}: {q.correctAnswer}</Text>
           </View>
         </View>
       ))}
@@ -673,7 +752,7 @@ function SlidesDeckView({ deck, colors, isRTL, isAr, accent }: {
 }) {
   return (
     <View style={{ gap: 10 }}>
-      <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 12, textAlign: isRTL ? 'right' : 'left' }}>
+      <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 12, textAlign: isRTL ? 'right' : 'left' }}>
         {isAr ? arCountPhrase(deck.slides.length, 'شريحة', 'شريحتان', 'شرائح') : `${deck.slides.length} slides`}
       </Text>
       {deck.slides.map(s => (
@@ -683,16 +762,16 @@ function SlidesDeckView({ deck, colors, isRTL, isAr, accent }: {
         >
           <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 10, marginBottom: 6 }}>
             <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: accent + '18', alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: accent, fontFamily: 'Cairo_700Bold', fontSize: 11 }}>{s.slideNumber}</Text>
+              <Text style={{ color: accent, fontFamily: 'ReadexPro_700Bold', fontSize: 11 }}>{s.slideNumber}</Text>
             </View>
-            <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 14, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 14, textAlign: isRTL ? 'right' : 'left' }}>
               {s.title}
             </Text>
             {s.durationSeconds > 0 && (
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 11 }}>{s.durationSeconds}s</Text>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 11 }}>{s.durationSeconds}s</Text>
             )}
           </View>
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: isRTL ? 'right' : 'left' }}>
             {s.content}
           </Text>
         </View>
@@ -716,7 +795,7 @@ function FlowView({ flow, colors, isRTL, lang, accent }: {
           {flow.objectives.map((obj, i) => (
             <View key={i} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start' }]}>
               <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: FLOW_NAVY, marginTop: 7, flexShrink: 0 }} />
-              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}>{obj}</Text>
+              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: isRTL ? 'right' : 'left' }}>{obj}</Text>
             </View>
           ))}
         </View>
@@ -727,15 +806,15 @@ function FlowView({ flow, colors, isRTL, lang, accent }: {
       icon: 'flame-outline', color: '#C2410C',
       render: () => (
         <View style={{ gap: 6 }}>
-          <Text style={{ color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 13, marginBottom: 4, textAlign: isRTL ? 'right' : 'left' }}>{flow.warmup.title}</Text>
+          <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, marginBottom: 4, textAlign: isRTL ? 'right' : 'left' }}>{flow.warmup.title}</Text>
           {flow.warmup.steps.map((s, i) => (
             <View key={i} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start', backgroundColor: colors.muted, borderRadius: 8, padding: 10 }]}>
               <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#C2410C', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 10 }}>{i + 1}</Text>
+                <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5, textAlign: isRTL ? 'right' : 'left' }}>{s.title}</Text>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 2, lineHeight: 19, textAlign: isRTL ? 'right' : 'left' }}>{s.description}</Text>
+                <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>{s.title}</Text>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, marginTop: 2, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>{s.description}</Text>
               </View>
             </View>
           ))}
@@ -747,15 +826,15 @@ function FlowView({ flow, colors, isRTL, lang, accent }: {
       icon: 'flash-outline', color: '#4F46E5',
       render: () => (
         <View style={{ gap: 6 }}>
-          <Text style={{ color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 13, marginBottom: 4, textAlign: isRTL ? 'right' : 'left' }}>{flow.activity.title}</Text>
+          <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, marginBottom: 4, textAlign: isRTL ? 'right' : 'left' }}>{flow.activity.title}</Text>
           {flow.activity.steps.map((s, i) => (
             <View key={i} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start', backgroundColor: colors.muted, borderRadius: 8, padding: 10 }]}>
               <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#4F46E5', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 10 }}>{i + 1}</Text>
+                <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5, textAlign: isRTL ? 'right' : 'left' }}>{s.title}</Text>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 2, lineHeight: 19, textAlign: isRTL ? 'right' : 'left' }}>{s.description}</Text>
+                <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>{s.title}</Text>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, marginTop: 2, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>{s.description}</Text>
               </View>
             </View>
           ))}
@@ -767,7 +846,7 @@ function FlowView({ flow, colors, isRTL, lang, accent }: {
       icon: 'pencil-outline', color: FLOW_TEAL,
       render: () => (
         <View style={{ backgroundColor: FLOW_TEAL + '10', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: FLOW_TEAL + '30' }}>
-          <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>{flow.guidedPractice}</Text>
+          <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' }}>{flow.guidedPractice}</Text>
         </View>
       ),
     },
@@ -779,9 +858,9 @@ function FlowView({ flow, colors, isRTL, lang, accent }: {
           {flow.worksheet.sections.flatMap(sec => sec.questions).slice(0, 5).map((q, i) => (
             <View key={i} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start', backgroundColor: colors.muted, borderRadius: 8, padding: 10 }]}>
               <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#6D28D9', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 10 }}>{i + 1}</Text>
+                <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
-              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}>{q.text}</Text>
+              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: isRTL ? 'right' : 'left' }}>{q.text}</Text>
             </View>
           ))}
         </View>
@@ -789,15 +868,15 @@ function FlowView({ flow, colors, isRTL, lang, accent }: {
     },
     {
       label: lang === 'ar' ? 'بطاقة الخروج' : 'Exit Ticket',
-      icon: 'ticket-outline', color: '#B54708',
+      icon: 'ticket-outline', color: palette.warning,
       render: () => (
         <View style={{ gap: 6 }}>
           {flow.exitTicket.questions.slice(0, 3).map((q, i) => (
             <View key={i} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start', backgroundColor: colors.muted, borderRadius: 8, padding: 10 }]}>
               <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#B54708', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 10 }}>{i + 1}</Text>
+                <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
-              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}>{q.text}</Text>
+              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: isRTL ? 'right' : 'left' }}>{q.text}</Text>
             </View>
           ))}
         </View>
@@ -811,7 +890,7 @@ function FlowView({ flow, colors, isRTL, lang, accent }: {
       <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' }]}>
         {[flow.grade, flow.subject, lang === 'ar' ? arCountPhrase(flow.duration, 'دقيقة', 'دقيقتان', 'دقائق') : `${flow.duration} min`].map(tag => (
           <View key={tag} style={{ backgroundColor: FLOW_TEAL + '15', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 }}>
-            <Text style={{ color: FLOW_TEAL, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>{tag}</Text>
+            <Text style={{ color: FLOW_TEAL, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>{tag}</Text>
           </View>
         ))}
       </View>
@@ -834,7 +913,7 @@ function ContentSection({ title, icon, isRTL, accent, colors, children }: {
     <View style={{ marginBottom: 16 }}>
       <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, marginBottom: 8 }]}>
         <Ionicons name={icon} size={15} color={accent} />
-        <Text style={[{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: isRTL ? 'right' : 'left' }]}>{title}</Text>
+        <Text style={[{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: isRTL ? 'right' : 'left' }]}>{title}</Text>
       </View>
       <View style={[{ backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1, borderRadius: colors.radius, padding: 14 }]}>
         {children}
@@ -848,7 +927,7 @@ const styles = StyleSheet.create({
   backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 8 },
   headerTitle: { fontSize: 22, marginBottom: 6, lineHeight: 30 },
   metaRow: { gap: 10, flexWrap: 'wrap' },
-  metaPill: { fontSize: 13, lineHeight: 21, opacity: 0.9 },
+  metaPill: { fontSize: 15, lineHeight: 24, opacity: 0.9 },
   actionBar: { flexDirection: 'row', padding: 12, paddingHorizontal: 20, borderBottomWidth: 1, gap: 16 },
   actionBtn: { alignItems: 'center', gap: 6, paddingVertical: 4 },
 });

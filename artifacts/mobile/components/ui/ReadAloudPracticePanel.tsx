@@ -69,11 +69,11 @@ function PassageQuestions({ questions }: { questions: readonly PracticeQuestion[
     <View style={{ gap: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: 14 }}>
       <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
         <Ionicons name="help-circle-outline" size={16} color={ACCENT} />
-        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>
           {t('practiceQuestionsTitle')}
         </Text>
         {answered > 0 ? (
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 12 }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>
             {t('practiceQuestionsScore', String(right), String(questions.length))}
           </Text>
         ) : null}
@@ -122,7 +122,7 @@ function PassageQuestions({ questions }: { questions: readonly PracticeQuestion[
                     ) : (
                       <View style={[styles.choiceDot, { borderColor: colors.border }]} />
                     )}
-                    <Text style={{ color: colors.foreground, fontSize: 13.5, flex: 1, textAlign: 'left', writingDirection: 'ltr' }}>
+                    <Text style={{ color: colors.foreground, fontSize: 14, flex: 1, textAlign: 'left', writingDirection: 'ltr' }}>
                       {c.label}
                     </Text>
                   </Pressable>
@@ -209,7 +209,7 @@ function PassageCard({ passage }: { passage: PracticePassage }) {
             size={20}
             color="#fff"
           />
-          <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+          <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
             {phase === 'recording'
               ? t('readAloudStop', formatDuration(elapsedMs))
               : phase === 'working'
@@ -232,7 +232,7 @@ function PassageCard({ passage }: { passage: PracticePassage }) {
           <Text
             style={{
               color: pct >= GOOD_ENOUGH * 100 ? '#15803D' : colors.foreground,
-              fontFamily: 'Cairo_600SemiBold',
+              fontFamily: 'ReadexPro_600SemiBold',
               fontSize: 16,
               textAlign: align,
             }}
@@ -272,7 +272,7 @@ export function ReadAloudPracticePanel({ lessonId, accent }: { lessonId: string;
     <View style={styles.section}>
       <View style={[styles.header, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Ionicons name="mic-outline" size={16} color={accent} />
-        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>
+        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
           {t('practiceTitle')}
         </Text>
       </View>
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 15 },
   card: { borderWidth: 1, borderRadius: 14, padding: 16, gap: 12 },
   credit: { fontSize: 11, lineHeight: 18 },
-  note: { fontSize: 12, lineHeight: 20, fontFamily: 'Almarai_400Regular' },
+  note: { fontSize: 13, lineHeight: 22, fontFamily: 'Almarai_400Regular' },
   recordBtn: {
     flexDirection: 'row',
     alignItems: 'center',

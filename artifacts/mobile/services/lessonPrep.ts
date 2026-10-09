@@ -30,10 +30,8 @@ import { getBookForLesson } from './knowledgeBase.ts';
 import type { AIRequest } from './ai/AIService.ts';
 import {
   buildAdaptationsDirective,
-  buildGeneratorContext,
-  generatorLessonId,
-  generatorUnitId,
   getUnitPriorKnowledge,
+  nccdUnitId,
   resolveGeneratorGrounding,
 } from './kbContext.ts';
 
@@ -151,6 +149,31 @@ export function scopePickerParams(
   const subjectIdx = getPickerSubjects().findIndex(s => s.id === subjectId);
   if (gradeIdx < 0 || subjectIdx < 0) return null;
   return { gradeIdx: String(gradeIdx), subjectIdx: String(subjectIdx) };
+}
+
+/**
+ * Route params that open a generator on the teacher's current lesson — the
+ * tools tab's prefill.
+ *
+ * It used to send `topic` and `subjectIdx` and leave the grade to
+ * `scopeFromParams`, which re-grounds a bare title. 107 titles repeat across
+ * the grade 1–10 books, so a Grade 9 pick could open the tool on Grade 10 and
+ * generate for the wrong class. The pick already knows its lesson, or at
+ * least its grade and subject, so those are sent as positions — computed
+ * against the same bare picker lists the receiving screens rebuild.
+ *
+ * A pick saved before grades existed has neither, and keeps the old
+ * subject-only behaviour.
+ */
+export function pickPrefillParams(
+  pick: { topic: string; lessonId?: string | null; gradeId?: string; subjectId?: string } | null | undefined,
+  lang: 'ar' | 'en',
+): { topic?: string; gradeIdx?: string; subjectIdx?: string } {
+  if (!pick?.topic) return {};
+  const scoped = lessonPickerParams(pick.lessonId, lang) ?? scopePickerParams(pick.gradeId, pick.subjectId);
+  if (scoped) return { topic: pick.topic, ...scoped };
+  const subjectIdx = pick.subjectId ? getPickerSubjects().findIndex(s => s.id === pick.subjectId) : -1;
+  return subjectIdx >= 0 ? { topic: pick.topic, subjectIdx: String(subjectIdx) } : { topic: pick.topic };
 }
 
 /**
@@ -367,8 +390,12 @@ export function buildLessonPrepRequest(args: {
   const context = resolveLessonPrepContext(args.lessonId, args.lang);
   if (!context) return null;
 
+  // Grounded on the lesson in hand, not its title: 571 of 679 lessons with a
+  // repeated title used to resolve to another one (G10 «النسب المثلثية» → G9).
   const grounding = resolveGeneratorGrounding(context.topic, args.lang, {
     teacherObjectives: context.objectives || undefined,
+    lessonId: context.lessonId,
+    scope: { gradeId: context.gradeId, subjectId: context.subjectId },
   });
   const additionalContext = [
     grounding.grounded ? grounding.context : grounding.ungroundedNote,
@@ -427,6 +454,10 @@ export function buildGapWarmupRequest(
   if (!objective || !context) return null;
   const objectiveText =
     (lang === 'ar' ? objective.descriptionAr : objective.description) || objective.description;
+  const grounding = resolveGeneratorGrounding(context.topic, lang, {
+    lessonId: context.lessonId,
+    scope: { gradeId: context.gradeId, subjectId: context.subjectId },
+  });
   return {
     context,
     objectiveText,
@@ -439,9 +470,9 @@ export function buildGapWarmupRequest(
       duration: 8,
       activityVariant: 'warmup',
       objectives: objectiveText,
-      additionalContext: buildGeneratorContext(context.topic, lang),
-      unitId: generatorUnitId(context.topic, lang),
-      lessonId: generatorLessonId(context.topic, lang),
+      additionalContext: grounding.grounded ? grounding.context : grounding.ungroundedNote,
+      unitId: nccdUnitId(grounding.lesson?.unitId),
+      lessonId: grounding.lesson?.id,
       contextSource: 'curriculum',
     },
   };

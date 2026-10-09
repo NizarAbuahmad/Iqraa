@@ -15,7 +15,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { looksLikeActivityContent } from '../materialShape.ts';
+import { isEditableMaterial, looksLikeActivityContent } from '../materialShape.ts';
 import type {
   ActivityOutput,
   LessonPlanOutput,
@@ -94,6 +94,21 @@ describe('looksLikeActivityContent', () => {
   it('says no to anything that is not a material at all', () => {
     for (const junk of [null, undefined, '', 0, [], {}, 'activity']) {
       assert.equal(looksLikeActivityContent(junk), false, `${JSON.stringify(junk)} passed`);
+    }
+  });
+});
+
+describe('isEditableMaterial', () => {
+  it('refuses a saved virtual-lab sheet — editing it corrupts it and skips its review', () => {
+    assert.equal(isEditableMaterial({ formState: { lessonId: 'kbl-chem-s1-nccd-u1_lab', materialKind: 'virtual-lab' } }), false);
+  });
+
+  it('allows every other material, including ones saved without a formState', () => {
+    for (const formState of [
+      { materialKind: 'worksheet' }, { materialKind: 'quiz' }, { materialKind: 'homework' },
+      { materialKind: 'lesson' }, { lessonId: 'x' }, {}, undefined, null,
+    ]) {
+      assert.equal(isEditableMaterial({ formState }), true, JSON.stringify(formState));
     }
   });
 });

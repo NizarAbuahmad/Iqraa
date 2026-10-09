@@ -9,6 +9,11 @@ import assert from 'node:assert/strict';
 import {
   hasRenderableMath,
   isolateForeignRuns,
+  groupRtlSegments,
+  groupLtrSegments,
+  bindOperators,
+  isArabicLed,
+  isLatinProseLine,
   normalizeExponents,
   mathLineToHtml,
   mathLineToUnicode,
@@ -367,5 +372,251 @@ describe('normalizeExponents', () => {
     // promptAr for se-e1 is «2³ · 2⁴»; its canonical eq is «2^3 · 2^4».
     assert.equal(normalizeExponents('2^3 · 2^4'), '2³ · 2⁴');
     assert.equal(normalizeExponents('(2^3 · 2^{-1}) / 2'), '(2³ · 2⁻¹) / 2');
+  });
+});
+
+// The curriculum data writes every minus as U+2212, not the ASCII hyphen. With
+// only `-` in the run class, «y = 2x−5» was cut at the sign and bidi reordered
+// the pieces, so a worked example reached the projector as «7x+12=0−x²».
+describe('isolateForeignRuns — the U+2212 minus sign', () => {
+  const strip = (s: string) => s.replace(/[⁦⁩]/g, '');
+
+  it('keeps a worked example whole, one isolate per side of the Arabic «و»', () => {
+    const line = 'y = 2x−5 و y = x²−5x+7: 2x−5 = x²−5x+7 → x²−7x+12=0';
+    const out = isolateForeignRuns(line);
+    assert.equal(
+      out,
+      '⁦y = 2x−5⁩ و ⁦y = x²−5x+7⁩: ⁦2x−5 = x²−5x+7 → x²−7x+12=0⁩',
+    );
+    assert.equal(strip(out), line);
+  });
+
+  it('keeps a negative energy expression whole', () => {
+    const out = isolateForeignRuns('طاقة المستوى: E = −13.6 / n² إلكترون فولت');
+    assert.equal(out, 'طاقة المستوى: ⁦E = −13.6 / n²⁩ إلكترون فولت');
+  });
+
+  it('treats a number and a U+2212 minus as notation, like the ASCII hyphen', () => {
+    assert.equal(isolateForeignRuns('الناتج 7−3 هنا'), 'الناتج ⁦7−3⁩ هنا');
+  });
+});
+
+// The bank writes powers as `3^{2x}` and `2^{x+3}`. The parser only knew
+// `^2` and `^(2x)`, so a braced exponent fell through to plain text and
+// printed with its braces on the worksheet screen. (Found by running the app
+// 2026-10-05: «4^x = 2^{x+3}» rendered as «2^{x+3}4^x».)
+describe('parseMathLine — braced exponents', () => {
+  it('reads ^{x+3} as one exponent, braces dropped', () => {
+    const n = parseMathLine('2^{x+3}');
+    assert.deepEqual(n, [{ kind: 'sup', base: '2', exp: 'x+3' }]);
+  });
+
+  it('reads ^{2x} and keeps the text after it', () => {
+    assert.deepEqual(parseMathLine('3^{2x} = 81'), [
+      { kind: 'sup', base: '3', exp: '2x' },
+      { kind: 'text', text: ' = 81' },
+    ]);
+  });
+
+  it('handles a braced and a bare exponent on one line', () => {
+    assert.deepEqual(parseMathLine('4^x = 2^{x+3}'), [
+      { kind: 'sup', base: '4', exp: 'x' },
+      { kind: 'text', text: ' = ' },
+      { kind: 'sup', base: '2', exp: 'x+3' },
+    ]);
+  });
+
+  it('reads a braced exponent after a parenthesised group', () => {
+    assert.deepEqual(parseMathLine('(2^2)^{x}'), [
+      { kind: 'sup', base: '(2^2)', exp: 'x' },
+    ]);
+  });
+
+  it('leaves an unclosed brace as plain text', () => {
+    const n = parseMathLine('2^{x+3');
+    assert.ok(!n.some(x => x.kind === 'sup'));
+    assert.equal(n.map(x => (x.kind === 'text' ? x.text : '')).join(''), '2^{x+3');
+  });
+
+  it('renders HTML and unicode without braces', () => {
+    assert.equal(mathLineToHtml('2^{x+3}'), '2<sup>x+3</sup>');
+    assert.equal(mathLineToUnicode('3^{2}'), '3²');
+  });
+});
+
+describe('isolateForeignRuns — braces stay inside the run', () => {
+  it('wraps «3^{2x} = 81» in one isolate, not three', () => {
+    const out = isolateForeignRuns('أوجد حل المعادلة: 3^{2x} = 81');
+    assert.equal(out, 'أوجد حل المعادلة: ⁦3^{2x} = 81⁩');
+  });
+});
+
+// MathText lays an Arabic-led line out with flex-direction row-reverse so the
+// prose reads right to left. That reversed EVERY node, including the pieces of
+// one equation: «أوجد حل المعادلة: 3^x = 27» drew as «= 27 | 3ˣ | prose», the
+// equation back to front. The fix keeps each equation as one left-to-right
+// group and reverses only between Arabic phrases and equations.
+describe('groupRtlSegments — one equation is one left-to-right group', () => {
+  const prose = (text: string) => ({ kind: 'prose', text });
+  const kinds = (segs: ReturnType<typeof groupRtlSegments>) => segs.map(g => g.kind);
+
+  it('keeps «3^x = 27» together after the Arabic lead', () => {
+    const segs = groupRtlSegments(parseMathLine('أوجد حل المعادلة: 3^x = 27'));
+    assert.deepEqual(kinds(segs), ['prose', 'math']);
+    assert.deepEqual(segs[0], prose('أوجد حل المعادلة:'));
+    const m = segs[1];
+    assert.ok(m.kind === 'math');
+    assert.deepEqual(m.nodes.map(n => n.kind), ['sup', 'text']);
+    assert.equal(flat(m.nodes).trim(), '3^x = 27');
+  });
+
+  it('puts the colon with the Arabic, not at the front of the equation', () => {
+    const segs = groupRtlSegments(parseMathLine('أوجد حل المعادلة: 3^x = 27'));
+    assert.ok(segs[0].kind === 'prose' && segs[0].text.endsWith(':'));
+  });
+
+  it('splits an equation sitting between two Arabic phrases', () => {
+    const segs = groupRtlSegments(parseMathLine('إذا كان x^2 = 4 فإن س موجبة'));
+    assert.deepEqual(kinds(segs), ['prose', 'math', 'prose']);
+    assert.equal(segs[0].kind === 'prose' && segs[0].text, 'إذا كان');
+    assert.equal(segs[2].kind === 'prose' && segs[2].text, 'فإن س موجبة');
+  });
+
+  it('keeps «27 = 3^3» whole in the half-solved step line', () => {
+    const segs = groupRtlSegments(parseMathLine('1) نكتب 27 بالأساس 3: 27 = 3^3'));
+    const maths = segs.filter(g => g.kind === 'math');
+    const last = maths[maths.length - 1];
+    assert.ok(last.kind === 'math');
+    assert.ok(flat(last.nodes).replace(/\s/g, '').endsWith('27=3^3'));
+  });
+
+  it('returns a single math group for a line with no Arabic', () => {
+    const segs = groupRtlSegments(parseMathLine('3^x = 27'));
+    assert.deepEqual(kinds(segs), ['math']);
+  });
+
+  it('drops nothing: segments reassemble to the original text', () => {
+    const line = 'بسّط: x^2 + 1 ثم عوّض x = 2';
+    const segs = groupRtlSegments(parseMathLine(line));
+    const back = segs.map(g => (g.kind === 'prose' ? g.text : flat(g.nodes))).join('');
+    assert.equal(back.replace(/\s/g, ''), line.replace(/\s/g, ''));
+  });
+});
+
+// A numbered step line — «1) نكتب 27 بالأساس 3: 27 = 3^3» — opens with its
+// marker, not Arabic, so the old /^\s*Arabic/ test called it a left-to-right
+// line and the browser's bidi scrambled it («= 27 :3 ...»; seen in the app).
+describe('isArabicLed — a list marker does not make a line Latin', () => {
+  it('true for plain Arabic and for Arabic after a marker', () => {
+    for (const s of ['أوجد حل المعادلة: 3^x = 27', '1) نكتب 27', '2. نعوّض', '(3) اجمع', '١) نكتب', '  - اكتب']) {
+      assert.equal(isArabicLed(s), true, s);
+    }
+  });
+  it('false for an equation or Latin-led line', () => {
+    for (const s of ['3^x = 27', 'x = 3 ثم', '12 + 4 = 16', '(x+1)/2', 'f(x) = 2x', '']) {
+      assert.equal(isArabicLed(s), false, s);
+    }
+  });
+});
+
+// On a phone-width projector «Solve the equation: 2^x = 32» broke between the
+// raised exponent and « = 32» (2ˣ on one line, = 32 on the next), and
+// «Write 32 with base 2: 32 = 2^5» left «2^5» alone on its own line. MathText's
+// left-to-right row wrapped at every node boundary. The fix glues an equation's
+// neighbouring numbers and operators to it, so the row can only break between
+// prose and an equation, never inside one.
+describe('groupLtrSegments — a wrap never lands inside an equation', () => {
+  const shape = (line: string) =>
+    groupLtrSegments(parseMathLine(line)).map(g =>
+      g.kind === 'prose' ? `P:${g.text}` : `M:${flat(g.nodes).replace(/\s+/g, ' ').trim()}`);
+
+  it('keeps « = 32» with the exponent that precedes it', () => {
+    assert.deepEqual(shape('Solve the equation: 2^x = 32'), [
+      'P:Solve the equation:',
+      'M:2^x = 32',
+    ]);
+  });
+
+  it('pulls the numbers before the exponent into the equation', () => {
+    assert.deepEqual(shape('Write 32 with base 2: 32 = 2^5'), [
+      'P:Write 32 with base',
+      'M:2: 32 = 2^5',
+    ]);
+  });
+
+  it('stops at the first prose word after the equation', () => {
+    assert.deepEqual(shape('2^x = 32 is the solution'), ['M:2^x = 32', 'P:is the solution']);
+  });
+
+  it('keeps two exponents on one line as a single equation', () => {
+    assert.deepEqual(shape('Substitute: 4^x = 2^{x+3}'), ['P:Substitute:', 'M:4^x = 2^(x+3)']);
+  });
+
+  it('returns one math group for a pure equation', () => {
+    const segs = groupLtrSegments(parseMathLine('3^x = 27'));
+    assert.deepEqual(segs.map(g => g.kind), ['math']);
+  });
+
+  it('returns plain prose untouched', () => {
+    assert.deepEqual(shape('Read the passage carefully'), ['P:Read the passage carefully']);
+  });
+
+  it('does not treat the article «a» as a variable', () => {
+    assert.deepEqual(shape('Write a 2^x'), ['P:Write a', 'M:2^x']);
+  });
+
+  it('drops nothing: segments reassemble to the original text', () => {
+    const line = 'Then 3^2 + 4^2 = 25 so the triangle is right-angled';
+    const back = groupLtrSegments(parseMathLine(line))
+      .map(g => (g.kind === 'prose' ? g.text : flat(g.nodes))).join('');
+    assert.equal(back.replace(/\s/g, ''), line.replace(/\s/g, '').replace(/\^/g, '^'));
+  });
+});
+
+// «…so the exponents are equal: x = 3» wrapped as «x» / «= 3» on a phone-width
+// slide. A plain-text line has no nodes to group, so the spaces around an
+// operator become non-breaking: the browser may still break the sentence, but
+// not the equation.
+describe('bindOperators — a plain line never breaks around an operator', () => {
+  const NB = '\u00A0';
+  it('binds the spaces around = to their operands', () => {
+    assert.equal(bindOperators('are equal: x = 3'), `are equal: x${NB}=${NB}3`);
+  });
+  it('binds each operator in a chain', () => {
+    assert.equal(bindOperators('2x + 3 = 11'), `2x${NB}+${NB}3${NB}=${NB}11`);
+  });
+  it('covers the comparison and times signs', () => {
+    assert.equal(bindOperators('a ≤ b × c'), `a${NB}≤${NB}b${NB}×${NB}c`);
+  });
+  it('leaves a spaced hyphen or dash alone: that is punctuation', () => {
+    assert.equal(bindOperators('Step one - read the text'), 'Step one - read the text');
+  });
+  it('leaves ordinary spaces between words alone', () => {
+    assert.equal(bindOperators('the bases are equal'), 'the bases are equal');
+  });
+  it('is idempotent and a no-op on empty text', () => {
+    const once = bindOperators('x = 3');
+    assert.equal(bindOperators(once), once);
+    assert.equal(bindOperators(''), '');
+  });
+});
+
+/**
+ * A chat bubble laid a URL or an English credit out right-to-left, so the
+ * lab sheet's link read «//phet.colorado.edu/…:https» and the credit's words
+ * came out in reverse order. A line with no Arabic in it that is not maths is
+ * shown left-to-right; maths keeps its own layout.
+ */
+describe('isLatinProseLine', () => {
+  it('takes a URL and an English credit', () => {
+    assert.equal(isLatinProseLine('https://phet.colorado.edu/sims/html/vector-addition/latest/vector-addition_ar.html'), true);
+    assert.equal(isLatinProseLine('PhET Interactive Simulations, University of Colorado Boulder — phet.colorado.edu (CC BY-NC 4.0)'), true);
+  });
+  it('leaves Arabic, mixed and maths lines alone', () => {
+    assert.equal(isLatinProseLine('هذه ورقة المختبر الافتراضي'), false);
+    assert.equal(isLatinProseLine('افتح الرابط https://phet.colorado.edu'), false);
+    assert.equal(isLatinProseLine('x^2 + 3 = 7'), false);
+    assert.equal(isLatinProseLine('٢٠ ÷ ٤ = ٥'), false);
+    assert.equal(isLatinProseLine('   '), false);
   });
 });

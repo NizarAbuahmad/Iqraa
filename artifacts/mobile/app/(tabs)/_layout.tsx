@@ -18,9 +18,10 @@ import { NotificationBell } from '@/components/ui/NotificationBell';
 import { listThreads } from '@/services/messaging';
 import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { badgeLabel, setUnreadMessages, useUnreadMessages } from '@/services/unreadMessages';
+import { ensureNotificationChannels, syncAppBadge } from '@/services/pushTokens';
 import { TranslationKey } from '@/services/i18n';
 import { HomeLessonPick, loadLessonPick, subscribeLessonPick } from '@/services/lessonContext';
-import { DEFAULT_ACTIVE_LESSON_ID } from '@/services/lessonCopilot';
+import { defaultLessonIdFor } from '@/services/lessonCopilot';
 import { lessonPickerParams, resolveLessonPrepContext, scopePickerParams } from '@/services/lessonPrep';
 
 /**
@@ -188,7 +189,7 @@ function ClassicTabLayout() {
     workspace both fall back to when there is none. Resolved here rather than
     in the palette so all three surfaces name the same lesson.
   */
-  const fallbackLesson = resolveLessonPrepContext(DEFAULT_ACTIVE_LESSON_ID, lang as 'ar' | 'en');
+  const fallbackLesson = resolveLessonPrepContext(defaultLessonIdFor(user?.teachingAssignments), lang as 'ar' | 'en');
   const activeLesson = lessonPick?.topic?.trim()
     ? {
         topic: lessonPick.topic.trim(),
@@ -218,6 +219,16 @@ function ClassicTabLayout() {
     void loadUnread();
   }, [loadUnread]);
   usePollingRefresh(loadUnread);
+  // The app icon shows the same number as the bell, so reading a thread here
+  // clears it there too (a chat push sets it while the app is closed).
+  useEffect(() => {
+    if (user) syncAppBadge(unread);
+  }, [user, unread]);
+  // Android channels, named in the app's language — see services/pushPolicy.ts.
+  const isSystemAdmin = user?.role === 'system_admin';
+  useEffect(() => {
+    if (user) void ensureNotificationChannels(lang, isSystemAdmin);
+  }, [user, lang, isSystemAdmin]);
 
   const tabEntries = buildTabEntries(isTeacher, isDesktop, unread);
 
@@ -225,6 +236,11 @@ function ClassicTabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        // The Tabs navigator now sits above the keyboard (root Stack's
+        // KeyboardSafeView), so an absolutely-positioned bar would ride up and
+        // eat the space the keyboard just left. Chat's composer drops its
+        // tab-bar padding to match (useKeyboardVisible in iqra.tsx).
+        tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.mutedForeground,
         tabBarStyle: {
@@ -251,7 +267,7 @@ function ClassicTabLayout() {
               style={[StyleSheet.absoluteFill, { backgroundColor: colors.card }]}
             />
           ) : null,
-        tabBarLabelStyle: { fontFamily: 'Cairo_600SemiBold', fontSize: 11 },
+        tabBarLabelStyle: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 11 },
       }}
     >
       {/*
@@ -333,7 +349,7 @@ function ClassicTabLayout() {
           backgroundColor: colors.background,
         }}
       >
-        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 18 }}>{t('appName')}</Text>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 18 }}>{t('appName')}</Text>
         {bell}
       </View>
     );

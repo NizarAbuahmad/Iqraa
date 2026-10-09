@@ -11,6 +11,7 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -124,10 +125,11 @@ export function ParticipantPickerSheet({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardSafeView>
       <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable style={[styles.sheet, { backgroundColor: colors.background }]} onPress={e => e.stopPropagation()}>
           <View style={[styles.head, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', flex: 1, textAlign: align }]}>
+            <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', flex: 1, textAlign: align }]}>
               {t('messagingPickMembers')}
             </Text>
             <Pressable onPress={onClose} hitSlop={10}>
@@ -199,7 +201,7 @@ export function ParticipantPickerSheet({
                         <Text
                           style={{
                             color: allPicked ? ACCENT : colors.foreground,
-                            fontFamily: 'Cairo_500Medium',
+                            fontFamily: 'ReadexPro_500Medium',
                             fontSize: 12,
                           }}
                           numberOfLines={1}
@@ -253,7 +255,7 @@ export function ParticipantPickerSheet({
                   </View>
                 ) : (
                   <View style={{ paddingVertical: 24, paddingHorizontal: 16, gap: 6 }}>
-                    <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: 'center' }]}>
+                    <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: 'center' }]}>
                       {t('messagingNoContactsTitle')}
                     </Text>
                     <Text
@@ -281,10 +283,10 @@ export function ParticipantPickerSheet({
                   >
                     <Ionicons name={checked ? 'checkbox' : 'square-outline'} size={20} color={checked ? ACCENT : colors.mutedForeground} />
                     <View style={{ flex: 1 }}>
-                      <Text style={{ color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }} numberOfLines={1}>
+                      <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }} numberOfLines={1}>
                         {item.firstName} {item.lastName}
                       </Text>
-                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }} numberOfLines={1}>
+                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }} numberOfLines={1}>
                         {item.role === 'student' ? t('roleStudent') : t('roleParent')} · {item.studentName}
                       </Text>
                     </View>
@@ -296,20 +298,21 @@ export function ParticipantPickerSheet({
 
           <View style={[styles.actions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Pressable onPress={onClose} style={styles.btn}>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>{t('cancel')}</Text>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>{t('cancel')}</Text>
             </Pressable>
             <Pressable
               onPress={() => onConfirm([...selected.values()])}
               disabled={selected.size === 0}
               style={[styles.btn, styles.confirmBtn, { backgroundColor: selected.size > 0 ? colors.primary : colors.muted }]}
             >
-              <Text style={{ color: selected.size > 0 ? colors.primaryForeground : colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>
+              <Text style={{ color: selected.size > 0 ? colors.primaryForeground : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>
                 {t('messagingAddSelected')} {selected.size > 0 ? `(${selected.size})` : ''}
               </Text>
             </Pressable>
           </View>
         </Pressable>
       </Pressable>
+      </KeyboardSafeView>
     </Modal>
   );
 }
@@ -319,12 +322,12 @@ const styles = StyleSheet.create({
   sheet: { maxHeight: '75%', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 16, gap: 12 },
   head: { alignItems: 'center', paddingHorizontal: 16 },
   title: { fontSize: 17 },
-  hint: { fontSize: 13, lineHeight: 21, paddingVertical: 28, paddingHorizontal: 16 },
+  hint: { fontSize: 15, lineHeight: 24, paddingVertical: 28, paddingHorizontal: 16 },
   emptyTitle: { fontSize: 14 },
   searchWrap: { alignItems: 'center', gap: 8, marginHorizontal: 16, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 10, borderWidth: 1 },
   // No explicit height: the row sizes to the input, and a fixed one clips
   // Cairo's Arabic descenders.
-  searchInput: { flex: 1, fontFamily: 'Almarai_400Regular', fontSize: 14, padding: 0 },
+  searchInput: { flex: 1, fontFamily: 'Almarai_400Regular', fontSize: 15, padding: 0 },
   classHint: { fontSize: 11, lineHeight: 16 },
   chipRow: { gap: 6, paddingHorizontal: 16 },
   chip: { alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14, borderWidth: 1 },

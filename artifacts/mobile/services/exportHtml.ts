@@ -21,9 +21,13 @@
  * and note this is the opposite of the rule in React Native components, where
  * `row-reverse` is correct because RN has no document direction to inherit.
  */
-import { labelAnswer, labelOption, labelOptionLine } from './optionLabels.ts';
+import { labelAnswerParts, labelOption, labelOptionLine } from './optionLabels.ts';
 import { arCountPhrase } from './arCount.ts';
+import { dateLocale } from './dateLabels.ts';
+import { quizInstructions, quizMarkRows, quizMarksTotal, quizStudentFields, quizTypeLabel } from './quizPaper.ts';
 import { isolateForeignRuns, normalizeExponents } from './mathRender.ts';
+import { labQrSvg } from './labQr.ts';
+import { displayObjective } from './objectiveDisplay.ts';
 import type {
   ActivityOutput,
   LessonFlowOutput,
@@ -44,17 +48,18 @@ import type {
 /**
  * The accent a printed document is built around.
  *
- * The same four colours the projector already uses per artifact type
- * (`buildWorksheetSlidesHTML` et al, and `deckTheme.ts`'s `slideTypeAccent`),
- * so a teacher who prints a worksheet and then projects it sees one product.
- * They were previously teal for everything except the activity, which had its
- * own orange and its own hand-built document to put it in.
+ * The same four colours the projector slides use (`buildWorksheetSlidesHTML`
+ * et al read them from here) and the app shows for each material
+ * (`MATERIAL_FILL` in constants/materialKind.ts, which this file can't import:
+ * it pulls in react-native), so a worksheet printed, projected and opened in
+ * موادي is one colour. Each is ≥ 5.2:1 under white and ≥ 4.8:1 as text on
+ * white; the old quiz amber was 2.15:1, and it numbered projected questions.
  */
 export const DOC_ACCENT = {
-  lesson: '#1B6B62',
-  worksheet: '#8B5CF6',
-  quiz: '#F59E0B',
-  activity: '#E67E22',
+  lesson: '#006D65',
+  worksheet: '#8A5A00',
+  quiz: '#B0284F',
+  activity: '#3F7A1E',
 } as const;
 
 /** Where the name-and-date block gets its rule, and every section its tint. */
@@ -155,7 +160,7 @@ function htmlBase(
       padding-bottom: 4px; margin-bottom: 8px;
       border-bottom: 1px solid ${accent}33;
     }
-    .body-text { font-size: 12.5px; line-height: 1.8; color: #374151; }
+    .body-text { font-size: 12.5px; line-height: 1.8; color: #374151; white-space: pre-line; }
     ul { padding-${isRTL ? 'right' : 'left'}: 18px; }
     li { margin-bottom: 5px; font-size: 12.5px; color: #374151; line-height: 1.6; }
     /* Question cards — a numbered badge instead of a bold full stop. */
@@ -171,6 +176,10 @@ function htmlBase(
       font-size: 11px; font-weight: 700; flex-shrink: 0;
     }
     .q-text { font-size: 12.5px; color: #111827; line-height: 1.6; flex: 1; }
+    /* A worksheet question that was written on several lines — a half-solved
+       one, steps given then blanks — keeps them. Opt-in per element: quizzes
+       share \`.q-text\` and are laid out as they always were. */
+    .q-break { white-space: pre-line; }
     .q-option {
       display: flex; flex-direction: row; gap: 8px; align-items: flex-start;
       margin-top: 5px; font-size: 12px; color: #4b5563;
@@ -194,6 +203,36 @@ function htmlBase(
     .answer-key .section-title { color: #15803d; border-color: #bbf7d0; }
     .answer-row { display: flex; flex-direction: row; gap: 8px; margin-bottom: 5px; font-size: 12px; }
     .answer-num { font-weight: 700; color: #15803d; min-width: 24px; }
+    .answer-body { flex: 1; }
+    /* A question's working, under its answer — teacher's half only. */
+    .solution { margin-top: 3px; padding-${isRTL ? 'right' : 'left'}: 18px; color: #4b5563; }
+    .solution li { font-size: 11.5px; margin-bottom: 2px; }
+    /* The key starts a fresh page so the paper can be printed without it, and
+       may then run to a second page: with working under every answer it is no
+       longer a block that fits on the end of the last one. */
+    .key-page { break-before: page; page-break-before: always; }
+    .key-page .answer-key { margin-top: 0; break-inside: auto; }
+    /* A worked example: studied, not answered — a tinted card, no number badge. */
+    .worked {
+      background: ${accent}0A; border: 1px solid ${accent}33; border-radius: 8px;
+      padding: 12px 14px; margin-bottom: 16px; break-inside: avoid;
+    }
+    .worked-label { font-family: ${isRTL ? "'Cairo', 'Almarai', Arial" : "'Inter', 'Helvetica Neue', Arial"}, sans-serif; font-weight: 700; font-size: 13px; color: ${accent}; margin-bottom: 6px; }
+    .worked-problem { font-size: 12.5px; color: #111827; margin-bottom: 6px; }
+    .worked-steps { padding-${isRTL ? 'right' : 'left'}: 20px; }
+    .worked-steps li { font-size: 12.5px; margin-bottom: 3px; }
+    .worked-self { font-size: 12px; color: #374151; margin-top: 8px; }
+    /* A virtual lab: the link as text (a photocopy still carries it) beside a QR of it. */
+    .lab-box { border: 1px solid ${accent}55; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; break-inside: avoid; }
+    .lab-head { display: flex; flex-direction: row; gap: 12px; align-items: center; }
+    .lab-text { flex: 1; }
+    .lab-url { direction: ltr; text-align: left; font-family: monospace; font-size: 11px; color: #1d4ed8; word-break: break-all; margin: 4px 0; }
+    /* The credit is Latin prose: laid out LTR so its words keep their order on an RTL page. */
+    .lab-credit { direction: ltr; text-align: ${isRTL ? 'right' : 'left'}; font-size: 10.5px; color: #6b7280; }
+    .lab-qr { width: 84px; height: 84px; flex-shrink: 0; }
+    .lab-qr svg { width: 100%; height: 100%; }
+    .lab-steps { padding-${isRTL ? 'right' : 'left'}: 20px; margin-top: 8px; }
+    .lab-steps li { font-size: 12.5px; margin-bottom: 3px; }
     /* Step cards, for the activity's numbered run-sheet. */
     .step-card {
       display: flex; flex-direction: row; gap: 10px; align-items: flex-start;
@@ -207,7 +246,20 @@ function htmlBase(
     }
     .step-body { flex: 1; }
     .step-title { font-size: 12.5px; font-weight: 700; color: #111827; margin-bottom: 3px; }
-    .step-desc { font-size: 11.5px; color: #6b7280; line-height: 1.55; }
+    .step-desc { font-size: 11.5px; color: #6b7280; line-height: 1.55; white-space: pre-line; }
+    /* The exam paper's head: the lines a student writes on, and the table the
+       teacher totals the paper in. */
+    .exam-fields { display: flex; flex-direction: row; gap: 18px; margin-bottom: 14px; font-size: 12.5px; color: #111827; }
+    .exam-field { flex: 1; display: flex; flex-direction: row; gap: 6px; align-items: flex-end; }
+    .exam-blank { flex: 1; border-bottom: 1px solid #9ca3af; height: 18px; }
+    .callout ul { margin: 0; }
+    .callout li { margin-bottom: 2px; }
+    .marks-wrap { margin-bottom: 16px; break-inside: avoid; }
+    .marks-table { width: 65%; border-collapse: collapse; font-size: 12px; }
+    .marks-table th, .marks-table td { border: 1px solid #d1d5db; padding: 5px 8px; text-align: start; }
+    .marks-table th { background: #f3f4f6; font-weight: 700; color: #374151; }
+    .marks-score { white-space: nowrap; }
+    .marks-total td { font-weight: 700; }
     /* A tinted callout for the one line that matters most on the page. */
     .callout {
       background: ${accent}0F; border-radius: 8px; padding: 12px 14px;
@@ -224,13 +276,13 @@ function htmlBase(
   <div class="page">
   <div class="school-header">
     <div>
-      <div class="school-placeholder">${isRTL ? 'اقرأ — مساعد التدريس الذكي' : 'Iqra — AI Teaching Assistant'}</div>
+      <div class="school-placeholder">${isRTL ? 'إقرأ — مساعد التدريس الذكي' : 'Iqra — AI Teaching Assistant'}</div>
       <div class="school-name">${isRTL ? 'اسم المدرسة' : 'School Name'}</div>
     </div>
-    <div class="school-name">${new Date().toLocaleDateString(isRTL ? 'ar-JO' : 'en-GB')}</div>
+    <div class="school-name">${new Date().toLocaleDateString(dateLocale(isRTL ? 'ar' : 'en'))}</div>
   </div>
   ${content}
-  <div class="footer">${isRTL ? 'أُنشئ بواسطة اقرأ — مساعد التدريس الذكي' : 'Generated by Iqra — AI Teaching Assistant'}</div>
+  <div class="footer">${isRTL ? 'أُنشئ بواسطة إقرأ — مساعد التدريس الذكي' : 'Generated by Iqra — AI Teaching Assistant'}</div>
   </div>
 </body>
 </html>`;
@@ -432,7 +484,7 @@ export function buildLessonPlanHTML(
   const content = `
     <div class="doc-title">${esc(title)}</div>
     <div class="doc-meta">${esc(meta.subject)} • ${esc(meta.grade)}${meta.duration ? ` • ${L(arCountPhrase(meta.duration, 'دقيقة', 'دقيقتان', 'دقائق'), `${meta.duration} min`)}` : ''}</div>
-    ${bullets(L('الأهداف', 'Objectives'), '🎯', '#081B3A', plan.objectives)}
+    ${bullets(L('الأهداف', 'Objectives'), '🎯', '#081B3A', plan.objectives.map(displayObjective))}
     ${bullets(L('المواد اللازمة', 'Materials Needed'), '🧰', '#6B7280', plan.materials)}
     ${plan.priorReview?.trim() ? section(L('مراجعة سابقة', 'Prior Knowledge Review'), '🔁', '#0EA5E9', plan.priorReview) : ''}
     ${section(L('التمهيد', 'Introduction'), '🔥', '#E67E22', plan.introduction)}
@@ -446,6 +498,20 @@ export function buildLessonPlanHTML(
     ${figuresSectionHTML(figures, isAr)}
   `;
   return htmlBase(content, isAr, title, 'lesson');
+}
+
+/**
+ * A question's text as the worksheet prints it.
+ *
+ * `generateWorksheet` appends «الإجابة:» and two lines of underscores to every
+ * open question so the SCREEN and the shared text have somewhere to write. The
+ * printed page draws its own ruled lines under the question, so the suffix
+ * printed on top of them — and once `.q-break` honours line breaks it would
+ * print as three more lines. Only that exact suffix is removed: the numbered
+ * blanks of a half-solved question are the student's work space, not a suffix.
+ */
+function printableQuestionText(text: string): string {
+  return text.replace(/\n+(?:الإجابة|Answer):\n_{10,}(?:\n_{10,})*\s*$/u, '');
 }
 
 export function buildWorksheetHTML(
@@ -471,7 +537,7 @@ export function buildWorksheetHTML(
       // questions that have none.
       const room = q.options ? '' : `<div class="q-lines">${ANSWER_RULES.map(() => '<div class="q-rule"></div>').join('')}</div>`;
       const html = `<div class="q-card">`
-        + `<div class="q-head"><span class="q-num">${qNum}</span><span class="q-text">${esc(q.text)}</span></div>`
+        + `<div class="q-head"><span class="q-num">${qNum}</span><span class="q-text q-break">${esc(printableQuestionText(q.text))}</span></div>`
         + `${options}${room}`
         + `<div class="q-pts">${L(arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط'), `${q.points} pts`)}</div>`
         + `</div>`;
@@ -482,24 +548,74 @@ export function buildWorksheetHTML(
   }).join('');
 
   const akRows = includeAnswers
-    ? ws.answerKey?.map(item =>
-      `<div class="answer-row"><span class="answer-num">${item.num}.</span><span>${esc(item.answer)}</span></div>`
+    ? ws.answerKey?.map(item => item.solution?.length
+      ? `<div class="answer-row"><span class="answer-num">${item.num}.</span><div class="answer-body"><span>${esc(item.answer)}</span>`
+        + `<ol class="solution">${item.solution.map(line => `<li>${esc(line)}</li>`).join('')}</ol></div></div>`
+      : `<div class="answer-row"><span class="answer-num">${item.num}.</span><span>${esc(item.answer)}</span></div>`
     ).join('') ?? ''
     : '';
 
   const answerKey = akRows
-    ? `<div class="answer-key"><div class="section-title">${L('مفتاح الإجابات', 'Answer Key')}</div>${akRows}</div>`
+    ? `<div class="key-page"><div class="answer-key"><div class="section-title">${L('مفتاح الإجابات', 'Answer Key')}</div>${akRows}</div></div>`
+    : '';
+
+  // Studied, not answered: it is on the student copy too. Only the lines for
+  // the student to write their own explanation are ruled.
+  const ex = ws.workedExample;
+  const worked = ex
+    ? `<div class="worked"><div class="worked-label">${L('مثال محلول', 'Worked example')}</div>`
+      + `<div class="worked-problem">${esc(ex.problem)}</div>`
+      + `<ol class="worked-steps">${ex.steps.map(step => `<li>${esc(step)}</li>`).join('')}</ol>`
+      + (ex.selfExplain
+        ? `<div class="worked-self">${esc(ex.selfExplain)}</div><div class="q-lines">${ANSWER_RULES.slice(0, 2).map(() => '<div class="q-rule"></div>').join('')}</div>`
+        : '')
+      + `</div>`
+    : '';
+
+  // The link is printed as text and as a QR. The text goes through `escAttr`,
+  // not `esc`: `esc` adds bidi isolates, which would corrupt a copied link.
+  const lab = ws.lab
+    ? `<div class="lab-box"><div class="lab-head"><div class="lab-text">`
+      + `<div class="worked-label">${L('المحاكاة', 'Simulation')}: ${esc(ws.lab.simName)}</div>`
+      + `<div class="lab-url">${escAttr(ws.lab.url)}</div>`
+      + `<div class="lab-credit">${esc(ws.lab.attribution)}</div></div>`
+      + `<div class="lab-qr">${labQrSvg(ws.lab.url)}</div></div>`
+      + `<ol class="lab-steps">${ws.lab.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol></div>`
     : '';
 
   const content = `
     <div class="doc-title">${esc(title)}</div>
     <div class="doc-meta">${esc(meta.subject)} • ${esc(meta.grade)}</div>
     ${ws.instructions ? `<div class="callout">${esc(ws.instructions)}</div>` : ''}
+    ${lab}
+    ${worked}
     ${sections}
     ${answerKey}
     ${figuresSectionHTML(figures, isAr)}
   `;
   return htmlBase(content, isAr, title, 'worksheet');
+}
+
+/**
+ * What makes the printed quiz an exam paper rather than a list of questions:
+ * the student's name/class/date lines, the instructions, and the marks table
+ * the teacher totals it in. On both copies — the teacher marks the student's.
+ */
+function examPaperHTML(quiz: QuizOutput, isAr: boolean): string {
+  const L = (ar: string, en: string) => isAr ? ar : en;
+  const fields = quizStudentFields(isAr)
+    .map(f => `<div class="exam-field"><span>${esc(f)}:</span><span class="exam-blank"></span></div>`)
+    .join('');
+  const instructions = quizInstructions(quiz.questions, isAr).map(l => `<li>${esc(l)}</li>`).join('');
+  const rows = quizMarkRows(quiz.questions, isAr);
+  const markRows = rows
+    .map(r => `<tr><td>${esc(r.label)}</td><td>${r.count}</td><td class="marks-score"><bdi dir="ltr">____ / ${r.points}</bdi></td></tr>`)
+    .join('');
+  return `<div class="exam-fields">${fields}</div>`
+    + `<div class="callout"><div class="section-title">${L('التعليمات', 'Instructions')}</div><ul>${instructions}</ul></div>`
+    + `<div class="marks-wrap"><div class="section-title">${L('جدول العلامات (للمصحّح)', 'Marks (for the marker)')}</div>`
+    + `<table class="marks-table"><thead><tr><th>${L('الأسئلة', 'Questions')}</th><th>${L('العدد', 'Count')}</th><th>${L('العلامة', 'Score')}</th></tr></thead>`
+    + `<tbody>${markRows}<tr class="marks-total"><td>${L('المجموع', 'Total')}</td><td>${quiz.questions.length}</td><td class="marks-score"><bdi dir="ltr">____ / ${quizMarksTotal(rows)}</bdi></td></tr></tbody></table></div>`;
 }
 
 export function buildQuizHTML(
@@ -508,12 +624,10 @@ export function buildQuizHTML(
   meta: { subject: string; grade: string },
   isAr: boolean,
   figures: readonly BookFigureRef[] = [],
+  includeAnswers = true,
 ): string {
   const L = (ar: string, en: string) => isAr ? ar : en;
-  const typeLabel = (t: string) =>
-    t === 'multiple_choice' ? L('اختيار متعدد', 'MCQ')
-      : t === 'true_false' ? L('صح/خطأ', 'True/False')
-        : L('إجابة قصيرة', 'Short Answer');
+  const typeLabel = (t: QuizOutput['questions'][number]['type']) => quizTypeLabel(t, isAr);
 
   const questions = quiz.questions.map((q, i) => {
     const options = q.options
@@ -533,16 +647,24 @@ export function buildQuizHTML(
     </div>`;
   }).join('');
 
-  const akRows = quiz.questions.map((q, i) =>
-    `<div class="answer-row"><span class="answer-num">${i + 1}.</span><span>${esc(labelAnswer(q.options, q.correctAnswer, isAr))}</span></div>`
-  ).join('');
+  // The key goes on its own page, and only on the teacher's copy: it used to
+  // sit under the last question on every print, so a student copy meant
+  // cutting it off by hand.
+  const akRows = quiz.questions.map((q, i) => {
+    const { letter, text } = labelAnswerParts(q.options, q.correctAnswer, isAr);
+    return `<div class="answer-row"><span class="answer-num">${i + 1}.</span><span>${letter ? `${letter} ` : ''}${esc(text)}</span></div>`;
+  }).join('');
+  const answerKey = includeAnswers
+    ? `<div class="key-page"><div class="answer-key"><div class="section-title">${L('مفتاح الإجابات', 'Answer Key')}</div>${akRows}</div></div>`
+    : '';
 
   const content = `
     <div class="doc-title">${esc(title)}</div>
     <div class="doc-meta">${esc(meta.subject)} • ${esc(meta.grade)} • ${L(arCountPhrase(quiz.duration, 'دقيقة', 'دقيقتان', 'دقائق'), `${quiz.duration} min`)} • ${L(arCountPhrase(quiz.totalPoints, 'نقطة', 'نقطتان', 'نقاط'), `${quiz.totalPoints} pts`)}</div>
+    ${examPaperHTML(quiz, isAr)}
     ${sectionBand(L('الأسئلة', 'Questions'), '📋', DOC_ACCENT.quiz, isAr)}
     ${questions}
-    <div class="answer-key"><div class="section-title">${L('مفتاح الإجابات', 'Answer Key')}</div>${akRows}</div>
+    ${answerKey}
     ${figuresSectionHTML(figures, isAr)}
   `;
   return htmlBase(content, isAr, title, 'quiz');
@@ -608,13 +730,13 @@ export function buildLessonPlanSlidesHTML(
   figures: readonly BookFigureRef[] = [],
 ): string {
   const dir = isAr ? 'rtl' : 'ltr';
-  const ACCENT = '#1B6B62';
+  const ACCENT = DOC_ACCENT.lesson;
   const bullets = (items: string[]) => items.map(i => `<li>${esc(i)}</li>`).join('');
   const L = (ar: string, en: string) => isAr ? ar : en;
 
   const footer = (num: number, total: number) => `
     <div class="slide-footer">
-      <span>${L('أُنشئ بواسطة اقرأ', 'Generated by Iqra')}</span>
+      <span>${L('أُنشئ بواسطة إقرأ', 'Generated by Iqrra')}</span>
       <span>${num} / ${total}</span>
     </div>`;
 
@@ -638,7 +760,7 @@ export function buildLessonPlanSlidesHTML(
       <div class="title-badge">${L('خطة درس', 'Lesson Plan')}</div>
       <h1 class="title-main">${esc(title)}</h1>
       <div class="title-meta">${esc(meta.subject)} &nbsp;•&nbsp; ${esc(meta.grade)}${meta.duration ? ` &nbsp;•&nbsp; ${L(arCountPhrase(meta.duration, 'دقيقة', 'دقيقتان', 'دقائق'), `${meta.duration} min`)}` : ''}</div>
-      <div class="title-brand">${L('اقرأ — مساعد التدريس الذكي', 'Iqra — AI Teaching Assistant')}</div>
+      <div class="title-brand">${L('إقرأ — مساعد التدريس الذكي', 'Iqra — AI Teaching Assistant')}</div>
     </div>`;
 
   // Optional: present only when the teacher asked for a warm-up review of
@@ -652,7 +774,7 @@ export function buildLessonPlanSlidesHTML(
   const slide2 = `${slideOpen()}
     ${header(L('الأهداف والمواد', 'Objectives & Materials'))}
     <div class="slide-body two-col">
-      ${sectionBlock('🎯', L('الأهداف التعليمية', 'Learning Objectives'), `<ul>${bullets(plan.objectives)}</ul>`)}
+      ${sectionBlock('🎯', L('الأهداف التعليمية', 'Learning Objectives'), `<ul>${bullets(plan.objectives.map(displayObjective))}</ul>`)}
       ${sectionBlock('🎒', L('المواد اللازمة', 'Materials'), `<ul>${bullets(plan.materials)}</ul>`)}
     </div>`;
 
@@ -713,7 +835,7 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
   overflow: hidden; page-break-after: always; display: flex; flex-direction: column;
 }
 /* Title slide */
-.title-slide { background: linear-gradient(135deg, ${ACCENT} 0%, #144f49 100%); }
+.title-slide { background: linear-gradient(135deg, ${ACCENT} 0%, #004C46 100%); }
 .title-content { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center; }
 .title-badge { background: rgba(255,255,255,0.2); color:#fff; font-size:11px; letter-spacing:2px; text-transform:uppercase; padding:4px 16px; border-radius:20px; margin-bottom:20px; }
 .title-main { font-size:36px; font-weight:700; color:#fff; line-height:1.3; margin-bottom:16px; max-width:500px; }
@@ -761,14 +883,14 @@ export function buildActivitySlidesHTML(
   figures: readonly BookFigureRef[] = [],
 ): string {
   const dir = isAr ? 'rtl' : 'ltr';
-  const ACCENT = '#E67E22';
+  const ACCENT = DOC_ACCENT.activity;
   const L = (ar: string, en: string) => isAr ? ar : en;
 
   const TOTAL = 3 + Math.ceil(activity.steps.length / 2) + (figures.length ? 1 : 0);
 
   const footer = (num: number) => `
     <div class="slide-footer">
-      <span>${L('أُنشئ بواسطة اقرأ', 'Generated by Iqra')}</span>
+      <span>${L('أُنشئ بواسطة إقرأ', 'Generated by Iqrra')}</span>
       <span>${num} / ${TOTAL}</span>
     </div>`;
 
@@ -844,7 +966,7 @@ export function buildActivitySlidesHTML(
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .slide { width:297mm; height:210mm; background:#fff; position:relative; overflow:hidden; page-break-after:always; display:flex; flex-direction:column; }
-.title-slide { background:linear-gradient(135deg,${ACCENT} 0%,#b55a0f 100%); }
+.title-slide { background:linear-gradient(135deg,${ACCENT} 0%,#2A5414 100%); }
 .title-content { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; text-align:center; }
 .title-badge { background:rgba(255,255,255,0.2); color:#fff; font-size:11px; letter-spacing:2px; text-transform:uppercase; padding:4px 16px; border-radius:20px; margin-bottom:20px; }
 .title-main { font-size:34px; font-weight:700; color:#fff; line-height:1.3; margin-bottom:14px; max-width:520px; }
@@ -852,7 +974,7 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 .title-obj { font-size:12px; color:rgba(255,255,255,0.7); max-width:480px; line-height:1.5; }
 .slide-header { display:flex; align-items:stretch; height:60px; flex-shrink:0; }
 .header-accent { width:8px; background:${ACCENT}; flex-shrink:0; }
-.header-content { flex:1; background:#FFF7ED; padding:10px 24px; display:flex; flex-direction:column; justify-content:center; border-bottom:1px solid #e5e7eb; }
+.header-content { flex:1; background:#F2F7EE; padding:10px 24px; display:flex; flex-direction:column; justify-content:center; border-bottom:1px solid #e5e7eb; }
 .slide-eyebrow { font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:${ACCENT}; font-weight:600; margin-bottom:3px; }
 .slide-topic { font-size:13px; font-weight:700; color:#111827; }
 .slide-body { flex:1; padding:18px 26px; overflow:hidden; }
@@ -869,7 +991,7 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 .step-num { background:${ACCENT}; color:#fff; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; }
 .step-title { font-weight:600; font-size:12px; flex:1; color:#111827; }
 .step-dur { font-size:10px; color:#9ca3af; }
-.step-desc { font-size:11.5px; color:#374151; line-height:1.6; }
+.step-desc { font-size:11.5px; color:#374151; line-height:1.6; white-space: pre-line; }
 .slide-footer { height:26px; border-top:1px solid #f3f4f6; display:flex; align-items:center; justify-content:space-between; padding:0 26px; flex-shrink:0; }
 .slide-footer span { font-size:9px; color:#9ca3af; }
 </style>
@@ -900,7 +1022,7 @@ export function buildWorksheetSlidesHTML(
   includeAnswers = true,
 ): string {
   const dir = isAr ? 'rtl' : 'ltr';
-  const ACCENT = '#8B5CF6';
+  const ACCENT = DOC_ACCENT.worksheet;
   // Text only in this builder — no attribute or URL goes through `e`, so it
   // is the isolating `esc` under a shorter name.
   const e = esc;
@@ -909,12 +1031,12 @@ export function buildWorksheetSlidesHTML(
   // Total: title + (instructions if present: 1) + sections + answer key
   const hasInstructions = !!ws.instructions;
   const showAnswerKey = includeAnswers && !!ws.answerKey && ws.answerKey.length > 0;
-  const TOTAL = 1 + (hasInstructions ? 1 : 0) + ws.sections.length
+  const TOTAL = 1 + (hasInstructions ? 1 : 0) + (ws.workedExample ? 1 : 0) + ws.sections.length
     + (showAnswerKey ? 1 : 0) + (figures.length ? 1 : 0);
 
   const footer = (num: number) => `
     <div class="slide-footer">
-      <span>${L('أُنشئ بواسطة اقرأ', 'Generated by Iqra')}</span>
+      <span>${L('أُنشئ بواسطة إقرأ', 'Generated by Iqrra')}</span>
       <span>${num} / ${TOTAL}</span>
     </div>`;
 
@@ -938,7 +1060,7 @@ export function buildWorksheetSlidesHTML(
       <div class="title-badge">${L('ورقة عمل', 'Worksheet')}</div>
       <h1 class="title-main">${e(title)}</h1>
       <div class="title-meta">${e(meta.subject)} &nbsp;•&nbsp; ${e(meta.grade)}</div>
-      <div class="title-brand">${L('اقرأ — مساعد التدريس الذكي', 'Iqra — AI Teaching Assistant')}</div>
+      <div class="title-brand">${L('إقرأ — مساعد التدريس الذكي', 'Iqra — AI Teaching Assistant')}</div>
     </div>
     ${footer(slideNum++)}</div>`;
 
@@ -950,6 +1072,18 @@ export function buildWorksheetSlidesHTML(
     </div>
     ${footer(slideNum++)}</div>` : '';
 
+  // The worked example, studied before anything is asked. The key slide below
+  // stays answers-only: a slide is a fixed A4 page and per-question working
+  // does not fit ten answers on it.
+  const workedSlide = ws.workedExample ? `<div class="slide">
+    ${header(L('مثال محلول', 'Worked example'))}
+    <div class="slide-body">
+      ${sBlock('✍️', L('مثال محلول', 'Worked example'),
+        `<p>${e(ws.workedExample.problem)}</p><ol>${ws.workedExample.steps.map(step => `<li>${e(step)}</li>`).join('')}</ol>`
+        + (ws.workedExample.selfExplain ? `<p>${e(ws.workedExample.selfExplain)}</p>` : ''))}
+    </div>
+    ${footer(slideNum++)}</div>` : '';
+
   // One slide per section
   let qCounter = 1;
   const sectionSlides = ws.sections.map(sec => {
@@ -957,7 +1091,7 @@ export function buildWorksheetSlidesHTML(
       const opts = q.options
         ? `<div class="q-opts">${q.options.map((o, oi) => `<div class="q-opt">${e(labelOptionLine(o, oi, isAr))}</div>`).join('')}</div>`
         : '';
-      const html = `<div class="q-card"><span class="q-num">${qCounter}.</span> <span class="q-text">${e(q.text)}</span>${opts}<span class="q-pts">${L(arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط'), `${q.points} pts`)}</span></div>`;
+      const html = `<div class="q-card"><span class="q-num">${qCounter}.</span> <span class="q-text q-break">${e(printableQuestionText(q.text))}</span>${opts}<span class="q-pts">${L(arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط'), `${q.points} pts`)}</span></div>`;
       qCounter++;
       return html;
     }).join('');
@@ -990,7 +1124,7 @@ export function buildWorksheetSlidesHTML(
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .slide { width:297mm; height:210mm; background:#fff; position:relative; overflow:hidden; page-break-after:always; display:flex; flex-direction:column; }
-.title-slide { background:linear-gradient(135deg,${ACCENT} 0%,#5b21b6 100%); }
+.title-slide { background:linear-gradient(135deg,${ACCENT} 0%,#5E3D00 100%); }
 .title-content { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; text-align:center; }
 .title-badge { background:rgba(255,255,255,0.2); color:#fff; font-size:11px; letter-spacing:2px; text-transform:uppercase; padding:4px 16px; border-radius:20px; margin-bottom:20px; }
 .title-main { font-size:34px; font-weight:700; color:#fff; line-height:1.3; margin-bottom:14px; max-width:520px; }
@@ -998,7 +1132,7 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 .title-brand { font-size:11px; color:rgba(255,255,255,0.5); margin-top:8px; }
 .slide-header { display:flex; align-items:stretch; height:60px; flex-shrink:0; }
 .header-accent { width:8px; background:${ACCENT}; flex-shrink:0; }
-.header-content { flex:1; background:#faf5ff; padding:10px 24px; display:flex; flex-direction:column; justify-content:center; border-bottom:1px solid #e5e7eb; }
+.header-content { flex:1; background:#FBF6EC; padding:10px 24px; display:flex; flex-direction:column; justify-content:center; border-bottom:1px solid #e5e7eb; }
 .slide-eyebrow { font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:${ACCENT}; font-weight:600; margin-bottom:3px; }
 .slide-topic { font-size:13px; font-weight:700; color:#111827; }
 .slide-body { flex:1; padding:18px 26px; overflow:hidden; }
@@ -1009,11 +1143,12 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 .q-card { display:flex; flex-wrap:wrap; gap:4px; align-items:baseline; border:1px solid #e5e7eb; border-radius:6px; padding:8px 12px; margin-bottom:7px; font-size:11.5px; }
 .q-num { font-weight:700; color:${ACCENT}; flex-shrink:0; }
 .q-text { flex:1; color:#111827; }
+.q-break { white-space:pre-line; }
 .q-opts { display:flex; gap:10px; flex-wrap:wrap; margin-top:4px; width:100%; padding-${isAr ? 'right' : 'left'}:12px; font-size:10.5px; color:#6b7280; }
 .q-opt { white-space:nowrap; }
 .q-pts { font-size:10px; color:#9ca3af; margin-${isAr ? 'right' : 'left'}:auto; }
 .ak-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:8px; }
-.ak-row { display:flex; gap:6px; align-items:baseline; background:#faf5ff; border:1px solid ${ACCENT}22; border-radius:6px; padding:6px 10px; font-size:11.5px; }
+.ak-row { display:flex; gap:6px; align-items:baseline; background:#FBF6EC; border:1px solid ${ACCENT}22; border-radius:6px; padding:6px 10px; font-size:11.5px; }
 .ak-num { font-weight:700; color:${ACCENT}; flex-shrink:0; }
 .ak-ans { color:#374151; }
 .slide-footer { height:26px; border-top:1px solid #f3f4f6; display:flex; align-items:center; justify-content:space-between; padding:0 26px; flex-shrink:0; }
@@ -1023,6 +1158,7 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 <body>
 ${slide1}
 ${instrSlide}
+${workedSlide}
 ${sectionSlides.join('\n')}
 ${akSlide}
 ${figuresSlideHTML(figures, isAr, header, footer(TOTAL))}
@@ -1043,9 +1179,10 @@ export function buildQuizSlidesHTML(
    * exactly what this builder rendered before.
    */
   figures: readonly BookFigureRef[] = [],
+  includeAnswers = true,
 ): string {
   const dir = isAr ? 'rtl' : 'ltr';
-  const ACCENT = '#F59E0B';
+  const ACCENT = DOC_ACCENT.quiz;
   // Text only in this builder — no attribute or URL goes through `e`, so it
   // is the isolating `esc` under a shorter name.
   const e = esc;
@@ -1061,13 +1198,14 @@ export function buildQuizSlidesHTML(
     questionGroups.push(quiz.questions.slice(i, i + GROUP_SIZE));
   }
 
-  // title + groups + answer key + the optional book-figures slide
-  const TOTAL = 1 + questionGroups.length + 1 + (figures.length ? 1 : 0);
+  // title + groups + the answer key (teacher's copy only) + the optional
+  // book-figures slide
+  const TOTAL = 1 + questionGroups.length + (includeAnswers ? 1 : 0) + (figures.length ? 1 : 0);
   let slideNum = 1;
 
   const footer = (num: number) => `
     <div class="slide-footer">
-      <span>${L('أُنشئ بواسطة اقرأ', 'Generated by Iqra')}</span>
+      <span>${L('أُنشئ بواسطة إقرأ', 'Generated by Iqrra')}</span>
       <span>${num} / ${TOTAL}</span>
     </div>`;
 
@@ -1084,7 +1222,7 @@ export function buildQuizSlidesHTML(
       <h1 class="title-main">${e(title)}</h1>
       <div class="title-meta">${e(meta.subject)} &nbsp;•&nbsp; ${e(meta.grade)}</div>
       <div class="title-meta">${L(arCountPhrase(quiz.duration, 'دقيقة', 'دقيقتان', 'دقائق'), `${quiz.duration} min`)} &nbsp;•&nbsp; ${L(arCountPhrase(quiz.totalPoints, 'نقطة', 'نقطتان', 'نقاط'), `${quiz.totalPoints} pts`)}</div>
-      <div class="title-brand">${L('اقرأ — مساعد التدريس الذكي', 'Iqra — AI Teaching Assistant')}</div>
+      <div class="title-brand">${L('إقرأ — مساعد التدريس الذكي', 'Iqra — AI Teaching Assistant')}</div>
     </div>
     ${footer(slideNum++)}</div>`;
 
@@ -1114,14 +1252,14 @@ export function buildQuizSlidesHTML(
   });
 
   // Answer key slide
-  const akSlide = `<div class="slide">
+  const akSlide = includeAnswers ? `<div class="slide">
     ${header(L('مفتاح الإجابات', 'Answer Key'))}
     <div class="slide-body">
       <div class="ak-grid">
         ${quiz.questions.map((q, i) => `<div class="ak-row"><span class="ak-num">${i + 1}.</span><span class="ak-ans">${e(q.correctAnswer)}</span></div>`).join('')}
       </div>
     </div>
-    ${footer(slideNum++)}</div>`;
+    ${footer(slideNum++)}</div>` : '';
 
   return `<!DOCTYPE html>
 <html dir="${dir}" lang="${isAr ? 'ar' : 'en'}">
@@ -1132,7 +1270,7 @@ export function buildQuizSlidesHTML(
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .slide { width:297mm; height:210mm; background:#fff; position:relative; overflow:hidden; page-break-after:always; display:flex; flex-direction:column; }
-.title-slide { background:linear-gradient(135deg,${ACCENT} 0%,#b45309 100%); }
+.title-slide { background:linear-gradient(135deg,${ACCENT} 0%,#7E1C38 100%); }
 .title-content { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; text-align:center; }
 .title-badge { background:rgba(255,255,255,0.2); color:#fff; font-size:11px; letter-spacing:2px; text-transform:uppercase; padding:4px 16px; border-radius:20px; margin-bottom:20px; }
 .title-main { font-size:34px; font-weight:700; color:#fff; line-height:1.3; margin-bottom:14px; max-width:520px; }
@@ -1140,20 +1278,20 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 .title-brand { font-size:11px; color:rgba(255,255,255,0.5); margin-top:8px; }
 .slide-header { display:flex; align-items:stretch; height:60px; flex-shrink:0; }
 .header-accent { width:8px; background:${ACCENT}; flex-shrink:0; }
-.header-content { flex:1; background:#fffbeb; padding:10px 24px; display:flex; flex-direction:column; justify-content:center; border-bottom:1px solid #e5e7eb; }
+.header-content { flex:1; background:#FCF1F4; padding:10px 24px; display:flex; flex-direction:column; justify-content:center; border-bottom:1px solid #e5e7eb; }
 .slide-eyebrow { font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:${ACCENT}; font-weight:600; margin-bottom:3px; }
 .slide-topic { font-size:13px; font-weight:700; color:#111827; }
 .slide-body { flex:1; padding:16px 26px; overflow:hidden; display:flex; flex-direction:column; gap:8px; }
 .q-card { border:1px solid #e5e7eb; border-radius:8px; padding:10px 14px; flex-shrink:0; }
 .q-top { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
 .q-num { background:${ACCENT}; color:#fff; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; }
-.type-badge { font-size:10px; background:#fef3c7; color:#92400e; padding:2px 8px; border-radius:10px; }
+.type-badge { font-size:10px; background:#F9DDE5; color:#7E1C38; padding:2px 8px; border-radius:10px; }
 .q-pts { font-size:10px; color:#9ca3af; margin-${isAr ? 'right' : 'left'}:auto; }
 .q-text { font-size:12px; color:#111827; line-height:1.5; }
 .q-opts { display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-top:6px; padding-${isAr ? 'right' : 'left'}:12px; font-size:10.5px; color:#6b7280; }
 .q-opt { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .ak-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; }
-.ak-row { display:flex; gap:6px; align-items:baseline; background:#fffbeb; border:1px solid ${ACCENT}33; border-radius:6px; padding:6px 10px; font-size:11.5px; }
+.ak-row { display:flex; gap:6px; align-items:baseline; background:#FCF1F4; border:1px solid ${ACCENT}33; border-radius:6px; padding:6px 10px; font-size:11.5px; }
 .ak-num { font-weight:700; color:${ACCENT}; flex-shrink:0; }
 .ak-ans { color:#374151; }
 .slide-footer { height:26px; border-top:1px solid #f3f4f6; display:flex; align-items:center; justify-content:space-between; padding:0 26px; flex-shrink:0; }
@@ -1222,8 +1360,17 @@ export function buildLessonFlowHTML(
   const activityBody = (act: ActivityOutput) =>
     `${act.steps.map((s, i) => stepCard(s, i)).join('')}`;
 
-  /* ── Worksheet questions ── */
-  const wsBody = flow.worksheet.sections.flatMap(s =>
+  /* ── Worksheet: the worked example, then the questions ── */
+  const flowExample = flow.worksheet.workedExample;
+  const wsExample = flowExample
+    ? `<div class="q-block">
+         <div class="q-text"><strong>${isAr ? 'مثال محلول' : 'Worked example'}</strong></div>
+         <div class="q-text">${esc(flowExample.problem)}</div>
+         <ol class="bullets">${flowExample.steps.map(step => `<li>${esc(step)}</li>`).join('')}</ol>
+         ${flowExample.selfExplain ? `<div class="q-text">${esc(flowExample.selfExplain)}</div>` : ''}
+       </div>`
+    : '';
+  const wsBody = wsExample + flow.worksheet.sections.flatMap(s =>
     s.questions.map((q, i) => questionBlock(q, i))
   ).join('');
 
@@ -1258,7 +1405,7 @@ export function buildLessonFlowHTML(
   .step-num { min-width: 24px; height: 24px; border-radius: 50%; color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .step-body { flex: 1; }
   .step-title { font-size: 12.5px; font-weight: 600; color: #111827; margin-bottom: 3px; }
-  .step-desc { font-size: 11.5px; color: #6b7280; line-height: 1.5; }
+  .step-desc { font-size: 11.5px; color: #6b7280; line-height: 1.5; white-space: pre-line; }
   /* Guided practice */
   .guided-text { font-size: 12.5px; color: #374151; line-height: 1.7; background: #f0fdf9; border-radius: 8px; padding: 14px; border: 1px solid ${TEAL}30; }
   /* Questions */
@@ -1318,7 +1465,7 @@ export function buildLessonFlowHTML(
 
   ${figuresSectionHTML(figures, isAr)}
 
-  <div class="footer">${isAr ? 'اقرأ — رفيقك في تحضير الحصص' : 'Iqrra — your lesson-prep companion'} · ${esc(flow.topic)} · ${new Date().toLocaleDateString(isAr ? 'ar-JO' : 'en-GB')}</div>
+  <div class="footer">${isAr ? 'إقرأ — رفيقك في تحضير الحصص' : 'Iqrra — your lesson-prep companion'} · ${esc(flow.topic)} · ${new Date().toLocaleDateString(dateLocale(isAr ? 'ar' : 'en'))}</div>
 </div>
 </body>
 </html>`;

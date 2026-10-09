@@ -136,18 +136,51 @@ export function applyMediaEdit(
   edit: { url: string; caption: string },
 ): MediaEditResult {
   const url = edit.url.trim();
-  const kind = classifyMediaUrl(url);
+  const urlChanged = url !== (slide.mediaUrl ?? '').trim();
+  // A NEW link must be something the app can embed. An UNCHANGED link is
+  // already on the slide, so its kind is the slide's own: an interactive lab
+  // item is a `document` slide whose share link is neither an image nor a
+  // YouTube URL, and refusing it blocked saving even a title edit.
+  const kind = classifyMediaUrl(url) ?? (urlChanged ? null : (slide.mediaKind ?? null));
   if (!kind) return { ok: false, reason: 'unsupported-url' };
 
-  const urlChanged = url !== (slide.mediaUrl ?? '').trim();
   const caption = edit.caption.trim();
   // "Untouched" means still byte-identical to what generation put there.
   const captionIsStale = urlChanged && caption === (slide.mediaCaption ?? '').trim();
 
   const next: ActivitySlide = { ...slide, type: 'media', mediaKind: kind, mediaUrl: url };
-  if (captionIsStale || !caption) delete next.mediaCaption;
-  else next.mediaCaption = caption;
+  if (captionIsStale || (!caption && urlChanged)) {
+    // The media was swapped, so the old caption credits something else.
+    delete next.mediaCaption;
+  } else if (caption) {
+    next.mediaCaption = caption;
+  }
+  // else: the media is unchanged and the field was left blank. The caption is
+  // the credit the PDF and PPTX print (a licence's attribution, a video's
+  // channel), so a blank field keeps it rather than quietly deleting it.
   return { ok: true, slide: next };
+}
+
+/**
+ * The slide body after a media edit.
+ *
+ * Slides built from a caption (lab items, teacher attachments) repeat it in
+ * `content`, which is where the presenter shows the credit. `applyMediaEdit`
+ * drops a caption that no longer describes the media, but the editor writes
+ * the form's body text back over the slide, so the old credit stayed on screen
+ * under a different picture. When the media was swapped and the body is still
+ * just the old caption, it follows the caption: the new one, or nothing.
+ * Body text the teacher wrote is left alone.
+ */
+export function contentAfterMediaEdit(
+  before: ActivitySlide,
+  after: ActivitySlide,
+  formContent: string,
+): string {
+  const swapped = (after.mediaUrl ?? '').trim() !== (before.mediaUrl ?? '').trim();
+  const oldCaption = (before.mediaCaption ?? '').trim();
+  if (swapped && oldCaption && formContent.trim() === oldCaption) return after.mediaCaption ?? '';
+  return formContent;
 }
 
 export function buildGraphSlide(
@@ -282,6 +315,18 @@ export function insertVideoSlide(
   return next.map((s, i) => ({ ...s, slideNumber: i + 1 }));
 }
 
+/**
+ * Where hand-added slides (teacher attachments, lab items) go: after the
+ * teaching, before the worked examples, else before the summary, else at the
+ * end — and never at index 0, which every export draws as the title slide.
+ */
+function slotForResources(slides: readonly ActivitySlide[]): number {
+  const beforeExamples = slides.findIndex(s => s.type === 'challenge');
+  const beforeSummary = slides.findIndex(s => s.type === 'summary');
+  const at = beforeExamples >= 0 ? beforeExamples : beforeSummary >= 0 ? beforeSummary : slides.length;
+  return Math.max(at, Math.min(1, slides.length));
+}
+
 /** What a teacher pinned to a lesson — the shape `lessonMedia` stores. */
 export type AttachedResource = { kind: 'image' | 'video' | 'audio' | 'document'; url: string; caption: string };
 
@@ -300,12 +345,24 @@ export function insertLessonResources(
   isAr: boolean,
 ): ActivitySlide[] {
   if (items.length === 0) return [...slides];
-  const beforeExamples = slides.findIndex(s => s.type === 'challenge');
-  const beforeSummary = slides.findIndex(s => s.type === 'summary');
-  const at = beforeExamples >= 0 ? beforeExamples : beforeSummary >= 0 ? beforeSummary : slides.length;
+  const at = slotForResources(slides);
   const built = items.map(m => buildMediaSlide(m.kind, m.url, m.caption, isAr, 0));
   return [...slides.slice(0, at), ...built, ...slides.slice(at)]
     .map((s, i) => ({ ...s, slideNumber: i + 1 }));
+}
+
+/**
+ * Put already-built lab slides into a deck, as one batch in the order given,
+ * at the same slot `insertLessonResources` uses. Called after it, so the
+ * teacher's own attachments sit ahead of the lab slides.
+ */
+export function insertLabSlides(
+  slides: readonly ActivitySlide[],
+  labSlides: readonly ActivitySlide[],
+): ActivitySlide[] {
+  if (labSlides.length === 0) return [...slides];
+  const at = slotForResources(slides);
+  return [...slides.slice(0, at), ...labSlides, ...slides.slice(at)].map((s, i) => ({ ...s, slideNumber: i + 1 }));
 }
 
 /**

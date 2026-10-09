@@ -12,8 +12,12 @@
  * builds a link of its own. Opening an exam goes through `/take/:code`, which
  * recognises a signed-in student and skips the name picker — or resumes the
  * sitting they already hold.
+ *
+ * A parent reaches the same screen as «نتائج أبنائي»: one section per child,
+ * from `GET /parent/exams`, under the student's release rule and with no
+ * link on any row — the exam is the child's to sit.
  */
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -29,8 +33,11 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { useAuth } from '@/context/AuthContext';
 import { goBack } from '@/services/navigation';
-import { getMyExams } from '@/services/studentExam';
+import { getChildExams, getMyExams, retakeExam } from '@/services/studentExam';
+import { confirm } from '@/services/confirm';
+import { useMasteryProgress } from '@/hooks/useMasteryProgress';
 import {
   MY_EXAM_STATE_KEY,
   myExamAction,
@@ -51,9 +58,9 @@ const ACCENT_FILL = palette.hero;
 
 const STATE_COLOR: Record<MyExamState, string> = {
   available: ACCENT,
-  in_progress: '#B54708',
+  in_progress: palette.warning,
   submitted: '#475467',
-  result: '#067647',
+  result: palette.success,
   closed: '#667085',
 };
 
@@ -65,26 +72,47 @@ const STATE_ICON: Record<MyExamState, keyof typeof Ionicons.glyphMap> = {
   closed: 'lock-closed-outline',
 };
 
+/** A child's section for a parent; the student's own list is one unnamed group. */
+interface ExamGroup {
+  key: string;
+  name: string | null;
+  exams: MyExam[];
+}
+
 export default function MyExamsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
   const align = isRTL ? 'right' : 'left';
 
-  const [exams, setExams] = useState<MyExam[] | null>(null);
+  const { user } = useAuth();
+  const isParent = user?.role === 'parent';
+  const [groups, setGroups] = useState<ExamGroup[] | null>(null);
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [openResult, setOpenResult] = useState<string | null>(null);
+  const progress = useMasteryProgress();
+  const [retaking, setRetaking] = useState<string | null>(null);
 
+  // Which list to read depends on the role, so nothing loads until the
+  // session has: a reload used to ask /student/exams for a parent, and its
+  // 403 landed after the right list and put an error banner over it. A
+  // newer load also wins over an older one still in flight.
+  const loadSeq = useRef(0);
   const load = useCallback(async () => {
+    if (!user) return;
+    const seq = ++loadSeq.current;
     setError('');
     try {
-      setExams(await getMyExams());
+      const next = isParent
+        ? (await getChildExams()).map(c => ({ key: c.studentId, name: c.displayName, exams: c.exams }))
+        : [{ key: 'self', name: null, exams: await getMyExams() }];
+      if (seq === loadSeq.current) setGroups(next);
     } catch (e) {
-      setError(apiErrorMessage(e, 'myExamsLoadFailed', t));
+      if (seq === loadSeq.current) setError(apiErrorMessage(e, isParent ? 'childResultsLoadFailed' : 'myExamsLoadFailed', t));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isParent, user?.id]);
 
   // On every focus, not once: a student comes back here from handing a paper
   // in, and the row they just finished must not still say «تابع».
@@ -100,33 +128,58 @@ export default function MyExamsScreen() {
     setRefreshing(false);
   }, [load]);
 
-  const onRow = (exam: MyExam) => {
+  // Keyed by group as well: two siblings in one class share an exam id.
+  const onRow = (exam: MyExam, openKey: string) => {
     const action = myExamAction(exam);
     if (!action) return;
     Haptics.selectionAsync();
     if (action === 'toggle_result') {
-      setOpenResult(prev => (prev === exam.evaluationId ? null : exam.evaluationId));
+      setOpenResult(prev => (prev === openKey ? null : openKey));
       return;
     }
     if (exam.shareCode) router.push(`/take/${exam.shareCode}` as never);
+  };
+
+  const onRetake = async (exam: MyExam) => {
+    const go = await confirm({
+      title: t('masteryRetakeConfirmTitle'),
+      message: t('masteryRetakeConfirmBody'),
+      confirmLabel: t('masteryRetake'),
+      cancelLabel: t('masteryClose'),
+    });
+    if (!go) return;
+    setRetaking(exam.evaluationId);
+    setError('');
+    try {
+      const { shareCode } = await retakeExam(exam.evaluationId);
+      // The old sitting is gone, so opening the link starts a fresh one.
+      if (shareCode) router.push(`/take/${shareCode}` as never);
+      else await load();
+    } catch (e) {
+      setError(apiErrorMessage(e, 'masteryRetakeFailed', t));
+      await load();
+    } finally {
+      setRetaking(null);
+    }
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { paddingTop: insets.top + 12, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('back')}
           onPress={() => goBack()}
           hitSlop={10}
-          accessibilityRole="button"
           style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
         >
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
-        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: align }]}>
-          {t('myExamsTitle')}
+        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
+          {t(isParent ? 'childResultsTitle' : 'myExamsTitle')}
         </Text>
         <Text style={[styles.desc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
-          {t('myExamsDesc')}
+          {t(isParent ? 'childResultsDesc' : 'myExamsDesc')}
         </Text>
       </View>
 
@@ -148,54 +201,80 @@ export default function MyExamsScreen() {
               {error}
             </Text>
             <Pressable onPress={() => void load()} hitSlop={8} accessibilityRole="button">
-              <Text style={{ color: colors.destructive, fontFamily: 'Cairo_600SemiBold', fontSize: 13, textDecorationLine: 'underline' }}>
+              <Text style={{ color: colors.destructive, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textDecorationLine: 'underline' }}>
                 {t('retry')}
               </Text>
             </Pressable>
           </View>
         ) : null}
 
-        {exams === null && !error ? (
+        {groups === null && !error ? (
           <ActivityIndicator color={ACCENT} style={{ marginTop: 40 }} />
         ) : null}
 
-        {exams !== null && exams.length === 0 ? (
+        {groups !== null && groups.every(g => g.exams.length === 0) ? (
           <View style={styles.empty}>
             <View style={[styles.emptyIcon, { backgroundColor: ACCENT + '1F' }]}>
               <Ionicons name="document-text-outline" size={30} color={ACCENT} />
             </View>
-            <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 17, textAlign: 'center' }}>
+            <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 17, textAlign: 'center' }}>
               {t('myExamsEmptyTitle')}
             </Text>
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: 'center' }}>
-              {t('myExamsEmptyDesc')}
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
+              {t(isParent ? 'childResultsEmptyDesc' : 'myExamsEmptyDesc')}
             </Text>
           </View>
         ) : null}
 
-        {(exams ?? []).map(exam => (
-          <ExamRow
-            key={exam.evaluationId}
-            exam={exam}
-            open={openResult === exam.evaluationId}
-            onPress={() => onRow(exam)}
-            colors={colors}
-            isRTL={isRTL}
-            lang={lang}
-            t={t}
-          />
-        ))}
+        {groups !== null && groups.some(g => g.exams.length > 0)
+          ? groups.map(group => (
+              <View key={group.key} style={{ gap: 12 }}>
+                {group.name ? (
+                  <Text style={[styles.childName, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
+                    {group.name}
+                  </Text>
+                ) : null}
+                {group.name && group.exams.length === 0 ? (
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, textAlign: align }}>
+                    {t('childResultsNone')}
+                  </Text>
+                ) : null}
+                {group.exams.map(exam => {
+                  const openKey = `${group.key}:${exam.evaluationId}`;
+                  return (
+                    <ExamRow
+                      key={openKey}
+                      exam={exam}
+                      open={openResult === openKey}
+                      onPress={() => onRow(exam, openKey)}
+                      canRetake={!isParent && progress.retakeEvaluationIds.includes(exam.evaluationId)}
+                      retaking={retaking === exam.evaluationId}
+                      onRetake={() => void onRetake(exam)}
+                      colors={colors}
+                      isRTL={isRTL}
+                      lang={lang}
+                      t={t}
+                    />
+                  );
+                })}
+              </View>
+            ))
+          : null}
       </ScrollView>
     </View>
   );
 }
 
 function ExamRow({
-  exam, open, onPress, colors, isRTL, lang, t,
+  exam, open, onPress, canRetake, retaking, onRetake, colors, isRTL, lang, t,
 }: {
   exam: MyExam;
   open: boolean;
   onPress: () => void;
+  /** A failed lesson quiz the student may sit again (mastery gate). */
+  canRetake: boolean;
+  retaking: boolean;
+  onRetake: () => void;
   colors: ReturnType<typeof useColors>;
   isRTL: boolean;
   lang: 'ar' | 'en';
@@ -219,7 +298,10 @@ function ExamRow({
 
   const levelKey = exam.result?.levelKey ? LEVEL_LABEL_KEY[exam.result.levelKey] : undefined;
 
+  // The retake bar sits beside the card, not inside it: the card is a button,
+  // and a button inside a button is invalid on the web build.
   return (
+    <View style={{ gap: 8 }}>
     <Pressable
       onPress={onPress}
       disabled={!action}
@@ -234,22 +316,22 @@ function ExamRow({
           <Ionicons name={STATE_ICON[exam.state]} size={20} color={stateColor} />
         </View>
         <View style={{ flex: 1, gap: 4 }}>
-          <Text numberOfLines={2} style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15, lineHeight: 23, textAlign: align }}>
-            {myExamTitle(exam, lang)}
+          <Text numberOfLines={2} style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, lineHeight: 23, textAlign: align }}>
+            {myExamTitle(exam, lang) || t('myExamsUntitled', subject ?? '')}
           </Text>
           {meta ? (
-            <Text numberOfLines={2} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
+            <Text numberOfLines={2} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
               {meta}
             </Text>
           ) : null}
           <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginTop: 2, flexWrap: 'wrap' }}>
             <View style={[styles.chip, { backgroundColor: stateColor + '1A' }]}>
-              <Text style={{ color: stateColor, fontFamily: 'Cairo_600SemiBold', fontSize: 12 }}>
+              <Text style={{ color: stateColor, fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>
                 {t(MY_EXAM_STATE_KEY[exam.state])}
               </Text>
             </View>
             {exam.result ? (
-              <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+              <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
                 {levelKey ? `${t(levelKey)} · ` : ''}{exam.result.percent}%
               </Text>
             ) : null}
@@ -258,7 +340,7 @@ function ExamRow({
 
         {action === 'start' || action === 'continue' ? (
           <View style={[styles.cta, { backgroundColor: ACCENT_FILL }]}>
-            <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+            <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
               {t(action === 'start' ? 'myExamsStart' : 'myExamsContinue')}
             </Text>
           </View>
@@ -273,6 +355,31 @@ function ExamRow({
         </View>
       ) : null}
     </Pressable>
+    {canRetake ? (
+      <View
+        style={[
+          styles.retakeBar,
+          { flexDirection: isRTL ? 'row-reverse' : 'row', backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius },
+        ]}
+      >
+        <Text style={{ flex: 1, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
+          {t('masteryNotPassed')}
+        </Text>
+        <Pressable
+          onPress={onRetake}
+          disabled={retaking}
+          accessibilityRole="button"
+          style={[styles.cta, { backgroundColor: ACCENT_FILL, opacity: retaking ? 0.6 : 1 }]}
+        >
+          {retaking ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{t('masteryRetake')}</Text>
+          )}
+        </Pressable>
+      </View>
+    ) : null}
+    </View>
   );
 }
 
@@ -280,14 +387,16 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: StyleSheet.hairlineWidth },
   backBtn: { padding: 4, marginBottom: 8 },
   title: { fontSize: 22 },
-  desc: { fontSize: 13, lineHeight: 21, marginTop: 4 },
+  desc: { fontSize: 15, lineHeight: 24, marginTop: 4 },
   errorBanner: { alignItems: 'center', gap: 8, padding: 12, borderWidth: 1 },
-  errorText: { flex: 1, fontSize: 13, lineHeight: 21 },
+  errorText: { flex: 1, fontSize: 15, lineHeight: 24 },
   empty: { alignItems: 'center', gap: 10, paddingHorizontal: 24, paddingTop: 48 },
   emptyIcon: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
   card: { borderWidth: 1, padding: 14 },
   rowTop: { alignItems: 'flex-start', gap: 12 },
   stateIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   chip: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
+  retakeBar: { alignItems: 'center', gap: 12, borderWidth: 1, paddingVertical: 10, paddingHorizontal: 14 },
   cta: { alignSelf: 'center', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
+  childName: { fontSize: 17, marginTop: 4 },
 });

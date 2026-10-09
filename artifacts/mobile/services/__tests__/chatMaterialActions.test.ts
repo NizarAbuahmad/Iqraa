@@ -21,6 +21,7 @@ import assert from 'node:assert/strict';
 
 import {
   canPresentArtifact,
+  chatDocumentText,
   deckForArtifact,
   materialContentFor,
   materialFormStateFor,
@@ -145,6 +146,17 @@ describe('materialFormStateFor', () => {
   it('carries the topic, so re-opening a saved chat material is not a blank form', () => {
     assert.deepEqual(materialFormStateFor('تركيب الاقترانات'), { topic: 'تركيب الاقترانات' });
   });
+  const lab = { url: 'https://phet.colorado.edu/x', simName: 'تجربة', attribution: 'PhET', steps: ['خطوة'] };
+  it('marks a worksheet that carries a lab, and names its lesson, as the card does', () => {
+    const data: ChatArtifactData = { kind: 'worksheet', worksheet: { title: 't', instructions: '', sections: [], answerKey: [], lab } };
+    assert.deepEqual(materialFormStateFor('الطيف الذري', data, 'kbl-chem-s1-nccd-u1_lab'),
+      { topic: 'الطيف الذري', lessonId: 'kbl-chem-s1-nccd-u1_lab', materialKind: 'virtual-lab' });
+  });
+  it('leaves every other material as the topic alone, a lesson id or not', () => {
+    const plain: ChatArtifactData = { kind: 'worksheet', worksheet: { title: 't', instructions: '', sections: [], answerKey: [] } };
+    assert.deepEqual(materialFormStateFor('س', plain, 'kbl-x'), { topic: 'س' });
+    assert.deepEqual(materialFormStateFor('س', { kind: 'lesson-plan', plan: PLAN }, 'kbl-x'), { topic: 'س' });
+  });
 });
 
 describe('canPresentArtifact', () => {
@@ -194,5 +206,36 @@ describe('deckForArtifact', () => {
         );
       }
     }
+  });
+});
+
+/**
+ * The bubble's own «نسخ» hands over the student copy. It used to copy the
+ * teacher text, key included, while every export menu already defaulted to the
+ * student copy — so the one-tap path was the one that leaked the answers.
+ */
+describe('chatDocumentText', () => {
+  const META = { title: 'تركيب الاقترانات', subject: 'الرياضيات', grade: 'الصف العاشر', lang: 'ar' as const };
+
+  it('leaves the key out of a quiz and a worksheet when asked for the student copy', () => {
+    for (const data of [{ kind: 'quiz', quiz: QUIZ }, { kind: 'worksheet', worksheet: WORKSHEET }] as ChatArtifactData[]) {
+      const student = chatDocumentText(data, META, 'fallback', 'ar', { includeAnswers: false });
+      const teacher = chatDocumentText(data, META, 'fallback', 'ar', { includeAnswers: true });
+      assert.ok(!student.includes('مفتاح الإجابات'), `${data.kind}: student copy carries the key`);
+      assert.ok(teacher.includes('مفتاح الإجابات'), `${data.kind}: teacher copy lost the key`);
+    }
+  });
+
+  it('formats a lesson plan the same either way — it has no key', () => {
+    const data: ChatArtifactData = { kind: 'lesson-plan', plan: PLAN };
+    assert.equal(
+      chatDocumentText(data, META, 'x', 'ar', { includeAnswers: false }),
+      chatDocumentText(data, META, 'x', 'ar', { includeAnswers: true }),
+    );
+  });
+
+  it('falls back to the message text without structured data or meta', () => {
+    assert.equal(chatDocumentText(undefined, META, 'نص الرسالة', 'ar', { includeAnswers: false }), 'نص الرسالة');
+    assert.equal(chatDocumentText({ kind: 'quiz', quiz: QUIZ }, undefined, 'نص الرسالة', 'ar', { includeAnswers: false }), 'نص الرسالة');
   });
 });

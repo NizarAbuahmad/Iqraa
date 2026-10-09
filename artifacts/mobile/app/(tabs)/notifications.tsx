@@ -12,7 +12,6 @@
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -25,7 +24,7 @@ import {
   type ChatRole,
 } from '@/services/messaging';
 import { apiErrorMessage } from '@/services/apiErrorKey';
-import { chatRoleLabel } from '@/services/chatRoleLabel';
+import { chatThreadSubtitle } from '@/services/chatThreadSubtitle';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { useStudentAccountsEnabled } from '@/services/features';
@@ -33,19 +32,7 @@ import { setUnreadMessages } from '@/services/unreadMessages';
 import { filterThreads, THREAD_FILTERS, type ThreadFilter } from '@/services/threadFilter';
 import { Avatar } from '@/components/ui/Avatar';
 import { LoadError } from '@/components/ui/LoadError';
-
-function relativeTime(iso: string, lang: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return lang === 'ar' ? 'الآن' : 'now';
-  if (mins < 60) return lang === 'ar' ? `${mins}د` : `${mins}m`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return lang === 'ar' ? `${hrs}س` : `${hrs}h`;
-  const days = Math.floor(hrs / 24);
-  if (days < 7) return lang === 'ar' ? `${days}ي` : `${days}d`;
-  const wks = Math.floor(days / 7);
-  return lang === 'ar' ? `${wks}أ` : `${wks}w`;
-}
+import { relativeTime } from '@/services/relativeTime';
 
 interface Contact {
   userId: string;
@@ -56,7 +43,6 @@ interface Contact {
 
 export default function NotificationsScreen() {
   const colors = useColors();
-  const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
   const studentAccounts = useStudentAccountsEnabled();
   const { user } = useAuth();
@@ -136,7 +122,7 @@ export default function NotificationsScreen() {
       // account, not people on the roster, and "none yet" needs to say so.
       ListEmptyComponent={
         <View style={{ paddingVertical: 20, gap: 6 }}>
-          <Text style={[styles.threadName, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: 'center' }]}>
+          <Text style={[styles.threadName, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: 'center' }]}>
             {t('messagingNoContactsTitle')}
           </Text>
           <Text style={[styles.threadPreview, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center', lineHeight: 20 }]}>
@@ -153,7 +139,7 @@ export default function NotificationsScreen() {
         >
           <Avatar firstName={item.firstName} lastName={item.lastName} size={40} colors={colors} />
           <View style={{ flex: 1 }}>
-            <Text style={[styles.threadName, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]} numberOfLines={1}>
+            <Text style={[styles.threadName, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]} numberOfLines={1}>
               {item.firstName} {item.lastName}
             </Text>
             <Text style={[styles.threadPreview, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]} numberOfLines={1}>
@@ -168,7 +154,7 @@ export default function NotificationsScreen() {
             {startingUserId === item.userId ? (
               <ActivityIndicator color={colors.primaryForeground} size="small" />
             ) : (
-              <Text style={{ color: colors.primaryForeground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>
+              <Text style={{ color: colors.primaryForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
                 {t('messagingStartConversation')}
               </Text>
             )}
@@ -178,7 +164,10 @@ export default function NotificationsScreen() {
     />
   );
 
-  const topPad = insets.top + (insets.top === 0 ? 16 : 0);
+  // Not insets.top: the tab layout's lesson bar (or the slim bell header a
+  // parent/student gets) sits above this screen and already pays for the
+  // status bar, so adding it again left a blank band under that bar.
+  const topPad = 16;
   const unreadCount = threads.reduce((sum, th) => sum + th.unreadCount, 0);
   const align = isRTL ? 'right' : 'left';
   const visibleThreads = filterThreads(threads, filter);
@@ -192,7 +181,7 @@ export default function NotificationsScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: colors.card, borderBottomColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'flex-end' }]}>
         <View style={{ alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
-          <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: align }]}>
+          <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
             {t('notificationsTitle')}
           </Text>
           {unreadCount > 0 && (
@@ -248,10 +237,10 @@ export default function NotificationsScreen() {
                 key={f}
                 onPress={() => setFilter(f)}
                 accessibilityRole="tab"
-                accessibilityState={{ selected: active }}
+                aria-selected={active}
                 style={[styles.filterChip, { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border }]}
               >
-                <Text style={{ fontSize: 13, fontFamily: 'Cairo_600SemiBold', color: active ? colors.primaryForeground : colors.mutedForeground }}>
+                <Text style={{ fontSize: 13, fontFamily: 'ReadexPro_600SemiBold', color: active ? colors.primaryForeground : colors.mutedForeground }}>
                   {filterLabel[f]}
                 </Text>
               </Pressable>
@@ -301,7 +290,7 @@ export default function NotificationsScreen() {
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
                     <Text
-                      style={[styles.threadName, { color: colors.foreground, fontFamily: item.unreadCount > 0 ? 'Cairo_600SemiBold' : 'Cairo_500Medium', textAlign: align, flex: 1 }]}
+                      style={[styles.threadName, { color: colors.foreground, fontFamily: item.unreadCount > 0 ? 'ReadexPro_600SemiBold' : 'ReadexPro_500Medium', textAlign: align, flex: 1 }]}
                       numberOfLines={1}
                     >
                       {name}
@@ -317,7 +306,7 @@ export default function NotificationsScreen() {
                       style={[styles.threadRole, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}
                       numberOfLines={1}
                     >
-                      {chatRoleLabel(other.role, t)}
+                      {chatThreadSubtitle(other, t, lang)}
                     </Text>
                   ) : item.type === 'class_group' ? (
                     <Text style={[styles.threadRole, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]} numberOfLines={1}>
@@ -337,7 +326,7 @@ export default function NotificationsScreen() {
                 </View>
                 {item.unreadCount > 0 && (
                   <View style={[styles.badge, { backgroundColor: colors.primary }]}>
-                    <Text style={{ color: '#fff', fontSize: 11, fontFamily: 'Cairo_600SemiBold', lineHeight: 16 }}>
+                    <Text style={{ color: '#fff', fontSize: 11, fontFamily: 'ReadexPro_600SemiBold', lineHeight: 16 }}>
                       {item.unreadCount > 9 ? '9+' : String(item.unreadCount)}
                     </Text>
                   </View>
@@ -371,7 +360,7 @@ export default function NotificationsScreen() {
         <Pressable style={styles.newChatBackdrop} onPress={() => setNewChatOpen(false)}>
           <Pressable style={[styles.newChatSheet, { backgroundColor: colors.background }]} onPress={e => e.stopPropagation()}>
             <View style={[styles.newChatHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              <Text style={[styles.title, { fontSize: 18, color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>
+              <Text style={[styles.title, { fontSize: 18, color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
                 {t('messagingStartConversation')}
               </Text>
               <Pressable onPress={() => setNewChatOpen(false)} hitSlop={10}>
@@ -389,22 +378,22 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 1 },
   title: { fontSize: 28 },
-  unreadCount: { fontSize: 13, lineHeight: 21, marginTop: 2 },
+  unreadCount: { fontSize: 15, lineHeight: 24, marginTop: 2 },
   headerAction: { alignItems: 'center', gap: 4 },
   headerActionPrimary: { alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-  headerActionText: { fontSize: 13, fontFamily: 'Cairo_600SemiBold' },
+  headerActionText: { fontSize: 13, fontFamily: 'ReadexPro_600SemiBold' },
   filterRow: { gap: 8, paddingHorizontal: 16, paddingTop: 12 },
   filterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, borderWidth: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   threadCard: { padding: 14, gap: 12, borderWidth: 1, alignItems: 'center' },
   groupIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   threadName: { fontSize: 15, marginBottom: 3 },
-  threadRole: { fontSize: 12, marginBottom: 2 },
-  threadPreview: { fontSize: 13, lineHeight: 21 },
+  threadRole: { fontSize: 13, marginBottom: 2 },
+  threadPreview: { fontSize: 15, lineHeight: 24 },
   badge: { minWidth: 20, height: 20, borderRadius: 10, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   empty: { alignItems: 'center', paddingTop: 60, paddingBottom: 24, paddingHorizontal: 32, gap: 8 },
-  emptyText: { fontSize: 15, fontFamily: 'Cairo_500Medium' as any },
-  emptyDesc: { fontSize: 13, lineHeight: 21, textAlign: 'center' },
+  emptyText: { fontSize: 15, fontFamily: 'ReadexPro_500Medium' as any },
+  emptyDesc: { fontSize: 15, lineHeight: 24, textAlign: 'center' },
   contactCard: { padding: 12, gap: 12, borderWidth: 1, alignItems: 'center' },
   messageBtn: { paddingHorizontal: 14, paddingVertical: 8, minWidth: 72, alignItems: 'center' },
   newChatBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },

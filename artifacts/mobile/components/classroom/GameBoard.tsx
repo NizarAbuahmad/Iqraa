@@ -16,7 +16,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import type { GameState, TeamStanding } from '@/services/classGame';
-import { isAwarded, standings } from '@/services/classGame';
+import { isAwarded, isNobody, medalFor, standings } from '@/services/classGame';
 
 const CARD_BG = '#FFFFFF';
 const BORDER = '#EFDCD4';
@@ -24,7 +24,6 @@ const TEXT_PRIMARY = '#22303C';
 const TEXT_MUTED = '#7C6A65';
 const GREEN = '#16A34A';
 
-const MEDALS = ['🥇', '🥈', '🥉'];
 
 /** Arabic-Indic digits, because the rest of the projected deck is Arabic. */
 function num(n: number, isAr: boolean): string {
@@ -60,7 +59,7 @@ export function ScoreStrip({
           ]}
         >
           <Text style={strip.emoji}>{team.emoji}</Text>
-          <Text style={[strip.score, { color: team.color, fontFamily: 'Cairo_700Bold' }]}>
+          <Text style={[strip.score, { color: team.color, fontFamily: 'ReadexPro_700Bold' }]}>
             {num(team.score, isAr)}
           </Text>
           {/* A live streak is the thing that makes the room react — it earns
@@ -81,20 +80,23 @@ export function ScoreStrip({
  * `classGame` recomputes scores from the ledger, so an undo is exact.
  */
 export function AwardRow({
-  state, questionIndex, isRTL, onToggle, onAll, labels,
+  state, questionIndex, isRTL, onToggle, onAll, onNobody, labels,
 }: {
   state: GameState;
   questionIndex: number;
   isRTL: boolean;
   onToggle: (teamId: string) => void;
   onAll: () => void;
-  labels: { prompt: string; all: string };
+  /** «Nobody got it» — an explicit entry, so the question still breaks streaks. */
+  onNobody: () => void;
+  labels: { prompt: string; all: string; nobody: string };
 }) {
   const allAwarded = state.teams.every(team => isAwarded(state, questionIndex, team.id));
+  const nobody = isNobody(state, questionIndex);
 
   return (
     <View style={award.wrap}>
-      <Text style={[award.prompt, { fontFamily: 'Cairo_600SemiBold' }]}>{labels.prompt}</Text>
+      <Text style={[award.prompt, { fontFamily: 'ReadexPro_600SemiBold' }]}>{labels.prompt}</Text>
 
       <View style={[award.row, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         {state.teams.map(team => {
@@ -107,7 +109,7 @@ export function AwardRow({
                 onToggle(team.id);
               }}
               accessibilityRole="checkbox"
-              accessibilityState={{ checked: on }}
+              aria-checked={on}
               accessibilityLabel={team.name}
               style={[
                 award.team,
@@ -119,7 +121,7 @@ export function AwardRow({
             >
               <Text style={award.teamEmoji}>{team.emoji}</Text>
               <Text
-                style={[award.teamName, { color: on ? team.color : TEXT_MUTED, fontFamily: 'Cairo_600SemiBold' }]}
+                style={[award.teamName, { color: on ? team.color : TEXT_MUTED, fontFamily: 'ReadexPro_600SemiBold' }]}
                 numberOfLines={1}
               >
                 {team.name}
@@ -130,25 +132,53 @@ export function AwardRow({
         })}
       </View>
 
-      <Pressable
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          onAll();
-        }}
-        style={[
-          award.allBtn,
-          {
-            borderColor: allAwarded ? GREEN : BORDER,
-            backgroundColor: allAwarded ? GREEN + '18' : 'transparent',
-            flexDirection: isRTL ? 'row-reverse' : 'row',
-          },
-        ]}
-      >
-        <Ionicons name="people-outline" size={16} color={allAwarded ? GREEN : TEXT_MUTED} />
-        <Text style={[award.allText, { color: allAwarded ? GREEN : TEXT_MUTED, fontFamily: 'Cairo_500Medium' }]}>
-          {labels.all}
-        </Text>
-      </Pressable>
+      <View style={[award.row, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onAll();
+          }}
+          accessibilityRole="checkbox"
+          aria-checked={allAwarded}
+          style={[
+            award.allBtn,
+            {
+              borderColor: allAwarded ? GREEN : BORDER,
+              backgroundColor: allAwarded ? GREEN + '18' : 'transparent',
+              flexDirection: isRTL ? 'row-reverse' : 'row',
+            },
+          ]}
+        >
+          <Ionicons name="people-outline" size={16} color={allAwarded ? GREEN : TEXT_MUTED} />
+          <Text style={[award.allText, { color: allAwarded ? GREEN : TEXT_MUTED, fontFamily: 'ReadexPro_500Medium' }]}>
+            {labels.all}
+          </Text>
+        </Pressable>
+
+        {/* Said out loud and tapped: a question nobody got is still a question
+            that was asked, and it has to break everyone's streak. */}
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onNobody();
+          }}
+          accessibilityRole="checkbox"
+          aria-checked={nobody}
+          style={[
+            award.allBtn,
+            {
+              borderColor: nobody ? TEXT_MUTED : BORDER,
+              backgroundColor: nobody ? TEXT_MUTED + '22' : 'transparent',
+              flexDirection: isRTL ? 'row-reverse' : 'row',
+            },
+          ]}
+        >
+          <Ionicons name="close-circle-outline" size={16} color={nobody ? TEXT_PRIMARY : TEXT_MUTED} />
+          <Text style={[award.allText, { color: nobody ? TEXT_PRIMARY : TEXT_MUTED, fontFamily: 'ReadexPro_500Medium' }]}>
+            {labels.nobody}
+          </Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -164,6 +194,7 @@ export function ScoreboardView({
 }) {
   const rows = standings(state);
   const leader = rows[0]?.score ?? 0;
+  const anyScored = rows.some(r => r.score > 0);
 
   return (
     <View style={board.wrap}>
@@ -179,13 +210,13 @@ export function ScoreboardView({
             },
           ]}
         >
-          <Text style={[board.rank, { color: team.color, fontFamily: 'Cairo_700Bold' }]}>
-            {team.rank <= 3 ? MEDALS[team.rank - 1] : num(team.rank, isAr)}
+          <Text style={[board.rank, { color: team.color, fontFamily: 'ReadexPro_700Bold' }]}>
+            {medalFor(team.rank, anyScored) ?? num(team.rank, isAr)}
           </Text>
           <Text style={board.emoji}>{team.emoji}</Text>
           <View style={{ flex: 1, marginHorizontal: 12 }}>
             <Text
-              style={[board.name, { fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}
+              style={[board.name, { fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}
               numberOfLines={1}
             >
               {team.name}
@@ -205,7 +236,7 @@ export function ScoreboardView({
             </View>
           </View>
           <View style={{ alignItems: isRTL ? 'flex-start' : 'flex-end' }}>
-            <Text style={[board.score, { color: team.color, fontFamily: 'Cairo_700Bold' }]}>
+            <Text style={[board.score, { color: team.color, fontFamily: 'ReadexPro_700Bold' }]}>
               {num(team.score, isAr)}
             </Text>
             <Text style={[board.scoreLabel, { fontFamily: 'Almarai_400Regular' }]}>
@@ -239,7 +270,7 @@ export function PodiumView({
       style={[podium.againBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
     >
       <Ionicons name="refresh" size={18} color={TEXT_MUTED} />
-      <Text style={[podium.againText, { fontFamily: 'Cairo_600SemiBold' }]}>{labels.playAgain}</Text>
+      <Text style={[podium.againText, { fontFamily: 'ReadexPro_600SemiBold' }]}>{labels.playAgain}</Text>
     </Pressable>
   );
 
@@ -269,12 +300,12 @@ export function PodiumView({
                 },
               ]}
             >
-              <Text style={[podium.medal, { fontSize: gi === 0 ? 52 : 38 }]}>{MEDALS[gi]}</Text>
+              <Text style={[podium.medal, { fontSize: gi === 0 ? 52 : 38 }]}>{medalFor(group[0]!.rank, true)}</Text>
               <View style={{ flex: 1, marginHorizontal: 14 }}>
                 <Text
                   style={[
                     podium.name,
-                    { fontSize: gi === 0 ? 32 : 24, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' },
+                    { fontSize: gi === 0 ? 32 : 24, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' },
                   ]}
                   numberOfLines={1}
                 >
@@ -283,7 +314,7 @@ export function PodiumView({
               </View>
               <View style={{ alignItems: 'center' }}>
                 <Text
-                  style={[podium.score, { color: team.color, fontSize: gi === 0 ? 40 : 28, fontFamily: 'Cairo_700Bold' }]}
+                  style={[podium.score, { color: team.color, fontSize: gi === 0 ? 40 : 28, fontFamily: 'ReadexPro_700Bold' }]}
                 >
                   {num(team.score, isAr)}
                 </Text>

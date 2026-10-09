@@ -18,6 +18,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -141,9 +142,9 @@ export function EditQuestionModal({
     <Pressable
       key={key}
       onPress={onPress}
-      style={[styles.chip, { borderColor: selected ? ACCENT : colors.border, backgroundColor: selected ? ACCENT + '12' : colors.card }]}
+      style={[styles.chip, { borderColor: selected ? ACCENT : colors.border, backgroundColor: selected ? palette.selected : colors.card }]}
     >
-      <Text style={{ color: selected ? ACCENT : colors.foreground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>{text}</Text>
+      <Text style={{ color: selected ? ACCENT : colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{text}</Text>
     </Pressable>
   );
   const row = { flexDirection: isRTL ? 'row-reverse' : 'row' } as const;
@@ -160,7 +161,7 @@ export function EditQuestionModal({
               const on = form.correct.includes(i);
               return (
                 <View key={i} style={[row, { alignItems: 'center', gap: 8 }]}>
-                  <Pressable onPress={() => set({ correct: [i] })} hitSlop={8} accessibilityRole="radio" accessibilityState={{ checked: on }}>
+                  <Pressable onPress={() => set({ correct: [i] })} hitSlop={8} accessibilityRole="radio" aria-checked={on}>
                     <Ionicons name={on ? 'checkmark-circle' : 'ellipse-outline'} size={22} color={on ? ACCENT : colors.mutedForeground} />
                   </Pressable>
                   <View style={{ flex: 1 }}>
@@ -254,10 +255,11 @@ export function EditQuestionModal({
 
   return (
     <Modal visible animationType="slide" transparent onRequestClose={onClose}>
+      <KeyboardSafeView>
       <View style={styles.backdrop}>
         <View style={[styles.sheet, { backgroundColor: colors.background }]}>
           <View style={[styles.header, row, { borderColor: colors.border }]}>
-            <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 17 }}>
+            <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 17 }}>
               {t(question ? 'questionEditTitle' : 'questionAddTitle')}
             </Text>
             <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={t('close')}>
@@ -304,11 +306,11 @@ export function EditQuestionModal({
                       key={id}
                       onPress={() => setObjectiveId(id)}
                       accessibilityRole="radio"
-                      accessibilityState={{ checked: on }}
-                      style={[row, styles.objectiveRow, { borderColor: on ? ACCENT : colors.border, backgroundColor: on ? ACCENT + '12' : colors.card }]}
+                      aria-checked={on}
+                      style={[row, styles.objectiveRow, { borderColor: on ? ACCENT : colors.border, backgroundColor: on ? palette.selected : colors.card }]}
                     >
                       <Ionicons name={on ? 'radio-button-on' : 'radio-button-off'} size={18} color={on ? ACCENT : colors.mutedForeground} />
-                      <Text numberOfLines={2} style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: align }}>
+                      <Text numberOfLines={2} style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
                         {objectiveLabel(id, lang) ?? t('readAloudObjectiveN', String(i + 1))}
                       </Text>
                     </Pressable>
@@ -336,12 +338,13 @@ export function EditQuestionModal({
               {busy ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>{t('questionSaveBtn')}</Text>
+                <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>{t('questionSaveBtn')}</Text>
               )}
             </Pressable>
           </ScrollView>
         </View>
       </View>
+      </KeyboardSafeView>
     </Modal>
   );
 }
@@ -350,8 +353,8 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   sheet: { maxHeight: '92%', borderTopLeftRadius: 20, borderTopRightRadius: 20 },
   header: { alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1 },
-  label: { fontFamily: 'Cairo_600SemiBold', fontSize: 14, marginTop: 6 },
-  hint: { fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 20 },
+  label: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, marginTop: 6 },
+  hint: { fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 22 },
   input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, fontFamily: 'Almarai_400Regular' },
   multiline: { minHeight: 80, textAlignVertical: 'top' },
   wrap: { flexWrap: 'wrap', gap: 8 },

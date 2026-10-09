@@ -13,6 +13,13 @@
 # state, whoever caused it and whenever: a table dropped by hand, a push run
 # against the wrong URL, a restored backup from before a migration. Read-only —
 # `to_regclass` looks names up in the catalog and touches no data.
+#
+# Also called by deploy.yml, which runs it BEFORE the API deploy and stops the
+# deploy when it fails. That replaced the `push` trigger this file used to have:
+# on 2026-10-05 a push-triggered run failed at 08:52Z, but a failing check that
+# runs beside the deploy only reports the outage, it does not prevent it — the
+# API shipped code that selected three columns production did not have. Run as
+# a gate, the old revision keeps serving until the DDL is applied.
 name: Schema check
 
 on:
@@ -21,16 +28,7 @@ on:
     # is fixable before anyone teaches against it.
     - cron: '0 6 * * *'
   workflow_dispatch:
-  push:
-    branches: [main]
-    # A schema change reaching main is the moment the push is most likely to
-    # be outstanding, so ask immediately rather than waiting for the schedule.
-    paths:
-      - 'lib/db/src/schema/**'
-
-concurrency:
-  group: schema-check
-  cancel-in-progress: false
+  workflow_call:
 
 # See the note in ci.yml. This one reads production through DATABASE_URL and
 # reports; it writes nothing, to the database or to the repository.
@@ -114,7 +112,7 @@ jobs:
             echo '```'
             if [ "$CODE" = "1" ]; then
               echo
-              echo 'Fix: `pnpm --filter @workspace/db run push` against the same DATABASE_URL.'
+              echo 'Fix: the `production migrations` job log names any failed statement; if it passed, production drifted by hand. See docs/deploying.md, «Schema».'
             fi
           } >> "$GITHUB_STEP_SUMMARY"
           exit "$CODE"

@@ -42,7 +42,7 @@ export interface SavedMaterial {
   formState: Record<string, any>;
   /**
    * The class this material is attached to, or null/undefined for none.
-   * Set from the class screen, not at save time — see `app/classes/[id].tsx`.
+   * Set from the class screen, not at save time — see `app/classes/[id]/index.tsx`.
    */
   classGroupId?: string | null;
 }

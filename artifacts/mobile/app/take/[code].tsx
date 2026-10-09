@@ -42,6 +42,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { isStudentRole, useAuth } from '@/context/AuthContext';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { bookFigureRefsForLessons } from '@/services/bookFigureUri';
+import { questionRefersToFigure } from '@/services/questionFigures';
 import {
   StudentExamError,
   claimEvaluationAsSelf,
@@ -59,9 +60,9 @@ import {
   type StudentResponse,
   type StudentResult,
 } from '@/services/studentExam';
-import { createSaveQueue, type SaveQueue, type SaveQueueState } from '@/services/answerSaveQueue';
+import { createSaveQueue, mergeUnsavedAnswers, type SaveQueue, type SaveQueueState } from '@/services/answerSaveQueue';
 import { takeErrorKey } from '@/services/takeErrorKey';
-import { clearExamSession, loadExamSession, saveExamSession } from '@/services/examSession';
+import { clearExamSession, loadExamSession, loadUnsavedAnswers, saveExamSession, saveUnsavedAnswers } from '@/services/examSession';
 import { formatMarks } from '@/services/studentAnswers';
 import { StudentResultCard } from '@/components/StudentResultCard';
 import { DictationInput, FillBlankInput, MatchingInput, ReadAloudInput } from '@/components/QuestionInputs';
@@ -124,6 +125,13 @@ export default function TakeExamScreen() {
   // refuses late writes and that refusal hands in).
   const clockOffsetMs = useRef(0);
   const [notice, setNotice] = useState('');
+  // Its own flag, not a `notice`: «تابعنا من حيث توقّفت» is about the
+  // questions, and as a notice it carried over to «تم التسليم» — on a paper
+  // reopened after hand-in, and on one resumed and then handed in.
+  const [showResumed, setShowResumed] = useState(false);
+  // Answers kept on this device that the server did not have when the paper
+  // was re-entered; the save queue sends them as soon as it exists.
+  const resendRef = useRef<Record<string, StudentResponse>>({});
 
   /**
    * Enter the paper with a sitting the server just handed over — a fresh
@@ -134,7 +142,17 @@ export default function TakeExamScreen() {
     const state = await getExamState(claimed.token);
     setToken(claimed.token);
     setQuestions(state.questions.length ? state.questions : claimed.questions);
-    setAnswers(Object.fromEntries(state.answers.map(a => [a.questionId, a.response])));
+    const serverAnswers: Record<string, StudentResponse> = Object.fromEntries(
+      state.answers.map(a => [a.questionId, a.response]),
+    );
+    if (code && !state.submittedAt) {
+      const local = (await loadUnsavedAnswers(code)) as Record<string, StudentResponse>;
+      const { answers: merged, resend } = mergeUnsavedAnswers(serverAnswers, local);
+      resendRef.current = Object.fromEntries(resend.map(id => [id, local[id]]));
+      setAnswers(merged);
+    } else {
+      setAnswers(serverAnswers);
+    }
     // Resume wins over claim: an older API answers neither and the panel
     // simply stays empty, which is what this screen did before figures.
     setLessonIds(state.lessonIds ?? claimed.lessonIds ?? []);
@@ -145,7 +163,8 @@ export default function TakeExamScreen() {
     }
     setChosen({ id: claimed.student.id, displayName: claimed.student.displayName, taken: true });
     if (code) await saveExamSession(code, { token: claimed.token, studentName: claimed.student.displayName });
-    setNotice(resumed ? t('takeResumed') : '');
+    setNotice('');
+    setShowResumed(resumed && !state.submittedAt);
     setPhase(state.submittedAt ? 'done' : 'answering');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
@@ -260,12 +279,32 @@ export default function TakeExamScreen() {
       },
     });
     queueRef.current = queue;
+    for (const [id, response] of Object.entries(resendRef.current)) queue.set(id, response, { immediate: true });
+    resendRef.current = {};
     return () => {
       queue.dispose();
       queueRef.current = null;
     };
   }, [token]);
   const unsavedCount = saveState.failed.length;
+
+  // Mirror every answer the server has not confirmed into storage, so a
+  // reload or a killed app mid-paper does not take them with it.
+  useEffect(() => {
+    if (!code || !token) return;
+    if (phase === 'done') {
+      void saveUnsavedAnswers(code, {});
+      return;
+    }
+    // The queue's own state, not `saveState`: on re-entry the resent answers
+    // are in the queue a render before `saveState` hears of them, and writing
+    // the stale empty list would wipe them from storage in between.
+    const pending = queueRef.current?.state().pending ?? saveState.pending;
+    const unsaved = Object.fromEntries(
+      pending.filter(id => answers[id] !== undefined).map(id => [id, answers[id]]),
+    );
+    void saveUnsavedAnswers(code, unsaved);
+  }, [code, token, phase, saveState, answers]);
 
   const retryUnsaved = useCallback(async () => {
     return queueRef.current ? queueRef.current.flush() : true;
@@ -376,10 +415,10 @@ export default function TakeExamScreen() {
     return (
       <View style={[styles.center, { backgroundColor: colors.background, padding: 32, gap: 12 }]}>
         <Ionicons name="alert-circle-outline" size={40} color={colors.destructive} />
-        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 16, textAlign: 'center' }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 16, textAlign: 'center' }}>
           {error || t('takeLinkFailed')}
         </Text>
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: 'center' }}>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
           {t('takeAskTeacher')}
         </Text>
         {/* A dropped connection looks exactly like a dead link from here. */}
@@ -389,7 +428,7 @@ export default function TakeExamScreen() {
           style={({ pressed }) => [styles.retryBtn, { borderColor: ACCENT, opacity: pressed ? 0.7 : 1 }]}
         >
           <Ionicons name="refresh" size={16} color={ACCENT} />
-          <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>{t('retry')}</Text>
+          <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>{t('retry')}</Text>
         </Pressable>
       </View>
     );
@@ -399,11 +438,11 @@ export default function TakeExamScreen() {
     return (
       <View style={[styles.center, { backgroundColor: colors.background, padding: 32, gap: 12 }]}>
         <Ionicons name="checkmark-circle" size={56} color={ACCENT} />
-        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 20 }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 20 }}>
           {t('takeHandedIn')}
         </Text>
         {notice ? (
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: 'center' }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
             {notice}
           </Text>
         ) : null}
@@ -411,7 +450,7 @@ export default function TakeExamScreen() {
             (`releaseResultsToStudent`) and requires the paper to be fully
             marked — this only ever checks, on request, whether both are true
             yet; see `studentResultReady` on the server. */}
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: 'center' }}>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
           {t('takeTeacherWillReview')}
         </Text>
 
@@ -422,7 +461,7 @@ export default function TakeExamScreen() {
         ) : (
           <View style={{ marginTop: 8, alignItems: 'center', gap: 8 }}>
             {resultChecked && (
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: 'center' }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 23, textAlign: 'center' }}>
                 {t('takeResultNotReady')}
               </Text>
             )}
@@ -436,7 +475,7 @@ export default function TakeExamScreen() {
               ) : (
                 <Ionicons name="refresh" size={16} color={ACCENT} />
               )}
-              <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
                 {checkingResult ? t('takeCheckingResult') : t('takeCheckResult')}
               </Text>
             </Pressable>
@@ -448,7 +487,7 @@ export default function TakeExamScreen() {
 
   const header = (
     <View style={[styles.header, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 14 }]}>
-      <Text style={[styles.headerTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]} numberOfLines={2}>
+      <Text style={[styles.headerTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]} numberOfLines={2}>
         {title}
       </Text>
       {chosen && (
@@ -461,7 +500,7 @@ export default function TakeExamScreen() {
           accessibilityLiveRegion="polite"
           style={[
             styles.headerSub,
-            { fontFamily: 'Cairo_600SemiBold', textAlign: align, color: remainingMs < 60_000 ? '#FDE68A' : 'rgba(255,255,255,0.95)' },
+            { fontFamily: 'ReadexPro_600SemiBold', textAlign: align, color: remainingMs < 5 * 60_000 ? '#FDE68A' : 'rgba(255,255,255,0.95)' },
           ]}
         >
           {t('takeTimeLeft', formatCountdown(remainingMs))}
@@ -475,7 +514,7 @@ export default function TakeExamScreen() {
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         {header}
         <ScrollView contentContainerStyle={{ padding: 20, gap: 10, paddingBottom: 40 }}>
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
             {t('takeQuestionsAndMarks', String(exam?.questionCount ?? 0), formatMarks(exam?.totalMarks))}
           </Text>
 
@@ -483,14 +522,14 @@ export default function TakeExamScreen() {
             <View style={{ gap: 14, marginTop: 20, alignItems: 'center' }}>
               {/* The confirm step is the cheapest guard against a level landing
                   on the wrong child. It is not decoration. */}
-              <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 22, textAlign: 'center' }}>
+              <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 22, textAlign: 'center' }}>
                 {chosen.displayName}
               </Text>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: 'center' }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
                 {t('takeConfirmName')}
               </Text>
               {error ? (
-                <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: 'center' }}>
+                <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
                   {error}
                 </Text>
               ) : null}
@@ -498,22 +537,29 @@ export default function TakeExamScreen() {
                 {busy ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 16 }}>{t('takeYesStart')}</Text>
+                  <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 16 }}>{t('takeYesStart')}</Text>
                 )}
               </Pressable>
-              <Pressable onPress={() => { setChosen(null); setPhase('pick'); }} hitSlop={8}>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 14 }}>
+              {/* Grey caption text read as a label, not a control, and a child who
+                  tapped the wrong name never found the way back. */}
+              <Pressable
+                onPress={() => { setChosen(null); setPhase('pick'); }}
+                hitSlop={8}
+                accessibilityRole="button"
+                style={[styles.navBtn, { borderColor: colors.border, minWidth: 200 }]}
+              >
+                <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 14 }}>
                   {t('takeNotMe')}
                 </Text>
               </Pressable>
             </View>
           ) : (
             <>
-              <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15, textAlign: align, marginTop: 6 }}>
+              <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: align, marginTop: 6 }}>
                 {t('takePickYourName')}
               </Text>
               {error ? (
-                <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
+                <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
                   {error}
                 </Text>
               ) : null}
@@ -532,11 +578,11 @@ export default function TakeExamScreen() {
                     },
                   ]}
                 >
-                  <Text style={{ color: colors.foreground, fontFamily: 'Cairo_500Medium', fontSize: 16, flex: 1, textAlign: align }}>
+                  <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 16, flex: 1, textAlign: align }}>
                     {s.displayName}
                   </Text>
                   {s.taken && (
-                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
                       {t('takeNameTaken')}
                     </Text>
                   )}
@@ -554,7 +600,7 @@ export default function TakeExamScreen() {
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         {header}
         <ScrollView contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 40 }}>
-          <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 16, textAlign: align }}>
+          <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 16, textAlign: align }}>
             {t('takeReviewTitle')}
           </Text>
           <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -569,7 +615,7 @@ export default function TakeExamScreen() {
                     { borderColor: done ? ACCENT : colors.border, backgroundColor: done ? ACCENT + '18' : 'transparent' },
                   ]}
                 >
-                  <Text style={{ color: done ? ACCENT : colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+                  <Text style={{ color: done ? ACCENT : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
                     {i + 1}
                   </Text>
                 </Pressable>
@@ -578,22 +624,22 @@ export default function TakeExamScreen() {
           </View>
 
           {/* Name the number. "Are you sure?" is not information. */}
-          <Text style={{ color: unanswered > 0 ? '#B54708' : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: align }}>
+          <Text style={{ color: unanswered > 0 ? palette.warning : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
             {unanswered > 0 ? t('takeUnansweredWarning', String(unanswered)) : t('takeAllAnswered')}
           </Text>
           {error ? (
-            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>{error}</Text>
+            <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>{error}</Text>
           ) : null}
 
           <Pressable onPress={() => void hand()} disabled={busy} style={[styles.primaryBtn, { backgroundColor: ACCENT_FILL, opacity: busy ? 0.7 : 1 }]}>
             {busy ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 16 }}>{t('takeHandIn')}</Text>
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 16 }}>{t('takeHandIn')}</Text>
             )}
           </Pressable>
           <Pressable onPress={() => setPhase('answering')} hitSlop={8} style={{ alignSelf: 'center' }}>
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 14 }}>{t('takeBackToQuestions')}</Text>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 14 }}>{t('takeBackToQuestions')}</Text>
           </Pressable>
         </ScrollView>
       </View>
@@ -601,17 +647,36 @@ export default function TakeExamScreen() {
   }
 
   const question = questions[index];
-  const examFigures = bookFigureRefsForLessons(lessonIds, lang === 'ar');
+  // Lesson-level, so on its own it sat under every question — a spelling item in a
+  // maths paper got the maths lesson's compass rose. Show it only where the
+  // question itself points at a figure.
+  const examFigures = question && questionRefersToFigure(question.body)
+    ? bookFigureRefsForLessons(lessonIds, lang === 'ar')
+    : [];
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {header}
+      <View
+        style={{ height: 4, backgroundColor: colors.muted }}
+        accessibilityRole="progressbar"
+        accessibilityValue={{ min: 0, max: questions.length, now: questions.length - unanswered }}
+      >
+        <View
+          style={{
+            height: 4,
+            width: `${questions.length ? ((questions.length - unanswered) / questions.length) * 100 : 0}%`,
+            backgroundColor: colors.primary,
+            alignSelf: isRTL ? 'flex-end' : 'flex-start',
+          }}
+        />
+      </View>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40, gap: 16 }} keyboardShouldPersistTaps="handled">
         <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
             {t('takeProgress', String(index + 1), String(questions.length))}
           </Text>
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
-            {t('marksAbbrev', question?.marks ?? '')}
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
+            {t('takeQuestionMarks', question?.marks ?? '')}
           </Text>
           {unsavedCount > 0 && (
             <Pressable
@@ -620,16 +685,16 @@ export default function TakeExamScreen() {
               accessibilityRole="button"
               style={{ marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}
             >
-              <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19 }}>
-                {t('takeSaveFailed')} · <Text style={{ fontFamily: 'Cairo_600SemiBold', textDecorationLine: 'underline' }}>{t('retry')}</Text>
+              <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21 }}>
+                {t('takeSaveFailed')} · <Text style={{ fontFamily: 'ReadexPro_600SemiBold', textDecorationLine: 'underline' }}>{t('retry')}</Text>
               </Text>
             </Pressable>
           )}
         </View>
 
-        {notice ? (
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
-            {notice}
+        {notice || showResumed ? (
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
+            {notice || t('takeResumed')}
           </Text>
         ) : null}
 
@@ -672,15 +737,15 @@ export default function TakeExamScreen() {
             disabled={index === 0}
             style={[styles.navBtn, { borderColor: colors.border, opacity: index === 0 ? 0.4 : 1 }]}
           >
-            <Text style={{ color: colors.foreground, fontFamily: 'Cairo_500Medium', fontSize: 14 }}>{t('takePrevious')}</Text>
+            <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 14 }}>{t('takePrevious')}</Text>
           </Pressable>
           {index < questions.length - 1 ? (
             <Pressable onPress={() => setIndex(i => i + 1)} style={[styles.navBtn, { borderColor: ACCENT, backgroundColor: ACCENT_FILL, flex: 1 }]}>
-              <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>{t('takeNext')}</Text>
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>{t('takeNext')}</Text>
             </Pressable>
           ) : (
             <Pressable onPress={() => setPhase('review')} style={[styles.navBtn, { borderColor: ACCENT, backgroundColor: ACCENT_FILL, flex: 1 }]}>
-              <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>{t('takeReview')}</Text>
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>{t('takeReview')}</Text>
             </Pressable>
           )}
         </View>
@@ -772,7 +837,7 @@ function QuestionCard({
                   {
                     // Selected, never correct. There is no correctness to show.
                     borderColor: on ? ACCENT : colors.border,
-                    backgroundColor: on ? ACCENT + '12' : 'transparent',
+                    backgroundColor: on ? palette.selected : 'transparent',
                     flexDirection: isRTL ? 'row-reverse' : 'row',
                   },
                 ]}
@@ -810,7 +875,7 @@ function QuestionCard({
                 onPress={() => onAnswer({ value: opt.v })}
                 style={[styles.tf, { borderColor: on ? ACCENT : colors.border, backgroundColor: on ? ACCENT : 'transparent' }]}
               >
-                <Text style={{ color: on ? palette.primaryForeground : colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+                <Text style={{ color: on ? palette.primaryForeground : colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
                   {t(opt.key)}
                 </Text>
               </Pressable>
@@ -904,5 +969,5 @@ const styles = StyleSheet.create({
   navBtn: { alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 10, paddingVertical: 14, paddingHorizontal: 18 },
   retryBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 8, marginTop: 4 },
   primaryBtn: { alignItems: 'center', justifyContent: 'center', borderRadius: 12, paddingVertical: 16, paddingHorizontal: 24, minWidth: 200 },
-  reviewDot: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 10 },
+  reviewDot: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 10 },
 });

@@ -40,6 +40,13 @@ export interface QrResource {
   /** The printed page the code sits on — the locator a student can act on. */
   pdfPage: number;
   isHttp: boolean;
+  /**
+   * What the code opens, in the words of the thing itself — the page's own
+   * title, a video's title, a file's name. Optional on purpose: the manifest
+   * carries one only where someone opened the link and read it, and a row
+   * without one falls back to the book it is printed in.
+   */
+  title?: string;
 }
 
 export interface QrResourceBook {
@@ -132,6 +139,7 @@ interface RawEntry {
   book?: string;
   pdfPage?: number;
   kind?: string;
+  title?: string;
   workingUrl?: string;
   httpStatus?: string | number;
 }
@@ -176,6 +184,7 @@ export function qrResourcesForGrade(gradeId: string): QrResourceBook[] {
       url,
       pdfPage: entry.pdfPage ?? 0,
       isHttp: url.toLowerCase().startsWith('http://'),
+      ...(entry.title?.trim() ? { title: entry.title.trim() } : {}),
     });
   }
 

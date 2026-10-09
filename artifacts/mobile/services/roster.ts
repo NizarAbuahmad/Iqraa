@@ -9,13 +9,18 @@
  */
 import { apiFetch } from './apiClient.ts';
 import { trackEvent } from './analytics.ts';
+import type { AddLabResourceBody, AddResourceBody, ClassResource } from './classResources.ts';
+import type { StudentRecord } from './studentRecord.ts';
 
 export interface ClassGroup {
   id: string;
   name: string;
   nameAr: string;
   gradeId: string;
+  /** The primary subject — `subjectIds[0]`. Read the list through `classSubjectIds` (services/classSubjects.ts). */
   subjectId: string;
+  /** Every subject taught to this class. Optional: a server older than the field omits it. */
+  subjectIds?: string[];
   academicYear: string;
   createdAt: string;
   studentCount: number;
@@ -109,7 +114,7 @@ export async function createClass(input: {
   name: string;
   nameAr?: string;
   gradeId?: string;
-  subjectId?: string;
+  subjectIds?: string[];
   academicYear?: string;
 }): Promise<ClassGroup> {
   const res = await apiFetch('/classes', {
@@ -122,7 +127,7 @@ export async function createClass(input: {
 
 export async function updateClass(
   classId: string,
-  patch: { name?: string; nameAr?: string; gradeId?: string; subjectId?: string; academicYear?: string },
+  patch: { name?: string; nameAr?: string; gradeId?: string; subjectIds?: string[]; academicYear?: string },
 ): Promise<ClassGroup> {
   const res = await apiFetch(`/classes/${classId}`, {
     method: 'PATCH',
@@ -190,6 +195,12 @@ export async function getClassMastery(classId: string): Promise<ClassMastery> {
   return readJson<ClassMastery>(res, 'Loading class mastery');
 }
 
+/** One student's record in one class. 404 when the student is not in it. */
+export async function getStudentRecord(classId: string, studentId: string): Promise<StudentRecord> {
+  const res = await apiFetch(`/classes/${classId}/students/${studentId}/record`);
+  return readJson<StudentRecord>(res, 'Loading student record');
+}
+
 /**
  * Add students to a class. Send the whole list in one call — a teacher entering
  * a register of thirty should not generate thirty round trips, each of which
@@ -218,6 +229,44 @@ export async function removeStudentFromClass(
     method: 'DELETE',
   });
   await readJson(res, 'Removing student');
+}
+
+/**
+ * The Library items a teacher has put in front of this class. The server reads
+ * a missing table as an empty list, so this never fails for want of a schema.
+ */
+export async function listClassResources(classId: string): Promise<ClassResource[]> {
+  const res = await apiFetch(`/classes/${classId}/resources`);
+  const data = await readJson<{ resources: ClassResource[] }>(res, 'Loading class resources');
+  return data.resources;
+}
+
+/**
+ * Put a Library item on a class's shelf. Resolves with the new row, or `null`
+ * when it was already there — a double tap, or a second device, is not a
+ * failure the teacher needs to hear about.
+ */
+export async function addClassResource(
+  classId: string,
+  body: AddResourceBody | AddLabResourceBody,
+): Promise<ClassResource | null> {
+  const res = await apiFetch(`/classes/${classId}/resources`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+  try {
+    const data = await readJson<{ resource: ClassResource }>(res, 'Adding resource');
+    return data.resource;
+  } catch (err) {
+    if (err instanceof RosterError && err.status === 409 && err.code === 'already_added') return null;
+    throw err;
+  }
+}
+
+/** Take an item off the class's shelf. The Library item itself is untouched. */
+export async function removeClassResource(classId: string, resourceId: string): Promise<void> {
+  const res = await apiFetch(`/classes/${classId}/resources/${resourceId}`, { method: 'DELETE' });
+  await readJson(res, 'Removing resource');
 }
 
 /**
@@ -295,8 +344,16 @@ export async function unlinkAccount(studentId: string, userId: string): Promise<
 export interface JoinRosterEntry {
   id: string;
   displayName: string;
-  /** A student account already holds this name. Parents may still claim it; a second student may not. */
+  /** A student account already holds this name; a second student may not claim it. */
   taken: boolean;
+  /**
+   * A parent account already holds this name; a second parent may not pick it
+   * from this list (the teacher adds one with the child's own code). Optional
+   * because a server from before the rule does not send it, and reading absent
+   * as "free" is the right way for an old server to degrade — the picker lets
+   * the claim through and that server accepts it.
+   */
+  guardianTaken?: boolean;
 }
 
 /**

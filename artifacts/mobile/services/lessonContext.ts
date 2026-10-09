@@ -144,6 +144,29 @@ export async function setPrepSkip(lessonKey: string, rowType: string, skipped: b
   return next;
 }
 
+/*
+  Whether the chat's readiness board is unfolded. One flag for every lesson:
+  it records how the teacher likes the empty chat, not anything about a
+  lesson. Absent reads as folded — the chat opens on the chat.
+*/
+const PREP_BOARD_OPEN_KEY = '@iqra_prep_board_open_v1';
+
+export async function loadPrepBoardOpen(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(scopedKey(PREP_BOARD_OPEN_KEY))) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export async function savePrepBoardOpen(open: boolean): Promise<void> {
+  try {
+    await AsyncStorage.setItem(scopedKey(PREP_BOARD_OPEN_KEY), open ? '1' : '0');
+  } catch {
+    // Non-fatal: the board still folds for this session.
+  }
+}
+
 /** Set once the teacher closes the home card's "set up your timetable" nudge. */
 const SETUP_NUDGE_DISMISSED_KEY = '@iqra_setup_nudge_dismissed_v1';
 

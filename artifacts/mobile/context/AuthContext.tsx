@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { Platform } from 'react-native';
 import {
   getAccessToken,
   getRefreshToken,
@@ -10,6 +11,7 @@ import {
   setOnRefreshFailed,
   getApiBaseUrl,
 } from '@/services/apiClient';
+import { LEGAL_VERSION } from '@/constants/legal';
 import { trackEvent } from '@/services/analytics';
 import { fetchWithTimeout } from '@/services/fetchWithTimeout';
 import { setActiveLessonContextUser } from '@/services/lessonContext';
@@ -17,6 +19,7 @@ import { setActiveMediaUser } from '@/services/lessonMedia';
 import { setActiveWorkspaceUser } from '@/services/workspace';
 import { readUserSnapshot, saveUserSnapshot } from '@/services/userSnapshot';
 import { queryClient } from '@/services/queryClient';
+import { isTokenRemovedByOtherTab } from '@/services/sessionLoss';
 import { isSavedFull, sortSavedAccounts, type SavedAccountMeta } from '@/services/accountList';
 import {
   getSavedRefreshToken,
@@ -115,6 +118,12 @@ export interface RegisterData {
   confirmPassword?: string;
   /** Defaults to 'teacher' server-side when omitted. */
   role?: 'teacher' | 'student' | 'parent';
+  /**
+   * The person ticked «أوافق على شروط الاستخدام وسياسة الخصوصية». The server
+   * refuses a new account without it and records the version shown
+   * (`LEGAL_VERSION`) — see `api-server/src/lib/termsAcceptance.ts`.
+   */
+  acceptedTerms?: boolean;
 }
 
 interface AuthContextType {
@@ -127,14 +136,14 @@ interface AuthContextType {
    * "Continue with Google" button, which used to ignore the role pill
    * entirely and silently create a teacher.
    */
-  loginWithGoogle: (credential: string, signup?: Pick<RegisterData, 'role'>) => Promise<void>;
+  loginWithGoogle: (credential: string, signup?: Pick<RegisterData, 'role' | 'acceptedTerms'>) => Promise<void>;
   /**
    * Creates the account but does NOT sign in — a password account starts
    * unverified and the server refuses login until `verifyEmail` succeeds.
    * Returns the email the code was sent to, for the caller to carry to the
    * verify screen (the trimmed/lowercased form the server actually used).
    */
-  register: (data: RegisterData) => Promise<{ email: string }>;
+  register: (data: RegisterData) => Promise<{ email: string; emailSent?: boolean }>;
   /** Submits the 6-digit code from the verification email. Signs the user in on success, same as login. */
   verifyEmail: (email: string, code: string) => Promise<void>;
   /** Requests a fresh code for an unverified account. Always resolves — the server never confirms whether the email exists. */
@@ -145,7 +154,7 @@ interface AuthContextType {
    * that is the only proof it belongs to whoever is asking. Returns the
    * address the new code went to.
    */
-  changeUnverifiedEmail: (email: string, password: string, newEmail: string) => Promise<{ email: string }>;
+  changeUnverifiedEmail: (email: string, password: string, newEmail: string) => Promise<{ email: string; emailSent?: boolean }>;
   /**
    * Always resolves when the request was accepted, whether or not that address
    * has an account — the server refuses to say, so the UI must not imply it
@@ -303,6 +312,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  // Web only: tokens live in localStorage, which every tab on the origin
+  // shares. Signing out (or adding an account) in one tab clears them under
+  // the others, which would keep showing a user whose requests all 401.
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    const onStorage = (e: StorageEvent) => {
+      if (!isTokenRemovedByOtherTab(e)) return;
+      queryClient.clear();
+      setUser(null);
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
   // On mount: try to restore session from stored access token
   useEffect(() => {
     (async () => {
@@ -437,7 +460,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithGoogle = useCallback(async (
     credential: string,
-    signup?: Pick<RegisterData, 'role'>,
+    signup?: Pick<RegisterData, 'role' | 'acceptedTerms'>,
   ) => {
     // `isNewAccount` is optional on purpose: an app build can outlive the API
     // revision that answers it (and predates it during a rollout). Absent is
@@ -455,6 +478,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({
           credential,
           role: signup?.role,
+          // Read only when this credential creates an account; someone
+          // signing back in is not asked again.
+          acceptedTerms: signup?.acceptedTerms === true,
+          termsVersion: LEGAL_VERSION,
         }),
       },
     );
@@ -476,7 +503,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (payload.confirmPassword && payload.confirmPassword !== payload.password)
       throw new ApiError('Passwords do not match', 'passwords_mismatch');
 
-    const data = await apiJson<{ email: string; message: string }>(
+    const data = await apiJson<{ email: string; message: string; emailSent?: boolean }>(
       '/auth/register',
       {
         method: 'POST',
@@ -487,12 +514,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           password: payload.password,
           confirmPassword: payload.confirmPassword,
           role: payload.role,
+          acceptedTerms: payload.acceptedTerms === true,
+          termsVersion: LEGAL_VERSION,
         }),
       },
     );
 
     trackEvent('signup_started', { method: 'email', role: payload.role ?? 'unspecified' });
-    return { email: data.email };
+    return { email: data.email, emailSent: data.emailSent };
   }, []);
 
   const verifyEmail = useCallback(async (email: string, code: string) => {
@@ -520,7 +549,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const changeUnverifiedEmail = useCallback(
     async (email: string, password: string, newEmail: string) => {
-      const data = await apiJson<{ email: string; message: string }>(
+      const data = await apiJson<{ email: string; message: string; emailSent?: boolean }>(
         '/auth/change-unverified-email',
         {
           method: 'POST',
@@ -531,7 +560,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }),
         },
       );
-      return { email: data.email };
+      return { email: data.email, emailSent: data.emailSent };
     },
     [],
   );
@@ -593,7 +622,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
-    setUser(toUser(updated));
+    // PATCH /users/profile does not echo hasRosterLink; dropping it would turn
+    // a linked student's `true` into "not answered" until the next /auth/me.
+    setUser(prev => ({ ...toUser(updated), hasRosterLink: updated.hasRosterLink ?? prev?.hasRosterLink }));
   }, []);
 
   const uploadAvatar = useCallback(async (dataUrl: string) => {

@@ -27,6 +27,7 @@ import { MaterialClassField } from './MaterialClassField';
 import { FeedbackWidget } from './FeedbackWidget';
 import { RelatedResourcesPanel } from './RelatedResourcesPanel';
 import { textOn } from '@/services/readableColor';
+import { palette } from '@/constants/colors';
 
 export type SaveState = 'save' | 'saved' | 'updated';
 
@@ -36,7 +37,7 @@ export interface GeneratorResultActionsProps {
   savedId: string | null | undefined;
   onToast: (message: string) => void;
   saveState: SaveState;
-  onSave: () => void;
+  onSave: () => void | Promise<void>;
   /** Omit entirely for a screen with no favouriting (activity has none). */
   favorite?: { favorited: boolean; onToggle: () => void };
   /** Opens the screen's own ExportMenu. */
@@ -78,6 +79,18 @@ export function GeneratorResultActions({
   const colors = useColors();
   const { t, isRTL } = useLanguage();
   const [reporting, setReporting] = React.useState(false);
+  // A second tap while the first save's POST is in flight would create a
+  // second copy in موادي — every screen's `savedId` is only set once it returns.
+  const saving = React.useRef(false);
+  const handleSavePress = async () => {
+    if (saving.current) return;
+    saving.current = true;
+    try {
+      await onSave();
+    } finally {
+      saving.current = false;
+    }
+  };
   const [reported, setReported] = React.useState(false);
 
   // A new variantId means onRegenerate() already swapped in a fresh,
@@ -137,7 +150,7 @@ export function GeneratorResultActions({
         <MaterialClassField materialId={savedId} onToast={onToast} />
 
         <Pressable
-          onPress={onSave}
+          onPress={handleSavePress}
           style={({ pressed }) => [
             styles.actionBtn,
             {
@@ -150,7 +163,7 @@ export function GeneratorResultActions({
           ]}
         >
           <Ionicons name={saveDone ? 'checkmark-circle' : 'bookmark-outline'} size={16} color={saveDone ? textOn(accent) : accent} />
-          <Text style={[styles.actionText, { color: saveDone ? textOn(accent) : accent, fontFamily: 'Cairo_600SemiBold' }]}>
+          <Text style={[styles.actionText, { color: saveDone ? textOn(accent) : accent, fontFamily: 'ReadexPro_600SemiBold' }]}>
             {saveBtnLabel}
           </Text>
         </Pressable>
@@ -162,7 +175,7 @@ export function GeneratorResultActions({
             style={({ pressed }) => [
               styles.actionBtn,
               {
-                borderColor: favorite.favorited ? '#B54708' : colors.mutedForeground,
+                borderColor: favorite.favorited ? palette.warning : colors.mutedForeground,
                 borderRadius: colors.radius,
                 flexDirection: isRTL ? 'row-reverse' : 'row',
                 backgroundColor: favorite.favorited ? '#F59E0B18' : 'transparent',
@@ -170,8 +183,8 @@ export function GeneratorResultActions({
               },
             ]}
           >
-            <Ionicons name={favorite.favorited ? 'star' : 'star-outline'} size={16} color={favorite.favorited ? '#B54708' : colors.mutedForeground} />
-            <Text style={[styles.actionText, { color: favorite.favorited ? '#B54708' : colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>
+            <Ionicons name={favorite.favorited ? 'star' : 'star-outline'} size={16} color={favorite.favorited ? palette.warning : colors.mutedForeground} />
+            <Text style={[styles.actionText, { color: favorite.favorited ? palette.warning : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }]}>
               {favorite.favorited ? t('inFavorites') : t('addToFavorites')}
             </Text>
           </Pressable>
@@ -182,7 +195,7 @@ export function GeneratorResultActions({
           style={[styles.actionBtn, { borderColor: colors.mutedForeground, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
         >
           <Ionicons name="share-outline" size={16} color={colors.mutedForeground} />
-          <Text style={[styles.actionText, { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>{t('exportBtn')}</Text>
+          <Text style={[styles.actionText, { color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }]}>{t('exportBtn')}</Text>
         </Pressable>
 
         <Pressable
@@ -190,7 +203,7 @@ export function GeneratorResultActions({
           style={[styles.actionBtn, { borderColor: accent, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
         >
           <Ionicons name="refresh-outline" size={16} color={accent} />
-          <Text style={[styles.actionText, { color: accent, fontFamily: 'Cairo_600SemiBold' }]}>{t('regenerateBtn')}</Text>
+          <Text style={[styles.actionText, { color: accent, fontFamily: 'ReadexPro_600SemiBold' }]}>{t('regenerateBtn')}</Text>
         </Pressable>
 
         {/* Report a problem — only for an artifact that is actually shared.
@@ -211,7 +224,7 @@ export function GeneratorResultActions({
             ]}
           >
             <Ionicons name="flag-outline" size={16} color={colors.destructive} />
-            <Text style={[styles.actionText, { color: colors.destructive, fontFamily: 'Cairo_600SemiBold' }]}>
+            <Text style={[styles.actionText, { color: colors.destructive, fontFamily: 'ReadexPro_600SemiBold' }]}>
               {reported ? t('reportArtifactSent') : t('reportArtifactBtn')}
             </Text>
           </Pressable>

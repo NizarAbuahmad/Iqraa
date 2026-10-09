@@ -11,6 +11,7 @@ import { confirm } from '@/services/confirm';
 import { listClasses, type ClassGroup } from '@/services/roster';
 import { classNameFor } from '@/services/materialClass';
 import { arCountPhrase } from '@/services/arCount';
+import { isEditableMaterial } from '@/services/materialShape';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import {
@@ -24,6 +25,8 @@ import {
   MATERIAL_LABEL_KEY,
 } from '@/constants/materialKind';
 import { goBack } from '@/services/navigation';
+import { AR_LATIN } from '@/services/dateLabels';
+import { palette } from '@/constants/colors';
 
 const TABS: Array<{ key: MaterialType | 'all'; labelKey: string }> = [
   { key: 'all', labelKey: 'allFilter' },
@@ -143,8 +146,9 @@ export default function WorkspaceScreen() {
   const menuActions = (item: SavedMaterial) => {
     // A chain of ternaries ending in `: '/ai-tools/quiz'` sent activities and
     // decks to the quiz builder, which cannot rebuild either. Kinds with no
-    // form-driven editor simply do not offer Edit.
-    const editRoute = MATERIAL_EDIT_ROUTE[item.type];
+    // form-driven editor simply do not offer Edit — and neither does a saved
+    // virtual-lab sheet, which is fixed reviewed content (see isEditableMaterial).
+    const editRoute = isEditableMaterial(item) ? MATERIAL_EDIT_ROUTE[item.type] : undefined;
     return [
       {
         key: 'open',
@@ -184,7 +188,7 @@ export default function WorkspaceScreen() {
     try {
       const d = new Date(iso);
       if (lang === 'ar') {
-        return d.toLocaleDateString('ar-JO', { day: 'numeric', month: 'short', year: 'numeric' });
+        return d.toLocaleDateString(AR_LATIN, { day: 'numeric', month: 'short', year: 'numeric' });
       }
       return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     } catch {
@@ -220,14 +224,14 @@ export default function WorkspaceScreen() {
         {/* Body */}
         <View style={{ flex: 1 }}>
           <Text
-            style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}
+            style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}
             numberOfLines={2}
           >
             {item.title}
           </Text>
           <View style={[styles.cardMeta, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <View style={[styles.typePill, { backgroundColor: color + '18', borderRadius: 8 }]}>
-              <Text style={[styles.typeText, { color, fontFamily: 'Cairo_500Medium' }]}>
+              <Text style={[styles.typeText, { color, fontFamily: 'ReadexPro_500Medium' }]}>
                 {typeLabel(item.type)}
               </Text>
             </View>
@@ -264,7 +268,7 @@ export default function WorkspaceScreen() {
             <Ionicons
               name={item.isFavorite ? 'star' : 'star-outline'}
               size={20}
-              color={item.isFavorite ? '#B54708' : colors.mutedForeground}
+              color={item.isFavorite ? palette.warning : colors.mutedForeground}
             />
           </Pressable>
           <Pressable
@@ -286,12 +290,14 @@ export default function WorkspaceScreen() {
       {/* Header */}
       <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('back')}
           onPress={() => goBack()} hitSlop={10}
           style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
         >
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.headerTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('myWorkspace')}
         </Text>
         <Text style={[styles.headerSub, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -334,7 +340,7 @@ export default function WorkspaceScreen() {
                 styles.tabText,
                 {
                   color: activeTab === tab.key ? colors.primary : colors.mutedForeground,
-                  fontFamily: activeTab === tab.key ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                  fontFamily: activeTab === tab.key ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
                 },
               ]}>
                 {t(tab.labelKey as any)}
@@ -351,14 +357,14 @@ export default function WorkspaceScreen() {
           style={[
             styles.filterBtn,
             {
-              backgroundColor: favoritesOnly ? '#B54708' + '22' : colors.muted,
+              backgroundColor: favoritesOnly ? palette.warning + '22' : colors.muted,
               borderRadius: 20,
               flexDirection: isRTL ? 'row-reverse' : 'row',
             },
           ]}
         >
-          <Ionicons name={favoritesOnly ? 'star' : 'star-outline'} size={14} color={favoritesOnly ? '#B54708' : colors.mutedForeground} />
-          <Text style={[styles.filterText, { color: favoritesOnly ? '#B54708' : colors.mutedForeground, fontFamily: 'Cairo_500Medium' }]}>
+          <Ionicons name={favoritesOnly ? 'star' : 'star-outline'} size={14} color={favoritesOnly ? palette.warning : colors.mutedForeground} />
+          <Text style={[styles.filterText, { color: favoritesOnly ? palette.warning : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>
             {t('favoritesFilter')}
           </Text>
         </Pressable>
@@ -379,7 +385,7 @@ export default function WorkspaceScreen() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Ionicons name="folder-open-outline" size={64} color={colors.mutedForeground} style={{ opacity: 0.4 }} />
-            <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: 'center' }]}>
+            <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: 'center' }]}>
               {t('noSavedItems')}
             </Text>
             <Text style={[styles.emptyDesc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
@@ -389,7 +395,7 @@ export default function WorkspaceScreen() {
               onPress={() => router.push('/(tabs)/ai-tools')}
               style={[styles.emptyBtn, { backgroundColor: colors.primary, borderRadius: colors.radius }]}
             >
-              <Text style={[{ color: colors.primaryForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }]}>
+              <Text style={[{ color: colors.primaryForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }]}>
                 {t('aiTools')}
               </Text>
             </Pressable>
@@ -413,7 +419,7 @@ export default function WorkspaceScreen() {
                 styles.menuTitle,
                 {
                   color: colors.foreground,
-                  fontFamily: 'Cairo_600SemiBold',
+                  fontFamily: 'ReadexPro_600SemiBold',
                   textAlign: isRTL ? 'right' : 'left',
                 },
               ]}
@@ -443,7 +449,7 @@ export default function WorkspaceScreen() {
                 <Text
                   style={{
                     color: action.destructive ? colors.destructive : colors.foreground,
-                    fontFamily: 'Cairo_500Medium',
+                    fontFamily: 'ReadexPro_500Medium',
                     flex: 1,
                     textAlign: isRTL ? 'right' : 'left',
                   }}
@@ -453,7 +459,7 @@ export default function WorkspaceScreen() {
               </Pressable>
             ))}
             <Pressable onPress={() => setMenuItem(null)} style={styles.menuCancel}>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>
                 {t('cancel')}
               </Text>
             </Pressable>
@@ -486,16 +492,16 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 0, borderBottomWidth: 1 },
   backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 4 },
   headerTitle: { fontSize: 26, marginBottom: 2 },
-  headerSub: { fontSize: 13, lineHeight: 21, marginBottom: 14 },
+  headerSub: { fontSize: 15, lineHeight: 24, marginBottom: 14 },
   searchRow: { alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 14 },
-  searchInput: { flex: 1, fontSize: 14, padding: 0 },
+  searchInput: { flex: 1, fontSize: 15, padding: 0 },
   tabs: { gap: 0 },
   tab: { paddingHorizontal: 4, paddingVertical: 10, marginRight: 20 },
   tabText: { fontSize: 13 },
   filterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1 },
   filterBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 6 },
   filterText: { fontSize: 12 },
-  countText: { fontSize: 12, lineHeight: 19 },
+  countText: { fontSize: 13, lineHeight: 21 },
   card: { padding: 14, borderWidth: 1, gap: 12, alignItems: 'flex-start' },
   cardIcon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   cardTitle: { fontSize: 14, marginBottom: 6, lineHeight: 20 },
@@ -507,6 +513,6 @@ const styles = StyleSheet.create({
   cardActions: { justifyContent: 'flex-start', flexShrink: 0 },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12, paddingHorizontal: 20 },
   emptyTitle: { fontSize: 18, marginTop: 8 },
-  emptyDesc: { fontSize: 13, lineHeight: 20, maxWidth: 280 },
+  emptyDesc: { fontSize: 15, lineHeight: 23, maxWidth: 280 },
   emptyBtn: { paddingHorizontal: 24, paddingVertical: 12, marginTop: 8 },
 });

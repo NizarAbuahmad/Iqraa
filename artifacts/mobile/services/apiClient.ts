@@ -5,9 +5,7 @@
 import * as storage from './secureStorage';
 import { fetchWithTimeout } from './fetchWithTimeout';
 import { originHeaders } from './clientPlatform';
-
-const ACCESS_TOKEN_KEY = 'iqra_access_token';
-const REFRESH_TOKEN_KEY = 'iqra_refresh_token';
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, isSessionLost } from './sessionLoss';
 
 const LOCAL_DEV_API = 'http://localhost:8080/api';
 
@@ -139,6 +137,10 @@ async function refreshAccessToken(): Promise<string | null> {
         // token, and clearing on it logged a teacher out of a working
         // session because the network blinked.
         if (res.status === 400 || res.status === 401 || res.status === 403) {
+          // On web every tab shares one token store. If another tab rotated
+          // this token meanwhile (the server refuses the loser inside its
+          // grace window), the stored pair is fresh — keep it, don't wipe it.
+          if ((await getRefreshToken()) !== refreshToken) return getAccessToken();
           await clearTokens();
           _onRefreshFailed?.();
         }
@@ -192,10 +194,17 @@ export async function apiFetch(
   const res = await fetchWithTimeout(`${getApiBaseUrl()}${path}`, { ...init, headers }, timeoutMs);
 
   if (res.status === 401 && retry) {
+    // Read after the response, not before the request: a sign-in that landed
+    // while this was in flight must not be mistaken for a lost session.
+    const hadRefreshToken = !!(await getRefreshToken());
     const newToken = await refreshAccessToken();
     if (newToken) {
       return apiFetch(path, options, false);
     }
+    // Nothing to refresh with, so `refreshAccessToken` never reported a
+    // failure and the screen would keep a signed-in user that every request
+    // refuses. A failed refresh already reported itself.
+    if (isSessionLost(path, hadRefreshToken)) _onRefreshFailed?.();
   }
 
   return res;

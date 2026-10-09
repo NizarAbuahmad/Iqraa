@@ -14,6 +14,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useColors } from '@/hooks/useColors';
@@ -139,6 +140,7 @@ export function CommandPalette({
 
   return (
     <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+      <KeyboardSafeView>
       <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
         {/* Swallows the backdrop press so a click inside the card does not close it. */}
         <Pressable
@@ -229,6 +231,7 @@ export function CommandPalette({
           </View>
         </Pressable>
       </Pressable>
+      </KeyboardSafeView>
     </Modal>
   );
 }
@@ -255,11 +258,11 @@ const styles = StyleSheet.create({
   },
   inputRow: { alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1 },
   input: { flex: 1, fontSize: 15, fontFamily: 'Almarai_400Regular', outlineStyle: 'none' as never },
-  section: { fontSize: 11, fontFamily: 'Cairo_600SemiBold', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 },
+  section: { fontSize: 11, fontFamily: 'ReadexPro_600SemiBold', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 },
   row: { alignItems: 'center', gap: 11, paddingHorizontal: 16, paddingVertical: 10 },
-  rowLabel: { fontSize: 14, fontFamily: 'Cairo_600SemiBold' },
-  rowHint: { fontSize: 12, lineHeight: 19, fontFamily: 'Almarai_400Regular', marginTop: 1 },
-  empty: { fontSize: 13, lineHeight: 21, fontFamily: 'Almarai_400Regular', padding: 24 },
+  rowLabel: { fontSize: 14, fontFamily: 'ReadexPro_600SemiBold' },
+  rowHint: { fontSize: 13, lineHeight: 21, fontFamily: 'Almarai_400Regular', marginTop: 1 },
+  empty: { fontSize: 15, lineHeight: 24, fontFamily: 'Almarai_400Regular', padding: 24 },
   footer: { alignItems: 'center', gap: 7, paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1 },
   footText: { fontSize: 11, lineHeight: 18, fontFamily: 'Almarai_400Regular', marginInlineEnd: 8 },
   kbd: { borderWidth: 1, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },

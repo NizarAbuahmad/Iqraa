@@ -236,6 +236,36 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(post.status, 401, "minting a link code must require a token");
   });
 
+  it("mounts the class-resource routes inside the roster's guarded prefix", async () => {
+    // Like the claim-code routes: had these landed outside `router.use(["/classes",
+    // "/students"], …)` they would answer 404 rather than 401, and a teacher's class
+    // shelf would be readable and writable with no token at all. NB this passes
+    // before the routes exist (the prefix guard answers 401 for any /classes/** path)
+    // — it is a guard against someone moving them out, not a test that they exist.
+    const id = "00000000-0000-0000-0000-000000000000";
+    const get = await fetch(`${base}/classes/${id}/resources`);
+    assert.equal(get.status, 401, "listing class resources must require a token");
+
+    const post = await fetch(`${base}/classes/${id}/resources`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    });
+    assert.equal(post.status, 401, "adding a class resource must require a token");
+
+    const del = await fetch(`${base}/classes/${id}/resources/${id}`, { method: "DELETE" });
+    assert.equal(del.status, 401, "removing a class resource must require a token");
+  });
+
+  it("mounts the student record inside the roster's guarded prefix", async () => {
+    // Like the class-resource routes: outside `router.use(["/classes", "/students"], …)`
+    // this would answer 404 rather than 401, and one child's marks would be
+    // readable with no token. Passes before the route exists — it guards the move.
+    const id = "00000000-0000-0000-0000-000000000000";
+    const res = await fetch(`${base}/classes/${id}/students/${id}/record`);
+    assert.equal(res.status, 401, "a student's record must require a token");
+  });
+
   it("mounts account deletion, and refuses it without a token", async () => {
     // Apple 5.1.1(v) and Play both require this route to exist, so the thing
     // worth pinning is that it is *mounted* — a 404 here is a submission
@@ -273,6 +303,39 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
       });
       assert.equal(res.status, 400, `${path} must be mounted, public, and validate its body`);
     }
+  });
+
+  it("refuses a malformed address before an account exists for it", async () => {
+    // «info@zarya.gate@gmail.com» used to pass a bare includes("@") check: the
+    // account was created, the app said "code sent", and no mail could ever be
+    // delivered. Both entry points must answer invalid_email — and do so
+    // before the database, which this suite cannot supply, so a pass here
+    // also proves the check runs first.
+    const bad = "info@zarya.gate@gmail.com";
+    const post = (path: string, body: unknown) =>
+      fetch(`${base}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+    const register = await post("/auth/register", {
+      firstName: "A",
+      lastName: "B",
+      email: bad,
+      password: "Sufficiently1Strong!",
+      acceptedTerms: true,
+    });
+    assert.equal(register.status, 400);
+    assert.equal(((await register.json()) as { code: string }).code, "invalid_email");
+
+    const change = await post("/auth/change-unverified-email", {
+      email: "someone@example.com",
+      password: "Sufficiently1Strong!",
+      newEmail: bad,
+    });
+    assert.equal(change.status, 400);
+    assert.equal(((await change.json()) as { code: string }).code, "invalid_email");
   });
 
   it("reports that student accounts are off, and refuses one", async () => {
@@ -360,6 +423,8 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
       const res = await fetch(`${base}${route}`);
       assert.equal(res.status, 401, `${route} must require a token`);
     }
+    const readAll = await fetch(`${base}/messaging/threads/read-all`, { method: "POST" });
+    assert.equal(readAll.status, 401, "/messaging/threads/read-all must require a token");
   });
 
   it("keeps the student exam link public, and only the link", async () => {
@@ -397,8 +462,19 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     // guards for teachers — the tell would be a different 401 or 403 there.
     const mine = await fetch(`${base}/student/exams`);
     assert.equal(mine.status, 401, "/student/exams must require a token");
+    const grades = await fetch(`${base}/student/grades`);
+    assert.equal(grades.status, 401, "/student/grades must require a token");
+    const progress = await fetch(`${base}/student/progress`);
+    assert.equal(progress.status, 401, "/student/progress must require a token");
+    const retake = await fetch(`${base}/student/exams/00000000-0000-0000-0000-000000000000/retake`, { method: "POST" });
+    assert.equal(retake.status, 401, "/student/exams/:id/retake must require a token");
     const roster = await fetch(`${base}/students/00000000-0000-0000-0000-000000000000`);
     assert.equal(roster.status, 401, "the roster route keeps its own guard");
+  });
+
+  it("guards a parent's view of their children's exams", async () => {
+    const theirs = await fetch(`${base}/parent/exams`);
+    assert.equal(theirs.status, 401, "/parent/exams must require a token");
   });
 
   it("keeps the class join-code lookup public, and closed while student accounts are off", async () => {
@@ -639,10 +715,32 @@ describe("API register (student accounts enabled)", { skip: built ? false : "run
         email: "child@example.com",
         password: "Sufficiently1Strong!",
         role: "parent",
+        acceptedTerms: true,
+        termsVersion: "2026-09-06",
       }),
     });
     assert.notEqual(res.status, 400, "a missing class code must not be refused anymore");
     assert.equal(res.status, 500, "no database in this suite — reaching it is the proof");
+  });
+
+  it("refuses a new account that did not accept the terms, before touching the database", async () => {
+    // The register screen's checkbox used to be the only thing standing here,
+    // and «متابعة عبر Google» skipped it. The server is the boundary now
+    // (lib/termsAcceptance.ts); a 400 rather than this suite's database 500
+    // proves the refusal happens first.
+    const res = await fetch(`${base}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        firstName: "A",
+        lastName: "B",
+        email: "teacher@example.com",
+        password: "Sufficiently1Strong!",
+      }),
+    });
+    assert.equal(res.status, 400);
+    const body = (await res.json()) as { code?: string };
+    assert.equal(body.code, "terms_required");
   });
 });
 

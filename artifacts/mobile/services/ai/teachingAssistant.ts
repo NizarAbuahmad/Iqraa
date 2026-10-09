@@ -3,7 +3,7 @@
  * Demo Mode: fully local KB grounding. No OpenAI / network.
  */
 
-import { artifactFromAsk } from './askVocabulary.ts';
+import { artifactFromAsk, isTeachMeAsk } from './askVocabulary.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
 import { getBookForLesson, getUnitForLesson } from '../knowledgeBase.ts';
 import { GRADES, SUBJECTS } from '../curriculumData.ts';
@@ -146,6 +146,11 @@ export type TeachingAssistantResult = {
   needsClarification: boolean;
   clarificationOptions?: ClarificationOption[];
   clarificationQuery?: string;
+  /**
+   * The explanation assumed a first-time framing the teacher did not state;
+   * the screen offers the review framing as a follow-up (`reviewFollowUp`).
+   */
+  offerReview?: boolean;
   activeLesson: KBLesson | null;
   memoryPatch: Partial<ChatSessionMemory>;
 };
@@ -239,37 +244,50 @@ function prepStepLabel(step: PrepStepId, isAr: boolean): string {
   return isAr ? ar[step] : en[step];
 }
 
+// A logical teaching sequence after each completed step.
+const PREFER_AFTER: Record<PrepStepId, PrepStepId[]> = {
+  explanation: ['lesson-plan', 'worksheet', 'activity'],
+  'lesson-plan': ['worksheet', 'activity', 'quiz'],
+  worksheet: ['quiz', 'homework', 'activity'],
+  quiz: ['homework', 'activity', 'worksheet'],
+  activity: ['worksheet', 'quiz', 'homework'],
+  homework: ['quiz', 'activity', 'lesson-plan'],
+};
+
+/**
+ * The step to suggest next, or null when none is left. Shared by the progress
+ * card's sentence and the composer chips, so the two never disagree about
+ * what comes next. `among` limits the candidates (the chips cannot make an
+ * explanation, and leave out steps the teacher marked not needed).
+ */
+export function nextPrepStep(
+  completed: readonly PrepStepId[],
+  lastStep: PrepStepId | null,
+  among: readonly PrepStepId[] = PREP_ALL_STEPS,
+): PrepStepId | null {
+  const remaining = among.filter(s => !completed.includes(s));
+  if (remaining.length === 0) return null;
+  if (!lastStep) return remaining[0]!;
+  return PREFER_AFTER[lastStep].find(s => remaining.includes(s)) ?? remaining[0]!;
+}
+
 /** Next suggested action after the latest completed prep step. */
 export function nextPrepRecommendation(
   completed: PrepStepId[],
   lastStep: PrepStepId | null,
   isAr: boolean,
 ): string | null {
-  const remaining = PREP_ALL_STEPS.filter(s => !completed.includes(s));
-  if (remaining.length === 0) {
+  const next = nextPrepStep(completed, lastStep);
+  if (next === null) {
     return isAr
       ? 'اكتملت مواد الدرس — يمكنك تصديرها جميعاً إلى PDF.'
       : 'You can now export all materials to PDF.';
   }
   if (!lastStep) {
-    const next = remaining[0]!;
     return isAr
       ? `أقترح الآن: ${prepStepLabel(next, true)}.`
       : `I suggest next: ${prepStepLabel(next, false)}.`;
   }
-
-  // Prefer a logical teaching sequence after the last completion
-  const preferAfter: Record<PrepStepId, PrepStepId[]> = {
-    explanation: ['lesson-plan', 'worksheet', 'activity'],
-    'lesson-plan': ['worksheet', 'activity', 'quiz'],
-    worksheet: ['quiz', 'homework', 'activity'],
-    quiz: ['homework', 'activity', 'worksheet'],
-    activity: ['worksheet', 'quiz', 'homework'],
-    homework: ['quiz', 'activity', 'lesson-plan'],
-  };
-
-  const preferred = preferAfter[lastStep].find(s => remaining.includes(s));
-  const next = preferred ?? remaining[0]!;
 
   if (isAr) {
     if (next === 'worksheet') return 'لنجهّز الآن ورقة عمل.';
@@ -318,6 +336,12 @@ export function markPrepStep(
 export function buildPrepProgressView(
   memory: ChatSessionMemory,
   lang: 'ar' | 'en',
+  /**
+   * Material types موادي already holds for the lesson (`savedPrepArtifacts`),
+   * so the card agrees with the lesson card's count and the chips — it used
+   * to list a plan saved yesterday as remaining and recommend making it.
+   */
+  saved: readonly string[] = [],
 ): PrepProgressView | null {
   if (!memory.prepLessonId && !memory.activeLessonId) return null;
   if (memory.prepCompleted.length === 0 && !memory.activeLessonId) return null;
@@ -330,12 +354,16 @@ export function buildPrepProgressView(
   // Show progress once preparation has started (explanation or any artifact)
   if (memory.prepCompleted.length === 0) return null;
 
-  const done = memory.prepCompleted.map(id => ({
+  const completed: PrepStepId[] = [
+    ...memory.prepCompleted,
+    ...PREP_ARTIFACT_STEPS.filter(s => saved.includes(s) && !memory.prepCompleted.includes(s)),
+  ];
+  const done = completed.map(id => ({
     id,
     label: prepStepLabel(id, isAr),
   }));
   const remaining = PREP_ALL_STEPS
-    .filter(s => !memory.prepCompleted.includes(s))
+    .filter(s => !completed.includes(s))
     .map(id => ({ id, label: prepStepLabel(id, isAr) }));
 
   const allReady = remaining.length === 0;
@@ -343,7 +371,7 @@ export function buildPrepProgressView(
     ? (isAr
         ? 'اكتملت مواد الدرس — يمكنك تصديرها جميعاً إلى PDF.'
         : 'You can now export all materials to PDF.')
-    : nextPrepRecommendation(memory.prepCompleted, memory.lastCompletedPrepStep, isAr);
+    : nextPrepRecommendation(completed, memory.lastCompletedPrepStep, isAr);
 
   return {
     lessonTitle,
@@ -410,7 +438,10 @@ export function detectIntent(query: string): Intent {
   if (/مثال|example|تمارين?\s*محلول|أضف\s*مثالاً?|اضف\s*مثال|add\s*an?\s*example/i.test(q)) {
     return 'example';
   }
-  if (/كيف\s*أشرح|شرح|explain|simplify|بسّ?ط|سهلة|بطريقة|للطلبة\s*الضعفاء|للطلبة\s*المتفوقين/i.test(q)) {
+  if (
+    /كيف\s*أشرح|شرح|explain|simplify|بسّ?ط|سهلة|بطريقة|للطلبة\s*الضعفاء|للطلبة\s*المتفوقين/i.test(q)
+    || isTeachMeAsk(q)
+  ) {
     return 'explain';
   }
   if (isReferentialQuery(q)) return 'follow_up';
@@ -713,7 +744,19 @@ function shortReply(isAr: boolean, lesson: KBLesson, ctx: CurriculumContext): st
   return lines.join('\n');
 }
 
-function shouldAskPedagogicalClarify(
+const FIRST_TIME_FRAMING = /لأول\s*مرة|first_time|first-time|First-time/i;
+const REVIEW_FRAMING = /مراجعة|قبل\s*الاختبار|review/i;
+
+/**
+ * An explanation ask that did not say whether it is a first-time introduction
+ * or a pre-test review — answered as first-time, with review offered after.
+ *
+ * This used to stop and ask «هل هذا شرح للمفهوم لأول مرة، أم مراجعة قبل
+ * الاختبار؟» before explaining anything, and the two answers differed by one
+ * framing sentence: a whole turn spent on a line. Once per lesson, as the
+ * question was — a second explanation of the same lesson is not re-framed.
+ */
+function framingUnstated(
   query: string,
   intent: Intent,
   lessonId: string,
@@ -721,45 +764,16 @@ function shouldAskPedagogicalClarify(
 ): boolean {
   if (intent !== 'explain') return false;
   if (memory.clarifiedLessonIds.includes(lessonId)) return false;
-  if (/لأول\s*مرة|مراجعة|قبل\s*الاختبار|first\s*time|review|revision|introduc/i.test(query)) {
-    return false;
-  }
-  return true;
+  return !FIRST_TIME_FRAMING.test(query) && !REVIEW_FRAMING.test(query);
 }
 
-function buildClarification(
-  query: string,
-  ctx: CurriculumContext,
-  isAr: boolean,
-): TeachingAssistantResult {
-  const text = isAr
-    ? `${contextLine(ctx, true)}\n\nقبل أن أبدأ: هل هذا شرح للمفهوم لأول مرة، أم مراجعة قبل الاختبار؟`
-    : `${contextLine(ctx, false)}\n\nQuick check so I help precisely: is this a first-time introduction, or a review before the test?`;
-
+/** The follow-up chip that re-asks an explanation as a pre-test review. */
+export function reviewFollowUp(query: string, lang: 'ar' | 'en'): { label: string; prompt: string } {
+  const tag = lang === 'ar' ? 'مراجعة قبل الاختبار' : 'review before the test';
+  const q = query.trim();
   return {
-    text,
-    actions: [],
-    needsClarification: true,
-    clarificationOptions: [
-      {
-        id: 'first_time',
-        labelAr: 'شرح لأول مرة',
-        labelEn: 'First-time explanation',
-      },
-      {
-        id: 'review',
-        labelAr: 'مراجعة قبل الاختبار',
-        labelEn: 'Review before the test',
-      },
-    ],
-    clarificationQuery: query,
-    activeLesson: null,
-    memoryPatch: {
-      activeLessonId: ctx.lessonId,
-      activeTopicAr: ctx.lessonTitleAr,
-      activeTopicEn: ctx.lessonTitleEn,
-      clarifiedLessonIds: [ctx.lessonId],
-    },
+    label: lang === 'ar' ? `🔁 ${tag}` : `🔁 Review before the test`,
+    prompt: q ? `${q} — ${tag}` : tag,
   };
 }
 
@@ -927,17 +941,7 @@ export function buildTeachingAssistantReply(
 
   const ctx = resolveCurriculumContext(lesson);
 
-  if (mode === 'teacher' && shouldAskPedagogicalClarify(query, intent, lesson.id, memory)) {
-    const clarify = buildClarification(query, ctx, isAr);
-    clarify.activeLesson = lesson;
-    clarify.memoryPatch = {
-      ...clarify.memoryPatch,
-      recentQueries: [...memory.recentQueries, query].slice(-8),
-      lastIntent: intent,
-      clarifiedLessonIds: [...new Set([...memory.clarifiedLessonIds, lesson.id])],
-    };
-    return clarify;
-  }
+  const assumeFirstTime = mode === 'teacher' && framingUnstated(query, intent, lesson.id, memory);
 
   if (intent === 'short') {
     const prepAfter = mode === 'teacher'
@@ -1004,13 +1008,13 @@ export function buildTeachingAssistantReply(
   }
 
   // Pedagogical angle if clarified via chip text in query
-  if (/لأول\s*مرة|first_time|first-time|First-time/i.test(query)) {
+  if (assumeFirstTime || FIRST_TIME_FRAMING.test(query)) {
     parts.push(
       isAr
         ? 'سأعامل هذا كشرح تأسيسي لأول مرة: أمثلة بسيطة ثم القاعدة.'
         : 'Treating this as a first-time introduction: simple examples, then the rule.',
     );
-  } else if (/مراجعة|قبل\s*الاختبار|review/i.test(query)) {
+  } else if (REVIEW_FRAMING.test(query)) {
     parts.push(
       isAr
         ? 'سأعامل هذا كمراجعة قبل الاختبار: تركيز على الأخطاء الشائعة وتمارين سريعة.'
@@ -1130,6 +1134,7 @@ export function buildTeachingAssistantReply(
     text: parts.join('\n').trim(),
     actions: mode === 'teacher' ? prioritizeActions(intent) : [],
     needsClarification: false,
+    offerReview: assumeFirstTime,
     activeLesson: lesson,
     memoryPatch: {
       activeLessonId: lesson.id,
@@ -1139,7 +1144,9 @@ export function buildTeachingAssistantReply(
       recentQueries: [...memory.recentQueries, query].slice(-8),
       discussedArtifacts: discussed,
       lastIntent: intent,
-      clarifiedLessonIds: memory.clarifiedLessonIds,
+      clarifiedLessonIds: assumeFirstTime
+        ? [...new Set([...memory.clarifiedLessonIds, lesson.id])]
+        : memory.clarifiedLessonIds,
       prepLessonId: prepAfter.prepLessonId,
       prepCompleted: prepAfter.prepCompleted,
       lastCompletedPrepStep: prepAfter.lastCompletedPrepStep,

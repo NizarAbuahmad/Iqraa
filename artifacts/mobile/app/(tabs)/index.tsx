@@ -41,11 +41,12 @@ import { isStudentRole, isTeacherRole, useAuth } from '@/context/AuthContext';
 import { IqraaMark } from '@/components/ui/IqraaMark';
 import { JordanFlag } from '@/components/ui/JordanFlag';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
-import { buildPrepBoard, prepLessonKey, prepSummary, withoutBoardTools, type PrepRow } from '@/services/lessonBoard';
+import { buildPrepBoard, prepLessonKey, prepSummary, savedDeckFor, withoutBoardTools, type PrepRow } from '@/services/lessonBoard';
 import { LessonPrepBoard } from '@/components/ui/LessonPrepBoard';
 import { getAllItems, type SavedMaterial } from '@/services/workspace';
 import { listClasses } from '@/services/roster';
 import type { ClassGroup } from '@/services/roster';
+import { periodClassLabel } from '@/services/classSubjects';
 import { className, classNameFor } from '@/services/materialClass';
 import { todayLabel } from '@/services/dateLabels';
 import { loadTimetable } from '@/services/schedule';
@@ -57,7 +58,7 @@ import {
 } from '@/services/lessonContext';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { lessonPickerParams, resolveLessonPrepContext, scopePickerParams } from '@/services/lessonPrep';
-import { DEFAULT_ACTIVE_LESSON_ID } from '@/services/lessonCopilot';
+import { defaultLessonIdFor } from '@/services/lessonCopilot';
 import { buildClassDeck } from '@/services/startClass';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { WORKFLOW } from '@/services/toolCatalog';
@@ -96,6 +97,7 @@ export default function Index() {
 }
 
 function LessonWorkspace() {
+  const { user } = useAuth();
   const colors = useColors();
   const { t, lang, isRTL } = useLanguage();
   const isAr = lang === 'ar';
@@ -147,8 +149,8 @@ function LessonWorkspace() {
     showed «تركيب الاقترانات» would read as a bug in whichever was seen second.
   */
   const fallback = useMemo(
-    () => resolveLessonPrepContext(DEFAULT_ACTIVE_LESSON_ID, lang as 'ar' | 'en'),
-    [lang],
+    () => resolveLessonPrepContext(defaultLessonIdFor(user?.teachingAssignments), lang as 'ar' | 'en'),
+    [lang, user?.teachingAssignments],
   );
   /*
     The lesson the card is about, in order: a lesson the teacher picked by
@@ -172,7 +174,7 @@ function LessonWorkspace() {
   // «الحصة القادمة · العاشر ب · 10:15» — only when the card is showing that period's lesson.
   const periodLine = fromSchedule && next
     ? formatNextPeriod(next, {
-        classLabel: classNameFor(classes, next.classGroupId, lang as 'ar' | 'en'),
+        classLabel: periodClassLabel(classNameFor(classes, next.classGroupId, lang as 'ar' | 'en'), next.subjectId, lang),
         today: todayISO(),
         lang: lang as 'ar' | 'en',
         nowLabel: t('homePeriodNow'),
@@ -230,6 +232,15 @@ function LessonWorkspace() {
     setStartingClass(true);
     setStartClassError('');
     try {
+      // A «عرض الحصة» the teacher already made for this lesson is the deck
+      // they meant to teach from — present it instead of building a new one.
+      const saved = savedDeckFor(materials, topic, active?.lessonId);
+      if (saved) {
+        setPendingClassroomActivity(saved);
+        trackEvent('class_started', { source: 'workspace', deck: 'saved' });
+        router.push('/ai-tools/classroom/presentation' as never);
+        return;
+      }
       // The lesson's own subject, not the deck builder's maths default —
       // `isMathContext` reads the subject *name*, so a chemistry lesson
       // announced as "Mathematics" comes back as a deck of algebra questions
@@ -239,17 +250,18 @@ function LessonWorkspace() {
         lang: lang as 'ar' | 'en',
         subjectId: active?.subjectId ?? undefined,
         subjectName: subject?.name,
+        gradeId: active?.gradeId ?? undefined,
         lessonId: active?.lessonId ?? null,
       });
       setPendingClassroomActivity(activity);
-      trackEvent('class_started', { source: 'workspace' });
+      trackEvent('class_started', { source: 'workspace', deck: 'built' });
       router.push('/ai-tools/classroom/presentation' as never);
     } catch {
       setStartClassError(t('startClassFailed'));
     } finally {
       setStartingClass(false);
     }
-  }, [startingClass, topic, lang, active?.subjectId, active?.lessonId, subject?.name, t]);
+  }, [startingClass, topic, lang, materials, active?.subjectId, active?.gradeId, active?.lessonId, subject?.name, t]);
 
   // ⌘K → «ابدأ الحصة» arrives as a nonce param, so pressing it twice fires
   // twice (a plain flag would have been swallowed the second time).
@@ -285,11 +297,20 @@ function LessonWorkspace() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {/* ─── Top bar ─────────────────────────────────────────────── */}
-      <View style={[s.topbar, { backgroundColor: colors.card, borderBottomColor: colors.border, flexDirection: rowDir }]}>
+      {/*
+        ─── Header band ───────────────────────────────────────────
+        The logo's navy as a surface, so splash, login and the workspace read
+        as one product. It carries the two things the screen is about — which
+        lesson, and the one action that starts it — and the card below keeps
+        only what is still missing.
+      */}
+      <View style={[s.band, { backgroundColor: colors.ink }]}>
+        <View pointerEvents="none" style={[s.bandGlow, s.bandGlowA, { backgroundColor: colors.brand }]} />
+        <View pointerEvents="none" style={[s.bandGlow, s.bandGlowB, { backgroundColor: colors.brand }]} />
+      <View style={[s.topbar, { flexDirection: rowDir }]}>
         <View style={[{ flexDirection: rowDir, alignItems: 'center', gap: 10 }]}>
-          <Text style={[s.today, { color: colors.mutedForeground }]}>{todayLabel(lang as 'ar' | 'en')}</Text>
-          <AiSourceBadge isRTL={isRTL} />
+          <Text style={[s.today, { color: 'rgba(255,255,255,0.78)' }]}>{todayLabel(lang as 'ar' | 'en')}</Text>
+          <AiSourceBadge onDark isRTL={isRTL} />
         </View>
         <View style={[{ flexDirection: rowDir, alignItems: 'center', gap: 9 }]}>
           <Pressable
@@ -312,14 +333,39 @@ function LessonWorkspace() {
             style={({ pressed }) => [
               s.btn,
               s.btnGhost,
-              { borderColor: colors.primary + '55', backgroundColor: colors.card, opacity: pressed ? 0.8 : 1, flexDirection: rowDir },
+              { borderColor: 'rgba(255,255,255,0.28)', backgroundColor: 'rgba(255,255,255,0.06)', opacity: pressed ? 0.8 : 1, flexDirection: rowDir },
             ]}
             accessibilityRole="button"
           >
-            <Ionicons name="swap-horizontal" size={15} color={colors.primary} />
-            <Text style={[s.btnText, { color: colors.primary }]}>{t('changeLesson')}</Text>
+            <Ionicons name="swap-horizontal" size={15} color="#fff" />
+            <Text style={s.btnText}>{t('changeLesson')}</Text>
           </Pressable>
         </View>
+      </View>
+
+      {/* Which lesson this is */}
+      <View style={s.bandLesson}>
+        {periodLine ? (
+          <View style={[s.periodPill, { backgroundColor: colors.accent, flexDirection: rowDir, alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+            <Ionicons name={next?.happeningNow ? 'radio-button-on' : 'time-outline'} size={13} color={colors.accentForeground} />
+            <Text style={[s.periodText, { color: colors.accentForeground }]}>{periodLine}</Text>
+          </View>
+        ) : null}
+        <View style={[{ flexDirection: rowDir, alignItems: 'center', gap: 7 }]}>
+          <JordanFlag width={17} />
+          <Text style={[s.crumb, { color: 'rgba(255,255,255,0.78)', textAlign: align }]}>
+            {[subjectLabel, gradeLabel].filter(Boolean).join(isAr ? ' • ' : ' • ')}
+          </Text>
+        </View>
+        <Text style={[s.lessonTitle, { color: '#FFFFFF', textAlign: align }]}>
+          {topic || t('homeNoLesson')}
+        </Text>
+        {!topic ? (
+          <Text style={[s.hint, { color: 'rgba(255,255,255,0.78)', textAlign: align }]}>
+            {t('homeNoLessonHint')}
+          </Text>
+        ) : null}
+      </View>
       </View>
 
       <View style={[s.body, { flexDirection: rowDir }]}>
@@ -327,31 +373,6 @@ function LessonWorkspace() {
         <ScrollView style={{ flex: 1 }} contentContainerStyle={s.mainCol} showsVerticalScrollIndicator={false}>
           {/* Lesson + readiness */}
           <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={[{ flexDirection: rowDir, alignItems: 'flex-start', gap: 16 }]}>
-              <View style={{ flex: 1 }}>
-                {periodLine ? (
-                  <View style={[s.periodPill, { backgroundColor: colors.secondary, flexDirection: rowDir, alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-                    <Ionicons name={next?.happeningNow ? 'radio-button-on' : 'time-outline'} size={13} color={colors.primary} />
-                    <Text style={[s.periodText, { color: colors.primary }]}>{periodLine}</Text>
-                  </View>
-                ) : null}
-                <View style={[{ flexDirection: rowDir, alignItems: 'center', gap: 7, marginBottom: 7 }]}>
-                  <JordanFlag width={17} />
-                  <Text style={[s.crumb, { color: colors.mutedForeground, textAlign: align }]}>
-                    {[subjectLabel, gradeLabel].filter(Boolean).join(isAr ? ' • ' : ' • ')}
-                  </Text>
-                </View>
-                <Text style={[s.lessonTitle, { color: colors.foreground, textAlign: align }]}>
-                  {topic || t('homeNoLesson')}
-                </Text>
-                {!topic ? (
-                  <Text style={[s.hint, { color: colors.mutedForeground, textAlign: align }]}>
-                    {t('homeNoLessonHint')}
-                  </Text>
-                ) : null}
-              </View>
-            </View>
-
             {/*
               One next thing to set up so this card can follow the timetable —
               production had bell times but not a single class in a period.
@@ -364,13 +385,16 @@ function LessonWorkspace() {
                 <Text style={[s.nudgeText, { color: colors.foreground, textAlign: align }]}>
                   {setup.step === 'timetable'
                     ? t('homeSetupTimetable')
-                    : t('homeSetupPlan', classNameFor(classes, setup.classGroupId, lang as 'ar' | 'en') ?? '')}
+                    : t('homeSetupPlan', periodClassLabel(classNameFor(classes, setup.classGroupId, lang as 'ar' | 'en'), setup.subjectId, lang) ?? '')}
                 </Text>
                 <Pressable
                   onPress={() =>
                     setup.step === 'timetable'
                       ? router.push('/schedule' as never)
-                      : router.push({ pathname: '/teaching-plans', params: { classId: setup.classGroupId } } as never)
+                      : router.push({
+                          pathname: '/teaching-plans',
+                          params: { classId: setup.classGroupId, ...(setup.subjectId ? { subjectId: setup.subjectId } : {}) },
+                        } as never)
                   }
                   style={({ pressed }) => [s.nudgeBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
                   accessibilityRole="button"
@@ -401,7 +425,7 @@ function LessonWorkspace() {
               </View>
             ) : null}
 
-            <View style={{ marginTop: 16 }}>
+            <View>
               <LessonPrepBoard
                 rows={board}
                 colors={colors}
@@ -534,7 +558,7 @@ function LessonWorkspace() {
             </Pressable>
           </View>
           <Pressable onPress={() => router.push('/iqra')} style={{ paddingTop: 10 }}>
-            <Text style={[s.openChat, { color: colors.primary, textAlign: align }]}>{t('homeOpenChat')} ←</Text>
+            <Text style={[s.openChat, { color: colors.primary, textAlign: align }]}>{t('homeOpenChat')} {align === 'right' ? '←' : '→'}</Text>
           </Pressable>
         </View>
       </View>
@@ -556,43 +580,47 @@ function suggestionsFor(board: PrepRow[], topic: string, isAr: boolean): string[
 }
 
 const s = StyleSheet.create({
+  // The navy header band. `overflow: hidden` clips the two glows to it.
+  band: { paddingHorizontal: 24, paddingTop: 14, paddingBottom: 26, gap: 14, overflow: 'hidden' },
+  bandGlow: { position: 'absolute', borderRadius: 999, opacity: 0.16 },
+  bandGlowA: { width: 320, height: 320, top: -170, left: -90 },
+  bandGlowB: { width: 260, height: 260, bottom: -190, left: 200, opacity: 0.09 },
+  bandLesson: { gap: 8 },
   topbar: {
-    height: 58,
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    borderBottomWidth: 1,
   },
-  today: { fontSize: 12.5, lineHeight: 20, fontFamily: 'Almarai_400Regular' },
-  btn: { alignItems: 'center', gap: 7, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 12 },
+  today: { fontSize: 15, lineHeight: 23, fontFamily: 'Almarai_400Regular' },
+  btn: { alignItems: 'center', gap: 7, paddingHorizontal: 16, paddingVertical: 11, minHeight: 44, borderRadius: 12 },
   btnGhost: { borderWidth: 1 },
-  btnText: { color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 13 },
+  btnText: { color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 },
 
   body: { flex: 1, gap: 20, padding: 22 },
   mainCol: { gap: 16, paddingBottom: 40 },
-  card: { borderWidth: 1, borderRadius: 18, padding: 22 },
-  crumb: { fontSize: 12, lineHeight: 19, fontFamily: 'Almarai_400Regular' },
-  periodPill: { alignItems: 'center', gap: 6, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 10 },
-  periodText: { fontSize: 12.5, fontFamily: 'Cairo_600SemiBold' },
-  lessonTitle: { fontSize: 22, fontFamily: 'Cairo_700Bold', lineHeight: 34 },
-  hint: { fontSize: 13, lineHeight: 21, fontFamily: 'Almarai_400Regular', marginTop: 6 },
+  card: { borderWidth: 1, borderRadius: 18, padding: 22, gap: 14 },
+  crumb: { fontSize: 13, lineHeight: 21, fontFamily: 'Almarai_400Regular' },
+  periodPill: { alignItems: 'center', gap: 6, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5 },
+  periodText: { fontSize: 13, fontFamily: 'ReadexPro_600SemiBold' },
+  lessonTitle: { fontSize: 28, fontFamily: 'ReadexPro_700Bold', lineHeight: 40 },
+  hint: { fontSize: 15, lineHeight: 24, fontFamily: 'Almarai_400Regular' },
 
 
-  errorRow: { alignItems: 'center', gap: 7, borderRadius: 10, padding: 9, marginTop: 12 },
-  nudge: { alignItems: 'center', gap: 10, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 12, marginTop: 14 },
-  nudgeText: { flex: 1, fontSize: 13, lineHeight: 20, fontFamily: 'Almarai_400Regular' },
+  errorRow: { alignItems: 'center', gap: 7, borderRadius: 10, padding: 9 },
+  nudge: { alignItems: 'center', gap: 10, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 12 },
+  nudgeText: { flex: 1, fontSize: 15, lineHeight: 23, fontFamily: 'Almarai_400Regular' },
   nudgeBtn: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
-  nudgeBtnText: { fontSize: 12.5, fontFamily: 'Cairo_600SemiBold' },
+  nudgeBtnText: { fontSize: 13, fontFamily: 'ReadexPro_600SemiBold' },
   nudgeClose: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
-  errorText: { fontSize: 12, lineHeight: 19, fontFamily: 'Almarai_400Regular', flex: 1 },
+  errorText: { fontSize: 13, lineHeight: 21, fontFamily: 'Almarai_400Regular', flex: 1 },
 
-  sectionTitle: { fontSize: 14.5, fontFamily: 'Cairo_600SemiBold', marginTop: 6 },
+  sectionTitle: { fontSize: 15, fontFamily: 'ReadexPro_600SemiBold', marginTop: 6 },
   tool: { flex: 1, alignItems: 'center', gap: 9, borderWidth: 1, borderRadius: 16, paddingVertical: 16, paddingHorizontal: 10 },
   toolIcon: { width: 40, height: 40, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
-  toolText: { fontSize: 12.5, fontFamily: 'Cairo_600SemiBold' },
+  toolText: { fontSize: 13, fontFamily: 'ReadexPro_600SemiBold' },
   classChip: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 9 },
-  classChipText: { fontSize: 13, fontFamily: 'Cairo_500Medium' },
-  empty: { fontSize: 13, lineHeight: 21, fontFamily: 'Almarai_400Regular' },
+  classChipText: { fontSize: 13, fontFamily: 'ReadexPro_500Medium' },
+  empty: { fontSize: 15, lineHeight: 24, fontFamily: 'Almarai_400Regular' },
 
   side: {
     width: SIDE_PANEL_WIDTH,
@@ -603,12 +631,12 @@ const s = StyleSheet.create({
     borderRadius: 18,
     padding: 16,
   },
-  sideTitle: { fontSize: 14.5, fontFamily: 'Cairo_600SemiBold' },
-  sideHint: { fontSize: 11.5, lineHeight: 18, fontFamily: 'Almarai_400Regular', marginTop: 1 },
+  sideTitle: { fontSize: 15, fontFamily: 'ReadexPro_600SemiBold' },
+  sideHint: { fontSize: 13, lineHeight: 20, fontFamily: 'Almarai_400Regular', marginTop: 1 },
   sugg: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
-  suggText: { fontSize: 12.5, fontFamily: 'Almarai_400Regular', lineHeight: 20 },
+  suggText: { fontSize: 15, fontFamily: 'Almarai_400Regular', lineHeight: 23 },
   composer: { alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 9 },
-  composerInput: { flex: 1, fontSize: 13, fontFamily: 'Almarai_400Regular', outlineStyle: 'none' as never },
+  composerInput: { flex: 1, fontSize: 15, fontFamily: 'Almarai_400Regular', outlineStyle: 'none' as never },
   send: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  openChat: { fontSize: 12.5, fontFamily: 'Cairo_600SemiBold' },
+  openChat: { fontSize: 13, fontFamily: 'ReadexPro_600SemiBold' },
 });

@@ -15,6 +15,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { apiFetch } from '@/services/apiClient';
 import { trackEvent } from '@/services/analytics';
+import { palette } from '@/constants/colors';
 
 type Rating = 'up' | 'down';
 
@@ -82,7 +83,7 @@ export function FeedbackWidget({ materialType, toolId }: Props) {
   return (
     <View style={[styles.wrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={[styles.row, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        <Text style={[styles.prompt, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.prompt, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
           {lang === 'ar' ? 'هل كان هذا مفيدًا؟' : 'Was this helpful?'}
         </Text>
         <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8 }}>
@@ -91,11 +92,11 @@ export function FeedbackWidget({ materialType, toolId }: Props) {
             accessibilityRole="button"
             accessibilityLabel={lang === 'ar' ? 'مفيد' : 'Helpful'}
             style={[styles.thumb, {
-              borderColor: rating === 'up' ? '#067647' : colors.border,
+              borderColor: rating === 'up' ? palette.success : colors.border,
               backgroundColor: rating === 'up' ? '#10B98118' : 'transparent',
             }]}
           >
-            <Ionicons name="thumbs-up" size={16} color={rating === 'up' ? '#067647' : colors.mutedForeground} />
+            <Ionicons name="thumbs-up" size={16} color={rating === 'up' ? palette.success : colors.mutedForeground} />
           </Pressable>
           <Pressable
             onPress={() => pick('down')}
@@ -150,7 +151,7 @@ export function FeedbackWidget({ materialType, toolId }: Props) {
           >
             {submitting
               ? <ActivityIndicator size="small" color="#fff" />
-              : <Text style={[styles.submitText, { fontFamily: 'Cairo_600SemiBold' }]}>{lang === 'ar' ? 'إرسال' : 'Send'}</Text>}
+              : <Text style={[styles.submitText, { fontFamily: 'ReadexPro_600SemiBold' }]}>{lang === 'ar' ? 'إرسال' : 'Send'}</Text>}
           </Pressable>
         </View>
       )}
@@ -169,11 +170,11 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   row: { alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-  prompt: { fontSize: 13.5, flex: 1 },
+  prompt: { fontSize: 14, flex: 1 },
   thumb: { width: 34, height: 34, borderRadius: 10, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
-  input: { borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, minHeight: 44 },
+  input: { borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, minHeight: 44 },
   submitBtn: { alignSelf: 'flex-start', paddingHorizontal: 18, paddingVertical: 9 },
   submitText: { color: '#fff', fontSize: 13 },
-  thanks: { fontSize: 13.5, lineHeight: 22 },
-  failed: { fontSize: 12.5, lineHeight: 18 },
+  thanks: { fontSize: 15, lineHeight: 24 },
+  failed: { fontSize: 15, lineHeight: 21 },
 });

@@ -363,3 +363,13 @@ describe('bankStats', () => {
     assert.equal(appSubjectId('math'), 'mathematics');
   });
 });
+
+describe('a non-commercial licence is link-only', () => {
+  it('maps CC-BY-NC-4.0 to link-only', () => {
+    assert.equal(usePolicy({ authority: 'third-party', license: 'CC-BY-NC-4.0' }), 'link-only');
+  });
+  it('is not quotable, so it can never be reproduced or prompted', () => {
+    const sim = { ...examPapers({ authority: 'teacher' })[0]!, license: 'CC-BY-NC-4.0' as LicenseId };
+    assert.throws(() => assertQuotable(sim), /link-only/);
+  });
+});
