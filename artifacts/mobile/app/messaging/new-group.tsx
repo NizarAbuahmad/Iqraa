@@ -16,7 +16,7 @@ import { createGroup } from '@/services/messaging';
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { ParticipantPickerSheet } from '@/components/ui/ParticipantPickerSheet';
 import { Avatar } from '@/components/ui/Avatar';
-import { goBack } from '@/services/navigation';
+import { BackButton } from '@/components/ui/BackButton';
 
 interface Picked { userId: string; firstName: string; lastName: string }
 
@@ -52,9 +52,7 @@ export default function NewGroupScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { paddingTop: topPad, borderBottomColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10}>
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
-        </Pressable>
+        <BackButton color={colors.foreground} />
         <Text style={[styles.headerTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', flex: 1, textAlign: align }]}>
           {t('messagingNewGroup')}
         </Text>

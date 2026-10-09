@@ -25,6 +25,7 @@ import { Button } from '@/components/ui/Button';
 import { getPickerGrades } from '@/services/curriculumData';
 import { goBack } from '@/services/navigation';
 import { getMyGradeIds } from '@/services/studentExam';
+import { BackButton } from '@/components/ui/BackButton';
 
 export default function SetupGradeScreen() {
   const colors = useColors();
@@ -88,9 +89,7 @@ export default function SetupGradeScreen() {
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (editMode ? 16 : 40), paddingBottom: insets.bottom + 32 }]}
       >
         {editMode ? (
-          <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.back, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
-          </Pressable>
+          <BackButton color={colors.foreground} style={[styles.back, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
         ) : (
           <View style={[styles.icon, { backgroundColor: colors.primary + '18' }]}>
             <Ionicons name="school-outline" size={32} color={colors.primary} />
