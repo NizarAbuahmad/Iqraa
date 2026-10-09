@@ -118,6 +118,8 @@ export function formatWorksheetText(
     lines.push('─'.repeat(sec.title.length));
     sec.questions.forEach(q => {
       lines.push(`\n${qNum}. ${q.text} (${isAr ? arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط') : `${q.points} pts`})`);
+      // Text cannot carry the picture; say which figure, so it can be found.
+      if (q.figure) lines.push(`   [${isAr ? 'الشكل' : 'Figure'}: ${q.figure.caption}]`);
       q.options?.forEach(o => lines.push(`   ○ ${o}`));
       qNum++;
     });

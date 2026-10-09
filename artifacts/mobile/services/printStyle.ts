@@ -54,7 +54,8 @@ const INK = `
     .q-rule { border-bottom: 1px solid #555 !important; }
     .exam-blank, .q-blank .exam-blank { border-bottom-color: #333 !important; }
     .q-pts, .school-name, .doc-meta, .footer { color: #333 !important; }
-    .marks-table th, .marks-table td { border-color: #555 !important; }`;
+    .marks-table th, .marks-table td { border-color: #555 !important; }
+    .q-fig img { filter: grayscale(1) contrast(1.15); }`;
 
 const LARGE = `
     /* print-style: large */
@@ -71,4 +72,6 @@ const LARGE = `
     .doc-meta { font-size: 14px; }
     .q-pts { font-size: 13px; }
     .worked-label, .section-title { font-size: 16px; }
-    .answer-row { font-size: 15px; }`;
+    .answer-row { font-size: 15px; }
+    .q-fig img { max-height: 80mm; max-width: 90%; }
+    .q-fig figcaption { font-size: 13px; }`;
