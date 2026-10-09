@@ -47,3 +47,16 @@ describe('mergeNewMessages', () => {
     assert.deepEqual(merged.map(m => m.id), ['b', 'a']);
   });
 });
+
+describe('mergeNewMessages — seen', () => {
+  it('marks a held message seen when the poll says it was', () => {
+    const current = [{ id: 'b', seen: false }, { id: 'a', seen: false }];
+    const merged = mergeNewMessages(current, [{ id: 'b', seen: true }]);
+    assert.deepEqual(merged, [{ id: 'b', seen: true }, { id: 'a', seen: false }]);
+  });
+
+  it('never unmarks one, and a quiet poll keeps the same array', () => {
+    const current = [{ id: 'a', seen: true }];
+    assert.equal(mergeNewMessages(current, [{ id: 'a', seen: false }]), current);
+  });
+});
