@@ -41,6 +41,7 @@ import { createVerificationTracker } from '@/services/verificationTracker';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { FigurePickerSheet } from '@/components/ui/FigurePickerSheet';
+import { SendWorksheetSheet } from '@/components/ui/SendWorksheetSheet';
 import { Image } from 'expo-image';
 import { questionRefersToFigure } from '@/services/questionFigures';
 import { GeneratorResultActions, GeneratorSaveBar } from '@/components/ui/GeneratorResultActions';
@@ -221,6 +222,7 @@ export default function WorksheetScreen() {
   const [printStyle, setPrintStyle] = usePrintStyle();
   /** The question whose figure picker is open, by section and position. */
   const [figurePickFor, setFigurePickFor] = useState<{ si: number; qi: number } | null>(null);
+  const [showSend, setShowSend] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
@@ -857,6 +859,17 @@ export default function WorksheetScreen() {
             </Text>
           </Pressable>
 
+          {/* A digital copy for the class — the server builds a draft exam the
+              teacher reviews and publishes on the ordinary exam screen. */}
+          <Pressable
+            onPress={() => setShowSend(true)}
+            style={[styles.toggleBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', alignSelf: 'stretch', justifyContent: 'center' }]}
+            accessibilityRole="button"
+          >
+            <Ionicons name="phone-portrait-outline" size={16} color={ACCENT} />
+            <Text style={[{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }]}>{t('sendToClass')}</Text>
+          </Pressable>
+
           <Pressable
             onPress={() => setShowAnswers(v => !v)}
             style={[styles.toggleBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
@@ -1122,6 +1135,22 @@ export default function WorksheetScreen() {
       <GeneratorSaveBar accent={ACCENT} savedId={savedId} saveState={saveLabel} onSave={handleSave} onExport={() => setShowExport(true)} />
     )}
 
+    {result ? (
+      <SendWorksheetSheet
+        visible={showSend}
+        worksheet={result}
+        lessonId={scope.lesson?.id}
+        language={outLang === 'en' ? 'en' : 'ar'}
+        accent={ACCENT}
+        colors={colors}
+        onClose={() => setShowSend(false)}
+        onSent={(id, auto, teacher) => {
+          setShowSend(false);
+          showToast(t('sendToClassSent', auto, teacher));
+          router.push({ pathname: '/evaluations/[id]', params: { id } } as any);
+        }}
+      />
+    ) : null}
     <FigurePickerSheet
       visible={!!pickingQuestion}
       figures={lessonFigures}
