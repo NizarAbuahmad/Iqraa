@@ -26,6 +26,7 @@ import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import {
   getBookById,
   getEvaluableBookIds,
+  getObjectiveById,
   getObjectivesForBook,
   lessonIdsForObjectiveIds,
   objectivesAreWithinBook,
@@ -52,7 +53,9 @@ import { validateGenerated } from "../modules/assessment/validator";
 import { verificationAfterEdit, verifyAnswerKeys } from "../modules/assessment/keyVerification.ts";
 import { relateAnswerKey } from "../lib/mathVerifierClient.ts";
 import { QUESTION_TYPES } from "../modules/assessment/questionTypes";
-import { COMPETENCY_KEYS, type CompetencyKey } from "../modules/assessment/competency";
+import { COMPETENCY_KEYS, competencyForBlooms, type CompetencyKey } from "../modules/assessment/competency";
+import { convertWorksheet } from "../modules/assessment/fromWorksheet.ts";
+import { parseWorksheetRequest } from "../modules/assessment/worksheetRequest.ts";
 import { isPaperQuestion, parsePaperRows } from "../modules/assessment/paperExam";
 import { partitionForRegeneration } from "../modules/assessment/regeneration";
 import { aggregateClass, finishedAttempts } from "../modules/assessment/classInsights";
@@ -270,6 +273,126 @@ router.post("/evaluations", async (req: AuthenticatedRequest, res) => {
   } catch (err) {
     logger.error({ err }, "create evaluation failed");
     res.status(500).json({ error: "Failed to create evaluation" });
+  }
+});
+
+/**
+ * A worksheet the teacher generated or saved, sent to one of their classes as a
+ * draft evaluation — reviewed and published on the ordinary detail screen.
+ *
+ * Scope comes from the one objective the teacher picked (its book, grade,
+ * subject; its Bloom level gives every question its competency). The questions
+ * come from `convertWorksheet`, which decides what is safe to mark
+ * automatically and sends the rest to the teacher; a question with no key
+ * stops the send rather than getting an invented one. Everything is written in
+ * one transaction, so a failure leaves no half-built draft behind.
+ *
+ * `source: "teacher"` — the teacher chose this paper. `verification` is left
+ * empty: nothing here was checked by the verifier, and nothing may claim it was.
+ */
+router.post("/evaluations/from-worksheet", async (req: AuthenticatedRequest, res) => {
+  try {
+    const parsed = parseWorksheetRequest(req.body);
+    if (!parsed.ok) {
+      res.status(400).json({ error: parsed.error });
+      return;
+    }
+    const { worksheet, objectiveId, classGroupId, title, language } = parsed.value;
+
+    const objective = getObjectiveById(objectiveId);
+    const book = objective ? getBookById(objective.bookId) : undefined;
+    if (!objective || !book || !getEvaluableBookIds().includes(book.id)) {
+      res.status(400).json({ error: "Unknown objective" });
+      return;
+    }
+    if (!(await findLiveClass(classGroupId, req.user!.id))) {
+      res.status(404).json({ error: "Class not found" });
+      return;
+    }
+
+    const converted = convertWorksheet(worksheet);
+    if (!converted.ok) {
+      res.status(400).json({ error: "Some questions have no answer in the key", missingKey: converted.missingKey });
+      return;
+    }
+    // The converter's tests prove this; the route still does not store what
+    // the registry would refuse to put in front of a student.
+    const problems = converted.questions.flatMap((q, i) =>
+      QUESTION_TYPES[q.type].validate({ ...q, rubric: null }).map(p => `Q${i + 1}: ${p}`),
+    );
+    if (problems.length > 0) {
+      res.status(400).json({ error: problems.join("; ") });
+      return;
+    }
+
+    const [defaultScale] = await db
+      .select({ id: levelScales.id })
+      .from(levelScales)
+      .where(and(eq(levelScales.scope, "system"), eq(levelScales.isDefault, true)))
+      .limit(1);
+    if (!defaultScale) {
+      res.status(409).json({
+        error:
+          "No level scale is configured. Seed the assessment configuration before creating evaluations.",
+        code: "no_level_scale",
+      });
+      return;
+    }
+
+    const competencyKey = competencyForBlooms(objective.effectiveBloomsLevel);
+    const total = converted.questions.reduce((sum, q) => sum + q.marks, 0);
+
+    const evaluation = await db.transaction(async tx => {
+      const [row] = await tx
+        .insert(evaluations)
+        .values({
+          teacherId: req.user!.id,
+          title,
+          titleAr: title,
+          gradeId: book.gradeId,
+          subjectId: book.subjectId,
+          bookId: book.id,
+          unitId: objective.unitId,
+          lessonId: objective.lessonId,
+          objectiveIds: [objectiveId],
+          difficulty: "standard",
+          targetQuestionCount: converted.questions.length,
+          assessmentTypes: [...new Set(converted.questions.map(q => q.type))],
+          language: book.subjectId === "english" ? "en" : language,
+          levelScaleId: defaultScale.id,
+          classGroupId,
+          generator: "worksheet",
+          generationParams: { fromWorksheet: true },
+          totalMarks: total.toFixed(2),
+        })
+        .returning();
+      await tx.insert(evaluationQuestions).values(
+        converted.questions.map((q, i) => ({
+          evaluationId: row!.id,
+          orderIndex: i,
+          type: q.type,
+          body: q.body,
+          expectedAnswer: q.expectedAnswer,
+          rubric: null,
+          objectiveId,
+          competencyKey,
+          marks: q.marks.toFixed(2),
+          difficulty: "standard" as const,
+          gradingMode: QUESTION_TYPES[q.type].defaultGradingMode,
+          source: "teacher" as const,
+        })),
+      );
+      return row!;
+    });
+
+    res.status(201).json({
+      evaluation,
+      autoMarked: converted.autoMarked,
+      teacherMarked: converted.teacherMarked,
+    });
+  } catch (err) {
+    logger.error({ err }, "evaluation from worksheet failed");
+    res.status(500).json({ error: "Failed to send the worksheet" });
   }
 });
 

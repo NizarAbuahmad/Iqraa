@@ -166,7 +166,7 @@ export const evaluations = pgTable(
 
     /** Exact request handed to the generator — makes a result reproducible. */
     generationParams: jsonb("generation_params").$type<Record<string, unknown>>().notNull().default({}),
-    generator: text("generator").$type<"mock" | "llm">().notNull().default("mock"),
+    generator: text("generator").$type<"mock" | "llm" | "worksheet">().notNull().default("mock"),
     modelId: text("model_id"),
 
     publishedAt: timestamp("published_at", { withTimezone: true }),
