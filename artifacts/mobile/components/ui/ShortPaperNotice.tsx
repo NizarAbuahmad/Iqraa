@@ -22,7 +22,7 @@ export function ShortPaperNotice({ shortfall }: { shortfall?: { requested: numbe
       style={[styles.box, row, { borderColor: colors.border, backgroundColor: colors.card, borderRadius: colors.radius }]}
       accessibilityRole="alert"
     >
-      <Ionicons name="information-circle-outline" size={18} color={colors.mutedForeground} />
+      <Ionicons name="information-circle-outline" size={18} color={colors.mutedForeground} style={{ marginTop: 1 }} />
       <Text style={[styles.text, { color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left' }]}>
         {t('shortPaperNotice', shortfall.produced, shortfall.requested)}
       </Text>
@@ -31,6 +31,6 @@ export function ShortPaperNotice({ shortfall }: { shortfall?: { requested: numbe
 }
 
 const styles = StyleSheet.create({
-  box: { alignItems: 'flex-start', gap: 8, borderWidth: 1, padding: 12, marginBottom: 12 },
+  box: { alignItems: 'flex-start', gap: 12, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 12 },
   text: { flex: 1, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20 },
 });
