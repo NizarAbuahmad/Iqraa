@@ -68,7 +68,7 @@ export default function PickStudentScreen() {
     try {
       setClasses(await listClasses());
     } catch (err) {
-      setError(err instanceof RosterError ? err.message : t('rosterLoadFailed'));
+      setError(t('rosterLoadFailed'));
     } finally {
       setLoading(false);
     }
@@ -88,7 +88,7 @@ export default function PickStudentScreen() {
       setStudents(roster);
       setClassId(id_);
     } catch (err) {
-      setError(err instanceof RosterError ? err.message : t('rosterLoadFailed'));
+      setError(t('rosterLoadFailed'));
     } finally {
       setLoading(false);
     }
@@ -158,7 +158,7 @@ export default function PickStudentScreen() {
             const status = attempt?.status ?? 'not_started';
             return (
               <Pressable
-                onPress={() => router.push({ pathname: '/evaluations/[id]/answers/[studentId]', params: { id: id as string, studentId: item.id } })}
+                onPress={() => router.push({ pathname: '/evaluations/[id]/answers/[studentId]', params: { id: id as string, studentId: item.id, classId: classId ?? '' } })}
                 style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
               >
                 <View style={{ flex: 1 }}>

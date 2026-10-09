@@ -27,8 +27,13 @@ import type { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
 import { mathLineToUnicode, prettifySymPy } from '@/services/mathRender';
 import { trackEvent } from '@/services/analytics';
 
-/** Cairo carries headings, Almarai body copy — the same split app/_layout.tsx makes on screen. */
-const HEAD_FONT = 'Cairo';
+/**
+ * Readex Pro carries headings, Almarai body copy — the same split
+ * app/_layout.tsx makes on screen. It said Cairo until 2026-10-08, a face the
+ * app never loads, so the exported deck's headings were in a different
+ * typeface from the projected one.
+ */
+const HEAD_FONT = 'Readex Pro';
 const BODY_FONT = 'Almarai';
 
 import * as theme from './deckTheme.ts';
@@ -112,6 +117,17 @@ async function fetchAsDataUrl(url: string): Promise<string | null> {
 type PptxSlide = ReturnType<InstanceType<typeof import('pptxgenjs').default>['addSlide']>;
 
 /**
+ * The scrim under a hero photo — its own constant, NOT `DECK_BG`. It was
+ * `DECK_BG` while the deck was near-black, and when the palette went cream the
+ * scrim went with it: a 75%-opaque cream wash with white text on top, which is
+ * an unreadable cover in every PPTX that had a photo. The white text below
+ * needs a dark ground whatever colour the slides are. Matches the midpoint of
+ * the `rgba(13,13,20,0.35→0.92)` gradient the HTML and native covers use.
+ */
+const HERO_SCRIM = '0D0D14';
+const HERO_SCRIM_TRANSPARENCY = 40;
+
+/**
  * The two soft circles the projected slide sits on. Drawn first so every
  * later shape and text box stacks above them — pptxgenjs has no z-index, add
  * order is the whole story.
@@ -167,7 +183,7 @@ async function addHeroBackground(s: PptxSlide, url: string, credit?: string): Pr
   const dataUrl = await fetchAsDataUrl(url);
   if (!dataUrl) return false;
   s.addImage({ data: dataUrl, x: 0, y: 0, w: 10, h: 5.63, sizing: { type: 'cover', w: 10, h: 5.63 } });
-  s.addShape('rect', { x: 0, y: 0, w: 10, h: 5.63, fill: { color: DECK_BG, transparency: 25 } });
+  s.addShape('rect', { x: 0, y: 0, w: 10, h: 5.63, fill: { color: HERO_SCRIM, transparency: HERO_SCRIM_TRANSPARENCY } });
   if (credit) {
     s.addText(credit, {
       x: 0.4, y: 5.18, w: 9.2, h: 0.28, align: 'center',
@@ -199,7 +215,7 @@ export async function exportDeckAsPptx(
   pptx.rtlMode = isAr;
   // The app's real typefaces instead of Arial. PowerPoint cannot embed a font
   // from pptxgenjs — this NAMES them, so the deck renders correctly wherever
-  // Cairo/Almarai are installed and falls back to a system Arabic face
+  // Readex Pro/Almarai are installed and falls back to a system Arabic face
   // otherwise, which is no worse than the Arial it printed before. It also
   // covers the Google Slides route: both are Google Fonts, so a .pptx
   // uploaded there resolves them from Google's own catalogue.

@@ -505,51 +505,110 @@ function num(n: number): string {
   return Number.isFinite(n) ? n.toFixed(2) : '0';
 }
 
+/** The colour of the i-th series or category — shared by every renderer. */
+export function seriesColor(i: number): string {
+  return SERIES_COLORS[i % SERIES_COLORS.length]!;
+}
+
+/** A chart laid out in pixel space, ready to become SVG or react-native-svg. */
+export type ChartGeometry =
+  | {
+      kind: 'pie';
+      slices: { d: string; fill: string; label: string }[];
+      /** One row per slice, beside the pie: a pie with no legend is coloured wedges and a guess. */
+      legend: { label: string; fill: string; x: number; y: number }[];
+    }
+  | {
+      kind: 'bars';
+      bars: {
+        x: number; y: number; w: number; h: number; fill: string;
+        label: string; labelX: number; labelY: number;
+      }[];
+    };
+
 /**
- * A chart's bars/slices as SVG. Categorical data has no shared geometry with a
- * plot, so it is laid out here rather than through plotGeometry.
+ * Where a chart's bars or slices go. Categorical data has no shared geometry
+ * with a plot, so it is laid out here rather than through plotGeometry — and
+ * laid out ONCE: the presenter used to carry its own bar loop, which drew a pie
+ * as unlabeled bars and labelled nothing, so a finance lesson's budget split
+ * projected as four anonymous rectangles while the PDF of the same deck showed
+ * a pie. Returns null when there is nothing honest to draw.
  */
-function chartSvg(block: Extract<VisualBlock, { kind: 'chart' }>, width: number, height: number): string {
+export function chartGeometry(
+  block: Extract<VisualBlock, { kind: 'chart' }>,
+  width: number,
+  height: number,
+): ChartGeometry | null {
   const { categories, values } = block;
-  if (!categories.length || categories.length !== values.length) return '';
+  if (!categories.length || categories.length !== values.length) return null;
   const pad = 30;
   const w = width - pad * 2;
   const h = height - pad * 2;
 
   if (block.chartType === 'pie') {
     const total = values.reduce((s, v) => s + Math.max(0, v), 0);
-    if (total <= 0) return '';
-    const r = Math.min(w, h) / 2;
-    const cx = width / 2;
+    if (total <= 0) return null;
+    // The pie takes the first ~60% of the width and the legend the rest.
+    const r = Math.min(w * 0.6, h) / 2;
+    const cx = pad + w * 0.3;
     const cy = height / 2;
     let angle = -Math.PI / 2;
     const slices = values.map((v, i) => {
       const sweep = (Math.max(0, v) / total) * Math.PI * 2;
+      const fill = seriesColor(i);
+      // A single category is the whole circle, and an arc whose end meets its
+      // start collapses to nothing — draw it as two half-circles instead.
+      if (sweep >= Math.PI * 2 - 1e-9) {
+        const d = `M ${num(cx - r)} ${num(cy)} A ${num(r)} ${num(r)} 0 1 1 ${num(cx + r)} ${num(cy)} A ${num(r)} ${num(r)} 0 1 1 ${num(cx - r)} ${num(cy)} Z`;
+        return { d, fill, label: categories[i]! };
+      }
       const x1 = cx + r * Math.cos(angle);
       const y1 = cy + r * Math.sin(angle);
       angle += sweep;
       const x2 = cx + r * Math.cos(angle);
       const y2 = cy + r * Math.sin(angle);
       const large = sweep > Math.PI ? 1 : 0;
-      const fill = SERIES_COLORS[i % SERIES_COLORS.length]!;
-      return `<path d="M ${num(cx)} ${num(cy)} L ${num(x1)} ${num(y1)} A ${num(r)} ${num(r)} 0 ${large} 1 ${num(x2)} ${num(y2)} Z" fill="${fill}" opacity="0.9"/>`;
+      const d = `M ${num(cx)} ${num(cy)} L ${num(x1)} ${num(y1)} A ${num(r)} ${num(r)} 0 ${large} 1 ${num(x2)} ${num(y2)} Z`;
+      return { d, fill, label: categories[i]! };
     });
-    return slices.join('');
+    const legend = categories.map((label, i) => ({
+      label: `${label} ${Math.round((Math.max(0, values[i]!) / total) * 100)}%`,
+      fill: seriesColor(i),
+      x: pad + w * 0.66,
+      y: pad + 12 + i * 22,
+    }));
+    return { kind: 'pie', slices, legend };
   }
 
   const max = Math.max(...values, 0);
-  if (max <= 0) return '';
+  if (max <= 0) return null;
   const slot = w / categories.length;
   const barW = slot * 0.6;
-  return values
-    .map((v, i) => {
-      const bh = (Math.max(0, v) / max) * h;
-      const x = pad + i * slot + (slot - barW) / 2;
-      const y = pad + h - bh;
-      const fill = SERIES_COLORS[i % SERIES_COLORS.length]!;
-      return `<rect x="${num(x)}" y="${num(y)}" width="${num(barW)}" height="${num(bh)}" fill="${fill}" rx="3"/>`
-        + `<text x="${num(x + barW / 2)}" y="${num(height - 10)}" font-size="11" text-anchor="middle" fill="#6B7280">${esc(categories[i]!)}</text>`;
-    })
+  const bars = values.map((v, i) => {
+    const bh = (Math.max(0, v) / max) * h;
+    const x = pad + i * slot + (slot - barW) / 2;
+    return {
+      x, y: pad + h - bh, w: barW, h: bh, fill: seriesColor(i),
+      label: categories[i]!, labelX: x + barW / 2, labelY: height - 10,
+    };
+  });
+  return { kind: 'bars', bars };
+}
+
+/** A chart's bars/slices as SVG, from the same geometry the presenter draws. */
+function chartSvg(block: Extract<VisualBlock, { kind: 'chart' }>, width: number, height: number): string {
+  const g = chartGeometry(block, width, height);
+  if (!g) return '';
+  if (g.kind === 'pie') {
+    return g.slices.map(s => `<path d="${s.d}" fill="${s.fill}" opacity="0.9"/>`).join('')
+      + g.legend.map(l =>
+        `<rect x="${num(l.x)}" y="${num(l.y - 11)}" width="12" height="12" rx="2" fill="${l.fill}"/>`
+        + `<text x="${num(l.x + 18)}" y="${num(l.y)}" font-size="13" fill="#4B5563">${esc(l.label)}</text>`).join('');
+  }
+  return g.bars
+    .map(b =>
+      `<rect x="${num(b.x)}" y="${num(b.y)}" width="${num(b.w)}" height="${num(b.h)}" fill="${b.fill}" rx="3"/>`
+      + `<text x="${num(b.labelX)}" y="${num(b.labelY)}" font-size="11" text-anchor="middle" fill="#6B7280">${esc(b.label)}</text>`)
     .join('');
 }
 
@@ -583,7 +642,7 @@ export function visualToSvg(block: VisualBlock, width = 640, height = 340): stri
 
   const curves = g.series
     .map((s, i) => {
-      const color = SERIES_COLORS[i % SERIES_COLORS.length]!;
+      const color = seriesColor(i);
       const d = s.points.map(p => `${num(p.x)},${num(p.y)}`).join(' ');
       return `<polyline points="${d}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
     })
@@ -592,7 +651,7 @@ export function visualToSvg(block: VisualBlock, width = 640, height = 340): stri
   const legend = g.series.length > 1
     ? g.series
         .map((s, i) => {
-          const color = SERIES_COLORS[i % SERIES_COLORS.length]!;
+          const color = seriesColor(i);
           return `<text x="12" y="${18 + i * 16}" font-size="12" fill="${color}">${esc(s.label)}</text>`;
         })
         .join('')
