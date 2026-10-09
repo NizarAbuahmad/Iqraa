@@ -292,6 +292,25 @@ an announcement by default» below.
   gate exercised live in a browser (flags scoring/next, memory flip/match,
   colour round-advance, `/play` loads signed-out). Not verified: capitals
   trivia specifically (same component as flags, lower risk).
+  - **Grade bands and an element-symbols game, 2026-10-08.** Every `/play`
+    card now shows which grades it suits («الصفوف 7–10»), from
+    `services/publicGames/gradeBands.ts` — keyed by the hub's game id, so a new
+    game without a band fails typecheck. The bands are a judgement against
+    the Jordanian curriculum (+/− G1–3, ×/÷ G3–5, English G1–4 and G9–10,
+    flags G3–8, capitals G4–9, memory G1–3, colours G1–4), not measured.
+    New: **«رموز العناصر»** at `/play/elements` (G7–10), the hub's only
+    science game and second on the page — 30 elements (1–20 plus common
+    metals and halogens, Jordanian spelling: الخارصين), alternating
+    symbol→name and name→symbol, distractors preferring the same first letter
+    (C/Ca/Cl/Cu). `TriviaGame.tsx` was split into a generic `TriviaBoard` to
+    host it. Verified: mobile suite green, typecheck clean, the hub and a full
+    8-question round exercised in a browser (light mode only).
+  - **The Smart Whiteboard that shipped beside it is gone** — removed on
+    2026-09-25 (#624): a text box shown full-screen, no AI, no drawing,
+    nothing saved, and the classroom board already did the job. It is not in
+    `toolCatalog.ts`, `toolCatalog.test.ts` or `app/ai-tools/` any more. This
+    entry went on describing it as a live during-class tool for a week after
+    the delete — checked against the tree on 2026-10-02.
   - **The first Smart Whiteboard is gone; a new board replaced it** — the old
     one was removed on 2026-09-25 (#624): a text box shown full-screen, no AI,
     no drawing, nothing saved. The new «السبورة» (sub-project A of three) is

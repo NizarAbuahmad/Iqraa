@@ -2263,6 +2263,10 @@ const translations = {
     playCapitalsTitle: 'عواصم العالم',
     playCapitalsDesc: 'اختبر معلوماتك في عواصم دول العالم',
     playCapitalsPrompt: (country: string) => `ما هي عاصمة ${country}؟`,
+    playElementsTitle: 'رموز العناصر',
+    playElementsDesc: 'طابِق كل عنصر كيميائي برمزه — مراجعة سريعة للعلوم والكيمياء',
+    playElementsNamePrompt: 'ما اسم هذا العنصر؟',
+    playElementsSymbolPrompt: 'ما رمز هذا العنصر؟',
     playQuestionProgress: (i: number, total: number) => `سؤال ${i} من ${total}`,
     playNext: 'التالي',
 
@@ -4462,6 +4466,10 @@ const translations = {
     playCapitalsTitle: 'World Capitals',
     playCapitalsDesc: 'Test your knowledge of world capitals',
     playCapitalsPrompt: (country: string) => `What is the capital of ${country}?`,
+    playElementsTitle: 'Element Symbols',
+    playElementsDesc: 'Match each chemical element to its symbol — a quick science review',
+    playElementsNamePrompt: 'Which element is this?',
+    playElementsSymbolPrompt: 'What is this element\'s symbol?',
     playQuestionProgress: (i: number, total: number) => `Question ${i} of ${total}`,
     playNext: 'Next',
 
