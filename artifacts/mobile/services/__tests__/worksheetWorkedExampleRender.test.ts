@@ -184,12 +184,18 @@ describe('a half-solved question keeps its line breaks on paper', () => {
   it('does not print the generator\'s answer-space suffix where ruled lines are drawn anyway', () => {
     const html = plainHtml(buildWorksheetHTML(halfSolved(), 'ورقة', meta, true));
     assert.ok(!html.includes('الإجابة:'), 'the suffix would be printed on top of the ruled lines');
-    assert.ok(html.includes('class="q-lines"'), 'the ruled lines are still drawn');
+    // Its numbered blanks are the writing room (below), so no ruled lines are
+    // drawn under them as well — that doubled the space on this one question.
+    assert.ok(!html.includes('class="q-lines"'), 'ruled lines drawn under the blanks too');
   });
 
-  it('keeps the numbered blanks the student fills in', () => {
+  it('keeps the numbered blanks the student fills in, as full-width lines', () => {
     const html = plainHtml(buildWorksheetHTML(halfSolved(), 'ورقة', meta, true));
-    assert.ok(html.includes('2) __________') && html.includes('3) __________'));
+    // A ten-underscore blank is too short for one step of working on paper.
+    for (const n of ['2)', '3)']) {
+      assert.ok(html.includes(`<span class="q-blank"><span>${n}</span><span class="exam-blank"></span></span>`), n);
+    }
+    assert.ok(!html.includes('__________'), 'an underscore blank was printed');
     assert.ok(html.includes('أكمل الحل:'));
   });
 
