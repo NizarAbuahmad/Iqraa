@@ -407,6 +407,19 @@ export async function claimRosterCode(
   return claimed;
 }
 
+/** Who this account is linked to, with the grade the teacher's roster gives each. `GET /auth/claim`. */
+export async function listMyRosterLinks(): Promise<{ studentId: string; displayName: string; gradeId: string | null }[]> {
+  const res = await apiFetch('/auth/claim');
+  const data = await readJson<{ links: { studentId: string; displayName: string; gradeId: string | null }[] }>(res, 'Loading your links');
+  return data.links;
+}
+
+/** Undoes this account's own claims, for a wrong name picked off a class list. `DELETE /auth/claim`. */
+export async function unclaimRoster(): Promise<void> {
+  const res = await apiFetch('/auth/claim', { method: 'DELETE' });
+  await readJson(res, 'Unlinking account');
+}
+
 export interface ParentContact {
   kind: string;
   channel: 'in_app' | 'share' | 'copy';
