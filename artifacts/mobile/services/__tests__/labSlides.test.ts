@@ -23,6 +23,17 @@ import {
 
 const LRI = '⁦';
 const PDI = '⁩';
+/** How many separate top-level isolates a string holds (nesting does not count). */
+function topLevelIsolates(text: string): number {
+  let depth = 0;
+  let top = 0;
+  for (const ch of text) {
+    if (ch === LRI) { if (depth === 0) top += 1; depth += 1; }
+    else if (ch === PDI) depth = Math.max(0, depth - 1);
+  }
+  return top;
+}
+const withoutIsolates = (text: string) => text.replace(/[\u2066\u2069]/g, '');
 const laws = LAB_ITEMS.filter((i): i is LabLawItem => i.kind === 'law');
 const externals = LAB_ITEMS.filter((i): i is LabExternalItem => i.kind === 'external');
 
@@ -67,7 +78,7 @@ describe('law slides', () => {
     assert.equal(s.type, 'intro');
     assert.ok(s.title.includes('القانون الثاني لنيوتن'));
     assert.ok(s.content.split('\n')[0] === 'F = m × a');
-    assert.ok(s.content.includes('• a — Acceleration (m·s⁻²)'));
+    assert.ok(s.content.includes(`• ${LRI}a — Acceleration (m·s⁻²)${PDI}`));
   });
   it('carries the lesson terms only in an Arabic deck, and never repeats the title as a term', () => {
     const ar = buildLabSlide(getLabItem('law-molar-mass')!, true, 0)!;
@@ -174,7 +185,17 @@ describe('GUARD: every shipped law, through the deck’s real formula helpers', 
         }
         for (const line of rest) {
           assert.ok(isBulletLine(line), `"${line}" must be a bullet so it is never drawn as a boxed equation`);
-          assert.ok(!hasRenderableMath(stripBullet(line)), `"${line}" would be parsed as stacked maths`);
+          assert.ok(!hasRenderableMath(withoutIsolates(stripBullet(line))), `"${line}" would be parsed as stacked maths`);
+          // A Latin phrase in an Arabic deck must be ONE left-to-right run. The deck's own
+          // isolation splits at «,» and «·», and the pieces then lay out right to left:
+          // «Rx, Ry» printed as «Ry ,Rx» and «m·s⁻²» as «s⁻²·m» (seen in a real render).
+          if (/[A-Za-z]/.test(line)) {
+            assert.equal(
+              topLevelIsolates(isolateForeignRuns(line)),
+              1,
+              `"${line}" is split into several runs, which an Arabic page lays out in reverse`,
+            );
+          }
         }
         assert.ok(!/[ₐ-ₜ]/.test(slide.content), 'a subscript letter would be stranded outside the isolate');
       });
@@ -191,6 +212,11 @@ describe('GUARD: every shipped credit reaches both fields the exports read', () 
       assert.ok(res.attribution.trim());
       assert.ok(slide.content.includes(res.attribution), 'presenter reads the credit from content');
       assert.ok(slide.mediaCaption?.includes(res.attribution), 'PDF and PPTX read it from mediaCaption');
+      // The credit is Latin text with commas inside an Arabic page: it must stay one run, or it
+      // prints backwards («via Wikimedia Commons ,CC BY 3.0 ,2012rc» in a real render).
+      assert.ok(slide.content.includes(`${LRI}${res.attribution}${PDI}`), 'credit is one isolated run in content');
+      assert.ok(slide.mediaCaption!.includes(`${LRI}${res.attribution}${PDI}`), 'credit is one isolated run in mediaCaption');
+      assert.equal(topLevelIsolates(isolateForeignRuns(slide.mediaCaption!)), 1, 'the credit is the only run in the caption');
       if (res.kind === 'image') {
         assert.equal(slide.mediaUrl, res.fetchUrl);
         assert.ok(!slide.mediaUrl!.includes('/media/external/'), 'never the one-hour presigned link');
