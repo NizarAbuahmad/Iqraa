@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
   copyRow: { borderRadius: 10, padding: 3, gap: 3, marginBottom: 8 },
   copyOption: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: 'transparent' },
   copyLabel: { fontSize: 14 },
-  groupLabel: { fontSize: 13, marginBottom: 6 },
+  groupLabel: { fontSize: 13, marginBottom: 8 },
   row: {
     alignItems: 'center', gap: 14,
     paddingVertical: 14, borderBottomWidth: 1,
