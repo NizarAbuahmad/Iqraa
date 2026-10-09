@@ -54,6 +54,7 @@ import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { CHAT_MAX_WIDTH } from '@/constants/layout';
 import { toLatinDigits } from '@/services/latinDigits';
+import { getClass } from '@/services/roster';
 import { playUri } from '@/services/englishAudio';
 import { isPaperQuestion } from '@/services/paperQuestion';
 
@@ -133,7 +134,21 @@ export default function AnswerEntryScreen() {
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
   const align = isRTL ? 'right' : 'left';
-  const { id, studentId } = useLocalSearchParams<{ id: string; studentId: string }>();
+  const { id, studentId, classId } = useLocalSearchParams<{ id: string; studentId: string; classId?: string }>();
+  // The next name on the roster this teacher came from. Marking thirty papers
+  // used to mean back to the list after every one.
+  const [nextStudent, setNextStudent] = useState<{ id: string; displayName: string } | null>(null);
+  useEffect(() => {
+    setNextStudent(null);
+    if (!classId || !studentId) return;
+    getClass(classId)
+      .then(({ students }) => {
+        const i = students.findIndex(s => s.id === studentId);
+        const next = i >= 0 ? students[i + 1] : undefined;
+        setNextStudent(next ? { id: next.id, displayName: next.displayName } : null);
+      })
+      .catch(() => {});
+  }, [classId, studentId]);
 
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [questions, setQuestions] = useState<EvaluationQuestion[]>([]);
@@ -173,7 +188,7 @@ export default function AnswerEntryScreen() {
         setComment(data.attempt.teacherComment ?? '');
         setResult(data.result);
       } catch (err) {
-        setError(err instanceof EvaluationError ? err.message : t('attemptLoadFailed'));
+        setError(t('attemptLoadFailed'));
       } finally {
         setLoading(false);
       }
@@ -304,18 +319,34 @@ export default function AnswerEntryScreen() {
     [attemptId],
   );
 
+  /**
+   * Save every mark still only in its box — every scan proposal, or a box
+   * that never lost focus. Submit re-reads marks from the server and «next»
+   * leaves the screen, so either would drop them. False if one was refused.
+   */
+  const saveUnsavedMarks = async () => {
+    for (const q of questions) {
+      const d = grades[q.id];
+      if (isUnsavedMark(d) && !(await commitGrade(q, d!.marks, d!.note))) return false;
+    }
+    return true;
+  };
+
+  const goToNextStudent = async () => {
+    if (!nextStudent || submitting) return;
+    if (!(await saveUnsavedMarks())) return;
+    router.replace({
+      pathname: '/evaluations/[id]/answers/[studentId]',
+      params: { id: id as string, studentId: nextStudent.id, classId: classId ?? '' },
+    });
+  };
+
   const onSubmit = async () => {
     if (!attemptId || submitting) return;
     setSubmitting(true);
     setError('');
     try {
-      // Submit re-reads every mark from the server, so a mark still only in
-      // its box — every scan proposal, or a box that never lost focus — would
-      // be wiped. Save those first; if one is refused, stop with it on screen.
-      for (const q of questions) {
-        const d = grades[q.id];
-        if (isUnsavedMark(d) && !(await commitGrade(q, d!.marks, d!.note))) return;
-      }
+      if (!(await saveUnsavedMarks())) return;
       await submitAttempt(attemptId);
       // Re-read rather than patching state from the response: submit returns
       // only the marks it produced, and the machine may have just replaced a
@@ -479,6 +510,22 @@ export default function AnswerEntryScreen() {
               </Text>
             )}
           </Pressable>
+          {nextStudent ? (
+            <Pressable
+              onPress={() => { void goToNextStudent(); }}
+              disabled={submitting}
+              accessibilityRole="button"
+              style={({ pressed }) => [
+                styles.submitBtn,
+                { marginTop: 10, backgroundColor: 'transparent', borderWidth: 1, borderColor: ACCENT, opacity: pressed ? 0.7 : 1, flexDirection: isRTL ? 'row-reverse' : 'row', gap: 6 },
+              ]}
+            >
+              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
+                {t('nextStudentBtn', nextStudent.displayName)}
+              </Text>
+              <Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={16} color={ACCENT} />
+            </Pressable>
+          ) : null}
         </View>
         </View>
       </ScrollView>

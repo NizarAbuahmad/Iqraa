@@ -458,7 +458,47 @@ function worthIsolating(run: string): boolean {
 }
 
 export function isolateForeignRuns(line: string): string {
-  return (line ?? '').replace(FOREIGN_RUN_RE, m => (worthIsolating(m) ? `⁦${m}⁩` : m));
+  return (line ?? '').replace(FOREIGN_RUN_RE, m => (worthIsolating(m) ? isolateRun(m) : m));
+}
+
+/**
+ * An isolate is laid out on its own, so a bracket inside it cannot pair with
+ * its partner outside it. Chemistry stems hit this constantly:
+ * «(الكتلة المولية 44 g/mol)» opens in the Arabic and closes in the run, and
+ * «CO₂. (C = 12، O = 16)» is cut in two by the Arabic comma — printed as
+ * «O = 16) ،CO₂. (C = 12». An unpaired bracket is left in the surrounding
+ * flow, where the bidi algorithm pairs and mirrors it correctly, and the
+ * pieces between are isolated on their own. Balanced runs are unchanged.
+ */
+function isolateRun(run: string): string {
+  const unpaired = new Set<number>();
+  const open: number[] = [];
+  for (let i = 0; i < run.length; i++) {
+    if (run[i] === '(') open.push(i);
+    else if (run[i] === ')') {
+      if (open.length) open.pop();
+      else unpaired.add(i);
+    }
+  }
+  for (const i of open) unpaired.add(i);
+  if (!unpaired.size) return `⁦${run}⁩`;
+
+  let out = '';
+  let piece = '';
+  const flush = () => {
+    // Spaces at a piece's edge belong to the flow, as they do for a whole run.
+    const [, lead, body, trail] = /^(\s*)(.*?)(\s*)$/su.exec(piece)!;
+    out += lead + (body && worthIsolating(body) ? `⁦${body}⁩` : body) + trail;
+    piece = '';
+  };
+  for (let i = 0; i < run.length; i++) {
+    if (unpaired.has(i)) {
+      flush();
+      out += run[i];
+    } else piece += run[i];
+  }
+  flush();
+  return out;
 }
 
 /**

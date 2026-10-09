@@ -1401,8 +1401,8 @@ export class MockAIService extends AIService {
         ? `ورقة عمل صفية – ${topic}`
         : `In-class Worksheet – ${topic}`,
       instructions: lang === 'ar'
-        ? `الاسم: ________________    الصف: ${req.grade}    التاريخ: ________________\n\nمقدمة قصيرة: هذه ورقة تدريب صفية حول «${topic}». اعمل بهدوء، وابدأ بالأسهل ثم انتقل للأصعب.\n\n${exampleItem ? '• ادرس المثال المحلول أولًا، ثم أكمل الحل في السؤال الأول، ثم تابع بقية الأسئلة.\n' : ''}• أجب في المساحات المخصصة.\n• بيّن خطوات الحل عند الحاجة.\n• لا حاجة لملاحظات المعلم — هذه ورقة للطالب.`
-        : `Name: ________________    Grade: ${req.grade}    Date: ________________\n\nShort intro: This is an in-class practice sheet on “${topic}”. Work quietly and move from easier to harder items.\n\n${exampleItem ? '• Study the worked example first, then finish the solution in question 1, then carry on.\n' : ''}• Write in the answer spaces provided.\n• Show working where needed.\n• Student sheet only — no teacher notes.`,
+        ? `مقدمة قصيرة: هذه ورقة تدريب صفية حول «${topic}». اعمل بهدوء، وابدأ بالأسهل ثم انتقل للأصعب.\n\n${exampleItem ? '• ادرس المثال المحلول أولًا، ثم أكمل الحل في السؤال الأول، ثم تابع بقية الأسئلة.\n' : ''}• أجب في المساحات المخصصة.\n• بيّن خطوات الحل عند الحاجة.`
+        : `Short intro: This is an in-class practice sheet on “${topic}”. Work quietly and move from easier to harder items.\n\n${exampleItem ? '• Study the worked example first, then finish the solution in question 1, then carry on.\n' : ''}• Write in the answer spaces provided.\n• Show working where needed.`,
       ...(exampleItem
         ? {
             workedExample: {

@@ -307,10 +307,13 @@ describe('buildDeckSlidesHTML — a check that carries its own figure', () => {
 describe('buildDeckSlidesHTML — typography', () => {
   it('loads the app’s real typefaces and uses them, with Arial only as fallback', () => {
     const html = buildDeckSlidesHTML(deck([titleSlide]), true);
-    assert.match(html, /fonts\.googleapis\.com\/css2\?family=Almarai[^"]*Cairo/);
-    // Body copy in Almarai, headings in Cairo — the split the on-screen UI makes.
+    assert.match(html, /fonts\.googleapis\.com\/css2\?family=Almarai[^"]*Readex\+Pro/);
+    // Body copy in Almarai, headings in Readex Pro — the split the on-screen UI
+    // makes (app/_layout.tsx loads exactly those two). The export named Cairo
+    // until 2026-10-08, which the app never loads, so headings differed.
     assert.match(html, /body \{ font-family: 'Almarai'/);
-    assert.match(html, /\.deck-title-main[^}]*\{ font-family: 'Cairo'|font-family: 'Cairo'[^}]*\}/);
+    assert.match(html, /\.deck-title-main[^}]*\{ font-family: 'Readex Pro'|font-family: 'Readex Pro'[^}]*\}/);
+    assert.doesNotMatch(html, /Cairo/);
     // Arial must survive as the offline fallback, not disappear entirely.
     assert.match(html, /'Almarai','Arial'/);
   });
