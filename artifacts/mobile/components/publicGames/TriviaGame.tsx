@@ -1,19 +1,21 @@
 /**
- * Flags + capitals trivia — same mechanic, different question field and
- * (for flags) an image. One component covers both games; only the data
- * differs (services/publicGames/countries.ts).
+ * Four-option trivia. `TriviaBoard` is the mechanic (one answer per question,
+ * reveal, next, score); `TriviaGame` is flags + capitals on top of it — same
+ * mechanic, different question field and (for flags) an image, data in
+ * services/publicGames/countries.ts. The element-symbols game reuses the
+ * board with its own prompt (ElementsGame.tsx).
  */
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { GameShell } from './GameShell';
-import { buildTriviaRound, flagUrl, type TriviaField, type TriviaQuestion } from '@/services/publicGames/countries';
+import { buildTriviaRound, flagUrl, type TriviaField, type TriviaOption, type TriviaQuestion } from '@/services/publicGames/countries';
 import type { TranslationKey } from '@/services/i18n';
 
-const QUESTION_COUNT = 8;
+export const QUESTION_COUNT = 8;
 
 export function TriviaGame({
   field, titleKey, accent,
@@ -23,6 +25,37 @@ export function TriviaGame({
   accent: string;
 }) {
   const colors = useColors();
+  const { t, lang } = useLanguage();
+  const buildRound = useCallback(
+    (l: 'ar' | 'en') => buildTriviaRound(field, l, QUESTION_COUNT),
+    [field],
+  );
+  const renderPrompt = (question: TriviaQuestion) =>
+    field === 'name' ? (
+      <View style={styles.flagWrap}>
+        <Image source={{ uri: flagUrl(question.country.code) }} style={styles.flag} resizeMode="cover" />
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 18, textAlign: 'center', marginTop: 14 }}>
+          {t('playFlagsPrompt')}
+        </Text>
+      </View>
+    ) : (
+      <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 20, textAlign: 'center', marginVertical: 20 }}>
+        {t('playCapitalsPrompt', lang === 'ar' ? question.country.nameAr : question.country.nameEn)}
+      </Text>
+    );
+  return <TriviaBoard titleKey={titleKey} accent={accent} buildRound={buildRound} renderPrompt={renderPrompt} />;
+}
+
+export function TriviaBoard<Q extends { options: TriviaOption[]; correctId: string }>({
+  titleKey, accent, buildRound, renderPrompt,
+}: {
+  titleKey: TranslationKey;
+  accent: string;
+  /** Must be stable (module-level or useCallback): a new identity reshuffles the round. */
+  buildRound: (lang: 'ar' | 'en') => Q[];
+  renderPrompt: (question: Q) => React.ReactNode;
+}) {
+  const colors = useColors();
   const { t, isRTL, lang } = useLanguage();
   const [round, setRound] = useState(0); // bumped to reshuffle a fresh game
   const [index, setIndex] = useState(0);
@@ -30,12 +63,12 @@ export function TriviaGame({
   const [selected, setSelected] = useState<string | null>(null);
   const [gameOver, setGameOver] = useState(false);
 
-  const questions: TriviaQuestion[] = useMemo(
-    () => buildTriviaRound(field, lang, QUESTION_COUNT),
+  const questions: Q[] = useMemo(
+    () => buildRound(lang),
     // A fresh set on mount and every "play again" — never mid-game, or the
     // options under a selected answer would shuffle out from under the tap.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [field, lang, round],
+    [buildRound, lang, round],
   );
   const question = questions[index];
 
@@ -75,18 +108,7 @@ export function TriviaGame({
           {t('playQuestionProgress', index + 1, questions.length)}
         </Text>
 
-        {field === 'name' ? (
-          <View style={styles.flagWrap}>
-            <Image source={{ uri: flagUrl(question.country.code) }} style={styles.flag} resizeMode="cover" />
-            <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 18, textAlign: 'center', marginTop: 14 }}>
-              {t('playFlagsPrompt')}
-            </Text>
-          </View>
-        ) : (
-          <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 20, textAlign: 'center', marginVertical: 20 }}>
-            {t('playCapitalsPrompt', lang === 'ar' ? question.country.nameAr : question.country.nameEn)}
-          </Text>
-        )}
+        {renderPrompt(question)}
 
         <View style={styles.optionsGrid}>
           {question.options.map(o => {
