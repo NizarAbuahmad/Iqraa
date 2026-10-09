@@ -50,13 +50,13 @@ import {
 import { isolateForeignRuns } from '@/services/mathRender';
 import { FillBlankInput, MatchingInput } from '@/components/QuestionInputs';
 import type { TranslationKey } from '@/services/i18n';
-import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { CHAT_MAX_WIDTH } from '@/constants/layout';
 import { toLatinDigits } from '@/services/latinDigits';
 import { getClass } from '@/services/roster';
 import { playUri } from '@/services/englishAudio';
 import { isPaperQuestion } from '@/services/paperQuestion';
+import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = palette.primary;
 
@@ -394,9 +394,7 @@ export default function AnswerEntryScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <View style={[styles.header, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
-            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-          </Pressable>
+          <BackButton color="#fff" style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }} />
           <Text style={[styles.headerTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>{studentName}</Text>
           <Text style={[styles.headerSub, { fontFamily: 'Almarai_400Regular', textAlign: align, color: 'rgba(255,255,255,0.95)' }]} numberOfLines={1}>
             {evaluationTitle}

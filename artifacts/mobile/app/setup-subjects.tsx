@@ -45,6 +45,7 @@ import { PillSelector } from '@/components/ui/PillSelector';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { getPickerGrades, getSubjectsForGrade } from '@/services/curriculumData';
 import { goBack } from '@/services/navigation';
+import { BackButton } from '@/components/ui/BackButton';
 
 function toggle(list: string[], id: string): string[] {
   return list.includes(id) ? list.filter(x => x !== id) : [...list, id];
@@ -194,14 +195,7 @@ export default function SetupSubjectsScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {editMode ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('back')}
-            onPress={() => goBack()} hitSlop={10}
-            style={[styles.back, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
-          >
-            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
-          </Pressable>
+          <BackButton color={colors.foreground} style={[styles.back, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
         ) : (
           <View style={[styles.icon, { backgroundColor: colors.primary + '18' }]}>
             <Ionicons name="school-outline" size={32} color={colors.primary} />

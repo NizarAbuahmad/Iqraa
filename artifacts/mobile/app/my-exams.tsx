@@ -34,7 +34,6 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
-import { goBack } from '@/services/navigation';
 import { getChildExams, getMyExams, retakeExam } from '@/services/studentExam';
 import { confirm } from '@/services/confirm';
 import { useMasteryProgress } from '@/hooks/useMasteryProgress';
@@ -52,6 +51,7 @@ import { apiErrorMessage } from '@/services/apiErrorKey';
 import { StudentResultCard, LEVEL_LABEL_KEY } from '@/components/StudentResultCard';
 import { palette } from '@/constants/colors';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
+import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = palette.primary;
 const ACCENT_FILL = palette.hero;
@@ -166,15 +166,7 @@ export default function MyExamsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { paddingTop: insets.top + 12, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('back')}
-          onPress={() => goBack()}
-          hitSlop={10}
-          style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
-        >
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
-        </Pressable>
+        <BackButton color={colors.foreground} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
           {t(isParent ? 'childResultsTitle' : 'myExamsTitle')}
         </Text>

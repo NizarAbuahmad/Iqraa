@@ -15,8 +15,8 @@ import {
 import { confirm } from '@/services/confirm';
 import { lockState } from '@/services/lessonLock';
 import { useMasteryProgress } from '@/hooks/useMasteryProgress';
-import { goBack } from '@/services/navigation';
 import { readableOn } from '@/services/readableColor';
+import { BackButton } from '@/components/ui/BackButton';
 
 export default function UnitLessonsScreen() {
   const colors = useColors();
@@ -51,9 +51,7 @@ export default function UnitLessonsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { backgroundColor: colorFill, paddingTop: insets.top + 12 }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-        </Pressable>
+        <BackButton color="#fff" style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
         <Text style={[styles.eyebrow, { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
           {semesterLabel ? `${semesterLabel} · ` : ''}{t('unitLabel')} {unit.order}
         </Text>

@@ -28,6 +28,7 @@ import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 import { goBack } from '@/services/navigation';
 import { readableOn } from '@/services/readableColor';
 import { palette } from '@/constants/colors';
+import { BackButton } from '@/components/ui/BackButton';
 
 const BLOOMS_COLORS: Record<string, string> = {
   Remember: '#6366F1',
@@ -125,9 +126,7 @@ export default function LessonDetailScreen() {
     >
       {/* Hero */}
       <View style={[styles.hero, { backgroundColor: colorFill, paddingTop: insets.top + 12 }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-        </Pressable>
+        <BackButton color="#fff" style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
         <Text style={[styles.heroTitle, { color: '#fff', fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {lessonTitle}
         </Text>

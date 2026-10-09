@@ -7,6 +7,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
+import { BackButton } from '@/components/ui/BackButton';
 
 const TOOL_TITLE_KEYS: Record<string, TranslationKey> = {
   homework: 'toolHomeworkTitle',
@@ -28,9 +29,7 @@ export default function ComingSoonScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
-        </Pressable>
+        <BackButton color={colors.foreground} style={[styles.backBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]} />
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {toolTitle}
         </Text>
