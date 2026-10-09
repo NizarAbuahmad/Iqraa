@@ -12,8 +12,15 @@
     {
       "idx": 1,
       "version": "7",
-      "when": 1791538145118,
-      "tag": "0001_sturdy_lord_tyger",
+      "when": 1791535929906,
+      "tag": "0001_fine_boomer",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791557338236,
+      "tag": "0002_white_barracuda",
       "breakpoints": true
     }
   ]

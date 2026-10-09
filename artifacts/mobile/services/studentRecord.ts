@@ -93,7 +93,7 @@ export function sittingsLine(o: StudentRecordObjective, lang: 'ar' | 'en'): stri
 }
 
 /** The worksheet generator on the lesson's own grade and subject — never a default. */
-export function worksheetAction(o: StudentRecordObjective) {
+export function worksheetAction(o: Pick<StudentRecordObjective, 'lessonId'>) {
   if (!o.lessonId) return null;
   const picker = lessonPickerParams(o.lessonId, 'ar');
   const context = resolveLessonPrepContext(o.lessonId, 'ar');

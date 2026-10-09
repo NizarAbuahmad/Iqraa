@@ -75,6 +75,8 @@ import {
 } from "../modules/assessment/studentResponse.ts";
 import { gradeSubmission } from "../modules/assessment/attemptGrading.ts";
 import { attemptAudioKey, deleteAttemptAudio } from "../lib/attemptAudio.ts";
+import { inAudience } from "../modules/assessment/audience.ts";
+import { evaluationAudience } from "../lib/evaluationAudience.ts";
 
 const router = Router();
 
@@ -207,6 +209,10 @@ router.get("/take/:code", async (req, res) => {
       .innerJoin(students, eq(students.id, classMemberships.studentId))
       .where(eq(classMemberships.classGroupId, evaluation.classGroupId))
       .orderBy(asc(students.displayName));
+    // A group check's link lists its group only: the names behind a link are
+    // the one thing it exposes, and a group check must not expose the class.
+    const audience = await evaluationAudience(evaluation.id);
+    const shown = roster.filter(s => inAudience(audience, s.id));
 
     const claimed = await db
       .select({ studentId: attempts.studentId })
@@ -224,7 +230,7 @@ router.get("/take/:code", async (req, res) => {
         timeLimitMin: evaluation.timeLimitMin,
         language: evaluation.language,
       },
-      students: roster.map(s => ({ ...s, taken: taken.has(s.id) })),
+      students: shown.map(s => ({ ...s, taken: taken.has(s.id) })),
     });
   } catch (err) {
     logger.error({ err }, "open student link failed");
@@ -245,6 +251,14 @@ async function claimAttemptFor(
   evaluation: NonNullable<Awaited<ReturnType<typeof evaluationByCode>>>,
   member: { id: string; displayName: string },
 ): Promise<void> {
+  // Both claim paths (tap-a-name and signed-in self) come through here, so the
+  // group rule is enforced once. Resuming an attempt already held never
+  // reaches this function.
+  if (!inAudience(await evaluationAudience(evaluation.id), member.id)) {
+    res.status(403).json({ error: "This check is for a group in your class", code: "not_in_group" });
+    return;
+  }
+
   const [existing] = await db
     .select({ id: attempts.id })
     .from(attempts)
