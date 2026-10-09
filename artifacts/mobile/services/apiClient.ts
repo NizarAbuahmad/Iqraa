@@ -188,15 +188,20 @@ async function refreshAccessToken(): Promise<string | null> {
 /**
  * `timeoutMs` overrides the 15s default for the handful of routes that call a
  * model and legitimately run longer. Everything else is a database read.
+ *
+ * `fetchImpl` swaps the transport. The only caller today is the chat stream
+ * (`services/ai/chatStreamClient.ts`), which needs `expo/fetch` for a
+ * readable body on native; it brings its own `signal`, so no timer is armed
+ * here — the same rule `fetchWithTimeout` already applies to a signal.
  */
-export type ApiOptions = RequestInit & { timeoutMs?: number };
+export type ApiOptions = RequestInit & { timeoutMs?: number; fetchImpl?: typeof fetch };
 
 export async function apiFetch(
   path: string,
   options: ApiOptions = {},
   retry = true,
 ): Promise<Response> {
-  const { timeoutMs, ...init } = options;
+  const { timeoutMs, fetchImpl, ...init } = options;
   const accessToken = await getAccessToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -205,7 +210,10 @@ export async function apiFetch(
   };
   if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
 
-  const res = await fetchWithTimeout(`${getApiBaseUrl()}${path}`, { ...init, headers }, timeoutMs);
+  const url = `${getApiBaseUrl()}${path}`;
+  const res = fetchImpl
+    ? await fetchImpl(url, { ...init, headers })
+    : await fetchWithTimeout(url, { ...init, headers }, timeoutMs);
 
   if (res.status === 401 && retry) {
     // Read after the response, not before the request: a sign-in that landed
