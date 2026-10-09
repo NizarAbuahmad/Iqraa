@@ -815,7 +815,7 @@ Step 4 of the worksheet review, agreed in chat. A worksheet was paper only: to
 get it in front of a class digitally a teacher retyped it as an evaluation.
 
 - **«أرسل للصف كواجب رقمي»** on the worksheet screen's results, and
-  «أرسل للصف» in موادي's worksheet viewer. `SendWorksheetSheet` asks two
+  «أرسل للصف» in ملفاتي's worksheet viewer (موادي until #954). `SendWorksheetSheet` asks two
   things: the class (those of the lesson's grade/subject first, none hidden)
   and the one objective it practises (the lesson's own, by KB id — preselected
   when there is one). It says the worked example is study material and is not
