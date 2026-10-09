@@ -24,6 +24,7 @@ export * from './bank.ts';
 // here grows with the size of the library.
 export * from './external.ts';
 export * from './virtualLabs.ts';
+export * from './bookFigureBase.ts';
 // `passages.ts` is NOT re-exported. It reads the ~2.1 MB extracted corpus from
 // disk with node:fs; the mobile app imports this package, so exporting it here
 // would eventually put the whole corpus in a phone bundle. Server-side callers
