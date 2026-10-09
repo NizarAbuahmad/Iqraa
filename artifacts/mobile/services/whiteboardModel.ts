@@ -201,3 +201,23 @@ export function axesGeometry(
 export function localizeDigits(text: string, lang: string): string {
   return lang === 'ar' ? text.replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[Number(d)]!) : text;
 }
+
+/** The page's reference size. Paper and stroke widths are drawn in these units. */
+export const CANVAS_W = 1280;
+export const CANVAS_H = 720;
+
+/** Where the 16:9 page sits inside the screen area, and how big it is. */
+export type Stage = { scale: number; width: number; height: number; offsetX: number; offsetY: number };
+
+/**
+ * The largest 16:9 rectangle that fits the area, centred. `scale` is its width
+ * over `CANVAS_W` (canvas units to pixels). An area with no size yet — before
+ * layout — gives an all-zero stage rather than dividing by it.
+ */
+export function fitCanvas(areaW: number, areaH: number): Stage {
+  if (!(areaW > 0) || !(areaH > 0)) return { scale: 0, width: 0, height: 0, offsetX: 0, offsetY: 0 };
+  const scale = Math.min(areaW / CANVAS_W, areaH / CANVAS_H);
+  const width = CANVAS_W * scale;
+  const height = CANVAS_H * scale;
+  return { scale, width, height, offsetX: (areaW - width) / 2, offsetY: (areaH - height) / 2 };
+}

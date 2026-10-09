@@ -4,6 +4,8 @@ import assert from 'node:assert/strict';
 import {
   BOARD_BACKGROUNDS,
   BOARD_DEFAULT_WIDTH,
+  CANVAS_H,
+  CANVAS_W,
   EMPTY_BOARD,
   HISTORY_LIMIT,
   STROKE_WIDTHS,
@@ -13,6 +15,7 @@ import {
   commitStrokes,
   eraseAlong,
   eraseAt,
+  fitCanvas,
   gridLines,
   hasInk,
   localizeDigits,
@@ -302,5 +305,37 @@ describe('strokes stored as fractions of the canvas width (unit = 1 / canvas wid
     assert.equal(eraseAt([wall], 0.1, 0.5, 16 * unit, unit).length, 1);
     assert.equal(eraseAt([wall], 0.9, 0.5, 16 * unit, unit).length, 1);
     assert.deepEqual(eraseAlong([wall], 0.1, 0.5, 0.9, 0.5, 16 * unit, unit), []);
+  });
+});
+
+describe('fitCanvas', () => {
+  it('is the identity on an area that is exactly the reference size', () => {
+    assert.deepEqual(fitCanvas(1280, 720), { scale: 1, width: 1280, height: 720, offsetX: 0, offsetY: 0 });
+  });
+
+  it('letterboxes a wide area at the sides, keeping the scale limited by the height', () => {
+    assert.deepEqual(fitCanvas(2560, 720), { scale: 1, width: 1280, height: 720, offsetX: 640, offsetY: 0 });
+  });
+
+  it('letterboxes a tall area above and below, keeping the scale limited by the width', () => {
+    assert.deepEqual(fitCanvas(640, 1000), { scale: 0.5, width: 640, height: 360, offsetX: 0, offsetY: 320 });
+  });
+
+  it('always yields a 16:9 stage that fits inside the area', () => {
+    for (const [w, h] of [[390, 844], [844, 390], [1920, 1080], [1000, 1000], [300, 50]] as const) {
+      const s = fitCanvas(w, h);
+      assert.ok(Math.abs(s.width / s.height - CANVAS_W / CANVAS_H) < 1e-9, `${w}x${h}`);
+      assert.ok(s.width <= w + 1e-9 && s.height <= h + 1e-9, `${w}x${h}`);
+      assert.ok(Math.abs(s.offsetX * 2 + s.width - w) < 1e-9, `${w}x${h} centred horizontally`);
+      assert.ok(Math.abs(s.offsetY * 2 + s.height - h) < 1e-9, `${w}x${h} centred vertically`);
+    }
+  });
+
+  it('returns an empty stage for an area with no size yet', () => {
+    const empty = { scale: 0, width: 0, height: 0, offsetX: 0, offsetY: 0 };
+    assert.deepEqual(fitCanvas(0, 720), empty);
+    assert.deepEqual(fitCanvas(1280, 0), empty);
+    assert.deepEqual(fitCanvas(-5, 100), empty);
+    assert.deepEqual(fitCanvas(Number.NaN, 100), empty);
   });
 });
