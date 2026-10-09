@@ -59,6 +59,7 @@ import { useStudentAccountsEnabled } from '@/services/features';
 import { saveRemoteImage } from '@/services/share';
 import { goBack } from '@/services/navigation';
 import { confirm } from '@/services/confirm';
+import { BackButton } from '@/components/ui/BackButton';
 
 
 export default function ThreadScreen() {
@@ -354,9 +355,7 @@ export default function ThreadScreen() {
           { paddingTop: topPad, backgroundColor: colors.card, borderBottomColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' },
         ]}
       >
-        <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10}>
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
-        </Pressable>
+        <BackButton color={colors.foreground} />
         {isGroup ? (
           <>
             <View style={[styles.groupIcon, { backgroundColor: colors.secondary }]}>
@@ -461,6 +460,7 @@ export default function ThreadScreen() {
                   senderLastName={sender?.lastName}
                   attachmentUrl={item.attachmentUrl}
                   attachmentKind={item.attachmentKind}
+                  seenLabel={isOwn && item.seen ? t('messageSeen') : undefined}
                 />
               </Pressable>
             );

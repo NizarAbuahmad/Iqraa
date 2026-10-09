@@ -16,6 +16,7 @@ import { useAuth } from '@/context/AuthContext';
 import { apiJson } from '@/services/apiClient';
 import { confirm } from '@/services/confirm';
 import { goBack } from '@/services/navigation';
+import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = '#4F46E5';
 const ADMIN_ROLES = ['system_admin'];
@@ -128,9 +129,7 @@ export default function ArtifactReportsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: ACCENT }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel={ar ? 'رجوع' : 'Back'} onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-        </Pressable>
+        <BackButton color="#fff" style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
         <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
           {ar ? 'بلاغات المحتوى' : 'Content reports'}
         </Text>

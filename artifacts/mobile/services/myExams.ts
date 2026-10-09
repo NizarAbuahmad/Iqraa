@@ -59,6 +59,16 @@ export function myExamAction(exam: MyExam): MyExamAction {
   return null;
 }
 
+/**
+ * Whether the row offers «أعد المحاولة». The server lists a quiz as retakeable
+ * only once the teacher has released its result; the row checks it shows that
+ * result too, so a retake bar can never sit beside «بانتظار النتيجة» and say
+ * "failed" before the teacher has. A parent never retakes for a child.
+ */
+export function canRetakeExam(exam: Pick<MyExam, 'evaluationId' | 'state'>, retakeEvaluationIds: readonly string[], isParent: boolean): boolean {
+  return !isParent && exam.state === 'result' && retakeEvaluationIds.includes(exam.evaluationId);
+}
+
 /** The exam's title in the reader's language, falling back to the other. */
 export function myExamTitle(exam: Pick<MyExam, 'title' | 'titleAr'>, lang: 'ar' | 'en'): string {
   return (lang === 'ar' ? exam.titleAr || exam.title : exam.title || exam.titleAr) || '';

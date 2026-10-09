@@ -76,7 +76,6 @@ import { countMaterials, countStudents } from '@/services/i18n';
 import { confirm } from '@/services/confirm';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
-import { goBack } from '@/services/navigation';
 import { ClassResourceRow } from '@/components/classes/ClassResourceRow';
 import { LibraryPickerSheet } from '@/components/classes/LibraryPickerSheet';
 import { LabPickerSheet } from '@/components/classes/LabPickerSheet';
@@ -99,6 +98,8 @@ import { palette } from '@/constants/colors';
 import { CLASSES_QUERY_KEY, classQueryKey as CLASS_QUERY_KEY } from '@/services/rosterQueryKeys';
 import { AR_LATIN } from '@/services/dateLabels';
 import { Button } from '@/components/ui/Button';
+import { BackButton } from '@/components/ui/BackButton';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -400,6 +401,55 @@ export default function ClassDetailScreen() {
     }
   };
 
+  // Select several and remove them in one go: clearing last year's names
+  // used to be one × and one confirm per student.
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const toggleSelected = (studentId: string) =>
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(studentId)) next.delete(studentId);
+      else next.add(studentId);
+      return next;
+    });
+  const stopSelecting = () => { setSelecting(false); setSelected(new Set()); };
+  const [removingMany, setRemovingMany] = useState(false);
+  const onRemoveSelected = async () => {
+    if (!id || selected.size === 0 || removingMany) return;
+    const ok = await confirm({
+      title: t('rosterRemoveSelectedConfirmTitle'),
+      message: t('rosterRemoveSelectedConfirmBody'),
+      confirmLabel: `${t('remove')} (${selected.size})`,
+      cancelLabel: t('cancel'),
+      destructive: true,
+    });
+    if (!ok) return;
+    setRemovingMany(true);
+    setError('');
+    // One at a time, through the same call as the single ×: a half-finished
+    // batch leaves exactly the students that failed, still selected.
+    const removed = new Set<string>();
+    for (const studentId of selected) {
+      try {
+        await removeStudentFromClass(id, studentId);
+        removed.add(studentId);
+      } catch {
+        /* reported once below */
+      }
+    }
+    queryClient.setQueryData<ClassQueryData>(CLASS_QUERY_KEY(id), prev =>
+      prev ? { ...prev, students: prev.students.filter(s => !removed.has(s.id)) } : prev,
+    );
+    void queryClient.invalidateQueries({ queryKey: CLASSES_QUERY_KEY });
+    setRemovingMany(false);
+    if (removed.size < selected.size) {
+      setSelected(new Set([...selected].filter(x => !removed.has(x))));
+      setError(t('rosterRemovePartial'));
+    } else {
+      stopSelecting();
+    }
+  };
+
   const onRemove = async (student: RosterStudent) => {
     if (!id) return;
     const ok = await confirm({
@@ -662,21 +712,7 @@ export default function ClassDetailScreen() {
     descKey: 'noStudentsDesc' | 'noMaterialsDesc' | 'noExamsDesc',
     action?: { label: string; onPress: () => void },
   ) => (
-    <View style={styles.empty}>
-      <Ionicons name={icon} size={40} color={colors.mutedForeground} />
-      <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
-        {t(titleKey)}
-      </Text>
-      <Text
-        style={[
-          styles.emptyText,
-          { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' },
-        ]}
-      >
-        {t(descKey)}
-      </Text>
-      {action ? <Button label={action.label} onPress={action.onPress} style={{ marginTop: 8 }} /> : null}
-    </View>
+    <EmptyState icon={icon} title={t(titleKey)} body={t(descKey)} action={action} />
   );
 
   /**
@@ -760,9 +796,7 @@ export default function ClassDetailScreen() {
             justifyContent: 'space-between',
           }}
         >
-          <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={12}>
-            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-          </Pressable>
+          <BackButton color="#fff" />
           {/* The name and grade set at creation and never editable again —
               a typo or a class that moved up a grade had no way back. Icon-
               only opposite the back arrow: unlike the chat pill below, its
@@ -855,6 +889,34 @@ export default function ClassDetailScreen() {
               {students.length > 0 && (
                 <ParentContactSection summary={contactSummary} subjectIds={subjectIds} colors={colors} isRTL={isRTL} align={align} lang={lang} t={t} />
               )}
+              {students.length > 1 && (
+                <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                  <Pressable
+                    onPress={() => (selecting ? stopSelecting() : setSelecting(true))}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, paddingVertical: 8 }}
+                  >
+                    <Ionicons name={selecting ? 'close-circle-outline' : 'checkbox-outline'} size={18} color={ACCENT} />
+                    <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
+                      {t(selecting ? 'rosterSelectDone' : 'rosterSelect')}
+                    </Text>
+                  </Pressable>
+                  {selecting && selected.size > 0 ? (
+                    <Pressable
+                      onPress={() => { void onRemoveSelected(); }}
+                      disabled={removingMany}
+                      accessibilityRole="button"
+                      style={({ pressed }) => ({ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, backgroundColor: colors.destructive, opacity: removingMany ? 0.6 : pressed ? 0.85 : 1 })}
+                    >
+                      {removingMany ? <ActivityIndicator size="small" color={colors.destructiveForeground} /> : <Ionicons name="trash-outline" size={16} color={colors.destructiveForeground} />}
+                      <Text style={{ color: colors.destructiveForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
+                        {`${t('remove')} (${selected.size})`}
+                      </Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              )}
             </View>
           }
           ListEmptyComponent={
@@ -863,8 +925,11 @@ export default function ClassDetailScreen() {
           renderItem={({ item }) => (
             <Pressable
               onPress={() =>
-                router.push({ pathname: '/classes/[id]/student/[studentId]', params: { id, studentId: item.id } })
+                selecting
+                  ? toggleSelected(item.id)
+                  : router.push({ pathname: '/classes/[id]/student/[studentId]', params: { id, studentId: item.id } })
               }
+              aria-checked={selecting ? selected.has(item.id) : undefined}
               style={[
                 styles.row,
                 {
@@ -874,6 +939,9 @@ export default function ClassDetailScreen() {
                 },
               ]}
             >
+              {selecting ? (
+                <Ionicons name={selected.has(item.id) ? 'checkbox' : 'square-outline'} size={22} color={selected.has(item.id) ? ACCENT : colors.mutedForeground} />
+              ) : null}
               <View style={{ flex: 1 }}>
                 <Text
                   style={[
@@ -956,9 +1024,11 @@ export default function ClassDetailScreen() {
                   <Ionicons name="key-outline" size={18} color={colors.mutedForeground} />
                 </Pressable>
               ) : null}
+              {selecting ? null : (
               <Pressable onPress={() => { void onRemove(item); }} hitSlop={10} accessibilityRole="button" accessibilityLabel={`${t('removeStudentA11y')}: ${item.displayName}`}>
                 <Ionicons name="close" size={20} color={colors.mutedForeground} />
               </Pressable>
+              )}
             </Pressable>
           )}
         />

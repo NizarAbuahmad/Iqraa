@@ -19,11 +19,11 @@ import { periodClassLabel } from '@/services/classSubjects';
 import { getLessonById } from '@/services/knowledgeBase';
 import { buildDayAgenda, dayHasAgenda, isInMonth, monthGridDates } from '@/services/scheduleCalendar';
 import { todayISO } from '@/services/planEntries';
-import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { LoadError } from '@/components/ui/LoadError';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { dateLocale } from '@/services/dateLabels';
+import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -138,9 +138,7 @@ export default function CalendarScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
         <View style={{ flexDirection: rowDir, justifyContent: 'space-between', alignItems: 'center' }}>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={12}>
-            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-          </Pressable>
+          <BackButton color="#fff" />
           <Pressable onPress={goToday} hitSlop={12}>
             <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{t('tabToday')}</Text>
           </Pressable>

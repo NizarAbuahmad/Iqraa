@@ -1965,6 +1965,8 @@ const translations = {
     masteryLockedBadge: 'مقفل',
     masteryLockedTitle: 'أنهِ اختبار الدرس السابق أولًا',
     masteryLockedBody: 'يُفتح هذا الدرس حين تنجح في اختبار الدرس الذي قبله.',
+    masteryAwaitingTitle: 'بانتظار معلّمك',
+    masteryAwaitingBody: 'سلّمتَ اختبار الدرس السابق، وستظهر نتيجته في «اختباراتي» حين يُعلنها معلّمك.',
     masteryGoToExams: 'اختباراتي',
     masteryClose: 'حسنًا',
     masteryStudentNotPassed: 'لم يصل الطالب إلى علامة النجاح بعد.',
@@ -2383,6 +2385,12 @@ const translations = {
     moreOptionsOptional: "خيارات إضافية (اختيارية)",
     dangerZoneSection: 'إجراءات نهائية',
     nextStudentBtn: (name: string) => `الطالب التالي: ${name}`,
+    messageSeen: "شوهدت",
+    rosterSelect: "تحديد",
+    rosterSelectDone: "إلغاء التحديد",
+    rosterRemoveSelectedConfirmTitle: "إزالة الطلبة المحدّدين من الشعبة؟",
+    rosterRemoveSelectedConfirmBody: "يبقى سجلّ كلّ منهم محفوظًا.",
+    rosterRemovePartial: "تعذّرت إزالة بعض الطلبة. حاول مرّة أخرى.",
   },
 
   en: {
@@ -4180,6 +4188,8 @@ const translations = {
     masteryLockedBadge: 'Locked',
     masteryLockedTitle: 'Finish the previous lesson’s quiz first',
     masteryLockedBody: 'This lesson opens once you pass the quiz for the lesson before it.',
+    masteryAwaitingTitle: 'Waiting for your teacher',
+    masteryAwaitingBody: 'You’ve handed in the previous lesson’s quiz. Its result will appear in My exams once your teacher releases it.',
     masteryGoToExams: 'My exams',
     masteryClose: 'OK',
     masteryStudentNotPassed: 'This student hasn’t reached the pass mark yet.',
@@ -4587,6 +4597,12 @@ const translations = {
     moreOptionsOptional: "More options (optional)",
     dangerZoneSection: 'Permanent actions',
     nextStudentBtn: (name: string) => `Next student: ${name}`,
+    messageSeen: "Seen",
+    rosterSelect: "Select",
+    rosterSelectDone: "Cancel",
+    rosterRemoveSelectedConfirmTitle: "Remove the selected students from this class?",
+    rosterRemoveSelectedConfirmBody: "Their records are kept.",
+    rosterRemovePartial: "Some students could not be removed. Try again.",
   },
 } as const;
 

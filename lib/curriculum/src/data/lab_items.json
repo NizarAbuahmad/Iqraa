@@ -180,6 +180,46 @@
       "lessonId": "kbl-chem-s1-nccd-u1_lab",
       "titleAr": "اختبار اللهب للفلزّات",
       "titleEn": "Flame Tests of Metals"
+    },
+    {
+      "id": "lab-ext-servier-bacteriophage",
+      "kind": "external",
+      "externalId": "servier-bacteriophage",
+      "gradeId": "grade-10",
+      "subjectId": "biology",
+      "lessonId": "kbl-biology-s1-nccd-u2_l1",
+      "titleAr": "الفيروس آكل البكتيريا",
+      "titleEn": "Bacteriophage"
+    },
+    {
+      "id": "lab-ext-servier-influenza-virus",
+      "kind": "external",
+      "externalId": "servier-influenza-virus",
+      "gradeId": "grade-10",
+      "subjectId": "biology",
+      "lessonId": "kbl-biology-s1-nccd-u2_l1",
+      "titleAr": "الفيروس",
+      "titleEn": "Influenza virus"
+    },
+    {
+      "id": "lab-ext-servier-rod-bacterium",
+      "kind": "external",
+      "externalId": "servier-rod-bacterium",
+      "gradeId": "grade-10",
+      "subjectId": "biology",
+      "lessonId": "kbl-biology-s1-nccd-u3_l2",
+      "titleAr": "العصوية",
+      "titleEn": "Rod-shaped bacterium"
+    },
+    {
+      "id": "lab-ext-servier-aspergillus-mycelium",
+      "kind": "external",
+      "externalId": "servier-aspergillus-mycelium",
+      "gradeId": "grade-10",
+      "subjectId": "biology",
+      "lessonId": "kbl-biology-s1-nccd-u3_l4",
+      "titleAr": "الغزل الفطري",
+      "titleEn": "Aspergillus: fungal mycelium"
     }
   ]
 }
