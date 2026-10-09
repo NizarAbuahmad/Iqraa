@@ -103,7 +103,7 @@ export async function streamChat(
     if (!res.ok) await throwApiError(res);
 
     const contentType = res.headers.get('content-type') ?? '';
-    if (!/text\/event-stream/i.test(contentType) || !res.body) {
+    if (!/text\/event-stream/i.test(contentType)) {
       // An API that does not stream yet, or a proxy that collapsed the
       // stream: the body is the old `{ content }` and arrives whole.
       const json = (await res.json()) as { content?: unknown };
@@ -114,7 +114,6 @@ export async function streamChat(
 
     const parser = createSseParser();
     const decoder = new TextDecoder();
-    reader = res.body.getReader();
     let streamError = null as { code: string; message: string } | null;
 
     const handle = (events: ReturnType<typeof parser.push>) => {
@@ -130,19 +129,28 @@ export async function streamChat(
       }
     };
 
-    // Stop reading at `done`: a proxy that holds the connection open after
-    // the last frame must not turn a finished answer into an idle timeout.
-    while (doneContent === null) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      armIdle();
-      handle(parser.push(decoder.decode(value, { stream: true })));
+    if (res.body) {
+      reader = res.body.getReader();
+      // Stop reading at `done`: a proxy that holds the connection open after
+      // the last frame must not turn a finished answer into an idle timeout.
+      while (doneContent === null) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        armIdle();
+        handle(parser.push(decoder.decode(value, { stream: true })));
+      }
+      handle(parser.push(decoder.decode()));
+    } else {
+      // An event stream with no readable body (a runtime that buffers the
+      // response): the frames are all in the text, so parse them the same way
+      // rather than treating SSE as JSON.
+      handle(parser.push(await res.text()));
     }
-    handle(parser.push(decoder.decode()));
     handle(parser.flush());
     throttle.flush();
 
-    if (opts.signal.aborted && !timedOut) return { content: full, cancelled: true };
+    // A Stop beats a timeout: if both fired, the teacher chose to stop.
+    if (opts.signal.aborted) return { content: full, cancelled: true };
     if (timedOut) throw new ChatStreamTimeoutError();
 
     // `done` is the only positive completion signal. Without it the reply
@@ -163,8 +171,9 @@ export async function streamChat(
   } catch (e) {
     // Whatever ends the turn, the last <=80 ms of text reaches the screen.
     throttle.flush();
-    if (opts.signal.aborted && !timedOut) {
-      // The teacher's Stop: not an error. Hand back what arrived.
+    if (opts.signal.aborted) {
+      // The teacher's Stop: not an error, and it outranks a timeout that
+      // fired alongside it. Hand back what arrived.
       return { content: full, cancelled: true };
     }
     if (timedOut) throw new ChatStreamTimeoutError();

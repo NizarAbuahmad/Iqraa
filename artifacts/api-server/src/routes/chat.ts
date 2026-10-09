@@ -45,6 +45,9 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
   const streaming = wantsEventStream(req.get("accept"));
   let headersSent = false;
   let clientGone = false;
+  // Set only once the upstream call is about to start, so the catch below
+  // knows there is spend to account for. Clears itself after one use.
+  let recordEstimate: ((reason: "abandoned" | "failed" | "client_gone", streamedChars: number) => void) | null = null;
   try {
     const { messages, context, mode, language } = req.body as {
       messages: { role: string; content: string }[];
@@ -76,6 +79,21 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
         content: clampPromptText(String(m.content ?? ""), CHAT_MESSAGE_MAX_CHARS),
       })),
     ];
+
+    const promptChars = chatMessages.reduce((n, m) => n + m.content.length, 0);
+
+    // The teacher pressed Stop, or the app went away: cancel the upstream
+    // call so the model stops generating tokens we pay for and nobody reads.
+    // Registered before the quota reads so a Stop during them is seen too.
+    // `close` also fires after a normal end, hence the `writableFinished` check.
+    const upstream = new AbortController();
+    if (streaming) {
+      res.on("close", () => {
+        if (res.writableFinished) return;
+        clientGone = true;
+        upstream.abort();
+      });
+    }
 
     assertLiveModeEnabled();
     // Keyed on the signed-in account, and on its role: students draw on
@@ -115,15 +133,26 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
       return;
     }
 
-    // The teacher pressed Stop, or the app went away: cancel the upstream
-    // call so the model stops generating tokens we pay for and nobody reads.
-    // `close` also fires after a normal end, hence the `writableFinished` check.
-    const upstream = new AbortController();
-    res.on("close", () => {
-      if (res.writableFinished) return;
-      clientGone = true;
-      upstream.abort();
-    });
+    // Gone during the quota reads: nothing was started, so nothing is owed.
+    if (clientGone) {
+      logger.info({ userId: req.user?.id }, "chat stream abandoned before upstream call");
+      return;
+    }
+
+    // An estimate for a turn whose usage chunk never arrived. The prompt is
+    // counted at 3 chars/token; the completion is charged at CHAT_MAX_TOKENS,
+    // because `max_completion_tokens` caps reasoning and visible output
+    // together, so it is the only true ceiling — counting the visible text
+    // alone would undercount a reasoning model, whose hidden tokens bill too.
+    recordEstimate = (reason, streamedChars) => {
+      recordEstimate = null;
+      recordUsage(
+        { prompt_tokens: estimateTokens(promptChars), completion_tokens: CHAT_MAX_TOKENS },
+        model,
+        { ...detail, durationMs: Date.now() - startedAt },
+      );
+      logger.info({ userId: req.user?.id, estimated: true, reason, streamedChars }, "chat spend estimated");
+    };
 
     const stream = await openai.chat.completions.create(
       {
@@ -138,7 +167,7 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
 
     res.status(200);
     res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
-    res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("Cache-Control", "no-store, no-transform");
     res.setHeader("Connection", "keep-alive");
     // Tells nginx-style proxies not to buffer; harmless on Cloud Run.
     res.setHeader("X-Accel-Buffering", "no");
@@ -149,21 +178,17 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
     const durationMs = Date.now() - startedAt;
 
     if (result.usage) {
+      // Real figures, including when the usage chunk beat the client's Stop.
+      recordEstimate = null;
       recordUsage(result.usage, model, { ...detail, durationMs });
     } else {
       // No usage chunk: the client hung up, the upstream failed, or (rarely)
-      // the stream ended without one. OpenAI still bills the tokens generated
-      // up to that point, so the ledger must move: an estimate that errs high
-      // (lib/chatStream.ts) rather than nothing at all.
-      const promptChars = chatMessages.reduce((n, m) => n + m.content.length, 0);
-      recordUsage(
-        { prompt_tokens: estimateTokens(promptChars), completion_tokens: estimateTokens(result.content) },
-        model,
-        { ...detail, durationMs },
-      );
-      if (result.aborted) {
-        logger.info({ userId: req.user?.id, streamedChars: result.content.length }, "chat stream abandoned by client");
-      }
+      // the stream ended without one. The provider still bills what was
+      // generated, so the ledger must move: an estimate that errs high.
+      recordEstimate?.(result.aborted ? "abandoned" : "failed", result.content.length);
+    }
+    if (result.aborted) {
+      logger.info({ userId: req.user?.id, streamedChars: result.content.length }, "chat stream abandoned by client");
     }
     if (result.error) {
       // The upstream failed mid-stream. The spend is already recorded above;
@@ -178,6 +203,8 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
     // error. (Only the streaming branch sets this.)
     if (clientGone) {
       logger.info({ userId: req.user?.id }, "chat stream abandoned before first byte");
+      // The upstream call had started, so tokens may have been billed.
+      recordEstimate?.("client_gone", 0);
       return;
     }
     // After the first frame there is no status code left to send; the error

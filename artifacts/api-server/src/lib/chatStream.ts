@@ -57,7 +57,8 @@ export function estimateTokens(textOrChars: string | number): number {
  * An `AbortError` from the iterator after that is the upstream call being
  * cancelled, which is expected. Any error thrown once the signal is aborted
  * is folded into "aborted" too: the client is gone, so there is nobody to
- * tell and nothing to distinguish.
+ * tell and nothing to distinguish. `usage` is whatever had arrived by then —
+ * real figures when the usage chunk beat the abort, otherwise null.
  *
  * Any other error is NOT thrown: it comes back as `error`, alongside the text
  * generated so far, so the route can still record the spend for tokens that
@@ -73,7 +74,7 @@ export async function pumpChatStream(
   let usage: StreamUsage | null = null;
   try {
     for await (const chunk of chunks) {
-      if (signal.aborted) return { content, usage: null, aborted: true };
+      if (signal.aborted) return { content, usage, aborted: true };
       const text = chunk.choices?.[0]?.delta?.content;
       if (text) {
         content += text;
@@ -83,11 +84,11 @@ export async function pumpChatStream(
     }
   } catch (err) {
     if (signal.aborted || (err instanceof Error && err.name === "AbortError")) {
-      return { content, usage: null, aborted: true };
+      return { content, usage, aborted: true };
     }
     return { content, usage: null, aborted: false, error: err };
   }
-  if (signal.aborted) return { content, usage: null, aborted: true };
+  if (signal.aborted) return { content, usage, aborted: true };
   sink.write(sseFrame({ type: "done", content }));
   return { content, usage, aborted: false };
 }

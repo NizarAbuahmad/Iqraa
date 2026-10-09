@@ -2743,17 +2743,31 @@ export default function IqraScreen() {
           return next;
         });
       } else {
-        // Stream into an empty bubble so the first words show as they come.
-        // The id scheme matches the rest of the file; the message is replaced
-        // by the final one below, never left as a second copy.
+        // Stream into a bubble that appears with the first words, so the
+        // thinking footer stays up until there is text to show. The id scheme
+        // matches the rest of the file; the message is replaced by the final
+        // one below, never left as a second copy.
         streamedId = (Date.now() + 1).toString();
         const placeholderId = streamedId;
         const controller = new AbortController();
         abortRef.current = controller;
         setCanStop(true);
-        setStreamingId(placeholderId);
-        setMessages(prev => [...prev, { id: placeholderId, role: 'assistant', text: '', timestamp: new Date() }]);
+        let inserted = false;
         let streamed = '';
+        // The lesson/topic bookkeeping for a reply the model actually wrote.
+        // Shared by a finished reply, a Stopped one with text, and one cut off
+        // by a lost connection, so none of them skips the pin.
+        const applyReplyBookkeeping = () => {
+          if (results[0]) {
+            lessonTopic = lang === 'ar' ? results[0].titleAr : results[0].titleEn;
+            quickTopic = lessonTopic;
+            const pin = pendingHardPin;
+            if (pin) setSessionMemory(prev => pinLesson(prev, pin, 'hard'));
+          } else if (hasDocs) {
+            quickTopic = primaryTopicFromDocuments(docBundle.documents, docNames[0] || q);
+            lessonTopic = quickTopic;
+          }
+        };
         try {
           const out = await remoteAIService.chat(
             { messages: history, context: kbContext, mode, language: lang as 'ar' | 'en' },
@@ -2761,22 +2775,29 @@ export default function IqraScreen() {
               signal: controller.signal,
               onDelta: full => {
                 streamed = full;
-                setMessages(prev => prev.map(m => (m.id === placeholderId ? { ...m, text: full } : m)));
+                if (!inserted) {
+                  inserted = true;
+                  setStreamingId(placeholderId);
+                  setMessages(prev => [...prev, { id: placeholderId, role: 'assistant', text: full, timestamp: new Date() }]);
+                } else {
+                  setMessages(prev => prev.map(m => (m.id === placeholderId ? { ...m, text: full } : m)));
+                }
               },
             },
           );
           responseText = out.content;
           if (out.cancelled) {
             if (!responseText.trim()) {
-              // Stopped before a word arrived: nothing to keep. Drop the
-              // bubble and put the question back so retrying is one tap.
+              // Stopped before a word arrived: nothing to keep. Put the
+              // question back so retrying is one tap.
               setMessages(prev => prev.filter(m => m.id !== placeholderId));
               streamedId = null;
               setInput(prev => prev || shown);
               return;
             }
             showToast(t('iqraStopped'));
-          } else if (!responseText.trim()) {
+          }
+          if (!responseText.trim()) {
             const ta = runTeachingAssistant();
             responseText = ta.text || t('iqraNoResults');
             teachingActions = ta.actions;
@@ -2792,15 +2813,8 @@ export default function IqraScreen() {
               if (pendingHardPin) next = pinLesson(next, pendingHardPin, 'hard');
               return next;
             });
-          } else if (results[0]) {
-            lessonTopic = lang === 'ar' ? results[0].titleAr : results[0].titleEn;
-            quickTopic = lessonTopic;
-            if (pendingHardPin) {
-              setSessionMemory(prev => pinLesson(prev, pendingHardPin, 'hard'));
-            }
-          } else if (hasDocs) {
-            quickTopic = primaryTopicFromDocuments(docBundle.documents, docNames[0] || q);
-            lessonTopic = quickTopic;
+          } else {
+            applyReplyBookkeeping();
           }
         } catch (remoteErr) {
           console.error('[iqra chat] remote AI failed', remoteErr);
@@ -2809,6 +2823,7 @@ export default function IqraScreen() {
             // keep it and say the turn did not finish, rather than replace it
             // with a local answer that reads as if the model wrote it.
             responseText = streamed;
+            applyReplyBookkeeping();
             showToast(t('iqraChatError'));
           } else if (isCapError(remoteErr)) {
             // Quota spent or live mode off: say so. This used to fall through
@@ -2884,11 +2899,16 @@ export default function IqraScreen() {
         showLessonPrep,
         timestamp: new Date(),
       };
+      // Read into a const: the updater runs later, after `streamedId` is reset.
+      const replaceId = streamedId;
       setMessages(prev =>
-        streamedId && prev.some(m => m.id === streamedId)
-          ? prev.map(m => (m.id === streamedId ? assistantMsg : m))
+        replaceId && prev.some(m => m.id === replaceId)
+          ? prev.map(m => (m.id === replaceId ? assistantMsg : m))
           : [...prev, assistantMsg],
       );
+      // The placeholder is now the real answer: a throw further down must not
+      // filter it out as if it were an unfinished bubble.
+      streamedId = null;
 
       // Composer shortcuts only — never persist as floating chips in the timeline
       const nextEphemeral: EphemeralSuggestion[] = [];
@@ -3778,6 +3798,7 @@ export default function IqraScreen() {
         ref={listRef}
         data={messages}
         keyExtractor={m => m.id}
+        extraData={streamingId}
         style={{ flex: 1 }}
         /*
           An empty thread used to pin its intro to the top of a 900px-tall
@@ -3803,8 +3824,8 @@ export default function IqraScreen() {
             colors={colors}
             isRTL={isRTL}
             onLongPress={item.role === 'assistant' ? () => handleExportMessage(item) : undefined}
-            onCopy={item.role === 'assistant' ? handleCopyMessage : undefined}
-            onExport={item.role === 'assistant' ? handleExportMessage : undefined}
+            onCopy={item.role === 'assistant' && item.id !== streamingId ? handleCopyMessage : undefined}
+            onExport={item.role === 'assistant' && item.id !== streamingId ? handleExportMessage : undefined}
             onSaveMaterial={item.role === 'assistant' ? handleSaveMaterial : undefined}
             onAddToClass={item.role === 'assistant' ? handleAddToClass : undefined}
             onPresentMaterial={item.role === 'assistant' ? handlePresentMaterial : undefined}

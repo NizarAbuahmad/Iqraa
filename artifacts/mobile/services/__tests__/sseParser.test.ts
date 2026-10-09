@@ -48,6 +48,20 @@ describe('createSseParser', () => {
     assert.deepEqual(events, [{ type: 'delta', text: 'ok' }]);
   });
 
+  it('parses an error event', () => {
+    const p = createSseParser();
+    assert.deepEqual(p.push('data: {"type":"error","code":"stream_failed","message":"boom"}\n\n'), [
+      { type: 'error', code: 'stream_failed', message: 'boom' },
+    ]);
+  });
+
+  it('gives an error with no code or message the defaults', () => {
+    const p = createSseParser();
+    assert.deepEqual(p.push('data: {"type":"error"}\n\n'), [
+      { type: 'error', code: 'stream_failed', message: '' },
+    ]);
+  });
+
   it('drops an event whose type is not one of the three', () => {
     const p = createSseParser();
     assert.deepEqual(p.push('data: {"type":"usage","tokens":3}\n\n'), []);

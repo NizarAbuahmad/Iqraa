@@ -119,6 +119,23 @@ describe("pumpChatStream", () => {
     assert.deepEqual(s.frames, [sseFrame({ type: "delta", text: "أ" })], "no done frame after abort");
   });
 
+  it("returns the usage that arrived before the abort was observed", async () => {
+    const s = sink();
+    const controller = new AbortController();
+    async function* late(): AsyncIterable<StreamChunk> {
+      yield { choices: [{ delta: { content: "أ" } }] };
+      yield { choices: [], usage: { prompt_tokens: 9, completion_tokens: 4 } };
+      controller.abort();
+      yield { choices: [{ delta: { content: "ب" } }] };
+    }
+    const result = await pumpChatStream(late(), s, controller.signal);
+    assert.deepEqual(result, {
+      content: "أ",
+      usage: { prompt_tokens: 9, completion_tokens: 4 },
+      aborted: true,
+    });
+  });
+
   it("treats an AbortError thrown by the iterator as an abort, not a failure", async () => {
     const s = sink();
     const controller = new AbortController();
