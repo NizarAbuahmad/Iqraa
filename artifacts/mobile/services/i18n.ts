@@ -59,18 +59,18 @@ export function countClasses(n: number, lang: Lang): string {
 
 /** Same four-case rule as arCountStudents, for materials attached to a class. */
 export function arCountMaterials(n: number): string {
-  if (n === 0) return 'لا موارد';
-  if (n === 1) return 'مورد واحد';
-  if (n === 2) return 'موردان';
-  if (n >= 3 && n <= 10) return `${n} موارد`;
-  return `${n} موردًا`;
+  if (n === 0) return 'لا ملفات';
+  if (n === 1) return 'ملف واحد';
+  if (n === 2) return 'ملفان';
+  if (n >= 3 && n <= 10) return `${n} ملفات`;
+  return `${n} ملفًا`;
 }
 
 /** Count materials in the active language. */
 export function countMaterials(n: number, lang: Lang): string {
   if (lang === 'ar') return arCountMaterials(n);
-  if (n === 0) return 'No materials';
-  return `${n} ${n === 1 ? 'material' : 'materials'}`;
+  if (n === 0) return 'No files';
+  return `${n} ${n === 1 ? 'file' : 'files'}`;
 }
 
 /**
@@ -236,7 +236,7 @@ const translations = {
     continueEmptyDesc: 'حضّر خطة درس لأحد دروس منهاجك، ثم عد لإكمالها هنا.',
     recentEmptyTitle: 'لم تُنشئ أي مواد بعد.',
     recentEmptyDesc: 'ابدأ بإنشاء أول مادة تعليمية.',
-    startCreating: 'أنشئ أول مادة',
+    startCreating: 'أنشئ أول ملف',
     resumeWork: 'متابعة العمل',
     unitNumberLabel: (n: number) => `الوحدة ${n}`,
     lessonNumberLabel: (n: number) => `الدرس ${n}`,
@@ -250,11 +250,10 @@ const translations = {
     materialHomework: '🏠 واجب بيتي',
     materialActivity: '🎯 نشاط صفي',
     materialFlow: '📄 مسار درس',
-    myMaterials: 'موادي',
     lessonsThisWeek: 'دروس هذا الأسبوع',
     subjects: 'المواد',
     quickActions: 'ابدأ بسرعة',
-    recentMaterials: 'آخر المواد',
+    recentMaterials: 'آخر الملفات',
     lessonPlan: 'خطة درس',
     worksheet: 'ورقة عمل',
     quiz: 'اختبار قصير',
@@ -795,7 +794,7 @@ const translations = {
     homeAskPlaceholder: 'اسأل عن الدرس، أو اطلب مادة…',
     homeNoLesson: 'لم تختر درسًا بعد',
     homeNoLessonHint: 'اختر الصف والمادة والدرس لتبدأ التحضير.',
-    homeRecent: 'آخر المواد',
+    homeRecent: 'آخر الملفات',
     homeRecentEmpty: 'لا توجد مواد محفوظة بعد.',
     homeOpenChat: 'افتح المحادثة',
 
@@ -978,27 +977,27 @@ const translations = {
     totalLabel: 'المجموع',
 
     // Workspace
-    myWorkspace: 'موادي',
-    workspaceSubtitle: 'ما حفظته من مواد',
+    myWorkspace: 'ملفاتي',
+    workspaceSubtitle: 'ما حفظته من ملفات',
     myLessons: 'دروسي',
     myWorksheets: 'أوراق عملي',
     myQuizzes: 'اختباراتي',
-    saveToWorkspace: 'احفظ في موادي',
+    saveToWorkspace: 'احفظ في ملفاتي',
     savedSuccess: 'حُفظت ✓',
     updatedSuccess: 'حُدّثت ✓',
     englishMaterialRedone: 'جُهّزت من جديد بالإنجليزية وحلّت محل النسخة العربية ✓',
     updateInWorkspace: 'حدّث',
-    searchWorkspace: 'ابحث في موادك…',
+    searchWorkspace: 'ابحث في ملفاتك…',
     allFilter: 'الكل',
     favoritesFilter: 'المفضلة',
-    noSavedItems: 'لم تحفظ أي مواد بعد',
+    noSavedItems: 'لم تحفظ أي ملفات بعد',
     noSavedItemsDesc: 'جهّز خطة درس أو ورقة عمل أو اختبارًا وستظهر هنا',
     openItem: 'افتح',
     editItem: 'عدّل',
     duplicateItem: 'كرّر',
     deleteItem: 'احذف',
-    deleteConfirmTitle: 'حذف المادة',
-    deleteConfirmMsg: 'هل تريد حذف هذه المادة؟ لا يمكن التراجع.',
+    deleteConfirmTitle: 'حذف الملف',
+    deleteConfirmMsg: 'هل تريد حذف هذا الملف؟ لا يمكن التراجع.',
     duplicatedSuccess: 'تم تجهيز نسخة جديدة',
     savedAt: 'حُفظت',
     lessonType: 'خطة درس',
@@ -1008,11 +1007,11 @@ const translations = {
     activityType: 'نشاط صفي',
     slidesType: 'شرائح',
     promptSlidesType: 'شرائح من وصف',
-    viewSavedContent: 'عرض المادة',
+    viewSavedContent: 'عرض الملف',
     noContentAvailable: 'المحتوى غير متاح',
 
     // Export & sharing
-    exportTitle: 'تصدير المادة',
+    exportTitle: 'تصدير الملف',
     exportShare: 'مشاركة',
     exportShareSub: 'واتساب، البريد، وغيرها',
     exportCopy: 'نسخ النص',
@@ -1200,8 +1199,8 @@ const translations = {
     faqA11: 'الصفوف والمباحث والوحدات والدروس مأخوذة من المنهاج الأردني، وتُبنى المواد على دروس الكتاب. ومع ذلك راجع أي مادة قبل أن تستخدمها في صفّك — أنت أعرف بطلبتك. وتجد تحت أوراق العمل خيار «بلّغ عن مشكلة» إن وجدت خطأً.',
     faqQ12: 'ما هي «ألعاب إقرأ»؟',
     faqA12: 'ألعاب مجانية تُفتح من رابط دون تسجيل دخول، تصلح للمراجعة والمتعة. شارك الرابط مع طلبتك ليلعبوا من هواتفهم. تجدها في «الأدوات ← أثناء الحصة».',
-    faqQ13: 'أين أجد موادي المحفوظة؟',
-    faqA13: 'من «حسابي ← موادي». تجد فيها كل ما حفظته من خطط وأوراق عمل واختبارات، وتستطيع فتحها وتعديلها وتصديرها في أي وقت.',
+    faqQ13: 'أين أجد ملفاتي المحفوظة؟',
+    faqA13: 'من «حسابي ← ملفاتي». تجد فيها كل ما حفظته من خطط وأوراق عمل واختبارات، وتستطيع فتحها وتعديلها وتصديرها في أي وقت.',
     faqQ14: 'كيف أرسل رسالة إلى وليّ الأمر؟',
     faqA14: 'من «الأدوات ← بعد الحصة ← رسالة لوليّ الأمر». يصوغ إقرأ رسالة واضحة عن تقدّم الطالب أو الحصة، وتراجعها قبل الإرسال. تجد رسائلك في تبويب «الرسائل».',
     faqQ15: 'كيف أنشئ اختبارًا وأتابع نتائج الطلبة؟',
@@ -1344,8 +1343,8 @@ const translations = {
     slidesIncludeAttachments: 'أضف مرفقاتي لهذا الدرس (صور وتسجيلات) إلى الشرائح',
     slidesFromLab: 'من المختبر',
     slidesFromLabHint: 'اختر مواد من مختبر هذا الدرس لإضافتها إلى الشرائح.',
-    slidesSaved: 'حُفظت الشرائح في مساحتك',
-    slidesUnsaved: 'أزلت الشرائح من مساحتك',
+    slidesSaved: 'حُفظت الشرائح في ملفاتك',
+    slidesUnsaved: 'أزلت الشرائح من ملفاتك',
     savedDeckUnreadable: 'تعذّر فتح العرض المحفوظ — يمكنك إنشاؤه من جديد.',
     gameExitTitle: 'إنهاء التحدي؟',
     gameExitMsg: 'ستُمسح نتائج الفرق ولا يمكن استرجاعها.',
@@ -1598,7 +1597,7 @@ const translations = {
 
     // Class ↔ materials
     classTabStudents: 'الطلبة',
-    classTabMaterials: 'الموارد',
+    classTabMaterials: 'الملفات',
     classTabExams: 'الامتحانات',
     countExams: (n: number) =>
       n === 0 ? 'لا امتحانات' : arCountPhrase(n, 'امتحان واحد', 'امتحانان', 'امتحانات'),
@@ -1644,13 +1643,13 @@ const translations = {
     miniEvalPublishing: 'جارٍ النشر…',
     miniEvalFailed: 'تعذّر إنشاء التقييم السريع',
     miniEvalRegenerate: 'ولّد غيرها',
-    noMaterialsYet: 'لا موارد لهذه الشعبة',
-    noMaterialsDesc: 'أرفق مادة من مساحتك أو موردًا من المكتبة ليظهر هنا',
-    attachMaterial: 'أرفق مادة',
-    attachMaterialHint: 'اختر من موادك المحفوظة غير المرتبطة بشعبة',
-    noMaterialsToAttach: 'كل موادك المحفوظة مرتبطة بشُعَب أخرى',
-    noSavedMaterials: 'لا مواد محفوظة بعد — أنشئ درسًا أو ورقة عمل أولًا',
-    createNewMaterial: 'أنشئ مادة جديدة',
+    noMaterialsYet: 'لا ملفات لهذه الشعبة',
+    noMaterialsDesc: 'أرفق ملفًا من ملفاتك أو موردًا من المكتبة ليظهر هنا',
+    attachMaterial: 'أرفق ملفًا',
+    attachMaterialHint: 'اختر من ملفاتك المحفوظة غير المرتبطة بشعبة',
+    noMaterialsToAttach: 'كل ملفاتك المحفوظة مرتبطة بشُعَب أخرى',
+    noSavedMaterials: 'لا ملفات محفوظة بعد — أنشئ درسًا أو ورقة عمل أولًا',
+    createNewMaterial: 'أنشئ ملفًا جديدًا',
     fromLibrary: 'من المكتبة',
     libraryPickerTitle: 'أضف من المكتبة',
     resourceKindLab: 'مختبر',
@@ -1662,10 +1661,10 @@ const translations = {
     resourceAdded: 'مضاف',
     resourceTag: 'المكتبة',
     resourceUnavailable: 'لم يعد متاحًا',
-    classResourceFailed: 'تعذّر تحديث موارد الشعبة — حاول مرة أخرى',
+    classResourceFailed: 'تعذّر تحديث ملفات الشعبة — حاول مرة أخرى',
     detachMaterial: 'أزل من الشعبة',
     detachMaterialConfirm: (title: string) =>
-      `إزالة «${title}» من هذه الشعبة؟ سيبقى محفوظًا في مساحتك.`,
+      `إزالة «${title}» من هذه الشعبة؟ سيبقى محفوظًا في ملفاتك.`,
 
     // Student notes
     studentNoteHint: 'ملاحظتك عن هذا الطالب — تبقى معه عبر الفصل',
@@ -1698,9 +1697,9 @@ const translations = {
 
     // Save a material into a class
     pickFromMyClasses: 'اختر من شُعَبي',
-    saveToClassTitle: 'لأي شعبة هذه المادة؟',
-    changeClassTitle: 'انقل المادة إلى شعبة أخرى',
-    saveToClassHint: 'ستجدها في تبويب «الموارد» داخل الشعبة',
+    saveToClassTitle: 'لأي شعبة هذا الملف؟',
+    changeClassTitle: 'انقل الملف إلى شعبة أخرى',
+    saveToClassHint: 'ستجده في تبويب «الملفات» داخل الشعبة',
     materialInClass: (name: string) => `الشعبة: ${name}`,
     materialNoClass: 'غير مرتبطة بشعبة',
     backToClass: (name: string) => `العودة إلى ${name}`,
@@ -1714,7 +1713,7 @@ const translations = {
     savedToClassesPartial: (ok: string, total: string) => `حُفظت في ${ok} من ${total} — أعد المحاولة للبقية`,
     saveToClassesConfirm: 'احفظ في الشُّعَب المحددة',
     currentClassTag: 'الشعبة الحالية',
-    saveToClassFailed: 'تعذّر ربطها بالشعبة — المادة محفوظة، حاول الإرفاق من داخل الشعبة',
+    saveToClassFailed: 'تعذّر ربطه بالشعبة — الملف محفوظ، حاول الإرفاق من داخل الشعبة',
 
     // Evaluations — authoring
     evaluations: 'التقييمات',
@@ -1879,7 +1878,7 @@ const translations = {
     virtualLabTitle: 'مختبر افتراضي',
     virtualLabOpen: 'افتح المحاكاة',
     virtualLabSheet: 'ورقة العمل',
-    virtualLabSave: 'احفظ في موادي',
+    virtualLabSave: 'احفظ في ملفاتي',
     virtualLabAlreadyPosted: 'ورقة المختبر موجودة في المحادثة أعلاه',
     shelfNoReprint: 'للاستئناس فقط — لا يجوز إعادة نشرِه.',
     extKindText: 'نصّ',
@@ -2564,7 +2563,7 @@ const translations = {
     continueEmptyDesc: 'Prepare a lesson plan for one of your lessons, then come back here to continue it.',
     recentEmptyTitle: 'No recent materials yet',
     recentEmptyDesc: 'Create your first teaching material and it will appear here.',
-    startCreating: 'Create your first material',
+    startCreating: 'Create your first file',
     resumeWork: 'Continue working',
     unitNumberLabel: (n: number) => `Unit ${n}`,
     lessonNumberLabel: (n: number) => `Lesson ${n}`,
@@ -2578,11 +2577,10 @@ const translations = {
     materialHomework: '🏠 Homework',
     materialActivity: '🎯 Class activity',
     materialFlow: '📄 Lesson flow',
-    myMaterials: 'My materials',
     lessonsThisWeek: 'Lessons this week',
     subjects: 'Subjects',
     quickActions: 'Start fast',
-    recentMaterials: 'Recent materials',
+    recentMaterials: 'Recent files',
     lessonPlan: 'Lesson plan',
     worksheet: 'Worksheet',
     quiz: 'Quiz',
@@ -3090,7 +3088,7 @@ const translations = {
     homeAskPlaceholder: 'Ask about the lesson, or request a material…',
     homeNoLesson: 'No lesson picked yet',
     homeNoLessonHint: 'Pick a grade, subject and lesson to start preparing.',
-    homeRecent: 'Recent materials',
+    homeRecent: 'Recent files',
     homeRecentEmpty: 'Nothing saved yet.',
     homeOpenChat: 'Open chat',
 
@@ -3270,27 +3268,27 @@ const translations = {
     totalLabel: 'Total',
 
     // Workspace
-    myWorkspace: 'My materials',
-    workspaceSubtitle: 'Your saved materials',
+    myWorkspace: 'My files',
+    workspaceSubtitle: 'Your saved files',
     myLessons: 'My lesson plans',
     myWorksheets: 'My worksheets',
     myQuizzes: 'My quizzes',
-    saveToWorkspace: 'Save to my materials',
+    saveToWorkspace: 'Save to my files',
     savedSuccess: 'Saved ✓',
     updatedSuccess: 'Updated ✓',
     englishMaterialRedone: 'Prepared again in English and saved over the Arabic copy ✓',
     updateInWorkspace: 'Update',
-    searchWorkspace: 'Search your materials…',
+    searchWorkspace: 'Search your files…',
     allFilter: 'All',
     favoritesFilter: 'Favourites',
-    noSavedItems: 'No saved materials yet',
+    noSavedItems: 'No saved files yet',
     noSavedItemsDesc: 'Generate a lesson plan, worksheet, or quiz and it will appear here',
     openItem: 'Open',
     editItem: 'Edit',
     duplicateItem: 'Duplicate',
     deleteItem: 'Delete',
-    deleteConfirmTitle: 'Delete material',
-    deleteConfirmMsg: 'Are you sure you want to delete this material? This cannot be undone.',
+    deleteConfirmTitle: 'Delete file',
+    deleteConfirmMsg: 'Are you sure you want to delete this file? This cannot be undone.',
     duplicatedSuccess: 'Material duplicated',
     savedAt: 'Saved',
     lessonType: 'Lesson plan',
@@ -3300,11 +3298,11 @@ const translations = {
     activityType: 'Class activity',
     slidesType: 'Slides',
     promptSlidesType: 'Prompt slides',
-    viewSavedContent: 'View material',
+    viewSavedContent: 'View file',
     noContentAvailable: 'This material has no content yet — open it to regenerate',
 
     // Export & sharing
-    exportTitle: 'Export material',
+    exportTitle: 'Export file',
     exportShare: 'Share',
     exportShareSub: 'WhatsApp, email and more',
     exportCopy: 'Copy text',
@@ -3486,8 +3484,8 @@ const translations = {
     faqA11: 'Grades, subjects, units and lessons come from the Jordanian national curriculum, and materials are built on the textbook lessons. Still, review any material before using it with your class — you know your students best. Under each worksheet there is a "Report a problem" option if you spot a mistake.',
     faqQ12: 'What are Iqrra games?',
     faqA12: 'Free games that open from a link with no sign-in, good for revision and fun. Share the link with your students to play on their phones. Find them under Tools → During class.',
-    faqQ13: 'Where do I find my saved materials?',
-    faqA13: 'From Profile → My materials. Everything you saved — plans, worksheets, quizzes — is there to open, edit and export any time.',
+    faqQ13: 'Where do I find my saved files?',
+    faqA13: 'From Profile → My files. Everything you saved — plans, worksheets, quizzes — is there to open, edit and export any time.',
     faqQ14: "How do I send a message to a student's parent?",
     faqA14: 'Go to Tools → After class → Parent message. Iqrra drafts a clear message about the student\'s progress or the lesson, and you review it before sending. Your messages are in the Messages tab.',
     faqQ15: "How do I create a test and follow my students' results?",
@@ -3624,8 +3622,8 @@ const translations = {
     slidesIncludeAttachments: 'Include my attachments for this lesson (photos and recordings)',
     slidesFromLab: 'From the Lab',
     slidesFromLabHint: 'Pick items from this lesson’s lab to add to the slides.',
-    slidesSaved: 'Slides saved to your workspace',
-    slidesUnsaved: 'Slides removed from your workspace',
+    slidesSaved: 'Slides saved to your files',
+    slidesUnsaved: 'Slides removed from your files',
     savedDeckUnreadable: "Couldn't open the saved deck — you can build it again.",
     gameExitTitle: 'End the challenge?',
     gameExitMsg: "The teams' scores will be cleared and can't be recovered.",
@@ -3872,7 +3870,7 @@ const translations = {
 
     // Class ↔ materials
     classTabStudents: 'Students',
-    classTabMaterials: 'Materials',
+    classTabMaterials: 'Files',
     classTabExams: 'Exams',
     countExams: (n: number) => (n === 1 ? '1 exam' : `${n} exams`),
     noExamsYet: 'No exams for this class',
@@ -3913,13 +3911,13 @@ const translations = {
     miniEvalPublishing: 'Publishing…',
     miniEvalFailed: 'Could not create the quick evaluation',
     miniEvalRegenerate: 'Write different ones',
-    noMaterialsYet: 'No materials for this class',
-    noMaterialsDesc: 'Attach a material from your workspace or a resource from the Library and it will show up here',
-    attachMaterial: 'Attach material',
-    attachMaterialHint: 'Pick from your saved materials that are not in a class yet',
-    noMaterialsToAttach: 'All your saved materials are already in other classes',
+    noMaterialsYet: 'No files for this class',
+    noMaterialsDesc: 'Attach a file from your files or a resource from the Library and it will show up here',
+    attachMaterial: 'Attach a file',
+    attachMaterialHint: 'Pick from your saved files that are not in a class yet',
+    noMaterialsToAttach: 'All your saved files are already in other classes',
     noSavedMaterials: 'Nothing saved yet — create a lesson or worksheet first',
-    createNewMaterial: 'Create a new material',
+    createNewMaterial: 'Create a new file',
     fromLibrary: 'From the Library',
     libraryPickerTitle: 'Add from the Library',
     resourceKindLab: 'Lab',
@@ -3931,10 +3929,10 @@ const translations = {
     resourceAdded: 'Added',
     resourceTag: 'Library',
     resourceUnavailable: 'No longer available',
-    classResourceFailed: "Couldn't update the class's resources — try again",
+    classResourceFailed: "Couldn't update the class's files — try again",
     detachMaterial: 'Remove from class',
     detachMaterialConfirm: (title: string) =>
-      `Remove "${title}" from this class? It stays saved in your workspace.`,
+      `Remove "${title}" from this class? It stays saved in your files.`,
 
     // Student notes
     studentNoteHint: 'Your note on this student — it stays with them all term',
@@ -3968,8 +3966,8 @@ const translations = {
     // Save a material into a class
     pickFromMyClasses: 'Pick from my classes',
     saveToClassTitle: 'Which class is this for?',
-    changeClassTitle: 'Move this material to another class',
-    saveToClassHint: "You'll find it in the class's Materials tab",
+    changeClassTitle: 'Move this file to another class',
+    saveToClassHint: "You'll find it in the class's Files tab",
     materialInClass: (name: string) => `Class: ${name}`,
     materialNoClass: 'Not in a class',
     backToClass: (name: string) => `Back to ${name}`,
@@ -3983,7 +3981,7 @@ const translations = {
     savedToClassesPartial: (ok: string, total: string) => `Saved to ${ok} of ${total} — try the rest again`,
     saveToClassesConfirm: 'Save to selected classes',
     currentClassTag: 'Current class',
-    saveToClassFailed: "Couldn't add it to the class — the material is saved, try attaching from the class",
+    saveToClassFailed: "Couldn't add it to the class — the file is saved, try attaching from the class",
 
     // Evaluations — authoring
     evaluations: 'Evaluations',
@@ -4144,7 +4142,7 @@ const translations = {
     virtualLabTitle: 'Virtual lab',
     virtualLabOpen: 'Open the simulation',
     virtualLabSheet: 'Worksheet',
-    virtualLabSave: 'Save to my materials',
+    virtualLabSave: 'Save to my files',
     virtualLabAlreadyPosted: 'The lab sheet is already in the conversation above',
     shelfNoReprint: 'Reference only — may not be reprinted.',
     extKindText: 'Text',
