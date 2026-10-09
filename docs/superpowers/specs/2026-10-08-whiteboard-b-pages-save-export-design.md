@@ -5,9 +5,15 @@ Builds on sub-project A (`2026-10-08-whiteboard-board-design.md`, PR #928).
 
 ## Context
 
-A shipped a blank board that is drawn in raw screen pixels and saved nowhere.
-B makes a board worth keeping: several pages, a canvas that looks the same on
-every screen, saving to «موادي», reopening, and a PDF.
+A shipped a blank board that saves nothing. B makes a board worth keeping:
+several pages, a page that looks the same on every screen, saving to «موادي»,
+reopening, and a PDF.
+
+**Update 2026-10-09 (after merging `main` into the A branch):** `main` now stores
+pen ink as **fractions of the canvas width** (`services/penInk.ts`, #820), so a
+stroke already survives a resize. That removes the pixel-coordinate problem B1
+was going to solve, and B1 below is rewritten around it. The rest of B is
+unchanged.
 
 B is split in two, **one spec, two plans**, because the first half changes code
 A just shipped and the second half is mostly new surface:
@@ -19,7 +25,14 @@ A just shipped and the second half is mostly new surface:
 
 C (AI solve) is untouched and still depends on A (and on B if solutions are saved).
 
-## Facts this design rests on (verified in the tree, 2026-10-08)
+## Facts this design rests on (verified in the tree, 2026-10-08/09)
+
+- **Ink is stored as fractions of the canvas width** (`services/penInk.ts`,
+  `appendInkPoint` / `scaleInkPoints`; both axes use the width so a circle stays
+  round). `PenCanvas` measures its own width (`onLayout`) and draws
+  `scaleInkPoints(points, width)`. A's eraser converts the touch and its reach
+  into those units (`unit` argument on `strokeHit` / `eraseAt` / `eraseAlong`).
+  Stroke `width` is still in pixels.
 
 - **No schema change.** `saved_materials.type` is plain `text` and `content` is
   `jsonb` (`lib/db/src/schema/savedMaterials.ts`). `POST /workspace/items`
@@ -72,38 +85,34 @@ collaboration; a lesson-identity link stronger than every other material has.
 
 ## Design
 
-### B1 · 1. Fixed logical canvas
+### B1 · 1. A fitted 16:9 stage
 
-- Strokes are stored in **canvas units** on a **1280 × 720 (16:9)** canvas.
-  1280 × 720 keeps A's look unchanged on a 1280-px-wide screen (stroke widths
-  3 / 6 / 12 and the 40-unit grid mean the same thing there) while keeping the
-  numbers small.
-- Pure, tested helpers in `whiteboardModel.ts`:
-  - `CANVAS_W = 1280`, `CANVAS_H = 720`.
-  - `fitCanvas(areaW, areaH): { scale, width, height, offsetX, offsetY }` — the
-    largest 16:9 rectangle that fits (`scale = min(areaW / 1280, areaH / 720)`),
-    centred. Degenerate areas return scale 0.
-  - `toCanvas(x, y, scale)` — screen offset to canvas units (`x / scale`);
-    scale 0 returns the input unchanged so nothing divides by zero.
-- `PenCanvas` gets an optional `scale` (default 1). Touches are divided by it,
-  and the SVG draws in canvas units (`viewBox="0 0 1280 720"` on the board;
-  without `scale` it behaves exactly as today). **The slide pen and the
-  book-page pen do not pass `scale`, so they are unchanged.**
-- The **eraser radius is a screen size**: the model keeps `ERASER_RADIUS = 16`
-  px and `PenCanvas` passes `16 / scale` canvas units, so a finger-sized eraser
-  stays finger-sized on a small screen. `eraseAlong` already works in whatever
-  units it is given.
-- `BoardBackground` draws in canvas units (grid step 40, axes through the
-  snapped centre) inside the same viewBox, so tick positions and labels scale
-  with the page.
-- The stage is the fitted rectangle; the area around it is a neutral
-  letterbox. The floating toolbars overlay the whole screen as in A; on a tall
-  phone the letterbox bands are where they sit.
-- A stored nothing, so there is **no migration**.
+- The page is a **16:9 stage fitted into the screen** (the largest 16:9
+  rectangle that fits, centred, letterboxed). `PenCanvas` is hosted inside the
+  stage, so the ink is stored as fractions of the **stage** width: a page looks
+  the same on every screen, and a resize keeps every stroke in place, with no
+  new coordinate system and no migration (A saved nothing).
+- Pure, tested helper in `whiteboardModel.ts`: `CANVAS_W = 1280`,
+  `CANVAS_H = 720` (the reference size, so the paper and stroke widths mean the
+  same thing as in A on a 1280-px-wide screen) and
+  `fitCanvas(areaW, areaH): { scale, width, height, offsetX, offsetY }` with
+  `scale = min(areaW / 1280, areaH / 720)`; a degenerate area gives scale 0.
+- **Stroke widths scale with the page.** Board widths stay 3 / 6 / 12 but are in
+  *canvas units*; `PenCanvas` gets an optional `strokeScale` (default 1, so the
+  slide pen and book-page pen are unchanged) and draws
+  `width * strokeScale` pixels. The board passes `strokeScale = stageWidth /
+  1280`. The hit test's `unit` becomes `strokeScale / canvasWidth` (one width
+  unit in stored units); the eraser **radius stays a screen size**
+  (`ERASER_RADIUS / canvasWidth`) so a finger-sized eraser stays finger-sized.
+- `BoardBackground` draws in canvas units inside
+  `viewBox="0 0 1280 720"` sized to the stage (grid step 40, axes through the
+  snapped centre), so the paper and tick labels scale with the page.
+- The floating toolbars overlay the whole screen as in A; on a tall phone the
+  letterbox bands are where they sit.
 - **Cost, stated plainly:** on a portrait phone the page is a small landscape
-  rectangle, and strokes are thin there (a width-6 stroke on a 390-px screen is
-  about 1.8 px). That is the price of every screen showing the same page; the
-  B1 plan verifies it at phone size before this is accepted.
+  rectangle, and a width-6 stroke is about 1.8 px on a 390-px screen. The B1
+  plan verifies this at phone size; if it is unacceptable the fix is a minimum
+  on-screen stroke width, not a different canvas.
 
 ### B1 · 2. Pages
 
@@ -140,7 +149,7 @@ collaboration; a lesson-identity link stronger than every other material has.
   `workspace/view.tsx` redirects `kind === 'board'` there so it never reaches the
   quiz fallback. `materialKind.ts` gains colour, icon and label for `'board'`,
   and the list gets a «سبورة» filter tab (the existing `TABS`).
-- **Failure and size.** Serialisation rounds coordinates to one decimal. A hard
+- **Failure and size.** Points are already rounded to five decimals of the width by `appendInkPoint`. A hard
   cap of **2 MB of serialised content** and **20 pages** is enforced before any
   write; over the cap the teacher gets a message and nothing is written (2 MB
   stays under the 12 MB server limit and well under the shared browser storage
@@ -152,7 +161,8 @@ collaboration; a lesson-identity link stronger than every other material has.
 - A pure `buildBoardHTML(doc, title, isAr)` (new file `services/boardExportHtml.ts`)
   returns one landscape page per board page: an inline `<svg viewBox="0 0 1280 720">`
   with the paper (grid lines, axes, tick labels through `localizeDigits`) and the
-  strokes, plus the title and page number in the margin. It goes through the
+  strokes (stored fractions turned into canvas units with
+  `scaleInkPoints(points, 1280)`), plus the title and page number in the margin. It goes through the
   existing `exportAsPDF`.
 - **Untrusted content.** Saved `content` is data from the server or local
   storage. `parseBoard(content)` (pure, tested) validates before anything is used
@@ -167,7 +177,7 @@ collaboration; a lesson-identity link stronger than every other material has.
 ### Testing and verification
 
 - Pure tests (inside `services/__tests__/`): `fitCanvas` (wide, tall, exact,
-  degenerate), `toCanvas`, page add / remove / go-to / cap, `hasInk` across
+  degenerate), the hit-test `unit` for a scaled stroke width, page add / remove / go-to / cap, `hasInk` across
   pages, `serializeBoard` (rounding, cap refusal), `parseBoard` (accepts a good
   board; rejects bad colour, bad points, too many pages, unknown version, wrong
   types), and `buildBoardHTML` (one page per board page, a hostile title is
@@ -201,9 +211,9 @@ then B gets its own PR. Implementation does not start until this is decided.
 - **B1 changes code A just shipped.** The slide pen and book-page pen must stay
   byte-for-byte unchanged in behaviour (`scale` defaults to 1). The browser pass
   re-runs the A regressions.
-- **A shared `PenCanvas` with a scale** is easy to get subtly wrong at the
-  edges (letterbox hit areas, eraser size). The tests cover the pure maths; the
-  browser pass covers two window sizes.
+- **`PenCanvas` gains `strokeScale`.** Easy to get subtly wrong at the edges
+  (the hit-test unit, eraser size, the letterbox). The tests cover the pure
+  maths; the browser pass covers two window sizes.
 - **Thin strokes on phones** (see B1 · 1). If it is unacceptable in the browser
   pass at phone width, the plan's fix is a minimum on-screen stroke width, not a
   different canvas.

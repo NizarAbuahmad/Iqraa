@@ -327,6 +327,15 @@ an announcement by default» below.
     was open (00:43 → 00:36 over about seven seconds). The browser pass also
     caught a real regression in the first fix for this — Escape popped the
     presentation as well as the board — which is fixed and re-checked.
+    Re-verified 2026-10-09 after merging `main` into the branch: `main` now
+    stores pen ink as fractions of the canvas width (`services/penInk.ts`,
+    #820) and requires `aria-selected` rather than `accessibilityState`
+    (#842), so the eraser converts the touch and its reach into those units
+    (`unit` argument on `strokeHit` / `eraseAt` / `eraseAlong`, tested) and the
+    toolbar uses `aria-selected`. Root typecheck clean, mobile suite 3351 pass /
+    0 fail / 10 skipped, and in Chromium the board (25/25), Escape / keys /
+    countdown (9/9), the slide pen, per-slide ink and the book-page pen all
+    pass again.
     Not verified: touch on a real phone, Android hardware back, native SVG text
     on a device, whether a slide still scrolls while the pen is off and locks
     while it is on, the board on a projector, erasing on a full board on a
