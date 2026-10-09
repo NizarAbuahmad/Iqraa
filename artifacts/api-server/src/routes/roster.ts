@@ -32,9 +32,10 @@ import {
   chatMessageReads,
   type ParentContactChannel,
 } from "@workspace/db";
-import { and, asc, count, desc, eq, inArray, isNull } from "drizzle-orm";
-import { resolveObjectiveIds } from "@workspace/curriculum";
-import { aggregateClass } from "../modules/assessment/classInsights.ts";
+import { and, asc, count, desc, eq, inArray, isNull, ne } from "drizzle-orm";
+import { getObjectiveById, resolveObjectiveIds } from "@workspace/curriculum";
+import { studentRecord } from "../modules/assessment/studentRecord.ts";
+import { aggregateClass, finishedAttempts } from "../modules/assessment/classInsights.ts";
 import type { ObjectiveScore } from "../modules/assessment/scoring.ts";
 import {
   authMiddleware,
@@ -53,7 +54,7 @@ import {
   archiveClassThread,
   renameClassGroupThread,
   resyncClassGroupThreadIfExists,
-  syncClassGroupThread,
+  syncClassThreadsForStudent,
 } from "../lib/classThread.js";
 import { findLiveClass } from "../lib/classOwnership.js";
 import { publicUrl } from "../lib/r2.js";
@@ -245,6 +246,7 @@ router.get("/classes/:id/mastery", async (req: AuthenticatedRequest, res) => {
     const rows = await db
       .select({
         objectiveScores: attemptResults.objectiveScores,
+        isProvisional: attemptResults.isProvisional,
         studentId: attempts.studentId,
         evaluationId: attempts.evaluationId,
         displayName: students.displayName,
@@ -259,7 +261,9 @@ router.get("/classes/:id/mastery", async (req: AuthenticatedRequest, res) => {
     // carries an empty breakdown, and letting those in would drag the term
     // average toward zero as the roster grows — "the class is at 31%" would
     // quietly mean "you have not finished marking".
-    const marked = rows
+    // A provisional paper is scored over its machine-marked questions only,
+    // so it is held back too, as `finishedAttempts` does for the insights.
+    const marked = finishedAttempts(rows)
       .map(r => ({ ...r, objectiveScores: (r.objectiveScores as ObjectiveScore[]) ?? [] }))
       .filter(r => r.objectiveScores.length > 0);
 
@@ -307,6 +311,112 @@ router.get("/classes/:id/mastery", async (req: AuthenticatedRequest, res) => {
     });
   } catch (err) {
     failRoster(res, err, "class mastery", "Failed to load class mastery");
+  }
+});
+
+/**
+ * One student's record in this class — the per-student view STATUS.md listed as
+ * "deliberately not built". Scoped to this class's evaluations, so a subject's
+ * objectives stay together. Every refusal is 404, for the reason the rest of
+ * this router gives: "exists but not yours" must not be distinguishable.
+ */
+router.get("/classes/:id/students/:studentId/record", async (req: AuthenticatedRequest, res) => {
+  try {
+    const classId = req.params["id"] as string;
+    const studentId = req.params["studentId"] as string;
+    const teacherId = req.user!.id;
+    if (!isUuid(classId) || !isUuid(studentId)) {
+      res.status(404).json({ error: "Student not found" });
+      return;
+    }
+    const group = await findLiveClass(classId, teacherId);
+    if (!group) {
+      res.status(404).json({ error: "Class not found" });
+      return;
+    }
+
+    const [student] = await db
+      .select({
+        id: students.id,
+        displayName: students.displayName,
+        teacherNote: students.teacherNote,
+        gender: students.gender,
+      })
+      .from(students)
+      .innerJoin(
+        classMemberships,
+        and(eq(classMemberships.studentId, students.id), eq(classMemberships.classGroupId, classId)),
+      )
+      .where(and(eq(students.id, studentId), eq(students.teacherId, teacherId), isNull(students.archivedAt)))
+      .limit(1);
+    if (!student) {
+      res.status(404).json({ error: "Student not found" });
+      return;
+    }
+
+    const rows = await db
+      .select({
+        evaluationId: evaluations.id,
+        title: evaluations.title,
+        titleAr: evaluations.titleAr,
+        createdAt: evaluations.createdAt,
+        archivedAt: evaluations.archivedAt,
+        attemptId: attempts.id,
+        attemptStatus: attempts.status,
+        teacherComment: attempts.teacherComment,
+        submittedAt: attempts.submittedAt,
+        earned: attemptResults.earnedMarks,
+        total: attemptResults.totalMarks,
+        percent: attemptResults.percent,
+        isProvisional: attemptResults.isProvisional,
+        objectiveScores: attemptResults.objectiveScores,
+      })
+      .from(evaluations)
+      .leftJoin(attempts, and(eq(attempts.evaluationId, evaluations.id), eq(attempts.studentId, studentId)))
+      .leftJoin(attemptResults, eq(attemptResults.attemptId, attempts.id))
+      .where(
+        and(
+          eq(evaluations.classGroupId, classId),
+          // Archived rows are kept on purpose: they still count in the
+          // objectives, as in /classes/:id/mastery (studentRecord() hides them
+          // from the exam list).
+          ne(evaluations.status, "draft"),
+        ),
+      );
+
+    const [guardian] = await db
+      .select({ id: rosterLinks.id })
+      .from(rosterLinks)
+      .where(and(eq(rosterLinks.studentId, studentId), eq(rosterLinks.relation, "guardian")))
+      .limit(1);
+
+    const [lastContact] = await db
+      .select({ kind: parentContacts.kind, channel: parentContacts.channel, at: parentContacts.createdAt })
+      .from(parentContacts)
+      .where(and(eq(parentContacts.studentId, studentId), eq(parentContacts.teacherId, teacherId)))
+      .orderBy(desc(parentContacts.createdAt))
+      .limit(1);
+
+    const record = studentRecord(rows.map(({ archivedAt, ...r }) => ({ ...r, archived: archivedAt !== null })), objectiveId => {
+      const o = getObjectiveById(objectiveId);
+      return o
+        ? { titleAr: o.descriptionAr || o.description, lessonId: o.lessonId, lessonTitleAr: o.lessonTitleAr || o.lessonTitle }
+        : null;
+    });
+
+    res.json({
+      student,
+      className: group.nameAr || group.name,
+      ...record,
+      parent: {
+        linked: Boolean(guardian),
+        lastContact: lastContact
+          ? { kind: lastContact.kind, channel: lastContact.channel, at: lastContact.at.toISOString() }
+          : null,
+      },
+    });
+  } catch (err) {
+    failRoster(res, err, "student record", "Failed to load student record");
   }
 });
 
@@ -1208,7 +1318,7 @@ router.post("/classes/:id/join-code", async (req: AuthenticatedRequest, res) => 
  *     live, so the person disappears from both immediately — no new thread or
  *     group can include them.
  *   - Class-group chat membership is derived from the roster, so
- *     syncClassGroupThread is called below to rebuild it now rather than
+ *     syncClassThreadsForStudent is called below to rebuild it now rather than
  *     leaving the wrong adult in a thread full of children until the next time
  *     somebody happens to open it.
  *   - Custom groups and any existing direct thread are NOT touched. Those
@@ -1243,23 +1353,11 @@ router.delete("/students/:id/links/:userId", async (req: AuthenticatedRequest, r
       return;
     }
 
-    // Rebuild every class thread this student sits in, so the unlinked account
-    // loses its place in them now. One derivation rule, one implementation —
-    // hand-writing the delete here would be a second copy that gets it wrong
-    // when the same user is self-linked to another child in the same class.
-    const memberships = await db
-      .select({
-        classGroupId: classMemberships.classGroupId,
-        teacherId: classGroups.teacherId,
-        name: classGroups.name,
-        nameAr: classGroups.nameAr,
-      })
-      .from(classMemberships)
-      .innerJoin(classGroups, eq(classGroups.id, classMemberships.classGroupId))
-      .where(and(eq(classMemberships.studentId, studentId), isNull(classGroups.archivedAt)));
-    for (const m of memberships) {
-      await syncClassGroupThread(m.classGroupId, m.teacherId, m.name, m.nameAr);
-    }
+    // Rebuild every existing class thread this student sits in, so the
+    // unlinked account loses its place in them now. One derivation rule, one
+    // implementation — and it is a no-op where no chat exists yet, so an
+    // unlink does not conjure empty class chats into the teacher's inbox.
+    await syncClassThreadsForStudent(studentId);
 
     res.json({ removedUserId: linkedUserId });
   } catch (err) {

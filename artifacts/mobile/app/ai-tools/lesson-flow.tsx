@@ -353,7 +353,7 @@ export default function LessonFlowScreen() {
     { key: 'activity',   labelKey: 'lessonFlowStepActivity',   icon: 'flash-outline', color: '#4F46E5' },
     { key: 'guided',     labelKey: 'lessonFlowStepGuided',     icon: 'pencil-outline', color: ACCENT },
     { key: 'worksheet',  labelKey: 'lessonFlowStepWorksheet',  icon: 'document-text-outline', color: '#6D28D9' },
-    { key: 'exitTicket', labelKey: 'lessonFlowStepExitTicket', icon: 'ticket-outline', color: '#B54708' },
+    { key: 'exitTicket', labelKey: 'lessonFlowStepExitTicket', icon: 'ticket-outline', color: palette.warning },
   ];
 
   const isDone = phase === 'done';
@@ -374,6 +374,8 @@ export default function LessonFlowScreen() {
         <View style={[styles.header, { paddingTop: topPad + 8, backgroundColor: NAVY, borderBottomColor: NAVY }]}>
           <View style={[styles.headerRow, isRTL && { flexDirection: 'row-reverse' }]}>
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('back')}
               onPress={() => goBack()}
               style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.6 : 1 }]}
               hitSlop={12}
@@ -548,7 +550,7 @@ export default function LessonFlowScreen() {
         {isBuilding && error && failedStep && (
           <View style={[styles.errorBanner, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Ionicons name="alert-circle-outline" size={16} color="#D92D20" style={{ marginTop: 1 }} />
-            <Text style={{ flex: 1, color: '#D92D20', fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ flex: 1, color: palette.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' }}>
               {error}
             </Text>
             <Pressable
@@ -670,7 +672,7 @@ function StepCard({ stepNum, label, icon, color, status, isRTL, lang, colors, co
         </View>
         <View style={{ flex: 1 }}>
           <Text style={[styles.stepLabel, {
-            color: status === 'done' ? colors.foreground : status === 'error' ? '#D92D20' : colors.mutedForeground,
+            color: status === 'done' ? colors.foreground : status === 'error' ? palette.destructive : colors.mutedForeground,
             fontFamily: 'ReadexPro_600SemiBold',
             textAlign: isRTL ? 'right' : 'left',
           }]}>
@@ -682,7 +684,7 @@ function StepCard({ stepNum, label, icon, color, status, isRTL, lang, colors, co
             </Text>
           )}
           {status === 'error' && (
-            <Text style={{ color: '#D92D20', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: palette.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>
               {lang === 'ar' ? 'تعذّر إكمال الخطوة — أعد المحاولة' : 'Failed — tap Retry below'}
             </Text>
           )}

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
@@ -53,7 +52,6 @@ function SettingRow({ icon, label, onPress, destructive, isRTL, colors }: {
 
 export default function ProfileScreen() {
   const colors = useColors();
-  const insets = useSafeAreaInsets();
   const { t, isRTL } = useLanguage();
   const { user, logout, uploadAvatar, removeAvatar } = useAuth();
   const [avatarBusy, setAvatarBusy] = useState(false);
@@ -61,7 +59,10 @@ export default function ProfileScreen() {
   const [toastVisible, setToastVisible] = useState(false);
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
 
-  const topPad = insets.top + (insets.top === 0 ? 16 : 0);
+  // Not insets.top: the tab layout's lesson bar (or the slim bell header a
+  // parent/student gets) sits above this screen and already pays for the
+  // status bar, so adding it again left a blank band under that bar.
+  const topPad = 16;
 
   const initials = user
     ? [user.firstName?.[0], user.lastName?.[0]]
@@ -185,6 +186,9 @@ export default function ProfileScreen() {
             {avatarBusy ? null : (
               <Pressable
                 onPress={handleChangePhoto}
+                accessibilityRole="button"
+                accessibilityLabel={t('editProfilePhoto')}
+                hitSlop={8}
                 style={[
                   styles.avatarEditBadge,
                   { backgroundColor: '#FFFFFF', borderColor: colors.hero },

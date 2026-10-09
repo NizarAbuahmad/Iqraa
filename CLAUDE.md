@@ -235,6 +235,15 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   composer and the tab bar are the exception that proves it — the bar hides on
   keyboard (`tabBarHideOnKeyboard`) and the composer drops its tab-bar padding
   (`useKeyboardVisible`), or a ~84px gap sits above the keyboard.
+  **`KeyboardSafeView` is keyboard-controller's `KeyboardAvoidingView`, not
+  React Native's (since 2026-10-08).** RN's caches the last keyboard event and
+  re-derives its padding from it on every layout, so once it was wrapping every
+  screen a lost hide left the padding in place for good — a grey band (the
+  navigator's background) under the tab bar. keyboard-controller's padding
+  follows live keyboard progress and is 0 whenever the keyboard is closed.
+  Related trap: tab screens sit *under* the tab layout's lesson bar / bell
+  header, which already pays `insets.top` — a tab screen header must not add it
+  again.
 - **Extensionless relative imports only work through esbuild.** Anything loaded
   directly by `node --test` needs an explicit `.ts` extension.
 - **The OpenAI client throws at module scope without a key**, which makes

@@ -93,7 +93,8 @@ export default function DeleteAccountScreen() {
       // to login. Pushing a route as well would race it.
     } catch (err) {
       setBusy(false);
-      setError(err instanceof Error && err.message ? err.message : t('deleteAccountFailed'));
+      // The API's sentence is English; this screen is not.
+      setError(t('deleteAccountFailed'));
     }
   };
 
@@ -106,8 +107,9 @@ export default function DeleteAccountScreen() {
         ]}
       >
         <Pressable
-          onPress={() => goBack()} hitSlop={10}
           accessibilityRole="button"
+          accessibilityLabel={t('back')}
+          onPress={() => goBack()} hitSlop={10}
           style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
         >
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
@@ -192,7 +194,7 @@ export default function DeleteAccountScreen() {
           )}
         </Pressable>
 
-        <Pressable onPress={() => goBack()} hitSlop={10} disabled={busy} style={styles.cancelBtn}>
+        <Pressable accessibilityRole="button" onPress={() => goBack()} hitSlop={10} disabled={busy} style={styles.cancelBtn}>
           <Text style={[styles.cancelText, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>
             {t('deleteAccountCancel')}
           </Text>

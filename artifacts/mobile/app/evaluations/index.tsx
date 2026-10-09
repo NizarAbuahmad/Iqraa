@@ -22,6 +22,7 @@ import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { LoadError } from '@/components/ui/LoadError';
+import { Button } from '@/components/ui/Button';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -37,8 +38,8 @@ const STATUS_KEY: Record<Evaluation['status'], TranslationKey> = {
   closed: 'evalStatusClosed',
 };
 const STATUS_COLOR: Record<Evaluation['status'], string> = {
-  draft: '#B54708',
-  published: '#067647',
+  draft: palette.warning,
+  published: palette.success,
   closed: '#6B7280',
 };
 
@@ -165,6 +166,7 @@ export default function EvaluationsScreen() {
                 >
                   {t('noEvaluationsDesc')}
                 </Text>
+                <Button label={t('newEvaluation')} onPress={() => router.push('/evaluations/new')} style={{ marginTop: 8 }} />
               </View>
             )
           }

@@ -9,6 +9,7 @@ import type { KBLesson, KBScoredLesson } from './knowledgeBase.ts';
 import type { KbScope } from './knowledgeBase.ts';
 import {
   getBookForLesson,
+  getLessonById as getKbLessonById,
   getUnitForLesson,
   isConfidentKbHit,
   KB_SUGGEST_SCORE,
@@ -42,6 +43,12 @@ export type BuildGeneratorContextOptions = {
    * books resolves to the lesson in *this* scope — see `KbScope`.
    */
   scope?: KbScope;
+  /**
+   * The KB id of the lesson, when the caller already holds it. Wins over the
+   * title lookup — a title does not identify a lesson (see CLAUDE.md), and
+   * scope alone cannot pick between repeated titles inside one book.
+   */
+  lessonId?: string;
 };
 
 export type GeneratorGrounding = {
@@ -212,7 +219,9 @@ export function resolveGeneratorGrounding(
   lang: 'ar' | 'en',
   options?: BuildGeneratorContextOptions,
 ): GeneratorGrounding {
-  const lesson = resolveGroundedKbLesson(topic, lang, options?.scope);
+  const lesson =
+    (options?.lessonId ? getKbLessonById(options.lessonId) : undefined)
+    ?? resolveGroundedKbLesson(topic, lang, options?.scope);
   if (!lesson) {
     const isAr = lang === 'ar';
     return {

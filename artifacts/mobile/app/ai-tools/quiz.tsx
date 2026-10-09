@@ -227,9 +227,9 @@ export default function QuizScreen() {
   const TYPE_LABEL = typeLabels(t);
   const OUT_TYPE_LABEL = typeLabels(outT);
   const TYPE_COLOR: Record<QType, string> = {
-    multiple_choice: '#B54708',
-    true_false: '#1D4ED8',
-    short_answer: '#067647',
+    multiple_choice: palette.warning,
+    true_false: palette.info,
+    short_answer: palette.success,
   };
 
   /*
@@ -724,7 +724,7 @@ export default function QuizScreen() {
                 {o?.verifiedBy === 'symbolic' ? (
                   <View style={[styles.verifyRow, { marginTop: 0, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                     <Ionicons name="shield-checkmark" size={13} color="#067647" />
-                    <Text style={[styles.verifyText, { color: '#067647', textAlign: isRTL ? 'right' : 'left' }]}>
+                    <Text style={[styles.verifyText, { color: palette.success, textAlign: isRTL ? 'right' : 'left' }]}>
                       {t('verifiedBySymbolic')}
                     </Text>
                   </View>
@@ -749,8 +749,8 @@ export default function QuizScreen() {
                   const marker = optionMarkerState(showAnswers, opt, q.correctAnswer);
                   const isCorrect = marker === 'selected';
                   return (
-                    <View key={oi} style={[styles.optRow, { backgroundColor: isCorrect ? '#067647' + '15' : colors.muted, borderRadius: 8, flexDirection: outRTL ? 'row-reverse' : 'row' }]}>
-                      <Text style={[styles.optLabel, { color: isCorrect ? '#067647' : colors.mutedForeground, fontFamily: isCorrect ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular' }]}>
+                    <View key={oi} style={[styles.optRow, { backgroundColor: isCorrect ? palette.success + '15' : colors.muted, borderRadius: 8, flexDirection: outRTL ? 'row-reverse' : 'row' }]}>
+                      <Text style={[styles.optLabel, { color: isCorrect ? palette.success : colors.mutedForeground, fontFamily: isCorrect ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular' }]}>
                         {optionLetter(oi, outRTL)}.
                       </Text>
                       <View style={{ flex: 1 }}>
@@ -779,7 +779,7 @@ export default function QuizScreen() {
                           <Ionicons
                             name={isCorrect ? 'checkmark-circle' : 'ellipse-outline'}
                             size={17}
-                            color={isCorrect ? '#067647' : colors.mutedForeground}
+                            color={isCorrect ? palette.success : colors.mutedForeground}
                           />
                         </Pressable>
                       )}
@@ -788,9 +788,9 @@ export default function QuizScreen() {
                 })}
 
                 {showAnswers && q.type === 'true_false' && (
-                  <View style={[styles.ansBox, { backgroundColor: '#067647' + '15', borderRadius: 8, flexDirection: outRTL ? 'row-reverse' : 'row' }]}>
+                  <View style={[styles.ansBox, { backgroundColor: palette.success + '15', borderRadius: 8, flexDirection: outRTL ? 'row-reverse' : 'row' }]}>
                     <Ionicons name="checkmark-circle" size={14} color="#067647" />
-                    <Text style={[{ color: '#067647', fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>{outT('answer')}:</Text>
+                    <Text style={[{ color: palette.success, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>{outT('answer')}:</Text>
                     <View style={{ flex: 1 }}>
                       <EditableText
                         value={q.correctAnswer}
@@ -804,7 +804,7 @@ export default function QuizScreen() {
                 )}
 
                 {showAnswers && q.type === 'short_answer' && (
-                  <View style={[styles.ansBox, { backgroundColor: '#1D4ED8' + '12', borderRadius: 8 }]}>
+                  <View style={[styles.ansBox, { backgroundColor: palette.info + '12', borderRadius: 8 }]}>
                     <EditableText
                       value={q.correctAnswer}
                       onChange={next => updateQuestion(i, { correctAnswer: next })}

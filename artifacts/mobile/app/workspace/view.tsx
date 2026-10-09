@@ -121,7 +121,7 @@ export default function WorkspaceViewScreen() {
         <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 }}>
           {t('noContentAvailable')}
         </Text>
-        <Pressable onPress={() => goBack()} hitSlop={10} style={{ padding: 12 }}>
+        <Pressable accessibilityRole="button" onPress={() => goBack()} hitSlop={10} style={{ padding: 12 }}>
           <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_500Medium' }}>{t('back')}</Text>
         </Pressable>
       </View>
@@ -234,6 +234,8 @@ export default function WorkspaceViewScreen() {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: MATERIAL_FILL[kind as keyof typeof MATERIAL_FILL] ?? colors.hero, paddingTop: topPad + 12 }]}>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('back')}
           onPress={() => goBack()} hitSlop={10}
           style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
         >
@@ -271,9 +273,9 @@ export default function WorkspaceViewScreen() {
           <Ionicons
             name={favorited ? 'star' : 'star-outline'}
             size={16}
-            color={favorited ? '#B54708' : colors.mutedForeground}
+            color={favorited ? palette.warning : colors.mutedForeground}
           />
-          <Text style={[{ color: favorited ? '#B54708' : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>
+          <Text style={[{ color: favorited ? palette.warning : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>
             {favorited ? t('inFavorites') : t('favoriteShort')}
           </Text>
         </Pressable>
@@ -690,9 +692,9 @@ function QuizView({ quiz, colors, isRTL, t, accent, lang }: {
               <Text style={[{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' }]}>{opt}</Text>
             </View>
           ))}
-          <View style={[{ padding: 10, marginTop: 4, backgroundColor: '#067647' + '15', borderRadius: 8, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }]}>
+          <View style={[{ padding: 10, marginTop: 4, backgroundColor: palette.success + '15', borderRadius: 8, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }]}>
             <Ionicons name="checkmark-circle" size={14} color="#067647" />
-            <Text style={[{ color: '#067647', fontFamily: 'ReadexPro_500Medium', fontSize: 12, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{t('answer')}: {q.correctAnswer}</Text>
+            <Text style={[{ color: palette.success, fontFamily: 'ReadexPro_500Medium', fontSize: 12, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{t('answer')}: {q.correctAnswer}</Text>
           </View>
         </View>
       ))}
@@ -866,7 +868,7 @@ function FlowView({ flow, colors, isRTL, lang, accent }: {
     },
     {
       label: lang === 'ar' ? 'بطاقة الخروج' : 'Exit Ticket',
-      icon: 'ticket-outline', color: '#B54708',
+      icon: 'ticket-outline', color: palette.warning,
       render: () => (
         <View style={{ gap: 6 }}>
           {flow.exitTicket.questions.slice(0, 3).map((q, i) => (

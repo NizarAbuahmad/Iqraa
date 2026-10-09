@@ -380,6 +380,20 @@ router.post(
       }
 
       const retired = outcome === "approved" ? await retireVariant(report.artifactId) : false;
+      if (outcome === "approved" && !retired) {
+        // `false` is both "already retired" and a swallowed DB error. Closing
+        // the report on the second would leave the bad artifact serving with
+        // nothing left in the queue to say so.
+        const [artifact] = await db
+          .select({ retiredAt: aiArtifacts.retiredAt })
+          .from(aiArtifacts)
+          .where(eq(aiArtifacts.id, report.artifactId))
+          .limit(1);
+        if (artifact && !artifact.retiredAt) {
+          res.status(500).json({ error: "Could not retire the artifact; the report is still open" });
+          return;
+        }
+      }
 
       const [saved] = await db
         .update(aiArtifactReports)

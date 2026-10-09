@@ -13,8 +13,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { verificationLines, type VerificationSummary } from '@/services/quizVerification';
+import { palette } from '@/constants/colors';
 
-const PROVED = '#067647';
+const PROVED = palette.success;
 
 export function VerificationSummaryRow({ summary }: { summary: VerificationSummary }) {
   const colors = useColors();
