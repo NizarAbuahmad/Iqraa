@@ -553,9 +553,12 @@ describe('exponent notation on the printed page', () => {
     assert.ok(!/5\^4|5\^\{|2\^\{-1\}/.test(html), 'raw caret notation survived');
   });
 
-  it('leaves a fractional exponent readable rather than guessing a shape', () => {
+  // No Unicode superscript exists for a slash, so this one is raised with
+  // <sup> — the way the screen's parser shows it — never squeezed into a
+  // shape the notation does not have.
+  it('raises a fractional exponent whole rather than guessing a shape', () => {
     const html = buildWorksheetHTML(powers(), 'ورقة', meta, true);
-    assert.ok(html.includes('8^(2/3)'), 'the stem lost its fractional exponent');
+    assert.ok(html.includes('8<sup>2/3</sup>'), 'the stem lost its fractional exponent');
   });
 
   it('does not rewrite a plain fraction in the key', () => {

@@ -722,6 +722,58 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The printed worksheet reads as a student's paper, 2026-10-09
+
+Found by printing an offline maths sheet (المعادلات الأسية) and a chemistry
+sheet (المول والكتلة المولية) in headless Chromium and reading them as a
+student would. These are fixes only; images, themes and digital worksheets were
+reviewed the same day and are not started.
+
+- **Exponents with letters printed with a caret.** `5^x = 125`, `3^(2x) = 81`:
+  every question on the exponential-equations sheet, while the screen raised
+  them. `normalizeExponents` can only turn digits and `n` into Unicode, so
+  `esc` in `exportHtml.ts` now raises what is left with `<sup>`
+  (`raiseExponents`). This applies to every printed document, quiz included. `8^(2/3)` prints as
+  a raised `2/3`, as the screen's parser shows it.
+- **Chemistry stems lost their brackets' order.** An isolate is laid out on its
+  own, so a bracket in it cannot pair with its partner outside:
+  «(الكتلة المولية 44 g/mol)» closed inside the Latin run, and
+  «CO₂. (C = 12، O = 16)», cut in two by the Arabic comma, printed as
+  «O = 16) ،CO₂. (C = 12». `isolateForeignRuns` now leaves an unpaired
+  bracket in the Arabic flow and isolates the pieces between; balanced runs
+  (`Ca(OH)₂`, `f(x)`) are unchanged. It is shared with the screens, so they get
+  the fix too. **Not checked on the native app.**
+- **Name, class, date and a score box** («الدرجة: ____ / 42», the points
+  total) head the paper, as on the quiz. The offline generator used to write
+  the name line into `instructions` as underscores, which printed glued into
+  the instructions paragraph, beside a bullet that was a note to the generator
+  itself («لا حاجة لملاحظات المعلم — هذه ورقة للطالب»). Both are gone from
+  `generateWorksheet`, and `worksheetInstructions` (`services/worksheetPaper.ts`)
+  drops them from saved sheets and the premade JSON at export, so nothing needs
+  regenerating. The shared text writes its own name line. The instructions'
+  bullets print as a list.
+- **The masthead's «اسم المدرسة»** was a placeholder printed as if it were the
+  name; it is a line to write on («المدرسة: ____») on every `htmlBase`
+  document. A school name exists only on teaching plans and bell schedules
+  (`schoolName`), and a teacher can have several, so there is no one name
+  to print; picking the class's school is a later step.
+- **The half-solved question** got its numbered blanks and three ruled lines
+  under them. Its blanks are now full-width writing lines (a ten-underscore
+  blank is too short for one step) and it gets no extra rules.
+- **Options sit side by side** when short: four across up to 12 characters
+  («صح / خطأ», «x = 2»), two up to 28, else one per line (`optionColumns`).
+  Worksheet only; the quiz paper is unchanged. With slightly tighter cards, the
+  10-question maths student copy went from **4 A4 pages to 3**; chemistry
+  stays at 2.
+- A multi-line question's number badge sits by its first line, not mid-text.
+
+Covered by `worksheetPrint.test.ts` and new cases in `mathRender.test.ts`,
+each watched failing first. Two existing assertions changed with the
+behaviour: `8^(2/3)` (now raised) and the half-solved question's ruled lines
+(now its own full-width blanks). Mobile 3330 pass / 0 fail / 10 skipped,
+typecheck clean. **Not checked:** expo-print on a device, and a live-AI sheet;
+the live prompt never asked for a name line, so it needed no change.
+
 ## A parent or student picks their class, and sees only that, 2026-10-08
 
 Until now only teachers could narrow the curriculum (`/setup-subjects`); a
