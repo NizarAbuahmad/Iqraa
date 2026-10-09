@@ -57,6 +57,8 @@ import {
   syncClassThreadsForStudent,
 } from "../lib/classThread.js";
 import { findLiveClass } from "../lib/classOwnership.js";
+import { examVisibleTo } from "../modules/assessment/audience.ts";
+import { assignedStudentsByEvaluation } from "../lib/evaluationAudience.ts";
 import { publicUrl } from "../lib/r2.js";
 import {
   isUuid,
@@ -384,6 +386,11 @@ router.get("/classes/:id/students/:studentId/record", async (req: AuthenticatedR
         ),
       );
 
+    // Another group's check is not this student's paper: leave it out rather
+    // than listing it as «لم يقدّمه». One they hold an attempt on stays.
+    const assignedByExam = await assignedStudentsByEvaluation([...new Set(rows.map(r => r.evaluationId))]);
+    const ownRows = rows.filter(r => examVisibleTo(assignedByExam.get(r.evaluationId), [studentId], r.attemptId !== null));
+
     const [guardian] = await db
       .select({ id: rosterLinks.id })
       .from(rosterLinks)
@@ -397,7 +404,7 @@ router.get("/classes/:id/students/:studentId/record", async (req: AuthenticatedR
       .orderBy(desc(parentContacts.createdAt))
       .limit(1);
 
-    const record = studentRecord(rows.map(({ archivedAt, ...r }) => ({ ...r, archived: archivedAt !== null })), objectiveId => {
+    const record = studentRecord(ownRows.map(({ archivedAt, ...r }) => ({ ...r, archived: archivedAt !== null })), objectiveId => {
       const o = getObjectiveById(objectiveId);
       return o
         ? { titleAr: o.descriptionAr || o.description, lessonId: o.lessonId, lessonTitleAr: o.lessonTitleAr || o.lessonTitle }
