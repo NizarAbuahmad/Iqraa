@@ -355,16 +355,36 @@ an announcement by default» below.
     0 fail / 10 skipped, and in Chromium the board (25/25), Escape / keys /
     countdown (9/9), the slide pen, per-slide ink and the book-page pen all
     pass again.
+    **B1 (2026-10-09): a fitted 16:9 stage and several pages, still unsaved.**
+    The board is now a 1280×720 page letterboxed into the screen
+    (`fitCanvas` in `services/whiteboardModel.ts`), so ink and paper keep their
+    place when the window resizes; stroke widths and paper scale with it
+    (`strokeScale` on `PenCanvas`; the eraser radius stays a fixed 16 screen px
+    at every scale, and only the stroke's half-width term in its reach scales). Up to 20
+    pages (`BoardDoc`: add after the current page, delete the current one —
+    never the last — previous / next), each with its own paper and its own
+    undo. Delete asks only when that page has ink; leaving asks when *any* page
+    has ink; clear clears the current page only. Nothing is saved or exported
+    yet — that is B2. Root typecheck clean, mobile suite 3376 pass / 0 fail /
+    10 skipped; in Chromium the new pass (25/25: stage 16:9 and re-fit, stroke
+    stays in the same page place at 800px, width scaling, eraser at 800px, page
+    add / previous / next / delete / cap, per-page paper and undo, the delete
+    and leave prompts) and the A scripts (board 25/25, Escape / keys /
+    countdown 9/9, slide pen, per-slide ink, book-page pen) all pass. Seen, not
+    fixed: in a **portrait phone** the 16:9 page is a thin strip and the axes
+    tick labels are about 5px — fine for a projector, poor on a phone.
     Not verified: touch on a real phone, Android hardware back, native SVG text
     on a device, whether a slide still scrolls while the pen is off and locks
     while it is on, the board on a projector, erasing on a full board on a
     phone (the hit test is cached and bounds-checked; its cost was measured
     only in node, before the cache, at about 39 ms for a 400-stroke sweep),
     and the presentation's action row at phone width.
-    Still to build: B (saving, pages, export) and C (AI solve — only the 7
+    Still to build: B2 (save as a material, reopen from «موادي», PDF export) and C (AI solve — only the 7
     `VERIFIABLE_TOPICS` may ever be marked verified). Spec and plan:
     `docs/superpowers/specs/2026-10-08-whiteboard-board-design.md`,
-    `docs/superpowers/plans/2026-10-08-whiteboard-board.md`.
+    `docs/superpowers/plans/2026-10-08-whiteboard-board.md`; B:
+    `docs/superpowers/specs/2026-10-08-whiteboard-b-pages-save-export-design.md`,
+    `docs/superpowers/plans/2026-10-09-whiteboard-b1-stage-and-pages.md`.
 - **A teacher can set, replace and remove their own profile picture**
   (2026-09-09): `app/(tabs)/profile.tsx`, `POST`/`DELETE /auth/users/avatar`.
   Uploads into the `iqraa-public` R2 bucket (anonymous-read, non-expiring
@@ -789,6 +809,45 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A print style for the student's paper: colour, ink-saver, large print, 2026-10-09
+
+Step 2 of the worksheet review, Nizar's call on scope: worksheets and quizzes,
+both new styles, and the PDF/print export only — Word, shared text and the
+projector slides are unchanged.
+
+- **The export menu has a «شكل ورقة PDF» row** — ملوّن / موفّر للحبر / خط كبير —
+  wherever a worksheet or quiz is exported: the worksheet and quiz screens,
+  موادي, the chat and the virtual-lab card. The premade sheets' direct print
+  (non-teacher path in `curriculum/resources.tsx`) has no menu and prints in the
+  style last picked (`readPrintStyle`).
+- **Remembered per device** (`hooks/usePrintStyle.ts`, AsyncStorage key
+  `@iqra_print_style_v1`): the choice follows the school's copier, not the
+  teacher, so every menu reads and writes the same key.
+- **Ink-saver** is for black-and-white copiers, which turn the designed page's
+  grey cards, tinted bands, solid number badges and colour emoji into grey
+  blocks and lose its light-grey writing lines: white cards with dark borders,
+  section bands as a bold heading over a rule, outlined badges, no emoji, rules
+  in `#555`. **Large print** is 16px text (from 12.5), 30px writing lines and
+  28px badges; a 10-question maths worksheet goes from 3 A4 pages to 4.
+- **One stylesheet, one argument.** The overrides live in
+  `services/printStyle.ts` and are appended to `htmlBase`'s sheet with
+  `!important`, because `sectionBand` sets its colours inline. `colour` adds
+  nothing, so the default page is byte-for-byte what it was.
+- **Also fixed, found in the renders:** a nested exponent, «2^(2(x+1))» in the
+  half-solved question, still printed its caret after the 2026-10-09 fix below
+  — the bracket match stopped at the first `)`. `raiseExponents` now matches
+  the exponent's own closing bracket.
+
+Covered by `printStyle.test.ts` (each style's overrides, colour unchanged, the
+export bundles carry the style, a stored value round-trips) and a nested-exponent
+case in `worksheetPrint.test.ts`, watched failing first. Mobile 3404 pass /
+0 fail / 10 skipped, typecheck clean. **Verified in the web build** (Expo web
+on :8081, `/auth/me` stubbed, every other API call aborted, Chromium 390×844):
+the row renders under «تصدير المادة»; Ink-saver picked, menu closed and
+reopened, still selected; the PDF handed to the print iframe carried the
+picked style (colour first, then large print). Both styles were also rendered
+to A4 in Chromium and read by eye. **Not checked:** expo-print on a device,
+and a real black-and-white photocopy.
 ## The chat streams its reply and can be stopped, 2026-10-09
 
 `POST /chat` answers in Server-Sent Events when the request carries

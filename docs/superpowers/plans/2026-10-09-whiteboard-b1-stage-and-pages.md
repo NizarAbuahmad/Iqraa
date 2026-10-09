@@ -24,7 +24,7 @@
 - **Commit messages end with a blank line and these two lines, copied verbatim (do not substitute any other model name):**
   `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>` and
   `Claude-Session: https://claude.ai/code/session_01ESUy8bkeK9ZwcELgKZuu5d`
-- Work on branch `ccr-cdf5bcd6-nzb5tw`. **This branch still carries PR #928 (sub-project A, unmerged) — B1 stacks on it.** Never push to another branch.
+- Work on branch `ccr-cdf5bcd6-nzb5tw`, which was restarted from `main` after PR #928 (sub-project A) was squash-merged, so B1 is a **new PR**. The remote branch still holds the old merged history, so the **first** push needs `--force-with-lease` (later pushes are plain `git push`). Never push to another branch.
 - Typecheck from the repo root: `cd /home/user/Iqraa && pnpm run typecheck`. If `artifacts/mobile` typecheck reports route-name errors (`"/suggest-feature"` and similar), the git-ignored generated file `artifacts/mobile/.expo/types/router.d.ts` is stale: delete it and re-run (CI has no such file).
 
 ## Decisions recorded in this plan
@@ -1016,8 +1016,8 @@ EOF
 git push -u origin ccr-cdf5bcd6-nzb5tw
 ```
 
-If the push fails on a network error, retry up to four times with 2s, 4s, 8s, 16s waits.
+(Use `--force-with-lease` only for the very first push of this branch, as in Global Constraints.) If the push fails on a network error, retry up to four times with 2s, 4s, 8s, 16s waits.
 
-- [ ] **Step 5: Update PR #928**
+- [ ] **Step 5: Open the pull request**
 
-The PR now carries A **and** B1. Retitle it to «Whiteboard (سبورة): A — blank board, B1 — fitted stage and pages», add a B1 section to the body (what changed, what was verified, what was not), keep `schema-push: n/a (no schema change)` and the two footer lines `🤖 Generated with [Claude Code](https://claude.com/claude-code)` / `https://claude.ai/code/session_01ESUy8bkeK9ZwcELgKZuu5d`, and keep it a draft.
+Open a **draft** PR from `ccr-cdf5bcd6-nzb5tw` into `main` titled «Whiteboard (سبورة) B1 — fitted stage and pages». Body: what changed (the File Structure table), what Step 1 verified and what it could not, `schema-push: n/a (no schema change)` (no migration is needed — CLAUDE.md now requires `lib/db/migrations/` only for a schema edit, and this changes none), and as the last lines `🤖 Generated with [Claude Code](https://claude.com/claude-code)`, a blank line, then `https://claude.ai/code/session_01ESUy8bkeK9ZwcELgKZuu5d`. Then subscribe to the PR's activity.

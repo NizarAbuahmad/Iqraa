@@ -14,7 +14,9 @@ import { DEFAULT_STROKE_WIDTH, ERASER_RADIUS, eraseAlong, eraseAt, type Stroke }
 /**
  * `points` are fractions of the canvas width, not pixels (`services/penInk.ts`),
  * so a stroke follows the slide when the stage is resized instead of staying
- * where it was drawn. `width`, when present, is in pixels.
+ * where it was drawn. `width`, when present, is in width units: slide strokes
+ * keep pixel widths (`strokeScale` 1), board strokes are in canvas units of the
+ * 1280x720 page and are multiplied by `strokeScale` to get pixels.
  */
 export type { Stroke };
 
@@ -24,7 +26,7 @@ export const PEN_COLORS = [TIMER_RED, DECK_ACCENT, DECK_TEXT];
  * Committed strokes, drawn at the canvas's current width. Memoised so a
  * touch-move that only changes the draft never re-renders them.
  */
-const StrokeLines = memo(function StrokeLines({ strokes, canvasW }: { strokes: Stroke[]; canvasW: number }) {
+const StrokeLines = memo(function StrokeLines({ strokes, canvasW, strokeScale }: { strokes: Stroke[]; canvasW: number; strokeScale: number }) {
   return (
     <>
       {strokes.map((s, i) => (
@@ -33,7 +35,7 @@ const StrokeLines = memo(function StrokeLines({ strokes, canvasW }: { strokes: S
           points={scaleInkPoints(s.points, canvasW)}
           fill="none"
           stroke={s.color}
-          strokeWidth={s.width ?? DEFAULT_STROKE_WIDTH}
+          strokeWidth={(s.width ?? DEFAULT_STROKE_WIDTH) * strokeScale}
           strokeLinecap="round"
           strokeLinejoin="round"
         />
@@ -51,22 +53,27 @@ const StrokeLines = memo(function StrokeLines({ strokes, canvasW }: { strokes: S
  * component while the finger is down and is handed to `onChange` once, on
  * release — so a long board does not rebuild every polyline on every touch event.
  */
-export function PenCanvas({ strokes, color, active, onChange, width = DEFAULT_STROKE_WIDTH, erase = false }: {
+export function PenCanvas({ strokes, color, active, onChange, width = DEFAULT_STROKE_WIDTH, erase = false, strokeScale = 1 }: {
   strokes: Stroke[];
   color: string;
   active: boolean;
   onChange: (next: Stroke[]) => void;
-  /** Stroke width in pixels. Slides leave this alone. */
+  /** Stroke width in width units (pixels when `strokeScale` is 1). Slides leave this alone. */
   width?: number;
   /** Touches remove strokes instead of drawing. */
   erase?: boolean;
+  /**
+   * Pixels per width unit. The board passes its stage's scale so a stroke keeps
+   * its thickness relative to the PAGE on every screen; slides leave it at 1.
+   */
+  strokeScale?: number;
 }) {
   // The canvas follows the slide's content box, so its width changes with the
   // stage. Strokes are stored relative to it and drawn at whatever it is now.
   const [canvasW, setCanvasW] = useState(0);
   // PanResponder is built once; read the latest props through a ref.
-  const latest = useRef({ strokes, color, width, erase, onChange, canvasW });
-  latest.current = { strokes, color, width, erase, onChange, canvasW };
+  const latest = useRef({ strokes, color, width, erase, onChange, canvasW, strokeScale });
+  latest.current = { strokes, color, width, erase, onChange, canvasW, strokeScale };
 
   const [draft, setDraft] = useState<Stroke | null>(null);
   const [erased, setErased] = useState<Stroke[] | null>(null);
@@ -104,13 +111,16 @@ export function PenCanvas({ strokes, color, active, onChange, width = DEFAULT_ST
         if (cur.erase) {
           // Strokes are stored as fractions of the canvas width, so the touch
           // and the eraser's reach are converted to the same units. `unit` is
-          // one pixel in those units, which is what turns a stroke's pixel
-          // width into the right reach.
+          // one WIDTH unit in those units (a stroke's `width` times
+          // `strokeScale` pixels), which is what turns a stroke's width into
+          // the right reach. The eraser's own reach is a fixed number of
+          // screen pixels, whatever the scale.
           if (!(cur.canvasW > 0)) return; // not laid out yet — nothing to erase against
-          const unit = 1 / cur.canvasW;
-          const fx = x * unit;
-          const fy = y * unit;
-          const next = eraseAt(cur.strokes, fx, fy, ERASER_RADIUS * unit, unit);
+          const px = 1 / cur.canvasW;                  // one pixel, in stored units
+          const unit = cur.strokeScale / cur.canvasW;  // one WIDTH unit, in stored units
+          const fx = x * px;
+          const fy = y * px;
+          const next = eraseAt(cur.strokes, fx, fy, ERASER_RADIUS * px, unit);
           lastErase.current = { x: fx, y: fy };
           erasedRef.current = next;
           setErased(next);
@@ -129,11 +139,12 @@ export function PenCanvas({ strokes, color, active, onChange, width = DEFAULT_ST
         const cw = latest.current.canvasW;
         if (erasedRef.current) {
           if (!(cw > 0)) return;
-          const unit = 1 / cw;
-          const fx = x * unit;
-          const fy = y * unit;
+          const px = 1 / cw;
+          const unit = latest.current.strokeScale / cw;
+          const fx = x * px;
+          const fy = y * px;
           const from = lastErase.current ?? { x: fx, y: fy };
-          const next = eraseAlong(erasedRef.current, from.x, from.y, fx, fy, ERASER_RADIUS * unit, unit);
+          const next = eraseAlong(erasedRef.current, from.x, from.y, fx, fy, ERASER_RADIUS * px, unit);
           lastErase.current = { x: fx, y: fy };
           if (next !== erasedRef.current) {
             erasedRef.current = next;
@@ -161,8 +172,8 @@ export function PenCanvas({ strokes, color, active, onChange, width = DEFAULT_ST
       style={[StyleSheet.absoluteFill, active && Platform.OS === 'web' && ({ touchAction: 'none', cursor: 'crosshair' } as any)]}
     >
       <Svg width="100%" height="100%">
-        <StrokeLines strokes={erased ?? strokes} canvasW={canvasW} />
-        {draft && <StrokeLines strokes={[draft]} canvasW={canvasW} />}
+        <StrokeLines strokes={erased ?? strokes} canvasW={canvasW} strokeScale={strokeScale} />
+        {draft && <StrokeLines strokes={[draft]} canvasW={canvasW} strokeScale={strokeScale} />}
       </Svg>
     </View>
   );

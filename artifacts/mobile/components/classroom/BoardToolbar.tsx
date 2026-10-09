@@ -16,6 +16,10 @@ export type BoardToolbarLabels = {
   /** One per `STROKE_WIDTHS` entry. */
   widths: string[];
   backgrounds: Record<BoardBackground, string>;
+  prevPage: string;
+  nextPage: string;
+  addPage: string;
+  deletePage: string;
 };
 
 /**
@@ -28,6 +32,8 @@ export function BoardToolbar({
   color, onColor, width, onWidth, erase, onErase,
   canUndo, onUndo, hasInk, onClear,
   background, onBackground, onClose, labels,
+  pageLabel, canPrevPage, canNextPage, canAddPage, canDeletePage,
+  onPrevPage, onNextPage, onAddPage, onDeletePage,
 }: {
   isRTL: boolean;
   topInset: number;
@@ -46,6 +52,16 @@ export function BoardToolbar({
   onBackground: (b: BoardBackground) => void;
   onClose: () => void;
   labels: BoardToolbarLabels;
+  /** "2 / 5", digits already localised. */
+  pageLabel: string;
+  canPrevPage: boolean;
+  canNextPage: boolean;
+  canAddPage: boolean;
+  canDeletePage: boolean;
+  onPrevPage: () => void;
+  onNextPage: () => void;
+  onAddPage: () => void;
+  onDeletePage: () => void;
 }) {
   const rowDir = isRTL ? 'row-reverse' : 'row';
   return (
@@ -119,6 +135,21 @@ export function BoardToolbar({
             <Ionicons name="trash-outline" size={20} color={DECK_MUTED} />
           </Pressable>
         </View>
+        <View style={[styles.group, { flexDirection: rowDir }]}>
+          <Pressable onPress={onPrevPage} disabled={!canPrevPage} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.prevPage} style={{ opacity: canPrevPage ? 1 : 0.35 }}>
+            <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={20} color={DECK_MUTED} />
+          </Pressable>
+          <Text style={[styles.pageLabel, { fontFamily: 'Almarai_400Regular' }]}>{pageLabel}</Text>
+          <Pressable onPress={onNextPage} disabled={!canNextPage} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.nextPage} style={{ opacity: canNextPage ? 1 : 0.35 }}>
+            <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={DECK_MUTED} />
+          </Pressable>
+          <Pressable onPress={onAddPage} disabled={!canAddPage} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.addPage} style={{ opacity: canAddPage ? 1 : 0.35 }}>
+            <Ionicons name="add-circle-outline" size={22} color={DECK_MUTED} />
+          </Pressable>
+          <Pressable onPress={onDeletePage} disabled={!canDeletePage} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.deletePage} style={{ opacity: canDeletePage ? 1 : 0.35 }}>
+            <Ionicons name="remove-circle-outline" size={22} color={DECK_MUTED} />
+          </Pressable>
+        </View>
       </View>
     </>
   );
@@ -147,4 +178,5 @@ const styles = StyleSheet.create({
   swatchOn: { borderWidth: 3, borderColor: DECK_BORDER, transform: [{ scale: 1.2 }] },
   widthSlot: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center' },
   group: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  pageLabel: { fontSize: 13, color: DECK_MUTED, minWidth: 40, textAlign: 'center' },
 });
