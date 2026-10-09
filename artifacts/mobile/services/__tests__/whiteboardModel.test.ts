@@ -454,3 +454,19 @@ describe('pages', () => {
     assert.equal(hasInk(currentPage(d).board), false);
   });
 });
+
+describe('hit test with canvas-unit stroke widths (strokeScale)', () => {
+  // A 640px-wide stage showing the 1280-unit page: strokeScale = 0.5, so a
+  // width-12 stroke is drawn 6px wide and one WIDTH unit is 0.5/640 of the
+  // stored width-fraction. The eraser stays 16 screen pixels.
+  const canvasW = 640;
+  const strokeScale = 0.5;
+  const unit = strokeScale / canvasW;
+  const radius = 16 / canvasW;
+  const s = line('0.1,0.25 0.9,0.25', { width: 12 });
+
+  it('reach = 16px eraser + 3px (half of the 6px drawn width) = 0.0296875 of the width', () => {
+    assert.equal(strokeHit(s, 0.5, 0.25 + 0.0295, radius, unit), true);
+    assert.equal(strokeHit(s, 0.5, 0.25 + 0.03, radius, unit), false);
+  });
+});
