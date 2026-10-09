@@ -26,7 +26,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { getBookById, getObjectivesForBook, type CurriculumObjective } from '@/services/curriculumData';
+import { GRADES, SUBJECTS, getBookById, getObjectivesForBook, type CurriculumObjective } from '@/services/curriculumData';
+import { NO_BOOK_FILTER, applyBookFilter, facetIds, resolveBookFilter } from '@/services/evaluationBookFilter';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { PickerField as SharedPickerField } from '@/components/ui/PickerField';
 import {
@@ -219,7 +220,20 @@ export default function NewEvaluationScreen() {
     return !book || (isGradeShown(book.gradeId) && isSubjectShown(book.subjectId, book.gradeId));
   });
   const narrowed = myBooks.length > 0 && myBooks.length < books.length;
-  const visibleBooks = narrowed && !showAllBooks ? myBooks : books;
+  const scopedBooks = narrowed && !showAllBooks ? myBooks : books;
+
+  // Grade / subject drill-down on top of that scope. Options come from the
+  // books on offer, so a teacher with two grades is never shown the other ten.
+  const [pickedFilter, setPickedFilter] = useState(NO_BOOK_FILTER);
+  const bookLookup = useCallback((id: string) => getBookById(id), []);
+  const bookFilter = resolveBookFilter(scopedBooks, bookLookup, pickedFilter);
+  const gradeIds = facetIds(scopedBooks, bookLookup, 'gradeId');
+  const subjectIds = facetIds(scopedBooks, bookLookup, 'subjectId', { gradeId: bookFilter.gradeId });
+  const nameOf = (list: { id: string; name: string; nameAr: string }[], id: string) => {
+    const item = list.find(x => x.id === id);
+    return item ? (lang === 'ar' ? item.nameAr : item.name) : id;
+  };
+  const visibleBooks = applyBookFilter(scopedBooks, bookLookup, bookFilter);
 
   const onSubmit = async () => {
     if (creating) return;
@@ -335,6 +349,29 @@ export default function NewEvaluationScreen() {
         <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
           {t(mode === 'generate' ? 'evalModeGenerateHint' : 'evalModePaperHint')}
         </Text>
+
+        {!loadingBooks && gradeIds.length > 1 && (
+          <PickerField
+            label={t('evalFilterGrade')}
+            value={bookFilter.gradeId ? nameOf(GRADES, bookFilter.gradeId) : t('allFilter')}
+            options={[t('allFilter'), ...gradeIds.map(id => nameOf(GRADES, id))]}
+            onChange={i => setPickedFilter({ gradeId: i === 0 ? '' : gradeIds[i - 1]!, subjectId: '' })}
+            colors={colors}
+            isRTL={isRTL}
+            accent={ACCENT}
+          />
+        )}
+        {!loadingBooks && subjectIds.length > 1 && (
+          <PickerField
+            label={t('evalFilterSubject')}
+            value={bookFilter.subjectId ? nameOf(SUBJECTS, bookFilter.subjectId) : t('allFilter')}
+            options={[t('allFilter'), ...subjectIds.map(id => nameOf(SUBJECTS, id))]}
+            onChange={i => setPickedFilter({ gradeId: bookFilter.gradeId, subjectId: i === 0 ? '' : subjectIds[i - 1]! })}
+            colors={colors}
+            isRTL={isRTL}
+            accent={ACCENT}
+          />
+        )}
 
         <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
           {t('selectBookLabel')}

@@ -2137,6 +2137,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/arabic/G10/1/0010%20S.pdf',
   },
   // ── Arabic Grade 10 – Semester 2 ───────────────────────────────────────────
   // Units 6-10, continuing S1's numbering. Same missing download link as S1.
@@ -2152,6 +2153,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Arabic/2025/%D8%B9%D8%B1%D8%A8%D9%8A%206.7.2025/10/P2/%D8%B7%D8%A7%D9%84%D8%A8%20-%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%812%20.pdf',
   },
   // ── Islamic Education Grade 10 – Semesters 1 & 2 ───────────────────────────
   // hasKnowledgeBase is true and honest, but note what it is built from: the
@@ -2171,6 +2173,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Islamic/G10/1/%D8%A5%D8%B3%D9%84%D8%A7%D9%85%D9%8A%D8%A9%2010%20%D9%811%20Pdf%202026%20.pdf',
   },
   {
     id: ISLAMIC_S2_CURRICULUM_BOOK_ID,
@@ -2184,6 +2187,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Islam/Islam/2025/G10/2/islamic%20Grade%2010.pdf',
   },
   // ── Math Grade 9 – Semester 1 ───────────────────────────────────────────────
   // Given its own id rather than reusing the inert `book-math-9` stub that used
@@ -2610,6 +2614,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Math/G5/1/ST/2026_MT05_ST1.pdf',
   },
   // Grade 5 Mathematics S2 — the gap Semester 1 alone left, closed
   // 2026-09-20 once its student-book PDF was found on disk (see g5MathSem2.ts
@@ -2626,6 +2631,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Math/2025/G05/2/MT05/SE/MT05_SE2_WEB.pdf',
   },
   // Grade 5 Science, both semesters — the second Grade 5 subject. Units are
   // numbered 1-5 then 6-10 continuously across the two semesters, the same
@@ -2643,6 +2649,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G5/1/StBook5.pdf',
   },
   {
     id: G5_SCIENCE_S2_CURRICULUM_BOOK_ID,
@@ -2656,6 +2663,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/New%20folder%20%282%29/%D8%B9%D9%84%D9%88%D9%85%20%D8%AE%D8%A7%D9%85%D8%B3%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%AE%D8%A7%D9%85%D8%B3%20%D8%A7%D9%84%D8%AC%D8%B2%D8%A1%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A.pdf',
   },
   // Grade 5 Islamic Education, both semesters — the third Grade 5 subject.
   // Unlike g6IslamicSem1 (title-only, pdf-parse dropped the assimilated lam),
@@ -2674,6 +2682,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Islamic/G5/1/%D8%A5%D8%B3%D9%84%D8%A7%D9%85%D9%8A%D8%A9%205%20%D9%811%20Pdf%202026%20.pdf',
   },
   {
     id: G5_ISLAMIC_S2_CURRICULUM_BOOK_ID,
@@ -2687,6 +2696,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Islam/Islam/2025/G5/2/Islamic%205P2%20new.pdf',
   },
   // Grade 5 English, both semesters — the last planned Grade 5 MVP subject.
   // "Jordan Team Together" series (Pearson/York Press), same publisher as
@@ -2705,6 +2715,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2026/G5/JOR%20TT-G5-S1-PB-Reprint-2025-FM.pdf',
   },
   {
     id: G5_ENGLISH_S2_CURRICULUM_BOOK_ID,
@@ -2718,6 +2729,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2025/G5/2/JOR-TT-G5-S2-Reprints-2025-Pupils-Book-Updated.pdf',
   },
   // Grade 5 Arabic, both semesters — title-only: every unit is five lessons
   // of a fixed pattern (أستمع/أتحدث/أقرأ/أكتب/أبني لغتي) built from
@@ -2735,6 +2747,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/arabic/G5/1/005%20S.pdf',
   },
   {
     id: G5_ARABIC_S2_CURRICULUM_BOOK_ID,
@@ -2748,6 +2761,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Arabic/2025/%D8%B9%D8%B1%D8%A8%D9%8A%206.7.2025/5/P2/%D8%AE%D8%A7%D9%85%D8%B3%20%D8%B7%D8%A7%D9%84%D8%A8%20%D9%812%20.pdf',
   },
   // Grade 5 Social Studies, both semesters — title-only, but not for the
   // usual reason: this student book's PDF has a corrupted embedded text
@@ -2765,6 +2779,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/SS/G5/1/%D8%AF%D8%B1%D8%A7%D8%B3%D8%A7%D8%AA%20%D8%A7%D8%AC%D8%AA%D9%85%D8%A7%D8%B9%D9%8A%D8%A9%20%D8%AE%D8%A7%D9%85%D8%B3%20%D9%811%202026%20.pdf',
   },
   {
     id: G5_SOCIAL_S2_CURRICULUM_BOOK_ID,
@@ -2778,6 +2793,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/SS/G5/2/%D8%A7%D9%95%D8%B9%D8%A7%D8%AF%D8%A9%20%D8%A7%D9%84%D8%B7%D8%A8%D8%A7%D8%B9%D8%A9-%D8%A7%D9%84%D8%AF%D8%B1%D8%A7%D8%B3%D8%A7%D8%AA%20%D8%A7%D9%84%D8%A7%D8%AC%D8%AA%D9%85%D8%A7%D8%B9%D9%8A%D8%A9-%D8%A7%D9%84%D8%AE%D8%A7%D9%85%D8%B3%20%D9%812.pdf',
   },
   // Grade 5 Digital Skills, Semester 1 — a cross-curricular companion, not a
   // subject book: its units are blocks attached to Science units and carry
@@ -2853,6 +2869,7 @@ export const BOOKS: Book[] = [
     edition: '1st',
     hasKnowledgeBase: true,
     audience: 'all',
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Mm/G5/%D9%81%D9%86%20%D9%85%D9%88%D8%B3%D9%8A%D9%82%D9%89%20%D8%AE%D8%A7%D9%85%D8%B3%202026%20.pdf',
   },
   // Grade 9 Art, Music and Drama Education — one book for the whole year (no
   // semester field on the book itself; nccd.gov.jo lists it as «الفصل الأول»).
@@ -2891,6 +2908,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%8A%D8%A9%20%D8%A7%D9%84%D9%85%D9%87%D9%86%D9%8A%D8%A9/5/%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%8A%D8%A9%20%D8%A7%D9%84%D9%85%D9%87%D9%86%D9%8A%D8%A9-%20%D8%A7%D9%84%D8%AE%D8%A7%D9%85%D8%B3%20-%20%D9%811.pdf',
   },
   {
     id: G5_VOC_S2_CURRICULUM_BOOK_ID,
@@ -2904,6 +2922,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%8A%D8%A9%20%D8%A7%D9%84%D9%85%D9%87%D9%86%D9%8A%D8%A9/5/2/%D9%85%D9%87%D9%86%D9%8A%20%D8%AE%D8%A7%D9%85%D8%B3%20%D9%812%202025%20.pdf',
   },
   // The first Grade 4 book in the repo, and the book that brings grade-4
   // into MVP_GRADE_IDS. HarperCollins/NCCD series, same publisher as
@@ -2921,6 +2940,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Math/G4/1/ST/2026_MT04_ST1.pdf',
   },
   {
     id: G4_MATH_S2_CURRICULUM_BOOK_ID,
@@ -2934,6 +2954,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Math/2025/G04/2/MT04/SE/Math%2004.pdf',
   },
   // Grade 4 Science, both semesters — the second Grade 4 subject. Units are
   // numbered 1-4 then 6-10 continuously across the two semesters (unit 5
@@ -2952,6 +2973,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G4/1/StBook4.pdf',
   },
   {
     id: G4_SCIENCE_S2_CURRICULUM_BOOK_ID,
@@ -2965,6 +2987,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/New%20folder%20%282%29/%D8%B9%D9%84%D9%88%D9%85%20%D8%B1%D8%A7%D8%A8%D8%B9%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%B1%D8%A7%D8%A8%D8%B9%20%D8%B7%D8%A7%D9%84%D8%A8%20%D8%AC2.pdf',
   },
   // Grade 4 Digital Skills, Semester 1 — a cross-curricular companion, not a
   // subject book: its units are blocks attached to Science and Math units
@@ -2999,6 +3022,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Islamic/G4/1/%D8%A5%D8%B3%D9%84%D8%A7%D9%85%D9%8A%D8%A9%204%20%D9%811%20Pdf%202026%20.pdf',
   },
   {
     id: G4_ISLAMIC_S2_CURRICULUM_BOOK_ID,
@@ -3012,6 +3036,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Islam/Islam/2025/G4/2/islamic%20Grade%204.pdf',
   },
   // Grade 4 Social Studies, both semesters — the fourth Grade 4 subject.
   // Reads cleanly through PyMuPDF (unlike g5SocialSem1's corrupted CMap), so
@@ -3030,6 +3055,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/SS/G4/1/%D8%AF%D8%B1%D8%A7%D8%B3%D8%A7%D8%AA%20%D8%A7%D8%AC%D8%AA%D9%85%D8%A7%D8%B9%D9%8A%D8%A9%20%D8%B1%D8%A7%D8%A8%D8%B9%20%D9%811%202026%20.pdf',
   },
   {
     id: G4_SOCIAL_S2_CURRICULUM_BOOK_ID,
@@ -3043,6 +3069,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/SS/G4.2/%D8%A7%D9%84%D8%AF%D8%B1%D8%A7%D8%B3%D8%A7%D8%AA%20%D8%A7%D9%84%D8%A7%D8%AC%D8%AA%D9%85%D8%A7%D8%B9%D9%8A%D8%A9-%D8%A7%D9%84%D8%B5%D9%81%20%D8%A7%D9%84%D8%B1%D8%A7%D8%A8%D8%B9%20%D9%812.pdf',
   },
   // Grade 4 Arabic, both semesters — the fifth Grade 4 subject. Title-only,
   // same convention as g5ArabicSem1.ts: every unit is five lessons of a
@@ -3060,6 +3087,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/arabic/G4/1/004%20S.pdf',
   },
   {
     id: G4_ARABIC_S2_CURRICULUM_BOOK_ID,
@@ -3073,6 +3101,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Arabic/2025/%D8%B9%D8%B1%D8%A8%D9%8A%206.7.2025/4/P2/%D8%B1%D8%A7%D8%A8%D8%B9%20%D8%B7%D8%A7%D9%84%D8%A8%20.pdf',
   },
   // Grade 4 English, both semesters — the last planned Grade 4 MVP subject.
   // "Jordan Team Together" series (Pearson/York Press), same publisher as
@@ -3091,6 +3120,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2026/G4/Jo-TT-G4-SB-S1-Rpt26.pdf',
   },
   {
     id: G4_ENGLISH_S2_CURRICULUM_BOOK_ID,
@@ -3104,6 +3134,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2025/G4/2/Jordan-Team%20Together-G4-SB%20S2.pdf',
   },
   // ── Art, Music and Drama Education Grade 4 ─────────────────────────────
   // Seventh Grade 4 subject, required extending SUBJECTS.grades for
@@ -3123,6 +3154,7 @@ export const BOOKS: Book[] = [
     edition: '1st',
     hasKnowledgeBase: true,
     audience: 'all',
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Mm/G4/%D9%81%D9%86%20%D9%85%D9%88%D8%B3%D9%8A%D9%82%D9%89%20%D8%B1%D8%A7%D8%A8%D8%B9%202026%20.pdf',
   },
   // ── Vocational Education Grade 4 – Semesters 1 and 2 ─────────────────────
   // Ninth and last Grade 4 subject, required extending SUBJECTS.grades for
@@ -3143,6 +3175,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Vocational%20Education/G4/%D8%A7%D9%84%D9%85%D9%87%D9%86%D9%8A%20%D8%B1%D8%A7%D8%A8%D8%B9%20%D9%811%202026%20S%20.pdf',
   },
   {
     id: G4_VOC_S2_CURRICULUM_BOOK_ID,
@@ -3156,6 +3189,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%8A%D8%A9%20%D8%A7%D9%84%D9%85%D9%87%D9%86%D9%8A%D8%A9/4/2/%D9%85%D9%87%D9%86%D9%8A%20%D8%B1%D8%A7%D8%A8%D8%B9%20%D9%812%202025%20.pdf',
   },
   // The first Grade 3 book in the repo, and the book that brings grade-3
   // into MVP_GRADE_IDS. HarperCollins/NCCD series, same publisher as
@@ -3188,6 +3222,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Math/2025/G03/2/MT03/SE/MA.03.ST2.pdf',
   },
   // Grade 3 Science, both semesters. Same HarperCollins/NCCD series as Grade
   // 4/5 Science — real per-lesson content from «الفِكْرَةُ الرَّئيسَةُ» and
@@ -3208,6 +3243,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G3/1/StBook3.pdf',
   },
   {
     id: G3_SCIENCE_S2_CURRICULUM_BOOK_ID,
@@ -3221,6 +3257,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/New%20folder%20%282%29/%D8%B9%D9%84%D9%88%D9%85%20%D8%AB%D8%A7%D9%84%D8%AB%20%D9%812%20Pdf/%D8%B7%D8%A7%D9%84%D8%A8%20%D8%B9%D9%84%D9%88%D9%85%20%D8%AB%D8%A7%D9%84%D8%AB%20%D8%AC2%20.pdf',
   },
   // Grade 3 Islamic Education, both semesters. NCCD's own Arabic-native
   // Islamic-studies text, not a HarperCollins translation — real per-lesson
@@ -3240,6 +3277,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Islamic/G3/1/%D8%A5%D8%B3%D9%84%D8%A7%D9%85%D9%8A%D8%A9%203%20%D9%811%20Pdf%202026%20.pdf',
   },
   {
     id: G3_ISLAMIC_S2_CURRICULUM_BOOK_ID,
@@ -3253,6 +3291,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Islam/Islam/2025/G3/2/Islamic_G3_SE2.pdf',
   },
   // Grade 3 Arabic, both semesters. Title-only, same reason as
   // g4ArabicSem1/g5ArabicSem1 — five units per semester, five fixed-pattern
@@ -3270,6 +3309,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/arabic/G3/1/003%20S.pdf',
   },
   {
     id: G3_ARABIC_S2_CURRICULUM_BOOK_ID,
@@ -3283,6 +3323,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Arabic/2025/%D8%B9%D8%B1%D8%A8%D9%8A%206.7.2025/3/P2/%D8%AB%D8%A7%D9%84%D8%AB%20%D8%B7%D8%A7%D9%84%D8%A8%20%D9%812.pdf',
   },
   // Grade 3 Social Studies, both semesters. NCCD's own Arabic-native text —
   // real per-lesson content from each lesson's own «الفِكْرَةُ الرَّئيسَةُ» and
@@ -3301,6 +3342,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/SS/G3/1/%D8%AF%D8%B1%D8%A7%D8%B3%D8%A7%D8%AA%20%D8%A7%D8%AC%D8%AA%D9%85%D8%A7%D8%B9%D9%8A%D8%A9%20%D8%AB%D8%A7%D9%84%D8%AB%20%D9%811%202026%20.pdf',
   },
   {
     id: G3_SOCIAL_S2_CURRICULUM_BOOK_ID,
@@ -3314,6 +3356,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/SS/G3/2/%D8%AC-%D8%A7%D9%84%D8%AF%D8%B1%D8%A7%D8%B3%D8%A7%D8%AA%20%D8%A7%D9%84%D8%A7%D8%AC%D8%AA%D9%85%D8%A7%D8%B9%D9%8A%D8%A9-%D8%A7%D9%84%D8%B5%D9%81%20%D8%A7%D9%84%D8%AB%D8%A7%D9%84%D8%AB-%D9%812%D9%86%D9%87%D8%A7%D8%A6%D9%8A%20.pdf',
   },
   // Grade 3 English, both semesters ("Jordan Team Together" series,
   // Pearson/York Press). Real unit-level content from the book's own "Scope
@@ -3333,6 +3376,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2026/G3/JOR%20TT-G3-S1-PB-Reprint-2025-FM.pdf',
   },
   {
     id: G3_ENGLISH_S2_CURRICULUM_BOOK_ID,
@@ -3346,6 +3390,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2025/G3/2/JOR-TT-G3-S2-Reprints-2025-Pupils-Book-Updated.pdf',
   },
   // ── Art, Music and Drama Education Grade 3 ──────────────────────────────
   // Sixth Grade 3 MVP subject, required extending SUBJECTS.grades for
@@ -3366,6 +3411,7 @@ export const BOOKS: Book[] = [
     edition: '1st',
     hasKnowledgeBase: true,
     audience: 'all',
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Mm/G3/%D9%81%D9%86%20%D9%85%D9%88%D8%B3%D9%8A%D9%82%D9%89%20%D8%AB%D8%A7%D9%84%D8%AB%202026%20.pdf',
   },
   // ── Physical Education Grade 3 – Semesters 1 and 2 ──────────────────────
   // Ninth and last Grade 3 MVP subject, required extending SUBJECTS.grades
@@ -3386,6 +3432,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Sport/G3/1/Sport%20G3%20P1%202026%20.pdf',
   },
   {
     id: G3_PE_S2_CURRICULUM_BOOK_ID,
@@ -3452,6 +3499,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Math/G2/1/ST/2026_MA.02.ST.pdf',
   },
   {
     id: G2_MATH_S2_CURRICULUM_BOOK_ID,
@@ -3465,6 +3513,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Math/2025/G02/2/MT02/SE/MA.02.ST_2025.pdf',
   },
   // ── Science Grade 2 – Semesters 1 and 2 ─────────────────────────────────
   // Second Grade 2 book in this repo. 'science' is already declared for
@@ -3483,6 +3532,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G2/1/StBook2.pdf',
   },
   {
     id: G2_SCIENCE_S2_CURRICULUM_BOOK_ID,
@@ -3496,6 +3546,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/New%20folder%20%282%29/%D8%B9%D9%84%D9%88%D9%85%20%D8%AB%D8%A7%D9%86%D9%8A%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%AB%D8%A7%D9%86%D9%89%20%D8%AC2%20.pdf',
   },
   // ── Islamic Education Grade 2 – Semesters 1 and 2 ───────────────────────
   // Third Grade 2 book in this repo. 'islamic' is already declared for
@@ -3517,6 +3568,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Islamic/G2/1/%D8%A5%D8%B3%D9%84%D8%A7%D9%85%D9%8A%D8%A9%202%20%D9%811%20Pdf%202026%20.pdf',
   },
   {
     id: G2_ISLAMIC_S2_CURRICULUM_BOOK_ID,
@@ -3530,6 +3582,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Islam/Islam/2025/G2/2/Islamic-G2-SE2.pdf',
   },
   // ── English Grade 2 – Semesters 1 and 2 ─────────────────────────────────
   // Fourth Grade 2 book in this repo. 'english' is already declared for
@@ -3551,6 +3604,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2026/G2/Jo-TT-G2-SB-S1-Rpt26.pdf',
   },
   {
     id: G2_ENGLISH_S2_CURRICULUM_BOOK_ID,
@@ -3564,6 +3618,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2025/G2/2/Jordan-Team%20Together-G2-SB-S2.pdf',
   },
   // ── Arabic Grade 2 – Semesters 1 and 2 ───────────────────────────────────
   // Sixth Grade 2 book in this repo. 'arabic' is already declared for every
@@ -3586,6 +3641,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/arabic/G2/1/002%20S.pdf',
   },
   {
     id: G2_ARABIC_S2_CURRICULUM_BOOK_ID,
@@ -3599,6 +3655,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Arabic/2025/%D8%B9%D8%B1%D8%A8%D9%8A%206.7.2025/2/P2/%D8%AB%D8%A7%D9%86%D9%8A%20%D8%B7%D8%A7%D9%84%D8%A8%20%D9%812%20.pdf',
   },
   // ── Social Studies Grade 2 – Semesters 1 and 2 ──────────────────────────
   // Seventh Grade 2 book in this repo. 'social' is already declared for
@@ -3617,6 +3674,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/SS/G2/1/%D8%AF%D8%B1%D8%A7%D8%B3%D8%A7%D8%AA%20%D8%A7%D8%AC%D8%AA%D9%85%D8%A7%D8%B9%D9%8A%D8%A9%20%D8%AB%D8%A7%D9%86%D9%8A%20%D9%811%202026%20.pdf',
   },
   {
     id: G2_SOCIAL_S2_CURRICULUM_BOOK_ID,
@@ -3630,6 +3688,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/SS/G2/2/%D8%AF%D8%B1%D8%A7%D8%B3%D8%A7%D8%AA%20%D8%AB%D8%A7%D9%86%D9%8A%20%D9%812%202025%20.pdf',
   },
   // ── Art, Music and Drama Education Grade 2 ──────────────────────────────
   // Eighth Grade 2 book in this repo, required extending SUBJECTS.grades
@@ -3646,6 +3705,7 @@ export const BOOKS: Book[] = [
     edition: '1st',
     hasKnowledgeBase: true,
     audience: 'all',
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Mm/G2/%D9%81%D9%86%20%D9%85%D9%88%D8%B3%D9%8A%D9%82%D9%89%20%D8%AB%D8%A7%D9%86%D9%8A%202026%20.pdf',
   },
   // ── Physical Education Grade 2 – Semester 1 ─────────────────────────────
   // Ninth and last Grade 2 MVP book in this repo, required extending
@@ -3664,6 +3724,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Sport/G2/2/Sport%20G2%20S1%202026%20.pdf',
   },
   // ── Science Grade 1 – Semesters 1 and 2 ─────────────────────────────────
   // Second Grade 1 book in this repo. 'science' is already declared for
@@ -3682,6 +3743,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G1/1/StBook1.pdf',
   },
   {
     id: G1_SCIENCE_S2_CURRICULUM_BOOK_ID,
@@ -3695,6 +3757,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/New%20folder%20%282%29/%D8%B9%D9%84%D9%88%D9%85%20%D8%A3%D9%88%D9%84%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%B5%D9%81%20%D8%A3%D9%88%D9%84%20%D8%AC2%20.pdf',
   },
   // ── Islamic Education Grade 1 – Semesters 1 and 2 ───────────────────────
   // Third and fourth Grade 1 books in this repo. 'islamic' is already
@@ -3714,6 +3777,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Islamic/G1/1/%D8%A5%D8%B3%D9%84%D8%A7%D9%85%D9%8A%D8%A9%201%20%D9%811%20Pdf%202026%20.pdf',
   },
   {
     id: G1_ISLAMIC_S2_CURRICULUM_BOOK_ID,
@@ -3727,6 +3791,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Islam/Islam/2025/G1/2/G1-Islamic.pdf',
   },
   // ── English Grade 1 – Semesters 1 and 2 ─────────────────────────────────
   // Fifth and sixth Grade 1 books in this repo. 'english' is already declared
@@ -3747,6 +3812,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2026/G1/JOR-TT-G1-S1-PB-Reprint-2025-FM.pdf',
   },
   {
     id: G1_ENGLISH_S2_CURRICULUM_BOOK_ID,
@@ -3779,6 +3845,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/arabic/G1/1/001%20S.pdf',
   },
   {
     id: G1_ARABIC_S2_CURRICULUM_BOOK_ID,
@@ -3792,6 +3859,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Arabic/2025/%D8%B9%D8%B1%D8%A8%D9%8A%206.7.2025/1/P2/%D8%A7%D9%88%D9%84%20-%20%D8%B7%D8%A7%D9%84%D8%A8%20%D9%812%20.pdf',
   },
   // ── Social Studies Grade 1 – Semesters 1 and 2 ──────────────────────────
   // Ninth and tenth Grade 1 books in this repo. 'social' is already declared
@@ -3810,6 +3878,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/SS/G1/1/%D8%AF%D8%B1%D8%A7%D8%B3%D8%A7%D8%AA%20%D8%A7%D8%AC%D8%AA%D9%85%D8%A7%D8%B9%D9%8A%D8%A9%20%D8%A3%D9%88%D9%84%20%D9%811%202026%20.pdf',
   },
   {
     id: G1_SOCIAL_S2_CURRICULUM_BOOK_ID,
@@ -3823,6 +3892,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/SS/G1/p2/%D8%AF%D8%B1%D8%A7%D8%B3%D8%A7%D8%AA%20%D8%A7%D8%AC%D8%AA%D9%85%D8%A7%D8%B9%D9%8A%D8%A9%20%D8%A3%D9%88%D9%84%20%D9%812%20.pdf',
   },
   // ── Art, Music and Drama Education Grade 1 ──────────────────────────────
   // Eleventh Grade 1 book in this repo, required extending SUBJECTS.grades
@@ -3839,6 +3909,7 @@ export const BOOKS: Book[] = [
     edition: '1st',
     hasKnowledgeBase: true,
     audience: 'all',
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Mm/G1/%D9%81%D9%86%20%D9%85%D9%88%D8%B3%D9%8A%D9%82%D9%89%20%D8%A3%D9%88%D9%84%202026%20.pdf',
   },
   // ── Physical Education Grade 1 – Semester 1 ─────────────────────────────
   // Added 2026-10-07 once the Semester 1 book was found, completing Grade 1
@@ -3876,6 +3947,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%8A%D8%A9%20%D8%A7%D9%84%D8%B1%D9%8A%D8%A7%D8%B6%D9%8A%D8%A9/1/2/Grade%2001_SE2.pdf',
   },
   // The first Grade 6 books in the repo. Maths S1 carries four units and
   // eighteen lessons; Maths S2 (added 2026-09-20) continues with units 5-8
@@ -5055,6 +5127,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/SS/G10/1/%D8%AA%D8%B1%D8%A8%D9%8A%D8%A9%20%D9%88%D8%B7%D9%86%D9%8A%D8%A9%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%811%202026%20.pdf',
   },
   {
     id: 'book-civ-10-s2',
@@ -5068,6 +5141,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/SS/G10/2/%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%8A%D8%A9%20%D8%A7%D9%84%D9%88%D8%B7%D9%86%D9%8A%D8%A9%20%D8%A7%D9%84%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%A7%D9%84%D9%81%D8%B5%D9%84%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A%20.pdf',
   },
   // ── Physical Education Grade 9 – Semesters 1 and 2 ────────────────────────
   // Fifth brand-new subject added this week, and the first skills-based one
@@ -5253,6 +5327,7 @@ export const BOOKS: Book[] = [
     edition: '1st',
     hasKnowledgeBase: true,
     audience: 'all',
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Mm/G10/%D9%81%D9%86%20%D9%85%D9%88%D8%B3%D9%8A%D9%82%D9%89%20%D8%B9%D8%A7%D8%B4%D8%B1%202026%20.pdf',
   },
   // ── Physical Education Grade 10 – Semester 1 ───────────────────────────────
   // Extends the subject to grade-10 (SUBJECTS.grades updated), closing the

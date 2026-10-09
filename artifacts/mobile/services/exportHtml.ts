@@ -27,7 +27,8 @@ import { dateLocale } from './dateLabels.ts';
 import { quizInstructions, quizMarkRows, quizMarksTotal, quizStudentFields, quizTypeLabel } from './quizPaper.ts';
 import { isolateForeignRuns, normalizeExponents } from './mathRender.ts';
 import { labQrSvg } from './labQr.ts';
-import { blankLine, hasOwnBlanks, optionColumns, worksheetInstructions, worksheetPointsTotal } from './worksheetPaper.ts';
+import { printStyleCss, type PrintStyle } from './printStyle.ts';
+import { blankLine, hasOwnBlanks, optionColumns, unattachedFigures, worksheetInstructions, worksheetPointsTotal } from './worksheetPaper.ts';
 import { displayObjective } from './objectiveDisplay.ts';
 import type {
   ActivityOutput,
@@ -96,6 +97,7 @@ function htmlBase(
   isRTL: boolean,
   title: string,
   kind: DocKind = 'lesson',
+  style: PrintStyle = 'colour',
 ): string {
   const dir = isRTL ? 'rtl' : 'ltr';
   const align = isRTL ? 'right' : 'left';
@@ -187,6 +189,10 @@ function htmlBase(
        one, steps given then blanks — keeps them. Opt-in per element: quizzes
        share \`.q-text\` and are laid out as they always were. */
     .q-break { white-space: pre-line; }
+    /* A book figure the teacher attached to this question. */
+    .q-fig { margin: 6px 0 4px; text-align: center; break-inside: avoid; }
+    .q-fig img { max-width: 75%; max-height: 62mm; object-fit: contain; }
+    .q-fig figcaption { font-size: 10.5px; color: #6b7280; margin-top: 3px; }
     /* A numbered blank in a half-solved question, ruled across the card. */
     .q-blank { display: flex; flex-direction: row; gap: 6px; align-items: flex-end; height: 24px; }
     .q-option {
@@ -284,7 +290,7 @@ function htmlBase(
     .footer {
       margin-top: 28px; padding-top: 12px; border-top: 1px solid #e5e7eb;
       font-size: 10.5px; color: #9ca3af; text-align: center;
-    }
+    }${printStyleCss(style)}
   </style>
 </head>
 <body>
@@ -337,9 +343,26 @@ function esc(s: string): string {
  * attribute takes `escAttr`.
  */
 function raiseExponents(html: string): string {
-  return html
-    .replace(/\^\(([^()]+)\)/g, '<sup>$1</sup>')
-    .replace(/\^([+\-\u2212]?[A-Za-z0-9]+)/g, '<sup>$1</sup>');
+  // A bracketed exponent is matched to ITS closing bracket, so «2^(2(x+1))»
+  // raises «2(x+1)» whole; an unclosed one is left as written.
+  let out = '';
+  for (let i = 0; i < html.length; i++) {
+    if (html[i] === '^' && html[i + 1] === '(') {
+      let depth = 0;
+      let j = i + 1;
+      for (; j < html.length; j++) {
+        if (html[j] === '(') depth++;
+        else if (html[j] === ')' && --depth === 0) break;
+      }
+      if (j < html.length) {
+        out += `<sup>${html.slice(i + 2, j)}</sup>`;
+        i = j;
+        continue;
+      }
+    }
+    out += html[i];
+  }
+  return out.replace(/\^([+\-\u2212]?[A-Za-z0-9]+)/g, '<sup>$1</sup>');
 }
 
 /**
@@ -544,6 +567,17 @@ function printableQuestionText(text: string): string {
 }
 
 /**
+ * A book figure the teacher attached to this question, printed inside its card
+ * with the book's own citation. `escAttr` for the URL and alt: `esc` adds bidi
+ * isolates (and `<sup>`), which belong in text, never in an attribute.
+ */
+function questionFigureHTML(figure: WorksheetOutput['sections'][number]['questions'][number]['figure']): string {
+  if (!figure) return '';
+  return `<figure class="q-fig"><img src="${escAttr(figure.uri)}" alt="${escAttr(figure.caption)}" />`
+    + `<figcaption>${esc(figure.caption)}</figcaption></figure>`;
+}
+
+/**
  * A worksheet question's text, its blank lines drawn as full-width lines to
  * write on. «3) __________» is ten underscores — too short for one step of
  * working on paper. The newline on either side of a blank goes with it: the
@@ -577,8 +611,11 @@ export function buildWorksheetHTML(
   isAr: boolean,
   figures: readonly BookFigureRef[] = [],
   includeAnswers = true,
+  style: PrintStyle = 'colour',
 ): string {
   const L = (ar: string, en: string) => isAr ? ar : en;
+  // A figure a question already shows is not repeated in the appendix.
+  figures = unattachedFigures(ws, figures);
   let qNum = 1;
   const sections = ws.sections.map((sec, si) => {
     const questions = sec.questions.map(q => {
@@ -597,7 +634,7 @@ export function buildWorksheetHTML(
       const room = q.options || hasOwnBlanks(text) ? '' : `<div class="q-lines">${ANSWER_RULES.map(() => '<div class="q-rule"></div>').join('')}</div>`;
       const html = `<div class="q-card">`
         + `<div class="q-head"><span class="q-num">${qNum}</span><span class="q-text q-break">${questionBodyHTML(text)}</span></div>`
-        + `${options}${room}`
+        + `${questionFigureHTML(q.figure)}${options}${room}`
         + `<div class="q-pts">${L(arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط'), `${q.points} pts`)}</div>`
         + `</div>`;
       qNum++;
@@ -667,7 +704,7 @@ export function buildWorksheetHTML(
     ${answerKey}
     ${figuresSectionHTML(figures, isAr)}
   `;
-  return htmlBase(content, isAr, title, 'worksheet');
+  return htmlBase(content, isAr, title, 'worksheet', style);
 }
 
 /**
@@ -699,6 +736,7 @@ export function buildQuizHTML(
   isAr: boolean,
   figures: readonly BookFigureRef[] = [],
   includeAnswers = true,
+  style: PrintStyle = 'colour',
 ): string {
   const L = (ar: string, en: string) => isAr ? ar : en;
   const typeLabel = (t: QuizOutput['questions'][number]['type']) => quizTypeLabel(t, isAr);
@@ -741,7 +779,7 @@ export function buildQuizHTML(
     ${answerKey}
     ${figuresSectionHTML(figures, isAr)}
   `;
-  return htmlBase(content, isAr, title, 'quiz');
+  return htmlBase(content, isAr, title, 'quiz', style);
 }
 export function buildActivityHTML(
   activity: ActivityOutput,
@@ -1095,6 +1133,8 @@ export function buildWorksheetSlidesHTML(
   figures: readonly BookFigureRef[] = [],
   includeAnswers = true,
 ): string {
+  // As on paper: a figure a question already shows is not repeated at the end.
+  figures = unattachedFigures(ws, figures);
   const dir = isAr ? 'rtl' : 'ltr';
   const ACCENT = DOC_ACCENT.worksheet;
   // Text only in this builder — no attribute or URL goes through `e`, so it
@@ -1165,7 +1205,7 @@ export function buildWorksheetSlidesHTML(
       const opts = q.options
         ? `<div class="q-opts">${q.options.map((o, oi) => `<div class="q-opt">${e(labelOptionLine(o, oi, isAr))}</div>`).join('')}</div>`
         : '';
-      const html = `<div class="q-card"><span class="q-num">${qCounter}.</span> <span class="q-text q-break">${e(printableQuestionText(q.text))}</span>${opts}<span class="q-pts">${L(arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط'), `${q.points} pts`)}</span></div>`;
+      const html = `<div class="q-card"><span class="q-num">${qCounter}.</span> <span class="q-text q-break">${e(printableQuestionText(q.text))}</span>${questionFigureHTML(q.figure)}${opts}<span class="q-pts">${L(arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط'), `${q.points} pts`)}</span></div>`;
       qCounter++;
       return html;
     }).join('');
@@ -1220,6 +1260,9 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 .q-break { white-space:pre-line; }
 .q-opts { display:flex; gap:10px; flex-wrap:wrap; margin-top:4px; width:100%; padding-${isAr ? 'right' : 'left'}:12px; font-size:10.5px; color:#6b7280; }
 .q-opt { white-space:nowrap; }
+.q-fig { width:100%; margin:4px 0; text-align:center; }
+.q-fig img { max-height:70mm; max-width:60%; object-fit:contain; }
+.q-fig figcaption { font-size:9px; color:#6b7280; }
 .q-pts { font-size:10px; color:#9ca3af; margin-${isAr ? 'right' : 'left'}:auto; }
 .ak-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:8px; }
 .ak-row { display:flex; gap:6px; align-items:baseline; background:#FBF6EC; border:1px solid ${ACCENT}22; border-radius:6px; padding:6px 10px; font-size:11.5px; }

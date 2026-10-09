@@ -48,6 +48,7 @@ import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
 import { useFavorite } from '@/hooks/useFavorite';
 import { useGeneratorExport } from '@/hooks/useGeneratorExport';
+import { usePrintStyle } from '@/hooks/usePrintStyle';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GeneratorResultActions, GeneratorSaveBar } from '@/components/ui/GeneratorResultActions';
@@ -181,6 +182,7 @@ export default function QuizScreen() {
   const [editedQuestions, setEditedQuestions] = useState<ReadonlySet<string>>(new Set());
   const [error, setError] = useState('');
   const [showAnswers, setShowAnswers] = useState(false);
+  const [printStyle, setPrintStyle] = usePrintStyle();
   const [savedId, setSavedId] = useState<string | undefined>(params.savedId);
   const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
   const [showExport, setShowExport] = useState(false);
@@ -492,7 +494,7 @@ export default function QuizScreen() {
     // The paper follows the answers toggle, as the worksheet's does: hidden
     // (the default) prints the student copy, shown prints the teacher's.
     formatText: (quiz, title, meta, isAr) => formatQuizText(quiz, title, meta, isAr, showAnswers),
-    buildHTML: (quiz, title, meta, isAr, figures) => buildQuizHTML(quiz, title, meta, isAr, figures, showAnswers),
+    buildHTML: (quiz, title, meta, isAr, figures) => buildQuizHTML(quiz, title, meta, isAr, figures, showAnswers, printStyle),
     buildSlidesHTML: (quiz, title, meta, isAr, figures) => buildQuizSlidesHTML(quiz, title, meta, isAr, figures, showAnswers),
     buildWord: (quiz, title, meta, isAr, docx) => buildQuizDocx(quiz, title, meta, isAr, showAnswers, docx),
     onError: key => showToast(t(key)),
@@ -862,6 +864,7 @@ export default function QuizScreen() {
       onWord={handleWord}
       onSlides={handleSlides}
       note={t(showAnswers ? 'exportTeacherCopyNote' : 'exportStudentCopyNote')}
+      printStyle={{ value: printStyle, onChange: setPrintStyle }}
       isRTL={isRTL}
       loadingPDF={loadingPDF}
       loadingWord={loadingWord}
