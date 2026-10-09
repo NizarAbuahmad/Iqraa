@@ -9,7 +9,6 @@ import Constants from 'expo-constants';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { versionLabel } from '@/services/versionLabel';
-import { goBack } from '@/services/navigation';
 import { ApiError, apiJson } from '@/services/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { useStudentAccountsEnabled } from '@/services/features';
@@ -18,9 +17,11 @@ import { Button } from '@/components/ui/Button';
 import { Toast } from '@/components/ui/Toast';
 import { AccountRow } from '@/components/ui/AccountRow';
 import { confirm } from '@/services/confirm';
+import { getPickerGrades } from '@/services/curriculumData';
 import { dateLocale } from '@/services/dateLabels';
 import { askForPushPermission, getPushPermissionState, pushAskCopy, type PushPermissionState } from '@/services/pushTokens';
 import { usePollingRefresh } from '@/hooks/usePollingRefresh';
+import { BackButton } from '@/components/ui/BackButton';
 
 type AiUsage = { spentUsd: number | null; limitUsd: number; resetsAt: string };
 
@@ -83,6 +84,11 @@ export default function SettingsScreen() {
   // to, or 'add' — one at a time, and every other row is inert meanwhile.
   const [accountBusy, setAccountBusy] = useState<string | null>(null);
   const [accountError, setAccountError] = useState('');
+  // The class(es) a parent or student picked, as the row's right-hand text.
+  const classSummary = getPickerGrades()
+    .filter(g => user?.gradeIds?.includes(g.id))
+    .map(g => (lang === 'ar' ? g.nameAr : g.name))
+    .join(lang === 'ar' ? '، ' : ', ');
   const roleLabelFor = (role: string) =>
     t(role === 'parent' ? 'roleParent'
       : role === 'student' ? 'roleStudent'
@@ -181,9 +187,7 @@ export default function SettingsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
-        </Pressable>
+        <BackButton color={colors.foreground} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('settingsTitle')}
         </Text>
@@ -248,6 +252,23 @@ export default function SettingsScreen() {
         )}
 
         {/* Language */}
+        {/* A parent or student picks which class(es) the curriculum shows. */}
+        {user && (user.role === 'parent' || user.role === 'student') && (
+          <>
+            <SectionLabel label={t(user.role === 'parent' ? 'classSettingRowParent' : 'classSettingRow')} isRTL={isRTL} colors={colors} top />
+            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+              <SettingRow
+                icon="school-outline"
+                label={t(user.role === 'parent' ? 'classSettingRowParent' : 'classSettingRow')}
+                isRTL={isRTL}
+                colors={colors}
+                right={<Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{classSummary}</Text>}
+                onPress={() => router.push({ pathname: '/setup-grade', params: { mode: 'edit' } } as any)}
+              />
+            </View>
+          </>
+        )}
+
         <SectionLabel label={t('languageSection')} isRTL={isRTL} colors={colors} top={!!user} />
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
           <SettingRow
@@ -338,6 +359,8 @@ export default function SettingsScreen() {
         {/* Account. Deleting is the only row here, and it is deliberately last
             and on its own card — both stores require the path to exist, and
             nothing else in Settings is irreversible. */}
+        {(usage || canChangeType) && (
+        <>
         <SectionLabel label={t('accountSection')} isRTL={isRTL} colors={colors} top />
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
           {usage && (
@@ -361,7 +384,7 @@ export default function SettingsScreen() {
                   {t('aiUsageResets')} {new Date(usage.resetsAt).toLocaleDateString(dateLocale(lang === 'ar' ? 'ar' : 'en'), { day: 'numeric', month: 'long', timeZone: 'UTC' })}
                 </Text>
               </View>
-              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              {canChangeType && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
             </>
           )}
           {canChangeType && (
@@ -405,9 +428,16 @@ export default function SettingsScreen() {
                   />
                 </View>
               )}
-              <View style={[styles.divider, { backgroundColor: colors.border }]} />
             </>
           )}
+        </View>
+        </>
+        )}
+
+        {/* Its own card, last: it used to sit one row under the account-type
+            switch, two very different kinds of «change my account» touching. */}
+        <SectionLabel label={t('dangerZoneSection')} isRTL={isRTL} colors={colors} top />
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
           <SettingRow
             icon="trash-outline"
             label={t('deleteAccount')}

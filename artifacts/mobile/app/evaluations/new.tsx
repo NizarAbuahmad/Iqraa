@@ -41,9 +41,9 @@ import {
   type QuestionType,
 } from '@/services/evaluations';
 import type { TranslationKey } from '@/services/i18n';
-import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { toLatinDigits } from '@/services/latinDigits';
+import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -282,7 +282,7 @@ export default function NewEvaluationScreen() {
       if (err instanceof EvaluationError && err.code === 'no_level_scale') {
         setError(t('evaluationSetupNotReady'));
       } else {
-        setError(err instanceof EvaluationError ? err.message : t('evaluationCreateFailed'));
+        setError(t('evaluationCreateFailed'));
       }
       setCreating(false);
     }
@@ -295,9 +295,7 @@ export default function NewEvaluationScreen() {
       keyboardShouldPersistTaps="handled"
     >
       <View style={[styles.header, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-        </Pressable>
+        <BackButton color="#fff" style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }} />
         <Text style={[styles.headerTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
           {t('newEvaluation')}
         </Text>

@@ -37,6 +37,8 @@ const FILES = [
   { file: 'iqra_curriculum_g10_chem_sem2.json', subject: 'chem', semester: 2 },
   { file: 'iqra_curriculum_g10_phys_sem1.json', subject: 'phys', semester: 1 },
   { file: 'iqra_curriculum_g10_phys_sem2.json', subject: 'phys', semester: 2 },
+  { file: 'iqra_curriculum_g10_bio_sem1.json', subject: 'biology', semester: 1 },
+  { file: 'iqra_curriculum_g10_bio_sem2.json', subject: 'biology', semester: 2 },
 ] as const;
 
 /** kbl id → { subject slug, Arabic vocabulary terms }, for every grade 10 chem/phys lesson. */
@@ -54,7 +56,7 @@ function lessonIndex(): Map<string, { slug: string; terms: string[] }> {
   return out;
 }
 
-const SLUG_BY_SUBJECT: Record<string, string> = { chemistry: 'chem', physics: 'phys' };
+const SLUG_BY_SUBJECT: Record<string, string> = { chemistry: 'chem', physics: 'phys', biology: 'biology' };
 
 describe('the shipped lab manifest', () => {
   it('is structurally valid', () => {
@@ -90,7 +92,7 @@ describe('the shipped lab manifest', () => {
     const lessons = lessonIndex();
     for (const item of LAB_ITEMS) {
       const lesson = lessons.get(item.lessonId);
-      assert.ok(lesson, `${item.id}: ${item.lessonId} is not a grade 10 chemistry/physics lesson`);
+      assert.ok(lesson, `${item.id}: ${item.lessonId} is not a grade 10 chemistry/physics/biology lesson`);
       assert.equal(lesson.slug, SLUG_BY_SUBJECT[item.subjectId], `${item.id}: subject disagrees with its lesson`);
     }
   });
@@ -103,6 +105,24 @@ describe('the shipped lab manifest', () => {
       for (const term of item.termsAr) {
         assert.ok(terms.includes(term), `${item.id}: "${term}" is not in the lesson's vocabulary`);
       }
+    }
+  });
+
+  it('credits every Servier Medical Art image the way their licence asks, and names it by a term of its lesson', () => {
+    const lessons = lessonIndex();
+    const servier = LAB_ITEMS.filter(i => i.kind === 'external' && getExternalResource(i.externalId)?.provider === 'servier');
+    assert.ok(servier.length >= 4, 'expected the Grade 10 biology Servier images');
+    for (const item of servier) {
+      if (item.kind !== 'external') continue;
+      const res = getExternalResource(item.externalId)!;
+      assert.equal(res.license, 'CC-BY-4.0', `${item.id}: licence`);
+      assert.ok(
+        res.attribution.includes('Servier Medical Art (https://smart.servier.com/), licensed under CC BY 4.0'),
+        `${item.id}: credit line`,
+      );
+      assert.ok(res.sourceUrl.startsWith('https://smart.servier.com/smart_image/'), `${item.id}: sourceUrl`);
+      // The Arabic title is a term the lesson itself lists — nobody wrote curriculum Arabic from memory.
+      assert.ok(lessons.get(item.lessonId)?.terms.includes(item.titleAr), `${item.id}: "${item.titleAr}" is not in the lesson's vocabulary`);
     }
   });
 

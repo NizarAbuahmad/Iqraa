@@ -49,9 +49,9 @@ import { summariseAttempts } from '@/services/attemptSummary';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { saveItem } from '@/services/workspace';
 import type { TranslationKey } from '@/services/i18n';
-import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { ACTIVITY_TYPE_IDS } from '@/constants/activityType';
+import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -182,9 +182,7 @@ export default function ResultsDashboardScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-        </Pressable>
+        <BackButton color="#fff" style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }} />
         <Text style={[styles.headerTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]} numberOfLines={1}>
           {t('resultsDashboardTitle')}
         </Text>

@@ -21,8 +21,8 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { apiFetch } from '@/services/apiClient';
 import { trackEvent } from '@/services/analytics';
-import { goBack } from '@/services/navigation';
 import { loadSuggestionDraft, saveSuggestionDraft } from '@/services/suggestionDraft';
+import { BackButton } from '@/components/ui/BackButton';
 
 const MAX_LENGTH = 2000;
 
@@ -87,9 +87,7 @@ export default function SuggestFeatureScreen() {
         ]}
       >
         <View style={[styles.headerRow, { flexDirection: rowDir }]}>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10}>
-            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
-          </Pressable>
+          <BackButton color={colors.foreground} />
           <Text style={[styles.title, { color: colors.foreground, textAlign: align, flex: 1 }]}>
             {t('suggestFeature')}
           </Text>

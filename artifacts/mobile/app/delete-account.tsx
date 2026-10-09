@@ -32,6 +32,7 @@ import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import { apiJson } from '@/services/apiClient';
 import { confirm } from '@/services/confirm';
 import { goBack } from '@/services/navigation';
+import { BackButton } from '@/components/ui/BackButton';
 
 export default function DeleteAccountScreen() {
   const colors = useColors();
@@ -106,14 +107,7 @@ export default function DeleteAccountScreen() {
           { paddingTop: topPad + 12, backgroundColor: colors.card, borderBottomColor: colors.border },
         ]}
       >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('back')}
-          onPress={() => goBack()} hitSlop={10}
-          style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
-        >
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
-        </Pressable>
+        <BackButton color={colors.foreground} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
           {t('deleteAccountTitle')}
         </Text>

@@ -39,7 +39,7 @@ import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
 import { captureGenerationScope, materialScope, reopenedGenerationScope, savedIdAfterGeneration, type GenerationScope } from '@/services/generationScope';
 import { readIndexParam } from '@/services/materialParams';
 import { buildActivityRequest } from '@/services/generatorRequests';
-import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
+import { GeneratorResultActions, GeneratorSaveBar } from '@/components/ui/GeneratorResultActions';
 import { useGeneratorExport } from '@/hooks/useGeneratorExport';
 import { buildActivityHTML, buildActivitySlidesHTML, formatActivityText } from '@/services/share';
 import { ToolHeader } from '@/components/ui/ToolHeader';
@@ -358,7 +358,7 @@ export default function ActivityScreen() {
     <ScrollView
       ref={scrollRef}
       style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={{ paddingBottom: 60, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}
+      contentContainerStyle={{ paddingBottom: 140, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
@@ -488,6 +488,9 @@ export default function ActivityScreen() {
         />
       )}
     </ScrollView>
+    {result && !loading && (
+      <GeneratorSaveBar accent={ACCENT} savedId={savedId} saveState={saveLabel} onSave={handleSave} onExport={() => setShowExport(true)} />
+    )}
 
     <ExportMenu
       visible={showExport}

@@ -955,7 +955,23 @@ router.get("/messaging/threads/:id/messages", async (req: AuthenticatedRequest, 
       .set({ lastReadAt: new Date() })
       .where(and(eq(chatParticipants.threadId, threadId), eq(chatParticipants.userId, req.user!.id)));
 
-    res.json({ messages: await toClientMessages(messages) });
+    // Which of the caller's own messages someone else's screen has shown —
+    // the rows POST /threads/:id/read writes. Only the sender learns it, and
+    // only as a yes/no: who read it is not exposed.
+    const ownIds = messages.filter(m => m.senderId === req.user!.id).map(m => m.id);
+    const seenIds = new Set<string>();
+    if (ownIds.length > 0) {
+      const reads = await db
+        .selectDistinct({ messageId: chatMessageReads.messageId })
+        .from(chatMessageReads)
+        .where(and(inArray(chatMessageReads.messageId, ownIds), ne(chatMessageReads.userId, req.user!.id)));
+      for (const r of reads) seenIds.add(r.messageId);
+    }
+
+    const client = await toClientMessages(messages);
+    res.json({
+      messages: client.map(m => (m.senderId === req.user!.id ? { ...m, seen: seenIds.has(m.id) } : m)),
+    });
   } catch (err) {
     failMessaging(res, err, "list messages", "Failed to load messages");
   }

@@ -54,6 +54,7 @@ export type ExternalProvider =
   | 'common-voice'
   | 'nasa'
   | 'wikimedia'
+  | 'servier'
   | 'openstax'
   | 'phet'
   | 'youtube';

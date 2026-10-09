@@ -28,6 +28,7 @@ import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 import { goBack } from '@/services/navigation';
 import { readableOn } from '@/services/readableColor';
 import { palette } from '@/constants/colors';
+import { BackButton } from '@/components/ui/BackButton';
 
 const BLOOMS_COLORS: Record<string, string> = {
   Remember: '#6366F1',
@@ -76,9 +77,8 @@ export default function LessonDetailScreen() {
   // A locked lesson can also be reached by a deep link or the back stack, so
   // the lock is enforced here as well as on the unit list.
   const masteryProgress = useMasteryProgress();
-  const lessonLocked = lesson
-    ? lockState(getLessonsForUnit(lesson.unitId).map(l => l.id), masteryProgress).locked.has(lesson.id)
-    : false;
+  const lock = lesson ? lockState(getLessonsForUnit(lesson.unitId).map(l => l.id), masteryProgress) : null;
+  const lessonLocked = lesson ? lock!.locked.has(lesson.id) : false;
 
   if (!lesson) {
     return (
@@ -93,10 +93,10 @@ export default function LessonDetailScreen() {
       <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 14 }}>
         <Ionicons name="lock-closed" size={40} color={colors.mutedForeground} />
         <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 17, textAlign: 'center' }}>
-          {t('masteryLockedTitle')}
+          {t(lock?.awaiting ? 'masteryAwaitingTitle' : 'masteryLockedTitle')}
         </Text>
         <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: 'center' }}>
-          {t('masteryLockedBody')}
+          {t(lock?.awaiting ? 'masteryAwaitingBody' : 'masteryLockedBody')}
         </Text>
         <Pressable
           onPress={() => router.replace('/my-exams' as never)}
@@ -125,9 +125,7 @@ export default function LessonDetailScreen() {
     >
       {/* Hero */}
       <View style={[styles.hero, { backgroundColor: colorFill, paddingTop: insets.top + 12 }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-        </Pressable>
+        <BackButton color="#fff" style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
         <Text style={[styles.heroTitle, { color: '#fff', fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {lessonTitle}
         </Text>

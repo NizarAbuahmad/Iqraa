@@ -64,11 +64,11 @@ import { allPremade } from '@workspace/curriculum/premade';
 import { getSubjectsForGrade, getVisibleGrades } from '@workspace/curriculum';
 import { ENGLISH_HUB_GRADES } from '@workspace/curriculum/englishHub';
 import type { TranslationKey } from '@/services/i18n';
-import { goBack } from '@/services/navigation';
 import { cellWidthPercent, isVisualKind, libraryColumns, previewCount } from '@/services/libraryLayout';
 import { palette } from '@/constants/colors';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { RESOURCE_KIND_ICON as KIND_ICON, RESOURCE_KIND_LABEL as KIND_LABEL } from '@/constants/resourceKind';
+import { BackButton } from '@/components/ui/BackButton';
 
 type Cols = 1 | 2 | 3;
 
@@ -461,11 +461,12 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
   );
   const isStaff = user?.role === 'system_admin';
   const { gradeId } = useLocalSearchParams<{ gradeId?: string; gradeName?: string }>();
-  // Opened from the Tools card there is no grade param: start on the
-  // teacher's own first grade, the same narrowing the curriculum tab does.
+  // Opened from the Tools card there is no grade param: start on the user's
+  // own first grade, the same narrowing the curriculum tab does (teachers pick
+  // on /setup-subjects, parents and students on /setup-grade).
   const grades = useMemo(
-    () => narrowToSelection(getVisibleGrades(), isTeacher ? user?.gradeIds : undefined),
-    [isTeacher, user?.gradeIds],
+    () => narrowToSelection(getVisibleGrades(), user?.gradeIds),
+    [user?.gradeIds],
   );
   const [pickedGrade, setGrade] = useState<string>(gradeId || grades[0]?.id || '');
   // The tab stays mounted while the teacher edits their grades on the profile
@@ -583,14 +584,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: heroTop }]}>
         {asTab ? null : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('back')}
-            onPress={() => goBack()} hitSlop={10}
-            style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
-          >
-            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-          </Pressable>
+          <BackButton color="#fff" style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
         )}
         {/* Title block and the staff button share a row: the band used to
             stack title, meta and button, and cost ~165px to say three things. */}
