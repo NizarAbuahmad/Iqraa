@@ -5,6 +5,8 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import { SendWorksheetSheet } from '@/components/ui/SendWorksheetSheet';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -69,6 +71,7 @@ export default function WorkspaceViewScreen() {
   // A saved quiz is exported as the student's or the teacher's copy, picked
   // in the export menu — this screen has no answers toggle to decide it.
   const [docCopy, setDocCopy] = useState<QuizCopy>('student');
+  const [showSend, setShowSend] = useState(false);
   const [printStyle, setPrintStyle] = usePrintStyle();
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
   const { favorited, setFavorited, toggle: handleToggleFavorite } =
@@ -283,6 +286,17 @@ export default function WorkspaceViewScreen() {
           <Ionicons name="share-outline" size={16} color={colors.mutedForeground} />
           <Text style={[{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>{t('exportBtn')}</Text>
         </Pressable>
+        {kind === 'worksheet' && content && (
+          <Pressable
+            onPress={() => setShowSend(true)}
+            style={[styles.actionBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            accessibilityRole="button"
+            accessibilityLabel={t('sendToClass')}
+          >
+            <Ionicons name="phone-portrait-outline" size={16} color={accent} />
+            <Text style={[{ color: accent, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>{t('sendToClassShort')}</Text>
+          </Pressable>
+        )}
         {/* A saved deck's whole point is being projected again — the workspace
             is where a teacher returns to it the morning of the lesson. */}
         {(kind === 'slides' || kind === 'prompt-slides') && content && (
@@ -368,6 +382,22 @@ export default function WorkspaceViewScreen() {
       </View>
     </ScrollView>
 
+    {kind === 'worksheet' && content ? (
+      <SendWorksheetSheet
+        visible={showSend}
+        worksheet={content as WorksheetOutput}
+        lessonId={item.formState?.lessonId}
+        language={docLang === 'en' ? 'en' : 'ar'}
+        accent={accent}
+        colors={colors}
+        onClose={() => setShowSend(false)}
+        onSent={(id, auto, teacher) => {
+          setShowSend(false);
+          showToast(t('sendToClassSent', auto, teacher));
+          router.push({ pathname: '/evaluations/[id]', params: { id } } as any);
+        }}
+      />
+    ) : null}
     <ExportMenu
       visible={showExport}
       onClose={() => setShowExport(false)}
@@ -612,6 +642,12 @@ function WorksheetView({ ws, lessonId, colors, isRTL, t, accent }: {
               <Text style={[{ color: accent, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, width: 20 }]}>{i + 1}.</Text>
               <View style={{ flex: 1 }}>
                 <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 22, textAlign: isRTL ? 'right' : 'left' }]}>{q.text}</Text>
+                {q.figure ? (
+                  <View style={{ marginTop: 8, alignItems: 'center', gap: 4 }}>
+                    <Image source={{ uri: q.figure.uri }} style={{ width: '100%', height: 160 }} contentFit="contain" accessibilityLabel={q.figure.caption} />
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, textAlign: 'center' }}>{q.figure.caption}</Text>
+                  </View>
+                ) : null}
                 {q.options?.map(o => (
                   <View key={o} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginTop: 6 }]}>
                     <View style={{ width: 14, height: 14, borderRadius: 7, borderWidth: 1.5, borderColor: colors.border, flexShrink: 0 }} />

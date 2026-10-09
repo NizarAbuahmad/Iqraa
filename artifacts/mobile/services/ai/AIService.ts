@@ -248,6 +248,22 @@ export interface WorksheetQuestion {
    * answer" — never as «من بنك الأسئلة المُراجَع».
    */
   fromBank?: true;
+  /**
+   * A figure from the lesson's own student book, attached to this question by
+   * the teacher. Never set by a generator: the model that wrote the questions
+   * never saw the book's figures, so it cannot know which one goes with which
+   * item — a person matches them, as `BookFiguresPanel` explains.
+   */
+  figure?: QuestionFigure;
+}
+
+/** A book figure as a question carries it — the same shape as `BookFigureRef`. */
+export interface QuestionFigure {
+  uri: string;
+  /** 1-based page in the source PDF. */
+  page: number;
+  /** Already cites the book and page, e.g. «كتاب الطالب · الفصل الأول · صفحة ٤٥». */
+  caption: string;
 }
 
 export interface WorksheetAnswerKeyItem {
