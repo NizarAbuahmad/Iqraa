@@ -73,9 +73,9 @@ describe('labels', () => {
   it('counts students in Arabic and English', () => {
     assert.equal(groupSizeLabel(1, 'ar'), 'للمجموعة: طالب واحد');
     assert.equal(groupSizeLabel(2, 'ar'), 'للمجموعة: طالبان');
-    assert.equal(groupSizeLabel(5, 'ar'), 'للمجموعة: 5 طلاب');
+    assert.equal(groupSizeLabel(5, 'ar'), 'للمجموعة: 5 طلبة');
     assert.equal(groupSizeLabel(1, 'en'), 'For the group: 1 student');
-    assert.equal(membersBelowLabel(3, 'ar'), '3 طلاب دون 60%');
+    assert.equal(membersBelowLabel(3, 'ar'), '3 طلبة دون 60%');
     assert.equal(membersBelowLabel(12, 'ar'), '12 طالبًا دون 60%');
     assert.equal(membersBelowLabel(2, 'en'), '2 students below 60%');
   });

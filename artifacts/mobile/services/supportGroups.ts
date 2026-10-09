@@ -73,7 +73,7 @@ export function filterToAudience<T extends { id: string }>(rows: T[], audience: 
 function studentsAr(n: number): string {
   // arCountPhrase's 11+ branch reuses the singular («12 طالب واحد»); Arabic
   // takes the accusative singular there.
-  return n >= 11 ? `${n} طالبًا` : arCountPhrase(n, 'طالب واحد', 'طالبان', 'طلاب');
+  return n >= 11 ? `${n} طالبًا` : arCountPhrase(n, 'طالب واحد', 'طالبان', 'طلبة');
 }
 
 export function groupSizeLabel(n: number, lang: 'ar' | 'en'): string {
