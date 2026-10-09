@@ -21,6 +21,7 @@
  */
 import crypto from "node:crypto";
 import { QUESTION_TYPES } from "./questionTypes.ts";
+import { studentFigure } from "./questionFigure.ts";
 
 /**
  * No I, L, O, 0 or 1. A teacher writes this on a whiteboard and thirty
@@ -180,6 +181,11 @@ export function sanitizeQuestionForStudent(
       `${attemptId} ${question.id}`,
     );
   }
+
+  // Outside every type's allowlist on purpose: any type may carry one, and
+  // only a book figure the app serves gets through (see questionFigure.ts).
+  const figure = studentFigure(source);
+  if (figure) body["figure"] = figure;
 
   return {
     id: question.id,

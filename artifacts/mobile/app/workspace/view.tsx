@@ -6,6 +6,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { SendWorksheetSheet } from '@/components/ui/SendWorksheetSheet';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -70,6 +71,7 @@ export default function WorkspaceViewScreen() {
   // A saved quiz is exported as the student's or the teacher's copy, picked
   // in the export menu — this screen has no answers toggle to decide it.
   const [docCopy, setDocCopy] = useState<QuizCopy>('student');
+  const [showSend, setShowSend] = useState(false);
   const [printStyle, setPrintStyle] = usePrintStyle();
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
   const { favorited, setFavorited, toggle: handleToggleFavorite } =
@@ -284,6 +286,17 @@ export default function WorkspaceViewScreen() {
           <Ionicons name="share-outline" size={16} color={colors.mutedForeground} />
           <Text style={[{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>{t('exportBtn')}</Text>
         </Pressable>
+        {kind === 'worksheet' && content && (
+          <Pressable
+            onPress={() => setShowSend(true)}
+            style={[styles.actionBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            accessibilityRole="button"
+            accessibilityLabel={t('sendToClass')}
+          >
+            <Ionicons name="phone-portrait-outline" size={16} color={accent} />
+            <Text style={[{ color: accent, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>{t('sendToClassShort')}</Text>
+          </Pressable>
+        )}
         {/* A saved deck's whole point is being projected again — the workspace
             is where a teacher returns to it the morning of the lesson. */}
         {(kind === 'slides' || kind === 'prompt-slides') && content && (
@@ -369,6 +382,22 @@ export default function WorkspaceViewScreen() {
       </View>
     </ScrollView>
 
+    {kind === 'worksheet' && content ? (
+      <SendWorksheetSheet
+        visible={showSend}
+        worksheet={content as WorksheetOutput}
+        lessonId={item.formState?.lessonId}
+        language={docLang === 'en' ? 'en' : 'ar'}
+        accent={accent}
+        colors={colors}
+        onClose={() => setShowSend(false)}
+        onSent={(id, auto, teacher) => {
+          setShowSend(false);
+          showToast(t('sendToClassSent', auto, teacher));
+          router.push({ pathname: '/evaluations/[id]', params: { id } } as any);
+        }}
+      />
+    ) : null}
     <ExportMenu
       visible={showExport}
       onClose={() => setShowExport(false)}
