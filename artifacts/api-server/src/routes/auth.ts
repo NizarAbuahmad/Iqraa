@@ -52,6 +52,7 @@ import {
   RESET_CODE_TTL_MS,
 } from "../lib/passwordReset.js";
 import { resolveClaimCode, type ClaimRole } from "../lib/rosterClaim.js";
+import { studentGradeIds } from "../lib/studentGrades.ts";
 import { resyncClassGroupThreadIfExists } from "../lib/classThread.js";
 import { decideRoleSwitch } from "../lib/roleSwitch.js";
 import { normalizeShareCode } from "../modules/assessment/studentView.ts";
@@ -971,6 +972,63 @@ router.post("/claim", authMiddleware, claimLimiter, async (req: AuthenticatedReq
   } catch (err) {
     logger.error({ err }, "claim failed");
     res.status(500).json({ error: "Failed to link account" });
+  }
+});
+
+/**
+ * Who this account is linked to, each with the grade their roster row (or its
+ * class) says — so the class picker after a claim can say «Memi · الصف الخامس»
+ * and start ticked, instead of a parent guessing whether they picked the right
+ * name.
+ */
+router.get("/claim", authMiddleware, async (req: AuthenticatedRequest, res) => {
+  try {
+    const rows = await db
+      .select({
+        studentId: students.id,
+        displayName: students.displayName,
+        studentGradeId: students.gradeId,
+        classGradeId: classGroups.gradeId,
+      })
+      .from(rosterLinks)
+      .innerJoin(students, eq(students.id, rosterLinks.studentId))
+      .leftJoin(classMemberships, eq(classMemberships.studentId, students.id))
+      .leftJoin(classGroups, and(eq(classGroups.id, classMemberships.classGroupId), isNull(classGroups.archivedAt)))
+      .where(and(eq(rosterLinks.userId, req.user!.id), isNull(students.archivedAt)));
+    const byStudent = new Map<string, { studentId: string; displayName: string; gradeId: string | null }>();
+    for (const r of rows) {
+      const gradeId = studentGradeIds([r])[0] ?? null;
+      const seen = byStudent.get(r.studentId);
+      if (!seen) byStudent.set(r.studentId, { studentId: r.studentId, displayName: r.displayName, gradeId });
+      else if (!seen.gradeId) seen.gradeId = gradeId;
+    }
+    res.json({ links: [...byStudent.values()] });
+  } catch (err) {
+    logger.error({ err }, "claim list failed");
+    res.status(500).json({ error: "Failed to load your links" });
+  }
+});
+
+/**
+ * The joiner's own undo for a wrong pick: drops every roster link this account
+ * holds, so the routing gate sends it back to the code screen. Only ever the
+ * caller's own rows — the teacher's per-link undo is
+ * `DELETE /students/:id/links/:userId`. Class chats are rebuilt the same way
+ * that route does, so the account leaves the wrong class's thread now.
+ */
+router.delete("/claim", authMiddleware, async (req: AuthenticatedRequest, res) => {
+  try {
+    const removed = await db
+      .delete(rosterLinks)
+      .where(eq(rosterLinks.userId, req.user!.id))
+      .returning({ studentId: rosterLinks.studentId });
+    for (const studentId of new Set(removed.map(r => r.studentId))) {
+      await syncClassThreadsForStudent(studentId);
+    }
+    res.json({ hasRosterLink: false });
+  } catch (err) {
+    logger.error({ err }, "unclaim failed");
+    res.status(500).json({ error: "Failed to unlink account" });
   }
 });
 
