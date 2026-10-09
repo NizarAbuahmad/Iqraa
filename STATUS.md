@@ -1375,6 +1375,22 @@ than read as 1.
 it ships over the air. No table, no native module, no `app.json` version bump,
 no schema push.
 
+**Servier Medical Art, grade 10 biology (2026-10-08).** Four images from
+smart.servier.com (CC BY 4.0, commercial use allowed with credit; their FAQ names
+mobile apps and e-learning, and bars only selling them as a standalone image
+library) are filed on real biology lessons: bacteriophage and influenza virus on
+«الفيروسات» (`u2_l1`), a rod-shaped bacterium on «البكتيريا والأثريات» (`u3_l2`),
+Aspergillus mycelium on «الفطريات» (`u3_l4`). Provider `servier` is new in
+`external.ts`. Each Arabic title is a term the lesson itself lists (tested), and
+the credit line is the one Servier asks for, verbatim; the image is unmodified, so
+it says «provided by», and **an edited copy (cropped, recoloured, Arabic labels
+added) must say «adapted from»**. `LabExternalCard` now shows an image that has an
+`ingest` block, with the credit under it. Chosen for fit, not volume: the grade 10
+biology book is evolution, viruses, taxonomy and ecology, so Servier's human-body
+sets do not apply, and plant, animal-kingdom and ecology lessons got nothing. The
+PNGs are small (368–900 px wide), fine on a phone, soft on a projector.
+`licenseCheckedAt` is 2026-10-08 and goes stale after 180 days.
+
 ### What does not work
 
 - **Nothing in this feature has been seen by a person in a browser.** Every
