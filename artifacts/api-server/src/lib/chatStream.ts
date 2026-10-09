@@ -55,14 +55,20 @@ export function estimateTokens(textOrChars: string | number): number {
  *
  * `signal` is the request's: the route aborts it when the response closes.
  * An `AbortError` from the iterator after that is the upstream call being
- * cancelled, which is expected; any other error is rethrown for the route
- * to turn into an error frame.
+ * cancelled, which is expected. Any error thrown once the signal is aborted
+ * is folded into "aborted" too: the client is gone, so there is nobody to
+ * tell and nothing to distinguish.
+ *
+ * Any other error is NOT thrown: it comes back as `error`, alongside the text
+ * generated so far, so the route can still record the spend for tokens that
+ * were billed before the failure and then turn the error into a frame.
+ * `error` is absent on success and on abort.
  */
 export async function pumpChatStream(
   chunks: AsyncIterable<StreamChunk>,
   sink: { write(frame: string): void },
   signal: AbortSignal,
-): Promise<{ content: string; usage: StreamUsage | null; aborted: boolean }> {
+): Promise<{ content: string; usage: StreamUsage | null; aborted: boolean; error?: unknown }> {
   let content = "";
   let usage: StreamUsage | null = null;
   try {
@@ -79,7 +85,7 @@ export async function pumpChatStream(
     if (signal.aborted || (err instanceof Error && err.name === "AbortError")) {
       return { content, usage: null, aborted: true };
     }
-    throw err;
+    return { content, usage: null, aborted: false, error: err };
   }
   if (signal.aborted) return { content, usage: null, aborted: true };
   sink.write(sseFrame({ type: "done", content }));

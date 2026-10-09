@@ -108,7 +108,8 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
       // here would be the same for every turn and would show up in the repeat-rate
       // analysis as a workload with a perfect hit rate — the opposite of the truth.
       // The `kind` is what earns its place: it separates chat's share of spend
-      // from generation's.
+      // from generation's, which is what decides whether AI_MODEL_CHAT is worth
+      // pointing at something cheaper (STATUS.md, 2026-08-22, still open).
       recordUsage(completion.usage, model, { ...detail, durationMs: Date.now() - startedAt });
       res.json({ content: completion.choices[0]?.message?.content ?? "" });
       return;
@@ -150,16 +151,25 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
     if (result.usage) {
       recordUsage(result.usage, model, { ...detail, durationMs });
     } else {
-      // The client hung up before the usage chunk. OpenAI still bills the
-      // tokens generated up to the abort, so the ledger must move: an estimate
-      // that errs high (lib/chatStream.ts) rather than nothing at all.
+      // No usage chunk: the client hung up, the upstream failed, or (rarely)
+      // the stream ended without one. OpenAI still bills the tokens generated
+      // up to that point, so the ledger must move: an estimate that errs high
+      // (lib/chatStream.ts) rather than nothing at all.
       const promptChars = chatMessages.reduce((n, m) => n + m.content.length, 0);
       recordUsage(
         { prompt_tokens: estimateTokens(promptChars), completion_tokens: estimateTokens(result.content) },
         model,
         { ...detail, durationMs },
       );
-      logger.info({ userId: req.user?.id, streamedChars: result.content.length }, "chat stream abandoned by client");
+      if (result.aborted) {
+        logger.info({ userId: req.user?.id, streamedChars: result.content.length }, "chat stream abandoned by client");
+      }
+    }
+    if (result.error) {
+      // The upstream failed mid-stream. The spend is already recorded above;
+      // the error travels as a frame and the client keeps what it has.
+      logger.error({ err: result.error }, "chat stream error");
+      res.write(sseFrame({ type: "error", code: "stream_failed", message: "AI service error. Please try again." }));
     }
     res.end();
   } catch (err) {

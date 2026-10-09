@@ -133,14 +133,21 @@ describe("pumpChatStream", () => {
     assert.deepEqual(result, { content: "أ", usage: null, aborted: true });
   });
 
-  it("rethrows any other iterator error", async () => {
+  it("returns any other iterator error alongside the partial content", async () => {
     async function* failing(): AsyncIterable<StreamChunk> {
       yield { choices: [{ delta: { content: "أ" } }] };
       throw new Error("upstream 500");
     }
-    await assert.rejects(
-      () => pumpChatStream(failing(), sink(), new AbortController().signal),
-      /upstream 500/,
+    const frames: string[] = [];
+    const result = await pumpChatStream(
+      failing(),
+      { write: (f) => void frames.push(f) },
+      new AbortController().signal,
     );
+    assert.equal(result.content, "أ");
+    assert.equal(result.usage, null);
+    assert.equal(result.aborted, false);
+    assert.ok(result.error instanceof Error && result.error.message === "upstream 500");
+    assert.deepEqual(frames, [sseFrame({ type: "delta", text: "أ" })]);
   });
 });
