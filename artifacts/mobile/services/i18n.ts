@@ -1636,6 +1636,10 @@ const translations = {
     // Student notes
     studentNoteHint: 'ملاحظتك عن هذا الطالب — تبقى معه عبر الفصل',
     studentRecordTitle: 'ملف الطالب',
+    miniEvalWhoSits: 'من يقدّمه؟',
+    miniEvalGroupNoneTicked: 'اختر طالبًا واحدًا على الأقل.',
+    supportGroupAudienceFailed: 'تعذّر تحديد طلبة المجموعة. حاول مرة أخرى.',
+    supportGroupClassFailed: 'تعذّر ربط التحقق بالصف. حاول مرة أخرى.',
     studentRecordNeedsSupport: 'يحتاج دعمًا',
     studentRecordAllClear: 'لا أهداف ضعيفة في هذا الصف. أضعف هدف حتى الآن:',
     studentRecordAllObjectives: 'كل الأهداف',
@@ -3869,6 +3873,10 @@ const translations = {
     // Student notes
     studentNoteHint: 'Your note on this student — it stays with them all term',
     studentRecordTitle: 'Student record',
+    miniEvalWhoSits: 'Who sits it?',
+    miniEvalGroupNoneTicked: 'Choose at least one student.',
+    supportGroupAudienceFailed: 'Could not set the group. Try again.',
+    supportGroupClassFailed: 'Could not attach the check to the class. Try again.',
     studentRecordNeedsSupport: 'Needs support',
     studentRecordAllClear: 'No weak objectives in this class. Weakest so far:',
     studentRecordAllObjectives: 'All objectives',
