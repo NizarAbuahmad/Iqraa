@@ -864,6 +864,114 @@
       "attribution": "PhET Interactive Simulations, University of Colorado Boulder — phet.colorado.edu (CC BY-NC 4.0)",
       "licenseCheckedAt": "2026-10-07",
       "authority": "third-party"
+    },
+    {
+      "id": "servier-bacteriophage",
+      "lessonIds": [
+        "kbl-biology-s1-nccd-u2_l1"
+      ],
+      "gradeIds": [
+        "grade-10"
+      ],
+      "subjectId": "biology",
+      "kind": "image",
+      "titleEn": "Bacteriophage",
+      "titleAr": "الفيروس آكل البكتيريا",
+      "provider": "servier",
+      "license": "CC-BY-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourceUrl": "https://smart.servier.com/smart_image/bacteriophage/",
+      "fetchUrl": "https://smart.servier.com/wp-content/uploads/2016/10/bacteriophage_f.png",
+      "attribution": "Image provided by Servier Medical Art (https://smart.servier.com/), licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).",
+      "licenseCheckedAt": "2026-10-08",
+      "authority": "third-party",
+      "ingest": {
+        "r2Key": "external/servier-bacteriophage.png",
+        "sha256": "d5424f8f2c07b0fc1a54858edd18ff25d35302874e4c8cc0c3bb35f0c55dc45f",
+        "bytes": 127499,
+        "ingestedAt": "2026-10-08"
+      }
+    },
+    {
+      "id": "servier-influenza-virus",
+      "lessonIds": [
+        "kbl-biology-s1-nccd-u2_l1"
+      ],
+      "gradeIds": [
+        "grade-10"
+      ],
+      "subjectId": "biology",
+      "kind": "image",
+      "titleEn": "Influenza virus",
+      "titleAr": "الفيروس",
+      "provider": "servier",
+      "license": "CC-BY-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourceUrl": "https://smart.servier.com/smart_image/influenza-virus/",
+      "fetchUrl": "https://smart.servier.com/wp-content/uploads/2016/10/influenza_f.png",
+      "attribution": "Image provided by Servier Medical Art (https://smart.servier.com/), licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).",
+      "licenseCheckedAt": "2026-10-08",
+      "authority": "third-party",
+      "ingest": {
+        "r2Key": "external/servier-influenza-virus.png",
+        "sha256": "3e23dacd929599d8a844f9e33c24df6899ae1c2c7296184900ad4c5fbe65c710",
+        "bytes": 162753,
+        "ingestedAt": "2026-10-08"
+      }
+    },
+    {
+      "id": "servier-rod-bacterium",
+      "lessonIds": [
+        "kbl-biology-s1-nccd-u3_l2"
+      ],
+      "gradeIds": [
+        "grade-10"
+      ],
+      "subjectId": "biology",
+      "kind": "image",
+      "titleEn": "Rod-shaped bacterium",
+      "titleAr": "العصوية",
+      "provider": "servier",
+      "license": "CC-BY-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourceUrl": "https://smart.servier.com/smart_image/bacterium/",
+      "fetchUrl": "https://smart.servier.com/wp-content/uploads/2016/10/bacterie_f.png",
+      "attribution": "Image provided by Servier Medical Art (https://smart.servier.com/), licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).",
+      "licenseCheckedAt": "2026-10-08",
+      "authority": "third-party",
+      "ingest": {
+        "r2Key": "external/servier-rod-bacterium.png",
+        "sha256": "e06d52beccc090450cbbe82f591bc9ae212c76633c07eba8a4f861d0d384436a",
+        "bytes": 166170,
+        "ingestedAt": "2026-10-08"
+      }
+    },
+    {
+      "id": "servier-aspergillus-mycelium",
+      "lessonIds": [
+        "kbl-biology-s1-nccd-u3_l4"
+      ],
+      "gradeIds": [
+        "grade-10"
+      ],
+      "subjectId": "biology",
+      "kind": "image",
+      "titleEn": "Aspergillus: fungal mycelium",
+      "titleAr": "الغزل الفطري",
+      "provider": "servier",
+      "license": "CC-BY-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourceUrl": "https://smart.servier.com/smart_image/aspergillus-fumigatus/",
+      "fetchUrl": "https://smart.servier.com/wp-content/uploads/2024/02/Aspergillus-fumigatus.png",
+      "attribution": "Image provided by Servier Medical Art (https://smart.servier.com/), licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).",
+      "licenseCheckedAt": "2026-10-08",
+      "authority": "third-party",
+      "ingest": {
+        "r2Key": "external/servier-aspergillus-mycelium.png",
+        "sha256": "c2162f83645e641b6f5dc163d4a98b7dcd29124a805318052674d6466b098fe4",
+        "bytes": 53355,
+        "ingestedAt": "2026-10-08"
+      }
     }
   ]
 }
