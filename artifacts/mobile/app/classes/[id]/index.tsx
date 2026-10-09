@@ -890,12 +890,12 @@ export default function ClassDetailScreen() {
                 <ParentContactSection summary={contactSummary} subjectIds={subjectIds} colors={colors} isRTL={isRTL} align={align} lang={lang} t={t} />
               )}
               {students.length > 1 && (
-                <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                   <Pressable
                     onPress={() => (selecting ? stopSelecting() : setSelecting(true))}
                     hitSlop={8}
                     accessibilityRole="button"
-                    style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, paddingVertical: 6 }}
+                    style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, paddingVertical: 8 }}
                   >
                     <Ionicons name={selecting ? 'close-circle-outline' : 'checkbox-outline'} size={18} color={ACCENT} />
                     <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
@@ -907,7 +907,7 @@ export default function ClassDetailScreen() {
                       onPress={() => { void onRemoveSelected(); }}
                       disabled={removingMany}
                       accessibilityRole="button"
-                      style={({ pressed }) => ({ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: colors.destructive, opacity: removingMany ? 0.6 : pressed ? 0.85 : 1 })}
+                      style={({ pressed }) => ({ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, backgroundColor: colors.destructive, opacity: removingMany ? 0.6 : pressed ? 0.85 : 1 })}
                     >
                       {removingMany ? <ActivityIndicator size="small" color={colors.destructiveForeground} /> : <Ionicons name="trash-outline" size={16} color={colors.destructiveForeground} />}
                       <Text style={{ color: colors.destructiveForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
