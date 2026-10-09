@@ -14,6 +14,11 @@
 export interface MasteryProgress {
   enabled: boolean;
   passedLessonIds: string[];
+  /**
+   * Lessons whose quiz is handed in but whose result the teacher has not
+   * released: neither passed nor failed yet, as far as the student is told.
+   */
+  awaitingLessonIds: string[];
   /** Lessons with a quiz the student can sit now; only these can block. */
   quizLessonIds: string[];
   /** Failed quizzes the student may throw away and sit again. */
@@ -24,6 +29,7 @@ export interface MasteryProgress {
 export const NO_PROGRESS: MasteryProgress = {
   enabled: false,
   passedLessonIds: [],
+  awaitingLessonIds: [],
   quizLessonIds: [],
   retakeEvaluationIds: [],
 };
@@ -32,11 +38,16 @@ export interface LockState {
   locked: Set<string>;
   /** The lesson whose quiz is holding the rest back, for the explanation. */
   blockedBy: string | null;
+  /**
+   * The blocking quiz is handed in and waiting for the teacher's release, so
+   * the explanation says "waiting for your teacher", not "pass the quiz".
+   */
+  awaiting: boolean;
 }
 
 export function lockState(orderedLessonIds: readonly string[], progress: MasteryProgress): LockState {
   const locked = new Set<string>();
-  if (!progress.enabled) return { locked, blockedBy: null };
+  if (!progress.enabled) return { locked, blockedBy: null, awaiting: false };
 
   const quiz = new Set(progress.quizLessonIds);
   const passed = new Set(progress.passedLessonIds);
@@ -45,5 +56,6 @@ export function lockState(orderedLessonIds: readonly string[], progress: Mastery
     if (blockedBy) locked.add(id);
     else if (quiz.has(id) && !passed.has(id)) blockedBy = id;
   }
-  return { locked, blockedBy: locked.size > 0 ? blockedBy : null };
+  if (locked.size === 0) return { locked, blockedBy: null, awaiting: false };
+  return { locked, blockedBy, awaiting: progress.awaitingLessonIds.includes(blockedBy!) };
 }

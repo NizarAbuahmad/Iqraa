@@ -11,7 +11,7 @@ import { lockState, NO_PROGRESS, type MasteryProgress } from '../lessonLock.ts';
 const LESSONS = ['l1', 'l2', 'l3', 'l4'];
 
 function progress(over: Partial<MasteryProgress> = {}): MasteryProgress {
-  return { enabled: true, passedLessonIds: [], quizLessonIds: [], retakeEvaluationIds: [], ...over };
+  return { enabled: true, passedLessonIds: [], awaitingLessonIds: [], quizLessonIds: [], retakeEvaluationIds: [], ...over };
 }
 
 describe('lockState', () => {
@@ -48,5 +48,22 @@ describe('lockState', () => {
 
   it('ignores a quiz for a lesson outside this unit', () => {
     assert.equal(lockState(LESSONS, progress({ quizLessonIds: ['elsewhere'] })).locked.size, 0);
+  });
+
+  it('keeps the next lesson locked while a handed-in quiz waits for release, and says so', () => {
+    const s = lockState(LESSONS, progress({ quizLessonIds: ['l2'], awaitingLessonIds: ['l2'] }));
+    assert.deepEqual([...s.locked], ['l3', 'l4']);
+    assert.equal(s.blockedBy, 'l2');
+    assert.equal(s.awaiting, true);
+  });
+
+  it('says "pass the quiz", not "waiting", when the blocking quiz is not handed in', () => {
+    const s = lockState(LESSONS, progress({ quizLessonIds: ['l1', 'l3'], awaitingLessonIds: ['l3'] }));
+    assert.equal(s.blockedBy, 'l1');
+    assert.equal(s.awaiting, false);
+  });
+
+  it('is never "waiting" when nothing is locked', () => {
+    assert.equal(lockState(LESSONS, progress({ quizLessonIds: ['l4'], awaitingLessonIds: ['l4'] })).awaiting, false);
   });
 });

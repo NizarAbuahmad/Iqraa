@@ -40,6 +40,7 @@ import { confirm } from '@/services/confirm';
 import { useMasteryProgress } from '@/hooks/useMasteryProgress';
 import {
   MY_EXAM_STATE_KEY,
+  canRetakeExam,
   myExamAction,
   myExamTitle,
   subjectLabel,
@@ -247,7 +248,7 @@ export default function MyExamsScreen() {
                       exam={exam}
                       open={openResult === openKey}
                       onPress={() => onRow(exam, openKey)}
-                      canRetake={!isParent && progress.retakeEvaluationIds.includes(exam.evaluationId)}
+                      canRetake={canRetakeExam(exam, progress.retakeEvaluationIds, isParent)}
                       retaking={retaking === exam.evaluationId}
                       onRetake={() => void onRetake(exam)}
                       colors={colors}

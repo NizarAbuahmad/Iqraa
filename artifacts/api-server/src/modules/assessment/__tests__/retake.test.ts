@@ -12,6 +12,7 @@ function input(over: Partial<RetakeInput> = {}): RetakeInput {
   return {
     submitted: true,
     studentSitting: true,
+    released: true,
     isProvisional: false,
     percent: "40.00",
     threshold: 80,
@@ -59,5 +60,16 @@ describe("retakeDecision", () => {
 
   it("treats an unreadable percent as a fail, never a pass", () => {
     assert.deepEqual(retakeDecision(input({ percent: null })), { ok: true });
+  });
+
+  it("offers no retake, and says nothing about the mark, before the teacher releases results", () => {
+    // A fail, a pass and a used-up cap all read the same until release.
+    for (const over of [{}, { percent: 95 }, { retakesUsed: MAX_RETAKES }]) {
+      assert.deepEqual(retakeDecision(input({ ...over, released: false })), { ok: false, code: "not_released" });
+    }
+  });
+
+  it("still calls a teacher-typed paper the teacher's, released or not", () => {
+    assert.deepEqual(retakeDecision(input({ studentSitting: false, released: false })), { ok: false, code: "teacher_entry" });
   });
 });
