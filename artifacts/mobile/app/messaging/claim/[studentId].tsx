@@ -25,8 +25,8 @@ import { confirm } from '@/services/confirm.ts';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { Avatar } from '@/components/ui/Avatar';
 import { Toast } from '@/components/ui/Toast';
-import { goBack } from '@/services/navigation';
 import { AR_LATIN } from '@/services/dateLabels';
+import { BackButton } from '@/components/ui/BackButton';
 
 interface Guardian {
   userId: string;
@@ -189,9 +189,7 @@ export default function ClaimCodeScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { paddingTop: topPad, backgroundColor: colors.card, borderBottomColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10}>
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
-        </Pressable>
+        <BackButton color={colors.foreground} />
         <Text style={[styles.headerTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]} numberOfLines={1}>
           {studentName ?? ''}
         </Text>

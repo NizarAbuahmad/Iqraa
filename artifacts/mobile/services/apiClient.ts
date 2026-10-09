@@ -114,6 +114,16 @@ export function setOnRefreshFailed(cb: () => void) {
   _onRefreshFailed = cb;
 }
 
+/**
+ * Wait for a refresh already in flight, if any. An account switch reads the
+ * open account's refresh token to set it aside; read mid-refresh it is the
+ * token the server is about to retire, and replaying it later revokes that
+ * account's whole session family.
+ */
+export async function awaitPendingRefresh(): Promise<void> {
+  if (_refreshInFlight) await _refreshInFlight.catch(() => null);
+}
+
 async function refreshAccessToken(): Promise<string | null> {
   if (_refreshInFlight) return _refreshInFlight;
 
@@ -154,6 +164,10 @@ async function refreshAccessToken(): Promise<string | null> {
         return null;
       }
       if (typeof data.accessToken !== 'string' || typeof data.refreshToken !== 'string') return null;
+      // Another account was adopted while this was in flight (a switch, or
+      // a sign-in): its tokens own the slot now, and this pair belongs to an
+      // account that is no longer open.
+      if ((await getRefreshToken()) !== refreshToken) return getAccessToken();
       await storeTokens(data.accessToken, data.refreshToken);
       return data.accessToken;
     } catch {

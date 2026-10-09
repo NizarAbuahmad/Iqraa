@@ -106,7 +106,9 @@ export function RosterConsentGate({ children }: { children: React.ReactNode }) {
       });
       setConsented(true);
     } catch (e: unknown) {
-      setError(e instanceof Error && e.message ? e.message : copy.failed);
+      // Never the error's own text: offline it is the browser's English
+      // «Failed to fetch», shown to an Arabic-speaking teacher.
+      setError(copy.failed);
       setBusy(false);
     }
   }, [version, copy.failed]);

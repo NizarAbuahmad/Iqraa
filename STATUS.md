@@ -292,12 +292,79 @@ an announcement by default» below.
   gate exercised live in a browser (flags scoring/next, memory flip/match,
   colour round-advance, `/play` loads signed-out). Not verified: capitals
   trivia specifically (same component as flags, lower risk).
+  - **Grade bands and an element-symbols game, 2026-10-08.** Every `/play`
+    card now shows which grades it suits («الصفوف 7–10»), from
+    `services/publicGames/gradeBands.ts` — keyed by the hub's game id, so a new
+    game without a band fails typecheck. The bands are a judgement against
+    the Jordanian curriculum (+/− G1–3, ×/÷ G3–5, English G1–4 and G9–10,
+    flags G3–8, capitals G4–9, memory G1–3, colours G1–4), not measured.
+    New: **«رموز العناصر»** at `/play/elements` (G7–10), the hub's only
+    science game and second on the page — 30 elements (1–20 plus common
+    metals and halogens, Jordanian spelling: الخارصين), alternating
+    symbol→name and name→symbol, distractors preferring the same first letter
+    (C/Ca/Cl/Cu). `TriviaGame.tsx` was split into a generic `TriviaBoard` to
+    host it. Verified: mobile suite green, typecheck clean, the hub and a full
+    8-question round exercised in a browser (light mode only).
   - **The Smart Whiteboard that shipped beside it is gone** — removed on
     2026-09-25 (#624): a text box shown full-screen, no AI, no drawing,
     nothing saved, and the classroom board already did the job. It is not in
     `toolCatalog.ts`, `toolCatalog.test.ts` or `app/ai-tools/` any more. This
     entry went on describing it as a live during-class tool for a week after
     the delete — checked against the tree on 2026-10-02.
+  - **The first Smart Whiteboard is gone; a new board replaced it** — the old
+    one was removed on 2026-09-25 (#624): a text box shown full-screen, no AI,
+    no drawing, nothing saved. The new «السبورة» (sub-project A of three) is
+    `app/ai-tools/whiteboard.tsx`: a blank board with blank / grid / axes
+    paper, an eraser, three stroke widths, and undo that also covers erase and
+    clear. It is opened only from the presentation's action row — there is
+    deliberately no Tools-tab card, because the pilot tools list is pinned by
+    `toolCatalog.test.ts`. Nothing is saved yet, so clearing and leaving with
+    ink both ask first; on web, Escape also asks (the board binds it), but the
+    browser's own back button and closing the tab are not intercepted. The
+    logic lives in `services/whiteboardModel.ts` (tested, including
+    `eraseAlong`, which sweeps the eraser between pointer samples so a fast
+    drag cannot skip a stroke). `PenCanvas` now commits a stroke on pen-up,
+    which also changes the slide pen and `book-page.tsx`. The presentation's
+    countdown keeps running while the board is open (its timer cleanup now runs
+    on unmount, not on blur — opening the book page used to freeze it the same
+    way), and the deck's keyboard shortcuts are ignored while the board is on
+    top.
+    Verified 2026-10-08: monorepo typecheck clean, mobile suite 2354 pass /
+    0 fail / 10 skipped, and the board, the slide pen and the book-page pen
+    driven in Chromium against a local app (Postgres, API and Expo web, a
+    signed-in teacher). Passed: draw, tap-dot, widths 3/6/12, colours, eraser
+    (removes only the crossed stroke; undo restores it), picking a colour while
+    erasing returns to the pen, grid and axes (Arabic-Indic tick digits in
+    Arabic, Latin in English; all 24 negative labels render the minus left of
+    the digit), clear and leave each ask first, leaving returns to the same
+    slide with its ink untouched, closing an empty board does not ask, English
+    labels with an LTR layout, the toolbar wrapping between groups at
+    390/360/320px, Escape (an empty board leaves at once and lands on the
+    presentation; with ink it asks, the dialog survives the key release, and a
+    held Escape opens only one dialog), Space / PageDown / arrow keys doing
+    nothing under the board, and the countdown still running after the board
+    was open (00:43 → 00:36 over about seven seconds). The browser pass also
+    caught a real regression in the first fix for this — Escape popped the
+    presentation as well as the board — which is fixed and re-checked.
+    Re-verified 2026-10-09 after merging `main` into the branch: `main` now
+    stores pen ink as fractions of the canvas width (`services/penInk.ts`,
+    #820) and requires `aria-selected` rather than `accessibilityState`
+    (#842), so the eraser converts the touch and its reach into those units
+    (`unit` argument on `strokeHit` / `eraseAt` / `eraseAlong`, tested) and the
+    toolbar uses `aria-selected`. Root typecheck clean, mobile suite 3351 pass /
+    0 fail / 10 skipped, and in Chromium the board (25/25), Escape / keys /
+    countdown (9/9), the slide pen, per-slide ink and the book-page pen all
+    pass again.
+    Not verified: touch on a real phone, Android hardware back, native SVG text
+    on a device, whether a slide still scrolls while the pen is off and locks
+    while it is on, the board on a projector, erasing on a full board on a
+    phone (the hit test is cached and bounds-checked; its cost was measured
+    only in node, before the cache, at about 39 ms for a 400-stroke sweep),
+    and the presentation's action row at phone width.
+    Still to build: B (saving, pages, export) and C (AI solve — only the 7
+    `VERIFIABLE_TOPICS` may ever be marked verified). Spec and plan:
+    `docs/superpowers/specs/2026-10-08-whiteboard-board-design.md`,
+    `docs/superpowers/plans/2026-10-08-whiteboard-board.md`.
 - **A teacher can set, replace and remove their own profile picture**
   (2026-09-09): `app/(tabs)/profile.tsx`, `POST`/`DELETE /auth/users/avatar`.
   Uploads into the `iqraa-public` R2 bucket (anonymous-read, non-expiring
@@ -722,6 +789,58 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The printed worksheet reads as a student's paper, 2026-10-09
+
+Found by printing an offline maths sheet (المعادلات الأسية) and a chemistry
+sheet (المول والكتلة المولية) in headless Chromium and reading them as a
+student would. These are fixes only; images, themes and digital worksheets were
+reviewed the same day and are not started.
+
+- **Exponents with letters printed with a caret.** `5^x = 125`, `3^(2x) = 81`:
+  every question on the exponential-equations sheet, while the screen raised
+  them. `normalizeExponents` can only turn digits and `n` into Unicode, so
+  `esc` in `exportHtml.ts` now raises what is left with `<sup>`
+  (`raiseExponents`). This applies to every printed document, quiz included. `8^(2/3)` prints as
+  a raised `2/3`, as the screen's parser shows it.
+- **Chemistry stems lost their brackets' order.** An isolate is laid out on its
+  own, so a bracket in it cannot pair with its partner outside:
+  «(الكتلة المولية 44 g/mol)» closed inside the Latin run, and
+  «CO₂. (C = 12، O = 16)», cut in two by the Arabic comma, printed as
+  «O = 16) ،CO₂. (C = 12». `isolateForeignRuns` now leaves an unpaired
+  bracket in the Arabic flow and isolates the pieces between; balanced runs
+  (`Ca(OH)₂`, `f(x)`) are unchanged. It is shared with the screens, so they get
+  the fix too. **Not checked on the native app.**
+- **Name, class, date and a score box** («الدرجة: ____ / 42», the points
+  total) head the paper, as on the quiz. The offline generator used to write
+  the name line into `instructions` as underscores, which printed glued into
+  the instructions paragraph, beside a bullet that was a note to the generator
+  itself («لا حاجة لملاحظات المعلم — هذه ورقة للطالب»). Both are gone from
+  `generateWorksheet`, and `worksheetInstructions` (`services/worksheetPaper.ts`)
+  drops them from saved sheets and the premade JSON at export, so nothing needs
+  regenerating. The shared text writes its own name line. The instructions'
+  bullets print as a list.
+- **The masthead's «اسم المدرسة»** was a placeholder printed as if it were the
+  name; it is a line to write on («المدرسة: ____») on every `htmlBase`
+  document. A school name exists only on teaching plans and bell schedules
+  (`schoolName`), and a teacher can have several, so there is no one name
+  to print; picking the class's school is a later step.
+- **The half-solved question** got its numbered blanks and three ruled lines
+  under them. Its blanks are now full-width writing lines (a ten-underscore
+  blank is too short for one step) and it gets no extra rules.
+- **Options sit side by side** when short: four across up to 12 characters
+  («صح / خطأ», «x = 2»), two up to 28, else one per line (`optionColumns`).
+  Worksheet only; the quiz paper is unchanged. With slightly tighter cards, the
+  10-question maths student copy went from **4 A4 pages to 3**; chemistry
+  stays at 2.
+- A multi-line question's number badge sits by its first line, not mid-text.
+
+Covered by `worksheetPrint.test.ts` and new cases in `mathRender.test.ts`,
+each watched failing first. Two existing assertions changed with the
+behaviour: `8^(2/3)` (now raised) and the half-solved question's ruled lines
+(now its own full-width blanks). Mobile 3330 pass / 0 fail / 10 skipped,
+typecheck clean. **Not checked:** expo-print on a device, and a live-AI sheet;
+the live prompt never asked for a name line, so it needed no change.
+
 ## A parent or student picks their class, and sees only that, 2026-10-08
 
 Until now only teachers could narrow the curriculum (`/setup-subjects`); a
@@ -844,6 +963,34 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
 - When the worksheet screen is opened with a lesson, its unit dropdown still
   shows the placeholder (the documented gap in `TopicSelector.tsx`). The topic
   itself is held.
+## Five deck-rendering defects fixed, 2026-10-08
+
+A read of the whole slides pipeline on main (prompt → three renderers)
+turned up five defects that each corrupted output today, all fixed in one PR:
+
+- **PPTX cover/divider text was unreadable on a photo.** The scrim under a hero
+  photo was `DECK_BG` at 75% — written when the deck was near-black, left in
+  place when the palette went cream (2026-10-05), so white text sat on a cream
+  wash. `exportPptx.ts` now has its own dark `HERO_SCRIM`.
+- **The prompt sent control characters.** `\frac`, `\theta`, `\times` sat
+  unescaped in the template literal, so the model read a form feed and tabs
+  where the LaTeX ban named its examples. Pinned by a test that rejects a form feed
+  and a tab in the built prompt.
+- **The projector drew every chart as unlabeled bars.** `presentation.tsx` had
+  a private bar loop that ignored `chartType` and labelled nothing, while the
+  PDF of the same deck drew a pie. Both now draw from `chartGeometry()` in
+  `deckVisuals.ts`, and both pie renderings gained a legend naming each share.
+- **Exports named a heading face the app never loads.** The 2026-08-18 entry
+  below says Cairo; the app moved to Readex Pro since, and the PDF and PPTX had
+  not. Both now name Readex Pro, and the PDF test refuses the old name.
+- **Edits made while photos loaded were lost.** Prompt Slides swapped in a
+  whole enriched copy of the deck when Unsplash and YouTube came back.
+  `searchDeckMedia` now returns a patch keyed by slide object and
+  `applyDeckMedia` merges it into the deck as it stands — an edited slide keeps
+  its edit, a deleted one stays deleted, a regenerated deck is left alone.
+
+3282 mobile tests and 49 prompt tests green; mobile typecheck clean against
+the worktree's own libs.
 
 ## Virtual labs: a PhET link and a predict–observe–explain sheet, hidden until a teacher reviews it, 2026-10-07
 
@@ -1227,6 +1374,22 @@ than read as 1.
 **Data lives in `lib/curriculum`** (`lab.ts`, `elements.ts`, two JSON files), so
 it ships over the air. No table, no native module, no `app.json` version bump,
 no schema push.
+
+**Servier Medical Art, grade 10 biology (2026-10-08).** Four images from
+smart.servier.com (CC BY 4.0, commercial use allowed with credit; their FAQ names
+mobile apps and e-learning, and bars only selling them as a standalone image
+library) are filed on real biology lessons: bacteriophage and influenza virus on
+«الفيروسات» (`u2_l1`), a rod-shaped bacterium on «البكتيريا والأثريات» (`u3_l2`),
+Aspergillus mycelium on «الفطريات» (`u3_l4`). Provider `servier` is new in
+`external.ts`. Each Arabic title is a term the lesson itself lists (tested), and
+the credit line is the one Servier asks for, verbatim; the image is unmodified, so
+it says «provided by», and **an edited copy (cropped, recoloured, Arabic labels
+added) must say «adapted from»**. `LabExternalCard` now shows an image that has an
+`ingest` block, with the credit under it. Chosen for fit, not volume: the grade 10
+biology book is evolution, viruses, taxonomy and ecology, so Servier's human-body
+sets do not apply, and plant, animal-kingdom and ecology lessons got nothing. The
+PNGs are small (368–900 px wide), fine on a phone, soft on a projector.
+`licenseCheckedAt` is 2026-10-08 and goes stale after 180 days.
 
 ### What does not work
 

@@ -28,6 +28,7 @@ import { RosterError, claimRosterCode } from '@/services/roster';
 import { claimErrorKey } from '@/services/claimCodeGate';
 import { goBack } from '@/services/navigation';
 import { askForPushPermission, pushAskCopy } from '@/services/pushTokens';
+import { BackButton } from '@/components/ui/BackButton';
 
 export default function JoinClassScreen() {
   const colors = useColors();
@@ -89,14 +90,7 @@ export default function JoinClassScreen() {
           { paddingTop: insets.top + 12, backgroundColor: colors.card, borderBottomColor: colors.border },
         ]}
       >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('back')}
-          onPress={() => goBack()} hitSlop={10}
-          style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
-        >
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
-        </Pressable>
+        <BackButton color={colors.foreground} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
           {t('joinAnotherClass')}
         </Text>

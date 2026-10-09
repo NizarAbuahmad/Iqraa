@@ -4,7 +4,6 @@ import {
   TextInput, View,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { goBack } from '@/services/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -20,6 +19,7 @@ import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { narrowSubjectsForGrade, narrowToSelection, preferredGrade } from '@/services/teacherCatalogFilter';
 import { getMyGradeIds } from '@/services/studentExam';
 import { ENGLISH_HUB_GRADES } from '@workspace/curriculum/englishHub';
+import { BackButton } from '@/components/ui/BackButton';
 
 const SUBJECT_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   arabic:      'text',
@@ -125,14 +125,7 @@ export default function CurriculumBrowseScreen() {
       {/* ─── Header ────────────────────────────────────────────── */}
       <View style={[styles.header, { backgroundColor: colors.card, paddingTop: topPad + 12, borderBottomColor: colors.border }]}>
         <View style={centered}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('back')}
-          onPress={() => goBack()} hitSlop={10}
-          style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
-        >
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
-        </Pressable>
+        <BackButton color={colors.foreground} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('curriculumTitle')}
         </Text>
