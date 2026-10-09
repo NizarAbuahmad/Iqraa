@@ -23,6 +23,7 @@ import { MockAIService } from './generators';
 import { applyClassroomSetup } from '@/services/classroomRouting';
 import { ApiError, apiFetch } from '../apiClient';
 import { describeAiError, generateWithProvenance, recordGeneration } from './aiProvenance.ts';
+import { streamChat, type ChatParams } from './chatStreamClient';
 
 // Routes under /generate/* and /chat require auth (routes/index.ts scopes
 // authMiddleware to those prefixes) — go through apiFetch, not a bare fetch(),
@@ -274,26 +275,30 @@ export class RemoteAIService extends AIService {
   /**
    * Chat with iQra. In Demo Mode this throws so callers use local KB text.
    *
-   * No mock fallback here — the chat screen has its own local answer path and
-   * catches. It still records the failure, so the badge reports it: a
-   * knowledge-base answer and a model answer read alike to a teacher.
+   * Streams: `onDelta` receives the reply so far, at most every 80 ms, and
+   * `signal` ends the turn early — the result then says `cancelled` and
+   * carries the text that had arrived. No mock fallback here — the chat
+   * screen has its own local answer path and catches. It still records the
+   * failure, so the badge reports it: a knowledge-base answer and a model
+   * answer read alike to a teacher.
    */
-  async chat(params: {
-    messages: { role: string; content: string }[];
-    context?: string;
-    mode: 'teacher' | 'student';
-    language: 'ar' | 'en';
-  }): Promise<string> {
+  async chat(
+    params: ChatParams,
+    opts: { signal?: AbortSignal; onDelta?: (full: string) => void } = {},
+  ): Promise<{ content: string; cancelled: boolean }> {
     if (DEMO_MODE) {
       recordGeneration({ kind: 'chat', source: 'mock', reason: 'demo-mode', at: Date.now() });
       // Prefer grounding text already built by the chat screen.
-      if (params.context?.trim()) return params.context.trim();
+      if (params.context?.trim()) return { content: params.context.trim(), cancelled: false };
       throw new Error('Demo Mode: local KB only');
     }
     try {
-      const res = await postJSON<{ content: string }>('/chat', params);
+      const out = await streamChat(params, {
+        signal: opts.signal ?? new AbortController().signal,
+        onDelta: opts.onDelta ?? (() => {}),
+      });
       recordGeneration({ kind: 'chat', source: 'live', reason: 'live', at: Date.now() });
-      return res.content ?? '';
+      return out;
     } catch (e) {
       recordGeneration({
         kind: 'chat', source: 'none', reason: 'failed',
