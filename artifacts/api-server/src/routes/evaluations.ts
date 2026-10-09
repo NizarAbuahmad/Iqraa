@@ -310,7 +310,7 @@ router.post("/evaluations/from-worksheet", async (req: AuthenticatedRequest, res
       return;
     }
 
-    const converted = convertWorksheet(worksheet);
+    const converted = convertWorksheet(worksheet, language);
     if (!converted.ok) {
       res.status(400).json({ error: "Some questions have no answer in the key", missingKey: converted.missingKey });
       return;

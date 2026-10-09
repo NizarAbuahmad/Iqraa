@@ -61,6 +61,30 @@ describe("convertWorksheet", () => {
     assert.equal(only(one({ text: "س", points: 1 }, "-٣")).type, "fill_blank");
   });
 
+  it("drops the paper's writing lines, so a generated numeric question is still auto-marked", () => {
+    // generateWorksheet appends «الإجابة:» and two rules to every question
+    // without options (homework: «مساحة العمل:», three). Read as blanks, they
+    // made every generated numeric question a short answer — found driving the
+    // web build. On screen the student has a box; the lines are noise.
+    const lines = "\n_________________________________\n_________________________________";
+    const q = only(one({ text: `أوجد قيمة x: 2x = 10\n\nالإجابة:${lines}`, points: 2 }, "x = 5"));
+    assert.equal(q.type, "fill_blank");
+    assert.equal(q.body["template"], "أوجد قيمة x: 2x = 10\nالإجابة: {{1}}");
+    assert.equal(only(one({ text: `Find x: 2x = 10\n\nAnswer:${lines}`, points: 2 }, "5")).type, "fill_blank");
+    const hw = only(one({ text: `بسّط: cos²θ + sin²θ\n\nمساحة العمل:${lines}\n_____________`, points: 2 }, "1"));
+    assert.equal(hw.type, "fill_blank");
+    assert.equal(hw.body["template"], "بسّط: cos²θ + sin²θ\nالإجابة: {{1}}");
+    const sa = only(one({ text: `Explain why.\n\nWork space:${lines}`, points: 2 }, "Because they are complementary"));
+    assert.equal(sa.type, "short_answer");
+    assert.equal(sa.body["prompt"], "Explain why.");
+  });
+
+  it("labels the blank in the sheet's language", () => {
+    const r = convertWorksheet({ sections: [{ questions: [{ text: "Find x: 2x = 10", points: 1 }] }], answerKey: [{ num: 1, answer: "5" }] }, "en");
+    assert.ok(r.ok);
+    assert.equal(r.questions[0]!.body["template"], "Find x: 2x = 10\nAnswer: {{1}}");
+  });
+
   it("fails closed to a teacher-marked short answer", () => {
     const cases: [Q, string][] = [
       [{ text: "س", options: ["1", "2", "3"], points: 1 }, "4"],                     // key matches no option

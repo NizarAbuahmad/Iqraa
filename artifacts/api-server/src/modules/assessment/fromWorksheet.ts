@@ -9,6 +9,8 @@
  *  - a key that is a plain number or `<letter> = <number>` → fill_blank, marked
  *    by `answersMatch` (digit styles, spacing, minus signs);
  *  - everything else → short_answer, for the teacher.
+ * The printed writing space under a question is dropped first — on screen it
+ * is a box, and its rules would read as a blank to fill.
  * A key that matches no option, an Arabic or expression answer, a half-solved
  * question: all short answers. A wrong automatic mark is worse than a question
  * waiting for a person. A question with no key at all stops the conversion —
@@ -50,6 +52,12 @@ const OPTION_MARKER = /^\s*(?:[ء-يa-dA-D]|\d{1,2})\s*[).:\-]\s+/u;
 const NUMERIC_KEY = /^\s*(?:([A-Za-z])\s*=\s*)?([-−]?[0-9٠-٩]+(?:[.,٫][0-9٠-٩]+)?)\s*$/u;
 /** A line that is only a blank — the half-solved question's «3) __________». */
 const BLANK_LINE = /^\s*(\(?[0-9٠-٩]+[).]?)?\s*_{5,}\s*$/mu;
+/**
+ * The writing space a printed sheet leaves under a question — «الإجابة:» or
+ * «مساحة العمل:» and its rules (`generateWorksheet`, homework). On screen the
+ * student has a box, and left in, its rules read as blanks above.
+ */
+const WRITING_SPACE = /\s*(?:الإجابة|مساحة العمل|Answer|Work space)\s*:\s*(?:\n\s*_{5,}\s*)+$/iu;
 const OPTION_IDS = "abcdefghij";
 
 const comparable = (s: string) => normalizeArabic(s.replace(OPTION_MARKER, ""));
@@ -57,14 +65,15 @@ const TRUE_WORDS = new Set(["صح", "صحيح", "true"].map(comparable));
 const FALSE_WORDS = new Set(["خطأ", "خطا", "false"].map(comparable));
 const isTruthWord = (s: string) => TRUE_WORDS.has(comparable(s)) || FALSE_WORDS.has(comparable(s));
 
-export function convertWorksheet(ws: WorksheetInput): ConvertResult {
+export function convertWorksheet(ws: WorksheetInput, lang: "ar" | "en" = "ar"): ConvertResult {
   const flat = ws.sections.flatMap(s => s.questions);
   const keyFor = (n: number) => ws.answerKey.find(k => k.num === n);
 
   const missingKey = flat.map((_, i) => i + 1).filter(n => !keyFor(n)?.answer?.trim());
   if (missingKey.length > 0) return { ok: false, missingKey };
 
-  const questions = flat.map((q, i): ConvertedQuestion => {
+  const questions = flat.map((paper, i): ConvertedQuestion => {
+    const q = { ...paper, text: paper.text.replace(WRITING_SPACE, "").trim() };
     const entry = keyFor(i + 1)!;
     const answer = entry.answer.trim();
     const options = q.options ?? [];
@@ -98,7 +107,7 @@ export function convertWorksheet(ws: WorksheetInput): ConvertResult {
     if (options.length === 0 && numeric && !BLANK_LINE.test(q.text)) {
       return {
         type: "fill_blank",
-        body: withFigure({ template: `${q.text}\nالإجابة: {{1}}` }),
+        body: withFigure({ template: `${q.text}\n${lang === "en" ? "Answer" : "الإجابة"}: {{1}}` }),
         expectedAnswer: { blanks: [{ accept: numeric[1] ? [answer, numeric[2]!] : [answer] }] },
         marks,
       };
