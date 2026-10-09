@@ -1703,14 +1703,17 @@ not-found screen. Left for piece 2 on the owner's say-so.
 to the class screen (2026-10-05). A shelf row carries no subject (the table
 has none, and it is already in production), so a Library item shows under every
 subject filter, not just its own; the teacher's saved materials still follow the
-filter. The picker offers the focused subject's items, or the class's first
-subject on «الكل», so a second subject's items are reached by focusing it first.
-Driven in Chromium on a two-subject class (maths + chemistry, local database):
-the chips showed; a maths sheet added from the picker on «الكل» stayed on the
-shelf under the chemistry focus; the chemistry-focused picker did not list that
-sheet (this local Library has no chemistry items, so it showed its empty
-message); the console was clean. Adding a chemistry item under the focus was
-not exercised, for want of one.
+filter. The picker offers the focused subject's items, or on «كل المواد» the
+items of every subject the class teaches (plus any that name no subject). Since
+#885 (2026-10-07); until then «كل المواد» offered only the class's first
+subject, so a second subject's items were reached only by focusing it first.
+Driven in Chromium on a two-subject class (maths + chemistry, local database),
+**before #885**: the chips showed; a maths sheet added from the picker on
+«كل المواد» stayed on the shelf under the chemistry focus; the chemistry-focused
+picker did not list that sheet (this local Library has no chemistry items, so it
+showed its empty message); the console was clean. Adding a chemistry item under
+the focus was not exercised, for want of one, and #885's change to «كل المواد»
+was not re-driven here.
 
 **Not in this change.** Teacher-pasted links (no schema change) and device
 uploads (one more push, private storage, no video under the 8 MB cap) are
