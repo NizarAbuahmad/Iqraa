@@ -9,9 +9,11 @@
 /**
  * One stroke. `points` is `"x,y x,y …"` (an SVG polyline) in whatever units the
  * canvas stores — on screen they are fractions of the canvas width
- * (`services/penInk.ts`); `width` is always in pixels. The geometry below is
- * unit-agnostic: callers pass the touch, the eraser radius and `unit` (one pixel
- * expressed in point units) in the same units as the points.
+ * (`services/penInk.ts`). `width` is in width units: on the board, canvas units
+ * of the 1280x720 page, multiplied by `strokeScale` to get screen pixels; slide
+ * strokes keep pixel widths (`strokeScale` 1). The geometry below is
+ * unit-agnostic: callers pass the touch, the eraser radius and `unit` (one
+ * width unit expressed in point units) in the same units as the points.
  */
 export type Stroke = { color: string; points: string; /** Absent means DEFAULT_STROKE_WIDTH. */ width?: number };
 
@@ -76,9 +78,11 @@ function parsedOf(stroke: Stroke): Parsed {
 
 /**
  * Does an eraser of `radius` centred on (x, y) touch this stroke? `x`, `y`,
- * `radius` and the stroke's points share one unit; `unit` is one PIXEL in that
- * unit (default 1: points are pixels), which is what turns the stroke's pixel
- * `width` into the right amount of reach.
+ * `radius` and the stroke's points share one unit; `unit` is one stroke-width
+ * unit in that unit (default 1: points are in width units), which is what turns
+ * the stroke's `width` into the right amount of reach. The board passes
+ * `strokeScale / canvasW`; slides pass `1 / canvasW`, where a width unit is a
+ * pixel. `radius` is NOT scaled by `unit`: the eraser's own reach is fixed.
  */
 export function strokeHit(stroke: Stroke, x: number, y: number, radius: number, unit = 1): boolean {
   const { pts, minX, maxX, minY, maxY } = parsedOf(stroke);
@@ -109,9 +113,10 @@ export function eraseAt(strokes: Stroke[], x: number, y: number, radius: number 
  * Erase along the straight path from (x0, y0) to (x1, y1). A fast drag reports
  * positions farther apart than the eraser's reach, so testing only the end
  * points would skip any stroke lying between them; this samples the path at
- * most every half-radius (never finer than one pixel), which keeps the swept
+ * most every half-radius (never finer than one `unit`), which keeps the swept
  * area continuous. The start point is NOT tested — the previous call already
- * covered it. `unit` is one pixel in the points' unit, as for `strokeHit`.
+ * covered it. `unit` is one stroke-width unit in the points' unit, as for
+ * `strokeHit`.
  * Returns the SAME array when nothing was hit, like `eraseAt`.
  */
 export function eraseAlong(
@@ -201,3 +206,73 @@ export function axesGeometry(
 export function localizeDigits(text: string, lang: string): string {
   return lang === 'ar' ? text.replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[Number(d)]!) : text;
 }
+
+/** The page's reference size. Paper and stroke widths are drawn in these units. */
+export const CANVAS_W = 1280;
+export const CANVAS_H = 720;
+
+/** Where the 16:9 page sits inside the screen area, and how big it is. */
+export type Stage = { scale: number; width: number; height: number; offsetX: number; offsetY: number };
+
+/**
+ * The largest 16:9 rectangle that fits the area, centred. `scale` is its width
+ * over `CANVAS_W` (canvas units to pixels). An area with no size yet — before
+ * layout — gives an all-zero stage rather than dividing by it.
+ */
+export function fitCanvas(areaW: number, areaH: number): Stage {
+  if (!(areaW > 0) || !(areaH > 0)) return { scale: 0, width: 0, height: 0, offsetX: 0, offsetY: 0 };
+  const scale = Math.min(areaW / CANVAS_W, areaH / CANVAS_H);
+  const width = CANVAS_W * scale;
+  const height = CANVAS_H * scale;
+  return { scale, width, height, offsetX: (areaW - width) / 2, offsetY: (areaH - height) / 2 };
+}
+
+/** A board is a list of pages; each page owns its paper, its strokes and its undo history. */
+export const MAX_PAGES = 20;
+
+export type Page = { background: BoardBackground; board: BoardState };
+export type BoardDoc = { pages: Page[]; current: number };
+
+export const blankPage = (background: BoardBackground = 'blank'): Page => ({ background, board: EMPTY_BOARD });
+
+export const EMPTY_DOC: BoardDoc = { pages: [blankPage()], current: 0 };
+
+export const currentPage = (doc: BoardDoc): Page => doc.pages[doc.current]!;
+
+/** Apply `fn` to the current page. Same page back means the same document back. */
+export function updateCurrent(doc: BoardDoc, fn: (page: Page) => Page): BoardDoc {
+  const page = currentPage(doc);
+  const next = fn(page);
+  if (next === page) return doc;
+  return { ...doc, pages: doc.pages.map((p, i) => (i === doc.current ? next : p)) };
+}
+
+/**
+ * Insert a page right after the current one and select it. It has no ink but
+ * inherits the current page's paper — someone adding the next problem wants the
+ * same grid or axes. At `MAX_PAGES` the same document comes back.
+ */
+export function addPage(doc: BoardDoc): BoardDoc {
+  if (doc.pages.length >= MAX_PAGES) return doc;
+  const at = doc.current + 1;
+  const page = blankPage(currentPage(doc).background);
+  return { pages: [...doc.pages.slice(0, at), page, ...doc.pages.slice(at)], current: at };
+}
+
+/** Remove a page (default: the current one). Never the last page; a bad index is ignored. */
+export function removePage(doc: BoardDoc, index: number = doc.current): BoardDoc {
+  if (doc.pages.length <= 1 || !Number.isInteger(index) || index < 0 || index >= doc.pages.length) return doc;
+  const pages = doc.pages.filter((_, i) => i !== index);
+  const current = index < doc.current ? doc.current - 1 : doc.current;
+  return { pages, current: Math.min(current, pages.length - 1) };
+}
+
+/** Select a page, clamped into range. Same page selected means the same document back. */
+export function goToPage(doc: BoardDoc, index: number): BoardDoc {
+  if (!Number.isInteger(index)) return doc;
+  const next = Math.max(0, Math.min(doc.pages.length - 1, index));
+  return next === doc.current ? doc : { ...doc, current: next };
+}
+
+/** Is there ink on ANY page? (What leaving the board asks about.) */
+export const docHasInk = (doc: BoardDoc): boolean => doc.pages.some(p => hasInk(p.board));

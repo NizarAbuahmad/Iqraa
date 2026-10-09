@@ -355,16 +355,36 @@ an announcement by default» below.
     0 fail / 10 skipped, and in Chromium the board (25/25), Escape / keys /
     countdown (9/9), the slide pen, per-slide ink and the book-page pen all
     pass again.
+    **B1 (2026-10-09): a fitted 16:9 stage and several pages, still unsaved.**
+    The board is now a 1280×720 page letterboxed into the screen
+    (`fitCanvas` in `services/whiteboardModel.ts`), so ink and paper keep their
+    place when the window resizes; stroke widths and paper scale with it
+    (`strokeScale` on `PenCanvas`; the eraser radius stays a fixed 16 screen px
+    at every scale, and only the stroke's half-width term in its reach scales). Up to 20
+    pages (`BoardDoc`: add after the current page, delete the current one —
+    never the last — previous / next), each with its own paper and its own
+    undo. Delete asks only when that page has ink; leaving asks when *any* page
+    has ink; clear clears the current page only. Nothing is saved or exported
+    yet — that is B2. Root typecheck clean, mobile suite 3376 pass / 0 fail /
+    10 skipped; in Chromium the new pass (25/25: stage 16:9 and re-fit, stroke
+    stays in the same page place at 800px, width scaling, eraser at 800px, page
+    add / previous / next / delete / cap, per-page paper and undo, the delete
+    and leave prompts) and the A scripts (board 25/25, Escape / keys /
+    countdown 9/9, slide pen, per-slide ink, book-page pen) all pass. Seen, not
+    fixed: in a **portrait phone** the 16:9 page is a thin strip and the axes
+    tick labels are about 5px — fine for a projector, poor on a phone.
     Not verified: touch on a real phone, Android hardware back, native SVG text
     on a device, whether a slide still scrolls while the pen is off and locks
     while it is on, the board on a projector, erasing on a full board on a
     phone (the hit test is cached and bounds-checked; its cost was measured
     only in node, before the cache, at about 39 ms for a 400-stroke sweep),
     and the presentation's action row at phone width.
-    Still to build: B (saving, pages, export) and C (AI solve — only the 7
+    Still to build: B2 (save as a material, reopen from «موادي», PDF export) and C (AI solve — only the 7
     `VERIFIABLE_TOPICS` may ever be marked verified). Spec and plan:
     `docs/superpowers/specs/2026-10-08-whiteboard-board-design.md`,
-    `docs/superpowers/plans/2026-10-08-whiteboard-board.md`.
+    `docs/superpowers/plans/2026-10-08-whiteboard-board.md`; B:
+    `docs/superpowers/specs/2026-10-08-whiteboard-b-pages-save-export-design.md`,
+    `docs/superpowers/plans/2026-10-09-whiteboard-b1-stage-and-pages.md`.
 - **A teacher can set, replace and remove their own profile picture**
   (2026-09-09): `app/(tabs)/profile.tsx`, `POST`/`DELETE /auth/users/avatar`.
   Uploads into the `iqraa-public` R2 bucket (anonymous-read, non-expiring
