@@ -45,6 +45,18 @@ import { passedLessonIds, unlockState } from "../modules/assessment/lessonProgre
 import { findLiveClass } from "../lib/classOwnership.js";
 import { archiveDecision } from "../lib/evaluationArchive";
 import {
+  audienceRequestDecision,
+  classChangeAllowed,
+  inAudience,
+  MAX_AUDIENCE,
+} from "../modules/assessment/audience.ts";
+import { isUuid } from "../lib/classResource.ts";
+import {
+  assignedStudentsByEvaluation,
+  evaluationAudience,
+  replaceEvaluationAudience,
+} from "../lib/evaluationAudience.ts";
+import {
   bankContextFor,
   generateMockEvaluation,
   type GenerationResult,
@@ -412,6 +424,15 @@ router.get("/evaluations", async (req: AuthenticatedRequest, res) => {
         difficulty: evaluations.difficulty,
         totalMarks: evaluations.totalMarks,
         createdAt: evaluations.createdAt,
+        /**
+         * Students a group check is assigned to; 0 for a class-wide check.
+         * `evaluations.id` is literal: a `${evaluations.id}` column reference
+         * renders unqualified (`"id"`) and would bind to ea.id inside.
+         */
+        audienceSize: sql<number>`(
+          SELECT count(*)::int FROM evaluation_assignments ea
+          WHERE ea.evaluation_id = evaluations.id AND ea.student_id IS NOT NULL
+        )`,
         questionCount: sql<number>`(
           SELECT count(*)::int FROM evaluation_questions eq
           WHERE eq.evaluation_id = evaluations.id AND eq.deleted_at IS NULL
@@ -475,7 +496,8 @@ router.get("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
     }
     // Teacher view — answers and rubrics included. The student projection is a
     // different endpoint entirely, so the two cannot be confused.
-    res.json({ evaluation: row, questions: await liveQuestions(row.id) });
+    const assigned = (await assignedStudentsByEvaluation([row.id])).get(row.id);
+    res.json({ evaluation: row, questions: await liveQuestions(row.id), audience: assigned ?? null });
   } catch (err) {
     logger.error({ err }, "get evaluation failed");
     res.status(500).json({ error: "Failed to load evaluation" });
@@ -517,6 +539,33 @@ router.patch("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
       return;
     }
 
+    // A group check's students were checked against its class when the group
+    // was set. Detaching is always fine, and so is the class it is already in;
+    // moving it anywhere else is allowed only when that class holds every
+    // student in the group (audience.ts, classChangeAllowed).
+    const target = classGroupId || null;
+    if (target !== null && target !== evaluation.classGroupId) {
+      const assigned = (await assignedStudentsByEvaluation([evaluation.id])).get(evaluation.id) ?? [];
+      const inTarget = assigned.length
+        ? await db
+            .select({ id: students.id })
+            .from(classMemberships)
+            .innerJoin(students, eq(students.id, classMemberships.studentId))
+            .where(
+              and(
+                eq(classMemberships.classGroupId, target),
+                inArray(classMemberships.studentId, assigned),
+                eq(students.teacherId, req.user!.id),
+                isNull(students.archivedAt),
+              ),
+            )
+        : [];
+      if (!classChangeAllowed(assigned, new Set(inTarget.map(m => m.id)), target, evaluation.classGroupId)) {
+        res.status(409).json({ error: "This check is for a group in another class", code: "audience_class_locked" });
+        return;
+      }
+    }
+
     const [updated] = await db
       .update(evaluations)
       .set({ classGroupId: classGroupId || null, updatedAt: new Date() })
@@ -527,6 +576,56 @@ router.patch("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
   } catch (err) {
     logger.error({ err }, "attach evaluation to class failed");
     res.status(500).json({ error: "Failed to update the evaluation" });
+  }
+});
+
+/**
+ * Who a group check is for (support groups, 2026-10-09): replaces the
+ * evaluation's student-level assignments. Only while it is a draft attached to
+ * a class, and only with live members of that class — see audience.ts.
+ */
+router.put("/evaluations/:id/audience", async (req: AuthenticatedRequest, res) => {
+  try {
+    const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
+    if (!evaluation) {
+      res.status(404).json({ error: "Evaluation not found" });
+      return;
+    }
+    const requested = Array.isArray(req.body?.studentIds)
+      ? (req.body.studentIds as unknown[]).filter((v): v is string => typeof v === "string").map(v => v.trim()).filter(Boolean).filter(isUuid)
+      : [];
+    // A non-uuid id would be a 500 from the uuid column; it is simply not a
+    // member, and the decision below answers 400 audience_not_member. An
+    // oversized list is refused by the decision without a lookup.
+    const members = evaluation.classGroupId && requested.length && requested.length <= MAX_AUDIENCE
+      ? await db
+          .select({ id: students.id })
+          .from(classMemberships)
+          .innerJoin(students, eq(students.id, classMemberships.studentId))
+          .where(
+            and(
+              eq(classMemberships.classGroupId, evaluation.classGroupId),
+              inArray(classMemberships.studentId, requested),
+              eq(students.teacherId, req.user!.id),
+              isNull(students.archivedAt),
+            ),
+          )
+      : [];
+    const decision = audienceRequestDecision({
+      status: evaluation.status,
+      classGroupId: evaluation.classGroupId,
+      studentIds: req.body?.studentIds,
+      memberIds: new Set(members.map(m => m.id)),
+    });
+    if (!decision.ok) {
+      res.status(decision.status).json({ error: decision.error, code: decision.code });
+      return;
+    }
+    await replaceEvaluationAudience(evaluation.id, decision.studentIds, req.user!.id);
+    res.json({ audience: decision.studentIds });
+  } catch (err) {
+    logger.error({ err }, "set evaluation audience failed");
+    res.status(500).json({ error: "Failed to set who this check is for" });
   }
 });
 
@@ -1669,6 +1768,13 @@ router.post("/evaluations/:id/attempts", async (req: AuthenticatedRequest, res) 
       .limit(1);
     if (existing) {
       res.json({ attempt: existing, created: false });
+      return;
+    }
+
+    // A group check is for its group only — the same rule the share link and
+    // the student's own list apply (audience.ts).
+    if (!inAudience(await evaluationAudience(evaluation.id), studentId)) {
+      res.status(403).json({ error: "This check is for a group; this student is not in it", code: "not_in_group" });
       return;
     }
 
