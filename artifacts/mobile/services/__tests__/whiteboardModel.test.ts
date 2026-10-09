@@ -355,7 +355,7 @@ describe('pages', () => {
     updateCurrent(doc, p => ({ ...p, board: commitStrokes(p.board, [...p.board.strokes, stroke]) }));
   const paper = (doc: BoardDoc, background: 'blank' | 'grid' | 'axes'): BoardDoc =>
     updateCurrent(doc, p => ({ ...p, background }));
-  /** n pages, page i holding i strokes' worth of identity via its paper, current = `current`. */
+  /** Three pages with distinct papers [blank, grid, axes] and no ink; `current` selects one of them. */
   const threePages = (current: number): BoardDoc => {
     let d = paper(EMPTY_DOC, 'blank');
     d = paper(addPage(d), 'grid');
@@ -399,9 +399,18 @@ describe('pages', () => {
   });
 
   it('keeps the same page selected when an earlier page is removed', () => {
-    const d = removePage(threePages(2), 0);
+    // [blank, grid, axes], current 1 (grid); remove index 0 (< current) → [grid, axes], current 0.
+    const d = removePage(threePages(1), 0);
     assert.deepEqual(d.pages.map(p => p.background), ['grid', 'axes']);
-    assert.equal(currentPage(d).background, 'axes');
+    assert.equal(currentPage(d).background, 'grid');
+    assert.equal(d.current, 0);
+  });
+
+  it('inserts the new page right after the current one, not at the end', () => {
+    // [blank, grid, axes], current 0 → [blank, new blank, grid, axes], current 1.
+    const d = addPage(threePages(0));
+    assert.deepEqual(d.pages.map(p => p.background), ['blank', 'blank', 'grid', 'axes']);
+    assert.equal(d.current, 1);
   });
 
   it('never removes the last page, and ignores a bad index', () => {
