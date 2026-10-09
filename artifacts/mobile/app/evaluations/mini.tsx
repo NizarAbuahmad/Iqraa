@@ -48,8 +48,8 @@ import {
   MINI_EVAL_TYPES,
   miniEvalPreset,
 } from '@/services/miniEval';
-import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
+import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -171,7 +171,7 @@ export default function MiniEvalScreen() {
       if (err instanceof EvaluationError && err.code === 'no_level_scale') {
         setError(t('evaluationSetupNotReady'));
       } else {
-        setError(err instanceof EvaluationError ? err.message : t('miniEvalFailed'));
+        setError(t('miniEvalFailed'));
       }
       setWorking(false);
     }
@@ -183,15 +183,7 @@ export default function MiniEvalScreen() {
       contentContainerStyle={{ paddingBottom: 60 }}
     >
       <View style={[styles.header, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('back')}
-          onPress={() => goBack()}
-          style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}
-          hitSlop={10}
-        >
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-        </Pressable>
+        <BackButton color="#fff" style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }} />
         <Text style={[styles.headerTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
           {t('miniEvalTitle')}
         </Text>

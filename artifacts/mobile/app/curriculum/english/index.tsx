@@ -19,6 +19,7 @@ import { useHubProgress } from '@/services/englishHub/progressStore';
 import { goBack } from '@/services/navigation';
 import { BADGE_META } from '@/components/englishHub/badgeMeta';
 import { disableDailyReminder, enableDailyReminder, isReminderEnabled, syncDailyReminder } from '@/services/englishHub/dailyReminder';
+import { BackButton } from '@/components/ui/BackButton';
 
 export default function EnglishHubScreen() {
   const colors = useColors();
@@ -78,9 +79,7 @@ export default function EnglishHubScreen() {
         {/* Public page: with no history, `goBack()`'s fallback is `/`, which
             sends a visitor with no account to the login screen. `/play` is where
             they came from, or where they'd want to go. */}
-        <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => (router.canGoBack() ? goBack() : router.replace('/play' as never))} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-        </Pressable>
+        <BackButton color="#fff" onPress={() => (router.canGoBack() ? goBack() : router.replace('/play' as never))} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
         <Text style={[styles.title, { textAlign: align }]}>{t('hubTitle')}</Text>
         <Text style={[styles.sub, { textAlign: align }]}>{t('hubIntro')}</Text>
         {streak > 0 ? <Text style={[styles.streak, { textAlign: align }]}>{t('hubStreak', streak)}</Text> : null}
