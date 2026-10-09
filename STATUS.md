@@ -722,6 +722,41 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The chat streams its reply and can be stopped, 2026-10-09
+
+`POST /chat` answers in Server-Sent Events when the request carries
+`Accept: text/event-stream`, and in the old `{ content }` JSON otherwise —
+the API deploys ahead of the web bundle and days ahead of any binary, so
+both shapes stay. The pure half (`lib/chatStream.ts`) is tested. A mid-stream
+upstream error comes back from it alongside the text generated so far rather
+than thrown. The route aborts the OpenAI call when the client disconnects, and
+records the spend from an estimate that errs high (3 chars/token) whenever the
+usage chunk never came — the client left, or the upstream failed mid-reply.
+
+In the app, `RemoteAIService.chat` streams over `expo/fetch` (React
+Native's own fetch has no readable body) through `apiFetch`'s new
+`fetchImpl` option, so auth and the 401 retry are unchanged. The screen
+streams into an empty bubble, hides the thinking footer once text shows,
+and swaps Send for **Stop** while a remote reply is in flight. Stop keeps
+the text that arrived; before the first word it drops the bubble and
+restores the question. A connection lost mid-reply keeps the real text
+and shows the error as a toast — never a local answer in the model's place.
+A stream that ends without its `done` frame counts as lost, whatever the
+cause, and Stop is told apart from a timeout by state, not by error name.
+
+**Reaches native builds and OTA updates only.** Production web still ships
+`DEMO_MODE` on (deploy.yml), so web chat is the local teaching assistant
+and never streams; nothing about that decision changed here.
+
+Not done: the generators still return whole JSON; the list still scrolls
+to the end on every content change (it follows the growing bubble, which
+is wanted while streaming, and still yanks a teacher who scrolled up).
+
+Not run: the Android device check (text arriving incrementally, Stop
+working) and the live-key route checks were not run from the implementing
+session, which had neither a device nor a live key; they are the owner's to
+run before relying on this on a phone.
+
 ## The student record: one student's objectives and papers in a class, 2026-10-08
 
 A teacher could see that a class was weak on an objective, but not that
