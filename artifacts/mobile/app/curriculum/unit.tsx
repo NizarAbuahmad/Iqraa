@@ -46,7 +46,7 @@ export default function UnitLessonsScreen() {
   }
 
   const lessons = getLessonsForUnit(unit.id);
-  const { locked } = lockState(lessons.map(l => l.id), masteryProgress);
+  const { locked, awaiting } = lockState(lessons.map(l => l.id), masteryProgress);
   const unitName = lang === 'ar' ? (unit.nameAr || unit.name) : unit.name;
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -90,8 +90,8 @@ export default function UnitLessonsScreen() {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 if (isLocked) {
                   confirm({
-                    title: t('masteryLockedTitle'),
-                    message: t('masteryLockedBody'),
+                    title: t(awaiting ? 'masteryAwaitingTitle' : 'masteryLockedTitle'),
+                    message: t(awaiting ? 'masteryAwaitingBody' : 'masteryLockedBody'),
                     confirmLabel: t('masteryGoToExams'),
                     cancelLabel: t('masteryClose'),
                   }).then(go => {
