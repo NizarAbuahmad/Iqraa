@@ -85,8 +85,10 @@ import { classifyChatIntent, leavesClarificationStanding } from '@/services/ai/i
 import { unansweredEventProps, type UnansweredKind } from '@/services/chatUnanswered';
 import { IqraaMark } from '@/components/ui/IqraaMark';
 import { CHAT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
+import { RADIUS } from '@/constants/theme';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { useKeyboardVisible } from '@/hooks/useKeyboardVisible';
+import { usePrintStyle } from '@/hooks/usePrintStyle';
 import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { MaterialCanvas } from '@/components/ui/MaterialCanvas';
@@ -1411,6 +1413,13 @@ export default function IqraScreen() {
   const [input, setInput] = useState('');
   const [inputFocused, setInputFocused] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
+  /**
+   * The assistant bubble being filled by a streamed reply, if any. While set
+   * the thinking footer is hidden — the bubble is the progress indicator.
+   */
+  const [streamingId, setStreamingId] = useState<string | null>(null);
+  /** Stop is offered only while a remote reply can be stopped. */
+  const [canStop, setCanStop] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
   const [teachingCtx, setTeachingCtx] = useState('');
@@ -1483,6 +1492,7 @@ export default function IqraScreen() {
     isAr: boolean;
   } | null>(null);
   const [exportCopy, setExportCopy] = useState<QuizCopy>('student');
+  const [printStyle, setPrintStyle] = usePrintStyle();
   /**
    * Workspace id waiting for a class, or null. Set right after a material's
    * first save — the same "which class is this for?" moment the tool screens
@@ -1515,6 +1525,7 @@ export default function IqraScreen() {
   const listRef = useRef<FlatList>(null);
   /** Guards duplicate sends without relying on a stale useCallback closure. */
   const thinkingRef = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
   // True while the last thing IQRA said was the clarify question. Answering it
   // with something the router still cannot classify must not re-ask it.
   const awaitingClarifyRef = useRef(false);
@@ -1614,8 +1625,8 @@ export default function IqraScreen() {
   /** The quiz's or worksheet's paper for the export menu — built on press, not per render. */
   const exportDocs = () => !exportDoc ? null
     : exportDoc.kind === 'quiz'
-      ? quizExports(exportDoc.quiz, exportDoc.title, exportDoc.meta, exportDoc.isAr, exportCopy)
-      : worksheetExports(exportDoc.worksheet, exportDoc.title, exportDoc.meta, exportDoc.isAr, exportCopy);
+      ? quizExports(exportDoc.quiz, exportDoc.title, exportDoc.meta, exportDoc.isAr, exportCopy, [], printStyle)
+      : worksheetExports(exportDoc.worksheet, exportDoc.title, exportDoc.meta, exportDoc.isAr, exportCopy, [], printStyle);
 
   const handleEditArtifact = useCallback((messageId: string, next: ChatArtifactData) => {
     setMessages(prev =>
@@ -1850,6 +1861,15 @@ export default function IqraScreen() {
     teachingCtxRef.current = teachingCtx;
   }, [teachingCtx]);
 
+  const stopReply = useCallback(() => {
+    void Haptics.selectionAsync().catch(() => {});
+    abortRef.current?.abort();
+  }, []);
+
+  // A reply still streaming when the screen goes should not keep a socket
+  // open — nor keep the API generating tokens nobody will read.
+  useEffect(() => () => abortRef.current?.abort(), []);
+
   useEffect(() => {
     setSessionDocs(getSessionDocuments());
     return subscribeSessionDocuments(() => setSessionDocs(getSessionDocuments()));
@@ -2014,6 +2034,11 @@ export default function IqraScreen() {
       } else {
         setThinkingLabel(t('iqraTyping'));
       }
+
+      // Set when the remote path has put an empty assistant bubble on screen
+      // to stream into; the final message replaces it instead of appending.
+      // Declared outside the try so the outer catch can clear it too.
+      let streamedId: string | null = null;
 
       try {
       if (route.intent === 'app_help') {
@@ -2721,13 +2746,60 @@ export default function IqraScreen() {
           return next;
         });
       } else {
+        // Stream into a bubble that appears with the first words, so the
+        // thinking footer stays up until there is text to show. The id scheme
+        // matches the rest of the file; the message is replaced by the final
+        // one below, never left as a second copy.
+        streamedId = (Date.now() + 1).toString();
+        const placeholderId = streamedId;
+        const controller = new AbortController();
+        abortRef.current = controller;
+        setCanStop(true);
+        let inserted = false;
+        let streamed = '';
+        // The lesson/topic bookkeeping for a reply the model actually wrote.
+        // Shared by a finished reply, a Stopped one with text, and one cut off
+        // by a lost connection, so none of them skips the pin.
+        const applyReplyBookkeeping = () => {
+          if (results[0]) {
+            lessonTopic = lang === 'ar' ? results[0].titleAr : results[0].titleEn;
+            quickTopic = lessonTopic;
+            const pin = pendingHardPin;
+            if (pin) setSessionMemory(prev => pinLesson(prev, pin, 'hard'));
+          } else if (hasDocs) {
+            quickTopic = primaryTopicFromDocuments(docBundle.documents, docNames[0] || q);
+            lessonTopic = quickTopic;
+          }
+        };
         try {
-          responseText = await remoteAIService.chat({
-            messages: history,
-            context: kbContext,
-            mode,
-            language: lang as 'ar' | 'en',
-          });
+          const out = await remoteAIService.chat(
+            { messages: history, context: kbContext, mode, language: lang as 'ar' | 'en' },
+            {
+              signal: controller.signal,
+              onDelta: full => {
+                streamed = full;
+                if (!inserted) {
+                  inserted = true;
+                  setStreamingId(placeholderId);
+                  setMessages(prev => [...prev, { id: placeholderId, role: 'assistant', text: full, timestamp: new Date() }]);
+                } else {
+                  setMessages(prev => prev.map(m => (m.id === placeholderId ? { ...m, text: full } : m)));
+                }
+              },
+            },
+          );
+          responseText = out.content;
+          if (out.cancelled) {
+            if (!responseText.trim()) {
+              // Stopped before a word arrived: nothing to keep. Put the
+              // question back so retrying is one tap.
+              setMessages(prev => prev.filter(m => m.id !== placeholderId));
+              streamedId = null;
+              setInput(prev => prev || shown);
+              return;
+            }
+            showToast(t('iqraStopped'));
+          }
           if (!responseText.trim()) {
             const ta = runTeachingAssistant();
             responseText = ta.text || t('iqraNoResults');
@@ -2744,19 +2816,19 @@ export default function IqraScreen() {
               if (pendingHardPin) next = pinLesson(next, pendingHardPin, 'hard');
               return next;
             });
-          } else if (results[0]) {
-            lessonTopic = lang === 'ar' ? results[0].titleAr : results[0].titleEn;
-            quickTopic = lessonTopic;
-            if (pendingHardPin) {
-              setSessionMemory(prev => pinLesson(prev, pendingHardPin, 'hard'));
-            }
-          } else if (hasDocs) {
-            quickTopic = primaryTopicFromDocuments(docBundle.documents, docNames[0] || q);
-            lessonTopic = quickTopic;
+          } else {
+            applyReplyBookkeeping();
           }
         } catch (remoteErr) {
           console.error('[iqra chat] remote AI failed', remoteErr);
-          if (isCapError(remoteErr)) {
+          if (streamed.trim()) {
+            // The connection died mid-reply. What arrived is real model text;
+            // keep it and say the turn did not finish, rather than replace it
+            // with a local answer that reads as if the model wrote it.
+            responseText = streamed;
+            applyReplyBookkeeping();
+            showToast(t('iqraChatError'));
+          } else if (isCapError(remoteErr)) {
             // Quota spent or live mode off: say so. This used to fall through
             // to the local knowledge-base reply below under «تحقق من
             // الإنترنت», so a teacher whose allowance was gone got an answer
@@ -2779,6 +2851,9 @@ export default function IqraScreen() {
               return next;
             });
           }
+        } finally {
+          abortRef.current = null;
+          setCanStop(false);
         }
       }
 
@@ -2809,7 +2884,7 @@ export default function IqraScreen() {
       });
 
       const assistantMsg: Message = {
-        id: (Date.now() + 1).toString(),
+        id: streamedId ?? (Date.now() + 1).toString(),
         role: 'assistant',
         text: responseText,
         artifactData,
@@ -2827,7 +2902,16 @@ export default function IqraScreen() {
         showLessonPrep,
         timestamp: new Date(),
       };
-      setMessages(prev => [...prev, assistantMsg]);
+      // Read into a const: the updater runs later, after `streamedId` is reset.
+      const replaceId = streamedId;
+      setMessages(prev =>
+        replaceId && prev.some(m => m.id === replaceId)
+          ? prev.map(m => (m.id === replaceId ? assistantMsg : m))
+          : [...prev, assistantMsg],
+      );
+      // The placeholder is now the real answer: a throw further down must not
+      // filter it out as if it were an unfinished bubble.
+      streamedId = null;
 
       // Composer shortcuts only — never persist as floating chips in the timeline
       const nextEphemeral: EphemeralSuggestion[] = [];
@@ -2887,7 +2971,7 @@ export default function IqraScreen() {
           text: t('iqraChatError'),
           timestamp: new Date(),
         };
-        setMessages(prev => [...prev, errMsg]);
+        setMessages(prev => [...prev.filter(m => !streamedId || m.id !== streamedId), errMsg]);
         showToast(t('iqraChatError'));
         // The box was cleared on send; put the question back so trying again
         // is one tap, not retyping it. Never over something typed since.
@@ -2896,6 +2980,7 @@ export default function IqraScreen() {
         thinkingRef.current = false;
         setIsThinking(false);
         setThinkingLabel('');
+        setStreamingId(null);
         setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
       }
     },
@@ -3716,6 +3801,7 @@ export default function IqraScreen() {
         ref={listRef}
         data={messages}
         keyExtractor={m => m.id}
+        extraData={streamingId}
         style={{ flex: 1 }}
         /*
           An empty thread used to pin its intro to the top of a 900px-tall
@@ -3741,8 +3827,8 @@ export default function IqraScreen() {
             colors={colors}
             isRTL={isRTL}
             onLongPress={item.role === 'assistant' ? () => handleExportMessage(item) : undefined}
-            onCopy={item.role === 'assistant' ? handleCopyMessage : undefined}
-            onExport={item.role === 'assistant' ? handleExportMessage : undefined}
+            onCopy={item.role === 'assistant' && item.id !== streamingId ? handleCopyMessage : undefined}
+            onExport={item.role === 'assistant' && item.id !== streamingId ? handleExportMessage : undefined}
             onSaveMaterial={item.role === 'assistant' ? handleSaveMaterial : undefined}
             onAddToClass={item.role === 'assistant' ? handleAddToClass : undefined}
             onPresentMaterial={item.role === 'assistant' ? handlePresentMaterial : undefined}
@@ -3776,7 +3862,7 @@ export default function IqraScreen() {
           />
         )}
         ListFooterComponent={
-          isThinking ? (
+          isThinking && !streamingId ? (
             <View style={[styles.thinkingRow, isRTL && { flexDirection: 'row-reverse' }]}>
               <IqraaMark size={34} tone="soft" thinking style={styles.avatar} />
               <View style={[styles.thinkingBubble, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
@@ -3992,27 +4078,42 @@ export default function IqraScreen() {
                 : undefined
             }
           />
-          <Pressable
-            onPress={() => sendMessage(input)}
-            disabled={!input.trim() || isThinking}
-            accessibilityRole="button"
-            accessibilityLabel={t('iqraSend')}
-            hitSlop={3}
-            style={({ pressed }) => [
-              styles.sendBtn,
-              {
-                backgroundColor: input.trim() ? colors.primary : colors.muted,
-                borderRadius: 20,
-                opacity: pressed ? 0.8 : 1,
-              },
-            ]}
-          >
-            <Ionicons
-              name={isRTL ? 'arrow-back' : 'arrow-forward'}
-              size={18}
-              color={input.trim() ? colors.primaryForeground : colors.mutedForeground}
-            />
-          </Pressable>
+          {canStop ? (
+            <Pressable
+              onPress={stopReply}
+              accessibilityRole="button"
+              accessibilityLabel={t('iqraStop')}
+              hitSlop={3}
+              style={({ pressed }) => [
+                styles.sendBtn,
+                { backgroundColor: colors.foreground, borderRadius: RADIUS.pill, opacity: pressed ? 0.8 : 1 },
+              ]}
+            >
+              <Ionicons name="stop" size={16} color={colors.background} />
+            </Pressable>
+          ) : (
+            <Pressable
+              onPress={() => sendMessage(input)}
+              disabled={!input.trim() || isThinking}
+              accessibilityRole="button"
+              accessibilityLabel={t('iqraSend')}
+              hitSlop={3}
+              style={({ pressed }) => [
+                styles.sendBtn,
+                {
+                  backgroundColor: input.trim() ? colors.primary : colors.muted,
+                  borderRadius: 20,
+                  opacity: pressed ? 0.8 : 1,
+                },
+              ]}
+            >
+              <Ionicons
+                name={isRTL ? 'arrow-back' : 'arrow-forward'}
+                size={18}
+                color={input.trim() ? colors.primaryForeground : colors.mutedForeground}
+              />
+            </Pressable>
+          )}
         </View>
         </View>
       </View>
@@ -4093,6 +4194,7 @@ export default function IqraScreen() {
         loadingPDF={loadingPDF}
         loadingWord={loadingWord}
         copyChoice={exportDoc ? { value: exportCopy, onChange: setExportCopy } : undefined}
+        printStyle={exportDoc ? { value: printStyle, onChange: setPrintStyle } : undefined}
         onShare={async () => {
           setExportVisible(false);
           await shareAsText(exportDocs()?.text ?? exportText, currentLessonView?.topic ?? 'Iqrra');

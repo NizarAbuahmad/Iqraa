@@ -11,6 +11,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import type { QuizCopy } from '@/services/quizExport';
+import { PRINT_STYLES, type PrintStyle } from '@/services/printStyle';
+import type { TranslationKey } from '@/services/i18n';
 import { palette } from '@/constants/colors';
 
 interface ExportOption {
@@ -42,6 +44,9 @@ interface ExportMenuProps {
   /** Student or teacher copy, picked here — for a screen with no answers
    *  toggle of its own to decide it (موادي, the chat). */
   copyChoice?: { value: QuizCopy; onChange: (copy: QuizCopy) => void };
+  /** How the PDF looks — colour, ink-saver, large print. Only the papers a
+   *  student holds (worksheet, quiz) offer it; see services/printStyle.ts. */
+  printStyle?: { value: PrintStyle; onChange: (style: PrintStyle) => void };
   isRTL: boolean;
   loadingPDF?: boolean;
   loadingWord?: boolean;
@@ -76,6 +81,7 @@ export function ExportMenu({
   onMinistry,
   note,
   copyChoice,
+  printStyle,
   isRTL,
   loadingPDF,
   loadingWord,
@@ -180,6 +186,34 @@ export function ExportMenu({
               {t(copyChoice.value === 'student' ? 'exportStudentCopySub' : 'exportTeacherCopySub')}
             </Text>
           ) : null}
+          {printStyle ? (
+            <>
+              <Text style={[styles.groupLabel, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+                {t('exportPrintStyle')}
+              </Text>
+              <View style={[styles.copyRow, { flexDirection: isRTL ? 'row-reverse' : 'row', backgroundColor: colors.muted }]}>
+                {PRINT_STYLES.map(style => {
+                  const on = printStyle.value === style;
+                  return (
+                    <Pressable
+                      key={style}
+                      accessibilityRole="button"
+                      aria-selected={on}
+                      onPress={() => printStyle.onChange(style)}
+                      style={[styles.copyOption, on && { backgroundColor: colors.card, borderColor: colors.border }]}
+                    >
+                      <Text style={[styles.copyLabel, { color: on ? colors.foreground : colors.mutedForeground, fontFamily: on ? 'ReadexPro_600SemiBold' : 'ReadexPro_500Medium' }]}>
+                        {t(PRINT_STYLE_LABEL[style])}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <Text style={[styles.note, { marginTop: 0, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+                {t(PRINT_STYLE_SUB[printStyle.value])}
+              </Text>
+            </>
+          ) : null}
           {note ? (
             <Text style={[styles.note, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
               {note}
@@ -229,6 +263,17 @@ export function ExportMenu({
   );
 }
 
+const PRINT_STYLE_LABEL: Record<PrintStyle, TranslationKey> = {
+  colour: 'printStyleColour',
+  ink: 'printStyleInk',
+  large: 'printStyleLarge',
+};
+const PRINT_STYLE_SUB: Record<PrintStyle, TranslationKey> = {
+  colour: 'printStyleColourSub',
+  ink: 'printStyleInkSub',
+  large: 'printStyleLargeSub',
+};
+
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
@@ -252,6 +297,7 @@ const styles = StyleSheet.create({
   copyRow: { borderRadius: 10, padding: 3, gap: 3, marginBottom: 8 },
   copyOption: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: 'transparent' },
   copyLabel: { fontSize: 14 },
+  groupLabel: { fontSize: 13, marginBottom: 8 },
   row: {
     alignItems: 'center', gap: 14,
     paddingVertical: 14, borderBottomWidth: 1,

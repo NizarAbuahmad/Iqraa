@@ -4,21 +4,33 @@ import assert from 'node:assert/strict';
 import {
   BOARD_BACKGROUNDS,
   BOARD_DEFAULT_WIDTH,
+  CANVAS_H,
+  CANVAS_W,
   EMPTY_BOARD,
+  EMPTY_DOC,
   HISTORY_LIMIT,
+  MAX_PAGES,
   STROKE_WIDTHS,
+  addPage,
   axesGeometry,
   canUndo,
   clearBoard,
   commitStrokes,
+  currentPage,
+  docHasInk,
   eraseAlong,
   eraseAt,
+  fitCanvas,
+  goToPage,
   gridLines,
   hasInk,
   localizeDigits,
   parsePoints,
+  removePage,
   strokeHit,
   undoBoard,
+  updateCurrent,
+  type BoardDoc,
   type BoardState,
   type Stroke,
 } from '../whiteboardModel.ts';
@@ -302,5 +314,181 @@ describe('strokes stored as fractions of the canvas width (unit = 1 / canvas wid
     assert.equal(eraseAt([wall], 0.1, 0.5, 16 * unit, unit).length, 1);
     assert.equal(eraseAt([wall], 0.9, 0.5, 16 * unit, unit).length, 1);
     assert.deepEqual(eraseAlong([wall], 0.1, 0.5, 0.9, 0.5, 16 * unit, unit), []);
+  });
+});
+
+describe('fitCanvas', () => {
+  it('is the identity on an area that is exactly the reference size', () => {
+    assert.deepEqual(fitCanvas(1280, 720), { scale: 1, width: 1280, height: 720, offsetX: 0, offsetY: 0 });
+  });
+
+  it('letterboxes a wide area at the sides, keeping the scale limited by the height', () => {
+    assert.deepEqual(fitCanvas(2560, 720), { scale: 1, width: 1280, height: 720, offsetX: 640, offsetY: 0 });
+  });
+
+  it('letterboxes a tall area above and below, keeping the scale limited by the width', () => {
+    assert.deepEqual(fitCanvas(640, 1000), { scale: 0.5, width: 640, height: 360, offsetX: 0, offsetY: 320 });
+  });
+
+  it('always yields a 16:9 stage that fits inside the area', () => {
+    for (const [w, h] of [[390, 844], [844, 390], [1920, 1080], [1000, 1000], [300, 50]] as const) {
+      const s = fitCanvas(w, h);
+      assert.ok(Math.abs(s.width / s.height - CANVAS_W / CANVAS_H) < 1e-9, `${w}x${h}`);
+      assert.ok(s.width <= w + 1e-9 && s.height <= h + 1e-9, `${w}x${h}`);
+      assert.ok(Math.abs(s.offsetX * 2 + s.width - w) < 1e-9, `${w}x${h} centred horizontally`);
+      assert.ok(Math.abs(s.offsetY * 2 + s.height - h) < 1e-9, `${w}x${h} centred vertically`);
+    }
+  });
+
+  it('returns an empty stage for an area with no size yet', () => {
+    const empty = { scale: 0, width: 0, height: 0, offsetX: 0, offsetY: 0 };
+    assert.deepEqual(fitCanvas(0, 720), empty);
+    assert.deepEqual(fitCanvas(1280, 0), empty);
+    assert.deepEqual(fitCanvas(-5, 100), empty);
+    assert.deepEqual(fitCanvas(Number.NaN, 100), empty);
+  });
+});
+
+describe('pages', () => {
+  const stroke = line('0,0 10,10');
+  const draw = (doc: BoardDoc): BoardDoc =>
+    updateCurrent(doc, p => ({ ...p, board: commitStrokes(p.board, [...p.board.strokes, stroke]) }));
+  const paper = (doc: BoardDoc, background: 'blank' | 'grid' | 'axes'): BoardDoc =>
+    updateCurrent(doc, p => ({ ...p, background }));
+  /** Three pages with distinct papers [blank, grid, axes] and no ink; `current` selects one of them. */
+  const threePages = (current: number): BoardDoc => {
+    let d = paper(EMPTY_DOC, 'blank');
+    d = paper(addPage(d), 'grid');
+    d = paper(addPage(d), 'axes');
+    return goToPage(d, current);
+  };
+
+  it('starts as one blank page', () => {
+    assert.equal(EMPTY_DOC.pages.length, 1);
+    assert.equal(EMPTY_DOC.current, 0);
+    assert.equal(currentPage(EMPTY_DOC).background, 'blank');
+    assert.equal(docHasInk(EMPTY_DOC), false);
+  });
+
+  it('adds a page right after the current one, selects it, and inherits the paper but not the ink', () => {
+    let d = draw(paper(EMPTY_DOC, 'axes'));
+    d = addPage(goToPage(addPage(d), 0)); // pages: [axes+ink, new, new]  → current is index 1
+    assert.equal(d.pages.length, 3);
+    assert.equal(d.current, 1);
+    assert.equal(currentPage(d).background, 'axes');
+    assert.equal(hasInk(currentPage(d).board), false);
+    assert.equal(hasInk(d.pages[0]!.board), true);
+  });
+
+  it('refuses to grow past MAX_PAGES, returning the same document', () => {
+    let d = EMPTY_DOC;
+    for (let i = 1; i < MAX_PAGES; i++) d = addPage(d);
+    assert.equal(d.pages.length, MAX_PAGES);
+    assert.equal(addPage(d), d);
+  });
+
+  it('removes the current page and keeps pointing at a real page', () => {
+    // [blank, grid, axes], current 2 → remove the last page: current moves back to 1.
+    let d = removePage(threePages(2));
+    assert.deepEqual(d.pages.map(p => p.background), ['blank', 'grid']);
+    assert.equal(d.current, 1);
+    // current 1 → remove it: the next page slides in and stays selected.
+    d = removePage(threePages(1));
+    assert.deepEqual(d.pages.map(p => p.background), ['blank', 'axes']);
+    assert.equal(currentPage(d).background, 'axes');
+  });
+
+  it('keeps the same page selected when an earlier page is removed', () => {
+    // [blank, grid, axes], current 1 (grid); remove index 0 (< current) → [grid, axes], current 0.
+    const d = removePage(threePages(1), 0);
+    assert.deepEqual(d.pages.map(p => p.background), ['grid', 'axes']);
+    assert.equal(currentPage(d).background, 'grid');
+    assert.equal(d.current, 0);
+  });
+
+  it('inserts the new page right after the current one, not at the end', () => {
+    // [blank, grid, axes], current 0 → [blank, new blank, grid, axes], current 1.
+    const d = addPage(threePages(0));
+    assert.deepEqual(d.pages.map(p => p.background), ['blank', 'blank', 'grid', 'axes']);
+    assert.equal(d.current, 1);
+  });
+
+  it('never removes the last page, and ignores a bad index', () => {
+    assert.equal(removePage(EMPTY_DOC), EMPTY_DOC);
+    const d = threePages(0);
+    assert.equal(removePage(d, 9), d);
+    assert.equal(removePage(d, -1), d);
+    assert.equal(removePage(d, 1.5), d);
+  });
+
+  it('goToPage clamps, and returns the same document when nothing changes', () => {
+    const d = threePages(0);
+    assert.equal(goToPage(d, 99).current, 2);
+    assert.equal(goToPage(d, -5).current, 0);
+    assert.equal(goToPage(d, 0), d);
+    assert.equal(goToPage(d, Number.NaN), d);
+  });
+
+  it('updateCurrent edits only the current page, and is a no-op when the page is unchanged', () => {
+    const d = threePages(1);
+    assert.equal(updateCurrent(d, p => p), d);
+    const e = draw(d);
+    assert.equal(hasInk(e.pages[1]!.board), true);
+    assert.equal(hasInk(e.pages[0]!.board), false);
+    assert.equal(hasInk(e.pages[2]!.board), false);
+  });
+
+  it('sees ink on any page, not just the current one', () => {
+    const d = goToPage(draw(addPage(EMPTY_DOC)), 0); // ink on page 1, viewing page 0
+    assert.equal(hasInk(currentPage(d).board), false);
+    assert.equal(docHasInk(d), true);
+  });
+
+  it('addPage, removePage and goToPage leave the other pages as the same objects, so per-page undo survives', () => {
+    const base = goToPage(draw(addPage(draw(EMPTY_DOC))), 0); // [ink, ink], viewing page 0
+    const before = base.pages;
+    assert.equal(before.length, 2);
+
+    const added = addPage(base); // inserted after page 0 → [p0, new, p1]
+    assert.equal(added.pages.length, 3);
+    assert.equal(added.pages[0], before[0]);
+    assert.equal(added.pages[2], before[1]);
+
+    const removed = removePage(added, 1); // drop the new page again → [p0, p1]
+    assert.equal(removed.pages.length, 2);
+    assert.equal(removed.pages[0], before[0]);
+    assert.equal(removed.pages[1], before[1]);
+
+    const moved = goToPage(removed, 1);
+    assert.equal(moved.current, 1);
+    assert.equal(moved.pages[0], before[0]);
+    assert.equal(moved.pages[1], before[1]);
+    assert.equal(canUndo(moved.pages[0]!.board), true);
+  });
+
+  it('keeps undo history per page', () => {
+    let d = draw(EMPTY_DOC);                    // page 0: one stroke, one undo step
+    d = addPage(d);                              // page 1, current
+    assert.equal(canUndo(currentPage(d).board), false);
+    d = goToPage(d, 0);
+    assert.equal(canUndo(currentPage(d).board), true);
+    d = updateCurrent(d, p => ({ ...p, board: undoBoard(p.board) }));
+    assert.equal(hasInk(currentPage(d).board), false);
+  });
+});
+
+describe('hit test with canvas-unit stroke widths (strokeScale)', () => {
+  // A 640px-wide stage showing the 1280-unit page: strokeScale = 0.5, so a
+  // width-12 stroke is drawn 6px wide and one WIDTH unit is 0.5/640 of the
+  // stored width-fraction. The eraser stays 16 screen pixels.
+  const canvasW = 640;
+  const strokeScale = 0.5;
+  const unit = strokeScale / canvasW;
+  const radius = 16 / canvasW;
+  const s = line('0.1,0.25 0.9,0.25', { width: 12 });
+
+  it('reach = 16px eraser + 3px (half of the 6px drawn width) = 0.0296875 of the width', () => {
+    assert.equal(strokeHit(s, 0.5, 0.25 + 0.0295, radius, unit), true);
+    assert.equal(strokeHit(s, 0.5, 0.25 + 0.03, radius, unit), false);
   });
 });

@@ -355,16 +355,36 @@ an announcement by default» below.
     0 fail / 10 skipped, and in Chromium the board (25/25), Escape / keys /
     countdown (9/9), the slide pen, per-slide ink and the book-page pen all
     pass again.
+    **B1 (2026-10-09): a fitted 16:9 stage and several pages, still unsaved.**
+    The board is now a 1280×720 page letterboxed into the screen
+    (`fitCanvas` in `services/whiteboardModel.ts`), so ink and paper keep their
+    place when the window resizes; stroke widths and paper scale with it
+    (`strokeScale` on `PenCanvas`; the eraser radius stays a fixed 16 screen px
+    at every scale, and only the stroke's half-width term in its reach scales). Up to 20
+    pages (`BoardDoc`: add after the current page, delete the current one —
+    never the last — previous / next), each with its own paper and its own
+    undo. Delete asks only when that page has ink; leaving asks when *any* page
+    has ink; clear clears the current page only. Nothing is saved or exported
+    yet — that is B2. Root typecheck clean, mobile suite 3376 pass / 0 fail /
+    10 skipped; in Chromium the new pass (25/25: stage 16:9 and re-fit, stroke
+    stays in the same page place at 800px, width scaling, eraser at 800px, page
+    add / previous / next / delete / cap, per-page paper and undo, the delete
+    and leave prompts) and the A scripts (board 25/25, Escape / keys /
+    countdown 9/9, slide pen, per-slide ink, book-page pen) all pass. Seen, not
+    fixed: in a **portrait phone** the 16:9 page is a thin strip and the axes
+    tick labels are about 5px — fine for a projector, poor on a phone.
     Not verified: touch on a real phone, Android hardware back, native SVG text
     on a device, whether a slide still scrolls while the pen is off and locks
     while it is on, the board on a projector, erasing on a full board on a
     phone (the hit test is cached and bounds-checked; its cost was measured
     only in node, before the cache, at about 39 ms for a 400-stroke sweep),
     and the presentation's action row at phone width.
-    Still to build: B (saving, pages, export) and C (AI solve — only the 7
+    Still to build: B2 (save as a material, reopen from «موادي», PDF export) and C (AI solve — only the 7
     `VERIFIABLE_TOPICS` may ever be marked verified). Spec and plan:
     `docs/superpowers/specs/2026-10-08-whiteboard-board-design.md`,
-    `docs/superpowers/plans/2026-10-08-whiteboard-board.md`.
+    `docs/superpowers/plans/2026-10-08-whiteboard-board.md`; B:
+    `docs/superpowers/specs/2026-10-08-whiteboard-b-pages-save-export-design.md`,
+    `docs/superpowers/plans/2026-10-09-whiteboard-b1-stage-and-pages.md`.
 - **A teacher can set, replace and remove their own profile picture**
   (2026-09-09): `app/(tabs)/profile.tsx`, `POST`/`DELETE /auth/users/avatar`.
   Uploads into the `iqraa-public` R2 bucket (anonymous-read, non-expiring
@@ -872,6 +892,88 @@ Against a real Postgres, migrated the way production will be (`migrate --baselin
 - A signed-in student outside the group who opens the link sees the group's names in the picker but cannot claim one (403).
 - The audience is the assignment rows: deleting them would make the check class-wide. Only cascades delete them today.
 - An objective's group is recomputed live, so a student who passes the re-check stays listed until their overall percentage crosses 60%; the card shows their «تجاوز» beside them.
+
+## A print style for the student's paper: colour, ink-saver, large print, 2026-10-09
+
+Step 2 of the worksheet review, Nizar's call on scope: worksheets and quizzes,
+both new styles, and the PDF/print export only — Word, shared text and the
+projector slides are unchanged.
+
+- **The export menu has a «شكل ورقة PDF» row** — ملوّن / موفّر للحبر / خط كبير —
+  wherever a worksheet or quiz is exported: the worksheet and quiz screens,
+  موادي, the chat and the virtual-lab card. The premade sheets' direct print
+  (non-teacher path in `curriculum/resources.tsx`) has no menu and prints in the
+  style last picked (`readPrintStyle`).
+- **Remembered per device** (`hooks/usePrintStyle.ts`, AsyncStorage key
+  `@iqra_print_style_v1`): the choice follows the school's copier, not the
+  teacher, so every menu reads and writes the same key.
+- **Ink-saver** is for black-and-white copiers, which turn the designed page's
+  grey cards, tinted bands, solid number badges and colour emoji into grey
+  blocks and lose its light-grey writing lines: white cards with dark borders,
+  section bands as a bold heading over a rule, outlined badges, no emoji, rules
+  in `#555`. **Large print** is 16px text (from 12.5), 30px writing lines and
+  28px badges; a 10-question maths worksheet goes from 3 A4 pages to 4.
+- **One stylesheet, one argument.** The overrides live in
+  `services/printStyle.ts` and are appended to `htmlBase`'s sheet with
+  `!important`, because `sectionBand` sets its colours inline. `colour` adds
+  nothing, so the default page is byte-for-byte what it was.
+- **Also fixed, found in the renders:** a nested exponent, «2^(2(x+1))» in the
+  half-solved question, still printed its caret after the 2026-10-09 fix below
+  — the bracket match stopped at the first `)`. `raiseExponents` now matches
+  the exponent's own closing bracket.
+
+Covered by `printStyle.test.ts` (each style's overrides, colour unchanged, the
+export bundles carry the style, a stored value round-trips) and a nested-exponent
+case in `worksheetPrint.test.ts`, watched failing first. Mobile 3404 pass /
+0 fail / 10 skipped, typecheck clean. **Verified in the web build** (Expo web
+on :8081, `/auth/me` stubbed, every other API call aborted, Chromium 390×844):
+the row renders under «تصدير المادة»; Ink-saver picked, menu closed and
+reopened, still selected; the PDF handed to the print iframe carried the
+picked style (colour first, then large print). Both styles were also rendered
+to A4 in Chromium and read by eye. **Not checked:** expo-print on a device,
+and a real black-and-white photocopy.
+## The chat streams its reply and can be stopped, 2026-10-09
+
+`POST /chat` answers in Server-Sent Events when the request carries
+`Accept: text/event-stream`, and in the old `{ content }` JSON otherwise —
+the API deploys ahead of the web bundle and days ahead of any binary, so
+both shapes stay. The pure half (`lib/chatStream.ts`) is tested. A mid-stream
+upstream error comes back from it alongside the text generated so far rather
+than thrown. The route aborts the OpenAI call when the client disconnects, and
+records the spend whenever the usage chunk never came — the client left, or
+the upstream failed mid-reply — as an estimate that errs high: the prompt at 3
+chars/token plus `CHAT_MAX_TOKENS` completion tokens (the model's own output
+ceiling, reasoning included, so a reasoning model cannot be undercounted).
+Those rows are logged `estimated: true` ("chat spend estimated") to tell them
+from measured ones; usage that arrived before a Stop is recorded as measured.
+
+In the app, `RemoteAIService.chat` streams over `expo/fetch` (React
+Native's own fetch has no readable body) through `apiFetch`'s new
+`fetchImpl` option, so auth and the 401 retry are unchanged. The screen
+keeps the thinking footer up until the first text arrives, then streams into
+a bubble (Copy and Export stay hidden on it until the reply is done), and
+swaps Send for **Stop** while a remote reply is in flight. Stop keeps the
+text that arrived and runs the same lesson bookkeeping as a finished reply;
+before the first word there is no bubble and the question is restored. A
+connection lost mid-reply keeps the real text
+and shows the error as a toast — never a local answer in the model's place.
+A stream that ends without its `done` frame counts as lost, whatever the
+cause, and Stop is told apart from a timeout by state, not by error name.
+
+**Reaches native builds and OTA updates only.** Production web still ships
+`DEMO_MODE` on (deploy.yml), so web chat is the local teaching assistant
+and never streams; nothing about that decision changed here.
+
+Not done: the generators still return whole JSON; the list still scrolls
+to the end on every content change (it follows the growing bubble, which
+is wanted while streaming, and still yanks a teacher who scrolled up).
+
+Not run: the Android device check (text arriving incrementally, Stop
+working) and the live-key route checks were not run from the implementing
+session, which had neither a device nor a live key; they are the owner's to
+run before relying on this on a phone. Also not run: whether Cloud Run
+propagates a client disconnect to the container, which decides whether Stop
+halts upstream generation (spend is recorded either way).
 
 ## The printed worksheet reads as a student's paper, 2026-10-09
 
@@ -1566,10 +1668,26 @@ Spec `docs/superpowers/specs/2026-10-07-lab-class-workflow-design.md`, plan
   `labSlides.test.ts` runs every shipped law through the real helpers. (Inside
   «a — Acceleration (m/s²)» the raw unit does not stack; the conversion is
   defence, and the per-unit test is what fails if it regresses.)
+- **Latin text on an Arabic page (found 2026-10-09 by rendering, not by a test).**
+  The HTML export of a real lab deck, rendered in headless Chromium, printed
+  «Rx, Ry» as «Ry ,Rx», «m·s⁻²» as «s⁻²·m» and the licence credit
+  «2012rc, CC BY 3.0, via Wikimedia Commons» backwards: `isolateForeignRuns`
+  leaves «,» and «·» outside a run and cuts at «—», and the pieces then lay out
+  right to left. Every unit test passed, because they checked whole equation
+  lines and never the bullets or the credit. A quantity line and a credit are now
+  each one explicit left-to-right isolate (`ltr` in `labSlides.ts`), which keeps
+  the text exactly as written; the tests count top-level isolates, which is what
+  would have caught it.
 
 **Not seen, not done.**
-- Nothing here has been seen in a browser, and the PDF and PowerPoint output of
-  lab slides has not been looked at by a person.
+- The HTML export (the source of the PDF) of every shipped lab slide was
+  rendered in headless Chromium on 2026-10-09 and looked at, in both languages.
+  Not seen: the PDF's page breaks, the PowerPoint export (it does not apply
+  `isolateForeignRuns` at all, so the same reversals may exist there, and it
+  now also receives the isolate marks), the on-screen presenter, and the class
+  screens (add sheet, picker, shelf row, deck picker) on any device. One
+  Wikimedia image failed to load in the sandbox (network), so image slides were
+  judged on layout and credit, not on the picture.
 - The POST route's lab branch has no database test (tests have no database); it
   is covered by typecheck and build only.
 - ~~The slide editor's `applyMediaEdit` can strip a lab slide's credit when its
@@ -1771,14 +1889,17 @@ not-found screen. Left for piece 2 on the owner's say-so.
 to the class screen (2026-10-05). A shelf row carries no subject (the table
 has none, and it is already in production), so a Library item shows under every
 subject filter, not just its own; the teacher's saved materials still follow the
-filter. The picker offers the focused subject's items, or the class's first
-subject on «الكل», so a second subject's items are reached by focusing it first.
-Driven in Chromium on a two-subject class (maths + chemistry, local database):
-the chips showed; a maths sheet added from the picker on «الكل» stayed on the
-shelf under the chemistry focus; the chemistry-focused picker did not list that
-sheet (this local Library has no chemistry items, so it showed its empty
-message); the console was clean. Adding a chemistry item under the focus was
-not exercised, for want of one.
+filter. The picker offers the focused subject's items, or on «كل المواد» the
+items of every subject the class teaches (plus any that name no subject). Since
+#885 (2026-10-07); until then «كل المواد» offered only the class's first
+subject, so a second subject's items were reached only by focusing it first.
+Driven in Chromium on a two-subject class (maths + chemistry, local database),
+**before #885**: the chips showed; a maths sheet added from the picker on
+«كل المواد» stayed on the shelf under the chemistry focus; the chemistry-focused
+picker did not list that sheet (this local Library has no chemistry items, so it
+showed its empty message); the console was clean. Adding a chemistry item under
+the focus was not exercised, for want of one, and #885's change to «كل المواد»
+was not re-driven here.
 
 **Not in this change.** Teacher-pasted links (no schema change) and device
 uploads (one more push, private storage, no video under the 8 MB cap) are

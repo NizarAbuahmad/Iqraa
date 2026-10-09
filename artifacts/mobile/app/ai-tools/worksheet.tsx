@@ -30,6 +30,7 @@ import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
 import { useFavorite } from '@/hooks/useFavorite';
 import { useGeneratorExport } from '@/hooks/useGeneratorExport';
+import { usePrintStyle } from '@/hooks/usePrintStyle';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
@@ -213,6 +214,7 @@ export default function WorksheetScreen() {
   const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
   const [showExport, setShowExport] = useState(false);
   const [showAnswers, setShowAnswers] = useState(false);
+  const [printStyle, setPrintStyle] = usePrintStyle();
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
@@ -595,7 +597,7 @@ export default function WorksheetScreen() {
     getTitle: getExportTitle,
     getMeta: getExportMeta,
     formatText: (ws, title, meta, isAr) => formatWorksheetText(ws, title, meta, isAr, showAnswers),
-    buildHTML: (ws, title, meta, isAr, figures) => buildWorksheetHTML(ws, title, meta, isAr, figures, showAnswers),
+    buildHTML: (ws, title, meta, isAr, figures) => buildWorksheetHTML(ws, title, meta, isAr, figures, showAnswers, printStyle),
     buildSlidesHTML: (ws, title, meta, isAr, figures) => buildWorksheetSlidesHTML(ws, title, meta, isAr, figures, showAnswers),
     onError: key => showToast(t(key)),
     onCopied: key => showToast(t(key)),
@@ -1078,6 +1080,7 @@ export default function WorksheetScreen() {
       onWord={handleWord}
       onSlides={handleSlides}
       note={t(showAnswers ? 'exportTeacherCopyNote' : 'exportStudentCopyNote')}
+      printStyle={{ value: printStyle, onChange: setPrintStyle }}
       isRTL={isRTL}
       loadingPDF={loadingPDF}
       loadingWord={loadingWord}
@@ -1124,7 +1127,7 @@ function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
 }
 
 const styles = StyleSheet.create({
-  toggleBtn: { alignItems: 'center', gap: 6, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 16 },
+  toggleBtn: { alignItems: 'center', gap: 8, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 16 },
   verifyRow: { alignItems: 'center', gap: 6, marginTop: 8 },
   verifyText: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 12, flex: 1 },
   label: { fontSize: 13, marginBottom: 6 },
@@ -1135,7 +1138,7 @@ const styles = StyleSheet.create({
   levelTabs: { borderWidth: 1, padding: 4, gap: 4, marginBottom: 12 },
   levelTab: { flex: 1, alignItems: 'center', paddingVertical: 8 },
   secTitle: { fontSize: 14, marginBottom: 10 },
-  presentBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, marginBottom: 16 },
+  presentBtn: { alignItems: 'center', justifyContent: 'center', gap: 12, paddingVertical: 16, marginBottom: 16 },
   qCard: { padding: 14, borderWidth: 1, gap: 10, marginBottom: 8 },
   qNum: { fontSize: 14, width: 20 },
   optionRow: { alignItems: 'center', gap: 8, marginTop: 6 },

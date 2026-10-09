@@ -48,6 +48,7 @@ import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
 import { useFavorite } from '@/hooks/useFavorite';
 import { useGeneratorExport } from '@/hooks/useGeneratorExport';
+import { usePrintStyle } from '@/hooks/usePrintStyle';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GeneratorResultActions, GeneratorSaveBar } from '@/components/ui/GeneratorResultActions';
@@ -181,6 +182,7 @@ export default function QuizScreen() {
   const [editedQuestions, setEditedQuestions] = useState<ReadonlySet<string>>(new Set());
   const [error, setError] = useState('');
   const [showAnswers, setShowAnswers] = useState(false);
+  const [printStyle, setPrintStyle] = usePrintStyle();
   const [savedId, setSavedId] = useState<string | undefined>(params.savedId);
   const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
   const [showExport, setShowExport] = useState(false);
@@ -492,7 +494,7 @@ export default function QuizScreen() {
     // The paper follows the answers toggle, as the worksheet's does: hidden
     // (the default) prints the student copy, shown prints the teacher's.
     formatText: (quiz, title, meta, isAr) => formatQuizText(quiz, title, meta, isAr, showAnswers),
-    buildHTML: (quiz, title, meta, isAr, figures) => buildQuizHTML(quiz, title, meta, isAr, figures, showAnswers),
+    buildHTML: (quiz, title, meta, isAr, figures) => buildQuizHTML(quiz, title, meta, isAr, figures, showAnswers, printStyle),
     buildSlidesHTML: (quiz, title, meta, isAr, figures) => buildQuizSlidesHTML(quiz, title, meta, isAr, figures, showAnswers),
     buildWord: (quiz, title, meta, isAr, docx) => buildQuizDocx(quiz, title, meta, isAr, showAnswers, docx),
     onError: key => showToast(t(key)),
@@ -862,6 +864,7 @@ export default function QuizScreen() {
       onWord={handleWord}
       onSlides={handleSlides}
       note={t(showAnswers ? 'exportTeacherCopyNote' : 'exportStudentCopyNote')}
+      printStyle={{ value: printStyle, onChange: setPrintStyle }}
       isRTL={isRTL}
       loadingPDF={loadingPDF}
       loadingWord={loadingWord}
@@ -875,8 +878,8 @@ export default function QuizScreen() {
 
 function MetaPill({ icon, text, color }: { icon: keyof typeof Ionicons.glyphMap; text: string; color: string }) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: color + '18', borderRadius: 20 }}>
-      <Ionicons name={icon} size={12} color={color} />
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 4, backgroundColor: color + '18', borderRadius: 20 }}>
+      <Ionicons name={icon} size={14} color={color} />
       <Text style={{ color, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>{text}</Text>
     </View>
   );
@@ -909,24 +912,24 @@ function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
 }
 
 const styles = StyleSheet.create({
-  verifyRow: { alignItems: 'center', gap: 6, marginTop: 8 },
+  verifyRow: { alignItems: 'center', gap: 8, marginTop: 8, marginBottom: 8 },
   verifyText: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 12, flex: 1 },
   label: { fontSize: 13, marginBottom: 6 },
   checkboxGroup: { borderWidth: 1, padding: 14, marginBottom: 16, gap: 4 },
-  checkRow: { alignItems: 'center', gap: 10, paddingVertical: 6 },
+  checkRow: { alignItems: 'center', gap: 12, paddingVertical: 8 },
   checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   quizHeader: { padding: 16, borderWidth: 1, marginBottom: 16 },
-  quizTitle: { fontSize: 16, marginBottom: 10 },
+  quizTitle: { fontSize: 16, marginBottom: 12 },
   quizMeta: { gap: 8, flexWrap: 'wrap' },
-  toggleBtn: { alignItems: 'center', gap: 6, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 16 },
-  presentBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, marginBottom: 12 },
+  toggleBtn: { alignItems: 'center', gap: 8, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 16 },
+  presentBtn: { alignItems: 'center', justifyContent: 'center', gap: 12, paddingVertical: 16, marginBottom: 12 },
   qCard: { borderWidth: 1, padding: 16, marginBottom: 12 },
-  qTop: { alignItems: 'center', gap: 8, marginBottom: 10 },
+  qTop: { alignItems: 'center', gap: 12, marginBottom: 12 },
   qNumCircle: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  typeBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  typeBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8 },
   qText: { fontSize: 14, lineHeight: 20, marginBottom: 12 },
-  optRow: { alignItems: 'center', gap: 8, padding: 10, marginBottom: 6 },
-  optLabel: { fontSize: 13, width: 20 },
-  ansBox: { alignItems: 'center', gap: 6, padding: 10, marginTop: 8 },
-  expBox: { padding: 10, marginTop: 8 },
+  optRow: { alignItems: 'center', gap: 12, padding: 12, marginBottom: 8 },
+  optLabel: { fontSize: 13, width: 24 },
+  ansBox: { alignItems: 'center', gap: 8, padding: 12, marginTop: 8 },
+  expBox: { padding: 12, marginTop: 8 },
 });

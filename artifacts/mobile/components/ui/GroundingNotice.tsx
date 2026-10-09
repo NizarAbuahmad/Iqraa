@@ -72,10 +72,11 @@ export function GroundingNotice({ grounded, lessonTitle, sources, isRTL, colors,
     >
       <Ionicons
         name={grounded ? 'school' : 'information-circle-outline'}
-        size={15}
+        size={16}
         color={grounded ? colors.primary : colors.mutedForeground}
+        style={{ marginTop: 2 }}
       />
-      <View style={{ flex: 1, gap: 2 }}>
+      <View style={{ flex: 1, gap: 4 }}>
         <Text
           style={[
             styles.title,
@@ -124,10 +125,10 @@ export function GroundingNotice({ grounded, lessonTitle, sources, isRTL, colors,
 const styles = StyleSheet.create({
   wrap: {
     alignItems: 'flex-start',
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: 10,
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
     marginBottom: 12,
   },
