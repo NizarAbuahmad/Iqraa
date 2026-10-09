@@ -8,10 +8,12 @@
  * `Alert.prompt` only provides on iOS.
  *
  * The proof of identity depends on the account: a password account types its
- * password, a Google-only account retypes its own email, because there is no
- * hash to check. Which one is asked for comes from `/auth/me`, fetched here
- * rather than read off the auth context — the context is populated by six
- * different responses and only this one endpoint reports `hasPassword`.
+ * password, a Google-only account signs in with Google again right here, and
+ * the fresh ID token goes with the delete (the email it used to retype is
+ * inside the access token, so it proved nothing). Which one is asked for comes
+ * from `/auth/me`, fetched here rather than read off the auth context — the
+ * context is populated by six different responses and only this one endpoint
+ * reports `hasPassword`.
  */
 import React, { useEffect, useState } from 'react';
 import {
@@ -30,13 +32,15 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import { apiJson } from '@/services/apiClient';
+import { apiErrorKey } from '@/services/apiErrorKey';
 import { confirm } from '@/services/confirm';
 import { goBack } from '@/services/navigation';
+import { GoogleSignInButton, isGoogleSignInAvailable } from '@/components/ui/GoogleSignInButton';
 
 export default function DeleteAccountScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { t, isRTL } = useLanguage();
+  const { t, lang, isRTL } = useLanguage();
   const { user, deleteAccount } = useAuth();
 
   // `undefined` while unknown. Until it resolves the form stays disabled
@@ -68,11 +72,10 @@ export default function DeleteAccountScreen() {
   const ready = hasPassword !== undefined;
   const canSubmit = ready && proof.trim().length > 0 && !busy;
 
-  const handleDelete = async () => {
-    if (!canSubmit) {
-      setError(t('deleteAccountNeedProof'));
-      return;
-    }
+  // Confirm, then delete. Shared by the password button and the Google
+  // sign-in callback; the Google token is good for five minutes server-side,
+  // which is why it goes straight here rather than waiting for another tap.
+  const runDelete = async (proof: { password?: string; googleCredential?: string }) => {
     const ok = await confirm({
       title: t('deleteAccountConfirmTitle'),
       message: t('deleteAccountConfirmBody'),
@@ -85,17 +88,29 @@ export default function DeleteAccountScreen() {
     setBusy(true);
     setError(null);
     try {
-      await deleteAccount(
-        hasPassword ? { password: proof } : { confirmEmail: proof.trim() },
-      );
+      await deleteAccount(proof);
       // No navigation here on purpose: clearing the user in AuthContext is an
       // auth transition, and the root layout's effect sends a signed-out app
       // to login. Pushing a route as well would race it.
     } catch (err) {
       setBusy(false);
       // The API's sentence is English; this screen is not.
-      setError(t('deleteAccountFailed'));
+      setError(t(apiErrorKey(err, 'deleteAccountFailed')));
     }
+  };
+
+  const handleDelete = async () => {
+    if (!canSubmit) {
+      setError(t('deleteAccountNeedProof'));
+      return;
+    }
+    await runDelete({ password: proof });
+  };
+
+  const handleGoogleCredential = (credential: string) => {
+    if (busy) return;
+    setError(null);
+    void runDelete({ googleCredential: credential });
   };
 
   return (
@@ -131,68 +146,92 @@ export default function DeleteAccountScreen() {
         </Text>
 
         {ready && !hasPassword ? (
-          <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
-            {t('deleteAccountEmailHint')}
-          </Text>
-        ) : null}
-
-        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
-          {hasPassword === false ? t('deleteAccountEmailLabel') : t('deleteAccountPasswordLabel')}
-        </Text>
-        <TextInput
-          value={proof}
-          onChangeText={text => { setProof(text); setError(null); }}
-          editable={ready && !busy}
-          secureTextEntry={hasPassword !== false}
-          autoCapitalize="none"
-          autoCorrect={false}
-          keyboardType={hasPassword === false ? 'email-address' : 'default'}
-          textContentType={hasPassword === false ? 'emailAddress' : 'password'}
-          style={[
-            styles.input,
-            {
-              backgroundColor: colors.input,
-              borderColor: error ? colors.destructive : colors.border,
-              color: colors.foreground,
-              borderRadius: colors.radius,
-              textAlign: align,
-              fontFamily: 'Almarai_400Regular',
-            },
-          ]}
-        />
-
-        {error ? (
-          <Text style={[styles.error, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
-            {error}
-          </Text>
-        ) : null}
-
-        <Pressable
-          onPress={handleDelete}
-          disabled={!canSubmit}
-          accessibilityRole="button"
-          style={[
-            styles.deleteBtn,
-            {
-              backgroundColor: colors.destructive,
-              borderRadius: colors.radius,
-              opacity: canSubmit ? 1 : 0.5,
-            },
-          ]}
-        >
-          {busy ? (
-            <ActivityIndicator color={colors.destructiveForeground} />
-          ) : (
-            <Text
+          <>
+            <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+              {t('deleteAccountGoogleHint')}
+            </Text>
+            <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
+              {t('deleteAccountGoogleLabel')}
+            </Text>
+            {isGoogleSignInAvailable() ? (
+              // Google's own sign-in, the same component the login screen uses:
+              // on native it forgets the cached account and opens the chooser,
+              // so the ID token it hands back is freshly minted.
+              <View pointerEvents={busy ? 'none' : 'auto'} style={{ opacity: busy ? 0.5 : 1 }}>
+                <GoogleSignInButton onCredential={handleGoogleCredential} locale={lang} />
+              </View>
+            ) : (
+              <Text style={[styles.error, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                {t('deleteAccountGoogleUnavailable')}
+              </Text>
+            )}
+            {busy ? <ActivityIndicator style={{ marginTop: 16 }} color={colors.destructive} /> : null}
+            {error ? (
+              <Text style={[styles.error, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                {error}
+              </Text>
+            ) : null}
+          </>
+        ) : (
+          <>
+            <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
+              {t('deleteAccountPasswordLabel')}
+            </Text>
+            <TextInput
+              value={proof}
+              onChangeText={text => { setProof(text); setError(null); }}
+              editable={ready && !busy}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+              textContentType="password"
               style={[
-                styles.deleteBtnText,
-                { color: colors.destructiveForeground, fontFamily: 'ReadexPro_700Bold' },
+                styles.input,
+                {
+                  backgroundColor: colors.input,
+                  borderColor: error ? colors.destructive : colors.border,
+                  color: colors.foreground,
+                  borderRadius: colors.radius,
+                  textAlign: align,
+                  fontFamily: 'Almarai_400Regular',
+                },
+              ]}
+            />
+
+            {error ? (
+              <Text style={[styles.error, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                {error}
+              </Text>
+            ) : null}
+
+            <Pressable
+              onPress={handleDelete}
+              disabled={!canSubmit}
+              accessibilityRole="button"
+              style={[
+                styles.deleteBtn,
+                {
+                  backgroundColor: colors.destructive,
+                  borderRadius: colors.radius,
+                  opacity: canSubmit ? 1 : 0.5,
+                },
               ]}
             >
-              {t('deleteAccountSubmit')}
-            </Text>
-          )}
-        </Pressable>
+              {busy ? (
+                <ActivityIndicator color={colors.destructiveForeground} />
+              ) : (
+                <Text
+                  style={[
+                    styles.deleteBtnText,
+                    { color: colors.destructiveForeground, fontFamily: 'ReadexPro_700Bold' },
+                  ]}
+                >
+                  {t('deleteAccountSubmit')}
+                </Text>
+              )}
+            </Pressable>
+          </>
+        )}
 
         <Pressable accessibilityRole="button" onPress={() => goBack()} hitSlop={10} disabled={busy} style={styles.cancelBtn}>
           <Text style={[styles.cancelText, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>

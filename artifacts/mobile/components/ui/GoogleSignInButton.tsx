@@ -66,7 +66,7 @@ function loadGoogleScript(locale: string, onLoad: () => void) {
 /**
  * Whether to offer Google at all. Not platform-gated any more — native has its
  * own path below — so this is simply "is a client ID configured", mirroring the
- * API's own 503 when it is not. Both call sites (`app/(auth)/login.tsx`,
+ * API's own 503 when it is not. The sign-in call sites (`app/(auth)/login.tsx`,
  * `app/(auth)/register.tsx`) wrap the button, its loading line AND the "or"
  * divider in this, so an unset key leaves no orphan divider behind.
  *

@@ -272,12 +272,15 @@ router.post(
       }
 
       const passwordHash = await bcrypt.hash(password, 12);
-      await db.update(users).set({ passwordHash }).where(eq(users.id, target.id));
-
-      const revoked = await db
-        .delete(refreshTokens)
-        .where(eq(refreshTokens.userId, target.id))
-        .returning({ id: refreshTokens.id });
+      // One transaction, so the user-row lock is held through the delete and
+      // an in-flight /auth/refresh cannot slip a successor in between.
+      const revoked = await db.transaction(async tx => {
+        await tx.update(users).set({ passwordHash }).where(eq(users.id, target.id));
+        return tx
+          .delete(refreshTokens)
+          .where(eq(refreshTokens.userId, target.id))
+          .returning({ id: refreshTokens.id });
+      });
 
       // Names both people and never the password — this line is the only
       // record that the change happened.

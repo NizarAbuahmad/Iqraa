@@ -27,6 +27,7 @@ import { deleteObject, deletePublicObject, isPublicR2Configured, newAvatarKey, p
 import { googleClientIds } from "../lib/googleClients.js";
 import { decideGoogleLink, googleRoleConflict } from "../lib/googleLink.js";
 import { decideRefresh, refreshTokenTtlMs } from "../lib/refreshPolicy.js";
+import { checkGoogleReauth } from "../lib/googleReauth.js";
 import { studentAccountsEnabled } from "../lib/features.js";
 import { syncClassThreadsForStudent } from "../lib/classThread.js";
 import { audioKeysForTeacher } from "../lib/attemptAudio.ts";
@@ -195,14 +196,17 @@ function hashRefreshToken(tokenValue: string): string {
  * is omitted at sign-in, where the column's default starts a new chain, and
  * passed at rotation so the successor stays in the chain it replaces.
  */
+type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 async function storeRefreshToken(
   userId: string,
   tokenValue: string,
   origin: string | undefined,
   familyId?: string,
+  executor: typeof db | DbTx = db,
 ): Promise<void> {
   const expiresAt = new Date(Date.now() + refreshTokenTtlMs(origin));
-  await db.insert(refreshTokens).values({
+  await executor.insert(refreshTokens).values({
     userId,
     tokenHash: hashRefreshToken(tokenValue),
     expiresAt,
@@ -789,24 +793,29 @@ router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
-    await db.update(users).set({
-      passwordHash,
-      // Reading a code sent to that address is the same proof registration
-      // asks for, so a reset settles verification too. Without this, someone
-      // who reset their password could still be refused at login for an
-      // address they just demonstrably control.
-      emailVerified: true,
-    }).where(eq(users.id, user.id));
+    // One transaction: the user-row update holds its lock until the delete
+    // below has run, which is what keeps an in-flight /auth/refresh from
+    // slipping a successor token in between (see that route).
+    await db.transaction(async tx => {
+      await tx.update(users).set({
+        passwordHash,
+        // Reading a code sent to that address is the same proof registration
+        // asks for, so a reset settles verification too. Without this, someone
+        // who reset their password could still be refused at login for an
+        // address they just demonstrably control.
+        emailVerified: true,
+      }).where(eq(users.id, user.id));
 
-    await db
-      .update(passwordResetTokens)
-      .set({ used: true })
-      .where(eq(passwordResetTokens.id, stored.id));
+      await tx
+        .update(passwordResetTokens)
+        .set({ used: true })
+        .where(eq(passwordResetTokens.id, stored.id));
 
-    // Every existing session dies with the old password. If this reset was
-    // someone taking their account back, the sessions worth ending are exactly
-    // the ones already open.
-    await db.delete(refreshTokens).where(eq(refreshTokens.userId, user.id));
+      // Every existing session dies with the old password. If this reset was
+      // someone taking their account back, the sessions worth ending are
+      // exactly the ones already open.
+      await tx.delete(refreshTokens).where(eq(refreshTokens.userId, user.id));
+    });
 
     logger.info({ userId: user.id }, "password reset completed");
     res.json({ ok: true });
@@ -1569,41 +1578,55 @@ router.post("/refresh", async (req, res) => {
       return;
     }
 
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, stored!.userId))
-      .limit(1);
+    /*
+     * Check, retire and issue in one transaction, holding a share lock on the
+     * user row throughout.
+     *
+     * Without it, a password reset could land between the retire and the
+     * insert: the reset deletes every row it can see, then this inserts the
+     * successor, and the session the reset meant to end carries on. Every
+     * revocation that changes the user row (reset-password, the admin set-
+     * password) does its update and its delete in one transaction, so the
+     * lock below orders the two:
+     *   - reset first: this waits, then finds its row gone and answers 401;
+     *   - this first: the reset waits, and its delete then sees the successor.
+     */
+    const rotated = await db.transaction(async tx => {
+      const [user] = await tx
+        .select()
+        .from(users)
+        .where(eq(users.id, stored!.userId))
+        .limit(1)
+        .for("share");
+      if (!user) return { error: "User not found" } as const;
 
-    if (!user) {
-      res.status(401).json({ error: "User not found" });
+      // Retired, not deleted: a deleted row cannot report that it was used
+      // twice, which is the entire mechanism above. Conditional on
+      // `rotatedAt` still being null so that two refreshes racing the same
+      // token produce one winner — the loser updates nothing, and its own
+      // next attempt reads a retired row and trips the branch above, which is
+      // the correct reading of two callers holding one token.
+      const [retired] = await tx
+        .update(refreshTokens)
+        .set({ rotatedAt: new Date() })
+        .where(and(eq(refreshTokens.id, stored!.id), isNull(refreshTokens.rotatedAt)))
+        .returning({ id: refreshTokens.id });
+      if (!retired) return { error: "Invalid or expired refresh token" } as const;
+
+      const tokens = generateTokens(user.id, user.email, user.role);
+      // Same family: this is the same sign-in continuing, and a fresh family
+      // would put the successor beyond the reach of the revocation above.
+      await storeRefreshToken(user.id, tokens.refreshTokenValue, req.headers.origin, outcome.familyId, tx);
+      return { userId: user.id, ...tokens } as const;
+    });
+
+    if ("error" in rotated) {
+      res.status(401).json({ error: rotated.error });
       return;
     }
+    pruneExpiredRefreshTokens(rotated.userId);
 
-    // Retired, not deleted: a deleted row cannot report that it was used twice,
-    // which is the entire mechanism above. Conditional on `rotatedAt` still
-    // being null so that two refreshes racing the same token produce one
-    // winner — the loser updates nothing, and its own next attempt reads a
-    // retired row and trips the branch above, which is the correct reading of
-    // two callers holding one token.
-    const [retired] = await db
-      .update(refreshTokens)
-      .set({ rotatedAt: new Date() })
-      .where(and(eq(refreshTokens.id, stored!.id), isNull(refreshTokens.rotatedAt)))
-      .returning({ id: refreshTokens.id });
-
-    if (!retired) {
-      res.status(401).json({ error: "Invalid or expired refresh token" });
-      return;
-    }
-
-    const { accessToken, refreshTokenValue } = generateTokens(user.id, user.email, user.role);
-    // Same family: this is the same sign-in continuing, and a fresh family
-    // would put the successor beyond the reach of the revocation above.
-    await storeRefreshToken(user.id, refreshTokenValue, req.headers.origin, outcome.familyId);
-    pruneExpiredRefreshTokens(user.id);
-
-    res.json({ accessToken, refreshToken: refreshTokenValue });
+    res.json({ accessToken: rotated.accessToken, refreshToken: rotated.refreshTokenValue });
   } catch (err) {
     logger.error({ err }, "refresh failed");
     res.status(500).json({ error: "Token refresh failed" });
@@ -1869,9 +1892,10 @@ router.delete("/users/avatar", authMiddleware, async (req: AuthenticatedRequest,
 //     cascade. It is cost accounting; what survives is a spend row with no
 //     person attached to it.
 //
-// Re-authentication is required. For a teacher the cascade reaches the whole
-// roster — other people's children — and a stolen access token must not be
-// enough to erase it.
+// Re-authentication is required — the password, or a fresh Google sign-in for
+// an account without one. For a teacher the cascade reaches the whole roster —
+// other people's children — and a stolen access token must not be enough to
+// erase it.
 const deleteAccountLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000,
   max: 5,
@@ -1892,12 +1916,12 @@ router.delete(
       }
 
       // A password account proves itself with its password. A Google-only
-      // account has no hash to check, so it retypes its own email address:
-      // weaker, but it is the strongest thing that account actually holds,
-      // and it still stops deletion by token alone.
-      const { password, confirmEmail } = req.body as {
+      // account signs in with Google again, moments before: the email it used
+      // to retype is inside the access token, so it stopped nothing — see
+      // lib/googleReauth.ts.
+      const { password, googleCredential } = req.body as {
         password?: string;
-        confirmEmail?: string;
+        googleCredential?: string;
       };
       if (account.passwordHash) {
         const ok = password
@@ -1907,11 +1931,49 @@ router.delete(
           res.status(401).json({ error: "Password is incorrect", code: "password_incorrect" });
           return;
         }
-      } else if (
-        confirmEmail?.trim().toLowerCase() !== account.email.toLowerCase()
-      ) {
-        res.status(401).json({ error: "Email confirmation does not match", code: "email_mismatch" });
-        return;
+      } else {
+        // 403, not 401: the access token is fine, and a 401 makes the app
+        // refresh it and resend before showing anything. An app build from
+        // before this change sends `confirmEmail` and lands here with a
+        // readable refusal rather than a deleted account.
+        const reauthRequired = () =>
+          res.status(403).json({
+            error: "Sign in with Google again to confirm it is you, then delete. If the app does not offer this, update it first.",
+            code: "google_reauth_required",
+          });
+        if (typeof googleCredential !== "string" || !googleCredential) {
+          reauthRequired();
+          return;
+        }
+        if (!googleClient) {
+          res.status(503).json({ error: "Google sign-in is not configured" });
+          return;
+        }
+        let payload;
+        try {
+          // The same verifier and audience list as POST /auth/google.
+          const ticket = await googleClient.verifyIdToken({
+            idToken: googleCredential,
+            audience: googleClientIdList,
+          });
+          payload = ticket.getPayload();
+        } catch (err) {
+          logger.warn({ err, userId }, "account deletion: google id token rejected");
+          reauthRequired();
+          return;
+        }
+        const verdict = checkGoogleReauth(payload, account.googleId, Date.now());
+        if (verdict === "wrong_account") {
+          res.status(403).json({
+            error: "That Google account is not the one linked to this account.",
+            code: "google_account_mismatch",
+          });
+          return;
+        }
+        if (verdict !== "ok") {
+          reauthRequired();
+          return;
+        }
       }
 
       const media = await db

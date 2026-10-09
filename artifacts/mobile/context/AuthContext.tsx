@@ -10,6 +10,7 @@ import {
   isNetworkError,
   setOnRefreshFailed,
   getApiBaseUrl,
+  withRefreshPaused,
 } from '@/services/apiClient';
 import { LEGAL_VERSION } from '@/constants/legal';
 import { trackEvent } from '@/services/analytics';
@@ -175,11 +176,13 @@ interface AuthContextType {
   uploadAvatar: (dataUrl: string) => Promise<void>;
   removeAvatar: () => Promise<void>;
   /**
-   * Irreversible. Pass `password` for an ordinary account, or `confirmEmail`
-   * for a Google-only one — the server picks which it will accept based on
-   * whether the account has a password hash at all, and refuses 401 otherwise.
+   * Irreversible. Pass `password` for an ordinary account, or for a
+   * Google-only one `googleCredential`: an ID token from a Google sign-in made
+   * just now (the server accepts it for five minutes and checks it is this
+   * account's Google user). The server picks which it accepts based on whether
+   * the account has a password hash at all.
    */
-  deleteAccount: (proof: { password?: string; confirmEmail?: string }) => Promise<void>;
+  deleteAccount: (proof: { password?: string; googleCredential?: string }) => Promise<void>;
   /**
    * Flips `hasRosterLink` to true locally right after a successful
    * `POST /auth/claim`, so the routing gate clears without a round trip to
@@ -641,7 +644,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const deleteAccount = useCallback(
-    async (proof: { password?: string; confirmEmail?: string }) => {
+    async (proof: { password?: string; googleCredential?: string }) => {
       // Push token first, for the same reason logout does it first: after the
       // account is gone the server would refuse the unregister call, and the
       // device would keep a token pointed at a user that no longer exists.
@@ -754,12 +757,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // 3. Commit, new session first. Between the two writes the old session's
       //    token is in the active slot and nowhere else, or the new one's is —
       //    never one token in both places.
-      const leavingRefresh = user ? await getRefreshToken() : null;
-      await adoptSession(pair.accessToken, pair.refreshToken, apiUser);
-      await removeSavedAccount(targetId);
-      if (user && leavingRefresh) {
-        await saveAccount(metaForOpenAccount(user), leavingRefresh).catch(() => {});
-      }
+      //    With refreshes paused: one already in flight for the leaving account
+      //    lands first (so its rotated token is the one set aside), and none can
+      //    start until the slot holds the new account — otherwise its answer
+      //    would be written over the new account's tokens. See refreshGate.ts.
+      await withRefreshPaused(async () => {
+        const leavingRefresh = user ? await getRefreshToken() : null;
+        await adoptSession(pair.accessToken, pair.refreshToken, apiUser);
+        await removeSavedAccount(targetId);
+        if (user && leavingRefresh) {
+          await saveAccount(metaForOpenAccount(user), leavingRefresh).catch(() => {});
+        }
+      });
       await refreshSavedAccounts();
     } finally {
       accountOpBusy.current = false;
@@ -771,11 +780,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     accountOpBusy.current = true;
     try {
       if (isSavedFull(await loadSavedAccounts(), user.id)) throw new Error('too_many_accounts');
-      const refreshToken = await getRefreshToken();
-      if (!refreshToken) throw new Error('no_session');
-      // No server sign-out: that would end the very session being kept.
-      await saveAccount(metaForOpenAccount(user), refreshToken);
-      await clearTokens();
+      // Refreshes paused for the same reason as in switchAccount: the token set
+      // aside must be the newest one, and nothing may write it back afterwards.
+      await withRefreshPaused(async () => {
+        const refreshToken = await getRefreshToken();
+        if (!refreshToken) throw new Error('no_session');
+        // No server sign-out: that would end the very session being kept.
+        await saveAccount(metaForOpenAccount(user), refreshToken);
+        await clearTokens();
+      });
       try {
         // So the Google chooser appears for the next sign-in instead of the
         // native SDK silently handing back this account again.

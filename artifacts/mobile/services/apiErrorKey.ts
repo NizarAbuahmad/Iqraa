@@ -30,7 +30,8 @@ const BY_CODE = {
   role_locked_teaching: 'accountTypeLockedTeaching',
   role_locked_linked: 'accountTypeLockedLinked',
   password_incorrect: 'errPasswordIncorrect',
-  email_mismatch: 'errEmailMismatch',
+  google_reauth_required: 'errGoogleReauthRequired',
+  google_account_mismatch: 'errGoogleAccountMismatch',
   account_suspended: 'errAccountSuspended',
   // Messaging.
   not_connected: 'errNotConnected',

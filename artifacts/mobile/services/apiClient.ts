@@ -6,6 +6,7 @@ import * as storage from './secureStorage';
 import { fetchWithTimeout } from './fetchWithTimeout';
 import { originHeaders } from './clientPlatform';
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, isSessionLost } from './sessionLoss';
+import { RefreshGate } from './refreshGate';
 
 const LOCAL_DEV_API = 'http://localhost:8080/api';
 
@@ -105,70 +106,73 @@ export async function clearTokens(): Promise<void> {
   ]);
 }
 
-type RefreshCallback = () => Promise<string | null>;
-
 let _onRefreshFailed: (() => void) | null = null;
-let _refreshInFlight: Promise<string | null> | null = null;
+const refreshGate = new RefreshGate<string | null>();
 
 export function setOnRefreshFailed(cb: () => void) {
   _onRefreshFailed = cb;
 }
 
-async function refreshAccessToken(): Promise<string | null> {
-  if (_refreshInFlight) return _refreshInFlight;
+/**
+ * Run `fn` with no token refresh in flight and none starting until it settles.
+ * For anything that moves a refresh token into or out of the active slot — an
+ * account switch or add. See refreshGate.ts.
+ */
+export function withRefreshPaused<R>(fn: () => Promise<R>): Promise<R> {
+  return refreshGate.swap(fn);
+}
 
-  _refreshInFlight = (async () => {
-    try {
-      const refreshToken = await getRefreshToken();
-      if (!refreshToken) return null;
+function refreshAccessToken(): Promise<string | null> {
+  return refreshGate.refresh(doRefresh, getAccessToken);
+}
 
-      // The deadline here is what keeps `_refreshInFlight` from wedging: the
-      // reset below lives in this IIFE's `finally`, so a refresh that never
-      // settles leaves the latch set and every later 401 awaits a dead promise.
-      const res = await fetchWithTimeout(`${getApiBaseUrl()}/auth/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken }),
-      });
+async function doRefresh(): Promise<string | null> {
+  try {
+    const refreshToken = await getRefreshToken();
+    if (!refreshToken) return null;
 
-      if (!res.ok) {
-        // Only the server saying "that token is no good" ends the session. A
-        // 502 from the edge or a 503 from a cold API says nothing about the
-        // token, and clearing on it logged a teacher out of a working
-        // session because the network blinked.
-        if (res.status === 400 || res.status === 401 || res.status === 403) {
-          // On web every tab shares one token store. If another tab rotated
-          // this token meanwhile (the server refuses the loser inside its
-          // grace window), the stored pair is fresh — keep it, don't wipe it.
-          if ((await getRefreshToken()) !== refreshToken) return getAccessToken();
-          await clearTokens();
-          _onRefreshFailed?.();
-        }
-        return null;
+    // The deadline here is what keeps the gate's single-flight latch from
+    // wedging: it clears only when this settles, so a refresh that never
+    // settles would leave every later 401 awaiting a dead promise.
+    const res = await fetchWithTimeout(`${getApiBaseUrl()}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!res.ok) {
+      // Only the server saying "that token is no good" ends the session. A
+      // 502 from the edge or a 503 from a cold API says nothing about the
+      // token, and clearing on it logged a teacher out of a working
+      // session because the network blinked.
+      if (res.status === 400 || res.status === 401 || res.status === 403) {
+        // On web every tab shares one token store. If another tab rotated
+        // this token meanwhile (the server refuses the loser inside its
+        // grace window), the stored pair is fresh — keep it, don't wipe it.
+        if ((await getRefreshToken()) !== refreshToken) return getAccessToken();
+        await clearTokens();
+        _onRefreshFailed?.();
       }
-
-      let data: { accessToken?: unknown; refreshToken?: unknown };
-      try {
-        data = await res.json() as typeof data;
-      } catch {
-        return null;
-      }
-      if (typeof data.accessToken !== 'string' || typeof data.refreshToken !== 'string') return null;
-      await storeTokens(data.accessToken, data.refreshToken);
-      return data.accessToken;
-    } catch {
-      // A timeout or an offline device, not a verdict on the token: keep it
-      // and let the next request try again. Reproducible before this by
-      // toggling airplane mode once the access token had expired — the
-      // first 401 refreshed, the refresh timed out, and the teacher landed
-      // on the login screen mid-worksheet.
       return null;
-    } finally {
-      _refreshInFlight = null;
     }
-  })();
 
-  return _refreshInFlight;
+    let data: { accessToken?: unknown; refreshToken?: unknown };
+    try {
+      data = await res.json() as typeof data;
+    } catch {
+      return null;
+    }
+    if (typeof data.accessToken !== 'string' || typeof data.refreshToken !== 'string') return null;
+    await storeTokens(data.accessToken, data.refreshToken);
+    return data.accessToken;
+  } catch {
+    // A timeout or an offline device, not a verdict on the token: keep it
+    // and let the next request try again. Reproducible before this by
+    // toggling airplane mode once the access token had expired — the
+    // first 401 refreshed, the refresh timed out, and the teacher landed
+    // on the login screen mid-worksheet.
+    return null;
+  }
 }
 
 /**

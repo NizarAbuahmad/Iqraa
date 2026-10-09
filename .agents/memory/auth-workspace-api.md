@@ -41,7 +41,7 @@ description: JWT auth flow, workspace CRUD API, mobile SecureStore token storage
 
 - Tokens stored in `expo-secure-store` (not AsyncStorage).
 - `artifacts/mobile/services/apiClient.ts` — base URL helper, token store/clear, `apiFetch` with auto-refresh on 401, `apiJson` wrapper.
-- `context/AuthContext.tsx` — calls the real API; exposes `register(data: RegisterData)` (one object: firstName, lastName, email, password, optional confirmPassword/role/claimCode/studentId), plus `login`, `loginWithGoogle(credential, signup?)`, `logout`, `updateProfile`, `deleteAccount({ password?, confirmEmail? })`.
+- `context/AuthContext.tsx` — calls the real API; exposes `register(data: RegisterData)` (one object: firstName, lastName, email, password, optional confirmPassword/role/claimCode/studentId), plus `login`, `loginWithGoogle(credential, signup?)`, `logout`, `updateProfile`, `deleteAccount({ password?, googleCredential? })` (Google-only accounts re-sign-in with Google; the server wants an ID token ≤5 min old whose sub is the linked googleId).
 - `workspace.ts` — calls API when authenticated, falls back to AsyncStorage on network failure.
 
 ## User type changes
