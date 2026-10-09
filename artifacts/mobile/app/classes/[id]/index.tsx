@@ -46,6 +46,7 @@ import {
   generateJoinCode,
   getClass,
   getClassMastery,
+  getSupportGroups,
   listClassParentContacts,
   listClassResources,
   parseStudentNames,
@@ -66,7 +67,7 @@ import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { copyToClipboard, shareAsText } from '@/services/share';
 import { Toast } from '@/components/ui/Toast';
 import { getItems, updateItem, type SavedMaterial } from '@/services/workspace';
-import { listEvaluations, setEvaluationClass, type Evaluation } from '@/services/evaluations';
+import { EvaluationError, listEvaluations, setEvaluationClass, type Evaluation } from '@/services/evaluations';
 import {
   MATERIAL_COLOR,
   MATERIAL_ICON,
@@ -79,6 +80,8 @@ import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { ClassResourceRow } from '@/components/classes/ClassResourceRow';
 import { LibraryPickerSheet } from '@/components/classes/LibraryPickerSheet';
 import { LabPickerSheet } from '@/components/classes/LabPickerSheet';
+import { SupportGroupsSection } from '@/components/classes/SupportGroupsSection';
+import type { SupportGroup } from '@/services/supportGroups';
 import {
   addBodyFor,
   addLabBodyFor,
@@ -154,6 +157,7 @@ export default function ClassDetailScreen() {
   const [pickerError, setPickerError] = useState('');
   const [savedCount, setSavedCount] = useState(0);
   const [mastery, setMastery] = useState<ClassMastery | null>(null);
+  const [supportGroups, setSupportGroups] = useState<SupportGroup[] | null>(null);
   /** Null until loaded, or when the log can't be read — the card then hides. */
   const [parentContacts, setParentContacts] = useState<ClassParentContact[] | null>(null);
   const [noteStudent, setNoteStudent] = useState<RosterStudent | null>(null);
@@ -268,6 +272,7 @@ export default function ClassDetailScreen() {
     // A class with no marked attempts yet answers with empty objectives, which
     // the section renders as "nothing yet" rather than as an error.
     setMastery(await getClassMastery(id).catch(() => null));
+    setSupportGroups(await getSupportGroups(id).catch(() => null));
     // Same rule: the contact card is advice, never a reason to fail the roster.
     setParentContacts(await listClassParentContacts(id).catch(() => null));
   }, [id, describe]);
@@ -556,8 +561,8 @@ export default function ClassDetailScreen() {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setShowAttachExam(false);
       await load();
-    } catch {
-      setError(t('saveToClassFailed'));
+    } catch (err) {
+      setError(t(err instanceof EvaluationError && err.code === 'audience_class_locked' ? 'supportGroupClassLocked' : 'saveToClassFailed'));
     } finally {
       setAttachingExamId(null);
     }
@@ -576,8 +581,8 @@ export default function ClassDetailScreen() {
     try {
       await setEvaluationClass(exam.id, null);
       await load();
-    } catch {
-      setError(t('saveToClassFailed'));
+    } catch (err) {
+      setError(t(err instanceof EvaluationError && err.code === 'audience_class_locked' ? 'supportGroupClassLocked' : 'saveToClassFailed'));
     }
   };
 
@@ -1137,6 +1142,7 @@ export default function ClassDetailScreen() {
                 </View>
               </Pressable>
               <MasterySection mastery={mastery} colors={colors} isRTL={isRTL} align={align} lang={lang} t={t} />
+              <SupportGroupsSection classId={id} groups={supportGroups} isRTL={isRTL} align={align} lang={lang === 'ar' ? 'ar' : 'en'} t={t} />
             </View>
           }
           ListEmptyComponent={exams.length > 0 ? emptyForSubject : empty('clipboard-outline', 'noExamsYet', 'noExamsDesc', { label: t('attachExam'), onPress: () => { void openAttachExam(); } })}
@@ -1161,7 +1167,7 @@ export default function ClassDetailScreen() {
                   <Text style={[styles.rowRef, { color: draft ? palette.warning : colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
                     {draft
                       ? t('examNotPublished')
-                      : t('examMarkedCount', String(item.markedCount ?? 0), String(students.length))}
+                      : t('examMarkedCount', String(item.markedCount ?? 0), String(item.audienceSize || students.length))}
                   </Text>
                 </View>
                 <Pressable onPress={() => { void onDetachExam(item); }} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('remove')}>

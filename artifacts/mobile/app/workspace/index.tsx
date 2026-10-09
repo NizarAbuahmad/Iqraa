@@ -16,8 +16,12 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import {
   MaterialType, SavedMaterial,
-  deleteItem, duplicateItem, getItems, toggleFavorite,
+  attachToClasses, deleteItem, duplicateItem, getItems, toggleFavorite, updateItem,
 } from '@/services/workspace';
+import { describeAttachResult } from '@/services/classAttach';
+import type { Lang } from '@/services/i18n';
+import { ClassPickerSheet, type ClassPick } from '@/components/ui/ClassPickerSheet';
+import { Toast } from '@/components/ui/Toast';
 import {
   MATERIAL_COLOR,
   MATERIAL_EDIT_ROUTE,
@@ -57,6 +61,15 @@ export default function WorkspaceScreen() {
   const [query, setQuery] = useState(typeof q === 'string' ? q : '');
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [menuItem, setMenuItem] = useState<SavedMaterial | null>(null);
+  /**
+   * The material whose class is being changed from its «...» menu. The card
+   * already names the class; without this the only ways to change it were
+   * Edit → the generator's class row, or Remove inside the old class.
+   */
+  const [classPickFor, setClassPickFor] = useState<SavedMaterial | null>(null);
+  const [toastMsg, setToastMsg] = useState('');
+  const [toastVisible, setToastVisible] = useState(false);
+  const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
   /**
    * The roster, only so a card can name the class it belongs to. Loaded once
    * per focus rather than per card: `classGroupId` is stored on the material,
@@ -169,6 +182,12 @@ export default function WorkspaceScreen() {
         }]
         : []),
       {
+        key: 'class',
+        icon: 'people-outline' as const,
+        label: t(item.classGroupId ? 'changeClassTitle' : 'pickClassFirst'),
+        run: () => setClassPickFor(item),
+      },
+      {
         key: 'duplicate',
         icon: 'copy-outline' as const,
         label: t('duplicateItem'),
@@ -182,6 +201,33 @@ export default function WorkspaceScreen() {
         run: () => { void handleDelete(item); },
       },
     ];
+  };
+
+  // Same bodies as MaterialClassField's pick/clear: the first class keeps this
+  // material and the rest get copies (see attachToClasses); a failed write is
+  // reported, never shown as done.
+  const handlePickClass = async (picks: ClassPick[]) => {
+    const item = classPickFor;
+    setClassPickFor(null);
+    if (!item || picks.length === 0) return;
+    const outcome = await attachToClasses(item.id, picks.map(p => p.id));
+    showToast(describeAttachResult(outcome, picks, t, lang as Lang));
+    if (outcome.attached > 0) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      await queryClient.invalidateQueries({ queryKey: ['workspaceItems'] });
+    }
+  };
+
+  const handleClearClass = async () => {
+    const item = classPickFor;
+    setClassPickFor(null);
+    if (!item) return;
+    if (!(await updateItem(item.id, { classGroupId: null }))) {
+      showToast(t('saveToClassFailed'));
+      return;
+    }
+    showToast(t('removedFromClass'));
+    await queryClient.invalidateQueries({ queryKey: ['workspaceItems'] });
   };
 
   const formatDate = (iso: string) => {
@@ -362,7 +408,7 @@ export default function WorkspaceScreen() {
           </Text>
         </Pressable>
         <Text style={[styles.countText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-          {lang === 'ar' ? arCountPhrase(filtered.length, 'مادة', 'مادتان', 'مواد') : `${filtered.length} ${filtered.length === 1 ? 'item' : 'items'}`}
+          {lang === 'ar' ? arCountPhrase(filtered.length, 'ملف', 'ملفان', 'ملفات') : `${filtered.length} ${filtered.length === 1 ? 'item' : 'items'}`}
         </Text>
       </View>
 
@@ -459,6 +505,16 @@ export default function WorkspaceScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      <ClassPickerSheet
+        visible={classPickFor !== null}
+        selectedClassId={classPickFor?.classGroupId ?? null}
+        onClose={() => setClassPickFor(null)}
+        multiple
+        onPick={picks => { void handlePickClass(picks); }}
+        onClear={() => { void handleClearClass(); }}
+      />
+      <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
     </View>
   );
 }

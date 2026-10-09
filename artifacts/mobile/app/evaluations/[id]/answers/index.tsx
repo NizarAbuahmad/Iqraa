@@ -14,9 +14,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { RosterError, getClass, listClasses, type ClassGroup, type RosterStudent } from '@/services/roster';
-import { listAttempts, type AttemptListRow, type AttemptStatus } from '@/services/evaluations';
+import { getEvaluation, listAttempts, type AttemptListRow, type AttemptStatus } from '@/services/evaluations';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
+import { filterToAudience } from '@/services/supportGroups';
 import { palette } from '@/constants/colors';
 import { BackButton } from '@/components/ui/BackButton';
 
@@ -54,6 +55,7 @@ export default function PickStudentScreen() {
   const [classId, setClassId] = useState<string | null>(null);
   const [students, setStudents] = useState<RosterStudent[]>([]);
   const [attempts, setAttempts] = useState<AttemptListRow[]>([]);
+  const [audience, setAudience] = useState<string[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -61,6 +63,7 @@ export default function PickStudentScreen() {
     useCallback(() => {
       if (!id) return;
       listAttempts(id).then(setAttempts).catch(() => {});
+      getEvaluation(id).then(d => setAudience(d.audience ?? null)).catch(() => {});
     }, [id]),
   );
 
@@ -144,7 +147,7 @@ export default function PickStudentScreen() {
         />
       ) : (
         <FlatList
-          data={students}
+          data={filterToAudience(students, audience)}
           keyExtractor={s => s.id}
           contentContainerStyle={{ padding: 20, gap: 12 }}
           renderItem={({ item }) => {

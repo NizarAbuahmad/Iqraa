@@ -11,6 +11,7 @@ import { apiFetch } from './apiClient.ts';
 import { trackEvent } from './analytics.ts';
 import type { AddLabResourceBody, AddResourceBody, ClassResource } from './classResources.ts';
 import type { StudentRecord } from './studentRecord.ts';
+import type { SupportGroup } from './supportGroups';
 
 export interface ClassGroup {
   id: string;
@@ -199,6 +200,12 @@ export async function getClassMastery(classId: string): Promise<ClassMastery> {
 export async function getStudentRecord(classId: string, studentId: string): Promise<StudentRecord> {
   const res = await apiFetch(`/classes/${classId}/students/${studentId}/record`);
   return readJson<StudentRecord>(res, 'Loading student record');
+}
+
+/** The objectives this class is weak on, each with the members under the line. */
+export async function getSupportGroups(classId: string): Promise<SupportGroup[]> {
+  const res = await apiFetch(`/classes/${classId}/support-groups`);
+  return (await readJson<{ groups: SupportGroup[] }>(res, 'Loading support groups')).groups;
 }
 
 /**
