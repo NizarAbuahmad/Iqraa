@@ -13,6 +13,11 @@
  * deploys before the bundle, but a bundle can also meet an API that has not
  * redeployed yet (a preview, a local server on an older checkout).
  *
+ * A stream counts as complete only when its `done` frame arrives. Bytes that
+ * simply stop (a dropped connection, a proxy cutting in, a model error
+ * mid-reply) are not a finished answer, so that case throws and the screen
+ * keeps the partial text it was shown rather than presenting it as the reply.
+ *
  * Imports expo, so it is deliberately not loaded by `node --test`; the
  * parsing it leans on is tested in sseParser.test.ts.
  */
@@ -57,14 +62,18 @@ export async function streamChat(
   params: ChatParams,
   opts: { signal: AbortSignal; onDelta: (full: string) => void },
 ): Promise<{ content: string; cancelled: boolean }> {
+  // Stop pressed before anything started: no token read, no request.
+  if (opts.signal.aborted) return { content: '', cancelled: true };
+
   // One controller feeds fetch: the caller's Stop and the idle timer both
-  // abort it, and `timedOut` says which — a timeout is a failure the screen
-  // may fall back from, a Stop is a choice it must respect.
+  // abort it. Which one fired is read from state (`opts.signal.aborted`,
+  // `timedOut`), never from the error's name — a timeout is a failure the
+  // screen may fall back from, a Stop is a choice it must respect, and when
+  // both fired the Stop wins.
   const controller = new AbortController();
   let timedOut = false;
   const onCallerAbort = () => controller.abort();
-  if (opts.signal.aborted) controller.abort();
-  else opts.signal.addEventListener('abort', onCallerAbort);
+  opts.signal.addEventListener('abort', onCallerAbort);
 
   let idle: ReturnType<typeof setTimeout> | null = null;
   const armIdle = () => {
@@ -77,6 +86,10 @@ export async function streamChat(
 
   let full = '';
   const throttle = createDeltaThrottle(opts.onDelta, EMIT_EVERY_MS);
+  // Both are assigned in a closure or after an await, so TypeScript would
+  // otherwise narrow them to `null` where they are read.
+  let reader = null as ReadableStreamDefaultReader<Uint8Array> | null;
+  let doneContent = null as string | null;
 
   try {
     armIdle();
@@ -101,10 +114,7 @@ export async function streamChat(
 
     const parser = createSseParser();
     const decoder = new TextDecoder();
-    const reader = res.body.getReader();
-    // Assigned inside `handle`, so TypeScript would otherwise narrow both to
-    // `null` here and see the reads below as unreachable.
-    let doneContent = null as string | null;
+    reader = res.body.getReader();
     let streamError = null as { code: string; message: string } | null;
 
     const handle = (events: ReturnType<typeof parser.push>) => {
@@ -120,7 +130,9 @@ export async function streamChat(
       }
     };
 
-    for (;;) {
+    // Stop reading at `done`: a proxy that holds the connection open after
+    // the last frame must not turn a finished answer into an idle timeout.
+    while (doneContent === null) {
       const { value, done } = await reader.read();
       if (done) break;
       armIdle();
@@ -130,25 +142,38 @@ export async function streamChat(
     handle(parser.flush());
     throttle.flush();
 
-    if (streamError && !full) {
-      throw new ApiError(streamError.message || 'stream failed', streamError.code, 200);
+    if (opts.signal.aborted && !timedOut) return { content: full, cancelled: true };
+    if (timedOut) throw new ChatStreamTimeoutError();
+
+    // `done` is the only positive completion signal. Without it the reply
+    // may be cut anywhere, so it is an error — the screen keeps the partial
+    // text it already has.
+    if (doneContent === null) {
+      throw new ApiError(
+        streamError?.message || 'stream ended early',
+        streamError?.code ?? 'stream_incomplete',
+        200,
+      );
     }
     // `done` carries the authoritative text; deltas can lose a frame to a
     // proxy, the final string cannot.
-    const content = doneContent ?? full;
+    const content: string = doneContent;
     if (content !== full) opts.onDelta(content);
     return { content, cancelled: false };
   } catch (e) {
-    const aborted = e instanceof Error && e.name === 'AbortError';
-    if (aborted && !timedOut) {
+    // Whatever ends the turn, the last <=80 ms of text reaches the screen.
+    throttle.flush();
+    if (opts.signal.aborted && !timedOut) {
       // The teacher's Stop: not an error. Hand back what arrived.
-      throttle.flush();
       return { content: full, cancelled: true };
     }
-    if (aborted && timedOut) throw new ChatStreamTimeoutError();
+    if (timedOut) throw new ChatStreamTimeoutError();
     throw e;
   } finally {
     if (idle) clearTimeout(idle);
     opts.signal.removeEventListener('abort', onCallerAbort);
+    // Left unfinished (Stop, timeout, error): tell the server to stop
+    // generating rather than leaving the connection to run on.
+    if (reader && doneContent === null) reader.cancel().catch(() => {});
   }
 }
