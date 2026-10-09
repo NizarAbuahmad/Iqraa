@@ -69,6 +69,7 @@ import { DictationInput, FillBlankInput, MatchingInput, ReadAloudInput } from '@
 import { isolateForeignRuns } from '@/services/mathRender';
 import type { TranslationKey } from '@/services/i18n';
 import { palette } from '@/constants/colors';
+import { Image } from 'expo-image';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -650,7 +651,9 @@ export default function TakeExamScreen() {
   // Lesson-level, so on its own it sat under every question — a spelling item in a
   // maths paper got the maths lesson's compass rose. Show it only where the
   // question itself points at a figure.
-  const examFigures = question && questionRefersToFigure(question.body)
+  // A question that carries its own figure (attached by the teacher on the
+  // worksheet it came from) shows that one, not the whole lesson's.
+  const examFigures = question && !question.body['figure'] && questionRefersToFigure(question.body)
     ? bookFigureRefsForLessons(lessonIds, lang === 'ar')
     : [];
   return (
@@ -819,6 +822,22 @@ function QuestionCard({
         </Text>
       ) : null}
 
+      {/* The book figure the teacher attached to this question. The server only
+          lets a book-figure URL through (questionFigure.ts). */}
+      {typeof (body['figure'] as { uri?: unknown } | undefined)?.uri === 'string' ? (
+        <View style={styles.figure}>
+          <Image
+            source={{ uri: (body['figure'] as { uri: string }).uri }}
+            style={styles.figureImage}
+            contentFit="contain"
+            accessibilityLabel={String((body['figure'] as { caption?: unknown }).caption ?? '')}
+          />
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, textAlign: 'center' }}>
+            {String((body['figure'] as { caption?: unknown }).caption ?? '')}
+          </Text>
+        </View>
+      ) : null}
+
       {question.type === 'multiple_choice' && (
         <View style={{ gap: 10, marginTop: 16 }}>
           {options.map(o => {
@@ -957,6 +976,8 @@ function QuestionCard({
 }
 
 const styles = StyleSheet.create({
+  figure: { marginTop: 12, alignItems: 'center', gap: 4 },
+  figureImage: { width: '100%', height: 180 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { paddingHorizontal: 20, paddingBottom: 16, gap: 4 },
   headerTitle: { color: '#fff', fontSize: 19 },
