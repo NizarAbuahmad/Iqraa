@@ -15,6 +15,13 @@
  *    written as the plain capital, `NA`.
  * Quantity lines are bullets: a bullet is never drawn as a boxed equation.
  *
+ * A Latin phrase on an Arabic page is ONE left-to-right run (`ltr`). The deck's own
+ * isolation (`isolateForeignRuns`) deliberately leaves «,» and «·» outside a run and
+ * cuts at «—», and the pieces then lay out right to left. Seen in a real render of the
+ * HTML export: «Rx, Ry» printed as «Ry ,Rx», «m·s⁻²» as «s⁻²·m», and the licence
+ * credit «2012rc, CC BY 3.0, via Wikimedia Commons» backwards. Explicit isolates keep the
+ * text exactly as written; nested isolates inside one are ordered left to right.
+ *
  * A slide never carries unlicensed or uncredited media: an external item with
  * no attribution, or whose licence does not allow showing it, makes no slide.
  * The credit goes in `content` AND `mediaCaption` — the presenter reads one,
@@ -34,6 +41,14 @@ import { usePolicy } from '@workspace/curriculum/bank';
 import type { ActivitySlide } from './ai/AIService.ts';
 import { buildMediaSlide, youtubeIdFrom } from './classMedia.ts';
 import { labShareUrl } from './labLinks.ts';
+
+const LRI = '\u2066';
+const PDI = '\u2069';
+
+/** One left-to-right run, so an Arabic page cannot reorder the pieces inside it. */
+function ltr(text: string): string {
+  return `${LRI}${text}${PDI}`;
+}
 
 const SUPERSCRIPT: Record<string, string> = { '': '¹', '²': '²', '³': '³' };
 
@@ -67,7 +82,7 @@ export function lawFormulaLines(item: LabLawItem): string[] {
 
 function buildLawSlide(item: LabLawItem, isAr: boolean, slideNumber: number): ActivitySlide {
   const quantityLines = item.quantities.map(
-    q => `• ${slideSymbol(q.symbol)} — ${q.nameEn} (${unitForSlide(q.unit)})`,
+    q => `• ${ltr(`${slideSymbol(q.symbol)} — ${q.nameEn} (${unitForSlide(q.unit)})`)}`,
   );
   // Lesson vocabulary is Arabic, copied verbatim; the title is already one of the terms.
   const terms = isAr ? item.termsAr.filter(term => term !== item.titleAr) : [];
@@ -97,7 +112,7 @@ function buildExternalSlide(
   const credit = (res.attribution ?? '').trim();
   if (!credit) return null;
   const policy = usePolicy({ authority: res.authority, license: res.license });
-  const caption = `${isAr ? res.titleAr : res.titleEn} — ${credit}`;
+  const caption = `${isAr ? res.titleAr : res.titleEn} — ${ltr(credit)}`;
 
   if (res.kind === 'image') {
     // `fetchUrl` is a stable public URL; the presigned `/media/external/:id`

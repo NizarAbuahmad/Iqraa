@@ -41,6 +41,18 @@ describe("checkRecording", () => {
     assert.equal(r.durationMs, 20_000);
   });
 
+  it("bills by the bytes when the claimed duration is shorter than the file", () => {
+    // 1.6 MB of 128 kbps audio is ~100 s, whatever durationMs says.
+    const r = checkRecording({ ...ok, durationMs: 1, dataUrlLength: 2_133_334 });
+    assert.ok(!isRejection(r));
+    assert.ok(r.billedSeconds >= 99, `billed ${r.billedSeconds}s`);
+  });
+
+  it("refuses a compressed file too large to be two minutes", () => {
+    const r = rejected({ ...ok, durationMs: 1, dataUrlLength: 7_000_000 });
+    assert.equal(r.code, "audio_too_long");
+  });
+
   it("stops a student after their allotted takes", () => {
     const r = rejected({ ...ok, previousTakes: MAX_TAKES_PER_QUESTION });
     assert.equal(r.status, 429);

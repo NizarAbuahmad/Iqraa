@@ -8,8 +8,8 @@
  * `Alert.prompt` only provides on iOS.
  *
  * The proof of identity depends on the account: a password account types its
- * password, a Google-only account retypes its own email, because there is no
- * hash to check. Which one is asked for comes from `/auth/me`, fetched here
+ * password, a Google-only account signs in with Google again — its email
+ * would prove nothing, since every access token carries it in plain text. Which one is asked for comes from `/auth/me`, fetched here
  * rather than read off the auth context — the context is populated by six
  * different responses and only this one endpoint reports `hasPassword`.
  */
@@ -32,12 +32,13 @@ import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import { apiJson } from '@/services/apiClient';
 import { confirm } from '@/services/confirm';
 import { goBack } from '@/services/navigation';
+import { GoogleSignInButton, isGoogleSignInAvailable } from '@/components/ui/GoogleSignInButton';
 import { BackButton } from '@/components/ui/BackButton';
 
 export default function DeleteAccountScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, lang } = useLanguage();
   const { user, deleteAccount } = useAuth();
 
   // `undefined` while unknown. Until it resolves the form stays disabled
@@ -69,8 +70,9 @@ export default function DeleteAccountScreen() {
   const ready = hasPassword !== undefined;
   const canSubmit = ready && proof.trim().length > 0 && !busy;
 
-  const handleDelete = async () => {
-    if (!canSubmit) {
+  /** `googleCredential` is the fresh ID token a Google-only account confirms with. */
+  const handleDelete = async (googleCredential?: string) => {
+    if (hasPassword ? !canSubmit : !googleCredential || busy) {
       setError(t('deleteAccountNeedProof'));
       return;
     }
@@ -86,9 +88,7 @@ export default function DeleteAccountScreen() {
     setBusy(true);
     setError(null);
     try {
-      await deleteAccount(
-        hasPassword ? { password: proof } : { confirmEmail: proof.trim() },
-      );
+      await deleteAccount(hasPassword ? { password: proof } : { googleCredential });
       // No navigation here on purpose: clearing the user in AuthContext is an
       // auth transition, and the root layout's effect sends a signed-out app
       // to login. Pushing a route as well would race it.
@@ -130,18 +130,37 @@ export default function DeleteAccountScreen() {
           </Text>
         ) : null}
 
+        {hasPassword === false ? (
+          <>
+            <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
+              {t('deleteAccountEmailLabel')}
+            </Text>
+            {busy ? (
+              <ActivityIndicator color={colors.destructive} />
+            ) : isGoogleSignInAvailable() ? (
+              // The confirm dialog still follows the sign-in, so picking an
+              // account never deletes anything on its own.
+              <GoogleSignInButton onCredential={credential => { void handleDelete(credential); }} locale={lang} />
+            ) : null}
+            {error ? (
+              <Text style={[styles.error, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                {error}
+              </Text>
+            ) : null}
+          </>
+        ) : (
+        <>
         <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
-          {hasPassword === false ? t('deleteAccountEmailLabel') : t('deleteAccountPasswordLabel')}
+          {t('deleteAccountPasswordLabel')}
         </Text>
         <TextInput
           value={proof}
           onChangeText={text => { setProof(text); setError(null); }}
           editable={ready && !busy}
-          secureTextEntry={hasPassword !== false}
+          secureTextEntry
           autoCapitalize="none"
           autoCorrect={false}
-          keyboardType={hasPassword === false ? 'email-address' : 'default'}
-          textContentType={hasPassword === false ? 'emailAddress' : 'password'}
+          textContentType="password"
           style={[
             styles.input,
             {
@@ -162,7 +181,7 @@ export default function DeleteAccountScreen() {
         ) : null}
 
         <Pressable
-          onPress={handleDelete}
+          onPress={() => handleDelete()}
           disabled={!canSubmit}
           accessibilityRole="button"
           style={[
@@ -187,6 +206,8 @@ export default function DeleteAccountScreen() {
             </Text>
           )}
         </Pressable>
+        </>
+        )}
 
         <Pressable accessibilityRole="button" onPress={() => goBack()} hitSlop={10} disabled={busy} style={styles.cancelBtn}>
           <Text style={[styles.cancelText, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>
