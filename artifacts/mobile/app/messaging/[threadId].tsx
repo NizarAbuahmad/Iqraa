@@ -35,6 +35,7 @@ import {
   addGroupMembers,
   blockUser,
   getThread,
+  hideThread,
   listMessages,
   markMessagesRead,
   pickChatImage,
@@ -51,6 +52,8 @@ import { apiErrorMessage } from '@/services/apiErrorKey';
 import { MessageBubble } from '@/components/ui/MessageBubble';
 import { Avatar } from '@/components/ui/Avatar';
 import { chatThreadSubtitle } from '@/services/chatThreadSubtitle';
+import { chatRoleLabel } from '@/services/chatRoleLabel';
+import { startsSenderRun } from '@/services/senderRuns';
 import { ParticipantPickerSheet } from '@/components/ui/ParticipantPickerSheet';
 import { mergeNewMessages } from '@/services/messageMerge';
 import { pickUnreportedReads } from '@/services/readReceipts';
@@ -90,6 +93,8 @@ export default function ThreadScreen() {
   const [addMembersOpen, setAddMembersOpen] = useState(false);
   const [memberActionUserId, setMemberActionUserId] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);
+  const [hiding, setHiding] = useState(false);
+  const [membersOpen, setMembersOpen] = useState(false);
   const [togglingPosting, setTogglingPosting] = useState(false);
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const [savingImage, setSavingImage] = useState(false);
@@ -288,6 +293,34 @@ export default function ThreadScreen() {
     }
   };
 
+  /*
+   * «حذف المحادثة» (direct) and «إخفاء المجموعة» (class group) are the same
+   * call: hide the thread from MY inbox. Neither deletes anything for anyone
+   * else, and a newer message brings the thread back — services/messaging.ts.
+   * A class group has no real "leave": its members follow the roster.
+   */
+  const handleHide = async () => {
+    if (!threadId || hiding) return;
+    setMenuOpen(false);
+    const direct = thread?.type === 'direct';
+    const ok = await confirm({
+      title: t(direct ? 'messagingDeleteConfirmTitle' : 'messagingHideConfirmTitle'),
+      message: t(direct ? 'messagingDeleteConfirmDesc' : 'messagingHideConfirmDesc'),
+      confirmLabel: t(direct ? 'messagingDeleteConversation' : 'messagingHideGroup'),
+      cancelLabel: t('cancel'),
+      destructive: true,
+    });
+    if (!ok) return;
+    setHiding(true);
+    try {
+      await hideThread(threadId);
+      goBack();
+    } catch (e) {
+      setError(apiErrorMessage(e, 'messagingLoadError', t));
+      setHiding(false);
+    }
+  };
+
   const toggleBlock = async () => {
     if (!thread?.otherParticipant || blocking) return;
     setMenuOpen(false);
@@ -339,6 +372,14 @@ export default function ThreadScreen() {
   const isGroup = thread?.type !== 'direct';
   const headerTitle = isGroup ? (lang === 'ar' ? thread?.titleAr : thread?.title) || thread?.title : '';
   const isTeacher = isTeacherRole(user?.role);
+  // «مجموعة الصف · الأعضاء: 12». The count is only shown to those the server
+  // sends the full list to (lib/groupMemberView.ts) — to a child in an
+  // announcement-only group it would be «2», which is not the class.
+  const knowsFullRoster = !!thread && (thread.isOwner || isTeacher || thread.studentPostingEnabled);
+  const groupTypeLabel = thread?.type === 'class_group' ? t('messagingThreadClassGroup') : t('messagingThreadCustomGroup');
+  const groupSubtitle = knowsFullRoster && thread?.participants
+    ? `${groupTypeLabel} · ${t('messagingMembersCount', thread.participants.length)}`
+    : groupTypeLabel;
   // The server enforces this too (see routes/messaging.ts) — hiding the
   // composer is the courtesy, not the rule. Nothing is shown until the thread
   // has loaded: assuming "can post" meanwhile flashed a composer in every
@@ -357,17 +398,33 @@ export default function ThreadScreen() {
       >
         <BackButton color={colors.foreground} />
         {isGroup ? (
-          <>
+          // Tapping the title opens the member list: a group header used to be
+          // an icon and a name, with nothing to say what kind of group it was
+          // or who was in it.
+          <Pressable
+            onPress={() => setMembersOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel={t('messagingViewMembers')}
+            style={{ flex: 1, alignItems: 'center', gap: 10, flexDirection: isRTL ? 'row-reverse' : 'row' }}
+          >
             <View style={[styles.groupIcon, { backgroundColor: colors.secondary }]}>
               <Ionicons name="people" size={18} color={colors.primary} />
             </View>
-            <Text
-              style={[styles.headerName, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}
-              numberOfLines={1}
-            >
-              {headerTitle}
-            </Text>
-          </>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={[styles.headerNameStacked, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}
+                numberOfLines={1}
+              >
+                {headerTitle}
+              </Text>
+              <Text
+                style={[styles.headerRole, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}
+                numberOfLines={1}
+              >
+                {groupSubtitle}
+              </Text>
+            </View>
+          </Pressable>
         ) : thread?.otherParticipant ? (
           <>
             <Avatar firstName={thread.otherParticipant.firstName} lastName={thread.otherParticipant.lastName} size={34} colors={colors} />
@@ -410,7 +467,9 @@ export default function ThreadScreen() {
             <Ionicons name="person-add-outline" size={20} color={colors.foreground} />
           </Pressable>
         ) : null}
-        {(!isGroup && thread?.otherParticipant) || thread?.type === 'custom_group' || (isGroup && thread?.isOwner) ? (
+        {/* Every member of a loaded thread has something in here now: block or
+            delete (direct), leave (custom group) or hide (class group). */}
+        {thread && (isGroup || thread.otherParticipant) ? (
           <Pressable onPress={() => setMenuOpen(true)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('moreOptions')}>
             <Ionicons name="ellipsis-vertical" size={20} color={colors.foreground} />
           </Pressable>
@@ -432,9 +491,12 @@ export default function ThreadScreen() {
           viewabilityConfig={viewabilityConfig}
           onViewableItemsChanged={onViewableItemsChanged}
           ListFooterComponent={loadingMore ? <ActivityIndicator color={colors.mutedForeground} style={{ marginVertical: 8 }} /> : null}
-          renderItem={({ item }) => {
+          renderItem={({ item, index }) => {
             const isOwn = item.senderId === user?.id;
             const sender = isOwn ? null : participantsById.get(item.senderId);
+            // Group threads name who sent each run of messages; a direct
+            // chat's header already says who the other person is.
+            const showName = isGroup && !isOwn && !!sender && startsSenderRun(messages, index);
             return (
               <Pressable
                 onPress={() => {
@@ -458,6 +520,8 @@ export default function ThreadScreen() {
                   colors={colors}
                   senderFirstName={sender?.firstName}
                   senderLastName={sender?.lastName}
+                  senderName={showName && sender ? `${sender.firstName} ${sender.lastName}`.trim() : undefined}
+                  senderRoleLabel={showName && sender ? chatRoleLabel(sender.role, t) : undefined}
                   attachmentUrl={item.attachmentUrl}
                   attachmentKind={item.attachmentKind}
                   seenLabel={isOwn && item.seen ? t('messageSeen') : undefined}
@@ -535,7 +599,7 @@ export default function ThreadScreen() {
       </View>
       )}
 
-      {/* ─── Header menu: block/unblock a direct thread, or manage/leave a custom group ─── */}
+      {/* ─── Header menu: block/unblock or delete a direct thread; manage/leave a custom group; hide a class group ─── */}
       <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
         <Pressable style={styles.modalBackdrop} onPress={() => setMenuOpen(false)}>
           <View style={[styles.menuCard, { backgroundColor: colors.card }]}>
@@ -594,14 +658,32 @@ export default function ThreadScreen() {
                     </Text>
                   </Pressable>
                 ) : null}
+                {/* A class group cannot be left (the roster decides who is in
+                    it), so a student or parent hides it instead. */}
+                {thread?.type === 'class_group' && !thread.isOwner ? (
+                  <Pressable onPress={handleHide} disabled={hiding} style={styles.menuRow}>
+                    <Ionicons name="eye-off-outline" size={18} color={colors.destructive} />
+                    <Text style={[styles.menuText, { color: colors.destructive, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
+                      {t('messagingHideGroup')}
+                    </Text>
+                  </Pressable>
+                ) : null}
               </>
             ) : (
-              <Pressable onPress={toggleBlock} disabled={blocking} style={styles.menuRow}>
-                <Ionicons name={thread?.isBlocked ? 'checkmark-circle-outline' : 'ban-outline'} size={18} color={colors.destructive} />
-                <Text style={[styles.menuText, { color: colors.destructive, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
-                  {thread?.isBlocked ? t('messagingUnblock') : t('messagingBlock')}
-                </Text>
-              </Pressable>
+              <>
+                <Pressable onPress={toggleBlock} disabled={blocking} style={styles.menuRow}>
+                  <Ionicons name={thread?.isBlocked ? 'checkmark-circle-outline' : 'ban-outline'} size={18} color={colors.destructive} />
+                  <Text style={[styles.menuText, { color: colors.destructive, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
+                    {thread?.isBlocked ? t('messagingUnblock') : t('messagingBlock')}
+                  </Text>
+                </Pressable>
+                <Pressable onPress={handleHide} disabled={hiding} style={styles.menuRow}>
+                  <Ionicons name="trash-outline" size={18} color={colors.destructive} />
+                  <Text style={[styles.menuText, { color: colors.destructive, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
+                    {t('messagingDeleteConversation')}
+                  </Text>
+                </Pressable>
+              </>
             )}
           </View>
         </Pressable>
@@ -651,6 +733,46 @@ export default function ThreadScreen() {
               <Ionicons name="person-add-outline" size={18} color={colors.primary} />
               <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_500Medium' }}>{t('messagingPickMembers')}</Text>
             </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* ─── Who is in this group: read-only, for every member (the header opens it) ─── */}
+      <Modal visible={membersOpen} transparent animationType="slide" onRequestClose={() => setMembersOpen(false)}>
+        <Pressable style={styles.newChatBackdrop} onPress={() => setMembersOpen(false)}>
+          <Pressable style={[styles.newChatSheet, { backgroundColor: colors.background, paddingBottom: Math.max(insets.bottom, 16) }]} onPress={e => e.stopPropagation()}>
+            <View style={[styles.newChatHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]} numberOfLines={1}>
+                  {headerTitle}
+                </Text>
+                <Text style={[styles.headerRole, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align, paddingHorizontal: 10 }]} numberOfLines={1}>
+                  {groupSubtitle}
+                </Text>
+              </View>
+              <Pressable onPress={() => setMembersOpen(false)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('cancel')}>
+                <Ionicons name="close" size={22} color={colors.mutedForeground} />
+              </Pressable>
+            </View>
+            <FlatList
+              data={thread?.participants ?? []}
+              keyExtractor={p => p.userId}
+              style={{ maxHeight: 360 }}
+              contentContainerStyle={{ paddingHorizontal: 16, gap: 6 }}
+              renderItem={({ item }) => (
+                <View style={[styles.memberManageRow, { borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                  <Avatar firstName={item.firstName} lastName={item.lastName} size={30} colors={colors} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }} numberOfLines={1}>
+                      {item.firstName} {item.lastName}
+                    </Text>
+                    <Text style={[styles.headerRole, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]} numberOfLines={1}>
+                      {chatRoleLabel(item.role, t)}
+                    </Text>
+                  </View>
+                </View>
+              )}
+            />
           </Pressable>
         </Pressable>
       </Modal>
