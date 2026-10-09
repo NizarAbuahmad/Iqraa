@@ -1525,10 +1525,26 @@ Spec `docs/superpowers/specs/2026-10-07-lab-class-workflow-design.md`, plan
   `labSlides.test.ts` runs every shipped law through the real helpers. (Inside
   «a — Acceleration (m/s²)» the raw unit does not stack; the conversion is
   defence, and the per-unit test is what fails if it regresses.)
+- **Latin text on an Arabic page (found 2026-10-09 by rendering, not by a test).**
+  The HTML export of a real lab deck, rendered in headless Chromium, printed
+  «Rx, Ry» as «Ry ,Rx», «m·s⁻²» as «s⁻²·m» and the licence credit
+  «2012rc, CC BY 3.0, via Wikimedia Commons» backwards: `isolateForeignRuns`
+  leaves «,» and «·» outside a run and cuts at «—», and the pieces then lay out
+  right to left. Every unit test passed, because they checked whole equation
+  lines and never the bullets or the credit. A quantity line and a credit are now
+  each one explicit left-to-right isolate (`ltr` in `labSlides.ts`), which keeps
+  the text exactly as written; the tests count top-level isolates, which is what
+  would have caught it.
 
 **Not seen, not done.**
-- Nothing here has been seen in a browser, and the PDF and PowerPoint output of
-  lab slides has not been looked at by a person.
+- The HTML export (the source of the PDF) of every shipped lab slide was
+  rendered in headless Chromium on 2026-10-09 and looked at, in both languages.
+  Not seen: the PDF's page breaks, the PowerPoint export (it does not apply
+  `isolateForeignRuns` at all, so the same reversals may exist there, and it
+  now also receives the isolate marks), the on-screen presenter, and the class
+  screens (add sheet, picker, shelf row, deck picker) on any device. One
+  Wikimedia image failed to load in the sandbox (network), so image slides were
+  judged on layout and credit, not on the picture.
 - The POST route's lab branch has no database test (tests have no database); it
   is covered by typecheck and build only.
 - ~~The slide editor's `applyMediaEdit` can strip a lab slide's credit when its
