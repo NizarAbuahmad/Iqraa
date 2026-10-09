@@ -2363,6 +2363,8 @@ const translations = {
     messagingRemoveMemberConfirmTitle: 'إزالة هذا العضو من المجموعة؟',
     messagingRemoveMember: 'إزالة',
     moreOptionsOptional: "خيارات إضافية (اختيارية)",
+    dangerZoneSection: 'إجراءات نهائية',
+    nextStudentBtn: (name: string) => `الطالب التالي: ${name}`,
   },
 
   en: {
@@ -4547,6 +4549,8 @@ const translations = {
     messagingRemoveMemberConfirmTitle: 'Remove this member from the group?',
     messagingRemoveMember: 'Remove',
     moreOptionsOptional: "More options (optional)",
+    dangerZoneSection: 'Permanent actions',
+    nextStudentBtn: (name: string) => `Next student: ${name}`,
   },
 } as const;
 
