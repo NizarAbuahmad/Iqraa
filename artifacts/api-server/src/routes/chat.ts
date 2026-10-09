@@ -22,16 +22,29 @@ import {
   CHAT_MESSAGE_MAX_CHARS,
   clampPromptText,
 } from "../lib/chatPrompts.ts";
+import { estimateTokens, pumpChatStream, sseFrame, wantsEventStream } from "../lib/chatStream.ts";
 
 const chatRouter = Router();
 
 /**
  * POST /chat
  * IQRA conversational assistant — grounded by knowledge-base context
- * from the mobile client. Returns a plain JSON response (not SSE)
- * so React Native can consume it easily.
+ * from the mobile client.
+ *
+ * Two reply shapes, chosen by the request's Accept header:
+ *   - `text/event-stream` → frames as the model writes (lib/chatStream.ts).
+ *   - anything else       → `{ content }` once the model is done, as before.
+ * The JSON shape stays because the API deploys before the web bundle and
+ * days before any native binary; a client that does not ask for a stream
+ * must keep getting what it got.
+ *
+ * Every refusal (bad body, live mode off, a cap) is decided before the first
+ * byte, so it is plain JSON with a status code in both shapes.
  */
 chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
+  const streaming = wantsEventStream(req.get("accept"));
+  let headersSent = false;
+  let clientGone = false;
   try {
     const { messages, context, mode, language } = req.body as {
       messages: { role: string; content: string }[];
@@ -74,35 +87,99 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
     // `mode` from the body is NOT the identity used here. It selects the prompt
     // and a student's client could send either value; the role on the verified
     // session is the one that decides whose allowance pays.
-    // Per-user allowance on top of the shared monthly cap. /chat is reachable by
-    // any signed-in account — student and parent included — and was the largest
-    // spender with no per-caller ceiling of its own.
     await assertUserQuotaAvailable(req.user?.id, req.user?.role);
     assertBudgetAvailable();
 
-    const startedAt = Date.now();
-    const completion = await openai.chat.completions.create({
-      model: getChatModel(),
-      max_completion_tokens: CHAT_MAX_TOKENS,
-      messages: chatMessages,
-    });
-    const durationMs = Date.now() - startedAt;
-    // No cache keys on purpose. A chat turn never repeats, so any key computed
-    // here would be the same for every turn and would show up in the repeat-rate
-    // analysis as a workload with a perfect hit rate — the opposite of the truth.
-    // The `kind` is what earns its place: it separates chat's share of spend
-    // from generation's, which is what decides whether AI_MODEL_CHAT is worth
-    // pointing at something cheaper (STATUS.md, 2026-08-22, still open).
-    recordUsage(completion.usage, getChatModel(), {
-      kind: isTeacher ? "chat-teacher" : "chat-student",
+    const model = getChatModel();
+    const detail = {
+      kind: isTeacher ? ("chat-teacher" as const) : ("chat-student" as const),
       promptVersion: PROMPT_VERSION,
       userId: req.user?.id,
-      durationMs,
+    };
+    const startedAt = Date.now();
+
+    if (!streaming) {
+      const completion = await openai.chat.completions.create({
+        model,
+        max_completion_tokens: CHAT_MAX_TOKENS,
+        messages: chatMessages,
+      });
+      // No cache keys on purpose. A chat turn never repeats, so any key computed
+      // here would be the same for every turn and would show up in the repeat-rate
+      // analysis as a workload with a perfect hit rate — the opposite of the truth.
+      // The `kind` is what earns its place: it separates chat's share of spend
+      // from generation's.
+      recordUsage(completion.usage, model, { ...detail, durationMs: Date.now() - startedAt });
+      res.json({ content: completion.choices[0]?.message?.content ?? "" });
+      return;
+    }
+
+    // The teacher pressed Stop, or the app went away: cancel the upstream
+    // call so the model stops generating tokens we pay for and nobody reads.
+    // `close` also fires after a normal end, hence the `writableFinished` check.
+    const upstream = new AbortController();
+    res.on("close", () => {
+      if (res.writableFinished) return;
+      clientGone = true;
+      upstream.abort();
     });
 
-    const answer = completion.choices[0]?.message?.content ?? "";
-    res.json({ content: answer });
+    const stream = await openai.chat.completions.create(
+      {
+        model,
+        max_completion_tokens: CHAT_MAX_TOKENS,
+        messages: chatMessages,
+        stream: true,
+        stream_options: { include_usage: true },
+      },
+      { signal: upstream.signal },
+    );
+
+    res.status(200);
+    res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("Connection", "keep-alive");
+    // Tells nginx-style proxies not to buffer; harmless on Cloud Run.
+    res.setHeader("X-Accel-Buffering", "no");
+    res.flushHeaders();
+    headersSent = true;
+
+    const result = await pumpChatStream(stream, res, upstream.signal);
+    const durationMs = Date.now() - startedAt;
+
+    if (result.usage) {
+      recordUsage(result.usage, model, { ...detail, durationMs });
+    } else {
+      // The client hung up before the usage chunk. OpenAI still bills the
+      // tokens generated up to the abort, so the ledger must move: an estimate
+      // that errs high (lib/chatStream.ts) rather than nothing at all.
+      const promptChars = chatMessages.reduce((n, m) => n + m.content.length, 0);
+      recordUsage(
+        { prompt_tokens: estimateTokens(promptChars), completion_tokens: estimateTokens(result.content) },
+        model,
+        { ...detail, durationMs },
+      );
+      logger.info({ userId: req.user?.id, streamedChars: result.content.length }, "chat stream abandoned by client");
+    }
+    res.end();
   } catch (err) {
+    // The client left while the upstream call was still connecting: there
+    // is nobody to answer, and the abort is the expected outcome, not an
+    // error. (Only the streaming branch sets this.)
+    if (clientGone) {
+      logger.info({ userId: req.user?.id }, "chat stream abandoned before first byte");
+      return;
+    }
+    // After the first frame there is no status code left to send; the error
+    // travels as a frame and the client shows what it already has.
+    if (headersSent) {
+      logger.error({ err }, "chat stream error");
+      if (!res.writableEnded) {
+        res.write(sseFrame({ type: "error", code: "stream_failed", message: "AI service error. Please try again." }));
+        res.end();
+      }
+      return;
+    }
     // Each carries a `code`, as evaluations.ts and generate.ts do: the API
     // answers in English, the app is Arabic, and the code is the only thing the
     // client can translate from without matching on message text.
