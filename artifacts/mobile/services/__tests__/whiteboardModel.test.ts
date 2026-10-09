@@ -444,6 +444,28 @@ describe('pages', () => {
     assert.equal(docHasInk(d), true);
   });
 
+  it('addPage, removePage and goToPage leave the other pages as the same objects, so per-page undo survives', () => {
+    const base = goToPage(draw(addPage(draw(EMPTY_DOC))), 0); // [ink, ink], viewing page 0
+    const before = base.pages;
+    assert.equal(before.length, 2);
+
+    const added = addPage(base); // inserted after page 0 → [p0, new, p1]
+    assert.equal(added.pages.length, 3);
+    assert.equal(added.pages[0], before[0]);
+    assert.equal(added.pages[2], before[1]);
+
+    const removed = removePage(added, 1); // drop the new page again → [p0, p1]
+    assert.equal(removed.pages.length, 2);
+    assert.equal(removed.pages[0], before[0]);
+    assert.equal(removed.pages[1], before[1]);
+
+    const moved = goToPage(removed, 1);
+    assert.equal(moved.current, 1);
+    assert.equal(moved.pages[0], before[0]);
+    assert.equal(moved.pages[1], before[1]);
+    assert.equal(canUndo(moved.pages[0]!.board), true);
+  });
+
   it('keeps undo history per page', () => {
     let d = draw(EMPTY_DOC);                    // page 0: one stroke, one undo step
     d = addPage(d);                              // page 1, current

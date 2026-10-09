@@ -152,7 +152,11 @@ export default function WhiteboardScreen() {
     <View style={styles.container} onLayout={e => setArea({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>
       <View style={[styles.stage, { left: stage.offsetX, top: stage.offsetY, width: stage.width, height: stage.height }]}>
         <BoardBackground kind={page.background} lang={lang} />
-        {/* Keyed by page so a gesture in flight cannot carry onto the next page. */}
+        {/* Keyed by the current page index: prev / next / add, and deleting the
+            LAST page (which moves `current` back), remount the canvas, so an
+            in-flight draft and the measured canvas width reset. Deleting a
+            middle page keeps `current` unchanged, so no remount — the canvas
+            just receives the next page's strokes. */}
         <PenCanvas
           key={doc.current}
           strokes={page.board.strokes}

@@ -340,7 +340,8 @@ an announcement by default» below.
     The board is now a 1280×720 page letterboxed into the screen
     (`fitCanvas` in `services/whiteboardModel.ts`), so ink and paper keep their
     place when the window resizes; stroke widths and paper scale with it
-    (`strokeScale` on `PenCanvas`; the eraser's reach scales too). Up to 20
+    (`strokeScale` on `PenCanvas`; the eraser radius stays a fixed 16 screen px
+    at every scale, and only the stroke's half-width term in its reach scales). Up to 20
     pages (`BoardDoc`: add after the current page, delete the current one —
     never the last — previous / next), each with its own paper and its own
     undo. Delete asks only when that page has ink; leaving asks when *any* page

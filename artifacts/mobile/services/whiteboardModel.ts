@@ -9,9 +9,11 @@
 /**
  * One stroke. `points` is `"x,y x,y …"` (an SVG polyline) in whatever units the
  * canvas stores — on screen they are fractions of the canvas width
- * (`services/penInk.ts`); `width` is always in pixels. The geometry below is
- * unit-agnostic: callers pass the touch, the eraser radius and `unit` (one pixel
- * expressed in point units) in the same units as the points.
+ * (`services/penInk.ts`). `width` is in width units: on the board, canvas units
+ * of the 1280x720 page, multiplied by `strokeScale` to get screen pixels; slide
+ * strokes keep pixel widths (`strokeScale` 1). The geometry below is
+ * unit-agnostic: callers pass the touch, the eraser radius and `unit` (one
+ * width unit expressed in point units) in the same units as the points.
  */
 export type Stroke = { color: string; points: string; /** Absent means DEFAULT_STROKE_WIDTH. */ width?: number };
 
@@ -76,9 +78,11 @@ function parsedOf(stroke: Stroke): Parsed {
 
 /**
  * Does an eraser of `radius` centred on (x, y) touch this stroke? `x`, `y`,
- * `radius` and the stroke's points share one unit; `unit` is one PIXEL in that
- * unit (default 1: points are pixels), which is what turns the stroke's pixel
- * `width` into the right amount of reach.
+ * `radius` and the stroke's points share one unit; `unit` is one stroke-width
+ * unit in that unit (default 1: points are in width units), which is what turns
+ * the stroke's `width` into the right amount of reach. The board passes
+ * `strokeScale / canvasW`; slides pass `1 / canvasW`, where a width unit is a
+ * pixel. `radius` is NOT scaled by `unit`: the eraser's own reach is fixed.
  */
 export function strokeHit(stroke: Stroke, x: number, y: number, radius: number, unit = 1): boolean {
   const { pts, minX, maxX, minY, maxY } = parsedOf(stroke);
@@ -109,9 +113,10 @@ export function eraseAt(strokes: Stroke[], x: number, y: number, radius: number 
  * Erase along the straight path from (x0, y0) to (x1, y1). A fast drag reports
  * positions farther apart than the eraser's reach, so testing only the end
  * points would skip any stroke lying between them; this samples the path at
- * most every half-radius (never finer than one pixel), which keeps the swept
+ * most every half-radius (never finer than one `unit`), which keeps the swept
  * area continuous. The start point is NOT tested — the previous call already
- * covered it. `unit` is one pixel in the points' unit, as for `strokeHit`.
+ * covered it. `unit` is one stroke-width unit in the points' unit, as for
+ * `strokeHit`.
  * Returns the SAME array when nothing was hit, like `eraseAt`.
  */
 export function eraseAlong(

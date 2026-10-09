@@ -14,7 +14,9 @@ import { DEFAULT_STROKE_WIDTH, ERASER_RADIUS, eraseAlong, eraseAt, type Stroke }
 /**
  * `points` are fractions of the canvas width, not pixels (`services/penInk.ts`),
  * so a stroke follows the slide when the stage is resized instead of staying
- * where it was drawn. `width`, when present, is in pixels.
+ * where it was drawn. `width`, when present, is in width units: slide strokes
+ * keep pixel widths (`strokeScale` 1), board strokes are in canvas units of the
+ * 1280x720 page and are multiplied by `strokeScale` to get pixels.
  */
 export type { Stroke };
 
