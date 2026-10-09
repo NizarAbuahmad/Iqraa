@@ -13,7 +13,7 @@ import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbContext';
 import { pooledVariantId } from '@/services/ai/regeneration';
-import { WorksheetOutput } from '@/services/ai/AIService';
+import { WorksheetOutput, type QuestionFigure } from '@/services/ai/AIService';
 import { buildDeckFromWorksheet } from '@/services/classDeck';
 import { ShortPaperNotice } from '@/components/ui/ShortPaperNotice';
 import { bookFigureUri } from '@/services/bookFigureUri';
@@ -40,6 +40,9 @@ import { captureGenerationScope, materialScope, reopenedGenerationScope, type Ge
 import { createVerificationTracker } from '@/services/verificationTracker';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
+import { FigurePickerSheet } from '@/components/ui/FigurePickerSheet';
+import { Image } from 'expo-image';
+import { questionRefersToFigure } from '@/services/questionFigures';
 import { GeneratorResultActions, GeneratorSaveBar } from '@/components/ui/GeneratorResultActions';
 import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 import { buildWorksheetHTML, buildWorksheetSlidesHTML, formatWorksheetText } from '@/services/share';
@@ -53,6 +56,7 @@ import {
   answerFor,
   applyWorksheetAnswerEdit,
   applyWorksheetOptionEdit,
+  applyWorksheetFigure,
   applyWorksheetQuestionEdit,
   flatIndexOf,
   parsePoints,
@@ -215,6 +219,8 @@ export default function WorksheetScreen() {
   const [showExport, setShowExport] = useState(false);
   const [showAnswers, setShowAnswers] = useState(false);
   const [printStyle, setPrintStyle] = usePrintStyle();
+  /** The question whose figure picker is open, by section and position. */
+  const [figurePickFor, setFigurePickFor] = useState<{ si: number; qi: number } | null>(null);
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
@@ -494,6 +500,17 @@ export default function WorksheetScreen() {
     setResult(prev => (prev ? applyWorksheetQuestionEdit(prev, sectionIndex, questionIndex, { text }) : prev));
   };
 
+  /**
+   * Attach, swap or remove a question's book figure. Not `markEdited`: the
+   * question and its answer are unchanged, so its verification badge stands;
+   * only the saved copy is now behind.
+   */
+  const setQuestionFigure = (sectionIndex: number, questionIndex: number, figure: QuestionFigure | null) => {
+    setResult(prev => (prev ? applyWorksheetFigure(prev, sectionIndex, questionIndex, figure) : prev));
+    setSaveLabel('save');
+    setFigurePickFor(null);
+  };
+
   const updateQuestionPoints = (sectionIndex: number, questionIndex: number, raw: string) => {
     if (!result) return;
     // Marks must stay a positive number — a zero-mark question takes a
@@ -602,6 +619,11 @@ export default function WorksheetScreen() {
     onError: key => showToast(t(key)),
     onCopied: key => showToast(t(key)),
   });
+  /** What a question can be given — the lesson's own book figures, every one of them. */
+  const lessonFigures: QuestionFigure[] = result ? getExportFigures() : [];
+  const pickingQuestion = figurePickFor && result
+    ? result.sections[figurePickFor.si]?.questions[figurePickFor.qi]
+    : undefined;
 
   const exportLabels = {
     title: t('exportTitle'),
@@ -909,6 +931,17 @@ export default function WorksheetScreen() {
                       placeholder={t('editPlaceholder')}
                       edited={editedFlatIndexes.has(flatIndex)}
                     />
+                    {q.figure ? (
+                      <Pressable
+                        onPress={() => setFigurePickFor({ si, qi: i })}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${t('changeFigure')} — ${q.figure.caption}`}
+                        style={[styles.qFigure, { borderColor: colors.border, backgroundColor: colors.muted }]}
+                      >
+                        <Image source={{ uri: q.figure.uri }} style={styles.qFigureImage} contentFit="contain" />
+                        <Text style={[styles.qFigureCaption, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>{q.figure.caption}</Text>
+                      </Pressable>
+                    ) : null}
                     {q.options?.map((o, oi) => {
                       const marker = optionMarkerState(showAnswers, o, correctAnswer);
                       const isCorrect = marker === 'selected';
@@ -963,12 +996,30 @@ export default function WorksheetScreen() {
                         />
                       </View>
                       <Text style={[styles.pts, { color: ACCENT, fontFamily: 'ReadexPro_500Medium' }]}>{outT('pts')}</Text>
+                      {lessonFigures.length > 0 ? (() => {
+                        // A question whose words point at a figure («انظر الشكل»)
+                        // and has none yet is the one a teacher must not miss.
+                        const wanted = !q.figure && questionRefersToFigure(q.text);
+                        return (
+                          <Pressable
+                            onPress={() => setFigurePickFor({ si, qi: i })}
+                            hitSlop={8}
+                            accessibilityRole="button"
+                            style={[styles.figureBtn, { flexDirection: outRTL ? 'row-reverse' : 'row', marginLeft: outRTL ? 0 : 'auto', marginRight: outRTL ? 'auto' : 0 }, wanted && { backgroundColor: ACCENT + '1A', borderColor: ACCENT }]}
+                          >
+                            <Ionicons name="image-outline" size={15} color={wanted ? ACCENT : colors.mutedForeground} />
+                            <Text style={[styles.figureBtnText, { color: wanted ? ACCENT : colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>
+                              {t(q.figure ? 'changeFigure' : 'attachFigure')}
+                            </Text>
+                          </Pressable>
+                        );
+                      })() : null}
                       <Pressable
                         onPress={() => { void removeQuestion(si, i); }}
                         hitSlop={8}
                         accessibilityRole="button"
                         accessibilityLabel={t('deleteQuestion')}
-                        style={{ marginLeft: outRTL ? 0 : 'auto', marginRight: outRTL ? 'auto' : 0 }}
+                        style={lessonFigures.length > 0 ? undefined : { marginLeft: outRTL ? 0 : 'auto', marginRight: outRTL ? 'auto' : 0 }}
                       >
                         <Ionicons name="trash-outline" size={15} color={colors.mutedForeground} />
                       </Pressable>
@@ -1071,6 +1122,17 @@ export default function WorksheetScreen() {
       <GeneratorSaveBar accent={ACCENT} savedId={savedId} saveState={saveLabel} onSave={handleSave} onExport={() => setShowExport(true)} />
     )}
 
+    <FigurePickerSheet
+      visible={!!pickingQuestion}
+      figures={lessonFigures}
+      current={pickingQuestion?.figure}
+      onPick={figure => { if (figurePickFor) setQuestionFigure(figurePickFor.si, figurePickFor.qi, figure); }}
+      onClose={() => setFigurePickFor(null)}
+      isRTL={isRTL}
+      accent={ACCENT}
+      colors={colors}
+      labels={{ title: t('attachFigureTitle'), note: t('attachFigureNote'), none: t('removeFigure'), cancel: t('cancel') }}
+    />
     <ExportMenu
       visible={showExport}
       onClose={() => setShowExport(false)}
@@ -1143,7 +1205,12 @@ const styles = StyleSheet.create({
   qNum: { fontSize: 14, width: 20 },
   optionRow: { alignItems: 'center', gap: 8, marginTop: 6 },
   optLabel: { fontSize: 12, width: 16 },
-  qFooter: { alignItems: 'center', gap: 6, marginTop: 8 },
+  qFooter: { alignItems: 'center', gap: 8, marginTop: 8 },
+  qFigure: { borderWidth: 1, borderRadius: 8, padding: 8, alignItems: 'center', gap: 4 },
+  qFigureImage: { width: '100%', height: 160 },
+  qFigureCaption: { fontSize: 11, textAlign: 'center' },
+  figureBtn: { alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, borderWidth: 1, borderColor: 'transparent' },
+  figureBtnText: { fontSize: 13 },
   pts: { fontSize: 11 },
   akHeader: { alignItems: 'center', gap: 6, marginBottom: 8, marginTop: 4 },
   akTitle: { fontSize: 14 },

@@ -38,6 +38,16 @@ export function worksheetInstructions(text: string | undefined): WorksheetInstru
   return { intro, bullets };
 }
 
+/**
+ * The lesson's figures no question holds, in their book order — what the
+ * «من الكتاب المدرسي» appendix still prints once the teacher has attached some
+ * to their questions, so none is printed twice.
+ */
+export function unattachedFigures<F extends { uri: string }>(ws: WorksheetOutput, figures: readonly F[]): F[] {
+  const attached = new Set(ws.sections.flatMap(s => s.questions.map(q => q.figure?.uri)).filter(Boolean));
+  return figures.filter(f => !attached.has(f.uri));
+}
+
 /** The total the score box is out of. */
 export function worksheetPointsTotal(ws: WorksheetOutput): number {
   return ws.sections.reduce((sum, sec) => sum + sec.questions.reduce((s, q) => s + (q.points || 0), 0), 0);
