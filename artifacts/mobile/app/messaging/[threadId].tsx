@@ -461,6 +461,7 @@ export default function ThreadScreen() {
                   senderLastName={sender?.lastName}
                   attachmentUrl={item.attachmentUrl}
                   attachmentKind={item.attachmentKind}
+                  seenLabel={isOwn && item.seen ? t('messageSeen') : undefined}
                 />
               </Pressable>
             );

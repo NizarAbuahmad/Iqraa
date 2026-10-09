@@ -37,10 +37,12 @@ interface Props {
   /** Only rendered for attachmentKind='image' — audio/document attachments have no chat UI yet (see services/messaging.ts). */
   attachmentUrl?: string | null;
   attachmentKind?: 'image' | 'audio' | 'document' | null;
+  /** Own bubble only: «شوهدت», shown once the other side's screen has displayed it. */
+  seenLabel?: string;
 }
 
 export function MessageBubble({
-  body, createdAt, isOwn, isRTL, colors, senderFirstName, senderLastName, attachmentUrl, attachmentKind,
+  body, createdAt, isOwn, isRTL, colors, senderFirstName, senderLastName, attachmentUrl, attachmentKind, seenLabel,
 }: Props) {
   const timeLabel = new Date(createdAt).toLocaleTimeString(isRTL ? AR_LATIN : undefined, { hour: '2-digit', minute: '2-digit' });
   const image = attachmentKind === 'image' && attachmentUrl ? (
@@ -58,7 +60,7 @@ export function MessageBubble({
             </Text>
           ) : null}
           <Text style={[styles.timestamp, { color: 'rgba(255,255,255,0.95)', textAlign: isRTL ? 'left' : 'right' }]}>
-            {timeLabel}
+            {seenLabel ? `${timeLabel} · ${seenLabel}` : timeLabel}
           </Text>
         </View>
       </View>

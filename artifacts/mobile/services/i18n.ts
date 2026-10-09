@@ -2385,6 +2385,12 @@ const translations = {
     moreOptionsOptional: "خيارات إضافية (اختيارية)",
     dangerZoneSection: 'إجراءات نهائية',
     nextStudentBtn: (name: string) => `الطالب التالي: ${name}`,
+    messageSeen: "شوهدت",
+    rosterSelect: "تحديد",
+    rosterSelectDone: "إلغاء التحديد",
+    rosterRemoveSelectedConfirmTitle: "إزالة الطلبة المحدّدين من الشعبة؟",
+    rosterRemoveSelectedConfirmBody: "يبقى سجلّ كلّ منهم محفوظًا.",
+    rosterRemovePartial: "تعذّرت إزالة بعض الطلبة. حاول مرّة أخرى.",
   },
 
   en: {
@@ -4591,6 +4597,12 @@ const translations = {
     moreOptionsOptional: "More options (optional)",
     dangerZoneSection: 'Permanent actions',
     nextStudentBtn: (name: string) => `Next student: ${name}`,
+    messageSeen: "Seen",
+    rosterSelect: "Select",
+    rosterSelectDone: "Cancel",
+    rosterRemoveSelectedConfirmTitle: "Remove the selected students from this class?",
+    rosterRemoveSelectedConfirmBody: "Their records are kept.",
+    rosterRemovePartial: "Some students could not be removed. Try again.",
   },
 } as const;
 
