@@ -18,13 +18,16 @@ import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { Button } from '@/components/ui/Button';
 import type { TranslationKey } from '@/services/i18n';
 import { palette } from '@/constants/colors';
+import { PLAY_GAME_GRADES, gradeBandLabel, type PlayGameId } from '@/services/publicGames/gradeBands';
+import { readableOn } from '@/services/readableColor';
+import { ELEMENTS_ACCENT } from '@/components/publicGames/ElementsGame';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
 const ACCENT_FILL = palette.hero;
 
 const GAMES: Array<{
-  id: string;
+  id: PlayGameId;
   route: string;
   icon: keyof typeof Ionicons.glyphMap;
   color: string;
@@ -33,6 +36,8 @@ const GAMES: Array<{
 }> = [
   // First: it's the one game built from the students' own books.
   { id: 'english', route: '/curriculum/english', icon: 'headset-outline', color: '#006D65', titleKey: 'hubTitle', descKey: 'playEnglishDesc' },
+  // Second: the hub's science game, from the G7–10 science/chemistry books.
+  { id: 'elements', route: '/play/elements', icon: 'flask-outline', color: ELEMENTS_ACCENT, titleKey: 'playElementsTitle', descKey: 'playElementsDesc' },
   { id: 'flags', route: '/play/flags', icon: 'flag-outline', color: '#1D4ED8', titleKey: 'playFlagsTitle', descKey: 'playFlagsDesc' },
   { id: 'capitals', route: '/play/capitals', icon: 'location-outline', color: '#0E8F86', titleKey: 'playCapitalsTitle', descKey: 'playCapitalsDesc' },
   { id: 'memory', route: '/play/memory', icon: 'apps-outline', color: '#0369A1', titleKey: 'playMemoryTitle', descKey: 'playMemoryDesc' },
@@ -46,7 +51,7 @@ const GAMES: Array<{
 export default function PlayHubScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { t, isRTL } = useLanguage();
+  const { t, lang } = useLanguage();
   const { user } = useAuth();
   const topPad = insets.top + (insets.top === 0 ? 20 : 0);
 
@@ -81,6 +86,12 @@ export default function PlayHubScreen() {
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: 'center' }}>
                 {t(g.descKey)}
               </Text>
+              <View style={[styles.gradeChip, { backgroundColor: `${g.color}14` }]}>
+                <Ionicons name="school-outline" size={13} color={readableOn(g.color, colors.card)} />
+                <Text style={{ color: readableOn(g.color, colors.card), fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>
+                  {gradeBandLabel(PLAY_GAME_GRADES[g.id], lang)}
+                </Text>
+              </View>
             </Pressable>
           ))}
         </View>
@@ -113,5 +124,6 @@ const styles = StyleSheet.create({
     flexBasis: '46%', flexGrow: 1, borderWidth: 1, borderRadius: 16, padding: 18, gap: 8, alignItems: 'center',
   },
   iconWrap: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
+  gradeChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, marginTop: 'auto' },
   ctaCard: { marginHorizontal: 20, borderWidth: 1, borderRadius: 16, padding: 20, gap: 10 },
 });
