@@ -287,6 +287,34 @@ describe('isolateForeignRuns', () => {
   // The arrow is interior-only on purpose. At the edge of a Latin word and
   // Arabic prose it was already laid out correctly, so absorbing it would
   // change output that had nothing wrong with it.
+  // The chemistry worksheet bug, found by printing one. An isolate is laid out
+  // on its own, so a bracket inside it cannot pair with its partner outside:
+  // «(الكتلة المولية 44 g/mol)» printed its closing bracket inside the Latin
+  // run, and «CO₂. (C = 12، O = 16)» — the Arabic comma ends a run — printed
+  // as «O = 16) ،CO₂. (C = 12». An unpaired bracket stays in the Arabic flow.
+  it('leaves a closing bracket opened in the Arabic outside the isolate', () => {
+    assert.equal(
+      isolateForeignRuns('(الكتلة المولية 44 g/mol)'),
+      '(الكتلة المولية ⁦44 g/mol⁩)',
+    );
+  });
+
+  it('keeps a bracket split by an Arabic comma in the Arabic flow', () => {
+    assert.equal(
+      isolateForeignRuns('أوجد الكتلة المولية لـ CO₂. (C = 12، O = 16)'),
+      'أوجد الكتلة المولية لـ ⁦CO₂.⁩ (⁦C = 12⁩، ⁦O = 16⁩)',
+    );
+  });
+
+  it('still keeps a balanced bracket inside its run', () => {
+    assert.equal(isolateForeignRuns('صيغة Ca(OH)₂ هنا'), 'صيغة ⁦Ca(OH)₂⁩ هنا');
+  });
+
+  it('stripping the isolates recovers a line with unpaired brackets', () => {
+    const original = 'لـ Ca(OH)₂. (Ca = 40، O = 16، H = 1)؟ (الكتلة 74 g/mol)';
+    assert.equal(isolateForeignRuns(original).replace(/[⁦⁩]/g, ''), original);
+  });
+
   it('does not pull an edge arrow into the isolate', () => {
     assert.equal(isolateForeignRuns('Wi-Fi → الإعدادات'), '⁦Wi-Fi⁩ → الإعدادات');
   });

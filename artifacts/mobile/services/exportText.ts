@@ -9,6 +9,8 @@
  */
 import { labelAnswer, labelOptionLine } from './optionLabels.ts';
 import { arCountPhrase } from './arCount.ts';
+import { quizStudentFields } from './quizPaper.ts';
+import { worksheetInstructions } from './worksheetPaper.ts';
 import type {
   ActivityOutput,
   LessonPlanOutput,
@@ -85,8 +87,14 @@ export function formatWorksheetText(
 
   lines.push(title);
   lines.push(`${meta.subject} | ${meta.grade}`);
+  // The paper's name line, written here rather than read from `instructions`,
+  // which no longer carries it; an old saved sheet's copy is dropped below.
+  lines.push(quizStudentFields(isAr).map(f => `${f}: ____________`).join('    '));
   lines.push(SEP);
-  if (ws.instructions) lines.push(`\n${ws.instructions}\n`);
+  const { intro, bullets } = worksheetInstructions(ws.instructions);
+  if (intro.length || bullets.length) {
+    lines.push(`\n${[...intro, ...bullets.map(b => `• ${b}`)].join('\n')}\n`);
+  }
 
   if (ws.lab) {
     lines.push(`\n${isAr ? 'المحاكاة' : 'SIMULATION'}: ${ws.lab.simName}`);

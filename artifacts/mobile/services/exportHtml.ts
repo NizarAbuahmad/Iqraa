@@ -27,6 +27,7 @@ import { dateLocale } from './dateLabels.ts';
 import { quizInstructions, quizMarkRows, quizMarksTotal, quizStudentFields, quizTypeLabel } from './quizPaper.ts';
 import { isolateForeignRuns, normalizeExponents } from './mathRender.ts';
 import { labQrSvg } from './labQr.ts';
+import { blankLine, hasOwnBlanks, optionColumns, worksheetInstructions, worksheetPointsTotal } from './worksheetPaper.ts';
 import { displayObjective } from './objectiveDisplay.ts';
 import type {
   ActivityOutput,
@@ -114,7 +115,7 @@ function htmlBase(
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${esc(title)}</title>
+  <title>${escAttr(isolateForeignRuns(normalizeExponents(title)))}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700&family=Cairo:wght@500;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -144,6 +145,9 @@ function htmlBase(
       padding: 12px 16px; margin-bottom: 18px;
     }
     .school-name { font-size: 12px; color: #6b7280; }
+    .school-fill { display: flex; flex-direction: row; gap: 6px; align-items: flex-end; min-width: 200px; }
+    .exam-score { flex: 0 0 auto; white-space: nowrap; }
+    .callout p + p, .callout p + ul { margin-top: 4px; }
     .school-placeholder { font-weight: 700; color: ${accent}; font-size: 14px; }
     .doc-title { font-size: 23px; font-weight: 700; color: #111827; margin-bottom: 6px; line-height: 1.35; }
     .doc-meta { font-size: 12px; color: #6b7280; margin-bottom: 20px; }
@@ -166,9 +170,12 @@ function htmlBase(
     /* Question cards — a numbered badge instead of a bold full stop. */
     .q-card {
       background: #f9fafb; border: 1px solid #eef0f3; border-radius: 8px;
-      padding: 11px 13px; margin-bottom: 8px; break-inside: avoid;
+      padding: 9px 12px; margin-bottom: 7px; break-inside: avoid;
     }
-    .q-head { display: flex; align-items: center; gap: 8px; flex-direction: row; margin-bottom: 5px; }
+    /* flex-start: a question written on several lines (a half-solved one, a
+       true/false with its proposed answer) kept its number in the middle of
+       the text; it belongs beside the first line. */
+    .q-head { display: flex; align-items: flex-start; gap: 8px; flex-direction: row; margin-bottom: 5px; }
     .q-num {
       background: ${accent}; color: #fff;
       min-width: 22px; height: 22px; border-radius: 50%;
@@ -180,12 +187,20 @@ function htmlBase(
        one, steps given then blanks — keeps them. Opt-in per element: quizzes
        share \`.q-text\` and are laid out as they always were. */
     .q-break { white-space: pre-line; }
+    /* A numbered blank in a half-solved question, ruled across the card. */
+    .q-blank { display: flex; flex-direction: row; gap: 6px; align-items: flex-end; height: 24px; }
     .q-option {
       display: flex; flex-direction: row; gap: 8px; align-items: flex-start;
       margin-top: 5px; font-size: 12px; color: #4b5563;
       padding-${isRTL ? 'right' : 'left'}: 12px;
     }
+    /* Short options side by side (worksheet builder; see optionColumns). */
+    .q-options-2, .q-options-4 { display: grid; column-gap: 14px; }
+    .q-options-2 { grid-template-columns: repeat(2, 1fr); }
+    .q-options-4 { grid-template-columns: repeat(4, 1fr); }
     .q-pts { font-size: 10.5px; color: #9ca3af; margin-top: 5px; }
+    /* A raised exponent must not push its line apart. */
+    sup { font-size: 0.72em; line-height: 0; }
     .q-type {
       font-size: 10px; background: #fef3c7; color: #92400e;
       padding: 2px 8px; border-radius: 9px; white-space: nowrap; flex-shrink: 0;
@@ -277,7 +292,7 @@ function htmlBase(
   <div class="school-header">
     <div>
       <div class="school-placeholder">${isRTL ? 'إقرأ — مساعد التدريس الذكي' : 'Iqra — AI Teaching Assistant'}</div>
-      <div class="school-name">${isRTL ? 'اسم المدرسة' : 'School Name'}</div>
+      <div class="school-name school-fill"><span>${isRTL ? 'المدرسة:' : 'School:'}</span><span class="exam-blank"></span></div>
     </div>
     <div class="school-name">${new Date().toLocaleDateString(dateLocale(isRTL ? 'ar' : 'en'))}</div>
   </div>
@@ -310,7 +325,21 @@ function esc(s: string): string {
   // run is then isolated as a whole. Doing it here rather than at each option
   // and key line is the same argument as the isolation itself: 57 call sites,
   // and a new builder must not be able to forget.
-  return escAttr(isolateForeignRuns(normalizeExponents(s)));
+  return raiseExponents(escAttr(isolateForeignRuns(normalizeExponents(s))));
+}
+
+/**
+ * Whatever `normalizeExponents` could not turn into Unicode — a letter or a
+ * bracketed exponent, «5^x», «3^(2x)», «4^(x+1)» — raised with `<sup>`. Unicode
+ * has no superscript for most letters, so those reached the paper with a
+ * literal caret: every question on the exponential-equations worksheet, while
+ * the screen raised them. Runs on escaped text, so it is text-node only; an
+ * attribute takes `escAttr`.
+ */
+function raiseExponents(html: string): string {
+  return html
+    .replace(/\^\(([^()]+)\)/g, '<sup>$1</sup>')
+    .replace(/\^([+\-\u2212]?[A-Za-z0-9]+)/g, '<sup>$1</sup>');
 }
 
 /**
@@ -363,7 +392,7 @@ function figuresSectionHTML(figures: readonly BookFigureRef[], isAr: boolean): s
   const shown = figures.slice(0, EXPORT_FIGURE_MAX);
   const cards = shown.map(f => `
       <div style="break-inside:avoid;page-break-inside:avoid;border:1px solid #e5e7eb;border-radius:6px;padding:10px;text-align:center;background:#fafafa">
-        <img src="${escAttr(f.uri)}" alt="${esc(f.caption)}" style="max-width:100%;max-height:260px;object-fit:contain" />
+        <img src="${escAttr(f.uri)}" alt="${escAttr(f.caption)}" style="max-width:100%;max-height:260px;object-fit:contain" />
         <div style="font-size:11px;color:#666;margin-top:6px">${esc(f.caption)}</div>
       </div>`).join('');
   const note = isAr
@@ -413,7 +442,7 @@ function figureGridHTML(figures: readonly BookFigureRef[]): string {
   const cols = shown.length === 4 ? 2 : Math.min(shown.length, 3);
   const cards = shown.map(f => `
         <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;min-width:0">
-          <img src="${escAttr(f.uri)}" alt="${esc(f.caption)}" style="max-width:100%;max-height:110mm;object-fit:contain" />
+          <img src="${escAttr(f.uri)}" alt="${escAttr(f.caption)}" style="max-width:100%;max-height:110mm;object-fit:contain" />
           <div style="font-size:10px;color:#6b7280;text-align:center">${esc(f.caption)}</div>
         </div>`).join('');
   return `<div class="slide-body">
@@ -514,6 +543,33 @@ function printableQuestionText(text: string): string {
   return text.replace(/\n+(?:الإجابة|Answer):\n_{10,}(?:\n_{10,})*\s*$/u, '');
 }
 
+/**
+ * A worksheet question's text, its blank lines drawn as full-width lines to
+ * write on. «3) __________» is ten underscores — too short for one step of
+ * working on paper. The newline on either side of a blank goes with it: the
+ * line is a block of its own, and under `.q-break` a kept newline would add an
+ * empty line above and below it.
+ */
+function questionBodyHTML(text: string): string {
+  const out: string[] = [];
+  let prose: string[] = [];
+  const flush = () => {
+    if (prose.length) out.push(esc(prose.join('\n')));
+    prose = [];
+  };
+  for (const line of text.split('\n')) {
+    const label = blankLine(line);
+    if (label === null) {
+      prose.push(line);
+      continue;
+    }
+    flush();
+    out.push(`<span class="q-blank"><span>${esc(label)}</span><span class="exam-blank"></span></span>`);
+  }
+  flush();
+  return out.join('');
+}
+
 export function buildWorksheetHTML(
   ws: WorksheetOutput,
   title: string,
@@ -526,18 +582,21 @@ export function buildWorksheetHTML(
   let qNum = 1;
   const sections = ws.sections.map((sec, si) => {
     const questions = sec.questions.map(q => {
+      const cols = q.options?.length ? optionColumns(q.options) : 1;
       const options = q.options
-        ? q.options.map((o, oi) => optionRowHTML(o, oi, isAr)).join('')
+        ? `<div class="q-options${cols > 1 ? ` q-options-${cols}` : ''}">${q.options.map((o, oi) => optionRowHTML(o, oi, isAr)).join('')}</div>`
         : '';
+      const text = printableQuestionText(q.text);
       // Somewhere to write. A worksheet is the one document a student fills
       // in, and this printed multiple-choice options or nothing at all — so
       // every short-answer question arrived as a sentence floating above the
       // next sentence, and the teacher's copier did the ruling by hand.
       // Options mean the answer goes in the margin, so the rules are only for
       // questions that have none.
-      const room = q.options ? '' : `<div class="q-lines">${ANSWER_RULES.map(() => '<div class="q-rule"></div>').join('')}</div>`;
+      // A half-solved question already has its numbered blanks to write on.
+      const room = q.options || hasOwnBlanks(text) ? '' : `<div class="q-lines">${ANSWER_RULES.map(() => '<div class="q-rule"></div>').join('')}</div>`;
       const html = `<div class="q-card">`
-        + `<div class="q-head"><span class="q-num">${qNum}</span><span class="q-text q-break">${esc(printableQuestionText(q.text))}</span></div>`
+        + `<div class="q-head"><span class="q-num">${qNum}</span><span class="q-text q-break">${questionBodyHTML(text)}</span></div>`
         + `${options}${room}`
         + `<div class="q-pts">${L(arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط'), `${q.points} pts`)}</div>`
         + `</div>`;
@@ -583,10 +642,25 @@ export function buildWorksheetHTML(
       + `<ol class="lab-steps">${ws.lab.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol></div>`
     : '';
 
+  const total = worksheetPointsTotal(ws);
+  const fields = quizStudentFields(isAr)
+    .map(f => `<div class="exam-field"><span>${esc(f)}:</span><span class="exam-blank"></span></div>`)
+    .join('')
+    + (total > 0
+      ? `<div class="exam-field exam-score"><span>${L('الدرجة', 'Score')}:</span><bdi dir="ltr">____ / ${total}</bdi></div>`
+      : '');
+  const { intro, bullets } = worksheetInstructions(ws.instructions);
+  const instructions = intro.length || bullets.length
+    ? `<div class="callout">${intro.map(p => `<p>${esc(p)}</p>`).join('')}`
+      + (bullets.length ? `<ul>${bullets.map(b => `<li>${esc(b)}</li>`).join('')}</ul>` : '')
+      + `</div>`
+    : '';
+
   const content = `
     <div class="doc-title">${esc(title)}</div>
     <div class="doc-meta">${esc(meta.subject)} • ${esc(meta.grade)}</div>
-    ${ws.instructions ? `<div class="callout">${esc(ws.instructions)}</div>` : ''}
+    <div class="exam-fields">${fields}</div>
+    ${instructions}
     ${lab}
     ${worked}
     ${sections}
