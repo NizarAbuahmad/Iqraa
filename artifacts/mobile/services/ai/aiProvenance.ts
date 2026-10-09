@@ -149,7 +149,9 @@ export function throwIfAborted(signal: AbortSignal): void {
  * claim about AI content at all, so answering it with mock content is the one
  * substitution that most directly contradicts the switch.
  */
-const CAP_CODES = new Set(['user_quota_exceeded', 'budget_exceeded', 'live_mode_off']);
+// `generation_in_flight`: the server refuses a third simultaneous call from one
+// account. Mock content would hide that as a «generated» paper; «try again» is honest.
+const CAP_CODES = new Set(['user_quota_exceeded', 'budget_exceeded', 'live_mode_off', 'generation_in_flight']);
 
 export function isCapError(e: unknown): boolean {
   if (!e || typeof e !== 'object') return false;

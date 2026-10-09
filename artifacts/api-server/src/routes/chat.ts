@@ -4,12 +4,14 @@ import { logger } from "../lib/logger";
 import {
   AiBudgetExceededError,
   AiLiveModeOffError,
+  AiUserBusyError,
   AiUserQuotaExceededError,
   assertBudgetAvailable,
   assertLiveModeEnabled,
   assertUserQuotaAvailable,
   getChatModel,
   recordUsage,
+  withUserAiSlot,
 } from "../lib/aiBudget.ts";
 import { PROMPT_VERSION } from "../lib/generationKey.ts";
 import type { AuthenticatedRequest } from "../middlewares/auth.ts";
@@ -81,11 +83,13 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
     assertBudgetAvailable();
 
     const startedAt = Date.now();
-    const completion = await openai.chat.completions.create({
-      model: getChatModel(),
-      max_completion_tokens: CHAT_MAX_TOKENS,
-      messages: chatMessages,
-    });
+    const completion = await withUserAiSlot(req.user?.id, () =>
+      openai.chat.completions.create({
+        model: getChatModel(),
+        max_completion_tokens: CHAT_MAX_TOKENS,
+        messages: chatMessages,
+      }),
+    );
     const durationMs = Date.now() - startedAt;
     // No cache keys on purpose. A chat turn never repeats, so any key computed
     // here would be the same for every turn and would show up in the repeat-rate
@@ -112,6 +116,10 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
     }
     if (err instanceof AiUserQuotaExceededError) {
       res.status(429).json({ error: err.message, code: "user_quota_exceeded" });
+      return;
+    }
+    if (err instanceof AiUserBusyError) {
+      res.status(429).json({ error: err.message, code: "generation_in_flight" });
       return;
     }
     if (err instanceof AiBudgetExceededError) {
