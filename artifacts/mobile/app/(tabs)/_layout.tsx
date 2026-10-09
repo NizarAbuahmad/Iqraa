@@ -35,7 +35,7 @@ function iconNameFor(name: string): string {
     case 'iqra': return 'chatbubble-ellipses-outline';
     case 'curriculum': return 'library-outline';
     case 'ai-tools': return 'sparkles-outline';
-    case 'notifications': return 'chatbubble-outline';
+    case 'notifications': return 'mail-outline';
     case 'profile': return 'person-circle-outline';
     default: return 'ellipse-outline';
   }
@@ -131,9 +131,11 @@ function buildTabEntries(isTeacher: boolean, isDesktop: boolean, unread: number)
       badge: badgeLabel(unread),
       icon: ({ color, focused, isIOS }) =>
         isIOS ? (
-          <SymbolView name={focused ? 'bubble.left.fill' : 'bubble.left'} tintColor={color} size={22} />
+          <SymbolView name={focused ? 'envelope.fill' : 'envelope'} tintColor={color} size={22} />
         ) : (
-          <Ionicons name={focused ? 'chatbubble' : 'chatbubble-outline'} size={22} color={color} />
+          // An envelope, not a second chat bubble: sitting beside «اسأل إقرأ»
+          // the two tabs read as the same thing.
+          <Ionicons name={focused ? 'mail' : 'mail-outline'} size={22} color={color} />
         ),
     },
     {
