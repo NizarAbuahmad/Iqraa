@@ -5,6 +5,7 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -612,6 +613,12 @@ function WorksheetView({ ws, lessonId, colors, isRTL, t, accent }: {
               <Text style={[{ color: accent, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, width: 20 }]}>{i + 1}.</Text>
               <View style={{ flex: 1 }}>
                 <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 22, textAlign: isRTL ? 'right' : 'left' }]}>{q.text}</Text>
+                {q.figure ? (
+                  <View style={{ marginTop: 8, alignItems: 'center', gap: 4 }}>
+                    <Image source={{ uri: q.figure.uri }} style={{ width: '100%', height: 160 }} contentFit="contain" accessibilityLabel={q.figure.caption} />
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, textAlign: 'center' }}>{q.figure.caption}</Text>
+                  </View>
+                ) : null}
                 {q.options?.map(o => (
                   <View key={o} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginTop: 6 }]}>
                     <View style={{ width: 14, height: 14, borderRadius: 7, borderWidth: 1.5, borderColor: colors.border, flexShrink: 0 }} />

@@ -809,6 +809,42 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A teacher attaches a book figure to a worksheet question, 2026-10-09
+
+Step 3a of the worksheet review, agreed in chat. Until now a book figure
+reached a worksheet only as the «من الكتاب المدرسي» appendix after the answer
+key, because the model that writes the questions never sees the figures and
+cannot say which goes with which. A teacher can, so a teacher does.
+
+- **On the worksheet screen** every question card has «أرفق شكلًا» when the
+  lesson has book figures (621 of 3,318 lessons do; median 3). It opens
+  `FigurePickerSheet` with **all** the lesson's figures — not the six the
+  appendix caps at — and the pick shows under the question, tappable to change
+  or remove («بلا شكل»). A question whose words point at a figure
+  (`questionRefersToFigure`: «انظر الشكل»…) and has none is highlighted.
+- **Stored on the question** as `WorksheetQuestion.figure` (`{uri, page,
+  caption}`, the `BookFigureRef` shape). Never set by a generator; the live
+  prompt and `generateWorksheet` are untouched, so the two-places rule does not
+  apply. `applyWorksheetFigure` (`worksheetEdits.ts`) sets it; rewording,
+  points and option edits keep it, deleting the question drops it. It is not
+  `markEdited`: the question and answer are unchanged, so a verification badge
+  stands. Saved to موادي as part of the content, which the API stores as-is.
+- **Where it shows:** printed/PDF inside the question's card, before the
+  writing lines, with the book's citation (grey in ink-saver, larger in large
+  print); the projector slides on that question; the shared text and Word as
+  «[الشكل: كتاب الطالب · … · صفحة ٤٥]»; موادي's viewer. The appendix and the
+  slides' figure slide drop any figure a question already shows
+  (`unattachedFigures`), so nothing prints twice.
+- **Not done:** quizzes, the live class deck, graphs from data, sketch grids.
+
+Covered by `worksheetQuestionFigure.test.ts` (13 cases, watched failing
+first). Mobile 3460 pass / 0 fail / 10 skipped, typecheck clean. **Verified in
+the web build** (Expo web, `/auth/me` stubbed, Chromium 390×844) on
+«النسب المثلثية»: the picker opened with the lesson's figures loaded from R2,
+the pick showed under question 1 and the button became «غيّر الشكل»; the
+exported PDF held one `q-fig` in that card plus the lesson's other figure in
+the appendix, and rendered to A4 with the figure and its citation in place.
+**Not checked:** expo-print on a device.
 ## Support groups: who is under the line on each objective, and a check for them alone, 2026-10-09
 
 The class view said «3 طلاب دون الحد» on an objective and never said which
