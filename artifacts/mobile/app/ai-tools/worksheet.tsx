@@ -39,7 +39,7 @@ import { captureGenerationScope, materialScope, reopenedGenerationScope, type Ge
 import { createVerificationTracker } from '@/services/verificationTracker';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
-import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
+import { GeneratorResultActions, GeneratorSaveBar } from '@/components/ui/GeneratorResultActions';
 import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 import { buildWorksheetHTML, buildWorksheetSlidesHTML, formatWorksheetText } from '@/services/share';
 import { EditableText } from '@/components/ui/Editable';
@@ -616,7 +616,7 @@ export default function WorksheetScreen() {
     <ScrollView
       ref={scrollRef}
       style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={{ paddingBottom: 60, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}
+      contentContainerStyle={{ paddingBottom: 140, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
@@ -1065,6 +1065,9 @@ export default function WorksheetScreen() {
         />
       )}
     </ScrollView>
+    {result && !loading && (
+      <GeneratorSaveBar accent={ACCENT} savedId={savedId} saveState={saveLabel} onSave={handleSave} onExport={() => setShowExport(true)} />
+    )}
 
     <ExportMenu
       visible={showExport}

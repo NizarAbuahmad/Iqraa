@@ -2362,6 +2362,7 @@ const translations = {
     messagingLeaveConfirmDesc: 'لن تصلك رسائل هذه المجموعة بعد مغادرتها.',
     messagingRemoveMemberConfirmTitle: 'إزالة هذا العضو من المجموعة؟',
     messagingRemoveMember: 'إزالة',
+    moreOptionsOptional: "خيارات إضافية (اختيارية)",
   },
 
   en: {
@@ -4545,6 +4546,7 @@ const translations = {
     messagingLeaveConfirmDesc: "You'll stop receiving this group's messages.",
     messagingRemoveMemberConfirmTitle: 'Remove this member from the group?',
     messagingRemoveMember: 'Remove',
+    moreOptionsOptional: "More options (optional)",
   },
 } as const;
 
