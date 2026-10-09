@@ -61,7 +61,7 @@ export default function ForgotPasswordScreen() {
       // Straight to login rather than signing them in. The code proves they
       // control the mailbox, not that they will remember the password they
       // just chose — typing it once more is the cheapest confirmation there is.
-      router.replace('/(auth)/login');
+      router.replace({ pathname: '/(auth)/login', params: { reset: '1' } });
     } catch (e: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setError(apiErrorMessage(e, 'invalidVerificationCode', t));
@@ -144,6 +144,8 @@ export default function ForgotPasswordScreen() {
                 onChangeText={text => setCode(toLatinDigits(text).replace(/\D/g, '').slice(0, 6))}
                 leftIcon="key-outline"
                 keyboardType="number-pad"
+                autoComplete="one-time-code"
+                textContentType="oneTimeCode"
                 maxLength={6}
                 isRTL={isRTL}
                 autoFocus
@@ -157,6 +159,9 @@ export default function ForgotPasswordScreen() {
                 secureTextEntry={!showPassword}
                 rightIcon={showPassword ? 'eye-off-outline' : 'eye-outline'}
                 onRightIconPress={() => setShowPassword(v => !v)}
+                rightIconLabel={t(showPassword ? 'hidePasswordA11y' : 'showPasswordA11y')}
+                autoComplete="new-password"
+                textContentType="newPassword"
                 autoCapitalize="none"
                 isRTL={isRTL}
               />

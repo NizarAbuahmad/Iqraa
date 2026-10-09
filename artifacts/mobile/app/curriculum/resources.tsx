@@ -211,12 +211,13 @@ function ResourceRow({
   // A sheet's note says what a teacher gets before printing; a title alone
   // does not tell «12 questions with a key» from «a blank page».
   const note = item.description ?? (sheet ? t('premadeSheetMeta', questionCount) : null);
-  // A book code reads «which book» (the headline, like every other row), with
-  // «what it is» and «which page» on a line underneath. The kind used to be the
-  // headline, which made every code in a book read «صفحة ويب» and left nothing
-  // to tell one row from the next.
+  // A book code reads «what it opens» (the headline, like every other row),
+  // with «which book» and «which page» underneath — the page and book are where
+  // to find the printed code. The kind is deliberately not shown: the title says
+  // what it is, and «صفحة ويب» on every row told a teacher nothing.
   const isBook = item.source === 'book-qr';
-  const bookKind = isBook ? t(KIND_LABEL[item.kind]) : null;
+  // A row with no title of its own already uses the book as its headline.
+  const bookName = isBook && item.bookTitle && item.bookTitle !== title ? item.bookTitle : null;
   const bookPage = isBook && page ? t('qrOnPage', page) : null;
 
   // A frozen sheet has no URL: it is rendered on the spot and handed to the
@@ -279,14 +280,12 @@ function ResourceRow({
   );
   const notes = (
     <>
-      {isBook ? (
+      {bookName ? <Text numberOfLines={2} style={noteStyle}>{bookName}</Text> : null}
+      {bookPage ? (
         <View style={[styles.bookHeadline, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <Text numberOfLines={1} style={[noteStyle, { flexShrink: 1 }]}>{bookKind}</Text>
-          {bookPage ? (
-            <View style={[styles.pagePill, { backgroundColor: ACCENT + '14' }]}>
-              <Text style={[styles.pageText, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }]}>{bookPage}</Text>
-            </View>
-          ) : null}
+          <View style={[styles.pagePill, { backgroundColor: ACCENT + '14' }]}>
+            <Text style={[styles.pageText, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }]}>{bookPage}</Text>
+          </View>
         </View>
       ) : null}
       {note ? <Text numberOfLines={2} style={noteStyle}>{note}</Text> : null}
@@ -389,7 +388,7 @@ function ResourceRow({
               accessibilityElementsHidden
               onError={() => setThumbFailed(true)}
             />
-          ) : (
+          ) : isBook ? null : (
             <View style={[styles.thumb, styles.thumbFallback, { backgroundColor: colors.muted }]}>
               <Ionicons name={KIND_ICON[item.kind]} size={22} color={accent} />
             </View>
@@ -462,11 +461,12 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
   );
   const isStaff = user?.role === 'system_admin';
   const { gradeId } = useLocalSearchParams<{ gradeId?: string; gradeName?: string }>();
-  // Opened from the Tools card there is no grade param: start on the
-  // teacher's own first grade, the same narrowing the curriculum tab does.
+  // Opened from the Tools card there is no grade param: start on the user's
+  // own first grade, the same narrowing the curriculum tab does (teachers pick
+  // on /setup-subjects, parents and students on /setup-grade).
   const grades = useMemo(
-    () => narrowToSelection(getVisibleGrades(), isTeacher ? user?.gradeIds : undefined),
-    [isTeacher, user?.gradeIds],
+    () => narrowToSelection(getVisibleGrades(), user?.gradeIds),
+    [user?.gradeIds],
   );
   const [pickedGrade, setGrade] = useState<string>(gradeId || grades[0]?.id || '');
   // The tab stays mounted while the teacher edits their grades on the profile
@@ -576,12 +576,17 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
   // A filter can empty the open shelf; fall back to the overview rather than a blank list.
   const openShelf = shelf ? shelves.find(g => g.shelf === shelf) ?? null : null;
   const total = shown.length;
+  // As a tab, the lesson bar (or the slim bell header) above already pays for
+  // the status bar; pushed as its own route, nothing does.
+  const heroTop = asTab ? 12 : insets.top + 12;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
+      <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: heroTop }]}>
         {asTab ? null : (
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('back')}
             onPress={() => goBack()} hitSlop={10}
             style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
           >

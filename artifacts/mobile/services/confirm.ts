@@ -22,26 +22,32 @@ export type ConfirmOptions = {
 };
 
 /**
- * On web the dialog is drawn in-app by `ConfirmHost` (components/ui/ConfirmDialog),
- * not by the browser. `window.confirm` cannot be styled, always prints the site
- * name ("app.iqrra.com says"), ignores our RTL layout and font, and shows a bare
- * OK/Cancel instead of the action's own label. The host registers itself here.
+ * The dialog is drawn in-app by `ConfirmHost` (components/ui/ConfirmDialog) on
+ * every target, not by the system. The browser's `window.confirm` cannot be
+ * styled, always prints the site name ("app.iqrra.com says"), ignores our RTL
+ * layout and font, and shows a bare OK/Cancel instead of the action's own
+ * label. Android's `Alert` has the same problem on a phone: a stock grey box
+ * in the system font, with the buttons pushed to the far edge. The host
+ * registers itself here.
  */
-type WebConfirmHandler = (options: ConfirmOptions) => Promise<boolean>;
-let webHandler: WebConfirmHandler | null = null;
+type ConfirmHandler = (options: ConfirmOptions) => Promise<boolean>;
+let handler: ConfirmHandler | null = null;
 
-export function registerWebConfirmHandler(handler: WebConfirmHandler | null) {
-  webHandler = handler;
+export function registerConfirmHandler(next: ConfirmHandler | null) {
+  handler = next;
 }
 
 /** Resolves true when the user confirms, false on cancel or dismissal. */
 export function confirm(options: ConfirmOptions): Promise<boolean> {
   const { title, message, confirmLabel, cancelLabel, destructive } = options;
 
+  if (handler) return handler(options);
+
+  // Host not mounted yet (very early boot) — the system prompt still works.
   if (Platform.OS === 'web') {
-    if (webHandler) return webHandler(options);
-    // Host not mounted yet (very early boot) — the native prompt still works.
-    const text = message ? `${title}\n\n${message}` : title;
+    const text = message ? `${title}
+
+${message}` : title;
     const ok = typeof window !== 'undefined' && window.confirm(text);
     return Promise.resolve(!!ok);
   }

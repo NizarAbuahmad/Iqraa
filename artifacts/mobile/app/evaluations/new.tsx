@@ -295,7 +295,7 @@ export default function NewEvaluationScreen() {
       keyboardShouldPersistTaps="handled"
     >
       <View style={[styles.header, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
-        <Pressable onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <Text style={[styles.headerTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>

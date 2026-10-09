@@ -48,3 +48,29 @@ export async function clearExamSession(code: string): Promise<void> {
     /* nothing to clear */
   }
 }
+
+/**
+ * Answers the server has not confirmed yet, kept beside the token so a
+ * reload or a killed app cannot lose them. Written whenever the save queue
+ * changes, emptied as saves land, cleared at hand-in.
+ */
+const unsavedKey = (code: string) => `${key(code)}:unsaved`;
+
+export async function saveUnsavedAnswers(code: string, answers: Record<string, unknown>): Promise<void> {
+  try {
+    if (Object.keys(answers).length === 0) await AsyncStorage.removeItem(unsavedKey(code));
+    else await AsyncStorage.setItem(unsavedKey(code), JSON.stringify(answers));
+  } catch {
+    /* same as the token: a convenience, never a reason to fail the sitting */
+  }
+}
+
+export async function loadUnsavedAnswers(code: string): Promise<Record<string, unknown>> {
+  try {
+    const raw = await AsyncStorage.getItem(unsavedKey(code));
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}

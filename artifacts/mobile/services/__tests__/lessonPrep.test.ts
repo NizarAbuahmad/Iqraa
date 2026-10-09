@@ -149,6 +149,23 @@ describe('buildLessonPrepRequest', () => {
     assert.match(buildGeneratorContext('موضوع حر غير موجود في المنهاج', 'ar'), /غير موجود في المنهاج/);
   });
 
+  it('keeps the lesson it was given when other books share its title', () => {
+    // A title does not identify a lesson: G10 maths «النسب المثلثية» used to
+    // ground to G9's, and the request carried G9's id into the shared pool.
+    const byTitle = new Map<string, string[]>();
+    for (const l of LESSONS) {
+      const title = l.titleAr || l.title;
+      byTitle.set(title, [...(byTitle.get(title) ?? []), l.id]);
+    }
+    const repeated = [...byTitle.values()].filter(ids => ids.length > 1).flat().slice(0, 40);
+    assert.ok(repeated.length > 1, 'no repeated titles left to test with');
+    for (const id of repeated) {
+      const built = buildLessonPrepRequest({ lessonId: id, lang: 'ar' });
+      if (!built) continue;
+      assert.equal(built.request.lessonId, id);
+    }
+  });
+
   it('returns null for an unknown lesson', () => {
     assert.equal(buildLessonPrepRequest({ lessonId: 'no-such-lesson', lang: 'ar' }), null);
   });

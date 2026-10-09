@@ -64,6 +64,7 @@ import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { LoadError } from '@/components/ui/LoadError';
 import { dateLocale } from '@/services/dateLabels';
+import { Button } from '@/components/ui/Button';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -628,7 +629,7 @@ export default function TeachingPlansScreen() {
           >
             <Ionicons name="add" size={20} color="#fff" />
           </Pressable>
-          <Pressable onPress={() => goBack()} hitSlop={12}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={12}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
         </View>
@@ -691,6 +692,7 @@ export default function TeachingPlansScreen() {
                 >
                   {t('noTeachingPlansDesc')}
                 </Text>
+                <Button label={t('newTeachingPlan')} onPress={openCreate} style={{ marginTop: 8 }} />
               </View>
             )
           }

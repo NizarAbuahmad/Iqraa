@@ -12,7 +12,6 @@
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -44,7 +43,6 @@ interface Contact {
 
 export default function NotificationsScreen() {
   const colors = useColors();
-  const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
   const studentAccounts = useStudentAccountsEnabled();
   const { user } = useAuth();
@@ -166,7 +164,10 @@ export default function NotificationsScreen() {
     />
   );
 
-  const topPad = insets.top + (insets.top === 0 ? 16 : 0);
+  // Not insets.top: the tab layout's lesson bar (or the slim bell header a
+  // parent/student gets) sits above this screen and already pays for the
+  // status bar, so adding it again left a blank band under that bar.
+  const topPad = 16;
   const unreadCount = threads.reduce((sum, th) => sum + th.unreadCount, 0);
   const align = isRTL ? 'right' : 'left';
   const visibleThreads = filterThreads(threads, filter);

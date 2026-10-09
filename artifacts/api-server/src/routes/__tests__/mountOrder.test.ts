@@ -257,6 +257,15 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(del.status, 401, "removing a class resource must require a token");
   });
 
+  it("mounts the student record inside the roster's guarded prefix", async () => {
+    // Like the class-resource routes: outside `router.use(["/classes", "/students"], …)`
+    // this would answer 404 rather than 401, and one child's marks would be
+    // readable with no token. Passes before the route exists — it guards the move.
+    const id = "00000000-0000-0000-0000-000000000000";
+    const res = await fetch(`${base}/classes/${id}/students/${id}/record`);
+    assert.equal(res.status, 401, "a student's record must require a token");
+  });
+
   it("mounts account deletion, and refuses it without a token", async () => {
     // Apple 5.1.1(v) and Play both require this route to exist, so the thing
     // worth pinning is that it is *mounted* — a 404 here is a submission
@@ -414,6 +423,8 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
       const res = await fetch(`${base}${route}`);
       assert.equal(res.status, 401, `${route} must require a token`);
     }
+    const readAll = await fetch(`${base}/messaging/threads/read-all`, { method: "POST" });
+    assert.equal(readAll.status, 401, "/messaging/threads/read-all must require a token");
   });
 
   it("keeps the student exam link public, and only the link", async () => {

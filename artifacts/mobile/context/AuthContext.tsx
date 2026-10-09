@@ -622,7 +622,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
-    setUser(toUser(updated));
+    // PATCH /users/profile does not echo hasRosterLink; dropping it would turn
+    // a linked student's `true` into "not answered" until the next /auth/me.
+    setUser(prev => ({ ...toUser(updated), hasRosterLink: updated.hasRosterLink ?? prev?.hasRosterLink }));
   }, []);
 
   const uploadAvatar = useCallback(async (dataUrl: string) => {

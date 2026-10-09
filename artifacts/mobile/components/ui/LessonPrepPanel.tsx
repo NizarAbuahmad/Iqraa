@@ -60,6 +60,7 @@ import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { RelatedResourcesPanel } from '@/components/ui/RelatedResourcesPanel';
 import { Toast } from '@/components/ui/Toast';
 import { textOn } from '@/services/readableColor';
+import { palette } from '@/constants/colors';
 
 /** Same ladder the lesson-plan tool offers, so a saved plan can reopen there. */
 const DURATION_VALUES = [30, 45, 60, 90];
@@ -171,7 +172,10 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
 
   // Prior-knowledge availability for this lesson (no fabrication)
   const priorKnowledge = (() => {
-    const g = resolveGeneratorGrounding(context.topic, lang as 'ar' | 'en');
+    const g = resolveGeneratorGrounding(context.topic, lang as 'ar' | 'en', {
+      lessonId: context.lessonId,
+      scope: { gradeId: context.gradeId, subjectId: context.subjectId },
+    });
     return g.lesson ? getUnitPriorKnowledge(g.lesson.id) : [];
   })();
   const priorReviewAvailable = priorKnowledge.length > 0;
@@ -509,7 +513,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
                 icon={favorited ? 'star' : 'star-outline'}
                 label={favorited ? t('inFavorites') : t('addToFavorites')}
                 onPress={handleToggleFavorite}
-                accent={favorited ? '#B54708' : colors.mutedForeground}
+                accent={favorited ? palette.warning : colors.mutedForeground}
                 colors={colors}
                 isRTL={isRTL}
               />

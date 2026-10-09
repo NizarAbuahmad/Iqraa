@@ -112,7 +112,7 @@ jobs:
             echo '```'
             if [ "$CODE" = "1" ]; then
               echo
-              echo 'Fix: `pnpm --filter @workspace/db run push` against the same DATABASE_URL.'
+              echo 'Fix: the `production migrations` job log names any failed statement; if it passed, production drifted by hand. See docs/deploying.md, «Schema».'
             fi
           } >> "$GITHUB_STEP_SUMMARY"
           exit "$CODE"

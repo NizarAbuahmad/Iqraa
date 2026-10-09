@@ -1,17 +1,17 @@
 /**
- * The web build's confirm dialog — see `services/confirm.ts` for why the
- * browser's own `window.confirm` is not used. Mounted once in app/_layout.tsx;
- * every `confirm()` call in the app resolves through it.
+ * The app's confirm dialog, on web and on the phone — see `services/confirm.ts`
+ * for why neither `window.confirm` nor Android's stock `Alert` is used. Mounted
+ * once in app/_layout.tsx; every `confirm()` call in the app resolves through it.
  *
  * A second `confirm()` while one is open cancels the first rather than stacking:
  * a double-click on a destructive button must never leave an orphaned promise.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { registerWebConfirmHandler, type ConfirmOptions } from '@/services/confirm';
+import { registerConfirmHandler, type ConfirmOptions } from '@/services/confirm';
 
 export function ConfirmHost() {
   const colors = useColors();
@@ -26,15 +26,14 @@ export function ConfirmHost() {
   }, []);
 
   useEffect(() => {
-    if (Platform.OS !== 'web') return;
-    registerWebConfirmHandler(options => {
+    registerConfirmHandler(options => {
       resolver.current?.(false);
       return new Promise<boolean>(resolve => {
         resolver.current = resolve;
         setOpts(options);
       });
     });
-    return () => registerWebConfirmHandler(null);
+    return () => registerConfirmHandler(null);
   }, []);
 
   if (!opts) return null;
@@ -43,13 +42,14 @@ export function ConfirmHost() {
   const toneText = opts.destructive ? colors.destructiveForeground : '#FFFFFF';
 
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={() => settle(false)}>
+    <Modal visible transparent statusBarTranslucent animationType="fade" onRequestClose={() => settle(false)}>
       <Pressable style={styles.backdrop} onPress={() => settle(false)}>
         {/* Inner Pressable swallows taps so clicking the card doesn't dismiss. */}
         <Pressable
           style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => {}}
           accessibilityRole="alert"
+          accessibilityViewIsModal
         >
           <View style={[styles.icon, { backgroundColor: `${tone}1F` }]}>
             <Ionicons
@@ -96,7 +96,7 @@ export function ConfirmHost() {
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(11,27,51,0.45)',
+    backgroundColor: 'rgba(11,27,51,0.55)',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 380,
-    borderRadius: 20,
+    borderRadius: 24,
     borderWidth: 1,
     paddingHorizontal: 24,
     paddingTop: 24,
@@ -115,6 +115,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 12 },
+    elevation: 12,
   },
   icon: {
     width: 52,
@@ -129,8 +130,8 @@ const styles = StyleSheet.create({
   actions: { width: '100%', gap: 10, marginTop: 16 },
   btn: {
     flex: 1,
-    minHeight: 46,
-    borderRadius: 12,
+    minHeight: 48,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 12,

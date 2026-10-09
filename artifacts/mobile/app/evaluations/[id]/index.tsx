@@ -60,8 +60,8 @@ const STATUS_KEY: Record<Evaluation['status'], TranslationKey> = {
   closed: 'evalStatusClosed',
 };
 const STATUS_COLOR: Record<Evaluation['status'], string> = {
-  draft: '#B54708',
-  published: '#067647',
+  draft: palette.warning,
+  published: palette.success,
   closed: '#6B7280',
 };
 const TYPE_LABEL_KEY: Record<QuestionType, TranslationKey> = {
@@ -166,7 +166,7 @@ export default function EvaluationDetailScreen() {
   const evaluation = data?.evaluation ?? null;
   const questions = data?.questions ?? [];
   const loadError = loadFailed
-    ? (loadErrorRaw instanceof EvaluationError ? loadErrorRaw.message : t('evaluationLoadFailed'))
+    ? t('evaluationLoadFailed')
     : '';
   // Action error (delete/generate/publish/...) takes priority over a stale
   // load error — it's the more recent thing the teacher is looking at.
@@ -216,7 +216,7 @@ export default function EvaluationDetailScreen() {
       );
       setTotal(totalMarks);
     } catch (err) {
-      setError(err instanceof EvaluationError ? err.message : t('questionSaveFailed'));
+      setError(t('questionSaveFailed'));
     }
   };
 
@@ -241,7 +241,7 @@ export default function EvaluationDetailScreen() {
       setGenWarnings(gen.warnings ?? []);
       await refetch();
     } catch (err) {
-      setError(err instanceof EvaluationError ? err.message : t('evaluationGenerateFailed'));
+      setError(t('evaluationGenerateFailed'));
     } finally {
       setBusy(null);
     }
@@ -265,7 +265,7 @@ export default function EvaluationDetailScreen() {
         prev ? { ...prev, evaluation: updated } : prev,
       );
     } catch (err) {
-      setError(err instanceof EvaluationError ? err.message : t('evaluationCloseFailed'));
+      setError(t('evaluationCloseFailed'));
     } finally {
       setBusy(null);
     }
@@ -292,7 +292,7 @@ export default function EvaluationDetailScreen() {
       queryClient.removeQueries({ queryKey: evaluationQueryKey(id) });
       goBack();
     } catch (err) {
-      setError(err instanceof EvaluationError ? err.message : t('archiveEvaluationFailed'));
+      setError(t('archiveEvaluationFailed'));
     } finally {
       setBusy(null);
     }
@@ -365,7 +365,7 @@ export default function EvaluationDetailScreen() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ paddingBottom: 60 }}>
       <View style={[styles.header, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
-        <Pressable onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <Text style={[styles.headerTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]} numberOfLines={2}>
@@ -429,7 +429,7 @@ export default function EvaluationDetailScreen() {
             await setEvaluationClass(id, classId);
             await refetch();
           } catch (err) {
-            setError(err instanceof EvaluationError ? err.message : t('saveToClassFailed'));
+            setError(t('saveToClassFailed'));
           }
         }}
       />
@@ -595,7 +595,7 @@ export default function EvaluationDetailScreen() {
             {q.verification?.verified ? (
               <View style={[styles.verifiedRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <Ionicons name="shield-checkmark" size={13} color="#067647" />
-                <Text style={{ color: '#067647', fontFamily: 'ReadexPro_500Medium', fontSize: 11 }}>
+                <Text style={{ color: palette.success, fontFamily: 'ReadexPro_500Medium', fontSize: 11 }}>
                   {t('keyVerifiedBadge')}
                 </Text>
               </View>
@@ -797,7 +797,7 @@ function KeyCheckNotice({
   t: (key: TranslationKey, ...args: any[]) => string;
 }) {
   const tone = summary.kind === 'verified'
-    ? { fg: '#067647', bg: '#05966912', border: '#05966933', icon: 'shield-checkmark' as const }
+    ? { fg: palette.success, bg: '#05966912', border: '#05966933', icon: 'shield-checkmark' as const }
     : summary.kind === 'verifier-down'
       ? { fg: '#B45309', bg: '#F59E0B14', border: '#F59E0B38', icon: 'cloud-offline-outline' as const }
       : { fg: colors.mutedForeground, bg: colors.card, border: colors.border, icon: 'information-circle-outline' as const };
@@ -861,7 +861,7 @@ function ShareLinkCard({
 
         {!attachedToClass ? (
           <>
-            <Text style={{ color: '#B54708', fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginTop: 8, textAlign: align }}>
+            <Text style={{ color: palette.warning, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginTop: 8, textAlign: align }}>
               {t('shareExamNeedsClass')}
             </Text>
             {/* Naming the problem without offering the fix is what made this a
