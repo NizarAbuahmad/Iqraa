@@ -9,8 +9,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { goBack } from '@/services/navigation';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
+import { BackButton } from '@/components/ui/BackButton';
 
 type Props = {
   title: string;
@@ -27,15 +27,7 @@ export function LabFrame({ title, subtitle, children }: Props) {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.hero, { backgroundColor: colors.hero, paddingTop: insets.top + 12 }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('back')}
-          onPress={() => goBack()}
-          hitSlop={10}
-          style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start', marginBottom: 8 }}
-        >
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-        </Pressable>
+        <BackButton color="#fff" style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start', marginBottom: 8 }} />
         <Text style={[styles.title, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>{title}</Text>
         {subtitle ? (
           <Text style={[styles.subtitle, { fontFamily: 'Almarai_400Regular', textAlign: align }]}>{subtitle}</Text>

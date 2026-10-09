@@ -275,7 +275,7 @@ export function GeneratorSaveBar({
       style={[
         styles.bar,
         {
-          paddingBottom: 10 + insets.bottom,
+          paddingBottom: 12 + insets.bottom,
           backgroundColor: colors.card,
           borderTopColor: colors.border,
           flexDirection: isRTL ? 'row-reverse' : 'row',
@@ -312,7 +312,7 @@ export function GeneratorSaveBar({
 const styles = StyleSheet.create({
   actionBtn: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1.5 },
   actionText: { fontSize: 14 },
-  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, gap: 10, paddingHorizontal: 16, paddingTop: 10, borderTopWidth: 1 },
+  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, gap: 12, paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1 },
   barPrimary: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 48 },
   barSecondary: { width: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5 },
 });

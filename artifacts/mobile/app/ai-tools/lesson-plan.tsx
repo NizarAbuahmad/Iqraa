@@ -466,7 +466,7 @@ export default function LessonPlanScreen() {
           onPress={() => setShowMore(v => !v)}
           accessibilityRole="button"
           aria-expanded={moreOpen}
-          style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, paddingVertical: 10, marginBottom: 6 }}
+          style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, paddingVertical: 12, marginBottom: 8 }}
         >
           <Ionicons name={moreOpen ? 'chevron-up' : 'chevron-down'} size={16} color={ACCENT} />
           <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>{t('moreOptionsOptional')}</Text>

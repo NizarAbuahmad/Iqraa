@@ -76,7 +76,6 @@ import { countMaterials, countStudents } from '@/services/i18n';
 import { confirm } from '@/services/confirm';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
-import { goBack } from '@/services/navigation';
 import { ClassResourceRow } from '@/components/classes/ClassResourceRow';
 import { LibraryPickerSheet } from '@/components/classes/LibraryPickerSheet';
 import { LabPickerSheet } from '@/components/classes/LabPickerSheet';
@@ -99,6 +98,8 @@ import { palette } from '@/constants/colors';
 import { CLASSES_QUERY_KEY, classQueryKey as CLASS_QUERY_KEY } from '@/services/rosterQueryKeys';
 import { AR_LATIN } from '@/services/dateLabels';
 import { Button } from '@/components/ui/Button';
+import { BackButton } from '@/components/ui/BackButton';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -711,21 +712,7 @@ export default function ClassDetailScreen() {
     descKey: 'noStudentsDesc' | 'noMaterialsDesc' | 'noExamsDesc',
     action?: { label: string; onPress: () => void },
   ) => (
-    <View style={styles.empty}>
-      <Ionicons name={icon} size={40} color={colors.mutedForeground} />
-      <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
-        {t(titleKey)}
-      </Text>
-      <Text
-        style={[
-          styles.emptyText,
-          { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' },
-        ]}
-      >
-        {t(descKey)}
-      </Text>
-      {action ? <Button label={action.label} onPress={action.onPress} style={{ marginTop: 8 }} /> : null}
-    </View>
+    <EmptyState icon={icon} title={t(titleKey)} body={t(descKey)} action={action} />
   );
 
   /**
@@ -809,9 +796,7 @@ export default function ClassDetailScreen() {
             justifyContent: 'space-between',
           }}
         >
-          <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={12}>
-            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-          </Pressable>
+          <BackButton color="#fff" />
           {/* The name and grade set at creation and never editable again —
               a typo or a class that moved up a grade had no way back. Icon-
               only opposite the back arrow: unlike the chat pill below, its
@@ -905,12 +890,12 @@ export default function ClassDetailScreen() {
                 <ParentContactSection summary={contactSummary} subjectIds={subjectIds} colors={colors} isRTL={isRTL} align={align} lang={lang} t={t} />
               )}
               {students.length > 1 && (
-                <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                   <Pressable
                     onPress={() => (selecting ? stopSelecting() : setSelecting(true))}
                     hitSlop={8}
                     accessibilityRole="button"
-                    style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, paddingVertical: 6 }}
+                    style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, paddingVertical: 8 }}
                   >
                     <Ionicons name={selecting ? 'close-circle-outline' : 'checkbox-outline'} size={18} color={ACCENT} />
                     <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
@@ -922,7 +907,7 @@ export default function ClassDetailScreen() {
                       onPress={() => { void onRemoveSelected(); }}
                       disabled={removingMany}
                       accessibilityRole="button"
-                      style={({ pressed }) => ({ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: colors.destructive, opacity: removingMany ? 0.6 : pressed ? 0.85 : 1 })}
+                      style={({ pressed }) => ({ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, backgroundColor: colors.destructive, opacity: removingMany ? 0.6 : pressed ? 0.85 : 1 })}
                     >
                       {removingMany ? <ActivityIndicator size="small" color={colors.destructiveForeground} /> : <Ionicons name="trash-outline" size={16} color={colors.destructiveForeground} />}
                       <Text style={{ color: colors.destructiveForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>

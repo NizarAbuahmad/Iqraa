@@ -24,9 +24,9 @@ import {
   MATERIAL_ICON,
   MATERIAL_LABEL_KEY,
 } from '@/constants/materialKind';
-import { goBack } from '@/services/navigation';
 import { AR_LATIN } from '@/services/dateLabels';
 import { palette } from '@/constants/colors';
+import { BackButton } from '@/components/ui/BackButton';
 
 const TABS: Array<{ key: MaterialType | 'all'; labelKey: string }> = [
   { key: 'all', labelKey: 'allFilter' },
@@ -289,14 +289,7 @@ export default function WorkspaceScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('back')}
-          onPress={() => goBack()} hitSlop={10}
-          style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
-        >
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
-        </Pressable>
+        <BackButton color={colors.foreground} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
         <Text style={[styles.headerTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('myWorkspace')}
         </Text>
