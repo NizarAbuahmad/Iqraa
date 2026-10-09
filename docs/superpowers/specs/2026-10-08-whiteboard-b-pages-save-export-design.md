@@ -209,7 +209,7 @@ then B gets its own PR. Implementation does not start until this is decided.
 ## Risks
 
 - **B1 changes code A just shipped.** The slide pen and book-page pen must stay
-  byte-for-byte unchanged in behaviour (`scale` defaults to 1). The browser pass
+  byte-for-byte unchanged in behaviour (`strokeScale` defaults to 1). The browser pass
   re-runs the A regressions.
 - **`PenCanvas` gains `strokeScale`.** Easy to get subtly wrong at the edges
   (the hit-test unit, eraser size, the letterbox). The tests cover the pure
