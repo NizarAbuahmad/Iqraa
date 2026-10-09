@@ -278,6 +278,12 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(res.status, 401, "setting who may sit an exam must require a token");
   });
 
+  it("mounts support groups inside the roster's guarded prefix", async () => {
+    const id = "00000000-0000-0000-0000-000000000000";
+    const res = await fetch(`${base}/classes/${id}/support-groups`);
+    assert.equal(res.status, 401, "who is under the line in a class must require a token");
+  });
+
   it("mounts account deletion, and refuses it without a token", async () => {
     // Apple 5.1.1(v) and Play both require this route to exist, so the thing
     // worth pinning is that it is *mounted* — a 404 here is a submission

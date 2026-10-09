@@ -24,6 +24,7 @@ import {
   classGroups,
   classMemberships,
   classResources,
+  evaluationAssignments,
   evaluations,
   libraryResources,
   parentContacts,
@@ -32,10 +33,11 @@ import {
   chatMessageReads,
   type ParentContactChannel,
 } from "@workspace/db";
-import { and, asc, count, desc, eq, inArray, isNull, ne } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNotNull, isNull, ne } from "drizzle-orm";
 import { getObjectiveById, resolveObjectiveIds } from "@workspace/curriculum";
 import { studentRecord } from "../modules/assessment/studentRecord.ts";
 import { aggregateClass, finishedAttempts } from "../modules/assessment/classInsights.ts";
+import { supportGroups } from "../modules/assessment/supportGroups.ts";
 import type { ObjectiveScore } from "../modules/assessment/scoring.ts";
 import {
   authMiddleware,
@@ -424,6 +426,96 @@ router.get("/classes/:id/students/:studentId/record", async (req: AuthenticatedR
     });
   } catch (err) {
     failRoster(res, err, "student record", "Failed to load student record");
+  }
+});
+
+/**
+ * Support groups (مجموعات الدعم): per objective, the class members under the
+ * line and the group's latest re-check. Same access as the record.
+ */
+router.get("/classes/:id/support-groups", async (req: AuthenticatedRequest, res) => {
+  try {
+    const classId = req.params["id"] as string;
+    const teacherId = req.user!.id;
+    if (!isUuid(classId)) {
+      res.status(404).json({ error: "Class not found" });
+      return;
+    }
+    const group = await findLiveClass(classId, teacherId);
+    if (!group) {
+      res.status(404).json({ error: "Class not found" });
+      return;
+    }
+
+    const members = await db
+      .select({ studentId: students.id, displayName: students.displayName })
+      .from(classMemberships)
+      .innerJoin(students, eq(students.id, classMemberships.studentId))
+      .where(and(eq(classMemberships.classGroupId, classId), eq(students.teacherId, teacherId), isNull(students.archivedAt)));
+
+    const papers = await db
+      .select({ studentId: attempts.studentId, objectiveScores: attemptResults.objectiveScores })
+      .from(attemptResults)
+      .innerJoin(attempts, eq(attempts.id, attemptResults.attemptId))
+      .innerJoin(evaluations, eq(evaluations.id, attempts.evaluationId))
+      .where(and(eq(evaluations.classGroupId, classId), ne(evaluations.status, "draft")));
+
+    const assignmentRows = await db
+      .select({
+        evaluationId: evaluations.id,
+        title: evaluations.title,
+        titleAr: evaluations.titleAr,
+        status: evaluations.status,
+        archivedAt: evaluations.archivedAt,
+        createdAt: evaluations.createdAt,
+        objectiveIds: evaluations.objectiveIds,
+        studentId: evaluationAssignments.studentId,
+      })
+      .from(evaluationAssignments)
+      .innerJoin(evaluations, eq(evaluations.id, evaluationAssignments.evaluationId))
+      .where(and(eq(evaluations.classGroupId, classId), isNotNull(evaluationAssignments.studentId)));
+
+    const checksById = new Map<string, Parameters<typeof supportGroups>[0]["checks"][number]>();
+    for (const r of assignmentRows) {
+      const c = checksById.get(r.evaluationId) ?? {
+        evaluationId: r.evaluationId,
+        title: r.titleAr || r.title,
+        status: r.status,
+        archived: r.archivedAt !== null,
+        createdAt: r.createdAt,
+        objectiveIds: (r.objectiveIds as string[] | null) ?? [],
+        assignedStudentIds: [],
+      };
+      if (r.studentId) c.assignedStudentIds.push(r.studentId);
+      checksById.set(r.evaluationId, c);
+    }
+    const checkIds = [...checksById.keys()];
+    const checkAttempts = checkIds.length
+      ? await db
+          .select({
+            evaluationId: attempts.evaluationId,
+            studentId: attempts.studentId,
+            attemptStatus: attempts.status,
+            percent: attemptResults.percent,
+            objectiveScores: attemptResults.objectiveScores,
+          })
+          .from(attempts)
+          .leftJoin(attemptResults, eq(attemptResults.attemptId, attempts.id))
+          .where(inArray(attempts.evaluationId, checkIds))
+      : [];
+
+    const groups = supportGroups(
+      { members, papers, checks: [...checksById.values()], checkAttempts },
+      objectiveId => {
+        const o = getObjectiveById(objectiveId);
+        return o
+          ? { titleAr: o.descriptionAr || o.description, lessonId: o.lessonId, lessonTitleAr: o.lessonTitleAr || o.lessonTitle }
+          : null;
+      },
+    );
+    res.json({ groups });
+  } catch (err) {
+    failRoster(res, err, "support groups", "Failed to load support groups");
   }
 });
 
