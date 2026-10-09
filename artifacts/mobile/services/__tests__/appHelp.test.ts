@@ -83,6 +83,66 @@ describe('answerAppHelp', () => {
   });
 });
 
+describe('"how do I" questions about the app', () => {
+  const t = (k: string) => `<${k}>`;
+
+  const how = [
+    'how to add more clases',                        // the typo that was actually typed
+    'now i teach grade 10 how to add grade 8',
+    'كيف أضيف شعبة جديدة؟',
+    'كيف أضيف صف ثامن',
+    'how do I export my lesson plan',
+    'how do I start the class on the projector',
+    'كيف أغيّر الدرس',
+    'كيف أستخدم التطبيق؟',
+  ];
+  for (const q of how) {
+    it(`claims «${q}»`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(classifyChatIntent(q).intent, 'app_help');
+    });
+  }
+
+  const teaching = [
+    'كيف أجمع الكسور',
+    'how to add fractions',
+    'كيف أشرح الاقترانات',
+    'كيف أبسّط الكسر',
+    'how do I use the quadratic formula',
+    'how can I explain grade 10 functions',
+  ];
+  for (const q of teaching) {
+    it(`leaves «${q}» alone`, () => assert.equal(isAppHelpQuery(q), false));
+  }
+
+  it('«how to add more clases» gives the add-class steps and opens /classes', () => {
+    const a = answerAppHelp('how to add more clases', 'en', t);
+    assert.equal(a.text, '<howAddClass>');
+    assert.deepEqual(a.places.map(p => [p.id, p.route]), [['classes', '/classes']]);
+  });
+
+  it('«how to add grade 8» gives the add-grade steps and opens the subject editor', () => {
+    const a = answerAppHelp('now i teach grade 10 how to add grade 8', 'en', t);
+    assert.equal(a.text, '<howAddGrade>');
+    assert.deepEqual(a.places.map(p => [p.id, p.route, p.routeParams?.mode]), [['subjects', '/setup-subjects', 'edit']]);
+  });
+
+  it('reuses the FAQ answers for start-class, change-lesson and export', () => {
+    assert.equal(answerAppHelp('how do I start the class on the projector', 'en', t).text, '<faqA7>');
+    assert.equal(answerAppHelp('كيف أغيّر الدرس', 'ar', t).text, '<faqA2>');
+    assert.equal(answerAppHelp('how do I export to pdf', 'en', t).text, '<faqA4>');
+  });
+
+  it('a "where" question about the same place still lists the path, not the steps', () => {
+    const a = answerAppHelp('وين الشعب تبعتي', 'ar', t);
+    assert.match(a.text, /<tabProfile> ← <myClasses>/);
+  });
+
+  it('a grade named inside another ask does not turn into the subject editor', () => {
+    assert.notEqual(top('how do I export a grade 10 quiz'), 'subjects');
+  });
+});
+
 describe('classifyChatIntent routes app questions before artifacts', () => {
   it('«وين ألاقي ورقة العمل» asks for the tool, not a worksheet', () => {
     assert.equal(classifyChatIntent('وين ألاقي ورقة العمل؟').intent, 'app_help');
