@@ -39,8 +39,8 @@ import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { studentGradeIds } from "../lib/studentGrades.ts";
 import {
   MASTERY_PASS_PERCENT,
-  passedLessonIds,
   quizLessonIds,
+  studentLessonProgress,
   withUnlocks,
 } from "../modules/assessment/lessonProgress.ts";
 import { audioKeysForAttempt, deleteAttemptAudio } from "../lib/attemptAudio.ts";
@@ -98,6 +98,7 @@ async function loadRetakeCandidates(studentIds: string[], now: Date): Promise<Re
       isProvisional: attemptResults.isProvisional,
       objectiveIds: evaluations.objectiveIds,
       status: evaluations.status,
+      released: evaluations.releaseResultsToStudent,
       shareCode: evaluations.shareCode,
       shareCodeExpiresAt: evaluations.shareCodeExpiresAt,
     })
@@ -126,6 +127,7 @@ async function loadRetakeCandidates(studentIds: string[], now: Date): Promise<Re
     decision: retakeDecision({
       submitted: s.submittedAt !== null,
       studentSitting: s.source === "student_link",
+      released: s.released,
       // No result row means grading never ran; treat it as not final.
       isProvisional: s.isProvisional ?? true,
       percent: s.percent,
@@ -277,9 +279,10 @@ router.get("/student/exams", async (req: AuthenticatedRequest, res) => {
  *
  * Reports `enabled: false` (and nothing else) until `MASTERY_GATE=true`, so a
  * client that asks before the pilot starts locks nothing. Only lesson ids come
- * back, never marks: whether a mark may be shown is the teacher's call
- * (`releaseResultsToStudent`), and "passed" is all an unlock needs to say.
- * What counts as passed is `passedLessonIds`.
+ * back, never marks, and nothing about a paper the teacher has not released
+ * (`releaseResultsToStudent`): until then its lesson is in `awaitingLessonIds`
+ * — handed in, waiting for the teacher — and is neither passed nor offered a
+ * retake. What counts is `studentLessonProgress` and `retakeDecision`.
  */
 router.get("/student/progress", async (req: AuthenticatedRequest, res) => {
   try {
@@ -294,6 +297,7 @@ router.get("/student/progress", async (req: AuthenticatedRequest, res) => {
       res.json({
         enabled: false,
         passedLessonIds: [],
+        awaitingLessonIds: [],
         quizLessonIds: [],
         retakeEvaluationIds: [],
         threshold: MASTERY_PASS_PERCENT,
@@ -327,18 +331,24 @@ router.get("/student/progress", async (req: AuthenticatedRequest, res) => {
         ).filter(e => !e.shareCodeExpiresAt || e.shareCodeExpiresAt.getTime() > now.getTime())
       : [];
 
+    // Every handed-in sitting, graded or not: one with no result row yet is
+    // still "waiting for your teacher", never passed.
     const sittings = studentIds.length
-      ? await db
-          .select({
-            objectiveIds: evaluations.objectiveIds,
-            percent: attemptResults.percent,
-            isProvisional: attemptResults.isProvisional,
-          })
-          .from(attempts)
-          .innerJoin(attemptResults, eq(attemptResults.attemptId, attempts.id))
-          .innerJoin(evaluations, eq(evaluations.id, attempts.evaluationId))
-          .where(and(inArray(attempts.studentId, studentIds), isNotNull(attempts.submittedAt)))
+      ? (
+          await db
+            .select({
+              objectiveIds: evaluations.objectiveIds,
+              percent: attemptResults.percent,
+              isProvisional: attemptResults.isProvisional,
+              released: evaluations.releaseResultsToStudent,
+            })
+            .from(attempts)
+            .leftJoin(attemptResults, eq(attemptResults.attemptId, attempts.id))
+            .innerJoin(evaluations, eq(evaluations.id, attempts.evaluationId))
+            .where(and(inArray(attempts.studentId, studentIds), isNotNull(attempts.submittedAt)))
+        ).map(s => ({ ...s, isProvisional: s.isProvisional ?? true }))
       : [];
+    const lessons = studentLessonProgress(sittings, lessonIdsForObjectiveIds);
 
     // Which failed quizzes could be retaken. If `attempt_retakes` has not been
     // pushed yet, offer none rather than failing the whole gate.
@@ -371,7 +381,8 @@ router.get("/student/progress", async (req: AuthenticatedRequest, res) => {
 
     res.json({
       enabled: true,
-      passedLessonIds: withUnlocks(passedLessonIds(sittings, lessonIdsForObjectiveIds), unlockedLessonIds),
+      passedLessonIds: withUnlocks(lessons.passed, unlockedLessonIds),
+      awaitingLessonIds: lessons.awaiting,
       quizLessonIds: quizLessonIds(openExams, lessonIdsForObjectiveIds),
       retakeEvaluationIds: [...new Set(retakeEvaluationIds)],
       threshold: MASTERY_PASS_PERCENT,
