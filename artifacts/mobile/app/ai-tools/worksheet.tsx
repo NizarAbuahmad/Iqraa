@@ -1127,7 +1127,7 @@ function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
 }
 
 const styles = StyleSheet.create({
-  toggleBtn: { alignItems: 'center', gap: 6, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 16 },
+  toggleBtn: { alignItems: 'center', gap: 8, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 16 },
   verifyRow: { alignItems: 'center', gap: 6, marginTop: 8 },
   verifyText: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 12, flex: 1 },
   label: { fontSize: 13, marginBottom: 6 },
@@ -1138,7 +1138,7 @@ const styles = StyleSheet.create({
   levelTabs: { borderWidth: 1, padding: 4, gap: 4, marginBottom: 12 },
   levelTab: { flex: 1, alignItems: 'center', paddingVertical: 8 },
   secTitle: { fontSize: 14, marginBottom: 10 },
-  presentBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, marginBottom: 16 },
+  presentBtn: { alignItems: 'center', justifyContent: 'center', gap: 12, paddingVertical: 16, marginBottom: 16 },
   qCard: { padding: 14, borderWidth: 1, gap: 10, marginBottom: 8 },
   qNum: { fontSize: 14, width: 20 },
   optionRow: { alignItems: 'center', gap: 8, marginTop: 6 },

@@ -878,8 +878,8 @@ export default function QuizScreen() {
 
 function MetaPill({ icon, text, color }: { icon: keyof typeof Ionicons.glyphMap; text: string; color: string }) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: color + '18', borderRadius: 20 }}>
-      <Ionicons name={icon} size={12} color={color} />
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 4, backgroundColor: color + '18', borderRadius: 20 }}>
+      <Ionicons name={icon} size={14} color={color} />
       <Text style={{ color, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>{text}</Text>
     </View>
   );
@@ -912,24 +912,24 @@ function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
 }
 
 const styles = StyleSheet.create({
-  verifyRow: { alignItems: 'center', gap: 6, marginTop: 8 },
+  verifyRow: { alignItems: 'center', gap: 8, marginTop: 8, marginBottom: 8 },
   verifyText: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 12, flex: 1 },
   label: { fontSize: 13, marginBottom: 6 },
   checkboxGroup: { borderWidth: 1, padding: 14, marginBottom: 16, gap: 4 },
-  checkRow: { alignItems: 'center', gap: 10, paddingVertical: 6 },
+  checkRow: { alignItems: 'center', gap: 12, paddingVertical: 8 },
   checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   quizHeader: { padding: 16, borderWidth: 1, marginBottom: 16 },
-  quizTitle: { fontSize: 16, marginBottom: 10 },
+  quizTitle: { fontSize: 16, marginBottom: 12 },
   quizMeta: { gap: 8, flexWrap: 'wrap' },
-  toggleBtn: { alignItems: 'center', gap: 6, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 16 },
-  presentBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, marginBottom: 12 },
+  toggleBtn: { alignItems: 'center', gap: 8, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 16 },
+  presentBtn: { alignItems: 'center', justifyContent: 'center', gap: 12, paddingVertical: 16, marginBottom: 12 },
   qCard: { borderWidth: 1, padding: 16, marginBottom: 12 },
-  qTop: { alignItems: 'center', gap: 8, marginBottom: 10 },
+  qTop: { alignItems: 'center', gap: 12, marginBottom: 12 },
   qNumCircle: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  typeBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  typeBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8 },
   qText: { fontSize: 14, lineHeight: 20, marginBottom: 12 },
-  optRow: { alignItems: 'center', gap: 8, padding: 10, marginBottom: 6 },
-  optLabel: { fontSize: 13, width: 20 },
-  ansBox: { alignItems: 'center', gap: 6, padding: 10, marginTop: 8 },
-  expBox: { padding: 10, marginTop: 8 },
+  optRow: { alignItems: 'center', gap: 12, padding: 12, marginBottom: 8 },
+  optLabel: { fontSize: 13, width: 24 },
+  ansBox: { alignItems: 'center', gap: 8, padding: 12, marginTop: 8 },
+  expBox: { padding: 12, marginTop: 8 },
 });

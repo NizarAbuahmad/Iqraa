@@ -21,7 +21,7 @@ export function VerificationSummaryRow({ summary }: { summary: VerificationSumma
   const colors = useColors();
   const { t, isRTL } = useLanguage();
   return (
-    <>
+    <View style={styles.wrap}>
       {verificationLines(summary).map(line => {
         const [icon, color, text] =
           line.kind === 'proved'
@@ -42,11 +42,12 @@ export function VerificationSummaryRow({ summary }: { summary: VerificationSumma
           </View>
         );
       })}
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { alignItems: 'center', gap: 6, marginTop: 8 },
+  wrap: { gap: 8, marginTop: 4, marginBottom: 12 },
+  row: { alignItems: 'center', gap: 8 },
   text: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 12, flex: 1 },
 });
