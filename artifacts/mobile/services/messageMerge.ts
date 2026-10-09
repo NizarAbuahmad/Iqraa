@@ -21,12 +21,18 @@
  *   re-adding it would show it twice.
  * - Nothing new returns the original array reference, so a quiet poll costs no
  *   re-render.
+ * - A message already held takes the poll's `seen`, which only ever turns
+ *   true: it is how the sender's «شوهدت» appears without reopening the thread.
  *
  * Both lists are newest-first (the thread's FlatList is inverted), so anything
  * genuinely new belongs in front.
  */
-export function mergeNewMessages<T extends { id: string }>(current: T[], polled: T[]): T[] {
+export function mergeNewMessages<T extends { id: string; seen?: boolean }>(current: T[], polled: T[]): T[] {
   const known = new Set(current.map(m => m.id));
   const fresh = polled.filter(m => !known.has(m.id));
-  return fresh.length === 0 ? current : [...fresh, ...current];
+  const nowSeen = new Set(polled.filter(m => m.seen).map(m => m.id));
+  const marks = current.some(m => !m.seen && nowSeen.has(m.id));
+  if (fresh.length === 0 && !marks) return current;
+  const held = marks ? current.map(m => (!m.seen && nowSeen.has(m.id) ? { ...m, seen: true } : m)) : current;
+  return fresh.length === 0 ? held : [...fresh, ...held];
 }
