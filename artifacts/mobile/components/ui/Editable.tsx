@@ -243,8 +243,8 @@ function EditAffordance({ colors, edited }: { colors: Colors; edited?: boolean }
 }
 
 const styles = StyleSheet.create({
-  readRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
-  editingRow: { alignItems: 'flex-end', gap: 6 },
+  readRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  editingRow: { alignItems: 'flex-end', gap: 8 },
   body: { flex: 1, fontSize: 14, lineHeight: 22 },
   input: {
     fontSize: 15,
@@ -255,9 +255,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     minHeight: 40,
   },
-  listRow: { alignItems: 'flex-start', gap: 8 },
+  listRow: { alignItems: 'flex-start', gap: 12 },
   bullet: { width: 5, height: 5, borderRadius: 3, marginTop: 9 },
-  addRow: { alignItems: 'center', gap: 6, paddingVertical: 6 },
+  addRow: { alignItems: 'center', gap: 8, paddingVertical: 8 },
   affordance: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 5 },
   editedDot: { width: 5, height: 5, borderRadius: 3 },
 });
