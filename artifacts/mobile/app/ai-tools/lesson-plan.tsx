@@ -38,7 +38,7 @@ import { readIndexParam } from '@/services/materialParams';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
-import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
+import { GeneratorResultActions, GeneratorSaveBar } from '@/components/ui/GeneratorResultActions';
 import { buildLessonPlanHTML, buildLessonPlanSlidesHTML, exportMinistryPlanWord, formatLessonPlanText } from '@/services/share';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
@@ -158,6 +158,8 @@ export default function LessonPlanScreen() {
   const [error, setError] = useState('');
   const [savedId, setSavedId] = useState<string | undefined>(params.savedId);
   const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
+  const [showMore, setShowMore] = useState(false);
+  const moreOpen = showMore || !!(objectives.trim() || adaptations.trim() || priorTopicsNotes.trim());
   const [showExport, setShowExport] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
@@ -430,7 +432,7 @@ export default function LessonPlanScreen() {
     <ScrollView
       ref={scrollRef}
       style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={{ paddingBottom: 60, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}
+      contentContainerStyle={{ paddingBottom: 140, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
@@ -457,6 +459,20 @@ export default function LessonPlanScreen() {
           t={t}
         />
 
+        {/* The three optional boxes fold away: nine fields stood between a
+            teacher and the button, and most plans need none of these. Any box
+            that already holds text keeps the section open. */}
+        <Pressable
+          onPress={() => setShowMore(v => !v)}
+          accessibilityRole="button"
+          aria-expanded={moreOpen}
+          style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, paddingVertical: 10, marginBottom: 6 }}
+        >
+          <Ionicons name={moreOpen ? 'chevron-up' : 'chevron-down'} size={16} color={ACCENT} />
+          <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>{t('moreOptionsOptional')}</Text>
+        </Pressable>
+        {moreOpen ? (
+          <>
         {/* Objectives (optional) */}
         <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('objectivesLabel')}
@@ -527,6 +543,9 @@ export default function LessonPlanScreen() {
             multiline
           />
         </View>
+
+          </>
+        ) : null}
 
         <View style={[styles.checkboxGroup, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: priorReviewAvailable ? 1 : 0.55 }]}>
           <CheckboxRow
@@ -642,6 +661,9 @@ export default function LessonPlanScreen() {
         />
       )}
     </ScrollView>
+    {result && !loading && (
+      <GeneratorSaveBar accent={ACCENT} savedId={savedId} saveState={saveLabel} onSave={handleSave} onExport={() => setShowExport(true)} />
+    )}
 
     <ExportMenu
       visible={showExport}
