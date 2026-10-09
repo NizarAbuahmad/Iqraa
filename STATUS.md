@@ -831,6 +831,7 @@ session, which had neither a device nor a live key; they are the owner's to
 run before relying on this on a phone. Also not run: whether Cloud Run
 propagates a client disconnect to the container, which decides whether Stop
 halts upstream generation (spend is recorded either way).
+
 ## The printed worksheet reads as a student's paper, 2026-10-09
 
 Found by printing an offline maths sheet (المعادلات الأسية) and a chemistry

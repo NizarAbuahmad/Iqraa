@@ -85,6 +85,7 @@ import { classifyChatIntent, leavesClarificationStanding } from '@/services/ai/i
 import { unansweredEventProps, type UnansweredKind } from '@/services/chatUnanswered';
 import { IqraaMark } from '@/components/ui/IqraaMark';
 import { CHAT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
+import { RADIUS } from '@/constants/theme';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { useKeyboardVisible } from '@/hooks/useKeyboardVisible';
 import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
@@ -4083,7 +4084,7 @@ export default function IqraScreen() {
               hitSlop={3}
               style={({ pressed }) => [
                 styles.sendBtn,
-                { backgroundColor: colors.foreground, borderRadius: 20, opacity: pressed ? 0.8 : 1 },
+                { backgroundColor: colors.foreground, borderRadius: RADIUS.pill, opacity: pressed ? 0.8 : 1 },
               ]}
             >
               <Ionicons name="stop" size={16} color={colors.background} />
