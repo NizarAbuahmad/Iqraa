@@ -285,3 +285,35 @@ describe("LaTeX in a JSON reply", () => {
     assert.equal(out.a, body);
   });
 });
+
+describe("prompt-slides — laid-out slides keep their substance outside content", () => {
+  // A stat or compare slide legitimately has an empty body, and refusing it
+  // threw away a whole paid deck over its best slide. Found 2026-10-08.
+  it("accepts a stat slide and a compare slide with no content", () => {
+    const slides = [
+      ...fiveSlides(),
+      slide({ content: "", layout: "stat", stat: { value: "3", label: "قوانين" } }),
+      slide({ content: "", layout: "compare", compare: { leftTitle: "أ", left: ["x"], rightTitle: "ب", right: ["y"] } }),
+    ];
+    assert.doesNotThrow(() => assertUsableGeneration("prompt-slides", deck(slides)));
+  });
+
+  it("still refuses a laid-out slide whose payload is empty too", () => {
+    assert.throws(
+      () => assertUsableGeneration("prompt-slides", deck([...fiveSlides(), slide({ content: "", layout: "stat", stat: { value: " ", label: "x" } })])),
+      UnusableGenerationError,
+    );
+    assert.throws(
+      () => assertUsableGeneration("prompt-slides", deck([...fiveSlides(), slide({ content: "", layout: "compare", compare: { leftTitle: "أ", left: [], rightTitle: "ب", right: ["y"] } })])),
+      UnusableGenerationError,
+    );
+  });
+});
+
+describe("deckShortfalls — the cover is one line on purpose", () => {
+  it("does not count the first slide as thin", () => {
+    const slides = fiveSlides();
+    slides[0] = slide({ content: "one line cover" });
+    assert.ok(!deckShortfalls(deck(slides)).some(s => /single unbroken line/.test(s)));
+  });
+});
