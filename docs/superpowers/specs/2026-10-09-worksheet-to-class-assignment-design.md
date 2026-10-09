@@ -107,8 +107,11 @@ No schema change and no migration: everything rides existing jsonb columns.
   موادي's worksheet viewer.
 - A sheet: the teacher's classes (scoped to the worksheet's grade/subject when
   the class has one), the lesson's objectives (preselected when there is one),
-  a line «٦ تُصحَّح تلقائيًا · ٤ يصحّحها المعلّم», and a note that the worked example
-  is not sent.
+  and a note that the worked example is not sent. *As built:* the
+  «٦ تُصحَّح تلقائيًا · ٤ يصحّحها المعلّم» split is shown in the toast **after** the
+  send, from the server's answer, not before — the rules live in the
+  converter only, and a client-side preview would be a second copy of them
+  that could disagree.
 - On success → `/evaluations/[id]`, the existing review-and-publish screen,
   which issues the class code.
 
@@ -119,11 +122,16 @@ No schema change and no migration: everything rides existing jsonb columns.
   short answer; no key → error), and every converted question passing the real
   type registry.
 - Route: auth, foreign class refused, transaction (a bad question leaves no
-  evaluation), counts returned — in the api-server suite.
+  evaluation), counts returned — in the api-server suite. *As built:* the
+  api-server suite has no database, and `/evaluations` is guarded by prefix, so
+  a mount test would answer 401 whether the route existed or not. The route was
+  driven instead against a local Postgres with migrations applied (see
+  STATUS.md); the request parser has its own unit tests.
 - Figure: registry accepts a book-figure URI and refuses any other host.
-- Driven in the web build: send a sheet, publish, take it as a student, see a
+- Driven end to end: send a sheet, publish, take it as a student, see a
   multiple choice and a numeric answer auto-marked and a short answer waiting
-  for the teacher.
+  for the teacher. *As built:* driven through the API, then through the web
+  build's UI (STATUS.md).
 
 ## Not in this change
 

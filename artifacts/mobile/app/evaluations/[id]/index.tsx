@@ -38,6 +38,7 @@ import { EditQuestionModal } from '@/components/EditQuestionModal';
 import { isEditableQuestion } from '@/services/questionDraft';
 import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
+import { QuestionFigure } from '@/components/ui/QuestionFigure';
 import { bookFigureRefsForObjectives } from '@/services/bookFigureUri';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
@@ -619,6 +620,7 @@ export default function EvaluationDetailScreen() {
             >
               {questionText(q) || '—'}
             </Text>
+            <QuestionFigure body={q.body} captionColor={colors.mutedForeground} />
           </View>
         ))}
       </View>
