@@ -171,7 +171,7 @@ export default function MiniEvalScreen() {
       if (err instanceof EvaluationError && err.code === 'no_level_scale') {
         setError(t('evaluationSetupNotReady'));
       } else {
-        setError(err instanceof EvaluationError ? err.message : t('miniEvalFailed'));
+        setError(t('miniEvalFailed'));
       }
       setWorking(false);
     }

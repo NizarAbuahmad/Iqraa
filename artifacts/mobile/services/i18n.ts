@@ -2366,6 +2366,8 @@ const translations = {
     messagingLeaveConfirmDesc: 'لن تصلك رسائل هذه المجموعة بعد مغادرتها.',
     messagingRemoveMemberConfirmTitle: 'إزالة هذا العضو من المجموعة؟',
     messagingRemoveMember: 'إزالة',
+    dangerZoneSection: 'إجراءات نهائية',
+    nextStudentBtn: (name: string) => `الطالب التالي: ${name}`,
   },
 
   en: {
@@ -4553,6 +4555,8 @@ const translations = {
     messagingLeaveConfirmDesc: "You'll stop receiving this group's messages.",
     messagingRemoveMemberConfirmTitle: 'Remove this member from the group?',
     messagingRemoveMember: 'Remove',
+    dangerZoneSection: 'Permanent actions',
+    nextStudentBtn: (name: string) => `Next student: ${name}`,
   },
 } as const;
 
