@@ -41,6 +41,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
+import { readPrintStyle } from '@/hooks/usePrintStyle';
 import { useLanguage } from '@/context/LanguageContext';
 import { isStudentRole, isTeacherRole, useAuth } from '@/context/AuthContext';
 import { getMyExams, getMyGradeIds } from '@/services/studentExam';
@@ -222,7 +223,8 @@ function ResourceRow({
 
   // A frozen sheet has no URL: it is rendered on the spot and handed to the
   // print/share sheet, the same path the worksheet generator's PDF export takes.
-  const printSheet = () => {
+  // No export menu on this path, so it prints in the style last picked in one.
+  const printSheet = async () => {
     if (!sheet) return;
     const grade = getVisibleGrades().find(g => g.id === sheet.gradeId);
     const subject = getSubjectsForGrade(sheet.gradeId).find(s => s.id === sheet.subjectId);
@@ -234,6 +236,9 @@ function ResourceRow({
         grade: grade ? (isAr ? grade.nameAr : grade.name) : '',
       },
       isAr,
+      [],
+      true,
+      await readPrintStyle(),
     );
     void exportAsPDF(html, `${title}.pdf`);
   };
@@ -247,7 +252,7 @@ function ResourceRow({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (item.url) void openExternal(item.url);
     else if (opensSheet) router.push({ pathname: '/workspace/view' as never, params: { premade: item.nativeId } });
-    else if (printable) printSheet();
+    else if (printable) void printSheet();
   };
 
   // A picture-first kind: videos, infographics and photos are recognised by

@@ -789,6 +789,46 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A print style for the student's paper: colour, ink-saver, large print, 2026-10-09
+
+Step 2 of the worksheet review, Nizar's call on scope: worksheets and quizzes,
+both new styles, and the PDF/print export only — Word, shared text and the
+projector slides are unchanged.
+
+- **The export menu has a «شكل ورقة PDF» row** — ملوّن / موفّر للحبر / خط كبير —
+  wherever a worksheet or quiz is exported: the worksheet and quiz screens,
+  موادي, the chat and the virtual-lab card. The premade sheets' direct print
+  (non-teacher path in `curriculum/resources.tsx`) has no menu and prints in the
+  style last picked (`readPrintStyle`).
+- **Remembered per device** (`hooks/usePrintStyle.ts`, AsyncStorage key
+  `@iqra_print_style_v1`): the choice follows the school's copier, not the
+  teacher, so every menu reads and writes the same key.
+- **Ink-saver** is for black-and-white copiers, which turn the designed page's
+  grey cards, tinted bands, solid number badges and colour emoji into grey
+  blocks and lose its light-grey writing lines: white cards with dark borders,
+  section bands as a bold heading over a rule, outlined badges, no emoji, rules
+  in `#555`. **Large print** is 16px text (from 12.5), 30px writing lines and
+  28px badges; a 10-question maths worksheet goes from 3 A4 pages to 4.
+- **One stylesheet, one argument.** The overrides live in
+  `services/printStyle.ts` and are appended to `htmlBase`'s sheet with
+  `!important`, because `sectionBand` sets its colours inline. `colour` adds
+  nothing, so the default page is byte-for-byte what it was.
+- **Also fixed, found in the renders:** a nested exponent, «2^(2(x+1))» in the
+  half-solved question, still printed its caret after the 2026-10-09 fix below
+  — the bracket match stopped at the first `)`. `raiseExponents` now matches
+  the exponent's own closing bracket.
+
+Covered by `printStyle.test.ts` (each style's overrides, colour unchanged, the
+export bundles carry the style, a stored value round-trips) and a nested-exponent
+case in `worksheetPrint.test.ts`, watched failing first. Mobile 3404 pass /
+0 fail / 10 skipped, typecheck clean. **Verified in the web build** (Expo web
+on :8081, `/auth/me` stubbed, every other API call aborted, Chromium 390×844):
+the row renders under «تصدير المادة»; Ink-saver picked, menu closed and
+reopened, still selected; the PDF handed to the print iframe carried the
+picked style (colour first, then large print). Both styles were also rendered
+to A4 in Chromium and read by eye. **Not checked:** expo-print on a device,
+and a real black-and-white photocopy.
+
 ## The printed worksheet reads as a student's paper, 2026-10-09
 
 Found by printing an offline maths sheet (المعادلات الأسية) and a chemistry
