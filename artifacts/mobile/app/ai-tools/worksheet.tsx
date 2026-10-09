@@ -30,6 +30,7 @@ import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
 import { useFavorite } from '@/hooks/useFavorite';
 import { useGeneratorExport } from '@/hooks/useGeneratorExport';
+import { usePrintStyle } from '@/hooks/usePrintStyle';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
@@ -213,6 +214,7 @@ export default function WorksheetScreen() {
   const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
   const [showExport, setShowExport] = useState(false);
   const [showAnswers, setShowAnswers] = useState(false);
+  const [printStyle, setPrintStyle] = usePrintStyle();
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
@@ -595,7 +597,7 @@ export default function WorksheetScreen() {
     getTitle: getExportTitle,
     getMeta: getExportMeta,
     formatText: (ws, title, meta, isAr) => formatWorksheetText(ws, title, meta, isAr, showAnswers),
-    buildHTML: (ws, title, meta, isAr, figures) => buildWorksheetHTML(ws, title, meta, isAr, figures, showAnswers),
+    buildHTML: (ws, title, meta, isAr, figures) => buildWorksheetHTML(ws, title, meta, isAr, figures, showAnswers, printStyle),
     buildSlidesHTML: (ws, title, meta, isAr, figures) => buildWorksheetSlidesHTML(ws, title, meta, isAr, figures, showAnswers),
     onError: key => showToast(t(key)),
     onCopied: key => showToast(t(key)),
@@ -1078,6 +1080,7 @@ export default function WorksheetScreen() {
       onWord={handleWord}
       onSlides={handleSlides}
       note={t(showAnswers ? 'exportTeacherCopyNote' : 'exportStudentCopyNote')}
+      printStyle={{ value: printStyle, onChange: setPrintStyle }}
       isRTL={isRTL}
       loadingPDF={loadingPDF}
       loadingWord={loadingWord}
