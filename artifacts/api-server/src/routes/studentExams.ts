@@ -43,6 +43,7 @@ import {
   quizLessonIds,
   withUnlocks,
 } from "../modules/assessment/lessonProgress.ts";
+import { audioKeysForAttempt, deleteAttemptAudio } from "../lib/attemptAudio.ts";
 import { retakeDecision } from "../modules/assessment/retake.ts";
 import {
   guardianExamRow,
@@ -91,6 +92,7 @@ async function loadRetakeCandidates(studentIds: string[], now: Date): Promise<Re
       attemptId: attempts.id,
       evaluationId: attempts.evaluationId,
       studentId: attempts.studentId,
+      source: attempts.source,
       submittedAt: attempts.submittedAt,
       percent: attemptResults.percent,
       isProvisional: attemptResults.isProvisional,
@@ -123,6 +125,7 @@ async function loadRetakeCandidates(studentIds: string[], now: Date): Promise<Re
     failedPercent: s.percent,
     decision: retakeDecision({
       submitted: s.submittedAt !== null,
+      studentSitting: s.source === "student_link",
       // No result row means grading never ran; treat it as not final.
       isProvisional: s.isProvisional ?? true,
       percent: s.percent,
@@ -418,6 +421,9 @@ router.post("/student/exams/:evaluationId/retake", async (req: AuthenticatedRequ
     }
 
     const failedPercent = Number(candidate.failedPercent);
+    // Read before the cascade removes the rows that name them, deleted after
+    // commit — otherwise a minor's recordings stay in R2 with nothing pointing at them.
+    const audioKeys = await audioKeysForAttempt(candidate.attemptId);
     const done = await db.transaction(async tx => {
       const removed = await tx
         .delete(attempts)
@@ -435,6 +441,7 @@ router.post("/student/exams/:evaluationId/retake", async (req: AuthenticatedRequ
       res.status(409).json({ code: "already_reset", error: "This sitting was already reset." });
       return;
     }
+    await deleteAttemptAudio(audioKeys, { attemptId: candidate.attemptId, reason: "retake" });
     res.json({ ok: true, shareCode: candidate.shareCode });
   } catch (err) {
     if (isSchemaMissing(err)) {

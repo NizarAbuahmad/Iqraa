@@ -22,8 +22,8 @@
  * slides, near-identical name, same deck at the end. It is a link inside the
  * slides screen now, so it is parked here like the others.
  *
- * The resources library (2026-09-25) is deliberately NOT in this list: it is
- * `LIBRARY_TOOL`, a standalone section at the top of the Tools tab.
+ * The resources library is not a tool at all: it has its own tab, and since
+ * 2026-10-08 no card on the Tools tab either.
  *
  * Parked tools stay in the catalog (their routes still resolve for saved
  * materials and deep links) but must not reappear on a menu — which is easy to
@@ -45,7 +45,7 @@ const OFFERED_TOOLS = [
 
 /** Parked on 2026-08-18 and still parked — none of these may reach a menu. */
 const PARKED_TOOLS = [
-  'lesson-flow', 'geogebra', 'lesson-media', 'homework', 'prompt-slides',
+  'lesson-flow', 'geogebra', 'homework', 'prompt-slides',
 ];
 
 describe('toolCatalog — the offered surface', () => {

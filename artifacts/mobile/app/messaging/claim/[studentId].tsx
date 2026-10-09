@@ -50,7 +50,7 @@ export default function ClaimCodeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
-  // The entry point in classes/[id].tsx is hidden while this is false, but a
+  // The entry point in classes/[id]/index.tsx is hidden while this is false, but a
   // deep link, a back gesture or a stale history entry can still land here.
   const studentAccounts = useStudentAccountsEnabled();
 
@@ -189,7 +189,7 @@ export default function ClaimCodeScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { paddingTop: topPad, backgroundColor: colors.card, borderBottomColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        <Pressable onPress={() => goBack()} hitSlop={10}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]} numberOfLines={1}>

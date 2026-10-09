@@ -220,3 +220,41 @@ describe('searching', () => {
     );
   });
 });
+
+describe('naming a book code', () => {
+  const qrOnly = (resources: ResourceCatalogInput['qr'][number]['resources']): ResourceCatalogInput => ({
+    uploaded: [],
+    premade: [],
+    qr: [{ title: 'كتاب الطالب — التربية الوطنية', subjectId: 'civic-education', resources }],
+  });
+
+  it('names a code by what it opens when the manifest says, and keeps the book for the line below', () => {
+    const [row] = buildResourceCatalog(
+      qrOnly([{ kind: 'page', url: 'https://example.invalid/a', pdfPage: 24, isHttp: false, title: 'الدستور الأردني' }]),
+    );
+    assert.equal(row.titleAr, 'الدستور الأردني');
+    assert.equal(row.titleEn, 'الدستور الأردني');
+    assert.equal(row.bookTitle, 'كتاب الطالب — التربية الوطنية');
+  });
+
+  it('falls back to the book when nobody has read the link', () => {
+    const [row] = buildResourceCatalog(
+      qrOnly([{ kind: 'page', url: 'https://example.invalid/b', pdfPage: 52, isHttp: false }]),
+    );
+    assert.equal(row.titleAr, 'كتاب الطالب — التربية الوطنية');
+    assert.equal(row.bookTitle, row.titleAr);
+  });
+
+  it('finds a code by its own title, not only by its book', () => {
+    const rows = buildResourceCatalog(
+      qrOnly([
+        { kind: 'page', url: 'https://example.invalid/a', pdfPage: 24, isHttp: false, title: 'الجمعية الفلكية الأردنية' },
+        { kind: 'page', url: 'https://example.invalid/b', pdfPage: 52, isHttp: false },
+      ]),
+    );
+    assert.deepEqual(
+      filterResources(rows, { query: 'الفلكية' }).map(r => r.page),
+      [24],
+    );
+  });
+});

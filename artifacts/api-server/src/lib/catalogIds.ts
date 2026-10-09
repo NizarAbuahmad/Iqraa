@@ -57,3 +57,15 @@ export function sanitizeTeachingAssignments(
   }
   return [...byGrade.entries()].map(([gradeId, subjectIds]) => ({ gradeId, subjectIds: [...subjectIds] }));
 }
+
+/**
+ * A student is in one class; a parent has one per child. `PATCH
+ * /users/profile` takes the same `gradeIds` for every role, so the cap lives
+ * here rather than in the screen — a stale client could otherwise leave a
+ * student with two grades and a library that opens on the wrong one.
+ * `undefined` ("not sent") passes through untouched.
+ */
+export function limitGradesForRole(role: string, gradeIds: string[] | undefined): string[] | undefined {
+  if (!gradeIds) return gradeIds;
+  return role === "student" ? gradeIds.slice(0, 1) : gradeIds;
+}

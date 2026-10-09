@@ -1,7 +1,6 @@
 import React from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
@@ -17,7 +16,6 @@ import { loadLessonPick } from '@/services/lessonContext';
 import { classToolParamsFromRoute, type ClassToolParams } from '@/services/classToolParams';
 import {
   ALL_TOOLS,
-  LIBRARY_TOOL,
   type ToolDef,
 } from '@/services/toolCatalog';
 
@@ -32,9 +30,8 @@ async function runToolAction(tool: ToolDef, lang: 'ar' | 'en', forClass: ClassTo
   // Arrived from a class: the class decides the scope, so the global "current
   // lesson" below is skipped — it can belong to another subject, and a topic
   // from one subject under another's indices is refused as a conflict.
-  // Explicit routeParams still win. The library is a catalogue, not a
-  // generator, so it is left alone.
-  if (tool.route && forClass && tool.id !== LIBRARY_TOOL.id) {
+  // Explicit routeParams still win.
+  if (tool.route && forClass) {
     router.push({ pathname: tool.route as any, params: { ...forClass, ...tool.routeParams } });
     return;
   }
@@ -172,9 +169,11 @@ function ToolCard({
 
 export default function AIToolsScreen() {
   const colors = useColors();
-  const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
-  const topPad = insets.top + (insets.top === 0 ? 16 : 0);
+  // Not insets.top: the tab layout's lesson bar (or the slim bell header a
+  // parent/student gets) sits above this screen and already pays for the
+  // status bar, so adding it again left a blank band under that bar.
+  const topPad = 16;
   const viewportW = useViewportWidth();
   const isDesktop = Platform.OS === 'web' && viewportW >= DESKTOP_BREAKPOINT;
   // Set only when the teacher tapped «أنشئ مادة جديدة» inside a class.
@@ -206,13 +205,14 @@ export default function AIToolsScreen() {
         </Text>
       </View>
 
-      {/* One flat grid, library first. The before/during/after headings were
+      {/* One flat grid of tools. The library left it on 2026-10-08: it has its
+          own tab, and a card here was a second door to the same room. The before/during/after headings were
           dropped 2026-09-25: with a dozen tools they cost scrolling without
           helping a teacher choose. WORKFLOW still orders the list, and still
           groups the home screen and command palette. */}
       <View style={[styles.section, { paddingTop: 16 }]}>
         <View style={[styles.list, isDesktop && styles.listGrid]}>
-          {[LIBRARY_TOOL, ...ALL_TOOLS].map(tool => (
+          {ALL_TOOLS.map(tool => (
             <ToolCard key={tool.id} tool={tool} isRTL={isRTL} colors={colors} t={t} grid={isDesktop} forClass={forClass} />
           ))}
         </View>

@@ -35,7 +35,7 @@ import {
   ROSTER_CONSENT_VERSION,
 } from "../lib/rosterConsent.js";
 import { isStrongPassword, PASSWORD_POLICY_MESSAGE } from "../lib/passwordPolicy.js";
-import { sanitizeCatalogIds, sanitizeTeachingAssignments } from "../lib/catalogIds.js";
+import { limitGradesForRole, sanitizeCatalogIds, sanitizeTeachingAssignments } from "../lib/catalogIds.js";
 import { GRADES, SUBJECTS } from "@workspace/curriculum";
 import { isValidEmailAddress } from "../lib/emailAddress.js";
 import { changeEmailResponse, registerResponse, resendResponse } from "../lib/verificationDelivery.js";
@@ -77,9 +77,15 @@ function avatarUrlFor(avatarKey: string | null): string | null {
  */
 
 // Login gets more headroom than register since real users mistype passwords;
-// a burst of registrations is rarely legitimate at any volume.
-const loginLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "login" });
-const googleLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "google-auth" });
+// a burst of registrations is rarely legitimate at any volume. Same pair as
+// signup: tight per account (what bounds password guessing), loose per IP —
+// ten per IP meant the eleventh student signing in on the school wifi at the
+// start of a lesson was locked out for fifteen minutes.
+const loginEmailLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "login-email", key: emailKey });
+const loginLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 100, name: "login" });
+// Google verifies the credential itself, so there is no password to guess
+// here; the per-IP ceiling only has to stop floods, not a classroom.
+const googleLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 100, name: "google-auth" });
 
 /*
  * The signup and verification routes are limited twice: tightly per address,
@@ -118,7 +124,8 @@ const changeEmailLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 30
 const perUser = (req: Request) => (req as AuthenticatedRequest).user?.id ?? req.ip ?? "unknown";
 const claimLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 10, name: "claim", key: perUser });
 // Same reasoning as resend-verification: asking costs someone else an email.
-const forgotPasswordLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 3, name: "forgot-password" });
+const forgotPasswordEmailLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 3, name: "forgot-password-email", key: emailKey });
+const forgotPasswordLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 20, name: "forgot-password" });
 /**
  * Keyed on the **email**, not the caller's IP.
  *
@@ -661,7 +668,7 @@ router.post("/change-unverified-email", changeEmailLimiter, changeEmailAddressLi
  * only that the request was accepted, which is the point — anything finer is
  * an oracle for which addresses have accounts here.
  */
-router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
+router.post("/forgot-password", forgotPasswordLimiter, forgotPasswordEmailLimiter, async (req, res) => {
   try {
     const { email } = req.body as { email?: string };
     if (!email?.includes("@")) {
@@ -1113,7 +1120,7 @@ router.get("/join/:code", joinLookupLimiter, async (req, res) => {
 });
 
 // POST /auth/login
-router.post("/login", loginLimiter, async (req, res) => {
+router.post("/login", loginLimiter, loginEmailLimiter, async (req, res) => {
   try {
     const { email, password } = req.body as { email?: unknown; password?: unknown };
 
@@ -1717,7 +1724,9 @@ router.patch("/users/profile", authMiddleware, async (req: AuthenticatedRequest,
     } else {
       // Older client build sending the flat lists directly.
       const sanitizedGradeIds = sanitizeCatalogIds(gradeIds, VALID_GRADE_IDS);
-      if (sanitizedGradeIds) updates.gradeIds = sanitizedGradeIds;
+      // A parent or student picks their class(es) here too (/setup-grade); a
+      // student is in one, so the cap is applied by role rather than trusted.
+      if (sanitizedGradeIds) updates.gradeIds = limitGradesForRole(req.user!.role, sanitizedGradeIds);
       const sanitizedSubjectIds = sanitizeCatalogIds(subjectIds, VALID_SUBJECT_IDS);
       if (sanitizedSubjectIds) updates.subjectIds = sanitizedSubjectIds;
     }
@@ -1804,8 +1813,12 @@ router.post("/users/avatar", authMiddleware, async (req: AuthenticatedRequest, r
     // Old object is orphaned otherwise — deleted only after the new one is
     // safely written and recorded, so a mid-request failure never leaves a
     // user with no photo at all.
+    // Best-effort: the new photo is already live, so a failed cleanup must not
+    // turn into a 500 that tells the user their change didn't happen.
     if (existing.avatarKey && existing.avatarKey !== key) {
-      await deletePublicObject(existing.avatarKey);
+      await deletePublicObject(existing.avatarKey).catch(err =>
+        logger.warn({ err, key: existing.avatarKey }, "old avatar delete failed"),
+      );
     }
 
     res.json({ avatarUrl: avatarUrlFor(updated!.avatarKey) });
@@ -1824,9 +1837,13 @@ router.delete("/users/avatar", authMiddleware, async (req: AuthenticatedRequest,
       return;
     }
 
+    // Unlink first, then delete best-effort — the other order can leave the
+    // account pointing at an object that no longer exists.
     if (existing.avatarKey) {
-      await deletePublicObject(existing.avatarKey);
       await db.update(users).set({ avatarKey: null }).where(eq(users.id, req.user!.id));
+      await deletePublicObject(existing.avatarKey).catch(err =>
+        logger.warn({ err, key: existing.avatarKey }, "avatar delete failed"),
+      );
     }
 
     res.json({ avatarUrl: null });

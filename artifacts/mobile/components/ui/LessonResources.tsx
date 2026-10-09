@@ -110,7 +110,7 @@ export function LessonResources({ topic, onChange }: Props) {
           <Ionicons
             name={m.kind === 'video' ? 'logo-youtube' : 'image-outline'}
             size={18}
-            color={m.kind === 'video' ? '#D92D20' : TEAL}
+            color={m.kind === 'video' ? palette.destructive : TEAL}
           />
           <Text
             numberOfLines={1}
@@ -135,7 +135,7 @@ export function LessonResources({ topic, onChange }: Props) {
             autoCorrect={false}
             // A URL is latin text: left-aligned even in the RTL layout, or it
             // renders with the scheme at the wrong end.
-            style={[styles.input, { backgroundColor: colors.card, borderColor: error ? '#D92D20' : colors.border, borderRadius: colors.radius, color: colors.foreground, textAlign: 'left' }]}
+            style={[styles.input, { backgroundColor: colors.card, borderColor: error ? palette.destructive : colors.border, borderRadius: colors.radius, color: colors.foreground, textAlign: 'left' }]}
           />
           <TextInput
             value={caption}
@@ -145,7 +145,7 @@ export function LessonResources({ topic, onChange }: Props) {
             style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, color: colors.foreground, textAlign: isRTL ? 'right' : 'left' }]}
           />
           {error ? (
-            <Text style={{ color: '#D92D20', fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>
+            <Text style={{ color: palette.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>
               {error}
             </Text>
           ) : null}

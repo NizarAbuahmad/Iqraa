@@ -76,10 +76,10 @@ export default function CurriculumBrowseScreen() {
   const insets = useSafeAreaInsets();
   const { t, lang, isRTL } = useLanguage();
   const { user } = useAuth();
-  // A teacher who has picked grades/subjects on /setup-subjects sees only
-  // those by default here — the whole point of asking at signup. Anyone else
-  // (no selection yet, or not a teacher) sees the full catalog, unchanged.
-  const visibleGrades = narrowToSelection(getVisibleGrades(), isTeacherRole(user?.role) ? user?.gradeIds : undefined);
+  // Whoever has picked grades — a teacher on /setup-subjects, a parent or
+  // student on /setup-grade — sees only those here; the whole point of asking
+  // at signup. No selection yet (or an admin) sees the full catalog, unchanged.
+  const visibleGrades = narrowToSelection(getVisibleGrades(), user?.gradeIds);
   const { gradeId } = useLocalSearchParams<{ gradeId?: string }>();
   const [selectedGrade, setSelectedGrade] = useState<Grade>(
     visibleGrades.find(g => g.id === gradeId) ?? visibleGrades[0],
@@ -126,6 +126,8 @@ export default function CurriculumBrowseScreen() {
       <View style={[styles.header, { backgroundColor: colors.card, paddingTop: topPad + 12, borderBottomColor: colors.border }]}>
         <View style={centered}>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('back')}
           onPress={() => goBack()} hitSlop={10}
           style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
         >

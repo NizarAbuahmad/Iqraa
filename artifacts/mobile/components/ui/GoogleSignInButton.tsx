@@ -9,6 +9,7 @@ import {
   GoogleSigninButton,
   isSuccessResponse,
 } from '@react-native-google-signin/google-signin';
+import { palette } from '@/constants/colors';
 
 // Google Identity Services (GIS) — loaded lazily, web only. Renders Google's
 // own button widget rather than a custom Pressable: a hand-rolled trigger
@@ -156,7 +157,7 @@ function NativeGoogleButton({
       />
       {error ? (
         <Text
-          style={{ color: '#D92D20', fontSize: 13, marginTop: 8, textAlign: 'center' }}
+          style={{ color: palette.destructive, fontSize: 13, marginTop: 8, textAlign: 'center' }}
         >
           {error}
         </Text>

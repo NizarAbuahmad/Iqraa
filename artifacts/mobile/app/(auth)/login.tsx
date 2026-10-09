@@ -3,7 +3,7 @@ import {
   Pressable,
   ScrollView, StyleSheet, Text, View,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
@@ -24,6 +24,9 @@ export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const { login, loginWithGoogle, savedAccounts, switchAccount } = useAuth();
   const { t, lang, isRTL } = useLanguage();
+  // Arriving from a successful password reset. It used to land here with no
+  // word, so a teacher could not tell the reset had worked.
+  const justReset = useLocalSearchParams<{ reset?: string }>().reset === '1';
   const { isWide } = useAuthLayout();
 
   const [email, setEmail] = useState('');
@@ -153,6 +156,25 @@ export default function LoginScreen() {
           </Text>
         </View>
 
+        {justReset && !error ? (
+          <View
+            style={[
+              styles.errorBanner,
+              {
+                backgroundColor: colors.success + '14',
+                borderColor: colors.success + '33',
+                flexDirection: isRTL ? 'row-reverse' : 'row',
+              },
+            ]}
+            accessibilityLiveRegion="polite"
+          >
+            <Ionicons name="checkmark-circle-outline" size={16} color={colors.success} />
+            <Text style={[styles.errorText, { color: colors.success, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+              {t('passwordResetDone')}
+            </Text>
+          </View>
+        ) : null}
+
         {error ? (
           <View
             style={[
@@ -275,10 +297,12 @@ export default function LoginScreen() {
           value={password}
           onChangeText={setPassword}
           secureTextEntry={!showPassword}
-          autoComplete="password"
+          autoComplete="current-password"
+          textContentType="password"
           leftIcon="lock-closed-outline"
           rightIcon={showPassword ? 'eye-off-outline' : 'eye-outline'}
           onRightIconPress={() => setShowPassword(v => !v)}
+          rightIconLabel={t(showPassword ? 'hidePasswordA11y' : 'showPasswordA11y')}
           isRTL={isRTL}
         />
 

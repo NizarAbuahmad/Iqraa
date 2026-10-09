@@ -725,6 +725,129 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A parent or student picks their class, and sees only that, 2026-10-08
+
+Until now only teachers could narrow the curriculum (`/setup-subjects`); a
+parent saw grades 1–10 and a student got a roster-derived grade only once a
+teacher had linked them to a class.
+
+- **`/setup-grade`** (`artifacts/mobile/app/setup-grade.tsx`): a student picks
+  one class, a parent one per child. Saved to the existing `users.gradeIds`
+  through `PATCH /users/profile` — **no schema change** (`schema-push: not
+  needed`). The server keeps a student to one grade (`limitGradesForRole`).
+- **Onboarding**: `needsGradeSetup` (`routeGating.ts`) routes a parent/student
+  with no grade to the picker on sign-in and on every boot. It waits behind the
+  roster-claim gate, so the order is sign up → claim code → pick class. The
+  pre-login intro (`onboarding.tsx`) is unchanged.
+- **Settings**: a «الصف» / «صفوف أبنائي» row opens the same screen in edit mode.
+- **Shown**: `curriculum/browse.tsx` and `curriculum/resources.tsx` now narrow
+  grades by `gradeIds` for every role (it was teachers only). A student's pick
+  wins over the roster grade, which stays the fallback. **Not** narrowed:
+  exams, messages and anything server-scoped by roster — a parent with
+  children in two classes must not lose results to a display preference.
+- Not run on a device or the web build; covered by unit tests and typecheck.
+
+## The student record: one student's objectives and papers in a class, 2026-10-08
+
+A teacher could see that a class was weak on an objective, but not that
+*this* student had missed it on every paper since September. Tapping a student
+row used to only open the note box. It now opens **ملف الطالب**
+(`app/classes/[id]/student/[studentId].tsx`). The screen leads with the
+objectives this student keeps missing, and each one has an action next to it.
+Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
+`docs/superpowers/plans/2026-10-08-student-record.md`.
+
+| Question | Decision |
+| --- | --- |
+| Main job | Plan remediation, not parent meetings or term reports |
+| Scope | This class's evaluations only |
+| Actions on a weak objective | Remedial worksheet, quick re-check, open the lesson |
+| Architecture | One route returning the whole record |
+| Provisional papers | Counted in the rollup, as the class view does, with a line saying so |
+| Entry point | Tapping the row opens the record; the row's pencil icon still opens the note box |
+| Parent | Links to the existing parent-message screen, with no marks pulled into it |
+
+- **Route.** `GET /classes/:id/students/:studentId/record` sits in
+  `routes/roster.ts`, under the router's existing `/classes` guard. A class
+  that isn't live or isn't the teacher's answers 404 «Class not found». The
+  student cases answer 404 «Student not found»:
+  - a student not in the class;
+  - an archived student;
+  - malformed ids.
+  Neither message says whether the student exists.
+  Draft evaluations are excluded. Archived evaluations are left out of the exams
+  list but still count in the objectives, as `/classes/:id/mastery` does, so
+  «في N أوراق» can exceed the papers listed.
+  The pure core is `studentRecord()` (`modules/assessment/studentRecord.ts`).
+  It builds the per-objective rollup with `aggregateClass`, unchanged, so it is
+  marks-weighted (sum earned ÷ sum total), not a mean of percentages. Each
+  objective also carries how many papers tested it and when it was last seen.
+  Exam status maps exhaustively:
+  - `needs_review` → marked (it is the provisional result);
+  - `abandoned` / `not_started` / no attempt → not sat.
+  There is no schema change.
+- **Weak = below 60%**, the class view's `STUDENT_GAP_PERCENT`. The app draws
+  the line with its own `WEAK_PERCENT = 60` (`services/studentRecord.ts`),
+  because it cannot import the server module. The server constant is not
+  exported, so the pin is a comment plus a test of the literal: change one,
+  change both. Displayed objective percentages go through `displayPercent`, so
+  a value under 60 never reads as «60%» (59.6 shows 59).
+- **Actions.**
+  - «ورقة علاجية» opens the worksheet screen with the lesson's own grade and
+    subject (`lessonPickerParams`). It is hidden when the lesson can't be
+    resolved.
+  - «تحقق سريع» opens `/evaluations/mini?classId&objectiveId`. The screen
+    preselects that objective and its book (`miniEvalPreset`), but only when
+    the class offers that book.
+  - «افتح الدرس» opens the lesson page.
+  - «رسالة لولي الأمر» opens the parent message with the name prefilled.
+  - A paper row opens the marking screen. **A not-sat row is not tappable**,
+    because that screen creates an attempt on mount.
+- **The note** saves in place. The class roster query is invalidated so the
+  class screen shows it. A failed save says so rather than failing silently,
+  and a teacher who hasn't confirmed the roster-consent statement gets the
+  consent message in the same slot. Dates use the device-local
+  `formatListDate`, as «تقييماتي» does. The record refetches when the teacher comes back from marking or a quick
+  check, and a draft being typed survives that refetch.
+- **The class screen moved** from `app/classes/[id].tsx` to
+  `app/classes/[id]/index.tsx` so the record can nest under it. Links to
+  `/classes/[id]` are unchanged, and the Stack registration follows the move.
+- **Analytics:** `student_record_opened { classId }` and
+  `student_record_action { kind }`. Neither event carries a student name or id.
+
+**Verified:**
+- api-server `studentRecord.test.ts` 13/13, and a mountOrder case (an
+  unauthenticated request to the new path is 401).
+- mobile 3275 pass / 0 fail; root typecheck 0 errors.
+- In the running web app (local Postgres + API + Expo web, a seeded chemistry
+  class, one student with two marked papers, one of them provisional, and one
+  who sat nothing):
+  - the row opens the record;
+  - the weak objective reads «30% · في ورقتين», which is 3/10 across both
+    papers;
+  - the bar fills from the right;
+  - the worksheet opens on الصف العاشر / الكيمياء;
+  - the quick check opens with the objective selected;
+  - the lesson and the paper both open;
+  - tapping a not-sat row does nothing, and the `attempts` count stayed at 2;
+  - the other student sees the empty state;
+  - a student from another class shows «هذا الطالب ليس في هذا الصف.»;
+  - the pencil icon still opens the note box;
+  - the note saves trimmed;
+  - re-marking a paper and pressing back updated 30% → 60% without losing an
+    unsaved draft.
+
+**Not verified:**
+- a native build;
+- «ولي أمر مرتبط» in the header, because no seeded student had a linked
+  parent;
+- the screen against production data.
+
+**Known gaps:**
+- When the worksheet screen is opened with a lesson, its unit dropdown still
+  shows the placeholder (the documented gap in `TopicSelector.tsx`). The topic
+  itself is held.
+
 ## Virtual labs: a PhET link and a predict–observe–explain sheet, hidden until a teacher reviews it, 2026-10-07
 
 Grade 10's «تجربة استهلالية» lessons had no content (the book's labs are
@@ -1119,8 +1242,8 @@ no schema push.
   is 18 columns in a horizontal scroll with the bar hidden, so a phone showed
   only H, Li, Be, Na, Mg, K, Ca (found from a screenshot, 2026-10-07). It now
   shows the scroll bar, a right-edge fade and a hint while more is off-screen,
-  and the electron configuration renders its exponents raised. Both are
-  typechecked, not yet seen on a device.
+  and the electron configuration renders its exponents raised (PR #913).
+  Both were checked on a device after it deployed (2026-10-08).
 - **Atomic masses are the book's rounded values**, not the precise ones (H 1,
   C 12, O 16, Na 23, Cl 35.5 ...), so H2O is 18, not 18.015. The rounded
   masses of H, C, N, O, Na, Mg, Al, Si and Ca come from the S2 student book (a
@@ -1205,9 +1328,17 @@ Spec `docs/superpowers/specs/2026-10-07-lab-class-workflow-design.md`, plan
   lab slides has not been looked at by a person.
 - The POST route's lab branch has no database test (tests have no database); it
   is covered by typecheck and build only.
-- The slide editor's `applyMediaEdit` can strip a lab slide's credit when its
-  caption is left blank, and blocks editing audio and document slides
-  (pre-existing).
+- ~~The slide editor's `applyMediaEdit` can strip a lab slide's credit when its
+  caption is left blank, and blocks editing audio and document slides.~~
+  **Fixed 2026-10-08** (found by reproducing it on real lab slides, three
+  defects): a blank caption on unchanged media now keeps the existing caption
+  (it is the credit the PDF and PPTX print; a teacher can replace it but not
+  blank it); an unchanged link on a slide whose link is not an image or YouTube
+  URL (an interactive lab item's share link, an uploaded voice note) no longer
+  blocks saving; and swapping the media drops the old credit from the slide body
+  as well as from `mediaCaption` (`contentAfterMediaEdit`), where the presenter
+  used to keep crediting the old picture. A NEW link the app cannot embed is
+  still refused. `classMediaCredits.test.ts`.
 - Image media slides are cropped (`object-fit: cover`) in the HTML and PPTX
   exports, so a labelled diagram can lose its edges there.
 - A deck's lab slides do not update if the lab item changes after the deck is
@@ -9120,12 +9251,12 @@ ALTER TABLE evaluations ADD COLUMN class_group_id uuid
   REFERENCES class_groups(id) ON DELETE SET NULL;
 ```
 
-**Deliberately not built:** a per-student exam history. Tapping a student still
-only edits their note. That is the natural home for a sitting's comment as
-history, and the answer to the two-notes overlap — `students.teacher_note` (the
-running note on the child) and `attempts.teacher_comment` (one paper) now both
-exist and a teacher meets two boxes that look alike. Worth a decision, not a
-silent merge of the two.
+~~**Deliberately not built:** a per-student exam history.~~ **Built 2026-10-08**
+— see «The student record: one student's objectives and papers in a class».
+Tapping a student now opens their record, which lists each paper's
+`attempts.teacher_comment` under that paper and keeps `students.teacher_note`
+as the one running note at the bottom. The two notes stay separate, and each
+is labelled by where it sits.
 
 ## What the class missed, 2026-08-24
 

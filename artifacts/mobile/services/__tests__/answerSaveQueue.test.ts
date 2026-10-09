@@ -9,7 +9,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createSaveQueue } from '../answerSaveQueue.ts';
+import { createSaveQueue, mergeUnsavedAnswers } from '../answerSaveQueue.ts';
 
 /** Manual timers, so a test decides when the debounce fires. */
 function fakeTimers() {
@@ -141,5 +141,25 @@ describe('createSaveQueue', () => {
     assert.equal(settled, false);
     calls[0]!.resolve();
     assert.equal(await done, true);
+  });
+});
+
+describe('mergeUnsavedAnswers', () => {
+  it('restores an answer the server never got and marks it for resending', () => {
+    const server = { q1: { choice: 'a' } };
+    const local = { q1: { choice: 'a' }, q2: { text: 'كتبتها قبل انقطاع الشبكة' } };
+    const { answers, resend } = mergeUnsavedAnswers(server, local);
+    assert.deepEqual(answers, { q1: { choice: 'a' }, q2: { text: 'كتبتها قبل انقطاع الشبكة' } });
+    assert.deepEqual(resend, ['q2']);
+  });
+
+  it('prefers the newer local answer over a stale server one', () => {
+    const { answers, resend } = mergeUnsavedAnswers({ q1: { text: 'نصف' } }, { q1: { text: 'نصف الجواب كاملًا' } });
+    assert.deepEqual(answers.q1, { text: 'نصف الجواب كاملًا' });
+    assert.deepEqual(resend, ['q1']);
+  });
+
+  it('resends nothing when nothing was kept', () => {
+    assert.deepEqual(mergeUnsavedAnswers({ q1: { choice: 'b' } }, {}).resend, []);
   });
 });

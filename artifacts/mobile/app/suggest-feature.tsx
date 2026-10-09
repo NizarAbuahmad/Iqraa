@@ -87,7 +87,7 @@ export default function SuggestFeatureScreen() {
         ]}
       >
         <View style={[styles.headerRow, { flexDirection: rowDir }]}>
-          <Pressable onPress={() => goBack()} hitSlop={10} accessibilityRole="button">
+          <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
           </Pressable>
           <Text style={[styles.title, { color: colors.foreground, textAlign: align, flex: 1 }]}>

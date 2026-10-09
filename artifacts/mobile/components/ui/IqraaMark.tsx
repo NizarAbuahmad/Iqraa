@@ -9,7 +9,7 @@
  * lockup (headers, splash, login); use this where the mark is small or repeated.
  */
 import React, { useEffect, useId, useRef } from 'react';
-import { Animated, Easing, StyleSheet, type ViewStyle } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, StyleSheet, type ViewStyle } from 'react-native';
 import Svg, { Circle, Defs, Mask, Path, Rect } from 'react-native-svg';
 import { NATIVE_DRIVER } from '@/constants/animation';
 import { BRAND_TEAL, DOT, LEAF_PATH, MARK_RADIUS, STEM_PATH } from '@/constants/brandMark';
@@ -55,8 +55,13 @@ export function IqraaMark({ size = 34, tone = 'soft', thinking = false, style }:
         }),
       ]),
     );
-    loop.start();
-    return () => loop.stop();
+    // Under Reduce Motion the mark holds still; the thinking label beside it
+    // already says what is happening.
+    let cancelled = false;
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then(reduced => { if (!cancelled && !reduced) loop.start(); })
+      .catch(() => { if (!cancelled) loop.start(); });
+    return () => { cancelled = true; loop.stop(); };
   }, [thinking, pulse]);
 
   const ground =

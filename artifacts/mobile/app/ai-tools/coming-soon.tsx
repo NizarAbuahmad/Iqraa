@@ -28,7 +28,7 @@ export default function ComingSoonScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -51,6 +51,7 @@ export default function ComingSoonScreen() {
         </Text>
 
         <Pressable
+          accessibilityRole="button"
           onPress={() => goBack()} hitSlop={10}
           style={[styles.backBtnLarge, { backgroundColor: colors.primary, borderRadius: colors.radius }]}
         >

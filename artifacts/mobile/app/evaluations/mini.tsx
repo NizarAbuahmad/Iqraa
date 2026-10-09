@@ -31,6 +31,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import {
   BOOKS,
   getEvaluableBookIds,
+  getObjectiveById,
   getObjectivesForBook,
   type CurriculumObjective,
 } from '@/services/curriculumData';
@@ -45,6 +46,7 @@ import {
   MINI_EVAL_COUNT,
   MINI_EVAL_DIFFICULTY,
   MINI_EVAL_TYPES,
+  miniEvalPreset,
 } from '@/services/miniEval';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
@@ -58,7 +60,7 @@ export default function MiniEvalScreen() {
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
   const align = isRTL ? 'right' : 'left';
-  const { classId } = useLocalSearchParams<{ classId?: string }>();
+  const { classId, objectiveId: presetObjectiveId } = useLocalSearchParams<{ classId?: string; objectiveId?: string }>();
 
   const [loading, setLoading] = useState(true);
   const [bookId, setBookId] = useState<string | null>(null);
@@ -93,13 +95,19 @@ export default function MiniEvalScreen() {
       }
       if (cancelled) return;
       setBookChoices(candidates.map(b => ({ id: b.id, titleAr: b.titleAr, title: b.title })));
-      if (candidates.length === 1) setBookId(candidates[0]!.id);
+      const preset = miniEvalPreset(presetObjectiveId, candidates.map(b => b.id), getObjectiveById);
+      if (preset) {
+        setBookId(preset.bookId);
+        setObjectiveId(preset.objectiveId);
+      } else if (candidates.length === 1) {
+        setBookId(candidates[0]!.id);
+      }
       setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [classId]);
+  }, [classId, presetObjectiveId]);
 
   const objectives: CurriculumObjective[] = useMemo(
     () => (bookId ? getObjectivesForBook(bookId) : []),
@@ -176,6 +184,8 @@ export default function MiniEvalScreen() {
     >
       <View style={[styles.header, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('back')}
           onPress={() => goBack()}
           style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}
           hitSlop={10}
