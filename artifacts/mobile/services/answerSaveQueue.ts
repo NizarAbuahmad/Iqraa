@@ -134,3 +134,26 @@ export function createSaveQueue(opts: {
     },
   };
 }
+
+/**
+ * Answers this device kept because the server had not confirmed them, laid
+ * back over what the server returned when the paper is re-entered.
+ *
+ * The queue lives in memory, so a reload (a cold boot on web) or a killed
+ * app used to drop every answer whose save had failed. The screen now keeps
+ * the unconfirmed ones in storage; this decides which of them still need
+ * sending — only those that differ from the server's copy.
+ */
+export function mergeUnsavedAnswers<R>(
+  server: Record<string, R>,
+  local: Record<string, R>,
+): { answers: Record<string, R>; resend: string[] } {
+  const answers = { ...server };
+  const resend: string[] = [];
+  for (const [id, response] of Object.entries(local)) {
+    if (JSON.stringify(server[id]) === JSON.stringify(response)) continue;
+    answers[id] = response;
+    resend.push(id);
+  }
+  return { answers, resend };
+}

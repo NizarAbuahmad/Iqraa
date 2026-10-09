@@ -149,20 +149,6 @@ const DURING_CLASS_ALL: ToolDef[] = [
     externalAction: 'geogebra-graphing',
     mathOnly: true,
   },
-  // The retired home screen, now named for the only two things it still
-  // uniquely does: attaching media to the current lesson (which becomes deck
-  // slides in Class Mode) and Smart Templates. It used to hide behind a card
-  // labelled "أدوات إضافية / useful when you need them", which told a teacher
-  // nothing and quietly dropped them onto an old screen.
-  {
-    id: 'lesson-media',
-    hidden: true,
-    titleKey: 'toolLessonMediaTitle',
-    descKey: 'toolLessonMediaDesc',
-    icon: 'images-outline',
-    color: '#6366F1',
-    route: '/home',
-  },
 ];
 
 const AFTER_CLASS_ALL: ToolDef[] = [
@@ -221,21 +207,6 @@ export const AFTER_CLASS: ToolDef[] = visible(AFTER_CLASS_ALL);
 // — a live feature (evaluations), two working tools, and one dead stub — behind
 // a disclosure a teacher had no reason to open. Everything moved into the stage
 // where it is actually used; the stub became a real screen.
-
-/**
- * The per-grade resources library. Not a generator, so it is not in a
- * workflow stage or ALL_TOOLS; the Tools tab and the chat "+" menu each put it
- * first in their flat list. It lives under /curriculum so students can reach
- * it too.
- */
-export const LIBRARY_TOOL: ToolDef = {
-  id: 'library',
-  titleKey: 'toolLibraryTitle',
-  descKey: 'toolLibraryDesc',
-  icon: 'library-outline',
-  color: '#7C3AED',
-  route: '/curriculum/resources',
-};
 
 export const WORKFLOW: WorkflowSection[] = [
   { id: 'before', titleKey: 'toolsBeforeClass', tools: BEFORE_CLASS },

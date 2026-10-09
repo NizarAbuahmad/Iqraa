@@ -162,6 +162,16 @@ describe("matching grading", () => {
     assert.equal(matching.grade!(q, { pairs: three }).fraction, 0.75);
   });
 
+  it("credits each left item once, however many pairs are sent for it", () => {
+    const everyCombination = ["1", "2", "3", "4"].flatMap(left =>
+      ["a", "b", "c", "d"].map(right => ({ left, right })),
+    );
+    // Last pair per left wins, so this reads as every item → "d": one link right.
+    assert.equal(matching.grade!(q, { pairs: everyCombination }).fraction, 0.25);
+    const repeated = Array.from({ length: 4 }, () => ({ left: "1", right: "a" }));
+    assert.equal(matching.grade!(q, { pairs: repeated }).fraction, 0.25);
+  });
+
   it("separates unanswered from all-wrong", () => {
     assert.equal(matching.grade!(q, { pairs: [] }).status, "unanswered");
     assert.equal(

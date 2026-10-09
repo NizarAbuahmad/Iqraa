@@ -25,6 +25,7 @@ import { goBack } from '@/services/navigation';
 import { confirm } from '@/services/confirm';
 import { ACCENT, Bar, FilterChip, KeyValue, SectionTitle, StatCard, Table } from '@/components/admin/widgets';
 import { DateRange, EMPTY_RANGE, rangeQuery, type Range } from '@/components/admin/DateRange';
+import { palette } from '@/constants/colors';
 
 const ADMIN_ROLES = ['school_admin', 'system_admin'];
 
@@ -183,7 +184,7 @@ export default function AdminDashboardScreen() {
         <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 16, marginTop: 12, textAlign: 'center' }}>
           {lang === 'ar' ? 'هذه الصفحة للإدارة فقط' : 'This page is for admins only'}
         </Text>
-        <Pressable onPress={() => goBack()} hitSlop={10} style={{ marginTop: 16 }}>
+        <Pressable accessibilityRole="button" onPress={() => goBack()} hitSlop={10} style={{ marginTop: 16 }}>
           <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }}>{lang === 'ar' ? 'رجوع' : 'Go back'}</Text>
         </Pressable>
       </View>
@@ -194,7 +195,7 @@ export default function AdminDashboardScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={[{ paddingBottom: 60 }, centered]} showsVerticalScrollIndicator={false}>
         <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: ACCENT }]}>
-          <Pressable onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => goBack()} hitSlop={10} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
           <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
@@ -583,7 +584,7 @@ function GrowthSection({ metrics, onSaved, isRTL, ar, colors }: {
               <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>
                 {last ? last.value.toLocaleString() : '—'}
               </Text>
-              <Text style={{ color: delta == null ? colors.mutedForeground : delta >= 0 ? '#067647' : colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }}>
+              <Text style={{ color: delta == null ? colors.mutedForeground : delta >= 0 ? palette.success : colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }}>
                 {last
                   ? `${delta == null ? '' : `${delta >= 0 ? '+' : ''}${delta.toLocaleString()} · `}${last.date}`
                   : (ar ? 'لم يُسجَّل بعد' : 'Not recorded yet')}
@@ -636,7 +637,7 @@ function FeedbackRow({ item, isRTL, colors, onDelete }: { item: FeedbackItem; is
         <Ionicons
           name={item.rating === 'idea' ? 'bulb' : item.rating === 'up' ? 'thumbs-up' : 'thumbs-down'}
           size={14}
-          color={item.rating === 'idea' ? '#B54708' : item.rating === 'up' ? '#067647' : colors.destructive}
+          color={item.rating === 'idea' ? palette.warning : item.rating === 'up' ? palette.success : colors.destructive}
         />
         <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>
           {item.rating === 'idea' ? (isRTL ? 'اقتراح ميزة' : 'Feature idea') : `${item.materialType} · ${item.toolId}`}

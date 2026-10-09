@@ -10,6 +10,7 @@
 import { apiFetch } from './apiClient.ts';
 import { trackEvent } from './analytics.ts';
 import type { AddLabResourceBody, AddResourceBody, ClassResource } from './classResources.ts';
+import type { StudentRecord } from './studentRecord.ts';
 
 export interface ClassGroup {
   id: string;
@@ -192,6 +193,12 @@ export interface ClassMastery {
 export async function getClassMastery(classId: string): Promise<ClassMastery> {
   const res = await apiFetch(`/classes/${classId}/mastery`);
   return readJson<ClassMastery>(res, 'Loading class mastery');
+}
+
+/** One student's record in one class. 404 when the student is not in it. */
+export async function getStudentRecord(classId: string, studentId: string): Promise<StudentRecord> {
+  const res = await apiFetch(`/classes/${classId}/students/${studentId}/record`);
+  return readJson<StudentRecord>(res, 'Loading student record');
 }
 
 /**

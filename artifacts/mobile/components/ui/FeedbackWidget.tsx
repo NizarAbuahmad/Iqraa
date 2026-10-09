@@ -15,6 +15,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { apiFetch } from '@/services/apiClient';
 import { trackEvent } from '@/services/analytics';
+import { palette } from '@/constants/colors';
 
 type Rating = 'up' | 'down';
 
@@ -91,11 +92,11 @@ export function FeedbackWidget({ materialType, toolId }: Props) {
             accessibilityRole="button"
             accessibilityLabel={lang === 'ar' ? 'مفيد' : 'Helpful'}
             style={[styles.thumb, {
-              borderColor: rating === 'up' ? '#067647' : colors.border,
+              borderColor: rating === 'up' ? palette.success : colors.border,
               backgroundColor: rating === 'up' ? '#10B98118' : 'transparent',
             }]}
           >
-            <Ionicons name="thumbs-up" size={16} color={rating === 'up' ? '#067647' : colors.mutedForeground} />
+            <Ionicons name="thumbs-up" size={16} color={rating === 'up' ? palette.success : colors.mutedForeground} />
           </Pressable>
           <Pressable
             onPress={() => pick('down')}

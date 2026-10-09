@@ -314,6 +314,8 @@ export default function RegisterScreen() {
             onChangeText={setEmail}
             leftIcon="mail-outline"
             keyboardType="email-address"
+            autoComplete="email"
+            textContentType="emailAddress"
             autoCapitalize="none"
             isRTL={isRTL}
           />
@@ -326,7 +328,10 @@ export default function RegisterScreen() {
             leftIcon="lock-closed-outline"
             rightIcon={showPassword ? 'eye-off-outline' : 'eye-outline'}
             onRightIconPress={() => setShowPassword(v => !v)}
+            rightIconLabel={t(showPassword ? 'hidePasswordA11y' : 'showPasswordA11y')}
             secureTextEntry={!showPassword}
+            autoComplete="new-password"
+            textContentType="newPassword"
             hint={password.length > 0 && password.length < 8 ? t('passwordMinHint') : undefined}
             isRTL={isRTL}
           />
@@ -339,8 +344,11 @@ export default function RegisterScreen() {
             leftIcon="lock-closed-outline"
             rightIcon={showConfirm ? 'eye-off-outline' : 'eye-outline'}
             onRightIconPress={() => setShowConfirm(v => !v)}
+            rightIconLabel={t(showConfirm ? 'hidePasswordA11y' : 'showPasswordA11y')}
             secureTextEntry={!showConfirm}
-            hint={
+            autoComplete="new-password"
+            textContentType="newPassword"
+            error={
               confirmPassword.length > 0 && confirmPassword !== password
                 ? t('passwordsDoNotMatch')
                 : undefined

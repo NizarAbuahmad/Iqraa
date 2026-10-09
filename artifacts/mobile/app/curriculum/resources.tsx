@@ -461,11 +461,12 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
   );
   const isStaff = user?.role === 'system_admin';
   const { gradeId } = useLocalSearchParams<{ gradeId?: string; gradeName?: string }>();
-  // Opened from the Tools card there is no grade param: start on the
-  // teacher's own first grade, the same narrowing the curriculum tab does.
+  // Opened from the Tools card there is no grade param: start on the user's
+  // own first grade, the same narrowing the curriculum tab does (teachers pick
+  // on /setup-subjects, parents and students on /setup-grade).
   const grades = useMemo(
-    () => narrowToSelection(getVisibleGrades(), isTeacher ? user?.gradeIds : undefined),
-    [isTeacher, user?.gradeIds],
+    () => narrowToSelection(getVisibleGrades(), user?.gradeIds),
+    [user?.gradeIds],
   );
   const [pickedGrade, setGrade] = useState<string>(gradeId || grades[0]?.id || '');
   // The tab stays mounted while the teacher edits their grades on the profile
@@ -575,12 +576,17 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
   // A filter can empty the open shelf; fall back to the overview rather than a blank list.
   const openShelf = shelf ? shelves.find(g => g.shelf === shelf) ?? null : null;
   const total = shown.length;
+  // As a tab, the lesson bar (or the slim bell header) above already pays for
+  // the status bar; pushed as its own route, nothing does.
+  const heroTop = asTab ? 12 : insets.top + 12;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: insets.top + 12 }]}>
+      <View style={[styles.hero, { backgroundColor: ACCENT_FILL, paddingTop: heroTop }]}>
         {asTab ? null : (
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('back')}
             onPress={() => goBack()} hitSlop={10}
             style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
           >

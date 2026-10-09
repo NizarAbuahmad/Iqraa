@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { badgeLabel, setUnreadMessages, useUnreadMessages } from '@/services/unreadMessages';
-import { listThreads, type ChatThreadSummary } from '@/services/messaging';
+import { listThreads, markAllThreadsRead, type ChatThreadSummary } from '@/services/messaging';
 import { relativeTime } from '@/services/relativeTime';
 import { Avatar } from '@/components/ui/Avatar';
 
@@ -26,6 +26,8 @@ export function NotificationBell({ size = 22 }: { size?: number }) {
   const [anchor, setAnchor] = useState<{ top: number; left: number } | null>(null);
   const [threads, setThreads] = useState<ChatThreadSummary[] | null>(null);
   const [failed, setFailed] = useState(false);
+  const [marking, setMarking] = useState(false);
+  const [markFailed, setMarkFailed] = useState(false);
 
   const panelW = Math.min(PANEL_WIDTH, winW - 16);
   const align = isRTL ? 'right' : 'left';
@@ -38,12 +40,25 @@ export function NotificationBell({ size = 22 }: { size?: number }) {
     });
     setThreads(null);
     setFailed(false);
+    setMarkFailed(false);
     listThreads()
       .then(list => {
         setThreads(list.filter(th => th.unreadCount > 0));
         setUnreadMessages(list.reduce((sum, th) => sum + th.unreadCount, 0));
       })
       .catch(() => setFailed(true));
+  };
+
+  const markAllRead = () => {
+    setMarking(true);
+    setMarkFailed(false);
+    markAllThreadsRead()
+      .then(() => {
+        setThreads([]);
+        setUnreadMessages(0);
+      })
+      .catch(() => setMarkFailed(true))
+      .finally(() => setMarking(false));
   };
 
   const close = () => setAnchor(null);
@@ -79,7 +94,21 @@ export function NotificationBell({ size = 22 }: { size?: number }) {
               { top: anchor.top, left: anchor.left, width: panelW, backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius },
             ]}
           >
-            <Text style={[styles.title, { color: colors.foreground, textAlign: align }]}>{t('bellTitle')}</Text>
+            <View style={[styles.header, { flexDirection: row }]}>
+              <Text style={[styles.title, { color: colors.foreground, textAlign: align }]}>{t('bellTitle')}</Text>
+              {threads && threads.length > 0 ? (
+                <Pressable onPress={markAllRead} disabled={marking} hitSlop={8} accessibilityRole="button">
+                  {marking ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : (
+                    <Text style={[styles.markAll, { color: colors.primary }]}>{t('markAllRead')}</Text>
+                  )}
+                </Pressable>
+              ) : null}
+            </View>
+            {markFailed ? (
+              <Text style={[styles.markError, { color: colors.destructive, textAlign: align }]}>{t('bellMarkFailed')}</Text>
+            ) : null}
 
             {failed ? (
               <Text style={[styles.empty, { color: colors.mutedForeground }]}>{t('messagingLoadError')}</Text>
@@ -163,7 +192,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 8,
   },
-  title: { fontSize: 16, fontFamily: 'ReadexPro_600SemiBold', paddingHorizontal: 14, paddingBottom: 8 },
+  header: { justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 14, paddingBottom: 8, gap: 8 },
+  title: { fontSize: 16, fontFamily: 'ReadexPro_600SemiBold' },
+  markAll: { fontSize: 13, fontFamily: 'ReadexPro_600SemiBold' },
+  markError: { fontSize: 12, fontFamily: 'Almarai_400Regular', paddingHorizontal: 14, paddingBottom: 6 },
   empty: { fontSize: 14, fontFamily: 'Almarai_400Regular', textAlign: 'center', paddingVertical: 20, paddingHorizontal: 14 },
   item: { alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 10 },
   groupIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
