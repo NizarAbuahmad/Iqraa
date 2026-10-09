@@ -530,6 +530,53 @@ async function writeGate(attempt: { evaluationId: string; startedAt: Date | null
   };
 }
 
+/**
+ * Write one answer only while the paper is still open.
+ *
+ * The route-level `submittedAt` check reads the attempt at the start of the
+ * request; an autosave (or a transcription that takes seconds) could pass it,
+ * lose the race to «تسليم», and land after grading — an answer the teacher
+ * sees but that was never marked. The attempt row is locked here and by the
+ * submit route, so one of the two waits for the other.
+ *
+ * `update` maps the answer row as it stands (if any) to the new response, or
+ * to `null` to write nothing — so a caller that builds on it (a read-aloud
+ * take count) reads it under the lock. Returns `null` when the paper is
+ * already in, otherwise whether it wrote and what was there before.
+ */
+async function writeAnswerIfOpen(
+  attemptId: string,
+  questionId: string,
+  update: (previous: Record<string, unknown> | undefined) => Record<string, unknown> | null,
+): Promise<{ written: boolean; previous: Record<string, unknown> | undefined } | null> {
+  return db.transaction(async tx => {
+    const [open] = await tx
+      .select({ submittedAt: attempts.submittedAt })
+      .from(attempts)
+      .where(eq(attempts.id, attemptId))
+      .for("update");
+    if (!open || open.submittedAt) return null;
+    const [row] = await tx
+      .select({ response: attemptAnswers.response })
+      .from(attemptAnswers)
+      .where(and(eq(attemptAnswers.attemptId, attemptId), eq(attemptAnswers.questionId, questionId)))
+      .limit(1);
+    const previous = (row?.response ?? undefined) as Record<string, unknown> | undefined;
+    const response = update(previous);
+    if (!response) return { written: false, previous };
+    await tx
+      .insert(attemptAnswers)
+      .values({ attemptId, questionId, response, isFinal: false })
+      .onConflictDoUpdate({
+        target: [attemptAnswers.attemptId, attemptAnswers.questionId],
+        set: { response, updatedAt: new Date() },
+      });
+    return { written: true, previous };
+  });
+}
+
+const ALREADY_SUBMITTED = { error: "This exam was already submitted", code: "already_submitted" } as const;
+
 /** Resume: what this student has answered so far, and what is left. */
 router.get("/take/attempt/state", async (req, res) => {
   try {
@@ -606,13 +653,10 @@ router.put("/take/attempt/answers/:questionId", async (req, res) => {
       return;
     }
 
-    await db
-      .insert(attemptAnswers)
-      .values({ attemptId: attempt.id, questionId, response, isFinal: false })
-      .onConflictDoUpdate({
-        target: [attemptAnswers.attemptId, attemptAnswers.questionId],
-        set: { response, updatedAt: new Date() },
-      });
+    if (!(await writeAnswerIfOpen(attempt.id, questionId, () => response))) {
+      res.status(409).json(ALREADY_SUBMITTED);
+      return;
+    }
 
     res.json({ saved: true });
   } catch (err) {
@@ -658,6 +702,9 @@ router.use(
 
 router.post("/take/attempt/audio/:questionId", async (req, res) => {
   let uploadedKey: string | null = null;
+  // Set once a take is reserved and cleared once it is used, so a failure in
+  // between hands the take back instead of costing the student one of three.
+  let reserved: { attemptId: string; questionId: string } | null = null;
   try {
     const attempt = await attemptForToken(req.headers.authorization);
     if (!attempt) {
@@ -753,6 +800,37 @@ router.post("/take/attempt/audio/:questionId", async (req, res) => {
     // so a refused recording costs neither storage nor a transcription.
     await assertUserQuotaAvailable(owningTeacherId);
 
+    /*
+     * Reserve the take before spending anything. `takes` above was read
+     * outside any lock, so parallel uploads all saw the same count, all
+     * transcribed (billed to the teacher) and all wrote `takes + 1`. Counted
+     * here under the attempt's row lock; the previous take's audio and
+     * transcript stay in place until this one replaces them.
+     */
+    let tooMany = false;
+    const reservation = await writeAnswerIfOpen(attempt.id, questionId, current => {
+      const used = typeof current?.["takes"] === "number" ? current["takes"] : 0;
+      if (used >= MAX_TAKES_PER_QUESTION) {
+        tooMany = true;
+        return null;
+      }
+      return { ...(current ?? {}), takes: used + 1 };
+    });
+    if (!reservation) {
+      res.status(409).json(ALREADY_SUBMITTED);
+      return;
+    }
+    if (tooMany) {
+      res.status(429).json({
+        error: `You can record this question ${MAX_TAKES_PER_QUESTION} times`,
+        code: "too_many_takes",
+      });
+      return;
+    }
+    reserved = { attemptId: attempt.id, questionId };
+    const takeNumber =
+      (typeof reservation.previous?.["takes"] === "number" ? reservation.previous["takes"] : 0) + 1;
+
     const key = newAttemptAudioKey(verdict.extension);
     await putObject(key, parsed.buffer, parsed.mime);
     // Set once the object exists and cleared once a row points at it: if
@@ -774,21 +852,29 @@ router.post("/take/attempt/audio/:questionId", async (req, res) => {
     // runtime image, so every browser recording would fail on conversion.
     const transcript = await speechToText(parsed.buffer, verdict.transcribeAs);
 
-    recordAudioUsage(verdict.durationMs / 1000, "gpt-4o-mini-transcribe", owningTeacherId);
+    recordAudioUsage(verdict.billedSeconds, "gpt-4o-mini-transcribe", owningTeacherId);
 
-    const response = { audioKey: key, transcript, durationMs: verdict.durationMs, takes: takes + 1 };
-    await db
-      .insert(attemptAnswers)
-      .values({ attemptId: attempt.id, questionId, response, isFinal: false })
-      .onConflictDoUpdate({
-        target: [attemptAnswers.attemptId, attemptAnswers.questionId],
-        set: { response, updatedAt: new Date() },
-      });
+    // Conditional on the paper still being open: a hand-in that happened
+    // while this was transcribing has already been graded without it.
+    const written = await writeAnswerIfOpen(attempt.id, questionId, current => ({
+      audioKey: key,
+      transcript,
+      durationMs: verdict.durationMs,
+      takes: Math.max(takeNumber, typeof current?.["takes"] === "number" ? current["takes"] : 0),
+    }));
+    if (!written) {
+      // The catch below deletes the upload; the take no longer matters.
+      reserved = null;
+      res.status(409).json(ALREADY_SUBMITTED);
+      return;
+    }
     uploadedKey = null;
+    reserved = null;
 
     // The take this one replaced is no longer referenced by anything; its
-    // recording goes with it rather than sitting in R2 for good.
-    const replaced = attemptAudioKey(previous);
+    // recording goes with it rather than sitting in R2 for good. Read from
+    // the row as it stood under the lock, not the copy from the request's start.
+    const replaced = attemptAudioKey(written.previous ?? {});
     if (replaced && replaced !== key) {
       await deleteAttemptAudio([replaced], { attemptId: attempt.id, questionId, reason: "re-take" });
     }
@@ -796,10 +882,18 @@ router.post("/take/attempt/audio/:questionId", async (req, res) => {
     // The transcript goes back so the student can see what was heard and
     // decide whether to use a remaining take. The score does not: releasing a
     // result here would tell them their mark before the teacher has the paper.
-    res.json({ saved: true, transcript, takesLeft: MAX_TAKES_PER_QUESTION - (takes + 1) });
+    res.json({ saved: true, transcript, takesLeft: MAX_TAKES_PER_QUESTION - takeNumber });
   } catch (err) {
     if (uploadedKey) {
       await deleteAttemptAudio([uploadedKey], { reason: "upload failed before it was saved" });
+    }
+    if (reserved) {
+      // Best-effort refund: a server-side failure must not cost a take.
+      const { attemptId, questionId } = reserved;
+      await writeAnswerIfOpen(attemptId, questionId, current => {
+        const used = typeof current?.["takes"] === "number" ? current["takes"] : 0;
+        return used > 0 ? { ...(current ?? {}), takes: used - 1 } : null;
+      }).catch(refundErr => logger.warn({ err: refundErr }, "read-aloud take refund failed"));
     }
     if (
       err instanceof AiLiveModeOffError
@@ -842,14 +936,30 @@ router.post("/take/attempt/submit", async (req, res) => {
     }
 
     const now = new Date();
-    await db
-      .update(attemptAnswers)
-      .set({ isFinal: true, updatedAt: now })
-      .where(eq(attemptAnswers.attemptId, attempt.id));
-    await db
-      .update(attempts)
-      .set({ status: "submitted", submittedAt: now, updatedAt: now })
-      .where(eq(attempts.id, attempt.id));
+    // Under the attempt's row lock, the same one `writeAnswerIfOpen` takes: an
+    // autosave or a transcription in flight either lands before this (and is
+    // graded) or sees the paper is in and refuses — never after grading.
+    const handedIn = await db.transaction(async tx => {
+      const [open] = await tx
+        .select({ submittedAt: attempts.submittedAt })
+        .from(attempts)
+        .where(eq(attempts.id, attempt.id))
+        .for("update");
+      if (!open || open.submittedAt) return false;
+      await tx
+        .update(attemptAnswers)
+        .set({ isFinal: true, updatedAt: now })
+        .where(eq(attemptAnswers.attemptId, attempt.id));
+      await tx
+        .update(attempts)
+        .set({ status: "submitted", submittedAt: now, updatedAt: now })
+        .where(eq(attempts.id, attempt.id));
+      return true;
+    });
+    if (!handedIn) {
+      res.json({ submitted: true, alreadySubmitted: true });
+      return;
+    }
 
     try {
       await gradeSubmission({ ...attempt, submittedAt: now });

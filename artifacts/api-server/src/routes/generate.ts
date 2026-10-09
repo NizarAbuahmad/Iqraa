@@ -42,6 +42,7 @@ import {
 import {
   AiBudgetExceededError,
   AiLiveModeOffError,
+  AiUserBusyError,
   AiUserQuotaExceededError,
   assertBudgetAvailable,
   assertLiveModeEnabled,
@@ -50,12 +51,14 @@ import {
   getGenerationModel,
   getPromptSlidesModel,
   recordCacheHit,
+  recordImageUsage,
   recordUsage,
+  withUserAiSlot,
   type GenerationDetail,
 } from "../lib/aiBudget.ts";
 import { normalizeEscapeCodes } from "../lib/escapeCodes.ts";
 import { withGrounding, type Grounding } from "../lib/grounding.ts";
-import { PROMPT_VERSION, generationKeys, normalizeText } from "../lib/generationKey.ts";
+import { PROMPT_VERSION, generationKeys, hasBookFigures, normalizeText } from "../lib/generationKey.ts";
 import {
   noteServed,
   readPool,
@@ -181,14 +184,16 @@ async function completeOnce(args: {
   detail: Omit<GenerationDetail, "artifactId">;
 }): Promise<Completion> {
   const startedAt = Date.now();
-  const completion = await openai.chat.completions.create({
-    model: args.model,
-    max_completion_tokens: args.maxCompletionTokens,
-    messages: [
-      { role: "system", content: args.systemPrompt },
-      { role: "user", content: args.userPrompt },
-    ],
-  });
+  const completion = await withUserAiSlot(args.detail.userId, () =>
+    openai.chat.completions.create({
+      model: args.model,
+      max_completion_tokens: args.maxCompletionTokens,
+      messages: [
+        { role: "system", content: args.systemPrompt },
+        { role: "user", content: args.userPrompt },
+      ],
+    }),
+  );
   const durationMs = Date.now() - startedAt;
   try {
     const raw = completion.choices[0]?.message?.content ?? "{}";
@@ -442,27 +447,6 @@ function dedupe(lines: string[]): string[] {
   return [...new Set(lines)];
 }
 
-/**
- * Whether this lesson has student-book figures that will actually be printed.
- *
- * The client knows; the server cannot. The crops live in
- * `knowledge-base/<grade>-<subject>/figures/` and are joined to a lesson by
- * `figure-lesson-map.json`, both of which are bundled into the app — the API
- * has no copy of either and no way to resolve one. So the generator screens
- * send the count they already compute for the export appendix, and this reads
- * it.
- *
- * Fail closed on anything unexpected. Missing, zero or non-numeric means "no
- * figures", which selects the stricter prompt — the one that forbids referring
- * to a figure at all. Wrong in the permissive direction would print «انظر
- * الشكل المجاور» on a paper with no figure anywhere on it, which is the exact
- * bug the graph rule was written to stop.
- */
-function hasBookFigures(body: Record<string, unknown>): boolean {
-  const n = body.bookFigureCount;
-  return typeof n === "number" && Number.isFinite(n) && n > 0;
-}
-
 /** How the pool is browsed by a human — the lesson this artifact belongs to.
  *  Not part of the key, so an imperfect value costs nothing but readability. */
 function lessonRefOf(body: Record<string, unknown>): string {
@@ -522,8 +506,8 @@ function respondAiError(err: unknown, res: Response, label: string): void {
     res.status(429).json({ error: err.message, code: "user_quota_exceeded" });
     return;
   }
-  if (err instanceof AiUserQuotaExceededError) {
-    res.status(429).json({ error: err.message, code: "user_quota_exceeded" });
+  if (err instanceof AiUserBusyError) {
+    res.status(429).json({ error: err.message, code: "generation_in_flight" });
     return;
   }
   if (err instanceof AiBudgetExceededError) {
@@ -722,7 +706,7 @@ function imageGenerationEnabled(): boolean {
   return process.env.AI_IMAGE_GENERATION === "true";
 }
 
-async function finalizePromptSlides(content: unknown): Promise<unknown> {
+async function finalizePromptSlides(content: unknown, userId: string | null | undefined): Promise<unknown> {
   if (content === null || typeof content !== "object" || Array.isArray(content)) return content;
   const deck = content as Record<string, unknown>;
   const slides = deck.slides;
@@ -741,6 +725,13 @@ async function finalizePromptSlides(content: unknown): Promise<unknown> {
     return { ...deck, slides: truncated };
   }
 
+  // Images are paid calls too. They used to run past both caps unrecorded,
+  // and once per teacher who joined the same in-flight deck.
+  if (await refusalFromCaps(userId)) {
+    logger.warn({ userId }, "prompt-slides images skipped — an AI cap refused");
+    return { ...deck, slides: truncated };
+  }
+
   let imagesUsed = 0;
   const finished = await Promise.all(truncated.map(async (raw) => {
     if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return raw;
@@ -751,6 +742,7 @@ async function finalizePromptSlides(content: unknown): Promise<unknown> {
     imagesUsed += 1;
     try {
       const buffer = await generateImageBuffer(mediaPrompt);
+      recordImageUsage(1, "gpt-image-1", userId);
       // An empty `b64_json` yields a 0-byte Buffer that uploads happily and
       // serves a broken image forever. Refuse it here.
       if (!buffer?.length) throw new Error("image model returned an empty buffer");
@@ -808,7 +800,7 @@ generateRouter.post('/generate/prompt-slides', async (req: AuthenticatedRequest,
       model: getPromptSlidesModel(),
       body, isAr, userId: req.user?.id,
     });
-    const finalized = await finalizePromptSlides(result.content);
+    const finalized = await finalizePromptSlides(result.content, req.user?.id);
     // Quality bars we will not refuse a paid deck over, but do want to see —
     // a run of these in the logs means the prompt needs another pass.
     const shortfalls = deckShortfalls(finalized);

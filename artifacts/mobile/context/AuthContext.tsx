@@ -10,6 +10,7 @@ import {
   isNetworkError,
   setOnRefreshFailed,
   getApiBaseUrl,
+  awaitPendingRefresh,
 } from '@/services/apiClient';
 import { LEGAL_VERSION } from '@/constants/legal';
 import { trackEvent } from '@/services/analytics';
@@ -175,11 +176,12 @@ interface AuthContextType {
   uploadAvatar: (dataUrl: string) => Promise<void>;
   removeAvatar: () => Promise<void>;
   /**
-   * Irreversible. Pass `password` for an ordinary account, or `confirmEmail`
-   * for a Google-only one — the server picks which it will accept based on
-   * whether the account has a password hash at all, and refuses 401 otherwise.
+   * Irreversible. Pass `password` for an ordinary account, or a fresh Google
+   * ID token as `googleCredential` for a Google-only one — the server picks
+   * which it will accept based on whether the account has a password hash at
+   * all, and refuses 401 otherwise.
    */
-  deleteAccount: (proof: { password?: string; confirmEmail?: string }) => Promise<void>;
+  deleteAccount: (proof: { password?: string; googleCredential?: string }) => Promise<void>;
   /**
    * Flips `hasRosterLink` to true locally right after a successful
    * `POST /auth/claim`, so the routing gate clears without a round trip to
@@ -641,7 +643,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const deleteAccount = useCallback(
-    async (proof: { password?: string; confirmEmail?: string }) => {
+    async (proof: { password?: string; googleCredential?: string }) => {
       // Push token first, for the same reason logout does it first: after the
       // account is gone the server would refuse the unregister call, and the
       // device would keep a token pointed at a user that no longer exists.
@@ -754,6 +756,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // 3. Commit, new session first. Between the two writes the old session's
       //    token is in the active slot and nowhere else, or the new one's is —
       //    never one token in both places.
+      // After any refresh in flight settles: read mid-rotation, this is the
+      // token the server is retiring, and replaying it later revokes the family.
+      await awaitPendingRefresh();
       const leavingRefresh = user ? await getRefreshToken() : null;
       await adoptSession(pair.accessToken, pair.refreshToken, apiUser);
       await removeSavedAccount(targetId);
@@ -771,6 +776,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     accountOpBusy.current = true;
     try {
       if (isSavedFull(await loadSavedAccounts(), user.id)) throw new Error('too_many_accounts');
+      await awaitPendingRefresh();
       const refreshToken = await getRefreshToken();
       if (!refreshToken) throw new Error('no_session');
       // No server sign-out: that would end the very session being kept.
