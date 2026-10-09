@@ -135,7 +135,7 @@ export function BoardToolbar({
             <Ionicons name="trash-outline" size={20} color={DECK_MUTED} />
           </Pressable>
         </View>
-        <View style={styles.group}>
+        <View style={[styles.group, { flexDirection: rowDir }]}>
           <Pressable onPress={onPrevPage} disabled={!canPrevPage} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.prevPage} style={{ opacity: canPrevPage ? 1 : 0.35 }}>
             <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={20} color={DECK_MUTED} />
           </Pressable>
