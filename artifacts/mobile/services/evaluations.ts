@@ -202,6 +202,31 @@ export async function createEvaluation(input: {
   return data.evaluation;
 }
 
+/**
+ * Send a worksheet to one of the teacher's classes as a draft evaluation
+ * (`POST /evaluations/from-worksheet`). The server decides what is marked
+ * automatically and reports the split; a question with no answer in the key
+ * stops the send, and its paper numbers come back as `code: 'missing_key'`
+ * with the numbers in `details`.
+ */
+export async function createEvaluationFromWorksheet(input: {
+  worksheet: import('./worksheetAssignment.ts').WorksheetSendBody;
+  objectiveId: string;
+  classGroupId: string;
+  language: 'ar' | 'en';
+}): Promise<{ evaluation: Evaluation; autoMarked: number; teacherMarked: number }> {
+  const res = await apiFetch('/evaluations/from-worksheet', { method: 'POST', body: JSON.stringify(input) });
+  if (res.status === 400) {
+    let body: { error?: string; missingKey?: unknown } = {};
+    try { body = await res.json(); } catch { /* not JSON — fall through to the status */ }
+    if (Array.isArray(body.missingKey)) {
+      throw new EvaluationError(body.error ?? 'Missing answers', 400, 'missing_key', body.missingKey.map(String));
+    }
+    throw new EvaluationError(body.error ?? 'Sending the worksheet failed (400)', 400, '');
+  }
+  return readJson(res, 'Sending the worksheet');
+}
+
 export async function getEvaluation(
   id: string,
 ): Promise<{ evaluation: Evaluation; questions: EvaluationQuestion[] }> {
