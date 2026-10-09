@@ -7,21 +7,30 @@ import {
   CANVAS_H,
   CANVAS_W,
   EMPTY_BOARD,
+  EMPTY_DOC,
   HISTORY_LIMIT,
+  MAX_PAGES,
   STROKE_WIDTHS,
+  addPage,
   axesGeometry,
   canUndo,
   clearBoard,
   commitStrokes,
+  currentPage,
+  docHasInk,
   eraseAlong,
   eraseAt,
   fitCanvas,
+  goToPage,
   gridLines,
   hasInk,
   localizeDigits,
   parsePoints,
+  removePage,
   strokeHit,
   undoBoard,
+  updateCurrent,
+  type BoardDoc,
   type BoardState,
   type Stroke,
 } from '../whiteboardModel.ts';
@@ -337,5 +346,102 @@ describe('fitCanvas', () => {
     assert.deepEqual(fitCanvas(1280, 0), empty);
     assert.deepEqual(fitCanvas(-5, 100), empty);
     assert.deepEqual(fitCanvas(Number.NaN, 100), empty);
+  });
+});
+
+describe('pages', () => {
+  const stroke = line('0,0 10,10');
+  const draw = (doc: BoardDoc): BoardDoc =>
+    updateCurrent(doc, p => ({ ...p, board: commitStrokes(p.board, [...p.board.strokes, stroke]) }));
+  const paper = (doc: BoardDoc, background: 'blank' | 'grid' | 'axes'): BoardDoc =>
+    updateCurrent(doc, p => ({ ...p, background }));
+  /** n pages, page i holding i strokes' worth of identity via its paper, current = `current`. */
+  const threePages = (current: number): BoardDoc => {
+    let d = paper(EMPTY_DOC, 'blank');
+    d = paper(addPage(d), 'grid');
+    d = paper(addPage(d), 'axes');
+    return goToPage(d, current);
+  };
+
+  it('starts as one blank page', () => {
+    assert.equal(EMPTY_DOC.pages.length, 1);
+    assert.equal(EMPTY_DOC.current, 0);
+    assert.equal(currentPage(EMPTY_DOC).background, 'blank');
+    assert.equal(docHasInk(EMPTY_DOC), false);
+  });
+
+  it('adds a page right after the current one, selects it, and inherits the paper but not the ink', () => {
+    let d = draw(paper(EMPTY_DOC, 'axes'));
+    d = addPage(goToPage(addPage(d), 0)); // pages: [axes+ink, new, new]  → current is index 1
+    assert.equal(d.pages.length, 3);
+    assert.equal(d.current, 1);
+    assert.equal(currentPage(d).background, 'axes');
+    assert.equal(hasInk(currentPage(d).board), false);
+    assert.equal(hasInk(d.pages[0]!.board), true);
+  });
+
+  it('refuses to grow past MAX_PAGES, returning the same document', () => {
+    let d = EMPTY_DOC;
+    for (let i = 1; i < MAX_PAGES; i++) d = addPage(d);
+    assert.equal(d.pages.length, MAX_PAGES);
+    assert.equal(addPage(d), d);
+  });
+
+  it('removes the current page and keeps pointing at a real page', () => {
+    // [blank, grid, axes], current 2 → remove the last page: current moves back to 1.
+    let d = removePage(threePages(2));
+    assert.deepEqual(d.pages.map(p => p.background), ['blank', 'grid']);
+    assert.equal(d.current, 1);
+    // current 1 → remove it: the next page slides in and stays selected.
+    d = removePage(threePages(1));
+    assert.deepEqual(d.pages.map(p => p.background), ['blank', 'axes']);
+    assert.equal(currentPage(d).background, 'axes');
+  });
+
+  it('keeps the same page selected when an earlier page is removed', () => {
+    const d = removePage(threePages(2), 0);
+    assert.deepEqual(d.pages.map(p => p.background), ['grid', 'axes']);
+    assert.equal(currentPage(d).background, 'axes');
+  });
+
+  it('never removes the last page, and ignores a bad index', () => {
+    assert.equal(removePage(EMPTY_DOC), EMPTY_DOC);
+    const d = threePages(0);
+    assert.equal(removePage(d, 9), d);
+    assert.equal(removePage(d, -1), d);
+    assert.equal(removePage(d, 1.5), d);
+  });
+
+  it('goToPage clamps, and returns the same document when nothing changes', () => {
+    const d = threePages(0);
+    assert.equal(goToPage(d, 99).current, 2);
+    assert.equal(goToPage(d, -5).current, 0);
+    assert.equal(goToPage(d, 0), d);
+    assert.equal(goToPage(d, Number.NaN), d);
+  });
+
+  it('updateCurrent edits only the current page, and is a no-op when the page is unchanged', () => {
+    const d = threePages(1);
+    assert.equal(updateCurrent(d, p => p), d);
+    const e = draw(d);
+    assert.equal(hasInk(e.pages[1]!.board), true);
+    assert.equal(hasInk(e.pages[0]!.board), false);
+    assert.equal(hasInk(e.pages[2]!.board), false);
+  });
+
+  it('sees ink on any page, not just the current one', () => {
+    const d = goToPage(draw(addPage(EMPTY_DOC)), 0); // ink on page 1, viewing page 0
+    assert.equal(hasInk(currentPage(d).board), false);
+    assert.equal(docHasInk(d), true);
+  });
+
+  it('keeps undo history per page', () => {
+    let d = draw(EMPTY_DOC);                    // page 0: one stroke, one undo step
+    d = addPage(d);                              // page 1, current
+    assert.equal(canUndo(currentPage(d).board), false);
+    d = goToPage(d, 0);
+    assert.equal(canUndo(currentPage(d).board), true);
+    d = updateCurrent(d, p => ({ ...p, board: undoBoard(p.board) }));
+    assert.equal(hasInk(currentPage(d).board), false);
   });
 });

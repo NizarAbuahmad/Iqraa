@@ -221,3 +221,53 @@ export function fitCanvas(areaW: number, areaH: number): Stage {
   const height = CANVAS_H * scale;
   return { scale, width, height, offsetX: (areaW - width) / 2, offsetY: (areaH - height) / 2 };
 }
+
+/** A board is a list of pages; each page owns its paper, its strokes and its undo history. */
+export const MAX_PAGES = 20;
+
+export type Page = { background: BoardBackground; board: BoardState };
+export type BoardDoc = { pages: Page[]; current: number };
+
+export const blankPage = (background: BoardBackground = 'blank'): Page => ({ background, board: EMPTY_BOARD });
+
+export const EMPTY_DOC: BoardDoc = { pages: [blankPage()], current: 0 };
+
+export const currentPage = (doc: BoardDoc): Page => doc.pages[doc.current]!;
+
+/** Apply `fn` to the current page. Same page back means the same document back. */
+export function updateCurrent(doc: BoardDoc, fn: (page: Page) => Page): BoardDoc {
+  const page = currentPage(doc);
+  const next = fn(page);
+  if (next === page) return doc;
+  return { ...doc, pages: doc.pages.map((p, i) => (i === doc.current ? next : p)) };
+}
+
+/**
+ * Insert a page right after the current one and select it. It has no ink but
+ * inherits the current page's paper — someone adding the next problem wants the
+ * same grid or axes. At `MAX_PAGES` the same document comes back.
+ */
+export function addPage(doc: BoardDoc): BoardDoc {
+  if (doc.pages.length >= MAX_PAGES) return doc;
+  const at = doc.current + 1;
+  const page = blankPage(currentPage(doc).background);
+  return { pages: [...doc.pages.slice(0, at), page, ...doc.pages.slice(at)], current: at };
+}
+
+/** Remove a page (default: the current one). Never the last page; a bad index is ignored. */
+export function removePage(doc: BoardDoc, index: number = doc.current): BoardDoc {
+  if (doc.pages.length <= 1 || !Number.isInteger(index) || index < 0 || index >= doc.pages.length) return doc;
+  const pages = doc.pages.filter((_, i) => i !== index);
+  const current = index < doc.current ? doc.current - 1 : doc.current;
+  return { pages, current: Math.min(current, pages.length - 1) };
+}
+
+/** Select a page, clamped into range. Same page selected means the same document back. */
+export function goToPage(doc: BoardDoc, index: number): BoardDoc {
+  if (!Number.isInteger(index)) return doc;
+  const next = Math.max(0, Math.min(doc.pages.length - 1, index));
+  return next === doc.current ? doc : { ...doc, current: next };
+}
+
+/** Is there ink on ANY page? (What leaving the board asks about.) */
+export const docHasInk = (doc: BoardDoc): boolean => doc.pages.some(p => hasInk(p.board));
