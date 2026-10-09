@@ -54,6 +54,7 @@ export function SupportGroupsSection({
       {visibleGroups(groups, showAll).map(g => {
         const ws = groupWorksheetAction(g);
         const draft = groupDraftAction(g);
+        const checkDate = g.latestCheck ? formatListDate(g.latestCheck.createdAt, lang) : '';
         return (
           <View key={g.objectiveId} style={[styles.card, { borderColor: colors.border, backgroundColor: colors.card }]}>
             <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 15, textAlign: align }}>{g.titleAr}</Text>
@@ -66,6 +67,7 @@ export function SupportGroupsSection({
                 <Pressable
                   key={m.studentId}
                   accessibilityRole="button"
+                  hitSlop={8}
                   onPress={() => go('student', { pathname: '/classes/[id]/student/[studentId]', params: { id: classId, studentId: m.studentId } })}
                   style={[styles.chip, { borderColor: colors.border }]}
                 >
@@ -80,7 +82,7 @@ export function SupportGroupsSection({
               <View style={{ gap: 4, marginTop: 4 }}>
                 <Text style={[styles.meta, { color: colors.mutedForeground, textAlign: align }]}>
                   {t('supportGroupLatest')}: {g.latestCheck.title}
-                  {formatListDate(g.latestCheck.createdAt, lang) ? ` · ${formatListDate(g.latestCheck.createdAt, lang)}` : ''}
+                  {checkDate ? ` · ${checkDate}` : ''}
                 </Text>
                 {g.latestCheck.outcomes.length === 0 ? (
                   <Text style={[styles.meta, { color: colors.mutedForeground, textAlign: align }]}>{t('supportGroupNoneLeft')}</Text>

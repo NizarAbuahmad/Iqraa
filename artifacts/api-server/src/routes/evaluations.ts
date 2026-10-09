@@ -43,7 +43,13 @@ import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { passedLessonIds, unlockState } from "../modules/assessment/lessonProgress.ts";
 import { findLiveClass } from "../lib/classOwnership.js";
 import { archiveDecision } from "../lib/evaluationArchive";
-import { audienceRequestDecision, inAudience } from "../modules/assessment/audience.ts";
+import {
+  audienceRequestDecision,
+  classChangeAllowed,
+  inAudience,
+  MAX_AUDIENCE,
+} from "../modules/assessment/audience.ts";
+import { isUuid } from "../lib/classResource.ts";
 import {
   assignedStudentsByEvaluation,
   evaluationAudience,
@@ -295,6 +301,15 @@ router.get("/evaluations", async (req: AuthenticatedRequest, res) => {
         difficulty: evaluations.difficulty,
         totalMarks: evaluations.totalMarks,
         createdAt: evaluations.createdAt,
+        /**
+         * Students a group check is assigned to; 0 for a class-wide check.
+         * `evaluations.id` is literal: a `${evaluations.id}` column reference
+         * renders unqualified (`"id"`) and would bind to ea.id inside.
+         */
+        audienceSize: sql<number>`(
+          SELECT count(*)::int FROM evaluation_assignments ea
+          WHERE ea.evaluation_id = evaluations.id AND ea.student_id IS NOT NULL
+        )`,
         questionCount: sql<number>`(
           SELECT count(*)::int FROM evaluation_questions eq
           WHERE eq.evaluation_id = evaluations.id AND eq.deleted_at IS NULL
@@ -401,13 +416,29 @@ router.patch("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
       return;
     }
 
-    // A group check's students were checked against this class when it was
-    // set; moving it would leave an audience of students who are not in the
-    // new class. Re-attaching to the same class is a no-op and allowed.
-    if ((classGroupId || null) !== evaluation.classGroupId) {
-      const assigned = (await assignedStudentsByEvaluation([evaluation.id])).get(evaluation.id);
-      if (assigned && assigned.length > 0) {
-        res.status(409).json({ error: "This check is for a group in its class", code: "audience_class_locked" });
+    // A group check's students were checked against its class when the group
+    // was set. Detaching is always fine, and so is the class it is already in;
+    // moving it anywhere else is allowed only when that class holds every
+    // student in the group (audience.ts, classChangeAllowed).
+    const target = classGroupId || null;
+    if (target !== null && target !== evaluation.classGroupId) {
+      const assigned = (await assignedStudentsByEvaluation([evaluation.id])).get(evaluation.id) ?? [];
+      const inTarget = assigned.length
+        ? await db
+            .select({ id: students.id })
+            .from(classMemberships)
+            .innerJoin(students, eq(students.id, classMemberships.studentId))
+            .where(
+              and(
+                eq(classMemberships.classGroupId, target),
+                inArray(classMemberships.studentId, assigned),
+                eq(students.teacherId, req.user!.id),
+                isNull(students.archivedAt),
+              ),
+            )
+        : [];
+      if (!classChangeAllowed(assigned, new Set(inTarget.map(m => m.id)), target, evaluation.classGroupId)) {
+        res.status(409).json({ error: "This check is for a group in another class", code: "audience_class_locked" });
         return;
       }
     }
@@ -438,9 +469,12 @@ router.put("/evaluations/:id/audience", async (req: AuthenticatedRequest, res) =
       return;
     }
     const requested = Array.isArray(req.body?.studentIds)
-      ? (req.body.studentIds as unknown[]).filter((v): v is string => typeof v === "string").map(v => v.trim()).filter(Boolean)
+      ? (req.body.studentIds as unknown[]).filter((v): v is string => typeof v === "string").map(v => v.trim()).filter(Boolean).filter(isUuid)
       : [];
-    const members = evaluation.classGroupId && requested.length
+    // A non-uuid id would be a 500 from the uuid column; it is simply not a
+    // member, and the decision below answers 400 audience_not_member. An
+    // oversized list is refused by the decision without a lookup.
+    const members = evaluation.classGroupId && requested.length && requested.length <= MAX_AUDIENCE
       ? await db
           .select({ id: students.id })
           .from(classMemberships)

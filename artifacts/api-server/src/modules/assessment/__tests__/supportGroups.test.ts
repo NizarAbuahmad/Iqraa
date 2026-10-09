@@ -82,9 +82,10 @@ describe("supportGroups — the group's check", () => {
         { evaluationId: "c1", studentId: "s3", attemptStatus: "in_progress", percent: null, objectiveScores: null },
       ],
     }), describeAll);
-    assert.deepEqual(g!.latestCheck!.outcomes.map(x => [x.studentId, x.outcome]), [["s1", "passed"], ["s2", "still_weak"], ["s3", "not_yet"]]);
+    // sorted by name: أحمد (s1), عمر (s3), ليلى (s2)
+    assert.deepEqual(g!.latestCheck!.outcomes.map(x => [x.studentId, x.outcome]), [["s1", "passed"], ["s3", "not_yet"], ["s2", "still_weak"]]);
     assert.equal(g!.latestCheck!.outcomes[0]!.percent, 100);
-    assert.equal(g!.latestCheck!.outcomes[2]!.percent, null);
+    assert.equal(g!.latestCheck!.outcomes[1]!.percent, null);
   });
   it("uses the attempt's percent when the breakdown is empty, and 60 passes", () => {
     const [g] = supportGroups(input({
@@ -113,5 +114,28 @@ describe("supportGroups — the group's check", () => {
       papers, checks: [check({ assignedStudentIds: ["s1", "gone"] })],
     }), describeAll);
     assert.deepEqual(g!.latestCheck!.outcomes.map(x => x.studentId), ["s1"]);
+  });
+  it("treats a marked attempt with no percent and no entry for the objective as not_yet, not still_weak", () => {
+    const [g] = supportGroups(input({
+      papers, checks: [check({ assignedStudentIds: ["s1", "s2"] })],
+      checkAttempts: [
+        { evaluationId: "c1", studentId: "s1", attemptStatus: "graded", percent: null, objectiveScores: [] },
+        { evaluationId: "c1", studentId: "s2", attemptStatus: "graded", percent: null, objectiveScores: [o("oZ", 1, 2)] },
+      ],
+    }), describeAll);
+    for (const x of g!.latestCheck!.outcomes) {
+      assert.equal(x.outcome, "not_yet");
+      assert.equal(x.percent, null);
+    }
+  });
+  it("sorts outcomes by display name, then student id", () => {
+    const twin = [...members, { studentId: "s0", displayName: "ليلى" }];
+    const [g] = supportGroups({
+      members: twin,
+      papers: [...papers, { studentId: "s0", objectiveScores: [o("oA", 1, 5)] }],
+      checks: [check({ assignedStudentIds: ["s2", "s3", "s0", "s1"] })],
+      checkAttempts: [],
+    }, describeAll);
+    assert.deepEqual(g!.latestCheck!.outcomes.map(x => x.studentId), ["s1", "s3", "s0", "s2"]);
   });
 });

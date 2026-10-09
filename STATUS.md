@@ -817,29 +817,30 @@ shows each member's result on it.
 
 `supportGroups()` is in `modules/assessment/supportGroups.ts` and is served by `GET /classes/:id/support-groups`. Groups are ordered by member count, then by the class's percentage on the objective.
 
-**The audience rule.** A group check is an evaluation with student-level rows in `evaluation_assignments`; that table existed but was unused until now. Its audience is exactly those students. An evaluation with no rows is for its class, as before, so nothing that existed changes. The rule is one pure module, `modules/assessment/audience.ts`, and it is enforced in six places:
+**The audience rule.** A group check is an evaluation with student-level rows in `evaluation_assignments`; that table existed but was unused until now. Its audience is exactly those students. An evaluation with no rows is for its class, as before, so nothing that existed changes. The rule is one pure module, `modules/assessment/audience.ts`, and it is enforced in seven places:
 - the student's «اختباراتي» (`examRowsFor`), which the parent view inherits;
 - the share link's roster (`GET /take/:code`), which lists the group only;
 - claiming a name, by tap or by signed-in self-claim (403 `not_in_group`);
 - teacher mark entry (403 `not_in_group`);
+- moving an attempt to another student (`PATCH /attempts/:id`) — 403 `not_in_group`;
 - the student record, where another group's check is not «لم يقدّمه»;
 - the lesson mastery gate.
 
 A sitting a student already holds always stays visible to them.
 
-**Setting it.** `PUT /evaluations/:id/audience` accepts the students only while the check is a draft attached to a class, and only if each one is a live member of that class. A group check cannot be moved to another class (409 `audience_class_locked`). `GET /evaluations/:id` returns `audience`.
+**Setting it.** `PUT /evaluations/:id/audience` accepts the students only while the check is a draft attached to a class, and only if each one is a live member of that class. A group check can be detached from its class, or attached to a class that holds all its students; moving it to a class missing any of them is refused (409 `audience_class_locked`). The list endpoint returns `audienceSize` so «صُحّح N من M» counts the group. `GET /evaluations/:id` returns `audience`.
 
 **Schema.** Migration `0001` adds a unique `(evaluation_id, student_id)` on `evaluation_assignments`. It is additive, and the table had no writer before this, so production holds no duplicates.
 
 **In the app.**
 - Each card shows member chips (each opens the student record) and «ورقة علاجية» (the lesson's own grade and subject).
-- «تحقق للمجموعة» opens the quick check with the members ticked. The teacher can untick, and the audience is set before any questions are generated, so a failed audience never leaves a class-wide draft.
+- «تحقق للمجموعة» opens the quick check with the members ticked. The teacher can untick. The audience is set before questions are generated, so a failed audience leaves only an empty draft in the class list (no questions), which the teacher can delete.
 - Once a check exists, the card shows its outcome per member: «تجاوز», «ما زال يحتاج دعمًا» or «لم يقدّمه بعد». The button becomes «تحقق جديد», or «أكمل التحقق» while a draft is open.
 - The review screen says «للمجموعة: N».
 - The marking list shows the group only.
 
 **Verified:**
-- api-server 1328 pass / 0 fail, with new `audience` and `supportGroups` tests and mountOrder cases for both new routes;
+- api-server 1337 pass / 0 fail, with new `audience` and `supportGroups` tests and mountOrder cases for both new routes;
 - mobile 3406 pass / 0 fail;
 - root typecheck 0 errors.
 
@@ -847,7 +848,7 @@ Against a real Postgres, migrated the way production will be (`migrate --baselin
 - **Audience route:**
   - a non-member is refused with 400, as is an empty list;
   - a published check refuses changes with 409;
-  - moving the check to another class gets 409.
+  - moving the check to another class got 409 (checked under the first rule, which refused every move; the membership rule that replaced it is covered by `classChangeAllowed` unit tests, not yet a real-database run).
 - **Gates:**
   - the share link lists the group only;
   - a non-member's claim gets 403;
@@ -868,7 +869,8 @@ Against a real Postgres, migrated the way production will be (`migrate --baselin
 - a parent account's view, which inherits the student list's rule by code rather than by test.
 
 **Known gaps:**
-- The class exam list's «صُحّح N من M» counts against the whole class even for a group check.
+- A signed-in student outside the group who opens the link sees the group's names in the picker but cannot claim one (403).
+- The audience is the assignment rows: deleting them would make the check class-wide. Only cascades delete them today.
 - An objective's group is recomputed live, so a student who passes the re-check stays listed until their overall percentage crosses 60%; the card shows their «تجاوز» beside them.
 
 ## The printed worksheet reads as a student's paper, 2026-10-09

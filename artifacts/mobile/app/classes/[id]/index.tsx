@@ -67,7 +67,7 @@ import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { copyToClipboard, shareAsText } from '@/services/share';
 import { Toast } from '@/components/ui/Toast';
 import { getItems, updateItem, type SavedMaterial } from '@/services/workspace';
-import { listEvaluations, setEvaluationClass, type Evaluation } from '@/services/evaluations';
+import { EvaluationError, listEvaluations, setEvaluationClass, type Evaluation } from '@/services/evaluations';
 import {
   MATERIAL_COLOR,
   MATERIAL_ICON,
@@ -561,8 +561,8 @@ export default function ClassDetailScreen() {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setShowAttachExam(false);
       await load();
-    } catch {
-      setError(t('saveToClassFailed'));
+    } catch (err) {
+      setError(t(err instanceof EvaluationError && err.code === 'audience_class_locked' ? 'supportGroupClassLocked' : 'saveToClassFailed'));
     } finally {
       setAttachingExamId(null);
     }
@@ -581,8 +581,8 @@ export default function ClassDetailScreen() {
     try {
       await setEvaluationClass(exam.id, null);
       await load();
-    } catch {
-      setError(t('saveToClassFailed'));
+    } catch (err) {
+      setError(t(err instanceof EvaluationError && err.code === 'audience_class_locked' ? 'supportGroupClassLocked' : 'saveToClassFailed'));
     }
   };
 
@@ -1167,7 +1167,7 @@ export default function ClassDetailScreen() {
                   <Text style={[styles.rowRef, { color: draft ? palette.warning : colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
                     {draft
                       ? t('examNotPublished')
-                      : t('examMarkedCount', String(item.markedCount ?? 0), String(students.length))}
+                      : t('examMarkedCount', String(item.markedCount ?? 0), String(item.audienceSize || students.length))}
                   </Text>
                 </View>
                 <Pressable onPress={() => { void onDetachExam(item); }} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('remove')}>

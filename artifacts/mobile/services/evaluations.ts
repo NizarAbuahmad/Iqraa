@@ -44,6 +44,11 @@ export interface Evaluation {
    */
   markedCount?: number;
   /**
+   * Students a group check is assigned to (0 for a class-wide check). LIST
+   * endpoint only. Use `|| students.length` for the denominator of «صُحّح N من M».
+   */
+  audienceSize?: number;
+  /**
    * Questions actually on the paper right now, counted server-side. Returned
    * by the LIST endpoint only, and **not** the same as `targetQuestionCount`:
    * that is what was asked for, this is what the generator produced, and the

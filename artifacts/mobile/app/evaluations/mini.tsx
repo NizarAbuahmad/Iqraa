@@ -84,6 +84,9 @@ export default function MiniEvalScreen() {
       // on create.
       const evaluable = new Set(getEvaluableBookIds());
       let candidates = BOOKS.filter(b => evaluable.has(b.id));
+      // Applied only after the staleness check below: a load for a class the
+      // teacher has already left must not put its names on this screen.
+      let inGroup: { id: string; name: string }[] | null = null;
       try {
         if (classId) {
           const { group, students: roster } = await getClass(classId);
@@ -91,8 +94,7 @@ export default function MiniEvalScreen() {
             // Names from the class itself: an id in the link that is no longer
             // in the class is simply not offered.
             const inClass = roster.filter(s => groupIds.includes(s.id));
-            setGroupNames(inClass.map(s => ({ id: s.id, name: s.displayName })));
-            setTicked(new Set(inClass.map(s => s.id)));
+            inGroup = inClass.map(s => ({ id: s.id, name: s.displayName }));
           }
           // Both default to '' on older classes. Narrow only on what is set;
           // an empty filter would leave a teacher with no books and no reason.
@@ -108,6 +110,10 @@ export default function MiniEvalScreen() {
         // pick one by hand, which is what an unscoped class gets anyway.
       }
       if (cancelled) return;
+      if (inGroup) {
+        setGroupNames(inGroup);
+        setTicked(new Set(inGroup.map(s => s.id)));
+      }
       setBookChoices(candidates.map(b => ({ id: b.id, titleAr: b.titleAr, title: b.title })));
       const preset = miniEvalPreset(presetObjectiveId, candidates.map(b => b.id), getObjectiveById);
       if (preset) {

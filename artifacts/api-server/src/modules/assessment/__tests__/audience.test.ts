@@ -5,7 +5,9 @@
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { audienceFor, audienceRequestDecision, examVisibleTo, inAudience } from "../audience.ts";
+import {
+  audienceFor, audienceRequestDecision, classChangeAllowed, examVisibleTo, inAudience, MAX_AUDIENCE,
+} from "../audience.ts";
 
 describe("audienceFor / inAudience", () => {
   it("is the whole class when nobody is assigned", () => {
@@ -59,5 +61,45 @@ describe("audienceRequestDecision", () => {
     const d = audienceRequestDecision({ ...base, studentIds: ["s1", "s3"] });
     assert.equal(d.ok, false);
     if (!d.ok) { assert.equal(d.status, 400); assert.equal(d.code, "audience_not_member"); }
+  });
+});
+
+describe("audienceRequestDecision — size", () => {
+  it("refuses more than MAX_AUDIENCE ids with 400 audience_too_large", () => {
+    assert.equal(MAX_AUDIENCE, 200);
+    const ids = Array.from({ length: MAX_AUDIENCE + 1 }, (_, i) => `s${i}`);
+    const d = audienceRequestDecision({
+      status: "draft", classGroupId: "c1", memberIds: new Set(ids), studentIds: ids,
+    });
+    assert.equal(d.ok, false);
+    if (!d.ok) { assert.equal(d.status, 400); assert.equal(d.code, "audience_too_large"); }
+  });
+  it("accepts exactly MAX_AUDIENCE ids", () => {
+    const ids = Array.from({ length: MAX_AUDIENCE }, (_, i) => `s${i}`);
+    const d = audienceRequestDecision({
+      status: "draft", classGroupId: "c1", memberIds: new Set(ids), studentIds: ids,
+    });
+    assert.equal(d.ok, true);
+  });
+});
+
+describe("classChangeAllowed", () => {
+  const members = new Set(["s1", "s2", "s3"]);
+  it("allows any change for a class-wide check (nobody assigned)", () => {
+    assert.equal(classChangeAllowed([], new Set(), "c2", "c1"), true);
+  });
+  it("allows detaching a group check", () => {
+    assert.equal(classChangeAllowed(["s1"], new Set(), null, "c1"), true);
+  });
+  it("allows the class it is already in", () => {
+    assert.equal(classChangeAllowed(["s1"], new Set(), "c1", "c1"), true);
+  });
+  it("allows a class that holds every assigned student", () => {
+    assert.equal(classChangeAllowed(["s1", "s2"], members, "c2", "c1"), true);
+    assert.equal(classChangeAllowed(["s1", "s2"], members, "c2", null), true);
+  });
+  it("refuses a class missing any assigned student", () => {
+    assert.equal(classChangeAllowed(["s1", "s9"], members, "c2", "c1"), false);
+    assert.equal(classChangeAllowed(["s1"], new Set(), "c2", "c1"), false);
   });
 });

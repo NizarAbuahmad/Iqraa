@@ -34,6 +34,27 @@ export function examVisibleTo(
   return studentIds.some(id => inAudience(audience, id));
 }
 
+/** The most students one group check can be assigned to. */
+export const MAX_AUDIENCE = 200;
+
+/**
+ * May a check move to class `target`? A class-wide check (nobody assigned)
+ * may go anywhere; a group check may be detached, left where it is, or
+ * attached to a class that holds every one of its students — never to a class
+ * missing any, which would leave names in an audience their class cannot see.
+ * `targetMemberIds` is the set of assigned ids that are live members of
+ * `target` (the route looks them up).
+ */
+export function classChangeAllowed(
+  assigned: readonly string[],
+  targetMemberIds: ReadonlySet<string>,
+  target: string | null,
+  current: string | null,
+): boolean {
+  if (assigned.length === 0 || target === null || target === current) return true;
+  return assigned.every(id => targetMemberIds.has(id));
+}
+
 export type AudienceDecision =
   | { ok: true; studentIds: string[] }
   | { ok: false; status: 400 | 409; code: string; error: string };
@@ -53,6 +74,9 @@ export function audienceRequestDecision(input: {
   const raw = input.studentIds;
   if (!Array.isArray(raw) || raw.length === 0) {
     return { ok: false, status: 400, code: "audience_empty", error: "studentIds must be a non-empty list" };
+  }
+  if (raw.length > MAX_AUDIENCE) {
+    return { ok: false, status: 400, code: "audience_too_large", error: `A group is at most ${MAX_AUDIENCE} students` };
   }
   const ids = raw.map(v => (typeof v === "string" ? v.trim() : ""));
   if (ids.some(id => !id) || new Set(ids).size !== ids.length) {

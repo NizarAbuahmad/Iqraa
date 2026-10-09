@@ -108,7 +108,8 @@ export function supportGroups(
             createdAt: latest.createdAt.toISOString(),
             outcomes: latest.assignedStudentIds
               .filter(id => names.has(id))
-              .map(id => outcomeFor(latest.evaluationId, objectiveId, id, names.get(id)!, input.checkAttempts)),
+              .map(id => outcomeFor(latest.evaluationId, objectiveId, id, names.get(id)!, input.checkAttempts))
+              .sort((a, b) => a.displayName.localeCompare(b.displayName) || a.studentId.localeCompare(b.studentId)),
           }
         : null,
       draftCheck: draft ? { evaluationId: draft.evaluationId } : null,
@@ -134,8 +135,12 @@ function outcomeFor(
     return { studentId, displayName, outcome: "not_yet", percent: null };
   }
   const own = scoresOf(attempt.objectiveScores).find(s => s.objectiveId === objectiveId);
+  if (!(own && own.total > 0) && attempt.percent === null) {
+    // Marked, but nothing says how they did on THIS objective: no verdict.
+    return { studentId, displayName, outcome: "not_yet", percent: null };
+  }
   const percent = own && own.total > 0
     ? round2((own.earned / own.total) * 100)
-    : attempt.percent === null ? 0 : Number(attempt.percent);
+    : Number(attempt.percent);
   return { studentId, displayName, outcome: percent >= STUDENT_GAP_PERCENT ? "passed" : "still_weak", percent };
 }

@@ -435,7 +435,7 @@ export default function EvaluationDetailScreen() {
             await setEvaluationClass(id, classId);
             await refetch();
           } catch (err) {
-            setError(t('saveToClassFailed'));
+            setError(t(err instanceof EvaluationError && err.code === 'audience_class_locked' ? 'supportGroupClassLocked' : 'saveToClassFailed'));
           }
         }}
       />
