@@ -1607,6 +1607,7 @@ const translations = {
     miniEvalBtn: 'تقييم سريع',
     miniEvalTitle: 'تقييم سريع',
     miniEvalSubtitle: 'ثلاثة أسئلة تُصحَّح تلقائيًا، دون إدخال علامات',
+    miniEvalLessonHint: (lesson: string) => `هذا التقييم لدرس: ${lesson}`,
     miniEvalPickObjective: 'اختر هدفًا واحدًا',
     miniEvalPickBookFirst: 'اختر الكتاب أولًا',
     miniEvalNeedsLiveAi:
@@ -3849,6 +3850,7 @@ const translations = {
     miniEvalBtn: 'Quick evaluation',
     miniEvalTitle: 'Quick evaluation',
     miniEvalSubtitle: 'Three questions that mark themselves — no marks to enter',
+    miniEvalLessonHint: (lesson: string) => `This check is for the lesson: ${lesson}`,
     miniEvalPickObjective: 'Pick one objective',
     miniEvalPickBookFirst: 'Pick the book first',
     miniEvalNeedsLiveAi:
