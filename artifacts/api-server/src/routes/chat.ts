@@ -5,11 +5,11 @@ import {
   AiBudgetExceededError,
   AiLiveModeOffError,
   AiUserQuotaExceededError,
-  assertBudgetAvailable,
   assertLiveModeEnabled,
-  assertUserQuotaAvailable,
+  estimateCompletionUsd,
   getChatModel,
   recordUsage,
+  withReservedSpend,
 } from "../lib/aiBudget.ts";
 import { PROMPT_VERSION } from "../lib/generationKey.ts";
 import type { AuthenticatedRequest } from "../middlewares/auth.ts";
@@ -77,28 +77,34 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
     // Per-user allowance on top of the shared monthly cap. /chat is reachable by
     // any signed-in account — student and parent included — and was the largest
     // spender with no per-caller ceiling of its own.
-    await assertUserQuotaAvailable(req.user?.id, req.user?.role);
-    assertBudgetAvailable();
-
-    const startedAt = Date.now();
-    const completion = await openai.chat.completions.create({
-      model: getChatModel(),
-      max_completion_tokens: CHAT_MAX_TOKENS,
-      messages: chatMessages,
-    });
-    const durationMs = Date.now() - startedAt;
-    // No cache keys on purpose. A chat turn never repeats, so any key computed
-    // here would be the same for every turn and would show up in the repeat-rate
-    // analysis as a workload with a perfect hit rate — the opposite of the truth.
-    // The `kind` is what earns its place: it separates chat's share of spend
-    // from generation's, which is what decides whether AI_MODEL_CHAT is worth
-    // pointing at something cheaper (STATUS.md, 2026-08-22, still open).
-    recordUsage(completion.usage, getChatModel(), {
-      kind: isTeacher ? "chat-teacher" : "chat-student",
-      promptVersion: PROMPT_VERSION,
-      userId: req.user?.id,
-      durationMs,
-    });
+    const promptChars = chatMessages.reduce((n, m) => n + m.content.length, 0);
+    const completion = await withReservedSpend(
+      req.user?.id,
+      req.user?.role,
+      estimateCompletionUsd(getChatModel(), CHAT_MAX_TOKENS, promptChars),
+      async () => {
+        const startedAt = Date.now();
+        const completion = await openai.chat.completions.create({
+          model: getChatModel(),
+          max_completion_tokens: CHAT_MAX_TOKENS,
+          messages: chatMessages,
+        });
+        const durationMs = Date.now() - startedAt;
+        // No cache keys on purpose. A chat turn never repeats, so any key computed
+        // here would be the same for every turn and would show up in the repeat-rate
+        // analysis as a workload with a perfect hit rate — the opposite of the truth.
+        // The `kind` is what earns its place: it separates chat's share of spend
+        // from generation's, which is what decides whether AI_MODEL_CHAT is worth
+        // pointing at something cheaper (STATUS.md, 2026-08-22, still open).
+        recordUsage(completion.usage, getChatModel(), {
+          kind: isTeacher ? "chat-teacher" : "chat-student",
+          promptVersion: PROMPT_VERSION,
+          userId: req.user?.id,
+          durationMs,
+        });
+        return completion;
+      },
+    );
 
     const answer = completion.choices[0]?.message?.content ?? "";
     res.json({ content: answer });

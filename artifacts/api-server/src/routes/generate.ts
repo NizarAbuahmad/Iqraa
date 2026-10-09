@@ -43,19 +43,22 @@ import {
   AiBudgetExceededError,
   AiLiveModeOffError,
   AiUserQuotaExceededError,
-  assertBudgetAvailable,
   assertLiveModeEnabled,
-  assertUserQuotaAvailable,
+  estimateCompletionUsd,
   getChatModel,
   getGenerationModel,
   getPromptSlidesModel,
+  IMAGE_USD_PER_IMAGE,
   recordCacheHit,
+  recordImageUsage,
   recordUsage,
+  reserveSpend,
+  withReservedSpend,
   type GenerationDetail,
 } from "../lib/aiBudget.ts";
 import { normalizeEscapeCodes } from "../lib/escapeCodes.ts";
 import { withGrounding, type Grounding } from "../lib/grounding.ts";
-import { PROMPT_VERSION, generationKeys, normalizeText } from "../lib/generationKey.ts";
+import { PROMPT_VERSION, generationKeys, normalizeText, requestLanguage } from "../lib/generationKey.ts";
 import {
   noteServed,
   readPool,
@@ -209,8 +212,7 @@ async function completeOnce(args: {
 }
 
 /**
- * Ask both caps whether a live call is allowed, and hand back the refusal
- * rather than throwing it.
+ * Reserve against both caps, and hand back the refusal rather than throwing it.
  *
  * Returning the error instead of raising it is what lets the caller choose to
  * serve a pooled repeat instead — a decision that needs to know a cap said no,
@@ -219,29 +221,24 @@ async function completeOnce(args: {
  * propagates, because "the guard itself failed" must not read as "the guard
  * said no".
  */
-async function refusalFromCaps(
+async function reserveOrRefusal(
   userId: string | null | undefined,
-): Promise<{ reason: "quota" | "budget"; error: Error } | null> {
+  estimateUsd: number,
+): Promise<{ release: () => void } | { reason: "quota" | "budget"; error: Error }> {
   try {
-    await assertUserQuotaAvailable(userId);
+    return { release: await reserveSpend(userId, null, estimateUsd) };
   } catch (err) {
     if (err instanceof AiUserQuotaExceededError) return { reason: "quota", error: err };
-    throw err;
-  }
-  try {
-    assertBudgetAvailable();
-  } catch (err) {
     if (err instanceof AiBudgetExceededError) return { reason: "budget", error: err };
     throw err;
   }
-  return null;
 }
 
 /**
  * Shared by every route below: gate on AI_LIVE_MODE, try the shared variant
  * pool, and only then gate on budget and call the model.
  *
- * The order matters. `assertBudgetAvailable()` used to run first; it now runs
+ * The order matters. The budget check used to run first; it now runs
  * after the cache lookup, so a spent budget still serves artifacts that cost
  * nothing to serve. `assertLiveModeEnabled()` stays first, deliberately: with
  * live mode off this API is meant to make no claim about AI content at all,
@@ -304,14 +301,26 @@ async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
     return { content: decision.artifact.content, variantId: decision.artifact.id };
   }
 
+  // What this teacher has already been shown for this key: the pooled variants
+  // they were served, plus whatever the screen says it is holding. Only the
+  // stems are sent — a whole prior worksheet in the prompt would cost more
+  // input than the generation it is varying. Worked out before the reservation
+  // so nothing between holding spend and the `finally` that releases it can throw.
+  const avoid = regenerate
+    ? dedupe([
+        ...pool.variants.filter((v) => seenIds.has(v.id)).flatMap((v) => signatureLines(v.content)),
+        ...normalizeAvoidInput(body.avoid),
+      ])
+    : [];
+
   // Both caps, and what to do when one of them says no.
   //
   // Placement is the point. This sits *after* the serve branch above, so a
   // teacher who is out of allowance still gets every pooled artifact, without
   // limit — the caps exist to bound what we pay OpenAI, and serving an artifact
-  // another teacher already paid for costs nothing. `assertBudgetAvailable()`
-  // was moved here for that reason already (see the note above); the per-user
-  // check inherits it by standing on the same line.
+  // another teacher already paid for costs nothing. The global check was moved
+  // here for that reason already (see the note above); the per-user check
+  // inherits it by standing on the same line.
   //
   // When a cap does refuse, prefer a repeat over a refusal. Reaching here means
   // the pool had nothing unseen — but "nothing unseen" is not "nothing at all",
@@ -326,8 +335,16 @@ async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
   // which checks the same allowance itself — its handlers now take the request
   // and pass `req.user.id` down, so those completions are both billed to a user
   // and bounded by one.
-  const capRefusal = await refusalFromCaps(userId);
-  if (capRefusal) {
+  //
+  // A regeneration may spend a second completion (the overlap retry below), so
+  // it holds room for two.
+  const reservation = await reserveOrRefusal(
+    userId,
+    estimateCompletionUsd(model, args.maxCompletionTokens, args.systemPrompt.length + args.userPrompt.length)
+      * (regenerate ? 2 : 1),
+  );
+  if (!("release" in reservation)) {
+    const capRefusal = reservation;
     const fallback = pool.variants[0];
     if (fallback) {
       noteServed(fallback.id);
@@ -347,17 +364,6 @@ async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
     // spend and limit, and an error reconstructed here would report $0 of $0.
     throw capRefusal.error;
   }
-
-  // What this teacher has already been shown for this key: the pooled variants
-  // they were served, plus whatever the screen says it is holding. Only the
-  // stems are sent — a whole prior worksheet in the prompt would cost more
-  // input than the generation it is varying.
-  const avoid = regenerate
-    ? dedupe([
-        ...pool.variants.filter((v) => seenIds.has(v.id)).flatMap((v) => signatureLines(v.content)),
-        ...normalizeAvoidInput(body.avoid),
-      ])
-    : [];
 
   const run = async (): Promise<GenerateResult> => {
     const completionArgs = {
@@ -416,7 +422,7 @@ async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
       kind,
       model,
       promptVersion: PROMPT_VERSION,
-      language: typeof body.language === "string" ? body.language : "arabic",
+      language: requestLanguage(body),
       lessonRef: lessonRefOf(body),
       variantIndex: decision.variantIndex,
       content: chosen.parsed,
@@ -426,7 +432,11 @@ async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
     return { content: chosen.parsed, variantId: artifactId ?? undefined };
   };
 
-  return inFlight.run(`${keys.strictKey}:${decision.variantIndex}`, run);
+  try {
+    return await inFlight.run(`${keys.strictKey}:${decision.variantIndex}`, run);
+  } finally {
+    reservation.release();
+  }
 }
 
 /** Variant ids the client says it already holds. Sanitised: this is
@@ -545,7 +555,7 @@ function respondAiError(err: unknown, res: Response, label: string): void {
 // ─── Lesson Plan ─────────────────────────────────────────────────────────────
 generateRouter.post("/generate/lesson-plan", async (req: AuthenticatedRequest, res) => {
   try {
-    const isAr = req.body.language !== "english";
+    const isAr = requestLanguage(req.body) === "arabic";
     const { body, grounding } = withGrounding(req.body, isAr);
     const prompt = isAr ? lessonPlanPromptAr(body) : lessonPlanPromptEn(body);
     const result = await generateContent({
@@ -561,7 +571,7 @@ generateRouter.post("/generate/lesson-plan", async (req: AuthenticatedRequest, r
 // ─── Worksheet ────────────────────────────────────────────────────────────────
 generateRouter.post("/generate/worksheet", async (req: AuthenticatedRequest, res) => {
   try {
-    const isAr = req.body.language !== "english";
+    const isAr = requestLanguage(req.body) === "arabic";
     const { body, grounding } = withGrounding(req.body, isAr);
     const prompt = isAr ? worksheetPromptAr(body) : worksheetPromptEn(body);
     const result = await generateContent({
@@ -577,7 +587,7 @@ generateRouter.post("/generate/worksheet", async (req: AuthenticatedRequest, res
 // ─── Quiz ─────────────────────────────────────────────────────────────────────
 generateRouter.post("/generate/quiz", async (req: AuthenticatedRequest, res) => {
   try {
-    const isAr = req.body.language !== "english";
+    const isAr = requestLanguage(req.body) === "arabic";
     const { body, grounding } = withGrounding(req.body, isAr);
     const prompt = isAr ? quizPromptAr(body) : quizPromptEn(body);
     const result = await generateContent({
@@ -593,7 +603,7 @@ generateRouter.post("/generate/quiz", async (req: AuthenticatedRequest, res) => 
 // ─── Homework ─────────────────────────────────────────────────────────────────
 generateRouter.post("/generate/homework", async (req: AuthenticatedRequest, res) => {
   try {
-    const isAr = req.body.language !== "english";
+    const isAr = requestLanguage(req.body) === "arabic";
     const { body, grounding } = withGrounding(req.body, isAr);
     const prompt = isAr ? worksheetPromptAr({ ...body, homework: true }) : worksheetPromptEn({ ...body, homework: true });
     // `homework: true` rides on the key body as well as the prompt — a homework
@@ -613,7 +623,7 @@ generateRouter.post("/generate/homework", async (req: AuthenticatedRequest, res)
 // ─── Activity ─────────────────────────────────────────────────────────────────
 generateRouter.post("/generate/activity", async (req: AuthenticatedRequest, res) => {
   try {
-    const isAr = req.body.language !== "english";
+    const isAr = requestLanguage(req.body) === "arabic";
     const { body, grounding } = withGrounding(req.body, isAr);
     const prompt = isAr ? activityPromptAr(body) : activityPromptEn(body);
     const result = await generateContent({
@@ -630,7 +640,7 @@ generateRouter.post("/generate/activity", async (req: AuthenticatedRequest, res)
 // No book figures: the card has nowhere to place one.
 generateRouter.post("/generate/infographic", async (req: AuthenticatedRequest, res) => {
   try {
-    const isAr = req.body.language !== "english";
+    const isAr = requestLanguage(req.body) === "arabic";
     const { body, grounding } = withGrounding(req.body, isAr);
     const prompt = isAr ? infographicPromptAr(body) : infographicPromptEn(body);
     const result = await generateContent({
@@ -651,9 +661,9 @@ generateRouter.post("/generate/infographic", async (req: AuthenticatedRequest, r
 // unauthenticated, unlimited proxy onto the OpenAI account. Same failure
 // shape as the roster/evaluations mount-order incident; see routes/index.ts.
 generateRouter.post('/generate/classroom-activity', async (req: AuthenticatedRequest, res) => {
-  // `!== 'english'`, like every other route: a request with no language is
-  // Arabic, not English — Arabic is the product language.
-  const isAr = (req.body as Record<string, unknown>).language !== 'english';
+  // `requestLanguage`, like every other route and the cache key: a request
+  // with no language is Arabic, not English — Arabic is the product language.
+  const isAr = requestLanguage(req.body as Record<string, unknown>) === 'arabic';
   const { body, grounding } = withGrounding(req.body as Record<string, unknown>, isAr);
   try {
     const prompt = (isAr ? classroomPromptAr(body) : classroomPromptEn(body))
@@ -687,7 +697,7 @@ generateRouter.post('/generate/classroom-activity', async (req: AuthenticatedReq
 // generated once and served to every teacher who builds that deck. See
 // lib/lessonTeachingPrompt.ts for why this is its own call.
 generateRouter.post('/generate/lesson-teaching', async (req: AuthenticatedRequest, res) => {
-  const isAr = (req.body as Record<string, unknown>).language !== 'english';
+  const isAr = requestLanguage(req.body as Record<string, unknown>) === 'arabic';
   const { body, grounding } = withGrounding(req.body as Record<string, unknown>, isAr);
   try {
     const prompt = isAr ? lessonTeachingPromptAr(body) : lessonTeachingPromptEn(body);
@@ -722,7 +732,7 @@ function imageGenerationEnabled(): boolean {
   return process.env.AI_IMAGE_GENERATION === "true";
 }
 
-async function finalizePromptSlides(content: unknown): Promise<unknown> {
+async function finalizePromptSlides(content: unknown, userId: string | null | undefined): Promise<unknown> {
   if (content === null || typeof content !== "object" || Array.isArray(content)) return content;
   const deck = content as Record<string, unknown>;
   const slides = deck.slides;
@@ -750,7 +760,15 @@ async function finalizePromptSlides(content: unknown): Promise<unknown> {
 
     imagesUsed += 1;
     try {
-      const buffer = await generateImageBuffer(mediaPrompt);
+      // Through the same reservation as every completion, so turning the flag
+      // on cannot spend past AI_BUDGET_USD or the teacher's allowance. A cap
+      // refusal lands in the catch below: the slide keeps its `mediaPrompt` and
+      // the client's photo search covers it, exactly like a failed image.
+      const buffer = await withReservedSpend(userId, null, IMAGE_USD_PER_IMAGE, async () => {
+        const image = await generateImageBuffer(mediaPrompt);
+        recordImageUsage("gpt-image-1", userId);
+        return image;
+      });
       // An empty `b64_json` yields a 0-byte Buffer that uploads happily and
       // serves a broken image forever. Refuse it here.
       if (!buffer?.length) throw new Error("image model returned an empty buffer");
@@ -784,7 +802,7 @@ async function finalizePromptSlides(content: unknown): Promise<unknown> {
 // being in that pool at all.
 generateRouter.post('/generate/prompt-slides', async (req: AuthenticatedRequest, res) => {
   const reqBody = req.body as Record<string, unknown>;
-  const isAr = reqBody.language !== 'english';
+  const isAr = requestLanguage(reqBody) === 'arabic';
   const prompt = typeof reqBody.prompt === 'string' ? reqBody.prompt.trim() : '';
   if (!prompt) {
     res.status(400).json({ error: 'prompt is required' });
@@ -808,7 +826,7 @@ generateRouter.post('/generate/prompt-slides', async (req: AuthenticatedRequest,
       model: getPromptSlidesModel(),
       body, isAr, userId: req.user?.id,
     });
-    const finalized = await finalizePromptSlides(result.content);
+    const finalized = await finalizePromptSlides(result.content, req.user?.id);
     // Quality bars we will not refuse a paid deck over, but do want to see —
     // a run of these in the logs means the prompt needs another pass.
     const shortfalls = deckShortfalls(finalized);
@@ -845,7 +863,7 @@ generateRouter.post('/generate/prompt-slides', async (req: AuthenticatedRequest,
  */
 generateRouter.post('/generate/prompt-slides/questions', async (req: AuthenticatedRequest, res) => {
   const reqBody = req.body as Record<string, unknown>;
-  const isAr = reqBody.language !== 'english';
+  const isAr = requestLanguage(reqBody) === 'arabic';
   const prompt = typeof reqBody.prompt === 'string' ? reqBody.prompt.trim() : '';
   if (!prompt) {
     res.status(400).json({ error: 'prompt is required' });
@@ -853,23 +871,31 @@ generateRouter.post('/generate/prompt-slides/questions', async (req: Authenticat
   }
   try {
     assertLiveModeEnabled();
-    await assertUserQuotaAvailable(req.user?.id);
-    assertBudgetAvailable();
 
     const model = getChatModel();
     const body = { ...reqBody, prompt };
-    const completion = await openai.chat.completions.create({
-      model,
-      max_completion_tokens: QUESTIONS_TOKENS,
-      messages: [
-        { role: "system", content: systemPrompt(isAr) },
-        { role: "user", content: isAr ? questionsPromptAr(body) : questionsPromptEn(body) },
-      ],
-    });
-    recordUsage(completion.usage, model, {
-      kind: "prompt-slides-questions", promptVersion: PROMPT_VERSION,
-      userId: req.user?.id, artifactId: null,
-    });
+    const system = systemPrompt(isAr);
+    const user = isAr ? questionsPromptAr(body) : questionsPromptEn(body);
+    const completion = await withReservedSpend(
+      req.user?.id,
+      null,
+      estimateCompletionUsd(model, QUESTIONS_TOKENS, system.length + user.length),
+      async () => {
+        const completion = await openai.chat.completions.create({
+          model,
+          max_completion_tokens: QUESTIONS_TOKENS,
+          messages: [
+            { role: "system", content: system },
+            { role: "user", content: user },
+          ],
+        });
+        recordUsage(completion.usage, model, {
+          kind: "prompt-slides-questions", promptVersion: PROMPT_VERSION,
+          userId: req.user?.id, artifactId: null,
+        });
+        return completion;
+      },
+    );
 
     let questions: ReturnType<typeof parseQuestions> = [];
     try {

@@ -15,11 +15,13 @@ import {
   MAX_TAKES_PER_QUESTION,
   checkRecording,
   isRejection,
+  takesUsed,
 } from "../readAloudUpload.ts";
+import { webmOpus } from "./audioFixtures.ts";
 
 const ok = {
   mime: "audio/webm",
-  durationMs: 20_000,
+  audio: webmOpus(1000) as Buffer | null, // 20 s of 20 ms opus packets
   previousTakes: 0,
   dataUrlLength: 500_000,
   maxDataUrlLength: 8_000_000,
@@ -55,22 +57,34 @@ describe("checkRecording", () => {
   it("reports the take limit before complaining about the payload", () => {
     // A student out of attempts should be told that, not sent away to fix an
     // audio format that was never the problem.
-    const r = rejected({ ...ok, previousTakes: 99, mime: "image/png", durationMs: "nonsense" });
+    const r = rejected({ ...ok, previousTakes: 99, mime: "image/png", audio: null });
     assert.equal(r.code, "too_many_takes");
   });
 
-  it("refuses a recording longer than the ceiling", () => {
-    const r = rejected({ ...ok, durationMs: MAX_AUDIO_SECONDS * 1000 + 1 });
+  it("refuses a recording longer than the ceiling, measured from the audio", () => {
+    // 122 s of packets. There is no client duration to lie with any more —
+    // the old route took `durationMs: 1000` for this and billed one second.
+    const r = rejected({ ...ok, audio: webmOpus(6100) });
     assert.equal(r.status, 413);
     assert.equal(r.code, "audio_too_long");
   });
 
-  it("refuses a missing, zero, negative or non-numeric duration", () => {
-    // Duration is what gets billed. Anything unusable must not default to
-    // free — and a negative one must never credit the ledger.
-    for (const durationMs of [undefined, null, 0, -5000, "soon", NaN, Infinity]) {
-      const r = rejected({ ...ok, durationMs });
-      assert.equal(r.code, "bad_duration", `durationMs=${String(durationMs)}`);
+  it("allows a full-length take with the encoder's last packet just past the limit", () => {
+    const r = checkRecording({ ...ok, audio: webmOpus(MAX_AUDIO_SECONDS * 50 + 3) });
+    assert.ok(!isRejection(r));
+  });
+
+  it("reports the measured duration, which is what gets billed", () => {
+    const r = checkRecording({ ...ok, audio: webmOpus(150) });
+    assert.ok(!isRejection(r));
+    assert.equal(r.durationMs, 3000);
+  });
+
+  it("refuses audio whose length cannot be read rather than treating it as short", () => {
+    // Unmeasurable must not default to free.
+    for (const audio of [null, Buffer.alloc(0), Buffer.alloc(4096, 0x42), webmOpus(50, { laced: true })]) {
+      const r = rejected({ ...ok, audio });
+      assert.equal(r.code, "bad_audio");
     }
   });
 
@@ -111,6 +125,18 @@ describe("checkRecording", () => {
       const r = checkRecording({ ...ok, mime });
       assert.ok(!isRejection(r));
       assert.ok(["wav", "mp3", "webm"].includes(r.transcribeAs), `${mime} -> ${r.transcribeAs}`);
+    }
+  });
+});
+
+describe("takesUsed", () => {
+  it("reads the claimed count off a stored answer", () => {
+    assert.equal(takesUsed({ takes: 2, audioKey: "k" }), 2);
+  });
+
+  it("reads anything else as none used, never as negative", () => {
+    for (const response of [undefined, null, {}, { takes: "3" }, { takes: -1 }, { takes: 1.5 }]) {
+      assert.equal(takesUsed(response), 0, JSON.stringify(response));
     }
   });
 });

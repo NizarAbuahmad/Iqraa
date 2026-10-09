@@ -142,9 +142,9 @@ export const CHAT_HISTORY_TURNS = 6;
  * capped how long each one was, and `context` was interpolated whole. The only
  * ceiling underneath was `express.json({ limit: "12mb" })` in app.ts — roughly
  * three million input tokens in a single call, which is more than the whole
- * month's `AI_BUDGET_USD` in one request. Because `assertBudgetAvailable()`
- * checks the ledger *before* the call rather than reserving against it, one
- * request can overshoot the global cap outright, and the cap is shared, so the
+ * month's `AI_BUDGET_USD` in one request. Because `reserveSpend()`
+ * refuses only once the total has *reached* the cap, one request that starts
+ * under it can overshoot the global cap outright, and the cap is shared, so the
  * account that does it takes AI down for every teacher.
  *
  * Sized for the real workload, not for the limit: `context` is book passages

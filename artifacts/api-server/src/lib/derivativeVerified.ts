@@ -11,11 +11,11 @@
 import { verifyDerivative } from "./mathVerifierClient.ts";
 import { PROMPT_VERSION } from "./generationKey.ts";
 import {
-  assertBudgetAvailable,
   assertLiveModeEnabled,
-  assertUserQuotaAvailable,
+  estimateCompletionUsd,
   getGenerationModel,
   recordUsage,
+  withReservedSpend,
 } from "./aiBudget.ts";
 
 // The OpenAI client is imported lazily, inside callLlm. At module scope it
@@ -208,34 +208,40 @@ type LlmContract = {
 
 async function callLlm(userId?: string | null): Promise<LlmContract> {
   assertLiveModeEnabled();
-  await assertUserQuotaAvailable(userId);
-  assertBudgetAvailable();
   const { openai } = await import("@workspace/integrations-openai-ai-server");
-  const completion = await openai.chat.completions.create({
-    model: getGenerationModel(),
-    max_completion_tokens: 400,
-    messages: [
-      { role: "system", content: SYSTEM },
-      {
-        role: "user",
-        content:
-          "Generate one fresh derivative_polynomial drill item. Use a cubic/quartic with 3+ terms; vary coefficients.",
-      },
-    ],
-  });
-  // No cache keys: this prompt takes no inputs and explicitly asks for a
-  // *fresh, varied* item, so it is uncacheable by design. Cost is still worth
-  // recording — see GenerationDetail on why a constant key would be worse than
-  // none at all.
-  // `userId` is what makes the per-user cap real here. Without it these rows
-  // land with a null user, `readUserPeriodSpendUsd` cannot see them, and this —
-  // the route that can issue more completions per request than any other —
-  // would be the one workload that escaped AI_USER_BUDGET_USD entirely.
-  recordUsage(completion.usage, getGenerationModel(), {
-    kind: "derivative-verified",
-    promptVersion: PROMPT_VERSION,
+  const completion = await withReservedSpend(
     userId,
-  });
+    null,
+    estimateCompletionUsd(getGenerationModel(), 400, SYSTEM.length),
+    async () => {
+      const completion = await openai.chat.completions.create({
+        model: getGenerationModel(),
+        max_completion_tokens: 400,
+        messages: [
+          { role: "system", content: SYSTEM },
+          {
+            role: "user",
+            content:
+              "Generate one fresh derivative_polynomial drill item. Use a cubic/quartic with 3+ terms; vary coefficients.",
+          },
+        ],
+      });
+      // No cache keys: this prompt takes no inputs and explicitly asks for a
+      // *fresh, varied* item, so it is uncacheable by design. Cost is still worth
+      // recording — see GenerationDetail on why a constant key would be worse than
+      // none at all.
+      // `userId` is what makes the per-user cap real here. Without it these rows
+      // land with a null user, the per-user ledger cannot see them, and this —
+      // the route that can issue more completions per request than any other —
+      // would be the one workload that escaped AI_USER_BUDGET_USD entirely.
+      recordUsage(completion.usage, getGenerationModel(), {
+        kind: "derivative-verified",
+        promptVersion: PROMPT_VERSION,
+        userId,
+      });
+      return completion;
+    },
+  );
   const raw = completion.choices[0]?.message?.content ?? "{}";
   return extractJSON(raw) as LlmContract;
 }

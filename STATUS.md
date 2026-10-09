@@ -722,6 +722,32 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Four races from the 2026-10-08 review closed, 2026-10-09
+
+Items 2, 3, 4 and 6 of PR #926's "found, not fixed" list.
+
+- **AI caps hold spend, not just check it.** Every model call goes through
+  `reserveSpend` (`lib/aiBudget.ts`): the per-user allowance inserts a row in
+  the new `ai_spend_reservations` table under a per-user advisory lock, so
+  fifteen parallel prompt-slides no longer all pass (4 of 15 against a $1
+  allowance on a scratch Postgres). The global cap holds in-process. Image
+  generation (`AI_IMAGE_GENERATION`, still off) now goes through the same
+  reservation and writes a ledger row at $0.17/image.
+- **Read-aloud length is measured from the audio** (`lib/audioDuration.ts`:
+  opus packets, AAC sample count, PCM bytes, MP3 frames); the client's
+  `durationMs` is ignored for both the 120 s cap and billing. An unreadable
+  file is refused. Chrome's Opus-in-MP4 is refused too — the app records webm
+  there, so only a hand-made upload hits it. Takes are claimed under the
+  attempt's row lock before transcription and handed back if it fails.
+- **A save can't land after a hand-in.** Student answer saves and read-aloud
+  saves re-check `submitted_at` under `FOR UPDATE`; the hand-in is a
+  conditional `UPDATE … WHERE submitted_at IS NULL` in one transaction.
+  Refused saves answer `409 already_submitted`, which the app already handles.
+- **Cache key v2** (`KEY_SCHEME` in `lib/generationKey.ts`): `topic` is hashed
+  even when `lessonId` is present, and `requestLanguage()` is the one reading
+  of `language` for the prompt and the key. **The shared pool reset once** on
+  deploy (product-owner decision; old keys are not read).
+
 ## A parent or student picks their class, and sees only that, 2026-10-08
 
 Until now only teachers could narrow the curriculum (`/setup-subjects`); a

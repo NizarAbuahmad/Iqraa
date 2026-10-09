@@ -27,8 +27,9 @@ import {
   currentPeriodStart,
   getPersistenceFailure,
   readPeriodSpendUsd,
-  readUserPeriodSpendUsd,
   recordGeneration,
+  releaseUserSpend,
+  reserveUserSpend,
 } from "./aiUsageLog.ts";
 
 export class AiLiveModeOffError extends Error {
@@ -129,7 +130,7 @@ const AUDIO_USD_PER_MINUTE = 0.01;
  * the budget blind to the one workload a stranger with a link can trigger.
  *
  * **`userId` is what makes the per-user cap real.** Until this wrote a row,
- * `assertUserQuotaAvailable` — which reads `ai_generations` — could not see
+ * the per-user cap — which reads `ai_generations` — could not see
  * audio at all, so `AI_USER_BUDGET_USD` bounded every workload except the one
  * a caller can trigger without an account. The global `spentUsd` was the only
  * thing standing behind transcription.
@@ -143,13 +144,10 @@ export function recordAudioUsage(
   userId?: string | null,
 ): void {
   rollPeriodIfNeeded();
-  // Negative or non-finite duration bills as zero rather than crediting the
-  // budget: a bad number must never buy someone more spend.
-  const safeSeconds = Number.isFinite(seconds) && seconds > 0 ? seconds : 0;
-  const cost = (safeSeconds / 60) * AUDIO_USD_PER_MINUTE;
+  const cost = audioCostUsd(seconds);
   spentUsd += cost;
   logger.info(
-    { spentUsd: Number(spentUsd.toFixed(4)), limitUsd: getBudgetLimitUsd(), model, seconds: safeSeconds },
+    { spentUsd: Number(spentUsd.toFixed(4)), limitUsd: getBudgetLimitUsd(), model, seconds },
     "ai audio spend updated",
   );
 
@@ -283,7 +281,6 @@ export function assertLiveModeEnabled(): void {
   if (!isAiLiveModeOn()) throw new AiLiveModeOffError();
 }
 
-/** Throws AiBudgetExceededError once the running total meets the configured cap. */
 export class AiUserQuotaExceededError extends Error {
   constructor(spentUsd: number, limitUsd: number, role?: string | null) {
     // Names the var that actually governs this caller. It used to say "this
@@ -327,27 +324,6 @@ export function getUserBudgetLimitUsd(role?: string | null): number {
   return Number.isFinite(raw) && raw > 0 ? raw : 0;
 }
 
-/**
- * Refuse if this teacher is over their own allowance.
- *
- * Async because it reads the ledger rather than a process counter — a per-user
- * total cannot live in memory when the free tier restarts on every wake, which
- * is the exact bug that made `AI_BUDGET_USD` a per-wake allowance once before.
- *
- * A ledger that cannot be read does **not** block the call. The global cap is
- * still in force underneath, and refusing every teacher because a query failed
- * turns a database blip into a total outage.
- */
-export async function assertUserQuotaAvailable(
-  userId: string | null | undefined,
-  role?: string | null,
-): Promise<void> {
-  const limit = getUserBudgetLimitUsd(role);
-  if (!limit || !userId) return;
-  const spent = await readUserPeriodSpendUsd(userId);
-  if (spent === null) return;
-  if (spent >= limit) throw new AiUserQuotaExceededError(spent, limit, role);
-}
 
 /**
  * How stale the in-memory total may get before the store is consulted again.
@@ -384,11 +360,147 @@ function refreshSpendFromStoreIfStale(): void {
     });
 }
 
-export function assertBudgetAvailable(): void {
+/** Estimates held by calls still in flight in this process — see `reserveSpend`. */
+let reservedUsd = 0;
+
+/** Where per-user holds live. A parameter only so a test can stand in for
+ *  Postgres; every caller uses the default. */
+export type UserSpendLedger = {
+  reserve: typeof reserveUserSpend;
+  release: typeof releaseUserSpend;
+};
+const postgresLedger: UserSpendLedger = { reserve: reserveUserSpend, release: releaseUserSpend };
+
+/**
+ * Check both caps and hold `estimateUsd` against them until the returned
+ * release function is called. Call before every model request; release in a
+ * `finally`, after `recordUsage` has added the real cost.
+ *
+ * Both caps used to be a check with nothing held: a total read, compared, and
+ * only raised once a call *finished*. Fifteen parallel prompt-slides requests
+ * all read the same total and all passed. Now:
+ *
+ * - **Global** (`AI_BUDGET_USD`): checked and raised in one synchronous step,
+ *   so no two requests in this process can claim the same headroom. Across
+ *   instances it is still the store refresh in `refreshSpendFromStoreIfStale`
+ *   — that cap is the project's backstop, not an exact ledger.
+ * - **Per user** (`AI_USER_BUDGET_USD` / `AI_STUDENT_BUDGET_USD`): a row in
+ *   `ai_spend_reservations`, inserted under a per-user Postgres lock, so it
+ *   holds across every instance — see `reserveUserSpend`.
+ *
+ * A per-user ledger that cannot be reached does **not** block the call: the
+ * global cap is still in force, and refusing every teacher because a query
+ * failed turns a database blip into a total outage.
+ */
+export async function reserveSpend(
+  userId: string | null | undefined,
+  role: string | null | undefined,
+  estimateUsd: number,
+  ledger: UserSpendLedger = postgresLedger,
+): Promise<() => void> {
   rollPeriodIfNeeded();
   refreshSpendFromStoreIfStale();
   const limit = getBudgetLimitUsd();
-  if (spentUsd >= limit) throw new AiBudgetExceededError(spentUsd, limit);
+  if (spentUsd + reservedUsd >= limit) {
+    throw new AiBudgetExceededError(spentUsd + reservedUsd, limit);
+  }
+  const estimate = Number.isFinite(estimateUsd) && estimateUsd > 0 ? estimateUsd : 0;
+  reservedUsd += estimate;
+
+  let heldId: string | null = null;
+  try {
+    const userLimit = getUserBudgetLimitUsd(role);
+    if (userLimit && userId) {
+      const held = await ledger.reserve(userId, userLimit, estimate);
+      if (held && !held.ok) throw new AiUserQuotaExceededError(held.committedUsd, userLimit, role);
+      if (held?.ok) heldId = held.id;
+    }
+  } catch (err) {
+    reservedUsd -= estimate;
+    throw err;
+  }
+
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    reservedUsd -= estimate;
+    if (heldId) void ledger.release(heldId);
+  };
+}
+
+/** `reserveSpend` around one unit of work, released however it ends. */
+export async function withReservedSpend<T>(
+  userId: string | null | undefined,
+  role: string | null | undefined,
+  estimateUsd: number,
+  work: () => Promise<T>,
+): Promise<T> {
+  const release = await reserveSpend(userId, role, estimateUsd);
+  try {
+    return await work();
+  } finally {
+    release();
+  }
+}
+
+/**
+ * The most a completion can cost: its output ceiling at the output rate, plus
+ * its prompt at the input rate. Prompt tokens are guessed at two characters
+ * each (Arabic tokenizes worse than English) plus a flat allowance for an
+ * image or a system prompt the caller didn't measure. Only bounds what
+ * parallel calls may claim; the real cost is what `recordUsage` bills.
+ */
+export function estimateCompletionUsd(
+  model: string,
+  maxCompletionTokens: number,
+  promptChars = 0,
+): number {
+  const { input, output } = getPricing(model);
+  const promptTokens = promptChars / 2 + 2000;
+  return (promptTokens / 1_000_000) * input + (maxCompletionTokens / 1_000_000) * output;
+}
+
+/** What a transcription of `seconds` of audio costs at the guard's rate. */
+export function audioCostUsd(seconds: number): number {
+  // Negative or non-finite duration bills as zero rather than crediting the
+  // budget: a bad number must never buy someone more spend.
+  const safeSeconds = Number.isFinite(seconds) && seconds > 0 ? seconds : 0;
+  return (safeSeconds / 60) * AUDIO_USD_PER_MINUTE;
+}
+
+/**
+ * Ceiling for one `gpt-image-1` 1024×1024 image. Its high-quality tier is
+ * about $0.17, and `generateImageBuffer` leaves quality on "auto", so the guard
+ * bills every image at the top tier — over, never under, like the token
+ * fallback above.
+ */
+export const IMAGE_USD_PER_IMAGE = 0.17;
+
+/**
+ * Add one generated image to the running total and the ledger.
+ *
+ * Images bypassed both caps entirely: no check before the call and no row
+ * after it, so turning `AI_IMAGE_GENERATION` on would have spent outside
+ * `AI_BUDGET_USD` and every per-user allowance. Pair with `reserveSpend`.
+ */
+export function recordImageUsage(model: string, userId?: string | null): void {
+  rollPeriodIfNeeded();
+  spentUsd += IMAGE_USD_PER_IMAGE;
+  void recordGeneration({
+    userId: userId ?? null,
+    kind: "image",
+    model,
+    promptVersion: "image-v1",
+    coarseKey: "",
+    strictKey: "",
+    hasContext: false,
+    cacheStatus: "miss",
+    artifactId: null,
+    promptTokens: 0,
+    completionTokens: 0,
+    costUsd: IMAGE_USD_PER_IMAGE,
+  });
 }
 
 /**

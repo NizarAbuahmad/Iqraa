@@ -29,10 +29,10 @@ import {
   AiBudgetExceededError,
   AiLiveModeOffError,
   AiUserQuotaExceededError,
-  assertBudgetAvailable,
   assertLiveModeEnabled,
-  assertUserQuotaAvailable,
+  audioCostUsd,
   recordAudioUsage,
+  reserveSpend,
 } from "../lib/aiBudget";
 import { MAX_DATA_URL_LENGTH, parseDataUrl } from "../lib/lessonMediaUpload";
 import { checkRecording, isRejection } from "../lib/readAloudUpload";
@@ -81,7 +81,7 @@ router.post("/practice/read-aloud", async (req: AuthenticatedRequest, res) => {
     const parsed = rawAudio ? parseDataUrl(rawAudio) : null;
     const verdict = checkRecording({
       mime: parsed?.mime ?? null,
-      durationMs: req.body?.durationMs,
+      audio: parsed?.buffer ?? null,
       // Practice has no take counter to read, so the cap cannot fire. Passing
       // zero is what makes retries unlimited — deliberately not a `maxTakes`
       // option, which would only add a way to weaken the assessment path.
@@ -99,52 +99,56 @@ router.post("/practice/read-aloud", async (req: AuthenticatedRequest, res) => {
     }
 
     assertLiveModeEnabled();
-    assertBudgetAvailable();
     // Pass the role: practice is the student surface, and without it a student
     // is checked against the teacher allowance instead of AI_STUDENT_BUDGET_USD.
-    await assertUserQuotaAvailable(userId, req.user?.role);
+    // The hold is the measured length's cost — known before the call, because
+    // the length is read from the bytes rather than taken from the client.
+    const release = await reserveSpend(userId, req.user?.role, audioCostUsd(verdict.durationMs / 1000));
+    try {
+      /*
+       * Count the transcription, not the request — and only now, after every
+       * validation has passed.
+       *
+       * As middleware this would tick on a bad MIME type or an over-long clip, so
+       * a student with a broken microphone could burn a day's allowance without
+       * ever being transcribed once. Quota should measure what was spent.
+       */
+      const hit = await pgRateLimitStore.hit(`practice-audio:${userId}`, PRACTICE_WINDOW_MS);
+      if (hit.count > PRACTICE_PER_DAY) {
+        const retryAfterSec = Math.max(1, Math.ceil((hit.resetAt.getTime() - Date.now()) / 1000));
+        res.status(429)
+          .set("Retry-After", String(retryAfterSec))
+          .json({
+            error: `You have practised ${PRACTICE_PER_DAY} times today. Come back tomorrow.`,
+            code: "practice_daily_limit",
+          });
+        return;
+      }
 
-    /*
-     * Count the transcription, not the request — and only now, after every
-     * validation has passed.
-     *
-     * As middleware this would tick on a bad MIME type or an over-long clip, so
-     * a student with a broken microphone could burn a day's allowance without
-     * ever being transcribed once. Quota should measure what was spent.
-     */
-    const hit = await pgRateLimitStore.hit(`practice-audio:${userId}`, PRACTICE_WINDOW_MS);
-    if (hit.count > PRACTICE_PER_DAY) {
-      const retryAfterSec = Math.max(1, Math.ceil((hit.resetAt.getTime() - Date.now()) / 1000));
-      res.status(429)
-        .set("Retry-After", String(retryAfterSec))
-        .json({
-          error: `You have practised ${PRACTICE_PER_DAY} times today. Come back tomorrow.`,
-          code: "practice_daily_limit",
-        });
-      return;
+      // Lazily imported: the module builds its OpenAI client at module scope and
+      // throws without a key, so a top-level import would take this whole router
+      // down on any deploy missing OPENAI_API_KEY.
+      const { speechToText } = await import("@workspace/integrations-openai-ai-server/audio");
+      const transcript = await speechToText(parsed.buffer, verdict.transcribeAs);
+      recordAudioUsage(verdict.durationMs / 1000, "gpt-4o-mini-transcribe", userId);
+
+      // `scoreReading` directly, not `readAloud.grade`: that keys "attempted" on
+      // an `audioKey`, and there is deliberately no stored object here.
+      const score = scoreReading(passage.passage, transcript);
+
+      res.json({
+        transcript,
+        accuracy: score.accuracy,
+        errors: score.errors,
+        referenceWords: score.referenceWords,
+        spokenWords: score.spokenWords,
+        // Echoed so the panel can render the credit next to the result without a
+        // second lookup. Every licence here requires it wherever the text shows.
+        attribution: resource.attribution,
+      });
+    } finally {
+      release();
     }
-
-    // Lazily imported: the module builds its OpenAI client at module scope and
-    // throws without a key, so a top-level import would take this whole router
-    // down on any deploy missing OPENAI_API_KEY.
-    const { speechToText } = await import("@workspace/integrations-openai-ai-server/audio");
-    const transcript = await speechToText(parsed.buffer, verdict.transcribeAs);
-    recordAudioUsage(verdict.durationMs / 1000, "gpt-4o-mini-transcribe", userId);
-
-    // `scoreReading` directly, not `readAloud.grade`: that keys "attempted" on
-    // an `audioKey`, and there is deliberately no stored object here.
-    const score = scoreReading(passage.passage, transcript);
-
-    res.json({
-      transcript,
-      accuracy: score.accuracy,
-      errors: score.errors,
-      referenceWords: score.referenceWords,
-      spokenWords: score.spokenWords,
-      // Echoed so the panel can render the credit next to the result without a
-      // second lookup. Every licence here requires it wherever the text shows.
-      attribution: resource.attribution,
-    });
   } catch (err) {
     if (
       err instanceof AiLiveModeOffError

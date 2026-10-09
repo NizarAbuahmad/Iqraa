@@ -31,6 +31,8 @@ export * from "./feedback";
 
 // AI spend + cache-hit measurement — see docs/ai-cost-savings-plan.md
 export * from "./aiGenerations";
+// Spend held against a user's allowance while a model call is in flight
+export * from "./aiSpendReservations";
 // The shared variant pool those keys are looked up in (plan phase 1)
 export * from "./aiArtifacts";
 // A teacher's report against a pooled artifact — see aiArtifactReports.ts

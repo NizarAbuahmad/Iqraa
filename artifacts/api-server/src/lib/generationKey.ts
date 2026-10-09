@@ -23,6 +23,17 @@ import { createHash } from "node:crypto";
  */
 export const PROMPT_VERSION = "2026-10-04.1";
 
+/**
+ * Bump when the *shape* of the key changes, so entries written under the old
+ * scheme are simply never hit again — a one-time reset of the pool, accepted
+ * on purpose rather than a fallback read of old keys.
+ *
+ * 2: `topic` is hashed even when `lessonId` is present (a crafted topic under
+ *    a real lesson id could plant an artifact in the shared pool), and
+ *    `language` goes through `requestLanguage` like the generator does.
+ */
+export const KEY_SCHEME = 2;
+
 /** Parameters the plan proposes to serve by slicing one superset artifact,
  *  rather than by generating a separate artifact per combination. They are in
  *  the strict key and out of the coarse key; the gap between the two repeat
@@ -93,6 +104,18 @@ export function normalizeText(value: string): string {
     .toLowerCase();
 }
 
+/**
+ * The one reading of a request's `language`, for the prompt and the key alike.
+ *
+ * The routes asked `language !== "english"` while the key normalised the
+ * value — so `"English"` generated an Arabic artifact and filed it under the
+ * English key, where the next English request was served it.
+ */
+export function requestLanguage(body: Record<string, unknown>): "arabic" | "english" {
+  const raw = typeof body.language === "string" ? normalizeText(body.language) : "";
+  return raw === "english" || raw === "en" ? "english" : "arabic";
+}
+
 function normalizeValue(value: unknown): unknown {
   if (typeof value === "string") {
     const text = normalizeText(value);
@@ -155,14 +178,18 @@ export function generationKeys(
   const hasContext = context.length > 0 && contextSourceOf(body) === "teacher";
 
   const shared: Record<string, unknown> = {
+    keyScheme: KEY_SCHEME,
     kind,
     model,
     promptVersion,
-    // lessonId when the client sent one — a stable id beats a typed string.
-    lesson: normalizeValue(body.lessonId ?? body.topic),
+    // Both, always. The id pins the lesson; the topic is still prompt text, so
+    // two requests that differ in it are two different artifacts. Keying on
+    // the id alone let any topic ride into the pool under a real lesson's key.
+    lessonId: normalizeValue(body.lessonId),
+    topic: normalizeValue(body.topic),
     subject: normalizeValue(body.subject),
     grade: normalizeValue(body.grade),
-    language: normalizeValue(body.language) ?? "arabic",
+    language: requestLanguage(body),
     // In BOTH keys, unlike `activityType`. A warm-up is not a slice of the
     // main activity that a superset artifact could be cut from — it is a
     // different artifact, and sharing a coarse key with the lesson activity

@@ -9,6 +9,7 @@
  * only route in the API that spends money for a caller with no account. A
  * guard nothing can exercise is a guard nobody notices the loss of.
  */
+import { audioDurationMs } from "./audioDuration.ts";
 
 /** Two minutes. Any real read-aloud passage is well under a minute spoken. */
 export const MAX_AUDIO_SECONDS = 120;
@@ -63,7 +64,9 @@ export interface AcceptedRecording {
  */
 export function checkRecording(input: {
   mime: string | null;
-  durationMs: unknown;
+  /** The decoded upload. Its length is measured here; the client's
+   *  `durationMs` is not read at all. */
+  audio: Buffer | null;
   previousTakes: number;
   dataUrlLength: number;
   maxDataUrlLength: number;
@@ -94,16 +97,18 @@ export function checkRecording(input: {
    * opus is roughly ninety minutes of audio, so the size ceiling alone leaves
    * the cost ceiling wide open.
    *
-   * The client reports this and is not trusted — but it is not the only guard
-   * either. The take limit and the per-attempt rate limiter bound what a lying
-   * client can spend, and understating the duration only understates the
-   * ledger, which is a reporting problem rather than an unbounded one.
+   * It used to be the client's `durationMs`, trusted for both the ceiling and
+   * the ledger — a client claiming one second for ninety minutes got both to
+   * agree. It is now measured from the bytes (`audioDurationMs`), and a file
+   * that cannot be measured is refused rather than read as short.
    */
-  const durationMs = Number(input.durationMs);
-  if (!Number.isFinite(durationMs) || durationMs <= 0) {
-    return { status: 400, error: "durationMs is required", code: "bad_duration" };
+  const durationMs = input.audio ? audioDurationMs(input.audio) : null;
+  if (durationMs === null) {
+    return { status: 400, error: "That recording could not be read", code: "bad_audio" };
   }
-  if (durationMs > MAX_AUDIO_SECONDS * 1000) {
+  // One second of grace: the client stops at 120 s of wall clock, and the
+  // encoder's last packet can land a few milliseconds past it.
+  if (durationMs > (MAX_AUDIO_SECONDS + 1) * 1000) {
     return {
       status: 413,
       error: `Recordings are limited to ${MAX_AUDIO_SECONDS} seconds`,
@@ -112,6 +117,20 @@ export function checkRecording(input: {
   }
 
   return { mime: input.mime, extension: type.extension, transcribeAs: type.transcribeAs, durationMs };
+}
+
+/**
+ * How many takes a stored read-aloud answer has used.
+ *
+ * The counter is claimed *before* the upload is transcribed — the route bumps
+ * it under the attempt's row lock, then does the slow work — so three parallel
+ * uploads can no longer all read "0 used" and all go through. The final save
+ * keeps whatever count is stored by then rather than writing its own, or a
+ * slow take finishing last would wind the counter back.
+ */
+export function takesUsed(response: unknown): number {
+  const takes = (response as Record<string, unknown> | null | undefined)?.["takes"];
+  return typeof takes === "number" && Number.isInteger(takes) && takes > 0 ? takes : 0;
 }
 
 export function isRejection(r: RecordingRejection | AcceptedRecording): r is RecordingRejection {

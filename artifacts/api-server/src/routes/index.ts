@@ -31,7 +31,7 @@ const router: IRouter = Router();
  * Burst ceilings on the two model-backed surfaces, keyed per user.
  *
  * These are the DoS half of the AI cost controls, and the half that works with
- * no configuration: `assertUserQuotaAvailable` is a no-op unless
+ * no configuration: the per-user half of `reserveSpend` is a no-op unless
  * AI_USER_BUDGET_USD is set (`getUserBudgetLimitUsd` returns 0 otherwise).
  * deploy.yml sets it for production; on any deployment that has not, these
  * limiters are the only thing standing between one account and the whole

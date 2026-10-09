@@ -68,12 +68,12 @@ import {
   AiBudgetExceededError,
   AiLiveModeOffError,
   AiUserQuotaExceededError,
-  assertBudgetAvailable,
   assertLiveModeEnabled,
-  assertUserQuotaAvailable,
+  estimateCompletionUsd,
   getGenerationModel,
   isAiLiveModeOn,
   recordUsage,
+  withReservedSpend,
 } from "../lib/aiBudget.ts";
 import { extractJSON } from "../lib/generationShape.ts";
 import { groundingForObjectives } from "../lib/grounding.ts";
@@ -459,8 +459,6 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
 
     if (live) {
       assertLiveModeEnabled();
-      assertBudgetAvailable();
-      await assertUserQuotaAvailable(req.user!.id);
 
       // The book, where there is one. Exam questions written from an
       // objective's title alone are the thing this whole path exists to stop
@@ -505,22 +503,31 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
         },
         async prompt => {
           const model = getGenerationModel();
-          const completion = await openai.chat.completions.create({
-            model,
-            // Room for a full paper of questions with options and rubrics. A
-            // truncated response parses to something plausible, which is worse
-            // than an error.
-            max_completion_tokens: 8000,
-            messages: [
-              { role: "system", content: prompt.system },
-              { role: "user", content: prompt.user },
-            ],
-          });
-          recordUsage(completion.usage, model, {
-            kind: "quiz",
-            promptVersion: GENERATION_PROMPT_VERSION,
-            userId: req.user!.id,
-          });
+          // Room for a full paper of questions with options and rubrics. A
+          // truncated response parses to something plausible, which is worse
+          // than an error.
+          const maxTokens = 8000;
+          const completion = await withReservedSpend(
+            req.user!.id,
+            null,
+            estimateCompletionUsd(model, maxTokens, prompt.system.length + prompt.user.length),
+            async () => {
+              const completion = await openai.chat.completions.create({
+                model,
+                max_completion_tokens: maxTokens,
+                messages: [
+                  { role: "system", content: prompt.system },
+                  { role: "user", content: prompt.user },
+                ],
+              });
+              recordUsage(completion.usage, model, {
+                kind: "quiz",
+                promptVersion: GENERATION_PROMPT_VERSION,
+                userId: req.user!.id,
+              });
+              return completion;
+            },
+          );
           return {
             parsed: extractJSON(completion.choices[0]?.message?.content ?? "{}"),
             model,

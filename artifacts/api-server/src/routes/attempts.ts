@@ -51,11 +51,11 @@ import {
   AiBudgetExceededError,
   AiLiveModeOffError,
   AiUserQuotaExceededError,
-  assertBudgetAvailable,
   assertLiveModeEnabled,
-  assertUserQuotaAvailable,
+  estimateCompletionUsd,
   getGenerationModel,
   recordUsage,
+  withReservedSpend,
 } from "../lib/aiBudget.ts";
 import { extractJSON } from "../lib/generationShape.ts";
 import { openai } from "@workspace/integrations-openai-ai-server";
@@ -398,8 +398,6 @@ router.post("/attempts/:id/scan-marks", aiLimiter, async (req: AuthenticatedRequ
     }
 
     assertLiveModeEnabled();
-    assertBudgetAvailable();
-    await assertUserQuotaAvailable(req.user!.id);
 
     const snapshot = (owned.attempt.questionSnapshot as EvaluationQuestion[]) ?? [];
     if (snapshot.length === 0) {
@@ -415,25 +413,33 @@ router.post("/attempts/:id/scan-marks", aiLimiter, async (req: AuthenticatedRequ
 
     const prompt = buildScanPrompt(questions);
     const model = getGenerationModel();
-    const completion = await openai.chat.completions.create({
-      model,
-      max_completion_tokens: 1500,
-      messages: [
-        { role: "system", content: prompt.system },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: prompt.user },
-            { type: "image_url", image_url: { url: image } },
+    const completion = await withReservedSpend(
+      req.user!.id,
+      null,
+      estimateCompletionUsd(model, 1500, prompt.system.length + prompt.user.length),
+      async () => {
+        const completion = await openai.chat.completions.create({
+          model,
+          max_completion_tokens: 1500,
+          messages: [
+            { role: "system", content: prompt.system },
+            {
+              role: "user",
+              content: [
+                { type: "text", text: prompt.user },
+                { type: "image_url", image_url: { url: image } },
+              ],
+            },
           ],
-        },
-      ],
-    });
-    recordUsage(completion.usage, model, {
-      kind: "quiz",
-      promptVersion: "scan-marks-1",
-      userId: req.user!.id,
-    });
+        });
+        recordUsage(completion.usage, model, {
+          kind: "quiz",
+          promptVersion: "scan-marks-1",
+          userId: req.user!.id,
+        });
+        return completion;
+      },
+    );
 
     const parsed = parseScanResponse(
       extractJSON(completion.choices[0]?.message?.content ?? "{}"),
