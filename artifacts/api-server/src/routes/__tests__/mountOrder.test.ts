@@ -266,6 +266,18 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(res.status, 401, "a student's record must require a token");
   });
 
+  it("mounts the group-check audience inside the evaluations guard", async () => {
+    // A student list on an exam decides who may sit it; it must never be
+    // writable without a teacher token.
+    const id = "00000000-0000-0000-0000-000000000000";
+    const res = await fetch(`${base}/evaluations/${id}/audience`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ studentIds: [id] }),
+    });
+    assert.equal(res.status, 401, "setting who may sit an exam must require a token");
+  });
+
   it("mounts account deletion, and refuses it without a token", async () => {
     // Apple 5.1.1(v) and Play both require this route to exist, so the thing
     // worth pinning is that it is *mounted* — a 404 here is a submission
