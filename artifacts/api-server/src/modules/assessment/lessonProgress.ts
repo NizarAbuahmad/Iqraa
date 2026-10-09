@@ -13,9 +13,10 @@
  *   proves none of them, so it is skipped rather than credited to all six.
  * - **Best sitting wins.** A student who failed and later passed has passed.
  *
- * Only lesson ids come back, never a percent: the teacher may not have
- * released the marks, and "unlocked" is all the gate needs to say.
+ * Only lesson ids come back, never a percent. What the student may be told
+ * at all waits for the teacher's release — see `studentLessonProgress`.
  */
+import { studentResultReady } from "./studentView.ts";
 
 /** Pass mark, in percent. */
 // ponytail: one constant for the pilot; per-class threshold when phase 3 lands.
@@ -76,6 +77,31 @@ export function unlockState(i: {
   if (!i.gateOn || !i.lessonId) return "none";
   if (i.granted) return "granted";
   return i.passed ? "none" : "available";
+}
+
+/**
+ * What `/student/progress` may tell the student: `passed` counts only results
+ * the student may already see (`studentResultReady` — the teacher released the
+ * exam and nothing is left unmarked), and `awaiting` names the lessons whose
+ * quiz is handed in but not released yet. Until release a lesson is neither
+ * passed nor failed to the student; unlocking the next lesson early would say
+ * "passed" as plainly as a mark. The teacher's results screen keeps calling
+ * `passedLessonIds` directly — the teacher sees every mark.
+ */
+export function studentLessonProgress(
+  sittings: readonly (SittingForProgress & { released: boolean })[],
+  lessonsOf: (objectiveIds: readonly string[] | null | undefined) => string[],
+): { passed: string[]; awaiting: string[] } {
+  const ready = sittings.filter(s => studentResultReady({ released: s.released, result: s }));
+  const passed = passedLessonIds(ready, lessonsOf);
+  const passedSet = new Set(passed);
+  const awaiting = new Set<string>();
+  for (const s of sittings) {
+    if (ready.includes(s)) continue;
+    const lessons = lessonsOf(s.objectiveIds);
+    if (lessons.length === 1 && !passedSet.has(lessons[0]!)) awaiting.add(lessons[0]!);
+  }
+  return { passed, awaiting: [...awaiting] };
 }
 
 export function passedLessonIds(
