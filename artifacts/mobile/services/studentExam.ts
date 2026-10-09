@@ -243,6 +243,8 @@ export async function getMyProgress(): Promise<MasteryProgress> {
     return {
       enabled: true,
       passedLessonIds: Array.isArray(data.passedLessonIds) ? data.passedLessonIds : [],
+      // Absent from an API older than the release rule; reads as nothing waiting.
+      awaitingLessonIds: Array.isArray(data.awaitingLessonIds) ? data.awaitingLessonIds : [],
       quizLessonIds: Array.isArray(data.quizLessonIds) ? data.quizLessonIds : [],
       retakeEvaluationIds: Array.isArray(data.retakeEvaluationIds) ? data.retakeEvaluationIds : [],
     };

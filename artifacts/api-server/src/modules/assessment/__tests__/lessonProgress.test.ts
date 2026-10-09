@@ -9,6 +9,7 @@ import {
   MASTERY_PASS_PERCENT,
   passedLessonIds,
   quizLessonIds,
+  studentLessonProgress,
   unlockState,
   withUnlocks,
   type SittingForProgress,
@@ -91,5 +92,36 @@ describe("passedLessonIds", () => {
 
   it("honours a different threshold", () => {
     assert.deepEqual(passedLessonIds([sitting({ percent: 85 })], lessonsOf, 90), []);
+  });
+});
+
+describe("studentLessonProgress", () => {
+  const released = (over: Partial<SittingForProgress> = {}) => ({ ...sitting(over), released: true });
+  const held = (over: Partial<SittingForProgress> = {}) => ({ ...sitting(over), released: false });
+
+  it("counts a pass only once the teacher has released it", () => {
+    assert.deepEqual(studentLessonProgress([released({ percent: 95 })], lessonsOf), { passed: ["l1"], awaiting: [] });
+    assert.deepEqual(studentLessonProgress([held({ percent: 95 })], lessonsOf), { passed: [], awaiting: ["l1"] });
+  });
+
+  it("reports a pass and a fail the same way before release", () => {
+    assert.deepEqual(
+      studentLessonProgress([held({ percent: 95 })], lessonsOf),
+      studentLessonProgress([held({ percent: 10 })], lessonsOf),
+    );
+  });
+
+  it("keeps a released but unmarked paper waiting, and a released fail neither passed nor waiting", () => {
+    assert.deepEqual(studentLessonProgress([released({ isProvisional: true })], lessonsOf), { passed: [], awaiting: ["l1"] });
+    assert.deepEqual(studentLessonProgress([released({ percent: 40 })], lessonsOf), { passed: [], awaiting: [] });
+  });
+
+  it("does not call a lesson waiting once a released sitting has passed it", () => {
+    const out = studentLessonProgress([released({ percent: 90 }), held({ percent: 20 })], lessonsOf);
+    assert.deepEqual(out, { passed: ["l1"], awaiting: [] });
+  });
+
+  it("ignores an unreleased exam that spans several lessons", () => {
+    assert.deepEqual(studentLessonProgress([held({ objectiveIds: ["o1", "o2"] })], lessonsOf), { passed: [], awaiting: [] });
   });
 });

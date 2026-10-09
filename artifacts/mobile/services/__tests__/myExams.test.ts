@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   MY_EXAM_STATE_KEY,
   actionableCount,
+  canRetakeExam,
   myExamAction,
   myExamTitle,
   subjectLabel,
@@ -81,5 +82,22 @@ describe('labels', () => {
   it('resolves a subject name, and says nothing for an unknown id', () => {
     assert.ok(subjectLabel('mathematics', 'ar'));
     assert.equal(subjectLabel('no-such-subject', 'ar'), null);
+  });
+});
+
+describe('canRetakeExam', () => {
+  const shown = exam({ state: 'result', result: RESULT });
+
+  it('offers a retake on a released result the server lists', () => {
+    assert.equal(canRetakeExam(shown, ['e1'], false), true);
+  });
+
+  it('never offers one beside a paper still waiting for the teacher', () => {
+    assert.equal(canRetakeExam(exam({ state: 'submitted' }), ['e1'], false), false);
+  });
+
+  it('never offers one to a parent, or on a quiz the server did not list', () => {
+    assert.equal(canRetakeExam(shown, ['e1'], true), false);
+    assert.equal(canRetakeExam(shown, [], false), false);
   });
 });
