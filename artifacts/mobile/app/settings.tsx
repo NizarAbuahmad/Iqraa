@@ -361,6 +361,8 @@ export default function SettingsScreen() {
         {/* Account. Deleting is the only row here, and it is deliberately last
             and on its own card — both stores require the path to exist, and
             nothing else in Settings is irreversible. */}
+        {(usage || canChangeType) && (
+        <>
         <SectionLabel label={t('accountSection')} isRTL={isRTL} colors={colors} top />
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
           {usage && (
@@ -384,7 +386,7 @@ export default function SettingsScreen() {
                   {t('aiUsageResets')} {new Date(usage.resetsAt).toLocaleDateString(dateLocale(lang === 'ar' ? 'ar' : 'en'), { day: 'numeric', month: 'long', timeZone: 'UTC' })}
                 </Text>
               </View>
-              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              {canChangeType && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
             </>
           )}
           {canChangeType && (
@@ -428,9 +430,16 @@ export default function SettingsScreen() {
                   />
                 </View>
               )}
-              <View style={[styles.divider, { backgroundColor: colors.border }]} />
             </>
           )}
+        </View>
+        </>
+        )}
+
+        {/* Its own card, last: it used to sit one row under the account-type
+            switch, two very different kinds of «change my account» touching. */}
+        <SectionLabel label={t('dangerZoneSection')} isRTL={isRTL} colors={colors} top />
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
           <SettingRow
             icon="trash-outline"
             label={t('deleteAccount')}
