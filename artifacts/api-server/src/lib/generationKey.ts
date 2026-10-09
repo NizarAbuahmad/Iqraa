@@ -119,6 +119,18 @@ function hash(parts: Record<string, unknown>): string {
   return createHash("sha256").update(canonical).digest("hex").slice(0, 16);
 }
 
+/**
+ * Fail closed on anything unexpected. Missing, zero or non-numeric means "no
+ * figures", which selects the stricter prompt — the one that forbids referring
+ * to a figure at all. Wrong in the permissive direction would print «انظر
+ * الشكل المجاور» on a paper with no figure anywhere on it, which is the exact
+ * bug the graph rule was written to stop.
+ */
+export function hasBookFigures(body: Record<string, unknown>): boolean {
+  const n = body.bookFigureCount;
+  return typeof n === "number" && Number.isFinite(n) && n > 0;
+}
+
 export type GenerationKeys = {
   coarseKey: string;
   strictKey: string;
@@ -162,7 +174,10 @@ export function generationKeys(
     lesson: normalizeValue(body.lessonId ?? body.topic),
     subject: normalizeValue(body.subject),
     grade: normalizeValue(body.grade),
-    language: normalizeValue(body.language) ?? "arabic",
+    // The prompt builders' own rule (`language !== "english"`), not a
+    // normalised one: "English" gets an Arabic artifact, so it must be keyed
+    // as Arabic, or that artifact is served to every English request.
+    language: body.language === "english" ? "english" : "arabic",
     // In BOTH keys, unlike `activityType`. A warm-up is not a slice of the
     // main activity that a superset artifact could be cut from — it is a
     // different artifact, and sharing a coarse key with the lesson activity
@@ -174,6 +189,12 @@ export function generationKeys(
   for (const field of STRICT_ONLY_FIELDS) {
     strict[field] = normalizeValue(body[field]);
   }
+  // The topic goes into every prompt verbatim, so a request that sends a real
+  // lessonId with a made-up topic must not land on that lesson's pooled key.
+  strict.topic = normalizeValue(body.topic);
+  // The system prompt differs on it (whether «انظر الشكل» is allowed), so a
+  // paper that cites a figure must not reach a client that has none.
+  strict.bookFigures = hasBookFigures(body);
   if (context.length > 0) {
     strict.contextHash = createHash("sha256").update(context).digest("hex").slice(0, 16);
   }

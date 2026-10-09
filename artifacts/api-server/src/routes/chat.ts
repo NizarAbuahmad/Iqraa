@@ -4,12 +4,14 @@ import { logger } from "../lib/logger";
 import {
   AiBudgetExceededError,
   AiLiveModeOffError,
+  AiUserBusyError,
   AiUserQuotaExceededError,
   assertBudgetAvailable,
   assertLiveModeEnabled,
   assertUserQuotaAvailable,
   getChatModel,
   recordUsage,
+  withUserAiSlot,
 } from "../lib/aiBudget.ts";
 import { PROMPT_VERSION } from "../lib/generationKey.ts";
 import type { AuthenticatedRequest } from "../middlewares/auth.ts";
@@ -117,11 +119,13 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
     const startedAt = Date.now();
 
     if (!streaming) {
-      const completion = await openai.chat.completions.create({
-        model,
-        max_completion_tokens: CHAT_MAX_TOKENS,
-        messages: chatMessages,
-      });
+      const completion = await withUserAiSlot(req.user?.id, () =>
+        openai.chat.completions.create({
+          model,
+          max_completion_tokens: CHAT_MAX_TOKENS,
+          messages: chatMessages,
+        }),
+      );
       // No cache keys on purpose. A chat turn never repeats, so any key computed
       // here would be the same for every turn and would show up in the repeat-rate
       // analysis as a workload with a perfect hit rate — the opposite of the truth.
@@ -154,27 +158,34 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
       logger.info({ userId: req.user?.id, estimated: true, reason, streamedChars }, "chat spend estimated");
     };
 
-    const stream = await openai.chat.completions.create(
-      {
-        model,
-        max_completion_tokens: CHAT_MAX_TOKENS,
-        messages: chatMessages,
-        stream: true,
-        stream_options: { include_usage: true },
-      },
-      { signal: upstream.signal },
-    );
+    // The user's live-call slot is held for the whole stream, not just the
+    // connect: a streamed turn is in flight until its last frame, and the slot
+    // exists to bound simultaneous calls. A refusal (AiUserBusyError) is thrown
+    // before `create` runs, so it reaches the catch below with no header sent
+    // and goes out as the same 429 JSON the non-streaming branch sends.
+    const result = await withUserAiSlot(req.user?.id, async () => {
+      const stream = await openai.chat.completions.create(
+        {
+          model,
+          max_completion_tokens: CHAT_MAX_TOKENS,
+          messages: chatMessages,
+          stream: true,
+          stream_options: { include_usage: true },
+        },
+        { signal: upstream.signal },
+      );
 
-    res.status(200);
-    res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
-    res.setHeader("Cache-Control", "no-store, no-transform");
-    res.setHeader("Connection", "keep-alive");
-    // Tells nginx-style proxies not to buffer; harmless on Cloud Run.
-    res.setHeader("X-Accel-Buffering", "no");
-    res.flushHeaders();
-    headersSent = true;
+      res.status(200);
+      res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+      res.setHeader("Cache-Control", "no-store, no-transform");
+      res.setHeader("Connection", "keep-alive");
+      // Tells nginx-style proxies not to buffer; harmless on Cloud Run.
+      res.setHeader("X-Accel-Buffering", "no");
+      res.flushHeaders();
+      headersSent = true;
 
-    const result = await pumpChatStream(stream, res, upstream.signal);
+      return pumpChatStream(stream, res, upstream.signal);
+    });
     const durationMs = Date.now() - startedAt;
 
     if (result.usage) {
@@ -226,6 +237,10 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
     }
     if (err instanceof AiUserQuotaExceededError) {
       res.status(429).json({ error: err.message, code: "user_quota_exceeded" });
+      return;
+    }
+    if (err instanceof AiUserBusyError) {
+      res.status(429).json({ error: err.message, code: "generation_in_flight" });
       return;
     }
     if (err instanceof AiBudgetExceededError) {

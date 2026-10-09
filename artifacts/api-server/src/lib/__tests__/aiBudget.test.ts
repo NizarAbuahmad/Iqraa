@@ -216,9 +216,28 @@ describe("recordAudioUsage", () => {
     // parity check — crude, but it pins the exact line whose absence left the
     // per-user cap blind to audio.
     const src = readFileSync(new URL("../aiBudget.ts", import.meta.url), "utf8");
-    const body = /export function recordAudioUsage\(([\s\S]*?)\n}/.exec(src);
-    assert.ok(body, "recordAudioUsage not found — has it been renamed?");
+    const audio = /export function recordAudioUsage\(([\s\S]*?)\n}/.exec(src);
+    assert.ok(audio, "recordAudioUsage not found — has it been renamed?");
+    assert.match(audio[1]!, /recordFixedCost\([\s\S]*userId\);/, "audio spend must pass its owner on");
+    const body = /function recordFixedCost\(([\s\S]*?)\n}/.exec(src);
+    assert.ok(body, "recordFixedCost not found — has it been renamed?");
     assert.match(body[1]!, /recordGeneration\(/, "audio spend must reach ai_generations");
     assert.match(body[1]!, /userId:\s*userId\s*\?\?\s*null/, "the ledger row must carry the owner");
+  });
+});
+
+describe("withUserAiSlot", () => {
+  it("refuses a third simultaneous call from one user, and frees the slot after", async () => {
+    const { withUserAiSlot, AiUserBusyError } = await import("../aiBudget.ts");
+    let release!: () => void;
+    const gate = new Promise<void>(r => { release = r; });
+    const a = withUserAiSlot("u1", () => gate);
+    const b = withUserAiSlot("u1", () => gate);
+    await assert.rejects(withUserAiSlot("u1", async () => 1), AiUserBusyError);
+    // Another user is not affected.
+    assert.equal(await withUserAiSlot("u2", async () => 2), 2);
+    release();
+    await Promise.all([a, b]);
+    assert.equal(await withUserAiSlot("u1", async () => 3), 3);
   });
 });
