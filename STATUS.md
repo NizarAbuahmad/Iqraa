@@ -916,6 +916,69 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Messages can be reacted to with an emoji, 2026-10-10
+
+Person-to-person chat (teacher ↔ parent / student, class and custom groups — not
+the AI assistant) now takes one fixed-set reaction per person per message:
+👍 ❤️ 😂 😮 👏 🙏. Long-press a message for the sheet; chips sit under the bubble.
+
+- **Allowed where posting is not.** A student in an announcement-only group
+  (`studentPostingEnabled = false`) cannot send, and can react. That is the
+  point of the feature and is deliberate: `reactionAccess` ignores the flag and a
+  test pins it. Do not "make it match the send route".
+- **Who sees what.** Everyone sees counts and their own mark. Only teacher-role
+  viewers get `userIds` (the sheet lists names). A non-teacher never sees a
+  reaction from someone they blocked, nor can they react to a blocked sender.
+  A non-teacher who reacted and *then* blocked the sender can no longer retract
+  it: `DELETE` is 404 because they can no longer see the message. By design;
+  covered by unit tests, not exercised against the running API.
+- **The reactor list names the teacher «أنت».** A direct thread's participant
+  map never contains the viewer, so `services/reactorNames.ts` adds the viewer
+  themself as «أنت» (tested).
+- **Never render chips from the inbox.** The inbox `latest` message carries
+  `reactions: []` always; chips come only from the thread's message list.
+- **Reactions are silent.** No push, no unread change, no inbox reorder
+  (`updated_at` / `last_read_at` untouched).
+- **The emoji list lives in two places** —
+  `artifacts/api-server/src/lib/messageReactions.ts` and
+  `artifacts/mobile/services/messageReactions.ts`. Keep the one-line
+  declaration identical; `reactionEmojiParity.test.ts` reads both as text.
+  `❤️` is two code points, and a bare U+2764 is refused on purpose.
+- **Poll limit.** The thread polls every 10 s and fetches only the newest page,
+  so a reaction on an older scrolled-back message appears on reopening. A poll
+  that started before your own tap lands can flash the old chips until the next one.
+- **Long-press changed.** It used to open the report picker straight away; it now
+  opens the sheet first (report is the row under the emoji, picker unchanged).
+- Migration `0003` (additive). No native module, so `app.json` `version` is unchanged.
+- **Verified against a real Postgres 16** (all migrations applied, built API
+  bundle, minted tokens, 2026-10-10), seeded custom group with posting off:
+  - Student reacts 👍 → 200, `count 1, mine true`, no `userIds`; the same student's
+    `POST /messages` is still 403 `group_read_only`.
+  - Second student, same emoji → `count 2`. First student replaces with 🙏 → two
+    chips (👍 1 not mine, 🙏 1 mine), one DB row per user; repeating the request
+    gives an identical body and still one row per user.
+  - `GET /messages`: the teacher gets `userIds` on each chip, a student does not.
+  - `👎` → 400 `invalid_reaction`; `not-a-uuid` → 400 `invalid_input`; an unknown
+    message id → 404; a user who is not a participant → 404.
+  - `DELETE` twice → 200 both times, the second changes nothing.
+  - Silent: `chat_threads.updated_at` identical before and after
+    (`2026-10-10 19:30:37.672621+00`); `last_read_at` moved only for the two users
+    who did a `GET` (teacher, first student) and stayed null for the user who only reacted.
+  - Block: after student B blocks student A, B's list drops A's reaction from the
+    counts (B's own stays); the teacher still sees it. Teachers cannot be blocked
+    (403 `cannot_block_teacher`).
+  - Rate limit: `message-react` bucket is per user in `rate_limit_buckets`; the
+    61st request inside a minute is 429 `rate_limited` (60 allowed, counting
+    earlier reactions by that user).
+- **UI not exercised in a browser.** The environment has no Chromium or
+  Playwright, and the seed has no user with a password hash. Everything above is
+  API + unit tests + typecheck; none of the screen behaviour was seen running.
+- **Not verified on a device:** chip layout and hit area (~38 px with `hitSlop`,
+  under the 44 px guideline); whether a long-press that starts on a chip reaches
+  the bubble's handler; the iOS Modal swap (a 250 ms timer before the report
+  picker opens — if too short, «إبلاغ» would silently do nothing on iOS); RTL
+  rendering.
+
 ## Greek letters and degrees cut an equation in two, 2026-10-10
 
 Seen on 2026-10-09 while driving a worksheet sent to a class: the take and
