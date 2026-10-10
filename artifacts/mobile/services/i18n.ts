@@ -2495,6 +2495,7 @@ const translations = {
     messageReactionsList: 'التفاعلات',
     messageReportAction: 'إبلاغ',
     messageReactorUnknown: 'مستخدم',
+    messageReactorYou: 'أنت',
     messageReactionFailed: 'تعذّر حفظ التفاعل. حاول مرة أخرى.',
     messageReactionChipLabel: (emoji: string, count: number, mine: boolean) =>
       `${emoji} ${count} — ${mine ? 'إزالة تفاعلك' : 'تفاعل بنفس الرمز'}`,
@@ -4819,6 +4820,7 @@ const translations = {
     messageReactionsList: 'Reactions',
     messageReportAction: 'Report',
     messageReactorUnknown: 'User',
+    messageReactorYou: 'You',
     messageReactionFailed: 'Could not save your reaction. Try again.',
     messageReactionChipLabel: (emoji: string, count: number, mine: boolean) =>
       `${emoji} ${count} — ${mine ? 'remove your reaction' : 'react with the same emoji'}`,

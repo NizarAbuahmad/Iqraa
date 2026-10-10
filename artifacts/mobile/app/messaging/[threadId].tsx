@@ -53,6 +53,7 @@ import {
 } from '@/services/messaging';
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { REACTION_EMOJI, myReaction, toggleReaction, type ChatReaction } from '@/services/messageReactions';
+import { reactorNames } from '@/services/reactorNames';
 import { MessageBubble } from '@/components/ui/MessageBubble';
 import { Avatar } from '@/components/ui/Avatar';
 import { chatThreadSubtitle } from '@/services/chatThreadSubtitle';
@@ -856,12 +857,10 @@ export default function ThreadScreen() {
                       key={r.emoji}
                       style={[styles.reactorLine, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: align }]}
                     >
-                      {`${r.emoji}  ${(r.userIds ?? [])
-                        .map(id => {
-                          const p = participantsById.get(id);
-                          return p ? `${p.firstName} ${p.lastName}`.trim() : t('messageReactorUnknown');
-                        })
-                        .join(isRTL ? '، ' : ', ')}`}
+                      {`${r.emoji}  ${reactorNames(r.userIds ?? [], user?.id, participantsById, {
+                        you: t('messageReactorYou'),
+                        unknown: t('messageReactorUnknown'),
+                      }).join(isRTL ? '، ' : ', ')}`}
                     </Text>
                   ))}
                 </View>
