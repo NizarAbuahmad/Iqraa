@@ -111,6 +111,13 @@ export const chatParticipants = pgTable(
      * if "seen by" UI is actually requested.
      */
     lastReadAt: timestamp("last_read_at", { withTimezone: true }),
+    /**
+     * "Delete for me" / "hide this group": when set, the thread drops out of
+     * this participant's inbox until a message newer than this arrives. Per
+     * participant on purpose — a class group's membership is re-derived from
+     * the roster, so leaving it would be undone, but this survives the sync.
+     */
+    hiddenAt: timestamp("hidden_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   t => [
