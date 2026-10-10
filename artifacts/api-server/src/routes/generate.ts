@@ -186,8 +186,8 @@ async function completeOnce(args: {
   userPrompt: string;
   maxCompletionTokens: number;
   detail: Omit<GenerationDetail, "artifactId">;
-  /** The request the prompt was built from — what a quiz is normalised against. */
-  body: Record<string, unknown>;
+  /** The request the prompt was built from — what a quiz is normalised against. Absent for calls that are not a quiz (e.g. solve). */
+  body?: Record<string, unknown>;
 }): Promise<Completion> {
   const startedAt = Date.now();
   const completion = await withUserAiSlot(args.detail.userId, () =>
