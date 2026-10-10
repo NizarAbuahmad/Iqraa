@@ -362,6 +362,9 @@ export default function WhiteboardScreen() {
         onExport={onExport}
         canExport={!loading && docHasInk(doc)}
         exportBusy={exportBusy}
+        onSolve={() => {}}
+        canSolve={false}
+        solution={null}
         labels={{
           close: t('close'),
           pen: t('penTool'),
@@ -377,6 +380,10 @@ export default function WhiteboardScreen() {
           deletePage: t('boardDeletePage'),
           save: t('boardSave'),
           exportPdf: t('boardExportPdf'),
+          solve: t('boardSolve'),
+          solveNext: t('solveNextStep'),
+          solveHideAll: t('solveHideAll'),
+          solveDelete: t('solveDelete'),
         }}
       />
       <BoardSaveDialog
