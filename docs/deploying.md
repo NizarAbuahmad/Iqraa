@@ -503,14 +503,12 @@ migrations existed.
 `0000_baseline.sql` is the whole schema as of 2026-10-08. Production already
 had those tables from `push`, so it must record 0000 as applied without
 running it. `migrate` refuses a database that has tables but no migration
-history, so the first deploy after this change fails safely until this runs.
-For production, run it in Actions so the URL stays in the repository secret:
+history rather than guessing.
 
-```bash
-gh workflow run db-baseline.yml    # verify-schema, then baseline, then migrate
-```
-
-then re-run the failed deploy. For any other database:
+**Production was baselined on 2026-10-08** (Actions run 37803469909: 48/48
+tables verified, 0000 recorded, 0 new), by a one-time `db-baseline.yml`
+workflow that was then deleted — it kept the URL inside the repository secret.
+Any other database:
 
 ```bash
 pnpm --filter @workspace/db run verify-schema   # must report every table/column present
