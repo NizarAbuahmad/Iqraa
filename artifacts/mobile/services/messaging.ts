@@ -283,6 +283,16 @@ export async function removeGroupMember(threadId: string, userId: string): Promi
   await readJson(res, 'Removing member');
 }
 
+/**
+ * «حذف المحادثة» / «إخفاء المجموعة» — takes the thread out of MY inbox only.
+ * The other side keeps it, and a newer message brings it back. The only way
+ * out of a class group, whose membership follows the roster.
+ */
+export async function hideThread(threadId: string): Promise<void> {
+  const res = await apiFetch(`/messaging/threads/${threadId}/hide`, { method: 'POST' });
+  await readJson(res, 'Hiding conversation');
+}
+
 /** Newest page first. Also marks the thread read for the caller — see messaging.ts on the server. */
 export async function listMessages(
   threadId: string,
