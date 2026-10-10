@@ -24,7 +24,7 @@ import { generatorLessonId } from './kbContext';
 // label and a ContinueMaterialKind member. It was missing here, which made the
 // `item.type === 'activity'` branch in continueTeaching.ts provably dead — so a
 // saved activity arriving without formState was silently labelled a lesson.
-export type MaterialType = 'lesson' | 'worksheet' | 'quiz' | 'flow' | 'activity' | 'slides' | 'prompt-slides';
+export type MaterialType = 'lesson' | 'worksheet' | 'quiz' | 'flow' | 'activity' | 'slides' | 'prompt-slides' | 'board';
 
 export interface SavedMaterial {
   id: string;

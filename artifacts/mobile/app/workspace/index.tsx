@@ -37,6 +37,7 @@ const TABS: Array<{ key: MaterialType | 'all'; labelKey: string }> = [
   { key: 'lesson', labelKey: 'myLessons' },
   { key: 'worksheet', labelKey: 'myWorksheets' },
   { key: 'quiz', labelKey: 'myQuizzes' },
+  { key: 'board', labelKey: 'myBoards' },
 ];
 
 /**

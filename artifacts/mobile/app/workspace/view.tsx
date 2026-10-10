@@ -98,6 +98,13 @@ export default function WorkspaceViewScreen() {
       setLoading(false);
     } else if (id) {
       getItem(id).then(m => {
+        // A board is not a quiz. Without this it falls through every `kind`
+        // switch below to the quiz builders. It reopens in the whiteboard
+        // itself; `replace` so Back goes to the list, not to this spinner.
+        if (m?.type === 'board') {
+          router.replace({ pathname: '/ai-tools/whiteboard' as any, params: { savedId: m.id } });
+          return;
+        }
         // An English material saved in Arabic opens in its tool instead, which
         // redoes it in English over this copy (see useEnglishRefresh).
         const redo = m && redoesInEnglish(m) ? MATERIAL_EDIT_ROUTE[viewKind(m, parseContent(m.content))] : undefined;
