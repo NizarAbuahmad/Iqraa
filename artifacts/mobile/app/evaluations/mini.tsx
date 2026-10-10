@@ -49,6 +49,7 @@ import {
   MINI_EVAL_COUNT,
   MINI_EVAL_DIFFICULTY,
   MINI_EVAL_TYPES,
+  groupObjectivesByLesson,
   miniEvalPreset,
 } from '@/services/miniEval';
 import { palette } from '@/constants/colors';
@@ -133,6 +134,12 @@ export default function MiniEvalScreen() {
     () => (bookId ? getObjectivesForBook(bookId) : []),
     [bookId],
   );
+  // Shown under lesson headings, so the teacher can see which lesson the check
+  // is for — the lesson is what the mastery gate unlocks.
+  const lessonGroups = useMemo(() => groupObjectivesByLesson(objectives), [objectives]);
+  const selectedGroup = objectiveId
+    ? lessonGroups.find(g => g.objectives.some(o => o.id === objectiveId))
+    : undefined;
 
   const onGenerate = useCallback(async () => {
     if (!bookId || !objectiveId) return;
@@ -327,43 +334,62 @@ export default function MiniEvalScreen() {
               {t('miniEvalNoObjectives')}
             </Text>
           ) : (
-            objectives.map(o => {
-              const selected = o.id === objectiveId;
-              return (
-                <Pressable
-                  key={o.id}
-                  // One objective, not a set: three questions spread over two
-                  // objectives is not enough evidence about either, and the
-                  // server would honestly report nothing for both.
-                  onPress={() => setObjectiveId(selected ? null : o.id)}
-                  style={[
-                    styles.row,
-                    {
-                      borderColor: selected ? ACCENT : colors.border,
-                      backgroundColor: selected ? palette.selected : colors.card,
-                      flexDirection: isRTL ? 'row-reverse' : 'row',
-                      alignItems: 'center',
-                      gap: 10,
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name={selected ? 'radio-button-on' : 'radio-button-off'}
-                    size={18}
-                    color={selected ? ACCENT : colors.mutedForeground}
-                  />
-                  <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, flex: 1, textAlign: align }}>
-                    {(lang === 'ar' ? o.descriptionAr : o.description) || o.description}
+            lessonGroups.map((g, i) => (
+              <View key={g.lessonId} style={{ gap: 8 }}>
+                <View style={{ marginTop: 10 }}>
+                  {i === 0 || lessonGroups[i - 1]!.unitId !== g.unitId ? (
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: align }}>
+                      {(lang === 'ar' ? g.unitNameAr : g.unitName) || g.unitName}
+                    </Text>
+                  ) : null}
+                  <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, lineHeight: 24, textAlign: align }}>
+                    {(lang === 'ar' ? g.lessonTitleAr : g.lessonTitle) || g.lessonTitle}
                   </Text>
-                </Pressable>
-              );
-            })
+                </View>
+                {g.objectives.map(o => {
+                  const selected = o.id === objectiveId;
+                  return (
+                    <Pressable
+                      key={o.id}
+                      // One objective, not a set: three questions spread over two
+                      // objectives is not enough evidence about either, and the
+                      // server would honestly report nothing for both.
+                      onPress={() => setObjectiveId(selected ? null : o.id)}
+                      style={[
+                        styles.row,
+                        {
+                          borderColor: selected ? ACCENT : colors.border,
+                          backgroundColor: selected ? palette.selected : colors.card,
+                          flexDirection: isRTL ? 'row-reverse' : 'row',
+                          alignItems: 'center',
+                          gap: 10,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name={selected ? 'radio-button-on' : 'radio-button-off'}
+                        size={18}
+                        color={selected ? ACCENT : colors.mutedForeground}
+                      />
+                      <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, flex: 1, textAlign: align }}>
+                        {(lang === 'ar' ? o.descriptionAr : o.description) || o.description}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ))
           )}
         </View>
       )}
 
       {bookChoices.length > 0 && (
         <View style={{ paddingHorizontal: 20, paddingTop: 4, gap: 8 }}>
+          {selectedGroup ? (
+            <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 13, lineHeight: 21, textAlign: align }}>
+              {t('miniEvalLessonHint', (lang === 'ar' ? selectedGroup.lessonTitleAr : selectedGroup.lessonTitle) || selectedGroup.lessonTitle)}
+            </Text>
+          ) : null}
           <Pressable
             onPress={() => void onGenerate()}
             disabled={!objectiveId || working}
