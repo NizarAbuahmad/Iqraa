@@ -479,9 +479,13 @@ an announcement by default» below.
     than clip the verdict); for an Arabic prose problem the only guard that
     the ✓ is about the right problem is the teacher reading «فُهمت المسألة
     هكذا»; a forged saved board with `verified: true` plus a plausible
-    `understoodAs` is accepted (the file has no signature). Seen, not
-    changed: `modules/assessment/keyVerification.ts` (the exam path) has no
-    tautology guard on model-written checks either.
+    `understoodAs` is accepted (the file has no signature). The exam path
+    had the same hole (a model-written `check` of `P = 1/6` → `1/6` came back
+    `verified`, reproduced 2026-10-10) and now shares the fix: `parseAnswerKeyCheck`
+    refuses a check whose `question` is not a real question for its topic
+    (`isRealCheckQuestion` in `lib/math-verify/src/answerKey.ts`, built on the
+    same equation / circle extractors the typed-problem gate uses), so such a
+    question stays in the paper with no check and no badge.
     Spec and plan of A and B:
     `docs/superpowers/specs/2026-10-08-whiteboard-board-design.md`,
     `docs/superpowers/plans/2026-10-08-whiteboard-board.md`; B:
