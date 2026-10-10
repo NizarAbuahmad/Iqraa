@@ -248,7 +248,7 @@ describe('savedDeckFor', () => {
     content: over.content,
   });
 
-  it('returns the saved deck for the lesson so «ابدأ الحصة» presents it', () => {
+  it('returns the saved deck for the lesson so «ابدأ الحصة الآن» presents it', () => {
     const got = savedDeckFor([saved({ type: 'slides', content: deck('mine') })], TOPIC, 'L1');
     assert.equal(got?.activityName, 'mine');
   });

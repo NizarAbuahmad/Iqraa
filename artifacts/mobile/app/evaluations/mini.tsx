@@ -39,9 +39,12 @@ import {
   EvaluationError,
   createEvaluation,
   generateEvaluation,
+  setEvaluationAudience,
   setEvaluationClass,
 } from '@/services/evaluations';
 import { getClass } from '@/services/roster';
+import { groupSizeLabel, parseStudentIds } from '@/services/supportGroups';
+import { trackEvent } from '@/services/analytics';
 import {
   MINI_EVAL_COUNT,
   MINI_EVAL_DIFFICULTY,
@@ -61,7 +64,9 @@ export default function MiniEvalScreen() {
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
   const align = isRTL ? 'right' : 'left';
-  const { classId, objectiveId: presetObjectiveId } = useLocalSearchParams<{ classId?: string; objectiveId?: string }>();
+  const { classId, objectiveId: presetObjectiveId, studentIds: rawStudentIds } = useLocalSearchParams<{ classId?: string; objectiveId?: string; studentIds?: string }>();
+  const groupIds = useMemo(() => parseStudentIds(rawStudentIds), [rawStudentIds]);
+  const isGroup = groupIds.length > 0 && !!classId;
 
   const [loading, setLoading] = useState(true);
   const [bookId, setBookId] = useState<string | null>(null);
@@ -69,6 +74,8 @@ export default function MiniEvalScreen() {
   const [objectiveId, setObjectiveId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [working, setWorking] = useState(false);
+  const [groupNames, setGroupNames] = useState<{ id: string; name: string }[]>([]);
+  const [ticked, setTicked] = useState<Set<string>>(() => new Set(groupIds));
 
   useEffect(() => {
     let cancelled = false;
@@ -78,9 +85,18 @@ export default function MiniEvalScreen() {
       // on create.
       const evaluable = new Set(getEvaluableBookIds());
       let candidates = BOOKS.filter(b => evaluable.has(b.id));
+      // Applied only after the staleness check below: a load for a class the
+      // teacher has already left must not put its names on this screen.
+      let inGroup: { id: string; name: string }[] | null = null;
       try {
         if (classId) {
-          const { group } = await getClass(classId);
+          const { group, students: roster } = await getClass(classId);
+          if (groupIds.length) {
+            // Names from the class itself: an id in the link that is no longer
+            // in the class is simply not offered.
+            const inClass = roster.filter(s => groupIds.includes(s.id));
+            inGroup = inClass.map(s => ({ id: s.id, name: s.displayName }));
+          }
           // Both default to '' on older classes. Narrow only on what is set;
           // an empty filter would leave a teacher with no books and no reason.
           const scoped = candidates.filter(
@@ -95,6 +111,10 @@ export default function MiniEvalScreen() {
         // pick one by hand, which is what an unscoped class gets anyway.
       }
       if (cancelled) return;
+      if (inGroup) {
+        setGroupNames(inGroup);
+        setTicked(new Set(inGroup.map(s => s.id)));
+      }
       setBookChoices(candidates.map(b => ({ id: b.id, titleAr: b.titleAr, title: b.title })));
       const preset = miniEvalPreset(presetObjectiveId, candidates.map(b => b.id), getObjectiveById);
       if (preset) {
@@ -108,7 +128,7 @@ export default function MiniEvalScreen() {
     return () => {
       cancelled = true;
     };
-  }, [classId, presetObjectiveId]);
+  }, [classId, presetObjectiveId, rawStudentIds]);
 
   const objectives: CurriculumObjective[] = useMemo(
     () => (bookId ? getObjectivesForBook(bookId) : []),
@@ -123,6 +143,7 @@ export default function MiniEvalScreen() {
 
   const onGenerate = useCallback(async () => {
     if (!bookId || !objectiveId) return;
+    if (isGroup && ticked.size === 0) { setError(t('miniEvalGroupNoneTicked')); return; }
     setError('');
     setWorking(true);
     try {
@@ -142,8 +163,27 @@ export default function MiniEvalScreen() {
           await setEvaluationClass(evaluation.id, classId);
         } catch {
           // The evaluation exists and is worth keeping; the detail screen can
-          // attach it. Losing the draft over this would be the worse trade.
+          // attach it. Losing the draft over this would be the worse trade —
+          // except for a group check, whose students are checked against the
+          // class: without it the draft would be class-wide.
+          if (isGroup) {
+            setError(t('supportGroupClassFailed'));
+            setWorking(false);
+            return;
+          }
         }
+      }
+      if (isGroup) {
+        // Before generating: a failed audience must not leave a class-wide
+        // draft behind with its questions already written.
+        try {
+          await setEvaluationAudience(evaluation.id, [...ticked]);
+        } catch {
+          setError(t('supportGroupAudienceFailed'));
+          setWorking(false);
+          return;
+        }
+        trackEvent('support_group_check_created', { members: ticked.size });
       }
       const result = await generateEvaluation(evaluation.id);
 
@@ -182,7 +222,7 @@ export default function MiniEvalScreen() {
       }
       setWorking(false);
     }
-  }, [bookId, objectiveId, classId, t]);
+  }, [bookId, objectiveId, classId, isGroup, ticked, t]);
 
   return (
     <ScrollView
@@ -205,6 +245,35 @@ export default function MiniEvalScreen() {
           <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', flex: 1, textAlign: align }}>
             {error}
           </Text>
+        </View>
+      ) : null}
+
+      {isGroup && groupNames.length > 0 ? (
+        <View style={{ paddingHorizontal: 20, paddingTop: 16, gap: 8 }}>
+          <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: align }}>
+            {t('miniEvalWhoSits')} · {groupSizeLabel(ticked.size, lang === 'ar' ? 'ar' : 'en')}
+          </Text>
+          {groupNames.map(s => {
+            const on = ticked.has(s.id);
+            return (
+              <Pressable
+                key={s.id}
+                onPress={() => setTicked(prev => {
+                  const next = new Set(prev);
+                  if (next.has(s.id)) next.delete(s.id); else next.add(s.id);
+                  return next;
+                })}
+                accessibilityRole="checkbox"
+                aria-checked={on}
+                style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, paddingVertical: 8 }}
+              >
+                <Ionicons name={on ? 'checkbox' : 'square-outline'} size={20} color={on ? ACCENT : colors.mutedForeground} />
+                <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, textAlign: align, flex: 1 }}>
+                  {s.name}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
       ) : null}
 

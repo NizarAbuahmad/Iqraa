@@ -11,6 +11,7 @@ import { apiFetch } from './apiClient.ts';
 import { trackEvent } from './analytics.ts';
 import type { AddLabResourceBody, AddResourceBody, ClassResource } from './classResources.ts';
 import type { StudentRecord } from './studentRecord.ts';
+import type { SupportGroup } from './supportGroups';
 
 export interface ClassGroup {
   id: string;
@@ -199,6 +200,12 @@ export async function getClassMastery(classId: string): Promise<ClassMastery> {
 export async function getStudentRecord(classId: string, studentId: string): Promise<StudentRecord> {
   const res = await apiFetch(`/classes/${classId}/students/${studentId}/record`);
   return readJson<StudentRecord>(res, 'Loading student record');
+}
+
+/** The objectives this class is weak on, each with the members under the line. */
+export async function getSupportGroups(classId: string): Promise<SupportGroup[]> {
+  const res = await apiFetch(`/classes/${classId}/support-groups`);
+  return (await readJson<{ groups: SupportGroup[] }>(res, 'Loading support groups')).groups;
 }
 
 /**
@@ -398,6 +405,19 @@ export async function claimRosterCode(
   // and instrumenting one of them is how half a funnel goes missing.
   trackEvent('class_joined', { relation: claimed.relation });
   return claimed;
+}
+
+/** Who this account is linked to, with the grade the teacher's roster gives each. `GET /auth/claim`. */
+export async function listMyRosterLinks(): Promise<{ studentId: string; displayName: string; gradeId: string | null }[]> {
+  const res = await apiFetch('/auth/claim');
+  const data = await readJson<{ links: { studentId: string; displayName: string; gradeId: string | null }[] }>(res, 'Loading your links');
+  return data.links;
+}
+
+/** Undoes this account's own claims, for a wrong name picked off a class list. `DELETE /auth/claim`. */
+export async function unclaimRoster(): Promise<void> {
+  const res = await apiFetch('/auth/claim', { method: 'DELETE' });
+  await readJson(res, 'Unlinking account');
 }
 
 export interface ParentContact {

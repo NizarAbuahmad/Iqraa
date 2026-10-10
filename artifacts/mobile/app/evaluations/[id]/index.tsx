@@ -38,9 +38,11 @@ import { EditQuestionModal } from '@/components/EditQuestionModal';
 import { isEditableQuestion } from '@/services/questionDraft';
 import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
+import { QuestionFigure } from '@/components/ui/QuestionFigure';
 import { bookFigureRefsForObjectives } from '@/services/bookFigureUri';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
+import { groupSizeLabel } from '@/services/supportGroups';
 import { palette } from '@/constants/colors';
 import { PROD_ORIGIN } from '@/services/siteOrigin';
 import { BackButton } from '@/components/ui/BackButton';
@@ -166,6 +168,7 @@ export default function EvaluationDetailScreen() {
   });
   const evaluation = data?.evaluation ?? null;
   const questions = data?.questions ?? [];
+  const audience = data?.audience ?? null;
   const loadError = loadFailed
     ? t('evaluationLoadFailed')
     : '';
@@ -383,6 +386,11 @@ export default function EvaluationDetailScreen() {
             <Text style={{ color: 'rgba(255,255,255,0.9)', fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 }}>
               {t('evalTotalMarks', evaluation.totalMarks)}
             </Text>
+            {audience ? (
+              <Text style={{ color: 'rgba(255,255,255,0.9)', fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 }}>
+                {groupSizeLabel(audience.length, lang === 'ar' ? 'ar' : 'en')}
+              </Text>
+            ) : null}
           </View>
         )}
       </View>
@@ -428,7 +436,7 @@ export default function EvaluationDetailScreen() {
             await setEvaluationClass(id, classId);
             await refetch();
           } catch (err) {
-            setError(t('saveToClassFailed'));
+            setError(t(err instanceof EvaluationError && err.code === 'audience_class_locked' ? 'supportGroupClassLocked' : 'saveToClassFailed'));
           }
         }}
       />
@@ -619,6 +627,7 @@ export default function EvaluationDetailScreen() {
             >
               {questionText(q) || '—'}
             </Text>
+            <QuestionFigure body={q.body} captionColor={colors.mutedForeground} />
           </View>
         ))}
       </View>

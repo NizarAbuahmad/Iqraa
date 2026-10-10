@@ -69,6 +69,7 @@ import { DictationInput, FillBlankInput, MatchingInput, ReadAloudInput } from '@
 import { isolateForeignRuns } from '@/services/mathRender';
 import type { TranslationKey } from '@/services/i18n';
 import { palette } from '@/constants/colors';
+import { QuestionFigure } from '@/components/ui/QuestionFigure';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -650,7 +651,9 @@ export default function TakeExamScreen() {
   // Lesson-level, so on its own it sat under every question — a spelling item in a
   // maths paper got the maths lesson's compass rose. Show it only where the
   // question itself points at a figure.
-  const examFigures = question && questionRefersToFigure(question.body)
+  // A question that carries its own figure (attached by the teacher on the
+  // worksheet it came from) shows that one, not the whole lesson's.
+  const examFigures = question && !question.body['figure'] && questionRefersToFigure(question.body)
     ? bookFigureRefsForLessons(lessonIds, lang === 'ar')
     : [];
   return (
@@ -818,6 +821,9 @@ function QuestionCard({
           {prompt}
         </Text>
       ) : null}
+
+      {/* The book figure the teacher attached to this question. */}
+      <QuestionFigure body={body} captionColor={colors.mutedForeground} />
 
       {question.type === 'multiple_choice' && (
         <View style={{ gap: 10, marginTop: 16 }}>

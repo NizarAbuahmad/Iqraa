@@ -27,6 +27,7 @@
 import React, { useEffect, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
+import { TapToEnlarge } from '@/components/ui/ImageViewer';
 import { Ionicons } from '@expo/vector-icons';
 import { externalResourcesForLesson, type ExternalResource } from '@workspace/curriculum';
 import { useColors } from '@/hooks/useColors';
@@ -107,12 +108,14 @@ function ImageItem({ resource, align }: { resource: ExternalResource; align: 'le
 
   return (
     <View style={styles.item}>
-      <Image
-        source={{ uri: url }}
-        style={[styles.image, { borderColor: colors.border }]}
-        resizeMode="contain"
-        accessibilityLabel={resource.titleEn}
-      />
+      <TapToEnlarge url={url} caption={resource.titleEn}>
+        <Image
+          source={{ uri: url }}
+          style={[styles.image, { borderColor: colors.border }]}
+          resizeMode="contain"
+          accessibilityLabel={resource.titleEn}
+        />
+      </TapToEnlarge>
       <Credit text={credit} align={align} />
     </View>
   );

@@ -809,6 +809,230 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A worksheet can be sent to a class as a digital assignment, 2026-10-09
+
+Step 4 of the worksheet review, agreed in chat. A worksheet was paper only: to
+get it in front of a class digitally a teacher retyped it as an evaluation.
+
+- **«أرسل للصف كواجب رقمي»** on the worksheet screen's results, and
+  «أرسل للصف» in ملفاتي's worksheet viewer (موادي until #954). `SendWorksheetSheet` asks two
+  things: the class (those of the lesson's grade/subject first, none hidden)
+  and the one objective it practises (the lesson's own, by KB id — preselected
+  when there is one). It says the worked example is study material and is not
+  sent. A worksheet with no lesson id cannot be sent; the sheet says why.
+- **`POST /evaluations/from-worksheet`** (`routes/evaluations.ts`) rebuilds the
+  body field by field (`worksheetRequest.ts`), checks the objective's book is
+  evaluable and the class is the caller's (404 otherwise), converts, runs every
+  question through the type registry, and stores a **draft** evaluation
+  (`generator: "worksheet"`) plus its questions in one transaction. The
+  teacher lands on `/evaluations/[id]`, the ordinary review-and-publish screen
+  that issues the class code. No schema change; `generator`'s TS union gained
+  `"worksheet"` and `db generate` produces no migration.
+- **What is marked automatically is decided in one place**,
+  `modules/assessment/fromWorksheet.ts`, and fails closed: a two-option
+  صح/خطأ question → true/false; ≥3 options with the key matching one →
+  multiple choice; no options and a key that is a plain number or `x = number`
+  (Arabic or Latin digits) → fill-blank; **everything else → a short answer
+  the teacher marks**, with the key and its working as the model answer. An
+  Arabic-word key, a key matching no option and a half-solved question all
+  land there. A question with no key refuses the whole send (400,
+  `missingKey`) rather than inventing one. The split comes back and is shown
+  after sending, never guessed by the app. **The paper's writing space is
+  dropped first:** `generateWorksheet` appends «الإجابة:» and two rules to
+  every question without options (homework: «مساحة العمل:»), and read as blanks
+  they made *every* generated numeric question teacher-marked — caught only by
+  driving the web build, since a hand-written test sheet has no such lines.
+- **Figures reach the student.** A question's book figure travels with it, and
+  `sanitizeQuestionForStudent` passes `body.figure` through `studentFigure`,
+  which drops anything not under `BOOK_FIGURE_BASE_URL` (now shared from
+  `lib/curriculum`). `QuestionFigure` renders it under the prompt on the take
+  screen and on the teacher's review screen, so what is published is what was
+  reviewed.
+- **Not done:** quizzes (same converter, later), due dates, editing a sent
+  sheet, an AI rubric for the short answers.
+
+Covered by `fromWorksheet.test.ts` (13), `worksheetRequest.test.ts` (12),
+`questionFigure.test.ts` (api-server) and `worksheetAssignment.test.ts` (5,
+mobile). **Driven end to end against a local Postgres** with migrations applied
+and `seed:assessment` run: register → roster consent → class → send a
+four-question sheet. A missing key gave 400 `missingKey:[4]`; another
+teacher's class gave 404; a good send gave 201 with 3 auto-marked and 1
+teacher-marked, as a draft. Then publish → share code → a student claimed it,
+saw no answers in the bodies and the figure on the multiple-choice question,
+answered (`٥` for the numeric one) and submitted. Multiple choice, true/false
+and fill-blank were graded `correct` at full marks by the deterministic
+grader; the short answer has no grade and the attempt is `needs_review`.
+**Then driven in the web build** (Expo web against that API, Chromium 390×844,
+real sign-in): «النسب المثلثية» worksheet generated offline, a book figure
+attached to question 1, «أرسل للصف كواجب رقمي» → the sheet offered the one
+class preselected and the lesson's five objectives, «أرسل» stayed disabled
+until an objective was picked → landed on the draft evaluation with the
+figure on question 1. Published; as a student the figure and its page
+citation showed under question 1, and «بسّط: cos²θ + sin²θ» (key `1`) was a
+fill-blank box. **Not checked:** on a device. **Seen, not fixed here:** Latin
+maths inside an Arabic prompt reads back to front on the take and review
+screens («cos²θ + sin²θ» shows as «θ + sin²θcos²») — the worksheet screen's
+2026-10-05 fix (`isolateForeignRuns`) never reached them.
+
+## A teacher attaches a book figure to a worksheet question, 2026-10-09
+
+Step 3a of the worksheet review, agreed in chat. Until now a book figure
+reached a worksheet only as the «من الكتاب المدرسي» appendix after the answer
+key, because the model that writes the questions never sees the figures and
+cannot say which goes with which. A teacher can, so a teacher does.
+
+- **On the worksheet screen** every question card has «أرفق شكلًا» when the
+  lesson has book figures (621 of 3,318 lessons do; median 3). It opens
+  `FigurePickerSheet` with **all** the lesson's figures — not the six the
+  appendix caps at — and the pick shows under the question, tappable to change
+  or remove («بلا شكل»). A question whose words point at a figure
+  (`questionRefersToFigure`: «انظر الشكل»…) and has none is highlighted.
+- **Stored on the question** as `WorksheetQuestion.figure` (`{uri, page,
+  caption}`, the `BookFigureRef` shape). Never set by a generator; the live
+  prompt and `generateWorksheet` are untouched, so the two-places rule does not
+  apply. `applyWorksheetFigure` (`worksheetEdits.ts`) sets it; rewording,
+  points and option edits keep it, deleting the question drops it. It is not
+  `markEdited`: the question and answer are unchanged, so a verification badge
+  stands. Saved to موادي as part of the content, which the API stores as-is.
+- **Where it shows:** printed/PDF inside the question's card, before the
+  writing lines, with the book's citation (grey in ink-saver, larger in large
+  print); the projector slides on that question; the shared text and Word as
+  «[الشكل: كتاب الطالب · … · صفحة ٤٥]»; موادي's viewer. The appendix and the
+  slides' figure slide drop any figure a question already shows
+  (`unattachedFigures`), so nothing prints twice.
+- **Not done:** quizzes, the live class deck, graphs from data, sketch grids.
+
+Covered by `worksheetQuestionFigure.test.ts` (13 cases, watched failing
+first). Mobile 3460 pass / 0 fail / 10 skipped, typecheck clean. **Verified in
+the web build** (Expo web, `/auth/me` stubbed, Chromium 390×844) on
+«النسب المثلثية»: the picker opened with the lesson's figures loaded from R2,
+the pick showed under question 1 and the button became «غيّر الشكل»; the
+exported PDF held one `q-fig` in that card plus the lesson's other figure in
+the appendix, and rendered to A4 with the figure and its citation in place.
+**Not checked:** expo-print on a device.
+## Support groups: who is under the line on each objective, and a check for them alone, 2026-10-09
+
+The class view said «3 طلاب دون الحد» on an objective and never said which
+three. The student record (2026-10-08) names one student's weak objectives, but
+assembling a group meant opening every record. **«مجموعات الدعم»** on the class
+screen's exams tab now names, per objective, the students under 60%. It gives
+that group a remedial worksheet and a quick re-check **only they can sit**, and
+shows each member's result on it.
+
+- Spec: `docs/superpowers/specs/2026-10-09-support-groups-design.md`
+- Plan: `docs/superpowers/plans/2026-10-09-support-groups.md`
+
+| Question | Decision |
+| --- | --- |
+| How the group sits its re-check | Online, assignees only, auto-marked; the teacher can still enter marks for an assignee |
+| What «moved up» means | Passed the re-check: ≥ 60% on the check itself. Who is weak stays the student record's rule |
+| How the worksheet reaches the group | The teacher prints it; the card lists the names |
+| Architecture | Groups are derived live from marks; only a check's audience is stored |
+| Do group checks count in class mastery | Yes, like any paper |
+| Can the teacher change the group | Untick before creating the check; not add students from outside it |
+
+**Who is in a group.** A student is in a group when they are a live, non-archived class member whose percentage on the objective is under 60%. The percentage is marks-weighted across all their marked papers in this class, which is the student record's rule exactly:
+- provisional papers count;
+- archived evaluations count;
+- drafts don't.
+
+`supportGroups()` is in `modules/assessment/supportGroups.ts` and is served by `GET /classes/:id/support-groups`. Groups are ordered by member count, then by the class's percentage on the objective.
+
+**The audience rule.** A group check is an evaluation with student-level rows in `evaluation_assignments`; that table existed but was unused until now. Its audience is exactly those students. An evaluation with no rows is for its class, as before, so nothing that existed changes. The rule is one pure module, `modules/assessment/audience.ts`, and it is enforced in seven places:
+- the student's «اختباراتي» (`examRowsFor`), which the parent view inherits;
+- the share link's roster (`GET /take/:code`), which lists the group only;
+- claiming a name, by tap or by signed-in self-claim (403 `not_in_group`);
+- teacher mark entry (403 `not_in_group`);
+- moving an attempt to another student (`PATCH /attempts/:id`) — 403 `not_in_group`;
+- the student record, where another group's check is not «لم يقدّمه»;
+- the lesson mastery gate.
+
+A sitting a student already holds always stays visible to them.
+
+**Setting it.** `PUT /evaluations/:id/audience` accepts the students only while the check is a draft attached to a class, and only if each one is a live member of that class. A group check can be detached from its class, or attached to a class that holds all its students; moving it to a class missing any of them is refused (409 `audience_class_locked`). The list endpoint returns `audienceSize` so «صُحّح N من M» counts the group. `GET /evaluations/:id` returns `audience`.
+
+**Schema.** Migration `0001` adds a unique `(evaluation_id, student_id)` on `evaluation_assignments`. It is additive, and the table had no writer before this, so production holds no duplicates.
+
+**In the app.**
+- Each card shows member chips (each opens the student record) and «ورقة علاجية» (the lesson's own grade and subject).
+- «تحقق للمجموعة» opens the quick check with the members ticked. The teacher can untick. The audience is set before questions are generated, so a failed audience leaves only an empty draft in the class list (no questions), which the teacher can delete.
+- Once a check exists, the card shows its outcome per member: «تجاوز», «ما زال يحتاج دعمًا» or «لم يقدّمه بعد». The button becomes «تحقق جديد», or «أكمل التحقق» while a draft is open.
+- The review screen says «للمجموعة: N».
+- The marking list shows the group only.
+
+**Verified:**
+- api-server 1337 pass / 0 fail, with new `audience` and `supportGroups` tests and mountOrder cases for both new routes;
+- mobile 3406 pass / 0 fail;
+- root typecheck 0 errors.
+
+Against a real Postgres, migrated the way production will be (`migrate --baseline`, then `migrate` applied `0001`):
+- **Audience route:**
+  - a non-member is refused with 400, as is an empty list;
+  - a published check refuses changes with 409;
+  - moving the check to another class got 409 (checked under the first rule, which refused every move; the membership rule that replaced it is covered by `classChangeAllowed` unit tests, not yet a real-database run).
+- **Gates:**
+  - the share link lists the group only;
+  - a non-member's claim gets 403;
+  - teacher entry for a non-member gets 403;
+  - a non-member's record omits the check;
+  - with `STUDENT_ACCOUNTS=true` locally, a member's student account sees the check in «اختباراتي» and a non-member's doesn't.
+- **In the web app:**
+  - the card shows the two weak students, weakest first;
+  - the worksheet opens on الكيمياء;
+  - unticking one student created a draft whose audience is the other only;
+  - «أكمل التحقق» opened that draft;
+  - marking the member 3/3 showed «تجاوز · 100%» while his overall moved 30% → 46%, so he stays in the group by design;
+  - the marking list shows the group only.
+
+**Not verified:**
+- a native build;
+- the migration against production itself;
+- a parent account's view, which inherits the student list's rule by code rather than by test.
+
+**Known gaps:**
+- A signed-in student outside the group who opens the link sees the group's names in the picker but cannot claim one (403).
+- The audience is the assignment rows: deleting them would make the check class-wide. Only cascades delete them today.
+- An objective's group is recomputed live, so a student who passes the re-check stays listed until their overall percentage crosses 60%; the card shows their «تجاوز» beside them.
+
+## A print style for the student's paper: colour, ink-saver, large print, 2026-10-09
+
+Step 2 of the worksheet review, Nizar's call on scope: worksheets and quizzes,
+both new styles, and the PDF/print export only — Word, shared text and the
+projector slides are unchanged.
+
+- **The export menu has a «شكل ورقة PDF» row** — ملوّن / موفّر للحبر / خط كبير —
+  wherever a worksheet or quiz is exported: the worksheet and quiz screens,
+  موادي, the chat and the virtual-lab card. The premade sheets' direct print
+  (non-teacher path in `curriculum/resources.tsx`) has no menu and prints in the
+  style last picked (`readPrintStyle`).
+- **Remembered per device** (`hooks/usePrintStyle.ts`, AsyncStorage key
+  `@iqra_print_style_v1`): the choice follows the school's copier, not the
+  teacher, so every menu reads and writes the same key.
+- **Ink-saver** is for black-and-white copiers, which turn the designed page's
+  grey cards, tinted bands, solid number badges and colour emoji into grey
+  blocks and lose its light-grey writing lines: white cards with dark borders,
+  section bands as a bold heading over a rule, outlined badges, no emoji, rules
+  in `#555`. **Large print** is 16px text (from 12.5), 30px writing lines and
+  28px badges; a 10-question maths worksheet goes from 3 A4 pages to 4.
+- **One stylesheet, one argument.** The overrides live in
+  `services/printStyle.ts` and are appended to `htmlBase`'s sheet with
+  `!important`, because `sectionBand` sets its colours inline. `colour` adds
+  nothing, so the default page is byte-for-byte what it was.
+- **Also fixed, found in the renders:** a nested exponent, «2^(2(x+1))» in the
+  half-solved question, still printed its caret after the 2026-10-09 fix below
+  — the bracket match stopped at the first `)`. `raiseExponents` now matches
+  the exponent's own closing bracket.
+
+Covered by `printStyle.test.ts` (each style's overrides, colour unchanged, the
+export bundles carry the style, a stored value round-trips) and a nested-exponent
+case in `worksheetPrint.test.ts`, watched failing first. Mobile 3404 pass /
+0 fail / 10 skipped, typecheck clean. **Verified in the web build** (Expo web
+on :8081, `/auth/me` stubbed, every other API call aborted, Chromium 390×844):
+the row renders under «تصدير المادة»; Ink-saver picked, menu closed and
+reopened, still selected; the PDF handed to the print iframe carried the
+picked style (colour first, then large print). Both styles were also rendered
+to A4 in Chromium and read by eye. **Not checked:** expo-print on a device,
+and a real black-and-white photocopy.
 ## The chat streams its reply and can be stopped, 2026-10-09
 
 `POST /chat` answers in Server-Sent Events when the request carries
