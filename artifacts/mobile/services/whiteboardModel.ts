@@ -167,6 +167,29 @@ export const BOARD_BACKGROUNDS: readonly BoardBackground[] = ['blank', 'grid', '
 /** Grid square size in view pixels; one axis unit is one square. */
 export const BOARD_STEP = 40;
 
+/**
+ * How the paper is drawn at a given page scale (screen pixels per canvas unit).
+ * Sizes are in canvas units and are the designed ones at projector size; as the
+ * page shrinks (a phone held upright is ~0.3) they grow so that numbers stay
+ * 11px, grid lines 1px and axes 2px on screen, and `labelEvery` thins the
+ * tick numbers so neighbours stay about 28px apart instead of running
+ * together. A bad scale is treated as 1.
+ */
+export function paperMetrics(scale: number): {
+  fontSize: number;
+  gridStroke: number;
+  axisStroke: number;
+  labelEvery: number;
+} {
+  const k = Number.isFinite(scale) && scale > 0 ? scale : 1;
+  return {
+    fontSize: Math.max(16, 11 / k),
+    gridStroke: Math.max(1.5, 1 / k),
+    axisStroke: Math.max(3, 2 / k),
+    labelEvery: Math.max(1, Math.ceil(28 / (BOARD_STEP * k) - 1e-9)),
+  };
+}
+
 export type Segment = { x1: number; y1: number; x2: number; y2: number };
 
 export function gridLines(width: number, height: number, step: number): Segment[] {

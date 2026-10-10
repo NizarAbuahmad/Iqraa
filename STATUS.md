@@ -370,9 +370,17 @@ an announcement by default» below.
     stays in the same page place at 800px, width scaling, eraser at 800px, page
     add / previous / next / delete / cap, per-page paper and undo, the delete
     and leave prompts) and the A scripts (board 25/25, Escape / keys /
-    countdown 9/9, slide pen, per-slide ink, book-page pen) all pass. Seen, not
-    fixed: in a **portrait phone** the 16:9 page is a thin strip and the axes
-    tick labels are about 5px — fine for a projector, poor on a phone.
+    countdown 9/9, slide pen, per-slide ink, book-page pen) all pass. Seen at
+    first: on a **portrait phone** the 16:9 page is a thin strip and the axes
+    tick labels were about 5px. **Paper made readable 2026-10-10**
+    (`paperMetrics` in `services/whiteboardModel.ts`, used by
+    `BoardBackground`): as the page shrinks, tick numbers, grid lines and axes
+    keep a minimum on-screen size (11 / 1 / 2px) and numbers are drawn every
+    2nd or 3rd square instead of every one (390px: every 3rd; 768px: every 2nd;
+    projector size unchanged). Seen in Chromium at 390, 768 and 1280px. The
+    page itself is still a 16:9 strip about 220px tall on an upright phone —
+    only the paper was fixed; a taller portrait page would change what B2 saves
+    and was not done.
     Not verified: touch on a real phone, Android hardware back, native SVG text
     on a device, whether a slide still scrolls while the pen is off and locks
     while it is on, the board on a projector, erasing on a full board on a
