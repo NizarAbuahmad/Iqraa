@@ -10,20 +10,25 @@ description: JWT auth flow, workspace CRUD API, mobile SecureStore token storage
 - `SESSION_SECRET` env var (already set) is used as JWT signing secret — no separate `JWT_SECRET` needed.
 - Access tokens: 15-minute expiry, signed with `{ sub, email, role, type: "access" }`.
 - Refresh tokens: 48-byte random hex, stored as SHA-256 hash in `refresh_tokens` table, 30-day expiry. Rotated on each use (old deleted, new issued).
-- Password reset: **removed 2026-09-10** (PRs 311+312, client and server). There is no reset and no change-password route — `password_hash` is written once, at register, and never updated. Google sign-in is the only recovery: `/auth/google` links a Google ID onto an existing password account with the same email, preserving its role. An email+password account on a non-Google address has no recovery route at all.
+- Password reset: removed 2026-09-10, **restored 2026-09-12** — `/forgot-password` and `/reset-password` use a 6-digit emailed code (`lib/passwordReset.ts`), and a reset ends every session. Needs an email on the account.
+- **Code-only accounts (2026-10-10):** a parent or student can sign up from a teacher's code with no email and no password (`POST /auth/redeem`). `users.email` is therefore **nullable**. Their credential is a 12-character personal login code (`users.login_code_hash`, sha256), shown once at sign-up and used at `POST /auth/code-login`; the teacher can re-issue it. They can add an email + password later (`POST /auth/add-email`, then `/verify-email`). See STATUS.md.
+- Registering a parent/student by email still works (`/register`) but the app no longer offers it: the register screen sends parents and students to the code form.
 
 **Why:** Separate access/refresh token strategy limits damage from token theft; refresh rotation prevents replay attacks.
 
 ## Database tables added
 
-- `users` (id UUID, first_name, last_name, email unique, **password_hash nullable** — a Google-only account never sets one, google_id unique, preferred_language, role, email_verified, suspended_at, suspended_reason, roster_consent_at, roster_consent_version, created_at, last_login)
+- `users` (id UUID, first_name, last_name, email unique **nullable**, login_code_hash unique nullable, **password_hash nullable** — a Google-only account never sets one, google_id unique, preferred_language, role, email_verified, suspended_at, suspended_reason, roster_consent_at, roster_consent_version, created_at, last_login)
 - `refresh_tokens` (id UUID, user_id FK→users, token_hash unique, expires_at, created_at)
 - `password_reset_tokens` — **vestigial.** Still in `lib/db/src/schema/users.ts`, read and written by nothing since the 2026-09-10 removal. Dropping it needs a manual schema push and buys nothing.
 - `saved_materials` (id UUID, user_id FK→users, type, title, subject, grade, topic, language, content jsonb, form_state jsonb, is_favorite bool, created_at, updated_at)
 
 ## API routes (all under /api prefix)
 
-- `POST /auth/register` — creates user, returns access+refresh tokens. `role` is clamped to teacher/student/parent; student and parent additionally need a `claimCode` and are gated on the `STUDENT_ACCOUNTS` flag
+- `POST /auth/register` — creates the user and emails a 6-digit verification code (**no tokens until `/verify-email`**). `role` is clamped to teacher/student/parent; student and parent are gated on the `STUDENT_ACCOUNTS` flag. Takes no claim code — a code is redeemed afterwards (`POST /claim`) or, for a new parent/student, instead of all of this at `POST /auth/redeem`
+- `POST /auth/redeem` — creates a parent/student account **and** its roster link from a teacher's code alone; returns tokens plus the one-time `loginCode`. A parent needs the per-student code (not a class code)
+- `POST /auth/code-login` — signs in with the personal login code
+- `POST /auth/add-email` — a signed-in account with no email adds one (and a password); verified through `/verify-email`
 - `POST /auth/login` — verifies bcrypt hash, updates last_login, returns tokens
 - `POST /auth/google` — verifies Google ID token; links to an existing password account by email, or mints a new one
 - `POST /auth/logout` — deletes refresh token from DB (requires auth)

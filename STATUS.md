@@ -916,6 +916,78 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Parents and students sign up with the teacher's code alone, 2026-10-10
+
+A parent or student used to need a first and last name, an email, a password, a
+verified inbox and ticked terms — and only then could enter the teacher's code,
+which is what actually proves who they are. Now the code is the sign-up.
+
+- **`POST /auth/redeem`** (`routes/auth.ts`): code + role + terms in, an account
+  and its roster link out, **in one transaction** (a linkless account with no
+  email cannot be recovered by the child). No email, no password, no
+  verification. The write half of claiming is shared with `POST /claim`
+  (`linkRosterRowInTx`), so the one-account-per-child lock and the
+  one-parent-per-name rule are the same code, not a copy.
+- **A parent cannot sign up from a class code** (`lib/redeemPolicy.ts`): it is
+  one string for a whole room and its picker lists every child, so it could make
+  anyone "the parent" of any unclaimed child with nothing else to check. A parent
+  needs the code written for their child. A student may use either kind.
+  **This is stricter than `/claim`** (an existing, emailed account may still
+  claim by class code); only brand-new code-only accounts are held to it.
+- **The way back in is a second code, not the teacher's.** The teacher's code is
+  shared, not single-use, and expires; as a login it would let anyone who ever
+  saw it take the account. So `/redeem` also returns a 12-character personal
+  **login code** (`lib/loginCode.ts`, 31^12 ≈ 7.9e17), shown **once**, stored as a
+  sha256 (`users.login_code_hash`). `POST /auth/code-login` takes it. The app
+  shows it on sign-up and holds the session back until «حفظت الرمز»; it is parked
+  in device storage only until then (`services/pendingLoginCode.ts`) so a closed
+  app does not strand a new account, and cleared right after. It is deliberately
+  **not** kept longer — on web that storage is `localStorage`, and a code that
+  never expires would turn a 30-day session into a permanent credential.
+- **Lost the code?** The teacher re-issues it:
+  `POST /students/:id/links/:userId/login-code` (key icon on the linked-accounts
+  list, `messaging/claim/[studentId].tsx`). Old code dies and every open session
+  of that account ends. Refused for an account that has a password or Google
+  (it can reset itself).
+- **Email later, optionally:** `POST /auth/add-email` (email **and a password**)
+  then the usual `/verify-email`. The password is required because
+  `/forgot-password` on a verified email with no password would answer with the
+  «this is a Google account» notice, which would be false. The login code keeps
+  working after. App: profile → «أضف بريدًا إلكترونيًا» (`/add-email`).
+- **Schema (migration `0003`)**: `users.email` is now **nullable** (unique still
+  holds — Postgres allows many NULLs) and `login_code_hash` is added. `DROP NOT
+  NULL` is not flagged by CI's destructive check and is safe to migrate ahead of
+  the new API. **Do not roll the migration back** once code-only accounts exist:
+  re-adding `NOT NULL` fails on their rows. Rolling the API back is fine.
+- **Everything that assumed an email was found by the typechecker** (making the
+  column nullable surfaced nine sites): `/register` and `/forgot-password`
+  paths, `adminNotify`, the access-token claim (now `""`), `AuthenticatedRequest`,
+  the saved-accounts list, the account row, the admin users list. Any new code
+  reading `user.email` for a non-teacher must tolerate null.
+- **A bug the browser found, not the tests:** `/verify-email` hard-coded
+  `hasRosterLink: false` for parents/students ("nothing between register and
+  here can have created a link"). `/add-email` made that false, and a verified
+  account was sent back to the claim screen. It is queried now.
+- **Rate limits** (no email to key on): per code (100/h) and per IP (300/h, loose
+  for a school NAT). That is a speed bump, not a wall — 31^6 ≈ 8.9e8 against a few
+  thousand live codes — and **`GET /auth/join/:code` still has only its one
+  global limit**; a per-code lockout there would not slow enumeration, so none
+  was added.
+- **Not changed, needs a decision:** `constants/legal.ts` still says an account
+  holder must be "of the age of majority" while student accounts exist, and the
+  privacy policy says minors are created "only with a teacher-issued code" — which
+  is now literally true. The legal wording is not mine to edit.
+- **Verified:** API tests 1463/1463 (18 of them new: `loginCode`, `redeemPolicy`); mobile 3800 pass, 10 skipped as before; typecheck clean. Run against a
+  local Postgres with all four migrations applied: redeem (own code, class code +
+  name, parent refusal, taken, expired, bad role), code-login, refresh, `/me`,
+  add-email → verify, delete-with-code, teacher re-issue (old code and old session
+  dead), and 8 simultaneous redeems of one name → exactly one account, no orphans.
+  Browser (web build) end to end: student sign-up, saved code, profile, add email,
+  sign out, sign back in by code, parent refused on a class code, student on a
+  class code with the «is this you?» step, teacher re-issue. **Not run on a
+  device**, and no DB-backed test exists in the repo, so the route logic itself
+  is covered by that manual run rather than a committed test.
+
 ## Greek letters and degrees cut an equation in two, 2026-10-10
 
 Seen on 2026-10-09 while driving a worksheet sent to a class: the take and
@@ -1395,8 +1467,11 @@ teacher had linked them to a class.
   needed`). The server keeps a student to one grade (`limitGradesForRole`).
 - **Onboarding**: `needsGradeSetup` (`routeGating.ts`) routes a parent/student
   with no grade to the picker on sign-in and on every boot. It waits behind the
-  roster-claim gate, so the order is sign up → claim code → pick class. The
-  pre-login intro (`onboarding.tsx`) is unchanged.
+  roster-claim gate, so the order is sign up → claim code → pick class — **since
+  2026-10-10 a new parent/student enters the code *at* sign-up** (see «Parents
+  and students sign up with the teacher's code alone»), so for them the claim
+  step is already done; `claim-required` remains for older and Google-created
+  accounts. The pre-login intro (`onboarding.tsx`) is unchanged.
 - **Settings**: a «الصف» / «صفوف أبنائي» row opens the same screen in edit mode.
 - **Shown**: `curriculum/browse.tsx` and `curriculum/resources.tsx` now narrow
   grades by `gradeIds` for every role (it was teachers only). A student's pick

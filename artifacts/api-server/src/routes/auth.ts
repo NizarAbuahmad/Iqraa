@@ -51,7 +51,9 @@ import {
   hashResetCode,
   RESET_CODE_TTL_MS,
 } from "../lib/passwordReset.js";
-import { resolveClaimCode, type ClaimRole } from "../lib/rosterClaim.js";
+import { resolveClaimCode, type ClaimResolution, type ClaimRole } from "../lib/rosterClaim.js";
+import { generateLoginCode, hashLoginCode } from "../lib/loginCode.ts";
+import { namesForNewAccount, redeemRoleCheck } from "../lib/redeemPolicy.ts";
 import { studentGradeIds } from "../lib/studentGrades.ts";
 import { resyncClassGroupThreadIfExists } from "../lib/classThread.js";
 import { decideRoleSwitch } from "../lib/roleSwitch.js";
@@ -124,6 +126,37 @@ const changeEmailLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 30
 // attempts" for something ten classmates had just done.
 const perUser = (req: Request) => (req as AuthenticatedRequest).user?.id ?? req.ip ?? "unknown";
 const claimLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 10, name: "claim", key: perUser });
+
+/*
+ * Signing up from a code has no email to key a limit on, and the IP is the wrong
+ * thing to make tight: thirty children redeeming a class code in one lesson are
+ * one school NAT address. So two ceilings, each wrong alone.
+ *
+ * Per code: bounds how often one code can be redeemed or hammered — a class is
+ * ~40 children plus retries. Per IP: loose enough for a classroom, and the only
+ * thing that slows someone walking different codes. 31^6 ≈ 8.9e8 against a few
+ * thousand live codes is not a space to be relaxed about; this is a speed bump,
+ * not a wall, and a redeem still only links to a roster row — it reads nothing
+ * but that child's name.
+ */
+const redeemIpLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 300, name: "redeem" });
+const redeemCodeLimiter = createRateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 100,
+  name: "redeem-code",
+  key: req => {
+    const code = (req.body as { claimCode?: unknown } | undefined)?.claimCode;
+    const normalized = typeof code === "string" ? normalizeShareCode(code) : "";
+    return normalized || "no-code";
+  },
+});
+// The login code is 31^12; nobody walks that, so the ceiling only has to stop
+// floods. Loose on purpose — a school is one address.
+const codeLoginLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 200, name: "code-login" });
+// Adding an email costs someone else a mail when the address is not the
+// caller's own, so the same pair as register.
+const addEmailUserLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, name: "add-email-user", key: perUser });
+const addEmailAddressLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 3, name: "add-email-address", key: emailKey });
 // Same reasoning as resend-verification: asking costs someone else an email.
 const forgotPasswordEmailLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 3, name: "forgot-password-email", key: emailKey });
 const forgotPasswordLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 20, name: "forgot-password" });
@@ -173,10 +206,14 @@ function getSecret(): string {
   return secret;
 }
 
-function generateTokens(userId: string, email: string, role: string) {
+// `email` is null for an account made from a teacher's code alone. The claim is
+// informational — authMiddleware re-reads the row and never trusts the token's
+// email or role — so an empty string stands in rather than a null that some
+// future reader would have to remember to handle.
+function generateTokens(userId: string, email: string | null, role: string) {
   const secret = getSecret();
   const accessToken = jwt.sign(
-    { sub: userId, email, role, type: "access" },
+    { sub: userId, email: email ?? "", role, type: "access" },
     secret,
     { expiresIn: "15m" },
   );
@@ -290,6 +327,82 @@ async function hasLiveRosterLink(userId: string): Promise<boolean> {
     .where(and(eq(rosterLinks.userId, userId), isNull(students.archivedAt)))
     .limit(1);
   return !!row;
+}
+
+type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * The write half of claiming a roster row, shared by `POST /claim` (an account
+ * that already exists) and `POST /redeem` (an account created in the same
+ * transaction). Check-then-insert, serialised on the student row.
+ *
+ * `decideClaim` already asked "does this child have a self link?", but two
+ * students submitting the same code in the same second both got "no" and both
+ * became that child. The roster row is the thing being claimed, so it is the
+ * thing locked: the second transaction waits on the first and then sees its
+ * link. A partial unique index would say the same thing in the schema; this
+ * says it without a manual schema push.
+ */
+async function linkRosterRowInTx(
+  tx: DbTx,
+  userId: string,
+  resolved: Extract<ClaimResolution, { ok: true }>,
+): Promise<"linked" | "taken" | "guardian_taken"> {
+  await tx.execute(sql`select id from ${students} where id = ${resolved.studentId} for update`);
+  if (resolved.relation === "self") {
+    const [taken] = await tx
+      .select({ id: rosterLinks.id })
+      .from(rosterLinks)
+      .where(
+        and(
+          eq(rosterLinks.studentId, resolved.studentId),
+          eq(rosterLinks.relation, "self"),
+          ne(rosterLinks.userId, userId),
+        ),
+      )
+      .limit(1);
+    if (taken) return "taken";
+  }
+  // The one-parent rule for a class-code claim, asked again under the same
+  // lock: decideClaim's answer was given before it, so two parents picking
+  // the same name in the same second would both have been told "free".
+  if (resolved.relation === "guardian" && resolved.viaClassCode) {
+    const [other] = await tx
+      .select({ id: rosterLinks.id })
+      .from(rosterLinks)
+      .where(
+        and(
+          eq(rosterLinks.studentId, resolved.studentId),
+          eq(rosterLinks.relation, "guardian"),
+          ne(rosterLinks.userId, userId),
+        ),
+      )
+      .limit(1);
+    if (other) return "guardian_taken";
+  }
+  await tx
+    .insert(rosterLinks)
+    .values({ studentId: resolved.studentId, userId, relation: resolved.relation })
+    .onConflictDoNothing();
+  return "linked";
+}
+
+/**
+ * A student who joins is a member of every class thread their roster row sits
+ * in — the same rule roster edits apply (routes/roster.ts), applied here on the
+ * way in. Without it the new account saw no class group until the teacher
+ * happened to reopen it. "If exists", like those edits: a claim must not
+ * conjure an empty chat into a teacher's inbox.
+ */
+async function resyncClassThreadsOfStudent(studentId: string): Promise<void> {
+  const memberships = await db
+    .select({ classGroupId: classMemberships.classGroupId, teacherId: classGroups.teacherId })
+    .from(classMemberships)
+    .innerJoin(classGroups, eq(classGroups.id, classMemberships.classGroupId))
+    .where(and(eq(classMemberships.studentId, studentId), isNull(classGroups.archivedAt)));
+  for (const m of memberships) {
+    await resyncClassGroupThreadIfExists(m.classGroupId, m.teacherId);
+  }
 }
 
 /**
@@ -406,9 +519,11 @@ router.post("/register", registerLimiter, registerEmailLimiter, async (req, res)
     // proves the address at POST /auth/verify-email, which is what hands
     // back the session. Google accounts skip all of this — they set
     // emailVerified: true and log in immediately, further down this file.
-    const emailSent = await issueVerificationCode(user.id, user.email);
+    // Just inserted with a validated address, so it is never null here.
+    const address = email.toLowerCase().trim();
+    const emailSent = await issueVerificationCode(user.id, address);
 
-    res.status(201).json(registerResponse(user.email, emailSent));
+    res.status(201).json(registerResponse(address, emailSent));
   } catch (err: any) {
     if (err.code === "23505") {
       res.status(409).json({ error: "An account with this email already exists", code: "email_taken" });
@@ -510,9 +625,15 @@ router.post("/verify-email", verifyEmailLimiter, verifyEmailAddressLimiter, asyn
         // it owes the client the same field login does — without it a
         // freshly verified parent/student arrives with hasRosterLink absent
         // and the claim gate cannot tell "no link yet" from "not asked".
-        // Always false rather than queried: nothing between register and here
-        // can have created a roster link for this account.
-        ...(verified.role === "teacher" ? {} : { hasRosterLink: false }),
+        //
+        // Queried, not assumed false. It was a constant while the only way to
+        // reach this route was register → verify, and nothing in between could
+        // link an account. `/add-email` changed that: a parent or student who
+        // signed up from a code verifies an address *after* being linked, and a
+        // hard-coded false sent them to the claim screen to enter a code for a
+        // child they were already linked to.
+        ...(verified.role === "teacher" ? {} : { hasRosterLink: await hasLiveRosterLink(verified.id) }),
+        hasLoginCode: verified.loginCodeHash !== null,
       },
     });
   } catch (err) {
@@ -540,8 +661,9 @@ router.post("/resend-verification", resendVerificationLimiter, resendVerificatio
     // account is already verified — so this cannot probe which emails are
     // registered. The one exception is a send that failed for an account that
     // needed it: see resendResponse.
-    const needsCode = !!user && !user.emailVerified;
-    const emailSent = needsCode ? await issueVerificationCode(user.id, user.email) : false;
+    // A code-only account with no email has nowhere to send one.
+    const needsCode = !!user && !!user.email && !user.emailVerified;
+    const emailSent = needsCode && user?.email ? await issueVerificationCode(user.id, user.email) : false;
 
     const { status, body } = resendResponse(needsCode, emailSent);
     res.status(status).json(body);
@@ -635,10 +757,10 @@ router.post("/change-unverified-email", changeEmailLimiter, changeEmailAddressLi
         ),
       );
 
-    const emailSent = await issueVerificationCode(updated.id, updated.email);
+    const emailSent = await issueVerificationCode(updated.id, next);
 
     logger.info({ userId: updated.id }, "pending signup repointed to a new email");
-    res.json(changeEmailResponse(updated.email, emailSent));
+    res.json(changeEmailResponse(next, emailSent));
   } catch (err: any) {
     if (err.code === "23505") {
       res.status(409).json({ error: "An account with this email already exists", code: "email_taken" });
@@ -685,7 +807,9 @@ router.post("/forgot-password", forgotPasswordLimiter, forgotPasswordEmailLimite
       .limit(1);
 
     // No account: nothing to tell, and no address to tell it to either way.
-    if (!user) {
+    // (An account with no email cannot match the lookup above; the check is for
+    // the type, and the answer would be the same.)
+    if (!user || !user.email) {
       res.json({ ok: true });
       return;
     }
@@ -858,56 +982,8 @@ router.post("/claim", authMiddleware, claimLimiter, async (req: AuthenticatedReq
       return;
     }
 
-    /*
-     * Check-then-insert, serialised on the student row.
-     *
-     * `decideClaim` already asked "does this child have a self link?", but
-     * two students submitting the same code in the same second both got
-     * "no" and both became that child. The roster row is the thing being
-     * claimed, so it is the thing locked: the second transaction waits on the
-     * first and then sees its link. A partial unique index would say the same
-     * thing in the schema; this says it without a manual schema push.
-     */
     const userId = req.user!.id;
-    const outcome = await db.transaction(async tx => {
-      await tx.execute(sql`select id from ${students} where id = ${resolved.studentId} for update`);
-      if (resolved.relation === "self") {
-        const [taken] = await tx
-          .select({ id: rosterLinks.id })
-          .from(rosterLinks)
-          .where(
-            and(
-              eq(rosterLinks.studentId, resolved.studentId),
-              eq(rosterLinks.relation, "self"),
-              ne(rosterLinks.userId, userId),
-            ),
-          )
-          .limit(1);
-        if (taken) return "taken" as const;
-      }
-      // The one-parent rule for a class-code claim, asked again under the same
-      // lock: decideClaim's answer was given before it, so two parents picking
-      // the same name in the same second would both have been told "free".
-      if (resolved.relation === "guardian" && resolved.viaClassCode) {
-        const [other] = await tx
-          .select({ id: rosterLinks.id })
-          .from(rosterLinks)
-          .where(
-            and(
-              eq(rosterLinks.studentId, resolved.studentId),
-              eq(rosterLinks.relation, "guardian"),
-              ne(rosterLinks.userId, userId),
-            ),
-          )
-          .limit(1);
-        if (other) return "guardian_taken" as const;
-      }
-      await tx
-        .insert(rosterLinks)
-        .values({ studentId: resolved.studentId, userId, relation: resolved.relation })
-        .onConflictDoNothing();
-      return "linked" as const;
-    });
+    const outcome = await db.transaction(tx => linkRosterRowInTx(tx, userId, resolved));
     if (outcome === "taken") {
       res.status(409).json({
         error: "This student is already linked to another account",
@@ -953,19 +1029,7 @@ router.post("/claim", authMiddleware, claimLimiter, async (req: AuthenticatedReq
         return;
       }
 
-      // A student who joins is a member of every class thread their roster row
-      // sits in — the same rule roster edits apply (routes/roster.ts), applied
-      // here on the way in. Without it the new account saw no class group
-      // until the teacher happened to reopen it. "If exists", like those
-      // edits: a claim must not conjure an empty chat into a teacher's inbox.
-      const memberships = await db
-        .select({ classGroupId: classMemberships.classGroupId, teacherId: classGroups.teacherId })
-        .from(classMemberships)
-        .innerJoin(classGroups, eq(classGroups.id, classMemberships.classGroupId))
-        .where(and(eq(classMemberships.studentId, resolved.studentId), isNull(classGroups.archivedAt)));
-      for (const m of memberships) {
-        await resyncClassGroupThreadIfExists(m.classGroupId, m.teacherId);
-      }
+      await resyncClassThreadsOfStudent(resolved.studentId);
     }
 
     res.status(201).json({ studentId: resolved.studentId, relation: resolved.relation });
@@ -1179,6 +1243,316 @@ router.get("/join/:code", joinLookupLimiter, async (req, res) => {
   } catch (err) {
     logger.error({ err }, "join code lookup failed");
     res.status(500).json({ error: "Failed to open this class code" });
+  }
+});
+
+/**
+ * The user shape every sign-in response carries. One builder for the two routes
+ * that mint a session without an email (`/redeem`, `/code-login`), so they
+ * cannot drift apart. `email` is null here by construction.
+ */
+function codeAccountUser(user: typeof users.$inferSelect, hasRosterLink: boolean) {
+  return {
+    id: user.id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    email: user.email,
+    role: user.role,
+    preferredLanguage: user.preferredLanguage,
+    avatarUrl: avatarUrlFor(user.avatarKey),
+    gradeIds: user.gradeIds,
+    subjectIds: user.subjectIds,
+    teachingAssignments: user.teachingAssignments,
+    createdAt: user.createdAt,
+    lastLogin: user.lastLogin,
+    hasRosterLink,
+    // These two routes are the only ones that make or sign in such an account.
+    hasLoginCode: true,
+  };
+}
+
+/** Thrown inside the redeem transaction to roll the new user back when the roster row turns out to be taken. */
+class RedeemRefused extends Error {
+  constructor(readonly outcome: "taken" | "guardian_taken") {
+    super(outcome);
+  }
+}
+
+/**
+ * POST /auth/redeem — create a parent or student account from a teacher's code
+ * alone. No email, no password, no verification: the code is the proof of who
+ * is asking, because the teacher chose who to give it to.
+ *
+ * The account is created and linked in ONE transaction. Two steps would leave a
+ * linkless account behind whenever the second failed, and that account is one a
+ * child cannot get out of — it has no email to recover it by.
+ *
+ * What it returns, and returns only once, is `loginCode`: the personal
+ * credential for signing back in (see lib/loginCode.ts for why the teacher's own
+ * code cannot be that). Only its hash is stored; lose it and the teacher issues
+ * a new one.
+ *
+ * ponytail: not idempotent. A retry after a lost response finds the code taken
+ * (a student's `claim_already_linked`) and the child asks the teacher to unlink
+ * and reissue. Add an idempotency key if that turns out to be common.
+ */
+router.post("/redeem", redeemIpLimiter, redeemCodeLimiter, async (req, res) => {
+  try {
+    // Closed for the same reason /register and /claim are.
+    if (!studentAccountsEnabled()) {
+      res.status(403).json({
+        code: "student_accounts_disabled",
+        error: "Parent and student accounts are not available yet.",
+      });
+      return;
+    }
+
+    const { claimCode, studentId, role: rawRole, preferredLanguage } = (req.body ?? {}) as {
+      claimCode?: unknown;
+      studentId?: unknown;
+      role?: unknown;
+      preferredLanguage?: unknown;
+    };
+
+    if (rawRole !== "student" && rawRole !== "parent") {
+      res.status(400).json({ error: "Choose student or parent", code: "invalid_role" });
+      return;
+    }
+    const role: ClaimRole = rawRole;
+
+    const code = typeof claimCode === "string" ? claimCode.trim() : "";
+    if (!code) {
+      res.status(400).json({ error: "A code is required", code: "claim_code_invalid" });
+      return;
+    }
+
+    // A new account must have accepted the terms; see lib/termsAcceptance.ts.
+    const terms = termsAcceptance(req.body);
+    if (!terms.ok) {
+      res.status(terms.status).json({ error: terms.error, code: terms.code });
+      return;
+    }
+
+    // No account exists yet, so there is no existing link of the caller's own
+    // to exclude: a fresh id means "nobody", which is exactly right.
+    const resolved = await resolveClaimCode(
+      code,
+      role,
+      trimmedOrUndefined(typeof studentId === "string" ? studentId : undefined),
+      crypto.randomUUID(),
+    );
+    if (!resolved.ok) {
+      res.status(resolved.status).json({ error: resolved.error, code: resolved.code });
+      return;
+    }
+
+    const roleCheck = redeemRoleCheck(role, resolved);
+    if (!roleCheck.ok) {
+      res.status(roleCheck.status).json({ error: roleCheck.error, code: roleCheck.code });
+      return;
+    }
+
+    const [student] = await db
+      .select({ displayName: students.displayName })
+      .from(students)
+      .where(eq(students.id, resolved.studentId))
+      .limit(1);
+    if (!student) {
+      res.status(400).json({ error: "That code is invalid or has expired", code: "claim_code_invalid" });
+      return;
+    }
+
+    const loginCode = generateLoginCode();
+    const names = namesForNewAccount(role, student.displayName);
+
+    let user: typeof users.$inferSelect;
+    try {
+      user = await db.transaction(async tx => {
+        const [created] = await tx
+          .insert(users)
+          .values({
+            ...names,
+            email: null,
+            passwordHash: null,
+            loginCodeHash: hashLoginCode(loginCode)!,
+            role,
+            // Arabic-first: unlike register, which defaults to "en" because its
+            // callers are teachers who pick, a child redeeming a class code has
+            // not been asked and the whole product is Arabic.
+            preferredLanguage: preferredLanguage === "en" ? "en" : "ar",
+            termsAcceptedAt: terms.termsAcceptedAt,
+            termsVersion: terms.termsVersion,
+            lastLogin: new Date(),
+            ...signupSource(req.headers),
+          })
+          .returning();
+        if (!created) throw new Error("Failed to create user");
+
+        const outcome = await linkRosterRowInTx(tx, created.id, resolved);
+        if (outcome !== "linked") throw new RedeemRefused(outcome);
+        return created;
+      });
+    } catch (err) {
+      if (err instanceof RedeemRefused) {
+        res.status(409).json(
+          err.outcome === "taken"
+            ? { error: "This student is already linked to an account", code: "claim_already_linked" }
+            : { error: "A parent account is already linked to this student", code: "claim_guardian_taken" },
+        );
+        return;
+      }
+      throw err;
+    }
+
+    if (resolved.relation === "self") {
+      try {
+        await syncClassThreadsForStudent(resolved.studentId);
+        await resyncClassThreadsOfStudent(resolved.studentId);
+      } catch (err) {
+        // The account and its link are committed; a chat that is a moment late
+        // must not turn a successful signup into an error.
+        logger.warn({ err, studentId: resolved.studentId }, "class thread sync after redeem failed");
+      }
+    }
+
+    const { accessToken, refreshTokenValue } = generateTokens(user.id, user.email, user.role);
+    await storeRefreshToken(user.id, refreshTokenValue, req.headers.origin);
+
+    res.status(201).json({
+      accessToken,
+      refreshToken: refreshTokenValue,
+      loginCode,
+      user: codeAccountUser(user, true),
+    });
+  } catch (err) {
+    logger.error({ err }, "redeem failed");
+    res.status(500).json({ error: "Could not create the account" });
+  }
+});
+
+/**
+ * POST /auth/code-login — sign back in with the personal login code, on a new
+ * phone or after logging out. Only accounts made by /redeem have one.
+ *
+ * One answer for "malformed", "no such code" and "wrong": the code is the whole
+ * credential, so which of those it was is exactly what a guesser would want.
+ */
+router.post("/code-login", codeLoginLimiter, async (req, res) => {
+  try {
+    if (!studentAccountsEnabled()) {
+      res.status(403).json({
+        code: "student_accounts_disabled",
+        error: "Parent and student accounts are not available yet.",
+      });
+      return;
+    }
+
+    const hash = hashLoginCode((req.body as { loginCode?: unknown } | undefined)?.loginCode);
+    const invalid = () =>
+      res.status(401).json({ error: "That login code is not right", code: "invalid_login_code" });
+    if (!hash) {
+      invalid();
+      return;
+    }
+
+    const [user] = await db.select().from(users).where(eq(users.loginCodeHash, hash)).limit(1);
+    if (!user) {
+      invalid();
+      return;
+    }
+
+    // Past the credential there is no one left to leak a suspension to; same
+    // ordering as /login, and the reason is what lets them appeal.
+    if (user.suspendedAt) {
+      res.status(403).json({
+        error: user.suspendedReason || "This account has been suspended.",
+        code: "account_suspended",
+      });
+      return;
+    }
+
+    const [updated] = await db
+      .update(users)
+      .set({ lastLogin: new Date() })
+      .where(eq(users.id, user.id))
+      .returning();
+
+    const { accessToken, refreshTokenValue } = generateTokens(user.id, user.email, user.role);
+    await storeRefreshToken(user.id, refreshTokenValue, req.headers.origin);
+
+    res.json({
+      accessToken,
+      refreshToken: refreshTokenValue,
+      user: codeAccountUser(updated ?? user, await hasLiveRosterLink(user.id)),
+    });
+  } catch (err) {
+    logger.error({ err }, "code login failed");
+    res.status(500).json({ error: "Login failed" });
+  }
+});
+
+/**
+ * POST /auth/add-email — a signed-in account that has no email adds one, with a
+ * password, so it can later reset that password and sign in the ordinary way.
+ *
+ * Asks for the password here, not later: without one, `/forgot-password` would
+ * find a verified email and no hash and answer with the "this is a Google
+ * account" notice, which is false. With one, the existing verify-email and
+ * reset flows work unchanged, so nothing else needs to learn about this path.
+ *
+ * Verification is the usual one — the address is stored unverified, a 6-digit
+ * code goes to it, and `POST /verify-email` (which hands back a fresh session)
+ * finishes it. The login code keeps working throughout and afterwards.
+ */
+router.post("/add-email", authMiddleware, addEmailUserLimiter, addEmailAddressLimiter, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { email, password } = (req.body ?? {}) as { email?: unknown; password?: unknown };
+
+    if (!isValidEmailAddress(email)) {
+      res.status(400).json({ error: "Valid email is required", code: "invalid_email" });
+      return;
+    }
+    if (typeof password !== "string" || !password || !isStrongPassword(password)) {
+      res.status(400).json({ error: PASSWORD_POLICY_MESSAGE, code: "password_policy" });
+      return;
+    }
+
+    const address = email.toLowerCase().trim();
+    const [taken] = await db.select({ id: users.id }).from(users).where(eq(users.email, address)).limit(1);
+    if (taken) {
+      res.status(409).json({ error: "An account with this email already exists", code: "email_taken" });
+      return;
+    }
+
+    // Conditional on the column still being null: this route is for accounts
+    // without an address. Changing a verified one is a different, riskier act
+    // (it moves where password resets go) and is not offered here.
+    const passwordHash = await bcrypt.hash(password, 12);
+    const [updated] = await db
+      .update(users)
+      .set({ email: address, passwordHash, emailVerified: false })
+      .where(and(eq(users.id, req.user!.id), isNull(users.email)))
+      .returning({ id: users.id, email: users.email });
+    if (!updated || !updated.email) {
+      res.status(409).json({ error: "This account already has an email", code: "email_already_set" });
+      return;
+    }
+
+    const emailSent = await issueVerificationCode(updated.id, updated.email);
+    res.json({
+      email: updated.email,
+      emailSent,
+      message: emailSent
+        ? "Check your email for a 6-digit verification code."
+        : "We could not send the verification email. Try resending the code, or check the address.",
+    });
+  } catch (err: any) {
+    if (err.code === "23505") {
+      res.status(409).json({ error: "An account with this email already exists", code: "email_taken" });
+      return;
+    }
+    logger.error({ err }, "add email failed");
+    res.status(500).json({ error: "Could not add the email" });
   }
 });
 
@@ -1727,6 +2101,9 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
       // six other places this object is serialised: the delete screen fetches
       // /me itself, so one site cannot drift out of step with the others.
       hasPassword: user.passwordHash !== null,
+      // Whether this account signs back in with a personal login code — the
+      // delete screen reads it to ask for that instead of a password.
+      hasLoginCode: user.loginCodeHash !== null,
       // Whether this teacher has attested to their school's parental consent,
       // and which wording they saw. Null means the roster is read-only for
       // them until they do — the app reads this to show the statement rather
@@ -1984,6 +2361,14 @@ router.delete(
           : false;
         if (!ok) {
           res.status(401).json({ error: "Password is incorrect", code: "password_incorrect" });
+          return;
+        }
+      } else if (account.loginCodeHash && !account.googleId) {
+        // A code-only account has no password and no Google identity; its login
+        // code is the one secret it holds that a stolen access token does not.
+        const given = hashLoginCode((req.body as { loginCode?: unknown }).loginCode);
+        if (!given || given !== account.loginCodeHash) {
+          res.status(401).json({ error: "Login code is incorrect", code: "login_code_incorrect" });
           return;
         }
       } else {

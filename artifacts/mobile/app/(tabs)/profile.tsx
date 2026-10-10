@@ -223,7 +223,8 @@ export default function ProfileScreen() {
           {t('profileInfo')}
         </Text>
         <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-          <InfoRow icon="mail-outline" label={t('email')} value={user?.email ?? ''} color={colors.primary} isRTL={isRTL} />
+          {/* An account made from a teacher's code has no address until it adds one. */}
+          <InfoRow icon="mail-outline" label={t('email')} value={user?.email ?? t('profileNoEmail')} color={colors.primary} isRTL={isRTL} />
           {memberSince ? (
             <>
               <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -243,6 +244,11 @@ export default function ProfileScreen() {
             </>
           ) : null}
         </View>
+        {user && !user.email ? (
+          <View style={{ marginTop: 12 }}>
+            <SettingRow icon="mail-outline" label={t('addEmailRow')} onPress={() => router.push('/add-email' as any)} isRTL={isRTL} colors={colors} />
+          </View>
+        ) : null}
 
         {/* Subjects & Grades — the ids picked on /setup-subjects, resolved
             against the same catalog the curriculum browser reads. Teacher-only:

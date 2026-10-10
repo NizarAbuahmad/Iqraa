@@ -34,6 +34,7 @@ import { confirm } from '@/services/confirm';
 import { goBack } from '@/services/navigation';
 import { GoogleSignInButton, isGoogleSignInAvailable } from '@/components/ui/GoogleSignInButton';
 import { BackButton } from '@/components/ui/BackButton';
+import { formatLoginCode } from '@/services/loginCode';
 
 export default function DeleteAccountScreen() {
   const colors = useColors();
@@ -45,18 +46,23 @@ export default function DeleteAccountScreen() {
   // rather than guessing — a Google account shown a password field would burn
   // attempts against a 5-per-hour limit on a password it does not have.
   const [hasPassword, setHasPassword] = useState<boolean | undefined>(undefined);
+  // A parent or student who signed up from a teacher's code has no password and
+  // no Google identity; the personal login code is what proves it is them.
+  const [usesCode, setUsesCode] = useState(false);
   const [proof, setProof] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    apiJson<{ hasPassword?: boolean }>('/auth/me')
+    apiJson<{ hasPassword?: boolean; hasLoginCode?: boolean }>('/auth/me')
       .then(me => {
         // Absent (an older server) is read as "has a password": that is the
         // overwhelmingly common account, and a wrong guess costs one clear
         // 401 rather than an unusable screen.
-        if (!cancelled) setHasPassword(me.hasPassword !== false);
+        if (cancelled) return;
+        setHasPassword(me.hasPassword !== false);
+        setUsesCode(me.hasPassword === false && me.hasLoginCode === true);
       })
       .catch(() => {
         if (!cancelled) setHasPassword(true);
@@ -68,11 +74,13 @@ export default function DeleteAccountScreen() {
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
   const teacher = isTeacherRole(user?.role);
   const ready = hasPassword !== undefined;
+  // A typed proof (password or login code) rather than a Google sign-in.
+  const needsText = hasPassword === true || usesCode;
   const canSubmit = ready && proof.trim().length > 0 && !busy;
 
   /** `googleCredential` is the fresh ID token a Google-only account confirms with. */
   const handleDelete = async (googleCredential?: string) => {
-    if (hasPassword ? !canSubmit : !googleCredential || busy) {
+    if (needsText ? !canSubmit : !googleCredential || busy) {
       setError(t('deleteAccountNeedProof'));
       return;
     }
@@ -88,7 +96,9 @@ export default function DeleteAccountScreen() {
     setBusy(true);
     setError(null);
     try {
-      await deleteAccount(hasPassword ? { password: proof } : { googleCredential });
+      await deleteAccount(
+        needsText ? (usesCode ? { loginCode: proof } : { password: proof }) : { googleCredential },
+      );
       // No navigation here on purpose: clearing the user in AuthContext is an
       // auth transition, and the root layout's effect sends a signed-out app
       // to login. Pushing a route as well would race it.
@@ -124,13 +134,18 @@ export default function DeleteAccountScreen() {
           {teacher ? t('deleteAccountWhatGoesTeacher') : t('deleteAccountWhatGoesOther')}
         </Text>
 
-        {ready && !hasPassword ? (
+        {ready && !needsText ? (
           <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
             {t('deleteAccountEmailHint')}
           </Text>
         ) : null}
+        {usesCode ? (
+          <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+            {t('deleteLoginCodeHint')}
+          </Text>
+        ) : null}
 
-        {hasPassword === false ? (
+        {hasPassword === false && !usesCode ? (
           <>
             <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
               {t('deleteAccountEmailLabel')}
@@ -151,16 +166,16 @@ export default function DeleteAccountScreen() {
         ) : (
         <>
         <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
-          {t('deleteAccountPasswordLabel')}
+          {usesCode ? t('loginWithCodeField') : t('deleteAccountPasswordLabel')}
         </Text>
         <TextInput
           value={proof}
-          onChangeText={text => { setProof(text); setError(null); }}
+          onChangeText={text => { setProof(usesCode ? formatLoginCode(text) : text); setError(null); }}
           editable={ready && !busy}
-          secureTextEntry
-          autoCapitalize="none"
+          secureTextEntry={!usesCode}
+          autoCapitalize={usesCode ? 'characters' : 'none'}
           autoCorrect={false}
-          textContentType="password"
+          textContentType={usesCode ? 'none' : 'password'}
           style={[
             styles.input,
             {

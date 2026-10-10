@@ -9,7 +9,8 @@ import { suspendedMayReach } from "../lib/suspension.js";
 export interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
-    email: string;
+    /** Null for a parent or student who signed up from a teacher's code and has not added one. */
+    email: string | null;
     role: string;
     firstName: string;
     lastName: string;
