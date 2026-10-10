@@ -1634,7 +1634,8 @@ const translations = {
     miniEvalTitle: 'تقييم سريع',
     miniEvalSubtitle: 'ثلاثة أسئلة تُصحَّح تلقائيًا، دون إدخال علامات',
     miniEvalLessonHint: (lesson: string) => `هذا التقييم لدرس: ${lesson}`,
-    miniEvalPickObjective: 'اختر هدفًا واحدًا',
+    miniEvalPickBook: 'اختر الكتاب',
+    miniEvalPickLesson: 'اختر الدرس',
     miniEvalPickBookFirst: 'اختر الكتاب أولًا',
     miniEvalNeedsLiveAi:
       'التقييم السريع يحتاج توليدًا بالذكاء الاصطناعي، وهو غير مُفعَّل الآن. أنشئ امتحانًا كاملًا بأسئلتك أنت.',
@@ -3925,7 +3926,8 @@ const translations = {
     miniEvalTitle: 'Quick evaluation',
     miniEvalSubtitle: 'Three questions that mark themselves — no marks to enter',
     miniEvalLessonHint: (lesson: string) => `This check is for the lesson: ${lesson}`,
-    miniEvalPickObjective: 'Pick one objective',
+    miniEvalPickBook: 'Pick the book',
+    miniEvalPickLesson: 'Pick the lesson',
     miniEvalPickBookFirst: 'Pick the book first',
     miniEvalNeedsLiveAi:
       'A quick evaluation needs AI generation, which is off right now. Create a full exam with your own questions instead.',

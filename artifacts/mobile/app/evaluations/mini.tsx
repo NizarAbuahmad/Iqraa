@@ -21,7 +21,7 @@
  * reusing that screen means the quick path cannot drift away from the checks
  * the slow path performs.
  */
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -53,6 +53,8 @@ import {
   miniEvalPreset,
 } from '@/services/miniEval';
 import { palette } from '@/constants/colors';
+import { useAuth } from '@/context/AuthContext';
+import { narrowBooksToTeacher } from '@/services/teacherCatalogFilter';
 import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = palette.primary;
@@ -67,11 +69,22 @@ export default function MiniEvalScreen() {
   const { classId, objectiveId: presetObjectiveId, studentIds: rawStudentIds } = useLocalSearchParams<{ classId?: string; objectiveId?: string; studentIds?: string }>();
   const groupIds = useMemo(() => parseStudentIds(rawStudentIds), [rawStudentIds]);
   const isGroup = groupIds.length > 0 && !!classId;
+  // A ref: the profile narrows the book list once on load, and a refreshed user
+  // object must not reset a book the teacher has already picked.
+  const { user } = useAuth();
+  const userRef = useRef(user);
+  userRef.current = user;
 
   const [loading, setLoading] = useState(true);
   const [bookId, setBookId] = useState<string | null>(null);
   const [bookChoices, setBookChoices] = useState<{ id: string; titleAr: string; title: string }[]>([]);
-  const [objectiveId, setObjectiveId] = useState<string | null>(null);
+  const [lessonId, setLessonId] = useState<string | null>(null);
+  /**
+   * Set only by the student record's «تحقق سريع», which opens here aimed at one
+   * objective. It narrows the check to that objective; picking any lesson by hand
+   * clears it, so the lesson picker always means the whole lesson.
+   */
+  const [onlyObjectiveId, setOnlyObjectiveId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [working, setWorking] = useState(false);
   const [groupNames, setGroupNames] = useState<{ id: string; name: string }[]>([]);
@@ -85,6 +98,7 @@ export default function MiniEvalScreen() {
       // on create.
       const evaluable = new Set(getEvaluableBookIds());
       let candidates = BOOKS.filter(b => evaluable.has(b.id));
+      let classScoped = false;
       // Applied only after the staleness check below: a load for a class the
       // teacher has already left must not put its names on this screen.
       let inGroup: { id: string; name: string }[] | null = null;
@@ -104,13 +118,22 @@ export default function MiniEvalScreen() {
               (!group.gradeId || b.gradeId === group.gradeId) &&
               (!group.subjectId || b.subjectId === group.subjectId),
           );
-          if (scoped.length > 0) candidates = scoped;
+          if (scoped.length > 0) {
+            candidates = scoped;
+            classScoped = true;
+          }
         }
       } catch {
         // A roster failure must not empty the book list — the teacher can still
         // pick one by hand, which is what an unscoped class gets anyway.
       }
       if (cancelled) return;
+      // A class with its own grade + subject is the stronger signal; otherwise
+      // offer only the grades and subjects picked in the teacher's profile.
+      if (!classScoped) {
+        const u = userRef.current;
+        candidates = narrowBooksToTeacher(candidates, u?.gradeIds, u?.subjectIds, u?.teachingAssignments);
+      }
       if (inGroup) {
         setGroupNames(inGroup);
         setTicked(new Set(inGroup.map(s => s.id)));
@@ -119,7 +142,8 @@ export default function MiniEvalScreen() {
       const preset = miniEvalPreset(presetObjectiveId, candidates.map(b => b.id), getObjectiveById);
       if (preset) {
         setBookId(preset.bookId);
-        setObjectiveId(preset.objectiveId);
+        setOnlyObjectiveId(preset.objectiveId);
+        setLessonId(getObjectiveById(preset.objectiveId)?.lessonId ?? null);
       } else if (candidates.length === 1) {
         setBookId(candidates[0]!.id);
       }
@@ -137,19 +161,17 @@ export default function MiniEvalScreen() {
   // Shown under lesson headings, so the teacher can see which lesson the check
   // is for — the lesson is what the mastery gate unlocks.
   const lessonGroups = useMemo(() => groupObjectivesByLesson(objectives), [objectives]);
-  const selectedGroup = objectiveId
-    ? lessonGroups.find(g => g.objectives.some(o => o.id === objectiveId))
-    : undefined;
+  const selectedGroup = lessonId ? lessonGroups.find(g => g.lessonId === lessonId) : undefined;
 
   const onGenerate = useCallback(async () => {
-    if (!bookId || !objectiveId) return;
+    if (!bookId || !selectedGroup) return;
     if (isGroup && ticked.size === 0) { setError(t('miniEvalGroupNoneTicked')); return; }
     setError('');
     setWorking(true);
     try {
       const evaluation = await createEvaluation({
         bookId,
-        objectiveIds: [objectiveId],
+        objectiveIds: onlyObjectiveId ? [onlyObjectiveId] : selectedGroup.objectives.map(o => o.id),
         assessmentTypes: [...MINI_EVAL_TYPES],
         targetQuestionCount: MINI_EVAL_COUNT,
         difficulty: MINI_EVAL_DIFFICULTY,
@@ -222,7 +244,7 @@ export default function MiniEvalScreen() {
       }
       setWorking(false);
     }
-  }, [bookId, objectiveId, classId, isGroup, ticked, t]);
+  }, [bookId, selectedGroup, onlyObjectiveId, classId, isGroup, ticked, t]);
 
   return (
     <ScrollView
@@ -295,7 +317,8 @@ export default function MiniEvalScreen() {
                     key={b.id}
                     onPress={() => {
                       setBookId(b.id);
-                      setObjectiveId(null);
+                      setLessonId(null);
+                      setOnlyObjectiveId(null);
                     }}
                     style={[
                       styles.row,
@@ -315,7 +338,7 @@ export default function MiniEvalScreen() {
           )}
 
           <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
-            {t('miniEvalPickObjective')}
+            {t(bookId ? 'miniEvalPickLesson' : 'miniEvalPickBook')}
           </Text>
 
           {/*
@@ -334,51 +357,44 @@ export default function MiniEvalScreen() {
               {t('miniEvalNoObjectives')}
             </Text>
           ) : (
-            lessonGroups.map((g, i) => (
-              <View key={g.lessonId} style={{ gap: 8 }}>
-                <View style={{ marginTop: 10 }}>
+            lessonGroups.map((g, i) => {
+              const selected = g.lessonId === lessonId;
+              return (
+                <View key={g.lessonId} style={{ gap: 8 }}>
                   {i === 0 || lessonGroups[i - 1]!.unitId !== g.unitId ? (
-                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: align }}>
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: align, marginTop: 10 }}>
                       {(lang === 'ar' ? g.unitNameAr : g.unitName) || g.unitName}
                     </Text>
                   ) : null}
-                  <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, lineHeight: 24, textAlign: align }}>
-                    {(lang === 'ar' ? g.lessonTitleAr : g.lessonTitle) || g.lessonTitle}
-                  </Text>
+                  <Pressable
+                    // One lesson: the check covers every objective the lesson lists.
+                    onPress={() => {
+                      setLessonId(selected ? null : g.lessonId);
+                      setOnlyObjectiveId(null);
+                    }}
+                    style={[
+                      styles.row,
+                      {
+                        borderColor: selected ? ACCENT : colors.border,
+                        backgroundColor: selected ? palette.selected : colors.card,
+                        flexDirection: isRTL ? 'row-reverse' : 'row',
+                        alignItems: 'center',
+                        gap: 10,
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name={selected ? 'radio-button-on' : 'radio-button-off'}
+                      size={18}
+                      color={selected ? ACCENT : colors.mutedForeground}
+                    />
+                    <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 15, lineHeight: 24, flex: 1, textAlign: align }}>
+                      {(lang === 'ar' ? g.lessonTitleAr : g.lessonTitle) || g.lessonTitle}
+                    </Text>
+                  </Pressable>
                 </View>
-                {g.objectives.map(o => {
-                  const selected = o.id === objectiveId;
-                  return (
-                    <Pressable
-                      key={o.id}
-                      // One objective, not a set: three questions spread over two
-                      // objectives is not enough evidence about either, and the
-                      // server would honestly report nothing for both.
-                      onPress={() => setObjectiveId(selected ? null : o.id)}
-                      style={[
-                        styles.row,
-                        {
-                          borderColor: selected ? ACCENT : colors.border,
-                          backgroundColor: selected ? palette.selected : colors.card,
-                          flexDirection: isRTL ? 'row-reverse' : 'row',
-                          alignItems: 'center',
-                          gap: 10,
-                        },
-                      ]}
-                    >
-                      <Ionicons
-                        name={selected ? 'radio-button-on' : 'radio-button-off'}
-                        size={18}
-                        color={selected ? ACCENT : colors.mutedForeground}
-                      />
-                      <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, flex: 1, textAlign: align }}>
-                        {(lang === 'ar' ? o.descriptionAr : o.description) || o.description}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ))
+              );
+            })
           )}
         </View>
       )}
@@ -392,12 +408,12 @@ export default function MiniEvalScreen() {
           ) : null}
           <Pressable
             onPress={() => void onGenerate()}
-            disabled={!objectiveId || working}
+            disabled={!selectedGroup || working}
             style={[
               styles.cta,
               {
                 backgroundColor: ACCENT_FILL,
-                opacity: !objectiveId || working ? 0.5 : 1,
+                opacity: !selectedGroup || working ? 0.5 : 1,
                 flexDirection: isRTL ? 'row-reverse' : 'row',
               },
             ]}
