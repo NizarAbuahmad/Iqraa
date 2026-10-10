@@ -7,6 +7,10 @@
 | 3 | `out/Iqrra_03_Classes.mp4` | **recorded from the app**, demo account | 24.4 s |
 | 4 | `out/Iqrra_04_Communication.mp4` | **recorded from the app**, demo account | 24.3 s |
 | 5 | `out/Iqrra_05_Quiz.mp4` | **recorded from the app**, demo account (+ a clip of Reel 2's take) | 23.1 s |
+| 6 | `out/Iqrra_06_Ask_Iqra.mp4` | cut from the full-app tour (chapter 03), demo mode | 21.5 s |
+| 7 | `out/Iqrra_07_Class_Games.mp4` | cut from the full-app tour (chapters 12, 08) | 20.0 s |
+| 8 | `out/Iqrra_08_Lesson_Slides.mp4` | cut from the full-app tour (chapter 10), demo mode | 22.6 s |
+| 9 | `out/Iqrra_09_Full_Lesson.mp4` | cut from the full-app tour (chapter 16), demo mode | 20.4 s |
 
 Reels 1–4 share one layout (headline in the top safe zone, the app in a rounded card, branded end card),
 the same Chromium-rendered Arabic (Cairo / Almarai, never ffmpeg `drawtext`) and the same music bed.
@@ -47,6 +51,20 @@ highlighted in the app, the same key row highlighted in «مفتاح الإجا�
   an Arabic «و» that renders like a stray "g" next to Latin maths, so it was dropped.)
 - **Library issue, since fixed on this branch:** 27 of 28 premade sheets repeated question stems inside one sheet.
   The manifest was regenerated, so «تركيب الاقترانات» now has 4 questions, not the 10 shown in Reels 2 and 5.
+
+## Reels 6–9 — cut from the full-app tour
+
+`capture/takes/tour.mp4` is an 8m14s silent screen recording (780×1688, 26 chapter cards) supplied by the repo
+owner. It is **not committed** (21 MB, gitignored); put it at that path to rebuild, with an empty
+`tour.events.json` (`[]`) beside it. `build_tour_reels.py` holds the four cuts, with the source timestamps.
+
+Left out on purpose: every frame where the build the tour was recorded from shows maths with its words and
+symbols in reversed bidi order (chapter 03's worksheet reply, chapter 10's «مفردات الدرس» slide, the class
+challenge's questions, chapter 16's worksheet and «تحقّق سريع» cards). Those are real app defects — worth a fix,
+and not something a promo should be the first place a teacher meets. Also left out: the empty calendar/timetable,
+the sign-in screen (a typed e-mail) and the blank whiteboard. Copy on these four is written by me, not supplied.
+
+    node render_overlays.js ; python3 build_tour_reels.py 6 7 8 9
 
 ## Rebuilding
 
