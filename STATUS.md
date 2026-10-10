@@ -916,6 +916,35 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Greek letters and degrees cut an equation in two, 2026-10-10
+
+Seen on 2026-10-09 while driving a worksheet sent to a class: the take and
+review screens showed «بسّط: cos²θ + sin²θ» as «بسّط: θ + sin²θcos²», and
+«حل: 2 cos θ = 1 حيث 0° ≤ θ < 360°.» with its pieces scrambled. Both screens
+already ran the text through `isolateForeignRuns` — the cause was its
+character class (`FOREIGN_CHAR`, `services/mathRender.ts`), which had no Greek
+letters and no `°`. Every θ ended a run, so one equation became several
+isolates with bare θs between them, and bidi laid those out right to left.
+
+- Greek letters (α–ω, Α–Ω, ϑ ϕ ϵ) and `°` are now part of a run, and a Greek
+  letter makes a run worth isolating the way a Latin one does.
+- A run no longer **ends** on `.`. With `°` in the class, «360°.» would have
+  pulled the sentence's own full stop into the left-to-right isolate, where it
+  displays between the equation and the Arabic. An interior `.` («3.5»,
+  «CO₂. (C») is unchanged.
+- This is the shared helper, so the print/PDF export, Word export, lab slides
+  and chat get the same fix. On an English page the only change is invisible
+  (`⁦A⁩.` instead of `⁦A.⁩`); `exportHtml.test.ts` now compares the text a
+  reader sees rather than the raw markup.
+
+Covered by three new cases in `mathRender.test.ts` (two watched failing
+first; the third pins that a lone «30°» stays unwrapped). Mobile 3638 pass /
+0 fail, typecheck clean. **Checked in the web build** (Chromium 390×844, local
+API) on the 2026-10-09 paper: the teacher's review screen and the student's
+take screen now read «بسّط: cos²θ + sin²θ» and «حل: 2 cos θ = 1 حيث 0° ≤ θ <
+360°.» in order, each equation one isolate in the DOM. **Not checked:** native
+`Text` on a device, which runs the same bidi algorithm on the same isolates.
+
 ## «where i can add more classes» reached the subject question, 2026-10-10
 
 Reported from the web chat: «where i can add more classes to my account»
@@ -1062,10 +1091,10 @@ class preselected and the lesson's five objectives, «أرسل» stayed disabled
 until an objective was picked → landed on the draft evaluation with the
 figure on question 1. Published; as a student the figure and its page
 citation showed under question 1, and «بسّط: cos²θ + sin²θ» (key `1`) was a
-fill-blank box. **Not checked:** on a device. **Seen, not fixed here:** Latin
-maths inside an Arabic prompt reads back to front on the take and review
-screens («cos²θ + sin²θ» shows as «θ + sin²θcos²») — the worksheet screen's
-2026-10-05 fix (`isolateForeignRuns`) never reached them.
+fill-blank box. **Not checked:** on a device. **Seen here, fixed 2026-10-10:**
+Latin maths inside an Arabic prompt read back to front on the take and review
+screens («cos²θ + sin²θ» showed as «θ + sin²θcos²») — see «Greek letters and
+degrees cut an equation in two».
 
 ## Book codes name what they open, and only Grades 9–10 have ever been scanned, 2026-10-09
 
