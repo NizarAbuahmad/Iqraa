@@ -10,7 +10,8 @@ import {
   parseBoard,
   serializeBoard,
 } from '../boardFile.ts';
-import { blankPage, type BoardBackground, type BoardDoc, type Stroke } from '../whiteboardModel.ts';
+import type { BoardSolution } from '@workspace/math-verify';
+import { blankPage, withSolution, type BoardBackground, type BoardDoc, type Stroke } from '../whiteboardModel.ts';
 
 const stroke = (points: string, extra: Partial<Stroke> = {}): Stroke => ({ color: '#DC2626', points, width: 6, ...extra });
 
@@ -54,7 +55,7 @@ describe('serializeBoard / parseBoard round trip', () => {
     const v = JSON.parse(r.json);
     assert.equal(Object.keys(v).join(), 'version,canvas,pages');
     assert.deepEqual(v.canvas, { w: 1280, h: 720 });
-    assert.equal(v.version, BOARD_FILE_VERSION);
+    assert.equal(v.version, 1);
     assert.equal(Object.keys(v.pages[0]).join(), 'background,strokes');
     assert.equal(Object.keys(v.pages[0].strokes[0]).join(), 'color,width,points');
   });
@@ -119,7 +120,7 @@ describe('parseBoard refuses', () => {
     ['null', null],
     ['an array', []],
     ['text that is not JSON', '{nope'],
-    ['a wrong version', mutate(b => { b.version = 2; })],
+    ['a wrong version', mutate(b => { b.version = 3; })],
     ['a missing version', mutate(b => { delete b.version; })],
     ['a wrong canvas width', mutate(b => { b.canvas.w = 100; })],
     ['a wrong canvas height', mutate(b => { b.canvas.h = 100; })],
@@ -207,5 +208,97 @@ describe('isBoardDirty', () => {
   it('a board too big to serialise counts as dirty (it can never match what was saved)', () => {
     const big = docOf(['blank', Array.from({ length: 3000 }, () => stroke(manyPoints(80)))]);
     assert.equal(isBoardDirty(big, '{}'), true);
+  });
+});
+
+describe('boards with a solution (version 2)', () => {
+  const sol = (over: Partial<BoardSolution> = {}): BoardSolution => ({
+    problem: 'حل المعادلة 2x+5=13', steps: ['2x + 5 = 13', '2x = 8', 'x = 4'], answer: 'x = 4',
+    verified: true, source: 'sympy', understoodAs: '2x+5=13', ...over,
+  });
+  const docWith = (s: BoardSolution | null): BoardDoc => ({
+    current: 0,
+    pages: [withSolution({ background: 'grid', board: { strokes: [stroke('0.1,0.2 0.3,0.4')], past: [] } }, s), blankPage()],
+  });
+
+  it('writes version 2 only when some page has a solution', () => {
+    const plain = serializeBoard(docWith(null));
+    const solved = serializeBoard(docWith(sol()));
+    assert.ok(plain.ok && solved.ok);
+    if (!plain.ok || !solved.ok) return;
+    assert.equal((JSON.parse(plain.json) as { version: number }).version, 1);
+    assert.equal((JSON.parse(solved.json) as { version: number }).version, BOARD_FILE_VERSION);
+    assert.equal(BOARD_FILE_VERSION, 2);
+  });
+
+  it('round-trips a solution, verified and unchecked, onto the right page', () => {
+    const unchecked: BoardSolution = {
+      problem: 'حل المعادلة 2x+5=13', steps: ['2x + 5 = 13', '2x = 8', 'x = 4'], answer: 'x = 4', verified: false, source: 'unchecked',
+    };
+    for (const s of [sol(), unchecked]) {
+      const r = serializeBoard(docWith(s));
+      assert.ok(r.ok);
+      if (!r.ok) return;
+      const p = parseBoard(r.json);
+      assert.ok(p.ok);
+      if (!p.ok) return;
+      const back = docOfFile(p.file);
+      assert.deepEqual(back.pages[0]!.solution, s);
+      assert.equal(back.pages[1]!.solution, undefined);
+      assert.deepEqual(back.pages[0]!.board.strokes, docWith(s).pages[0]!.board.strokes);
+    }
+  });
+
+  it('still opens a version-1 board, and refuses a solution inside one', () => {
+    const v1 = { version: 1, canvas: { w: 1280, h: 720 }, pages: [{ background: 'blank', strokes: [] }] };
+    assert.equal(parseBoard(v1).ok, true);
+    const smuggled = { ...v1, pages: [{ background: 'blank', strokes: [], solution: sol() }] };
+    const r = parseBoard(smuggled);
+    assert.equal(r.ok, false);
+    assert.equal(!r.ok && r.reason, 'solution');
+  });
+
+  it('refuses the whole board for one bad solution', () => {
+    const base = { version: 2, canvas: { w: 1280, h: 720 } };
+    const page = (solution: unknown) => ({ background: 'blank', strokes: [], solution });
+    for (const bad of [
+      sol({ steps: [] }),
+      sol({ understoodAs: undefined }),
+      { ...sol(), verified: 'yes' },
+      { ...sol(), source: 'llm' },
+      'x = 4',
+      null,
+    ]) {
+      const r = parseBoard({ ...base, pages: [{ background: 'blank', strokes: [] }, page(bad)] });
+      assert.equal(r.ok, false, JSON.stringify(bad));
+      assert.equal(!r.ok && r.reason, 'solution');
+    }
+  });
+
+  it('drops unknown keys inside a solution and keeps a fixed key order', () => {
+    const r = parseBoard({
+      version: 2, canvas: { w: 1280, h: 720 },
+      pages: [{ background: 'blank', strokes: [], solution: { ...sol(), computedAnswer: 'x = 4', extra: 1 } }],
+    });
+    assert.ok(r.ok);
+    if (!r.ok) return;
+    assert.deepEqual(Object.keys(r.file.pages[0]!.solution!), ['problem', 'steps', 'answer', 'verified', 'source', 'understoodAs']);
+  });
+
+  it('equal boards serialise to equal strings; changing or removing a solution is a change', () => {
+    const a = serializeBoard(docWith(sol()));
+    const b = serializeBoard(docWith(sol()));
+    assert.ok(a.ok && b.ok);
+    if (!a.ok || !b.ok) return;
+    assert.equal(a.json, b.json);
+    assert.equal(isBoardDirty(docWith(sol()), a.json), false);
+    assert.equal(isBoardDirty(docWith(sol({ answer: 'x = 5' })), a.json), true);
+    assert.equal(isBoardDirty(docWith(null), a.json), true);
+  });
+
+  it('a never-saved board with only a solution is unsaved work', () => {
+    const solutionOnly: BoardDoc = { current: 0, pages: [withSolution(blankPage(), sol())] };
+    assert.equal(isBoardDirty(solutionOnly, null), true);
+    assert.equal(isBoardDirty({ current: 0, pages: [blankPage()] }, null), false);
   });
 });

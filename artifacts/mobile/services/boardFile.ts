@@ -10,21 +10,29 @@
  * Ink is already stored as fractions of the page width (`services/penInk.ts`),
  * so a saved page looks the same on every screen. Undo history is not saved.
  *
- * Free of react-native so `node --test` can load it. Serialised content is
- * plain ASCII (digits, hex colours, JSON punctuation), so its length in
- * characters is its length in bytes.
+ * Free of react-native so `node --test` can load it. The stored string counts
+ * characters, not bytes: ink is ASCII, but a page's solution is Arabic prose
+ * (at most ~3.2 KB of it per page), so the byte size can exceed the cap
+ * slightly. The server accepts 12 MB.
  */
+import { parseBoardSolution, type BoardSolution } from '@workspace/math-verify';
 import {
   CANVAS_H,
   CANVAS_W,
   DEFAULT_STROKE_WIDTH,
   MAX_PAGES,
   docHasInk,
+  docHasSolution,
   type BoardBackground,
   type BoardDoc,
 } from './whiteboardModel.ts';
 
-export const BOARD_FILE_VERSION = 1;
+/**
+ * The newest version this app understands. A board is WRITTEN as version 1
+ * unless a page carries a solution, so an app that has not updated yet can
+ * still open every board that has none.
+ */
+export const BOARD_FILE_VERSION = 2;
 /**
  * Cap on the STORED STRING: enforced on save by `serializeBoard` and on open by
  * `parseBoard` for string input. For already-parsed object input only the
@@ -38,8 +46,8 @@ export const MIN_STROKE_WIDTH = 0.5;
 export const MAX_STROKE_WIDTH = 64;
 
 export type BoardFileStroke = { color: string; width: number; points: string };
-export type BoardFilePage = { background: BoardBackground; strokes: BoardFileStroke[] };
-export type BoardFile = { version: 1; canvas: { w: number; h: number }; pages: BoardFilePage[] };
+export type BoardFilePage = { background: BoardBackground; strokes: BoardFileStroke[]; solution?: BoardSolution };
+export type BoardFile = { version: 1 | 2; canvas: { w: number; h: number }; pages: BoardFilePage[] };
 
 const BACKGROUNDS: readonly string[] = ['blank', 'grid', 'axes'];
 /** #rgb, #rgba, #rrggbb or #rrggbbaa — nothing else gets into an attribute. */
@@ -52,10 +60,20 @@ function validPoints(points: unknown): points is string {
   return points.split(' ').every(token => PAIR_RE.test(token));
 }
 
+/** Rebuilt in a fixed key order so two equal boards serialise to equal strings. */
+const solutionOut = (s: BoardSolution): BoardSolution => ({
+  problem: s.problem,
+  steps: [...s.steps],
+  answer: s.answer,
+  verified: s.verified,
+  source: s.source,
+  ...(s.understoodAs !== undefined ? { understoodAs: s.understoodAs } : {}),
+});
+
 /** The board as a plain, fixed-shape object. Never includes undo history. */
 export function boardFileOf(doc: BoardDoc): BoardFile {
   return {
-    version: BOARD_FILE_VERSION,
+    version: docHasSolution(doc) ? BOARD_FILE_VERSION : 1,
     canvas: { w: CANVAS_W, h: CANVAS_H },
     pages: doc.pages.map(p => ({
       background: p.background,
@@ -64,6 +82,7 @@ export function boardFileOf(doc: BoardDoc): BoardFile {
         width: s.width ?? DEFAULT_STROKE_WIDTH,
         points: s.points,
       })),
+      ...(p.solution ? { solution: solutionOut(p.solution) } : {}),
     })),
   };
 }
@@ -104,7 +123,8 @@ export function parseBoard(content: unknown): ParseResult {
   }
   if (!value || typeof value !== 'object' || Array.isArray(value)) return bad('not-an-object');
   const v = value as Record<string, unknown>;
-  if (v.version !== BOARD_FILE_VERSION) return bad('version');
+  if (v.version !== 1 && v.version !== 2) return bad('version');
+  const version: 1 | 2 = v.version;
   const canvas = v.canvas as Record<string, unknown> | null | undefined;
   if (!canvas || typeof canvas !== 'object' || canvas.w !== CANVAS_W || canvas.h !== CANVAS_H) return bad('canvas');
   if (!Array.isArray(v.pages) || v.pages.length < 1 || v.pages.length > MAX_PAGES) return bad('pages');
@@ -129,9 +149,16 @@ export function parseBoard(content: unknown): ParseResult {
       if (totalChars > MAX_BOARD_BYTES) return bad('too-big');
       strokes.push({ color: s.color, width: s.width, points: s.points });
     }
-    pages.push({ background: p.background as BoardBackground, strokes });
+    let solution: BoardSolution | undefined;
+    if ('solution' in p) {
+      // A solution is a version-2 field; a version-1 file never has one.
+      const read = version === 2 ? parseBoardSolution(p.solution) : null;
+      if (!read) return bad('solution');
+      solution = read;
+    }
+    pages.push({ background: p.background as BoardBackground, strokes, ...(solution ? { solution } : {}) });
   }
-  return { ok: true, file: { version: BOARD_FILE_VERSION, canvas: { w: CANVAS_W, h: CANVAS_H }, pages } };
+  return { ok: true, file: { version, canvas: { w: CANVAS_W, h: CANVAS_H }, pages } };
 }
 
 /** A validated file as an editable document: first page current, no undo history. */
@@ -144,18 +171,19 @@ export function docOfFile(file: BoardFile): BoardDoc {
         strokes: p.strokes.map(s => ({ color: s.color, width: s.width, points: s.points })),
         past: [],
       },
+      ...(p.solution ? { solution: solutionOut(p.solution) } : {}),
     })),
   };
 }
 
 /**
  * Whether leaving now would lose something. A board that was never saved is
- * dirty when it has ink; a saved one when it no longer serialises to what was
+ * dirty when it has ink or a solution; a saved one when it no longer serialises to what was
  * saved (a board too big to serialise can never match, so it counts as dirty).
  * Undo history and the current page are not part of what is saved.
  */
 export function isBoardDirty(doc: BoardDoc, savedJson: string | null): boolean {
-  if (savedJson === null) return docHasInk(doc);
+  if (savedJson === null) return docHasInk(doc) || docHasSolution(doc);
   const r = serializeBoard(doc);
   return !r.ok || r.json !== savedJson;
 }
