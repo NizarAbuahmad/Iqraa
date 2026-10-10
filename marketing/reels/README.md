@@ -46,7 +46,7 @@ highlighted in the app, the same key row highlighted in «مفتاح الإجا�
   agree — highlighting key row 6 under a question the app labels «3.» would confuse. (Another MCQ on that sheet has
   an Arabic «و» that renders like a stray "g" next to Latin maths, so it was dropped.)
 - **Known library issue, not touched here:** 27 of 28 premade sheets repeat question stems inside one sheet
-  (this one repeats three of its ten); queued as a separate task.
+  (this one repeats three of its ten). Reported to the repo owner in the PR; no fix attempted here.
 
 ## Rebuilding
 
