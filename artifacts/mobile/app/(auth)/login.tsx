@@ -330,6 +330,18 @@ export default function LoginScreen() {
           style={styles.signInBtn}
         />
 
+        {/* For a parent or student who signed up from a teacher's code: they
+            have no email or password to type above. */}
+        <Pressable
+          onPress={() => router.push('/(auth)/login-code' as any)}
+          style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start', paddingVertical: 6 }}
+          accessibilityRole="link"
+        >
+          <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: isRTL ? 'right' : 'left' }}>
+            {t('loginWithCodeLink')}
+          </Text>
+        </Pressable>
+
       </ScrollView>
     </View>
   );

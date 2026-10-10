@@ -17,7 +17,8 @@ import type { useColors } from '@/hooks/useColors';
 
 interface Props {
   name: string;
-  email: string;
+  /** Absent for an account made from a teacher's code, which has no address. */
+  email?: string | null;
   roleLabel: string;
   /** «آخر استخدام» — the account that was open most recently. */
   badge?: string;
@@ -35,7 +36,7 @@ interface Props {
 export function AccountRow({
   name, email, roleLabel, badge, current, busy, disabled, onPress, onRemove, removeLabel, colors, isRTL,
 }: Props) {
-  const initial = (name.trim()[0] ?? email.trim()[0] ?? '?').toUpperCase();
+  const initial = (name.trim()[0] ?? email?.trim()[0] ?? '?').toUpperCase();
   const align = isRTL ? 'right' : 'left';
   const direction = isRTL ? 'row-reverse' : 'row';
 
@@ -49,9 +50,11 @@ export function AccountRow({
         <Text numberOfLines={1} style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: align }}>
           {name}
         </Text>
-        <Text numberOfLines={1} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>
-          {email}
-        </Text>
+        {email ? (
+          <Text numberOfLines={1} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>
+            {email}
+          </Text>
+        ) : null}
         <View style={[styles.chips, { flexDirection: direction }]}>
           <View style={[styles.chip, { backgroundColor: colors.muted }]}>
             <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 11 }}>{roleLabel}</Text>

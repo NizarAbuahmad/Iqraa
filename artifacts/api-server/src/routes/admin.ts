@@ -110,7 +110,11 @@ router.get("/admin/usage-summary", authMiddleware, requireRole(...ADMIN_ROLES), 
       db
         .select({
           google: sql<number>`count(${users.googleId})::int`,
-          password: sql<number>`count(*) filter (where ${users.googleId} is null)::int`,
+          // Password accounts only: a parent or student who signed up from a
+          // teacher's code has neither, and counting them here would make the
+          // split say "password" for a child who has never typed one.
+          password: sql<number>`count(*) filter (where ${users.googleId} is null and ${users.passwordHash} is not null)::int`,
+          codeOnly: sql<number>`count(*) filter (where ${users.googleId} is null and ${users.passwordHash} is null and ${users.loginCodeHash} is not null)::int`,
         })
         .from(users),
       // "Active" = generated something with AI or saved a material. Logging in

@@ -216,6 +216,7 @@ function RootLayoutNav() {
       <Stack.Screen name="faq" options={{ headerShown: false }} />
       <Stack.Screen name="suggest-feature" options={{ headerShown: false }} />
       <Stack.Screen name="join-class" options={{ headerShown: false }} />
+      <Stack.Screen name="add-email" options={{ headerShown: false }} />
       <Stack.Screen name="claim-required" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="setup-subjects" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="setup-grade" options={{ headerShown: false }} />

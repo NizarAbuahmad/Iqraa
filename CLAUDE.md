@@ -285,6 +285,15 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   **three** places to be declared, not one: `deploy.yml` (web), `eas.json`'s
   per-profile `env` (builds), and `mobile-update.yml` (OTA — `eas update` does
   not read `eas.json`). Add a new one to all three or state why not.
+- **A parent or student may have no email.** Since 2026-10-10 they sign up from a
+  teacher's code alone (`POST /auth/redeem`), so `users.email` is nullable and
+  their credential is a personal login code (`users.login_code_hash`), not a
+  password. Anything reading `user.email` for a non-teacher must tolerate null —
+  the typechecker finds the typed sites, but not the assumptions: `/verify-email`
+  hard-coded `hasRosterLink: false` because "no link can exist yet", which stopped
+  being true the day an account could verify an email *after* being linked. And
+  **the teacher's code is not a login**: it is shared, not single-use, and
+  expires. A new code-only parent may not be made from a class code at all.
 - **The schema deploys as migrations (since 2026-10-08) — don't `push` to
   production.** Edit `lib/db/src/schema`, run `pnpm --filter @workspace/db run
   generate`, and commit `lib/db/migrations/`. CI fails a schema edit with no

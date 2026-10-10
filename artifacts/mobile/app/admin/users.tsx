@@ -28,7 +28,8 @@ type UserRow = {
   id: string;
   firstName: string;
   lastName: string;
-  email: string;
+  /** Null for a parent or student who signed up from a teacher's code. */
+  email: string | null;
   role: string;
   google: boolean;
   signupPlatform: string | null;
@@ -96,7 +97,7 @@ export default function AdminUsersScreen() {
   };
 
   const block = async (u: UserRow, reason: string) => {
-    const name = `${u.firstName} ${u.lastName}`.trim() || u.email;
+    const name = `${u.firstName} ${u.lastName}`.trim() || u.email || u.id;
     const ok = await confirm({
       title: ar ? `حظر ${name}؟` : `Block ${name}?`,
       message: ar ? 'يفقد الدخول فورًا، ويمكن التراجع عن ذلك.' : 'They lose access immediately. This can be undone.',
@@ -111,7 +112,7 @@ export default function AdminUsersScreen() {
 
   const unblock = async (u: UserRow) => {
     const ok = await confirm({
-      title: ar ? `رفع الحظر عن ${u.email}؟` : `Unblock ${u.email}?`,
+      title: ar ? `رفع الحظر عن ${u.email ?? `${u.firstName} ${u.lastName}`.trim()}؟` : `Unblock ${u.email ?? `${u.firstName} ${u.lastName}`.trim()}?`,
       confirmLabel: ar ? 'رفع الحظر' : 'Unblock',
       cancelLabel: ar ? 'إلغاء' : 'Cancel',
     });
@@ -176,7 +177,7 @@ export default function AdminUsersScreen() {
                       {`${u.firstName} ${u.lastName}`.trim() || '—'} · <Text style={{ color: colors.mutedForeground }}>{u.role}</Text>
                     </Text>
                     <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
-                      {u.email} · {u.google ? 'Google' : (ar ? 'كلمة مرور' : 'password')}
+                      {u.email ?? (ar ? 'بلا بريد' : 'no email')} · {u.google ? 'Google' : u.email ? (ar ? 'كلمة مرور' : 'password') : (ar ? 'رمز دخول' : 'login code')}
                     </Text>
                     <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18, textAlign: align }}>
                       {ar ? 'انضم' : 'Joined'} {date(u.createdAt)} · {ar ? 'آخر دخول' : 'Last login'} {date(u.lastLogin)} · AI ${u.monthSpendUsd.toFixed(3)}
