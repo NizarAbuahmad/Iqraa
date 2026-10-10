@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
+import { RADIUS, TYPE } from '@/constants/theme';
 import { DECK_ACCENT, DECK_BORDER, DECK_CARD_BG, DECK_MUTED, DECK_TEXT } from '@/services/deckTheme';
 import { SOLUTION_LIMITS } from '@workspace/math-verify';
 
@@ -100,24 +101,24 @@ export function SolveDialog({ visible, isRTL, busy, error, labels, onSubmit, onC
 const styles = StyleSheet.create({
   backdrop: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: 'rgba(0,0,0,0.4)' },
   card: {
-    width: '100%', maxWidth: 460, padding: 20, gap: 12, borderRadius: 20,
+    width: '100%', maxWidth: 460, padding: 20, gap: 12, borderRadius: RADIUS.xl,
     backgroundColor: DECK_CARD_BG, borderWidth: 1, borderColor: DECK_BORDER,
   },
-  heading: { fontSize: 17, color: DECK_TEXT },
+  heading: { fontSize: TYPE.bodyLg, color: DECK_TEXT },
   input: {
     minHeight: 96, maxHeight: 180, textAlignVertical: 'top',
-    borderWidth: 1, borderColor: DECK_BORDER, borderRadius: 12,
-    paddingHorizontal: 12, paddingVertical: 10, fontSize: 16, color: DECK_TEXT,
+    borderWidth: 1, borderColor: DECK_BORDER, borderRadius: RADIUS.md,
+    paddingHorizontal: 12, paddingVertical: 10, fontSize: TYPE.bodyLg, color: DECK_TEXT,
   },
   symbols: { flexWrap: 'wrap', gap: 8 },
   symbol: {
     minWidth: 40, height: 36, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center',
-    borderRadius: 10, borderWidth: 1, borderColor: DECK_BORDER, backgroundColor: DECK_CARD_BG,
+    borderRadius: RADIUS.md, borderWidth: 1, borderColor: DECK_BORDER, backgroundColor: DECK_CARD_BG,
   },
-  symbolText: { fontSize: 16, color: DECK_TEXT },
-  error: { fontSize: 13, color: '#B91C1C' },
+  symbolText: { fontSize: TYPE.bodyLg, color: DECK_TEXT },
+  error: { fontSize: TYPE.caption, color: '#B91C1C' },
   buttons: { gap: 10, justifyContent: 'flex-end' },
-  btn: { paddingHorizontal: 18, paddingVertical: 10, borderRadius: 12, alignItems: 'center', gap: 8 },
+  btn: { paddingHorizontal: 18, paddingVertical: 10, borderRadius: RADIUS.md, alignItems: 'center', gap: 8 },
   btnPrimary: { backgroundColor: DECK_ACCENT },
-  btnText: { fontSize: 14 },
+  btnText: { fontSize: TYPE.label },
 });
