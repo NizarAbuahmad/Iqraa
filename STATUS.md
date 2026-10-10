@@ -874,6 +874,39 @@ maths inside an Arabic prompt reads back to front on the take and review
 screens («cos²θ + sin²θ» shows as «θ + sin²θcos²») — the worksheet screen's
 2026-10-05 fix (`isolateForeignRuns`) never reached them.
 
+## Book codes name what they open, and only Grades 9–10 have ever been scanned, 2026-10-09
+
+A Library row for a book's printed QR code is now headlined by **what it opens**
+(«ديوان البحتري», «الجريدة الرسمية (العدد ٥٧٨٢): قانون الانتخاب لمجلس النواب»),
+with the book and printed page underneath. The «صفحة ويب» label and the type
+icon are gone from these rows; a video keeps its play badge. This supersedes the
+2026-10-06 wording below («titled by its book … «صفحة ويب» underneath»), which
+was true for two days. The title is an optional `title` on a
+`book-qr-links.json` entry, written by hand after opening the link (page title,
+YouTube title, the Gazette issue's contents). **14 of the 17 reachable codes
+have one**; the other three — two `top4top.io` mp4s on Arabic pp. ٩٠ and ٩٧ and
+a `me-qr.com` link behind an ad gate on p. ١٠٦ — fall back to the book's name.
+
+**The manifest covers Grade 9 and 10 only — not because other grades have no
+codes, but because they were never scanned.** The one decode pass (2026-09-15)
+ran over 14 book folders, all Grade 9 or 10 (186 rows), and its script was never
+committed, so for every other grade "no entries" looked the same as "no codes".
+This file and a test comment both then asserted the ministry prints codes in
+Grade 9 and 10 only; that was never checked. Measured on 2026-10-09 for the
+Library: Grade 2 and Grade 4 have **0 book codes and 0 ready-made sheets**, so a
+teacher of those grades sees only what staff uploaded.
+
+`scripts/scan_book_qr.py` is the repeatable version. Run it where the book PDFs
+are (they are gitignored), or add `--fetch` and it downloads the student books
+from the catalog's own `Book.pdfUrl` links first (182 books, Grades 1–10) — on a
+network that can reach `nccd.gov.jo`, which the ministry host refuses from a
+cloud/CI network (checked 2026-10-10: connection reset). Then `verify-qr-links`. It writes new rows as `httpStatus: "unchecked"`, which the
+app does not show until the link check has seen them answer, and records every
+book it looked at under `scannedBooks` so "scanned, found none" is distinguishable
+from "never scanned". **Tested only on synthetic PDFs built with known codes,
+and `--fetch` only against a local web server** — neither has yet been run on a
+real ministry book.
+
 ## A teacher attaches a book figure to a worksheet question, 2026-10-09
 
 Step 3a of the worksheet review, agreed in chat. Until now a book figure
@@ -1526,7 +1559,7 @@ it responded to the grade/subject chips the other shelves answered to. Each
 book code now sits on the shelf of what it opens (video → فيديوهات, audio →
 تسجيلات صوتية, image → صور, PDF → مستندات), after staff uploads and ready-made
 sheets, and is titled by its book with the printed page and, for a web page,
-«صفحة ويب» underneath. **A web-page code has no shelf of its own and is filed
+«صفحة ويب» underneath *(superseded 2026-10-09, above)*. **A web-page code has no shelf of its own and is filed
 under مستندات** — 11 of the 17 reachable grade 9–10 codes are exactly that.
 Checked against the real manifest: grade 10's 15 codes land as 4 videos + 11
 documents, and **all 15 are Arabic / civics / Islamic / geography — none is
