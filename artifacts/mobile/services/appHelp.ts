@@ -57,7 +57,7 @@ const SCREENS: AppPlace[] = [
   {
     id: 'subjects', route: '/setup-subjects', routeParams: { mode: 'edit' }, labelKey: 'mySubjects', pathKeys: ['tabProfile'], isTool: false,
     // No bare «grade» / «صف»: they sit inside every «grade 10 quiz» and «للصف العاشر».
-    keywords: ['الصفوف', 'صفوفي', 'مواد ادرسها', 'المواد التي ادرسها', 'اضافه صف', 'اضيف صف', 'صف جديد', 'add grade', 'add a grade', 'new grade', 'another grade', 'add subject', 'add a subject', 'another subject', 'subjects i teach'],
+    keywords: ['الصفوف', 'صفوفي', 'مواد ادرسها', 'المواد التي ادرسها', 'اضافه صف', 'اضيف صف', 'صف جديد', 'add grade', 'add a grade', 'new grade', 'another grade', 'add subject', 'add a subject', 'another subject', 'subjects i teach', 'اضافه ماده', 'اضيف ماده'],
     howKey: 'howAddGrade',
   },
   // The FAQ's own answers, reachable from the chat. They have no screen of
@@ -91,7 +91,7 @@ const SCREENS: AppPlace[] = [
   },
   {
     id: 'workspace', route: '/workspace', labelKey: 'myWorkspace', pathKeys: ['tabProfile'], isTool: false,
-    keywords: ['محفوظ', 'المحفوظه', 'المحفوظات', 'موادي', 'ملفاتي', 'مساحه العمل', 'saved', 'workspace', 'my materials'],
+    keywords: ['محفوظ', 'المحفوظه', 'المحفوظات', 'موادي', 'ملفاتي', 'مساحه العمل', 'saved', 'workspace', 'my materials', 'saved materials', 'saved material', 'مواد محفوظه', 'ملفات محفوظه'],
   },
   {
     id: 'settings', route: '/settings', labelKey: 'settings', pathKeys: ['tabProfile'], isTool: false,
@@ -180,24 +180,118 @@ const HOW_PATTERN =
  * fractions» fail the anchor and stay teaching. Written against `normalize()`
  * output, as the patterns above are.
  */
+const EN_INTENT = String.raw`(?:(?:please|pls|plz)\s+)?(?:(?:i|we)\s+(?:want|need|wanna)\s+to|(?:i|we)(?:'d|\s+would)\s+like\s+to|let\s+me|help\s+me(?:\s+to)?)\s+`;
 const EN_LEAD = String.raw`^(?:(?:please|pls|plz)\s+)?(?:(?:(?:i|we)\s+(?:want|need|wanna)\s+to|(?:i|we)(?:'d|\s+would)\s+like\s+to|let\s+me|help\s+me(?:\s+to)?)\s+)?`;
-const EN_TAIL = String.raw`(?:\s+(?:to|in|into|on)\s+(?:my|the)\s+(?:account|profile|app|list))?(?:\s+(?:please|pls|plz|too|now|here|as\s+well))*$`;
+/** What may follow the object: a grade, a name or a count for the new class, then «to my account», then «please». */
+const EN_QUAL = String.raw`(?:\s+(?:for|in)\s+(?:my\s+)?(?:grade|class|section|year)\s+\d{1,2}[a-z]?|\s+(?:called|named)\s+[a-z0-9]+(?:\s+[a-z0-9]+)?|\s+with\s+\d{1,3}\s+students)?`;
+const EN_TAIL = EN_QUAL + String.raw`(?:\s+(?:to|in|into|on)\s+(?:my|the)\s+(?:account|profile|app|list))?(?:\s+(?:please|pls|plz|too|now|here|as\s+well))*$`;
 const EN_ADD_TO_ACCOUNT = new RegExp(
   `${EN_LEAD}(?:add|register|set\\s*up)\\s+(?:` +
-    String.raw`(?:(?:an?|another|one\s+more|more|new|extra|my|some)\s+)*class(?:es)?` +
+    String.raw`(?:(?:an?|another|one\s+more|more|new|extra|my|some)\s+)*class(?:es)?(?:\s+\d{1,2}[a-z]?)?` +
     String.raw`|(?:another|more|new|extra|one\s+more)\s+(?:grades?|subjects?)` +
     String.raw`|grades?\s+\d{1,2}` +
   `)${EN_TAIL}`,
 );
+/**
+ * A bare «grade» or «subject» is ambiguous («add a grade» may be a mark), so it
+ * needs first-person intent, or «to my account / profile», to be an account add.
+ */
+const EN_ADD_BARE_GRADE = new RegExp(
+  `^${EN_INTENT}(?:add|register|set\\s*up)\\s+(?:(?:an?|another|more|new)\\s+)?(?:grades?|subjects?)${EN_TAIL}`,
+);
+const EN_ADD_GRADE_TO_MY = new RegExp(
+  String.raw`^(?:(?:please|pls|plz)\s+)?add\s+(?:(?:an?|another|more|new)\s+)?(?:grades?|subjects?)\s+(?:to|in|into)\s+my\s+(?:account|profile|list|teaching|grades|subjects|classes)(?:\s+(?:please|pls|plz|too|now))*$`,
+);
+const AR_INTENT = String.raw`(?:ا?ريد|بدي|ابغي|ابي|ودي|احتاج|محتاج|لازم|عاوز|عايز|حابب|حابه)\s+(?:ان\s+)?`;
 const AR_QUAL = String.raw`(?:جديده|جديد|اخري|اخر|اضافيه|اضافي|ثاني|ثانيه|ثالث|رابع|خامس|سادس|سابع|ثامن|تاسع|عاشر|\d{1,2})`;
+const AR_TAIL =
+  String.raw`(?:\s+(?:للصف|لصف|في\s+الصف)\s+\S+)?(?:\s+(?:باسم|اسمها|اسمه)\s+\S+(?:\s+\S+)?)?` +
+  String.raw`(?:\s+(?:لي|من\s+فضلك|لو\s+سمحت|الي\s+حسابي|الي\s+التطبيق|في\s+حسابي|في\s+التطبيق))*$`;
+const AR_ADD_VERB = String.raw`(?:اضيف|اضافه|اضف|اسجل|تسجيل|سجل)\s+`;
 const AR_ADD_TO_ACCOUNT = new RegExp(
-  String.raw`^(?:(?:ا?ريد|بدي|ابغي|ابي|ودي|احتاج|محتاج|لازم|عاوز|عايز|حابب|حابه)\s+(?:ان\s+)?)?` +
-    String.raw`(?:اضيف|اضافه|اضف|اسجل|تسجيل|سجل)\s+` +
+  `^(?:${AR_INTENT})?${AR_ADD_VERB}` +
     String.raw`(?:(?:شعبه|شعب)(?:\s+${AR_QUAL})*|(?:صف|صفوف)(?:\s+${AR_QUAL})+)` +
-    String.raw`(?:\s+(?:لي|من\s+فضلك|لو\s+سمحت|الي\s+حسابي|الي\s+التطبيق|في\s+حسابي|في\s+التطبيق))*$`,
+    AR_TAIL,
+);
+/** «صف» and «مادة» bare are ambiguous too («اضف صفا» is a row): first-person intent required. */
+const AR_ADD_BARE_GRADE = new RegExp(
+  `^${AR_INTENT}${AR_ADD_VERB}(?:صف|صفوف|ماده|مواد)(?:\\s+${AR_QUAL})*${AR_TAIL}`,
 );
 const isAddToAccount = (plainQuery: string) =>
-  EN_ADD_TO_ACCOUNT.test(plainQuery) || AR_ADD_TO_ACCOUNT.test(plainQuery);
+  EN_ADD_TO_ACCOUNT.test(plainQuery) || EN_ADD_BARE_GRADE.test(plainQuery) || EN_ADD_GRADE_TO_MY.test(plainQuery) ||
+  AR_ADD_TO_ACCOUNT.test(plainQuery) || AR_ADD_BARE_GRADE.test(plainQuery);
+
+/**
+ * «i want to change the language», «بدي افتح الاعدادات»: first-person intent, a
+ * verb, an optional «my / the», then exactly the name of a screen and nothing
+ * else — so «i want to change the lesson to be shorter» and «i want to find the
+ * best game for students» stay teaching. Built from the places' own keywords so
+ * a screen added there is covered here. A generator's name counts only after
+ * «export / تصدير», which is a question about the app whatever it exports.
+ * Written against `matchForm()` output, which also drops «ال».
+ */
+type ScreenPatterns = { en: RegExp; ar: RegExp; enProblem: RegExp[]; arProblem: RegExp };
+let screenPatterns: ScreenPatterns | null = null;
+function buildScreenPatterns(): ScreenPatterns {
+  if (screenPatterns) return screenPatterns;
+  const esc = (kw: string) => kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+  const alt = (list: string[]) => [...new Set(list)].sort((a, b) => b.length - a.length).map(esc).join('|');
+  const latin = (kw: string) => /^[\x00-\x7F]+$/.test(kw);
+  const screens = APP_PLACES.filter(p => !p.isTool).flatMap(p => p.keywords);
+  const tools = APP_PLACES.filter(p => p.isTool).flatMap(p => p.keywords);
+  const enScreens = alt(screens.filter(latin));
+  const arScreens = alt(screens.filter(k => !latin(k)));
+  const verbBearing = /^(?:change|start|switch|تغيير|تغير|اغير|بدء|ابدا)(?:\s|$)/;
+  const tail = String.raw`(?:\s+(?:please|pls|plz|now|today))*$`;
+  const enDet = String.raw`(?:(?:my|the|a|an|our|your|all|some)\s+)?`;
+  const enVerb = String.raw`(?:change|edit|open|see|view|find|go\s+to|delete|remove|link|invite|switch|start)`;
+  const arVerb = String.raw`(?:اغير|اعدل|افتح|اشوف|اشاهد|اري|الاقي|احذف|اربط|ادعو|ابدا)`;
+  const en = new RegExp(
+    `^${EN_INTENT}(?:` +
+      `${enVerb}\\s+${enDet}(?:${enScreens})` +
+      `|(?:${alt(screens.filter(k => latin(k) && verbBearing.test(k)))})` +
+      `|export\\s+${enDet}(?:${alt([...screens, ...tools].filter(latin))})` +
+    `)${tail}`,
+  );
+  const ar = new RegExp(
+    `^${AR_INTENT}(?:` +
+      `${arVerb}\\s+(?:${arScreens})` +
+      `|(?:${alt(screens.filter(k => !latin(k) && verbBearing.test(k)))})` +
+      `|(?:تصدير|اصدر)\\s+(?:${alt([...screens, ...tools].filter(k => !latin(k)))})` +
+    `)${tail}`,
+  );
+  // Problems: the same anchor, so «i can't find the settings of the equation» is
+  // not «i can't find settings». Screens only: a generator's name never counts.
+  const enNeg = String.raw`(?:i|we)\s+(?:am\s+|are\s+)?(?:can['’]?t|cannot|can\s+not|couldn['’]?t|could\s+not|unable\s+to|not\s+able\s+to|don['’]?t|do\s+not|didn['’]?t|did\s+not)\s+(?:seem\s+to\s+)?`;
+  const enSubject = String.raw`(?:(?:my|the|all\s+my|all\s+the)\s+)?`;
+  const enProblem = [
+    // «i can't find my classes», «i can't add a class» (the keyword carries its own «add»)
+    new RegExp(`^${enNeg}(?:(?:find|see|open|reach|access|get\\s+to|locate)\\s+${enDet})?(?:${enScreens})(?:\\s+(?:anymore|anywhere|now|again))*$`),
+    // «my classes are missing», «my class list is empty»
+    new RegExp(`^${enSubject}(?:${enScreens})(?:\\s+list)?\\s+(?:is|are)\\s+(?:missing|gone|empty|not\\s+(?:showing|there|appearing|visible)|disappeared)(?:\\s+(?:now|again|too))*$`),
+    // «where did my classes go»
+    new RegExp(`^where\\s+(?:did|has|have)\\s+${enSubject}(?:${enScreens})\\s+(?:go|gone|went|disappear(?:ed)?)$`),
+  ];
+  const arProblem = new RegExp(
+    String.raw`^(?:(?:ما|مو|مش|لم|لن)\s*(?:ب)?(?:لقيت|لاقي|الاقي|اجد|شفت|اشوف|اري)\s+(?:${arScreens})(?:\s+(?:بعد|الان|ابدا))*` +
+      String.raw`|(?:اختفت|اختفي|ضاعت|راحت)\s+(?:${arScreens})` +
+      String.raw`|(?:${arScreens})\s+(?:اختفت|ضاعت|راحت|مفقوده|فاضيه|فارغه))$`,
+  );
+  screenPatterns = { en, ar, enProblem, arProblem };
+  return screenPatterns;
+}
+const isScreenStatement = (query: string) => {
+  const q = matchForm(query);
+  const { en, ar } = buildScreenPatterns();
+  return en.test(q) || ar.test(q);
+};
+/** A problem with adding gets the add steps, not the path to the screen. */
+const PROBLEM_ADDING = /\b(?:add|create)\b|(?:^|\s)(?:اضيف|اضافه|انشي)(?:\s|$)/;
+const isProblemWithScreen = (query: string) => {
+  const q = matchForm(query);
+  const { enProblem, arProblem } = buildScreenPatterns();
+  return enProblem.some(re => re.test(q)) || arProblem.test(q);
+};
 
 /**
  * «class of compounds», «class activity», «class quiz» say «class» in the other
@@ -237,7 +331,9 @@ const plain = (query: string) => normalize(query.replace(/[؟?!.,،]/g, ' '));
 export function isHowQuery(query: string): boolean {
   const q = plain(query);
   // «add more classes to my account» is a «how do I» in disguise: it gets the steps.
-  return HOW_PATTERN.test(q) || isAddToAccount(q);
+  // So is «i can't add a class», and a statement about a screen gets that screen's
+  // steps when it has any (answerAppHelp falls back to the path when it has none).
+  return HOW_PATTERN.test(q) || isAddToAccount(q) || (isProblemWithScreen(q) && PROBLEM_ADDING.test(q)) || isScreenStatement(query);
 }
 
 /**
@@ -247,7 +343,7 @@ export function isHowQuery(query: string): boolean {
  */
 export function isAppHelpQuery(query: string): boolean {
   const q = plain(query);
-  if (isAddToAccount(q)) return true;
+  if (isAddToAccount(q) || isProblemWithScreen(q) || isScreenStatement(query)) return true;
   if (!WHERE_PATTERN.test(q) && !HOW_PATTERN.test(q)) return false;
   return findAppPlaces(q, 1).length > 0 || APP_NOUN.test(q);
 }
@@ -273,7 +369,12 @@ export function answerAppHelp(
   }
   // A how-to gets the steps of the best match when it has them, with the
   // button to open it; otherwise it falls through to the path listing.
-  const how = isHowQuery(query) ? places[0]!.howKey : undefined;
+  // «how do I export my lesson plan» names a generator first and the export
+  // screen second: the steps asked for are the export's, so it is the one place
+  // allowed to answer from behind another.
+  const how = isHowQuery(query)
+    ? places[0]!.howKey ?? places.find(p => p.id === 'export')?.howKey
+    : undefined;
   if (how) return { text: t(how), places: [places[0]!] };
   const sep = isAr ? ' ← ' : ' → ';
   const lines = places.map(p => {

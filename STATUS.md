@@ -949,15 +949,54 @@ also dropped before places are matched, which fixes «where can i find classes o
 compounds» finding My classes. The create verbs stay out of every new opener,
 including «انشئ», which reads the same as the imperative.
 
-**Still not claimed, and still ends in the subject question:** a problem
-statement («i can't find my classes»), a statement with more after the object
-(«add a class for grade 9»), a bare «add a grade» or «add a subject», and
-statements about any other screen («i want to export my worksheet»). One
-deliberate overlap: «any way to share the answers with students» is claimed,
-because «how can i share the answers with students» already was (the word
-«students» is a Classes keyword). Pinned by 23 claims and 16 teaching look-alikes
-in `appHelp.test.ts`; a further 21 look-alikes were run once by hand through the
-router (one claimed, the overlap above). Not checked in the web build.
+**The four that were left, also the same day.** All four are now claimed, each
+on a rule as narrow as the statement rule above, because none has a where/how
+word:
+
+- **A problem** — «i can't find my classes», «i don't see my classes», «my
+  classes are missing», «my class list is empty», «where did my classes go»,
+  «i can't add a class», «i can't open settings», «ما لقيت شعبتي», «مش لاقي
+  الاعدادات», «اختفت شعبي». The message must be the problem phrase and then
+  exactly an account screen's name, nothing more, and a generator never counts:
+  «i can't find a good worksheet on fractions» asks for one. A problem finding
+  something gets the path; a problem adding gets the steps.
+- **A longer add** — «add a class for grade 9», «add a class called 9A», «add
+  class 9B», «اضف شعبة للصف التاسع», «بدي اضيف شعبة باسم تاسع ب». The extra words
+  must be a grade, a name or a count; «add a class for fractions» is teaching.
+- **A bare grade or subject** — «i want to add a grade», «i need to add a
+  subject», «add a grade to my account», «بدي اضيف صف», «اريد اضافة مادة». Only
+  with first-person intent or «to my account / profile», because «add a grade»
+  alone may be a mark. **This is a guess:** «i want to add a grade» said about a
+  student's mark gets the add-a-grade steps, which is wrong for that teacher.
+- **Another screen** — «i want to change the language», «i need to open
+  settings», «i want to see my saved materials», «i want to change the lesson»,
+  «i want to start the class», «i want to export my worksheet», «بدي اغير
+  اللغة», «اريد تصدير ورقة العمل». First-person intent, a verb, then exactly a
+  screen's name; built from the places' own keywords, so a screen added there is
+  covered here. A generator's name counts only after «export / تصدير».
+  «i want to change the lesson to be shorter» and «i want to find the best game
+  for students» are teaching.
+
+«how do I export my lesson plan» used to answer with the path to the lesson-plan
+generator; it now gets the export steps, since the steps were what it asked for.
+That is the one change to an existing answer.
+
+**A mistake worth keeping:** the first version of the problem rule took «a
+problem phrase + any screen word anywhere» and passed its own tests. An
+adversarial run of 44 look-alike sentences claimed 10 of them («i can't find the
+settings of the equation», «my students are missing the point of fractions»,
+«ما لقيت الجدول الدوري في الكتاب»). The fix was the anchor above, and the ten are
+now in the test file. Run an adversarial set before trusting a new gate here.
+
+**Still not claimed:** a statement or problem with words after the screen's
+name that are not a grade, name or count; a screen reached by a verb not listed
+(`save`, `share`, `check` are left out on purpose: «i want to check the answers
+of the students» is grading); a problem about a generator. One deliberate
+overlap: «any way to share the answers with students» is claimed, because «how
+can i share the answers with students» already was (the word «students» is a
+Classes keyword). Pinned by 35 new claims and 30 + 14 teaching look-alikes in
+`appHelp.test.ts`; 65 look-alikes in two adversarial runs, none claimed but the
+overlap. Not checked in the web build.
 
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 

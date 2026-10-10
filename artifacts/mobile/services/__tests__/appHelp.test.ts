@@ -279,6 +279,159 @@ describe('statements and other openers about the account', () => {
   });
 });
 
+// The four things #980 listed as still not claimed. Each is claimed on a rule
+// as narrow as the one before it, because none of them has a where/how word:
+//  - a problem («i can't find my classes») only when it names an account screen,
+//    never a generator, since «i can't find a good worksheet» asks for one;
+//  - a longer add («add a class for grade 9») only with a grade, name or count;
+//  - a bare «i want to add a grade» only with first-person intent;
+//  - another screen («i want to change the language») only when the message ends
+//    on the place it names, so «change the lesson to be shorter» stays teaching.
+describe('problems, longer adds, bare grades and other screens', () => {
+  const t = (k: string) => `<${k}>`;
+  const lang = (q: string) => (/[؀-ۿ]/.test(q) ? 'ar' : 'en');
+
+  const claims = [
+    // problems
+    "i can't find my classes",
+    'i cannot see my saved materials',
+    "i don't see my classes",
+    'my classes are missing',
+    'my class list is empty',
+    'where did my classes go',
+    "i can't add a class",
+    'i am unable to add a class',
+    "i can't open settings",
+    'ما لقيت شعبتي',
+    'ما لقيت المواد المحفوظة',
+    'مش لاقي الاعدادات',
+    'اختفت شعبي',
+    // a longer add
+    'add a class for grade 9',
+    'i want to add another class for grade 8',
+    'add a class called 9A',
+    'i want to add a class named Grade 9B',
+    'add class 9B',
+    'اضف شعبة للصف التاسع',
+    'بدي اضيف شعبة باسم تاسع ب',
+    // a bare grade or subject
+    'i want to add a grade',
+    'i need to add a subject',
+    'add a grade to my account',
+    'add a subject to my profile',
+    'بدي اضيف صف',
+    'اريد اضافة مادة',
+    // other screens
+    'i want to export my worksheet',
+    'i want to change the language',
+    'i want to change the lesson',
+    'i need to open settings',
+    'i want to see my saved materials',
+    'i want to start the class',
+    'بدي اغير اللغة',
+    'اريد تصدير ورقة العمل',
+    'بدي افتح الاعدادات',
+  ];
+  for (const q of claims) {
+    it(`claims «${q}»`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(classifyChatIntent(q, lang(q)).intent, 'app_help');
+    });
+  }
+
+  it('a problem finding something lists where it is; a problem adding gives the steps', () => {
+    const find = answerAppHelp("i can't find my classes", 'en', t);
+    assert.equal(find.places[0]?.id, 'classes');
+    assert.match(find.text, /<tabProfile> → <myClasses>/);
+    assert.equal(answerAppHelp("i can't add a class", 'en', t).text, '<howAddClass>');
+  });
+
+  it('a longer add gets the add-a-class steps', () => {
+    for (const q of ['add a class for grade 9', 'add class 9B', 'اضف شعبة للصف التاسع']) {
+      assert.equal(answerAppHelp(q, lang(q), t).text, '<howAddClass>', q);
+    }
+  });
+
+  it('a bare grade or subject gets the add-a-grade steps', () => {
+    for (const q of ['i want to add a grade', 'add a subject to my profile', 'بدي اضيف صف', 'اريد اضافة مادة']) {
+      assert.equal(answerAppHelp(q, lang(q), t).text, '<howAddGrade>', q);
+    }
+  });
+
+  it('a statement about another screen gets that screen’s steps, or its path', () => {
+    assert.equal(answerAppHelp('i want to export my worksheet', 'en', t).text, '<faqA4>');
+    assert.equal(answerAppHelp('اريد تصدير ورقة العمل', 'ar', t).text, '<faqA4>');
+    assert.equal(answerAppHelp('i want to change the lesson', 'en', t).text, '<faqA2>');
+    assert.equal(answerAppHelp('i want to start the class', 'en', t).text, '<faqA7>');
+    const lang1 = answerAppHelp('i want to change the language', 'en', t);
+    assert.equal(lang1.places[0]?.id, 'settings');
+    assert.match(lang1.text, /<settings>/);
+  });
+
+  it('«how do I export my lesson plan» now gets the export steps, not the lesson-plan tool path', () => {
+    assert.equal(answerAppHelp('how do I export my lesson plan', 'en', t).text, '<faqA4>');
+    // …and a how-question about a tool that is not an export is unchanged.
+    assert.notEqual(answerAppHelp('how do I add a worksheet for my class', 'en', t).text, '<faqA4>');
+  });
+
+  // Look-alikes built from the same words. None may become app help.
+  const teaching = [
+    "i can't find a good worksheet on fractions",
+    "i can't find a good activity for fractions",
+    "i don't see how to add fractions",
+    "i can't add these fractions",
+    "i can't see the pattern in this sequence",
+    'my classes are noisy, give me a calming activity',
+    "i can't find the roots of this equation",
+    'where did the Romans go after Carthage',
+    'add a class for fractions',
+    'i want to add a class discussion about fractions',
+    'add class notes to the lesson plan',
+    'i want to add a grade column to the worksheet',
+    'i need to add a subject line to the email',
+    'add a grade to each student',
+    'i want to add a grade to this student',
+    'i want to export the data to a table',
+    'i want to change the quiz language to english',
+    'i want to change the lesson to be shorter',
+    'i want to save time on marking',
+    'i want to open with a question',
+    'i want to see how fractions are added',
+    'i want to start the lesson with a game',
+    'i want to find the best game for students',
+    'i want to check the answers of the students',
+    'ما لقيت حل المعادلة',
+    'ما اقدر اجمع الكسور',
+    'بدي اغير نشاط الدرس',
+    'اريد تصدير البيانات الى جدول',
+    'اريد اضافة صف الى الجدول',
+    'بدي افتح الدرس بسؤال',
+    // Found by the adversarial run, not by guessing: the first version of the
+    // problem rule took «a problem phrase + any screen word» and claimed all ten.
+    "i can't find the settings of the equation",
+    "i don't see the schedule of the reaction",
+    'my students are missing the point of fractions',
+    'my class is empty of ideas for this lesson',
+    'the schedule is missing a break',
+    'my account of the war is missing detail',
+    'my saved time is gone',
+    'where did the settings of the experiment go wrong',
+    'ما لقيت الجدول الدوري في الكتاب',
+    'ما لقيت المحفوظات في الدرس',
+    // …and statements that held, kept so they keep holding.
+    'i want to change the settings of the experiment',
+    'i want to start the class with a quiz',
+    'i want to edit the schedule of the lesson',
+    'بدي اشوف طلابي يحلون المسالة',
+  ];
+  for (const q of teaching) {
+    it(`leaves «${q}» alone`, () => {
+      assert.equal(isAppHelpQuery(q), false);
+      assert.notEqual(classifyChatIntent(q, lang(q)).intent, 'app_help');
+    });
+  }
+});
+
 describe('classifyChatIntent routes app questions before artifacts', () => {
   it('«وين ألاقي ورقة العمل» asks for the tool, not a worksheet', () => {
     assert.equal(classifyChatIntent('وين ألاقي ورقة العمل؟').intent, 'app_help');
