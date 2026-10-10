@@ -545,8 +545,11 @@ const styles = StyleSheet.create({
   headerSub: { fontSize: 15, lineHeight: 24, marginBottom: 14 },
   searchRow: { alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 14 },
   searchInput: { flex: 1, fontSize: 15, padding: 0 },
-  tabs: { gap: 0 },
-  tab: { paddingHorizontal: 4, paddingVertical: 10, marginRight: 20 },
+  // Five filters must fit a 320-360px phone, so the gap is small and the row wraps
+  // instead of clipping (a clipped «سبوراتي» was unreachable). Spacing is a gap, not a
+  // per-tab marginRight, which also pushed the first tab in from the edge.
+  tabs: { flexWrap: 'wrap', columnGap: 10 },
+  tab: { paddingHorizontal: 2, paddingVertical: 10 },
   tabText: { fontSize: 13 },
   filterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1 },
   filterBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 6 },
