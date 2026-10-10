@@ -3481,6 +3481,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Math/2025/G01/2/MT01/SE/MA.01.ST2.pdf',
   },
   // ── Mathematics Grade 2 – Semesters 1 and 2 ─────────────────────────────
   // The first Grade 2 book in this repo. Same HarperCollins/NCCD series;
