@@ -21,6 +21,7 @@ export type BoardToolbarLabels = {
   addPage: string;
   deletePage: string;
   save: string;
+  exportPdf: string;
 };
 
 /**
@@ -36,6 +37,7 @@ export function BoardToolbar({
   pageLabel, canPrevPage, canNextPage, canAddPage, canDeletePage,
   onPrevPage, onNextPage, onAddPage, onDeletePage,
   onSave, canSave, saveDirty, saveBusy,
+  onExport, canExport, exportBusy,
 }: {
   isRTL: boolean;
   topInset: number;
@@ -70,6 +72,10 @@ export function BoardToolbar({
   /** Draws the icon filled and accented. */
   saveDirty: boolean;
   saveBusy: boolean;
+  onExport: () => void;
+  /** Enabled only when some page has ink. */
+  canExport: boolean;
+  exportBusy: boolean;
 }) {
   const rowDir = isRTL ? 'row-reverse' : 'row';
   return (
@@ -168,6 +174,16 @@ export function BoardToolbar({
             style={{ opacity: canSave && !saveBusy ? 1 : 0.35 }}
           >
             <Ionicons name={saveDirty ? 'save' : 'save-outline'} size={20} color={saveDirty ? DECK_ACCENT : DECK_MUTED} />
+          </Pressable>
+          <Pressable
+            onPress={onExport}
+            disabled={!canExport || exportBusy}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel={labels.exportPdf}
+            style={{ opacity: canExport && !exportBusy ? 1 : 0.35 }}
+          >
+            <Ionicons name="document-outline" size={20} color={DECK_MUTED} />
           </Pressable>
         </View>
       </View>

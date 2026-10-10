@@ -7,9 +7,12 @@ import { confirm } from '@/services/confirm';
 import { goBack } from '@/services/navigation';
 import { DECK_ACCENT, DECK_BG, DECK_CARD_BG } from '@/services/deckTheme';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
-import { BOARD_FILE_VERSION, docOfFile, isBoardDirty, parseBoard, serializeBoard } from '@/services/boardFile';
+import { BOARD_FILE_VERSION, boardFileOf, docOfFile, isBoardDirty, parseBoard, serializeBoard } from '@/services/boardFile';
 import { PEN_COLORS, PenCanvas } from '@/components/classroom/PenLayer';
 import { BoardBackground } from '@/components/classroom/BoardBackground';
+import { exportAsPDF } from '@/services/share';
+import { exportFilename } from '@/services/exportFilename';
+import { buildBoardHTML } from '@/services/boardExportHtml';
 import { BoardToolbar } from '@/components/classroom/BoardToolbar';
 import { BoardSaveDialog } from '@/components/classroom/BoardSaveDialog';
 import { Toast } from '@/components/ui/Toast';
@@ -22,6 +25,7 @@ import {
   clearBoard,
   commitStrokes,
   currentPage,
+  docHasInk,
   fitCanvas,
   goToPage,
   hasInk,
@@ -68,6 +72,7 @@ export default function WhiteboardScreen() {
   const [saved, setSaved] = useState<Saved | null>(null);
   const [askTitle, setAskTitle] = useState(false);
   const [saveBusy, setSaveBusy] = useState(false);
+  const [exportBusy, setExportBusy] = useState(false);
   const [toast, setToast] = useState({ msg: '', visible: false });
   const showToast = useCallback((msg: string) => setToast({ msg, visible: true }), []);
 
@@ -83,6 +88,7 @@ export default function WhiteboardScreen() {
   // Escape key repeats, and each repeat would otherwise stack another dialog.
   const busy = useRef(false);
   const saving = useRef(false);
+  const exporting = useRef(false);
 
   const page = currentPage(doc);
   const stage = fitCanvas(area.w, area.h);
@@ -259,6 +265,29 @@ export default function WhiteboardScreen() {
     else setAskTitle(true);
   }, [loading, persist]);
 
+  // From the in-memory document, so a board can be exported before it is saved.
+  // `buildBoardHTML` validates what it is given, so a bug in `boardFileOf`
+  // cannot put anything unchecked into the markup.
+  const onExport = useCallback(async () => {
+    if (exporting.current || loading) return;
+    const title = savedRef.current?.title ?? defaultTitle();
+    const html = buildBoardHTML(boardFileOf(docRef.current), title, lang === 'ar');
+    if (!html) {
+      showToast(t('boardExportFailed'));
+      return;
+    }
+    exporting.current = true;
+    setExportBusy(true);
+    try {
+      await exportAsPDF(html, exportFilename(title, '', 'whiteboard'));
+    } catch {
+      showToast(t('boardExportFailed'));
+    } finally {
+      exporting.current = false;
+      setExportBusy(false);
+    }
+  }, [defaultTitle, lang, loading, showToast, t]);
+
   const pageLabel = `${localizeDigits(String(doc.current + 1), lang)} / ${localizeDigits(String(doc.pages.length), lang)}`;
 
   return (
@@ -316,6 +345,9 @@ export default function WhiteboardScreen() {
         canSave={!loading && dirty}
         saveDirty={dirty}
         saveBusy={saveBusy}
+        onExport={onExport}
+        canExport={!loading && docHasInk(doc)}
+        exportBusy={exportBusy}
         labels={{
           close: t('close'),
           pen: t('penTool'),
@@ -330,6 +362,7 @@ export default function WhiteboardScreen() {
           addPage: t('boardAddPage'),
           deletePage: t('boardDeletePage'),
           save: t('boardSave'),
+          exportPdf: t('boardExportPdf'),
         }}
       />
       <BoardSaveDialog
