@@ -1,51 +1,75 @@
 # Reels (1080×1920, Instagram / Facebook)
 
-| # | File | Status |
-| --- | --- | --- |
-| 1 | `out/Iqrra_01_Three_Steps.mp4` (22.9 s) | **Built** — one real workflow: tools → شرائح الدرس → الصف العاشر · الجغرافيا · الغلاف الجوي → generated deck → presented |
-| 2 | `Iqrra_02_Library.mp4` | **Blocked — no footage** (see below) |
-| 3 | `Iqrra_03_Classes.mp4` | **Blocked — no footage** |
-| 4 | `Iqrra_04_Communication.mp4` | **Blocked — no footage** |
+| # | File | Footage | Length |
+| --- | --- | --- | --- |
+| 1 | `out/Iqrra_01_Three_Steps.mp4` | the 2026-09-15 desktop walkthrough (`../tutorial/segments`) | 22.9 s |
+| 2 | `out/Iqrra_02_Library.mp4` | **recorded from the app**, demo account | 22.7 s |
+| 3 | `out/Iqrra_03_Classes.mp4` | **recorded from the app**, demo account | 24.4 s |
+| 4 | `out/Iqrra_04_Communication.mp4` | **recorded from the app**, demo account | 24.3 s |
 
-## Build (Reel 1)
+All four share one layout (headline in the top safe zone, the app in a rounded card, branded end card),
+the same Chromium-rendered Arabic (Cairo / Almarai, never ffmpeg `drawtext`) and the same music bed.
+
+## What is real, what is staged (Reels 2–4)
+
+Everything on screen is a real screen of this repo's app, recorded in a phone-sized browser against a
+throwaway local Postgres. Nothing is sent to a real person: there is no email service, no push, and the
+accounts exist only on that machine.
+
+- **Accounts.** One fictional teacher «سلمى الخطيب» per reel, created through the real `/auth/register`
+  route. `email_verified` is set directly in SQL because there is no mailer locally; the roster-consent
+  prompt («أُقرّ بذلك») is acknowledged off-camera on that fictional account.
+- **Reel 2.** Nothing staged. The library is the real المكتبة tab, and the search is the lesson already
+  shown in the app's own lesson bar («تركيب الاقترانات»); the one result is what the library holds for it.
+- **Reel 3.** The teacher starts with two seeded classes so the overview has cards. On camera: «شعبة جديدة»,
+  the name typed, الكيمياء switched off, «أنشئ الشعبة», the add-students sheet (first names only, all
+  fictional), back to the overview (now three classes), and the new class opened. Dead time is sped up.
+- **Reel 4.** Class «الثامن علوم أ» with three student accounts and two parent accounts, all created through the
+  real claim-code flow (`STUDENT_ACCOUNTS=true`, as in production). The class-group thread is created before any
+  message; both messages are the demo texts from the brief and exist only in that local database. The pill
+  «محادثة تجريبية · حساب تجريبي» says so on screen.
+- **Wording.** The app calls a class a «شعبة»; the brief's copy says «صف / صفوف» and is kept verbatim, so Reel 3's
+  headlines say «صفّك» over screens that say «شعبة».
+
+## Rebuilding
 
 ```bash
-node render_overlays.js          # Arabic headlines + end card, rendered by Chromium (never ffmpeg drawtext)
-python3 make_music.py out/bed.wav 23.5
-python3 build_reel1.py           # -> out/Iqrra_01_Three_Steps.mp4
+# 1. the app (see ../../LOCAL_SETUP.md): Postgres up, .env with DATABASE_URL, SESSION_SECRET, OPENAI_API_KEY=dummy
+#    and STUDENT_ACCOUNTS=true; then
+pnpm --filter @workspace/db run migrate && pnpm --filter @workspace/db run seed:assessment
+pnpm run dev:api                                              # :8080
+(cd ../../artifacts/mobile && EXPO_PUBLIC_API_BASE_URL=http://localhost:8080/api CI=1 npx expo export --platform web)
+node capture/serve.mjs ../../artifacts/mobile/dist &          # :8081, SPA fallback
+
+# 2. fictional demo state + signed-in browser sessions (wipes the LOCAL users table, then re-seed assessment)
+capture/prep_all.sh
+
+# 3. record a take, then build  (relogin first: access tokens last 15 min and refresh tokens rotate)
+node capture/relogin.cjs demo.library@example.com r2  && node capture/r2_record.cjs
+node capture/r3_record.cjs                          # r3 / r4 sessions: node capture/relogin.cjs demo.classes@example.com r3
+node capture/relogin.cjs demo.messages@example.com r4 && node capture/r4_record.cjs
+
+node render_overlays.js && python3 make_music.py out/bed.wav 23.5
+python3 build_reel1.py && python3 build_reel2.py && python3 build_reel3.py && python3 build_reel4.py
+python3 verify_reel.py out/Iqrra_02_Library.mp4              # format, loudness, black frames, safe-zone margins
 ```
 
-Footage is `../tutorial/segments/*.mp4` (the 2026-09-15 recording). `build_reel1.py` lists every
-source window; they deliberately skip the Claude desktop toast (seg07 ≈8–12 s), the delete-slide
-confirm + Chrome print dialog (seg09 0–5 s) and the downloads bubble that names an unrelated
-`.pptx` (seg09 ≈13–16 s).
+Recording uses Chrome's screencast (`capture/rec.cjs`) at 2× so the footage is crisp and scrolling stays smooth
+(3× dropped to ~19 fps). It logs every pointer move and tap; `reel_lib.py` draws the arrow and the tap ripple from
+that log, so a highlight always sits where the click really landed. Cameras are written in CSS pixels of the
+390×844 viewport. Playwright is loaded from `/opt/node-tools` — adjust the path in `capture/common.cjs` elsewhere.
 
-## Things to know about Reel 1
+`take`s are committed (`capture/takes/*.mp4` + `.events.json`) so the reels rebuild without re-recording.
 
-- The app's own «وضع العرض · محتوى تجريبي» badge is in the footage, so the reel carries the same
-  label under the card (repo rule: demo content says so).
-- The tap-ripples sit on real click positions read from the footage. The step-1 ripple on
-  شرائح الدرس is the one exception: the recording cuts straight from hovering that card to the
-  tool open, so the click itself is not on camera.
-- **Music is an original synthesised bed** (`make_music.py`) — no third-party licence. The five
-  stock tracks used by the earlier reel are not in the repo and `docs/marketing-plan.md` still lists
-  "music licences" as unbought, so none were reused. Swap in a licensed track by replacing `out/bed.wav`.
+## Reel 1 notes
 
-## Footage still needed for Reels 2–4
+- The app's own «وضع العرض · محتوى تجريبي» badge is in that footage, so the reel carries the same label.
+- Source windows skip the Claude toast (seg07 ≈8–12 s), the delete-slide confirm + Chrome print dialog
+  (seg09 0–5 s) and a downloads bubble naming an unrelated `.pptx` (seg09 ≈13–16 s).
+- The step-1 ripple on شرائح الدرس is the one drawn tap: the recording cuts from hovering that card to the tool open.
 
-None of these screens appear anywhere in `marketing/tutorial/` (it only covers lesson picker, tools
-list, شرائح الدرس and خطة الدرس). Record in the demo account, 1080p, no notifications, no terminals.
+## Music
 
-**Reel 2 — library.** Open the resource library from the app (not مكتبتي media tab — 503s in
-production, and `/curriculum/resources` links are dead). Needed: library landing → one real search or
-browse for a single lesson topic → open one resource and hold on its content. ~25 s. A resource
-preview frame for the opening hook comes from the same take.
-
-**Reel 3 — classes.** حسابي → صفوفي: classes overview with a fictional demo class → roster-consent
-gate («أُقرّ بذلك») → add-class form filled → new class in the overview → open the class.
-No real student names or photos; seed a fictional class first.
-
-**Reel 4 — communication.** الرسائل tab (the tab exists in the nav but is never opened in the
-footage). Needed: inbox showing both class-group and parent threads, open the class-group thread and
-send the demo reminder, open a parent thread and send the second demo message. Demo environment only,
-fictional parent/student names, no profile photos. Both exact messages are in the brief.
+An original synthesised bed (`make_music.py`) — no third-party licence. The five stock tracks used by the
+earlier reel are not in the repo and `docs/marketing-plan.md` still lists "music licences" as unbought. To use a
+licensed track, replace `out/bed.wav` and rebuild.

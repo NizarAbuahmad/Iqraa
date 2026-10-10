@@ -3,7 +3,8 @@
 const { chromium } = require('/opt/node-tools/node_modules/playwright');
 const path = require('path');
 
-const IDS = ['hook', 'step1', 'step2', 'step3', 'chip', 'demo', 'end'];
+// every .o element in overlays.html; ids starting with 'end' are opaque full-frame cards
+let IDS;
 
 (async () => {
   const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' }).catch(
@@ -16,11 +17,12 @@ const IDS = ['hook', 'step1', 'step2', 'step3', 'chip', 'demo', 'end'];
   }));
   console.log('fonts loaded:', JSON.stringify(fonts));
   if (!fonts.cairo || !fonts.almarai) throw new Error('brand fonts did not load');
+  IDS = await page.evaluate(() => [...document.querySelectorAll('.o')].map(e => e.id));
   for (const id of IDS) {
     await page.evaluate((keep) => document.querySelectorAll('.o').forEach(e => { e.style.display = e.id === keep ? '' : 'none'; }), id);
     const el = await page.$('#' + id);
     const out = path.join(__dirname, 'overlays', id + '.png');
-    await el.screenshot({ path: out, omitBackground: id !== 'end' });
+    await el.screenshot({ path: out, omitBackground: !id.startsWith('end') });
     const box = await el.boundingBox();
     console.log(id, Math.round(box.width) + 'x' + Math.round(box.height));
   }
