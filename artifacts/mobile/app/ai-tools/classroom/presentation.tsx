@@ -1538,7 +1538,10 @@ export default function PresentationScreen() {
             )}
           </Pressable>
           <Pressable
-            onPress={() => router.push('/ai-tools/whiteboard' as never)}
+            onPress={() => router.push({
+              pathname: '/ai-tools/whiteboard',
+              params: { topic: activity?.lesson ?? '', subject: activity?.subject ?? '', grade: activity?.grade ?? '' },
+            } as never)}
             style={styles.actionBtn}
             hitSlop={8}
             accessibilityRole="button"

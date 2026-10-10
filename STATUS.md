@@ -381,18 +381,59 @@ an announcement by default» below.
     page itself is still a 16:9 strip about 220px tall on an upright phone —
     only the paper was fixed; a taller portrait page would change what B2 saves
     and was not done.
-    Not verified: touch on a real phone, Android hardware back, native SVG text
-    on a device, whether a slide still scrolls while the pen is off and locks
+    **B2 (2026-10-10): save, reopen, PDF.** A board saves as a `'board'`
+    material (no schema change — `saved_materials.type` is plain text and
+    `content` jsonb): `services/boardFile.ts` serialises it, refuses more than
+    20 pages or 2 MB, and `parseBoard` validates anything read back (hex
+    colours, plain-decimal points, known paper, sane widths) and refuses a bad
+    board whole. The first Save asks for a name (pre-filled from the deck's
+    lesson); later saves update the same material with no dialog. Reopen is
+    `/ai-tools/whiteboard?savedId=<id>` — from the «ملفاتي» card (through
+    `workspace/view.tsx`, which now redirects a board instead of letting it
+    fall through to the quiz renderer); the card's Edit menu is wired by
+    construction (`MATERIAL_EDIT_ROUTE.board` + `{ savedId, ...formState }`) and
+    was not clicked in the browser. There is a «سبوراتي» filter
+    tab (the tab row now wraps; the fifth tab was clipped off-screen at 360px).
+    Leaving asks only when the board no longer matches what was saved. A saved
+    board that fails validation opens blank with «تعذّر فتح السبورة», and Save
+    then creates a NEW material and never overwrites the unreadable one. The
+    PDF (`services/boardExportHtml.ts`, from the in-memory board, so it works
+    before saving) is one A4-landscape page per board page with the title, a
+    page number, the paper and the strokes; it validates its input again and
+    escapes the title. Verified in Chromium against the local stack, a
+    signed-in teacher: a 35-check pass (save → toast, one row on the server
+    with the deck's topic/subject/grade, listed under «الكل» and «سبوراتي»,
+    hard reload and reopen from the list with the same stroke geometry,
+    inherited axes paper on page 2, `/workspace/view?id=` redirects, a second
+    save updates in place with no dialog and no duplicate, undo back to the
+    saved state is clean, an unreadable board opens blank and is not
+    overwritten, Save/PDF inside the viewport at 390/360/320px), the earlier
+    scripts again (B1 25/25, board 25/25, Escape / keys / countdown 9/9, slide
+    pen, per-slide ink, book-page pen), and a real PDF download — 2 pages,
+    A4 landscape, title, grid, axes, strokes visible. Mobile suite 3570 pass /
+    0 fail / 10 skipped. Seen, not changed: the Arabic page number reads
+    «٢ / ١» for page 1 of 2, on screen and in the PDF alike (the Unicode bidi
+    order of «١ / ٢» in an RTL line — 1 sits on the right); the browser named
+    the downloaded file `download`, not the title (the same `exportAsPDF`
+    path as every other PDF — not compared); a stroke drawn within about a
+    second of a hard reload of `?savedId=` is dropped (the screen re-mounts
+    while the app restores the session).
+    Not verified: touch on a real phone, Android hardware back (and the
+    keyboard over the name dialog), native print / share of the PDF, native
+    SVG text on a device, English labels of the new controls in a browser, a
+    quota failure on save, a signed-out teacher (the board is only reachable
+    signed in), a board near the 2 MB cap, whether a slide still scrolls while the pen is off and locks
     while it is on, the board on a projector, erasing on a full board on a
     phone (the hit test is cached and bounds-checked; its cost was measured
     only in node, before the cache, at about 39 ms for a 400-stroke sweep),
     and the presentation's action row at phone width.
-    Still to build: B2 (save as a material, reopen from «موادي», PDF export) and C (AI solve — only the 7
+    Still to build: C (AI solve — only the 7
     `VERIFIABLE_TOPICS` may ever be marked verified). Spec and plan:
     `docs/superpowers/specs/2026-10-08-whiteboard-board-design.md`,
     `docs/superpowers/plans/2026-10-08-whiteboard-board.md`; B:
     `docs/superpowers/specs/2026-10-08-whiteboard-b-pages-save-export-design.md`,
-    `docs/superpowers/plans/2026-10-09-whiteboard-b1-stage-and-pages.md`.
+    `docs/superpowers/plans/2026-10-09-whiteboard-b1-stage-and-pages.md`,
+    `docs/superpowers/plans/2026-10-10-whiteboard-b2-save-reopen-pdf.md`.
 - **A teacher can set, replace and remove their own profile picture**
   (2026-09-09): `app/(tabs)/profile.tsx`, `POST`/`DELETE /auth/users/avatar`.
   Uploads into the `iqraa-public` R2 bucket (anonymous-read, non-expiring

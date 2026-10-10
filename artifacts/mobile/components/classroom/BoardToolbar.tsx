@@ -20,6 +20,8 @@ export type BoardToolbarLabels = {
   nextPage: string;
   addPage: string;
   deletePage: string;
+  save: string;
+  exportPdf: string;
 };
 
 /**
@@ -34,6 +36,8 @@ export function BoardToolbar({
   background, onBackground, onClose, labels,
   pageLabel, canPrevPage, canNextPage, canAddPage, canDeletePage,
   onPrevPage, onNextPage, onAddPage, onDeletePage,
+  onSave, canSave, saveDirty, saveBusy,
+  onExport, canExport, exportBusy,
 }: {
   isRTL: boolean;
   topInset: number;
@@ -62,6 +66,16 @@ export function BoardToolbar({
   onNextPage: () => void;
   onAddPage: () => void;
   onDeletePage: () => void;
+  onSave: () => void;
+  /** Enabled only when there is something to save. */
+  canSave: boolean;
+  /** Draws the icon filled and accented. */
+  saveDirty: boolean;
+  saveBusy: boolean;
+  onExport: () => void;
+  /** Enabled only when some page has ink. */
+  canExport: boolean;
+  exportBusy: boolean;
 }) {
   const rowDir = isRTL ? 'row-reverse' : 'row';
   return (
@@ -148,6 +162,28 @@ export function BoardToolbar({
           </Pressable>
           <Pressable onPress={onDeletePage} disabled={!canDeletePage} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.deletePage} style={{ opacity: canDeletePage ? 1 : 0.35 }}>
             <Ionicons name="remove-circle-outline" size={22} color={DECK_MUTED} />
+          </Pressable>
+        </View>
+        <View style={styles.group}>
+          <Pressable
+            onPress={onSave}
+            disabled={!canSave || saveBusy}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel={labels.save}
+            style={{ opacity: canSave && !saveBusy ? 1 : 0.35 }}
+          >
+            <Ionicons name={saveDirty ? 'save' : 'save-outline'} size={20} color={saveDirty ? DECK_ACCENT : DECK_MUTED} />
+          </Pressable>
+          <Pressable
+            onPress={onExport}
+            disabled={!canExport || exportBusy}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel={labels.exportPdf}
+            style={{ opacity: canExport && !exportBusy ? 1 : 0.35 }}
+          >
+            <Ionicons name="document-outline" size={20} color={DECK_MUTED} />
           </Pressable>
         </View>
       </View>
