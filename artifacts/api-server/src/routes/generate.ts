@@ -86,6 +86,10 @@ import {
   type GenerationKind,
 } from "../lib/generationShape.ts";
 import { checkDeck } from "../lib/deckChecks.ts";
+import { SOLUTION_LIMITS, cleanSolutionText } from "@workspace/math-verify";
+import { relateAnswerKey } from "../lib/mathVerifierClient.ts";
+import { SOLVE_TOKENS, solveSystemPrompt } from "../lib/solvePrompt.ts";
+import { solveProblem } from "../lib/solveProblem.ts";
 
 const generateRouter = Router();
 
@@ -876,6 +880,59 @@ generateRouter.post('/generate/prompt-slides/questions', async (req: Authenticat
   }
 });
 
+
+/**
+ * «حلّ مسألة» on the whiteboard: one problem in, a worked solution out, with the
+ * FINAL ANSWER checked by SymPy when the problem is one of the verifiable kinds.
+ *
+ * Deliberately NOT routed through `generateContent`. A teacher's own problem
+ * has no business in the shared `ai_artifacts` pool, so there is nothing to
+ * pool, version or retire and no `contextSource` to force — the same reasoning
+ * as the clarifying-questions route. It still sits inside every guard: live
+ * mode, both spend caps (re-checked before the retry, which is a second paid
+ * call) and the per-user slot, and every completion records its spend.
+ *
+ * The pipeline (`lib/solveProblem.ts`) decides what may be called verified; this
+ * route only wires the real model and the real verifier into it.
+ */
+generateRouter.post('/generate/solve', async (req: AuthenticatedRequest, res) => {
+  const reqBody = (req.body ?? {}) as Record<string, unknown>;
+  const isAr = reqBody.language !== 'english';
+  const problem = cleanSolutionText(reqBody.problem, SOLUTION_LIMITS.problem);
+  if (!problem) {
+    res.status(400).json({
+      error: `problem is required (1-${SOLUTION_LIMITS.problem} characters)`,
+      code: 'bad_problem',
+    });
+    return;
+  }
+  const userId = req.user?.id;
+  try {
+    assertLiveModeEnabled();
+    const model = getGenerationModel();
+    const detail = { kind: 'solve', promptVersion: PROMPT_VERSION, userId };
+    const outcome = await solveProblem(problem, isAr, {
+      complete: async (userPrompt) => {
+        const refusal = await refusalFromCaps(userId);
+        if (refusal) throw refusal.error;
+        const done = await completeOnce({
+          kind: 'solve', model, systemPrompt: solveSystemPrompt(isAr), userPrompt,
+          maxCompletionTokens: SOLVE_TOKENS, detail,
+        });
+        recordUsage(done.usage, model, { ...detail, artifactId: null, durationMs: done.durationMs });
+        return done.parsed;
+      },
+      relate: relateAnswerKey,
+    });
+    if (!outcome.ok) {
+      res.status(422).json({ error: 'The problem could not be solved with confidence.', code: 'no_solution' });
+      return;
+    }
+    res.json(outcome.result);
+  } catch (err) {
+    respondAiError(err, res, 'generate solve');
+  }
+});
 
 /**
  * Report a pooled artifact as wrong.

@@ -36,7 +36,8 @@ export type GenerationKind =
   | "classroom-activity"
   | "prompt-slides"
   | "lesson-teaching"
-  | "infographic";
+  | "infographic"
+  | "solve";
 
 /**
  * Fields whose absence leaves the screen with nothing to draw.
@@ -64,6 +65,9 @@ export const REQUIRED_FIELDS: Record<GenerationKind, readonly string[]> = {
   "lesson-teaching": ["concepts"],
   // `subtitle` is decoration and may legitimately be short or absent.
   infographic: ["title", "keyFacts", "sections", "takeaway"],
+  // The board's AI-solved problem. `problem` is deliberately absent: the route
+  // shows the teacher's own text, so the model is not asked to restate it.
+  solve: ["steps", "answer"],
 };
 
 /** Which required fields are missing or empty — [] means usable. */
