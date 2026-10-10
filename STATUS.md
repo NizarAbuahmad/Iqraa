@@ -858,6 +858,30 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## «where i can add more classes» reached the subject question, 2026-10-10
+
+Reported from the web chat: «where i can add more classes to my account»
+came back as «سؤالك قد يخص أكثر من مادة. أيّ مادة تقصد؟». The question never
+reached the app map. `isAppHelpQuery` (`services/appHelp.ts`) only claims a
+message that opens with a known where/how phrase, and «where i can …» is not one
+of them («where can i …» is, which is why the same question worded that way
+worked). It fell through to the teaching pipeline, found no lesson, and the
+ambiguity check asked for a subject.
+
+Now claimed as app help: «where i/we can|could|should|do|would …», «where to …»,
+«where should i/we …», and «can i add|change|edit|delete|remove|export|save|
+share|link|invite …». Each still needs a place or an app noun, so «where to find
+the vertex of a parabola» and «can i add fractions with different denominators»
+stay teaching, and «can we create a quiz on fractions» is left as a request to
+the assistant (`create` and `make` are deliberately not in the can-I verbs).
+`appHelp.test.ts` has the reported sentence, its siblings, and the guards.
+
+**Still not claimed, and still ends in the subject question:** a statement with
+no where/how/can-I in front, such as «add more classes to my account» or «i want
+to add another class». «class» also means a class of compounds, so claiming a
+bare statement needs more than a keyword; not attempted here. Checked by running
+the router on each sentence, not in the web build.
+
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
 Step 4 of the worksheet review, agreed in chat. A worksheet was paper only: to
