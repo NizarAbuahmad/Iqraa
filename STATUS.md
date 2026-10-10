@@ -1439,6 +1439,30 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
 - When the worksheet screen is opened with a lesson, its unit dropdown still
   shows the placeholder (the documented gap in `TopicSelector.tsx`). The topic
   itself is held.
+## Teacher notes reach the exports, and five smaller deck fixes, 2026-10-09
+
+The follow-up to the 2026-10-08 entry below, closing what that review left open:
+
+- **Teacher notes in both exports.** `services/deckNotes.ts` turns a slide's
+  `hint` and `teacher` block into labelled sections. The PPTX puts them in the
+  speaker-notes pane (`addNotes`), where presenter view shows them to the
+  teacher and never to the class; the PDF appends «ملاحظات المعلّم» pages after
+  the last slide, one block per slide, kept whole across page breaks. Until now
+  neither export carried a word of the block the prompt spends its budget on.
+- **A `stat` or `compare` slide no longer fails the whole deck.**
+  `assertUsableDeck` treated their empty `content` as a blank slide and threw
+  away a paid generation over its best-laid-out slide; it now accepts a filled
+  `stat.value` or two filled `compare` columns in place of a body.
+- **PDF stems keep their lines.** A two-line problem on a question or example
+  slide printed as one run-on line (HTML collapses newlines); each line is now
+  its own block, as on the projector.
+- **PPTX `steps` fit the slide.** Row height now budgets for the gaps, and the
+  badge and type step down past six steps; seven used to end below the edge.
+- **No empty «الإجابة المتوقعة» section** in the presenter's teacher panel on
+  cover and hook slides, whose blocks carry only tips.
+- `deckShortfalls` no longer counts the cover as a thin slide — it is one line
+  by the prompt's own rule, so the warning fired on every deck.
+
 ## Five deck-rendering defects fixed, 2026-10-08
 
 A read of the whole slides pipeline on main (prompt → three renderers)
@@ -1730,7 +1754,11 @@ on both sides — the old `query` filter existed but lower-cased only the title
 and had no UI. A book code's printed page is searchable too (2026-10-06,
 follow-up): «صفحة ٣٥», «page 35», «35» and «٣٥» all find it. It is a substring
 match like the rest, so «3» also finds pages 13 and 30–39 — not a page-exact
-lookup.
+lookup. **Book-name search regressed and was restored (2026-10-10).** #923 made a
+code's own page title its headline and moved the book name to `bookTitle`, which
+the search did not read, so «التربية الإسلامية» found 0 of its 3 codes and
+«اللغة العربية» found 3 of 6 (only the untitled ones). `bookTitle` is searched
+again; checked on the real grade 10 manifest.
 
 Verified: `services/__tests__/resourceCatalog.test.ts` (shelf mapping, order,
 search), whole-monorepo `pnpm run typecheck` clean, mobile suite 2982 pass /

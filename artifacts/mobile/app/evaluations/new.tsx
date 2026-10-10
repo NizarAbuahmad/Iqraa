@@ -19,7 +19,7 @@
  * — the picker works offline and never drifts from what the server will
  * accept, since both read the same package.
  */
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -44,6 +44,7 @@ import {
 import type { TranslationKey } from '@/services/i18n';
 import { palette } from '@/constants/colors';
 import { toLatinDigits } from '@/services/latinDigits';
+import { groupObjectivesByLesson } from '@/services/miniEval';
 import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = palette.primary;
@@ -185,6 +186,19 @@ export default function NewEvaluationScreen() {
 
   const setPaperRow = useCallback((index: number, patch: Partial<PaperRow>) => {
     setPaperRows(prev => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)));
+  }, []);
+
+  // Teachers think in lessons, not objectives: the picker lists lessons, and
+  // ticking one selects every objective it carries. Downstream (paper rows,
+  // create) still works on objective ids, so nothing else moves.
+  const lessonGroups = useMemo(() => groupObjectivesByLesson(objectives), [objectives]);
+  const toggleLesson = useCallback((ids: string[]) => {
+    setSelectedObjectives(prev => {
+      const next = new Set(prev);
+      const allOn = ids.every(id => next.has(id));
+      for (const id of ids) (allOn ? next.delete(id) : next.add(id));
+      return next;
+    });
   }, []);
 
   const toggleObjective = useCallback((id: string) => {
@@ -424,23 +438,32 @@ export default function NewEvaluationScreen() {
         {bookId && (
           <>
             <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
-              {t('selectObjectivesLabel')}
+              {t('selectLessonsLabel', String(lessonGroups.length))}
             </Text>
             <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
-              {t('selectObjectivesHint')}
+              {t('selectLessonsHint')}
             </Text>
             <View style={[styles.checkboxGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              {objectives.map(o => (
-                <CheckboxRow
-                  key={o.id}
-                  label={lang === 'ar' ? o.descriptionAr || o.description : o.description}
-                  checked={selectedObjectives.has(o.id)}
-                  onToggle={() => toggleObjective(o.id)}
-                  accent={ACCENT}
-                  colors={colors}
-                  isRTL={isRTL}
-                />
-              ))}
+              {lessonGroups.map((g, i) => {
+                const ids = g.objectives.map(o => o.id);
+                return (
+                  <View key={g.lessonId}>
+                    {i === 0 || lessonGroups[i - 1]!.unitId !== g.unitId ? (
+                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: align, marginTop: i === 0 ? 0 : 10 }}>
+                        {(lang === 'ar' ? g.unitNameAr : g.unitName) || g.unitName}
+                      </Text>
+                    ) : null}
+                    <CheckboxRow
+                      label={(lang === 'ar' ? g.lessonTitleAr : g.lessonTitle) || g.lessonTitle}
+                      checked={ids.every(id => selectedObjectives.has(id))}
+                      onToggle={() => toggleLesson(ids)}
+                      accent={ACCENT}
+                      colors={colors}
+                      isRTL={isRTL}
+                    />
+                  </View>
+                );
+              })}
             </View>
           </>
         )}
