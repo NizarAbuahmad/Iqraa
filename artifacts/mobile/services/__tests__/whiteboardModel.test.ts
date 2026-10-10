@@ -17,6 +17,7 @@ import {
   clearBoard,
   commitStrokes,
   currentPage,
+  paperMetrics,
   docHasInk,
   eraseAlong,
   eraseAt,
@@ -490,5 +491,47 @@ describe('hit test with canvas-unit stroke widths (strokeScale)', () => {
   it('reach = 16px eraser + 3px (half of the 6px drawn width) = 0.0296875 of the width', () => {
     assert.equal(strokeHit(s, 0.5, 0.25 + 0.0295, radius, unit), true);
     assert.equal(strokeHit(s, 0.5, 0.25 + 0.03, radius, unit), false);
+  });
+});
+
+describe('paperMetrics', () => {
+  it('leaves the paper as designed at projector size', () => {
+    for (const scale of [1, 0.75, 0.7]) {
+      const m = paperMetrics(scale);
+      assert.equal(m.fontSize, 16, `font at ${scale}`);
+      assert.equal(m.gridStroke, 1.5);
+      assert.equal(m.axisStroke, 3);
+      assert.equal(m.labelEvery, 1);
+    }
+  });
+
+  it('keeps tick numbers, grid lines and axes a readable size on screen when the page shrinks', () => {
+    const scale = 390 / CANVAS_W; // a portrait phone
+    const m = paperMetrics(scale);
+    assert.ok(m.fontSize * scale >= 10.99, `numbers are ${m.fontSize * scale}px`);
+    assert.ok(m.gridStroke * scale >= 0.99, `grid is ${m.gridStroke * scale}px`);
+    assert.ok(m.axisStroke * scale >= 1.99, `axes are ${m.axisStroke * scale}px`);
+  });
+
+  it('labels fewer squares when they would run together, and never skips a label it can fit', () => {
+    const scale = 390 / CANVAS_W;
+    const m = paperMetrics(scale);
+    // adjacent labels are at least ~28px apart on screen
+    assert.ok(m.labelEvery * 40 * scale >= 27.99, `labels are ${m.labelEvery * 40 * scale}px apart`);
+    // and the step is the smallest that achieves that
+    assert.ok((m.labelEvery - 1) * 40 * scale < 28);
+    assert.ok(m.labelEvery > 1);
+  });
+
+  it('grows monotonically as the page shrinks', () => {
+    const a = paperMetrics(0.5);
+    const b = paperMetrics(0.25);
+    assert.ok(b.fontSize >= a.fontSize && b.labelEvery >= a.labelEvery);
+  });
+
+  it('treats a degenerate scale as the reference scale', () => {
+    for (const bad of [0, -1, NaN, Infinity]) {
+      assert.deepEqual(paperMetrics(bad), paperMetrics(1), String(bad));
+    }
   });
 });

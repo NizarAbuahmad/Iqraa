@@ -98,11 +98,13 @@ describe('titles', () => {
 
 describe('grouping', () => {
   it('covers only the grades that have a reachable code', () => {
-    // Derived rather than pinned. The books print codes for grades 9 and 10
-    // only — but whether either has a *reachable* one depends on the ministry
+    // Derived rather than pinned. Only grades 9 and 10 have been *scanned* for
+    // codes (see scripts/scan_book_qr.py and STATUS.md, 2026-10-09) — not the
+    // same as only those grades printing them. Whether either has a *reachable*
+    // one depends on the ministry
     // host, which went down between 2026-09-12 and 2026-09-15 and took 151 of
-    // the 169 rows with it. Grades 6-8 have none either way, which is why the
-    // library entry hides itself rather than opening onto an empty screen.
+    // the 169 rows with it. A grade with no rows has none either way, which is why
+    // the library entry hides itself rather than opening onto an empty screen.
     const reachable = (QR_LINKS as { entries: (RawEntry & { gradeId?: string })[] }).entries
       .filter(e => e.workingUrl && ['200', '206'].includes(String(e.httpStatus)));
     const grades = [...new Set(reachable.map(e => e.gradeId))].sort();
