@@ -388,9 +388,11 @@ an announcement by default» below.
     colours, plain-decimal points, known paper, sane widths) and refuses a bad
     board whole. The first Save asks for a name (pre-filled from the deck's
     lesson); later saves update the same material with no dialog. Reopen is
-    `/ai-tools/whiteboard?savedId=<id>` — from the «ملفاتي» card, its Edit
-    menu, and `workspace/view.tsx`, which now redirects a board instead of
-    letting it fall through to the quiz renderer. There is a «سبوراتي» filter
+    `/ai-tools/whiteboard?savedId=<id>` — from the «ملفاتي» card (through
+    `workspace/view.tsx`, which now redirects a board instead of letting it
+    fall through to the quiz renderer); the card's Edit menu is wired by
+    construction (`MATERIAL_EDIT_ROUTE.board` + `{ savedId, ...formState }`) and
+    was not clicked in the browser. There is a «سبوراتي» filter
     tab (the tab row now wraps; the fifth tab was clipped off-screen at 360px).
     Leaving asks only when the board no longer matches what was saved. A saved
     board that fails validation opens blank with «تعذّر فتح السبورة», and Save

@@ -25,7 +25,12 @@ import {
 } from './whiteboardModel.ts';
 
 export const BOARD_FILE_VERSION = 1;
-/** Above this a board is refused on save and on open (the server accepts 12 MB; browser storage ~5 MB shared). */
+/**
+ * Cap on the STORED STRING: enforced on save by `serializeBoard` and on open by
+ * `parseBoard` for string input. For already-parsed object input only the
+ * point characters are counted (`MAX_POINTS_CHARS` per stroke, summed).
+ * (The server accepts 12 MB; browser storage ~5 MB shared.)
+ */
 export const MAX_BOARD_BYTES = 2_000_000;
 export const MAX_STROKES_PER_PAGE = 5000;
 export const MAX_POINTS_CHARS = 200_000;
@@ -83,9 +88,9 @@ const bad = (reason: string): ParseResult => ({ ok: false, reason });
 
 /**
  * Validate stored content (the JSON string, or the already-parsed object).
- * Accepts only the exact shape `boardFileOf` writes; everything is checked
- * before anything is returned, and the result is rebuilt field by field so no
- * unvalidated property can ride along.
+ * Accepts only the shape `boardFileOf` writes; unknown keys are dropped.
+ * Everything is checked before anything is returned, and the result is rebuilt
+ * field by field so no unvalidated property can ride along.
  */
 export function parseBoard(content: unknown): ParseResult {
   let value: unknown = content;

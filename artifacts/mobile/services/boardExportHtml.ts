@@ -90,7 +90,7 @@ export function buildBoardHTML(content: unknown, title: string, isAr: boolean): 
 body { font-family: ${font}, sans-serif; background: #f0f0f0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .slide { width: 297mm; height: 210mm; background: #fff; position: relative; overflow: hidden; page-break-after: always; display: flex; flex-direction: column; }
 .bar { height: 14mm; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 10mm; border-bottom: 1px solid ${DECK_BORDER}; color: ${DECK_TEXT}; font-size: 14px; }
-.title { font-weight: 700; }
+.title { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; margin-inline-end: 12px; }
 .num { color: ${DECK_MUTED}; direction: ltr; unicode-bidi: isolate; }
 .page { flex: 1; display: flex; align-items: center; justify-content: center; }
 .page svg { width: 297mm; height: 167.06mm; display: block; }

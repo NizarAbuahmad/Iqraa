@@ -75,6 +75,12 @@ export default function WhiteboardScreen() {
   const [exportBusy, setExportBusy] = useState(false);
   const [toast, setToast] = useState({ msg: '', visible: false });
   const showToast = useCallback((msg: string) => setToast({ msg, visible: true }), []);
+  // The reopen effect reads these through refs so a language change (a new `t`)
+  // does not re-fetch the board and overwrite strokes drawn since it loaded.
+  const tRef = useRef(t);
+  tRef.current = t;
+  const showToastRef = useRef(showToast);
+  showToastRef.current = showToast;
 
   // Listeners registered once read the document through refs.
   const docRef = useRef(doc);
@@ -153,12 +159,16 @@ export default function WhiteboardScreen() {
         setDoc(next);
         setSaved(r.ok ? { id: item.id, title: item.title, json: r.json } : null);
       } else {
-        showToast(t('boardOpenFailed'));
+        showToastRef.current(tRef.current('boardOpenFailed'));
       }
+      setLoading(false);
+    }).catch(() => {
+      if (!live) return;
+      showToastRef.current(tRef.current('boardOpenFailed'));
       setLoading(false);
     });
     return () => { live = false; };
-  }, [params.savedId, showToast, t]);
+  }, [params.savedId]);
 
   const onClear = useCallback(async () => {
     if (busy.current) return;
@@ -205,7 +215,11 @@ export default function WhiteboardScreen() {
   const defaultTitle = useCallback(() => {
     const base = t('whiteboardTool');
     const topic = (params.topic ?? '').trim();
-    return topic ? `${base} — ${topic}` : `${base} ${new Date().toISOString().slice(0, 10)}`;
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    // Local parts, not toISOString(): that is the UTC day, so before 03:00 in Jordan it is yesterday.
+    const day = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    return topic ? `${base} — ${topic}` : `${base} ${day}`;
   }, [params.topic, t]);
 
   const persist = useCallback(async (title: string) => {
@@ -219,7 +233,7 @@ export default function WhiteboardScreen() {
     // `parseBoard` would not read back: a board that saves but cannot be
     // reopened loses the teacher's work.
     if (!parseBoard(r.json).ok) {
-      showToast(t('boardSaveFailed'));
+      showToast(t('boardTooBig'));
       return;
     }
     saving.current = true;

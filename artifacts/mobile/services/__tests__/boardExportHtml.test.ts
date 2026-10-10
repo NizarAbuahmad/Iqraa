@@ -66,6 +66,11 @@ describe('buildBoardHTML', () => {
     assert.ok(html.includes('&amp;'));
   });
 
+  it('truncates a long title with an ellipsis instead of pushing the page number off', () => {
+    const html = buildBoardHTML(boardFileOf(docOf(['blank', []])), 'x'.repeat(500), true)!;
+    assert.ok(html.includes('text-overflow: ellipsis'));
+  });
+
   it('refuses content that is not a valid board, instead of printing any of it', () => {
     const evil = { version: 1, canvas: { w: 1280, h: 720 }, pages: [{ background: 'grid', strokes: [{ color: '#fff" onload="alert(1)', width: 6, points: '0.1,0.2 0.3,0.4' }] }] };
     assert.equal(buildBoardHTML(evil, 't', true), null);
