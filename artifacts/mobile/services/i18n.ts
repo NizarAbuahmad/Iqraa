@@ -1193,6 +1193,8 @@ const translations = {
     faqA8: 'الشُّعَب تربط التقويم بأسماء طلبتك، فيصبح لكل طالب مستوى ونقاط قوة وفجوات. أضف شعبةً من «حسابي ← الشُّعَب»، والصق أسماء الطلبة دفعة واحدة.',
     faqQ9: 'هل يحتاج الطلبة إلى حسابات؟',
     faqA9: 'ليس بالضرورة. يمكنك إدخال الإجابات الورقية بنفسك، أو مشاركة رمز الربط ليُنشئ الطلبة وأولياء الأمور حساباتهم ويجيبوا من هواتفهم.',
+    howAddClass: 'من «حسابي» ← «شُعَبي» اضغط «شعبة جديدة»، واكتب اسم الشعبة واختر موادّها ثم «أنشئ الشعبة». بعدها الصق أسماء الطلبة دفعة واحدة. كرّر الخطوات لكل شعبة إضافية.',
+    howAddGrade: 'من «حسابي» ← «المواد التي أُدرّسها» اضغط «إضافة صف» واختر الصف ثم موادّه، ثم «حفظ». يمكنك إضافة أكثر من صف (مثل العاشر والثامن)، وتبديل الدرس من الشريط أعلى المحادثة.',
     faqQ10: 'ماذا أكتب لأحصل على نتيجة أدق؟',
     faqA10: 'اذكر الصف والدرس ونوع المادة وما يهمّك فيها — مثل «ورقة عمل من ١٠ أسئلة عن تركيب الاقترانات بمستوى متوسط». كلما كان الطلب أوضح قلّت الحاجة إلى إعادة المحاولة. وإن لم تذكر الصف أو الدرس يستخدم إقرأ الدرس الحالي.',
     faqQ11: 'هل المحتوى مطابق للمنهاج الأردني؟',
@@ -1631,6 +1633,7 @@ const translations = {
     miniEvalBtn: 'تقييم سريع',
     miniEvalTitle: 'تقييم سريع',
     miniEvalSubtitle: 'ثلاثة أسئلة تُصحَّح تلقائيًا، دون إدخال علامات',
+    miniEvalLessonHint: (lesson: string) => `هذا التقييم لدرس: ${lesson}`,
     miniEvalPickObjective: 'اختر هدفًا واحدًا',
     miniEvalPickBookFirst: 'اختر الكتاب أولًا',
     miniEvalNeedsLiveAi:
@@ -3506,6 +3509,8 @@ const translations = {
     faqA8: "Classes attach evaluation to your students' names, so each one gets a level, strengths and gaps. Add a class from Profile → My classes, and paste the whole name list at once.",
     faqQ9: 'Do students need accounts?',
     faqA9: 'Not necessarily. You can mark paper answers yourself, or share a link code so students and parents create accounts and answer from their phones.',
+    howAddClass: 'From Profile → My classes tap "New class", type the class name, pick its subjects, then "Create class". Then paste the student names in one go. Repeat for each extra class.',
+    howAddGrade: 'From Profile → Subjects I teach tap "Add grade", pick the grade and its subjects, then Save. You can add more than one grade (say 10 and 8), and switch lessons from the bar above the conversation.',
     faqQ10: 'What should I write to get a more accurate result?',
     faqA10: 'Name the grade, the lesson, the kind of material and what matters to you — e.g. "a 10-question worksheet on function composition, medium level". The clearer the request, the less you need to retry. If you leave out the grade or lesson, Iqrra uses the current lesson.',
     faqQ11: 'Does the content follow the Jordanian curriculum?',
@@ -3927,6 +3932,7 @@ const translations = {
     miniEvalBtn: 'Quick evaluation',
     miniEvalTitle: 'Quick evaluation',
     miniEvalSubtitle: 'Three questions that mark themselves — no marks to enter',
+    miniEvalLessonHint: (lesson: string) => `This check is for the lesson: ${lesson}`,
     miniEvalPickObjective: 'Pick one objective',
     miniEvalPickBookFirst: 'Pick the book first',
     miniEvalNeedsLiveAi:
