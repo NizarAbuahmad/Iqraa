@@ -3,6 +3,8 @@
  * which is the shape `exportAsPDF` / `capturePdf` already turns into one PDF
  * page each (`SLIDE_SELECTOR` in `pdfCapture.web.ts`).
  *
+ * A page that carries a solution also gets its panel, all steps revealed.
+ *
  * Each page is an inline `<svg viewBox="0 0 1280 720">` holding the paper and
  * the strokes (stored fractions of the width, times 1280, are canvas units).
  * The page is 16:9 and A4 is not, so it is centred under a thin title bar.
@@ -14,10 +16,12 @@
  *
  * Free of react-native so `node --test` can load it.
  */
+import type { BoardSolution } from '@workspace/math-verify';
 import { parseBoard } from './boardFile.ts';
-import { DECK_BORDER, DECK_MUTED, DECK_TEXT } from './deckTheme.ts';
+import { DECK_ACCENT, DECK_BORDER, DECK_MUTED, DECK_TEXT } from './deckTheme.ts';
+import { mathLineToUnicode } from './mathRender.ts';
 import { scaleInkPoints } from './penInk.ts';
-import type { SolutionLabels } from './solutionLayout.ts';
+import { SOLUTION_BOX, SOLUTION_PAD, layoutSolution, solutionItems, type SolutionItemKind, type SolutionLabels } from './solutionLayout.ts';
 import {
   BOARD_STEP,
   CANVAS_H,
@@ -55,10 +59,48 @@ function paperSVG(background: BoardBackground, lang: string): string {
   return grid + line(axes.xAxis, DECK_MUTED, 3) + line(axes.yAxis, DECK_MUTED, 3) + ticks;
 }
 
+/** An unchecked verdict is amber so it cannot be mistaken for the teal ✓. */
+const UNCHECKED_COLOR = '#B45309';
+
+const MATH_KINDS: ReadonlySet<SolutionItemKind> = new Set(['problem', 'step', 'answer', 'understood']);
+
+/**
+ * The solution as SVG text on the page's left panel, ALL steps shown: a printed
+ * page is the record, not a lesson in progress. SVG text cannot wrap, so
+ * `layoutSolution` breaks it into rows. Both honesty labels are always drawn.
+ */
+function solutionSVG(s: BoardSolution, labels: SolutionLabels, isAr: boolean): string {
+  const items = solutionItems(s, labels, s.steps.length).map(item => ({
+    ...item,
+    text: MATH_KINDS.has(item.kind) ? mathLineToUnicode(item.text) : item.text,
+  }));
+  const inner = { w: SOLUTION_BOX.w - 2 * SOLUTION_PAD, h: SOLUTION_BOX.h - 2 * SOLUTION_PAD };
+  const layout = layoutSolution(items, inner);
+  const anchorX = isAr ? SOLUTION_BOX.x + SOLUTION_BOX.w - SOLUTION_PAD : SOLUTION_BOX.x + SOLUTION_PAD;
+  const top = SOLUTION_BOX.y + SOLUTION_PAD;
+  const rows = layout.rows
+    .map(row => {
+      const small = row.kind === 'ai' || row.kind === 'understood';
+      const bold = row.kind === 'problem' || row.kind === 'answer' || row.kind === 'verdict';
+      const fill =
+        small ? DECK_MUTED
+        : row.kind === 'answer' ? DECK_ACCENT
+        : row.kind === 'verdict' ? (s.verified ? DECK_ACCENT : UNCHECKED_COLOR)
+        : DECK_TEXT;
+      const size = small ? layout.fontSize * 0.8 : layout.fontSize;
+      return `<text x="${num(anchorX)}" y="${num(top + row.y)}" font-size="${num(size)}" font-weight="${bold ? 700 : 400}" fill="${fill}" direction="${isAr ? 'rtl' : 'ltr'}" text-anchor="start">${escapeHtml(row.text)}</text>`;
+    })
+    .join('');
+  return `<rect x="${SOLUTION_BOX.x}" y="${SOLUTION_BOX.y}" width="${SOLUTION_BOX.w}" height="${SOLUTION_BOX.h}" rx="14" fill="#FFFFFF" fill-opacity="0.92" stroke="${DECK_BORDER}"/>${rows}`;
+}
+
 /** The whole document, or null when `content` is not a valid board. */
-export function buildBoardHTML(content: unknown, title: string, isAr: boolean, _solutionLabels?: SolutionLabels): string | null {
+export function buildBoardHTML(content: unknown, title: string, isAr: boolean, solutionLabels?: SolutionLabels): string | null {
   const parsed = parseBoard(content);
   if (!parsed.ok) return null;
+  // A solution is never printed without the labels that say it is AI-written
+  // and whether its answer was checked.
+  if (parsed.file.pages.some(p => p.solution) && !solutionLabels) return null;
   const lang = isAr ? 'ar' : 'en';
   const total = parsed.file.pages.length;
   const safeTitle = escapeHtml(title);
@@ -74,7 +116,7 @@ export function buildBoardHTML(content: unknown, title: string, isAr: boolean, _
       const label = `${localizeDigits(String(i + 1), lang)} / ${localizeDigits(String(total), lang)}`;
       return `<div class="slide">
   <div class="bar"><span class="title">${safeTitle}</span><span class="num">${label}</span></div>
-  <div class="page"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CANVAS_W} ${CANVAS_H}" direction="ltr" style="direction:ltr">${paperSVG(page.background, lang)}${strokes}</svg></div>
+  <div class="page"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CANVAS_W} ${CANVAS_H}" direction="ltr" style="direction:ltr">${paperSVG(page.background, lang)}${page.solution && solutionLabels ? solutionSVG(page.solution, solutionLabels, isAr) : ''}${strokes}</svg></div>
 </div>`;
     })
     .join('\n');
