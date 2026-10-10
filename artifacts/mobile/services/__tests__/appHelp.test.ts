@@ -143,6 +143,52 @@ describe('"how do I" questions about the app', () => {
   });
 });
 
+// Reported 2026-10-10 from the web chat: «where i can add more classes to my
+// account» came back as «سؤالك قد يخص أكثر من مادة. أيّ مادة تقصد؟». The gate
+// only knew «where can / is / are / do», so the order people actually type
+// («where i can …», «where to …») and the plain yes/no form («can i add …»)
+// never reached the app map, fell through to the teaching pipeline, and ended
+// in a subject question about a sentence that had no subject in it.
+describe('natural English phrasings of a where / can-I question', () => {
+  const help = [
+    'where i can add more classes to my account',   // the one that was reported
+    'where i can find my saved materials',
+    'where we can change the language',
+    'where to change the language',
+    'where should i go to add a class',
+    'can i add more classes to my account',
+    'can I export my lesson plan',
+  ];
+  for (const q of help) {
+    it(`claims «${q}»`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(classifyChatIntent(q, 'en').intent, 'app_help');
+    });
+  }
+
+  it('«where i can add more classes to my account» points at My classes', () => {
+    const t = (k: string) => `<${k}>`;
+    const ans = answerAppHelp('where i can add more classes to my account', 'en', t);
+    assert.equal(ans.places[0]?.id, 'classes');
+    assert.equal(ans.places[0]?.route, '/classes');
+  });
+
+  // The same words with a teaching object name no place and no app noun. The
+  // «can we create a quiz …» line is a request to the assistant, not a question
+  // about the app, even though «quiz» and «students» are both place keywords.
+  const teaching = [
+    'where i can use the quadratic formula',
+    'where to find the vertex of a parabola',
+    'where should i start with fractions',
+    'can i add fractions with different denominators',
+    'can we create a quiz for the students to solve',
+    'can I save time by factoring first',
+  ];
+  for (const q of teaching) {
+    it(`leaves «${q}» alone`, () => assert.equal(isAppHelpQuery(q), false));
+  }
+});
+
 describe('classifyChatIntent routes app questions before artifacts', () => {
   it('«وين ألاقي ورقة العمل» asks for the tool, not a worksheet', () => {
     assert.equal(classifyChatIntent('وين ألاقي ورقة العمل؟').intent, 'app_help');
