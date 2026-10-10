@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -46,6 +45,7 @@ import {
 import { AwardRow, PodiumView, ScoreStrip, ScoreboardView } from '@/components/classroom/GameBoard';
 import { MathText } from '@/components/classroom/MathText';
 import { VerifiedBadge } from '@/components/classroom/VerifiedBadge';
+import { ImageViewerModal } from '@/components/ui/ImageViewer';
 import { PEN_COLORS, PenCanvas, PenPalette, type Stroke } from '@/components/classroom/PenLayer';
 import { bindOperators, hasRenderableMath, isolateForeignRuns } from '@/services/mathRender';
 import { goBack } from '@/services/navigation';
@@ -272,40 +272,15 @@ function MediaView({
         </Pressable>
       )}
 
-      {/* Full-screen viewer. `transparent` over a near-opaque backdrop rather
-          than an opaque Modal: the slide stays faintly visible behind, so it
-          reads as a zoom of this figure and not a navigation away from the
-          deck. Dismissed by tapping anywhere, which is the gesture people try
-          first, with an explicit button for anyone who does not. */}
-      <Modal
-        visible={zoomed}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setZoomed(false)}
-        supportedOrientations={['portrait', 'landscape']}
-      >
-        <Pressable style={mediaStyles.zoomBackdrop} onPress={() => setZoomed(false)}>
-          <Image
-            source={{ uri: url }}
-            style={mediaStyles.zoomImage}
-            resizeMode="contain"
-            accessibilityLabel={slide.mediaCaption || ''}
-          />
-          {!!slide.mediaCaption && (
-            <Text style={[mediaStyles.zoomCaption, { fontFamily: 'Almarai_400Regular' }]}>
-              {isolateForeignRuns(slide.mediaCaption)}
-            </Text>
-          )}
-          <Pressable
-            style={mediaStyles.zoomClose}
-            onPress={() => setZoomed(false)}
-            accessibilityRole="button"
-            accessibilityLabel={t('closeImage')}
-          >
-            <Ionicons name="close" size={26} color="#fff" />
-          </Pressable>
-        </Pressable>
-      </Modal>
+      {/* Full-screen viewer (close + download), shared with the rest of the app.
+          The slide stays faintly visible behind it, so it reads as a zoom of
+          this figure and not a navigation away from the deck. */}
+      <ImageViewerModal
+        url={zoomed ? url : null}
+        onClose={() => setZoomed(false)}
+        caption={slide.mediaCaption ? isolateForeignRuns(slide.mediaCaption) : undefined}
+        whiteGround
+      />
     </View>
   );
 }
@@ -619,7 +594,7 @@ function WorkingAnswer({ answer, isRTL }: { answer: string; isRTL: boolean }) {
  * in the Arabic app. See `slideIsRTL` for why.
  */
 
-function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
+function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: boolean; onZoomSide?: (url: string) => void }) {
   // Only for the teacher-led cue below. `isRTL` stays the prop: it follows
   // the slide's own payload, not the app's UI language.
   const { t } = useLanguage();
@@ -906,12 +881,19 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
           exportHtml.ts. */}
       {slide.sideImageUrl && (
         <View style={slideStyles.splitFig}>
-          <Image
-            source={{ uri: slide.sideImageUrl }}
-            style={slideStyles.splitImg}
-            resizeMode="contain"
-            accessibilityLabel={slide.sideImageCaption}
-          />
+          <Pressable
+            onPress={() => onZoomSide?.(slide.sideImageUrl!)}
+            style={{ width: '100%' }}
+            accessibilityRole="button"
+            accessibilityLabel={t('enlargeImage')}
+          >
+            <Image
+              source={{ uri: slide.sideImageUrl }}
+              style={slideStyles.splitImg}
+              resizeMode="contain"
+              accessibilityLabel={slide.sideImageCaption}
+            />
+          </Pressable>
           {!!slide.sideImageCaption && (
             <Text style={[slideStyles.splitCaption, { fontFamily: 'Almarai_400Regular' }]}>
               {slide.sideImageCaption}
@@ -974,6 +956,8 @@ export default function PresentationScreen() {
   const [fullscreen, setFullscreen] = useState(false);
   /** The media slide's enlarged figure — here so the key handler can see it. */
   const [zoomed, setZoomed] = useState(false);
+  // A split slide's side figure; lifted here so Esc closes it before leaving the deck.
+  const [sideZoom, setSideZoom] = useState<string | null>(null);
   // Ink is kept per slide so stepping back shows what was drawn there.
   const [penOn, setPenOn] = useState(false);
   const [penColor, setPenColor] = useState(PEN_COLORS[0]!);
@@ -1032,6 +1016,7 @@ export default function PresentationScreen() {
     setAnswerVisible(false);
     setTeacherPanelOpen(false);
     setZoomed(false);
+    setSideZoom(null);
     // Not `slide.durationSeconds` — an intro, a reveal or a summary is read to
     // the class, so a duration on one is model noise rather than a task to time.
     const seconds = timerSecondsForSlide(slide);
@@ -1166,7 +1151,7 @@ export default function PresentationScreen() {
           key: e.key, code: e.code, ctrlKey: e.ctrlKey, metaKey: e.metaKey, altKey: e.altKey,
           ...describeKeyTarget(e.target),
         },
-        { isRTL, fullscreen: isFullscreen(), modalOpen: zoomed },
+        { isRTL, fullscreen: isFullscreen(), modalOpen: zoomed || !!sideZoom },
       );
       if (!action) return;
       e.preventDefault();
@@ -1333,7 +1318,13 @@ export default function PresentationScreen() {
         >
           {slide.type === 'divider' || (isFirst && slide.mediaUrl)
             ? <HeroSlideView slide={slide} accent={slideTypeAccent(slide.type)} />
-            : <SlideView slide={slide} isRTL={slideRTL} />}
+            : <SlideView slide={slide} isRTL={slideRTL} onZoomSide={setSideZoom} />}
+          <ImageViewerModal
+            url={sideZoom}
+            onClose={() => setSideZoom(null)}
+            caption={slide.sideImageCaption}
+            whiteGround
+          />
 
           {/* Graph and media (image / YouTube) slides */}
           {slide.type === 'graph' && <GraphView slide={slide} isRTL={isRTL} t={t} />}
@@ -1824,20 +1815,6 @@ const mediaStyles = StyleSheet.create({
     width: 34, height: 34, borderRadius: 17,
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: 'rgba(15,23,42,0.55)',
-  },
-  zoomBackdrop: {
-    flex: 1, backgroundColor: 'rgba(8,12,20,0.94)',
-    alignItems: 'center', justifyContent: 'center', padding: 24, gap: 14,
-  },
-  // A figure is mostly white, so it needs its own ground against the dark
-  // backdrop or the strokes float in the void.
-  zoomImage: { width: '100%', flex: 1, borderRadius: 12, backgroundColor: '#fff' },
-  zoomCaption: { fontSize: 16, color: '#E6E3DB', textAlign: 'center' },
-  zoomClose: {
-    position: 'absolute', top: 18, right: 18,
-    width: 44, height: 44, borderRadius: 22,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.16)',
   },
   openBtn: {
     alignItems: 'center',
