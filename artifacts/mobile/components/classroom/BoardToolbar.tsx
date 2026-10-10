@@ -86,7 +86,8 @@ export function BoardToolbar({
   onSolve: () => void;
   canSolve: boolean;
   /** Present only when the current page has a solution. */
-  solution: null | { shown: number; total: number; onNext: () => void; onHideAll: () => void; onDelete: () => void };
+  /** `counter` is "2/5", digits already localised. */
+  solution: null | { shown: number; total: number; counter: string; onNext: () => void; onHideAll: () => void; onDelete: () => void };
 }) {
   const rowDir = isRTL ? 'row-reverse' : 'row';
   return (
@@ -188,7 +189,7 @@ export function BoardToolbar({
               <Ionicons name="chevron-down-circle-outline" size={22} color={DECK_ACCENT} />
             </Pressable>
             <Text style={[styles.pageLabel, { fontFamily: 'Almarai_400Regular', minWidth: 28 }]}>
-              {`${solution.shown}/${solution.total}`}
+              {solution.counter}
             </Text>
             <Pressable
               onPress={solution.onHideAll}

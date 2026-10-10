@@ -19,7 +19,7 @@
 import type { BoardSolution } from '@workspace/math-verify';
 import { parseBoard } from './boardFile.ts';
 import { DECK_ACCENT, DECK_BORDER, DECK_MUTED, DECK_TEXT } from './deckTheme.ts';
-import { mathLineToUnicode } from './mathRender.ts';
+import { isolateForeignRuns, mathLineToUnicode } from './mathRender.ts';
 import { scaleInkPoints } from './penInk.ts';
 import { SOLUTION_BOX, SOLUTION_PAD, layoutSolution, solutionItems, type SolutionItemKind, type SolutionLabels } from './solutionLayout.ts';
 import {
@@ -94,7 +94,12 @@ function solutionSVG(s: BoardSolution, labels: SolutionLabels, isAr: boolean): s
         : row.kind === 'verdict' ? (s.verified ? DECK_ACCENT : UNCHECKED_COLOR)
         : DECK_TEXT;
       const size = small ? layout.fontSize * 0.8 : layout.fontSize;
-      return `<text x="${num(anchorX)}" y="${num(top + row.y)}" font-size="${num(size)}" font-weight="${bold ? 700 : 400}" fill="${fill}" direction="${isAr ? 'rtl' : 'ltr'}" text-anchor="start">${escapeHtml(row.text)}</text>`;
+      // The SVG is `direction: rtl` on an Arabic board, so a numbers-only run
+      // («5 + 3 = 8») would lay out reversed. Isolate each wrapped row's foreign
+      // runs (after wrapping, so a split run is isolated piece by piece) and
+      // only then escape: the isolate marks are not HTML-special.
+      const text = isAr ? isolateForeignRuns(row.text) : row.text;
+      return `<text x="${num(anchorX)}" y="${num(top + row.y)}" font-size="${num(size)}" font-weight="${bold ? 700 : 400}" fill="${fill}" direction="${isAr ? 'rtl' : 'ltr'}" text-anchor="start">${escapeHtml(text)}</text>`;
     })
     .join('');
   return `<rect x="${SOLUTION_BOX.x}" y="${SOLUTION_BOX.y}" width="${SOLUTION_BOX.w}" height="${SOLUTION_BOX.h}" rx="14" fill="#FFFFFF" fill-opacity="0.92" stroke="${DECK_BORDER}"/>${rows}`;

@@ -103,16 +103,19 @@ export function layoutSolution(
   box: { w: number; h: number },
   opts: { maxFont: number; minFont: number } = { maxFont: 28, minFont: 14 },
 ): SolutionLayout {
-  const minFont = opts.minFont;
-  const maxFont = Math.max(opts.maxFont, minFont);
+  // A non-finite or non-positive floor would never be reached by the shrink
+  // loop below (NaN compares false), and a non-finite height never fits.
+  const minFont = Number.isFinite(opts.minFont) && opts.minFont > 0 ? opts.minFont : 1;
+  const boxH = Number.isFinite(box.h) ? box.h : 0;
+  const maxFont = Math.max(Number.isFinite(opts.maxFont) ? opts.maxFont : minFont, minFont);
   let size = maxFont;
   for (;;) {
     const built = build(items, box, size);
-    if (built.height <= box.h) return { fontSize: built.fontSize, lineHeight: built.lineHeight, fits: true, rows: built.rows };
+    if (built.height <= boxH) return { fontSize: built.fontSize, lineHeight: built.lineHeight, fits: true, rows: built.rows };
     const next = size * SHRINK;
     if (next < minFont) {
       const last = build(items, box, minFont);
-      return { fontSize: last.fontSize, lineHeight: last.lineHeight, fits: last.height <= box.h, rows: last.rows };
+      return { fontSize: last.fontSize, lineHeight: last.lineHeight, fits: last.height <= boxH, rows: last.rows };
     }
     size = next;
   }

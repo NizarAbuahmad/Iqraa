@@ -89,7 +89,13 @@ function Line({ item, first, fontSize, solution, isRTL }: {
   const align = isRTL ? 'right' : 'left';
   const math = item.kind === 'step' || item.kind === 'problem' || item.kind === 'answer';
   return (
-    <View style={{ marginTop: first ? 0 : fontSize * 0.5 }}>
+    <View
+      style={[
+        { marginTop: first ? 0 : fontSize * 0.5 },
+        // A very long answer must never push the verdict out of the panel.
+        item.kind === 'answer' ? { maxHeight: Math.round(size * 1.4) * 3, overflow: 'hidden' } : null,
+      ]}
+    >
       {math && hasRenderableMath(item.text) ? (
         <MathText text={item.text} fontSize={size} color={color} fontFamily={fontFamily} isRTL={isRTL} />
       ) : (
@@ -107,6 +113,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.9)', borderWidth: 1, borderColor: DECK_BORDER,
   },
   header: { flexShrink: 0 },
-  body: { flex: 1, overflow: 'hidden' },
+  // flexShrink, not flex: the footer follows short content, and a long body
+  // still yields to it instead of clipping the answer and verdict.
+  body: { flexShrink: 1, overflow: 'hidden' },
   footer: { flexShrink: 0 },
 });

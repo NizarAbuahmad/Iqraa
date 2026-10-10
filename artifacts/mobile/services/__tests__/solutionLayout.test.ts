@@ -82,3 +82,18 @@ describe('layoutSolution', () => {
     assert.equal(l.fontSize, 11);
   });
 });
+
+describe('layoutSolution — hardening', () => {
+  const huge = sol({ steps: Array.from({ length: 8 }, () => 'word '.repeat(60).trim()) });
+  it('a non-finite or non-positive minimum still terminates', () => {
+    for (const minFont of [NaN, 0, -3]) {
+      const l = layoutSolution(solutionItems(huge, labels, 8), { w: 200, h: 100 }, { maxFont: 28, minFont });
+      assert.ok(Number.isFinite(l.fontSize) && l.fontSize > 0 && l.fontSize <= 28);
+    }
+  });
+  it('a non-finite box height terminates and does not claim to fit', () => {
+    const l = layoutSolution(solutionItems(sol(), labels, 3), { w: 400, h: NaN }, { maxFont: 28, minFont: 14 });
+    assert.equal(l.fits, false);
+  });
+});
+

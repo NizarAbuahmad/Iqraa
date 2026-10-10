@@ -31,6 +31,8 @@ export function acceptSolveResponse(raw: unknown): BoardSolution | null {
   const verification: SolveVerification = {
     verified: claim['verified'] === true,
     source: claim['source'] === 'sympy' ? 'sympy' : 'unchecked',
+    // Placeholder: the type requires a code, and `boardSolutionOf` ignores it
+    // (only `verified` and `source` decide the badge).
     code: 'verified',
     ...(understoodAs !== undefined ? { understoodAs } : {}),
   };

@@ -131,6 +131,14 @@ describe('buildBoardHTML — a page with a solution', () => {
     assert.ok(!out.includes('UNCHECKED-LABEL'));
   });
 
+  it('isolates an arithmetic run in an Arabic board so it is not printed reversed; an English board is untouched', () => {
+    const s = sol({ steps: ['احسب 5 + 3 = 8 ثم قارن'] });
+    const ar = html(s, true)!;
+    assert.ok(ar.includes('\u20665 + 3 = 8\u2069'), 'the run is wrapped in a first-strong isolate');
+    const en = html(sol({ steps: ['compute 5 + 3 = 8 then compare'] }), false)!;
+    assert.ok(!en.includes('\u2066'));
+  });
+
   it('writes exponents as real superscripts', () => {
     assert.ok(html(sol())!.includes('STEP-ONE x²'));
   });

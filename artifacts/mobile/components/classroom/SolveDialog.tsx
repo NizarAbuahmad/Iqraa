@@ -5,7 +5,11 @@ import { RADIUS, TYPE } from '@/constants/theme';
 import { DECK_ACCENT, DECK_BORDER, DECK_CARD_BG, DECK_MUTED, DECK_TEXT } from '@/services/deckTheme';
 import { SOLUTION_LIMITS } from '@workspace/math-verify';
 
-export type SolveDialogLabels = { title: string; fieldLabel: string; placeholder: string; submit: string; working: string; cancel: string };
+export type SolveDialogLabels = {
+  title: string; fieldLabel: string; placeholder: string; submit: string; working: string; cancel: string;
+  /** States the verification limit: what is and is not checked. */
+  hint: string;
+};
 
 /** Tap-to-add maths characters the keyboard hides. They are appended to the field. */
 const SYMBOLS = ['x²', '^', '√', '÷', '×', '(', ')', '='] as const;
@@ -70,6 +74,9 @@ export function SolveDialog({ visible, isRTL, busy, error, labels, onSubmit, onC
                 </Pressable>
               ))}
             </View>
+            <Text style={[styles.hint, { textAlign: isRTL ? 'right' : 'left', fontFamily: 'Almarai_400Regular' }]}>
+              {labels.hint}
+            </Text>
             {error ? (
               <Text accessibilityRole="alert" style={[styles.error, { textAlign: isRTL ? 'right' : 'left', fontFamily: 'Almarai_400Regular' }]}>
                 {error}
@@ -116,6 +123,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md, borderWidth: 1, borderColor: DECK_BORDER, backgroundColor: DECK_CARD_BG,
   },
   symbolText: { fontSize: TYPE.bodyLg, color: DECK_TEXT },
+  hint: { fontSize: TYPE.caption, color: DECK_MUTED },
   error: { fontSize: TYPE.caption, color: '#B91C1C' },
   buttons: { gap: 10, justifyContent: 'flex-end' },
   btn: { paddingHorizontal: 18, paddingVertical: 10, borderRadius: RADIUS.md, alignItems: 'center', gap: 8 },

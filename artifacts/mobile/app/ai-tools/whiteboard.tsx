@@ -219,7 +219,8 @@ export default function WhiteboardScreen() {
     if (busy.current) return;
     const d = docRef.current;
     if (d.pages.length <= 1) return;
-    if (!hasInk(currentPage(d).board)) {
+    // A page holding only a solution has no ink but is still work worth a confirm.
+    if (!hasInk(currentPage(d).board) && !currentPage(d).solution) {
       setDoc(x => removePage(x));
       return;
     }
@@ -273,6 +274,8 @@ export default function WhiteboardScreen() {
         { problem, language: lang === 'ar' ? 'arabic' : 'english' },
         { signal: controller.signal },
       );
+      // Cancel pressed in the same tick the answer landed: do not commit it.
+      if (controller.signal.aborted) return;
       revealRef.current.set(solved, 0);
       setDoc(d => updateCurrent(d, p => withSolution(p, solved)));
       setAskSolve(false);
@@ -343,6 +346,7 @@ export default function WhiteboardScreen() {
   const persist = useCallback(async (title: string) => {
     if (saving.current) return;
     const r = serializeBoard(docRef.current);
+    const version = docHasSolution(docRef.current) ? BOARD_FILE_VERSION : 1;
     if (!r.ok) {
       showToast(t('boardTooBig'));
       return;
@@ -373,7 +377,7 @@ export default function WhiteboardScreen() {
           topic: params.topic ?? '',
           language: lang === 'ar' ? 'ar' : 'en',
           content: r.json,
-          formState: { boardVersion: docHasSolution(docRef.current) ? BOARD_FILE_VERSION : 1 },
+          formState: { boardVersion: version },
         });
         id = created.id;
         showToast(t('boardSaved'));
@@ -499,6 +503,7 @@ export default function WhiteboardScreen() {
         solution={page.solution ? {
           shown: shownOf(page.solution),
           total: page.solution.steps.length,
+          counter: `${localizeDigits(String(shownOf(page.solution)), lang)}/${localizeDigits(String(page.solution.steps.length), lang)}`,
           onNext: onNextStep,
           onHideAll,
           onDelete: () => void onDeleteSolution(),
@@ -539,7 +544,7 @@ export default function WhiteboardScreen() {
         error={solveError}
         labels={{
           title: t('solveTitle'), fieldLabel: t('solveFieldLabel'), placeholder: t('solvePlaceholder'),
-          submit: t('solveSubmit'), working: t('solveWorking'), cancel: t('cancel'),
+          submit: t('solveSubmit'), working: t('solveWorking'), cancel: t('cancel'), hint: t('solveHint'),
         }}
         onSubmit={problem => void onSolve(problem)}
         onCancel={onCancelSolve}
