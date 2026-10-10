@@ -382,6 +382,7 @@ export default function ThreadScreen() {
     Haptics.selectionAsync();
     try {
       put(removing ? await clearReaction(threadId, messageId) : await setReaction(threadId, messageId, emoji));
+      setError('');
     } catch (e) {
       put(prior);
       setError(apiErrorMessage(e, 'messageReactionFailed', t));
@@ -846,6 +847,24 @@ export default function ThreadScreen() {
                 ))}
               </View>
 
+              {/* Reporting stays one tap away, the first row under the emoji — above the reactor list, which grows with the class. */}
+              {sheetMessage.senderId !== user?.id ? (
+                <Pressable
+                  onPress={() => {
+                    const target = { messageId: sheetMessage.id, senderId: sheetMessage.senderId };
+                    setSheetMessageId(null);
+                    // Two Modals cannot swap in the same tick on iOS — the second is dropped.
+                    setTimeout(() => setReportTarget(target), 250);
+                  }}
+                  style={styles.menuRow}
+                >
+                  <Ionicons name="flag-outline" size={18} color={colors.destructive} />
+                  <Text style={[styles.menuText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                    {t('messageReportAction')}
+                  </Text>
+                </Pressable>
+              ) : null}
+
               {/* Who reacted — teachers only; the server sends userIds to no one else. */}
               {isTeacher && (sheetMessage.reactions ?? []).length > 0 ? (
                 <View>
@@ -866,23 +885,6 @@ export default function ThreadScreen() {
                 </View>
               ) : null}
 
-              {/* Reporting stays one tap away; the report modal itself is unchanged. */}
-              {sheetMessage.senderId !== user?.id ? (
-                <Pressable
-                  onPress={() => {
-                    const target = { messageId: sheetMessage.id, senderId: sheetMessage.senderId };
-                    setSheetMessageId(null);
-                    // Two Modals cannot swap in the same tick on iOS — the second is dropped.
-                    setTimeout(() => setReportTarget(target), 250);
-                  }}
-                  style={styles.menuRow}
-                >
-                  <Ionicons name="flag-outline" size={18} color={colors.destructive} />
-                  <Text style={[styles.menuText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
-                    {t('messageReportAction')}
-                  </Text>
-                </Pressable>
-              ) : null}
             </View>
           ) : null}
         </Pressable>

@@ -1,3 +1,21 @@
+interface ReactionLike {
+  emoji: string;
+  count: number;
+  mine: boolean;
+  userIds?: string[];
+}
+
+/** Same chips, same counts, same own mark, same people. The server's order is stable, so position matters. */
+export function sameReactions(a?: readonly ReactionLike[], b?: readonly ReactionLike[]): boolean {
+  const x = a ?? [];
+  const y = b ?? [];
+  if (x.length !== y.length) return false;
+  return x.every((r, i) => {
+    const o = y[i]!;
+    return r.emoji === o.emoji && r.count === o.count && r.mine === o.mine && (r.userIds ?? []).join(',') === (o.userIds ?? []).join(',');
+  });
+}
+
 /**
  * Folds a freshly-polled newest page into the messages already on screen.
  *
@@ -8,8 +26,8 @@
  * types from. Anything importable from there is therefore untestable. Same
  * shape as the OpenAI-client-at-module-scope trap in CLAUDE.md.
  *
- * Generic over `{ id }` rather than typed to ChatMessage so it needs no import
- * at all, not even a type one.
+ * Generic over `{ id, seen?, reactions? }` rather than typed to ChatMessage so
+ * it needs no import at all, not even a type one.
  *
  * The rules it encodes:
  *
@@ -33,24 +51,6 @@
  * Both lists are newest-first (the thread's FlatList is inverted), so anything
  * genuinely new belongs in front.
  */
-interface ReactionLike {
-  emoji: string;
-  count: number;
-  mine: boolean;
-  userIds?: string[];
-}
-
-/** Same chips, same counts, same own mark, same people. The server's order is stable, so position matters. */
-export function sameReactions(a?: readonly ReactionLike[], b?: readonly ReactionLike[]): boolean {
-  const x = a ?? [];
-  const y = b ?? [];
-  if (x.length !== y.length) return false;
-  return x.every((r, i) => {
-    const o = y[i]!;
-    return r.emoji === o.emoji && r.count === o.count && r.mine === o.mine && (r.userIds ?? []).join(',') === (o.userIds ?? []).join(',');
-  });
-}
-
 export function mergeNewMessages<T extends { id: string; seen?: boolean; reactions?: ReactionLike[] }>(current: T[], polled: T[]): T[] {
   const known = new Set(current.map(m => m.id));
   const fresh = polled.filter(m => !known.has(m.id));

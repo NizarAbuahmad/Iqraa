@@ -2494,11 +2494,11 @@ const translations = {
     messageReactTitle: 'تفاعل مع الرسالة',
     messageReactionsList: 'التفاعلات',
     messageReportAction: 'إبلاغ',
-    messageReactorUnknown: 'مستخدم',
+    messageReactorUnknown: 'عضو سابق',
     messageReactorYou: 'أنت',
     messageReactionFailed: 'تعذّر حفظ التفاعل. حاول مرة أخرى.',
     messageReactionChipLabel: (emoji: string, count: number, mine: boolean) =>
-      `${emoji} ${count} — ${mine ? 'إزالة تفاعلك' : 'تفاعل بنفس الرمز'}`,
+      `${emoji} ${count} — ${mine ? 'إزالة تفاعلك' : 'تفاعل بالرمز نفسه'}`,
     rosterSelect: "تحديد",
     rosterSelectDone: "إلغاء التحديد",
     rosterRemoveSelectedConfirmTitle: "إزالة الطلبة المحدّدين من الشعبة؟",
@@ -4819,7 +4819,7 @@ const translations = {
     messageReactTitle: 'React to message',
     messageReactionsList: 'Reactions',
     messageReportAction: 'Report',
-    messageReactorUnknown: 'User',
+    messageReactorUnknown: 'Former member',
     messageReactorYou: 'You',
     messageReactionFailed: 'Could not save your reaction. Try again.',
     messageReactionChipLabel: (emoji: string, count: number, mine: boolean) =>
