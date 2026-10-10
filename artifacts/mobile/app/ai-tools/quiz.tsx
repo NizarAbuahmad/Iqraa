@@ -63,19 +63,20 @@ const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
 const ACCENT_FILL = palette.hero;
 
-type QType = 'multiple_choice' | 'true_false' | 'short_answer';
-type Difficulty = 'easy' | 'medium' | 'hard';
-type DifficultyLevel = 'normal' | 'high' | 'difficult';
+type QType = 'multiple_choice' | 'true_false' | 'fill_blank' | 'short_answer';
+type Difficulty = 'easy' | 'medium' | 'hard' | 'mixed';
+type DifficultyLevel = 'normal' | 'high' | 'difficult' | 'mixed';
 
 const DURATION_OPTIONS = [10, 15, 20, 25, 30, 45];
 const MARKS_OPTIONS = [10, 20, 25, 30, 40, 50, 100];
 const NUM_Q_OPTIONS = [5, 8, 10, 12, 15, 20];
-const ALL_Q_TYPES: QType[] = ['multiple_choice', 'true_false', 'short_answer'];
-const DIFFICULTY_IDS: DifficultyLevel[] = ['normal', 'high', 'difficult'];
+const ALL_Q_TYPES: QType[] = ['multiple_choice', 'true_false', 'fill_blank', 'short_answer'];
+const DIFFICULTY_IDS: DifficultyLevel[] = ['normal', 'high', 'difficult', 'mixed'];
 const DIFFICULTY_MAP: Record<DifficultyLevel, Difficulty> = {
   normal: 'easy',
   high: 'medium',
   difficult: 'hard',
+  mixed: 'mixed',
 };
 
 export default function QuizScreen() {
@@ -94,7 +95,7 @@ export default function QuizScreen() {
   const durationLabels = DURATION_OPTIONS.map(d => `${d} ${t('min')}`);
   const marksLabels = MARKS_OPTIONS.map(m => String(m));
   const numQLabels = NUM_Q_OPTIONS.map(n => String(n));
-  const diffLabels = [t('difficultyNormal'), t('difficultyHigh'), t('difficultyDifficult')];
+  const diffLabels = [t('difficultyNormal'), t('difficultyHigh'), t('difficultyDifficult'), t('difficultyMixed')];
 
   const parseTypes = (raw?: string): Set<QType> => {
     if (!raw) return new Set(['multiple_choice', 'true_false', 'short_answer']);
@@ -224,6 +225,7 @@ export default function QuizScreen() {
   const typeLabels = (tr: typeof t): Record<QType, string> => ({
     multiple_choice: tr('typeMultipleChoice'),
     true_false: tr('typeTrueFalse'),
+    fill_blank: tr('typeFillBlank'),
     short_answer: tr('typeShortAnswer'),
   });
   const TYPE_LABEL = typeLabels(t);
@@ -231,6 +233,7 @@ export default function QuizScreen() {
   const TYPE_COLOR: Record<QType, string> = {
     multiple_choice: palette.warning,
     true_false: palette.info,
+    fill_blank: palette.warning,
     short_answer: palette.success,
   };
 
@@ -805,7 +808,7 @@ export default function QuizScreen() {
                   </View>
                 )}
 
-                {showAnswers && q.type === 'short_answer' && (
+                {showAnswers && (q.type === 'short_answer' || q.type === 'fill_blank') && (
                   <View style={[styles.ansBox, { backgroundColor: palette.info + '12', borderRadius: 8 }]}>
                     <EditableText
                       value={q.correctAnswer}

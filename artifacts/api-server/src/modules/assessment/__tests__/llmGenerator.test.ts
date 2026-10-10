@@ -84,6 +84,13 @@ describe("buildGenerationPrompt", () => {
     assert.equal(user.includes("practical_task"), false);
   });
 
+  it("asks for every requested type, grouped as a ministry paper", () => {
+    const { system } = buildGenerationPrompt(REQ);
+    assert.match(system, /Spread the count across every listed type/);
+    assert.match(system, /each type in one consecutive block/);
+    assert.match(system, /half of any true\/false statements are false/);
+  });
+
   it("asks for Arabic unless the evaluation is in English", () => {
     assert.ok(buildGenerationPrompt(REQ).system.includes("Arabic"));
     assert.ok(

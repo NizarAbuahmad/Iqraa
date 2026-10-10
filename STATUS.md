@@ -1787,7 +1787,11 @@ on both sides — the old `query` filter existed but lower-cased only the title
 and had no UI. A book code's printed page is searchable too (2026-10-06,
 follow-up): «صفحة ٣٥», «page 35», «35» and «٣٥» all find it. It is a substring
 match like the rest, so «3» also finds pages 13 and 30–39 — not a page-exact
-lookup.
+lookup. **Book-name search regressed and was restored (2026-10-10).** #923 made a
+code's own page title its headline and moved the book name to `bookTitle`, which
+the search did not read, so «التربية الإسلامية» found 0 of its 3 codes and
+«اللغة العربية» found 3 of 6 (only the untitled ones). `bookTitle` is searched
+again; checked on the real grade 10 manifest.
 
 Verified: `services/__tests__/resourceCatalog.test.ts` (shelf mapping, order,
 search), whole-monorepo `pnpm run typecheck` clean, mobile suite 2982 pass /
