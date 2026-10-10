@@ -151,7 +151,7 @@ export default function WhiteboardScreen() {
   return (
     <View style={styles.container} onLayout={e => setArea({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>
       <View style={[styles.stage, { left: stage.offsetX, top: stage.offsetY, width: stage.width, height: stage.height }]}>
-        <BoardBackground kind={page.background} lang={lang} />
+        <BoardBackground kind={page.background} lang={lang} scale={stage.scale} />
         {/* Keyed by the current page index: prev / next / add, and deleting the
             LAST page (which moves `current` back), remount the canvas, so an
             in-flight draft and the measured canvas width reset. Deleting a
