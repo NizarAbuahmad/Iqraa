@@ -161,6 +161,24 @@ def camera(cam, t):
     return cam[-1][1]
 
 
+def draw_box(card, rect, to_card, scale, t_rel, ann):
+    """Rounded highlight (soft fill + outline) over a CSS-px rect; fades in, then breathes."""
+    if t_rel < ann["on"] or t_rel > ann["off"]:
+        return
+    k = ease((t_rel - ann["on"]) / 0.3) * ease((ann["off"] - t_rel) / 0.2)
+    pulse = 0.86 + 0.14 * np.sin((t_rel - ann["on"]) * 5.0)
+    x, y, w, h = rect
+    x0, y0 = to_card(x, y); x1, y1 = to_card(x + w, y + h)
+    pad = 5 * scale / 2
+    box = (x0 - pad, y0 - pad, x1 + pad, y1 + pad)
+    col = ann.get("color", (16, 185, 129))
+    big = Image.new("RGBA", (card.width * 2, card.height * 2), (0, 0, 0, 0))           # 2x then down, for a clean edge
+    r = 18 * scale / 2
+    ImageDraw.Draw(big).rounded_rectangle(tuple(v * 2 for v in box), r * 2, fill=col + (int(70 * k),),
+                                          outline=col + (int(255 * k * pulse),), width=10)
+    card.alpha_composite(big.resize(card.size, Image.LANCZOS))
+
+
 def render_scene(sc, take, reader, bg, t_rel):
     t_src = sc["src"] + sc["rate"] * t_rel
     if "src_end" in sc:
@@ -176,6 +194,8 @@ def render_scene(sc, take, reader, bg, t_rel):
     def to_card(px, py):
         return (px - x) * scale, (py - y) * scale
 
+    for ann in sc.get("boxes", []):
+        draw_box(foot, ann["rect"], to_card, scale, t_rel, ann)
     for tt, tx, ty in take.taps:
         cx, cy = to_card(tx, ty)
         ripple(foot, cx, cy, (t_src - tt) / 0.8, scale)
@@ -212,7 +232,12 @@ def build(cfg):
     scene   : dict(src, rate, dur, cam=[(t_rel,(x,y,w,h))], src_end?, pointer?)
     overlay : dict(png, on, off, kind='head'|'chip'|'pill', y?)
     """
-    take = Take(cfg["take"])
+    takes = {}
+    def take_for(sc):
+        n = sc.get("take", cfg["take"])
+        if n not in takes:
+            takes[n] = Take(n)
+        return takes[n]
     t = 0.0
     for s in cfg["scenes"]:
         s["t0"] = t
@@ -241,9 +266,9 @@ def build(cfg):
                     prev_last = last[cur]
                     readers.pop(cur).close()
                 cur = idx
-                readers[idx] = FrameReader(take, sc["src"])
+                readers[idx] = FrameReader(take_for(sc), sc["src"])
             t_rel = tt - sc["t0"]
-            frame = render_scene(sc, take, readers[idx], bg, t_rel)
+            frame = render_scene(sc, take_for(sc), readers[idx], bg, t_rel)
             last[idx] = frame
             if prev_last is not None and t_rel < XFADE:
                 frame = Image.blend(prev_last, frame, ease(t_rel / XFADE))
@@ -253,7 +278,7 @@ def build(cfg):
                 a = min(a_in, ease((o["off"] - tt) / 0.08))
                 if a <= 0.003:
                     continue
-                dy = 0 if first else (1 - ease((tt - o["on"]) / 0.26)) * 22
+                dy = 0 if (first or o["kind"] == "at") else (1 - ease((tt - o["on"]) / 0.26)) * 22
                 img = imgs[o["png"]]
                 if a < 0.999:
                     img = img.copy(); img.putalpha(img.getchannel("A").point(lambda v: int(v * a)))
@@ -261,9 +286,22 @@ def build(cfg):
                     pos = (HEAD_X, HEAD_Y)
                 elif o["kind"] == "chip":
                     pos = (960 - img.width, o["y"])
+                elif o["kind"] == "at":                      # centred on (cx, cy): the countdown numerals
+                    pos = (o["cx"] - img.width / 2, o["cy"] - img.height / 2)
                 else:
                     pos = (960 - img.width, 1484)
                 frame.alpha_composite(img, (int(pos[0]), int(pos[1] - dy)))
+            for rg in cfg.get("rings", []):
+                if rg["on"] <= tt <= rg["off"]:
+                    a = ease((tt - rg["on"]) / 0.15) * ease((rg["off"] - tt) / 0.1)
+                    prog = min(1.0, (tt - rg["on"]) / (rg["off"] - rg["on"] - 0.1))
+                    S2 = 3; R = rg["r"]; pad = 14
+                    L = Image.new("RGBA", ((2 * R + 2 * pad) * S2,) * 2, (0, 0, 0, 0)); dd = ImageDraw.Draw(L)
+                    box = (pad * S2, pad * S2, (2 * R + pad) * S2, (2 * R + pad) * S2)
+                    dd.ellipse(box, outline=(255, 255, 255, int(46 * a)), width=10 * S2 // 2)
+                    dd.arc(box, -90, -90 + 360 * (1 - prog), fill=AQUA + (int(255 * a),), width=10 * S2 // 2)
+                    L = L.resize((2 * R + 2 * pad, 2 * R + 2 * pad), Image.LANCZOS)
+                    frame.alpha_composite(L, (int(rg["cx"] - R - pad), int(rg["cy"] - R - pad)))
             out = frame.convert("RGB")
         else:
             te = tt - t_end

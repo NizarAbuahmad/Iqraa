@@ -6,8 +6,9 @@
 | 2 | `out/Iqrra_02_Library.mp4` | **recorded from the app**, demo account | 22.7 s |
 | 3 | `out/Iqrra_03_Classes.mp4` | **recorded from the app**, demo account | 24.4 s |
 | 4 | `out/Iqrra_04_Communication.mp4` | **recorded from the app**, demo account | 24.3 s |
+| 5 | `out/Iqrra_05_Quiz.mp4` | **recorded from the app**, demo account (+ a clip of Reel 2's take) | 23.1 s |
 
-All four share one layout (headline in the top safe zone, the app in a rounded card, branded end card),
+Reels 1–4 share one layout (headline in the top safe zone, the app in a rounded card, branded end card),
 the same Chromium-rendered Arabic (Cairo / Almarai, never ffmpeg `drawtext`) and the same music bed.
 
 ## What is real, what is staged (Reels 2–4)
@@ -31,6 +32,22 @@ accounts exist only on that machine.
 - **Wording.** The app calls a class a «شعبة»; the brief's copy says «صف / صفوف» and is kept verbatim, so Reel 3's
   headlines say «صفّك» over screens that say «شعبة».
 
+## Reel 5 — «سؤال الحصة» (a different format)
+
+Reels 1–4 are screen walkthroughs; Reel 5 is a quiz: a real multiple-choice question from the library worksheet
+«تركيب الاقترانات» (item 2: f(x) = x² − 1, find f(3), options 8 / 9 / 2 / −1), a 3-2-1 ring, the answer
+highlighted in the app, the same key row highlighted in «مفتاح الإجابات», and a closing clip of the library card.
+`build_reel5.py` has the rationale; the take is `capture/r5_record.cjs`.
+
+- **Nothing says «verified».** Every key in the premade library is `verificationSource: 'bank'` (computed with its
+  question) — none is `'symbolic'` — so the reel shows the key and never claims proof. I checked the answer by hand
+  (3² − 1 = 8; 9 is the "forgot the −1" slip).
+- **Why item 2.** The sheet numbers questions per section but its key globally, and only in the first section do they
+  agree — highlighting key row 6 under a question the app labels «3.» would confuse. (Another MCQ on that sheet has
+  an Arabic «و» that renders like a stray "g" next to Latin maths, so it was dropped.)
+- **Known library issue, not touched here:** 27 of 28 premade sheets repeat question stems inside one sheet
+  (this one repeats three of its ten); queued as a separate task.
+
 ## Rebuilding
 
 ```bash
@@ -51,6 +68,7 @@ node capture/relogin.cjs demo.messages@example.com r4 && node capture/r4_record.
 
 node render_overlays.js && python3 make_music.py out/bed.wav 23.5
 python3 build_reel1.py && python3 build_reel2.py && python3 build_reel3.py && python3 build_reel4.py
+node capture/relogin.cjs demo.library@example.com r2 && node capture/r5_record.cjs && python3 build_reel5.py
 python3 verify_reel.py out/Iqrra_02_Library.mp4              # format, loudness, black frames, safe-zone margins
 ```
 
