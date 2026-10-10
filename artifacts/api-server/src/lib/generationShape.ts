@@ -36,7 +36,8 @@ export type GenerationKind =
   | "classroom-activity"
   | "prompt-slides"
   | "lesson-teaching"
-  | "infographic";
+  | "infographic"
+  | "solve";
 
 /**
  * Fields whose absence leaves the screen with nothing to draw.
@@ -64,6 +65,9 @@ export const REQUIRED_FIELDS: Record<GenerationKind, readonly string[]> = {
   "lesson-teaching": ["concepts"],
   // `subtitle` is decoration and may legitimately be short or absent.
   infographic: ["title", "keyFacts", "sections", "takeaway"],
+  // The board's AI-solved problem. `problem` is deliberately absent: the route
+  // shows the teacher's own text, so the model is not asked to restate it.
+  solve: ["steps", "answer"],
 };
 
 /** Which required fields are missing or empty — [] means usable. */
@@ -140,7 +144,16 @@ export function assertUsableDeck(parsed: unknown): void {
     const slide = s as Record<string, unknown>;
     const title = typeof slide.title === "string" ? slide.title.trim() : "";
     const content = typeof slide.content === "string" ? slide.content.trim() : "";
-    return !title || !content;
+    // A `stat` or `compare` slide keeps its substance outside `content` — the
+    // figure and its caption, the two columns — and the prompt never asks for
+    // a body on those. Refusing them here threw away a whole paid deck over
+    // the one slide the model had laid out best.
+    const stat = slide.stat as { value?: unknown } | undefined;
+    const compare = slide.compare as { left?: unknown; right?: unknown } | undefined;
+    const hasStat = typeof stat?.value === "string" && stat.value.trim() !== "";
+    const hasCompare = Array.isArray(compare?.left) && compare.left.length > 0
+      && Array.isArray(compare?.right) && compare.right.length > 0;
+    return !title || !(content || hasStat || hasCompare);
   });
   if (blank.length > 0) {
     throw new UnusableGenerationError("prompt-slides", [
@@ -167,7 +180,9 @@ export function deckShortfalls(parsed: unknown): string[] {
   if (!objects.some(s => s.type === "divider")) out.push("no divider slide");
   // A laid-out slide is meant to be one line (statement) or keeps its body
   // outside `content` (stat, compare), so it is not a thin slide.
-  const thin = objects.filter(s => !s.layout && typeof s.content === "string" && !s.content.includes("\n")).length;
+  // Not the cover: the prompt asks for one line there on purpose, so counting
+  // it flagged every deck ever generated as having at least one thin slide.
+  const thin = objects.filter((s, i) => i > 0 && !s.layout && typeof s.content === "string" && !s.content.includes("\n")).length;
   if (thin > 0) out.push(`${thin}/${objects.length} slides are a single unbroken line`);
   return out;
 }

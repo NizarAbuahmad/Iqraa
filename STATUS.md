@@ -427,8 +427,62 @@ an announcement by default» below.
     phone (the hit test is cached and bounds-checked; its cost was measured
     only in node, before the cache, at about 39 ms for a 400-stroke sweep),
     and the presentation's action row at phone width.
-    Still to build: C (AI solve — only the 7
-    `VERIFIABLE_TOPICS` may ever be marked verified). Spec and plan:
+    **C — «حلّ مسألة» (2026-10-10).** A teacher types a problem (a text box
+    with a symbol row); `POST /generate/solve` (teacher-only, unpooled, both
+    spend caps re-checked before each model call) returns steps and a final
+    answer, drawn in a panel on the left of the page under the pen, revealed
+    one step at a time from the palette, saved with the board (board file
+    version 2 — written only when a page has a solution, so boards without
+    one stay version 1) and printed in the PDF with every step. **What may
+    be called verified:** only the *final answer*, only when the problem is one
+    of the 7 `VERIFIABLE_TOPICS` and SymPy says `equivalent`; the steps are
+    never checked and every block says so («خطوات مكتوبة بالذكاء الاصطناعي ولم
+    تُراجَع»), with either «✓ الإجابة النهائية: تحقق منها SymPy» or «الإجابة
+    النهائية لم يُتحقق منها» beside the answer. The model's reply is
+    whitelisted into `{steps, answer, check}` — a model-written `verified` is
+    never read. The ✓ needs the checked answer to equal the shown one, the
+    check to be a real question (a tautology such as `P = 1/6` is refused —
+    found by the final review), and, when the typed text is Latin maths the
+    shared classifier can read, the check to be about that same problem; a
+    verified block shows «فُهمت المسألة هكذا» (what SymPy actually checked).
+    A SymPy `distinct` retries once with SymPy's answer and shows the retry
+    only if it verifies, else «لم أستطع حل هذه المسألة بثقة»; undecided, no
+    check, unsupported and an unreachable verifier keep the solution,
+    unchecked. `lib/math-verify/src/solution.ts` (`parseSolution`) is shared by
+    the API, the app and the saved-board parser; `DEMO_MODE` is untouched
+    (`solveProblem` is live-only, like prompt-slides: with live AI off the
+    dialog says «الحل بالذكاء الاصطناعي غير مُفعَّل»). Spec and plan:
+    `docs/superpowers/specs/2026-10-10-whiteboard-c-ai-solve-design.md`,
+    `docs/superpowers/plans/2026-10-10-whiteboard-c-ai-solve.md`.
+    Verified: lib 25, api-server 1421 and mobile 3621 tests green (0 fail),
+    typecheck clean; in Chromium against the local stack with the REAL route
+    and the REAL SymPy verifier but a **stub model** (a local OpenAI-compatible
+    server returning canned replies): verified, contradicted-then-corrected,
+    contradicted-twice (422 + message, dialog stays open, nothing drawn),
+    no-check unchecked with a model-written `verified: true` ignored, the
+    tautology refused, replace / delete / delete-page confirms, the pen
+    drawing over the block, save → one version-2 row, hard reload → fully
+    revealed and not dirty, a real PDF download with the panel and both
+    labels, the layout at 1280, 768 and 360 px. Measured, not guessed: in an
+    Arabic PDF a numbers-only equation printed REVERSED («5 + 3 = 8» as «8 =
+    3 + 5») until each row was bidi-isolated; the generated markup now lays
+    the digits left to right.
+    Not verified: **the live model's real solutions, the verifier on real
+    model output, token cost and latency** (the client times out at 60 s; two
+    model calls plus two 8 s verifier timeouts can exceed it, and the server
+    still bills), touch on a real phone, Android, native PDF share, a board
+    near the 2 MB cap. Known limits: steps show in the Latin notation the
+    model wrote (no «س» / Arabic-digit conversion — `MathText` cannot parse
+    Arabic-Indic exponents); a phone-sized stage clips the middle of a long
+    solution (the label and the answer are pinned and never clipped; the PDF
+    is complete, and refuses to export a solution too large to print rather
+    than clip the verdict); for an Arabic prose problem the only guard that
+    the ✓ is about the right problem is the teacher reading «فُهمت المسألة
+    هكذا»; a forged saved board with `verified: true` plus a plausible
+    `understoodAs` is accepted (the file has no signature). Seen, not
+    changed: `modules/assessment/keyVerification.ts` (the exam path) has no
+    tautology guard on model-written checks either.
+    Spec and plan of A and B:
     `docs/superpowers/specs/2026-10-08-whiteboard-board-design.md`,
     `docs/superpowers/plans/2026-10-08-whiteboard-board.md`; B:
     `docs/superpowers/specs/2026-10-08-whiteboard-b-pages-save-export-design.md`,
@@ -1379,6 +1433,30 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
 - When the worksheet screen is opened with a lesson, its unit dropdown still
   shows the placeholder (the documented gap in `TopicSelector.tsx`). The topic
   itself is held.
+## Teacher notes reach the exports, and five smaller deck fixes, 2026-10-09
+
+The follow-up to the 2026-10-08 entry below, closing what that review left open:
+
+- **Teacher notes in both exports.** `services/deckNotes.ts` turns a slide's
+  `hint` and `teacher` block into labelled sections. The PPTX puts them in the
+  speaker-notes pane (`addNotes`), where presenter view shows them to the
+  teacher and never to the class; the PDF appends «ملاحظات المعلّم» pages after
+  the last slide, one block per slide, kept whole across page breaks. Until now
+  neither export carried a word of the block the prompt spends its budget on.
+- **A `stat` or `compare` slide no longer fails the whole deck.**
+  `assertUsableDeck` treated their empty `content` as a blank slide and threw
+  away a paid generation over its best-laid-out slide; it now accepts a filled
+  `stat.value` or two filled `compare` columns in place of a body.
+- **PDF stems keep their lines.** A two-line problem on a question or example
+  slide printed as one run-on line (HTML collapses newlines); each line is now
+  its own block, as on the projector.
+- **PPTX `steps` fit the slide.** Row height now budgets for the gaps, and the
+  badge and type step down past six steps; seven used to end below the edge.
+- **No empty «الإجابة المتوقعة» section** in the presenter's teacher panel on
+  cover and hook slides, whose blocks carry only tips.
+- `deckShortfalls` no longer counts the cover as a thin slide — it is one line
+  by the prompt's own rule, so the warning fired on every deck.
+
 ## Five deck-rendering defects fixed, 2026-10-08
 
 A read of the whole slides pipeline on main (prompt → three renderers)

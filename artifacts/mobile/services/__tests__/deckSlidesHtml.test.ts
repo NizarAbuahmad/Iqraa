@@ -607,3 +607,40 @@ describe('buildDeckSlidesHTML — a worked example’s answer chain', () => {
     assert.doesNotMatch(render('N₂ + 3H₂ → 2NH₃'), /deck-working-row/);
   });
 });
+
+describe('buildDeckSlidesHTML — teacher notes pages', () => {
+  // Neither export carried a word of the `teacher` blocks until 2026-10-09.
+  const noted: ActivitySlide = {
+    slideNumber: 2, type: 'challenge', title: 'مثال 1', content: 'أوجد الميل', durationSeconds: 60,
+    hint: 'استخدم القانون', teacher: { expectedAnswer: 'm = 2', teachingTips: 'اطلب الخطوة الأولى' },
+  };
+
+  it('appends the notes after the slides, labelled, without adding a slide', () => {
+    const html = markup(buildDeckSlidesHTML(deck([titleSlide, noted]), true));
+    assert.equal((html.match(/class="deck-slide/g) ?? []).length, 2);
+    assert.ok(html.lastIndexOf('class="deck-slide') < html.indexOf('class="notes-pages"'));
+    assert.match(html, /ملاحظات المعلّم/);
+    assert.match(html, /notes-title">2 · مثال 1/);
+    assert.match(html, /notes-label">تلميح<\/p><p class="notes-text">استخدم القانون/);
+    assert.match(html, /الإجابة المتوقعة/);
+  });
+
+  it('prints no notes section for a deck with nothing for the teacher', () => {
+    const html = markup(buildDeckSlidesHTML(deck([titleSlide]), true));
+    assert.doesNotMatch(html, /notes-pages/);
+  });
+});
+
+describe('buildDeckSlidesHTML — multi-line stems', () => {
+  it('keeps each line of a question or example on its own line', () => {
+    // HTML collapses newlines, so the whole stem as one block printed a
+    // two-line problem as one run-on line the projector had shown as two.
+    const html = markup(buildDeckSlidesHTML(deck([
+      titleSlide,
+      { slideNumber: 2, type: 'challenge', title: 'مثال', content: 'المعطيات: نقطتان\nأوجد الميل', durationSeconds: 60 },
+      { slideNumber: 3, type: 'question', title: 'سؤال', content: 'السطر الأول\nالسطر الثاني', options: ['أ', 'ب'], correctIndex: 0, durationSeconds: 45 },
+    ]), true));
+    assert.match(html, /deck-line">المعطيات: نقطتان<\/div><div class="deck-line">أوجد الميل/);
+    assert.match(html, /deck-line">السطر الأول<\/div><div class="deck-line">السطر الثاني/);
+  });
+});
