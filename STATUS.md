@@ -53,6 +53,19 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **API credentials are Secret Manager references** (2026-10-08, live since
+  `iqraa-api-00283-twr`). The ten credentials (`SESSION_SECRET`,
+  `DATABASE_URL`, `OPENAI_API_KEY`, both R2 keys, Unsplash, YouTube,
+  `ADMIN_DEBUG_KEY`, `RESEND_API_KEY`, `SITE_INGEST_KEY`) were copied from the
+  live spec without being printed, checked byte-identical by sha256, and
+  switched in one revision; the other 18 env vars are config and stay plain.
+  Verified live: login reaches the database, `/healthz/unsplash` ok, AI budget
+  persisted, no errors on the new revision, and a CI deploy (run 37806853432,
+  `iqraa-api-00284-b9g`) kept all ten references. Not yet done: revisions
+  ≤ `00282` still hold plain values in their spec until each credential is
+  rotated (OpenAI, `DATABASE_URL` and Google OAuth never were). Rotation is now
+  `gcloud secrets versions add` + a new revision — see *Rotating a secret* in
+  `docs/deploying.md`.
 - **The schema deploys as migrations** (2026-10-08, not yet live until
   production is baselined). `lib/db/migrations/0000_baseline.sql` is the whole
   48-table schema; `deploy.yml` runs `migrate` before `verify-schema` and the
