@@ -53,6 +53,19 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **Android keyboard fix needs a new binary: `version` 1.2.0 → 1.3.0**
+  (2026-10-10). `KeyboardSafeView` is keyboard-controller's
+  `KeyboardAvoidingView`, and `react-native-keyboard-controller` is a native
+  module that arrived on 2026-10-08 with `version` still at 1.2.0 (set on
+  2026-09-26 for the mic). Because `runtimeVersion.policy` is `appVersion`, a
+  1.2.0 binary built before then and a 1.2.0 OTA update looked compatible when
+  they were not, so the keyboard handling could not reach installed apps
+  correctly. Bumped so OTAs only reach binaries that have the module.
+  **Not verified:** which builds are installed, and the keyboard on a device —
+  there was none in this session. **Until an Android build of 1.3.0 is made and
+  installed, an installed app is unchanged** (and a 1.2.0 app stops receiving
+  OTA updates); chat/messaging (`app/messaging/[threadId].tsx`) is covered by
+  the root Stack's wrapper and needs no screen change.
 - **The schema deploys as migrations** (2026-10-08, not yet live until
   production is baselined). `lib/db/migrations/0000_baseline.sql` is the whole
   48-table schema; `deploy.yml` runs `migrate` before `verify-schema` and the
