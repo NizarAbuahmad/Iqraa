@@ -858,6 +858,27 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Premade sheets no longer repeat a question, 2026-10-10
+
+27 of the 28 frozen Grade 10 maths sheets in `premade_worksheets.json` asked
+the same stem more than once inside one sheet. Root cause was two things: the
+manifest predated the generator's `usedStems` guard, and `build-premade-sheets.ts`
+only ever *upserted*, so a lesson the generator now refuses (no offline question
+bank: 4 of them) kept its old repeating sheet.
+
+- The script now refuses any sheet with a repeated stem (`repeatedStems`,
+  `services/premadeStems.ts`) and drops a refused lesson's old sheet
+  (`mergeSheets`, `services/premadeManifest.ts`). `premadeSheets.test.ts` fails
+  a frozen sheet that repeats a stem; the coverage floor is now **24**, not 28.
+- Cost, stated plainly: the bank is small for some lessons, so a few sheets are
+  short (2–5 questions on 16 of 24; only 6 reach 10). A minimum size is a product call.
+- The 4 lessons without a sheet need a question bank in `lib/math-practice`:
+  تمثيل الاقترانات المثلثية, حل مسائل ثلاثية الأبعاد, اقترانات كثيرات الحدود,
+  قسمة كثيرات الحدود والاقترانات النسبية.
+- Not checked/changed: the **live** path. `worksheetPromptAr/En` only forbids
+  repeating the *worked example*; nothing tells the model not to repeat a
+  question. Every key is still `'bank'`, never `'symbolic'`.
+
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
 Step 4 of the worksheet review, agreed in chat. A worksheet was paper only: to

@@ -1,0 +1,114 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Iqraa reel overlays</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;900&family=Almarai:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+:root{ --navy:#081B3A; --teal:#00A99D; --aqua:#34D6C6; --muted:#8BA0B8; }
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:transparent}
+body{font-family:"Almarai",sans-serif;direction:rtl;width:1080px}
+.o{position:absolute;left:0;top:0}
+
+/* Headlines: right edge x=960 (clear of the Reels action rail), top >= 290 */
+.head{width:900px;text-align:right;font-family:"Cairo";font-weight:900;font-size:78px;line-height:1.28;color:#fff;text-wrap:balance;padding:6px 0 18px;
+  text-shadow:0 4px 24px rgba(3,12,28,.55)}
+.head .hl{color:var(--aqua)}
+.head .n{color:var(--aqua);unicode-bidi:isolate}
+
+.chip{display:inline-flex;align-items:center;gap:14px;padding:12px 28px;border-radius:999px;
+  background:rgba(52,214,198,.14);border:2px solid rgba(52,214,198,.55);
+  font-family:"Cairo";font-weight:700;font-size:34px;color:#fff;white-space:nowrap}
+.chip i{font-style:normal;color:var(--aqua)}
+.demo{display:inline-flex;align-items:center;padding:8px 22px;border-radius:999px;background:rgba(8,27,58,.78);
+  border:2px solid rgba(139,160,184,.55);font-family:"Almarai";font-weight:700;font-size:28px;color:#C9D6E6;white-space:nowrap}
+
+/* End card: full 1080x1920, opaque */
+.end{width:1080px;height:1920px;position:relative;overflow:hidden;background:var(--navy)}
+.end .bg{position:absolute;inset:0;background:
+  radial-gradient(900px 760px at 50% 30%, rgba(52,214,198,.20), transparent 62%),
+  radial-gradient(800px 700px at 8% 92%, rgba(0,169,157,.16), transparent 65%),
+  var(--navy)}
+.end .col{position:absolute;left:60px;right:120px;top:360px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.end img{width:470px;display:block}
+.end .name{font-family:"Cairo";font-weight:900;font-size:150px;line-height:1.1;color:#fff;margin-top:34px}
+.end .cta{font-family:"Cairo";font-weight:900;font-size:80px;line-height:1.3;color:#fff;margin-top:70px}
+.end .cta .hl{color:var(--aqua)}
+.end .url{margin-top:64px;direction:ltr;display:inline-block;background:var(--aqua);color:#06243F;
+  font-family:"Cairo";font-weight:900;font-size:58px;padding:24px 62px;border-radius:999px;
+  box-shadow:0 22px 56px rgba(52,214,198,.34);letter-spacing:.01em}
+.end .rule{width:150px;height:6px;border-radius:99px;background:var(--teal);margin-top:56px}
+
+/* --- Reels 2-4 additions (Reel 1 above is unchanged) --- */
+.end .cta.long{font-size:72px;max-width:860px;text-wrap:balance}
+.end .cta.long .hl{color:var(--aqua)}
+
+/* --- Reel 5 additions --- */
+.cd{width:170px;height:170px;display:flex;align-items:center;justify-content:center;font-family:"Cairo";font-weight:900;font-size:118px;color:var(--aqua);line-height:1;text-shadow:0 4px 24px rgba(3,12,28,.55)}
+.formula{direction:ltr;display:inline-flex;align-items:center;padding:12px 30px;border-radius:18px;background:rgba(16,185,129,.16);border:2px solid rgba(52,214,198,.6);font-family:"Cairo";font-weight:700;font-size:44px;color:#fff;white-space:nowrap}
+</style>
+
+<div id="hook"   class="o head">أول مرة على <span class="hl">اقرأ</span>؟<br>ابدأ من هون 👇</div>
+<div id="step1"  class="o head"><span class="n">١.</span> اختار الأداة اللي بتحتاجها</div>
+<div id="step2"  class="o head"><span class="n">٢.</span> أضف تفاصيل الدرس</div>
+<div id="step3"  class="o head"><span class="n">٣.</span> راجع النتيجة</div>
+<div id="chip"   class="o chip"><i>الصف العاشر</i> · الجغرافيا · الغلاف الجوي</div>
+<div id="demo"   class="o demo">وضع العرض · محتوى تجريبي</div>
+
+<div id="end" class="o end"><div class="bg"></div>
+  <div class="col">
+    <img src="assets/logo-wordmark.png" alt="">
+    <div class="rule"></div>
+    <div class="cta">جرّبها على درسك <span class="hl">الجاي</span></div>
+    <div class="url">www.iqrra.com</div>
+  </div>
+</div>
+
+<!-- Reel 2 — library -->
+<div id="r2_hook"  class="o head">بدك فكرة لحصتك <span class="hl">الجاي</span>؟</div>
+<div id="r2_intro" class="o head">افتح مكتبة <span class="hl">اقرأ</span> 📚</div>
+<div id="r2_find"  class="o head">دَوّر على مورد يناسب درسك</div>
+<div id="r2_open"  class="o head">افتحه وشوف إذا بناسب حصتك</div>
+<div id="chip_r2"  class="o chip"><i>الصف العاشر</i> · الرياضيات · تركيب الاقترانات</div>
+
+<!-- Reel 3 — classes -->
+<div id="r3_hook"   class="o head">كل صف إله دروسه وتفاصيله…</div>
+<div id="r3_value"  class="o head">رتّب صفوفك بمكان واحد</div>
+<div id="r3_add"    class="o head">أضف صفّك على <span class="hl">اقرأ</span></div>
+<div id="r3_result" class="o head">وافتح صفّك لتتابع تفاصيله</div>
+<div id="pill_r3"   class="o demo">شعبة وطلبة تجريبيون</div>
+
+<!-- Reel 4 — communication -->
+<div id="r4_hook"   class="o head">صفّك وأولياء الأمور…</div>
+<div id="r4_value"  class="o head">تواصل معهم من نفس المكان</div>
+<div id="r4_class"  class="o head">شارك تذكير مع صفّك</div>
+<div id="r4_parent" class="o head">وتابع مع أولياء الأمور</div>
+<div id="pill_r4"   class="o demo">محادثة تجريبية · حساب تجريبي</div>
+
+<!-- End cards (same layout as Reel 1's) -->
+<div id="end2" class="o end"><div class="bg"></div><div class="col">
+  <img src="assets/logo-wordmark.png" alt=""><div class="rule"></div>
+  <div class="cta long">فكرة حصتك الجاي ممكن تلاقيها <span class="hl">هون</span></div>
+  <div class="url">www.iqrra.com</div></div></div>
+<div id="end3" class="o end"><div class="bg"></div><div class="col">
+  <img src="assets/logo-wordmark.png" alt=""><div class="rule"></div>
+  <div class="cta long">ابدأ بإضافة <span class="hl">أول صف</span></div>
+  <div class="url">www.iqrra.com</div></div></div>
+<div id="end4" class="o end"><div class="bg"></div><div class="col">
+  <img src="assets/logo-wordmark.png" alt=""><div class="rule"></div>
+  <div class="cta long">خلّي التواصل جزء من يومك على <span class="hl">اقرأ</span></div>
+  <div class="url">www.iqrra.com</div></div></div>
+
+<!-- Reel 5 — «سؤال الحصة» quiz and reveal -->
+<div id="r5_hook"   class="o head">سؤال الحصة: جاوب قبل ما يخلص الوقت</div>
+<div id="r5_think"  class="o head">فكّر… واختار جوابك</div>
+<div id="r5_reveal" class="o head">الجواب الصحيح</div>
+<div id="r5_key"    class="o head">ومعها مفتاح الإجابات جاهز</div>
+<div id="r5_lib"    class="o head">الورقة كاملة في مكتبة <span class="hl">اقرأ</span></div>
+<div id="formula"   class="o formula">f(3) = 3² − 1 = 8</div>
+<div id="cd3" class="o cd">٣</div>
+<div id="cd2" class="o cd">٢</div>
+<div id="cd1" class="o cd">١</div>
+<div id="end5" class="o end"><div class="bg"></div><div class="col">
+  <img src="assets/logo-wordmark.png" alt=""><div class="rule"></div>
+  <div class="cta long">أسئلة بجوابها… لدرسك <span class="hl">الجاي</span></div>
+  <div class="url">www.iqrra.com</div></div></div>

@@ -52,6 +52,8 @@ import { fileURLToPath } from 'node:url';
 
 import { MockAIService } from '../services/ai/generators.ts';
 import { classifyVerifiableTopic } from '../services/ai/verifyMathGuards.ts';
+import { mergeSheets } from '../services/premadeManifest.ts';
+import { repeatedStems } from '../services/premadeStems.ts';
 import type { WorksheetOutput } from '../services/ai/AIService.ts';
 import {
   buildNccdSem1Catalog,
@@ -228,6 +230,8 @@ function problemsWith(id: string, content: WorksheetOutput): string[] {
     problems.push(`answer key does not line up: ${nums.length} keys for ${questionCount} questions`);
   }
   if (content.answerKey.some(k => !k.answer.trim())) problems.push('an answer key is empty');
+  // A sheet that asks the same thing twice is a smaller sheet than its count says.
+  problems.push(...repeatedStems(content));
   return problems.map(problem => `${id}: ${problem}`);
 }
 
@@ -260,16 +264,22 @@ function readManifest(): Manifest {
 /**
  * Upsert by id and sort, so a re-run produces a reviewable diff.
  *
- * Also drops any sheet whose lesson is now held back. Without that, adding an
- * entry to `HELD_BACK` would leave the bad sheet sitting in the manifest from
- * an earlier run — held back in the code and still shipped in the data.
+ * Drops two kinds of sheet. A lesson now held back (any level), so adding an
+ * entry to `HELD_BACK` does not leave the bad sheet shipped from an earlier run.
+ * And a lesson this run refused (this level only): upsert alone keeps the old
+ * sheet, so a lesson the generator can no longer build cleanly — it has too few
+ * distinct questions — would keep serving the repeating sheet it used to build.
  */
-function writeManifest(manifest: Manifest, produced: PremadeWorksheet[]): void {
-  const byId = new Map(manifest.sheets.map(sheet => [sheet.id, sheet]));
-  for (const sheet of produced) byId.set(sheet.id, sheet);
-  const sheets = [...byId.values()]
-    .filter(sheet => !HELD_BACK[sheet.lessonId])
-    .sort((a, b) => a.id.localeCompare(b.id));
+function writeManifest(
+  manifest: Manifest,
+  produced: PremadeWorksheet[],
+  refusedIds: ReadonlySet<string>,
+): void {
+  const sheets = mergeSheets(
+    manifest.sheets,
+    produced,
+    sheet => Boolean(HELD_BACK[sheet.lessonId]) || refusedIds.has(sheet.id),
+  );
   writeFileSync(MANIFEST_PATH, `${JSON.stringify({ ...manifest, sheets }, null, 2)}\n`, 'utf8');
 }
 
@@ -303,6 +313,7 @@ async function main(): Promise<void> {
 
   const produced: PremadeWorksheet[] = [];
   const problems: string[] = [];
+  const refusedIds = new Set<string>();
   let totalProvable = 0;
 
   for (const [index, lesson] of lessons.entries()) {
@@ -329,6 +340,7 @@ async function main(): Promise<void> {
       const sheetProblems = problemsWith(id, content);
       if (sheetProblems.length) {
         problems.push(...sheetProblems);
+        refusedIds.add(id);
         console.log(`${position} ${id}  REFUSED — ${sheetProblems.join('; ')}`);
         continue;
       }
@@ -355,6 +367,7 @@ async function main(): Promise<void> {
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       problems.push(`${id}: ${message}`);
+      refusedIds.add(id);
       console.log(`${position} ${id}  FAILED — ${message}`);
     }
   }
@@ -371,8 +384,8 @@ async function main(): Promise<void> {
 
   if (args.dryRun) {
     console.log('\n--dry-run: manifest not written');
-  } else if (produced.length) {
-    writeManifest(readManifest(), produced);
+  } else if (produced.length || refusedIds.size) {
+    writeManifest(readManifest(), produced, refusedIds);
     console.log(`\nwrote ${MANIFEST_PATH}`);
     console.log('review the diff before committing — this is the quality gate');
   }
