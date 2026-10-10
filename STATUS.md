@@ -370,21 +370,124 @@ an announcement by default» below.
     stays in the same page place at 800px, width scaling, eraser at 800px, page
     add / previous / next / delete / cap, per-page paper and undo, the delete
     and leave prompts) and the A scripts (board 25/25, Escape / keys /
-    countdown 9/9, slide pen, per-slide ink, book-page pen) all pass. Seen, not
-    fixed: in a **portrait phone** the 16:9 page is a thin strip and the axes
-    tick labels are about 5px — fine for a projector, poor on a phone.
-    Not verified: touch on a real phone, Android hardware back, native SVG text
-    on a device, whether a slide still scrolls while the pen is off and locks
+    countdown 9/9, slide pen, per-slide ink, book-page pen) all pass. Seen at
+    first: on a **portrait phone** the 16:9 page is a thin strip and the axes
+    tick labels were about 5px. **Paper made readable 2026-10-10**
+    (`paperMetrics` in `services/whiteboardModel.ts`, used by
+    `BoardBackground`): as the page shrinks, tick numbers, grid lines and axes
+    keep a minimum on-screen size (11 / 1 / 2px) and numbers are drawn every
+    2nd or 3rd square instead of every one (390px: every 3rd; 768px: every 2nd;
+    projector size unchanged). Seen in Chromium at 390, 768 and 1280px. The
+    page itself is still a 16:9 strip about 220px tall on an upright phone —
+    only the paper was fixed; a taller portrait page would change what B2 saves
+    and was not done.
+    **B2 (2026-10-10): save, reopen, PDF.** A board saves as a `'board'`
+    material (no schema change — `saved_materials.type` is plain text and
+    `content` jsonb): `services/boardFile.ts` serialises it, refuses more than
+    20 pages or 2 MB, and `parseBoard` validates anything read back (hex
+    colours, plain-decimal points, known paper, sane widths) and refuses a bad
+    board whole. The first Save asks for a name (pre-filled from the deck's
+    lesson); later saves update the same material with no dialog. Reopen is
+    `/ai-tools/whiteboard?savedId=<id>` — from the «ملفاتي» card (through
+    `workspace/view.tsx`, which now redirects a board instead of letting it
+    fall through to the quiz renderer); the card's Edit menu is wired by
+    construction (`MATERIAL_EDIT_ROUTE.board` + `{ savedId, ...formState }`) and
+    was not clicked in the browser. There is a «سبوراتي» filter
+    tab (the tab row now wraps; the fifth tab was clipped off-screen at 360px).
+    Leaving asks only when the board no longer matches what was saved. A saved
+    board that fails validation opens blank with «تعذّر فتح السبورة», and Save
+    then creates a NEW material and never overwrites the unreadable one. The
+    PDF (`services/boardExportHtml.ts`, from the in-memory board, so it works
+    before saving) is one A4-landscape page per board page with the title, a
+    page number, the paper and the strokes; it validates its input again and
+    escapes the title. Verified in Chromium against the local stack, a
+    signed-in teacher: a 35-check pass (save → toast, one row on the server
+    with the deck's topic/subject/grade, listed under «الكل» and «سبوراتي»,
+    hard reload and reopen from the list with the same stroke geometry,
+    inherited axes paper on page 2, `/workspace/view?id=` redirects, a second
+    save updates in place with no dialog and no duplicate, undo back to the
+    saved state is clean, an unreadable board opens blank and is not
+    overwritten, Save/PDF inside the viewport at 390/360/320px), the earlier
+    scripts again (B1 25/25, board 25/25, Escape / keys / countdown 9/9, slide
+    pen, per-slide ink, book-page pen), and a real PDF download — 2 pages,
+    A4 landscape, title, grid, axes, strokes visible. Mobile suite 3570 pass /
+    0 fail / 10 skipped. Seen, not changed: the Arabic page number reads
+    «٢ / ١» for page 1 of 2, on screen and in the PDF alike (the Unicode bidi
+    order of «١ / ٢» in an RTL line — 1 sits on the right); the browser named
+    the downloaded file `download`, not the title (the same `exportAsPDF`
+    path as every other PDF — not compared); a stroke drawn within about a
+    second of a hard reload of `?savedId=` is dropped (the screen re-mounts
+    while the app restores the session).
+    Not verified: touch on a real phone, Android hardware back (and the
+    keyboard over the name dialog), native print / share of the PDF, native
+    SVG text on a device, English labels of the new controls in a browser, a
+    quota failure on save, a signed-out teacher (the board is only reachable
+    signed in), a board near the 2 MB cap, whether a slide still scrolls while the pen is off and locks
     while it is on, the board on a projector, erasing on a full board on a
     phone (the hit test is cached and bounds-checked; its cost was measured
     only in node, before the cache, at about 39 ms for a 400-stroke sweep),
     and the presentation's action row at phone width.
-    Still to build: B2 (save as a material, reopen from «موادي», PDF export) and C (AI solve — only the 7
-    `VERIFIABLE_TOPICS` may ever be marked verified). Spec and plan:
+    **C — «حلّ مسألة» (2026-10-10).** A teacher types a problem (a text box
+    with a symbol row); `POST /generate/solve` (teacher-only, unpooled, both
+    spend caps re-checked before each model call) returns steps and a final
+    answer, drawn in a panel on the left of the page under the pen, revealed
+    one step at a time from the palette, saved with the board (board file
+    version 2 — written only when a page has a solution, so boards without
+    one stay version 1) and printed in the PDF with every step. **What may
+    be called verified:** only the *final answer*, only when the problem is one
+    of the 7 `VERIFIABLE_TOPICS` and SymPy says `equivalent`; the steps are
+    never checked and every block says so («خطوات مكتوبة بالذكاء الاصطناعي ولم
+    تُراجَع»), with either «✓ الإجابة النهائية: تحقق منها SymPy» or «الإجابة
+    النهائية لم يُتحقق منها» beside the answer. The model's reply is
+    whitelisted into `{steps, answer, check}` — a model-written `verified` is
+    never read. The ✓ needs the checked answer to equal the shown one, the
+    check to be a real question (a tautology such as `P = 1/6` is refused —
+    found by the final review), and, when the typed text is Latin maths the
+    shared classifier can read, the check to be about that same problem; a
+    verified block shows «فُهمت المسألة هكذا» (what SymPy actually checked).
+    A SymPy `distinct` retries once with SymPy's answer and shows the retry
+    only if it verifies, else «لم أستطع حل هذه المسألة بثقة»; undecided, no
+    check, unsupported and an unreachable verifier keep the solution,
+    unchecked. `lib/math-verify/src/solution.ts` (`parseSolution`) is shared by
+    the API, the app and the saved-board parser; `DEMO_MODE` is untouched
+    (`solveProblem` is live-only, like prompt-slides: with live AI off the
+    dialog says «الحل بالذكاء الاصطناعي غير مُفعَّل»). Spec and plan:
+    `docs/superpowers/specs/2026-10-10-whiteboard-c-ai-solve-design.md`,
+    `docs/superpowers/plans/2026-10-10-whiteboard-c-ai-solve.md`.
+    Verified: lib 25, api-server 1421 and mobile 3621 tests green (0 fail),
+    typecheck clean; in Chromium against the local stack with the REAL route
+    and the REAL SymPy verifier but a **stub model** (a local OpenAI-compatible
+    server returning canned replies): verified, contradicted-then-corrected,
+    contradicted-twice (422 + message, dialog stays open, nothing drawn),
+    no-check unchecked with a model-written `verified: true` ignored, the
+    tautology refused, replace / delete / delete-page confirms, the pen
+    drawing over the block, save → one version-2 row, hard reload → fully
+    revealed and not dirty, a real PDF download with the panel and both
+    labels, the layout at 1280, 768 and 360 px. Measured, not guessed: in an
+    Arabic PDF a numbers-only equation printed REVERSED («5 + 3 = 8» as «8 =
+    3 + 5») until each row was bidi-isolated; the generated markup now lays
+    the digits left to right.
+    Not verified: **the live model's real solutions, the verifier on real
+    model output, token cost and latency** (the client times out at 60 s; two
+    model calls plus two 8 s verifier timeouts can exceed it, and the server
+    still bills), touch on a real phone, Android, native PDF share, a board
+    near the 2 MB cap. Known limits: steps show in the Latin notation the
+    model wrote (no «س» / Arabic-digit conversion — `MathText` cannot parse
+    Arabic-Indic exponents); a phone-sized stage clips the middle of a long
+    solution (the label and the answer are pinned and never clipped; the PDF
+    is complete, and refuses to export a solution too large to print rather
+    than clip the verdict); for an Arabic prose problem the only guard that
+    the ✓ is about the right problem is the teacher reading «فُهمت المسألة
+    هكذا»; a forged saved board with `verified: true` plus a plausible
+    `understoodAs` is accepted (the file has no signature). Seen, not
+    changed: `modules/assessment/keyVerification.ts` (the exam path) has no
+    tautology guard on model-written checks either.
+    Spec and plan of A and B:
     `docs/superpowers/specs/2026-10-08-whiteboard-board-design.md`,
     `docs/superpowers/plans/2026-10-08-whiteboard-board.md`; B:
     `docs/superpowers/specs/2026-10-08-whiteboard-b-pages-save-export-design.md`,
-    `docs/superpowers/plans/2026-10-09-whiteboard-b1-stage-and-pages.md`.
+    `docs/superpowers/plans/2026-10-09-whiteboard-b1-stage-and-pages.md`,
+    `docs/superpowers/plans/2026-10-10-whiteboard-b2-save-reopen-pdf.md`.
 - **A teacher can set, replace and remove their own profile picture**
   (2026-09-09): `app/(tabs)/profile.tsx`, `POST`/`DELETE /auth/users/avatar`.
   Uploads into the `iqraa-public` R2 bucket (anonymous-read, non-expiring
@@ -809,6 +912,30 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## «where i can add more classes» reached the subject question, 2026-10-10
+
+Reported from the web chat: «where i can add more classes to my account»
+came back as «سؤالك قد يخص أكثر من مادة. أيّ مادة تقصد؟». The question never
+reached the app map. `isAppHelpQuery` (`services/appHelp.ts`) only claims a
+message that opens with a known where/how phrase, and «where i can …» is not one
+of them («where can i …» is, which is why the same question worded that way
+worked). It fell through to the teaching pipeline, found no lesson, and the
+ambiguity check asked for a subject.
+
+Now claimed as app help: «where i/we can|could|should|do|would …», «where to …»,
+«where should i/we …», and «can i add|change|edit|delete|remove|export|save|
+share|link|invite …». Each still needs a place or an app noun, so «where to find
+the vertex of a parabola» and «can i add fractions with different denominators»
+stay teaching, and «can we create a quiz on fractions» is left as a request to
+the assistant (`create` and `make` are deliberately not in the can-I verbs).
+`appHelp.test.ts` has the reported sentence, its siblings, and the guards.
+
+**Still not claimed, and still ends in the subject question:** a statement with
+no where/how/can-I in front, such as «add more classes to my account» or «i want
+to add another class». «class» also means a class of compounds, so claiming a
+bare statement needs more than a keyword; not attempted here. Checked by running
+the router on each sentence, not in the web build.
+
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
 Step 4 of the worksheet review, agreed in chat. A worksheet was paper only: to
@@ -873,6 +1000,39 @@ fill-blank box. **Not checked:** on a device. **Seen, not fixed here:** Latin
 maths inside an Arabic prompt reads back to front on the take and review
 screens («cos²θ + sin²θ» shows as «θ + sin²θcos²») — the worksheet screen's
 2026-10-05 fix (`isolateForeignRuns`) never reached them.
+
+## Book codes name what they open, and only Grades 9–10 have ever been scanned, 2026-10-09
+
+A Library row for a book's printed QR code is now headlined by **what it opens**
+(«ديوان البحتري», «الجريدة الرسمية (العدد ٥٧٨٢): قانون الانتخاب لمجلس النواب»),
+with the book and printed page underneath. The «صفحة ويب» label and the type
+icon are gone from these rows; a video keeps its play badge. This supersedes the
+2026-10-06 wording below («titled by its book … «صفحة ويب» underneath»), which
+was true for two days. The title is an optional `title` on a
+`book-qr-links.json` entry, written by hand after opening the link (page title,
+YouTube title, the Gazette issue's contents). **14 of the 17 reachable codes
+have one**; the other three — two `top4top.io` mp4s on Arabic pp. ٩٠ and ٩٧ and
+a `me-qr.com` link behind an ad gate on p. ١٠٦ — fall back to the book's name.
+
+**The manifest covers Grade 9 and 10 only — not because other grades have no
+codes, but because they were never scanned.** The one decode pass (2026-09-15)
+ran over 14 book folders, all Grade 9 or 10 (186 rows), and its script was never
+committed, so for every other grade "no entries" looked the same as "no codes".
+This file and a test comment both then asserted the ministry prints codes in
+Grade 9 and 10 only; that was never checked. Measured on 2026-10-09 for the
+Library: Grade 2 and Grade 4 have **0 book codes and 0 ready-made sheets**, so a
+teacher of those grades sees only what staff uploaded.
+
+`scripts/scan_book_qr.py` is the repeatable version. Run it where the book PDFs
+are (they are gitignored), or add `--fetch` and it downloads the student books
+from the catalog's own `Book.pdfUrl` links first (182 books, Grades 1–10) — on a
+network that can reach `nccd.gov.jo`, which the ministry host refuses from a
+cloud/CI network (checked 2026-10-10: connection reset). Then `verify-qr-links`. It writes new rows as `httpStatus: "unchecked"`, which the
+app does not show until the link check has seen them answer, and records every
+book it looked at under `scannedBooks` so "scanned, found none" is distinguishable
+from "never scanned". **Tested only on synthetic PDFs built with known codes,
+and `--fetch` only against a local web server** — neither has yet been run on a
+real ministry book.
 
 ## A teacher attaches a book figure to a worksheet question, 2026-10-09
 
@@ -1550,7 +1710,7 @@ it responded to the grade/subject chips the other shelves answered to. Each
 book code now sits on the shelf of what it opens (video → فيديوهات, audio →
 تسجيلات صوتية, image → صور, PDF → مستندات), after staff uploads and ready-made
 sheets, and is titled by its book with the printed page and, for a web page,
-«صفحة ويب» underneath. **A web-page code has no shelf of its own and is filed
+«صفحة ويب» underneath *(superseded 2026-10-09, above)*. **A web-page code has no shelf of its own and is filed
 under مستندات** — 11 of the 17 reachable grade 9–10 codes are exactly that.
 Checked against the real manifest: grade 10's 15 codes land as 4 videos + 11
 documents, and **all 15 are Arabic / civics / Islamic / geography — none is

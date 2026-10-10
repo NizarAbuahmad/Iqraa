@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
+import type { BoardSolution } from '@workspace/math-verify';
 import {
   BOARD_BACKGROUNDS,
   BOARD_DEFAULT_WIDTH,
@@ -12,12 +13,15 @@ import {
   MAX_PAGES,
   STROKE_WIDTHS,
   addPage,
+  blankPage,
   axesGeometry,
   canUndo,
   clearBoard,
   commitStrokes,
   currentPage,
+  paperMetrics,
   docHasInk,
+  docHasSolution,
   eraseAlong,
   eraseAt,
   fitCanvas,
@@ -30,6 +34,7 @@ import {
   strokeHit,
   undoBoard,
   updateCurrent,
+  withSolution,
   type BoardDoc,
   type BoardState,
   type Stroke,
@@ -490,5 +495,84 @@ describe('hit test with canvas-unit stroke widths (strokeScale)', () => {
   it('reach = 16px eraser + 3px (half of the 6px drawn width) = 0.0296875 of the width', () => {
     assert.equal(strokeHit(s, 0.5, 0.25 + 0.0295, radius, unit), true);
     assert.equal(strokeHit(s, 0.5, 0.25 + 0.03, radius, unit), false);
+  });
+});
+
+describe('paperMetrics', () => {
+  it('leaves the paper as designed at projector size', () => {
+    for (const scale of [1, 0.75, 0.7]) {
+      const m = paperMetrics(scale);
+      assert.equal(m.fontSize, 16, `font at ${scale}`);
+      assert.equal(m.gridStroke, 1.5);
+      assert.equal(m.axisStroke, 3);
+      assert.equal(m.labelEvery, 1);
+    }
+  });
+
+  it('keeps tick numbers, grid lines and axes a readable size on screen when the page shrinks', () => {
+    const scale = 390 / CANVAS_W; // a portrait phone
+    const m = paperMetrics(scale);
+    assert.ok(m.fontSize * scale >= 10.99, `numbers are ${m.fontSize * scale}px`);
+    assert.ok(m.gridStroke * scale >= 0.99, `grid is ${m.gridStroke * scale}px`);
+    assert.ok(m.axisStroke * scale >= 1.99, `axes are ${m.axisStroke * scale}px`);
+  });
+
+  it('labels fewer squares when they would run together, and never skips a label it can fit', () => {
+    const scale = 390 / CANVAS_W;
+    const m = paperMetrics(scale);
+    // adjacent labels are at least ~28px apart on screen
+    assert.ok(m.labelEvery * 40 * scale >= 27.99, `labels are ${m.labelEvery * 40 * scale}px apart`);
+    // and the step is the smallest that achieves that
+    assert.ok((m.labelEvery - 1) * 40 * scale < 28);
+    assert.ok(m.labelEvery > 1);
+  });
+
+  it('grows monotonically as the page shrinks', () => {
+    const a = paperMetrics(0.5);
+    const b = paperMetrics(0.25);
+    assert.ok(b.fontSize >= a.fontSize && b.labelEvery >= a.labelEvery);
+  });
+
+  it('treats a degenerate scale as the reference scale', () => {
+    for (const bad of [0, -1, NaN, Infinity]) {
+      assert.deepEqual(paperMetrics(bad), paperMetrics(1), String(bad));
+    }
+  });
+});
+
+describe('a solution on a page', () => {
+  const sol: BoardSolution = {
+    problem: '2x+5=13', steps: ['2x = 8', 'x = 4'], answer: 'x = 4', verified: false, source: 'unchecked',
+  };
+
+  it('is set and cleared without touching the ink', () => {
+    const page = blankPage();
+    const withIt = withSolution(page, sol);
+    assert.equal(withIt.solution, sol);
+    assert.equal(withIt.board, page.board);
+    const cleared = withSolution(withIt, null);
+    assert.equal('solution' in cleared, false);
+    assert.equal(cleared.board, page.board);
+  });
+
+  it('answers the same page when nothing changes', () => {
+    const page = blankPage();
+    assert.equal(withSolution(page, null), page);
+    const withIt = withSolution(page, sol);
+    assert.equal(withSolution(withIt, sol), withIt);
+  });
+
+  it('is not ink: docHasInk ignores it, docHasSolution sees it on any page', () => {
+    const doc: BoardDoc = { current: 0, pages: [blankPage(), withSolution(blankPage(), sol)] };
+    assert.equal(docHasInk(doc), false);
+    assert.equal(docHasSolution(doc), true);
+    assert.equal(docHasSolution({ current: 0, pages: [blankPage()] }), false);
+  });
+
+  it('a new page has none, and removing a page removes its solution with it', () => {
+    const doc: BoardDoc = { current: 0, pages: [withSolution(blankPage(), sol)] };
+    const added = addPage(doc);
+    assert.equal(added.pages[1]!.solution, undefined);
+    assert.equal(docHasSolution(removePage(added, 0)), false);
   });
 });

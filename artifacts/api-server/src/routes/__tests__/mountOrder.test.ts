@@ -211,6 +211,8 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
       // second route under the same prefix, so it is a second chance to get
       // the mount wrong.
       "/generate/prompt-slides/questions",
+      // Spends a model call (two after a contradiction) per request.
+      "/generate/solve",
       "/practice/read-aloud",
     ]) {
       const res = await fetch(`${base}${route}`, {

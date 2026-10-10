@@ -9,36 +9,40 @@ import {
   axesGeometry,
   gridLines,
   localizeDigits,
+  paperMetrics,
   type BoardBackground as BoardBackgroundKind,
 } from '@/services/whiteboardModel';
 
 /**
  * The paper behind the ink, drawn in canvas units (1280 × 720) inside a
- * viewBox, so it scales with the page. The parent must be the 16:9 stage.
+ * viewBox, so it scales with the page; `scale` (screen px per canvas unit, from
+ * the stage) only decides sizes — see `paperMetrics`. The parent must be the
+ * 16:9 stage.
  * Purely visual: it never takes a touch, so the canvas above it gets every
  * event. `axes` is a grid with the x and y axes and one numbered tick per
  * square (digits localised at display time only).
  */
-export function BoardBackground({ kind, lang }: { kind: BoardBackgroundKind; lang: string }) {
+export function BoardBackground({ kind, lang, scale }: { kind: BoardBackgroundKind; lang: string; scale: number }) {
   if (kind === 'blank') return null;
+  const m = paperMetrics(scale);
   const grid = gridLines(CANVAS_W, CANVAS_H, BOARD_STEP);
   const axes = kind === 'axes' ? axesGeometry(CANVAS_W, CANVAS_H, BOARD_STEP) : null;
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       <Svg width="100%" height="100%" viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`} preserveAspectRatio="none">
         {grid.map((s, i) => (
-          <Line key={i} x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} stroke={DECK_BORDER} strokeWidth={1.5} />
+          <Line key={i} x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} stroke={DECK_BORDER} strokeWidth={m.gridStroke} />
         ))}
         {axes && (
           <>
-            <Line {...axes.xAxis} stroke={DECK_MUTED} strokeWidth={3} />
-            <Line {...axes.yAxis} stroke={DECK_MUTED} strokeWidth={3} />
-            {axes.ticks.map((tick, i) => (
+            <Line {...axes.xAxis} stroke={DECK_MUTED} strokeWidth={m.axisStroke} />
+            <Line {...axes.yAxis} stroke={DECK_MUTED} strokeWidth={m.axisStroke} />
+            {axes.ticks.filter(tick => Math.abs(Number(tick.value)) % m.labelEvery === 0).map((tick, i) => (
               <SvgText
                 key={i}
-                x={tick.axis === 'x' ? tick.x : tick.x - 8}
-                y={tick.axis === 'x' ? tick.y + 22 : tick.y + 5}
-                fontSize={16}
+                x={tick.axis === 'x' ? tick.x : tick.x - m.fontSize * 0.5}
+                y={tick.axis === 'x' ? tick.y + m.fontSize * 1.4 : tick.y + m.fontSize * 0.3}
+                fontSize={m.fontSize}
                 fill={DECK_MUTED}
                 textAnchor={tick.axis === 'x' ? 'middle' : 'end'}
               >

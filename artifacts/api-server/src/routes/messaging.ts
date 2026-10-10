@@ -62,6 +62,7 @@ import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { sendExpoPush, deadTokensFrom, PUSH_CHANNEL } from "../lib/pushNotifications.js";
 import { UUID } from "../lib/adminMetrics.js";
 import { visibleGroupMembers } from "../lib/groupMemberView.ts";
+import { isHiddenFor } from "../lib/threadHiding.ts";
 import { latestVisibleMessages, unreadCounts, unreadTotals } from "../lib/inboxSummary.ts";
 import { isR2Configured, newChatMediaKey, presignedGetUrl, putObject } from "../lib/r2.js";
 import { syncClassGroupThread } from "../lib/classThread.js";
@@ -392,7 +393,7 @@ router.get("/messaging/contacts", async (req: AuthenticatedRequest, res) => {
 router.get("/messaging/threads", async (req: AuthenticatedRequest, res) => {
   try {
     const mine = await db
-      .select({ threadId: chatParticipants.threadId })
+      .select({ threadId: chatParticipants.threadId, hiddenAt: chatParticipants.hiddenAt })
       .from(chatParticipants)
       .where(eq(chatParticipants.userId, req.user!.id));
 
@@ -402,6 +403,7 @@ router.get("/messaging/threads", async (req: AuthenticatedRequest, res) => {
     }
 
     const threadIds = mine.map(m => m.threadId);
+    const hiddenAtByThread = new Map(mine.map(m => [m.threadId, m.hiddenAt]));
 
     const threadRows = await db
       .select()
@@ -464,7 +466,11 @@ router.get("/messaging/threads", async (req: AuthenticatedRequest, res) => {
       : [];
     const senderNames = new Map(senderRows.map(u => [u.id, u.firstName]));
 
-    const threads = await Promise.all(threadRows.map(async thread => {
+    // «حذف المحادثة» / «إخفاء المجموعة» — see lib/threadHiding.ts.
+    const shownRows = threadRows.filter(
+      t => !isHiddenFor(hiddenAtByThread.get(t.id), latestByThread.get(t.id)?.createdAt),
+    );
+    const threads = await Promise.all(shownRows.map(async thread => {
       const latest = latestByThread.get(thread.id);
       const lastMessage = latest
         ? { ...await toClientMessage(latest), senderName: senderNames.get(latest.senderId) ?? null }
@@ -572,6 +578,12 @@ router.post("/messaging/threads", async (req: AuthenticatedRequest, res) => {
       ])
       .onConflictDoNothing();
 
+    // Opening the conversation again is asking for it back.
+    await db
+      .update(chatParticipants)
+      .set({ hiddenAt: null })
+      .where(and(eq(chatParticipants.threadId, thread.id), eq(chatParticipants.userId, req.user!.id)));
+
     res.status(201).json({ thread });
   } catch (err) {
     failMessaging(res, err, "create thread", "Failed to create thread");
@@ -625,6 +637,11 @@ router.get("/messaging/threads/class/:classGroupId", async (req: AuthenticatedRe
 
     const thread = await syncClassGroupThread(classGroupId, group.teacherId, group.name, group.nameAr);
     const isOwner = group.teacherId === req.user!.id;
+    // Opened from the class itself — that is asking for a hidden group back.
+    await db
+      .update(chatParticipants)
+      .set({ hiddenAt: null })
+      .where(and(eq(chatParticipants.threadId, thread.id), eq(chatParticipants.userId, req.user!.id)));
     // Same view as GET /messaging/threads/:id — not the whole class to every child.
     const participants = visibleGroupMembers({
       members: await participantsOf(thread.id),
@@ -664,6 +681,32 @@ router.post("/messaging/threads/read-all", async (req: AuthenticatedRequest, res
     res.json({ threads: updated.length });
   } catch (err) {
     failMessaging(res, err, "mark all threads read", "Failed to mark messages read");
+  }
+});
+
+/**
+ * «حذف المحادثة» / «إخفاء المجموعة»: takes the thread out of MY inbox only.
+ * Nothing is deleted and nobody else's view changes — the other side keeps the
+ * whole conversation, and a message newer than this brings it back (see
+ * lib/threadHiding.ts). It is the only way out of a class group, whose
+ * membership is derived from the roster and so cannot be left. Marking read
+ * as well keeps the bell from counting messages in a thread I just dismissed.
+ */
+router.post("/messaging/threads/:id/hide", async (req: AuthenticatedRequest, res) => {
+  try {
+    const threadId = req.params["id"] as string;
+    if (!(await participantOf(threadId, req.user!.id))) {
+      res.status(404).json({ error: "Thread not found", code: "not_found" });
+      return;
+    }
+    const now = new Date();
+    await db
+      .update(chatParticipants)
+      .set({ hiddenAt: now, lastReadAt: now })
+      .where(and(eq(chatParticipants.threadId, threadId), eq(chatParticipants.userId, req.user!.id)));
+    res.json({ hidden: true });
+  } catch (err) {
+    failMessaging(res, err, "hide thread", "Failed to hide conversation");
   }
 });
 
