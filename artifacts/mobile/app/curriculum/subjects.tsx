@@ -15,6 +15,7 @@ import {
   getSemesterLabel,
   getUnitsForBook,
 } from '@/services/curriculumData';
+import { linkedEditionYear } from '@/services/nccdEdition';
 import { readableOn } from '@/services/readableColor';
 import { BackButton } from '@/components/ui/BackButton';
 
@@ -192,7 +193,7 @@ export default function SubjectsScreen() {
                 <Text style={[styles.downloadNote, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
                   {(lang === 'ar' ? book.downloadNoteAr : book.downloadNote)
                     ?? book.downloadNote
-                    ?? t('downloadSourceNccd', book.academicYear)}
+                    ?? t('downloadSourceNccd', linkedEditionYear(book.pdfUrl ?? guideUrl ?? book.activityPdfUrl))}
                 </Text>
               </View>
             )}

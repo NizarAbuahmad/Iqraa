@@ -468,7 +468,9 @@ const translations = {
     downloadActivityBook: 'كتاب الأنشطة',
     // Books are republished yearly by NCCD — the year is what tells a teacher
     // whether the linked edition still matches what's printed this year.
-    downloadSourceNccd: (year: string) => `من موقع المركز الوطني لتطوير المناهج · طبعة ${year}`,
+    // `year` is the linked file's own edition (see services/nccdEdition.ts), and
+    // absent when the link doesn't say — never the catalog's academicYear.
+    downloadSourceNccd: (year?: string) => (year ? `من موقع المركز الوطني لتطوير المناهج · طبعة ${year}` : 'من موقع المركز الوطني لتطوير المناهج'),
 
     // Curriculum — lessons screen
     unitLabel: 'الوحدة',
@@ -2852,7 +2854,7 @@ const translations = {
     downloadBook: 'Download book',
     downloadTeacherGuide: 'Teacher guide',
     downloadActivityBook: 'Activity book',
-    downloadSourceNccd: (year: string) => `From the National Center for Curriculum Development · ${year} edition`,
+    downloadSourceNccd: (year?: string) => (year ? `From the National Center for Curriculum Development · ${year} edition` : 'From the National Center for Curriculum Development'),
 
     unitLabel: 'Unit',
     unitsAvailable: (n: number) => `${n} unit${n !== 1 ? 's' : ''}`,
