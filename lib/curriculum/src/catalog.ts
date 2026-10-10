@@ -3467,6 +3467,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Math/2025/G01/MA.01.ST.BOOK_WEB.pdf',
   },
   {
     id: G1_MATH_S2_CURRICULUM_BOOK_ID,
