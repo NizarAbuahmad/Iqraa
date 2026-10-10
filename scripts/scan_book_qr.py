@@ -25,6 +25,11 @@ version, and it records every book it has looked at under `scannedBooks`, so
     # only some grades, and look first
     python scripts/scan_book_qr.py --grade 2 4 --dry-run
 
+    # no PDFs to hand? download the student books from the links the catalog
+    # already holds (Book.pdfUrl, the official NCCD files), then scan them
+    python scripts/scan_book_qr.py --fetch --grade 2 4 --dry-run   # list what it would fetch
+    python scripts/scan_book_qr.py --fetch --grade 2 4
+
     # a PDF that lives outside the repo layout (the Windows "Knowledge Base" tree)
     python scripts/scan_book_qr.py --pdf "C:\\...\\كتاب الطالب لمادة العلوم للصف الرابع الفصل الأول.pdf" \\
         --pdf-grade 4 --pdf-subject science
@@ -36,6 +41,14 @@ Then, in this order:
 
 New rows are written with `httpStatus: "unchecked"`, which the app does not show:
 a code appears in the library only after the link check has seen it answer.
+
+**`--fetch` needs to run where `nccd.gov.jo` answers** — a normal home or office
+connection in Jordan does; a cloud sandbox or CI runner may not (this one did
+not: connection reset). It needs Node, the same one pnpm uses, to read the catalog.
+Files land in the usual layout (`knowledge-base/grade-N-<subject>/support-pdfs/`,
+gitignored), are named `كتاب الطالب — <title>.pdf` so the library shows a readable
+book name, are checked to really be PDFs, and are not downloaded again. A book
+that fails to download is listed and is **not** recorded as scanned.
 
 **One page is not enough, and neither is one resolution.** A code that decodes at
 200 dpi can fail at 150, 300 and 400 (Grade 10 history S1, page 12). So every
@@ -56,11 +69,17 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
+import shutil
+import subprocess
 import sys
+import time
+import urllib.error
+import urllib.request
 from datetime import date
 from pathlib import Path
-from urllib.parse import unquote, urlparse
+from urllib.parse import quote, unquote, urlparse
 
 REPO = Path(__file__).resolve().parent.parent
 KB = REPO / "knowledge-base"
@@ -68,6 +87,13 @@ MANIFEST = KB / "book-qr-links.json"
 
 DPIS = (150, 200, 260)
 UNCHECKED = "unchecked"
+
+MIN_PDF_BYTES = 10_000
+# NCCD answers a browser; a bare Python user agent is the kind of thing that gets refused.
+USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+)
 
 # A student book, by name. Teacher guides, answer keys and worksheets live in the
 # same folders and print no student-facing codes; scanning them would only add
@@ -237,6 +263,120 @@ def discover(kb: Path, grades: set[int] | None, subjects: set[str] | None):
             yield grade, subject, pdf, bool(STUDENT_BOOK.search(pdf.name))
 
 
+# ── fetching ─────────────────────────────────────────────────────────────────
+
+class DownloadError(Exception):
+    pass
+
+
+def safe_filename(name: str) -> str:
+    """A name Windows will accept: drop what it refuses, collapse the whitespace."""
+    return re.sub(r"\s+", " ", re.sub(r'[\\/:*?"<>|]+', " ", name)).strip()
+
+
+def fetch_filename(title_ar: str) -> str:
+    """
+    `كتاب الطالب — العلوم – الصف الرابع – الفصل الأول.pdf`
+
+    The library shows the file name, minus `.pdf`, as the book's name; and the
+    leading «كتاب الطالب» is what marks it a student book to `STUDENT_BOOK`.
+    """
+    return safe_filename(f"كتاب الطالب — {title_ar}") + ".pdf"
+
+
+def catalog_books(catalog_json: Path | None = None) -> list[dict]:
+    """
+    Every book the catalog has an official student-book link for.
+
+    Read through the real `BOOKS` array (`lib/curriculum/scripts/list-book-urls.ts`)
+    rather than scraped out of `catalog.ts`, so a book added to the catalog is
+    picked up with no second list to keep in step. `catalog_json` replaces it
+    for tests or when Node is not to hand.
+    """
+    if catalog_json:
+        return json.loads(catalog_json.read_text(encoding="utf8"))
+    try:
+        proc = subprocess.run(
+            ["node", "--experimental-strip-types", "scripts/list-book-urls.ts"],
+            cwd=REPO / "lib" / "curriculum", capture_output=True, text=True, timeout=120,
+        )
+    except FileNotFoundError:
+        raise SystemExit("--fetch needs Node (the one pnpm uses) to read the catalog; "
+                         "or pass --catalog-json with a saved list.")
+    if proc.returncode != 0:
+        raise SystemExit(f"could not read the catalog:\n{proc.stderr.strip()[-600:]}")
+    return json.loads(proc.stdout.strip().splitlines()[-1])
+
+
+def select_books(rows: list[dict], grades: set[int] | None, subjects: set[str] | None) -> list[dict]:
+    """Filter by grade/subject; one row per link, since two books can share a file."""
+    out: list[dict] = []
+    seen: set[str] = set()
+    for r in rows:
+        m = re.match(r"^grade-(\d{1,2})$", str(r.get("gradeId", "")))
+        url = (r.get("pdfUrl") or "").strip()
+        if not m or not url or url in seen:
+            continue
+        grade, subject = int(m.group(1)), str(r.get("subjectId", "")).lower()
+        if grades and grade not in grades:
+            continue
+        if subjects and subject not in subjects:
+            continue
+        seen.add(url)
+        out.append({"grade": grade, "subject": subject, "title": r.get("titleAr", ""), "url": url})
+    return out
+
+
+def looks_like_pdf(path: Path) -> bool:
+    """A real PDF, not the HTML error page a server sometimes returns with a 200."""
+    try:
+        with open(path, "rb") as f:
+            head = f.read(5)
+        return head == b"%PDF-" and path.stat().st_size >= MIN_PDF_BYTES
+    except OSError:
+        return False
+
+
+def download(url: str, dest: Path, tries: int = 3, timeout: int = 60, pause: float = 2.0) -> str:
+    """
+    Returns "cached" or "downloaded"; raises DownloadError with the reason.
+
+    TLS verification stays on: an expired certificate is reported, not bypassed.
+    A refusal (403/404/410) or a non-PDF answer is not retried — asking again
+    will not change it — but a timeout or a dropped connection is.
+    """
+    if looks_like_pdf(dest):
+        return "cached"
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    part = dest.with_name(dest.name + ".part")
+    safe_url = quote(url, safe="%:/?&=#+@,;~!$'()*")
+    last = "failed"
+    for attempt in range(1, tries + 1):
+        try:
+            req = urllib.request.Request(
+                safe_url, headers={"User-Agent": USER_AGENT, "Accept": "application/pdf,*/*"}
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp, open(part, "wb") as out:
+                shutil.copyfileobj(resp, out, 1 << 20)
+            if not looks_like_pdf(part):
+                raise DownloadError(f"the server answered, but not with a PDF (or one under {MIN_PDF_BYTES // 1000} KB, too small to be a book)")
+            os.replace(part, dest)
+            return "downloaded"
+        except DownloadError as exc:
+            last = str(exc)
+            break
+        except urllib.error.HTTPError as exc:
+            last = f"HTTP {exc.code}"
+            if exc.code in (400, 401, 403, 404, 410):
+                break
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            last = str(getattr(exc, "reason", exc))
+        if attempt < tries:
+            time.sleep(pause * attempt)
+    part.unlink(missing_ok=True)
+    raise DownloadError(last)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Scan student books for printed QR codes.")
     ap.add_argument("--kb", type=Path, default=KB, help="knowledge-base folder (default: the repo's)")
@@ -246,6 +386,10 @@ def main() -> int:
     ap.add_argument("--pdf", type=Path, nargs="*", help="scan these PDFs instead of walking --kb")
     ap.add_argument("--pdf-grade", type=int, help="grade of the --pdf files")
     ap.add_argument("--pdf-subject", help="subject of the --pdf files, as in the folder name (e.g. science)")
+    ap.add_argument("--fetch", action="store_true",
+                    help="download the student books from the catalog's official links, then scan them")
+    ap.add_argument("--catalog-json", type=Path,
+                    help="with --fetch: read the book list from this JSON instead of running Node")
     ap.add_argument("--rescan", action="store_true", help="scan books already listed under scannedBooks")
     ap.add_argument("--all-pdfs", action="store_true", help="scan every PDF, not only student books")
     ap.add_argument("--dry-run", action="store_true", help="report, write nothing")
@@ -260,10 +404,47 @@ def main() -> int:
     doc = json.loads(args.manifest.read_text(encoding="utf8"))
     doc.setdefault("entries", [])
 
+    already = doc.get("scannedBooks", {})
+
     # Work list: (grade, subject, path)
     work: list[tuple[int, str, Path]] = []
     skipped_not_student: list[Path] = []
-    if args.pdf:
+    download_failed: list[tuple[str, str]] = []
+    if args.fetch:
+        if args.pdf:
+            print("--fetch and --pdf are separate ways to supply books; use one.", file=sys.stderr)
+            return 2
+        books = select_books(
+            catalog_books(args.catalog_json), set(args.grade or []),
+            {x.lower() for x in args.subject or []},
+        )
+        if not books:
+            print("the catalog has no book links for that selection.")
+            return 1
+        print(f"{len(books)} book link(s) selected from the catalog")
+        for i, b in enumerate(books, 1):
+            name = fetch_filename(b["title"])
+            dest = args.kb / f"grade-{b['grade']}-{b['subject']}" / "support-pdfs" / name
+            key = book_key(b["grade"], b["subject"], name)
+            tag = f"[{i}/{len(books)}] {b['title']}"
+            if key in already and not args.rescan:
+                print(f"{tag}: already scanned, not fetching")
+                continue
+            if args.dry_run:
+                print(f"{tag}: would fetch {b['url']}")
+                continue
+            try:
+                how = download(b["url"], dest)
+            except DownloadError as exc:
+                download_failed.append((b["title"], str(exc)))
+                print(f"{tag}: FAILED — {exc}")
+                continue
+            print(f"{tag}: {how}", flush=True)
+            work.append((b["grade"], b["subject"], dest))
+        if args.dry_run:
+            print("\n--dry-run: nothing downloaded or scanned.")
+            return 0
+    elif args.pdf:
         if not (args.pdf_grade and args.pdf_subject):
             print("--pdf needs --pdf-grade and --pdf-subject", file=sys.stderr)
             return 2
@@ -281,13 +462,18 @@ def main() -> int:
                 skipped_not_student.append(pdf)
 
     if not work:
+        if args.fetch:
+            print("nothing to scan" + (f" — {len(download_failed)} download(s) failed" if download_failed else "") + ".")
+            if download_failed:
+                print("  If every one says the connection was reset or refused, this network cannot")
+                print("  reach nccd.gov.jo; run it from one that can (e.g. a home connection).")
+            return 1 if download_failed else 0
         print("no PDFs found to scan.")
         if args.pdf is None and not any(args.kb.glob("grade-*-*/support-pdfs/*.pdf")):
             print("  The PDFs are gitignored: run this on the machine that holds them,")
             print("  or pass --pdf with --pdf-grade and --pdf-subject.")
         return 1
 
-    already = doc.get("scannedBooks", {})
     new_entries: list[dict] = []
     scanned: dict[str, dict] = {}
     unreadable: list[tuple[Path, str]] = []
@@ -330,6 +516,10 @@ def main() -> int:
         print(f"\n{len(not_links)} payload(s) that were not links, left out:")
         for b, p, t in not_links[:15]:
             print(f"  • {Path(b).name} p.{p}: {t!r}")
+    if download_failed:
+        print(f"\n{len(download_failed)} book(s) could not be downloaded — NOT recorded as scanned:")
+        for title, why in download_failed:
+            print(f"  • {title}: {why}")
     if unreadable:
         print(f"\n{len(unreadable)} PDF(s) could not be read — NOT recorded as scanned:")
         for p, why in unreadable:
@@ -351,11 +541,11 @@ def main() -> int:
         return 0
     if not scanned:
         print("\nnothing new scanned: manifest left as it was.")
-        return 0 if not unreadable else 1
+        return 0 if not (unreadable or download_failed) else 1
     args.manifest.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n", encoding="utf8")
     print(f"\nwrote {args.manifest}")
     print("next: pnpm --filter @workspace/curriculum run verify-qr-links")
-    return 1 if unreadable else 0
+    return 1 if (unreadable or download_failed) else 0
 
 
 if __name__ == "__main__":

@@ -897,12 +897,15 @@ Library: Grade 2 and Grade 4 have **0 book codes and 0 ready-made sheets**, so a
 teacher of those grades sees only what staff uploaded.
 
 `scripts/scan_book_qr.py` is the repeatable version. Run it where the book PDFs
-are (they are gitignored and the ministry host refuses this CI/cloud network),
-then `verify-qr-links`. It writes new rows as `httpStatus: "unchecked"`, which the
+are (they are gitignored), or add `--fetch` and it downloads the student books
+from the catalog's own `Book.pdfUrl` links first (182 books, Grades 1–10) — on a
+network that can reach `nccd.gov.jo`, which the ministry host refuses from a
+cloud/CI network (checked 2026-10-10: connection reset). Then `verify-qr-links`. It writes new rows as `httpStatus: "unchecked"`, which the
 app does not show until the link check has seen them answer, and records every
 book it looked at under `scannedBooks` so "scanned, found none" is distinguishable
-from "never scanned". **Tested only on synthetic PDFs built with known codes** —
-it has not yet been run on a real ministry book.
+from "never scanned". **Tested only on synthetic PDFs built with known codes,
+and `--fetch` only against a local web server** — neither has yet been run on a
+real ministry book.
 
 ## A teacher attaches a book figure to a worksheet question, 2026-10-09
 

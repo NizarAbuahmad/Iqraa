@@ -164,12 +164,18 @@ has been scanned:
 ```bash
 pip install pymupdf opencv-python-headless numpy
 python scripts/scan_book_qr.py --grade 4 --dry-run     # look first
-python scripts/scan_book_qr.py --grade 4
+python scripts/scan_book_qr.py --grade 4               # PDFs already in knowledge-base/
+python scripts/scan_book_qr.py --fetch --grade 4       # or: download them first
 pnpm --filter @workspace/curriculum run verify-qr-links
 pnpm --filter @workspace/mobile test
 ```
 
-Run it where the PDFs are. New rows are written as `httpStatus: "unchecked"` and
+`--fetch` downloads each student book from the link the catalog already holds
+(`Book.pdfUrl`, read through `pnpm --filter @workspace/curriculum run
+list-book-urls`) into the usual gitignored `support-pdfs/` folders, then scans
+them. It must run where `nccd.gov.jo` answers — a cloud sandbox or CI runner may
+be refused. A book that fails to download is listed and is not recorded as
+scanned. Without `--fetch`, run it where the PDFs already are. New rows are written as `httpStatus: "unchecked"` and
 stay hidden until `verify-qr-links` has seen them answer. Every book scanned is
 recorded under `scannedBooks`, with its code count — a book with `codes: 0` was
 looked at and has none, which is different from a book that is not listed.
