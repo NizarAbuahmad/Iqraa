@@ -383,7 +383,9 @@ function TeacherPanel({
           </Pressable>
         </View>
         <ScrollView showsVerticalScrollIndicator={false}>
-          <Section label={t('expectedAnswerLabel')} content={teacher.expectedAnswer} />
+          {/* Typed as required, but the prompt's cover and hook blocks carry
+              only tips — an unconditional section printed a label over nothing. */}
+          {teacher.expectedAnswer ? <Section label={t('expectedAnswerLabel')} content={teacher.expectedAnswer} /> : null}
           {teacher.commonMisconceptions ? <Section label={t('misconceptionsLabel')} content={teacher.commonMisconceptions} /> : null}
           {teacher.teachingTips ? <Section label={t('teachingTipsLabel2')} content={teacher.teachingTips} /> : null}
           {teacher.suggestedQuestions?.length ? (

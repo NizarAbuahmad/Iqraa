@@ -291,7 +291,8 @@ export interface QuizOutput {
 
 export interface QuizQuestion {
   id: string;
-  type: 'multiple_choice' | 'true_false' | 'short_answer';
+  /** In ministry-paper order — see `QUIZ_TYPE_ORDER` in `services/quizPaper.ts`. */
+  type: 'multiple_choice' | 'true_false' | 'fill_blank' | 'short_answer';
   text: string;
   options?: string[];
   correctAnswer: string;

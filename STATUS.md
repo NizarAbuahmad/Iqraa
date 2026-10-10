@@ -53,6 +53,19 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **Android keyboard fix needs a new binary: `version` 1.2.0 → 1.3.0**
+  (2026-10-10). `KeyboardSafeView` is keyboard-controller's
+  `KeyboardAvoidingView`, and `react-native-keyboard-controller` is a native
+  module that arrived on 2026-10-08 with `version` still at 1.2.0 (set on
+  2026-09-26 for the mic). Because `runtimeVersion.policy` is `appVersion`, a
+  1.2.0 binary built before then and a 1.2.0 OTA update looked compatible when
+  they were not, so the keyboard handling could not reach installed apps
+  correctly. Bumped so OTAs only reach binaries that have the module.
+  **Not verified:** which builds are installed, and the keyboard on a device —
+  there was none in this session. **Until an Android build of 1.3.0 is made and
+  installed, an installed app is unchanged** (and a 1.2.0 app stops receiving
+  OTA updates); chat/messaging (`app/messaging/[threadId].tsx`) is covered by
+  the root Stack's wrapper and needs no screen change.
 - **The schema deploys as migrations** (2026-10-08, not yet live until
   production is baselined). `lib/db/migrations/0000_baseline.sql` is the whole
   48-table schema; `deploy.yml` runs `migrate` before `verify-schema` and the
@@ -427,8 +440,66 @@ an announcement by default» below.
     phone (the hit test is cached and bounds-checked; its cost was measured
     only in node, before the cache, at about 39 ms for a 400-stroke sweep),
     and the presentation's action row at phone width.
-    Still to build: C (AI solve — only the 7
-    `VERIFIABLE_TOPICS` may ever be marked verified). Spec and plan:
+    **C — «حلّ مسألة» (2026-10-10).** A teacher types a problem (a text box
+    with a symbol row); `POST /generate/solve` (teacher-only, unpooled, both
+    spend caps re-checked before each model call) returns steps and a final
+    answer, drawn in a panel on the left of the page under the pen, revealed
+    one step at a time from the palette, saved with the board (board file
+    version 2 — written only when a page has a solution, so boards without
+    one stay version 1) and printed in the PDF with every step. **What may
+    be called verified:** only the *final answer*, only when the problem is one
+    of the 7 `VERIFIABLE_TOPICS` and SymPy says `equivalent`; the steps are
+    never checked and every block says so («خطوات مكتوبة بالذكاء الاصطناعي ولم
+    تُراجَع»), with either «✓ الإجابة النهائية: تحقق منها SymPy» or «الإجابة
+    النهائية لم يُتحقق منها» beside the answer. The model's reply is
+    whitelisted into `{steps, answer, check}` — a model-written `verified` is
+    never read. The ✓ needs the checked answer to equal the shown one, the
+    check to be a real question (a tautology such as `P = 1/6` is refused —
+    found by the final review), and, when the typed text is Latin maths the
+    shared classifier can read, the check to be about that same problem; a
+    verified block shows «فُهمت المسألة هكذا» (what SymPy actually checked).
+    A SymPy `distinct` retries once with SymPy's answer and shows the retry
+    only if it verifies, else «لم أستطع حل هذه المسألة بثقة»; undecided, no
+    check, unsupported and an unreachable verifier keep the solution,
+    unchecked. `lib/math-verify/src/solution.ts` (`parseSolution`) is shared by
+    the API, the app and the saved-board parser; `DEMO_MODE` is untouched
+    (`solveProblem` is live-only, like prompt-slides: with live AI off the
+    dialog says «الحل بالذكاء الاصطناعي غير مُفعَّل»). Spec and plan:
+    `docs/superpowers/specs/2026-10-10-whiteboard-c-ai-solve-design.md`,
+    `docs/superpowers/plans/2026-10-10-whiteboard-c-ai-solve.md`.
+    Verified: lib 25, api-server 1421 and mobile 3621 tests green (0 fail),
+    typecheck clean; in Chromium against the local stack with the REAL route
+    and the REAL SymPy verifier but a **stub model** (a local OpenAI-compatible
+    server returning canned replies): verified, contradicted-then-corrected,
+    contradicted-twice (422 + message, dialog stays open, nothing drawn),
+    no-check unchecked with a model-written `verified: true` ignored, the
+    tautology refused, replace / delete / delete-page confirms, the pen
+    drawing over the block, save → one version-2 row, hard reload → fully
+    revealed and not dirty, a real PDF download with the panel and both
+    labels, the layout at 1280, 768 and 360 px. Measured, not guessed: in an
+    Arabic PDF a numbers-only equation printed REVERSED («5 + 3 = 8» as «8 =
+    3 + 5») until each row was bidi-isolated; the generated markup now lays
+    the digits left to right.
+    Not verified: **the live model's real solutions, the verifier on real
+    model output, token cost and latency** (the client times out at 60 s; two
+    model calls plus two 8 s verifier timeouts can exceed it, and the server
+    still bills), touch on a real phone, Android, native PDF share, a board
+    near the 2 MB cap. Known limits: steps show in the Latin notation the
+    model wrote (no «س» / Arabic-digit conversion — `MathText` cannot parse
+    Arabic-Indic exponents); a phone-sized stage clips the middle of a long
+    solution (the label and the answer are pinned and never clipped; the PDF
+    is complete, and refuses to export a solution too large to print rather
+    than clip the verdict); for an Arabic prose problem the only guard that
+    the ✓ is about the right problem is the teacher reading «فُهمت المسألة
+    هكذا»; a forged saved board with `verified: true` plus a plausible
+    `understoodAs` is accepted (the file has no signature). The exam path
+    had the same hole (a model-written `check` of `P = 1/6` → `1/6` came back
+    `verified`, reproduced 2026-10-10) and now shares the fix: `parseAnswerKeyCheck`
+    refuses a check whose `question` is not a real question for its topic
+    (`isRealCheckQuestion` in `lib/math-verify/src/answerKey.ts`, built on the
+    same equation / circle extractors the typed-problem gate uses), so such a
+    question stays in the paper with no check and no badge.
+    Spec and plan of A and B:
     `docs/superpowers/specs/2026-10-08-whiteboard-board-design.md`,
     `docs/superpowers/plans/2026-10-08-whiteboard-board.md`; B:
     `docs/superpowers/specs/2026-10-08-whiteboard-b-pages-save-export-design.md`,
@@ -858,6 +929,121 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Greek letters and degrees cut an equation in two, 2026-10-10
+
+Seen on 2026-10-09 while driving a worksheet sent to a class: the take and
+review screens showed «بسّط: cos²θ + sin²θ» as «بسّط: θ + sin²θcos²», and
+«حل: 2 cos θ = 1 حيث 0° ≤ θ < 360°.» with its pieces scrambled. Both screens
+already ran the text through `isolateForeignRuns` — the cause was its
+character class (`FOREIGN_CHAR`, `services/mathRender.ts`), which had no Greek
+letters and no `°`. Every θ ended a run, so one equation became several
+isolates with bare θs between them, and bidi laid those out right to left.
+
+- Greek letters (α–ω, Α–Ω, ϑ ϕ ϵ) and `°` are now part of a run, and a Greek
+  letter makes a run worth isolating the way a Latin one does.
+- A run no longer **ends** on `.`. With `°` in the class, «360°.» would have
+  pulled the sentence's own full stop into the left-to-right isolate, where it
+  displays between the equation and the Arabic. An interior `.` («3.5»,
+  «CO₂. (C») is unchanged.
+- This is the shared helper, so the print/PDF export, Word export, lab slides
+  and chat get the same fix. On an English page the only change is invisible
+  (`⁦A⁩.` instead of `⁦A.⁩`); `exportHtml.test.ts` now compares the text a
+  reader sees rather than the raw markup.
+
+Covered by three new cases in `mathRender.test.ts` (two watched failing
+first; the third pins that a lone «30°» stays unwrapped). Mobile 3638 pass /
+0 fail, typecheck clean. **Checked in the web build** (Chromium 390×844, local
+API) on the 2026-10-09 paper: the teacher's review screen and the student's
+take screen now read «بسّط: cos²θ + sin²θ» and «حل: 2 cos θ = 1 حيث 0° ≤ θ <
+360°.» in order, each equation one isolate in the DOM. **Not checked:** native
+`Text` on a device, which runs the same bidi algorithm on the same isolates.
+
+## «where i can add more classes» reached the subject question, 2026-10-10
+
+Reported from the web chat: «where i can add more classes to my account»
+came back as «سؤالك قد يخص أكثر من مادة. أيّ مادة تقصد؟». The question never
+reached the app map. `isAppHelpQuery` (`services/appHelp.ts`) only claims a
+message that opens with a known where/how phrase, and «where i can …» is not one
+of them («where can i …» is, which is why the same question worded that way
+worked). It fell through to the teaching pipeline, found no lesson, and the
+ambiguity check asked for a subject.
+
+Now claimed as app help: «where i/we can|could|should|do|would …», «where to …»,
+«where should i/we …», and «can i add|change|edit|delete|remove|export|save|
+share|link|invite …». Each still needs a place or an app noun, so «where to find
+the vertex of a parabola» and «can i add fractions with different denominators»
+stay teaching, and «can we create a quiz on fractions» is left as a request to
+the assistant (`create` and `make` are deliberately not in the can-I verbs).
+`appHelp.test.ts` has the reported sentence, its siblings, and the guards.
+
+**Plain statements and the other openers, same day (follow-up).** «add more
+classes to my account», «i want to add another class», «let me / help me add a
+class», «i want to add grade 8», «بدي اضيف شعبة», «اضف شعبة», «ابغى اضيف صف
+ثامن» now reach app help and get the add-a-class or add-a-grade **steps**, not
+just a path. So do «is there a way / is it possible / any way to add …» and
+«هل يمكنني / ممكن / هل اقدر اضيف …».
+
+A statement names no where/how word, so it is trusted alone and is therefore
+narrow (`EN_ADD_TO_ACCOUNT` / `AR_ADD_TO_ACCOUNT` in `services/appHelp.ts`): the
+verb is add, register or set up, the object is a class, or a grade or subject
+that is new («add a grade» alone could be a mark, and is not claimed), and the
+object must end the message bar «to my account» and «please». «add a class of
+compounds to the table», «add a class activity on fractions», «add grade 8
+questions to the quiz» and «اضف صفا الى الجدول» all fail that anchor and stay
+teaching. «class of …», «class activity / quiz / test / exam / worksheet» are
+also dropped before places are matched, which fixes «where can i find classes of
+compounds» finding My classes. The create verbs stay out of every new opener,
+including «انشئ», which reads the same as the imperative.
+
+**The four that were left, also the same day.** All four are now claimed, each
+on a rule as narrow as the statement rule above, because none has a where/how
+word:
+
+- **A problem** — «i can't find my classes», «i don't see my classes», «my
+  classes are missing», «my class list is empty», «where did my classes go»,
+  «i can't add a class», «i can't open settings», «ما لقيت شعبتي», «مش لاقي
+  الاعدادات», «اختفت شعبي». The message must be the problem phrase and then
+  exactly an account screen's name, nothing more, and a generator never counts:
+  «i can't find a good worksheet on fractions» asks for one. A problem finding
+  something gets the path; a problem adding gets the steps.
+- **A longer add** — «add a class for grade 9», «add a class called 9A», «add
+  class 9B», «اضف شعبة للصف التاسع», «بدي اضيف شعبة باسم تاسع ب». The extra words
+  must be a grade, a name or a count; «add a class for fractions» is teaching.
+- **A bare grade or subject** — «i want to add a grade», «i need to add a
+  subject», «add a grade to my account», «بدي اضيف صف», «اريد اضافة مادة». Only
+  with first-person intent or «to my account / profile», because «add a grade»
+  alone may be a mark. **This is a guess:** «i want to add a grade» said about a
+  student's mark gets the add-a-grade steps, which is wrong for that teacher.
+- **Another screen** — «i want to change the language», «i need to open
+  settings», «i want to see my saved materials», «i want to change the lesson»,
+  «i want to start the class», «i want to export my worksheet», «بدي اغير
+  اللغة», «اريد تصدير ورقة العمل». First-person intent, a verb, then exactly a
+  screen's name; built from the places' own keywords, so a screen added there is
+  covered here. A generator's name counts only after «export / تصدير».
+  «i want to change the lesson to be shorter» and «i want to find the best game
+  for students» are teaching.
+
+«how do I export my lesson plan» used to answer with the path to the lesson-plan
+generator; it now gets the export steps, since the steps were what it asked for.
+That is the one change to an existing answer.
+
+**A mistake worth keeping:** the first version of the problem rule took «a
+problem phrase + any screen word anywhere» and passed its own tests. An
+adversarial run of 44 look-alike sentences claimed 10 of them («i can't find the
+settings of the equation», «my students are missing the point of fractions»,
+«ما لقيت الجدول الدوري في الكتاب»). The fix was the anchor above, and the ten are
+now in the test file. Run an adversarial set before trusting a new gate here.
+
+**Still not claimed:** a statement or problem with words after the screen's
+name that are not a grade, name or count; a screen reached by a verb not listed
+(`save`, `share`, `check` are left out on purpose: «i want to check the answers
+of the students» is grading); a problem about a generator. One deliberate
+overlap: «any way to share the answers with students» is claimed, because «how
+can i share the answers with students» already was (the word «students» is a
+Classes keyword). Pinned by 35 new claims and 30 + 14 teaching look-alikes in
+`appHelp.test.ts`; 65 look-alikes in two adversarial runs, none claimed but the
+overlap. Not checked in the web build.
+
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
 Step 4 of the worksheet review, agreed in chat. A worksheet was paper only: to
@@ -918,10 +1104,10 @@ class preselected and the lesson's five objectives, «أرسل» stayed disabled
 until an objective was picked → landed on the draft evaluation with the
 figure on question 1. Published; as a student the figure and its page
 citation showed under question 1, and «بسّط: cos²θ + sin²θ» (key `1`) was a
-fill-blank box. **Not checked:** on a device. **Seen, not fixed here:** Latin
-maths inside an Arabic prompt reads back to front on the take and review
-screens («cos²θ + sin²θ» shows as «θ + sin²θcos²») — the worksheet screen's
-2026-10-05 fix (`isolateForeignRuns`) never reached them.
+fill-blank box. **Not checked:** on a device. **Seen here, fixed 2026-10-10:**
+Latin maths inside an Arabic prompt read back to front on the take and review
+screens («cos²θ + sin²θ» showed as «θ + sin²θcos²») — see «Greek letters and
+degrees cut an equation in two».
 
 ## Book codes name what they open, and only Grades 9–10 have ever been scanned, 2026-10-09
 
@@ -1332,6 +1518,30 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
 - When the worksheet screen is opened with a lesson, its unit dropdown still
   shows the placeholder (the documented gap in `TopicSelector.tsx`). The topic
   itself is held.
+## Teacher notes reach the exports, and five smaller deck fixes, 2026-10-09
+
+The follow-up to the 2026-10-08 entry below, closing what that review left open:
+
+- **Teacher notes in both exports.** `services/deckNotes.ts` turns a slide's
+  `hint` and `teacher` block into labelled sections. The PPTX puts them in the
+  speaker-notes pane (`addNotes`), where presenter view shows them to the
+  teacher and never to the class; the PDF appends «ملاحظات المعلّم» pages after
+  the last slide, one block per slide, kept whole across page breaks. Until now
+  neither export carried a word of the block the prompt spends its budget on.
+- **A `stat` or `compare` slide no longer fails the whole deck.**
+  `assertUsableDeck` treated their empty `content` as a blank slide and threw
+  away a paid generation over its best-laid-out slide; it now accepts a filled
+  `stat.value` or two filled `compare` columns in place of a body.
+- **PDF stems keep their lines.** A two-line problem on a question or example
+  slide printed as one run-on line (HTML collapses newlines); each line is now
+  its own block, as on the projector.
+- **PPTX `steps` fit the slide.** Row height now budgets for the gaps, and the
+  badge and type step down past six steps; seven used to end below the edge.
+- **No empty «الإجابة المتوقعة» section** in the presenter's teacher panel on
+  cover and hook slides, whose blocks carry only tips.
+- `deckShortfalls` no longer counts the cover as a thin slide — it is one line
+  by the prompt's own rule, so the warning fired on every deck.
+
 ## Five deck-rendering defects fixed, 2026-10-08
 
 A read of the whole slides pipeline on main (prompt → three renderers)
@@ -1623,7 +1833,11 @@ on both sides — the old `query` filter existed but lower-cased only the title
 and had no UI. A book code's printed page is searchable too (2026-10-06,
 follow-up): «صفحة ٣٥», «page 35», «35» and «٣٥» all find it. It is a substring
 match like the rest, so «3» also finds pages 13 and 30–39 — not a page-exact
-lookup.
+lookup. **Book-name search regressed and was restored (2026-10-10).** #923 made a
+code's own page title its headline and moved the book name to `bookTitle`, which
+the search did not read, so «التربية الإسلامية» found 0 of its 3 codes and
+«اللغة العربية» found 3 of 6 (only the untitled ones). `bookTitle` is searched
+again; checked on the real grade 10 manifest.
 
 Verified: `services/__tests__/resourceCatalog.test.ts` (shelf mapping, order,
 search), whole-monorepo `pnpm run typecheck` clean, mobile suite 2982 pass /

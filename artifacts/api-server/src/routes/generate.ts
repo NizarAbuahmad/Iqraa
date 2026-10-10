@@ -86,6 +86,10 @@ import {
   type GenerationKind,
 } from "../lib/generationShape.ts";
 import { checkDeck } from "../lib/deckChecks.ts";
+import { SOLUTION_LIMITS, cleanSolutionText } from "@workspace/math-verify";
+import { relateAnswerKey } from "../lib/mathVerifierClient.ts";
+import { SOLVE_TOKENS, solveSystemPrompt } from "../lib/solvePrompt.ts";
+import { solveProblem } from "../lib/solveProblem.ts";
 
 const generateRouter = Router();
 
@@ -182,6 +186,8 @@ async function completeOnce(args: {
   userPrompt: string;
   maxCompletionTokens: number;
   detail: Omit<GenerationDetail, "artifactId">;
+  /** The request the prompt was built from — what a quiz is normalised against. Absent for calls that are not a quiz (e.g. solve). */
+  body?: Record<string, unknown>;
 }): Promise<Completion> {
   const startedAt = Date.now();
   const completion = await withUserAiSlot(args.detail.userId, () =>
@@ -202,7 +208,10 @@ async function completeOnce(args: {
     // answered 200 with `{}` and the screen rendered a blank lesson plan. It
     // also guards the pool: an unusable artifact stored here would be served
     // to every teacher who asks for that lesson.
-    assertUsableGeneration(args.kind, parsed);
+    const adjusted = assertUsableGeneration(args.kind, parsed, args.body);
+    // A quiz the model shaped against the request is corrected before it is
+    // pooled; said out loud, or a prompt that keeps being ignored stays invisible.
+    if (adjusted.length) logger.warn({ kind: args.kind, adjusted }, "generation normalised before serving");
     // Optional teaching extras (a worksheet's worked example and key working)
     // are dropped when malformed rather than failing the generation or being
     // stored — see `sanitizeWorksheetExtras`.
@@ -371,6 +380,7 @@ async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
       systemPrompt: args.systemPrompt,
       maxCompletionTokens: args.maxCompletionTokens,
       detail,
+      body: args.body,
     };
 
     let chosen = await completeOnce({
@@ -876,6 +886,59 @@ generateRouter.post('/generate/prompt-slides/questions', async (req: Authenticat
   }
 });
 
+
+/**
+ * «حلّ مسألة» on the whiteboard: one problem in, a worked solution out, with the
+ * FINAL ANSWER checked by SymPy when the problem is one of the verifiable kinds.
+ *
+ * Deliberately NOT routed through `generateContent`. A teacher's own problem
+ * has no business in the shared `ai_artifacts` pool, so there is nothing to
+ * pool, version or retire and no `contextSource` to force — the same reasoning
+ * as the clarifying-questions route. It still sits inside every guard: live
+ * mode, both spend caps (re-checked before the retry, which is a second paid
+ * call) and the per-user slot, and every completion records its spend.
+ *
+ * The pipeline (`lib/solveProblem.ts`) decides what may be called verified; this
+ * route only wires the real model and the real verifier into it.
+ */
+generateRouter.post('/generate/solve', async (req: AuthenticatedRequest, res) => {
+  const reqBody = (req.body ?? {}) as Record<string, unknown>;
+  const isAr = reqBody.language !== 'english';
+  const problem = cleanSolutionText(reqBody.problem, SOLUTION_LIMITS.problem);
+  if (!problem) {
+    res.status(400).json({
+      error: `problem is required (1-${SOLUTION_LIMITS.problem} characters)`,
+      code: 'bad_problem',
+    });
+    return;
+  }
+  const userId = req.user?.id;
+  try {
+    assertLiveModeEnabled();
+    const model = getGenerationModel();
+    const detail = { kind: 'solve', promptVersion: PROMPT_VERSION, userId };
+    const outcome = await solveProblem(problem, isAr, {
+      complete: async (userPrompt) => {
+        const refusal = await refusalFromCaps(userId);
+        if (refusal) throw refusal.error;
+        const done = await completeOnce({
+          kind: 'solve', model, systemPrompt: solveSystemPrompt(isAr), userPrompt,
+          maxCompletionTokens: SOLVE_TOKENS, detail,
+        });
+        recordUsage(done.usage, model, { ...detail, artifactId: null, durationMs: done.durationMs });
+        return done.parsed;
+      },
+      relate: relateAnswerKey,
+    });
+    if (!outcome.ok) {
+      res.status(422).json({ error: 'The problem could not be solved with confidence.', code: 'no_solution' });
+      return;
+    }
+    res.json(outcome.result);
+  } catch (err) {
+    respondAiError(err, res, 'generate solve');
+  }
+});
 
 /**
  * Report a pooled artifact as wrong.
