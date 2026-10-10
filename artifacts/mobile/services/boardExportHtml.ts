@@ -17,6 +17,7 @@
 import { parseBoard } from './boardFile.ts';
 import { DECK_BORDER, DECK_MUTED, DECK_TEXT } from './deckTheme.ts';
 import { scaleInkPoints } from './penInk.ts';
+import type { SolutionLabels } from './solutionLayout.ts';
 import {
   BOARD_STEP,
   CANVAS_H,
@@ -55,7 +56,7 @@ function paperSVG(background: BoardBackground, lang: string): string {
 }
 
 /** The whole document, or null when `content` is not a valid board. */
-export function buildBoardHTML(content: unknown, title: string, isAr: boolean): string | null {
+export function buildBoardHTML(content: unknown, title: string, isAr: boolean, _solutionLabels?: SolutionLabels): string | null {
   const parsed = parseBoard(content);
   if (!parsed.ok) return null;
   const lang = isAr ? 'ar' : 'en';

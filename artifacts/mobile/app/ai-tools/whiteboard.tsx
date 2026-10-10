@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { ActivityIndicator, BackHandler, Platform, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,7 +15,13 @@ import { exportFilename } from '@/services/exportFilename';
 import { buildBoardHTML } from '@/services/boardExportHtml';
 import { BoardToolbar } from '@/components/classroom/BoardToolbar';
 import { BoardSaveDialog } from '@/components/classroom/BoardSaveDialog';
+import { SolveDialog } from '@/components/classroom/SolveDialog';
+import { SolutionBlock } from '@/components/classroom/SolutionBlock';
 import { Toast } from '@/components/ui/Toast';
+import type { BoardSolution } from '@workspace/math-verify';
+import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
+import { isAbortError } from '@/services/ai/aiProvenance';
+import { solveErrorKey } from '@/services/solve';
 import {
   BOARD_DEFAULT_WIDTH,
   EMPTY_DOC,
@@ -26,6 +32,7 @@ import {
   commitStrokes,
   currentPage,
   docHasInk,
+  docHasSolution,
   fitCanvas,
   goToPage,
   hasInk,
@@ -33,6 +40,7 @@ import {
   removePage,
   undoBoard,
   updateCurrent,
+  withSolution,
   type BoardBackground as BoardBackgroundKind,
   type BoardDoc,
 } from '@/services/whiteboardModel';
@@ -55,6 +63,11 @@ type Saved = { id: string; title: string; json: string };
  * button and (on web) Escape are intercepted; the browser's own back button
  * and closing the tab are not.
  *
+ * A page can also carry an AI-solved problem («حلّ مسألة»): the teacher types
+ * a problem, the model's steps appear as a block over the page and are revealed
+ * one at a time. The solution is saved with the board (file v2) and exported
+ * with it; the block takes no touches, so ink passes straight through it.
+ *
  * A saved board that fails validation is refused with a message and the
  * screen stays blank; Save then creates a NEW material and never overwrites
  * the unreadable one.
@@ -71,6 +84,16 @@ export default function WhiteboardScreen() {
   const [loading, setLoading] = useState(!!params.savedId);
   const [saved, setSaved] = useState<Saved | null>(null);
   const [askTitle, setAskTitle] = useState(false);
+  const [askSolve, setAskSolve] = useState(false);
+  const [solveBusy, setSolveBusy] = useState(false);
+  const [solveError, setSolveError] = useState<string | null>(null);
+  const solveAbort = useRef<AbortController | null>(null);
+  // How many steps of each solution are revealed. Transient on purpose (a
+  // reopened board shows its solutions fully revealed), keyed by the solution
+  // object itself so adding, deleting or reordering pages cannot hand one
+  // page's state to another.
+  const revealRef = useRef(new WeakMap<BoardSolution, number>());
+  const [, bumpReveal] = useReducer((n: number) => n + 1, 0);
   const [saveBusy, setSaveBusy] = useState(false);
   const [exportBusy, setExportBusy] = useState(false);
   const [toast, setToast] = useState({ msg: '', visible: false });
@@ -89,6 +112,8 @@ export default function WhiteboardScreen() {
   savedRef.current = saved;
   const askTitleRef = useRef(askTitle);
   askTitleRef.current = askTitle;
+  const askSolveRef = useRef(askSolve);
+  askSolveRef.current = askSolve;
 
   // One confirm dialog at a time, shared by leave, clear and delete-page: a held
   // Escape key repeats, and each repeat would otherwise stack another dialog.
@@ -101,7 +126,7 @@ export default function WhiteboardScreen() {
   const dirty = useMemo(() => isBoardDirty(doc, saved?.json ?? null), [doc, saved]);
 
   const leave = useCallback(async () => {
-    if (busy.current || askTitleRef.current) return;
+    if (busy.current || askTitleRef.current || askSolveRef.current) return;
     if (!isBoardDirty(docRef.current, savedRef.current?.json ?? null)) {
       goBack();
       return;
@@ -136,13 +161,15 @@ export default function WhiteboardScreen() {
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || askTitleRef.current) return;
+      if (e.key !== 'Escape' || askTitleRef.current || askSolveRef.current) return;
       e.preventDefault();
       void leave();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [leave]);
+
+  useEffect(() => () => solveAbort.current?.abort(), []);
 
   // Reopen a saved board. Nothing is drawn until it has loaded, so a stroke
   // can never be overwritten by the load finishing.
@@ -211,6 +238,97 @@ export default function WhiteboardScreen() {
     }
   }, [t]);
 
+  const shownOf = useCallback((s: BoardSolution) => revealRef.current.get(s) ?? s.steps.length, []);
+
+  /** Opens the dialog; a page that already has a solution asks before a model call is spent. */
+  const onOpenSolve = useCallback(async () => {
+    if (busy.current || loading) return;
+    if (currentPage(docRef.current).solution) {
+      busy.current = true;
+      try {
+        const ok = await confirm({
+          title: t('solveReplaceTitle'),
+          message: t('solveReplaceMessage'),
+          confirmLabel: t('solveReplaceConfirm'),
+          cancelLabel: t('cancel'),
+          destructive: true,
+        });
+        if (!ok) return;
+      } finally {
+        busy.current = false;
+      }
+    }
+    setSolveError(null);
+    setAskSolve(true);
+  }, [loading, t]);
+
+  const onSolve = useCallback(async (problem: string) => {
+    if (solveAbort.current) return;
+    const controller = new AbortController();
+    solveAbort.current = controller;
+    setSolveBusy(true);
+    setSolveError(null);
+    try {
+      const solved = await aiService.solveProblem(
+        { problem, language: lang === 'ar' ? 'arabic' : 'english' },
+        { signal: controller.signal },
+      );
+      revealRef.current.set(solved, 0);
+      setDoc(d => updateCurrent(d, p => withSolution(p, solved)));
+      setAskSolve(false);
+    } catch (e) {
+      // Cancel is not an error to explain.
+      if (!isAbortError(e)) setSolveError(t(solveErrorKey(e)));
+    } finally {
+      solveAbort.current = null;
+      setSolveBusy(false);
+    }
+  }, [lang, t]);
+
+  const onCancelSolve = useCallback(() => {
+    solveAbort.current?.abort();
+    setAskSolve(false);
+    setSolveError(null);
+  }, []);
+
+  const onNextStep = useCallback(() => {
+    const s = currentPage(docRef.current).solution;
+    if (!s) return;
+    revealRef.current.set(s, Math.min(s.steps.length, shownOf(s) + 1));
+    bumpReveal();
+  }, [shownOf]);
+
+  const onHideAll = useCallback(() => {
+    const s = currentPage(docRef.current).solution;
+    if (!s) return;
+    revealRef.current.set(s, 0);
+    bumpReveal();
+  }, []);
+
+  /** Removing a solution is not undoable, so it asks once steps are showing. */
+  const onDeleteSolution = useCallback(async () => {
+    if (busy.current) return;
+    const s = currentPage(docRef.current).solution;
+    if (!s) return;
+    if (shownOf(s) === 0) {
+      setDoc(d => updateCurrent(d, p => withSolution(p, null)));
+      return;
+    }
+    busy.current = true;
+    try {
+      const ok = await confirm({
+        title: t('solveDeleteTitle'),
+        message: t('solveDeleteMessage'),
+        confirmLabel: t('solveDeleteConfirm'),
+        cancelLabel: t('cancel'),
+        destructive: true,
+      });
+      if (ok) setDoc(d => updateCurrent(d, p => withSolution(p, null)));
+    } finally {
+      busy.current = false;
+    }
+  }, [shownOf, t]);
+
   /** «السبورة — <the lesson>», else «السبورة <today, Latin digits>». */
   const defaultTitle = useCallback(() => {
     const base = t('whiteboardTool');
@@ -255,7 +373,7 @@ export default function WhiteboardScreen() {
           topic: params.topic ?? '',
           language: lang === 'ar' ? 'ar' : 'en',
           content: r.json,
-          formState: { boardVersion: BOARD_FILE_VERSION },
+          formState: { boardVersion: docHasSolution(docRef.current) ? BOARD_FILE_VERSION : 1 },
         });
         id = created.id;
         showToast(t('boardSaved'));
@@ -285,7 +403,12 @@ export default function WhiteboardScreen() {
   const onExport = useCallback(async () => {
     if (exporting.current || loading) return;
     const title = savedRef.current?.title ?? defaultTitle();
-    const html = buildBoardHTML(boardFileOf(docRef.current), title, lang === 'ar');
+    const html = buildBoardHTML(boardFileOf(docRef.current), title, lang === 'ar', {
+      ai: t('solveAiLabel'),
+      verified: t('solveVerifiedLabel'),
+      unchecked: t('solveUncheckedLabel'),
+      understoodAs: t('solveUnderstoodAs'),
+    });
     if (!html) {
       showToast(t('boardExportFailed'));
       return;
@@ -308,6 +431,15 @@ export default function WhiteboardScreen() {
     <View style={styles.container} onLayout={e => setArea({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>
       <View style={[styles.stage, { left: stage.offsetX, top: stage.offsetY, width: stage.width, height: stage.height }]}>
         <BoardBackground kind={page.background} lang={lang} scale={stage.scale} />
+        {page.solution && (
+          <SolutionBlock
+            solution={page.solution}
+            shown={shownOf(page.solution)}
+            scale={stage.scale}
+            isRTL={isRTL}
+            labels={{ ai: t('solveAiLabel'), verified: t('solveVerifiedLabel'), unchecked: t('solveUncheckedLabel'), understoodAs: t('solveUnderstoodAs') }}
+          />
+        )}
         {/* Keyed by the current page index: prev / next / add, and deleting the
             LAST page (which moves `current` back), remount the canvas, so an
             in-flight draft and the measured canvas width reset. Deleting a
@@ -360,11 +492,17 @@ export default function WhiteboardScreen() {
         saveDirty={dirty}
         saveBusy={saveBusy}
         onExport={onExport}
-        canExport={!loading && docHasInk(doc)}
+        canExport={!loading && (docHasInk(doc) || docHasSolution(doc))}
         exportBusy={exportBusy}
-        onSolve={() => {}}
-        canSolve={false}
-        solution={null}
+        onSolve={() => void onOpenSolve()}
+        canSolve={!loading && !solveBusy}
+        solution={page.solution ? {
+          shown: shownOf(page.solution),
+          total: page.solution.steps.length,
+          onNext: onNextStep,
+          onHideAll,
+          onDelete: () => void onDeleteSolution(),
+        } : null}
         labels={{
           close: t('close'),
           pen: t('penTool'),
@@ -393,6 +531,18 @@ export default function WhiteboardScreen() {
         labels={{ title: t('boardSaveTitle'), nameLabel: t('boardSaveNameLabel'), save: t('boardSaveConfirm'), cancel: t('cancel') }}
         onSubmit={title => { setAskTitle(false); void persist(title); }}
         onCancel={() => setAskTitle(false)}
+      />
+      <SolveDialog
+        visible={askSolve}
+        isRTL={isRTL}
+        busy={solveBusy}
+        error={solveError}
+        labels={{
+          title: t('solveTitle'), fieldLabel: t('solveFieldLabel'), placeholder: t('solvePlaceholder'),
+          submit: t('solveSubmit'), working: t('solveWorking'), cancel: t('cancel'),
+        }}
+        onSubmit={problem => void onSolve(problem)}
+        onCancel={onCancelSolve}
       />
       <Toast visible={toast.visible} message={toast.msg} onHide={() => setToast(s => ({ ...s, visible: false }))} />
     </View>
