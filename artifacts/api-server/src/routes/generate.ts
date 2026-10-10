@@ -182,6 +182,8 @@ async function completeOnce(args: {
   userPrompt: string;
   maxCompletionTokens: number;
   detail: Omit<GenerationDetail, "artifactId">;
+  /** The request the prompt was built from — what a quiz is normalised against. */
+  body: Record<string, unknown>;
 }): Promise<Completion> {
   const startedAt = Date.now();
   const completion = await withUserAiSlot(args.detail.userId, () =>
@@ -202,7 +204,10 @@ async function completeOnce(args: {
     // answered 200 with `{}` and the screen rendered a blank lesson plan. It
     // also guards the pool: an unusable artifact stored here would be served
     // to every teacher who asks for that lesson.
-    assertUsableGeneration(args.kind, parsed);
+    const adjusted = assertUsableGeneration(args.kind, parsed, args.body);
+    // A quiz the model shaped against the request is corrected before it is
+    // pooled; said out loud, or a prompt that keeps being ignored stays invisible.
+    if (adjusted.length) logger.warn({ kind: args.kind, adjusted }, "generation normalised before serving");
     // Optional teaching extras (a worksheet's worked example and key working)
     // are dropped when malformed rather than failing the generation or being
     // stored — see `sanitizeWorksheetExtras`.
@@ -371,6 +376,7 @@ async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
       systemPrompt: args.systemPrompt,
       maxCompletionTokens: args.maxCompletionTokens,
       detail,
+      body: args.body,
     };
 
     let chosen = await completeOnce({

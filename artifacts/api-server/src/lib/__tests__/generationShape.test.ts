@@ -15,9 +15,78 @@ import {
   extractJSON,
   deckShortfalls,
   missingFields,
+  normalizeQuiz,
   REQUIRED_FIELDS,
   UnusableGenerationError,
 } from "../generationShape.ts";
+
+/** A quiz in the model's own order, with the shapes it actually returns. */
+const quiz = () => ({
+  title: "اختبار",
+  questions: [
+    { id: "q1", type: "short_answer", text: "علّل", correctAnswer: "لأن", points: 4 },
+    { id: "q2", type: "True/False", text: "الماء مركّب.", correctAnswer: "صحيح", points: 2 },
+    { id: "q3", type: "multiple_choice", text: "أيّ؟", options: ["أ", "ب", "ج", "د"], correctAnswer: "ب", points: 2 },
+    { id: "q4", type: "true_false", text: "Water is an element.", options: ["True", "False"], correctAnswer: "F", points: 2 },
+  ],
+});
+
+describe("normalizeQuiz", () => {
+  it("groups the questions in ministry order without reordering within a type", () => {
+    const q = quiz();
+    const notes = normalizeQuiz(q, ["multiple_choice", "true_false", "short_answer"]);
+    assert.deepEqual(q.questions.map(x => x.id), ["q3", "q2", "q4", "q1"]);
+    assert.ok(notes.some(n => /reordered/.test(n)));
+  });
+
+  it("drops the types the teacher did not tick, and says so", () => {
+    const q = quiz();
+    const notes = normalizeQuiz(q, ["true_false"]);
+    assert.deepEqual(q.questions.map(x => x.id), ["q2", "q4"]);
+    assert.ok(notes.some(n => /dropped 2/.test(n)));
+  });
+
+  it("gives every true/false item the pair the app renders, in the paper's language", () => {
+    const q = quiz();
+    normalizeQuiz(q, ["true_false"]);
+    const [ar, en] = q.questions as Record<string, unknown>[];
+    assert.equal(ar!.type, "true_false");
+    assert.deepEqual(ar!.options, ["صح", "خطأ"]);
+    assert.equal(ar!.correctAnswer, "صح");
+    assert.deepEqual(en!.options, ["True", "False"]);
+    assert.equal(en!.correctAnswer, "False");
+  });
+
+  it("reads a missing or unknown type label from the question's shape", () => {
+    const q = {
+      questions: [
+        { text: "أيّ؟", options: ["أ", "ب", "ج"], correctAnswer: "أ", points: 1 },
+        { text: "اذكر", correctAnswer: "…", points: 1 },
+        { type: "matching", text: "صل", correctAnswer: "…", points: 1 },
+      ],
+    };
+    const notes = normalizeQuiz(q, ["multiple_choice", "short_answer"]);
+    assert.deepEqual(q.questions.map(x => x.type), ["multiple_choice", "short_answer"]);
+    assert.ok(notes.some(n => /dropped 1/.test(n)));
+  });
+
+  it("allows every type when the request named none", () => {
+    const q = quiz();
+    normalizeQuiz(q, undefined);
+    assert.equal(q.questions.length, 4);
+  });
+
+  it("refuses a paper with nothing of the requested type rather than serving it", () => {
+    assert.throws(() => normalizeQuiz(quiz(), ["fill_blank"]), UnusableGenerationError);
+  });
+
+  it("runs from assertUsableGeneration for a quiz, with the request body", () => {
+    const q = quiz();
+    assertUsableGeneration("quiz", q, { questionTypes: ["multiple_choice"] });
+    assert.deepEqual(q.questions.map(x => x.id), ["q3"]);
+    assert.deepEqual(assertUsableGeneration("lesson-plan", lessonPlan()), []);
+  });
+});
 
 /** A deck that clears the structural floor, for mutating in the cases below. */
 const deck = (slides: unknown[]) => ({ activityName: "عرض", slides });

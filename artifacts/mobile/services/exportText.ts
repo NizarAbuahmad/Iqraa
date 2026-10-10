@@ -9,7 +9,7 @@
  */
 import { labelAnswer, labelOptionLine } from './optionLabels.ts';
 import { arCountPhrase } from './arCount.ts';
-import { quizStudentFields } from './quizPaper.ts';
+import { quizBlockPoints, quizBlocks, quizStudentFields } from './quizPaper.ts';
 import { worksheetInstructions } from './worksheetPaper.ts';
 import type {
   ActivityOutput,
@@ -154,14 +154,14 @@ export function formatQuizText(
   lines.push(`${isAr ? 'المدة' : 'Duration'}: ${isAr ? arCountPhrase(quiz.duration, 'دقيقة', 'دقيقتان', 'دقائق') : `${quiz.duration} min`} | ${isAr ? 'المجموع' : 'Total'}: ${isAr ? arCountPhrase(quiz.totalPoints, 'نقطة', 'نقطتان', 'نقاط') : `${quiz.totalPoints} pts`}`);
   lines.push(SEP);
 
-  quiz.questions.forEach((q, i) => {
-    const typeLabel = q.type === 'multiple_choice'
-      ? (isAr ? 'اختيار متعدد' : 'MCQ')
-      : q.type === 'true_false'
-        ? (isAr ? 'صح/خطأ' : 'T/F')
-        : (isAr ? 'قصير' : 'Short');
-    lines.push(`\n${i + 1}. [${typeLabel}] ${q.text} (${isAr ? arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط') : `${q.points} pts`})`);
-    q.options?.forEach((opt, oi) => lines.push(`   ${labelOptionLine(opt, oi, isAr)}`));
+  quizBlocks(quiz.questions, isAr).forEach(block => {
+    const pts = quizBlockPoints(block);
+    lines.push(`
+${block.heading} (${isAr ? arCountPhrase(pts, 'علامة', 'علامتان', 'علامات') : `${pts} marks`})`);
+    block.questions.forEach((q, bi) => {
+      lines.push(`${block.start + bi + 1}. ${q.text} (${isAr ? arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط') : `${q.points} pts`})`);
+      q.options?.forEach((opt, oi) => lines.push(`   ${labelOptionLine(opt, oi, isAr)}`));
+    });
   });
 
   if (includeAnswers) {
