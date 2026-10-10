@@ -23,6 +23,7 @@ import { File, Paths } from 'expo-file-system';
 import { visualForSlide } from './deckVisuals.ts';
 import { isBulletLine, looksLikeEquation, stripBullet, workingSteps } from './deckText.ts';
 import { resolveSlideLayout } from './slideLayout.ts';
+import { slideTeacherNotesText } from './deckNotes.ts';
 import type { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
 import { mathLineToUnicode, prettifySymPy } from '@/services/mathRender';
 import { trackEvent } from '@/services/analytics';
@@ -231,6 +232,11 @@ export async function exportDeckAsPptx(
   for (const [i, slide] of deck.slides.entries()) {
     const s = pptx.addSlide();
     s.background = { color: DECK_BG };
+    // The teacher's notes go in the speaker-notes pane, where PowerPoint's
+    // presenter view shows them to the teacher and never to the class. Set
+    // here, before the per-type branches, because most of those `continue`.
+    const notes = slideTeacherNotesText(slide, isAr);
+    if (notes) s.addNotes(notes);
     // pptxgenjs writes a paragraph's `rtl="1"` only from that text's own
     // `rtlMode`; the presentation-level flag above reaches the root element and
     // nothing else. Without it Arabic is right-aligned but laid out LTR —
@@ -379,20 +385,28 @@ export async function exportDeckAsPptx(
 
       // steps
       const STEP_TOP = 1.15;
-      const STEP_H = Math.min(0.72, 3.9 / Math.max(layout.steps.length, 1));
+      const STEP_GAP = 0.12;
+      const n = Math.max(layout.steps.length, 1);
+      // The gaps come out of the budget too: without them seven steps ended at
+      // 5.77in on a 5.63in slide. The number badge shrinks with the row, and
+      // the type steps down once rows get short.
+      const STEP_H = Math.min(0.72, (3.9 - STEP_GAP * (n - 1)) / n);
+      const BADGE = Math.min(0.5, STEP_H);
+      const stepFont = STEP_H < 0.45 ? 12 : 16;
       layout.steps.forEach((step, i) => {
-        const y = STEP_TOP + i * (STEP_H + 0.12);
-        const numX = isAr ? 8.85 : 0.55;
+        const y = STEP_TOP + i * (STEP_H + STEP_GAP);
+        const numX = isAr ? 9.35 - BADGE : 0.55;
+        const badgeY = y + (STEP_H - BADGE) / 2;
         s.addShape('ellipse', {
-          x: numX, y, w: 0.5, h: 0.5, fill: { color: accent },
+          x: numX, y: badgeY, w: BADGE, h: BADGE, fill: { color: accent },
         });
         s.addText(String(i + 1), {
-          x: numX, y, w: 0.5, h: 0.5, align: 'center', valign: 'middle',
-          fontSize: 16, color: 'FFFFFF', bold: true, fontFace: HEAD_FONT,
+          x: numX, y: badgeY, w: BADGE, h: BADGE, align: 'center', valign: 'middle',
+          fontSize: STEP_H < 0.45 ? 11 : 16, color: 'FFFFFF', bold: true, fontFace: HEAD_FONT,
         });
         s.addText(step, {
           x: isAr ? 0.55 : 1.2, y, w: 8.2, h: STEP_H, align: rtlAlign, valign: 'middle',
-          fontSize: 16, color: DECK_TEXT, fontFace: BODY_FONT,
+          fontSize: stepFont, color: DECK_TEXT, fontFace: BODY_FONT,
         });
       });
       continue;
