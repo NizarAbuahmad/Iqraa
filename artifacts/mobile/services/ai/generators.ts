@@ -32,6 +32,7 @@ import { buildLessonStyleBlueprint, type LessonDocContext } from './lessonPlanBl
 import { arPrefixed, lessonKindFor, type LessonKind } from './lessonPlanKinds.ts';
 import { arMinutes } from './lessonPlanTypes.ts';
 import { classifyVerifiableTopic } from './verifyMathGuards.ts';
+import { QUIZ_TYPE_ORDER } from '../quizPaper.ts';
 
 /**
  * Symbolic verification, loaded lazily.
@@ -836,6 +837,15 @@ function makeQuizTF_en(topic: string, kb: KBLesson | null, pts: number, id: stri
   return { id, type: 'true_false', text: q.text, options: ['True', 'False'], correctAnswer: q.answer, points: pts, explanation: `The answer is "${q.answer}" — ${q.text}`, ...bankMark(q) };
 }
 
+function makeQuizFB_ar(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string, diff: DiffTier = 'medium'): QuizQuestion {
+  const q = makeFBQ_ar(topic, kb, diff, subject, false);
+  return { id, type: 'fill_blank', text: q.text, correctAnswer: q.answer, points: pts, explanation: `الإجابة: ${q.answer}`, ...bankMark(q) };
+}
+function makeQuizFB_en(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string, diff: DiffTier = 'medium'): QuizQuestion {
+  const q = makeFBQ_en(topic, kb, diff, subject, false);
+  return { id, type: 'fill_blank', text: q.text, correctAnswer: q.answer, points: pts, explanation: `Answer: ${q.answer}`, ...bankMark(q) };
+}
+
 function makeQuizSA_ar(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string, diff: DiffTier = 'medium'): QuizQuestion {
   const q = makeSAQ_ar(topic, kb, diff, subject, false);
   return { id, type: 'short_answer', text: q.text, correctAnswer: q.answer, points: pts, explanation: `إجابة كاملة: ${q.answer}`, ...bankMark(q) };
@@ -1451,6 +1461,13 @@ export class MockAIService extends AIService {
     // distributed evenly. Falls back to 2-per-type for callers (e.g. the
     // classroom mini-quiz) that don't send numQuestions.
     const numQuestions = Math.max(types.length, req.numQuestions ?? types.length * 2);
+    // Grouped as a ministry paper is, not interleaved: the picked types in
+    // `QUIZ_TYPE_ORDER`, the count split evenly with the remainder going to the
+    // earlier blocks. `word_problem` is a written answer, so it joins that block.
+    const blockTypes = QUIZ_TYPE_ORDER.filter(t =>
+      types.some(x => (x === 'word_problem' ? 'short_answer' : x) === t));
+    const plan: QuizQuestion['type'][] = blockTypes.flatMap((t, bi) =>
+      Array<QuizQuestion['type']>(Math.floor(numQuestions / blockTypes.length) + (bi < numQuestions % blockTypes.length ? 1 : 0)).fill(t));
     const basePts = Math.max(1, Math.floor(totalMarks / numQuestions));
 
     const questions: QuizQuestion[] = [];
@@ -1475,7 +1492,7 @@ export class MockAIService extends AIService {
     bankOnly = questionBankPolicy.required;
     try {
     for (let i = 0; i < numQuestions; i++) {
-      const type = types[i % types.length];
+      const type = plan[i];
       const id = `q${qIdx++}`;
       // Last question absorbs any rounding difference
       const isLast = qIdx > numQuestions;
@@ -1483,18 +1500,16 @@ export class MockAIService extends AIService {
       usedPts += pts;
 
       const tier = quizTier(qIdx - 2);
-      // NOTE: `fill_blank` and `word_problem` fall into the short-answer
-      // branch. The quiz picker (`app/ai-tools/quiz.tsx`) offers only the
-      // three types handled here, so no teacher can reach it today; a caller
-      // that sent one would get an honest short-answer question, correctly
-      // labelled as such. Add real branches here before offering them.
+      // `word_problem` falls into the short-answer branch (see `plan` above).
       if (lang === 'ar') {
         if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_ar(topic, kb, pts, id, req.subject, tier)));
         else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_ar(topic, kb, pts, id, req.subject, tier)));
+        else if (type === 'fill_blank') questions.push(pushUnique(() => makeQuizFB_ar(topic, kb, pts, id, req.subject, tier)));
         else questions.push(pushUnique(() => makeQuizSA_ar(topic, kb, pts, id, req.subject, tier)));
       } else {
         if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_en(topic, kb, pts, id, req.subject, tier)));
         else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_en(topic, kb, pts, id, req.subject, tier)));
+        else if (type === 'fill_blank') questions.push(pushUnique(() => makeQuizFB_en(topic, kb, pts, id, req.subject, tier)));
         else questions.push(pushUnique(() => makeQuizSA_en(topic, kb, pts, id, req.subject, tier)));
       }
     }

@@ -108,11 +108,121 @@ export class UnusableGenerationError extends Error {
   }
 }
 
-/** Throws `UnusableGenerationError` unless every required field is present. */
-export function assertUsableGeneration(kind: GenerationKind, parsed: unknown): void {
+/**
+ * Throws `UnusableGenerationError` unless every required field is present.
+ *
+ * A quiz is also normalised in place against the request body (see
+ * `normalizeQuiz`); the returned lines say what that changed, for the log.
+ * Empty for every other kind and for a quiz that needed nothing.
+ */
+export function assertUsableGeneration(
+  kind: GenerationKind,
+  parsed: unknown,
+  body?: Record<string, unknown>,
+): string[] {
   const missing = missingFields(kind, parsed);
   if (missing.length > 0) throw new UnusableGenerationError(kind, missing);
   if (kind === "prompt-slides") assertUsableDeck(parsed);
+  if (kind === "quiz") return normalizeQuiz(parsed, body?.questionTypes);
+  return [];
+}
+
+/**
+ * The order a ministry exam paper puts its question types in — the «السؤال
+ * الأول: ضع دائرة…», «السؤال الثاني: ضع إشارة ✓/✗…» structure every Jordanian
+ * school exam follows. The prompt asks for it and `normalizeQuiz` enforces it,
+ * so the app's screen, PDF, Word file and shared text all print the same
+ * grouped paper from the same array. Keep in step with `QUIZ_TYPE_ORDER` in
+ * `artifacts/mobile/services/quizPaper.ts`, which the offline generator uses.
+ */
+export const QUIZ_TYPE_ORDER = ["multiple_choice", "true_false", "fill_blank", "short_answer"] as const;
+export type QuizType = (typeof QUIZ_TYPE_ORDER)[number];
+
+const TRUE_RE = /^\s*(?:[أ-يa-z]\s*[).\-:]\s*)?(?:صح|صحيح|صحيحة|صواب|نعم|true|t|yes|✓|✔)\s*[.!]?\s*$/i;
+const FALSE_RE = /^\s*(?:[أ-يa-z]\s*[).\-:]\s*)?(?:خطأ|خاطئ|خاطئة|لا|false|f|no|✗|✘|×)\s*[.!]?\s*$/i;
+
+/** The model's name for a type, mapped onto ours; `null` for anything else. */
+function quizTypeOf(raw: unknown, options: unknown[]): QuizType | null {
+  const t = typeof raw === "string" ? raw.toLowerCase() : "";
+  if (/multi|mcq|choice|اختيار/.test(t)) return "multiple_choice";
+  if (/true|false|tf|صح|خطأ/.test(t)) return "true_false";
+  if (/blank|fill|complet|فراغ|أكمل/.test(t)) return "fill_blank";
+  if (/short|open|essay|answer|قصير|مقال/.test(t)) return "short_answer";
+  // No usable label: read the shape instead of discarding a sound question.
+  if (options.length >= 3) return "multiple_choice";
+  if (options.length === 2 && options.every(o => TRUE_RE.test(String(o)) || FALSE_RE.test(String(o)))) return "true_false";
+  if (options.length === 0 && t === "") return "short_answer";
+  return null;
+}
+
+/**
+ * Make a generated quiz honour what the teacher asked for, before it is
+ * stored and served to every teacher who asks for that lesson.
+ *
+ * The prompt states the allowed types, the order and the true/false shape;
+ * this is what happens when the model treats that as a suggestion. Three
+ * things, all in place on `parsed.questions`:
+ *
+ *  - a question of a type the teacher did not tick is dropped (the model's
+ *    own labels are mapped first, so "True/False" is not thrown away for
+ *    not being spelled `true_false`);
+ *  - a true/false question always carries exactly the two options the app
+ *    renders and marks against, with `correctAnswer` one of them, whether the
+ *    model wrote `options`, wrote «صحيح»/"T", or wrote nothing;
+ *  - questions are grouped by type in `QUIZ_TYPE_ORDER`, stably, so the paper
+ *    reads as a ministry exam rather than an interleaved list.
+ *
+ * `requested` absent or unrecognised means every type is allowed — a caller
+ * that does not send `questionTypes` has not asked for a restriction.
+ *
+ * Throws when nothing survives: an all-MCQ reply to a صح/خطأ request is not a
+ * quiz the teacher can use, and serving it would also pool it.
+ */
+export function normalizeQuiz(parsed: unknown, requested: unknown): string[] {
+  const obj = parsed as Record<string, unknown>;
+  const list = Array.isArray(obj.questions) ? (obj.questions as unknown[]) : [];
+  const asked = Array.isArray(requested)
+    ? requested.filter((t): t is QuizType => (QUIZ_TYPE_ORDER as readonly string[]).includes(String(t)))
+    : [];
+  const allowed = new Set<QuizType>(asked.length ? asked : QUIZ_TYPE_ORDER);
+  const notes: string[] = [];
+  const dropped: string[] = [];
+
+  const kept: { q: Record<string, unknown>; rank: number }[] = [];
+  list.forEach((item, i) => {
+    if (item === null || typeof item !== "object" || Array.isArray(item)) return;
+    const q = item as Record<string, unknown>;
+    const options = Array.isArray(q.options) ? q.options : [];
+    const type = quizTypeOf(q.type, options);
+    if (!type || !allowed.has(type)) {
+      dropped.push(`#${i + 1} ${String(q.type ?? "?")}`);
+      return;
+    }
+    q.type = type;
+    if (type === "true_false") {
+      const answer = String(q.correctAnswer ?? "");
+      const arabic = /[؀-ۿ]/.test(`${String(q.text ?? "")}${answer}${options.join("")}`);
+      const pair = arabic ? ["صح", "خطأ"] : ["True", "False"];
+      q.options = pair;
+      if (TRUE_RE.test(answer)) q.correctAnswer = pair[0];
+      else if (FALSE_RE.test(answer)) q.correctAnswer = pair[1];
+      else if (answer === "" && typeof q.answer === "boolean") q.correctAnswer = q.answer ? pair[0] : pair[1];
+    } else if (type !== "multiple_choice" && options.length === 0) {
+      delete q.options;
+    }
+    kept.push({ q, rank: QUIZ_TYPE_ORDER.indexOf(type) });
+  });
+
+  if (kept.length === 0) {
+    throw new UnusableGenerationError("quiz", [
+      `questions (none of the ${list.length} returned were of the requested types: ${[...allowed].join(", ")})`,
+    ]);
+  }
+  if (dropped.length) notes.push(`dropped ${dropped.length} question(s) of unrequested types: ${dropped.join(", ")}`);
+  const ordered = kept.map((k, i) => ({ ...k, i })).sort((a, b) => a.rank - b.rank || a.i - b.i).map(k => k.q);
+  if (ordered.some((q, i) => q !== kept[i]!.q)) notes.push("reordered questions into ministry type order");
+  obj.questions = ordered;
+  return notes;
 }
 
 /** A deck shorter than this is not a lesson, whatever the teacher asked for. */
