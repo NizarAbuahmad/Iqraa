@@ -189,6 +189,96 @@ describe('natural English phrasings of a where / can-I question', () => {
   }
 });
 
+// The phrasings #978 left out: plain statements («add more classes to my
+// account», «i want to add another class») and the other ways of asking
+// («is there a way to…», «ممكن اضيف…»). A statement names no where/how word,
+// so it is claimed only for the account's own two lists, classes and grades or
+// subjects, and only when the message ends on that object: «add a class of
+// compounds to the table» and «add a class activity on fractions» are teaching.
+describe('statements and other openers about the account', () => {
+  const t = (k: string) => `<${k}>`;
+
+  const claims = [
+    'add more classes to my account',
+    'add a new class to my account',
+    'add a class',
+    'please add a class',
+    'i want to add another class',
+    'i want to add more classes to my account',
+    'i need to add a new class',
+    'let me add a class',
+    'help me add a class',
+    'i want to add grade 8',
+    'i need to add another subject',
+    'is there a way to add more classes',
+    'is it possible to add another class',
+    'any way to add a grade',
+    'اريد اضافة شعبة جديدة',
+    'بدي اضيف شعبة',
+    'ابغى اضيف صف ثامن',
+    'اضف شعبة',
+    'لازم اضيف شعبة اخرى',
+    'عاوز اضيف شعبة',
+    'هل يمكنني اضافة شعبة؟',
+    'ممكن اضيف شعبة جديدة',
+    'هل اقدر اضيف صف',
+  ];
+  for (const q of claims) {
+    it(`claims «${q}»`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(classifyChatIntent(q, /[؀-ۿ]/.test(q) ? 'ar' : 'en').intent, 'app_help');
+    });
+  }
+
+  it('answers an add-a-class statement with the steps and opens /classes', () => {
+    for (const q of ['add more classes to my account', 'i want to add another class', 'بدي اضيف شعبة']) {
+      const a = answerAppHelp(q, /[؀-ۿ]/.test(q) ? 'ar' : 'en', t);
+      assert.equal(a.text, '<howAddClass>', q);
+      assert.equal(a.places[0]?.route, '/classes', q);
+    }
+  });
+
+  it('answers an add-a-grade statement with the grade steps', () => {
+    for (const q of ['i want to add grade 8', 'i need to add another subject', 'ابغى اضيف صف ثامن']) {
+      const a = answerAppHelp(q, /[؀-ۿ]/.test(q) ? 'ar' : 'en', t);
+      assert.equal(a.text, '<howAddGrade>', q);
+    }
+  });
+
+  // Real teaching requests built from the same words. None may become app help,
+  // and the ones that generate material must still reach the generator.
+  const teaching = [
+    'add fractions with different denominators',
+    'i want to add fractions',
+    'i want to add a class activity on fractions',
+    'add a class of compounds to the table',
+    'i need to add another class of organic compounds',
+    'please add three more questions to the quiz',
+    'i want to add grade 8 questions to the quiz',
+    'i want to add a subject heading to the worksheet',
+    'is it possible to add fractions with different denominators',
+    'any way to add these fractions quickly',
+    'is it possible to create a quiz about fractions',
+    'اريد اضافة سؤال الى الاختبار',
+    'اضف سؤالا عن الكسور',
+    'بدي اضيف نشاط صفي عن الكسور',
+    'ممكن انشئ اختبار عن الكسور',
+    'هل يمكنني جمع الكسور بدون توحيد المقامات',
+  ];
+  for (const q of teaching) {
+    it(`leaves «${q}» alone`, () => {
+      assert.equal(isAppHelpQuery(q), false);
+      assert.notEqual(classifyChatIntent(q, /[؀-ۿ]/.test(q) ? 'ar' : 'en').intent, 'app_help');
+    });
+  }
+
+  it('«class of compounds» and «class activity» are not the Classes screen', () => {
+    assert.notEqual(top('where can i find classes of compounds'), 'classes');
+    assert.notEqual(top('where can i find the class activity'), 'classes');
+    assert.equal(top('where can i find my classes'), 'classes');
+  });
+});
+
 describe('classifyChatIntent routes app questions before artifacts', () => {
   it('«وين ألاقي ورقة العمل» asks for the tool, not a worksheet', () => {
     assert.equal(classifyChatIntent('وين ألاقي ورقة العمل؟').intent, 'app_help');

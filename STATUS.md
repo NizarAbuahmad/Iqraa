@@ -876,11 +876,34 @@ stay teaching, and «can we create a quiz on fractions» is left as a request to
 the assistant (`create` and `make` are deliberately not in the can-I verbs).
 `appHelp.test.ts` has the reported sentence, its siblings, and the guards.
 
-**Still not claimed, and still ends in the subject question:** a statement with
-no where/how/can-I in front, such as «add more classes to my account» or «i want
-to add another class». «class» also means a class of compounds, so claiming a
-bare statement needs more than a keyword; not attempted here. Checked by running
-the router on each sentence, not in the web build.
+**Plain statements and the other openers, same day (follow-up).** «add more
+classes to my account», «i want to add another class», «let me / help me add a
+class», «i want to add grade 8», «بدي اضيف شعبة», «اضف شعبة», «ابغى اضيف صف
+ثامن» now reach app help and get the add-a-class or add-a-grade **steps**, not
+just a path. So do «is there a way / is it possible / any way to add …» and
+«هل يمكنني / ممكن / هل اقدر اضيف …».
+
+A statement names no where/how word, so it is trusted alone and is therefore
+narrow (`EN_ADD_TO_ACCOUNT` / `AR_ADD_TO_ACCOUNT` in `services/appHelp.ts`): the
+verb is add, register or set up, the object is a class, or a grade or subject
+that is new («add a grade» alone could be a mark, and is not claimed), and the
+object must end the message bar «to my account» and «please». «add a class of
+compounds to the table», «add a class activity on fractions», «add grade 8
+questions to the quiz» and «اضف صفا الى الجدول» all fail that anchor and stay
+teaching. «class of …», «class activity / quiz / test / exam / worksheet» are
+also dropped before places are matched, which fixes «where can i find classes of
+compounds» finding My classes. The create verbs stay out of every new opener,
+including «انشئ», which reads the same as the imperative.
+
+**Still not claimed, and still ends in the subject question:** a problem
+statement («i can't find my classes»), a statement with more after the object
+(«add a class for grade 9»), a bare «add a grade» or «add a subject», and
+statements about any other screen («i want to export my worksheet»). One
+deliberate overlap: «any way to share the answers with students» is claimed,
+because «how can i share the answers with students» already was (the word
+«students» is a Classes keyword). Pinned by 23 claims and 16 teaching look-alikes
+in `appHelp.test.ts`; a further 21 look-alikes were run once by hand through the
+router (one claimed, the overlap above). Not checked in the web build.
 
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 

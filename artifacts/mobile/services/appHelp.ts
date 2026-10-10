@@ -51,13 +51,13 @@ const SCREENS: AppPlace[] = [
   {
     id: 'classes', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false,
     // «clases» is the typo that actually got typed.
-    keywords: ['شعب', 'شعبه', 'شعبي', 'شعبتي', 'طلابي', 'طلبتي', 'رمز الانضمام', 'classes', 'clases', 'my class', 'add class', 'add a class', 'new class', 'students'],
+    keywords: ['شعب', 'شعبه', 'شعبي', 'شعبتي', 'طلابي', 'طلبتي', 'رمز الانضمام', 'classes', 'clases', 'my class', 'add class', 'add a class', 'new class', 'another class', 'extra class', 'students'],
     howKey: 'howAddClass',
   },
   {
     id: 'subjects', route: '/setup-subjects', routeParams: { mode: 'edit' }, labelKey: 'mySubjects', pathKeys: ['tabProfile'], isTool: false,
     // No bare «grade» / «صف»: they sit inside every «grade 10 quiz» and «للصف العاشر».
-    keywords: ['الصفوف', 'صفوفي', 'مواد ادرسها', 'المواد التي ادرسها', 'اضافه صف', 'اضيف صف', 'صف جديد', 'add grade', 'add a grade', 'new grade', 'another grade', 'subjects i teach'],
+    keywords: ['الصفوف', 'صفوفي', 'مواد ادرسها', 'المواد التي ادرسها', 'اضافه صف', 'اضيف صف', 'صف جديد', 'add grade', 'add a grade', 'new grade', 'another grade', 'add subject', 'add a subject', 'another subject', 'subjects i teach'],
     howKey: 'howAddGrade',
   },
   // The FAQ's own answers, reachable from the chat. They have no screen of
@@ -160,12 +160,52 @@ const WHERE_PATTERN =
  * folded, ة → ه), so «أضيف» is «اضيف». Like WHERE_PATTERN it claims nothing alone:
  * «كيف أجمع الكسور» and «how to add fractions» name no place and stay teaching.
  *
- * «can I add …» is the yes/no form of the same question, so only «can I» and
- * only the verbs that act on the account («create» and «make» are left out:
- * «can we create a quiz on fractions» asks the assistant to make one).
+ * «can I add …», «is there a way to add …» and «ممكن اضيف …» are the yes/no
+ * forms of the same question, so only the first person and only the verbs that
+ * act on the account («create» and «make» are left out, and so is «انشئ», which
+ * reads the same as the imperative: «can we create a quiz on fractions» and
+ * «ممكن انشئ اختبار» ask the assistant to make one).
  */
 const HOW_PATTERN =
-  /(كيف|طريقه|خطوات)\s*(يمكنني\s*|ممكن\s*)?((ا|ن)?(ضيف|ضف|ضافه|نشي|نشئ|نشاء|عمل|غير|عدل|حذف|صدر|حفظ|بدا|شارك|ربط|دعو|ستخدم)|تغيير|تعديل|تصدير|بدء)|\bhow\s+(?:(?:do|can|should)\s+(?:i|we)\s+)?(?:to\s+)?(?:add|create|make|change|edit|delete|remove|export|save|share|start|use|link|invite)\b|\bcan\s+i\s+(?:add|change|edit|delete|remove|export|save|share|link|invite)\b/i;
+  /(كيف|طريقه|خطوات)\s*(يمكنني\s*|ممكن\s*)?((ا|ن)?(ضيف|ضف|ضافه|نشي|نشئ|نشاء|عمل|غير|عدل|حذف|صدر|حفظ|بدا|شارك|ربط|دعو|ستخدم)|تغيير|تعديل|تصدير|بدء)|\bhow\s+(?:(?:do|can|should)\s+(?:i|we)\s+)?(?:to\s+)?(?:add|create|make|change|edit|delete|remove|export|save|share|start|use|link|invite)\b|\bcan\s+i\s+(?:add|change|edit|delete|remove|export|save|share|link|invite)\b|\b(?:is\s+there\s+(?:a|any|some)\s+way|is\s+it\s+possible|any\s+way)\s+to\s+(?:add|change|edit|delete|remove|export|save|share|link|invite)\b|(?:^|\s)(?:هل\s+)?(?:يمكنني|يمكن|اقدر|استطيع|ممكن)\s+(?:ان\s+)?(?:اضيف|اضافه|اغير|اعدل|احذف|اصدر|احفظ|اشارك|اربط|ادعو)(?:\s|$)/i;
+
+/**
+ * A plain statement that adds to the account's own lists: «add more classes to
+ * my account», «i want to add another class», «بدي اضيف شعبة». It names no
+ * where/how word, so unlike the patterns above it is trusted alone, which is why
+ * it is this narrow: classes, and grades or subjects, only with a determiner
+ * that makes the object a new one («add a grade» alone could be a mark), and
+ * only when the object ends the message (bar «to my account» and «please»).
+ * «add a class of compounds to the table» and «add a class activity on
+ * fractions» fail the anchor and stay teaching. Written against `normalize()`
+ * output, as the patterns above are.
+ */
+const EN_LEAD = String.raw`^(?:(?:please|pls|plz)\s+)?(?:(?:(?:i|we)\s+(?:want|need|wanna)\s+to|(?:i|we)(?:'d|\s+would)\s+like\s+to|let\s+me|help\s+me(?:\s+to)?)\s+)?`;
+const EN_TAIL = String.raw`(?:\s+(?:to|in|into|on)\s+(?:my|the)\s+(?:account|profile|app|list))?(?:\s+(?:please|pls|plz|too|now|here|as\s+well))*$`;
+const EN_ADD_TO_ACCOUNT = new RegExp(
+  `${EN_LEAD}(?:add|register|set\\s*up)\\s+(?:` +
+    String.raw`(?:(?:an?|another|one\s+more|more|new|extra|my|some)\s+)*class(?:es)?` +
+    String.raw`|(?:another|more|new|extra|one\s+more)\s+(?:grades?|subjects?)` +
+    String.raw`|grades?\s+\d{1,2}` +
+  `)${EN_TAIL}`,
+);
+const AR_QUAL = String.raw`(?:جديده|جديد|اخري|اخر|اضافيه|اضافي|ثاني|ثانيه|ثالث|رابع|خامس|سادس|سابع|ثامن|تاسع|عاشر|\d{1,2})`;
+const AR_ADD_TO_ACCOUNT = new RegExp(
+  String.raw`^(?:(?:ا?ريد|بدي|ابغي|ابي|ودي|احتاج|محتاج|لازم|عاوز|عايز|حابب|حابه)\s+(?:ان\s+)?)?` +
+    String.raw`(?:اضيف|اضافه|اضف|اسجل|تسجيل|سجل)\s+` +
+    String.raw`(?:(?:شعبه|شعب)(?:\s+${AR_QUAL})*|(?:صف|صفوف)(?:\s+${AR_QUAL})+)` +
+    String.raw`(?:\s+(?:لي|من\s+فضلك|لو\s+سمحت|الي\s+حسابي|الي\s+التطبيق|في\s+حسابي|في\s+التطبيق))*$`,
+);
+const isAddToAccount = (plainQuery: string) =>
+  EN_ADD_TO_ACCOUNT.test(plainQuery) || AR_ADD_TO_ACCOUNT.test(plainQuery);
+
+/**
+ * «class of compounds», «class activity», «class quiz» say «class» in the other
+ * sense. Dropped before the keywords are matched, so «where can i find classes of
+ * compounds» no longer finds My classes — the word after it still counts, so «the
+ * class activity» still finds the activity generator.
+ */
+const NOT_A_SCHOOL_CLASS = /\bclass(?:es)?(?=\s+(?:of|activity|activities|quiz|quizzes|test|exam|worksheet)\b)/g;
 
 /** A word that says the question is about the app, even when no place matched. */
 const APP_NOUN = /تطبيق|البرنامج|صفحه|قسم|تبويب|زر|قائمه|\bapp\b|\bpage\b|\bscreen\b|\btab\b|\bbutton\b|\bmenu\b/i;
@@ -176,7 +216,7 @@ const APP_NOUN = /تطبيق|البرنامج|صفحه|قسم|تبويب|زر|ق
  * question, so multi-word keywords win over their single-word prefixes.
  */
 export function findAppPlaces(query: string, limit = 3): AppPlace[] {
-  const q = ` ${matchForm(query)} `;
+  const q = ` ${matchForm(query).replace(NOT_A_SCHOOL_CLASS, ' ')} `;
   const scored: { place: AppPlace; score: number }[] = [];
   for (const place of APP_PLACES) {
     let best = 0;
@@ -195,7 +235,9 @@ const plain = (query: string) => normalize(query.replace(/[؟?!.,،]/g, ' '));
 
 /** "How do I…" rather than "where is…" — the answer is steps, not a path. */
 export function isHowQuery(query: string): boolean {
-  return HOW_PATTERN.test(plain(query));
+  const q = plain(query);
+  // «add more classes to my account» is a «how do I» in disguise: it gets the steps.
+  return HOW_PATTERN.test(q) || isAddToAccount(q);
 }
 
 /**
@@ -205,6 +247,7 @@ export function isHowQuery(query: string): boolean {
  */
 export function isAppHelpQuery(query: string): boolean {
   const q = plain(query);
+  if (isAddToAccount(q)) return true;
   if (!WHERE_PATTERN.test(q) && !HOW_PATTERN.test(q)) return false;
   return findAppPlaces(q, 1).length > 0 || APP_NOUN.test(q);
 }
