@@ -7,8 +7,9 @@
  * side effect, so there is no separate "mark read" call here — see
  * services/messaging.ts.
  *
- * Block (direct threads only, from the header menu) and report (any
- * message, via long-press) are this phase's safety rails. Both are
+ * Block (direct threads only, from the header menu) and report (someone
+ * else's message, from the long-press sheet — which also holds the emoji
+ * reaction row) are this phase's safety rails. Both are
  * deliberately light here: block just flips a flag the server already
  * enforces, and report is a short reason picker, not a full form — see
  * services/messaging.ts and the server's file header for what each one
@@ -34,6 +35,7 @@ import { askForPushPermission, pushAskCopy } from '@/services/pushTokens';
 import {
   addGroupMembers,
   blockUser,
+  clearReaction,
   getThread,
   hideThread,
   listMessages,
@@ -42,6 +44,7 @@ import {
   removeGroupMember,
   reportUser,
   sendMessage as sendMessageApi,
+  setReaction,
   setStudentPosting,
   unblockUser,
   type ChatMessage,
@@ -49,6 +52,8 @@ import {
   type ThreadDetail,
 } from '@/services/messaging';
 import { apiErrorMessage } from '@/services/apiErrorKey';
+import { REACTION_EMOJI, myReaction, toggleReaction, type ChatReaction } from '@/services/messageReactions';
+import { reactorNames } from '@/services/reactorNames';
 import { MessageBubble } from '@/components/ui/MessageBubble';
 import { Avatar } from '@/components/ui/Avatar';
 import { chatThreadSubtitle } from '@/services/chatThreadSubtitle';
@@ -88,6 +93,13 @@ export default function ThreadScreen() {
   const [blocking, setBlocking] = useState(false);
   const [reportTarget, setReportTarget] = useState<{ messageId: string; senderId: string } | null>(null);
   const [reporting, setReporting] = useState(false);
+  // The message whose reaction sheet is open. An id, not the message: the sheet
+  // re-reads it from `messages` so its highlighted emoji follows the optimistic update.
+  const [sheetMessageId, setSheetMessageId] = useState<string | null>(null);
+  // Messages with a reaction request in flight. Their reactions are ignored by the
+  // poll (so a poll that started before the PUT cannot undo the tap) and a second
+  // tap on them is ignored until the first settles.
+  const pendingReactions = useRef(new Set<string>());
   const [attachment, setAttachment] = useState<string | null>(null);
   const [manageOpen, setManageOpen] = useState(false);
   const [addMembersOpen, setAddMembersOpen] = useState(false);
@@ -130,7 +142,10 @@ export default function ThreadScreen() {
     if (!threadId) return;
     try {
       const polled = await listMessages(threadId);
-      setMessages(prev => mergeNewMessages(prev, polled));
+      // A message mid-reaction keeps what the tap put on screen; `reactions: undefined`
+      // is "no news" to mergeNewMessages.
+      const safe = polled.map(m => (pendingReactions.current.has(m.id) ? { ...m, reactions: undefined } : m));
+      setMessages(prev => mergeNewMessages(prev, safe));
     } catch {
       // Leave the open thread exactly as it was.
     }
@@ -352,11 +367,37 @@ export default function ThreadScreen() {
     }
   };
 
+  const reactTo = async (messageId: string, emoji: string) => {
+    if (!threadId || !user || pendingReactions.current.has(messageId)) return;
+    const before = messages.find(m => m.id === messageId);
+    if (!before) return;
+    const prior = before.reactions ?? [];
+    const removing = myReaction(prior) === emoji;
+    const put = (reactions: ChatReaction[]) =>
+      setMessages(prev => prev.map(m => (m.id === messageId ? { ...m, reactions } : m)));
+
+    pendingReactions.current.add(messageId);
+    // Only a teacher's chips carry userIds, so only a teacher's tap needs the id.
+    put(toggleReaction(prior, emoji, isTeacher ? user.id : undefined));
+    Haptics.selectionAsync();
+    try {
+      put(removing ? await clearReaction(threadId, messageId) : await setReaction(threadId, messageId, emoji));
+      setError('');
+    } catch (e) {
+      put(prior);
+      setError(apiErrorMessage(e, 'messageReactionFailed', t));
+    } finally {
+      pendingReactions.current.delete(messageId);
+    }
+  };
+
   const topPad = insets.top + (insets.top === 0 ? 12 : 0);
   const align = isRTL ? 'right' : 'left';
   const isGroup = thread?.type !== 'direct';
   const headerTitle = isGroup ? (lang === 'ar' ? thread?.titleAr : thread?.title) || thread?.title : '';
   const isTeacher = isTeacherRole(user?.role);
+  const sheetMessage = sheetMessageId ? messages.find(m => m.id === sheetMessageId) ?? null : null;
+  const sheetMine = myReaction(sheetMessage?.reactions);
   // «مجموعة الصف · الأعضاء: 12». The count is only shown to those the server
   // sends the full list to (lib/groupMemberView.ts) — to a child in an
   // announcement-only group it would be «2», which is not the class.
@@ -490,10 +531,8 @@ export default function ThreadScreen() {
                   }
                 }}
                 onLongPress={() => {
-                  if (!isOwn) {
-                    Haptics.selectionAsync();
-                    setReportTarget({ messageId: item.id, senderId: item.senderId });
-                  }
+                  Haptics.selectionAsync();
+                  setSheetMessageId(item.id);
                 }}
                 delayLongPress={400}
               >
@@ -510,6 +549,9 @@ export default function ThreadScreen() {
                   attachmentUrl={item.attachmentUrl}
                   attachmentKind={item.attachmentKind}
                   seenLabel={isOwn && item.seen ? t('messageSeen') : undefined}
+                  reactions={item.reactions}
+                  onReactionPress={emoji => void reactTo(item.id, emoji)}
+                  reactionLabel={r => t('messageReactionChipLabel', r.emoji, r.count, r.mine)}
                 />
               </Pressable>
             );
@@ -779,7 +821,76 @@ export default function ThreadScreen() {
         }}
       />
 
-      {/* ─── Report reason picker, opened by long-pressing a message ─── */}
+      {/* ─── Message sheet, opened by long-pressing any message: react, or report someone else's ─── */}
+      <Modal visible={!!sheetMessage} transparent animationType="fade" onRequestClose={() => setSheetMessageId(null)}>
+        <Pressable style={styles.modalBackdrop} onPress={() => setSheetMessageId(null)}>
+          {sheetMessage ? (
+            <View style={[styles.menuCard, { backgroundColor: colors.card }]}>
+              <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
+                {t('messageReactTitle')}
+              </Text>
+              <View style={styles.emojiRow}>
+                {REACTION_EMOJI.map(emoji => (
+                  <Pressable
+                    key={emoji}
+                    accessibilityRole="button"
+                    accessibilityLabel={emoji}
+                    onPress={() => {
+                      const id = sheetMessage.id;
+                      setSheetMessageId(null);
+                      void reactTo(id, emoji);
+                    }}
+                    style={[styles.emojiBtn, sheetMine === emoji && { backgroundColor: colors.secondary }]}
+                  >
+                    <Text style={styles.emojiText}>{emoji}</Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              {/* Reporting stays one tap away, the first row under the emoji — above the reactor list, which grows with the class. */}
+              {sheetMessage.senderId !== user?.id ? (
+                <Pressable
+                  onPress={() => {
+                    const target = { messageId: sheetMessage.id, senderId: sheetMessage.senderId };
+                    setSheetMessageId(null);
+                    // Two Modals cannot swap in the same tick on iOS — the second is dropped.
+                    setTimeout(() => setReportTarget(target), 250);
+                  }}
+                  style={styles.menuRow}
+                >
+                  <Ionicons name="flag-outline" size={18} color={colors.destructive} />
+                  <Text style={[styles.menuText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                    {t('messageReportAction')}
+                  </Text>
+                </Pressable>
+              ) : null}
+
+              {/* Who reacted — teachers only; the server sends userIds to no one else. */}
+              {isTeacher && (sheetMessage.reactions ?? []).length > 0 ? (
+                <View>
+                  <Text style={[styles.modalTitle, { color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
+                    {t('messageReactionsList')}
+                  </Text>
+                  {(sheetMessage.reactions ?? []).map(r => (
+                    <Text
+                      key={r.emoji}
+                      style={[styles.reactorLine, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: align }]}
+                    >
+                      {`${r.emoji}  ${reactorNames(r.userIds ?? [], user?.id, participantsById, {
+                        you: t('messageReactorYou'),
+                        unknown: t('messageReactorUnknown'),
+                      }).join(isRTL ? '، ' : ', ')}`}
+                    </Text>
+                  ))}
+                </View>
+              ) : null}
+
+            </View>
+          ) : null}
+        </Pressable>
+      </Modal>
+
+      {/* ─── Report reason picker, opened from the message sheet ─── */}
       <Modal visible={!!reportTarget} transparent animationType="fade" onRequestClose={() => setReportTarget(null)}>
         <Pressable style={styles.modalBackdrop} onPress={() => setReportTarget(null)}>
           <View style={[styles.menuCard, { backgroundColor: colors.card }]}>
@@ -825,6 +936,10 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 15, paddingHorizontal: 10, paddingTop: 8, paddingBottom: 4 },
   menuRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 10 },
   menuText: { fontSize: 14, flex: 1 },
+  emojiRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 4, paddingVertical: 8 },
+  emojiBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  emojiText: { fontSize: 24 },
+  reactorLine: { fontSize: 13, lineHeight: 20, paddingHorizontal: 10, paddingVertical: 2 },
   readOnlyNotice: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 10, paddingHorizontal: 12 },
   readOnlyText: { fontSize: 15, lineHeight: 23, flexShrink: 1 },
   attachmentPreview: { alignItems: 'center', gap: 8, paddingHorizontal: 4, paddingBottom: 8 },

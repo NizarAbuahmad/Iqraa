@@ -60,3 +60,55 @@ describe('mergeNewMessages — seen', () => {
     assert.equal(mergeNewMessages(current, [{ id: 'a', seen: false }]), current);
   });
 });
+
+describe('mergeNewMessages — reactions', () => {
+  // One declared shape for every literal below: the generic merge infers its
+  // type from both arguments, and `{ id }` next to `{ id, reactions }` would not typecheck.
+  type M = { id: string; seen?: boolean; reactions?: { emoji: string; count: number; mine: boolean; userIds?: string[] }[] };
+  const r = (emoji: string, count: number, mine = false) => ({ emoji, count, mine });
+
+  it('adopts changed reactions on a message already on screen', () => {
+    const current: M[] = [{ id: 'a', reactions: [r('👍', 1)] }];
+    const polled: M[] = [{ id: 'a', reactions: [r('👍', 2), r('🙏', 1)] }];
+    assert.deepEqual(mergeNewMessages(current, polled), [{ id: 'a', reactions: [r('👍', 2), r('🙏', 1)] }]);
+  });
+
+  it('keeps the same array reference when reactions did not change', () => {
+    const current: M[] = [{ id: 'a', reactions: [r('👍', 1, true)] }];
+    const polled: M[] = [{ id: 'a', reactions: [r('👍', 1, true)] }];
+    assert.equal(mergeNewMessages(current, polled), current);
+  });
+
+  it('notices the same chip held by different people (teacher view)', () => {
+    const current: M[] = [{ id: 'a', reactions: [{ emoji: '👍', count: 1, mine: false, userIds: ['x'] }] }];
+    const polled: M[] = [{ id: 'a', reactions: [{ emoji: '👍', count: 1, mine: false, userIds: ['y'] }] }];
+    assert.notEqual(mergeNewMessages(current, polled), current);
+  });
+
+  it('treats a poll without a reactions field (older API build) as "no news", not "all removed"', () => {
+    const current: M[] = [{ id: 'a', reactions: [r('👍', 1)] }];
+    const polled: M[] = [{ id: 'a' }];
+    assert.equal(mergeNewMessages(current, polled), current);
+  });
+
+  it('clears reactions when the poll says there are none', () => {
+    const current: M[] = [{ id: 'a', reactions: [r('👍', 1)] }];
+    const polled: M[] = [{ id: 'a', reactions: [] }];
+    assert.deepEqual(mergeNewMessages(current, polled), [{ id: 'a', reactions: [] }]);
+  });
+
+  it('applies reactions and new messages together, leaving other held messages alone', () => {
+    const current: M[] = [{ id: 'b', reactions: [r('👍', 1)] }, { id: 'a', reactions: [r('🙏', 1)] }];
+    const polled: M[] = [{ id: 'c', reactions: [] }, { id: 'b', reactions: [r('👍', 2)] }];
+    const merged = mergeNewMessages(current, polled);
+    assert.deepEqual(merged.map(m => m.id), ['c', 'b', 'a']);
+    assert.deepEqual(merged[1]!.reactions, [r('👍', 2)]);
+    assert.equal(merged[2], current[1]);
+  });
+
+  it('still adopts a new seen alongside reactions', () => {
+    const current: M[] = [{ id: 'a', seen: false, reactions: [r('👍', 1)] }];
+    const polled: M[] = [{ id: 'a', seen: true, reactions: [r('👍', 2)] }];
+    assert.deepEqual(mergeNewMessages(current, polled), [{ id: 'a', seen: true, reactions: [r('👍', 2)] }]);
+  });
+});

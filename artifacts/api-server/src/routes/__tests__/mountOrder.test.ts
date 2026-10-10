@@ -447,6 +447,18 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(readAll.status, 401, "/messaging/threads/read-all must require a token");
   });
 
+  it("guards the reaction routes like the rest of /messaging", async () => {
+    const path = "/messaging/threads/00000000-0000-0000-0000-000000000001/messages/00000000-0000-0000-0000-000000000002/reaction";
+    const put = await fetch(`${base}${path}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emoji: "👍" }),
+    });
+    assert.equal(put.status, 401, "PUT reaction must require a token");
+    const del = await fetch(`${base}${path}`, { method: "DELETE" });
+    assert.equal(del.status, 401, "DELETE reaction must require a token");
+  });
+
   it("keeps the student exam link public, and only the link", async () => {
     // The one unauthenticated write surface. What is asserted is the absence of
     // a 401: that status would mean an earlier guard swallowed the request and
