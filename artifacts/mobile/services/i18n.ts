@@ -273,6 +273,7 @@ const translations = {
     // Curriculum — top level
     curriculumTitle: 'المنهاج',
     jordanCurriculum: 'المنهاج الأردني',
+    nationalBookNote: 'الكتاب الوطني المعتمد من وزارة التربية والتعليم الأردنية',
     curriculumIntro:
       'تصفّح المنهاج الأردني الرسمي حسب الصف والمادة والوحدة والدرس — بالترتيب نفسه وأرقام الصفحات نفسها الموجودة في الكتاب المطبوع، لتراجع محتوى الكتاب الحقيقي مباشرة من هنا.',
     searchSubjects: 'ابحث في المواد…',
@@ -2669,6 +2670,7 @@ const translations = {
 
     curriculumTitle: 'Curriculum',
     jordanCurriculum: 'Jordanian Curriculum',
+    nationalBookNote: "The national textbook, approved by Jordan's Ministry of Education",
     curriculumIntro:
       "Browse the official Jordanian curriculum by grade, subject, unit and lesson — in the same order and with the same page numbers as the printed book, so you can review the real book's content directly from here.",
     searchSubjects: 'Search subjects…',
