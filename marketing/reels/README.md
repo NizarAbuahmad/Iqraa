@@ -45,8 +45,8 @@ highlighted in the app, the same key row highlighted in «مفتاح الإجا�
 - **Why item 2.** The sheet numbers questions per section but its key globally, and only in the first section do they
   agree — highlighting key row 6 under a question the app labels «3.» would confuse. (Another MCQ on that sheet has
   an Arabic «و» that renders like a stray "g" next to Latin maths, so it was dropped.)
-- **Known library issue, not touched here:** 27 of 28 premade sheets repeat question stems inside one sheet
-  (this one repeats three of its ten). Reported to the repo owner in the PR; no fix attempted here.
+- **Library issue, since fixed on this branch:** 27 of 28 premade sheets repeated question stems inside one sheet.
+  The manifest was regenerated, so «تركيب الاقترانات» now has 4 questions, not the 10 shown in Reels 2 and 5.
 
 ## Rebuilding
 
