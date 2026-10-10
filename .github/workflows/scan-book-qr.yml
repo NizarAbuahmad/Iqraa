@@ -1,0 +1,98 @@
+# Scan the student books for printed QR codes, from a GitHub runner.
+#
+# Why this exists: `scripts/scan_book_qr.py --fetch` has to download the books
+# from nccd.gov.jo, and that host resets connections from the cloud sandbox the
+# agent works in. A GitHub runner has a different network path, so this finds out
+# whether it can reach the ministry — and if it can, does the whole scan there.
+# Run it by hand from the Actions tab, or by pushing a branch named `qr-scan/*`.
+#
+# What it does NOT do: it does not run `verify-qr-links`. That check rewrites the
+# `httpStatus` of every row from the runner's point of view, and a US datacenter's
+# view of `qr.nccd.gov.jo` is not a teacher's. New rows stay `unchecked`, which the
+# app hides; run `verify-qr-links` from a normal connection before merging.
+#
+# The result is pushed to a branch (`qr-scan-result/<run id>`) as a change to
+# `knowledge-base/book-qr-links.json`, never to `main`. The downloaded PDFs are
+# gitignored and never committed.
+name: Scan book QR codes
+
+on:
+  workflow_dispatch:
+    inputs:
+      grades:
+        description: Grades to scan, space separated (blank = every grade)
+        default: "2 4"
+  push:
+    branches: ["qr-scan/**"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: scan-book-qr
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    name: scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install scanner dependencies
+        run: pip install pymupdf opencv-python-headless numpy
+
+      # Fail in a minute, with a clear message, rather than after downloading nothing.
+      - name: Can this runner reach nccd.gov.jo?
+        run: |
+          url="https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G4/1/StBook4.pdf"
+          code=$(curl -sS -m 60 -o /tmp/probe.pdf -w "%{http_code}" -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124 Safari/537.36" "$url" || echo "000")
+          echo "nccd.gov.jo answered HTTP $code ($(stat -c %s /tmp/probe.pdf 2>/dev/null || echo 0) bytes)"
+          if [ "$code" != "200" ]; then
+            echo "::error::GitHub's runners cannot reach nccd.gov.jo either (HTTP $code). Run scripts/scan_book_qr.py --fetch from a network that can."
+            exit 1
+          fi
+          head -c 5 /tmp/probe.pdf | grep -q '%PDF-' || { echo "::error::nccd.gov.jo answered 200 but not with a PDF"; exit 1; }
+
+      - name: Scan
+        env:
+          GRADES: ${{ inputs.grades || '2 4' }}
+        run: |
+          set -o pipefail
+          if [ -n "$GRADES" ]; then
+            python scripts/scan_book_qr.py --fetch --grade $GRADES 2>&1 | grep -v -i "fitz" | tee scan.log
+          else
+            python scripts/scan_book_qr.py --fetch 2>&1 | grep -v -i "fitz" | tee scan.log
+          fi
+
+      - name: Publish the result to a branch
+        run: |
+          if git diff --quiet -- knowledge-base/book-qr-links.json; then
+            echo "The manifest did not change: nothing new was found, or nothing downloaded."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          branch="qr-scan-result/${GITHUB_RUN_ID}"
+          git switch -c "$branch"
+          git add knowledge-base/book-qr-links.json
+          git commit -m "Book QR scan result (run ${GITHUB_RUN_ID}, rows left unchecked)"
+          git push origin "$branch"
+          echo "Pushed $branch"
+
+      - name: Keep the scan log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan-log
+          path: scan.log
+          if-no-files-found: ignore
