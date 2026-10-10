@@ -3828,6 +3828,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2025/G1/2/JOR-TT-G1-S2-Reprints-2025-Pupils-Book-Updated.pdf',
   },
   // ── Arabic Grade 1 – Semesters 1 and 2 ──────────────────────────────────
   // Seventh and eighth Grade 1 books in this repo. 'arabic' is already
