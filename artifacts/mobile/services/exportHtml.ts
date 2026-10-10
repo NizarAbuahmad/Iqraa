@@ -24,7 +24,7 @@
 import { labelAnswerParts, labelOption, labelOptionLine } from './optionLabels.ts';
 import { arCountPhrase } from './arCount.ts';
 import { dateLocale } from './dateLabels.ts';
-import { quizInstructions, quizMarkRows, quizMarksTotal, quizStudentFields, quizTypeLabel } from './quizPaper.ts';
+import { quizBlockPoints, quizBlocks, quizInstructions, quizMarkRows, quizMarksTotal, quizStudentFields, quizTypeLabel } from './quizPaper.ts';
 import { isolateForeignRuns, normalizeExponents } from './mathRender.ts';
 import { labQrSvg } from './labQr.ts';
 import { printStyleCss, type PrintStyle } from './printStyle.ts';
@@ -741,14 +741,19 @@ export function buildQuizHTML(
   const L = (ar: string, en: string) => isAr ? ar : en;
   const typeLabel = (t: QuizOutput['questions'][number]['type']) => quizTypeLabel(t, isAr);
 
-  const questions = quiz.questions.map((q, i) => {
-    const options = q.options
-      ? q.options.map((o, oi) => optionRowHTML(o, oi, isAr)).join('')
-      : '';
-    // A short-answer question on a quiz needs writing room for the same
-    // reason it does on a worksheet — this is the paper a student sits.
-    const room = q.options ? '' : `<div class="q-lines">${ANSWER_RULES.map(() => '<div class="q-rule"></div>').join('')}</div>`;
-    return `<div class="q-card">
+  // One band per run of the same type — «السؤال الأول: اختر…», «السؤال
+  // الثاني: ضع إشارة…» — as a ministry paper prints it. Numbering stays flat.
+  const questions = quizBlocks(quiz.questions, isAr).map(block => {
+    const cards = block.questions.map((q, bi) => {
+      const i = block.start + bi;
+      const options = q.options
+        ? q.options.map((o, oi) => optionRowHTML(o, oi, isAr)).join('')
+        : '';
+      // A short-answer question on a quiz needs writing room for the same
+      // reason it does on a worksheet — this is the paper a student sits. A
+      // fill-blank has its blanks in the sentence, so it needs none.
+      const room = q.options || q.type === 'fill_blank' ? '' : `<div class="q-lines">${ANSWER_RULES.map(() => '<div class="q-rule"></div>').join('')}</div>`;
+      return `<div class="q-card">
       <div class="q-head">
         <span class="q-num">${i + 1}</span>
         <span class="q-text">${esc(q.text)}</span>
@@ -757,6 +762,10 @@ export function buildQuizHTML(
       ${options}${room}
       <div class="q-pts">${L(arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط'), `${q.points} pts`)}</div>
     </div>`;
+    }).join('');
+    const pts = quizBlockPoints(block);
+    const heading = `${block.heading} (${L(arCountPhrase(pts, 'علامة', 'علامتان', 'علامات'), `${pts} marks`)})`;
+    return `<div class="exam-block">${sectionBand(heading, '📋', DOC_ACCENT.quiz, isAr)}${cards}</div>`;
   }).join('');
 
   // The key goes on its own page, and only on the teacher's copy: it used to
@@ -774,7 +783,6 @@ export function buildQuizHTML(
     <div class="doc-title">${esc(title)}</div>
     <div class="doc-meta">${esc(meta.subject)} • ${esc(meta.grade)} • ${L(arCountPhrase(quiz.duration, 'دقيقة', 'دقيقتان', 'دقائق'), `${quiz.duration} min`)} • ${L(arCountPhrase(quiz.totalPoints, 'نقطة', 'نقطتان', 'نقاط'), `${quiz.totalPoints} pts`)}</div>
     ${examPaperHTML(quiz, isAr)}
-    ${sectionBand(L('الأسئلة', 'Questions'), '📋', DOC_ACCENT.quiz, isAr)}
     ${questions}
     ${answerKey}
     ${figuresSectionHTML(figures, isAr)}
@@ -1307,7 +1315,8 @@ export function buildQuizSlidesHTML(
   const typeLabel = (t: string) =>
     t === 'multiple_choice' ? L('اختيار متعدد', 'MCQ')
       : t === 'true_false' ? L('صح/خطأ', 'T/F')
-        : L('إجابة قصيرة', 'Short');
+        : t === 'fill_blank' ? L('أكمل الفراغ', 'Fill in')
+          : L('إجابة قصيرة', 'Short');
 
   const GROUP_SIZE = 3;
   const questionGroups: typeof quiz.questions[] = [];

@@ -2664,6 +2664,7 @@ export default function IqraScreen() {
             documentContext: hasDocs ? docBundle.promptBlock : null,
             fromSoftPin: softBareArtifact && !topicStrong,
             scope: artScope,
+            ask: q,
           });
           // Name the file the teacher opened, and say plainly that the
           // material above is not drawn from it. This branch emits no support

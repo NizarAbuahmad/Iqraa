@@ -183,6 +183,15 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   asserts the two match. `req.difficulty` used to be read by neither
   generator, and the quiz factories passed a literal `'medium'`, so an easy
   and a hard quiz drew the same bank slice.
+- **A quiz's question types and their order live in three places.** The live
+  prompt (`quizPromptAr/En` + `QUIZ_TYPE_ORDER` in `artifacts/api-server/src/lib/`),
+  the server backstop `normalizeQuiz` (`generationShape.ts` — drops unrequested
+  types, forces the صح/خطأ option pair, groups into ministry order before
+  anything is pooled) and the offline `quizOnce` in `generators.ts`, which
+  builds the same blocks from `QUIZ_TYPE_ORDER` in `services/quizPaper.ts`.
+  The exports print a «السؤال الأول: …» heading per block from `quizBlocks`.
+  A new quiz type needs an entry in all of them, and the type contract in the
+  prompt, or the model is never told what the type looks like.
 - **`additionalContext` is not teacher-pasted material — it is usually the
   curriculum.** Every `/ai-tools` screen fills it with `buildGeneratorContext()`
   output derived from the lesson, and the server appends its own book passages

@@ -479,9 +479,13 @@ an announcement by default» below.
     than clip the verdict); for an Arabic prose problem the only guard that
     the ✓ is about the right problem is the teacher reading «فُهمت المسألة
     هكذا»; a forged saved board with `verified: true` plus a plausible
-    `understoodAs` is accepted (the file has no signature). Seen, not
-    changed: `modules/assessment/keyVerification.ts` (the exam path) has no
-    tautology guard on model-written checks either.
+    `understoodAs` is accepted (the file has no signature). The exam path
+    had the same hole (a model-written `check` of `P = 1/6` → `1/6` came back
+    `verified`, reproduced 2026-10-10) and now shares the fix: `parseAnswerKeyCheck`
+    refuses a check whose `question` is not a real question for its topic
+    (`isRealCheckQuestion` in `lib/math-verify/src/answerKey.ts`, built on the
+    same equation / circle extractors the typed-problem gate uses), so such a
+    question stays in the paper with no check and no badge.
     Spec and plan of A and B:
     `docs/superpowers/specs/2026-10-08-whiteboard-board-design.md`,
     `docs/superpowers/plans/2026-10-08-whiteboard-board.md`; B:
@@ -959,11 +963,73 @@ stay teaching, and «can we create a quiz on fractions» is left as a request to
 the assistant (`create` and `make` are deliberately not in the can-I verbs).
 `appHelp.test.ts` has the reported sentence, its siblings, and the guards.
 
-**Still not claimed, and still ends in the subject question:** a statement with
-no where/how/can-I in front, such as «add more classes to my account» or «i want
-to add another class». «class» also means a class of compounds, so claiming a
-bare statement needs more than a keyword; not attempted here. Checked by running
-the router on each sentence, not in the web build.
+**Plain statements and the other openers, same day (follow-up).** «add more
+classes to my account», «i want to add another class», «let me / help me add a
+class», «i want to add grade 8», «بدي اضيف شعبة», «اضف شعبة», «ابغى اضيف صف
+ثامن» now reach app help and get the add-a-class or add-a-grade **steps**, not
+just a path. So do «is there a way / is it possible / any way to add …» and
+«هل يمكنني / ممكن / هل اقدر اضيف …».
+
+A statement names no where/how word, so it is trusted alone and is therefore
+narrow (`EN_ADD_TO_ACCOUNT` / `AR_ADD_TO_ACCOUNT` in `services/appHelp.ts`): the
+verb is add, register or set up, the object is a class, or a grade or subject
+that is new («add a grade» alone could be a mark, and is not claimed), and the
+object must end the message bar «to my account» and «please». «add a class of
+compounds to the table», «add a class activity on fractions», «add grade 8
+questions to the quiz» and «اضف صفا الى الجدول» all fail that anchor and stay
+teaching. «class of …», «class activity / quiz / test / exam / worksheet» are
+also dropped before places are matched, which fixes «where can i find classes of
+compounds» finding My classes. The create verbs stay out of every new opener,
+including «انشئ», which reads the same as the imperative.
+
+**The four that were left, also the same day.** All four are now claimed, each
+on a rule as narrow as the statement rule above, because none has a where/how
+word:
+
+- **A problem** — «i can't find my classes», «i don't see my classes», «my
+  classes are missing», «my class list is empty», «where did my classes go»,
+  «i can't add a class», «i can't open settings», «ما لقيت شعبتي», «مش لاقي
+  الاعدادات», «اختفت شعبي». The message must be the problem phrase and then
+  exactly an account screen's name, nothing more, and a generator never counts:
+  «i can't find a good worksheet on fractions» asks for one. A problem finding
+  something gets the path; a problem adding gets the steps.
+- **A longer add** — «add a class for grade 9», «add a class called 9A», «add
+  class 9B», «اضف شعبة للصف التاسع», «بدي اضيف شعبة باسم تاسع ب». The extra words
+  must be a grade, a name or a count; «add a class for fractions» is teaching.
+- **A bare grade or subject** — «i want to add a grade», «i need to add a
+  subject», «add a grade to my account», «بدي اضيف صف», «اريد اضافة مادة». Only
+  with first-person intent or «to my account / profile», because «add a grade»
+  alone may be a mark. **This is a guess:** «i want to add a grade» said about a
+  student's mark gets the add-a-grade steps, which is wrong for that teacher.
+- **Another screen** — «i want to change the language», «i need to open
+  settings», «i want to see my saved materials», «i want to change the lesson»,
+  «i want to start the class», «i want to export my worksheet», «بدي اغير
+  اللغة», «اريد تصدير ورقة العمل». First-person intent, a verb, then exactly a
+  screen's name; built from the places' own keywords, so a screen added there is
+  covered here. A generator's name counts only after «export / تصدير».
+  «i want to change the lesson to be shorter» and «i want to find the best game
+  for students» are teaching.
+
+«how do I export my lesson plan» used to answer with the path to the lesson-plan
+generator; it now gets the export steps, since the steps were what it asked for.
+That is the one change to an existing answer.
+
+**A mistake worth keeping:** the first version of the problem rule took «a
+problem phrase + any screen word anywhere» and passed its own tests. An
+adversarial run of 44 look-alike sentences claimed 10 of them («i can't find the
+settings of the equation», «my students are missing the point of fractions»,
+«ما لقيت الجدول الدوري في الكتاب»). The fix was the anchor above, and the ten are
+now in the test file. Run an adversarial set before trusting a new gate here.
+
+**Still not claimed:** a statement or problem with words after the screen's
+name that are not a grade, name or count; a screen reached by a verb not listed
+(`save`, `share`, `check` are left out on purpose: «i want to check the answers
+of the students» is grading); a problem about a generator. One deliberate
+overlap: «any way to share the answers with students» is claimed, because «how
+can i share the answers with students» already was (the word «students» is a
+Classes keyword). Pinned by 35 new claims and 30 + 14 teaching look-alikes in
+`appHelp.test.ts`; 65 look-alikes in two adversarial runs, none claimed but the
+overlap. Not checked in the web build.
 
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
