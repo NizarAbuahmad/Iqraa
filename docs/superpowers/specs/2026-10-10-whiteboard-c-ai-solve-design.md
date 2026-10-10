@@ -269,3 +269,42 @@ Where `parseSolution` lives (shared lib vs api-server, decided by where the app
 also needs it); the exact symbol-row insertion behaviour on native vs web text
 inputs (cursor selection); where the control row sits so it neither covers the
 steps nor collides with the toolbar at phone width.
+
+## Plan refinements (settled while writing the plan; these win over the text above)
+
+The plan (`docs/superpowers/plans/2026-10-10-whiteboard-c-ai-solve.md`) closed the
+open points above and tightened a few details after reading the code:
+
+- **`parseSolution` lives in `lib/math-verify`** (`src/solution.ts`, re-exported
+  from the package root), beside `parseAnswerKeyCheck`: the app and the API both
+  need it and it is pure. It refuses over-length text instead of truncating it.
+- **The server shows the teacher's own text as the problem.** The model returns
+  `{steps, answer, check?}` only (`REQUIRED_FIELDS.solve = ["steps","answer"]`);
+  `problem` in the response is the typed text, so the model cannot restate it
+  into something else. The request field is `language: 'arabic' | 'english'`
+  like the sibling routes, and "no solution" is HTTP 422 `code: 'no_solution'`.
+- **The route bypasses `generateContent` and the artifact pool entirely** (as the
+  prompt-slides questions route does): there is nothing to pool, so there is no
+  `contextSource` to force. `GenerationKind "solve"` exists for the shape check
+  and the usage log.
+- **A contradicted first attempt is shown only if the retry is verified.** After
+  a `distinct`, a retry that comes back unchecked also yields no solution — the
+  first answer was contradicted, so an unchecked second is not good enough.
+- **Where the controls live:** in the bottom palette (a group shown only when the
+  page has a solution), so they cannot collide with the toolbar. The block's
+  box is x 24–568, y 72–600 (clear of the top bar and the palette), not y 24–696.
+- **Symbol row appends at the end of the field** (no cursor tracking).
+- **The AI label always shows; the final answer and its verdict label appear
+  together** once every step has been revealed.
+- **Steps display in the notation the model wrote** (Latin maths inside Arabic
+  prose). Converting to «س» and Arabic digits for free-form model text is out of
+  scope: `MathText` cannot parse Arabic-Indic exponents and a blind `x→س` would
+  corrupt Latin words. Reported to the owner as a known limit.
+- **A board file stays version 1 until a page carries a solution** (then 2), so a
+  not-yet-updated app can still open every board that has none.
+- **A solution counts as content** for "unsaved" and for enabling PDF export;
+  `docHasInk` itself is unchanged.
+- **Replace-confirm is asked when the dialog is opened** on a page that already
+  has a solution, before any model call is spent.
+- **A phone-sized stage clips a long solution** (the page is ~0.3 scale there);
+  the PDF is always complete.
