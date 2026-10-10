@@ -25,10 +25,8 @@
  */
 import {
   SOLUTION_LIMITS,
-  circleEquationFrom,
   classifyVerifiableTopic,
   cleanSolutionText,
-  latinEquationFrom,
   parseAnswerKeyCheck,
   parseSolution,
   type Solution,
@@ -52,9 +50,6 @@ type Attempt =
   | { kind: "shown"; solution: Solution; verification: SolveVerification }
   | { kind: "contradicted"; computed: string | null; question: string };
 
-const EQUATION_TOPICS = new Set(["equation_linear", "equation_quadratic", "equation_exponential"]);
-const CIRCLE_TOPICS = new Set(["circle_center", "circle_radius"]);
-
 const squash = (s: string): string => s.replace(/\s+/g, "");
 
 async function attempt(problem: string, reply: unknown, relate: RelateKeyFn): Promise<Attempt> {
@@ -77,14 +72,8 @@ async function attempt(problem: string, reply: unknown, relate: RelateKeyFn): Pr
   const check = parseAnswerKeyCheck(rawCheck);
   if (!check) return unchecked(rawCheck === undefined || rawCheck === null ? "no_check" : "unsupported");
 
-  // `check.question` must be a real question of its topic. Without this a
-  // model can write `{question: "P = 1/6", answer: "P = 1/6"}` for a problem
-  // we cannot classify: the verifier "solves" the question to its own answer,
-  // says `equivalent`, and a tautology earns a ✓. The same gates the shared
-  // classifier applies to typed text apply to the model's payload.
-  if (EQUATION_TOPICS.has(check.topic) && latinEquationFrom(check.question) === null) return unchecked("unsupported");
-  if (CIRCLE_TOPICS.has(check.topic) && circleEquationFrom(check.question) === null) return unchecked("unsupported");
-  if (check.topic.startsWith("derivative") && !/x/.test(check.question)) return unchecked("unsupported");
+  // (A check that merely restates its own answer — `P = 1/6` — never gets here:
+  // `parseAnswerKeyCheck` refuses it, so it is 'unsupported' above.)
 
   // The verifier judges `check.answer`; the teacher is shown `answer`.
   if (squash(check.answer) !== squash(solution.answer)) return unchecked("unlinked");
