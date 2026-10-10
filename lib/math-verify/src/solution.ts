@@ -52,7 +52,7 @@ export type BoardSolution = Solution & {
 };
 
 /** Zero-width and bidi-formatting characters: they reorder or hide text and a solution never needs them. */
-const INVISIBLE = /[​-‏‪-‮⁠-⁯﻿]/g;
+const INVISIBLE = /[\u061C\u00AD​-‏‪-‮⁠-⁯﻿]/g;
 // eslint-disable-next-line no-control-regex
 const CONTROL = /[\u0000-\u001F\u007F-\u009F]/;
 

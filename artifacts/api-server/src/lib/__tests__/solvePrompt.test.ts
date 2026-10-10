@@ -18,11 +18,18 @@ describe("solvePrompt", () => {
     assert.equal(count(p, "<<<"), 1);
   });
 
+  it("long runs of markers are spaced out too", () => {
+    const p = solvePrompt("a >>>>> b <<<<< c", true);
+    assert.equal(count(p, ">>>"), 1);
+    assert.equal(count(p, "<<<"), 1);
+  });
+
   it("lists every verifiable topic and asks for a check in Latin only", () => {
     const p = solvePrompt("x", false);
     for (const topic of VERIFIABLE_TOPICS) assert.ok(p.includes(topic), topic);
     assert.ok(/check is OPTIONAL/.test(p));
     assert.ok(/LATIN/.test(p));
+    assert.ok(p.includes("x = 2 or x = 3"));
   });
 
   it("asks for the check answer to equal the displayed answer", () => {
@@ -39,6 +46,11 @@ describe("solvePrompt", () => {
     const retry = solvePrompt("x", true, "x = 4");
     assert.ok(retry.includes("x = 4"));
     assert.ok(/computer algebra system solved/.test(retry));
+    assert.ok(retry.includes("solved this problem and got: x = 4"));
+    assert.ok(retry.includes('leave "check" out'));
+    assert.ok(!solvePrompt("x", true).includes('leave "check" out'));
+    const named = solvePrompt("x", true, "x = 4", "2x+5=13");
+    assert.ok(named.includes("solved 2x+5=13 and got: x = 4"));
   });
 
   it("has a JSON-only system prompt and a sane token ceiling", () => {

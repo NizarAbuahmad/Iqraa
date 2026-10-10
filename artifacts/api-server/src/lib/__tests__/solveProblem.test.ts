@@ -167,6 +167,89 @@ describe("solveProblem — never claims what nothing checked", () => {
   });
 });
 
+describe("solveProblem — a tautological check earns no tick", () => {
+  const DICE = "عند رمي حجر نرد عادل، ما احتمال ظهور 5؟";
+  const dice = (check: unknown) => ({ steps: ["P = 1/6"], answer: "P = 1/6", check });
+
+  it("a check whose question is its own answer is 'unsupported'; the verifier is not asked", async () => {
+    const { result, relateCalls } = await shown(
+      DICE,
+      [dice({ topic: "equation_linear", question: "P = 1/6", answer: "P = 1/6" })],
+      [],
+    );
+    assert.equal(relateCalls.length, 0);
+    assert.equal(result.verification.verified, false);
+    assert.equal(result.verification.code, "unsupported");
+  });
+
+  it("'x = 4' is not an equation to solve either", async () => {
+    const { result, relateCalls } = await shown(
+      "solve something",
+      [reply({ check: { topic: "equation_linear", question: "x = 4", answer: "x = 4" } })],
+      [],
+    );
+    assert.equal(relateCalls.length, 0);
+    assert.equal(result.verification.code, "unsupported");
+    assert.equal(result.verification.verified, false);
+  });
+
+  it("circle and derivative checks need a real payload too", async () => {
+    for (const check of [
+      { topic: "circle_radius", question: "r = 3", answer: "3" },
+      { topic: "circle_center", question: "(4, -1)", answer: "(4, -1)" },
+      { topic: "derivative_polynomial", question: "3", answer: "3" },
+    ]) {
+      const { result, relateCalls } = await shown(
+        "something unreadable",
+        [{ steps: ["a"], answer: check.answer, check }],
+        [],
+      );
+      assert.equal(relateCalls.length, 0, check.topic);
+      assert.equal(result.verification.code, "unsupported", check.topic);
+    }
+  });
+
+  it("an unclassifiable problem with a REAL check still verifies", async () => {
+    const { result, relateCalls } = await shown(
+      "Find the number that doubled and increased by five gives thirteen",
+      [reply({ check: { topic: "equation_linear", question: "2x+5=13", answer: "x = 4" } })],
+      [equivalent()],
+    );
+    assert.equal(relateCalls.length, 1);
+    assert.equal(result.verification.verified, true);
+  });
+
+  it("real quadratic, exponential and circle questions pass the gate", async () => {
+    const cases: Array<[string, string, string]> = [
+      ["equation_quadratic", "x^2-5x+6=0", "x = 2 or x = 3"],
+      ["equation_exponential", "2^x = 8", "x = 3"],
+      ["circle_radius", "(x-4)^2 + (y+1)^2 = 9", "3"],
+    ];
+    for (const [topic, question, answer] of cases) {
+      const { result, relateCalls } = await shown(
+        "unreadable prose",
+        [{ steps: ["a"], answer, check: { topic, question, answer } }],
+        [equivalent()],
+      );
+      assert.equal(relateCalls.length, 1, topic);
+      assert.equal(result.verification.verified, true, topic);
+    }
+  });
+});
+
+describe("solveProblem — a malformed verifier body", () => {
+  it("null from the verifier is 'undecided' and the solution stays", async () => {
+    const h = harness([reply()], []);
+    h.deps.relate = async () => null as never;
+    const out = await solveProblem(PROBLEM, true, h.deps);
+    assert.equal(out.ok, true);
+    if (!out.ok) throw new Error("unreachable");
+    assert.equal(out.result.verification.code, "undecided");
+    assert.equal(out.result.verification.verified, false);
+    assert.deepEqual(out.result.steps, reply().steps);
+  });
+});
+
 describe("solveProblem — a contradiction", () => {
   const wrong = reply({
     steps: ["2x + 5 = 13", "2x = 10", "x = 5"],
@@ -182,6 +265,12 @@ describe("solveProblem — a contradiction", () => {
     assert.ok(!prompts[0]!.includes("computer algebra system solved"));
     assert.ok(prompts[1]!.includes("computer algebra system solved"));
     assert.ok(prompts[1]!.includes("x = 4"));
+    // The retry names the question the CAS actually solved (the model's own
+    // check.question) and lets the model drop a check that is about another
+    // problem; the first call carries neither.
+    assert.ok(prompts[1]!.includes("solved 2x+5=13 and got: x = 4"));
+    assert.ok(prompts[1]!.includes('leave "check" out'));
+    assert.ok(!prompts[0]!.includes('leave "check" out'));
     assert.equal(result.answer, "x = 4");
     assert.equal(result.verification.verified, true);
   });

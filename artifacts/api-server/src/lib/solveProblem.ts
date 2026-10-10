@@ -25,8 +25,10 @@
  */
 import {
   SOLUTION_LIMITS,
+  circleEquationFrom,
   classifyVerifiableTopic,
   cleanSolutionText,
+  latinEquationFrom,
   parseAnswerKeyCheck,
   parseSolution,
   type Solution,
@@ -48,7 +50,10 @@ export type SolveOutcome = { ok: true; result: SolveResult } | { ok: false; reas
 
 type Attempt =
   | { kind: "shown"; solution: Solution; verification: SolveVerification }
-  | { kind: "contradicted"; computed: string | null };
+  | { kind: "contradicted"; computed: string | null; question: string };
+
+const EQUATION_TOPICS = new Set(["equation_linear", "equation_quadratic", "equation_exponential"]);
+const CIRCLE_TOPICS = new Set(["circle_center", "circle_radius"]);
 
 const squash = (s: string): string => s.replace(/\s+/g, "");
 
@@ -72,6 +77,15 @@ async function attempt(problem: string, reply: unknown, relate: RelateKeyFn): Pr
   const check = parseAnswerKeyCheck(rawCheck);
   if (!check) return unchecked(rawCheck === undefined || rawCheck === null ? "no_check" : "unsupported");
 
+  // `check.question` must be a real question of its topic. Without this a
+  // model can write `{question: "P = 1/6", answer: "P = 1/6"}` for a problem
+  // we cannot classify: the verifier "solves" the question to its own answer,
+  // says `equivalent`, and a tautology earns a ✓. The same gates the shared
+  // classifier applies to typed text apply to the model's payload.
+  if (EQUATION_TOPICS.has(check.topic) && latinEquationFrom(check.question) === null) return unchecked("unsupported");
+  if (CIRCLE_TOPICS.has(check.topic) && circleEquationFrom(check.question) === null) return unchecked("unsupported");
+  if (check.topic.startsWith("derivative") && !/x/.test(check.question)) return unchecked("unsupported");
+
   // The verifier judges `check.answer`; the teacher is shown `answer`.
   if (squash(check.answer) !== squash(solution.answer)) return unchecked("unlinked");
 
@@ -82,6 +96,9 @@ async function attempt(problem: string, reply: unknown, relate: RelateKeyFn): Pr
   }
 
   const res = await relate(check.topic, check.question, check.answer);
+  // A verifier that answers with something that is not an object is "could not
+  // tell", never a crash and never a verdict.
+  if (!res || typeof res !== "object") return unchecked("undecided");
   if (isVerifierUnreachable(res.error)) return unchecked("verifier_unreachable");
 
   if (res.relation === "equivalent") {
@@ -94,7 +111,7 @@ async function attempt(problem: string, reply: unknown, relate: RelateKeyFn): Pr
     if (typeof res.computed_answer === "string") verification.computedAnswer = res.computed_answer;
     return { kind: "shown", solution, verification };
   }
-  if (res.relation === "distinct") return { kind: "contradicted", computed: res.computed_answer };
+  if (res.relation === "distinct") return { kind: "contradicted", computed: res.computed_answer, question: check.question };
   if (res.relation === "unsupported_topic") return unchecked("unsupported");
   return unchecked("undecided");
 }
@@ -114,7 +131,7 @@ export async function solveProblem(problem: string, isAr: boolean, deps: SolveDe
   const target = cleanSolutionText(first.computed, SOLUTION_LIMITS.answer);
   if (target === null) return { ok: false, reason: "no_solution" };
 
-  const second = await attempt(problem, await deps.complete(solvePrompt(problem, isAr, target)), deps.relate);
+  const second = await attempt(problem, await deps.complete(solvePrompt(problem, isAr, target, first.question)), deps.relate);
   if (second.kind === "shown" && second.verification.verified) {
     return { ok: true, result: { ...second.solution, verification: second.verification } };
   }

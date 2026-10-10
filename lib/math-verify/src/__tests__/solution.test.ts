@@ -18,6 +18,9 @@ describe('cleanSolutionText', () => {
   it('strips invisible bidi and zero-width characters', () => {
     assert.equal(cleanSolutionText('x‏ = ‮4​', 20), 'x = 4');
   });
+  it('strips the Arabic letter mark U+061C and the soft hyphen U+00AD', () => {
+    assert.equal(cleanSolutionText('x\u061C = 4\u00AD', 20), 'x = 4');
+  });
   it('refuses control characters, non-strings, blanks and over-length text (never truncates)', () => {
     assert.equal(cleanSolutionText('a\u0000b', 20), null);
     assert.equal(cleanSolutionText('a\u001Bb', 20), null);
