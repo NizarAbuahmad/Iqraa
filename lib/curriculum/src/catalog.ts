@@ -3209,6 +3209,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Math/G3/1/ST/2026_MT03.ST2.pdf',
   },
   {
     id: G3_MATH_S2_CURRICULUM_BOOK_ID,
@@ -3467,6 +3468,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Math/2025/G01/MA.01.ST.BOOK_WEB.pdf',
   },
   {
     id: G1_MATH_S2_CURRICULUM_BOOK_ID,
@@ -3480,6 +3482,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Math/2025/G01/2/MT01/SE/MA.01.ST2.pdf',
   },
   // ── Mathematics Grade 2 – Semesters 1 and 2 ─────────────────────────────
   // The first Grade 2 book in this repo. Same HarperCollins/NCCD series;
@@ -3826,6 +3829,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2025/G1/2/JOR-TT-G1-S2-Reprints-2025-Pupils-Book-Updated.pdf',
   },
   // ── Arabic Grade 1 – Semesters 1 and 2 ──────────────────────────────────
   // Seventh and eighth Grade 1 books in this repo. 'arabic' is already

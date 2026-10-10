@@ -10,3 +10,4 @@
  */
 export * from './guards.ts';
 export * from './answerKey.ts';
+export * from './solution.ts';
