@@ -15,6 +15,7 @@ import {
   Pressable, ScrollView, StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { NationalBookBanner } from '@/components/ui/NationalBookBanner';
 import {
   KB_BOOKS,
   getLessonsForUnit, getUnitsForSubjectGrade, hasKBContent,
@@ -245,6 +246,15 @@ export function TopicSelector({
 
   return (
     <View style={{ marginBottom: 8 }}>
+      {/* English is the Ministry's national book — say so as soon as it is picked. */}
+      <View style={{ marginBottom: 10 }}>
+        <NationalBookBanner
+          subjectId={subjectId}
+          color={accent}
+          background={colors.card}
+          borderColor={accent}
+        />
+      </View>
       {/* ── Unit picker ─────────────────────────── */}
       <Text style={[s.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
         {t('topicLabel')}
