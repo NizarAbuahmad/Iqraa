@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { boardFileOf } from '../boardFile.ts';
 import { buildBoardHTML } from '../boardExportHtml.ts';
 import type { BoardSolution } from '@workspace/math-verify';
-import type { SolutionLabels } from '../solutionLayout.ts';
+import { SOLUTION_BOX, SOLUTION_PAD, layoutSolution, solutionItems, type SolutionLabels } from '../solutionLayout.ts';
 import {
   BOARD_STEP,
   CANVAS_H,
@@ -152,6 +152,39 @@ describe('buildBoardHTML — a page with a solution', () => {
   it('refuses a board with a solution when it has no labels to print', () => {
     // Not via `html(...)`: passing `undefined` to its defaulted parameter would apply the default labels.
     assert.equal(buildBoardHTML(boardFileOf(docWith(sol())), 't', true), null);
+  });
+
+  it('refuses a board with a solution when a required label is an empty string', () => {
+    const doc = boardFileOf(docWith(sol()));
+    assert.equal(buildBoardHTML(doc, 't', true, { ...labels, ai: '' }), null);
+    assert.equal(buildBoardHTML(doc, 't', true, { ...labels, verified: '' }), null);
+    assert.equal(buildBoardHTML(doc, 't', true, { ...labels, unchecked: '  ' }), null);
+    assert.ok(buildBoardHTML(doc, 't', true, { ...labels, understoodAs: '' }));
+  });
+
+  it('draws the panel before the strokes, so ink is written over it', () => {
+    const out = html(sol())!;
+    assert.ok(out.indexOf('AI-LABEL') > -1 && out.indexOf('AI-LABEL') < out.indexOf('<polyline'));
+  });
+
+  // 8 steps and a problem of 150 chars: too tall at the screen's 14-unit minimum
+  // font (probed against layoutSolution), but it fits at the paper's 10.
+  const wordy = (n: number): string => ('word '.repeat(100)).slice(0, n).trim();
+
+  it('a long solution that only fits at the smaller paper type still prints, verdict included', () => {
+    const long = sol({ problem: wordy(150), steps: Array(8).fill(wordy(150)) });
+    const items = solutionItems(long, labels, 8);
+    const inner = { w: SOLUTION_BOX.w - 2 * SOLUTION_PAD, h: SOLUTION_BOX.h - 2 * SOLUTION_PAD };
+    assert.equal(layoutSolution(items, inner).fits, false);
+    assert.equal(layoutSolution(items, inner, { maxFont: 28, minFont: 10 }).fits, true);
+    const out = html(long);
+    assert.ok(out);
+    assert.ok(out.includes('UNCHECKED-LABEL') && out.includes('ANSWER-x=4'));
+  });
+
+  it('refuses, rather than clip the verdict, a solution too long for the panel even at the smallest type', () => {
+    const huge = sol({ problem: wordy(400), steps: Array(8).fill(wordy(300)), answer: wordy(200) });
+    assert.equal(html(huge), null);
   });
 
   it('a board with no solution prints exactly as before', () => {

@@ -68,14 +68,20 @@ const MATH_KINDS: ReadonlySet<SolutionItemKind> = new Set(['problem', 'step', 'a
  * The solution as SVG text on the page's left panel, ALL steps shown: a printed
  * page is the record, not a lesson in progress. SVG text cannot wrap, so
  * `layoutSolution` breaks it into rows. Both honesty labels are always drawn.
+ *
+ * Paper may use smaller type than the screen (10 canvas units is still ~6.5pt
+ * on A4 landscape). If it STILL does not fit, the last rows (answer, verdict)
+ * would be clipped off the page, so this returns null and the export is refused:
+ * a loud failure, never a silently lost honesty label.
  */
-function solutionSVG(s: BoardSolution, labels: SolutionLabels, isAr: boolean): string {
+function solutionSVG(s: BoardSolution, labels: SolutionLabels, isAr: boolean): string | null {
   const items = solutionItems(s, labels, s.steps.length).map(item => ({
     ...item,
     text: MATH_KINDS.has(item.kind) ? mathLineToUnicode(item.text) : item.text,
   }));
   const inner = { w: SOLUTION_BOX.w - 2 * SOLUTION_PAD, h: SOLUTION_BOX.h - 2 * SOLUTION_PAD };
-  const layout = layoutSolution(items, inner);
+  const layout = layoutSolution(items, inner, { maxFont: 28, minFont: 10 });
+  if (!layout.fits) return null;
   const anchorX = isAr ? SOLUTION_BOX.x + SOLUTION_BOX.w - SOLUTION_PAD : SOLUTION_BOX.x + SOLUTION_PAD;
   const top = SOLUTION_BOX.y + SOLUTION_PAD;
   const rows = layout.rows
@@ -94,17 +100,23 @@ function solutionSVG(s: BoardSolution, labels: SolutionLabels, isAr: boolean): s
   return `<rect x="${SOLUTION_BOX.x}" y="${SOLUTION_BOX.y}" width="${SOLUTION_BOX.w}" height="${SOLUTION_BOX.h}" rx="14" fill="#FFFFFF" fill-opacity="0.92" stroke="${DECK_BORDER}"/>${rows}`;
 }
 
+/** `ai`, `verified` and `unchecked` must be real text; `understoodAs` may be anything. */
+const hasHonestyLabels = (l: SolutionLabels | undefined): l is SolutionLabels =>
+  !!l && [l.ai, l.verified, l.unchecked].every(v => typeof v === 'string' && v.trim() !== '');
+
 /** The whole document, or null when `content` is not a valid board. */
 export function buildBoardHTML(content: unknown, title: string, isAr: boolean, solutionLabels?: SolutionLabels): string | null {
   const parsed = parseBoard(content);
   if (!parsed.ok) return null;
   // A solution is never printed without the labels that say it is AI-written
   // and whether its answer was checked.
-  if (parsed.file.pages.some(p => p.solution) && !solutionLabels) return null;
+  const hasSolution = parsed.file.pages.some(p => p.solution);
+  if (hasSolution && !hasHonestyLabels(solutionLabels)) return null;
   const lang = isAr ? 'ar' : 'en';
   const total = parsed.file.pages.length;
   const safeTitle = escapeHtml(title);
 
+  let refused = false;
   const slides = parsed.file.pages
     .map((page, i) => {
       const strokes = page.strokes
@@ -113,13 +125,16 @@ export function buildBoardHTML(content: unknown, title: string, isAr: boolean, s
             `<polyline points="${scaleInkPoints(s.points, CANVAS_W)}" fill="none" stroke="${s.color}" stroke-width="${num(s.width)}" stroke-linecap="round" stroke-linejoin="round"/>`,
         )
         .join('');
+      const panel = page.solution && solutionLabels ? solutionSVG(page.solution, solutionLabels, isAr) : '';
+      if (panel === null) refused = true;
       const label = `${localizeDigits(String(i + 1), lang)} / ${localizeDigits(String(total), lang)}`;
       return `<div class="slide">
   <div class="bar"><span class="title">${safeTitle}</span><span class="num">${label}</span></div>
-  <div class="page"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CANVAS_W} ${CANVAS_H}" direction="ltr" style="direction:ltr">${paperSVG(page.background, lang)}${page.solution && solutionLabels ? solutionSVG(page.solution, solutionLabels, isAr) : ''}${strokes}</svg></div>
+  <div class="page"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CANVAS_W} ${CANVAS_H}" direction="ltr" style="direction:ltr">${paperSVG(page.background, lang)}${panel ?? ''}${strokes}</svg></div>
 </div>`;
     })
     .join('\n');
+  if (refused) return null;
 
   const font = isAr ? "'Almarai', 'Noto Naskh Arabic', Arial" : "'Inter', 'Helvetica Neue', Arial";
   return `<!DOCTYPE html>
