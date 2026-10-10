@@ -56,7 +56,7 @@ import { mergeNewMessages } from '@/services/messageMerge';
 import { pickUnreportedReads } from '@/services/readReceipts';
 import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { useStudentAccountsEnabled } from '@/services/features';
-import { saveRemoteImage } from '@/services/share';
+import { ImageViewerModal } from '@/components/ui/ImageViewer';
 import { goBack } from '@/services/navigation';
 import { confirm } from '@/services/confirm';
 import { BackButton } from '@/components/ui/BackButton';
@@ -92,21 +92,6 @@ export default function ThreadScreen() {
   const [leaving, setLeaving] = useState(false);
   const [togglingPosting, setTogglingPosting] = useState(false);
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
-  const [savingImage, setSavingImage] = useState(false);
-
-  const saveViewedImage = async () => {
-    if (!viewerUrl || savingImage) return;
-    setSavingImage(true);
-    try {
-      await saveRemoteImage(viewerUrl, `iqra-chat-${Date.now()}.jpg`);
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError(t('messagingImageSaveFailed'));
-    } finally {
-      setSavingImage(false);
-    }
-  };
 
   const load = useCallback(async () => {
     if (!threadId) return;
@@ -691,25 +676,7 @@ export default function ThreadScreen() {
       </Modal>
 
       {/* ─── Full-screen image viewer, opened by tapping an attachment ─── */}
-      <Modal visible={!!viewerUrl} transparent animationType="fade" onRequestClose={() => setViewerUrl(null)}>
-        <View style={styles.viewerBackdrop}>
-          <View style={[styles.viewerBar, { paddingTop: insets.top + 8 }]}>
-            <Pressable onPress={() => setViewerUrl(null)} hitSlop={12} style={styles.viewerBtn} accessibilityRole="button" accessibilityLabel={t('close')}>
-              <Ionicons name="close" size={26} color="#fff" />
-            </Pressable>
-            <Pressable onPress={saveViewedImage} disabled={savingImage} hitSlop={12} style={styles.viewerBtn} accessibilityRole="button" accessibilityLabel={t('saveImage')}>
-              {savingImage ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Ionicons name="download-outline" size={24} color="#fff" />
-              )}
-            </Pressable>
-          </View>
-          {viewerUrl ? (
-            <Image source={{ uri: viewerUrl }} style={styles.viewerImage} resizeMode="contain" />
-          ) : null}
-        </View>
-      </Modal>
+      <ImageViewerModal url={viewerUrl} onClose={() => setViewerUrl(null)} />
     </View>
   );
 }
@@ -739,10 +706,6 @@ const styles = StyleSheet.create({
   readOnlyNotice: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 10, paddingHorizontal: 12 },
   readOnlyText: { fontSize: 15, lineHeight: 23, flexShrink: 1 },
   attachmentPreview: { alignItems: 'center', gap: 8, paddingHorizontal: 4, paddingBottom: 8 },
-  viewerBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)' },
-  viewerBar: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 8 },
-  viewerBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  viewerImage: { flex: 1, width: '100%' },
   attachmentThumb: { width: 56, height: 56, borderRadius: 10 },
   newChatBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   newChatSheet: { maxHeight: '75%', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 16, gap: 12 },

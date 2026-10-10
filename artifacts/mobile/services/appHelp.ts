@@ -28,6 +28,8 @@ export type AppPlace = {
   /** Normalised words that point at this place. */
   keywords: string[];
   routeParams?: Record<string, string>;
+  /** i18n key of the steps to give when the question is "how do I…", not "where is…". */
+  howKey?: string;
 };
 
 /** Extra words per catalog tool id; the tool's id is always a keyword too. */
@@ -48,7 +50,32 @@ const TOOL_KEYWORDS: Record<string, string[]> = {
 const SCREENS: AppPlace[] = [
   {
     id: 'classes', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false,
-    keywords: ['شعب', 'شعبه', 'شعبي', 'شعبتي', 'طلابي', 'طلبتي', 'رمز الانضمام', 'classes', 'my class', 'students'],
+    // «clases» is the typo that actually got typed.
+    keywords: ['شعب', 'شعبه', 'شعبي', 'شعبتي', 'طلابي', 'طلبتي', 'رمز الانضمام', 'classes', 'clases', 'my class', 'add class', 'add a class', 'new class', 'students'],
+    howKey: 'howAddClass',
+  },
+  {
+    id: 'subjects', route: '/setup-subjects', routeParams: { mode: 'edit' }, labelKey: 'mySubjects', pathKeys: ['tabProfile'], isTool: false,
+    // No bare «grade» / «صف»: they sit inside every «grade 10 quiz» and «للصف العاشر».
+    keywords: ['الصفوف', 'صفوفي', 'مواد ادرسها', 'المواد التي ادرسها', 'اضافه صف', 'اضيف صف', 'صف جديد', 'add grade', 'add a grade', 'new grade', 'another grade', 'subjects i teach'],
+    howKey: 'howAddGrade',
+  },
+  // The FAQ's own answers, reachable from the chat. They have no screen of
+  // their own, so the button opens the FAQ.
+  {
+    id: 'start-class', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false,
+    keywords: ['ابدا الحصه', 'بدء الحصه', 'شاشه العرض', 'start class', 'start the class', 'projector'],
+    howKey: 'faqA7',
+  },
+  {
+    id: 'change-lesson', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false,
+    keywords: ['تغيير الدرس', 'تغير الدرس', 'اغير الدرس', 'change lesson', 'change the lesson', 'switch lesson'],
+    howKey: 'faqA2',
+  },
+  {
+    id: 'export', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false,
+    keywords: ['تصدير', 'اصدر', 'pdf', 'export'],
+    howKey: 'faqA4',
   },
   {
     id: 'teaching-plans', route: '/teaching-plans', labelKey: 'myTeachingPlans', pathKeys: ['tabProfile'], isTool: false,
@@ -128,6 +155,14 @@ export const APP_PLACES: AppPlace[] = [
 const WHERE_PATTERN =
   /(^|\s)(وين|وينه|وينها|اين|فين|من وين)(\s|$)|كيف\s*(ا|ن)?(لاقي|لقي|جد|وصل|فتح|روح)|where\s+(is|are|can|do)|how\s+(do|can)\s+i\s+(find|open|get\s+to|reach|access)/i;
 
+/**
+ * "How do I add / export / start…" — written against `normalize()` output (hamza
+ * folded, ة → ه), so «أضيف» is «اضيف». Like WHERE_PATTERN it claims nothing alone:
+ * «كيف أجمع الكسور» and «how to add fractions» name no place and stay teaching.
+ */
+const HOW_PATTERN =
+  /(كيف|طريقه|خطوات)\s*(يمكنني\s*|ممكن\s*)?((ا|ن)?(ضيف|ضف|ضافه|نشي|نشئ|نشاء|عمل|غير|عدل|حذف|صدر|حفظ|بدا|شارك|ربط|دعو|ستخدم)|تغيير|تعديل|تصدير|بدء)|\bhow\s+(?:(?:do|can|should)\s+(?:i|we)\s+)?(?:to\s+)?(?:add|create|make|change|edit|delete|remove|export|save|share|start|use|link|invite)\b/i;
+
 /** A word that says the question is about the app, even when no place matched. */
 const APP_NOUN = /تطبيق|البرنامج|صفحه|قسم|تبويب|زر|قائمه|\bapp\b|\bpage\b|\bscreen\b|\btab\b|\bbutton\b|\bmenu\b/i;
 
@@ -152,14 +187,21 @@ export function findAppPlaces(query: string, limit = 3): AppPlace[] {
     .map(s => s.place);
 }
 
+const plain = (query: string) => normalize(query.replace(/[؟?!.,،]/g, ' '));
+
+/** "How do I…" rather than "where is…" — the answer is steps, not a path. */
+export function isHowQuery(query: string): boolean {
+  return HOW_PATTERN.test(plain(query));
+}
+
 /**
- * True when the teacher is asking where something is in the app. Needs both a
- * "where / how do I find" phrase and something app-shaped — «أين تقع البتراء؟»
- * is a geography question and must stay one.
+ * True when the teacher is asking where something is in the app, or how to do
+ * something in it. Needs both a "where / how do I" phrase and something
+ * app-shaped — «أين تقع البتراء؟» is a geography question and must stay one.
  */
 export function isAppHelpQuery(query: string): boolean {
-  const q = normalize(query.replace(/[؟?!.,،]/g, ' '));
-  if (!WHERE_PATTERN.test(q)) return false;
+  const q = plain(query);
+  if (!WHERE_PATTERN.test(q) && !HOW_PATTERN.test(q)) return false;
   return findAppPlaces(q, 1).length > 0 || APP_NOUN.test(q);
 }
 
@@ -182,6 +224,10 @@ export function answerAppHelp(
       places: [faq],
     };
   }
+  // A how-to gets the steps of the best match when it has them, with the
+  // button to open it; otherwise it falls through to the path listing.
+  const how = isHowQuery(query) ? places[0]!.howKey : undefined;
+  if (how) return { text: t(how), places: [places[0]!] };
   const sep = isAr ? ' ← ' : ' → ';
   const lines = places.map(p => {
     const where = [...p.pathKeys, p.labelKey].map(t).join(sep);

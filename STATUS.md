@@ -809,6 +809,71 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A worksheet can be sent to a class as a digital assignment, 2026-10-09
+
+Step 4 of the worksheet review, agreed in chat. A worksheet was paper only: to
+get it in front of a class digitally a teacher retyped it as an evaluation.
+
+- **«أرسل للصف كواجب رقمي»** on the worksheet screen's results, and
+  «أرسل للصف» in ملفاتي's worksheet viewer (موادي until #954). `SendWorksheetSheet` asks two
+  things: the class (those of the lesson's grade/subject first, none hidden)
+  and the one objective it practises (the lesson's own, by KB id — preselected
+  when there is one). It says the worked example is study material and is not
+  sent. A worksheet with no lesson id cannot be sent; the sheet says why.
+- **`POST /evaluations/from-worksheet`** (`routes/evaluations.ts`) rebuilds the
+  body field by field (`worksheetRequest.ts`), checks the objective's book is
+  evaluable and the class is the caller's (404 otherwise), converts, runs every
+  question through the type registry, and stores a **draft** evaluation
+  (`generator: "worksheet"`) plus its questions in one transaction. The
+  teacher lands on `/evaluations/[id]`, the ordinary review-and-publish screen
+  that issues the class code. No schema change; `generator`'s TS union gained
+  `"worksheet"` and `db generate` produces no migration.
+- **What is marked automatically is decided in one place**,
+  `modules/assessment/fromWorksheet.ts`, and fails closed: a two-option
+  صح/خطأ question → true/false; ≥3 options with the key matching one →
+  multiple choice; no options and a key that is a plain number or `x = number`
+  (Arabic or Latin digits) → fill-blank; **everything else → a short answer
+  the teacher marks**, with the key and its working as the model answer. An
+  Arabic-word key, a key matching no option and a half-solved question all
+  land there. A question with no key refuses the whole send (400,
+  `missingKey`) rather than inventing one. The split comes back and is shown
+  after sending, never guessed by the app. **The paper's writing space is
+  dropped first:** `generateWorksheet` appends «الإجابة:» and two rules to
+  every question without options (homework: «مساحة العمل:»), and read as blanks
+  they made *every* generated numeric question teacher-marked — caught only by
+  driving the web build, since a hand-written test sheet has no such lines.
+- **Figures reach the student.** A question's book figure travels with it, and
+  `sanitizeQuestionForStudent` passes `body.figure` through `studentFigure`,
+  which drops anything not under `BOOK_FIGURE_BASE_URL` (now shared from
+  `lib/curriculum`). `QuestionFigure` renders it under the prompt on the take
+  screen and on the teacher's review screen, so what is published is what was
+  reviewed.
+- **Not done:** quizzes (same converter, later), due dates, editing a sent
+  sheet, an AI rubric for the short answers.
+
+Covered by `fromWorksheet.test.ts` (13), `worksheetRequest.test.ts` (12),
+`questionFigure.test.ts` (api-server) and `worksheetAssignment.test.ts` (5,
+mobile). **Driven end to end against a local Postgres** with migrations applied
+and `seed:assessment` run: register → roster consent → class → send a
+four-question sheet. A missing key gave 400 `missingKey:[4]`; another
+teacher's class gave 404; a good send gave 201 with 3 auto-marked and 1
+teacher-marked, as a draft. Then publish → share code → a student claimed it,
+saw no answers in the bodies and the figure on the multiple-choice question,
+answered (`٥` for the numeric one) and submitted. Multiple choice, true/false
+and fill-blank were graded `correct` at full marks by the deterministic
+grader; the short answer has no grade and the attempt is `needs_review`.
+**Then driven in the web build** (Expo web against that API, Chromium 390×844,
+real sign-in): «النسب المثلثية» worksheet generated offline, a book figure
+attached to question 1, «أرسل للصف كواجب رقمي» → the sheet offered the one
+class preselected and the lesson's five objectives, «أرسل» stayed disabled
+until an objective was picked → landed on the draft evaluation with the
+figure on question 1. Published; as a student the figure and its page
+citation showed under question 1, and «بسّط: cos²θ + sin²θ» (key `1`) was a
+fill-blank box. **Not checked:** on a device. **Seen, not fixed here:** Latin
+maths inside an Arabic prompt reads back to front on the take and review
+screens («cos²θ + sin²θ» shows as «θ + sin²θcos²») — the worksheet screen's
+2026-10-05 fix (`isolateForeignRuns`) never reached them.
+
 ## Book codes name what they open, and only Grades 9–10 have ever been scanned, 2026-10-09
 
 A Library row for a book's printed QR code is now headlined by **what it opens**

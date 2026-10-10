@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
+import { TapToEnlarge } from '@/components/ui/ImageViewer';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
@@ -117,7 +118,9 @@ export function LessonAttachments({ lessonId, onChange }: Props) {
               style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
               {m.kind === 'image' && m.url ? (
-                <Image source={{ uri: m.url }} style={styles.thumb} resizeMode="cover" />
+                <TapToEnlarge url={m.url} caption={m.caption || undefined}>
+                  <Image source={{ uri: m.url }} style={styles.thumb} resizeMode="cover" />
+                </TapToEnlarge>
               ) : (
                 <Ionicons
                   name={m.kind === 'audio' ? 'musical-notes-outline' : 'document-text-outline'}
