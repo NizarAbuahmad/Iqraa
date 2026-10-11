@@ -58,7 +58,8 @@ paper-exam table (families would get two lists of exams and results).
   deny-by-default) and `buildTabEntries` in `app/(tabs)/_layout.tsx`.
 - Nothing for homework, standalone grades or attendance. No scheduler in the API
   server. Student/parent accounts sit behind `STUDENT_ACCOUNTS=true`
-  (`lib/features.ts`), currently off.
+  (`lib/features.ts`), which is currently `true` in production (STATUS.md,
+  2026-09-07).
 
 ## 0. Foundation
 
@@ -103,9 +104,11 @@ a case in `mountOrder.test.ts`.
   split from the pure `services/familySchedule.ts`: `apiClient.ts` pulls
   `react-native` into module scope, which the bare `node --test` runner cannot
   load, so the logic stays importable by tests.
-- Teacher side: a one-line hint in `classes/[id]` ("N periods in this class's
-  timetable") so teachers know what families see. Pure logic in
-  `services/familySchedule.ts`, tested like `scheduleCalendar.ts`.
+- Teacher side: **Deferred — not built in Parts 0–1; candidate for the next plan:**
+  a one-line hint in `classes/[id]` ("N periods in this class's timetable") so
+  teachers know what families see.
+- Pure logic lives in `services/familySchedule.ts`, tested like
+  `scheduleCalendar.ts`.
 
 ## 2. Homework
 
@@ -181,8 +184,10 @@ wraps its body in `KeyboardSafeView`); attaching a worksheet reuses the
 
 ## Risks and open items
 
-1. `STUDENT_ACCOUNTS` is off in production — none of this is visible until it is
-   turned on. A product decision, not a code change.
+1. `STUDENT_ACCOUNTS` is already `true` in production (STATUS.md, 2026-09-07), so
+   this feature reaches real parent and student accounts on merge. The School tab
+   has not been viewed on a device or browser; check it on a signed-in parent and
+   student account right after deploy.
 2. The assembled schedule is only as complete as teacher adoption.
 3. The reminder needs new infrastructure (Cloud Scheduler + internal endpoint).
    If unwanted, drop that one notification.

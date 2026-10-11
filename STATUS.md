@@ -1054,14 +1054,18 @@ weekly timetable, read-only, from `GET /student/schedule` and
   allowlist. The mobile fetchers are in `services/familyScheduleApi.ts`, split from
   the pure `services/familySchedule.ts`, because `apiClient.ts` pulls `react-native`
   into module scope and `node --test` cannot load it.
-- Behind `STUDENT_ACCOUNTS=true` like every family route.
+- Behind `STUDENT_ACCOUNTS=true` like every family route (currently `true` in
+  production — see «Student accounts went live, reversing the v1 decision,
+  2026-09-07»).
 - **Not run, anywhere.** The School tab has never been opened in a browser or on a
   device — the dev environment had no database or browser for this work. What is
   covered: the routes' 401 guards (mount-order suite) and the pure grouping /
   assembly / day-ordering logic (unit tests). What is **not**: the signed-in family
   path (403 / 200 / 500 from the real routes against real rows) and the screen's
-  rendering (RTL layout, the child picker, the empty state). Look at it before
-  turning `STUDENT_ACCOUNTS` on for anyone.
+  rendering (RTL layout, the child picker, the empty state). `STUDENT_ACCOUNTS` is
+  already `true` in production, so the tab and routes reach real family accounts
+  on merge. Look at it on a signed-in parent and a signed-in student account right
+  after deploy.
 - Still to come (spec `docs/superpowers/specs/2026-10-11-family-school-views-design.md`):
   homework, exam dates and paper marks, notifications.
 
