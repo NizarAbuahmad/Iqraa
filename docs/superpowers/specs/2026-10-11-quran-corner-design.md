@@ -98,9 +98,11 @@ it has for `/curriculum/lab`.
 - **`/curriculum/quran/[surahId]`** — the reader. Ayahs in order with their
   numbers (Latin in data, Arabic-Indic at display only). When segments are not
   contiguous (e.g. البقرة 143–144 and 183–186) a visible «…» marker separates
-  them and the ayah numbers stay on, so nobody reads a gap as continuous. A
-  per-ayah action opens the lesson that assigns it. Below the text: the Tanzil
-  attribution, its link, and the pinned snapshot version.
+  them and the ayah numbers stay on, so nobody reads a gap as continuous. Below
+  the text: the lessons that assign the surah, each opening its lesson with the
+  ayah range it covers (an ayah can be assigned by two lessons, so one per-ayah
+  button would hide one of them); then the Tanzil attribution, its link, and the
+  pinned snapshot version.
 - **`/curriculum/quran/[surahId]/memorize`** — the tools below.
 - **Font.** Readex Pro does not carry the Uthmani marks. An open-licence Quran
   font (Amiri Quran, SIL OFL, is the candidate) is loaded as a JS asset through
