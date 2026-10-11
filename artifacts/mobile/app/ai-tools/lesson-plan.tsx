@@ -31,7 +31,7 @@ import { useGeneratorExport } from '@/hooks/useGeneratorExport';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
-import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
+import { aiErrorText, isAbortError } from '@/services/ai/aiProvenance';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
 import { captureGenerationScope, materialScope, reopenedGenerationScope, type GenerationScope } from '@/services/generationScope';
 import { readIndexParam } from '@/services/materialParams';
@@ -271,7 +271,7 @@ export default function LessonPlanScreen() {
       // Deliberately not the raw error: "HTTP 500" is not a sentence in any
       // language a teacher reads. The technical text is already recorded in
       // aiProvenance, where the badge carries it for support.
-      else setError(t(aiErrorMessageKey(e)));
+      else setError(aiErrorText(e, t));
       // Hand back what was on screen; a stop or a failure is not a reason to
       // lose it.
       if (held.result) {

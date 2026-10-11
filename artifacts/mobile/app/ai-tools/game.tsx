@@ -29,7 +29,7 @@ import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { Button } from '@/components/ui/Button';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
+import { aiErrorText, isAbortError } from '@/services/ai/aiProvenance';
 import { isolateForeignRuns } from '@/services/mathRender';
 import type { ClassroomActivity, QuizOutput } from '@/services/ai/AIService';
 import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId, resolveGeneratorGrounding, type GeneratorGrounding } from '@/services/kbContext';
@@ -231,7 +231,7 @@ export default function ClassGameScreen() {
     } catch (e) {
       // A cancel is the teacher's own action, not a failure to report.
       if (isAbortError(e)) setCancelled(true);
-      else setError(t(aiErrorMessageKey(e)));
+      else setError(aiErrorText(e, t));
       restore();
     } finally {
       abortRef.current = null;

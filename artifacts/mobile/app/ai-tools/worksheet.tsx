@@ -34,7 +34,7 @@ import { usePrintStyle } from '@/hooks/usePrintStyle';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
-import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
+import { aiErrorText, isAbortError } from '@/services/ai/aiProvenance';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
 import { captureGenerationScope, materialScope, reopenedGenerationScope, type GenerationScope } from '@/services/generationScope';
 import { createVerificationTracker } from '@/services/verificationTracker';
@@ -418,10 +418,10 @@ export default function WorksheetScreen() {
     } catch (e) {
       // A cancel is the teacher's own doing, so it is reported as a stop, not
       // as a failure they need to diagnose or retry out of. The raw error text
-      // is deliberately not shown: "HTTP 500" is not a sentence in a language
-      // a teacher reads, and aiProvenance already records it for the badge.
+      // is deliberately not shown (aiProvenance records it for the badge), except
+      // when live failed and the offline path has no bank — see aiErrorText.
       if (isAbortError(e)) setCancelled(true);
-      else setError(t(aiErrorMessageKey(e)));
+      else setError(aiErrorText(e, t));
       // Hand back what was on screen; a stop or a failure is not a reason to
       // lose it. The scope goes back with it so the badges and the grounding
       // notice describe the restored paper, not the one that never came.
