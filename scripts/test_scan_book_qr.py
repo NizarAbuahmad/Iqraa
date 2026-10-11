@@ -196,6 +196,20 @@ class Fetching(unittest.TestCase):
         self.assertFalse(dest.exists())
         self.assertFalse(list(self.tmp.glob("*.part")))
 
+    def test_the_catalog_is_read_as_utf8_whatever_the_machine_default_is(self):
+        # On Windows the default code page is cp1252, which cannot decode Node's
+        # UTF-8 Arabic output. Linux tests never see that, so assert the call asks
+        # for UTF-8 outright rather than hoping the locale agrees.
+        from unittest import mock
+
+        fake = mock.Mock(returncode=0, stdout='[{"gradeId":"grade-4","titleAr":"العلوم"}]\n', stderr="")
+        with mock.patch.object(s.subprocess, "run", return_value=fake) as run:
+            rows = s.catalog_books()
+        kwargs = run.call_args.kwargs
+        self.assertEqual(kwargs.get("encoding"), "utf-8")
+        self.assertNotIn("text", kwargs, "text=True would use the machine's code page")
+        self.assertEqual(rows[0]["titleAr"], "العلوم")
+
     def test_the_real_catalog_lists_books_with_official_links(self):
         if not shutil.which("node"):
             self.skipTest("node not installed")
