@@ -120,6 +120,9 @@ describe('isNonTeacherRoute', () => {
       // prefix rule as the library above.
       '/curriculum/lab',
       '/curriculum/lab/lab-periodic-table',
+      // The Math Corner hub and a tool (a shareable URL). Same prefix rule.
+      '/curriculum/math',
+      '/curriculum/math/calculator',
       '/settings',
       '/faq',
       '/delete-account',

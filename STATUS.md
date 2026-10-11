@@ -932,6 +932,74 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Math Corner: a scientific calculator in the library, 2026-10-11
+
+**What a user can do today.** The library (`/curriculum/resources`) has a
+«زاوية الرياضيات» tile opening `/curriculum/math`, a hub with a scientific
+calculator (`/curriculum/math/calculator`, copyable link) and a «افتح GeoGebra»
+card. Everyone who can see the library can open it; no gating change
+(`/curriculum` is already on the non-teacher prefix allowlist, pinned in
+`routeGating.test.ts`). First of four planned PRs: the function grapher, the
+geometry sketchpad and the unit converter + Grade 10 formula sheet are **not
+built yet**, and the hub lists only what exists (`MATH_TOOL_IDS` in
+`services/mathTools.ts`; `MathTool.tsx` is a `Record` over it, so an id without a
+component does not compile).
+
+**GeoGebra is a link, never an embed.** The card calls `openGeogebraGraphing()`
+(new tab on web, in-app browser on Android). The embed was removed on
+2026-09-11 over GeoGebra's licence (see «The GeoGebra embed is gone»); the
+planned grapher and sketchpad are first-party for the same reason.
+
+**The engine fails closed.** `services/mathExpr.ts` is a hand-written
+tokenizer + recursive-descent evaluator (no `eval`, no `Function`; a test greps
+for both). Every failure is a named reason (`divide-by-zero`, `domain`,
+`unbalanced`, `function-needs-brackets`, …), never a number, and an unknown word
+is refused rather than read as a product of letters. It is deliberately **not**
+`deckVisuals.compileExpression`, whose tests pin `log`/`sqrt` as unsupported.
+Choices a teacher may question:
+- Degrees by default (the books write «جا ٣٠ = ٠٫٥»), exact at every multiple of
+  30°; `tan 90°` is a domain error, not 1.6e16. Radian mode snaps results under
+  1e-15 to 0 (`sin π`).
+- Results are tidied to 15 significant digits, so `0.1+0.2` is 0.3.
+- `%` is `/100`; `1/2x` is `(1/2)·x`; `^` is right-associative and binds tighter
+  than unary minus (`-2^2 = -4`).
+- Arabic input is folded in `normaliseInput` (digits, `٫`, `×÷−`, `س`, `π`, `√`,
+  جا/جتا/ظا). Compute is latin; Arabic digits appear only at display
+  (`mathCalc.ts`).
+
+**Arabic-Indic digits are not safe in an RTL page, and no style fixes it.**
+Found only by rendering the screen, not by any test. Two separate causes:
+1. react-native-web stamps `dir="auto"` on every `Text`, which beats the CSS
+   `direction`/`writingDirection`. So «٩٫٥ × ١٠» printed as «١٠ × ٩٫٥» and a lone
+   «(» was drawn as «)».
+2. A bidi *isolate* (U+2066 … U+2069, what `isolateForeignRuns` uses for Latin maths) is
+   not enough for Arabic-Indic digits: they are type AN, which has no
+   «weak → L» rule, so the neutrals between two numbers still resolve RTL and
+   the runs swap places. It needs a left-to-right **override** (U+202D … U+202C).
+   But an override also reverses Arabic *letters* («جا» → «اج»).
+`mathCalc.ts` therefore has `forceLtr` (override), `displayLtr` (override unless
+the text has Arabic letters) and `entriesToSegments`, which gives each Arabic
+function word its own run so the screen lays the runs out in a flex row in typed
+order. Any new screen that shows Arabic-Indic digits next to operators needs the
+same. Measured per-character, not by eye.
+
+**Also learned the hard way:** `accessibilityState` is banned by `ariaState.test.ts`
+(react-native-web ignores it; use `aria-*`); `designScale.test.ts` caps off-scale
+font sizes, radii and spacing, so new screens use `TYPE`/`SPACE`/`RADIUS` from
+`constants/theme.ts`; `i18nTerminology.test.ts` wants «ًا», not «اً».
+
+**What was and was not verified.** Unit tests: 3,900+ mobile tests pass,
+typecheck clean. Rendered with the Expo web build at 360 px wide in Arabic (RTL)
+and English: the hub, the calculator at rest, a result, an error, scientific
+notation, a 30-digit line wrapping, and the expanded function rows. **Not
+verified:** the library tile itself (it needs a signed-in session; it is a copy
+of the Lab tile), 390 px after the final fixes, anything on Android, real touch
+input, and screen-reader output. The calculator's history rows and recall were
+not tapped in a browser.
+
+No table, no native module, no `app.json` version bump, no schema push: ships
+over the air. Not yet decided: whether calculator history should persist.
+
 ## Messages can be reacted to with an emoji, 2026-10-10
 
 Person-to-person chat (teacher ↔ parent / student, class and custom groups — not
