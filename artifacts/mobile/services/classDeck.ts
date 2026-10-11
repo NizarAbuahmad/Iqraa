@@ -16,10 +16,13 @@ import type {
   ClassroomActivity,
   QuizOutput,
   WorksheetOutput,
+  WorksheetQuestionFormat,
 } from './ai/AIService.ts';
 import type { KBLesson } from './knowledgeBase.ts';
 import type { BookFigure } from './bookFigures.ts';
 import { bookFigureSlides } from './lessonSlides.ts';
+import { toArabicDigits } from './labFormat.ts';
+import { optionLetter } from './optionLabels.ts';
 
 const THINK_SECONDS = 45;
 
@@ -272,6 +275,39 @@ export function buildDeckFromQuiz(
   };
 }
 
+/**
+ * What the class reads for a structured worksheet question: the stem, then the
+ * format's own lines laid out for a screen. **Nothing here is an answer** —
+ * `pairs`, `order`, `wrongStep`, `fix` and `why` are never read, and the
+ * graph's curve is deliberately not attached (see the call site). The key goes
+ * in the slide's `answer`, which the presenter shows only on reveal.
+ */
+function formatDeckContent(f: WorksheetQuestionFormat, isAr: boolean): string {
+  const num = (i: number) => (isAr ? toArabicDigits(String(i + 1)) : String(i + 1));
+  const lines: string[] = [];
+  switch (f.kind) {
+    case 'match': {
+      const rows = Math.max(f.left.length, f.right.length);
+      for (let i = 0; i < rows; i++) {
+        const l = i < f.left.length ? `${num(i)}) ${f.left[i]}` : '';
+        const r = i < f.right.length ? `${optionLetter(i, isAr)}) ${f.right[i]}` : '';
+        lines.push(l && r ? `${l}  \u27F7  ${r}` : l || r);
+      }
+      break;
+    }
+    case 'order':
+      f.steps.forEach((s, i) => lines.push(`${optionLetter(i, isAr)}) ${s}`));
+      break;
+    case 'spot_error':
+      f.steps.forEach((s, i) => lines.push(`${num(i)}) ${s}`));
+      break;
+    case 'graph':
+      f.exprs.forEach(e => lines.push(`${isAr ? 'ص' : 'y'} = ${e}`));
+      break;
+  }
+  return [f.stem, '', ...lines].join('\n');
+}
+
 /** Worksheet → projectable deck (same rules; sections are flattened). */
 export function buildDeckFromWorksheet(
   ws: WorksheetOutput,
@@ -332,7 +368,10 @@ export function buildDeckFromWorksheet(
   for (const section of ws.sections ?? []) {
     for (const q of section.questions ?? []) {
       qNum += 1;
-      const hasOptions = Array.isArray(q.options) && q.options.length >= 2;
+      const fmt = q.format;
+      // A structured format is an open question: it never becomes a choice
+      // slide, even if a stray `options` array rode along.
+      const hasOptions = !fmt && Array.isArray(q.options) && q.options.length >= 2;
       const answer = answerByPosition.get(qNum) ?? '';
       answers.push(isAr ? `سؤال ${qNum}: ${answer}` : `Q${qNum}: ${answer}`);
       // Same rule as buildDeckFromQuiz: a key naming no option is shown as an
@@ -343,7 +382,12 @@ export function buildDeckFromWorksheet(
         slideNumber: slides.length + 1,
         type: asChoice ? 'question' : 'challenge',
         title: isAr ? `سؤال ${qNum}` : `Question ${qNum}`,
-        content: q.text,
+        // The stem alone for a formatted question: `q.text` is the whole
+        // question in plain text and would print the steps a second time.
+        // Not `visual` for a graph: the presenter draws `visual` on every
+        // non-graph slide with no reveal gate (presentation.tsx), so the
+        // curve would sit on the class screen before anyone had answered.
+        content: fmt ? formatDeckContent(fmt, isAr) : q.text,
         ...(asChoice
           ? {
               options: q.options,

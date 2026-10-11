@@ -14,7 +14,7 @@
 import type { WorksheetQuestionFormat } from './ai/AIService.ts';
 import { normalizePlotExpr } from './ai/worksheetFormats.ts';
 import { samplePlot } from './deckVisuals.ts';
-import { esc } from './exportHtml.ts';
+import { esc } from './htmlEscape.ts';
 import { toArabicDigits } from './labFormat.ts';
 import { optionLetter } from './optionLabels.ts';
 
@@ -133,7 +133,11 @@ export function gridSvg(
     if (y === 0 || y % stepY !== 0) continue;
     parts.push(`<text x="${r1(Math.max(axisX - 4, left - 3))}" y="${r1(f.py(y) + 3)}" text-anchor="end">${fmtNum(y, isAr)}</text>`);
   }
-  parts.push(`<text x="${r1(axisX - 4)}" y="${r1(axisY + 11)}" text-anchor="end">${fmtNum(0, isAr)}</text>`);
+  // The origin only exists when 0 is inside both ranges; otherwise the axes sit
+  // on the window's edge and a «٠» there would label a point that is not 0.
+  if (win.xMin <= 0 && win.xMax >= 0 && win.yMin <= 0 && win.yMax >= 0) {
+    parts.push(`<text x="${r1(axisX - 4)}" y="${r1(axisY + 11)}" text-anchor="end">${fmtNum(0, isAr)}</text>`);
+  }
   parts.push(`<text x="${r1(right + 3)}" y="${r1(axisY + 3)}" text-anchor="start">${isAr ? 'س' : 'x'}</text>`);
   parts.push(`<text x="${r1(axisX + 5)}" y="${r1(top - 2)}" text-anchor="start">${isAr ? 'ص' : 'y'}</text>`);
 

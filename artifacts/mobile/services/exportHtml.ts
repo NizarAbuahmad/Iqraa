@@ -26,6 +26,7 @@ import { arCountPhrase } from './arCount.ts';
 import { dateLocale } from './dateLabels.ts';
 import { quizBlockPoints, quizBlocks, quizInstructions, quizMarkRows, quizMarksTotal, quizStudentFields, quizTypeLabel } from './quizPaper.ts';
 import { isolateForeignRuns, normalizeExponents } from './mathRender.ts';
+import { esc, escAttr } from './htmlEscape.ts';
 import { labQrSvg } from './labQr.ts';
 import { printStyleCss, type PrintStyle } from './printStyle.ts';
 import { FORMAT_CSS, formatBodyHTML, formatKeyExtraHTML } from './formatPrintHtml.ts';
@@ -310,61 +311,8 @@ function htmlBase(
 </html>`;
 }
 
-/** Escape only. For attribute values — above all URLs, which must not carry
- *  the directional isolates `esc` adds. */
-function escAttr(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-/**
- * Escape *and* bidi-isolate. Every text node in this file is model-written
- * Arabic that can carry an equation, and a printed worksheet reordering
- * «f(x) = 2x⁴ - x² + 3» is the same bug the screens had — a teacher hands it
- * to a class on paper, where nobody can reload to check. Isolation belongs
- * here rather than at the 57 call sites so a new builder cannot forget it;
- * `escAttr` is the deliberate opt-out for the one URL attribute.
- */
-export function esc(s: string): string {
-  // Null-safe via isolateForeignRuns, which two builders here relied on when
-  // they each carried their own `s ?? ''` copy of this function.
-  //
-  // Exponents are normalised BEFORE isolating, so «2^{12}» becomes «2¹²» and the
-  // run is then isolated as a whole. Doing it here rather than at each option
-  // and key line is the same argument as the isolation itself: 57 call sites,
-  // and a new builder must not be able to forget.
-  return raiseExponents(escAttr(isolateForeignRuns(normalizeExponents(s))));
-}
-
-/**
- * Whatever `normalizeExponents` could not turn into Unicode — a letter or a
- * bracketed exponent, «5^x», «3^(2x)», «4^(x+1)» — raised with `<sup>`. Unicode
- * has no superscript for most letters, so those reached the paper with a
- * literal caret: every question on the exponential-equations worksheet, while
- * the screen raised them. Runs on escaped text, so it is text-node only; an
- * attribute takes `escAttr`.
- */
-function raiseExponents(html: string): string {
-  // A bracketed exponent is matched to ITS closing bracket, so «2^(2(x+1))»
-  // raises «2(x+1)» whole; an unclosed one is left as written.
-  let out = '';
-  for (let i = 0; i < html.length; i++) {
-    if (html[i] === '^' && html[i + 1] === '(') {
-      let depth = 0;
-      let j = i + 1;
-      for (; j < html.length; j++) {
-        if (html[j] === '(') depth++;
-        else if (html[j] === ')' && --depth === 0) break;
-      }
-      if (j < html.length) {
-        out += `<sup>${html.slice(i + 2, j)}</sup>`;
-        i = j;
-        continue;
-      }
-    }
-    out += html[i];
-  }
-  return out.replace(/\^([+\-\u2212]?[A-Za-z0-9]+)/g, '<sup>$1</sup>');
-}
+/** Re-exported so existing importers of `esc` from here are unchanged. */
+export { esc };
 
 /**
  * A book figure ready to print — already resolved to a loadable URI and
@@ -1221,10 +1169,16 @@ export function buildWorksheetSlidesHTML(
   let qCounter = 1;
   const sectionSlides = ws.sections.map(sec => {
     const questionsHtml = sec.questions.map(q => {
-      const opts = q.options
-        ? `<div class="q-opts">${q.options.map((o, oi) => `<div class="q-opt">${e(labelOptionLine(o, oi, isAr))}</div>`).join('')}</div>`
-        : '';
-      const html = `<div class="q-card"><span class="q-num">${qCounter}.</span> <span class="q-text q-break">${e(printableQuestionText(q.text))}</span>${questionFigureHTML(q.figure)}${opts}<span class="q-pts">${L(arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط'), `${q.points} pts`)}</span></div>`;
+      // As on paper: a structured format prints its stem and its own empty
+      // body (never `pairs`, `order`, `fix`, `why` or a curve), and its options
+      // are not drawn.
+      const fmt = q.format;
+      const opts = fmt
+        ? formatBodyHTML(fmt, isAr)
+        : q.options
+          ? `<div class="q-opts">${q.options.map((o, oi) => `<div class="q-opt">${e(labelOptionLine(o, oi, isAr))}</div>`).join('')}</div>`
+          : '';
+      const html = `<div class="q-card"><span class="q-num">${qCounter}.</span> <span class="q-text q-break">${e(printableQuestionText(fmt ? fmt.stem : q.text))}</span>${questionFigureHTML(q.figure)}${opts}<span class="q-pts">${L(arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط'), `${q.points} pts`)}</span></div>`;
       qCounter++;
       return html;
     }).join('');
@@ -1238,12 +1192,18 @@ export function buildWorksheetSlidesHTML(
     return slide;
   });
 
-  // Answer key slide
+  // Answer key slide. Key rows map to questions by flat position, as on paper;
+  // the drawn curve is only ever built here, and only when answers are shown.
+  const flat = ws.sections.flatMap(sec => sec.questions);
+  const akRow = (item: { num: number; answer: string }) => {
+    const extra = formatKeyExtraHTML(flat[item.num - 1]?.format ?? null, isAr);
+    return `<div class="ak-row${extra ? ' ak-wide' : ''}"><span class="ak-num">${item.num}.</span><span class="ak-ans">${e(item.answer)}${extra}</span></div>`;
+  };
   const akSlide = showAnswerKey ? `<div class="slide">
     ${header(L('مفتاح الإجابات', 'Answer Key'))}
     <div class="slide-body">
       <div class="ak-grid">
-        ${ws.answerKey!.map(item => `<div class="ak-row"><span class="ak-num">${item.num}.</span><span class="ak-ans">${e(item.answer)}</span></div>`).join('')}
+        ${ws.answerKey!.map(akRow).join('')}
       </div>
     </div>
     ${footer(slideNum++)}</div>` : '';
@@ -1287,7 +1247,15 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 .ak-row { display:flex; gap:6px; align-items:baseline; background:#FBF6EC; border:1px solid ${ACCENT}22; border-radius:6px; padding:6px 10px; font-size:11.5px; }
 .ak-num { font-weight:700; color:${ACCENT}; flex-shrink:0; }
 .ak-ans { color:#374151; }
-.slide-footer { height:26px; border-top:1px solid #f3f4f6; display:flex; align-items:center; justify-content:space-between; padding:0 26px; flex-shrink:0; }
+.ak-wide { grid-column:1 / -1; }
+.ak-wide .fmt-grid { max-height:190px; }
+${FORMAT_CSS}
+.q-card .fmt-match, .q-card .fmt-order, .q-card .fmt-steps, .q-card .fmt-line, .q-card .fmt-label, .q-card .q-lines { width:100%; }
+.q-card .fmt-grid { max-height:200px; }
+.q-card .fmt-steps li, .q-card .fmt-card, .q-card .fmt-match, .q-card .fmt-line, .q-card .fmt-label { font-size:11px; }
+.q-rule { border-bottom:1px solid #d1d5db; height:16px; }
+.exam-blank { flex:1; border-bottom:1px solid #9ca3af; height:16px; }
+.slide-footer.slide-footer { height:26px; border-top:1px solid #f3f4f6; display:flex; align-items:center; justify-content:space-between; padding:0 26px; flex-shrink:0; }
 .slide-footer span { font-size:9px; color:#9ca3af; }
 </style>
 </head>
