@@ -64,7 +64,7 @@ const PLAN: LessonPlanOutput = {
   guidedPractice: 'حل تمرينين معًا.',
   independentPractice: 'حل ٤ تمارين فرديًا.',
   closure: 'لخّص الخطوات الثلاث.',
-  assessment: 'بطاقة خروج.',
+  assessment: 'غلق الدرس.',
   differentiation: 'أعطِ المتقدمين معادلة بمعاملات كسرية.',
   homework: 'تمارين ١-٦ صفحة ٧٢.',
 };
@@ -450,7 +450,7 @@ describe('formative checks in the lesson deck', () => {
       checks: [mcq(1), mcq(2), mcq(3), mcq(4), mcq(5)],
     });
     assert.equal(checkTitles(deck.slides, 'تحقّق سريع').length, 2);
-    assert.equal(checkTitles(deck.slides, 'تذكرة الخروج ').length, 3);
+    assert.equal(checkTitles(deck.slides, 'غلق الدرس ').length, 3);
   });
 
   it('puts one mid-lesson check before the worked examples and one after', () => {
@@ -475,8 +475,8 @@ describe('formative checks in the lesson deck', () => {
       checks: [mcq(1), mcq(2), mcq(3), mcq(4), mcq(5)],
     });
     const summary = deck.slides.findIndex(s => s.type === 'summary');
-    const divider = deck.slides.findIndex(s => s.type === 'divider' && s.title.includes('تذكرة الخروج'));
-    const firstTicket = deck.slides.findIndex(s => s.title.includes('تذكرة الخروج '));
+    const divider = deck.slides.findIndex(s => s.type === 'divider' && s.title.includes('غلق الدرس'));
+    const firstTicket = deck.slides.findIndex(s => s.title.includes('غلق الدرس '));
     assert.ok(summary >= 0 && divider > summary, 'divider follows the summary');
     assert.equal(firstTicket, divider + 1);
   });
@@ -511,7 +511,7 @@ describe('formative checks in the lesson deck', () => {
     // Three is one short of an exit ticket worth the name, so all three stay
     // mid-lesson — nothing is dropped and no one-question section appears.
     assert.equal(checkTitles(deck.slides, 'تحقّق سريع').length, 3);
-    assert.equal(checkTitles(deck.slides, 'تذكرة الخروج').length, 0);
+    assert.equal(checkTitles(deck.slides, 'غلق الدرس').length, 0);
   });
 
   it('refuses a question slide with no usable options', () => {
@@ -564,11 +564,11 @@ describe('formative checks in the lesson deck', () => {
       checks: [mcq(1), mcq(2), mcq(3), mcq(4), mcq(5)],
     });
     // The book example still numbers as an example; a check is keyed by its
-    // section title, because "تذكرة الخروج 1" is the first exit-ticket
+    // section title, because "غلق الدرس 1" is the first exit-ticket
     // question and not the first question in the deck.
     assert.ok(deck.answerKey.some(k => k.startsWith('مثال 1:')));
     assert.ok(deck.answerKey.some(k => k.includes('✋ تحقّق سريع 1') && k.endsWith(': ب1')));
-    assert.ok(deck.answerKey.some(k => k.includes('🎫 تذكرة الخروج 1') && k.endsWith(': ب3')));
+    assert.ok(deck.answerKey.some(k => k.includes('🎫 غلق الدرس 1') && k.endsWith(': ب3')));
   });
 
   it('leaves open checks out of the answer key rather than printing a blank row', () => {
@@ -891,8 +891,8 @@ describe('one language per deck', () => {
     });
     const check = deck.slides.find(s => s.title.includes('تحقّق سريع 1'))!;
     assert.equal(check.title, '✋ تحقّق سريع 1');
-    const exit = deck.slides.find(s => s.title.includes('تذكرة الخروج 1'))!;
-    assert.equal(exit.title, '🎫 تذكرة الخروج 1');
+    const exit = deck.slides.find(s => s.title.includes('غلق الدرس 1'))!;
+    assert.equal(exit.title, '🎫 غلق الدرس 1');
   });
 });
 
@@ -1074,7 +1074,7 @@ describe('opening order', () => {
   it('gives the exit-ticket divider the same shape', () => {
     const deck = build(two, { checks: [mcq(1), mcq(2), mcq(3), mcq(4), mcq(5)] });
     const exit = deck.slides.filter(s => s.type === 'divider').pop()!;
-    assert.equal(exit.title, 'تذكرة الخروج');
+    assert.equal(exit.title, 'غلق الدرس');
     assert.equal(exit.content, 'حل المعادلات التربيعية');
   });
 

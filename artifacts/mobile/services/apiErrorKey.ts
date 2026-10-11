@@ -32,6 +32,11 @@ const BY_CODE = {
   password_incorrect: 'errPasswordIncorrect',
   email_mismatch: 'errEmailMismatch',
   account_suspended: 'errAccountSuspended',
+  // Code-only accounts (no email): signing in with the personal login code,
+  // adding an email afterwards, and proving identity to delete.
+  invalid_login_code: 'errInvalidLoginCode',
+  login_code_incorrect: 'errLoginCodeIncorrect',
+  email_already_set: 'errEmailAlreadySet',
   // Messaging.
   not_connected: 'errNotConnected',
   blocked: 'errBlocked',

@@ -108,6 +108,12 @@ describe("checkDeck", () => {
     assert.ok(!codes(d, "").includes("weak_book_support"));
   });
 
+  it("does not judge explanation slides against the book — they paraphrase it", () => {
+    const d = goodDeck();
+    Object.assign(d.slides[3]!, { title: "مفهوم آخر", content: ["• طاقة حرارية تتحول إلى حركية", "• جسيمات تتحرك بسرعة"].join("\n") });
+    assert.ok(!codes(d, BOOK).includes("weak_book_support"));
+  });
+
   it("treats a non-deck as an error, not a crash", () => {
     assert.deepEqual(codes(null), ["no_slides"]);
     assert.deepEqual(codes({ slides: "x" }), ["no_slides"]);

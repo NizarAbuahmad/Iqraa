@@ -263,8 +263,43 @@ export const chatMessageReads = pgTable(
   ],
 );
 
+/**
+ * One reaction per person per message — the unique key is what makes a second
+ * reaction a replace, and what lets two people tapping at once both land.
+ * `emoji` is text, not an enum: the allow-list lives in the API
+ * (lib/messageReactions.ts) because changing a Postgres enum is a migration.
+ *
+ * Not a "post": reactions are allowed in announcement-only groups, so nothing
+ * here consults `chatThreads.studentPostingEnabled`.
+ */
+export const chatMessageReactions = pgTable(
+  "chat_message_reactions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    messageId: uuid("message_id")
+      .notNull()
+      .references(() => chatMessages.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    emoji: text("emoji").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  t => [
+    // Leads with message_id, so it also serves every "reactions for these
+    // messages" lookup — a separate index on message_id alone would be a
+    // duplicate (migration 0003 had one; 0004 dropped it).
+    unique("chat_message_reactions_unique").on(t.messageId, t.userId),
+    // The users ON DELETE CASCADE has to find a deleted account's reactions;
+    // the unique key above cannot serve a user_id-only lookup.
+    index("chat_message_reactions_user_idx").on(t.userId),
+  ],
+);
+
 export type RosterLink = typeof rosterLinks.$inferSelect;
 export type ChatMessageRead = typeof chatMessageReads.$inferSelect;
+export type ChatMessageReaction = typeof chatMessageReactions.$inferSelect;
 export type ChatThread = typeof chatThreads.$inferSelect;
 export type ChatParticipant = typeof chatParticipants.$inferSelect;
 export type ChatMessage = typeof chatMessages.$inferSelect;

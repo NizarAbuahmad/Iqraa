@@ -24,6 +24,7 @@ import { visualForExport, visualForSlide } from './deckVisuals.ts';
 import { isBulletLine, looksLikeEquation, stripBullet, workingSteps } from './deckText.ts';
 import { resolveSlideLayout } from './slideLayout.ts';
 import { slideTeacherNotesText } from './deckNotes.ts';
+import { creditSegments, type PhotoCredit } from './photoCredit.ts';
 import type { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
 import { mathLineToUnicode, prettifySymPy } from '@/services/mathRender';
 import { trackEvent } from '@/services/analytics';
@@ -83,7 +84,7 @@ async function addSideImage(
   const y = 1.35;
   s.addImage({ data: dataUrl, x, y, w, h, sizing: { type: 'contain', w, h } });
   if (slide.sideImageCaption) {
-    s.addText(slide.sideImageCaption, {
+    s.addText(captionRuns(slide.sideImageCaption, slide.sideImageCredit), {
       x, y: y + h + 0.1, w, h: 0.35,
       align: 'center', fontSize: 10, color: DECK_MUTED,
     });
@@ -116,6 +117,17 @@ async function fetchAsDataUrl(url: string): Promise<string | null> {
  * to a flat accent panel when the fetch above came back empty.
  */
 type PptxSlide = ReturnType<InstanceType<typeof import('pptxgenjs').default>['addSlide']>;
+
+/**
+ * A caption as PowerPoint text: the Unsplash credit's photographer and
+ * "Unsplash" runs become real hyperlinks when `credit` still matches the
+ * caption (see `creditSegments`); anything else stays the plain string.
+ */
+function captionRuns(caption: string, credit?: PhotoCredit): Parameters<PptxSlide['addText']>[0] {
+  const segs = creditSegments(caption, credit);
+  if (!segs) return caption;
+  return segs.map(s => (s.url ? { text: s.text, options: { hyperlink: { url: s.url } } } : { text: s.text }));
+}
 
 /**
  * The scrim under a hero photo — its own constant, NOT `DECK_BG`. It was
@@ -180,13 +192,13 @@ function addPlotChart(
  * and re-presented — so a hero photo leaving without its credit is the worst
  * of the three paths that used to drop it.
  */
-async function addHeroBackground(s: PptxSlide, url: string, credit?: string): Promise<boolean> {
+async function addHeroBackground(s: PptxSlide, url: string, credit?: string, creditLinks?: PhotoCredit): Promise<boolean> {
   const dataUrl = await fetchAsDataUrl(url);
   if (!dataUrl) return false;
   s.addImage({ data: dataUrl, x: 0, y: 0, w: 10, h: 5.63, sizing: { type: 'cover', w: 10, h: 5.63 } });
   s.addShape('rect', { x: 0, y: 0, w: 10, h: 5.63, fill: { color: HERO_SCRIM, transparency: HERO_SCRIM_TRANSPARENCY } });
   if (credit) {
-    s.addText(credit, {
+    s.addText(captionRuns(credit, creditLinks), {
       x: 0.4, y: 5.18, w: 9.2, h: 0.28, align: 'center',
       fontSize: 9, color: 'FFFFFF', transparency: 28,
     });
@@ -254,7 +266,7 @@ export async function exportDeckAsPptx(
 
     if (i === 0) {
       // Title slide.
-      const onPhoto = slide.mediaUrl ? await addHeroBackground(s, slide.mediaUrl, slide.mediaCaption) : false;
+      const onPhoto = slide.mediaUrl ? await addHeroBackground(s, slide.mediaUrl, slide.mediaCaption, slide.mediaCredit) : false;
       if (!onPhoto) addBlobs(s);
       const [meta, ...rest] = slide.content.split('\n\n');
       s.addText('Iqrra', {
@@ -286,7 +298,7 @@ export async function exportDeckAsPptx(
     if (slide.type === 'divider') {
       // Full-bleed, like the title slide — a pacing break, not another
       // header-bar-and-bullets content slide.
-      const gotPhoto = slide.mediaUrl ? await addHeroBackground(s, slide.mediaUrl, slide.mediaCaption) : false;
+      const gotPhoto = slide.mediaUrl ? await addHeroBackground(s, slide.mediaUrl, slide.mediaCaption, slide.mediaCredit) : false;
       if (!gotPhoto) s.background = { color: deckSlideAccent('divider') };
       s.addText(slide.title, {
         x: 0.6, y: 2.1, w: 8.8, h: 1.2, align: 'center', valign: 'middle',

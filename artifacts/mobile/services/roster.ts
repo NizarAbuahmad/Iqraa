@@ -348,6 +348,18 @@ export async function unlinkAccount(studentId: string, userId: string): Promise<
   await readJson(res, 'Unlinking account');
 }
 
+/**
+ * A new personal login code for a parent or student who signed up from a code
+ * and lost theirs. They have no email to reset by, so the teacher who vouched
+ * for the link is the way back in. The old code stops working and the account's
+ * open sessions end. Shown once — only a hash is kept. Refused (409
+ * `not_a_code_account`) for an account that has its own email and password.
+ */
+export async function reissueLoginCode(studentId: string, userId: string): Promise<{ loginCode: string }> {
+  const res = await apiFetch(`/students/${studentId}/links/${userId}/login-code`, { method: 'POST' });
+  return readJson(res, 'Issuing a login code');
+}
+
 export interface JoinRosterEntry {
   id: string;
   displayName: string;

@@ -339,21 +339,21 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.addition
   }
 
   if (actType === 'exit-ticket') {
-    return `أنت مصمم أنشطة صفية تفاعلية. أنشئ نشاط "بطاقة الخروج" لمادة ${b.subject}، الصف ${b.grade}، موضوع "${b.topic}".
+    return `أنت مصمم أنشطة صفية تفاعلية. أنشئ نشاط "غلق الدرس" لمادة ${b.subject}، الصف ${b.grade}، موضوع "${b.topic}".
 المدة: ${b.duration} دقيقة | الصعوبة: ${diffs[b.difficulty] ?? b.difficulty} | التجميع: ${groups[b.groupType] ?? b.groupType} | الهدف: ${goals[b.teachingGoal] ?? b.teachingGoal}
 ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.additionalContext}` : ''}
 
 أعد JSON بالشكل الآتي (بالعربية الكاملة):
 {
-  "activityName": "بطاقة الخروج – ${b.topic}",
+  "activityName": "غلق الدرس – ${b.topic}",
   "activityType": "exit-ticket",
   "grade": "${b.grade}", "subject": "${b.subject}", "lesson": "${b.topic}",
   "duration": ${b.duration}, "difficulty": "${b.difficulty}", "groupType": "${b.groupType}",
   "learningObjective": "التحقق من فهم ${b.topic} في نهاية الحصة",
-  "materials": ["بطاقة خروج مطبوعة (لكل طالب)","قلم"],
+  "materials": ["ورقة غلق الدرس مطبوعة (لكل طالب)","قلم"],
   "teacherPreparation": "اطبع البطاقات؛ خصّص آخر ${b.duration} دقائق من الحصة",
   "slides": [
-    { "slideNumber": 1, "type": "intro", "title": "🎫 بطاقة الخروج", "content": "التعليمات: عمل فردي، تُسلَّم عند الباب", "durationSeconds": 0 },
+    { "slideNumber": 1, "type": "intro", "title": "🎫 غلق الدرس", "content": "التعليمات: عمل فردي، تُسلَّم عند الباب", "durationSeconds": 0 },
     {
       "slideNumber": 2, "type": "challenge", "title": "❓ السؤال 1 – استرجاع",
       "content": "عرّف المفهوم الأساسي لموضوع ${b.topic} بأسلوبك",
@@ -365,7 +365,7 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.addition
   ],
   "teacherNotes": ["اجمع البطاقات عند الباب","صنّفها إلى: فهم كامل / جزئي / يحتاج دعمًا"],
   "answerKey": ["س1: التعريف","س2: التطبيق","س3: تفكير ناقد"],
-  "printables": ["بطاقة الخروج (لكل طالب)"],
+  "printables": ["ورقة غلق الدرس (لكل طالب)"],
   "assessment": "صنّف البطاقات إلى ثلاث فئات حسب مستوى الفهم",
   "extensionChallenge": "استخدم النتائج لتصميم تمهيد مركّز للحصة القادمة"
 }

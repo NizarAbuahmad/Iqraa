@@ -102,6 +102,36 @@ describe('buildDeckSlidesHTML — media attribution', () => {
     assert.ok(html.includes(credit));
   });
 
+  it('links the photographer and Unsplash when the slide carries the credit links', () => {
+    const linked: ActivitySlide = {
+      ...withPhoto,
+      mediaCaption: '📷 Photo by Jane Roe on Unsplash',
+      mediaCredit: {
+        photographer: 'Jane Roe',
+        photographerUrl: 'https://unsplash.com/@jane?utm_source=iqraa&utm_medium=referral',
+        unsplashUrl: 'https://unsplash.com/photos/abc?utm_source=iqraa&utm_medium=referral',
+      },
+    };
+    const html = markup(stripIsolates(buildDeckSlidesHTML(deck([linked]), false)));
+    assert.match(html, /<a href="https:\/\/unsplash\.com\/@jane\?utm_source=iqraa&amp;utm_medium=referral"[^>]*>Jane Roe<\/a>/);
+    assert.match(html, /<a href="https:\/\/unsplash\.com\/photos\/abc[^"]*"[^>]*>Unsplash<\/a>/);
+  });
+
+  it('drops the links when the caption was edited after generation', () => {
+    const edited: ActivitySlide = {
+      ...withPhoto,
+      mediaCaption: 'My own caption',
+      mediaCredit: {
+        photographer: 'Jane Roe',
+        photographerUrl: 'https://unsplash.com/@jane',
+        unsplashUrl: 'https://unsplash.com/photos/abc',
+      },
+    };
+    const html = markup(stripIsolates(buildDeckSlidesHTML(deck([edited]), false)));
+    assert.doesNotMatch(html, /<a href/);
+    assert.ok(html.includes('My own caption'));
+  });
+
   it('describes the image to a screen reader instead of alt=""', () => {
     const html = markup(buildDeckSlidesHTML(deck([withPhoto]), true));
     assert.doesNotMatch(html, /class="deck-hero-img"[^>]*alt=""/);

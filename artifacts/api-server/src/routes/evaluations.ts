@@ -62,7 +62,7 @@ import {
   type GenerationResult,
 } from "../modules/assessment/mockGenerator";
 import { validateGenerated } from "../modules/assessment/validator";
-import { verificationAfterEdit, verifyAnswerKeys } from "../modules/assessment/keyVerification.ts";
+import { contradictionWarning, verificationAfterEdit, verifyAnswerKeys } from "../modules/assessment/keyVerification.ts";
 import { relateAnswerKey } from "../lib/mathVerifierClient.ts";
 import { QUESTION_TYPES } from "../modules/assessment/questionTypes";
 import { COMPETENCY_KEYS, competencyForBlooms, type CompetencyKey } from "../modules/assessment/competency";
@@ -814,11 +814,11 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
     /**
      * SymPy checks every key that states one, before a teacher sees the paper.
      *
-     * Placed after the structural validator and before the insert because a
-     * contradicted key means the question should never have existed — dropping
-     * it here keeps `rejected` the single place a teacher reads for "why is
-     * this 14 questions and not 15". A key the verifier cannot judge, or a
-     * verifier that cannot be reached, removes nothing.
+     * Placed after the structural validator and before the insert. It removes
+     * nothing: a key the verifier agrees with is marked verified, one it
+     * disagrees with is kept and flagged in the warnings below (the check may be
+     * the thing that is wrong — see `keyVerification.ts`), and one it cannot
+     * judge, or a verifier that cannot be reached, leaves the question as it is.
      */
     const keyCheck = await verifyAnswerKeys(validation.accepted, relateAnswerKey);
     // The model is asked for `count` questions and is free to send more. A
@@ -830,8 +830,12 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
         `The generator returned ${surplus} more question${surplus === 1 ? "" : "s"} than the ${evaluation.targetQuestionCount} requested; the extra ${surplus === 1 ? "one was" : "ones were"} left out.`,
       );
     }
+    // After the trim above, so the warning never names a question that is not on the paper.
+    const contradiction = contradictionWarning(keyCheck.kept);
+    if (contradiction) generationNotes.push(contradiction);
     generationParams["keysChecked"] = keyCheck.checked;
     generationParams["keysVerified"] = keyCheck.verified;
+    generationParams["keysContradicted"] = keyCheck.contradicted;
 
     /**
      * A maths paper where nothing was checkable is the quiet failure mode of
@@ -918,7 +922,7 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
       // What the library holds for these units. Pairs with unavailableTypes:
       // the types we declined, and where real items for them would come from.
       bankContext: result.bankContext,
-      rejected: [...validation.rejected, ...keyCheck.dropped],
+      rejected: validation.rejected,
       warnings: [
         ...result.notes,
         ...generationNotes,

@@ -57,7 +57,7 @@ import { KB_SUGGEST_SCORE, shouldAskWhichLesson } from '@/services/kbSuggestion'
 import { Toast } from '@/components/ui/Toast';
 import { remoteAIService } from '@/services/ai/RemoteAIService';
 import { DEMO_MODE } from '@/services/ai/demoMode';
-import { aiErrorMessageKey, isCapError } from '@/services/ai/aiProvenance';
+import { aiErrorText, isCapError } from '@/services/ai/aiProvenance';
 import { shouldSendOnEnter } from '@/services/composerKeys';
 import type { ArtifactScope } from '@/services/ai/artifactScope';
 import {
@@ -294,6 +294,12 @@ interface Message {
   clarificationLessons?: { id: string; title: string }[];
   /** Places in the app this reply points at — solid buttons inside the bubble. */
   placeLinks?: EphemeralSuggestion[];
+  /**
+   * Set on a reply that answered a question about the app itself. The starter
+   * chips above the composer are for teaching, so they stay away from it — the
+   * answer already carries the one button that matters.
+   */
+  appHelp?: boolean;
   pedagogicalClarification?: ClarificationOption[];
   clarificationQuery?: string;
   showLessonPrep?: boolean;
@@ -1113,7 +1119,10 @@ function MessageBubble({
       onPress: () => onPresentMaterial(message),
     });
   }
-  if (onCopy && onExport && (canAct || infographic || message.text.trim().length > 60)) {
+  // Not under an answer about the app: a how-to is not a document to file, and
+  // «تصدير» under «where is Settings» offers to export a sentence.
+  if (onCopy && onExport && !message.appHelp
+    && (canAct || infographic || message.text.trim().length > 60)) {
     messageActions.push(
       {
         key: 'copy',
@@ -2047,6 +2056,7 @@ export default function IqraScreen() {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
           text: help.text,
+          appHelp: true,
           placeLinks: help.places.map(p => ({
             id: `place-${p.id}`,
             label: t(p.labelKey as TranslationKey),
@@ -2703,7 +2713,7 @@ export default function IqraScreen() {
             // allowance is spent" with a local lesson outline would be the
             // substitution that module exists to prevent, with nothing on
             // screen to say the AI never ran.
-            responseText = t(aiErrorMessageKey(genErr));
+            responseText = aiErrorText(genErr, t);
           } else {
             const ta = runTeachingAssistant();
             responseText = ta.text || t('iqraChatError');
@@ -2834,7 +2844,7 @@ export default function IqraScreen() {
             // to the local knowledge-base reply below under «تحقق من
             // الإنترنت», so a teacher whose allowance was gone got an answer
             // that read like the AI's, with a message blaming their network.
-            responseText = t(aiErrorMessageKey(remoteErr));
+            responseText = aiErrorText(remoteErr, t);
           } else {
             const ta = runTeachingAssistant();
             responseText = ta.text || t('iqraOfflineFallback');
@@ -3827,7 +3837,7 @@ export default function IqraScreen() {
             message={item}
             colors={colors}
             isRTL={isRTL}
-            onLongPress={item.role === 'assistant' ? () => handleExportMessage(item) : undefined}
+            onLongPress={item.role === 'assistant' && !item.appHelp ? () => handleExportMessage(item) : undefined}
             onCopy={item.role === 'assistant' && item.id !== streamingId ? handleCopyMessage : undefined}
             onExport={item.role === 'assistant' && item.id !== streamingId ? handleExportMessage : undefined}
             onSaveMaterial={item.role === 'assistant' ? handleSaveMaterial : undefined}
@@ -3882,8 +3892,11 @@ export default function IqraScreen() {
         Shown once the intro has scrolled out of the way, and only when the
         one-shot follow-ups below are not — two chip strips stacked on a phone
         is the clutter this change set out to remove.
+        Not under an answer about the app: «حضّر خطة الدرس» next to «where is
+        Settings» offers a lesson to someone who asked for a screen.
       */}
-      {ephemeralSuggestions.length === 0 && !isThinking && messages.length > 1 ? (
+      {ephemeralSuggestions.length === 0 && !isThinking && messages.length > 1
+        && !messages[messages.length - 1]?.appHelp ? (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}

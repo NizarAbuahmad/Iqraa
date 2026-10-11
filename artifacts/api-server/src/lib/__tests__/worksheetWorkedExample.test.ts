@@ -135,3 +135,50 @@ describe("sanitizeWorksheetExtras", () => {
     }
   });
 });
+
+// The app tells a teacher which working a person reviewed: anything marked
+// `fromBank` came from the offline question bank, everything else is shown as
+// «written by AI, nobody reviewed it». That mark must be set only by the app's
+// own bank path. A model that writes `fromBank: true` into its JSON — by
+// imitating an example it was shown, or at a teacher's prompt-injection — would
+// otherwise stamp its own work as reviewed, and the stamp would be stored in the
+// shared pool for every teacher.
+describe("sanitizeWorksheetExtras: a model cannot mark its own work as reviewed", () => {
+  const example = { problem: "2^x = 8", steps: ["8 = 2^3", "x = 3"], answer: "x = 3" };
+
+  it("drops fromBank from the worked example", () => {
+    const out = sanitizeWorksheetExtras("worksheet", { workedExample: { ...example, fromBank: true } }) as any;
+    assert.equal("fromBank" in out.workedExample, false);
+  });
+
+  for (const kind of ["worksheet", "homework"] as const) {
+    it(`${kind}: drops fromBank from every question in every section`, () => {
+      const parsed = {
+        title: "t", instructions: "i", answerKey: [],
+        sections: [
+          { title: "a", questions: [{ text: "q1", points: 2, fromBank: true }, { text: "q2", points: 2 }] },
+          { title: "b", questions: [{ text: "q3", points: 2, fromBank: true }] },
+        ],
+      };
+      const out = sanitizeWorksheetExtras(kind, parsed) as any;
+      const qs = out.sections.flatMap((s: any) => s.questions);
+      assert.equal(qs.length, 3);
+      assert.ok(qs.every((q: any) => !("fromBank" in q)), "a question kept its fromBank mark");
+      assert.deepEqual(qs.map((q: any) => q.text), ["q1", "q2", "q3"]);
+    });
+  }
+
+  it("quiz: drops fromBank from every question", () => {
+    const out = sanitizeWorksheetExtras("quiz", {
+      title: "t", questions: [{ text: "q", correctAnswer: "a", fromBank: true }],
+    }) as any;
+    assert.ok(!("fromBank" in out.questions[0]));
+  });
+
+  it("leaves other kinds and malformed shapes alone", () => {
+    const lesson = { title: "x", fromBank: true };
+    assert.equal(sanitizeWorksheetExtras("lesson-plan", lesson), lesson);
+    assert.deepEqual(sanitizeWorksheetExtras("worksheet", { sections: "oops" }), { sections: "oops" });
+    assert.equal(sanitizeWorksheetExtras("quiz", null), null);
+  });
+});

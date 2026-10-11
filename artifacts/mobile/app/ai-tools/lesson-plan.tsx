@@ -31,7 +31,7 @@ import { useGeneratorExport } from '@/hooks/useGeneratorExport';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
-import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
+import { aiErrorText, isAbortError } from '@/services/ai/aiProvenance';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
 import { captureGenerationScope, materialScope, reopenedGenerationScope, type GenerationScope } from '@/services/generationScope';
 import { readIndexParam } from '@/services/materialParams';
@@ -75,7 +75,7 @@ export default function LessonPlanScreen() {
   // `scopeFromParams`. Grounding the topic is what recovers the right scope.
   // Only the grades/subjects this teacher picked on /setup-subjects are offered.
   const teacherScope = useTeacherScope();
-  const [initialScope] = useState(() => scopeFromParams(params, uiLang, teacherScope.defaultScope));
+  const [initialScope] = useState(() => scopeFromParams(params, uiLang, teacherScope.defaultScope, teacherScope));
   const [gradeIdx, setGradeIdx] = useState(initialScope.gradeIdx);
   // Index-aligned flags rather than a pre-filtered `subjects`: these positions
   // are persisted as subjectIdx, so entries are dropped at render time only.
@@ -271,7 +271,7 @@ export default function LessonPlanScreen() {
       // Deliberately not the raw error: "HTTP 500" is not a sentence in any
       // language a teacher reads. The technical text is already recorded in
       // aiProvenance, where the badge carries it for support.
-      else setError(t(aiErrorMessageKey(e)));
+      else setError(aiErrorText(e, t));
       // Hand back what was on screen; a stop or a failure is not a reason to
       // lose it.
       if (held.result) {
@@ -372,9 +372,10 @@ export default function LessonPlanScreen() {
    * The plan on screen, on the Ministry's «خطة الدرس» form. The form is
    * Arabic-only, so names come from the Arabic fields whatever the UI
    * language. Teacher-role text is this plan's own phases folded into the four
-   * stages; the learner column is left for the teacher — the plan on screen
-   * has no learner half, and a second generation would no longer match what
-   * the teacher has read and edited.
+   * stages. The plan on screen has no learner half, and a second generation
+   * would no longer match what the teacher has read and edited, so the learner
+   * column is filled from the stock per-style lines in `ministryLearnerRoles`
+   * (in the plan's language) rather than left empty.
    */
   const handleMinistry = async () => {
     if (!result) return;
@@ -394,7 +395,11 @@ export default function LessonPlanScreen() {
         section: '',
         date: todayISO(),
         teacher: user?.name ?? '',
-        stages: stagesFromLessonPlan(result),
+        stages: stagesFromLessonPlan(result, {
+          lang: outLang === 'ar' ? 'ar' : 'en',
+          style: STYLE_IDS[styleIdx],
+          topic: (outLang === 'ar' ? lesson?.titleAr : lesson?.titleEn) ?? scope.topic,
+        }),
       };
       const title = getExportTitle();
       await exportMinistryPlanWord([page], title);

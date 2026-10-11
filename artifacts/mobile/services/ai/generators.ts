@@ -410,7 +410,7 @@ function lpIntroAr(topic: string, kb: KBLesson | null, kind: LessonKind = 'calc'
 function lpClosureAr(topic: string, dur: number): string {
   const t = Math.round(dur * 0.1);
   return pick([
-    `(${arMinutes(t)}) بطاقة الخروج:\n• أهم شيء تعلمته اليوم عن ${topic}.\n• سؤال لا يزال يراوده.\nاجمع البطاقات عند الخروج.`,
+    `(${arMinutes(t)}) غلق الدرس:\n• أهم شيء تعلمته اليوم عن ${topic}.\n• سؤال لا يزال يراوده.\nاجمع البطاقات عند الخروج.`,
     `(${arMinutes(t)}) "3-2-1":\n• 3 أشياء تعلمتها\n• 2 مفاهيم أريد فهمها أكثر\n• 1 سؤال لديّ عن ${topic}`,
   ]);
 }
@@ -1475,6 +1475,7 @@ export class MockAIService extends AIService {
               problem: exampleItem.problem,
               steps: exampleItem.steps,
               answer: exampleItem.answer,
+              fromBank: true as const,
               selfExplain: lang === 'ar'
                 ? 'اشرح بجملة واحدة: لماذا كانت الخطوة الأولى صحيحة؟'
                 : 'In one sentence, explain why the first step was valid.',
@@ -2302,20 +2303,20 @@ export class MockAIService extends AIService {
     if (actType === 'exit-ticket') {
       if (isAr) {
         return {
-          activityName: `بطاقة الخروج – ${topic}`,
+          activityName: `غلق الدرس – ${topic}`,
           activityType: 'exit-ticket',
           grade: req.grade, subject: req.subject, lesson: topic, duration: dur,
           difficulty: req.difficulty, groupType: req.groupType,
           learningObjective: `التحقق من مستوى فهم الطلبة لـ${topic} في نهاية الحصة`,
-          materials: ['ورقة بطاقة الخروج المطبوعة (1 لكل طالب)', 'قلم'],
-          teacherPreparation: 'اطبع بطاقة الخروج (3-4 أسئلة). خصّص 5-7 دقائق في نهاية الحصة.',
+          materials: ['ورقة غلق الدرس المطبوعة (1 لكل طالب)', 'قلم'],
+          teacherPreparation: 'اطبع ورقة غلق الدرس (3-4 أسئلة). خصّص 5-7 دقائق في نهاية الحصة.',
           teacherNotes: ['اجمع البطاقات عند الباب', 'راجعها قبل الحصة القادمة لتعديل خطة التدريس'],
           answerKey: ['السؤال 1: التعريف الأساسي', 'السؤال 2: التطبيق', 'السؤال 3: التفكير الناقد', 'السؤال 4: التقييم الذاتي'],
-          printables: ['بطاقة الخروج (نسخة لكل طالب)'],
+          printables: ['ورقة غلق الدرس (نسخة لكل طالب)'],
           assessment: 'افرز البطاقات إلى 3 مجموعات: فهم كامل / فهم جزئي / يحتاج دعمًا.',
           extensionChallenge: `استخدم نتائج البطاقة لتصميم نشاط علاجي في بداية الحصة القادمة.`,
           slides: [
-            { slideNumber: 1, type: 'intro', title: '🎫 بطاقة الخروج', content: `الوقت المتبقي: ${dur} دقائق\n\nقبل أن تغادر الفصل اليوم،\nأثبت ما تعلمته عن ${topic}.\n\n3 أسئلة سريعة — عمل فردي\nاجمع ورقتك عند الباب عند انتهاء الوقت.`, durationSeconds: 0 },
+            { slideNumber: 1, type: 'intro', title: '🎫 غلق الدرس', content: `الوقت المتبقي: ${dur} دقائق\n\nقبل أن تغادر الفصل اليوم،\nأثبت ما تعلمته عن ${topic}.\n\n3 أسئلة سريعة — عمل فردي\nاجمع ورقتك عند الباب عند انتهاء الوقت.`, durationSeconds: 0 },
             {
               slideNumber: 2, type: 'challenge',
               title: '❓ السؤال 1 – تذكّر',

@@ -273,6 +273,7 @@ const translations = {
     // Curriculum — top level
     curriculumTitle: 'المنهاج',
     jordanCurriculum: 'المنهاج الأردني',
+    nationalBookNote: 'الكتاب الوطني المعتمد من وزارة التربية والتعليم الأردنية',
     curriculumIntro:
       'تصفّح المنهاج الأردني الرسمي حسب الصف والمادة والوحدة والدرس — بالترتيب نفسه وأرقام الصفحات نفسها الموجودة في الكتاب المطبوع، لتراجع محتوى الكتاب الحقيقي مباشرة من هنا.',
     searchSubjects: 'ابحث في المواد…',
@@ -468,7 +469,9 @@ const translations = {
     downloadActivityBook: 'كتاب الأنشطة',
     // Books are republished yearly by NCCD — the year is what tells a teacher
     // whether the linked edition still matches what's printed this year.
-    downloadSourceNccd: (year: string) => `من موقع المركز الوطني لتطوير المناهج · طبعة ${year}`,
+    // `year` is the linked file's own edition (see services/nccdEdition.ts), and
+    // absent when the link doesn't say — never the catalog's academicYear.
+    downloadSourceNccd: (year?: string) => (year ? `من موقع المركز الوطني لتطوير المناهج · طبعة ${year}` : 'من موقع المركز الوطني لتطوير المناهج'),
 
     // Curriculum — lessons screen
     unitLabel: 'الوحدة',
@@ -622,6 +625,10 @@ const translations = {
     aiUnavailable: 'خدمة الذكاء الاصطناعي متوقفة حاليًا. حاول لاحقًا.',
     // The offline demo has real questions for maths and chemistry only.
     noQuestionBank: 'لا يتوفر بعد بنك أسئلة لهذا الدرس في النسخة التجريبية، لذلك لا نعرض أسئلة عامة لا تخص الدرس. جرّب خطة الدرس أو الأنشطة، أو درسًا من الرياضيات أو الكيمياء.',
+    // The live call failed AND the offline path has no bank for this lesson —
+    // the cause is the failed call, not the demo, so say that and show why.
+    noQuestionBankLiveFailed: 'تعذّر توليد المحتوى عبر الذكاء الاصطناعي، ولا يتوفر بنك أسئلة محلي لهذا الدرس كبديل. حاول مرة أخرى، أو جرّب درسًا من الرياضيات أو الكيمياء.',
+    aiErrorReason: 'السبب:',
     // Shown with a result, not instead of one: the teacher asked for something
     // new and got a saved copy, and must not mistake it for a fresh generation.
     aiServedSavedCopy: 'هذه نسخة محفوظة — انتهت حصة التوليد الجديد لهذا الشهر.',
@@ -648,7 +655,7 @@ const translations = {
     sectionMainActivity: 'النشاط الرئيسي',
     sectionClosure: 'الختام',
     sectionAssessment: 'التقويم',
-    sectionDifferentiation: 'التمايز',
+    sectionDifferentiation: 'فروق فردية',
     sectionHomework: 'الواجب البيتي',
 
     // Worksheet generator
@@ -1136,7 +1143,7 @@ const translations = {
     lessonFlowStepActivity: 'النشاط التفاعلي',
     lessonFlowStepGuided: 'التدريب الموجّه',
     lessonFlowStepWorksheet: 'ورقة العمل',
-    lessonFlowStepExitTicket: 'بطاقة الخروج',
+    lessonFlowStepExitTicket: 'غلق الدرس',
     lessonFlowLaunchClassroom: 'اعرض على شاشة الصف',
     lessonFlowExportAll: 'صدّر الكل PDF',
     lessonFlowSaveFlow: 'احفظ المسار',
@@ -1181,6 +1188,10 @@ const translations = {
     suggestFeatureAnother: 'اقترح فكرة أخرى',
     suggestFeatureFailed: 'تعذّر إرسال اقتراحك. تحقّق من اتصالك وحاول مرة أخرى — نصّك ما زال هنا.',
     suggestFeatureSessionExpired: 'انتهت جلستك. سجّل الدخول من جديد ثم أرسل اقتراحك.',
+    suggestFeatureEmailPlaceholder: 'بريدك الإلكتروني (اختياري — لنردّ عليك)',
+    suggestFeatureAuthLink: 'عندك فكرة لـ«إقرأ»؟ اقترح ميزة',
+    suggestFeatureEmailInvalid: 'هذا البريد الإلكتروني لا يبدو صحيحًا. صحّحه أو اترك الحقل فارغًا.',
+    suggestFeatureTooMany: 'أرسلت عدة اقتراحات خلال وقت قصير. حاول مرة أخرى بعد قليل — نصّك ما زال هنا.',
     faqQ1: 'من أين أبدأ؟',
     faqA1: 'من شاشة «إقرأ». اكتب ما تحتاجه بلغتك — مثل «حضّر خطة درس عن تركيب الاقترانات» — أو اضغط زر ➕ بجانب مربّع الكتابة لاختيار الأداة مباشرة.',
     faqQ2: 'كيف أحدّد الدرس الذي أعمل عليه؟',
@@ -1282,6 +1293,9 @@ const translations = {
     // Live-AI answers, and anything else not drawn from the bank: nothing and
     // nobody checked them, so the teacher has to.
     answersUnreviewedAll: 'لم يتحقّق أي مصدر مُراجَع من هذه الإجابات، وقد وُلِّدت تلقائيًا — راجعها بنفسك قبل التوزيع',
+    // Step-by-step working a model wrote, as opposed to the offline bank's, which
+    // a person wrote and checked. See `workingProvenance`.
+    workingUnreviewed: 'الخطوات المكتوبة في هذه الورقة وُلِّدت بالذكاء الاصطناعي ولم يراجعها أحد — راجعها بنفسك قبل التوزيع',
     answersUnreviewedSome: (n: number, total: number) =>
       `لم يتحقّق أي مصدر مُراجَع من ${n} من أصل ${total} إجابة، وقد وُلِّدت تلقائيًا — راجعها بنفسك قبل التوزيع`,
     examplesAiUnverified: 'كتب الذكاء الاصطناعي المثال ولم يتحقّق أحد من إجابته — راجعها قبل العرض',
@@ -1292,7 +1306,7 @@ const translations = {
     activityBingoDesc: 'استدعِ المصطلحات وشطّب المربعات — أول من يكمل صفًا يفوز',
     activityRelayTitle: 'سباق التتابع',
     activityRelayDesc: 'سلسلة من 4–6 مسائل متصلة — كل إجابة تفتح التالية',
-    activityExitTitle: 'بطاقة الخروج',
+    activityExitTitle: 'غلق الدرس',
     activityExitDesc: '3–5 أسئلة سريعة في نهاية الحصة للتحقق من الفهم',
     activityErrorTitle: 'المحقق الرياضي',
     activityErrorDesc: 'اعثر على الخطأ في الحل وصحّحه — تعلّم عبر اكتشاف الأخطاء',
@@ -1481,7 +1495,7 @@ const translations = {
     misconceptionsLabel: 'الأخطاء الشائعة',
     teachingTipsLabel2: 'نصائح التدريس',
     suggestedQuestionsLabel: 'أسئلة مقترحة',
-    differentiationLabel: 'التمايز',
+    differentiationLabel: 'فروق فردية',
     slideTypeIntro: 'تمهيد',
     slideTypeChallenge: 'تحدٍّ',
     slideTypeReveal: 'كشف',
@@ -1570,9 +1584,9 @@ const translations = {
     planWeekdaySat: 'سبت',
     planExportMinistry: 'تصدير بنموذج الوزارة',
     planExportAiTitle: 'تعبئة الأدوار بالذكاء الاصطناعي؟',
-    planExportAiMessage: (n: number) => `سيُنشأ دور المعلم ودور المتعلم لكل درس من دروس الخطة، وعددها ${n} (قد يستغرق دقيقة). «إلغاء» يصدّر النموذج فارغًا لتكتبه بنفسك.`,
+    planExportAiMessage: (n: number) => `سيُنشأ دور المعلم ودور المتعلم لكل درس من دروس الخطة، وعددها ${n} (قد يستغرق دقيقة). «بدون ذكاء اصطناعي» يعبّئ النموذج بأدوار عامة جاهزة حسب أسلوب التدريس لتعدّلها بنفسك.`,
     planExportAiYes: 'عبّئ بالذكاء الاصطناعي',
-    planExportAiNo: 'نموذج فارغ',
+    planExportAiNo: 'بدون ذكاء اصطناعي',
     planExportEmpty: 'لا توجد دروس مجدولة في هذه الخطة بعد. وزّع الدروس على تواريخ أولًا.',
     planTodayLesson: (title: string) => `اليوم: ${title}`,
     planNextLesson: (date: string, title: string) => `القادم (${date}): ${title}`,
@@ -1668,7 +1682,7 @@ const translations = {
     parentContactsAllGood: 'وصلت رسالةٌ إلى أسرة كل طالب خلال الشهر، ولم تقتصر أيٌّ منها على الملاحظات.',
     parentContactsTapHint: 'اضغط على اسم لكتابة رسالة لأسرته.',
     parentContactsUnread: (n: string) => `رسالة داخل إقرأ لم تُفتح منذ يومين أو أكثر (${n})`,
-    // Not «تحقّق سريع» and not «تذكرة الخروج» — the classroom-activity
+    // Not «تحقّق سريع» and not «غلق الدرس» — the classroom-activity
     // generator already owns both of those (`activityType: 'quick-check'` and
     // `'exit-ticket'`). This one belongs to the evaluations family, produces a
     // per-student record, and is named from that side of the app.
@@ -2173,14 +2187,14 @@ const translations = {
     onboardingSlide6Desc: 'مساعد يعرف كتب المنهاج: اسأله عن درس أو فكرة للشرح، ويدلّك على الأداة المناسبة بزرّ واحد.',
     onboardingSlide6Points: 'إجابات من كتب المنهاج\nأفكار للشرح والتمهيد\nيدلّك على الأداة المناسبة',
     onboardingSlide2Title: 'رحلة حصة كاملة في مسار واحد',
-    onboardingSlide2Desc: 'من الأهداف والتمهيد، إلى النشاط والتدريب وورقة العمل وبطاقة الخروج — تُبنى بالتتابع، لا قطعًا متفرقة.',
-    onboardingSlide2Points: 'الأهداف والتمهيد\nالنشاط والتدريب\nورقة العمل وبطاقة الخروج',
+    onboardingSlide2Desc: 'من الأهداف والتمهيد، إلى النشاط والتدريب وورقة العمل وغلق الدرس — تُبنى بالتتابع، لا قطعًا متفرقة.',
+    onboardingSlide2Points: 'الأهداف والتمهيد\nالنشاط والتدريب\nورقة العمل وغلق الدرس',
     onboardingSlide4Title: 'أدوات لكل لحظة في الحصة',
     onboardingSlide4Desc: 'شرائح تعرضها على السبورة، وتحدٍّ جماعي بلا هواتف، وأشكال من كتابك برقم صفحتها — جاهزة قبل الحصة وأثناءها.',
     onboardingSlide4Points: 'شرائح للعرض\nتحدٍّ جماعي بلا هواتف\nأشكال الكتاب برقم الصفحة',
     onboardingSlide7Title: 'أوراق عمل وبطاقات خروج في دقيقة',
-    onboardingSlide7Desc: 'ورقة عمل بمستويات صعوبة ومفتاح إجابة، وبطاقة خروج تعرف بها ما فهمه طلبتك قبل أن يغادروا الصف.',
-    onboardingSlide7Points: 'مستويات صعوبة متدرّجة\nمفتاح إجابة جاهز\nبطاقة خروج لآخر الحصة',
+    onboardingSlide7Desc: 'ورقة عمل بمستويات صعوبة ومفتاح إجابة، وغلق للدرس تعرف به ما فهمه طلبتك قبل أن يغادروا الصف.',
+    onboardingSlide7Points: 'مستويات صعوبة متدرّجة\nمفتاح إجابة جاهز\nغلق الدرس في آخر الحصة',
     onboardingSlide8Title: 'اختبار يجيب عنه الطلبة من هواتفهم',
     onboardingSlide8Desc: 'ولّد الاختبار من الدرس وشاركه برابط، فيجيب الطلبة من هواتفهم، وتُرصد علاماتهم وتصلك نتائج كل طالب.',
     onboardingSlide8Points: 'أسئلة من المنهاج\nمشاركة برابط\nرصد العلامات والنتائج',
@@ -2282,6 +2296,36 @@ const translations = {
     claimNameNotInClass: 'هذا الاسم ليس في قائمة هذه الشعبة',
     claimAlreadyLinked: 'هذا الطالب مرتبط بحساب آخر بالفعل',
     claimGuardianTaken: 'هذا الاسم مرتبط بحساب وليّ أمر بالفعل. إن كنت وليّ أمره، اطلب من المعلم رمزًا خاصًا بابنك أو ابنتك.',
+    // Code-only sign-up (POST /auth/redeem): a parent account is never made from
+    // a class code, which is one string for a whole room.
+    claimParentNeedsOwnCode: 'هذا رمز ربط للشعبة كلها. لإنشاء حساب وليّ أمر، اطلب من المعلم رمز الربط الخاص بابنك أو ابنتك.',
+    errInvalidLoginCode: 'رمز الدخول غير صحيح. تأكد منه وأعد المحاولة.',
+    errLoginCodeIncorrect: 'رمز الدخول غير صحيح',
+    errEmailAlreadySet: 'لهذا الحساب بريد إلكتروني بالفعل',
+    errCodeSignupFailed: 'تعذّر إنشاء الحساب. تأكد من الرمز وأعد المحاولة.',
+    codeSignupSubtitle: 'سجّل برمز الربط الذي أعطاك إياه معلمك. لا تحتاج إلى بريد إلكتروني الآن، ويمكنك إضافته لاحقًا.',
+    loginCodeTitle: 'رمز دخولك',
+    loginCodeSaveNote: 'احتفظ بهذا الرمز في مكان آمن؛ به تدخل إلى حسابك من أي جهاز. لن يظهر مرة أخرى. وإن ضاع، يطلب المعلم لك رمزًا جديدًا.',
+    loginCodeCopy: 'نسخ الرمز',
+    loginCodeCopied: 'تم النسخ',
+    loginCodeSavedContinue: 'حفظت الرمز، متابعة',
+    loginWithCodeLink: 'سجّلت برمز الربط؟ ادخل برمز حسابك',
+    loginWithCodeTitle: 'الدخول برمز الحساب',
+    loginWithCodeSub: 'أدخل رمز الدخول الطويل الذي ظهر لك عند إنشاء الحساب، وليس رمز الربط.',
+    loginWithCodeField: 'رمز الدخول',
+    loginWithCodeLost: 'ضاع الرمز؟ اطلب من معلمك رمز دخول جديدًا.',
+    loginWithCodeFoundPending: 'وجدنا رمز حساب لم يكتمل تسجيله على هذا الجهاز، وأضفناه لك.',
+    addEmailRow: 'أضف بريدًا إلكترونيًا',
+    addEmailTitle: 'إضافة بريد إلكتروني',
+    addEmailSub: 'اختياري. يتيح لك الدخول بالبريد وكلمة المرور، واستعادة كلمة المرور إن نسيتها. ويبقى رمز الدخول يعمل أيضًا.',
+    addEmailSubmit: 'أرسل رمز التحقق',
+    addEmailCodeSentTo: (email: string) => `أرسلنا رمزًا من 6 أرقام إلى ${email}`,
+    addEmailCodeNotSent: 'تعذّر إرسال الرمز. تحقق من العنوان ثم أعد المحاولة.',
+    addEmailCodeLabel: 'رمز التحقق',
+    addEmailVerify: 'تحقق',
+    addEmailDone: 'تمت إضافة بريدك الإلكتروني',
+    profileNoEmail: 'لم تضف بريدًا بعد',
+    deleteLoginCodeHint: 'أدخل رمز الدخول الخاص بك لتأكيد حذف الحساب.',
     claimEmptyClass: 'لا توجد أسماء في هذه الشعبة بعد. اطلب من المعلم إضافة أسماء الطلبة، ثم أعد المحاولة.',
     claimEmptyClassFor: (className: string) =>
       `لا توجد أسماء في شعبة «${className}» بعد. اطلب من المعلم إضافة أسماء الطلبة، ثم أعد المحاولة.`,
@@ -2316,6 +2360,12 @@ const translations = {
     rosterNotLinked: 'لم ينضم بعد',
     unlinkAccount: 'إلغاء الربط',
     unlinkAccountConfirm: 'سيتم فصل هذا الحساب عن الطالب، وسيخرج من محادثات الشعبة. هل تريد المتابعة؟',
+    reissueLoginCode: 'رمز دخول جديد',
+    reissueLoginCodeConfirm: 'سيتوقف رمز الدخول الحالي لهذا الحساب عن العمل، وسيخرج من جميع الأجهزة. هل تريد إصدار رمز جديد؟',
+    reissueLoginCodeResult: (name: string) => `رمز الدخول الجديد لـ«${name}»`,
+    reissueLoginCodeNote: 'سلّمه لصاحب الحساب الآن؛ لن يظهر مرة أخرى.',
+    reissueNotCodeAccount: 'هذا الحساب يدخل بالبريد وكلمة المرور، ويمكنه استعادتها بنفسه.',
+    reissueLoginCodeFailed: 'تعذّر إصدار رمز جديد',
     messagingBlock: 'حظر',
     messagingUnblock: 'إلغاء الحظر',
     messagingReportTitle: 'الإبلاغ عن رسالة',
@@ -2497,6 +2547,14 @@ const translations = {
     dangerZoneSection: 'إجراءات نهائية',
     nextStudentBtn: (name: string) => `الطالب التالي: ${name}`,
     messageSeen: "شوهدت",
+    messageReactTitle: 'تفاعل مع الرسالة',
+    messageReactionsList: 'التفاعلات',
+    messageReportAction: 'إبلاغ',
+    messageReactorUnknown: 'عضو سابق',
+    messageReactorYou: 'أنت',
+    messageReactionFailed: 'تعذّر حفظ التفاعل. حاول مرة أخرى.',
+    messageReactionChipLabel: (emoji: string, count: number, mine: boolean) =>
+      `${emoji} ${count} — ${mine ? 'إزالة تفاعلك' : 'تفاعل بالرمز نفسه'}`,
     rosterSelect: "تحديد",
     rosterSelectDone: "إلغاء التحديد",
     rosterRemoveSelectedConfirmTitle: "إزالة الطلبة المحدّدين من الشعبة؟",
@@ -2675,6 +2733,7 @@ const translations = {
 
     curriculumTitle: 'Curriculum',
     jordanCurriculum: 'Jordanian Curriculum',
+    nationalBookNote: "The national textbook, approved by Jordan's Ministry of Education",
     curriculumIntro:
       "Browse the official Jordanian curriculum by grade, subject, unit and lesson — in the same order and with the same page numbers as the printed book, so you can review the real book's content directly from here.",
     searchSubjects: 'Search subjects…',
@@ -2858,7 +2917,7 @@ const translations = {
     downloadBook: 'Download book',
     downloadTeacherGuide: 'Teacher guide',
     downloadActivityBook: 'Activity book',
-    downloadSourceNccd: (year: string) => `From the National Center for Curriculum Development · ${year} edition`,
+    downloadSourceNccd: (year?: string) => (year ? `From the National Center for Curriculum Development · ${year} edition` : 'From the National Center for Curriculum Development'),
 
     unitLabel: 'Unit',
     unitsAvailable: (n: number) => `${n} unit${n !== 1 ? 's' : ''}`,
@@ -3001,6 +3060,8 @@ const translations = {
       "This month's AI allowance is used up. You can still open saved worksheets and lessons.",
     aiUnavailable: 'The AI service is switched off right now. Try again later.',
     noQuestionBank: 'The demo has no question bank for this lesson yet, so we won\'t show generic questions that aren\'t about it. Try the lesson plan or activities, or a maths or chemistry lesson.',
+    noQuestionBankLiveFailed: 'AI generation failed, and there is no offline question bank for this lesson to fall back on. Try again, or pick a maths or chemistry lesson.',
+    aiErrorReason: 'Reason:',
     aiServedSavedCopy: "This is a saved copy — this month's AI allowance is used up.",
     curriculumUngroundedNotice: 'This topic is not in the currently available curriculum. The plan is generic and not grounded in a specific textbook lesson.',
     curriculumUngroundedNoticeWorksheet: 'This topic is not in the currently available curriculum. The worksheet is generic and not grounded in a specific textbook lesson.',
@@ -3542,6 +3603,10 @@ const translations = {
     suggestFeatureAnother: 'Suggest another idea',
     suggestFeatureFailed: "Couldn't send your suggestion. Check your connection and try again — your text is still here.",
     suggestFeatureSessionExpired: 'Your session has ended. Sign in again, then send your suggestion.',
+    suggestFeatureEmailPlaceholder: 'Your email (optional — so we can reply)',
+    suggestFeatureAuthLink: 'Have an idea for Iqrra? Suggest a feature',
+    suggestFeatureEmailInvalid: "That email doesn't look right. Fix it or leave the field empty.",
+    suggestFeatureTooMany: "You've sent several suggestions in a short time. Try again in a little while — your text is still here.",
     faqQ1: 'Where do I start?',
     faqA1: 'On the Iqrra screen. Type what you need in your own words — "prepare a lesson plan on function composition" — or press the ➕ next to the message box to pick a tool directly.',
     faqQ2: 'How do I set which lesson I am working on?',
@@ -3637,6 +3702,9 @@ const translations = {
     levelsPartial: 'Some levels could not be built. The ones that finished are shown; try the rest again later.',
     quizVerifiedNone: 'No answer was symbolically verified — keys come from the reviewed bank',
     answersUnreviewedAll: 'No reviewed source has checked these answers, and they were generated automatically — check them yourself before handing out',
+    // Step-by-step working a model wrote, as opposed to the offline bank's, which
+    // a person wrote and checked. See `workingProvenance`.
+    workingUnreviewed: 'The step-by-step working on this sheet was written by AI and nobody has reviewed it — check it yourself before handing out',
     answersUnreviewedSome: (n: number, total: number) =>
       `No reviewed source has checked ${n} of ${total} answers, and they were generated automatically — check them yourself before handing out`,
     examplesAiUnverified: "The example was written by AI and nobody has checked its answer — review it before class",
@@ -3918,9 +3986,9 @@ const translations = {
     planWeekdaySat: 'Sat',
     planExportMinistry: 'Export in Ministry template',
     planExportAiTitle: 'Fill the roles with AI?',
-    planExportAiMessage: (n: number) => `Teacher and learner roles will be generated for each of the ${n} lessons in this plan (may take a minute). Cancel exports the form blank for you to write.`,
+    planExportAiMessage: (n: number) => `Teacher and learner roles will be generated for each of the ${n} lessons in this plan (may take a minute). “Without AI” fills the form with ready-made general roles for the teaching style, for you to edit.`,
     planExportAiYes: 'Fill with AI',
-    planExportAiNo: 'Blank form',
+    planExportAiNo: 'Without AI',
     planExportEmpty: 'This plan has no scheduled lessons yet. Give the lessons dates first.',
     planTodayLesson: (title: string) => `Today: ${title}`,
     planNextLesson: (date: string, title: string) => `Next (${date}): ${title}`,
@@ -4607,6 +4675,36 @@ const translations = {
     claimNameNotInClass: 'That name is not on this class list',
     claimAlreadyLinked: 'This student is already linked to another account',
     claimGuardianTaken: 'A parent account is already linked to this name. If you are their parent, ask the teacher for a code for your child.',
+    // Code-only sign-up (POST /auth/redeem): a parent account is never made from
+    // a class code, which is one string for a whole room.
+    claimParentNeedsOwnCode: 'This is a link code for the whole class. To create a parent account, ask the teacher for the link code written for your child.',
+    errInvalidLoginCode: "That login code isn't right. Check it and try again.",
+    errLoginCodeIncorrect: 'Login code is incorrect',
+    errEmailAlreadySet: 'This account already has an email',
+    errCodeSignupFailed: "Couldn't create the account. Check the code and try again.",
+    codeSignupSubtitle: 'Sign up with the link code your teacher gave you. No email needed now — you can add one later.',
+    loginCodeTitle: 'Your login code',
+    loginCodeSaveNote: "Keep this code somewhere safe — it's how you sign back in on any device. It won't be shown again, and if you lose it your teacher can issue a new one.",
+    loginCodeCopy: 'Copy code',
+    loginCodeCopied: 'Copied',
+    loginCodeSavedContinue: 'I saved it — continue',
+    loginWithCodeLink: 'Signed up with a link code? Sign in with your account code',
+    loginWithCodeTitle: 'Sign in with your account code',
+    loginWithCodeSub: 'Enter the long login code you were shown when you created the account — not the link code.',
+    loginWithCodeField: 'Login code',
+    loginWithCodeLost: 'Lost your code? Ask your teacher for a new one.',
+    loginWithCodeFoundPending: 'We found the code of an account whose sign-up did not finish on this device, and filled it in.',
+    addEmailRow: 'Add an email',
+    addEmailTitle: 'Add an email',
+    addEmailSub: 'Optional. Lets you sign in with email and a password, and reset it if you forget. Your login code keeps working too.',
+    addEmailSubmit: 'Send verification code',
+    addEmailCodeSentTo: (email: string) => `We sent a 6-digit code to ${email}`,
+    addEmailCodeNotSent: "We couldn't send the code. Check the address and try again.",
+    addEmailCodeLabel: 'Verification code',
+    addEmailVerify: 'Verify',
+    addEmailDone: 'Your email was added',
+    profileNoEmail: 'No email added yet',
+    deleteLoginCodeHint: 'Enter your login code to confirm deleting the account.',
     claimEmptyClass: 'This class has no names on it yet. Ask the teacher to add the students, then try again.',
     claimEmptyClassFor: (className: string) =>
       `"${className}" has no names on it yet. Ask the teacher to add the students, then try again.`,
@@ -4641,6 +4739,12 @@ const translations = {
     rosterNotLinked: 'Not joined yet',
     unlinkAccount: 'Unlink',
     unlinkAccountConfirm: 'This account will be disconnected from the student and removed from class chats. Continue?',
+    reissueLoginCode: 'New login code',
+    reissueLoginCodeConfirm: "This account's current login code will stop working and it will be signed out everywhere. Issue a new one?",
+    reissueLoginCodeResult: (name: string) => `New login code for “${name}”`,
+    reissueLoginCodeNote: "Hand it to the account's owner now — it won't be shown again.",
+    reissueNotCodeAccount: 'This account signs in with an email and password, so it can reset its own.',
+    reissueLoginCodeFailed: "Couldn't issue a new code",
     messagingBlock: 'Block',
     messagingUnblock: 'Unblock',
     messagingReportTitle: 'Report message',
@@ -4820,6 +4924,14 @@ const translations = {
     dangerZoneSection: 'Permanent actions',
     nextStudentBtn: (name: string) => `Next student: ${name}`,
     messageSeen: "Seen",
+    messageReactTitle: 'React to message',
+    messageReactionsList: 'Reactions',
+    messageReportAction: 'Report',
+    messageReactorUnknown: 'Former member',
+    messageReactorYou: 'You',
+    messageReactionFailed: 'Could not save your reaction. Try again.',
+    messageReactionChipLabel: (emoji: string, count: number, mine: boolean) =>
+      `${emoji} ${count} — ${mine ? 'remove your reaction' : 'react with the same emoji'}`,
     rosterSelect: "Select",
     rosterSelectDone: "Cancel",
     rosterRemoveSelectedConfirmTitle: "Remove the selected students from this class?",

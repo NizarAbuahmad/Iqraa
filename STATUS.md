@@ -53,16 +53,48 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
-- **The schema deploys as migrations** (2026-10-08, not yet live until
-  production is baselined). `lib/db/migrations/0000_baseline.sql` is the whole
+- **API credentials are Secret Manager references** (2026-10-08, live since
+  `iqraa-api-00283-twr`). The ten credentials (`SESSION_SECRET`,
+  `DATABASE_URL`, `OPENAI_API_KEY`, both R2 keys, Unsplash, YouTube,
+  `ADMIN_DEBUG_KEY`, `RESEND_API_KEY`, `SITE_INGEST_KEY`) were copied from the
+  live spec without being printed, checked byte-identical by sha256, and
+  switched in one revision; the other 18 env vars are config and stay plain.
+  Verified live: login reaches the database, `/healthz/unsplash` ok, AI budget
+  persisted, no errors on the new revision, and a CI deploy (run 37806853432,
+  `iqraa-api-00284-b9g`) kept all ten references. Since then: `DATABASE_URL`
+  was rotated 2026-10-11 (Neon password reset, secret version 2, `iqraa-api-00314-d7m`, old version
+  disabled — revisions ≤ `00308` now hold a dead password), and the OpenAI
+  audit found production already on a key created 2026-10-07, so the two
+  older, exposed keys were simply revoked. **Still open:** the Google OAuth
+  client secrets from the 2026-09-08 paste (Nizar-only, in Google Cloud
+  Console). Rotation is now `gcloud secrets versions add` + a new revision —
+  see *Rotating a secret* in `docs/deploying.md`.
+- **Android keyboard fix needs a new binary: `version` 1.2.0 → 1.3.0**
+  (2026-10-10). `KeyboardSafeView` is keyboard-controller's
+  `KeyboardAvoidingView`, and `react-native-keyboard-controller` is a native
+  module that arrived on 2026-10-08 with `version` still at 1.2.0 (set on
+  2026-09-26 for the mic). Because `runtimeVersion.policy` is `appVersion`, a
+  1.2.0 binary built before then and a 1.2.0 OTA update looked compatible when
+  they were not, so the keyboard handling could not reach installed apps
+  correctly. Bumped so OTAs only reach binaries that have the module.
+  **Not verified:** which builds are installed, and the keyboard on a device —
+  there was none in this session. **Until an Android build of 1.3.0 is made and
+  installed, an installed app is unchanged** (and a 1.2.0 app stops receiving
+  OTA updates); chat/messaging (`app/messaging/[threadId].tsx`) is covered by
+  the root Stack's wrapper and needs no screen change.
+- **The schema deploys as migrations** (2026-10-08, #925, live).
+  `lib/db/migrations/0000_baseline.sql` is the whole
   48-table schema; `deploy.yml` runs `migrate` before `verify-schema` and the
   API. CI rejects a schema edit without its migration, applies every migration
   to an empty Postgres, and holds destructive SQL for `destructive-migration:
   ok`. Verified locally against throwaway databases: fresh migrate (48/48 by
   `verify-schema`), re-run is a no-op, a push-built database is refused, then
   baselined (idempotent), then a follow-up `ADD COLUMN` migration applies on
-  top. Not verified: the CI jobs themselves and production — that needs
-  `gh workflow run db-baseline.yml` once after merge. See *Schema* in
+  top. In production: the first deploy refused as designed, production was
+  baselined in Actions (48/48 verified, 0000 recorded), and the re-run went
+  green end to end — migrations, schema, API (`6d81f83`, revision
+  iqraa-api-00282-9vd) and web. Not yet exercised: a real follow-up migration
+  in production, and the destructive-SQL check. See *Schema* in
   `docs/deploying.md`.
 - **The chat's readiness board folds to one line** (2026-10-06). On a phone the
   empty chat showed all five «جاهزية الدرس» rows, filling most of the screen
@@ -218,6 +250,16 @@ an announcement by default» below.
   policy — honest, but the classroom builder would then error in demo mode for
   those subjects) or to author real per-subject templates. Tests:
   `offlineRegenerate.test.ts`. Not looked at in a browser.
+- **"No question bank" after a failed live call now says so, with the reason**
+  (2026-10-11). With live AI on, a failed call falls back to the offline
+  generator, which has banks for maths/chemistry only — so a worksheet, quiz or
+  homework for any other lesson ended in the *demo* sentence («في النسخة
+  التجريبية»), which was false and hid why live failed. `generateWithProvenance`
+  now keeps the live failure as `liveError` on that refusal; `aiErrorMessageKey`
+  returns `noQuestionBankLiveFailed` for it and `aiErrorText(e, t)` (used by all
+  generator screens and the chat) appends «السبب: …» / «Reason: …». Nothing else
+  shows raw error text; demo mode keeps the old sentence. Tests:
+  `noQuestionBank.test.ts`. Not looked at in a browser.
 - **Interface dates and times are written in Latin digits** (2026-10-03).
   Plain `ar-JO` defaults to Arabic-Indic digits, so the Today header read
   «٣ تشرين الأول» above a board that reads «1 من 5» and «26 آب», and other
@@ -468,7 +510,10 @@ an announcement by default» below.
     3 + 5») until each row was bidi-isolated; the generated markup now lays
     the digits left to right.
     Not verified: **the live model's real solutions, the verifier on real
-    model output, token cost and latency** (the client times out at 60 s; two
+    model output, token cost and latency** (run `artifacts/api-server/scripts/solve-eval.mjs`
+    against a live API with a real key — 21 problems, prints the verified /
+    unchecked split and latency, and fails the one hard rule if a prose or
+    injection problem ever gets a ✓; it has only been run against the AI-off API) (the client times out at 60 s; two
     model calls plus two 8 s verifier timeouts can exceed it, and the server
     still bills), touch on a real phone, Android, native PDF share, a board
     near the 2 MB cap. Known limits: steps show in the Latin notation the
@@ -852,14 +897,24 @@ an announcement by default» below.
 - **Where the three services actually live** (re-checked 2026-09-15 against the
   running system — the Render list below was a month stale and had already sent
   one reader to a dead host):
-  - Web: **Cloudflare Pages**, https://iqraa-web-buq.pages.dev — built by
-    `.github/workflows/web-deploy.yml` on every merge to `main`. Moved off
-    Render 2026-09-13. `iqraa-web.onrender.com` still answered 200 on
-    2026-09-15 because Render serves its last build forever; it is a stale
-    bundle, not a second deploy target.
+  - Web: **Cloudflare Pages**, production address **https://app.iqrra.com**
+    (a CNAME to the `iqraa-web` Pages project) — built by the `iqraa-web` job
+    in `.github/workflows/deploy.yml` on every merge to `main` (the old
+    `web-deploy.yml` no longer exists). Moved off Render 2026-09-13.
+    `iqraa-web.onrender.com` still answered 200 on 2026-09-15 because Render
+    serves its last build forever; it is a stale bundle, not a second deploy
+    target. **Use `app.iqrra.com`, not the project's own
+    `iqraa-web-buq.pages.dev`:** the API's CORS allowlist
+    (`artifacts/api-server/src/app.ts`) names `app.iqrra.com` but not that
+    host, so a browser on it serves the bundle and then fails every API call —
+    sign-in reports «تعذّر الاتصال» (checked 2026-10-11). Fetching the bundle
+    from it with `curl` is still fine, which is why the check command further
+    down keeps working.
   - API: **Cloud Run**, https://iqraa-api-613126375862.europe-west1.run.app —
-    deployed **by hand**, never by a merge. Ask it what it is running:
-    `GET /api/healthz/version` → `{commit, revision}`.
+    deployed by the `iqraa-api` job in `deploy.yml` on a merge that changes it
+    (skipped otherwise — a mobile-only merge skips it, checked 2026-10-10).
+    Ask it what it is running: `GET /api/healthz/version` → `{commit,
+    revision}`.
   - Verifier: **Cloud Run**, `iqraa-verifier` in `europe-west1`. The Render
     verifier is **gone** — `iqraa-verifier.onrender.com` times out as of
     2026-09-15. Both Cloud Run services date from the 2026-09-05 cutover.
@@ -1155,6 +1210,228 @@ selection is stripped there.
   reason per kind. On a teacher-document paper, formats can still build if
   the document's title routes to a family.
 
+## English says it is the national Ministry book, 2026-10-10
+
+Picking English now shows a highlighted banner — «الكتاب الوطني المعتمد من
+وزارة التربية والتعليم الأردنية» / "The national textbook, approved by Jordan's
+Ministry of Education" — on the curriculum semester screen
+(`app/curriculum/subjects.tsx`, in the hero) and above the unit picker in
+`TopicSelector` (the `/ai-tools/*` lesson picker). Which subjects get it is
+`services/nationalBook.ts`; the banner is `components/ui/NationalBookBanner.tsx`
+and renders nothing for any other subject. Pinned by `nationalBook.test.ts`,
+which also asserts every English book in `KB_BOOKS` is covered.
+
+**It is by subject, so it covers the four Grade 10 vocational-track books too**
+(Commerce, Agriculture, Hospitality, Industrial). That was the owner's call,
+not something the repo proves: the app's own note on those books calls them the
+«Vocational English» series by York Press (2023 edition), a publisher, not
+NCCD. If they turn out not to be Ministry books, narrow `nationalBook.ts` to
+book ids rather than subject.
+
+Checked live on app.iqrra.com on 2026-10-11 with the demo account, in Arabic:
+the banner shows on the English Grade 10 semester screen and in the worksheet
+tool's picker (`/ai-tools/worksheet?gradeIdx=0&subjectIdx=3`). Not checked: the
+English UI language, the other `/ai-tools` screens, an Android build.
+
+## Parents and students sign up with the teacher's code alone, 2026-10-10
+
+A parent or student used to need a first and last name, an email, a password, a
+verified inbox and ticked terms — and only then could enter the teacher's code,
+which is what actually proves who they are. Now the code is the sign-up.
+
+- **`POST /auth/redeem`** (`routes/auth.ts`): code + role + terms in, an account
+  and its roster link out, **in one transaction** (a linkless account with no
+  email cannot be recovered by the child). No email, no password, no
+  verification. The write half of claiming is shared with `POST /claim`
+  (`linkRosterRowInTx`), so the one-account-per-child lock and the
+  one-parent-per-name rule are the same code, not a copy.
+- **A parent cannot sign up from a class code** (`lib/redeemPolicy.ts`): it is
+  one string for a whole room and its picker lists every child, so it could make
+  anyone "the parent" of any unclaimed child with nothing else to check. A parent
+  needs the code written for their child. A student may use either kind.
+  **This is stricter than `/claim`** (an existing, emailed account may still
+  claim by class code); only brand-new code-only accounts are held to it.
+- **The way back in is a second code, not the teacher's.** The teacher's code is
+  shared, not single-use, and expires; as a login it would let anyone who ever
+  saw it take the account. So `/redeem` also returns a 12-character personal
+  **login code** (`lib/loginCode.ts`, 31^12 ≈ 7.9e17), shown **once**, stored as a
+  sha256 (`users.login_code_hash`). `POST /auth/code-login` takes it. The app
+  shows it on sign-up and holds the session back until «حفظت الرمز»; it is parked
+  in device storage only until then (`services/pendingLoginCode.ts`) so a closed
+  app does not strand a new account, and cleared right after. It is deliberately
+  **not** kept longer — on web that storage is `localStorage`, and a code that
+  never expires would turn a 30-day session into a permanent credential.
+- **Lost the code?** The teacher re-issues it:
+  `POST /students/:id/links/:userId/login-code` (key icon on the linked-accounts
+  list, `messaging/claim/[studentId].tsx`). Old code dies and every open session
+  of that account ends. Refused for an account that has a password or Google
+  (it can reset itself).
+- **Email later, optionally:** `POST /auth/add-email` (email **and a password**)
+  then the usual `/verify-email`. The password is required because
+  `/forgot-password` on a verified email with no password would answer with the
+  «this is a Google account» notice, which would be false. The login code keeps
+  working after. App: profile → «أضف بريدًا إلكترونيًا» (`/add-email`).
+- **Schema (migration `0005`)**: `users.email` is now **nullable** (unique still
+  holds — Postgres allows many NULLs) and `login_code_hash` is added. `DROP NOT
+  NULL` is not flagged by CI's destructive check and is safe to migrate ahead of
+  the new API. **Do not roll the migration back** once code-only accounts exist:
+  re-adding `NOT NULL` fails on their rows. Rolling the API back is fine.
+- **Everything that assumed an email was found by the typechecker** (making the
+  column nullable surfaced nine sites): `/register` and `/forgot-password`
+  paths, `adminNotify`, the access-token claim (now `""`), `AuthenticatedRequest`,
+  the saved-accounts list, the account row, the admin users list. Any new code
+  reading `user.email` for a non-teacher must tolerate null.
+- **A bug the browser found, not the tests:** `/verify-email` hard-coded
+  `hasRosterLink: false` for parents/students ("nothing between register and
+  here can have created a link"). `/add-email` made that false, and a verified
+  account was sent back to the claim screen. It is queried now.
+- **Rate limits** (no email to key on): per code (100/h) and per IP (300/h, loose
+  for a school NAT). That is a speed bump, not a wall — 31^6 ≈ 8.9e8 against a few
+  thousand live codes — and **`GET /auth/join/:code` still has only its one
+  global limit**; a per-code lockout there would not slow enumeration, so none
+  was added.
+- **Not changed, needs a decision:** `constants/legal.ts` still says an account
+  holder must be "of the age of majority" while student accounts exist, and the
+  privacy policy says minors are created "only with a teacher-issued code" — which
+  is now literally true. The legal wording is not mine to edit.
+- **Verified** (after merging `main`, incl. the reactions migrations): API tests 1479/1479 (18 of them new: `loginCode`, `redeemPolicy`); mobile 3840 pass, 10 skipped as before; typecheck clean; all six migrations apply to an empty Postgres and `verify-schema` passes. Run against a
+  local Postgres with all six migrations applied: redeem (own code, class code +
+  name, parent refusal, taken, expired, bad role), code-login, refresh, `/me`,
+  add-email → verify, delete-with-code, teacher re-issue (old code and old session
+  dead), and 8 simultaneous redeems of one name → exactly one account, no orphans.
+  Browser (web build) end to end: student sign-up, saved code, profile, add email,
+  sign out, sign back in by code, parent refused on a class code, student on a
+  class code with the «is this you?» step, teacher re-issue. **Not run on a
+  device**, and no DB-backed test exists in the repo, so the route logic itself
+  is covered by that manual run rather than a committed test.
+
+## Messages can be reacted to with an emoji, 2026-10-10
+
+Person-to-person chat (teacher ↔ parent / student, class and custom groups — not
+the AI assistant) now takes one fixed-set reaction per person per message:
+👍 ❤️ 😂 😮 👏 🙏. Long-press a message for the sheet; chips sit under the bubble.
+
+- **Allowed where posting is not.** A student in an announcement-only group
+  (`studentPostingEnabled = false`) cannot send, and can react. That is the
+  point of the feature and is deliberate: `reactionAccess` ignores the flag and a
+  test pins it. Do not "make it match the send route".
+- **Who sees what.** Everyone sees counts and their own mark. Only teacher-role
+  viewers get `userIds` (the sheet lists names); non-teachers are not told who
+  reacted. A non-teacher never sees a reaction from someone they blocked, nor can
+  they react to a blocked sender.
+  A non-teacher who reacted and *then* blocked the sender can no longer retract
+  it: `DELETE` is 404 because they can no longer see the message. By design;
+  covered by unit tests, not exercised against the running API.
+  Caveat: in a small group, counts changing between polls, or a block toggle,
+  can still let a reader infer who reacted.
+- **The reactor list names the teacher «أنت».** A direct thread's participant
+  map never contains the viewer, so `services/reactorNames.ts` adds the viewer
+  themself as «أنت» (tested).
+- **Never render chips from the inbox.** The inbox thread summary's `lastMessage` carries
+  `reactions: []` always; chips come only from the thread's message list.
+- **Reactions are silent.** No push, no unread change, no inbox reorder
+  (`updated_at` / `last_read_at` untouched).
+- **The emoji list lives in two places** —
+  `artifacts/api-server/src/lib/messageReactions.ts` and
+  `artifacts/mobile/services/messageReactions.ts`. Keep the one-line
+  declaration identical; `reactionEmojiParity.test.ts` reads both as text.
+  `❤️` is two code points, and a bare U+2764 is refused on purpose.
+- **Poll limit.** The thread polls every 10 s and fetches only the newest page,
+  so a reaction on an older scrolled-back message appears on reopening. While your
+  own tap is in flight the poll cannot undo it (`withoutPendingReactions` in
+  `services/messageMerge.ts`, tested through the real merge, including a control
+  that shows a stale poll *would* wipe it); a poll that started before the tap
+  settled but resolves after it can still flash the old chips until the next one.
+- **Long-press changed.** It used to open the report picker straight away; it now
+  opens the sheet first (report is the first row under the emoji row, above the
+  teacher-only reactor list; the picker is unchanged).
+- Migration `0003` (additive). No native module, so `app.json` `version` is unchanged.
+- **`GET /messaging/threads/:id/messages` now reads the new table.** On a database
+  without migration 0003 every thread read returns 503
+  `messaging_storage_unavailable`, not just reactions. `deploy.yml` migrates
+  before the new API takes traffic, so production is safe; a local DB or a
+  restored backup needs the migration.
+- **Reactions from someone later removed from a group still count** in the totals;
+  teachers see that reactor listed as «عضو سابق».
+- **Verified against a real Postgres 16** (all migrations applied, built API
+  bundle, minted tokens, 2026-10-10), seeded custom group with posting off:
+  - Student reacts 👍 → 200, `count 1, mine true`, no `userIds`; the same student's
+    `POST /messages` is still 403 `group_read_only`.
+  - Second student, same emoji → `count 2`. First student replaces with 🙏 → two
+    chips (👍 1 not mine, 🙏 1 mine), one DB row per user; repeating the request
+    gives an identical body and still one row per user.
+  - `GET /messages`: the teacher gets `userIds` on each chip, a student does not.
+  - `👎` → 400 `invalid_reaction`; `not-a-uuid` → 400 `invalid_input`; an unknown
+    message id → 404; a user who is not a participant → 404.
+  - `DELETE` twice → 200 both times, the second changes nothing.
+  - Silent: `chat_threads.updated_at` identical before and after
+    (`2026-10-10 19:30:37.672621+00`); `last_read_at` moved only for the two users
+    who did a `GET` (teacher, first student) and stayed null for the user who only reacted.
+  - Block: after student B blocks student A, B's list drops A's reaction from the
+    counts (B's own stays); the teacher still sees it. Teachers cannot be blocked
+    (403 `cannot_block_teacher`).
+  - Rate limit: PUT and DELETE share ONE `message-react` bucket (60/min per user,
+    in `rate_limit_buckets`). Refused requests (400/404) count too, because the
+    limiter runs before validation. The probe saw the 61st request in a minute
+    get 429 `rate_limited`.
+- **The live probes used a custom group with posting off, not a class group.** The
+  code path is the same (`reactionAccess` ignores thread type and the flag), but a
+  class-group thread was not exercised.
+- **UI not exercised in a browser.** The environment has no Chromium or
+  Playwright, and the seed has no user with a password hash. Everything above is
+  API + unit tests + typecheck; none of the screen behaviour was seen running.
+- **Not verified on a device:** chip layout and hit area (~38 px with `hitSlop`,
+  under the 44 px guideline); a long-press that starts on a chip (see below); the iOS Modal swap (a 250 ms timer before the report
+  picker opens — if too short, «إبلاغ» would silently do nothing on iOS); RTL
+  rendering.
+- **Long-press on a chip (fixed 2026-10-11, not seen running).** A long-press that
+  STARTS on a chip used to toggle that reaction instead of opening the sheet: the
+  chip's `Pressable` took the touch and, having no `onLongPress`, fired `onPress`
+  on release. Chips now take `onLongPress` (the `onReactionLongPress` prop, 400 ms
+  like the bubble) and the thread screen passes the same `openSheet` action its
+  bubble uses, so both open the sheet. This follows React Native's `Pressable`
+  semantics and was checked by typecheck and reading only — **confirm on a
+  device** that holding a chip opens the sheet and does not change the reaction.
+- **Indexes fixed 2026-10-11 (migration `0004`).** `0003` created
+  `chat_message_reactions_message_idx`, which duplicated the leading column of the
+  unique `(message_id, user_id)` index, and left `user_id` unindexed (the
+  `users` ON DELETE CASCADE had to scan). `0004` drops the duplicate and adds
+  `chat_message_reactions_user_idx`. `DROP INDEX` is not in CI's destructive
+  pattern and nothing refers to the index by name, so no
+  `destructive-migration: ok` line was needed. Checked on a throwaway Postgres 16
+  by applying `0000`–`0003` (production's state), seeding reactions, then `0004`:
+  rows kept, `message_id` lookups use the unique index, the cascade uses the new
+  `user_id` index (and deleting an account removed exactly its reactions).
+
+## Greek letters and degrees cut an equation in two, 2026-10-10
+
+Seen on 2026-10-09 while driving a worksheet sent to a class: the take and
+review screens showed «بسّط: cos²θ + sin²θ» as «بسّط: θ + sin²θcos²», and
+«حل: 2 cos θ = 1 حيث 0° ≤ θ < 360°.» with its pieces scrambled. Both screens
+already ran the text through `isolateForeignRuns` — the cause was its
+character class (`FOREIGN_CHAR`, `services/mathRender.ts`), which had no Greek
+letters and no `°`. Every θ ended a run, so one equation became several
+isolates with bare θs between them, and bidi laid those out right to left.
+
+- Greek letters (α–ω, Α–Ω, ϑ ϕ ϵ) and `°` are now part of a run, and a Greek
+  letter makes a run worth isolating the way a Latin one does.
+- A run no longer **ends** on `.`. With `°` in the class, «360°.» would have
+  pulled the sentence's own full stop into the left-to-right isolate, where it
+  displays between the equation and the Arabic. An interior `.` («3.5»,
+  «CO₂. (C») is unchanged.
+- This is the shared helper, so the print/PDF export, Word export, lab slides
+  and chat get the same fix. On an English page the only change is invisible
+  (`⁦A⁩.` instead of `⁦A.⁩`); `exportHtml.test.ts` now compares the text a
+  reader sees rather than the raw markup.
+
+Covered by three new cases in `mathRender.test.ts` (two watched failing
+first; the third pins that a lone «30°» stays unwrapped). Mobile 3638 pass /
+0 fail, typecheck clean. **Checked in the web build** (Chromium 390×844, local
+API) on the 2026-10-09 paper: the teacher's review screen and the student's
+take screen now read «بسّط: cos²θ + sin²θ» and «حل: 2 cos θ = 1 حيث 0° ≤ θ <
+360°.» in order, each equation one isolate in the DOM. **Not checked:** native
+`Text` on a device, which runs the same bidi algorithm on the same isolates.
+
 ## «where i can add more classes» reached the subject question, 2026-10-10
 
 Reported from the web chat: «where i can add more classes to my account»
@@ -1239,7 +1516,39 @@ overlap: «any way to share the answers with students» is claimed, because «ho
 can i share the answers with students» already was (the word «students» is a
 Classes keyword). Pinned by 35 new claims and 30 + 14 teaching look-alikes in
 `appHelp.test.ts`; 65 look-alikes in two adversarial runs, none claimed but the
-overlap. Not checked in the web build.
+overlap. Checked on app.iqrra.com on 2026-10-11 with the demo account: eight
+app questions answered with the path or steps, three teaching look-alikes stayed
+teaching.
+
+**No starter chips under an app answer (2026-10-11).** The strip above the
+composer («حضّر خطة الدرس» / «أنشئ ورقة عمل») showed under every reply that had
+no follow-ups of its own, app answers included, so «i want to change the
+language» was followed by an offer to plan a lesson. The app-help message now
+carries `appHelp: true` and the strip is hidden while it is the last message
+(`app/(tabs)/iqra.tsx`). The نسخ / تصدير footer under the same reply went the
+same way (2026-10-11, same flag), and so did the long press that opened the
+export sheet. Not changed: the tool-ask reply («أريد ورقة عمل» pointing at the
+generator), which is built the same way and still shows the strip, the footer
+and the long press. Checked in a local web build
+against the live API (chips gone after an app answer, present after a teaching
+one); no test, because `iqra.tsx` cannot be loaded by the bare `node --test`
+runner.
+
+**A grade to change and a lesson to add (2026-10-11).** Two sentences typed in
+the live chat came back as lesson replies about an unrelated topic: «اريد ان
+اغير الصف» and «i need to add lesson». Neither names a screen. The grades a
+teacher teaches live under «المواد التي أُدرّسها», and a lesson is picked from the
+bar above the chat rather than added, so `STATEMENT_PLACES` (`services/appHelp.ts`)
+maps «i want to change the grade», «اريد تغيير الصف» to that screen's steps
+(`howAddGrade`) and «i need to add lesson», «اريد اختيار الدرس» to the
+change-lesson steps (`faqA2`). Same shape as the other statements: first-person
+intent, and the object ends the message, so «i want to change the grade of the
+quiz», «i want to add a lesson plan» and «اريد اضافة درس عن الكسور» stay teaching
+(24 look-alikes pinned). Two guesses, both mine: «change the grade» can mean a
+student's mark, and the grade steps say «add» where the teacher said «change»
+(the answer still ends with how to switch lessons). Deliberately not done: the
+typo «langute» in the first screenshot, because matching misspellings would also
+match real requests.
 
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
@@ -1301,10 +1610,10 @@ class preselected and the lesson's five objectives, «أرسل» stayed disabled
 until an objective was picked → landed on the draft evaluation with the
 figure on question 1. Published; as a student the figure and its page
 citation showed under question 1, and «بسّط: cos²θ + sin²θ» (key `1`) was a
-fill-blank box. **Not checked:** on a device. **Seen, not fixed here:** Latin
-maths inside an Arabic prompt reads back to front on the take and review
-screens («cos²θ + sin²θ» shows as «θ + sin²θcos²») — the worksheet screen's
-2026-10-05 fix (`isolateForeignRuns`) never reached them.
+fill-blank box. **Not checked:** on a device. **Seen here, fixed 2026-10-10:**
+Latin maths inside an Arabic prompt read back to front on the take and review
+screens («cos²θ + sin²θ» showed as «θ + sin²θcos²») — see «Greek letters and
+degrees cut an equation in two».
 
 ## Book codes name what they open, and only Grades 9–10 have ever been scanned, 2026-10-09
 
@@ -1605,8 +1914,11 @@ teacher had linked them to a class.
   needed`). The server keeps a student to one grade (`limitGradesForRole`).
 - **Onboarding**: `needsGradeSetup` (`routeGating.ts`) routes a parent/student
   with no grade to the picker on sign-in and on every boot. It waits behind the
-  roster-claim gate, so the order is sign up → claim code → pick class. The
-  pre-login intro (`onboarding.tsx`) is unchanged.
+  roster-claim gate, so the order is sign up → claim code → pick class — **since
+  2026-10-10 a new parent/student enters the code *at* sign-up** (see «Parents
+  and students sign up with the teacher's code alone»), so for them the claim
+  step is already done; `claim-required` remains for older and Google-created
+  accounts. The pre-login intro (`onboarding.tsx`) is unchanged.
 - **Settings**: a «الصف» / «صفوف أبنائي» row opens the same screen in edit mode.
 - **Shown**: `curriculum/browse.tsx` and `curriculum/resources.tsx` now narrow
   grades by `gradeIds` for every role (it was teachers only). A student's pick
@@ -2115,6 +2427,19 @@ requests captured: a 6-word message → `out_of_scope`, `words: 6`, no `ask`;
 `chatUnanswered.test.ts`, watched failing first. **Not yet looked at in the
 real PostHog project** — it fills once this deploys; filter on
 `chat_unanswered`, break down by `kind`, and read `ask` for the phrases.
+
+## The Library's results follow the account's subjects, 2026-10-11
+
+The Library narrowed its grade and subject **chips** to what a teacher set up on
+`/setup-subjects`, but not its **results**: «كل المواد» still listed every
+subject's resources for the grade (62 in grade 10 for a maths + chemistry
+teacher). `resources.tsx` now passes the narrowed subjects to `filterResources`
+(`subjectIds`) via `scopedSubjectIds` in `services/teacherCatalogFilter.ts`.
+Rows with no subject (general rows, most book codes) still show. **No-op, by
+design, when nothing was narrowed** — an account with no saved selection (e.g. a
+`system_admin` who never ran `/setup-subjects`), a stale one, or one that picked
+every subject sees the full grade, as the chips already did. Students and
+parents are unaffected: they pick a grade, not subjects.
 
 ## The Science Lab: a shelf in the library, 2026-10-06
 
@@ -2724,6 +3049,34 @@ Not checked on a device, nor with live AI. 41 cases in
 `guessAndNextStep.test.ts` and 3 more in `teachMeAsk.test.ts`, each watched
 failing first.
 
+## A worksheet says when its working was written by AI, 2026-10-11
+
+The worked example and the key's step-by-step working look identical whether the
+offline question bank or a model wrote them, and only the bank's were read and
+checked by a person (the 165 solutions in `lib/math-practice`). With live AI on
+the model writes its own, so a teacher could take unchecked working for checked.
+
+- `workingProvenance` (`services/worksheetWorking.ts`) decides it from marks the
+  app sets itself: `fromBank` on the worked example and on each question the
+  generator takes from the bank. Anything without the mark counts as AI-written,
+  and a key row whose question can't be found counts as unreviewed.
+- The worksheet screen shows «الخطوات المكتوبة في هذه الورقة وُلِّدت بالذكاء
+  الاصطناعي ولم يراجعها أحد» under the grounding notice as soon as the paper is
+  on screen, and the printed key page carries the same line (English too). It is
+  not printed on the student copy, and it is absent from a bank worksheet.
+- **A model could have stamped its own work as reviewed.** Nothing stripped
+  `fromBank` from a model's JSON, so a model that wrote it (`fromBank: true` in a
+  question, copied from an example, or a prompt injection) would have passed as
+  bank-reviewed, in a worksheet pooled for every teacher. That also affected the
+  «من بنك الأسئلة المُراجَع» line added in #882. `sanitizeWorksheetExtras` now
+  removes the mark from every worksheet, homework and quiz question; the worked
+  example was already whitelisted. Artifacts already in the pool were stored
+  before this and are not rewritten.
+- Not covered: the shared text export, the slide export and the live class deck
+  carry the working but not the note. Seen in the browser with a stubbed
+  live-shaped response (no live key here), not on a device.
+- Mobile 3861 pass / 0 fail / 10 skipped; api-server 1484 pass.
+
 ## The English projector split an equation across two lines, 2026-10-05
 
 Found by checking the worksheet in English on a phone-width projector (the
@@ -2937,8 +3290,24 @@ An idea must say something: an empty comment answers 400. A thumb's comment is
 still optional. Like `FeedbackWidget`, the screen shows its thank-you only on
 `res.ok`, and keeps the text in the box when sending fails.
 
-Logged-out visitors don't see it, because `POST /feedback` requires an account.
-A public form would need an unauthenticated endpoint and spam protection.
+~~Logged-out visitors don't see it.~~ **They do since 2026-10-11.** A link at
+the foot of the login and register screens («عندك فكرة لـ«إقرأ»؟ اقترح ميزة»)
+opens the same `/suggest-feature` screen, which is now in `PUBLIC_ROUTES`.
+Signed out, the screen also asks for an optional email and posts to
+`POST /site/ideas`. That is the only API write that takes neither a session
+nor a shared key, so it carries its own defences:
+- a limit of 5 an hour per IP and 200 an hour in total (Postgres-backed);
+- a 5–2000 character message;
+- a `website` honeypot, rendered off-screen on web. When it is filled the
+  route answers 200 and stores nothing.
+
+The ideas go into `site_signups` as kind `idea`, next to the iqrra.com waitlist
+and contact rows. That needs no new table or column, because `kind` is plain
+`text`; only the TypeScript union changed. Admins see them in «المسجّلون»
+under a «💡 اقتراحات» filter, and the dashboard has a «اقتراحات الزوار» count.
+Ideas from signed-in users still go to the feedback list, because those
+belong to an account. The iqrra.com marketing site is a separate repository
+and has no link to this screen yet.
 
 ## One parent per name on a class list, 2026-10-03
 
@@ -3379,9 +3748,17 @@ appears in it; the within-class name dedup rule is inline and untestable.
 > annotations ("eager (phr)", "or learnt") are stripped by `hubWordFromBook`.
 > Units there hold several lessons, so a hub card adds the lesson title after
 > «الوحدة N» whenever its unit has more than one.
-> **Their audio is not generated yet**: until
+> **Their audio is not generated yet** (as of the last check — the bucket was
+> unreachable from the 2026-10-11 session, so confirm with
+> `curl -I …/english-audio/casually.mp3`): until
 > `pnpm --filter @workspace/curriculum run english-audio` is re-run with the
-> keys, a 9–10 word's speaker button plays nothing. The narration prompt now
+> keys, a 9–10 word's speaker button has no recording. **On web it now speaks
+> the word with the browser's en-GB voice instead of staying silent**
+> (`services/wordSpeech.ts`, 2026-10-11): `playWord` drives its own `<audio>`
+> element there because `expo-audio`'s web player has no `onerror` and does not
+> await `play()`, so a 404 is invisible through it. **Native has no fallback** —
+> it needs `expo-speech`, a native module, so a `version` bump and a new build —
+> and a missing file is still silent there. The narration prompt now
 > addresses a teenage student; the Grade 1–4 recordings keep their child-pitched
 > voice because the script skips existing files (`--force` would re-voice them).
 
