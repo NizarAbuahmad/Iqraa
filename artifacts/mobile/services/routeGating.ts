@@ -81,6 +81,9 @@ const NON_TEACHER_ROUTES = [
   // «اقترح ميزة» is linked from the profile tab for every role, like /faq.
   '/suggest-feature',
   '/delete-account',
+  // Adding an email to an account made from a teacher's code — only a parent or
+  // student can be one, so it belongs here and nowhere on the teacher side.
+  '/add-email',
   // «اختباراتي» for a student, «نتائج أبنائي» for a parent — one screen,
   // reading /student/exams or /parent/exams by role.
   '/my-exams',
@@ -110,7 +113,9 @@ export function isNonTeacherRoute(pathname: string | null | undefined): boolean 
 // `/verify-email` too: it is reached signed-out (register answers with no
 // tokens), so a reload there used to bounce to login and drop the `email`
 // param the code screen needs.
-const ENTRY_ROUTES = ['/login', '/register', '/onboarding', '/forgot-password', '/verify-email'];
+// `/login-code` is a sign-in screen like `/login`: once it works, the person is
+// signed in and should be handed to the tabs rather than left on it.
+const ENTRY_ROUTES = ['/login', '/register', '/onboarding', '/forgot-password', '/verify-email', '/login-code'];
 
 export function isEntryRoute(pathname: string | null | undefined): boolean {
   // No path yet (first paint) is treated as an entry: there is no destination
