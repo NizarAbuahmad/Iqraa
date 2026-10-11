@@ -42,7 +42,8 @@
 | `lib/curriculum/src/data/quran_corner.json` | **Generated.** The only Quranic text in the app |
 | `lib/curriculum/src/quran.ts` | Loader: `QURAN_CORNER`, `QURAN_SURAHS`, `getQuranSurah`, re-exports |
 | `artifacts/mobile/services/quranProgress.ts` | Progress reducer, parse, per-user key (pure) |
-| `artifacts/mobile/hooks/useQuranProgress.ts` | AsyncStorage adapter + React state |
+| `artifacts/mobile/services/quranProgressStore.ts` | One shared progress store with injected storage (pure, tested for the races) |
+| `artifacts/mobile/hooks/useQuranProgress.ts` | Thin `useSyncExternalStore` wrapper over the store; gated on auth `isLoading` |
 | `artifacts/mobile/services/quranLinks.ts` | Route builders and URL-param resolver |
 | `artifacts/mobile/services/__tests__/support/ttfCmap.ts` | Test-only font character-map reader |
 | `artifacts/mobile/app/curriculum/quran/index.tsx` | Corner home: surahs by grade + resources |
@@ -633,8 +634,8 @@ git commit -m "Quran Corner: the outside-resources shelf (links unchecked)" -m $
 ### Task 4: Progress store (pure logic + device adapter)
 
 **Files:**
-- Create: `artifacts/mobile/services/quranProgress.ts`, `artifacts/mobile/hooks/useQuranProgress.ts`
-- Test: `artifacts/mobile/services/__tests__/quranProgress.test.ts`
+- Create: `artifacts/mobile/services/quranProgress.ts`, `artifacts/mobile/services/quranProgressStore.ts`, `artifacts/mobile/hooks/useQuranProgress.ts`
+- Test: `artifacts/mobile/services/__tests__/quranProgress.test.ts`, `artifacts/mobile/services/__tests__/quranProgressStore.test.ts`
 
 **Interfaces:**
 - Produces (pure, `services/quranProgress.ts`): `type AyahStatus = 'learning' | 'memorised'`; `type AyahState = AyahStatus | 'new'`; `type QuranProgress = Record<string, Record<string, AyahMark>>`; `quranProgressKey(userId)`, `todayKey(d?)`, `parseProgress(raw)`, `rateAyah(progress, surah, ayah, status | null, today)`, `stateOf(progress, surah, ayah)`, `countMemorised(progress, surah, ayahs)`.
@@ -852,99 +853,511 @@ cd artifacts/mobile && node --import ./scripts/registerTestAlias.mjs --experimen
 ```
 Expected: `# tests 10`, `# pass 10`, `# fail 0`.
 
-- [ ] **Step 5: Write the device adapter.** Create `artifacts/mobile/hooks/useQuranProgress.ts`. It is not unit-tested (it imports AsyncStorage and React); all of its logic lives in the pure module above. It re-reads when the user id changes, because on web a reload mounts screens before the session restores (the same reason the prep-board key is read on `user?.id`):
+- [ ] **Step 5: Write the shared store's test, watch it fail, then write the store.** One module-level store serves every screen that calls the hook (the Task 9 screens stay mounted under each other on the root Stack, so per-screen state goes stale), and it lives in a pure file with its storage injected so the races are testable under the bare runner. Create `artifacts/mobile/services/__tests__/quranProgressStore.test.ts`:
+
+```ts
+/**
+ * What this guards: every screen that shows or edits memorisation progress
+ * shares ONE store, so a rating made on one screen is on the others without a
+ * remount; a rating can never be written before the person's saved marks have
+ * been read (it would replace them with a one-mark blob); and a late read for a
+ * previous person can never land on, or be saved under, the next person's key.
+ * Surah/ayah numbers below are placeholders.
+ */
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+
+import { createProgressStore, type KeyValueStorage } from '../quranProgressStore.ts';
+import { quranProgressKey, type QuranProgress } from '../quranProgress.ts';
+
+const TODAY = '2026-01-02';
+
+interface PendingRead {
+  key: string;
+  resolve: (raw: string | null) => void;
+  reject: (e: unknown) => void;
+}
+
+/** A storage whose reads resolve only when the test releases them, so ordering is deterministic. */
+function fakeStorage(opts: { failWrites?: boolean } = {}) {
+  const reads: PendingRead[] = [];
+  const writes: { key: string; value: string }[] = [];
+  const storage: KeyValueStorage = {
+    getItem(key) {
+      return new Promise<string | null>((resolve, reject) => reads.push({ key, resolve, reject }));
+    },
+    setItem(key, value) {
+      writes.push({ key, value });
+      return opts.failWrites ? Promise.reject(new Error('quota')) : Promise.resolve();
+    },
+  };
+  return { storage, reads, writes };
+}
+
+/** Let promise continuations run. */
+const flush = () => new Promise<void>(r => setImmediate(r));
+
+const blob = (p: QuranProgress) => JSON.stringify(p);
+const mark = (status: 'learning' | 'memorised', at = '2025-12-31') => ({ status, at });
+
+function setup(opts?: { failWrites?: boolean }) {
+  const fake = fakeStorage(opts);
+  const store = createProgressStore(fake.storage, () => TODAY);
+  let notified = 0;
+  store.subscribe(() => notified++);
+  return { ...fake, store, notifications: () => notified };
+}
+
+describe('select', () => {
+  it('is not loaded until the read lands, then holds the parsed marks, notifying on each change', async () => {
+    const { store, reads, notifications } = setup();
+    const key = quranProgressKey('A');
+
+    store.select('A');
+    assert.deepEqual(store.getSnapshot(), { forKey: key, progress: {}, loaded: false });
+    assert.equal(notifications(), 1);
+    assert.equal(reads.length, 1);
+    assert.equal(reads[0].key, key);
+
+    reads[0].resolve(blob({ '1': { '2': mark('memorised') } }));
+    await flush();
+
+    const snap = store.getSnapshot();
+    assert.equal(snap.forKey, key);
+    assert.equal(snap.loaded, true);
+    assert.deepEqual(snap.progress, { '1': { '2': mark('memorised') } });
+    assert.equal(notifications(), 2);
+  });
+
+  it('selecting the same person twice reads once', async () => {
+    const { store, reads, notifications } = setup();
+    store.select('A');
+    store.select('A');
+    assert.equal(reads.length, 1);
+    assert.equal(notifications(), 1);
+
+    reads[0].resolve(null);
+    await flush();
+    store.select('A');
+    assert.equal(reads.length, 1);
+    assert.equal(notifications(), 2);
+  });
+
+  it('undefined (session still restoring): nothing is read, nothing is saved; null then reads the bare key', async () => {
+    const { store, reads, writes } = setup();
+    store.select(undefined);
+    assert.deepEqual(store.getSnapshot(), { forKey: null, progress: {}, loaded: false });
+    assert.equal(reads.length, 0);
+
+    store.rate(1, 1, 'learning');
+    assert.equal(writes.length, 0);
+    assert.deepEqual(store.getSnapshot().progress, {});
+
+    store.select(null);
+    assert.equal(reads.length, 1);
+    assert.equal(reads[0].key, quranProgressKey(null));
+    assert.equal(store.getSnapshot().forKey, quranProgressKey(null));
+    assert.equal(store.getSnapshot().loaded, false);
+
+    reads[0].resolve(null);
+    await flush();
+    assert.equal(store.getSnapshot().loaded, true);
+  });
+
+  it('a rejected read counts as loaded and empty', async () => {
+    const { store, reads, writes } = setup();
+    store.select('A');
+    reads[0].reject(new Error('blocked'));
+    await flush();
+
+    const snap = store.getSnapshot();
+    assert.equal(snap.loaded, true);
+    assert.deepEqual(snap.progress, {});
+
+    store.rate(3, 4, 'learning');
+    assert.equal(writes.length, 1);
+    assert.deepEqual(store.getSnapshot().progress, { '3': { '4': mark('learning', TODAY) } });
+  });
+});
+
+describe('rate', () => {
+  it('is ignored before the read lands: nothing written, and the saved marks survive the read intact', async () => {
+    const { store, reads, writes } = setup();
+    store.select('A');
+    store.rate(5, 6, 'memorised');
+    assert.equal(writes.length, 0);
+    assert.deepEqual(store.getSnapshot().progress, {});
+
+    const saved: QuranProgress = { '1': { '1': mark('memorised'), '2': mark('learning') } };
+    reads[0].resolve(blob(saved));
+    await flush();
+
+    assert.deepEqual(store.getSnapshot().progress, saved);
+    assert.equal(writes.length, 0);
+  });
+
+  it('after the read: updates the snapshot, writes the FULL merged blob once, and a second subscriber sees it with no re-read', async () => {
+    const { store, reads, writes } = setup();
+    const key = quranProgressKey('A');
+    store.select('A');
+    reads[0].resolve(blob({ '1': { '1': mark('memorised') } }));
+    await flush();
+
+    let secondScreenSaw: QuranProgress | null = null;
+    store.subscribe(() => {
+      secondScreenSaw = store.getSnapshot().progress;
+    });
+
+    store.rate(2, 3, 'learning');
+
+    const expected: QuranProgress = {
+      '1': { '1': mark('memorised') },
+      '2': { '3': mark('learning', TODAY) },
+    };
+    assert.deepEqual(store.getSnapshot().progress, expected);
+    assert.equal(store.getSnapshot().loaded, true);
+    assert.deepEqual(secondScreenSaw, expected);
+    assert.equal(writes.length, 1);
+    assert.equal(writes[0].key, key);
+    assert.deepEqual(JSON.parse(writes[0].value), expected);
+    assert.equal(reads.length, 1);
+  });
+
+  it('two quick ratings compose: the second write contains the first', async () => {
+    const { store, reads, writes } = setup();
+    store.select('A');
+    reads[0].resolve(null);
+    await flush();
+
+    store.rate(1, 1, 'learning');
+    store.rate(1, 2, 'memorised');
+    assert.equal(writes.length, 2);
+    assert.deepEqual(JSON.parse(writes[1].value), {
+      '1': { '1': mark('learning', TODAY), '2': mark('memorised', TODAY) },
+    });
+  });
+
+  it('a rejected write neither throws nor leaves an unhandled rejection', async () => {
+    const { store, reads, writes } = setup({ failWrites: true });
+    store.select('A');
+    reads[0].resolve(null);
+    await flush();
+
+    assert.doesNotThrow(() => store.rate(1, 1, 'memorised'));
+    await flush();
+    assert.equal(writes.length, 1);
+    assert.deepEqual(store.getSnapshot().progress, { '1': { '1': mark('memorised', TODAY) } });
+  });
+
+  it('is a stable closure: it works detached from the store object', async () => {
+    const { store, reads, writes } = setup();
+    const { rate } = store;
+    store.select('A');
+    reads[0].resolve(null);
+    await flush();
+    rate(1, 1, 'learning');
+    assert.equal(writes.length, 1);
+  });
+});
+
+describe('switching person', () => {
+  it('A -> B: snapshot resets at once, A\'s late read is ignored, rate waits for B\'s read, and only B\'s data is written under B\'s key', async () => {
+    const { store, reads, writes } = setup();
+    const keyA = quranProgressKey('A');
+    const keyB = quranProgressKey('B');
+
+    store.select('A');
+    store.select('B');
+    assert.deepEqual(store.getSnapshot(), { forKey: keyB, progress: {}, loaded: false });
+    assert.equal(reads.length, 2);
+    assert.equal(reads[0].key, keyA);
+    assert.equal(reads[1].key, keyB);
+
+    // A's read lands late, after the switch.
+    reads[0].resolve(blob({ '9': { '9': mark('memorised') } }));
+    await flush();
+    assert.deepEqual(store.getSnapshot(), { forKey: keyB, progress: {}, loaded: false });
+
+    // B has not been read yet: a tap is ignored.
+    store.rate(1, 1, 'learning');
+    assert.equal(writes.length, 0);
+
+    reads[1].resolve(blob({ '2': { '2': mark('learning') } }));
+    await flush();
+    assert.deepEqual(store.getSnapshot().progress, { '2': { '2': mark('learning') } });
+
+    store.rate(3, 3, 'memorised');
+    assert.equal(writes.length, 1);
+    assert.equal(writes[0].key, keyB);
+    assert.deepEqual(JSON.parse(writes[0].value), {
+      '2': { '2': mark('learning') },
+      '3': { '3': mark('memorised', TODAY) },
+    });
+    // A's marks were never written, anywhere.
+    assert.ok(!writes.some(w => w.value.includes('"9"')));
+  });
+
+  it('A loaded, then B selected: A\'s marks are gone from the snapshot immediately', async () => {
+    const { store, reads } = setup();
+    store.select('A');
+    reads[0].resolve(blob({ '1': { '1': mark('memorised') } }));
+    await flush();
+    assert.equal(store.getSnapshot().loaded, true);
+
+    store.select('B');
+    assert.deepEqual(store.getSnapshot(), { forKey: quranProgressKey('B'), progress: {}, loaded: false });
+  });
+
+  it('switching back to A reads A again (the marks are not cached across a switch)', async () => {
+    const { store, reads } = setup();
+    store.select('A');
+    store.select('B');
+    store.select('A');
+    assert.equal(reads.length, 3);
+
+    // The first A read is stale (generation changed twice); only the last counts.
+    reads[0].resolve(blob({ '1': { '1': mark('learning') } }));
+    await flush();
+    assert.equal(store.getSnapshot().loaded, false);
+
+    reads[2].resolve(blob({ '4': { '4': mark('memorised') } }));
+    await flush();
+    assert.deepEqual(store.getSnapshot().progress, { '4': { '4': mark('memorised') } });
+  });
+});
+
+describe('snapshot and subscribe', () => {
+  it('getSnapshot returns the identical object until something changes', async () => {
+    const { store, reads } = setup();
+    assert.equal(store.getSnapshot(), store.getSnapshot());
+
+    store.select('A');
+    const a = store.getSnapshot();
+    assert.equal(store.getSnapshot(), a);
+    store.select('A');
+    assert.equal(store.getSnapshot(), a);
+
+    reads[0].resolve(null);
+    await flush();
+    const b = store.getSnapshot();
+    assert.notEqual(b, a);
+    assert.equal(store.getSnapshot(), b);
+
+    store.rate(1, 1, 'learning');
+    assert.notEqual(store.getSnapshot(), b);
+  });
+
+  it('unsubscribe stops notifications, and unsubscribing twice is harmless', () => {
+    const fake = fakeStorage();
+    const store = createProgressStore(fake.storage, () => TODAY);
+    let n = 0;
+    const off = store.subscribe(() => n++);
+    store.select('A');
+    assert.equal(n, 1);
+
+    off();
+    off();
+    store.select('B');
+    assert.equal(n, 1);
+  });
+
+  it('a listener removed during a notification does not break iteration', () => {
+    const fake = fakeStorage();
+    const store = createProgressStore(fake.storage, () => TODAY);
+    const calls: string[] = [];
+    let offSecond: () => void = () => {};
+    store.subscribe(() => {
+      calls.push('first');
+      offSecond();
+    });
+    offSecond = store.subscribe(() => calls.push('second'));
+    const offThird = store.subscribe(() => calls.push('third'));
+
+    assert.doesNotThrow(() => store.select('A'));
+    assert.ok(calls.includes('first'));
+    assert.ok(calls.includes('third'));
+    assert.ok(!calls.includes('second'), 'a listener removed mid-notification is not called');
+    offThird();
+  });
+});
+```
+
+```bash
+cd artifacts/mobile && node --import ./scripts/registerTestAlias.mjs --experimental-strip-types --test services/__tests__/quranProgressStore.test.ts 2>&1 | grep -E "ERR_MODULE_NOT_FOUND|# fail"
+```
+Expected: FAIL — module not found. Then create `artifacts/mobile/services/quranProgressStore.ts`:
+
+```ts
+/**
+ * The one place memorisation progress lives while the app runs. Pure: storage
+ * is injected, so this imports nothing from React or React Native and is tested
+ * with bare `node --test`. `hooks/useQuranProgress.ts` creates the single
+ * instance and subscribes screens to it.
+ *
+ * Why a shared store and not state in each hook call: the Quran Corner screens
+ * are pushed onto one Stack, which keeps earlier screens mounted. Per-call state
+ * went stale there (rate in the memorise screen, go back, and the reader's badges
+ * still showed the old marks), and a second writing screen would have brought
+ * back the lost update across instances. One snapshot per app means every
+ * screen sees every rating and every write composes onto the latest marks.
+ *
+ * Two guards, both about not losing or mixing up a person's marks:
+ *  - `rate` is ignored until the selected person's saved marks have been read,
+ *    so a tap can never replace them with a one-mark blob.
+ *  - Changing person bumps a generation. A read that settles after the change is
+ *    dropped, and the snapshot is emptied at once, so one person's marks never
+ *    show or save under another's key on a shared device.
+ */
+import { parseProgress, quranProgressKey, rateAyah, todayKey, type AyahStatus, type QuranProgress } from './quranProgress.ts';
+
+export interface KeyValueStorage {
+  getItem(key: string): Promise<string | null>;
+  setItem(key: string, value: string): Promise<void>;
+}
+
+export interface ProgressSnapshot {
+  /** The storage key this snapshot belongs to; null while the user is not yet known. */
+  forKey: string | null;
+  progress: QuranProgress;
+  /** True once `forKey`'s saved marks have been read (or the read failed). */
+  loaded: boolean;
+}
+
+export interface ProgressStore {
+  /**
+   * Point the store at a person. `undefined` = not known yet (session still
+   * restoring): nothing is read, nothing can be saved. `null` = signed out (the
+   * bare key). Selecting the key already selected does nothing.
+   */
+  select(userId: string | null | undefined): void;
+  /** The SAME object until something changes (`useSyncExternalStore` needs a stable reference). */
+  getSnapshot(): ProgressSnapshot;
+  subscribe(listener: () => void): () => void;
+  /** Bound closure with a stable identity: safe to pass around and to use in effect deps. */
+  rate(surah: number, ayah: number, status: AyahStatus | null): void;
+}
+
+export function createProgressStore(storage: KeyValueStorage, today: () => string = todayKey): ProgressStore {
+  let snapshot: ProgressSnapshot = { forKey: null, progress: {}, loaded: false };
+  // Bumped on every real change of person; a read from an earlier one is stale.
+  let generation = 0;
+  const listeners = new Set<() => void>();
+
+  const publish = (next: ProgressSnapshot) => {
+    snapshot = next;
+    // Iterate a copy, and skip anyone removed along the way.
+    for (const listener of [...listeners]) {
+      if (listeners.has(listener)) listener();
+    }
+  };
+
+  const select = (userId: string | null | undefined): void => {
+    const key = userId === undefined ? null : quranProgressKey(userId);
+    if (key === snapshot.forKey) return;
+
+    const mine = ++generation;
+    publish({ forKey: key, progress: {}, loaded: false });
+    if (key === null) return;
+
+    storage
+      .getItem(key)
+      .then(
+        raw => parseProgress(raw),
+        // Storage can be unavailable (private window, blocked site data); the
+        // screens still work with empty progress, and writes will fail the same way.
+        () => ({}) as QuranProgress,
+      )
+      .then(progress => {
+        if (mine !== generation) return;
+        publish({ forKey: key, progress, loaded: true });
+      });
+  };
+
+  const rate = (surah: number, ayah: number, status: AyahStatus | null): void => {
+    const { forKey, progress, loaded } = snapshot;
+    // Ignore a rating until this person's saved marks have been read: writing
+    // now would replace them with a one-mark blob. Screens disable the buttons while !loaded.
+    if (forKey === null || !loaded) return;
+    const next = rateAyah(progress, surah, ayah, status, today());
+    publish({ forKey, progress: next, loaded: true });
+    storage.setItem(forKey, JSON.stringify(next)).catch(() => {});
+  };
+
+  return {
+    select,
+    getSnapshot: () => snapshot,
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    rate,
+  };
+}
+```
+
+```bash
+cd artifacts/mobile && node --import ./scripts/registerTestAlias.mjs --experimental-strip-types --test services/__tests__/quranProgressStore.test.ts 2>&1 | grep -E "^# (tests|pass|fail)"
+```
+Expected: `# tests 15`, `# pass 15`, `# fail 0`.
+
+- [ ] **Step 5b: Write the hook.** A thin wrapper: it points the store at the signed-in person (waiting while the session restores) and shows only a snapshot that belongs to the key it expects. Create `artifacts/mobile/hooks/useQuranProgress.ts`. It is not unit-tested (React); all of its logic is in the store above:
 
 ```ts
 /**
  * Memorisation progress for the signed-in person, on this device. Thin on
- * purpose: every decision is in `services/quranProgress.ts`.
+ * purpose: the decisions are in `services/quranProgress.ts` and the state, the
+ * read/write ordering and the user-switch guards are in
+ * `services/quranProgressStore.ts`.
  *
- * Two guards live here. On a change of user, the marks in state are cleared
- * before the new read, so one person's progress never shows or saves under
- * another's key on a shared device. And `rate` is ignored until the current
- * user's saved marks have been read, so a tap can never overwrite them with a
- * one-mark blob.
+ * ONE store serves every call of this hook. The Quran Corner screens stay
+ * mounted under each other on the root Stack, so they must share their marks:
+ * a rating made in the memorise screen is on the reader and the home row
+ * the moment it is made, and writes from any screen compose onto the same copy.
+ *
+ * A snapshot is shown only when it belongs to the person this render is for, so
+ * for the one render after a user switch (before the effect re-points the
+ * store) the previous person's marks are not painted. While the session is
+ * still restoring (`isLoading`) the person is unknown, so nothing is read and
+ * a tap cannot be saved under the signed-out key.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/context/AuthContext';
-import {
-  parseProgress,
-  quranProgressKey,
-  rateAyah,
-  todayKey,
-  type AyahStatus,
-  type QuranProgress,
-} from '@/services/quranProgress';
+import { quranProgressKey, type AyahStatus, type QuranProgress } from '@/services/quranProgress';
+import { createProgressStore } from '@/services/quranProgressStore';
+
+const store = createProgressStore(AsyncStorage);
+
+const EMPTY: QuranProgress = Object.freeze({}) as QuranProgress;
 
 export function useQuranProgress(): {
   progress: QuranProgress;
   loaded: boolean;
   rate: (surah: number, ayah: number, status: AyahStatus | null) => void;
 } {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const userId = user?.id ?? null;
-  const [progress, setProgress] = useState<QuranProgress>({});
-  const [loaded, setLoaded] = useState(false);
-  // The latest value, so two quick taps compose instead of the second one
-  // overwriting the first with a stale copy.
-  const latest = useRef<QuranProgress>({});
-  // The storage key whose contents are in `latest`. Null until that user's read
-  // has landed. A ref, not `loaded`, because `rate` reads it without re-rendering.
-  const loadedKey = useRef<string | null>(null);
+  // The key this render should show; null while the session is restoring.
+  const wanted = isLoading ? null : quranProgressKey(userId);
 
   useEffect(() => {
-    const key = quranProgressKey(userId);
-    let live = true;
-    // Another person's marks must not outlive a switch of user, and nothing may
-    // be saved under the new key until it has been read (or the read failed).
-    loadedKey.current = null;
-    latest.current = {};
-    setProgress({});
-    setLoaded(false);
-    AsyncStorage.getItem(key)
-      .then(raw => {
-        if (!live) return;
-        const read = parseProgress(raw);
-        latest.current = read;
-        loadedKey.current = key;
-        setProgress(read);
-        setLoaded(true);
-      })
-      .catch(() => {
-        // Storage can be unavailable (private window, blocked site data); the
-        // screens still work with empty progress, and writes will fail the same way.
-        if (!live) return;
-        loadedKey.current = key;
-        setLoaded(true);
-      });
-    return () => {
-      live = false;
-    };
-  }, [userId]);
+    store.select(isLoading ? undefined : userId);
+  }, [isLoading, userId]);
 
-  const rate = useCallback(
-    (surah: number, ayah: number, status: AyahStatus | null) => {
-      const key = quranProgressKey(userId);
-      // Ignore a rating until this user's saved marks have been read: writing now
-      // would replace them with a one-mark blob. Screens disable the buttons while !loaded.
-      if (loadedKey.current !== key) return;
-      const next = rateAyah(latest.current, surah, ayah, status, todayKey());
-      latest.current = next;
-      setProgress(next);
-      AsyncStorage.setItem(key, JSON.stringify(next)).catch(() => {});
-    },
-    [userId],
-  );
+  const snap = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
+  // Never show, or accept ratings against, another person's snapshot.
+  const current = wanted !== null && snap.forKey === wanted;
 
-  return { progress, loaded, rate };
+  return { progress: current ? snap.progress : EMPTY, loaded: current && snap.loaded, rate: store.rate };
 }
 ```
 
-- [ ] **Step 6: Commit** (typecheck runs in Task 9 once the screens exist; the hook is exercised there).
+- [ ] **Step 6: Typecheck, then commit.** Run `pnpm run typecheck` from the repo root (it covers the hook; expected: clean). The hook's runtime behaviour is exercised by the store tests plus the Task 9 screens.
 
 ```bash
-git add artifacts/mobile/services/quranProgress.ts artifacts/mobile/services/__tests__/quranProgress.test.ts artifacts/mobile/hooks/useQuranProgress.ts
+git add artifacts/mobile/services/quranProgress.ts artifacts/mobile/services/quranProgressStore.ts artifacts/mobile/services/__tests__/quranProgress.test.ts artifacts/mobile/services/__tests__/quranProgressStore.test.ts artifacts/mobile/hooks/useQuranProgress.ts
 git commit -m "Quran Corner: on-device memorisation progress, a learner's own rating" -m $'Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_019NrGKPQMgbkMzSTzD6mEEY'
 ```
 
