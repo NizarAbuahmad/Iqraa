@@ -106,7 +106,7 @@ export default function QuizScreen() {
   // `scopeFromParams`. Grounding the topic is what recovers the right scope.
   // Only the grades/subjects this teacher picked on /setup-subjects are offered.
   const teacherScope = useTeacherScope();
-  const [initialScope] = useState(() => scopeFromParams(params, uiLang, teacherScope.defaultScope));
+  const [initialScope] = useState(() => scopeFromParams(params, uiLang, teacherScope.defaultScope, teacherScope));
   const [gradeIdx, setGradeIdx] = useState(initialScope.gradeIdx);
   // Index-aligned flags rather than a pre-filtered `subjects`: these positions
   // are persisted as subjectIdx, so entries are dropped at render time only.
