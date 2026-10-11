@@ -33,7 +33,7 @@ import { arPrefixed, lessonKindFor, type LessonKind } from './lessonPlanKinds.ts
 import { arMinutes } from './lessonPlanTypes.ts';
 import { classifyVerifiableTopic } from './verifyMathGuards.ts';
 import { QUIZ_TYPE_ORDER } from '../quizPaper.ts';
-import { splitFormatTypes, fitFormats, formatPoints, worksheetTotal, buildFormatQuestion } from './worksheetFormats.ts';
+import { splitFormatTypes, fitFormats, formatPoints, worksheetTotal, buildFormatSet } from './worksheetFormats.ts';
 import type { FormatKind } from '@workspace/math-practice';
 
 /**
@@ -1221,6 +1221,18 @@ export class MockAIService extends AIService {
     const requested = req.difficulty === 'easy' || req.difficulty === 'hard' ? req.difficulty : 'medium';
     const band = BANDS[requested];
 
+    // The ticked formats are PICKED first, before the worked example and any
+    // practice question, and only pushed (in display order) after the word
+    // problem. Their bank items are scarce — «أين الخطأ؟» has two candidates in
+    // the exponential-equations family — and a format that picks last finds
+    // them spent by the practice sections, so a ticked, supported format came
+    // back «missing» about half the time. Formats beyond what the total can
+    // hold are trimmed and reported, not squeezed in (`formatRoom`, the same
+    // rule as the live path). `session: undefined` is the pass's shared session.
+    const { taken: formats, trimmed } = fitFormats(ticked, rest, totalQ);
+    const { built: builtFormats, missing: unbuilt } = buildFormatSet(formats, { topic, kb, lang, subject: req.subject, session: undefined, points: formatPoints(requested) });
+    const missingFormats: FormatKind[] = [...trimmed, ...unbuilt];
+
     // The worked example, and the half-solved item that follows it.
     //
     // Taken before any practice question so the pass's session set spends them:
@@ -1238,9 +1250,6 @@ export class MockAIService extends AIService {
     const exampleItem = takeSolved(band[0]);
     const completionItem = exampleItem ? takeSolved(band[1]) : null;
     const reserved = (exampleItem ? 1 : 0) + (completionItem ? 1 : 0);
-    // Formats beyond what the total can hold are trimmed and reported, not
-    // squeezed in — see `formatRoom`. Same rule as the live path.
-    const { taken: formats, trimmed } = fitFormats(ticked, rest, totalQ);
     const mainTotal = Math.max(0, totalQ - reserved - (wantsWordProblem ? 1 : 0) - formats.length);
 
     const answerSpace = lang === 'ar'
@@ -1369,7 +1378,6 @@ export class MockAIService extends AIService {
 
     let typeIdx = 0;
     let spent = false;
-    const missingFormats: FormatKind[] = [...trimmed];
     bankOnly = questionBankPolicy.required;
     try {
     for (const bucket of buckets) {
@@ -1412,14 +1420,8 @@ export class MockAIService extends AIService {
       answerKey.push({ num: qNum++, answer: q.answer ?? '—', ...(q.steps ? { solution: q.steps } : {}) });
     }
 
-    // The ticked formats, one question each. They draw on the same pass
-    // session as the rest of the paper (`undefined` → the module session that
-    // `beginMathPracticeSession()` reset above), so a format cannot repeat an
-    // item the practice sections already used. A kind the lesson's bank cannot
-    // supply is reported, never invented.
-    for (const kind of formats) {
-      const built = buildFormatQuestion(kind, { topic, kb, lang, subject: req.subject, session: undefined, points: formatPoints(requested) });
-      if (!built) { missingFormats.push(kind); continue; }
+    // The ticked formats picked above, one question each, after the practice.
+    for (const built of builtFormats) {
       sections.push(built.section);
       answerKey.push({ num: qNum++, ...built.key });
     }

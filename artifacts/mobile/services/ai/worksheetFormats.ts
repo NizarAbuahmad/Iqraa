@@ -228,6 +228,35 @@ export function requestWithoutFormats(req: AIRequest): AIRequest {
   };
 }
 
+type BuiltFormat = NonNullable<ReturnType<typeof buildFormatQuestion>>;
+
+/** Scarcest bank first: «أين الخطأ؟» and «ارسم» have a couple of candidates a lesson, «صِل» takes five. */
+const BUILD_ORDER: readonly FormatKind[] = ['spot_error', 'graph', 'order', 'match'];
+
+/**
+ * Build several formats against ONE session set. They are built scarcest-first
+ * so «صِل», which takes five items, cannot leave «أين الخطأ؟» without its two,
+ * and the results come back in the order ticked (the order the paper shows
+ * them). A kind that cannot be built, or whose build throws, is `missing` —
+ * a format bug must never cost the paper around it.
+ */
+export function buildFormatSet(kinds: FormatKind[], ctx: FormatCtx): { built: BuiltFormat[]; missing: FormatKind[] } {
+  const results = new Map<FormatKind, BuiltFormat>();
+  const session = ctx.session ?? currentSession();
+  for (const kind of [...kinds].sort((a, b) => BUILD_ORDER.indexOf(a) - BUILD_ORDER.indexOf(b))) {
+    try {
+      const r = buildFormatQuestion(kind, { ...ctx, session });
+      if (r) results.set(kind, r);
+    } catch {
+      /* reported as missing below */
+    }
+  }
+  return {
+    built: kinds.flatMap(k => (results.has(k) ? [results.get(k)!] : [])),
+    missing: kinds.filter(k => !results.has(k)),
+  };
+}
+
 /**
  * Add the bank-built format questions to a live paper, numbered on from its
  * last answer. Kinds beyond `formatRoom` are trimmed (the model was asked for
@@ -250,17 +279,11 @@ export function appendFormats(ws: WorksheetOutput, req: AIRequest, formats: Form
   const answerKey = [...ws.answerKey];
   const missing: FormatKind[] = [...(ws.missingFormats ?? []), ...trimmed];
   let num = answerKey.reduce((m, k) => Math.max(m, k.num), 0) + 1;
-  const session = new Set<string>();
-  for (const kind of taken) {
-    let built: ReturnType<typeof buildFormatQuestion> = null;
-    try {
-      built = buildFormatQuestion(kind, { topic, kb, lang, subject: req.subject, session, points });
-    } catch {
-      built = null;
-    }
-    if (!built) { missing.push(kind); continue; }
-    sections.push(built.section);
-    answerKey.push({ num: num++, ...built.key });
+  const { built, missing: unbuilt } = buildFormatSet(taken, { topic, kb, lang, subject: req.subject, session: new Set<string>(), points });
+  missing.push(...unbuilt);
+  for (const b of built) {
+    sections.push(b.section);
+    answerKey.push({ num: num++, ...b.key });
   }
   return { ...ws, sections, answerKey, ...(missing.length ? { missingFormats: missing } : {}) };
 }
