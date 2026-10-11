@@ -24,8 +24,29 @@ describe('tokenizeAyah', () => {
     assert.equal(tokenizeAyah(SAMPLE).join(' '), SAMPLE);
   });
 
-  it('keeps a leading mark rather than dropping it', () => {
-    assert.deepEqual(tokenizeAyah('ۖ ألف'), ['ۖ', 'ألف']);
+  it('glues a leading mark onto the first word, so it is never a word of its own', () => {
+    assert.deepEqual(tokenizeAyah('ۖ ألف'), ['ۖ ألف']);
+    assert.deepEqual(tokenizeAyah('۞ ألف باء'), ['۞ ألف', 'باء']);
+  });
+
+  it('round-trips a leading mark before the first word', () => {
+    assert.equal(tokenizeAyah('۞ ألف باء').join(' '), '۞ ألف باء');
+  });
+
+  it('glues several leading marks onto the first word, in order', () => {
+    assert.deepEqual(tokenizeAyah('۞ ۖ ألف باء'), ['۞ ۖ ألف', 'باء']);
+    assert.equal(tokenizeAyah('۞ ۖ ألف باء').join(' '), '۞ ۖ ألف باء');
+  });
+
+  it('keeps marks-only text as one token and drops nothing', () => {
+    assert.deepEqual(tokenizeAyah('۞ ۝'), ['۞ ۝']);
+    assert.equal(tokenizeAyah('۞ ۝').join(' '), '۞ ۝');
+  });
+
+  it('shows a leading mark with the first word under the firstWordHint level', () => {
+    const words = tokenizeAyah('۞ ألف باء جيم');
+    assert.deepEqual(words, ['۞ ألف', 'باء', 'جيم']);
+    assert.deepEqual(hiddenFlags(words.length, 'firstWordHint'), [false, true, true]);
   });
 
   it('returns no words for an empty string', () => {

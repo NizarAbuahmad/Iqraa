@@ -12,21 +12,28 @@ export type HideLevel = 'none' | 'every3' | 'every2' | 'secondHalf' | 'firstWord
 export const HIDE_LEVELS: readonly HideLevel[] = ['none', 'every3', 'every2', 'secondHalf', 'firstWordHint', 'all'];
 
 /**
- * Split an ayah into words. A token made only of marks is glued, with its
- * space, to the word before it, so it can never be hidden on its own.
- * `words.join(' ')` equals the input whenever the input has single spaces,
- * which every line of the source does (a test checks all of them).
+ * Split an ayah into words. A mark-only token is never a word of its own:
+ * one after a word is glued to the word before it, and marks before the first
+ * word are glued onto the front of that first word. Text made only of marks
+ * comes back as one token. Nothing is dropped, and `words.join(' ')` equals
+ * the input whenever the input has single spaces. The Quran Corner's data
+ * test checks that for every shipped ayah.
  */
 export function tokenizeAyah(text: string): string[] {
   const words: string[] = [];
+  let leading = ''; // marks seen before the first word
   for (const raw of text.split(' ')) {
     if (raw === '') continue;
-    if (!LETTER.test(raw) && words.length > 0) {
+    if (LETTER.test(raw)) {
+      words.push(leading ? `${leading} ${raw}` : raw);
+      leading = '';
+    } else if (words.length > 0) {
       words[words.length - 1] += ' ' + raw;
     } else {
-      words.push(raw);
+      leading = leading ? `${leading} ${raw}` : raw;
     }
   }
+  if (leading) words.push(leading); // marks only: keep them, drop nothing
   return words;
 }
 
