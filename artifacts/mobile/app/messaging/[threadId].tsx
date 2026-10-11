@@ -7,8 +7,9 @@
  * side effect, so there is no separate "mark read" call here — see
  * services/messaging.ts.
  *
- * Block (direct threads only, from the header menu) and report (any
- * message, via long-press) are this phase's safety rails. Both are
+ * Block (direct threads only, from the header menu) and report (someone
+ * else's message, from the long-press sheet — which also holds the emoji
+ * reaction row) are this phase's safety rails. Both are
  * deliberately light here: block just flips a flag the server already
  * enforces, and report is a short reason picker, not a full form — see
  * services/messaging.ts and the server's file header for what each one
@@ -34,13 +35,16 @@ import { askForPushPermission, pushAskCopy } from '@/services/pushTokens';
 import {
   addGroupMembers,
   blockUser,
+  clearReaction,
   getThread,
+  hideThread,
   listMessages,
   markMessagesRead,
   pickChatImage,
   removeGroupMember,
   reportUser,
   sendMessage as sendMessageApi,
+  setReaction,
   setStudentPosting,
   unblockUser,
   type ChatMessage,
@@ -48,15 +52,19 @@ import {
   type ThreadDetail,
 } from '@/services/messaging';
 import { apiErrorMessage } from '@/services/apiErrorKey';
+import { REACTION_EMOJI, myReaction, toggleReaction, type ChatReaction } from '@/services/messageReactions';
+import { reactorNames } from '@/services/reactorNames';
 import { MessageBubble } from '@/components/ui/MessageBubble';
 import { Avatar } from '@/components/ui/Avatar';
 import { chatThreadSubtitle } from '@/services/chatThreadSubtitle';
+import { chatRoleLabel } from '@/services/chatRoleLabel';
+import { startsSenderRun } from '@/services/senderRuns';
 import { ParticipantPickerSheet } from '@/components/ui/ParticipantPickerSheet';
 import { mergeNewMessages } from '@/services/messageMerge';
 import { pickUnreportedReads } from '@/services/readReceipts';
 import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { useStudentAccountsEnabled } from '@/services/features';
-import { saveRemoteImage } from '@/services/share';
+import { ImageViewerModal } from '@/components/ui/ImageViewer';
 import { goBack } from '@/services/navigation';
 import { confirm } from '@/services/confirm';
 import { BackButton } from '@/components/ui/BackButton';
@@ -85,28 +93,22 @@ export default function ThreadScreen() {
   const [blocking, setBlocking] = useState(false);
   const [reportTarget, setReportTarget] = useState<{ messageId: string; senderId: string } | null>(null);
   const [reporting, setReporting] = useState(false);
+  // The message whose reaction sheet is open. An id, not the message: the sheet
+  // re-reads it from `messages` so its highlighted emoji follows the optimistic update.
+  const [sheetMessageId, setSheetMessageId] = useState<string | null>(null);
+  // Messages with a reaction request in flight. Their reactions are ignored by the
+  // poll (so a poll that started before the PUT cannot undo the tap) and a second
+  // tap on them is ignored until the first settles.
+  const pendingReactions = useRef(new Set<string>());
   const [attachment, setAttachment] = useState<string | null>(null);
   const [manageOpen, setManageOpen] = useState(false);
   const [addMembersOpen, setAddMembersOpen] = useState(false);
   const [memberActionUserId, setMemberActionUserId] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);
+  const [hiding, setHiding] = useState(false);
+  const [membersOpen, setMembersOpen] = useState(false);
   const [togglingPosting, setTogglingPosting] = useState(false);
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
-  const [savingImage, setSavingImage] = useState(false);
-
-  const saveViewedImage = async () => {
-    if (!viewerUrl || savingImage) return;
-    setSavingImage(true);
-    try {
-      await saveRemoteImage(viewerUrl, `iqra-chat-${Date.now()}.jpg`);
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError(t('messagingImageSaveFailed'));
-    } finally {
-      setSavingImage(false);
-    }
-  };
 
   const load = useCallback(async () => {
     if (!threadId) return;
@@ -140,7 +142,10 @@ export default function ThreadScreen() {
     if (!threadId) return;
     try {
       const polled = await listMessages(threadId);
-      setMessages(prev => mergeNewMessages(prev, polled));
+      // A message mid-reaction keeps what the tap put on screen; `reactions: undefined`
+      // is "no news" to mergeNewMessages.
+      const safe = polled.map(m => (pendingReactions.current.has(m.id) ? { ...m, reactions: undefined } : m));
+      setMessages(prev => mergeNewMessages(prev, safe));
     } catch {
       // Leave the open thread exactly as it was.
     }
@@ -288,6 +293,34 @@ export default function ThreadScreen() {
     }
   };
 
+  /*
+   * «حذف المحادثة» (direct) and «إخفاء المجموعة» (class group) are the same
+   * call: hide the thread from MY inbox. Neither deletes anything for anyone
+   * else, and a newer message brings the thread back — services/messaging.ts.
+   * A class group has no real "leave": its members follow the roster.
+   */
+  const handleHide = async () => {
+    if (!threadId || hiding) return;
+    setMenuOpen(false);
+    const direct = thread?.type === 'direct';
+    const ok = await confirm({
+      title: t(direct ? 'messagingDeleteConfirmTitle' : 'messagingHideConfirmTitle'),
+      message: t(direct ? 'messagingDeleteConfirmDesc' : 'messagingHideConfirmDesc'),
+      confirmLabel: t(direct ? 'messagingDeleteConversation' : 'messagingHideGroup'),
+      cancelLabel: t('cancel'),
+      destructive: true,
+    });
+    if (!ok) return;
+    setHiding(true);
+    try {
+      await hideThread(threadId);
+      goBack();
+    } catch (e) {
+      setError(apiErrorMessage(e, 'messagingLoadError', t));
+      setHiding(false);
+    }
+  };
+
   const toggleBlock = async () => {
     if (!thread?.otherParticipant || blocking) return;
     setMenuOpen(false);
@@ -334,11 +367,45 @@ export default function ThreadScreen() {
     }
   };
 
+  const reactTo = async (messageId: string, emoji: string) => {
+    if (!threadId || !user || pendingReactions.current.has(messageId)) return;
+    const before = messages.find(m => m.id === messageId);
+    if (!before) return;
+    const prior = before.reactions ?? [];
+    const removing = myReaction(prior) === emoji;
+    const put = (reactions: ChatReaction[]) =>
+      setMessages(prev => prev.map(m => (m.id === messageId ? { ...m, reactions } : m)));
+
+    pendingReactions.current.add(messageId);
+    // Only a teacher's chips carry userIds, so only a teacher's tap needs the id.
+    put(toggleReaction(prior, emoji, isTeacher ? user.id : undefined));
+    Haptics.selectionAsync();
+    try {
+      put(removing ? await clearReaction(threadId, messageId) : await setReaction(threadId, messageId, emoji));
+      setError('');
+    } catch (e) {
+      put(prior);
+      setError(apiErrorMessage(e, 'messageReactionFailed', t));
+    } finally {
+      pendingReactions.current.delete(messageId);
+    }
+  };
+
   const topPad = insets.top + (insets.top === 0 ? 12 : 0);
   const align = isRTL ? 'right' : 'left';
   const isGroup = thread?.type !== 'direct';
   const headerTitle = isGroup ? (lang === 'ar' ? thread?.titleAr : thread?.title) || thread?.title : '';
   const isTeacher = isTeacherRole(user?.role);
+  const sheetMessage = sheetMessageId ? messages.find(m => m.id === sheetMessageId) ?? null : null;
+  const sheetMine = myReaction(sheetMessage?.reactions);
+  // «مجموعة الصف · الأعضاء: 12». The count is only shown to those the server
+  // sends the full list to (lib/groupMemberView.ts) — to a child in an
+  // announcement-only group it would be «2», which is not the class.
+  const knowsFullRoster = !!thread && (thread.isOwner || isTeacher || thread.studentPostingEnabled);
+  const groupTypeLabel = thread?.type === 'class_group' ? t('messagingThreadClassGroup') : t('messagingThreadCustomGroup');
+  const groupSubtitle = knowsFullRoster && thread?.participants
+    ? `${groupTypeLabel} · ${t('messagingMembersCount', thread.participants.length)}`
+    : groupTypeLabel;
   // The server enforces this too (see routes/messaging.ts) — hiding the
   // composer is the courtesy, not the rule. Nothing is shown until the thread
   // has loaded: assuming "can post" meanwhile flashed a composer in every
@@ -357,17 +424,33 @@ export default function ThreadScreen() {
       >
         <BackButton color={colors.foreground} />
         {isGroup ? (
-          <>
+          // Tapping the title opens the member list: a group header used to be
+          // an icon and a name, with nothing to say what kind of group it was
+          // or who was in it.
+          <Pressable
+            onPress={() => setMembersOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel={t('messagingViewMembers')}
+            style={{ flex: 1, alignItems: 'center', gap: 10, flexDirection: isRTL ? 'row-reverse' : 'row' }}
+          >
             <View style={[styles.groupIcon, { backgroundColor: colors.secondary }]}>
               <Ionicons name="people" size={18} color={colors.primary} />
             </View>
-            <Text
-              style={[styles.headerName, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}
-              numberOfLines={1}
-            >
-              {headerTitle}
-            </Text>
-          </>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={[styles.headerNameStacked, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}
+                numberOfLines={1}
+              >
+                {headerTitle}
+              </Text>
+              <Text
+                style={[styles.headerRole, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}
+                numberOfLines={1}
+              >
+                {groupSubtitle}
+              </Text>
+            </View>
+          </Pressable>
         ) : thread?.otherParticipant ? (
           <>
             <Avatar firstName={thread.otherParticipant.firstName} lastName={thread.otherParticipant.lastName} size={34} colors={colors} />
@@ -410,7 +493,9 @@ export default function ThreadScreen() {
             <Ionicons name="person-add-outline" size={20} color={colors.foreground} />
           </Pressable>
         ) : null}
-        {(!isGroup && thread?.otherParticipant) || thread?.type === 'custom_group' || (isGroup && thread?.isOwner) ? (
+        {/* Every member of a loaded thread has something in here now: block or
+            delete (direct), leave (custom group) or hide (class group). */}
+        {thread && (isGroup || thread.otherParticipant) ? (
           <Pressable onPress={() => setMenuOpen(true)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('moreOptions')}>
             <Ionicons name="ellipsis-vertical" size={20} color={colors.foreground} />
           </Pressable>
@@ -432,9 +517,18 @@ export default function ThreadScreen() {
           viewabilityConfig={viewabilityConfig}
           onViewableItemsChanged={onViewableItemsChanged}
           ListFooterComponent={loadingMore ? <ActivityIndicator color={colors.mutedForeground} style={{ marginVertical: 8 }} /> : null}
-          renderItem={({ item }) => {
+          renderItem={({ item, index }) => {
             const isOwn = item.senderId === user?.id;
             const sender = isOwn ? null : participantsById.get(item.senderId);
+            // Group threads name who sent each run of messages; a direct
+            // chat's header already says who the other person is.
+            const showName = isGroup && !isOwn && !!sender && startsSenderRun(messages, index);
+            // One action for a long-press on the bubble AND on one of its chips
+            // (a chip's own Pressable would otherwise swallow the long-press and toggle).
+            const openSheet = () => {
+              Haptics.selectionAsync();
+              setSheetMessageId(item.id);
+            };
             return (
               <Pressable
                 onPress={() => {
@@ -442,12 +536,7 @@ export default function ThreadScreen() {
                     setViewerUrl(item.attachmentUrl);
                   }
                 }}
-                onLongPress={() => {
-                  if (!isOwn) {
-                    Haptics.selectionAsync();
-                    setReportTarget({ messageId: item.id, senderId: item.senderId });
-                  }
-                }}
+                onLongPress={openSheet}
                 delayLongPress={400}
               >
                 <MessageBubble
@@ -458,9 +547,15 @@ export default function ThreadScreen() {
                   colors={colors}
                   senderFirstName={sender?.firstName}
                   senderLastName={sender?.lastName}
+                  senderName={showName && sender ? `${sender.firstName} ${sender.lastName}`.trim() : undefined}
+                  senderRoleLabel={showName && sender ? chatRoleLabel(sender.role, t) : undefined}
                   attachmentUrl={item.attachmentUrl}
                   attachmentKind={item.attachmentKind}
                   seenLabel={isOwn && item.seen ? t('messageSeen') : undefined}
+                  reactions={item.reactions}
+                  onReactionPress={emoji => void reactTo(item.id, emoji)}
+                  onReactionLongPress={openSheet}
+                  reactionLabel={r => t('messageReactionChipLabel', r.emoji, r.count, r.mine)}
                 />
               </Pressable>
             );
@@ -535,7 +630,7 @@ export default function ThreadScreen() {
       </View>
       )}
 
-      {/* ─── Header menu: block/unblock a direct thread, or manage/leave a custom group ─── */}
+      {/* ─── Header menu: block/unblock or delete a direct thread; manage/leave a custom group; hide a class group ─── */}
       <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
         <Pressable style={styles.modalBackdrop} onPress={() => setMenuOpen(false)}>
           <View style={[styles.menuCard, { backgroundColor: colors.card }]}>
@@ -594,14 +689,32 @@ export default function ThreadScreen() {
                     </Text>
                   </Pressable>
                 ) : null}
+                {/* A class group cannot be left (the roster decides who is in
+                    it), so a student or parent hides it instead. */}
+                {thread?.type === 'class_group' && !thread.isOwner ? (
+                  <Pressable onPress={handleHide} disabled={hiding} style={styles.menuRow}>
+                    <Ionicons name="eye-off-outline" size={18} color={colors.destructive} />
+                    <Text style={[styles.menuText, { color: colors.destructive, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
+                      {t('messagingHideGroup')}
+                    </Text>
+                  </Pressable>
+                ) : null}
               </>
             ) : (
-              <Pressable onPress={toggleBlock} disabled={blocking} style={styles.menuRow}>
-                <Ionicons name={thread?.isBlocked ? 'checkmark-circle-outline' : 'ban-outline'} size={18} color={colors.destructive} />
-                <Text style={[styles.menuText, { color: colors.destructive, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
-                  {thread?.isBlocked ? t('messagingUnblock') : t('messagingBlock')}
-                </Text>
-              </Pressable>
+              <>
+                <Pressable onPress={toggleBlock} disabled={blocking} style={styles.menuRow}>
+                  <Ionicons name={thread?.isBlocked ? 'checkmark-circle-outline' : 'ban-outline'} size={18} color={colors.destructive} />
+                  <Text style={[styles.menuText, { color: colors.destructive, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
+                    {thread?.isBlocked ? t('messagingUnblock') : t('messagingBlock')}
+                  </Text>
+                </Pressable>
+                <Pressable onPress={handleHide} disabled={hiding} style={styles.menuRow}>
+                  <Ionicons name="trash-outline" size={18} color={colors.destructive} />
+                  <Text style={[styles.menuText, { color: colors.destructive, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
+                    {t('messagingDeleteConversation')}
+                  </Text>
+                </Pressable>
+              </>
             )}
           </View>
         </Pressable>
@@ -655,6 +768,46 @@ export default function ThreadScreen() {
         </Pressable>
       </Modal>
 
+      {/* ─── Who is in this group: read-only, for every member (the header opens it) ─── */}
+      <Modal visible={membersOpen} transparent animationType="slide" onRequestClose={() => setMembersOpen(false)}>
+        <Pressable style={styles.newChatBackdrop} onPress={() => setMembersOpen(false)}>
+          <Pressable style={[styles.newChatSheet, { backgroundColor: colors.background, paddingBottom: Math.max(insets.bottom, 16) }]} onPress={e => e.stopPropagation()}>
+            <View style={[styles.newChatHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]} numberOfLines={1}>
+                  {headerTitle}
+                </Text>
+                <Text style={[styles.headerRole, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align, paddingHorizontal: 10 }]} numberOfLines={1}>
+                  {groupSubtitle}
+                </Text>
+              </View>
+              <Pressable onPress={() => setMembersOpen(false)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('cancel')}>
+                <Ionicons name="close" size={22} color={colors.mutedForeground} />
+              </Pressable>
+            </View>
+            <FlatList
+              data={thread?.participants ?? []}
+              keyExtractor={p => p.userId}
+              style={{ maxHeight: 360 }}
+              contentContainerStyle={{ paddingHorizontal: 16, gap: 6 }}
+              renderItem={({ item }) => (
+                <View style={[styles.memberManageRow, { borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                  <Avatar firstName={item.firstName} lastName={item.lastName} size={30} colors={colors} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }} numberOfLines={1}>
+                      {item.firstName} {item.lastName}
+                    </Text>
+                    <Text style={[styles.headerRole, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]} numberOfLines={1}>
+                      {chatRoleLabel(item.role, t)}
+                    </Text>
+                  </View>
+                </View>
+              )}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <ParticipantPickerSheet
         visible={addMembersOpen}
         onClose={() => setAddMembersOpen(false)}
@@ -672,7 +825,76 @@ export default function ThreadScreen() {
         }}
       />
 
-      {/* ─── Report reason picker, opened by long-pressing a message ─── */}
+      {/* ─── Message sheet, opened by long-pressing any message: react, or report someone else's ─── */}
+      <Modal visible={!!sheetMessage} transparent animationType="fade" onRequestClose={() => setSheetMessageId(null)}>
+        <Pressable style={styles.modalBackdrop} onPress={() => setSheetMessageId(null)}>
+          {sheetMessage ? (
+            <View style={[styles.menuCard, { backgroundColor: colors.card }]}>
+              <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
+                {t('messageReactTitle')}
+              </Text>
+              <View style={styles.emojiRow}>
+                {REACTION_EMOJI.map(emoji => (
+                  <Pressable
+                    key={emoji}
+                    accessibilityRole="button"
+                    accessibilityLabel={emoji}
+                    onPress={() => {
+                      const id = sheetMessage.id;
+                      setSheetMessageId(null);
+                      void reactTo(id, emoji);
+                    }}
+                    style={[styles.emojiBtn, sheetMine === emoji && { backgroundColor: colors.secondary }]}
+                  >
+                    <Text style={styles.emojiText}>{emoji}</Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              {/* Reporting stays one tap away, the first row under the emoji — above the reactor list, which grows with the class. */}
+              {sheetMessage.senderId !== user?.id ? (
+                <Pressable
+                  onPress={() => {
+                    const target = { messageId: sheetMessage.id, senderId: sheetMessage.senderId };
+                    setSheetMessageId(null);
+                    // Two Modals cannot swap in the same tick on iOS — the second is dropped.
+                    setTimeout(() => setReportTarget(target), 250);
+                  }}
+                  style={styles.menuRow}
+                >
+                  <Ionicons name="flag-outline" size={18} color={colors.destructive} />
+                  <Text style={[styles.menuText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                    {t('messageReportAction')}
+                  </Text>
+                </Pressable>
+              ) : null}
+
+              {/* Who reacted — teachers only; the server sends userIds to no one else. */}
+              {isTeacher && (sheetMessage.reactions ?? []).length > 0 ? (
+                <View>
+                  <Text style={[styles.modalTitle, { color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
+                    {t('messageReactionsList')}
+                  </Text>
+                  {(sheetMessage.reactions ?? []).map(r => (
+                    <Text
+                      key={r.emoji}
+                      style={[styles.reactorLine, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: align }]}
+                    >
+                      {`${r.emoji}  ${reactorNames(r.userIds ?? [], user?.id, participantsById, {
+                        you: t('messageReactorYou'),
+                        unknown: t('messageReactorUnknown'),
+                      }).join(isRTL ? '، ' : ', ')}`}
+                    </Text>
+                  ))}
+                </View>
+              ) : null}
+
+            </View>
+          ) : null}
+        </Pressable>
+      </Modal>
+
+      {/* ─── Report reason picker, opened from the message sheet ─── */}
       <Modal visible={!!reportTarget} transparent animationType="fade" onRequestClose={() => setReportTarget(null)}>
         <Pressable style={styles.modalBackdrop} onPress={() => setReportTarget(null)}>
           <View style={[styles.menuCard, { backgroundColor: colors.card }]}>
@@ -691,25 +913,7 @@ export default function ThreadScreen() {
       </Modal>
 
       {/* ─── Full-screen image viewer, opened by tapping an attachment ─── */}
-      <Modal visible={!!viewerUrl} transparent animationType="fade" onRequestClose={() => setViewerUrl(null)}>
-        <View style={styles.viewerBackdrop}>
-          <View style={[styles.viewerBar, { paddingTop: insets.top + 8 }]}>
-            <Pressable onPress={() => setViewerUrl(null)} hitSlop={12} style={styles.viewerBtn} accessibilityRole="button" accessibilityLabel={t('close')}>
-              <Ionicons name="close" size={26} color="#fff" />
-            </Pressable>
-            <Pressable onPress={saveViewedImage} disabled={savingImage} hitSlop={12} style={styles.viewerBtn} accessibilityRole="button" accessibilityLabel={t('saveImage')}>
-              {savingImage ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Ionicons name="download-outline" size={24} color="#fff" />
-              )}
-            </Pressable>
-          </View>
-          {viewerUrl ? (
-            <Image source={{ uri: viewerUrl }} style={styles.viewerImage} resizeMode="contain" />
-          ) : null}
-        </View>
-      </Modal>
+      <ImageViewerModal url={viewerUrl} onClose={() => setViewerUrl(null)} />
     </View>
   );
 }
@@ -736,13 +940,13 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 15, paddingHorizontal: 10, paddingTop: 8, paddingBottom: 4 },
   menuRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 10 },
   menuText: { fontSize: 14, flex: 1 },
+  emojiRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 4, paddingVertical: 8 },
+  emojiBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  emojiText: { fontSize: 24 },
+  reactorLine: { fontSize: 13, lineHeight: 20, paddingHorizontal: 10, paddingVertical: 2 },
   readOnlyNotice: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 10, paddingHorizontal: 12 },
   readOnlyText: { fontSize: 15, lineHeight: 23, flexShrink: 1 },
   attachmentPreview: { alignItems: 'center', gap: 8, paddingHorizontal: 4, paddingBottom: 8 },
-  viewerBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)' },
-  viewerBar: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 8 },
-  viewerBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  viewerImage: { flex: 1, width: '100%' },
   attachmentThumb: { width: 56, height: 56, borderRadius: 10 },
   newChatBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   newChatSheet: { maxHeight: '75%', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 16, gap: 12 },

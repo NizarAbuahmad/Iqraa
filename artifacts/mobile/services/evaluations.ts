@@ -44,6 +44,11 @@ export interface Evaluation {
    */
   markedCount?: number;
   /**
+   * Students a group check is assigned to (0 for a class-wide check). LIST
+   * endpoint only. Use `|| students.length` for the denominator of «صُحّح N من M».
+   */
+  audienceSize?: number;
+  /**
    * Questions actually on the paper right now, counted server-side. Returned
    * by the LIST endpoint only, and **not** the same as `targetQuestionCount`:
    * that is what was asked for, this is what the generator produced, and the
@@ -189,6 +194,15 @@ export async function setEvaluationClass(
   return data.evaluation;
 }
 
+/** Who a group check is for (support groups). Only while it is a draft. */
+export async function setEvaluationAudience(evaluationId: string, studentIds: string[]): Promise<string[]> {
+  const res = await apiFetch(`/evaluations/${evaluationId}/audience`, {
+    method: 'PUT',
+    body: JSON.stringify({ studentIds }),
+  });
+  return (await readJson<{ audience: string[] }>(res, 'Choosing the group')).audience;
+}
+
 export async function createEvaluation(input: {
   bookId: string;
   objectiveIds: string[];
@@ -202,9 +216,34 @@ export async function createEvaluation(input: {
   return data.evaluation;
 }
 
+/**
+ * Send a worksheet to one of the teacher's classes as a draft evaluation
+ * (`POST /evaluations/from-worksheet`). The server decides what is marked
+ * automatically and reports the split; a question with no answer in the key
+ * stops the send, and its paper numbers come back as `code: 'missing_key'`
+ * with the numbers in `details`.
+ */
+export async function createEvaluationFromWorksheet(input: {
+  worksheet: import('./worksheetAssignment.ts').WorksheetSendBody;
+  objectiveId: string;
+  classGroupId: string;
+  language: 'ar' | 'en';
+}): Promise<{ evaluation: Evaluation; autoMarked: number; teacherMarked: number }> {
+  const res = await apiFetch('/evaluations/from-worksheet', { method: 'POST', body: JSON.stringify(input) });
+  if (res.status === 400) {
+    let body: { error?: string; missingKey?: unknown } = {};
+    try { body = await res.json(); } catch { /* not JSON — fall through to the status */ }
+    if (Array.isArray(body.missingKey)) {
+      throw new EvaluationError(body.error ?? 'Missing answers', 400, 'missing_key', body.missingKey.map(String));
+    }
+    throw new EvaluationError(body.error ?? 'Sending the worksheet failed (400)', 400, '');
+  }
+  return readJson(res, 'Sending the worksheet');
+}
+
 export async function getEvaluation(
   id: string,
-): Promise<{ evaluation: Evaluation; questions: EvaluationQuestion[] }> {
+): Promise<{ evaluation: Evaluation; questions: EvaluationQuestion[]; audience: string[] | null }> {
   const res = await apiFetch(`/evaluations/${id}`);
   return readJson(res, 'Loading evaluation');
 }

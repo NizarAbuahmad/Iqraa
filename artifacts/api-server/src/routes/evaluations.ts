@@ -26,6 +26,7 @@ import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import {
   getBookById,
   getEvaluableBookIds,
+  getObjectiveById,
   getObjectivesForBook,
   lessonIdsForObjectiveIds,
   objectivesAreWithinBook,
@@ -44,6 +45,18 @@ import { passedLessonIds, unlockState } from "../modules/assessment/lessonProgre
 import { findLiveClass } from "../lib/classOwnership.js";
 import { archiveDecision } from "../lib/evaluationArchive";
 import {
+  audienceRequestDecision,
+  classChangeAllowed,
+  inAudience,
+  MAX_AUDIENCE,
+} from "../modules/assessment/audience.ts";
+import { isUuid } from "../lib/classResource.ts";
+import {
+  assignedStudentsByEvaluation,
+  evaluationAudience,
+  replaceEvaluationAudience,
+} from "../lib/evaluationAudience.ts";
+import {
   bankContextFor,
   generateMockEvaluation,
   type GenerationResult,
@@ -52,7 +65,9 @@ import { validateGenerated } from "../modules/assessment/validator";
 import { verificationAfterEdit, verifyAnswerKeys } from "../modules/assessment/keyVerification.ts";
 import { relateAnswerKey } from "../lib/mathVerifierClient.ts";
 import { QUESTION_TYPES } from "../modules/assessment/questionTypes";
-import { COMPETENCY_KEYS, type CompetencyKey } from "../modules/assessment/competency";
+import { COMPETENCY_KEYS, competencyForBlooms, type CompetencyKey } from "../modules/assessment/competency";
+import { convertWorksheet } from "../modules/assessment/fromWorksheet.ts";
+import { parseWorksheetRequest } from "../modules/assessment/worksheetRequest.ts";
 import { isPaperQuestion, parsePaperRows } from "../modules/assessment/paperExam";
 import { partitionForRegeneration } from "../modules/assessment/regeneration";
 import { aggregateClass, finishedAttempts } from "../modules/assessment/classInsights";
@@ -273,6 +288,126 @@ router.post("/evaluations", async (req: AuthenticatedRequest, res) => {
   }
 });
 
+/**
+ * A worksheet the teacher generated or saved, sent to one of their classes as a
+ * draft evaluation — reviewed and published on the ordinary detail screen.
+ *
+ * Scope comes from the one objective the teacher picked (its book, grade,
+ * subject; its Bloom level gives every question its competency). The questions
+ * come from `convertWorksheet`, which decides what is safe to mark
+ * automatically and sends the rest to the teacher; a question with no key
+ * stops the send rather than getting an invented one. Everything is written in
+ * one transaction, so a failure leaves no half-built draft behind.
+ *
+ * `source: "teacher"` — the teacher chose this paper. `verification` is left
+ * empty: nothing here was checked by the verifier, and nothing may claim it was.
+ */
+router.post("/evaluations/from-worksheet", async (req: AuthenticatedRequest, res) => {
+  try {
+    const parsed = parseWorksheetRequest(req.body);
+    if (!parsed.ok) {
+      res.status(400).json({ error: parsed.error });
+      return;
+    }
+    const { worksheet, objectiveId, classGroupId, title, language } = parsed.value;
+
+    const objective = getObjectiveById(objectiveId);
+    const book = objective ? getBookById(objective.bookId) : undefined;
+    if (!objective || !book || !getEvaluableBookIds().includes(book.id)) {
+      res.status(400).json({ error: "Unknown objective" });
+      return;
+    }
+    if (!(await findLiveClass(classGroupId, req.user!.id))) {
+      res.status(404).json({ error: "Class not found" });
+      return;
+    }
+
+    const converted = convertWorksheet(worksheet, language);
+    if (!converted.ok) {
+      res.status(400).json({ error: "Some questions have no answer in the key", missingKey: converted.missingKey });
+      return;
+    }
+    // The converter's tests prove this; the route still does not store what
+    // the registry would refuse to put in front of a student.
+    const problems = converted.questions.flatMap((q, i) =>
+      QUESTION_TYPES[q.type].validate({ ...q, rubric: null }).map(p => `Q${i + 1}: ${p}`),
+    );
+    if (problems.length > 0) {
+      res.status(400).json({ error: problems.join("; ") });
+      return;
+    }
+
+    const [defaultScale] = await db
+      .select({ id: levelScales.id })
+      .from(levelScales)
+      .where(and(eq(levelScales.scope, "system"), eq(levelScales.isDefault, true)))
+      .limit(1);
+    if (!defaultScale) {
+      res.status(409).json({
+        error:
+          "No level scale is configured. Seed the assessment configuration before creating evaluations.",
+        code: "no_level_scale",
+      });
+      return;
+    }
+
+    const competencyKey = competencyForBlooms(objective.effectiveBloomsLevel);
+    const total = converted.questions.reduce((sum, q) => sum + q.marks, 0);
+
+    const evaluation = await db.transaction(async tx => {
+      const [row] = await tx
+        .insert(evaluations)
+        .values({
+          teacherId: req.user!.id,
+          title,
+          titleAr: title,
+          gradeId: book.gradeId,
+          subjectId: book.subjectId,
+          bookId: book.id,
+          unitId: objective.unitId,
+          lessonId: objective.lessonId,
+          objectiveIds: [objectiveId],
+          difficulty: "standard",
+          targetQuestionCount: converted.questions.length,
+          assessmentTypes: [...new Set(converted.questions.map(q => q.type))],
+          language: book.subjectId === "english" ? "en" : language,
+          levelScaleId: defaultScale.id,
+          classGroupId,
+          generator: "worksheet",
+          generationParams: { fromWorksheet: true },
+          totalMarks: total.toFixed(2),
+        })
+        .returning();
+      await tx.insert(evaluationQuestions).values(
+        converted.questions.map((q, i) => ({
+          evaluationId: row!.id,
+          orderIndex: i,
+          type: q.type,
+          body: q.body,
+          expectedAnswer: q.expectedAnswer,
+          rubric: null,
+          objectiveId,
+          competencyKey,
+          marks: q.marks.toFixed(2),
+          difficulty: "standard" as const,
+          gradingMode: QUESTION_TYPES[q.type].defaultGradingMode,
+          source: "teacher" as const,
+        })),
+      );
+      return row!;
+    });
+
+    res.status(201).json({
+      evaluation,
+      autoMarked: converted.autoMarked,
+      teacherMarked: converted.teacherMarked,
+    });
+  } catch (err) {
+    logger.error({ err }, "evaluation from worksheet failed");
+    res.status(500).json({ error: "Failed to send the worksheet" });
+  }
+});
+
 router.get("/evaluations", async (req: AuthenticatedRequest, res) => {
   try {
     const classId = trimmed(req.query["classId"]);
@@ -289,6 +424,15 @@ router.get("/evaluations", async (req: AuthenticatedRequest, res) => {
         difficulty: evaluations.difficulty,
         totalMarks: evaluations.totalMarks,
         createdAt: evaluations.createdAt,
+        /**
+         * Students a group check is assigned to; 0 for a class-wide check.
+         * `evaluations.id` is literal: a `${evaluations.id}` column reference
+         * renders unqualified (`"id"`) and would bind to ea.id inside.
+         */
+        audienceSize: sql<number>`(
+          SELECT count(*)::int FROM evaluation_assignments ea
+          WHERE ea.evaluation_id = evaluations.id AND ea.student_id IS NOT NULL
+        )`,
         questionCount: sql<number>`(
           SELECT count(*)::int FROM evaluation_questions eq
           WHERE eq.evaluation_id = evaluations.id AND eq.deleted_at IS NULL
@@ -352,7 +496,8 @@ router.get("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
     }
     // Teacher view — answers and rubrics included. The student projection is a
     // different endpoint entirely, so the two cannot be confused.
-    res.json({ evaluation: row, questions: await liveQuestions(row.id) });
+    const assigned = (await assignedStudentsByEvaluation([row.id])).get(row.id);
+    res.json({ evaluation: row, questions: await liveQuestions(row.id), audience: assigned ?? null });
   } catch (err) {
     logger.error({ err }, "get evaluation failed");
     res.status(500).json({ error: "Failed to load evaluation" });
@@ -394,6 +539,33 @@ router.patch("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
       return;
     }
 
+    // A group check's students were checked against its class when the group
+    // was set. Detaching is always fine, and so is the class it is already in;
+    // moving it anywhere else is allowed only when that class holds every
+    // student in the group (audience.ts, classChangeAllowed).
+    const target = classGroupId || null;
+    if (target !== null && target !== evaluation.classGroupId) {
+      const assigned = (await assignedStudentsByEvaluation([evaluation.id])).get(evaluation.id) ?? [];
+      const inTarget = assigned.length
+        ? await db
+            .select({ id: students.id })
+            .from(classMemberships)
+            .innerJoin(students, eq(students.id, classMemberships.studentId))
+            .where(
+              and(
+                eq(classMemberships.classGroupId, target),
+                inArray(classMemberships.studentId, assigned),
+                eq(students.teacherId, req.user!.id),
+                isNull(students.archivedAt),
+              ),
+            )
+        : [];
+      if (!classChangeAllowed(assigned, new Set(inTarget.map(m => m.id)), target, evaluation.classGroupId)) {
+        res.status(409).json({ error: "This check is for a group in another class", code: "audience_class_locked" });
+        return;
+      }
+    }
+
     const [updated] = await db
       .update(evaluations)
       .set({ classGroupId: classGroupId || null, updatedAt: new Date() })
@@ -404,6 +576,56 @@ router.patch("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
   } catch (err) {
     logger.error({ err }, "attach evaluation to class failed");
     res.status(500).json({ error: "Failed to update the evaluation" });
+  }
+});
+
+/**
+ * Who a group check is for (support groups, 2026-10-09): replaces the
+ * evaluation's student-level assignments. Only while it is a draft attached to
+ * a class, and only with live members of that class — see audience.ts.
+ */
+router.put("/evaluations/:id/audience", async (req: AuthenticatedRequest, res) => {
+  try {
+    const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
+    if (!evaluation) {
+      res.status(404).json({ error: "Evaluation not found" });
+      return;
+    }
+    const requested = Array.isArray(req.body?.studentIds)
+      ? (req.body.studentIds as unknown[]).filter((v): v is string => typeof v === "string").map(v => v.trim()).filter(Boolean).filter(isUuid)
+      : [];
+    // A non-uuid id would be a 500 from the uuid column; it is simply not a
+    // member, and the decision below answers 400 audience_not_member. An
+    // oversized list is refused by the decision without a lookup.
+    const members = evaluation.classGroupId && requested.length && requested.length <= MAX_AUDIENCE
+      ? await db
+          .select({ id: students.id })
+          .from(classMemberships)
+          .innerJoin(students, eq(students.id, classMemberships.studentId))
+          .where(
+            and(
+              eq(classMemberships.classGroupId, evaluation.classGroupId),
+              inArray(classMemberships.studentId, requested),
+              eq(students.teacherId, req.user!.id),
+              isNull(students.archivedAt),
+            ),
+          )
+      : [];
+    const decision = audienceRequestDecision({
+      status: evaluation.status,
+      classGroupId: evaluation.classGroupId,
+      studentIds: req.body?.studentIds,
+      memberIds: new Set(members.map(m => m.id)),
+    });
+    if (!decision.ok) {
+      res.status(decision.status).json({ error: decision.error, code: decision.code });
+      return;
+    }
+    await replaceEvaluationAudience(evaluation.id, decision.studentIds, req.user!.id);
+    res.json({ audience: decision.studentIds });
+  } catch (err) {
+    logger.error({ err }, "set evaluation audience failed");
+    res.status(500).json({ error: "Failed to set who this check is for" });
   }
 });
 
@@ -1546,6 +1768,13 @@ router.post("/evaluations/:id/attempts", async (req: AuthenticatedRequest, res) 
       .limit(1);
     if (existing) {
       res.json({ attempt: existing, created: false });
+      return;
+    }
+
+    // A group check is for its group only — the same rule the share link and
+    // the student's own list apply (audience.ts).
+    if (!inAudience(await evaluationAudience(evaluation.id), studentId)) {
+      res.status(403).json({ error: "This check is for a group; this student is not in it", code: "not_in_group" });
       return;
     }
 

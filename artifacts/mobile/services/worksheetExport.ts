@@ -5,6 +5,7 @@
  */
 import type * as Docx from 'docx';
 
+import type { PrintStyle } from './printStyle.ts';
 import type { WorksheetOutput } from './ai/AIService.ts';
 import { buildWordDocument } from './docxBuild.ts';
 import { buildWorksheetHTML, type BookFigureRef } from './exportHtml.ts';
@@ -18,12 +19,13 @@ export function worksheetExports(
   isAr: boolean,
   copy: QuizCopy,
   figures: readonly BookFigureRef[] = [],
+  style: PrintStyle = 'colour',
 ) {
   const withKey = copy === 'teacher';
   const text = formatWorksheetText(ws, title, meta, isAr, withKey);
   return {
     text,
-    html: buildWorksheetHTML(ws, title, meta, isAr, figures, withKey),
+    html: buildWorksheetHTML(ws, title, meta, isAr, figures, withKey, style),
     word: (docx: typeof Docx) => buildWordDocument(text, isAr, docx),
   };
 }

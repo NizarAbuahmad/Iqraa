@@ -15,6 +15,10 @@
 import {
   lessonKindClauseAr, lessonKindClauseEn, usesWorkedExample, worksheetKindRuleAr, worksheetKindRuleEn,
 } from "./lessonKinds.ts";
+import { QUIZ_TYPE_ORDER, type QuizType } from "./generationShape.ts";
+
+/** «السؤال الأول» … — how a ministry paper numbers its question blocks. */
+const ORDINAL_AR = ["الأول", "الثاني", "الثالث", "الرابع", "الخامس", "السادس"];
 
 // ─── System prompts ──────────────────────────────────────────────────────────
 /**
@@ -361,6 +365,41 @@ Required structure (worked example, then faded, then independent):
 5. If the lesson has no multi-step procedure worth modelling (a definitions-only lesson, say), omit "workedExample", make no question half-solved, and give ${n} questions as usual.`;
 }
 
+/**
+ * What each worksheet question type carries in JSON.
+ *
+ * The prompt's example shows one `{ "text", "points" }` item, so a model asked
+ * for multiple choice had nowhere shown to put the options — they arrived
+ * inside `text` or not at all, and `buildWorksheetHTML` (which prints
+ * `options` as lettered rows) drew ruled lines under them. Only the requested
+ * types are described, like the quiz's contracts.
+ */
+const WORKSHEET_TYPE_SHAPE_AR: Record<string, string> = {
+  multiple_choice: `- multiple_choice: السؤال يحمل "options" أربعة خيارات نصّية بلا أحرف ترقيم، واحد منها صحيح، والمشتّتات أخطاء شائعة؛ وإجابته في answerKey نصّ الخيار الصحيح.`,
+  true_false: `- true_false: "text" عبارة خبرية صحيحة أو خاطئة بلا لبس، و"options": ["صح", "خطأ"]؛ وإجابته في answerKey «صح» أو «خطأ» مع تصويب العبارة الخاطئة.`,
+  fill_blank: `- fill_blank: "text" جملة فيها فراغ أو فراغان بعشر شرطات سفلية «__________» بلا "options"؛ وإجابته الكلمات الناقصة بالترتيب.`,
+  short_answer: `- short_answer: سؤال يُجاب عنه بجملة أو جملتين أو بحل قصير، بلا "options".`,
+  word_problem: `- word_problem: مسألة حياتية بسيناريو واقعي، بلا "options"؛ وإجابته خطوات الحل باختصار ثم الناتج.`,
+};
+
+const WORKSHEET_TYPE_SHAPE_EN: Record<string, string> = {
+  multiple_choice: `- multiple_choice: the question carries "options" — four plain option texts with no leading letters, one correct, distractors being common mistakes; its answerKey entry is the correct option's text.`,
+  true_false: `- true_false: "text" is one declarative statement, unambiguously true or false, with "options": ["True", "False"]; its answerKey entry is "True" or "False" plus the corrected statement when false.`,
+  fill_blank: `- fill_blank: "text" is a sentence with one or two blanks written as ten underscores "__________", no "options"; its answer lists the missing words in order.`,
+  short_answer: `- short_answer: answered in a sentence or two or a short working, no "options".`,
+  word_problem: `- word_problem: a realistic scenario, no "options"; its answer is the working in brief, then the result.`,
+};
+
+function worksheetTypeShapesAr(types: string[]): string {
+  const lines = types.map(t => WORKSHEET_TYPE_SHAPE_AR[t]).filter(Boolean);
+  return lines.length ? `شكل كل نوع (و"type" كل قسم أحد هذه الأنواع فقط):\n${lines.join("\n")}` : "";
+}
+
+function worksheetTypeShapesEn(types: string[]): string {
+  const lines = types.map(t => WORKSHEET_TYPE_SHAPE_EN[t]).filter(Boolean);
+  return lines.length ? `The shape of each type (and every section's "type" is one of these only):\n${lines.join("\n")}` : "";
+}
+
 export function worksheetPromptAr(b: any): string {
   const n = b.numQuestions ?? 8;
   const isHW = b.homework;
@@ -373,7 +412,8 @@ export function worksheetPromptAr(b: any): string {
     : null;
   return `أنشئ ${isHW ? "واجبًا منزليًا" : "ورقة عمل"} لمادة ${b.subject} للصف ${b.grade} حول "${b.topic}".
 عدد الأسئلة: ${n}
-أنواع الأسئلة المطلوبة: ${types.join(", ")}
+أنواع الأسئلة المطلوبة (لا تستعمل غيرها، ووزّع الأسئلة عليها): ${types.join(", ")}
+${worksheetTypeShapesAr(types)}
 ${difficultyClauseAr(b)}
 ${wantsWP ? "\nيجب تضمين مسألة حياتية واحدة على الأقل (سيناريو واقعي يتطلب تطبيق مفاهيم الدرس، بأسلوب «حل مسائل حياتية»)." : ""}
 ${prior ? `\nابدأ بقسم «مراجعة سابقة» فيه سؤالان أو ثلاثة فقط مبنية حرفيًا على هذه المفاهيم السابقة (لا تختلق غيرها):\n- ${prior.join("\n- ")}` : ""}
@@ -417,7 +457,8 @@ export function worksheetPromptEn(b: any): string {
   return `Create a ${isHW ? "homework assignment" : "worksheet"} for ${b.subject}, ${b.grade}, on "${b.topic}".
 Number of questions: ${n}
 ${difficultyClauseEn(b)}
-Question types: ${types.join(", ")}
+Question types requested (use no others, and spread the questions across them): ${types.join(", ")}
+${worksheetTypeShapesEn(types)}
 ${wantsWP ? "\nInclude at least one real-life word problem (a realistic scenario that requires applying the lesson concepts)." : ""}
 ${prior ? `\nStart with a "Prior knowledge review" section of 2–3 questions drawn only from these concepts (do not invent others):\n- ${prior.join("\n- ")}` : ""}
 ${b.additionalContext ? `\nTextbook context (use this to craft accurate, curriculum-aligned questions):\n${b.additionalContext}` : ""}
@@ -448,13 +489,78 @@ Return JSON in this exact shape:
 Important: every question must have a matching answerKey entry.`;
 }
 
+// ─── Quiz ────────────────────────────────────────────────────────────────────
+/**
+ * What each quiz question type must look like, and how the paper is laid out.
+ *
+ * The prompt used to send the teacher's picks as raw tokens («أنواع الأسئلة:
+ * multiple_choice, true_false») beside a single MCQ example, so the model had
+ * nothing to say what a true/false or fill-blank item *is* here, nor that
+ * other types were off limits, nor how many of each. Papers came back all
+ * MCQ, or with true/false items carrying four options, in whatever order the
+ * model felt like — and the server checked only that `questions` existed.
+ *
+ * `normalizeQuiz` (`generationShape.ts`) is the backstop for a model that
+ * still ignores this; the two must agree on type names, the true/false option
+ * pair and `QUIZ_TYPE_ORDER`. The offline generator in
+ * `artifacts/mobile/services/ai/generators.ts` builds the same grouped order.
+ */
+const QUIZ_TYPE_CONTRACT_AR: Record<QuizType, string> = {
+  multiple_choice: `"multiple_choice": "options" أربعة خيارات نصّية بلا أحرف ترقيم في أولها (لا «أ)» ولا «1.»)، واحد منها فقط صحيح، و"correctAnswer" نصّ الخيار الصحيح حرفيًا كما ورد في "options". المشتّتات أخطاء شائعة يقع فيها الطالب فعلًا (خطأ حسابي معروف، خلط بين مصطلحين، شرط منسي) — وممنوع «جميع ما سبق» و«لا شيء مما سبق».`,
+  true_false: `"true_false": "text" عبارة خبرية واحدة صحيحة أو خاطئة بلا أي لبس، "options": ["صح", "خطأ"] دائمًا، و"correctAnswer" إحداهما حرفيًا. اجعل نصف العبارات تقريبًا خاطئة، والخطأ في تفصيل محدد (رقم، مصطلح، شرط، اتجاه) لا في عبارة سخيفة يرفضها أي طالب.`,
+  fill_blank: `"fill_blank": "text" جملة من الدرس فيها فراغ واحد أو اثنان مكتوبان بعشر شرطات سفلية «__________»، بلا "options"، و"correctAnswer" الكلمات أو القيم الناقصة بالترتيب مفصولة بـ«؛».`,
+  short_answer: `"short_answer": سؤال يُجاب عنه بجملة أو جملتين أو بحل قصير (احسب، علّل، قارن، اذكر)، بلا "options"، و"correctAnswer" الإجابة النموذجية — وفي الرياضيات والعلوم خطوات الحل باختصار ثم الناتج.`,
+};
+
+const QUIZ_TYPE_CONTRACT_EN: Record<QuizType, string> = {
+  multiple_choice: `"multiple_choice": "options" is four plain option texts with no leading letters or numbers (no "A)", no "1."), exactly one correct, and "correctAnswer" is that option's text verbatim as it appears in "options". Distractors are mistakes a student actually makes (a known slip, two confused terms, a forgotten condition) — never "all of the above" or "none of the above".`,
+  true_false: `"true_false": "text" is one declarative statement that is unambiguously true or false, "options" is always ["True", "False"], and "correctAnswer" is one of those two verbatim. Make roughly half the statements false, with the error in a specific detail (a number, a term, a condition, a direction), never an absurdity.`,
+  fill_blank: `"fill_blank": "text" is a sentence from the lesson with one or two blanks written as ten underscores "__________", no "options", and "correctAnswer" lists the missing words or values in order, separated by ";".`,
+  short_answer: `"short_answer": a question answered in a sentence or two or a short working (calculate, justify, compare, state), no "options", and "correctAnswer" is the model answer — in maths and science the working in brief, then the result.`,
+};
+
+const QUIZ_SECTION_NAME_AR: Record<QuizType, string> = {
+  multiple_choice: "الاختيار من متعدد",
+  true_false: "صح / خطأ",
+  fill_blank: "أكمل الفراغ",
+  short_answer: "الإجابة القصيرة",
+};
+
+/** The teacher's picks, in ministry order, with anything unknown dropped. */
+export function quizTypes(b: any): QuizType[] {
+  const asked = Array.isArray(b.questionTypes) ? b.questionTypes.map(String) : [];
+  const known = QUIZ_TYPE_ORDER.filter(t => asked.includes(t));
+  return known.length ? known : ["multiple_choice", "true_false"];
+}
+
+const QUIZ_VARIETY_RULE_AR = `تنويع الأسئلة (اختبار مدرسي حقيقي لا قائمة متشابهة):
+- نوّع المستويات المعرفية: استرجاع، فهم، تطبيق، وسؤال واحد على الأقل يتطلب تحليلًا أو ربطًا بموقف من الحياة.
+- نوّع صيغ الأسئلة: لا تبدأ أكثر من سؤالين بالصيغة نفسها («أيّ مما يأتي…»)، واستعمل صيغ الكتاب: «احسب»، «علّل»، «قارن»، «ما ناتج…»، «ما المقصود بـ…»، «أكمل».
+- غطِّ أجزاء الدرس المختلفة، ولا تسأل عن الفكرة نفسها مرتين بصياغتين.
+- المحتوى من الكتاب المدرسي وبمصطلحاته، ولا تشر في نص السؤال إلى «الدرس» أو «الفقرة» أو «الفيديو».`;
+
+const QUIZ_VARIETY_RULE_EN = `Vary the questions (a real school exam, not a list of look-alikes):
+- Vary the cognitive demand: recall, comprehension, application, and at least one item that requires analysis or a link to a real-life situation.
+- Vary the stems: no more than two questions open the same way ("Which of the following…"); use the book's own forms: "Calculate", "Justify", "Compare", "What is the result of…", "What is meant by…", "Complete".
+- Cover different parts of the lesson; never ask the same idea twice in two wordings.
+- Content and terminology come from the textbook; the question text never refers to "the lesson", "the paragraph" or "the video".`;
+
 export function quizPromptAr(b: any): string {
   const n = b.numQuestions ?? 10;
   const marks = b.totalMarks ?? 20;
+  const types = quizTypes(b);
+  const sections = types.map((t, i) => `السؤال ${ORDINAL_AR[i]}: ${QUIZ_SECTION_NAME_AR[t]}`).join("، ثم ");
   return `أنشئ اختبارًا لمادة ${b.subject} للصف ${b.grade} حول "${b.topic}".
 عدد الأسئلة: ${n}، العلامة الكاملة: ${marks}
-أنواع الأسئلة: ${(b.questionTypes ?? ["multiple_choice", "true_false"]).join(", ")}
 ${quizDifficultyClauseAr(b)}
+
+أنواع الأسئلة المطلوبة — لا تستعمل غيرها، ووزّع الأسئلة الـ${n} عليها بالتساوي قدر الإمكان: ${types.join(", ")}
+رتّب الورقة كما في اختبارات وزارة التربية والتعليم الأردنية: كل نوع في مجموعة متتالية، بهذا الترتيب: ${sections}. لا تخلط الأنواع داخل المجموعة الواحدة.
+شكل كل نوع في JSON:
+${types.map(t => `- ${QUIZ_TYPE_CONTRACT_AR[t]}`).join("\n")}
+العلامات: مجموع "points" لكل الأسئلة يساوي ${marks} بالضبط؛ أسئلة الاختيار وصح/خطأ وأكمل علامة أو علامتان للسؤال، والأسئلة المفتوحة أكثر.
+
+${QUIZ_VARIETY_RULE_AR}
 ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه لصياغة أسئلة دقيقة ومرتبطة بالمنهج):\n${b.additionalContext}` : ""}
 أعد JSON بالشكل الآتي (بالعربية):
 {
@@ -464,10 +570,10 @@ ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه 
   "questions": [
     {
       "id": "q1",
-      "type": "multiple_choice",
+      "type": "${types[0]}",
       "text": "نص السؤال",
-      "options": ["أ) خيار", "ب) خيار", "ج) خيار", "د) خيار"],
-      "correctAnswer": "أ) الخيار الصحيح",
+      "options": ["خيار", "خيار", "خيار", "خيار"],
+      "correctAnswer": "نص الخيار الصحيح",
       "points": 2,
       "explanation": "تفسير الإجابة"
     }
@@ -478,10 +584,19 @@ ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه 
 export function quizPromptEn(b: any): string {
   const n = b.numQuestions ?? 10;
   const marks = b.totalMarks ?? 20;
+  const types = quizTypes(b);
+  const sections = types.map((t, i) => `Question ${i + 1}: ${t}`).join(", then ");
   return `Create a quiz for ${b.subject}, ${b.grade}, on "${b.topic}".
 Number of questions: ${n}, total marks: ${marks}
-Question types: ${(b.questionTypes ?? ["multiple_choice", "true_false"]).join(", ")}
 ${quizDifficultyClauseEn(b)}
+
+Question types requested — use no others, and spread the ${n} questions across them as evenly as the count allows: ${types.join(", ")}
+Lay the paper out as a Jordanian Ministry of Education exam does: each type in one consecutive block, in this order: ${sections}. Never mix types inside a block.
+The JSON shape of each type:
+${types.map(t => `- ${QUIZ_TYPE_CONTRACT_EN[t]}`).join("\n")}
+Marks: the "points" of all questions sum to exactly ${marks}; choice, true/false and fill-blank items carry one or two marks each, open questions more.
+
+${QUIZ_VARIETY_RULE_EN}
 ${b.additionalContext ? `\nTextbook context (use this to craft accurate, curriculum-aligned questions):\n${b.additionalContext}` : ""}
 Return JSON in this exact shape:
 {
@@ -491,10 +606,10 @@ Return JSON in this exact shape:
   "questions": [
     {
       "id": "q1",
-      "type": "multiple_choice",
+      "type": "${types[0]}",
       "text": "Question text",
-      "options": ["A) option", "B) option", "C) option", "D) option"],
-      "correctAnswer": "A) correct option",
+      "options": ["option", "option", "option", "option"],
+      "correctAnswer": "the correct option's text",
       "points": 2,
       "explanation": "Explanation of answer"
     }

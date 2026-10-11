@@ -24,6 +24,8 @@ import { applyClassroomSetup } from '@/services/classroomRouting';
 import { ApiError, apiFetch } from '../apiClient';
 import { describeAiError, generateWithProvenance, recordGeneration } from './aiProvenance.ts';
 import { streamChat, type ChatParams } from './chatStreamClient';
+import type { BoardSolution } from '@workspace/math-verify';
+import { acceptSolveResponse, type SolveRequest } from '../solve';
 
 // Routes under /generate/* and /chat require auth (routes/index.ts scopes
 // authMiddleware to those prefixes) — go through apiFetch, not a bare fetch(),
@@ -221,6 +223,29 @@ export class RemoteAIService extends AIService {
       'lesson-teaching',
       () => postJSON<LessonTeachingOutput>('/generate/lesson-teaching', req, opts),
       () => { throw new Error('lesson-teaching has no offline fallback'); },
+      { demoMode: false, strict: true },
+    );
+  }
+
+  /**
+   * «حلّ مسألة» on the whiteboard.
+   *
+   * `demoMode: false`: a mock "solution" would be a fabricated worked answer on a
+   * classroom wall, and the call is useless without the model. `strict: true`:
+   * there is no offline twin to fall back to — a failure reaches the dialog,
+   * which says what happened. The response is validated INSIDE the live call so
+   * an unusable one is recorded as a failure, not as a live success.
+   */
+  async solveProblem(req: SolveRequest, opts?: GenerateOptions): Promise<BoardSolution> {
+    return generateWithProvenance(
+      'solve',
+      async () => {
+        const raw = await postJSON<unknown>('/generate/solve', req, opts, 60_000);
+        const accepted = acceptSolveResponse(raw);
+        if (!accepted) throw new ApiError('The solution was not usable.', 'no_solution');
+        return accepted;
+      },
+      () => { throw new Error('solve has no offline fallback'); },
       { demoMode: false, strict: true },
     );
   }

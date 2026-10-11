@@ -56,6 +56,17 @@ describe('printed worksheet: exponents', () => {
     assert.ok(!questions.includes('^'), 'a caret reached the paper');
   });
 
+  // Found printing the half-solved question «4^(x+1) = 2^(2(x+1))»: a
+  // bracket inside the exponent ended the match early and left the caret.
+  it('raises an exponent that holds brackets of its own', () => {
+    const ws = sheet({ sections: [{ type: 'short_answer', title: 'أ', questions: [
+      { text: 'قوة القوة: 4^(x+1) = 2^(2(x+1))', points: 2 },
+    ] }] });
+    const html = plain(buildWorksheetHTML(ws, 'ورقة', meta, true, [], false));
+    assert.ok(html.includes('2<sup>2(x+1)</sup>'), 'nested exponent');
+    assert.ok(!cards(html).join('').includes('^'), 'a caret reached the paper');
+  });
+
   // <title> holds text only: a tag there is printed literally, in the browser
   // tab and as the saved PDF's name.
   it('keeps markup out of the document title', () => {

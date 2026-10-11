@@ -29,6 +29,8 @@ import {
   type AuthenticatedRequest,
 } from "../middlewares/auth.js";
 import { logger } from "../lib/logger";
+import { inAudience } from "../modules/assessment/audience.ts";
+import { evaluationAudience } from "../lib/evaluationAudience.ts";
 import { audioKeysForAttempt, deleteAttemptAudio, withRecordingUrls } from "../lib/attemptAudio.ts";
 import { presignedGetUrl } from "../lib/r2.js";
 import {
@@ -524,6 +526,15 @@ router.patch("/attempts/:id", async (req: AuthenticatedRequest, res) => {
       const [eligible] = await eligibleQuery.limit(1);
       if (!eligible) {
         res.status(404).json({ error: "Student not found" });
+        return;
+      }
+      // A group check is for its group: a paper cannot be moved onto a
+      // classmate outside it.
+      if (!inAudience(await evaluationAudience(owned.attempt.evaluationId), studentId)) {
+        res.status(403).json({
+          error: "This check is for a group; this student is not in it",
+          code: "not_in_group",
+        });
         return;
       }
       // One sitting per student per exam. Moving onto a student who already
