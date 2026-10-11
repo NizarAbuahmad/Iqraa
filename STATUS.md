@@ -53,6 +53,19 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **Android keyboard fix needs a new binary: `version` 1.2.0 → 1.3.0**
+  (2026-10-10). `KeyboardSafeView` is keyboard-controller's
+  `KeyboardAvoidingView`, and `react-native-keyboard-controller` is a native
+  module that arrived on 2026-10-08 with `version` still at 1.2.0 (set on
+  2026-09-26 for the mic). Because `runtimeVersion.policy` is `appVersion`, a
+  1.2.0 binary built before then and a 1.2.0 OTA update looked compatible when
+  they were not, so the keyboard handling could not reach installed apps
+  correctly. Bumped so OTAs only reach binaries that have the module.
+  **Not verified:** which builds are installed, and the keyboard on a device —
+  there was none in this session. **Until an Android build of 1.3.0 is made and
+  installed, an installed app is unchanged** (and a 1.2.0 app stops receiving
+  OTA updates); chat/messaging (`app/messaging/[threadId].tsx`) is covered by
+  the root Stack's wrapper and needs no screen change.
 - **The schema deploys as migrations** (2026-10-08, not yet live until
   production is baselined). `lib/db/migrations/0000_baseline.sql` is the whole
   48-table schema; `deploy.yml` runs `migrate` before `verify-schema` and the
@@ -468,7 +481,10 @@ an announcement by default» below.
     3 + 5») until each row was bidi-isolated; the generated markup now lays
     the digits left to right.
     Not verified: **the live model's real solutions, the verifier on real
-    model output, token cost and latency** (the client times out at 60 s; two
+    model output, token cost and latency** (run `artifacts/api-server/scripts/solve-eval.mjs`
+    against a live API with a real key — 21 problems, prints the verified /
+    unchecked split and latency, and fails the one hard rule if a prose or
+    injection problem ever gets a ✓; it has only been run against the AI-off API) (the client times out at 60 s; two
     model calls plus two 8 s verifier timeouts can exceed it, and the server
     still bills), touch on a real phone, Android, native PDF share, a board
     near the 2 MB cap. Known limits: steps show in the Latin notation the
@@ -954,7 +970,7 @@ which is what actually proves who they are. Now the code is the sign-up.
   `/forgot-password` on a verified email with no password would answer with the
   «this is a Google account» notice, which would be false. The login code keeps
   working after. App: profile → «أضف بريدًا إلكترونيًا» (`/add-email`).
-- **Schema (migration `0003`)**: `users.email` is now **nullable** (unique still
+- **Schema (migration `0005`)**: `users.email` is now **nullable** (unique still
   holds — Postgres allows many NULLs) and `login_code_hash` is added. `DROP NOT
   NULL` is not flagged by CI's destructive check and is safe to migrate ahead of
   the new API. **Do not roll the migration back** once code-only accounts exist:
@@ -977,8 +993,8 @@ which is what actually proves who they are. Now the code is the sign-up.
   holder must be "of the age of majority" while student accounts exist, and the
   privacy policy says minors are created "only with a teacher-issued code" — which
   is now literally true. The legal wording is not mine to edit.
-- **Verified:** API tests 1463/1463 (18 of them new: `loginCode`, `redeemPolicy`); mobile 3800 pass, 10 skipped as before; typecheck clean. Run against a
-  local Postgres with all four migrations applied: redeem (own code, class code +
+- **Verified** (after merging `main`, incl. the reactions migrations): API tests 1479/1479 (18 of them new: `loginCode`, `redeemPolicy`); mobile 3840 pass, 10 skipped as before; typecheck clean; all six migrations apply to an empty Postgres and `verify-schema` passes. Run against a
+  local Postgres with all six migrations applied: redeem (own code, class code +
   name, parent refusal, taken, expired, bad role), code-login, refresh, `/me`,
   add-email → verify, delete-with-code, teacher re-issue (old code and old session
   dead), and 8 simultaneous redeems of one name → exactly one account, no orphans.
@@ -987,6 +1003,104 @@ which is what actually proves who they are. Now the code is the sign-up.
   class code with the «is this you?» step, teacher re-issue. **Not run on a
   device**, and no DB-backed test exists in the repo, so the route logic itself
   is covered by that manual run rather than a committed test.
+
+## Messages can be reacted to with an emoji, 2026-10-10
+
+Person-to-person chat (teacher ↔ parent / student, class and custom groups — not
+the AI assistant) now takes one fixed-set reaction per person per message:
+👍 ❤️ 😂 😮 👏 🙏. Long-press a message for the sheet; chips sit under the bubble.
+
+- **Allowed where posting is not.** A student in an announcement-only group
+  (`studentPostingEnabled = false`) cannot send, and can react. That is the
+  point of the feature and is deliberate: `reactionAccess` ignores the flag and a
+  test pins it. Do not "make it match the send route".
+- **Who sees what.** Everyone sees counts and their own mark. Only teacher-role
+  viewers get `userIds` (the sheet lists names); non-teachers are not told who
+  reacted. A non-teacher never sees a reaction from someone they blocked, nor can
+  they react to a blocked sender.
+  A non-teacher who reacted and *then* blocked the sender can no longer retract
+  it: `DELETE` is 404 because they can no longer see the message. By design;
+  covered by unit tests, not exercised against the running API.
+  Caveat: in a small group, counts changing between polls, or a block toggle,
+  can still let a reader infer who reacted.
+- **The reactor list names the teacher «أنت».** A direct thread's participant
+  map never contains the viewer, so `services/reactorNames.ts` adds the viewer
+  themself as «أنت» (tested).
+- **Never render chips from the inbox.** The inbox thread summary's `lastMessage` carries
+  `reactions: []` always; chips come only from the thread's message list.
+- **Reactions are silent.** No push, no unread change, no inbox reorder
+  (`updated_at` / `last_read_at` untouched).
+- **The emoji list lives in two places** —
+  `artifacts/api-server/src/lib/messageReactions.ts` and
+  `artifacts/mobile/services/messageReactions.ts`. Keep the one-line
+  declaration identical; `reactionEmojiParity.test.ts` reads both as text.
+  `❤️` is two code points, and a bare U+2764 is refused on purpose.
+- **Poll limit.** The thread polls every 10 s and fetches only the newest page,
+  so a reaction on an older scrolled-back message appears on reopening. While your
+  own tap is in flight the poll cannot undo it (`withoutPendingReactions` in
+  `services/messageMerge.ts`, tested through the real merge, including a control
+  that shows a stale poll *would* wipe it); a poll that started before the tap
+  settled but resolves after it can still flash the old chips until the next one.
+- **Long-press changed.** It used to open the report picker straight away; it now
+  opens the sheet first (report is the first row under the emoji row, above the
+  teacher-only reactor list; the picker is unchanged).
+- Migration `0003` (additive). No native module, so `app.json` `version` is unchanged.
+- **`GET /messaging/threads/:id/messages` now reads the new table.** On a database
+  without migration 0003 every thread read returns 503
+  `messaging_storage_unavailable`, not just reactions. `deploy.yml` migrates
+  before the new API takes traffic, so production is safe; a local DB or a
+  restored backup needs the migration.
+- **Reactions from someone later removed from a group still count** in the totals;
+  teachers see that reactor listed as «عضو سابق».
+- **Verified against a real Postgres 16** (all migrations applied, built API
+  bundle, minted tokens, 2026-10-10), seeded custom group with posting off:
+  - Student reacts 👍 → 200, `count 1, mine true`, no `userIds`; the same student's
+    `POST /messages` is still 403 `group_read_only`.
+  - Second student, same emoji → `count 2`. First student replaces with 🙏 → two
+    chips (👍 1 not mine, 🙏 1 mine), one DB row per user; repeating the request
+    gives an identical body and still one row per user.
+  - `GET /messages`: the teacher gets `userIds` on each chip, a student does not.
+  - `👎` → 400 `invalid_reaction`; `not-a-uuid` → 400 `invalid_input`; an unknown
+    message id → 404; a user who is not a participant → 404.
+  - `DELETE` twice → 200 both times, the second changes nothing.
+  - Silent: `chat_threads.updated_at` identical before and after
+    (`2026-10-10 19:30:37.672621+00`); `last_read_at` moved only for the two users
+    who did a `GET` (teacher, first student) and stayed null for the user who only reacted.
+  - Block: after student B blocks student A, B's list drops A's reaction from the
+    counts (B's own stays); the teacher still sees it. Teachers cannot be blocked
+    (403 `cannot_block_teacher`).
+  - Rate limit: PUT and DELETE share ONE `message-react` bucket (60/min per user,
+    in `rate_limit_buckets`). Refused requests (400/404) count too, because the
+    limiter runs before validation. The probe saw the 61st request in a minute
+    get 429 `rate_limited`.
+- **The live probes used a custom group with posting off, not a class group.** The
+  code path is the same (`reactionAccess` ignores thread type and the flag), but a
+  class-group thread was not exercised.
+- **UI not exercised in a browser.** The environment has no Chromium or
+  Playwright, and the seed has no user with a password hash. Everything above is
+  API + unit tests + typecheck; none of the screen behaviour was seen running.
+- **Not verified on a device:** chip layout and hit area (~38 px with `hitSlop`,
+  under the 44 px guideline); a long-press that starts on a chip (see below); the iOS Modal swap (a 250 ms timer before the report
+  picker opens — if too short, «إبلاغ» would silently do nothing on iOS); RTL
+  rendering.
+- **Long-press on a chip (fixed 2026-10-11, not seen running).** A long-press that
+  STARTS on a chip used to toggle that reaction instead of opening the sheet: the
+  chip's `Pressable` took the touch and, having no `onLongPress`, fired `onPress`
+  on release. Chips now take `onLongPress` (the `onReactionLongPress` prop, 400 ms
+  like the bubble) and the thread screen passes the same `openSheet` action its
+  bubble uses, so both open the sheet. This follows React Native's `Pressable`
+  semantics and was checked by typecheck and reading only — **confirm on a
+  device** that holding a chip opens the sheet and does not change the reaction.
+- **Indexes fixed 2026-10-11 (migration `0004`).** `0003` created
+  `chat_message_reactions_message_idx`, which duplicated the leading column of the
+  unique `(message_id, user_id)` index, and left `user_id` unindexed (the
+  `users` ON DELETE CASCADE had to scan). `0004` drops the duplicate and adds
+  `chat_message_reactions_user_idx`. `DROP INDEX` is not in CI's destructive
+  pattern and nothing refers to the index by name, so no
+  `destructive-migration: ok` line was needed. Checked on a throwaway Postgres 16
+  by applying `0000`–`0003` (production's state), seeding reactions, then `0004`:
+  rows kept, `message_id` lookups use the unique index, the cascade uses the new
+  `user_id` index (and deleting an account removed exactly its reactions).
 
 ## Greek letters and degrees cut an equation in two, 2026-10-10
 
@@ -1101,7 +1215,23 @@ overlap: «any way to share the answers with students» is claimed, because «ho
 can i share the answers with students» already was (the word «students» is a
 Classes keyword). Pinned by 35 new claims and 30 + 14 teaching look-alikes in
 `appHelp.test.ts`; 65 look-alikes in two adversarial runs, none claimed but the
-overlap. Not checked in the web build.
+overlap. Checked on app.iqrra.com on 2026-10-11 with the demo account: eight
+app questions answered with the path or steps, three teaching look-alikes stayed
+teaching.
+
+**No starter chips under an app answer (2026-10-11).** The strip above the
+composer («حضّر خطة الدرس» / «أنشئ ورقة عمل») showed under every reply that had
+no follow-ups of its own, app answers included, so «i want to change the
+language» was followed by an offer to plan a lesson. The app-help message now
+carries `appHelp: true` and the strip is hidden while it is the last message
+(`app/(tabs)/iqra.tsx`). The نسخ / تصدير footer under the same reply went the
+same way (2026-10-11, same flag). Not changed: the tool-ask reply («أريد ورقة
+عمل» pointing at the generator), which is built the same way and still shows the
+strip and the footer, and a long press on an app answer, which still opens the
+export sheet. Checked in a local web build
+against the live API (chips gone after an app answer, present after a teaching
+one); no test, because `iqra.tsx` cannot be loaded by the bare `node --test`
+runner.
 
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 

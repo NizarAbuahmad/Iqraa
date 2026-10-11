@@ -273,6 +273,7 @@ const translations = {
     // Curriculum — top level
     curriculumTitle: 'المنهاج',
     jordanCurriculum: 'المنهاج الأردني',
+    nationalBookNote: 'الكتاب الوطني المعتمد من وزارة التربية والتعليم الأردنية',
     curriculumIntro:
       'تصفّح المنهاج الأردني الرسمي حسب الصف والمادة والوحدة والدرس — بالترتيب نفسه وأرقام الصفحات نفسها الموجودة في الكتاب المطبوع، لتراجع محتوى الكتاب الحقيقي مباشرة من هنا.',
     searchSubjects: 'ابحث في المواد…',
@@ -468,7 +469,9 @@ const translations = {
     downloadActivityBook: 'كتاب الأنشطة',
     // Books are republished yearly by NCCD — the year is what tells a teacher
     // whether the linked edition still matches what's printed this year.
-    downloadSourceNccd: (year: string) => `من موقع المركز الوطني لتطوير المناهج · طبعة ${year}`,
+    // `year` is the linked file's own edition (see services/nccdEdition.ts), and
+    // absent when the link doesn't say — never the catalog's academicYear.
+    downloadSourceNccd: (year?: string) => (year ? `من موقع المركز الوطني لتطوير المناهج · طبعة ${year}` : 'من موقع المركز الوطني لتطوير المناهج'),
 
     // Curriculum — lessons screen
     unitLabel: 'الوحدة',
@@ -2527,6 +2530,14 @@ const translations = {
     dangerZoneSection: 'إجراءات نهائية',
     nextStudentBtn: (name: string) => `الطالب التالي: ${name}`,
     messageSeen: "شوهدت",
+    messageReactTitle: 'تفاعل مع الرسالة',
+    messageReactionsList: 'التفاعلات',
+    messageReportAction: 'إبلاغ',
+    messageReactorUnknown: 'عضو سابق',
+    messageReactorYou: 'أنت',
+    messageReactionFailed: 'تعذّر حفظ التفاعل. حاول مرة أخرى.',
+    messageReactionChipLabel: (emoji: string, count: number, mine: boolean) =>
+      `${emoji} ${count} — ${mine ? 'إزالة تفاعلك' : 'تفاعل بالرمز نفسه'}`,
     rosterSelect: "تحديد",
     rosterSelectDone: "إلغاء التحديد",
     rosterRemoveSelectedConfirmTitle: "إزالة الطلبة المحدّدين من الشعبة؟",
@@ -2705,6 +2716,7 @@ const translations = {
 
     curriculumTitle: 'Curriculum',
     jordanCurriculum: 'Jordanian Curriculum',
+    nationalBookNote: "The national textbook, approved by Jordan's Ministry of Education",
     curriculumIntro:
       "Browse the official Jordanian curriculum by grade, subject, unit and lesson — in the same order and with the same page numbers as the printed book, so you can review the real book's content directly from here.",
     searchSubjects: 'Search subjects…',
@@ -2888,7 +2900,7 @@ const translations = {
     downloadBook: 'Download book',
     downloadTeacherGuide: 'Teacher guide',
     downloadActivityBook: 'Activity book',
-    downloadSourceNccd: (year: string) => `From the National Center for Curriculum Development · ${year} edition`,
+    downloadSourceNccd: (year?: string) => (year ? `From the National Center for Curriculum Development · ${year} edition` : 'From the National Center for Curriculum Development'),
 
     unitLabel: 'Unit',
     unitsAvailable: (n: number) => `${n} unit${n !== 1 ? 's' : ''}`,
@@ -4880,6 +4892,14 @@ const translations = {
     dangerZoneSection: 'Permanent actions',
     nextStudentBtn: (name: string) => `Next student: ${name}`,
     messageSeen: "Seen",
+    messageReactTitle: 'React to message',
+    messageReactionsList: 'Reactions',
+    messageReportAction: 'Report',
+    messageReactorUnknown: 'Former member',
+    messageReactorYou: 'You',
+    messageReactionFailed: 'Could not save your reaction. Try again.',
+    messageReactionChipLabel: (emoji: string, count: number, mine: boolean) =>
+      `${emoji} ${count} — ${mine ? 'remove your reaction' : 'react with the same emoji'}`,
     rosterSelect: "Select",
     rosterSelectDone: "Cancel",
     rosterRemoveSelectedConfirmTitle: "Remove the selected students from this class?",

@@ -1,5 +1,5 @@
 {
-  "id": "dc83a29c-7ed9-496d-8e71-f0d4fbd1a2b7",
+  "id": "d626fb36-3d36-4bcf-9816-5b19168b91e8",
   "prevId": "1603eb1f-ddbe-4dbb-9f6c-40c5ae3b0f49",
   "version": "7",
   "dialect": "postgresql",
@@ -348,7 +348,7 @@
           "name": "email",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "password_hash": {
           "name": "password_hash",
@@ -358,12 +358,6 @@
         },
         "google_id": {
           "name": "google_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "login_code_hash": {
-          "name": "login_code_hash",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -497,13 +491,6 @@
           "nullsNotDistinct": false,
           "columns": [
             "google_id"
-          ]
-        },
-        "users_login_code_hash_unique": {
-          "name": "users_login_code_hash_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "login_code_hash"
           ]
         }
       },
@@ -4463,6 +4450,110 @@
           "columns": [
             "blocker_user_id",
             "blocked_user_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.chat_message_reactions": {
+      "name": "chat_message_reactions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "message_id": {
+          "name": "message_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "emoji": {
+          "name": "emoji",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "chat_message_reactions_message_idx": {
+          "name": "chat_message_reactions_message_idx",
+          "columns": [
+            {
+              "expression": "message_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "chat_message_reactions_message_id_chat_messages_id_fk": {
+          "name": "chat_message_reactions_message_id_chat_messages_id_fk",
+          "tableFrom": "chat_message_reactions",
+          "tableTo": "chat_messages",
+          "columnsFrom": [
+            "message_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "chat_message_reactions_user_id_users_id_fk": {
+          "name": "chat_message_reactions_user_id_users_id_fk",
+          "tableFrom": "chat_message_reactions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "chat_message_reactions_unique": {
+          "name": "chat_message_reactions_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "message_id",
+            "user_id"
           ]
         }
       },

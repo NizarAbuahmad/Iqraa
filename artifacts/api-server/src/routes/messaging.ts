@@ -25,6 +25,11 @@
  *    deliberately turned it on for one specific group — which is what makes
  *    the consent question a per-group decision a teacher owns, rather than a
  *    property of the whole product.
+ * 4. Reactions are not posts. A reaction is one of six fixed emoji, one per
+ *    person per message, and is allowed in an announcement-only group where the
+ *    person cannot send (see lib/messageReactions.ts). It is deliberately NOT
+ *    gated by studentPostingEnabled — that gate is on POST …/messages only.
+ *    Non-teachers see counts; only teacher-role viewers are told who reacted.
  *
  * Block and report sit on top of both: a block never removes anyone from a
  * shared thread or hides anything from the owning teacher, it only filters
@@ -40,6 +45,7 @@ import {
   chatParticipants,
   chatMessages,
   chatMessageReads,
+  chatMessageReactions,
   chatBlocks,
   chatReports,
   rosterLinks,
@@ -58,6 +64,7 @@ import {
 } from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
 import { createRateLimiter } from "../lib/rateLimit.js";
+import { isAllowedReaction, reactionAccess, summarizeReactions, type ReactionSummary } from "../lib/messageReactions.ts";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { sendExpoPush, deadTokensFrom, PUSH_CHANNEL } from "../lib/pushNotifications.js";
 import { UUID } from "../lib/adminMetrics.js";
@@ -214,6 +221,8 @@ async function toClientMessage(row: typeof chatMessages.$inferSelect) {
   return {
     ...rest,
     attachmentUrl: attachmentKey ? await presignedGetUrl(attachmentKey) : null,
+    // Filled in by the list route; a fresh or summarised message has none to show.
+    reactions: [] as ReactionSummary[],
   };
 }
 
@@ -1011,9 +1020,31 @@ router.get("/messaging/threads/:id/messages", async (req: AuthenticatedRequest, 
       for (const r of reads) seenIds.add(r.messageId);
     }
 
+    // Reactions for this page, summarised for this viewer. `blocked` is the same
+    // set the message filter above used (empty for a teacher), so a non-teacher
+    // never sees a reaction from someone they blocked.
+    const reactionRows =
+      messages.length === 0
+        ? []
+        : await db
+            .select({
+              messageId: chatMessageReactions.messageId,
+              userId: chatMessageReactions.userId,
+              emoji: chatMessageReactions.emoji,
+            })
+            .from(chatMessageReactions)
+            .where(inArray(chatMessageReactions.messageId, messages.map(m => m.id)));
+    const reactionsByMessage = summarizeReactions(reactionRows, req.user!.id, {
+      viewerIsTeacher: isTeacherRole(req.user!.role),
+      hiddenUserIds: blocked,
+    });
+
     const client = await toClientMessages(messages);
     res.json({
-      messages: client.map(m => (m.senderId === req.user!.id ? { ...m, seen: seenIds.has(m.id) } : m)),
+      messages: client.map(m => {
+        const withSeen = m.senderId === req.user!.id ? { ...m, seen: seenIds.has(m.id) } : m;
+        return { ...withSeen, reactions: reactionsByMessage.get(m.id) ?? [] };
+      }),
     });
   } catch (err) {
     failMessaging(res, err, "list messages", "Failed to load messages");
@@ -1182,6 +1213,129 @@ router.post("/messaging/threads/:id/messages", sendMessageLimiter, async (req: A
     );
   } catch (err) {
     failMessaging(res, err, "send message", "Failed to send message");
+  }
+});
+
+// ─── Reactions ───────────────────────────────────────────────────────────────
+
+/**
+ * Keyed by user, like sends. Higher than the 30/min send ceiling because a tap is
+ * cheap and a person catching up on an announcement thread may react to several
+ * messages in a row; low enough to stop a script.
+ */
+const reactionLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 60,
+  name: "message-react",
+  key: req => (req as AuthenticatedRequest).user?.id ?? req.ip ?? "unknown",
+});
+
+type ReactionTarget =
+  | { status: "ok"; messageId: string; isTeacher: boolean; blocked: Set<string> }
+  | { status: "not_found" | "invalid_input" };
+
+/**
+ * Looks everything up, then hands the facts to the pure `reactionAccess`. Note
+ * what it does NOT consult: `studentPostingEnabled`. Reactions are allowed in
+ * announcement-only groups — see the file header, rule 4.
+ */
+async function resolveReactionTarget(req: AuthenticatedRequest): Promise<ReactionTarget> {
+  const threadId = req.params["id"] as string;
+  const messageId = req.params["messageId"] as string;
+  // A malformed message id would reach Postgres as a uuid cast error and 500.
+  if (!UUID.test(messageId)) return { status: "invalid_input" };
+
+  const viewer = req.user!;
+  const isTeacher = isTeacherRole(viewer.role);
+  const participant = await participantOf(threadId, viewer.id);
+  const [thread] = participant
+    ? await db.select().from(chatThreads).where(eq(chatThreads.id, threadId)).limit(1)
+    : [];
+  const [message] = participant
+    ? await db
+        .select({ id: chatMessages.id, threadId: chatMessages.threadId, senderId: chatMessages.senderId, archivedAt: chatMessages.archivedAt })
+        .from(chatMessages)
+        .where(eq(chatMessages.id, messageId))
+        .limit(1)
+    : [];
+  const blocked = isTeacher ? new Set<string>() : await blockedSenderIds(viewer.id);
+
+  const verdict = reactionAccess({
+    isParticipant: !!participant && !!thread,
+    messageInThread: !!message && message.threadId === threadId,
+    messageArchived: !!message?.archivedAt,
+    viewerIsTeacher: isTeacher,
+    viewerBlocksSender: !!message && blocked.has(message.senderId),
+    threadType: thread?.type ?? "direct",
+    studentPostingEnabled: thread?.studentPostingEnabled ?? false,
+  });
+  return verdict === "ok" ? { status: "ok", messageId, isTeacher, blocked } : { status: "not_found" };
+}
+
+/** The message's reactions as this viewer sees them — the body both routes answer with. */
+async function reactionsAfterWrite(target: Extract<ReactionTarget, { status: "ok" }>, viewerId: string): Promise<ReactionSummary[]> {
+  const rows = await db
+    .select({ messageId: chatMessageReactions.messageId, userId: chatMessageReactions.userId, emoji: chatMessageReactions.emoji })
+    .from(chatMessageReactions)
+    .where(eq(chatMessageReactions.messageId, target.messageId));
+  return (
+    summarizeReactions(rows, viewerId, { viewerIsTeacher: target.isTeacher, hiddenUserIds: target.blocked }).get(target.messageId) ?? []
+  );
+}
+
+function refuseReaction(res: Parameters<Parameters<typeof router.get>[1]>[1], status: "not_found" | "invalid_input"): void {
+  if (status === "invalid_input") {
+    res.status(400).json({ error: "messageId is not a valid id", code: "invalid_input" });
+    return;
+  }
+  res.status(404).json({ error: "Message not found", code: "not_found" });
+}
+
+/**
+ * Set or replace the caller's reaction. An upsert on (message, user): replacing
+ * is one statement, the same emoji twice changes nothing, and two simultaneous
+ * taps cannot both insert. Touches no thread or read state — a reaction does not
+ * reorder the inbox, change an unread count, or send a push.
+ */
+router.put("/messaging/threads/:id/messages/:messageId/reaction", reactionLimiter, async (req: AuthenticatedRequest, res) => {
+  try {
+    const target = await resolveReactionTarget(req);
+    if (target.status !== "ok") {
+      refuseReaction(res, target.status);
+      return;
+    }
+    const emoji: unknown = req.body?.emoji;
+    if (!isAllowedReaction(emoji)) {
+      res.status(400).json({ error: "emoji is not an allowed reaction", code: "invalid_reaction" });
+      return;
+    }
+    await db
+      .insert(chatMessageReactions)
+      .values({ messageId: target.messageId, userId: req.user!.id, emoji })
+      .onConflictDoUpdate({
+        target: [chatMessageReactions.messageId, chatMessageReactions.userId],
+        set: { emoji, updatedAt: new Date() },
+      });
+    res.json({ reactions: await reactionsAfterWrite(target, req.user!.id) });
+  } catch (err) {
+    failMessaging(res, err, "set reaction", "Failed to save reaction");
+  }
+});
+
+/** Remove the caller's reaction. Idempotent: removing one that is not there is still 200, so a retry after a lost response is harmless. */
+router.delete("/messaging/threads/:id/messages/:messageId/reaction", reactionLimiter, async (req: AuthenticatedRequest, res) => {
+  try {
+    const target = await resolveReactionTarget(req);
+    if (target.status !== "ok") {
+      refuseReaction(res, target.status);
+      return;
+    }
+    await db
+      .delete(chatMessageReactions)
+      .where(and(eq(chatMessageReactions.messageId, target.messageId), eq(chatMessageReactions.userId, req.user!.id)));
+    res.json({ reactions: await reactionsAfterWrite(target, req.user!.id) });
+  } catch (err) {
+    failMessaging(res, err, "remove reaction", "Failed to remove reaction");
   }
 });
 
