@@ -7,7 +7,7 @@
  * `resolveSurahParam` or the screen says it could not find the surah.
  */
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -17,6 +17,7 @@ import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { useQuranProgress } from '@/hooks/useQuranProgress';
+import { useQuranFont } from '@/hooks/useQuranFont';
 import { stateOf } from '@/services/quranProgress';
 import { getLessonById } from '@/services/knowledgeBase';
 import { openExternal } from '@/services/externalLinks';
@@ -29,6 +30,7 @@ export default function QuranReaderScreen() {
   const colors = useColors();
   const { t, lang, isRTL } = useLanguage();
   const { progress } = useQuranProgress();
+  const fontReady = useQuranFont();
   const align = isRTL ? 'right' : 'left';
   const digits = (s: string | number) => (lang === 'ar' ? toArabicDigits(String(s)) : String(s));
 
@@ -39,6 +41,14 @@ export default function QuranReaderScreen() {
         <Text style={[styles.missing, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
           {t('quranNotFound')}
         </Text>
+      </LabFrame>
+    );
+  }
+
+  if (!fontReady) {
+    return (
+      <LabFrame title={surah.nameAr}>
+        <ActivityIndicator color={colors.primary} style={{ marginTop: SPACE.xl }} />
       </LabFrame>
     );
   }

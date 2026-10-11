@@ -233,10 +233,6 @@ export default function RootLayout() {
     ReadexPro_500Medium,
     ReadexPro_600SemiBold,
     ReadexPro_700Bold,
-    // The Quran Corner's script: the King Fahd Complex's own font, unmodified. A
-    // bundled asset (a static require), so it ships over the air: no native
-    // module, so no app.json version bump.
-    UthmanicHafs: require('../assets/fonts/UthmanicHafs-v-3.0.ttf'),
     // Vector icons must be explicitly loaded — Ionicons font powers all
     // non-iOS tab bar icons and in-app icons on Android / web.
     ...Ionicons.font,

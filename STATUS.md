@@ -968,13 +968,15 @@ card opening `/curriculum/quran`: the 40 surahs the grade 1–10 Islamic Educati
 books name for recitation, grouped under the first grade that assigns them.
 Each opens a reader (`/curriculum/quran/<n>`) showing only the ayah ranges the
 lesson titles print — 585 ayahs, 31 surahs whole and 9 in part, with a «…» where
-a surah's ranges do not touch — and a memorise page (`…/memorize`) with six hide
-levels, tap-to-reveal, an ayah-by-ayah repeat counter and a self-rating (جديدة /
+a surah's ranges do not touch — and a memorise page (`…/memorize`) with five hiding
+levels plus show-all, tap-to-reveal, an ayah-by-ayah repeat counter and a self-rating (جديدة /
 قيد المراجعة / محفوظة) kept on the device, per user. Below the surahs, a shelf
 of five outside links. Student-reachable through the existing `/curriculum`
 prefix allowlist, pinned in `routeGating.test.ts`. No table, no API route, no
 native module, no `app.json` version bump: the data lives in `lib/curriculum`,
-the font is a bundled asset, so it ships over the air.
+the font is a bundled asset loaded by the two screens that draw Quran text
+(`hooks/useQuranFont.ts`), not at app start, so it ships over the air and adds
+nothing to anyone's cold start.
 
 **Where the text comes from.** The King Fahd Glorious Qur'an Printing Complex's
 Mus'haf al-Madinah (Hafs), through the npm package `@quran.ws/text` 0.1.0, pinned

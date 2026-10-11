@@ -3007,6 +3007,8 @@ with `@quran.ws/text` 0.1.0 (SHA-256 5c47602425fb4190327ab9e1a2e8ed2f53dceaf595d
 Do not edit, subset or convert it.
 ```
 
+> **As shipped (final review, 2026-10-11):** the font is NOT loaded in `_layout.tsx` — the root gate waits for every font, which put 300 KB on every cold web start. `artifacts/mobile/hooks/useQuranFont.ts` calls `useFonts({ UthmanicHafs: require(...) })` and the reader and memorise screens wait for it. The step below is superseded.
+
 - [ ] **Step 6: Load the font at startup.** In `artifacts/mobile/app/_layout.tsx`, in `RootLayout`'s `useFonts({ … })` call, after `ReadexPro_700Bold,` add:
 
 ```ts

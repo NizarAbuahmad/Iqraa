@@ -5,7 +5,7 @@
  * changes the text underneath (`quranMemorize.ts` tests the round trip).
  */
 import React, { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import type { QuranSurah } from '@workspace/curriculum/quran';
@@ -14,6 +14,7 @@ import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { useQuranProgress } from '@/hooks/useQuranProgress';
+import { useQuranFont } from '@/hooks/useQuranFont';
 import { countMemorised, stateOf, type AyahState } from '@/services/quranProgress';
 import { resolveSurahParam } from '@/services/quranLinks';
 import { toArabicDigits } from '@/services/labFormat';
@@ -197,6 +198,7 @@ export default function QuranMemorizeScreen() {
   const { surahId } = useLocalSearchParams<{ surahId: string }>();
   const colors = useColors();
   const { t } = useLanguage();
+  const fontReady = useQuranFont();
   const surah = resolveSurahParam(surahId);
   if (!surah) {
     return (
@@ -204,6 +206,13 @@ export default function QuranMemorizeScreen() {
         <Text style={[styles.missing, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
           {t('quranNotFound')}
         </Text>
+      </LabFrame>
+    );
+  }
+  if (!fontReady) {
+    return (
+      <LabFrame title={t('quranTitle')}>
+        <ActivityIndicator color={colors.primary} style={{ marginTop: SPACE.xl }} />
       </LabFrame>
     );
   }
