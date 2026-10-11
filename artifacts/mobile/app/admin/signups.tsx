@@ -2,6 +2,9 @@
  * Collected emails — iqrra.com's waitlist and contact-form submissions, which
  * the site's Vercel functions copy into `site_signups` (POST /api/site/signups).
  * Signups from before that existed live only in Resend / the FEEDBACK_TO inbox.
+ * Also «اقترح ميزة» ideas from signed-out visitors to the app (kind `idea`,
+ * POST /api/site/ideas). Ideas from signed-in users are in the dashboard's
+ * feedback list instead, because those carry an account.
  *
  * Role-gated client-side like `admin/dashboard.tsx`; enforcement is server-side.
  */
@@ -23,8 +26,8 @@ import { BackButton } from '@/components/ui/BackButton';
 const ACCENT = '#4F46E5';
 const ADMIN_ROLES = ['school_admin', 'system_admin'];
 
-type Signup = { id: string; kind: 'waitlist' | 'contact'; email: string; name: string; message: string; context: string; createdAt: string };
-type Kind = 'all' | 'waitlist' | 'contact';
+type Signup = { id: string; kind: 'waitlist' | 'contact' | 'idea'; email: string; name: string; message: string; context: string; createdAt: string };
+type Kind = 'all' | 'waitlist' | 'contact' | 'idea';
 
 export default function AdminSignupsScreen() {
   const colors = useColors();
@@ -97,7 +100,7 @@ export default function AdminSignupsScreen() {
   }
 
   const align = isRTL ? 'right' : 'left';
-  const chips: [Kind, string, string][] = [['all', 'الكل', 'All'], ['waitlist', 'قائمة الانتظار', 'Waitlist'], ['contact', 'رسائل التواصل', 'Contact']];
+  const chips: [Kind, string, string][] = [['all', 'الكل', 'All'], ['waitlist', 'قائمة الانتظار', 'Waitlist'], ['contact', 'رسائل التواصل', 'Contact'], ['idea', '💡 اقتراحات', '💡 Ideas']];
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -141,7 +144,7 @@ export default function AdminSignupsScreen() {
           ) : items.map(s => (
             <View key={s.id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
               <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
-                <Ionicons name={s.kind === 'waitlist' ? 'mail-outline' : 'chatbubble-outline'} size={15} color={ACCENT} />
+                <Ionicons name={s.kind === 'waitlist' ? 'mail-outline' : s.kind === 'idea' ? 'bulb-outline' : 'chatbubble-outline'} size={15} color={ACCENT} />
                 <Text selectable style={{ flex: 1, color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
                   {s.email || s.name || '—'}
                 </Text>
