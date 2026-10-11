@@ -5,15 +5,19 @@
  * into the same anonymous-read bucket as the book figures — a constant, for the
  * reason `FIGURE_BASE_URL` gives.
  *
- * `expo-audio` on every platform, web included. It is a native module, which is
- * why `app.json`'s `version` moved with it (see CLAUDE.md): an OTA carrying
- * this file to a binary without the module would crash on launch.
+ * `expo-audio` on native. It is a native module, which is why `app.json`'s
+ * `version` moved with it (see CLAUDE.md): an OTA carrying this file to a
+ * binary without the module would crash on launch. Web plays through its own
+ * <audio> element so a missing recording can fall back to speech
+ * (`wordSpeech.ts`) — `playWord` below says why.
  *
  * Never rejects. A word that will not play is still on screen to be read, and
  * an error banner over a flashcard helps nobody.
  */
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
+import { Platform } from 'react-native';
 import { audioSlug } from '@workspace/curriculum/englishHub';
+import { playRecordingOrSpeak } from './wordSpeech';
 
 export const ENGLISH_AUDIO_BASE_URL = 'https://pub-d9ddd8f74e734a21824518b812652124.r2.dev/english-audio';
 
@@ -23,10 +27,31 @@ export function englishAudioUrl(word: string): string {
 
 let player: AudioPlayer | null = null;
 let modeSet = false;
+/** Stops the web word in flight (recording or spoken fallback). */
+let stopWebWord: (() => void) | null = null;
 
-/** One player, reused: tapping a second word cuts off the first rather than talking over it. */
+function stopWeb(): void {
+  stopWebWord?.();
+  stopWebWord = null;
+}
+
+/**
+ * One player, reused: tapping a second word cuts off the first rather than talking over it.
+ *
+ * On web a word with no recording is spoken with the browser's own voice
+ * instead of staying silent (`wordSpeech.ts` — `expo-audio`'s web player cannot
+ * report a failed load, so the web path drives its own element). Native has no
+ * such fallback: a word whose file is missing is still silent there until the
+ * recording script is re-run.
+ */
 export async function playWord(word: string): Promise<void> {
   try {
+    if (Platform.OS === 'web') {
+      player?.pause();
+      stopWeb();
+      stopWebWord = playRecordingOrSpeak(englishAudioUrl(word), word);
+      return;
+    }
     if (!modeSet) {
       modeSet = true;
       // iOS mutes playback on the silent switch by default; a child tapping
@@ -60,6 +85,7 @@ export async function playLocalUri(uri: string): Promise<void> {
  */
 export async function playUri(uri: string): Promise<void> {
   try {
+    stopWeb(); // a web word still playing would talk over the recording
     if (!modeSet) {
       modeSet = true;
       await setAudioModeAsync({ playsInSilentMode: true }).catch(() => {});
