@@ -289,12 +289,11 @@ function formatDeckContent(f: WorksheetQuestionFormat, isAr: boolean): string {
   const lines: string[] = [];
   switch (f.kind) {
     case 'match': {
-      const rows = Math.max(f.left.length, f.right.length);
-      for (let i = 0; i < rows; i++) {
-        const l = i < f.left.length ? `${num(i)}) ${f.left[i]}` : '';
-        const r = i < f.right.length ? `${optionLetter(i, isAr)}) ${f.right[i]}` : '';
-        lines.push(l && r ? `${l}  \u27F7  ${r}` : l || r);
-      }
+      // Two blocks, never one row each: `right` is shuffled, so an arrow or a
+      // shared row would tell the class left[i] pairs with right[i].
+      f.left.forEach((l, i) => lines.push(`${num(i)}) ${l}`));
+      lines.push('');
+      f.right.forEach((r, i) => lines.push(`${optionLetter(i, isAr)}) ${r}`));
       break;
     }
     case 'order':
@@ -374,8 +373,14 @@ export function buildDeckFromWorksheet(
       // A structured format is an open question: it never becomes a choice
       // slide, even if a stray `options` array rode along.
       const hasOptions = !fmt && Array.isArray(q.options) && q.options.length >= 2;
-      const answer = answerByPosition.get(qNum) ?? '';
-      answers.push(isAr ? `سؤال ${qNum}: ${answer}` : `Q${qNum}: ${answer}`);
+      const keyAnswer = answerByPosition.get(qNum) ?? '';
+      // An order or a spot-the-error is answered with its working: the ordered
+      // steps, or the wrong step beside its correction. Plain lines, not the
+      // «→» form `workingSteps` would turn into a chain.
+      const answer = (fmt?.kind === 'order' || fmt?.kind === 'spot_error') && keyAnswer && solutionByPosition.get(qNum)?.length
+        ? [keyAnswer, ...solutionByPosition.get(qNum)!].join('\n')
+        : keyAnswer;
+      answers.push(isAr ? `سؤال ${qNum}: ${keyAnswer}` : `Q${qNum}: ${keyAnswer}`);
       // Same rule as buildDeckFromQuiz: a key naming no option is shown as an
       // open question carrying the key, never as option A.
       const correct = hasOptions ? indexOfAnswer(q.options!, answer) : -1;
@@ -417,10 +422,10 @@ export function buildDeckFromWorksheet(
             ? { answer }
             : {}),
         durationSeconds: THINK_SECONDS,
-        ...(answer
+        ...(keyAnswer
           ? {
               teacher: {
-                expectedAnswer: answer,
+                expectedAnswer: keyAnswer,
                 teachingTips: [
                   isAr ? 'الكل يجيب معًا عند انتهاء المؤقت.' : 'Everyone answers together when the timer ends.',
                   ...(solutionByPosition.get(qNum)?.length

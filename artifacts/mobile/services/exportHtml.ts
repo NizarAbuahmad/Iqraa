@@ -1195,9 +1195,14 @@ export function buildWorksheetSlidesHTML(
   // Answer key slide. Key rows map to questions by flat position, as on paper;
   // the drawn curve is only ever built here, and only when answers are shown.
   const flat = ws.sections.flatMap(sec => sec.questions);
-  const akRow = (item: { num: number; answer: string }) => {
+  const akRow = (item: { num: number; answer: string; solution?: string[] }) => {
     const extra = formatKeyExtraHTML(flat[item.num - 1]?.format ?? null, isAr);
-    return `<div class="ak-row${extra ? ' ak-wide' : ''}"><span class="ak-num">${item.num}.</span><span class="ak-ans">${e(item.answer)}${extra}</span></div>`;
+    // The working, as print renders it: an order's steps, a spot-the-error's
+    // reason and corrected solution.
+    const working = item.solution?.length
+      ? `<ol class="solution">${item.solution.map(line => `<li>${e(line)}</li>`).join('')}</ol>`
+      : '';
+    return `<div class="ak-row${extra || working ? ' ak-wide' : ''}"><span class="ak-num">${item.num}.</span><span class="ak-ans">${e(item.answer)}${working}${extra}</span></div>`;
   };
   const akSlide = showAnswerKey ? `<div class="slide">
     ${header(L('مفتاح الإجابات', 'Answer Key'))}
@@ -1248,6 +1253,8 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 .ak-num { font-weight:700; color:${ACCENT}; flex-shrink:0; }
 .ak-ans { color:#374151; }
 .ak-wide { grid-column:1 / -1; }
+.ak-wide .solution { margin-top:3px; padding-${isAr ? 'right' : 'left'}:18px; color:#4b5563; }
+.ak-wide .solution li { font-size:10.5px; margin-bottom:1px; }
 .ak-wide .fmt-grid { max-height:190px; }
 ${FORMAT_CSS}
 .q-card .fmt-match, .q-card .fmt-order, .q-card .fmt-steps, .q-card .fmt-line, .q-card .fmt-label, .q-card .q-lines { width:100%; }
@@ -1255,7 +1262,7 @@ ${FORMAT_CSS}
 .q-card .fmt-steps li, .q-card .fmt-card, .q-card .fmt-match, .q-card .fmt-line, .q-card .fmt-label { font-size:11px; }
 .q-rule { border-bottom:1px solid #d1d5db; height:16px; }
 .exam-blank { flex:1; border-bottom:1px solid #9ca3af; height:16px; }
-.slide-footer.slide-footer { height:26px; border-top:1px solid #f3f4f6; display:flex; align-items:center; justify-content:space-between; padding:0 26px; flex-shrink:0; }
+.slide-footer { height:26px; border-top:1px solid #f3f4f6; display:flex; align-items:center; justify-content:space-between; padding:0 26px; flex-shrink:0; }
 .slide-footer span { font-size:9px; color:#9ca3af; }
 </style>
 </head>

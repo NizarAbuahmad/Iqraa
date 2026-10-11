@@ -15,7 +15,12 @@ const ws = {
     { type: 'order', title: 'رتّب', questions: [{ text: 'o', points: 2, format: { kind: 'order', stem: 'رتّب الخطوات', steps: ['ALPHASTEP', 'BETASTEP', 'GAMMASTEP'], order: [2, 0, 1] } }] },
     { type: 'spot_error', title: 'أين الخطأ؟', questions: [{ text: 's', points: 2, format: { kind: 'spot_error', stem: 'أين الخطأ؟', steps: ['S1TEXT', 'S2TEXT'], wrongStep: 1, fix: 'FIXTEXT', why: 'WHYTEXT' } }] },
   ],
-  answerKey: [{ num: 1, answer: '١-ب، ٢-أ' }, { num: 2, answer: '(1 ، 2)' }, { num: 3, answer: 'ج، أ، ب' }, { num: 4, answer: 'الخطوة ٢' }],
+  answerKey: [
+    { num: 1, answer: '١-ب، ٢-أ' },
+    { num: 2, answer: '(1 ، 2)' },
+    { num: 3, answer: 'ج، أ، ب', solution: ['SOLSTEP-A', 'SOLSTEP-B', 'SOLSTEP-C'] },
+    { num: 4, answer: 'الخطوة ٢: FIXTEXT', solution: ['WHYTEXT', 'S1TEXT', 'FIXTEXT'] },
+  ],
 } as any;
 
 const meta = { subject: 's', grade: 'g' };
@@ -43,16 +48,36 @@ describe('formats on the projector', () => {
     assert.ok(h.indexOf('<polyline') > h.indexOf('مفتاح الإجابات'), 'the curve is after the key heading');
   });
 
-  it('slides export without answers leaks nothing: no curve, no fix, no why', () => {
+  it('slides export without answers leaks nothing: no curve, no fix, no why, no working', () => {
     const h = buildWorksheetSlidesHTML(ws, 't', meta, true, [], false);
     assert.ok(!/<polyline|<path/.test(h), 'no drawn curve');
-    assert.ok(!h.includes('FIXTEXT') && !h.includes('WHYTEXT'));
+    for (const secret of ['FIXTEXT', 'WHYTEXT', 'SOLSTEP-A', 'SOLSTEP-B']) {
+      assert.ok(!h.includes(secret), `${secret} must not appear`);
+    }
     assert.match(h, /<svg/, 'the empty grid is still there');
   });
 
-  it('slides export with answers still keeps fix and why off the question slides', () => {
+  it('slides export with answers: the key slide carries each solution, nothing earlier does', () => {
     const h = buildWorksheetSlidesHTML(ws, 't', meta, true);
-    assert.ok(!h.includes('FIXTEXT') && !h.includes('WHYTEXT'));
+    const keyAt = h.indexOf('مفتاح الإجابات');
+    assert.ok(keyAt > 0);
+    for (const shown of ['SOLSTEP-A', 'SOLSTEP-C', 'WHYTEXT', 'FIXTEXT']) {
+      assert.ok(h.includes(shown), `${shown} is on the key slide`);
+      assert.ok(h.indexOf(shown) > keyAt, `${shown} is not before the key slide`);
+    }
+    assert.match(h, /<ol class="solution">/);
+  });
+
+  it('key rows map by num, not by position in answerKey', () => {
+    const shuffled = { ...ws, answerKey: [...ws.answerKey].reverse() };
+    const h = buildWorksheetSlidesHTML(shuffled, 't', meta, true);
+    const rows = h.split('<div class="ak-row').slice(1);
+    const row = (n: number) => rows.find(r => r.includes(`<span class="ak-num">${n}.</span>`))!;
+    assert.match(row(2), /<polyline/, 'the curve sits on the graph row');
+    for (const n of [1, 3, 4]) assert.ok(!/<polyline/.test(row(n)), `row ${n} has no curve`);
+    assert.match(row(3), /SOLSTEP-A/);
+    assert.ok(!row(4).includes('SOLSTEP-A'));
+    assert.match(row(4), /WHYTEXT/);
   });
 
   it('live deck: one challenge slide per formatted question, in order', () => {
@@ -60,17 +85,20 @@ describe('formats on the projector', () => {
     const qs = deck.slides.filter(s => s.type === 'challenge');
     assert.equal(qs.length, 4);
     assert.deepEqual(qs.map(s => s.title), ['سؤال 1', 'سؤال 2', 'سؤال 3', 'سؤال 4']);
-    assert.deepEqual(qs.map(s => s.answer), ['١-ب، ٢-أ', '(1 ، 2)', 'ج، أ، ب', 'الخطوة ٢']);
-    assert.match(qs[0]!.content, /⟷/);
+    assert.deepEqual(qs.map(s => s.answer?.split('\n')[0]), ['١-ب، ٢-أ', '(1 ، 2)', 'ج، أ، ب', 'الخطوة ٢: FIXTEXT']);
   });
 
-  it('live deck: match is two blocks, left numbered and right lettered', () => {
+  it('live deck: match is two blocks, no row pairs a problem with an answer', () => {
     const deck = buildDeckFromWorksheet(ws, 't', true);
     const c = deck.slides.filter(s => s.type === 'challenge')[0]!.content;
     assert.match(c, /^صِل/);
-    assert.match(c, /١\) 2\^x = 8/);
-    assert.match(c, /أ\) 2/);
-    assert.match(c, /ب\) 3/);
+    assert.ok(!c.includes('⟷'), 'no arrow joining left to right');
+    const lines = c.split('\n');
+    assert.ok(lines.includes('١) 2^x = 8') && lines.includes('٢) 3^x = 9'), 'numbered problems');
+    assert.ok(lines.includes('أ) 2') && lines.includes('ب) 3'), 'lettered answers');
+    const blank = lines.lastIndexOf('');
+    assert.ok(blank > lines.indexOf('٢) 3^x = 9') && blank < lines.indexOf('أ) 2'), 'a blank line separates the blocks');
+    assert.ok(lines.every(l => !(/^[١٢]\)/.test(l) && /[أب]\)/.test(l))), 'never both on one line');
   });
 
   it('live deck: order is lettered steps, spot_error numbered, graph the equations', () => {
@@ -105,6 +133,26 @@ describe('formats on the projector', () => {
       assert.equal(qs[i]!.visual, undefined);
       assert.equal(qs[i]!.visualOnReveal, undefined);
     }
+  });
+
+  it('live deck: order and spot_error reveal the key answer then its working, line by line', () => {
+    const deck = buildDeckFromWorksheet(ws, 't', true);
+    const qs = deck.slides.filter(s => s.type === 'challenge');
+    assert.equal(qs[2]!.answer, 'ج، أ، ب\nSOLSTEP-A\nSOLSTEP-B\nSOLSTEP-C');
+    assert.equal(qs[3]!.answer, 'الخطوة ٢: FIXTEXT\nWHYTEXT\nS1TEXT\nFIXTEXT');
+    assert.ok(!qs[2]!.answer!.includes('→'), 'plain lines, not a working chain');
+    // Match and graph keep the bare key answer; the teacher tip keeps it too.
+    assert.equal(qs[0]!.answer, '١-ب، ٢-أ');
+    assert.equal(qs[2]!.teacher?.expectedAnswer, 'ج، أ، ب');
+    // The deck-level key list stays one short line per question.
+    assert.equal(deck.answerKey[2], 'سؤال 3: ج، أ، ب');
+  });
+
+  it('live deck: a constant graph expression still gives a series with points', () => {
+    const zero = { ...ws, sections: [{ type: 'graph', title: 'g', questions: [{ text: 'k', points: 1, format: { kind: 'graph', stem: 's', exprs: ['0'], window: WIN } }] }], answerKey: [{ num: 1, answer: 'y=0' }] };
+    const slide = buildDeckFromWorksheet(zero, 't', true).slides.find(s => s.type === 'challenge')!;
+    assert.equal(slide.visual?.kind, 'plot');
+    assert.ok(slide.visual?.kind === 'plot' && slide.visual.series[0]!.points.length > 0);
   });
 
   it('live deck keeps outcomes[qNum-1] numbering: one slide per question', () => {
