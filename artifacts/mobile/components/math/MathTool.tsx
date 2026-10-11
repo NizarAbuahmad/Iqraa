@@ -7,10 +7,12 @@ import React from 'react';
 import type { MathToolId } from '@/services/mathTools';
 import { MathCalculator } from './MathCalculator';
 import { MathFormulaSheet } from './MathFormulaSheet';
+import { MathGrapher } from './MathGrapher';
 import { MathUnitConverter } from './MathUnitConverter';
 
 const TOOLS: Record<MathToolId, React.ComponentType> = {
   calculator: MathCalculator,
+  grapher: MathGrapher,
   converter: MathUnitConverter,
   formulas: MathFormulaSheet,
 };

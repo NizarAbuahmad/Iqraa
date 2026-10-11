@@ -14,7 +14,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { MATH_TOOLS, MATH_TOOL_IDS, mathToolPath } from '@/services/mathTools';
-import { LabFrame } from '@/components/lab/LabFrame';
+import { MathFrame } from '@/components/math/MathFrame';
 import { GeogebraLink } from '@/components/math/GeogebraLink';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 
@@ -24,7 +24,7 @@ export default function MathCornerScreen() {
   const align = isRTL ? 'right' : 'left';
 
   return (
-    <LabFrame title={t('mathTitle')} subtitle={t('mathIntro')}>
+    <MathFrame title={t('mathTitle')} subtitle={t('mathIntro')}>
       <View style={styles.list}>
         {MATH_TOOL_IDS.map(id => {
           const meta = MATH_TOOLS[id];
@@ -64,7 +64,7 @@ export default function MathCornerScreen() {
         })}
         <GeogebraLink />
       </View>
-    </LabFrame>
+    </MathFrame>
   );
 }
 

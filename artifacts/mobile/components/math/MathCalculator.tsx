@@ -14,7 +14,8 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import type { TranslationKey } from '@/services/i18n';
-import type { AngleMode, MathFailure } from '@/services/mathExpr';
+import type { AngleMode } from '@/services/mathExpr';
+import { MATH_ERROR_KEY } from './mathErrors';
 import { toArabicDigits } from '@/services/labFormat';
 import {
   displayLtr,
@@ -29,21 +30,6 @@ import {
   type CalcState,
 } from '@/services/mathCalc';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
-
-// Exhaustive on purpose: a new failure reason without a message fails to compile.
-const ERROR_KEY: Record<MathFailure, TranslationKey> = {
-  empty: 'mathErrEmpty',
-  'too-long': 'mathErrTooLong',
-  syntax: 'mathErrSyntax',
-  unbalanced: 'mathErrUnbalanced',
-  'unknown-symbol': 'mathErrUnknown',
-  'function-needs-brackets': 'mathErrBrackets',
-  'wrong-arity': 'mathErrArity',
-  domain: 'mathErrDomain',
-  'divide-by-zero': 'mathErrDivZero',
-  overflow: 'mathErrOverflow',
-  'factorial-domain': 'mathErrFactorial',
-};
 
 type KeyKind = 'digit' | 'op' | 'fn' | 'action' | 'equals';
 type KeyDef = { key: CalcKey; label: string; arLabel?: string; kind: KeyKind };
@@ -179,7 +165,7 @@ function Result({ state, lang, colors, t }: { state: CalcState; lang: 'ar' | 'en
         accessibilityLiveRegion="polite"
         style={[styles.error, { color: colors.destructive, fontFamily: 'ReadexPro_600SemiBold' }]}
       >
-        {t(ERROR_KEY[r.reason])}
+        {t(MATH_ERROR_KEY[r.reason])}
       </Text>
     );
   }

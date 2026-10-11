@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { autoCloseBrackets, evaluate, normaliseInput } from '../mathExpr.ts';
+import { autoCloseBrackets, compile, evaluate, normaliseInput } from '../mathExpr.ts';
 
 function val(src: string, opts?: Parameters<typeof evaluate>[1]): number {
   const r = evaluate(src, opts);
@@ -194,5 +194,77 @@ describe('autoCloseBrackets', () => {
   });
   it('makes a half-typed expression evaluable', () => {
     assert.equal(val(autoCloseBrackets('2*(3+4')), 14);
+  });
+});
+
+describe('compile: a function of x for the grapher', () => {
+  function fn(src: string, angle?: 'deg' | 'rad') {
+    const r = compile(src, { angle });
+    assert.ok(r.ok, `expected "${src}" to compile, got ${JSON.stringify(r)}`);
+    return r.f;
+  }
+  function bad(src: string): string {
+    const r = compile(src);
+    assert.ok(!r.ok, `expected "${src}" to be refused`);
+    return r.reason;
+  }
+
+  it('evaluates at a point', () => {
+    assert.equal(fn('x^2')(3), 9);
+    assert.equal(fn('x^2')(-2), 4);
+    assert.equal(fn('2x+1')(5), 11);
+  });
+  it('reads the angle mode', () => {
+    assert.equal(fn('sin(x)')(30), 0.5);
+    close(fn('sin(x)', 'rad')(Math.PI / 6), 0.5);
+  });
+  it('a failure at one point is NaN there, not a refusal and not a throw', () => {
+    const f = fn('sqrt(x-5)');
+    assert.equal(f(6), 1);
+    assert.ok(Number.isNaN(f(4)));
+    const g = fn('1/x');
+    assert.equal(g(2), 0.5);
+    assert.ok(Number.isNaN(g(0)));
+    assert.ok(Number.isNaN(fn('ln(x)')(-1)));
+    assert.ok(Number.isNaN(fn('tan(x)')(90)));
+  });
+  it('a value that overflows or is not finite is NaN', () => {
+    assert.ok(Number.isNaN(fn('10^x')(400)));
+    assert.ok(Number.isNaN(fn('x')(Infinity)));
+    assert.ok(Number.isNaN(fn('x')(Number.NaN)));
+  });
+  it('a function that is undefined everywhere still compiles', () => {
+    const f = fn('sqrt(-x^2-1)');
+    assert.ok(Number.isNaN(f(0)) && Number.isNaN(f(3)));
+  });
+  it('refuses what is wrong however x is chosen, with the named reason', () => {
+    assert.equal(bad(''), 'empty');
+    assert.equal(bad('2+'), 'syntax');
+    assert.equal(bad('x+*2'), 'syntax');
+    assert.equal(bad('(x'), 'unbalanced');
+    assert.equal(bad('foo(x)'), 'unknown-symbol');
+    assert.equal(bad('x+y'), 'unknown-symbol');
+    assert.equal(bad('sinx'), 'function-needs-brackets');
+    assert.equal(bad('sqrt(x,1)'), 'wrong-arity');
+    assert.equal(bad('x'.repeat(201)), 'too-long');
+  });
+  it('catches a syntax error hiding behind a value error', () => {
+    assert.equal(bad('sqrt(-x^2-1)+'), 'syntax');
+    assert.equal(bad('1/(x-x)+*'), 'syntax');
+    assert.equal(bad('ln(0)+sin'), 'function-needs-brackets');
+  });
+  it('accepts Arabic input and the variable س', () => {
+    assert.equal(fn('س^2')(3), 9);
+    assert.equal(fn('٢س+١')(5), 11);
+    assert.equal(fn('جا(س)')(30), 0.5);
+  });
+  it('is repeatable and independent between calls', () => {
+    const f = fn('x^2-4');
+    assert.equal(f(3), 5);
+    assert.equal(f(1), -3);
+    assert.equal(f(3), 5);
+  });
+  it('does not tidy to 15 digits: a plot wants the raw value', () => {
+    assert.notEqual(fn('x')(0.1 + 0.2), 0.3);
   });
 });

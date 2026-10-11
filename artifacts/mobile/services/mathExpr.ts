@@ -92,7 +92,12 @@ type Token = { t: 'num'; v: number } | { t: 'id'; v: string } | { t: 'op'; v: st
 
 const OPS = '+-*/^!%(),';
 
-type Ctx = { angle: AngleMode; vars: Record<string, number> };
+/**
+ * `dry` walks the grammar and checks arity and symbols but not values, so a
+ * structural mistake is found whatever x is (see `compile`). Every value check
+ * (`finite`, division by zero, factorial, domain) is skipped in it.
+ */
+type Ctx = { angle: AngleMode; vars: Record<string, number>; dry?: boolean };
 
 const CONSTANTS: Record<string, number> = { pi: Math.PI, e: Math.E };
 
@@ -279,6 +284,7 @@ const FUNCTIONS: Record<string, FnDef> = {
 function run(tokens: Token[], ctx: Ctx): number {
   let pos = 0;
   let depth = 0;
+  const fin = (n: number): number => (ctx.dry ? 0 : finite(n));
 
   const peek = (): Token | undefined => tokens[pos];
   const isOp = (v: string): boolean => {
@@ -293,7 +299,7 @@ function run(tokens: Token[], ctx: Ctx): number {
     while (isOp('+') || isOp('-')) {
       const op = (tokens[pos++] as { v: string }).v;
       const r = term();
-      v = finite(op === '+' ? v + r : v - r);
+      v = fin(op === '+' ? v + r : v - r);
     }
     depth -= 1;
     return v;
@@ -310,14 +316,14 @@ function run(tokens: Token[], ctx: Ctx): number {
         const op = (tokens[pos++] as { v: string }).v;
         const r = unary();
         if (op === '/') {
-          if (r === 0) throw new MathError('divide-by-zero');
-          v = finite(v / r);
+          if (r === 0 && !ctx.dry) throw new MathError('divide-by-zero');
+          v = fin(v / r);
         } else {
-          v = finite(v * r);
+          v = fin(v * r);
         }
       } else if (startsOperand(peek())) {
         // Implicit multiplication, same precedence as `*`: 2(3+4), 2pi, 3x.
-        v = finite(v * unary());
+        v = fin(v * unary());
       } else {
         return v;
       }
@@ -341,6 +347,7 @@ function run(tokens: Token[], ctx: Ctx): number {
     if (isOp('^')) {
       pos += 1;
       const exp = unary();
+      if (ctx.dry) return 0;
       if (base === 0 && exp < 0) throw new MathError('divide-by-zero');
       return finite(Math.pow(base, exp));
     }
@@ -352,7 +359,7 @@ function run(tokens: Token[], ctx: Ctx): number {
     for (;;) {
       if (isOp('!')) {
         pos += 1;
-        v = factorial(v);
+        v = ctx.dry ? v : factorial(v);
       } else if (isOp('%')) {
         pos += 1;
         v = v / 100;
@@ -399,7 +406,7 @@ function run(tokens: Token[], ctx: Ctx): number {
       if (!isOp(')')) throw new MathError('syntax');
       pos += 1;
       if (args.length < fn.min || args.length > fn.max) throw new MathError('wrong-arity');
-      return finite(fn.run(args, ctx));
+      return ctx.dry ? 0 : finite(fn.run(args, ctx));
     }
     if (t.v in ctx.vars) return ctx.vars[t.v];
     if (t.v in CONSTANTS) return CONSTANTS[t.v];
@@ -428,6 +435,46 @@ export function evaluate(src: string, opts: EvalOptions = {}): EvalResult {
     const tokens = tokenize(s, vars);
     const value = run(tokens, { angle: opts.angle ?? 'deg', vars });
     return { ok: true, value: tidy(finite(value)) };
+  } catch (err) {
+    if (err instanceof MathError) return { ok: false, reason: err.reason };
+    throw err;
+  }
+}
+
+export type CompiledFn = (x: number) => number;
+export type CompileResult = { ok: true; f: CompiledFn } | { ok: false; reason: MathFailure };
+
+/**
+ * Turn a typed function of `x` into something a plot can call a few hundred
+ * times a frame. Tokenizes once.
+ *
+ * Refuses only what is wrong whatever x is — a syntax error, an unknown word, a
+ * missing bracket, the wrong number of arguments (a dry pass checks the grammar
+ * without checking values, so a mistake hiding behind `sqrt(-x^2-1)` is still
+ * found). `sqrt(x-5)` compiles: it is undefined for x < 5, and that is a gap in
+ * the curve, not an error in the input. At a point where the value is undefined
+ * or not finite the function returns NaN, never throws, and does not tidy: a
+ * plot wants the raw number.
+ */
+export function compile(src: string, opts: { angle?: AngleMode } = {}): CompileResult {
+  try {
+    const s = normaliseInput(src);
+    if (s === '') throw new MathError('empty');
+    if (s.length > MAX_EXPR_LENGTH) throw new MathError('too-long');
+    checkBalanced(s);
+    const angle = opts.angle ?? 'deg';
+    const tokens = tokenize(s, { x: 0 });
+    run(tokens, { angle, vars: { x: 0 }, dry: true });
+    const f: CompiledFn = x => {
+      try {
+        const v = run(tokens, { angle, vars: { x } });
+        return Number.isFinite(v) ? v : Number.NaN;
+      } catch (err) {
+        if (err instanceof MathError) return Number.NaN;
+        throw err;
+      }
+    };
+    return { ok: true, f };
   } catch (err) {
     if (err instanceof MathError) return { ok: false, reason: err.reason };
     throw err;

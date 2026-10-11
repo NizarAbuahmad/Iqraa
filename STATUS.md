@@ -932,16 +932,16 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
-## Math Corner: calculator, unit converter and formula sheet in the library, 2026-10-11
+## Math Corner: calculator, grapher, unit converter and formula sheet in the library, 2026-10-11
 
 **What a user can do today.** The library (`/curriculum/resources`) has a
-«زاوية الرياضيات» tile opening `/curriculum/math`, a hub with three first-party
-tools — a scientific calculator, a unit converter and a Grade 10 formula sheet
-(`/curriculum/math/calculator`, `/converter`, `/formulas`, each with a copyable
-link) — and a «افتح GeoGebra» card. Everyone who can see the library can open
+«زاوية الرياضيات» tile opening `/curriculum/math`, a hub with four first-party
+tools — a scientific calculator, a function grapher, a unit converter and a
+Grade 10 formula sheet (`/curriculum/math/calculator`, `/grapher`, `/converter`,
+`/formulas`, each with a copyable link) — and a «افتح GeoGebra» card. Everyone who can see the library can open
 it; no gating change (`/curriculum` is already on the non-teacher prefix
-allowlist, pinned in `routeGating.test.ts`). The function grapher and the
-geometry sketchpad are **not built yet**, and the hub lists only what exists
+allowlist, pinned in `routeGating.test.ts`). The geometry sketchpad is **not
+built yet**, and the hub lists only what exists
 (`MATH_TOOL_IDS` in `services/mathTools.ts`; `MathTool.tsx` is a `Record` over
 it, so an id without a component does not compile).
 
@@ -1015,6 +1015,50 @@ mangles them (e.g. «قانون طول القوس»).
 - **Grade scope.** The sheet is Grade 10 only and says so; the library is
   visible to every grade. Filtering by the viewer's grade is not done.
 
+**The grapher** (`components/math/MathGrapher.tsx`) draws up to four functions
+with react-native-svg on an equal-aspect plane, so a circle is round. Drag pans,
+two fingers pinch, the wheel zooms, a tap reads the point off every curve, and
+the zeros, maximum and minimum values, y-intercept and pairwise intersections
+are found and marked. Everything that is arithmetic is a tested pure module:
+`mathExpr.compile` (a function of x; refuses only what is wrong whatever x is,
+so `sqrt(x-5)` compiles but `sqrt(-x^2-1)+` does not), `mathViewport`,
+`mathGraph` and `mathGeogebra`. Typing `x = 3` is a vertical line and an
+implicit equation such as `x²+y²=25` is **refused by name** rather than graphed
+as something else; circles belong to the sketchpad.
+- **A pole between two samples broke the first version.** The curve is broken
+  where the function is undefined *or* where it changes sign across more than a
+  canvas height. The first threshold was 3× the height, and every test passed
+  because every pole in the tests happened to land exactly on a sample (value
+  undefined, so it split anyway). At ordinary zoom `1/(x−0.05)` jumps only
+  ~650 px, so a line was drawn through the asymptote. Found by asking why a
+  mutation of that rule failed no test; the threshold is now one height and the
+  tests put poles *between* samples. The same trap applies to roots and
+  extrema (a sign change across a pole is not a root; a "peak" next to a pole is
+  not an extremum) and each guard has a test that fails without it.
+- **Trig graphs need a free aspect.** The book draws sin x over 0°…360° and
+  −1…1, which no equal-aspect view can, so the «sin» button switches to a
+  degree- or radian-axis view and the «1:1» button goes back. Degree ticks fall
+  on 15°/30°/45°/90°.
+- **A canvas inside a ScrollView needs a scroll lock.** `MathFrame` is
+  `LabFrame` plus a context: the grapher locks the page while a finger is on
+  the canvas. Verified: dragging the canvas leaves `scrollTop` unchanged.
+- **The mouse wheel was silently dead in the first build.** The canvas mounts
+  only after its first layout and the wheel listener was attached once at mount,
+  to an element that did not exist yet. A callback ref fixes it. Only driving the
+  real page caught it.
+- **«Open in GeoGebra» translates, it does not just forward.** GeoGebra's trig
+  takes radians (a degree argument gets a `°`), its `log` is the natural log
+  (base 10 is `lg`) and a two-argument `log` puts the base first.
+  `services/mathGeogebra.ts` does these; anything it cannot say faithfully
+  (percent, `nPr`, unbalanced brackets) is left out and the screen says so.
+  **The `?command=` URL itself is existing code that was not re-verified against
+  geogebra.org** from here.
+- Curves use the slide palette on light and brighter relatives on dark: the
+  slide teal was dim on the dark card (seen, then fixed).
+- Cost: roots, extrema and intersections are computed from the last *settled*
+  view (finger up, wheel stopped, button pressed), ~600 samples each, not on
+  every frame of a drag.
+
 **The converter** (`services/mathUnits.ts`) is `from → base → to` and fails
 closed: an unknown unit, a conversion across categories, an unparseable number,
 a temperature below absolute zero and an overflow are named reasons, never a
@@ -1027,18 +1071,24 @@ not had a teacher confirm. The unit names are our own chrome text. There is a
 font sizes, radii and spacing, so new screens use `TYPE`/`SPACE`/`RADIUS` from
 `constants/theme.ts`; `i18nTerminology.test.ts` wants «ًا», not «اً».
 
-**What was and was not verified.** Unit tests: ~3,980 mobile tests and 349
+**What was and was not verified.** Unit tests: ~4,070 mobile tests and 349
 curriculum tests pass, typecheck clean. Rendered with the Expo web build at
-360 px wide in Arabic (RTL) and English: the hub, the calculator at rest, a
-result, an error, scientific notation, a 30-digit line wrapping and the expanded
-function rows; the converter empty, with a length and a temperature result and
-the below-absolute-zero error; the formula sheet whole and filtered to
-derivatives, vectors and statistics, which use the least common glyphs (⟨ ⟩ ₁ ⁿ⁻¹ ′ Σ σ² ∪ ∩ ⊥ ⇔ rendered without empty boxes).
+360 px wide in Arabic (RTL) and English: the hub, the calculator (rest, result,
+error, scientific notation, a 30-digit line, expanded rows), the converter (empty,
+length, temperature, below absolute zero), the formula sheet (whole, and filtered
+to derivatives, vectors and statistics, which use the least common glyphs) and
+the grapher (one and two functions with intersections, tan in a degree view,
+a pole between samples, errors, a vertical line; light and dark; Arabic and
+English). The grapher's interactions were driven in a real browser: mouse drag,
+wheel zoom, zoom buttons, a tap, and a genuine two-finger pinch sent as touch
+events, with the page's scroll position checked.
 **Not verified:** the library tile itself (it needs a signed-in session; it is a
-copy of the Lab tile), 390 px after the final fixes, anything on Android, real
-touch input, screen-reader output, the calculator's history rows, and the
-converter's ± button and unit chips (screenshotted, not tapped through).
-The Arabic strings have not been through the Arabic copy reviewer.
+copy of the Lab tile), 390 px after the final fixes, anything on Android or a
+real touch screen (the pinch was emulated, so `PanResponder`'s multi-touch on a
+phone is unconfirmed), screen-reader output, the calculator's history rows, the
+converter's ± button and chips (screenshotted, not tapped through), the
+grapher's keyboard on a phone, and the GeoGebra link-out URL. The Arabic strings
+have not been through the Arabic copy reviewer.
 
 No table, no native module, no `app.json` version bump, no schema push: ships
 over the air. Not yet decided: whether calculator history should persist.
