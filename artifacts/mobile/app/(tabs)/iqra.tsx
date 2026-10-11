@@ -1119,7 +1119,10 @@ function MessageBubble({
       onPress: () => onPresentMaterial(message),
     });
   }
-  if (onCopy && onExport && (canAct || infographic || message.text.trim().length > 60)) {
+  // Not under an answer about the app: a how-to is not a document to file, and
+  // «تصدير» under «where is Settings» offers to export a sentence.
+  if (onCopy && onExport && !message.appHelp
+    && (canAct || infographic || message.text.trim().length > 60)) {
     messageActions.push(
       {
         key: 'copy',
