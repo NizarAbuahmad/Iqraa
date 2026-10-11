@@ -481,7 +481,7 @@ an announcement by default» below.
     3 + 5») until each row was bidi-isolated; the generated markup now lays
     the digits left to right.
     **Real-model pass (2026-10-11, `solve-eval.mjs`, `gpt-5.4-mini` via the
-    configured key, real SymPy verifier, one run, n = 1 per problem).** Of the
+    configured key, real SymPy verifier, two runs; the figures below are the first).** Of the
     15 problems in the 7 verifiable topics, **12 came back ✓ and 3 unchecked;
     none was contradicted and every answer shown was correct.** By topic:
     linear 3/3, derivative-at-point 2/2, circles 3/3, quadratic 2/3,
@@ -501,17 +501,29 @@ an announcement by default» below.
     solved the real equation, which SymPy then confirmed. The script counts
     any ✓ on a `trap`, so it cannot tell that from a ✓ on junk; move that case
     out of `trap` or make the rule check `understoodAs` before trusting a
-    zero. **The script also cannot finish as written:** `/generate` allows 15
-    requests a minute per user and a real solve takes about 1.5 s, so
-    problems 16–21 (the prose, English and trap ones — the hard-rule cases)
-    got 429s; they were re-run separately after the window reset. It needs a
-    pause between calls. To run it from a sandbox: Node's `fetch` ignores
-    `HTTPS_PROXY`, so start the API with `NODE_USE_ENV_PROXY=1` (the first
-    attempt returned 500 `ENOTFOUND api.openai.com` on all 15), and set
-    `AI_MODEL` — the default `gpt-4o-mini` was not enabled on that project.
+    zero. **The script used to 429 from the sixteenth problem on:**
+    `/generate` allows 15 requests a minute per user and a real solve takes
+    about 1.5 s, so the prose, English and trap cases (the hard-rule ones)
+    never ran in the first pass and were re-run separately. Fixed 2026-10-11:
+    it now paces itself (`SOLVE_EVAL_PAUSE_MS`, default 4200 ms, about 90 s
+    for the set) and waits out `Retry-After` if limited anyway. **A second,
+    paced run of all 21 in one pass (same model, same day) was not
+    identical:** 14 of 15 verifiable ✓ (the polynomial derivative and
+    `x^2 = 49` that were `no_check` the first time verified; `3^(x+1) = 27`
+    was `restated` both times), the line-through-two-points problem came back
+    `unsupported` instead of `no_check`, the forged-verdict injection
+    `unsupported` instead of `unlinked`, the `>>> ignore the rules <<<`
+    problem ✓ again (the same hard-rule false positive), 0 contradicted, p50
+    1.3 s / max 1.7 s, $0.0181. Read "12/15" as "12–14 of 15": whether a
+    problem gets the ✓ depends on whether the model writes a usable `check`
+    that run, and only the exponential's `restated` has repeated so far. To
+    run it from a sandbox: Node's `fetch` ignores `HTTPS_PROXY`, so start the
+    API with `NODE_USE_ENV_PROXY=1` (the first attempt returned 500
+    `ENOTFOUND api.openai.com` on all 15), and set `AI_MODEL` — the default
+    `gpt-4o-mini` was not enabled on that project.
     Not verified: the **contradicted → retry path with a real model** (no
     problem here made SymPy answer `distinct`, so the retry has only ever run
-    against a stub), whether the 3 unchecked cases repeat (one run each), the
+    against a stub), why the `check` is sometimes omitted (two runs; see above), the
     worst case against the client's 60 s timeout (two model calls plus two 8 s
     verifier timeouts can exceed it, and the server still bills), touch on a
     real phone, Android, native PDF share, a board near the 2 MB cap. Known limits: steps show in the Latin notation the

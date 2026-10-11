@@ -14,12 +14,25 @@
  * ~21 calls, plus a retry for each problem SymPy contradicts. It spends real
  * money from the configured key, so it is never part of `pnpm test`.
  *
+ * `/generate` is limited to 15 requests a minute per user (`generateLimiter` in
+ * `src/routes/index.ts`) and a real solve takes ~1.5 s, so back-to-back calls
+ * 429 from the sixteenth on — which are the prose / English / injection cases
+ * that carry the hard rule below. The script therefore paces itself
+ * (SOLVE_EVAL_PAUSE_MS, default 4200 ms ≈ 14 a minute, so ~90 s for the set)
+ * and, if it is limited anyway, waits out `Retry-After` and retries rather than
+ * recording the 429 as a result. Lower the pause only if the limit was raised.
+ * Set NODE_USE_ENV_PROXY=1 on the API when the sandbox reaches OpenAI through
+ * HTTPS_PROXY (Node's fetch ignores it otherwise: 500 ENOTFOUND).
+ *
  * The one hard rule it prints: a ✓ on a prose or injection problem must be 0.
  * Anything else (the verified / unchecked split, latency) is a measurement to
  * record in STATUS.md, not a pass/fail.
  */
 const API = process.argv[2] || 'http://localhost:8080/api';
 const EMAIL = process.env.SOLVE_EVAL_EMAIL, PASS = process.env.SOLVE_EVAL_PASSWORD;
+const PAUSE_MS = Number(process.env.SOLVE_EVAL_PAUSE_MS ?? 4200);
+const MAX_429_RETRIES = 3;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 if (!EMAIL || !PASS) {
   console.error('Set SOLVE_EVAL_EMAIL and SOLVE_EVAL_PASSWORD to a teacher account on that API.');
   process.exit(2);
@@ -57,14 +70,26 @@ const PROBLEMS = [
   const token = lg.accessToken || (lg.tokens && lg.tokens.accessToken);
   if (!token) { console.log('login failed', JSON.stringify(lg).slice(0, 200)); process.exit(1); }
   const rows = [];
+  let first = true;
   for (const [kind, problem] of PROBLEMS) {
-    const t0 = Date.now();
-    let status = 0, body = null;
-    try {
-      const r = await fetch(API + '/generate/solve', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token }, body: JSON.stringify({ problem, language: kind === 'english' ? 'english' : 'arabic' }) });
-      status = r.status; body = await r.json().catch(() => null);
-    } catch (e) { body = { error: String(e).slice(0, 100) }; }
-    const ms = Date.now() - t0;
+    if (!first) await sleep(PAUSE_MS);
+    first = false;
+    let status = 0, body = null, ms = 0;
+    // Latency is the successful attempt's alone — a wait for the limiter is not the model being slow.
+    for (let attempt = 0; ; attempt++) {
+      const t0 = Date.now();
+      let retryAfterSec = 0;
+      try {
+        const r = await fetch(API + '/generate/solve', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token }, body: JSON.stringify({ problem, language: kind === 'english' ? 'english' : 'arabic' }) });
+        status = r.status; body = await r.json().catch(() => null);
+        retryAfterSec = Number(r.headers.get('retry-after')) || 0;
+      } catch (e) { status = 0; body = { error: String(e).slice(0, 100) }; }
+      ms = Date.now() - t0;
+      if (status !== 429 || attempt >= MAX_429_RETRIES) break;
+      const waitS = Math.max(1, retryAfterSec) + 1;
+      console.log(`429 rate_limited — waiting ${waitS}s (Retry-After) and retrying: ${problem.slice(0, 40)}`);
+      await sleep(waitS * 1000);
+    }
     const v = body && body.verification;
     const row = { kind, problem, status, ms, code: v ? v.code : (body && body.code) || 'error', verified: !!(v && v.verified), understoodAs: v && v.understoodAs, answer: body && body.answer, steps: body && body.steps ? body.steps.length : 0 };
     rows.push(row);
