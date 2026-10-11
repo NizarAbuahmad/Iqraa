@@ -23,6 +23,8 @@ import type { BookFigure } from './bookFigures.ts';
 import { bookFigureSlides } from './lessonSlides.ts';
 import { toArabicDigits } from './labFormat.ts';
 import { optionLetter } from './optionLabels.ts';
+import { samplePlot } from './deckVisuals.ts';
+import { normalizePlotExpr } from './ai/worksheetFormats.ts';
 
 const THINK_SECONDS = 45;
 
@@ -279,7 +281,7 @@ export function buildDeckFromQuiz(
  * What the class reads for a structured worksheet question: the stem, then the
  * format's own lines laid out for a screen. **Nothing here is an answer** —
  * `pairs`, `order`, `wrongStep`, `fix` and `why` are never read, and the
- * graph's curve is deliberately not attached (see the call site). The key goes
+ * graph's curve rides separately as `visual` + `visualOnReveal`. The key goes
  * in the slide's `answer`, which the presenter shows only on reveal.
  */
 function formatDeckContent(f: WorksheetQuestionFormat, isAr: boolean): string {
@@ -384,10 +386,21 @@ export function buildDeckFromWorksheet(
         title: isAr ? `سؤال ${qNum}` : `Question ${qNum}`,
         // The stem alone for a formatted question: `q.text` is the whole
         // question in plain text and would print the steps a second time.
-        // Not `visual` for a graph: the presenter draws `visual` on every
-        // non-graph slide with no reveal gate (presentation.tsx), so the
-        // curve would sit on the class screen before anyone had answered.
         content: fmt ? formatDeckContent(fmt, isAr) : q.text,
+        // A graph question's curve IS the answer, so it rides on the slide but
+        // the presenter holds it back until the reveal (`visualOnReveal`).
+        ...(fmt?.kind === 'graph'
+          ? {
+              visual: {
+                kind: 'plot' as const,
+                series: fmt.exprs.map(e => ({
+                  label: e,
+                  points: samplePlot(normalizePlotExpr(e), { from: fmt.window.xMin, to: fmt.window.xMax, steps: 120 }) ?? [],
+                })),
+              },
+              visualOnReveal: true,
+            }
+          : {}),
         ...(asChoice
           ? {
               options: q.options,

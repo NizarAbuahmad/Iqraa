@@ -1331,7 +1331,7 @@ export default function PresentationScreen() {
           {/* An explicit visual — a finance chart, a stats bar. Graph slides are
               excluded because GraphView draws the same VisualView itself, under
               the command pills; rendering it here too would double the plot. */}
-          {slide.type !== 'graph' && <VisualView slide={slide} />}
+          {slide.type !== 'graph' && (!slide.visualOnReveal || answerVisible) && <VisualView slide={slide} />}
           {slide.type === 'media' && (
             <MediaView slide={slide} isRTL={isRTL} t={t} zoomed={zoomed} setZoomed={setZoomed} />
           )}

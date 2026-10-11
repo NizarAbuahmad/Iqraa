@@ -427,6 +427,8 @@ export interface ActivitySlide {
    * the picture too.
    */
   visual?: import('../deckVisuals.ts').VisualBlock;
+  /** The visual is the answer: the presenter draws it only after the reveal. */
+  visualOnReveal?: boolean;
   /** Media payload for type 'media' — projected image, video, audio, or a linked document. */
   /**
    * A picture that sits BESIDE this slide's text rather than replacing it.

@@ -667,6 +667,8 @@ export type VisualSource = {
   type?: string;
   graphCommands?: string[] | undefined;
   visual?: VisualBlock | undefined;
+  /** The visual is the answer: draw it only after the reveal. */
+  visualOnReveal?: boolean | undefined;
 };
 
 /**

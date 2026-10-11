@@ -94,13 +94,17 @@ describe('formats on the projector', () => {
     }
   });
 
-  it('live deck: the graph slide carries no plot before the reveal exists for it', () => {
-    // presentation.tsx draws `visual` on every non-graph slide with no reveal
-    // gate, so a plot on a challenge slide would show the answer on the class
-    // screen. Until the presenter gates it, the slide must not carry one.
+  it('live deck: the graph slide carries its plot, held back until the reveal', () => {
     const deck = buildDeckFromWorksheet(ws, 't', true);
     const qs = deck.slides.filter(s => s.type === 'challenge');
-    assert.equal(qs[1]!.visual, undefined);
+    const v = qs[1]!.visual;
+    assert.equal(v?.kind, 'plot');
+    assert.ok(v?.kind === 'plot' && v.series.length === 1 && v.series[0]!.points.length > 0, 'non-empty series');
+    assert.equal(qs[1]!.visualOnReveal, true, 'the presenter must not draw it before the reveal');
+    for (const i of [0, 2, 3]) {
+      assert.equal(qs[i]!.visual, undefined);
+      assert.equal(qs[i]!.visualOnReveal, undefined);
+    }
   });
 
   it('live deck keeps outcomes[qNum-1] numbering: one slide per question', () => {
