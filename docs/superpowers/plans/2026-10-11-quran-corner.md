@@ -4,9 +4,9 @@
 
 **Goal:** A «ركن القرآن» card in the Library opens a corner where teachers and students can read, and memorise with hide-the-words tools, exactly the surahs and ayah ranges the grade 1–10 Islamic Education books assign, plus a shelf of outside resources.
 
-**Architecture:** A build script copies the assigned ayahs, unchanged, from one pinned Tanzil Uthmani snapshot into `lib/curriculum/src/data/quran_corner.json`; scope comes from parsing the lesson titles already in the 20 Islamic catalogs. The app reads that file through a small loader and three new screens under `/curriculum/quran` (inside the already-allowlisted `/curriculum` prefix). Memorisation helpers and progress logic are pure TypeScript with unit tests; progress is stored on the device, keyed by user id. Everything ships over the air like the Science Lab.
+**Architecture:** A build script renders the assigned ayahs, unchanged, from the pinned `@quran.ws/text` dataset (the King Fahd Complex's Mus'haf al-Madinah, Hafs) into `lib/curriculum/src/data/quran_corner.json`; scope comes from parsing the lesson titles already in the 20 Islamic catalogs. The app reads that file through a small loader and three new screens under `/curriculum/quran` (inside the already-allowlisted `/curriculum` prefix). Memorisation helpers and progress logic are pure TypeScript with unit tests; progress is stored on the device, keyed by user id. Everything ships over the air like the Science Lab.
 
-**Tech Stack:** TypeScript, Expo / React Native + expo-router (mobile), `@workspace/curriculum` (data + pure helpers), `node --test` with `--experimental-strip-types`, one new JS-only font package (`@expo-google-fonts/amiri-quran`).
+**Tech Stack:** TypeScript, Expo / React Native + expo-router (mobile), `@workspace/curriculum` (data + pure helpers), `node --test` with `--experimental-strip-types`, one pinned dev dependency for the text (`@quran.ws/text`, read only by the build) and the King Fahd Complex's font as a bundled asset.
 
 **Spec:** `docs/superpowers/specs/2026-10-11-quran-corner-design.md` (read it first; this plan implements it and records two things the spec left to the plan: where the text snapshot comes from, and the exact file layout).
 
@@ -15,8 +15,9 @@
 - **Quranic text is never typed, pasted from memory, or taken from PDF extraction** — not in code, tests, fixtures, strings or docs. Every ayah in the shipped data is copied by the build script from the pinned snapshot, and a test compares it byte-for-byte. Tests and fixtures use placeholder text (`x96.1`, `ألف باء`).
 - **The stored and displayed ayah text is never run through `normalizeArabic`** or any other rewrite. `normalizeArabic` is used only on curriculum *titles*.
 - **Scope is exactly what the lesson titles assign:** only surahs a lesson title names, and only the ayah ranges the title prints; a title with no range means the whole surah.
-- **Text source: Tanzil Uthmani (`quran-uthmani`), CC BY 3.0, verbatim only** (decided 2026-10-11). If a verifiable copy cannot be obtained, stop and report; never substitute another source (`quran-json` is CC BY-SA 4.0 and its Uthmani text comes from quranenc.com — rejected).
-- **No schema change, no API change, no native module, no `app.json` `version` bump.** The one new dependency, `@expo-google-fonts/amiri-quran@0.4.1`, was checked: no dependencies, no config plugin, no `exports` field, JS plus a `.ttf` asset. If Task 7 finds otherwise, stop and report (the OTA `version` rule in CLAUDE.md would apply).
+- **Text source: the King Fahd Complex's Mus'haf al-Madinah (Hafs) through `@quran.ws/text` 0.1.0, pinned** (the owner chose it on 2026-10-11 after Tanzil proved unreachable from the build sandbox; see the spec's *Constraints* for the licence, what was checked and what was not). The Complex's usage rights allow free use in websites and software; the dataset is CC BY 4.0 with attribution waived inside a product. Never substitute another source without the owner (`quran-json` is CC BY-SA 4.0 and its Uthmani text comes from quranenc.com: rejected).
+- **The text has not been verified against a printed mushaf until a named person has done it** (`lib/curriculum/sources/quran-ws/VERIFY.md`). Never write that it has been verified before then, in code, copy, `STATUS.md` or the PR. The corner must not be released before it is.
+- **No schema change, no API change, no native module, no `app.json` `version` bump, and no new mobile dependency.** The text package is a dev dependency of `lib/curriculum` only (the app never imports it). The font is a committed, unmodified asset loaded with a static `require` (JavaScript, so it ships over the air). If Task 7 finds the font needs a native change, stop and report (the OTA `version` rule in CLAUDE.md would apply). The font's licence forbids selling, modifying or altering it: never edit, subset or convert the file.
 - **Progress is the learner's own rating, stored on the device, keyed by user id.** Nothing in code or copy may call it verified, correct or checked; the app does not hear recitation.
 - **Carry lessons by `kbl-*` id, never by title. Group by `gradeId` from the data, never by a picker index.**
 - **Arabic digits only at display time** (`toArabicDigits` from `services/labFormat.ts`); data and logic are Latin.
@@ -36,9 +37,11 @@
 | `lib/curriculum/src/quranResources.ts` + `data/quran_resources.json` | Outside-links shelf: type, loader, validator |
 | `lib/curriculum/src/quranTypes.ts` | Types of `quran_corner.json` (types only) |
 | `lib/curriculum/src/quranView.ts` | Pure view helpers: whole-surah test, range text, group by grade |
-| `lib/curriculum/scripts/quranCornerBuild.ts` | Parse snapshot, build the corner, review sheet, input loader (pure + one loader) |
+| `lib/curriculum/scripts/quranCornerBuild.ts` | Build the corner from a source and the catalogs; check the surah table against the source's own; credit line; verification sheet (pure) |
+| `lib/curriculum/scripts/quranCornerSource.ts` | Read the pinned `@quran.ws/text` package and the 20 catalogs (Node only) |
 | `lib/curriculum/scripts/build-quran-corner.ts` | CLI: write or `--check` the generated file |
-| `lib/curriculum/sources/tanzil/` | Pinned snapshot, `SOURCE.json`, `SHA256SUMS`, generated `REVIEW.md` (build input, never bundled) |
+| `lib/curriculum/sources/quran-ws/VERIFY.md` | Generated: every shipped ayah, for a person to check against a printed mushaf (never bundled) |
+| `artifacts/mobile/assets/fonts/UthmanicHafs-v-3.0.ttf` | The King Fahd Complex's font, unmodified, plus its notice |
 | `lib/curriculum/src/data/quran_corner.json` | **Generated.** The only Quranic text in the app |
 | `lib/curriculum/src/quran.ts` | Loader: `QURAN_CORNER`, `QURAN_SURAHS`, `getQuranSurah`, re-exports |
 | `artifacts/mobile/services/quranProgress.ts` | Progress reducer, parse, per-user key (pure) |
@@ -51,12 +54,14 @@
 | `artifacts/mobile/app/curriculum/quran/[surahId]/memorize.tsx` | Memorisation tools |
 
 **Two more departures from the spec, recorded after the Tasks 1–5 final review:**
-1. *The surah table is hand-typed* (`SURAHS` in `scripts/quranCornerBuild.ts`: numbers and ayah counts, not text). The spec prefers names from Tanzil's metadata and allows a hand table only if the metadata cannot supply them, with a range-fits test and a PR disclosure. The plan takes the hand table because the snapshot the owner downloads is the plain `sura|aya|text` file, which has no names, and Tanzil's metadata file would be a second owner-supplied file whose format could not be checked from the build sandbox (`tanzil.net` is refused). The spec's conditions are met: `buildCorner` throws when a range does not fit or a count differs (tested), and the PR says so. The cost: an equal-length swap of two whole surahs is caught only by a person reading `REVIEW.md`. If the owner also supplies Tanzil's metadata file, add a name cross-check then.
-2. *The snapshot record is `SOURCE.json`, not `SOURCE.md`* (plus `SHA256SUMS`), because the build reads it. The spec was amended to match.
+1. *The text source changed from Tanzil to `@quran.ws/text`* (owner's decision, 2026-10-11, after Tanzil could not be fetched). The spec and Task 6 were rewritten; Task 5 is kept as executed, and Task 6 replaces its Tanzil reader.
+2. *The surah table is hand-typed* (`SURAHS` in `scripts/quranCornerBuild.ts`: numbers and ayah counts, not text). The spec allows that only with a range-fits test and a PR disclosure; the build now also refuses to run unless the source's own surah names and counts agree with every row it uses (tested), which catches an equal-length swap that a count check alone cannot.
+3. *The font is the Complex's, not Amiri Quran*, because the dataset says other fonts show gaps; see Task 7.
+4. *Verification is a release requirement against a printed mushaf*, because the dataset's licence puts the duty on whoever shows the text to users and the build cannot check diacritics.
 
 **One deliberate difference from the spec:** the spec says "a per-ayah action opens the lesson that assigns it". The reader instead lists the lessons that assign the surah, each opening its lesson with the ayah range it covers. An ayah can be assigned by two lessons (الجمعة 9–11 is in grades 4 and 6), which a single per-ayah button cannot show. The spec sentence was amended to match.
 
-Tasks 1–5 need no Quranic text and can run first. **Task 6 stops at an owner gate** (the snapshot file). Tasks 7–10 need Task 6.
+Tasks 1–5 need no Quranic text and can run first. Task 6 reads it from the pinned package, so nothing has to be supplied by hand; **the one human step is the printed-mushaf verification** (Task 6 Step 10), which gates *release*, not the build. Tasks 7–10 need Task 6.
 
 ---
 
@@ -1365,6 +1370,8 @@ git commit -m "Quran Corner: on-device memorisation progress, a learner's own ra
 
 ### Task 5: Types, view helpers and the corner builder (on a synthetic source)
 
+> **Superseded in part by Task 6.** Task 6 replaces `scripts/quranCornerBuild.ts` and its test (the Tanzil text reader and the file loader go away; the `SURAHS` table, `mergeRanges`, `quranView.ts` and `quranTypes.ts`, apart from `QuranSource`, stay). Task 5 below is kept exactly as it was executed.
+
 **Files:**
 - Create: `lib/curriculum/src/quranTypes.ts`, `lib/curriculum/src/quranView.ts`, `lib/curriculum/scripts/quranCornerBuild.ts`
 - Test: `lib/curriculum/src/__tests__/quranView.test.ts`, `lib/curriculum/src/__tests__/quranCornerBuild.test.ts`
@@ -2035,64 +2042,645 @@ git commit -m "Quran Corner: corner builder and view helpers, tested on a placeh
 
 ---
 
-### Task 6: Pin the snapshot, generate the data, review it (OWNER GATE)
+### Task 6: Switch the source to the King Fahd Complex dataset, generate the data, verify it
 
 **Files:**
-- Create: `lib/curriculum/sources/tanzil/quran-uthmani.txt`, `lib/curriculum/sources/tanzil/SOURCE.json`, `lib/curriculum/sources/tanzil/SHA256SUMS`, `lib/curriculum/scripts/build-quran-corner.ts`, `lib/curriculum/src/quran.ts`, generated `lib/curriculum/src/data/quran_corner.json`, generated `lib/curriculum/sources/tanzil/REVIEW.md`
+- Modify: `lib/curriculum/package.json` (a dev dependency, the `./quran` export, a script) and `pnpm-lock.yaml`; `lib/curriculum/src/quranTypes.ts` (the `QuranSource` interface)
+- Replace: `lib/curriculum/scripts/quranCornerBuild.ts` and `lib/curriculum/src/__tests__/quranCornerBuild.test.ts` (Task 5 read a Tanzil text file; this reads the dataset)
+- Create: `lib/curriculum/scripts/quranCornerSource.ts`, `lib/curriculum/scripts/build-quran-corner.ts`, `lib/curriculum/src/quran.ts`, generated `lib/curriculum/src/data/quran_corner.json`, generated `lib/curriculum/sources/quran-ws/VERIFY.md`
 - Test: `lib/curriculum/src/__tests__/quranCorner.test.ts`
-- Modify: `lib/curriculum/package.json` (exports + script)
 
 **Interfaces:**
-- Consumes: Task 5's `buildCorner`, `loadBuildInput`, `parseTanzilTxt`, `assertFullHafs`, `reviewSheet`; Task 2's `tokenizeAyah`.
+- Consumes: Task 1's `parseSurahTitle`; Task 2's `tokenizeAyah`; Task 5's `quranTypes.ts`, `quranView.ts`, `mergeRanges` and the `SURAHS` table (all kept).
+- Produces (`quranCornerBuild.ts`, pure): `SURAHS`, `surahKey(nameAr)`, `assertFullHafs(source)`, `mergeRanges`, `creditLine(info)`, `buildCorner(input: BuildInput): QuranCornerFile`, `reviewSheet(corner): string`, types `SourceAyah`, `SourceSurah`, `BuildSource`, `CatalogInput`, `BuildInput`.
+- Produces (`quranCornerSource.ts`, Node only): `quranWsDir()`, `loadQuranWsSource(): Promise<BuildSource>`, `loadCatalogs()`, `loadBuildInput(): Promise<BuildInput>`.
 - Produces (`quran.ts`): `QURAN_CORNER: QuranCornerFile`, `QURAN_SURAHS: readonly QuranSurah[]`, `getQuranSurah(number): QuranSurah | undefined`, and re-exports of the types and of `groupSurahsByGrade`, `isWholeSurah`, `segmentsText`, `surahGradeIds`.
 
-**Why this is a gate.** `tanzil.net` was refused by the build sandbox's egress proxy when this plan was written, and no npm package carrying Tanzil's own file with its licence notice was found (67 candidates scanned). So the file has to come from a person or an environment that can open `tanzil.net`. **If `quran-uthmani.txt` is not already in the repo, stop here, tell the owner exactly what is needed (Step 1), and do not continue to Tasks 7–10.**
+**Why the source changed.** The plan first used Tanzil's text, which the build sandbox could not fetch (`tanzil.net` is refused). On 2026-10-11 the owner asked for a different source and approved **`@quran.ws/text` 0.1.0**: the King Fahd Complex's Mus'haf al-Madinah (Hafs) as an npm package. Read the spec's *Constraints* for what was checked and what was not. Everything below was run against the real package in a scratch copy before it was written here: 6,236 ayahs, 585 shipped, all 77 lesson ids resolving across all 20 catalogs, and the character-map check against the Complex's font.
 
-- [ ] **Step 1: Obtain the snapshot (owner, or an environment that can reach tanzil.net).** On `https://tanzil.net/download/`: Quran Text Type **Uthmani**, Output **Text (with aya numbers)** — the `sura|aya|text` format. The page also offers toggles for pause marks, sajdah signs, rub-el-hizb marks and the like. Recommended, and the owner's call: pause marks **on** (a learner sees what the printed mushaf shows), sajdah signs **on**, rub-el-hizb marks **off** (a decorative sign that would lead some ayahs). Save the file as `lib/curriculum/sources/tanzil/quran-uthmani.txt` **without opening it in an editor that re-saves it** (no re-encoding, no line-ending changes).
+- [ ] **Step 1: Add the dependency.** An exact version, as a dev dependency of the curriculum package only (the app never imports it):
 
-Create `lib/curriculum/sources/tanzil/SOURCE.json`, writing the real date and the exact options chosen:
+```bash
+pnpm --filter @workspace/curriculum add -D --save-exact @quran.ws/text@0.1.0
+git diff --stat
+grep -n -A3 "'@quran.ws/text@0.1.0'" pnpm-lock.yaml | head -8
+```
+Expected: `lib/curriculum/package.json` gains `"@quran.ws/text": "0.1.0"` under `devDependencies` and `pnpm-lock.yaml` gains the package, whose lockfile integrity is `sha512-CWr2Kp4h1CknaTgSE/OUZ0E0v22AlKPMey7CZPOo4/Juh2cYGj/P2cTX1VJgPGodCnrNP8ucWopwEiCWENR8aA==`. **If pnpm refuses it (the repo's `minimumReleaseAge`; the version was published 2026-09-12 so it should pass) or the integrity differs, stop and report. Do not add it to `minimumReleaseAgeExclude`.**
 
-```json
-{
-  "retrievedOn": "YYYY-MM-DD",
-  "notes": "tanzil.net/download: Uthmani, Text (with aya numbers); pause marks on, sajdah signs on, rub-el-hizb marks off"
+- [ ] **Step 2: Check the package is the one this plan describes** before building on it (no Quranic text is printed):
+
+```bash
+cd lib/curriculum && node --input-type=module -e "
+import { createHash } from 'node:crypto'; import { readFileSync } from 'node:fs'; import { createRequire } from 'node:module'; import { dirname, join } from 'node:path';
+import { Mushaf } from '@quran.ws/text';
+const m = await Mushaf.hafs(); const dir = dirname(createRequire(import.meta.url).resolve('@quran.ws/text'));
+const h = f => createHash('sha256').update(readFileSync(join(dir, 'data', f))).digest('hex');
+console.log(m.surahs.length, m.ayahCount, m.wordCount, m.font.family, m.font.file);
+console.log('hafs.json', h('hafs.json')); console.log('font     ', h(m.font.file));"
+```
+Expected, exactly: `114 6236 77432 KFGQPC HAFS Uthmanic Script UthmanicHafs-v-3.0.ttf`, `hafs.json 31186b3ac554ea8d5db1dbc1f67ac5a6d3bd99a62091d04ff73f39be18bf2568`, `font      5c47602425fb4190327ab9e1a2e8ed2f53dceaf595d8ccc29ac32b8b209ad398`. **Any difference: stop and report.** The data and the tests below are only correct for these bytes.
+
+- [ ] **Step 3: Replace the `QuranSource` type.** In `lib/curriculum/src/quranTypes.ts` replace the whole `QuranSource` interface with this, and change the comment on `QuranCornerFile.notice` to `/** The credit and licence line the corner shows, written by the build from `source`. */`:
+
+```ts
+export interface QuranSource {
+  /** The dataset the ayahs were read from. */
+  name: string;
+  /** The package and version pinned, e.g. `@quran.ws/text 0.1.0`. */
+  version: string;
+  url: string;
+  /** Who publishes the text itself. */
+  publisher: string;
+  licenseName: string;
+  licenseUrl: string;
+  /** SHA-256 of the dataset file (`data/hafs.json`) the ayahs were read from. */
+  sha256: string;
+  /** The font this text must be drawn in: the publisher's own, which the dataset ships. */
+  font: { family: string; file: string; sha256: string };
 }
 ```
 
-Record the checksum:
-
-```bash
-cd lib/curriculum/sources/tanzil && sha256sum quran-uthmani.txt > SHA256SUMS && cat SHA256SUMS
-```
-
-- [ ] **Step 2: Inspect the file before trusting the parser.**
-
-```bash
-cd lib/curriculum/sources/tanzil
-file quran-uthmani.txt                      # expect: UTF-8 text
-head -n 3 quran-uthmani.txt                 # expect lines shaped  1|1|<text>
-grep -c '^[0-9]' quran-uthmani.txt          # expect: 6236
-grep '^#' quran-uthmani.txt | head -n 12    # expect: Tanzil's licence notice
-grep -E '^(1|2|112)\|1\|' quran-uthmani.txt # note whether the basmala is inside ayah 1 of surahs 2 and 112
-```
-If the shape differs from `sura|aya|text`, or the count is not 6236, or there is no `#` notice: **stop and report**; do not edit the file or the parser to fit. Write what you saw about the basmala into `SOURCE.json`'s `notes` (the corner shows exactly what the source has, so a reader should know).
-
-- [ ] **Step 3: Write the CLI.** Create `lib/curriculum/scripts/build-quran-corner.ts`:
+- [ ] **Step 4: Write the failing test.** Replace `lib/curriculum/src/__tests__/quranCornerBuild.test.ts` with the version below. It tests the builder on a placeholder source (no Quranic text, no package needed), and adds the checks that matter most now: the build refuses when the source names a surah differently from the table (the equal-length swap), or counts it differently.
 
 ```ts
 /**
- * Writes `src/data/quran_corner.json` and `sources/tanzil/REVIEW.md`, or with
- * `--check` only verifies the committed file is what the snapshot and the
- * catalogs produce. Run after adding or retitling an Islamic Education lesson.
+ * The corner builder, on a placeholder source. The "ayahs" here are
+ * `x<surah>.<ayah>` and the surah names are built from the surah table's own
+ * keys, so this file contains no Quranic text and runs without the real package.
+ * What it guards: scope comes from the lesson titles, ranges merge when they
+ * touch, every kept ayah is copied unchanged, and the build REFUSES (rather than
+ * guesses) when a name, a count or a range does not fit the source.
  */
-import { readFileSync, writeFileSync } from 'node:fs';
-import { assertFullHafs, buildCorner, loadBuildInput, parseTanzilTxt, reviewSheet } from './quranCornerBuild.ts';
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+
+import {
+  SURAHS,
+  assertFullHafs,
+  buildCorner,
+  creditLine,
+  mergeRanges,
+  reviewSheet,
+  surahKey,
+  type BuildInput,
+  type BuildSource,
+  type CatalogInput,
+} from '../../scripts/quranCornerBuild.ts';
+import type { QuranSource } from '../quranTypes.ts';
+
+const INFO: QuranSource = {
+  name: 'test dataset',
+  version: '@test/pkg 1.0.0',
+  url: 'https://example.test/data',
+  publisher: 'Test Publisher',
+  licenseName: 'TEST-LICENSE',
+  licenseUrl: 'https://example.test/license',
+  sha256: '0'.repeat(64),
+  font: { family: 'Test Font', file: 'test.ttf', sha256: '1'.repeat(64) },
+};
+
+/** A source for the 40 surahs in the table, from the table's own numbers and counts. Overrides break one fact. */
+function fakeSource(opts: { counts?: Record<number, number>; names?: Record<number, string>; drop?: number } = {}): BuildSource {
+  const surahs: BuildSource['surahs'] = [];
+  const ayahs: BuildSource['ayahs'] = [];
+  for (const [key, s] of Object.entries(SURAHS).sort((a, b) => a[1].number - b[1].number)) {
+    if (s.number === opts.drop) continue;
+    const count = opts.counts?.[s.number] ?? s.ayahCount;
+    surahs.push({ number: s.number, nameAr: opts.names?.[s.number] ?? `سورة ${key}`, ayahCount: count });
+    for (let a = 1; a <= count; a++) ayahs.push({ surah: s.number, ayah: a, text: `x${s.number}.${a}` });
+  }
+  return { ayahs, surahs, info: INFO };
+}
+
+/** A complete-looking source: 114 surahs of 55 ayahs, the last of 21, which is 6,236 in all. */
+function fullShapeSource(): BuildSource {
+  const surahs: BuildSource['surahs'] = [];
+  const ayahs: BuildSource['ayahs'] = [];
+  for (let n = 1; n <= 114; n++) {
+    const count = n === 114 ? 21 : 55;
+    surahs.push({ number: n, nameAr: `سورة ${n}`, ayahCount: count });
+    for (let a = 1; a <= count; a++) ayahs.push({ surah: n, ayah: a, text: `x${n}.${a}` });
+  }
+  return { ayahs, surahs, info: INFO };
+}
+
+const lessons = (...titles: string[]): CatalogInput['units'] => [
+  { lessons: titles.map((title_ar, i) => ({ id: `u1_l${i + 1}`, title_ar })) },
+];
+
+function input(catalogs: CatalogInput[], source = fakeSource()): BuildInput {
+  return { source, catalogs };
+}
+
+describe('SURAHS', () => {
+  it('has 40 surahs with distinct numbers between 1 and 114', () => {
+    const numbers = Object.values(SURAHS).map(s => s.number);
+    assert.equal(numbers.length, 40);
+    assert.equal(new Set(numbers).size, 40);
+    assert.ok(numbers.every(n => n >= 1 && n <= 114));
+  });
+});
+
+describe('surahKey', () => {
+  it('folds the source\'s name and drops «سورة», so it equals the key a lesson title folds to', () => {
+    assert.equal(surahKey('سورَةُ الإِخْلاصِ'), 'الاخلاص');
+    assert.equal(surahKey('سورة آل عمران'), 'ال عمران');
+    assert.equal(surahKey('الفاتحة'), 'الفاتحه');
+  });
+});
+
+describe('assertFullHafs', () => {
+  it('accepts 114 surahs and 6,236 ayahs', () => {
+    assert.doesNotThrow(() => assertFullHafs(fullShapeSource()));
+  });
+
+  it('refuses a source that is not the complete Hafs text', () => {
+    assert.throws(() => assertFullHafs(fakeSource()), /expected 114/);
+    const short = fullShapeSource();
+    short.ayahs.pop();
+    assert.throws(() => assertFullHafs(short), /6235 ayahs, expected 6236/);
+    const odd = fullShapeSource();
+    odd.surahs[0]!.ayahCount += 1;
+    assert.throws(() => assertFullHafs(odd), /adds up to 6237/);
+  });
+});
+
+describe('mergeRanges', () => {
+  it('merges overlapping and touching ranges, and keeps gaps', () => {
+    assert.deepEqual(mergeRanges([[5, 7], [1, 4]]), [{ from: 1, to: 7 }]);
+    assert.deepEqual(mergeRanges([[1, 4], [6, 7]]), [{ from: 1, to: 4 }, { from: 6, to: 7 }]);
+    assert.deepEqual(mergeRanges([[1, 10], [3, 4]]), [{ from: 1, to: 10 }]);
+    assert.deepEqual(mergeRanges([[20, 20]]), [{ from: 20, to: 20 }]);
+    assert.deepEqual(mergeRanges([]), []);
+  });
+});
+
+describe('buildCorner', () => {
+  const g3: CatalogInput = {
+    gradeId: 'grade-3',
+    semester: 1,
+    units: lessons(
+      'سورَةُ الْعَلَقِ، الآياتُ الْكَريمَةُ (1-8)',
+      'سورَةُ الْعَلَقِ، الآياتُ الْكَريمَةُ (9-19)',
+      'سورَةُ الْقَدْرِ',
+      'القُرْآنُ الكَريمُ',
+    ),
+  };
+  const g10: CatalogInput = {
+    gradeId: 'grade-10',
+    semester: 1,
+    units: lessons('سورة البقرة: الآيتان الكريمتان (143-144)', 'سورة البقرة: الآيات الكريمة (183-186)'),
+  };
+
+  it('takes scope from titles: whole surahs, merged ranges, and nothing else', () => {
+    const corner = buildCorner(input([g3, g10]));
+    assert.deepEqual(corner.surahs.map(s => s.number), [96, 97, 2]);
+    const alaq = corner.surahs[0]!;
+    assert.deepEqual(alaq.segments, [{ from: 1, to: 19 }]);
+    assert.equal(alaq.ayahs.length, 19);
+    assert.equal(corner.surahs[1]!.ayahs.length, 5);
+    const baqarah = corner.surahs[2]!;
+    assert.deepEqual(baqarah.segments, [{ from: 143, to: 144 }, { from: 183, to: 186 }]);
+    assert.deepEqual(baqarah.ayahs.map(a => a.n), [143, 144, 183, 184, 185, 186]);
+  });
+
+  it('copies every kept ayah unchanged', () => {
+    const baqarah = buildCorner(input([g10])).surahs[0]!;
+    assert.deepEqual(baqarah.ayahs[0], { n: 143, text: 'x2.143' });
+  });
+
+  it('records each lesson by kbl id, grade and semester', () => {
+    const alaq = buildCorner(input([g3])).surahs[0]!;
+    assert.deepEqual(alaq.lessons, [
+      { lessonId: 'kbl-g3-islamic-s1-nccd-u1_l1', gradeId: 'grade-3', semester: 1, from: 1, to: 8 },
+      { lessonId: 'kbl-g3-islamic-s1-nccd-u1_l2', gradeId: 'grade-3', semester: 1, from: 9, to: 19 },
+    ]);
+    const baqarah = buildCorner(input([g10])).surahs[0]!;
+    assert.equal(baqarah.lessons[0]!.lessonId, 'kbl-islamic-s1-nccd-u1_l1', 'grade 10 keeps the historical id form');
+  });
+
+  it('carries the source facts and a credit line written from them', () => {
+    const corner = buildCorner(input([g3]));
+    assert.deepEqual(corner.source, INFO);
+    assert.equal(corner.notice, creditLine(INFO));
+  });
+
+  it('refuses a surah it has no number for, instead of guessing', () => {
+    const odd: CatalogInput = { gradeId: 'grade-3', semester: 1, units: lessons('سورة النمل') };
+    assert.throws(() => buildCorner(input([odd])), /no surah number/);
+  });
+
+  it('refuses when the source has no such surah', () => {
+    assert.throws(() => buildCorner(input([g3], fakeSource({ drop: 96 }))), /the source has no surah 96/);
+  });
+
+  it('refuses when the source names the surah differently: two surahs swapped in the table', () => {
+    const swapped = fakeSource({ names: { 96: 'سورة القدر' } });
+    assert.throws(() => buildCorner(input([g3], swapped)), /the table calls it "العلق" but the source calls it "القدر"/);
+  });
+
+  it('refuses when the table\'s ayah count differs from the source', () => {
+    assert.throws(
+      () => buildCorner(input([g3], fakeSource({ counts: { 96: 20 } }))),
+      /the table says 19 ayahs, the source says 20/,
+    );
+  });
+
+  it('refuses a range that runs past the end of the surah', () => {
+    const bad: CatalogInput = { gradeId: 'grade-3', semester: 1, units: lessons('سورة العلق: الآيات (9-25)') };
+    assert.throws(() => buildCorner(input([bad])), /names ayah 25/);
+  });
+
+  it('refuses when an ayah inside a range is missing from the source', () => {
+    const src = fakeSource();
+    src.ayahs = src.ayahs.filter(a => !(a.surah === 96 && a.ayah === 5));
+    assert.throws(() => buildCorner(input([g3], src)), /the source has no 96:5/);
+  });
+
+  it('orders surahs by the first grade that assigns them, then surah number', () => {
+    const g1: CatalogInput = { gradeId: 'grade-1', semester: 1, units: lessons('سورة الناس', 'سورة العصر') };
+    assert.deepEqual(buildCorner(input([g10, g1, g3])).surahs.map(s => s.number), [103, 114, 96, 97, 2]);
+  });
+});
+
+describe('creditLine', () => {
+  it('names the publisher, the dataset, its version and licence, and says the text was modified', () => {
+    const line = creditLine(INFO);
+    assert.match(line, /Test Publisher/);
+    assert.match(line, /test dataset, @test\/pkg 1\.0\.0 — https:\/\/example\.test\/data — TEST-LICENSE/);
+    assert.match(line, /Modified: yes/);
+  });
+});
+
+describe('reviewSheet', () => {
+  it('lists EVERY shipped ayah for checking against a printed mushaf', () => {
+    const corner = buildCorner(input([{ gradeId: 'grade-3', semester: 1, units: lessons('سورة العلق') }]));
+    const sheet = reviewSheet(corner);
+    for (let a = 1; a <= 19; a++) assert.match(sheet, new RegExp(`^96:${a} {2}x96\\.${a}$`, 'm'));
+    assert.match(sheet, /authorised printed Mus'haf al-Madinah/);
+    assert.match(sheet, /Test Publisher/);
+  });
+});
+```
+
+```bash
+cd lib/curriculum && node --experimental-strip-types --test src/__tests__/quranCornerBuild.test.ts 2>&1 | grep -E "^# (tests|pass|fail)|not ok" | head
+```
+Expected: FAIL (the Task 5 builder has no `surahKey`, `creditLine` or `BuildSource`).
+
+- [ ] **Step 5: Replace the builder.** Replace `lib/curriculum/scripts/quranCornerBuild.ts` with this. The `SURAHS` table and `mergeRanges` are unchanged from Task 5; the Tanzil text reader and the file loader are gone.
+
+```ts
+/**
+ * Builds `src/data/quran_corner.json` from a Quran source and the 20 Islamic
+ * Education catalogs. Pure functions only: reading the source (the pinned npm
+ * package) is `quranCornerSource.ts`, so everything here runs on a placeholder
+ * source in tests. Shared by the CLI (`build-quran-corner.ts`) and the test that
+ * proves the committed file is what these inputs produce.
+ *
+ * No Quranic text is written here. Every ayah is copied from the source
+ * unchanged; the only hand-typed data is `SURAHS`, which holds surah names (as
+ * folded keys), numbers and ayah COUNTS — metadata, and the build refuses to run
+ * unless the source's own surah table agrees with it, name and count.
+ */
+import { normalizeArabic } from '../src/arabic.ts';
+import { lessonKbId } from '../src/curriculumIds.ts';
+import { parseSurahTitle } from '../src/quranTitles.ts';
+import type {
+  QuranAyah,
+  QuranCornerFile,
+  QuranLessonRef,
+  QuranSegment,
+  QuranSource,
+  QuranSurah,
+} from '../src/quranTypes.ts';
+
+/**
+ * The 40 surahs the books name: folded name (as `parseSurahTitle` returns it)
+ * → surah number and ayah count.
+ *
+ * Typed by hand. It is NOT Quranic text, but a wrong number would show a
+ * student the wrong surah under a right name, so the build checks every row
+ * against the source's OWN surah table: the number must name the surah the key
+ * names (`surahKey` of the source's Arabic name) and the ayah count must be the
+ * same. That catches an equal-length swap, which a count check alone cannot.
+ */
+export const SURAHS: Record<string, { number: number; ayahCount: number }> = {
+  'الفاتحه': { number: 1, ayahCount: 7 },
+  'البقره': { number: 2, ayahCount: 286 },
+  'ال عمران': { number: 3, ayahCount: 200 },
+  'النساء': { number: 4, ayahCount: 176 },
+  'الانفال': { number: 8, ayahCount: 75 },
+  'الاسراء': { number: 17, ayahCount: 111 },
+  'الكهف': { number: 18, ayahCount: 110 },
+  'لقمان': { number: 31, ayahCount: 34 },
+  'الحجرات': { number: 49, ayahCount: 18 },
+  'الواقعه': { number: 56, ayahCount: 96 },
+  'الجمعه': { number: 62, ayahCount: 11 },
+  'الملك': { number: 67, ayahCount: 30 },
+  'القلم': { number: 68, ayahCount: 52 },
+  'المعارج': { number: 70, ayahCount: 44 },
+  'نوح': { number: 71, ayahCount: 28 },
+  'المزمل': { number: 73, ayahCount: 20 },
+  'النبا': { number: 78, ayahCount: 40 },
+  'الطارق': { number: 86, ayahCount: 17 },
+  'الاعلي': { number: 87, ayahCount: 19 },
+  'الغاشيه': { number: 88, ayahCount: 26 },
+  'البلد': { number: 90, ayahCount: 20 },
+  'الشمس': { number: 91, ayahCount: 15 },
+  'الليل': { number: 92, ayahCount: 21 },
+  'الضحي': { number: 93, ayahCount: 11 },
+  'الشرح': { number: 94, ayahCount: 8 },
+  'التين': { number: 95, ayahCount: 8 },
+  'العلق': { number: 96, ayahCount: 19 },
+  'القدر': { number: 97, ayahCount: 5 },
+  'الزلزله': { number: 99, ayahCount: 8 },
+  'العصر': { number: 103, ayahCount: 3 },
+  'الهمزه': { number: 104, ayahCount: 9 },
+  'الفيل': { number: 105, ayahCount: 5 },
+  'قريش': { number: 106, ayahCount: 4 },
+  'الماعون': { number: 107, ayahCount: 7 },
+  'الكوثر': { number: 108, ayahCount: 3 },
+  'النصر': { number: 110, ayahCount: 3 },
+  'المسد': { number: 111, ayahCount: 5 },
+  'الاخلاص': { number: 112, ayahCount: 4 },
+  'الفلق': { number: 113, ayahCount: 5 },
+  'الناس': { number: 114, ayahCount: 6 },
+};
+
+export interface SourceAyah {
+  surah: number;
+  ayah: number;
+  text: string;
+}
+
+/** The source's own table of surahs, used to check `SURAHS`. */
+export interface SourceSurah {
+  number: number;
+  /** The name as the source writes it («سورة …»). */
+  nameAr: string;
+  ayahCount: number;
+}
+
+/** What the build reads: the ayahs, the source's surah table, and where they came from. */
+export interface BuildSource {
+  ayahs: SourceAyah[];
+  surahs: SourceSurah[];
+  info: QuranSource;
+}
+
+/**
+ * The key `SURAHS` uses for a surah, from the source's Arabic name: folded by
+ * `normalizeArabic`, without the leading «سورة». Titles in the books fold to the
+ * same key, so one rule serves both sides.
+ */
+export function surahKey(nameAr: string): string {
+  return normalizeArabic(nameAr).replace(/^سوره\s+/, '');
+}
+
+/** Hafs numbering has 114 surahs and 6,236 ayahs. Any other total is a different text. */
+export function assertFullHafs(source: Pick<BuildSource, 'ayahs' | 'surahs'>): void {
+  if (source.surahs.length !== 114) throw new Error(`the source has ${source.surahs.length} surahs, expected 114`);
+  if (source.ayahs.length !== 6236) throw new Error(`the source has ${source.ayahs.length} ayahs, expected 6236 (Hafs)`);
+  const counted = source.surahs.reduce((n, s) => n + s.ayahCount, 0);
+  if (counted !== 6236) throw new Error(`the source's surah table adds up to ${counted} ayahs, expected 6236`);
+}
+
+/** Merges overlapping and touching ranges: 1–4 and 5–7 are one run, 1–4 and 6–7 are two. */
+export function mergeRanges(ranges: ReadonlyArray<readonly [number, number]>): QuranSegment[] {
+  const sorted = [...ranges].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const out: QuranSegment[] = [];
+  for (const [from, to] of sorted) {
+    const last = out[out.length - 1];
+    if (last && from <= last.to + 1) last.to = Math.max(last.to, to);
+    else out.push({ from, to });
+  }
+  return out;
+}
+
+export interface CatalogInput {
+  gradeId: string;
+  semester: 1 | 2;
+  units: Array<{ lessons: Array<{ id: string; title_ar: string }> }>;
+}
+
+export interface BuildInput {
+  source: BuildSource;
+  catalogs: CatalogInput[];
+}
+
+const gradeNumber = (gradeId: string): number => Number(gradeId.replace('grade-', ''));
+
+/** The credit and licence line the corner shows. Written here, from the source's own facts, so it cannot drift from them. */
+export function creditLine(info: QuranSource): string {
+  return [
+    `Text: ${info.publisher}.`,
+    `Dataset: ${info.name}, ${info.version} — ${info.url} — ${info.licenseName}.`,
+    'Modified: yes (a subset of the ayahs, each assembled from the dataset\'s words and signs).',
+  ].join(' ');
+}
+
+export function buildCorner(input: BuildInput): QuranCornerFile {
+  const { source } = input;
+  const textOf = new Map(source.ayahs.map(a => [`${a.surah}:${a.ayah}`, a.text]));
+  const sourceSurah = new Map(source.surahs.map(s => [s.number, s]));
+
+  const found = new Map<
+    string,
+    { number: number; ayahCount: number; nameAr: string; ranges: Array<[number, number]>; lessons: QuranLessonRef[] }
+  >();
+
+  for (const cat of input.catalogs) {
+    for (const unit of cat.units) {
+      for (const lesson of unit.lessons) {
+        const title = parseSurahTitle(lesson.title_ar);
+        if (!title) continue;
+        const meta = SURAHS[title.key];
+        if (!meta) {
+          throw new Error(`no surah number for "${title.nameAr}" (${title.key}), in ${cat.gradeId} s${cat.semester} ${lesson.id}`);
+        }
+        const theirs = sourceSurah.get(meta.number);
+        if (!theirs) throw new Error(`the source has no surah ${meta.number} ("${title.nameAr}")`);
+        if (surahKey(theirs.nameAr) !== title.key) {
+          throw new Error(`surah ${meta.number}: the table calls it "${title.key}" but the source calls it "${surahKey(theirs.nameAr)}"`);
+        }
+        if (theirs.ayahCount !== meta.ayahCount) {
+          throw new Error(`surah ${meta.number} ("${title.nameAr}"): the table says ${meta.ayahCount} ayahs, the source says ${theirs.ayahCount}`);
+        }
+        const from = title.from ?? 1;
+        const to = title.to ?? theirs.ayahCount;
+        if (to > theirs.ayahCount) {
+          throw new Error(`"${lesson.title_ar}" names ayah ${to}, but surah ${meta.number} has ${theirs.ayahCount}`);
+        }
+        let entry = found.get(title.key);
+        if (!entry) {
+          entry = { number: meta.number, ayahCount: theirs.ayahCount, nameAr: title.nameAr, ranges: [], lessons: [] };
+          found.set(title.key, entry);
+        }
+        entry.ranges.push([from, to]);
+        entry.lessons.push({
+          lessonId: lessonKbId({ gradeId: cat.gradeId, subject: 'islamic', semester: cat.semester }, lesson.id),
+          gradeId: cat.gradeId,
+          semester: cat.semester,
+          from,
+          to,
+        });
+      }
+    }
+  }
+
+  const surahs: QuranSurah[] = [...found.values()].map(e => {
+    const segments = mergeRanges(e.ranges);
+    const list: QuranAyah[] = [];
+    for (const seg of segments) {
+      for (let n = seg.from; n <= seg.to; n++) {
+        const text = textOf.get(`${e.number}:${n}`);
+        if (text === undefined) throw new Error(`the source has no ${e.number}:${n}`);
+        list.push({ n, text });
+      }
+    }
+    const lessons = [...e.lessons].sort(
+      (a, b) => gradeNumber(a.gradeId) - gradeNumber(b.gradeId) || a.semester - b.semester,
+    );
+    return { number: e.number, nameAr: e.nameAr, ayahCount: e.ayahCount, segments, lessons, ayahs: list };
+  });
+  surahs.sort(
+    (a, b) =>
+      gradeNumber(a.lessons[0]!.gradeId) - gradeNumber(b.lessons[0]!.gradeId) || a.number - b.number,
+  );
+
+  return { source: source.info, notice: creditLine(source.info), surahs };
+}
+
+/**
+ * The sheet a person checks the shipped text against an authorised printed
+ * Mus'haf al-Madinah with. EVERY shipped ayah is listed, by surah and number,
+ * because the publisher's terms put the duty to verify on whoever publishes the
+ * text to end users, and the build cannot do that for diacritics.
+ */
+export function reviewSheet(corner: QuranCornerFile): string {
+  const out: string[] = [
+    '# Quran Corner — verification sheet',
+    '',
+    'Generated by `pnpm --filter @workspace/curriculum run build-quran-corner`. Do not edit by hand.',
+    '',
+    `Source: ${corner.source.name}, ${corner.source.version} (text: ${corner.source.publisher}).`,
+    '',
+    'Check every ayah below against an **authorised printed Mus\'haf al-Madinah**: the letters,',
+    'every vowel and every sign. The build already checked, by machine, that each surah\'s number,',
+    'name and ayah count agree with the source\'s own table; it cannot check the diacritics.',
+    'Record who checked and when in the commit message.',
+    '',
+  ];
+  for (const s of corner.surahs) {
+    const segs = s.segments.map(g => (g.from === g.to ? `${g.from}` : `${g.from}–${g.to}`)).join('، ');
+    out.push(`## ${s.number} — ${s.nameAr} (${s.ayahCount} ayahs in the surah; shipped: ${segs})`, '');
+    for (const a of s.ayahs) out.push(`${s.number}:${a.n}  ${a.text}`);
+    out.push('');
+  }
+  return out.join('\n');
+}
+```
+
+```bash
+cd lib/curriculum && node --experimental-strip-types --test src/__tests__/quranCornerBuild.test.ts 2>&1 | grep -E "^# (tests|pass|fail)"
+```
+Expected: `# tests 18`, `# pass 18`, `# fail 0`.
+
+- [ ] **Step 6: Write the source reader and the CLI.** Create `lib/curriculum/scripts/quranCornerSource.ts`:
+
+```ts
+/**
+ * Reads the Quran source the corner is built from: the pinned `@quran.ws/text`
+ * package (the King Fahd Complex's Mus'haf al-Madinah, Hafs). Node only, and
+ * never imported by the app — the app reads the generated `quran_corner.json`.
+ *
+ * Ayahs are rendered with the package's own renderer (`Ayah.render`), which
+ * re-attaches the waqf and other signs the dataset stores separately, so no
+ * assembly logic is reimplemented here.
+ */
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { dirname, join } from 'node:path';
+
+import { Mushaf } from '@quran.ws/text';
+
+import type { BuildInput, BuildSource, CatalogInput, SourceAyah, SourceSurah } from './quranCornerBuild.ts';
+
+const sha256 = (path: string): string => createHash('sha256').update(readFileSync(path)).digest('hex');
+
+/** Where the installed package lives. Its `exports` allow only the entry point, so the data files are found beside it. */
+export function quranWsDir(): string {
+  return dirname(createRequire(import.meta.url).resolve('@quran.ws/text'));
+}
+
+export async function loadQuranWsSource(): Promise<BuildSource> {
+  const dir = quranWsDir();
+  const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')) as { name: string; version: string };
+  const mushaf = await Mushaf.hafs();
+
+  const surahs: SourceSurah[] = [];
+  const ayahs: SourceAyah[] = [];
+  for (const s of mushaf.surahs) {
+    surahs.push({ number: s.number, nameAr: s.nameAr, ayahCount: s.ayahCount });
+    for (const a of s.ayahs) ayahs.push({ surah: s.number, ayah: a.number, text: a.render({ marks: true }) });
+  }
+
+  return {
+    ayahs,
+    surahs,
+    info: {
+      name: 'quran-text by quran-ws',
+      version: `${pkg.name} ${pkg.version}`,
+      url: 'https://github.com/quran-ws/quran-text',
+      publisher: "King Fahd Glorious Qur'an Printing Complex — Mus'haf al-Madinah, Hafs from 'Asim (UthmanicHafs v3.0)",
+      licenseName: "CC BY 4.0 (the dataset); the text and font stay under the Complex's published usage rights",
+      licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
+      sha256: sha256(join(dir, 'data', 'hafs.json')),
+      font: { family: mushaf.font.family, file: mushaf.font.file, sha256: sha256(join(dir, 'data', mushaf.font.file)) },
+    },
+  };
+}
+
+/** The 20 Islamic catalogs, grade 1 to 10, two semesters each, in a fixed order. */
+export function loadCatalogs(dir: URL = new URL('../src/data/', import.meta.url)): CatalogInput[] {
+  const catalogs: CatalogInput[] = [];
+  for (let grade = 1; grade <= 10; grade++) {
+    for (const semester of [1, 2] as const) {
+      const file = new URL(`iqra_curriculum_g${grade}_islamic_sem${semester}.json`, dir);
+      const cat = JSON.parse(readFileSync(file, 'utf8')) as { units: CatalogInput['units'] };
+      catalogs.push({ gradeId: `grade-${grade}`, semester, units: cat.units });
+    }
+  }
+  return catalogs;
+}
+
+export async function loadBuildInput(): Promise<BuildInput> {
+  return { source: await loadQuranWsSource(), catalogs: loadCatalogs() };
+}
+```
+
+and `lib/curriculum/scripts/build-quran-corner.ts`:
+
+```ts
+/**
+ * Writes `src/data/quran_corner.json` and `sources/quran-ws/VERIFY.md`, or with
+ * `--check` only verifies the committed file is what the pinned package and the
+ * catalogs produce. Run after adding or retitling an Islamic Education lesson,
+ * or after bumping `@quran.ws/text`.
+ */
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+
+import { assertFullHafs, buildCorner, reviewSheet } from './quranCornerBuild.ts';
+import { loadBuildInput } from './quranCornerSource.ts';
 
 const OUT = new URL('../src/data/quran_corner.json', import.meta.url);
-const REVIEW = new URL('../sources/tanzil/REVIEW.md', import.meta.url);
+const SHEET_DIR = new URL('../sources/quran-ws/', import.meta.url);
+const SHEET = new URL('VERIFY.md', SHEET_DIR);
 
-const input = loadBuildInput();
-assertFullHafs(parseTanzilTxt(input.source).ayahs);
+const input = await loadBuildInput();
+assertFullHafs(input.source);
 const corner = buildCorner(input);
 const json = JSON.stringify(corner, null, 1) + '\n';
 
@@ -2104,7 +2692,8 @@ if (process.argv.includes('--check')) {
   console.log('quran_corner.json is up to date');
 } else {
   writeFileSync(OUT, json);
-  writeFileSync(REVIEW, reviewSheet(corner));
+  mkdirSync(SHEET_DIR, { recursive: true });
+  writeFileSync(SHEET, reviewSheet(corner));
   const ayahs = corner.surahs.reduce((n, s) => n + s.ayahs.length, 0);
   console.log(`wrote ${corner.surahs.length} surahs, ${ayahs} ayahs`);
 }
@@ -2116,65 +2705,103 @@ In `lib/curriculum/package.json` `"scripts"`, add after `"audit-r2"` (mind the c
     "build-quran-corner": "node --experimental-strip-types scripts/build-quran-corner.ts"
 ```
 
-- [ ] **Step 4: Generate.**
+- [ ] **Step 7: Generate the data.**
 
 ```bash
 pnpm --filter @workspace/curriculum run build-quran-corner
+pnpm --filter @workspace/curriculum run build-quran-corner -- --check
+ls -la lib/curriculum/src/data/quran_corner.json lib/curriculum/sources/quran-ws/VERIFY.md | awk '{print $5, $9}'
 ```
-Expected: `wrote 40 surahs, 585 ayahs`. (585 = the union of every assigned range; it was computed from the catalogs when this plan was written. 31 surahs are assigned whole, 9 in part.) A thrown error is a real finding — the likely ones and what they mean: *"table says N ayahs, the source has M"* → the `SURAHS` row, or the snapshot, is wrong; *"names ayah N, but surah S has M"* → the title's range or the surah number is wrong; *"no surah number for …"* → a new surah appeared in a title. **Stop and report, do not edit `SURAHS` to silence it.**
+Expected: `wrote 40 surahs, 585 ayahs`, then `quran_corner.json is up to date`; the data file is about 118 KB and `VERIFY.md` about 82 KB. A thrown error is a real finding. The likely ones: *"the table calls it X but the source calls it Y"* → a `SURAHS` row is wrong (two surahs swapped, or a typo); *"the table says N ayahs, the source says M"* → a count is wrong; *"no surah number for …"* → a new surah appeared in a title. **Stop and report; do not edit `SURAHS` to silence it.**
 
-- [ ] **Step 5: Review gate (a person who reads Arabic).** Open `lib/curriculum/sources/tanzil/REVIEW.md`. For each of the 40 rows confirm the **name** matches the **first assigned ayah** and the **assigned ayahs** match the lesson. This is the only check that catches two surahs of equal length being swapped in `SURAHS`. If any row is wrong, fix the `SURAHS` entry, regenerate, and review again. Record who reviewed and when in the commit message (Step 9). **Do not continue until this is done.**
-
-- [ ] **Step 6: Write the failing-then-passing corner test.** Create `lib/curriculum/src/__tests__/quranCorner.test.ts`. (Written after generation because it reads the generated file; it is the regression guard from here on.)
+- [ ] **Step 8: Write the loader, export it, and write the corner test.** Create `lib/curriculum/src/quran.ts`:
 
 ```ts
 /**
- * The shipped Quran data. What this guards: every ayah in the app is the
- * snapshot's, unchanged; the snapshot is the pinned one; the file is what the
- * build produces from the current catalogs (so retitling a lesson cannot leave
- * the corner stale); and the scope is the one a person reviewed.
+ * The Quran Corner's data: the surahs and ayahs the grade 1–10 Islamic
+ * Education books assign for recitation and memorisation, taken from the King
+ * Fahd Complex's Mus'haf al-Madinah (Hafs) through a pinned `@quran.ws/text`.
+ * `data/quran_corner.json` is GENERATED by `scripts/build-quran-corner.ts` —
+ * never edit it by hand; `quranCorner.test.ts` regenerates it and compares.
+ */
+import raw from './data/quran_corner.json' with { type: 'json' };
+import type { QuranCornerFile, QuranSurah } from './quranTypes.ts';
+
+export type {
+  QuranAyah,
+  QuranCornerFile,
+  QuranLessonRef,
+  QuranSegment,
+  QuranSource,
+  QuranSurah,
+} from './quranTypes.ts';
+export { groupSurahsByGrade, isWholeSurah, segmentsText, surahGradeIds } from './quranView.ts';
+
+export const QURAN_CORNER = raw as unknown as QuranCornerFile;
+export const QURAN_SURAHS: readonly QuranSurah[] = QURAN_CORNER.surahs;
+
+export function getQuranSurah(number: number): QuranSurah | undefined {
+  return QURAN_SURAHS.find(s => s.number === number);
+}
+```
+
+In `lib/curriculum/package.json` exports, after the `"./quran-resources"` line add `    "./quran": "./src/quran.ts",`. (Do **not** re-export it from `src/index.ts`: it holds the text, and only the corner's screens should pull it into a bundle, the same rule `passages.ts` and `premade.ts` follow.) Create `lib/curriculum/src/__tests__/quranCorner.test.ts`:
+
+```ts
+/**
+ * The shipped Quran data. What this guards: every ayah in the app is the pinned
+ * package's, unchanged; the data records the package version and file hash it
+ * came from (so bumping the dependency forces a regeneration); the file is what
+ * the build produces from the current catalogs (so retitling a lesson cannot
+ * leave the corner stale); and the scope is the one a person reviewed.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import { QURAN_CORNER, QURAN_SURAHS } from '../quran.ts';
-import { assertFullHafs, buildCorner, loadBuildInput, parseTanzilTxt } from '../../scripts/quranCornerBuild.ts';
+import { SURAHS, assertFullHafs, buildCorner, surahKey } from '../../scripts/quranCornerBuild.ts';
+import { loadBuildInput, quranWsDir } from '../../scripts/quranCornerSource.ts';
 import { tokenizeAyah } from '../quranMemorize.ts';
 
-const SNAPSHOT = new URL('../../sources/tanzil/quran-uthmani.txt', import.meta.url);
-const SUMS = new URL('../../sources/tanzil/SHA256SUMS', import.meta.url);
 const DATA = new URL('../data/quran_corner.json', import.meta.url);
+const input = await loadBuildInput();
+const textOf = new Map(input.source.ayahs.map(a => [`${a.surah}:${a.ayah}`, a.text]));
+const sha256 = (path: string) => createHash('sha256').update(readFileSync(path)).digest('hex');
 
-const input = loadBuildInput();
-const source = parseTanzilTxt(input.source);
-const textOf = new Map(source.ayahs.map(a => [`${a.surah}:${a.ayah}`, a.text]));
-
-describe('the pinned snapshot', () => {
+describe('the pinned source', () => {
   it('is the complete Hafs text', () => {
-    assertFullHafs(source.ayahs);
+    assertFullHafs(input.source);
   });
 
-  it('matches its recorded SHA-256, and the shipped data records the same one', () => {
-    const actual = createHash('sha256').update(readFileSync(SNAPSHOT)).digest('hex');
-    assert.equal(actual, readFileSync(SUMS, 'utf8').trim().split(/\s+/)[0]);
-    assert.equal(QURAN_CORNER.source.sha256, actual);
+  it('is the package version and file the shipped data says it came from', () => {
+    assert.equal(QURAN_CORNER.source.sha256, sha256(join(quranWsDir(), 'data', 'hafs.json')));
+    assert.deepEqual(QURAN_CORNER.source, input.source.info);
   });
 
-  it('carries Tanzil\'s licence notice, which the corner must show', () => {
-    assert.match(source.notice, /tanzil/i);
-    assert.equal(QURAN_CORNER.notice, source.notice);
-    assert.equal(QURAN_CORNER.source.licenseName, 'CC BY 3.0');
+  it('carries a credit line that names the publisher and the dataset licence', () => {
+    assert.match(QURAN_CORNER.notice, /King Fahd Glorious Qur'an Printing Complex/);
+    assert.match(QURAN_CORNER.notice, /CC BY 4\.0/);
+    assert.match(QURAN_CORNER.notice, /Modified: yes/);
+  });
+
+  it('agrees with the hand-typed surah table on all 40 surahs, by name and by count', () => {
+    for (const [key, s] of Object.entries(SURAHS)) {
+      const theirs = input.source.surahs.find(x => x.number === s.number)!;
+      assert.equal(surahKey(theirs.nameAr), key, `surah ${s.number}`);
+      assert.equal(theirs.ayahCount, s.ayahCount, `surah ${s.number}`);
+    }
   });
 });
 
 describe('quran_corner.json', () => {
-  it('is exactly what the build produces from the snapshot and the catalogs', () => {
+  it('is exactly what the build produces from the pinned package and the catalogs', () => {
     assert.equal(readFileSync(DATA, 'utf8'), JSON.stringify(buildCorner(input), null, 1) + '\n');
   });
 
-  it('holds every ayah byte-for-byte as the snapshot has it', () => {
+  it('holds every ayah exactly as the source renders it', () => {
     let checked = 0;
     for (const s of QURAN_SURAHS) {
       for (const a of s.ayahs) {
@@ -2186,7 +2813,7 @@ describe('quran_corner.json', () => {
   });
 
   // Pinned on purpose: a new book or a retitled lesson changes these numbers, and
-  // the corner's scope (and REVIEW.md) should be re-read by a person when it does.
+  // the corner's scope (and VERIFY.md) should be re-read by a person when it does.
   it('names 40 surahs from 77 lesson assignments', () => {
     assert.equal(QURAN_SURAHS.length, 40);
     assert.equal(QURAN_SURAHS.reduce((n, s) => n + s.lessons.length, 0), 77);
@@ -2245,40 +2872,7 @@ describe('quran_corner.json', () => {
 });
 ```
 
-- [ ] **Step 7: Write the loader and export it.** Create `lib/curriculum/src/quran.ts`:
-
-```ts
-/**
- * The Quran Corner's data: the surahs and ayahs the grade 1–10 Islamic
- * Education books assign for recitation and memorisation, copied unchanged from
- * one pinned Tanzil snapshot. `data/quran_corner.json` is GENERATED by
- * `scripts/build-quran-corner.ts` — never edit it by hand; `quranCorner.test.ts`
- * regenerates it and compares.
- */
-import raw from './data/quran_corner.json' with { type: 'json' };
-import type { QuranCornerFile, QuranSurah } from './quranTypes.ts';
-
-export type {
-  QuranAyah,
-  QuranCornerFile,
-  QuranLessonRef,
-  QuranSegment,
-  QuranSource,
-  QuranSurah,
-} from './quranTypes.ts';
-export { groupSurahsByGrade, isWholeSurah, segmentsText, surahGradeIds } from './quranView.ts';
-
-export const QURAN_CORNER = raw as unknown as QuranCornerFile;
-export const QURAN_SURAHS: readonly QuranSurah[] = QURAN_CORNER.surahs;
-
-export function getQuranSurah(number: number): QuranSurah | undefined {
-  return QURAN_SURAHS.find(s => s.number === number);
-}
-```
-
-In `lib/curriculum/package.json` exports, after the `"./quran-resources"` line add `    "./quran": "./src/quran.ts",`. (Do **not** re-export it from `src/index.ts`: it holds the text, and only the corner's screens should pull it into a bundle — the same rule `passages.ts` and `premade.ts` follow.)
-
-- [ ] **Step 8: Run everything for the curriculum package.**
+- [ ] **Step 9: Run everything for the curriculum package.**
 
 ```bash
 cd lib/curriculum
@@ -2287,30 +2881,34 @@ pnpm --filter @workspace/curriculum run build-quran-corner -- --check
 pnpm --filter @workspace/curriculum run typecheck
 pnpm test 2>&1 | tail -8
 ```
-Expected: the corner test passes (`# tests 10`), `--check` prints `quran_corner.json is up to date`, typecheck is clean, and the whole suite passes. If the "names 40 surahs from 77" or "585" pins fail, the data differs from what was reviewed: stop and report.
+Expected: the corner test passes (`# tests 11`), `--check` prints `quran_corner.json is up to date`, typecheck is clean, and the whole suite passes. If a pin fails ("40 surahs from 77", `585`), the data differs from what this plan was written against: stop and report.
 
-- [ ] **Step 9: Commit.** Replace the reviewer line with the real name and date from Step 5.
+- [ ] **Step 10: The verification a person must do (a release requirement, not a build step).** The package's licence puts the duty to verify the text on whoever shows it to end users, and the build cannot check diacritics (see the spec's *Constraints*). Open `lib/curriculum/sources/quran-ws/VERIFY.md`. For every ayah listed, someone who reads Arabic checks the letters, every vowel and every sign against an **authorised printed Mus'haf al-Madinah**. **Do not stop the build for this**, but do not claim it is done: leave the commit message and `STATUS.md` saying *not yet verified against a printed mushaf* until a named person has done it and recorded the date. The corner must not be released before then.
+
+- [ ] **Step 11: Commit.**
 
 ```bash
-git add lib/curriculum/sources lib/curriculum/scripts/build-quran-corner.ts lib/curriculum/src/quran.ts lib/curriculum/src/data/quran_corner.json lib/curriculum/src/__tests__/quranCorner.test.ts lib/curriculum/package.json
-git commit -m "Quran Corner: the assigned ayahs, copied from the pinned Tanzil snapshot" -m $'Review sheet confirmed by <name> on <date> (sources/tanzil/REVIEW.md).\n\nCo-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_019NrGKPQMgbkMzSTzD6mEEY'
+git add lib/curriculum/package.json pnpm-lock.yaml lib/curriculum/src/quranTypes.ts lib/curriculum/scripts lib/curriculum/src/quran.ts lib/curriculum/src/data/quran_corner.json lib/curriculum/sources lib/curriculum/src/__tests__/quranCornerBuild.test.ts lib/curriculum/src/__tests__/quranCorner.test.ts
+git commit -m "Quran Corner: the assigned ayahs, from the King Fahd Complex text (@quran.ws/text 0.1.0)" -m $'NOT yet verified against a printed mushaf: lib/curriculum/sources/quran-ws/VERIFY.md is unchecked.\n\nCo-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_019NrGKPQMgbkMzSTzD6mEEY'
 ```
-
 
 ---
 
 ### Task 7: Route helpers and the Quran font
 
 **Files:**
-- Create: `artifacts/mobile/services/quranLinks.ts`, `artifacts/mobile/services/__tests__/support/ttfCmap.ts`
+- Create: `artifacts/mobile/services/quranLinks.ts`, `artifacts/mobile/services/__tests__/support/ttfCmap.ts`, `artifacts/mobile/assets/fonts/UthmanicHafs-v-3.0.ttf`, `artifacts/mobile/assets/fonts/UthmanicHafs-NOTICE.md`
 - Test: `artifacts/mobile/services/__tests__/quranLinks.test.ts`, `artifacts/mobile/services/__tests__/quranFontCoverage.test.ts`
-- Modify: `artifacts/mobile/package.json` and `pnpm-lock.yaml` (new dependency), `artifacts/mobile/app/_layout.tsx` (load the font)
+- Modify: `artifacts/mobile/app/_layout.tsx` (load the font)
+- No `package.json` or lockfile change in the mobile app: the font is a committed asset, not a dependency.
 
 **Interfaces:**
-- Consumes: `getQuranSurah`, `QuranSurah` from `@workspace/curriculum/quran` (Task 6).
+- Consumes: `getQuranSurah`, `QuranSurah`, `QURAN_CORNER`, `QURAN_SURAHS` from `@workspace/curriculum/quran` (Task 6).
 - Produces (`quranLinks.ts`): `QURAN_ROUTE = '/curriculum/quran'`, `surahPath(number: number): string`, `memorizePath(number: number): string`, `resolveSurahParam(param: string | string[] | undefined): QuranSurah | null`.
-- Produces (font): the font family name `'AmiriQuran_400Regular'`, usable in any `fontFamily` once the root layout has loaded it.
-- Produces (test support): `fontCodePoints(buf: Uint8Array): Set<number>` — code points a TrueType font has glyphs for.
+- Produces (font): the font family name `'UthmanicHafs'`, usable in any `fontFamily` once the root layout has loaded it.
+- Produces (test support): `fontCodePoints(buf: Uint8Array): Set<number>` — the code points a TrueType font has glyphs for.
+
+**The font.** The dataset says its text uses code points that only the King Fahd Complex's own font is guaranteed to draw, and that a general Arabic font shows gaps. A render of shipped ayahs in a headless browser (done while planning) confirmed it: the Complex's font drew every mark in place, including the sajdah line over 96:19; a default serif font left gaps and detached marks. **The font's embedded licence** (read from the file's `name` table) grants free use, copying and distribution, and says the font "cannot be Sold, Modified, Altered, Translated, Reverse Engineered…". Bundling the **unmodified** file is allowed; whether shipping it inside a paid product counts as "selling" it is the owner's call (spec, *Open items*). **Fallback if the owner objects:** Amiri Quran (SIL OFL, `@expo-google-fonts/amiri-quran@0.4.1`, a JS-only package) has a glyph for every one of the 38,739 characters in the 585 shipped ayahs (checked), but places some marks differently; swapping it in changes the asset, the `useFonts` entry and the `fontFamily` strings, and the coverage test below runs unchanged against its file.
 
 - [ ] **Step 1: Write the failing route test.** Create `artifacts/mobile/services/__tests__/quranLinks.test.ts`:
 
@@ -2387,32 +2985,39 @@ cd artifacts/mobile && node --import ./scripts/registerTestAlias.mjs --experimen
 ```
 Expected: `# tests 3`, `# pass 3`, `# fail 0`.
 
-- [ ] **Step 5: Add the font package and check it is JS-only.**
+- [ ] **Step 5: Add the font as an app asset, unmodified.** The font ships inside the pinned dataset package; copy it byte for byte and prove it is the file the data says it is:
 
 ```bash
-pnpm --filter @workspace/mobile add @expo-google-fonts/amiri-quran@0.4.1
-cd artifacts/mobile
-ls node_modules/@expo-google-fonts/amiri-quran node_modules/@expo-google-fonts/amiri-quran/400Regular
-node -e "const p=require('./node_modules/@expo-google-fonts/amiri-quran/package.json');console.log(p.version,'|',p.license,'|deps:',p.dependencies,'|exports:',p.exports,'|expo:',p.expo)"
-test ! -e node_modules/@expo-google-fonts/amiri-quran/app.plugin.js && echo "no config plugin"
+mkdir -p artifacts/mobile/assets/fonts
+cp lib/curriculum/node_modules/@quran.ws/text/data/UthmanicHafs-v-3.0.ttf artifacts/mobile/assets/fonts/UthmanicHafs-v-3.0.ttf
+sha256sum artifacts/mobile/assets/fonts/UthmanicHafs-v-3.0.ttf
+node -e "console.log(JSON.parse(require('fs').readFileSync('lib/curriculum/src/data/quran_corner.json','utf8')).source.font.sha256)"
 ```
-Expected: `AmiriQuran_400Regular.ttf` listed; `0.4.1 | MIT AND OFL-1.1 |deps: undefined |exports: undefined |expo: undefined`; `no config plugin`. **If any differs (a dependency, a plugin, an `exports` map), stop and report: it may be a native change, and CLAUDE.md's OTA rule (`app.json` `version`) would then apply.** Then confirm `git diff --stat` shows only `artifacts/mobile/package.json` and `pnpm-lock.yaml`.
+Expected: both hashes are `5c47602425fb4190327ab9e1a2e8ed2f53dceaf595d8ccc29ac32b8b209ad398`. Create `artifacts/mobile/assets/fonts/UthmanicHafs-NOTICE.md`:
 
-- [ ] **Step 6: Load the font at startup.** In `artifacts/mobile/app/_layout.tsx`, after the line `import { Almarai_400Regular } from '@expo-google-fonts/almarai';` add:
+```markdown
+# UthmanicHafs-v-3.0.ttf
+
+KFGQPC HAFS Uthmanic Script, by the King Fahd Glorious Qur'an Printing Complex
+(fonts.qurancomplex.gov.sa). Used under the Complex's published usage rights and
+the end-user licence embedded in the font file (its `name` table, ID 13): free
+use, copying and distribution; the font must not be sold, modified, altered,
+translated or reverse engineered. This file is the unmodified copy that ships
+with `@quran.ws/text` 0.1.0 (SHA-256 5c47602425fb4190327ab9e1a2e8ed2f53dceaf595d8ccc29ac32b8b209ad398).
+Do not edit, subset or convert it.
+```
+
+- [ ] **Step 6: Load the font at startup.** In `artifacts/mobile/app/_layout.tsx`, in `RootLayout`'s `useFonts({ … })` call, after `ReadexPro_700Bold,` add:
 
 ```ts
-import { AmiriQuran_400Regular } from '@expo-google-fonts/amiri-quran';
+    // The Quran Corner's script: the King Fahd Complex's own font, unmodified. A
+    // bundled asset (a static require), so it ships over the air: no native
+    // module, so no app.json version bump.
+    UthmanicHafs: require('../assets/fonts/UthmanicHafs-v-3.0.ttf'),
 ```
+If `pnpm run typecheck` rejects the `require` (a `.ttf` module declaration is missing), add `declare module '*.ttf';` to the app's existing ambient declarations file and say so in the report; do not weaken types elsewhere.
 
-and in `RootLayout`'s `useFonts({ … })` call, after `ReadexPro_700Bold,` add:
-
-```ts
-    // The Quran Corner's script. A JS package with a .ttf asset: ships over the
-    // air, no native module, so no app.json version bump.
-    AmiriQuran_400Regular,
-```
-
-- [ ] **Step 7: Write the character-map reader (test support).** Create `artifacts/mobile/services/__tests__/support/ttfCmap.ts` (it does not end in `.test.ts`, so the runner does not execute it as a test). It was checked against Python's fontTools on three real fonts, including Amiri Quran: the code-point sets were identical.
+- [ ] **Step 7: Write the character-map reader (test support).** Create `artifacts/mobile/services/__tests__/support/ttfCmap.ts` (it does not end in `.test.ts`, so the runner does not execute it as a test). It was checked against Python's fontTools on four real fonts, including the Complex's: the code-point sets were identical (611 glyphs).
 
 ```ts
 /**
@@ -2482,7 +3087,7 @@ export function fontCodePoints(buf: Uint8Array): Set<number> {
 }
 ```
 
-- [ ] **Step 8: Write the font-coverage test.** Create `artifacts/mobile/services/__tests__/quranFontCoverage.test.ts`:
+- [ ] **Step 8: Write the font tests.** Create `artifacts/mobile/services/__tests__/quranFontCoverage.test.ts`:
 
 ```ts
 /**
@@ -2490,20 +3095,20 @@ export function fontCodePoints(buf: Uint8Array): Set<number> {
  * the platform silently draws it in another font, and a Quranic mark can come
  * out as a box or in a different style on a student's phone. (The Lab's «Nₐ»
  * was this exact bug in Readex Pro.) This reads the font file's own character
- * map and checks every code point of the shipped text against it.
+ * map and checks every code point of the shipped text against it, and checks
+ * the file is the unmodified one the data says the text must be drawn in.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
 
-import { QURAN_SURAHS } from '@workspace/curriculum/quran';
+import { QURAN_CORNER, QURAN_SURAHS } from '@workspace/curriculum/quran';
 import { fontCodePoints } from './support/ttfCmap.ts';
 
-const FONT = createRequire(import.meta.url).resolve(
-  '@expo-google-fonts/amiri-quran/400Regular/AmiriQuran_400Regular.ttf',
-);
-const glyphs = fontCodePoints(readFileSync(FONT));
+const FONT = new URL('../../assets/fonts/UthmanicHafs-v-3.0.ttf', import.meta.url);
+const bytes = readFileSync(FONT);
+const glyphs = fontCodePoints(bytes);
 
 describe('the character-map reader', () => {
   it('sees Arabic letters and a space, and not a CJK ideograph', () => {
@@ -2514,6 +3119,11 @@ describe('the character-map reader', () => {
 });
 
 describe('the Quran font', () => {
+  it('is the unmodified file the data says the text must be drawn in', () => {
+    assert.equal(createHash('sha256').update(bytes).digest('hex'), QURAN_CORNER.source.font.sha256);
+    assert.equal(QURAN_CORNER.source.font.family, 'KFGQPC HAFS Uthmanic Script');
+  });
+
   it('has a glyph for every code point in the shipped text', () => {
     const missing = new Map<number, string>();
     for (const s of QURAN_SURAHS) {
@@ -2535,14 +3145,14 @@ describe('the Quran font', () => {
 ```bash
 cd artifacts/mobile && node --import ./scripts/registerTestAlias.mjs --experimental-strip-types --test services/__tests__/quranFontCoverage.test.ts services/__tests__/quranLinks.test.ts 2>&1 | grep -E "^# (tests|pass|fail)|not ok|U\+"
 ```
-Expected: all pass. **If the coverage test lists code points: do not drop, replace or normalise any character in the data.** Report the list; the fix is a font (or a second font in the stack) that has them, chosen with the owner. As an extra check of the reader on this font, if `fonttools` is available (`pip install fonttools`): `python3 -c "from fontTools.ttLib import TTFont; print(len(TTFont('node_modules/@expo-google-fonts/amiri-quran/400Regular/AmiriQuran_400Regular.ttf').getBestCmap()))"` should print `266`, the number of glyphs the reader found when this plan was written.
+Expected: all pass (`quranLinks` 3, `quranFontCoverage` 3). **If the coverage test lists code points: do not drop, replace or normalise any character in the data.** Report the list; the fix is a font change decided with the owner. As an extra check of the reader on this font, if `fonttools` is available (`pip install fonttools`): `python3 -c "from fontTools.ttLib import TTFont; print(len(TTFont('assets/fonts/UthmanicHafs-v-3.0.ttf').getBestCmap()))"` should print `611`.
 
 - [ ] **Step 10: Typecheck and commit.**
 
 ```bash
 pnpm run typecheck
-git add artifacts/mobile/services/quranLinks.ts artifacts/mobile/services/__tests__/quranLinks.test.ts artifacts/mobile/services/__tests__/quranFontCoverage.test.ts artifacts/mobile/services/__tests__/support/ttfCmap.ts artifacts/mobile/package.json pnpm-lock.yaml artifacts/mobile/app/_layout.tsx
-git commit -m "Quran Corner: route helpers, and the Quran font with a glyph-coverage test" -m $'Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_019NrGKPQMgbkMzSTzD6mEEY'
+git add artifacts/mobile/services/quranLinks.ts artifacts/mobile/services/__tests__/quranLinks.test.ts artifacts/mobile/services/__tests__/quranFontCoverage.test.ts artifacts/mobile/services/__tests__/support/ttfCmap.ts artifacts/mobile/assets/fonts artifacts/mobile/app/_layout.tsx
+git commit -m "Quran Corner: route helpers, and the King Fahd Complex font with a glyph-coverage test" -m $'Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_019NrGKPQMgbkMzSTzD6mEEY'
 ```
 
 ---
@@ -2573,8 +3183,8 @@ These are our own interface text, not curriculum. They contain no Quranic text.
     quranLessonsTitle: 'الدروس التي تتناولها',
     quranOpenLesson: 'افتح الدرس',
     quranSourceTitle: 'عن النص',
-    quranSourceBody: 'النص من مشروع تنزيل (الرسم العثماني) بترخيص CC BY 3.0، وهو معروض دون أي تعديل.',
-    quranSourceLink: 'موقع تنزيل',
+    quranSourceBody: 'النص من مصحف المدينة النبوية الصادر عن مجمع الملك فهد لطباعة المصحف الشريف (رواية حفص عن عاصم)، وقد أُخذ من مجموعة بيانات quran.ws ويُعرض كما ورد فيها.',
+    quranSourceLink: 'مجموعة بيانات quran.ws',
     quranResourcesTitle: 'مصادر مفيدة',
     quranResourcesNote: 'روابط إلى مواقع خارجية تُفتح خارج التطبيق.',
     quranLinkUnchecked: 'لم يُفتح هذا الرابط للتحقق منه بعد',
@@ -2621,8 +3231,8 @@ These are our own interface text, not curriculum. They contain no Quranic text.
     quranLessonsTitle: 'Lessons that cover it',
     quranOpenLesson: 'Open lesson',
     quranSourceTitle: 'About the text',
-    quranSourceBody: 'The text is from the Tanzil project (Uthmani script), licensed CC BY 3.0, and is shown unmodified.',
-    quranSourceLink: 'Tanzil website',
+    quranSourceBody: 'The text is the King Fahd Complex’s Mus’haf al-Madinah (Hafs), taken from the quran.ws dataset (CC BY 4.0) and shown as it appears there.',
+    quranSourceLink: 'quran.ws dataset',
     quranResourcesTitle: 'Useful resources',
     quranResourcesNote: 'Links to outside sites. They open outside the app.',
     quranLinkUnchecked: 'This link has not been opened and checked yet',
@@ -2681,7 +3291,7 @@ git commit -m "Quran Corner: interface strings, Arabic and English" -m $'Co-Auth
 **Interfaces:**
 - Consumes: everything above — `QURAN_SURAHS`, `QURAN_CORNER`, `groupSurahsByGrade`, `isWholeSurah`, `segmentsText` (`@workspace/curriculum/quran`); `QURAN_RESOURCES` (`…/quran-resources`); `HIDE_LEVELS`, `hiddenFlags`, `tokenizeAyah`, `HideLevel` (`…/quran-memorize`); `useQuranProgress`, `countMemorised`, `stateOf`; `surahPath`, `memorizePath`, `resolveSurahParam`; the translation keys from Task 8; `LabFrame`, `openExternal`, `toArabicDigits`, `getLessonById`.
 
-The screens are React Native and cannot be unit-tested under the bare runner (CLAUDE.md); their logic is in the tested modules. They follow the Lab shelf's patterns (`app/curriculum/lab/index.tsx`): module-scope row components, `LabFrame` for the page frame, explicit `isRTL ? 'row-reverse' : 'row'` for UI chrome. **The Quran text itself is the exception: fixed `row-reverse`, `textAlign: 'right'`, `writingDirection: 'rtl'`, font `AmiriQuran_400Regular`.**
+The screens are React Native and cannot be unit-tested under the bare runner (CLAUDE.md); their logic is in the tested modules. They follow the Lab shelf's patterns (`app/curriculum/lab/index.tsx`): module-scope row components, `LabFrame` for the page frame, explicit `isRTL ? 'row-reverse' : 'row'` for UI chrome. **The Quran text itself is the exception: fixed `row-reverse`, `textAlign: 'right'`, `writingDirection: 'rtl'`, font `UthmanicHafs` (the King Fahd Complex's, loaded in Task 7).**
 
 - [ ] **Step 1: Pin the routes (test first).** In `artifacts/mobile/services/__tests__/routeGating.test.ts`, in the `isNonTeacherRoute` "lets a parent or student reach the screens built for them" list, directly after the line `      '/curriculum/lab/lab-periodic-table',` add:
 
@@ -3048,14 +3658,14 @@ export default function QuranReaderScreen() {
           style={{ marginTop: 8, alignSelf: isRTL ? 'flex-end' : 'flex-start' }}
         >
           <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
-            {t('quranSourceLink')} · tanzil.net
+            {t('quranSourceLink')} · github.com/quran-ws/quran-text
           </Text>
         </Pressable>
         <Text selectable style={{ color: colors.mutedForeground, fontSize: 11, marginTop: 8, textAlign: 'left', writingDirection: 'ltr' }}>
           {QURAN_CORNER.notice}
         </Text>
         <Text selectable style={{ color: colors.mutedForeground, fontSize: 11, marginTop: 6, textAlign: 'left', writingDirection: 'ltr' }}>
-          {`Snapshot ${QURAN_CORNER.source.retrievedOn} · sha256 ${QURAN_CORNER.source.sha256.slice(0, 12)}`}
+          {`${QURAN_CORNER.source.version} · sha256 ${QURAN_CORNER.source.sha256.slice(0, 12)}`}
         </Text>
       </View>
     </LabFrame>
@@ -3078,7 +3688,7 @@ const styles = StyleSheet.create({
   badge: { minWidth: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
   quran: {
     flex: 1,
-    fontFamily: 'AmiriQuran_400Regular',
+    fontFamily: 'UthmanicHafs',
     fontSize: 28,
     lineHeight: 58,
     textAlign: 'right',
@@ -3322,7 +3932,7 @@ const styles = StyleSheet.create({
   card: { margin: 16, padding: 16, borderRadius: 14, borderWidth: 1, gap: 12 },
   words: { flexWrap: 'wrap', columnGap: 8, rowGap: 4 },
   cover: { borderRadius: 8 },
-  quran: { fontFamily: 'AmiriQuran_400Regular', fontSize: 30, lineHeight: 58, writingDirection: 'rtl' },
+  quran: { fontFamily: 'UthmanicHafs', fontSize: 30, lineHeight: 58, writingDirection: 'rtl' },
   rowEnd: { alignItems: 'center', gap: 12 },
   note: { fontSize: 12, marginTop: 10, marginHorizontal: 16 },
 });
@@ -3364,7 +3974,7 @@ cd ../../artifacts/mobile && pnpm test 2>&1 | tail -6
 ```
 Expected: typecheck clean; both suites pass. Type errors in the three new screens are expected possibilities (this React Native code was written against the Lab screens' patterns but could not be compiled when the plan was written): fix them in the new files only, keep the behaviour described in the comments, and do not loosen types with `any` to get past them.
 
-- [ ] **Step 7: Look at it if you can.** The corner sits behind sign-in, so a browser check needs a signed-in session against an API. If you have one (`pnpm run dev:api`, `pnpm run dev:mobile:web`, see `LOCAL_SETUP.md`), open `/curriculum/quran` at a phone width in Arabic and check: the grade groups; a surah row's range text; the reader's Uthmani script (marks drawn, not boxes), the «…» between non-touching ayahs, the Tanzil notice; the memorise page's six levels, tap-to-reveal, the three ratings and that a rating survives a reload; the Library card. **If you cannot, say so in the PR and `STATUS.md`: do not describe the screens as working.**
+- [ ] **Step 7: Look at it if you can.** The corner sits behind sign-in, so a browser check needs a signed-in session against an API. If you have one (`pnpm run dev:api`, `pnpm run dev:mobile:web`, see `LOCAL_SETUP.md`), open `/curriculum/quran` at a phone width in Arabic and check: the grade groups; a surah row's range text; the reader's Uthmani script in the King Fahd Complex font (marks drawn in place, the sajdah line over 96:19, not boxes or gaps), the «…» between non-touching ayahs, the credit line; the memorise page's six levels, tap-to-reveal, the three ratings and that a rating survives a reload; the Library card. **If you cannot, say so in the PR and `STATUS.md`: do not describe the screens as working.**
 
 - [ ] **Step 8: Commit.**
 
@@ -3383,10 +3993,10 @@ git commit -m "Quran Corner: home, reader, memorise page and the Library entry c
 - [ ] **Step 1: Say how a new Islamic Education book reaches the corner.** In `docs/adding-a-book.md`, in the table under `## Where each track shows up in the app`, add a row after the `Catalog` row:
 
 ```markdown
-| Catalog (Islamic Education) | the Quran Corner: a lesson whose `title_ar` names a surah («سورة X» with an optional `(a-b)`) puts those ayahs in the corner. After adding or retitling one, run `pnpm --filter @workspace/curriculum run build-quran-corner` and have a person re-read `lib/curriculum/sources/tanzil/REVIEW.md`; `quranCorner.test.ts` fails until the generated data matches. A lesson that quotes Quran but does not name a surah in its title is not covered. |
+| Catalog (Islamic Education) | the Quran Corner: a lesson whose `title_ar` names a surah («سورة X» with an optional `(a-b)`) puts those ayahs in the corner. After adding or retitling one, run `pnpm --filter @workspace/curriculum run build-quran-corner` and have a person re-check the changed ayahs in `lib/curriculum/sources/quran-ws/VERIFY.md` against a printed mushaf; `quranCorner.test.ts` fails until the generated data matches. A lesson that quotes Quran but does not name a surah in its title is not covered. |
 ```
 
-- [ ] **Step 2: Record what exists, and what does not, in `STATUS.md`** (CLAUDE.md: "edit it in the same PR that changed it"). Add a new section directly above `## Messages can be reacted to with an emoji, 2026-10-10` (sections run newest first), using the date you finish and the real reviewer from Task 6 Step 5. Every sentence below is true only if the tasks above ran as written; **change any sentence that did not hold, and keep the "not verified" list honest.**
+- [ ] **Step 2: Record what exists, and what does not, in `STATUS.md`** (CLAUDE.md: "edit it in the same PR that changed it"). Add a new section directly above `## Messages can be reacted to with an emoji, 2026-10-10` (sections run newest first), using the date you finish. The verification line stays "not yet done" unless a named person has really checked `VERIFY.md` against a printed mushaf. Every sentence below is true only if the tasks above ran as written; **change any sentence that did not hold, and keep the "not verified" list honest.**
 
 ```markdown
 ## The Quran Corner: a shelf in the library, <YYYY-MM-DD>
@@ -3402,25 +4012,29 @@ levels, tap-to-reveal, an ayah-by-ayah repeat counter and a self-rating (جدي�
 of five outside links. Student-reachable through the existing `/curriculum`
 prefix allowlist, pinned in `routeGating.test.ts`. No table, no API route, no
 native module, no `app.json` version bump: the data lives in `lib/curriculum`,
-the font is a JS package, so it ships over the air.
+the font is a bundled asset, so it ships over the air.
 
-**Where the text comes from.** One pinned Tanzil Uthmani snapshot
-(`lib/curriculum/sources/tanzil/`; CC BY 3.0, verbatim only; the options chosen,
-the date and the SHA-256 are recorded there). `scripts/build-quran-corner.ts`
-copies the assigned ayahs out of it unchanged; `quranCorner.test.ts` compares
-every shipped ayah to the snapshot byte for byte, regenerates the file from the
-snapshot and the 20 catalogs and compares, and pins 40 surahs / 77 lesson
-assignments / 585 ayahs. The scope is read from lesson titles by
-`quranTitles.ts`. `quran-json` was rejected: its `LICENSE.txt` and README say
-CC BY-SA 4.0 while its npm metadata says CC-BY-4.0, and its Uthmani text comes
-from quranenc.com. `quranFontCoverage.test.ts` reads the Amiri Quran font's own
-character map and checks every code point of the text against it.
+**Where the text comes from.** The King Fahd Glorious Qur'an Printing Complex's
+Mus'haf al-Madinah (Hafs), through the npm package `@quran.ws/text` 0.1.0, pinned
+as a dev dependency of `lib/curriculum` (the app never imports it).
+`scripts/build-quran-corner.ts` renders each assigned ayah with the package's own
+renderer and writes `quran_corner.json`, which records the package version and the
+SHA-256 of its data file. `quranCorner.test.ts` compares every shipped ayah to the
+package's output, regenerates the file from the package and the 20 catalogs and
+compares, checks the hand-typed surah table against the package's own surah names
+and counts, and pins 40 surahs / 77 lesson assignments / 585 ayahs. Terms: the
+Complex's published usage rights allow free use in websites and software; the
+dataset is CC BY 4.0 with attribution waived inside a product. `quran-json` was
+rejected (CC BY-SA 4.0; Uthmani text from quranenc.com), and Tanzil's text could
+not be fetched from the build sandbox. The text is drawn in the Complex's own
+font, committed unmodified as `artifacts/mobile/assets/fonts/UthmanicHafs-v-3.0.ttf`;
+`quranFontCoverage.test.ts` checks its hash and that it has a glyph for every code
+point of the text.
 
 **The surah table was typed by hand** (`SURAHS` in `scripts/quranCornerBuild.ts`:
-numbers and ayah counts, not text). The build checks every count against the
-snapshot; the equal-length swap it cannot catch was checked by <name> reading
-`sources/tanzil/REVIEW.md` on <date>. Re-read that sheet whenever a book is
-added.
+numbers and ayah counts, not text). The build refuses to run unless the package's
+own surah names and ayah counts agree with every row it uses, which catches two
+surahs of equal length being swapped.
 
 ### What does not work, and what was not verified
 
@@ -3434,13 +4048,24 @@ added.
 - **The five resource links have never been opened** (`urlCheckedAt` is null on
   each, and the screen says so); their hosts are refused from the build
   sandbox. The list is the planner's candidates, not an approved list.
-- **Tanzil's terms were read from the upstream `quran-json` README**, not from
-  `tanzil.net` (refused from the sandbox). Someone with access should read the
-  live terms.
+- **The text has NOT been verified against a printed mushaf.** The package's
+  licence puts that duty on whoever shows the text to end users, and the build
+  cannot check diacritics (the v3.0 release encodes some marks with newer code
+  points, so a mark-level comparison with older releases is inconclusive).
+  `lib/curriculum/sources/quran-ws/VERIFY.md` lists every shipped ayah for
+  <name> to check against an authorised printed Mus'haf al-Madinah on <date>:
+  **leave this as "not yet done" until it is.** The corner must not be released
+  before. The package is Beta and records no origin URL for its v3.0 text package.
+- **The font's licence forbids selling it** (embedded in the file: free use,
+  copying and distribution; no sale, modification or reverse engineering).
+  Whether shipping it inside a paid product counts is the owner's call; the
+  fallback is Amiri Quran, which has a glyph for every code point of the shipped
+  text.
 - **Progress is a self-rating on one device.** The app cannot hear or check a
   recitation, and nothing syncs or shows a teacher.
-- **The corner shows the source's text as it is.** Whether the basmala is part
-  of ayah 1 of each surah is recorded in `sources/tanzil/SOURCE.json`.
+- **The corner shows the source's text as it is.** The basmala is not part of
+  ayah 1 of any surah here (only Al-Fatiha's own ayah 1 is the basmala); the
+  corner adds none.
 - **A lesson that quotes Quran without naming a surah in its title is not
   covered**, and so is outside the corner.
 - **Not built:** audio, speech checking, translations or tafsir text, bookmarks,
@@ -3458,7 +4083,7 @@ cd ../.. && git status --short
 ```
 Expected: typecheck clean; both suites pass; `quran_corner.json is up to date`; `git status` shows only the docs edits. Read the actual output before saying any of that is true.
 
-- [ ] **Step 4: Re-read the diff adversarially, then push.** Look for: any Arabic Quranic text typed by hand (there must be none outside `sources/tanzil/` and the generated JSON); any `normalizeArabic` applied to ayah text (there must be none); any use of the words «تم التحقق» / "verified" / «صحيح» near progress; a hand-written `AmiriQuran` import outside the layout and `fontFamily` strings; the `urlCheckedAt` values (all `null` unless someone really opened the links).
+- [ ] **Step 4: Re-read the diff adversarially, then push.** Look for: any Arabic Quranic text typed by hand (there must be none outside the generated `quran_corner.json` and `VERIFY.md`); any `normalizeArabic` applied to ayah text (there must be none); any use of the words «تم التحقق» / "verified" / «صحيح» near progress; any font other than `UthmanicHafs` used for Quran text, and any edit to the font file (its licence forbids modifying it); the `urlCheckedAt` values (all `null` unless someone really opened the links).
 
 ```bash
 git add STATUS.md docs/adding-a-book.md
@@ -3466,5 +4091,5 @@ git commit -m "Quran Corner: STATUS and adding-a-book" -m $'Co-Authored-By: Clau
 git push -u origin claude/happy-bell-hgl63h
 ```
 
-- [ ] **Step 5: Update the PR.** The PR (NizarAbuahmad/Iqraa#1001) is a draft and was titled as a spec. Retitle it «Quran Corner («ركن القرآن») in the Library», keep it a draft, and rewrite the body: what it adds; the licence route and why `quran-json` was rejected; **the three open items for the owner** (Jordan approval, the unopened resource links, Tanzil's live terms); the reviewer of `REVIEW.md`; what was and was not seen in a browser; and "schema-push: n/a, no migration, no version bump". Say plainly that **`SURAHS` (surah numbers and ayah counts) was typed by hand** and name its two guards (the build's count check and the `REVIEW.md` read). List any change the Arabic reviewer skill declined. End the body with `🤖 Generated with [Claude Code](https://claude.com/claude-code)` and the session link `https://claude.ai/code/session_019NrGKPQMgbkMzSTzD6mEEY`. Then leave the PR subscribed; CI results and review comments arrive as events.
+- [ ] **Step 5: Update the PR.** The PR (NizarAbuahmad/Iqraa#1001) is a draft and was titled as a spec. Retitle it «Quran Corner («ركن القرآن») in the Library», keep it a draft, and rewrite the body: what it adds; the licence route and why `quran-json` was rejected; **the open items for the owner** (Jordan approval; the unopened resource links; the font licence's "cannot be sold" clause and whether it affects a paid product; and the printed-mushaf verification of `VERIFY.md`, **stated as not yet done unless a named person has done it**); what was and was not seen in a browser; and "schema-push: n/a, no migration, no version bump". Say plainly that **`SURAHS` (surah numbers and ayah counts) was typed by hand** and name its guard (the build refuses to run unless the source's own surah names and counts agree with every row it uses). List any change the Arabic reviewer skill declined. End the body with `🤖 Generated with [Claude Code](https://claude.com/claude-code)` and the session link `https://claude.ai/code/session_019NrGKPQMgbkMzSTzD6mEEY`. Then leave the PR subscribed; CI results and review comments arrive as events.
 

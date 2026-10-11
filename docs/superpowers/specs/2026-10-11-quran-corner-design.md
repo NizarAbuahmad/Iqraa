@@ -18,14 +18,31 @@ Constraints that shape the design:
   extraction drops letters (the `pdf-parse` lam contamination in `STATUS.md`).
   For the Quran the rule is absolute: every ayah comes verbatim from one
   verified, pinned, licensed source, and a test proves it.
-- **Licence.** Decided 2026-10-11: **Tanzil Uthmani text, CC BY 3.0, verbatim
-  only**. Not the `quran-json` npm package: its `LICENSE.txt` and README say
-  CC BY-SA 4.0 while its npm metadata says CC-BY-4.0, and its Uthmani source
-  (quranenc.com) has terms nobody here has read.
-- **The text source is not reachable from the build sandbox today.**
-  `tanzil.net` and the jsDelivr CDN are refused by the egress proxy; the npm
-  registry and `raw.githubusercontent.com` are reachable. See *Source
-  snapshot* and *Open items*.
+- **Text source (decided 2026-10-11, revised the same day).** The first choice,
+  Tanzil's Uthmani text, could not be fetched from the build sandbox
+  (`tanzil.net` is refused by the egress proxy), and the owner asked for a
+  different source. The text is now the **King Fahd Glorious Qur'an Printing
+  Complex's Mus'haf al-Madinah (Hafs from 'Asim)**, the official publisher,
+  taken through the npm package **`@quran.ws/text` 0.1.0**, pinned. The Complex's
+  published usage rights allow free use "in websites, software, and other
+  similar intermediates" (printing or importing mushaf copies for sale is
+  restricted, which this is not); the dataset around it is CC BY 4.0 with
+  attribution waived inside a product and asked for when the data itself is
+  republished. Not used: the `quran-json` package (CC BY-SA 4.0 files, a Uthmani
+  text from quranenc.com with unread terms) and the MIT repackagings that state
+  no provenance for their text.
+- **What is and is not verified about that text.** Checked by machine: 6,236
+  ayahs, every word accounted for; the source's own surah names and ayah counts
+  agree with all 40 rows of the hand-typed surah table; the consonants of every
+  ayah are identical to two older King Fahd Complex releases, and to a
+  Tanzil-style Uthmani copy except the basmala convention and two ayahs of
+  Yusuf, which the books do not assign. **Not verified: the diacritics** (the
+  v3.0 release encodes some marks with newer code points, so a full-mark
+  comparison with older releases is inconclusive). The dataset is Beta, and it
+  records that the origin URL of the v3.0 text package is unknown (verifiable by
+  SHA-256, not re-fetchable). Its licence puts the duty to check the text against
+  an **authorised printed mushaf** on whoever shows it to end users. That check
+  is a release requirement (see *Open items*).
 
 ## Decisions
 
@@ -34,43 +51,44 @@ Constraints that shape the design:
 | Tools | A built-in reader and memorisation tools, plus a link-out resources shelf. |
 | Audience | Teachers and students. Both open the same corner. |
 | Text scope | **Only the surahs the curriculum names**, and for a surah the book prints in part, **only the ayah ranges the book prints**. A surah whose lesson title has no range is shown whole. |
-| Text source | Tanzil Uthmani, pinned snapshot, byte-for-byte. |
+| Text source | King Fahd Complex Mus'haf al-Madinah (Hafs) through `@quran.ws/text` 0.1.0, pinned; each ayah rendered by the package's own renderer. |
 | Progress | On the device, keyed by user id. No table, no migration, no server sync. |
 | Build approach | Pure TypeScript and React Native, nothing native. Data in `lib/curriculum`, so it ships over the air like the Lab. |
 
 ## Design
 
-### Source snapshot
+### Source
 
-- A pinned copy of Tanzil's `quran-uthmani` text and its metadata is committed
-  **outside `src/`** (e.g. `lib/curriculum/sources/tanzil/`) with a
-  `SOURCE.json` (date, the options chosen on the download page) and a SHA-256
-  manifest (`SHA256SUMS`). It is a
-  build input, never imported by the app.
-- Where it comes from is decided in the plan, in this order: a copy with a
-  recorded checksum from a path this sandbox can reach (the `quran-json` repo
-  keeps upstream snapshots under `data/`, and its tag `v3.1.2` is on
-  `raw.githubusercontent.com`); otherwise the owner supplies the file. **If no
-  verifiable copy of Tanzil's own text can be obtained, the build stops and
-  says so. It does not fall back to another source.**
-- The stored ayah text is the source's line, unmodified: no normalisation, no
-  re-spelling, no `normalizeArabic`. Whether the source folds the basmala into
-  ayah 1 is read from the real snapshot in the plan, and the corner shows
-  exactly what the source has.
+- `@quran.ws/text` is a **pinned dev dependency of `lib/curriculum`** (exact
+  version; the lockfile carries its integrity). It is read by the build script
+  and by tests, **never imported by the app**. No snapshot file is committed and
+  nothing has to be downloaded by hand.
+- Each ayah is rendered with the package's own renderer (`Ayah.render` with its
+  signs), which re-attaches the waqf and other signs the dataset stores
+  separately, so no assembly logic is reimplemented here. The stored ayah text
+  is exactly that string: no normalisation, no re-spelling, no
+  `normalizeArabic`.
+- The data records the package version and the SHA-256 of `data/hafs.json`, so
+  a dependency bump fails a test until the data is regenerated and re-checked.
+- The package also ships the Complex's own font, which it says is the only one
+  guaranteed to draw its code points. That file is committed as an app asset
+  (see *Screens*).
 
 ### Generated data
 
-- `lib/curriculum/scripts/build-quran-corner.ts` reads the snapshot and the 20
-  `iqra_curriculum_g{1..10}_islamic_sem{1,2}.json` files and writes
+- `lib/curriculum/scripts/build-quran-corner.ts` reads the pinned package and
+  the 20 `iqra_curriculum_g{1..10}_islamic_sem{1,2}.json` files and writes
   `lib/curriculum/src/data/quran_corner.json`, committed. The app imports only
   that file.
 - **Which surahs and ranges.** The script parses each lesson `title_ar` that
   names a surah: «سورة X» with an optional `(a-b)` or `(n)`. A title with no
-  range means the whole surah. Names are matched on a diacritic- and
-  hamza-folded form against the surah names in Tanzil's metadata, not a table
-  typed by hand; if the metadata cannot supply names, a hand table is allowed
-  only with a test that every range fits the source's ayah count, and the PR
-  says so.
+  range means the whole surah. A title's surah name is matched on a
+  diacritic- and hamza-folded form to a hand-typed table of surah numbers and
+  ayah counts (not Quranic text). **The build refuses to run unless the
+  source's own surah table agrees with that table, name and count, for every
+  surah used**, which catches a swap of two surahs of equal length; the
+  alternative of reading names from a separate metadata file was dropped because
+  the package already carries them.
 - **One entry per surah**: surah number, name, `segments` (the union of ranges,
   sorted and merged), and `lessons`: `{ lessonId, gradeId, semester, from, to }`.
   `lessonId` is the existing `kbl-*` id, built with the catalog's own
@@ -79,7 +97,7 @@ Constraints that shape the design:
   titles; the test pins the real number.
 - **Every ayah in a kept segment** is stored as `{ n, text }`, with the source's
   surah and ayah numbers.
-- Tanzil's licence notice is stored once in the file and shown in the corner.
+- A credit line is stored once in the file and shown in the corner. The build writes it from the source's own facts (publisher, dataset, version, licence, and that the text was subset and assembled), so it cannot drift from them.
 - **Fail closed.** The script exits non-zero if any title containing «سورة»
   fails to parse, any range runs past the surah's ayah count, or a name does not
   resolve. Lessons that read Quran but whose title does not name a surah are not
@@ -102,16 +120,18 @@ it has for `/curriculum/lab`.
   them and the ayah numbers stay on, so nobody reads a gap as continuous. Below
   the text: the lessons that assign the surah, each opening its lesson with the
   ayah range it covers (an ayah can be assigned by two lessons, so one per-ayah
-  button would hide one of them); then the Tanzil attribution, its link, and the
-  pinned snapshot version.
+  button would hide one of them); then the credit line, a link to the dataset, and the
+  pinned package version and file hash.
 - **`/curriculum/quran/[surahId]/memorize`** — the tools below.
-- **Font.** Readex Pro does not carry the Uthmani marks. An open-licence Quran
-  font (Amiri Quran, SIL OFL, is the candidate) is loaded as a JS asset through
-  `expo-font`, so no native module and no `app.json` `version` bump — **to be
-  confirmed in the plan**; if it needs a config plugin the version bump rule
-  applies. A test checks every code point in `quran_corner.json` against the
-  chosen font's character map, because a missing glyph falls back to a system
-  font silently (the Lab's `Nₐ` case).
+- **Font.** Readex Pro does not carry the Uthmani marks, and a general Arabic
+  font shows gaps. The text is drawn in the Complex's own `UthmanicHafs-v-3.0`
+  font, which ships with the dataset and is covered by the same usage rights. It
+  is committed as an app asset and loaded through `expo-font` with a static
+  `require`, so it is a JavaScript asset: no native module, no new dependency,
+  no config plugin, no `app.json` `version` bump. A test reads the font file's
+  own character map and checks every code point in `quran_corner.json` against
+  it, because a missing glyph falls back to a system font silently (the Lab's
+  `Nₐ` case); another checks the file's hash against the one the data records.
 
 ### Memorisation tools
 
@@ -182,9 +202,14 @@ prints in part, and a link from an Islamic lesson into the corner.
    text needs a review by the Ministry of Awqaf or a Quran committee is not
    something the code can answer. Nothing here assumes it either way.
 2. **The resources list** needs an owner's eye; its URLs are unchecked.
-3. **Tanzil's terms** were read from the upstream project's README, not from
-   `tanzil.net`, which cannot be opened from here. Someone with access should
-   read the live terms before release.
-4. **Nothing in this feature can be seen in a browser from this sandbox.** Like
+3. **Verification against a printed mushaf (release requirement).** The
+   dataset's licence says whoever publishes Qur'anic text to end users must
+   verify it against an authorised printed mushaf. The build writes
+   `lib/curriculum/sources/quran-ws/VERIFY.md` listing every shipped ayah; a
+   person who reads Arabic checks each letter, vowel and sign against a printed
+   Mus'haf al-Madinah and records who and when. Until then the corner must not
+   be released, and `STATUS.md` says so. The package is Beta and records no
+   origin URL for its v3.0 text package; re-check when it is superseded.
+5. **Nothing in this feature can be seen in a browser from this sandbox.** Like
    the Lab, it sits behind sign-in, so the Uthmani rendering and the RTL layout
    are verified by tests and review only until someone opens it.
