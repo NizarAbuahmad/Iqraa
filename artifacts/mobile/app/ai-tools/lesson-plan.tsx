@@ -31,7 +31,7 @@ import { useGeneratorExport } from '@/hooks/useGeneratorExport';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
-import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
+import { aiErrorText, isAbortError } from '@/services/ai/aiProvenance';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
 import { captureGenerationScope, materialScope, reopenedGenerationScope, type GenerationScope } from '@/services/generationScope';
 import { readIndexParam } from '@/services/materialParams';
@@ -75,7 +75,7 @@ export default function LessonPlanScreen() {
   // `scopeFromParams`. Grounding the topic is what recovers the right scope.
   // Only the grades/subjects this teacher picked on /setup-subjects are offered.
   const teacherScope = useTeacherScope();
-  const [initialScope] = useState(() => scopeFromParams(params, uiLang, teacherScope.defaultScope));
+  const [initialScope] = useState(() => scopeFromParams(params, uiLang, teacherScope.defaultScope, teacherScope));
   const [gradeIdx, setGradeIdx] = useState(initialScope.gradeIdx);
   // Index-aligned flags rather than a pre-filtered `subjects`: these positions
   // are persisted as subjectIdx, so entries are dropped at render time only.
@@ -271,7 +271,7 @@ export default function LessonPlanScreen() {
       // Deliberately not the raw error: "HTTP 500" is not a sentence in any
       // language a teacher reads. The technical text is already recorded in
       // aiProvenance, where the badge carries it for support.
-      else setError(t(aiErrorMessageKey(e)));
+      else setError(aiErrorText(e, t));
       // Hand back what was on screen; a stop or a failure is not a reason to
       // lose it.
       if (held.result) {

@@ -36,8 +36,13 @@
  * reason. It calls no API: the words ship in the bundle, the audio is in the
  * public bucket, and progress stays on the device. Only this subtree is public;
  * the rest of `/curriculum` still needs an account.
+ *
+ * `/suggest-feature` («اقترح ميزة») is linked from the login and register
+ * screens, so a visitor without an account can tell us what would make them
+ * sign up. Signed out it posts to the public, rate-limited `POST /site/ideas`;
+ * signed in, to `/feedback` as before.
  */
-const PUBLIC_ROUTES = ['/take', '/legal', '/play', '/curriculum/english'];
+const PUBLIC_ROUTES = ['/take', '/legal', '/play', '/curriculum/english', '/suggest-feature'];
 
 export function isPublicRoute(pathname: string | null | undefined): boolean {
   if (!pathname) return false;
