@@ -33,7 +33,7 @@ import { arPrefixed, lessonKindFor, type LessonKind } from './lessonPlanKinds.ts
 import { arMinutes } from './lessonPlanTypes.ts';
 import { classifyVerifiableTopic } from './verifyMathGuards.ts';
 import { QUIZ_TYPE_ORDER } from '../quizPaper.ts';
-import { splitFormatTypes, buildFormatQuestion } from './worksheetFormats.ts';
+import { splitFormatTypes, fitFormats, formatPoints, worksheetTotal, buildFormatQuestion } from './worksheetFormats.ts';
 import type { FormatKind } from '@workspace/math-practice';
 
 /**
@@ -1183,7 +1183,7 @@ export class MockAIService extends AIService {
     // `worksheetFormats.ts`, one question each, INSIDE the teacher's total.
     // They never enter the rotation below, and the live prompt is never asked
     // for them (`requestWithoutFormats`, `prompts.ts`).
-    const { formats, rest } = splitFormatTypes(selectedTypes);
+    const { formats: ticked, rest } = splitFormatTypes(selectedTypes);
     const restTypes = rest as QType[];
     const wantsWordProblem = restTypes.includes('word_problem');
     const mainTypes = restTypes.filter(t => t !== 'word_problem');
@@ -1199,7 +1199,7 @@ export class MockAIService extends AIService {
     // exactly (one easy, one hard, the rest middle, plus the word problem).
     // A lesson whose bank holds fewer items than this still returns fewer: that
     // limit is `BankSpentError`, not this line.
-    const totalQ = Math.min(20, Math.max(5, req.numQuestions ?? 8));
+    const totalQ = worksheetTotal(req);
     const priorConcepts = req.includePriorReview && req.priorKnowledge?.length
       ? req.priorKnowledge
       : [];
@@ -1238,6 +1238,9 @@ export class MockAIService extends AIService {
     const exampleItem = takeSolved(band[0]);
     const completionItem = exampleItem ? takeSolved(band[1]) : null;
     const reserved = (exampleItem ? 1 : 0) + (completionItem ? 1 : 0);
+    // Formats beyond what the total can hold are trimmed and reported, not
+    // squeezed in — see `formatRoom`. Same rule as the live path.
+    const { taken: formats, trimmed } = fitFormats(ticked, rest, totalQ);
     const mainTotal = Math.max(0, totalQ - reserved - (wantsWordProblem ? 1 : 0) - formats.length);
 
     const answerSpace = lang === 'ar'
@@ -1366,7 +1369,7 @@ export class MockAIService extends AIService {
 
     let typeIdx = 0;
     let spent = false;
-    const missingFormats: FormatKind[] = [];
+    const missingFormats: FormatKind[] = [...trimmed];
     bankOnly = questionBankPolicy.required;
     try {
     for (const bucket of buckets) {
@@ -1415,7 +1418,7 @@ export class MockAIService extends AIService {
     // item the practice sections already used. A kind the lesson's bank cannot
     // supply is reported, never invented.
     for (const kind of formats) {
-      const built = buildFormatQuestion(kind, { topic, kb, lang, subject: req.subject, session: undefined, points: saPts(band[1]) });
+      const built = buildFormatQuestion(kind, { topic, kb, lang, subject: req.subject, session: undefined, points: formatPoints(requested) });
       if (!built) { missingFormats.push(kind); continue; }
       sections.push(built.section);
       answerKey.push({ num: qNum++, ...built.key });

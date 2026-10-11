@@ -177,30 +177,64 @@ export function splitFormatTypes(types: string[]): { formats: FormatKind[]; rest
   };
 }
 
-/** The picker's minimum, which the server honours (`NUM_Q_OPTIONS`). */
-const MIN_QUESTIONS = 5;
+/**
+ * The paper's total — the picker's own range (5-20, `NUM_Q_OPTIONS`). One
+ * clamp for the offline and the live path, so they cannot disagree on it.
+ */
+export function worksheetTotal(req: { numQuestions?: number }): number {
+  return Math.min(20, Math.max(5, req.numQuestions ?? 8));
+}
+
+/**
+ * How many format questions fit in a paper of `totalQ`. Room is what is left
+ * after the worked example, the half-solved item, at least one ordinary
+ * question and the word problem (when ticked); asking for more would overshoot
+ * the total the teacher picked. Shared by both paths.
+ */
+export function formatRoom(totalQ: number, wantsWordProblem: boolean): number {
+  return Math.max(0, totalQ - 3 - (wantsWordProblem ? 1 : 0));
+}
+
+/** Points per format question — the offline generator's `saPts`, shared so live agrees. */
+export function formatPoints(difficulty: 'easy' | 'medium' | 'hard' | undefined): number {
+  return difficulty === 'easy' ? 4 : difficulty === 'hard' ? 10 : 6;
+}
+
+/** Split the ticked formats into those that fit the total and those trimmed to keep it. */
+export function fitFormats(
+  formats: FormatKind[],
+  rest: string[],
+  totalQ: number,
+): { taken: FormatKind[]; trimmed: FormatKind[] } {
+  const room = formatRoom(totalQ, rest.includes('word_problem'));
+  return { taken: formats.slice(0, room), trimmed: formats.slice(room) };
+}
 
 /**
  * The request the live model sees. It is never asked for a format kind — the
  * bank builds those (see `appendFormats`, and the filter in the api-server's
  * `worksheetPromptAr/En`) — and the count it is asked for is the teacher's
- * total minus the formats, so formats count INSIDE the number picked.
+ * total minus the formats that fit, so formats count INSIDE the number picked.
  */
 export function requestWithoutFormats(req: AIRequest): AIRequest {
   const { formats, rest } = splitFormatTypes((req.questionTypes ?? []) as string[]);
   if (formats.length === 0) return req;
+  const totalQ = worksheetTotal(req);
+  const { taken } = fitFormats(formats, rest, totalQ);
   return {
     ...req,
     questionTypes: (rest.length ? rest : ['short_answer']) as AIRequest['questionTypes'],
-    numQuestions: Math.max(MIN_QUESTIONS, (req.numQuestions ?? 8) - formats.length),
+    numQuestions: totalQ - taken.length,
   };
 }
 
 /**
  * Add the bank-built format questions to a live paper, numbered on from its
- * last answer. The live paper's items are not bank-tracked, so each kind is
- * built against a fresh session (nothing to avoid repeating). A kind the
- * lesson's bank cannot supply is reported in `missingFormats`, not invented.
+ * last answer. Kinds beyond `formatRoom` are trimmed (the model was asked for
+ * the full remainder), and a kind the lesson's bank cannot supply — or whose
+ * build throws — is reported in `missingFormats`, never invented and never
+ * allowed to discard a good paper. One session set covers the whole paper so
+ * two formats cannot draw the same worked item.
  */
 export function appendFormats(ws: WorksheetOutput, req: AIRequest, formats: FormatKind[]): WorksheetOutput {
   if (formats.length === 0) return ws;
@@ -209,13 +243,21 @@ export function appendFormats(ws: WorksheetOutput, req: AIRequest, formats: Form
   const docs = parseDocumentGrounding(req.additionalContext);
   const topic = docs.present && docs.title ? docs.title : req.topic;
   const kb = docs.present ? null : ((req.lessonId ? getLessonById(req.lessonId) : null) ?? resolveGroundedKbLesson(topic, lang));
-  const points = 6;
+  const points = formatPoints(req.difficulty === 'easy' || req.difficulty === 'hard' ? req.difficulty : 'medium');
+  const rest = ((req.questionTypes ?? []) as string[]).filter(t => !isFormatKind(t));
+  const { taken, trimmed } = fitFormats(formats, rest, worksheetTotal(req));
   const sections = [...ws.sections];
   const answerKey = [...ws.answerKey];
-  const missing: FormatKind[] = [...(ws.missingFormats ?? [])];
+  const missing: FormatKind[] = [...(ws.missingFormats ?? []), ...trimmed];
   let num = answerKey.reduce((m, k) => Math.max(m, k.num), 0) + 1;
-  for (const kind of formats) {
-    const built = buildFormatQuestion(kind, { topic, kb, lang, subject: req.subject, session: new Set<string>(), points });
+  const session = new Set<string>();
+  for (const kind of taken) {
+    let built: ReturnType<typeof buildFormatQuestion> = null;
+    try {
+      built = buildFormatQuestion(kind, { topic, kb, lang, subject: req.subject, session, points });
+    } catch {
+      built = null;
+    }
     if (!built) { missing.push(kind); continue; }
     sections.push(built.section);
     answerKey.push({ num: num++, ...built.key });
