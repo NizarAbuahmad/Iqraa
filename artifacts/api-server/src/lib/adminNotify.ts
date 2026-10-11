@@ -45,7 +45,11 @@ export async function notifyAdminsOfArtifactReport(args: {
       await db.delete(devicePushTokens).where(inArray(devicePushTokens.expoPushToken, dead));
     }
 
-    await Promise.all(admins.map((a) => sendArtifactReportedEmail(a.email, args)));
+    // An admin account is a teacher-style one and has an email; the filter is for
+    // the type, now that the column is nullable.
+    await Promise.all(
+      admins.flatMap((a) => (a.email ? [sendArtifactReportedEmail(a.email, args)] : [])),
+    );
   } catch (err) {
     logger.error({ err }, "notifyAdminsOfArtifactReport failed");
   }

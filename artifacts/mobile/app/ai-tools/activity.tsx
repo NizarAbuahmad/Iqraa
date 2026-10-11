@@ -32,7 +32,7 @@ import {
   type ActivityTypeId } from '@/constants/activityType';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
-import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
+import { aiErrorText, isAbortError } from '@/services/ai/aiProvenance';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
 import { useFavorite } from '@/hooks/useFavorite';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
@@ -73,7 +73,7 @@ export default function ActivityScreen() {
   // `scopeFromParams`. Grounding the topic is what recovers the right scope.
   // Only the grades/subjects this teacher picked on /setup-subjects are offered.
   const teacherScope = useTeacherScope();
-  const [initialScope] = useState(() => scopeFromParams(params, uiLang, teacherScope.defaultScope));
+  const [initialScope] = useState(() => scopeFromParams(params, uiLang, teacherScope.defaultScope, teacherScope));
   const [gradeIdx, setGradeIdx] = useState(initialScope.gradeIdx);
   // Index-aligned flags rather than a pre-filtered `subjects`: these positions
   // are persisted as subjectIdx, so entries are dropped at render time only.
@@ -240,7 +240,7 @@ export default function ActivityScreen() {
       // A cancel is the teacher's own doing, so it is reported as a stop, not
       // as a failure they need to diagnose or retry out of.
       if (isAbortError(e)) setCancelled(true);
-      else setError(t(aiErrorMessageKey(e)));
+      else setError(aiErrorText(e, t));
       if (held.result) {
         setResult(held.result);
         setGenerated(held.generated);

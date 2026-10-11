@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/Button';
 import { GoogleSignInButton, isGoogleSignInAvailable } from '@/components/ui/GoogleSignInButton';
 import { Input } from '@/components/ui/Input';
 import { AccountRow } from '@/components/ui/AccountRow';
+import { SuggestFeatureAuthLink } from '@/components/ui/SuggestFeatureAuthLink';
 import { ApiError } from '@/services/apiClient';
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { getLastGoogleEmail } from '@/services/savedAccounts';
@@ -329,6 +330,20 @@ export default function LoginScreen() {
           fullWidth
           style={styles.signInBtn}
         />
+
+        {/* For a parent or student who signed up from a teacher's code: they
+            have no email or password to type above. */}
+        <Pressable
+          onPress={() => router.push('/(auth)/login-code' as any)}
+          style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start', paddingVertical: 6 }}
+          accessibilityRole="link"
+        >
+          <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: isRTL ? 'right' : 'left' }}>
+            {t('loginWithCodeLink')}
+          </Text>
+        </Pressable>
+
+        <SuggestFeatureAuthLink />
 
       </ScrollView>
     </View>

@@ -1419,6 +1419,7 @@ export class MockAIService extends AIService {
               problem: exampleItem.problem,
               steps: exampleItem.steps,
               answer: exampleItem.answer,
+              fromBank: true as const,
               selfExplain: lang === 'ar'
                 ? 'اشرح بجملة واحدة: لماذا كانت الخطوة الأولى صحيحة؟'
                 : 'In one sentence, explain why the first step was valid.',

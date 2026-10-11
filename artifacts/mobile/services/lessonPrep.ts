@@ -203,23 +203,36 @@ export function scopeFromParams(
   // Where to open when neither the route nor the topic says: the teacher's
   // own first grade/subject (`useTeacherScope`), rather than index 0.
   fallback: { gradeIdx: number; subjectIdx: number } = { gradeIdx: 0, subjectIdx: 0 },
+  // `useTeacherScope`'s masks. A position the teacher's selection hides is
+  // treated like one the list cannot honour — the pickers do not offer it, yet
+  // the closed field still displays whatever index it is handed, so a lesson
+  // link for Grade 1 opened a teacher of Grade 10 on «الصف الأول».
+  selection?: { gradeHidden: boolean[]; subjectHiddenFor: (gradeId: string) => boolean[] },
 ): { gradeIdx: number; subjectIdx: number } {
   const grades = getPickerGrades();
   const subjects = getPickerSubjects();
 
+  const shownGrade = (i: number | null): number | null =>
+    i != null && selection?.gradeHidden[i] === true ? null : i;
+
   const fromRoute = {
-    gradeIdx: pickerIndexOrNull(params.gradeIdx, grades.length),
+    gradeIdx: shownGrade(pickerIndexOrNull(params.gradeIdx, grades.length)),
     subjectIdx: pickerIndexOrNull(params.subjectIdx, subjects.length),
   };
-  if (fromRoute.gradeIdx != null && fromRoute.subjectIdx != null) {
-    return { gradeIdx: fromRoute.gradeIdx, subjectIdx: fromRoute.subjectIdx };
-  }
 
-  const inferred = topicPickerParams(params.topic, lang);
-  return {
-    gradeIdx: fromRoute.gradeIdx ?? resolvePickerIndex(inferred?.gradeIdx, grades.length, fallback.gradeIdx),
-    subjectIdx: fromRoute.subjectIdx ?? resolvePickerIndex(inferred?.subjectIdx, subjects.length, fallback.subjectIdx),
-  };
+  const inferred = fromRoute.gradeIdx != null && fromRoute.subjectIdx != null
+    ? null
+    : topicPickerParams(params.topic, lang);
+  const gradeIdx = fromRoute.gradeIdx
+    ?? shownGrade(pickerIndexOrNull(inferred?.gradeIdx, grades.length))
+    ?? fallback.gradeIdx;
+
+  let subjectIdx = fromRoute.subjectIdx ?? resolvePickerIndex(inferred?.subjectIdx, subjects.length, fallback.subjectIdx);
+  // Judged against the grade finally chosen: a subject taught in Grade 10 may
+  // be hidden under the grade the teacher fell back to.
+  const subjectMask = selection?.subjectHiddenFor(grades[gradeIdx]?.id ?? '');
+  if (subjectMask?.[subjectIdx]) subjectIdx = Math.max(0, subjectMask.indexOf(false));
+  return { gradeIdx, subjectIdx };
 }
 
 /**

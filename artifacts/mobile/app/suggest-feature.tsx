@@ -11,14 +11,22 @@
  * a teacher who typed out an idea must not lose it to a dropped connection.
  * It is also kept in suggestionDraft.ts as they type, so a session that ends
  * (which sends them to login and unmounts this screen) does not take it either.
+ *
+ * Signed out (a visitor who reached it from the login or register screen), the
+ * same screen posts to the public `POST /site/ideas` instead: no account, so it
+ * asks for an optional email to reply to, and lands in the admin «المسجّلون»
+ * list as kind `idea`. That endpoint is rate-limited per IP and carries a
+ * honeypot field — `website`, rendered off-screen on web only, where form bots
+ * crawl the DOM. The route is in PUBLIC_ROUTES (services/routeGating.ts).
  */
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { useAuth } from '@/context/AuthContext';
 import { apiFetch } from '@/services/apiClient';
 import { trackEvent } from '@/services/analytics';
 import { loadSuggestionDraft, saveSuggestionDraft } from '@/services/suggestionDraft';
@@ -33,7 +41,12 @@ export default function SuggestFeatureScreen() {
   const [idea, setIdea] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
-  const [failed, setFailed] = useState<null | 'network' | 'session'>(null);
+  const [failed, setFailed] = useState<null | 'network' | 'session' | 'email' | 'tooMany'>(null);
+  const { user } = useAuth();
+  const signedOut = !user;
+  const [email, setEmail] = useState('');
+  // Honeypot. Never shown to a person; see the header comment.
+  const [website, setWebsite] = useState('');
 
   // A draft from before the session ended. `prev || draft`: never overwrite what
   // the teacher has typed since the screen opened.
@@ -43,25 +56,36 @@ export default function SuggestFeatureScreen() {
 
   const align = isRTL ? 'right' : 'left' as const;
   const rowDir = isRTL ? 'row-reverse' : 'row' as const;
-  const canSend = idea.trim().length > 0 && !sending;
+  // The public endpoint refuses fewer than 5 characters; say so with a disabled button, not a 400.
+  const canSend = idea.trim().length >= (signedOut ? 5 : 1) && !sending;
 
   const send = async () => {
     if (!canSend) return;
     setSending(true);
     setFailed(null);
     try {
-      const res = await apiFetch('/feedback', {
-        method: 'POST',
-        body: JSON.stringify({ materialType: 'feature_request', rating: 'idea', comment: idea.trim() }),
-      });
-      if (res.status === 401) {
+      const res = signedOut
+        ? await apiFetch('/site/ideas', {
+          method: 'POST',
+          body: JSON.stringify({ message: idea.trim(), email: email.trim(), website, context: `app:${Platform.OS}` }),
+        })
+        : await apiFetch('/feedback', {
+          method: 'POST',
+          body: JSON.stringify({ materialType: 'feature_request', rating: 'idea', comment: idea.trim() }),
+        });
+      if (signedOut && res.status === 429) { setFailed('tooMany'); return; }
+      if (signedOut && res.status === 400) {
+        const body = await res.json().catch(() => ({})) as { error?: string };
+        if (body.error === 'email') { setFailed('email'); return; }
+      }
+      if (!signedOut && res.status === 401) {
         // Not a connection problem: the session is gone (apiFetch has already
         // signed the user out), so "check your connection" would send them hunting.
         setFailed('session');
         return;
       }
       if (!res.ok) throw new Error(`suggestion failed: ${res.status}`);
-      trackEvent('feature_suggested', { length: idea.trim().length });
+      trackEvent('feature_suggested', { length: idea.trim().length, signedIn: !signedOut });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       setSent(true);
       setIdea('');
@@ -133,9 +157,44 @@ export default function SuggestFeatureScreen() {
                   textAlign: align,
                 }]}
               />
+              {signedOut && (
+                <TextInput
+                  value={email}
+                  onChangeText={(v) => { setEmail(v); if (failed === 'email') setFailed(null); }}
+                  placeholder={t('suggestFeatureEmailPlaceholder')}
+                  placeholderTextColor={colors.mutedForeground}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  textContentType="emailAddress"
+                  maxLength={200}
+                  accessibilityLabel={t('suggestFeatureEmailPlaceholder')}
+                  style={[styles.emailInput, {
+                    color: colors.foreground,
+                    borderColor: failed === 'email' ? colors.destructive : colors.border,
+                    borderRadius: colors.radius,
+                    textAlign: align,
+                  }]}
+                />
+              )}
+              {signedOut && Platform.OS === 'web' && (
+                <TextInput
+                  value={website}
+                  onChangeText={setWebsite}
+                  {...({ tabIndex: -1, 'aria-hidden': true, name: 'website' } as object)}
+                  autoComplete="off"
+                  importantForAutofill="no"
+                  style={styles.honeypot}
+                />
+              )}
               {failed && (
                 <Text style={[styles.failed, { color: colors.destructive, textAlign: align }]}>
-                  {t(failed === 'session' ? 'suggestFeatureSessionExpired' : 'suggestFeatureFailed')}
+                  {t(
+                    failed === 'session' ? 'suggestFeatureSessionExpired'
+                      : failed === 'email' ? 'suggestFeatureEmailInvalid'
+                        : failed === 'tooMany' ? 'suggestFeatureTooMany'
+                          : 'suggestFeatureFailed',
+                  )}
                 </Text>
               )}
               <Pressable
@@ -184,6 +243,9 @@ const styles = StyleSheet.create({
     fontFamily: 'Almarai_400Regular',
   },
   failed: { fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 21 },
+  emailInput: { borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, fontFamily: 'Almarai_400Regular' },
+  // Off-screen rather than display:none — some bots skip fields that are not rendered.
+  honeypot: { position: 'absolute', left: -10000, top: 0, width: 1, height: 1, opacity: 0 },
   sendBtn: { paddingHorizontal: 20, paddingVertical: 11, minWidth: 120, alignItems: 'center' },
   sendText: { color: '#fff', fontSize: 14, fontFamily: 'ReadexPro_600SemiBold' },
   thanksCard: { alignItems: 'center', paddingVertical: 28 },

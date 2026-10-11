@@ -217,6 +217,44 @@ const AR_ADD_TO_ACCOUNT = new RegExp(
 const AR_ADD_BARE_GRADE = new RegExp(
   `^${AR_INTENT}${AR_ADD_VERB}(?:صف|صفوف|ماده|مواد)(?:\\s+${AR_QUAL})*${AR_TAIL}`,
 );
+/**
+ * «i want to change the grade», «اريد ان اغير الصف» and «i need to add lesson»
+ * say what the teacher wants without naming the screen that does it: the grades
+ * they teach live under «المواد التي أُدرّسها», and a lesson is picked from the bar
+ * above the chat, not added. Each maps to the place that answers it. As with the
+ * bare «add a grade» they need first-person intent and must end the message —
+ * «change the grade of the quiz», «i want to add a lesson plan» and «اريد اضافة
+ * درس عن الكسور» stay teaching — and «grade» here can still mean a mark, a guess
+ * kept for the same reason as the bare add.
+ */
+const STATEMENT_PLACES: { re: RegExp; id: string }[] = [
+  {
+    id: 'subjects',
+    re: new RegExp(
+      `^${EN_INTENT}(?:change|switch|edit|update|swap)\\s+(?:(?:my|the)\\s+)?(?:grades?|year)(?:\\s+(?:please|pls|plz|now|here))*$`,
+    ),
+  },
+  {
+    id: 'subjects',
+    re: new RegExp(
+      `^${AR_INTENT}(?:اغير|تغيير|اعدل|تعديل|ابدل|تبديل)\\s+(?:ال)?(?:صف|صفي|صفوف|صفوفي)(?:\\s+(?:لي|من\\s+فضلك|لو\\s+سمحت|هنا|الان))*$`,
+    ),
+  },
+  {
+    id: 'change-lesson',
+    re: new RegExp(
+      `^${EN_INTENT}(?:add|pick|choose|select)\\s+(?:(?:an?|another|one\\s+more|new|a\\s+new|the)\\s+)?lessons?(?:\\s+(?:please|pls|plz|now|here))*$`,
+    ),
+  },
+  {
+    id: 'change-lesson',
+    re: new RegExp(
+      `^${AR_INTENT}(?:اضيف|اضافه|اضف|اختار|اختيار|اخير)\\s+(?:ال)?درس(?:\\s+(?:جديد|اخر|ثاني))?(?:\\s+(?:لي|من\\s+فضلك|لو\\s+سمحت|هنا|الان))*$`,
+    ),
+  },
+];
+const statementPlaceId = (plainQuery: string) =>
+  STATEMENT_PLACES.find(s => s.re.test(plainQuery))?.id;
 const isAddToAccount = (plainQuery: string) =>
   EN_ADD_TO_ACCOUNT.test(plainQuery) || EN_ADD_BARE_GRADE.test(plainQuery) || EN_ADD_GRADE_TO_MY.test(plainQuery) ||
   AR_ADD_TO_ACCOUNT.test(plainQuery) || AR_ADD_BARE_GRADE.test(plainQuery);
@@ -310,6 +348,8 @@ const APP_NOUN = /تطبيق|البرنامج|صفحه|قسم|تبويب|زر|ق
  * question, so multi-word keywords win over their single-word prefixes.
  */
 export function findAppPlaces(query: string, limit = 3): AppPlace[] {
+  const statementId = statementPlaceId(plain(query));
+  if (statementId) return APP_PLACES.filter(p => p.id === statementId);
   const q = ` ${matchForm(query).replace(NOT_A_SCHOOL_CLASS, ' ')} `;
   const scored: { place: AppPlace; score: number }[] = [];
   for (const place of APP_PLACES) {
@@ -333,7 +373,7 @@ export function isHowQuery(query: string): boolean {
   // «add more classes to my account» is a «how do I» in disguise: it gets the steps.
   // So is «i can't add a class», and a statement about a screen gets that screen's
   // steps when it has any (answerAppHelp falls back to the path when it has none).
-  return HOW_PATTERN.test(q) || isAddToAccount(q) || (isProblemWithScreen(q) && PROBLEM_ADDING.test(q)) || isScreenStatement(query);
+  return HOW_PATTERN.test(q) || isAddToAccount(q) || Boolean(statementPlaceId(q)) || (isProblemWithScreen(q) && PROBLEM_ADDING.test(q)) || isScreenStatement(query);
 }
 
 /**
@@ -343,7 +383,7 @@ export function isHowQuery(query: string): boolean {
  */
 export function isAppHelpQuery(query: string): boolean {
   const q = plain(query);
-  if (isAddToAccount(q) || isProblemWithScreen(q) || isScreenStatement(query)) return true;
+  if (isAddToAccount(q) || statementPlaceId(q) || isProblemWithScreen(q) || isScreenStatement(query)) return true;
   if (!WHERE_PATTERN.test(q) && !HOW_PATTERN.test(q)) return false;
   return findAppPlaces(q, 1).length > 0 || APP_NOUN.test(q);
 }

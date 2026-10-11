@@ -36,8 +36,13 @@
  * reason. It calls no API: the words ship in the bundle, the audio is in the
  * public bucket, and progress stays on the device. Only this subtree is public;
  * the rest of `/curriculum` still needs an account.
+ *
+ * `/suggest-feature` («اقترح ميزة») is linked from the login and register
+ * screens, so a visitor without an account can tell us what would make them
+ * sign up. Signed out it posts to the public, rate-limited `POST /site/ideas`;
+ * signed in, to `/feedback` as before.
  */
-const PUBLIC_ROUTES = ['/take', '/legal', '/play', '/curriculum/english'];
+const PUBLIC_ROUTES = ['/take', '/legal', '/play', '/curriculum/english', '/suggest-feature'];
 
 export function isPublicRoute(pathname: string | null | undefined): boolean {
   if (!pathname) return false;
@@ -81,6 +86,9 @@ const NON_TEACHER_ROUTES = [
   // «اقترح ميزة» is linked from the profile tab for every role, like /faq.
   '/suggest-feature',
   '/delete-account',
+  // Adding an email to an account made from a teacher's code — only a parent or
+  // student can be one, so it belongs here and nowhere on the teacher side.
+  '/add-email',
   // «اختباراتي» for a student, «نتائج أبنائي» for a parent — one screen,
   // reading /student/exams or /parent/exams by role.
   '/my-exams',
@@ -110,7 +118,9 @@ export function isNonTeacherRoute(pathname: string | null | undefined): boolean 
 // `/verify-email` too: it is reached signed-out (register answers with no
 // tokens), so a reload there used to bounce to login and drop the `email`
 // param the code screen needs.
-const ENTRY_ROUTES = ['/login', '/register', '/onboarding', '/forgot-password', '/verify-email'];
+// `/login-code` is a sign-in screen like `/login`: once it works, the person is
+// signed in and should be handed to the tabs rather than left on it.
+const ENTRY_ROUTES = ['/login', '/register', '/onboarding', '/forgot-password', '/verify-email', '/login-code'];
 
 export function isEntryRoute(pathname: string | null | undefined): boolean {
   // No path yet (first paint) is treated as an entry: there is no destination

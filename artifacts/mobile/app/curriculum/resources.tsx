@@ -46,7 +46,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { isStudentRole, isTeacherRole, useAuth } from '@/context/AuthContext';
 import { getMyExams, getMyGradeIds } from '@/services/studentExam';
 import { actionableCount } from '@/services/myExams';
-import { narrowSubjectsForGrade, narrowToSelection, preferredGrade } from '@/services/teacherCatalogFilter';
+import { narrowSubjectsForGrade, narrowToSelection, preferredGrade, scopedSubjectIds } from '@/services/teacherCatalogFilter';
 import { listLibrary, type LibraryItem } from '@/services/libraryApi';
 import { getLessonById } from '@/services/knowledgeBase';
 import { openExternal } from '@/services/externalLinks';
@@ -550,9 +550,16 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
     return gradeSubjects.filter(s => withRows.has(s.id));
   }, [inGrade, gradeSubjects]);
 
+  // «All subjects» means all of the teacher's subjects, not every subject in
+  // the grade: the chips above were narrowed but the results were not.
+  const scopeSubjectIds = useMemo(
+    () => (isTeacher ? scopedSubjectIds(gradeSubjects, getSubjectsForGrade(grade)) : undefined),
+    [isTeacher, gradeSubjects, grade],
+  );
+
   const items = useMemo(
-    () => filterResources(inGrade, { subjectId: subjectId ?? undefined }),
-    [inGrade, subjectId],
+    () => filterResources(inGrade, { subjectId: subjectId ?? undefined, subjectIds: scopeSubjectIds }),
+    [inGrade, subjectId, scopeSubjectIds],
   );
 
   /**
