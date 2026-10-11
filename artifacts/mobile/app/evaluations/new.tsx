@@ -19,14 +19,15 @@
  * — the picker works offline and never drifts from what the server will
  * accept, since both read the same package.
  */
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { getBookById, getObjectivesForBook, type CurriculumObjective } from '@/services/curriculumData';
+import { GRADES, SUBJECTS, getBookById, getObjectivesForBook, type CurriculumObjective } from '@/services/curriculumData';
+import { NO_BOOK_FILTER, applyBookFilter, facetIds, resolveBookFilter } from '@/services/evaluationBookFilter';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { PickerField as SharedPickerField } from '@/components/ui/PickerField';
 import {
@@ -43,6 +44,7 @@ import {
 import type { TranslationKey } from '@/services/i18n';
 import { palette } from '@/constants/colors';
 import { toLatinDigits } from '@/services/latinDigits';
+import { groupObjectivesByLesson } from '@/services/miniEval';
 import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = palette.primary;
@@ -186,6 +188,19 @@ export default function NewEvaluationScreen() {
     setPaperRows(prev => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)));
   }, []);
 
+  // Teachers think in lessons, not objectives: the picker lists lessons, and
+  // ticking one selects every objective it carries. Downstream (paper rows,
+  // create) still works on objective ids, so nothing else moves.
+  const lessonGroups = useMemo(() => groupObjectivesByLesson(objectives), [objectives]);
+  const toggleLesson = useCallback((ids: string[]) => {
+    setSelectedObjectives(prev => {
+      const next = new Set(prev);
+      const allOn = ids.every(id => next.has(id));
+      for (const id of ids) (allOn ? next.delete(id) : next.add(id));
+      return next;
+    });
+  }, []);
+
   const toggleObjective = useCallback((id: string) => {
     setSelectedObjectives(prev => {
       const next = new Set(prev);
@@ -219,7 +234,20 @@ export default function NewEvaluationScreen() {
     return !book || (isGradeShown(book.gradeId) && isSubjectShown(book.subjectId, book.gradeId));
   });
   const narrowed = myBooks.length > 0 && myBooks.length < books.length;
-  const visibleBooks = narrowed && !showAllBooks ? myBooks : books;
+  const scopedBooks = narrowed && !showAllBooks ? myBooks : books;
+
+  // Grade / subject drill-down on top of that scope. Options come from the
+  // books on offer, so a teacher with two grades is never shown the other ten.
+  const [pickedFilter, setPickedFilter] = useState(NO_BOOK_FILTER);
+  const bookLookup = useCallback((id: string) => getBookById(id), []);
+  const bookFilter = resolveBookFilter(scopedBooks, bookLookup, pickedFilter);
+  const gradeIds = facetIds(scopedBooks, bookLookup, 'gradeId');
+  const subjectIds = facetIds(scopedBooks, bookLookup, 'subjectId', { gradeId: bookFilter.gradeId });
+  const nameOf = (list: { id: string; name: string; nameAr: string }[], id: string) => {
+    const item = list.find(x => x.id === id);
+    return item ? (lang === 'ar' ? item.nameAr : item.name) : id;
+  };
+  const visibleBooks = applyBookFilter(scopedBooks, bookLookup, bookFilter);
 
   const onSubmit = async () => {
     if (creating) return;
@@ -336,6 +364,29 @@ export default function NewEvaluationScreen() {
           {t(mode === 'generate' ? 'evalModeGenerateHint' : 'evalModePaperHint')}
         </Text>
 
+        {!loadingBooks && gradeIds.length > 1 && (
+          <PickerField
+            label={t('evalFilterGrade')}
+            value={bookFilter.gradeId ? nameOf(GRADES, bookFilter.gradeId) : t('allFilter')}
+            options={[t('allFilter'), ...gradeIds.map(id => nameOf(GRADES, id))]}
+            onChange={i => setPickedFilter({ gradeId: i === 0 ? '' : gradeIds[i - 1]!, subjectId: '' })}
+            colors={colors}
+            isRTL={isRTL}
+            accent={ACCENT}
+          />
+        )}
+        {!loadingBooks && subjectIds.length > 1 && (
+          <PickerField
+            label={t('evalFilterSubject')}
+            value={bookFilter.subjectId ? nameOf(SUBJECTS, bookFilter.subjectId) : t('allFilter')}
+            options={[t('allFilter'), ...subjectIds.map(id => nameOf(SUBJECTS, id))]}
+            onChange={i => setPickedFilter({ gradeId: bookFilter.gradeId, subjectId: i === 0 ? '' : subjectIds[i - 1]! })}
+            colors={colors}
+            isRTL={isRTL}
+            accent={ACCENT}
+          />
+        )}
+
         <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
           {t('selectBookLabel')}
         </Text>
@@ -387,23 +438,32 @@ export default function NewEvaluationScreen() {
         {bookId && (
           <>
             <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
-              {t('selectObjectivesLabel')}
+              {t('selectLessonsLabel', String(lessonGroups.length))}
             </Text>
             <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
-              {t('selectObjectivesHint')}
+              {t('selectLessonsHint')}
             </Text>
             <View style={[styles.checkboxGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              {objectives.map(o => (
-                <CheckboxRow
-                  key={o.id}
-                  label={lang === 'ar' ? o.descriptionAr || o.description : o.description}
-                  checked={selectedObjectives.has(o.id)}
-                  onToggle={() => toggleObjective(o.id)}
-                  accent={ACCENT}
-                  colors={colors}
-                  isRTL={isRTL}
-                />
-              ))}
+              {lessonGroups.map((g, i) => {
+                const ids = g.objectives.map(o => o.id);
+                return (
+                  <View key={g.lessonId}>
+                    {i === 0 || lessonGroups[i - 1]!.unitId !== g.unitId ? (
+                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: align, marginTop: i === 0 ? 0 : 10 }}>
+                        {(lang === 'ar' ? g.unitNameAr : g.unitName) || g.unitName}
+                      </Text>
+                    ) : null}
+                    <CheckboxRow
+                      label={(lang === 'ar' ? g.lessonTitleAr : g.lessonTitle) || g.lessonTitle}
+                      checked={ids.every(id => selectedObjectives.has(id))}
+                      onToggle={() => toggleLesson(ids)}
+                      accent={ACCENT}
+                      colors={colors}
+                      isRTL={isRTL}
+                    />
+                  </View>
+                );
+              })}
             </View>
           </>
         )}

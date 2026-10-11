@@ -22,7 +22,7 @@
  */
 import { BOOK_FIGURE_KEYS } from './bookFigureAssets';
 import { figuresForLesson, type BookFigure } from './bookFigures';
-import { lessonIdsForObjectiveIds } from '@workspace/curriculum';
+import { BOOK_FIGURE_BASE_URL, lessonIdsForObjectiveIds } from '@workspace/curriculum';
 import { bookFigureCaption } from './lessonSlides';
 import { EXPORT_FIGURE_MAX, type BookFigureRef } from './exportHtml.ts';
 
@@ -34,7 +34,7 @@ import { EXPORT_FIGURE_MAX, type BookFigureRef } from './exportHtml.ts';
  * an unset variable at build time would silently ship an app whose every
  * figure is a broken image.
  */
-export const FIGURE_BASE_URL = 'https://pub-d9ddd8f74e734a21824518b812652124.r2.dev/figures';
+export const FIGURE_BASE_URL = BOOK_FIGURE_BASE_URL;
 
 /**
  * `null` when the figure is not one the app knows about — a figure extracted

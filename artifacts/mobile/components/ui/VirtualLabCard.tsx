@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
+import { usePrintStyle } from '@/hooks/usePrintStyle';
 import { useLanguage } from '@/context/LanguageContext';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import { ExportMenu } from '@/components/ui/ExportMenu';
@@ -58,6 +59,7 @@ export function VirtualLabCard({ lessonId, accent }: Props) {
   // A teacher prints the student's copy far more often than the key, so that
   // is what the menu opens on.
   const [copy, setCopy] = useState<QuizCopy>('student');
+  const [printStyle, setPrintStyle] = usePrintStyle();
   const [loadingPDF, setLoadingPDF] = useState(false);
   const [loadingWord, setLoadingWord] = useState(false);
   // A ref, not only state: two taps inside one frame both read the old state
@@ -80,7 +82,7 @@ export function VirtualLabCard({ lessonId, accent }: Props) {
   // Everything below needs the worksheet, which needs the lesson's own title
   // from the curriculum. If that did not resolve there is no sheet to offer.
   const canExport = isTeacher && ws !== null && ctx !== null;
-  const docs = () => worksheetExports(ws!, ws!.title, { subject: ctx!.subjectLabel, grade: ctx!.gradeName }, true, copy);
+  const docs = () => worksheetExports(ws!, ws!.title, { subject: ctx!.subjectLabel, grade: ctx!.gradeName }, true, copy, [], printStyle);
 
   const handlePDF = async () => {
     setLoadingPDF(true);
@@ -197,6 +199,7 @@ export function VirtualLabCard({ lessonId, accent }: Props) {
             onPDF={handlePDF}
             onWord={handleWord}
             copyChoice={{ value: copy, onChange: setCopy }}
+            printStyle={{ value: printStyle, onChange: setPrintStyle }}
             isRTL={isRTL}
             loadingPDF={loadingPDF}
             loadingWord={loadingWord}

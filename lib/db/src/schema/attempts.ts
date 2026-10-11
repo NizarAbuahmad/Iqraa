@@ -59,7 +59,13 @@ export const evaluationAssignments = pgTable(
     dueAt: timestamp("due_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  t => [index("evaluation_assignments_eval_idx").on(t.evaluationId)],
+  t => [
+    index("evaluation_assignments_eval_idx").on(t.evaluationId),
+    // A student is assigned to an evaluation once. Class-level rows leave
+    // student_id null, and Postgres treats nulls as distinct, so they are
+    // unaffected.
+    unique("evaluation_assignments_eval_student_unique").on(t.evaluationId, t.studentId),
+  ],
 );
 
 export const attempts = pgTable(

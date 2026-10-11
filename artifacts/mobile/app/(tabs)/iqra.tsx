@@ -88,6 +88,7 @@ import { CHAT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
 import { RADIUS } from '@/constants/theme';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { useKeyboardVisible } from '@/hooks/useKeyboardVisible';
+import { usePrintStyle } from '@/hooks/usePrintStyle';
 import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { MaterialCanvas } from '@/components/ui/MaterialCanvas';
@@ -293,6 +294,12 @@ interface Message {
   clarificationLessons?: { id: string; title: string }[];
   /** Places in the app this reply points at — solid buttons inside the bubble. */
   placeLinks?: EphemeralSuggestion[];
+  /**
+   * Set on a reply that answered a question about the app itself. The starter
+   * chips above the composer are for teaching, so they stay away from it — the
+   * answer already carries the one button that matters.
+   */
+  appHelp?: boolean;
   pedagogicalClarification?: ClarificationOption[];
   clarificationQuery?: string;
   showLessonPrep?: boolean;
@@ -1112,7 +1119,10 @@ function MessageBubble({
       onPress: () => onPresentMaterial(message),
     });
   }
-  if (onCopy && onExport && (canAct || infographic || message.text.trim().length > 60)) {
+  // Not under an answer about the app: a how-to is not a document to file, and
+  // «تصدير» under «where is Settings» offers to export a sentence.
+  if (onCopy && onExport && !message.appHelp
+    && (canAct || infographic || message.text.trim().length > 60)) {
     messageActions.push(
       {
         key: 'copy',
@@ -1491,6 +1501,7 @@ export default function IqraScreen() {
     isAr: boolean;
   } | null>(null);
   const [exportCopy, setExportCopy] = useState<QuizCopy>('student');
+  const [printStyle, setPrintStyle] = usePrintStyle();
   /**
    * Workspace id waiting for a class, or null. Set right after a material's
    * first save — the same "which class is this for?" moment the tool screens
@@ -1623,8 +1634,8 @@ export default function IqraScreen() {
   /** The quiz's or worksheet's paper for the export menu — built on press, not per render. */
   const exportDocs = () => !exportDoc ? null
     : exportDoc.kind === 'quiz'
-      ? quizExports(exportDoc.quiz, exportDoc.title, exportDoc.meta, exportDoc.isAr, exportCopy)
-      : worksheetExports(exportDoc.worksheet, exportDoc.title, exportDoc.meta, exportDoc.isAr, exportCopy);
+      ? quizExports(exportDoc.quiz, exportDoc.title, exportDoc.meta, exportDoc.isAr, exportCopy, [], printStyle)
+      : worksheetExports(exportDoc.worksheet, exportDoc.title, exportDoc.meta, exportDoc.isAr, exportCopy, [], printStyle);
 
   const handleEditArtifact = useCallback((messageId: string, next: ChatArtifactData) => {
     setMessages(prev =>
@@ -2045,6 +2056,7 @@ export default function IqraScreen() {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
           text: help.text,
+          appHelp: true,
           placeLinks: help.places.map(p => ({
             id: `place-${p.id}`,
             label: t(p.labelKey as TranslationKey),
@@ -2662,6 +2674,7 @@ export default function IqraScreen() {
             documentContext: hasDocs ? docBundle.promptBlock : null,
             fromSoftPin: softBareArtifact && !topicStrong,
             scope: artScope,
+            ask: q,
           });
           // Name the file the teacher opened, and say plainly that the
           // material above is not drawn from it. This branch emits no support
@@ -3879,8 +3892,11 @@ export default function IqraScreen() {
         Shown once the intro has scrolled out of the way, and only when the
         one-shot follow-ups below are not — two chip strips stacked on a phone
         is the clutter this change set out to remove.
+        Not under an answer about the app: «حضّر خطة الدرس» next to «where is
+        Settings» offers a lesson to someone who asked for a screen.
       */}
-      {ephemeralSuggestions.length === 0 && !isThinking && messages.length > 1 ? (
+      {ephemeralSuggestions.length === 0 && !isThinking && messages.length > 1
+        && !messages[messages.length - 1]?.appHelp ? (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -4192,6 +4208,7 @@ export default function IqraScreen() {
         loadingPDF={loadingPDF}
         loadingWord={loadingWord}
         copyChoice={exportDoc ? { value: exportCopy, onChange: setExportCopy } : undefined}
+        printStyle={exportDoc ? { value: printStyle, onChange: setPrintStyle } : undefined}
         onShare={async () => {
           setExportVisible(false);
           await shareAsText(exportDocs()?.text ?? exportText, currentLessonView?.topic ?? 'Iqrra');

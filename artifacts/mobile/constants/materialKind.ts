@@ -27,6 +27,7 @@ export const MATERIAL_FILL: Record<MaterialType, string> = {
   activity: '#3F7A1E',
   slides: '#1F5FA8',
   'prompt-slides': '#1F5FA8',
+  board: '#9A3F12',
 };
 
 /** The same hues lifted for the dark card (#111F36): each ≥ 7.1:1 there. */
@@ -38,6 +39,7 @@ const ON_DARK: Record<MaterialType, string> = {
   activity: '#9BCB6A',
   slides: '#7DB4F2',
   'prompt-slides': '#7DB4F2',
+  board: '#F2A671',
 };
 
 /** Icon and text colour on a card. Fills that carry white text use MATERIAL_FILL. */
@@ -51,6 +53,7 @@ export const MATERIAL_ICON: Record<MaterialType, keyof typeof Ionicons.glyphMap>
   activity: 'game-controller-outline',
   slides: 'tv-outline',
   'prompt-slides': 'sparkles-outline',
+  board: 'easel-outline',
 };
 
 export const MATERIAL_LABEL_KEY: Record<MaterialType, TranslationKey> = {
@@ -61,6 +64,7 @@ export const MATERIAL_LABEL_KEY: Record<MaterialType, TranslationKey> = {
   activity: 'activityType',
   slides: 'slidesType',
   'prompt-slides': 'promptSlidesType',
+  board: 'boardType',
 };
 
 /**
@@ -71,6 +75,7 @@ export const MATERIAL_LABEL_KEY: Record<MaterialType, TranslationKey> = {
  * `formState` restores what each was built from — gradeIdx/subjectIdx/topic
  * for `slides`, prompt/mode/slide count for `prompt-slides`. Neither screen can
  * take the other's item: their form states are different shapes.
+ * A board reopens in the whiteboard: `savedId` makes the screen load the stored pages.
  */
 export const MATERIAL_EDIT_ROUTE: Partial<Record<MaterialType, string>> = {
   lesson: '/ai-tools/lesson-plan',
@@ -80,4 +85,5 @@ export const MATERIAL_EDIT_ROUTE: Partial<Record<MaterialType, string>> = {
   activity: '/ai-tools/activity',
   slides: '/ai-tools/slides',
   'prompt-slides': '/ai-tools/prompt-slides',
+  board: '/ai-tools/whiteboard',
 };

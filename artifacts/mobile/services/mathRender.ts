@@ -420,7 +420,16 @@ export function hasRenderableMath(line: string): boolean {
 // as U+2212, not the ASCII hyphen. With only `-` here «y = 2x−5» was cut at the
 // sign, and bidi then reordered the pieces — the worked example
 // «x²−7x+12=0» reached the projector as «7x+12=0−x²».
-const FOREIGN_CHAR = "A-Za-z0-9(){}=+\\-\\u2212./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞";
+//
+// Greek letters and `°` are in the class too: a trigonometry question
+// «cos²θ + sin²θ» was cut at every θ, and the take and review screens showed it
+// as «θ + sin²θcos²» (found 2026-10-09). A run may not END on `.`, though — the
+// sentence's own full stop belongs to the Arabic flow; inside the isolate it sat
+// between the equation and the Arabic before it. An interior `.` («3.5»,
+// «CO₂. (C») is unaffected.
+const FOREIGN_GREEK = 'α-ωΑ-Ωϑϕϵ';
+const FOREIGN_CHAR = `A-Za-z0-9(){}=+\\-\\u2212./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞°${FOREIGN_GREEK}`;
+const FOREIGN_END = FOREIGN_CHAR.replace('.', '');
 
 // Reaction and implication arrows. They may sit INSIDE a run but never at its
 // edge. Left out of the run, «N₂ + H₂ → NH₃» became two isolates with the arrow
@@ -433,7 +442,7 @@ const FOREIGN_CHAR = "A-Za-z0-9(){}=+\\-\\u2212./^√×÷∘′'¹²³⁰⁴-⁹
 const FOREIGN_ARROW = '→←↔⇒⇐⇔⇌⇄⟶⟵⟷';
 
 const FOREIGN_RUN_RE = new RegExp(
-  `[${FOREIGN_CHAR}](?:[${FOREIGN_CHAR}${FOREIGN_ARROW} ]*[${FOREIGN_CHAR}])?`,
+  `[${FOREIGN_CHAR}](?:[${FOREIGN_CHAR}${FOREIGN_ARROW} ]*[${FOREIGN_END}])?`,
   'g',
 );
 
@@ -448,7 +457,7 @@ const FOREIGN_RUN_RE = new RegExp(
  * standalone punctuation mark is laid out correctly by the bidi algorithm on
  * its own; only a mixed run of them needs help.
  */
-const HAS_LATIN = /[A-Za-z]/;
+const HAS_LATIN = /[A-Za-zα-ωΑ-Ωϑϕϵ]/;
 const HAS_DIGIT = /[0-9₀-₉¹²³⁰⁴-⁹]/;
 const HAS_OPERATOR = /[=+\-−/^√×÷∘<>≤≥≠≈±∞]/;
 

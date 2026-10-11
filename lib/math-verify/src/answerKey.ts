@@ -13,7 +13,7 @@
  * machine. This mirrors the repo's standing rule — compute in latin `x`,
  * convert to `س` and Arabic digits only at display time.
  */
-import type { VerifiableTopic } from './guards.ts';
+import { circleEquationFrom, latinEquationFrom, type VerifiableTopic } from './guards.ts';
 
 /** Topics the verifier can prove — the only values a `check` may name. */
 export const VERIFIABLE_TOPICS: readonly VerifiableTopic[] = [
@@ -51,6 +51,31 @@ export function isLatinMath(text: string): boolean {
   return !/[`'"\[\]{}#$;:\\]|__/.test(value);
 }
 
+const EQUATION_TOPICS: ReadonlySet<VerifiableTopic> = new Set<VerifiableTopic>([
+  'equation_linear',
+  'equation_quadratic',
+  'equation_exponential',
+]);
+const CIRCLE_TOPICS: ReadonlySet<VerifiableTopic> = new Set<VerifiableTopic>(['circle_center', 'circle_radius']);
+
+/**
+ * Is `question` a real question for `topic`, or just the answer restated?
+ *
+ * The verifier answers whatever it is asked. Given `P = 1/6` it "solves" the
+ * equation to `1/6` and agrees with the key by construction — the probability
+ * item that once carried a green «تم التحقق رياضيًا» badge for reasoning
+ * nothing did (STATUS.md). The shared gates already refuse that shape, but only
+ * on text pulled out of a TYPED problem; a model-written `check` skipped them.
+ * Running the same extractors over the payload is the one definition of "a real
+ * question", so the exam generator and the whiteboard cannot drift apart.
+ */
+export function isRealCheckQuestion(topic: VerifiableTopic, question: string): boolean {
+  if (EQUATION_TOPICS.has(topic)) return latinEquationFrom(question) !== null;
+  if (CIRCLE_TOPICS.has(topic)) return circleEquationFrom(question) !== null;
+  // A derivative needs something to differentiate; the payload may carry `@point`.
+  return /x/i.test(question);
+}
+
 /**
  * Read a model-supplied `check`, or null when it is absent or unusable.
  *
@@ -68,6 +93,8 @@ export function parseAnswerKeyCheck(raw: unknown): AnswerKeyCheck | null {
   const question = String(record['question'] ?? '');
   const answer = String(record['answer'] ?? '');
   if (!isLatinMath(question) || !isLatinMath(answer)) return null;
+  // A check that restates its own answer is not a check: see `isRealCheckQuestion`.
+  if (!isRealCheckQuestion(topic as VerifiableTopic, question)) return null;
 
   return { topic: topic as VerifiableTopic, question: question.trim(), answer: answer.trim() };
 }

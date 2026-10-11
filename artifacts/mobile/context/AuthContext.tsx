@@ -185,9 +185,10 @@ interface AuthContextType {
   /**
    * Flips `hasRosterLink` to true locally right after a successful
    * `POST /auth/claim`, so the routing gate clears without a round trip to
-   * `/auth/me` just to learn something this call already knows.
+   * `/auth/me` just to learn something this call already knows. `false` after
+   * `DELETE /auth/claim`, which sends the gate back to the code screen.
    */
-  markRosterClaimed: () => void;
+  markRosterClaimed: (linked?: boolean) => void;
   /**
    * Changes the role picked at signup. The server (POST /auth/role) allows it
    * only while this account has claimed no roster row — i.e. exactly while the
@@ -669,8 +670,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
-  const markRosterClaimed = useCallback(() => {
-    setUser(u => (u ? { ...u, hasRosterLink: true } : u));
+  const markRosterClaimed = useCallback((linked = true) => {
+    setUser(u => (u ? { ...u, hasRosterLink: linked } : u));
   }, []);
 
   const switchRole = useCallback(async (role: 'teacher' | 'parent' | 'student') => {

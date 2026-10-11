@@ -45,6 +45,8 @@ import {
 } from "../modules/assessment/lessonProgress.ts";
 import { audioKeysForAttempt, deleteAttemptAudio } from "../lib/attemptAudio.ts";
 import { retakeDecision } from "../modules/assessment/retake.ts";
+import { examVisibleTo } from "../modules/assessment/audience.ts";
+import { assignedStudentsByEvaluation } from "../lib/evaluationAudience.ts";
 import {
   guardianExamRow,
   sortStudentExams,
@@ -219,6 +221,12 @@ async function examRowsFor(studentIds: string[]): Promise<StudentExamRow[]> {
     .from(evaluations)
     .where(where);
 
+  // A group check is listed only for its students (support groups); a sitting
+  // the student already holds keeps it listed whatever the group.
+  const assignedByExam = await assignedStudentsByEvaluation(exams.map(e => e.id));
+  const heldIds = new Set(heldEvaluationIds);
+  const visibleExams = exams.filter(e => examVisibleTo(assignedByExam.get(e.id), studentIds, heldIds.has(e.id)));
+
   // One sitting per student per exam is a database rule, but an account
   // linked to two roster rows could in principle hold one through each.
   // Keep the one that got further.
@@ -235,7 +243,7 @@ async function examRowsFor(studentIds: string[]): Promise<StudentExamRow[]> {
   const resultByAttempt = new Map(results.map(r => [r.attemptId, r]));
 
   const now = new Date();
-  const rows = exams
+  const rows = visibleExams
     .map(exam => {
       const sitting = sittingByExam.get(exam.id) ?? null;
       const result = sitting ? (resultByAttempt.get(sitting.id) ?? null) : null;
@@ -319,10 +327,11 @@ router.get("/student/progress", async (req: AuthenticatedRequest, res) => {
         ).map(m => m.classGroupId)
       : [];
     const now = new Date();
-    const openExams = classIds.length
+    const openExamRows = classIds.length
       ? (
           await db
             .select({
+              id: evaluations.id,
               objectiveIds: evaluations.objectiveIds,
               shareCodeExpiresAt: evaluations.shareCodeExpiresAt,
             })
@@ -330,6 +339,9 @@ router.get("/student/progress", async (req: AuthenticatedRequest, res) => {
             .where(and(inArray(evaluations.classGroupId, [...new Set(classIds)]), eq(evaluations.status, "published")))
         ).filter(e => !e.shareCodeExpiresAt || e.shareCodeExpiresAt.getTime() > now.getTime())
       : [];
+    // A group check never holds back a student outside the group.
+    const openAssigned = await assignedStudentsByEvaluation(openExamRows.map(e => e.id));
+    const openExams = openExamRows.filter(e => examVisibleTo(openAssigned.get(e.id), studentIds, false));
 
     // Every handed-in sitting, graded or not: one with no result row yet is
     // still "waiting for your teacher", never passed.

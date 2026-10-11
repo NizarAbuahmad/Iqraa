@@ -104,7 +104,7 @@ export function buildCommands(opts: {
     out.push({
       id: 'lesson:start-class',
       kind: 'lesson',
-      label: isAr ? 'ابدأ الحصة' : 'Start class',
+      label: isAr ? 'ابدأ الحصة الآن' : 'Start class now',
       hint: opts.lessonTopic,
       icon: 'tv-outline',
       action: 'start-class',

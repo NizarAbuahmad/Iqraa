@@ -190,6 +190,25 @@ describe('searching', () => {
     assert.deepEqual(keys('الفصل الأول'), ['book-qr:12:https://example.invalid/v1', 'book-qr:31:http://example.invalid/a1']);
   });
 
+  it('still finds a titled book code by the name of its book', () => {
+    // A code that carries its own page title headlines with that title, and the
+    // book name moves to `bookTitle`. Searching only the headline made every
+    // titled code unreachable by its book, which is what a teacher types.
+    const titled = buildResourceCatalog({
+      ...input,
+      qr: [
+        {
+          title: 'كتاب الطالب لمادة التربية الإسلامية للصف العاشر',
+          subjectId: 'islamic',
+          resources: [{ kind: 'page', url: 'https://example.invalid/p', pdfPage: 70, isHttp: false, title: 'الباحث الحديث' }],
+        },
+      ],
+    });
+    const found = (query: string) => filterResources(titled, { query }).map(i => i.key);
+    assert.deepEqual(found('الباحث'), ['book-qr:70:https://example.invalid/p']);
+    assert.deepEqual(found('التربية الإسلامية'), ['book-qr:70:https://example.invalid/p']);
+  });
+
   it('matches the description, which is where a staff upload says what it is for', () => {
     const withNote = buildResourceCatalog({
       ...input,

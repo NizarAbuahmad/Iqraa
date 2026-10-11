@@ -7,7 +7,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { hiddenOutsideSelection, hiddenSubjectsForGrade, narrowSubjectsForGrade, narrowToSelection, resolveSelectedId, preferredGrade } from '../teacherCatalogFilter.ts';
+import { hiddenOutsideSelection, hiddenSubjectsForGrade, narrowSubjectsForGrade, narrowToSelection, resolveSelectedId, preferredGrade, narrowBooksToTeacher } from '../teacherCatalogFilter.ts';
 
 const CATALOG = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
 
@@ -95,5 +95,32 @@ describe('preferredGrade', () => {
   it('leaves the default alone when none of theirs is shown', () => {
     assert.equal(preferredGrade(grades, []), undefined);
     assert.equal(preferredGrade(grades, ['grade-3']), undefined);
+  });
+});
+
+describe('narrowBooksToTeacher', () => {
+  const books = [
+    { id: 'm10', gradeId: 'grade-10', subjectId: 'mathematics' },
+    { id: 'c10', gradeId: 'grade-10', subjectId: 'chemistry' },
+    { id: 'm9', gradeId: 'grade-9', subjectId: 'mathematics' },
+    { id: 'b9', gradeId: 'grade-9', subjectId: 'biology' },
+  ];
+  const ids = (xs: { id: string }[]) => xs.map(x => x.id);
+
+  it('keeps only the grade+subject pairs in teachingAssignments', () => {
+    const out = narrowBooksToTeacher(books, undefined, undefined, [
+      { gradeId: 'grade-10', subjectIds: ['chemistry'] },
+      { gradeId: 'grade-9', subjectIds: ['mathematics'] },
+    ]);
+    assert.deepEqual(ids(out), ['c10', 'm9']);
+  });
+
+  it('falls back to flat gradeIds/subjectIds without assignments', () => {
+    assert.deepEqual(ids(narrowBooksToTeacher(books, ['grade-10'], ['mathematics', 'chemistry'], [])), ['m10', 'c10']);
+  });
+
+  it('returns everything when nothing is selected or nothing would match', () => {
+    assert.equal(narrowBooksToTeacher(books, undefined, undefined, undefined).length, 4);
+    assert.equal(narrowBooksToTeacher(books, ['grade-1'], undefined, undefined).length, 4);
   });
 });

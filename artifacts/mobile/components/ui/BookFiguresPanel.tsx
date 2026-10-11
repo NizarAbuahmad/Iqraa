@@ -15,6 +15,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
+import { TapToEnlarge } from '@/components/ui/ImageViewer';
 import type { BookFigureRef } from '@/services/exportHtml';
 import { EXPORT_FIGURE_MAX } from '@/services/exportHtml';
 
@@ -62,7 +63,9 @@ export function BookFiguresPanel({ figures, isRTL, colors, labels }: Props) {
             key={f.uri}
             style={[styles.card, { borderColor: colors.border, backgroundColor: colors.muted }]}
           >
-            <Image source={{ uri: f.uri }} style={styles.image} resizeMode="contain" />
+            <TapToEnlarge url={f.uri} caption={f.caption} whiteGround style={styles.tap}>
+              <Image source={{ uri: f.uri }} style={styles.image} resizeMode="contain" />
+            </TapToEnlarge>
             <Text
               style={[styles.caption, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}
             >
@@ -87,6 +90,7 @@ const styles = StyleSheet.create({
     padding: 8,
     alignItems: 'center',
   },
+  tap: { width: '100%' },
   image: { width: '100%', height: 130, marginBottom: 6 },
   caption: { fontSize: 11, textAlign: 'center', lineHeight: 15 },
 });

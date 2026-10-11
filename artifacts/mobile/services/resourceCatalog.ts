@@ -186,7 +186,9 @@ export function filterResources(items: ResourceItem[], filter: ResourceFilter): 
       // A book code is located by its printed page, so «صفحة ٣٥», «page 35»
       // and a bare «35» all find it; digits fold to Latin in `normalizeArabic`.
       const page = item.page === undefined ? '' : `صفحة ${item.page} page ${item.page}`;
-      const haystack = normalizeArabic(`${item.titleAr} ${item.titleEn} ${item.description ?? ''} ${page}`);
+      const haystack = normalizeArabic(
+        `${item.titleAr} ${item.titleEn} ${item.description ?? ''} ${item.bookTitle ?? ''} ${page}`,
+      );
       if (!haystack.includes(query)) return false;
     }
     return true;

@@ -94,3 +94,28 @@ export function preferredGrade<T extends { id: string }>(all: readonly T[], pref
   }
   return undefined;
 }
+
+/**
+ * Narrows books to the grade + subject pairs a teacher set up on
+ * `/setup-subjects`. `teachingAssignments` carries the real pairing; the flat
+ * `gradeIds`/`subjectIds` are the fallback for accounts that predate it.
+ * Same fallback as the helpers above: if narrowing would leave nothing, return
+ * everything rather than an unexplained empty list.
+ */
+export function narrowBooksToTeacher<T extends { gradeId: string; subjectId: string }>(
+  books: T[],
+  gradeIds: string[] | undefined,
+  subjectIds: string[] | undefined,
+  teachingAssignments: { gradeId: string; subjectIds: string[] }[] | undefined,
+): T[] {
+  const narrowed = teachingAssignments?.length
+    ? books.filter(b =>
+        teachingAssignments.some(a => a.gradeId === b.gradeId && a.subjectIds.includes(b.subjectId)),
+      )
+    : books.filter(
+        b =>
+          (!gradeIds?.length || gradeIds.includes(b.gradeId)) &&
+          (!subjectIds?.length || subjectIds.includes(b.subjectId)),
+      );
+  return narrowed.length > 0 ? narrowed : books;
+}

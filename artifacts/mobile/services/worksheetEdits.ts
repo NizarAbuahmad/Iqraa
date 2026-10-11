@@ -11,7 +11,7 @@
  *
  * Kept free of React so it can be tested directly.
  */
-import type { WorksheetOutput, WorksheetQuestion } from './ai/AIService.ts';
+import type { QuestionFigure, WorksheetOutput, WorksheetQuestion } from './ai/AIService.ts';
 
 export { parsePoints } from './quizEdits.ts';
 
@@ -129,6 +129,25 @@ export function applyWorksheetAnswerEdit(
   const flat = flatten(ws).map(f =>
     f.sectionIndex === sectionIndex && f.questionIndex === questionIndex ? { ...withoutSolution(f), answer: next } : f,
   );
+  return rebuild(ws, flat);
+}
+
+/**
+ * Attach a book figure to one question, replace it, or remove it with `null`.
+ * The question's working and the answer key are untouched: the figure is
+ * something to look at, not a change to what is asked.
+ */
+export function applyWorksheetFigure(
+  ws: WorksheetOutput,
+  sectionIndex: number,
+  questionIndex: number,
+  figure: QuestionFigure | null,
+): WorksheetOutput {
+  const flat = flatten(ws).map(f => {
+    if (f.sectionIndex !== sectionIndex || f.questionIndex !== questionIndex) return f;
+    const { figure: _old, ...question } = f.question;
+    return { ...f, question: figure ? { ...question, figure } : question };
+  });
   return rebuild(ws, flat);
 }
 

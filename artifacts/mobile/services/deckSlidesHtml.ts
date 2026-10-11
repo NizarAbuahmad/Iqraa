@@ -20,12 +20,13 @@ import { visualForSlide, visualToSvg } from './deckVisuals.ts';
 import { isBulletLine, looksLikeEquation, splitEmoji, stripBullet, workingSteps } from './deckText.ts';
 import { resolveSlideLayout } from './slideLayout.ts';
 import { deckIconSvg, iconForGlyph, type DeckIconName } from './deckIcons.ts';
+import { slideTeacherNotes } from './deckNotes.ts';
 import type { ActivitySlide, ClassroomActivity } from './ai/AIService.ts';
 import { hasRenderableMath, isolateForeignRuns, mathLineToHtml, MATH_HTML_STYLES, prettifySymPy } from './mathRender.ts';
 
 import {
   DECK_ACCENT, DECK_BG, DECK_BLOB, DECK_BORDER, DECK_CARD_BG, DECK_MUTED,
-  DECK_PINK, DECK_TEXT, slideTypeAccent as deckSlideAccent,
+  DECK_PINK, DECK_TEAL, DECK_TEXT, slideTypeAccent as deckSlideAccent,
 } from './deckTheme.ts';
 
 /** Escape only. For attribute values — above all the media and video URLs,
@@ -197,6 +198,16 @@ function deckContentLine(line: string, isEquation: boolean): string {
   return `<div class="${cls}">${html}</div>`;
 }
 
+/**
+ * A question or worked-example stem, one block per line. The whole stem used
+ * to go through `deckContentLine` as one string, and HTML collapses newlines,
+ * so a two-line problem — the givens, then the ask — printed as one run-on
+ * line the projector had shown as two.
+ */
+function deckStem(content: string): string {
+  return content.split('\n').map(l => deckContentLine(l, true)).join('');
+}
+
 export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): string {
   const dir = isAr ? 'rtl' : 'ltr';
   const L = (ar: string, en: string) => (isAr ? ar : en);
@@ -290,7 +301,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
     return `<div class="deck-slide">
       ${deckHeader(slide.title, accent)}
       <div class="deck-body deck-body-center">
-        ${deckContentLine(slide.content, true)}
+        ${deckStem(slide.content)}
         ${slidePlot(slide)}
         ${slide.answer ? `
           <div class="deck-answer" style="border-color:${accent}44">
@@ -391,7 +402,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
     return `<div class="deck-slide">
       ${deckHeader(slide.title, accent)}
       <div class="deck-body deck-body-center">
-        ${deckContentLine(slide.content, true)}
+        ${deckStem(slide.content)}
         ${slidePlot(slide)}
         <div class="deck-options">
           ${options.map((opt, i) => {
@@ -525,6 +536,27 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
     if (slide.type === 'divider') return dividerSlide(slide, num);
     return contentSlide(slide, num);
   }).join('\n');
+
+  // The teacher's notes, after the last slide, on pages of their own. Not on
+  // the slides: this file is projected to the class. Until 2026-10-09 neither
+  // export carried a word of the `teacher` blocks the prompt pays for, so a
+  // PDF taken to a borrowed laptop was the deck with its teaching stripped out.
+  // Class names deliberately avoid the slide prefix — a test counts it.
+  const notesHtml = (() => {
+    const blocks = deck.slides.flatMap((slide, i) => {
+      const sections = slideTeacherNotes(slide, isAr);
+      if (sections.length === 0) return [];
+      return [`<section class="notes-slide">
+      <h2 class="notes-title">${i + 1} · ${esc(splitEmoji(slide.title)[1] || slide.title)}</h2>
+      ${sections.map(s => `<p class="notes-label">${esc(s.label)}</p><p class="notes-text">${esc(s.text).replace(/\n/g, '<br/>')}</p>`).join('')}
+    </section>`];
+    });
+    if (blocks.length === 0) return '';
+    return `<div class="notes-pages">
+    <h1 class="notes-heading">${L('ملاحظات المعلّم', 'Teacher notes')} — ${esc(deck.activityName)}</h1>
+    ${blocks.join('\n')}
+  </div>`;
+  })();
 
   return `<!DOCTYPE html>
 <html dir="${dir}" lang="${isAr ? 'ar' : 'en'}">
@@ -676,11 +708,21 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${DECK_BOR
 .deck-footer span { font-size:13px; color:${DECK_MUTED}; }
 .deck-divider-slide .deck-footer, .deck-on-photo .deck-footer { border-top-color:rgba(255,255,255,0.35); }
 .deck-divider-slide .deck-footer span, .deck-on-photo .deck-footer span { color:rgba(255,255,255,0.9); }
+/* Teacher notes: ordinary flowing pages after the deck, paginated by the
+   browser, each slide's block kept whole. Body-sized type — these are read at
+   a desk, not off a wall. */
+.notes-pages { page-break-before:always; background:${DECK_CARD_BG}; color:${DECK_TEXT}; padding:18mm 20mm; }
+.notes-heading { font-size:26px; font-weight:700; color:${DECK_TEAL}; margin-bottom:18px; font-family:'Readex Pro','Arial','Tahoma',sans-serif; }
+.notes-slide { break-inside:avoid; page-break-inside:avoid; border-top:1px solid ${DECK_BORDER}; padding:14px 0 10px; }
+.notes-title { font-size:17px; font-weight:700; margin-bottom:8px; font-family:'Readex Pro','Arial','Tahoma',sans-serif; }
+.notes-label { font-size:11px; font-weight:700; color:${DECK_MUTED}; text-transform:uppercase; letter-spacing:1px; margin-top:8px; }
+.notes-text { font-size:14px; line-height:1.7; }
 ${MATH_HTML_STYLES}
 </style>
 </head>
 <body>
 ${slidesHtml}
+${notesHtml}
 </body>
 </html>`;
 }
