@@ -509,6 +509,18 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(theirs.status, 401, "/parent/exams must require a token");
   });
 
+  it("guards the family schedule, for both roles", async () => {
+    // Same two traps as «اختباراتي»: refuse an anonymous caller, and never
+    // answer for a path the teacher router owns. /schedule (teacher) and
+    // /student/schedule (family) share a word and nothing else.
+    for (const p of ["/student/schedule", "/parent/schedule"]) {
+      const res = await fetch(`${base}${p}`);
+      assert.equal(res.status, 401, `${p} must require a token`);
+    }
+    const teacher = await fetch(`${base}/schedule`);
+    assert.equal(teacher.status, 401, "the teacher timetable keeps its own guard");
+  });
+
   it("keeps the class join-code lookup public, and closed while student accounts are off", async () => {
     // The trap this guards: roster.ts mounts
     // `router.use(["/classes","/students"], authMiddleware, …)`, and Express
