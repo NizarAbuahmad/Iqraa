@@ -48,6 +48,7 @@ import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
 import { useFavorite } from '@/hooks/useFavorite';
 import { useGeneratorExport } from '@/hooks/useGeneratorExport';
+import { usePrintStyle } from '@/hooks/usePrintStyle';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GeneratorResultActions, GeneratorSaveBar } from '@/components/ui/GeneratorResultActions';
@@ -62,19 +63,20 @@ const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
 const ACCENT_FILL = palette.hero;
 
-type QType = 'multiple_choice' | 'true_false' | 'short_answer';
-type Difficulty = 'easy' | 'medium' | 'hard';
-type DifficultyLevel = 'normal' | 'high' | 'difficult';
+type QType = 'multiple_choice' | 'true_false' | 'fill_blank' | 'short_answer';
+type Difficulty = 'easy' | 'medium' | 'hard' | 'mixed';
+type DifficultyLevel = 'normal' | 'high' | 'difficult' | 'mixed';
 
 const DURATION_OPTIONS = [10, 15, 20, 25, 30, 45];
 const MARKS_OPTIONS = [10, 20, 25, 30, 40, 50, 100];
 const NUM_Q_OPTIONS = [5, 8, 10, 12, 15, 20];
-const ALL_Q_TYPES: QType[] = ['multiple_choice', 'true_false', 'short_answer'];
-const DIFFICULTY_IDS: DifficultyLevel[] = ['normal', 'high', 'difficult'];
+const ALL_Q_TYPES: QType[] = ['multiple_choice', 'true_false', 'fill_blank', 'short_answer'];
+const DIFFICULTY_IDS: DifficultyLevel[] = ['normal', 'high', 'difficult', 'mixed'];
 const DIFFICULTY_MAP: Record<DifficultyLevel, Difficulty> = {
   normal: 'easy',
   high: 'medium',
   difficult: 'hard',
+  mixed: 'mixed',
 };
 
 export default function QuizScreen() {
@@ -93,7 +95,7 @@ export default function QuizScreen() {
   const durationLabels = DURATION_OPTIONS.map(d => `${d} ${t('min')}`);
   const marksLabels = MARKS_OPTIONS.map(m => String(m));
   const numQLabels = NUM_Q_OPTIONS.map(n => String(n));
-  const diffLabels = [t('difficultyNormal'), t('difficultyHigh'), t('difficultyDifficult')];
+  const diffLabels = [t('difficultyNormal'), t('difficultyHigh'), t('difficultyDifficult'), t('difficultyMixed')];
 
   const parseTypes = (raw?: string): Set<QType> => {
     if (!raw) return new Set(['multiple_choice', 'true_false', 'short_answer']);
@@ -181,6 +183,7 @@ export default function QuizScreen() {
   const [editedQuestions, setEditedQuestions] = useState<ReadonlySet<string>>(new Set());
   const [error, setError] = useState('');
   const [showAnswers, setShowAnswers] = useState(false);
+  const [printStyle, setPrintStyle] = usePrintStyle();
   const [savedId, setSavedId] = useState<string | undefined>(params.savedId);
   const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
   const [showExport, setShowExport] = useState(false);
@@ -222,6 +225,7 @@ export default function QuizScreen() {
   const typeLabels = (tr: typeof t): Record<QType, string> => ({
     multiple_choice: tr('typeMultipleChoice'),
     true_false: tr('typeTrueFalse'),
+    fill_blank: tr('typeFillBlank'),
     short_answer: tr('typeShortAnswer'),
   });
   const TYPE_LABEL = typeLabels(t);
@@ -229,6 +233,7 @@ export default function QuizScreen() {
   const TYPE_COLOR: Record<QType, string> = {
     multiple_choice: palette.warning,
     true_false: palette.info,
+    fill_blank: palette.warning,
     short_answer: palette.success,
   };
 
@@ -492,7 +497,7 @@ export default function QuizScreen() {
     // The paper follows the answers toggle, as the worksheet's does: hidden
     // (the default) prints the student copy, shown prints the teacher's.
     formatText: (quiz, title, meta, isAr) => formatQuizText(quiz, title, meta, isAr, showAnswers),
-    buildHTML: (quiz, title, meta, isAr, figures) => buildQuizHTML(quiz, title, meta, isAr, figures, showAnswers),
+    buildHTML: (quiz, title, meta, isAr, figures) => buildQuizHTML(quiz, title, meta, isAr, figures, showAnswers, printStyle),
     buildSlidesHTML: (quiz, title, meta, isAr, figures) => buildQuizSlidesHTML(quiz, title, meta, isAr, figures, showAnswers),
     buildWord: (quiz, title, meta, isAr, docx) => buildQuizDocx(quiz, title, meta, isAr, showAnswers, docx),
     onError: key => showToast(t(key)),
@@ -803,7 +808,7 @@ export default function QuizScreen() {
                   </View>
                 )}
 
-                {showAnswers && q.type === 'short_answer' && (
+                {showAnswers && (q.type === 'short_answer' || q.type === 'fill_blank') && (
                   <View style={[styles.ansBox, { backgroundColor: palette.info + '12', borderRadius: 8 }]}>
                     <EditableText
                       value={q.correctAnswer}
@@ -862,6 +867,7 @@ export default function QuizScreen() {
       onWord={handleWord}
       onSlides={handleSlides}
       note={t(showAnswers ? 'exportTeacherCopyNote' : 'exportStudentCopyNote')}
+      printStyle={{ value: printStyle, onChange: setPrintStyle }}
       isRTL={isRTL}
       loadingPDF={loadingPDF}
       loadingWord={loadingWord}
@@ -875,8 +881,8 @@ export default function QuizScreen() {
 
 function MetaPill({ icon, text, color }: { icon: keyof typeof Ionicons.glyphMap; text: string; color: string }) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: color + '18', borderRadius: 20 }}>
-      <Ionicons name={icon} size={12} color={color} />
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 4, backgroundColor: color + '18', borderRadius: 20 }}>
+      <Ionicons name={icon} size={14} color={color} />
       <Text style={{ color, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>{text}</Text>
     </View>
   );
@@ -909,24 +915,24 @@ function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
 }
 
 const styles = StyleSheet.create({
-  verifyRow: { alignItems: 'center', gap: 6, marginTop: 8 },
+  verifyRow: { alignItems: 'center', gap: 8, marginTop: 8, marginBottom: 8 },
   verifyText: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 12, flex: 1 },
   label: { fontSize: 13, marginBottom: 6 },
   checkboxGroup: { borderWidth: 1, padding: 14, marginBottom: 16, gap: 4 },
-  checkRow: { alignItems: 'center', gap: 10, paddingVertical: 6 },
+  checkRow: { alignItems: 'center', gap: 12, paddingVertical: 8 },
   checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   quizHeader: { padding: 16, borderWidth: 1, marginBottom: 16 },
-  quizTitle: { fontSize: 16, marginBottom: 10 },
+  quizTitle: { fontSize: 16, marginBottom: 12 },
   quizMeta: { gap: 8, flexWrap: 'wrap' },
-  toggleBtn: { alignItems: 'center', gap: 6, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 16 },
-  presentBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, marginBottom: 12 },
+  toggleBtn: { alignItems: 'center', gap: 8, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 16 },
+  presentBtn: { alignItems: 'center', justifyContent: 'center', gap: 12, paddingVertical: 16, marginBottom: 12 },
   qCard: { borderWidth: 1, padding: 16, marginBottom: 12 },
-  qTop: { alignItems: 'center', gap: 8, marginBottom: 10 },
+  qTop: { alignItems: 'center', gap: 12, marginBottom: 12 },
   qNumCircle: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  typeBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  typeBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8 },
   qText: { fontSize: 14, lineHeight: 20, marginBottom: 12 },
-  optRow: { alignItems: 'center', gap: 8, padding: 10, marginBottom: 6 },
-  optLabel: { fontSize: 13, width: 20 },
-  ansBox: { alignItems: 'center', gap: 6, padding: 10, marginTop: 8 },
-  expBox: { padding: 10, marginTop: 8 },
+  optRow: { alignItems: 'center', gap: 12, padding: 12, marginBottom: 8 },
+  optLabel: { fontSize: 13, width: 24 },
+  ansBox: { alignItems: 'center', gap: 8, padding: 12, marginTop: 8 },
+  expBox: { padding: 12, marginTop: 8 },
 });

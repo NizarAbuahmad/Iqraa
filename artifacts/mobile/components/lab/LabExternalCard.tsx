@@ -10,6 +10,7 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
+import { TapToEnlarge } from '@/components/ui/ImageViewer';
 import { Ionicons } from '@expo/vector-icons';
 import type { LabExternalItem } from '@workspace/curriculum/lab';
 import { getExternalResource } from '@workspace/curriculum/external';
@@ -52,12 +53,14 @@ export function LabExternalCard({ item }: { item: LabExternalItem }) {
         {lang === 'ar' ? resource.titleAr : resource.titleEn}
       </Text>
       {image ? (
-        <Image
-          source={{ uri: image.url }}
-          style={[styles.image, { borderColor: colors.border }]}
-          contentFit="contain"
-          accessibilityLabel={resource.titleEn}
-        />
+        <TapToEnlarge url={image.url} caption={resource.titleEn}>
+          <Image
+            source={{ uri: image.url }}
+            style={[styles.image, { borderColor: colors.border }]}
+            contentFit="contain"
+            accessibilityLabel={resource.titleEn}
+          />
+        </TapToEnlarge>
       ) : null}
       <Pressable
         onPress={() => openExternal(resource.sourceUrl)}

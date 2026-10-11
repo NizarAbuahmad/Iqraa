@@ -9,6 +9,7 @@
  */
 import type * as Docx from 'docx';
 
+import type { PrintStyle } from './printStyle.ts';
 import type { QuizOutput } from './ai/AIService.ts';
 import { buildQuizHTML, type BookFigureRef } from './exportHtml.ts';
 import { formatQuizText } from './exportText.ts';
@@ -23,11 +24,12 @@ export function quizExports(
   isAr: boolean,
   copy: QuizCopy,
   figures: readonly BookFigureRef[] = [],
+  style: PrintStyle = 'colour',
 ) {
   const withKey = copy === 'teacher';
   return {
     text: formatQuizText(quiz, title, meta, isAr, withKey),
-    html: buildQuizHTML(quiz, title, meta, isAr, figures, withKey),
+    html: buildQuizHTML(quiz, title, meta, isAr, figures, withKey, style),
     word: (docx: typeof Docx) => buildQuizDocx(quiz, title, meta, isAr, withKey, docx),
   };
 }

@@ -5,6 +5,8 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import { SendWorksheetSheet } from '@/components/ui/SendWorksheetSheet';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -23,6 +25,7 @@ import { arCountPhrase } from '@/services/arCount';
 import { MATERIAL_COLOR, MATERIAL_EDIT_ROUTE, MATERIAL_FILL } from '@/constants/materialKind';
 import { materialSubjectId } from '@/services/contentLanguage';
 import { redoesInEnglish } from '@/hooks/useEnglishRefresh';
+import { usePrintStyle } from '@/hooks/usePrintStyle';
 import { getT } from '@/services/i18n';
 import { openExternal } from '@/services/externalLinks';
 import { trackEvent } from '@/services/analytics';
@@ -68,6 +71,8 @@ export default function WorkspaceViewScreen() {
   // A saved quiz is exported as the student's or the teacher's copy, picked
   // in the export menu — this screen has no answers toggle to decide it.
   const [docCopy, setDocCopy] = useState<QuizCopy>('student');
+  const [showSend, setShowSend] = useState(false);
+  const [printStyle, setPrintStyle] = usePrintStyle();
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
   const { favorited, setFavorited, toggle: handleToggleFavorite } =
     useFavorite(item?.id, key => showToast(t(key)));
@@ -93,6 +98,13 @@ export default function WorkspaceViewScreen() {
       setLoading(false);
     } else if (id) {
       getItem(id).then(m => {
+        // A board is not a quiz. Without this it falls through every `kind`
+        // switch below to the quiz builders. It reopens in the whiteboard
+        // itself; `replace` so Back goes to the list, not to this spinner.
+        if (m?.type === 'board') {
+          router.replace({ pathname: '/ai-tools/whiteboard' as any, params: { savedId: m.id } });
+          return;
+        }
         // An English material saved in Arabic opens in its tool instead, which
         // redoes it in English over this copy (see useEnglishRefresh).
         const redo = m && redoesInEnglish(m) ? MATERIAL_EDIT_ROUTE[viewKind(m, parseContent(m.content))] : undefined;
@@ -187,10 +199,10 @@ export default function WorkspaceViewScreen() {
     const figures = getExportFigures();
     if (kind === 'lesson') return buildLessonPlanHTML(content as LessonPlanOutput, item.title, meta, isAr, figures);
     if (kind === 'activity') return buildActivityHTML(content as ActivityOutput, item.title, meta, isAr, figures);
-    if (kind === 'worksheet') return worksheetExports(content as WorksheetOutput, item.title, meta, isAr, docCopy, figures).html;
+    if (kind === 'worksheet') return worksheetExports(content as WorksheetOutput, item.title, meta, isAr, docCopy, figures, printStyle).html;
     if (kind === 'flow') return buildLessonFlowHTML(content as unknown as LessonFlowOutput, isAr, figures);
     if (kind === 'slides' || kind === 'prompt-slides') return buildDeckHTML(content as ClassroomActivity, isAr);
-    return quizExports(content as QuizOutput, item.title, meta, isAr, docCopy, figures).html;
+    return quizExports(content as QuizOutput, item.title, meta, isAr, docCopy, figures, printStyle).html;
   };
 
   const handleShareText = async () => { await shareAsText(getPlainText(), item.title); };
@@ -281,6 +293,17 @@ export default function WorkspaceViewScreen() {
           <Ionicons name="share-outline" size={16} color={colors.mutedForeground} />
           <Text style={[{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>{t('exportBtn')}</Text>
         </Pressable>
+        {kind === 'worksheet' && content && (
+          <Pressable
+            onPress={() => setShowSend(true)}
+            style={[styles.actionBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            accessibilityRole="button"
+            accessibilityLabel={t('sendToClass')}
+          >
+            <Ionicons name="phone-portrait-outline" size={16} color={accent} />
+            <Text style={[{ color: accent, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>{t('sendToClassShort')}</Text>
+          </Pressable>
+        )}
         {/* A saved deck's whole point is being projected again — the workspace
             is where a teacher returns to it the morning of the lesson. */}
         {(kind === 'slides' || kind === 'prompt-slides') && content && (
@@ -366,6 +389,22 @@ export default function WorkspaceViewScreen() {
       </View>
     </ScrollView>
 
+    {kind === 'worksheet' && content ? (
+      <SendWorksheetSheet
+        visible={showSend}
+        worksheet={content as WorksheetOutput}
+        lessonId={item.formState?.lessonId}
+        language={docLang === 'en' ? 'en' : 'ar'}
+        accent={accent}
+        colors={colors}
+        onClose={() => setShowSend(false)}
+        onSent={(id, auto, teacher) => {
+          setShowSend(false);
+          showToast(t('sendToClassSent', auto, teacher));
+          router.push({ pathname: '/evaluations/[id]', params: { id } } as any);
+        }}
+      />
+    ) : null}
     <ExportMenu
       visible={showExport}
       onClose={() => setShowExport(false)}
@@ -374,6 +413,7 @@ export default function WorkspaceViewScreen() {
       onPDF={handlePDF}
       onWord={handleWord}
       copyChoice={(kind === 'quiz' || kind === 'worksheet') && content ? { value: docCopy, onChange: setDocCopy } : undefined}
+      printStyle={(kind === 'quiz' || kind === 'worksheet') && content ? { value: printStyle, onChange: setPrintStyle } : undefined}
       isRTL={isRTL}
       loadingPDF={loadingPDF}
       loadingWord={loadingWord}
@@ -609,6 +649,12 @@ function WorksheetView({ ws, lessonId, colors, isRTL, t, accent }: {
               <Text style={[{ color: accent, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, width: 20 }]}>{i + 1}.</Text>
               <View style={{ flex: 1 }}>
                 <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 22, textAlign: isRTL ? 'right' : 'left' }]}>{q.text}</Text>
+                {q.figure ? (
+                  <View style={{ marginTop: 8, alignItems: 'center', gap: 4 }}>
+                    <Image source={{ uri: q.figure.uri }} style={{ width: '100%', height: 160 }} contentFit="contain" accessibilityLabel={q.figure.caption} />
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, textAlign: 'center' }}>{q.figure.caption}</Text>
+                  </View>
+                ) : null}
                 {q.options?.map(o => (
                   <View key={o} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginTop: 6 }]}>
                     <View style={{ width: 14, height: 14, borderRadius: 7, borderWidth: 1.5, borderColor: colors.border, flexShrink: 0 }} />

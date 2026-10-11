@@ -9,8 +9,11 @@
  *    `goBack()` on success.
  *
  * Saves to `gradeIds` through the same PATCH /users/profile a teacher uses;
- * the server keeps a student to one (`limitGradesForRole`). A student already
- * linked to a class starts with that class's grade ticked.
+ * the server keeps a student to one (`limitGradesForRole`). The names this
+ * account is linked to are shown with their grade, and those grades start
+ * ticked — a parent sees which child they picked instead of guessing. First
+ * time through, «اخترت اسمًا خاطئًا؟» undoes the claim (`DELETE /auth/claim`)
+ * and the gate sends the account back to the code screen.
  */
 import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -24,14 +27,14 @@ import { isStudentRole, useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { getPickerGrades } from '@/services/curriculumData';
 import { goBack } from '@/services/navigation';
-import { getMyGradeIds } from '@/services/studentExam';
+import { listMyRosterLinks, unclaimRoster } from '@/services/roster';
 import { BackButton } from '@/components/ui/BackButton';
 
 export default function SetupGradeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, lang, isRTL } = useLanguage();
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, markRosterClaimed } = useAuth();
   const { mode } = useLocalSearchParams<{ mode?: string }>();
   const editMode = mode === 'edit';
   const isStudent = isStudentRole(user?.role);
@@ -43,19 +46,41 @@ export default function SetupGradeScreen() {
   const [selected, setSelected] = useState<string[]>(() => user?.gradeIds ?? []);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [links, setLinks] = useState<{ studentId: string; displayName: string; gradeId: string | null }[]>([]);
+  const [unlinking, setUnlinking] = useState(false);
 
-  // First time through, a linked student's class already says which grade they
-  // are in — start there rather than on an empty choice.
+  // The roster already says which grade each linked name is in — show it, and
+  // start there rather than on an empty choice.
   useEffect(() => {
-    if (!isStudent || selected.length > 0) return;
     let cancelled = false;
-    void getMyGradeIds().then(ids => {
-      const own = ids.find(id => grades.some(g => g.id === id));
-      if (!cancelled && own) setSelected(prev => (prev.length === 0 ? [own] : prev));
-    });
+    listMyRosterLinks()
+      .then(rows => {
+        if (cancelled) return;
+        setLinks(rows);
+        const known = [...new Set(rows.map(r => r.gradeId).filter((id): id is string => !!id && grades.some(g => g.id === id)))];
+        if (known.length) setSelected(prev => (prev.length === 0 ? (isStudent ? known.slice(0, 1) : known) : prev));
+      })
+      .catch(() => {});
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isStudent]);
+
+  const handleWrongName = async () => {
+    if (unlinking) return;
+    setUnlinking(true);
+    setError('');
+    try {
+      await unclaimRoster();
+      markRosterClaimed(false);
+    } catch {
+      setError(t('gradeSetupUnlinkFailed'));
+      setUnlinking(false);
+    }
+  };
+  const gradeName = (id: string | null) => {
+    const g = id ? grades.find(x => x.id === id) : undefined;
+    return g ? (lang === 'ar' ? g.nameAr : g.name) : '';
+  };
 
   const toggle = (id: string) => {
     Haptics.selectionAsync();
@@ -103,6 +128,19 @@ export default function SetupGradeScreen() {
           {t(isStudent ? 'gradeSetupDescStudent' : 'gradeSetupDescParent')}
         </Text>
 
+        {links.length > 0 ? (
+          <View style={[styles.linked, { borderColor: colors.border, backgroundColor: colors.muted, borderRadius: colors.radius }]}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>
+              {t('gradeSetupLinked')}
+            </Text>
+            {links.map(l => (
+              <Text key={l.studentId} style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 15, textAlign: align }}>
+                {l.displayName}{gradeName(l.gradeId) ? ` · ${gradeName(l.gradeId)}` : ''}
+              </Text>
+            ))}
+          </View>
+        ) : null}
+
         <View style={[styles.chips, isRTL && { flexDirection: 'row-reverse' }]}>
           {ordered.map(g => {
             const on = selected.includes(g.id);
@@ -140,6 +178,14 @@ export default function SetupGradeScreen() {
           fullWidth
           style={{ marginTop: 24 }}
         />
+
+        {!editMode && links.length > 0 ? (
+          <Pressable onPress={handleWrongName} disabled={unlinking} hitSlop={8} accessibilityRole="button" style={{ alignSelf: 'center', marginTop: 20, opacity: unlinking ? 0.5 : 1 }}>
+            <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_500Medium', fontSize: 14 }}>
+              {t('gradeSetupWrongName')}
+            </Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -151,6 +197,7 @@ const styles = StyleSheet.create({
   icon: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginBottom: 20 },
   title: { fontSize: 22, marginBottom: 8, lineHeight: 30 },
   desc: { fontSize: 15, lineHeight: 24, marginBottom: 20 },
+  linked: { borderWidth: 1, padding: 12, gap: 4, marginBottom: 16 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1 },
   chipText: { fontSize: 13 },

@@ -195,7 +195,10 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
     "",
     "Rules you do not break:",
     "1. Every question measures one of the listed objectives, and carries that objective's exact id. Nothing outside them.",
-    "2. You only produce the question types listed. Never substitute a different type.",
+    "2. You only produce the question types listed. Never substitute a different type. Spread the count "
+      + "across every listed type as evenly as it allows, and order the paper as a Jordanian ministry exam "
+      + "does — each type in one consecutive block, in the order the types are listed. Roughly half of "
+      + "any true/false statements are false, each wrong in a specific detail.",
     "3. Distractors are plausible wrong answers a real student would pick — never filler, never obviously absurd, never 'none of the above'.",
     "4. Never write a question whose answer is a matter of opinion unless the type is open_ended.",
     "5. Do not repeat yourself. Two questions that test the same fact in the same way are one question.",

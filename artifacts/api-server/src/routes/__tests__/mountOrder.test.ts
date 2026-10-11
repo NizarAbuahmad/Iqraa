@@ -211,6 +211,8 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
       // second route under the same prefix, so it is a second chance to get
       // the mount wrong.
       "/generate/prompt-slides/questions",
+      // Spends a model call (two after a contradiction) per request.
+      "/generate/solve",
       "/practice/read-aloud",
     ]) {
       const res = await fetch(`${base}${route}`, {
@@ -264,6 +266,24 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     const id = "00000000-0000-0000-0000-000000000000";
     const res = await fetch(`${base}/classes/${id}/students/${id}/record`);
     assert.equal(res.status, 401, "a student's record must require a token");
+  });
+
+  it("mounts the group-check audience inside the evaluations guard", async () => {
+    // A student list on an exam decides who may sit it; it must never be
+    // writable without a teacher token.
+    const id = "00000000-0000-0000-0000-000000000000";
+    const res = await fetch(`${base}/evaluations/${id}/audience`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ studentIds: [id] }),
+    });
+    assert.equal(res.status, 401, "setting who may sit an exam must require a token");
+  });
+
+  it("mounts support groups inside the roster's guarded prefix", async () => {
+    const id = "00000000-0000-0000-0000-000000000000";
+    const res = await fetch(`${base}/classes/${id}/support-groups`);
+    assert.equal(res.status, 401, "who is under the line in a class must require a token");
   });
 
   it("mounts account deletion, and refuses it without a token", async () => {
@@ -425,6 +445,18 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     }
     const readAll = await fetch(`${base}/messaging/threads/read-all`, { method: "POST" });
     assert.equal(readAll.status, 401, "/messaging/threads/read-all must require a token");
+  });
+
+  it("guards the reaction routes like the rest of /messaging", async () => {
+    const path = "/messaging/threads/00000000-0000-0000-0000-000000000001/messages/00000000-0000-0000-0000-000000000002/reaction";
+    const put = await fetch(`${base}${path}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emoji: "👍" }),
+    });
+    assert.equal(put.status, 401, "PUT reaction must require a token");
+    const del = await fetch(`${base}${path}`, { method: "DELETE" });
+    assert.equal(del.status, 401, "DELETE reaction must require a token");
   });
 
   it("keeps the student exam link public, and only the link", async () => {

@@ -188,7 +188,10 @@ describe('option lettering', () => {
 
   it('keeps A/B/C/D for English', () => {
     const html = buildQuizHTML(quiz(), 'Quiz', { subject: 'Math', grade: 'Grade 10' }, false);
-    assert.ok(html.includes('A.') && html.includes('B.'));
+    // What a reader sees: the invisible bidi isolates are not part of it, and
+    // whether «.» sits inside or after one does not change an English page.
+    const visible = html.replace(/[⁦-⁩]/g, '');
+    assert.ok(visible.includes('A.') && visible.includes('B.'));
   });
 
   it("strips the model's own marker instead of printing two", () => {

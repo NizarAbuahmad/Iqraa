@@ -1,0 +1,1 @@
+ALTER TABLE "evaluation_assignments" ADD CONSTRAINT "evaluation_assignments_eval_student_unique" UNIQUE("evaluation_id","student_id");

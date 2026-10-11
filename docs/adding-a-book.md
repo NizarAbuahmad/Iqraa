@@ -154,6 +154,38 @@ No credentials and no extraction. This is pure file hosting.
     the copy came from. `book-english-10-s1` is the worked example.
 27. Nothing else. `subjects.tsx` renders a chip per field that is present.
 
+## G. Book QR codes (student books)
+
+The ministry prints QR codes in a student book's margins — a video, a recording,
+a supporting page. They are drawn into the page, so only rendering it and running
+a detector finds them. A new student book gets no codes in the library until it
+has been scanned:
+
+```bash
+pip install pymupdf opencv-python-headless numpy
+python scripts/scan_book_qr.py --grade 4 --dry-run     # look first
+python scripts/scan_book_qr.py --grade 4               # PDFs already in knowledge-base/
+python scripts/scan_book_qr.py --fetch --grade 4       # or: download them first
+pnpm --filter @workspace/curriculum run verify-qr-links
+pnpm --filter @workspace/mobile test
+```
+
+`--fetch` downloads each student book from the link the catalog already holds
+(`Book.pdfUrl`, read through `pnpm --filter @workspace/curriculum run
+list-book-urls`) into the usual gitignored `support-pdfs/` folders, then scans
+them. It must run where `nccd.gov.jo` answers — a cloud sandbox or CI runner may
+be refused. A book that fails to download is listed and is not recorded as
+scanned. Without `--fetch`, run it where the PDFs already are. New rows are written as `httpStatus: "unchecked"` and
+stay hidden until `verify-qr-links` has seen them answer. Every book scanned is
+recorded under `scannedBooks`, with its code count — a book with `codes: 0` was
+looked at and has none, which is different from a book that is not listed.
+
+Then open each reachable link and add a `title` to its row in
+`knowledge-base/book-qr-links.json` (the page's title, the video's title, the
+file's name). A row without one shows the book's name, and every code in that
+book then reads the same. A subject id the app does not know fails the mobile
+test; add it to `SUBJECT_ALIASES` in `artifacts/mobile/services/bookQrLinks.ts`.
+
 ## Where each track shows up in the app
 
 | Track | Consumed by |

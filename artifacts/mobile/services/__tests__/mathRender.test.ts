@@ -246,6 +246,32 @@ describe('isolateForeignRuns', () => {
     assert.equal(out, 'السرعة اللحظية باستخدام ⁦s(t) = 80t - 5t²⁩');
   });
 
+  // Found 2026-10-09 on a worksheet sent to a class: the take and review
+  // screens showed «بسّط: cos²θ + sin²θ» as «بسّط: θ + sin²θcos²». θ and °
+  // were not in the run's character class, so every θ cut the equation and
+  // the stray pieces were reordered against the Arabic around them.
+  it('keeps an equation with Greek letters and degrees in ONE isolate', () => {
+    assert.equal(isolateForeignRuns('بسّط: cos²θ + sin²θ'), 'بسّط: ⁦cos²θ + sin²θ⁩');
+    assert.equal(
+      isolateForeignRuns('حل: 2 cos θ = 1 حيث 0° ≤ θ < 360°.'),
+      'حل: ⁦2 cos θ = 1⁩ حيث ⁦0° ≤ θ < 360°⁩.',
+    );
+    assert.equal(isolateForeignRuns('مساحة الدائرة πr²'), 'مساحة الدائرة ⁦πr²⁩');
+    assert.equal(isolateForeignRuns('إذا كان α + β = 90°'), 'إذا كان ⁦α + β = 90°⁩');
+  });
+
+  // The sentence's own full stop belongs to the Arabic flow, where it lands at
+  // the sentence's end. Inside a left-to-right isolate it sat between the
+  // equation and the Arabic before it.
+  it('leaves a sentence-final full stop outside the isolate', () => {
+    assert.equal(isolateForeignRuns('أوجد قيمة sin 30°.'), 'أوجد قيمة ⁦sin 30°⁩.');
+    assert.equal(isolateForeignRuns('أوجد قيمة x = 3.5.'), 'أوجد قيمة ⁦x = 3.5⁩.');
+  });
+
+  it('does not wrap a lone degree measure, which bidi already lays out', () => {
+    assert.equal(isolateForeignRuns('زاوية قياسها 30°'), 'زاوية قياسها 30°');
+  });
+
   it('isolates subscripts and comparisons as one run, not three', () => {
     assert.equal(isolateForeignRuns('حيث x₁ ≤ 5'), 'حيث ⁦x₁ ≤ 5⁩');
   });

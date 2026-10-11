@@ -19,6 +19,7 @@ import {
   type LlmGenerationRequest,
 } from "../llmGenerator.ts";
 import { validateGenerated } from "../validator.ts";
+import { verifyAnswerKeys } from "../keyVerification.ts";
 import type { QuestionType } from "@workspace/db";
 import type { CurriculumObjective } from "@workspace/curriculum";
 
@@ -82,6 +83,13 @@ describe("buildGenerationPrompt", () => {
     // Asking for a type the teacher did not choose wastes tokens and produces
     // questions the validator will throw away.
     assert.equal(user.includes("practical_task"), false);
+  });
+
+  it("asks for every requested type, grouped as a ministry paper", () => {
+    const { system } = buildGenerationPrompt(REQ);
+    assert.match(system, /Spread the count across every listed type/);
+    assert.match(system, /each type in one consecutive block/);
+    assert.match(system, /half of any true\/false statements are false/);
   });
 
   it("asks for Arabic unless the evaluation is in English", () => {
@@ -157,6 +165,51 @@ describe("questionStem", () => {
     assert.equal(questionStem({ left: [], right: [] }), undefined);
     assert.equal(questionStem(null), undefined);
     assert.equal(questionStem(undefined), undefined);
+  });
+});
+
+describe("parseGeneratedQuestions — a model-written check that restates its own answer", () => {
+  const shortAnswer = (check: unknown) => ({
+    type: "multiple_choice",
+    objectiveId: "obj-1",
+    competencyKey: "application",
+    marks: 2,
+    body: {
+      stem: "عند رمي حجر نرد عادل، ما احتمال ظهور 5؟",
+      multiSelect: false,
+      options: [{ id: "a", text: "P = 1/6" }, { id: "b", text: "P = 1/3" }],
+    },
+    expectedAnswer: { optionIds: ["a"] },
+    check,
+  });
+
+  it("is treated as no check at all, so the verifier is never asked and nothing is badged", async () => {
+    const { questions } = parseGeneratedQuestions(
+      { questions: [shortAnswer({ topic: "equation_linear", question: "P = 1/6", answer: "P = 1/6" })] },
+      REQ,
+      META,
+    );
+    assert.equal(questions.length, 1, "the question itself survives");
+    assert.equal(questions[0]!.check, null);
+
+    let asked = 0;
+    const result = await verifyAnswerKeys(questions, async () => {
+      asked += 1;
+      return { relation: "equivalent", computed_answer: "1/6" };
+    });
+    assert.equal(asked, 0);
+    assert.equal(result.verified, 0);
+    assert.equal(result.kept[0]!.verification.verified, false);
+    assert.equal(result.kept[0]!.verification.code, "no_key");
+  });
+
+  it("leaves a real check alone", () => {
+    const { questions } = parseGeneratedQuestions(
+      { questions: [shortAnswer({ topic: "equation_linear", question: "2x + 5 = 13", answer: "x = 4" })] },
+      REQ,
+      META,
+    );
+    assert.deepEqual(questions[0]!.check, { topic: "equation_linear", question: "2x + 5 = 13", answer: "x = 4" });
   });
 });
 

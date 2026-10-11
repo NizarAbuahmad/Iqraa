@@ -185,9 +185,17 @@ export async function exportAsPDF(html: string, filename: string): Promise<void>
  * which is where "Save Image" actually lives on both iOS and Android.
  */
 export async function saveRemoteImage(url: string, filename: string): Promise<void> {
-  const res = await fetchWithTimeout(url, {}, 20_000);
-  if (!res.ok) throw new Error(`Failed to download image (${res.status})`);
-  const blob = await res.blob();
+  let blob: Blob;
+  try {
+    const res = await fetchWithTimeout(url, {}, 20_000);
+    if (!res.ok) throw new Error(`Failed to download image (${res.status})`);
+    blob = await res.blob();
+  } catch (e) {
+    // A host without CORS headers (figures bucket, stock photos) blocks the
+    // fetch on web; opening the image in a tab still lets the user save it.
+    if (Platform.OS === 'web') { window.open(url, '_blank', 'noopener'); return; }
+    throw e;
+  }
 
   if (Platform.OS === 'web') {
     const objectUrl = URL.createObjectURL(blob);

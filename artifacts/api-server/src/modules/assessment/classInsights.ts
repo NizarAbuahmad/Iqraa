@@ -20,7 +20,7 @@
 import { splitGapsAndStrengths, type ObjectiveScore } from "./scoring.ts";
 
 /** Below this share of an objective's marks, a student counts as struggling. */
-const STUDENT_GAP_PERCENT = 60;
+export const STUDENT_GAP_PERCENT = 60;
 
 export interface ClassObjectiveScore extends ObjectiveScore {
   /** How many marked students were below the gap line on this objective. */
