@@ -58,10 +58,44 @@ export function squashMath(input: string): string {
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-/** Is `needle` in `haystack` as a whole expression — «5» is not found in «15». */
+/**
+ * Is `needle` in `haystack` as a whole expression — «5» is not found in «15».
+ *
+ * A «.» straight after it ends the match only when a digit follows («5» is not
+ * in «5.5»); a full stop closing the sentence does not. It used to block both,
+ * so «المشتقة هي ٣س² − ٤.» was refused for a key it plainly states — measured on
+ * 2026-10-12, where the same sentence without the stop linked.
+ */
 function containsExpression(haystack: string, needle: string): boolean {
   if (!needle) return false;
-  return new RegExp(`(?<![a-z0-9.^])${escapeRe(needle)}(?![a-z0-9.^])`).test(haystack);
+  return new RegExp(`(?<![a-z0-9.^])${escapeRe(needle)}(?![a-z0-9^]|\\.[a-z0-9])`).test(haystack);
+}
+
+/** More answers than this in one check is not a list of roots. */
+const MAX_LIST_PARTS = 4;
+
+/**
+ * The separate answers a check states: «x = 1, 3» and «x = 5 or x = -5» are two,
+ * «(3, -4)» is one. Each part is in the comparison form, so the label on «x = 5»
+ * is gone and the part can be looked for on its own.
+ */
+export function answerParts(answer: string): string[] {
+  const text = toLatinMath(answer).replace(/\s+(?:or|and)\s+/g, ",");
+  const parts: string[] = [];
+  let depth = 0;
+  let current = "";
+  for (const ch of text) {
+    if ("([{".includes(ch)) depth += 1;
+    if (")]}".includes(ch)) depth -= 1;
+    if (ch === "," && depth === 0) {
+      parts.push(current);
+      current = "";
+    } else {
+      current += ch;
+    }
+  }
+  parts.push(current);
+  return parts.map(squashMath).filter(Boolean);
 }
 
 type GradedKey =
@@ -113,7 +147,14 @@ export function linkCheck(question: GeneratedQuestion): KeyLink {
       ? { linked: true }
       : { linked: false, why: "the answer key is not the answer that was checked" };
   }
-  return containsExpression(squashMath(key.text), target)
+  // A list of roots is stated in prose as «س = ١ و س = ٣», never as «x = 1, 3», so
+  // each root is looked for on its own — all of them, as whole expressions.
+  const haystack = squashMath(key.text);
+  const parts = answerParts(check.answer);
+  const stated = parts.length > 1 && parts.length <= MAX_LIST_PARTS
+    ? parts.every(part => containsExpression(haystack, part))
+    : containsExpression(haystack, target);
+  return stated
     ? { linked: true }
     : { linked: false, why: "the model answer does not state the answer that was checked" };
 }

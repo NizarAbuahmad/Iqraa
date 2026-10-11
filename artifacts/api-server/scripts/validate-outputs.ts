@@ -10,16 +10,17 @@
  * sweep over every real class is a plain test
  * (`artifacts/mobile/services/__tests__/planChecks.test.ts`) and runs in CI.
  *
- * Hard failures (exit 1): a question the validator rejects, a key the SymPy
- * verifier contradicts, or a deck `error` (correctIndex out of range, a slide
- * with no teacher block, ...). Those are regressions — rerun on every prompt or
- * model change and compare.
+ * Hard failures (exit 1): a question the validator rejects, or a deck `error`
+ * (correctIndex out of range, a slide with no teacher block, ...). Those are
+ * regressions — rerun on every prompt or model change and compare.
  * Soft signals (printed, exit 0): answers/slides with weak book support, deck
- * warnings, and the share of keys SymPy actually judged. They rank what a
- * person should read; they do not prove anything is wrong.
+ * warnings, the share of keys SymPy actually judged, and any key it disagreed
+ * with (KEY FLAGGED, printed with the question: the key may be wrong, or the
+ * check may have asked the verifier a different question than the stem). They
+ * rank what a person should read; they do not prove anything is wrong.
  *
  * Run (live model, spends tokens — about two calls per unit):
- *   OPENAI_API_KEY=... node --experimental-strip-types  *     artifacts/api-server/scripts/validate-outputs.ts [--units 8] [--out report.json]
+ *   OPENAI_API_KEY=... node --experimental-strip-types artifacts/api-server/scripts/validate-outputs.ts [--units 8] [--out report.json]
  *
  * Only units with extracted book text are used: with no text there is nothing
  * to ground against and the result would say nothing.
@@ -104,15 +105,26 @@ for (const unitId of unitIds) {
   const verdicts = checkGrounding(kept, source);
   const weak = verdicts.filter(v => v.status === "weak");
 
-  hardFailures += valid.rejected.length + keys.dropped.length;
+  hardFailures += valid.rejected.length;
   console.log(
     `${unitId}: asked ${COUNT}, got ${gen.questions.length}, rejected ${valid.rejected.length}, `
-      + `key-contradicted ${keys.dropped.length}, keys checked ${keys.checked}/${kept.length}, `
+      + `key-flagged ${keys.contradicted}, keys checked ${keys.checked}/${kept.length}, `
       + `weak book support ${weak.length}`,
   );
   for (const v of weak) console.log(`  weak (${v.support!.toFixed(2)}): ${claimText(kept[v.index]!)}`);
   for (const r of valid.rejected) console.log(`  REJECTED #${r.index + 1}: ${r.reason}`);
-  for (const d of keys.dropped) console.log(`  KEY WRONG #${d.index + 1}: ${d.reason}`);
+  // A disagreement is kept and flagged, not deleted: the check often asks the
+  // verifier a different question than the stem (a discriminant checked as
+  // "solve the equation"). Printed with the question so a wrong key can be told
+  // from a wrong check; not a hard failure.
+  kept.forEach((q, i) => {
+    const v = keys.kept[i]!.verification;
+    if (v.code !== "contradicted") return;
+    console.log(`  KEY FLAGGED #${i + 1}: ${v.reason}`);
+    console.log(`    asked: ${JSON.stringify(q.body).slice(0, 300)}`);
+    console.log(`    key:   ${JSON.stringify(q.expectedAnswer).slice(0, 200)}`);
+    console.log(`    check: ${JSON.stringify(q.check)}`);
+  });
 
   // Deck, same unit, same book text.
   const unitName = getUnitById(unitId)?.nameAr ?? unitId;
@@ -140,7 +152,7 @@ for (const unitId of unitIds) {
     console.log(`    ${i.severity === "error" ? "DECK ERROR" : "deck warn"} ${i.code}${where}${i.detail ? ` — ${i.detail}` : ""}`);
   }
 
-  report.push({ unitId, model: gen.model, rejected: valid.rejected, dropped: keys.dropped, weak, verdicts, deckIssues });
+  report.push({ unitId, model: gen.model, rejected: valid.rejected, flagged: keys.contradicted, weak, verdicts, deckIssues });
 }
 
 const out = arg("out");
