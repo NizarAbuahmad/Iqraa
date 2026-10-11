@@ -22,6 +22,7 @@ import { resolveSlideLayout } from './slideLayout.ts';
 import { deckIconSvg, iconForGlyph, type DeckIconName } from './deckIcons.ts';
 import { slideTeacherNotes } from './deckNotes.ts';
 import type { ActivitySlide, ClassroomActivity } from './ai/AIService.ts';
+import { creditSegments, type PhotoCredit } from './photoCredit.ts';
 import { hasRenderableMath, isolateForeignRuns, mathLineToHtml, MATH_HTML_STYLES, prettifySymPy } from './mathRender.ts';
 
 import { resolveDeckTheme, slideTypeAccent as deckSlideAccent } from './deckTheme.ts';
@@ -104,9 +105,22 @@ function deckHeroLayer(mediaUrl: string | undefined, mediaCaption?: string): str
  * ~100 characters — wraps to a second line, and a fixed offset chosen to clear
  * a 30px footer stops clearing it the moment that happens.
  */
-function deckHeroCredit(mediaUrl: string | undefined, mediaCaption?: string): string {
+function deckHeroCredit(mediaUrl: string | undefined, mediaCaption?: string, credit?: PhotoCredit): string {
   if (!mediaUrl || !mediaCaption) return '';
-  return `<div class="deck-hero-credit">${esc(mediaCaption)}</div>`;
+  return `<div class="deck-hero-credit">${captionHtml(mediaCaption, credit)}</div>`;
+}
+
+/**
+ * A caption, with the Unsplash credit's two runs as links when `credit` still
+ * matches it (see `creditSegments`). Links survive in the PDF, and the colour is
+ * inherited so they read as part of the line rather than as default blue.
+ */
+function captionHtml(caption: string, credit?: PhotoCredit): string {
+  const segs = creditSegments(caption, credit);
+  if (!segs) return esc(caption);
+  return segs
+    .map(s => (s.url ? `<a href="${escAttr(s.url)}" style="color:inherit;text-decoration:underline">${esc(s.text)}</a>` : esc(s.text)))
+    .join('');
 }
 
 /**
@@ -229,7 +243,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
         ${meta ? `<div class="deck-title-meta">${esc(meta)}</div>` : ''}
         ${rest.length ? `<div class="deck-title-summary">${esc(rest.join(' '))}</div>` : ''}
       </div>
-      ${deckHeroCredit(slide.mediaUrl, slide.mediaCaption)}
+      ${deckHeroCredit(slide.mediaUrl, slide.mediaCaption, slide.mediaCredit)}
       ${footer(num)}</div>`;
   };
 
@@ -241,7 +255,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
         <h1 class="deck-divider-title">${esc(slide.title)}</h1>
         ${slide.content ? `<div class="deck-divider-subtitle">${esc(slide.content)}</div>` : ''}
       </div>
-      ${deckHeroCredit(slide.mediaUrl, slide.mediaCaption)}
+      ${deckHeroCredit(slide.mediaUrl, slide.mediaCaption, slide.mediaCredit)}
       ${footer(num)}</div>`;
   };
 
@@ -318,7 +332,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
       ${deckHeader(slide.title, accent)}
       <div class="deck-body deck-body-center deck-body-media">
         <img class="deck-media-img" src="${escAttr(slide.mediaUrl ?? '')}" alt="${esc(slide.mediaCaption ?? '')}" />
-        ${slide.mediaCaption ? `<div class="deck-media-caption">${esc(slide.mediaCaption)}</div>` : ''}
+        ${slide.mediaCaption ? `<div class="deck-media-caption">${captionHtml(slide.mediaCaption, slide.mediaCredit)}</div>` : ''}
       </div>
       ${footer(num)}</div>`;
   };
@@ -499,7 +513,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
         <div class="split-text">${body}</div>
         <figure class="split-fig">
           <img src="${escAttr(slide.sideImageUrl)}" alt="${esc(slide.sideImageCaption ?? '')}"/>
-          ${slide.sideImageCaption ? `<figcaption>${esc(slide.sideImageCaption)}</figcaption>` : ''}
+          ${slide.sideImageCaption ? `<figcaption>${captionHtml(slide.sideImageCaption, slide.sideImageCredit)}</figcaption>` : ''}
         </figure>
       </div>
       ${footer(num)}</div>`;

@@ -722,9 +722,7 @@ export default function SlidesScreen() {
           const { attachBackgroundImage, buildMediaSlide, deckPhotoQueries, insertVideoSlide } =
             await import('@/services/classMedia');
           const [titleQuery, dividerQuery] = deckPhotoQueries(subjects[subjectIdx].id, subjects[subjectIdx].name);
-          const captionFor = (photographer: string) => (isAr
-            ? `📷 ${photographer} · Unsplash`
-            : `📷 Photo by ${photographer} on Unsplash`);
+          const { creditFromPhoto, photoCreditText } = await import('@/services/photoCredit');
 
           // The video query uses the lesson topic, not the subject: a generic
           // "mathematics" video is no use mid-lesson, where the point is to
@@ -756,10 +754,10 @@ export default function SlidesScreen() {
             // since regenerated — same identity check the verify pass uses.
             if (!cur || cur.slides[0] !== built.slides[0]) return cur;
             let slides = cur.slides;
-            if (titlePhoto) slides = attachBackgroundImage(slides, 0, titlePhoto.url, captionFor(titlePhoto.photographer));
+            if (titlePhoto) slides = attachBackgroundImage(slides, 0, titlePhoto.url, photoCreditText(titlePhoto, isAr), creditFromPhoto(titlePhoto));
             const dividerIdx = slides.findIndex(s => s.type === 'divider');
             if (dividerPhoto && dividerIdx >= 0) {
-              slides = attachBackgroundImage(slides, dividerIdx, dividerPhoto.url, captionFor(dividerPhoto.photographer));
+              slides = attachBackgroundImage(slides, dividerIdx, dividerPhoto.url, photoCreditText(dividerPhoto, isAr), creditFromPhoto(dividerPhoto));
             }
             if (video) {
               // Two different jobs, so two different fields. `mediaCaption`

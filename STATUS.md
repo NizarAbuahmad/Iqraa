@@ -53,6 +53,22 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **API credentials are Secret Manager references** (2026-10-08, live since
+  `iqraa-api-00283-twr`). The ten credentials (`SESSION_SECRET`,
+  `DATABASE_URL`, `OPENAI_API_KEY`, both R2 keys, Unsplash, YouTube,
+  `ADMIN_DEBUG_KEY`, `RESEND_API_KEY`, `SITE_INGEST_KEY`) were copied from the
+  live spec without being printed, checked byte-identical by sha256, and
+  switched in one revision; the other 18 env vars are config and stay plain.
+  Verified live: login reaches the database, `/healthz/unsplash` ok, AI budget
+  persisted, no errors on the new revision, and a CI deploy (run 37806853432,
+  `iqraa-api-00284-b9g`) kept all ten references. Since then: `DATABASE_URL`
+  was rotated 2026-10-11 (Neon password reset, secret version 2, `iqraa-api-00314-d7m`, old version
+  disabled — revisions ≤ `00308` now hold a dead password), and the OpenAI
+  audit found production already on a key created 2026-10-07, so the two
+  older, exposed keys were simply revoked. **Still open:** the Google OAuth
+  client secrets from the 2026-09-08 paste (Nizar-only, in Google Cloud
+  Console). Rotation is now `gcloud secrets versions add` + a new revision —
+  see *Rotating a secret* in `docs/deploying.md`.
 - **Android keyboard fix needs a new binary: `version` 1.2.0 → 1.3.0**
   (2026-10-10). `KeyboardSafeView` is keyboard-controller's
   `KeyboardAvoidingView`, and `react-native-keyboard-controller` is a native
@@ -66,16 +82,19 @@ an announcement by default» below.
   installed, an installed app is unchanged** (and a 1.2.0 app stops receiving
   OTA updates); chat/messaging (`app/messaging/[threadId].tsx`) is covered by
   the root Stack's wrapper and needs no screen change.
-- **The schema deploys as migrations** (2026-10-08, not yet live until
-  production is baselined). `lib/db/migrations/0000_baseline.sql` is the whole
+- **The schema deploys as migrations** (2026-10-08, #925, live).
+  `lib/db/migrations/0000_baseline.sql` is the whole
   48-table schema; `deploy.yml` runs `migrate` before `verify-schema` and the
   API. CI rejects a schema edit without its migration, applies every migration
   to an empty Postgres, and holds destructive SQL for `destructive-migration:
   ok`. Verified locally against throwaway databases: fresh migrate (48/48 by
   `verify-schema`), re-run is a no-op, a push-built database is refused, then
   baselined (idempotent), then a follow-up `ADD COLUMN` migration applies on
-  top. Not verified: the CI jobs themselves and production — that needs
-  `gh workflow run db-baseline.yml` once after merge. See *Schema* in
+  top. In production: the first deploy refused as designed, production was
+  baselined in Actions (48/48 verified, 0000 recorded), and the re-run went
+  green end to end — migrations, schema, API (`6d81f83`, revision
+  iqraa-api-00282-9vd) and web. Not yet exercised: a real follow-up migration
+  in production, and the destructive-SQL check. See *Schema* in
   `docs/deploying.md`.
 - **The chat's readiness board folds to one line** (2026-10-06). On a phone the
   empty chat showed all five «جاهزية الدرس» rows, filling most of the screen

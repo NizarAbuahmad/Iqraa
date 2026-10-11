@@ -29,11 +29,14 @@ import {
   videoCaption,
 } from './classMedia.ts';
 import { chartForLesson } from './deckVisuals.ts';
+import { creditFromPhoto, photoCreditText } from './photoCredit.ts';
 
 /** Matches `searchDeckPhoto` in `services/unsplashImage.ts`. */
 export type PhotoSearch = (query: string) => Promise<{
   url: string;
   photographer: string;
+  photographerUrl?: string;
+  unsplashLink?: string;
 } | null>;
 
 /** Matches `searchDeckVideos` in `services/youtubeVideo.ts`. */
@@ -147,9 +150,6 @@ function fallbackPhotoSlides(
     .map((e, i) => ({ ...e, query: queries[i]! }));
 }
 
-function photoCredit(photographer: string, isAr: boolean): string {
-  return isAr ? `📷 ${photographer} · Unsplash` : `📷 Photo by ${photographer} on Unsplash`;
-}
 
 /**
  * Drawn visuals, which cost nothing: no network, no AI, no key.
@@ -278,17 +278,17 @@ export async function searchDeckMedia(
     // Beside the text, not instead of it — and the credit rides along, which
     // is both the Unsplash licence requirement and the thing three renderers
     // have dropped before (see the attribution note in CLAUDE.md's neighbours).
-    add(slide, { sideImageUrl: photo.url, sideImageCaption: photoCredit(photo.photographer, isAr) });
+    add(slide, { sideImageUrl: photo.url, sideImageCaption: photoCreditText(photo, isAr), sideImageCredit: creditFromPhoto(photo) });
   });
 
   // The title slide and the divider render `mediaUrl` as a full-bleed
   // background — the same fields `attachBackgroundImage` sets.
   if (hero && slides[0]) {
-    add(slides[0], { mediaUrl: hero.url, mediaCaption: photoCredit(hero.photographer, isAr) });
+    add(slides[0], { mediaUrl: hero.url, mediaCaption: photoCreditText(hero, isAr), mediaCredit: creditFromPhoto(hero) });
   }
   const divider = slides.find(s => s.type === 'divider');
   if (section && divider) {
-    add(divider, { mediaUrl: section.url, mediaCaption: photoCredit(section.photographer, isAr) });
+    add(divider, { mediaUrl: section.url, mediaCaption: photoCreditText(section, isAr), mediaCredit: creditFromPhoto(section) });
   }
 
   const video = videos[0];

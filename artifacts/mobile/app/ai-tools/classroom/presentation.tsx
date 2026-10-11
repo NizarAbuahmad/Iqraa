@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -46,6 +47,7 @@ import { VerifiedBadge } from '@/components/classroom/VerifiedBadge';
 import { ImageViewerModal } from '@/components/ui/ImageViewer';
 import { PEN_COLORS, PenCanvas, PenPalette, type Stroke } from '@/components/classroom/PenLayer';
 import { bindOperators, hasRenderableMath, isolateForeignRuns } from '@/services/mathRender';
+import { creditSegments, type PhotoCredit } from '@/services/photoCredit';
 import { goBack } from '@/services/navigation';
 import { confirm } from '@/services/confirm';
 
@@ -298,6 +300,32 @@ function MediaView({
 // other slide type — a pacing break for dividers, a real opener for the title.
 // Falls back to a flat accent panel (no Image/gradient) when there's no photo
 // to show, e.g. Unsplash unconfigured — never a blank or broken slide.
+/**
+ * A photo caption. When it is an Unsplash credit, the photographer and
+ * "Unsplash" are tappable links to their Unsplash pages (the API guidelines ask
+ * for both); otherwise it is the plain text it always was.
+ */
+function CreditCaption({ caption, credit, style }: { caption: string; credit?: PhotoCredit; style: React.ComponentProps<typeof Text>['style'] }) {
+  const segs = creditSegments(caption, credit);
+  if (!segs) return <Text style={style}>{isolateForeignRuns(caption)}</Text>;
+  return (
+    <Text style={style}>
+      {segs.map((s, i) => (s.url
+        ? (
+          <Text
+            key={i}
+            accessibilityRole="link"
+            style={{ textDecorationLine: 'underline' }}
+            onPress={() => { void Linking.openURL(s.url!); }}
+          >
+            {isolateForeignRuns(s.text)}
+          </Text>
+        )
+        : isolateForeignRuns(s.text)))}
+    </Text>
+  );
+}
+
 function HeroSlideView({ slide, accent }: { slide: ActivitySlide; accent: string }) {
   const T = useContext(ThemeContext);
   const { heroStyles } = sheetsFor(T);
@@ -334,9 +362,11 @@ function HeroSlideView({ slide, accent }: { slide: ActivitySlide; accent: string
           already render theirs; this is the same line, sized not to compete
           with the title. */}
       {!!slide.mediaCaption && (
-        <Text style={[heroStyles.credit, { fontFamily: 'Almarai_400Regular' }]}>
-          {isolateForeignRuns(slide.mediaCaption)}
-        </Text>
+        <CreditCaption
+          caption={slide.mediaCaption}
+          credit={slide.mediaCredit}
+          style={[heroStyles.credit, { fontFamily: 'Almarai_400Regular' }]}
+        />
       )}
     </View>
   );
@@ -915,9 +945,11 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
             />
           </Pressable>
           {!!slide.sideImageCaption && (
-            <Text style={[slideStyles.splitCaption, { fontFamily: 'Almarai_400Regular' }]}>
-              {slide.sideImageCaption}
-            </Text>
+            <CreditCaption
+              caption={slide.sideImageCaption}
+              credit={slide.sideImageCredit}
+              style={[slideStyles.splitCaption, { fontFamily: 'Almarai_400Regular' }]}
+            />
           )}
         </View>
       )}

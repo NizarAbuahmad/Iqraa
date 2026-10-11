@@ -436,6 +436,8 @@ export interface ActivitySlide {
   sideImageUrl?: string;
   /** Book and page for `sideImageUrl`, same provenance rule as `mediaCaption`. */
   sideImageCaption?: string;
+  /** Links behind `sideImageCaption` when it is an Unsplash credit. See `services/photoCredit.ts`. */
+  sideImageCredit?: PhotoCredit;
   /**
    * How to DRAW this slide — deliberately separate from `type`, which says
    * what the slide IS.
@@ -474,6 +476,8 @@ export interface ActivitySlide {
    */
   mediaUrl?: string;
   mediaCaption?: string;
+  /** Links behind `mediaCaption` when it is an Unsplash credit. See `services/photoCredit.ts`. */
+  mediaCredit?: PhotoCredit;
   /**
    * Position of this question in the game's scoring ledger (Class Challenge).
    *
@@ -676,6 +680,7 @@ export interface GenerateOptions {
 
 export type { InfographicOutput } from './infographic.ts';
 import type { InfographicOutput } from './infographic.ts';
+import type { PhotoCredit } from '../photoCredit.ts';
 
 export abstract class AIService {
   abstract generateLessonPlan(req: AIRequest, opts?: GenerateOptions): Promise<LessonPlanOutput>;

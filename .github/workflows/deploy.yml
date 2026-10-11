@@ -317,19 +317,21 @@ jobs:
 
   web:
     name: iqraa-web
-    needs: [changes, schema, api, verifier]
+    needs: [changes, migrate, schema, api, verifier]
     # `always()` is load-bearing, not decorative: without it a skipped `api`
     # job would skip `web` too, and most merges do not touch the API. The
     # explicit result checks are what actually enforce server-before-client — a
     # skipped dependency is fine, a failed one is not.
     #
-    # `schema` is checked separately because a failed schema gate leaves `api`
-    # SKIPPED, not failed — and a skipped api passes the check below, which
-    # would ship the new bundle against the old API.
+    # `migrate` and `schema` are checked separately because either failing
+    # leaves everything after it SKIPPED, not failed — and a skipped api passes
+    # the check below, which would ship the new bundle against the old API. A
+    # failed `migrate` did exactly that on 2026-10-08 before this line existed.
     if: |
       always()
       && needs.changes.result == 'success'
       && needs.changes.outputs.web == 'true'
+      && needs.migrate.result != 'failure' && needs.migrate.result != 'cancelled'
       && needs.schema.result != 'failure' && needs.schema.result != 'cancelled'
       && needs.api.result != 'failure' && needs.api.result != 'cancelled'
       && needs.verifier.result != 'failure' && needs.verifier.result != 'cancelled'
