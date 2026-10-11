@@ -296,9 +296,13 @@ def catalog_books(catalog_json: Path | None = None) -> list[dict]:
     if catalog_json:
         return json.loads(catalog_json.read_text(encoding="utf8"))
     try:
+        # Node writes UTF-8 and the titles are Arabic. `text=True` alone decodes with
+        # the machine's default code page — cp1252 on Windows — and dies on the
+        # first Arabic byte (UnicodeDecodeError, then `stdout` is None).
         proc = subprocess.run(
             ["node", "--experimental-strip-types", "scripts/list-book-urls.ts"],
-            cwd=REPO / "lib" / "curriculum", capture_output=True, text=True, timeout=120,
+            cwd=REPO / "lib" / "curriculum", capture_output=True, timeout=120,
+            encoding="utf-8", errors="replace",
         )
     except FileNotFoundError:
         raise SystemExit("--fetch needs Node (the one pnpm uses) to read the catalog; "
@@ -378,6 +382,13 @@ def download(url: str, dest: Path, tries: int = 3, timeout: int = 60, pause: flo
 
 
 def main() -> int:
+    # Book names are Arabic. A Windows console or a redirected stream defaults to a
+    # legacy code page and would raise on the first one it prints.
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
     ap = argparse.ArgumentParser(description="Scan student books for printed QR codes.")
     ap.add_argument("--kb", type=Path, default=KB, help="knowledge-base folder (default: the repo's)")
     ap.add_argument("--manifest", type=Path, default=MANIFEST)
