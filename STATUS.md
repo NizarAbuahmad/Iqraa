@@ -932,6 +932,83 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The Quran Corner: a shelf in the library, 2026-10-11
+
+**What a teacher or student can use.** `/curriculum/resources` has a «ركن القرآن»
+card opening `/curriculum/quran`: the 40 surahs the grade 1–10 Islamic Education
+books name for recitation, grouped under the first grade that assigns them.
+Each opens a reader (`/curriculum/quran/<n>`) showing only the ayah ranges the
+lesson titles print — 585 ayahs, 31 surahs whole and 9 in part, with a «…» where
+a surah's ranges do not touch — and a memorise page (`…/memorize`) with six hide
+levels, tap-to-reveal, an ayah-by-ayah repeat counter and a self-rating (جديدة /
+قيد المراجعة / محفوظة) kept on the device, per user. Below the surahs, a shelf
+of five outside links. Student-reachable through the existing `/curriculum`
+prefix allowlist, pinned in `routeGating.test.ts`. No table, no API route, no
+native module, no `app.json` version bump: the data lives in `lib/curriculum`,
+the font is a bundled asset, so it ships over the air.
+
+**Where the text comes from.** The King Fahd Glorious Qur'an Printing Complex's
+Mus'haf al-Madinah (Hafs), through the npm package `@quran.ws/text` 0.1.0, pinned
+as a dev dependency of `lib/curriculum` (the app never imports it).
+`scripts/build-quran-corner.ts` renders each assigned ayah with the package's own
+renderer and writes `quran_corner.json`, which records the package version and the
+SHA-256 of its data file. `quranCorner.test.ts` compares every shipped ayah to the
+package's output, regenerates the file from the package and the 20 catalogs and
+compares, checks the hand-typed surah table against the package's own surah names
+and counts, and pins 40 surahs / 77 lesson assignments / 585 ayahs. Terms: the
+Complex's published usage rights allow free use in websites and software; the
+dataset is CC BY 4.0 with attribution waived inside a product. `quran-json` was
+rejected (CC BY-SA 4.0; Uthmani text from quranenc.com), and Tanzil's text could
+not be fetched from the build sandbox. The text is drawn in the Complex's own
+font, committed unmodified as `artifacts/mobile/assets/fonts/UthmanicHafs-v-3.0.ttf`;
+`quranFontCoverage.test.ts` checks its hash and that it has a glyph for every code
+point of the text.
+
+**The surah table was typed by hand** (`SURAHS` in `scripts/quranCornerBuild.ts`:
+numbers and ayah counts, not text). The build refuses to run unless the package's
+own surah names and ayah counts agree with every row it uses, which catches two
+surahs of equal length being swapped.
+
+### What does not work, and what was not verified
+
+- **Nothing here has been seen by a person in a browser or on a device.** The
+  corner sits behind sign-in and the build sandbox has no session or API, so
+  the Uthmani rendering in the Complex's font (including the sajdah mark over
+  96:19), the RTL layout, the bidi of the «n / m» subtitle and rating
+  persistence across a reload are all unchecked. A web export of the app does
+  build and its bundle contains the three screens and the font. Verification
+  was typecheck, unit tests for the pure logic, a review of each task's diff,
+  and the font and data tests.
+- **Whether Quran text in an app needs approval in Jordan** (the Ministry of
+  Awqaf or a Quran committee) is unknown and is not a code question. Open with
+  the owner.
+- **The five resource links have never been opened** (`urlCheckedAt` is null on
+  each, and the screen says so); their hosts are refused from the build
+  sandbox. The list is the planner's candidates, not an approved list.
+- **The text has NOT been verified against a printed mushaf.** The package's
+  licence puts that duty on whoever shows the text to end users, and the build
+  cannot check diacritics (the v3.0 release encodes some marks with newer code
+  points, so a mark-level comparison with older releases is inconclusive).
+  `lib/curriculum/sources/quran-ws/VERIFY.md` lists every shipped ayah for
+  a person to check against an authorised printed Mus'haf al-Madinah and
+  record who and when. **Status: not yet done. Nobody has checked it.** The corner must not be released
+  before. The package is Beta and records no origin URL for its v3.0 text package.
+- **The font's licence forbids selling it** (embedded in the file: free use,
+  copying and distribution; no sale, modification or reverse engineering).
+  Whether shipping it inside a paid product counts is the owner's call; the
+  fallback is Amiri Quran, which has a glyph for every code point of the shipped
+  text.
+- **Progress is a self-rating on one device.** The app cannot hear or check a
+  recitation, and nothing syncs or shows a teacher.
+- **The corner shows the source's text as it is.** The basmala is not part of
+  ayah 1 of any surah here (only Al-Fatiha's own ayah 1 is the basmala); the
+  corner adds none.
+- **A lesson that quotes Quran without naming a surah in its title is not
+  covered**, and so is outside the corner.
+- **Not built:** audio, speech checking, translations or tafsir text, bookmarks,
+  spaced repetition, attaching a surah to a class, a link from an Islamic lesson
+  into the corner, whole-surah text for surahs the books print in part.
+
 ## Messages can be reacted to with an emoji, 2026-10-10
 
 Person-to-person chat (teacher ↔ parent / student, class and custom groups — not
