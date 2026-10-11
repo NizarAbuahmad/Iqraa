@@ -35,6 +35,8 @@ export { subjectIdFromName } from './subjects.ts';
 export { stepsFor, solvedItemIds, completionSplit } from './steps.ts';
 export type { SolutionSteps } from './steps.ts';
 export { MISSTEPS, misstepsFor } from './missteps.ts';
+export { pickForFormat, formatSupported } from './formatsBank.ts';
+export type { FormatKind, MatchPick, OrderPick, SpotErrorPick, GraphPick } from './formatsBank.ts';
 export type { Misstep } from './missteps.ts';
 export { detectElementaryOp, elementaryOpsForTitle } from './elementary.ts';
 export { topicFor } from './topics.ts';
@@ -124,6 +126,9 @@ const usedIds = new Set<string>();
 export function beginMathPracticeSession(): void {
   usedIds.clear();
 }
+
+/** The module-level used-id set, so offline worksheet formats dedupe against the same set as every other question on the sheet. */
+export function currentSession(): Set<string> { return usedIds; }
 
 /** The lesson's name and nothing else — what routing reads. See `elementaryOpsForTitle`. */
 export function lessonTitleBlob(topic: string, kb: KBLesson | null): string {
@@ -470,7 +475,7 @@ const BANK = MATH_BANK;
  * One stem, every type. Items with no prompt fall back to wording chosen by
  * what the item actually is rather than one phrase covering everything.
  */
-function itemStem(item: ConcreteItem, isAr: boolean): string {
+export function itemStem(item: ConcreteItem, isAr: boolean): string {
   if (item.kind === 'word' && (item.wordAr || item.wordEn)) {
     return isAr ? (item.wordAr ?? item.eq) : (item.wordEn ?? item.eq);
   }
