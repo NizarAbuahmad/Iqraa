@@ -162,12 +162,25 @@ function fromFormat(format: unknown, answer: string, entry: { solution?: string[
     if (!win || !["xMin", "xMax", "yMin", "yMax"].every(k => Number.isFinite(win[k]))) return null;
     return {
       type: "short_answer",
-      body: { prompt: `${stem}\n${exprs.map(e => `y = ${e}`).join("\n")}` },
+      body: { prompt: [stem, ...exprsMissingFromStem(stem, exprs)].join("\n") },
       expectedAnswer: { modelAnswer: [answer, ...(entry.solution ?? [])].join("\n"), keyConcepts: [answer] },
     };
   }
 
   return null;
+}
+
+/**
+ * The graph's equations a stem does not already state, as «y = …». A system
+ * item's stem lists its equations, so appending every expression printed each
+ * one twice. Spacing and notation do not count («y=x^2-2x» is «y = x² − 2x»).
+ * Mirrors `exprsMissingFromStem` in the app's `services/ai/worksheetFormats.ts`.
+ */
+function exprsMissingFromStem(stem: string, exprs: string[]): string[] {
+  const flat = (t: string) =>
+    t.replace(/−/g, "-").replace(/²/g, "^2").replace(/³/g, "^3").replace(/×/g, "*").replace(/\s+/g, "");
+  const have = flat(stem);
+  return exprs.filter(e => !have.includes(flat(`y = ${e}`))).map(e => `y = ${e}`);
 }
 
 const comparable = (s: string) => normalizeArabic(s.replace(OPTION_MARKER, ""));

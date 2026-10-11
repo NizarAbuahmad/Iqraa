@@ -198,6 +198,16 @@ describe("formats", () => {
     assert.deepEqual(q.expectedAnswer, { modelAnswer: "(1 ، 2)", keyConcepts: ["(1 ، 2)"] });
   });
 
+  it("graph: equations the stem already states are not repeated in the prompt", () => {
+    const stem = "ارسم في المستوى الإحداثي ثم أجب:\nأوجد حلول النظام:\ny = x² − 2x\ny = x";
+    const win = { xMin: -3, xMax: 6, yMin: -4, yMax: 10 };
+    const q = only(one({ text: "x", points: 2, format: { kind: "graph", stem, exprs: ["x² − 2x", "x"], window: win } } as any, "(0 ، 0) و (3 ، 3)"));
+    assert.equal(q.body["prompt"], stem);
+    // Spacing and notation are not a different equation; a missing one is still added.
+    const q2 = only(one({ text: "x", points: 2, format: { kind: "graph", stem: "ارسم:\ny=x^2-2x", exprs: ["x² − 2x", "2x + 1"], window: win } } as any, "k"));
+    assert.equal(q2.body["prompt"], "ارسم:\ny=x^2-2x\ny = 2x + 1");
+  });
+
   it("a malformed format falls back to the text rules", () => {
     const q = only(one({ text: "x", points: 2, format: { kind: "match", stem: "s", left: ["a"], right: ["b"], pairs: [5] } } as any, "شرح طويل"));
     assert.equal(q.type, "short_answer");
