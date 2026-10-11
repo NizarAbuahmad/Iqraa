@@ -10,8 +10,11 @@
  * week after Grades 1–5 shipped in the app.
  *
  * A grade/subject whose lessons carry neither objectives nor key terms is
- * dropped here: a page of bare lesson titles is the thin page the site's own
- * builder refuses to publish, so there is no point shipping it the data.
+ * exported as a stub: `books: []` and the real counts, never the bare lesson
+ * titles. A page of those is the thin page the site's own builder refuses to
+ * publish, so it gets no data to publish, but /manhaj still lists the subject
+ * (as «نتاجات التعلّم قريبًا») so a teacher can see it exists. Dropping it
+ * outright made 24 subjects invisible on the site while the app had them.
  */
 import { writeFileSync } from 'node:fs';
 
@@ -43,13 +46,14 @@ for (const grade of grades) {
     }));
     const units = books.flatMap((b) => b.units);
     const lessons = units.flatMap((u) => u.lessons);
-    if (!lessons.some((l) => l.objectivesAr.length || l.keywordsAr.length)) continue;
+    if (!lessons.length) continue;
+    const hasContent = lessons.some((l) => l.objectivesAr.length || l.keywordsAr.length);
     out.push({
       gradeId: grade.id,
       gradeAr: grade.nameAr,
       subjectId: subject.id,
       subjectAr: subject.nameAr,
-      books,
+      books: hasContent ? books : [],
       counts: { units: units.length, lessons: lessons.length },
     });
   }

@@ -294,6 +294,12 @@ interface Message {
   clarificationLessons?: { id: string; title: string }[];
   /** Places in the app this reply points at — solid buttons inside the bubble. */
   placeLinks?: EphemeralSuggestion[];
+  /**
+   * Set on a reply that answered a question about the app itself. The starter
+   * chips above the composer are for teaching, so they stay away from it — the
+   * answer already carries the one button that matters.
+   */
+  appHelp?: boolean;
   pedagogicalClarification?: ClarificationOption[];
   clarificationQuery?: string;
   showLessonPrep?: boolean;
@@ -2047,6 +2053,7 @@ export default function IqraScreen() {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
           text: help.text,
+          appHelp: true,
           placeLinks: help.places.map(p => ({
             id: `place-${p.id}`,
             label: t(p.labelKey as TranslationKey),
@@ -3882,8 +3889,11 @@ export default function IqraScreen() {
         Shown once the intro has scrolled out of the way, and only when the
         one-shot follow-ups below are not — two chip strips stacked on a phone
         is the clutter this change set out to remove.
+        Not under an answer about the app: «حضّر خطة الدرس» next to «where is
+        Settings» offers a lesson to someone who asked for a screen.
       */}
-      {ephemeralSuggestions.length === 0 && !isThinking && messages.length > 1 ? (
+      {ephemeralSuggestions.length === 0 && !isThinking && messages.length > 1
+        && !messages[messages.length - 1]?.appHelp ? (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
