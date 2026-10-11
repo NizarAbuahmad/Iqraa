@@ -186,14 +186,32 @@ has the verification and the defects that drive found.
   `fitGraphWindow` widens y to cover a sample of each expression (clamped to
   ±10, with a margin), using `normalizePlotExpr`. Both live in
   `worksheetFormats.ts`, not `deckVisuals.ts`.
-- **أين الخطأ؟'s key solution** is the reason (`why`) followed by the
-  corrected working. Print, slides and the deck show it that way. The drive
-  found that the reason's position numbers the working one off from the
-  paper; see STATUS.
+- **أين الخطأ؟'s key, after fix round 1.** The answer is «الخطوة N: <fix>»
+  with the reason on the next line. `solution` is the corrected working only,
+  so its item N is the paper's step N. As first built, the reason was
+  `solution[0]`, and every working number was one off.
 - **Missteps.** 28 entries, two per maths family with working (14 families),
   with no deliberately uncovered family.
 - **`esc` moved to `services/htmlEscape.ts`.** It is re-exported from
   `exportHtml.ts`, which ends the `formatPrintHtml` ↔ `exportHtml` import
   cycle.
+- **Fix round 1 (2026-10-11), after the web-build drive:**
+  - **The grid's tick and axis labels are HTML laid over the SVG.** They are
+    positioned in percent, not SVG `<text>`. html2canvas, which makes the
+    web PDF, cut a text-bearing SVG off part-way across. The grid and a key
+    row with a graph are `break-inside: avoid`.
+  - **The key legend reads «y = …».** It is latin, as on the paper, with a
+    swatch per curve drawn by the curve's own class, so ink-saver's dashes
+    match. «ص» appears only as the grid's axis label.
+  - **The slides export's answer key flows onto as many slides as its rows
+    need** (`planKeySlides`). The ارسم question slide shows the grid on its
+    own row at projector size.
+  - **Format cells keep their line breaks** (`escLines`), and so do key
+    answers.
+  - **A graph's equations are appended only when the stem lacks them.** This
+    holds in the live deck and in the class prompt, compared without spacing
+    or notation.
+  - **The evaluation review screen shows a stemmed matching question's
+    columns under its stem** (`services/evaluationQuestionText.ts`).
 - **Driven on a different lesson than planned.** The drive used «حل المعادلة
   الأسية» and the unit-1 GeoGebra lab (`u1_lab`), not «النسب المثلثية».

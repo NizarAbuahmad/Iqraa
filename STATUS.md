@@ -988,75 +988,91 @@ selection is stripped there.
   Without it, رتّب reached students with no problem to order. No schema
   change; `db generate` reports none.
 
-**Verified 2026-10-11.**
+**Verified 2026-10-11, after one fix round (below).**
 
-- **Checks.** Root typecheck clean. Mobile suite 3868 tests, 3858 pass,
-  0 fail, 10 skipped. api-server (built first) 1477 / 1477.
+- **Checks.** Root typecheck clean. Mobile suite 3884 tests, 3874 pass,
+  0 fail, 10 skipped. api-server (built first) 1478 / 1478.
   `lib/math-practice` 802 / 802. `pnpm --filter @workspace/db run generate`:
   «No schema changes». The new and changed files:
-  - Mobile: `worksheetFormats.test.ts` (13), `worksheetFormatsGenerator.test.ts`
+  - Mobile: `worksheetFormats.test.ts` (14), `worksheetFormatsGenerator.test.ts`
     (13), `worksheetFormatTicks.test.ts` (11), `worksheetFormatEdits.test.ts`
-    (2), `formatPrintHtml.test.ts` (12), `formatSlides.test.ts` (17),
+    (2), `formatPrintHtml.test.ts` (16), `formatSlides.test.ts` (22),
     `exportHtml.test.ts` (47), `deckText.test.ts` (20),
-    `worksheetAssignment.test.ts` (7).
+    `worksheetAssignment.test.ts` (7), `evaluationQuestionText.test.ts` (5),
+    `mathRender.test.ts` (90, one new).
   - api-server: `worksheetFormatPrompt.test.ts` (3), `fromWorksheet.test.ts`
-    (28), `worksheetRequest.test.ts` (26).
+    (29), `worksheetRequest.test.ts` (26).
   - `lib/math-practice`: `missteps.test.ts` (3), `formatsBank.test.ts` (7).
-- **Driven in Chromium** against a local app (Postgres with migrations and
-  `seed:assessment`, the API, and Expo web in demo mode, so the offline path).
-  A real sign-in at 390×844; the projector at 1280×800; the print and slides
-  HTML at A4 width.
-  - «حل المعادلة الأسية» (the picker has no lesson titled «المعادلات
-    الأسية»). ارسم was greyed with its reason and could not be ticked. Ticked
-    صِل، رتّب، أين الخطأ؟ on a 10-question sheet: all three came out with
-    correct keys.
-  - Exported to PDF as student and teacher copies, in colour, ink-saver and
-    large print. Projected and revealed each format.
-  - Sent the sheet to a class: 7 of 9 questions auto-marked, and the half-solved
-    question and a «x = 3/2» short answer for the teacher. Published it, and took it as a student. The database marked صِل
-    `correct` 4/4, رتّب `correct` 4/4, and أين الخطأ؟ answered with step ٣
-    (the misstep is step ٤) `incorrect` 0/4, all by the `deterministic`
-    grader.
-  - The unit-1 GeoGebra lab (`u1_lab`): ticked ارسم. The bank gave 8 of the
-    10 questions, and the shortfall note said so. In the HTML the paper shows
-    an empty grid (−3..6 × −4..10). The key draws `y = x² − 2x` and `y = x`
-    meeting at (0, 0) and (3, 3). The live deck shows no plot until «أظهر
-    الإجابة», then the plot. Sent to the class, it is a `short_answer` with
-    the bank answer as the model answer (`grading_mode` `ai_rubric`, so
-    with AI off a teacher marks it).
+- **Driven in Chromium twice**, before and after the fixes, against a local
+  app: Postgres with migrations and `seed:assessment`, the API, and Expo web in
+  demo mode, so the offline path. A real sign-in at 390×844; the projector at
+  1280×800. The PDFs checked are the ones the app's «تصدير PDF» and «تصدير
+  شرائح» actually downloaded (html2canvas), rasterised page by page.
+  - **«حل المعادلة الأسية».** The picker has no lesson titled «المعادلات
+    الأسية». ارسم was greyed with its reason and could not be ticked.
+  - **صِل، رتّب، أين الخطأ؟** were ticked on a 10-question sheet, and all
+    three came out with correct keys.
+  - **Sent to a class:** 7 of 9 questions auto-marked; the half-solved
+    question and a «x = 3/2» short answer went to the teacher. The review
+    screen now shows صِل's problems and answers and رتّب's steps and
+    positions.
+  - **Taken as a student, both runs.** The database marked صِل `correct` 4/4,
+    رتّب `correct` 4/4, and a wrong step on أين الخطأ؟ `incorrect` 0/4, all by
+    the `deterministic` grader.
+  - **The unit-1 GeoGebra lab (`u1_lab`), with ارسم ticked.** The bank gave 8
+    of the 10 questions, and the shortfall note said so.
+  - **The ارسم grid.** The downloaded student PDF shows the whole empty grid.
+    The key PDF draws the curves whole, with a legend whose swatches match
+    them, in colour, ink-saver (dashed) and large print. Each key graph sits on
+    one page.
+  - **The slides PDF** shows the empty grid at projector size, and the key
+    over two slides with nothing cut off.
+  - **The live deck** shows no plot until «أظهر الإجابة». The sent question
+    is a teacher-marked `short_answer` whose prompt states each equation once.
 
-**Found by the drive, not fixed here:**
+**Fix round 1 (same day): found by the first drive, now fixed:**
 
-- **Web PDF breaks the ارسم grid.** In the PDF that «تصدير PDF» downloads on
-  web (html2canvas, `services/pdfCapture.web.ts`), the grid is cut off at
-  about x = 1 on the student copy. On the key the curves are cut off at about
-  x = 2, so the (3, 3) intersection is gone, and the grid is split across two
-  pages. The same HTML renders whole in Chromium. In a reproduction the
-  clipping goes away when the SVG's `<text>` tick labels are removed.
-- **The same web PDF mirrors brackets inside maths.** For example «2x = 3)x − 1(»,
-  which on an أين الخطأ؟ paper looks like a planted error. This is
-  html2canvas and LRI/PDI isolates, not the format code, and it hits any
-  bracketed maths on the web PDF.
-- **The slides-export answer-key slide clips.** It is one fixed slide with
-  `overflow: hidden`. On the exponential sheet the last three lines of
-  أين الخطأ؟'s working are lost; on the graph sheet the drawn graph is lost
-  entirely.
-- **The slides-export ارسم slide** puts a 190 px grid beside the question
-  text, too small to read on a projector.
-- **Systems lose their line break in the printed صِل table.** «x − y = 1» and
-  «3ˣ = 9ʸ» print on one line, which reads as «x − y = 1 3ˣ = 9ʸ» («13ˣ»).
-- **The graph equations appear twice** on the live-deck slide and in the
-  class version's prompt, because the stem already holds them. The deck's
-  extra lines are «ص = x² − 2x», which mix «ص» with a Latin x and lose their
-  bidi order. The print key's legend has the same «ص = x…» mix and no colour
-  or dash key.
-- **The review screen hides the problems of صِل and رتّب** on
-  `/evaluations/[id]`, now that they carry a `stem`. `questionText` prefers
-  `stem`, so `matchingLeftText` never runs, and a teacher reviewing the draft
-  cannot see the problems or steps before publishing.
-- **The reason is numbered as step 1 of the working** in أين الخطأ؟'s key and
-  reveal. The corrected working's numbers are then one off from the student's
-  paper: the key says «الخطوة ٤», and the fixed line is item 5.
+- **Web PDF cut the ارسم grid off.** html2canvas cut an inline SVG holding
+  `<text>` part-way across, which lost the key's (3, 3) intersection. The tick
+  and axis labels are now HTML laid over the SVG, positioned in percent
+  (`gridSvg`, `formatPrintHtml.ts`). The grid and a key row carrying a graph
+  are `break-inside: avoid`, so the web PDF's page planner never splits a
+  graph.
+- **The slides-export key clipped.** It was one fixed slide with
+  `overflow: hidden`. `planKeySlides` (`exportHtml.ts`) now costs the rows and
+  flows them onto as many key slides as they need. The footer total counts
+  them all.
+- **The slides-export ارسم slide** drew a 190 px grid beside the text. The
+  grid is now its own row, 400 px wide, with 13 px ticks.
+- **Systems lost their line break.** In the صِل table, the step cards and the
+  numbered working they now keep it, as `<br>` between separately isolated
+  lines (`escLines`, `htmlEscape.ts`). So does a key answer.
+- **Graph equations appeared twice.** The live deck (`classDeck.ts`) and the
+  class prompt (`fromWorksheet.ts`) now append only the equations the stem
+  lacks, compared without spacing or notation, as latin «y = …». The print
+  key's legend is «y = …» with a swatch per curve. «ص» now appears only as the
+  grid's axis label.
+- **The review screen hid صِل and رتّب.** `questionText` moved to
+  `services/evaluationQuestionText.ts`. A matching question with a stem lists
+  its left column numbered and its right column lettered under it.
+- **The reason was numbered as working step 1.** أين الخطأ؟'s key answer is
+  now «الخطوة N: <fix>» plus the reason on the next line. `solution` is the
+  corrected working only, so item N is step N on every key.
+- **A full stop after an equation** stays outside the isolate
+  (`isolateForeignRuns`), so «3x − 3.» no longer prints as «.3x − 3». A label
+  such as «A.» keeps its dot.
+
+**Not fixed:**
+
+- **The web PDF mirrors brackets inside isolated maths.** It prints
+  «2x = 3)x − 1(», which on an أين الخطأ؟ paper reads as a planted error.
+  Seen again after the fixes, in «(y = 0)». This is html2canvas with LRI/PDI,
+  not the format code, and it hits any bracketed maths on the web PDF.
+- **Raw notation on the take and review screens** (pre-existing): `2^{x+1}`,
+  `3^{2x}`. The in-app worksheet key also shows «(3^2)».
+- **A section of many questions overflows its single slide** in the slides
+  export (pre-existing, not the key). Seen only with a synthetic 20-question
+  section.
 
 **Not done or not checked:**
 
@@ -1067,6 +1083,9 @@ selection is stripped there.
 - No drawing on the phone: ارسم is text-only on the take screen.
 - Word export and the English UI were not driven.
 - The graph sheet was sent but not taken.
+- The live deck's dedupe of a two-equation system was checked by
+  `formatSlides.test.ts` with the reported stem. The second drive drew a
+  one-curve item («y = x² − 4» with «(y = 0)»), which was also not repeated.
 
 ## «where i can add more classes» reached the subject question, 2026-10-10
 
