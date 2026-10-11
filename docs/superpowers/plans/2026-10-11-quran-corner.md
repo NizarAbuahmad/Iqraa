@@ -343,8 +343,29 @@ describe('tokenizeAyah', () => {
     assert.equal(tokenizeAyah(SAMPLE).join(' '), SAMPLE);
   });
 
-  it('keeps a leading mark rather than dropping it', () => {
-    assert.deepEqual(tokenizeAyah('ۖ ألف'), ['ۖ', 'ألف']);
+  it('glues a leading mark onto the first word, so it is never a word of its own', () => {
+    assert.deepEqual(tokenizeAyah('ۖ ألف'), ['ۖ ألف']);
+    assert.deepEqual(tokenizeAyah('۞ ألف باء'), ['۞ ألف', 'باء']);
+  });
+
+  it('round-trips a leading mark before the first word', () => {
+    assert.equal(tokenizeAyah('۞ ألف باء').join(' '), '۞ ألف باء');
+  });
+
+  it('glues several leading marks onto the first word, in order', () => {
+    assert.deepEqual(tokenizeAyah('۞ ۖ ألف باء'), ['۞ ۖ ألف', 'باء']);
+    assert.equal(tokenizeAyah('۞ ۖ ألف باء').join(' '), '۞ ۖ ألف باء');
+  });
+
+  it('keeps marks-only text as one token and drops nothing', () => {
+    assert.deepEqual(tokenizeAyah('۞ ۝'), ['۞ ۝']);
+    assert.equal(tokenizeAyah('۞ ۝').join(' '), '۞ ۝');
+  });
+
+  it('shows a leading mark with the first word under the firstWordHint level', () => {
+    const words = tokenizeAyah('۞ ألف باء جيم');
+    assert.deepEqual(words, ['۞ ألف', 'باء', 'جيم']);
+    assert.deepEqual(hiddenFlags(words.length, 'firstWordHint'), [false, true, true]);
   });
 
   it('returns no words for an empty string', () => {
@@ -410,21 +431,28 @@ export type HideLevel = 'none' | 'every3' | 'every2' | 'secondHalf' | 'firstWord
 export const HIDE_LEVELS: readonly HideLevel[] = ['none', 'every3', 'every2', 'secondHalf', 'firstWordHint', 'all'];
 
 /**
- * Split an ayah into words. A token made only of marks is glued, with its
- * space, to the word before it, so it can never be hidden on its own.
- * `words.join(' ')` equals the input whenever the input has single spaces,
- * which every line of the source does (a test checks all of them).
+ * Split an ayah into words. A mark-only token is never a word of its own:
+ * one after a word is glued to the word before it, and marks before the first
+ * word are glued onto the front of that first word. Text made only of marks
+ * comes back as one token. Nothing is dropped, and `words.join(' ')` equals
+ * the input whenever the input has single spaces. The Quran Corner's data
+ * test checks that for every shipped ayah.
  */
 export function tokenizeAyah(text: string): string[] {
   const words: string[] = [];
+  let leading = ''; // marks seen before the first word
   for (const raw of text.split(' ')) {
     if (raw === '') continue;
-    if (!LETTER.test(raw) && words.length > 0) {
+    if (LETTER.test(raw)) {
+      words.push(leading ? `${leading} ${raw}` : raw);
+      leading = '';
+    } else if (words.length > 0) {
       words[words.length - 1] += ' ' + raw;
     } else {
-      words.push(raw);
+      leading = leading ? `${leading} ${raw}` : raw;
     }
   }
+  if (leading) words.push(leading); // marks only: keep them, drop nothing
   return words;
 }
 
@@ -457,7 +485,7 @@ export function hiddenFlags(wordCount: number, level: HideLevel): boolean[] {
 ```bash
 cd lib/curriculum && node --experimental-strip-types --test src/__tests__/quranMemorize.test.ts 2>&1 | grep -E "^# (tests|pass|fail)"
 ```
-Expected: `# tests 10`, `# pass 10`, `# fail 0`.
+Expected: `# tests 14`, `# pass 14`, `# fail 0`.
 
 - [ ] **Step 5: Export, typecheck, commit.** In `lib/curriculum/package.json` exports, after the `"./quran-titles"` line add `    "./quran-memorize": "./src/quranMemorize.ts",`, then:
 
