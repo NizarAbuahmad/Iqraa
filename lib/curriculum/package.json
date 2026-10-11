@@ -13,6 +13,7 @@
     "./external": "./src/external.ts",
     "./virtual-labs": "./src/virtualLabs.ts",
     "./lab": "./src/lab.ts",
+    "./quran-titles": "./src/quranTitles.ts",
     "./elements": "./src/elements.ts",
     "./practice": "./src/practice.ts",
     "./premade": "./src/premade.ts",
