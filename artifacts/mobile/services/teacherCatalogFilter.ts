@@ -53,6 +53,19 @@ export function hiddenOutsideSelection<T extends { id: string }>(all: T[], selec
   return all.map(item => !kept.has(item.id));
 }
 
+/**
+ * The subject ids a list of *results* should be restricted to, given the
+ * grade's subjects before and after `narrowSubjectsForGrade`. `undefined` when
+ * narrowing removed nothing (no selection, a stale one, or everything picked):
+ * restricting then would only hide rows of subjects outside the grade's own
+ * list for no reason. The library used to narrow its subject chips but not its
+ * results, so «كل المواد» still listed every subject the teacher had not picked.
+ */
+export function scopedSubjectIds<T extends { id: string }>(narrowed: readonly T[], all: readonly T[]): string[] | undefined {
+  if (narrowed.length === 0 || narrowed.length >= all.length) return undefined;
+  return narrowed.map(s => s.id);
+}
+
 /** `narrowSubjectsForGrade` as an index-aligned hide mask — see above. */
 export function hiddenSubjectsForGrade<T extends { id: string }>(
   all: T[],
