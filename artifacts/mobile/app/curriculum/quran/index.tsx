@@ -29,6 +29,7 @@ import { openExternal } from '@/services/externalLinks';
 import { surahPath } from '@/services/quranLinks';
 import { toArabicDigits } from '@/services/labFormat';
 import { LabFrame } from '@/components/lab/LabFrame';
+import { QuranGate } from '@/components/quran/QuranGate';
 import type { TranslationKey } from '@/services/i18n';
 
 type Colors = ReturnType<typeof useColors>;
@@ -140,7 +141,7 @@ function ResourceRow({
   );
 }
 
-export default function QuranCornerScreen() {
+function QuranCorner() {
   const colors = useColors();
   const { t, lang, isRTL } = useLanguage();
   const { progress } = useQuranProgress();
@@ -193,3 +194,11 @@ const styles = StyleSheet.create({
   rowTitle: { fontSize: 15 },
   rowMeta: { fontSize: TYPE.caption, marginTop: 2 },
 });
+
+export default function QuranCornerScreen() {
+  return (
+    <QuranGate>
+      <QuranCorner />
+    </QuranGate>
+  );
+}

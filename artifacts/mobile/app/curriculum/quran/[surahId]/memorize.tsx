@@ -19,6 +19,7 @@ import { countMemorised, stateOf, type AyahState } from '@/services/quranProgres
 import { resolveSurahParam } from '@/services/quranLinks';
 import { toArabicDigits } from '@/services/labFormat';
 import { LabFrame } from '@/components/lab/LabFrame';
+import { QuranGate } from '@/components/quran/QuranGate';
 import type { TranslationKey } from '@/services/i18n';
 
 const LEVEL_LABEL: Record<HideLevel, TranslationKey> = {
@@ -194,7 +195,7 @@ function Memorize({ surah }: { surah: QuranSurah }) {
   );
 }
 
-export default function QuranMemorizeScreen() {
+function QuranMemorizeRoute() {
   const { surahId } = useLocalSearchParams<{ surahId: string }>();
   const colors = useColors();
   const { t } = useLanguage();
@@ -233,3 +234,11 @@ const styles = StyleSheet.create({
   rowEnd: { alignItems: 'center', gap: 12 },
   note: { fontSize: TYPE.caption, marginTop: SPACE.md, marginHorizontal: 16 },
 });
+
+export default function QuranMemorizeScreen() {
+  return (
+    <QuranGate>
+      <QuranMemorizeRoute />
+    </QuranGate>
+  );
+}

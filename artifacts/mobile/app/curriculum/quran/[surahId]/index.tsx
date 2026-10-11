@@ -24,8 +24,9 @@ import { openExternal } from '@/services/externalLinks';
 import { memorizePath, resolveSurahParam } from '@/services/quranLinks';
 import { toArabicDigits } from '@/services/labFormat';
 import { LabFrame } from '@/components/lab/LabFrame';
+import { QuranGate } from '@/components/quran/QuranGate';
 
-export default function QuranReaderScreen() {
+function QuranReader() {
   const { surahId } = useLocalSearchParams<{ surahId: string }>();
   const colors = useColors();
   const { t, lang, isRTL } = useLanguage();
@@ -205,3 +206,11 @@ const styles = StyleSheet.create({
   },
   source: { margin: 16, marginTop: 24, padding: SPACE.md, borderRadius: RADIUS.md, borderWidth: 1 },
 });
+
+export default function QuranReaderScreen() {
+  return (
+    <QuranGate>
+      <QuranReader />
+    </QuranGate>
+  );
+}

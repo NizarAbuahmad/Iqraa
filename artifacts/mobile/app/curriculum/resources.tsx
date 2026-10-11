@@ -66,6 +66,7 @@ import { getSubjectsForGrade, getVisibleGrades } from '@workspace/curriculum';
 import { ENGLISH_HUB_GRADES } from '@workspace/curriculum/englishHub';
 import type { TranslationKey } from '@/services/i18n';
 import { cellWidthPercent, isVisualKind, libraryColumns, previewCount } from '@/services/libraryLayout';
+import { QURAN_CORNER_RELEASED, quranCornerVisible } from '@/services/quranRelease';
 import { palette } from '@/constants/colors';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { RESOURCE_KIND_ICON as KIND_ICON, RESOURCE_KIND_LABEL as KIND_LABEL } from '@/constants/resourceKind';
@@ -820,28 +821,30 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
                 {t('labEntryHint')}
               </Text>
             </Pressable>
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push('/curriculum/quran' as never);
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={`${t('quranTitle')}, ${t('quranEntryHint')}`}
-              style={({ pressed }) => [
-                styles.tile,
-                { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
-              ]}
-            >
-              <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
-                <Ionicons name="book-outline" size={26} color={ACCENT} />
-              </View>
-              <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
-                {t('quranTitle')}
-              </Text>
-              <Text numberOfLines={2} style={[styles.tileCount, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
-                {t('quranEntryHint')}
-              </Text>
-            </Pressable>
+            {quranCornerVisible(QURAN_CORNER_RELEASED, __DEV__) ? (
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push('/curriculum/quran' as never);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`${t('quranTitle')}, ${t('quranEntryHint')}`}
+                style={({ pressed }) => [
+                  styles.tile,
+                  { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
+                ]}
+              >
+                <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
+                  <Ionicons name="book-outline" size={26} color={ACCENT} />
+                </View>
+                <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
+                  {t('quranTitle')}
+                </Text>
+                <Text numberOfLines={2} style={[styles.tileCount, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
+                  {t('quranEntryHint')}
+                </Text>
+              </Pressable>
+            ) : null}
             {isStudent || isParent ? (
               <Pressable
                 onPress={() => {

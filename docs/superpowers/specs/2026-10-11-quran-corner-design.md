@@ -202,6 +202,10 @@ prints in part, and a link from an Islamic lesson into the corner.
    text needs a review by the Ministry of Awqaf or a Quran committee is not
    something the code can answer. Nothing here assumes it either way.
 2. **The resources list** needs an owner's eye; its URLs are unchecked.
+0. **Release gate (added after the final review).** `QURAN_CORNER_RELEASED`
+   (`artifacts/mobile/services/quranRelease.ts`, `false`) hides the Library card
+   and makes the three screens say the corner is not available yet in any
+   non-development build; `__DEV__` always shows it. Flipping it is the release.
 3. **Verification against a printed mushaf (release requirement).** The
    dataset's licence says whoever publishes Qur'anic text to end users must
    verify it against an authorised printed mushaf. The build writes
