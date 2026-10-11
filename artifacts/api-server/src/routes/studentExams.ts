@@ -47,6 +47,7 @@ import { audioKeysForAttempt, deleteAttemptAudio } from "../lib/attemptAudio.ts"
 import { retakeDecision } from "../modules/assessment/retake.ts";
 import { examVisibleTo } from "../modules/assessment/audience.ts";
 import { assignedStudentsByEvaluation } from "../lib/evaluationAudience.ts";
+import { guardianLinkedStudents, selfLinkedStudentIds } from "../lib/familyAccess.ts";
 import {
   guardianExamRow,
   sortStudentExams,
@@ -60,16 +61,6 @@ const router = Router();
 
 router.use("/student", authMiddleware, requireRole("student"));
 router.use("/parent", authMiddleware, requireRole("parent"));
-
-/** Every live roster row this account is `self`-linked to. */
-async function selfLinkedStudentIds(userId: string): Promise<string[]> {
-  const linked = await db
-    .select({ studentId: rosterLinks.studentId })
-    .from(rosterLinks)
-    .innerJoin(students, eq(students.id, rosterLinks.studentId))
-    .where(and(eq(rosterLinks.userId, userId), eq(rosterLinks.relation, "self"), isNull(students.archivedAt)));
-  return [...new Set(linked.map(l => l.studentId))];
-}
 
 interface RetakeCandidate {
   attemptId: string;
@@ -493,18 +484,7 @@ router.get("/parent/exams", async (req: AuthenticatedRequest, res) => {
       return;
     }
 
-    const linked = await db
-      .select({ studentId: students.id, displayName: students.displayName })
-      .from(rosterLinks)
-      .innerJoin(students, eq(students.id, rosterLinks.studentId))
-      .where(
-        and(
-          eq(rosterLinks.userId, req.user!.id),
-          eq(rosterLinks.relation, "guardian"),
-          isNull(students.archivedAt),
-        ),
-      );
-    const children = [...new Map(linked.map(l => [l.studentId, l])).values()];
+    const children = await guardianLinkedStudents(req.user!.id);
 
     const lists = await Promise.all(
       children.map(async child => ({
