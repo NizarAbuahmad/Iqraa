@@ -99,14 +99,21 @@ describe("buildFamilySchedule", () => {
   it("matches a period to the slot's school — the same number means different times in two schools", () => {
     const s = buildFamilySchedule(
       input({
-        slots: [slot({ schoolName: "B" })],
+        // Same teacher, same period number, different days, so the two slots
+        // do not collide on the DB's unique index.
+        slots: [
+          slot({ schoolName: "", dayOfWeek: 0 }),
+          slot({ schoolName: "B", dayOfWeek: 1 }),
+        ],
+        // "B" is listed last on purpose: a school-blind key would let its row win.
         periods: [
           period({ schoolName: "", startTime: "08:00" }),
           period({ schoolName: "B", startTime: "13:00" }),
         ],
       }),
     );
-    assert.equal(s.days[0].periods[0].startTime, "13:00");
+    assert.equal(s.days[0].periods[0].startTime, "08:00");
+    assert.equal(s.days[1].periods[0].startTime, "13:00");
   });
 
   it("keeps a period whose time is unknown, last, with null times", () => {
