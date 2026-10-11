@@ -932,18 +932,18 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
-## Math Corner: a scientific calculator in the library, 2026-10-11
+## Math Corner: calculator, unit converter and formula sheet in the library, 2026-10-11
 
 **What a user can do today.** The library (`/curriculum/resources`) has a
-«زاوية الرياضيات» tile opening `/curriculum/math`, a hub with a scientific
-calculator (`/curriculum/math/calculator`, copyable link) and a «افتح GeoGebra»
-card. Everyone who can see the library can open it; no gating change
-(`/curriculum` is already on the non-teacher prefix allowlist, pinned in
-`routeGating.test.ts`). First of four planned PRs: the function grapher, the
-geometry sketchpad and the unit converter + Grade 10 formula sheet are **not
-built yet**, and the hub lists only what exists (`MATH_TOOL_IDS` in
-`services/mathTools.ts`; `MathTool.tsx` is a `Record` over it, so an id without a
-component does not compile).
+«زاوية الرياضيات» tile opening `/curriculum/math`, a hub with three first-party
+tools — a scientific calculator, a unit converter and a Grade 10 formula sheet
+(`/curriculum/math/calculator`, `/converter`, `/formulas`, each with a copyable
+link) — and a «افتح GeoGebra» card. Everyone who can see the library can open
+it; no gating change (`/curriculum` is already on the non-teacher prefix
+allowlist, pinned in `routeGating.test.ts`). The function grapher and the
+geometry sketchpad are **not built yet**, and the hub lists only what exists
+(`MATH_TOOL_IDS` in `services/mathTools.ts`; `MathTool.tsx` is a `Record` over
+it, so an id without a component does not compile).
 
 **GeoGebra is a link, never an embed.** The card calls `openGeogebraGraphing()`
 (new tab on web, in-app browser on Android). The embed was removed on
@@ -983,19 +983,62 @@ function word its own run so the screen lays the runs out in a flex row in typed
 order. Any new screen that shows Arabic-Indic digits next to operators needs the
 same. Measured per-character, not by eye.
 
+**The formula sheet is traced to the printed books, not to memory.**
+`lib/curriculum/src/data/math_formulas.json` holds 40 formulas. Each names its
+lesson by `kbl-*` id, the book and printed page, and the fragments that page
+prints. `lib/curriculum/.../mathFormulas.test.ts` reads the extracted student
+books and checks that the page lies inside that lesson's printed range (found
+from the «الدرس» headings, not a hand-kept table), that the page prints the
+fragments, that the page number is the number printed on it, and that any
+Arabic caption is printed intact in that lesson. `services/__tests__/
+mathFormulas.test.ts` then runs 34 numeric identities through the calculator's
+own engine, using the book's worked examples where it prints one (the 3-4-5
+triangle, circle (5, −3) with r = 4, v = ⟨2, 8⟩·w = ⟨−5, 4⟩ = 22,
+0.85 = 0.65 + 0.75 − 0.55). Both were mutation-checked: a wrong page, a typo'd
+fragment, a wrong lesson, a wrong caption and two wrong identities each fail.
+What this does **not** prove: the display `formula` text itself is typed by us
+(the fragments it is checked against are the book's extraction, which breaks
+fractions and drops overlines), so a typo there is caught only by a person.
+Every title a student sees comes from the knowledge base; an Arabic caption is
+the book's own phrase or absent, and several are absent because extraction
+mangles them (e.g. «قانون طول القوس»).
+- **The book's notation, not a textbook's.** The circle is centred at (a, b),
+  the triangle's area is `K = ½ ab sin C`, the vector product is `v · w`, and
+  the cosine rule's lesson is «قانون جيوب التمام».
+- **Unit 1 is deliberately absent.** The book's first unit prints three
+  lessons and the catalog lists four, so a lesson id there cannot be tied to a
+  page range; the test refuses a formula filed on one.
+- **Grade 10 sequences have no formula to list.** Planning assumed arithmetic
+  and geometric term/sum formulas; the lesson (units 5, lesson 5) is about
+  finding the general term of quadratic and cubic sequences. Reading the book
+  first is what caught it.
+- **Grade scope.** The sheet is Grade 10 only and says so; the library is
+  visible to every grade. Filtering by the viewer's grade is not done.
+
+**The converter** (`services/mathUnits.ts`) is `from → base → to` and fails
+closed: an unknown unit, a conversion across categories, an unparseable number,
+a temperature below absolute zero and an overflow are named reasons, never a
+number. The Jordanian **dunum is 1000 m²** — a unit name and a factor we have
+not had a teacher confirm. The unit names are our own chrome text. There is a
+± button because a decimal keypad has no minus.
+
 **Also learned the hard way:** `accessibilityState` is banned by `ariaState.test.ts`
 (react-native-web ignores it; use `aria-*`); `designScale.test.ts` caps off-scale
 font sizes, radii and spacing, so new screens use `TYPE`/`SPACE`/`RADIUS` from
 `constants/theme.ts`; `i18nTerminology.test.ts` wants «ًا», not «اً».
 
-**What was and was not verified.** Unit tests: 3,900+ mobile tests pass,
-typecheck clean. Rendered with the Expo web build at 360 px wide in Arabic (RTL)
-and English: the hub, the calculator at rest, a result, an error, scientific
-notation, a 30-digit line wrapping, and the expanded function rows. **Not
-verified:** the library tile itself (it needs a signed-in session; it is a copy
-of the Lab tile), 390 px after the final fixes, anything on Android, real touch
-input, and screen-reader output. The calculator's history rows and recall were
-not tapped in a browser.
+**What was and was not verified.** Unit tests: ~3,980 mobile tests and 349
+curriculum tests pass, typecheck clean. Rendered with the Expo web build at
+360 px wide in Arabic (RTL) and English: the hub, the calculator at rest, a
+result, an error, scientific notation, a 30-digit line wrapping and the expanded
+function rows; the converter empty, with a length and a temperature result and
+the below-absolute-zero error; the formula sheet whole and filtered to
+derivatives, vectors and statistics, which use the least common glyphs (⟨ ⟩ ₁ ⁿ⁻¹ ′ Σ σ² ∪ ∩ ⊥ ⇔ rendered without empty boxes).
+**Not verified:** the library tile itself (it needs a signed-in session; it is a
+copy of the Lab tile), 390 px after the final fixes, anything on Android, real
+touch input, screen-reader output, the calculator's history rows, and the
+converter's ± button and unit chips (screenshotted, not tapped through).
+The Arabic strings have not been through the Arabic copy reviewer.
 
 No table, no native module, no `app.json` version bump, no schema push: ships
 over the air. Not yet decided: whether calculator history should persist.

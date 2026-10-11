@@ -6,9 +6,13 @@
 import React from 'react';
 import type { MathToolId } from '@/services/mathTools';
 import { MathCalculator } from './MathCalculator';
+import { MathFormulaSheet } from './MathFormulaSheet';
+import { MathUnitConverter } from './MathUnitConverter';
 
 const TOOLS: Record<MathToolId, React.ComponentType> = {
   calculator: MathCalculator,
+  converter: MathUnitConverter,
+  formulas: MathFormulaSheet,
 };
 
 export function MathTool({ toolId }: { toolId: MathToolId }) {
