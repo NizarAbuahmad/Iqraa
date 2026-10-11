@@ -31,7 +31,7 @@ import { subjectLabel } from '@/services/myExams';
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { palette } from '@/constants/colors';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
-import { RADIUS, TYPE } from '@/constants/theme';
+import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 
 const ACCENT = palette.primary;
 
@@ -97,7 +97,8 @@ export default function SchoolScreen() {
       <ScrollView
         contentContainerStyle={{
           padding: 16,
-          paddingBottom: 120,
+          // Clears the floating tab bar; deliberately not one SPACE step.
+          paddingBottom: SPACE.hero * 2 + SPACE.xxl,
           gap: 12,
           width: '100%',
           maxWidth: CONTENT_MAX_WIDTH,
@@ -228,7 +229,7 @@ function PeriodRow({
   const time = periodTimeLabel(period);
   const meta = [period.teacherName, time].filter(Boolean).join(' · ');
   return (
-    <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'flex-start', gap: 12, marginTop: 10 }}>
+    <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'flex-start', gap: 12, marginTop: SPACE.md }}>
       <View style={[styles.periodBadge, { backgroundColor: ACCENT + '1F' }]}>
         <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_700Bold', fontSize: 14 }}>{period.periodNumber}</Text>
       </View>
@@ -257,11 +258,11 @@ const styles = StyleSheet.create({
   desc: { fontSize: 15, lineHeight: 24, marginTop: 4 },
   errorBanner: { alignItems: 'center', gap: 8, padding: 12, borderWidth: 1 },
   errorText: { flex: 1, fontSize: 15, lineHeight: 24 },
-  empty: { alignItems: 'center', gap: 10, paddingHorizontal: 24, paddingTop: 40 },
-  emptyIcon: { width: 64, height: 64, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
-  chip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
-  dayCard: { borderWidth: 1, padding: 14 },
-  todayChip: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 2 },
+  empty: { alignItems: 'center', gap: SPACE.md, paddingHorizontal: 24, paddingTop: 40 },
+  emptyIcon: { width: 64, height: 64, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center', marginBottom: SPACE.sm },
+  chip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: SPACE.lg, paddingVertical: 8 },
+  dayCard: { borderWidth: 1, padding: SPACE.lg },
+  todayChip: { borderRadius: 999, paddingHorizontal: SPACE.md, paddingVertical: 2 },
   periodBadge: { width: 34, height: 34, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center' },
-  examsRow: { alignItems: 'center', gap: 12, borderWidth: 1, padding: 14, marginTop: 4 },
+  examsRow: { alignItems: 'center', gap: 12, borderWidth: 1, padding: SPACE.lg, marginTop: 4 },
 });
