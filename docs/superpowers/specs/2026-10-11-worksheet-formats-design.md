@@ -128,3 +128,72 @@ The worksheet send payload (`worksheetSendPayload`) and the request parser carry
 - AI-written formats.
 - Fill-in tables.
 - A drag-to-order answer UI.
+
+## As built (2026-10-11) — where the build differs from the above
+
+Recorded after the web-build drive. STATUS.md («Four new worksheet formats»)
+has the verification and the defects that drive found.
+
+- **Every format carries a `stem`.** The union in *Data model* gained
+  `stem: string` on all four kinds: the instruction plus the problem, e.g.
+  «رتّب خطوات حل المسألة الآتية:\nأوجد حل المعادلة: …». Print, slides, the
+  deck and the converter read the problem from it rather than re-deriving it
+  from `text`.
+- **The matching student projection carries `stem`.** `questionTypes.ts`'s
+  `matching.sanitizeForStudent` now passes a non-empty `stem` through.
+  Without it, رتّب reached the take screen with the steps but not the problem
+  they solve. The stem holds no answer data, and `take/[code].tsx` shows it.
+  Any matching question with a stem now shows it, as every other type
+  already did.
+- **The order cap.** رتّب converts to `matching` against
+  «الأولى…السادسة», so 2–6 steps are auto-marked. A longer order (the
+  parser accepts up to 10) has no position label, falls back to the text
+  rules, and lands as a short answer for the teacher. That fails closed. The
+  generator only builds 3–6 steps, so it does not arise from the bank today.
+- **`visualOnReveal` on deck slides.** The live deck shows ارسم's graph only
+  after «أظهر الإجابة». `deckVisuals.ts`'s slide type gained an optional
+  `visualOnReveal`. `buildDeckFromWorksheet` sets it with the plot, and
+  `presentation.tsx` renders the visual when `!visualOnReveal || answerVisible`.
+  Challenge slides elsewhere keep their figures visible, because they need
+  them to be answered.
+- **The reveal shows the working.** For رتّب and أين الخطأ؟ the revealed
+  answer is the key answer plus its solution lines. The presenter splits a
+  maths-bearing multi-line answer one line per row (`answerLines` in
+  `services/deckText.ts`). On the projector صِل is two blocks (numbered
+  problems, then lettered answers), never paired rows: the answers are
+  shuffled, so a shared row would teach wrong pairs.
+- **Count and points are one rule for both paths.**
+  - `formatRoom(total, wantsWordProblem) = max(0, total − 3 − (wp ? 1 : 0))`:
+    the room left after the worked example, the half-solved question, one
+    ordinary question and the word problem. Ticked formats beyond the room
+    are reported, not added.
+  - `formatPoints`: 4 / 6 / 10 by difficulty.
+  - The live path asks the model for `total − taken`, with no floor of 5.
+- **Formats are picked first, scarcest first.** The bank is drawn for the
+  formats before the worked example and the practice sections, so a ticked
+  format is not starved by ordinary questions. On a small bank the practice
+  sections come up short instead, and say so through the existing shortfall
+  note.
+- **Greying needs a grounded lesson.** A tick is judged only when the topic
+  grounds to a KB lesson. A greyed tick draws unchecked and disabled, but it
+  stays in the stored selection and is stripped only from the request, so
+  typing a title no longer wipes ticks. On homework the ticks are hidden, and
+  a carried-in selection is stripped.
+- **The missing-formats note covers two causes.** No room in the count, or
+  not enough bank items: «لم تُضف هذه الأنواع: {names} — لا يتّسع لها عدد
+  الأسئلة المطلوب، أو لا تكفي أسئلة البنك لهذا الدرس.»
+- **The graph window holds the curves, not only the answer points.**
+  `fitGraphWindow` widens y to cover a sample of each expression (clamped to
+  ±10, with a margin), using `normalizePlotExpr`. Both live in
+  `worksheetFormats.ts`, not `deckVisuals.ts`.
+- **أين الخطأ؟'s key solution** is the reason (`why`) followed by the
+  corrected working. Print, slides and the deck show it that way. The drive
+  found that the reason's position numbers the working one off from the
+  paper; see STATUS.
+- **Missteps.** 28 entries, two per maths family with working (14 families),
+  with no deliberately uncovered family.
+- **`esc` moved to `services/htmlEscape.ts`.** It is re-exported from
+  `exportHtml.ts`, which ends the `formatPrintHtml` ↔ `exportHtml` import
+  cycle.
+- **Driven on a different lesson than planned.** The drive used «حل المعادلة
+  الأسية» and the unit-1 GeoGebra lab (`u1_lab`), not «النسب المثلثية».

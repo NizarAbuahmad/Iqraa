@@ -916,6 +916,158 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Four new worksheet formats: صِل، رتّب، أين الخطأ؟، ارسم, 2026-10-11
+
+Step 5 of the worksheet review, agreed in chat on 2026-10-10/11. Spec:
+`docs/superpowers/specs/2026-10-11-worksheet-formats-design.md`. The worksheet
+screen's «أنواع الأسئلة» gains four ticks. Each ticked format adds one
+question, in its own section, and that question counts inside the number the
+teacher picked.
+
+- **صِل (match).** 4–5 solved bank items of the lesson's family, with distinct
+  short answers. The problems are numbered on the right with a box for the
+  letter, and the answers are shuffled and lettered on the left. Key:
+  «١-أ، ٢-ج، …».
+- **رتّب الخطوات (order).** One solved item's 3–6 working steps as lettered
+  cards. The last step (the answer line) is kept last, so the order has one
+  reading. Key: the letters in order, plus the ordered working.
+- **أين الخطأ؟ (spot_error).** One item's working with one step replaced by
+  a hand-written misstep: 28 entries, two for each of the 14 maths families
+  that have working (`lib/math-practice/src/missteps.ts`). The paper asks for
+  the step number and two lines for the correction. Key: «الخطوة ن: …», the
+  reason, and the corrected working.
+- **ارسم (graph).** Bank items with graph answers (`system_graph`). The
+  equations and an empty SVG grid sized to the answer points and curves, with
+  Arabic-Indic tick digits and «س»/«ص» axes on an Arabic paper. The key draws
+  the curves on the same grid.
+
+**Bank only, no AI.** Content comes from `pickForFormat`
+(`lib/math-practice/src/formatsBank.ts`) through `buildFormatQuestion`
+(`artifacts/mobile/services/ai/worksheetFormats.ts`), and is deduped against
+the sheet's own math-practice session. Offline, `generateWorksheet` builds the
+formats first, scarcest first, and then the rest of the sheet. Live,
+`RemoteAIService.generateWorksheet` asks the model for `total − formats`
+ordinary questions with the format types removed from the request, then
+appends the same builder's questions and renumbers the key. A pooled sheet
+therefore gets fresh bank items on every serve. `worksheetFormatPrompt.test.ts`
+asserts the format kinds never reach the prompt. Both paths share
+`formatRoom` (room = total − 3, − 1 more with a word problem) and
+`formatPoints` (4 / 6 / 10 by difficulty). A format that does not fit, or that
+the bank cannot build, is named under the sheet as «لم تُضف هذه الأنواع: …».
+Nothing is invented.
+
+**The screen** (`app/ai-tools/worksheet.tsx` + `services/worksheetFormatTicks.ts`)
+appends the four to `ALL_Q_TYPES`, which is persisted order. A tick is greyed
+with «غير متاح لهذا الدرس: لا توجد في البنك أسئلة كافية لهذا النوع.» only once
+a lesson is grounded. A greyed tick keeps its place in the stored selection
+but is dropped from the request. The ticks are hidden on homework, and a carried-in
+selection is stripped there.
+
+**Everywhere else it goes:**
+
+- **Print.** `services/formatPrintHtml.ts` (table, cards, numbered working,
+  grid), called from `buildWorksheetHTML`. `esc` moved to the leaf
+  `services/htmlEscape.ts`.
+- **Slides export.** `buildWorksheetSlidesHTML`. The key slide carries the
+  working.
+- **Live deck.** `buildDeckFromWorksheet` in `classDeck.ts`. صِل is two
+  blocks, never paired rows. The رتّب and أين الخطأ؟ reveal is the key plus
+  its working, split one line per row by `answerLines` (`services/deckText.ts`).
+  The graph rides on the slide as a plot with the new `visualOnReveal` flag,
+  which `presentation.tsx` honours.
+- **Send to class.** `worksheetAssignment.ts` sends `format`,
+  `worksheetRequest.ts` parses it, and `fromWorksheet.ts` converts it:
+  - صِل → `matching`.
+  - رتّب → `matching` against «الأولى…السادسة». An order of more than 6
+    steps falls back to a teacher-marked short answer.
+  - أين الخطأ؟ → `multiple_choice` over «الخطوة ١…ن». The correction is not
+    marked.
+  - ارسم → `short_answer` for the teacher.
+
+  `questionTypes.ts`'s matching student projection now carries the `stem`.
+  Without it, رتّب reached students with no problem to order. No schema
+  change; `db generate` reports none.
+
+**Verified 2026-10-11.**
+
+- **Checks.** Root typecheck clean. Mobile suite 3868 tests, 3858 pass,
+  0 fail, 10 skipped. api-server (built first) 1477 / 1477.
+  `lib/math-practice` 802 / 802. `pnpm --filter @workspace/db run generate`:
+  «No schema changes». The new and changed files:
+  - Mobile: `worksheetFormats.test.ts` (13), `worksheetFormatsGenerator.test.ts`
+    (13), `worksheetFormatTicks.test.ts` (11), `worksheetFormatEdits.test.ts`
+    (2), `formatPrintHtml.test.ts` (12), `formatSlides.test.ts` (17),
+    `exportHtml.test.ts` (47), `deckText.test.ts` (20),
+    `worksheetAssignment.test.ts` (7).
+  - api-server: `worksheetFormatPrompt.test.ts` (3), `fromWorksheet.test.ts`
+    (28), `worksheetRequest.test.ts` (26).
+  - `lib/math-practice`: `missteps.test.ts` (3), `formatsBank.test.ts` (7).
+- **Driven in Chromium** against a local app (Postgres with migrations and
+  `seed:assessment`, the API, and Expo web in demo mode, so the offline path).
+  A real sign-in at 390×844; the projector at 1280×800; the print and slides
+  HTML at A4 width.
+  - «حل المعادلة الأسية» (the picker has no lesson titled «المعادلات
+    الأسية»). ارسم was greyed with its reason and could not be ticked. Ticked
+    صِل، رتّب، أين الخطأ؟ on a 10-question sheet: all three came out with
+    correct keys.
+  - Exported to PDF as student and teacher copies, in colour, ink-saver and
+    large print. Projected and revealed each format.
+  - Sent the sheet to a class: 7 of 9 questions auto-marked, and the half-solved
+    question and a «x = 3/2» short answer for the teacher. Published it, and took it as a student. The database marked صِل
+    `correct` 4/4, رتّب `correct` 4/4, and أين الخطأ؟ answered with step ٣
+    (the misstep is step ٤) `incorrect` 0/4, all by the `deterministic`
+    grader.
+  - The unit-1 GeoGebra lab (`u1_lab`): ticked ارسم. The bank gave 8 of the
+    10 questions, and the shortfall note said so. In the HTML the paper shows
+    an empty grid (−3..6 × −4..10). The key draws `y = x² − 2x` and `y = x`
+    meeting at (0, 0) and (3, 3). The live deck shows no plot until «أظهر
+    الإجابة», then the plot. Sent to the class, it is a `short_answer` with
+    the bank answer as the model answer (`grading_mode` `ai_rubric`, so
+    with AI off a teacher marks it).
+
+**Found by the drive, not fixed here:**
+
+- **Web PDF breaks the ارسم grid.** In the PDF that «تصدير PDF» downloads on
+  web (html2canvas, `services/pdfCapture.web.ts`), the grid is cut off at
+  about x = 1 on the student copy. On the key the curves are cut off at about
+  x = 2, so the (3, 3) intersection is gone, and the grid is split across two
+  pages. The same HTML renders whole in Chromium. In a reproduction the
+  clipping goes away when the SVG's `<text>` tick labels are removed.
+- **The same web PDF mirrors brackets inside maths.** For example «2x = 3)x − 1(»,
+  which on an أين الخطأ؟ paper looks like a planted error. This is
+  html2canvas and LRI/PDI isolates, not the format code, and it hits any
+  bracketed maths on the web PDF.
+- **The slides-export answer-key slide clips.** It is one fixed slide with
+  `overflow: hidden`. On the exponential sheet the last three lines of
+  أين الخطأ؟'s working are lost; on the graph sheet the drawn graph is lost
+  entirely.
+- **The slides-export ارسم slide** puts a 190 px grid beside the question
+  text, too small to read on a projector.
+- **Systems lose their line break in the printed صِل table.** «x − y = 1» and
+  «3ˣ = 9ʸ» print on one line, which reads as «x − y = 1 3ˣ = 9ʸ» («13ˣ»).
+- **The graph equations appear twice** on the live-deck slide and in the
+  class version's prompt, because the stem already holds them. The deck's
+  extra lines are «ص = x² − 2x», which mix «ص» with a Latin x and lose their
+  bidi order. The print key's legend has the same «ص = x…» mix and no colour
+  or dash key.
+- **The review screen hides the problems of صِل and رتّب** on
+  `/evaluations/[id]`, now that they carry a `stem`. `questionText` prefers
+  `stem`, so `matchingLeftText` never runs, and a teacher reviewing the draft
+  cannot see the problems or steps before publishing.
+- **The reason is numbered as step 1 of the working** in أين الخطأ؟'s key and
+  reveal. The corrected working's numbers are then one off from the student's
+  paper: the key says «الخطوة ٤», and the fixed line is item 5.
+
+**Not done or not checked:**
+
+- No device run.
+- No live-AI run (demo mode only, so the live append path is covered by tests
+  alone).
+- No chemistry missteps, so أين الخطأ؟ is maths-only.
+- No drawing on the phone: ارسم is text-only on the take screen.
+- Word export and the English UI were not driven.
+- The graph sheet was sent but not taken.
+
 ## «where i can add more classes» reached the subject question, 2026-10-10
 
 Reported from the web chat: «where i can add more classes to my account»
