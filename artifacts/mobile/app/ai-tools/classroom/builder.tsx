@@ -23,7 +23,7 @@ import { regenerationFields } from '@/services/ai/regeneration';
 import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId } from '@/services/kbContext';
 import { groundedSubjectConflict, scopeWithoutCurriculum, subjectPickerLabels } from '@/services/lessonPrep';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
-import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
+import { aiErrorText, isAbortError } from '@/services/ai/aiProvenance';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
@@ -151,7 +151,7 @@ export default function ClassroomBuilderScreen() {
       // A cancel is the teacher's own doing, so it is reported as a stop, not
       // as a failure to diagnose or retry out of.
       if (isAbortError(e)) setCancelled(true);
-      else setError(t(aiErrorMessageKey(e)));
+      else setError(aiErrorText(e, t));
     } finally {
       abortRef.current = null;
       setLoading(false);

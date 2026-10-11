@@ -8,6 +8,7 @@
 import type { VisualBlock } from './deckVisuals.ts';
 import { curveFromCommand } from './deckVisuals.ts';
 import type { ActivitySlide } from './ai/AIService.ts';
+import type { PhotoCredit } from './photoCredit.ts';
 
 /** Blank GeoGebra Graphing app — used when there is nothing to plot. */
 export const GEOGEBRA_GRAPHING_URL = 'https://www.geogebra.org/graphing';
@@ -271,9 +272,14 @@ export function attachBackgroundImage(
   index: number,
   url: string,
   caption: string,
+  credit?: PhotoCredit,
 ): ActivitySlide[] {
   if (index < 0 || index >= slides.length) return [...slides];
-  return slides.map((s, i) => (i === index ? { ...s, mediaUrl: url, mediaCaption: caption } : s));
+  return slides.map((s, i) => {
+    if (i !== index) return s;
+    const { mediaCredit: _old, ...rest } = s;
+    return { ...rest, mediaUrl: url, mediaCaption: caption, ...(credit ? { mediaCredit: credit } : {}) };
+  });
 }
 
 /**
