@@ -2140,6 +2140,19 @@ requests captured: a 6-word message → `out_of_scope`, `words: 6`, no `ask`;
 real PostHog project** — it fills once this deploys; filter on
 `chat_unanswered`, break down by `kind`, and read `ask` for the phrases.
 
+## The Library's results follow the account's subjects, 2026-10-11
+
+The Library narrowed its grade and subject **chips** to what a teacher set up on
+`/setup-subjects`, but not its **results**: «كل المواد» still listed every
+subject's resources for the grade (62 in grade 10 for a maths + chemistry
+teacher). `resources.tsx` now passes the narrowed subjects to `filterResources`
+(`subjectIds`) via `scopedSubjectIds` in `services/teacherCatalogFilter.ts`.
+Rows with no subject (general rows, most book codes) still show. **No-op, by
+design, when nothing was narrowed** — an account with no saved selection (e.g. a
+`system_admin` who never ran `/setup-subjects`), a stale one, or one that picked
+every subject sees the full grade, as the chips already did. Students and
+parents are unaffected: they pick a grade, not subjects.
+
 ## The Science Lab: a shelf in the library, 2026-10-06
 
 **What a teacher can use today.** `/curriculum/resources` has a «المختبر» card
