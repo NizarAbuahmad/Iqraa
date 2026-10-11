@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/Button';
 import { GoogleSignInButton, isGoogleSignInAvailable } from '@/components/ui/GoogleSignInButton';
 import { Input } from '@/components/ui/Input';
 import { PillSelector } from '@/components/ui/PillSelector';
+import { CodeSignupForm } from '@/components/CodeSignupForm';
 import { useStudentAccountsStatus } from '@/services/features';
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { emailNotSent } from '@/services/emailDelivery';
@@ -53,6 +54,10 @@ export default function RegisterScreen() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
+  // A parent or student signs up from the teacher's code alone (no email, no
+  // password, no Google): the code already says who they are, and email can be
+  // added later from the profile. Teachers keep the form below.
+  const codeSignup = chosenRole === 'parent' || chosenRole === 'student';
 
   const handleGoogleCredential = async (credential: string) => {
     setError('');
@@ -244,6 +249,20 @@ export default function RegisterScreen() {
             </Text>
           </Pressable>
 
+          {codeSignup ? (
+            <CodeSignupForm
+              // Remounted per role: the name picker and the typed code belong to
+              // the role that was chosen when they were entered.
+              key={chosenRole}
+              role={chosenRole}
+              termsAccepted={termsAccepted}
+              lang={lang}
+              colors={colors}
+              isRTL={isRTL}
+              t={t}
+            />
+          ) : (
+            <>
           {isGoogleSignInAvailable() && !featuresLoading && (
             <>
               {/* Google draws its own button on web, which has no disabled
@@ -361,6 +380,8 @@ export default function RegisterScreen() {
               {t('registerAcceptTermsFirst')}
             </Text>
           ) : null}
+            </>
+          )}
 
         </View>
 

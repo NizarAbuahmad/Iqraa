@@ -15,7 +15,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { generateClaimCode, getClaimCode, unlinkAccount } from '@/services/roster';
+import { RosterError, generateClaimCode, getClaimCode, reissueLoginCode, unlinkAccount } from '@/services/roster';
+import { formatLoginCode } from '@/services/loginCode';
 import { getTeacherContacts, startThread, type ChatRole } from '@/services/messaging';
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { copyToClipboard, shareAsText } from '@/services/share.ts';
@@ -60,6 +61,10 @@ export default function ClaimCodeScreen() {
   const [toast, setToast] = useState('');
   const [startingUserId, setStartingUserId] = useState<string | null>(null);
   const [unlinkingUserId, setUnlinkingUserId] = useState<string | null>(null);
+  const [reissuingUserId, setReissuingUserId] = useState<string | null>(null);
+  // The new login code, held on screen only: the server keeps a hash and will
+  // never show it again, so this is the one chance to hand it over.
+  const [reissued, setReissued] = useState<{ name: string; code: string } | null>(null);
 
   const {
     data,
@@ -164,6 +169,29 @@ export default function ClaimCodeScreen() {
       setError(apiErrorMessage(e, 'messagingLoadError', t));
     } finally {
       setUnlinkingUserId(null);
+    }
+  };
+
+  const onReissue = async (g: Guardian) => {
+    const ok = await confirm({
+      title: `${t('reissueLoginCode')} — ${g.firstName} ${g.lastName}`,
+      message: t('reissueLoginCodeConfirm'),
+      confirmLabel: t('reissueLoginCode'),
+      cancelLabel: t('cancel'),
+      destructive: true,
+    });
+    if (!ok || !studentId) return;
+    setReissuingUserId(g.userId);
+    setError('');
+    setReissued(null);
+    try {
+      const { loginCode } = await reissueLoginCode(studentId, g.userId);
+      setReissued({ name: `${g.firstName} ${g.lastName}`.trim(), code: formatLoginCode(loginCode) });
+    } catch (e) {
+      // 409: this account has its own email and password — it can reset itself.
+      setError(t(e instanceof RosterError && e.code === 'not_a_code_account' ? 'reissueNotCodeAccount' : 'reissueLoginCodeFailed'));
+    } finally {
+      setReissuingUserId(null);
     }
   };
 
@@ -330,6 +358,21 @@ export default function ClaimCodeScreen() {
                       that one code is shared with a whole class: somebody
                       eventually picks the wrong name, and until this existed a
                       roster link could only be created, never removed. */}
+                  {/* For an account with no email: the teacher who vouched for the
+                      link is its only way back in. */}
+                  <Pressable
+                    onPress={() => { void onReissue(g); }}
+                    disabled={reissuingUserId === g.userId}
+                    hitSlop={10}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('reissueLoginCode')}
+                  >
+                    {reissuingUserId === g.userId ? (
+                      <ActivityIndicator color={colors.primary} size="small" />
+                    ) : (
+                      <Ionicons name="key-outline" size={20} color={colors.primary} />
+                    )}
+                  </Pressable>
                   <Pressable onPress={() => { void onUnlink(g); }} disabled={unlinkingUserId === g.userId} hitSlop={10}>
                     {unlinkingUserId === g.userId ? (
                       <ActivityIndicator color={colors.destructive} size="small" />
@@ -342,6 +385,28 @@ export default function ClaimCodeScreen() {
             </View>
           )}
         </View>
+
+        {reissued ? (
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.primary, borderRadius: colors.radius }]}>
+            <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
+              {t('reissueLoginCodeResult', reissued.name)}
+            </Text>
+            <View style={[styles.codeRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <Text selectable style={[styles.codeText, { color: colors.primary, fontFamily: 'ReadexPro_700Bold', writingDirection: 'ltr' }]}>{reissued.code}</Text>
+              <Pressable
+                onPress={async () => { await copyToClipboard(reissued.code); setToast(t('messagingCodeCopied')); }}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={t('messagingCopyCode')}
+              >
+                <Ionicons name="copy-outline" size={20} color={colors.mutedForeground} />
+              </Pressable>
+            </View>
+            <Text style={[styles.expiresText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+              {t('reissueLoginCodeNote')}
+            </Text>
+          </View>
+        ) : null}
 
         {displayError ? (
           <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>{displayError}</Text>

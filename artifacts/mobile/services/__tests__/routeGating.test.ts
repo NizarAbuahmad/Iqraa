@@ -15,6 +15,13 @@ describe('isEntryRoute', () => {
     }
   });
 
+  it('treats sign-in with an account code as an entry — once it works the person is signed in', () => {
+    // A parent or student who signed up from a teacher's code has no email or
+    // password; this is their sign-in screen. Left out of the list, a reload
+    // after signing in would strand them on it instead of handing them over.
+    assert.equal(isEntryRoute('/login-code'), true);
+  });
+
   it('treats the app root and an unresolved path as entries', () => {
     assert.equal(isEntryRoute('/'), true);
     assert.equal(isEntryRoute(null), true);
@@ -127,6 +134,8 @@ describe('isNonTeacherRoute', () => {
       '/profile',
       '/join-class',
       '/claim-required',
+      // Adding an email to a code-only account: only a parent or student can be one.
+      '/add-email',
     ]) {
       assert.equal(isNonTeacherRoute(p), true, p);
     }

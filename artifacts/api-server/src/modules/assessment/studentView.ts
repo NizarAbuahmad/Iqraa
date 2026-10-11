@@ -22,13 +22,10 @@
 import crypto from "node:crypto";
 import { QUESTION_TYPES } from "./questionTypes.ts";
 import { studentFigure } from "./questionFigure.ts";
+import { SHARE_CODE_ALPHABET } from "../../lib/shareCodeAlphabet.ts";
 
-/**
- * No I, L, O, 0 or 1. A teacher writes this on a whiteboard and thirty
- * students read it from the back of the room; a code that can be read two ways
- * is a code that produces "not found" and a raised hand.
- */
-const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+// No I, L, O, 0 or 1 — see lib/shareCodeAlphabet.ts.
+const ALPHABET = SHARE_CODE_ALPHABET;
 const CODE_LENGTH = 6;
 
 export function generateShareCode(): string {
