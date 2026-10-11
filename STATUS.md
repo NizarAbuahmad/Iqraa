@@ -868,14 +868,24 @@ an announcement by default» below.
 - **Where the three services actually live** (re-checked 2026-09-15 against the
   running system — the Render list below was a month stale and had already sent
   one reader to a dead host):
-  - Web: **Cloudflare Pages**, https://iqraa-web-buq.pages.dev — built by
-    `.github/workflows/web-deploy.yml` on every merge to `main`. Moved off
-    Render 2026-09-13. `iqraa-web.onrender.com` still answered 200 on
-    2026-09-15 because Render serves its last build forever; it is a stale
-    bundle, not a second deploy target.
+  - Web: **Cloudflare Pages**, production address **https://app.iqrra.com**
+    (a CNAME to the `iqraa-web` Pages project) — built by the `iqraa-web` job
+    in `.github/workflows/deploy.yml` on every merge to `main` (the old
+    `web-deploy.yml` no longer exists). Moved off Render 2026-09-13.
+    `iqraa-web.onrender.com` still answered 200 on 2026-09-15 because Render
+    serves its last build forever; it is a stale bundle, not a second deploy
+    target. **Use `app.iqrra.com`, not the project's own
+    `iqraa-web-buq.pages.dev`:** the API's CORS allowlist
+    (`artifacts/api-server/src/app.ts`) names `app.iqrra.com` but not that
+    host, so a browser on it serves the bundle and then fails every API call —
+    sign-in reports «تعذّر الاتصال» (checked 2026-10-11). Fetching the bundle
+    from it with `curl` is still fine, which is why the check command further
+    down keeps working.
   - API: **Cloud Run**, https://iqraa-api-613126375862.europe-west1.run.app —
-    deployed **by hand**, never by a merge. Ask it what it is running:
-    `GET /api/healthz/version` → `{commit, revision}`.
+    deployed by the `iqraa-api` job in `deploy.yml` on a merge that changes it
+    (skipped otherwise — a mobile-only merge skips it, checked 2026-10-10).
+    Ask it what it is running: `GET /api/healthz/version` → `{commit,
+    revision}`.
   - Verifier: **Cloud Run**, `iqraa-verifier` in `europe-west1`. The Render
     verifier is **gone** — `iqraa-verifier.onrender.com` times out as of
     2026-09-15. Both Cloud Run services date from the 2026-09-05 cutover.
@@ -931,6 +941,29 @@ an announcement by default» below.
     deployed. The client's timeout is 2.5s, so the first call after idle fails.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
+
+## English says it is the national Ministry book, 2026-10-10
+
+Picking English now shows a highlighted banner — «الكتاب الوطني المعتمد من
+وزارة التربية والتعليم الأردنية» / "The national textbook, approved by Jordan's
+Ministry of Education" — on the curriculum semester screen
+(`app/curriculum/subjects.tsx`, in the hero) and above the unit picker in
+`TopicSelector` (the `/ai-tools/*` lesson picker). Which subjects get it is
+`services/nationalBook.ts`; the banner is `components/ui/NationalBookBanner.tsx`
+and renders nothing for any other subject. Pinned by `nationalBook.test.ts`,
+which also asserts every English book in `KB_BOOKS` is covered.
+
+**It is by subject, so it covers the four Grade 10 vocational-track books too**
+(Commerce, Agriculture, Hospitality, Industrial). That was the owner's call,
+not something the repo proves: the app's own note on those books calls them the
+«Vocational English» series by York Press (2023 edition), a publisher, not
+NCCD. If they turn out not to be Ministry books, narrow `nationalBook.ts` to
+book ids rather than subject.
+
+Checked live on app.iqrra.com on 2026-10-11 with the demo account, in Arabic:
+the banner shows on the English Grade 10 semester screen and in the worksheet
+tool's picker (`/ai-tools/worksheet?gradeIdx=0&subjectIdx=3`). Not checked: the
+English UI language, the other `/ai-tools` screens, an Android build.
 
 ## Messages can be reacted to with an emoji, 2026-10-10
 
