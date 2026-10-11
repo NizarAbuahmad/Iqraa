@@ -147,3 +147,35 @@ describe('a paper shorter than asked for carries the reason', () => {
     assert.ok(ar.includes('8') && en.includes('3') && en.includes('8'));
   });
 });
+
+// ── A live failure that the offline path cannot cover ───────────────────────
+
+import { generateWithProvenance, aiErrorText, resetGenerationLog } from '../ai/aiProvenance.ts';
+
+describe('live failure followed by a bank-less offline refusal', () => {
+  const live = async () => { throw new Error('HTTP 500'); };
+  const mock = () => service.generateWorksheet(ISLAMIC);
+  const t = (k: string) => (translations as any).en[k] as string;
+
+  it('keeps the live reason on the error and names the right message', async () => {
+    resetGenerationLog();
+    const err = await generateWithProvenance('worksheet', live, mock, { demoMode: false, strict: false })
+      .then(() => null, e => e);
+    assert.ok(refuses(err));
+    assert.equal(aiErrorMessageKey(err), 'noQuestionBankLiveFailed');
+    const text = aiErrorText(err, t as any);
+    assert.ok(text.includes('HTTP 500') && text.includes(t('noQuestionBankLiveFailed')), text);
+    assert.ok((translations as any).ar.noQuestionBankLiveFailed && (translations as any).ar.aiErrorReason);
+  });
+
+  it('demo mode keeps the demo sentence and shows no reason', async () => {
+    const err = await generateWithProvenance('worksheet', live, mock, { demoMode: true })
+      .then(() => null, e => e);
+    assert.equal(aiErrorMessageKey(err), 'noQuestionBank');
+    assert.equal(aiErrorText(err, t as any), t('noQuestionBank'));
+  });
+
+  it('other errors never gain a raw reason', () => {
+    assert.equal(aiErrorText(new Error('HTTP 500'), t as any), t('generationFailed'));
+  });
+});

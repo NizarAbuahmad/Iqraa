@@ -8,7 +8,8 @@
  * well. One row per (key, day) so re-entering a day corrects it rather than
  * double-counting.
  *
- * `site_signups` — waitlist and contact-form submissions from iqrra.com. They
+ * `site_signups` — waitlist and contact-form submissions from iqrra.com, and
+ * feature ideas from signed-out visitors to app.iqrra.com (kind `idea`). They
  * used to exist only as Resend contacts (unreadable with a sending-only key)
  * or as emails in an inbox; the site's Vercel functions now also post them
  * here (POST /api/site/signups, admin.ts).
@@ -29,7 +30,7 @@ export const manualMetrics = pgTable(
   t => [unique("manual_metrics_key_day_unique").on(t.key, t.recordedOn)],
 );
 
-export type SiteSignupKind = "waitlist" | "contact";
+export type SiteSignupKind = "waitlist" | "contact" | "idea"; // idea: «اقترح ميزة» from a signed-out visitor (POST /site/ideas)
 
 export const siteSignups = pgTable(
   "site_signups",
