@@ -13,6 +13,7 @@ import assert from "node:assert/strict";
 import { BOOK_FIGURE_BASE_URL } from "@workspace/curriculum";
 import { convertWorksheet, type WorksheetInput } from "../fromWorksheet.ts";
 import { QUESTION_TYPES } from "../questionTypes.ts";
+import { sanitizeQuestionForStudent } from "../studentView.ts";
 
 type Q = WorksheetInput["sections"][number]["questions"][number];
 
@@ -138,5 +139,140 @@ describe("convertWorksheet", () => {
     assert.deepEqual(only(one({ text: "س", points: 1, figure: fig }, "3")).body["figure"], fig);
     const foreign = only(one({ text: "س", points: 1, figure: { uri: "https://x.example/a.png", caption: "c" } }, "3"));
     assert.equal(foreign.body["figure"], undefined);
+  });
+});
+
+describe("formats", () => {
+  const FIX = "الصحيح: 2x = 6";
+  const WHY = "لأنّ الجمع لا يُوزَّع على الضرب";
+  const asStudent = (q: { type: string; body: Record<string, unknown> }) =>
+    sanitizeQuestionForStudent({ id: "q1", orderIndex: 0, type: q.type, marks: "2", body: q.body }, "attempt-1");
+
+  it("match → matching, auto-marked, pairs by id", () => {
+    const q = only(one({ text: "x", points: 3, format: { kind: "match", stem: "صِل", left: ["2^x = 8", "3^x = 9"], right: ["2", "3"], pairs: [1, 0] } } as any, "١-ب، ٢-أ"));
+    assert.equal(q.type, "matching");
+    assert.deepEqual(q.expectedAnswer, { pairs: [{ left: "l0", right: "r1" }, { left: "l1", right: "r0" }] });
+    assert.deepEqual(q.body["left"], [{ id: "l0", text: "2^x = 8" }, { id: "l1", text: "3^x = 9" }]);
+    assert.deepEqual(q.body["right"], [{ id: "r0", text: "2" }, { id: "r1", text: "3" }]);
+  });
+
+  it("order → matching against positions", () => {
+    const q = only(one({ text: "x", points: 2, format: { kind: "order", stem: "رتّب", steps: ["b", "a", "c"], order: [1, 0, 2] } } as any, "ب، أ، ج"));
+    assert.equal(q.type, "matching");
+    assert.deepEqual((q.expectedAnswer as any).pairs[0], { left: "s1", right: "p0" });
+    assert.deepEqual((q.body["right"] as { text: string }[]).map(r => r.text), ["الأولى", "الثانية", "الثالثة"]);
+    assert.match(String(q.body["stem"]), /^طابق كل خطوة بترتيبها في الحل\.\nرتّب$/);
+  });
+
+  it("order on an English paper uses English positions and instruction", () => {
+    const r = convertWorksheet({
+      sections: [{ questions: [{ text: "x", points: 2, format: { kind: "order", stem: "Order", steps: ["b", "a"], order: [1, 0] } } as any] }],
+      answerKey: [{ num: 1, answer: "a, b" }],
+    }, "en");
+    assert.ok(r.ok);
+    assert.deepEqual((r.questions[0]!.body["right"] as { text: string }[]).map(x => x.text), ["1st", "2nd"]);
+    assert.match(String(r.questions[0]!.body["stem"]), /^Match each step to its position in the solution\.\nOrder$/);
+  });
+
+  it("spot_error → multiple choice over step numbers", () => {
+    const q = only(one({ text: "x", points: 2, format: { kind: "spot_error", stem: "أين الخطأ؟", steps: ["a", "b", "c"], wrongStep: 1, fix: "B", why: "w" } } as any, "الخطوة ٢: B"));
+    assert.equal(q.type, "multiple_choice");
+    assert.deepEqual(q.expectedAnswer, { optionIds: ["b"] });
+    assert.equal(q.body["stem"], "أين الخطأ؟\n1) a\n2) b\n3) c");
+    assert.deepEqual(q.body["options"], [{ id: "a", text: "الخطوة ١" }, { id: "b", text: "الخطوة ٢" }, { id: "c", text: "الخطوة ٣" }]);
+  });
+
+  it("spot_error on an English paper names the steps in English", () => {
+    const r = convertWorksheet({
+      sections: [{ questions: [{ text: "x", points: 2, format: { kind: "spot_error", stem: "Find the error", steps: ["a", "b", "c"], wrongStep: 0, fix: "F", why: "W" } } as any] }],
+      answerKey: [{ num: 1, answer: "Step 1" }],
+    }, "en");
+    assert.ok(r.ok);
+    assert.deepEqual((r.questions[0]!.body["options"] as { text: string }[]).map(o => o.text), ["Step 1", "Step 2", "Step 3"]);
+  });
+
+  it("graph → teacher-marked short answer", () => {
+    const q = only(one({ text: "x", points: 2, format: { kind: "graph", stem: "ارسم", exprs: ["x + 1"], window: { xMin: -3, xMax: 3, yMin: -3, yMax: 3 } } } as any, "(1 ، 2)"));
+    assert.equal(q.type, "short_answer");
+    assert.equal(q.body["prompt"], "ارسم\ny = x + 1");
+    assert.deepEqual(q.expectedAnswer, { modelAnswer: "(1 ، 2)", keyConcepts: ["(1 ، 2)"] });
+  });
+
+  it("a malformed format falls back to the text rules", () => {
+    const q = only(one({ text: "x", points: 2, format: { kind: "match", stem: "s", left: ["a"], right: ["b"], pairs: [5] } } as any, "شرح طويل"));
+    assert.equal(q.type, "short_answer");
+  });
+
+  it("every way a format can be invalid falls through, and still validates", () => {
+    const bad: unknown[] = [
+      { kind: "match", stem: "s", left: ["a", "b"], right: ["x", "y"], pairs: [0] },
+      { kind: "match", stem: "s", left: ["a", "b"], right: ["x", "y"], pairs: [0, 0] },
+      { kind: "match", stem: "s", left: ["a", "b"], right: ["x"], pairs: [0, 0] },
+      { kind: "match", stem: "s", left: ["a", "b"], right: ["x", "y"], pairs: [0, 2] },
+      { kind: "match", stem: "s", left: ["a", "b"], right: ["x", "y"], pairs: [0, 0.5] },
+      { kind: "order", stem: "s", steps: ["a"], order: [0] },
+      { kind: "order", stem: "s", steps: ["a", "b", "c", "d", "e", "f", "g"], order: [0, 1, 2, 3, 4, 5, 6] },
+      { kind: "order", stem: "s", steps: ["a", "b", "c"], order: [0, 0, 1] },
+      { kind: "order", stem: "s", steps: ["a", "b", "c"], order: [0, 1] },
+      { kind: "spot_error", stem: "s", steps: ["a", "b"], wrongStep: 0, fix: "f", why: "w" },
+      { kind: "spot_error", stem: "s", steps: ["a", "b", "c"], wrongStep: 3, fix: "f", why: "w" },
+      { kind: "spot_error", stem: "s", steps: ["a", "b", "c"], wrongStep: -1, fix: "f", why: "w" },
+      { kind: "graph", stem: "s", exprs: [], window: { xMin: -1, xMax: 1, yMin: -1, yMax: 1 } },
+      { kind: "graph", stem: " ", exprs: ["x"], window: { xMin: -1, xMax: 1, yMin: -1, yMax: 1 } },
+      { kind: "other", stem: "s" },
+      "match",
+    ];
+    for (const format of bad) {
+      const q = only(one({ text: "اشرح", points: 2, format } as any, "شرح"));
+      assert.equal(q.type, "short_answer", JSON.stringify(format));
+      assert.equal(q.body["prompt"], "اشرح");
+    }
+  });
+
+  it("counts match, order and spot_error as auto-marked, graph as the teacher's", () => {
+    const r = convertWorksheet({
+      sections: [{ questions: [
+        { text: "m", points: 1, format: { kind: "match", stem: "s", left: ["a", "b"], right: ["x", "y"], pairs: [0, 1] } },
+        { text: "o", points: 1, format: { kind: "order", stem: "s", steps: ["a", "b"], order: [1, 0] } },
+        { text: "e", points: 1, format: { kind: "spot_error", stem: "s", steps: ["a", "b", "c"], wrongStep: 2, fix: "f", why: "w" } },
+        { text: "g", points: 1, format: { kind: "graph", stem: "s", exprs: ["x"], window: { xMin: -1, xMax: 1, yMin: -1, yMax: 1 } } },
+      ] as any }],
+      answerKey: [1, 2, 3, 4].map(num => ({ num, answer: "k" })),
+    });
+    assert.ok(r.ok);
+    assert.deepEqual([r.autoMarked, r.teacherMarked], [3, 1]);
+    for (const q of r.questions) assert.deepEqual(QUESTION_TYPES[q.type].validate({ ...q, rubric: null }), []);
+  });
+
+  // R8: the key rides in expectedAnswer only. What a student is sent is the
+  // type's own projection of the body, so both are checked.
+  it("never puts the fix or the reason in anything a student can read", () => {
+    const q = only(one({ text: "x", points: 2, format: { kind: "spot_error", stem: "أين الخطأ؟", steps: ["a", "b", "c"], wrongStep: 1, fix: FIX, why: WHY } } as any, "الخطوة ٢"));
+    for (const seen of [JSON.stringify(q.body), JSON.stringify(asStudent(q).body)]) {
+      assert.ok(!seen.includes(FIX), seen);
+      assert.ok(!seen.includes(WHY), seen);
+    }
+    assert.ok(!JSON.stringify(q.expectedAnswer).includes(FIX));
+  });
+
+  it("never puts the pairing or the order in a match or order body", () => {
+    const m = only(one({ text: "x", points: 2, format: { kind: "match", stem: "صِل", left: ["a", "b"], right: ["x", "y"], pairs: [1, 0] } } as any, "k"));
+    const o = only(one({ text: "x", points: 2, format: { kind: "order", stem: "رتّب", steps: ["b", "a", "c"], order: [1, 0, 2] } } as any, "k"));
+    for (const q of [m, o]) {
+      for (const seen of [q.body, asStudent(q).body]) {
+        for (const key of ["pairs", "order", "wrongStep", "fix", "why", "expectedAnswer"]) assert.ok(!(key in seen), key);
+      }
+    }
+  });
+
+  it("a student is given the matching question's stem, which is the problem", () => {
+    const o = only(one({ text: "x", points: 2, format: { kind: "order", stem: "رتّب حل 2x + 1 = 7", steps: ["b", "a"], order: [1, 0] } } as any, "k"));
+    assert.equal(asStudent(o).body["stem"], "طابق كل خطوة بترتيبها في الحل.\nرتّب حل 2x + 1 = 7");
+  });
+
+  it("carries a book figure on a format question too", () => {
+    const fig = { uri: `${BOOK_FIGURE_BASE_URL}/a/p1.png`, caption: "ص ١" };
+    const q = only(one({ text: "x", points: 2, figure: fig, format: { kind: "graph", stem: "ارسم", exprs: ["x"], window: { xMin: -1, xMax: 1, yMin: -1, yMax: 1 } } } as any, "k"));
+    assert.deepEqual(q.body["figure"], fig);
   });
 });
