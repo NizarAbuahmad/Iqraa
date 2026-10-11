@@ -68,3 +68,25 @@ export function mergeNewMessages<T extends { id: string; seen?: boolean; reactio
   if (fresh.length === 0 && !changed) return current;
   return fresh.length === 0 ? held : [...fresh, ...held];
 }
+
+/**
+ * The polled page with `reactions` blanked for every message whose reaction
+ * request is still in flight, so the poll cannot undo the viewer's own tap.
+ *
+ * A poll issued before a PUT/DELETE reaches the server still shows the old
+ * chips; merged as-is it would flash them over the optimistic update. Blanking
+ * (`undefined`, not `[]`) is "no news" to `mergeNewMessages` — an absent field
+ * leaves the held reactions alone, while `[]` would mean "someone removed them
+ * all". Every other field of the message (`seen`, the body) passes through, so
+ * read receipts and new messages in the same poll are unaffected.
+ *
+ * Nothing pending returns the same array, so a quiet poll costs no re-render.
+ * Never mutates its input.
+ */
+export function withoutPendingReactions<T extends { id: string; reactions?: ReactionLike[] }>(
+  polled: T[],
+  pending: ReadonlySet<string>,
+): T[] {
+  if (pending.size === 0) return polled;
+  return polled.map(m => (pending.has(m.id) ? { ...m, reactions: undefined } : m));
+}
