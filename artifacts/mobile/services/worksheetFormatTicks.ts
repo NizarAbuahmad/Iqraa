@@ -17,7 +17,12 @@ export type FormatAvailabilityMap = Record<FormatKind, boolean>;
 
 export interface TickContext {
   isHomework: boolean;
-  availability: FormatAvailabilityMap;
+  /**
+   * What the grounded lesson can supply, or null when no lesson is grounded
+   * (empty or half-typed topic). Null judges nothing: a tick is only greyed
+   * once there is a lesson to say it cannot be built from.
+   */
+  availability: FormatAvailabilityMap | null;
 }
 
 /** The selection a teacher gets back when every ticked type is taken away. */
@@ -26,14 +31,27 @@ export const DEFAULT_QUESTION_TYPES = ['multiple_choice', 'short_answer'] as con
 export function formatTicks(ctx: TickContext): { shown: FormatKind[]; greyed: FormatKind[] } {
   if (ctx.isHomework) return { shown: [], greyed: [] };
   const shown = [...FORMAT_KINDS];
-  return { shown, greyed: shown.filter(k => !ctx.availability[k]) };
+  const availability = ctx.availability;
+  return { shown, greyed: availability ? shown.filter(k => !availability[k]) : [] };
+}
+
+/**
+ * Whether a tick draws as checked. A greyed tick draws unchecked but stays in
+ * the stored selection: the teacher's choice survives a passing topic (typing
+ * a title passes through ungrounded and other lessons' states) and comes back
+ * if the lesson changes to one that supports it.
+ */
+export function isTickChecked<T extends string>(type: T, selected: Set<T>, ctx: TickContext): boolean {
+  return selected.has(type) && !(isFormatKind(type) && formatTicks(ctx).greyed.includes(type));
 }
 
 /**
  * The selection with unavailable formats removed (all formats, for homework).
- * Returns the SAME set when nothing changed so a state effect built on it does
- * not loop. Never empty: a selection that was only formats falls back to the
- * default ordinary types.
+ * Used for the REQUEST, and — with `availability: null`, which leaves only the
+ * homework rule — for the stored selection. Greyed formats are not stripped
+ * from the stored selection (see `isTickChecked`). Returns the SAME set when
+ * nothing changed so a state effect built on it does not loop. Never empty: a
+ * selection that was only formats falls back to the default ordinary types.
  */
 export function sanitizeQuestionTypes<T extends string>(selected: Set<T>, ctx: TickContext): Set<T> {
   const greyed = new Set<string>(formatTicks(ctx).greyed);

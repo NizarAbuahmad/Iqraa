@@ -15,7 +15,7 @@ import { getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbC
 import { pooledVariantId } from '@/services/ai/regeneration';
 import { WorksheetOutput, type QuestionFigure } from '@/services/ai/AIService';
 import { formatAvailability, isFormatKind } from '@/services/ai/worksheetFormats';
-import { formatTicks, sanitizeQuestionTypes } from '@/services/worksheetFormatTicks';
+import { formatTicks, isTickChecked, sanitizeQuestionTypes } from '@/services/worksheetFormatTicks';
 import { buildDeckFromWorksheet } from '@/services/classDeck';
 import { ShortPaperNotice } from '@/components/ui/ShortPaperNotice';
 import { bookFigureUri } from '@/services/bookFigureUri';
@@ -279,15 +279,13 @@ export default function WorksheetScreen() {
   const isHomework = readHomeworkParam(params.isHomework);
 
   // The four formats come from the lesson's question bank, so a lesson with
-  // too little of it cannot offer them. With no topic yet there is nothing to
-  // judge, so nothing is greyed (the button is disabled anyway). Subject is the
-  // one the request carries, so the tick and the generator agree.
+  // too little of it cannot offer them. Judged only once a lesson is GROUNDED:
+  // a half-typed title grounds to nothing, which says nothing about the bank.
+  // Subject is the one the request carries, so the tick and the generator agree.
   const subjectName = subjects[subjectIdx].name;
   const groundedKbId = groundedKb?.id;
   const availability = useMemo(
-    () => (topic.trim()
-      ? formatAvailability(topic.trim(), groundedKb, subjectName)
-      : { match: true, order: true, spot_error: true, graph: true }),
+    () => (groundedKb ? formatAvailability(topic.trim(), groundedKb, subjectName) : null),
     // groundedKb is a fresh object each render; its id is what identifies it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [topic, groundedKbId, subjectName],
@@ -295,12 +293,12 @@ export default function WorksheetScreen() {
   const tickCtx = { isHomework, availability };
   const { shown: shownFormats, greyed: greyedFormats } = formatTicks(tickCtx);
 
-  // A greyed tick (or any tick, on homework) leaves the selection rather than
-  // staying ticked and invisible — and again at request time, below, since a
-  // route param can hand this screen a stale selection before the effect runs.
+  // Homework never builds formats, so a carried-in tick leaves the stored
+  // selection. A GREYED tick does not: it draws unchecked and is dropped from
+  // the request below, but stays selected so typing a title cannot wipe it.
   useEffect(() => {
-    setSelectedTypes(prev => sanitizeQuestionTypes(prev, { isHomework, availability }));
-  }, [isHomework, availability]);
+    setSelectedTypes(prev => sanitizeQuestionTypes(prev, { isHomework, availability: null }));
+  }, [isHomework]);
 
   /**
    * A hand-edit invalidates whatever the verifier proved about that question
@@ -406,7 +404,7 @@ export default function WorksheetScreen() {
         lang,
         difficulty: DIFFICULTY_MAP[DIFFICULTY_IDS[diffIdx]],
         numQuestions: NUM_Q_OPTIONS[numQIdx],
-        questionTypes: Array.from(sanitizeQuestionTypes(selectedTypes, { isHomework, availability })),
+        questionTypes: Array.from(sanitizeQuestionTypes(selectedTypes, tickCtx)),
         includePriorReview,
         regenerate: opts?.regenerate === true,
         previous,
@@ -721,7 +719,7 @@ export default function WorksheetScreen() {
               <CheckboxRow
                 key={type}
                 label={typeLabels[type]}
-                checked={selectedTypes.has(type)}
+                checked={isTickChecked(type, selectedTypes, tickCtx)}
                 onToggle={() => toggleType(type)}
                 accent={ACCENT}
                 colors={colors}
