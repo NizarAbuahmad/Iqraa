@@ -18,6 +18,7 @@ import {
 import { linkedEditionYear } from '@/services/nccdEdition';
 import { readableOn } from '@/services/readableColor';
 import { BackButton } from '@/components/ui/BackButton';
+import { NationalBookBanner } from '@/components/ui/NationalBookBanner';
 
 function DownloadChip({ label, url, icon, color }: {
   label: string; url: string; icon: 'download-outline' | 'school-outline' | 'clipboard-outline'; color: string;
@@ -63,9 +64,8 @@ export default function SubjectsScreen() {
 
   // Math/Chem/Finlit have one book per semester, so "Semester 1" alone tells
   // them apart. English has several different books (different school
-  // tracks — Commerce, Agriculture, Hospitality, Industrial — the way
-  // different Jordanian private schools use different English series) that
-  // all happen to be Semester 1. Showing "Semester 1" on every card there
+  // tracks — Commerce, Agriculture, Hospitality, Industrial — all Ministry of
+  // Education books, see `nationalBook.ts`) that all happen to be Semester 1. Showing "Semester 1" on every card there
   // would make four cards read identically. Fall back to the book's own
   // title whenever more than one book on this screen shares a semester.
   const semesterCounts = new Map<number, number>();
@@ -93,6 +93,7 @@ export default function SubjectsScreen() {
           <Text style={[styles.heroSub, { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('selectSemester')}
           </Text>
+          <NationalBookBanner subjectId={subjectId} color="#fff" />
         </View>
       </View>
 

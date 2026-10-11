@@ -9,6 +9,7 @@
 import * as ImagePicker from 'expo-image-picker';
 import { apiFetch } from './apiClient.ts';
 import { downscaleImage } from './imageDownscale.ts';
+import type { ChatReaction } from './messageReactions.ts';
 
 export type ChatAttachmentKind = 'image' | 'audio' | 'document';
 
@@ -65,6 +66,8 @@ export interface ChatMessage {
   createdAt: string;
   /** Own messages only: someone else's screen has shown it. Absent on others' messages and on older API builds. */
   seen?: boolean;
+  /** Absent on older API builds — read it as []. */
+  reactions?: ChatReaction[];
 }
 
 export interface ChatThreadSummary {
@@ -318,6 +321,23 @@ export async function sendMessage(
   });
   const data = await readJson<{ message: ChatMessage }>(res, 'Sending message');
   return data.message;
+}
+
+/** Put (or replace) your reaction on a message. Answers with that message's fresh chips. */
+export async function setReaction(threadId: string, messageId: string, emoji: string): Promise<ChatReaction[]> {
+  const res = await apiFetch(`/messaging/threads/${threadId}/messages/${messageId}/reaction`, {
+    method: 'PUT',
+    body: JSON.stringify({ emoji }),
+  });
+  const data = await readJson<{ reactions: ChatReaction[] }>(res, 'Reacting to message');
+  return data.reactions;
+}
+
+/** Take your reaction off a message. Safe to repeat. */
+export async function clearReaction(threadId: string, messageId: string): Promise<ChatReaction[]> {
+  const res = await apiFetch(`/messaging/threads/${threadId}/messages/${messageId}/reaction`, { method: 'DELETE' });
+  const data = await readJson<{ reactions: ChatReaction[] }>(res, 'Removing reaction');
+  return data.reactions;
 }
 
 /**
