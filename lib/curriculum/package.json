@@ -15,6 +15,7 @@
     "./lab": "./src/lab.ts",
     "./quran-titles": "./src/quranTitles.ts",
     "./quran-memorize": "./src/quranMemorize.ts",
+    "./quran-resources": "./src/quranResources.ts",
     "./elements": "./src/elements.ts",
     "./practice": "./src/practice.ts",
     "./premade": "./src/premade.ts",
