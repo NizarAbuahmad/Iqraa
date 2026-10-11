@@ -18,7 +18,11 @@ for i in range(0, int(dur * 2)):
     t = i / 2
     run("ffmpeg", "-v", "error", "-y", "-ss", str(t), "-i", path, "-frames:v", "1", "/tmp/_v.png")
     a = np.array(Image.open("/tmp/_v.png").convert("RGB")).astype(int)
-    br = a.max(-1) > 150
+    # Dark grounds (navy / deep teal): content in a margin is anything bright. Light grounds (the paper reels):
+    # the ground itself is bright, so content is anything clearly darker than paper or its teal haze.
+    light = a[:40, :40].mean() > 200
+    lum = a @ np.array([0.299, 0.587, 0.114])
+    br = (lum < 200) if light else (a.max(-1) > 150)
     top, bot, rail = br[:270].sum(), br[-384:].sum(), br[1000:1536, -120:].sum()
     if top or bot or rail:
         bad += 1; print(f"  t={t:.1f}s bright px in margins: top {top} bottom {bot} right-rail {rail}")

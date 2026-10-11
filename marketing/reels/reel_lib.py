@@ -84,10 +84,23 @@ class FrameReader:
         self.proc.stdout.close()
 
 
-def background():
+# Grounds. "navy" is Reels 1-4 and 6-9 as shipped; "paper" and "teal" are the app's own palette
+# (Paper #F6F5F1, Primary teal #006D65, Midnight ink #0B1B33, logo teal #00A99D) for the re-branded reels.
+THEMES = {
+    "navy": dict(base=NAVY, blobs=[(540, 560, 760, (52, 214, 198), .16), (80, 1780, 700, (0, 169, 157), .14)],
+                 shadow=(2, 8, 20), shadow_a=1.0, edge=(255, 255, 255, 46)),
+    "paper": dict(base=(246, 245, 241), blobs=[(900, 330, 820, (0, 169, 157), .20), (120, 1700, 760, (52, 214, 198), .22)],
+                  shadow=(11, 27, 51), shadow_a=0.42, edge=(11, 27, 51, 34)),
+    "teal": dict(base=(0, 84, 79), blobs=[(540, 760, 980, (0, 169, 157), .75), (60, 1820, 820, (11, 27, 51), .85)],
+                 shadow=(2, 22, 26), shadow_a=1.0, edge=(255, 255, 255, 64)),
+}
+
+
+def background(theme="navy"):
+    t = THEMES[theme]
     yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
-    base = np.zeros((H, W, 3), np.float32) + np.array(NAVY, np.float32)
-    for cx, cy, r, col, a in [(540, 560, 760, (52, 214, 198), .16), (80, 1780, 700, (0, 169, 157), .14)]:
+    base = np.zeros((H, W, 3), np.float32) + np.array(t["base"], np.float32)
+    for cx, cy, r, col, a in t["blobs"]:
         d = np.sqrt((xx - cx) ** 2 + (yy - cy) ** 2) / r
         base += (np.clip(1 - d, 0, 1) ** 2 * a)[..., None] * (np.array(col, np.float32) - base)
     return Image.fromarray(np.clip(base, 0, 255).astype(np.uint8), "RGB")
@@ -179,7 +192,7 @@ def draw_box(card, rect, to_card, scale, t_rel, ann):
     card.alpha_composite(big.resize(card.size, Image.LANCZOS))
 
 
-def render_scene(sc, take, reader, bg, t_rel):
+def render_scene(sc, take, reader, bg, t_rel, theme=THEMES["navy"]):
     t_src = sc["src"] + sc["rate"] * t_rel
     if "src_end" in sc:
         t_src = min(t_src, sc["src_end"])
@@ -217,11 +230,12 @@ def render_scene(sc, take, reader, bg, t_rel):
     left, top = BOX_CX - pw // 2, BOX_CY - ph // 2
     frame = bg.copy().convert("RGBA")
     sh, pad = card_shadow(pw, ph)
-    shadow = Image.new("RGBA", sh.size, (2, 8, 20, 0)); shadow.putalpha(sh)
+    shadow = Image.new("RGBA", sh.size, theme["shadow"] + (0,))
+    shadow.putalpha(sh.point(lambda v: int(v * theme["shadow_a"])))
     frame.alpha_composite(shadow, (left - pad, top - pad))
     frame.paste(foot, (left, top), card_mask(pw, ph))
     edge = Image.new("RGBA", (pw, ph), (0, 0, 0, 0))
-    ImageDraw.Draw(edge).rounded_rectangle((0, 0, pw - 1, ph - 1), RADIUS, outline=(255, 255, 255, 46), width=2)
+    ImageDraw.Draw(edge).rounded_rectangle((0, 0, pw - 1, ph - 1), RADIUS, outline=theme["edge"], width=2)
     frame.alpha_composite(edge, (left, top))
     return frame
 
@@ -246,7 +260,8 @@ def build(cfg):
     total = t_end + cfg.get("end_dur", 3.7)
     imgs = {o["png"]: Image.open(OV / f"{o['png']}.png").convert("RGBA") for o in cfg["overlays"]}
     end_img = Image.open(OV / f"{cfg['end']}.png").convert("RGB")
-    bg = background()
+    theme = THEMES[cfg.get("theme", "navy")]
+    bg = background(cfg.get("theme", "navy"))
     OUT.mkdir(exist_ok=True)
     silent = OUT / f"_{cfg['name']}_silent.mp4"
     enc = subprocess.Popen(
@@ -268,7 +283,7 @@ def build(cfg):
                 cur = idx
                 readers[idx] = FrameReader(take_for(sc), sc["src"])
             t_rel = tt - sc["t0"]
-            frame = render_scene(sc, take_for(sc), readers[idx], bg, t_rel)
+            frame = render_scene(sc, take_for(sc), readers[idx], bg, t_rel, theme)
             last[idx] = frame
             if prev_last is not None and t_rel < XFADE:
                 frame = Image.blend(prev_last, frame, ease(t_rel / XFADE))
