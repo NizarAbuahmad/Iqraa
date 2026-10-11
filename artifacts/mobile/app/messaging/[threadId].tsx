@@ -60,7 +60,7 @@ import { chatThreadSubtitle } from '@/services/chatThreadSubtitle';
 import { chatRoleLabel } from '@/services/chatRoleLabel';
 import { startsSenderRun } from '@/services/senderRuns';
 import { ParticipantPickerSheet } from '@/components/ui/ParticipantPickerSheet';
-import { mergeNewMessages } from '@/services/messageMerge';
+import { mergeNewMessages, withoutPendingReactions } from '@/services/messageMerge';
 import { pickUnreportedReads } from '@/services/readReceipts';
 import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { useStudentAccountsEnabled } from '@/services/features';
@@ -144,7 +144,7 @@ export default function ThreadScreen() {
       const polled = await listMessages(threadId);
       // A message mid-reaction keeps what the tap put on screen; `reactions: undefined`
       // is "no news" to mergeNewMessages.
-      const safe = polled.map(m => (pendingReactions.current.has(m.id) ? { ...m, reactions: undefined } : m));
+      const safe = withoutPendingReactions(polled, pendingReactions.current);
       setMessages(prev => mergeNewMessages(prev, safe));
     } catch {
       // Leave the open thread exactly as it was.
