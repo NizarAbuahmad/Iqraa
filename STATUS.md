@@ -961,8 +961,11 @@ the AI assistant) now takes one fixed-set reaction per person per message:
   declaration identical; `reactionEmojiParity.test.ts` reads both as text.
   `❤️` is two code points, and a bare U+2764 is refused on purpose.
 - **Poll limit.** The thread polls every 10 s and fetches only the newest page,
-  so a reaction on an older scrolled-back message appears on reopening. A poll
-  that started before your own tap lands can flash the old chips until the next one.
+  so a reaction on an older scrolled-back message appears on reopening. While your
+  own tap is in flight the poll cannot undo it (`withoutPendingReactions` in
+  `services/messageMerge.ts`, tested through the real merge, including a control
+  that shows a stale poll *would* wipe it); a poll that started before the tap
+  settled but resolves after it can still flash the old chips until the next one.
 - **Long-press changed.** It used to open the report picker straight away; it now
   opens the sheet first (report is the first row under the emoji row, above the
   teacher-only reactor list; the picker is unchanged).
@@ -1013,10 +1016,16 @@ the AI assistant) now takes one fixed-set reaction per person per message:
   bubble uses, so both open the sheet. This follows React Native's `Pressable`
   semantics and was checked by typecheck and reading only — **confirm on a
   device** that holding a chip opens the sheet and does not change the reaction.
-- **Known follow-up, not done:** `chat_message_reactions_message_idx` duplicates the
-  leading column of the unique `(message_id, user_id)` index, and there is no index
-  on `user_id` (account deletion's cascade has to scan). Cheap to fix with a new
-  migration if it ever matters.
+- **Indexes fixed 2026-10-11 (migration `0004`).** `0003` created
+  `chat_message_reactions_message_idx`, which duplicated the leading column of the
+  unique `(message_id, user_id)` index, and left `user_id` unindexed (the
+  `users` ON DELETE CASCADE had to scan). `0004` drops the duplicate and adds
+  `chat_message_reactions_user_idx`. `DROP INDEX` is not in CI's destructive
+  pattern and nothing refers to the index by name, so no
+  `destructive-migration: ok` line was needed. Checked on a throwaway Postgres 16
+  by applying `0000`–`0003` (production's state), seeding reactions, then `0004`:
+  rows kept, `message_id` lookups use the unique index, the cascade uses the new
+  `user_id` index (and deleting an account removed exactly its reactions).
 
 ## Greek letters and degrees cut an equation in two, 2026-10-10
 
