@@ -625,6 +625,10 @@ const translations = {
     aiUnavailable: 'خدمة الذكاء الاصطناعي متوقفة حاليًا. حاول لاحقًا.',
     // The offline demo has real questions for maths and chemistry only.
     noQuestionBank: 'لا يتوفر بعد بنك أسئلة لهذا الدرس في النسخة التجريبية، لذلك لا نعرض أسئلة عامة لا تخص الدرس. جرّب خطة الدرس أو الأنشطة، أو درسًا من الرياضيات أو الكيمياء.',
+    // The live call failed AND the offline path has no bank for this lesson —
+    // the cause is the failed call, not the demo, so say that and show why.
+    noQuestionBankLiveFailed: 'تعذّر توليد المحتوى عبر الذكاء الاصطناعي، ولا يتوفر بنك أسئلة محلي لهذا الدرس كبديل. حاول مرة أخرى، أو جرّب درسًا من الرياضيات أو الكيمياء.',
+    aiErrorReason: 'السبب:',
     // Shown with a result, not instead of one: the teacher asked for something
     // new and got a saved copy, and must not mistake it for a fresh generation.
     aiServedSavedCopy: 'هذه نسخة محفوظة — انتهت حصة التوليد الجديد لهذا الشهر.',
@@ -1178,6 +1182,10 @@ const translations = {
     suggestFeatureAnother: 'اقترح فكرة أخرى',
     suggestFeatureFailed: 'تعذّر إرسال اقتراحك. تحقّق من اتصالك وحاول مرة أخرى — نصّك ما زال هنا.',
     suggestFeatureSessionExpired: 'انتهت جلستك. سجّل الدخول من جديد ثم أرسل اقتراحك.',
+    suggestFeatureEmailPlaceholder: 'بريدك الإلكتروني (اختياري — لنردّ عليك)',
+    suggestFeatureAuthLink: 'عندك فكرة لـ«إقرأ»؟ اقترح ميزة',
+    suggestFeatureEmailInvalid: 'هذا البريد الإلكتروني لا يبدو صحيحًا. صحّحه أو اترك الحقل فارغًا.',
+    suggestFeatureTooMany: 'أرسلت عدة اقتراحات خلال وقت قصير. حاول مرة أخرى بعد قليل — نصّك ما زال هنا.',
     faqQ1: 'من أين أبدأ؟',
     faqA1: 'من شاشة «إقرأ». اكتب ما تحتاجه بلغتك — مثل «حضّر خطة درس عن تركيب الاقترانات» — أو اضغط زر ➕ بجانب مربّع الكتابة لاختيار الأداة مباشرة.',
     faqQ2: 'كيف أحدّد الدرس الذي أعمل عليه؟',
@@ -1279,6 +1287,9 @@ const translations = {
     // Live-AI answers, and anything else not drawn from the bank: nothing and
     // nobody checked them, so the teacher has to.
     answersUnreviewedAll: 'لم يتحقّق أي مصدر مُراجَع من هذه الإجابات، وقد وُلِّدت تلقائيًا — راجعها بنفسك قبل التوزيع',
+    // Step-by-step working a model wrote, as opposed to the offline bank's, which
+    // a person wrote and checked. See `workingProvenance`.
+    workingUnreviewed: 'الخطوات المكتوبة في هذه الورقة وُلِّدت بالذكاء الاصطناعي ولم يراجعها أحد — راجعها بنفسك قبل التوزيع',
     answersUnreviewedSome: (n: number, total: number) =>
       `لم يتحقّق أي مصدر مُراجَع من ${n} من أصل ${total} إجابة، وقد وُلِّدت تلقائيًا — راجعها بنفسك قبل التوزيع`,
     examplesAiUnverified: 'كتب الذكاء الاصطناعي المثال ولم يتحقّق أحد من إجابته — راجعها قبل العرض',
@@ -3043,6 +3054,8 @@ const translations = {
       "This month's AI allowance is used up. You can still open saved worksheets and lessons.",
     aiUnavailable: 'The AI service is switched off right now. Try again later.',
     noQuestionBank: 'The demo has no question bank for this lesson yet, so we won\'t show generic questions that aren\'t about it. Try the lesson plan or activities, or a maths or chemistry lesson.',
+    noQuestionBankLiveFailed: 'AI generation failed, and there is no offline question bank for this lesson to fall back on. Try again, or pick a maths or chemistry lesson.',
+    aiErrorReason: 'Reason:',
     aiServedSavedCopy: "This is a saved copy — this month's AI allowance is used up.",
     curriculumUngroundedNotice: 'This topic is not in the currently available curriculum. The plan is generic and not grounded in a specific textbook lesson.',
     curriculumUngroundedNoticeWorksheet: 'This topic is not in the currently available curriculum. The worksheet is generic and not grounded in a specific textbook lesson.',
@@ -3578,6 +3591,10 @@ const translations = {
     suggestFeatureAnother: 'Suggest another idea',
     suggestFeatureFailed: "Couldn't send your suggestion. Check your connection and try again — your text is still here.",
     suggestFeatureSessionExpired: 'Your session has ended. Sign in again, then send your suggestion.',
+    suggestFeatureEmailPlaceholder: 'Your email (optional — so we can reply)',
+    suggestFeatureAuthLink: 'Have an idea for Iqrra? Suggest a feature',
+    suggestFeatureEmailInvalid: "That email doesn't look right. Fix it or leave the field empty.",
+    suggestFeatureTooMany: "You've sent several suggestions in a short time. Try again in a little while — your text is still here.",
     faqQ1: 'Where do I start?',
     faqA1: 'On the Iqrra screen. Type what you need in your own words — "prepare a lesson plan on function composition" — or press the ➕ next to the message box to pick a tool directly.',
     faqQ2: 'How do I set which lesson I am working on?',
@@ -3673,6 +3690,9 @@ const translations = {
     levelsPartial: 'Some levels could not be built. The ones that finished are shown; try the rest again later.',
     quizVerifiedNone: 'No answer was symbolically verified — keys come from the reviewed bank',
     answersUnreviewedAll: 'No reviewed source has checked these answers, and they were generated automatically — check them yourself before handing out',
+    // Step-by-step working a model wrote, as opposed to the offline bank's, which
+    // a person wrote and checked. See `workingProvenance`.
+    workingUnreviewed: 'The step-by-step working on this sheet was written by AI and nobody has reviewed it — check it yourself before handing out',
     answersUnreviewedSome: (n: number, total: number) =>
       `No reviewed source has checked ${n} of ${total} answers, and they were generated automatically — check them yourself before handing out`,
     examplesAiUnverified: "The example was written by AI and nobody has checked its answer — review it before class",

@@ -22,7 +22,7 @@ import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PickerField } from '@/components/ui/PickerField';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
-import { aiErrorMessageKey, isAbortError, throwIfAborted } from '@/services/ai/aiProvenance';
+import { aiErrorText, isAbortError, throwIfAborted } from '@/services/ai/aiProvenance';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { Button } from '@/components/ui/Button';
 import { Toast } from '@/components/ui/Toast';
@@ -597,7 +597,7 @@ export default function SlidesScreen() {
         // are spend on a deck that will never exist — and teaching is live AI
         // even in demo mode. They were left to run to completion.
         controller.abort();
-        setError(t(aiErrorMessageKey(planError)));
+        setError(aiErrorText(planError, t));
         if (previous) restoreDeck(previous);
         return;
       }
@@ -792,7 +792,7 @@ export default function SlidesScreen() {
       // Reached only by a cancel today: every other failure inside is handled
       // where it happens, because a partial deck still has value.
       if (isAbortError(e)) setCancelled(true);
-      else setError(t(aiErrorMessageKey(e)));
+      else setError(aiErrorText(e, t));
       // The draft was a promise of the full deck, and the status box now
       // says that promise was not kept («لم يُنشأ أي محتوى»). Leaving the
       // draft under that message would contradict it — but the deck the
