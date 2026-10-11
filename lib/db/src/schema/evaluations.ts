@@ -158,6 +158,21 @@ export const evaluations = pgTable(
 
     levelScaleId: uuid("level_scale_id").references(() => levelScales.id),
     timeLimitMin: integer("time_limit_min"),
+
+    /**
+     * When the sitting is planned — "YYYY-MM-DD" and an optional "HH:MM", plain
+     * text like the schedule and plan tables so a day compares equal to the
+     * calendar's local-date keys. Both null for the many exams that were never
+     * given a day.
+     *
+     * Planning data, not access control: it does not open or close the student
+     * link (`status` and `shareCodeExpiresAt` do that). It exists so teachers at
+     * one school can see each other's dates and avoid putting a grade through
+     * two exams on the same day — see `lib/examClashes.ts`. A time never exists
+     * without a date (`lib/examDate.ts`).
+     */
+    examDate: text("exam_date"),
+    examTime: text("exam_time"),
     shuffleQuestions: boolean("shuffle_questions").notNull().default(false),
     releaseResultsToStudent: boolean("release_results_to_student").notNull().default(false),
 
@@ -183,6 +198,7 @@ export const evaluations = pgTable(
   t => [
     index("evaluations_teacher_idx").on(t.teacherId),
     index("evaluations_status_idx").on(t.status),
+    index("evaluations_exam_date_idx").on(t.examDate),
   ],
 );
 
