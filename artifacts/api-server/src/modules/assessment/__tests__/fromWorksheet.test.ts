@@ -270,6 +270,24 @@ describe("formats", () => {
     assert.equal(asStudent(o).body["stem"], "طابق كل خطوة بترتيبها في الحل.\nرتّب حل 2x + 1 = 7");
   });
 
+  it("a matching body with no stem, or an empty one, projects to exactly left and right", () => {
+    const columns = { left: [{ id: "l1", text: "a" }, { id: "l2", text: "b" }], right: [{ id: "r1", text: "x" }, { id: "r2", text: "y" }] };
+    for (const body of [columns, { ...columns, stem: "" }, { ...columns, stem: "   " }]) {
+      const out = asStudent({ type: "matching", body }).body;
+      assert.deepEqual(Object.keys(out).sort(), ["left", "right"]);
+      assert.ok(!("stem" in out));
+    }
+  });
+
+  it("graph keeps the working after the key in the model answer, as a solved short answer does", () => {
+    const graph = { kind: "graph", stem: "ارسم", exprs: ["x + 1"], window: { xMin: -3, xMax: 3, yMin: -3, yMax: 3 } };
+    const plain = only(one({ text: "اشرح", points: 2 }, "(1 ، 2)", ["خطوة ١", "خطوة ٢"]));
+    const q = only(one({ text: "x", points: 2, format: graph } as any, "(1 ، 2)", ["خطوة ١", "خطوة ٢"]));
+    assert.equal(q.expectedAnswer["modelAnswer"], "(1 ، 2)\nخطوة ١\nخطوة ٢");
+    assert.deepEqual(q.expectedAnswer, plain.expectedAnswer);
+    assert.deepEqual(q.expectedAnswer["keyConcepts"], ["(1 ، 2)"]);
+  });
+
   it("carries a book figure on a format question too", () => {
     const fig = { uri: `${BOOK_FIGURE_BASE_URL}/a/p1.png`, caption: "ص ١" };
     const q = only(one({ text: "x", points: 2, figure: fig, format: { kind: "graph", stem: "ارسم", exprs: ["x"], window: { xMin: -1, xMax: 1, yMin: -1, yMax: 1 } } } as any, "k"));
