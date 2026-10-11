@@ -53,6 +53,22 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **API credentials are Secret Manager references** (2026-10-08, live since
+  `iqraa-api-00283-twr`). The ten credentials (`SESSION_SECRET`,
+  `DATABASE_URL`, `OPENAI_API_KEY`, both R2 keys, Unsplash, YouTube,
+  `ADMIN_DEBUG_KEY`, `RESEND_API_KEY`, `SITE_INGEST_KEY`) were copied from the
+  live spec without being printed, checked byte-identical by sha256, and
+  switched in one revision; the other 18 env vars are config and stay plain.
+  Verified live: login reaches the database, `/healthz/unsplash` ok, AI budget
+  persisted, no errors on the new revision, and a CI deploy (run 37806853432,
+  `iqraa-api-00284-b9g`) kept all ten references. Since then: `DATABASE_URL`
+  was rotated 2026-10-11 (Neon password reset, secret version 2, `iqraa-api-00314-d7m`, old version
+  disabled — revisions ≤ `00308` now hold a dead password), and the OpenAI
+  audit found production already on a key created 2026-10-07, so the two
+  older, exposed keys were simply revoked. **Still open:** the Google OAuth
+  client secrets from the 2026-09-08 paste (Nizar-only, in Google Cloud
+  Console). Rotation is now `gcloud secrets versions add` + a new revision —
+  see *Rotating a secret* in `docs/deploying.md`.
 - **Android keyboard fix needs a new binary: `version` 1.2.0 → 1.3.0**
   (2026-10-10). `KeyboardSafeView` is keyboard-controller's
   `KeyboardAvoidingView`, and `react-native-keyboard-controller` is a native

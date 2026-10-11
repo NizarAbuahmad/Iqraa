@@ -240,15 +240,26 @@ with a real request, and only then revoke the old one.** Revoking first leaves
 no working key and a broken write path, and the failure will not be where you
 are looking.
 
-Install with `--update-env-vars`, never `--set-env-vars` — the latter replaces
-the whole environment, taking `DATABASE_URL`, `SESSION_SECRET` and everything
-else with it:
+**Credentials live in Secret Manager** (since 2026-10-08 — see *Credentials
+are Secret Manager references* below). Install a new value as a new version,
+piped in so it never sits in shell history or a transcript, then roll a
+revision so instances re-read `latest` (env-var secrets resolve at instance
+start; until a new revision, old instances keep the old value):
 
 ```bash
-gcloud run services update iqraa-api \
-  --region europe-west1 --project iqraa-auth-507315 \
-  --update-env-vars KEY_NAME=NEW_VALUE
+# paste the value, then Ctrl-D (Ctrl-Z Enter on Windows) — no trailing newline
+gcloud secrets versions add KEY_NAME --data-file=- --project iqraa-auth-507315
+gcloud run services update iqraa-api --region europe-west1 \
+  --project iqraa-auth-507315 --update-labels rotated=$(date +%Y%m%d)
 ```
+
+Revoking the old credential at the provider is still the last step. Afterwards
+`gcloud secrets versions disable KEY_NAME --version <old>` so it can't be read
+back either.
+
+Non-secret config (model names, budgets, flags, bucket names) is still plain
+env: change it with `--update-env-vars KEY=VALUE`, never `--set-env-vars` —
+the latter replaces the whole environment.
 
 **Check that the new revision actually took traffic.** This file used to say
 traffic is `latestRevision: true` so it happens by itself. That is the normal
@@ -406,13 +417,34 @@ Public Development URL, not something the token grants — see
 nothing else server-written today) belongs in the public one, not
 `iqraa-media`.
 
-### These are plain env vars, and that has cost something
+### Credentials are Secret Manager references
 
-Every secret above sits in the Cloud Run revision spec as a plain environment
-variable, not a Secret Manager reference. That means anything that prints the
-service description prints the secrets: on 2026-09-06 a `gcloud run services
-describe` dump did exactly that and every `iqraa-api` secret had to be treated as
-exposed. When reading service config, ask for names and never values:
+Until 2026-10-08 every secret sat in the Cloud Run revision spec as a plain
+env var, so anything that printed the service description printed the secrets
+— it happened on 2026-09-06, 2026-09-19 and 2026-09-21, each a full rotation
+trigger. Since revision `iqraa-api-00283-twr` these ten are
+`valueFrom.secretKeyRef` → a secret of the same name, version `latest`:
+
+```
+SESSION_SECRET  DATABASE_URL  OPENAI_API_KEY  R2_ACCESS_KEY_ID
+R2_SECRET_ACCESS_KEY  UNSPLASH_ACCESS_KEY  YOUTUBE_API_KEY
+ADMIN_DEBUG_KEY  RESEND_API_KEY  SITE_INGEST_KEY
+```
+
+A describe of the service or a new revision now shows the reference, not the
+value. The runtime account (`613126375862-compute@…`) holds
+`secretmanager.secretAccessor` on each secret individually; `deploy.yml`'s
+`--update-env-vars` deploys keep the references untouched (proved by run
+37806853432). A **new** credential needs the same three steps: `gcloud secrets
+create NAME --data-file=-`, `gcloud secrets add-iam-policy-binding NAME
+--member=serviceAccount:613126375862-compute@developer.gserviceaccount.com
+--role=roles/secretmanager.secretAccessor`, then `gcloud run services update
+iqraa-api --update-secrets=NAME=NAME:latest`. A new `EXPO_PUBLIC_*` is not a
+secret — it ships in the bundle.
+
+**Old revisions still hold the plain values.** `iqraa-api-00282-9vd` and
+earlier carry them in their spec, so `gcloud run revisions describe` on one of
+them still prints secrets. Ask for names only, as before:
 
 ```bash
 gcloud run services describe iqraa-api --region europe-west1 \
@@ -420,9 +452,9 @@ gcloud run services describe iqraa-api --region europe-west1 \
   --format="value(spec.template.spec.containers[0].env[].name)"
 ```
 
-Moving these to Secret Manager would make that class of leak impossible rather
-than merely discouraged. Until then the rule is the awkward one: never print a
-value, and treat any transcript that shows one as a rotation trigger.
+Rotating a credential retires its old value from those revisions too, which is
+the real fix. `gcloud secrets versions access` prints the value by design — it
+is the one command that should, so never run it into a transcript.
 
 ## The Android app (Google Play)
 
