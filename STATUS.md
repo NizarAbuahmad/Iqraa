@@ -481,7 +481,10 @@ an announcement by default» below.
     3 + 5») until each row was bidi-isolated; the generated markup now lays
     the digits left to right.
     Not verified: **the live model's real solutions, the verifier on real
-    model output, token cost and latency** (the client times out at 60 s; two
+    model output, token cost and latency** (run `artifacts/api-server/scripts/solve-eval.mjs`
+    against a live API with a real key — 21 problems, prints the verified /
+    unchecked split and latency, and fails the one hard rule if a prose or
+    injection problem ever gets a ✓; it has only been run against the AI-off API) (the client times out at 60 s; two
     model calls plus two 8 s verifier timeouts can exceed it, and the server
     still bills), touch on a real phone, Android, native PDF share, a board
     near the 2 MB cap. Known limits: steps show in the Latin notation the
