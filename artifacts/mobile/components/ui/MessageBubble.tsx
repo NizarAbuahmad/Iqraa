@@ -52,17 +52,25 @@ interface Props {
   /** Chips under the bubble. Tapping one toggles the viewer's own reaction (the screen decides what that means). */
   reactions?: ChatReaction[];
   onReactionPress?: (emoji: string) => void;
+  /**
+   * A long-press that STARTS on a chip. Without this the chip's Pressable takes
+   * the touch and, having no onLongPress, fires onPress on release — so holding
+   * a chip toggled the reaction instead of reaching the bubble's long-press
+   * handler. The screen passes the same action the bubble's own long-press runs.
+   */
+  onReactionLongPress?: () => void;
   /** Spoken label for a chip — passed in so this component needs no translation hook. */
   reactionLabel?: (r: ChatReaction) => string;
 }
 
 function ReactionChips({
-  reactions, colors, isRTL, onPress, label,
+  reactions, colors, isRTL, onPress, onLongPress, label,
 }: {
   reactions: ChatReaction[];
   colors: Colors;
   isRTL: boolean;
   onPress?: (emoji: string) => void;
+  onLongPress?: () => void;
   label?: (r: ChatReaction) => string;
 }) {
   if (reactions.length === 0) return null;
@@ -72,6 +80,8 @@ function ReactionChips({
         <Pressable
           key={r.emoji}
           onPress={() => onPress?.(r.emoji)}
+          onLongPress={onLongPress}
+          delayLongPress={400}
           accessibilityRole="button"
           accessibilityLabel={label?.(r)}
           hitSlop={6}
@@ -95,7 +105,7 @@ function ReactionChips({
 
 export function MessageBubble({
   body, createdAt, isOwn, isRTL, colors, senderFirstName, senderLastName, attachmentUrl, attachmentKind, seenLabel,
-  senderName, senderRoleLabel, reactions, onReactionPress, reactionLabel,
+  senderName, senderRoleLabel, reactions, onReactionPress, onReactionLongPress, reactionLabel,
 }: Props) {
   const timeLabel = new Date(createdAt).toLocaleTimeString(isRTL ? AR_LATIN : undefined, { hour: '2-digit', minute: '2-digit' });
   const image = attachmentKind === 'image' && attachmentUrl ? (
@@ -117,7 +127,7 @@ export function MessageBubble({
               {seenLabel ? `${timeLabel} · ${seenLabel}` : timeLabel}
             </Text>
           </View>
-          <ReactionChips reactions={reactions ?? []} colors={colors} isRTL={isRTL} onPress={onReactionPress} label={reactionLabel} />
+          <ReactionChips reactions={reactions ?? []} colors={colors} isRTL={isRTL} onPress={onReactionPress} onLongPress={onReactionLongPress} label={reactionLabel} />
         </View>
       </View>
     );
@@ -147,7 +157,7 @@ export function MessageBubble({
             {timeLabel}
           </Text>
         </View>
-        <ReactionChips reactions={reactions ?? []} colors={colors} isRTL={isRTL} onPress={onReactionPress} label={reactionLabel} />
+        <ReactionChips reactions={reactions ?? []} colors={colors} isRTL={isRTL} onPress={onReactionPress} onLongPress={onReactionLongPress} label={reactionLabel} />
       </View>
     </View>
   );

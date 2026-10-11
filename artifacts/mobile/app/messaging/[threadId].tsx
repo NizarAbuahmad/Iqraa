@@ -523,6 +523,12 @@ export default function ThreadScreen() {
             // Group threads name who sent each run of messages; a direct
             // chat's header already says who the other person is.
             const showName = isGroup && !isOwn && !!sender && startsSenderRun(messages, index);
+            // One action for a long-press on the bubble AND on one of its chips
+            // (a chip's own Pressable would otherwise swallow the long-press and toggle).
+            const openSheet = () => {
+              Haptics.selectionAsync();
+              setSheetMessageId(item.id);
+            };
             return (
               <Pressable
                 onPress={() => {
@@ -530,10 +536,7 @@ export default function ThreadScreen() {
                     setViewerUrl(item.attachmentUrl);
                   }
                 }}
-                onLongPress={() => {
-                  Haptics.selectionAsync();
-                  setSheetMessageId(item.id);
-                }}
+                onLongPress={openSheet}
                 delayLongPress={400}
               >
                 <MessageBubble
@@ -551,6 +554,7 @@ export default function ThreadScreen() {
                   seenLabel={isOwn && item.seen ? t('messageSeen') : undefined}
                   reactions={item.reactions}
                   onReactionPress={emoji => void reactTo(item.id, emoji)}
+                  onReactionLongPress={openSheet}
                   reactionLabel={r => t('messageReactionChipLabel', r.emoji, r.count, r.mine)}
                 />
               </Pressable>

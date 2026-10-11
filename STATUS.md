@@ -989,13 +989,17 @@ the AI assistant) now takes one fixed-set reaction per person per message:
   Playwright, and the seed has no user with a password hash. Everything above is
   API + unit tests + typecheck; none of the screen behaviour was seen running.
 - **Not verified on a device:** chip layout and hit area (~38 px with `hitSlop`,
-  under the 44 px guideline); the iOS Modal swap (a 250 ms timer before the report
+  under the 44 px guideline); a long-press that starts on a chip (see below); the iOS Modal swap (a 250 ms timer before the report
   picker opens — if too short, «إبلاغ» would silently do nothing on iOS); RTL
   rendering.
-- **Expected, not just unverified:** a long-press that STARTS on a chip will almost
-  certainly toggle that reaction instead of opening the sheet — the chip
-  `Pressable` has no `onLongPress`, so React Native fires its `onPress` on release.
-  A small follow-up (an `onReactionLongPress` prop) fixes it; it is not done.
+- **Long-press on a chip (fixed 2026-10-11, not seen running).** A long-press that
+  STARTS on a chip used to toggle that reaction instead of opening the sheet: the
+  chip's `Pressable` took the touch and, having no `onLongPress`, fired `onPress`
+  on release. Chips now take `onLongPress` (the `onReactionLongPress` prop, 400 ms
+  like the bubble) and the thread screen passes the same `openSheet` action its
+  bubble uses, so both open the sheet. This follows React Native's `Pressable`
+  semantics and was checked by typecheck and reading only — **confirm on a
+  device** that holding a chip opens the sheet and does not change the reaction.
 - **Known follow-up, not done:** `chat_message_reactions_message_idx` duplicates the
   leading column of the unique `(message_id, user_id)` index, and there is no index
   on `user_id` (account deletion's cascade has to scan). Cheap to fix with a new
