@@ -1262,6 +1262,22 @@ against the live API (chips gone after an app answer, present after a teaching
 one); no test, because `iqra.tsx` cannot be loaded by the bare `node --test`
 runner.
 
+**A grade to change and a lesson to add (2026-10-11).** Two sentences typed in
+the live chat came back as lesson replies about an unrelated topic: «اريد ان
+اغير الصف» and «i need to add lesson». Neither names a screen. The grades a
+teacher teaches live under «المواد التي أُدرّسها», and a lesson is picked from the
+bar above the chat rather than added, so `STATEMENT_PLACES` (`services/appHelp.ts`)
+maps «i want to change the grade», «اريد تغيير الصف» to that screen's steps
+(`howAddGrade`) and «i need to add lesson», «اريد اختيار الدرس» to the
+change-lesson steps (`faqA2`). Same shape as the other statements: first-person
+intent, and the object ends the message, so «i want to change the grade of the
+quiz», «i want to add a lesson plan» and «اريد اضافة درس عن الكسور» stay teaching
+(24 look-alikes pinned). Two guesses, both mine: «change the grade» can mean a
+student's mark, and the grade steps say «add» where the teacher said «change»
+(the answer still ends with how to switch lessons). Deliberately not done: the
+typo «langute» in the first screenshot, because matching misspellings would also
+match real requests.
+
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
 Step 4 of the worksheet review, agreed in chat. A worksheet was paper only: to
