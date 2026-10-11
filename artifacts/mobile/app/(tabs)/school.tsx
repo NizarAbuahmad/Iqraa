@@ -242,11 +242,6 @@ function PeriodRow({
             {meta}
           </Text>
         ) : null}
-        {period.notes ? (
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
-            {period.notes}
-          </Text>
-        ) : null}
       </View>
     </View>
   );

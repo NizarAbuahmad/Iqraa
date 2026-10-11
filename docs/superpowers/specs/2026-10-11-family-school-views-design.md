@@ -91,6 +91,11 @@ a case in `mountOrder.test.ts`.
   from the slot or class; teacher display name.
 - Response: a week grid per child (`dayOfWeek` 0 = Sunday); each cell has
   period, start/end, subject, teacher.
+- **Teachers' slot notes are private and are NOT sent to families.**
+  `schedule_slots.notes` is a note in the teacher's own timetable; nothing told
+  teachers families could read it, and notes can concern individual children. If
+  notes are ever shown to families it must be a deliberate, separately-labelled
+  teacher field, not these.
 - **A class with no slots returns an explicit empty state** saying the teachers
   have not entered it, never an empty grid that reads as a free week.
 - Teachers define period times independently, so each slot carries its own

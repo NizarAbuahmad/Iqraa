@@ -17,7 +17,6 @@ export interface FamilyPeriod {
   /** '' when it cannot be told without guessing. */
   subjectId: string;
   teacherName: string;
-  notes: string;
 }
 
 export interface FamilyDay {

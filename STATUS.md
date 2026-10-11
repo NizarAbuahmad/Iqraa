@@ -1049,6 +1049,7 @@ weekly timetable, read-only, from `GET /student/schedule` and
   schedule, because the same child under two teachers is two roster rows.
   `/parent/exams` still lists one section per roster row.
 - Times come from each slot's own teacher (`schedule_periods`); they are never merged.
+- **Teachers' slot notes (`schedule_slots.notes`) are private and never sent to families** — the loader does not even select the column. They are written in the teacher's own timetable and can concern individual children; showing them to families would need a deliberate, separately-labelled teacher field.
 - **Tab and routing:** a fourth tab for parent/student only (`visible: !isTeacher`);
   the teacher tab bar is unchanged. `/school` is on the `NON_TEACHER_ROUTES`
   allowlist. The mobile fetchers are in `services/familyScheduleApi.ts`, split from

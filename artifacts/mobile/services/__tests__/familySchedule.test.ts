@@ -21,7 +21,6 @@ const period = (over: Partial<FamilyPeriod> = {}): FamilyPeriod => ({
   durationMinutes: 45,
   subjectId: 'mathematics',
   teacherName: 'Omar Haddad',
-  notes: '',
   ...over,
 });
 

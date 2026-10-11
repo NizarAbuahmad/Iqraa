@@ -23,7 +23,6 @@ export interface SlotRow {
   classGroupId: string;
   /** '' = the teacher did not say which of the class's subjects this is. */
   subjectId: string;
-  notes: string;
 }
 
 export interface PeriodRow {
@@ -61,7 +60,6 @@ export interface FamilyPeriod {
   /** '' when it cannot be told without guessing. */
   subjectId: string;
   teacherName: string;
-  notes: string;
 }
 
 export interface FamilyDay {
@@ -102,7 +100,6 @@ export function buildFamilySchedule(input: ScheduleInput): FamilySchedule {
       durationMinutes: time?.durationMinutes ?? null,
       subjectId: subjectFor(s.subjectId, cls),
       teacherName: teacher ? `${teacher.firstName} ${teacher.lastName}`.trim() : "",
-      notes: s.notes,
     };
     const day = byDay.get(s.dayOfWeek);
     if (day) day.push(entry);

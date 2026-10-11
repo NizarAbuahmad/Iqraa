@@ -22,7 +22,6 @@ function slot(over: Partial<SlotRow> = {}): SlotRow {
     periodNumber: 1,
     classGroupId: "c1",
     subjectId: "",
-    notes: "",
     ...over,
   };
 }
@@ -172,8 +171,15 @@ describe("buildFamilySchedule", () => {
     assert.equal(s.days[0].periods[0].teacherName, "");
   });
 
-  it("carries the slot note through", () => {
-    const s = buildFamilySchedule(input({ slots: [slot({ notes: "أحضر الآلة الحاسبة" })] }));
-    assert.equal(s.days[0].periods[0].notes, "أحضر الآلة الحاسبة");
+  it("never exposes a teacher's private slot note", () => {
+    // schedule_slots.notes is a note in the teacher's own timetable and can concern
+    // individual children. Even if a row somehow carries one, it must not reach a family.
+    const note = "غياب سارة متكرر";
+    const withNote = { ...slot(), notes: note } as SlotRow;
+    const result = buildFamilySchedule(input({ slots: [withNote], periods: [period()] }));
+    const p = result.days[0].periods[0];
+    assert.equal("notes" in p, false);
+    assert.ok(!Object.keys(p).includes("notes"));
+    assert.ok(!JSON.stringify(result).includes(note));
   });
 });

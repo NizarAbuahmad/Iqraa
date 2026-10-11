@@ -36,7 +36,6 @@ export async function loadFamilySchedule(studentIds: string[]): Promise<FamilySc
       periodNumber: scheduleSlots.periodNumber,
       classGroupId: scheduleSlots.classGroupId,
       subjectId: scheduleSlots.subjectId,
-      notes: scheduleSlots.notes,
     })
     .from(scheduleSlots)
     .where(
