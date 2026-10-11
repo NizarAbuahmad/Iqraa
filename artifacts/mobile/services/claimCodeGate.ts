@@ -61,6 +61,8 @@ const CLAIM_ERROR_KEYS: Record<string, TranslationKey> = {
   claim_name_not_in_class: 'claimNameNotInClass',
   claim_already_linked: 'claimAlreadyLinked',
   claim_guardian_taken: 'claimGuardianTaken',
+  // Code-only signup (POST /auth/redeem): a parent may not create an account from a class code.
+  claim_parent_needs_student_code: 'claimParentNeedsOwnCode',
 };
 
 /**
@@ -71,6 +73,26 @@ const CLAIM_ERROR_KEYS: Record<string, TranslationKey> = {
  */
 export function claimErrorKey(code: string | undefined): TranslationKey {
   return (code && CLAIM_ERROR_KEYS[code]) || 'joinAnotherClassFailed';
+}
+
+/**
+ * Code-only signup (`POST /auth/redeem`) makes an account with no email behind
+ * it, so the code is the only proof of who is asking. That rules a class code
+ * out for a parent: it is one string for a whole room, its picker lists every
+ * child, and anyone holding it could become "the parent" of any child still
+ * unclaimed. A parent needs the code written for their child. A student is fine
+ * either way — picking your own name off the list is how a student has always
+ * joined. The server enforces the same rule (api-server/src/lib/redeemPolicy.ts);
+ * this is so the button is not offered for something it will refuse.
+ */
+export function canSubmitSignup(role: 'parent' | 'student', state: JoinCodeState, studentId: string): boolean {
+  if (role === 'parent') return state === 'student-code';
+  return canSubmitClaim(state, studentId);
+}
+
+/** A parent who typed a class code: the screen explains instead of leaving Continue dead. */
+export function parentNeedsOwnCode(role: string | null | undefined, state: JoinCodeState): boolean {
+  return role === 'parent' && state === 'class';
 }
 
 /**
