@@ -14,6 +14,7 @@
     "./virtual-labs": "./src/virtualLabs.ts",
     "./lab": "./src/lab.ts",
     "./quran-titles": "./src/quranTitles.ts",
+    "./quran-memorize": "./src/quranMemorize.ts",
     "./elements": "./src/elements.ts",
     "./practice": "./src/practice.ts",
     "./premade": "./src/premade.ts",
