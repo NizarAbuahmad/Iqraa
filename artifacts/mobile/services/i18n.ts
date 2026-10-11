@@ -1279,6 +1279,9 @@ const translations = {
     // Live-AI answers, and anything else not drawn from the bank: nothing and
     // nobody checked them, so the teacher has to.
     answersUnreviewedAll: 'لم يتحقّق أي مصدر مُراجَع من هذه الإجابات، وقد وُلِّدت تلقائيًا — راجعها بنفسك قبل التوزيع',
+    // Step-by-step working a model wrote, as opposed to the offline bank's, which
+    // a person wrote and checked. See `workingProvenance`.
+    workingUnreviewed: 'الخطوات المكتوبة في هذه الورقة وُلِّدت بالذكاء الاصطناعي ولم يراجعها أحد — راجعها بنفسك قبل التوزيع',
     answersUnreviewedSome: (n: number, total: number) =>
       `لم يتحقّق أي مصدر مُراجَع من ${n} من أصل ${total} إجابة، وقد وُلِّدت تلقائيًا — راجعها بنفسك قبل التوزيع`,
     examplesAiUnverified: 'كتب الذكاء الاصطناعي المثال ولم يتحقّق أحد من إجابته — راجعها قبل العرض',
@@ -3673,6 +3676,9 @@ const translations = {
     levelsPartial: 'Some levels could not be built. The ones that finished are shown; try the rest again later.',
     quizVerifiedNone: 'No answer was symbolically verified — keys come from the reviewed bank',
     answersUnreviewedAll: 'No reviewed source has checked these answers, and they were generated automatically — check them yourself before handing out',
+    // Step-by-step working a model wrote, as opposed to the offline bank's, which
+    // a person wrote and checked. See `workingProvenance`.
+    workingUnreviewed: 'The step-by-step working on this sheet was written by AI and nobody has reviewed it — check it yourself before handing out',
     answersUnreviewedSome: (n: number, total: number) =>
       `No reviewed source has checked ${n} of ${total} answers, and they were generated automatically — check them yourself before handing out`,
     examplesAiUnverified: "The example was written by AI and nobody has checked its answer — review it before class",

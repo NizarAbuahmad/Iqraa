@@ -181,6 +181,12 @@ export interface WorksheetWorkedExample {
   answer: string;
   /** Asks the student to say in a sentence why the first step was valid. */
   selfExplain?: string;
+  /**
+   * Taken from the offline question bank, whose working a person wrote and
+   * checked. Absent on anything a model wrote; see `WorksheetQuestion.fromBank`
+   * and `workingProvenance`.
+   */
+  fromBank?: true;
 }
 
 /**

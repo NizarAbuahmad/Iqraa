@@ -325,12 +325,36 @@ const isLines = (v: unknown, min: number): v is string[] =>
  * rest of the paper kept, rather than failing either way.
  *
  * Whitelists the fields it keeps, so a model that invents a sibling field does
- * not get it stored.
+ * not get it stored. Also removes `fromBank` from every worksheet, homework and
+ * quiz question — see the comment inside.
  */
 export function sanitizeWorksheetExtras<T>(kind: GenerationKind, parsed: T): T {
-  if (kind !== "worksheet" && kind !== "homework") return parsed;
+  if (kind !== "worksheet" && kind !== "homework" && kind !== "quiz") return parsed;
   if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) return parsed;
   const out: Record<string, unknown> = { ...(parsed as Record<string, unknown>) };
+
+  // `fromBank` means "taken from the reviewed offline question bank" and only the
+  // app's own bank path may set it. A model writing it would stamp its own work
+  // as reviewed, and the stamp would be pooled for every teacher.
+  const unmarked = (qs: unknown): unknown =>
+    Array.isArray(qs)
+      ? qs.map(q => {
+          if (q === null || typeof q !== "object" || Array.isArray(q) || !("fromBank" in q)) return q;
+          const { fromBank: _selfCertified, ...rest } = q as Record<string, unknown>;
+          return rest;
+        })
+      : qs;
+  if (kind === "quiz") {
+    if ("questions" in out) out.questions = unmarked(out.questions);
+    return out as T;
+  }
+  if (Array.isArray(out.sections)) {
+    out.sections = out.sections.map(sec =>
+      sec !== null && typeof sec === "object" && !Array.isArray(sec) && "questions" in sec
+        ? { ...(sec as Record<string, unknown>), questions: unmarked((sec as Record<string, unknown>).questions) }
+        : sec,
+    );
+  }
 
   if ("workedExample" in out) {
     const ex = out.workedExample as Record<string, unknown> | null;
