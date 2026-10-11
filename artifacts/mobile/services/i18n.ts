@@ -2154,6 +2154,7 @@ const translations = {
     deleteSlideTitle: 'حذف الشريحة؟',
     deleteLabel: 'حذف',
     slideUpdated: 'تم تعديل الشريحة',
+    deckThemeLabel: 'مظهر العرض',
 
     // Onboarding carousel — first-run intro, before login
     onboardingSkip: 'تخطي',
@@ -4525,6 +4526,7 @@ const translations = {
     deleteSlideTitle: 'Delete slide?',
     deleteLabel: 'Delete',
     slideUpdated: 'Slide updated',
+    deckThemeLabel: 'Deck look',
 
     // Onboarding carousel — first-run intro, before login
     onboardingSkip: 'Skip',

@@ -527,6 +527,13 @@ export interface ClassroomActivity {
    * podium), so a normal deck can never accidentally start scoring.
    */
   game?: ClassGameConfig;
+  /**
+   * The look this deck is drawn in, by `DeckThemeId`. Absent means "the
+   * subject's" — `resolveDeckTheme` picks from `subject` — so every deck built
+   * or saved before themes existed still opens, and a teacher's own choice is
+   * the only thing that ever sets it.
+   */
+  themeId?: import('../deckTheme.ts').DeckThemeId;
 }
 
 export interface ClassGameConfig {

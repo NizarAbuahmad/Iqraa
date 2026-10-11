@@ -1710,6 +1710,42 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
 - When the worksheet screen is opened with a lesson, its unit dropdown still
   shows the placeholder (the documented gap in `TopicSelector.tsx`). The topic
   itself is held.
+## Decks have themes, 2026-10-11
+
+Every deck was the same cream-and-teal slide, whatever the subject. The look is
+now a parameter: `DeckTheme` in `services/deckTheme.ts` — ground, card, border,
+text, muted, accent, a text-safe `primary`, a `secondary` and the blob colour.
+Six palettes: `iqraa` (the original, unchanged), `ocean`, `forest`,
+`parchment`, `violet`, `graphite`.
+
+- **Chosen by subject, overridable.** `resolveDeckTheme(deck)` reads
+  `deck.themeId` if the teacher set one, else matches the deck's subject — by id
+  or by its Arabic or English name — and falls to the brand default for
+  anything unknown. Maths and finance read as ocean; sciences as forest;
+  Arabic, Islamic, social, history, civics as parchment; English and the arts
+  as violet; computing, digital and vocational as graphite. Physical Education
+  stays on the brand (the word «physical» must not match «physics»).
+- **All three renderers read it.** The presenter builds its six style sheets per
+  theme (`sheetsFor`) and passes the theme down by context; the PDF and the PPTX
+  resolve it once per file. The PPTX's correct-answer row now fills with
+  `primary` — white on the light accent was unreadable on some palettes.
+- **Picker.** `DeckThemePicker` on both Slides and Prompt Slides writes `themeId`
+  onto the deck, so a saved deck keeps its look; a deck saved before this has
+  none and takes its subject's.
+- **Contrast is the contract.** `deckTheme.test.ts` checks every palette:
+  `primary` on its ground and white on `primary` at 4.5:1, body text at 7:1,
+  muted text at 4.5:1. The default's pink secondary is 4.43:1 on cream and was
+  left alone so the default deck does not move.
+- **Not changed:** the typed accents (challenge orange, question blue) are the
+  same in every theme — they are meaning, not decoration. Layout is still the
+  same on every theme; this is colour only, the first step of the design work.
+  The saved-materials PDF in `workspace/view.tsx` is a separate renderer and
+  ignores themes.
+
+Verified by rendering a six-slide deck through the real PDF exporter in each
+theme and looking at it. Not verified: the presenter on a device or on the web
+build, and the PPTX in PowerPoint.
+
 ## Teacher notes reach the exports, and five smaller deck fixes, 2026-10-09
 
 The follow-up to the 2026-10-08 entry below, closing what that review left open:

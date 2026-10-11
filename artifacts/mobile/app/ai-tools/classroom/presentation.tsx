@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Platform,
@@ -17,9 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import {
-  DECK_BG as BG, DECK_BLOB as BLOB, DECK_BORDER as BORDER, DECK_CARD_BG as CARD_BG,
-  DECK_MUTED as TEXT_MUTED, DECK_PINK as PINK, DECK_TEXT as TEXT_PRIMARY,
-  DECK_ACCENT as ACCENT, slideTypeAccent, TIMER_AMBER, TIMER_GREEN,
+  DEFAULT_DECK_THEME, resolveDeckTheme, slideTypeAccent, TIMER_AMBER, TIMER_GREEN, type DeckTheme,
 } from '@/services/deckTheme';
 import { NATIVE_DRIVER } from '@/constants/animation';
 import { useLanguage } from '@/context/LanguageContext';
@@ -51,6 +49,10 @@ import { bindOperators, hasRenderableMath, isolateForeignRuns } from '@/services
 import { goBack } from '@/services/navigation';
 import { confirm } from '@/services/confirm';
 
+
+/** The deck's theme, for every slide component below the screen. */
+const ThemeContext = createContext<DeckTheme>(DEFAULT_DECK_THEME);
+
 /** Open a media URL outside the app (native fallback — no WebView dep). */
 async function openExternalMedia(url: string): Promise<void> {
   if (!url) return;
@@ -76,6 +78,8 @@ async function openExternalMedia(url: string): Promise<void> {
 // Draws the same spec the PDF and PPTX draw, via react-native-svg, so the three
 // surfaces cannot drift into showing different pictures of the same data.
 function VisualView({ slide }: { slide: ActivitySlide }) {
+  const T = useContext(ThemeContext);
+  const { styles } = sheetsFor(T);
   const visual = visualForSlide(slide);
   if (!visual) return null;
 
@@ -156,6 +160,8 @@ function VisualView({ slide }: { slide: ActivitySlide }) {
 // when `visualForSlide` refuses a command it cannot plot honestly —
 // `Circle(...)`, a trig function — where VisualView renders nothing at all.
 function GraphView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; t: (k: any, arg?: any) => string }) {
+  const T = useContext(ThemeContext);
+  const { mediaStyles } = sheetsFor(T);
   const commands = slide.graphCommands ?? [];
 
   return (
@@ -210,6 +216,8 @@ function MediaView({
   zoomed: boolean;
   setZoomed: (zoomed: boolean) => void;
 }) {
+  const T = useContext(ThemeContext);
+  const { mediaStyles } = sheetsFor(T);
   const url = slide.mediaUrl ?? '';
   const embed = slide.mediaKind === 'video' ? youtubeEmbedUrl(url) : null;
 
@@ -249,7 +257,7 @@ function MediaView({
         // no player component to fall back to, and browsers already render a
         // usable one for free.
         <View style={mediaStyles.audioFrame}>
-          <Ionicons name="musical-notes" size={28} color={ACCENT} />
+          <Ionicons name="musical-notes" size={28} color={T.accent} />
           {React.createElement('audio', {
             src: url,
             controls: true,
@@ -291,6 +299,8 @@ function MediaView({
 // Falls back to a flat accent panel (no Image/gradient) when there's no photo
 // to show, e.g. Unsplash unconfigured — never a blank or broken slide.
 function HeroSlideView({ slide, accent }: { slide: ActivitySlide; accent: string }) {
+  const T = useContext(ThemeContext);
+  const { heroStyles } = sheetsFor(T);
   const hasPhoto = !!slide.mediaUrl;
   const body = (
     <View style={heroStyles.textWrap}>
@@ -341,6 +351,8 @@ function TeacherPanel({
   t: (k: any, arg?: any) => string;
   onClose: () => void;
 }) {
+  const T = useContext(ThemeContext);
+  const { panelStyles } = sheetsFor(T);
   const insets = useSafeAreaInsets();
   const translateY = useRef(new Animated.Value(600)).current;
 
@@ -376,10 +388,10 @@ function TeacherPanel({
         <View style={panelStyles.handle} />
         {/* Header */}
         <View style={[panelStyles.header, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <Ionicons name="school-outline" size={18} color={ACCENT} />
+          <Ionicons name="school-outline" size={18} color={T.accent} />
           <Text style={[panelStyles.headerText, { fontFamily: 'ReadexPro_700Bold' }]}>{t('teacherPanelTitle')}</Text>
           <Pressable onPress={close} style={panelStyles.closeBtn} hitSlop={12} accessibilityRole="button" accessibilityLabel={t('close')}>
-            <Ionicons name="close" size={20} color={TEXT_MUTED} />
+            <Ionicons name="close" size={20} color={T.muted} />
           </Pressable>
         </View>
         <ScrollView showsVerticalScrollIndicator={false}>
@@ -423,6 +435,8 @@ function QuestionOptions({
   revealed: boolean;
   onToggleReveal: () => void;
 }) {
+  const T = useContext(ThemeContext);
+  const { qStyles } = sheetsFor(T);
   const options = slide.options ?? [];
   if (options.length === 0) return null;
   // `isRTL` is the slide's direction: an English-subject check's own options
@@ -453,8 +467,8 @@ function QuestionOptions({
               style={[
                 qStyles.option,
                 {
-                  borderColor: isCorrect ? TIMER_GREEN : BORDER,
-                  backgroundColor: isCorrect ? TIMER_GREEN + '18' : CARD_BG,
+                  borderColor: isCorrect ? TIMER_GREEN : T.border,
+                  backgroundColor: isCorrect ? TIMER_GREEN + '18' : T.card,
                   opacity: isDimmed ? 0.4 : 1,
                   flexDirection: isRTL ? 'row-reverse' : 'row',
                 },
@@ -489,14 +503,14 @@ function QuestionOptions({
         style={[
           qStyles.revealBtn,
           {
-            borderColor: revealed ? BORDER : TIMER_GREEN + '60',
+            borderColor: revealed ? T.border : TIMER_GREEN + '60',
             backgroundColor: revealed ? 'transparent' : TIMER_GREEN + '12',
             flexDirection: isRTL ? 'row-reverse' : 'row',
           },
         ]}
       >
-        <Ionicons name={revealed ? 'eye-off-outline' : 'checkmark-circle-outline'} size={18} color={revealed ? TEXT_MUTED : TIMER_GREEN} />
-        <Text style={[qStyles.revealBtnText, { color: revealed ? TEXT_MUTED : TIMER_GREEN, fontFamily: 'ReadexPro_600SemiBold' }]}>
+        <Ionicons name={revealed ? 'eye-off-outline' : 'checkmark-circle-outline'} size={18} color={revealed ? T.muted : TIMER_GREEN} />
+        <Text style={[qStyles.revealBtnText, { color: revealed ? T.muted : TIMER_GREEN, fontFamily: 'ReadexPro_600SemiBold' }]}>
           {revealed ? t('hideAnswer') : t('revealAnswer')}
         </Text>
       </Pressable>
@@ -546,9 +560,11 @@ function DeckIcon({ name, color, size }: { name: DeckIconName; color: string; si
 
 /** One line of worked answer — math-aware, the same choice the reveal makes for a single line. */
 function WorkingLine({ text, size, bold, isRTL }: { text: string; size: number; bold?: boolean; isRTL: boolean }) {
+  const T = useContext(ThemeContext);
+  const { styles } = sheetsFor(T);
   const fontFamily = bold ? 'ReadexPro_700Bold' : 'ReadexPro_500Medium';
   return hasRenderableMath(text) ? (
-    <MathText text={text} fontSize={size} color={TEXT_PRIMARY} fontFamily={fontFamily} isRTL={isRTL} />
+    <MathText text={text} fontSize={size} color={T.text} fontFamily={fontFamily} isRTL={isRTL} />
   ) : (
     <Text
       style={[
@@ -567,6 +583,8 @@ function WorkingLine({ text, size, bold, isRTL }: { text: string; size: number; 
  * only renders this when it can, so a plain answer keeps its one line.
  */
 function WorkingAnswer({ answer, isRTL }: { answer: string; isRTL: boolean }) {
+  const T = useContext(ThemeContext);
+  const { styles } = sheetsFor(T);
   const working = workingSteps(answer);
   if (!working) return null;
   return (
@@ -595,10 +613,12 @@ function WorkingAnswer({ answer, isRTL }: { answer: string; isRTL: boolean }) {
  */
 
 function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: boolean; onZoomSide?: (url: string) => void }) {
+  const T = useContext(ThemeContext);
+  const { slideStyles } = sheetsFor(T);
   // Only for the teacher-led cue below. `isRTL` stays the prop: it follows
   // the slide's own payload, not the app's UI language.
   const { t } = useLanguage();
-  const accent = slideTypeAccent(slide.type);
+  const accent = slideTypeAccent(slide.type, T);
   const align = isRTL ? ('right' as const) : ('left' as const);
   // Alignment is not direction. Every body line here is model-written prose
   // that can carry an equation, and on web the document is pinned to
@@ -663,9 +683,9 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
             <View style={[slideStyles.compareRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               {([[layout.leftTitle, layout.left], [layout.rightTitle, layout.right]] as const).map(
                 ([colTitle, items], col) => (
-                  <View key={col} style={[slideStyles.compareCol, { borderColor: col === 0 ? accent : BORDER }]}>
+                  <View key={col} style={[slideStyles.compareCol, { borderColor: col === 0 ? accent : T.border }]}>
                     <Text style={[slideStyles.compareHead, {
-                      color: col === 0 ? accent : TEXT_MUTED, textAlign: align, writingDirection: dir,
+                      color: col === 0 ? accent : T.muted, textAlign: align, writingDirection: dir,
                     }]}>
                       {isolateForeignRuns(colTitle)}
                     </Text>
@@ -804,7 +824,7 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
                 <MathText
                   text={text}
                   fontSize={30}
-                  color={TEXT_PRIMARY}
+                  color={T.text}
                   fontFamily="ReadexPro_700Bold"
                   isRTL={isRTL}
                   centered
@@ -932,6 +952,9 @@ export default function PresentationScreen() {
   const navigation = useNavigation();
 
   const [activity, setActivity] = useState<ClassroomActivity | null>(null);
+  // The deck carries its look (or its subject's); until it loads, the brand's.
+  const T = resolveDeckTheme(activity);
+  const { styles } = sheetsFor(T);
   // Non-null only for Class Challenge decks (`activity.game` present). Kept
   // here rather than in a store because a game is one run of one deck: leaving
   // the presentation ends it, and resuming a half-scored game the teacher has
@@ -1227,6 +1250,7 @@ export default function PresentationScreen() {
   const ss = (timerSec % 60).toString().padStart(2, '0');
 
   return (
+    <ThemeContext.Provider value={T}>
     <View style={styles.container}>
       <StatusBar hidden />
 
@@ -1239,7 +1263,7 @@ export default function PresentationScreen() {
       <View style={[styles.topBar, { paddingTop: insets.top + 8, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         {/* Exit */}
         <Pressable onPress={() => { void exitPresentation(); }} style={styles.exitBtn} hitSlop={12}>
-          <Ionicons name="close" size={22} color={TEXT_MUTED} />
+          <Ionicons name="close" size={22} color={T.muted} />
         </Pressable>
 
         {/* Fullscreen — the projector's own control, so the teacher never has
@@ -1249,7 +1273,7 @@ export default function PresentationScreen() {
             <Ionicons
               name={fullscreen ? 'contract-outline' : 'expand-outline'}
               size={20}
-              color={TEXT_MUTED}
+              color={T.muted}
             />
           </Pressable>
         )}
@@ -1264,7 +1288,7 @@ export default function PresentationScreen() {
                 {
                   width: i === slideIndex ? 20 : 8,
                   height: i === slideIndex ? 8 : 8,
-                  backgroundColor: i === slideIndex ? slideTypeAccent(s.type) : (i < slideIndex ? BORDER + 'aa' : BORDER),
+                  backgroundColor: i === slideIndex ? slideTypeAccent(s.type, T) : (i < slideIndex ? T.border + 'aa' : T.border),
                 },
               ]} />
             </Pressable>
@@ -1317,7 +1341,7 @@ export default function PresentationScreen() {
           bounces={false}
         >
           {slide.type === 'divider' || (isFirst && slide.mediaUrl)
-            ? <HeroSlideView slide={slide} accent={slideTypeAccent(slide.type)} />
+            ? <HeroSlideView slide={slide} accent={slideTypeAccent(slide.type, T)} />
             : <SlideView slide={slide} isRTL={slideRTL} onZoomSide={setSideZoom} />}
           <ImageViewerModal
             url={sideZoom}
@@ -1451,7 +1475,7 @@ export default function PresentationScreen() {
                     <MathText
                       text={slide.answer}
                       fontSize={18}
-                      color={TEXT_PRIMARY}
+                      color={T.text}
                       fontFamily="ReadexPro_700Bold"
                       isRTL={slideRTL}
                     />
@@ -1516,8 +1540,8 @@ export default function PresentationScreen() {
           accessibilityRole="button"
           accessibilityLabel={t('prevSlide')}
         >
-          <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={20} color={TEXT_PRIMARY} />
-          <Text numberOfLines={1} style={[styles.navLabel, { color: TEXT_PRIMARY, fontFamily: 'ReadexPro_500Medium' }]}>
+          <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={20} color={T.text} />
+          <Text numberOfLines={1} style={[styles.navLabel, { color: T.text, fontFamily: 'ReadexPro_500Medium' }]}>
             {t('prevSlide')}
           </Text>
         </Pressable>
@@ -1526,15 +1550,15 @@ export default function PresentationScreen() {
         <View style={[styles.actionRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <Pressable
             onPress={() => setPenOn(v => !v)}
-            style={[styles.actionBtn, penOn && { borderColor: ACCENT + '50', backgroundColor: ACCENT + '12' }]}
+            style={[styles.actionBtn, penOn && { borderColor: T.accent + '50', backgroundColor: T.accent + '12' }]}
             hitSlop={8}
             accessibilityRole="button"
             aria-selected={penOn}
             accessibilityLabel={t('penTool')}
           >
-            <Ionicons name={penOn ? 'brush' : 'brush-outline'} size={18} color={penOn ? ACCENT : TEXT_MUTED} />
+            <Ionicons name={penOn ? 'brush' : 'brush-outline'} size={18} color={penOn ? T.accent : T.muted} />
             {compactBar ? null : (
-              <Text numberOfLines={1} style={[styles.actionLabel, penOn && { color: ACCENT }, { fontFamily: 'Almarai_400Regular' }]}>
+              <Text numberOfLines={1} style={[styles.actionLabel, penOn && { color: T.accent }, { fontFamily: 'Almarai_400Regular' }]}>
                 {t('penTool')}
               </Text>
             )}
@@ -1549,7 +1573,7 @@ export default function PresentationScreen() {
             accessibilityRole="button"
             accessibilityLabel={t('whiteboardTool')}
           >
-            <Ionicons name="easel-outline" size={18} color={TEXT_MUTED} />
+            <Ionicons name="easel-outline" size={18} color={T.muted} />
             {compactBar ? null : (
               <Text numberOfLines={1} style={[styles.actionLabel, { fontFamily: 'Almarai_400Regular' }]}>
                 {t('whiteboardTool')}
@@ -1559,14 +1583,14 @@ export default function PresentationScreen() {
           {hasTimer && !compactBar && canTogglePause({ running: timerRunning, sec: timerSec }) && (
             <Pressable
               onPress={togglePauseTimer}
-              style={[styles.actionBtn, timerPaused && { borderColor: ACCENT + '50', backgroundColor: ACCENT + '12' }]}
+              style={[styles.actionBtn, timerPaused && { borderColor: T.accent + '50', backgroundColor: T.accent + '12' }]}
               hitSlop={8}
               accessibilityRole="button"
               accessibilityLabel={timerPaused ? t('resumeTimer') : t('pauseTimer')}
               aria-selected={timerPaused}
             >
-              <Ionicons name={timerPaused ? 'play-outline' : 'pause-outline'} size={18} color={timerPaused ? ACCENT : TEXT_MUTED} />
-              <Text numberOfLines={1} style={[styles.actionLabel, timerPaused && { color: ACCENT }, { fontFamily: 'Almarai_400Regular' }]}>
+              <Ionicons name={timerPaused ? 'play-outline' : 'pause-outline'} size={18} color={timerPaused ? T.accent : T.muted} />
+              <Text numberOfLines={1} style={[styles.actionLabel, timerPaused && { color: T.accent }, { fontFamily: 'Almarai_400Regular' }]}>
                 {timerPaused ? t('resumeTimer') : t('pauseTimer')}
               </Text>
             </Pressable>
@@ -1579,7 +1603,7 @@ export default function PresentationScreen() {
               accessibilityRole="button"
               accessibilityLabel={t('restartTimer')}
             >
-              <Ionicons name="refresh-outline" size={18} color={TEXT_MUTED} />
+              <Ionicons name="refresh-outline" size={18} color={T.muted} />
               {compactBar ? null : (
                 <Text numberOfLines={1} style={[styles.actionLabel, { fontFamily: 'Almarai_400Regular' }]}>
                   {t('restartTimer')}
@@ -1590,14 +1614,14 @@ export default function PresentationScreen() {
           {hasTeacherNotes && (
             <Pressable
               onPress={() => setTeacherPanelOpen(true)}
-              style={[styles.actionBtn, { borderColor: ACCENT + '50', backgroundColor: ACCENT + '12' }]}
+              style={[styles.actionBtn, { borderColor: T.accent + '50', backgroundColor: T.accent + '12' }]}
               hitSlop={8}
               accessibilityRole="button"
               accessibilityLabel={t('teacherPanelTitle')}
             >
-              <Ionicons name="school-outline" size={18} color={ACCENT} />
+              <Ionicons name="school-outline" size={18} color={T.accent} />
               {compactBar ? null : (
-                <Text numberOfLines={1} style={[styles.actionLabel, { color: ACCENT, fontFamily: 'ReadexPro_500Medium' }]}>
+                <Text numberOfLines={1} style={[styles.actionLabel, { color: T.accent, fontFamily: 'ReadexPro_500Medium' }]}>
                   {t('teacherPanelTitle')}
                 </Text>
               )}
@@ -1614,17 +1638,17 @@ export default function PresentationScreen() {
             compactBar && styles.navBtnCompact,
             {
               opacity: isLast ? 0.3 : 1,
-              backgroundColor: isLast ? 'transparent' : ACCENT,
+              backgroundColor: isLast ? 'transparent' : T.accent,
               flexDirection: isRTL ? 'row-reverse' : 'row',
             },
           ]}
           accessibilityRole="button"
           accessibilityLabel={t('nextSlide')}
         >
-          <Text numberOfLines={1} style={[styles.navLabel, { color: isLast ? TEXT_MUTED : '#fff', fontFamily: 'ReadexPro_700Bold' }]}>
+          <Text numberOfLines={1} style={[styles.navLabel, { color: isLast ? T.muted : '#fff', fontFamily: 'ReadexPro_700Bold' }]}>
             {t('nextSlide')}
           </Text>
-          <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={isLast ? TEXT_MUTED : '#fff'} />
+          <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={isLast ? T.muted : '#fff'} />
         </Pressable>
       </View>
 
@@ -1650,27 +1674,28 @@ export default function PresentationScreen() {
         </Animated.View>
       )}
     </View>
+    </ThemeContext.Provider>
   );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
+const makeStyles = (T: DeckTheme) => StyleSheet.create({
   visualWrap: { width: '100%', maxWidth: 900, alignSelf: 'center', marginTop: 12 },
-  container: { flex: 1, backgroundColor: BG },
+  container: { flex: 1, backgroundColor: T.bg },
   celebrationOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', zIndex: 20, pointerEvents: 'none' },
   celebrationCard: { alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.96)', borderRadius: 24, paddingHorizontal: 40, paddingVertical: 32, borderWidth: 1, borderColor: TIMER_GREEN + '60', gap: 12 },
   celebrationEmoji: { fontSize: 64 },
-  celebrationTitle: { fontSize: 22, color: TEXT_PRIMARY, textAlign: 'center', lineHeight: 30 },
+  celebrationTitle: { fontSize: 22, color: T.text, textAlign: 'center', lineHeight: 30 },
   topBar: { alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 10 },
-  exitBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 19, backgroundColor: CARD_BG, borderWidth: 1, borderColor: BORDER },
+  exitBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 19, backgroundColor: T.card, borderWidth: 1, borderColor: T.border },
   progressRow: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 12 },
   dot: { height: 6, borderRadius: 3 },
   timerBox: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
   timerText: { fontSize: 14 },
-  timerBarTrack: { height: 3, backgroundColor: BORDER, marginHorizontal: 0 },
+  timerBarTrack: { height: 3, backgroundColor: T.border, marginHorizontal: 0 },
   timerBarFill: { height: 3 },
   slideArea: { flex: 1 },
-  blob: { position: 'absolute', borderRadius: 999, backgroundColor: BLOB },
+  blob: { position: 'absolute', borderRadius: 999, backgroundColor: T.blob },
   blobTop: { width: 260, height: 260, top: -96, left: -84 },
   blobBottom: { width: 330, height: 330, bottom: -132, right: -116 },
   // flexGrow so the content box is at least the height of the stage: the cover
@@ -1680,54 +1705,54 @@ const styles = StyleSheet.create({
   revealBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 10, borderWidth: 1 },
   revealBtnText: { fontSize: 14 },
   revealContent: { padding: 14, borderRadius: 10, borderWidth: 1 },
-  revealText: { fontSize: 14, color: TEXT_PRIMARY, lineHeight: 22 },
+  revealText: { fontSize: 14, color: T.text, lineHeight: 22 },
   workingRow: { alignItems: 'center', gap: 10 },
   workingNum: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   workingNumText: { color: '#FFFFFF', fontSize: 13, fontFamily: 'ReadexPro_700Bold' },
   workingFinal: { borderTopWidth: 1, paddingTop: 8 },
-  bottomBar: { alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: BORDER, backgroundColor: CARD_BG },
+  bottomBar: { alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: T.border, backgroundColor: T.card },
   navBtnWide: { alignItems: 'center', justifyContent: 'center', gap: 6, minWidth: 110, height: 46, borderRadius: 23, paddingHorizontal: 16 },
   // 92 fits «التالي»/«السابق» plus the chevron at 360dp with the two
   // icon-only action buttons still on the same row.
   navBtnCompact: { minWidth: 92, paddingHorizontal: 10 },
   navLabel: { fontSize: 14 },
   dotTarget: { paddingVertical: 10, paddingHorizontal: 2, justifyContent: 'center' },
-  counterBox: { minWidth: 54, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, backgroundColor: CARD_BG, borderWidth: 1, borderColor: BORDER },
-  counterText: { fontSize: 13, color: TEXT_PRIMARY },
+  counterBox: { minWidth: 54, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, backgroundColor: T.card, borderWidth: 1, borderColor: T.border },
+  counterText: { fontSize: 13, color: T.text },
   actionRow: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, paddingHorizontal: 10 },
   // flexShrink so an unexpected width narrows these instead of letting them
   // spill over the nav buttons, which is what the overlap on a real phone was.
-  actionBtn: { flexDirection: 'row', alignItems: 'center', flexShrink: 1, gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: BORDER },
-  actionLabel: { fontSize: 12, color: TEXT_MUTED },
+  actionBtn: { flexDirection: 'row', alignItems: 'center', flexShrink: 1, gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: T.border },
+  actionLabel: { fontSize: 12, color: T.muted },
 });
 
-const slideStyles = StyleSheet.create({
+const makeSlideStyles = (T: DeckTheme) => StyleSheet.create({
   container: { paddingTop: 8 },
   // Centred vertically. Left top-aligned, a three-line mission sat under the
   // header with two-thirds of the projector empty below it, which reads as a
   // slide that failed to load rather than one that is simply short.
   cover: { flexGrow: 1, justifyContent: 'center', paddingTop: 48, paddingBottom: 32 },
-  coverTitle: { fontSize: 40, lineHeight: 62, color: ACCENT },
-  coverSub: { fontSize: 20, lineHeight: 34, color: TEXT_MUTED, marginBottom: 6 },
-  rule: { width: 64, height: 5, borderRadius: 3, backgroundColor: PINK, marginTop: 14, marginBottom: 24 },
+  coverTitle: { fontSize: 40, lineHeight: 62, color: T.accent },
+  coverSub: { fontSize: 20, lineHeight: 34, color: T.muted, marginBottom: 6 },
+  rule: { width: 64, height: 5, borderRadius: 3, backgroundColor: T.secondary, marginTop: 14, marginBottom: 24 },
   // ─── Layout shapes (services/slideLayout.ts) ────────────────────────────────
   // Sized against the existing display type: `codeValue` is 48pt and is the
   // deck's precedent for a number meant to be read from the back of a room,
   // so a stat goes larger still and its caption sits at cover-subtitle size.
   statValue: { fontSize: 96, lineHeight: 120, fontFamily: 'ReadexPro_700Bold' },
-  statLabel: { fontSize: 26, lineHeight: 42, color: TEXT_PRIMARY, fontFamily: 'ReadexPro_600SemiBold' },
-  statSource: { fontSize: 15, lineHeight: 26, color: TEXT_MUTED, fontFamily: 'Almarai_400Regular', marginTop: 10 },
+  statLabel: { fontSize: 26, lineHeight: 42, color: T.text, fontFamily: 'ReadexPro_600SemiBold' },
+  statSource: { fontSize: 15, lineHeight: 26, color: T.muted, fontFamily: 'Almarai_400Regular', marginTop: 10 },
   compareRow: { gap: 18, alignSelf: 'stretch' },
   compareCol: {
     flex: 1, borderWidth: 2, borderRadius: 18, padding: 20, gap: 12,
-    backgroundColor: CARD_BG,
+    backgroundColor: T.card,
   },
   compareHead: { fontSize: 24, lineHeight: 36, fontFamily: 'ReadexPro_700Bold' },
-  compareItem: { fontSize: 21, lineHeight: 34, color: TEXT_PRIMARY, fontFamily: 'Almarai_400Regular' },
+  compareItem: { fontSize: 21, lineHeight: 34, color: T.text, fontFamily: 'Almarai_400Regular' },
   stepRow: { alignItems: 'center', gap: 16 },
   stepNum: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   stepNumText: { fontSize: 22, color: '#fff', fontFamily: 'ReadexPro_700Bold' },
-  stepText: { flex: 1, fontSize: 22, lineHeight: 36, color: TEXT_PRIMARY, fontFamily: 'Almarai_400Regular' },
+  stepText: { flex: 1, fontSize: 22, lineHeight: 36, color: T.text, fontFamily: 'Almarai_400Regular' },
   headRow: { alignItems: 'center', gap: 12 },
   glyphChip: { width: 44, height: 44, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   glyph: { fontSize: 21 },
@@ -1740,21 +1765,21 @@ const slideStyles = StyleSheet.create({
   splitFig: { flex: 0.8, alignItems: 'center', gap: 8 },
   splitImg: { width: '100%', height: 340, borderRadius: 12 },
   splitCaption: { fontSize: 13, color: '#7C6A65', textAlign: 'center' },
-  bodyLine: { fontSize: 21, color: TEXT_PRIMARY, lineHeight: 36 },
+  bodyLine: { fontSize: 21, color: T.text, lineHeight: 36 },
   // Addressed to the teacher, not the class: smaller and muted, so from the
   // back of the room it reads as chrome rather than as part of the lesson.
-  teacherLedHint: { fontSize: 15, color: TEXT_MUTED, lineHeight: 26, marginTop: 6, opacity: 0.85 },
-  card: { alignItems: 'center', gap: 14, backgroundColor: CARD_BG, borderRadius: 14, borderWidth: 1, borderColor: BORDER, paddingVertical: 15, paddingHorizontal: 16 },
+  teacherLedHint: { fontSize: 15, color: T.muted, lineHeight: 26, marginTop: 6, opacity: 0.85 },
+  card: { alignItems: 'center', gap: 14, backgroundColor: T.card, borderRadius: 14, borderWidth: 1, borderColor: T.border, paddingVertical: 15, paddingHorizontal: 16 },
   cardBar: { width: 5, alignSelf: 'stretch', borderRadius: 3 },
-  cardText: { flex: 1, fontSize: 21, color: TEXT_PRIMARY, lineHeight: 34 },
-  formulaBox: { backgroundColor: CARD_BG, borderRadius: 16, borderWidth: 1, borderColor: BORDER, paddingVertical: 22, paddingHorizontal: 18, alignItems: 'center' },
-  formula: { fontSize: 30, color: TEXT_PRIMARY, textAlign: 'center', lineHeight: 46 },
+  cardText: { flex: 1, fontSize: 21, color: T.text, lineHeight: 34 },
+  formulaBox: { backgroundColor: T.card, borderRadius: 16, borderWidth: 1, borderColor: T.border, paddingVertical: 22, paddingHorizontal: 18, alignItems: 'center' },
+  formula: { fontSize: 30, color: T.text, textAlign: 'center', lineHeight: 46 },
   codeBadge: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 28, backgroundColor: TIMER_GREEN + '12', borderRadius: 14, borderWidth: 1, borderColor: TIMER_GREEN + '40', padding: 20 },
   codeLabel: { fontSize: 28 },
   codeValue: { fontSize: 48, color: TIMER_GREEN },
 });
 
-const heroStyles = StyleSheet.create({
+const makeHeroStyles = (T: DeckTheme) => StyleSheet.create({
   wrap: { flex: 1, minHeight: 420, borderRadius: 20, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', padding: 32 },
   textWrap: { alignItems: 'center', maxWidth: 560 },
   title: { fontSize: 34, color: '#fff', textAlign: 'center', lineHeight: 46 },
@@ -1771,7 +1796,7 @@ const heroStyles = StyleSheet.create({
 });
 
 // Graph + media slides: the frame is the star, sized for a projector.
-const mediaStyles = StyleSheet.create({
+const makeMediaStyles = (T: DeckTheme) => StyleSheet.create({
   wrap: { marginTop: 10, gap: 12 },
   cmdRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
   cmdPill: {
@@ -1782,8 +1807,8 @@ const mediaStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#0369A1' + '45',
   },
-  cmdText: { fontSize: 20, color: TEXT_PRIMARY },
-  emptyHint: { fontSize: 14, color: TEXT_MUTED, lineHeight: 22 },
+  cmdText: { fontSize: 20, color: T.text },
+  emptyHint: { fontSize: 14, color: T.muted, lineHeight: 22 },
   frame: {
     width: '100%',
     // 16:9, not a fixed height: a YouTube embed letterboxes itself inside
@@ -1797,17 +1822,17 @@ const mediaStyles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: T.border,
   },
-  image: { width: '100%', height: 460, borderRadius: 14, backgroundColor: CARD_BG },
+  image: { width: '100%', height: 460, borderRadius: 14, backgroundColor: T.card },
   audioFrame: {
     width: '100%',
     maxWidth: 560,
     alignSelf: 'center',
     borderRadius: 14,
-    backgroundColor: CARD_BG,
+    backgroundColor: T.card,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: T.border,
     paddingVertical: 28,
     paddingHorizontal: 20,
     alignItems: 'center',
@@ -1823,7 +1848,7 @@ const mediaStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    backgroundColor: ACCENT,
+    backgroundColor: T.accent,
     borderRadius: 14,
     paddingVertical: 18,
   },
@@ -1831,7 +1856,7 @@ const mediaStyles = StyleSheet.create({
 });
 
 // Sized for projection: options readable from the back of a classroom.
-const qStyles = StyleSheet.create({
+const makeQStyles = (T: DeckTheme) => StyleSheet.create({
   wrap: { marginTop: 8, gap: 14 },
   respondBanner: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 10, backgroundColor: '#1D4ED8' + '14', borderWidth: 1, borderColor: '#1D4ED8' + '35', alignSelf: 'center' },
   respondText: { fontSize: 14, color: '#1D4ED8' },
@@ -1839,20 +1864,42 @@ const qStyles = StyleSheet.create({
   option: { alignItems: 'center', gap: 14, borderWidth: 2, borderRadius: 16, paddingVertical: 18, paddingHorizontal: 18 },
   letterBadge: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   letterText: { fontSize: 22 },
-  optionText: { flex: 1, fontSize: 22, color: TEXT_PRIMARY, lineHeight: 32 },
+  optionText: { flex: 1, fontSize: 22, color: T.text, lineHeight: 32 },
   revealBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 13, borderRadius: 12, borderWidth: 1 },
   revealBtnText: { fontSize: 15 },
 });
 
-const panelStyles = StyleSheet.create({
+const makePanelStyles = (T: DeckTheme) => StyleSheet.create({
   overlay: { position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10 },
-  panel: { backgroundColor: CARD_BG, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderColor: BORDER, paddingHorizontal: 20, paddingTop: 12, maxHeight: 480 },
-  handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: BORDER, alignSelf: 'center', marginBottom: 16 },
+  panel: { backgroundColor: T.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderColor: T.border, paddingHorizontal: 20, paddingTop: 12, maxHeight: 480 },
+  handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: T.border, alignSelf: 'center', marginBottom: 16 },
   header: { alignItems: 'center', gap: 8, marginBottom: 16 },
-  headerText: { flex: 1, fontSize: 16, color: TEXT_PRIMARY },
+  headerText: { flex: 1, fontSize: 16, color: T.text },
   closeBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   section: { marginBottom: 16 },
-  sectionLabel: { fontSize: 11, color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', textTransform: 'uppercase', marginBottom: 6 },
-  sectionText: { fontSize: 13, color: TEXT_PRIMARY, lineHeight: 20 },
-  bulletQ: { fontSize: 13, color: TEXT_PRIMARY, lineHeight: 20, marginBottom: 4 },
+  sectionLabel: { fontSize: 11, color: T.accent, fontFamily: 'ReadexPro_600SemiBold', textTransform: 'uppercase', marginBottom: 6 },
+  sectionText: { fontSize: 13, color: T.text, lineHeight: 20 },
+  bulletQ: { fontSize: 13, color: T.text, lineHeight: 20, marginBottom: 4 },
 });
+
+type Sheets = {
+  styles: ReturnType<typeof makeStyles>;
+  slideStyles: ReturnType<typeof makeSlideStyles>;
+  heroStyles: ReturnType<typeof makeHeroStyles>;
+  mediaStyles: ReturnType<typeof makeMediaStyles>;
+  qStyles: ReturnType<typeof makeQStyles>;
+  panelStyles: ReturnType<typeof makePanelStyles>;
+};
+const sheetCache = new Map<DeckTheme, Sheets>();
+/** The six style sheets for a theme, built once per theme — themes are module constants. */
+function sheetsFor(T: DeckTheme): Sheets {
+  let sheets = sheetCache.get(T);
+  if (!sheets) {
+    sheets = {
+      styles: makeStyles(T), slideStyles: makeSlideStyles(T), heroStyles: makeHeroStyles(T),
+      mediaStyles: makeMediaStyles(T), qStyles: makeQStyles(T), panelStyles: makePanelStyles(T),
+    };
+    sheetCache.set(T, sheets);
+  }
+  return sheets;
+}
