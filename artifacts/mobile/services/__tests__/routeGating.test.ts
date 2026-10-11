@@ -73,6 +73,13 @@ describe('isPublicRoute', () => {
     }
   });
 
+  it('lets a signed-out visitor suggest a feature from the login screen', () => {
+    // «اقترح ميزة» is linked from login and register; bouncing a visitor with
+    // no account back to login would make the link a loop.
+    assert.equal(isPublicRoute('/suggest-feature'), true);
+    assert.equal(isPublicRoute('/suggest-features'), false);
+  });
+
   it('keeps every teacher route private', () => {
     for (const p of ['/', '/classes', '/evaluations', '/admin/dashboard', '/workspace']) {
       assert.equal(isPublicRoute(p), false, p);
