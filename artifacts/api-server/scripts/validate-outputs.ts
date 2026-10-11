@@ -19,12 +19,13 @@
  * person should read; they do not prove anything is wrong.
  *
  * Run (live model, spends tokens — about two calls per unit):
- *   OPENAI_API_KEY=... node --experimental-strip-types  *     artifacts/api-server/scripts/validate-outputs.ts [--units 8] [--out report.json]
+ *   OPENAI_API_KEY=... node --experimental-strip-types  *     artifacts/api-server/scripts/validate-outputs.ts [--units 8] [--filter math] [--out report.json]
  *
  * Only units with extracted book text are used: with no text there is nothing
  * to ground against and the result would say nothing.
  */
 import { writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import OpenAI from "openai";
 import { getAllObjectives, getObjectivesForUnit, getUnitById } from "@workspace/curriculum";
 import { passagesForUnit, repairExtractionArtifacts } from "@workspace/curriculum/passages";
@@ -54,16 +55,33 @@ if (!process.env.OPENAI_API_KEY) {
 }
 const openai = new OpenAI();
 
-// Sorted, so the golden set is the same units on every run.
-const unitIds = [...new Set(getAllObjectives().map(o => o.unitId))]
+// One unit per book, spread evenly across the books that have extracted text, so
+// the set mixes subjects (taking the first N sorted gave eight Arabic-language
+// units and exercised nothing else). Sorted, so it is the same on every run.
+const withText = [...new Set(getAllObjectives().map(o => o.unitId))]
   .sort()
-  .filter(id => passagesForUnit({ unitId: id, limit: 1, quotableOnly: true }).length > 0)
-  .slice(0, UNIT_CAP);
+  .filter(id => passagesForUnit({ unitId: id, limit: 1, quotableOnly: true }).length > 0);
+// --filter math keeps only books whose id contains that text, to aim the run at
+// one subject (the spread below otherwise decides which books are sampled).
+const BOOK_FILTER = arg("filter");
+const firstPerBook = new Map<string, string>();
+for (const id of withText) {
+  const book = getUnitById(id)?.bookId ?? id;
+  if (BOOK_FILTER && !book.includes(BOOK_FILTER)) continue;
+  if (!firstPerBook.has(book)) firstPerBook.set(book, id);
+}
+const perBook = [...firstPerBook.values()];
+const stride = Math.max(1, Math.floor(perBook.length / UNIT_CAP));
+const unitIds = perBook.filter((_, i) => i % stride === 0).slice(0, UNIT_CAP);
 
 let hardFailures = 0;
 const report: unknown[] = [];
 
+// Where a response that would not parse is saved, so the cause can be read.
+const RAW_DIR = arg("out") ? dirname(arg("out")!) : ".";
+
 for (const unitId of unitIds) {
+ try {
   const objectives = getObjectivesForUnit(unitId);
   const grounding = groundingForObjectives(objectives, true);
   // Wider than the three pages the prompt carried: a correct answer drawn from
@@ -91,7 +109,14 @@ for (const unitId of unitIds) {
           { role: "user", content: prompt.user },
         ],
       });
-      return { parsed: extractJSON(c.choices[0]?.message?.content ?? "{}"), model };
+      const raw = c.choices[0]?.message?.content ?? "{}";
+      try {
+        return { parsed: extractJSON(raw), model };
+      } catch (err) {
+        writeFileSync(`${RAW_DIR}/raw-${unitId}-exam.txt`, `finish_reason=${c.choices[0]?.finish_reason}
+${raw}`);
+        throw err;
+      }
     },
   );
 
@@ -100,19 +125,31 @@ for (const unitId of unitIds) {
     allowedTypes: [...TYPES],
   });
   const keys = await verifyAnswerKeys(valid.accepted, relateAnswerKey);
-  const kept = keys.kept.map(k => k.question);
+  // The route trims a paper to the requested count after the key check (#808),
+  // so the same is done here: what is judged is what a teacher would be shown.
+  const kept = keys.kept.map(k => k.question).slice(0, COUNT);
   const verdicts = checkGrounding(kept, source);
   const weak = verdicts.filter(v => v.status === "weak");
 
   hardFailures += valid.rejected.length + keys.dropped.length;
   console.log(
-    `${unitId}: asked ${COUNT}, got ${gen.questions.length}, rejected ${valid.rejected.length}, `
-      + `key-contradicted ${keys.dropped.length}, keys checked ${keys.checked}/${kept.length}, `
-      + `weak book support ${weak.length}`,
+    `${unitId} (${getUnitById(unitId)?.bookId ?? "?"}): asked ${COUNT}, model wrote ${gen.questions.length}, `
+      + `kept ${kept.length}, rejected ${valid.rejected.length}, key-contradicted ${keys.dropped.length}, `
+      + `keys checked ${keys.checked}/${kept.length}, weak book support ${weak.length}`,
   );
   for (const v of weak) console.log(`  weak (${v.support!.toFixed(2)}): ${claimText(kept[v.index]!)}`);
   for (const r of valid.rejected) console.log(`  REJECTED #${r.index + 1}: ${r.reason}`);
-  for (const d of keys.dropped) console.log(`  KEY WRONG #${d.index + 1}: ${d.reason}`);
+  for (const d of keys.dropped) {
+    console.log(`  KEY WRONG #${d.index + 1}: ${d.reason}`);
+    // Show what was asked and what the model keyed, so a real wrong key can be
+    // told from a key field that holds the wrong thing for the question.
+    const q = valid.accepted[d.index];
+    if (q) {
+      console.log(`    asked:   ${JSON.stringify(q.body).slice(0, 300)}`);
+      console.log(`    key:     ${JSON.stringify(q.expectedAnswer).slice(0, 200)}`);
+      console.log(`    check:   ${JSON.stringify(q.check)}`);
+    }
+  }
 
   // Deck, same unit, same book text.
   const unitName = getUnitById(unitId)?.nameAr ?? unitId;
@@ -127,9 +164,12 @@ for (const unitId of unitIds) {
     ],
   });
   let deckIssues: ReturnType<typeof checkDeck>;
+  const deckRaw = deckCall.choices[0]?.message?.content ?? "{}";
   try {
-    deckIssues = checkDeck(extractJSON(deckCall.choices[0]?.message?.content ?? "{}"), source);
+    deckIssues = checkDeck(extractJSON(deckRaw), source);
   } catch {
+    writeFileSync(`${RAW_DIR}/raw-${unitId}-deck.txt`, `finish_reason=${deckCall.choices[0]?.finish_reason}
+${deckRaw}`);
     deckIssues = [{ severity: "error", code: "unparseable_json" }];
   }
   const deckErrors = deckIssues.filter(i => i.severity === "error");
@@ -141,6 +181,13 @@ for (const unitId of unitIds) {
   }
 
   report.push({ unitId, model: gen.model, rejected: valid.rejected, dropped: keys.dropped, weak, verdicts, deckIssues });
+ } catch (err) {
+  // One bad response must not end the run — it is a finding, not a crash.
+  hardFailures += 1;
+  const msg = err instanceof Error ? err.message : String(err);
+  console.log(`${unitId}: FAILED — ${msg.slice(0, 200)}`);
+  report.push({ unitId, error: msg });
+ }
 }
 
 const out = arg("out");
