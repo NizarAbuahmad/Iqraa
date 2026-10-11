@@ -49,6 +49,10 @@
 | `artifacts/mobile/app/curriculum/quran/[surahId]/index.tsx` | Reader |
 | `artifacts/mobile/app/curriculum/quran/[surahId]/memorize.tsx` | Memorisation tools |
 
+**Two more departures from the spec, recorded after the Tasks 1–5 final review:**
+1. *The surah table is hand-typed* (`SURAHS` in `scripts/quranCornerBuild.ts`: numbers and ayah counts, not text). The spec prefers names from Tanzil's metadata and allows a hand table only if the metadata cannot supply them, with a range-fits test and a PR disclosure. The plan takes the hand table because the snapshot the owner downloads is the plain `sura|aya|text` file, which has no names, and Tanzil's metadata file would be a second owner-supplied file whose format could not be checked from the build sandbox (`tanzil.net` is refused). The spec's conditions are met: `buildCorner` throws when a range does not fit or a count differs (tested), and the PR says so. The cost: an equal-length swap of two whole surahs is caught only by a person reading `REVIEW.md`. If the owner also supplies Tanzil's metadata file, add a name cross-check then.
+2. *The snapshot record is `SOURCE.json`, not `SOURCE.md`* (plus `SHA256SUMS`), because the build reads it. The spec was amended to match.
+
 **One deliberate difference from the spec:** the spec says "a per-ayah action opens the lesson that assigns it". The reader instead lists the lessons that assign the surah, each opening its lesson with the ayah range it covers. An ayah can be assigned by two lessons (الجمعة 9–11 is in grades 4 and 6), which a single per-ayah button cannot show. The spec sentence was amended to match.
 
 Tasks 1–5 need no Quranic text and can run first. **Task 6 stops at an owner gate** (the snapshot file). Tasks 7–10 need Task 6.
@@ -1725,8 +1729,6 @@ import { readFileSync } from 'node:fs';
 import { QURAN_CORNER, QURAN_SURAHS } from '../quran.ts';
 import { assertFullHafs, buildCorner, loadBuildInput, parseTanzilTxt } from '../../scripts/quranCornerBuild.ts';
 import { tokenizeAyah } from '../quranMemorize.ts';
-import { buildG4IslamicSem1Catalog } from '../catalogs/g4IslamicSem1.ts';
-import { buildG7IslamicSem1Catalog } from '../catalogs/g7IslamicSem1.ts';
 
 const SNAPSHOT = new URL('../../sources/tanzil/quran-uthmani.txt', import.meta.url);
 const SUMS = new URL('../../sources/tanzil/SHA256SUMS', import.meta.url);
@@ -1798,16 +1800,28 @@ describe('quran_corner.json', () => {
     }
   });
 
-  it('records lesson ids that the real catalog builders emit', () => {
-    const real = {
-      'grade-4': new Set(buildG4IslamicSem1Catalog().lessons.map(l => l.id)),
-      'grade-7': new Set(buildG7IslamicSem1Catalog().lessons.map(l => l.id)),
-    } as const;
-    for (const [gradeId, ids] of Object.entries(real)) {
-      const refs = QURAN_SURAHS.flatMap(s => s.lessons).filter(l => l.gradeId === gradeId && l.semester === 1);
-      assert.ok(refs.length > 0, `${gradeId} semester 1 should assign at least one surah`);
-      for (const r of refs) assert.ok(ids.has(r.lessonId), `${r.lessonId} is not a lesson id the ${gradeId} catalog builds`);
+  it('records lesson ids that the real catalog builders emit, for all 20 books', async () => {
+    let checked = 0;
+    for (let grade = 1; grade <= 10; grade++) {
+      for (const semester of [1, 2] as const) {
+        const mod = (await import(`../catalogs/g${grade}IslamicSem${semester}.ts`)) as Record<
+          string,
+          () => { lessons: Array<{ id: string }> }
+        >;
+        // Grades 1–9 export buildG<N>IslamicSem<S>Catalog; grade 10 keeps the historical buildIslamicSem<S>Catalog.
+        const build = mod[grade === 10 ? `buildIslamicSem${semester}Catalog` : `buildG${grade}IslamicSem${semester}Catalog`];
+        assert.equal(typeof build, 'function', `no catalog builder for grade ${grade} semester ${semester}`);
+        const ids = new Set(build!().lessons.map(l => l.id));
+        const refs = QURAN_SURAHS.flatMap(s => s.lessons).filter(
+          l => l.gradeId === `grade-${grade}` && l.semester === semester,
+        );
+        for (const r of refs) {
+          assert.ok(ids.has(r.lessonId), `${r.lessonId} is not a lesson id the grade ${grade} semester ${semester} catalog builds`);
+          checked++;
+        }
+      }
     }
+    assert.equal(checked, 77);
   });
 
   it('splits every ayah into words that join back to it', () => {

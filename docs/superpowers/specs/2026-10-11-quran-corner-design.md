@@ -44,7 +44,8 @@ Constraints that shape the design:
 
 - A pinned copy of Tanzil's `quran-uthmani` text and its metadata is committed
   **outside `src/`** (e.g. `lib/curriculum/sources/tanzil/`) with a
-  `SOURCE.md` (URL it came from, date, version) and a SHA-256 manifest. It is a
+  `SOURCE.json` (date, the options chosen on the download page) and a SHA-256
+  manifest (`SHA256SUMS`). It is a
   build input, never imported by the app.
 - Where it comes from is decided in the plan, in this order: a copy with a
   recorded checksum from a path this sandbox can reach (the `quran-json` repo
