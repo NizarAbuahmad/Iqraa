@@ -169,11 +169,18 @@ has the verification and the defects that drive found.
     are reported, not added.
   - `formatPoints`: 4 / 6 / 10 by difficulty.
   - The live path asks the model for `total − taken`, with no floor of 5.
-- **Formats are picked first, scarcest first.** The bank is drawn for the
-  formats before the worked example and the practice sections, so a ticked
-  format is not starved by ordinary questions. On a small bank the practice
-  sections come up short instead, and say so through the existing shortfall
-  note.
+- **The worked example first, then formats scarcest first (R14 as revised
+  at the final review).** Offline takes the worked example and the
+  half-solved item first, so a small bank still opens with an example, as the
+  live paper does. They avoid the misstep items when أين الخطأ؟ is ticked and
+  the `ORDER_SAFE` items when رتّب is, falling back to them only when nothing
+  else is left. The formats come next, scarcest first, before any practice
+  question, so a ticked format is not starved by ordinary questions. On a
+  small bank the practice sections come up short instead, and say so through
+  the existing shortfall note. When even the formats run short (صِل needs
+  four items left), the format is named as missing. As first built, formats
+  were picked before the example, and «المتتاليات الحسابية» at n=10 with
+  three formats came out with formats only.
 - **Greying needs a grounded lesson.** A tick is judged only when the topic
   grounds to a KB lesson. A greyed tick draws unchecked and disabled, but it
   stays in the stored selection and is stripped only from the request, so
@@ -215,3 +222,35 @@ has the verification and the defects that drive found.
     columns under its stem** (`services/evaluationQuestionText.ts`).
 - **Driven on a different lesson than planned.** The drive used «حل المعادلة
   الأسية» and the unit-1 GeoGebra lab (`u1_lab`), not «النسب المثلثية».
+- **Final whole-branch review (2026-10-11):**
+  - **رتّب draws only from `ORDER_SAFE`** (`lib/math-practice/src/orderSafe.ts`),
+    a hand-audited allowlist of the solved items whose steps, apart from the
+    pinned last line, have one valid order. Of 164 audited items (92 maths,
+    72 chemistry), 78 are listed (65 and 13). Items with interchangeable
+    steps were marked partly wrong by the deterministic grader. Every maths
+    family keeps رتّب. Grade-10 chemistry goes from 17 to 8 of 17 lessons.
+  - **A word problem the bank cannot supply is a shortfall.** It no longer
+    drops the built formats. They are pushed outside the practice `try`.
+  - **A live paper's format keys** are numbered from the flat question count.
+  - **An answer edit drops the format** of صِل، رتّب and أين الخطأ؟, but not of
+    ارسم, whose key is its answer.
+  - **The deck exports draw a `visualOnReveal` plot** only on a slide that
+    prints the answer (`visualForExport`).
+  - **The converted أين الخطأ؟ stem uses Arabic step numbers.**
+    `exprsMissingFromStem` matches whole equations only. The deck's answer
+    summary keeps a multi-line key on one line.
+  - **`isolateForeignRuns` is app-wide.** Only a run with an operator gives
+    back its trailing dot. Latin-only runs («x.», «CO₂.») keep the dot
+    inside.
+  - **Known limits:**
+    - `planKeySlides` estimates row heights, so one row taller than a slide
+      still overflows.
+    - «بلّغ عن مشكلة» on a live paper retires the pooled model paper, not a
+      bank format.
+    - ارسم is reachable on 2 of 36 grade-10 maths lessons, because of
+      pre-existing routing: «بيانيًا» against `بيانيا`, and `u8_lab` on
+      «جيوجبرا».
+    - `formatAvailability` gives one generic reason, not one per kind.
+    - On a teacher-document paper, formats can still build when the
+      document's title routes to a family.
+    - The in-app result card shows «١ (» before a maths run (pre-existing).

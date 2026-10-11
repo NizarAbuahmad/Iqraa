@@ -929,8 +929,10 @@ teacher picked.
   letter, and the answers are shuffled and lettered on the left. Key:
   «١-أ، ٢-ج، …».
 - **رتّب الخطوات (order).** One solved item's 3–6 working steps as lettered
-  cards. The last step (the answer line) is kept last, so the order has one
-  reading. Key: the letters in order, plus the ordered working.
+  cards. The last step (the answer line) is kept last. Only items in the
+  hand-audited `ORDER_SAFE` allowlist (`lib/math-practice/src/orderSafe.ts`)
+  are drawn, since their steps have exactly one valid order (see the final
+  review below). Key: the letters in order, plus the ordered working.
 - **أين الخطأ؟ (spot_error).** One item's working with one step replaced by
   a hand-written misstep: 28 entries, two for each of the 14 maths families
   that have working (`lib/math-practice/src/missteps.ts`). The paper asks for
@@ -944,8 +946,9 @@ teacher picked.
 **Bank only, no AI.** Content comes from `pickForFormat`
 (`lib/math-practice/src/formatsBank.ts`) through `buildFormatQuestion`
 (`artifacts/mobile/services/ai/worksheetFormats.ts`), and is deduped against
-the sheet's own math-practice session. Offline, `generateWorksheet` builds the
-formats first, scarcest first, and then the rest of the sheet. Live,
+the sheet's own math-practice session. Offline, `generateWorksheet` takes the
+worked example and the half-solved item first, then builds the formats
+scarcest first, then the rest of the sheet (the final review's R14 revision). Live,
 `RemoteAIService.generateWorksheet` asks the model for `total − formats`
 ordinary questions with the format types removed from the request, then
 appends the same builder's questions and renumbers the key. A pooled sheet
@@ -1059,8 +1062,10 @@ selection is stripped there.
   now «الخطوة N: <fix>» plus the reason on the next line. `solution` is the
   corrected working only, so item N is step N on every key.
 - **A full stop after an equation** stays outside the isolate
-  (`isolateForeignRuns`), so «3x − 3.» no longer prints as «.3x − 3». A label
-  such as «A.» keeps its dot.
+  (`isolateForeignRuns`), so «3x − 3.» no longer prints as «.3x − 3». Only a
+  run with an operator gives its dot back. A label such as «A.» keeps its dot,
+  and so do latin-only runs such as «x.» or «CO₂.», where the dot can still
+  print on the wrong side. The change is app-wide, not only on worksheets.
 
 **Not fixed:**
 
@@ -1086,6 +1091,69 @@ selection is stripped there.
 - The live deck's dedupe of a two-equation system was checked by
   `formatSlides.test.ts` with the reported stem. The second drive drew a
   one-curve item («y = x² − 4» with «(y = 0)»), which was also not repeated.
+
+**Final whole-branch review, fixed (2026-10-11):**
+
+- **Offline, a word problem that spent the bank dropped every format** (C1).
+  `makeQ('word_problem')` threw `BankSpentError` inside the same `try` as the
+  format push, and the outer catch swallowed it. There was no
+  `missingFormats` and no shortfall. Reproduced on «المعادلات الأسية» at n=14,
+  15 and 18. The word problem now has its own `try`, which reports the
+  shortfall, and built formats are pushed after the `try`.
+- **رتّب marked a valid order wrong** (I2). Many items have steps that can
+  swap: c-m1's h/k/r, d-m1's two terms, t-m1's quadrants, the formula and the
+  givens in most chemistry items. The converter auto-marks one order.
+  `ORDER_SAFE` (`lib/math-practice/src/orderSafe.ts`) is a hand-audited
+  allowlist. All 164 solved items with 3–6 steps were read: 92 maths and 72
+  chemistry. It lists 78: 65 maths and 13 chemistry, chosen where each step
+  uses the one before it. When unsure, an item was left out. As a result:
+  - Every maths family keeps رتّب. 25 of 36 grade-10 maths lessons offer it,
+    the same as before.
+  - Chemistry drops from 17 to 8 of 17 grade-10 lessons. The nine that lose it
+    are the two unit-1 lessons and their lab, the two unit-2 lessons and their
+    lab, «المول والكتلة المولية», «تغيرات الطاقة في التفاعلات الكيميائية»
+    and «الطاقة الممتصة والطاقة المنبعثة من المادة». The last two route to
+    the mole and general families, which is pre-existing routing.
+- **A short or gapped model key moved the format keys** (I3). `appendFormats`
+  numbers from the flat question count, not from the model's largest `num`.
+- **Correcting a format's key left students marked against the old one** (I4).
+  An answer edit now drops the `format` of صِل، رتّب and أين الخطأ؟, as a
+  text edit does. ارسم keeps its format, because its equations are the stem's
+  and its key is the answer.
+- **R14 revised: the worked example comes first offline.** Formats picked
+  first could leave a small bank's paper with no worked example, while live
+  kept the model's. The example and the half-solved item are now taken first.
+  They avoid the misstep items when أين الخطأ؟ is ticked and the
+  `ORDER_SAFE` items when رتّب is, falling back to them only when nothing
+  else is left. Formats follow, scarcest first, then practice. On
+  «المتتاليات الحسابية» (7 solved items) at n=10 with صِل + رتّب + أين الخطأ؟,
+  the paper keeps its example, رتّب and أين الخطأ؟, and reports صِل missing.
+- **Minor fixes:**
+  - The PDF and PowerPoint deck exports draw a `visualOnReveal` plot only on
+    a slide that prints its answer (`visualForExport`; inside the answer card
+    in HTML).
+  - The converted أين الخطأ؟ stem numbers its steps «١)» on an Arabic paper.
+  - `exprsMissingFromStem` (app and api) needs a whole equation: «y = x» is
+    not found inside «y = x + 1».
+  - The live deck's answer summary keeps a multi-line key on one line.
+- **Checks after the fixes.** Root typecheck clean. Mobile 3895 tests: 3885
+  pass, 0 fail, 10 skipped. api-server (built first) 1479 / 1479.
+  `lib/math-practice` 807 / 807.
+
+**Known limits, recorded at the final review:**
+
+- **`planKeySlides`** splits the key by estimated row heights. A single row
+  taller than a slide still overflows.
+- **The in-app result card shows «١ (»** for a label before a maths run
+  (pre-existing).
+- **«بلّغ عن مشكلة» on a live paper** retires the pooled model paper, not a
+  bank format, so a bank error persists into the next paper.
+- **ارسم is reachable on 2 of 36 grade-10 maths lessons.** «بيانيًا» does not
+  match the `بيانيا` keyword, and `u8_lab` routes on «جيوجبرا». This is
+  pre-existing routing and was left out of scope.
+- **`formatAvailability`** returns booleans with one generic reason, not a
+  reason per kind. On a teacher-document paper, formats can still build if
+  the document's title routes to a family.
 
 ## «where i can add more classes» reached the subject question, 2026-10-10
 
