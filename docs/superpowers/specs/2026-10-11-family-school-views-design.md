@@ -62,16 +62,19 @@ paper-exam table (families would get two lists of exams and results).
 
 ## 0. Foundation
 
-1. **`api-server/src/lib/familyAccess.ts`** — `linkedStudentIds(userId, role)`
-   (self link for students, guardian links for parents, non-archived) and
-   `classIdsForStudents(studentIds)`. Extracted from the inline queries in
-   `studentExams.ts` and used by every new route; `studentExams.ts` moves onto it
-   with its existing tests as the safety net.
+1. **`api-server/src/lib/familyAccess.ts`** — `selfLinkedStudentIds(userId)`
+   and `guardianLinkedStudents(userId)` (self link for students, guardian links
+   for parents, non-archived), extracted from the inline queries in
+   `studentExams.ts` and used by every new route; the class lookup lives in
+   `lib/familyScheduleLoad.ts` rather than a separate `classIdsForStudents`.
+   `studentExams.ts` moves onto it with its existing tests as the safety net.
 2. **Parents with several children** get a child picker (the per-child section
    pattern of `my-exams.tsx`). Filter by roster link, never by a display
    preference — STATUS.md records results being lost that way.
-3. **"School" (المدرسة) tab** for student and parent in `buildTabEntries`, with
-   segments Schedule · Homework · Exams. `app/(tabs)/school.tsx`, an
+3. **"School" (المدرسة) tab** for student and parent in `buildTabEntries`,
+   showing the timetable, with a row to «اختباراتي»; Part 2 adds a Homework
+   section (no segment control while there is one list and one link).
+   `app/(tabs)/school.tsx`, an
    `iconNameFor` case, ar + en i18n keys, sub-routes added to
    `NON_TEACHER_ROUTES` and `routeGating.test.ts`. `my-exams` stays reachable
    from the Exams segment.
@@ -91,6 +94,15 @@ a case in `mountOrder.test.ts`.
   have not entered it, never an empty grid that reads as a free week.
 - Teachers define period times independently, so each slot carries its own
   teacher's times; they are not merged.
+- **A class has one teacher**, so a family sees the slots of every class their
+  linked roster rows sit in — the union across teachers, not a whole-class
+  timetable. An account linked to only one teacher's class sees only that
+  teacher's periods. Parents' roster rows are grouped into children by name
+  (`modules/family/children.ts`) so one child under two teachers is one entry.
+- The mobile fetchers live in their own file, `services/familyScheduleApi.ts`,
+  split from the pure `services/familySchedule.ts`: `apiClient.ts` pulls
+  `react-native` into module scope, which the bare `node --test` runner cannot
+  load, so the logic stays importable by tests.
 - Teacher side: a one-line hint in `classes/[id]` ("N periods in this class's
   timetable") so teachers know what families see. Pure logic in
   `services/familySchedule.ts`, tested like `scheduleCalendar.ts`.

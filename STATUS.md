@@ -1033,6 +1033,38 @@ which is what actually proves who they are. Now the code is the sign-up.
   device**, and no DB-backed test exists in the repo, so the route logic itself
   is covered by that manual run rather than a committed test.
 
+## Students and parents see the weekly timetable, 2026-10-11
+
+Parents and students have a **المدرسة** tab (`app/(tabs)/school.tsx`) showing the
+weekly timetable, read-only, from `GET /student/schedule` and
+`GET /parent/schedule` (`routes/familySchedule.ts`). No new tables.
+
+- **It is the union of the teachers who have filled theirs in.** A class belongs to
+  one teacher, so an account sees only the slots of classes its linked roster rows
+  sit in. A student who has claimed one teacher's code sees one teacher's periods
+  until they claim the rest (`POST /auth/claim`). The empty state says the schedule
+  is "not entered yet" and may stay incomplete until the account is linked to all
+  its teachers' classes — never "no lessons".
+- **A parent's children are grouped by name** (`modules/family/children.ts`) for the
+  schedule, because the same child under two teachers is two roster rows.
+  `/parent/exams` still lists one section per roster row.
+- Times come from each slot's own teacher (`schedule_periods`); they are never merged.
+- **Tab and routing:** a fourth tab for parent/student only (`visible: !isTeacher`);
+  the teacher tab bar is unchanged. `/school` is on the `NON_TEACHER_ROUTES`
+  allowlist. The mobile fetchers are in `services/familyScheduleApi.ts`, split from
+  the pure `services/familySchedule.ts`, because `apiClient.ts` pulls `react-native`
+  into module scope and `node --test` cannot load it.
+- Behind `STUDENT_ACCOUNTS=true` like every family route.
+- **Not run, anywhere.** The School tab has never been opened in a browser or on a
+  device — the dev environment had no database or browser for this work. What is
+  covered: the routes' 401 guards (mount-order suite) and the pure grouping /
+  assembly / day-ordering logic (unit tests). What is **not**: the signed-in family
+  path (403 / 200 / 500 from the real routes against real rows) and the screen's
+  rendering (RTL layout, the child picker, the empty state). Look at it before
+  turning `STUDENT_ACCOUNTS` on for anyone.
+- Still to come (spec `docs/superpowers/specs/2026-10-11-family-school-views-design.md`):
+  homework, exam dates and paper marks, notifications.
+
 ## Messages can be reacted to with an emoji, 2026-10-10
 
 Person-to-person chat (teacher ↔ parent / student, class and custom groups — not
