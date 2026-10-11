@@ -381,7 +381,10 @@ export function buildDeckFromWorksheet(
       const answer = (fmt?.kind === 'order' || fmt?.kind === 'spot_error') && keyAnswer && solutionByPosition.get(qNum)?.length
         ? [keyAnswer, ...solutionByPosition.get(qNum)!].join('\n')
         : keyAnswer;
-      answers.push(isAr ? `سؤال ${qNum}: ${keyAnswer}` : `Q${qNum}: ${keyAnswer}`);
+      // One line per question: the summary is read line by line, so a
+      // multi-line key (أين الخطأ؟'s reason) is joined onto its question's line.
+      const summary = keyAnswer.split('\n').map(l => l.trim()).filter(Boolean).join(' — ');
+      answers.push(isAr ? `سؤال ${qNum}: ${summary}` : `Q${qNum}: ${summary}`);
       // Same rule as buildDeckFromQuiz: a key naming no option is shown as an
       // open question carrying the key, never as option A.
       const correct = hasOptions ? indexOfAnswer(q.options!, answer) : -1;

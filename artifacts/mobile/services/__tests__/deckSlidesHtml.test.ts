@@ -12,6 +12,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { buildDeckSlidesHTML } from '../deckSlidesHtml.ts';
+import { visualForExport } from '../deckVisuals.ts';
 import type { ActivitySlide, ClassroomActivity } from '../ai/AIService.ts';
 
 /**
@@ -642,5 +643,37 @@ describe('buildDeckSlidesHTML — multi-line stems', () => {
     ]), true));
     assert.match(html, /deck-line">المعطيات: نقطتان<\/div><div class="deck-line">أوجد الميل/);
     assert.match(html, /deck-line">السطر الأول<\/div><div class="deck-line">السطر الثاني/);
+  });
+});
+
+/**
+ * ارسم's curve is its answer. The live deck holds it back until «أظهر
+ * الإجابة» (`visualOnReveal`); the exports have no reveal, so they draw it
+ * only where the slide prints its answer too — beside the answer, not under
+ * the question.
+ */
+describe('a visualOnReveal plot in the exports', () => {
+  const plot = { kind: 'plot' as const, series: [{ label: 'y = x', points: [{ x: -1, y: -1 }, { x: 0, y: 0 }, { x: 1, y: 1 }] }] };
+  const graphQ = (answer?: string, type: ActivitySlide['type'] = 'challenge'): ActivitySlide => ({
+    slideNumber: 2, type, title: 'سؤال 1', content: 'ارسم y = x', durationSeconds: 0,
+    visual: plot, visualOnReveal: true, ...(answer ? { answer } : {}),
+  } as ActivitySlide);
+
+  it('is not drawn on a question face with no answer', () => {
+    assert.doesNotMatch(markup(buildDeckSlidesHTML(deck([titleSlide, graphQ()]), true)), /<svg/);
+    assert.doesNotMatch(markup(buildDeckSlidesHTML(deck([titleSlide, graphQ(undefined, 'intro')]), true)), /<svg/);
+  });
+
+  it('is drawn inside the answer card when the slide prints the answer', () => {
+    const html = markup(buildDeckSlidesHTML(deck([titleSlide, graphQ('(0 ، 0)')]), true));
+    assert.match(html, /<svg/);
+    assert.ok(html.indexOf('deck-answer-label') < html.indexOf('<svg'), 'the curve sits in the answer card, not under the question');
+  });
+
+  it('visualForExport (the pptx gate) follows the same rule', () => {
+    assert.equal(visualForExport(graphQ()), null);
+    assert.equal(visualForExport(graphQ(undefined, 'intro')), null);
+    assert.equal(visualForExport(graphQ('(0 ، 0)'))?.kind, 'plot');
+    assert.equal(visualForExport({ ...graphQ(), visualOnReveal: undefined })?.kind, 'plot');
   });
 });

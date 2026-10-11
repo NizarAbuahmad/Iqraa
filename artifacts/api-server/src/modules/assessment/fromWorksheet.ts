@@ -148,7 +148,8 @@ function fromFormat(format: unknown, answer: string, entry: { solution?: string[
     return {
       type: "multiple_choice",
       body: {
-        stem: `${stem}\n${steps.map((s, i) => `${i + 1}) ${s}`).join("\n")}`,
+        // Numbered as the paper is («١)» on an Arabic one), so «الخطوة ٢» names a line the student can see.
+        stem: `${stem}\n${steps.map((s, i) => `${lang === "ar" ? toArabicDigits(i + 1) : i + 1}) ${s}`).join("\n")}`,
         options: steps.map((_, i) => ({ id: OPTION_IDS[i]!, text: stepLabel(i + 1, lang) })),
       },
       expectedAnswer: { optionIds: [OPTION_IDS[wrongStep]!] },
@@ -177,10 +178,37 @@ function fromFormat(format: unknown, answer: string, entry: { solution?: string[
  * Mirrors `exprsMissingFromStem` in the app's `services/ai/worksheetFormats.ts`.
  */
 function exprsMissingFromStem(stem: string, exprs: string[]): string[] {
-  const flat = (t: string) =>
-    t.replace(/−/g, "-").replace(/²/g, "^2").replace(/³/g, "^3").replace(/×/g, "*").replace(/\s+/g, "");
-  const have = flat(stem);
-  return exprs.filter(e => !have.includes(flat(`y = ${e}`))).map(e => `y = ${e}`);
+  const notation = (t: string) => t.replace(/−/g, "-").replace(/²/g, "^2").replace(/³/g, "^3").replace(/×/g, "*");
+  const text = notation(stem);
+  return exprs.filter(e => !statedIn(text, notation(`y = ${e}`).replace(/\s+/g, ""))).map(e => `y = ${e}`);
+}
+
+/**
+ * `eq` (spacing removed) appears in `text` as a whole equation: what follows
+ * the match is the end, or something that cannot continue the expression — so
+ * «y=x» is not found inside «y = x + 1», while «y = x² − 2x» on one line and
+ * «y = x» on the next are still two equations. Mirrors the app's copy.
+ */
+function statedIn(text: string, eq: string): boolean {
+  const chars: string[] = [];
+  const spaceBefore: boolean[] = [];
+  let pending = false;
+  for (const ch of text.split("")) {
+    if (/\s/.test(ch)) { pending = true; continue; }
+    chars.push(ch);
+    spaceBefore.push(pending);
+    pending = false;
+  }
+  const have = chars.join("");
+  for (let i = have.indexOf(eq); i >= 0; i = have.indexOf(eq, i + 1)) {
+    const k = i + eq.length;
+    const next = have[k];
+    if (next === undefined) return true;
+    if (/[+\-*/^]/.test(next)) continue; // an operator continues it
+    if (next === "." && /\d/.test(have[k + 1] ?? "")) continue; // so does a decimal point
+    if (spaceBefore[k] || !/[0-9A-Za-z(_√]/.test(next)) return true;
+  }
+  return false;
 }
 
 const comparable = (s: string) => normalizeArabic(s.replace(OPTION_MARKER, ""));

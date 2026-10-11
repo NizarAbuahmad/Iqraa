@@ -178,7 +178,8 @@ describe("formats", () => {
     const q = only(one({ text: "x", points: 2, format: { kind: "spot_error", stem: "أين الخطأ؟", steps: ["a", "b", "c"], wrongStep: 1, fix: "B", why: "w" } } as any, "الخطوة ٢: B"));
     assert.equal(q.type, "multiple_choice");
     assert.deepEqual(q.expectedAnswer, { optionIds: ["b"] });
-    assert.equal(q.body["stem"], "أين الخطأ؟\n1) a\n2) b\n3) c");
+    // Numbered as the paper numbers them, so «الخطوة ٢» names a «٢)» on the page.
+    assert.equal(q.body["stem"], "أين الخطأ؟\n١) a\n٢) b\n٣) c");
     assert.deepEqual(q.body["options"], [{ id: "a", text: "الخطوة ١" }, { id: "b", text: "الخطوة ٢" }, { id: "c", text: "الخطوة ٣" }]);
   });
 
@@ -189,6 +190,7 @@ describe("formats", () => {
     }, "en");
     assert.ok(r.ok);
     assert.deepEqual((r.questions[0]!.body["options"] as { text: string }[]).map(o => o.text), ["Step 1", "Step 2", "Step 3"]);
+    assert.equal(r.questions[0]!.body["stem"], "Find the error\n1) a\n2) b\n3) c");
   });
 
   it("graph → teacher-marked short answer", () => {
@@ -196,6 +198,17 @@ describe("formats", () => {
     assert.equal(q.type, "short_answer");
     assert.equal(q.body["prompt"], "ارسم\ny = x + 1");
     assert.deepEqual(q.expectedAnswer, { modelAnswer: "(1 ، 2)", keyConcepts: ["(1 ، 2)"] });
+  });
+
+  it("graph: an equation is not taken as stated because a longer one starts with it", () => {
+    // «y = x» sits inside «y = x + 1»; only a whole equation counts.
+    const win = { xMin: -3, xMax: 3, yMin: -3, yMax: 3 };
+    const q = only(one({ text: "x", points: 2, format: { kind: "graph", stem: "ارسم:\ny = x + 1", exprs: ["x + 1", "x"], window: win } } as any, "k"));
+    assert.equal(q.body["prompt"], "ارسم:\ny = x + 1\ny = x");
+    const q2 = only(one({ text: "x", points: 2, format: { kind: "graph", stem: "ارسم y = x² و y = x", exprs: ["x²", "x"], window: win } } as any, "k"));
+    assert.equal(q2.body["prompt"], "ارسم y = x² و y = x");
+    const q3 = only(one({ text: "x", points: 2, format: { kind: "graph", stem: "ارسم y = 0.5x، ثم y = x.", exprs: ["0", "x"], window: win } } as any, "k"));
+    assert.equal(q3.body["prompt"], "ارسم y = 0.5x، ثم y = x.\ny = 0");
   });
 
   it("graph: equations the stem already states are not repeated in the prompt", () => {

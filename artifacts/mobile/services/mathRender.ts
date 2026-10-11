@@ -461,9 +461,13 @@ export function isolateForeignRuns(line: string): string {
   return (line ?? '').replace(FOREIGN_RUN_RE, m => {
     // A sentence's closing full stop is not part of an equation before it:
     // inside the isolate it printed on the wrong side, «3x − 3.» read
-    // «.3x − 3». A run never ends in a decimal point, so after maths (a run
-    // with an operator) trailing dots go back to the flow. A label such as
-    // «A.» keeps its dot.
+    // «.3x − 3». So when the run ENDS in dots and holds an operator, those
+    // dots go back to the flow («x = 3.» → isolate «x = 3», then «.»).
+    // Only that case. A run with no operator keeps its dot inside — a label
+    // such as «A.» (wanted), but also a sentence ending in a latin-only run,
+    // «x.» or «CO₂.», whose dot can still print on the wrong side. And a dot
+    // followed by more latin on the same run («x = 3. y = 4») is mid-run, so
+    // it stays inside too.
     const [, body, dots] = /^(.*?)(\s*\.*)$/su.exec(m)!;
     if (dots && HAS_OPERATOR.test(body!)) return worthIsolating(body!) ? isolateRun(body!) + dots : m;
     return worthIsolating(m) ? isolateRun(m) : m;

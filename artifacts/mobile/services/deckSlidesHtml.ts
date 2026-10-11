@@ -254,7 +254,11 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
    * `graphCommands` for that figure (see lessonSlides.ts), and the printed
    * deck has to draw it for the same reason the projected one does.
    */
-  const slidePlot = (slide: ActivitySlide) => {
+  // `answerShown`: the caller is drawing inside the slide's printed answer.
+  // A `visualOnReveal` plot (ارسم's curve, which IS the answer) is drawn only
+  // there — `visualForExport` is the same gate for the PowerPoint export.
+  const slidePlot = (slide: ActivitySlide, answerShown = false) => {
+    if (slide.visualOnReveal && !answerShown) return '';
     const visual = visualForSlide(slide);
     const svg = visual ? visualToSvg(visual, 640, 320) : '';
     return svg ? `<div class="deck-plot">${svg}</div>` : '';
@@ -307,6 +311,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
           <div class="deck-answer" style="border-color:${accent}44">
             <div class="deck-answer-label" style="color:${accent}">${L('الإجابة', 'Answer')}</div>
             ${deckAnswerBody(slide.answer, accent)}
+            ${slide.visualOnReveal ? slidePlot(slide, true) : ''}
             ${verifiedBadge}
           </div>` : ''}
       </div>

@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  buildFormatQuestion, formatAvailability, FORMAT_KINDS, isFormatKind, normalizePlotExpr, fitGraphWindow,
+  buildFormatQuestion, formatAvailability, FORMAT_KINDS, isFormatKind, normalizePlotExpr, fitGraphWindow, exprsMissingFromStem,
 } from '../ai/worksheetFormats.ts';
 import { samplePlot } from '../deckVisuals.ts';
 
@@ -125,5 +125,17 @@ describe('graph window', () => {
         assert.ok(f.window.yMin <= -5);
       }
     }
+  });
+});
+
+describe('exprsMissingFromStem', () => {
+  it('a stated equation is not repeated, in any spacing or notation', () => {
+    assert.deepEqual(exprsMissingFromStem('أوجد حلول النظام:\ny = x² − 2x\ny = x', ['x² − 2x', 'x']), []);
+    assert.deepEqual(exprsMissingFromStem('ارسم:\ny=x^2-2x', ['x² − 2x', '2x + 1']), ['y = 2x + 1']);
+  });
+  it('an equation is not taken as stated because a longer one starts with it', () => {
+    assert.deepEqual(exprsMissingFromStem('ارسم:\ny = x + 1', ['x + 1', 'x']), ['y = x']);
+    assert.deepEqual(exprsMissingFromStem('ارسم y = x² و y = x', ['x²', 'x']), []);
+    assert.deepEqual(exprsMissingFromStem('ارسم y = 0.5x، ثم y = x.', ['0', 'x']), ['y = 0']);
   });
 });

@@ -61,9 +61,36 @@ export function normalizePlotExpr(e: string): string {
  * «y = x² − 2x»). The api-server converter keeps its own copy of this rule.
  */
 export function exprsMissingFromStem(stem: string, exprs: string[]): string[] {
-  const flat = (t: string) => normalizePlotExpr(t).replace(/\s+/g, '');
-  const have = flat(stem);
-  return exprs.filter(e => !have.includes(flat(`y = ${e}`))).map(e => `y = ${e}`);
+  const text = normalizePlotExpr(stem);
+  return exprs.filter(e => !statedIn(text, normalizePlotExpr(`y = ${e}`).replace(/\s+/g, ''))).map(e => `y = ${e}`);
+}
+
+/**
+ * `eq` (spacing removed) appears in `text` as a whole equation: what follows
+ * the match is the end, or something that cannot continue the expression — so
+ * «y=x» is not found inside «y = x + 1», while «y = x² − 2x» on one line and
+ * «y = x» on the next are still two equations.
+ */
+function statedIn(text: string, eq: string): boolean {
+  const chars: string[] = [];
+  const spaceBefore: boolean[] = [];
+  let pending = false;
+  for (const ch of text.split('')) {
+    if (/\s/.test(ch)) { pending = true; continue; }
+    chars.push(ch);
+    spaceBefore.push(pending);
+    pending = false;
+  }
+  const have = chars.join('');
+  for (let i = have.indexOf(eq); i >= 0; i = have.indexOf(eq, i + 1)) {
+    const k = i + eq.length;
+    const next = have[k];
+    if (next === undefined) return true;
+    if (/[+\-*/^]/.test(next)) continue; // an operator continues it
+    if (next === '.' && /\d/.test(have[k + 1] ?? '')) continue; // so does a decimal point
+    if (spaceBefore[k] || !/[0-9A-Za-z(_√]/.test(next)) return true;
+  }
+  return false;
 }
 
 type Win = { xMin: number; xMax: number; yMin: number; yMax: number };

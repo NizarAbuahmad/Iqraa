@@ -238,3 +238,17 @@ describe('fix round 1 (2026-10-11 drive)', () => {
     assert.match(h, /FIXTEXT⁩?<br>⁦?WHYTEXT/);
   });
 });
+
+describe('the live deck\'s answer summary', () => {
+  it('keeps a multi-line answer on its question\'s line', () => {
+    // أين الخطأ؟'s answer is «الخطوة N: fix» with the reason on the next line;
+    // read line by line, the reason used to stand alone under no question.
+    const deck = buildDeckFromWorksheet(ws, 't', true);
+    assert.equal(deck.answerKey.length, 4);
+    for (const line of deck.answerKey) {
+      assert.ok(!line.includes('\n'), line);
+      assert.match(line, /^سؤال \d+: /);
+    }
+    assert.match(deck.answerKey[3]!, /FIXTEXT.*WHYTEXT/);
+  });
+});
