@@ -63,6 +63,68 @@ describe('scopeFromParams', () => {
     }
   });
 
+  describe('with a teacher selection', () => {
+    // A teacher who picked only Grade 10 (index 0). The mask is index-aligned
+    // with the picker list, exactly as `useTeacherScope` builds it.
+    const gradeHidden = grades.map((_, i) => i !== 0);
+    const subjectHiddenFor = () => subjects.map((_, i) => i !== 0);
+    const selection = { gradeHidden, subjectHiddenFor };
+    const grade1Idx = grades.findIndex(g => g.id === 'grade-1');
+
+    it('falls back to the selected grade when the route names a hidden one', () => {
+      // The reported URL: a Grade 1 lesson, for a teacher who never picked it.
+      // The picker used to open on الصف الأول although it is not in the dropdown.
+      const scope = scopeFromParams(
+        { topic: 'المَوْقِعُ وَالإِتّجاهَ', gradeIdx: String(grade1Idx), subjectIdx: '0' },
+        'ar',
+        { gradeIdx: 0, subjectIdx: 0 },
+        selection,
+      );
+      assert.equal(scope.gradeIdx, 0);
+    });
+
+    it('does not take a hidden grade from the grounded topic either', () => {
+      const scope = scopeFromParams(
+        { topic: SCIENCE_TOPIC },
+        'ar',
+        { gradeIdx: 0, subjectIdx: 0 },
+        selection,
+      );
+      assert.equal(scope.gradeIdx, 0, 'topic is grade-3; the teacher does not teach it');
+    });
+
+    it('falls back to a shown subject when the route names a hidden one', () => {
+      const scope = scopeFromParams(
+        { gradeIdx: '0', subjectIdx: '1' },
+        'ar',
+        { gradeIdx: 0, subjectIdx: 0 },
+        selection,
+      );
+      assert.deepEqual(scope, { gradeIdx: 0, subjectIdx: 0 });
+    });
+
+    it('keeps a route scope that is inside the selection', () => {
+      const scope = scopeFromParams(
+        { gradeIdx: '0', subjectIdx: '0' },
+        'ar',
+        { gradeIdx: 0, subjectIdx: 0 },
+        selection,
+      );
+      assert.deepEqual(scope, { gradeIdx: 0, subjectIdx: 0 });
+    });
+
+    it('is unchanged when nothing is hidden', () => {
+      const none = { gradeHidden: grades.map(() => false), subjectHiddenFor: () => subjects.map(() => false) };
+      const scope = scopeFromParams(
+        { gradeIdx: String(grade1Idx), subjectIdx: '0' },
+        'ar',
+        { gradeIdx: 0, subjectIdx: 0 },
+        none,
+      );
+      assert.equal(scope.gradeIdx, grade1Idx);
+    });
+  });
+
   it('falls back to index 0 when the topic grounds to nothing', () => {
     // Unchanged behaviour — with no topic to learn from there is nothing
     // better than the default, and the screen's own pickers take over.
