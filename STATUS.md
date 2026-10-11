@@ -250,6 +250,16 @@ an announcement by default» below.
   policy — honest, but the classroom builder would then error in demo mode for
   those subjects) or to author real per-subject templates. Tests:
   `offlineRegenerate.test.ts`. Not looked at in a browser.
+- **"No question bank" after a failed live call now says so, with the reason**
+  (2026-10-11). With live AI on, a failed call falls back to the offline
+  generator, which has banks for maths/chemistry only — so a worksheet, quiz or
+  homework for any other lesson ended in the *demo* sentence («في النسخة
+  التجريبية»), which was false and hid why live failed. `generateWithProvenance`
+  now keeps the live failure as `liveError` on that refusal; `aiErrorMessageKey`
+  returns `noQuestionBankLiveFailed` for it and `aiErrorText(e, t)` (used by all
+  generator screens and the chat) appends «السبب: …» / «Reason: …». Nothing else
+  shows raw error text; demo mode keeps the old sentence. Tests:
+  `noQuestionBank.test.ts`. Not looked at in a browser.
 - **Interface dates and times are written in Latin digits** (2026-10-03).
   Plain `ar-JO` defaults to Arabic-Indic digits, so the Today header read
   «٣ تشرين الأول» above a board that reads «1 من 5» and «26 آب», and other
@@ -887,14 +897,24 @@ an announcement by default» below.
 - **Where the three services actually live** (re-checked 2026-09-15 against the
   running system — the Render list below was a month stale and had already sent
   one reader to a dead host):
-  - Web: **Cloudflare Pages**, https://iqraa-web-buq.pages.dev — built by
-    `.github/workflows/web-deploy.yml` on every merge to `main`. Moved off
-    Render 2026-09-13. `iqraa-web.onrender.com` still answered 200 on
-    2026-09-15 because Render serves its last build forever; it is a stale
-    bundle, not a second deploy target.
+  - Web: **Cloudflare Pages**, production address **https://app.iqrra.com**
+    (a CNAME to the `iqraa-web` Pages project) — built by the `iqraa-web` job
+    in `.github/workflows/deploy.yml` on every merge to `main` (the old
+    `web-deploy.yml` no longer exists). Moved off Render 2026-09-13.
+    `iqraa-web.onrender.com` still answered 200 on 2026-09-15 because Render
+    serves its last build forever; it is a stale bundle, not a second deploy
+    target. **Use `app.iqrra.com`, not the project's own
+    `iqraa-web-buq.pages.dev`:** the API's CORS allowlist
+    (`artifacts/api-server/src/app.ts`) names `app.iqrra.com` but not that
+    host, so a browser on it serves the bundle and then fails every API call —
+    sign-in reports «تعذّر الاتصال» (checked 2026-10-11). Fetching the bundle
+    from it with `curl` is still fine, which is why the check command further
+    down keeps working.
   - API: **Cloud Run**, https://iqraa-api-613126375862.europe-west1.run.app —
-    deployed **by hand**, never by a merge. Ask it what it is running:
-    `GET /api/healthz/version` → `{commit, revision}`.
+    deployed by the `iqraa-api` job in `deploy.yml` on a merge that changes it
+    (skipped otherwise — a mobile-only merge skips it, checked 2026-10-10).
+    Ask it what it is running: `GET /api/healthz/version` → `{commit,
+    revision}`.
   - Verifier: **Cloud Run**, `iqraa-verifier` in `europe-west1`. The Render
     verifier is **gone** — `iqraa-verifier.onrender.com` times out as of
     2026-09-15. Both Cloud Run services date from the 2026-09-05 cutover.
@@ -950,6 +970,29 @@ an announcement by default» below.
     deployed. The client's timeout is 2.5s, so the first call after idle fails.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
+
+## English says it is the national Ministry book, 2026-10-10
+
+Picking English now shows a highlighted banner — «الكتاب الوطني المعتمد من
+وزارة التربية والتعليم الأردنية» / "The national textbook, approved by Jordan's
+Ministry of Education" — on the curriculum semester screen
+(`app/curriculum/subjects.tsx`, in the hero) and above the unit picker in
+`TopicSelector` (the `/ai-tools/*` lesson picker). Which subjects get it is
+`services/nationalBook.ts`; the banner is `components/ui/NationalBookBanner.tsx`
+and renders nothing for any other subject. Pinned by `nationalBook.test.ts`,
+which also asserts every English book in `KB_BOOKS` is covered.
+
+**It is by subject, so it covers the four Grade 10 vocational-track books too**
+(Commerce, Agriculture, Hospitality, Industrial). That was the owner's call,
+not something the repo proves: the app's own note on those books calls them the
+«Vocational English» series by York Press (2023 edition), a publisher, not
+NCCD. If they turn out not to be Ministry books, narrow `nationalBook.ts` to
+book ids rather than subject.
+
+Checked live on app.iqrra.com on 2026-10-11 with the demo account, in Arabic:
+the banner shows on the English Grade 10 semester screen and in the worksheet
+tool's picker (`/ai-tools/worksheet?gradeIdx=0&subjectIdx=3`). Not checked: the
+English UI language, the other `/ai-tools` screens, an Android build.
 
 ## Parents and students sign up with the teacher's code alone, 2026-10-10
 
@@ -1244,13 +1287,29 @@ no follow-ups of its own, app answers included, so «i want to change the
 language» was followed by an offer to plan a lesson. The app-help message now
 carries `appHelp: true` and the strip is hidden while it is the last message
 (`app/(tabs)/iqra.tsx`). The نسخ / تصدير footer under the same reply went the
-same way (2026-10-11, same flag). Not changed: the tool-ask reply («أريد ورقة
-عمل» pointing at the generator), which is built the same way and still shows the
-strip and the footer, and a long press on an app answer, which still opens the
-export sheet. Checked in a local web build
+same way (2026-10-11, same flag), and so did the long press that opened the
+export sheet. Not changed: the tool-ask reply («أريد ورقة عمل» pointing at the
+generator), which is built the same way and still shows the strip, the footer
+and the long press. Checked in a local web build
 against the live API (chips gone after an app answer, present after a teaching
 one); no test, because `iqra.tsx` cannot be loaded by the bare `node --test`
 runner.
+
+**A grade to change and a lesson to add (2026-10-11).** Two sentences typed in
+the live chat came back as lesson replies about an unrelated topic: «اريد ان
+اغير الصف» and «i need to add lesson». Neither names a screen. The grades a
+teacher teaches live under «المواد التي أُدرّسها», and a lesson is picked from the
+bar above the chat rather than added, so `STATEMENT_PLACES` (`services/appHelp.ts`)
+maps «i want to change the grade», «اريد تغيير الصف» to that screen's steps
+(`howAddGrade`) and «i need to add lesson», «اريد اختيار الدرس» to the
+change-lesson steps (`faqA2`). Same shape as the other statements: first-person
+intent, and the object ends the message, so «i want to change the grade of the
+quiz», «i want to add a lesson plan» and «اريد اضافة درس عن الكسور» stay teaching
+(24 look-alikes pinned). Two guesses, both mine: «change the grade» can mean a
+student's mark, and the grade steps say «add» where the teacher said «change»
+(the answer still ends with how to switch lessons). Deliberately not done: the
+typo «langute» in the first screenshot, because matching misspellings would also
+match real requests.
 
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
@@ -2130,6 +2189,19 @@ requests captured: a 6-word message → `out_of_scope`, `words: 6`, no `ask`;
 real PostHog project** — it fills once this deploys; filter on
 `chat_unanswered`, break down by `kind`, and read `ask` for the phrases.
 
+## The Library's results follow the account's subjects, 2026-10-11
+
+The Library narrowed its grade and subject **chips** to what a teacher set up on
+`/setup-subjects`, but not its **results**: «كل المواد» still listed every
+subject's resources for the grade (62 in grade 10 for a maths + chemistry
+teacher). `resources.tsx` now passes the narrowed subjects to `filterResources`
+(`subjectIds`) via `scopedSubjectIds` in `services/teacherCatalogFilter.ts`.
+Rows with no subject (general rows, most book codes) still show. **No-op, by
+design, when nothing was narrowed** — an account with no saved selection (e.g. a
+`system_admin` who never ran `/setup-subjects`), a stale one, or one that picked
+every subject sees the full grade, as the chips already did. Students and
+parents are unaffected: they pick a grade, not subjects.
+
 ## The Science Lab: a shelf in the library, 2026-10-06
 
 **What a teacher can use today.** `/curriculum/resources` has a «المختبر» card
@@ -2738,6 +2810,34 @@ Not checked on a device, nor with live AI. 41 cases in
 `guessAndNextStep.test.ts` and 3 more in `teachMeAsk.test.ts`, each watched
 failing first.
 
+## A worksheet says when its working was written by AI, 2026-10-11
+
+The worked example and the key's step-by-step working look identical whether the
+offline question bank or a model wrote them, and only the bank's were read and
+checked by a person (the 165 solutions in `lib/math-practice`). With live AI on
+the model writes its own, so a teacher could take unchecked working for checked.
+
+- `workingProvenance` (`services/worksheetWorking.ts`) decides it from marks the
+  app sets itself: `fromBank` on the worked example and on each question the
+  generator takes from the bank. Anything without the mark counts as AI-written,
+  and a key row whose question can't be found counts as unreviewed.
+- The worksheet screen shows «الخطوات المكتوبة في هذه الورقة وُلِّدت بالذكاء
+  الاصطناعي ولم يراجعها أحد» under the grounding notice as soon as the paper is
+  on screen, and the printed key page carries the same line (English too). It is
+  not printed on the student copy, and it is absent from a bank worksheet.
+- **A model could have stamped its own work as reviewed.** Nothing stripped
+  `fromBank` from a model's JSON, so a model that wrote it (`fromBank: true` in a
+  question, copied from an example, or a prompt injection) would have passed as
+  bank-reviewed, in a worksheet pooled for every teacher. That also affected the
+  «من بنك الأسئلة المُراجَع» line added in #882. `sanitizeWorksheetExtras` now
+  removes the mark from every worksheet, homework and quiz question; the worked
+  example was already whitelisted. Artifacts already in the pool were stored
+  before this and are not rewritten.
+- Not covered: the shared text export, the slide export and the live class deck
+  carry the working but not the note. Seen in the browser with a stubbed
+  live-shaped response (no live key here), not on a device.
+- Mobile 3861 pass / 0 fail / 10 skipped; api-server 1484 pass.
+
 ## The English projector split an equation across two lines, 2026-10-05
 
 Found by checking the worksheet in English on a phone-width projector (the
@@ -2951,8 +3051,24 @@ An idea must say something: an empty comment answers 400. A thumb's comment is
 still optional. Like `FeedbackWidget`, the screen shows its thank-you only on
 `res.ok`, and keeps the text in the box when sending fails.
 
-Logged-out visitors don't see it, because `POST /feedback` requires an account.
-A public form would need an unauthenticated endpoint and spam protection.
+~~Logged-out visitors don't see it.~~ **They do since 2026-10-11.** A link at
+the foot of the login and register screens («عندك فكرة لـ«إقرأ»؟ اقترح ميزة»)
+opens the same `/suggest-feature` screen, which is now in `PUBLIC_ROUTES`.
+Signed out, the screen also asks for an optional email and posts to
+`POST /site/ideas`. That is the only API write that takes neither a session
+nor a shared key, so it carries its own defences:
+- a limit of 5 an hour per IP and 200 an hour in total (Postgres-backed);
+- a 5–2000 character message;
+- a `website` honeypot, rendered off-screen on web. When it is filled the
+  route answers 200 and stores nothing.
+
+The ideas go into `site_signups` as kind `idea`, next to the iqrra.com waitlist
+and contact rows. That needs no new table or column, because `kind` is plain
+`text`; only the TypeScript union changed. Admins see them in «المسجّلون»
+under a «💡 اقتراحات» filter, and the dashboard has a «اقتراحات الزوار» count.
+Ideas from signed-in users still go to the feedback list, because those
+belong to an account. The iqrra.com marketing site is a separate repository
+and has no link to this screen yet.
 
 ## One parent per name on a class list, 2026-10-03
 
@@ -3393,9 +3509,17 @@ appears in it; the within-class name dedup rule is inline and untestable.
 > annotations ("eager (phr)", "or learnt") are stripped by `hubWordFromBook`.
 > Units there hold several lessons, so a hub card adds the lesson title after
 > «الوحدة N» whenever its unit has more than one.
-> **Their audio is not generated yet**: until
+> **Their audio is not generated yet** (as of the last check — the bucket was
+> unreachable from the 2026-10-11 session, so confirm with
+> `curl -I …/english-audio/casually.mp3`): until
 > `pnpm --filter @workspace/curriculum run english-audio` is re-run with the
-> keys, a 9–10 word's speaker button plays nothing. The narration prompt now
+> keys, a 9–10 word's speaker button has no recording. **On web it now speaks
+> the word with the browser's en-GB voice instead of staying silent**
+> (`services/wordSpeech.ts`, 2026-10-11): `playWord` drives its own `<audio>`
+> element there because `expo-audio`'s web player has no `onerror` and does not
+> await `play()`, so a 404 is invisible through it. **Native has no fallback** —
+> it needs `expo-speech`, a native module, so a `version` bump and a new build —
+> and a missing file is still silent there. The narration prompt now
 > addresses a teenage student; the Grade 1–4 recordings keep their child-pitched
 > voice because the script skips existing files (`--force` would re-voice them).
 

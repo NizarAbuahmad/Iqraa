@@ -22,6 +22,7 @@
  * `row-reverse` is correct because RN has no document direction to inherit.
  */
 import { labelAnswerParts, labelOption, labelOptionLine } from './optionLabels.ts';
+import { workingProvenance } from './worksheetWorking.ts';
 import { arCountPhrase } from './arCount.ts';
 import { dateLocale } from './dateLabels.ts';
 import { quizBlockPoints, quizBlocks, quizInstructions, quizMarkRows, quizMarksTotal, quizStudentFields, quizTypeLabel } from './quizPaper.ts';
@@ -232,6 +233,7 @@ function htmlBase(
        may then run to a second page: with working under every answer it is no
        longer a block that fits on the end of the last one. */
     .key-page { break-before: page; page-break-before: always; }
+    .working-note { margin: 0 0 10px; padding: 6px 10px; border: 1px solid #b45309; border-radius: 6px; color: #92400e; font-size: 11.5px; }
     .key-page .answer-key { margin-top: 0; break-inside: auto; }
     /* A worked example: studied, not answered — a tinted card, no number badge. */
     .worked {
@@ -651,8 +653,16 @@ export function buildWorksheetHTML(
     ).join('') ?? ''
     : '';
 
+  // Working a model wrote is not working a person checked. The key is the
+  // teacher's page, so the warning goes here and never on the student copy.
+  const aiWorkingNote = akRows && workingProvenance(ws).unreviewedKeyLines > 0
+    ? `<div class="working-note">${L(
+        'خطوات الحل في هذا المفتاح وُلِّدت بالذكاء الاصطناعي ولم يراجعها أحد — راجعها قبل التوزيع.',
+        'The working in this key was written by AI and nobody has reviewed it. Check it before handing out.',
+      )}</div>`
+    : '';
   const answerKey = akRows
-    ? `<div class="key-page"><div class="answer-key"><div class="section-title">${L('مفتاح الإجابات', 'Answer Key')}</div>${akRows}</div></div>`
+    ? `<div class="key-page"><div class="answer-key"><div class="section-title">${L('مفتاح الإجابات', 'Answer Key')}</div>${aiWorkingNote}${akRows}</div></div>`
     : '';
 
   // Studied, not answered: it is on the student copy too. Only the lines for
