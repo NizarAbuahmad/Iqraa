@@ -3837,7 +3837,7 @@ export default function IqraScreen() {
             message={item}
             colors={colors}
             isRTL={isRTL}
-            onLongPress={item.role === 'assistant' ? () => handleExportMessage(item) : undefined}
+            onLongPress={item.role === 'assistant' && !item.appHelp ? () => handleExportMessage(item) : undefined}
             onCopy={item.role === 'assistant' && item.id !== streamingId ? handleCopyMessage : undefined}
             onExport={item.role === 'assistant' && item.id !== streamingId ? handleExportMessage : undefined}
             onSaveMaterial={item.role === 'assistant' ? handleSaveMaterial : undefined}
