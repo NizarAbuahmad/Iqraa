@@ -213,6 +213,9 @@ export interface WorksheetOutput {
    *  short paper with no explanation reads as a bug. */
   shortfall?: { requested: number; produced: number };
   lab?: WorksheetLab;
+  /** Formats the teacher asked for that this lesson's bank cannot supply, so the
+   *  screen can say so instead of silently handing back a plainer paper. */
+  missingFormats?: FormatKind[];
 }
 
 export interface WorksheetSection {
@@ -231,10 +234,18 @@ export interface WorksheetSection {
    * `'mixed'` — so a live-generated mixed section can still carry a single
    * type. Fix that there if this field ever gains a consumer.
    */
-  type: 'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem' | 'mixed';
+  type: 'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem' | 'mixed'
+    | 'match' | 'order' | 'spot_error' | 'graph';
   title: string;
   questions: WorksheetQuestion[];
 }
+
+/** A structured question format (spec 2026-10-11), beside the plain-text kinds. */
+export type WorksheetQuestionFormat =
+  | { kind: 'match'; stem: string; left: string[]; right: string[]; pairs: number[] }
+  | { kind: 'order'; stem: string; steps: string[]; order: number[] }
+  | { kind: 'spot_error'; stem: string; steps: string[]; wrongStep: number; fix: string; why: string }
+  | { kind: 'graph'; stem: string; exprs: string[]; window: { xMin: number; xMax: number; yMin: number; yMax: number } };
 
 export interface WorksheetQuestion {
   text: string;
@@ -255,6 +266,8 @@ export interface WorksheetQuestion {
    * item — a person matches them, as `BookFiguresPanel` explains.
    */
   figure?: QuestionFigure;
+  /** A structured format (spec 2026-10-11). `text` is still the whole question in plain text. */
+  format?: WorksheetQuestionFormat;
 }
 
 /** A book figure as a question carries it — the same shape as `BookFigureRef`. */
@@ -669,6 +682,7 @@ export interface GenerateOptions {
 
 export type { InfographicOutput } from './infographic.ts';
 import type { InfographicOutput } from './infographic.ts';
+import type { FormatKind } from '@workspace/math-practice';
 
 export abstract class AIService {
   abstract generateLessonPlan(req: AIRequest, opts?: GenerateOptions): Promise<LessonPlanOutput>;
