@@ -12,7 +12,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { canSubmitClaim, claimErrorKey, needsNameConfirm, normalizeClaimCode } from '../claimCodeGate.ts';
+import { canSubmitClaim, canSubmitSignup, claimErrorKey, needsNameConfirm, normalizeClaimCode, parentNeedsOwnCode } from '../claimCodeGate.ts';
 
 describe('canSubmitClaim', () => {
   it('blocks a code too short to have been looked up', () => {
@@ -65,6 +65,8 @@ describe('claimErrorKey', () => {
     assert.equal(claimErrorKey('claim_name_not_in_class'), 'claimNameNotInClass');
     assert.equal(claimErrorKey('claim_already_linked'), 'claimAlreadyLinked');
     assert.equal(claimErrorKey('claim_guardian_taken'), 'claimGuardianTaken');
+    // Added with code-only signup: a parent may not create an account from a class code.
+    assert.equal(claimErrorKey('claim_parent_needs_student_code'), 'claimParentNeedsOwnCode');
   });
 
   it('falls back to a generic message for an unknown code', () => {
@@ -105,5 +107,34 @@ describe('normalizeClaimCode', () => {
 
   it('leaves a clean code alone', () => {
     assert.equal(normalizeClaimCode('ABC234'), 'ABC234');
+  });
+});
+
+describe('code-only signup', () => {
+  // An account made from a code has no email behind it, so the code is the
+  // only proof of who is asking. A class code cannot be that for a parent: it
+  // is one string for a whole room and its picker lists every child.
+  it('lets a student sign up with either kind of code once it is ready to send', () => {
+    assert.equal(canSubmitSignup('student', 'student-code', ''), true);
+    assert.equal(canSubmitSignup('student', 'class', 'abc'), true);
+    assert.equal(canSubmitSignup('student', 'class', ''), false);
+  });
+
+  it('lets a parent sign up only with the code written for their child', () => {
+    assert.equal(canSubmitSignup('parent', 'student-code', ''), true);
+    assert.equal(canSubmitSignup('parent', 'class', 'abc'), false);
+  });
+
+  it('offers nothing while the code is still being looked at', () => {
+    for (const state of ['short', 'checking', 'empty-class', 'error'] as const) {
+      assert.equal(canSubmitSignup('student', state, 'abc'), false, state);
+      assert.equal(canSubmitSignup('parent', state, 'abc'), false, state);
+    }
+  });
+
+  it('says why when a parent holds a class code, so the button is not just dead', () => {
+    assert.equal(parentNeedsOwnCode('parent', 'class'), true);
+    assert.equal(parentNeedsOwnCode('parent', 'student-code'), false);
+    assert.equal(parentNeedsOwnCode('student', 'class'), false);
   });
 });

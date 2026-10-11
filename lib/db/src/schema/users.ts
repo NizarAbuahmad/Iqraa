@@ -6,10 +6,24 @@ export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
-  email: text("email").unique().notNull(),
+  /**
+   * Null for a parent or student who signed up with a teacher's code alone
+   * (`POST /auth/redeem`) and has not added one yet. Unique still holds — Postgres
+   * lets any number of rows carry NULL — so once set it identifies one account.
+   * Every teacher account has one; anything that reads this for a non-teacher
+   * must tolerate null.
+   */
+  email: text("email").unique(),
   // Nullable: a Google-only account never sets one.
   passwordHash: text("password_hash"),
   googleId: text("google_id").unique(),
+  /**
+   * sha256 of the personal login code issued at code-only signup — the only
+   * credential such an account has until it adds an email and password. Never
+   * the code itself; see api-server `lib/loginCode.ts` for why it exists and why
+   * a plain hash is enough. Null on every account made the usual way.
+   */
+  loginCodeHash: text("login_code_hash").unique(),
   preferredLanguage: text("preferred_language").notNull().default("en"),
   role: text("role").notNull().default("teacher"),
   /**
