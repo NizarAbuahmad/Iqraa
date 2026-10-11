@@ -625,6 +625,10 @@ const translations = {
     aiUnavailable: 'خدمة الذكاء الاصطناعي متوقفة حاليًا. حاول لاحقًا.',
     // The offline demo has real questions for maths and chemistry only.
     noQuestionBank: 'لا يتوفر بعد بنك أسئلة لهذا الدرس في النسخة التجريبية، لذلك لا نعرض أسئلة عامة لا تخص الدرس. جرّب خطة الدرس أو الأنشطة، أو درسًا من الرياضيات أو الكيمياء.',
+    // The live call failed AND the offline path has no bank for this lesson —
+    // the cause is the failed call, not the demo, so say that and show why.
+    noQuestionBankLiveFailed: 'تعذّر توليد المحتوى عبر الذكاء الاصطناعي، ولا يتوفر بنك أسئلة محلي لهذا الدرس كبديل. حاول مرة أخرى، أو جرّب درسًا من الرياضيات أو الكيمياء.',
+    aiErrorReason: 'السبب:',
     // Shown with a result, not instead of one: the teacher asked for something
     // new and got a saved copy, and must not mistake it for a fresh generation.
     aiServedSavedCopy: 'هذه نسخة محفوظة — انتهت حصة التوليد الجديد لهذا الشهر.',
@@ -3047,6 +3051,8 @@ const translations = {
       "This month's AI allowance is used up. You can still open saved worksheets and lessons.",
     aiUnavailable: 'The AI service is switched off right now. Try again later.',
     noQuestionBank: 'The demo has no question bank for this lesson yet, so we won\'t show generic questions that aren\'t about it. Try the lesson plan or activities, or a maths or chemistry lesson.',
+    noQuestionBankLiveFailed: 'AI generation failed, and there is no offline question bank for this lesson to fall back on. Try again, or pick a maths or chemistry lesson.',
+    aiErrorReason: 'Reason:',
     aiServedSavedCopy: "This is a saved copy — this month's AI allowance is used up.",
     curriculumUngroundedNotice: 'This topic is not in the currently available curriculum. The plan is generic and not grounded in a specific textbook lesson.',
     curriculumUngroundedNoticeWorksheet: 'This topic is not in the currently available curriculum. The worksheet is generic and not grounded in a specific textbook lesson.',

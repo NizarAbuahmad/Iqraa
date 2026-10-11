@@ -57,7 +57,7 @@ import { KB_SUGGEST_SCORE, shouldAskWhichLesson } from '@/services/kbSuggestion'
 import { Toast } from '@/components/ui/Toast';
 import { remoteAIService } from '@/services/ai/RemoteAIService';
 import { DEMO_MODE } from '@/services/ai/demoMode';
-import { aiErrorMessageKey, isCapError } from '@/services/ai/aiProvenance';
+import { aiErrorText, isCapError } from '@/services/ai/aiProvenance';
 import { shouldSendOnEnter } from '@/services/composerKeys';
 import type { ArtifactScope } from '@/services/ai/artifactScope';
 import {
@@ -2713,7 +2713,7 @@ export default function IqraScreen() {
             // allowance is spent" with a local lesson outline would be the
             // substitution that module exists to prevent, with nothing on
             // screen to say the AI never ran.
-            responseText = t(aiErrorMessageKey(genErr));
+            responseText = aiErrorText(genErr, t);
           } else {
             const ta = runTeachingAssistant();
             responseText = ta.text || t('iqraChatError');
@@ -2844,7 +2844,7 @@ export default function IqraScreen() {
             // to the local knowledge-base reply below under «تحقق من
             // الإنترنت», so a teacher whose allowance was gone got an answer
             // that read like the AI's, with a message blaming their network.
-            responseText = t(aiErrorMessageKey(remoteErr));
+            responseText = aiErrorText(remoteErr, t);
           } else {
             const ta = runTeachingAssistant();
             responseText = ta.text || t('iqraOfflineFallback');
