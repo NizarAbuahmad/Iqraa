@@ -47,6 +47,11 @@ export function summariseKeyChecks(
   const unlinked = questions.filter(q => q.verification?.code === 'key_unlinked').length;
   if (unlinked > 0) return { kind: 'unlinked', unlinked };
 
+  // The verifier did judge a key here and disagreed with it. That is the
+  // opposite of "nothing was checkable", and the generation warning already
+  // named the questions, so say nothing rather than the wrong thing.
+  if (questions.some(q => q.verification?.code === 'contradicted')) return { kind: 'silent' };
+
   // Only claim "nothing here was checkable" about a paper we actually looked
   // at. Every question written before key checking existed carries no
   // `verification` at all, and saying it of those would be reporting a finding
