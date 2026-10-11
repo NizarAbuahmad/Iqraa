@@ -120,6 +120,10 @@ describe('isNonTeacherRoute', () => {
       // prefix rule as the library above.
       '/curriculum/lab',
       '/curriculum/lab/lab-periodic-table',
+      // The Quran Corner: home, a surah, and its memorise page. Same prefix rule.
+      '/curriculum/quran',
+      '/curriculum/quran/112',
+      '/curriculum/quran/112/memorize',
       '/settings',
       '/faq',
       '/delete-account',

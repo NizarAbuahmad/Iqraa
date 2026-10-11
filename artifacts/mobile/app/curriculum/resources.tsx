@@ -813,6 +813,28 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
                 {t('labEntryHint')}
               </Text>
             </Pressable>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/curriculum/quran' as never);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`${t('quranTitle')}, ${t('quranEntryHint')}`}
+              style={({ pressed }) => [
+                styles.tile,
+                { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
+              ]}
+            >
+              <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
+                <Ionicons name="book-outline" size={26} color={ACCENT} />
+              </View>
+              <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
+                {t('quranTitle')}
+              </Text>
+              <Text numberOfLines={2} style={[styles.tileCount, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
+                {t('quranEntryHint')}
+              </Text>
+            </Pressable>
             {isStudent || isParent ? (
               <Pressable
                 onPress={() => {
