@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  badge: { minWidth: 28, height: 28, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center', paddingHorizontal: SPACE.sm },
+  badge: { minWidth: 28, height: 28, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center', paddingHorizontal: SPACE.sm },
   quran: {
     flex: 1,
     fontFamily: 'UthmanicHafs',

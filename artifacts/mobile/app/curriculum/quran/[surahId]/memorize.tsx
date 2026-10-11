@@ -207,7 +207,8 @@ export default function QuranMemorizeScreen() {
       </LabFrame>
     );
   }
-  return <Memorize surah={surah} />;
+  // keyed by surah so a param change on a mounted screen restarts at the first ayah
+  return <Memorize key={surah.number} surah={surah} />;
 }
 
 const styles = StyleSheet.create({
