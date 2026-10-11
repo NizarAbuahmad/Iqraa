@@ -372,9 +372,10 @@ export default function LessonPlanScreen() {
    * The plan on screen, on the Ministry's «خطة الدرس» form. The form is
    * Arabic-only, so names come from the Arabic fields whatever the UI
    * language. Teacher-role text is this plan's own phases folded into the four
-   * stages; the learner column is left for the teacher — the plan on screen
-   * has no learner half, and a second generation would no longer match what
-   * the teacher has read and edited.
+   * stages. The plan on screen has no learner half, and a second generation
+   * would no longer match what the teacher has read and edited, so the learner
+   * column is filled from the stock per-style lines in `ministryLearnerRoles`
+   * (in the plan's language) rather than left empty.
    */
   const handleMinistry = async () => {
     if (!result) return;
@@ -394,7 +395,11 @@ export default function LessonPlanScreen() {
         section: '',
         date: todayISO(),
         teacher: user?.name ?? '',
-        stages: stagesFromLessonPlan(result),
+        stages: stagesFromLessonPlan(result, {
+          lang: outLang === 'ar' ? 'ar' : 'en',
+          style: STYLE_IDS[styleIdx],
+          topic: (outLang === 'ar' ? lesson?.titleAr : lesson?.titleEn) ?? scope.topic,
+        }),
       };
       const title = getExportTitle();
       await exportMinistryPlanWord([page], title);
