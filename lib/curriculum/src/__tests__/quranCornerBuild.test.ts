@@ -1,9 +1,9 @@
 /**
- * The corner builder, on a synthetic source. The "ayahs" here are placeholders
- * (`x<surah>.<ayah>`) built from the surah table's own counts, so this file
- * contains no Quranic text and can run before the real snapshot is in the repo.
+ * The corner builder, on a placeholder source. The "ayahs" here are
+ * `x<surah>.<ayah>` and the surah names are built from the surah table's own
+ * keys, so this file contains no Quranic text and runs without the real package.
  * What it guards: scope comes from the lesson titles, ranges merge when they
- * touch, every kept ayah is copied unchanged, and the build refuses (rather than
+ * touch, every kept ayah is copied unchanged, and the build REFUSES (rather than
  * guesses) when a name, a count or a range does not fit the source.
  */
 import { describe, it } from 'node:test';
@@ -13,24 +13,50 @@ import {
   SURAHS,
   assertFullHafs,
   buildCorner,
+  creditLine,
   mergeRanges,
-  parseTanzilTxt,
   reviewSheet,
+  surahKey,
   type BuildInput,
+  type BuildSource,
   type CatalogInput,
 } from '../../scripts/quranCornerBuild.ts';
+import type { QuranSource } from '../quranTypes.ts';
 
-const NOTICE = '# Tanzil Quran Text (placeholder notice)\n# Licence: placeholder';
+const INFO: QuranSource = {
+  name: 'test dataset',
+  version: '@test/pkg 1.0.0',
+  url: 'https://example.test/data',
+  publisher: 'Test Publisher',
+  licenseName: 'TEST-LICENSE',
+  licenseUrl: 'https://example.test/license',
+  sha256: '0'.repeat(64),
+  font: { family: 'Test Font', file: 'test.ttf', sha256: '1'.repeat(64) },
+};
 
-/** A Tanzil-shaped file for the 40 surahs in the table, with placeholder text. */
-function fakeSource(overrides: Record<string, number> = {}): string {
-  const lines: string[] = [];
-  const surahs = Object.values(SURAHS).sort((a, b) => a.number - b.number);
-  for (const s of surahs) {
-    const count = overrides[String(s.number)] ?? s.ayahCount;
-    for (let a = 1; a <= count; a++) lines.push(`${s.number}|${a}|x${s.number}.${a}`);
+/** A source for the 40 surahs in the table, from the table's own numbers and counts. Overrides break one fact. */
+function fakeSource(opts: { counts?: Record<number, number>; names?: Record<number, string>; drop?: number } = {}): BuildSource {
+  const surahs: BuildSource['surahs'] = [];
+  const ayahs: BuildSource['ayahs'] = [];
+  for (const [key, s] of Object.entries(SURAHS).sort((a, b) => a[1].number - b[1].number)) {
+    if (s.number === opts.drop) continue;
+    const count = opts.counts?.[s.number] ?? s.ayahCount;
+    surahs.push({ number: s.number, nameAr: opts.names?.[s.number] ?? `سورة ${key}`, ayahCount: count });
+    for (let a = 1; a <= count; a++) ayahs.push({ surah: s.number, ayah: a, text: `x${s.number}.${a}` });
   }
-  return `${lines.join('\n')}\n${NOTICE}\n`;
+  return { ayahs, surahs, info: INFO };
+}
+
+/** A complete-looking source: 114 surahs of 55 ayahs, the last of 21, which is 6,236 in all. */
+function fullShapeSource(): BuildSource {
+  const surahs: BuildSource['surahs'] = [];
+  const ayahs: BuildSource['ayahs'] = [];
+  for (let n = 1; n <= 114; n++) {
+    const count = n === 114 ? 21 : 55;
+    surahs.push({ number: n, nameAr: `سورة ${n}`, ayahCount: count });
+    for (let a = 1; a <= count; a++) ayahs.push({ surah: n, ayah: a, text: `x${n}.${a}` });
+  }
+  return { ayahs, surahs, info: INFO };
 }
 
 const lessons = (...titles: string[]): CatalogInput['units'] => [
@@ -38,11 +64,11 @@ const lessons = (...titles: string[]): CatalogInput['units'] => [
 ];
 
 function input(catalogs: CatalogInput[], source = fakeSource()): BuildInput {
-  return { source, sourceMeta: { retrievedOn: '2026-10-11', notes: 'test' }, catalogs };
+  return { source, catalogs };
 }
 
 describe('SURAHS', () => {
-  it('has 40 surahs with distinct, ascending-valid numbers', () => {
+  it('has 40 surahs with distinct numbers between 1 and 114', () => {
     const numbers = Object.values(SURAHS).map(s => s.number);
     assert.equal(numbers.length, 40);
     assert.equal(new Set(numbers).size, 40);
@@ -50,32 +76,27 @@ describe('SURAHS', () => {
   });
 });
 
-describe('parseTanzilTxt', () => {
-  it('reads sura|aya|text lines and collects # lines as the notice', () => {
-    const r = parseTanzilTxt('1|1|a b\n1|2|c\n2|1|d\n# note one\n# note two\n');
-    assert.deepEqual(r.ayahs, [
-      { surah: 1, ayah: 1, text: 'a b' },
-      { surah: 1, ayah: 2, text: 'c' },
-      { surah: 2, ayah: 1, text: 'd' },
-    ]);
-    assert.equal(r.notice, 'note one\nnote two');
-  });
-
-  it('does not touch the text: spaces inside it are kept', () => {
-    assert.equal(parseTanzilTxt('1|1|a  b \n').ayahs[0]!.text, 'a  b ');
-  });
-
-  it('refuses a line it cannot read and numbering that is out of order', () => {
-    assert.throws(() => parseTanzilTxt('1|1|a\nnot a line\n'), /unreadable/);
-    assert.throws(() => parseTanzilTxt('1|1|a\n1|3|b\n'), /out of order/);
-    assert.throws(() => parseTanzilTxt('1|1|a\n3|1|b\n2|1|c\n'), /out of order/);
-    assert.throws(() => parseTanzilTxt('2|2|a\n'), /out of order/);
+describe('surahKey', () => {
+  it('folds the source\'s name and drops «سورة», so it equals the key a lesson title folds to', () => {
+    assert.equal(surahKey('سورَةُ الإِخْلاصِ'), 'الاخلاص');
+    assert.equal(surahKey('سورة آل عمران'), 'ال عمران');
+    assert.equal(surahKey('الفاتحة'), 'الفاتحه');
   });
 });
 
 describe('assertFullHafs', () => {
-  it('refuses a source that is not the full 6,236-ayah text', () => {
-    assert.throws(() => assertFullHafs(parseTanzilTxt(fakeSource()).ayahs), /expected 6236/);
+  it('accepts 114 surahs and 6,236 ayahs', () => {
+    assert.doesNotThrow(() => assertFullHafs(fullShapeSource()));
+  });
+
+  it('refuses a source that is not the complete Hafs text', () => {
+    assert.throws(() => assertFullHafs(fakeSource()), /expected 114/);
+    const short = fullShapeSource();
+    short.ayahs.pop();
+    assert.throws(() => assertFullHafs(short), /6235 ayahs, expected 6236/);
+    const odd = fullShapeSource();
+    odd.surahs[0]!.ayahCount += 1;
+    assert.throws(() => assertFullHafs(odd), /adds up to 6237/);
   });
 });
 
@@ -133,16 +154,10 @@ describe('buildCorner', () => {
     assert.equal(baqarah.lessons[0]!.lessonId, 'kbl-islamic-s1-nccd-u1_l1', 'grade 10 keeps the historical id form');
   });
 
-  it('carries the notice and a hash of the source', () => {
+  it('carries the source facts and a credit line written from them', () => {
     const corner = buildCorner(input([g3]));
-    assert.match(corner.notice, /Tanzil Quran Text/);
-    assert.match(corner.source.sha256, /^[0-9a-f]{64}$/);
-    assert.equal(corner.source.licenseName, 'CC BY 3.0');
-  });
-
-  it('refuses when the source carries no licence notice', () => {
-    const bare = fakeSource().split('\n').filter(l => !l.startsWith('#')).join('\n');
-    assert.throws(() => buildCorner(input([g3], bare)), /no licence notice/);
+    assert.deepEqual(corner.source, INFO);
+    assert.equal(corner.notice, creditLine(INFO));
   });
 
   it('refuses a surah it has no number for, instead of guessing', () => {
@@ -150,13 +165,31 @@ describe('buildCorner', () => {
     assert.throws(() => buildCorner(input([odd])), /no surah number/);
   });
 
+  it('refuses when the source has no such surah', () => {
+    assert.throws(() => buildCorner(input([g3], fakeSource({ drop: 96 }))), /the source has no surah 96/);
+  });
+
+  it('refuses when the source names the surah differently: two surahs swapped in the table', () => {
+    const swapped = fakeSource({ names: { 96: 'سورة القدر' } });
+    assert.throws(() => buildCorner(input([g3], swapped)), /the table calls it "العلق" but the source calls it "القدر"/);
+  });
+
   it('refuses when the table\'s ayah count differs from the source', () => {
-    assert.throws(() => buildCorner(input([g3], fakeSource({ '96': 20 }))), /table says 19 ayahs, the source has 20/);
+    assert.throws(
+      () => buildCorner(input([g3], fakeSource({ counts: { 96: 20 } }))),
+      /the table says 19 ayahs, the source says 20/,
+    );
   });
 
   it('refuses a range that runs past the end of the surah', () => {
     const bad: CatalogInput = { gradeId: 'grade-3', semester: 1, units: lessons('سورة العلق: الآيات (9-25)') };
     assert.throws(() => buildCorner(input([bad])), /names ayah 25/);
+  });
+
+  it('refuses when an ayah inside a range is missing from the source', () => {
+    const src = fakeSource();
+    src.ayahs = src.ayahs.filter(a => !(a.surah === 96 && a.ayah === 5));
+    assert.throws(() => buildCorner(input([g3], src)), /the source has no 96:5/);
   });
 
   it('orders surahs by the first grade that assigns them, then surah number', () => {
@@ -165,11 +198,21 @@ describe('buildCorner', () => {
   });
 });
 
+describe('creditLine', () => {
+  it('names the publisher, the dataset, its version and licence, and says the text was modified', () => {
+    const line = creditLine(INFO);
+    assert.match(line, /Test Publisher/);
+    assert.match(line, /test dataset, @test\/pkg 1\.0\.0 — https:\/\/example\.test\/data — TEST-LICENSE/);
+    assert.match(line, /Modified: yes/);
+  });
+});
+
 describe('reviewSheet', () => {
-  it('prints each surah with its first assigned ayah', () => {
-    const sheet = reviewSheet(
-      buildCorner(input([{ gradeId: 'grade-1', semester: 1, units: lessons('سورة العصر') }])),
-    );
-    assert.match(sheet, /\| 103 \| العصر \| 3 \| 1–3 \| 1 \| 1: x103\.1 \|/);
+  it('lists EVERY shipped ayah for checking against a printed mushaf', () => {
+    const corner = buildCorner(input([{ gradeId: 'grade-3', semester: 1, units: lessons('سورة العلق') }]));
+    const sheet = reviewSheet(corner);
+    for (let a = 1; a <= 19; a++) assert.match(sheet, new RegExp(`^96:${a} {2}x96\\.${a}$`, 'm'));
+    assert.match(sheet, /authorised printed Mus'haf al-Madinah/);
+    assert.match(sheet, /Test Publisher/);
   });
 });

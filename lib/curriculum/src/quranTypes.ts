@@ -39,22 +39,24 @@ export interface QuranSurah {
 }
 
 export interface QuranSource {
+  /** The dataset the ayahs were read from. */
   name: string;
-  variant: string;
+  /** The package and version pinned, e.g. `@quran.ws/text 0.1.0`. */
+  version: string;
   url: string;
+  /** Who publishes the text itself. */
+  publisher: string;
   licenseName: string;
   licenseUrl: string;
-  /** `YYYY-MM-DD` the snapshot was downloaded. */
-  retrievedOn: string;
-  /** SHA-256 of the snapshot file the ayahs were copied from. */
+  /** SHA-256 of the dataset file (`data/hafs.json`) the ayahs were read from. */
   sha256: string;
-  /** How the file was downloaded (the options chosen on the source's page). */
-  notes: string;
+  /** The font this text must be drawn in: the publisher's own, which the dataset ships. */
+  font: { family: string; file: string; sha256: string };
 }
 
 export interface QuranCornerFile {
   source: QuranSource;
-  /** The source's own licence notice, verbatim apart from the comment marker. */
+  /** The credit and licence line the corner shows, written by the build from `source`. */
   notice: string;
   surahs: QuranSurah[];
 }

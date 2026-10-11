@@ -1,16 +1,16 @@
 /**
- * Builds `src/data/quran_corner.json` from a pinned Tanzil snapshot and the 20
- * Islamic Education catalogs. Pure functions plus one loader, shared by the CLI
- * (`build-quran-corner.ts`) and the test that proves the committed file is what
- * these inputs produce.
+ * Builds `src/data/quran_corner.json` from a Quran source and the 20 Islamic
+ * Education catalogs. Pure functions only: reading the source (the pinned npm
+ * package) is `quranCornerSource.ts`, so everything here runs on a placeholder
+ * source in tests. Shared by the CLI (`build-quran-corner.ts`) and the test that
+ * proves the committed file is what these inputs produce.
  *
- * No Quranic text is written here. Every ayah is copied from the snapshot
- * unchanged; the only hand-typed data is `SURAHS`, which holds surah numbers
- * and ayah COUNTS — metadata, checked against the snapshot below.
+ * No Quranic text is written here. Every ayah is copied from the source
+ * unchanged; the only hand-typed data is `SURAHS`, which holds surah names (as
+ * folded keys), numbers and ayah COUNTS — metadata, and the build refuses to run
+ * unless the source's own surah table agrees with it, name and count.
  */
-import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
-
+import { normalizeArabic } from '../src/arabic.ts';
 import { lessonKbId } from '../src/curriculumIds.ts';
 import { parseSurahTitle } from '../src/quranTitles.ts';
 import type {
@@ -18,6 +18,7 @@ import type {
   QuranCornerFile,
   QuranLessonRef,
   QuranSegment,
+  QuranSource,
   QuranSurah,
 } from '../src/quranTypes.ts';
 
@@ -26,11 +27,10 @@ import type {
  * → surah number and ayah count.
  *
  * Typed by hand. It is NOT Quranic text, but a wrong number would show a
- * student the wrong surah under a right name, so two checks guard it: the
- * build fails if a count differs from the snapshot's, and the generated
- * `REVIEW.md` prints each surah's first assigned ayah beside its name for a
- * person who reads Arabic to confirm. The count check cannot catch two surahs
- * of equal length swapped (several have 5 or 8 ayahs); the review sheet does.
+ * student the wrong surah under a right name, so the build checks every row
+ * against the source's OWN surah table: the number must name the surah the key
+ * names (`surahKey` of the source's Arabic name) and the ayah count must be the
+ * same. That catches an equal-length swap, which a count check alone cannot.
  */
 export const SURAHS: Record<string, { number: number; ayahCount: number }> = {
   'الفاتحه': { number: 1, ayahCount: 7 },
@@ -81,39 +81,36 @@ export interface SourceAyah {
   text: string;
 }
 
+/** The source's own table of surahs, used to check `SURAHS`. */
+export interface SourceSurah {
+  number: number;
+  /** The name as the source writes it («سورة …»). */
+  nameAr: string;
+  ayahCount: number;
+}
+
+/** What the build reads: the ayahs, the source's surah table, and where they came from. */
+export interface BuildSource {
+  ayahs: SourceAyah[];
+  surahs: SourceSurah[];
+  info: QuranSource;
+}
+
 /**
- * Reads Tanzil's `sura|aya|text` file. Structure only: lines must be numbered
- * in order, and `#` lines are collected as the licence notice. Nothing is
- * trimmed or rewritten in the text.
+ * The key `SURAHS` uses for a surah, from the source's Arabic name: folded by
+ * `normalizeArabic`, without the leading «سورة». Titles in the books fold to the
+ * same key, so one rule serves both sides.
  */
-export function parseTanzilTxt(txt: string): { ayahs: SourceAyah[]; notice: string } {
-  const ayahs: SourceAyah[] = [];
-  const notice: string[] = [];
-  let lastSurah = 0;
-  let lastAyah = 0;
-  for (const raw of txt.replace(/^﻿/, '').split(/\r?\n/)) {
-    if (raw.startsWith('#')) {
-      notice.push(raw.replace(/^#\s?/, ''));
-      continue;
-    }
-    if (raw.trim() === '') continue;
-    const m = /^(\d+)\|(\d+)\|(.+)$/.exec(raw);
-    if (!m) throw new Error(`unreadable line in the source: ${raw.slice(0, 40)}`);
-    const surah = Number(m[1]);
-    const ayah = Number(m[2]);
-    const inOrder = surah === lastSurah ? ayah === lastAyah + 1 : surah > lastSurah && ayah === 1;
-    if (!inOrder) throw new Error(`source out of order at ${surah}:${ayah}`);
-    ayahs.push({ surah, ayah, text: m[3]! });
-    lastSurah = surah;
-    lastAyah = ayah;
-  }
-  return { ayahs, notice: notice.join('\n').trim() };
+export function surahKey(nameAr: string): string {
+  return normalizeArabic(nameAr).replace(/^سوره\s+/, '');
 }
 
 /** Hafs numbering has 114 surahs and 6,236 ayahs. Any other total is a different text. */
-export function assertFullHafs(ayahs: readonly SourceAyah[]): void {
-  if (ayahs.length !== 6236) throw new Error(`the source has ${ayahs.length} ayahs, expected 6236 (Hafs)`);
-  if (ayahs[ayahs.length - 1]!.surah !== 114) throw new Error('the source does not end at surah 114');
+export function assertFullHafs(source: Pick<BuildSource, 'ayahs' | 'surahs'>): void {
+  if (source.surahs.length !== 114) throw new Error(`the source has ${source.surahs.length} surahs, expected 114`);
+  if (source.ayahs.length !== 6236) throw new Error(`the source has ${source.ayahs.length} ayahs, expected 6236 (Hafs)`);
+  const counted = source.surahs.reduce((n, s) => n + s.ayahCount, 0);
+  if (counted !== 6236) throw new Error(`the source's surah table adds up to ${counted} ayahs, expected 6236`);
 }
 
 /** Merges overlapping and touching ranges: 1–4 and 5–7 are one run, 1–4 and 6–7 are two. */
@@ -135,21 +132,25 @@ export interface CatalogInput {
 }
 
 export interface BuildInput {
-  /** The snapshot file, as read (UTF-8). */
-  source: string;
-  sourceMeta: { retrievedOn: string; notes: string };
+  source: BuildSource;
   catalogs: CatalogInput[];
 }
 
 const gradeNumber = (gradeId: string): number => Number(gradeId.replace('grade-', ''));
 
-export function buildCorner(input: BuildInput): QuranCornerFile {
-  const { ayahs, notice } = parseTanzilTxt(input.source);
-  if (!notice) throw new Error('the source carries no licence notice; refusing to build without one');
+/** The credit and licence line the corner shows. Written here, from the source's own facts, so it cannot drift from them. */
+export function creditLine(info: QuranSource): string {
+  return [
+    `Text: ${info.publisher}.`,
+    `Dataset: ${info.name}, ${info.version} — ${info.url} — ${info.licenseName}.`,
+    'Modified: yes (a subset of the ayahs, each assembled from the dataset\'s words and signs).',
+  ].join(' ');
+}
 
-  const textOf = new Map(ayahs.map(a => [`${a.surah}:${a.ayah}`, a.text]));
-  const countOf = new Map<number, number>();
-  for (const a of ayahs) countOf.set(a.surah, Math.max(countOf.get(a.surah) ?? 0, a.ayah));
+export function buildCorner(input: BuildInput): QuranCornerFile {
+  const { source } = input;
+  const textOf = new Map(source.ayahs.map(a => [`${a.surah}:${a.ayah}`, a.text]));
+  const sourceSurah = new Map(source.surahs.map(s => [s.number, s]));
 
   const found = new Map<
     string,
@@ -165,18 +166,22 @@ export function buildCorner(input: BuildInput): QuranCornerFile {
         if (!meta) {
           throw new Error(`no surah number for "${title.nameAr}" (${title.key}), in ${cat.gradeId} s${cat.semester} ${lesson.id}`);
         }
-        const count = countOf.get(meta.number);
-        if (count !== meta.ayahCount) {
-          throw new Error(`surah ${meta.number} ("${title.nameAr}"): the table says ${meta.ayahCount} ayahs, the source has ${count}`);
+        const theirs = sourceSurah.get(meta.number);
+        if (!theirs) throw new Error(`the source has no surah ${meta.number} ("${title.nameAr}")`);
+        if (surahKey(theirs.nameAr) !== title.key) {
+          throw new Error(`surah ${meta.number}: the table calls it "${title.key}" but the source calls it "${surahKey(theirs.nameAr)}"`);
+        }
+        if (theirs.ayahCount !== meta.ayahCount) {
+          throw new Error(`surah ${meta.number} ("${title.nameAr}"): the table says ${meta.ayahCount} ayahs, the source says ${theirs.ayahCount}`);
         }
         const from = title.from ?? 1;
-        const to = title.to ?? count;
-        if (to > count) {
-          throw new Error(`"${lesson.title_ar}" names ayah ${to}, but surah ${meta.number} has ${count}`);
+        const to = title.to ?? theirs.ayahCount;
+        if (to > theirs.ayahCount) {
+          throw new Error(`"${lesson.title_ar}" names ayah ${to}, but surah ${meta.number} has ${theirs.ayahCount}`);
         }
         let entry = found.get(title.key);
         if (!entry) {
-          entry = { number: meta.number, ayahCount: count, nameAr: title.nameAr, ranges: [], lessons: [] };
+          entry = { number: meta.number, ayahCount: theirs.ayahCount, nameAr: title.nameAr, ranges: [], lessons: [] };
           found.set(title.key, entry);
         }
         entry.ranges.push([from, to]);
@@ -211,72 +216,34 @@ export function buildCorner(input: BuildInput): QuranCornerFile {
       gradeNumber(a.lessons[0]!.gradeId) - gradeNumber(b.lessons[0]!.gradeId) || a.number - b.number,
   );
 
-  return {
-    source: {
-      name: 'Tanzil',
-      variant: 'quran-uthmani',
-      url: 'https://tanzil.net',
-      licenseName: 'CC BY 3.0',
-      licenseUrl: 'https://tanzil.net/docs/text_license',
-      retrievedOn: input.sourceMeta.retrievedOn,
-      sha256: createHash('sha256').update(input.source).digest('hex'),
-      notes: input.sourceMeta.notes,
-    },
-    notice,
-    surahs,
-  };
+  return { source: source.info, notice: creditLine(source.info), surahs };
 }
 
-/** A sheet for a person who reads Arabic to confirm each surah's name against its first assigned ayah. */
+/**
+ * The sheet a person checks the shipped text against an authorised printed
+ * Mus'haf al-Madinah with. EVERY shipped ayah is listed, by surah and number,
+ * because the publisher's terms put the duty to verify on whoever publishes the
+ * text to end users, and the build cannot do that for diacritics.
+ */
 export function reviewSheet(corner: QuranCornerFile): string {
-  const rows = corner.surahs.map(s => {
-    const segs = s.segments.map(g => (g.from === g.to ? `${g.from}` : `${g.from}–${g.to}`)).join('، ');
-    const grades = [...new Set(s.lessons.map(l => gradeNumber(l.gradeId)))].join(', ');
-    return `| ${s.number} | ${s.nameAr} | ${s.ayahCount} | ${segs} | ${grades} | ${s.ayahs[0]!.n}: ${s.ayahs[0]!.text} |`;
-  });
-  return [
-    '# Quran Corner — review sheet',
+  const out: string[] = [
+    '# Quran Corner — verification sheet',
     '',
     'Generated by `pnpm --filter @workspace/curriculum run build-quran-corner`. Do not edit by hand.',
     '',
-    'For each row: does the **name** (as the book prints it) match the **first assigned ayah**,',
-    'and do the **ayahs** match what the lesson assigns? Surah numbers and counts were typed by',
-    'hand in `scripts/quranCornerBuild.ts`; this sheet is the check that catches two surahs of',
-    'equal length being swapped.',
+    `Source: ${corner.source.name}, ${corner.source.version} (text: ${corner.source.publisher}).`,
     '',
-    '| # | Name (book) | Ayahs in surah | Assigned | Grades | First assigned ayah (source) |',
-    '| --- | --- | --- | --- | --- | --- |',
-    ...rows,
+    'Check every ayah below against an **authorised printed Mus\'haf al-Madinah**: the letters,',
+    'every vowel and every sign. The build already checked, by machine, that each surah\'s number,',
+    'name and ayah count agree with the source\'s own table; it cannot check the diacritics.',
+    'Record who checked and when in the commit message.',
     '',
-  ].join('\n');
-}
-
-export interface LoadedPaths {
-  snapshot: URL;
-  meta: URL;
-  catalogDir: URL;
-}
-
-const PATHS: LoadedPaths = {
-  snapshot: new URL('../sources/tanzil/quran-uthmani.txt', import.meta.url),
-  meta: new URL('../sources/tanzil/SOURCE.json', import.meta.url),
-  catalogDir: new URL('../src/data/', import.meta.url),
-};
-
-/** Reads the snapshot, its `SOURCE.json` and the 20 Islamic catalogs, in grade order. */
-export function loadBuildInput(paths: LoadedPaths = PATHS): BuildInput {
-  const meta = JSON.parse(readFileSync(paths.meta, 'utf8')) as { retrievedOn: string; notes: string };
-  const catalogs: CatalogInput[] = [];
-  for (let grade = 1; grade <= 10; grade++) {
-    for (const semester of [1, 2] as const) {
-      const file = new URL(`iqra_curriculum_g${grade}_islamic_sem${semester}.json`, paths.catalogDir);
-      const cat = JSON.parse(readFileSync(file, 'utf8')) as { units: CatalogInput['units'] };
-      catalogs.push({ gradeId: `grade-${grade}`, semester, units: cat.units });
-    }
+  ];
+  for (const s of corner.surahs) {
+    const segs = s.segments.map(g => (g.from === g.to ? `${g.from}` : `${g.from}–${g.to}`)).join('، ');
+    out.push(`## ${s.number} — ${s.nameAr} (${s.ayahCount} ayahs in the surah; shipped: ${segs})`, '');
+    for (const a of s.ayahs) out.push(`${s.number}:${a.n}  ${a.text}`);
+    out.push('');
   }
-  return {
-    source: readFileSync(paths.snapshot, 'utf8'),
-    sourceMeta: { retrievedOn: meta.retrievedOn, notes: meta.notes },
-    catalogs,
-  };
+  return out.join('\n');
 }
