@@ -1,84 +1,47 @@
 /**
  * Memorisation progress for the signed-in person, on this device. Thin on
- * purpose: every decision is in `services/quranProgress.ts`.
+ * purpose: the decisions are in `services/quranProgress.ts` and the state, the
+ * read/write ordering and the user-switch guards are in
+ * `services/quranProgressStore.ts`.
  *
- * Two guards live here. On a change of user, the marks in state are cleared
- * before the new read, so one person's progress never shows or saves under
- * another's key on a shared device. And `rate` is ignored until the current
- * user's saved marks have been read, so a tap can never overwrite them with a
- * one-mark blob.
+ * ONE store serves every call of this hook. The Quran Corner screens stay
+ * mounted under each other on the root Stack, so they must share their marks:
+ * a rating made in the memorise screen is on the reader and the home row
+ * the moment it is made, and writes from any screen compose onto the same copy.
+ *
+ * A snapshot is shown only when it belongs to the person this render is for, so
+ * for the one render after a user switch (before the effect re-points the
+ * store) the previous person's marks are not painted. While the session is
+ * still restoring (`isLoading`) the person is unknown, so nothing is read and
+ * a tap cannot be saved under the signed-out key.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/context/AuthContext';
-import {
-  parseProgress,
-  quranProgressKey,
-  rateAyah,
-  todayKey,
-  type AyahStatus,
-  type QuranProgress,
-} from '@/services/quranProgress';
+import { quranProgressKey, type AyahStatus, type QuranProgress } from '@/services/quranProgress';
+import { createProgressStore } from '@/services/quranProgressStore';
+
+const store = createProgressStore(AsyncStorage);
+
+const EMPTY: QuranProgress = Object.freeze({}) as QuranProgress;
 
 export function useQuranProgress(): {
   progress: QuranProgress;
   loaded: boolean;
   rate: (surah: number, ayah: number, status: AyahStatus | null) => void;
 } {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const userId = user?.id ?? null;
-  const [progress, setProgress] = useState<QuranProgress>({});
-  const [loaded, setLoaded] = useState(false);
-  // The latest value, so two quick taps compose instead of the second one
-  // overwriting the first with a stale copy.
-  const latest = useRef<QuranProgress>({});
-  // The storage key whose contents are in `latest`. Null until that user's read
-  // has landed. A ref, not `loaded`, because `rate` reads it without re-rendering.
-  const loadedKey = useRef<string | null>(null);
+  // The key this render should show; null while the session is restoring.
+  const wanted = isLoading ? null : quranProgressKey(userId);
 
   useEffect(() => {
-    const key = quranProgressKey(userId);
-    let live = true;
-    // Another person's marks must not outlive a switch of user, and nothing may
-    // be saved under the new key until it has been read (or the read failed).
-    loadedKey.current = null;
-    latest.current = {};
-    setProgress({});
-    setLoaded(false);
-    AsyncStorage.getItem(key)
-      .then(raw => {
-        if (!live) return;
-        const read = parseProgress(raw);
-        latest.current = read;
-        loadedKey.current = key;
-        setProgress(read);
-        setLoaded(true);
-      })
-      .catch(() => {
-        // Storage can be unavailable (private window, blocked site data); the
-        // screens still work with empty progress, and writes will fail the same way.
-        if (!live) return;
-        loadedKey.current = key;
-        setLoaded(true);
-      });
-    return () => {
-      live = false;
-    };
-  }, [userId]);
+    store.select(isLoading ? undefined : userId);
+  }, [isLoading, userId]);
 
-  const rate = useCallback(
-    (surah: number, ayah: number, status: AyahStatus | null) => {
-      const key = quranProgressKey(userId);
-      // Ignore a rating until this user's saved marks have been read: writing now
-      // would replace them with a one-mark blob. Screens disable the buttons while !loaded.
-      if (loadedKey.current !== key) return;
-      const next = rateAyah(latest.current, surah, ayah, status, todayKey());
-      latest.current = next;
-      setProgress(next);
-      AsyncStorage.setItem(key, JSON.stringify(next)).catch(() => {});
-    },
-    [userId],
-  );
+  const snap = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
+  // Never show, or accept ratings against, another person's snapshot.
+  const current = wanted !== null && snap.forKey === wanted;
 
-  return { progress, loaded, rate };
+  return { progress: current ? snap.progress : EMPTY, loaded: current && snap.loaded, rate: store.rate };
 }
