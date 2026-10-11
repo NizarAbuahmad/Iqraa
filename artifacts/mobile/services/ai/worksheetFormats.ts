@@ -8,8 +8,9 @@
  * Arabic, since they are labels, not maths.
  */
 import { pickForFormat, formatSupported, currentSession, type FormatKind } from '@workspace/math-practice';
-import type { WorksheetSection, WorksheetQuestionFormat } from './AIService.ts';
-import type { KBLesson } from '../knowledgeBase.ts';
+import type { AIRequest, WorksheetOutput, WorksheetSection, WorksheetQuestionFormat } from './AIService.ts';
+import { getLessonById, resolveGroundedKbLesson, type KBLesson } from '../knowledgeBase.ts';
+import { parseDocumentGrounding } from '../documents/grounding.ts';
 import { samplePlot } from '../deckVisuals.ts';
 
 export const FORMAT_KINDS: readonly FormatKind[] = ['match', 'order', 'spot_error', 'graph'];
@@ -166,4 +167,58 @@ export function buildFormatQuestion(
     },
     key,
   };
+}
+
+/** Pull the format kinds out of a ticked question-type list. */
+export function splitFormatTypes(types: string[]): { formats: FormatKind[]; rest: string[] } {
+  return {
+    formats: types.filter(isFormatKind),
+    rest: types.filter(t => !isFormatKind(t)),
+  };
+}
+
+/** The picker's minimum, which the server honours (`NUM_Q_OPTIONS`). */
+const MIN_QUESTIONS = 5;
+
+/**
+ * The request the live model sees. It is never asked for a format kind — the
+ * bank builds those (see `appendFormats`, and the filter in the api-server's
+ * `worksheetPromptAr/En`) — and the count it is asked for is the teacher's
+ * total minus the formats, so formats count INSIDE the number picked.
+ */
+export function requestWithoutFormats(req: AIRequest): AIRequest {
+  const { formats, rest } = splitFormatTypes((req.questionTypes ?? []) as string[]);
+  if (formats.length === 0) return req;
+  return {
+    ...req,
+    questionTypes: (rest.length ? rest : ['short_answer']) as AIRequest['questionTypes'],
+    numQuestions: Math.max(MIN_QUESTIONS, (req.numQuestions ?? 8) - formats.length),
+  };
+}
+
+/**
+ * Add the bank-built format questions to a live paper, numbered on from its
+ * last answer. The live paper's items are not bank-tracked, so each kind is
+ * built against a fresh session (nothing to avoid repeating). A kind the
+ * lesson's bank cannot supply is reported in `missingFormats`, not invented.
+ */
+export function appendFormats(ws: WorksheetOutput, req: AIRequest, formats: FormatKind[]): WorksheetOutput {
+  if (formats.length === 0) return ws;
+  const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
+  // Same grounding as the offline paper: a teacher's own file has no bank lesson.
+  const docs = parseDocumentGrounding(req.additionalContext);
+  const topic = docs.present && docs.title ? docs.title : req.topic;
+  const kb = docs.present ? null : ((req.lessonId ? getLessonById(req.lessonId) : null) ?? resolveGroundedKbLesson(topic, lang));
+  const points = 6;
+  const sections = [...ws.sections];
+  const answerKey = [...ws.answerKey];
+  const missing: FormatKind[] = [...(ws.missingFormats ?? [])];
+  let num = answerKey.reduce((m, k) => Math.max(m, k.num), 0) + 1;
+  for (const kind of formats) {
+    const built = buildFormatQuestion(kind, { topic, kb, lang, subject: req.subject, session: new Set<string>(), points });
+    if (!built) { missing.push(kind); continue; }
+    sections.push(built.section);
+    answerKey.push({ num: num++, ...built.key });
+  }
+  return { ...ws, sections, answerKey, ...(missing.length ? { missingFormats: missing } : {}) };
 }

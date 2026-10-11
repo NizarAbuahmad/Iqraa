@@ -33,6 +33,8 @@ import { arPrefixed, lessonKindFor, type LessonKind } from './lessonPlanKinds.ts
 import { arMinutes } from './lessonPlanTypes.ts';
 import { classifyVerifiableTopic } from './verifyMathGuards.ts';
 import { QUIZ_TYPE_ORDER } from '../quizPaper.ts';
+import { splitFormatTypes, buildFormatQuestion } from './worksheetFormats.ts';
+import type { FormatKind } from '@workspace/math-practice';
 
 /**
  * Symbolic verification, loaded lazily.
@@ -1174,11 +1176,17 @@ export class MockAIService extends AIService {
     const kb = docs.present ? null : groundedKb(topic, lang, req.lessonId);
     // A paper built from the teacher's own file is grounded in that file.
     if (!docs.present) requireQuestionBank(topic, kb, req.subject);
-    const selectedTypes: QType[] = (req.questionTypes as QType[])?.length
-      ? (req.questionTypes as QType[])
+    const selectedTypes: string[] = (req.questionTypes as string[] | undefined)?.length
+      ? (req.questionTypes as string[])
       : ['multiple_choice', 'short_answer'];
-    const wantsWordProblem = selectedTypes.includes('word_problem');
-    const mainTypes = selectedTypes.filter(t => t !== 'word_problem');
+    // The four structured formats (صِل، رتّب، أين الخطأ؟، ارسم) are built by
+    // `worksheetFormats.ts`, one question each, INSIDE the teacher's total.
+    // They never enter the rotation below, and the live prompt is never asked
+    // for them (`requestWithoutFormats`, `prompts.ts`).
+    const { formats, rest } = splitFormatTypes(selectedTypes);
+    const restTypes = rest as QType[];
+    const wantsWordProblem = restTypes.includes('word_problem');
+    const mainTypes = restTypes.filter(t => t !== 'word_problem');
     if (mainTypes.length === 0) mainTypes.push('short_answer');
 
     // In-class practice: progressive difficulty (easy → medium → hard)
@@ -1230,7 +1238,7 @@ export class MockAIService extends AIService {
     const exampleItem = takeSolved(band[0]);
     const completionItem = exampleItem ? takeSolved(band[1]) : null;
     const reserved = (exampleItem ? 1 : 0) + (completionItem ? 1 : 0);
-    const mainTotal = Math.max(0, totalQ - reserved - (wantsWordProblem ? 1 : 0));
+    const mainTotal = Math.max(0, totalQ - reserved - (wantsWordProblem ? 1 : 0) - formats.length);
 
     const answerSpace = lang === 'ar'
       ? '\n\nالإجابة:\n_________________________________\n_________________________________'
@@ -1358,6 +1366,7 @@ export class MockAIService extends AIService {
 
     let typeIdx = 0;
     let spent = false;
+    const missingFormats: FormatKind[] = [];
     bankOnly = questionBankPolicy.required;
     try {
     for (const bucket of buckets) {
@@ -1399,6 +1408,18 @@ export class MockAIService extends AIService {
       });
       answerKey.push({ num: qNum++, answer: q.answer ?? '—', ...(q.steps ? { solution: q.steps } : {}) });
     }
+
+    // The ticked formats, one question each. They draw on the same pass
+    // session as the rest of the paper (`undefined` → the module session that
+    // `beginMathPracticeSession()` reset above), so a format cannot repeat an
+    // item the practice sections already used. A kind the lesson's bank cannot
+    // supply is reported, never invented.
+    for (const kind of formats) {
+      const built = buildFormatQuestion(kind, { topic, kb, lang, subject: req.subject, session: undefined, points: saPts(band[1]) });
+      if (!built) { missingFormats.push(kind); continue; }
+      sections.push(built.section);
+      answerKey.push({ num: qNum++, ...built.key });
+    }
     } catch (e) {
       if (!(e instanceof BankSpentError)) throw e;
     } finally {
@@ -1431,6 +1452,7 @@ export class MockAIService extends AIService {
       // is one of the items produced — without it a three-item paper asked of
       // twelve would be reported as two.
       ...(spent ? { shortfall: { requested: totalQ, produced: qNum - 1 - priorCount + (exampleItem ? 1 : 0) } } : {}),
+      ...(missingFormats.length ? { missingFormats } : {}),
     };
   }
 

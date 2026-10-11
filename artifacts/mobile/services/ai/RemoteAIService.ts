@@ -20,6 +20,7 @@ import {
 } from './AIService';
 import { DEMO_MODE } from './demoMode';
 import { MockAIService } from './generators';
+import { appendFormats, requestWithoutFormats, splitFormatTypes } from './worksheetFormats.ts';
 import { applyClassroomSetup } from '@/services/classroomRouting';
 import { ApiError, apiFetch } from '../apiClient';
 import { describeAiError, generateWithProvenance, recordGeneration } from './aiProvenance.ts';
@@ -118,7 +119,14 @@ export class RemoteAIService extends AIService {
   async generateWorksheet(req: AIRequest, opts?: GenerateOptions): Promise<WorksheetOutput> {
     return generateWithProvenance(
       'worksheet',
-      () => postJSON<WorksheetOutput>('/generate/worksheet', req, opts),
+      // The model is asked for neither the format kinds nor their count; the
+      // bank adds them afterwards. The fallback gets the ORIGINAL request —
+      // the offline generator builds the formats itself.
+      async () => appendFormats(
+        await postJSON<WorksheetOutput>('/generate/worksheet', requestWithoutFormats(req), opts),
+        req,
+        splitFormatTypes((req.questionTypes ?? []) as string[]).formats,
+      ),
       () => this.fallback.generateWorksheet(req),
     );
   }
