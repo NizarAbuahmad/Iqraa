@@ -634,7 +634,7 @@ git commit -m "Quran Corner: the outside-resources shelf (links unchecked)" -m $
 
 **Interfaces:**
 - Produces (pure, `services/quranProgress.ts`): `type AyahStatus = 'learning' | 'memorised'`; `type AyahState = AyahStatus | 'new'`; `type QuranProgress = Record<string, Record<string, AyahMark>>`; `quranProgressKey(userId)`, `todayKey(d?)`, `parseProgress(raw)`, `rateAyah(progress, surah, ayah, status | null, today)`, `stateOf(progress, surah, ayah)`, `countMemorised(progress, surah, ayahs)`.
-- Produces (hook): `useQuranProgress(): { progress: QuranProgress; loaded: boolean; rate: (surah: number, ayah: number, status: AyahStatus | null) => void }`.
+- Produces (hook): `useQuranProgress(): { progress: QuranProgress; loaded: boolean; rate: (surah: number, ayah: number, status: AyahStatus | null) => void }`. `rate` is a no-op until the current user's saved marks have been read (writing earlier would replace them), and state is reset on a user change, so screens must disable rating controls while `loaded` is false.
 
 - [ ] **Step 1: Write the failing test.** Create `artifacts/mobile/services/__tests__/quranProgress.test.ts`:
 
@@ -854,6 +854,12 @@ Expected: `# tests 10`, `# pass 10`, `# fail 0`.
 /**
  * Memorisation progress for the signed-in person, on this device. Thin on
  * purpose: every decision is in `services/quranProgress.ts`.
+ *
+ * Two guards live here. On a change of user, the marks in state are cleared
+ * before the new read, so one person's progress never shows or saves under
+ * another's key on a shared device. And `rate` is ignored until the current
+ * user's saved marks have been read, so a tap can never overwrite them with a
+ * one-mark blob.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -879,22 +885,34 @@ export function useQuranProgress(): {
   // The latest value, so two quick taps compose instead of the second one
   // overwriting the first with a stale copy.
   const latest = useRef<QuranProgress>({});
+  // The storage key whose contents are in `latest`. Null until that user's read
+  // has landed. A ref, not `loaded`, because `rate` reads it without re-rendering.
+  const loadedKey = useRef<string | null>(null);
 
   useEffect(() => {
+    const key = quranProgressKey(userId);
     let live = true;
+    // Another person's marks must not outlive a switch of user, and nothing may
+    // be saved under the new key until it has been read (or the read failed).
+    loadedKey.current = null;
+    latest.current = {};
+    setProgress({});
     setLoaded(false);
-    AsyncStorage.getItem(quranProgressKey(userId))
+    AsyncStorage.getItem(key)
       .then(raw => {
         if (!live) return;
         const read = parseProgress(raw);
         latest.current = read;
+        loadedKey.current = key;
         setProgress(read);
         setLoaded(true);
       })
       .catch(() => {
-        // Storage can be unavailable (private window, blocked site data). The
-        // screens still work; the ratings just do not survive a reload.
-        if (live) setLoaded(true);
+        // Storage can be unavailable (private window, blocked site data); the
+        // screens still work with empty progress, and writes will fail the same way.
+        if (!live) return;
+        loadedKey.current = key;
+        setLoaded(true);
       });
     return () => {
       live = false;
@@ -903,10 +921,14 @@ export function useQuranProgress(): {
 
   const rate = useCallback(
     (surah: number, ayah: number, status: AyahStatus | null) => {
+      const key = quranProgressKey(userId);
+      // Ignore a rating until this user's saved marks have been read: writing now
+      // would replace them with a one-mark blob. Screens disable the buttons while !loaded.
+      if (loadedKey.current !== key) return;
       const next = rateAyah(latest.current, surah, ayah, status, todayKey());
       latest.current = next;
       setProgress(next);
-      AsyncStorage.setItem(quranProgressKey(userId), JSON.stringify(next)).catch(() => {});
+      AsyncStorage.setItem(key, JSON.stringify(next)).catch(() => {});
     },
     [userId],
   );
@@ -2712,7 +2734,7 @@ function Chip({ label, on, onPress, colors }: { label: string; on: boolean; onPr
 function Memorize({ surah }: { surah: QuranSurah }) {
   const colors = useColors();
   const { t, lang, isRTL } = useLanguage();
-  const { progress, rate } = useQuranProgress();
+  const { progress, loaded, rate } = useQuranProgress();
   const [index, setIndex] = useState(0);
   const [level, setLevel] = useState<HideLevel>('every3');
   const [revealed, setRevealed] = useState<ReadonlySet<number>>(new Set());
@@ -2753,9 +2775,10 @@ function Memorize({ surah }: { surah: QuranSurah }) {
         Haptics.selectionAsync();
         rate(surah.number, ayah.n, status);
       }}
+      disabled={!loaded}
       accessibilityRole="button"
       aria-selected={active}
-      style={[styles.rate, { backgroundColor: active ? colors.primary : colors.muted }]}
+      style={[styles.rate, { backgroundColor: active ? colors.primary : colors.muted, opacity: loaded ? 1 : 0.5 }]}
     >
       <Text style={{ color: active ? colors.primaryForeground : colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
         {label}
