@@ -1665,7 +1665,7 @@ const translations = {
     parentContactsAllGood: 'وصلت رسالةٌ إلى أسرة كل طالب خلال الشهر، ولم تقتصر أيٌّ منها على الملاحظات.',
     parentContactsTapHint: 'اضغط على اسم لكتابة رسالة لأسرته.',
     parentContactsUnread: (n: string) => `رسالة داخل إقرأ لم تُفتح منذ يومين أو أكثر (${n})`,
-    // Not «تحقّق سريع» and not «تذكرة الخروج» — the classroom-activity
+    // Not «تحقّق سريع» and not «غلق الدرس» — the classroom-activity
     // generator already owns both of those (`activityType: 'quick-check'` and
     // `'exit-ticket'`). This one belongs to the evaluations family, produces a
     // per-student record, and is named from that side of the app.
