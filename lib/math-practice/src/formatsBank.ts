@@ -10,6 +10,7 @@ import {
 } from './index.ts';
 import { stepsFor } from './steps.ts';
 import { misstepsFor } from './missteps.ts';
+import { ORDER_SAFE } from './orderSafe.ts';
 
 export type FormatKind = 'match' | 'order' | 'spot_error' | 'graph';
 export interface MatchPick { pairs: { problem: string; answer: string }[] }
@@ -41,8 +42,10 @@ function matchCandidates(items: ConcreteItem[], used: Set<string>): ConcreteItem
     return true;
   });
 }
+/** Only the hand-audited items whose steps have one valid order (`orderSafe.ts`). */
 const orderCandidates = (items: ConcreteItem[], used: Set<string>) =>
-  items.filter(i => !used.has(i.id) && (stepsFor(i.id)?.ar.length ?? 0) >= 3 && (stepsFor(i.id)?.ar.length ?? 0) <= 6);
+  items.filter(i => !used.has(i.id) && ORDER_SAFE.has(i.id)
+    && (stepsFor(i.id)?.ar.length ?? 0) >= 3 && (stepsFor(i.id)?.ar.length ?? 0) <= 6);
 const spotCandidates = (items: ConcreteItem[], used: Set<string>, maths: boolean) =>
   maths ? items.filter(i => !used.has(i.id) && stepsFor(i.id) && misstepsFor(i.id).length > 0) : [];
 const graphCandidates = (items: ConcreteItem[], used: Set<string>, maths: boolean) =>

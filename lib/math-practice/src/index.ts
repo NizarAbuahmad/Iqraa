@@ -35,6 +35,7 @@ export { subjectIdFromName } from './subjects.ts';
 export { stepsFor, solvedItemIds, completionSplit } from './steps.ts';
 export type { SolutionSteps } from './steps.ts';
 export { MISSTEPS, misstepsFor } from './missteps.ts';
+export { ORDER_SAFE } from './orderSafe.ts';
 export { pickForFormat, formatSupported } from './formatsBank.ts';
 export type { FormatKind, MatchPick, OrderPick, SpotErrorPick, GraphPick } from './formatsBank.ts';
 export type { Misstep } from './missteps.ts';
