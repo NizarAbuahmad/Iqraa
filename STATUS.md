@@ -1143,7 +1143,21 @@ overlap: «any way to share the answers with students» is claimed, because «ho
 can i share the answers with students» already was (the word «students» is a
 Classes keyword). Pinned by 35 new claims and 30 + 14 teaching look-alikes in
 `appHelp.test.ts`; 65 look-alikes in two adversarial runs, none claimed but the
-overlap. Not checked in the web build.
+overlap. Checked on app.iqrra.com on 2026-10-11 with the demo account: eight
+app questions answered with the path or steps, three teaching look-alikes stayed
+teaching.
+
+**No starter chips under an app answer (2026-10-11).** The strip above the
+composer («حضّر خطة الدرس» / «أنشئ ورقة عمل») showed under every reply that had
+no follow-ups of its own, app answers included, so «i want to change the
+language» was followed by an offer to plan a lesson. The app-help message now
+carries `appHelp: true` and the strip is hidden while it is the last message
+(`app/(tabs)/iqra.tsx`). Not changed: the نسخ / تصدير footer under the same
+reply, and the tool-ask reply («أريد ورقة عمل» pointing at the generator), which
+is built the same way and still shows the strip. Checked in a local web build
+against the live API (chips gone after an app answer, present after a teaching
+one); no test, because `iqra.tsx` cannot be loaded by the bare `node --test`
+runner.
 
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
