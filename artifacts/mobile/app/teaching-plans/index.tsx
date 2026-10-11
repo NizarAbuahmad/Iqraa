@@ -54,6 +54,7 @@ import { stagesFromLessonPlan, type MinistryLessonPage } from '@/services/minist
 import { exportMinistryPlanWord } from '@/services/share';
 import { useAuth } from '@/context/AuthContext';
 import { remoteAIService } from '@/services/ai/RemoteAIService';
+import { aiService } from '@/services/ai/generators';
 import { resolveGeneratorGrounding } from '@/services/kbContext';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
 import { confirm } from '@/services/confirm';
@@ -541,36 +542,42 @@ export default function TeachingPlansScreen() {
       confirmLabel: t('planExportAiYes'),
       cancelLabel: t('planExportAiNo'),
     });
-    if (fillWithAI) {
-      setExportingId(plan.id);
-      // Three at a time: gentle on the API, and one lesson failing only
-      // leaves its own stages blank. The lesson id is passed directly — a
-      // title does not identify a lesson (CLAUDE.md).
-      for (let i = 0; i < pages.length; i += 3) {
-        await Promise.all(pages.slice(i, i + 3).map(async (page, k) => {
-          const lesson = lessons[i + k];
-          if (!cls) return;
-          try {
-            const g = resolveGeneratorGrounding(lesson.titleAr, 'ar');
-            const out = await remoteAIService.generateLessonPlan({
-              grade: page.grade,
-              subject: SUBJECTS.find(x => x.id === subjectId)?.name ?? '',
-              topic: lesson.titleAr,
-              duration: 45,
-              language: 'arabic',
-              lessonId: lesson.id,
-              additionalContext: g.lesson?.id === lesson.id ? g.context : undefined,
-              contextSource: 'curriculum',
-              ministryRoles: true,
-            });
-            page.stages = stagesFromLessonPlan(out);
-          } catch {
-            /* this lesson's stages stay blank */
-          }
-        }));
-      }
-      setExportingId(null);
+    // Both answers fill the stages. Live AI writes lesson-specific teacher and
+    // learner roles; declining (or a live failure — `RemoteAIService` falls back
+    // to it itself) uses the offline lesson plan, whose phases fold into the
+    // teacher column and whose learner column comes from the stock per-style
+    // lines. Nothing leaves the form's role columns blank.
+    const service = fillWithAI ? remoteAIService : aiService;
+    setExportingId(plan.id);
+    // Live: three at a time, gentle on the API, and one lesson failing only
+    // leaves its own stages blank. Offline: no server to be gentle on. The
+    // lesson id is passed directly — a title does not identify a lesson
+    // (CLAUDE.md).
+    const batch = fillWithAI ? 3 : Math.max(1, pages.length);
+    for (let i = 0; i < pages.length; i += batch) {
+      await Promise.all(pages.slice(i, i + batch).map(async (page, k) => {
+        const lesson = lessons[i + k];
+        if (!cls) return;
+        try {
+          const g = resolveGeneratorGrounding(lesson.titleAr, 'ar');
+          const out = await service.generateLessonPlan({
+            grade: page.grade,
+            subject: SUBJECTS.find(x => x.id === subjectId)?.name ?? '',
+            topic: lesson.titleAr,
+            duration: 45,
+            language: 'arabic',
+            lessonId: lesson.id,
+            additionalContext: g.lesson?.id === lesson.id ? g.context : undefined,
+            contextSource: 'curriculum',
+            ministryRoles: true,
+          });
+          page.stages = stagesFromLessonPlan(out, { lang: 'ar', topic: lesson.titleAr });
+        } catch {
+          /* this lesson's stages stay blank */
+        }
+      }));
     }
+    setExportingId(null);
     try {
       await exportMinistryPlanWord(pages, plan.title);
     } catch {
