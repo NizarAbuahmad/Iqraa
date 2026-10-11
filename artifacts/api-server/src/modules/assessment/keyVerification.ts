@@ -10,10 +10,17 @@
  * Three rules hold this together, and each exists because breaking it is worse
  * than not checking at all:
  *
- * 1. **Only a contradiction drops a question.** The verifier's three-way
- *    relation is preserved end to end: `indeterminate`, `error` and
- *    `unsupported_topic` all leave the question in the paper, unverified. A
- *    check that deletes work must never do so on "I could not tell".
+ * 1. **Nothing deletes a question.** The verifier's relation is preserved end
+ *    to end and every outcome leaves the question in the paper: `equivalent`
+ *    marks it verified, `indeterminate`, `error` and `unsupported_topic` leave
+ *    it unverified, and `distinct` flags it `contradicted` for the teacher.
+ *    `distinct` used to delete the question. Measured on 2026-10-12 over ~120
+ *    generated maths questions, it deleted correct ones far more often than
+ *    wrong ones: the model attaches a check for a different question than the
+ *    stem asks — «المميِّز» of x² − 4x + 4 = 0 checked as "solve the equation",
+ *    the maximum of −x² + 4x + 1 checked as its derivative — so SymPy answers
+ *    that other question and disagrees with a key that was right. A disagreement
+ *    is a reason for a teacher to look, not for the paper to lose a question.
  * 2. **An unreachable verifier changes nothing.** The verifier is a free-tier
  *    service that sleeps. Losing questions because it was asleep would be a far
  *    worse failure than shipping an unverified key, so the first unreachable
@@ -64,6 +71,8 @@ export type KeyVerificationCode =
   | "no_key"
   | "verifier_unreachable"
   | "undecided"
+  /** The verifier derived a different answer than the key. Kept, flagged — see rule 1 above. */
+  | "contradicted"
   /** The verifier was not asked: the answer it would have checked is not the answer this question is graded against. */
   | "key_unlinked"
   /** Was verified, then the teacher changed the question — the verdict no longer describes it. */
@@ -83,12 +92,12 @@ export type KeyVerification = {
 export interface KeyVerificationResult {
   /** Questions to insert, each with the verdict to store beside it. */
   kept: { question: GeneratedQuestion; verification: KeyVerification }[];
-  /** Dropped for a contradicted key, in the validator's own issue shape. */
-  dropped: { index: number; reason: string }[];
   warnings: string[];
   /** How many keys the verifier actually judged — the honest coverage number. */
   checked: number;
   verified: number;
+  /** How many keys the verifier disagreed with. Each is in `kept`, coded `contradicted`. */
+  contradicted: number;
 }
 
 const NOT_CHECKABLE = "no latin answer key to check";
@@ -98,18 +107,18 @@ export async function verifyAnswerKeys(
   relate: RelateKeyFn,
 ): Promise<KeyVerificationResult> {
   const kept: KeyVerificationResult["kept"] = [];
-  const dropped: { index: number; reason: string }[] = [];
   const warnings: string[] = [];
   const checkedAt = new Date().toISOString();
   let checked = 0;
   let verified = 0;
+  let contradicted = 0;
   let unlinked = 0;
   // Set on the first unreachable answer. Everything after it is kept
   // unverified without another 2.5s wait — thirty questions against a sleeping
   // verifier would otherwise stall a generation for over a minute.
   let verifierDown = false;
 
-  for (const [index, question] of questions.entries()) {
+  for (const question of questions) {
     const check = question.check;
     if (!check) {
       kept.push({
@@ -193,13 +202,22 @@ export async function verifyAnswerKeys(
     }
 
     if (result.relation === "distinct") {
-      // The one verdict that removes a teacher's question, so the reason names
-      // both keys: a teacher who asked for 15 and got 14 is owed the arithmetic.
-      dropped.push({
-        index,
-        reason:
-          `answer key contradicted by the maths verifier — it derives `
-          + `"${result.computed_answer ?? "?"}" where the key says "${check.answer}"`,
+      contradicted += 1;
+      // The reason names both answers: a teacher asked to look is owed the
+      // arithmetic. It may be the key that is wrong, or the check that asked
+      // the verifier a different question than the stem — only they can tell.
+      kept.push({
+        question,
+        verification: {
+          verified: false,
+          source: "unchecked",
+          code: "contradicted",
+          computedAnswer: result.computed_answer,
+          reason:
+            `the maths verifier derived "${result.computed_answer ?? "?"}" `
+            + `where the answer key says "${check.answer}"`,
+          checkedAt,
+        },
       });
       continue;
     }
@@ -230,14 +248,31 @@ export async function verifyAnswerKeys(
       "The maths verifier could not be reached, so no answer key was checked. "
         + "Nothing was removed from this paper.",
     );
-  } else if (dropped.length > 0) {
-    warnings.push(
-      `${dropped.length} question(s) were removed because the maths verifier `
-        + "contradicted their answer key.",
-    );
   }
 
-  return { kept, dropped, warnings, checked, verified };
+  return { kept, warnings, checked, verified, contradicted };
+}
+
+/**
+ * The warning a teacher reads about the questions the verifier disagreed with,
+ * built from the questions that are actually on the paper.
+ *
+ * Takes the final list rather than being computed inside `verifyAnswerKeys`
+ * because the route trims surplus questions afterwards, and a warning that
+ * names question 13 on a ten-question paper is worse than none. Numbers are
+ * 1-based positions, which is what the review screen shows.
+ */
+export function contradictionWarning(
+  kept: readonly { verification: KeyVerification }[],
+): string | null {
+  const lines = kept.flatMap((k, i) =>
+    k.verification.code === "contradicted" ? [`question ${i + 1}: ${k.verification.reason ?? ""}`] : [],
+  );
+  if (lines.length === 0) return null;
+  return (
+    `The maths verifier disagrees with the answer key of ${lines.length} question(s), so they are not marked `
+    + `verified. Check them before using the paper — either the key or the check may be wrong. ${lines.join("; ")}.`
+  );
 }
 
 /**
