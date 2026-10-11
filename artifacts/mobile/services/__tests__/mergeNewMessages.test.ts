@@ -8,7 +8,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { mergeNewMessages } from '../messageMerge.ts';
+import { mergeNewMessages, withoutPendingReactions } from '../messageMerge.ts';
 
 const msg = (id: string) => ({ id, body: id });
 
@@ -110,5 +110,70 @@ describe('mergeNewMessages — reactions', () => {
     const current: M[] = [{ id: 'a', seen: false, reactions: [r('👍', 1)] }];
     const polled: M[] = [{ id: 'a', seen: true, reactions: [r('👍', 2)] }];
     assert.deepEqual(mergeNewMessages(current, polled), [{ id: 'a', seen: true, reactions: [r('👍', 2)] }]);
+  });
+});
+
+describe('withoutPendingReactions — a poll must not undo a tap still in flight', () => {
+  // Same declared shape as the block above: the generic merge infers its type
+  // from both arguments, and `{ id }` next to `{ id, reactions }` would not typecheck.
+  type M = { id: string; seen?: boolean; body?: string; reactions?: { emoji: string; count: number; mine: boolean; userIds?: string[] }[] };
+  const r = (emoji: string, count: number, mine = false) => ({ emoji, count, mine });
+
+  it('blanks reactions only on messages whose request is in flight', () => {
+    const polled: M[] = [
+      { id: 'a', reactions: [r('👍', 2)] },
+      { id: 'b', reactions: [r('🙏', 1)] },
+    ];
+    const out = withoutPendingReactions(polled, new Set(['a']));
+    assert.equal(out[0]!.reactions, undefined);
+    assert.equal(out[1], polled[1], 'a message with nothing pending is passed through untouched');
+  });
+
+  it('keeps every other field of a pending message — seen and body survive', () => {
+    const polled: M[] = [{ id: 'a', seen: true, body: 'hello', reactions: [r('👍', 1)] }];
+    const out = withoutPendingReactions(polled, new Set(['a']));
+    assert.deepEqual(out, [{ id: 'a', seen: true, body: 'hello', reactions: undefined }]);
+  });
+
+  it('returns the same array when nothing is pending, so a quiet poll stays quiet', () => {
+    const polled: M[] = [{ id: 'a', reactions: [r('👍', 1)] }];
+    assert.equal(withoutPendingReactions(polled, new Set()), polled);
+  });
+
+  it('never mutates the polled page', () => {
+    const polled: M[] = [{ id: 'a', reactions: [r('👍', 1)] }];
+    const snapshot = JSON.parse(JSON.stringify(polled));
+    withoutPendingReactions(polled, new Set(['a']));
+    assert.deepEqual(polled, snapshot);
+  });
+
+  // The behaviour the screen relies on, end to end through the real merge.
+  // `held` is what the optimistic tap put on screen; `stale` is a poll that was
+  // issued before the PUT reached the server, so it still shows the old chips.
+  const held = (): M[] => [{ id: 'a', seen: false, reactions: [r('👍', 1, true)] }];
+  const stale = (): M[] => [
+    { id: 'b', reactions: [r('🙏', 1)] },
+    { id: 'a', seen: true, reactions: [] },
+  ];
+
+  it('control: WITHOUT the filter, a stale poll wipes the optimistic reaction', () => {
+    const merged = mergeNewMessages(held(), stale());
+    assert.deepEqual(merged.find(m => m.id === 'a')!.reactions, []);
+  });
+
+  it('WITH the filter, the optimistic reaction survives the stale poll', () => {
+    const merged = mergeNewMessages(held(), withoutPendingReactions(stale(), new Set(['a'])));
+    assert.deepEqual(merged.find(m => m.id === 'a')!.reactions, [r('👍', 1, true)]);
+  });
+
+  it('WITH the filter, the same poll still delivers everything else: new messages and seen', () => {
+    const merged = mergeNewMessages(held(), withoutPendingReactions(stale(), new Set(['a'])));
+    assert.deepEqual(merged.map(m => m.id), ['b', 'a'], 'the new message is added in front');
+    assert.equal(merged.find(m => m.id === 'a')!.seen, true, 'the read receipt still lands');
+  });
+
+  it('once the request settles (nothing pending) the poll is adopted again', () => {
+    const merged = mergeNewMessages(held(), withoutPendingReactions(stale(), new Set()));
+    assert.deepEqual(merged.find(m => m.id === 'a')!.reactions, []);
   });
 });

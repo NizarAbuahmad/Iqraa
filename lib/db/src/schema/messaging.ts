@@ -287,8 +287,13 @@ export const chatMessageReactions = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   t => [
+    // Leads with message_id, so it also serves every "reactions for these
+    // messages" lookup — a separate index on message_id alone would be a
+    // duplicate (migration 0003 had one; 0004 dropped it).
     unique("chat_message_reactions_unique").on(t.messageId, t.userId),
-    index("chat_message_reactions_message_idx").on(t.messageId),
+    // The users ON DELETE CASCADE has to find a deleted account's reactions;
+    // the unique key above cannot serve a user_id-only lookup.
+    index("chat_message_reactions_user_idx").on(t.userId),
   ],
 );
 
