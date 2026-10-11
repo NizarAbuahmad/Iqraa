@@ -127,7 +127,7 @@ export default function SchoolScreen() {
         {children === null && !error ? <ActivityIndicator color={ACCENT} style={{ marginTop: 40 }} /> : null}
 
         {isParent && children && children.length > 1 ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, flexDirection: rowDir }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[{ gap: 8, flexDirection: rowDir }, isRTL && { minWidth: '100%' }]}>
             {children.map(c => {
               const on = c.key === child?.key;
               return (
