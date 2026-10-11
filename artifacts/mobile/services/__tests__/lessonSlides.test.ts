@@ -64,7 +64,7 @@ const PLAN: LessonPlanOutput = {
   guidedPractice: 'حل تمرينين معًا.',
   independentPractice: 'حل ٤ تمارين فرديًا.',
   closure: 'لخّص الخطوات الثلاث.',
-  assessment: 'بطاقة خروج.',
+  assessment: 'غلق الدرس.',
   differentiation: 'أعطِ المتقدمين معادلة بمعاملات كسرية.',
   homework: 'تمارين ١-٦ صفحة ٧٢.',
 };

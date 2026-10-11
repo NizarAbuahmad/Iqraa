@@ -28,7 +28,7 @@ export function slideTeacherNotes(slide: ActivitySlide, isAr: boolean): NoteSect
   const questions = (Array.isArray(t?.suggestedQuestions) ? t!.suggestedQuestions! : [])
     .map(str).filter(Boolean);
   push(L('أسئلة مقترحة', 'Suggested questions'), questions.map(q => `• ${q}`).join('\n'));
-  push(L('التمايز', 'Differentiation'), str(t?.differentiationTips));
+  push(L('فروق فردية', 'Differentiation'), str(t?.differentiationTips));
   return out;
 }
 
