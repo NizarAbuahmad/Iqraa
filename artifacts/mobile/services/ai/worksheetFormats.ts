@@ -274,7 +274,7 @@ export function buildFormatSet(kinds: FormatKind[], ctx: FormatCtx): { built: Bu
 
 /**
  * Add the bank-built format questions to a live paper, numbered on from its
- * last answer. Kinds beyond `formatRoom` are trimmed (the model was asked for
+ * last question. Kinds beyond `formatRoom` are trimmed (the model was asked for
  * the full remainder), and a kind the lesson's bank cannot supply — or whose
  * build throws — is reported in `missingFormats`, never invented and never
  * allowed to discard a good paper. One session set covers the whole paper so
@@ -293,7 +293,9 @@ export function appendFormats(ws: WorksheetOutput, req: AIRequest, formats: Form
   const sections = [...ws.sections];
   const answerKey = [...ws.answerKey];
   const missing: FormatKind[] = [...(ws.missingFormats ?? []), ...trimmed];
-  let num = answerKey.reduce((m, k) => Math.max(m, k.num), 0) + 1;
+  // Numbered from the paper's flat question count: every consumer resolves a
+  // key by flat position, so a short or gapped model key must not shift it.
+  let num = ws.sections.reduce((n, s) => n + s.questions.length, 0) + 1;
   const { built, missing: unbuilt } = buildFormatSet(taken, { topic, kb, lang, subject: req.subject, session: new Set<string>(), points });
   missing.push(...unbuilt);
   for (const b of built) {

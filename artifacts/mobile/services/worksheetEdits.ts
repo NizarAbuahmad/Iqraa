@@ -126,6 +126,12 @@ export function applyWorksheetOptionEdit(
 /**
  * Set this question's answer directly — free-text edit, or a tap marking a
  * different option correct (the caller passes that option's own text).
+ *
+ * Drops the question's format as a reworded question does: صِل، رتّب and
+ * أين الخطأ؟ convert from `format` (pairs, order, wrongStep), not from the
+ * answer, so a kept format would auto-mark students against the key the
+ * teacher just corrected. The question stays, as plain text. ارسم keeps its
+ * format: its equations are the stem's, and its key IS the answer.
  */
 export function applyWorksheetAnswerEdit(
   ws: WorksheetOutput,
@@ -134,7 +140,9 @@ export function applyWorksheetAnswerEdit(
   next: string,
 ): WorksheetOutput {
   const flat = flatten(ws).map(f =>
-    f.sectionIndex === sectionIndex && f.questionIndex === questionIndex ? { ...withoutSolution(f), answer: next } : f,
+    f.sectionIndex === sectionIndex && f.questionIndex === questionIndex
+      ? { ...withoutSolution(f), question: f.question.format?.kind === 'graph' ? f.question : withoutFormat(f.question), answer: next }
+      : f,
   );
   return rebuild(ws, flat);
 }

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { applyWorksheetQuestionEdit } from '../worksheetEdits.ts';
+import { applyWorksheetQuestionEdit, applyWorksheetAnswerEdit } from '../worksheetEdits.ts';
 
 const ws = {
   title: 't', instructions: '',
@@ -16,5 +16,18 @@ describe('editing a formatted question', () => {
   it('changing points keeps it', () => {
     const out = applyWorksheetQuestionEdit(ws, 0, 0, { points: 5 });
     assert.equal(out.sections[0]!.questions[0]!.format?.kind, 'match');
+  });
+  it('correcting the key drops it — the converter would mark against the old pairs', () => {
+    // match/order/spot_error convert from `format`, not from `answer`, so a
+    // kept format auto-marks students against the key the teacher corrected.
+    const out = applyWorksheetAnswerEdit(ws, 0, 0, '١-ب');
+    assert.equal(out.sections[0]!.questions[0]!.format, undefined);
+    assert.equal(out.answerKey[0]!.answer, '١-ب');
+    assert.equal(out.sections[0]!.questions[0]!.text, 'صِل…');
+  });
+  it('correcting a graph\'s key keeps the grid — its equations are the stem\'s, its key is the answer', () => {
+    const g = { ...ws, sections: [{ type: 'graph', title: 'ارسم', questions: [{ text: 'ارسم', points: 3, format: { kind: 'graph', stem: 's', exprs: ['x'], window: { xMin: -5, xMax: 5, yMin: -5, yMax: 5 } } }] }] };
+    const out = applyWorksheetAnswerEdit(g, 0, 0, '(1 , 1)');
+    assert.equal(out.sections[0]!.questions[0]!.format?.kind, 'graph');
   });
 });
