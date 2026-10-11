@@ -131,6 +131,8 @@ describe('isNonTeacherRoute', () => {
       '/faq',
       '/delete-account',
       '/my-exams',
+      '/school',
+      '/school/anything',
       '/profile',
       '/join-class',
       '/claim-required',
@@ -183,6 +185,7 @@ describe('isNonTeacherRoute', () => {
     assert.equal(isNonTeacherRoute('/profiles'), false);
     assert.equal(isNonTeacherRoute('/curriculum-admin'), false);
     assert.equal(isNonTeacherRoute('/notificationsettings'), false);
+    assert.equal(isNonTeacherRoute('/schools'), false);
   });
 
   it('fails closed on no path', () => {
