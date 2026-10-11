@@ -28,6 +28,7 @@ import { quizBlockPoints, quizBlocks, quizInstructions, quizMarkRows, quizMarksT
 import { isolateForeignRuns, normalizeExponents } from './mathRender.ts';
 import { labQrSvg } from './labQr.ts';
 import { printStyleCss, type PrintStyle } from './printStyle.ts';
+import { FORMAT_CSS, formatBodyHTML, formatKeyExtraHTML } from './formatPrintHtml.ts';
 import { blankLine, hasOwnBlanks, optionColumns, unattachedFigures, worksheetInstructions, worksheetPointsTotal } from './worksheetPaper.ts';
 import { displayObjective } from './objectiveDisplay.ts';
 import type {
@@ -214,7 +215,7 @@ function htmlBase(
     }
     /* Writing room: a worksheet a student answers ON needs ruled space. */
     .q-lines { margin-top: 8px; }
-    .q-rule { border-bottom: 1px solid #d1d5db; height: 20px; }
+    .q-rule { border-bottom: 1px solid #d1d5db; height: 20px; }${FORMAT_CSS}
     /* Answer key stays green — it is the one block that is not about the
        document's own accent but about being obviously the teacher's half. */
     .answer-key {
@@ -323,7 +324,7 @@ function escAttr(s: string): string {
  * here rather than at the 57 call sites so a new builder cannot forget it;
  * `escAttr` is the deliberate opt-out for the one URL attribute.
  */
-function esc(s: string): string {
+export function esc(s: string): string {
   // Null-safe via isolateForeignRuns, which two builders here relied on when
   // they each carried their own `s ?? ''` copy of this function.
   //
@@ -623,7 +624,11 @@ export function buildWorksheetHTML(
       const options = q.options
         ? `<div class="q-options${cols > 1 ? ` q-options-${cols}` : ''}">${q.options.map((o, oi) => optionRowHTML(o, oi, isAr)).join('')}</div>`
         : '';
-      const text = printableQuestionText(q.text);
+      // A structured format brings its own body and its own writing space, and
+      // its head is the stem alone: `q.text` is the whole question in plain
+      // text, which would print the steps or pairs a second time.
+      const fmt = q.format;
+      const text = printableQuestionText(fmt ? fmt.stem : q.text);
       // Somewhere to write. A worksheet is the one document a student fills
       // in, and this printed multiple-choice options or nothing at all — so
       // every short-answer question arrived as a sentence floating above the
@@ -631,10 +636,10 @@ export function buildWorksheetHTML(
       // Options mean the answer goes in the margin, so the rules are only for
       // questions that have none.
       // A half-solved question already has its numbered blanks to write on.
-      const room = q.options || hasOwnBlanks(text) ? '' : `<div class="q-lines">${ANSWER_RULES.map(() => '<div class="q-rule"></div>').join('')}</div>`;
+      const room = fmt || q.options || hasOwnBlanks(text) ? '' : `<div class="q-lines">${ANSWER_RULES.map(() => '<div class="q-rule"></div>').join('')}</div>`;
       const html = `<div class="q-card">`
         + `<div class="q-head"><span class="q-num">${qNum}</span><span class="q-text q-break">${questionBodyHTML(text)}</span></div>`
-        + `${questionFigureHTML(q.figure)}${options}${room}`
+        + `${questionFigureHTML(q.figure)}${fmt ? formatBodyHTML(fmt, isAr) : options}${room}`
         + `<div class="q-pts">${L(arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط'), `${q.points} pts`)}</div>`
         + `</div>`;
       qNum++;
@@ -643,12 +648,18 @@ export function buildWorksheetHTML(
     return `<div class="section">${sectionBand(sec.title, SECTION_GLYPHS[si % SECTION_GLYPHS.length]!, DOC_ACCENT.worksheet, isAr)}${questions}</div>`;
   }).join('');
 
+  // Key rows map to questions by flat position, as `buildDeckFromWorksheet` does.
+  const flat = ws.sections.flatMap(sec => sec.questions);
   const akRows = includeAnswers
-    ? ws.answerKey?.map(item => item.solution?.length
-      ? `<div class="answer-row"><span class="answer-num">${item.num}.</span><div class="answer-body"><span>${esc(item.answer)}</span>`
-        + `<ol class="solution">${item.solution.map(line => `<li>${esc(line)}</li>`).join('')}</ol></div></div>`
-      : `<div class="answer-row"><span class="answer-num">${item.num}.</span><span>${esc(item.answer)}</span></div>`
-    ).join('') ?? ''
+    ? ws.answerKey?.map(item => {
+      const extra = formatKeyExtraHTML(flat[item.num - 1]?.format ?? null, isAr);
+      return item.solution?.length
+        ? `<div class="answer-row"><span class="answer-num">${item.num}.</span><div class="answer-body"><span>${esc(item.answer)}</span>`
+          + `<ol class="solution">${item.solution.map(line => `<li>${esc(line)}</li>`).join('')}</ol>${extra}</div></div>`
+        : extra
+          ? `<div class="answer-row"><span class="answer-num">${item.num}.</span><div class="answer-body"><span>${esc(item.answer)}</span>${extra}</div></div>`
+          : `<div class="answer-row"><span class="answer-num">${item.num}.</span><span>${esc(item.answer)}</span></div>`;
+    }).join('') ?? ''
     : '';
 
   const answerKey = akRows

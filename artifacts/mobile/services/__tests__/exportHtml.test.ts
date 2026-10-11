@@ -581,3 +581,53 @@ describe('exponent notation on the printed page', () => {
     assert.ok(!/\^\{/.test(html) && !/2\^7/.test(html));
   });
 });
+
+describe('worksheet formats', () => {
+  const FIX = 'FIX-TEXT-أصلح';
+  const WHY = 'WHY-TEXT-لأن';
+  const formatted = (): WorksheetOutput => ({
+    instructions: 'أجب.',
+    sections: [{
+      title: 'صيغ',
+      questions: [
+        { text: 'plain match text', points: 2, format: { kind: 'match', stem: 'صِل كل مسألة بحلّها', left: ['2^x = 8', '3^x = 9'], right: ['2', '3'], pairs: [1, 0] } },
+        { text: 'plain order text', points: 2, format: { kind: 'order', stem: 'رتّب الخطوات', steps: ['خطوة أ', 'خطوة ب'], order: [1, 0] } },
+        { text: 'plain spot text', points: 2, format: { kind: 'spot_error', stem: 'جد الخطأ', steps: ['س + 1 = 3', 'س = 3'], wrongStep: 1, fix: FIX, why: WHY } },
+        { text: 'plain graph text', points: 2, format: { kind: 'graph', stem: 'ارسم المنحنى', exprs: ['x² − 4'], window: { xMin: -4, xMax: 4, yMin: -5, yMax: 5 } } },
+      ],
+    }],
+    answerKey: [
+      { num: 1, answer: '1-ب، 2-أ' },
+      { num: 2, answer: 'ب ثم أ' },
+      { num: 3, answer: '2', solution: [FIX, WHY] },
+      { num: 4, answer: 'قطع مكافئ' },
+    ],
+  }) as unknown as WorksheetOutput;
+
+  it('a match question prints its table and no answer lines inside its card', () => {
+    const ws = formatted();
+    ws.sections[0]!.questions = [ws.sections[0]!.questions[0]!];
+    ws.answerKey = [{ num: 1, answer: 'x' }];
+    const html = buildWorksheetHTML(ws, 'ورقة', meta, true, [], false);
+    assert.ok(html.includes('fmt-match'));
+    const card = html.slice(html.indexOf('<div class="q-card">'), html.indexOf('</table>'));
+    assert.ok(!card.includes('q-lines'), 'the format brings its own writing space');
+    assert.ok(!html.includes('plain match text'), 'the head is the stem, not the flattened text');
+    assert.ok(html.includes('صِل كل مسألة'));
+  });
+
+  it('the student copy carries no fix, no why and no curve', () => {
+    const html = buildWorksheetHTML(formatted(), 'ورقة', meta, true, [], false);
+    assert.ok(!html.includes(FIX) && !html.includes(WHY));
+    assert.ok(!/<polyline|<path/.test(html));
+    assert.ok(html.includes('<svg'), 'the empty grid is there');
+  });
+
+  it('the teacher copy draws the curve in the graph question key row only', () => {
+    const html = buildWorksheetHTML(formatted(), 'ورقة', meta, true, [], true);
+    assert.equal((html.match(/<polyline/g) ?? []).length, 1);
+    const key = html.slice(html.indexOf('answer-key"'));
+    assert.ok(key.includes('<polyline'));
+    assert.ok(!html.slice(0, html.indexOf('answer-key"')).includes('<polyline'));
+  });
+});
