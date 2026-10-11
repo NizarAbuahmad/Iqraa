@@ -25,7 +25,7 @@ import { and, asc, desc, eq, gte, ilike, isNotNull, isNull, lt, or, sql } from "
 import { getBudgetStatus, getUserBudgetLimitUsd } from "../lib/aiBudget.js";
 import { currentPeriodStart } from "../lib/aiUsageLog.js";
 import { RATE_LIMITS } from "../lib/rateLimit.js";
-import { parseDateRange, parseMetricInput, parseSiteSignup, siteKeyMatches, toCsv, UUID } from "../lib/adminMetrics.js";
+import { parseDateRange, parseMetricInput, parsePublicIdea, parseSiteSignup, siteKeyMatches, toCsv, UUID } from "../lib/adminMetrics.js";
 import {
   authMiddleware,
   requireRole,
@@ -110,7 +110,11 @@ router.get("/admin/usage-summary", authMiddleware, requireRole(...ADMIN_ROLES), 
       db
         .select({
           google: sql<number>`count(${users.googleId})::int`,
-          password: sql<number>`count(*) filter (where ${users.googleId} is null)::int`,
+          // Password accounts only: a parent or student who signed up from a
+          // teacher's code has neither, and counting them here would make the
+          // split say "password" for a child who has never typed one.
+          password: sql<number>`count(*) filter (where ${users.googleId} is null and ${users.passwordHash} is not null)::int`,
+          codeOnly: sql<number>`count(*) filter (where ${users.googleId} is null and ${users.passwordHash} is null and ${users.loginCodeHash} is not null)::int`,
         })
         .from(users),
       // "Active" = generated something with AI or saved a material. Logging in
@@ -172,6 +176,7 @@ router.get("/admin/usage-summary", authMiddleware, requireRole(...ADMIN_ROLES), 
         .select({
           waitlist: sql<number>`count(*) filter (where ${siteSignups.kind} = 'waitlist')::int`,
           contact: sql<number>`count(*) filter (where ${siteSignups.kind} = 'contact')::int`,
+          idea: sql<number>`count(*) filter (where ${siteSignups.kind} = 'idea')::int`,
         })
         .from(siteSignups),
     ]);
@@ -454,7 +459,7 @@ router.get("/admin/signups", authMiddleware, requireRole(...ADMIN_ROLES), async 
       return;
     }
     const where = and(
-      kind === "waitlist" || kind === "contact" ? eq(siteSignups.kind, kind) : undefined,
+      kind === "waitlist" || kind === "contact" || kind === "idea" ? eq(siteSignups.kind, kind) : undefined,
       range.from ? gte(siteSignups.createdAt, range.from) : undefined,
       range.to ? lt(siteSignups.createdAt, range.to) : undefined,
     );
@@ -560,6 +565,38 @@ router.get("/admin/ai-costs", authMiddleware, requireRole(...ADMIN_ROLES), async
  * copy the dashboard can count.
  */
 const siteSignupLimiter = createRateLimiter({ windowMs: 60 * 1000, max: 60, name: "site-signups" });
+
+// «اقترح ميزة» for visitors with no account. Unlike /site/signups there is no
+// shared key to check — the browser posts here directly — so the limits are
+// the defence: a person suggests a few ideas, not dozens, and the global cap
+// bounds how fast even many IPs together can fill the table.
+const publicIdeaIpLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, name: "site-ideas-ip" });
+const publicIdeaGlobalLimiter = createRateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 200,
+  name: "site-ideas-all",
+  key: () => "all",
+});
+
+router.post("/site/ideas", publicIdeaIpLimiter, publicIdeaGlobalLimiter, async (req, res) => {
+  const parsed = parsePublicIdea(req.body);
+  if ("spam" in parsed) {
+    // Looks like success, so a bot has nothing to learn from the response.
+    res.json({ ok: true });
+    return;
+  }
+  if ("error" in parsed) {
+    res.status(400).json({ error: parsed.error });
+    return;
+  }
+  try {
+    await db.insert(siteSignups).values(parsed);
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err }, "public idea insert failed");
+    res.status(500).json({ error: "Failed to store idea" });
+  }
+});
 
 router.post("/site/signups", siteSignupLimiter, async (req, res) => {
   if (!siteKeyMatches(process.env.SITE_INGEST_KEY, req.headers["x-site-key"])) {
