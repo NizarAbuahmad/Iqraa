@@ -63,7 +63,7 @@ export function formatLessonPlanText(
   lines.push(H(isAr ? 'التقييم' : 'Assessment'));
   lines.push(plan.assessment);
 
-  lines.push(H(isAr ? 'التمايز' : 'Differentiation'));
+  lines.push(H(isAr ? 'فروق فردية' : 'Differentiation'));
   lines.push(plan.differentiation);
 
   lines.push(H(isAr ? 'الواجب البيتي' : 'Homework'));
@@ -272,7 +272,7 @@ export function formatActivityText(
   lines.push(H(isAr ? 'نصائح للمعلم' : 'Teacher Tips'));
   activity.teacherTips.forEach(tip => lines.push(`• ${tip}`));
 
-  lines.push(H(isAr ? 'التمايز' : 'Differentiation'));
+  lines.push(H(isAr ? 'فروق فردية' : 'Differentiation'));
   lines.push(activity.differentiation);
 
   lines.push(H(isAr ? 'التقييم' : 'Assessment'));

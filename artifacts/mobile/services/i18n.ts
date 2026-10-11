@@ -649,7 +649,7 @@ const translations = {
     sectionMainActivity: 'النشاط الرئيسي',
     sectionClosure: 'الختام',
     sectionAssessment: 'التقويم',
-    sectionDifferentiation: 'التمايز',
+    sectionDifferentiation: 'فروق فردية',
     sectionHomework: 'الواجب البيتي',
 
     // Worksheet generator
@@ -1137,7 +1137,7 @@ const translations = {
     lessonFlowStepActivity: 'النشاط التفاعلي',
     lessonFlowStepGuided: 'التدريب الموجّه',
     lessonFlowStepWorksheet: 'ورقة العمل',
-    lessonFlowStepExitTicket: 'بطاقة الخروج',
+    lessonFlowStepExitTicket: 'غلق الدرس',
     lessonFlowLaunchClassroom: 'اعرض على شاشة الصف',
     lessonFlowExportAll: 'صدّر الكل PDF',
     lessonFlowSaveFlow: 'احفظ المسار',
@@ -1287,6 +1287,9 @@ const translations = {
     // Live-AI answers, and anything else not drawn from the bank: nothing and
     // nobody checked them, so the teacher has to.
     answersUnreviewedAll: 'لم يتحقّق أي مصدر مُراجَع من هذه الإجابات، وقد وُلِّدت تلقائيًا — راجعها بنفسك قبل التوزيع',
+    // Step-by-step working a model wrote, as opposed to the offline bank's, which
+    // a person wrote and checked. See `workingProvenance`.
+    workingUnreviewed: 'الخطوات المكتوبة في هذه الورقة وُلِّدت بالذكاء الاصطناعي ولم يراجعها أحد — راجعها بنفسك قبل التوزيع',
     answersUnreviewedSome: (n: number, total: number) =>
       `لم يتحقّق أي مصدر مُراجَع من ${n} من أصل ${total} إجابة، وقد وُلِّدت تلقائيًا — راجعها بنفسك قبل التوزيع`,
     examplesAiUnverified: 'كتب الذكاء الاصطناعي المثال ولم يتحقّق أحد من إجابته — راجعها قبل العرض',
@@ -1297,7 +1300,7 @@ const translations = {
     activityBingoDesc: 'استدعِ المصطلحات وشطّب المربعات — أول من يكمل صفًا يفوز',
     activityRelayTitle: 'سباق التتابع',
     activityRelayDesc: 'سلسلة من 4–6 مسائل متصلة — كل إجابة تفتح التالية',
-    activityExitTitle: 'بطاقة الخروج',
+    activityExitTitle: 'غلق الدرس',
     activityExitDesc: '3–5 أسئلة سريعة في نهاية الحصة للتحقق من الفهم',
     activityErrorTitle: 'المحقق الرياضي',
     activityErrorDesc: 'اعثر على الخطأ في الحل وصحّحه — تعلّم عبر اكتشاف الأخطاء',
@@ -1486,7 +1489,7 @@ const translations = {
     misconceptionsLabel: 'الأخطاء الشائعة',
     teachingTipsLabel2: 'نصائح التدريس',
     suggestedQuestionsLabel: 'أسئلة مقترحة',
-    differentiationLabel: 'التمايز',
+    differentiationLabel: 'فروق فردية',
     slideTypeIntro: 'تمهيد',
     slideTypeChallenge: 'تحدٍّ',
     slideTypeReveal: 'كشف',
@@ -1673,7 +1676,7 @@ const translations = {
     parentContactsAllGood: 'وصلت رسالةٌ إلى أسرة كل طالب خلال الشهر، ولم تقتصر أيٌّ منها على الملاحظات.',
     parentContactsTapHint: 'اضغط على اسم لكتابة رسالة لأسرته.',
     parentContactsUnread: (n: string) => `رسالة داخل إقرأ لم تُفتح منذ يومين أو أكثر (${n})`,
-    // Not «تحقّق سريع» and not «تذكرة الخروج» — the classroom-activity
+    // Not «تحقّق سريع» and not «غلق الدرس» — the classroom-activity
     // generator already owns both of those (`activityType: 'quick-check'` and
     // `'exit-ticket'`). This one belongs to the evaluations family, produces a
     // per-student record, and is named from that side of the app.
@@ -2178,14 +2181,14 @@ const translations = {
     onboardingSlide6Desc: 'مساعد يعرف كتب المنهاج: اسأله عن درس أو فكرة للشرح، ويدلّك على الأداة المناسبة بزرّ واحد.',
     onboardingSlide6Points: 'إجابات من كتب المنهاج\nأفكار للشرح والتمهيد\nيدلّك على الأداة المناسبة',
     onboardingSlide2Title: 'رحلة حصة كاملة في مسار واحد',
-    onboardingSlide2Desc: 'من الأهداف والتمهيد، إلى النشاط والتدريب وورقة العمل وبطاقة الخروج — تُبنى بالتتابع، لا قطعًا متفرقة.',
-    onboardingSlide2Points: 'الأهداف والتمهيد\nالنشاط والتدريب\nورقة العمل وبطاقة الخروج',
+    onboardingSlide2Desc: 'من الأهداف والتمهيد، إلى النشاط والتدريب وورقة العمل وغلق الدرس — تُبنى بالتتابع، لا قطعًا متفرقة.',
+    onboardingSlide2Points: 'الأهداف والتمهيد\nالنشاط والتدريب\nورقة العمل وغلق الدرس',
     onboardingSlide4Title: 'أدوات لكل لحظة في الحصة',
     onboardingSlide4Desc: 'شرائح تعرضها على السبورة، وتحدٍّ جماعي بلا هواتف، وأشكال من كتابك برقم صفحتها — جاهزة قبل الحصة وأثناءها.',
     onboardingSlide4Points: 'شرائح للعرض\nتحدٍّ جماعي بلا هواتف\nأشكال الكتاب برقم الصفحة',
     onboardingSlide7Title: 'أوراق عمل وبطاقات خروج في دقيقة',
-    onboardingSlide7Desc: 'ورقة عمل بمستويات صعوبة ومفتاح إجابة، وبطاقة خروج تعرف بها ما فهمه طلبتك قبل أن يغادروا الصف.',
-    onboardingSlide7Points: 'مستويات صعوبة متدرّجة\nمفتاح إجابة جاهز\nبطاقة خروج لآخر الحصة',
+    onboardingSlide7Desc: 'ورقة عمل بمستويات صعوبة ومفتاح إجابة، وغلق للدرس تعرف به ما فهمه طلبتك قبل أن يغادروا الصف.',
+    onboardingSlide7Points: 'مستويات صعوبة متدرّجة\nمفتاح إجابة جاهز\nغلق الدرس في آخر الحصة',
     onboardingSlide8Title: 'اختبار يجيب عنه الطلبة من هواتفهم',
     onboardingSlide8Desc: 'ولّد الاختبار من الدرس وشاركه برابط، فيجيب الطلبة من هواتفهم، وتُرصد علاماتهم وتصلك نتائج كل طالب.',
     onboardingSlide8Points: 'أسئلة من المنهاج\nمشاركة برابط\nرصد العلامات والنتائج',
@@ -3699,6 +3702,9 @@ const translations = {
     levelsPartial: 'Some levels could not be built. The ones that finished are shown; try the rest again later.',
     quizVerifiedNone: 'No answer was symbolically verified — keys come from the reviewed bank',
     answersUnreviewedAll: 'No reviewed source has checked these answers, and they were generated automatically — check them yourself before handing out',
+    // Step-by-step working a model wrote, as opposed to the offline bank's, which
+    // a person wrote and checked. See `workingProvenance`.
+    workingUnreviewed: 'The step-by-step working on this sheet was written by AI and nobody has reviewed it — check it yourself before handing out',
     answersUnreviewedSome: (n: number, total: number) =>
       `No reviewed source has checked ${n} of ${total} answers, and they were generated automatically — check them yourself before handing out`,
     examplesAiUnverified: "The example was written by AI and nobody has checked its answer — review it before class",
