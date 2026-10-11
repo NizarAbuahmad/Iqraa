@@ -1176,8 +1176,8 @@ export class MockAIService extends AIService {
     const kb = docs.present ? null : groundedKb(topic, lang, req.lessonId);
     // A paper built from the teacher's own file is grounded in that file.
     if (!docs.present) requireQuestionBank(topic, kb, req.subject);
-    const selectedTypes: string[] = (req.questionTypes as string[] | undefined)?.length
-      ? (req.questionTypes as string[])
+    const selectedTypes: string[] = req.questionTypes?.length
+      ? req.questionTypes
       : ['multiple_choice', 'short_answer'];
     // The four structured formats (صِل، رتّب، أين الخطأ؟، ارسم) are built by
     // `worksheetFormats.ts`, one question each, INSIDE the teacher's total.

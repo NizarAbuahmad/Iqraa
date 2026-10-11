@@ -1,0 +1,43 @@
+/**
+ * Which of the four format ticks («صِل»، «رتّب الخطوات»، «أين الخطأ؟»، «ارسم»)
+ * the worksheet screen shows, which it greys, and what a selection may keep.
+ *
+ * Kept out of the screen so it can be tested: screen files import
+ * `react-native` and cannot be loaded by `node --test`.
+ *
+ * Homework shares the screen but its generator never builds formats, so the
+ * ticks are not offered there AND a selection carried in (a saved material, a
+ * route param) is stripped before a request is built — hiding the ticks alone
+ * would leave a stale one riding along invisibly.
+ */
+import type { FormatKind } from '@workspace/math-practice';
+import { FORMAT_KINDS, isFormatKind } from './ai/worksheetFormats.ts';
+
+export type FormatAvailabilityMap = Record<FormatKind, boolean>;
+
+export interface TickContext {
+  isHomework: boolean;
+  availability: FormatAvailabilityMap;
+}
+
+/** The selection a teacher gets back when every ticked type is taken away. */
+export const DEFAULT_QUESTION_TYPES = ['multiple_choice', 'short_answer'] as const;
+
+export function formatTicks(ctx: TickContext): { shown: FormatKind[]; greyed: FormatKind[] } {
+  if (ctx.isHomework) return { shown: [], greyed: [] };
+  const shown = [...FORMAT_KINDS];
+  return { shown, greyed: shown.filter(k => !ctx.availability[k]) };
+}
+
+/**
+ * The selection with unavailable formats removed (all formats, for homework).
+ * Returns the SAME set when nothing changed so a state effect built on it does
+ * not loop. Never empty: a selection that was only formats falls back to the
+ * default ordinary types.
+ */
+export function sanitizeQuestionTypes<T extends string>(selected: Set<T>, ctx: TickContext): Set<T> {
+  const greyed = new Set<string>(formatTicks(ctx).greyed);
+  const keep = [...selected].filter(t => !isFormatKind(t) || (!ctx.isHomework && !greyed.has(t)));
+  if (keep.length === selected.size) return selected;
+  return new Set<T>(keep.length ? keep : (DEFAULT_QUESTION_TYPES as readonly string[] as T[]));
+}

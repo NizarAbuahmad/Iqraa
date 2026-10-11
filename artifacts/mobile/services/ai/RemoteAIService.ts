@@ -125,7 +125,7 @@ export class RemoteAIService extends AIService {
       async () => appendFormats(
         await postJSON<WorksheetOutput>('/generate/worksheet', requestWithoutFormats(req), opts),
         req,
-        splitFormatTypes((req.questionTypes ?? []) as string[]).formats,
+        splitFormatTypes(req.questionTypes ?? []).formats,
       ),
       () => this.fallback.generateWorksheet(req),
     );

@@ -217,7 +217,7 @@ export function fitFormats(
  * total minus the formats that fit, so formats count INSIDE the number picked.
  */
 export function requestWithoutFormats(req: AIRequest): AIRequest {
-  const { formats, rest } = splitFormatTypes((req.questionTypes ?? []) as string[]);
+  const { formats, rest } = splitFormatTypes(req.questionTypes ?? []);
   if (formats.length === 0) return req;
   const totalQ = worksheetTotal(req);
   const { taken } = fitFormats(formats, rest, totalQ);
@@ -273,7 +273,7 @@ export function appendFormats(ws: WorksheetOutput, req: AIRequest, formats: Form
   const topic = docs.present && docs.title ? docs.title : req.topic;
   const kb = docs.present ? null : ((req.lessonId ? getLessonById(req.lessonId) : null) ?? resolveGroundedKbLesson(topic, lang));
   const points = formatPoints(req.difficulty === 'easy' || req.difficulty === 'hard' ? req.difficulty : 'medium');
-  const rest = ((req.questionTypes ?? []) as string[]).filter(t => !isFormatKind(t));
+  const rest = (req.questionTypes ?? []).filter(t => !isFormatKind(t));
   const { taken, trimmed } = fitFormats(formats, rest, worksheetTotal(req));
   const sections = [...ws.sections];
   const answerKey = [...ws.answerKey];

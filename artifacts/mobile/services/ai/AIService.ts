@@ -97,7 +97,8 @@ export interface AIRequest {
   // Worksheet extras
   difficulty?: 'easy' | 'medium' | 'hard' | 'mixed';
   numQuestions?: number;
-  questionTypes?: Array<'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem'>;
+  /** The four format kinds ('match' …) are worksheet-only: the bank builds them (see worksheetFormats.ts). */
+  questionTypes?: Array<'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem' | 'match' | 'order' | 'spot_error' | 'graph'>;
   /** When true and priorKnowledge is non-empty, prepend a "مراجعة سابقة" warm-up.
    *  Shared by worksheet and lesson-plan generation. */
   includePriorReview?: boolean;

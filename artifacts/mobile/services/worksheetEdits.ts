@@ -78,8 +78,15 @@ export function answerFor(ws: WorksheetOutput, sectionIndex: number, questionInd
 const withoutSolution = ({ solution: _solution, ...rest }: FlatItem): FlatItem => rest;
 
 /**
+ * The same question without its structured format. A format (the pairs of a
+ * «صِل», the steps of a «رتّب») is built from the bank item the original words
+ * were written for; reworded, the structure no longer describes the question.
+ */
+const withoutFormat = ({ format: _format, ...rest }: WorksheetQuestion): WorksheetQuestion => rest;
+
+/**
  * Patch a question's own fields (text, points) — the answer is untouched. A new
- * `text` drops this row's working; a points-only edit keeps it.
+ * `text` drops this row's working and its format; a points-only edit keeps both.
  */
 export function applyWorksheetQuestionEdit(
   ws: WorksheetOutput,
@@ -89,7 +96,7 @@ export function applyWorksheetQuestionEdit(
 ): WorksheetOutput {
   const flat = flatten(ws).map(f =>
     f.sectionIndex === sectionIndex && f.questionIndex === questionIndex
-      ? { ...('text' in patch ? withoutSolution(f) : f), question: { ...f.question, ...patch } }
+      ? { ...('text' in patch ? withoutSolution(f) : f), question: { ...('text' in patch ? withoutFormat(f.question) : f.question), ...patch } }
       : f,
   );
   return rebuild(ws, flat);
