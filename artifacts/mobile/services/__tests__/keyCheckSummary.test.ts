@@ -22,6 +22,7 @@ const verified = () => question({ verified: true, source: 'sympy', code: 'verifi
 const noKey = () => question({ verified: false, source: 'unchecked', code: 'no_key' });
 const down = () => question({ verified: false, source: 'unchecked', code: 'verifier_unreachable' });
 const undecided = () => question({ verified: false, source: 'unchecked', code: 'undecided' });
+const contradicted = () => question({ verified: false, source: 'unchecked', code: 'contradicted' });
 
 const MATHS = 'mathematics';
 const CHEM = 'chemistry';
@@ -40,6 +41,10 @@ describe('summariseKeyChecks', () => {
   it('says the checker was down rather than blaming the questions', () => {
     // The distinction that matters most: keys existed, the verifier failed.
     assert.deepEqual(summariseKeyChecks([down(), down()], MATHS), { kind: 'verifier-down' });
+  });
+
+  it('never calls a paper "nothing checkable" when the verifier judged a key and disagreed', () => {
+    assert.deepEqual(summariseKeyChecks([contradicted(), noKey()], MATHS), { kind: 'silent' });
   });
 
   it('never reports an outage as "nothing checkable"', () => {
