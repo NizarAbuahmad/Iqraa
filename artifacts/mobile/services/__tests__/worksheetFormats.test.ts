@@ -32,7 +32,22 @@ describe('buildFormatQuestion', () => {
     const f = r.section.questions[0]!.format as any;
     assert.notEqual(f.steps[f.wrongStep], f.fix);
     assert.ok(r.key.answer.includes(f.fix));
-    assert.equal(r.key.solution![0], f.why);
+  });
+
+  it('spot_error: the reason joins the answer, the solution is the corrected working only', () => {
+    for (let k = 0; k < 10; k++) {
+      const r = buildFormatQuestion('spot_error', ctx(EXP))!;
+      const f = r.section.questions[0]!.format as any;
+      const [head, why] = r.key.answer.split('\n');
+      assert.match(head!, /^الخطوة [١-٩]: /);
+      assert.ok(head!.endsWith(f.fix), 'first line: «الخطوة N: <fix>»');
+      assert.equal(why, f.why, 'second line: the reason');
+      // The working's numbers line up with the student's numbered steps.
+      assert.equal(r.key.solution!.length, f.steps.length);
+      assert.equal(r.key.solution![f.wrongStep], f.fix);
+      assert.ok(!r.key.solution!.includes(f.why), 'the reason is not a numbered step');
+      f.steps.forEach((s: string, i: number) => { if (i !== f.wrongStep) assert.equal(r.key.solution![i], s); });
+    }
   });
 
   it('graph: equations and a window, no answer in the student text', () => {

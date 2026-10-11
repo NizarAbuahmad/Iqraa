@@ -54,6 +54,18 @@ export function normalizePlotExpr(e: string): string {
   return e.replace(/−/g, '-').replace(/²/g, '^2').replace(/³/g, '^3').replace(/×/g, '*');
 }
 
+/**
+ * The graph's equations a stem does not already state, as «y = …». A system
+ * item's problem lists its equations, so appending every expression showed
+ * each one twice. Compared with spacing and notation removed («y=x^2-2x» is
+ * «y = x² − 2x»). The api-server converter keeps its own copy of this rule.
+ */
+export function exprsMissingFromStem(stem: string, exprs: string[]): string[] {
+  const flat = (t: string) => normalizePlotExpr(t).replace(/\s+/g, '');
+  const have = flat(stem);
+  return exprs.filter(e => !have.includes(flat(`y = ${e}`))).map(e => `y = ${e}`);
+}
+
 type Win = { xMin: number; xMax: number; yMin: number; yMax: number };
 
 /**
@@ -146,9 +158,12 @@ export function buildFormatQuestion(
     format = { kind: 'spot_error', stem, steps: pick.steps, wrongStep: pick.wrongStep, fix: pick.correctLine, why: pick.why };
     text = [stem, ...pick.steps.map((s, i) => `${num(i + 1, lang)}) ${s}`)].join('\n');
     const real = pick.steps.map((s, i) => (i === pick.wrongStep ? pick.correctLine : s));
+    // The reason belongs to the answer, not to the working: listed as the
+    // working's first line it shifted every number by one, so «الخطوة ٤»'s fix
+    // sat at item 5 of the key. `solution[i]` is now step i+1 of the paper.
     key = {
-      answer: `${lang === 'ar' ? 'الخطوة' : 'Step'} ${num(pick.wrongStep + 1, lang)}: ${pick.correctLine}`,
-      solution: [pick.why, ...real],
+      answer: `${lang === 'ar' ? 'الخطوة' : 'Step'} ${num(pick.wrongStep + 1, lang)}: ${pick.correctLine}\n${pick.why}`,
+      solution: real,
     };
   } else if (kind === 'graph' && 'exprs' in pick) {
     const stem = (lang === 'ar' ? 'ارسم في المستوى الإحداثي ثم أجب:' : 'Draw on the grid, then answer:') + '\n' + pick.problem;

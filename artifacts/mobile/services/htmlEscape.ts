@@ -12,6 +12,16 @@ export function escAttr(s: string): string {
 }
 
 /**
+ * `esc` with the text's line breaks kept as `<br>`, each line escaped and
+ * isolated on its own. For text that is several lines by construction — a
+ * system of equations, a key answer followed by its reason — where layout's
+ * whitespace collapsing would run the lines together.
+ */
+export function escLines(s: string): string {
+  return (s ?? '').split('\n').map(esc).join('<br>');
+}
+
+/**
  * Escape *and* bidi-isolate. Every text node in this file is model-written
  * Arabic that can carry an equation, and a printed worksheet reordering
  * «f(x) = 2x⁴ - x² + 3» is the same bug the screens had — a teacher hands it

@@ -14,13 +14,16 @@
 import type { WorksheetQuestionFormat } from './ai/AIService.ts';
 import { normalizePlotExpr } from './ai/worksheetFormats.ts';
 import { samplePlot } from './deckVisuals.ts';
-import { esc } from './htmlEscape.ts';
+// `escLines` for every cell that can hold a system: collapsed onto one line,
+// «x − y = 1» and «3ˣ = 9ʸ» printed as «x − y = 1 3ˣ = 9ʸ», which reads «13ˣ».
+import { esc, escLines } from './htmlEscape.ts';
 import { toArabicDigits } from './labFormat.ts';
 import { optionLetter } from './optionLabels.ts';
 
 type Win = { xMin: number; xMax: number; yMin: number; yMax: number };
 
 const L = (isAr: boolean, ar: string, en: string) => (isAr ? ar : en);
+
 const BOX = '<span class="fmt-box"></span>';
 const RULE = '<div class="q-rule"></div>';
 
@@ -41,14 +44,22 @@ export const FORMAT_CSS = `
     .fmt-line { display: flex; flex-direction: row; align-items: flex-end; gap: 8px; margin-top: 8px; font-size: 12.5px; }
     .fmt-line .exam-blank { max-width: 60px; }
     .fmt-label { font-size: 12.5px; margin-top: 8px; }
-    .fmt-grid { display: block; margin: 6px auto; max-width: 100%; height: auto; direction: ltr; }
+    .fmt-grid-row { width: 100%; }
+    .fmt-grid-wrap { position: relative; margin: 6px auto; max-width: 100%; direction: ltr; break-inside: avoid; page-break-inside: avoid; }
+    .fmt-grid { display: block; width: 100%; height: auto; }
     .fmt-grid .g-line { stroke: #d0d5dd; stroke-width: 0.5; }
     .fmt-grid .g-axis { stroke: #111827; stroke-width: 1.2; }
-    .fmt-grid text { font-size: 9px; fill: #374151; font-family: inherit; }
+    .g-lbl { position: absolute; width: 28px; font-size: 9px; line-height: 10px; color: #374151; white-space: nowrap; }
+    .g-lbl-middle { margin-left: -14px; text-align: center; }
+    .g-lbl-end { margin-left: -28px; text-align: right; }
+    .g-lbl-start { text-align: left; }
     .fmt-curve { fill: none; stroke: #1d4ed8; stroke-width: 1.8; stroke-linejoin: round; }
     .fmt-curve-1 { stroke: #dc2626; }
     .fmt-curve-2 { stroke: #15803d; }
-    .fmt-legend { font-size: 11.5px; margin: 2px 0 4px; }`;
+    .fmt-legend { font-size: 11.5px; margin: 2px 0 4px; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 18px; }
+    .fmt-leg-item { display: inline-flex; align-items: center; gap: 6px; direction: ltr; }
+    .fmt-swatch { display: inline-block; flex-shrink: 0; }
+    .fmt-key, .answer-row.ak-graph { break-inside: avoid; page-break-inside: avoid; }`;
 
 function fmtNum(n: number, isAr: boolean): string {
   const s = String(n).replace('-', '−');
@@ -125,21 +136,6 @@ export function gridSvg(
   }
   parts.push(`<line class="g-axis" x1="${r1(left)}" y1="${r1(axisY)}" x2="${r1(right)}" y2="${r1(axisY)}"/>`);
   parts.push(`<line class="g-axis" x1="${r1(axisX)}" y1="${r1(top)}" x2="${r1(axisX)}" y2="${r1(bottom)}"/>`);
-  for (let x = x0; x <= x1; x++) {
-    if (x === 0 || x % stepX !== 0) continue;
-    parts.push(`<text x="${r1(f.px(x))}" y="${r1(Math.min(axisY + 11, bottom + 12))}" text-anchor="middle">${fmtNum(x, isAr)}</text>`);
-  }
-  for (let y = y0; y <= y1; y++) {
-    if (y === 0 || y % stepY !== 0) continue;
-    parts.push(`<text x="${r1(Math.max(axisX - 4, left - 3))}" y="${r1(f.py(y) + 3)}" text-anchor="end">${fmtNum(y, isAr)}</text>`);
-  }
-  // The origin only exists when 0 is inside both ranges; otherwise the axes sit
-  // on the window's edge and a «٠» there would label a point that is not 0.
-  if (win.xMin <= 0 && win.xMax >= 0 && win.yMin <= 0 && win.yMax >= 0) {
-    parts.push(`<text x="${r1(axisX - 4)}" y="${r1(axisY + 11)}" text-anchor="end">${fmtNum(0, isAr)}</text>`);
-  }
-  parts.push(`<text x="${r1(right + 3)}" y="${r1(axisY + 3)}" text-anchor="start">${isAr ? 'س' : 'x'}</text>`);
-  parts.push(`<text x="${r1(axisX + 5)}" y="${r1(top - 2)}" text-anchor="start">${isAr ? 'ص' : 'y'}</text>`);
 
   (opts.exprs ?? []).forEach((e, i) => {
     for (const run of curveRuns(e, win)) {
@@ -148,7 +144,33 @@ export function gridSvg(
     }
   });
 
-  return `<svg class="fmt-grid" xmlns="http://www.w3.org/2000/svg" width="${f.width}" height="${f.height}" viewBox="0 0 ${f.width} ${f.height}" direction="ltr">${parts.join('')}</svg>`;
+  // The labels are HTML laid over the SVG, not SVG <text>: the web PDF export
+  // (html2canvas) mis-sizes an inline SVG that holds text and cuts the grid
+  // off part-way across (driven 2026-10-11). Positions are percentages of the
+  // drawing so they stay on their ticks when the grid is scaled.
+  const labels: string[] = [];
+  const label = (x: number, y: number, anchor: 'start' | 'middle' | 'end', text: string) => {
+    const pos = `left:${r1((x / f.width) * 100)}%;top:${r1(((y - 8) / f.height) * 100)}%`;
+    labels.push(`<span class="g-lbl g-lbl-${anchor}" style="${pos}">${text}</span>`);
+  };
+  for (let x = x0; x <= x1; x++) {
+    if (x === 0 || x % stepX !== 0) continue;
+    label(f.px(x), Math.min(axisY + 11, bottom + 12), 'middle', fmtNum(x, isAr));
+  }
+  for (let y = y0; y <= y1; y++) {
+    if (y === 0 || y % stepY !== 0) continue;
+    label(Math.max(axisX - 4, left - 3), f.py(y) + 3, 'end', fmtNum(y, isAr));
+  }
+  // The origin only exists when 0 is inside both ranges; otherwise the axes sit
+  // on the window's edge and a «٠» there would label a point that is not 0.
+  if (win.xMin <= 0 && win.xMax >= 0 && win.yMin <= 0 && win.yMax >= 0) {
+    label(axisX - 4, axisY + 11, 'end', fmtNum(0, isAr));
+  }
+  label(right + 3, axisY + 3, 'start', isAr ? 'س' : 'x');
+  label(axisX + 5, top - 2, 'start', isAr ? 'ص' : 'y');
+
+  const svg = `<svg class="fmt-grid" xmlns="http://www.w3.org/2000/svg" width="${f.width}" height="${f.height}" viewBox="0 0 ${f.width} ${f.height}">${parts.join('')}</svg>`;
+  return `<div class="fmt-grid-wrap" dir="ltr" style="width:${f.width}px">${svg}${labels.join('')}</div>`;
 }
 
 /**
@@ -187,10 +209,10 @@ export function formatBodyHTML(f: WorksheetQuestionFormat, isAr: boolean): strin
       const body: string[] = [];
       for (let i = 0; i < rows; i++) {
         const prob = i < f.left.length
-          ? `<div class="fmt-prob-row">${BOX}<span>${isAr ? toArabicDigits(String(i + 1)) : i + 1}.</span><span>${esc(f.left[i]!)}</span></div>`
+          ? `<div class="fmt-prob-row">${BOX}<span>${isAr ? toArabicDigits(String(i + 1)) : i + 1}.</span><span>${escLines(f.left[i]!)}</span></div>`
           : '';
         const ans = i < f.right.length
-          ? `<span><b>${optionLetter(i, isAr)}</b> ${esc(f.right[i]!)}</span>`
+          ? `<span><b>${optionLetter(i, isAr)}</b> ${escLines(f.right[i]!)}</span>`
           : '';
         body.push(`<tr><td class="fmt-prob">${prob}</td><td class="fmt-ans">${ans}</td></tr>`);
       }
@@ -198,22 +220,30 @@ export function formatBodyHTML(f: WorksheetQuestionFormat, isAr: boolean): strin
     }
     case 'order':
       return `<div class="fmt-order">${f.steps
-        .map((s, i) => `<div class="fmt-card">${BOX}<b>${optionLetter(i, isAr)})</b> <span>${esc(s)}</span></div>`)
+        .map((s, i) => `<div class="fmt-card">${BOX}<b>${optionLetter(i, isAr)})</b> <span>${escLines(s)}</span></div>`)
         .join('')}</div>`;
     case 'spot_error':
-      return `<ol class="fmt-steps">${f.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol>`
+      return `<ol class="fmt-steps">${f.steps.map(s => `<li>${escLines(s)}</li>`).join('')}</ol>`
         + `<div class="fmt-line"><span>${L(isAr, 'رقم الخطوة الخاطئة', 'Number of the wrong step')}:</span><span class="exam-blank"></span></div>`
         + `<div class="fmt-label">${L(isAr, 'التصحيح', 'Correction')}:</div>`
         + `<div class="q-lines">${RULE}${RULE}</div>`;
     case 'graph':
-      return gridSvg(f.window, { isAr })
+      return `<div class="fmt-grid-row">${gridSvg(f.window, { isAr })}</div>`
         + `<div class="fmt-label">${L(isAr, 'الإجابة', 'Answer')}:</div><div class="q-lines">${RULE}</div>`;
   }
+}
+
+/** A short sample of curve `i`'s stroke, styled by the same classes as the curve. */
+function legendSwatch(i: number): string {
+  return `<svg class="fmt-swatch" xmlns="http://www.w3.org/2000/svg" width="26" height="10" viewBox="0 0 26 10"><line class="fmt-curve fmt-curve-${i % 3}" x1="1" y1="5" x2="25" y2="5"/></svg>`;
 }
 
 /** The teacher's key: the graph drawn on its grid. Empty for every other kind. */
 export function formatKeyExtraHTML(f: WorksheetQuestionFormat | null | undefined, isAr: boolean): string {
   if (!f || f.kind !== 'graph') return '';
-  const legend = f.exprs.map(e => `<span>${isAr ? 'ص' : 'y'} = ${esc(e)}</span>`).join(' &nbsp; ');
+  // The paper's own convention, «y = …» in latin on both papers, never a «ص»
+  // beside a latin x. Each entry carries a sample of its line, so the colour —
+  // or the ink-saver dash — says which curve is which.
+  const legend = f.exprs.map((e, i) => `<span class="fmt-leg-item" dir="ltr">${legendSwatch(i)}${esc(`y = ${e}`)}</span>`).join('');
   return `<div class="fmt-key">${gridSvg(f.window, { isAr, exprs: f.exprs })}<div class="fmt-legend">${legend}</div></div>`;
 }

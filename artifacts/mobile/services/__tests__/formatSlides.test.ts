@@ -19,7 +19,7 @@ const ws = {
     { num: 1, answer: '١-ب، ٢-أ' },
     { num: 2, answer: '(1 ، 2)' },
     { num: 3, answer: 'ج، أ، ب', solution: ['SOLSTEP-A', 'SOLSTEP-B', 'SOLSTEP-C'] },
-    { num: 4, answer: 'الخطوة ٢: FIXTEXT', solution: ['WHYTEXT', 'S1TEXT', 'FIXTEXT'] },
+    { num: 4, answer: 'الخطوة ٢: FIXTEXT\nWHYTEXT', solution: ['S1TEXT', 'FIXTEXT'] },
   ],
 } as any;
 
@@ -104,7 +104,8 @@ describe('formats on the projector', () => {
   it('live deck: order is lettered steps, spot_error numbered, graph the equations', () => {
     const deck = buildDeckFromWorksheet(ws, 't', true);
     const qs = deck.slides.filter(s => s.type === 'challenge');
-    assert.match(qs[1]!.content, /ص = x \+ 1/);
+    assert.match(qs[1]!.content, /^y = x \+ 1$/m, 'an equation the stem lacks is added, in the paper\'s latin');
+    assert.ok(!qs[1]!.content.includes('ص'), 'never «ص = x»');
     assert.match(qs[2]!.content, /أ\) ALPHASTEP/);
     assert.match(qs[2]!.content, /ج\) GAMMASTEP/);
     assert.match(qs[3]!.content, /١\) S1TEXT/);
@@ -176,5 +177,64 @@ describe('htmlEscape', () => {
   it('is the same esc exportHtml re-exports', async () => {
     const mod = await import('../exportHtml.ts');
     assert.equal(mod.esc, esc);
+  });
+});
+
+describe('fix round 1 (2026-10-11 drive)', () => {
+  const graphWs = (stem: string, exprs: string[]) => ({
+    title: 't', instructions: '',
+    sections: [{ type: 'graph', title: 'ارسم', questions: [{ text: stem, points: 2, format: { kind: 'graph', stem, exprs, window: WIN } }] }],
+    answerKey: [{ num: 1, answer: '(0 ، 0) و (3 ، 3)' }],
+  }) as any;
+
+  it('live deck: equations already in the stem are not repeated', () => {
+    const stem = 'ارسم في المستوى الإحداثي ثم أجب:\nأوجد حلول النظام:\ny = x² − 2x\ny = x';
+    const c = buildDeckFromWorksheet(graphWs(stem, ['x² − 2x', 'x']), 't', true).slides.find(s => s.type === 'challenge')!.content;
+    assert.equal((c.match(/y = x² − 2x/g) ?? []).length, 1);
+    assert.equal(c.split('\n').filter(l => l.trim() === 'y = x').length, 1);
+    assert.ok(!c.includes('ص'));
+    // Spacing and notation do not count as a different equation.
+    const c2 = buildDeckFromWorksheet(graphWs('ارسم:\ny=x^2-2x', ['x² − 2x']), 't', true).slides.find(s => s.type === 'challenge')!.content;
+    assert.equal(c2.split('\n').filter(l => /y/.test(l)).length, 1);
+  });
+
+  it('slides export: a long key flows onto as many key slides as it needs, every row on one', () => {
+    const sol = ['first working line', 'second working line', 'third working line', 'fourth working line', 'fifth working line'];
+    const n = 14;
+    const long = {
+      title: 't', instructions: '',
+      sections: [{ type: 'short_answer', title: 'س', questions: [
+        ...Array.from({ length: n - 1 }, (_, i) => ({ text: `q${i}`, points: 1 })),
+        { text: 'g', points: 2, format: { kind: 'graph', stem: 'ارسم', exprs: ['x'], window: WIN } },
+      ] }],
+      answerKey: Array.from({ length: n }, (_, i) => ({ num: i + 1, answer: `ANS${i + 1}`, ...(i < n - 1 ? { solution: sol } : {}) })),
+    } as any;
+    const h = buildWorksheetSlidesHTML(long, 't', meta, true);
+    const keySlides = h.split('<div class="slide">').filter(sl => sl.includes('<div class="ak-grid">'));
+    assert.ok(keySlides.length > 1, `${keySlides.length} key slides`);
+    for (let i = 1; i <= n; i++) {
+      assert.equal(keySlides.filter(sl => sl.includes(`>ANS${i}<`) || sl.includes(`ANS${i}⁩`)).length, 1, `row ${i} on exactly one key slide`);
+    }
+    // The footer total counts every key slide.
+    const total = Number(/\d+ \/ (\d+)/.exec(h)![1]);
+    assert.equal((h.match(/<div class="slide[ "]/g) ?? []).length, total);
+  });
+
+  it('slides export: a short key stays on one slide', () => {
+    const h = buildWorksheetSlidesHTML(ws, 't', meta, true);
+    assert.equal(h.split('<div class="slide">').filter(sl => sl.includes('<div class="ak-grid">')).length, 1);
+  });
+
+  it('slides export: the empty grid is its own full-width row, at projector size', () => {
+    const h = buildWorksheetSlidesHTML(ws, 't', meta, true, [], false);
+    assert.match(h, /<div class="fmt-grid-row"><div class="fmt-grid-wrap"/);
+    assert.match(h, /\.q-card \.fmt-grid-row \{ width:100%; \}/);
+    assert.match(h, /\.q-card \.fmt-grid-wrap \{ width:400px !important; \}/);
+    assert.ok(!/\.q-card \.fmt-grid \{ max-height/.test(h), 'no 200px cap');
+  });
+
+  it('key answers keep their line breaks on the slide', () => {
+    const h = buildWorksheetSlidesHTML(ws, 't', meta, true);
+    assert.match(h, /FIXTEXT⁩?<br>⁦?WHYTEXT/);
   });
 });

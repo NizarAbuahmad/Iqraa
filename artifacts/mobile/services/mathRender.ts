@@ -458,7 +458,16 @@ function worthIsolating(run: string): boolean {
 }
 
 export function isolateForeignRuns(line: string): string {
-  return (line ?? '').replace(FOREIGN_RUN_RE, m => (worthIsolating(m) ? isolateRun(m) : m));
+  return (line ?? '').replace(FOREIGN_RUN_RE, m => {
+    // A sentence's closing full stop is not part of an equation before it:
+    // inside the isolate it printed on the wrong side, «3x − 3.» read
+    // «.3x − 3». A run never ends in a decimal point, so after maths (a run
+    // with an operator) trailing dots go back to the flow. A label such as
+    // «A.» keeps its dot.
+    const [, body, dots] = /^(.*?)(\s*\.*)$/su.exec(m)!;
+    if (dots && HAS_OPERATOR.test(body!)) return worthIsolating(body!) ? isolateRun(body!) + dots : m;
+    return worthIsolating(m) ? isolateRun(m) : m;
+  });
 }
 
 /**

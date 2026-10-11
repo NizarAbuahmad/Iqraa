@@ -26,7 +26,7 @@ import { arCountPhrase } from './arCount.ts';
 import { dateLocale } from './dateLabels.ts';
 import { quizBlockPoints, quizBlocks, quizInstructions, quizMarkRows, quizMarksTotal, quizStudentFields, quizTypeLabel } from './quizPaper.ts';
 import { isolateForeignRuns, normalizeExponents } from './mathRender.ts';
-import { esc, escAttr } from './htmlEscape.ts';
+import { esc, escAttr, escLines } from './htmlEscape.ts';
 import { labQrSvg } from './labQr.ts';
 import { printStyleCss, type PrintStyle } from './printStyle.ts';
 import { FORMAT_CSS, formatBodyHTML, formatKeyExtraHTML } from './formatPrintHtml.ts';
@@ -601,12 +601,15 @@ export function buildWorksheetHTML(
   const akRows = includeAnswers
     ? ws.answerKey?.map(item => {
       const extra = formatKeyExtraHTML(flat[item.num - 1]?.format ?? null, isAr);
+      // A row carrying a drawn graph is one unbreakable block, so the web PDF
+      // never cuts the graph across two pages.
+      const row = extra ? 'answer-row ak-graph' : 'answer-row';
       return item.solution?.length
-        ? `<div class="answer-row"><span class="answer-num">${item.num}.</span><div class="answer-body"><span>${esc(item.answer)}</span>`
+        ? `<div class="${row}"><span class="answer-num">${item.num}.</span><div class="answer-body"><span>${escLines(item.answer)}</span>`
           + `<ol class="solution">${item.solution.map(line => `<li>${esc(line)}</li>`).join('')}</ol>${extra}</div></div>`
         : extra
-          ? `<div class="answer-row"><span class="answer-num">${item.num}.</span><div class="answer-body"><span>${esc(item.answer)}</span>${extra}</div></div>`
-          : `<div class="answer-row"><span class="answer-num">${item.num}.</span><span>${esc(item.answer)}</span></div>`;
+          ? `<div class="${row}"><span class="answer-num">${item.num}.</span><div class="answer-body"><span>${escLines(item.answer)}</span>${extra}</div></div>`
+          : `<div class="answer-row"><span class="answer-num">${item.num}.</span><span>${escLines(item.answer)}</span></div>`;
     }).join('') ?? ''
     : '';
 
@@ -1112,8 +1115,9 @@ export function buildWorksheetSlidesHTML(
   // Total: title + (instructions if present: 1) + sections + answer key
   const hasInstructions = !!ws.instructions;
   const showAnswerKey = includeAnswers && !!ws.answerKey && ws.answerKey.length > 0;
+  const keyPages = showAnswerKey ? planKeySlides(ws) : [];
   const TOTAL = 1 + (hasInstructions ? 1 : 0) + (ws.workedExample ? 1 : 0) + ws.sections.length
-    + (showAnswerKey ? 1 : 0) + (figures.length ? 1 : 0);
+    + keyPages.length + (figures.length ? 1 : 0);
 
   const footer = (num: number) => `
     <div class="slide-footer">
@@ -1202,16 +1206,19 @@ export function buildWorksheetSlidesHTML(
     const working = item.solution?.length
       ? `<ol class="solution">${item.solution.map(line => `<li>${e(line)}</li>`).join('')}</ol>`
       : '';
-    return `<div class="ak-row${extra || working ? ' ak-wide' : ''}"><span class="ak-num">${item.num}.</span><span class="ak-ans">${e(item.answer)}${working}${extra}</span></div>`;
+    return `<div class="ak-row${extra || working ? ' ak-wide' : ''}"><span class="ak-num">${item.num}.</span><span class="ak-ans">${escLines(item.answer)}${working}${extra}</span></div>`;
   };
-  const akSlide = showAnswerKey ? `<div class="slide">
+  // As many key slides as the rows need: a slide is a fixed page with
+  // `overflow: hidden`, and one slide for the whole key silently cut off the
+  // working and the drawn graph of the last questions (driven 2026-10-11).
+  const akSlide = keyPages.map(page => `<div class="slide">
     ${header(L('مفتاح الإجابات', 'Answer Key'))}
     <div class="slide-body">
       <div class="ak-grid">
-        ${ws.answerKey!.map(akRow).join('')}
+        ${page.map(akRow).join('')}
       </div>
     </div>
-    ${footer(slideNum++)}</div>` : '';
+    ${footer(slideNum++)}</div>`).join('\n');
 
   return `<!DOCTYPE html>
 <html dir="${dir}" lang="${isAr ? 'ar' : 'en'}">
@@ -1255,10 +1262,15 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 .ak-wide { grid-column:1 / -1; }
 .ak-wide .solution { margin-top:3px; padding-${isAr ? 'right' : 'left'}:18px; color:#4b5563; }
 .ak-wide .solution li { font-size:10.5px; margin-bottom:1px; }
-.ak-wide .fmt-grid { max-height:190px; }
+.ak-wide .fmt-grid-wrap { width:300px !important; margin:6px 0; }
 ${FORMAT_CSS}
 .q-card .fmt-match, .q-card .fmt-order, .q-card .fmt-steps, .q-card .fmt-line, .q-card .fmt-label, .q-card .q-lines { width:100%; }
-.q-card .fmt-grid { max-height:200px; }
+/* On a slide the empty grid is the question: its own row, at projector size. */
+.q-card .fmt-grid-row { width:100%; }
+.q-card .fmt-grid-wrap { width:400px !important; }
+.q-card .g-lbl { font-size:13px; line-height:14px; width:34px; }
+.q-card .g-lbl-middle { margin-left:-17px; }
+.q-card .g-lbl-end { margin-left:-34px; }
 .q-card .fmt-steps li, .q-card .fmt-card, .q-card .fmt-match, .q-card .fmt-line, .q-card .fmt-label { font-size:11px; }
 .q-rule { border-bottom:1px solid #d1d5db; height:16px; }
 .exam-blank { flex:1; border-bottom:1px solid #9ca3af; height:16px; }
@@ -1275,6 +1287,48 @@ ${akSlide}
 ${figuresSlideHTML(figures, isAr, header, footer(TOTAL))}
 </body>
 </html>`;
+}
+
+/**
+ * The worksheet slides' answer key, cut into slides. Layout cannot be measured
+ * in a string builder, so rows are costed in CSS px of the key slide (rendered
+ * and checked in Chromium for the formats' worst cases): a row with working or
+ * a graph spans the slide (`ak-wide`) and grows with its lines; plain rows
+ * share grid lines, `KEY_COLS` to a line. A row that alone exceeds the budget
+ * still gets a slide of its own rather than being dropped.
+ */
+const KEY_BUDGET = 620;
+const KEY_COLS = 6;
+const KEY_LINE = 17;
+
+export function planKeySlides(ws: WorksheetOutput): WorksheetOutput['answerKey'][] {
+  const flat = ws.sections.flatMap(sec => sec.questions);
+  const pages: WorksheetOutput['answerKey'][] = [];
+  let page: WorksheetOutput['answerKey'] = [];
+  let used = 0;
+  let compactRun = 0; // plain rows on the current, unfinished grid line
+  for (const item of ws.answerKey ?? []) {
+    const graph = flat[item.num - 1]?.format?.kind === 'graph';
+    const lines = (item.solution?.length ?? 0) + item.answer.split('\n').length - 1;
+    const wide = graph || lines > 0;
+    const cost = wide
+      ? 30 + KEY_LINE * lines + (graph ? 340 : 0)
+      : compactRun % KEY_COLS === 0 ? 42 : 0;
+    if (page.length && used + cost > KEY_BUDGET) {
+      pages.push(page);
+      page = [];
+      used = 0;
+      compactRun = 0;
+      // A plain row opening a slide starts a grid line of its own.
+      used += wide ? 30 + KEY_LINE * lines + (graph ? 340 : 0) : 42;
+    } else {
+      used += cost;
+    }
+    compactRun = wide ? 0 : compactRun + 1;
+    page.push(item);
+  }
+  if (page.length) pages.push(page);
+  return pages;
 }
 
 // ─── Slides HTML (quiz) ───────────────────────────────────────────────────────

@@ -24,7 +24,7 @@ import { bookFigureSlides } from './lessonSlides.ts';
 import { toArabicDigits } from './labFormat.ts';
 import { optionLetter } from './optionLabels.ts';
 import { samplePlot } from './deckVisuals.ts';
-import { normalizePlotExpr } from './ai/worksheetFormats.ts';
+import { exprsMissingFromStem, normalizePlotExpr } from './ai/worksheetFormats.ts';
 
 const THINK_SECONDS = 45;
 
@@ -303,10 +303,11 @@ function formatDeckContent(f: WorksheetQuestionFormat, isAr: boolean): string {
       f.steps.forEach((s, i) => lines.push(`${num(i)}) ${s}`));
       break;
     case 'graph':
-      f.exprs.forEach(e => lines.push(`${isAr ? 'ص' : 'y'} = ${e}`));
+      // Only what the stem lacks, in the paper's latin «y = …».
+      lines.push(...exprsMissingFromStem(f.stem, f.exprs));
       break;
   }
-  return [f.stem, '', ...lines].join('\n');
+  return lines.length ? [f.stem, '', ...lines].join('\n') : f.stem;
 }
 
 /** Worksheet → projectable deck (same rules; sections are flattened). */
@@ -399,7 +400,7 @@ export function buildDeckFromWorksheet(
               visual: {
                 kind: 'plot' as const,
                 series: fmt.exprs.map(e => ({
-                  label: e,
+                  label: `y = ${e}`,
                   points: samplePlot(normalizePlotExpr(e), { from: fmt.window.xMin, to: fmt.window.xMax, steps: 120 }) ?? [],
                 })),
               },

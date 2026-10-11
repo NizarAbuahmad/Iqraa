@@ -84,4 +84,7 @@ const LARGE = `
     /* structured worksheet formats */
     .fmt-card, .fmt-match, .fmt-steps li, .fmt-line, .fmt-label { font-size: 16px; }
     .fmt-box { width: 28px; height: 28px; }
-    .fmt-grid { width: 100%; }`;
+    .fmt-grid-wrap { width: 100% !important; }
+    .g-lbl { font-size: 14px; line-height: 15px; width: 36px; }
+    .g-lbl-middle { margin-left: -18px; }
+    .g-lbl-end { margin-left: -36px; }`;
