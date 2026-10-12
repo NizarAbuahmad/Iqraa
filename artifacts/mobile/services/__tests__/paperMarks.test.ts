@@ -6,7 +6,7 @@ import {
   initialGridRows, isPaperExam, isQuickPaperExam, mergeTotalsResponse, paperTotalErrorText, paperTotalsFailureKey,
   parsePaperMark, quickPaperQuestions, rowState,
   MARKS_BLOCKER_KEY, countRefused, marksBlocker, refreshStoredMarks, rowProblemCode, saveOutcomeUncertain, savedMarksToClear,
-  markBookReachable, measuredObjectiveId, showGridSummary, foldMarkText, appendSentence,
+  markBookReachable, measuredObjectiveId, showGridSummary, foldMarkText, appendSentence, compareStudentNames, sortRoster,
 } from '../paperMarks.ts';
 import translations, { getT } from '../i18n.ts';
 
@@ -533,13 +533,22 @@ describe('W1: «مجموع فقط» measures one objective, and says which', () 
     assert.ok(q.ok);
     assert.equal(q.ok && q.questions[0]!.objectiveId, measuredObjectiveId(['o2', 'o1']));
   });
-  it('has the two lines in both languages, and fills the objective in', () => {
-    for (const key of ['paperTotalMeasures', 'paperTotalMeasuresMany'] as const) {
-      assert.equal(typeof ar[key], 'function', key);
-      assert.equal(typeof en[key], 'function', key);
-      assert.ok(ar[key]('هدف س').includes('هدف س'), key);
-      assert.ok(en[key]('Goal X').includes('Goal X'), key);
-    }
+  it('names the objective once: the hint quotes it, the warning says "that outcome" without repeating it', () => {
+    assert.equal(typeof ar.paperTotalMeasures, 'function');
+    assert.equal(typeof en.paperTotalMeasures, 'function');
+    assert.ok(ar.paperTotalMeasures('هدف س').includes('«هدف س»'));
+    assert.ok(en.paperTotalMeasures('Goal X').includes('“Goal X”'));
+    // Plain strings: there is no label to fill in, and nothing quoted.
+    assert.equal(typeof ar.paperTotalMeasuresMany, 'string');
+    assert.equal(typeof en.paperTotalMeasuresMany, 'string');
+    assert.ok(!/[«»“”]/.test(ar.paperTotalMeasuresMany + en.paperTotalMeasuresMany));
+  });
+  it('calls the objective «نتاج التعلّم», as the picker and the mark book do, never «الهدف»', () => {
+    const text = ar.paperTotalMeasures('س') + ar.paperTotalMeasuresMany;
+    assert.match(text, /نتاج التعلّم/);
+    assert.match(text, /نتاجات التعلّم/);
+    assert.ok(!/الهدف|الأهداف/.test(text), text);
+    assert.equal(ar.selectObjectivesLabel, 'نتاجات التعلّم');
   });
 });
 
@@ -656,7 +665,15 @@ describe('W2: what the mark box holds and how a failure reads', () => {
     for (const lang of ['ar', 'en'] as const) {
       const t = getT(lang);
       const text = appendSentence(t('marksGridSaveFailed'), t('marksGridCheckedAfterFailure'));
-      assert.ok(text.includes(`${t('marksGridSaveFailed')}. `), `${lang}: ${text}`);
+      assert.ok(text.startsWith(`${t('marksGridSaveFailed')} `), `${lang}: ${text}`);
+      assert.ok(!text.includes('..'), `${lang}: ${text}`);
+    }
+  });
+
+  it('ends the two failure banners with a full stop of their own', () => {
+    for (const lang of ['ar', 'en'] as const) {
+      const t = getT(lang);
+      for (const key of ['marksGridSaveFailed', 'marksGridLoadFailed'] as const) assert.match(t(key), /\.$/, `${lang} ${key}`);
     }
   });
 
@@ -671,5 +688,26 @@ describe('W2: what the mark box holds and how a failure reads', () => {
     assert.match(ar.marksGridClearConfirm('3', '0'), /3 علامات محفوظة من الخانات التي تركتها فارغة/);
     assert.ok(!/boxes/.test(en.marksGridClearConfirm('1', '0')), 'one mark is about one box');
     assert.match(en.marksGridClearConfirm('3', '0'), /3 marks saved for the boxes/);
+  });
+});
+
+describe('W3: the mark book lists students the way a teacher reads a class', () => {
+  const names = (rows: { displayName: string }[]) => rows.map(r => r.displayName);
+  it('puts «2» before «10» (numeric), where plain text order puts «10» first', () => {
+    const roster = ['طالب رقم 10', 'طالب رقم 2', 'طالب رقم 1'].map((displayName, i) => ({ id: `s${i}`, displayName }));
+    assert.deepEqual(names(roster).sort(), ['طالب رقم 1', 'طالب رقم 10', 'طالب رقم 2'], 'the trap: text order');
+    assert.deepEqual(names(sortRoster(roster)), ['طالب رقم 1', 'طالب رقم 2', 'طالب رقم 10']);
+  });
+  it('sorts Arabic names alphabetically and keeps equal names in arrival order', () => {
+    const roster = [
+      { id: 'a', displayName: 'سارة' }, { id: 'b', displayName: 'آدم' }, { id: 'c', displayName: 'زين' }, { id: 'd', displayName: 'زين' },
+    ];
+    assert.deepEqual(sortRoster(roster).map(r => r.id), ['b', 'c', 'd', 'a']);
+  });
+  it('does not reorder the list it was given', () => {
+    const roster = [{ id: 'a', displayName: 'ب' }, { id: 'b', displayName: 'أ' }];
+    sortRoster(roster);
+    assert.deepEqual(roster.map(r => r.id), ['a', 'b']);
+    assert.ok(compareStudentNames('2', '10') < 0);
   });
 });

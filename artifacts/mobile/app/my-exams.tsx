@@ -294,8 +294,9 @@ function ExamRow({
   // "handed in" times are when the teacher published it and typed the mark —
   // not what a family means by either — so a paper row shows only its day.
   const examWhen = exam.examDate && isValidYmd(exam.examDate) ? t('myExamsOnDate', formatExamWhen(exam.examDate, exam.examTime)) : null;
-  // Separate pieces in a wrapping row, not one string under `numberOfLines`:
-  // that cut «· 10 …» mid-text and let a separator start a line.
+  // Separate pieces in a wrapping row, spaced by a gap and with no separator
+  // character: one string under `numberOfLines` cut «· 10 …» mid-text, and a
+  // « ·» at the end of a piece dangled at the end of a wrapped line.
   const meta = metaSegments([
     subject,
     examWhen,
@@ -328,7 +329,7 @@ function ExamRow({
             {myExamTitle(exam, lang) || t('myExamsUntitled', subject ?? '')}
           </Text>
           {meta.length > 0 ? (
-            <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', columnGap: SPACE.xs }}>
+            <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', columnGap: SPACE.md, rowGap: SPACE.xxs }}>
               {meta.map((segment, i) => (
                 <Text key={i} style={{ flexShrink: 1, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 21, textAlign: align }}>
                   {segment}

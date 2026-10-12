@@ -119,6 +119,19 @@ export interface GridRow {
   status: RowStatus;
 }
 
+/**
+ * Arabic alphabetical, with a run of digits read as a number: «طالب رقم 2» before
+ * «طالب رقم 10», where plain text order puts «10» first.
+ */
+export function compareStudentNames(a: string, b: string): number {
+  return a.localeCompare(b, 'ar', { numeric: true });
+}
+
+/** The class in the order a teacher reads a mark book: by name, ties kept in arrival order. */
+export function sortRoster<T extends { displayName: string }>(roster: readonly T[]): T[] {
+  return [...roster].sort((a, b) => compareStudentNames(a.displayName, b.displayName));
+}
+
 export function initialGridRows(
   roster: readonly { id: string; displayName: string }[],
   attempts: readonly Pick<AttemptListRow, 'studentId' | 'submittedAt' | 'result'>[],

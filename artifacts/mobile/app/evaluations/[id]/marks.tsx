@@ -27,6 +27,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { useColors } from '@/hooks/useColors';
+import { useKeyboardVisible } from '@/hooks/useKeyboardVisible';
 import { useLanguage } from '@/context/LanguageContext';
 import { confirm } from '@/services/confirm';
 import { getEvaluation, listAttempts, savePaperTotals, setResultsReleased, type Evaluation } from '@/services/evaluations';
@@ -54,6 +55,7 @@ import {
   saveOutcomeUncertain,
   savedMarksToClear,
   showGridSummary,
+  sortRoster,
   type GridRow,
   type MarksBlocker,
 } from '@/services/paperMarks';
@@ -68,6 +70,8 @@ const ACCENT_FILL = palette.hero;
 export default function PaperMarksScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  // The root KeyboardSafeView already lifts the screen above the keyboard; the home-indicator inset below the footer would be a dead band on top of it.
+  const keyboardOpen = useKeyboardVisible();
   const { t, isRTL, lang } = useLanguage();
   const align = isRTL ? 'right' : 'left';
   const rowDir = isRTL ? 'row-reverse' : 'row';
@@ -96,7 +100,7 @@ export default function PaperMarksScreen() {
       if (stop) return;
       setMaxMarks(Number(questions[0]!.marks));
       const [{ students }, attempts] = await Promise.all([getClass(ev.classGroupId!), listAttempts(id)]);
-      setRows(initialGridRows(filterToAudience(students, audience), attempts));
+      setRows(initialGridRows(sortRoster(filterToAudience(students, audience)), attempts));
     } catch (e) {
       setLoadError(apiErrorMessage(e, 'marksGridLoadFailed', t));
     }
@@ -291,7 +295,7 @@ export default function PaperMarksScreen() {
       </ScrollView>
 
       {footerShown ? (
-        <View style={[styles.footer, { backgroundColor: colors.card, borderTopColor: colors.border, paddingBottom: insets.bottom + SPACE.md }]}>
+        <View style={[styles.footer, { backgroundColor: colors.card, borderTopColor: colors.border, paddingBottom: (keyboardOpen ? 0 : insets.bottom) + SPACE.md }]}>
           <View style={{ width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', gap: SPACE.sm }}>
             {summary && showGridSummary(summary) ? (
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
@@ -303,7 +307,7 @@ export default function PaperMarksScreen() {
 
             {/* Beside the button that caused it: out of the scroll, a failed save would be announced below thirteen rows. */}
             {notice ? (
-              <Text accessibilityLiveRegion="polite" style={{ color: notice.kind === 'error' ? colors.destructive : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.label, textAlign: align }}>
+              <Text accessibilityLiveRegion="polite" numberOfLines={3} style={{ color: notice.kind === 'error' ? colors.destructive : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.label, textAlign: align }}>
                 {notice.text}
               </Text>
             ) : null}

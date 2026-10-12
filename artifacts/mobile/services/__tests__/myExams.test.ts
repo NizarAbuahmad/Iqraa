@@ -112,17 +112,16 @@ describe('canRetakeExam', () => {
 });
 
 describe('metaSegments', () => {
-  it('drops empty pieces and ends every piece but the last with a no-break separator', () => {
-    assert.deepEqual(metaSegments(['الرياضيات', null, 'موعده 2026-10-17 09:30', false, '', '10 علامات']), [
-      'الرياضيات\u00A0·',
-      'موعده 2026-10-17 09:30\u00A0·',
+  it('keeps the pieces in order and drops the empty ones', () => {
+    assert.deepEqual(metaSegments(['الرياضيات', null, 'موعده 2026-10-17 09:30', false, '', '   ', undefined, '10 علامات']), [
+      'الرياضيات',
+      'موعده 2026-10-17 09:30',
       '10 علامات',
     ]);
-  });
-  it('never starts a piece with a separator, and a single piece has none', () => {
-    const segs = metaSegments(['a', 'b', 'c']);
-    for (const s of segs) assert.ok(!s.startsWith('·') && !s.startsWith('\u00A0'));
-    assert.deepEqual(metaSegments(['الرياضيات']), ['الرياضيات']);
     assert.deepEqual(metaSegments([null, undefined, '']), []);
+  });
+  it('carries no separator character, so no wrapped line can end or start on a dot', () => {
+    for (const s of metaSegments(['a', 'b', 'c'])) assert.ok(!/[·\u00A0]/.test(s), s);
+    assert.deepEqual(metaSegments(['الرياضيات']), ['الرياضيات']);
   });
 });

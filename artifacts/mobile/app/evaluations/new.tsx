@@ -592,7 +592,7 @@ export default function NewEvaluationScreen() {
             ) : null}
             {measuredLabel && selectedObjectives.size > 1 ? (
               <Text style={[styles.hint, { color: palette.warning, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
-                {t('paperTotalMeasuresMany', measuredLabel)}
+                {t('paperTotalMeasuresMany')}
               </Text>
             ) : null}
           </>
