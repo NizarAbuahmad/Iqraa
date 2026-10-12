@@ -464,6 +464,8 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     }
     const readAll = await fetch(`${base}/messaging/threads/read-all`, { method: "POST" });
     assert.equal(readAll.status, 401, "/messaging/threads/read-all must require a token");
+    const broadcast = await fetch(`${base}/messaging/threads/broadcast`, { method: "POST" });
+    assert.equal(broadcast.status, 401, "/messaging/threads/broadcast must require a token");
   });
 
   it("guards the reaction routes like the rest of /messaging", async () => {

@@ -1,9 +1,11 @@
 /**
- * Teacher-only custom group creation — a name plus a picked member list, then
- * straight into the new thread. Server-side, POST /messaging/threads/custom
- * re-validates every member is a real contact; this screen's picker only
- * ever offers contacts to begin with, so that check should never fire here
- * in practice, but it's the server's job to not trust that.
+ * Teacher-only «رسالة جماعية»: pick some of your parents/students, then either
+ * send one message to each as a private chat (broadcast — replies reach only
+ * the teacher) or make a custom group (a name plus the picked members, then
+ * straight into the new thread). Server-side, both routes re-validate every
+ * member is a real contact; this screen's picker only ever offers contacts to
+ * begin with, so that check should never fire here in practice, but it's the
+ * server's job to not trust that.
  */
 import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -12,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { createGroup } from '@/services/messaging';
+import { broadcastMessage, createGroup } from '@/services/messaging';
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { ParticipantPickerSheet } from '@/components/ui/ParticipantPickerSheet';
 import { Avatar } from '@/components/ui/Avatar';
@@ -25,7 +27,10 @@ export default function NewGroupScreen() {
   const insets = useSafeAreaInsets();
   const { t, isRTL } = useLanguage();
 
+  const [mode, setMode] = useState<'broadcast' | 'group'>('broadcast');
   const [name, setName] = useState('');
+  const [body, setBody] = useState('');
+  const [done, setDone] = useState('');
   const [members, setMembers] = useState<Picked[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -33,17 +38,27 @@ export default function NewGroupScreen() {
 
   const align = isRTL ? 'right' : 'left';
   const topPad = insets.top + (insets.top === 0 ? 12 : 0);
+  const isBroadcast = mode === 'broadcast';
+  const ready = members.length > 0 && (isBroadcast ? !!body.trim() : !!name.trim());
 
   const handleCreate = async () => {
-    const title = name.trim();
-    if (!title || members.length === 0 || creating) return;
+    if (!ready || creating) return;
     setCreating(true);
     setError('');
+    setDone('');
     try {
-      const thread = await createGroup(title, members.map(m => m.userId));
-      router.replace(`/messaging/${thread.id}`);
+      const ids = members.map(m => m.userId);
+      if (isBroadcast) {
+        const { sent, skipped } = await broadcastMessage(ids, body.trim());
+        setDone(t('messagingBroadcastDone', sent, skipped));
+        setMembers([]);
+        setBody('');
+      } else {
+        const thread = await createGroup(name.trim(), ids);
+        router.replace(`/messaging/${thread.id}`);
+      }
     } catch (e) {
-      setError(apiErrorMessage(e, 'messagingCreateGroupError', t));
+      setError(apiErrorMessage(e, isBroadcast ? 'messagingSendError' : 'messagingCreateGroupError', t));
     } finally {
       setCreating(false);
     }
@@ -54,28 +69,73 @@ export default function NewGroupScreen() {
       <View style={[styles.header, { paddingTop: topPad, borderBottomColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <BackButton color={colors.foreground} />
         <Text style={[styles.headerTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', flex: 1, textAlign: align }]}>
-          {t('messagingNewGroup')}
+          {t('messagingBroadcastTitle')}
         </Text>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
         <View style={{ gap: 8 }}>
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
-          {t('messagingGroupNameLabel')}
-        </Text>
-        <TextInput
-          accessibilityLabel={t('messagingGroupNameLabel')}
-          value={name}
-          onChangeText={setName}
-          placeholder={t('messagingGroupNamePlaceholder')}
-          placeholderTextColor={colors.mutedForeground}
-          style={[
-            styles.nameInput,
-            { color: colors.foreground, backgroundColor: colors.card, borderColor: colors.border, fontFamily: 'ReadexPro_500Medium', textAlign: align },
-          ]}
-          maxLength={80}
-        />
+          <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8 }} accessibilityRole="tablist">
+            {(['broadcast', 'group'] as const).map(m => {
+              const on = m === mode;
+              return (
+                <Pressable
+                  key={m}
+                  onPress={() => { setMode(m); setError(''); setDone(''); }}
+                  accessibilityRole="tab"
+                  aria-selected={on}
+                  style={[styles.modeChip, { backgroundColor: on ? colors.primary : colors.card, borderColor: on ? colors.primary : colors.border }]}
+                >
+                  <Text style={{ fontSize: 13, fontFamily: 'ReadexPro_600SemiBold', color: on ? colors.primaryForeground : colors.mutedForeground }}>
+                    {t(m === 'broadcast' ? 'messagingModeBroadcast' : 'messagingModeGroup')}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
+            {t(isBroadcast ? 'messagingModeBroadcastHint' : 'messagingModeGroupHint')}
+          </Text>
         </View>
+
+        {isBroadcast ? (
+          <View style={{ gap: 8 }}>
+            <Text style={[styles.sectionLabel, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+              {t('messagingBroadcastBodyLabel')}
+            </Text>
+            <TextInput
+              accessibilityLabel={t('messagingBroadcastBodyLabel')}
+              value={body}
+              onChangeText={setBody}
+              placeholder={t('messagingBroadcastBodyPlaceholder')}
+              placeholderTextColor={colors.mutedForeground}
+              multiline
+              style={[
+                styles.nameInput,
+                { minHeight: 110, textAlignVertical: 'top', color: colors.foreground, backgroundColor: colors.card, borderColor: colors.border, fontFamily: 'Almarai_400Regular', textAlign: align },
+              ]}
+              maxLength={4000}
+            />
+          </View>
+        ) : (
+          <View style={{ gap: 8 }}>
+            <Text style={[styles.sectionLabel, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+              {t('messagingGroupNameLabel')}
+            </Text>
+            <TextInput
+              accessibilityLabel={t('messagingGroupNameLabel')}
+              value={name}
+              onChangeText={setName}
+              placeholder={t('messagingGroupNamePlaceholder')}
+              placeholderTextColor={colors.mutedForeground}
+              style={[
+                styles.nameInput,
+                { color: colors.foreground, backgroundColor: colors.card, borderColor: colors.border, fontFamily: 'ReadexPro_500Medium', textAlign: align },
+              ]}
+              maxLength={80}
+            />
+          </View>
+        )}
 
         <View style={{ gap: 8 }}>
           <Text style={[styles.sectionLabel, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
@@ -103,6 +163,12 @@ export default function NewGroupScreen() {
           </Pressable>
         </View>
 
+        {done ? (
+          <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_500Medium', fontSize: 14, lineHeight: 22, textAlign: align }}>
+            {done}
+          </Text>
+        ) : null}
+
         {error ? (
           <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
             {error}
@@ -111,17 +177,14 @@ export default function NewGroupScreen() {
 
         <Pressable
           onPress={handleCreate}
-          disabled={!name.trim() || members.length === 0 || creating}
-          style={[
-            styles.createBtn,
-            { backgroundColor: name.trim() && members.length > 0 ? colors.primary : colors.muted },
-          ]}
+          disabled={!ready || creating}
+          style={[styles.createBtn, { backgroundColor: ready ? colors.primary : colors.muted }]}
         >
           {creating ? (
             <ActivityIndicator color={colors.primaryForeground} />
           ) : (
-            <Text style={{ color: name.trim() && members.length > 0 ? colors.primaryForeground : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>
-              {t('messagingCreateGroup')}
+            <Text style={{ color: ready ? colors.primaryForeground : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }}>
+              {isBroadcast ? t('messagingBroadcastSend', members.length) : t('messagingCreateGroup')}
             </Text>
           )}
         </Pressable>
@@ -143,6 +206,7 @@ export default function NewGroupScreen() {
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 16, paddingBottom: 12, alignItems: 'center', gap: 10, borderBottomWidth: 1 },
   headerTitle: { fontSize: 17 },
+  modeChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16, borderWidth: 1 },
   nameInput: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
   sectionLabel: { fontSize: 15, lineHeight: 24 },
   memberRow: { alignItems: 'center', gap: 10, paddingVertical: 8, paddingHorizontal: 10, borderWidth: 1, borderRadius: 10 },

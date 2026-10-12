@@ -11,7 +11,10 @@
  *
  * Returns issues and never throws or edits — same stance as
  * `modules/assessment/groundingCheck.ts`, whose word-support function this
- * reuses for the one thing a deck can get wrong that structure cannot see:
+ * reuses for the one thing a deck can get wrong that structure cannot see —
+ * and only for a quiz slide's correct option. Explanation slides paraphrase the
+ * book by design, so judging them against its words was noise (2–4 of every
+ * deck on 2026-10-11). Here:
  * saying something the lesson's book does not.
  *
  * `error` is a deck the app will render wrongly (a `correctIndex` past the
@@ -113,12 +116,6 @@ export function checkDeck(deck: unknown, sourceText = ""): DeckIssue[] {
         const support = supportIn(options[ci as number]!, source);
         if (support !== null && support < WEAK_BELOW) add("warn", "weak_book_support", n, options[ci as number]);
       }
-    }
-
-    // Explanation slides are where the lesson content lives; check they sound like the book.
-    if (type === "intro" && !layout && i > 2) {
-      const support = supportIn(`${title} ${content}`, source);
-      if (support !== null && support < WEAK_BELOW) add("warn", "weak_book_support", n, `${support.toFixed(2)}`);
     }
   });
 

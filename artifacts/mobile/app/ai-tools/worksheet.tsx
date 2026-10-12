@@ -18,6 +18,8 @@ import { buildDeckFromWorksheet } from '@/services/classDeck';
 import { ShortPaperNotice } from '@/components/ui/ShortPaperNotice';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
+import { workingProvenance } from '@/services/worksheetWorking';
+import { TYPE } from '@/constants/theme';
 import { VerificationSummaryRow } from '@/components/ui/VerificationSummaryRow';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
@@ -785,6 +787,19 @@ export default function WorksheetScreen() {
           {outcomes && verification.total > 0 && (
             <VerificationSummaryRow summary={verification} />
           )}
+        </View>
+      )}
+
+      {/* The worked example and the key's working are only as good as whoever
+          wrote them: the bank's was checked by a person, a model's was not.
+          Known the moment the paper is on screen, so unlike the answer check
+          above it does not wait for the verifier. */}
+      {result && workingProvenance(result).needsAiNote && (
+        <View style={{ marginHorizontal: 20, marginBottom: 12, gap: 8, alignItems: 'center', flexDirection: isRTL ? 'row-reverse' : 'row' }}>
+          <Ionicons name="alert-circle-outline" size={14} color={colors.warning} />
+          <Text style={{ flex: 1, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption, color: colors.warning, textAlign: isRTL ? 'right' : 'left' }}>
+            {t('workingUnreviewed')}
+          </Text>
         </View>
       )}
 

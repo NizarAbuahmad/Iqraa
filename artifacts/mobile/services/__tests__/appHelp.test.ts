@@ -432,6 +432,97 @@ describe('problems, longer adds, bare grades and other screens', () => {
   }
 });
 
+describe('a grade to change and a lesson to add', () => {
+  // Reported from the web chat (2026-10-11): «اريد ان اغير الصف» and «i need to
+  // add lesson» both came back as lesson replies about an unrelated topic. Neither
+  // names a screen: the grades a teacher teaches live under «المواد التي أُدرّسها»,
+  // and a lesson is picked from the bar above the chat rather than added.
+  const t = (k: string) => `<${k}>`;
+  const lang = (q: string) => (/[؀-ۿ]/.test(q) ? 'ar' : 'en');
+
+  const grade = [
+    'i want to change the grade',
+    'i need to change my grade',
+    'i want to switch grade',
+    'i would like to change the grade please',
+    'اريد ان اغير الصف',
+    'اريد تغيير الصف',
+    'بدي اغير صفي',
+    'ابغى اعدل الصفوف',
+  ];
+  const lesson = [
+    'i need to add lesson',
+    'i want to add a lesson',
+    'i want to pick a lesson',
+    'let me choose a lesson',
+    'help me add a lesson',
+    'اريد اضافة درس',
+    'بدي اضيف درس جديد',
+    'اريد اختيار الدرس',
+    'محتاج اضيف درس',
+  ];
+  for (const q of grade) {
+    it(`«${q}» gets the grade steps`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(classifyChatIntent(q, lang(q)).intent, 'app_help');
+      assert.deepEqual(findAppPlaces(q).map(p => p.id), ['subjects']);
+      const a = answerAppHelp(q, lang(q), t);
+      assert.equal(a.text, '<howAddGrade>');
+      assert.equal(a.places[0]!.id, 'subjects');
+    });
+  }
+  for (const q of lesson) {
+    it(`«${q}» gets the change-lesson steps`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(classifyChatIntent(q, lang(q)).intent, 'app_help');
+      assert.deepEqual(findAppPlaces(q).map(p => p.id), ['change-lesson']);
+      assert.equal(answerAppHelp(q, lang(q), t).text, '<faqA2>');
+    });
+  }
+
+  const teaching = [
+    // «grade» as a mark, a level or a boundary, with something after it
+    'i want to change the grade of the quiz',
+    'i want to change the grade on this worksheet to grade 8',
+    'i want to change the grade boundaries',
+    'i want to change the grade level of the worksheet',
+    'change the grade',
+    'change the grade of the exam',
+    'how do i change the grade of a student',
+    'i want to change the year of the exam',
+    'اريد ان اغير الصف في ورقة العمل',
+    'اريد تغيير الصف الى العاشر في الاختبار',
+    'بدي اغير صف الطالب',
+    // «lesson» as the thing to teach, not the one to pick
+    'i need to add lesson plan',
+    'i want to add a lesson plan for grade 9',
+    'i want to add a lesson to the worksheet',
+    'i want to add a lesson about fractions',
+    'i want to add a lesson on photosynthesis',
+    'i need to pick a lesson on fractions',
+    'i want to choose a lesson for tomorrow',
+    'i want to add the lesson to my plan',
+    'i want to add lessons to the schedule',
+    'اريد اضافة درس عن الكسور',
+    'اريد اضافة درس الى الخطة',
+    'اريد اختيار درس عن الاقترانات',
+    'اريد اضافة درس جديد عن الجبر',
+  ];
+  for (const q of teaching) {
+    it(`leaves «${q}» alone`, () => {
+      assert.equal(isAppHelpQuery(q), false);
+      assert.notEqual(classifyChatIntent(q, lang(q)).intent, 'app_help');
+    });
+  }
+
+  it('does not fix a typo: «langute» is not «language»', () => {
+    // Matching misspellings would also match real requests; the sentence works
+    // when typed correctly, which is what the first screenshot showed.
+    assert.equal(isAppHelpQuery('i want to change the langute'), false);
+    assert.equal(isAppHelpQuery('i want to change the language'), true);
+  });
+});
+
 describe('classifyChatIntent routes app questions before artifacts', () => {
   it('«وين ألاقي ورقة العمل» asks for the tool, not a worksheet', () => {
     assert.equal(classifyChatIntent('وين ألاقي ورقة العمل؟').intent, 'app_help');
