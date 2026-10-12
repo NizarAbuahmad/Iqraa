@@ -178,6 +178,15 @@ class UnitOpenText(unittest.TestCase):
         self.assertTrue({10, 11}.isdisjoint(x.split_unit_open(no_c)))
         self.assertEqual(sorted(x.split_unit_open('')), [])
 
+    def test_a_c_that_touches_a_digit_or_a_letter_is_not_substituted(self):
+        page = p47()
+        self.assertIn('x2 \u2212 y2 = c', page)
+        for touching in ('2c', 'c2', 'xc', 'cx'):
+            with self.subTest(touching=touching):
+                stems = x.split_unit_open(page.replace('x2 \u2212 y2 = c', f'x2 \u2212 y2 = {touching}'))
+                self.assertTrue({10, 11}.isdisjoint(stems), stems)    # refused, never "28" for 2*8
+                self.assertEqual(sorted(stems), [6, 7, 8, 9])
+
     def test_the_answer_block_splits_into_six_entries_and_ignores_the_appendix_line(self):
         entries, ignored = x.printed_entries(p47())
         self.assertEqual(entries, [
@@ -201,9 +210,40 @@ class UnitOpenText(unittest.TestCase):
 
 
 class ValueMatching(unittest.TestCase):
-    def test_flat_drops_whitespace_and_the_fraction_bar(self):
-        self.assertEqual(x.flat('( - 11 3 , - 7 3 )'), '(-113,-73)')
-        self.assertEqual(x.flat('(-11/3, -7/3)'), '(-113,-73)')
+    def test_flat_turns_the_fraction_bar_into_a_gap_and_keeps_a_gap_between_digits(self):
+        # the text layer splits `-11/3` into «- 11» over «3»; both spellings meet at `-11 3`
+        self.assertEqual(x.flat('( - 11 3 , - 7 3 )'), '(-11 3,-7 3)')
+        self.assertEqual(x.flat('( - 11\n3 , - 7\n3 )'), '(-11 3,-7 3)')
+        self.assertEqual(x.flat('(-11/3, -7/3)'), '(-11 3,-7 3)')
+        # a printed split fraction `1⏎2` IS `1/2`, but neither is the integer `12`
+        self.assertEqual(x.flat('1 2'), x.flat('1/2'))
+        self.assertNotEqual(x.flat('12'), x.flat('1 2'))
+        self.assertNotEqual(x.flat('12'), x.flat('1/2'))
+        self.assertEqual(x.flat('1  2'), x.flat('1\t2'))     # any run of whitespace is one gap
+
+    def test_values_that_only_collide_once_the_bar_is_deleted_stay_apart(self):
+        for printed, computed in [
+            ('(12, 3)', '(1/2, 3)'),
+            ('c < -13', 'c < -1/3'),
+            ('( - 1 13 , 0)', '(-11/3, 0)'),
+            ('( - 11 3 , 0)', '(-1/13, 0)'),
+            ('(1 2, 3)', '(12, 3)'),
+        ]:
+            with self.subTest(printed=printed, computed=computed):
+                self.assertFalse(x.same_answer(printed, computed))
+                self.assertFalse(x.same_answer(computed, printed))
+
+    def test_the_real_printed_forms_of_items_10_and_11_still_match(self):
+        self.assertTrue(x.same_answer('(3, 1), ( - 11 3 , - 7 3 )', '(-11/3, -7/3), (3, 1)'))
+        self.assertTrue(x.same_answer('c < - 1 3', 'c < -1/3'))
+
+    def test_a_duplicated_point_is_not_a_single_point(self):
+        self.assertFalse(x.same_answer('(1, 4), (1, 4)', '(1, 4)'))
+        self.assertFalse(x.same_answer('(1, 4)', '(1, 4), (1, 4)'))
+        records = [{'id': 'a', 'source': {'number': 1}, 'computedAnswer': '(1, 4)', 'printedAnswer': None}]
+        left = x.pair_printed(records, ['(1, 4), (1, 4)'])
+        self.assertEqual((records[0]['status'], records[0]['printedAnswer']), ('computed', None))
+        self.assertEqual(left, ['(1, 4), (1, 4)'])
 
     def test_a_split_fraction_matches_its_value(self):
         self.assertTrue(x.same_answer('(3, 1), ( - 11 3 , - 7 3 )', '(-11/3, -7/3), (3, 1)'))
@@ -254,6 +294,59 @@ class UnitOpenSolvers(unittest.TestCase):
 
     def test_the_parameter_values_with_no_solution(self):
         self.assertEqual(x.solve_param_no_solution('x - 2y = 1\nx^2 - y^2 = c', 'c'), 'c < -1/3')
+
+    def test_an_unsolved_system_is_never_answered_as_having_no_solution(self):
+        # SymPy has a real root here (x^5 - x + 1 = 0) but returns no closed form; an empty
+        # result means "could not solve", and `all()` over nothing is True.
+        stem = 'y = x^5 - x + 1\ny = 0'
+        with self.assertRaises(x.Reject) as ctx:
+            x.solve_system(stem, allow_none=True)
+        self.assertNotEqual(str(ctx.exception), x.NO_SOLUTION_AR)
+        self.assertIn(str(ctx.exception), ('not_solved', 'not_closed_form'))
+
+    def test_an_empty_solve_result_rejects_as_not_solved(self):
+        real = x.solve
+        x.solve = lambda *a, **k: []
+        try:
+            with self.assertRaises(x.Reject) as ctx:
+                x.solve_system('y = x - 1\ny = x^2', allow_none=True)
+        finally:
+            x.solve = real
+        self.assertEqual(str(ctx.exception), 'not_solved')
+
+    def test_a_partial_solution_is_not_proof_of_no_solution(self):
+        from sympy import I
+        real = x.solve
+        x.solve = lambda *a, **k: [{x.X: I}]      # says nothing about y
+        try:
+            with self.assertRaises(x.Reject) as ctx:
+                x.solve_system('y = x - 1\ny = x^2', allow_none=True)
+        finally:
+            x.solve = real
+        self.assertEqual(str(ctx.exception), 'no_real_solution')
+
+    def test_item_7_s_real_no_solution_case_is_still_answered(self):
+        self.assertEqual(x.solve_system('y - x = 15\nx^2 + y^2 = 64', allow_none=True), x.NO_SOLUTION_AR)
+
+    def test_a_parameter_in_the_leading_coefficient_is_rejected(self):
+        # c*x^2 - x^2 - 1 = 0 is not a quadratic for c = 1, so the discriminant rule is wrong there
+        with self.assertRaises(x.Reject) as ctx:
+            x.solve_param_no_solution('c*x^2 - y^2 = 1\nx - y = 0', 'c')
+        self.assertEqual(str(ctx.exception), 'parameter_in_leading_coefficient')
+
+    def test_the_bound_is_strict_because_the_boundary_value_has_a_solution(self):
+        stem = 'x - 2y = 1\nx^2 - y^2 = {}'
+        self.assertEqual(x.solve_system(stem.format('-1/3'), allow_none=True), '(-1/3, -2/3)')   # c = -1/3 is solvable
+        self.assertEqual(x.solve_system(stem.format('-1/2'), allow_none=True), x.NO_SOLUTION_AR)
+        self.assertEqual(x.solve_param_no_solution(stem.format('c'), 'c'), 'c < -1/3')
+
+    def test_only_an_open_half_line_is_a_bound(self):
+        from sympy import Interval, Rational, oo
+        self.assertEqual(x.strict_upper_bound(Interval.open(-oo, Rational(-1, 3))), Rational(-1, 3))
+        for bad in (Interval(-oo, Rational(-1, 3)),                 # closed: the boundary would be "no solution" too
+                    Interval.open(Rational(-1, 3), oo), Interval.open(0, 1), Interval.open(-oo, oo)):
+            with self.subTest(bad=bad), self.assertRaises(x.Reject):
+                x.strict_upper_bound(bad)
 
     def test_a_parameter_that_cannot_make_the_system_unsolvable_is_rejected(self):
         with self.assertRaises(x.Reject):

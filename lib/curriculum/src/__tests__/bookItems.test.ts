@@ -39,10 +39,12 @@ const ARABIC = /[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/;
 const NO_SOLUTION = 'لا يوجد حل';
 
 /**
- * The extractor's `flat`: no whitespace and no fraction bar, because the text layer splits
- * `-11/3` into «- 11» over «3» and the printed form flattens to `-113`, as ours does.
+ * The extractor's `flat` (scripts/extract_book_items.py): the fraction bar becomes a gap and
+ * every gap goes EXCEPT one between two digits. The text layer splits `-11/3` into «- 11» over
+ * «3», so both spellings meet at `-11 3`, while `12` and `1/2` stay apart (deleting the bar made
+ * `(12, 3)` equal `(1/2, 3)`). Keep the two in step.
  */
-const flat = (s: string) => s.replace(/[\s/]/g, '');
+const flat = (s: string) => s.replace(/\//g, ' ').replace(/\s+/g, ' ').replace(/(?<![0-9])\s+|\s+(?![0-9])/g, '');
 /** A list of `(a,b)` points as a sorted set; the book prints its points in its own order. */
 const points = (s: string): string[] | null => {
   const f = flat(s);
@@ -55,6 +57,36 @@ const sameValue = (printed: string, computed: string) => {
   const b = points(computed);
   return a !== null && b !== null && a.join('|') === b.join('|');
 };
+/** The ids of verified items whose printed answer is not their computed answer, by value. */
+const verifiedDisagreements = (list: BookItem[]) =>
+  list.filter(i => i.status === 'verified' && !sameValue(i.printedAnswer ?? '', i.computedAnswer)).map(i => i.id);
+
+describe('book items — comparing a printed answer by value', () => {
+  it('keeps values apart that only collide once the fraction bar is deleted', () => {
+    for (const [printed, computed] of [
+      ['(12, 3)', '(1/2, 3)'],
+      ['c < -13', 'c < -1/3'],
+      ['( - 1 13 , 0)', '(-11/3, 0)'],
+      ['( - 11 3 , 0)', '(-1/13, 0)'],
+      ['(1 2, 3)', '(12, 3)'],
+    ]) {
+      assert.equal(sameValue(printed, computed), false, `${printed} vs ${computed}`);
+      assert.equal(sameValue(computed, printed), false, `${computed} vs ${printed}`);
+    }
+  });
+
+  it('still matches a split printed fraction to its value', () => {
+    assert.equal(sameValue('(3, 1), ( - 11 3 , - 7 3 )', '(-11/3, -7/3), (3, 1)'), true);
+    assert.equal(sameValue('c < - 1 3', 'c < -1/3'), true);
+    assert.equal(flat('( - 11 3 , - 7 3 )'), '(-11 3,-7 3)');
+    assert.equal(flat('(-11/3, -7/3)'), '(-11 3,-7 3)');
+  });
+
+  it('does not take a duplicated point for a single point', () => {
+    assert.equal(sameValue('(1, 4), (1, 4)', '(1, 4)'), false);
+    assert.equal(sameValue('(1, 4)', '(1, 4), (1, 4)'), false);
+  });
+});
 
 describe('book items — the committed data', () => {
   it('has enough items that a run which quarantines everything fails here', () => {
@@ -109,11 +141,31 @@ describe('book items — the committed data', () => {
   it('verifies only where the printed answer is the computed one, compared by value', () => {
     const verified = items.filter(i => i.status === 'verified');
     assert.ok(verified.length >= 5, `only ${verified.length} verified`);
+    assert.deepEqual(verifiedDisagreements(items), []);
     for (const i of verified) {
-      assert.ok(sameValue(i.printedAnswer!, i.computedAnswer), `${i.id}: «${i.printedAnswer}» vs «${i.computedAnswer}»`);
       // the printed text is the book’s own, whitespace-normalised and nothing else
       assert.equal(i.printedAnswer, i.printedAnswer!.replace(/\s+/g, ' ').trim(), i.id);
     }
+  });
+
+  it('catches a data edit that makes a verified item disagree with its printed answer', () => {
+    const edit = (id: string, over: Partial<BookItem>) => items.map(i => (i.id === id ? { ...i, ...over } : i));
+    const ten = items.find(i => i.id === 'bi-math-s1-teacher-guide-u1l2-10')!;
+    const eleven = items.find(i => i.id === 'bi-math-s1-teacher-guide-u1l2-11')!;
+    assert.equal(ten.status, 'verified');
+    assert.equal(eleven.status, 'verified');
+    // the fraction bar read as nothing: -11/3 printed as -113
+    assert.deepEqual(
+      verifiedDisagreements(edit(ten.id, { printedAnswer: '(3, 1), (-113, -73)' })),
+      [ten.id],
+    );
+    // 1/3 computed as the integer 13 against a printed «- 1 3»
+    assert.deepEqual(
+      verifiedDisagreements(edit(eleven.id, { computedAnswer: 'c < -13' })),
+      [eleven.id],
+    );
+    // the unmodified data is untouched by the helper
+    assert.deepEqual(verifiedDisagreements(items), []);
   });
 
   it('keeps the page-47 item whose printed answer disagrees as computed, and says so', () => {

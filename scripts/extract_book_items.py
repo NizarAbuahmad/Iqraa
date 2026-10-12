@@ -164,6 +164,9 @@ def nfkc(s: str) -> str:
 
 
 C_TOKEN = re.compile(r'(?<![A-Za-z])c(?![A-Za-z])')
+# The `c` that item 10 replaces by its value: touching a digit (`2c`) or a letter it would be
+# a product or a name, and `2c` with c = 8 is 16, not 28.
+C_ISOLATED = re.compile(r'(?<![A-Za-z0-9])c(?![A-Za-z0-9])')
 ITEM_END = re.compile(r'[\t ]\s*(\d{1,2})\s*$')   # an Arabic instruction line ends with its number
 
 
@@ -208,7 +211,7 @@ def split_unit_open(text: str) -> dict[int, str]:
             and ends[11] > value[0][0] and C_TOKEN.search(lines[ends[11]]):
         h = headers[0]
         system = f'{lines[h + 1]}\n{lines[h + 2]}'
-        if len(C_TOKEN.findall(system)) == 1:
+        if len(C_TOKEN.findall(system)) == 1 and len(C_ISOLATED.findall(system)) == 1:
             out[11] = system
             out[10] = C_TOKEN.sub(value[0][1].group(1), system)
     return dict(sorted(out.items()))
@@ -246,16 +249,18 @@ def printed_entries(text: str) -> tuple[list[str], int]:
     return out, ignored
 
 
-# Matching a printed answer to an item is by VALUE. `flat` drops all whitespace and the
-# fraction bar: the text layer splits `-11/3` into «- 11» over «3», so the printed form
-# flattens to `-113` and so does ours. A collision with a different true answer would
-# need a stem that computes an integer digit-for-digit equal to the printed fraction AND a
-# solution of the same shape, for the one item that entry is being offered to - and each
-# entry is consumed once. Solution points may come in any order (the book prints them in
-# its own), so a list of `(a,b)` points is compared as a set of points; coordinates keep
-# their order, and `(2. 1)` is the decimal 2.1, never the point (2, 1).
+# Matching a printed answer to an item is by VALUE. The text layer splits `-11/3` into
+# «- 11» over «3», so the printed form reads `- 11 3`. `flat` therefore turns the fraction
+# bar into a gap and drops every gap EXCEPT one between two digits: both spellings meet at
+# `-11 3`, while `12`, `1 2` and `1/2` stay three different things. (Deleting the bar made
+# `(12, 3)` equal `(1/2, 3)` and `c < -13` equal `c < -1/3`: a printed answer could verify
+# an item it contradicted.) Solution points may come in any order (the book prints them in
+# its own), so a list of `(a,b)` points is compared as a sorted list of points - a
+# duplicate counts, so `(1, 4), (1, 4)` is not `(1, 4)`; coordinates keep their order, and
+# `(2. 1)` is the decimal 2.1, never the point (2, 1).
 def flat(s: str) -> str:
-    return re.sub(r'[\s/]', '', s)
+    s = re.sub(r'\s+', ' ', s.replace('/', ' '))
+    return re.sub(r'(?<![0-9])\s+|\s+(?![0-9])', '', s)
 
 
 def _points(s: str) -> list[str] | None:
@@ -373,7 +378,11 @@ def solve_system(stem: str, allow_none: bool = False) -> str:
     sols = solve([Eq(*eq_sides(l)) for l in lines], [X, Y], dict=True)
     real = [s for s in sols if len(s) == 2 and all(v.is_real is True for v in s.values())]
     if not real:
-        if allow_none and all(any(v.is_real is False for v in s.values()) for s in sols):
+        if not sols:
+            # SymPy returned nothing: it could not solve, which is not a proof of none
+            # (`y = x^5 - x + 1 ; y = 0` has a real root and comes back empty).
+            raise Reject('not_solved')
+        if allow_none and all(len(s) == 2 and any(v.is_real is False for v in s.values()) for s in sols):
             return NO_SOLUTION_AR
         raise Reject('no_real_solution')
     if not all(is_clean(v) for s in real for v in s.values()):
@@ -406,11 +415,25 @@ def solve_param_no_solution(stem: str, param: str) -> str:
     if quadratic.degree() != 2:
         raise Reject('not_a_quadratic')
     a, b, k = quadratic.all_coeffs()
+    if a.has(c):
+        # the leading coefficient can vanish for some c (`c*x^2 - y^2 = 1` with `x - y = 0`
+        # is not a quadratic at c = 1), and then the discriminant says nothing about it
+        raise Reject('parameter_in_leading_coefficient')
     allowed = solve_univariate_inequality(b**2 - 4 * a * k < 0, c, relational=False)
+    return f'{param} < {fmt(strict_upper_bound(allowed))}'
+
+
+def strict_upper_bound(allowed):
+    """`end` of an open half-line `(-oo, end)` with a rational end; anything else is rejected.
+
+    Open matters: at the boundary the discriminant is 0, a double root, so the system HAS a
+    solution there and `c <= end` would be a wrong answer.
+    """
+    from sympy import S  # noqa: PLC0415
     if not (getattr(allowed, 'is_Interval', False) and allowed.start == S.NegativeInfinity
             and allowed.right_open and allowed.end.is_Rational):
         raise Reject('not_a_half_line')
-    return f'{param} < {fmt(allowed.end)}'
+    return allowed.end
 
 
 def parse_f(stem: str):
