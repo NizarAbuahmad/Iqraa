@@ -1,6 +1,6 @@
 # Schedule, homework, exams & results for students and parents — design
 
-Date: 2026-10-11 · Status: Parts 0–2 built (Part 2 on 2026-10-12, with a final-review fix wave); Part 3 is half built — the exam date and a school-wide exam calendar shipped separately (PR #1017, below) — and Parts 3 (family side, paper marks) and 4 are not started
+Date: 2026-10-11 · Status: Parts 0–3 built (Part 2 on 2026-10-12, with a final-review fix wave; Part 3 on 2026-10-12, on top of the exam date and school exam calendar that shipped separately in PR #1017); Part 4 (notifications) is not started
 
 ## Why
 
@@ -54,7 +54,8 @@ paper-exam table (families would get two lists of exams and results).
   «Exams have a date, and teachers at one school can see each other's»)
   `evaluations` also has `exam_date` / `exam_time` text columns, and there are a
   `schools` table, `users.school_id` and a teacher-only `GET /exam-calendar`.
-  `/student/exams` and `/parent/exams` do not return the date yet.
+  Part 3 (below) returns the date to families through `/student/exams` and
+  `/parent/exams`; families still do not get `/exam-calendar`.
 - `lib/resultsReleaseNotify.ts#announceResultsRelease` already pushes to
   children and guardians; `lib/pushNotifications.ts` is the Expo push layer.
 - Mobile gating: `services/routeGating.ts` (`NON_TEACHER_ROUTES`,
@@ -223,24 +224,79 @@ instead of adding its own column:
 - The earlier plan for this part, an additive `evaluations.sitting_at
   timestamptz`, is dropped: the date exists, in the other shape.
 
-**Still to do in this part:**
+**Built in this part (2026-10-12):**
 
-- **Show the date to families.** `/student/exams` and `/parent/exams` do not
-  return `examDate` / `examTime` yet. Add them through `studentExamRow` /
-  `guardianExamRow`, so a date appears only for an exam the child may already
-  see — a draft that has been given a
-  date for planning must not leak through the date. Then an "upcoming" list on
-  the School tab. Families do not get `/exam-calendar`: it is the teachers'
-  cross-colleague view and is guarded as such.
-- Paper exams reuse `setPaperQuestions`, `scanMarks` and
-  `attempts.source = teacher_entry`. **First task of this part:** read
-  `evaluations/[id]/results` and `answers/[studentId]` and confirm whether a
-  per-class marks-entry grid is missing before building one.
-- Visibility stays gated by `releaseResultsToStudent` and shaped by
-  `studentExamRow` / `guardianExamRow`, so a parent never sees what the child
-  cannot.
-- A per-child results view built on `/student/grades` — check what it already
-  returns first. No term averages or report cards.
+- **Families see the date.** `/student/exams` and `/parent/exams` rows carry
+  `examDate` (`"YYYY-MM-DD"` or `null`), `examTime` (`"HH:MM"` or `null`) and
+  `paper` (boolean), all added in `studentExamRow` (`modules/assessment/studentExams.ts`),
+  so a date appears only on an exam the child may already see: the loader
+  (`examRowsFor`, `routes/studentExams.ts`) lists published or closed exams of
+  the child's live classes plus any exam the child already holds a sitting on, so
+  a dated draft and a dated exam with no class reach nobody (pinned by
+  `familyExams.db.test.ts`). `/parent/exams` keeps one entry per roster row, and
+  each entry now also carries `key`, the `groupChildren` key that
+  `/parent/homework` and `/parent/schedule` use, so the School tab can put one
+  child's rows from two teachers under one name. Families do not get
+  `/exam-calendar`: it is the teachers' cross-colleague view and is guarded as such.
+- **«الاختبارات القادمة»** is a section of the School tab between homework and
+  the timetable (`app/(tabs)/school.tsx`, logic in `services/upcomingExams.ts`):
+  the child's exams whose `examDate` is today or later, compared as
+  `YYYY-MM-DD` strings against `ammanToday()`, soonest first (then by time, with
+  a missing time last, then by title), in **any** state. A parent's picker is
+  one chip per child by `key`. A row opens «اختباراتي», which also shows
+  «موعده …» in the row's meta line.
+- **A paper exam never offers a link or «ابدأ».** A **paper exam** is one whose
+  every live question is a paper question (`isPaperExam` in
+  `modules/assessment/paperExam.ts`: manual grading and an empty body; there is no
+  column). Its row has `paper: true`, `shareCode: null`, and state `paper` («امتحان
+  ورقي») until a handed-in sitting exists, after which it is `submitted` /
+  `result` like any other exam, whatever the exam's status.
+- **Paper marks: one total per student.** The first task of this part confirmed
+  that no per-class grid existed: `answers/[studentId]` marks one student at a
+  time. The owner chose a single total per student, built on the existing paper
+  exam model with no migration. A **quick paper exam** is a paper exam with
+  exactly one question worth N (0 < N ≤ 100, decimals allowed, stored as
+  `numeric(5,2)`); «مجموع فقط» on the new-exam screen is the default shape for a
+  paper exam, and builds it with one question on the first selected objective and
+  the `understanding` competency. `PUT /evaluations/:id/paper-totals` takes
+  `{ totals: [{ studentId, marks }] }` and answers `{ maxMarks, results }`, one
+  result per row in order: `saved`, `unchanged`, `cleared`, or `error` with a code
+  (`not_in_class`, `not_in_group`, `marks_out_of_range`, `kept_student_work`,
+  `not_quick_paper`, `failed`). It accepts an exam that is `published` **or**
+  `closed` (a teacher may close the paper after the sitting, then type the totals);
+  a draft is `409 not_published`; an exam with no class, more than one question
+  or no level scale is `409 no_class` / `not_quick_paper` / `no_level_scale`; an
+  exam that is not the caller's, missing, malformed or archived is one identical
+  404. Each row is found-or-created as a `teacher_entry` sitting
+  (`lib/teacherEntry.ts`, shared with the per-student routes), the mark is
+  written, and the sitting is handed in with `gradeSubmission`, which stamps
+  `submittedAt` and builds the result. Rows are saved one after another and
+  independently: one bad row never costs the others. `marks` is a number, a
+  numeric string or `null`; a string is a plain decimal of at most **16
+  characters** (no hex, exponent or non-Latin digits — the app folds Arabic-Indic
+  digits and «٫» itself) read like a single typed mark (0..N, rounded to two
+  decimals), and anything else is a row-level `marks_out_of_range`. **Limits:** at
+  most **100 rows** per request (`400 too_many_rows`; the app sends chunks of 50),
+  **60 requests per minute per user** (`429`), a student appearing twice is
+  `400 duplicate_student`. **Clearing** (`marks: null`) deletes a
+  teacher-entered sitting that holds no answers — with its result and its
+  `grade_overrides` audit rows — even after results are released, and is refused
+  (`kept_student_work`) for a sitting the student made through the link or one
+  holding answers; the app asks for confirmation before sending a clear for a
+  mark it had saved. The class mark book is `app/evaluations/[id]/marks.tsx`,
+  reached from «أدخل العلامات» on the exam screen and «أدخل العلامات كجدول» on
+  the answers picker (both for a **published** quick paper exam). A multi-question
+  paper is still marked per student.
+- **Visibility is unchanged.** `releaseResultsToStudent` + handed in + not
+  provisional (`studentResultReady`), shaped by `studentExamRow` /
+  `guardianExamRow`, so a parent sees exactly what the child sees. The teacher's
+  `ExamDateCard` says when a date cannot reach families yet: no class, or a dated
+  draft.
+- **Per-child results: no new route — a correction.** An earlier draft of this
+  spec pointed at `/student/grades`; that route returns the student's curriculum
+  grade ids for the library (`{ gradeIds }`), not marks. The family's result is
+  `result{…}` on the exam rows «اختباراتي» already shows (which, for a parent, are
+  grouped per child). No term averages or report cards.
 
 **A school day is stored two ways**, and anything that compares them (the Part 4
 reminders, an "upcoming" list that mixes homework and exams) has to handle both:
@@ -255,8 +311,10 @@ as `YYYY-MM-DD` strings and homework days through their Amman date; never
 - Homework posted and exam scheduled/changed: pushed from the create/update
   handlers through `lib/pushNotifications.ts` to the class's students and their
   guardians, resolved with the Part 0 helper.
-- Results released: `announceResultsRelease` already does it; extend to paper
-  marks.
+- Results released: `announceResultsRelease` already does it, and it covers paper
+  marks handed in before the release (it selects every handed-in sitting of the
+  exam). Marks typed **after** release are visible to the family at once with no
+  push, because the announcement fires only when the release flag flips on.
 - Exam scheduled/changed has a hook already: `exam_date` / `exam_time` are
   written by `PATCH /evaluations/:id`. Note the two day representations in Part
   3 (text exam day, Amman end-of-day homework instant) before writing any
@@ -280,7 +338,13 @@ as `YYYY-MM-DD` strings and homework days through their Amman date; never
   cannot read another family's child; a student cannot read another class's
   homework; a teacher cannot edit another teacher's homework; results hidden
   until released; unowned paths still 404, not 401.
-- Mobile: logic in pure `services/*.ts` with tests in `services/__tests__/`;
+- Part 3 DB tests: `familyExams.db.test.ts` (the date reaches families only on
+  an exam they may see; `paper`; no link; release; the parent `key`),
+  `teacherEntry.db.test.ts` (the shared sitting/mark code, characterised before it
+  was extracted) and `paperTotals.db.test.ts` (who may call, which exams, per-row
+  results, clearing, limits, the rate limit).
+- Mobile: logic in pure `services/*.ts` with tests in `services/__tests__/`
+  (`upcomingExams.test.ts`, `paperMarks.test.ts`, `myExams.test.ts`);
   update `routeGating.test.ts`; keep `i18n.test.ts` green.
 - `pnpm run typecheck`; migrations generated with
   `pnpm --filter @workspace/db run generate`.
@@ -297,7 +361,11 @@ as `YYYY-MM-DD` strings and homework days through their Amman date; never
    and the homework screens were rendered in headless Chromium (create, edit,
    delete and tick exercised through the UI against a seeded database), but never
    on a device or by a real account; check them on a
-   signed-in parent and student account right after deploy.
+   signed-in parent and student account right after deploy. Part 3 (exam dates,
+   «الاختبارات القادمة», the `paper` state, the mark book) is the same: after
+   deploy, open it on a real signed-in parent, student and teacher. At the time of
+   writing none of it had been used by a real account or on a device; see STATUS.md
+   «Exam dates and paper marks reach families, 2026-10-12» for what was rendered.
 2. The assembled schedule is only as complete as teacher adoption.
 3. The reminder needs new infrastructure (Cloud Scheduler + internal endpoint).
    If unwanted, drop that one notification.

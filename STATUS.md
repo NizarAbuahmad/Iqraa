@@ -986,7 +986,10 @@ and plan lessons.
   `examTime` (`null` clears; a time cannot exist without a date —
   `lib/examDate.ts`). **Planning data only**: it does not open or close the
   student link. A text box, not a picker, like the teaching-plan dates — a picker
-  is a native module and would need an `app.json` `version` bump.
+  is a native module and would need an `app.json` `version` bump. **Since
+  2026-10-12 families see it too**, on the exam rows they already get and in an
+  upcoming list on the School tab — only for an exam they may already see; see
+  «Exam dates and paper marks reach families, 2026-10-12».
 - **Schools exist, assigned by a platform admin** (`schools` table,
   `users.school_id`): `GET/POST /admin/schools`, `PUT /admin/users/:id/school`,
   **`system_admin` only** — narrower than the rest of `routes/admin.ts`, because
@@ -1133,7 +1136,9 @@ weekly timetable, read-only, from `GET /student/schedule` and
   its teachers' classes — never "no lessons".
 - **A parent's children are grouped by name** (`modules/family/children.ts`) for the
   schedule, because the same child under two teachers is two roster rows.
-  `/parent/exams` still lists one section per roster row.
+  `/parent/exams` still returns one entry per roster row, but since 2026-10-12 each
+  carries the child's `key` and «اختباراتي» groups them per child — see «Exam dates and
+  paper marks reach families, 2026-10-12».
 - Times come from each slot's own teacher (`schedule_periods`); they are never merged.
 - **Teachers' slot notes (`schedule_slots.notes`) are private and never sent to families** — the loader does not even select the column. They are written in the teacher's own timetable and can concern individual children; showing them to families would need a deliberate, separately-labelled teacher field.
 - **Tab and routing:** a fourth tab for parent/student only (`visible: !isTeacher`);
@@ -1157,8 +1162,9 @@ weekly timetable, read-only, from `GET /student/schedule` and
   real family accounts on merge. Look at it on a signed-in parent and a signed-in
   student account right after deploy.
 - Still to come (spec `docs/superpowers/specs/2026-10-11-family-school-views-design.md`):
-  exam dates and paper marks (Part 3), notifications (Part 4). Homework (Part 2) is
-  built — see «Homework: teachers set it, students tick it, parents watch, 2026-10-12».
+  notifications (Part 4). Homework (Part 2) and exam dates / paper marks (Part 3) are
+  built — see «Homework: teachers set it, students tick it, parents watch, 2026-10-12»
+  and «Exam dates and paper marks reach families, 2026-10-12».
 
 ## API tests can run against a real database, 2026-10-12
 
@@ -1171,7 +1177,7 @@ tokens. First user: `src/routes/__tests__/familySchedule.db.test.ts` — cross-f
 access (a parent sees only their children; a student only their class), archived
 rows and classes excluded, teachers' private slot notes never sent, the flag-off 403,
 and which roster rows the `/parent/exams` list includes (link scoping only — no exams
-are seeded, so exam contents are not yet asserted).
+were seeded in that file; the exam rows are asserted in `familyExams.db.test.ts`, below).
 
 - **CI** (`workspace` job) now has a `postgres:16` service and sets `REQUIRE_DB_TESTS=true`,
   so a missing database fails instead of skipping. Locally the tests skip unless
@@ -1180,8 +1186,9 @@ are seeded, so exam contents are not yet asserted).
   refused without `ALLOW_REMOTE_TEST_DB=1`. Schema comes from the migrations, never `push`.
 - **Build first:** the tests boot `dist/index.mjs`, so `pnpm build` precedes `pnpm test` (CI already does).
 - Second and third users, 2026-10-12: `homework.db.test.ts` and `familyHomework.db.test.ts`
-  (see the homework section below). New tests for routes that need real rows (exams —
-  spec Part 3) should be written as `*.db.test.ts` on this harness.
+  (see the homework section below). New tests for routes that need real rows should be written as
+  `*.db.test.ts` on this harness; Part 3 (exams) did, with `src/test-support/seedExams.ts`
+  as the exam fixture — see «Exam dates and paper marks reach families, 2026-10-12».
 
 ## Homework: teachers set it, students tick it, parents watch, 2026-10-12
 
@@ -1212,7 +1219,7 @@ place — see its section 2).
   parent's child picker). The School tab (`app/(tabs)/school.tsx`) is titled
   «المدرسة» and has two sections, each under its own heading and with its own error
   banner: Homework first (a tick for a student, read-only per child for a parent),
-  then the weekly timetable. Logic is `services/homework.ts`, fetchers
+  then the weekly timetable (since 2026-10-12 «الاختبارات القادمة» sits between them). Logic is `services/homework.ts`, fetchers
   `services/homeworkApi.ts` (split, as for the timetable). Copy is `hw*` in
   `services/i18n.ts`, ar + en.
 - **An item nobody can tick is not "late" — decided per ITEM, not per child.** Ticking is
@@ -1376,6 +1383,206 @@ place — see its section 2).
   - The due-date range error (`hwErrDueRange`) appears at the bottom of the modal, away
     from the date field it is about.
   - Not exercised: real keyboard / IME input and real device text scaling.
+
+## Exam dates and paper marks reach families, 2026-10-12
+
+A student and a parent now see when an exam is, in an upcoming list on the School
+tab; a paper exam never offers a link; and a teacher types a paper exam's marks for
+the whole class in one screen, released like any digital result. Spec Part 3 of
+`docs/superpowers/specs/2026-10-11-family-school-views-design.md` (rewritten as
+built — see its section 3). **No migration**: the date columns came with «Exams have
+a date, and teachers at one school can see each other's, 2026-10-11», and a paper
+exam is a question shape, not a column. Before this, that section's date was
+planning-only and **not returned to families**; it still opens and closes nothing.
+
+- **Rows.** `/student/exams` and `/parent/exams` rows (`studentExamRow` in
+  `modules/assessment/studentExams.ts`, loaded by `examRowsFor` in
+  `routes/studentExams.ts`) carry `examDate`, `examTime` and `paper`, plus a new
+  state `paper`. A date therefore appears only on an exam the child may already see
+  (published or closed, in a live class of theirs, or one they hold a sitting on):
+  a dated draft and a dated exam with no class reach nobody. `/parent/exams` is
+  still one entry per roster row, now each with `key` — the `groupChildren` key
+  `/parent/homework` and `/parent/schedule` use — so one child under two teachers
+  is one section. Families still do not get `/exam-calendar`.
+- **Paper = every live question is a paper question** (`isPaperExam`,
+  `modules/assessment/paperExam.ts`: manual grading and an empty body). A paper
+  exam row has `paper: true`, `shareCode: null` for everyone, and state `paper`
+  («امتحان ورقي») until a handed-in sitting exists; after that it is `submitted` /
+  `result` like any exam, whatever its status.
+- **«الاختبارات القادمة»** (`app/(tabs)/school.tsx`, `services/upcomingExams.ts`):
+  a section between homework and the timetable with the child's exams whose
+  `examDate` is today or later — compared as `YYYY-MM-DD` **strings** against
+  `ammanToday()`, never through `new Date()` — in **any** state, soonest first
+  (then time, a missing time last, then title). Its own error banner and empty
+  state; a parent's picker is per child by `key`. A row opens «اختباراتي»
+  (`app/my-exams.tsx`), which now shows «موعده …» and groups a parent's rows per
+  child (`groupChildExams`). The teacher's `ExamDateCard` says when a date cannot
+  reach families: «no class», or a dated draft.
+- **`PUT /evaluations/:id/paper-totals`** (`routes/evaluations.ts`,
+  `lib/paperTotals.ts`, pure rules in `modules/assessment/paperTotals.ts`): body
+  `{ totals: [{ studentId, marks }] }`, answer `{ maxMarks, results }` with one
+  result per row, in order — `saved`, `unchanged`, `cleared`, or `error` with a
+  `code` (`not_in_class`, `not_in_group`, `marks_out_of_range`,
+  `kept_student_work`, `not_quick_paper`, `failed`). One total per student for a
+  **quick paper exam**: a paper exam with exactly one question worth N (0 < N ≤ 100,
+  decimals allowed). Accepts an exam that is `published` **or** `closed`; draft →
+  `409 not_published`; no class / not a quick paper / no level scale → `409
+  no_class` / `not_quick_paper` / `no_level_scale`; not yours, missing, malformed or
+  archived → one identical 404; a malformed body → 400 (`invalid_paper_totals`,
+  `too_many_rows`, `duplicate_student`). **Limits:** ≤ **100 rows** per request (the
+  app sends chunks of **50**), a mark string ≤ **16 characters** (checked before any
+  regex or `Number()` runs; the regex is linear), **60 requests/minute per user**
+  (`paper-totals` limiter, `429`). Each row is found-or-created as a
+  `teacher_entry` sitting, marked, and handed in with `gradeSubmission` — which
+  stamps `submittedAt` and builds the result; rows are saved one after another and
+  independently, so one bad row never costs the rest. A repeat of the same mark is
+  `unchanged` only when the stored result also stands; a handed-in sitting whose
+  result is missing, stale or provisional is repaired and reported `saved`.
+  **Clearing** (`marks: null`) deletes a teacher-entered sitting with no answers —
+  and with it its result and its `grade_overrides` audit rows — and is refused
+  (`kept_student_work`) for a sitting the student made or one holding answers.
+- **`lib/teacherEntry.ts`** now holds the find-or-start, frozen-template and
+  write-a-mark code that `POST /evaluations/:id/attempts` and the per-student mark
+  and submit routes used to carry inline (`routes/evaluations.ts`,
+  `routes/attempts.ts`); the mark book calls the same functions. It was extracted
+  after characterisation tests were written against the old routes, which passed
+  unchanged on both sides. `writeTeacherMark` does **not** check ownership — the
+  caller must.
+- **Mobile.** `app/evaluations/[id]/marks.tsx` is the class mark book (reached from
+  «أدخل العلامات» on the exam screen and «أدخل العلامات كجدول» on the answers
+  picker, both only for a **published** quick paper exam); logic is
+  `services/paperMarks.ts`, the fetcher `savePaperTotals` in
+  `services/evaluations.ts`. «مجموع فقط» is the default shape for a new paper exam
+  (`app/evaluations/new.tsx`): one question worth the typed total, on the first
+  selected objective, competency `understanding`. A published paper exam's screen
+  shows no share code. The grid folds Arabic-Indic digits and «٫» itself (the
+  server refuses non-Latin digits), locks its inputs while saving, keeps edits typed
+  during a save, and asks for confirmation before sending a clear for a mark it had
+  saved. Copy is `marksGrid*` / `paperShape*` / `upcomingExams*` / `myExamsStatePaper`
+  in `services/i18n.ts`, ar + en.
+- **Visibility is exactly as before.** `releaseResultsToStudent` + handed in + not
+  provisional (`studentResultReady`), through `studentExamRow` / `guardianExamRow`:
+  a parent sees what the child sees, and only after the teacher releases results. A
+  typed total is invisible to a family until its sitting is **handed in** — which only
+  `gradeSubmission` does on the teacher side. **No new results route**: the spec's
+  earlier "a per-child view on `/student/grades`" was wrong — that route returns the
+  student's curriculum grade ids (`{ gradeIds }`), not marks. The result is the
+  `result{…}` on the rows «اختباراتي» already shows.
+- **Access rules are pinned by tests against a real Postgres** (the harness of «API
+  tests can run against a real database, 2026-10-12»): `familyExams.db.test.ts`
+  (8 tests) — the date reaches a family only on an exam they may see (a dated draft
+  and a dated classless exam reach nobody), each family sees only its own classes, a
+  parent is never handed a link, a paper exam has no link and no «ابدأ», a mark shows
+  only once released and only on the child who sat, and a parent entry carries the
+  same child `key` as the homework list; `teacherEntry.db.test.ts` (6) — the shared
+  sitting/mark code (created once, refused when unpublished / not the teacher's
+  student / not their exam / outside a group / no scale / no questions, range check,
+  audit only on a re-mark, hand-in stamped once); `paperTotals.db.test.ts` (22) —
+  who may call (401 / 403 / identical 404s), which exams (the 409s, the 400s), per-row
+  refusals (not in the class, archived student, another teacher's student with a
+  stray membership row, group check, out-of-range or non-numeric), the 16-character
+  cap and a hostile string answered in constant time, a typed total becoming a
+  handed-in result that families see only after release, `unchanged` and the repair
+  of a stale result, rounding, a mixed batch, a row that throws, clearing (teacher
+  sitting deleted, student's own kept, a sitting with answers kept, a released one
+  deleted with its audit rows), a closed exam, and the 60/minute limit; plus a
+  mount-order case that the new path answers 401. Pure rules: `studentExams.test.ts`,
+  `paperExam.test.ts`, `paperTotals.test.ts` (api); `upcomingExams.test.ts`,
+  `paperMarks.test.ts`, `myExams.test.ts` (mobile).
+  **Mutation-proven**: each rule below was removed, the named test seen going red,
+  then restored (the DB tests boot the *built* bundle, so each mutation needed a
+  `pnpm build`).
+
+  | Removed | Went red |
+  | --- | --- |
+  | `!paper &&` in `offerLink` | unit `never offers a link once a student has handed one in` (the DB test cannot see it: state `paper` already withholds the link) |
+  | `.map(guardianExamRow)` in `/parent/exams` | `never hands a parent a link` |
+  | `"draft"` allowed in the family status list and the early return in `studentExamRow` | `never lists a dated draft, to anyone` |
+  | `examDate` in the loader's select | `carries each exam's planned day and time` and `offers no link and no Start on a paper exam` |
+  | group check in `findOrStartTeacherEntry` | `keeps a group check to its group` |
+  | override-audit insert in `writeTeacherMark` | `checks the range, and audits only a re-mark` |
+  | case folding on `studentId` in the totals parser | 2 unit tests (lower-casing, duplicate by case) |
+  | class-membership check | `refuses, row by row, anyone who is not a live student…` |
+  | `gradeSubmission` replaced by `recomputeResult` | `turns a typed total into a handed-in, final result…` |
+  | `archivedAt` check on the exam | `404 alike … an archived exam` |
+  | `clearDecision` always `delete` | `null clears a typed paper, and refuses to clear a student's own work` |
+  | `skipIfUnchanged` | `re-saving the same mark changes nothing…` |
+  | numeric-string guard | `refuses a mark outside 0..N, or not a number` |
+  | route accepts `published` only | both `after the sitting` cases (closed exam) |
+  | rate limit raised to 61 | `allows 60 requests a minute per teacher, then 429` |
+  | rethrow in the per-row catch | `a row that fails is reported as failed…` (needed a throwing fixture; a refusal alone stayed green) |
+  | `students.teacherId` filter | `refuses a student of another teacher even if a membership row…` (needed the stray-membership fixture) |
+  | the 16-character cap (and the old quadratic regex) | `reads a hostile mark string in constant time` (4.8 s on 100k digits + `x` before the fix) and `the text cap is 16 characters` |
+  | the stale-result repair | `repairs a handed-in sitting whose result is missing, stale or provisional…` |
+  | `isNull(students.archivedAt)` | `refuses an archived student of the teacher's own…` |
+  | `hasAnswers` hard-coded false | `keeps a teacher-entry sitting that holds an answer…` |
+  | merge ignoring edits made during a save, and the total missing from the out-of-range copy | 6 tests in `paperMarks.test.ts` |
+- **What has been seen.** Typecheck, the unit tests and the DB tests above — and
+  nothing else. **Nothing in Part 3 had been rendered at the time of writing**: no
+  browser, no device, no real account. The School tab section, «اختباراتي», the date
+  card hints, «مجموع فقط», the mark book and both entry buttons were
+  typechecked and logic-tested only. RTL layout, the keyboard, the confirm dialog,
+  the narrow total box and the tick icons are all unseen.
+  **Browser run: NOT YET RECORDED — to be replaced with what the controller's run (plan Task 10, Step 5: teacher, student and two-child parent at phone width, Arabic and English) did and did not cover.**
+  **Do after deploy** (spec Risk 1): `STUDENT_ACCOUNTS` is already `true` in
+  production, so this reaches real accounts on merge. Check the exam dates,
+  «الاختبارات القادمة», a paper exam in «اختباراتي» and the mark book on a real
+  signed-in parent, student and teacher.
+- **Known gaps** (found in review, not fixed):
+  - **No push when marks arrive after release.** `announceResultsRelease` fires only
+    when the release flag flips on (and covers sittings handed in by then); a mark
+    typed afterwards — the route also accepts a closed exam — is visible to the
+    family at once and silent. Exam scheduled/changed pushes nothing either. Both
+    are Part 4.
+  - **A dated exam with no class reaches no family** (nothing to hang it on); only
+    the teacher's hint says so.
+  - **A total-only paper measures one objective and one competency**: all marks go to
+    the first selected objective with competency `understanding`, so the teacher's
+    objective breakdown for that exam means "the total" and the family's competency
+    card says "not enough evidence". The «مجموع فقط» hint does not say so.
+  - **A quick paper exam's total is capped at 100**, as every paper question is.
+  - **A published paper exam still has a share code server-side**, and `/take/:code`
+    would admit a student who has it. Families and the teacher's screen no longer
+    show it; the endpoint was not changed.
+  - **`/student/progress` (the mastery gate) counts a published paper exam as an open
+    quiz** for its lesson. Only matters with `MASTERY_GATE=true`.
+  - **Old app builds show a blank chip for the new `paper` state** until they update
+    (an OTA carrying this work reaches them — no `app.json` `version` bump was needed,
+    no native module changed). They still offer no link: `shareCode` is null.
+  - **A typed number for a student whose own link sitting is open is accepted** and
+    hands that sitting in — the teacher decides — and re-saving through the grid a
+    sitting the student made grades it as the teacher's mark, as the per-student
+    screen already did. Clearing such a sitting is refused (`kept_student_work`).
+  - **Clearing a saved mark deletes the sitting and its `grade_overrides` audit rows,
+    even after release** (cascade). The server does not refuse; the app asks first and
+    adds "families will stop seeing it" when results are released. Same precedent as
+    `DELETE /attempts/:id`.
+  - **A closed quick paper exam has no entry button**: the route and the screen accept
+    it, but neither the exam screen's closed block nor the answers picker's card (shown
+    only while `published`) offers the button — reachable only by URL or back-navigation.
+  - **A closed or unpublished paper exam with no sitting reads `paper` forever**: the
+    row carries no status, so the chip cannot say it is over.
+  - **The mark book, found in review**: a reload after an uncertain save wipes the
+    per-row refusals; a refused clear (`kept_student_work`) leaves a blank, dirty box
+    that blocks release and does not show the stored value; the busy guard is state
+    only (a double tap before re-render could send twice — harmless, saves are
+    idempotent); a 429 gets the generic copy; the total-too-large error shows at the
+    bottom, away from the field; an archived class shows the generic load error; a few input niceties (selecting the text on focus,
+    a 44pt minimum height, folding digits as they are typed) are missing.
+  - **School tab**: when a parent's picker key matches no child the first child's
+    exams are shown instead of an empty state; merging a parent's rows by
+    `evaluationId` keeps the first copy rather than the most advanced state and loses
+    the server's sort order; the exams state
+    is not reset on an account change (same as homework).
+  - **`findOrStartTeacherEntry` still has its unique-violation race** on two concurrent
+    creates of the same sitting (a 500 on the per-student route; the mark book saves
+    rows sequentially and reports a throw as `failed`).
+  - **Test gaps**: `teacherEntry.db.test.ts` does not pin the order of its checks;
+    the family loader's `paper` derivation has no DB case for a mixed-type exam, a
+    zero-question exam or a soft-deleted question; the rate-limit test in
+    `paperTotals.db.test.ts` spends 56 of the 60 calls, leaving 4 of headroom, a
+    latent flake; `upcomingExams` has no cases for a malformed time or a same-title
+    tie.
 
 ## Messages can be reacted to with an emoji, 2026-10-10
 

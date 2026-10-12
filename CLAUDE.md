@@ -340,3 +340,13 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   account in another teacher's class. The child-level `canTrack` on
   `/parent/homework` is informational only; do not gate on it. Pinned by `homework.db.test.ts` and
   `familyHomework.db.test.ts`.
+- **A mark a teacher types is invisible to a family until its sitting is handed
+  in — writing the grade is not enough.** `studentExamRow` shows a result only
+  when the attempt has `submittedAt` *and* results are released. On the teacher
+  side only `gradeSubmission` (`modules/assessment/attemptGrading.ts`) stamps
+  `submittedAt` and builds the result; `writeTeacherMark` writes the grade and
+  stops, so a route that calls it alone passes its own tests (the grade rows are
+  there) while the family's row never leaves its pre-mark state (`paper`,
+  `available`…) and shows no mark. The paper-totals mark book
+  (`lib/paperTotals.ts`) calls both for that reason. `writeTeacherMark` also
+  does not check ownership — the caller must. Pinned by `paperTotals.db.test.ts`.
