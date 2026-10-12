@@ -1622,7 +1622,7 @@ export async function sendFamilyPush(input: {
 }
 ```
 
-- [ ] **Step 7: Rewrite the push half of `lib/resultsReleaseNotify.ts`.** Replace the imports and everything from `const text = releaseAnnouncement(evaluation);` up to and including the closing `}` of `if (userIds.length > 0) { … }` with the code below. The class-chat part stays as it is.
+- [ ] **Step 7: Rewrite the push half of `lib/resultsReleaseNotify.ts`.** Replace lines 20–72 of `lib/resultsReleaseNotify.ts` (the import block through the closing `}` of `if (userIds.length > 0) { … }`, which INCLUDES the function signature and its opening) with the code below — the code block carries its own imports and signature, so do not leave the old ones behind; keep the header comment (lines 1–19) and the class-chat tail (from line 74 on) exactly as they are.
 
 ```ts
 import {
@@ -2441,9 +2441,11 @@ Add one sentence to the route's doc comment: «A date that moves on an exam fami
 
 ```ts
     // A dated draft leaving draft is the moment its date reaches families.
-    // Not race-safe (a known gap): two publishes of one draft racing each other
-    // can both announce — the write above retries on a share-code collision,
-    // which a conditional write would turn into a failed publish.
+    // Not made race-safe, by choice (a known gap): two publishes of one draft
+    // racing each other can both announce. A conditional write is possible inside
+    // the share-code retry loop (first attempt `status = draft`, a zero-row result
+    // is not an exception so the retry stays intact) but it was left out of this
+    // part to keep the publish path unchanged.
     const notice = publishNotice(evaluation);
     if (notice) await pushWithin("exam published with a date", () => announceExamDate(updated, notice));
     res.json({ evaluation: updated });
@@ -3081,8 +3083,10 @@ async function remindAbout(item: DueItem, now: Date): Promise<number> {
  * the secret is created and attached to the service (docs/deploying.md,
  * «The homework reminder»), the reminder never runs.
  *
- * No `router.use` here: this router is mounted at the root of /api, where a
- * bare middleware would run for every request (see mountOrder.test.ts).
+ * No `router.use` here, and this router is mounted WITH a path prefix
+ * (`router.use("/internal", internalRouter)`): a bare middleware at the root
+ * of /api would run for every request (see mountOrder.test.ts), and the spec
+ * requires a prefix.
  */
 import { Router } from "express";
 import { siteKeyMatches } from "../lib/adminMetrics.js";
@@ -3091,7 +3095,7 @@ import { runHomeworkReminders } from "../lib/homeworkReminders.ts";
 
 const router = Router();
 
-router.post("/internal/homework-reminders", async (req, res) => {
+router.post("/homework-reminders", async (req, res) => {
   // siteKeyMatches is a generic constant-time shared-key check, named for its first user.
   if (!siteKeyMatches(process.env.INTERNAL_CRON_KEY, req.headers["x-internal-key"])) {
     res.status(404).json({ error: "Not found" });
@@ -3116,7 +3120,7 @@ In `routes/index.ts`: `import internalRouter from "./internal";` and, right afte
 ```ts
 // Cloud Scheduler's endpoints, guarded by a shared key inside each handler
 // (404 without it) — never a session, so mounted before any guarded router.
-router.use(internalRouter);
+router.use("/internal", internalRouter);
 ```
 
 - [ ] **Step 5: Run all four test files again and confirm they pass.** That is the unit tests, the DB test and `mountOrder.test.ts` after `pnpm build`. Then `pnpm run typecheck`.
@@ -3546,7 +3550,7 @@ A rerun the same day is safe: each homework is reminded at most once per due day
   - **What exists:** the four pushes and who gets each; the switches (column, route, Settings); quiet hours and the `quiet` channel; `pushWithin`; migration `0008` (additive); the DB tests that pin each rule (`pushPreferences`, `resultsPush`, `homeworkPush`, `examDatePush`, `paperTotalsPush`, `homeworkReminders`) and the mutation proofs that were run (paste the implementers' reports, including how the race case did in Task 7).
   - **Owner's checklist after merge** (numbered): (1) the merge deploys the API (and migration `0008`) and the web app, and `mobile-update.yml` publishes the OTA that carries the channels, the tap target and the switches; (2) run docs/deploying.md «The homework reminder» steps 1–6, because **until then no reminder is ever sent**; (3) on a real Android phone, sign in as a parent of a child in a class, grant notifications, then from the teacher account post homework to that class. The push should appear under «الواجبات», and tapping it should open «المدرسة». Set an exam date and confirm «موعد امتحان» arrives. Type a paper mark after releasing and confirm «نتيجة …» arrives. Turn «الواجبات» off in Settings, post again, and confirm nothing arrives. (4) The next day after 16:00 Amman, read the `homework reminders run` log line.
   - **Not seen:** delivery to any real device; the OTA on a phone; the `quiet` channel at night; Cloud Scheduler firing.
-  - **Known gaps** (one line each, with the reason): two simultaneous publishes of one dated draft can both announce; a sitting handed in after the release through `POST /attempts/:id/submit` or the student link is not pushed; hide → release announces again; moving a dated exam to another class tells the new class only; a corrected paper mark after the release is announced again; night pushes land in `quiet`, so an Android-level mute of «الواجبات» does not silence them (the in-app switch does); an app on a build from before this OTA shows homework/exam pushes in Android's catch-all channel (expo-notifications' fallback for an unknown channel, which also matches `PUSH_CHANNEL`'s own comment; never seen on a device); a reminder whose send fails after its claim is lost for that day; the release announcement is still fire-and-forget, so Cloud Run's CPU throttling can delay it; pushes are Arabic only and `preferredLanguage` is ignored, as before.
+  - **Known gaps** (one line each, with the reason): two simultaneous publishes of one dated draft can both announce (a conditional write inside the share-code retry loop would fix it; left out on purpose); two simultaneous PATCHes of one exam with DIFFERENT dates are never announced twice but the loser's value is stored without an announcement (families can hold the other date); a sitting handed in after the release through `POST /attempts/:id/submit` or the student link is not pushed; hide → release announces again; moving a dated exam to another class tells the new class only; a corrected paper mark after the release is announced again; night pushes land in `quiet`, so an Android-level mute of «الواجبات» does not silence them (the in-app switch does); an app on a build from before this OTA shows homework/exam pushes in Android's catch-all channel (expo-notifications' fallback for an unknown channel, which also matches `PUSH_CHANNEL`'s own comment; never seen on a device); a reminder whose send fails after its claim is lost for that day; the release announcement is still fire-and-forget, so Cloud Run's CPU throttling can delay it; pushes are Arabic only and `preferredLanguage` is ignored, as before.
   - Then update the lines this part makes untrue. Find them with `grep -n "Part 4\|no push\|no notification\|reminders/admin\|rows → user\|row → user" STATUS.md`. Expect the Homework section's «no notifications», the Part 3 section's «no push when marks arrive after release / exam scheduled/changed pushes nothing», the missing rows → users helper, and the channel list (now messages, results, reminders, admin, homework, exams, quiet).
 - [ ] **Step 4: CLAUDE.md.** Add these two bullets to «Things that have bitten before». Both are real traps that fail silently:
 
