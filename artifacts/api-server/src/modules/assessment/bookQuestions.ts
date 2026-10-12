@@ -35,6 +35,13 @@ export interface BookPlanRequest {
   enabled: boolean;
   /** The paper's difficulty; it picks the tier the dry run draws from. Defaults to "standard". */
   difficulty?: Difficulty;
+  /**
+   * Book item ids the teacher has already been shown (a regeneration). The dry
+   * run draws with them avoided, exactly as the real draw will: a lesson whose
+   * only multiple-choice item was shown comes back as an exercise, and a plan
+   * that ignored this would tell the model about a paper that will not exist.
+   */
+  avoidIds?: ReadonlySet<string>;
 }
 
 /**
@@ -126,6 +133,7 @@ export function planBook(req: BookPlanRequest): { k: number; supplied: BookSuppl
     difficulty: req.difficulty ?? "standard",
     k: cap,
     accepted: [],
+    ...(req.avoidIds ? { avoidIds: req.avoidIds } : {}),
     rng: mulberry32(PLAN_SEED),
   });
   const drawn = dry.slice(0, cap);
@@ -268,4 +276,28 @@ export function previousBookItemIds(
     if (typeof id === "string" && id) ids.add(id);
   }
   return ids;
+}
+
+/**
+ * What a maths paper's `generationParams.bookItems` records. `supplied` is the
+ * dry run's summary, `quota` the per-competency count the model was asked to
+ * write (`supplied.newByCompetency`, the quota that was SENT, not one re-derived
+ * later). With nothing planned there is no quota, and the key is left out.
+ */
+export function bookItemsRecord(args: {
+  enabled: boolean;
+  planned: number;
+  supplied: BookSupplied;
+  quota?: Readonly<Record<CompetencyKey, number>>;
+  drawn: number;
+  ids: ReadonlyArray<unknown>;
+}): Record<string, unknown> {
+  return {
+    enabled: args.enabled,
+    planned: args.planned,
+    supplied: args.supplied,
+    ...(args.planned > 0 && args.quota ? { quota: { ...args.quota } } : {}),
+    drawn: args.drawn,
+    ids: [...args.ids],
+  };
 }

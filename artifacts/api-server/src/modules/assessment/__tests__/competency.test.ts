@@ -371,6 +371,75 @@ describe("allocateQuestions with supplied questions", () => {
   });
 });
 
+describe("allocateQuestions on a small paper, with the book's lone questions", () => {
+  const fill = (p: Partial<Record<CompetencyKey, number>>) =>
+    Object.fromEntries(COMPETENCY_KEYS.map(k => [k, p[k] ?? 0])) as Record<CompetencyKey, number>;
+  const whole = (fresh: Record<CompetencyKey, number>, sup: Partial<Record<CompetencyKey, number>>) =>
+    COMPETENCY_KEYS.map(k => fresh[k] + (sup[k] ?? 0));
+  const atLeastTwo = (w: number[]) => w.filter(n => n >= 2).length;
+  const exactlyOne = (w: number[]) => w.filter(n => n === 1).length;
+
+  // The motivating plan: u1_l1 + u6_l2 supplies one understanding and four
+  // application questions. At 7 and 8 questions the budget cannot seed all four
+  // competencies, and the old code spent it scattering singletons.
+  const PLAN = { understanding: 1, application: 4 };
+
+  it("pairs the book's single question first: understanding 1 becomes 2", () => {
+    assert.deepEqual(allocateQuestions(7, "standard", PLAN), fill({ understanding: 2 }));
+    // 3 questions, application supplied once: the pair comes first, and the one
+    // left over joins a competency the paper already has rather than starting a lone one.
+    assert.deepEqual(allocateQuestions(3, "standard", { application: 1 }), fill({ application: 2 }));
+    assert.deepEqual(allocateQuestions(2, "standard", { understanding: 1 }), fill({ understanding: 1 }));
+  });
+
+  it("a competency it has to start from nothing gets two questions, not one", () => {
+    // 8 = 5 supplied + 3: one pairs understanding, the other two start knowledge as a pair.
+    assert.deepEqual(allocateQuestions(8, "standard", PLAN), fill({ knowledge: 2, understanding: 1 }));
+    assert.deepEqual(allocateQuestions(10, "standard", PLAN), fill({ knowledge: 2, understanding: 1, critical_thinking: 2 }));
+    assert.deepEqual(allocateQuestions(4, "standard", { application: 1 }), fill({ understanding: 2, application: 1 }));
+  });
+
+  it("pairs singles in competency order, as far as the budget goes", () => {
+    // Knowledge and understanding are both single; one question to give: knowledge's.
+    assert.deepEqual(allocateQuestions(3, "standard", { knowledge: 1, understanding: 1 }), fill({ knowledge: 1 }));
+  });
+
+  it("pairing needs something supplied, and a supplied two is not a single", () => {
+    // Nothing supplied: exactly the unaware allocation (also pinned for every total above).
+    assert.deepEqual(allocateQuestions(5, "standard", {}), allocateQuestions(5, "standard"));
+    // Understanding already has its two: nothing to pair, it gets none of the 5
+    // new questions, and the paper has no lone competency.
+    const fresh = allocateQuestions(7, "standard", { understanding: 2 });
+    assert.equal(fresh.understanding, 0);
+    assert.equal(exactlyOne(whole(fresh, { understanding: 2 })), 0);
+  });
+
+  it("is never worse than the unaware split on the whole paper (competencies with >= 2, and with exactly 1)", () => {
+    const mixes: Array<Partial<Record<CompetencyKey, number>>> = [
+      PLAN, { application: 1 }, { understanding: 1 }, { understanding: 1, application: 1 },
+    ];
+    let compared = 0;
+    let strictlyBetter = 0;
+    for (const difficulty of DIFFICULTIES) {
+      for (const sup of mixes) {
+        const sigma = Object.values(sup).reduce((a, b) => a + (b ?? 0), 0);
+        for (const total of [3, 4, 5, 6, 7, 8, 10, 20]) {
+          if (total <= sigma) continue;
+          const where = `${difficulty} ${JSON.stringify(sup)} x${total}`;
+          const aware = whole(allocateQuestions(total, difficulty, sup), sup);
+          const unaware = whole(allocateQuestions(total - sigma, difficulty), sup);
+          assert.ok(atLeastTwo(aware) >= atLeastTwo(unaware), `${where}: >=2 ${aware} vs ${unaware}`);
+          assert.ok(exactlyOne(aware) <= exactlyOne(unaware), `${where}: =1 ${aware} vs ${unaware}`);
+          compared += 1;
+          if (atLeastTwo(aware) > atLeastTwo(unaware) || exactlyOne(aware) < exactlyOne(unaware)) strictlyBetter += 1;
+        }
+      }
+    }
+    assert.ok(compared >= 80);
+    assert.ok(strictlyBetter >= 30, `the rule must actually improve small papers (${strictlyBetter})`);
+  });
+});
+
 describe("remainingQuota", () => {
   const quota = (o: Partial<Record<CompetencyKey, number>>) =>
     Object.fromEntries(COMPETENCY_KEYS.map(k => [k, o[k] ?? 0])) as Record<CompetencyKey, number>;

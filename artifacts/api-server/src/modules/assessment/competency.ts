@@ -109,6 +109,11 @@ export const MARKS_BY_COMPETENCY: Record<CompetencyKey, number> = {
  * competency floor and towards the shares, so the paper as a whole — not just
  * the new part — is steered to the targets. Absent or all zero, the result is
  * exactly what it was before this argument existed (pinned in the tests).
+ *
+ * **Small papers.** When the budget cannot seed every competency, nothing is
+ * seeded in general, but any competency the book supplies exactly one question
+ * of is first brought up to two (cost one each), so the book's lone question is
+ * paired rather than left as a single the validator warns about.
  */
 export function allocateQuestions(
   total: number,
@@ -131,6 +136,7 @@ export function allocateQuestions(
   // two. All-or-nothing, as before: a partial seeding would starve some
   // competency while pretending to protect the others.
   const MIN_PER_COMPETENCY = 2;
+  let pairFirst = false;
   const seedsNeeded = COMPETENCY_KEYS.reduce(
     (s, k) => s + Math.max(0, MIN_PER_COMPETENCY - have[k]),
     0,
@@ -140,6 +146,20 @@ export function allocateQuestions(
       const seed = Math.max(0, MIN_PER_COMPETENCY - have[key]);
       counts[key] = seed;
       remaining -= seed;
+    }
+  } else if (COMPETENCY_KEYS.some(k => have[k] > 0)) {
+    pairFirst = true;
+    // The budget cannot cover every seed, so none is made — but a competency the
+    // book already supplies exactly ONE question of is a single pair away from
+    // being scored, and the greedy loop below would scatter singletons instead.
+    // Pair those up first (one question each, in competency order, as far as the
+    // budget goes). Only with something supplied: with nothing, this is the
+    // pinned behaviour of the unaware allocation.
+    for (const key of COMPETENCY_KEYS) {
+      if (remaining > 0 && have[key] === 1) {
+        counts[key] += 1;
+        remaining -= 1;
+      }
     }
   }
 
@@ -160,6 +180,30 @@ export function allocateQuestions(
         bestDeficit = deficit;
         best = key;
       }
+    }
+
+    if (pairFirst && counts[best] + have[best] === 0) {
+      // Starting a competency from nothing. Two questions at once, or none: a
+      // lone one is a single the validator warns about, which the unaware split
+      // would not have made. With one question left, it goes to the competency
+      // furthest below target among those the paper already has.
+      if (remaining >= 2) {
+        counts[best] += 2;
+        remaining -= 2;
+        continue;
+      }
+      let present: CompetencyKey | undefined;
+      let presentDeficit = -Infinity;
+      for (const key of COMPETENCY_KEYS) {
+        if (counts[key] + have[key] === 0) continue;
+        const share = totalMarks > 0 ? ((counts[key] + have[key]) * MARKS_BY_COMPETENCY[key]) / totalMarks : 0;
+        const deficit = targets[key] - share;
+        if (deficit > presentDeficit) {
+          presentDeficit = deficit;
+          present = key;
+        }
+      }
+      best = present ?? best;
     }
 
     counts[best] += 1;

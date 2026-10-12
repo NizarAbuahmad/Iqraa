@@ -25,6 +25,7 @@ import type { CurriculumObjective } from "@workspace/curriculum";
 import type { QuestionType } from "@workspace/db";
 import {
   assembleLivePaper,
+  bookItemsRecord,
   drawBookQuestions,
   isBookItemsLiveOn,
   mulberry32,
@@ -454,36 +455,99 @@ describe("planBook", () => {
     assert.ok(nonEmpty > 10, "the fixtures must exercise real draws");
   });
 
-  it("with every lesson that has items in one list, supplied is the summary of the SAME dry draw (PLAN_SEED) as k", () => {
+  it("with every lesson that has items in one list, supplied is the summary of the SAME dry draw (PLAN_SEED, same avoidIds) as k", () => {
     // One lesson gives a pool so small that another seed draws the same items, so
     // a summary built from a second dry draw would go unnoticed. All lessons
     // together, over several type sets, counts and difficulties, make the draw
     // depend on the seed (a different seed changes the type mix, hence the summary).
+    // Each list is also replayed as a regeneration: with the items the teacher was
+    // shown in `avoidIds`, the dry run and its replay must agree on THAT draw.
     const lists = {
       "all lessons": LESSONS_WITH_ITEMS,
       "all lessons, reversed": [...LESSONS_WITH_ITEMS].reverse(),
       "all lessons twice": [...LESSONS_WITH_ITEMS, ...LESSONS_WITH_ITEMS],
     };
+    const everyItem = LESSONS_WITH_ITEMS.flatMap(l => bookItemsForLesson(l));
+    const avoidSets: Array<[string, ReadonlySet<string> | undefined]> = [
+      ["first draw", undefined],
+      ["mcq shown", new Set(everyItem.filter(i => i.kind === "unit-test-mcq").map(i => i.id))],
+      ["every other item shown", new Set(everyItem.filter((_, i) => i % 2 === 0).map(i => i.id))],
+      ["everything shown", new Set(everyItem.map(i => i.id))],
+    ];
     let compared = 0;
     for (const [listName, lessons] of Object.entries(lists)) {
       const objectives = lessons.map((lesson, i) => objective(`o${i + 1}`, lesson));
-      for (const types of [[...BOTH], ["short_answer"], ["multiple_choice"]] as QuestionType[][]) {
-        for (let count = 2; count <= 40; count += 1) {
-          for (const difficulty of ["basic", "standard", "advanced"] as const) {
-            const where = `${listName} ${types.join("+")} x${count} ${difficulty}`;
-            const req = { objectives, assessmentTypes: types, count, subjectId: "mathematics", enabled: true, difficulty };
-            const { k, supplied } = planBook(req);
-            const replayed = drawBookQuestions({
-              objectives, assessmentTypes: types, difficulty, k, accepted: [], rng: mulberry32(PLAN_SEED),
-            });
-            assert.equal(replayed.length, k, where);
-            assert.deepEqual(supplied, summariseBook(replayed), where);
-            if (k > 0) compared += 1;
+      for (const [avoidName, avoidIds] of avoidSets) {
+        for (const types of [[...BOTH], ["short_answer"], ["multiple_choice"]] as QuestionType[][]) {
+          for (let count = 2; count <= 40; count += 1) {
+            for (const difficulty of ["basic", "standard", "advanced"] as const) {
+              const where = `${listName} (${avoidName}) ${types.join("+")} x${count} ${difficulty}`;
+              const req = {
+                objectives, assessmentTypes: types, count, subjectId: "mathematics", enabled: true, difficulty,
+                ...(avoidIds ? { avoidIds } : {}),
+              };
+              const { k, supplied } = planBook(req);
+              const replayed = drawBookQuestions({
+                objectives, assessmentTypes: types, difficulty, k, accepted: [], rng: mulberry32(PLAN_SEED),
+                ...(avoidIds ? { avoidIds } : {}),
+              });
+              assert.equal(replayed.length, k, where);
+              assert.deepEqual(supplied, summariseBook(replayed), where);
+              if (k > 0) compared += 1;
+            }
           }
         }
       }
     }
-    assert.ok(compared >= 300, "the fixtures must exercise real draws");
+    assert.ok(compared >= 1200, "the fixtures must exercise real draws");
+  });
+
+  it("on a regeneration the dry run avoids what the teacher was shown, and supplied is the summary of THAT draw", () => {
+    // u1_l1 has ONE multiple-choice item. A first draw may use it; once it has been
+    // shown, the real draw swaps it for an exercise, so a plan that ignored
+    // `avoidIds` told the model "understanding 1" for a paper that has none.
+    const mcId = bookItemsForLesson(SYSTEMS).filter(i => i.kind === "unit-test-mcq").map(i => i.id);
+    assert.equal(mcId.length, 1, "the fixture relies on a lesson with a single multiple-choice item");
+    const avoidIds = new Set(mcId);
+    // With the derivatives lesson beside it the pool has enough exercises to take
+    // its place (alone, u1_l1 has only four, so the item would come back as a repeat).
+    const objectives = [objective("o1", SYSTEMS), objective("o2", DERIVATIVES)];
+    const base = { objectives, assessmentTypes: [...BOTH], count: 10, subjectId: "mathematics", enabled: true };
+    // Without avoidIds the plan does include the multiple-choice item (else this proves nothing).
+    assert.deepEqual(planBook(base).supplied.byCompetency, { understanding: 1, application: 4 }, "first plan carries the MC item");
+
+    const planned = planBook({ ...base, avoidIds });
+    assert.ok(planned.k > 0);
+    assert.equal(planned.supplied.byType.multiple_choice, undefined);
+    assert.deepEqual(planned.supplied.byCompetency, { application: 5 });
+    // The same draw the dry run made, replayed with the same avoidIds.
+    const replayed = drawBookQuestions({
+      objectives, assessmentTypes: [...BOTH], difficulty: "standard", k: planned.k, accepted: [],
+      avoidIds, rng: mulberry32(PLAN_SEED),
+    });
+    assert.deepEqual(planned.supplied, summariseBook(replayed));
+    // And the route's real draw (any seed, avoidIds the same) lands on that summary.
+    for (let seed = 1; seed <= 25; seed += 1) {
+      const real = drawBookQuestions({
+        objectives, assessmentTypes: [...BOTH], difficulty: "standard", k: planned.k, accepted: [],
+        avoidIds, rng: lcg(seed),
+      });
+      assert.deepEqual(summariseBook(real), planned.supplied, `seed ${seed}`);
+    }
+  });
+
+  it("avoidIds that cover the whole pool fall back to repeats, as the real draw does", () => {
+    const objectives = [objective("o1", SYSTEMS)];
+    const avoidIds = new Set(bookItemsForLesson(SYSTEMS).map(i => i.id));
+    const req = { objectives, assessmentTypes: [...BOTH], count: 10, subjectId: "mathematics", enabled: true, avoidIds };
+    const planned = planBook(req);
+    assert.ok(planned.k > 0, "a spent pool still plans repeats rather than nothing");
+    const replayed = drawBookQuestions({
+      objectives, assessmentTypes: [...BOTH], difficulty: "standard", k: planned.k, accepted: [],
+      avoidIds, rng: mulberry32(PLAN_SEED),
+    });
+    assert.equal(replayed.length, planned.k);
+    assert.deepEqual(planned.supplied, summariseBook(replayed));
   });
 
   it("returns results that are not aliased: changing one k = 0 result leaves the next one empty", () => {
@@ -534,5 +598,22 @@ describe("summariseBook", () => {
 
   it("is empty for no questions", () => {
     assert.deepEqual(summariseBook([]), { byType: {}, byCompetency: {}, marks: 0 });
+  });
+});
+
+describe("bookItemsRecord", () => {
+  const quota = { knowledge: 2, understanding: 0, application: 1, critical_thinking: 2 };
+  const supplied = { byType: { short_answer: 5 }, byCompetency: { application: 5 }, marks: 15 };
+
+  it("stores the quota that was sent, beside the supplied summary", () => {
+    const rec = bookItemsRecord({ enabled: true, planned: 5, supplied, quota, drawn: 5, ids: ["a", "b"] });
+    assert.deepEqual(rec, { enabled: true, planned: 5, supplied, quota, drawn: 5, ids: ["a", "b"] });
+    assert.notEqual(rec["quota"], quota, "a copy, not the caller's object");
+  });
+
+  it("has no quota when nothing was planned", () => {
+    const empty = { byType: {}, byCompetency: {}, marks: 0 };
+    assert.equal("quota" in bookItemsRecord({ enabled: false, planned: 0, supplied: empty, drawn: 0, ids: [] }), false);
+    assert.equal("quota" in bookItemsRecord({ enabled: true, planned: 0, supplied: empty, quota, drawn: 0, ids: [] }), false);
   });
 });

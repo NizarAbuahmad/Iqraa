@@ -249,6 +249,32 @@ describe("buildGenerationPrompt with a book share", () => {
     );
   });
 
+  it("a top-up says how many the model already wrote, and that the quota is what remains of its share", () => {
+    // 10-question paper, 4 from the book, 6 asked of the model, 4 written: 2 to go.
+    const topUp = {
+      ...SUPPLIED,
+      newByCompetency: { knowledge: 1, understanding: 0, application: 0, critical_thinking: 1 },
+      alreadyWritten: 4,
+    };
+    const { user } = buildGenerationPrompt({ ...BOOK_REQ, count: 2, supplied: topUp });
+    assert.match(user, /write only the 2 other questions/);
+    assert.match(user, /You already wrote 4 questions in an earlier reply \(their stems are in the avoid list\)/);
+    assert.match(user, /the quota below is what remains of your share/);
+    // Said once, after the "other questions" line and before the quota it explains.
+    assert.equal(user.split("You already wrote").length - 1, 1);
+    assert.ok(user.indexOf("write only the 2 other") < user.indexOf("You already wrote"));
+    assert.ok(user.indexOf("You already wrote") < user.indexOf("write about:"));
+    assert.match(buildGenerationPrompt({ ...BOOK_REQ, count: 2, supplied: { ...topUp, alreadyWritten: 1 } }).user, /You already wrote 1 question in an earlier reply/);
+  });
+
+  it("says nothing about earlier replies on a first call, or when alreadyWritten is 0 or absent", () => {
+    const first = buildGenerationPrompt(BOOK_REQ).user;
+    assert.equal(first.includes("already wrote"), false);
+    for (const alreadyWritten of [0, undefined]) {
+      assert.equal(buildGenerationPrompt({ ...BOOK_REQ, supplied: { ...SUPPLIED, alreadyWritten } }).user, first);
+    }
+  });
+
   it("is left out when the book supplies nothing", () => {
     const base = buildGenerationPrompt({ ...REQ, count: 6, language: "en" });
     const zero = buildGenerationPrompt({ ...BOOK_REQ, supplied: { ...SUPPLIED, count: 0 } });

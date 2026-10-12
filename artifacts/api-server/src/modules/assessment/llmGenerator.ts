@@ -52,6 +52,12 @@ export interface LlmSupplied extends BookSupplied {
   newByCompetency: Record<CompetencyKey, number>;
   /** The whole paper: the model's questions plus the book's. */
   paperTotal: number;
+  /**
+   * A top-up only: how many questions the model already wrote in an earlier reply
+   * (their stems are in the avoid list). Then `newByCompetency` is what remains
+   * of its share, and the block says so. Absent or 0 on a first call.
+   */
+  alreadyWritten?: number;
 }
 
 const hasSupplied = (req: LlmGenerationRequest): req is LlmGenerationRequest & { supplied: LlmSupplied } =>
@@ -229,6 +235,12 @@ function suppliedBlock(s: LlmSupplied, count: number): string[] {
     `You will not see them and must not try to reproduce them; write only the ${count} other questions. `
       + "Count them when you spread the questions across the listed types "
       + "(rule 2 applies to the whole paper, not only to your share).",
+    ...((s.alreadyWritten ?? 0) > 0
+      ? [
+        `You already wrote ${s.alreadyWritten} question${s.alreadyWritten === 1 ? "" : "s"} in an earlier reply `
+          + "(their stems are in the avoid list); the quota below is what remains of your share.",
+      ]
+      : []),
     `To bring the whole paper to its target mix, write about: ${toWrite}.`,
     "",
   ];

@@ -69,6 +69,7 @@ import {
   assembleLivePaper,
   drawBookQuestions,
   isBookItemsLiveOn,
+  bookItemsRecord,
   planBook,
   previousBookItemIds,
 } from "../modules/assessment/bookQuestions.ts";
@@ -757,6 +758,9 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
       // the model is asked for that many fewer. When BOOK_ITEMS_LIVE is not
       // "true" (the default), `bookPlanned` is 0 and nothing below changes.
       const bookEnabled = isBookItemsLiveOn();
+      // The items this teacher was already shown: the dry run avoids them like
+      // the real draw below does, so the plan describes the paper that will exist.
+      const shownBookItemIds = previousBookItemIds(previousQuestions);
       const plan = planBook({
         objectives,
         assessmentTypes: evaluation.assessmentTypes,
@@ -764,6 +768,7 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
         subjectId: evaluation.subjectId ?? undefined,
         enabled: bookEnabled,
         difficulty: evaluation.difficulty,
+        avoidIds: shownBookItemIds,
       });
       const bookPlanned = plan.k;
       const modelCount = evaluation.targetQuestionCount - bookPlanned;
@@ -875,6 +880,8 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
             supplied && {
               ...supplied,
               newByCompetency: remainingQuota(supplied.newByCompetency, llm.questions, missing),
+              // The prompt then says the quota is what remains of the model's share.
+              alreadyWritten: llm.questions.length,
             },
           );
           llm.questions.push(...more.questions);
@@ -907,22 +914,24 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
           difficulty: evaluation.difficulty,
           k: bookPlanned,
           accepted,
-          avoidIds: previousBookItemIds(previousQuestions),
+          avoidIds: shownBookItemIds,
           rng: Math.random,
         }),
       });
       if (evaluation.subjectId === "mathematics") {
-        generationParams["bookItems"] = {
+        // `supplied` is what the model was told the book supplies (the dry run's
+        // summary, before the real draw); `quota` is the per-competency count it
+        // was asked to write. Both are empty/absent when nothing was planned.
+        generationParams["bookItems"] = bookItemsRecord({
           enabled: bookEnabled,
           planned: bookPlanned,
-          // What the model was told the book supplies (the dry run's summary,
-          // before the real draw); empty when nothing was planned.
           supplied: plan.supplied,
+          quota: supplied?.newByCompetency,
           drawn: assembled.drawn,
           ids: assembled.questions
             .filter(q => q.aiMetadata["generator"] === "book")
             .map(q => q.aiMetadata["bookItemId"]),
-        };
+        });
       }
       if (assembled.trimmed > 0) {
         generationNotes.push(
