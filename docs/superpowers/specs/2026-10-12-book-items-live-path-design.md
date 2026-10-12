@@ -1,6 +1,6 @@
 # Real book items on the live model path — design addendum
 
-Status: drafted 2026-10-12, awaiting spec review. Nothing is built. Extends
+Status: approved 2026-10-12 ("do it") with the three open questions resolved as proposed (see "Resolved questions"). Nothing is built. Extends
 `2026-10-12-book-items-design.md` (the "live-AI path: unchanged" line there is
 what this changes).
 
@@ -46,7 +46,7 @@ competency and marks assigned by rule.
 | Paper length | Decide the number `k` of book questions first; ask the model for `count − k`; add `k` book questions. The paper stays `count` long. |
 | Competency and marks | By kind: an exercise is `application` (3 marks), a unit-test multiple-choice question is `understanding` (2 marks). Stated as nominal, as it already is on the mock path. |
 | Rollout | Behind a server flag, **off by default**. Turned on after a person has compared the 24 items with the printed books. |
-| Shared code | The book-question builder moves out of `mockGenerator.ts` into `modules/assessment/bookQuestions.ts`. The mock path calls it per slot, unchanged in behaviour; the live path calls it in a batch. |
+| Shared code | The existing `bookQuestion` in `mockGenerator.ts` is **exported** (not moved) and takes a `slot(kind)` function for competency and marks; the mock path passes a fixed slot, unchanged in behaviour. The new live-path code (`planBookDraw`, `drawBookQuestions`, `assembleLivePaper`) lives in `modules/assessment/bookQuestions.ts`. Moving it would have dragged `buildRubric`/`BANK_TIER` along or created an import cycle, for no gain. |
 
 ## Design
 
@@ -121,7 +121,7 @@ field above is the way to see which state a paper was made in.
 
 ### 6. Testing and rollout
 
-- `bookQuestions.test.ts`: `planBookDraw` (zero for non-maths, flag off, no
+- `bookQuestions.test.ts`: `isBookItemsLiveOn`, `planBookDraw` (zero for non-maths, flag off, no
   `lessonId`, no matching type; the half-paper cap; the eligible cap), and
   `drawBookQuestions` (never a near-duplicate of a supplied model question;
   never a type that was not requested; `check` always null; unit-test choices
@@ -140,15 +140,13 @@ field above is the way to see which state a paper was made in.
   env change on iqraa-api, taken after the 24 items are compared with the books.
   No schema change, no mobile change, no `app.json` `version` bump.
 
-## Open questions for the reviewer
+## Resolved questions
 
-1. **Flag default.** Off, as proposed? The cost of on-by-default is that 24
-   unchecked stems reach teachers' papers the day this merges.
-2. **Competency and marks.** Is "exercise = application (3), unit-test choice =
-   understanding (2)" acceptable as a nominal rule, or should a book question
-   inherit its competency from the objective's effective Bloom's level?
-3. **Position on the paper.** Book questions are appended after the model's.
-   Should they instead be interleaved, or grouped by type?
+1. **Flag default: off.** Merging changes nothing in production; turning it on is
+   an env change after the 24 items have been compared with the printed books.
+2. **Competency and marks: by kind** (exercise = application, 3 marks; unit-test
+   choice = understanding, 2 marks), nominal.
+3. **Position: appended** after the model's questions.
 
 ## Not decided here
 
