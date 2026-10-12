@@ -209,8 +209,9 @@ const COMPETENCY_ORDER: readonly CompetencyKey[] = [
  * The paragraph that tells the model what the textbook already supplies.
  * English, like the rest of the prompt's instructions. Every number is "about":
  * the real draw is made after the model answers and can differ by a question.
+ * `count` is what the model is asked to write (the request's own count).
  */
-function suppliedBlock(s: LlmSupplied): string[] {
+function suppliedBlock(s: LlmSupplied, count: number): string[] {
   const types = Object.entries(s.byType)
     .filter(([, n]) => (n ?? 0) > 0)
     .map(([t, n]) => `${n} ${t}`)
@@ -222,8 +223,9 @@ function suppliedBlock(s: LlmSupplied): string[] {
   return [
     `This paper has ${s.paperTotal} questions in all. About ${s.count} of them are already written from the official textbook `
       + "and will be added after yours.",
-    `Those are: ${types}; by competency ${competencies}, about ${s.marks} marks.`,
-    "Do not write those. Count them when you spread the questions across the listed types "
+    `Those are: ${types}; by competency ${competencies}.`,
+    `You will not see them and must not try to reproduce them; write only the ${count} other questions. `
+      + "Count them when you spread the questions across the listed types "
       + "(rule 2 applies to the whole paper, not only to your share).",
     `To bring the whole paper to its target mix, write about: ${toWrite}.`,
     "",
@@ -234,6 +236,13 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
   system: string;
   user: string;
 } {
+  // A programming error, caught before anything is sent: the per-competency
+  // targets are what the model is asked to write, so they must add up to it.
+  // (`paperTotal` is only text in the block; nothing is asserted about it.)
+  if (hasSupplied(req)) {
+    const toWrite = COMPETENCY_ORDER.reduce((n, c) => n + (req.supplied.newByCompetency[c] ?? 0), 0);
+    if (toWrite !== req.count) throw new Error("supplied.newByCompetency must sum to count");
+  }
   const arabic = req.language !== "en";
   const contracts = req.assessmentTypes
     .map(t => `- ${t}: ${TYPE_CONTRACTS[t] ?? "{}"}`)
@@ -298,7 +307,7 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
   const user = [
     `Write ${req.count} questions.`,
     "",
-    ...(hasSupplied(req) ? suppliedBlock(req.supplied) : []),
+    ...(hasSupplied(req) ? suppliedBlock(req.supplied, req.count) : []),
     "Objectives (use these ids verbatim):",
     objectives,
     "",

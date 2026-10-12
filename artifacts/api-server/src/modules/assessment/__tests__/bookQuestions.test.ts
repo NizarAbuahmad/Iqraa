@@ -28,6 +28,7 @@ import {
   drawBookQuestions,
   isBookItemsLiveOn,
   mulberry32,
+  PLAN_SEED,
   planBook,
   planBookDraw,
   summariseBook,
@@ -433,6 +434,53 @@ describe("planBook", () => {
       if (k > 0) nonEmpty += 1;
     }
     assert.ok(nonEmpty > 10, "the fixtures must exercise real draws");
+  });
+
+  it("with every lesson that has items in one list, supplied is the summary of the SAME dry draw (PLAN_SEED) as k", () => {
+    // One lesson gives a pool so small that another seed draws the same items, so
+    // a summary built from a second dry draw would go unnoticed. All lessons
+    // together, over several type sets, counts and difficulties, make the draw
+    // depend on the seed (a different seed changes the type mix, hence the summary).
+    const lists = {
+      "all lessons": LESSONS_WITH_ITEMS,
+      "all lessons, reversed": [...LESSONS_WITH_ITEMS].reverse(),
+      "all lessons twice": [...LESSONS_WITH_ITEMS, ...LESSONS_WITH_ITEMS],
+    };
+    let compared = 0;
+    for (const [listName, lessons] of Object.entries(lists)) {
+      const objectives = lessons.map((lesson, i) => objective(`o${i + 1}`, lesson));
+      for (const types of [[...BOTH], ["short_answer"], ["multiple_choice"]] as QuestionType[][]) {
+        for (let count = 2; count <= 40; count += 1) {
+          for (const difficulty of ["basic", "standard", "advanced"] as const) {
+            const where = `${listName} ${types.join("+")} x${count} ${difficulty}`;
+            const req = { objectives, assessmentTypes: types, count, subjectId: "mathematics", enabled: true, difficulty };
+            const { k, supplied } = planBook(req);
+            const replayed = drawBookQuestions({
+              objectives, assessmentTypes: types, difficulty, k, accepted: [], rng: mulberry32(PLAN_SEED),
+            });
+            assert.equal(replayed.length, k, where);
+            assert.deepEqual(supplied, summariseBook(replayed), where);
+            if (k > 0) compared += 1;
+          }
+        }
+      }
+    }
+    assert.ok(compared >= 300, "the fixtures must exercise real draws");
+  });
+
+  it("returns results that are not aliased: changing one k = 0 result leaves the next one empty", () => {
+    const req = { objectives: [objective("o1", SYSTEMS)], assessmentTypes: [...BOTH], count: 10, subjectId: "mathematics", enabled: false };
+    const first = planBook(req);
+    assert.equal(first.k, 0);
+    first.supplied.byType.short_answer = 9;
+    first.supplied.byCompetency.application = 9;
+    first.supplied.marks = 9;
+    const second = planBook(req);
+    assert.deepEqual(second.supplied, { byType: {}, byCompetency: {}, marks: 0 });
+    // Every route to "none" hands out its own object, not just the flag-off one.
+    const chem = planBook({ ...req, enabled: true, subjectId: "chemistry" });
+    chem.supplied.byType.multiple_choice = 1;
+    assert.deepEqual(planBook({ ...req, enabled: true, subjectId: "chemistry" }).supplied.byType, {});
   });
 
   it("a plan of nothing has an empty summary", () => {

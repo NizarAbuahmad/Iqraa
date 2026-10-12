@@ -7,6 +7,12 @@
  * without `supplied` (or with `supplied.count === 0`) must still produce exactly
  * these strings, so a flag-off paper is asked for exactly what it always was.
  * Do not regenerate them from the current code: that would pin nothing.
+ *
+ * One legitimate way for these literals to go stale: the user message lists
+ * `VERIFIABLE_TOPICS` (from `@workspace/math-verify`), so a NEW topic changes
+ * `topic is one of: …` in USER_PLAIN, USER_EXCERPTS and USER_AVOID. That is a
+ * deliberate prompt change for every paper: update the literals by hand, in the
+ * same commit as the new topic, and nowhere else.
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
@@ -38,6 +44,9 @@ const USER_PLAIN = "Write 6 questions.\n\nObjectives (use these ids verbatim):\n
 const USER_EXCERPTS = "Write 6 questions.\n\nObjectives (use these ids verbatim):\n- id \"obj-1\": نتاج obj-1\n- id \"obj-2\": نتاج obj-2\n\n[الكتاب ص ١٢] حل النظام س + ص = ٥\n\nPrefer the book's own worked values, notation and vocabulary over inventing your own. Do not write a question about something the excerpts do not cover unless an objective requires it.\n\nAllowed types and the exact JSON each must use:\n- multiple_choice: {\"type\":\"multiple_choice\",\"body\":{\"stem\":\"…\",\"multiSelect\":false,\"options\":[{\"id\":\"a\",\"text\":\"…\"},{\"id\":\"b\",\"text\":\"…\"},{\"id\":\"c\",\"text\":\"…\"},{\"id\":\"d\",\"text\":\"…\"}]},\"expectedAnswer\":{\"optionIds\":[\"b\"]}}  — 4 options, all different, exactly one correct, and every distractor must be a mistake a student could actually make\n- short_answer: {\"type\":\"short_answer\",\"body\":{\"prompt\":\"…\"},\"expectedAnswer\":{\"modelAnswer\":\"…\",\"keyConcepts\":[\"…\",\"…\"]},\"rubric\":{\"criteria\":[{\"label\":\"…\",\"marks\":2}]}}\n\nDifficulty: standard. A balanced paper: some recall, most application, a little analysis.\n\nEach question object also needs:\n  \"objectiveId\": one of the ids above\n  \"competencyKey\": one of knowledge | understanding | application | critical_thinking —\n    the cognitive demand of THIS question, which is not the same as its objective's level.\n    A recall question about an application objective is knowledge.\n  \"marks\": a positive number, larger for questions that demand more work\n  \"skill\": a two-to-four word label for what it actually tests, or null\n\nWhen the answer is something a computer algebra system can check, include:\n  \"check\": {\"topic\": …, \"question\": …, \"answer\": …} — all in LATIN notation (x, 0-9), never Arabic.\n    topic is one of: derivative_polynomial | derivative_at_point | circle_center | circle_radius | equation_linear | equation_quadratic | equation_exponential\n    question is the payload the topic needs: the expression for a derivative (\"x^3 - 4x\"),\n      the expression and point separated by @ for derivative_at_point (\"x^4@2\"),\n      the equation for an equation topic (\"2x + 5 = 13\") or a circle (\"(x-4)^2 + (y+1)^2 = 9\").\n    answer is your key in latin form (\"3x^2 - 4\", \"x = 4\", \"(4, -1)\").\n    The check answer must be THE SAME answer as the key you give the class — the correct option, the\n      accepted blank, or the model answer — written in Latin. It is compared with that key; a check that\n      disagrees with it is discarded as unlinked, however correct the maths. State the final answer in\n      the model answer itself (for example \"المشتقة هي ٣س² − ٤\" for the check answer \"3x^2 - 4\").\n    Omit \"check\" only when the answer is prose, a definition, or otherwise not symbolic.\n\nA complete example of a maths question, showing the Arabic a student reads and the Latin the\nverifier reads in the same object:\n{\"type\":\"short_answer\",\"objectiveId\":\"<one of the ids above>\",\"competencyKey\":\"application\",\"marks\":3,\"skill\":\"اشتقاق كثيرة حدود\",\"body\":{\"prompt\":\"أوجد مشتقة الاقتران ق(س) = س³ − ٤س\"},\"expectedAnswer\":{\"modelAnswer\":\"المشتقة هي ٣س² − ٤\",\"keyConcepts\":[\"المشتقة\",\"كثيرة الحدود\"]},\"rubric\":{\"criteria\":[{\"label\":\"صحة الاشتقاق\",\"marks\":3}]},\"check\":{\"topic\":\"derivative_polynomial\",\"question\":\"x^3 - 4x\",\"answer\":\"3x^2 - 4\"}}\n";
 const USER_AVOID = "Write 6 questions.\n\nObjectives (use these ids verbatim):\n- id \"obj-1\": نتاج obj-1\n- id \"obj-2\": نتاج obj-2\n\nAllowed types and the exact JSON each must use:\n- multiple_choice: {\"type\":\"multiple_choice\",\"body\":{\"stem\":\"…\",\"multiSelect\":false,\"options\":[{\"id\":\"a\",\"text\":\"…\"},{\"id\":\"b\",\"text\":\"…\"},{\"id\":\"c\",\"text\":\"…\"},{\"id\":\"d\",\"text\":\"…\"}]},\"expectedAnswer\":{\"optionIds\":[\"b\"]}}  — 4 options, all different, exactly one correct, and every distractor must be a mistake a student could actually make\n- short_answer: {\"type\":\"short_answer\",\"body\":{\"prompt\":\"…\"},\"expectedAnswer\":{\"modelAnswer\":\"…\",\"keyConcepts\":[\"…\",\"…\"]},\"rubric\":{\"criteria\":[{\"label\":\"…\",\"marks\":2}]}}\n\nDifficulty: standard. A balanced paper: some recall, most application, a little analysis.\n\nEach question object also needs:\n  \"objectiveId\": one of the ids above\n  \"competencyKey\": one of knowledge | understanding | application | critical_thinking —\n    the cognitive demand of THIS question, which is not the same as its objective's level.\n    A recall question about an application objective is knowledge.\n  \"marks\": a positive number, larger for questions that demand more work\n  \"skill\": a two-to-four word label for what it actually tests, or null\n\nWhen the answer is something a computer algebra system can check, include:\n  \"check\": {\"topic\": …, \"question\": …, \"answer\": …} — all in LATIN notation (x, 0-9), never Arabic.\n    topic is one of: derivative_polynomial | derivative_at_point | circle_center | circle_radius | equation_linear | equation_quadratic | equation_exponential\n    question is the payload the topic needs: the expression for a derivative (\"x^3 - 4x\"),\n      the expression and point separated by @ for derivative_at_point (\"x^4@2\"),\n      the equation for an equation topic (\"2x + 5 = 13\") or a circle (\"(x-4)^2 + (y+1)^2 = 9\").\n    answer is your key in latin form (\"3x^2 - 4\", \"x = 4\", \"(4, -1)\").\n    The check answer must be THE SAME answer as the key you give the class — the correct option, the\n      accepted blank, or the model answer — written in Latin. It is compared with that key; a check that\n      disagrees with it is discarded as unlinked, however correct the maths. State the final answer in\n      the model answer itself (for example \"المشتقة هي ٣س² − ٤\" for the check answer \"3x^2 - 4\").\n    Omit \"check\" only when the answer is prose, a definition, or otherwise not symbolic.\n\nA complete example of a maths question, showing the Arabic a student reads and the Latin the\nverifier reads in the same object:\n{\"type\":\"short_answer\",\"objectiveId\":\"<one of the ids above>\",\"competencyKey\":\"application\",\"marks\":3,\"skill\":\"اشتقاق كثيرة حدود\",\"body\":{\"prompt\":\"أوجد مشتقة الاقتران ق(س) = س³ − ٤س\"},\"expectedAnswer\":{\"modelAnswer\":\"المشتقة هي ٣س² − ٤\",\"keyConcepts\":[\"المشتقة\",\"كثيرة الحدود\"]},\"rubric\":{\"criteria\":[{\"label\":\"صحة الاشتقاق\",\"marks\":3}]},\"check\":{\"topic\":\"derivative_polynomial\",\"question\":\"x^3 - 4x\",\"answer\":\"3x^2 - 4\"}}\n\nهذه نسخة جديدة يطلبها المعلّم بديلًا عن نسخة سابقة، فيجب أن تختلف عنها اختلافًا حقيقيًا لا في الصياغة فقط.\nلا تُعِد أيًّا من هذه الأسئلة أو العناوين، ولا صيغة مكافئة لها بأرقام مختلفة:\n- أوجد مشتقة س^٣";
 
+const PIN_HINT =
+  "If only `topic is one of: …` differs, a new VERIFIABLE_TOPICS entry changed these literals: update them deliberately, by hand.";
+
 const SUPPLIED_NONE = {
   count: 0,
   byType: {},
@@ -51,21 +60,21 @@ describe("buildGenerationPrompt without a book share is byte-identical to before
   it("plain request", () => {
     const p = buildGenerationPrompt(BASE);
     assert.equal(p.system, SYSTEM);
-    assert.equal(p.user, USER_PLAIN);
+    assert.equal(p.user, USER_PLAIN, PIN_HINT);
   });
   it("with book excerpts", () => {
     const p = buildGenerationPrompt({ ...BASE, bookExcerpts: EXCERPTS });
     assert.equal(p.system, SYSTEM);
-    assert.equal(p.user, USER_EXCERPTS);
+    assert.equal(p.user, USER_EXCERPTS, PIN_HINT);
   });
   it("with an avoid list", () => {
     const p = buildGenerationPrompt({ ...BASE, avoid: [AVOID] });
     assert.equal(p.system, SYSTEM);
-    assert.equal(p.user, USER_AVOID);
+    assert.equal(p.user, USER_AVOID, PIN_HINT);
   });
   it("supplied.count === 0 adds nothing", () => {
     const p = buildGenerationPrompt({ ...BASE, bookExcerpts: EXCERPTS, supplied: SUPPLIED_NONE });
     assert.equal(p.system, SYSTEM);
-    assert.equal(p.user, USER_EXCERPTS);
+    assert.equal(p.user, USER_EXCERPTS, PIN_HINT);
   });
 });

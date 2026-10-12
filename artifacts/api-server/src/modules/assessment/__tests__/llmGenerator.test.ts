@@ -88,6 +88,8 @@ describe("buildGenerationPrompt", () => {
 
   it("asks for every requested type, grouped as a ministry paper", () => {
     const { system } = buildGenerationPrompt(REQ);
+    // The book share's block says "rule 2": keep that number and rule in step.
+    assert.match(system, /^2\. You only produce the question types listed/m);
     assert.match(system, /Spread the count across every listed type/);
     assert.match(system, /each type in one consecutive block/);
     assert.match(system, /half of any true\/false statements are false/);
@@ -190,7 +192,14 @@ describe("buildGenerationPrompt with a book share", () => {
     assert.match(user, /1 multiple_choice/);
     assert.match(user, /application 3 \(9 marks\)/);
     assert.match(user, /understanding 1 \(2 marks\)/);
-    assert.match(user, /Do not write those/);
+    assert.match(
+      user,
+      /You will not see them and must not try to reproduce them; write only the 6 other questions\./,
+    );
+    assert.equal(user.includes("Do not write those"), false);
+    // The per-competency marks are the only marks stated: no trailing total.
+    assert.match(user, /Those are: .*application 3 \(9 marks\)\.\n/);
+    assert.equal(/about \d+ marks/.test(user), false);
     assert.match(user, /count them when you spread the questions across the listed types/i);
   });
 
@@ -214,6 +223,30 @@ describe("buildGenerationPrompt with a book share", () => {
     const end = withoutExcerpt.indexOf("Objectives (use these ids verbatim):");
     assert.equal(withoutExcerpt.slice(0, start) + withoutExcerpt.slice(end), without);
     assert.ok(withBlock.includes("EXCERPT"));
+  });
+
+  it("refuses a share whose newByCompetency does not sum to the request's count", () => {
+    // A programming error, thrown before anything is sent to the model. Nothing
+    // is asserted about paperTotal: it is only text in the block.
+    const bad = { ...SUPPLIED, newByCompetency: { ...SUPPLIED.newByCompetency, knowledge: 3 } };
+    assert.throws(
+      () => buildGenerationPrompt({ ...BOOK_REQ, supplied: bad }),
+      /supplied\.newByCompetency must sum to count/,
+    );
+    const short = { ...SUPPLIED, newByCompetency: { ...SUPPLIED.newByCompetency, knowledge: 1 } };
+    assert.throws(
+      () => buildGenerationPrompt({ ...BOOK_REQ, supplied: short }),
+      /supplied\.newByCompetency must sum to count/,
+    );
+    // Whatever paperTotal says, a consistent share builds.
+    assert.doesNotThrow(() => buildGenerationPrompt({ ...BOOK_REQ, supplied: { ...SUPPLIED, paperTotal: 99 } }));
+    // A share of nothing is not a share: no block, so no sum to check.
+    assert.doesNotThrow(() =>
+      buildGenerationPrompt({
+        ...BOOK_REQ,
+        supplied: { ...SUPPLIED, count: 0, newByCompetency: { knowledge: 0, understanding: 0, application: 0, critical_thinking: 0 } },
+      }),
+    );
   });
 
   it("is left out when the book supplies nothing", () => {
