@@ -37,7 +37,8 @@ import { releaseAnnouncement } from "./resultsRelease.ts";
 
 /**
  * Live roster rows whose result on this exam a family can now open: handed in
- * AND final (`studentResultReady` also needs the release, which the callers
+ * AND final (a handed-in attempt with no result row yet is left out too, as
+ * `studentResultReady` leaves it out; it also needs the release, which the callers
  * check). A provisional paper is still being marked; telling its family
  * "results are out" would point them at a row with no result. `only` narrows
  * to rows a caller just saved (paper marks typed after the release).

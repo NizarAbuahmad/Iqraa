@@ -19,6 +19,7 @@ export const TITLE_MAX = 50;
 /** Trim, fold whitespace, and cut at `max` code points with «…» — never through a character. */
 export function clip(text: string, max: number): string {
   const folded = text.trim().replace(/\s+/g, " ");
+  if (max < 1) return "";
   const chars = [...folded];
   return chars.length <= max ? folded : `${chars.slice(0, max - 1).join("").trimEnd()}…`;
 }

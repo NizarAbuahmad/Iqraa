@@ -88,3 +88,11 @@ describe("clip", () => {
     assert.equal(clip("😀".repeat(5), 3), "😀😀…");
   });
 });
+
+describe("clip edge cases", () => {
+  it("returns an empty string for an empty or whitespace-only text, and for a max below 1", () => {
+    assert.equal(clip("   ", 10), "");
+    assert.equal(clip("abc", 0), "");
+    assert.equal(clip("abc", 1), "…");
+  });
+});

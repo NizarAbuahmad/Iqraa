@@ -34,10 +34,9 @@ export async function sendFamilyPush(input: {
   data: Record<string, unknown>;
   now?: Date;
 }): Promise<FamilyPushOutcome> {
-  // Homework and exam dates live on the School tab, which answers 403 while
-  // student accounts are off — never push toward a closed door. Results keep
-  // the behaviour they had before Part 4.
-  if (input.category !== "results" && !studentAccountsEnabled()) return NOTHING;
+  // Every family push opens a screen (School, My exams) whose endpoints answer
+  // 403 while student accounts are off — never push toward a closed door.
+  if (!studentAccountsEnabled()) return NOTHING;
   const recipients = selectRecipients(input.accounts, input.category);
   if (recipients.length === 0) return NOTHING;
 
