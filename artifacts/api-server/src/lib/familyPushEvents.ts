@@ -9,6 +9,8 @@ import { and, eq, isNull } from "drizzle-orm";
 import { accountsLinkedTo, liveClassStudentIds } from "./familyAccess.ts";
 import { assignedStudentsByEvaluation } from "./evaluationAudience.ts";
 import { sendFamilyPush, type FamilyPushOutcome } from "./familyPush.ts";
+import { releaseAnnouncement } from "./resultsRelease.ts";
+import { finalResultStudentIds } from "./resultsReleaseNotify.ts";
 import { dueAtToDueDate } from "../modules/homework/rules.ts";
 import { audienceFor, inAudience } from "../modules/assessment/audience.ts";
 import type { ExamDateNotice } from "../modules/notifications/examDateNotice.ts";
@@ -70,5 +72,22 @@ export async function announceExamDate(
     data: { screen: "school" },
     text: r => (r.relation === "guardian" ? text.guardian(r.childName) : text.student),
     now,
+  });
+}
+
+/**
+ * Paper marks typed after the release: the release's own words, to the
+ * children whose mark this request saved and whose result is now final.
+ */
+export async function announcePaperResults(
+  exam: { id: string; title: string; titleAr: string },
+  savedStudentIds: readonly string[],
+): Promise<FamilyPushOutcome> {
+  const text = releaseAnnouncement(exam);
+  return sendFamilyPush({
+    category: "results",
+    accounts: await accountsLinkedTo(await finalResultStudentIds(exam.id, savedStudentIds)),
+    data: { screen: "my-exams" },
+    text: r => (r.relation === "guardian" ? text.guardianPush(r.childName) : { title: text.pushTitle, body: text.pushBody }),
   });
 }

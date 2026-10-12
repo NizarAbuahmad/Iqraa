@@ -102,7 +102,7 @@ import { parsePaperTotals, PAPER_TOTALS_REFUSAL } from "../modules/assessment/pa
 import { resultsReleaseDecision } from "../lib/resultsRelease.ts";
 import { announceResultsRelease } from "../lib/resultsReleaseNotify.ts";
 import { pushWithin } from "../lib/pushWithin.ts";
-import { announceExamDate } from "../lib/familyPushEvents.ts";
+import { announceExamDate, announcePaperResults } from "../lib/familyPushEvents.ts";
 import { examDateNotice, publishNotice } from "../modules/notifications/examDateNotice.ts";
 const router = Router();
 // Path-scoped — see the note in roster.ts. Unscoped, this swallowed every
@@ -1892,6 +1892,10 @@ const paperTotalsLimiter = createRateLimiter({
  * Clearing (`marks: null`) deletes a teacher-entered sitting even after
  * results are released — the app asks the teacher to confirm first; the
  * server does not refuse (the paper was never the student's).
+ *
+ * A row saved while results are released is pushed to that child's family
+ * (lib/familyPushEvents.ts). A sitting handed in after the release through
+ * `POST /attempts/:id/submit` or the student link is not — a known gap.
  */
 router.put("/evaluations/:id/paper-totals", paperTotalsLimiter, async (req: AuthenticatedRequest, res) => {
   try {
@@ -1914,6 +1918,14 @@ router.put("/evaluations/:id/paper-totals", paperTotalsLimiter, async (req: Auth
     if (!outcome.ok) {
       res.status(409).json({ code: outcome.code, error: PAPER_TOTALS_REFUSAL[outcome.code] });
       return;
+    }
+    // A mark typed after the release is visible to the family at once
+    // (studentResultReady), and the release's own announcement has already
+    // gone — so announce it now. Only rows this request changed: a re-save of
+    // the same total answers "unchanged" and says nothing.
+    const saved = outcome.results.filter(r => r.status === "saved").map(r => r.studentId);
+    if (evaluation.releaseResultsToStudent && saved.length > 0) {
+      await pushWithin("paper results", () => announcePaperResults(evaluation, saved));
     }
     res.json({ maxMarks: outcome.maxMarks, results: outcome.results });
   } catch (err) {
