@@ -625,6 +625,10 @@ const translations = {
     aiUnavailable: 'خدمة الذكاء الاصطناعي متوقفة حاليًا. حاول لاحقًا.',
     // The offline demo has real questions for maths and chemistry only.
     noQuestionBank: 'لا يتوفر بعد بنك أسئلة لهذا الدرس في النسخة التجريبية، لذلك لا نعرض أسئلة عامة لا تخص الدرس. جرّب خطة الدرس أو الأنشطة، أو درسًا من الرياضيات أو الكيمياء.',
+    // The live call failed AND the offline path has no bank for this lesson —
+    // the cause is the failed call, not the demo, so say that and show why.
+    noQuestionBankLiveFailed: 'تعذّر توليد المحتوى عبر الذكاء الاصطناعي، ولا يتوفر بنك أسئلة محلي لهذا الدرس كبديل. حاول مرة أخرى، أو جرّب درسًا من الرياضيات أو الكيمياء.',
+    aiErrorReason: 'السبب:',
     // Shown with a result, not instead of one: the teacher asked for something
     // new and got a saved copy, and must not mistake it for a fresh generation.
     aiServedSavedCopy: 'هذه نسخة محفوظة — انتهت حصة التوليد الجديد لهذا الشهر.',
@@ -645,7 +649,7 @@ const translations = {
     sectionMainActivity: 'النشاط الرئيسي',
     sectionClosure: 'الختام',
     sectionAssessment: 'التقويم',
-    sectionDifferentiation: 'التمايز',
+    sectionDifferentiation: 'فروق فردية',
     sectionHomework: 'الواجب البيتي',
 
     // Worksheet generator
@@ -1133,7 +1137,7 @@ const translations = {
     lessonFlowStepActivity: 'النشاط التفاعلي',
     lessonFlowStepGuided: 'التدريب الموجّه',
     lessonFlowStepWorksheet: 'ورقة العمل',
-    lessonFlowStepExitTicket: 'بطاقة الخروج',
+    lessonFlowStepExitTicket: 'غلق الدرس',
     lessonFlowLaunchClassroom: 'اعرض على شاشة الصف',
     lessonFlowExportAll: 'صدّر الكل PDF',
     lessonFlowSaveFlow: 'احفظ المسار',
@@ -1178,6 +1182,10 @@ const translations = {
     suggestFeatureAnother: 'اقترح فكرة أخرى',
     suggestFeatureFailed: 'تعذّر إرسال اقتراحك. تحقّق من اتصالك وحاول مرة أخرى — نصّك ما زال هنا.',
     suggestFeatureSessionExpired: 'انتهت جلستك. سجّل الدخول من جديد ثم أرسل اقتراحك.',
+    suggestFeatureEmailPlaceholder: 'بريدك الإلكتروني (اختياري — لنردّ عليك)',
+    suggestFeatureAuthLink: 'عندك فكرة لـ«إقرأ»؟ اقترح ميزة',
+    suggestFeatureEmailInvalid: 'هذا البريد الإلكتروني لا يبدو صحيحًا. صحّحه أو اترك الحقل فارغًا.',
+    suggestFeatureTooMany: 'أرسلت عدة اقتراحات خلال وقت قصير. حاول مرة أخرى بعد قليل — نصّك ما زال هنا.',
     faqQ1: 'من أين أبدأ؟',
     faqA1: 'من شاشة «إقرأ». اكتب ما تحتاجه بلغتك — مثل «حضّر خطة درس عن تركيب الاقترانات» — أو اضغط زر ➕ بجانب مربّع الكتابة لاختيار الأداة مباشرة.',
     faqQ2: 'كيف أحدّد الدرس الذي أعمل عليه؟',
@@ -1279,6 +1287,9 @@ const translations = {
     // Live-AI answers, and anything else not drawn from the bank: nothing and
     // nobody checked them, so the teacher has to.
     answersUnreviewedAll: 'لم يتحقّق أي مصدر مُراجَع من هذه الإجابات، وقد وُلِّدت تلقائيًا — راجعها بنفسك قبل التوزيع',
+    // Step-by-step working a model wrote, as opposed to the offline bank's, which
+    // a person wrote and checked. See `workingProvenance`.
+    workingUnreviewed: 'الخطوات المكتوبة في هذه الورقة وُلِّدت بالذكاء الاصطناعي ولم يراجعها أحد — راجعها بنفسك قبل التوزيع',
     answersUnreviewedSome: (n: number, total: number) =>
       `لم يتحقّق أي مصدر مُراجَع من ${n} من أصل ${total} إجابة، وقد وُلِّدت تلقائيًا — راجعها بنفسك قبل التوزيع`,
     examplesAiUnverified: 'كتب الذكاء الاصطناعي المثال ولم يتحقّق أحد من إجابته — راجعها قبل العرض',
@@ -1289,7 +1300,7 @@ const translations = {
     activityBingoDesc: 'استدعِ المصطلحات وشطّب المربعات — أول من يكمل صفًا يفوز',
     activityRelayTitle: 'سباق التتابع',
     activityRelayDesc: 'سلسلة من 4–6 مسائل متصلة — كل إجابة تفتح التالية',
-    activityExitTitle: 'بطاقة الخروج',
+    activityExitTitle: 'غلق الدرس',
     activityExitDesc: '3–5 أسئلة سريعة في نهاية الحصة للتحقق من الفهم',
     activityErrorTitle: 'المحقق الرياضي',
     activityErrorDesc: 'اعثر على الخطأ في الحل وصحّحه — تعلّم عبر اكتشاف الأخطاء',
@@ -1478,7 +1489,7 @@ const translations = {
     misconceptionsLabel: 'الأخطاء الشائعة',
     teachingTipsLabel2: 'نصائح التدريس',
     suggestedQuestionsLabel: 'أسئلة مقترحة',
-    differentiationLabel: 'التمايز',
+    differentiationLabel: 'فروق فردية',
     slideTypeIntro: 'تمهيد',
     slideTypeChallenge: 'تحدٍّ',
     slideTypeReveal: 'كشف',
@@ -1636,6 +1647,29 @@ const translations = {
     calendarLessonFrom: (planTitle: string) => `من: ${planTitle}`,
     calendarLoadFailed: 'تعذّر تحميل التقويم.',
 
+    // Exam dates — teachers at one school see each other's exam days so a grade
+    // is not put through two exams at once (GET /exam-calendar).
+    calendarExamsSection: 'الامتحانات',
+    calendarShowSchoolExams: 'عرض امتحانات المدرسة',
+    calendarExamsNoSchool: 'حسابك غير مرتبط بمدرسة بعد، لذلك تظهر امتحاناتك فقط. اطلب من الإدارة ربطك بمدرستك.',
+    calendarExamsLoadFailed: 'تعذّر تحميل امتحانات المدرسة.',
+    calendarExamMine: 'امتحانك',
+    calendarExamTeacher: (name: string) => `المعلّم: ${name}`,
+    calendarExamClash: (grade: string) => `أكثر من امتحان لـ${grade} في هذا اليوم`,
+    examDateLabel: 'موعد الامتحان',
+    examDateHint: 'اختياري. يراه معلمو مدرستك حتى لا تتعارض الامتحانات.',
+    examDateInvalid: 'اكتب التاريخ بصيغة 2026-10-12',
+    examTimeLabel: 'الوقت (اختياري)',
+    examTimeInvalid: 'اكتب الوقت بصيغة 09:30',
+    examDateSave: 'حفظ الموعد',
+    examDateClear: 'إزالة الموعد',
+    examDateSaved: 'تم حفظ الموعد',
+    examDateSaveFailed: 'تعذّر حفظ الموعد.',
+    examDateConflict: (grade: string, count: number) =>
+      count === 1
+        ? `يوجد امتحان آخر لـ${grade} في هذا اليوم`
+        : `يوجد ${count} امتحانات أخرى لـ${grade} في هذا اليوم`,
+
     // Class ↔ materials
     classTabStudents: 'الطلبة',
     classTabMaterials: 'الملفات',
@@ -1665,7 +1699,7 @@ const translations = {
     parentContactsAllGood: 'وصلت رسالةٌ إلى أسرة كل طالب خلال الشهر، ولم تقتصر أيٌّ منها على الملاحظات.',
     parentContactsTapHint: 'اضغط على اسم لكتابة رسالة لأسرته.',
     parentContactsUnread: (n: string) => `رسالة داخل إقرأ لم تُفتح منذ يومين أو أكثر (${n})`,
-    // Not «تحقّق سريع» and not «تذكرة الخروج» — the classroom-activity
+    // Not «تحقّق سريع» and not «غلق الدرس» — the classroom-activity
     // generator already owns both of those (`activityType: 'quick-check'` and
     // `'exit-ticket'`). This one belongs to the evaluations family, produces a
     // per-student record, and is named from that side of the app.
@@ -2170,14 +2204,14 @@ const translations = {
     onboardingSlide6Desc: 'مساعد يعرف كتب المنهاج: اسأله عن درس أو فكرة للشرح، ويدلّك على الأداة المناسبة بزرّ واحد.',
     onboardingSlide6Points: 'إجابات من كتب المنهاج\nأفكار للشرح والتمهيد\nيدلّك على الأداة المناسبة',
     onboardingSlide2Title: 'رحلة حصة كاملة في مسار واحد',
-    onboardingSlide2Desc: 'من الأهداف والتمهيد، إلى النشاط والتدريب وورقة العمل وبطاقة الخروج — تُبنى بالتتابع، لا قطعًا متفرقة.',
-    onboardingSlide2Points: 'الأهداف والتمهيد\nالنشاط والتدريب\nورقة العمل وبطاقة الخروج',
+    onboardingSlide2Desc: 'من الأهداف والتمهيد، إلى النشاط والتدريب وورقة العمل وغلق الدرس — تُبنى بالتتابع، لا قطعًا متفرقة.',
+    onboardingSlide2Points: 'الأهداف والتمهيد\nالنشاط والتدريب\nورقة العمل وغلق الدرس',
     onboardingSlide4Title: 'أدوات لكل لحظة في الحصة',
     onboardingSlide4Desc: 'شرائح تعرضها على السبورة، وتحدٍّ جماعي بلا هواتف، وأشكال من كتابك برقم صفحتها — جاهزة قبل الحصة وأثناءها.',
     onboardingSlide4Points: 'شرائح للعرض\nتحدٍّ جماعي بلا هواتف\nأشكال الكتاب برقم الصفحة',
     onboardingSlide7Title: 'أوراق عمل وبطاقات خروج في دقيقة',
-    onboardingSlide7Desc: 'ورقة عمل بمستويات صعوبة ومفتاح إجابة، وبطاقة خروج تعرف بها ما فهمه طلبتك قبل أن يغادروا الصف.',
-    onboardingSlide7Points: 'مستويات صعوبة متدرّجة\nمفتاح إجابة جاهز\nبطاقة خروج لآخر الحصة',
+    onboardingSlide7Desc: 'ورقة عمل بمستويات صعوبة ومفتاح إجابة، وغلق للدرس تعرف به ما فهمه طلبتك قبل أن يغادروا الصف.',
+    onboardingSlide7Points: 'مستويات صعوبة متدرّجة\nمفتاح إجابة جاهز\nغلق الدرس في آخر الحصة',
     onboardingSlide8Title: 'اختبار يجيب عنه الطلبة من هواتفهم',
     onboardingSlide8Desc: 'ولّد الاختبار من الدرس وشاركه برابط، فيجيب الطلبة من هواتفهم، وتُرصد علاماتهم وتصلك نتائج كل طالب.',
     onboardingSlide8Points: 'أسئلة من المنهاج\nمشاركة برابط\nرصد العلامات والنتائج',
@@ -2377,6 +2411,18 @@ const translations = {
     messagingClassChipHint: 'اضغط على اسم الصف لإضافة جميع أعضائه دفعة واحدة',
     messagingNoSearchMatch: 'لا نتائج مطابقة لبحثك',
     messagingCreateGroup: 'أنشئ المجموعة',
+    messagingBroadcastTitle: 'رسالة جماعية',
+    messagingModeBroadcast: 'رسالة لكل شخص',
+    messagingModeBroadcastHint: 'تصل كل شخص كمحادثة خاصة بينك وبينه، وردّه يصلك أنت فقط.',
+    messagingModeGroup: 'مجموعة',
+    messagingModeGroupHint: 'محادثة واحدة يرى فيها الأعضاء بعضهم، وأنت وحدك تكتب فيها.',
+    messagingBroadcastBodyLabel: 'نص الرسالة',
+    messagingBroadcastBodyPlaceholder: 'اكتب الرسالة التي ستصل إلى كل من اخترتهم…',
+    messagingBroadcastSend: (n: number) => `أرسل إلى ${n}`,
+    messagingBroadcastDone: (sent: number, skipped: number) =>
+      skipped > 0 ? `أُرسلت الرسالة إلى ${sent}، وتعذّر الإرسال إلى ${skipped}.` : `أُرسلت الرسالة إلى ${sent}.`,
+    messagingRoleParents: 'أولياء الأمور',
+    messagingRoleStudents: 'الطلبة',
     messagingManageMembers: 'إدارة الأعضاء',
     messagingStudentCodes: 'رمز الربط',
     messagingLeaveGroup: 'مغادرة المجموعة',
@@ -3043,6 +3089,8 @@ const translations = {
       "This month's AI allowance is used up. You can still open saved worksheets and lessons.",
     aiUnavailable: 'The AI service is switched off right now. Try again later.',
     noQuestionBank: 'The demo has no question bank for this lesson yet, so we won\'t show generic questions that aren\'t about it. Try the lesson plan or activities, or a maths or chemistry lesson.',
+    noQuestionBankLiveFailed: 'AI generation failed, and there is no offline question bank for this lesson to fall back on. Try again, or pick a maths or chemistry lesson.',
+    aiErrorReason: 'Reason:',
     aiServedSavedCopy: "This is a saved copy — this month's AI allowance is used up.",
     curriculumUngroundedNotice: 'This topic is not in the currently available curriculum. The plan is generic and not grounded in a specific textbook lesson.',
     curriculumUngroundedNoticeWorksheet: 'This topic is not in the currently available curriculum. The worksheet is generic and not grounded in a specific textbook lesson.',
@@ -3578,6 +3626,10 @@ const translations = {
     suggestFeatureAnother: 'Suggest another idea',
     suggestFeatureFailed: "Couldn't send your suggestion. Check your connection and try again — your text is still here.",
     suggestFeatureSessionExpired: 'Your session has ended. Sign in again, then send your suggestion.',
+    suggestFeatureEmailPlaceholder: 'Your email (optional — so we can reply)',
+    suggestFeatureAuthLink: 'Have an idea for Iqrra? Suggest a feature',
+    suggestFeatureEmailInvalid: "That email doesn't look right. Fix it or leave the field empty.",
+    suggestFeatureTooMany: "You've sent several suggestions in a short time. Try again in a little while — your text is still here.",
     faqQ1: 'Where do I start?',
     faqA1: 'On the Iqrra screen. Type what you need in your own words — "prepare a lesson plan on function composition" — or press the ➕ next to the message box to pick a tool directly.',
     faqQ2: 'How do I set which lesson I am working on?',
@@ -3673,6 +3725,9 @@ const translations = {
     levelsPartial: 'Some levels could not be built. The ones that finished are shown; try the rest again later.',
     quizVerifiedNone: 'No answer was symbolically verified — keys come from the reviewed bank',
     answersUnreviewedAll: 'No reviewed source has checked these answers, and they were generated automatically — check them yourself before handing out',
+    // Step-by-step working a model wrote, as opposed to the offline bank's, which
+    // a person wrote and checked. See `workingProvenance`.
+    workingUnreviewed: 'The step-by-step working on this sheet was written by AI and nobody has reviewed it — check it yourself before handing out',
     answersUnreviewedSome: (n: number, total: number) =>
       `No reviewed source has checked ${n} of ${total} answers, and they were generated automatically — check them yourself before handing out`,
     examplesAiUnverified: "The example was written by AI and nobody has checked its answer — review it before class",
@@ -4023,6 +4078,29 @@ const translations = {
     calendarLessonsSection: 'Lessons',
     calendarLessonFrom: (planTitle: string) => `From: ${planTitle}`,
     calendarLoadFailed: 'Could not load your calendar.',
+
+    // Exam dates — teachers at one school see each other's exam days so a grade
+    // is not put through two exams at once (GET /exam-calendar).
+    calendarExamsSection: 'Exams',
+    calendarShowSchoolExams: 'Show school exams',
+    calendarExamsNoSchool: 'Your account is not linked to a school yet, so only your own exams show. Ask your administrator to link you.',
+    calendarExamsLoadFailed: 'Could not load school exams.',
+    calendarExamMine: 'Your exam',
+    calendarExamTeacher: (name: string) => `Teacher: ${name}`,
+    calendarExamClash: (grade: string) => `More than one exam for ${grade} on this day`,
+    examDateLabel: 'Exam date',
+    examDateHint: 'Optional. Teachers at your school can see it, so exams do not clash.',
+    examDateInvalid: 'Enter the date like 2026-10-12',
+    examTimeLabel: 'Time (optional)',
+    examTimeInvalid: 'Enter the time like 09:30',
+    examDateSave: 'Save date',
+    examDateClear: 'Remove date',
+    examDateSaved: 'Date saved',
+    examDateSaveFailed: 'Could not save the date.',
+    examDateConflict: (grade: string, count: number) =>
+      count === 1
+        ? `Another exam for ${grade} is on this day`
+        : `${count} other exams for ${grade} are on this day`,
 
     // Class ↔ materials
     classTabStudents: 'Students',
@@ -4739,6 +4817,18 @@ const translations = {
     messagingClassChipHint: 'Tap a class name to add everyone in it at once',
     messagingNoSearchMatch: 'No one matches your search',
     messagingCreateGroup: 'Create group',
+    messagingBroadcastTitle: 'Group message',
+    messagingModeBroadcast: 'Message each person',
+    messagingModeBroadcastHint: 'Each person gets a private chat with you, and their reply comes to you alone.',
+    messagingModeGroup: 'Group',
+    messagingModeGroupHint: 'One shared chat where members see each other. Only you can post.',
+    messagingBroadcastBodyLabel: 'Message',
+    messagingBroadcastBodyPlaceholder: 'Write the message everyone you picked will receive…',
+    messagingBroadcastSend: (n: number) => `Send to ${n}`,
+    messagingBroadcastDone: (sent: number, skipped: number) =>
+      skipped > 0 ? `Sent to ${sent}; ${skipped} could not be reached.` : `Sent to ${sent}.`,
+    messagingRoleParents: 'Parents',
+    messagingRoleStudents: 'Students',
     messagingManageMembers: 'Manage members',
     messagingStudentCodes: 'Link code',
     messagingLeaveGroup: 'Leave group',

@@ -7,7 +7,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { hiddenOutsideSelection, hiddenSubjectsForGrade, narrowSubjectsForGrade, narrowToSelection, resolveSelectedId, preferredGrade, narrowBooksToTeacher } from '../teacherCatalogFilter.ts';
+import { hiddenOutsideSelection, hiddenSubjectsForGrade, narrowSubjectsForGrade, narrowToSelection, resolveSelectedId, preferredGrade, narrowBooksToTeacher, scopedSubjectIds } from '../teacherCatalogFilter.ts';
 
 const CATALOG = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
 
@@ -122,5 +122,18 @@ describe('narrowBooksToTeacher', () => {
   it('returns everything when nothing is selected or nothing would match', () => {
     assert.equal(narrowBooksToTeacher(books, undefined, undefined, undefined).length, 4);
     assert.equal(narrowBooksToTeacher(books, ['grade-1'], undefined, undefined).length, 4);
+  });
+});
+
+describe('scopedSubjectIds', () => {
+  it('returns the narrowed ids when narrowing actually removed subjects', () => {
+    assert.deepEqual(scopedSubjectIds([{ id: 'a' }, { id: 'b' }], CATALOG), ['a', 'b']);
+  });
+
+  it('returns undefined when nothing was narrowed, so the filter is a no-op', () => {
+    // No selection (or a stale one) falls back to the full list; restricting
+    // rows to that list would hide rows of subjects outside the grade's own.
+    assert.equal(scopedSubjectIds(CATALOG, CATALOG), undefined);
+    assert.equal(scopedSubjectIds([], CATALOG), undefined);
   });
 });

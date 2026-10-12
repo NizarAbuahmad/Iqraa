@@ -38,6 +38,14 @@ export interface Evaluation {
   /** The class the teacher attached this exam to, or null. */
   classGroupId?: string | null;
   /**
+   * When the sitting is planned, "YYYY-MM-DD", or null/absent if never dated.
+   * Returned by `GET /evaluations/:id` and the PATCH, not by the LIST endpoint.
+   * Planning data only — it does not open or close the student link.
+   */
+  examDate?: string | null;
+  /** "HH:MM", only ever set together with `examDate`. */
+  examTime?: string | null;
+  /**
    * Papers the teacher has finished marking, counted server-side from
    * `attempt_results` excluding provisional ones. Returned by the LIST
    * endpoint only — `GET /evaluations/:id` does not carry it.
@@ -102,7 +110,7 @@ export interface EvaluationQuestion {
      * before key checking existed — treat that as "say nothing", never as a
      * verdict.
      */
-    code?: 'verified' | 'no_key' | 'verifier_unreachable' | 'undecided' | 'key_unlinked' | 'edited';
+    code?: 'verified' | 'no_key' | 'verifier_unreachable' | 'undecided' | 'contradicted' | 'key_unlinked' | 'edited';
     computedAnswer?: string | null;
     reason?: string;
     checkedAt?: string;
@@ -193,6 +201,23 @@ export async function setEvaluationClass(
     body: JSON.stringify({ classGroupId }),
   });
   const data = await readJson<{ evaluation: Evaluation }>(res, 'Attaching the exam');
+  return data.evaluation;
+}
+
+/**
+ * Set when an exam is planned to be sat, or pass `examDate: null` to clear it
+ * (which clears the time too). `examTime` needs a date. This is what the school
+ * exam calendar reads.
+ */
+export async function setEvaluationExamSchedule(
+  evaluationId: string,
+  schedule: { examDate: string | null; examTime?: string | null },
+): Promise<Evaluation> {
+  const res = await apiFetch(`/evaluations/${evaluationId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(schedule),
+  });
+  const data = await readJson<{ evaluation: Evaluation }>(res, 'Saving the exam date');
   return data.evaluation;
 }
 

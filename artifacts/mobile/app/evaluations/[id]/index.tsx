@@ -47,6 +47,7 @@ import { groupSizeLabel } from '@/services/supportGroups';
 import { palette } from '@/constants/colors';
 import { PROD_ORIGIN } from '@/services/siteOrigin';
 import { BackButton } from '@/components/ui/BackButton';
+import { ExamDateCard } from '@/components/ExamDateCard';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -415,6 +416,12 @@ export default function EvaluationDetailScreen() {
           align={align}
           t={t}
         />
+      )}
+
+      {/* Planned sitting — what colleagues at the same school see on their
+          calendars. Not shown once closed: that exam has been sat. */}
+      {evaluation && evaluation.status !== 'closed' && (
+        <ExamDateCard evaluation={evaluation} onSaved={refetch} />
       )}
 
       {/*

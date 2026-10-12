@@ -9,7 +9,7 @@
  * `routes/generate.ts`, which imports the OpenAI client at module scope and
  * throws without a key — so they could not be unit-tested at all. That let
  * the Arabic branch silently fall behind the English one: on the live server
- * an Arabic teacher picking «المحقق الرياضي», «جولة المعارض», «بطاقة الخروج»
+ * an Arabic teacher picking «المحقق الرياضي», «جولة المعارض», «غلق الدرس»
  * or «تحقق سريع» got an escape-challenge deck instead, because the Arabic
  * builder only recognised bingo and relay. The tests below pin every id in
  * both languages so that regression can't happen silently again.
@@ -113,7 +113,7 @@ describe("classroom prompts — Arabic format parity", () => {
     const exitTicket = classroomPromptAr({ ...baseBody, activityType: "exit-ticket" });
     assert.match(errorDetective, /المحقق الرياضي/);
     assert.match(galleryWalk, /جولة المعارض/);
-    assert.match(exitTicket, /بطاقة الخروج/);
+    assert.match(exitTicket, /غلق الدرس/);
   });
 });
 
