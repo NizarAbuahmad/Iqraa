@@ -59,10 +59,12 @@ an announcement by default» below.
   class → students → generate an exam → publish → attach to the class → a
   student with no account opens `/take/CODE`, answers and hands in → the
   teacher's results screen shows "1 of 1 students marked". Passes locally
-  (Chrome, Windows). **Not yet verified:** the workflow itself on a GitHub
-  runner (its first run is the PR's), and flakiness beyond a handful of local
-  runs. Deliberately **not a required check** yet. It uses the Evaluation
-  flow — the ai-tools quiz has no student link, so it cannot be part of it.
+  (Chrome, Windows, 3 of 3) and on a GitHub runner (PR #1032's own run
+  38263285986: migrations applied, seed ran, 1 passed in 8 s). **Not yet
+  verified:** flakiness beyond those runs — it is deliberately **not a required
+  check**; make it one after about a week without a red run. It uses the
+  Evaluation flow — the ai-tools quiz has no student link, so it cannot be
+  part of it.
 
 - **API credentials are Secret Manager references** (2026-10-08, live since
   `iqraa-api-00283-twr`). The ten credentials (`SESSION_SECRET`,
