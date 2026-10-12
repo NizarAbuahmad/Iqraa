@@ -644,6 +644,33 @@ ${list}
 Write exactly ${missing} MORE questions, of the same requested types and in the same shape, about different ideas and facts from the above — do not repeat or reword any of them. Return the same JSON shape, but "questions" holds only the new questions (numbered from q${have.length + 1}).`;
 }
 
+/**
+ * The block appended to a worksheet or homework request when the first reply
+ * came back short — the quiz's counterpart (`quizTopUpBlock`), for a paper whose
+ * questions sit in sections beside an answer key.
+ *
+ * The new questions arrive as ONE extra section, so the merge never has to
+ * guess where they belong; the answer key carries only their entries, numbered
+ * on from the questions already there. No worked example: the first reply
+ * already has whatever it was going to have.
+ */
+export function worksheetTopUpBlock(isAr: boolean, have: string[], missing: number): string {
+  const list = have.map((t, i) => `${i + 1}. ${t.slice(0, 160)}`).join("\n");
+  return isAr
+    ? `
+
+الورقة تحتوي حاليًا على ${have.length} سؤالًا، وهذه نصوصها:
+${list}
+
+اكتب ${missing} سؤالًا إضافيًا بالضبط، من أنواع الأسئلة المطلوبة نفسها وبالشكل نفسه، عن أفكار مختلفة عمّا سبق ولا تكرر أيًّا منها ولا تعد صياغته. أعد JSON بالشكل نفسه (مع "title" و"instructions" كما هما بإيجاز) لكن "sections" فيه قسم واحد جديد عنوانه «تمارين إضافية» يضم الأسئلة الجديدة وحدها، و"answerKey" فيه إجابات الأسئلة الجديدة وحدها بترقيم "num" يبدأ من ${have.length + 1}. بلا "workedExample".`
+    : `
+
+The paper so far has ${have.length} questions, with these texts:
+${list}
+
+Write exactly ${missing} MORE questions, of the same requested types and in the same shape, about different ideas from the above — do not repeat or reword any of them. Return the same JSON shape (with "title" and "instructions" repeated briefly), but "sections" holds ONE new section titled "Additional practice" with only the new questions, and "answerKey" holds only the new questions' answers, with "num" numbered from ${have.length + 1}. No "workedExample".`;
+}
+
 // ─── Difficulty ──────────────────────────────────────────────────────────────
 /**
  * What a difficulty tier actually means, and how it lands on each artifact.

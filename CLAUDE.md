@@ -170,6 +170,16 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   before it can be studied, and `steps.test.ts` fails a family with fewer than
   two solved items. Working is dropped, not kept, when a teacher edits the
   question it belongs to (`worksheetEdits.ts`).
+  **The live route enforces that count, and homework follows the picker.** A
+  model asked for 20 often returns 10, so `/generate/worksheet|homework` counts
+  (`worksheetShortfall` — the example is inside the number, a prior-knowledge
+  review of 2–3 questions is on top), asks once more for only the missing ones
+  as one extra section (`worksheetTopUpBlock`, `mergeWorksheetTopUp`), and trims
+  a real surplus (`trimWorksheet`, which never cuts a review the teacher asked
+  for). The offline `homeworkOnce` used to ignore `numQuestions` and
+  `questionTypes` entirely (always 3 written questions + challenge +
+  reflection); the challenge and the reflection are now two of the picked
+  number and the rest follow the ticked types (`worksheetCount.test.ts`).
 - **A question's difficulty tier lives on the template, and in two prompts.**
   Every non-math question template carries its own `tier`
   (`TieredTemplate` in `artifacts/mobile/services/ai/generators.ts`), and
