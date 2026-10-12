@@ -221,3 +221,19 @@ jobs:
         env:
           PYTHONIOENCODING: utf-8
         run: python -X utf8 test_equations.py
+
+      # Real book items: the extractor's normalisation and trust rules, then a
+      # check that the committed JSON is exactly what the script emits. A
+      # hand-edited item, or a rule change without a re-run, fails here.
+      - name: Book item extractor tests
+        working-directory: artifacts/math-verifier
+        env:
+          PYTHONIOENCODING: utf-8
+        run: python -X utf8 ../../scripts/test_extract_book_items.py
+
+      - name: Committed book items match the extractor
+        env:
+          PYTHONIOENCODING: utf-8
+        run: |
+          python -X utf8 scripts/extract_book_items.py
+          git diff --exit-code -- lib/curriculum/src/data/book-items

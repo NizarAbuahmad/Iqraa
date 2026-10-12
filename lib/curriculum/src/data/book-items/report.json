@@ -1,0 +1,190 @@
+{
+  "counts": {
+    "computed": 24,
+    "quarantined": 14
+  },
+  "quarantined": [
+    {
+      "id": "bi-math-s1-exercise-book-u1l2-5",
+      "lessonId": "kbl-math-s1-nccd-u1_l1",
+      "source": {
+        "sourceId": "math-s1-exercise-book",
+        "page": 11,
+        "bookPage": 11,
+        "unit": 1,
+        "number": 5
+      },
+      "family": "system",
+      "reason": "no_real_solution"
+    },
+    {
+      "id": "bi-math-s1-exercise-book-u1l2-6",
+      "lessonId": "kbl-math-s1-nccd-u1_l1",
+      "source": {
+        "sourceId": "math-s1-exercise-book",
+        "page": 11,
+        "bookPage": 11,
+        "unit": 1,
+        "number": 6
+      },
+      "family": "system",
+      "reason": "no_real_solution"
+    },
+    {
+      "id": "bi-math-s1-exercise-book-u1l2-11",
+      "lessonId": "kbl-math-s1-nccd-u1_l1",
+      "source": {
+        "sourceId": "math-s1-exercise-book",
+        "page": 11,
+        "bookPage": 11,
+        "unit": 1,
+        "number": 11
+      },
+      "family": "system",
+      "reason": "no_real_solution"
+    },
+    {
+      "id": "bi-math-s1-exercise-book-u1l2-12",
+      "lessonId": "kbl-math-s1-nccd-u1_l1",
+      "source": {
+        "sourceId": "math-s1-exercise-book",
+        "page": 11,
+        "bookPage": 11,
+        "unit": 1,
+        "number": 12
+      },
+      "family": "system",
+      "reason": "no_real_solution"
+    },
+    {
+      "id": "bi-math-s1-exercise-book-u1l3-2",
+      "lessonId": "kbl-math-s1-nccd-u1_l2",
+      "source": {
+        "sourceId": "math-s1-exercise-book",
+        "page": 12,
+        "bookPage": 12,
+        "unit": 1,
+        "number": 2
+      },
+      "family": "system",
+      "reason": "no_real_solution"
+    },
+    {
+      "id": "bi-math-s1-exercise-book-u1l3-7",
+      "lessonId": "kbl-math-s1-nccd-u1_l2",
+      "source": {
+        "sourceId": "math-s1-exercise-book",
+        "page": 12,
+        "bookPage": 12,
+        "unit": 1,
+        "number": 7
+      },
+      "family": "system",
+      "reason": "no_real_solution"
+    },
+    {
+      "id": "bi-math-s1-exercise-book-u1l3-11",
+      "lessonId": "kbl-math-s1-nccd-u1_l2",
+      "source": {
+        "sourceId": "math-s1-exercise-book",
+        "page": 12,
+        "bookPage": 12,
+        "unit": 1,
+        "number": 11
+      },
+      "family": "system",
+      "reason": "not_closed_form"
+    },
+    {
+      "id": "bi-math-s1-exercise-book-u1l3-12",
+      "lessonId": "kbl-math-s1-nccd-u1_l2",
+      "source": {
+        "sourceId": "math-s1-exercise-book",
+        "page": 12,
+        "bookPage": 12,
+        "unit": 1,
+        "number": 12
+      },
+      "family": "system",
+      "reason": "broken_fraction_or_exponent"
+    },
+    {
+      "id": "bi-math-s2-exercise-book-u6l2-1",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-exercise-book",
+        "page": 28,
+        "bookPage": 28,
+        "unit": 6,
+        "number": 1
+      },
+      "family": "derivative",
+      "reason": "broken_fraction_or_exponent"
+    },
+    {
+      "id": "bi-math-s2-exercise-book-u6l2-2",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-exercise-book",
+        "page": 28,
+        "bookPage": 28,
+        "unit": 6,
+        "number": 2
+      },
+      "family": "derivative",
+      "reason": "broken_fraction_or_exponent"
+    },
+    {
+      "id": "bi-math-s2-exercise-book-u6l2-5",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-exercise-book",
+        "page": 28,
+        "bookPage": 28,
+        "unit": 6,
+        "number": 5
+      },
+      "family": "derivative",
+      "reason": "exponent_out_of_range"
+    },
+    {
+      "id": "bi-math-s2-exercise-book-u6l2-6",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-exercise-book",
+        "page": 28,
+        "bookPage": 28,
+        "unit": 6,
+        "number": 6
+      },
+      "family": "derivative",
+      "reason": "exponent_out_of_range"
+    },
+    {
+      "id": "bi-math-s2-exercise-book-u6l2-10",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-exercise-book",
+        "page": 28,
+        "bookPage": 28,
+        "unit": 6,
+        "number": 10
+      },
+      "family": "derivative",
+      "reason": "broken_fraction_or_exponent"
+    },
+    {
+      "id": "bi-math-s2-exercise-book-u6l2-16",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-exercise-book",
+        "page": 28,
+        "bookPage": 28,
+        "unit": 6,
+        "number": 16
+      },
+      "family": "derivative_at",
+      "reason": "not_a_function_definition"
+    }
+  ]
+}
