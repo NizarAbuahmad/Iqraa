@@ -932,23 +932,22 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
-## Math Corner: calculator, grapher, unit converter and formula sheet in the library, 2026-10-11
+## Math Corner: calculator, grapher, geometry sketchpad, unit converter and formula sheet in the library, 2026-10-12
 
 **What a user can do today.** The library (`/curriculum/resources`) has a
 «زاوية الرياضيات» tile opening `/curriculum/math`, a hub with four first-party
-tools — a scientific calculator, a function grapher, a unit converter and a
-Grade 10 formula sheet (`/curriculum/math/calculator`, `/grapher`, `/converter`,
-`/formulas`, each with a copyable link) — and a «افتح GeoGebra» card. Everyone who can see the library can open
+tools — a scientific calculator, a function grapher, a geometry sketchpad, a
+unit converter and a Grade 10 formula sheet (`/curriculum/math/calculator`,
+`/grapher`, `/sketchpad`, `/converter`, `/formulas`, each with a copyable link) — and a «افتح GeoGebra» card. Everyone who can see the library can open
 it; no gating change (`/curriculum` is already on the non-teacher prefix
-allowlist, pinned in `routeGating.test.ts`). The geometry sketchpad is **not
-built yet**, and the hub lists only what exists
+allowlist, pinned in `routeGating.test.ts`). The hub lists only what exists
 (`MATH_TOOL_IDS` in `services/mathTools.ts`; `MathTool.tsx` is a `Record` over
 it, so an id without a component does not compile).
 
 **GeoGebra is a link, never an embed.** The card calls `openGeogebraGraphing()`
 (new tab on web, in-app browser on Android). The embed was removed on
 2026-09-11 over GeoGebra's licence (see «The GeoGebra embed is gone»); the
-planned grapher and sketchpad are first-party for the same reason.
+grapher and sketchpad are first-party for the same reason.
 
 **The engine fails closed.** `services/mathExpr.ts` is a hand-written
 tokenizer + recursive-descent evaluator (no `eval`, no `Function`; a test greps
@@ -1059,6 +1058,39 @@ as something else; circles belong to the sketchpad.
   view (finger up, wheel stopped, button pressed), ~600 samples each, not on
   every frame of a drag.
 
+**The sketchpad** (`components/math/MathSketchpad.tsx`) draws points, segments,
+polygons of 3–8 corners and circles on the grapher's plane (`PlaneGrid`, now
+shared) and works out lengths, interior angles, perimeter, area, a triangle's
+class and a circle's centre, radius, circumference, area and equation. The model
+is `services/mathGeometry.ts` (51 tests): a shape names its points by id, so
+dragging a point moves every shape through it and deleting a point deletes those
+shapes. Shapes are made by tapping their points, not by dragging; Move drags a
+point (one undo step per drag), and a second finger pinches the view instead.
+Snap to grid is on by default, with a step from the zoom level.
+- **It fails closed on the shapes the shoelace formula lies about.** A polygon
+  that crosses itself (a bow-tie) or touches itself gets «الشكل يقطع نفسه» and no
+  area or angles; collinear points get area 0 and no angles; two corners on one
+  spot make the angle there «coincident». A concave corner reports its reflex
+  angle (270°, not its 90° mirror), and angle sums are (n−2)·180 in both
+  orientations. Mutation-checked: turning off the self-intersection guard, the
+  reflex rule, the duplicate/degenerate/zero-radius refusals and the drag step
+  each fails a test.
+- **Lengths are in grid units**, and the screen says so: the grid is the ruler.
+  There is no «cm» because nothing here knows what a unit is.
+- **The circle's numbers are the book's:** centre (a, b), and r² in
+  (x − a)² + (y − b)² = r², written with س and ص and Arabic-Indic digits in
+  Arabic. The equation is a left-to-right override; that is safe here only
+  because the variables are single letters (see the digits note above).
+- **`addPoint` merges only when asked.** The first version merged an
+  exactly-coincident point by default (`d <= 0`), which made it impossible to
+  test two corners on one spot and would have hidden the «coincident» path; a
+  tap merges through an explicit tiny radius.
+- **Not done:** no saving (the scene lives for the visit), 26 points at most, and
+  point names are Latin A, B, C even in Arabic — the books write أ، ب، ج, which
+  was not mapped. Two known cosmetic limits: edge-length labels can sit on an
+  axis tick label, and angle labels are hidden on edges shorter than ~44 px
+  (the panel under the canvas still lists every angle).
+
 **The converter** (`services/mathUnits.ts`) is `from → base → to` and fails
 closed: an unknown unit, a conversion across categories, an unparseable number,
 a temperature below absolute zero and an overflow are named reasons, never a
@@ -1071,7 +1103,7 @@ not had a teacher confirm. The unit names are our own chrome text. There is a
 font sizes, radii and spacing, so new screens use `TYPE`/`SPACE`/`RADIUS` from
 `constants/theme.ts`; `i18nTerminology.test.ts` wants «ًا», not «اً».
 
-**What was and was not verified.** Unit tests: ~4,070 mobile tests and 349
+**What was and was not verified.** Unit tests: ~4,120 mobile tests and 349
 curriculum tests pass, typecheck clean. Rendered with the Expo web build at
 360 px wide in Arabic (RTL) and English: the hub, the calculator (rest, result,
 error, scientific notation, a 30-digit line, expanded rows), the converter (empty,
@@ -1081,8 +1113,12 @@ the grapher (one and two functions with intersections, tan in a degree view,
 a pole between samples, errors, a vertical line; light and dark; Arabic and
 English). The grapher's interactions were driven in a real browser: mouse drag,
 wheel zoom, zoom buttons, a tap, and a genuine two-finger pinch sent as touch
-events, with the page's scroll position checked.
-**Not verified:** the library tile itself (it needs a signed-in session; it is a
+events, with the page's scroll position checked. The sketchpad was driven the
+same way at 360 px in Arabic/light and English/dark: a 3-4-5 triangle by taps
+(right-angle marker, 36.87° / 90° / 53.13°, area 24), a mouse drag and a touch
+drag of a corner, undo of the drag, a circle with its equation, a bow-tie
+refused by name, a two-finger pinch, and the page's scroll position unchanged.
+**Not verified:** the sketchpad's Delete tool and snap switch (the code paths are unit-tested, the buttons were not clicked through), the polygon ✓ button's look, a full 26-point scene, the library tile itself (it needs a signed-in session; it is a
 copy of the Lab tile), 390 px after the final fixes, anything on Android or a
 real touch screen (the pinch was emulated, so `PanResponder`'s multi-touch on a
 phone is unconfirmed), screen-reader output, the calculator's history rows, the

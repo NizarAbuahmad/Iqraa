@@ -12,7 +12,7 @@ import { PROD_ORIGIN } from './siteOrigin.ts';
 
 export const MATH_ROUTE = '/curriculum/math';
 
-export const MATH_TOOL_IDS = ['calculator', 'grapher', 'converter', 'formulas'] as const;
+export const MATH_TOOL_IDS = ['calculator', 'grapher', 'sketchpad', 'converter', 'formulas'] as const;
 export type MathToolId = (typeof MATH_TOOL_IDS)[number];
 
 export type MathToolMeta = {
@@ -32,6 +32,11 @@ export const MATH_TOOLS: Record<MathToolId, MathToolMeta> = {
     icon: 'analytics-outline',
     titleKey: 'mathToolGrapher',
     hintKey: 'mathToolGrapherHint',
+  },
+  sketchpad: {
+    icon: 'shapes-outline',
+    titleKey: 'mathToolSketchpad',
+    hintKey: 'mathToolSketchpadHint',
   },
   converter: {
     icon: 'swap-horizontal-outline',

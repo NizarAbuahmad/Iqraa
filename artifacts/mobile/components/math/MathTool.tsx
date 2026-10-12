@@ -8,11 +8,13 @@ import type { MathToolId } from '@/services/mathTools';
 import { MathCalculator } from './MathCalculator';
 import { MathFormulaSheet } from './MathFormulaSheet';
 import { MathGrapher } from './MathGrapher';
+import { MathSketchpad } from './MathSketchpad';
 import { MathUnitConverter } from './MathUnitConverter';
 
 const TOOLS: Record<MathToolId, React.ComponentType> = {
   calculator: MathCalculator,
   grapher: MathGrapher,
+  sketchpad: MathSketchpad,
   converter: MathUnitConverter,
   formulas: MathFormulaSheet,
 };

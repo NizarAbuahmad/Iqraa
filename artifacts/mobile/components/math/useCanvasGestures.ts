@@ -1,6 +1,8 @@
 /**
  * One drag pans, two fingers pinch-zoom, a tap reads a point, and on web the
- * mouse wheel zooms. A thin wrapper over `PanResponder` — the maths (what a
+ * mouse wheel zooms. A tool that has things to pick up (the sketchpad's points)
+ * can claim a one-finger drag with `onGrab`: the drag then moves the grabbed
+ * thing instead of the view, and a second finger still pinches the view. A thin wrapper over `PanResponder` — the maths (what a
  * pinch means, how a pan moves the view) is `services/mathViewport.ts`, which
  * is where it is tested. `PanResponder` rather than gesture-handler: it is what
  * `components/classroom/PenLayer.tsx` already uses on both native and web, and
@@ -24,6 +26,14 @@ export type CanvasGestureHandlers = {
   onEnd: () => void;
   /** True while a finger is down, so the page does not scroll under the canvas. */
   onLock: (locked: boolean) => void;
+  /**
+   * A finger went down here. Return true to claim the drag (something was picked
+   * up); the touch then calls `onDrag`/`onDrop` and never pans or taps. Optional.
+   */
+  onGrab?: (x: number, y: number) => boolean;
+  onDrag?: (x: number, y: number) => void;
+  /** A claimed drag ended (finger up or the touch was taken away). */
+  onDrop?: () => void;
 };
 
 /** Movement under this many pixels is still a tap. */
@@ -51,10 +61,14 @@ export function useCanvasGestures(handlers: CanvasGestureHandlers) {
     let moved = false;
     let multi = false;
     let prevPinch: Point[] | null = null;
+    let grabbed = false;
 
     const end = (allowTap: boolean) => {
       latest.current.onLock(false);
-      if (allowTap && !moved && !multi && Date.now() - startedAt < TAP_MS) latest.current.onTap(start.x, start.y);
+      if (grabbed) {
+        grabbed = false;
+        latest.current.onDrop?.();
+      } else if (allowTap && !moved && !multi && Date.now() - startedAt < TAP_MS) latest.current.onTap(start.x, start.y);
       moved = false;
       multi = false;
       prevPinch = null;
@@ -76,11 +90,17 @@ export function useCanvasGestures(handlers: CanvasGestureHandlers) {
         moved = false;
         multi = t.length >= 2;
         prevPinch = multi ? t.slice(0, 2) : null;
+        grabbed = !multi && (latest.current.onGrab?.(p.x, p.y) ?? false);
       },
       onPanResponderMove: ev => {
         const t = touchesOf(ev);
         if (t.length >= 2) {
           multi = true;
+          // A second finger turns a drag of a point into a pinch of the view.
+          if (grabbed) {
+            grabbed = false;
+            latest.current.onDrop?.();
+          }
           const cur = t.slice(0, 2);
           const d = prevPinch ? pinchDelta(prevPinch, cur) : null;
           prevPinch = cur;
@@ -98,6 +118,11 @@ export function useCanvasGestures(handlers: CanvasGestureHandlers) {
           return;
         }
         const p = t[0] ?? { x: ev.nativeEvent.locationX, y: ev.nativeEvent.locationY };
+        if (grabbed) {
+          latest.current.onDrag?.(p.x, p.y);
+          last = p;
+          return;
+        }
         if (!moved && Math.hypot(p.x - start.x, p.y - start.y) > TAP_SLOP) moved = true;
         if (moved) latest.current.onPan(p.x - last.x, p.y - last.y);
         last = p;

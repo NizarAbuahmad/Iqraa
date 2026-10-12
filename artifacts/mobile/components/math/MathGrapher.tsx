@@ -14,7 +14,7 @@
  */
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, TextInput, View, type LayoutChangeEvent } from 'react-native';
-import Svg, { Circle, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Line, Path } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
@@ -42,7 +42,6 @@ import {
 import {
   bounds,
   equalize,
-  gridTicks,
   makeViewport,
   panBy,
   resize,
@@ -54,6 +53,7 @@ import {
 } from '@/services/mathViewport';
 import { MATH_ERROR_KEY } from './mathErrors';
 import { useScrollLock } from './MathFrame';
+import { PlaneGrid } from './PlaneGrid';
 import { useCanvasGestures } from './useCanvasGestures';
 
 type Lang = 'ar' | 'en';
@@ -135,12 +135,6 @@ function findAll(curves: Curve[], view: Viewport): { perCurve: Map<number, Found
 // ---------------------------------------------------------------------------
 // The canvas
 
-function axisLabel(value: number, lang: Lang, degrees: boolean): string {
-  const s = Math.abs(value).toString();
-  const body = lang === 'ar' ? toArabicDigits(s) : s;
-  return `${value < 0 ? '−' : ''}${body}${degrees ? '°' : ''}`;
-}
-
 function GraphCanvas({
   vp,
   curves,
@@ -158,42 +152,11 @@ function GraphCanvas({
   lang: Lang;
   colors: Colors;
 }) {
-  const { xs, ys } = gridTicks(vp, degreeAxis ? 'deg' : 'decimal');
-  const origin = toPx(vp, 0, 0);
-  const axisX = origin.x >= 0 && origin.x <= vp.w ? origin.x : null;
-  const axisY = origin.y >= 0 && origin.y <= vp.h ? origin.y : null;
-  const xLabelY = Math.min(vp.h - 4, Math.max(14, (axisY ?? vp.h) + 14));
-  const yLabelX = Math.min(vp.w - 28, Math.max(4, (axisX ?? 0) + 5));
   const inView = (p: Point) => p.x >= 0 && p.x <= vp.w && p.y >= 0 && p.y <= vp.h;
-  const label = { fontFamily: 'ReadexPro_500Medium', fontSize: TYPE.micro, fill: colors.mutedForeground };
 
   return (
     <Svg width={vp.w} height={vp.h}>
-      <Rect x={0} y={0} width={vp.w} height={vp.h} fill={colors.card} />
-      {xs.map(t => (
-        <Line key={`gx${t.value}`} x1={t.px} y1={0} x2={t.px} y2={vp.h} stroke={colors.border} strokeWidth={1} />
-      ))}
-      {ys.map(t => (
-        <Line key={`gy${t.value}`} x1={0} y1={t.px} x2={vp.w} y2={t.px} stroke={colors.border} strokeWidth={1} />
-      ))}
-      {axisX !== null ? <Line x1={axisX} y1={0} x2={axisX} y2={vp.h} stroke={colors.foreground} strokeOpacity={0.6} strokeWidth={1.5} /> : null}
-      {axisY !== null ? <Line x1={0} y1={axisY} x2={vp.w} y2={axisY} stroke={colors.foreground} strokeOpacity={0.6} strokeWidth={1.5} /> : null}
-      {xs.filter(t => t.value !== 0).map(t => (
-        <SvgText
-          key={`lx${t.value}`}
-          x={t.px < 18 ? 2 : t.px > vp.w - 18 ? vp.w - 2 : t.px}
-          y={xLabelY}
-          textAnchor={t.px < 18 ? 'start' : t.px > vp.w - 18 ? 'end' : 'middle'}
-          {...label}
-        >
-          {axisLabel(t.value, lang, degreeAxis)}
-        </SvgText>
-      ))}
-      {ys.filter(t => t.value !== 0).map(t => (
-        <SvgText key={`ly${t.value}`} x={yLabelX} y={t.px - 3} textAnchor="start" {...label}>
-          {axisLabel(t.value, lang, false)}
-        </SvgText>
-      ))}
+      <PlaneGrid vp={vp} degreeAxis={degreeAxis} lang={lang} colors={colors} />
 
       {curves.map(c => {
         if (c.kind === 'explicit') {
