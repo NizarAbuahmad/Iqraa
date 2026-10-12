@@ -349,6 +349,25 @@ describeDb("family homework over HTTP, against a real database", () => {
       }
     });
 
+    it("scopes both the tick and the undo to the account's own row, never a classmate's", async () => {
+      try {
+        // Adam (aA) is in c1 too, but he is not student A's row. His completion is pre-seeded.
+        await db.pool.query(`INSERT INTO homework_completions (homework_id, student_id) VALUES ($1, $2)`, [h.hw.hwC1, w.students.aA]);
+        const studentIdsOf = async () =>
+          (await db.pool.query(`SELECT student_id FROM homework_completions WHERE homework_id = $1`, [h.hw.hwC1])).rows
+            .map(r => r.student_id as string)
+            .sort();
+
+        assert.equal((await put(h.hw.hwC1)).status, 200);
+        assert.deepEqual(await studentIdsOf(), [w.students.aA, w.students.sA1].sort(), "PUT wrote only sA1's row");
+
+        assert.equal((await del(h.hw.hwC1)).status, 200);
+        assert.deepEqual(await studentIdsOf(), [w.students.aA], "DELETE removed sA1's row and left Adam's");
+      } finally {
+        await clean();
+      }
+    });
+
     it("lets the teacher see the count", async () => {
       try {
         assert.equal((await put(h.hw.hwC1)).status, 200);
