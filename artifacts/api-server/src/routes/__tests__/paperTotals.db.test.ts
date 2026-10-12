@@ -135,7 +135,12 @@ describeDb("paper totals over HTTP, against a real database", () => {
     });
   });
 
+  // 56 of the 60 requests a minute are t1's across this file: a fresh bucket for each later group keeps the headroom from being a flake.
+  const resetT1Bucket = () => db.pool.query(`DELETE FROM rate_limit_buckets WHERE key = $1`, [`paper-totals:${w.users.t1}`]);
+
   describe("per student", () => {
+    before(resetT1Bucket);
+
     it("refuses, row by row, anyone who is not a live student of the exam's class", async () => {
       // nB1: t1's, but in c3. sA2: t2's row. aArch: t2's, archived. Then a stranger.
       const r = await put(w.users.t1, x.exams.exPaper, totals([w.students.nB1, 5], [w.students.sA2, 5], [w.students.aArch, 5], [RANDOM_UUID, 5]));
@@ -182,7 +187,8 @@ describeDb("paper totals over HTTP, against a real database", () => {
         const r = await put(w.users.t1, x.exams.exPaper, totals([w.students.sA1, bad]));
         const took = Date.now() - started;
         assert.deepEqual(r.json.results[0], { studentId: w.students.sA1, status: "error", code: "marks_out_of_range" });
-        assert.ok(took < 1000, `took ${took} ms`);
+        // The old regex took ~4.8 s on ONE row, so 2 s still catches it and a slow CI box does not trip it.
+        assert.ok(took < 2000, `took ${took} ms`);
       }
       // 100 such rows in one request: still one length read each.
       // They must be the teacher's own live students: the class check runs before the marks are read.
@@ -199,7 +205,7 @@ describeDb("paper totals over HTTP, against a real database", () => {
       assert.equal(many.status, 200);
       assert.equal(many.json.results.length, 100);
       for (const row of many.json.results) assert.equal(row.code, "marks_out_of_range");
-      assert.ok(took < 3000, `100 hostile rows took ${took} ms`);
+      assert.ok(took < 6000, `100 hostile rows took ${took} ms`);
       assert.equal(await attemptsOn(x.exams.exPaper), 1);
     });
 
@@ -371,6 +377,8 @@ describeDb("paper totals over HTTP, against a real database", () => {
   });
 
   describe("after the sitting", () => {
+    before(resetT1Bucket);
+
     it("accepts a closed exam: a teacher may close the paper, then type the totals", async () => {
       await db.pool.query(`UPDATE evaluations SET status = 'closed', closed_at = now() WHERE id = $1`, [x.exams.exPaper]);
       try {

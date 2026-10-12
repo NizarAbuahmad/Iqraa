@@ -130,6 +130,24 @@ describeDb("family exam lists over HTTP, against a real database", () => {
     assert.equal(closed.shareCode, null);
   });
 
+  it("is a paper exam only when EVERY live question is on paper", async () => {
+    const { exams } = await studentList(w.users.studentA);
+    // One paper question beside a typed one: the typed one still needs the link.
+    const mixed = find(exams, EX_TITLES.exMixed);
+    assert.equal(mixed.paper, false);
+    assert.equal(mixed.state, "available");
+    assert.equal(mixed.shareCode, "EXMIX1");
+    // No questions at all is not "all paper": nothing to mark on paper either.
+    const empty = find(exams, EX_TITLES.exEmpty);
+    assert.equal(empty.paper, false);
+    assert.equal(empty.state, "available");
+    // A removed digital question does not turn a paper exam into a mixed one.
+    const tidy = find(exams, EX_TITLES.exPaperDeletedDigital);
+    assert.equal(tidy.paper, true);
+    assert.equal(tidy.state, "paper");
+    assert.equal(tidy.shareCode, null);
+  });
+
   it("shows a mark only once released, and only on the child who sat", async () => {
     const { exams } = await studentList(w.users.studentA);
     const waiting = find(exams, EX_TITLES.exUnreleased);

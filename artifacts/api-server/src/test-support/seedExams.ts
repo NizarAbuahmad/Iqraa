@@ -23,6 +23,8 @@ export const EX_TITLES = {
   exGroup: "ex-quick-paper-group-adam",
   exNoScale: "ex-quick-paper-no-scale",
   exEmpty: "ex-no-questions-c1",
+  exMixed: "ex-mixed-paper-and-digital-c1",
+  exPaperDeletedDigital: "ex-paper-plus-deleted-digital-c1",
   exReleased: "ex-released-c1",
   exUnreleased: "ex-unreleased-c1",
 } as const;
@@ -123,13 +125,20 @@ function exam(pool: Pool, s: ExamSpec): Promise<string> {
 }
 
 /** A paper question is what PUT /evaluations/:id/questions/paper writes: open_ended, empty body, manual. */
-function question(pool: Pool, evaluationId: string, order: number, kind: "paper" | "digital", marks: number): Promise<string> {
+function question(
+  pool: Pool,
+  evaluationId: string,
+  order: number,
+  kind: "paper" | "digital",
+  marks: number,
+  softDeleted = false,
+): Promise<string> {
   const paper = kind === "paper";
   return id(
     pool,
     `INSERT INTO evaluation_questions
-       (evaluation_id, order_index, type, body, expected_answer, objective_id, competency_key, marks, grading_mode, source)
-     VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, 'obj-test', 'understanding', $6, $7, 'teacher') RETURNING id`,
+       (evaluation_id, order_index, type, body, expected_answer, objective_id, competency_key, marks, grading_mode, source, deleted_at)
+     VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, 'obj-test', 'understanding', $6, $7, 'teacher', CASE WHEN $8::boolean THEN now() END) RETURNING id`,
     [
       evaluationId,
       order,
@@ -138,6 +147,7 @@ function question(pool: Pool, evaluationId: string, order: number, kind: "paper"
       JSON.stringify(paper ? {} : { correctIndex: 1 }),
       marks.toFixed(2),
       paper ? "manual" : "deterministic",
+      softDeleted,
     ],
   );
 }
@@ -192,6 +202,8 @@ export async function seedExams(pool: Pool, w: FamilyWorld): Promise<ExamWorld> 
     exGroup: await exam(pool, { ...base, classId: c1, title: EX_TITLES.exGroup, status: "published", totalMarks: 20, shareCode: "EXGRP1" }),
     exNoScale: await exam(pool, { teacherId: t1, scaleId: null, classId: c1, title: EX_TITLES.exNoScale, status: "published", totalMarks: 20, shareCode: "EXNSC1" }),
     exEmpty: await exam(pool, { ...base, classId: c1, title: EX_TITLES.exEmpty, status: "published", totalMarks: 0, shareCode: "EXEMP1" }),
+    exMixed: await exam(pool, { ...base, classId: c1, title: EX_TITLES.exMixed, status: "published", totalMarks: 20, shareCode: "EXMIX1" }),
+    exPaperDeletedDigital: await exam(pool, { ...base, classId: c1, title: EX_TITLES.exPaperDeletedDigital, status: "published", totalMarks: 20, shareCode: "EXPDD1" }),
     exReleased: await exam(pool, { ...base, classId: c1, title: EX_TITLES.exReleased, status: "published", totalMarks: 10, shareCode: "EXREL1", examDate: ammanDay(-2), release: true }),
     exUnreleased: await exam(pool, { ...base, classId: c1, title: EX_TITLES.exUnreleased, status: "published", totalMarks: 10, shareCode: "EXUNR1", examDate: ammanDay(-1) }),
   } satisfies Record<ExamKey, string>;
@@ -208,6 +220,12 @@ export async function seedExams(pool: Pool, w: FamilyWorld): Promise<ExamWorld> 
     exReleased: await question(pool, exams.exReleased, 0, "digital", 10),
     exUnreleased: await question(pool, exams.exUnreleased, 0, "digital", 10),
   };
+  // Mixed: one paper question and one typed one — not a paper exam, so it keeps its link.
+  await question(pool, exams.exMixed, 0, "paper", 10);
+  await question(pool, exams.exMixed, 1, "digital", 10);
+  // One live paper question beside a digital one the teacher removed: the removed one does not count.
+  await question(pool, exams.exPaperDeletedDigital, 0, "paper", 20);
+  await question(pool, exams.exPaperDeletedDigital, 1, "digital", 10, true);
   await question(pool, exams.exNoClass, 0, "digital", 10);
   await question(pool, exams.exC3, 0, "digital", 10);
   await question(pool, exams.exPaperDraft, 0, "paper", 20);

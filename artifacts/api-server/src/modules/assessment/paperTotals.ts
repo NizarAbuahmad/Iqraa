@@ -11,8 +11,10 @@
 import { isUuid } from "../homework/rules.ts";
 
 /**
- * A large class is ~45; this bounds one request's work, not a class. It matches
- * the mobile client's chunk size, so a full class goes up in a few requests.
+ * A large class is ~45; this bounds one request's work, not a class. It is
+ * deliberately above the mobile client's chunk (PAPER_TOTALS_CHUNK = 50 in
+ * services/paperMarks.ts), so a full class goes up in a request or two and a
+ * client that raises its chunk is still accepted.
  */
 export const PAPER_TOTALS_MAX_ROWS = 100;
 

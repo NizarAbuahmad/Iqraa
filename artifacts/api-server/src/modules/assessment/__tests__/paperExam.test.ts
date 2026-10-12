@@ -7,7 +7,7 @@
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { isPaperExam, isPaperQuestion, isQuickPaperExam, paperExamIds, parsePaperRows, MAX_MARKS_PER_QUESTION } from "../paperExam.ts";
+import { isPaperExam, isPaperQuestion, isQuickPaperExam, paperExamIds, paperExamIdsFromFlags, parsePaperRows, MAX_MARKS_PER_QUESTION } from "../paperExam.ts";
 
 const OPTS = { allowedObjectiveIds: ["obj-1", "obj-2"], maxQuestions: 50 };
 const row = (over: Record<string, unknown> = {}) => ({
@@ -104,5 +104,35 @@ describe("paperExamIds", () => {
       { evaluationId: "c", ...MCQ },
     ]);
     assert.deepEqual([...ids].sort(), ["a"]);
+  });
+});
+
+describe("paperExamIdsFromFlags", () => {
+  it("names the exams whose every flagged question is paper, as paperExamIds does", () => {
+    const ids = paperExamIdsFromFlags([
+      { evaluationId: "a", isPaper: true },
+      { evaluationId: "a", isPaper: true },
+      { evaluationId: "b", isPaper: true },
+      { evaluationId: "b", isPaper: false },
+      { evaluationId: "c", isPaper: false },
+    ]);
+    assert.deepEqual([...ids].sort(), ["a"]);
+  });
+  it("has no entry for an exam with no live question rows", () => {
+    assert.equal(paperExamIdsFromFlags([]).size, 0);
+    assert.equal(paperExamIdsFromFlags([{ evaluationId: "a", isPaper: true }]).has("zero"), false);
+  });
+  it("agrees with paperExamIds on the same rows, in any order", () => {
+    const rows = [
+      { evaluationId: "a", ...PAPER },
+      { evaluationId: "b", ...MCQ },
+      { evaluationId: "b", ...PAPER },
+      { evaluationId: "c", ...PAPER },
+      { evaluationId: "c", ...TYPED },
+    ];
+    for (const r of [rows, [...rows].reverse()]) {
+      const viaFlags = paperExamIdsFromFlags(r.map(q => ({ evaluationId: q.evaluationId, isPaper: isPaperQuestion(q) })));
+      assert.deepEqual([...viaFlags].sort(), [...paperExamIds(r)].sort());
+    }
   });
 });

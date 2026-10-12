@@ -49,7 +49,7 @@ import { retakeDecision } from "../modules/assessment/retake.ts";
 import { examVisibleTo } from "../modules/assessment/audience.ts";
 import { assignedStudentsByEvaluation } from "../lib/evaluationAudience.ts";
 import { guardianLinkedStudents, selfLinkedStudentIds } from "../lib/familyAccess.ts";
-import { paperExamIds } from "../modules/assessment/paperExam.ts";
+import { paperExamIdsFromFlags } from "../modules/assessment/paperExam.ts";
 import { groupChildren } from "../modules/family/children.ts";
 import {
   guardianExamRow,
@@ -225,13 +225,15 @@ async function examRowsFor(studentIds: string[]): Promise<StudentExamRow[]> {
 
   // "Paper" is the question shape (paperExam.ts), not a column: an exam whose
   // every live question is a paper question is sat in class and has no link.
+  // The flag is `isPaperQuestion`'s rule in SQL — a manually marked question
+  // with an empty body — so the (possibly large) body itself never leaves the
+  // database just to be tested for emptiness on every focus of the list.
   const paperIds = visibleExams.length
-    ? paperExamIds(
+    ? paperExamIdsFromFlags(
         await db
           .select({
             evaluationId: evaluationQuestions.evaluationId,
-            gradingMode: evaluationQuestions.gradingMode,
-            body: evaluationQuestions.body,
+            isPaper: sql<boolean>`(${evaluationQuestions.gradingMode} = 'manual' AND ${evaluationQuestions.body} = '{}'::jsonb)`.as("is_paper"),
           })
           .from(evaluationQuestions)
           .where(and(inArray(evaluationQuestions.evaluationId, visibleExams.map(e => e.id)), isNull(evaluationQuestions.deletedAt))),
