@@ -362,6 +362,19 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(res.status, 401, "the account-type switch must exist and require a token");
   });
 
+  it("guards the notification switches — signed-in only, any role", async () => {
+    // Account-level, under /auth beside /me. A 404 would mean the routes were
+    // never mounted; a 200 that anyone could read or flip them.
+    const get = await fetch(`${base}/auth/me/push-preferences`);
+    assert.equal(get.status, 401, "reading the switches must require a token");
+    const put = await fetch(`${base}/auth/me/push-preferences`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ homework: false }),
+    });
+    assert.equal(put.status, 401, "changing the switches must require a token");
+  });
+
   it("keeps the unverified-email routes public, since the caller has no session yet", async () => {
     // All three serve the verify screen, which by definition runs before any
     // session exists — a 401 on any of them means somebody moved them behind
