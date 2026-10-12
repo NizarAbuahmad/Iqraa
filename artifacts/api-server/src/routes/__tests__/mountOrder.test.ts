@@ -542,6 +542,22 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(teacher.status, 401, "the teacher timetable keeps its own guard");
   });
 
+  it("guards family homework, for both roles and the done toggle", async () => {
+    // Same shape as the schedule: refuse anonymous callers on every verb, and
+    // never answer for the teacher's /homework, which shares a word and nothing else.
+    for (const [method, p] of [
+      ["GET", "/student/homework"],
+      ["PUT", "/student/homework/x/done"],
+      ["DELETE", "/student/homework/x/done"],
+      ["GET", "/parent/homework"],
+    ] as const) {
+      const res = await fetch(`${base}${p}`, { method });
+      assert.equal(res.status, 401, `${method} ${p} must require a token`);
+    }
+    const teacher = await fetch(`${base}/homework`, { method: "POST" });
+    assert.equal(teacher.status, 401, "the teacher homework route keeps its own guard");
+  });
+
   it("keeps the class join-code lookup public, and closed while student accounts are off", async () => {
     // The trap this guards: roster.ts mounts
     // `router.use(["/classes","/students"], authMiddleware, …)`, and Express
