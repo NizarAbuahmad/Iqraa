@@ -3,8 +3,10 @@
  * shows only that. A student picks one; a parent picks one per child.
  *
  * Same two ways in as `/setup-subjects`:
- *  - Mandatory, via the routing gate in `app/_layout.tsx` (`needsGradeSetup`
- *    in routeGating.ts), once the roster claim is done. No back button.
+ *  - First sign-in, via the routing gate in `app/_layout.tsx` (`needsGradeSetup`
+ *    in routeGating.ts), once the roster claim is done. No back button, but
+ *    «تخطي» leaves it for later: the account keeps the whole catalog and the
+ *    gate stops asking on this device (`skipGradeSetup`).
  *  - Optional, from Settings, with `mode=edit`: a back arrow, "Save", and
  *    `goBack()` on success.
  *
@@ -34,7 +36,7 @@ export default function SetupGradeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, lang, isRTL } = useLanguage();
-  const { user, updateProfile, markRosterClaimed } = useAuth();
+  const { user, updateProfile, markRosterClaimed, skipGradeSetup } = useAuth();
   const { mode } = useLocalSearchParams<{ mode?: string }>();
   const editMode = mode === 'edit';
   const isStudent = isStudentRole(user?.role);
@@ -105,6 +107,12 @@ export default function SetupGradeScreen() {
       setError(t('gradeSetupFailed'));
       setSaving(false);
     }
+  };
+
+  const handleSkip = () => {
+    Haptics.selectionAsync();
+    skipGradeSetup();
+    router.replace('/(tabs)');
   };
 
   const align = isRTL ? 'right' : 'left';
@@ -179,6 +187,14 @@ export default function SetupGradeScreen() {
           style={{ marginTop: 24 }}
         />
 
+        {!editMode ? (
+          <Pressable onPress={handleSkip} disabled={saving} hitSlop={8} accessibilityRole="button" style={styles.skip}>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 14 }}>
+              {t('gradeSetupSkip')}
+            </Text>
+          </Pressable>
+        ) : null}
+
         {!editMode && links.length > 0 ? (
           <Pressable onPress={handleWrongName} disabled={unlinking} hitSlop={8} accessibilityRole="button" style={{ alignSelf: 'center', marginTop: 20, opacity: unlinking ? 0.5 : 1 }}>
             <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_500Medium', fontSize: 14 }}>
@@ -201,6 +217,7 @@ const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1 },
   chipText: { fontSize: 13 },
+  skip: { alignSelf: 'center', paddingVertical: 14, marginTop: 4 },
   errorBanner: { alignItems: 'center', gap: 8, padding: 12, borderWidth: 1, marginTop: 16 },
   errorText: { flex: 1, fontSize: 15, lineHeight: 24 },
 });
