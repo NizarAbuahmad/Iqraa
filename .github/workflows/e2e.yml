@@ -1,0 +1,96 @@
+# Browser smoke test: the journey a teacher actually takes, against the real API
+# and a real Postgres — sign up, make a class, publish an exam, a student hands
+# it in, the teacher sees it. Unit tests cannot catch a screen that never
+# renders or a gate that bounces a new user; this can.
+#
+# It is its own workflow, not a job in ci.yml, on purpose: it builds the web
+# bundle (several minutes) and should not delay the typecheck + tests result
+# that gates merging. It is NOT a required check yet — watch it for a week of
+# flakes before making it one.
+name: E2E
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: teacher to student smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      # A throwaway database in a throwaway service container. The test creates
+      # users and truncates rate_limit_buckets, so it must never point anywhere else.
+      E2E_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.18.0 --activate
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # The same two steps production deploys use: migrations, then the seed
+      # that creates the level scale (without it POST /evaluations answers 409).
+      - name: Prepare the database
+        env:
+          DATABASE_URL: ${{ env.E2E_DATABASE_URL }}
+        run: |
+          pnpm --filter @workspace/db run migrate -- --from-env
+          pnpm --filter @workspace/db run seed:assessment
+
+      - name: Build the API
+        run: pnpm --filter @workspace/api-server run build
+
+      # The bundle needs the API's address at build time. EXPO_PUBLIC_DEMO_MODE
+      # does not matter for this journey (exams are generated server-side) but is
+      # pinned so a stray .env cannot change what is under test.
+      - name: Build the web app
+        working-directory: artifacts/mobile
+        env:
+          EXPO_PUBLIC_API_BASE_URL: http://localhost:8099/api
+          EXPO_PUBLIC_DEMO_MODE: 'true'
+        run: pnpm run build:web
+
+      - name: Install the browser
+        run: pnpm --filter @workspace/e2e run install-browsers
+
+      # Playwright starts the API and the static server itself (see playwright.config.ts).
+      - name: Run the smoke test
+        run: pnpm --filter @workspace/e2e run test
+
+      # Traces and screenshots of a failure are the only way to see what a
+      # headless browser saw.
+      - name: Upload the failure report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: |
+            e2e/test-results
+            e2e/playwright-report
+          retention-days: 7

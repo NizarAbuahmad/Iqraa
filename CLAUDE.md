@@ -56,6 +56,32 @@ React Native transform, so anything importing `react-native` or `expo-*` at
 module scope cannot be loaded at all — which is why `routeGating.ts` and
 `fetchWithTimeout.ts` are split out of the files that use them.
 
+**Browser smoke test** (`e2e/`, Playwright, `.github/workflows/e2e.yml`): a teacher
+signs up, makes a class, publishes an exam, a student with no account hands it in
+through `/take/CODE`, and the teacher sees it. The shareable "quiz" is an
+*Evaluation*, not the ai-tools quiz, which can only be exported. To run it
+locally, against a **throwaway** database (the test creates users and truncates
+`rate_limit_buckets`):
+
+```bash
+# 1. empty Postgres database, then (db scripts IGNORE a shell DATABASE_URL when a
+#    repo-root .env exists — run these from a checkout without one, or use CI's way)
+DATABASE_URL=<throwaway> pnpm --filter @workspace/db run migrate -- --from-env
+DATABASE_URL=<throwaway> pnpm --filter @workspace/db run seed:assessment
+# 2. build what it drives
+pnpm --filter @workspace/api-server run build
+cd artifacts/mobile && EXPO_PUBLIC_API_BASE_URL=http://localhost:8099/api EXPO_PUBLIC_DEMO_MODE=true pnpm run build:web
+# 3. run (Playwright starts the API and a static server itself; uses your installed Chrome)
+cd e2e && E2E_DATABASE_URL=<throwaway> pnpm test
+```
+
+It sets the UI to English and skips the intro through `localStorage` keys, drives
+real screens (React Native Web inputs need `pressSequentially`, not `fill`, for
+multiline fields), and plants the email-verification code in Postgres because
+the real one is only ever emailed. It asserts "did it arrive", never copy or
+scores. On a slow machine a request can time out and leave a screen on its error
+text with no retry; the exam-builder step reloads for that, deliberately.
+
 Local setup, env vars and troubleshooting: [`LOCAL_SETUP.md`](./LOCAL_SETUP.md).
 Before a live demo: [`docs/demo-checklist.md`](./docs/demo-checklist.md).
 Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
