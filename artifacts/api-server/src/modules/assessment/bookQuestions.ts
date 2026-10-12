@@ -34,12 +34,31 @@ export interface BookPlanRequest {
   count: number;
   subjectId: string | undefined;
   enabled: boolean;
+  /** The paper's difficulty; it picks the tier the dry run draws from. Defaults to "standard". */
+  difficulty?: Difficulty;
+}
+
+/** Small seeded generator, so the dry run in `planBookDraw` is the same every time. */
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
 /**
  * How many book questions this paper will carry, decided BEFORE the model is
- * asked so it can be asked for that many fewer. Counts what is eligible; draws
- * nothing. At most half the paper, as on the mock path.
+ * asked so it can be asked for that many fewer. This is what the draw can
+ * DELIVER, not how many items are eligible: two book items whose stems are
+ * near-duplicates of each other are never both drawn (the validator would
+ * reject the second), so counting raw items asks the model for too few
+ * questions and the paper comes back short with the pool not exhausted. The
+ * number comes from a dry run of the real draw with a fixed seed. It still
+ * draws nothing for the paper. At most half the paper, as on the mock path.
  */
 export function planBookDraw(req: BookPlanRequest): number {
   if (!req.enabled || req.subjectId !== "mathematics") return 0;
@@ -55,7 +74,17 @@ export function planBookDraw(req: BookPlanRequest): number {
       if (item.kind === "unit-test-mcq" ? wantChoice : wantShort) eligible += 1;
     }
   }
-  return Math.max(0, Math.min(Math.floor(req.count / 2), eligible));
+  const cap = Math.max(0, Math.min(Math.floor(req.count / 2), eligible));
+  if (cap === 0) return 0;
+  const dry = drawBookQuestions({
+    objectives: req.objectives,
+    assessmentTypes: req.assessmentTypes,
+    difficulty: req.difficulty ?? "standard",
+    k: cap,
+    accepted: [],
+    rng: mulberry32(1),
+  });
+  return Math.min(cap, dry.length);
 }
 
 /**

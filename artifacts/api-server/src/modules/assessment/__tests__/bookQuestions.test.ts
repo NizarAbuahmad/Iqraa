@@ -4,7 +4,9 @@
  * What these pin:
  *  1. Nothing is planned or drawn unless the flag is on, the subject is maths,
  *     a lesson with items is selected and a matching type was requested.
- *  2. The plan is at most half the paper and never more than is eligible.
+ *  2. The plan is at most half the paper and never more than is eligible, and it
+ *     is what the draw can DELIVER: near-duplicate book items are not both drawn,
+ *     so counting raw items would ask the model for too few questions.
  *  3. A draw is never a near-duplicate of a model question, never an unrequested
  *     type, and never carries a `check`.
  *  4. A regeneration prefers items the teacher has not seen, and falls back to
@@ -15,7 +17,7 @@
  */
 import { afterEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { bookItemsForLesson } from "@workspace/curriculum/bookItems";
+import { bookItemsForLesson, displayMath } from "@workspace/curriculum/bookItems";
 import type { CurriculumObjective } from "@workspace/curriculum";
 import {
   assembleLivePaper,
@@ -25,10 +27,13 @@ import {
   previousBookItemIds,
 } from "../bookQuestions.ts";
 import type { GeneratedQuestion } from "../mockGenerator.ts";
-import { validateGenerated } from "../validator.ts";
+import { DUPLICATE_THRESHOLD, promptOf, stemSimilarity, validateGenerated } from "../validator.ts";
+import { MARKS_BY_COMPETENCY } from "../competency.ts";
 
 const SYSTEMS = "kbl-math-s1-nccd-u1_l1";
 const DERIVATIVES = "kbl-math-s2-nccd-u6_l2";
+/** Every lesson that has served book items (lib/curriculum/src/data/book-items/). */
+const LESSONS_WITH_ITEMS = [SYSTEMS, "kbl-math-s1-nccd-u1_l2", DERIVATIVES];
 
 const objective = (id: string, lessonId?: string): CurriculumObjective =>
   ({
@@ -119,6 +124,47 @@ describe("planBookDraw", () => {
     assert.equal(plan({ objectives: [objective("o1", DERIVATIVES)], assessmentTypes: ["multiple_choice"], count: 100 }), only("unit-test-mcq"));
   });
 
+  it("plans what the draw can deliver, not how many items are eligible", () => {
+    const o = [objective("o1", SYSTEMS)];
+    const eligibleShort = bookItemsForLesson(SYSTEMS).filter(i => i.kind === "exercise").length;
+    const planned = plan({ objectives: o, assessmentTypes: ["short_answer"], count: 40 });
+    // The eight exercises are systems that read as near-duplicates of each other.
+    assert.equal(eligibleShort, 8);
+    assert.equal(planned, 4);
+  });
+
+  it("every lesson with book items: a draw of the planned size delivers exactly the plan", () => {
+    const typeSets = [[...BOTH], ["short_answer"], ["multiple_choice"]] as const;
+    for (const lesson of LESSONS_WITH_ITEMS) {
+      assert.ok(bookItemsForLesson(lesson).length > 0, `${lesson} must have items`);
+      for (const types of typeSets) {
+        const o = [objective("o1", lesson)];
+        const k = plan({ objectives: o, assessmentTypes: [...types], count: 40 });
+        for (let seed = 1; seed <= 15; seed += 1) {
+          const drawn = drawBookQuestions({
+            objectives: o, assessmentTypes: [...types], difficulty: "standard",
+            k, accepted: [], rng: lcg(seed),
+          });
+          assert.equal(drawn.length, k, `${lesson} [${types.join("+")}] seed ${seed}: planned ${k}, drew ${drawn.length}`);
+        }
+      }
+    }
+  });
+
+  it("plans the same for the same request, and the plan holds at every difficulty", () => {
+    // Today the plan does not vary with difficulty (tier only changes WHICH items
+    // are drawn, not how many), so this pins plan == draw, not that it is read.
+    assert.equal(plan({ count: 40 }), plan({ count: 40 }));
+    for (const difficulty of ["basic", "standard", "advanced"] as const) {
+      const o = [objective("o1", SYSTEMS)];
+      const k = plan({ objectives: o, count: 40, difficulty });
+      const drawn = drawBookQuestions({
+        objectives: o, assessmentTypes: [...BOTH], difficulty, k, accepted: [], rng: lcg(5),
+      });
+      assert.equal(drawn.length, k, difficulty);
+    }
+  });
+
   it("counts a lesson once however many objectives point at it", () => {
     const one = plan({ count: 100 });
     const two = plan({ count: 100, objectives: [objective("o1", SYSTEMS), objective("o2", SYSTEMS)] });
@@ -151,9 +197,9 @@ describe("drawBookQuestions", () => {
   it("assigns competency and marks by kind", () => {
     for (const q of draw({ k: 6 })) {
       if (q.type === "multiple_choice") {
-        assert.deepEqual([q.competencyKey, q.marks], ["understanding", 2]);
+        assert.deepEqual([q.competencyKey, q.marks], ["understanding", MARKS_BY_COMPETENCY["understanding"]]);
       } else {
-        assert.deepEqual([q.competencyKey, q.marks], ["application", 3]);
+        assert.deepEqual([q.competencyKey, q.marks], ["application", MARKS_BY_COMPETENCY["application"]]);
       }
     }
   });
@@ -189,6 +235,76 @@ describe("drawBookQuestions", () => {
     const everything = new Set(bookItemsForLesson(SYSTEMS).map(i => i.id));
     const repeated = draw({ k: 3, avoidIds: everything });
     assert.equal(repeated.length, 3, "all seen: repeats are better than a short paper");
+  });
+
+  it("never draws a book item the model has already written (clash against MODEL questions)", () => {
+    const asModelQuestion = (instruction: string, stem: string): GeneratedQuestion => ({
+      ...modelQuestion(0, "o1"),
+      // Exactly the text `promptOf` reads from a book question's body.
+      body: { prompt: displayMath(`${instruction}\n${stem}`) },
+    });
+    for (let seed = 1; seed <= 10; seed += 1) {
+      const free = draw({ assessmentTypes: ["short_answer"], k: 8, rng: lcg(seed) });
+      assert.ok(free.length > 0);
+      const target = free[0]!;
+      const item = bookItemsForLesson(SYSTEMS).find(i => i.id === target.aiMetadata["bookItemId"])!;
+      const model = asModelQuestion(item.instruction, item.stem);
+      // The model question really is what the validator would call a duplicate.
+      assert.ok(stemSimilarity(promptOf(model), promptOf(target)) > DUPLICATE_THRESHOLD);
+
+      const again = draw({ assessmentTypes: ["short_answer"], k: 8, rng: lcg(seed), accepted: [model] });
+      const ids = again.map(q => q.aiMetadata["bookItemId"]);
+      assert.ok(!ids.includes(item.id), `seed ${seed}: drew ${item.id} although the model already wrote it`);
+      const { rejected } = validateGenerated([model, ...again], { allowedObjectiveIds: ["o1"], allowedTypes: [...BOTH] });
+      assert.deepEqual(rejected, [], `seed ${seed}`);
+    }
+  });
+
+  it("clash check covers multiple choice too: the only choice item is withheld when the model wrote it", () => {
+    const [mcq] = bookItemsForLesson(SYSTEMS).filter(i => i.kind === "unit-test-mcq");
+    assert.ok(mcq);
+    const model: GeneratedQuestion = {
+      ...modelQuestion(0, "o1"),
+      body: { prompt: displayMath(`${mcq.instruction}\n${mcq.stem}`) },
+    };
+    assert.equal(draw({ assessmentTypes: ["multiple_choice"], k: 1 }).length, 1, "control: drawn without the clash");
+    assert.deepEqual(draw({ assessmentTypes: ["multiple_choice"], k: 1, accepted: [model] }), []);
+  });
+
+  it("a partly seen lesson: unseen items first, then repeats, never twice and never a clash", () => {
+    for (const lesson of [DERIVATIVES, SYSTEMS]) {
+      const o = [objective("o1", lesson)];
+      const items = bookItemsForLesson(lesson).filter(i => i.kind === "exercise");
+      const free = (seed: number, avoidIds?: ReadonlySet<string>, k = 40) =>
+        drawBookQuestions({
+          objectives: o, assessmentTypes: ["short_answer"], difficulty: "standard",
+          k, accepted: [], avoidIds, rng: lcg(seed),
+        });
+      for (let seed = 1; seed <= 20; seed += 1) {
+        // See half the lesson, then ask for more than the unseen half can supply.
+        const seen = new Set(items.slice(0, Math.ceil(items.length / 2)).map(i => i.id));
+        const unseenDrawable = free(seed, new Set(items.slice(0, Math.ceil(items.length / 2)).map(i => i.id)), 1000)
+          .filter(q => !seen.has(String(q.aiMetadata["bookItemId"])));
+        const k = unseenDrawable.length + 2;
+        const out = free(seed, seen, k);
+        const ids = out.map(q => String(q.aiMetadata["bookItemId"]));
+        assert.equal(out.length, k, `${lesson} seed ${seed}: short of ${k}`);
+        assert.equal(new Set(ids).size, ids.length, `${lesson} seed ${seed}: an item came twice: ${ids}`);
+        // Unseen items lead; only then do repeats follow.
+        const firstSeen = ids.findIndex(id => seen.has(id));
+        assert.ok(firstSeen === -1 || ids.slice(0, firstSeen).every(id => !seen.has(id)));
+        assert.ok(ids.slice(0, unseenDrawable.length).every(id => !seen.has(id)), `${lesson} seed ${seed}: a repeat came before the unseen ones ran out`);
+        // The repeats are not near-duplicates of what came before them either.
+        for (let i = 0; i < out.length; i += 1) {
+          for (let j = 0; j < i; j += 1) {
+            assert.ok(
+              stemSimilarity(promptOf(out[i]!), promptOf(out[j]!)) <= DUPLICATE_THRESHOLD,
+              `${lesson} seed ${seed}: ${ids[i]} clashes with ${ids[j]}`,
+            );
+          }
+        }
+      }
+    }
   });
 
   it("is never rejected by the validator against model questions, over many seeds", () => {
