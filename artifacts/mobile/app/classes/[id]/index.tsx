@@ -1,10 +1,11 @@
 /**
  * Class detail — who is in this class, and what was made for it.
  *
- * Three tabs over one class. The roster (الطلبة) is the register; materials
+ * Four tabs over one class. The roster (الطلبة) is the register; materials
  * (الموارد) is what the teacher attached from their workspace; exams
- * (الامتحانات) is what they set and are marking. Together they turn a class
- * from an address book into "what did I give صف أ, and how did they do".
+ * (الامتحانات) is what they set and are marking; homework (الواجبات) is what
+ * they asked the class to do at home, and who has ticked it. Together they turn
+ * a class from an address book into "what did I give صف أ, and how did they do".
  *
  * The exams tab exists because marking was only reachable through the tools
  * catalog — a teacher standing on their own class, looking at their own
@@ -26,6 +27,7 @@ import {
   FlatList,
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -818,8 +820,8 @@ export default function ClassDetailScreen() {
           with the class name on the line below, so nothing said which class it
           would open — and a bare speech bubble does not say who you would be
           talking to. Labelled, beside the name, it reads as one phrase.
-          Deliberately not a fourth tab: the three tabs swap what this screen
-          shows, this leaves the screen.
+          Deliberately not a tab: the four tabs swap what this screen shows,
+          this leaves the screen.
         */}
         <Text style={[styles.heroTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]} numberOfLines={1}>
           {title}
@@ -862,12 +864,20 @@ export default function ClassDetailScreen() {
             </Pressable>
           ) : null}
         </View>
-        <View style={[styles.tabs, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+        {/* Four tabs no longer fit a phone at large font scales, so the row
+            scrolls (same recipe as the chip rows: the RTL minWidth keeps the
+            row hugging the right edge when it is shorter than the screen). */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.tabs}
+          contentContainerStyle={[{ flexDirection: isRTL ? 'row-reverse' : 'row' }, isRTL && { minWidth: '100%' }]}
+        >
           {renderTab('students', t('classTabStudents'), countStudents(students.length, lang))}
           {renderTab('materials', t('classTabMaterials'), countMaterials(materials.length + resources.length, lang))}
           {renderTab('exams', t('classTabExams'), t('countExams', exams.length))}
           {renderTab('homework', t('hwTeacherTab'), '')}
-        </View>
+        </ScrollView>
       </View>
 
       {loading ? (
@@ -2156,7 +2166,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.18)',
   },
   classChatPillText: { fontSize: 12, color: '#fff' },
-  tabs: { marginTop: 6 },
+  tabs: { marginTop: 6, flexGrow: 0 },
   tab: { paddingVertical: 10, paddingHorizontal: SPACE.sm, borderBottomWidth: 2, alignItems: 'center', gap: 2 },
   tabLabel: { fontSize: 15 },
   tabCount: { fontSize: 11, lineHeight: 18, color: 'rgba(255,255,255,0.95)' },

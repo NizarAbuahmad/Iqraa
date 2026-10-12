@@ -41,6 +41,7 @@ import {
   ammanToday,
   dueBadge,
   dueDatePresets,
+  formatDueDate,
   homeworkDraftError,
   type TeacherHomework,
 } from '@/services/homework';
@@ -278,8 +279,11 @@ export function HomeworkTab({
                     ? t('hwDueToday')
                     : badge.kind === 'tomorrow'
                       ? t('hwDueTomorrow')
-                      : t('hwDueOn', item.dueDate);
-              const pct = item.studentCount > 0 ? Math.min(100, Math.round((item.doneCount / item.studentCount) * 100)) : 0;
+                      : t('hwDueOn', formatDueDate(item.dueDate));
+              // Only students with an account can tick, so they — not the whole
+              // roster — are what "done" is counted against.
+              const noAccount = Math.max(0, item.studentCount - item.trackableCount);
+              const pct = item.trackableCount > 0 ? Math.min(100, Math.round((item.doneCount / item.trackableCount) * 100)) : 0;
               return (
                 <Pressable
                   key={item.id}
@@ -305,12 +309,21 @@ export function HomeworkTab({
                       </Text>
                     </View>
                   ) : null}
-                  <View style={[styles.track, { backgroundColor: colors.border, flexDirection: rowDir }]}>
-                    <View style={[styles.fill, { width: `${pct}%`, backgroundColor: ACCENT }]} />
-                  </View>
-                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
-                    {t('hwDoneCount', item.doneCount, item.studentCount)}
-                  </Text>
+                  {item.trackableCount > 0 ? (
+                    <>
+                      <View style={[styles.track, { backgroundColor: colors.border, flexDirection: rowDir }]}>
+                        <View style={[styles.fill, { width: `${pct}%`, backgroundColor: ACCENT }]} />
+                      </View>
+                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
+                        {t('hwDoneCount', item.doneCount, item.trackableCount)}
+                      </Text>
+                    </>
+                  ) : null}
+                  {noAccount > 0 ? (
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
+                      {t('hwNoAccountCount', noAccount)}
+                    </Text>
+                  ) : null}
                 </Pressable>
               );
             })}

@@ -6,10 +6,13 @@ import {
   applyDone,
   dueBadge,
   dueDatePresets,
+  formatDueDate,
   homeworkDraftError,
   isValidYmd,
+  normalizeChildHomework,
   normalizeFamilyHomework,
   normalizeTeacherHomework,
+  normalizeTeacherList,
   splitHomework,
   type FamilyHomework,
 } from '../homework.ts';
@@ -207,6 +210,7 @@ test('normalizeTeacherHomework keeps a well-formed row and ignores extra fields'
       examTitle: 'اختبار',
       doneCount: 3,
       studentCount: 20,
+      trackableCount: 20,
     },
   ]);
 });
@@ -218,6 +222,22 @@ test('normalizeTeacherHomework defaults missing counts to 0 and exam fields to n
   assert.equal(row!.evaluationId, null);
   assert.equal(row!.examTitle, null);
   assert.equal(row!.instructions, '');
+  assert.equal(row!.trackableCount, 0);
+});
+
+test('normalizeTeacherHomework trackableCount defaults to studentCount when the server omits it', () => {
+  // An older server must not make every student look untrackable.
+  const [row] = normalizeTeacherHomework([{ ...rawTeacher, studentCount: 7 }]);
+  assert.equal(row!.trackableCount, 7);
+});
+
+test('normalizeTeacherHomework keeps a served trackableCount, including 0', () => {
+  assert.equal(normalizeTeacherHomework([{ ...rawTeacher, trackableCount: 12 }])[0]!.trackableCount, 12);
+  assert.equal(normalizeTeacherHomework([{ ...rawTeacher, trackableCount: 0 }])[0]!.trackableCount, 0);
+});
+
+test('normalizeTeacherHomework never lets trackableCount exceed studentCount', () => {
+  assert.equal(normalizeTeacherHomework([{ ...rawTeacher, trackableCount: 99 }])[0]!.trackableCount, 20);
 });
 
 test('normalizeTeacherHomework drops malformed rows and tolerates non-arrays', () => {
@@ -306,4 +326,71 @@ test('homeworkDraftError: an invalid date is a dueDate error', () => {
 
 test('homeworkDraftError: a good draft is null', () => {
   assert.equal(homeworkDraftError({ title: 'واجب', dueDate: '2026-10-15' }), null);
+});
+
+// ─── normalizeChildHomework ──────────────────────────────────────────────────
+
+const rawChild = { key: 'k1', displayName: 'سارة', canTrack: true, homework: [rawItem] };
+
+test('normalizeChildHomework keeps key, name, canTrack and the normalised homework', () => {
+  const [c] = normalizeChildHomework([rawChild]);
+  assert.equal(c!.key, 'k1');
+  assert.equal(c!.displayName, 'سارة');
+  assert.equal(c!.canTrack, true);
+  assert.equal(c!.homework.length, 1);
+  assert.equal(c!.homework[0]!.id, 'h1');
+});
+
+test('normalizeChildHomework reads canTrack: false as false', () => {
+  assert.equal(normalizeChildHomework([{ ...rawChild, canTrack: false }])[0]!.canTrack, false);
+});
+
+test('normalizeChildHomework defaults canTrack to true when the field is absent', () => {
+  // An older server that never sent canTrack must not hide state.
+  const { canTrack: _c, ...legacy } = rawChild;
+  assert.equal(normalizeChildHomework([legacy])[0]!.canTrack, true);
+  assert.equal(normalizeChildHomework([{ ...rawChild, canTrack: 'no' }])[0]!.canTrack, true);
+});
+
+test('normalizeChildHomework drops an entry without a string key and tolerates non-arrays', () => {
+  assert.equal(normalizeChildHomework([{ ...rawChild, key: 5 }, null, rawChild]).length, 1);
+  assert.deepEqual(normalizeChildHomework(undefined), []);
+  assert.deepEqual(normalizeChildHomework({}), []);
+});
+
+test('normalizeChildHomework coerces a missing name to empty and a missing list to []', () => {
+  const [c] = normalizeChildHomework([{ key: 'k2' }]);
+  assert.equal(c!.displayName, '');
+  assert.deepEqual(c!.homework, []);
+  assert.equal(c!.canTrack, true);
+});
+
+// ─── normalizeTeacherList ────────────────────────────────────────────────────
+
+test('normalizeTeacherList reads both top-level counts and the rows', () => {
+  const out = normalizeTeacherList({ studentCount: 2, trackableCount: 1, homework: [{ ...rawTeacher, studentCount: 2, trackableCount: 1 }] });
+  assert.equal(out.studentCount, 2);
+  assert.equal(out.trackableCount, 1);
+  assert.equal(out.homework.length, 1);
+});
+
+test('normalizeTeacherList defaults trackableCount to studentCount when absent', () => {
+  assert.equal(normalizeTeacherList({ studentCount: 9, homework: [] }).trackableCount, 9);
+});
+
+test('normalizeTeacherList survives garbage', () => {
+  assert.deepEqual(normalizeTeacherList(null), { studentCount: 0, trackableCount: 0, homework: [] });
+});
+
+// ─── formatDueDate ───────────────────────────────────────────────────────────
+
+test('formatDueDate is day-month-year, isolated left-to-right', () => {
+  // U+2066 LRI … U+2069 PDI, so Arabic and English render the same digits order.
+  assert.equal(formatDueDate('2026-10-15'), '\u206615-10-2026\u2069');
+  assert.equal(formatDueDate('2027-01-05'), '\u206605-01-2027\u2069');
+});
+
+test('formatDueDate leaves an unparseable string untouched', () => {
+  assert.equal(formatDueDate('soon'), 'soon');
+  assert.equal(formatDueDate('2026-02-30'), '2026-02-30');
 });

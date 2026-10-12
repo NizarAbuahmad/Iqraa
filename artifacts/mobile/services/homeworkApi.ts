@@ -13,10 +13,13 @@
  */
 import { apiFetch, apiJson } from './apiClient.ts';
 import {
+  normalizeChildHomework,
   normalizeFamilyHomework,
   normalizeTeacherHomework,
+  normalizeTeacherList,
   type ChildHomework,
   type TeacherHomework,
+  type TeacherHomeworkList,
 } from './homework.ts';
 
 export class HomeworkError extends Error {
@@ -57,24 +60,12 @@ async function readJson<T>(res: Response, action: string): Promise<T> {
 /** A student's own homework, as a one-entry list so the screen treats both roles alike. */
 export async function getMyHomework(): Promise<ChildHomework[]> {
   const data = await apiJson<{ homework?: unknown }>('/student/homework');
-  return [{ key: 'self', displayName: '', homework: normalizeFamilyHomework(data.homework) }];
+  return [{ key: 'self', displayName: '', canTrack: true, homework: normalizeFamilyHomework(data.homework) }];
 }
 
 export async function getChildHomework(): Promise<ChildHomework[]> {
-  const data = await apiJson<{ children?: Array<{ key?: unknown; displayName?: unknown; homework?: unknown }> }>(
-    '/parent/homework',
-  );
-  return (data.children ?? []).flatMap(c =>
-    typeof c.key === 'string'
-      ? [
-          {
-            key: c.key,
-            displayName: typeof c.displayName === 'string' ? c.displayName : '',
-            homework: normalizeFamilyHomework(c.homework),
-          },
-        ]
-      : [],
-  );
+  const data = await apiJson<{ children?: unknown }>('/parent/homework');
+  return normalizeChildHomework(data.children);
 }
 
 /** Idempotent on the server, so a retry after a dropped response is safe. */
@@ -107,15 +98,9 @@ export interface HomeworkPatch {
   evaluationId?: string | null;
 }
 
-export async function listClassHomework(
-  classId: string,
-): Promise<{ studentCount: number; homework: TeacherHomework[] }> {
+export async function listClassHomework(classId: string): Promise<TeacherHomeworkList> {
   const res = await apiFetch(`/classes/${encodeURIComponent(classId)}/homework`);
-  const data = await readJson<{ studentCount?: unknown; homework?: unknown }>(res, 'Loading homework');
-  return {
-    studentCount: typeof data.studentCount === 'number' ? data.studentCount : 0,
-    homework: normalizeTeacherHomework(data.homework),
-  };
+  return normalizeTeacherList(await readJson<unknown>(res, 'Loading homework'));
 }
 
 export async function createHomework(input: NewHomework): Promise<TeacherHomework | null> {

@@ -31,6 +31,12 @@ export interface FamilyHomework {
 export interface ChildHomework {
   key: string;
   displayName: string;
+  /**
+   * False when none of the child's roster rows has a student account, so
+   * nobody can tick their homework: «متأخّر» and «لم يُنجز» would be claims the
+   * system cannot back. Absent on the wire (an older server) reads as true.
+   */
+  canTrack: boolean;
   homework: FamilyHomework[];
 }
 
@@ -43,6 +49,17 @@ export interface TeacherHomework {
   examTitle: string | null;
   doneCount: number;
   studentCount: number;
+  /**
+   * Students in the class who have an account and so can tick it. `doneCount`
+   * can only ever reach this, so it — not `studentCount` — is the denominator.
+   */
+  trackableCount: number;
+}
+
+export interface TeacherHomeworkList {
+  studentCount: number;
+  trackableCount: number;
+  homework: TeacherHomework[];
 }
 
 /** `days` is the signed distance from today: negative = late. */
@@ -141,6 +158,7 @@ export function normalizeTeacherHomework(raw: unknown): TeacherHomework[] {
     const title = str(r['title']);
     const dueDate = str(r['dueDate']);
     if (!id || !title || !isValidYmd(dueDate)) return [];
+    const studentCount = count(r['studentCount']);
     return [
       {
         id,
@@ -150,10 +168,55 @@ export function normalizeTeacherHomework(raw: unknown): TeacherHomework[] {
         evaluationId: str(r['evaluationId']) || null,
         examTitle: str(r['examTitle']) || null,
         doneCount: count(r['doneCount']),
-        studentCount: count(r['studentCount']),
+        studentCount,
+        trackableCount: trackable(r['trackableCount'], studentCount),
       },
     ];
   });
+}
+
+/** A server that omits `trackableCount` is read as "everyone can tick" — never as "no one". */
+function trackable(raw: unknown, studentCount: number): number {
+  return typeof raw === 'number' && Number.isFinite(raw) && raw >= 0 ? Math.min(raw, studentCount) : studentCount;
+}
+
+/** The whole body of `GET /classes/:id/homework`. Never throws. */
+export function normalizeTeacherList(raw: unknown): TeacherHomeworkList {
+  const r = isRecord(raw) ? raw : {};
+  const studentCount = count(r['studentCount']);
+  return {
+    studentCount,
+    trackableCount: trackable(r['trackableCount'], studentCount),
+    homework: normalizeTeacherHomework(r['homework']),
+  };
+}
+
+/** The `children` array of `GET /parent/homework`. An entry with no string key is dropped. */
+export function normalizeChildHomework(raw: unknown): ChildHomework[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((c): ChildHomework[] => {
+    if (!isRecord(c) || typeof c['key'] !== 'string') return [];
+    return [
+      {
+        key: c['key'],
+        displayName: str(c['displayName']),
+        canTrack: c['canTrack'] !== false,
+        homework: normalizeFamilyHomework(c['homework']),
+      },
+    ];
+  });
+}
+
+/**
+ * A due date for display: `DD-MM-YYYY` inside a left-to-right isolate
+ * (U+2066 … U+2069). Left to the bidi algorithm the digits and hyphens of a
+ * date in an Arabic sentence come out in an order nobody chose; the isolate
+ * makes it read the same in Arabic and English. An unparseable string is
+ * returned as it came. Display only — never feed this back to the server.
+ */
+export function formatDueDate(ymd: string): string {
+  if (!isValidYmd(ymd)) return ymd;
+  return `\u2066${ymd.slice(8, 10)}-${ymd.slice(5, 7)}-${ymd.slice(0, 4)}\u2069`;
 }
 
 /**

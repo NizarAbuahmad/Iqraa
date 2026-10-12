@@ -1,6 +1,7 @@
 // artifacts/mobile/app/(tabs)/school.tsx
 /**
- * «المدرسة» — a student's or parent's weekly timetable, read-only.
+ * «المدرسة» — a student's or parent's school page: homework, then the weekly
+ * timetable (read-only).
  *
  * The server assembles it from the teachers' own timetables, so it is only as
  * complete as the teachers who have filled theirs in: an empty week is "not
@@ -8,10 +9,12 @@
  * week. A parent sees one child at a time (a picker appears with more than
  * one); exams and results are one tap away on the existing «اختباراتي» screen.
  *
- * It also carries «الواجبات» above the timetable: a student ticks homework off
- * (optimistically, reverted if the save fails); a parent sees the same list per
- * child, read-only. Homework and timetable load, fail and refresh independently,
- * so one failing never blanks the other.
+ * «الواجبات» comes first: a student ticks homework off (optimistically,
+ * reverted if the save fails); a parent sees the same list per child,
+ * read-only. A child with no student account cannot tick anything, so that
+ * child's rows show only the due date — never «متأخّر» or a done mark.
+ * Homework and timetable load, fail and refresh independently, each with its
+ * own section and error banner, so one failing never reads as the other.
  *
  * Not a Stack screen: it sits under the tab layout, which already pays for the
  * status bar — so no `insets.top` here, same as notifications.tsx.
@@ -30,6 +33,7 @@ import {
   ammanToday,
   applyDone,
   dueBadge,
+  formatDueDate,
   splitHomework,
   type ChildHomework,
   type FamilyHomework,
@@ -155,6 +159,8 @@ export default function SchoolScreen() {
   const hwSplit = splitHomework(hwChild?.homework ?? []);
   const hwEmpty = homework !== null && !hwError && hwSplit.todo.length + hwSplit.done.length === 0;
   const hwToday = ammanToday();
+  // Only a parent's child can lack an account; a student's own list is always trackable.
+  const hwUntracked = isParent && hwChild?.canTrack === false;
   const loading = (children === null && !error) || (homework === null && !hwError);
 
   return (
@@ -162,10 +168,10 @@ export default function SchoolScreen() {
       {/* Not insets.top: the tab layout's bar above already pays for the status bar. */}
       <View style={[styles.header, { paddingTop: 16, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
-          {t('schoolScheduleTitle')}
+          {t('tabSchool')}
         </Text>
         <Text style={[styles.desc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
-          {t(isParent ? 'schoolScheduleDescParent' : 'schoolScheduleDesc')}
+          {t(isParent ? 'schoolPageDescParent' : 'schoolPageDesc')}
         </Text>
       </View>
 
@@ -181,25 +187,6 @@ export default function SchoolScreen() {
         }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ACCENT} />}
       >
-        {error ? (
-          <View
-            style={[
-              styles.errorBanner,
-              { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: rowDir },
-            ]}
-          >
-            <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
-            <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
-              {error}
-            </Text>
-            <Pressable onPress={() => void load()} hitSlop={8} accessibilityRole="button">
-              <Text style={{ color: colors.destructive, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textDecorationLine: 'underline' }}>
-                {t('retry')}
-              </Text>
-            </Pressable>
-          </View>
-        ) : null}
-
         {loading ? <ActivityIndicator color={ACCENT} style={{ marginTop: 40 }} /> : null}
 
         {isParent && pickerKids.length > 1 ? (
@@ -237,6 +224,11 @@ export default function SchoolScreen() {
             <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.body, lineHeight: 24, textAlign: align }}>
               {t(isParent ? 'hwDescParent' : 'hwDescStudent')}
             </Text>
+            {hwUntracked ? (
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.label, lineHeight: 22, textAlign: align }}>
+                {t('hwParentNoAccount', hwChild?.displayName ?? '')}
+              </Text>
+            ) : null}
           </View>
 
           {hwError ? (
@@ -286,6 +278,7 @@ export default function SchoolScreen() {
                     key={item.id}
                     item={item}
                     isParent={isParent}
+                    untracked={hwUntracked}
                     today={hwToday}
                     saving={hwSaving.has(item.id)}
                     onToggle={() => void toggleDone(hwChild?.key ?? 'self', item)}
@@ -299,47 +292,77 @@ export default function SchoolScreen() {
           )}
         </View>
 
-        {empty ? (
-          <View style={styles.empty}>
-            <View style={[styles.emptyIcon, { backgroundColor: ACCENT + '1F' }]}>
-              <Ionicons name="calendar-outline" size={30} color={ACCENT} />
-            </View>
-            <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 17, textAlign: 'center' }}>
-              {t('schoolEmptyTitle')}
+        <View style={{ gap: SPACE.md, marginTop: SPACE.md }}>
+          <View style={{ gap: SPACE.xs }}>
+            <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.bodyLg, textAlign: align }}>
+              {t('schoolScheduleTitle')}
             </Text>
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
-              {t(isParent ? 'schoolEmptyDescParent' : 'schoolEmptyDesc')}
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.body, lineHeight: 24, textAlign: align }}>
+              {t(isParent ? 'schoolScheduleDescParent' : 'schoolScheduleDesc')}
             </Text>
           </View>
-        ) : null}
 
-        {child?.schedule.days.map(day => (
-          <View
-            key={day.dayOfWeek}
-            style={[styles.dayCard, { backgroundColor: colors.card, borderColor: day.dayOfWeek === today ? ACCENT : colors.border, borderRadius: colors.radius }]}
-          >
-            <View style={{ flexDirection: rowDir, alignItems: 'center', gap: 8 }}>
-              <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.bodyLg, textAlign: align }}>
-                {t(WEEKDAY_KEYS[day.dayOfWeek] ?? 'schoolDaySun')}
+          {error ? (
+            <View
+              style={[
+                styles.errorBanner,
+                { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: rowDir },
+              ]}
+            >
+              <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+              <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                {error}
               </Text>
-              {day.dayOfWeek === today ? (
-                <View style={[styles.todayChip, { backgroundColor: ACCENT + '1A' }]}>
-                  <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption }}>{t('schoolToday')}</Text>
-                </View>
-              ) : null}
+              <Pressable onPress={() => void load()} hitSlop={8} accessibilityRole="button">
+                <Text style={{ color: colors.destructive, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textDecorationLine: 'underline' }}>
+                  {t('retry')}
+                </Text>
+              </Pressable>
             </View>
-            {day.periods.map((p, i) => (
-              <PeriodRow
-                key={`${p.periodNumber}:${p.teacherName}:${i}`}
-                period={p}
-                lang={lang}
-                colors={colors}
-                isRTL={isRTL}
-                t={t}
-              />
-            ))}
-          </View>
-        ))}
+          ) : null}
+
+          {empty ? (
+            <View style={styles.empty}>
+              <View style={[styles.emptyIcon, { backgroundColor: ACCENT + '1F' }]}>
+                <Ionicons name="calendar-outline" size={30} color={ACCENT} />
+              </View>
+              <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 17, textAlign: 'center' }}>
+                {t('schoolEmptyTitle')}
+              </Text>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
+                {t(isParent ? 'schoolEmptyDescParent' : 'schoolEmptyDesc')}
+              </Text>
+            </View>
+          ) : null}
+
+          {child?.schedule.days.map(day => (
+            <View
+              key={day.dayOfWeek}
+              style={[styles.dayCard, { backgroundColor: colors.card, borderColor: day.dayOfWeek === today ? ACCENT : colors.border, borderRadius: colors.radius }]}
+            >
+              <View style={{ flexDirection: rowDir, alignItems: 'center', gap: 8 }}>
+                <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.bodyLg, textAlign: align }}>
+                  {t(WEEKDAY_KEYS[day.dayOfWeek] ?? 'schoolDaySun')}
+                </Text>
+                {day.dayOfWeek === today ? (
+                  <View style={[styles.todayChip, { backgroundColor: ACCENT + '1A' }]}>
+                    <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption }}>{t('schoolToday')}</Text>
+                  </View>
+                ) : null}
+              </View>
+              {day.periods.map((p, i) => (
+                <PeriodRow
+                  key={`${p.periodNumber}:${p.teacherName}:${i}`}
+                  period={p}
+                  lang={lang}
+                  colors={colors}
+                  isRTL={isRTL}
+                  t={t}
+                />
+              ))}
+            </View>
+          ))}
+        </View>
 
         <Pressable
           accessibilityRole="button"
@@ -393,10 +416,12 @@ function PeriodRow({
 }
 
 function HomeworkRow({
-  item, isParent, today, saving, onToggle, colors, isRTL, t,
+  item, isParent, untracked, today, saving, onToggle, colors, isRTL, t,
 }: {
   item: FamilyHomework;
   isParent: boolean;
+  /** The child has no student account: show the date only, no status. */
+  untracked: boolean;
   today: string;
   saving: boolean;
   onToggle: () => void;
@@ -409,7 +434,9 @@ function HomeworkRow({
   // Which lines are cut off is not knowable up front, so a row with
   // instructions is simply tappable to show them all.
   const [expanded, setExpanded] = useState(false);
-  const badge = dueBadge(item.dueDate, today);
+  // Nobody can tick an untracked child's homework, so "late" would be a claim
+  // the system cannot back: the neutral date badge stands in for every kind.
+  const badge = untracked ? { kind: 'later' as const, days: 0 } : dueBadge(item.dueDate, today);
   const badgeColor =
     badge.kind === 'overdue' ? colors.destructive : badge.kind === 'today' || badge.kind === 'tomorrow' ? palette.warning : colors.mutedForeground;
   const badgeText =
@@ -419,7 +446,8 @@ function HomeworkRow({
         ? t('hwDueToday')
         : badge.kind === 'tomorrow'
           ? t('hwDueTomorrow')
-          : t('hwDueOn', item.dueDate);
+          : t('hwDueOn', formatDueDate(item.dueDate));
+  const done = item.done && !untracked;
   const meta = [item.className, item.teacherName].filter(Boolean).join(' · ');
   const hasInstructions = item.instructions.trim() !== '';
 
@@ -427,10 +455,10 @@ function HomeworkRow({
     <View
       style={[
         styles.hwRow,
-        { backgroundColor: colors.card, borderColor: item.state === 'overdue' ? colors.destructive + '55' : colors.border, borderRadius: colors.radius, flexDirection: rowDir },
+        { backgroundColor: colors.card, borderColor: item.state === 'overdue' && !untracked ? colors.destructive + '55' : colors.border, borderRadius: colors.radius, flexDirection: rowDir },
       ]}
     >
-      {isParent ? (
+      {untracked ? null : isParent ? (
         <View
           accessible
           accessibilityRole="image"
@@ -447,7 +475,9 @@ function HomeworkRow({
         <Pressable
           accessibilityRole="checkbox"
           aria-checked={item.done}
-          accessibilityLabel={t(item.done ? 'hwMarkUndone' : 'hwMarkDone')}
+          accessibilityLabel={`${t(item.done ? 'hwMarkUndone' : 'hwMarkDone')}: ${item.title}`}
+          aria-busy={saving}
+          aria-disabled={saving}
           hitSlop={8}
           onPress={onToggle}
           style={[styles.hwMark, { opacity: saving ? 0.5 : 1 }]}
@@ -470,11 +500,11 @@ function HomeworkRow({
         >
           <Text
             style={{
-              color: item.done ? colors.mutedForeground : colors.foreground,
+              color: done ? colors.mutedForeground : colors.foreground,
               fontFamily: 'ReadexPro_600SemiBold',
               fontSize: TYPE.body,
               textAlign: align,
-              textDecorationLine: item.done ? 'line-through' : 'none',
+              textDecorationLine: done ? 'line-through' : 'none',
             }}
           >
             {item.title}
@@ -485,9 +515,9 @@ function HomeworkRow({
             </Text>
           ) : null}
           <View style={{ flexDirection: rowDir }}>
-            {item.done ? (
+            {done ? (
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
-                {t('hwDueOn', item.dueDate)}
+                {t('hwDueOn', formatDueDate(item.dueDate))}
               </Text>
             ) : (
               <View style={[styles.hwBadge, { backgroundColor: badgeColor + '1A' }]}>
