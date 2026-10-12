@@ -65,3 +65,28 @@ export const homeworkCompletions = pgTable(
 
 export type Homework = typeof homework.$inferSelect;
 export type HomeworkCompletion = typeof homeworkCompletions.$inferSelect;
+
+/**
+ * One row per homework per due day that a reminder went out for — the
+ * at-most-once record behind `POST /internal/homework-reminders`. The run
+ * CLAIMS a row (insert … on conflict do nothing) before sending, and skips a
+ * homework it could not claim, so a second run the same day, a scheduler
+ * retry or two overlapping runs send nothing twice. Keyed by the due day too:
+ * a homework whose due date moves is reminded again for its new day. The price
+ * of claiming first, accepted: a send that fails after the claim is not retried.
+ */
+export const homeworkReminders = pgTable(
+  "homework_reminders",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    homeworkId: uuid("homework_id")
+      .notNull()
+      .references(() => homework.id, { onDelete: "cascade" }),
+    /** The Amman calendar day the homework was due on when reminded, `YYYY-MM-DD`. */
+    dueDate: text("due_date").notNull(),
+    sentAt: timestamp("sent_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  t => [unique("homework_reminders_unique").on(t.homeworkId, t.dueDate)],
+);
+
+export type HomeworkReminder = typeof homeworkReminders.$inferSelect;
