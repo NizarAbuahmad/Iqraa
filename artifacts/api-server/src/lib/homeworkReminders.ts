@@ -16,9 +16,10 @@
  * price: if the send fails after the claim, that day's reminder is lost.
  *
  * The run is sequential — a few queries and the Expo calls per homework — so a
- * very large school could outlast Cloud Scheduler's attempt deadline. The
- * handler keeps running after a client abort, and because claims are written
- * as it goes, a retry finishes the rest without repeating any.
+ * very large school could outlast Cloud Scheduler's attempt deadline. Do not
+ * count on the handler carrying on after its request ends (Cloud Run throttles
+ * CPU then); the job retries (docs/deploying.md), and because claims are written
+ * as it goes, a retry reminds only what is not yet claimed and repeats none.
  */
 import { classGroups, db, homework, homeworkCompletions, homeworkReminders } from "@workspace/db";
 import { and, eq, gt, inArray, isNull, lte } from "drizzle-orm";

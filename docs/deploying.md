@@ -473,7 +473,7 @@ when steps 4 and 5 need it. If the session is lost before step 5, do not read
 the secret back: rotate (see the end of this section).
 
 ```bash
-P="--project iqraa-auth-507315"
+P=--project=iqraa-auth-507315   # one word, so it also works unquoted in zsh
 URL=https://iqraa-api-613126375862.europe-west1.run.app/api/internal/homework-reminders
 # 1. The secret: a long random value, kept in $KEY (never echo it), no trailing newline.
 KEY=$(openssl rand -hex 32)
@@ -496,7 +496,8 @@ gcloud scheduler jobs create http homework-reminders $P \
   --http-method POST \
   --headers "x-internal-key=$KEY,Content-Type=application/json" \
   --message-body '{}' \
-  --attempt-deadline 300s
+  --attempt-deadline 300s \
+  --max-retry-attempts 3 --min-backoff 60s
 # 6. Fire it once now, and see that it ran (a second run the same day claims nothing).
 gcloud scheduler jobs run homework-reminders --location europe-west1 $P
 gcloud scheduler jobs describe homework-reminders --location europe-west1 $P \
@@ -511,6 +512,8 @@ The job stores the key in its own config, readable by anyone with
 value back:
 
 ```bash
+P=--project=iqraa-auth-507315   # set these again in a fresh shell
+URL=https://iqraa-api-613126375862.europe-west1.run.app/api/internal/homework-reminders
 KEY=$(openssl rand -hex 32)
 printf %s "$KEY" | gcloud secrets versions add INTERNAL_CRON_KEY --data-file=- $P
 gcloud run services update iqraa-api --region europe-west1 $P \
@@ -519,14 +522,18 @@ gcloud scheduler jobs update http homework-reminders --location europe-west1 $P 
   --update-headers "x-internal-key=$KEY,Content-Type=application/json"
 ```
 
-This rotation is also the way out if the shell session was lost before step 5.
+This rotation is also the way out if the shell session was lost before step 5 —
+but if the scheduler job does not exist yet, run step 5 (with the new `$KEY`)
+instead of the last `update` command.
 
 A rerun the same day is safe: each homework is reminded at most once per due day
 (`homework_reminders`, claimed before sending), and a send that fails after its
-claim is not retried. One failing homework does not stop the run. The run is
-sequential, so a very large school could outlast the job's 300 s attempt
-deadline; the handler keeps running, and a retry finishes the rest without
-repeating any (claims are written as it goes).
+claim is not retried. One failing homework does not stop the run. The job retries
+up to three times (`--max-retry-attempts 3`), which is safe because of those
+claims: a retry after a failed or timed-out run reminds only the homework not yet
+claimed and repeats none. The run is sequential, so a very large school could
+outlast the job's 300 s attempt deadline; do not rely on the handler carrying on
+after its request ends (Cloud Run throttles CPU then) — rely on the retry.
 
 ## The Android app (Google Play)
 

@@ -1864,8 +1864,9 @@ real family accounts — **none of it has been seen arriving on a phone.**
   - The Arabic push copy has not been read by a native speaker.
   - A reminder whose send fails after its claim is lost for that day.
   - The reminder run is sequential and could exceed Cloud Scheduler's 300 s attempt
-    deadline for a very large school; the handler keeps running and a retry finishes the
-    rest without repeating any (claims are written as it goes).
+    deadline for a very large school; the handler may not carry on after its request ends
+    (Cloud Run throttles CPU), so the scheduler job is created with `--max-retry-attempts 3`
+    and a retry reminds only what is not yet claimed (claims are written as it goes).
   - The reminder's `hasAccount` counts only non-suspended `self` links, so a suspended
     student's guardians get the softer "when it is due" text, not "not done".
   - The release announcement and chat pushes are still fire-and-forget, so Cloud Run's CPU

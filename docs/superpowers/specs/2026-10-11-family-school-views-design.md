@@ -359,7 +359,8 @@ As built, 2026-10-12. Four pushes, one sender, three switches.
   homework per due day (`homework_reminders`, claimed before sending; a failed
   send is not retried; a failed claim costs that homework only, not the run). The
   run is sequential, so a very large school could outlast Scheduler's attempt
-  deadline; a retry finishes the rest without repeating any. The key is
+  deadline; the job retries (`--max-retry-attempts 3`) and a retry reminds only what
+  is not yet claimed. The key is
   `x-internal-key` = `INTERNAL_CRON_KEY`, and the route is a 404 without it,
   including while the key is unset. This ships in the same PR as the rest of Part
   4, not "its own PR" as this section first said.

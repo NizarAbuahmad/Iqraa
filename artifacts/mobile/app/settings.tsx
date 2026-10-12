@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -79,15 +79,23 @@ export default function SettingsScreen() {
     return () => { cancelled = true; };
   }, [showsSchoolPrefs, user?.id]);
 
+  // The account a save belongs to: if the open account changes while a save is
+  // in flight, its answer must not be written into the new account's card.
+  const prefsOwner = useRef(user?.id);
+  prefsOwner.current = user?.id;
+
   // Optimistic: the switch moves at once; a failed save puts it back and says so.
   const handleSchoolPref = async (category: PushPrefCategory, on: boolean) => {
     if (!schoolPrefs || savingPref) return;
+    const owner = user?.id;
     const before = schoolPrefs;
     setSchoolPrefs(withPref(schoolPrefs, category, on));
     setSavingPref(category);
     try {
-      setSchoolPrefs(await savePushPref(category, on));
+      const saved = await savePushPref(category, on);
+      if (prefsOwner.current === owner) setSchoolPrefs(saved);
     } catch {
+      if (prefsOwner.current !== owner) return;
       setSchoolPrefs(before);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setToast(t('pushPrefsSaveFailed'));

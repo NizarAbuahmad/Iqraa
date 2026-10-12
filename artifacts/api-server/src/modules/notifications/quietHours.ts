@@ -9,6 +9,7 @@
  * `PUSH_QUIET_HOURS=off` disables the window (the DB tests set it, so no
  * assertion depends on the time of day).
  */
+import { PUSH_CHANNEL } from "../../lib/pushNotifications.ts";
 import type { PushCategory } from "./pushPrefs.ts";
 
 export const QUIET_FROM_HOUR = 22;
@@ -29,11 +30,16 @@ export function quietHoursEnabled(env: Record<string, string | undefined> = proc
 }
 
 export interface Delivery {
-  channelId: PushCategory | "quiet";
+  channelId: (typeof PUSH_CHANNEL)[PushCategory | "quiet"];
   sound: "default" | null;
 }
 
-/** The Android channel (named like its category) and sound a family push goes out with. */
+/**
+ * The Android channel and sound a family push goes out with. The channel comes
+ * from `PUSH_CHANNEL`, so a category with no channel there cannot compile.
+ */
 export function familyDelivery(category: PushCategory, now: Date, quietOn: boolean): Delivery {
-  return quietOn && isQuietHour(now) ? { channelId: "quiet", sound: null } : { channelId: category, sound: "default" };
+  return quietOn && isQuietHour(now)
+    ? { channelId: PUSH_CHANNEL.quiet, sound: null }
+    : { channelId: PUSH_CHANNEL[category], sound: "default" };
 }
