@@ -18,6 +18,8 @@ const SCREEN_ROUTES: Record<string, string> = {
   'artifact-reports': '/admin/artifact-reports',
   // A teacher released an exam's results (lib/resultsReleaseNotify.ts).
   'my-exams': '/my-exams',
+  // Homework posted, the day-before reminder, an exam date (spec Part 4).
+  school: '/school',
 };
 
 export function routeFromNotificationData(data: unknown): string | null {
