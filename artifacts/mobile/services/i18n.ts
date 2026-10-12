@@ -660,6 +660,8 @@ const translations = {
       `لا يوجد منهاج لمادة «${subject}» في «${grade}». اختر صفًا أو مادة أخرى.`,
     scopeNoCurriculumHint:
       'لا يتوفر منهاج لهذه المادة في الصف المحدد، لذلك لا تظهر ضمن قائمة المواد. غيّر الصف أو اختر مادة أخرى.',
+    scopeNotTaughtHint:
+      'لم تُضف هذه المادة إلى موادّك في هذا الصف، لذلك لا تظهر ضمن قائمة المواد. اختر مادة أخرى، أو أضفها من «المواد التي أُدرّسها» في الإعدادات.',
     generationFailed: 'تعذّر إتمام العملية. حاول مرة أخرى.',
     // Two states a teacher can act on, kept apart from generationFailed: one
     // says «wait, or reuse what you have», the other «this is switched off» —
@@ -3176,6 +3178,8 @@ const translations = {
       `No curriculum for ${subject} in ${grade}. Pick another grade or subject.`,
     scopeNoCurriculumHint:
       'There is no curriculum for this subject in the selected grade, so it is not in the subject list. Change the grade, or pick another subject.',
+    scopeNotTaughtHint:
+      'This subject is not in your teaching setup for this grade, so it is not in the subject list. Pick another subject, or add it under “Subjects I teach” in Settings.',
     generationFailed: 'Could not finish. Try again.',
     aiQuotaSpent:
       "This month's AI allowance is used up. You can still open saved worksheets and lessons.",
