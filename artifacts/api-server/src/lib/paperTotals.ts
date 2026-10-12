@@ -16,8 +16,8 @@
  * the exam; the member query below proves each student is a live student of
  * THIS exam's class and this teacher's.
  */
-import { db, attemptAnswers, attempts, classMemberships, students } from "@workspace/db";
-import type { Attempt, Evaluation, EvaluationQuestion } from "@workspace/db";
+import { db, attemptAnswers, attemptResults, attempts, classMemberships, students } from "@workspace/db";
+import type { Attempt, AttemptResult, Evaluation, EvaluationQuestion } from "@workspace/db";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { findLiveClass } from "./classOwnership.ts";
 import { logger } from "./logger.ts";
@@ -46,12 +46,26 @@ interface Context {
   members: Set<string>;
   attemptByStudent: Map<string, Attempt>;
   withAnswers: Set<string>;
+  resultByAttempt: Map<string, AttemptResult>;
 }
 
 const refused = (studentId: string, code: PaperTotalErrorCode): PaperTotalResult => ({ studentId, status: "error", code });
 
-/** A plain decimal: digits with an optional point. Not hex, an exponent, "Infinity" or non-latin digits. */
-const PLAIN_NUMBER = /^[+-]?(\d+\.?\d*|\.\d+)$/;
+/**
+ * A plain decimal: digits with an optional point. Not hex, an exponent,
+ * "Infinity" or non-latin digits. Linear: the digit runs are separated by a
+ * literal point, so there is nothing to backtrack through (`\d+\.?\d*` was
+ * quadratic on a long digit run ending in a letter).
+ */
+const PLAIN_NUMBER = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/;
+
+/**
+ * No mark a teacher types is longer than this ("0000000000000015" is already
+ * absurd). The cap is checked BEFORE any regex or `Number()` runs, so a
+ * megabyte string costs one length read — the request body limit is 12 MB and
+ * a request carries up to 100 rows.
+ */
+const MAX_MARKS_TEXT = 16;
 
 /**
  * The parser lets any non-blank string through; this is where a string either
@@ -60,7 +74,7 @@ const PLAIN_NUMBER = /^[+-]?(\d+\.?\d*|\.\d+)$/;
  * is 16 and `Number("1e1")` is 10, which are not things a teacher typed as a mark.
  */
 function readMarks(raw: number | string, maxMarks: number): number | null {
-  if (typeof raw === "string" && !PLAIN_NUMBER.test(raw.trim())) return null;
+  if (typeof raw === "string" && (raw.length > MAX_MARKS_TEXT || !PLAIN_NUMBER.test(raw.trim()))) return null;
   return normalizeManualMarks(raw, maxMarks);
 }
 
@@ -80,7 +94,13 @@ async function saveOne(row: PaperTotalInput, ctx: Context): Promise<PaperTotalRe
     const decision = clearDecision(existing && { source: existing.source, hasAnswers: ctx.withAnswers.has(existing.id) });
     if (decision === "keep") return refused(studentId, "kept_student_work");
     // Cascades to its grades, result, audit rows and recommendations: the paper was never entered.
-    if (decision === "delete") await db.delete(attempts).where(eq(attempts.id, existing!.id));
+    // The rule is stated in the statement too, not only in `decision`: only a
+    // teacher-entry sitting of THIS exam, whatever was loaded above.
+    if (decision === "delete") {
+      await db
+        .delete(attempts)
+        .where(and(eq(attempts.id, existing!.id), eq(attempts.source, "teacher_entry"), eq(attempts.evaluationId, ctx.evaluation.id)));
+    }
     return { studentId, status: "cleared", marks: null };
   }
 
@@ -111,7 +131,14 @@ async function saveOne(row: PaperTotalInput, ctx: Context): Promise<PaperTotalRe
     teacherId: ctx.teacherId,
     skipIfUnchanged: true,
   });
-  if (!changed && attempt.submittedAt) return { studentId, status: "unchanged", marks: awarded };
+  // Unchanged only when the stored result says so too. A request that died
+  // after `submittedAt` was stamped and before the result was written leaves a
+  // handed-in sitting with no (or a stale, or a provisional) result; a retry
+  // must repair it, and `gradeSubmission` is idempotent.
+  const stored = ctx.resultByAttempt.get(attempt.id);
+  const resultStands =
+    !!stored && !stored.isProvisional && Number(stored.earnedMarks).toFixed(2) === awarded.toFixed(2);
+  if (!changed && attempt.submittedAt && resultStands) return { studentId, status: "unchanged", marks: awarded };
 
   const graded = await gradeSubmission(attempt);
   if (!graded.ok) return refused(studentId, "failed");
@@ -164,6 +191,17 @@ export async function savePaperTotals(input: {
       )
     : new Set<string>();
 
+  const resultByAttempt = held.length
+    ? new Map(
+        (
+          await db
+            .select()
+            .from(attemptResults)
+            .where(inArray(attemptResults.attemptId, held.map(a => a.id)))
+        ).map(r => [r.attemptId, r]),
+      )
+    : new Map<string, AttemptResult>();
+
   const ctx: Context = {
     evaluation,
     teacherId,
@@ -172,6 +210,7 @@ export async function savePaperTotals(input: {
     members,
     attemptByStudent: new Map(held.map(a => [a.studentId, a])),
     withAnswers,
+    resultByAttempt,
   };
 
   const results: PaperTotalResult[] = [];

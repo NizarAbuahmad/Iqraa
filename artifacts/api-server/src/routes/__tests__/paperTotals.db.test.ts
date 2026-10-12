@@ -41,6 +41,22 @@ describeDb("paper totals over HTTP, against a real database", () => {
     return child?.exams.find((e: any) => e.title === EX_TITLES.exPaper);
   };
 
+  /** A roster row of t1's in class c1 (the exam's class), optionally archived. */
+  const rosterRow = async (name: string, archived = false) => {
+    const id = (
+      await db.pool.query(
+        `INSERT INTO students (teacher_id, display_name, archived_at) VALUES ($1, $2, CASE WHEN $3::boolean THEN now() END) RETURNING id`,
+        [w.users.t1, name, archived],
+      )
+    ).rows[0].id as string;
+    await db.pool.query(`INSERT INTO class_memberships (class_group_id, student_id) VALUES ($1, $2)`, [w.classes.c1, id]);
+    return id;
+  };
+  const sittingOf = async (examId: string, studentId: string) =>
+    (await db.pool.query(`SELECT id, submitted_at FROM attempts WHERE evaluation_id = $1 AND student_id = $2`, [examId, studentId])).rows[0] as
+      | { id: string; submitted_at: Date | null }
+      | undefined;
+
   before(async () => {
     db = await setupTestDb();
     w = await seedFamilyWorld(db.pool);
@@ -124,7 +140,15 @@ describeDb("paper totals over HTTP, against a real database", () => {
       // nB1: t1's, but in c3. sA2: t2's row. aArch: t2's, archived. Then a stranger.
       const r = await put(w.users.t1, x.exams.exPaper, totals([w.students.nB1, 5], [w.students.sA2, 5], [w.students.aArch, 5], [RANDOM_UUID, 5]));
       assert.equal(r.status, 200, on.logs().slice(-1500));
+      assert.equal(r.json.results.length, 4, "one result per request row");
       for (const row of r.json.results) assert.deepEqual([row.status, row.code], ["error", "not_in_class"]);
+      assert.equal(await attemptsOn(x.exams.exPaper), 1);
+    });
+
+    it("refuses an archived student of the teacher's own, though the membership row is still there", async () => {
+      const archived = await rosterRow("archived-own", true);
+      const r = await put(w.users.t1, x.exams.exPaper, totals([archived, 5]));
+      assert.deepEqual(r.json.results, [{ studentId: archived, status: "error", code: "not_in_class" }]);
       assert.equal(await attemptsOn(x.exams.exPaper), 1);
     });
 
@@ -148,6 +172,49 @@ describeDb("paper totals over HTTP, against a real database", () => {
         assert.deepEqual(row.json.results[0], { studentId: w.students.sA1, status: "error", code: "marks_out_of_range" }, bad);
       }
       assert.equal(await attemptsOn(x.exams.exPaper), 1);
+    });
+
+    it("reads a hostile mark string in constant time: the length cap comes before any regex", async () => {
+      // 100k digits then a letter backtracked quadratically in the old pattern (seconds per row, 100 rows a request).
+      const long = "1".repeat(100_000);
+      for (const bad of [`${long}x`, long, `${long}.${long}`]) {
+        const started = Date.now();
+        const r = await put(w.users.t1, x.exams.exPaper, totals([w.students.sA1, bad]));
+        const took = Date.now() - started;
+        assert.deepEqual(r.json.results[0], { studentId: w.students.sA1, status: "error", code: "marks_out_of_range" });
+        assert.ok(took < 1000, `took ${took} ms`);
+      }
+      // 100 such rows in one request: still one length read each.
+      // They must be the teacher's own live students: the class check runs before the marks are read.
+      const own = (
+        await db.pool.query(
+          `INSERT INTO students (teacher_id, display_name) SELECT $1, 'bulk-' || g FROM generate_series(1, 100) g RETURNING id`,
+          [w.users.t1],
+        )
+      ).rows.map(r => r.id as string);
+      await db.pool.query(`INSERT INTO class_memberships (class_group_id, student_id) SELECT $1, unnest($2::uuid[])`, [w.classes.c1, own]);
+      const started = Date.now();
+      const many = await put(w.users.t1, x.exams.exPaper, { totals: own.map(studentId => ({ studentId, marks: `${long}x` })) });
+      const took = Date.now() - started;
+      assert.equal(many.status, 200);
+      assert.equal(many.json.results.length, 100);
+      for (const row of many.json.results) assert.equal(row.code, "marks_out_of_range");
+      assert.ok(took < 3000, `100 hostile rows took ${took} ms`);
+      assert.equal(await attemptsOn(x.exams.exPaper), 1);
+    });
+
+    it("the text cap is 16 characters: 16 are read by the numeric rules, 17 are refused unread", async () => {
+      const capped = await rosterRow("cap");
+      const at16 = "0000000000000015"; // 16 characters, the number 15
+      const at17 = "00000000000000015"; // 17 characters, also 15 — refused only by the cap
+      assert.equal(at16.length, 16);
+      assert.equal(at17.length, 17);
+      const refused = await put(w.users.t1, x.exams.exPaper, totals([capped, at17]));
+      assert.deepEqual(refused.json.results[0], { studentId: capped, status: "error", code: "marks_out_of_range" });
+      assert.equal(await sittingOf(x.exams.exPaper, capped), undefined);
+      const read = await put(w.users.t1, x.exams.exPaper, totals([capped, at16]));
+      assert.deepEqual(read.json.results[0], { studentId: capped, status: "saved", marks: 15 });
+      assert.equal((await put(w.users.t1, x.exams.exPaper, totals([capped, null]))).json.results[0].status, "cleared");
     });
 
     it("turns a typed total into a handed-in, final result that families see only after release", async () => {
@@ -206,6 +273,30 @@ describeDb("paper totals over HTTP, against a real database", () => {
       assert.deepEqual([after.earned_marks, after.percent], ["16.50", "82.50"]);
     });
 
+    it("repairs a handed-in sitting whose result is missing, stale or provisional instead of calling it unchanged", async () => {
+      const stale = await rosterRow("stale");
+      assert.equal((await put(w.users.t1, x.exams.exPaper, totals([stale, 12]))).json.results[0].status, "saved");
+      const sitting = (await sittingOf(x.exams.exPaper, stale))!;
+      const result = () => db.pool.query(`SELECT earned_marks, is_provisional FROM attempt_results WHERE attempt_id = $1`, [sitting.id]);
+      assert.equal((await put(w.users.t1, x.exams.exPaper, totals([stale, 12]))).json.results[0].status, "unchanged");
+
+      // A request that died after the hand-in and before the result: grade written, submitted_at set, no result row.
+      await db.pool.query(`DELETE FROM attempt_results WHERE attempt_id = $1`, [sitting.id]);
+      const missing = await put(w.users.t1, x.exams.exPaper, totals([stale, 12]));
+      assert.deepEqual(missing.json.results[0], { studentId: stale, status: "saved", marks: 12 });
+      assert.deepEqual((await result()).rows, [{ earned_marks: "12.00", is_provisional: false }]);
+
+      await db.pool.query(`UPDATE attempt_results SET earned_marks = 3 WHERE attempt_id = $1`, [sitting.id]);
+      assert.equal((await put(w.users.t1, x.exams.exPaper, totals([stale, 12]))).json.results[0].status, "saved");
+      assert.deepEqual((await result()).rows, [{ earned_marks: "12.00", is_provisional: false }]);
+
+      await db.pool.query(`UPDATE attempt_results SET is_provisional = true WHERE attempt_id = $1`, [sitting.id]);
+      assert.equal((await put(w.users.t1, x.exams.exPaper, totals([stale, 12]))).json.results[0].status, "saved");
+      assert.deepEqual((await result()).rows, [{ earned_marks: "12.00", is_provisional: false }]);
+      assert.equal((await sittingOf(x.exams.exPaper, stale))!.submitted_at?.getTime(), sitting.submitted_at?.getTime(), "the hand-in time stands");
+      assert.equal(await count(`SELECT count(*)::int AS n FROM grade_overrides WHERE attempt_id = $1`, [sitting.id]), 0);
+    });
+
     it("rounds a fraction beyond two decimals the way a single mark is rounded", async () => {
       const r = await put(w.users.t1, x.exams.exPaper, totals([w.students.sA1, "16.504"]));
       assert.deepEqual(r.json.results[0], { studentId: w.students.sA1, status: "unchanged", marks: 16.5 });
@@ -229,6 +320,16 @@ describeDb("paper totals over HTTP, against a real database", () => {
       const zain = await put(w.users.t1, x.exams.exPaper, totals([x.zain, null]));
       assert.deepEqual(zain.json.results[0], { studentId: x.zain, status: "error", code: "kept_student_work" });
       assert.equal(await count(`SELECT count(*)::int AS n FROM attempts WHERE id = $1`, [x.attempts.zainPaper]), 1);
+    });
+
+    it("keeps a teacher-entry sitting that holds an answer: clearing it is not the grid's to do", async () => {
+      const answered = await rosterRow("answered");
+      assert.equal((await put(w.users.t1, x.exams.exPaper, totals([answered, 4]))).json.results[0].status, "saved");
+      const sitting = (await sittingOf(x.exams.exPaper, answered))!;
+      await db.pool.query(`INSERT INTO attempt_answers (attempt_id, question_id, response) VALUES ($1, $2, '{"text":"typed in"}'::jsonb)`, [sitting.id, x.questions.exPaper]);
+      const r = await put(w.users.t1, x.exams.exPaper, totals([answered, null]));
+      assert.deepEqual(r.json.results[0], { studentId: answered, status: "error", code: "kept_student_work" });
+      assert.equal(await count(`SELECT count(*)::int AS n FROM attempts WHERE id = $1`, [sitting.id]), 1);
     });
 
     it("keeps a group check to its group", async () => {
@@ -272,10 +373,13 @@ describeDb("paper totals over HTTP, against a real database", () => {
   describe("after the sitting", () => {
     it("accepts a closed exam: a teacher may close the paper, then type the totals", async () => {
       await db.pool.query(`UPDATE evaluations SET status = 'closed', closed_at = now() WHERE id = $1`, [x.exams.exPaper]);
-      const r = await put(w.users.t1, x.exams.exPaper, totals([w.students.sA1, 19]));
-      assert.equal(r.status, 200, on.logs().slice(-1500));
-      assert.deepEqual(r.json.results[0], { studentId: w.students.sA1, status: "saved", marks: 19 });
-      await db.pool.query(`UPDATE evaluations SET status = 'published', closed_at = NULL WHERE id = $1`, [x.exams.exPaper]);
+      try {
+        const r = await put(w.users.t1, x.exams.exPaper, totals([w.students.sA1, 19]));
+        assert.equal(r.status, 200, on.logs().slice(-1500));
+        assert.deepEqual(r.json.results[0], { studentId: w.students.sA1, status: "saved", marks: 19 });
+      } finally {
+        await db.pool.query(`UPDATE evaluations SET status = 'published', closed_at = NULL WHERE id = $1`, [x.exams.exPaper]);
+      }
     });
 
     it("clearing a released teacher-entered mark deletes it, with its audit rows (accepted, and confirmed in the app)", async () => {
