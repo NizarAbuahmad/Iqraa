@@ -147,6 +147,17 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   so the tests that pin them apart (`activityBlueprints.test.ts`,
   `activityPrompts.test.ts`) assert *every field differs from every other
   type*; a new format needs its own entry in both files or they fail.
+- **A question can come from the book, the bank or a model, and only a verifier
+  makes one `verified`.** Real book items (`lib/curriculum/src/bookItems.ts`,
+  data written by `scripts/extract_book_items.py`) join by `lessonId`, never by
+  title. A `computed` item — SymPy solved a stem read from a text layer that
+  flattens exponents and splits fractions — must never carry a `check`: the
+  existing verification pass would badge it «تم التحقق», which says the stem was
+  read correctly and nothing has checked that. `SERVED_STATUSES` is the one place
+  that decides what a paper may draw. Only the API evaluation generator uses
+  book items; the live-AI path and the mobile offline generators ignore them, so
+  a paper differs by which path made it — add a family to the script's `TABLE`,
+  never to a generator.
 - **A teaching style shapes the whole lesson plan, in two places.** Per-style
   phases live in `artifacts/mobile/services/ai/lessonPlanBlueprints.ts` and the
   matching contract in `LESSON_STYLE_RULES_AR`/`_EN`

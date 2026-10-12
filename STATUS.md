@@ -932,6 +932,40 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Real book items in evaluations: 24 served, none verified, 2026-10-12
+
+A Grade 10 maths evaluation used to be built from generated templates only.
+It now also draws **real NCCD items** — exercise-book questions and the teacher
+guide's end-of-unit test — for the objective's own lesson. Reader:
+`lib/curriculum/src/bookItems.ts`; data: `src/data/book-items/`, written by
+`scripts/extract_book_items.py`. Design:
+`docs/superpowers/specs/2026-10-12-book-items-design.md`.
+
+- **What is in it.** 24 served items: systems of equations (S1 unit 1, two
+  lessons), polynomial derivatives (S2 unit 6) and two unit-test choices. 14 more
+  were quarantined, each with its reason in `report.json` (no real solution, an
+  exponent the text layer made ambiguous, a fraction split across lines).
+- **None is `verified`.** The guide prints no answer for these item families —
+  its appendix answers word-problem and diagram exercises — so SymPy's answer is
+  the only one. They are `computed`: labelled to the teacher «الحل محسوب من نص
+  السؤال», and carrying no `check`, so they cannot earn the verified badge.
+  `verified` exists and is pinned by test for the day a family has a printed
+  answer; nothing exercises it with data yet.
+- **No stem has been compared with a page image.** The text layer flattens
+  exponents (`24x3` is 24x³) and splits fractions, and the book PDFs are not in a
+  fresh checkout. The extractor refuses anything ambiguous rather than choosing a
+  reading, but a person should read the 24 against the books. The PR that
+  introduced this lists them.
+- **Where it applies.** Only the API evaluation generator (`mockGenerator.ts`
+  `bookQuestion`): at most half a paper, only when the objective's `lessonId` has
+  items and the requested types allow them. The live-AI path, the mobile offline
+  quiz/exam generators, worksheets, homework and decks do not use book items.
+  The teacher sees the citation and key label on the evaluation screen
+  (`services/bookItemNote.ts`).
+- **Not covered.** S1 unit 1's first lesson («حل معادلات خاصة») has no
+  curriculum lesson, so its 15 exercises cannot be joined; Arabic word problems;
+  figure items; chemistry (its teacher guides have no extracted text).
+
 ## Parents and students sign up with the teacher's code alone, 2026-10-10
 
 A parent or student used to need a first and last name, an email, a password, a
