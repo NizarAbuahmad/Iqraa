@@ -1161,10 +1161,12 @@ weekly timetable, read-only, from `GET /student/schedule` and
   `STUDENT_ACCOUNTS` is already `true` in production, so the tab and routes reach
   real family accounts on merge. Look at it on a signed-in parent and a signed-in
   student account right after deploy.
-- Still to come (spec `docs/superpowers/specs/2026-10-11-family-school-views-design.md`):
-  notifications (Part 4). Homework (Part 2) and exam dates / paper marks (Part 3) are
-  built — see «Homework: teachers set it, students tick it, parents watch, 2026-10-12»
-  and «Exam dates and paper marks reach families, 2026-10-12».
+- Nothing is left to come from the spec
+  (`docs/superpowers/specs/2026-10-11-family-school-views-design.md`). Homework (Part 2),
+  exam dates / paper marks (Part 3) and notifications (Part 4) are built — see «Homework:
+  teachers set it, students tick it, parents watch, 2026-10-12», «Exam dates and paper marks
+  reach families, 2026-10-12» and «Families are told: homework, exam dates, results, and a
+  reminder the day before, 2026-10-12».
 
 ## API tests can run against a real database, 2026-10-12
 
@@ -1352,10 +1354,12 @@ place — see its section 2).
   IME input in the modal and real device text scaling were not exercised. `STUDENT_ACCOUNTS`
   is already `true` in production, so this reaches real family accounts on merge — open it
   on a signed-in teacher, parent and student right after deploy.
-- **No notifications.** Nothing tells a family that homework was posted, or that it
-  is due tomorrow: that is Part 4 (push from the create handler, and a scheduled
-  reminder that needs Cloud Scheduler and an internal endpoint). Until then a family
-  learns of homework only by opening the School tab.
+- **Notifications** (added the same day, Part 4): posting homework pushes the class's
+  students and guardians, and a Cloud Scheduler job reminds them the day before it is due
+  — see «Families are told: homework, exam dates, results, and a reminder the day before,
+  2026-10-12». **The reminder is inert until the owner creates the scheduler job**
+  (`docs/deploying.md`); until then a family learns of due-tomorrow work only by opening
+  the School tab.
 - **Known gaps** (found in review, not fixed):
   - After a tick on the student screen, the reload that follows can briefly un-tick
     the optimistic tick if it lands while the request is in flight; it self-heals on
@@ -1367,11 +1371,8 @@ place — see its section 2).
   - A dropped connection after the server has committed a `POST /homework` can
     duplicate it when the teacher retries: there is no idempotency key.
   - The teacher's numbers refresh only when the tab mounts, not while it is open.
-  - Part 4 (notifications) still needs a "roster row → user ids" lookup:
-    `lib/familyAccess.ts` has account → roster rows helpers
-    (`selfLinkedStudentIds`, `guardianLinkedStudents`) and a rows → "has any student
-    account" existence check (`studentIdsWithSelfAccount`), but nothing that returns the
-    users behind a set of rows.
+  - ~~Part 4 needs a "roster row → user ids" lookup.~~ **Built (2026-10-12):**
+    `accountsLinkedTo` and `liveClassStudentIds` in `lib/familyAccess.ts`.
   - From the real browser run (360px, Arabic RTL, Chromium): at a 320px width the English
     tab row cuts the last label mid-letter with no fade (it is reachable by scroll); a
     newly created homework does not appear at the top of the teacher's list, because the
@@ -1577,12 +1578,11 @@ planning-only and **not returned to families**; it still opens and closes nothin
   have shown it either), or the bottom inset on a device.
 - **Known gaps** (found in review or in the browser run, not fixed; each checked
   against the code on 2026-10-12):
-  - **No push when marks arrive after release, and none when an exam is scheduled or
-    changed.** `announceResultsRelease` fires only when the release flag flips on; a
-    mark typed afterwards (the route also takes a closed exam) is visible to the
-    family at once and silent. Both are Part 4 (see *Part 4 notes* below).
+  - ~~**No push when marks arrive after release, and none when an exam is scheduled or
+    changed.**~~ **Both are pushed now (Part 4, 2026-10-12)** — see «Families are told:
+    homework, exam dates, results, and a reminder the day before, 2026-10-12».
   - **A dated exam with no class reaches no family** (nothing to hang it on; only the
-    teacher's hint says so). It matters only for Part 4 pushes.
+    teacher's hint says so). Part 4 pushes nothing for it either.
   - **A total-only paper measures one objective and one competency**: all marks go to
     the first selected objective with competency `understanding`, so the teacher's
     objective breakdown for that exam means "the total" and the family's competency
@@ -1652,7 +1652,9 @@ planning-only and **not returned to families**; it still opens and closes nothin
     the checks (already-exists, then group, then no questions, then no scale);
     `upcomingExams` has no case for a malformed time inside the sort or a same-title
     tie.
-- **Part 4 notes** (what a notification PR must know; each checked against the code):
+- **Part 4 notes** (what a notification PR must know; each checked against the code;
+  **all addressed by Part 4, 2026-10-12** — each is now pinned by a test in the section
+  named above, and kept here as the reasons behind them):
   - Marks saved **after** release have no hook: the paper-totals route would have to
     announce the rows that answer `saved` while `releaseResultsToStudent` is on.
   - `announceResultsRelease` selects every handed-in sitting (`submittedAt` set) of
@@ -1668,7 +1670,206 @@ planning-only and **not returned to families**; it still opens and closes nothin
     resolving pushes needs the users behind a roster row (`self` / `guardian`
     links). `resultsReleaseNotify.ts` already joins attempts → `rosterLinks` inline
     for the sittings of one exam; what does not exist is a reusable **class-wide**
-    helper (class → rows → user ids) for a scheduled / changed push.
+    helper (class → rows → user ids) for a scheduled / changed push. (Built since:
+    `accountsLinkedTo` / `liveClassStudentIds`.)
+
+## Families are told: homework, exam dates, results, and a reminder the day before, 2026-10-12
+
+A student and their guardians now get a push when a teacher posts homework, sets,
+changes or clears an exam's date, or releases a result (or types a paper mark after
+the release), and a reminder the afternoon before homework is due. Spec Part 4 of
+`docs/superpowers/specs/2026-10-11-family-school-views-design.md` (rewritten as built
+— see its section 4). **The reminder is built but inert: nothing sends it until the
+owner creates `INTERNAL_CRON_KEY` and a Cloud Scheduler job** (checklist below). The
+other three pushes need no setup beyond the merge. Everything is gated on
+`STUDENT_ACCOUNTS`, which is already `true` in production, so on merge these reach
+real family accounts — **none of it has been seen arriving on a phone.**
+
+- **What exists, per push.** All four go through one sender, `lib/familyPush.ts`
+  (`sendFamilyPush`): the caller says which roster rows the news is about, the sender
+  finds the accounts linked to them (`self` and `guardian`, via `accountsLinkedTo` /
+  `liveClassStudentIds` in `lib/familyAccess.ts` — the "roster row → accounts" lookup
+  Part 3 asked for), drops suspended accounts and anyone who switched that category
+  off, sends to every device of each, and deletes the tokens Expo says are dead.
+  The parent `key` of `/parent/exams` is a name-grouped child and is never used: pushes
+  resolve through roster rows. A guardian of two children gets one push per child, the
+  child named first («سارة: واجب جديد», so no verb has to agree with a name); a student
+  gets the generic text. Texts are Arabic only (`modules/notifications/familyPushText.ts`).
+  - **Homework posted** (`POST /homework`): the class's live students and their guardians,
+    channel `homework`. Changing a due date pushes nothing.
+  - **Exam date set / changed / cleared** (`PATCH /evaluations/:id`): only when the stored
+    date or time actually moves, on an exam families can see (published or closed,
+    attached to a live class, not archived), to that exam's audience (a group check
+    reaches its own students). A class newly attached to a dated exam hears the date as
+    `set`; publishing a dated draft announces it as `set`; a dated draft or an exam with
+    no class pushes nothing. Channel `exams`. Moving a dated exam to another class tells
+    the new class only.
+  - **Results**: `announceResultsRelease` moved onto the shared sender, so it now skips
+    provisional sittings, suspended accounts and switched-off accounts; it still
+    announces again after hide → release. A mark typed **after** the release
+    (`PUT /evaluations/:id/paper-totals`, rows that answer `saved`) gets the same text,
+    to that child's family only. Channel `results`. **It is now gated on
+    `STUDENT_ACCOUNTS` like the others** (a review ruling: the exemption the plan gave it
+    contradicted its own reason, because `/student/exams` and `/parent/exams` answer 403
+    while the flag is off) — the plan's "results keep their old behaviour" is no longer
+    true on that one point.
+  - **Reminder** (`POST /internal/homework-reminders`, `routes/internal.ts` →
+    `lib/homeworkReminders.ts`): homework due tomorrow (Amman day), not archived, in a
+    live class, per live roster row. Ticked → nothing. Not ticked and the row has an
+    account that can tick (a **non-suspended** `self` link) → the student and guardians are
+    told it is not marked done. No such account → guardians only, told when it is due,
+    never that it is "not done". Claimed per (homework, due day) in `homework_reminders`
+    **before** sending, so a double fire or a scheduler retry sends nothing twice; a send
+    that fails after the claim is lost for that day, and a failed claim for one homework
+    does not stop the run. Guarded by `x-internal-key` = `INTERNAL_CRON_KEY`
+    (constant-time compare; **404 for a wrong, missing or unset key**), mounted as
+    `router.use("/internal", …)` with a path prefix and covered by a `mountOrder.test.ts`
+    case (404, never 401).
+- **Switches.** `users.push_prefs` (jsonb, `{}` = all on, only an explicit `false` turns
+  one off; `modules/notifications/pushPrefs.ts`), `GET|PUT /auth/me/push-preferences` for
+  any signed-in account (`{ preferences: { homework, exams, results } }`; a PUT stores
+  only the keys sent; unknown keys beside a known one are dropped, a body with none is
+  400), and three switches in Settings for parents and students («الواجبات»,
+  «مواعيد الامتحانات», «النتائج»), web included. The homework switch also governs the
+  reminder. Chat messages are not governed by them.
+- **Quiet hours.** 22:00–07:00 Asia/Amman (`modules/notifications/quietHours.ts`): the push
+  is still sent, to the new silent Android channel `quiet` with `sound: null` — the
+  channel, not the message, because on Android 8+ the sound belongs to the channel.
+  `PUSH_QUIET_HOURS=off` disables it (the tests do). Chat and admin pushes are untouched.
+- **`pushWithin`** (`lib/pushWithin.ts`): the teacher-triggered pushes (homework, exam
+  date, paper marks) are awaited before the response, capped at 4 s and never throwing,
+  because Cloud Run throttles CPU once a response is sent. `sendExpoPush` also gained an
+  8 s abort per chunk. **The release announcement is still fire-and-forget**, as are chat
+  pushes (CLAUDE.md, *Work after `res.json`*).
+- **Schema.** Migration `0008_nappy_lenny_balinger`, additive: `users.push_prefs jsonb NOT
+  NULL DEFAULT '{}'` and the `homework_reminders` table (unique on homework + due date,
+  cascading). No destructive flag was needed. Applied to an empty Postgres and
+  `verify-schema` run against it (53 of 53 tables). Main's journal had ended at idx 6 when
+  this was written: re-check before merge that nobody else took 0007/0008.
+- **App (ships by OTA, no native change, no `app.json` `version` bump).** Channels
+  `homework`, `exams` and `quiet` are created at runtime from `PUSH_CHANNELS`
+  (`services/pushPolicy.ts`; `quiet` is `importance: low` with no sound or vibration, and
+  a parity test pins the app's list against the server's `PUSH_CHANNEL`).
+  `data.screen: "school"` opens the School tab (`services/notificationDeepLink.ts`). The
+  permission prompt now mentions homework and exam dates. Settings: `pushPrefs*` copy,
+  `services/pushPrefs.ts`, `services/pushPrefsApi.ts`.
+- **Pinned by tests** (DB files run the built bundle against a real Postgres and an
+  in-process Expo stub, `test-support/pushStub.ts`; **47 DB tests across the six files**):
+  `pushPreferences.db.test.ts` (7), `resultsPush.db.test.ts` (8), `homeworkPush.db.test.ts`
+  (8), `examDatePush.db.test.ts` (12), `paperTotalsPush.db.test.ts` (7),
+  `homeworkReminders.db.test.ts` (5); pure rules in `modules/notifications/__tests__/`
+  (`pushPrefs`, `quietHours`, `familyPush`, `familyPushText`, `examDateNotice`,
+  `reminders`), `lib/__tests__/pushWithin.test.ts`, `pushNotifications.test.ts`; mobile
+  `pushPolicy`, `pushPrefs`, `notificationDeepLink`. **Counts as of the commit that wrote
+  this section:** api-server 1894 tests, 1894 pass, 0 fail, 0 skipped (built bundle,
+  Postgres on `127.0.0.1:55432`, `REQUIRE_DB_TESTS=true`); mobile 4150 tests, 4140 pass, 0
+  fail, 10 skipped (the 10 skips predate this work); `pnpm run typecheck` clean.
+  **Mutation-proven** — each rule removed, rebuilt, the named test seen red, then restored:
+
+  | Removed | Went red |
+  | --- | --- |
+  | merge of a switch change replaced by an overwrite | `merges a second change…`, `turns a switch back on` (pushPreferences) |
+  | the refusal body in `PUT /me/push-preferences` | `refuses a body that changes nothing…` |
+  | `authMiddleware` on the PUT | mountOrder `guards the notification switches` |
+  | `>=` → `>` at 22:00 | quietHours `starts at 22:00 Amman` |
+  | `quiet` removed from the app's channels | `has a silent night channel`, `creates every channel the server sends to` |
+  | second `then` in `pushWithin` | `never throws, whether the work rejects or throws synchronously` |
+  | the abort `signal` on the Expo fetch | the two abort tests in `pushNotifications.test.ts` |
+  | dead-token branch of the Expo stub | `answers DeviceNotRegistered for a token marked dead` |
+  | `isProvisional = false` in `finalResultStudentIds` | `tells nobody about a paper still being marked` |
+  | suspended-account drop in the sender | unit `drops a suspended account` + DB `skips a suspended guardian` |
+  | the per-category switch check | unit `drops an account that switched THIS category off` + DB `honours the results switch` |
+  | pruning of dead tokens | resultsPush pruning case |
+  | `await pushWithin(…)` around the homework push | tests 1–5 and 8 of `homeworkPush` |
+  | `void` instead of `await` | `waits for the push before answering` |
+  | `archivedAt` filter on roster rows | `never reaches an archived roster row` |
+  | the `STUDENT_ACCOUNTS` check in the sender | `pushes nothing … while student accounts are off` |
+  | the past-due-day guard (`<` and `<=` variants) | homework test 8; exam `saves a date in the past…`, `still pushes a date that is today` |
+  | `examVisibleToFamilies` → "has a class" | the draft cases (unit + 2 DB) |
+  | audience filter on a group check | `tells a group check's students only` |
+  | the equality line (nothing moved → nothing said) | unit + DB `says nothing when a save does not move…` |
+  | `releaseResultsToStudent &&` in paper-totals | `pushes nothing for a mark typed before the release` |
+  | `status !== "error"` instead of `saved` only | `says nothing when the same mark is saved again` |
+  | `claimed.length === 0` skip | reminders: second run, and cases 4–5 |
+  | `gte` for `gt` in the due window | case 2 (`rm-today` appears) |
+  | "no account" read as tracked | unit + 2 DB cases |
+  | `if (row.done) return null` | unit + DB case 2 |
+  | route open when the key is unset | case 1 (and 2) |
+  | suspended self links counted as accounts | case 5 (suspended student) |
+  | `Object.hasOwn(SCREEN_ROUTES, …)` → `in` | `ignores screens that are not whitelisted` |
+
+  **The racing-PATCH guard did not go red.** The exam PATCH's announcing write is
+  conditional on what the request read (`stillHolds` on class, date, time), so two
+  identical racing saves *should* announce at most once. Removing all three conditions
+  left the race case green three times, and an eight-way version three more times: the
+  requests serialise too tightly in this harness for the read and the write to
+  interleave. The case was deleted rather than kept as a test that proves nothing, so the
+  guard is correct by construction and **unproven by any test**.
+- **Owner's checklist after merge.**
+  1. The merge deploys the API (with migration `0008`) and the web app, and
+     `mobile-update.yml` publishes the OTA that carries the channels, the tap target
+     and the switches. Check `/api/healthz/version` matches the merge commit.
+  2. Run `docs/deploying.md` «The homework reminder» steps 1–6 in one shell, because
+     **until then no reminder is ever sent**. Step 4 sends real pushes if any
+     homework is due tomorrow.
+  3. On a real Android phone: sign in as a parent of a child in a class, grant
+     notifications, then from the teacher account post homework to that class. The push
+     should appear under «الواجبات», and tapping it should open «المدرسة». Set an exam
+     date and confirm «موعد امتحان» arrives. Type a paper mark after releasing and
+     confirm «نتيجة …» arrives. Turn «الواجبات» off in Settings, post again, and confirm
+     nothing arrives. Do it once after 22:00 Amman as well, to see the silent channel.
+  4. The next day after 16:00 Amman, read the `homework reminders run` log line
+     (`gcloud logging read` in the deploying.md section).
+  5. Acknowledge two decisions the code made for you: a guardian's lock-screen text
+     carries the child's roster name («نتيجة سارة» was already the precedent), and the
+     Arabic push copy was written without a native reader.
+- **Not seen.** Delivery to any real device; the OTA on a phone; the `quiet` channel at
+  night; Cloud Scheduler firing; the Secret Manager and scheduler commands (not run from
+  here); the `jsonPayload.msg` filter in the deploying.md logging command (the logger is
+  pino with the default `msg` key, but no Cloud Run log was read). The Settings card, as
+  of the commit that wrote this section, was typechecked only: its pure `pushPrefs.ts` is
+  tested, the screen and `pushPrefsApi.ts` are not (`apiClient` cannot load under
+  `node --test`). The visual check of the card (parent, teacher, student, Arabic and
+  English at 360 px) is recorded in a later commit.
+- **Known gaps** (one line each, with the reason):
+  - **Pushes for PAST-dated homework and exam dates are skipped by design** (a back-dated
+    entry is a record, not news; the API allows homework 30 days back). A cleared exam
+    date is always told.
+  - Two simultaneous publishes of one dated draft can both announce (a conditional write
+    inside the share-code retry loop would fix it; left out on purpose).
+  - Two simultaneous PATCHes of one exam with DIFFERENT dates: the loser's value is
+    stored without an announcement (families can briefly hold the other date). Identical
+    races *should* announce once, **unproven** — see above.
+  - A sitting handed in after the release through `POST /attempts/:id/submit` or the
+    student link is not pushed. A child with no final result row (never sat, or still
+    provisional) is never pushed.
+  - Hide → release announces again; a corrected paper mark after the release is
+    announced again (no memory of past announcements without a column).
+  - Moving a dated exam to another class tells the new class only.
+  - Night pushes land in `quiet`, so an Android-level mute of «الواجبات» does not
+    silence them (the in-app switch does). **An app on a build from before this OTA** has
+    no `quiet`, `homework` or `exams` channel: its pushes arrive in Android's fallback
+    channel, and a *night* push there **rings with sound**. Never seen on a device;
+    expo-notifications falls back rather than dropping it (the fallback described in
+    «Push: asked for in context, one Android channel per kind…, 2026-10-06»).
+  - Lock-screen texts carry the child's roster name for guardians (precedent «نتيجة
+    سارة») — for the owner to acknowledge.
+  - The Arabic push copy has not been read by a native speaker.
+  - A reminder whose send fails after its claim is lost for that day.
+  - The reminder run is sequential and could exceed Cloud Scheduler's 300 s attempt
+    deadline for a very large school; the handler keeps running and a retry finishes the
+    rest without repeating any (claims are written as it goes).
+  - The reminder's `hasAccount` counts only non-suspended `self` links, so a suspended
+    student's guardians get the softer "when it is due" text, not "not done".
+  - The release announcement and chat pushes are still fire-and-forget, so Cloud Run's CPU
+    throttling can delay them.
+  - Pushes are Arabic only; `preferredLanguage` is ignored, as before.
+  - Test gaps: the reminder case "moved to tomorrow" cannot show a homework that was
+    claimed and then moved; date tests compare the test's Amman "today" with the server's
+    and could flake in a run that straddles Amman midnight; the mountOrder right-key case
+    cannot tell a 200 from a 500; there is no integration case for a guardian with two
+    final children, and none for a `set` with a past date after publish.
+  - A mobile test run reports 10 skips — pre-existing, none from this work.
 
 ## Messages can be reacted to with an emoji, 2026-10-10
 
@@ -18210,6 +18411,8 @@ against the local stack:
 
 ## Students are told when results are released; state reaches screen readers, 2026-10-04
 
+*Since 2026-10-12 this announcement goes through the shared family sender and also skips provisional papers, suspended accounts and switched-off accounts — see «Families are told…», 2026-10-12.*
+
 **A release now announces itself.** When «أعلن النتائج للطلبة» turns a
 release on (`lib/resultsReleaseNotify.ts`, after the route has answered):
 
@@ -18297,7 +18500,9 @@ to system settings once Android will no longer prompt.
 
 **Android channels.** Every push used to land in Android's single catch-all
 channel, so muting one kind muted all of them. There are now `messages`,
-`results`, `reminders`, and `admin` (system admins only). They are created and
+`results`, `reminders`, and `admin` (system admins only), and since 2026-10-12
+also `homework`, `exams` and the silent night channel `quiet` (see «Families are
+told…»). They are created and
 named in the app's language by the tab layout. The server names a channel on
 every push (`PUSH_CHANNEL` in `lib/pushNotifications.ts`), and the English
 Hub's local reminder names `reminders`. `pushPolicy.test.ts` reads the

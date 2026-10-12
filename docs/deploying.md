@@ -456,6 +456,78 @@ Rotating a credential retires its old value from those revisions too, which is
 the real fix. `gcloud secrets versions access` prints the value by design — it
 is the one command that should, so never run it into a transcript.
 
+### The homework reminder (Cloud Scheduler) — manual, once
+
+`POST /api/internal/homework-reminders` sends the day-before homework reminder
+(spec Part 4). It answers **404 to everyone until `INTERNAL_CRON_KEY` is on the
+service** — so after a merge it is deployed but inert. Nothing in `deploy.yml`
+refers to the secret, on purpose: a `--update-secrets` ref to a secret that does
+not exist yet fails every Cloud Run deploy. Attach it by hand; `deploy.yml`'s
+`--update-env-vars` keeps it from then on, like the other ten.
+
+**The key value must never be echoed, printed or pasted into a transcript** —
+which is why this recipe generates it into a shell variable and never reads it
+back from Secret Manager (`gcloud secrets versions access` prints it; see the
+warning above). Run steps 1–5 in **one shell session**, so `$KEY` is still set
+when steps 4 and 5 need it. If the session is lost before step 5, do not read
+the secret back: rotate (see the end of this section).
+
+```bash
+P="--project iqraa-auth-507315"
+URL=https://iqraa-api-613126375862.europe-west1.run.app/api/internal/homework-reminders
+# 1. The secret: a long random value, kept in $KEY (never echo it), no trailing newline.
+KEY=$(openssl rand -hex 32)
+printf %s "$KEY" | gcloud secrets create INTERNAL_CRON_KEY --data-file=- $P
+# 2. Let the API's runtime account read it.
+gcloud secrets add-iam-policy-binding INTERNAL_CRON_KEY $P \
+  --member=serviceAccount:613126375862-compute@developer.gserviceaccount.com \
+  --role=roles/secretmanager.secretAccessor
+# 3. Put it on the service (rolls a new revision).
+gcloud run services update iqraa-api --region europe-west1 $P \
+  --update-secrets=INTERNAL_CRON_KEY=INTERNAL_CRON_KEY:latest
+# 4. Check by hand — this SENDS real pushes and CLAIMS tomorrow's homework for the reminder, so the
+#    scheduled run later today sends nothing for the same homework. {"homework":N,"pushed":M}; 404 = step 3 missing.
+curl -sS -X POST -H "x-internal-key: $KEY" "$URL"
+# 5. The daily job: 16:00 Amman. (`gcloud services enable cloudscheduler.googleapis.com $P` first if asked.)
+gcloud scheduler jobs create http homework-reminders $P \
+  --location europe-west1 \
+  --schedule "0 16 * * *" --time-zone "Asia/Amman" \
+  --uri "$URL" \
+  --http-method POST \
+  --headers "x-internal-key=$KEY,Content-Type=application/json" \
+  --message-body '{}' \
+  --attempt-deadline 300s
+# 6. Fire it once now, and see that it ran (a second run the same day claims nothing).
+gcloud scheduler jobs run homework-reminders --location europe-west1 $P
+gcloud scheduler jobs describe homework-reminders --location europe-west1 $P \
+  --format='value(lastAttemptTime,status)'
+gcloud logging read 'resource.labels.service_name="iqraa-api" AND jsonPayload.msg="homework reminders run"' \
+  $P --limit 5 --freshness 1d
+unset KEY   # when done
+```
+
+The job stores the key in its own config, readable by anyone with
+`cloudscheduler.jobs.get`. **Rotate both together**, never by reading the old
+value back:
+
+```bash
+KEY=$(openssl rand -hex 32)
+printf %s "$KEY" | gcloud secrets versions add INTERNAL_CRON_KEY --data-file=- $P
+gcloud run services update iqraa-api --region europe-west1 $P \
+  --update-secrets=INTERNAL_CRON_KEY=INTERNAL_CRON_KEY:latest --update-labels rotated=$(date +%Y%m%d)
+gcloud scheduler jobs update http homework-reminders --location europe-west1 $P \
+  --update-headers "x-internal-key=$KEY,Content-Type=application/json"
+```
+
+This rotation is also the way out if the shell session was lost before step 5.
+
+A rerun the same day is safe: each homework is reminded at most once per due day
+(`homework_reminders`, claimed before sending), and a send that fails after its
+claim is not retried. One failing homework does not stop the run. The run is
+sequential, so a very large school could outlast the job's 300 s attempt
+deadline; the handler keeps running, and a retry finishes the rest without
+repeating any (claims are written as it goes).
+
 ## The Android app (Google Play)
 
 **Nothing publishes the Android app automatically, on any path.** Both build

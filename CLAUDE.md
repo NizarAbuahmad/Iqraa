@@ -350,3 +350,18 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   `available`…) and shows no mark. The paper-totals mark book
   (`lib/paperTotals.ts`) calls both for that reason. `writeTeacherMark` also
   does not check ownership — the caller must. Pinned by `paperTotals.db.test.ts`.
+- **Work after `res.json` may never run on Cloud Run.** The API deploys
+  without `--no-cpu-throttling`, so once a response is sent the instance's CPU
+  is throttled and fire-and-forget work (`promise.catch(log)` after
+  `res.json`) can stall until some later request wakes it. The family pushes
+  (homework posted, exam date, paper marks) therefore `await pushWithin(…)`
+  before answering — capped at 4 s, never throwing (`lib/pushWithin.ts`). The
+  chat and release-announcement pushes are still fire-and-forget; move them
+  the same way if their delivery ever looks late.
+- **A secret ref in `deploy.yml` before the secret exists fails every deploy.**
+  `gcloud run deploy --update-secrets NAME=NAME:latest` refuses a secret Secret
+  Manager does not have, and that breaks every merge, not just the one that
+  added it. New secrets are attached by hand once (`gcloud run services update
+  --update-secrets`), and `--update-env-vars` deploys keep them — see
+  `INTERNAL_CRON_KEY` in docs/deploying.md. Code reading one must work, or
+  fail closed, while it is unset.

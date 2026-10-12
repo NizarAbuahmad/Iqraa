@@ -147,6 +147,20 @@ restart. For a cap that survives that (and covers you if this guard has a
 bug), also set a hard usage limit on the OpenAI account itself under
 Settings → Billing → Usage limits.
 
+### Family push notifications (optional)
+
+Homework posted, exam dates, results and the day-before homework reminder are
+pushed through `lib/familyPush.ts` (spec Part 4). Three variables touch them,
+none needed for ordinary local work:
+
+| Variable | Default | Notes |
+|----------|---------|--------|
+| `EXPO_PUSH_URL` | unset → `https://exp.host/--/api/v2/push/send` | A **test seam**, read on every send by `sendExpoPush` (`lib/pushNotifications.ts`). Point it at a local catcher to see the requests leave; the DB tests point the built server at an in-process stub (`test-support/pushStub.ts`) and `startServer.ts` sets it to a dead port by default, so a test can never reach Expo. Leave it unset in production. |
+| `PUSH_QUIET_HOURS` | unset (quiet hours on) | Exactly `off` disables the 22:00–07:00 Amman window in which family pushes go to the silent `quiet` channel (`modules/notifications/quietHours.ts`). The DB tests set it so no assertion depends on the time of day. Chat and admin pushes ignore it. |
+| `INTERNAL_CRON_KEY` | unset → the route answers 404 | The shared key Cloud Scheduler sends as `x-internal-key` to `POST /api/internal/homework-reminders` (`routes/internal.ts`). Unset, empty or wrong all look the same: 404. Locally, set any string and `curl -X POST -H "x-internal-key: <it>" localhost:8080/api/internal/homework-reminders` runs the reminder (it needs `STUDENT_ACCOUNTS=true` and a database). In production it is a Secret Manager secret attached by hand — `docs/deploying.md`, «The homework reminder». |
+
+Family pushes also need `STUDENT_ACCOUNTS=true`; with it off they send nothing.
+
 ### Legacy / Replit-only (not required locally)
 
 | Variable | Status |
