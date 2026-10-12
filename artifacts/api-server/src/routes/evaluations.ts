@@ -738,12 +738,12 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
         previousQuestions.map(q => ({ text: questionStem(q.body as Record<string, unknown>) })),
       );
 
-      const runLlm = (avoidList: readonly string[], insistent: boolean) => generateWithModel(
+      const runLlm = (avoidList: readonly string[], insistent: boolean, count = evaluation.targetQuestionCount) => generateWithModel(
         {
           objectives,
           gradeId: evaluation.gradeId,
           assessmentTypes: evaluation.assessmentTypes,
-          count: evaluation.targetQuestionCount,
+          count,
           difficulty: evaluation.difficulty,
           language: evaluation.language,
           bookExcerpts: grounding?.block,
@@ -757,7 +757,9 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
             // Room for a full paper of questions with options and rubrics. A
             // truncated response parses to something plausible, which is worse
             // than an error.
-            max_completion_tokens: 8000,
+            // Scaled to the paper: 30 questions with options and rubrics do not
+            // fit the 8000 that suits ten, and reasoning tokens bill against it.
+            max_completion_tokens: Math.min(24000, Math.max(8000, 2000 + 700 * evaluation.targetQuestionCount)),
             messages: [
               { role: "system", content: prompt.system },
               { role: "user", content: prompt.user },
@@ -790,6 +792,26 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
             "evaluation regeneration repeated most of the previous paper — retrying once",
           );
           llm = await runLlm(avoid, true);
+        }
+      }
+
+      // A reply can be well-formed and still short: asked for 20, a model will
+      // often send 10 and stop. Ask once more for only what is missing, with the
+      // stems already written so the second batch is new questions. Best effort
+      // — the paper is served short, and the shortfall warning says so, if it fails.
+      const missing = evaluation.targetQuestionCount - llm.questions.length;
+      if (missing > 0) {
+        logger.warn(
+          { evaluationId: evaluation.id, asked: evaluation.targetQuestionCount, got: llm.questions.length },
+          "evaluation came back short — asking for the rest",
+        );
+        try {
+          const have = signatureLines(llm.questions.map(q => ({ text: questionStem(q.body) })));
+          const more = await runLlm([...avoid, ...have], false, missing);
+          llm.questions.push(...more.questions);
+          llm.notes.push(...more.notes);
+        } catch (err) {
+          logger.warn({ err, evaluationId: evaluation.id }, "evaluation top-up failed - serving the short paper");
         }
       }
 
