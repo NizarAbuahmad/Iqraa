@@ -111,6 +111,14 @@ describe("the planned day", () => {
 });
 
 describe("a paper exam", () => {
+  it("never offers a link once a student has handed one in", () => {
+    // Pins the `!paper &&` in offerLink: without it a handed-in student_link sitting on a paper exam could re-open a link.
+    // (Adapt the attempt literal to the helper's real signature in this file.)
+    const row = rowOf(exam({ paper: true }), { status: "graded", startedAt: NOW, submittedAt: NOW, source: "student_link" }, null, NOW);
+    assert.equal(row.state, "submitted");
+    assert.equal(row.shareCode, null);
+  });
+
   it("is 'paper' with no link while nothing is marked", () => {
     const row = rowOf(exam({ paper: true }), null, null, NOW);
     assert.equal(row.state, "paper");
@@ -827,7 +835,7 @@ Expected: FAIL on `examDate` (undefined), the paper state (`available`), and the
 
 - [ ] **Step 6: Run to verify pass.** Same command → all pass. Then the full api-server suite: `pnpm build && TEST_DATABASE_URL=… REQUIRE_DB_TESTS=true pnpm test` → 0 failures, 0 skipped; `pnpm run typecheck` at the root.
 
-- [ ] **Step 7: Mutation proof** (report each, revert each): (a) in `studentExamRow` remove `!paper &&` from `offerLink` → "offers no link and no Start" goes red; (b) in `/parent/exams` drop `.map(guardianExamRow)` → "never hands a parent a link" goes red; (c) in `examRowsFor` change `["published", "closed"]` to `["draft", "published", "closed"]` → "never lists a dated draft" goes red; (d) remove `examDate` from the select → "carries each exam's planned day" goes red.
+- [ ] **Step 7: Mutation proof** (report each, revert each): (a) in `studentExamRow` remove `!paper &&` from `offerLink` → the Task 1 unit test "never offers a link once a student has handed one in" goes red (the DB test alone cannot catch it: for state `paper` the link is already off by the state list); (b) in `/parent/exams` drop `.map(guardianExamRow)` → "never hands a parent a link" goes red; (c) in `examRowsFor` change `["published", "closed"]` to `["draft", "published", "closed"]` AND delete the draft early-return in `studentExamRow` (`modules/assessment/studentExams.ts` ~L101) → "never lists a dated draft" goes red (changing the status list alone cannot go red: `studentExamRow` already drops a draft with no hand-in, which Task 1 pins); (d) remove `examDate` from the select → "carries each exam's planned day" goes red.
 
 - [ ] **Step 8: Commit**
 
@@ -1261,8 +1269,9 @@ import assert from "node:assert/strict";
 
 import { PAPER_TOTALS_MAX_ROWS, clearDecision, parsePaperTotals } from "../paperTotals.ts";
 
-const A = "11111111-1111-4111-8111-111111111111";
-const B = "22222222-2222-4222-8222-222222222222";
+// Hex LETTERS in the ids on purpose: all-digit ids are their own upper case, so a case test would pass without `.toLowerCase()`.
+const A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const B = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 
 describe("parsePaperTotals", () => {
   it("accepts numbers, numeric strings and null, and lower-cases ids", () => {
@@ -3106,7 +3115,7 @@ const styles = StyleSheet.create({
 
 - [ ] **Step 2: Entry from the evaluation screen** (`app/evaluations/[id]/index.tsx`).
   - Import `isPaperExam, isQuickPaperExam` from `'@/services/paperMarks'`. After `questions` is derived: `const paperExam = isPaperExam(questions); const quickPaper = isQuickPaperExam(questions);`
-  - `ShareLinkCard` gets a `paper: boolean` prop (pass `paper={paperExam}`). At the very top of `ShareLinkCard`, before `if (!shareCode) return null;`:
+  - `ShareLinkCard` gets a `paper: boolean` prop (pass `paper={paperExam}`). Directly AFTER the existing `const [copied, setCopied] = useState(false);` (never above any hook: `questions` starts empty and loads, so `paper` flips false → true and an early return above a hook changes the hook count) and before `if (!shareCode) return null;`:
 
 ```tsx
   // A paper exam is sat in class: its code would open a paper with nothing on
@@ -3130,7 +3139,7 @@ const styles = StyleSheet.create({
 ```
 
     (The literal sizes copy the card's own; 20/16/15/13 are all on the `SPACE`/`TYPE` scales, so the ratchet does not move. Run `designScale.test.ts` anyway.)
-  - In the `status === 'published'` actions block, when `quickPaper`, render a primary `Pressable` «`marksGridBtn`» (`styles.enterAnswersBtn`, `create-outline` icon) that pushes `{ pathname: '/evaluations/[id]/marks', params: { id: evaluation.id } }`, and render the existing «`enterAnswersBtn`» button with the outline look of `styles.resultsBtn` instead of the filled one. Otherwise unchanged.
+  - In the `status === 'published'` actions block, when `quickPaper`, render a primary `Pressable` «`marksGridBtn`» (`styles.enterAnswersBtn`, `create-outline` icon) that pushes `({ pathname: '/evaluations/[id]/marks', params: { id: evaluation.id } } as never)`, and render the existing «`enterAnswersBtn`» button with the outline look of `styles.resultsBtn` instead of the filled one. Otherwise unchanged.
 
 - [ ] **Step 3: Entry from the answers picker** (`app/evaluations/[id]/answers/index.tsx`). Import `isQuickPaperExam` from `'@/services/paperMarks'`. Add `const [quickPaper, setQuickPaper] = useState(false);` and change the focus-effect line to `getEvaluation(id).then(d => { setAudience(d.audience ?? null); setQuickPaper(d.evaluation.status === 'published' && isQuickPaperExam(d.questions)); }).catch(() => {});`. Directly below the error box, when `quickPaper`:
 
@@ -3138,7 +3147,7 @@ const styles = StyleSheet.create({
       {quickPaper ? (
         <Pressable
           accessibilityRole="button"
-          onPress={() => router.push({ pathname: '/evaluations/[id]/marks', params: { id: id as string } })}
+          onPress={() => router.push(({ pathname: '/evaluations/[id]/marks', params: { id: id as string } } as never))}
           style={[styles.card, { backgroundColor: colors.card, borderColor: ACCENT, marginHorizontal: SPACE.xl, marginTop: SPACE.lg }]}
         >
           <Ionicons name="grid-outline" size={18} color={ACCENT} />
