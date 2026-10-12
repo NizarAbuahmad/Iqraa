@@ -19,6 +19,7 @@ import {
   bookCitation,
   bookItemsForLesson,
   bookStatusLabel,
+  displayMath,
   takeBookItem,
   type BookItem,
 } from '../bookItems.ts';
@@ -144,5 +145,37 @@ describe('book items — the reader', () => {
     const computed = items.find(i => i.status === 'computed')!;
     assert.equal(bookStatusLabel(computed, 'ar'), 'الحل محسوب من نص السؤال');
     assert.equal(bookStatusLabel({ ...computed, status: 'verified' }, 'ar'), null);
+  });
+});
+
+describe('displayMath — typing notation to display notation', () => {
+  it('turns ^digits into superscripts', () => {
+    assert.equal(displayMath('x^2'), 'x²');
+    assert.equal(displayMath('x^12'), 'x¹²');
+    assert.equal(displayMath('y^2 = 0.5x^2'), 'y² = 0.5x²');
+    assert.equal(displayMath('a^0 b^3 c^45 d^6789'), 'a⁰ b³ c⁴⁵ d⁶⁷⁸⁹');
+  });
+
+  it('turns every ASCII hyphen into a minus sign', () => {
+    assert.equal(displayMath('y = x^2 - 3x + 2'), 'y = x² − 3x + 2');
+    assert.equal(displayMath('y = -x^2 -5x- 6'), 'y = −x² −5x− 6');
+    assert.equal(displayMath('(1, 4), (-5, -20)'), '(1, 4), (−5, −20)');
+  });
+
+  it('closes the gap in f (x)', () => {
+    assert.equal(displayMath('f (x) = -6x'), 'f(x) = −6x');
+    assert.equal(displayMath('f (x) = 3.2x'), 'f(x) = 3.2x');
+  });
+
+  it('leaves everything else alone', () => {
+    for (const same of ["√2 + 3", "x/2 = 0.75", "f'(x) = 2x", "2x + y = 7", "x ^ y", "x^", "g (x)", ""]) {
+      assert.equal(displayMath(same), same);
+    }
+    assert.equal(displayMath('x^2\ny = 3'), 'x²\ny = 3');
+  });
+
+  it('is idempotent', () => {
+    const once = displayMath('f (x) = -x^2 - 3');
+    assert.equal(displayMath(once), once);
   });
 });

@@ -122,6 +122,43 @@ describe("evaluation generator — real book items", () => {
     }
   });
 
+  it("shows students display notation, not typing notation", () => {
+    let seen = 0;
+    for (const seed of [1, 2, 3, 4, 5, 6]) {
+      for (const lessonId of [LESSON, "kbl-math-s1-nccd-u1_l2", "kbl-math-s2-nccd-u6_l2"]) {
+        const res = generate({ objectives: [objective(lessonId)], count: 10, seed });
+        for (const q of fromBook(res)) {
+          seen += 1;
+          const shown = [
+            q.body["prompt"], q.body["stem"],
+            ...((q.body["options"] as { text: string }[] | undefined) ?? []).map(o => o.text),
+            q.expectedAnswer["modelAnswer"],
+            ...((q.expectedAnswer["keyConcepts"] as string[] | undefined) ?? []),
+          ].filter((t): t is string => typeof t === "string").join("\n");
+          assert.ok(!shown.includes("^"), `a caret reached the screen: ${shown}`);
+          assert.ok(!shown.includes("-"), `an ASCII hyphen reached the screen: ${shown}`);
+          assert.ok(!/\bf \(/.test(shown), `"f (x)" reached the screen: ${shown}`);
+        }
+      }
+    }
+    assert.ok(seen > 0, "no book question was drawn, so this test proves nothing");
+  });
+
+  it("still self-marks when the option texts are converted for display", () => {
+    const grade = QUESTION_TYPES["multiple_choice"].grade!;
+    let checked = 0;
+    for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
+      const res = generate({ assessmentTypes: ["multiple_choice"], count: 6, seed });
+      for (const q of fromBook(res)) {
+        const draft = { type: q.type, body: q.body, expectedAnswer: q.expectedAnswer, rubric: q.rubric } as never;
+        const key = q.expectedAnswer["optionIds"] as string[];
+        assert.equal(grade(draft, { optionIds: key }).status, "correct");
+        checked += 1;
+      }
+    }
+    assert.ok(checked > 0);
+  });
+
   it("does not repeat an item within a paper", () => {
     const prompts = drawn(generate({ count: 9 })).map(q => String(q.body["prompt"] ?? q.body["stem"]));
     assert.equal(new Set(prompts).size, prompts.length);

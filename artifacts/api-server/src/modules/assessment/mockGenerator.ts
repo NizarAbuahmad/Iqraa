@@ -36,6 +36,7 @@ import {
   type BookItem,
   bookCitation,
   bookStatusLabel,
+  displayMath,
   takeBookItem,
 } from "@workspace/curriculum/bookItems";
 import type { Difficulty, QuestionType } from "@workspace/db";
@@ -507,7 +508,9 @@ function buildBookQuestion(
   difficulty: Difficulty,
   marks: number,
 ): GeneratedQuestion | null {
-  const prompt = `${item.instruction}\n${item.stem}`;
+  // Stored Latin, shown converted (x² / −): see displayMath. The instruction
+  // too — one of them carries maths («أجد قيمة f′(-1)»).
+  const prompt = displayMath(`${item.instruction}\n${item.stem}`);
   const common = {
     objectiveId: objective.id,
     competencyKey: competency,
@@ -529,8 +532,11 @@ function buildBookQuestion(
   };
 
   if (item.kind === "unit-test-mcq") {
-    const options = (item.options ?? []).map((text, i) => ({ id: `o${i}`, text }));
-    const correct = options.findIndex(o => o.text === item.computedAnswer);
+    // Find the key among the RAW strings, then convert for display: matching
+    // the converted text against the raw answer would never find it.
+    const raw = item.options ?? [];
+    const correct = raw.findIndex(o => o === item.computedAnswer);
+    const options = raw.map((text, i) => ({ id: `o${i}`, text: displayMath(text) }));
     // An answer not among the options would mark a correct student wrong, for
     // the whole class, with nothing to show why. Spend the item and fall through.
     if (options.length < 3 || correct < 0) return null;
@@ -547,7 +553,10 @@ function buildBookQuestion(
     ...common,
     type: "short_answer",
     body: { prompt },
-    expectedAnswer: { modelAnswer: item.computedAnswer, keyConcepts: [item.computedAnswer] },
+    expectedAnswer: {
+      modelAnswer: displayMath(item.computedAnswer),
+      keyConcepts: [displayMath(item.computedAnswer)],
+    },
     rubric: buildRubric(competency, marks),
     gradingMode: QUESTION_TYPES["short_answer"].defaultGradingMode,
   };

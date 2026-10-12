@@ -97,6 +97,21 @@ export function takeBookItem({ lessonId, kind, tier, session, rng = Math.random 
   return pick;
 }
 
+const SUPERSCRIPT = '⁰¹²³⁴⁵⁶⁷⁸⁹';
+
+/**
+ * A book stem as a student should read it. The stored text is the typing
+ * notation the extractor and SymPy work in (`x^2`, ASCII `-`, `f (x)`), and
+ * stays that way; this converts at display time only, to what the bank's own
+ * questions print: `x²`, `−` (U+2212), `f(x)`. Nothing else changes.
+ */
+export function displayMath(text: string): string {
+  return text
+    .replace(/\^(\d+)/g, (_, digits: string) => digits.replace(/[0-9]/g, d => SUPERSCRIPT[Number(d)]!))
+    .replace(/-/g, '\u2212')
+    .replace(/\bf \(/g, 'f(');
+}
+
 const arabicDigits = (n: number) => String(n).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[Number(d)]!);
 
 /** «كتاب التمارين ص ٧٢، س ١١» — Arabic digits at display time only. */
