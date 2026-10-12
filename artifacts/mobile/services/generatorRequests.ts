@@ -127,6 +127,12 @@ export function buildLessonPlanRequest(form: LessonPlanForm, grounding: Generato
     includePriorReview: usePrior || undefined,
     priorKnowledge: usePrior ? unitPrior : undefined,
     priorTopicsNotes: form.priorTopicsNotes.trim() || undefined,
+    // The Ministry form needs a learner role per stage. Asked for in the same
+    // call as the plan, so the roles match what the teacher reads — exporting
+    // later would mean a second generation that no longer does. Part of the
+    // strict cache key, and `pregenerate.ts` builds through here, so the pooled
+    // plan and the one this screen asks for are the same artifact.
+    ministryRoles: true,
   };
 }
 

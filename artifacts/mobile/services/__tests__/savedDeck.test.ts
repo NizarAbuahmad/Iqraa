@@ -92,3 +92,11 @@ describe('readFlagParam', () => {
     assert.equal(readFlagParam('maybe', true), true);
   });
 });
+
+describe('parseSavedDeck — the look survives a save', () => {
+  it('keeps the theme a teacher picked, and reads an older deck with none', () => {
+    const base = { activityName: 'x', slides: [{ slideNumber: 1, type: 'intro', title: 't', content: 'c', durationSeconds: 0 }] };
+    assert.equal(parseSavedDeck(JSON.stringify({ ...base, themeId: 'violet' }))?.themeId, 'violet');
+    assert.equal(parseSavedDeck(JSON.stringify(base))?.themeId, undefined);
+  });
+});

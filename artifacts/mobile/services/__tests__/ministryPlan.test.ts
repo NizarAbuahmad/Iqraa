@@ -132,6 +132,21 @@ describe('stagesFromLessonPlan', () => {
     assert.deepEqual(stagesFromLessonPlan({ ...base, ministryRoles: roles }), roles);
   });
 
+  it("takes the teacher column from the phases, and the learner column from the model, when the teacher edited the plan", () => {
+    const roles = [1, 2, 3, 4].map(i => ({ teacher: `model teacher ${i}`, learner: `model learner ${i}` }));
+    const st = stagesFromLessonPlan({ ...base, ministryRoles: roles }, { teacherFromPhases: true });
+    assert.deepEqual(st.map(s => s.teacher), ['a', 'b\nc', 'd', 'e']);
+    assert.deepEqual(st.map(s => s.learner), roles.map(r => r.learner));
+  });
+
+  it('keeps the model teacher text when the plan was not edited', () => {
+    const roles = [1, 2, 3, 4].map(i => ({ teacher: `model teacher ${i}`, learner: `model learner ${i}` }));
+    assert.deepEqual(
+      stagesFromLessonPlan({ ...base, ministryRoles: roles }, { teacherFromPhases: false }).map(s => s.teacher),
+      roles.map(r => r.teacher),
+    );
+  });
+
   it('falls back to the folded phases when the split is short or empty', () => {
     assert.equal(stagesFromLessonPlan({ ...base, ministryRoles: [{ teacher: 'x', learner: 'y' }] })[0].teacher, 'a');
     const blank = [1, 2, 3, 4].map(() => ({ teacher: ' ', learner: '' }));
