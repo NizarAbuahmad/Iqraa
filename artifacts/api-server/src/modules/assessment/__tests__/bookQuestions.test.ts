@@ -36,7 +36,7 @@ import {
 } from "../bookQuestions.ts";
 import type { GeneratedQuestion } from "../mockGenerator.ts";
 import { DUPLICATE_THRESHOLD, promptOf, stemSimilarity, validateGenerated } from "../validator.ts";
-import { MARKS_BY_COMPETENCY } from "../competency.ts";
+import { allocateQuestions, COMPETENCY_KEYS, MARKS_BY_COMPETENCY, remainingQuota } from "../competency.ts";
 
 const SYSTEMS = "kbl-math-s1-nccd-u1_l1";
 const DERIVATIVES = "kbl-math-s2-nccd-u6_l2";
@@ -411,6 +411,24 @@ describe("planBook", () => {
 
   it("k is exactly what planBookDraw returns, for every fixture", () => {
     for (const [name, req] of FIXTURES) assert.equal(planBook(req).k, planBookDraw(req), name);
+  });
+
+  it("the quota the route builds sums to the model's share (count - k) for every fixture, and its top-up rescale to what is missing", () => {
+    let checked = 0;
+    for (const [name, req] of FIXTURES) {
+      const { k, supplied } = planBook(req);
+      if (k === 0) continue;
+      const newByCompetency = allocateQuestions(req.count, req.difficulty ?? "standard", supplied.byCompetency);
+      const modelCount = req.count - k;
+      assert.equal(COMPETENCY_KEYS.reduce((s, c) => s + newByCompetency[c], 0), modelCount, name);
+      // A reply that wrote half of its share: the top-up quota sums to what is left.
+      const half = Math.floor(modelCount / 2);
+      const written = COMPETENCY_KEYS.flatMap(c => Array.from({ length: newByCompetency[c] }, () => ({ competencyKey: c }))).slice(0, half);
+      const rest = remainingQuota(newByCompetency, written, modelCount - half);
+      assert.equal(COMPETENCY_KEYS.reduce((s, c) => s + rest[c], 0), modelCount - half, name);
+      checked += 1;
+    }
+    assert.ok(checked > 10, "the fixtures must exercise real plans");
   });
 
   it("supplied is the summary of a draw of k with the plan's own seed", () => {

@@ -69,12 +69,18 @@ import {
   assembleLivePaper,
   drawBookQuestions,
   isBookItemsLiveOn,
-  planBookDraw,
+  planBook,
   previousBookItemIds,
 } from "../modules/assessment/bookQuestions.ts";
 import { relateAnswerKey } from "../lib/mathVerifierClient.ts";
 import { QUESTION_TYPES } from "../modules/assessment/questionTypes";
-import { COMPETENCY_KEYS, competencyForBlooms, type CompetencyKey } from "../modules/assessment/competency";
+import {
+  allocateQuestions,
+  COMPETENCY_KEYS,
+  competencyForBlooms,
+  remainingQuota,
+  type CompetencyKey,
+} from "../modules/assessment/competency";
 import { convertWorksheet } from "../modules/assessment/fromWorksheet.ts";
 import { parseWorksheetRequest } from "../modules/assessment/worksheetRequest.ts";
 import { isPaperQuestion, parsePaperRows } from "../modules/assessment/paperExam";
@@ -82,8 +88,9 @@ import { partitionForRegeneration } from "../modules/assessment/regeneration";
 import { aggregateClass, finishedAttempts } from "../modules/assessment/classInsights";
 import { generateShareCode } from "../modules/assessment/studentView";
 import {
-  GENERATION_PROMPT_VERSION,
   generateWithModel,
+  generationPromptVersion,
+  type LlmSupplied,
   paperIsMathematics,
   questionStem,
 } from "../modules/assessment/llmGenerator";
@@ -750,7 +757,7 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
       // the model is asked for that many fewer. When BOOK_ITEMS_LIVE is not
       // "true" (the default), `bookPlanned` is 0 and nothing below changes.
       const bookEnabled = isBookItemsLiveOn();
-      const bookPlanned = planBookDraw({
+      const plan = planBook({
         objectives,
         assessmentTypes: evaluation.assessmentTypes,
         count: evaluation.targetQuestionCount,
@@ -758,10 +765,39 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
         enabled: bookEnabled,
         difficulty: evaluation.difficulty,
       });
+      const bookPlanned = plan.k;
       const modelCount = evaluation.targetQuestionCount - bookPlanned;
 
-      // `count` defaults to the model's share; the top-up below passes what is missing.
-      const runLlm = (avoidList: readonly string[], insistent: boolean, count = modelCount) => generateWithModel(
+      // What the model is told the book supplies, and how many of each
+      // competency it should therefore write so the WHOLE paper lands on the
+      // target mix. Undefined when nothing is planned, so the request (and the
+      // prompt version) are exactly what they were before. `plan.supplied`
+      // counts the same k questions as `bookPlanned`, so the quota sums to
+      // `modelCount`; `buildGenerationPrompt` throws if that ever stops being true.
+      const supplied: LlmSupplied | undefined = bookPlanned > 0
+        ? {
+            ...plan.supplied,
+            count: bookPlanned,
+            paperTotal: evaluation.targetQuestionCount,
+            newByCompetency: allocateQuestions(
+              evaluation.targetQuestionCount,
+              evaluation.difficulty,
+              plan.supplied.byCompetency,
+            ),
+          }
+        : undefined;
+      // One value for the usage rows and the stored params: every batch of this
+      // paper (first, retry, top-up) carries the same `supplied` or none.
+      const promptVersion = generationPromptVersion({ supplied });
+
+      // `count` defaults to the model's share; the top-up below passes what is missing
+      // and a `suppliedFor` whose quota is rescaled to that count.
+      const runLlm = (
+        avoidList: readonly string[],
+        insistent: boolean,
+        count = modelCount,
+        suppliedFor: LlmSupplied | undefined = supplied,
+      ) => generateWithModel(
         {
           objectives,
           gradeId: evaluation.gradeId,
@@ -772,6 +808,7 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
           bookExcerpts: grounding?.block,
           avoid: avoidList,
           insistent,
+          ...(suppliedFor ? { supplied: suppliedFor } : {}),
         },
         async prompt => {
           const model = getGenerationModel();
@@ -790,7 +827,7 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
           });
           recordUsage(completion.usage, model, {
             kind: "quiz",
-            promptVersion: GENERATION_PROMPT_VERSION,
+            promptVersion,
             userId: req.user!.id,
           });
           return {
@@ -831,7 +868,15 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
         );
         try {
           const have = signatureLines(llm.questions.map(q => ({ text: questionStem(q.body) })));
-          const more = await runLlm([...avoid, ...have], false, missing);
+          const more = await runLlm(
+            [...avoid, ...have],
+            false,
+            missing,
+            supplied && {
+              ...supplied,
+              newByCompetency: remainingQuota(supplied.newByCompetency, llm.questions, missing),
+            },
+          );
           llm.questions.push(...more.questions);
           llm.notes.push(...more.notes);
         } catch (err) {
@@ -841,7 +886,7 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
 
       generator = "llm";
       modelId = llm.model;
-      generationParams["promptVersion"] = GENERATION_PROMPT_VERSION;
+      generationParams["promptVersion"] = promptVersion;
       generationParams["grounded"] = Boolean(grounding);
       generationParams["groundingSources"] = grounding
         ? grounding.sources.map(s => ({ sourceId: s.sourceId, page: s.page }))
@@ -870,6 +915,9 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
         generationParams["bookItems"] = {
           enabled: bookEnabled,
           planned: bookPlanned,
+          // What the model was told the book supplies (the dry run's summary,
+          // before the real draw); empty when nothing was planned.
+          supplied: plan.supplied,
           drawn: assembled.drawn,
           ids: assembled.questions
             .filter(q => q.aiMetadata["generator"] === "book")

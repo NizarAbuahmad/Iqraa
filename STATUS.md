@@ -981,8 +981,9 @@ read per request, so no rebuild; declared in `LOCAL_SETUP.md` and
 served items with the printed books. Design:
 `docs/superpowers/specs/2026-10-12-book-items-live-path-design.md`.
 
-- **How.** In `POST /evaluations/:id/generate` (maths only), `planBookDraw`
-  decides how many book questions (`k`): at most `floor(count / 2)` of the
+- **How.** In `POST /evaluations/:id/generate` (maths only), `planBook`
+  decides how many book questions (`k`) and summarises them (`supplied`: by type,
+  by competency, marks): at most `floor(count / 2)` of the
   REQUESTED count (if the model under-delivers, book questions can be more than
   half of the finished paper), never more
   than the eligible items for the requested types, and never more than a dry run
@@ -997,6 +998,20 @@ served items with the printed books. Design:
   "ask once more for what is missing" top-up is measured against the model's share
   (`count − k`), not the whole paper. With the flag off, or a
   non-maths subject, `k` is 0 and the model's paper passes through untouched.
+- **The model is told what the book supplies (since 2026-10-12).** When `k > 0`
+  the prompt gets a short block (`suppliedBlock` in `llmGenerator.ts`): the paper
+  has N questions, about `k` come from the book, how they split by type and by
+  competency, and "write about" a per-competency quota. The quota is
+  `allocateQuestions(count, difficulty, supplied.byCompetency)` over the WHOLE
+  paper, so the book's questions count towards the two-per-competency floor and
+  the mark shares and the model's `count − k` fills what they leave; it sums to
+  `count − k` (`buildGenerationPrompt` throws otherwise). The "ask once more" top-up
+  carries the same block with the quota rescaled to what is missing
+  (`remainingQuota`, `competency.ts`: take off what the model already wrote per
+  competency, then make the total equal `missing`). A paper made with the block
+  records `promptVersion` `exam-gen-6+book` in `generationParams` and on its
+  usage rows; flag off, non-maths or `k = 0` sends the request and records the
+  version exactly as before (`exam-gen-6`).
 - **Competency and marks are by kind and nominal.** An exercise is
   `application` (3 marks), a unit-test choice `understanding` (2 marks); the model
   picks its own for the rest. Like on the mock path, a book item's cognitive
@@ -1011,15 +1026,16 @@ served items with the printed books. Design:
   with `source: "ai"` like the model's, and is told apart by
   `aiMetadata.generator: "book"`. It shows its citation and key label on the
   evaluation screen. None carries a `check`, so none is badged verified.
-  `generationParams.bookItems = { enabled, planned, drawn, ids }` is written on
+  `generationParams.bookItems = { enabled, planned, supplied, drawn, ids }` (`supplied`
+  is the dry-run summary the model was told, empty when nothing was planned) is written on
   every live maths paper (not on the mock path, not on other subjects), so "why
   no book items" is answerable from the row when the flag is unset. A paper that
   drew fewer than planned says so in the response's `warnings` only: notes are
   returned with the HTTP response and never stored, so what persists is
   `generationParams.bookItems` `planned` against `drawn`.
 - **Not verified end to end.** The route's few lines of glue (the flag read,
-  `planBookDraw`, `modelCount`, `assembleLivePaper`, the `generationParams`
-  write) have no route-level test; they are covered by the typechecker and the
+  `planBook`, `modelCount`, the `supplied` request and its top-up rescale,
+  `assembleLivePaper`, the `generationParams` write) have no route-level test; they are covered by the typechecker and the
   helper tests in `modules/assessment/__tests__/bookQuestions.test.ts`. After
   turning the flag on, generate one maths evaluation and check
   `generationParams.bookItems` (`enabled: true`, `drawn` equal to `planned`; a
@@ -1027,14 +1043,14 @@ served items with the printed books. Design:
   `warnings` at generation time only) and, when the model delivered, that the
   paper is exactly the requested length.
 - **Known limits before turning the flag on.**
-  - The competency and type mix is skewed. The model is asked for `count − k` and
-    is not told the book supplies `k` questions, mostly short-answer 3-mark
-    application questions (and the odd 2-mark understanding choice), so the
-    competency targets (`COMPETENCY_TARGETS`) can be missed and the validator can
-    warn "Competency … has only 1 question". Warnings never block publishing.
-    The check after turning the flag on is to look at those warnings on one paper
-    per difficulty. Fixing it means telling the model what the book supplies, a
-    prompt change that needs a `GENERATION_PROMPT_VERSION` bump. Not done here.
+  - The competency mix is requested, not guaranteed. The quota is a request the
+    model may miss, so the validator can still warn "Competency … has only 1
+    question"; the check after turning the flag on is to look at those warnings
+    on one paper per difficulty. The real draw uses another seed than the dry run
+    and can differ from the summary the model was told by a question, so the block
+    says "about" for the count and the quota. Types are described to the model (counts
+    by type, rule 2 applies to the whole paper) but no per-type quota is
+    computed. Warnings still never block publishing.
   - The model's surplus is cut before validation, so if the validator rejects one
     of the model's kept questions the paper is one shorter than it would be with
     the flag off (previously the surplus filled the gap).

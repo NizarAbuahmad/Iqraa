@@ -168,3 +168,45 @@ export function allocateQuestions(
 
   return counts;
 }
+
+/**
+ * The per-competency quota for a top-up batch.
+ *
+ * A reply that is short is topped up with a second request for only the missing
+ * questions, and that request carries its own per-competency quota (which must
+ * sum to the number asked for). Start from the original quota, take off what
+ * the model already wrote in each competency (never below zero), then make the
+ * total exactly `missing`: over, reduce the largest entries one at a time; under,
+ * add to the entry with the largest remaining quota. Ties go to the earlier
+ * competency in `COMPETENCY_KEYS`, so the result is the same every time.
+ *
+ * With the original quota summing to what was first asked for, the remainder
+ * can only be at or over `missing`; "under" is a backstop, not a normal path.
+ */
+export function remainingQuota(
+  newByCompetency: Record<CompetencyKey, number>,
+  written: ReadonlyArray<{ competencyKey: CompetencyKey }>,
+  missing: number,
+): Record<CompetencyKey, number> {
+  const out = Object.fromEntries(
+    COMPETENCY_KEYS.map(k => [k, Math.max(0, newByCompetency[k] ?? 0)]),
+  ) as Record<CompetencyKey, number>;
+  for (const q of written) {
+    if (out[q.competencyKey] > 0) out[q.competencyKey] -= 1;
+  }
+
+  const want = Math.max(0, Math.floor(missing));
+  let have = COMPETENCY_KEYS.reduce((s, k) => s + out[k], 0);
+  const largest = (): CompetencyKey =>
+    COMPETENCY_KEYS.reduce((best, k) => (out[k] > out[best] ? k : best), COMPETENCY_KEYS[0]!);
+
+  while (have > want) {
+    out[largest()] -= 1;
+    have -= 1;
+  }
+  while (have < want) {
+    out[largest()] += 1;
+    have += 1;
+  }
+  return out;
+}

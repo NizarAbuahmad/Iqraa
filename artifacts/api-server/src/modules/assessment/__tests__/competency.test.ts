@@ -16,6 +16,7 @@ import {
   COMPETENCY_KEYS,
   COMPETENCY_TARGETS,
   MARKS_BY_COMPETENCY,
+  remainingQuota,
   type CompetencyKey,
   type Difficulty,
 } from "../competency.ts";
@@ -367,5 +368,81 @@ describe("allocateQuestions with supplied questions", () => {
       COMPETENCY_KEYS.some(k => k !== "understanding" && fresh[k] < 2),
       `expected no seeding, got ${JSON.stringify(fresh)}`,
     );
+  });
+});
+
+describe("remainingQuota", () => {
+  const quota = (o: Partial<Record<CompetencyKey, number>>) =>
+    Object.fromEntries(COMPETENCY_KEYS.map(k => [k, o[k] ?? 0])) as Record<CompetencyKey, number>;
+  const wrote = (...keys: CompetencyKey[]) => keys.map(competencyKey => ({ competencyKey }));
+  const total = (c: Record<CompetencyKey, number>) => COMPETENCY_KEYS.reduce((s, k) => s + c[k], 0);
+
+  it("is unchanged when nothing was written and missing is the original total", () => {
+    const q = quota({ knowledge: 1, understanding: 2, application: 3, critical_thinking: 2 });
+    assert.deepEqual(remainingQuota(q, [], 8), q);
+  });
+
+  it("subtracts what the model already wrote, per competency", () => {
+    const q = quota({ knowledge: 2, understanding: 3, application: 3, critical_thinking: 2 });
+    // 10 asked, 4 written (2 knowledge, 1 understanding, 1 application): 6 missing.
+    assert.deepEqual(
+      remainingQuota(q, wrote("knowledge", "knowledge", "understanding", "application"), 6),
+      quota({ understanding: 2, application: 2, critical_thinking: 2 }),
+    );
+  });
+
+  it("floors at zero when the model wrote more of a competency than its quota, and still sums to missing", () => {
+    const q = quota({ knowledge: 1, understanding: 3, application: 3, critical_thinking: 1 });
+    // Three knowledge written against a quota of 1: two over, floored at zero.
+    const out = remainingQuota(q, wrote("knowledge", "knowledge", "knowledge"), 5);
+    assert.equal(out.knowledge, 0);
+    assert.equal(total(out), 5);
+    assert.ok(COMPETENCY_KEYS.every(k => out[k] >= 0));
+  });
+
+  it("reduces the largest entries one at a time when the remainder is over missing", () => {
+    const q = quota({ knowledge: 1, understanding: 4, application: 4, critical_thinking: 1 });
+    // Nothing written but only 7 missing (e.g. the first batch was trimmed): drop 3 from the biggest.
+    const out = remainingQuota(q, [], 7);
+    assert.equal(total(out), 7);
+    assert.deepEqual(out, quota({ knowledge: 1, understanding: 2, application: 3, critical_thinking: 1 }));
+  });
+
+  it("adds to the largest remaining entry, ties by competency order, when under missing", () => {
+    const q = quota({ understanding: 2, application: 2 });
+    const out = remainingQuota(q, [], 5);
+    assert.equal(total(out), 5);
+    assert.deepEqual(out, quota({ understanding: 3, application: 2 }));
+    // Nothing left anywhere: the first competency in order takes it.
+    assert.deepEqual(remainingQuota(quota({}), [], 2), quota({ knowledge: 2 }));
+  });
+
+  it("gives all zeros when nothing is missing", () => {
+    const q = quota({ knowledge: 2, understanding: 2 });
+    assert.deepEqual(remainingQuota(q, wrote("knowledge"), 0), quota({}));
+    assert.deepEqual(remainingQuota(q, [], 0), quota({}));
+  });
+
+  it("always sums to missing and is never negative (exhaustive over small cases)", () => {
+    const base = quota({ knowledge: 2, understanding: 3, application: 3, critical_thinking: 2 });
+    const n = total(base);
+    for (let writtenCount = 0; writtenCount <= n; writtenCount += 1) {
+      for (let seed = 0; seed < 12; seed += 1) {
+        const written = Array.from({ length: writtenCount }, (_, i) => ({
+          competencyKey: COMPETENCY_KEYS[(i * (seed + 1) + seed) % COMPETENCY_KEYS.length]!,
+        }));
+        const missing = n - writtenCount;
+        const out = remainingQuota(base, written, missing);
+        assert.equal(total(out), missing, `written=${writtenCount} seed=${seed}`);
+        assert.ok(COMPETENCY_KEYS.every(k => out[k] >= 0 && Number.isInteger(out[k])));
+      }
+    }
+  });
+
+  it("does not mutate its input", () => {
+    const q = quota({ knowledge: 2, understanding: 2 });
+    const copy = { ...q };
+    remainingQuota(q, wrote("knowledge"), 3);
+    assert.deepEqual(q, copy);
   });
 });

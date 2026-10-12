@@ -262,6 +262,12 @@ describe("generationPromptVersion", () => {
     assert.equal(generationPromptVersion(BOOK_REQ), `${GENERATION_PROMPT_VERSION}+book`);
   });
 
+  it("needs only the supplied field, so the route can ask before it has a whole request", () => {
+    assert.equal(generationPromptVersion({}), GENERATION_PROMPT_VERSION);
+    assert.equal(generationPromptVersion({ supplied: undefined }), GENERATION_PROMPT_VERSION);
+    assert.equal(generationPromptVersion({ supplied: SUPPLIED }), `${GENERATION_PROMPT_VERSION}+book`);
+  });
+
   it("follows the prompt text: a zero-count share does not change the prompt, so not the version", () => {
     assert.equal(generationPromptVersion({ ...BOOK_REQ, supplied: { ...SUPPLIED, count: 0 } }), GENERATION_PROMPT_VERSION);
   });

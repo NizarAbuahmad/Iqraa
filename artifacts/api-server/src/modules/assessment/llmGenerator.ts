@@ -58,8 +58,10 @@ const hasSupplied = (req: LlmGenerationRequest): req is LlmGenerationRequest & {
   req.supplied !== undefined && req.supplied.count > 0;
 
 /** The prompt version to record for a paper made from `req`: the block changes the text, so it changes the version. */
-export function generationPromptVersion(req: LlmGenerationRequest): string {
-  return hasSupplied(req) ? `${GENERATION_PROMPT_VERSION}+book` : GENERATION_PROMPT_VERSION;
+export function generationPromptVersion(req: Pick<LlmGenerationRequest, "supplied">): string {
+  return req.supplied !== undefined && req.supplied.count > 0
+    ? `${GENERATION_PROMPT_VERSION}+book`
+    : GENERATION_PROMPT_VERSION;
 }
 
 export interface LlmGenerationRequest {
