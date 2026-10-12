@@ -324,6 +324,20 @@ as `YYYY-MM-DD` strings and homework days through their Amman date; never
   existence check (`studentIdsWithSelfAccount`); a push to "the class's students
   and their guardians" has to return the *users* (class → rows → `self` /
   `guardian` links → user ids), and that helper does not exist yet.
+- **What Part 3 leaves for Part 4** (each checked against the code):
+  - **Marks saved after release have no hook.** Emit from the paper-totals route for
+    the rows that answer `saved` while `releaseResultsToStudent` is on.
+  - **`announceResultsRelease` is coarse**: it selects every handed-in sitting
+    (`submittedAt` set), provisional results included, and it fires again after a
+    hide → release, because the flip from `false` to `true` is its only trigger.
+  - **An exam's day is zone-less text** (`exam_date` / `exam_time`) compared as a
+    string with `ammanToday()`; see the note at the end of section 3.
+  - **Do not push «scheduled» for a dated draft or an exam with no class**: no
+    family can see either (`studentExamRow`, `examRowsFor`).
+  - **Absent children stay in state `paper`** (a blank box makes no sitting), so a
+    «results are out» push to such a family would point at a row with no result.
+  - **`/parent/exams` `key` is a name-grouped child, not an account** (`groupChildren`);
+    resolving pushes needs the roster row → user lookup above.
 - **Homework due tomorrow, not done:** the API server has no scheduler. Use Cloud
   Scheduler calling `POST /internal/homework-reminders`, guarded by a
   shared-secret header, mounted with a path prefix and covered in

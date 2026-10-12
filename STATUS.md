@@ -1450,15 +1450,22 @@ planning-only and **not returned to families**; it still opens and closes nothin
   caller must.
 - **Mobile.** `app/evaluations/[id]/marks.tsx` is the class mark book (reached from
   «أدخل العلامات» on the exam screen and «أدخل العلامات كجدول» on the answers
-  picker, both only for a **published** quick paper exam); logic is
+  picker, both for a **published or closed** quick paper exam); logic is
   `services/paperMarks.ts`, the fetcher `savePaperTotals` in
   `services/evaluations.ts`. «مجموع فقط» is the default shape for a new paper exam
   (`app/evaluations/new.tsx`): one question worth the typed total, on the first
   selected objective, competency `understanding`. A published paper exam's screen
-  shows no share code. The grid folds Arabic-Indic digits and «٫» itself (the
-  server refuses non-Latin digits), locks its inputs while saving, keeps edits typed
-  during a save, and asks for confirmation before sending a clear for a mark it had
-  saved. Copy is `marksGrid*` / `paperShape*` / `upcomingExams*` / `myExamsStatePaper`
+  shows no share code. The grid folds Arabic-Indic digits and «٫» / «,» to Latin
+  **as they are typed** (`foldMarkText`; the server refuses non-Latin digits), locks
+  its inputs while saving, keeps edits typed during a save, and asks for confirmation
+  before sending a clear for a mark it had saved («احذف العلامات» — «امسح العلامات من
+  الورقة» is the camera scan on the same screen). Each row reads `[box] / N` in both
+  languages; «حفظ الكل», the unsaved count and the outcome of a save sit in a footer
+  **outside** the ScrollView, above the bottom inset, locked while a save runs (the
+  release control stays in the scroll). The two sentences of a failed save are joined
+  by `appendSentence`, which adds the full stop only when the first lacks one.
+  «اختباراتي» renders a row's facts as separate wrapping pieces (`metaSegments`), so
+  none is cut and a separator never starts a line. Copy is `marksGrid*` / `paperShape*` / `upcomingExams*` / `myExamsStatePaper`
   in `services/i18n.ts`, ar + en.
 - **Visibility is exactly as before.** `releaseResultsToStudent` + handed in + not
   provisional (`studentResultReady`), through `studentExamRow` / `guardianExamRow`:
@@ -1517,72 +1524,88 @@ planning-only and **not returned to families**; it still opens and closes nothin
   | `isNull(students.archivedAt)` | `refuses an archived student of the teacher's own…` |
   | `hasAnswers` hard-coded false | `keeps a teacher-entry sitting that holds an answer…` |
   | merge ignoring edits made during a save, and the total missing from the out-of-range copy | 6 tests in `paperMarks.test.ts` |
-- **What has been seen.** Typecheck, the unit tests and the DB tests above — and
-  nothing else. **Nothing in Part 3 had been rendered at the time of writing**: no
-  browser, no device, no real account. The School tab section, «اختباراتي», the date
-  card hints, «مجموع فقط», the mark book and both entry buttons were
-  typechecked and logic-tested only. RTL layout, the keyboard, the confirm dialog,
-  the narrow total box and the tick icons are all unseen.
-  **Browser run: NOT YET RECORDED — to be replaced with what the controller's run (plan Task 10, Step 5: teacher, student and two-child parent at phone width, Arabic and English) did and did not cover.**
-  **Do after deploy** (spec Risk 1): `STUDENT_ACCOUNTS` is already `true` in
-  production, so this reaches real accounts on merge. Check the exam dates,
-  «الاختبارات القادمة», a paper exam in «اختباراتي» and the mark book on a real
-  signed-in parent, student and teacher.
-- **Known gaps** (found in review, not fixed):
-  - **No push when marks arrive after release.** `announceResultsRelease` fires only
-    when the release flag flips on (and covers sittings handed in by then); a mark
-    typed afterwards — the route also accepts a closed exam — is visible to the
-    family at once and silent. Exam scheduled/changed pushes nothing either. Both
-    are Part 4.
-  - **A dated exam with no class reaches no family** (nothing to hang it on); only
-    the teacher's hint says so.
-  - **A total-only paper measures one objective and one competency**: all marks go to
-    the first selected objective with competency `understanding`, so the teacher's
-    objective breakdown for that exam means "the total" and the family's competency
-    card says "not enough evidence". The «مجموع فقط» hint does not say so.
-  - **A quick paper exam's total is capped at 100**, as every paper question is.
-  - **A published paper exam still has a share code server-side**, and `/take/:code`
-    would admit a student who has it. Families and the teacher's screen no longer
-    show it; the endpoint was not changed.
-  - **`/student/progress` (the mastery gate) counts a published paper exam as an open
-    quiz** for its lesson. Only matters with `MASTERY_GATE=true`.
-  - **Old app builds show a blank chip for the new `paper` state** until they update
-    (an OTA carrying this work reaches them — no `app.json` `version` bump was needed,
-    no native module changed). They still offer no link: `shareCode` is null.
-  - **A typed number for a student whose own link sitting is open is accepted** and
-    hands that sitting in — the teacher decides — and re-saving through the grid a
-    sitting the student made grades it as the teacher's mark, as the per-student
-    screen already did. Clearing such a sitting is refused (`kept_student_work`).
-  - **Clearing a saved mark deletes the sitting and its `grade_overrides` audit rows,
-    even after release** (cascade). The server does not refuse; the app asks first and
-    adds "families will stop seeing it" when results are released. Same precedent as
-    `DELETE /attempts/:id`.
-  - **A closed quick paper exam has no entry button**: the route and the screen accept
-    it, but neither the exam screen's closed block nor the answers picker's card (shown
-    only while `published`) offers the button — reachable only by URL or back-navigation.
-  - **A closed or unpublished paper exam with no sitting reads `paper` forever**: the
-    row carries no status, so the chip cannot say it is over.
-  - **The mark book, found in review**: a reload after an uncertain save wipes the
-    per-row refusals; a refused clear (`kept_student_work`) leaves a blank, dirty box
-    that blocks release and does not show the stored value; the busy guard is state
-    only (a double tap before re-render could send twice — harmless, saves are
-    idempotent); a 429 gets the generic copy; the total-too-large error shows at the
-    bottom, away from the field; an archived class shows the generic load error; a few input niceties (selecting the text on focus,
-    a 44pt minimum height, folding digits as they are typed) are missing.
-  - **School tab**: when a parent's picker key matches no child the first child's
-    exams are shown instead of an empty state; merging a parent's rows by
-    `evaluationId` keeps the first copy rather than the most advanced state and loses
-    the server's sort order; the exams state
-    is not reset on an account change (same as homework).
-  - **`findOrStartTeacherEntry` still has its unique-violation race** on two concurrent
-    creates of the same sitting (a 500 on the per-student route; the mark book saves
-    rows sequentially and reports a throw as `failed`).
-  - **Test gaps**: `teacherEntry.db.test.ts` does not pin the order of its checks;
-    the family loader's `paper` derivation has no DB case for a mixed-type exam, a
-    zero-question exam or a soft-deleted question; the rate-limit test in
-    `paperTotals.db.test.ts` spends 56 of the 60 calls, leaving 4 of headroom, a
-    latent flake; `upcomingExams` has no cases for a malformed time or a same-title
-    tie.
+- **What has been seen.** Typecheck, the unit tests and the DB tests above, and a
+  **headless-Chromium run (360x800, Arabic RTL; English only on the parent's School
+  tab in the saved captures) against a seeded database, 2026-10-12** — no device, no
+  real account. It established:
+  - **Families.** The parent's and student's School tab shows «الاختبارات القادمة»
+    (date pill, time, kind, «امتحان ورقي» label), its empty state «لا اختبارات بموعد
+    قادم.» and its own 500 banner. «اختباراتي» groups a parent's rows per child (one
+    child once), shows a paper exam as a chip with no action, and shows a released
+    result on the right child only. The `ExamDateCard` hints behave: none on an
+    attached published exam, «أرفق الامتحان بشعبة…» with no class, «لا يرى الطلبة… حتى
+    تنشر الامتحان» on a dated draft.
+  - **Teacher.** A quick paper exam was created through the UI («مجموع فقط»; a total
+    typed in Arabic-Indic digits was accepted), published and attached to a class. In
+    the mark book: typed Arabic digits were read as Latin, 16.5 saved, 30 and `abc`
+    went red, a blank box was skipped; the **database** showed `teacher_entry`
+    sittings, graded, `submitted_at` set, with a non-provisional result. The clear
+    confirmation appeared, **cancel sent nothing** and confirm sent only that row.
+  - **Release.** Before it the family row said «سُلِّم — بانتظار النتيجة»; after it
+    the child's result («نامٍ · 60%») appeared for that child's student and parent
+    only, the other child's family saw nothing.
+  - **Failure.** A forced 500 and a forced timeout on the totals request kept every
+    typed value and left the database untouched.
+  - **Also seen:** a closed exam had **no** entry button while its marks URL opened and
+    saved (fixed since: published or closed reach the mark book); an exam with no
+    level scale opens the grid and fails only on Save, with a specific message.
+
+  **Not re-rendered after the fixes that followed.** The run's layout findings were
+  fixed afterwards by reasoning from the code and the screenshots, and the screens
+  were not rendered again: `ExamDateCard`'s HH:MM field (the two inputs kept an
+  intrinsic ~242px minimum width and pushed the time off the left edge at 360px;
+  now `minWidth: 0`, 48 high), the «اختباراتي» meta line, the mark book's input
+  size, `[box] / N` order and sticky save footer, and the banner punctuation. They
+  are typechecked and their pure parts logic-tested only. No claim is made about
+  320px, a real keyboard, the footer over an open keyboard on Android, or the bottom
+  inset on a device.
+- **Known gaps** (found in review or in the browser run, not fixed):
+    are Part 4 (see *Part 4 notes* below).
+    card says "not enough evidence". The new-exam screen now names the objective
+    (`paperTotalMeasures`) and warns when more than one is selected
+    (`paperTotalMeasuresMany`) — and that warning shows often, because ticking a
+    lesson selects all of its objectives.
+    row carries no status, so the chip cannot say it is over. The same holds for a
+    child who did not sit it (a blank box creates no sitting), so an absent child's
+    row stays `paper`.
+  - **Before release a family can tell marked from not-yet**: a handed-in sitting is
+    `submitted` («سُلِّم — بانتظار النتيجة»), an exam with none is `paper`. The mark
+    itself stays hidden, but the difference shows (`studentExamRow`).
+  - **A refused clear does not fully recover.** A `kept_student_work` refusal puts the
+    stored mark back in the box, but a row that was saved and never handed in
+    (`pendingFinal`) stays unsaved, and saving it again would be refused again.
+  - **Changing an exam's class after typing marks leaves the old class's marks on
+    it.** `PATCH /evaluations/:id` moves `classGroupId` and touches no sitting; the
+    grid lists only the current class, so it cannot clear them. Clear them per student
+    on the per-student screen.
+  - **An exam with no level scale shows the grid** and fails only on Save, with the
+    409 `no_level_scale` message (`marksBlocker` cannot see it).
+  - **Ticks on saved rows are transient**: the green tick belongs to the session; a
+    reload shows the stored value with no tick.
+  - **The exam-conflict line has a tatweel**: «يوجد امتحان آخر لـالصف العاشر…» — the
+    `examDateConflict` copy from #1017 glues «لـ» to the grade label. Not fixed.
+  - **The mark book, still open from review**: the total-too-large error on the
+    new-exam screen shows at the bottom, away from the field; an archived class shows
+    the generic load error (not re-checked).
+    exams are shown instead of an empty state (`examChild` falls back to `exams[0]`);
+    the exams state is not reset on an account change (same as homework).
+    `upcomingExams` has no case for a malformed time inside the sort or a same-title
+    tie (carried from review, not re-checked).
+- **Part 4 notes** (what a notification PR must know; each checked against the code):
+  - Marks saved **after** release have no hook: the paper-totals route would have to
+    announce the rows that answer `saved` while `releaseResultsToStudent` is on.
+  - `announceResultsRelease` selects every handed-in sitting (`submittedAt` set) of
+    the exam, **provisional results included**, and fires again after a hide → release
+    (the flip from `false` to `true` is its only trigger).
+  - An exam's day is zone-less text (`exam_date` / `exam_time`) compared as a string
+    with `ammanToday()`; a homework's is an Amman end-of-day instant.
+  - A dated draft and an exam with no class must **not** push «scheduled»: no family
+    can see them (`studentExamRow`, `examRowsFor`).
+  - Absent children stay in state `paper`, so a «results are out» push to a child who
+    never sat would point at a row with no result.
+  - `/parent/exams` `key` is a name-grouped child (`groupChildren`), not an account:
+    resolving pushes needs the roster row → user lookup (`self` / `guardian` links),
+    which does not exist yet.
 
 ## Messages can be reacted to with an emoji, 2026-10-10
 
