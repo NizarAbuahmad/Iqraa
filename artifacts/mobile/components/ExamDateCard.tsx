@@ -3,7 +3,9 @@
  * their calendars (GET /exam-calendar), so a grade is not put through two exams
  * on the same day.
  *
- * Planning data only: it does not open or close the student link. The warning
+ * Planning data only: it does not open or close the student link. The date is
+ * also what students and parents see on «اختباراتي» and the School tab, but
+ * only for a published exam attached to a class — the two hints say so. The warning
  * for a day that already holds another exam for the grade is a warning, never a
  * block — the server's `clash` flag on the calendar is what stays authoritative.
  *
@@ -32,7 +34,7 @@ export function ExamDateCard({
   evaluation,
   onSaved,
 }: {
-  evaluation: Pick<Evaluation, 'id' | 'gradeId' | 'examDate' | 'examTime'>;
+  evaluation: Pick<Evaluation, 'id' | 'gradeId' | 'examDate' | 'examTime' | 'classGroupId' | 'status'>;
   onSaved: () => void | Promise<unknown>;
 }) {
   const colors = useColors();
@@ -127,6 +129,17 @@ export function ExamDateCard({
       <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 19, textAlign: align }}>
         {t('examDateHint')}
       </Text>
+      {/* Families see a date only on an exam they can see: published, in a class.
+          `=== null`, not falsy: an older server that omits the field says nothing. */}
+      {evaluation.classGroupId === null ? (
+        <Text style={{ color: colors.warning, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 19, textAlign: align }}>
+          {t('examDateNoClassHint')}
+        </Text>
+      ) : evaluation.status === 'draft' && evaluation.examDate ? (
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 19, textAlign: align }}>
+          {t('examDateDraftHint')}
+        </Text>
+      ) : null}
 
       <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8 }}>
         <TextInput

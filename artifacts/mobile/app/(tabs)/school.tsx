@@ -1,20 +1,24 @@
 // artifacts/mobile/app/(tabs)/school.tsx
 /**
- * «المدرسة» — a student's or parent's school page: homework, then the weekly
- * timetable (read-only).
+ * «المدرسة» — a student's or parent's school page: homework, then upcoming
+ * exams, then the weekly timetable (read-only).
  *
  * The server assembles it from the teachers' own timetables, so it is only as
  * complete as the teachers who have filled theirs in: an empty week is "not
  * entered yet", and the empty state says so rather than looking like a free
  * week. A parent sees one child at a time (a picker appears with more than
- * one); exams and results are one tap away on the existing «اختباراتي» screen.
+ * one); results are one tap away on the existing «اختباراتي» screen.
  *
  * «الواجبات» comes first: a student ticks homework off (optimistically,
  * reverted if the save fails); a parent sees the same list per child,
  * read-only. A child with no student account cannot tick anything, so that
  * child's rows show only the due date — never «متأخّر» or a done mark.
- * Homework and timetable load, fail and refresh independently, each with its
- * own section and error banner, so one failing never reads as the other.
+ * «الاختبارات القادمة» lists the exams that have a planned day from today on
+ * (a paper exam too, with no link), soonest first, for the same child the
+ * picker shows. Homework, exams and timetable load, fail and refresh
+ * independently, each with its own section and error banner, so one failing
+ * never reads as another. The exam day is plain text, compared against
+ * `ammanToday()` — never a device-local date.
  *
  * Not a Stack screen: it sits under the tab layout, which already pays for the
  * status bar — so no `insets.top` here, same as notifications.tsx.
@@ -46,7 +50,16 @@ import {
   type ChildSchedule,
   type FamilyPeriod,
 } from '@/services/familySchedule';
-import { subjectLabel } from '@/services/myExams';
+import { getChildExams, getMyExams } from '@/services/studentExam';
+import { MY_EXAM_STATE_KEY, myExamTitle, subjectLabel, type MyExam } from '@/services/myExams';
+import {
+  examDayKind,
+  formatExamTime,
+  formatExamWhen,
+  groupChildExams,
+  upcomingExams,
+  type ExamGroup,
+} from '@/services/upcomingExams';
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { palette } from '@/constants/colors';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
@@ -77,6 +90,12 @@ export default function SchoolScreen() {
   // double tap, the state only drives the dimmed look.
   const hwInFlight = useRef<Set<string>>(new Set());
   const [hwSaving, setHwSaving] = useState<ReadonlySet<string>>(new Set());
+
+  // Exams have their own list, error and sequence, like homework: one failing
+  // never blanks the other. A parent's rows are per roster row; grouped by the
+  // server's child key so they follow the same picker.
+  const [exams, setExams] = useState<ExamGroup[] | null>(null);
+  const [examError, setExamError] = useState('');
 
   // The list to read depends on the role, so nothing loads until the session
   // has; a newer load wins over an older one still in flight (same guard as
@@ -109,19 +128,36 @@ export default function SchoolScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isParent, user?.id]);
 
+  const examSeq = useRef(0);
+  const loadExams = useCallback(async () => {
+    if (!user) return;
+    const seq = ++examSeq.current;
+    setExamError('');
+    try {
+      const next: ExamGroup[] = isParent
+        ? groupChildExams(await getChildExams())
+        : [{ key: 'self', displayName: '', exams: await getMyExams() }];
+      if (seq === examSeq.current) setExams(next);
+    } catch (e) {
+      if (seq === examSeq.current) setExamError(apiErrorMessage(e, 'upcomingExamsLoadFailed', t));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isParent, user?.id]);
+
   // On every focus: a teacher may have entered their periods or set homework since last time.
   useFocusEffect(
     useCallback(() => {
       void load();
       void loadHomework();
-    }, [load, loadHomework]),
+      void loadExams();
+    }, [load, loadHomework, loadExams]),
   );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([load(), loadHomework()]);
+    await Promise.all([load(), loadHomework(), loadExams()]);
     setRefreshing(false);
-  }, [load, loadHomework]);
+  }, [load, loadHomework, loadExams]);
 
   const toggleDone = useCallback(
     async (childKey: string, item: FamilyHomework) => {
@@ -155,14 +191,19 @@ export default function SchoolScreen() {
   const empty = children !== null && (child === null || child.schedule.days.length === 0);
 
   // The picker reads whichever list arrived, so it survives one of them failing.
-  const pickerKids: readonly { key: string; displayName: string }[] = children ?? homework ?? [];
+  const pickerKids: readonly { key: string; displayName: string }[] = children ?? homework ?? exams ?? [];
   const hwChild = homework ? (homework.find(c => c.key === selected) ?? homework[0] ?? null) : null;
   // Whether an item can be ticked is the ITEM's flag (ticking is per class), not the child's.
   const hw = homeworkSections(hwChild?.homework ?? []);
   const untrackedKind = untrackedMode(hwChild?.homework ?? []);
   const hwEmpty = homework !== null && !hwError && hw.sections.length === 0;
   const hwToday = ammanToday();
-  const loading = (children === null && !error) || (homework === null && !hwError);
+  // Same child as the picker shows, whichever list decided it.
+  const activeKey = selected ?? child?.key ?? hwChild?.key ?? null;
+  const examChild = exams ? (exams.find(g => g.key === activeKey) ?? exams[0] ?? null) : null;
+  const upcoming = upcomingExams(examChild?.exams ?? [], hwToday);
+  const loading =
+    (children === null && !error) || (homework === null && !hwError) || (exams === null && !examError);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -193,7 +234,7 @@ export default function SchoolScreen() {
         {isParent && pickerKids.length > 1 ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[{ gap: 8, flexDirection: rowDir }, isRTL && { minWidth: '100%' }]}>
             {pickerKids.map(c => {
-              const on = c.key === (child?.key ?? hwChild?.key);
+              const on = c.key === (child?.key ?? hwChild?.key ?? examChild?.key);
               return (
                 <Pressable
                   key={c.key}
@@ -287,6 +328,46 @@ export default function SchoolScreen() {
                 />
               ))}
             </View>
+          ))}
+        </View>
+
+        <View style={{ gap: SPACE.md, marginTop: SPACE.md }}>
+          <View style={{ gap: SPACE.xs }}>
+            <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.bodyLg, textAlign: align }}>
+              {t('upcomingExamsTitle')}
+            </Text>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.body, lineHeight: 24, textAlign: align }}>
+              {t(isParent ? 'upcomingExamsDescParent' : 'upcomingExamsDescStudent')}
+            </Text>
+          </View>
+
+          {examError ? (
+            <View
+              style={[
+                styles.errorBanner,
+                { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: rowDir },
+              ]}
+            >
+              <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+              <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                {examError}
+              </Text>
+              <Pressable onPress={() => void loadExams()} hitSlop={8} accessibilityRole="button">
+                <Text style={{ color: colors.destructive, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption, textDecorationLine: 'underline' }}>
+                  {t('retry')}
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
+
+          {exams !== null && !examError && upcoming.length === 0 ? (
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.label, textAlign: align }}>
+              {t('upcomingExamsNone')}
+            </Text>
+          ) : null}
+
+          {upcoming.map(exam => (
+            <UpcomingExamRow key={exam.evaluationId} exam={exam} today={hwToday} colors={colors} isRTL={isRTL} lang={lang} t={t} />
           ))}
         </View>
 
@@ -410,6 +491,50 @@ function PeriodRow({
         ) : null}
       </View>
     </View>
+  );
+}
+
+function UpcomingExamRow({
+  exam, today, colors, isRTL, lang, t,
+}: {
+  exam: MyExam;
+  today: string;
+  colors: ReturnType<typeof useColors>;
+  isRTL: boolean;
+  lang: 'ar' | 'en';
+  t: ReturnType<typeof useLanguage>['t'];
+}) {
+  const align = isRTL ? 'right' : 'left';
+  // `upcomingExams` only returns rows with a valid day.
+  const kind = examDayKind(exam.examDate!, today);
+  const dayColor = kind === 'later' ? colors.mutedForeground : palette.warning;
+  const dayText = kind === 'today' ? t('examDayToday') : kind === 'tomorrow' ? t('examDayTomorrow') : formatExamWhen(exam.examDate!, null);
+  const subject = subjectLabel(exam.subjectId, lang);
+  // A state a newer server adds degrades to «مُغلق» rather than a blank.
+  const meta = [subject, formatExamTime(exam.examTime), t(MY_EXAM_STATE_KEY[exam.state] ?? 'myExamsStateClosed')]
+    .filter(Boolean)
+    .join(' · ');
+  return (
+    <Pressable
+      accessibilityRole="link"
+      onPress={() => router.push('/my-exams' as never)}
+      style={({ pressed }) => [
+        styles.examRow,
+        { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.85 : 1 },
+      ]}
+    >
+      <View style={[styles.hwBadge, { backgroundColor: dayColor + '1A' }]}>
+        <Text style={{ color: dayColor, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption }}>{dayText}</Text>
+      </View>
+      <View style={{ flex: 1, gap: SPACE.xs }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.body, textAlign: align }}>
+          {myExamTitle(exam, lang) || t('myExamsUntitled', subject ?? '')}
+        </Text>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 21, textAlign: align }}>
+          {meta}
+        </Text>
+      </View>
+    </Pressable>
   );
 }
 
@@ -565,5 +690,6 @@ const styles = StyleSheet.create({
   hwRow: { alignItems: 'flex-start', gap: SPACE.md, borderWidth: 1, padding: SPACE.md },
   hwMark: { width: TOUCH, height: TOUCH, alignItems: 'center', justifyContent: 'center' },
   hwBadge: { borderRadius: RADIUS.pill, paddingHorizontal: SPACE.md, paddingVertical: SPACE.xxs },
+  examRow: { alignItems: 'center', gap: SPACE.md, borderWidth: 1, padding: SPACE.md },
   examsRow: { alignItems: 'center', gap: 12, borderWidth: 1, padding: SPACE.lg, marginTop: 4 },
 });

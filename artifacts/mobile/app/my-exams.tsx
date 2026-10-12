@@ -47,6 +47,8 @@ import {
   type MyExamState,
 } from '@/services/myExams';
 import { formatListDate } from '@/services/evaluationRow';
+import { isValidYmd } from '@/services/homework';
+import { formatExamWhen, groupChildExams } from '@/services/upcomingExams';
 import { formatMarks } from '@/services/studentAnswers';
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { StudentResultCard, LEVEL_LABEL_KEY } from '@/components/StudentResultCard';
@@ -108,7 +110,7 @@ export default function MyExamsScreen() {
     setError('');
     try {
       const next = isParent
-        ? (await getChildExams()).map(c => ({ key: c.studentId, name: c.displayName, exams: c.exams }))
+        ? groupChildExams(await getChildExams()).map(g => ({ key: g.key, name: g.displayName, exams: g.exams }))
         : [{ key: 'self', name: null, exams: await getMyExams() }];
       if (seq === loadSeq.current) setGroups(next);
     } catch (e) {
@@ -277,17 +279,24 @@ function ExamRow({
 }) {
   const align = isRTL ? 'right' : 'left';
   const action = myExamAction(exam);
-  const stateColor = STATE_COLOR[exam.state];
+  // A state a future server adds degrades to «مُغلق» instead of a blank chip.
+  const stateColor = STATE_COLOR[exam.state] ?? '#667085';
+  const stateIcon = STATE_ICON[exam.state] ?? 'lock-closed-outline';
   const subject = subjectLabel(exam.subjectId, lang);
   const when =
     exam.submittedAt
       ? formatListDate(exam.submittedAt, lang)
       : formatListDate(exam.publishedAt, lang);
   const whenLine = when ? t(exam.submittedAt ? 'myExamsHandedInOn' : 'myExamsSentOn', when) : null;
+  // The planned day, when the teacher set one. A paper exam's "sent" and
+  // "handed in" times are when the teacher published it and typed the mark —
+  // not what a family means by either — so a paper row shows only its day.
+  const examWhen = exam.examDate && isValidYmd(exam.examDate) ? t('myExamsOnDate', formatExamWhen(exam.examDate, exam.examTime)) : null;
   const meta = [
     subject,
-    whenLine,
-    exam.timeLimitMin ? t('myExamsTimeLimit', exam.timeLimitMin) : null,
+    examWhen,
+    exam.paper ? null : whenLine,
+    exam.timeLimitMin && !exam.paper ? t('myExamsTimeLimit', exam.timeLimitMin) : null,
     exam.totalMarks ? t('myExamsMarks', formatMarks(exam.totalMarks)) : null,
   ].filter(Boolean).join(' · ');
 
@@ -308,7 +317,7 @@ function ExamRow({
     >
       <View style={[styles.rowTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <View style={[styles.stateIcon, { backgroundColor: stateColor + '1F' }]}>
-          <Ionicons name={STATE_ICON[exam.state]} size={20} color={stateColor} />
+          <Ionicons name={stateIcon} size={20} color={stateColor} />
         </View>
         <View style={{ flex: 1, gap: 4 }}>
           <Text numberOfLines={2} style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, lineHeight: 23, textAlign: align }}>
@@ -322,7 +331,7 @@ function ExamRow({
           <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginTop: 2, flexWrap: 'wrap' }}>
             <View style={[styles.chip, { backgroundColor: stateColor + '1A' }]}>
               <Text style={{ color: stateColor, fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>
-                {t(MY_EXAM_STATE_KEY[exam.state])}
+                {t(MY_EXAM_STATE_KEY[exam.state] ?? 'myExamsStateClosed')}
               </Text>
             </View>
             {exam.result ? (
