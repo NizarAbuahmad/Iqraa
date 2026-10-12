@@ -14,6 +14,11 @@
  * row before sending and skips a homework it cannot claim, so a double fire,
  * a scheduler retry or two overlapping runs send nothing twice. Accepted
  * price: if the send fails after the claim, that day's reminder is lost.
+ *
+ * The run is sequential — a few queries and the Expo calls per homework — so a
+ * very large school could outlast Cloud Scheduler's attempt deadline. The
+ * handler keeps running after a client abort, and because claims are written
+ * as it goes, a retry finishes the rest without repeating any.
  */
 import { classGroups, db, homework, homeworkCompletions, homeworkReminders } from "@workspace/db";
 import { and, eq, gt, inArray, isNull, lte } from "drizzle-orm";
@@ -50,17 +55,20 @@ export async function runHomeworkReminders(now: Date = new Date()): Promise<Remi
 
   const run: ReminderRun = { homework: 0, pushed: 0 };
   for (const item of due) {
-    const claimed = await db
-      .insert(homeworkReminders)
-      .values({ homeworkId: item.id, dueDate: span.dueDate })
-      .onConflictDoNothing()
-      .returning({ id: homeworkReminders.id });
-    if (claimed.length === 0) continue;
-    run.homework++;
+    // A failure here, at the claim or after it, costs this homework only: the
+    // loop goes on. A claim that failed was never written, so the next run
+    // (a scheduler retry) still finds the homework unclaimed.
     try {
+      const claimed = await db
+        .insert(homeworkReminders)
+        .values({ homeworkId: item.id, dueDate: span.dueDate })
+        .onConflictDoNothing()
+        .returning({ id: homeworkReminders.id });
+      if (claimed.length === 0) continue;
+      run.homework++;
       run.pushed += await remindAbout(item, now);
     } catch (err) {
-      logger.error({ err, homeworkId: item.id }, "homework reminder failed after its claim; not retried today");
+      logger.error({ err, homeworkId: item.id }, "homework reminder failed; a failure after its claim is not retried today");
     }
   }
   return run;

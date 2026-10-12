@@ -112,7 +112,7 @@ describeDb("homework reminders, against a real database", () => {
     assert.deepEqual(await stub.settle(200), []);
   });
 
-  it("reminds again for a homework whose due date moved to tomorrow", async () => {
+  it("reminds about a homework whose due date was moved to tomorrow", async () => {
     stub.clear();
     await db.pool.query(`UPDATE homework SET due_at = $2 WHERE id = $1`, [hw.dayAfter, ammanDueAt(1)]);
     const res = await trigger(server, KEY);
