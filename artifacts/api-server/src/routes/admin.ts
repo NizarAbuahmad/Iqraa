@@ -17,6 +17,7 @@ import {
   parentContacts,
   refreshTokens,
   savedMaterials,
+  schools,
   siteSignups,
   students,
   users,
@@ -25,6 +26,7 @@ import { and, asc, desc, eq, gte, ilike, isNotNull, isNull, lt, or, sql } from "
 import { getBudgetStatus, getUserBudgetLimitUsd } from "../lib/aiBudget.js";
 import { currentPeriodStart } from "../lib/aiUsageLog.js";
 import { RATE_LIMITS } from "../lib/rateLimit.js";
+import { parseSchoolAssignment, parseSchoolInput } from "../lib/adminSchools.js";
 import { parseDateRange, parseMetricInput, parsePublicIdea, parseSiteSignup, siteKeyMatches, toCsv, UUID } from "../lib/adminMetrics.js";
 import {
   authMiddleware,
@@ -337,9 +339,14 @@ router.get("/admin/users", authMiddleware, requireRole(...ADMIN_ROLES), async (r
       range.from ? gte(users.createdAt, range.from) : undefined,
       range.to ? lt(users.createdAt, range.to) : undefined,
     );
+    // Table names written out, not interpolated. In a single-table select drizzle
+    // renders interpolated columns unqualified, so this once read `user_id = id`
+    // inside the subquery — comparing ai_generations.user_id with its own id — and
+    // every row showed $0. It only came right when the school join below made
+    // drizzle qualify them; spelling it out keeps it right without that join.
     const spend = sql<number>`coalesce((
-      select sum(${aiGenerations.costUsd}) from ${aiGenerations}
-      where ${aiGenerations.userId} = ${users.id} and ${aiGenerations.createdAt} >= ${currentPeriodStart()}
+      select sum("ai_generations"."cost_usd") from "ai_generations"
+      where "ai_generations"."user_id" = "users"."id" and "ai_generations"."created_at" >= ${currentPeriodStart()}
     ), 0)::float`;
     const [items, [{ total }]] = await Promise.all([
       db
@@ -356,9 +363,12 @@ router.get("/admin/users", authMiddleware, requireRole(...ADMIN_ROLES), async (r
           lastLogin: users.lastLogin,
           suspendedAt: users.suspendedAt,
           suspendedReason: users.suspendedReason,
+          schoolId: users.schoolId,
+          schoolName: schools.name,
           monthSpendUsd: spend,
         })
         .from(users)
+        .leftJoin(schools, eq(schools.id, users.schoolId))
         .where(where)
         .orderBy(desc(users.createdAt))
         .limit(PAGE)
@@ -371,6 +381,114 @@ router.get("/admin/users", authMiddleware, requireRole(...ADMIN_ROLES), async (r
     res.status(500).json({ error: "Failed to list users" });
   }
 });
+
+/**
+ * Schools — who counts as a colleague for the exam calendar (GET /exam-calendar).
+ *
+ * `system_admin` only, deliberately narrower than the rest of this file's
+ * ADMIN_ROLES: membership decides whose exam dates a teacher can read, so a
+ * `school_admin` who could assign teachers could place themselves in any school
+ * and read its calendar. Membership is never self-declared; see lib/db/src/schema/schools.ts.
+ */
+const SCHOOL_ADMIN_ROLES = ["system_admin"];
+
+/** GET /admin/schools — every school with its teacher count, A to Z. */
+router.get("/admin/schools", authMiddleware, requireRole(...SCHOOL_ADMIN_ROLES), async (_req, res) => {
+  try {
+    const items = await db
+      .select({
+        id: schools.id,
+        name: schools.name,
+        createdAt: schools.createdAt,
+        // Written out, not interpolated: in a single-table select drizzle renders
+        // columns unqualified, so `${users.schoolId} = ${schools.id}` becomes
+        // `school_id = id` and compares users.school_id with users.id — always 0.
+        teacherCount: sql<number>`(select count(*)::int from "users" where "users"."school_id" = "schools"."id")`,
+      })
+      .from(schools)
+      .orderBy(asc(schools.name));
+    res.json({ items });
+  } catch (err) {
+    logger.error({ err }, "admin schools list failed");
+    res.status(500).json({ error: "Failed to list schools" });
+  }
+});
+
+/** POST /admin/schools { name } */
+router.post(
+  "/admin/schools",
+  authMiddleware,
+  requireRole(...SCHOOL_ADMIN_ROLES),
+  async (req: AuthenticatedRequest, res) => {
+    let input: { name: string };
+    try {
+      input = parseSchoolInput(req.body);
+    } catch (msg) {
+      res.status(400).json({ error: String(msg) });
+      return;
+    }
+    try {
+      const [school] = await db.insert(schools).values({ name: input.name }).returning();
+      logger.info({ actorId: req.user!.id, schoolId: school!.id }, "admin created school");
+      res.status(201).json({ school });
+    } catch (err) {
+      logger.error({ err }, "admin create school failed");
+      res.status(500).json({ error: "Failed to create the school" });
+    }
+  },
+);
+
+/**
+ * PUT /admin/users/:id/school { schoolId | null }
+ *
+ * Teachers only — a parent or student in a school would read colleagues' exam
+ * dates through nothing but a role check on the calendar route, and has no
+ * business there. `null` removes the teacher from their school.
+ */
+router.put(
+  "/admin/users/:id/school",
+  authMiddleware,
+  requireRole(...SCHOOL_ADMIN_ROLES),
+  async (req: AuthenticatedRequest, res) => {
+    const targetId = req.params["id"] as string;
+    if (!UUID.test(targetId)) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    let schoolId: string | null;
+    try {
+      schoolId = parseSchoolAssignment(req.body);
+    } catch (msg) {
+      res.status(400).json({ error: String(msg) });
+      return;
+    }
+    try {
+      const [target] = await db.select({ role: users.role }).from(users).where(eq(users.id, targetId)).limit(1);
+      if (!target) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+      if (target.role !== "teacher") {
+        res.status(400).json({ error: "Only a teacher can be placed in a school" });
+        return;
+      }
+      if (schoolId) {
+        const [school] = await db.select({ id: schools.id }).from(schools).where(eq(schools.id, schoolId)).limit(1);
+        if (!school) {
+          res.status(404).json({ error: "School not found" });
+          return;
+        }
+      }
+      await db.update(users).set({ schoolId }).where(eq(users.id, targetId));
+      // ponytail: the log line is the audit trail, as for set-password above.
+      logger.info({ actorId: req.user!.id, targetId, schoolId }, "admin set user school");
+      res.json({ ok: true, schoolId });
+    } catch (err) {
+      logger.error({ err }, "admin set school failed");
+      res.status(500).json({ error: "Failed to update the school" });
+    }
+  },
+);
 
 /**
  * POST /admin/users/:id/suspend { reason }

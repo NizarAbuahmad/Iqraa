@@ -120,3 +120,14 @@ export function toggleClassSelection<T extends { userId: string }>(
   }
   return next;
 }
+
+export type RoleFilter = 'all' | 'parent' | 'student';
+
+/**
+ * Narrows the picker to parents or to students. Applied before class chips are
+ * counted, so «10-أ (12)» with «أولياء الأمور» on means that class's parents —
+ * the usual ask is "all the parents of one class", not "everyone in it".
+ */
+export function filterByRole<T extends { role: ChatRole }>(contacts: readonly T[], filter: RoleFilter): T[] {
+  return filter === 'all' ? [...contacts] : contacts.filter(c => c.role === filter);
+}

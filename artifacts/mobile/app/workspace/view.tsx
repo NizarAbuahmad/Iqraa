@@ -907,7 +907,7 @@ function FlowView({ flow, colors, isRTL, lang, accent }: {
       ),
     },
     {
-      label: lang === 'ar' ? 'بطاقة الخروج' : 'Exit Ticket',
+      label: lang === 'ar' ? 'غلق الدرس' : 'Exit Ticket',
       icon: 'ticket-outline', color: palette.warning,
       render: () => (
         <View style={{ gap: 6 }}>

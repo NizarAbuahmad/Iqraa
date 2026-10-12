@@ -337,7 +337,7 @@ describe('buildAdaptationsDirective', () => {
     // with nothing in the body adapted. An adaptation says how to write every
     // section; it is not something a student can demonstrate.
     const out = buildAdaptationsDirective('كيّف الخطة لطالب لديه فرط حركة', 'ar');
-    assert.match(out, /التمايز/);
+    assert.match(out, /فروق فردية/);
     assert.match(out, /لا تُدرجها ضمن الأهداف/);
     assert.match(out, /كيّف الخطة لطالب لديه فرط حركة/);
   });

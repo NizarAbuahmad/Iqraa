@@ -13,6 +13,7 @@ import rosterRouter from "./roster";
 import homeworkRouter from "./homework";
 import teachingPlansRouter from "./teachingPlans";
 import scheduleRouter from "./schedule";
+import examCalendarRouter from "./examCalendar";
 import evaluationsRouter from "./evaluations";
 import attemptsRouter from "./attempts";
 import studentAttemptRouter from "./studentAttempt";
@@ -90,6 +91,7 @@ router.use(rosterRouter);
 router.use(homeworkRouter);
 router.use(teachingPlansRouter);
 router.use(scheduleRouter);
+router.use(examCalendarRouter);
 router.use(evaluationsRouter);
 router.use(attemptsRouter);
 // The student exam link — deliberately public, and the only unauthenticated

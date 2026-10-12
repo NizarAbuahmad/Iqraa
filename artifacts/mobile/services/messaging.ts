@@ -270,6 +270,22 @@ export async function createGroup(
   };
 }
 
+/**
+ * Teacher-only. One message, delivered as a separate private chat to each
+ * person — their reply reaches the teacher alone, unlike a group. `skipped`
+ * counts people who could not be sent to (a block either way).
+ */
+export async function broadcastMessage(
+  participantUserIds: string[],
+  body: string,
+): Promise<{ sent: number; skipped: number }> {
+  const res = await apiFetch('/messaging/threads/broadcast', {
+    method: 'POST',
+    body: JSON.stringify({ participantUserIds, body }),
+  });
+  return readJson<{ sent: number; skipped: number }>(res, 'Sending message');
+}
+
 /** Owning teacher only. */
 export async function addGroupMembers(threadId: string, participantUserIds: string[]): Promise<ChatParticipantInfo[]> {
   const res = await apiFetch(`/messaging/threads/${threadId}/participants`, {
