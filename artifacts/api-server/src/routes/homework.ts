@@ -10,6 +10,9 @@
  *    patch can never move it to another class or teacher — the update below
  *    sets only fields parsePatch produced.
  *
+ * Posting tells the class's students and their guardians
+ * (lib/familyPushEvents.ts); editing does not.
+ *
  * No `requireRosterConsent`: that gate is about entering a child's information,
  * and homework carries none. Guards are path-scoped (see mountOrder.test.ts):
  * a bare `router.use(mw)` here would guard every router mounted after it.
@@ -20,7 +23,9 @@ import { classGroups, classMemberships, evaluations, homework, homeworkCompletio
 import { and, count, countDistinct, desc, eq, inArray, isNull } from "drizzle-orm";
 import { authMiddleware, requireRole, TEACHER_ROLES, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { findLiveClass } from "../lib/classOwnership.js";
+import { announceHomeworkPosted } from "../lib/familyPushEvents.ts";
 import { logger } from "../lib/logger";
+import { pushWithin } from "../lib/pushWithin.ts";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { dueAtToDueDate, isUuid, parseCreate, parsePatch } from "../modules/homework/rules.ts";
 
@@ -195,7 +200,8 @@ router.post("/homework", async (req: AuthenticatedRequest, res) => {
   const input = parsed.value;
   try {
     const teacherId = req.user!.id;
-    if (!(await findLiveClass(input.classGroupId, teacherId))) {
+    const klass = await findLiveClass(input.classGroupId, teacherId);
+    if (!klass) {
       res.status(404).json(NO_CLASS);
       return;
     }
@@ -215,6 +221,9 @@ router.post("/homework", async (req: AuthenticatedRequest, res) => {
       })
       .returning();
     const [out] = await withCounts([row!]);
+    // Tell the class's families before answering — awaited, capped, never
+    // failing the post (lib/pushWithin.ts says why not fire-and-forget).
+    await pushWithin("homework posted", () => announceHomeworkPosted(row!, klass));
     res.status(201).json({ homework: out });
   } catch (err) {
     failHomework(res, err, "create homework");

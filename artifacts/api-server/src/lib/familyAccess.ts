@@ -10,7 +10,7 @@
  * Archived roster rows never count. The 404/empty behaviour for a row that is
  * not linked is the caller's — these only answer "which rows".
  */
-import { db, rosterLinks, students, users } from "@workspace/db";
+import { classGroups, classMemberships, db, rosterLinks, students, users } from "@workspace/db";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import type { GuardianLink } from "../modules/family/children.ts";
 import type { LinkedAccount } from "../modules/notifications/familyPush.ts";
@@ -89,4 +89,19 @@ export async function accountsLinkedTo(studentIds: readonly string[]): Promise<L
     pushPrefs: r.pushPrefs,
     suspended: r.suspendedAt !== null,
   }));
+}
+
+/**
+ * The class's children, for a push to "the class": live roster rows that are
+ * members of this class, and only while the class itself is live. Empty for
+ * an archived or missing class.
+ */
+export async function liveClassStudentIds(classId: string): Promise<string[]> {
+  const rows = await db
+    .select({ studentId: students.id })
+    .from(classMemberships)
+    .innerJoin(students, eq(students.id, classMemberships.studentId))
+    .innerJoin(classGroups, eq(classGroups.id, classMemberships.classGroupId))
+    .where(and(eq(classMemberships.classGroupId, classId), isNull(students.archivedAt), isNull(classGroups.archivedAt)));
+  return [...new Set(rows.map(r => r.studentId))];
 }
