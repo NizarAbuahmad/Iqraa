@@ -63,6 +63,8 @@ const CLAIM_ERROR_KEYS: Record<string, TranslationKey> = {
   claim_guardian_taken: 'claimGuardianTaken',
   // Code-only signup (POST /auth/redeem): a parent may not create an account from a class code.
   claim_parent_needs_student_code: 'claimParentNeedsOwnCode',
+  // A child already has the most parent accounts allowed (api-server lib/guardianLimit.ts).
+  claim_guardian_limit: 'claimGuardianLimit',
 };
 
 /**

@@ -1090,6 +1090,18 @@ which is what actually proves who they are. Now the code is the sign-up.
   NULL` is not flagged by CI's destructive check and is safe to migrate ahead of
   the new API. **Do not roll the migration back** once code-only accounts exist:
   re-adding `NOT NULL` fails on their rows. Rolling the API back is fine.
+- **A child may have at most 4 parent accounts (added 2026-10-12,
+  `lib/guardianLimit.ts`).** A per-student code is not single-use on purpose (a
+  second guardian), and with code-only sign-up anyone holding one could mint
+  guardian accounts for free — each reads that child's messages. The count runs
+  inside the shared claim write (`linkRosterRowInTx`), under the student-row lock,
+  so it covers `/redeem` **and** `/claim` and two parents cannot both take the
+  last seat. Refusal is `409 claim_guardian_limit`; the teacher unlinks one from
+  the linked-accounts list to make room. A parent re-sending a claim for a seat
+  they already hold is not refused (the count excludes the caller), and students
+  are not limited. **Four is a judgement** (two parents plus two relatives) — it is
+  one constant. It is a ceiling, not a rate limit: it does not stop someone
+  filling the four seats first.
 - **Everything that assumed an email was found by the typechecker** (making the
   column nullable surfaced nine sites): `/register` and `/forgot-password`
   paths, `adminNotify`, the access-token claim (now `""`), `AuthenticatedRequest`,

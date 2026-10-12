@@ -67,6 +67,8 @@ describe('claimErrorKey', () => {
     assert.equal(claimErrorKey('claim_guardian_taken'), 'claimGuardianTaken');
     // Added with code-only signup: a parent may not create an account from a class code.
     assert.equal(claimErrorKey('claim_parent_needs_student_code'), 'claimParentNeedsOwnCode');
+    // A child can have only so many parent accounts; the teacher removes one to make room.
+    assert.equal(claimErrorKey('claim_guardian_limit'), 'claimGuardianLimit');
   });
 
   it('falls back to a generic message for an unknown code', () => {
