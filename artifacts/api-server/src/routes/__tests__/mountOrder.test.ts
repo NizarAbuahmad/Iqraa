@@ -302,6 +302,19 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(res.status, 401, "setting who may sit an exam must require a token");
   });
 
+  it("guards the class mark book", async () => {
+    // Writes marks for a whole class; it must never answer without a teacher
+    // token. This pins the `/evaluations` prefix guard, not the route itself:
+    // it passes before the route exists, because the guard answers 401 first.
+    const id = "00000000-0000-0000-0000-000000000000";
+    const res = await fetch(`${base}/evaluations/${id}/paper-totals`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ totals: [{ studentId: id, marks: 1 }] }),
+    });
+    assert.equal(res.status, 401, "typing a class's marks must require a token");
+  });
+
   it("guards the teacher homework routes", async () => {
     // /homework is path-scoped inside its own router and the class read carries
     // its guards on the route. A 404 here would mean the mount was lost; a 200

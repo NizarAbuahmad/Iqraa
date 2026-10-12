@@ -96,6 +96,8 @@ import { recommendationsFor } from "../modules/assessment/recommend";
 import type { ObjectiveScore } from "../modules/assessment/scoring";
 
 import { findOrStartTeacherEntry } from "../lib/teacherEntry.ts";
+import { savePaperTotals } from "../lib/paperTotals.ts";
+import { parsePaperTotals, PAPER_TOTALS_REFUSAL } from "../modules/assessment/paperTotals.ts";
 import { resultsReleaseDecision } from "../lib/resultsRelease.ts";
 import { announceResultsRelease } from "../lib/resultsReleaseNotify.ts";
 const router = Router();
@@ -1827,6 +1829,61 @@ router.post("/evaluations/:id/attempts", async (req: AuthenticatedRequest, res) 
   } catch (err) {
     logger.error({ err }, "create attempt failed");
     res.status(500).json({ error: "Failed to start attempt" });
+  }
+});
+
+// A whole class per request, each row a find-or-create, a mark and a hand-in;
+// generous for a teacher saving a mark book, a wall for a loop.
+const paperTotalsLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 60,
+  name: "paper-totals",
+  key: (req) => (req as AuthenticatedRequest).user?.id ?? req.ip ?? "unknown",
+});
+
+/**
+ * The class mark book: one typed total per student for a quick paper exam
+ * (exactly one paper question, worth N) — see lib/paperTotals.ts. Each row is
+ * saved, refused or cleared on its own and reported back; a saved row is
+ * handed in, so it reaches the student and their parents once — and only once
+ * — the teacher releases results.
+ *
+ * Published or closed: a teacher may close a paper exam after the sitting and
+ * then type the totals. A draft has nothing to mark yet.
+ *
+ * Archived counts as "not found" here, like a missing or malformed id: the
+ * exam has left the teacher's lists, and a mark book must not write to it.
+ *
+ * Clearing (`marks: null`) deletes a teacher-entered sitting even after
+ * results are released — the app asks the teacher to confirm first; the
+ * server does not refuse (the paper was never the student's).
+ */
+router.put("/evaluations/:id/paper-totals", paperTotalsLimiter, async (req: AuthenticatedRequest, res) => {
+  try {
+    const id = req.params["id"] as string;
+    const evaluation = isUuid(id) ? await ownedEvaluation(id, req.user!.id) : undefined;
+    if (!evaluation || evaluation.archivedAt) {
+      res.status(404).json({ error: "Evaluation not found" });
+      return;
+    }
+    if (evaluation.status !== "published" && evaluation.status !== "closed") {
+      res.status(409).json({ code: "not_published", error: "Publish this evaluation before entering marks" });
+      return;
+    }
+    const parsed = parsePaperTotals(req.body);
+    if (!parsed.ok) {
+      res.status(400).json({ code: parsed.code, error: parsed.error, ...(parsed.index === undefined ? {} : { index: parsed.index }) });
+      return;
+    }
+    const outcome = await savePaperTotals({ evaluation, teacherId: req.user!.id, rows: parsed.rows });
+    if (!outcome.ok) {
+      res.status(409).json({ code: outcome.code, error: PAPER_TOTALS_REFUSAL[outcome.code] });
+      return;
+    }
+    res.json({ maxMarks: outcome.maxMarks, results: outcome.results });
+  } catch (err) {
+    logger.error({ err }, "save paper totals failed");
+    res.status(500).json({ error: "Failed to save the marks" });
   }
 });
 
