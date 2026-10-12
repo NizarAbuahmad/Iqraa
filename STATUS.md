@@ -1334,11 +1334,13 @@ place — see its section 2).
   `hwParentNoAccount` laid the whole English sentence out RTL), the sort position of newly
   created homework, the checkbox offset and the 320px English tab-row cut (the last three
   under *Known gaps*). The unchanged-date 400 and the per-child `canTrack` defect were found
-  by the **code review of the fix wave**, not by the browser run. **What changed after the
-  browser run has not been rendered**: the per-item neutral state and the flat list when every
-  item is untracked, the isolated name, the leading LRM that fixes the English bidi defect, the
-  mixed-case line `hwParentNoAccountSome`, the clamped done count and the reworded
-  `hwErrDueRange` were typechecked and unit- or DB-tested only.
+  by the **code review of the fix wave**, not by the browser run. **A third browser run
+  (2026-10-12) rendered** the per-item neutral state, the flat list for an all-untracked child, the
+  clamped done count, editing an old homework and the range message. **Not rendered since the
+  last fix round**: the mixed-case line `hwParentNoAccountSome`, the ranking of untracked
+  items in a mixed list and the reworded `hwErrDueRange` (typechecked and unit-tested only). The
+  leading LRM on the English name sentences was checked in Chromium's own layout engine in
+  isolation (`dir="auto"` resolves `rtl` without it and `ltr` with it) but not in the app.
 - **What has not.** Nobody has used it on a device or with a real account. Real keyboard /
   IME input in the modal and real device text scaling were not exercised. `STUDENT_ACCOUNTS`
   is already `true` in production, so this reaches real family accounts on merge — open it
