@@ -547,7 +547,7 @@ export function buildLessonPlanHTML(
     ${section(L('التدريب المستقل', 'Independent Practice'), '🧑', A, plan.independentPractice)}
     ${section(L('الختام', 'Closure'), '⏹', '#8B5CF6', plan.closure)}
     ${section(L('التقييم', 'Assessment'), '✅', '#16A34A', plan.assessment)}
-    ${section(L('التمايز', 'Differentiation'), '🔀', '#0891B2', plan.differentiation)}
+    ${section(L('فروق فردية', 'Differentiation'), '🔀', '#0891B2', plan.differentiation)}
     ${section(L('الواجب البيتي', 'Homework'), '🏠', '#F59E0B', plan.homework)}
     ${figuresSectionHTML(figures, isAr)}
   `;
@@ -838,7 +838,7 @@ export function buildActivityHTML(
     ${section(L('المواد اللازمة', 'Materials Needed'), '🧰', '#6B7280', `<ul>${activity.materials.map(m => `<li>${esc(m)}</li>`).join('')}</ul>`)}
     ${section(L('خطوات النشاط', 'Activity Steps'), '⚡', A, stepsHtml)}
     ${section(L('نصائح للمعلم', 'Teacher Tips'), '💡', '#F59E0B', `<ul>${activity.teacherTips.map(t => `<li>${esc(t)}</li>`).join('')}</ul>`)}
-    ${section(L('التمايز', 'Differentiation'), '🔀', '#0891B2', `<div class="body-text">${esc(activity.differentiation)}</div>`)}
+    ${section(L('فروق فردية', 'Differentiation'), '🔀', '#0891B2', `<div class="body-text">${esc(activity.differentiation)}</div>`)}
     ${section(L('التقييم', 'Assessment'), '✅', '#16A34A', `<div class="body-text">${esc(activity.assessment)}</div>`)}
     ${figuresSectionHTML(figures, isAr)}
   `;
@@ -930,9 +930,9 @@ export function buildLessonPlanSlidesHTML(
     </div>`;
 
   const slide6 = `${slideOpen()}
-    ${header(L('التمايز والواجب البيتي', 'Differentiation & Homework'))}
+    ${header(L('فروق فردية والواجب البيتي', 'Differentiation & Homework'))}
     <div class="slide-body two-col">
-      ${sectionBlock('📚', L('التمايز', 'Differentiation'), `<p>${esc(plan.differentiation)}</p>`)}
+      ${sectionBlock('📚', L('فروق فردية', 'Differentiation'), `<p>${esc(plan.differentiation)}</p>`)}
       ${sectionBlock('🏠', L('الواجب البيتي', 'Homework'), `<p>${esc(plan.homework)}</p>`)}
     </div>`;
 
@@ -1082,7 +1082,7 @@ export function buildActivitySlidesHTML(
       ${sBlock('💡', L('نصائح للمعلم', 'Teacher Tips'), `<ul>${activity.teacherTips.map(t => `<li>${esc(t)}</li>`).join('')}</ul>`)}
       <div class="section-block">
         ${sBlock('📊', L('التقييم', 'Assessment'), `<p>${esc(activity.assessment)}</p>`)}
-        ${sBlock('🔀', L('التمايز', 'Differentiation'), `<p>${esc(activity.differentiation)}</p>`)}
+        ${sBlock('🔀', L('فروق فردية', 'Differentiation'), `<p>${esc(activity.differentiation)}</p>`)}
       </div>
     </div>
     ${footer(TOTAL)}</div>`;
@@ -1596,7 +1596,7 @@ export function buildLessonFlowHTML(
   </div>
 
   <!-- 6. Exit Ticket -->
-  ${secHeader(isAr ? 'بطاقة الخروج' : 'Exit Ticket', '🎫', '#F59E0B')}
+  ${secHeader(isAr ? 'غلق الدرس' : 'Exit Ticket', '🎫', '#F59E0B')}
   ${etBody}
 
   ${figuresSectionHTML(figures, isAr)}

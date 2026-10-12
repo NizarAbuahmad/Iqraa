@@ -693,7 +693,7 @@ const translations = {
     sectionMainActivity: 'النشاط الرئيسي',
     sectionClosure: 'الختام',
     sectionAssessment: 'التقويم',
-    sectionDifferentiation: 'التمايز',
+    sectionDifferentiation: 'فروق فردية',
     sectionHomework: 'الواجب البيتي',
 
     // Worksheet generator
@@ -1181,7 +1181,7 @@ const translations = {
     lessonFlowStepActivity: 'النشاط التفاعلي',
     lessonFlowStepGuided: 'التدريب الموجّه',
     lessonFlowStepWorksheet: 'ورقة العمل',
-    lessonFlowStepExitTicket: 'بطاقة الخروج',
+    lessonFlowStepExitTicket: 'غلق الدرس',
     lessonFlowLaunchClassroom: 'اعرض على شاشة الصف',
     lessonFlowExportAll: 'صدّر الكل PDF',
     lessonFlowSaveFlow: 'احفظ المسار',
@@ -1344,7 +1344,7 @@ const translations = {
     activityBingoDesc: 'استدعِ المصطلحات وشطّب المربعات — أول من يكمل صفًا يفوز',
     activityRelayTitle: 'سباق التتابع',
     activityRelayDesc: 'سلسلة من 4–6 مسائل متصلة — كل إجابة تفتح التالية',
-    activityExitTitle: 'بطاقة الخروج',
+    activityExitTitle: 'غلق الدرس',
     activityExitDesc: '3–5 أسئلة سريعة في نهاية الحصة للتحقق من الفهم',
     activityErrorTitle: 'المحقق الرياضي',
     activityErrorDesc: 'اعثر على الخطأ في الحل وصحّحه — تعلّم عبر اكتشاف الأخطاء',
@@ -1533,7 +1533,7 @@ const translations = {
     misconceptionsLabel: 'الأخطاء الشائعة',
     teachingTipsLabel2: 'نصائح التدريس',
     suggestedQuestionsLabel: 'أسئلة مقترحة',
-    differentiationLabel: 'التمايز',
+    differentiationLabel: 'فروق فردية',
     slideTypeIntro: 'تمهيد',
     slideTypeChallenge: 'تحدٍّ',
     slideTypeReveal: 'كشف',
@@ -1691,6 +1691,29 @@ const translations = {
     calendarLessonFrom: (planTitle: string) => `من: ${planTitle}`,
     calendarLoadFailed: 'تعذّر تحميل التقويم.',
 
+    // Exam dates — teachers at one school see each other's exam days so a grade
+    // is not put through two exams at once (GET /exam-calendar).
+    calendarExamsSection: 'الامتحانات',
+    calendarShowSchoolExams: 'عرض امتحانات المدرسة',
+    calendarExamsNoSchool: 'حسابك غير مرتبط بمدرسة بعد، لذلك تظهر امتحاناتك فقط. اطلب من الإدارة ربطك بمدرستك.',
+    calendarExamsLoadFailed: 'تعذّر تحميل امتحانات المدرسة.',
+    calendarExamMine: 'امتحانك',
+    calendarExamTeacher: (name: string) => `المعلّم: ${name}`,
+    calendarExamClash: (grade: string) => `أكثر من امتحان لـ${grade} في هذا اليوم`,
+    examDateLabel: 'موعد الامتحان',
+    examDateHint: 'اختياري. يراه معلمو مدرستك حتى لا تتعارض الامتحانات.',
+    examDateInvalid: 'اكتب التاريخ بصيغة 2026-10-12',
+    examTimeLabel: 'الوقت (اختياري)',
+    examTimeInvalid: 'اكتب الوقت بصيغة 09:30',
+    examDateSave: 'حفظ الموعد',
+    examDateClear: 'إزالة الموعد',
+    examDateSaved: 'تم حفظ الموعد',
+    examDateSaveFailed: 'تعذّر حفظ الموعد.',
+    examDateConflict: (grade: string, count: number) =>
+      count === 1
+        ? `يوجد امتحان آخر لـ${grade} في هذا اليوم`
+        : `يوجد ${count} امتحانات أخرى لـ${grade} في هذا اليوم`,
+
     // Class ↔ materials
     classTabStudents: 'الطلبة',
     classTabMaterials: 'الملفات',
@@ -1720,7 +1743,7 @@ const translations = {
     parentContactsAllGood: 'وصلت رسالةٌ إلى أسرة كل طالب خلال الشهر، ولم تقتصر أيٌّ منها على الملاحظات.',
     parentContactsTapHint: 'اضغط على اسم لكتابة رسالة لأسرته.',
     parentContactsUnread: (n: string) => `رسالة داخل إقرأ لم تُفتح منذ يومين أو أكثر (${n})`,
-    // Not «تحقّق سريع» and not «تذكرة الخروج» — the classroom-activity
+    // Not «تحقّق سريع» and not «غلق الدرس» — the classroom-activity
     // generator already owns both of those (`activityType: 'quick-check'` and
     // `'exit-ticket'`). This one belongs to the evaluations family, produces a
     // per-student record, and is named from that side of the app.
@@ -2225,14 +2248,14 @@ const translations = {
     onboardingSlide6Desc: 'مساعد يعرف كتب المنهاج: اسأله عن درس أو فكرة للشرح، ويدلّك على الأداة المناسبة بزرّ واحد.',
     onboardingSlide6Points: 'إجابات من كتب المنهاج\nأفكار للشرح والتمهيد\nيدلّك على الأداة المناسبة',
     onboardingSlide2Title: 'رحلة حصة كاملة في مسار واحد',
-    onboardingSlide2Desc: 'من الأهداف والتمهيد، إلى النشاط والتدريب وورقة العمل وبطاقة الخروج — تُبنى بالتتابع، لا قطعًا متفرقة.',
-    onboardingSlide2Points: 'الأهداف والتمهيد\nالنشاط والتدريب\nورقة العمل وبطاقة الخروج',
+    onboardingSlide2Desc: 'من الأهداف والتمهيد، إلى النشاط والتدريب وورقة العمل وغلق الدرس — تُبنى بالتتابع، لا قطعًا متفرقة.',
+    onboardingSlide2Points: 'الأهداف والتمهيد\nالنشاط والتدريب\nورقة العمل وغلق الدرس',
     onboardingSlide4Title: 'أدوات لكل لحظة في الحصة',
     onboardingSlide4Desc: 'شرائح تعرضها على السبورة، وتحدٍّ جماعي بلا هواتف، وأشكال من كتابك برقم صفحتها — جاهزة قبل الحصة وأثناءها.',
     onboardingSlide4Points: 'شرائح للعرض\nتحدٍّ جماعي بلا هواتف\nأشكال الكتاب برقم الصفحة',
     onboardingSlide7Title: 'أوراق عمل وبطاقات خروج في دقيقة',
-    onboardingSlide7Desc: 'ورقة عمل بمستويات صعوبة ومفتاح إجابة، وبطاقة خروج تعرف بها ما فهمه طلبتك قبل أن يغادروا الصف.',
-    onboardingSlide7Points: 'مستويات صعوبة متدرّجة\nمفتاح إجابة جاهز\nبطاقة خروج لآخر الحصة',
+    onboardingSlide7Desc: 'ورقة عمل بمستويات صعوبة ومفتاح إجابة، وغلق للدرس تعرف به ما فهمه طلبتك قبل أن يغادروا الصف.',
+    onboardingSlide7Points: 'مستويات صعوبة متدرّجة\nمفتاح إجابة جاهز\nغلق الدرس في آخر الحصة',
     onboardingSlide8Title: 'اختبار يجيب عنه الطلبة من هواتفهم',
     onboardingSlide8Desc: 'ولّد الاختبار من الدرس وشاركه برابط، فيجيب الطلبة من هواتفهم، وتُرصد علاماتهم وتصلك نتائج كل طالب.',
     onboardingSlide8Points: 'أسئلة من المنهاج\nمشاركة برابط\nرصد العلامات والنتائج',
@@ -2432,6 +2455,18 @@ const translations = {
     messagingClassChipHint: 'اضغط على اسم الصف لإضافة جميع أعضائه دفعة واحدة',
     messagingNoSearchMatch: 'لا نتائج مطابقة لبحثك',
     messagingCreateGroup: 'أنشئ المجموعة',
+    messagingBroadcastTitle: 'رسالة جماعية',
+    messagingModeBroadcast: 'رسالة لكل شخص',
+    messagingModeBroadcastHint: 'تصل كل شخص كمحادثة خاصة بينك وبينه، وردّه يصلك أنت فقط.',
+    messagingModeGroup: 'مجموعة',
+    messagingModeGroupHint: 'محادثة واحدة يرى فيها الأعضاء بعضهم، وأنت وحدك تكتب فيها.',
+    messagingBroadcastBodyLabel: 'نص الرسالة',
+    messagingBroadcastBodyPlaceholder: 'اكتب الرسالة التي ستصل إلى كل من اخترتهم…',
+    messagingBroadcastSend: (n: number) => `أرسل إلى ${n}`,
+    messagingBroadcastDone: (sent: number, skipped: number) =>
+      skipped > 0 ? `أُرسلت الرسالة إلى ${sent}، وتعذّر الإرسال إلى ${skipped}.` : `أُرسلت الرسالة إلى ${sent}.`,
+    messagingRoleParents: 'أولياء الأمور',
+    messagingRoleStudents: 'الطلبة',
     messagingManageMembers: 'إدارة الأعضاء',
     messagingStudentCodes: 'رمز الربط',
     messagingLeaveGroup: 'مغادرة المجموعة',
@@ -4132,6 +4167,29 @@ const translations = {
     calendarLessonFrom: (planTitle: string) => `From: ${planTitle}`,
     calendarLoadFailed: 'Could not load your calendar.',
 
+    // Exam dates — teachers at one school see each other's exam days so a grade
+    // is not put through two exams at once (GET /exam-calendar).
+    calendarExamsSection: 'Exams',
+    calendarShowSchoolExams: 'Show school exams',
+    calendarExamsNoSchool: 'Your account is not linked to a school yet, so only your own exams show. Ask your administrator to link you.',
+    calendarExamsLoadFailed: 'Could not load school exams.',
+    calendarExamMine: 'Your exam',
+    calendarExamTeacher: (name: string) => `Teacher: ${name}`,
+    calendarExamClash: (grade: string) => `More than one exam for ${grade} on this day`,
+    examDateLabel: 'Exam date',
+    examDateHint: 'Optional. Teachers at your school can see it, so exams do not clash.',
+    examDateInvalid: 'Enter the date like 2026-10-12',
+    examTimeLabel: 'Time (optional)',
+    examTimeInvalid: 'Enter the time like 09:30',
+    examDateSave: 'Save date',
+    examDateClear: 'Remove date',
+    examDateSaved: 'Date saved',
+    examDateSaveFailed: 'Could not save the date.',
+    examDateConflict: (grade: string, count: number) =>
+      count === 1
+        ? `Another exam for ${grade} is on this day`
+        : `${count} other exams for ${grade} are on this day`,
+
     // Class ↔ materials
     classTabStudents: 'Students',
     classTabMaterials: 'Files',
@@ -4847,6 +4905,18 @@ const translations = {
     messagingClassChipHint: 'Tap a class name to add everyone in it at once',
     messagingNoSearchMatch: 'No one matches your search',
     messagingCreateGroup: 'Create group',
+    messagingBroadcastTitle: 'Group message',
+    messagingModeBroadcast: 'Message each person',
+    messagingModeBroadcastHint: 'Each person gets a private chat with you, and their reply comes to you alone.',
+    messagingModeGroup: 'Group',
+    messagingModeGroupHint: 'One shared chat where members see each other. Only you can post.',
+    messagingBroadcastBodyLabel: 'Message',
+    messagingBroadcastBodyPlaceholder: 'Write the message everyone you picked will receive…',
+    messagingBroadcastSend: (n: number) => `Send to ${n}`,
+    messagingBroadcastDone: (sent: number, skipped: number) =>
+      skipped > 0 ? `Sent to ${sent}; ${skipped} could not be reached.` : `Sent to ${sent}.`,
+    messagingRoleParents: 'Parents',
+    messagingRoleStudents: 'Students',
     messagingManageMembers: 'Manage members',
     messagingStudentCodes: 'Link code',
     messagingLeaveGroup: 'Leave group',

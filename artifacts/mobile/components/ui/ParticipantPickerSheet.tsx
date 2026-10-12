@@ -19,10 +19,12 @@ import { getTeacherContacts } from '@/services/messaging';
 import { useStudentAccountsEnabled } from '@/services/features';
 import {
   buildPickerContacts,
+  filterByRole,
   matchesQuery,
   toggleClassSelection,
   type PickerClass,
   type PickerContact,
+  type RoleFilter,
 } from '@/services/participantPicker';
 import { palette } from '@/constants/colors';
 
@@ -52,12 +54,14 @@ export function ParticipantPickerSheet({
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [selected, setSelected] = useState<Map<string, Contact>>(new Map());
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
 
   useEffect(() => {
     if (!visible) return;
     let cancelled = false;
     setSelected(new Map());
     setQuery('');
+    setRoleFilter('all');
     setLoading(true);
     setFailed(false);
     void (async () => {
@@ -82,10 +86,13 @@ export function ParticipantPickerSheet({
   const align = isRTL ? 'right' : 'left';
 
   /** Everyone addable, before the search box narrows it. Class selection works off this, not the filtered view. */
-  const addable = useMemo(
-    () => contacts.filter(c => !excluded.has(c.userId)),
-    [contacts, excluded],
+  const notExcluded = useMemo(() => contacts.filter(c => !excluded.has(c.userId)), [contacts, excluded]);
+  // Parents/students chips only when there is a choice to make.
+  const hasBothRoles = useMemo(
+    () => notExcluded.some(c => c.role === 'parent') && notExcluded.some(c => c.role === 'student'),
+    [notExcluded],
   );
+  const addable = useMemo(() => filterByRole(notExcluded, roleFilter), [notExcluded, roleFilter]);
 
   const visible_ = useMemo(
     () => (query ? addable.filter(c => matchesQuery(c, query)) : addable),
@@ -139,7 +146,7 @@ export function ParticipantPickerSheet({
 
           {/* Search and class chips only once there is a list worth narrowing —
               on an empty or failed load they would be controls over nothing. */}
-          {!loading && !failed && addable.length > 0 ? (
+          {!loading && !failed && notExcluded.length > 0 ? (
             <View style={{ gap: 10 }}>
               <View
                 style={[
@@ -162,6 +169,30 @@ export function ParticipantPickerSheet({
                   </Pressable>
                 ) : null}
               </View>
+
+              {hasBothRoles ? (
+                <View style={[styles.chipRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                  {(['all', 'parent', 'student'] as const).map(f => {
+                    const on = roleFilter === f;
+                    return (
+                      <Pressable
+                        key={f}
+                        onPress={() => setRoleFilter(f)}
+                        accessibilityRole="button"
+                        aria-selected={on}
+                        style={[
+                          styles.chip,
+                          { borderColor: on ? ACCENT : colors.border, backgroundColor: on ? `${ACCENT}14` : 'transparent' },
+                        ]}
+                      >
+                        <Text style={{ color: on ? ACCENT : colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
+                          {f === 'all' ? t('messagingFilterAll') : f === 'parent' ? t('messagingRoleParents') : t('messagingRoleStudents')}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ) : null}
 
               {classChips.length > 0 ? (
                 <>

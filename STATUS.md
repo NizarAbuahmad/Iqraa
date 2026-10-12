@@ -1060,6 +1060,59 @@ surahs of equal length being swapped.
   spaced repetition, attaching a surah to a class, a link from an Islamic lesson
   into the corner, whole-surah text for surahs the books print in part.
 
+## Exams have a date, and teachers at one school can see each other's, 2026-10-11
+
+Before this an exam had no date at all — `evaluations` had no such column and
+`evaluation_assignments.due_at` still has no writer — and no teacher could read
+another's data, so nobody could check that a grade was not facing two exams on
+one day. The calendar (`app/calendar`) was a read-only month of timetable periods
+and plan lessons.
+
+- **A date on the exam** (migration `0006`, additive and nullable):
+  `evaluations.exam_date` ("YYYY-MM-DD") and `exam_time` ("HH:MM"), set from the
+  evaluation screen (`components/ExamDateCard.tsx`) through the existing
+  `PATCH /evaluations/:id`, which now takes any of `classGroupId`, `examDate`,
+  `examTime` (`null` clears; a time cannot exist without a date —
+  `lib/examDate.ts`). **Planning data only**: it does not open or close the
+  student link. A text box, not a picker, like the teaching-plan dates — a picker
+  is a native module and would need an `app.json` `version` bump.
+- **Schools exist, assigned by a platform admin** (`schools` table,
+  `users.school_id`): `GET/POST /admin/schools`, `PUT /admin/users/:id/school`,
+  **`system_admin` only** — narrower than the rest of `routes/admin.ts`, because
+  membership decides whose exam dates a teacher can read and a `school_admin`
+  who could assign teachers could place themselves in any school. Teachers only;
+  there is no self-service and no matching on the free-text `schoolName`, which
+  would let anyone read another school's calendar by typing its name. The
+  admin users screen gets a school picker per teacher.
+- **`GET /exam-calendar?from=&to=`** (`routes/examCalendar.ts`): the teacher's own
+  dated exams plus colleagues' at the same `school_id`. A colleague's exam is
+  **date, time, grade, subject, class name and the teacher's name — never its id,
+  title or content** (`lib/examCalendar.ts`, pinned by a test on the serialised
+  object). Closed and archived exams are left out; a draft counts once it has a
+  date. No school → own exams only, `school: null`.
+- **A clash means same school, same grade, same day** (`lib/examClashes.ts`) —
+  **not** "shared students". A student row belongs to one teacher, so the same
+  child under two teachers is two rows and real overlap cannot be computed; the
+  UI says "more than one exam for this grade", not "your students".
+- **Calendar**: a "Show school exams" switch, off by default; the teacher's own
+  exams always show, with an amber square on a clash day (still shown with the
+  switch off, so a clash with a colleague is never hidden). The evaluation screen
+  warns before saving a date that already holds another exam for the grade — a
+  warning, not a block.
+- **Verified against a real Postgres, 2026-10-11**: all seven migrations apply to
+  an empty database and `verify-schema` reports 50/50; the routes were exercised
+  end to end with a school of two teachers, one outside it and both admin roles.
+- **Found on the way — the admin users list showed $0 AI spend for everyone.** The
+  spend subquery interpolated columns, and drizzle renders those unqualified in a
+  single-table select, so it compared `ai_generations.user_id` with its own `id`.
+  A user with $1.25 of spend read 0. The school join happened to fix it; both this
+  and the new `teacherCount` subquery now spell their table names out. **Any
+  correlated subquery written with `${table.col}` inside a single-table select
+  has the same trap.**
+- **Not built**: teachers joining a school themselves, school-admin self-service,
+  clash notifications, blocking a save on a clash, student-level overlap across
+  teachers (needs students that are not owned by a single teacher).
+
 ## English says it is the national Ministry book, 2026-10-10
 
 Picking English now shows a highlighted banner — «الكتاب الوطني المعتمد من
