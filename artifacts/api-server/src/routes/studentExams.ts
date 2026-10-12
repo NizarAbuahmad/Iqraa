@@ -25,6 +25,7 @@ import {
   attempts,
   classGroups,
   classMemberships,
+  evaluationQuestions,
   evaluations,
   masteryOverrides,
   rosterLinks,
@@ -48,6 +49,8 @@ import { retakeDecision } from "../modules/assessment/retake.ts";
 import { examVisibleTo } from "../modules/assessment/audience.ts";
 import { assignedStudentsByEvaluation } from "../lib/evaluationAudience.ts";
 import { guardianLinkedStudents, selfLinkedStudentIds } from "../lib/familyAccess.ts";
+import { paperExamIds } from "../modules/assessment/paperExam.ts";
+import { groupChildren } from "../modules/family/children.ts";
 import {
   guardianExamRow,
   sortStudentExams,
@@ -208,6 +211,8 @@ async function examRowsFor(studentIds: string[]): Promise<StudentExamRow[]> {
       releaseResultsToStudent: evaluations.releaseResultsToStudent,
       publishedAt: evaluations.publishedAt,
       closedAt: evaluations.closedAt,
+      examDate: evaluations.examDate,
+      examTime: evaluations.examTime,
     })
     .from(evaluations)
     .where(where);
@@ -217,6 +222,21 @@ async function examRowsFor(studentIds: string[]): Promise<StudentExamRow[]> {
   const assignedByExam = await assignedStudentsByEvaluation(exams.map(e => e.id));
   const heldIds = new Set(heldEvaluationIds);
   const visibleExams = exams.filter(e => examVisibleTo(assignedByExam.get(e.id), studentIds, heldIds.has(e.id)));
+
+  // "Paper" is the question shape (paperExam.ts), not a column: an exam whose
+  // every live question is a paper question is sat in class and has no link.
+  const paperIds = visibleExams.length
+    ? paperExamIds(
+        await db
+          .select({
+            evaluationId: evaluationQuestions.evaluationId,
+            gradingMode: evaluationQuestions.gradingMode,
+            body: evaluationQuestions.body,
+          })
+          .from(evaluationQuestions)
+          .where(and(inArray(evaluationQuestions.evaluationId, visibleExams.map(e => e.id)), isNull(evaluationQuestions.deletedAt))),
+      )
+    : new Set<string>();
 
   // One sitting per student per exam is a database rule, but an account
   // linked to two roster rows could in principle hold one through each.
@@ -239,7 +259,7 @@ async function examRowsFor(studentIds: string[]): Promise<StudentExamRow[]> {
       const sitting = sittingByExam.get(exam.id) ?? null;
       const result = sitting ? (resultByAttempt.get(sitting.id) ?? null) : null;
       return studentExamRow(
-        exam,
+        { ...exam, paper: paperIds.has(exam.id) },
         sitting as SittingForStudent | null,
         result as ResultForStudent | null,
         now,
@@ -470,7 +490,9 @@ router.post("/student/exams/:evaluationId/retake", async (req: AuthenticatedRequ
 
 /**
  * A parent's view of the same lists, one per child: every roster row this
- * account is `guardian`-linked to. Results follow the student's release rule
+ * account is `guardian`-linked to, each entry carrying `key`, the
+ * `groupChildren` key of its child (rows of one child under two teachers share
+ * it). Results follow the student's release rule
  * exactly (`examRowsFor` → `studentExamRow`), so a parent sees a mark when —
  * and only when — the child can; no row carries the exam link.
  */
@@ -484,10 +506,16 @@ router.get("/parent/exams", async (req: AuthenticatedRequest, res) => {
       return;
     }
 
-    const children = await guardianLinkedStudents(req.user!.id);
+    const links = await guardianLinkedStudents(req.user!.id);
+    // One entry per roster row, as before, each labelled with its child's key —
+    // the same grouping /parent/homework and /parent/schedule use — so the
+    // School tab can put a child's rows from two teachers under one name.
+    const keyOf = new Map<string, string>();
+    for (const child of groupChildren(links)) for (const studentId of child.studentIds) keyOf.set(studentId, child.key);
 
     const lists = await Promise.all(
-      children.map(async child => ({
+      links.map(async child => ({
+        key: keyOf.get(child.studentId) ?? child.studentId,
         studentId: child.studentId,
         displayName: child.displayName,
         exams: (await examRowsFor([child.studentId])).map(guardianExamRow),
