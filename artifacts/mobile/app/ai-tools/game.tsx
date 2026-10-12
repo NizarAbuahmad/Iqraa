@@ -41,7 +41,7 @@ import { bookFigureUri } from '@/services/bookFigureUri';
 import { createGame, MAX_TEAMS, MIN_TEAMS } from '@/services/classGame';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
-import { groundedSubjectConflict, scopeWithoutCurriculum, subjectPickerLabels, topicPickerParams, scopeFromParams } from '@/services/lessonPrep';
+import { groundedSubjectConflict, scopeWithoutCurriculum, subjectPickerLabels, topicPickerParams, scopeFromParams, topicForScope } from '@/services/lessonPrep';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { readableOn } from '@/services/readableColor';
@@ -89,7 +89,7 @@ export default function ClassGameScreen() {
   const lang = contentLang(subjects[subjectIdx].id, uiLang);
   const isAr = lang === 'ar';
   const [topic, setTopic] = useState(() => topicInLang(
-    params.topic ?? '', uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
+    topicForScope(params, uiLang, teacherScope.defaultScope, teacherScope), uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
     { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
   ));
   useWarmGrounding(topic, lang);
@@ -312,7 +312,7 @@ export default function ClassGameScreen() {
             accent={ACCENT}
             pillStyle={styles.pill}
           />
-          <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
+          <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t(teacherScope.strandedNoteKey(grades[gradeIdx].id, subjectIdx))} isRTL={isRTL} colors={colors} />
           <PillSelector
             label={t('subjects')}
             options={subjects.map((s, i) => ({ value: i, label: subjectNames[i] })).filter(o => !subjectHidden[o.value])}

@@ -617,6 +617,33 @@ Return JSON in this exact shape:
 }`;
 }
 
+/**
+ * The block appended to a quiz request when the first reply came back short.
+ *
+ * A model asked for 20 questions will often return 10 and call it done, in a
+ * perfectly valid reply that nothing downstream can tell is incomplete. The
+ * route counts, and asks again for only what is missing — with the stems it
+ * already has, so the second batch is new questions and not a rewording of the
+ * first. The reply is shaped like the original (a title is still required to
+ * pass the shape check) but its `questions` holds only the new ones.
+ */
+export function quizTopUpBlock(isAr: boolean, have: string[], missing: number): string {
+  const list = have.map((t, i) => `${i + 1}. ${t.slice(0, 160)}`).join("\n");
+  return isAr
+    ? `
+
+الورقة تحتوي حاليًا على ${have.length} سؤالًا، وهذه نصوصها:
+${list}
+
+اكتب ${missing} سؤالًا إضافيًا بالضبط، من الأنواع المطلوبة نفسها وبالشكل نفسه، عن أفكار وحقائق مختلفة عمّا سبق ولا تكرر أيًّا منها ولا تعد صياغته. أعد JSON بالشكل نفسه لكن "questions" فيه الأسئلة الجديدة وحدها (ترقيمها من q${have.length + 1}).`
+    : `
+
+The paper so far has ${have.length} questions, with these texts:
+${list}
+
+Write exactly ${missing} MORE questions, of the same requested types and in the same shape, about different ideas and facts from the above — do not repeat or reword any of them. Return the same JSON shape, but "questions" holds only the new questions (numbered from q${have.length + 1}).`;
+}
+
 // ─── Difficulty ──────────────────────────────────────────────────────────────
 /**
  * What a difficulty tier actually means, and how it lands on each artifact.
