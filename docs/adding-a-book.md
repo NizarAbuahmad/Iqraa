@@ -145,16 +145,16 @@ curriculum book with its own units and lessons.
 Only Grade 10 maths so far. Everything is in `scripts/extract_book_items.py`;
 read its header before adding to it.
 
-28. Add a row to `TABLE`: the source, the book's unit and lesson, the item range,
+- Add a row to `TABLE`: the source, the book's unit and lesson, the item range,
     a `family` (`system`, `derivative`, `derivative_at` or `mcq_pair`) and **your
     own** Arabic `instruction_ar`. The book's scrambled instruction line is never
     parsed. A row must join to a curriculum lesson or the script stops.
-29. A new kind of question needs a solver, a `MAX_EXP` entry and a test in
+- A new kind of question needs a solver, a `MAX_EXP` entry and a test in
     `scripts/test_extract_book_items.py`. Reject on ambiguity with a reason; never
     choose a reading.
-30. `python scripts/extract_book_items.py`, then commit the three JSON files and
+- `python scripts/extract_book_items.py`, then commit the three JSON files and
     `report.json`. CI re-runs the script and fails if the committed files differ.
-31. Read the new items against the printed book. No page image is reachable from a
+- Read the new items against the printed book. No page image is reachable from a
     fresh checkout, so this is the only check on the stem.
 
 ## F. Public download link (only when NCCD does not host the book)

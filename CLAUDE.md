@@ -154,8 +154,10 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   flattens exponents and splits fractions — must never carry a `check`: the
   existing verification pass would badge it «تم التحقق», which says the stem was
   read correctly and nothing has checked that. `SERVED_STATUSES` is the one place
-  that decides what a paper may draw. Only the API evaluation generator uses
-  book items; the live-AI path and the mobile offline generators ignore them, so
+  that decides what a paper may draw. Only the API's mock evaluation generator uses
+  book items, and it runs only when live AI is off; production has
+  `AI_LIVE_MODE=true`, so today no live paper uses them. The live-AI path and
+  the mobile offline generators ignore them, so
   a paper differs by which path made it — add a family to the script's `TABLE`,
   never to a generator.
 - **A teaching style shapes the whole lesson plan, in two places.** Per-style

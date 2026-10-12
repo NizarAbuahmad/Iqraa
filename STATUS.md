@@ -932,7 +932,7 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
-## Real book items in evaluations: 24 served, none verified, 2026-10-12
+## Real book items in the mock evaluation generator: 24 served, none verified, none live yet, 2026-10-12
 
 A Grade 10 maths evaluation used to be built from generated templates only.
 It now also draws **real NCCD items** — exercise-book questions and the teacher
@@ -941,29 +941,43 @@ guide's end-of-unit test — for the objective's own lesson. Reader:
 `scripts/extract_book_items.py`. Design:
 `docs/superpowers/specs/2026-10-12-book-items-design.md`.
 
+- **Not on the live path yet.** `generateMockEvaluation` has one caller, the
+  non-live `else` branch of `POST /evaluations/:id/generate`
+  (`routes/evaluations.ts`); the live path calls the model. Production runs
+  `AI_LIVE_MODE=true` (see "Live AI is on, 2026-08-20"), so with today's settings
+  **no live evaluation draws book items** — they appear only when live AI is off
+  (dev, demo, or `AI_LIVE_MODE` unset). Next slices: give the live model path the
+  same items, or the mobile offline quiz/exam generators.
 - **What is in it.** 24 served items: systems of equations (S1 unit 1, two
   lessons), polynomial derivatives (S2 unit 6) and two unit-test choices. 14 more
   were quarantined, each with its reason in `report.json` (no real solution, an
   exponent the text layer made ambiguous, a fraction split across lines).
-- **None is `verified`.** The guide prints no answer for these item families —
-  its appendix answers word-problem and diagram exercises — so SymPy's answer is
-  the only one. They are `computed`: labelled to the teacher «الحل محسوب من نص
-  السؤال», and carrying no `check`, so they cannot earn the verified badge.
+- **None is `verified`.** No printed answer was found for the families
+  extracted here (exercise-book systems and derivatives, unit-test choices 1-2),
+  so SymPy's answer is the only one. Guide page 47 does print answers inline for
+  unit-test items 6-11 (e.g. `(1, 4), (-5, -20)` for item 6, «لا يوجد حل» for
+  item 7); those are the first candidates for `verified` and are not extracted
+  yet. Until then the items are `computed`: labelled to the teacher «الحل محسوب
+  من نص السؤال», and carrying no `check`, so they cannot earn the verified badge.
   `verified` exists and is pinned by test for the day a family has a printed
   answer; nothing exercises it with data yet.
 - **No stem has been compared with a page image.** The text layer flattens
   exponents (`24x3` is 24x³) and splits fractions, and the book PDFs are not in a
   fresh checkout. The extractor refuses anything ambiguous rather than choosing a
   reading, but a person should read the 24 against the books. The PR that
-  introduced this lists them.
-- **Where it applies.** Only the API evaluation generator (`mockGenerator.ts`
+  introduced this lists them. Compare first `s1-exercise-book-u1l2-1`, `-2`,
+  `-8` and `-10` (surd answers; the final review asked for them to be eyeballed).
+- **Where it applies.** Only the mock evaluation generator (`mockGenerator.ts`
   `bookQuestion`): at most half a paper, only when the objective's `lessonId` has
   items and the requested types allow them. The live-AI path, the mobile offline
   quiz/exam generators, worksheets, homework and decks do not use book items.
   The teacher sees the citation and key label on the evaluation screen
   (`services/bookItemNote.ts`).
+- **Competency is nominal for book questions.** A book item's `competencyKey` is
+  stamped by the paper's slot and does not match the item, so the competency
+  breakdown is nominal for book questions.
 - **Not covered.** S1 unit 1's first lesson («حل معادلات خاصة») has no
-  curriculum lesson, so its 15 exercises cannot be joined; Arabic word problems;
+  curriculum lesson, so its 18 exercises (15 of them equation items) cannot be joined; Arabic word problems;
   figure items; chemistry (its teacher guides have no extracted text).
 
 ## Parents and students sign up with the teacher's code alone, 2026-10-10

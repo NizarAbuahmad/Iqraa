@@ -12,7 +12,7 @@
 
 ## Expected result (so nobody is surprised)
 
-Running the extractor on the committed text gives **24 served items, all `computed`, 0 `verified`, 14 quarantined**. The guide prints no answer for these item families, so nothing can be `verified` yet. The `verified` and `book-key` paths exist and are pinned by tests, but no data exercises them. If your counts differ, stop and find out why before continuing.
+Running the extractor on the committed text gives **24 served items, all `computed`, 0 `verified`, 14 quarantined**. No printed answer was found for the families extracted here (exercise-book systems and derivatives, unit-test choices 1-2), so nothing can be `verified` yet. Guide page 47 does print answers inline for unit-test items 6-11 (e.g. `(1, 4), (-5, -20)` for item 6, «لا يوجد حل» for item 7); those are the first candidates for `verified` and are not extracted yet. The `verified` and `book-key` paths exist and are pinned by tests, but no data exercises them. If your counts differ, stop and find out why before continuing.
 
 ## Differences from the spec
 
@@ -21,10 +21,11 @@ The spec was written before the text was probed in depth. These are the places t
 | Spec said | This plan does | Why |
 | --- | --- | --- |
 | Mobile offline quiz/exam uses book items | **Not in this plan** | `tryMathPractice` is reached from ten question factories in `generators.ts`; book items need provenance semantics (`fromBank` means "bank-checked"), and the paper exports have no place for a citation. It needs its own spec addendum. |
-| Read the printed answer from the guide appendix | **Not built**; `assign_state` implements the rule and is pinned by test | The appendix answers only word-problem and diagram exercises. No family in the table has a printed answer, so a reader would be dead code. Add it with the first family that has one. |
+| Read the printed answer from the guide appendix | **Not built**; `assign_state` implements the rule and is pinned by test | No printed answer was found for the families in the table, so a reader would be dead code. Guide page 47 does print answers inline for unit-test items 6-11 (e.g. `(1, 4), (-5, -20)` for item 6, «لا يوجد حل» for item 7); add the reader with the first of those families. |
 | Polynomial-equation family (S1 unit 1 lesson 1) | **Dropped** | The book's «حل معادلات خاصة» has no curriculum lesson, so its 15 items cannot be joined. The script stops if a table row cannot join. |
 | Sample of 30 items in the PR body | **List all 24** | There are only 24. |
 | Teacher sees citation/label | Shown on the **evaluation screen** from `aiMetadata` | The mobile quiz path is out of scope, and the evaluation screen is where these questions are reviewed. |
+| Book items reach production papers | Only when live AI is off | the only caller of generateMockEvaluation is the non-live branch; production runs AI_LIVE_MODE=true |
 
 ## Global Constraints
 
@@ -1522,9 +1523,9 @@ index ebd31f0..a1483bf 100644
 +  lessons), polynomial derivatives (S2 unit 6) and two unit-test choices. 14 more
 +  were quarantined, each with its reason in `report.json` (no real solution, an
 +  exponent the text layer made ambiguous, a fraction split across lines).
-+- **None is `verified`.** The guide prints no answer for these item families —
-+  its appendix answers word-problem and diagram exercises — so SymPy's answer is
-+  the only one. They are `computed`: labelled to the teacher «الحل محسوب من نص
++- **None is `verified`.** No printed answer was found for the families extracted
++  here (guide page 47 does print some for unit-test items 6-11, not extracted
++  yet), so SymPy's answer is the only one. They are `computed`: labelled to the teacher «الحل محسوب من نص
 +  السؤال», and carrying no `check`, so they cannot earn the verified badge.
 +  `verified` exists and is pinned by test for the day a family has a printed
 +  answer; nothing exercises it with data yet.
