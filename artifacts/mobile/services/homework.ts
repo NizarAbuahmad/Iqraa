@@ -242,11 +242,25 @@ export function formatDueDate(ymd: string): string {
  * given — the interface carries no completion time to sort by. Pure.
  */
 export function splitHomework(items: FamilyHomework[]): { todo: FamilyHomework[]; done: FamilyHomework[] } {
-  const rank = (h: FamilyHomework) => (h.state === 'overdue' ? 0 : 1);
+  // Rank by what the row SHOWS: an untracked item is drawn neutral (no «متأخّر»
+  // badge), so a server `overdue` on it must not lift it above open items.
+  const rank = (h: FamilyHomework) => (h.canTrack && h.state === 'overdue' ? 0 : 1);
   const todo = items
     .filter(h => !h.done)
     .sort((a, b) => rank(a) - rank(b) || (a.dueDate < b.dueDate ? -1 : a.dueDate > b.dueDate ? 1 : 0));
   return { todo, done: items.filter(h => h.done) };
+}
+
+/**
+ * Which explanation the family list owes for rows with no status: `none` when
+ * every visible item can be ticked, `all` when none can (nothing is wrong with
+ * the child's classes beyond a missing student account), `some` for a mix
+ * (e.g. an account in one teacher's class and none in another's). Saying "no
+ * student account" of the child in the mixed case would be false.
+ */
+export function untrackedMode(items: FamilyHomework[]): 'none' | 'some' | 'all' {
+  const n = items.filter(h => !h.canTrack).length;
+  return n === 0 ? 'none' : n === items.length ? 'all' : 'some';
 }
 
 export type HomeworkSection = { key: 'todo' | 'done' | 'all'; items: FamilyHomework[] };

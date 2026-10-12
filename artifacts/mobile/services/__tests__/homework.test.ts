@@ -16,6 +16,7 @@ import {
   normalizeTeacherHomework,
   normalizeTeacherList,
   splitHomework,
+  untrackedMode,
   type FamilyHomework,
 } from '../homework.ts';
 
@@ -288,6 +289,18 @@ test('splitHomework puts overdue first, then by due date ascending', () => {
   );
 });
 
+test('splitHomework ranks overdue by what is SHOWN: an untracked item the server marks overdue sorts by date like an open one', () => {
+  const { todo } = splitHomework([
+    hw({ id: 'open-soon', dueDate: '2026-10-14' }),
+    hw({ id: 'untracked-late', dueDate: '2026-10-20', state: 'overdue', canTrack: false }),
+    hw({ id: 'tracked-late', dueDate: '2026-10-25', state: 'overdue' }),
+  ]);
+  assert.deepEqual(
+    todo.map(h => h.id),
+    ['tracked-late', 'open-soon', 'untracked-late'],
+  );
+});
+
 test('splitHomework moves done items to done, whatever their date', () => {
   const { todo, done } = splitHomework([
     hw({ id: 'a', done: true, state: 'done' }),
@@ -457,4 +470,17 @@ test('homeworkSections: when every item is untracked the list is flat, soonest d
 
 test('homeworkSections: no items gives no sections and no explanation', () => {
   assert.deepEqual(homeworkSections([]), { sections: [], anyUntracked: false });
+});
+
+test('untrackedMode: none when every visible item can be ticked (or there are none)', () => {
+  assert.equal(untrackedMode([]), 'none');
+  assert.equal(untrackedMode([fam('a'), fam('b', { done: true, state: 'done' })]), 'none');
+});
+
+test('untrackedMode: some when only part of the list is untracked (the mixed-class case)', () => {
+  assert.equal(untrackedMode([fam('a'), fam('b', { canTrack: false })]), 'some');
+});
+
+test('untrackedMode: all when every visible item is untracked', () => {
+  assert.equal(untrackedMode([fam('a', { canTrack: false }), fam('b', { canTrack: false })]), 'all');
 });

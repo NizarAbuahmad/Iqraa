@@ -35,6 +35,7 @@ import {
   dueBadge,
   formatDueDate,
   homeworkSections,
+  untrackedMode,
   type ChildHomework,
   type FamilyHomework,
 } from '@/services/homework';
@@ -158,6 +159,7 @@ export default function SchoolScreen() {
   const hwChild = homework ? (homework.find(c => c.key === selected) ?? homework[0] ?? null) : null;
   // Whether an item can be ticked is the ITEM's flag (ticking is per class), not the child's.
   const hw = homeworkSections(hwChild?.homework ?? []);
+  const untrackedKind = untrackedMode(hwChild?.homework ?? []);
   const hwEmpty = homework !== null && !hwError && hw.sections.length === 0;
   const hwToday = ammanToday();
   const loading = (children === null && !error) || (homework === null && !hwError);
@@ -223,9 +225,9 @@ export default function SchoolScreen() {
             <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.body, lineHeight: 24, textAlign: align }}>
               {t(isParent ? 'hwDescParent' : 'hwDescStudent')}
             </Text>
-            {hw.anyUntracked ? (
+            {untrackedKind !== 'none' ? (
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.label, lineHeight: 22, textAlign: align }}>
-                {t('hwParentNoAccount', hwChild?.displayName ?? '')}
+                {t(untrackedKind === 'all' ? 'hwParentNoAccount' : 'hwParentNoAccountSome', hwChild?.displayName ?? '')}
               </Text>
             ) : null}
           </View>

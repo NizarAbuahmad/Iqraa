@@ -2130,13 +2130,14 @@ const translations = {
     hwDoneCount: (done: number, total: number) => `أنجزه ${done} من ${total}`,
     hwNoAccountCount: (n: number) => `${arCountStudents(n)} بلا حساب`,
     hwParentNoAccount: (name: string) => `لا يوجد حساب طالب لـ \u2068${name}\u2069، لذلك لا تظهر حالة الإنجاز.`,
+    hwParentNoAccountSome: (name: string) => `لا تظهر حالة الإنجاز لبعض واجبات \u2068${name}\u2069، لأنها من صفوف لا يوجد فيها حساب طالب.`,
     hwDelete: 'حذف الواجب',
     hwDeleteConfirm: 'سيختفي هذا الواجب عند الطلبة وأولياء الأمور.',
     hwTeacherEmptyTitle: 'لم تضف واجبًا بعد',
     hwTeacherEmptyDesc: 'أضف واجبًا ليراه طلبة الشعبة وأولياء أمورهم.',
     hwErrTitle: 'اكتب عنوانًا للواجب',
     hwErrDue: 'اكتب تاريخًا صحيحًا مثل \u20662026-10-14\u2069',
-    hwErrDueRange: 'التاريخ يجب أن يكون خلال آخر 30 يومًا أو السنة القادمة',
+    hwErrDueRange: 'التاريخ يجب أن يقع بين 30 يومًا مضت وسنة قادمة.',
     hwPresetDays: (n: number) =>
       n === 1 ? 'غدًا' : n === 2 ? 'بعد يومين' : n === 7 ? 'بعد أسبوع' : `بعد ${n} أيام`,
     myExamsEmptyTitle: 'لا توجد اختبارات بعد',
@@ -4603,14 +4604,18 @@ const translations = {
     hwNoExam: 'No exam',
     hwDoneCount: (done: number, total: number) => `${done} of ${total} done`,
     hwNoAccountCount: (n: number) => `${enCountStudents(n)} without an account`,
-    hwParentNoAccount: (name: string) => `\u2068${name}\u2069 has no student account yet, so completion status isn't shown.`,
+    // Leading LRM: the Text is dir="auto", so the first strong character picks the
+    // paragraph direction, and an Arabic name there would lay the whole English
+    // sentence out RTL. The isolates alone do not help with that.
+    hwParentNoAccount: (name: string) => `\u200E\u2068${name}\u2069 has no student account yet, so completion status isn't shown.`,
+    hwParentNoAccountSome: (name: string) => `\u200ECompletion status isn't shown for some of \u2068${name}\u2069's homework: those classes have no student account.`,
     hwDelete: 'Delete homework',
     hwDeleteConfirm: 'This will disappear for students and parents.',
     hwTeacherEmptyTitle: 'No homework yet',
     hwTeacherEmptyDesc: "Add homework and this section's students and parents will see it.",
     hwErrTitle: 'Enter a title',
     hwErrDue: 'Enter a valid date such as \u20662026-10-14\u2069',
-    hwErrDueRange: 'The date must be within the last 30 days or the next year',
+    hwErrDueRange: 'The date must be between 30 days ago and one year ahead.',
     hwPresetDays: (n: number) =>
       n === 1 ? 'Tomorrow' : n === 7 ? 'In a week' : `In ${n} days`,
     myExamsEmptyTitle: 'No exams yet',
