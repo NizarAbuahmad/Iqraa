@@ -132,3 +132,24 @@ export function narrowBooksToTeacher<T extends { gradeId: string; subjectId: str
       );
   return narrowed.length > 0 ? narrowed : books;
 }
+
+/**
+ * Why a subject row is hidden under the picked grade — the two causes the
+ * pickers' mask merges (`useTeacherScope.subjectHiddenFor`) but must not
+ * *explain* with one sentence. A missing book is a fact about the catalog and
+ * true for everyone; "not taught" is the teacher's own `/setup-subjects`
+ * selection, and saying «no curriculum» for it told a teacher that a grade
+ * with a book had none. `noBook` wins when both apply because it stays true
+ * however they change their selection.
+ */
+export type SubjectHideReason = 'noBook' | 'notTaught';
+
+export function subjectHideReason(
+  noBook: readonly boolean[],
+  notTaught: readonly boolean[],
+  index: number,
+): SubjectHideReason | null {
+  if (noBook[index]) return 'noBook';
+  if (notTaught[index]) return 'notTaught';
+  return null;
+}

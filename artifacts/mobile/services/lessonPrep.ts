@@ -223,11 +223,25 @@ export function scopeFromParams(
   const inferred = fromRoute.gradeIdx != null && fromRoute.subjectIdx != null
     ? null
     : topicPickerParams(params.topic, lang);
-  const gradeIdx = fromRoute.gradeIdx
-    ?? shownGrade(pickerIndexOrNull(inferred?.gradeIdx, grades.length))
-    ?? fallback.gradeIdx;
+  const inferredGrade = shownGrade(pickerIndexOrNull(inferred?.gradeIdx, grades.length));
+  const gradeIdx = fromRoute.gradeIdx ?? inferredGrade ?? fallback.gradeIdx;
 
-  let subjectIdx = fromRoute.subjectIdx ?? resolvePickerIndex(inferred?.subjectIdx, subjects.length, fallback.subjectIdx);
+  // The route's subject index describes the lesson of the grade it was built
+  // for. When that grade is hidden and the screen lands on the teacher's own
+  // fallback grade instead, the index belongs to nothing there — a Grade 1
+  // link's «الرياضيات» opened Grade 4 on Mathematics although the teacher
+  // teaches something else in it, and the note then blamed the curriculum. So
+  // the subject follows the grade: the grounded lesson's own subject if the
+  // topic placed us, else the teacher's default for the fallback grade.
+  const routeGradeDropped = selection != null
+    && pickerIndexOrNull(params.gradeIdx, grades.length) != null
+    && fromRoute.gradeIdx == null;
+  const routeSubject = routeGradeDropped ? null : fromRoute.subjectIdx;
+  const droppedFallbackSubject = routeGradeDropped && inferredGrade == null ? fallback.subjectIdx : null;
+
+  let subjectIdx = droppedFallbackSubject
+    ?? routeSubject
+    ?? resolvePickerIndex(inferred?.subjectIdx, subjects.length, fallback.subjectIdx);
   // Judged against the grade finally chosen: a subject taught in Grade 10 may
   // be hidden under the grade the teacher fell back to.
   const subjectMask = selection?.subjectHiddenFor(grades[gradeIdx]?.id ?? '');

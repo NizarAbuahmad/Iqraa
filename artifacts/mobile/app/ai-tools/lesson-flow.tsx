@@ -447,7 +447,7 @@ export default function LessonFlowScreen() {
                 </Pressable>
               ))}
             </ScrollView>
-            <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
+            <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t(teacherScope.strandedNoteKey(grades[gradeIdx].id, subjectIdx))} isRTL={isRTL} colors={colors} />
 
             {/* Subject */}
             <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', marginTop: 16, textAlign: isRTL ? 'right' : 'left' }]}>
