@@ -37,8 +37,11 @@ export interface BookPlanRequest {
   difficulty?: Difficulty;
 }
 
-/** Small seeded generator, so the dry run in `planBookDraw` is the same every time. */
-function mulberry32(seed: number): () => number {
+/**
+ * Small seeded generator, so the dry run in `planBook` is the same every time.
+ * Exported so a test can replay the dry run's own draw (seed `PLAN_SEED`).
+ */
+export function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
   return () => {
     a = (a + 0x6d2b79f5) >>> 0;
@@ -60,10 +63,52 @@ function mulberry32(seed: number): () => number {
  * draws nothing for the paper. At most half the paper, as on the mock path.
  */
 export function planBookDraw(req: BookPlanRequest): number {
-  if (!req.enabled || req.subjectId !== "mathematics") return 0;
+  return planBook(req).k;
+}
+
+/** The seed of the dry run in `planBook`. */
+export const PLAN_SEED = 1;
+
+/**
+ * What the dry run's book questions amount to. Nominal and approximate: the real
+ * draw uses another seed and may differ by a question, so anything told to a
+ * model from this says "about".
+ */
+export interface BookSupplied {
+  byType: Partial<Record<"short_answer" | "multiple_choice", number>>;
+  byCompetency: Partial<Record<CompetencyKey, number>>;
+  marks: number;
+}
+
+/** Summarise drawn book questions from their own type, competency and marks. */
+export function summariseBook(questions: readonly GeneratedQuestion[]): BookSupplied {
+  const byType: BookSupplied["byType"] = {};
+  const byCompetency: BookSupplied["byCompetency"] = {};
+  let marks = 0;
+  for (const q of questions) {
+    if (q.type === "short_answer" || q.type === "multiple_choice") {
+      byType[q.type] = (byType[q.type] ?? 0) + 1;
+    }
+    byCompetency[q.competencyKey] = (byCompetency[q.competencyKey] ?? 0) + 1;
+    marks += q.marks;
+  }
+  return { byType, byCompetency, marks };
+}
+
+const NO_BOOK: BookSupplied = { byType: {}, byCompetency: {}, marks: 0 };
+
+/**
+ * `planBookDraw`'s dry run, keeping what it drew: `k` is the number of book
+ * questions the paper will carry and `supplied` summarises them, so the prompt
+ * can say what the model's share has to make up for. `k === 0` gives an empty
+ * summary.
+ */
+export function planBook(req: BookPlanRequest): { k: number; supplied: BookSupplied } {
+  const none = { k: 0, supplied: { ...NO_BOOK, byType: {}, byCompetency: {} } };
+  if (!req.enabled || req.subjectId !== "mathematics") return none;
   const wantChoice = req.assessmentTypes.includes("multiple_choice");
   const wantShort = req.assessmentTypes.includes("short_answer");
-  if (!wantChoice && !wantShort) return 0;
+  if (!wantChoice && !wantShort) return none;
 
   const lessons = new Set<string>();
   for (const o of req.objectives) if (o.lessonId) lessons.add(o.lessonId);
@@ -74,16 +119,17 @@ export function planBookDraw(req: BookPlanRequest): number {
     }
   }
   const cap = Math.max(0, Math.min(Math.floor(req.count / 2), eligible));
-  if (cap === 0) return 0;
+  if (cap === 0) return none;
   const dry = drawBookQuestions({
     objectives: req.objectives,
     assessmentTypes: req.assessmentTypes,
     difficulty: req.difficulty ?? "standard",
     k: cap,
     accepted: [],
-    rng: mulberry32(1),
+    rng: mulberry32(PLAN_SEED),
   });
-  return Math.min(cap, dry.length);
+  const drawn = dry.slice(0, cap);
+  return { k: drawn.length, supplied: summariseBook(drawn) };
 }
 
 /**

@@ -32,12 +32,35 @@ import {
   isMathematicsSubject,
   parseAnswerKeyCheck,
 } from "@workspace/math-verify";
-import { competencyForBlooms, type CompetencyKey } from "./competency.ts";
+import { MARKS_BY_COMPETENCY, competencyForBlooms, type CompetencyKey } from "./competency.ts";
+import type { BookSupplied } from "./bookQuestions.ts";
 import type { GeneratedQuestion } from "./mockGenerator.ts";
 import { variationBlock } from "../../lib/variation.ts";
 
 /** Bumped when the prompt changes shape, so usage rows stay comparable. */
 export const GENERATION_PROMPT_VERSION = "exam-gen-6";
+
+/**
+ * What the model is told the official textbook already supplies for this paper
+ * (see `planBook` in `bookQuestions.ts`). Absent, or `count === 0`, the prompt is
+ * exactly what it was before this existed.
+ */
+export interface LlmSupplied extends BookSupplied {
+  /** About how many of the paper's questions the book writes. */
+  count: number;
+  /** How many of each competency the model should write so the whole paper lands on target. Sums to the request's `count`. */
+  newByCompetency: Record<CompetencyKey, number>;
+  /** The whole paper: the model's questions plus the book's. */
+  paperTotal: number;
+}
+
+const hasSupplied = (req: LlmGenerationRequest): req is LlmGenerationRequest & { supplied: LlmSupplied } =>
+  req.supplied !== undefined && req.supplied.count > 0;
+
+/** The prompt version to record for a paper made from `req`: the block changes the text, so it changes the version. */
+export function generationPromptVersion(req: LlmGenerationRequest): string {
+  return hasSupplied(req) ? `${GENERATION_PROMPT_VERSION}+book` : GENERATION_PROMPT_VERSION;
+}
 
 export interface LlmGenerationRequest {
   objectives: CurriculumObjective[];
@@ -70,6 +93,12 @@ export interface LlmGenerationRequest {
   avoid?: readonly string[];
   /** Set on the one retry after the first attempt repeated most of `avoid`. */
   insistent?: boolean;
+  /**
+   * Real textbook questions that will be added after the model's, so the model
+   * can write the rest of the paper around them. Only text for the user message;
+   * the model is told counts, never the book's stems.
+   */
+  supplied?: LlmSupplied;
 }
 
 /**
@@ -169,6 +198,38 @@ export function gradeClause(gradeId: string | undefined): string {
   return Number.isInteger(n) && n >= 1 && n <= 12 ? `, Grade ${n}` : "";
 }
 
+const COMPETENCY_ORDER: readonly CompetencyKey[] = [
+  "knowledge",
+  "understanding",
+  "application",
+  "critical_thinking",
+];
+
+/**
+ * The paragraph that tells the model what the textbook already supplies.
+ * English, like the rest of the prompt's instructions. Every number is "about":
+ * the real draw is made after the model answers and can differ by a question.
+ */
+function suppliedBlock(s: LlmSupplied): string[] {
+  const types = Object.entries(s.byType)
+    .filter(([, n]) => (n ?? 0) > 0)
+    .map(([t, n]) => `${n} ${t}`)
+    .join(", ");
+  const competencies = COMPETENCY_ORDER.filter(c => (s.byCompetency[c] ?? 0) > 0)
+    .map(c => `${c} ${s.byCompetency[c]} (${s.byCompetency[c]! * MARKS_BY_COMPETENCY[c]} marks)`)
+    .join(", ");
+  const toWrite = COMPETENCY_ORDER.map(c => `${c} ${s.newByCompetency[c] ?? 0}`).join(", ");
+  return [
+    `This paper has ${s.paperTotal} questions in all. About ${s.count} of them are already written from the official textbook `
+      + "and will be added after yours.",
+    `Those are: ${types}; by competency ${competencies}, about ${s.marks} marks.`,
+    "Do not write those. Count them when you spread the questions across the listed types "
+      + "(rule 2 applies to the whole paper, not only to your share).",
+    `To bring the whole paper to its target mix, write about: ${toWrite}.`,
+    "",
+  ];
+}
+
 export function buildGenerationPrompt(req: LlmGenerationRequest): {
   system: string;
   user: string;
@@ -237,6 +298,7 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
   const user = [
     `Write ${req.count} questions.`,
     "",
+    ...(hasSupplied(req) ? suppliedBlock(req.supplied) : []),
     "Objectives (use these ids verbatim):",
     objectives,
     "",
@@ -410,7 +472,7 @@ export function parseGeneratedQuestions(
       // `evaluations.generator` records the same at the evaluation level.
       aiMetadata: {
         model: meta.model,
-        promptVersion: GENERATION_PROMPT_VERSION,
+        promptVersion: generationPromptVersion(req),
         source: "llm",
       },
     });

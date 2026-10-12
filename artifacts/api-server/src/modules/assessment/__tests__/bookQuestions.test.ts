@@ -27,7 +27,10 @@ import {
   assembleLivePaper,
   drawBookQuestions,
   isBookItemsLiveOn,
+  mulberry32,
+  planBook,
   planBookDraw,
+  summariseBook,
   previousBookItemIds,
 } from "../bookQuestions.ts";
 import type { GeneratedQuestion } from "../mockGenerator.ts";
@@ -384,5 +387,86 @@ describe("previousBookItemIds", () => {
       { aiMetadata: { bookItemId: 5 } },
     ]);
     assert.deepEqual([...ids], ["bi-a"]);
+  });
+});
+
+describe("planBook", () => {
+  const FIXTURES: Array<[string, Parameters<typeof planBook>[0]]> = [];
+  for (const lesson of LESSONS_WITH_ITEMS) {
+    for (const types of [[...BOTH], ["short_answer"], ["multiple_choice"]] as QuestionType[][]) {
+      for (const count of [1, 4, 7, 10, 40]) {
+        FIXTURES.push([
+          `${lesson} [${types.join("+")}] x${count}`,
+          { objectives: [objective("o1", lesson)], assessmentTypes: types, count, subjectId: "mathematics", enabled: true },
+        ]);
+      }
+    }
+  }
+  FIXTURES.push(
+    ["flag off", { objectives: [objective("o1", SYSTEMS)], assessmentTypes: [...BOTH], count: 10, subjectId: "mathematics", enabled: false }],
+    ["chemistry", { objectives: [objective("o1", SYSTEMS)], assessmentTypes: [...BOTH], count: 10, subjectId: "chemistry", enabled: true }],
+    ["advanced", { objectives: [objective("o1", SYSTEMS)], assessmentTypes: [...BOTH], count: 10, subjectId: "mathematics", enabled: true, difficulty: "advanced" }],
+  );
+
+  it("k is exactly what planBookDraw returns, for every fixture", () => {
+    for (const [name, req] of FIXTURES) assert.equal(planBook(req).k, planBookDraw(req), name);
+  });
+
+  it("supplied is the summary of a draw of k with the plan's own seed", () => {
+    let nonEmpty = 0;
+    for (const [name, req] of FIXTURES) {
+      const { k, supplied } = planBook(req);
+      const drawn = drawBookQuestions({
+        objectives: req.objectives, assessmentTypes: req.assessmentTypes,
+        difficulty: req.difficulty ?? "standard", k, accepted: [], rng: mulberry32(1),
+      });
+      assert.equal(drawn.length, k, name);
+      const byType: Record<string, number> = {};
+      const byCompetency: Record<string, number> = {};
+      let marks = 0;
+      for (const q of drawn) {
+        byType[q.type] = (byType[q.type] ?? 0) + 1;
+        byCompetency[q.competencyKey] = (byCompetency[q.competencyKey] ?? 0) + 1;
+        marks += q.marks;
+      }
+      assert.deepEqual(supplied, { byType, byCompetency, marks }, name);
+      if (k > 0) nonEmpty += 1;
+    }
+    assert.ok(nonEmpty > 10, "the fixtures must exercise real draws");
+  });
+
+  it("a plan of nothing has an empty summary", () => {
+    const none = planBook({ objectives: [objective("o1", SYSTEMS)], assessmentTypes: [...BOTH], count: 10, subjectId: "mathematics", enabled: false });
+    assert.deepEqual(none, { k: 0, supplied: { byType: {}, byCompetency: {}, marks: 0 } });
+    assert.equal(planBook({ objectives: [objective("o1", SYSTEMS)], assessmentTypes: [...BOTH], count: 1, subjectId: "mathematics", enabled: true }).k, 0);
+  });
+});
+
+describe("summariseBook", () => {
+  const q = (type: QuestionType, competencyKey: GeneratedQuestion["competencyKey"], marks: number): GeneratedQuestion => ({
+    ...modelQuestion(1, "o1"), type, competencyKey, marks,
+  });
+
+  it("counts type and competency and adds up marks", () => {
+    const s = summariseBook([
+      q("short_answer", "application", 3),
+      q("short_answer", "application", 3),
+      q("multiple_choice", "understanding", 2),
+    ]);
+    assert.deepEqual(s, {
+      byType: { short_answer: 2, multiple_choice: 1 },
+      byCompetency: { application: 2, understanding: 1 },
+      marks: 8,
+    });
+  });
+
+  it("lists only the types and competencies that are present", () => {
+    const s = summariseBook([q("multiple_choice", "understanding", 2)]);
+    assert.deepEqual(Object.keys(s.byType), ["multiple_choice"]);
+    assert.deepEqual(Object.keys(s.byCompetency), ["understanding"]);
+  });
+
+  it("is empty for no questions", () => {
+    assert.deepEqual(summariseBook([]), { byType: {}, byCompetency: {}, marks: 0 });
   });
 });
