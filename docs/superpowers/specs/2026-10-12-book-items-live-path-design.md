@@ -78,8 +78,11 @@ After `generateWithModel` returns and before `validateGenerated`:
    that would be rejected as a near-duplicate of a model question is redrawn,
    not drawn and then lost. Objectives are visited round-robin in a shuffled
    order, as the mock does.
-3. The book questions are appended after the model's, then the whole list goes
-   through `validateGenerated` and `verifyAnswerKeys` exactly as today.
+3. The book questions are added to the model's, then the combined list is stably
+   sorted into the paper's type blocks (order of `assessmentTypes`), because the
+   model was told to lay the paper out in consecutive type blocks; the final trim
+   cannot fire when a book share exists. The whole list then goes through
+   `validateGenerated` and `verifyAnswerKeys` exactly as today.
 
 If the clash check exhausts the pool, fewer than `k` are drawn and the paper is
 short by the difference. That is reported through the existing `produced` /
@@ -146,7 +149,7 @@ field above is the way to see which state a paper was made in.
    an env change after the 24 items have been compared with the printed books.
 2. **Competency and marks: by kind** (exercise = application, 3 marks; unit-test
    choice = understanding, 2 marks), nominal.
-3. **Position: appended** after the model's questions.
+3. **Position: appended** after the model's questions (amended: ordered into type blocks, see §2).
 
 ## Not decided here
 

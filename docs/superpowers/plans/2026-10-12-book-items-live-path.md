@@ -4,7 +4,7 @@
 
 **Goal:** Maths evaluations written by the model also carry real, cited NCCD book questions (at most half the paper), behind a server flag that is off by default.
 
-**Architecture:** In `POST /evaluations/:id/generate`'s live branch, `planBookDraw` decides how many book questions `k` the paper will carry, the model is asked for `count − k`, and `assembleLivePaper` cuts the model's surplus first and then appends `k` book questions drawn so none is a near-duplicate of a model question. The existing, already-reviewed `bookQuestion` builder is exported and reused; the mock path is unchanged in behaviour.
+**Architecture:** In `POST /evaluations/:id/generate`'s live branch, `planBookDraw` decides how many book questions `k` the paper will carry, the model is asked for `count − k`, and `assembleLivePaper` cuts the model's surplus first, adds `k` book questions drawn so none is a near-duplicate of a model question, and sorts the combined list into the paper's type blocks. The existing, already-reviewed `bookQuestion` builder is exported and reused; the mock path is unchanged in behaviour.
 
 **Tech Stack:** TypeScript run by `node --experimental-strip-types --test`, Express API (`artifacts/api-server`), the `@workspace/curriculum/bookItems` reader from PR #1021.
 
@@ -15,7 +15,7 @@
 - **Off by default.** `BOOK_ITEMS_LIVE` is on only when it is exactly `"true"`, read per request. With it unset nothing about a production paper changes except one new `generationParams.bookItems` field on maths papers.
 - At most `floor(count / 2)` book questions, never more than are eligible, only when the subject is `mathematics`, an objective has a `lessonId` with items, and a matching type (`multiple_choice` for unit-test choices, `short_answer` for exercises) was requested.
 - Join by `objective.lessonId`, never by title. A `computed` book question must never carry a `check` (it would earn the «تم التحقق» badge).
-- The model's surplus is cut **before** the book questions are added: the route's own trim cuts from the END and would remove them first.
+- The model's surplus is cut **before** the book questions are added, so the route's own final trim has nothing left to cut when a book share exists. The combined list is then stably sorted into the paper's type blocks (order of `assessmentTypes`), because the model was told to lay the paper out in consecutive type blocks.
 - No database schema change, no native module, no mobile change, no `app.json` `version` bump.
 - Tests live inside `artifacts/api-server/src/**/__tests__/`; relative imports in node-tested code use explicit `.ts` extensions. Run `pnpm run build` before `pnpm test` in `artifacts/api-server` (the mount-order suite boots the built bundle).
 - Commit messages end with the two attribution lines given in the session's system reminder. Implementers commit locally and never push; the controller pushes.
@@ -24,6 +24,7 @@
 
 | Spec said | This plan does | Why |
 | --- | --- | --- |
+| Book questions are "appended after the model's" | Book questions are sorted into the paper's type blocks (`typeOrder`) instead of appended | Found in the Task 3 review: appending split the ministry blocks. |
 | The builder "moves out of `mockGenerator.ts`" | `bookQuestion` is **exported** and takes a `slot(kind)` function; the new live-path code is in `bookQuestions.ts` | Moving it would drag `buildRubric` and `BANK_TIER` along or create an import cycle, and re-review already-reviewed code, for no gain. |
 | Test "flag off: byte-for-byte identical request and rows" | Pinned for the pure assembly (`k = 0` passes the model's paper through untouched) and by the typechecker for the route glue | The route handler needs auth, a database and an OpenAI stub; there is no existing harness for it. STATUS.md says so plainly and gives a manual check for after the flag is turned on. |
 
@@ -35,7 +36,7 @@ pnpm run typecheck:libs
 cd artifacts/api-server && pnpm run build
 ```
 
-Baseline to hold: the API suite is **1563** passing before this work (1588 after: the 25 tests in `bookQuestions.test.ts`).
+Baseline to hold: the API suite is **1563** passing before this work (1594 after: the 31 tests in `bookQuestions.test.ts`).
 
 ## File structure
 
@@ -176,11 +177,15 @@ Create `artifacts/api-server/src/modules/assessment/__tests__/bookQuestions.test
  *  5. The assembled paper is exactly as long as was asked, the model's surplus
  *     is cut BEFORE the book questions are added, and with no book questions the
  *     model's paper passes through untouched.
+ *  6. With a `typeOrder` and at least one book question drawn, the combined paper
+ *     is stably sorted into one block per type (the ministry layout the prompt
+ *     asks for); with no `typeOrder`, or nothing drawn, nothing is reordered.
  */
 import { afterEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { bookItemsForLesson, displayMath } from "@workspace/curriculum/bookItems";
 import type { CurriculumObjective } from "@workspace/curriculum";
+import type { QuestionType } from "@workspace/db";
 import {
   assembleLivePaper,
   drawBookQuestions,
@@ -531,6 +536,97 @@ describe("assembleLivePaper", () => {
     assert.equal(out.questions.length, 6);
     assert.equal(out.drawn, 4);
   });
+
+  describe("type blocks (typeOrder)", () => {
+    const ORDER = ["multiple_choice", "short_answer", "true_false"] as const;
+    /** A model question of a given type; `tag` makes its position recognisable. */
+    const typed = (type: QuestionType, tag: number): GeneratedQuestion => ({
+      ...modelQuestion(tag, "o1"),
+      type,
+    });
+    const typesOf = (qs: readonly GeneratedQuestion[]) => qs.map(q => q.type);
+    /** Every type forms ONE run: no type appears again after another type began. */
+    const runsOf = (qs: readonly GeneratedQuestion[]) => {
+      const runs: QuestionType[] = [];
+      for (const q of qs) if (runs[runs.length - 1] !== q.type) runs.push(q.type);
+      return runs;
+    };
+    /** Book questions the draw returns, with the given types, in the given order. */
+    const fakeBook = (types: readonly QuestionType[]): GeneratedQuestion[] =>
+      types.map((t, i) => ({
+        ...modelQuestion(100 + i, "o1"),
+        type: t,
+        aiMetadata: { generator: "book", bookItemId: `bi-${i}` },
+      }));
+    const tagOf = (q: GeneratedQuestion) => String(q.aiMetadata["generator"] === "book" ? q.aiMetadata["bookItemId"] : q.body["prompt"]);
+
+    it("the split-block example: MCQ x2, short x2, T/F x1 plus 5 short book questions is one run per type", () => {
+      // The model wrote its share (5) in the order the prompt asked for.
+      const m = [typed("multiple_choice", 0), typed("multiple_choice", 1), typed("short_answer", 2), typed("short_answer", 3), typed("true_false", 4)];
+      const book = fakeBook(Array(5).fill("short_answer"));
+      const out = assembleLivePaper({
+        modelQuestions: m, requested: 10, k: 5, draw: () => book, typeOrder: ORDER,
+      });
+      assert.equal(out.questions.length, 10);
+      assert.deepEqual(runsOf(out.questions), [...ORDER], "each type is one consecutive block, in typeOrder");
+      assert.deepEqual(
+        typesOf(out.questions),
+        [...Array(2).fill("multiple_choice"), ...Array(7).fill("short_answer"), "true_false"],
+      );
+      assert.equal(out.drawn, 5);
+      assert.equal(out.trimmed, 0);
+    });
+
+    it("is a stable sort: each source keeps its within-type order, and the model comes before the book within a type", () => {
+      const m = [typed("short_answer", 0), typed("multiple_choice", 1), typed("short_answer", 2), typed("multiple_choice", 3)];
+      const book = fakeBook(["short_answer", "multiple_choice", "short_answer"]);
+      const out = assembleLivePaper({
+        modelQuestions: m, requested: 7, k: 3, draw: () => book, typeOrder: ORDER,
+      });
+      const mcqPrompt = (i: number) => String(m[i]!.body["prompt"]);
+      assert.deepEqual(out.questions.map(tagOf), [
+        // multiple_choice: model 1, model 3, then book bi-1
+        mcqPrompt(1), mcqPrompt(3), "bi-1",
+        // short_answer: model 0, model 2, then book bi-0, bi-2
+        mcqPrompt(0), mcqPrompt(2), "bi-0", "bi-2",
+      ]);
+    });
+
+    it("a type missing from typeOrder sorts last and keeps its relative order", () => {
+      const m = [typed("fill_blank", 0), typed("short_answer", 1), typed("fill_blank", 2)];
+      const book = fakeBook(["short_answer"]);
+      const out = assembleLivePaper({
+        modelQuestions: m, requested: 4, k: 1, draw: () => book, typeOrder: ["short_answer"],
+      });
+      assert.deepEqual(typesOf(out.questions), ["short_answer", "short_answer", "fill_blank", "fill_blank"]);
+      assert.deepEqual(out.questions.slice(2).map(tagOf), [String(m[0]!.body["prompt"]), String(m[2]!.body["prompt"])]);
+    });
+
+    it("k = 0 passes the model's paper through untouched, even when it is out of type order", () => {
+      const m = [typed("true_false", 0), typed("multiple_choice", 1), typed("short_answer", 2), typed("multiple_choice", 3)];
+      const out = assembleLivePaper({
+        modelQuestions: m, requested: 4, k: 0, draw: () => assert.fail("must not draw"), typeOrder: ORDER,
+      });
+      assert.deepEqual(out.questions, m);
+      assert.deepEqual(typesOf(out.questions), ["true_false", "multiple_choice", "short_answer", "multiple_choice"]);
+    });
+
+    it("k > 0 but nothing drawn: the model's questions keep their order, even when out of type order", () => {
+      const m = [typed("true_false", 0), typed("multiple_choice", 1), typed("short_answer", 2), typed("multiple_choice", 3)];
+      const out = assembleLivePaper({
+        modelQuestions: m, requested: 6, k: 2, draw: () => [], typeOrder: ORDER,
+      });
+      assert.deepEqual(out.questions, m);
+      assert.equal(out.drawn, 0);
+    });
+
+    it("without a typeOrder the book questions are appended, as before", () => {
+      const m = [typed("true_false", 0), typed("multiple_choice", 1)];
+      const book = fakeBook(["multiple_choice", "short_answer"]);
+      const out = assembleLivePaper({ modelQuestions: m, requested: 4, k: 2, draw: () => book });
+      assert.deepEqual(out.questions, [...m, ...book]);
+    });
+  });
 });
 
 describe("previousBookItemIds", () => {
@@ -566,9 +662,9 @@ Create `artifacts/api-server/src/modules/assessment/bookQuestions.ts`:
  *
  * Design: docs/superpowers/specs/2026-10-12-book-items-live-path-design.md.
  *
- * Ordering is the whole point of `assembleLivePaper`: the route trims a paper
- * that came back longer than asked from its END, so a book question appended
- * after an untrimmed model paper would be the first thing cut.
+ * Ordering is the whole point of `assembleLivePaper`: the model's surplus is cut
+ * BEFORE the book questions are added (so none of them is ever the one cut), and
+ * the combined paper is then put into the ministry's type blocks.
  */
 import { bookItemsForLesson } from "@workspace/curriculum/bookItems";
 import type { CurriculumObjective } from "@workspace/curriculum";
@@ -746,22 +842,57 @@ export interface LivePaper {
  * The model's questions plus the book's, exactly `requested` long when the
  * model delivered. With `k === 0` the model's questions pass through UNTOUCHED,
  * so the flag being off is byte-for-byte the behaviour before this existed.
+ *
+ * Block order: the model is told to lay the paper out as a ministry exam does,
+ * each question type in ONE consecutive block, in the order of
+ * `evaluation.assessmentTypes`. Appending the book's questions at the end would
+ * split a block (MCQ, short, T/F, then short again). So, when `typeOrder` is
+ * given and at least one book question was drawn, the combined list is stably
+ * sorted by each question's `type` index in `typeOrder`. Stable means each
+ * source keeps its own within-type order and, within a type, the model's
+ * questions come before the book's. A type missing from `typeOrder` sorts last,
+ * in relative order. With `k <= 0`, nothing drawn, or no `typeOrder`, nothing is
+ * reordered, so the model's own order is never second-guessed.
+ *
+ * This is safe because the route's final trim (which cuts from the END of the
+ * paper) cannot fire when `k > 0`: the model is cut to `requested - k` first, so
+ * the paper can never exceed `requested`. Position therefore no longer decides
+ * which question survives, and the order is free to follow the blocks.
  */
 export function assembleLivePaper(args: {
   modelQuestions: readonly GeneratedQuestion[];
   requested: number;
   k: number;
   draw: (accepted: readonly GeneratedQuestion[]) => GeneratedQuestion[];
+  /** The paper's question types in block order (`evaluation.assessmentTypes`). */
+  typeOrder?: readonly QuestionType[];
 }): LivePaper {
   if (args.k <= 0) return { questions: [...args.modelQuestions], trimmed: 0, drawn: 0 };
   const modelCap = Math.max(0, args.requested - args.k);
   const kept = args.modelQuestions.slice(0, modelCap);
   const book = args.draw(kept);
+  const combined = [...kept, ...book];
   return {
-    questions: [...kept, ...book],
+    questions: book.length > 0 && args.typeOrder ? sortIntoTypeBlocks(combined, args.typeOrder) : combined,
     trimmed: args.modelQuestions.length - kept.length,
     drawn: book.length,
   };
+}
+
+/** Stable sort by the index of each question's type in `order`; unlisted types last. */
+function sortIntoTypeBlocks(
+  questions: readonly GeneratedQuestion[],
+  order: readonly QuestionType[],
+): GeneratedQuestion[] {
+  const rank = (q: GeneratedQuestion) => {
+    const i = order.indexOf(q.type);
+    return i === -1 ? order.length : i;
+  };
+  // Decorate with the original index rather than lean on Array.sort's stability.
+  return questions
+    .map((q, at) => ({ q, at, r: rank(q) }))
+    .sort((a, b) => a.r - b.r || a.at - b.at)
+    .map(x => x.q);
 }
 
 /** The book item ids a previous version of this paper carried. */
@@ -780,7 +911,7 @@ export function previousBookItemIds(
 - [ ] **Step 4: Run the test to verify it passes**
 
 Run: `cd artifacts/api-server && node --experimental-strip-types --test src/modules/assessment/__tests__/bookQuestions.test.ts`
-Expected: `# pass 25`, `# fail 0`.
+Expected: `# pass 31`, `# fail 0`.
 
 - [ ] **Step 5: Typecheck**
 
@@ -804,7 +935,7 @@ git commit -m "Plan, draw and assemble real book questions for model-written eva
 
 **Interfaces:**
 - Consumes: Task 2's exports.
-- Produces: with `BOOK_ITEMS_LIVE=true`, a live maths evaluation carries up to `floor(count / 2)` book questions after the model's; every live maths paper records `generationParams.bookItems = { enabled, planned, drawn, ids }`.
+- Produces: with `BOOK_ITEMS_LIVE=true`, a live maths evaluation carries up to `floor(count / 2)` book questions, sorted into the paper's type blocks with the model's; every live maths paper records `generationParams.bookItems = { enabled, planned, drawn, ids }`.
 
 The handler has no test harness (it needs auth, a database and an OpenAI stub); the logic it calls is covered by Task 2, and the glue is covered by the typechecker. Do not invent a route test.
 
@@ -814,7 +945,7 @@ Apply to `artifacts/api-server/src/routes/evaluations.ts`:
 
 ```diff
 diff --git a/artifacts/api-server/src/routes/evaluations.ts b/artifacts/api-server/src/routes/evaluations.ts
-index e8693167..5b397dc4 100644
+index e8693167..28d3b9e4 100644
 --- a/artifacts/api-server/src/routes/evaluations.ts
 +++ b/artifacts/api-server/src/routes/evaluations.ts
 @@ -64,6 +64,13 @@ import {
@@ -859,17 +990,20 @@ index e8693167..5b397dc4 100644
            difficulty: evaluation.difficulty,
            language: evaluation.language,
            bookExcerpts: grounding?.block,
-@@ -801,13 +822,55 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
+@@ -801,13 +822,58 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
          ? grounding.sources.map(s => ({ sourceId: s.sourceId, page: s.page }))
          : [];
        generationNotes.push(...llm.notes);
 +
-+      // The model's questions first (cut to its share), then the book's: the
-+      // surplus trim further down cuts from the END, so the order matters.
++      // The model's surplus is cut to its share first, then the book's questions
++      // are drawn and the paper is put into the type blocks the prompt asked for
++      // (see assembleLivePaper). With a book share the paper cannot exceed the
++      // request, so the surplus trim further down cannot fire.
 +      const assembled = assembleLivePaper({
 +        modelQuestions: llm.questions,
 +        requested: evaluation.targetQuestionCount,
 +        k: bookPlanned,
++        typeOrder: evaluation.assessmentTypes,
 +        draw: accepted => drawBookQuestions({
 +          objectives,
 +          assessmentTypes: evaluation.assessmentTypes,
@@ -897,7 +1031,7 @@ index e8693167..5b397dc4 100644
 +      }
 +      if (assembled.drawn > 0) {
 +        generationNotes.push(
-+          `${assembled.drawn} question${assembled.drawn === 1 ? " is a" : "s are"} real item${assembled.drawn === 1 ? "" : "s"} from the NCCD books, with answers computed by SymPy from the question text; each is labelled.`,
++          `${assembled.drawn} question${assembled.drawn === 1 ? " is a" : "s are"} real item${assembled.drawn === 1 ? "" : "s"} from the NCCD books; each is labelled with how its answer was established.`,
 +        );
 +      }
 +      if (assembled.drawn < bookPlanned) {
@@ -930,7 +1064,7 @@ Add this row to the env table in `LOCAL_SETUP.md`, directly after the `AI_BUDGET
 - [ ] **Step 3: Build, run the whole API suite and typecheck**
 
 Run: `cd artifacts/api-server && pnpm run build && pnpm test && pnpm run typecheck`
-Expected: `# pass 1588`, `# fail 0`; typecheck prints no errors.
+Expected: `# pass 1594`, `# fail 0`; typecheck prints no errors.
 
 - [ ] **Step 4: Review your own diff against the constraints**
 
@@ -975,8 +1109,8 @@ index cbe17e92..6161ff89 100644
 +  which state a paper was made in). The mobile offline generators and
 +  `routes/generate.ts` ignore them, so a paper differs by which path made it —
 +  add a family to the script's `TABLE`, never to a generator. On the live path
-+  the model's surplus is cut before the book questions are added, because the
-+  route's own trim cuts from the end.
++  the model's surplus is cut before the book questions are added, and the
++  combined list is sorted into the paper's type blocks.
  - **A teaching style shapes the whole lesson plan, in two places.** Per-style
    phases live in `artifacts/mobile/services/ai/lessonPlanBlueprints.ts` and the
    matching contract in `LESSON_STYLE_RULES_AR`/`_EN`
@@ -1011,10 +1145,11 @@ index 8bcb3677..0b2144cd 100644
 +- **How.** In `POST /evaluations/:id/generate`, `planBookDraw` decides how many
 +  book questions (`k`, at most half the paper, never more than eligible), the
 +  model is asked for `count − k`, and `assembleLivePaper` (`modules/assessment/
-+  bookQuestions.ts`) cuts the model's surplus first and then appends the book
-+  questions, drawn so none is a near-duplicate of a model question. The surplus
-+  trim cuts from the end, so the order is load-bearing. With the flag off `k` is 0
-+  and the model's paper passes through untouched.
++  bookQuestions.ts`) cuts the model's surplus first, adds the book questions
++  (drawn so none is a near-duplicate of a model question) and sorts the combined
++  list into the paper's type blocks, so the ministry blocks are not split. The
++  route's own final trim cannot fire when a book share exists. With the flag off
++  `k` is 0 and the model's paper passes through untouched.
 +- **Competency and marks are by kind and nominal.** An exercise is
 +  `application` (3 marks), a unit-test choice `understanding` (2 marks); the model
 +  picks its own for the rest.
@@ -1060,7 +1195,7 @@ index 8bcb3677..0b2144cd 100644
 - [ ] **Step 2: Re-run the gate once**
 
 Run: `cd artifacts/api-server && pnpm run build && pnpm test && pnpm run typecheck`
-Expected: `# pass 1588`, `# fail 0`; no type errors. Then at the repo root: `git status --porcelain` is empty after the commit.
+Expected: `# pass 1594`, `# fail 0`; no type errors. Then at the repo root: `git status --porcelain` is empty after the commit.
 
 - [ ] **Step 3: Commit and push**
 
