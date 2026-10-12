@@ -63,6 +63,7 @@ const STATE_COLOR: Record<MyExamState, string> = {
   submitted: '#475467',
   result: palette.success,
   closed: '#667085',
+  paper: '#475467',
 };
 
 const STATE_ICON: Record<MyExamState, keyof typeof Ionicons.glyphMap> = {
@@ -71,6 +72,7 @@ const STATE_ICON: Record<MyExamState, keyof typeof Ionicons.glyphMap> = {
   submitted: 'hourglass-outline',
   result: 'ribbon-outline',
   closed: 'lock-closed-outline',
+  paper: 'document-text-outline',
 };
 
 /** A child's section for a parent; the student's own list is one unnamed group. */

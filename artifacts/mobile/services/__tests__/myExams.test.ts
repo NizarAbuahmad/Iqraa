@@ -50,6 +50,14 @@ describe('myExamAction', () => {
   it('does nothing for a paper waiting to be marked', () => {
     assert.equal(myExamAction(exam({ state: 'submitted' })), null);
   });
+
+  // A pin, not a RED test: a paper row carries no share code, so the existing
+  // `!shareCode` line already returns null. It holds the rule if that line moves.
+  it('never offers anything on a paper exam', () => {
+    assert.equal(myExamAction(exam({ state: 'paper', shareCode: null, paper: true })), null);
+    // Even if an older server still sent a code.
+    assert.equal(myExamAction(exam({ state: 'paper', shareCode: 'ABC234', paper: true })), null);
+  });
 });
 
 describe('actionableCount', () => {
@@ -69,7 +77,7 @@ describe('actionableCount', () => {
 
 describe('labels', () => {
   it('names every state the server can send', () => {
-    for (const s of ['available', 'in_progress', 'submitted', 'result', 'closed'] as const) {
+    for (const s of ['available', 'in_progress', 'submitted', 'result', 'closed', 'paper'] as const) {
       assert.ok(MY_EXAM_STATE_KEY[s], s);
     }
   });

@@ -10,7 +10,7 @@
 import { SUBJECTS } from '@workspace/curriculum';
 import type { StudentResult } from './studentExam.ts';
 
-export type MyExamState = 'available' | 'in_progress' | 'submitted' | 'result' | 'closed';
+export type MyExamState = 'available' | 'in_progress' | 'submitted' | 'result' | 'closed' | 'paper';
 
 export interface MyExam {
   evaluationId: string;
@@ -27,10 +27,18 @@ export interface MyExam {
   submittedAt: string | null;
   deadlineAt: string | null;
   result: StudentResult | null;
+  /** 'YYYY-MM-DD', a calendar day with no zone — compare as a string, never through `Date`. Absent from an older server. */
+  examDate?: string | null;
+  /** 'HH:MM', the teacher's wall-clock time. Absent from an older server. */
+  examTime?: string | null;
+  /** Sat on paper; never has a link. Absent from an older server. */
+  paper?: boolean;
 }
 
 /** One child's list, as `GET /parent/exams` returns it — no row carries a link. */
 export interface ChildExams {
+  /** The server's child key — one child's rows under two teachers share it; absent from an older server. */
+  key?: string;
   studentId: string;
   displayName: string;
   exams: MyExam[];
@@ -42,6 +50,7 @@ export const MY_EXAM_STATE_KEY = {
   submitted: 'myExamsStateSubmitted',
   result: 'myExamsStateResult',
   closed: 'myExamsStateClosed',
+  paper: 'myExamsStatePaper',
 } as const satisfies Record<MyExamState, string>;
 
 export type MyExamAction = 'start' | 'continue' | 'toggle_result' | null;
@@ -53,6 +62,7 @@ export type MyExamAction = 'start' | 'continue' | 'toggle_result' | null;
  */
 export function myExamAction(exam: MyExam): MyExamAction {
   if (exam.state === 'result' && exam.result) return 'toggle_result';
+  if (exam.state === 'paper') return null;
   if (!exam.shareCode) return null;
   if (exam.state === 'available') return 'start';
   if (exam.state === 'in_progress') return 'continue';
