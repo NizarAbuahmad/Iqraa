@@ -21,7 +21,7 @@ const done = (over: Partial<CompletionRow> = {}): CompletionRow => ({
   homeworkId: "h1", studentId: "s1", doneAt: new Date("2026-10-11T10:00:00Z"), ...over,
 });
 const teacher: TeacherRow = { id: T1, firstName: "سارة", lastName: "الخطيب" };
-const exam = (over: Partial<ExamRow> = {}): ExamRow => ({ id: "e1", title: "Quiz", titleAr: "اختبار", status: "published", ...over });
+const exam = (over: Partial<ExamRow> = {}): ExamRow => ({ id: "e1", title: "Quiz", titleAr: "اختبار", status: "published", archivedAt: null, classGroupId: C1, ...over });
 
 function build(over: Partial<Parameters<typeof buildFamilyHomework>[0]> = {}) {
   return buildFamilyHomework({
@@ -108,6 +108,14 @@ describe("buildFamilyHomework", () => {
     assert.equal(withExam([exam({ status: "closed" })]), null);
     assert.equal(withExam([]), null);
     assert.equal(withExam([exam()], null), null);
+  });
+
+  it("6b. a published exam is shown only while it is live and in the homework's own class", () => {
+    const withExam = (e: ExamRow) => build({ homework: [hw({ evaluationId: "e1" })], exams: [e] })[0]!.exam;
+    assert.deepEqual(withExam(exam()), { title: "اختبار" });
+    assert.equal(withExam(exam({ archivedAt: new Date("2026-10-01T00:00:00Z") })), null, "archived");
+    assert.equal(withExam(exam({ classGroupId: C2 })), null, "another class");
+    assert.equal(withExam(exam({ classGroupId: null })), null, "no class");
   });
 
   it("7. sorts not-done by dueAt then Arabic title, with done items last by dueAt", () => {

@@ -16,7 +16,7 @@
  */
 import { Router, type Response } from "express";
 import { db } from "@workspace/db";
-import { classGroups, classMemberships, evaluations, homework, homeworkCompletions, students, type Homework } from "@workspace/db";
+import { classGroups, classMemberships, evaluations, homework, homeworkCompletions, rosterLinks, students, type Homework } from "@workspace/db";
 import { and, count, countDistinct, desc, eq, inArray, isNull } from "drizzle-orm";
 import { authMiddleware, requireRole, TEACHER_ROLES, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { findLiveClass } from "../lib/classOwnership.js";
@@ -44,6 +44,8 @@ interface TeacherHomework {
   examTitle: string | null;
   doneCount: number;
   studentCount: number;
+  /** Of studentCount, the rows with a student account — the only ones who can tick it off. */
+  trackableCount: number;
 }
 
 /** Single exit for every homework failure: 503 + a code when the schema is absent. */
@@ -105,6 +107,27 @@ async function ownedHomework(id: string, teacherId: string): Promise<Homework | 
 }
 
 /**
+ * Per class: live roster rows currently in it, and how many of those have a
+ * student account (a `self` link to any user). The second is what "done" can
+ * ever reach — a class of children with no accounts shows 0 of N, which a
+ * teacher must not read as "nobody did it".
+ */
+async function classSizes(classIds: string[]): Promise<Map<string, { students: number; trackable: number }>> {
+  const rows = await db
+    .select({
+      classId: classMemberships.classGroupId,
+      n: countDistinct(students.id),
+      t: countDistinct(rosterLinks.studentId),
+    })
+    .from(classMemberships)
+    .innerJoin(students, eq(students.id, classMemberships.studentId))
+    .leftJoin(rosterLinks, and(eq(rosterLinks.studentId, students.id), eq(rosterLinks.relation, "self")))
+    .where(and(inArray(classMemberships.classGroupId, classIds), isNull(students.archivedAt)))
+    .groupBy(classMemberships.classGroupId);
+  return new Map(rows.map(r => [r.classId, { students: Number(r.n), trackable: Number(r.t) }]));
+}
+
+/**
  * Attach the numbers. Both count only roster rows that are live (not archived)
  * AND currently in the class: a child who left, or whose row was archived,
  * stops being part of "how many have done it" even though their completion row
@@ -116,13 +139,8 @@ async function withCounts(rows: Homework[]): Promise<TeacherHomework[]> {
   const homeworkIds = rows.map(r => r.id);
   const examIds = [...new Set(rows.map(r => r.evaluationId).filter((v): v is string => !!v))];
 
-  const [classCounts, doneCounts, exams] = await Promise.all([
-    db
-      .select({ classId: classMemberships.classGroupId, n: countDistinct(students.id) })
-      .from(classMemberships)
-      .innerJoin(students, eq(students.id, classMemberships.studentId))
-      .where(and(inArray(classMemberships.classGroupId, classIds), isNull(students.archivedAt)))
-      .groupBy(classMemberships.classGroupId),
+  const [sizes, doneCounts, exams] = await Promise.all([
+    classSizes(classIds),
     db
       .select({ homeworkId: homeworkCompletions.homeworkId, n: count() })
       .from(homeworkCompletions)
@@ -145,9 +163,8 @@ async function withCounts(rows: Homework[]): Promise<TeacherHomework[]> {
           .where(inArray(evaluations.id, examIds)),
   ]);
 
-  const studentCount = new Map(classCounts.map(c => [c.classId, Number(c.n)]));
   const done = new Map(doneCounts.map(c => [c.homeworkId, Number(c.n)]));
-  const examTitle = new Map(exams.map(e => [e.id, e.title || e.titleAr]));
+  const examTitle = new Map(exams.map(e => [e.id, e.titleAr || e.title]));
 
   return rows.map(r => ({
     id: r.id,
@@ -159,7 +176,8 @@ async function withCounts(rows: Homework[]): Promise<TeacherHomework[]> {
     evaluationId: r.evaluationId,
     examTitle: r.evaluationId ? (examTitle.get(r.evaluationId) ?? null) : null,
     doneCount: done.get(r.id) ?? 0,
-    studentCount: studentCount.get(r.classGroupId) ?? 0,
+    studentCount: sizes.get(r.classGroupId)?.students ?? 0,
+    trackableCount: sizes.get(r.classGroupId)?.trackable ?? 0,
   }));
 }
 
@@ -220,16 +238,8 @@ router.get(
         .limit(LIST_LIMIT);
       const items = await withCounts(rows);
       // An empty list still needs the class size.
-      let studentCount = items[0]?.studentCount;
-      if (studentCount === undefined) {
-        const [c] = await db
-          .select({ n: countDistinct(students.id) })
-          .from(classMemberships)
-          .innerJoin(students, eq(students.id, classMemberships.studentId))
-          .where(and(eq(classMemberships.classGroupId, klass.id), isNull(students.archivedAt)));
-        studentCount = Number(c?.n ?? 0);
-      }
-      res.json({ studentCount, homework: items });
+      const size = (await classSizes([klass.id])).get(klass.id);
+      res.json({ studentCount: size?.students ?? 0, trackableCount: size?.trackable ?? 0, homework: items });
     } catch (err) {
       failHomework(res, err, "load homework");
     }
@@ -250,7 +260,14 @@ router.patch("/homework/:id", async (req: AuthenticatedRequest, res) => {
       return;
     }
     const patch = parsed.value;
-    if (patch.evaluationId && !(await examOk(patch.evaluationId, teacherId, existing.classGroupId))) {
+    // An unchanged link is not re-checked: once the exam is archived (or moved),
+    // re-validating it would make every other edit to this homework a 400. Only
+    // a NEW exam must be live and in this class; null (detach) needs no check.
+    if (
+      patch.evaluationId &&
+      patch.evaluationId !== existing.evaluationId &&
+      !(await examOk(patch.evaluationId, teacherId, existing.classGroupId))
+    ) {
       res.status(400).json(BAD_EXAM);
       return;
     }

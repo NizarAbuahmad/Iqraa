@@ -36,6 +36,7 @@ interface Item {
 interface ChildBody {
   key: string;
   displayName: string;
+  canTrack: boolean;
   homework: Item[];
 }
 
@@ -218,6 +219,48 @@ describeDb("family homework over HTTP, against a real database", () => {
       assert.deepEqual(all.sort(), [HW_TITLES.hwC3, HW_TITLES.hwC5].sort());
       for (const t of [CHILDREN.sara, CHILDREN.adam, HW_TITLES.hwC1, HW_TITLES.hwC2, EXAM_TITLES.examPublished]) {
         assert.ok(!text.includes(t), `family A's ${t} must not appear`);
+      }
+    });
+
+    it("says which children have a student account that can tick homework off", async () => {
+      // Seeded self links: Sara (sA1) and Noor (nB1). Adam and Yazan have none.
+      const a = (await parentList(w.users.parentA)).children;
+      assert.equal(a.find(c => c.displayName === CHILDREN.sara)!.canTrack, true, "Sara: one of her two rows has a self link");
+      assert.equal(a.find(c => c.displayName === CHILDREN.adam)!.canTrack, false);
+      const b = (await parentList(w.users.parentB)).children;
+      assert.equal(b.find(c => c.displayName === CHILDREN.noor)!.canTrack, true);
+      assert.equal(b.find(c => c.displayName === CHILDREN.yazan)!.canTrack, false);
+      for (const c of [...a, ...b]) assert.deepEqual(Object.keys(c).sort(), ["canTrack", "displayName", "homework", "key"]);
+    });
+
+    it("counts a self link on any of the child's rows, to any account, and ignores an archived row's", async () => {
+      // Yazan's only row gets a student account → trackable. Adam's ARCHIVED row getting one changes nothing for him.
+      await db.pool.query(`INSERT INTO roster_links (student_id, user_id, relation) VALUES ($1, $2, 'self'), ($3, $2, 'self')`, [
+        w.students.yB,
+        w.users.studentUnlinked,
+        w.students.aArch,
+      ]);
+      try {
+        const yazan = (await parentList(w.users.parentB)).children.find(c => c.displayName === CHILDREN.yazan)!;
+        assert.equal(yazan.canTrack, true);
+        const adam = (await parentList(w.users.parentA)).children.find(c => c.displayName === CHILDREN.adam)!;
+        assert.equal(adam.canTrack, false, "an archived row is not part of the child");
+      } finally {
+        await db.pool.query(`DELETE FROM roster_links WHERE user_id = $1 AND relation = 'self'`, [w.users.studentUnlinked]);
+      }
+    });
+
+    it("stops showing an exam once it is archived", async () => {
+      await db.pool.query(`UPDATE evaluations SET archived_at = now() WHERE id = $1`, [h.exams.examPublished]);
+      try {
+        const sara = (await parentList(w.users.parentA)).children.find(c => c.displayName === CHILDREN.sara)!;
+        const item = sara.homework.find(i => i.title === HW_TITLES.hwC1Exam)!;
+        assert.equal(item.exam, null, "the family item shows no exam");
+        assert.ok(!(await parentList(w.users.parentA)).text.includes(EXAM_TITLES.examPublished));
+        const student = (await studentList(w.users.studentA)).homework.find(i => i.title === HW_TITLES.hwC1Exam)!;
+        assert.equal(student.exam, null);
+      } finally {
+        await db.pool.query(`UPDATE evaluations SET archived_at = NULL WHERE id = $1`, [h.exams.examPublished]);
       }
     });
 

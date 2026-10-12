@@ -30,6 +30,7 @@ interface TeacherHomework {
   examTitle: string | null;
   doneCount: number;
   studentCount: number;
+  trackableCount: number;
 }
 
 const RANDOM_UUID = "7c1f3a52-0d4e-4b8a-9c36-2e5f8a1b7d90";
@@ -47,8 +48,11 @@ async function call(server: TestServer, method: string, path: string, userId?: s
   return { status: res.status, text, json: (text ? JSON.parse(text) : null) as any };
 }
 
+/** The Amman calendar day `days` from now — due dates are bounded, so they cannot be literals. */
+const ammanDay = (days: number) => new Date(Date.now() + 3 * 3600_000 + days * 86_400_000).toISOString().slice(0, 10);
 /** A due date comfortably in the future, as a teacher would type it. */
-const DUE = "2030-05-14";
+const DUE = ammanDay(30);
+const DUE_LATER = ammanDay(60);
 
 describeDb("teacher homework over HTTP, against a real database", () => {
   let db: TestDb;
@@ -110,13 +114,14 @@ describeDb("teacher homework over HTTP, against a real database", () => {
       assert.equal(hw.title, "Page 12");
       assert.equal(hw.instructions, "Do 1-5");
       assert.equal(hw.dueDate, DUE);
-      assert.equal(hw.dueAt, "2030-05-14T20:59:59.999Z");
+      assert.equal(hw.dueAt, `${DUE}T20:59:59.999Z`);
       assert.equal(hw.classGroupId, w.classes.c1);
       assert.equal(hw.evaluationId, null);
       assert.equal(hw.examTitle, null);
       assert.equal(hw.doneCount, 0);
       // Sara's t1 row and Adam. The archived roster row aArch sits in c2, not c1.
       assert.equal(hw.studentCount, 2);
+      assert.equal(hw.trackableCount, 1, "only Sara has a student account");
       const row = await rowOf(hw.id);
       assert.equal(row?.teacher_id, w.users.t1);
     });
@@ -150,6 +155,17 @@ describeDb("teacher homework over HTTP, against a real database", () => {
         assert.equal(r.status, 400, `${name}: ${r.text}`);
         assert.equal(typeof r.json.error, "string", name);
       }
+    });
+
+    it("rejects a due date years away (a typo like 2062) and writes nothing", async () => {
+      const count = async () => (await db.pool.query(`SELECT count(*)::int AS n FROM homework`)).rows[0].n as number;
+      const before = await count();
+      const r = await create(w.users.t1, { classGroupId: w.classes.c1, title: "far", dueDate: "2062-01-01" });
+      assert.equal(r.status, 400, r.text);
+      assert.deepEqual(r.json, { error: "dueDate must be within the last 30 days and the next year" });
+      assert.equal(await count(), before, "no row inserted");
+      const past = await create(w.users.t1, { classGroupId: w.classes.c1, title: "past", dueDate: ammanDay(-45) });
+      assert.equal(past.status, 400);
     });
 
     it("accepts only an exam that is yours, live, and attached to THIS class", async () => {
@@ -193,6 +209,7 @@ describeDb("teacher homework over HTTP, against a real database", () => {
       const r = await list(w.users.t1, w.classes.c1);
       assert.equal(r.status, 200, server.logs().slice(-1500));
       assert.equal(r.json.studentCount, 2);
+      assert.equal(r.json.trackableCount, 1, "sA1 has a self link, Adam has none");
       const rows = r.json.homework as TeacherHomework[];
       const titles = rows.map(x => x.title);
       for (const t of [HW_TITLES.hwC1, HW_TITLES.hwC1Exam, HW_TITLES.hwC1Draft, HW_TITLES.hwOld, HW_TITLES.hwRecentOverdue]) {
@@ -205,7 +222,43 @@ describeDb("teacher homework over HTTP, against a real database", () => {
       assert.ok(rows.every(x => x.classGroupId === w.classes.c1));
       const withExam = rows.find(x => x.title === HW_TITLES.hwC1Exam);
       assert.equal(withExam?.examTitle, EXAM_TITLES.examPublished);
-      assert.ok(rows.every(x => x.studentCount === 2 && typeof x.dueDate === "string"));
+      assert.ok(rows.every(x => x.studentCount === 2 && x.trackableCount === 1 && typeof x.dueDate === "string"));
+    });
+
+    it("counts how many of the class can tick it off: rows with a student account, not the whole roster", async () => {
+      // c5 holds only Yazan, who has no student account.
+      const none = await list(w.users.t2, w.classes.c5);
+      assert.equal(none.status, 200, none.text);
+      assert.equal(none.json.studentCount, 1);
+      assert.equal(none.json.trackableCount, 0);
+      assert.ok((none.json.homework as TeacherHomework[]).every(x => x.studentCount === 1 && x.trackableCount === 0));
+
+      // c3 holds only Noor, whose self link is to student B.
+      const all = await list(w.users.t1, w.classes.c3);
+      assert.equal(all.json.studentCount, 1);
+      assert.equal(all.json.trackableCount, 1);
+
+      // An empty list still reports both numbers.
+      const klass = await db.pool.query<{ id: string }>(
+        `INSERT INTO class_groups (teacher_id, name, subject_id, subject_ids) VALUES ($1, 'empty-list', 'mathematics', '["mathematics"]'::jsonb) RETURNING id`,
+        [w.users.t1],
+      );
+      const cid = klass.rows[0]!.id;
+      await db.pool.query(`INSERT INTO class_memberships (class_group_id, student_id) VALUES ($1, $2), ($1, $3)`, [cid, w.students.nB1, w.students.aA]);
+      const empty = await list(w.users.t1, cid);
+      assert.deepEqual(empty.json, { studentCount: 2, trackableCount: 1, homework: [] });
+    });
+
+    it("does not count an archived roster row, even one with a student account", async () => {
+      // c2 has Sara's live row (sA2, no self link) and Adam's archived row. Give the archived one a self link.
+      await db.pool.query(`INSERT INTO roster_links (student_id, user_id, relation) VALUES ($1, $2, 'self')`, [w.students.aArch, w.users.studentUnlinked]);
+      try {
+        const r = await list(w.users.t2, w.classes.c2);
+        assert.equal(r.json.studentCount, 1);
+        assert.equal(r.json.trackableCount, 0);
+      } finally {
+        await db.pool.query(`DELETE FROM roster_links WHERE student_id = $1 AND relation = 'self'`, [w.students.aArch]);
+      }
     });
 
     it("answers 404 for another teacher's class, a missing one, an archived one and a malformed id", async () => {
@@ -231,11 +284,11 @@ describeDb("teacher homework over HTTP, against a real database", () => {
 
     it("changes title and due date, and moves updated_at", async () => {
       const before = (await db.pool.query(`SELECT updated_at FROM homework WHERE id = $1`, [mine])).rows[0].updated_at as Date;
-      const r = await call(server, "PATCH", `/homework/${mine}`, w.users.t1, { title: "changed", dueDate: "2030-06-01" });
+      const r = await call(server, "PATCH", `/homework/${mine}`, w.users.t1, { title: "changed", dueDate: DUE_LATER });
       assert.equal(r.status, 200, r.text);
       assert.equal(r.json.homework.title, "changed");
-      assert.equal(r.json.homework.dueDate, "2030-06-01");
-      assert.equal(r.json.homework.dueAt, "2030-06-01T20:59:59.999Z");
+      assert.equal(r.json.homework.dueDate, DUE_LATER);
+      assert.equal(r.json.homework.dueAt, `${DUE_LATER}T20:59:59.999Z`);
       const after = (await db.pool.query(`SELECT updated_at FROM homework WHERE id = $1`, [mine])).rows[0].updated_at as Date;
       assert.ok(after.getTime() > before.getTime());
     });
@@ -286,6 +339,37 @@ describeDb("teacher homework over HTTP, against a real database", () => {
       assert.equal(detach.json.homework.evaluationId, null);
       assert.equal(detach.json.homework.examTitle, null);
       assert.equal((await rowOf(mine))?.evaluation_id, null);
+    });
+
+    it("lets an edit through when the linked exam has since been archived, but not a switch to one", async () => {
+      const made = await create(w.users.t1, { classGroupId: w.classes.c1, title: "linked", dueDate: DUE, evaluationId: h.exams.examPublished });
+      assert.equal(made.status, 201, made.text);
+      const id = made.json.homework.id as string;
+      await db.pool.query(`UPDATE evaluations SET archived_at = now() WHERE id = $1`, [h.exams.examPublished]);
+      try {
+        // A title typo while the exam is archived: the unchanged link is not re-checked.
+        const same = await call(server, "PATCH", `/homework/${id}`, w.users.t1, { title: "x", evaluationId: h.exams.examPublished });
+        assert.equal(same.status, 200, same.text);
+        assert.equal(same.json.homework.title, "x");
+        assert.equal(same.json.homework.evaluationId, h.exams.examPublished);
+        assert.equal((await rowOf(id))?.evaluation_id, h.exams.examPublished, "the link is unchanged");
+
+        // …but pointing it at a DIFFERENT archived exam, or one in another class, is still refused.
+        await db.pool.query(`UPDATE evaluations SET archived_at = now() WHERE id = $1`, [h.exams.examDraft]);
+        for (const evaluationId of [h.exams.examDraft, h.exams.examOtherClass]) {
+          const r = await call(server, "PATCH", `/homework/${id}`, w.users.t1, { evaluationId });
+          assert.equal(r.status, 400, r.text);
+          assert.deepEqual(r.json, { error: "That exam is not attached to this class" });
+        }
+        assert.equal((await rowOf(id))?.evaluation_id, h.exams.examPublished, "still the original link");
+
+        // Detaching needs no check at all.
+        const detach = await call(server, "PATCH", `/homework/${id}`, w.users.t1, { evaluationId: null });
+        assert.equal(detach.status, 200, detach.text);
+        assert.equal(detach.json.homework.evaluationId, null);
+      } finally {
+        await db.pool.query(`UPDATE evaluations SET archived_at = NULL WHERE id IN ($1, $2)`, [h.exams.examPublished, h.exams.examDraft]);
+      }
     });
 
     it("answers 404 for homework in an archived class, and for archived homework", async () => {

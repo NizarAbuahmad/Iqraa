@@ -12,7 +12,7 @@ import { Router, type Response } from "express";
 import { authMiddleware, requireRole, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { studentAccountsEnabled } from "../lib/features.js";
 import { logger } from "../lib/logger";
-import { guardianLinkedStudents, selfLinkedStudentIds } from "../lib/familyAccess.ts";
+import { guardianLinkedStudents, selfLinkedStudentIds, studentIdsWithSelfAccount } from "../lib/familyAccess.ts";
 import { loadFamilyHomework } from "../lib/familyHomeworkLoad.ts";
 import { setHomeworkDone } from "../lib/homeworkDone.ts";
 import { groupChildren } from "../modules/family/children.ts";
@@ -49,10 +49,14 @@ router.get("/parent/homework", async (req: AuthenticatedRequest, res) => {
       return;
     }
     const children = groupChildren(await guardianLinkedStudents(req.user!.id));
+    // A child can only be "late" if someone can tick it off: some row of theirs
+    // must have a student account. Otherwise the client shows the list read-only.
+    const withAccount = await studentIdsWithSelfAccount(children.flatMap(c => c.studentIds));
     const lists = await Promise.all(
       children.map(async child => ({
         key: child.key,
         displayName: child.displayName,
+        canTrack: child.studentIds.some(id => withAccount.has(id)),
         homework: await loadFamilyHomework(child.studentIds),
       })),
     );

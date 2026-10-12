@@ -83,7 +83,14 @@ export async function loadFamilyHomework(studentIds: string[], now: Date = new D
     examIds.length === 0
       ? Promise.resolve([] as ExamRow[])
       : (db
-          .select({ id: evaluations.id, title: evaluations.title, titleAr: evaluations.titleAr, status: evaluations.status })
+          .select({
+            id: evaluations.id,
+            title: evaluations.title,
+            titleAr: evaluations.titleAr,
+            status: evaluations.status,
+            archivedAt: evaluations.archivedAt,
+            classGroupId: evaluations.classGroupId,
+          })
           .from(evaluations)
           .where(inArray(evaluations.id, examIds)) as Promise<ExamRow[]>),
   ]);

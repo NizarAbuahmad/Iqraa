@@ -1195,10 +1195,12 @@ place — see its section 2).
   `archived_at`) and `homework_completions` (unique per homework + roster row).
   Schema in `lib/db/src/schema/homework.ts`.
 - **Routes**, all path-scoped: teacher `POST /homework` (the class is in the body),
-  `GET /classes/:id/homework` (with done and student counts), `PATCH|DELETE
+  `GET /classes/:id/homework` (with done, student and `trackableCount` — the rows that have a student account), `PATCH|DELETE
   /homework/:id` (delete archives; completions are kept) in `routes/homework.ts`;
   `GET /student/homework`, `PUT|DELETE /student/homework/:id/done` and `GET
-  /parent/homework` in `routes/familyHomework.ts`. Rules and the family list builder
+  /parent/homework` (per child `{ key, displayName, canTrack, homework }`; `canTrack` is false
+  when no row of the child has a `self` link, so the client must not call their work
+  «متأخّر») in `routes/familyHomework.ts`. Rules and the family list builder
   are pure, in `modules/homework/`; loaders are `lib/familyHomeworkLoad.ts` and
   `lib/homeworkDone.ts`. The student and parent routes answer `403
   student_accounts_disabled` when the flag is off, like the timetable.
@@ -1213,7 +1215,8 @@ place — see its section 2).
   "YYYY-MM-DD"`; the server stores `dueAt` as 23:59:59.999 **Asia/Amman** of that day
   (a fixed UTC+3 — Jordan dropped DST in 2022) and also returns it as ISO. Clients
   never do timezone arithmetic. A homework is `overdue` only once that instant has
-  passed and it is not done.
+  passed and it is not done. A due date must lie within 30 days back and 366 days ahead
+  (Amman days), else 400 — a typo like 2062 is refused.
 - **A family sees the last 14 days and later**: `dueAt` within 14 days of now, newest
   200. Older work drops off the list (it is not deleted, and the teacher still sees it).
 - **Completions are per roster row, not per account.** A child taught by two teachers
@@ -1221,14 +1224,14 @@ place — see its section 2).
   row) is unambiguous. The consequence: two accounts linked to the *same* roster row
   share their done marks. A completion by a child who has since left the class, or whose
   row was archived, stops counting towards the teacher's number but is not deleted.
-- **A family sees an exam's title only when it is `published`.** A teacher may attach
+- **A family sees an exam's title only when it is `published`, not archived and still in the homework's class** (re-checked on read; a PATCH does not re-check an unchanged link). A teacher may attach
   only an exam that is theirs, not archived, and already attached to *that homework's
   class* (the spec's "send a worksheet as an exam" flow is a separate project); anything
   else is one identical 400. Tapping the title opens «اختباراتي», which applies the
   real visibility rules.
 - **Access rules are pinned by tests against a real Postgres**
-  (`src/routes/__tests__/homework.db.test.ts`, 18 tests; `familyHomework.db.test.ts`,
-  19 tests; plus mount-order cases that the new paths answer 401, not 404, with no
+  (`src/routes/__tests__/homework.db.test.ts`, 22 tests; `familyHomework.db.test.ts`,
+  22 tests; plus mount-order cases that the new paths answer 401, not 404, with no
   token). What each file pins: the teacher file — a class that is another teacher's,
   missing or archived is one 404; a teacher cannot change or delete another teacher's
   homework and a PATCH can never move it to another class or teacher; an exam must be

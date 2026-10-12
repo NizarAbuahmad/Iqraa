@@ -11,7 +11,11 @@ export interface HomeworkRow { id: string; classGroupId: string; title: string; 
 export interface MembershipRow { classGroupId: string; studentId: string; className: string; teacherId: string }
 export interface CompletionRow { homeworkId: string; studentId: string; doneAt: Date }
 export interface TeacherRow { id: string; firstName: string; lastName: string }
-export interface ExamRow { id: string; title: string; titleAr: string; status: string }
+export interface ExamRow {
+  id: string; title: string; titleAr: string; status: string;
+  /** Re-checked here: an exam archived or moved after it was linked must stop showing. */
+  archivedAt: Date | null; classGroupId: string | null;
+}
 
 export interface FamilyHomeworkItem {
   id: string; title: string; instructions: string;
@@ -19,7 +23,7 @@ export interface FamilyHomeworkItem {
   dueDate: string; dueAt: string;
   className: string; teacherName: string;
   done: boolean; doneAt: string | null; state: HomeworkState;
-  /** Only when the attached exam is published; null otherwise. */
+  /** Only when the attached exam is published, not archived and in the homework's own class; null otherwise. */
   exam: { title: string } | null;
 }
 
@@ -65,7 +69,10 @@ export function buildFamilyHomework(input: {
       done,
       doneAt: earliest ? earliest.toISOString() : null,
       state: homeworkState({ dueAt: h.dueAt, done, now: input.now }),
-      exam: exam && exam.status === "published" ? { title: exam.titleAr || exam.title } : null,
+      exam:
+        exam && exam.status === "published" && exam.archivedAt == null && exam.classGroupId === h.classGroupId
+          ? { title: exam.titleAr || exam.title }
+          : null,
     });
   }
 

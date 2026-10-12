@@ -45,6 +45,29 @@ export function homeworkState(input: { dueAt: Date; done: boolean; now: Date }):
   return input.now.getTime() > input.dueAt.getTime() ? "overdue" : "open";
 }
 
+/** How far back and ahead a teacher may set a due date, in Amman calendar days from today (inclusive). */
+export const DUE_PAST_DAYS = 30;
+export const DUE_FUTURE_DAYS = 366;
+const DUE_RANGE_ERROR = `dueDate must be within the last ${DUE_PAST_DAYS} days and the next year`;
+
+/** `YYYY-MM-DD` plus `days` calendar days (negative goes back). Pure date arithmetic, no clock. */
+function addDays(date: string, days: number): string {
+  const [y, m, d] = date.split("-").map(Number) as [number, number, number];
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}
+
+/**
+ * A due date is in range when, as an Amman calendar day, it falls between
+ * today - 30 days and today + 366 days inclusive ("today" being the Amman date
+ * of `now`). Judged on the day, not the instant, so it reads the way a teacher
+ * counts. Only a cap against typos like 2062: it does not stop a deliberate
+ * far-off date inside the year.
+ */
+function dueDateInRange(date: string, now: Date): boolean {
+  const today = dueAtToDueDate(now);
+  return date >= addDays(today, -DUE_PAST_DAYS) && date <= addDays(today, DUE_FUTURE_DAYS);
+}
+
 export function familyCutoff(now: Date): Date {
   return new Date(now.getTime() - FAMILY_WINDOW_DAYS * DAY_MS);
 }
@@ -85,7 +108,7 @@ function parseEvaluationId(v: unknown): Parsed<string | null> {
   return isUuid(v) ? { ok: true, value: v } : { ok: false, error: "evaluationId must be an exam id or null" };
 }
 
-export function parseCreate(body: unknown): Parsed<CreateInput> {
+export function parseCreate(body: unknown, now: Date = new Date()): Parsed<CreateInput> {
   const b = record(body);
   if (!b) return { ok: false, error: "A JSON object is required" };
   if (!isUuid(b["classGroupId"])) return { ok: false, error: "classGroupId is required" };
@@ -95,6 +118,7 @@ export function parseCreate(body: unknown): Parsed<CreateInput> {
   if (!instructions.ok) return instructions;
   const dueAt = dueDateToDueAt(b["dueDate"]);
   if (!dueAt) return { ok: false, error: "dueDate must be a real date, YYYY-MM-DD" };
+  if (!dueDateInRange(b["dueDate"] as string, now)) return { ok: false, error: DUE_RANGE_ERROR };
   const evaluationId = b["evaluationId"] === undefined ? ({ ok: true, value: null } as const) : parseEvaluationId(b["evaluationId"]);
   if (!evaluationId.ok) return evaluationId;
   return {
@@ -103,7 +127,7 @@ export function parseCreate(body: unknown): Parsed<CreateInput> {
   };
 }
 
-export function parsePatch(body: unknown): Parsed<PatchInput> {
+export function parsePatch(body: unknown, now: Date = new Date()): Parsed<PatchInput> {
   const b = record(body);
   if (!b) return { ok: false, error: "A JSON object is required" };
   const out: PatchInput = {};
@@ -120,6 +144,7 @@ export function parsePatch(body: unknown): Parsed<PatchInput> {
   if (b["dueDate"] !== undefined) {
     const d = dueDateToDueAt(b["dueDate"]);
     if (!d) return { ok: false, error: "dueDate must be a real date, YYYY-MM-DD" };
+    if (!dueDateInRange(b["dueDate"] as string, now)) return { ok: false, error: DUE_RANGE_ERROR };
     out.dueAt = d;
   }
   if (b["evaluationId"] !== undefined) {

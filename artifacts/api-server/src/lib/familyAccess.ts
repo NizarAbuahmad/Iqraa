@@ -11,7 +11,7 @@
  * not linked is the caller's — these only answer "which rows".
  */
 import { db, rosterLinks, students } from "@workspace/db";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import type { GuardianLink } from "../modules/family/children.ts";
 
 /** Every live roster row this account is `self`-linked to. */
@@ -38,4 +38,22 @@ export async function guardianLinkedStudents(userId: string): Promise<GuardianLi
       ),
     );
   return [...new Map(linked.map(l => [l.studentId, l])).values()];
+}
+
+/**
+ * Which of these live roster rows have a student account, i.e. a `self` link to
+ * ANY user. Only a self-linked account can tick homework off, so a child none of
+ * whose rows is in this set cannot be "late" — nobody is able to say they did it.
+ * One query for any number of children.
+ */
+export async function studentIdsWithSelfAccount(studentIds: string[]): Promise<Set<string>> {
+  if (studentIds.length === 0) return new Set();
+  const linked = await db
+    .select({ studentId: rosterLinks.studentId })
+    .from(rosterLinks)
+    .innerJoin(students, eq(students.id, rosterLinks.studentId))
+    .where(
+      and(inArray(rosterLinks.studentId, studentIds), eq(rosterLinks.relation, "self"), isNull(students.archivedAt)),
+    );
+  return new Set(linked.map(l => l.studentId));
 }
