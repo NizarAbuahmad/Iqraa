@@ -63,8 +63,8 @@ Items 10 and 11 share one printed stem with a parameter `c`.
 
 ## Consequences to handle
 
-- Served items go from 24 to 30; the pools of the two lessons grow (4 → 8 and
-  … ), so tests that pin pool-dependent numbers (plan sizes) move and must be
+- Served items go from 24 to 30; the pools of the two lessons grow (u1_l1 by four
+  items, u1_l2 by two), so tests that pin pool-dependent numbers (plan sizes) move and must be
   re-derived, not loosened.
 - Five items become `verified`, so "none is verified" in STATUS, CLAUDE.md, the
   PR body and `bookItems.ts` comments stops being true. "No stem has been compared
