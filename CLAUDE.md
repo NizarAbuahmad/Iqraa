@@ -218,6 +218,21 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   The exports print a «السؤال الأول: …» heading per block from `quizBlocks`.
   A new quiz type needs an entry in all of them, and the type contract in the
   prompt, or the model is never told what the type looks like.
+  **The count is enforced too.** A model asked for 20 questions often returns
+  10 in a perfectly valid reply, so the quiz route counts (`quizShortfall`),
+  asks once more for only the missing ones (`quizTopUpBlock`, merged by
+  `mergeQuizTopUp`), trims a surplus from the biggest block, and scales the
+  output ceiling with the count (`quizTokens`); evaluations do the same in
+  `/evaluations/:id/generate`. If it is still short, `shortfall` says so. The
+  offline generator can only give what the lesson's bank holds (5 for a
+  chemistry lesson, 17 for a maths family) — a spent type hands its share to
+  the others rather than ending the paper (`quizCount.test.ts`).
+  Saved evaluations follow the same convention by a different route: the
+  generate route stores questions via `inPaperOrder`
+  (`modules/assessment/paperOrder.ts`) and the teacher's list heads each run
+  of one type from `examBlocks` (`services/examBlocks.ts`). The two
+  `EXAM_TYPE_ORDER` lists are pinned equal by `paperOrder.test.ts`; a new
+  question type needs a place in both and a direction in `examBlockDirection`.
 - **`additionalContext` is not teacher-pasted material — it is usually the
   curriculum.** Every `/ai-tools` screen fills it with `buildGeneratorContext()`
   output derived from the lesson, and the server appends its own book passages

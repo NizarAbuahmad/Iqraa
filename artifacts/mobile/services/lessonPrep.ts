@@ -236,6 +236,30 @@ export function scopeFromParams(
 }
 
 /**
+ * The topic a generator screen should open with, given the same route params
+ * and teacher selection as `scopeFromParams`.
+ *
+ * A topic belongs to the grade and subject it was picked under. When
+ * `scopeFromParams` has to move the pickers off a scope the selection hides,
+ * the route's topic is left describing the other grade — a Grade 1 lesson
+ * under Grade 10 — so it is dropped rather than carried across. Judged by
+ * comparing the scope with and without the selection, so it covers a grade
+ * that came from the route and one inferred from the topic alike.
+ */
+export function topicForScope(
+  params: { topic?: string; gradeIdx?: string; subjectIdx?: string },
+  lang: 'ar' | 'en',
+  fallback: { gradeIdx: number; subjectIdx: number },
+  selection?: { gradeHidden: boolean[]; subjectHiddenFor: (gradeId: string) => boolean[] },
+): string {
+  const topic = params.topic ?? '';
+  if (!topic.trim() || !selection) return topic;
+  const asRouted = scopeFromParams(params, lang, fallback);
+  const chosen = scopeFromParams(params, lang, fallback, selection);
+  return asRouted.gradeIdx === chosen.gradeIdx && asRouted.subjectIdx === chosen.subjectIdx ? topic : '';
+}
+
+/**
  * Picker params inferred from a bare `topic` route param — the last line of
  * defence for navigations that carry a lesson title but no `gradeIdx` /
  * `subjectIdx` (old bookmarked URLs, callers that predate `lessonPickerParams`).

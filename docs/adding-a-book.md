@@ -193,6 +193,7 @@ test; add it to `SUBJECT_ALIASES` in `artifacts/mobile/services/bookQrLinks.ts`.
 | Manifest | bank search in chat and lesson context (titles only), exam papers, `/api/bank/*` |
 | Page text | every server generator and chat, via `grounding.ts` appending up to 3 NCCD passages with page numbers to `additionalContext` |
 | Catalog | curriculum browser, every picker, evaluations, objectives |
+| Catalog (Islamic Education) | the Quran Corner: a lesson whose `title_ar` names a surah («سورة X» with an optional `(a-b)`) puts those ayahs in the corner. After adding or retitling one, run `pnpm --filter @workspace/curriculum run build-quran-corner` and have a person re-check the changed ayahs in `lib/curriculum/sources/quran-ws/VERIFY.md` against a printed mushaf; `quranCorner.test.ts` fails until the generated data matches. A lesson that quotes Quran but does not name a surah in its title is not covered. |
 | Figures | slides deck and Start Class (2 slides), lesson plan / worksheet / quiz / activity panel and export appendix (up to 6, lesson-level, cited by page) |
 | Exercises | practice references in lesson plans and decks |
 | Public download link | a download chip on the book card in `app/curriculum/subjects.tsx`, and nothing else |
