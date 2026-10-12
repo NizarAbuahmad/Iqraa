@@ -1008,9 +1008,10 @@ served items with the printed books. Design:
   `count − k` (`buildGenerationPrompt` throws otherwise). The "ask once more" top-up
   carries the same block with the quota rescaled to what is missing
   (`remainingQuota`, `competency.ts`: take off what the model already wrote per
-  competency, then make the total equal `missing`). A paper made with the block
+  competency, then make the total equal `missing`; the prompt says how many the model
+  already wrote). A paper made with the block
   records `promptVersion` `exam-gen-6+book` in `generationParams` and on its
-  usage rows; flag off, non-maths or `k = 0` sends the request and records the
+  usage rows, and the quota sent under `generationParams.bookItems.quota`; flag off, non-maths or `k = 0` sends the request and records the
   version exactly as before (`exam-gen-6`).
 - **Competency and marks are by kind and nominal.** An exercise is
   `application` (3 marks), a unit-test choice `understanding` (2 marks); the model
@@ -1046,11 +1047,17 @@ served items with the printed books. Design:
   - The competency mix is requested, not guaranteed. The quota is a request the
     model may miss, so the validator can still warn "Competency … has only 1
     question"; the check after turning the flag on is to look at those warnings
-    on one paper per difficulty. The real draw uses another seed than the dry run
-    and can differ from the summary the model was told by a question, so the block
-    says "about" for the count and the quota. Types are described to the model (counts
-    by type, rule 2 applies to the whole paper) but no per-type quota is
-    computed. Warnings still never block publishing.
+    on one paper per difficulty. The plan comes from a dry run of the same draw
+    (same fixed seed, and on a regeneration the same `avoidIds` as the real one),
+    so the block matches the real draw in the cases tried; it still says "about"
+    because the real draw uses another seed and the model's questions can force a
+    different pick. Types are described to the model (counts by type, rule 2
+    applies to the whole paper) but no per-type quota is computed. On papers of
+    3–8 questions the book's lone questions are paired first
+    (`allocateQuestions`), which makes the mix no worse than the unaware split on
+    every case swept; the book's 12 application marks on a short basic paper
+    still exceed that target, whatever the model writes. Warnings still never
+    block publishing.
   - The model's surplus is cut before validation, so if the validator rejects one
     of the model's kept questions the paper is one shorter than it would be with
     the flag off (previously the surplus filled the gap).
