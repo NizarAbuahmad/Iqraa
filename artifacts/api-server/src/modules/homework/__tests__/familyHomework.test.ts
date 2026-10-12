@@ -78,6 +78,27 @@ describe("buildFamilyHomework", () => {
     assert.equal(build({ teachers: [] })[0]!.teacherName, "");
   });
 
+  it("5b. takes className and teacher from the homework's own class, not the first membership", () => {
+    const T2 = "t2";
+    const out = build({
+      // C1's membership is listed first; the first homework belongs to C2.
+      memberships: [
+        member({ classGroupId: C1, studentId: "s1", className: "العاشر أ", teacherId: T1 }),
+        member({ classGroupId: C2, studentId: "s2", className: "العاشر ب", teacherId: T2 }),
+      ],
+      teachers: [teacher, { id: T2, firstName: "ليلى", lastName: "حداد" }],
+      homework: [
+        hw({ id: "hc2", classGroupId: C2, dueAt: new Date("2026-10-13T20:59:59.999Z") }),
+        hw({ id: "hc1", classGroupId: C1, dueAt: new Date("2026-10-14T20:59:59.999Z") }),
+      ],
+    });
+    const byId = new Map(out.map((i) => [i.id, i]));
+    assert.equal(byId.get("hc2")!.className, "العاشر ب");
+    assert.equal(byId.get("hc2")!.teacherName, "ليلى حداد");
+    assert.equal(byId.get("hc1")!.className, "العاشر أ");
+    assert.equal(byId.get("hc1")!.teacherName, "سارة الخطيب");
+  });
+
   it("6. exam is {title: titleAr || title} only when published", () => {
     const withExam = (e: ExamRow[], evaluationId: string | null = "e1") =>
       build({ homework: [hw({ evaluationId })], exams: e })[0]!.exam;
