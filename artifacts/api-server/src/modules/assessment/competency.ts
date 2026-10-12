@@ -101,30 +101,51 @@ export const MARKS_BY_COMPETENCY: Record<CompetencyKey, number> = {
  * score for that competency; it produces no score at all, and the teacher gets
  * a blank where they expected a bar. Being somewhat over-weighted in critical
  * thinking on a short basic paper is the better failure.
+ *
+ * **`total` is the whole paper; `supplied` is what is already on it.** Pass the
+ * questions that will be added from elsewhere (the textbook's own items) and
+ * the return value is how many NEW ones to write per competency, summing to
+ * `max(0, total − Σsupplied)`. Supplied questions count towards the two-per-
+ * competency floor and towards the shares, so the paper as a whole — not just
+ * the new part — is steered to the targets. Absent or all zero, the result is
+ * exactly what it was before this argument existed (pinned in the tests).
  */
 export function allocateQuestions(
   total: number,
   difficulty: Difficulty,
+  supplied: Partial<Record<CompetencyKey, number>> = {},
 ): Record<CompetencyKey, number> {
   const targets = COMPETENCY_TARGETS[difficulty];
   const counts = Object.fromEntries(COMPETENCY_KEYS.map(k => [k, 0])) as Record<
     CompetencyKey,
     number
   >;
-  if (total <= 0) return counts;
+  const have = Object.fromEntries(
+    COMPETENCY_KEYS.map(k => [k, Math.max(0, supplied[k] ?? 0)]),
+  ) as Record<CompetencyKey, number>;
 
-  let remaining = total;
+  let remaining = Math.max(0, total - COMPETENCY_KEYS.reduce((s, k) => s + have[k], 0));
+  if (remaining <= 0) return counts;
 
+  // Seed each competency up to two, supplied questions counting towards the
+  // two. All-or-nothing, as before: a partial seeding would starve some
+  // competency while pretending to protect the others.
   const MIN_PER_COMPETENCY = 2;
-  if (remaining >= MIN_PER_COMPETENCY * COMPETENCY_KEYS.length) {
+  const seedsNeeded = COMPETENCY_KEYS.reduce(
+    (s, k) => s + Math.max(0, MIN_PER_COMPETENCY - have[k]),
+    0,
+  );
+  if (remaining >= seedsNeeded) {
     for (const key of COMPETENCY_KEYS) {
-      counts[key] = MIN_PER_COMPETENCY;
-      remaining -= MIN_PER_COMPETENCY;
+      const seed = Math.max(0, MIN_PER_COMPETENCY - have[key]);
+      counts[key] = seed;
+      remaining -= seed;
     }
   }
 
+  // Shares are of the whole paper: what is already on it plus what is added.
   const marksOf = (c: Record<CompetencyKey, number>) =>
-    COMPETENCY_KEYS.reduce((sum, k) => sum + c[k] * MARKS_BY_COMPETENCY[k], 0);
+    COMPETENCY_KEYS.reduce((sum, k) => sum + (c[k] + have[k]) * MARKS_BY_COMPETENCY[k], 0);
 
   while (remaining > 0) {
     const totalMarks = marksOf(counts);
@@ -132,7 +153,8 @@ export function allocateQuestions(
     let bestDeficit = -Infinity;
 
     for (const key of COMPETENCY_KEYS) {
-      const share = totalMarks > 0 ? (counts[key] * MARKS_BY_COMPETENCY[key]) / totalMarks : 0;
+      const share =
+        totalMarks > 0 ? ((counts[key] + have[key]) * MARKS_BY_COMPETENCY[key]) / totalMarks : 0;
       const deficit = targets[key] - share;
       if (deficit > bestDeficit) {
         bestDeficit = deficit;

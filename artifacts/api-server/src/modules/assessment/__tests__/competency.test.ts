@@ -16,6 +16,7 @@ import {
   COMPETENCY_KEYS,
   COMPETENCY_TARGETS,
   MARKS_BY_COMPETENCY,
+  type CompetencyKey,
   type Difficulty,
 } from "../competency.ts";
 
@@ -103,5 +104,268 @@ describe("allocateQuestions", () => {
   it("returns all zeros for a zero request rather than throwing", () => {
     const counts = allocateQuestions(0, "standard");
     assert.equal(marksOf(counts), 0);
+  });
+});
+
+/**
+ * Pin: with no `supplied` argument the result is exactly what the function
+ * returned before it learned about supplied questions.
+ *
+ * Provenance: generated once, on 2026-10-12, by running the UNMODIFIED
+ * `allocateQuestions` (commit 314f07f2) for every total 0..40 and every
+ * difficulty, and pasted here as literals. Each row is
+ * [knowledge, understanding, application, critical_thinking] for total = the
+ * trailing comment. Do not regenerate these from the current code — that would
+ * pin the new behaviour to itself.
+ */
+const PINNED: Record<Difficulty, number[][]> = {
+  basic: [
+    [0, 0, 0, 0], // 0
+    [1, 0, 0, 0], // 1
+    [1, 1, 0, 0], // 2
+    [1, 1, 1, 0], // 3
+    [2, 1, 1, 0], // 4
+    [2, 1, 1, 1], // 5
+    [3, 1, 1, 1], // 6
+    [3, 2, 1, 1], // 7
+    [2, 2, 2, 2], // 8
+    [3, 2, 2, 2], // 9
+    [4, 2, 2, 2], // 10
+    [5, 2, 2, 2], // 11
+    [5, 3, 2, 2], // 12
+    [6, 3, 2, 2], // 13
+    [7, 3, 2, 2], // 14
+    [7, 4, 2, 2], // 15
+    [8, 4, 2, 2], // 16
+    [9, 4, 2, 2], // 17
+    [9, 5, 2, 2], // 18
+    [10, 5, 2, 2], // 19
+    [11, 5, 2, 2], // 20
+    [11, 6, 2, 2], // 21
+    [12, 6, 2, 2], // 22
+    [12, 6, 3, 2], // 23
+    [13, 6, 3, 2], // 24
+    [13, 7, 3, 2], // 25
+    [14, 7, 3, 2], // 26
+    [15, 7, 3, 2], // 27
+    [15, 8, 3, 2], // 28
+    [16, 8, 3, 2], // 29
+    [17, 8, 3, 2], // 30
+    [17, 9, 3, 2], // 31
+    [17, 9, 4, 2], // 32
+    [18, 9, 4, 2], // 33
+    [19, 9, 4, 2], // 34
+    [19, 10, 4, 2], // 35
+    [20, 10, 4, 2], // 36
+    [21, 10, 4, 2], // 37
+    [21, 11, 4, 2], // 38
+    [22, 11, 4, 2], // 39
+    [22, 11, 5, 2], // 40
+  ],
+  standard: [
+    [0, 0, 0, 0], // 0
+    [0, 1, 0, 0], // 1
+    [0, 1, 1, 0], // 2
+    [1, 1, 1, 0], // 3
+    [1, 1, 1, 1], // 4
+    [2, 1, 1, 1], // 5
+    [2, 2, 1, 1], // 6
+    [2, 2, 2, 1], // 7
+    [2, 2, 2, 2], // 8
+    [3, 2, 2, 2], // 9
+    [3, 3, 2, 2], // 10
+    [4, 3, 2, 2], // 11
+    [4, 4, 2, 2], // 12
+    [4, 4, 3, 2], // 13
+    [5, 4, 3, 2], // 14
+    [6, 4, 3, 2], // 15
+    [6, 5, 3, 2], // 16
+    [6, 5, 4, 2], // 17
+    [7, 5, 4, 2], // 18
+    [7, 6, 4, 2], // 19
+    [8, 6, 4, 2], // 20
+    [9, 6, 4, 2], // 21
+    [9, 7, 4, 2], // 22
+    [9, 7, 5, 2], // 23
+    [9, 7, 5, 3], // 24
+    [10, 7, 5, 3], // 25
+    [10, 8, 5, 3], // 26
+    [10, 8, 6, 3], // 27
+    [11, 8, 6, 3], // 28
+    [11, 9, 6, 3], // 29
+    [12, 9, 6, 3], // 30
+    [13, 9, 6, 3], // 31
+    [13, 10, 6, 3], // 32
+    [13, 10, 7, 3], // 33
+    [13, 10, 7, 4], // 34
+    [14, 10, 7, 4], // 35
+    [14, 11, 7, 4], // 36
+    [14, 11, 8, 4], // 37
+    [15, 11, 8, 4], // 38
+    [15, 12, 8, 4], // 39
+    [16, 12, 8, 4], // 40
+  ],
+  advanced: [
+    [0, 0, 0, 0], // 0
+    [0, 0, 1, 0], // 1
+    [0, 0, 1, 1], // 2
+    [0, 1, 1, 1], // 3
+    [1, 1, 1, 1], // 4
+    [1, 1, 2, 1], // 5
+    [1, 2, 2, 1], // 6
+    [1, 2, 2, 2], // 7
+    [2, 2, 2, 2], // 8
+    [2, 2, 3, 2], // 9
+    [2, 3, 3, 2], // 10
+    [2, 3, 3, 3], // 11
+    [2, 3, 4, 3], // 12
+    [3, 3, 4, 3], // 13
+    [3, 4, 4, 3], // 14
+    [4, 4, 4, 3], // 15
+    [4, 4, 5, 3], // 16
+    [4, 4, 5, 4], // 17
+    [4, 5, 5, 4], // 18
+    [4, 5, 6, 4], // 19
+    [5, 5, 6, 4], // 20
+    [5, 5, 6, 5], // 21
+    [5, 6, 6, 5], // 22
+    [5, 6, 7, 5], // 23
+    [6, 6, 7, 5], // 24
+    [6, 6, 7, 6], // 25
+    [6, 6, 8, 6], // 26
+    [6, 7, 8, 6], // 27
+    [7, 7, 8, 6], // 28
+    [7, 7, 9, 6], // 29
+    [7, 7, 9, 7], // 30
+    [7, 8, 9, 7], // 31
+    [8, 8, 9, 7], // 32
+    [8, 8, 10, 7], // 33
+    [8, 8, 10, 8], // 34
+    [8, 9, 10, 8], // 35
+    [9, 9, 10, 8], // 36
+    [9, 9, 11, 8], // 37
+    [9, 10, 11, 8], // 38
+    [9, 10, 11, 9], // 39
+    [9, 10, 12, 9], // 40
+  ],
+};
+
+describe("allocateQuestions with no supplied questions", () => {
+  for (const difficulty of DIFFICULTIES) {
+    it(`equals the pre-supplied behaviour for every total 0..40 (${difficulty})`, () => {
+      PINNED[difficulty].forEach((row, total) => {
+        const expected = Object.fromEntries(
+          COMPETENCY_KEYS.map((k, i) => [k, row[i]]),
+        );
+        assert.deepEqual(allocateQuestions(total, difficulty), expected, `${difficulty}/${total}`);
+        assert.deepEqual(allocateQuestions(total, difficulty, {}), expected, `${difficulty}/${total} {}`);
+        assert.deepEqual(
+          allocateQuestions(total, difficulty, {
+            knowledge: 0,
+            understanding: 0,
+            application: 0,
+            critical_thinking: 0,
+          }),
+          expected,
+          `${difficulty}/${total} zeros`,
+        );
+      });
+    });
+  }
+});
+
+describe("allocateQuestions with supplied questions", () => {
+  const sum = (c: Record<CompetencyKey, number>) => COMPETENCY_KEYS.reduce((s, k) => s + c[k], 0);
+  const fill = (p: Partial<Record<CompetencyKey, number>>) =>
+    Object.fromEntries(COMPETENCY_KEYS.map(k => [k, p[k] ?? 0])) as Record<CompetencyKey, number>;
+  /** L1 distance between a paper's marks shares and the difficulty's targets. */
+  const distance = (counts: Record<CompetencyKey, number>, difficulty: Difficulty) => {
+    const total = marksOf(counts);
+    return COMPETENCY_KEYS.reduce(
+      (d, k) =>
+        d + Math.abs((counts[k] * MARKS_BY_COMPETENCY[k]) / total - COMPETENCY_TARGETS[difficulty][k]),
+      0,
+    );
+  };
+
+  it("(b) returns only the new questions and steers the WHOLE paper to the targets", () => {
+    const supplied = { application: 5, understanding: 1 };
+    const fresh = allocateQuestions(10, "basic", supplied);
+    assert.equal(sum(fresh), 4);
+
+    const whole = fill({});
+    const naiveWhole = fill({});
+    const naive = allocateQuestions(4, "basic");
+    for (const k of COMPETENCY_KEYS) {
+      whole[k] = fresh[k] + (supplied[k as keyof typeof supplied] ?? 0);
+      naiveWhole[k] = naive[k] + (supplied[k as keyof typeof supplied] ?? 0);
+    }
+    assert.ok(
+      distance(whole, "basic") < distance(naiveWhole, "basic"),
+      `aware ${distance(whole, "basic").toFixed(3)} should beat naive ${distance(naiveWhole, "basic").toFixed(3)}`,
+    );
+    // Application is already over-supplied for a basic paper: the new questions
+    // must not add more of it.
+    assert.equal(fresh.application, 0);
+  });
+
+  for (const difficulty of DIFFICULTIES) {
+    it(`(b) new counts sum to total minus supplied (${difficulty})`, () => {
+      for (const total of [0, 3, 6, 10, 15, 20, 40]) {
+        const supplied = { knowledge: 1, application: 3 };
+        const fresh = allocateQuestions(total, difficulty, supplied);
+        assert.equal(sum(fresh), Math.max(0, total - 4), `${difficulty}/${total}`);
+      }
+    });
+  }
+
+  it("(c) supplied larger than (or equal to) total gives all zeros", () => {
+    const zeros = fill({});
+    assert.deepEqual(allocateQuestions(5, "standard", { application: 9 }), zeros);
+    assert.deepEqual(allocateQuestions(5, "standard", { application: 5 }), zeros);
+    assert.deepEqual(allocateQuestions(0, "advanced", { knowledge: 2 }), zeros);
+  });
+
+  it("(d) never returns a negative count", () => {
+    for (const difficulty of DIFFICULTIES) {
+      for (let total = 0; total <= 30; total++) {
+        for (const supplied of [
+          { application: 12 },
+          { knowledge: 7, critical_thinking: 9 },
+          { understanding: 2, application: 2, knowledge: 2, critical_thinking: 2 },
+          { knowledge: 30 },
+        ]) {
+          const fresh = allocateQuestions(total, difficulty, supplied);
+          for (const k of COMPETENCY_KEYS) {
+            assert.ok(fresh[k] >= 0, `${difficulty}/${total}/${JSON.stringify(supplied)}: ${k}=${fresh[k]}`);
+          }
+        }
+      }
+    }
+  });
+
+  it("(e) the two-per-competency floor counts supplied questions", () => {
+    // 8 questions in all, 2 already understanding: the 6 new ones are exactly
+    // the seeds the other three competencies still need. Understanding is
+    // already at two, so it gets none.
+    assert.deepEqual(
+      allocateQuestions(8, "standard", { understanding: 2 }),
+      fill({ knowledge: 2, application: 2, critical_thinking: 2 }),
+    );
+    // One supplied critical-thinking question needs just one more seed.
+    assert.deepEqual(
+      allocateQuestions(8, "advanced", { critical_thinking: 1, understanding: 1 }),
+      fill({ knowledge: 2, understanding: 1, application: 2, critical_thinking: 1 }),
+    );
+  });
+
+  it("(e) seeds nothing when the budget cannot cover every seed (all-or-nothing)", () => {
+    // Seeds needed: 2 + 0 + 2 + 2 = 6, only 5 new questions to give: greedy only.
+    const fresh = allocateQuestions(7, "standard", { understanding: 2 });
+    assert.equal(sum(fresh), 5);
+    assert.ok(
+      COMPETENCY_KEYS.some(k => k !== "understanding" && fresh[k] < 2),
+      `expected no seeding, got ${JSON.stringify(fresh)}`,
+    );
   });
 });
