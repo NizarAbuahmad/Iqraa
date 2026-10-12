@@ -14,8 +14,25 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { quizPromptAr, quizPromptEn, quizTypes, worksheetPromptAr, worksheetPromptEn } from "../prompts.ts";
+import { quizPromptAr, quizPromptEn, quizTopUpBlock, quizTypes, worksheetPromptAr, worksheetPromptEn } from "../prompts.ts";
 import { QUIZ_TYPE_ORDER } from "../generationShape.ts";
+
+describe("the top-up block for a short reply", () => {
+  const have = ["ما ناتج 2+2؟", "عرّف المول."];
+  for (const [name, isAr] of [["ar", true], ["en", false]] as const) {
+    it(`${name}: names how many more, shows what is already written, and numbers on`, () => {
+      const b = quizTopUpBlock(isAr, have, 18);
+      assert.match(b, /18/);
+      assert.ok(b.includes("ما ناتج 2+2؟") && b.includes("عرّف المول."));
+      assert.match(b, /q3/);
+      assert.match(b, isAr ? /لا تكرر/ : /do not repeat/);
+    });
+  }
+  it("cuts a very long stem rather than pasting a paragraph into the prompt", () => {
+    const b = quizTopUpBlock(false, ["x".repeat(500)], 1);
+    assert.ok(!b.includes("x".repeat(200)));
+  });
+});
 
 const base = { subject: "الكيمياء", grade: "العاشر", topic: "الروابط الأيونية", numQuestions: 8, totalMarks: 20 };
 
