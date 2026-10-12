@@ -66,6 +66,20 @@ export function scopedSubjectIds<T extends { id: string }>(narrowed: readonly T[
   return narrowed.map(s => s.id);
 }
 
+/**
+ * A filter id that is still offered, else `null` ("no filter"). Unlike
+ * `resolveSelectedId` this never falls back to the first option: a screen whose
+ * "all" chip is `null` must land on "all", not on an arbitrary item.
+ *
+ * The library tab stays mounted while grades and subjects are edited on the
+ * profile page, so a subject or lesson picked earlier can name a chip that no
+ * longer exists. Left in state it filtered the list to nothing with no chip
+ * highlighted. Derived on render, like the grade fallback beside it.
+ */
+export function keepIfPresent<T extends { id: string }>(options: readonly T[], id: string | null | undefined): string | null {
+  return id && options.some(o => o.id === id) ? id : null;
+}
+
 /** `narrowSubjectsForGrade` as an index-aligned hide mask — see above. */
 export function hiddenSubjectsForGrade<T extends { id: string }>(
   all: T[],
