@@ -16,7 +16,6 @@ import {
   classMemberships,
   evaluations,
   evaluationQuestions,
-  levelBands,
   levelScales,
   masteryOverrides,
   students,
@@ -48,13 +47,11 @@ import { archiveDecision } from "../lib/evaluationArchive";
 import {
   audienceRequestDecision,
   classChangeAllowed,
-  inAudience,
   MAX_AUDIENCE,
 } from "../modules/assessment/audience.ts";
 import { isUuid } from "../lib/classResource.ts";
 import {
   assignedStudentsByEvaluation,
-  evaluationAudience,
   replaceEvaluationAudience,
 } from "../lib/evaluationAudience.ts";
 import {
@@ -98,6 +95,7 @@ import { openai } from "@workspace/integrations-openai-ai-server";
 import { recommendationsFor } from "../modules/assessment/recommend";
 import type { ObjectiveScore } from "../modules/assessment/scoring";
 
+import { findOrStartTeacherEntry } from "../lib/teacherEntry.ts";
 import { resultsReleaseDecision } from "../lib/resultsRelease.ts";
 import { announceResultsRelease } from "../lib/resultsReleaseNotify.ts";
 const router = Router();
@@ -1813,63 +1811,19 @@ router.post("/evaluations/:id/attempts", async (req: AuthenticatedRequest, res) 
       return;
     }
 
-    // Any source, not just teacher entry: the schema allows one attempt per
-    // student per evaluation, so a student who already sat via the link has
-    // the only paper there will be. Filtering on source made the insert below
-    // hit that constraint and answer 500, with no way for the teacher to open
-    // the paper from here.
-    const [existing] = await db
-      .select()
-      .from(attempts)
-      .where(and(eq(attempts.evaluationId, evaluation.id), eq(attempts.studentId, studentId)))
-      .limit(1);
-    if (existing) {
-      res.json({ attempt: existing, created: false });
+    const started = await findOrStartTeacherEntry({ evaluation, studentId, teacherId: req.user!.id });
+    if (!started.ok) {
+      if (started.code === "not_in_group") {
+        res.status(403).json({ error: "This check is for a group; this student is not in it", code: "not_in_group" });
+      } else if (started.code === "no_questions") {
+        res.status(409).json({ error: "This evaluation has no questions" });
+      } else {
+        res.status(409).json({ error: "No level scale is configured for this evaluation" });
+      }
       return;
     }
-
-    // A group check is for its group only — the same rule the share link and
-    // the student's own list apply (audience.ts).
-    if (!inAudience(await evaluationAudience(evaluation.id), studentId)) {
-      res.status(403).json({ error: "This check is for a group; this student is not in it", code: "not_in_group" });
-      return;
-    }
-
-    const questions = await liveQuestions(evaluation.id);
-    if (questions.length === 0) {
-      res.status(409).json({ error: "This evaluation has no questions" });
-      return;
-    }
-
-    // Frozen at start, per the plan: a later edit to the evaluation or the
-    // scale must not retroactively change what this attempt is graded against.
-    const bands = evaluation.levelScaleId
-      ? await db
-          .select()
-          .from(levelBands)
-          .where(eq(levelBands.scaleId, evaluation.levelScaleId))
-          .orderBy(asc(levelBands.sortOrder))
-      : [];
-    if (bands.length === 0) {
-      res.status(409).json({ error: "No level scale is configured for this evaluation" });
-      return;
-    }
-
-    const [row] = await db
-      .insert(attempts)
-      .values({
-        evaluationId: evaluation.id,
-        studentId,
-        source: "teacher_entry",
-        enteredBy: req.user!.id,
-        status: "in_progress",
-        startedAt: new Date(),
-        questionSnapshot: questions,
-        levelScaleSnapshot: { scaleId: evaluation.levelScaleId, bands },
-      })
-      .returning();
-
-    res.status(201).json({ attempt: row, created: true });
+    if (started.created) res.status(201).json({ attempt: started.attempt, created: true });
+    else res.json({ attempt: started.attempt, created: false });
   } catch (err) {
     logger.error({ err }, "create attempt failed");
     res.status(500).json({ error: "Failed to start attempt" });

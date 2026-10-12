@@ -16,7 +16,6 @@ import {
   attempts,
   classMemberships,
   evaluations,
-  gradeOverrides,
   recommendations,
   students,
 } from "@workspace/db";
@@ -59,6 +58,7 @@ import {
   getGenerationModel,
   recordUsage,
 } from "../lib/aiBudget.ts";
+import { writeTeacherMark } from "../lib/teacherEntry.ts";
 import { extractJSON } from "../lib/generationShape.ts";
 import { openai } from "@workspace/integrations-openai-ai-server";
 
@@ -295,54 +295,15 @@ router.put("/attempts/:id/grades/:questionId", async (req: AuthenticatedRequest,
       : deriveVerdict(awardedMarks, maxMarks);
     const note = typeof req.body?.note === "string" ? req.body.note.trim().slice(0, 2000) : "";
 
-    const [previous] = await db
-      .select()
-      .from(attemptQuestionGrades)
-      .where(
-        and(
-          eq(attemptQuestionGrades.attemptId, owned.attempt.id),
-          eq(attemptQuestionGrades.questionId, questionId),
-        ),
-      )
-      .limit(1);
-
-    const values = {
+    const { grade } = await writeTeacherMark({
       attemptId: owned.attempt.id,
       questionId,
-      awardedMarks: awardedMarks.toFixed(2),
-      maxMarks: maxMarks.toFixed(2),
+      awardedMarks,
+      maxMarks,
       verdict,
-      grader: "teacher" as const,
-      // A teacher's mark is not a guess, so it carries no confidence and never
-      // queues for review — it *is* the review.
-      confidence: null,
-      needsReview: false,
-      // The teacher's comment on this answer replaces the machine's rationale,
-      // because the machine's verdict no longer stands.
-      rationaleAr: note,
-      gradedAt: new Date(),
-    };
-    const [grade] = await db
-      .insert(attemptQuestionGrades)
-      .values(values)
-      .onConflictDoUpdate({
-        target: [attemptQuestionGrades.attemptId, attemptQuestionGrades.questionId],
-        set: values,
-      })
-      .returning();
-
-    if (previous) {
-      await db.insert(gradeOverrides).values({
-        attemptId: owned.attempt.id,
-        questionId,
-        teacherId: req.user!.id,
-        oldMarks: previous.awardedMarks,
-        newMarks: values.awardedMarks,
-        oldVerdict: previous.verdict,
-        newVerdict: verdict,
-        note,
-      });
-    }
+      note,
+      teacherId: req.user!.id,
+    });
 
     const recomputed = await recomputeResult(owned.attempt);
     res.json({
