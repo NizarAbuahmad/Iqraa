@@ -34,6 +34,7 @@ import {
 } from "@workspace/curriculum";
 import {
   type BookItem,
+  type BookItemKind,
   bookCitation,
   bookStatusLabel,
   displayMath,
@@ -463,11 +464,15 @@ function bankMultipleChoice(
  * Returns null whenever the lesson has no item of a requested shape, so the
  * caller falls through to the generated bank exactly as it did before.
  */
-function bookQuestion(args: {
+export function bookQuestion(args: {
   objective: CurriculumObjective;
-  competency: CompetencyKey;
   difficulty: Difficulty;
-  marks: number;
+  /**
+   * Competency and marks for the item that was actually drawn. A function of
+   * the kind because the kind is only known once an item is taken: the mock
+   * path fixes both by slot, the live path by kind (see `bookQuestions.ts`).
+   */
+  slot: (kind: BookItemKind) => { competency: CompetencyKey; marks: number };
   wantChoice: boolean;
   wantShort: boolean;
   session: Set<string>;
@@ -480,7 +485,7 @@ function bookQuestion(args: {
    */
   accepted: readonly GeneratedQuestion[];
 }): GeneratedQuestion | null {
-  const { objective, competency, difficulty, marks, session, rng, accepted } = args;
+  const { objective, difficulty, session, rng, accepted } = args;
   const lessonId = objective.lessonId;
   if (!lessonId) return null;
   const tier = BANK_TIER[difficulty];
@@ -491,6 +496,7 @@ function bookQuestion(args: {
       (args.wantShort && takeBookItem({ lessonId, kind: "exercise", tier, session, rng })) ||
       null;
     if (!item) return null;
+    const { competency, marks } = args.slot(item.kind);
     const built = buildBookQuestion(item, objective, competency, difficulty, marks);
     // A malformed item is spent and the slot falls through, as before.
     if (!built) return null;
@@ -700,9 +706,8 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
       if (bookUsed < bookQuota) {
         const book = bookQuestion({
           objective,
-          competency,
           difficulty: req.difficulty,
-          marks,
+          slot: () => ({ competency, marks }),
           wantChoice: mcqAvailable,
           wantShort: available.includes("short_answer"),
           session: bookSession,
