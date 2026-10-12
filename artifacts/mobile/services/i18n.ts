@@ -2468,6 +2468,8 @@ const translations = {
     messagingBroadcastDone: (sent: number, skipped: number) =>
       skipped > 0 ? `أُرسلت الرسالة إلى ${sent}، وتعذّر الإرسال إلى ${skipped}.` : `أُرسلت الرسالة إلى ${sent}.`,
     messagingRoleParents: 'أولياء الأمور',
+    messagingSelectAll: 'تحديد الكل',
+    messagingClearAll: 'إلغاء تحديد الكل',
     messagingRoleStudents: 'الطلبة',
     messagingManageMembers: 'إدارة الأعضاء',
     messagingStudentCodes: 'رمز الربط',
@@ -4920,6 +4922,8 @@ const translations = {
     messagingBroadcastDone: (sent: number, skipped: number) =>
       skipped > 0 ? `Sent to ${sent}; ${skipped} could not be reached.` : `Sent to ${sent}.`,
     messagingRoleParents: 'Parents',
+    messagingSelectAll: 'Select all',
+    messagingClearAll: 'Clear all',
     messagingRoleStudents: 'Students',
     messagingManageMembers: 'Manage members',
     messagingStudentCodes: 'Link code',
