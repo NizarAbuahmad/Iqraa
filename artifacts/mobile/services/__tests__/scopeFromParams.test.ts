@@ -103,6 +103,40 @@ describe('scopeFromParams', () => {
       assert.deepEqual(scope, { gradeIdx: 0, subjectIdx: 0 });
     });
 
+    it('does not carry the link\'s subject over to a fallback grade', () => {
+      // A Grade 1 link (subject index 0) for a teacher whose own first grade is
+      // grade-10, where subject 0 is hidden and subject 2 is the one they teach.
+      // The index described a Grade 1 lesson; it says nothing about the grade the
+      // screen fell back to, so the screen opens on the teacher's own subject.
+      const taughtOnlyTwo = { gradeHidden, subjectHiddenFor: () => subjects.map((_, i) => i !== 2) };
+      const scope = scopeFromParams(
+        { gradeIdx: String(grade1Idx), subjectIdx: '2' },
+        'ar',
+        { gradeIdx: 0, subjectIdx: 2 },
+        taughtOnlyTwo,
+      );
+      assert.deepEqual(scope, { gradeIdx: 0, subjectIdx: 2 });
+      const bothShown = { gradeHidden, subjectHiddenFor: () => subjects.map((_, i) => i > 2) };
+      const kept = scopeFromParams(
+        { gradeIdx: String(grade1Idx), subjectIdx: '1' },
+        'ar',
+        { gradeIdx: 0, subjectIdx: 2 },
+        bothShown,
+      );
+      assert.equal(kept.subjectIdx, 2, 'the link\'s subject 1 is shown but belonged to the dropped grade');
+    });
+
+    it('still honours the link\'s subject when its grade is shown', () => {
+      const bothShown = { gradeHidden, subjectHiddenFor: () => subjects.map((_, i) => i > 2) };
+      const scope = scopeFromParams(
+        { gradeIdx: '0', subjectIdx: '1' },
+        'ar',
+        { gradeIdx: 0, subjectIdx: 2 },
+        bothShown,
+      );
+      assert.deepEqual(scope, { gradeIdx: 0, subjectIdx: 1 });
+    });
+
     it('keeps a route scope that is inside the selection', () => {
       const scope = scopeFromParams(
         { gradeIdx: '0', subjectIdx: '0' },

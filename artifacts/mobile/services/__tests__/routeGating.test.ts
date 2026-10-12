@@ -6,7 +6,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { isEntryRoute, isNonTeacherRoute, isPublicRoute, needsGradeSetup, needsRosterClaim, needsTeacherSetup } from '../routeGating.ts';
+import { isEntryRoute, isNonTeacherRoute, isPublicRoute, gradeSetupSkipKey, needsGradeSetup, needsRosterClaim, needsTeacherSetup } from '../routeGating.ts';
 
 describe('isEntryRoute', () => {
   it('treats the auth and onboarding routes as entries', () => {
@@ -138,6 +138,10 @@ describe('isNonTeacherRoute', () => {
       // prefix rule as the library above.
       '/curriculum/lab',
       '/curriculum/lab/lab-periodic-table',
+      // The Quran Corner: home, a surah, and its memorise page. Same prefix rule.
+      '/curriculum/quran',
+      '/curriculum/quran/112',
+      '/curriculum/quran/112/memorize',
       '/settings',
       '/faq',
       '/delete-account',
@@ -318,5 +322,30 @@ describe('the mark book route', () => {
   it('is a teacher route: a non-teacher is bounced from it', () => {
     // Pinned with the other /evaluations screens; the server refuses a non-teacher anyway.
     assert.equal(isNonTeacherRoute('/evaluations/abc123/marks'), false);
+  });
+});
+
+describe('skipping the class picker', () => {
+  const unset = { role: 'student', hasRosterLink: true, gradeIds: [] };
+
+  it('stops gating once the account has skipped', () => {
+    assert.equal(needsGradeSetup(unset, true), false);
+    assert.equal(needsGradeSetup({ ...unset, role: 'parent' }, true), false);
+  });
+
+  it('still gates an account that has not skipped', () => {
+    assert.equal(needsGradeSetup(unset, false), true);
+    assert.equal(needsGradeSetup(unset), true);
+  });
+
+  it('does not gate while the skip flag is still loading', () => {
+    // null = not read from storage yet. Redirecting now would bounce an
+    // account that already skipped back to the picker on every cold boot.
+    assert.equal(needsGradeSetup(unset, null), false);
+  });
+
+  it('keeps one flag per account, so a second account on the device is asked', () => {
+    assert.notEqual(gradeSetupSkipKey('user-a'), gradeSetupSkipKey('user-b'));
+    assert.equal(gradeSetupSkipKey('user-a'), gradeSetupSkipKey('user-a'));
   });
 });

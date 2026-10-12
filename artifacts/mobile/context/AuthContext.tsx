@@ -16,6 +16,7 @@ import { LEGAL_VERSION } from '@/constants/legal';
 import { trackEvent } from '@/services/analytics';
 import { fetchWithTimeout } from '@/services/fetchWithTimeout';
 import { setActiveLessonContextUser } from '@/services/lessonContext';
+import { hasSkippedGradeSetup, markGradeSetupSkipped } from '@/services/gradeSetupSkip';
 import { setActiveMediaUser } from '@/services/lessonMedia';
 import { setActiveWorkspaceUser } from '@/services/workspace';
 import { readUserSnapshot, saveUserSnapshot } from '@/services/userSnapshot';
@@ -224,6 +225,14 @@ interface AuthContextType {
    * `DELETE /auth/claim`, which sends the gate back to the code screen.
    */
   markRosterClaimed: (linked?: boolean) => void;
+  /**
+   * Whether this account skipped the class picker on this device. `null`
+   * until the stored answer has been read — the routing gate waits for it
+   * (see `needsGradeSetup`).
+   */
+  gradeSetupSkipped: boolean | null;
+  /** Records «تخطي» on the class picker for the signed-in account. */
+  skipGradeSetup: () => void;
   /**
    * Changes the role picked at signup. The server (POST /auth/role) allows it
    * only while this account has claimed no roster row — i.e. exactly while the
@@ -760,6 +769,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(u => (u ? { ...u, hasRosterLink: linked } : u));
   }, []);
 
+  // Keyed by user id, so a stale answer from the previous account is never
+  // read as the new one's during the render before the effect below runs.
+  const [gradeSkip, setGradeSkip] = useState<{ userId: string; skipped: boolean } | null>(null);
+  const skipUserId = user?.id;
+  useEffect(() => {
+    if (!skipUserId) return;
+    let cancelled = false;
+    void hasSkippedGradeSetup(skipUserId).then(skipped => {
+      // Never undo a skip tapped while the read was in flight.
+      if (!cancelled) setGradeSkip(prev => (prev?.userId === skipUserId && prev.skipped ? prev : { userId: skipUserId, skipped }));
+    });
+    return () => { cancelled = true; };
+  }, [skipUserId]);
+  const gradeSetupSkipped = gradeSkip && gradeSkip.userId === skipUserId ? gradeSkip.skipped : null;
+  const skipGradeSetup = useCallback(() => {
+    if (!skipUserId) return;
+    setGradeSkip({ userId: skipUserId, skipped: true });
+    void markGradeSetupSkipped(skipUserId);
+  }, [skipUserId]);
+
   const switchRole = useCallback(async (role: 'teacher' | 'parent' | 'student') => {
     const updated = await apiJson<{ role: UserRole; hasRosterLink?: boolean }>('/auth/role', {
       method: 'POST',
@@ -933,6 +962,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         removeAvatar,
         deleteAccount,
         markRosterClaimed,
+        gradeSetupSkipped,
+        skipGradeSetup,
         switchRole,
         savedAccounts,
         switchAccount,

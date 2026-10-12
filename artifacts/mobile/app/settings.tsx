@@ -315,7 +315,7 @@ export default function SettingsScreen() {
                 label={t(user.role === 'parent' ? 'classSettingRowParent' : 'classSettingRow')}
                 isRTL={isRTL}
                 colors={colors}
-                right={<Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{classSummary}</Text>}
+                right={<Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{classSummary || t('classSettingNotSet')}</Text>}
                 onPress={() => router.push({ pathname: '/setup-grade', params: { mode: 'edit' } } as any)}
               />
             </View>

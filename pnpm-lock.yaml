@@ -394,6 +394,9 @@ importers:
       '@aws-sdk/client-s3':
         specifier: ^3.699.0
         version: 3.1121.0
+      '@quran.ws/text':
+        specifier: 0.1.0
+        version: 0.1.0
       '@types/node':
         specifier: 'catalog:'
         version: 25.9.5
@@ -1634,6 +1637,10 @@ packages:
 
   '@posthog/types@1.404.1':
     resolution: {integrity: sha512-i2Gei6ARfOSBeTN4s2yUP1p97s2UNI+1NWmtLjhnR/V6t3RFOfI1sBWKcJNWHjtoOCCWoAFU+PNPY6SgT2VtEQ==}
+
+  '@quran.ws/text@0.1.0':
+    resolution: {integrity: sha512-CWr2Kp4h1CknaTgSE/OUZ0E0v22AlKPMey7CZPOo4/Juh2cYGj/P2cTX1VJgPGodCnrNP8ucWopwEiCWENR8aA==}
+    engines: {node: '>=18'}
 
   '@radix-ui/primitive@1.1.5':
     resolution: {integrity: sha512-d86WIWFYNtGA0H/d8exstrTRTp7eWJYlYJbtNofxr/3ljupZYn6EFDG/Qgu/0Kc8v7yMUxySagqJsL1+PdYjWg==}
@@ -7268,6 +7275,8 @@ snapshots:
       '@posthog/types': 1.404.1
 
   '@posthog/types@1.404.1': {}
+
+  '@quran.ws/text@0.1.0': {}
 
   '@radix-ui/primitive@1.1.5': {}
 
