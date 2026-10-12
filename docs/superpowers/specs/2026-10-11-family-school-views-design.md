@@ -151,9 +151,13 @@ Routes, every guard path-scoped (`routes/homework.ts`, `routes/familyHomework.ts
   rows sits in.
 - Parent: `GET /parent/homework`, grouped per child (the same grouping as the
   schedule), each entry `{ key, displayName, canTrack, homework }`. Read-only: a
-  parent cannot mark done. `canTrack` is false when none of the child's roster
-  rows has a student account (a `self` link): nobody can tick that child's
-  homework, so the app shows the due date only — never «متأخّر» or a done mark.
+  parent cannot mark done. **`canTrack` is decided per item**, because ticking is per
+  class: each homework item carries `canTrack`, true iff a roster row of the child that
+  is a member of *that item's class* has a student account (a `self` link). When it is
+  false nobody can tick that item, so the app shows the due date only — never «متأخّر»
+  or a done mark — and, if every visible item is like that, drops the «المطلوب» heading.
+  The entry's own `canTrack` is an informational aggregate (any item trackable; with no
+  items, any live row has an account). Student items are always `canTrack: true`.
 - `STUDENT_ACCOUNTS` gate: the student and parent handlers answer
   `403 { code: "student_accounts_disabled" }` when the flag is off, as
   `routes/familySchedule.ts` does.
@@ -164,8 +168,8 @@ What a family sees:
 
 - **Recent homework only:** `dueAt` within the last 14 days or later, and of
   those the **200 earliest-due** (`ORDER BY due_at ASC LIMIT 200` in
-  `lib/familyHomeworkLoad.ts`; one limit across all the account's classes, not per
-  child). Older work drops off rather than accumulating. Earliest-due is the right
+  `lib/familyHomeworkLoad.ts`). The limit applies per call, so it is **per child for
+  a parent** (each child is loaded separately) and account-wide only for a student. Older work drops off rather than accumulating. Earliest-due is the right
   set to keep: if a family is ever over the limit, what gets cut is the work due
   furthest away, which nobody can act on yet, and never the work due this week. (An
   earlier draft of this spec said "newest 200"; that is not what the code does, and
@@ -185,7 +189,9 @@ that leaves the link as it is does not re-check it, so a homework stays editable
 after its exam is archived or moved.
 
 **The due date has a window:** `dueDate` must be within the last 30 days and the
-next 366 days (Amman calendar days), else 400. The API accepts only
+next 366 days (Amman calendar days), else 400 with `code: "due_date_out_of_range"`.
+A PATCH that resends the stored due date unchanged is not re-bounded, so an old
+homework stays editable; a changed date is. The API accepts only
 `YYYY-MM-DD`; the app displays it as `DD-MM-YYYY` in a left-to-right isolate. (Creating an
 exam from a worksheet, `SendWorksheetSheet` → `fromWorksheet`, is a separate
 flow and a separate project, so homework does not reuse it.)
@@ -256,9 +262,10 @@ as `YYYY-MM-DD` strings and homework days through their Amman date; never
   3 (text exam day, Amman end-of-day homework instant) before writing any
   "tomorrow" logic that covers both.
 - **Part 4 will need a "roster row → accounts" lookup.** `lib/familyAccess.ts`
-  only goes account → roster rows today; a push to "the class's students and
-  their guardians" has to go the other way (class → rows → `self` / `guardian`
-  links → users), and that helper does not exist yet.
+  has account → roster rows helpers plus a rows → "has any student account"
+  existence check (`studentIdsWithSelfAccount`); a push to "the class's students
+  and their guardians" has to return the *users* (class → rows → `self` /
+  `guardian` links → user ids), and that helper does not exist yet.
 - **Homework due tomorrow, not done:** the API server has no scheduler. Use Cloud
   Scheduler calling `POST /internal/homework-reminders`, guarded by a
   shared-secret header, mounted with a path prefix and covered in
@@ -287,8 +294,9 @@ as `YYYY-MM-DD` strings and homework days through their Amman date; never
 
 1. `STUDENT_ACCOUNTS` is already `true` in production (STATUS.md, 2026-09-07), so
    this feature reaches real parent and student accounts on merge. The School tab
-   and the homework screens were rendered once in headless Chromium against
-   seeded fixtures, but never on a device or by a real account; check them on a
+   and the homework screens were rendered in headless Chromium (create, edit,
+   delete and tick exercised through the UI against a seeded database), but never
+   on a device or by a real account; check them on a
    signed-in parent and student account right after deploy.
 2. The assembled schedule is only as complete as teacher adoption.
 3. The reminder needs new infrastructure (Cloud Scheduler + internal endpoint).

@@ -1198,9 +1198,8 @@ place — see its section 2).
   `GET /classes/:id/homework` (with done, student and `trackableCount` — the rows that have a student account), `PATCH|DELETE
   /homework/:id` (delete archives; completions are kept) in `routes/homework.ts`;
   `GET /student/homework`, `PUT|DELETE /student/homework/:id/done` and `GET
-  /parent/homework` (per child `{ key, displayName, canTrack, homework }`; `canTrack` is false
-  when no row of the child has a `self` link, so the client must not call their work
-  «متأخّر») in `routes/familyHomework.ts`. Rules and the family list builder
+  /parent/homework` (per child `{ key, displayName, canTrack, homework }`, where every item
+  also carries its own `canTrack` — see below) in `routes/familyHomework.ts`. Rules and the family list builder
   are pure, in `modules/homework/`; loaders are `lib/familyHomeworkLoad.ts` and
   `lib/homeworkDone.ts`. The student and parent routes answer `403
   student_accounts_disabled` when the flag is off, like the timetable.
@@ -1216,14 +1215,30 @@ place — see its section 2).
   then the weekly timetable. Logic is `services/homework.ts`, fetchers
   `services/homeworkApi.ts` (split, as for the timetable). Copy is `hw*` in
   `services/i18n.ts`, ar + en.
-- **A child with no student account is not "late".** `canTrack: false` (no roster row
-  with a `self` link) means nobody can tick that child's homework. The parent screen
-  then shows each item's due date in the neutral badge, no done mark and no «متأخّر»,
-  with one line under the heading: «لا يوجد حساب طالب لـ {name}…». An absent `canTrack`
-  (an older server) reads as `true`, so a missing field never hides state. The teacher's
-  tab counts "done" against `trackableCount`, not the whole roster, adds a muted
-  «N بلا حساب» line when some students have no account, and drops the bar when none
-  do. Both defaults are pinned in `homework.test.ts`.
+- **An item nobody can tick is not "late" — decided per ITEM, not per child.** Ticking is
+  per class (`lib/homeworkDone.ts` ticks only the account's own rows that are members of
+  the homework's class), so each family item carries `canTrack`: true iff a roster row of
+  the child **that is a member of that item's class** has a `self` link
+  (`buildFamilyHomework`, from `memberships` + `withAccount`, the set the loader gets from
+  `studentIdsWithSelfAccount`). The child-level `canTrack` on the parent response is only
+  an **informational aggregate** (any item trackable; with no items, any live row has an
+  account) — it is not the rule for any item. The case that forced this: Sara has row A1
+  in class 1 (self-linked) and A2 in class 2 (no self link); a child-level flag says
+  `true`, yet class-2 homework can never be ticked, so the parent saw class-2 work as
+  «متأخّر» forever while the class-2 teacher's `trackableCount` said 0. The student route's
+  items are always `canTrack: true` (their rows are self-linked by definition; asserted in
+  a test). On the parent screen an untracked item shows its due date in the neutral badge,
+  no done mark, no strike and no «متأخّر»; one line under the heading, «لا يوجد حساب طالب
+  لـ {name}…», appears when at least one visible item is untracked; and when **every**
+  visible item is untracked the «المطلوب» / «تم إنجازه» headings are dropped (a flat list,
+  soonest due first) so the work is not presented as actionable. An absent `canTrack` (an
+  older server) reads as `true` at both levels, so a missing field never hides state. The
+  name in that line sits in first-strong isolates (U+2068…U+2069) in both languages, so an
+  Arabic name inside the English sentence stays together. The teacher's tab counts "done"
+  against `trackableCount`, not the whole roster (the number shown is clamped to
+  `trackableCount`: a completion kept after a link was removed no longer reads «5 of 4»),
+  adds a muted «N بلا حساب» line when some students have no account, and drops the bar when
+  none do. The defaults are pinned in `homework.test.ts`.
 - **Dates are formatted, not left to the bidi algorithm.** `formatDueDate` returns
   `DD-MM-YYYY` inside a left-to-right isolate (U+2066…U+2069), so Arabic and English
   show the same digits in the same order; it is used wherever a due date is displayed.
@@ -1238,11 +1253,19 @@ place — see its section 2).
   (a fixed UTC+3 — Jordan dropped DST in 2022) and also returns it as ISO. Clients
   never do timezone arithmetic. A homework is `overdue` only once that instant has
   passed and it is not done. A due date must lie within 30 days back and 366 days ahead
-  (Amman days), else 400 — a typo like 2062 is refused.
+  (Amman days), else 400 with `code: "due_date_out_of_range"` next to `error` (POST and
+  PATCH) — a typo like 2062 is refused, and the mobile modal shows `hwErrDueRange`. **A PATCH
+  that leaves the due date unchanged is not re-bounded** (`parsePatch(body, now, existing)`
+  skips the range check when the parsed `dueAt` equals the stored one): the edit form always
+  resends `dueDate`, so without this any edit of a homework due more than 30 days ago was a
+  400 and a teacher could not fix a typo in an old homework. A CHANGED date outside the
+  window is still refused.
 - **A family sees the last 14 days and later**: `dueAt` within 14 days of now, and of
   those the **200 earliest-due** (`ORDER BY due_at ASC LIMIT 200` in
-  `lib/familyHomeworkLoad.ts`, one limit across all the account's classes, not per
-  child). It is not "newest 200" — an earlier version of this section and of the spec
+  `lib/familyHomeworkLoad.ts`). The limit is **per call, so per child for a parent**:
+  `routes/familyHomework.ts` loads each child separately, so a parent with three children can
+  receive up to 600 items; it is account-wide only for a student (one call for all their
+  rows). It is not "newest 200" — an earlier version of this section and of the spec
   said so, wrongly. Earliest-due is the right set to keep: past the limit what is cut is
   the work due furthest away, which nobody can act on yet, never the work due this
   week. Older work drops off the list (it is not deleted, and the teacher still sees it).
@@ -1259,8 +1282,8 @@ place — see its section 2).
   else is one identical 400. Tapping the title opens «اختباراتي», which applies the
   real visibility rules.
 - **Access rules are pinned by tests against a real Postgres**
-  (`src/routes/__tests__/homework.db.test.ts`, 22 tests; `familyHomework.db.test.ts`,
-  22 tests; plus mount-order cases that the new paths answer 401, not 404, with no
+  (`src/routes/__tests__/homework.db.test.ts`, 24 tests; `familyHomework.db.test.ts`,
+  25 tests; plus mount-order cases that the new paths answer 401, not 404, with no
   token). What each file pins: the teacher file — a class that is another teacher's,
   missing or archived is one 404; a teacher cannot change or delete another teacher's
   homework and a PATCH can never move it to another class or teacher; an exam must be
@@ -1270,8 +1293,12 @@ place — see its section 2).
   B sees none of A's; a draft exam's title never reaches a family; a student can tick
   and untick only for their own row (never a classmate's; a completion by the same
   child's row in another class does not read as done), and "not yours" is one identical 404 however it is not yours; the
-  flag-off 403; `canTrack` per child (a child with only an archived `self` row stays
-  false); `trackableCount` per class and per item.
+  flag-off 403; `canTrack` per item (Sara's class-1 item true, her class-2 item false;
+  Adam's false; Noor's true, Yazan's false; an account on her second row flips the class-2
+  item; a `self` link on an archived row changes nothing) with the child-level aggregate
+  checked separately, including the no-items case; a student's items always true; an old
+  homework (due 45 days ago) is editable with its date resent unchanged, a changed
+  out-of-window date is 400 with the code; `trackableCount` per class and per item.
   **Mutation-proven**: each rule below was removed, the named test seen going red, then
   the rule restored (the DB tests boot the *built* bundle, so each mutation needed a
   `pnpm build` — an un-rebuilt mutation passes falsely).
@@ -1290,23 +1317,23 @@ place — see its section 2).
   | `published` check on the exam title | exam-title (student) and "never exposes a draft exam" (parent) |
   | `homework.archivedAt` filter in the loader | student list and parent grouping |
   | exam archived / other-class check in the builder | 1 DB test (`stops showing an exam once it is archived`) + 1 unit test |
-  | `canTrack` forced true | 2 in `familyHomework.db` (which children can be tracked; a `self` link on any row counts) |
+  | `canTrack` forced true | 2 in `familyHomework.db` (which items can be tracked; a `self` link on any row counts) |
+  | item `canTrack` computed from the child's rows in ANY class instead of that item's class | 1 in `familyHomework.db` (`says per item…`) + 1 unit test in `familyHomework.test.ts` |
+  | unchanged-due-date skip in `parsePatch` removed | `changing > lets a homework that is already past the 30-day window be edited…` + 1 unit test |
   | `trackableCount` counted as every student | 4 in `homework.db` |
   | PATCH skip of an unchanged exam link removed | `lets an edit through when the linked exam has since been archived` |
   | due-date range check in `parseCreate` | 1 DB test (`rejects a due date years away`) + 4 unit tests |
-- **What has been seen.** Before the final-review fix wave, the School tab with the
-  Homework section and the teacher's class screen with its four tabs were rendered
-  **once**, in headless Chromium at 360px, in Arabic RTL, against seeded fixtures: no
-  console errors or failed requests, and four tabs fit at 360px in both ar and en
-  (50–65px of slack). **The fix wave itself has not been rendered** — the new page
-  header and section order, the no-account state, the `trackableCount` line, the
-  formatted dates and the scrolling tab row were typechecked and unit-tested only.
-- **What has not.** Nobody has used it on a device or with a real account. Keyboard
-  behaviour in the modal, and saving or creating a homework through the UI, were not
-  exercised (the routes are tested; the form driving them is not). 320px, long titles
-  and long tab counts were not looked at. `STUDENT_ACCOUNTS` is already `true` in
-  production, so this reaches real family accounts on merge — open it on a signed-in
-  teacher, parent and student right after deploy.
+- **What has been seen.** The homework UI was rendered in headless Chromium (360px, Arabic
+  RTL) and create, edit, delete and tick were exercised through it against a seeded
+  database — that run is what found the unchanged-date 400 and the per-child `canTrack`
+  defect fixed here. **What changed after that run has not been rendered**: the per-item
+  neutral state and the flat list when every item is untracked, the isolated name in
+  `hwParentNoAccount`, the clamped done count and the `hwErrDueRange` message were
+  typechecked and unit- or DB-tested only.
+- **What has not.** Nobody has used it on a device or with a real account. Real keyboard /
+  IME input in the modal and real device text scaling were not exercised. `STUDENT_ACCOUNTS`
+  is already `true` in production, so this reaches real family accounts on merge — open it
+  on a signed-in teacher, parent and student right after deploy.
 - **No notifications.** Nothing tells a family that homework was posted, or that it
   is due tomorrow: that is Part 4 (push from the create handler, and a scheduled
   reminder that needs Cloud Scheduler and an internal endpoint). Until then a family
@@ -1322,11 +1349,17 @@ place — see its section 2).
   - A dropped connection after the server has committed a `POST /homework` can
     duplicate it when the teacher retries: there is no idempotency key.
   - The teacher's numbers refresh only when the tab mounts, not while it is open.
-  - Part 4 (notifications) will need a "roster row → accounts" lookup:
-    `lib/familyAccess.ts` only goes account → roster rows.
-  - The student checkbox sits about 13px below the title's centre.
-  - Not exercised: the keyboard in the modal, creating or saving through the UI, a
-    320px screen, long titles.
+  - Part 4 (notifications) still needs a "roster row → user ids" lookup:
+    `lib/familyAccess.ts` has account → roster rows helpers
+    (`selfLinkedStudentIds`, `guardianLinkedStudents`) and a rows → "has any student
+    account" existence check (`studentIdsWithSelfAccount`), but nothing that returns the
+    users behind a set of rows.
+  - From the real browser run (360px, Arabic RTL, Chromium): at a 320px width the English
+    tab row cuts the last label mid-letter with no fade (it is reachable by scroll); a
+    newly created homework does not appear at the top of the teacher's list, because the
+    list sorts by due date, newest first; the checkbox glyph sits about 13px below the
+    title's centre.
+  - Not exercised: real keyboard / IME input and real device text scaling.
 
 ## Messages can be reacted to with an emoji, 2026-10-10
 
