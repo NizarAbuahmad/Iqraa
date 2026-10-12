@@ -196,6 +196,25 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     }
   });
 
+  it("guards the exam calendar and school assignment, and leaves unowned paths alone", async () => {
+    // The calendar is the one route where a teacher reads a colleague's data,
+    // and school assignment decides who counts as a colleague. Neither may be
+    // reachable without a token, and the guard must stay scoped to its own path
+    // — an unowned path still answers 404, not 401.
+    const calendar = await fetch(`${base}/exam-calendar?from=2026-10-01&to=2026-10-31`);
+    assert.equal(calendar.status, 401, "the exam calendar must require a token");
+    const schools = await fetch(`${base}/admin/schools`);
+    assert.equal(schools.status, 401, "listing schools must require a token");
+    const assign = await fetch(`${base}/admin/users/00000000-0000-4000-8000-000000000000/school`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    });
+    assert.equal(assign.status, 401, "assigning a school must require a token");
+    const unowned = await fetch(`${base}/exam-calendar-nothing-lives-here`);
+    assert.equal(unowned.status, 404);
+  });
+
   it("guards the OpenAI-backed routes", async () => {
     // `/practice/read-aloud` belongs here for the same reason as the rest: it
     // spends money on transcription per call. Unauthenticated it would have no

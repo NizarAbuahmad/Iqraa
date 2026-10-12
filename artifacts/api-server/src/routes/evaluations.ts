@@ -41,6 +41,7 @@ import {
 import { logger } from "../lib/logger";
 import { masteryGateEnabled } from "../lib/features.js";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
+import { resolveExamPatch } from "../lib/examDate.js";
 import { passedLessonIds, unlockState } from "../modules/assessment/lessonProgress.ts";
 import { findLiveClass } from "../lib/classOwnership.js";
 import { archiveDecision } from "../lib/evaluationArchive";
@@ -507,7 +508,9 @@ router.get("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
 // ─── Generation ──────────────────────────────────────────────────────────────
 
 /**
- * Attach this exam to a class, or detach it.
+ * Attach this exam to a class, or detach it — and/or set when it is planned to
+ * be sat (`examDate`, `examTime`; `null` clears), which is what the school exam
+ * calendar reads. Any one of the three may be sent alone.
  *
  * Attaching happens here rather than at authoring time for the same reason it
  * does for materials: a teacher does not know which section a paper is for
@@ -527,14 +530,31 @@ router.patch("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
     }
 
     const raw = req.body?.classGroupId;
-    if (raw === undefined) {
-      res.status(400).json({ error: "classGroupId is required" });
+    const touchesSchedule = req.body?.examDate !== undefined || req.body?.examTime !== undefined;
+    if (raw === undefined && !touchesSchedule) {
+      res.status(400).json({ error: "classGroupId, examDate or examTime is required" });
       return;
     }
-    const classGroupId = raw === null ? null : trimmed(raw);
+
+    // The planned sitting (examDate/examTime) is independent of the class: either
+    // may arrive alone. A message string thrown here is a 400, not a 500.
+    let schedule: { examDate: string | null; examTime: string | null };
+    try {
+      schedule = resolveExamPatch(
+        { examDate: evaluation.examDate, examTime: evaluation.examTime },
+        { examDate: req.body?.examDate, examTime: req.body?.examTime },
+      );
+    } catch (msg) {
+      res.status(400).json({ error: String(msg) });
+      return;
+    }
+
+    const classGroupId = raw === undefined ? evaluation.classGroupId : raw === null ? null : trimmed(raw);
     // Owned and not archived — the same lookup the roster routes use, so an
     // exam cannot be attached to a class the teacher has already removed.
-    if (classGroupId && !(await findLiveClass(classGroupId, req.user!.id))) {
+    // Only when the class is actually being changed: a schedule-only update on an
+    // exam whose class has since been archived must not 404 on the old class.
+    if (raw !== undefined && classGroupId && !(await findLiveClass(classGroupId, req.user!.id))) {
       res.status(404).json({ error: "Class not found" });
       return;
     }
@@ -568,13 +588,18 @@ router.patch("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
 
     const [updated] = await db
       .update(evaluations)
-      .set({ classGroupId: classGroupId || null, updatedAt: new Date() })
+      .set({
+        classGroupId: classGroupId || null,
+        examDate: schedule.examDate,
+        examTime: schedule.examTime,
+        updatedAt: new Date(),
+      })
       .where(eq(evaluations.id, evaluation.id))
       .returning();
 
     res.json({ evaluation: updated });
   } catch (err) {
-    logger.error({ err }, "attach evaluation to class failed");
+    logger.error({ err }, "update evaluation failed");
     res.status(500).json({ error: "Failed to update the evaluation" });
   }
 });

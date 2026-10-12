@@ -1647,6 +1647,29 @@ const translations = {
     calendarLessonFrom: (planTitle: string) => `من: ${planTitle}`,
     calendarLoadFailed: 'تعذّر تحميل التقويم.',
 
+    // Exam dates — teachers at one school see each other's exam days so a grade
+    // is not put through two exams at once (GET /exam-calendar).
+    calendarExamsSection: 'الامتحانات',
+    calendarShowSchoolExams: 'عرض امتحانات المدرسة',
+    calendarExamsNoSchool: 'حسابك غير مرتبط بمدرسة بعد، لذلك تظهر امتحاناتك فقط. اطلب من الإدارة ربطك بمدرستك.',
+    calendarExamsLoadFailed: 'تعذّر تحميل امتحانات المدرسة.',
+    calendarExamMine: 'امتحانك',
+    calendarExamTeacher: (name: string) => `المعلّم: ${name}`,
+    calendarExamClash: (grade: string) => `أكثر من امتحان لـ${grade} في هذا اليوم`,
+    examDateLabel: 'موعد الامتحان',
+    examDateHint: 'اختياري. يراه معلمو مدرستك حتى لا تتعارض الامتحانات.',
+    examDateInvalid: 'اكتب التاريخ بصيغة 2026-10-12',
+    examTimeLabel: 'الوقت (اختياري)',
+    examTimeInvalid: 'اكتب الوقت بصيغة 09:30',
+    examDateSave: 'حفظ الموعد',
+    examDateClear: 'إزالة الموعد',
+    examDateSaved: 'تم حفظ الموعد',
+    examDateSaveFailed: 'تعذّر حفظ الموعد.',
+    examDateConflict: (grade: string, count: number) =>
+      count === 1
+        ? `يوجد امتحان آخر لـ${grade} في هذا اليوم`
+        : `يوجد ${count} امتحانات أخرى لـ${grade} في هذا اليوم`,
+
     // Class ↔ materials
     classTabStudents: 'الطلبة',
     classTabMaterials: 'الملفات',
@@ -4055,6 +4078,29 @@ const translations = {
     calendarLessonsSection: 'Lessons',
     calendarLessonFrom: (planTitle: string) => `From: ${planTitle}`,
     calendarLoadFailed: 'Could not load your calendar.',
+
+    // Exam dates — teachers at one school see each other's exam days so a grade
+    // is not put through two exams at once (GET /exam-calendar).
+    calendarExamsSection: 'Exams',
+    calendarShowSchoolExams: 'Show school exams',
+    calendarExamsNoSchool: 'Your account is not linked to a school yet, so only your own exams show. Ask your administrator to link you.',
+    calendarExamsLoadFailed: 'Could not load school exams.',
+    calendarExamMine: 'Your exam',
+    calendarExamTeacher: (name: string) => `Teacher: ${name}`,
+    calendarExamClash: (grade: string) => `More than one exam for ${grade} on this day`,
+    examDateLabel: 'Exam date',
+    examDateHint: 'Optional. Teachers at your school can see it, so exams do not clash.',
+    examDateInvalid: 'Enter the date like 2026-10-12',
+    examTimeLabel: 'Time (optional)',
+    examTimeInvalid: 'Enter the time like 09:30',
+    examDateSave: 'Save date',
+    examDateClear: 'Remove date',
+    examDateSaved: 'Date saved',
+    examDateSaveFailed: 'Could not save the date.',
+    examDateConflict: (grade: string, count: number) =>
+      count === 1
+        ? `Another exam for ${grade} is on this day`
+        : `${count} other exams for ${grade} are on this day`,
 
     // Class ↔ materials
     classTabStudents: 'Students',

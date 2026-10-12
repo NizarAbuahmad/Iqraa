@@ -11,7 +11,7 @@
  * keeps working on the primary subject. Pure on purpose — no React Native
  * import — so `node --test` can load it.
  */
-import { SUBJECTS } from '@workspace/curriculum';
+import { GRADES, SUBJECTS } from '@workspace/curriculum';
 
 export interface HasClassSubjects {
   subjectId?: string | null;
@@ -54,6 +54,12 @@ export function toggleId(selected: readonly string[], id: string): string[] {
 export function inOptionOrder<T extends { id: string }>(options: readonly T[], selected: readonly string[]): string[] {
   const known = options.filter(o => selected.includes(o.id)).map(o => o.id);
   return [...known, ...selected.filter(id => !known.includes(id))];
+}
+
+export function gradeLabel(id: string, lang: string): string {
+  const grade = GRADES.find(g => g.id === id);
+  if (!grade) return '';
+  return lang === 'ar' ? grade.nameAr : grade.name;
 }
 
 export function subjectLabel(id: string, lang: string): string {
