@@ -14,7 +14,7 @@
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { subjectsWithoutCurriculum } from '@/services/lessonPrep';
-import { hiddenOutsideSelection, hiddenSubjectsForGrade } from '@/services/teacherCatalogFilter';
+import { hiddenOutsideSelection, hiddenSubjectsForGrade, subjectHideReason } from '@/services/teacherCatalogFilter';
 
 export function useTeacherScope() {
   const { user } = useAuth();
@@ -24,13 +24,31 @@ export function useTeacherScope() {
 
   const gradeHidden = hiddenOutsideSelection(grades, teacher ? user?.gradeIds : undefined);
 
-  /** Subjects to hide under `gradeId`: not taught by this teacher there, or no book for it. */
-  const subjectHiddenFor = (gradeId: string): boolean[] => {
+  /** Per-subject masks under `gradeId`, kept apart so the reason can be told. */
+  const subjectMasks = (gradeId: string) => {
     const noBook = subjectsWithoutCurriculum(gradeId);
     const notTaught = teacher
       ? hiddenSubjectsForGrade(subjects, gradeId, user?.teachingAssignments, user?.subjectIds)
       : noBook.map(() => false);
+    return { noBook, notTaught };
+  };
+
+  /** Subjects to hide under `gradeId`: not taught by this teacher there, or no book for it. */
+  const subjectHiddenFor = (gradeId: string): boolean[] => {
+    const { noBook, notTaught } = subjectMasks(gradeId);
     return noBook.map((hidden, i) => hidden || notTaught[i]);
+  };
+
+  /**
+   * The i18n key for the note under the grade picker when the picked subject is
+   * hidden: «no book» and «you don't teach it here» are different facts with
+   * different ways out, and the note used to say the first for both.
+   */
+  const strandedNoteKey = (gradeId: string, subjectIdx: number) => {
+    const { noBook, notTaught } = subjectMasks(gradeId);
+    return subjectHideReason(noBook, notTaught, subjectIdx) === 'notTaught'
+      ? 'scopeNotTaughtHint'
+      : 'scopeNoCurriculumHint';
   };
 
   // Where a picker should open when nothing (route, topic, saved form) says
@@ -48,6 +66,7 @@ export function useTeacherScope() {
   return {
     gradeHidden,
     subjectHiddenFor,
+    strandedNoteKey,
     isGradeShown,
     isSubjectShown,
     defaultScope: { gradeIdx, subjectIdx },
