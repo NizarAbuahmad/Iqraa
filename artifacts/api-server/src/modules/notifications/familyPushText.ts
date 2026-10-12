@@ -9,6 +9,8 @@
  *    child's gender, which the roster often does not record;
  *  - a day or time sits in a left-to-right isolate, as the app shows it.
  */
+import type { ExamDateNotice } from "./examDateNotice.ts";
+
 export interface PushText {
   title: string;
   body: string;
@@ -59,5 +61,28 @@ export function homeworkPostedText(i: { title: string; className: string; dueDat
   return {
     student: { title: titled("واجب جديد: ", i.title), body: `${i.className} — ${due}. تجده في «المدرسة».` },
     guardian: child => ({ title: forChild(child, "واجب جديد"), body: `«${clip(i.title, 60)}» في ${i.className} — ${due}.` }),
+  };
+}
+
+export function examDateText(i: { examTitle: string; className: string; notice: ExamDateNotice }): FamilyText {
+  const name = i.examTitle.trim() || "الامتحان";
+  const quoted = `«${clip(name, 60)}»`;
+  const n = i.notice;
+  if (n.kind === "cleared") {
+    return {
+      student: { title: titled("أُلغي موعد امتحان: ", name), body: `لم يعد له موعد محدّد — ${i.className}.` },
+      guardian: child => ({ title: forChild(child, "أُلغي موعد امتحان"), body: `${quoted} لم يعد له موعد محدّد — ${i.className}.` }),
+    };
+  }
+  const when = `يوم ${pushDay(n.examDate)}${n.examTime ? ` الساعة ${pushTime(n.examTime)}` : ""}`;
+  if (n.kind === "changed") {
+    return {
+      student: { title: titled("تغيّر موعد امتحان: ", name), body: `الموعد الجديد: ${when} — ${i.className}.` },
+      guardian: child => ({ title: forChild(child, "تغيّر موعد امتحان"), body: `${quoted} — الموعد الجديد: ${when} — ${i.className}.` }),
+    };
+  }
+  return {
+    student: { title: titled("موعد امتحان: ", name), body: `${when} — ${i.className}.` },
+    guardian: child => ({ title: forChild(child, "موعد امتحان"), body: `${quoted} ${when} — ${i.className}.` }),
   };
 }

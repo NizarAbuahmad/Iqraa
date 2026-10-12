@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { classLabel, homeworkPostedText, pushDay, pushTime, TITLE_MAX } from "../familyPushText.ts";
+import { classLabel, examDateText, homeworkPostedText, pushDay, pushTime, TITLE_MAX } from "../familyPushText.ts";
 
 const LONG = "حلّ تمارين الدرس الثاني من الوحدة الثالثة كاملةً مع التبرير ".repeat(4);
 const titleFits = (t: string) => assert.ok([...t].length <= TITLE_MAX, `${[...t].length}: ${t}`);
@@ -37,5 +37,34 @@ describe("homeworkPostedText", () => {
     const long = homeworkPostedText({ title: LONG, className: LONG, dueDate: "2026-10-14" });
     titleFits(long.student.title);
     titleFits(long.guardian(LONG).title);
+  });
+});
+
+describe("examDateText", () => {
+  const set = examDateText({ examTitle: "اختبار الوحدة الأولى", className: "10A maths", notice: { kind: "set", examDate: "2026-10-20", examTime: "09:30" } });
+  it("tells the day and time, by string", () => {
+    assert.equal(set.student.title, "موعد امتحان: اختبار الوحدة الأولى");
+    assert.ok(set.student.body.includes("⁦20-10-2026⁩"));
+    assert.ok(set.student.body.includes("⁦09:30⁩"));
+    assert.equal(set.guardian("سارة").title, "سارة: موعد امتحان");
+  });
+  it("leaves the time out when there is none", () => {
+    const noTime = examDateText({ examTitle: "x", className: "c", notice: { kind: "set", examDate: "2026-10-20", examTime: null } });
+    assert.equal(noTime.student.body.includes("الساعة"), false);
+  });
+  it("says changed and cleared plainly", () => {
+    const changed = examDateText({ examTitle: "x", className: "c", notice: { kind: "changed", examDate: "2026-10-21", examTime: null } });
+    assert.equal(changed.student.title, "تغيّر موعد امتحان: x");
+    assert.equal(changed.guardian("آدم").title, "آدم: تغيّر موعد امتحان");
+    const cleared = examDateText({ examTitle: "x", className: "c", notice: { kind: "cleared", examDate: null, examTime: null } });
+    assert.equal(cleared.student.title, "أُلغي موعد امتحان: x");
+    assert.ok(cleared.student.body.includes("لم يعد له موعد محدّد"));
+  });
+  it("keeps every title within TITLE_MAX", () => {
+    for (const kind of ["set", "changed"] as const) {
+      const t = examDateText({ examTitle: LONG, className: LONG, notice: { kind, examDate: "2026-10-20", examTime: "09:30" } });
+      titleFits(t.student.title);
+      titleFits(t.guardian(LONG).title);
+    }
   });
 });

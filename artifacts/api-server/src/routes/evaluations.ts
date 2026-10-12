@@ -22,6 +22,7 @@ import {
 } from "@workspace/db";
 import type { Difficulty, QuestionType } from "@workspace/db";
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import {
   getBookById,
   getEvaluableBookIds,
@@ -100,6 +101,9 @@ import { savePaperTotals } from "../lib/paperTotals.ts";
 import { parsePaperTotals, PAPER_TOTALS_REFUSAL } from "../modules/assessment/paperTotals.ts";
 import { resultsReleaseDecision } from "../lib/resultsRelease.ts";
 import { announceResultsRelease } from "../lib/resultsReleaseNotify.ts";
+import { pushWithin } from "../lib/pushWithin.ts";
+import { announceExamDate } from "../lib/familyPushEvents.ts";
+import { examDateNotice, publishNotice } from "../modules/notifications/examDateNotice.ts";
 const router = Router();
 // Path-scoped — see the note in roster.ts. Unscoped, this swallowed every
 // request reaching it, including routes belonging to later routers.
@@ -158,6 +162,9 @@ const MAX_QUESTIONS = 50;
 const SHARE_CODE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 const trimmed = (v: unknown): string => (typeof v === "string" ? v.trim() : "");
+
+/** "This column still holds what the request read" — null included. */
+const stillHolds = (col: AnyPgColumn, value: string | null) => sql`${col} IS NOT DISTINCT FROM ${value}`;
 
 /** Owned-or-404. Never distinguish "not yours" from "not there". */
 async function ownedEvaluation(id: string, teacherId: string) {
@@ -521,6 +528,9 @@ router.get("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
  * `classGroupId: null` detaches. The check is `!== undefined`, not truthiness —
  * treating null as "not provided" would make attach work and detach silently
  * do nothing, which is exactly the bug `pickDefined` was extracted to prevent.
+ *
+ * A date that moves on an exam families can see is pushed to them
+ * (modules/notifications/examDateNotice.ts) — once, even under racing saves.
  */
 router.patch("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
   try {
@@ -587,16 +597,31 @@ router.patch("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
       }
     }
 
-    const [updated] = await db
-      .update(evaluations)
-      .set({
-        classGroupId: classGroupId || null,
-        examDate: schedule.examDate,
-        examTime: schedule.examTime,
-        updatedAt: new Date(),
-      })
-      .where(eq(evaluations.id, evaluation.id))
-      .returning();
+    const next = { classGroupId: classGroupId || null, examDate: schedule.examDate, examTime: schedule.examTime };
+    const values = { ...next, updatedAt: new Date() };
+    // Families hear about a date only when it actually moved on an exam they
+    // can see (examDateNotice). The write that announces is conditional on
+    // the values this request read, so two PATCHes racing each other cannot
+    // both announce: the loser falls through to the plain write and stays quiet.
+    const notice = examDateNotice(evaluation, next);
+    const [claimed] = notice
+      ? await db
+          .update(evaluations)
+          .set(values)
+          .where(
+            and(
+              eq(evaluations.id, evaluation.id),
+              stillHolds(evaluations.classGroupId, evaluation.classGroupId),
+              stillHolds(evaluations.examDate, evaluation.examDate),
+              stillHolds(evaluations.examTime, evaluation.examTime),
+            ),
+          )
+          .returning()
+      : [];
+    const [updated] = claimed
+      ? [claimed]
+      : await db.update(evaluations).set(values).where(eq(evaluations.id, evaluation.id)).returning();
+    if (claimed && notice) await pushWithin("exam date", () => announceExamDate(claimed, notice));
 
     res.json({ evaluation: updated });
   } catch (err) {
@@ -1498,6 +1523,14 @@ router.post("/evaluations/:id/publish", async (req: AuthenticatedRequest, res) =
       return;
     }
 
+    // A dated draft leaving draft is the moment its date reaches families.
+    // Not made race-safe, by choice (a known gap): two publishes of one draft
+    // racing each other can both announce. A conditional write is possible inside
+    // the share-code retry loop (first attempt `status = draft`, a zero-row result
+    // is not an exception so the retry stays intact) but it was left out of this
+    // part to keep the publish path unchanged.
+    const notice = publishNotice(evaluation);
+    if (notice) await pushWithin("exam published with a date", () => announceExamDate(updated, notice));
     res.json({ evaluation: updated });
   } catch (err) {
     logger.error({ err }, "publish failed");
