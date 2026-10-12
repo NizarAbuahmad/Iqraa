@@ -26,6 +26,13 @@ export function assertSafeAdminUrl(raw: string, env: Env = process.env): URL {
       `Refusing to run DB tests against non-local host ${url.hostname} (set ALLOW_REMOTE_TEST_DB=1 to override)`,
     );
   }
+  // pg honours ?host= and ?hostaddr= OVER the URL hostname, so a local-looking
+  // host with a query can still connect elsewhere (or to a Cloud SQL socket).
+  if (url.search !== "" && env.ALLOW_REMOTE_TEST_DB !== "1") {
+    throw new Error(
+      "Refusing a TEST_DATABASE_URL with query parameters: a ?host= or ?hostaddr= would override the host check (set ALLOW_REMOTE_TEST_DB=1 to override)",
+    );
+  }
   return url;
 }
 

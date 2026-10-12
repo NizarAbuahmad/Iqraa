@@ -46,6 +46,42 @@ describe("assertSafeAdminUrl", () => {
     assert.throws(() => assertSafeAdminUrl("mysql://u@localhost/x", {}), /postgres/);
     assert.throws(() => assertSafeAdminUrl("not a url", {}), /valid URL/);
   });
+
+  it("refuses query parameters that override the host (pg honours ?host= and ?hostaddr=)", () => {
+    for (const raw of [
+      "postgres://localhost/postgres?host=evil.com",
+      "postgres://localhost/postgres?hostaddr=10.0.0.5",
+      "postgres://u:p@localhost/db?host=/cloudsql/proj:region:inst",
+    ]) {
+      assert.throws(() => assertSafeAdminUrl(raw, {}), /query parameters/, raw);
+    }
+  });
+
+  it("allows query parameters only with the explicit override", () => {
+    assert.doesNotThrow(() =>
+      assertSafeAdminUrl("postgres://localhost/postgres?host=evil.com", { ALLOW_REMOTE_TEST_DB: "1" }),
+    );
+  });
+
+  it("refuses host tricks that only look local", () => {
+    for (const raw of [
+      "postgres://localhost.evil.com/x",
+      "postgres://localhost@evil.com/x",
+      "postgres://localhost.:5432/x",
+      "postgres://LOCALHOST/x",
+    ]) {
+      assert.throws(() => assertSafeAdminUrl(raw, {}), /non-local host/, raw);
+    }
+  });
+
+  it("still accepts plain local URLs, including the expanded IPv6 loopback", () => {
+    for (const raw of [
+      "postgres://localhost/postgres",
+      "postgres://postgres@[0:0:0:0:0:0:0:1]:5432/postgres",
+    ]) {
+      assert.ok(assertSafeAdminUrl(raw, {}) instanceof URL, raw);
+    }
+  });
 });
 
 describe("test database names", () => {
@@ -68,6 +104,8 @@ describe("test database names", () => {
       "iqraa_test_0123456789ab; DROP DATABASE postgres",
       "IQRAA_TEST_0123456789ab",
       "iqraa_test_0123456789abc",
+      "iqraa_test_0123456789AB",
+      "iqraa_test_0123456789ab\n",
     ]) {
       assert.equal(isTestDbName(name), false, name);
     }
