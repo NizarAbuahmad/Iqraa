@@ -153,7 +153,15 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   title. A `computed` item — SymPy solved a stem read from a text layer that
   flattens exponents and splits fractions — must never carry a `check`: the
   existing verification pass would badge it «تم التحقق», which says the stem was
-  read correctly and nothing has checked that. `SERVED_STATUSES` is the one place
+  read correctly and nothing has checked that. `verified` exists for book items
+  only where the guide prints the answer (the `unit-test` items 6-11 on
+  teacher-guide p.47, 5 of 6): the printed answers come in a different order from
+  the items, so the extractor pairs by VALUE (printed entry equals SymPy's answer
+  for the stem it read; a misread stem finds no answer), never by position, and
+  leaves an unmatched entry `computed` and listed in `report.json`
+  (`unmatchedPrinted`), never tolerated into a match. Even then the item carries
+  no `check` and no badge. A `unit-test` item cites as the unit test and is drawn
+  wherever a short answer is wanted. `SERVED_STATUSES` is the one place
   that decides what a paper may draw. Only the API's evaluation generator uses
   book items: the mock path (live AI off), and the live model path only when
   `BOOK_ITEMS_LIVE=true` (off by default, read per request; production runs

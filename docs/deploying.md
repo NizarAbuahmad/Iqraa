@@ -266,8 +266,10 @@ add real NCCD maths book questions to an evaluation (at most half the requested
 count).
 **Off by default** — only the exact string `true` turns it on, it is read per
 request (no rebuild; a new revision from `--update-env-vars` is enough), and
-`deploy.yml` does not set it. Turn it on only after a person has compared the 24
-served items (`lib/curriculum/src/data/book-items/`) with the printed books. Its
+`deploy.yml` does not set it. Turn it on only after a person has compared the 25
+`computed` served items (`lib/curriculum/src/data/book-items/`) with the printed
+books (the 5 `verified` ones were cross-checked against the book's own printed
+answers). Its
 effect is visible on the paper itself: `generationParams.bookItems` is
 `{ enabled, planned, supplied, drawn, ids }` on every live maths evaluation, so an
 unset flag reads `enabled: false` rather than looking like a bug. A paper made

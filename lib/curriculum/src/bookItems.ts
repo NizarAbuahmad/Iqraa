@@ -11,7 +11,10 @@
  * no schema and no migration. See docs/superpowers/specs/2026-10-12-book-items-design.md.
  *
  * **Trust is in `status`, and it is not a ranking.**
- *  - `verified`    the book's printed answer and SymPy agree.
+ *  - `verified`    the book's printed answer and SymPy agree. Today that is
+ *                  five `unit-test` items (teacher guide p.47), whose printed
+ *                  answers are paired with the items by value, not position, so
+ *                  a misread stem finds no answer. Still no `check`, no badge.
  *  - `computed`    SymPy solved the stem; nothing in the book cross-checks it.
  *                  Served, labelled, and NEVER shown as verified — the stem was
  *                  read from a text layer that flattens exponents and splits

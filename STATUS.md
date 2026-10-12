@@ -973,12 +973,13 @@ an announcement by default» below.
 
 ## Real book items on the live model path, behind `BOOK_ITEMS_LIVE`, 2026-10-12
 
-The 24 served book items (see the next section) now also reach evaluations the
+The 30 served book items (see the next section) now also reach evaluations the
 model writes, not just the mock generator's. **Off by default**: nothing changes
 in production until `BOOK_ITEMS_LIVE=true` is set on iqraa-api (exactly `"true"`,
 read per request, so no rebuild; declared in `LOCAL_SETUP.md` and
 `docs/deploying.md`), and that should wait until a person has compared the
-served items with the printed books. Design:
+25 `computed` served items with the printed books (the 5 `verified` ones were
+cross-checked against the book's own printed answers; see the next section). Design:
 `docs/superpowers/specs/2026-10-12-book-items-live-path-design.md`.
 
 - **How.** In `POST /evaluations/:id/generate` (maths only), `planBook`
@@ -1013,9 +1014,9 @@ served items with the printed books. Design:
   records `promptVersion` `exam-gen-6+book` in `generationParams` and on its
   usage rows, and the quota sent under `generationParams.bookItems.quota`; flag off, non-maths or `k = 0` sends the request and records the
   version exactly as before (`exam-gen-6`).
-- **Competency and marks are by kind and nominal.** An exercise is
-  `application` (3 marks), a unit-test choice `understanding` (2 marks); the model
-  picks its own for the rest. Like on the mock path, a book item's cognitive
+- **Competency and marks are by kind and nominal.** An exercise and a unit-test
+  open question (`unit-test`) are `application` (3 marks), a unit-test choice
+  `understanding` (2 marks); the model picks its own for the rest. Like on the mock path, a book item's cognitive
   demand is not read from the book.
 - **A regeneration avoids only the items on the paper being replaced** (the live,
   non-soft-deleted rows; their ids are in each question's
@@ -1026,7 +1027,9 @@ served items with the printed books. Design:
 - **What shows.** `evaluation.generator` stays `"llm"`; a book question is stored
   with `source: "ai"` like the model's, and is told apart by
   `aiMetadata.generator: "book"`. It shows its citation and key label on the
-  evaluation screen. None carries a `check`, so none is badged verified.
+  evaluation screen. None carries a `check` (the 5 `verified` ones included), so
+  none earns the «تم التحقق» badge; a `verified` book item shows its citation and
+  no key label, a `computed` one adds «الحل محسوب من نص السؤال».
   `generationParams.bookItems = { enabled, planned, supplied, drawn, ids }` (`supplied`
   is the dry-run summary the model was told, empty when nothing was planned) is written on
   every live maths paper (not on the mock path, not on other subjects), so "why
@@ -1067,14 +1070,16 @@ served items with the printed books. Design:
 - **Still not covered:** the mobile offline quiz/exam generators and
   `routes/generate.ts` (worksheets, quizzes).
 
-## Real book items in the mock evaluation generator: 24 served, none verified, 2026-10-12
+## Real book items in the mock evaluation generator: 30 served, 5 verified, 2026-10-12
 
 A Grade 10 maths evaluation used to be built from generated templates only.
 It now also draws **real NCCD items** — exercise-book questions and the teacher
 guide's end-of-unit test — for the objective's own lesson. Reader:
 `lib/curriculum/src/bookItems.ts`; data: `src/data/book-items/`, written by
 `scripts/extract_book_items.py`. Design:
-`docs/superpowers/specs/2026-10-12-book-items-design.md`.
+`docs/superpowers/specs/2026-10-12-book-items-design.md`; the guide-page-47
+slice (items 6-11, the first `verified` ones):
+`docs/superpowers/specs/2026-10-12-book-items-unit-test-open-design.md`.
 
 - **Mock path only until the section above.** `generateMockEvaluation` has one
   caller, the non-live `else` branch of `POST /evaluations/:id/generate`
@@ -1083,25 +1088,64 @@ guide's end-of-unit test — for the objective's own lesson. Reader:
   items** unless `BOOK_ITEMS_LIVE=true` is set (off by default; the live model
   path then draws the same items). The mobile offline quiz/exam generators do not
   use them.
-- **What is in it.** 24 served items: systems of equations (S1 unit 1, two
-  lessons), polynomial derivatives (S2 unit 6) and two unit-test choices. 14 more
-  were quarantined, each with its reason in `report.json` (no real solution, an
-  exponent the text layer made ambiguous, a fraction split across lines).
-- **None is `verified`.** No printed answer was found for the families
-  extracted here (exercise-book systems and derivatives, unit-test choices 1-2),
-  so SymPy's answer is the only one. Guide page 47 does print answers inline for
-  unit-test items 6-11 (e.g. `(1, 4), (-5, -20)` for item 6, «لا يوجد حل» for
-  item 7); those are the first candidates for `verified` and are not extracted
-  yet. Until then the items are `computed`: labelled to the teacher «الحل محسوب
-  من نص السؤال», and carrying no `check`, so they cannot earn the verified badge.
-  `verified` exists and is pinned by test for the day a family has a printed
-  answer; nothing exercises it with data yet.
-- **No stem has been compared with a page image.** The text layer flattens
-  exponents (`24x3` is 24x³) and splits fractions, and the book PDFs are not in a
-  fresh checkout. The extractor refuses anything ambiguous rather than choosing a
-  reading, but a person should read the 24 against the books. The PR that
-  introduced this lists them. Compare first `s1-exercise-book-u1l2-1`, `-2`,
-  `-8` and `-10` (surd answers; the final review asked for them to be eyeballed).
+- **What is in it.** 30 served items (`report.json` counts: 25 `computed`, 5
+  `verified`): systems of equations (S1 unit 1, two lessons), polynomial
+  derivatives (S2 unit 6), the unit-test choices 1-2 and the unit-test open
+  questions 6-11 (guide p.47). 14 more were quarantined, each with its reason in
+  `report.json` (no real solution, an exponent the text layer made ambiguous, a
+  fraction split across lines); that list is unchanged by the p.47 slice.
+- **The new kind `unit-test`** is an open question from the end-of-unit test. It
+  cites as the test («اختبار نهاية الوحدة ١، س ٦»), not as the exercise book, and
+  is drawn wherever a paper wants a short answer, from the union with `exercise`
+  (`mockGenerator.ts` `bookQuestion`; `planBook` counts it as eligible for
+  `short_answer`). Its tier is `medium` (`tierSource` `default`); on the live path
+  it is `application`, 3 marks. Items 6, 7, 10, 11 join lesson
+  `kbl-math-s1-nccd-u1_l1` and 8, 9 join `…u1_l2`. Item 7's answer is the book's
+  own «لا يوجد حل» (the one served key that is Arabic); item 11's is the
+  inequality `c < -1/3`, solved by SymPy (discriminant below zero); item 10 is
+  stored with the book's `c = 8` substituted. Item 12 (an inequality) and the
+  appendix pointer are not extracted.
+- **What `verified` means here, and what it does not.** The guide prints the
+  answers to items 6-11 in one block after item 12, **in a different order from
+  the items** (the text layer places them as it likes). So an answer is attached
+  to an item by VALUE, never by position: the printed entry must equal what SymPy
+  computed from the stem we extracted (points compared as a multiset, so the
+  book's order does not matter but a duplicated point is not a single point;
+  whitespace removed except between two digits; a fraction split over two lines
+  has its bar kept as a separator, so `- 11` over `3` meets `-11/3` and still
+  differs from `-113`). Each printed entry is used at most once. Because the
+  entry has to match, **a misread stem would not find its answer**: for these 5
+  the extraction was cross-checked against the book's own key, not just against
+  SymPy. What this cannot detect is the book itself pairing answers with the wrong
+  items. The five: items 6, 7, 9, 10, 11 (`status: verified`,
+  `verificationSource: sympy+book`, `printedAnswer` the entry as printed). A
+  `verified` book item still carries `check: null`, so it does not reach the
+  verification pass and earns no «تم التحقق» badge; the teacher sees its citation
+  and no key label.
+- **Item 8 stays `computed`.** The guide prints `(0, 5), (2. 1)` for it; SymPy
+  gives `(0, 5), (2, 1)`. `2. 1` is the decimal 2.1, not the point (2, 1), and no
+  tolerance was added, because whether the printed page has a comma or a typo
+  cannot be seen without the PDF. The unmatched entry is listed in `report.json`
+  under `unmatchedPrinted` and the item's reason under `notes`. **To promote it**
+  a person opens the PDF (the guide's page 47, printed page 34) and reads what is
+  printed. There is no override mechanism: the JSON is regenerated by the script
+  and CI fails if a hand edit differs, so promotion means adding a page-specific,
+  reviewed correction to the extractor's reading of that entry, with a test, and
+  regenerating. If the page prints `(2, 1)` the text layer
+  dropped a comma and the item becomes `verified`; if it really prints `2.1` that
+  is a typo in the book and the item stays `computed`.
+- **The 25 `computed` items are not cross-checked.** SymPy's answer is the only
+  one: the exercise-book systems and derivatives, unit-test choices 1-2 and
+  item 8. They are labelled to the teacher «الحل محسوب من نص السؤال» and carry no
+  `check`, so they cannot earn the verified badge.
+- **No stem of the 25 `computed` items has been compared with a page image.**
+  The text layer flattens exponents (`24x3` is 24x³) and splits fractions, and
+  the book PDFs are not in a fresh checkout. The extractor refuses anything
+  ambiguous rather than choosing a reading, but a person should read those 25
+  against the books. The PR that introduced this lists them. Compare first
+  `s1-exercise-book-u1l2-1`, `-2`, `-8` and `-10` (surd answers; the final review
+  asked for them to be eyeballed). The 5 `verified` ones are the exception: each
+  stem found its own printed answer, which a misreading could not.
 - **Where it applies.** Only the API's evaluation generator, through one builder
   (`mockGenerator.ts` `bookQuestion`) that the mock path uses and the live
   model path uses only when `BOOK_ITEMS_LIVE=true`: at most half a paper, only
@@ -1117,7 +1161,8 @@ guide's end-of-unit test — for the objective's own lesson. Reader:
   competency breakdown is nominal for book questions.
 - **Not covered.** S1 unit 1's first lesson («حل معادلات خاصة») has no
   curriculum lesson, so its 18 exercises (15 of them equation items) cannot be joined; Arabic word problems;
-  figure items; chemistry (its teacher guides have no extracted text).
+  figure items; chemistry (its teacher guides have no extracted text); the rest of guide p.47 (choices 3-5, whose exponents and fractions the text layer
+  flattens, item 12, an inequality, and the answer appendix its key points to).
 
 ## The Quran Corner: a shelf in the library, 2026-10-11
 
