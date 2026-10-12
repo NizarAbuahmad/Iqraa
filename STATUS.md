@@ -971,7 +971,55 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
-## Real book items in the mock evaluation generator: 24 served, none verified, none live yet, 2026-10-12
+## Real book items on the live model path, behind `BOOK_ITEMS_LIVE`, 2026-10-12
+
+The 24 served book items (see the next section) now also reach evaluations the
+model writes, not just the mock generator's. **Off by default**: nothing changes
+in production until `BOOK_ITEMS_LIVE=true` is set on iqraa-api (exactly `"true"`,
+read per request, so no rebuild; declared in `LOCAL_SETUP.md` and
+`docs/deploying.md`), and that should wait until a person has compared the
+served items with the printed books. Design:
+`docs/superpowers/specs/2026-10-12-book-items-live-path-design.md`.
+
+- **How.** In `POST /evaluations/:id/generate` (maths only), `planBookDraw`
+  decides how many book questions (`k`): at most `floor(count / 2)`, never more
+  than the eligible items for the requested types, and never more than a dry run
+  of the real draw (fixed seed, nothing kept) can deliver, since two items whose
+  stems are near-duplicates are never both drawn. The model is asked for
+  `count − k`, and `assembleLivePaper` (`modules/assessment/bookQuestions.ts`)
+  cuts the model's surplus first, adds the book questions (drawn so none is a
+  near-duplicate of a model question) and sorts the combined list into the
+  paper's type blocks (`evaluation.assessmentTypes` order, stable, only when a
+  book question was drawn), so the ministry blocks are not split. The route's own
+  final trim cannot fire when a book share exists. With the flag off, or a
+  non-maths subject, `k` is 0 and the model's paper passes through untouched.
+- **Competency and marks are by kind and nominal.** An exercise is
+  `application` (3 marks), a unit-test choice `understanding` (2 marks); the model
+  picks its own for the rest. Like on the mock path, a book item's cognitive
+  demand is not read from the book.
+- **A regeneration prefers items the teacher has not seen** (their ids are in each
+  question's `aiMetadata.bookItemId`) and falls back to repeats, where the pool
+  and the near-duplicate check allow, rather than shorten the paper.
+- **What shows.** `evaluation.generator` stays `"llm"`; a book question is stored
+  with `source: "ai"` like the model's, and is told apart by
+  `aiMetadata.generator: "book"`. It shows its citation and key label on the
+  evaluation screen. None carries a `check`, so none is badged verified.
+  `generationParams.bookItems = { enabled, planned, drawn, ids }` is written on
+  every live maths paper (not on the mock path, not on other subjects), so "why
+  no book items" is answerable from the row when the flag is unset. A paper that
+  drew fewer than planned says so in its notes.
+- **Not verified end to end.** The route's few lines of glue (the flag read,
+  `planBookDraw`, `modelCount`, `assembleLivePaper`, the `generationParams`
+  write) have no route-level test; they are covered by the typechecker and the
+  helper tests in `modules/assessment/__tests__/bookQuestions.test.ts`. After
+  turning the flag on, generate one maths evaluation and check
+  `generationParams.bookItems` (`enabled: true`, `drawn` equal to `planned`; a
+  shortfall is also in the paper's notes) and, when the model delivered, that the
+  paper is exactly the requested length.
+- **Still not covered:** the mobile offline quiz/exam generators and
+  `routes/generate.ts` (worksheets, quizzes).
+
+## Real book items in the mock evaluation generator: 24 served, none verified, 2026-10-12
 
 A Grade 10 maths evaluation used to be built from generated templates only.
 It now also draws **real NCCD items** — exercise-book questions and the teacher
@@ -980,13 +1028,13 @@ guide's end-of-unit test — for the objective's own lesson. Reader:
 `scripts/extract_book_items.py`. Design:
 `docs/superpowers/specs/2026-10-12-book-items-design.md`.
 
-- **Not on the live path yet.** `generateMockEvaluation` has one caller, the
-  non-live `else` branch of `POST /evaluations/:id/generate`
-  (`routes/evaluations.ts`); the live path calls the model. Production runs
-  `AI_LIVE_MODE=true` (see "Live AI is on, 2026-08-20"), so with today's settings
-  **no live evaluation draws book items** — they appear only when live AI is off
-  (dev, demo, or `AI_LIVE_MODE` unset). Next slices: give the live model path the
-  same items, or the mobile offline quiz/exam generators.
+- **Mock path only until the section above.** `generateMockEvaluation` has one
+  caller, the non-live `else` branch of `POST /evaluations/:id/generate`
+  (`routes/evaluations.ts`); production runs `AI_LIVE_MODE=true` (see "Live AI is
+  on, 2026-08-20"), so with today's settings **no live evaluation draws book
+  items** unless `BOOK_ITEMS_LIVE=true` is set (off by default; the live model
+  path then draws the same items). The mobile offline quiz/exam generators do not
+  use them.
 - **What is in it.** 24 served items: systems of equations (S1 unit 1, two
   lessons), polynomial derivatives (S2 unit 6) and two unit-test choices. 14 more
   were quarantined, each with its reason in `report.json` (no real solution, an
@@ -1006,15 +1054,19 @@ guide's end-of-unit test — for the objective's own lesson. Reader:
   reading, but a person should read the 24 against the books. The PR that
   introduced this lists them. Compare first `s1-exercise-book-u1l2-1`, `-2`,
   `-8` and `-10` (surd answers; the final review asked for them to be eyeballed).
-- **Where it applies.** Only the mock evaluation generator (`mockGenerator.ts`
-  `bookQuestion`): at most half a paper, only when the objective's `lessonId` has
-  items and the requested types allow them. The live-AI path, the mobile offline
-  quiz/exam generators, worksheets, homework and decks do not use book items.
+- **Where it applies.** Only the API's evaluation generator, through one builder
+  (`mockGenerator.ts` `bookQuestion`) that the mock path uses and the live
+  model path uses only when `BOOK_ITEMS_LIVE=true`: at most half a paper, only
+  when the objective's `lessonId` has items and the requested types allow them.
+  With the flag unset the live-AI path, and always the mobile offline quiz/exam
+  generators, `routes/generate.ts` (worksheets, quizzes), homework and decks, do
+  not use book items.
   The teacher sees the citation and key label on the evaluation screen
   (`services/bookItemNote.ts`).
-- **Competency is nominal for book questions.** A book item's `competencyKey` is
-  stamped by the paper's slot and does not match the item, so the competency
-  breakdown is nominal for book questions.
+- **Competency is nominal for book questions.** On the mock path a book item's
+  `competencyKey` is stamped by the paper's slot and does not match the item; on
+  the live path it is set by kind (see the section above). Either way the
+  competency breakdown is nominal for book questions.
 - **Not covered.** S1 unit 1's first lesson («حل معادلات خاصة») has no
   curriculum lesson, so its 18 exercises (15 of them equation items) cannot be joined; Arabic word problems;
   figure items; chemistry (its teacher guides have no extracted text).

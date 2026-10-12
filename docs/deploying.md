@@ -261,6 +261,18 @@ Non-secret config (model names, budgets, flags, bucket names) is still plain
 env: change it with `--update-env-vars KEY=VALUE`, never `--set-env-vars` —
 the latter replaces the whole environment.
 
+`BOOK_ITEMS_LIVE` is one such flag on `iqraa-api`: it lets the live model path
+add real NCCD maths book questions to an evaluation (at most half the paper).
+**Off by default** — only the exact string `true` turns it on, it is read per
+request (no rebuild; a new revision from `--update-env-vars` is enough), and
+`deploy.yml` does not set it. Turn it on only after a person has compared the 24
+served items (`lib/curriculum/src/data/book-items/`) with the printed books. Its
+effect is visible on the paper itself: `generationParams.bookItems` is
+`{ enabled, planned, drawn, ids }` on every live maths evaluation, so an unset
+flag reads `enabled: false` rather than looking like a bug. Then generate one
+maths evaluation and check it; see "Real book items on the live model path" in
+`STATUS.md`.
+
 **Check that the new revision actually took traffic.** This file used to say
 traffic is `latestRevision: true` so it happens by itself. That is the normal
 state, not a guarantee, and when it is not true nothing tells you: a

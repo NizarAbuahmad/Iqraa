@@ -154,12 +154,16 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   flattens exponents and splits fractions — must never carry a `check`: the
   existing verification pass would badge it «تم التحقق», which says the stem was
   read correctly and nothing has checked that. `SERVED_STATUSES` is the one place
-  that decides what a paper may draw. Only the API's mock evaluation generator uses
-  book items, and it runs only when live AI is off; production has
-  `AI_LIVE_MODE=true`, so today no live paper uses them. The live-AI path and
-  the mobile offline generators ignore them, so
-  a paper differs by which path made it — add a family to the script's `TABLE`,
-  never to a generator.
+  that decides what a paper may draw. Only the API's evaluation generator uses
+  book items: the mock path (live AI off), and the live model path only when
+  `BOOK_ITEMS_LIVE=true` (off by default, read per request; production runs
+  `AI_LIVE_MODE=true`, so no live paper has them until someone sets the flag —
+  `generationParams.bookItems` says which state a paper was made in). The mobile
+  offline generators and `routes/generate.ts` ignore them, so a paper differs by
+  which path made it — add a family to the script's `TABLE`, never to a
+  generator. On the live path the model's surplus is cut before the book
+  questions are added, and the combined list is sorted into the paper's type
+  blocks (`assembleLivePaper`).
 - **A teaching style shapes the whole lesson plan, in two places.** Per-style
   phases live in `artifacts/mobile/services/ai/lessonPlanBlueprints.ts` and the
   matching contract in `LESSON_STYLE_RULES_AR`/`_EN`
