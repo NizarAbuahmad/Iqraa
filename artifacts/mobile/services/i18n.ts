@@ -2245,6 +2245,14 @@ const translations = {
     marksGridNotReleased: 'النتائج غير معلنة — لا يرى الطلبة وأولياء الأمور العلامات حتى تعلنها.',
     marksGridReleasedWarning: 'النتائج معلنة: أي علامة تحفظها الآن تظهر فورًا للطالب ووليّ أمره، دون إشعار.',
     marksGridSaveFirst: 'احفظ العلامات قبل إعلان النتائج.',
+    marksGridSavedWithErrors: (n: string) => `حُفظت بقية العلامات، وتعذّر حفظ ${arMarksPhrase(n, true)} — راجع الصفوف الحمراء.`,
+    marksGridCheckedAfterFailure: 'لم نتأكد من اكتمال الحفظ فأعدنا قراءة العلامات من الخادم. العلامات التي تحمل نقطة برتقالية لم تُحفظ بعد.',
+    marksGridClearTitle: 'مسح علامات محفوظة',
+    marksGridClearAction: 'امسح العلامات',
+    // `n` marks that are saved; «محفوظتان» for two. `released` is '1' once results are announced.
+    marksGridClearConfirm: (n: string, released: string) =>
+      `ستُمسح ${arMarksPhrase(n)} ${Number(n) === 2 ? 'محفوظتان' : 'محفوظة'} من الخانات التي تركتها فارغة، وتُزال معها ${Number(n) === 1 ? 'نتيجة الطالب' : 'نتائج الطلبة'}.` +
+      (released === '1' ? ' النتائج معلنة، فلن يراها الطلبة وأولياء أمورهم بعد الآن.' : ''),
     paperMarksLabel: 'العلامة',
     paperObjectiveLabel: 'النتاج',
     paperMarksInvalid: (n: string) => `علامة السؤال ${n} يجب أن تكون أكبر من صفر.`,
@@ -4763,6 +4771,13 @@ const translations = {
     marksGridNotReleased: 'Results not released — students and parents see no marks until you release them.',
     marksGridReleasedWarning: 'Results are released: any mark you save now shows to the student and their parent at once, with no notification.',
     marksGridSaveFirst: 'Save the marks before releasing the results.',
+    marksGridSavedWithErrors: (n: string) => `The rest were saved; ${enMarksPhrase(n)} could not be saved — check the rows in red.`,
+    marksGridCheckedAfterFailure: "We couldn't confirm the save finished, so the marks were reloaded from the server. Marks with an orange dot are not saved yet.",
+    marksGridClearTitle: 'Clear saved marks',
+    marksGridClearAction: 'Clear the marks',
+    marksGridClearConfirm: (n: string, released: string) =>
+      `${enMarksPhrase(n)} saved for the boxes you left empty will be cleared, removing ${Number(n) === 1 ? "the student's result" : "the students' results"}.` +
+      (released === '1' ? ' Results are released, so students and parents will stop seeing them.' : ''),
     paperMarksLabel: 'Marks',
     paperObjectiveLabel: 'Objective',
     paperMarksInvalid: (n: string) => `Question ${n} needs marks greater than zero.`,

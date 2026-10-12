@@ -10,7 +10,7 @@
  * «حفظ الكل» is the step that hands it in.
  */
 import { toLatinDigits } from './latinDigits.ts';
-import type { AttemptListRow, Difficulty, EvaluationQuestion, PaperQuestionInput } from './evaluations.ts';
+import type { AttemptListRow, Difficulty, EvaluationQuestion, EvaluationStatus, PaperQuestionInput } from './evaluations.ts';
 
 /** MAX_MARKS_PER_QUESTION in api-server/src/modules/assessment/paperExam.ts. */
 export const QUICK_PAPER_MAX = 100;
@@ -103,17 +103,38 @@ export function initialGridRows(
 ): GridRow[] {
   const byStudent = new Map(attempts.map(a => [a.studentId, a]));
   return roster.map(s => {
-    const a = byStudent.get(s.id);
-    const saved = a?.result && !a.result.isProvisional ? Number(a.result.earnedMarks) : null;
+    const { saved, pendingFinal } = storedMark(byStudent.get(s.id));
     return {
       studentId: s.id,
       name: s.displayName,
       saved,
-      pendingFinal: saved !== null && !a?.submittedAt,
+      pendingFinal,
       text: saved === null ? '' : formatMark(saved),
       status: { kind: 'idle' },
     };
   });
+}
+
+/** What the server holds for one student, from their attempt row. */
+function storedMark(a: Pick<AttemptListRow, 'submittedAt' | 'result'> | undefined): { saved: number | null; pendingFinal: boolean } {
+  const saved = a?.result && !a.result.isProvisional ? Number(a.result.earnedMarks) : null;
+  return { saved, pendingFinal: saved !== null && !a?.submittedAt };
+}
+
+/**
+ * Bring `saved` / `pendingFinal` back in line with the server after a request
+ * whose outcome is unknown (a timeout: the server may have finished), WITHOUT
+ * touching what the teacher has typed. A row's status goes back to idle — a
+ * tick or an error would describe an answer we never saw — and `rowState`
+ * then reports the truth: a row the server did save is clean, one it did not
+ * is still dirty.
+ */
+export function refreshStoredMarks(
+  rows: readonly GridRow[],
+  attempts: readonly Pick<AttemptListRow, 'studentId' | 'submittedAt' | 'result'>[],
+): GridRow[] {
+  const byStudent = new Map(attempts.map(a => [a.studentId, a]));
+  return rows.map(row => ({ ...row, ...storedMark(byStudent.get(row.studentId)), status: { kind: 'idle' } }));
 }
 
 export function editRow(rows: readonly GridRow[], studentId: string, text: string): GridRow[] {
@@ -206,6 +227,80 @@ export function gridSummary(
     if (row.status.kind === 'error') errors++;
   }
   return { total: rows.length, entered, dirty, invalid, errors };
+}
+
+/** Parse failures all read as the same sentence on the row: a mark from 0 to the total, two decimals at most. */
+const PARSE_ERROR_CODE = {
+  invalid: 'marks_out_of_range',
+  range: 'marks_out_of_range',
+  precision: 'marks_out_of_range',
+  length: 'marks_out_of_range',
+} as const satisfies Record<Extract<MarkParse, { ok: false }>['error'], PaperTotalErrorCode>;
+
+/**
+ * Why a row is red, as a refusal code the screen words with `paperTotalErrorText`:
+ * a box that does not parse (every `MarkParse` error, `length` included), else
+ * what the server last refused this row for. `null` when the row is fine.
+ */
+export function rowProblemCode(row: GridRow, max: number): PaperTotalErrorCode | null {
+  const parsed = parsePaperMark(row.text, max);
+  if (!parsed.ok) return PARSE_ERROR_CODE[parsed.error];
+  return row.status.kind === 'error' ? row.status.code : null;
+}
+
+/**
+ * How many marks already SAVED on the server this save would clear (a blank box
+ * over a stored mark). A blank row that never had a mark is not counted: there
+ * is nothing to lose, so no confirmation.
+ */
+export function savedMarksToClear(rows: readonly GridRow[], max: number): number {
+  let n = 0;
+  for (const row of rows) {
+    const s = rowState(row, max);
+    if (!s.invalid && s.dirty && s.value === null && row.saved !== null) n++;
+  }
+  return n;
+}
+
+/** Per-student refusals in one chunk's answer. */
+export function countRefused(results: readonly PaperTotalResult[]): number {
+  return results.filter(r => r.status === 'error').length;
+}
+
+/**
+ * Whether a failed request may still have been applied. A 4xx is the server
+ * saying no before it touched anything; a timeout, a dropped connection or a
+ * 5xx says nothing about what it finished, so the caller refetches before
+ * believing "nothing saved".
+ */
+export function saveOutcomeUncertain(err: unknown): boolean {
+  const status = (err as { status?: unknown } | null | undefined)?.status;
+  return !(typeof status === 'number' && status >= 400 && status < 500);
+}
+
+export type MarksBlocker = 'not_quick' | 'needs_publish' | 'needs_class';
+
+export const MARKS_BLOCKER_KEY = {
+  not_quick: 'marksGridNotQuick',
+  needs_publish: 'marksGridNeedsPublish',
+  needs_class: 'marksGridNeedsClass',
+} as const satisfies Record<MarksBlocker, string>;
+
+/**
+ * What stops the mark book opening, in the order a teacher can fix them: not a
+ * quick paper exam, still a draft, no class. A CLOSED exam is fine — the route
+ * takes marks for a published or a closed exam. (An exam with no level scale
+ * only shows itself as the route's 409 `no_level_scale`, at save.)
+ */
+export function marksBlocker(
+  questions: readonly QuestionShape[],
+  status: EvaluationStatus,
+  classGroupId: string | null | undefined,
+): MarksBlocker | null {
+  if (!isQuickPaperExam(questions)) return 'not_quick';
+  if (status === 'draft') return 'needs_publish';
+  if (!classGroupId) return 'needs_class';
+  return null;
 }
 
 /** Split a list into requests of `size` rows (the server refuses more than its PAPER_TOTALS_MAX_ROWS = 100 with a 400). */

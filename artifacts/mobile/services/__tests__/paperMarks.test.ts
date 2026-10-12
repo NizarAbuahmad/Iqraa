@@ -5,6 +5,7 @@ import {
   PAPER_TOTALS_CHUNK, PAPER_TOTAL_ERROR_KEY, buildTotalsRequest, chunkTotals, editRow, formatMark, gridSummary,
   initialGridRows, isPaperExam, isQuickPaperExam, mergeTotalsResponse, paperTotalErrorText, paperTotalsFailureKey,
   parsePaperMark, quickPaperQuestions, rowState,
+  MARKS_BLOCKER_KEY, countRefused, marksBlocker, refreshStoredMarks, rowProblemCode, saveOutcomeUncertain, savedMarksToClear,
 } from '../paperMarks.ts';
 import translations, { getT } from '../i18n.ts';
 
@@ -360,5 +361,150 @@ describe('the words for a per-student refusal, through the real translations', (
         assert.ok(text.trim().length > 0 && text !== key && !/undefined/.test(text), `${lang}.${key}`);
       }
     }
+  });
+});
+
+
+describe('what the mark book screen decides (Task 9)', () => {
+  const roster = [{ id: 's1', displayName: 'أ' }, { id: 's2', displayName: 'ب' }, { id: 's3', displayName: 'ج' }];
+  const paperQ = { gradingMode: 'manual', body: {} } as never;
+  const typedQ = { gradingMode: 'auto', body: { stem: 'x' } } as never;
+
+  describe('marksBlocker', () => {
+    it('orders the blockers: not a quick paper, then a draft, then no class', () => {
+      assert.equal(marksBlocker([typedQ], 'draft', null), 'not_quick');
+      assert.equal(marksBlocker([paperQ, paperQ], 'published', 'c1'), 'not_quick');
+      assert.equal(marksBlocker([], 'published', 'c1'), 'not_quick');
+      assert.equal(marksBlocker([paperQ], 'draft', null), 'needs_publish');
+      assert.equal(marksBlocker([paperQ], 'published', null), 'needs_class');
+      assert.equal(marksBlocker([paperQ], 'published', 'c1'), null);
+    });
+    it('lets a CLOSED quick paper exam through (the route takes published or closed)', () => {
+      assert.equal(marksBlocker([paperQ], 'closed', 'c1'), null);
+      assert.equal(marksBlocker([paperQ], 'closed', null), 'needs_class');
+    });
+    it('has copy for every blocker, in both languages', () => {
+      for (const key of Object.values(MARKS_BLOCKER_KEY)) {
+        assert.ok(typeof ar[key] === 'string' && typeof en[key] === 'string', key);
+      }
+      // «انشر الامتحان أولاً» is for a draft only.
+      assert.equal(MARKS_BLOCKER_KEY.needs_publish, 'marksGridNeedsPublish');
+    });
+  });
+
+  describe('rowProblemCode', () => {
+    it('words every way a box can fail to parse, the 16-character cap included', () => {
+      let rows = initialGridRows(roster, []);
+      for (const bad of ['abc', '21', '1.234', '1'.repeat(17), '-1']) {
+        rows = editRow(rows, 's1', bad);
+        assert.equal(rowProblemCode(rows[0]!, 20), 'marks_out_of_range', bad);
+      }
+      for (const lang of ['ar', 'en'] as const) {
+        assert.ok(paperTotalErrorText(getT(lang), 'marks_out_of_range', 20).includes('20'));
+      }
+    });
+    it('is quiet for a good or blank box, and reports a refusal the server sent', () => {
+      let rows = initialGridRows(roster, []);
+      assert.equal(rowProblemCode(rows[0]!, 20), null);
+      rows = editRow(rows, 's1', '12.5');
+      assert.equal(rowProblemCode(rows[0]!, 20), null);
+      rows = mergeTotalsResponse(rows, [{ studentId: 's1', status: 'error', code: 'kept_student_work' }]);
+      assert.equal(rowProblemCode(rows[0]!, 20), 'kept_student_work');
+      // Typing again clears the refusal (editRow resets the status).
+      assert.equal(rowProblemCode(editRow(rows, 's1', '13')[0]!, 20), null);
+    });
+  });
+
+  describe('savedMarksToClear', () => {
+    const attempts = [
+      { studentId: 's1', submittedAt: '2026-10-12T10:00:00Z', result: result('10.00') },
+      { studentId: 's2', submittedAt: null, result: result('5.00') },
+    ];
+    it('counts only blank boxes over a SAVED mark, never a blank row that had none', () => {
+      let rows = initialGridRows(roster, attempts);
+      assert.equal(savedMarksToClear(rows, 20), 0);
+      rows = editRow(rows, 's1', '');
+      assert.equal(savedMarksToClear(rows, 20), 1);
+      rows = editRow(rows, 's2', '  ');
+      assert.equal(savedMarksToClear(rows, 20), 2, 'a mark saved but never handed in is still a saved mark');
+      // s3 never had a mark: blank, clean, not counted.
+      assert.equal(rows[2]!.text, '');
+      assert.equal(savedMarksToClear(rows, 20), 2);
+    });
+    it('does not count a changed mark, an unchanged one, or an invalid box', () => {
+      let rows = initialGridRows(roster, attempts);
+      rows = editRow(rows, 's1', '11');
+      rows = editRow(rows, 's2', 'abc');
+      assert.equal(savedMarksToClear(rows, 20), 0);
+    });
+  });
+
+  describe('refreshStoredMarks (after a timeout)', () => {
+    it('adopts what the server holds and keeps what was typed', () => {
+      let rows = initialGridRows(roster, []);
+      rows = editRow(rows, 's1', '12');
+      rows = editRow(rows, 's2', '7');
+      rows = editRow(rows, 's3', 'oops');
+      // The server finished s1 (handed in), never saw s2.
+      const after = refreshStoredMarks(rows, [{ studentId: 's1', submittedAt: '2026-10-12T10:00:00Z', result: result('12.00') }]);
+      assert.deepEqual(after.map(r => r.text), ['12', '7', 'oops']);
+      assert.deepEqual(after.map(r => r.saved), [12, null, null]);
+      assert.equal(rowState(after[0]!, 20).dirty, false, 'the save that did land is clean');
+      assert.equal(rowState(after[1]!, 20).dirty, true, 'the one that did not is still to save');
+      assert.ok(after.every(r => r.status.kind === 'idle'));
+    });
+    it('sees a clear that landed, and a mark that is saved but not handed in', () => {
+      let rows = initialGridRows(roster, [{ studentId: 's1', submittedAt: '2026-10-12T10:00:00Z', result: result('10.00') }]);
+      rows = editRow(rows, 's1', '');
+      const cleared = refreshStoredMarks(rows, []);
+      assert.equal(cleared[0]!.saved, null);
+      assert.equal(rowState(cleared[0]!, 20).dirty, false);
+      const pending = refreshStoredMarks(rows, [{ studentId: 's1', submittedAt: null, result: result('10.00') }]);
+      assert.equal(pending[0]!.pendingFinal, true);
+    });
+    it('treats a provisional result as no mark, like the first load', () => {
+      const rows = initialGridRows(roster, []);
+      const after = refreshStoredMarks(rows, [{ studentId: 's1', submittedAt: null, result: result('3.00', true) }]);
+      assert.equal(after[0]!.saved, null);
+    });
+  });
+
+  describe('saveOutcomeUncertain / countRefused', () => {
+    it('a 4xx is a clean refusal; a timeout, a dropped connection and a 5xx are not', () => {
+      assert.equal(saveOutcomeUncertain({ status: 409, code: 'no_class' }), false);
+      assert.equal(saveOutcomeUncertain({ status: 400 }), false);
+      assert.equal(saveOutcomeUncertain({ status: 429 }), false);
+      assert.equal(saveOutcomeUncertain(Object.assign(new Error('x'), { name: 'AbortError' })), true);
+      assert.equal(saveOutcomeUncertain(new TypeError('Network request failed')), true);
+      assert.equal(saveOutcomeUncertain({ status: 502 }), true);
+      assert.equal(saveOutcomeUncertain(null), true);
+    });
+    it('counts the per-student refusals in a chunk', () => {
+      assert.equal(countRefused([
+        { studentId: 'a', status: 'saved', marks: 1 },
+        { studentId: 'b', status: 'error', code: 'failed' },
+        { studentId: 'c', status: 'cleared', marks: null },
+        { studentId: 'd', status: 'error', code: 'not_in_class' },
+      ]), 2);
+    });
+  });
+
+  describe('the new copy, through the real translations', () => {
+    it('words the partial save, the re-read and the clear confirmation in both languages', () => {
+      for (const lang of ['ar', 'en'] as const) {
+        const t = getT(lang);
+        const texts = [
+          t('marksGridSavedWithErrors', '1'), t('marksGridSavedWithErrors', '2'), t('marksGridSavedWithErrors', '5'),
+          t('marksGridCheckedAfterFailure'), t('marksGridClearTitle'), t('marksGridClearAction'),
+          t('marksGridClearConfirm', '1', '0'), t('marksGridClearConfirm', '2', '1'), t('marksGridClearConfirm', '11', '1'),
+        ];
+        for (const text of texts) assert.ok(text.trim().length > 0 && !/undefined|NaN|\[object|marksGrid/.test(text), `${lang}: ${text}`);
+        // The count carries its noun, and a released exam says families lose sight of it.
+        assert.ok(t('marksGridClearConfirm', '2', '0').length < t('marksGridClearConfirm', '2', '1').length);
+      }
+      assert.match(ar.marksGridClearConfirm('2', '0'), /علامتان محفوظتان/);
+      assert.match(ar.marksGridClearConfirm('1', '0'), /علامة واحدة محفوظة/);
+      assert.match(ar.marksGridSavedWithErrors('2'), /علامتين/);
+    });
   });
 });

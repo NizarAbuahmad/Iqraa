@@ -49,6 +49,7 @@ import { palette } from '@/constants/colors';
 import { PROD_ORIGIN } from '@/services/siteOrigin';
 import { BackButton } from '@/components/ui/BackButton';
 import { ExamDateCard } from '@/components/ExamDateCard';
+import { isPaperExam, isQuickPaperExam } from '@/services/paperMarks';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -171,6 +172,8 @@ export default function EvaluationDetailScreen() {
   });
   const evaluation = data?.evaluation ?? null;
   const questions = data?.questions ?? [];
+  const paperExam = isPaperExam(questions);
+  const quickPaper = isQuickPaperExam(questions);
   /** First question of each block -> its heading and marks. */
   const blockAt = new Map(
     examBlocks(questions, lang === 'ar').map(b => [b.start, { heading: b.heading, marks: examBlockMarks(b, q => q.marks) }] as const),
@@ -415,6 +418,7 @@ export default function EvaluationDetailScreen() {
         <ShareLinkCard
           shareCode={evaluation.shareCode ?? null}
           attachedToClass={Boolean(evaluation.classGroupId)}
+          paper={paperExam}
           onAttach={() => setPickingClass(true)}
           colors={colors}
           isRTL={isRTL}
@@ -456,12 +460,30 @@ export default function EvaluationDetailScreen() {
 
       {evaluation?.status === 'published' && (
         <View style={{ marginHorizontal: 20, marginTop: 16, gap: 10 }}>
+          {quickPaper ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push({ pathname: '/evaluations/[id]/marks', params: { id: evaluation.id } } as never)}
+              style={[styles.enterAnswersBtn, { backgroundColor: ACCENT_FILL, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            >
+              <Ionicons name="create-outline" size={18} color="#fff" />
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
+                {t('marksGridBtn')}
+              </Text>
+            </Pressable>
+          ) : null}
+          {/* A quick paper exam is marked from the mark book above; the per-student
+              entry stays for a paper with details to fill, as the quieter button. */}
           <Pressable
             onPress={() => router.push({ pathname: '/evaluations/[id]/answers', params: { id: evaluation.id } })}
-            style={[styles.enterAnswersBtn, { backgroundColor: ACCENT_FILL, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            style={
+              quickPaper
+                ? [styles.resultsBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]
+                : [styles.enterAnswersBtn, { backgroundColor: ACCENT_FILL, flexDirection: isRTL ? 'row-reverse' : 'row' }]
+            }
           >
-            <Ionicons name="create-outline" size={18} color="#fff" />
-            <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
+            <Ionicons name="create-outline" size={18} color={quickPaper ? ACCENT : '#fff'} />
+            <Text style={{ color: quickPaper ? ACCENT : '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
               {t('enterAnswersBtn')}
             </Text>
           </Pressable>
@@ -866,10 +888,12 @@ function KeyCheckNotice({
 }
 
 function ShareLinkCard({
-  shareCode, attachedToClass, onAttach, colors, isRTL, align, t,
+  shareCode, attachedToClass, paper, onAttach, colors, isRTL, align, t,
 }: {
   shareCode: string | null;
   attachedToClass: boolean;
+  /** A paper exam is sat in class: it has no code to hand out. */
+  paper: boolean;
   onAttach: () => void;
   colors: ReturnType<typeof useColors>;
   isRTL: boolean;
@@ -877,6 +901,25 @@ function ShareLinkCard({
   t: (key: TranslationKey, ...args: any[]) => string;
 }) {
   const [copied, setCopied] = useState(false);
+  // A paper exam is sat in class: its code would open a paper with nothing on
+  // it, so the card offers no code — only the class it still needs. After the
+  // hook above, never before it: `questions` loads, so `paper` flips false → true.
+  if (paper) {
+    if (attachedToClass) return null;
+    return (
+      <View style={{ marginHorizontal: 20, marginTop: 16 }}>
+        <View style={[styles.shareCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={{ color: palette.warning, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
+            {t('marksGridNeedsClass')}
+          </Text>
+          <Pressable onPress={onAttach} style={[styles.shareBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <Ionicons name="people-outline" size={16} color={ACCENT} />
+            <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{t('shareExamAttachNow')}</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
   if (!shareCode) return null;
 
   // Always the live site. This used to follow the host of the current page, so
