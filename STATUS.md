@@ -1733,7 +1733,15 @@ teacher had linked them to a class.
   and students sign up with the teacher's code alone»), so for them the claim
   step is already done; `claim-required` remains for older and Google-created
   accounts. The pre-login intro (`onboarding.tsx`) is unchanged.
-- **Settings**: a «الصف» / «صفوف أبنائي» row opens the same screen in edit mode.
+- **Skip (2026-10-12)**: «تخطي الآن» on the first-time picker leaves it for later.
+  The account keeps the whole catalog and the gate stops asking. Remembered **on
+  the device, per account** (`services/gradeSetupSkip.ts`, key from
+  `gradeSetupSkipKey`) — no schema change, so the same account on a second
+  device is asked once more. `needsGradeSetup(user, skipped)` treats `null`
+  (flag not read yet) as "don't gate", or a skipped account would bounce to the
+  picker on every cold boot. No skip button in Settings' edit mode.
+- **Settings**: a «الصف» / «صفوف أبنائي» row opens the same screen in edit mode;
+  it reads «لم يُحدَّد» until a class is chosen.
 - **Shown**: `curriculum/browse.tsx` and `curriculum/resources.tsx` now narrow
   grades by `gradeIds` for every role (it was teachers only). A student's pick
   wins over the roster grade, which stays the fallback. **Not** narrowed:
