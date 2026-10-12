@@ -37,7 +37,7 @@ import {
   type LessonFlowPrior,
   type StepKey } from '@/services/ai/lessonFlowRunner';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
-import { groundedSubjectConflict, scopeWithoutCurriculum, scopeFromParams, subjectPickerLabels } from '@/services/lessonPrep';
+import { groundedSubjectConflict, scopeWithoutCurriculum, scopeFromParams, topicForScope, subjectPickerLabels } from '@/services/lessonPrep';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
@@ -115,7 +115,7 @@ export default function LessonFlowScreen() {
   // The form is gone once building starts, so this cannot move under a flow.
   const lang = contentLang(subjects[subjectIdx].id, uiLang);
   const [topic, setTopic] = useState(() => topicInLang(
-    params.topic ?? '', uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
+    topicForScope(params, uiLang, teacherScope.defaultScope, teacherScope), uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
     { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
   ));
   const [durationIdx, setDurationIdx] = useState(0);
