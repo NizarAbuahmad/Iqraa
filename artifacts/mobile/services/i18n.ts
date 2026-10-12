@@ -2107,6 +2107,8 @@ const translations = {
     hwTeacherEmptyDesc: 'أضف واجبًا ليراه طلبة الشعبة وأولياء أمورهم.',
     hwErrTitle: 'اكتب عنوانًا للواجب',
     hwErrDue: 'اكتب تاريخًا صحيحًا مثل 2026-10-14',
+    hwPresetDays: (n: number) =>
+      n === 1 ? 'غدًا' : n === 2 ? 'بعد يومين' : n === 7 ? 'بعد أسبوع' : `بعد ${n} أيام`,
     myExamsEmptyTitle: 'لا توجد اختبارات بعد',
     myExamsEmptyDesc: 'حين يرسل معلّمك اختبارًا إلى شعبتك سيظهر هنا.',
     myExamsStateAvailable: 'جديد',
@@ -4537,6 +4539,8 @@ const translations = {
     hwTeacherEmptyDesc: "Add homework and this section's students and parents will see it.",
     hwErrTitle: 'Enter a title',
     hwErrDue: 'Enter a valid date such as 2026-10-14',
+    hwPresetDays: (n: number) =>
+      n === 1 ? 'Tomorrow' : n === 7 ? 'In a week' : `In ${n} days`,
     myExamsEmptyTitle: 'No exams yet',
     myExamsEmptyDesc: 'When your teacher sends an exam to your class, it will appear here.',
     myExamsStateAvailable: 'New',

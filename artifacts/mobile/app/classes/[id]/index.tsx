@@ -81,6 +81,8 @@ import { ClassResourceRow } from '@/components/classes/ClassResourceRow';
 import { LibraryPickerSheet } from '@/components/classes/LibraryPickerSheet';
 import { LabPickerSheet } from '@/components/classes/LabPickerSheet';
 import { SupportGroupsSection } from '@/components/classes/SupportGroupsSection';
+import { HomeworkTab } from '@/components/classes/HomeworkTab';
+import { SPACE } from '@/constants/theme';
 import type { SupportGroup } from '@/services/supportGroups';
 import {
   addBodyFor,
@@ -110,7 +112,7 @@ const ACCENT_FILL = palette.hero;
 /** Centred column on desktop web; full-bleed on phones. */
 const CENTERED = { width: '100%' as const, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' as const };
 
-type Tab = 'students' | 'materials' | 'exams';
+type Tab = 'students' | 'materials' | 'exams' | 'homework';
 
 type ClassQueryData = { group: ClassGroup; students: RosterStudent[] };
 
@@ -864,6 +866,7 @@ export default function ClassDetailScreen() {
           {renderTab('students', t('classTabStudents'), countStudents(students.length, lang))}
           {renderTab('materials', t('classTabMaterials'), countMaterials(materials.length + resources.length, lang))}
           {renderTab('exams', t('classTabExams'), t('countExams', exams.length))}
+          {renderTab('homework', t('hwTeacherTab'), '')}
         </View>
       </View>
 
@@ -1108,6 +1111,8 @@ export default function ClassDetailScreen() {
             );
           }}
         />
+      ) : tab === 'homework' ? (
+        <HomeworkTab classId={id} exams={exams} colors={colors} isRTL={isRTL} lang={lang === 'ar' ? 'ar' : 'en'} t={t} />
       ) : (
         <FlatList
           data={shownExams}
@@ -1179,6 +1184,8 @@ export default function ClassDetailScreen() {
         />
       )}
 
+      {/* No floating + on the homework tab: HomeworkTab has its own add row. */}
+      {tab === 'homework' ? null : (
       <Pressable
         onPress={() => {
           if (tab === 'students') setShowAdd(true);
@@ -1191,6 +1198,7 @@ export default function ClassDetailScreen() {
       >
         <Ionicons name={tab === 'students' ? 'person-add' : 'add'} size={22} color="#fff" />
       </Pressable>
+      )}
 
       <Modal
         visible={showJoinCode}
@@ -2149,7 +2157,7 @@ const styles = StyleSheet.create({
   },
   classChatPillText: { fontSize: 12, color: '#fff' },
   tabs: { marginTop: 6 },
-  tab: { paddingVertical: 10, paddingHorizontal: 14, borderBottomWidth: 2, alignItems: 'center', gap: 2 },
+  tab: { paddingVertical: 10, paddingHorizontal: SPACE.sm, borderBottomWidth: 2, alignItems: 'center', gap: 2 },
   tabLabel: { fontSize: 15 },
   tabCount: { fontSize: 11, lineHeight: 18, color: 'rgba(255,255,255,0.95)' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
