@@ -68,6 +68,7 @@ import { copyToClipboard, shareAsText } from '@/services/share';
 import { Toast } from '@/components/ui/Toast';
 import { getItems, updateItem, type SavedMaterial } from '@/services/workspace';
 import { EvaluationError, listEvaluations, setEvaluationClass, type Evaluation } from '@/services/evaluations';
+import { exportClassRegister } from '@/services/classRegister';
 import {
   MATERIAL_COLOR,
   MATERIAL_ICON,
@@ -683,6 +684,28 @@ export default function ClassDetailScreen() {
   const align = isRTL ? 'right' : 'left';
   const title = group ? (lang === 'ar' && group.nameAr ? group.nameAr : group.name) : '';
 
+  const [exportingRegister, setExportingRegister] = useState(false);
+  const onExportRegister = async () => {
+    if (!group || exportingRegister) return;
+    setExportingRegister(true);
+    setError('');
+    try {
+      const grade = pickerGrades.find(g => g.id === group.gradeId);
+      await exportClassRegister({
+        className: title,
+        subject: subjectLabel(focus || group.subjectId, lang) || '',
+        grade: grade ? (lang === 'ar' ? grade.nameAr : grade.name) : '',
+        students,
+        exams: shownExams,
+        isAr: lang === 'ar',
+      });
+    } catch (err) {
+      setError(describe(err));
+    } finally {
+      setExportingRegister(false);
+    }
+  };
+
   // An action error (add/remove/edit) takes priority over a stale load error —
   // it's the more recent thing the teacher is looking at.
   const displayError = error || loadError;
@@ -1141,6 +1164,29 @@ export default function ClassDetailScreen() {
                   </Text>
                 </View>
               </Pressable>
+              {students.length > 0 && shownExams.some(e => e.status !== 'draft') && (
+                <Pressable
+                  onPress={() => { void onExportRegister(); }}
+                  disabled={exportingRegister}
+                  accessibilityRole="button"
+                  style={[
+                    styles.row,
+                    { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 10 },
+                  ]}
+                >
+                  {exportingRegister
+                    ? <ActivityIndicator size="small" color={ACCENT} />
+                    : <Ionicons name="document-text-outline" size={20} color={ACCENT} />}
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 14, textAlign: align }}>
+                      {t('registerExportBtn')}
+                    </Text>
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: align }}>
+                      {t('registerExportSubtitle')}
+                    </Text>
+                  </View>
+                </Pressable>
+              )}
               <MasterySection mastery={mastery} colors={colors} isRTL={isRTL} align={align} lang={lang} t={t} />
               <SupportGroupsSection classId={id} groups={supportGroups} isRTL={isRTL} align={align} lang={lang === 'ar' ? 'ar' : 'en'} t={t} />
             </View>
