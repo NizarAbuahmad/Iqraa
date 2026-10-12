@@ -85,7 +85,12 @@ export interface PatchInput {
   dueAt?: Date;
   evaluationId?: string | null;
 }
-type Parsed<T> = { ok: true; value: T } | { ok: false; error: string };
+/** `code` is a machine-readable reason a client can branch on; absent for the ordinary field errors. */
+type Parsed<T> = { ok: true; value: T } | { ok: false; error: string; code?: string };
+
+/** Machine code for a due date outside the allowed window (POST and PATCH 400 bodies carry it next to `error`). */
+export const DUE_RANGE_CODE = "due_date_out_of_range";
+const DUE_RANGE_FAIL = { ok: false, error: DUE_RANGE_ERROR, code: DUE_RANGE_CODE } as const;
 
 function record(body: unknown): Record<string, unknown> | null {
   return body && typeof body === "object" && !Array.isArray(body) ? (body as Record<string, unknown>) : null;
@@ -118,7 +123,7 @@ export function parseCreate(body: unknown, now: Date = new Date()): Parsed<Creat
   if (!instructions.ok) return instructions;
   const dueAt = dueDateToDueAt(b["dueDate"]);
   if (!dueAt) return { ok: false, error: "dueDate must be a real date, YYYY-MM-DD" };
-  if (!dueDateInRange(b["dueDate"] as string, now)) return { ok: false, error: DUE_RANGE_ERROR };
+  if (!dueDateInRange(b["dueDate"] as string, now)) return DUE_RANGE_FAIL;
   const evaluationId = b["evaluationId"] === undefined ? ({ ok: true, value: null } as const) : parseEvaluationId(b["evaluationId"]);
   if (!evaluationId.ok) return evaluationId;
   return {
@@ -127,7 +132,13 @@ export function parseCreate(body: unknown, now: Date = new Date()): Parsed<Creat
   };
 }
 
-export function parsePatch(body: unknown, now: Date = new Date()): Parsed<PatchInput> {
+/**
+ * `existing` is the stored row. A due date equal to the stored one is not
+ * re-bounded: the mobile edit form always resends the date, so bounding it
+ * would make every edit of a homework due more than 30 days ago a 400 — a
+ * teacher could not fix a typo in an old one. A CHANGED date is still bounded.
+ */
+export function parsePatch(body: unknown, now: Date = new Date(), existing?: { dueAt: Date }): Parsed<PatchInput> {
   const b = record(body);
   if (!b) return { ok: false, error: "A JSON object is required" };
   const out: PatchInput = {};
@@ -144,7 +155,8 @@ export function parsePatch(body: unknown, now: Date = new Date()): Parsed<PatchI
   if (b["dueDate"] !== undefined) {
     const d = dueDateToDueAt(b["dueDate"]);
     if (!d) return { ok: false, error: "dueDate must be a real date, YYYY-MM-DD" };
-    if (!dueDateInRange(b["dueDate"] as string, now)) return { ok: false, error: DUE_RANGE_ERROR };
+    const unchanged = existing !== undefined && existing.dueAt.getTime() === d.getTime();
+    if (!unchanged && !dueDateInRange(b["dueDate"] as string, now)) return DUE_RANGE_FAIL;
     out.dueAt = d;
   }
   if (b["evaluationId"] !== undefined) {

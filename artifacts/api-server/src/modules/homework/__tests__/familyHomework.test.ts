@@ -25,7 +25,8 @@ const exam = (over: Partial<ExamRow> = {}): ExamRow => ({ id: "e1", title: "Quiz
 
 function build(over: Partial<Parameters<typeof buildFamilyHomework>[0]> = {}) {
   return buildFamilyHomework({
-    homework: [hw()], memberships: [member()], completions: [], teachers: [teacher], exams: [], now: NOW, ...over,
+    homework: [hw()], memberships: [member()], completions: [], teachers: [teacher], exams: [], now: NOW,
+    withAccount: new Set(["s1"]), ...over,
   });
 }
 
@@ -133,13 +134,42 @@ describe("buildFamilyHomework", () => {
     assert.deepEqual(out.map((i) => i.id), ["open-soon", "open-a", "open-b", "done-early", "done-late"]);
   });
 
+  it("9. canTrack is per item: true only when a row of the child IN THAT ITEM'S CLASS has a student account", () => {
+    // One child, two classes: s1 (c1) has an account, s2 (c2) has none.
+    const out = build({
+      memberships: [member(), member({ classGroupId: C2, studentId: "s2", className: "العاشر ب" })],
+      homework: [hw({ id: "hc1", classGroupId: C1 }), hw({ id: "hc2", classGroupId: C2 })],
+      withAccount: new Set(["s1"]),
+    });
+    const byId = new Map(out.map((i) => [i.id, i]));
+    assert.equal(byId.get("hc1")!.canTrack, true);
+    assert.equal(byId.get("hc2")!.canTrack, false, "the c2 row has no account, so nobody can tick c2 homework");
+  });
+
+  it("9b. canTrack: any one account-holding row of the class is enough; an account on a row outside the class does not count", () => {
+    const two = build({
+      memberships: [member(), member({ studentId: "s1b" })],
+      withAccount: new Set(["s1b"]),
+    });
+    assert.equal(two[0]!.canTrack, true);
+    // sOther has an account but is not a member of C1.
+    assert.equal(build({ withAccount: new Set(["sOther"]) })[0]!.canTrack, false);
+    assert.equal(build({ withAccount: new Set() })[0]!.canTrack, false);
+  });
+
+  it("9c. an untracked item is not 'late' by the builder's own say-so: state is unchanged, the flag is what tells a client", () => {
+    const [i] = build({ now: new Date("2026-10-14T21:00:00Z"), withAccount: new Set() });
+    assert.equal(i!.canTrack, false);
+    assert.equal(i!.state, "overdue");
+  });
+
   it("8. exposes no ids that name other people's rows", () => {
     const keys = Object.keys(build({ homework: [hw({ evaluationId: "e1" })], exams: [exam()], completions: [done()] })[0]!);
     for (const banned of ["teacherId", "classGroupId", "studentId", "evaluationId"]) {
       assert.equal(keys.includes(banned), false, banned);
     }
     assert.deepEqual(keys.sort(), [
-      "className", "done", "doneAt", "dueAt", "dueDate", "exam", "id", "instructions", "state", "teacherName", "title",
+      "canTrack", "className", "done", "doneAt", "dueAt", "dueDate", "exam", "id", "instructions", "state", "teacherName", "title",
     ]);
   });
 });

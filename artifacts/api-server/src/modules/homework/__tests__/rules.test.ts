@@ -103,6 +103,7 @@ describe("parsePatch", () => {
 // the window by a whole day.
 describe("due date bounds", () => {
   const MSG = "dueDate must be within the last 30 days and the next year";
+  const OUT = { ok: false, error: MSG, code: "due_date_out_of_range" };
   const create = (dueDate: string, now = NOW) => parseCreate({ classGroupId: CLASS, title: "t", dueDate }, now);
   const patch = (dueDate: string, now = NOW) => parsePatch({ dueDate }, now);
 
@@ -110,26 +111,45 @@ describe("due date bounds", () => {
     assert.equal(create("2026-09-12").ok, true);
     assert.equal(patch("2026-09-12").ok, true);
     for (const r of [create("2026-09-11"), patch("2026-09-11")]) {
-      assert.deepEqual(r, { ok: false, error: MSG });
+      assert.deepEqual(r, OUT);
     }
   });
   it("accepts exactly 366 days ahead and rejects 367, on create and on patch", () => {
     assert.equal(create("2027-10-13").ok, true);
     assert.equal(patch("2027-10-13").ok, true);
     for (const r of [create("2027-10-14"), patch("2027-10-14")]) {
-      assert.deepEqual(r, { ok: false, error: MSG });
+      assert.deepEqual(r, OUT);
     }
   });
   it("counts days in Amman: after 21:00Z it is already tomorrow there", () => {
     const late = new Date("2026-10-12T21:30:00Z"); // 00:30 on 2026-10-13 in Amman
     assert.equal(create("2026-09-13", late).ok, true);
-    assert.deepEqual(create("2026-09-12", late), { ok: false, error: MSG });
+    assert.deepEqual(create("2026-09-12", late), OUT);
     assert.equal(create("2027-10-14", late).ok, true);
-    assert.deepEqual(create("2027-10-15", late), { ok: false, error: MSG });
+    assert.deepEqual(create("2027-10-15", late), OUT);
   });
   it("rejects a far-future year, and still reports a malformed date as malformed", () => {
-    assert.deepEqual(create("2062-01-01"), { ok: false, error: MSG });
+    assert.deepEqual(create("2062-01-01"), OUT);
     assert.deepEqual(create("2026-02-30"), { ok: false, error: "dueDate must be a real date, YYYY-MM-DD" });
+  });
+  it("a malformed date carries no range code", () => {
+    assert.equal("code" in (create("2026-02-30") as object), false);
+    assert.equal("code" in (patch("soon") as object), false);
+  });
+  it("patch: an UNCHANGED stored due date is not re-bounded, so an old homework can still be edited", () => {
+    const existing = { dueAt: dueDateToDueAt("2026-08-28")! }; // 45 days before NOW: outside the window
+    const r = parsePatch({ title: "x", dueDate: "2026-08-28" }, NOW, existing);
+    assert.equal(r.ok, true);
+    if (r.ok) assert.equal(r.value.dueAt!.toISOString(), "2026-08-28T20:59:59.999Z");
+  });
+  it("patch: a CHANGED date outside the window is still refused, with the range code", () => {
+    const existing = { dueAt: dueDateToDueAt("2026-08-28")! };
+    assert.deepEqual(parsePatch({ dueDate: "2026-08-29" }, NOW, existing), OUT, "another out-of-window day");
+    assert.deepEqual(parsePatch({ dueDate: "2062-01-01" }, NOW, existing), OUT);
+    assert.equal(parsePatch({ dueDate: "2026-10-20" }, NOW, existing).ok, true, "moving it into the window is fine");
+  });
+  it("patch: the unchanged skip needs the existing row; without it the bound applies", () => {
+    assert.deepEqual(parsePatch({ dueDate: "2026-08-28" }, NOW), OUT);
   });
   it("defaults `now` to the clock", () => {
     const today = dueAtToDueDate(new Date());

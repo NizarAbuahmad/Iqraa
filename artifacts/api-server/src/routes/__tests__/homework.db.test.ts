@@ -162,10 +162,20 @@ describeDb("teacher homework over HTTP, against a real database", () => {
       const before = await count();
       const r = await create(w.users.t1, { classGroupId: w.classes.c1, title: "far", dueDate: "2062-01-01" });
       assert.equal(r.status, 400, r.text);
-      assert.deepEqual(r.json, { error: "dueDate must be within the last 30 days and the next year" });
+      assert.deepEqual(r.json, {
+        error: "dueDate must be within the last 30 days and the next year",
+        code: "due_date_out_of_range",
+      });
       assert.equal(await count(), before, "no row inserted");
       const past = await create(w.users.t1, { classGroupId: w.classes.c1, title: "past", dueDate: ammanDay(-45) });
       assert.equal(past.status, 400);
+      assert.equal(past.json.code, "due_date_out_of_range");
+    });
+
+    it("gives only the range error a machine code", async () => {
+      const r = await create(w.users.t1, { classGroupId: w.classes.c1, title: "x", dueDate: "2026-02-30" });
+      assert.equal(r.status, 400);
+      assert.deepEqual(r.json, { error: "dueDate must be a real date, YYYY-MM-DD" });
     });
 
     it("accepts only an exam that is yours, live, and attached to THIS class", async () => {
@@ -291,6 +301,37 @@ describeDb("teacher homework over HTTP, against a real database", () => {
       assert.equal(r.json.homework.dueAt, `${DUE_LATER}T20:59:59.999Z`);
       const after = (await db.pool.query(`SELECT updated_at FROM homework WHERE id = $1`, [mine])).rows[0].updated_at as Date;
       assert.ok(after.getTime() > before.getTime());
+    });
+
+    it("lets a homework that is already past the 30-day window be edited when its due date is resent unchanged", async () => {
+      // The mobile edit form always resends dueDate, so bounding an unchanged date
+      // would make every edit of an old homework a 400.
+      const old = ammanDay(-45);
+      const inserted = await db.pool.query<{ id: string }>(
+        `INSERT INTO homework (teacher_id, class_group_id, title, due_at) VALUES ($1, $2, 'old typo', $3) RETURNING id`,
+        [w.users.t1, w.classes.c1, `${old}T20:59:59.999Z`],
+      );
+      const id = inserted.rows[0]!.id;
+      const fixed = await call(server, "PATCH", `/homework/${id}`, w.users.t1, { title: "old fixed", dueDate: old });
+      assert.equal(fixed.status, 200, fixed.text);
+      assert.equal(fixed.json.homework.title, "old fixed");
+      assert.equal(fixed.json.homework.dueDate, old);
+
+      // A CHANGED date outside the window is still refused, with the code, and nothing is written.
+      const moved = await call(server, "PATCH", `/homework/${id}`, w.users.t1, { title: "moved", dueDate: ammanDay(-46) });
+      assert.equal(moved.status, 400, moved.text);
+      assert.deepEqual(moved.json, {
+        error: "dueDate must be within the last 30 days and the next year",
+        code: "due_date_out_of_range",
+      });
+      assert.equal((await rowOf(id))?.title, "old fixed");
+      const far = await call(server, "PATCH", `/homework/${id}`, w.users.t1, { dueDate: "2062-01-01" });
+      assert.equal(far.status, 400);
+      assert.equal(far.json.code, "due_date_out_of_range");
+
+      // Moving it back into the window works.
+      const back = await call(server, "PATCH", `/homework/${id}`, w.users.t1, { dueDate: DUE });
+      assert.equal(back.status, 200, back.text);
     });
 
     it("answers 404 to another teacher and leaves the row untouched", async () => {

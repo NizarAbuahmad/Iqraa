@@ -48,6 +48,11 @@ interface TeacherHomework {
   trackableCount: number;
 }
 
+/** The 400 body: `error` always, `code` when the rule has a machine-readable reason (a client branches on it). */
+function parseFailure(f: { error: string; code?: string }): { error: string; code?: string } {
+  return f.code ? { error: f.error, code: f.code } : { error: f.error };
+}
+
 /** Single exit for every homework failure: 503 + a code when the schema is absent. */
 function failHomework(res: Response, err: unknown, action: string): void {
   if (isSchemaMissing(err)) {
@@ -184,7 +189,7 @@ async function withCounts(rows: Homework[]): Promise<TeacherHomework[]> {
 router.post("/homework", async (req: AuthenticatedRequest, res) => {
   const parsed = parseCreate(req.body);
   if (!parsed.ok) {
-    res.status(400).json({ error: parsed.error });
+    res.status(400).json(parseFailure(parsed));
     return;
   }
   const input = parsed.value;
@@ -254,9 +259,9 @@ router.patch("/homework/:id", async (req: AuthenticatedRequest, res) => {
       res.status(404).json(NO_HOMEWORK);
       return;
     }
-    const parsed = parsePatch(req.body);
+    const parsed = parsePatch(req.body, new Date(), existing);
     if (!parsed.ok) {
-      res.status(400).json({ error: parsed.error });
+      res.status(400).json(parseFailure(parsed));
       return;
     }
     const patch = parsed.value;

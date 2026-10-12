@@ -49,16 +49,23 @@ router.get("/parent/homework", async (req: AuthenticatedRequest, res) => {
       return;
     }
     const children = groupChildren(await guardianLinkedStudents(req.user!.id));
-    // A child can only be "late" if someone can tick it off: some row of theirs
-    // must have a student account. Otherwise the client shows the list read-only.
+    // An item can only be "late" if someone can tick it off, and ticking is per
+    // class — so the rule lives on each ITEM (`canTrack`, built in
+    // buildFamilyHomework from the child's rows in that item's class). The
+    // child-level `canTrack` below is only an aggregate for a client that wants
+    // one answer per child: informational, never the rule for a given item.
     const withAccount = await studentIdsWithSelfAccount(children.flatMap(c => c.studentIds));
     const lists = await Promise.all(
-      children.map(async child => ({
-        key: child.key,
-        displayName: child.displayName,
-        canTrack: child.studentIds.some(id => withAccount.has(id)),
-        homework: await loadFamilyHomework(child.studentIds),
-      })),
+      children.map(async child => {
+        const homework = await loadFamilyHomework(child.studentIds, new Date(), withAccount);
+        return {
+          key: child.key,
+          displayName: child.displayName,
+          // Any item trackable; with no items to judge, whether any live row has an account.
+          canTrack: homework.length > 0 ? homework.some(i => i.canTrack) : child.studentIds.some(id => withAccount.has(id)),
+          homework,
+        };
+      }),
     );
     res.json({ children: lists });
   } catch (err) {

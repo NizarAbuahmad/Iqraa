@@ -25,11 +25,21 @@ export interface FamilyHomeworkItem {
   done: boolean; doneAt: string | null; state: HomeworkState;
   /** Only when the attached exam is published, not archived and in the homework's own class; null otherwise. */
   exam: { title: string } | null;
+  /**
+   * Whether anyone can tick THIS item off: some roster row of the child that is a
+   * member of this item's class has a student account (a `self` link). Per item
+   * because ticking is per class — a child with an account row in class 1 and a
+   * bare row in class 2 can tick class-1 work and never class-2 work, so a client
+   * must not show class-2 work as "late" for want of a tick nobody can make.
+   */
+  canTrack: boolean;
 }
 
 export function buildFamilyHomework(input: {
   homework: HomeworkRow[]; memberships: MembershipRow[]; completions: CompletionRow[];
   teachers: TeacherRow[]; exams: ExamRow[]; now: Date;
+  /** Roster-row ids that have a student account (a `self` link to any user). */
+  withAccount: ReadonlySet<string>;
 }): FamilyHomeworkItem[] {
   const teachers = new Map(input.teachers.map((t) => [t.id, t]));
   const exams = new Map(input.exams.map((e) => [e.id, e]));
@@ -69,6 +79,7 @@ export function buildFamilyHomework(input: {
       done,
       doneAt: earliest ? earliest.toISOString() : null,
       state: homeworkState({ dueAt: h.dueAt, done, now: input.now }),
+      canTrack: rows.some((r) => input.withAccount.has(r.studentId)),
       exam:
         exam && exam.status === "published" && exam.archivedAt == null && exam.classGroupId === h.classGroupId
           ? { title: exam.titleAr || exam.title }

@@ -22,8 +22,18 @@ import {
   type TeacherRow,
 } from "../modules/homework/familyHomework.ts";
 import { FAMILY_LIMIT, familyCutoff } from "../modules/homework/rules.ts";
+import { studentIdsWithSelfAccount } from "./familyAccess.ts";
 
-export async function loadFamilyHomework(studentIds: string[], now: Date = new Date()): Promise<FamilyHomeworkItem[]> {
+/**
+ * `withAccount` is which of `studentIds` have a student account; a caller that
+ * already has it (the parent route asks once for all children) passes it in,
+ * otherwise it is fetched here. It feeds each item's `canTrack`.
+ */
+export async function loadFamilyHomework(
+  studentIds: string[],
+  now: Date = new Date(),
+  withAccount?: ReadonlySet<string>,
+): Promise<FamilyHomeworkItem[]> {
   if (studentIds.length === 0) return [];
 
   const memberships: MembershipRow[] = await db
@@ -60,6 +70,7 @@ export async function loadFamilyHomework(studentIds: string[], now: Date = new D
     .limit(FAMILY_LIMIT);
   if (homeworkRows.length === 0) return [];
 
+  const accounts = withAccount ?? (await studentIdsWithSelfAccount(studentIds));
   const teacherIds = [...new Set(memberships.map(m => m.teacherId))];
   const examIds = [...new Set(homeworkRows.flatMap(h => (h.evaluationId ? [h.evaluationId] : [])))];
   const [completions, teachers, exams] = await Promise.all([
@@ -95,5 +106,5 @@ export async function loadFamilyHomework(studentIds: string[], now: Date = new D
           .where(inArray(evaluations.id, examIds)) as Promise<ExamRow[]>),
   ]);
 
-  return buildFamilyHomework({ homework: homeworkRows, memberships, completions, teachers, exams, now });
+  return buildFamilyHomework({ homework: homeworkRows, memberships, completions, teachers, exams, now, withAccount: accounts });
 }
