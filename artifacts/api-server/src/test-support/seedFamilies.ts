@@ -29,6 +29,10 @@ export interface FamilyWorld {
     studentUnlinked: string;
     suspendedParent: string;
   };
+  /** c4 is the archived class. */
+  classes: { c1: string; c2: string; c3: string; c4: string; c5: string };
+  /** Roster rows: Sara under t1 (sA1) and t2 (sA2), Adam live (aA) and archived (aArch), Noor, Yazan. */
+  students: { sA1: string; sA2: string; aA: string; aArch: string; nB1: string; yB: string };
 }
 
 async function id(pool: Pool, sql: string, params: unknown[]): Promise<string> {
@@ -154,5 +158,9 @@ export async function seedFamilyWorld(pool: Pool): Promise<FamilyWorld> {
   await slot(pool, t1, 4, 1, null, "", FREE_PERIOD_NOTE);
   await slot(pool, t2, 0, 1, c2, "physics", "");
 
-  return { users: { t1, t2, parentA, parentB, studentA, studentB, studentUnlinked, suspendedParent } };
+  return {
+    users: { t1, t2, parentA, parentB, studentA, studentB, studentUnlinked, suspendedParent },
+    classes: { c1, c2, c3, c4, c5 },
+    students: { sA1, sA2, aA, aArch, nB1, yB },
+  };
 }

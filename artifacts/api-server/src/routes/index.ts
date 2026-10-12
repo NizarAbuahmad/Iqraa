@@ -10,6 +10,7 @@ import verifiedMathRouter from "./verifiedMath";
 import curriculumRouter from "./curriculum";
 import bankRouter from "./bank";
 import rosterRouter from "./roster";
+import homeworkRouter from "./homework";
 import teachingPlansRouter from "./teachingPlans";
 import scheduleRouter from "./schedule";
 import evaluationsRouter from "./evaluations";
@@ -83,6 +84,9 @@ router.use(curriculumRouter);
 // not serve the documents; there is nothing here to serve.
 router.use(bankRouter);
 router.use(rosterRouter);
+// Teacher homework: /homework is guarded inside the router (path-scoped); the class read
+// carries its own guards on the route.
+router.use(homeworkRouter);
 router.use(teachingPlansRouter);
 router.use(scheduleRouter);
 router.use(evaluationsRouter);

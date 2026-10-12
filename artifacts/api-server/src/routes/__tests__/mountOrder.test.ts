@@ -283,6 +283,24 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(res.status, 401, "setting who may sit an exam must require a token");
   });
 
+  it("guards the teacher homework routes", async () => {
+    // /homework is path-scoped inside its own router and the class read carries
+    // its guards on the route. A 404 here would mean the mount was lost; a 200
+    // or 5xx would mean a teacher's homework (and its counts) is open.
+    const id = "00000000-0000-0000-0000-000000000000";
+    const json = { "Content-Type": "application/json" };
+    const cases: Array<[string, string, RequestInit]> = [
+      ["POST", "/homework", { method: "POST", headers: json, body: "{}" }],
+      ["PATCH", "/homework/x", { method: "PATCH", headers: json, body: "{}" }],
+      ["DELETE", "/homework/x", { method: "DELETE" }],
+      ["GET", `/classes/${id}/homework`, {}],
+    ];
+    for (const [method, route, init] of cases) {
+      const res = await fetch(`${base}${route}`, init);
+      assert.equal(res.status, 401, `${method} ${route} must require a token`);
+    }
+  });
+
   it("mounts support groups inside the roster's guarded prefix", async () => {
     const id = "00000000-0000-0000-0000-000000000000";
     const res = await fetch(`${base}/classes/${id}/support-groups`);
