@@ -309,9 +309,11 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
       + "A question that depends on identifying one of them cannot be answered from this paper.",
     ...(isMaths
       ? [
-        "8. This is a mathematics paper. Every question here whose answer is an expression, a value, a "
-          + "solution set or a point has a \"check\" — that is most of them. A maths question without one "
-          + "is a question nobody can verify.",
+        "8. This is a mathematics paper. Where a question's answer is what one of the check topics below "
+          + "computes, it has a \"check\". Where the objective allows, prefer phrasing a question as the "
+          + "thing a topic computes — solve this equation, differentiate this function, find this circle's "
+          + "centre — over asking about it, so more of the paper can be verified. Where no topic fits, "
+          + "leave \"check\" out: a question nobody can verify is better than a check for the wrong question.",
       ]
       : []),
     "",
@@ -361,16 +363,42 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
     '      the expression and point separated by @ for derivative_at_point ("x^4@2"),',
     '      the equation for an equation topic ("2x + 5 = 13") or a circle ("(x-4)^2 + (y+1)^2 = 9").',
     '    answer is your key in latin form ("3x^2 - 4", "x = 4", "(4, -1)").',
+    // Measured on 2026-10-12 (gpt-5.4-mini, ~125 maths questions): 18 of 64 checks
+    // were thrown away because the model stretched a topic over a computation that
+    // is not one (an area, an exponent law), and the verifier "disagreed" with a
+    // correct discriminant and a correct maximum because the check solved the
+    // equation / differentiated instead of answering what the stem asked.
+    '    What each topic computes — the check answer is exactly this, nothing else:',
+    '      derivative_polynomial: the derivative expression. derivative_at_point: the number f\'(point).',
+    '      circle_center: the centre "(h, k)". circle_radius: the radius.',
+    '      equation_linear | equation_quadratic | equation_exponential: the solution(s) of that equation',
+    '        ("x = 4", "x = 1 or x = 3"). Join several solutions with "or", never with a comma: a comma reads',
+    '        as a system of equations («x = 2, y = 3») and the verifier will not judge it.',
+    '    The check must answer the SAME question the stem asks, not a nearby one. The solver does only what its',
+    '      topic says, so a check for another quantity makes a correct question look wrong. When the stem asks',
+    '      for the discriminant, a maximum or minimum value, a vertex, the sum or product of the roots, the',
+    '      number of solutions, a factored form, the equation of a tangent or a line, an area, an arc length, or',
+    '      a velocity or slope taken from a derivative, or an answer that drops one of the equation\'s roots (a',
+    '      length or an age, where the negative root is discarded: "x = 12" when the equation also gives -12),',
+    '      leave "check" out. Do not stretch a topic to fit — an',
+    '      area or an exponent law is not an equation, and a check that says so is thrown away.',
     // The two statements of the key are now compared. A check whose answer is not
     // the question's own key is never marked verified, so it earns nothing.
     '    The check answer must be THE SAME answer as the key you give the class — the correct option, the',
     '      accepted blank, or the model answer — written in Latin. It is compared with that key; a check that',
     '      disagrees with it is discarded as unlinked, however correct the maths. State the final answer in',
     '      the model answer itself (for example "المشتقة هي ٣س² − ٤" for the check answer "3x^2 - 4").',
-    // The permission to omit stays, and is deliberately narrow. A model
-    // badgered into inventing a check for an essay question would produce a
-    // key the verifier then judges — which is a worse outcome than no key.
-    '    Omit "check" only when the answer is prose, a definition, or otherwise not symbolic.',
+    '      Per type — multiple choice: the check answer is what the correct option states, as a bare value (the',
+    '      option «٧» is "7"), and every option is written in that same form so only one of them matches.',
+    '      Fill in the blank: only when ONE blank holds the checked answer by itself; a question with several',
+    '      blanks has no single check, so leave it out. Short answer: the model answer states the final answer',
+    '      as its own expression ("س = ٢ أو س = ٣"), with any unit after it.',
+    // The permission to omit is deliberate, and now covers a topic that does not
+    // fit as well as an answer that is prose: a model badgered into inventing a
+    // check for the wrong question produces a key the verifier then judges, which
+    // is a worse outcome than no key.
+    '    Leave "check" out when the answer is prose, a definition, a quantity no topic computes, or',
+    '      otherwise not symbolic.',
     // One complete object beats three paragraphs describing one. It exists
     // mainly to show the two notations sitting side by side in a single
     // question — Arabic in the stem a student reads, Latin in the field the

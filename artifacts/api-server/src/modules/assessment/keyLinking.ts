@@ -37,14 +37,27 @@ export function toLatinMath(input: string): string {
   s = s.replace(/[٠-٩]/g, d => String(ARABIC_DIGITS.indexOf(d)));
   s = s.replace(/[۰-۹]/g, d => String(PERSIAN_DIGITS.indexOf(d)));
   s = s.replace(/٫/g, ".").replace(/٬/g, "").replace(/،/g, ",");
-  s = s.replace(/[−–—‒﹣]/g, "-").replace(/[×·⋅∙]/g, "*").replace(/÷/g, "/");
+  // «⁄» (U+2044) is the fraction slash a model writes in «−١⁄٢»; it is a «/».
+  s = s.replace(/[−–—‒﹣]/g, "-").replace(/[×·⋅∙]/g, "*").replace(/[÷⁄]/g, "/");
   s = s.replace(/[½¼¾⅓⅔]/g, f => FRACTIONS[f] ?? f);
   // «x¹⁰» and «x⁻²» are runs, not one digit each.
   s = s.replace(/[⁻⁰¹²³⁴⁵⁶⁷⁸⁹]+/g, run =>
     "^" + [...run].map(c => (c === "⁻" ? "-" : String(SUPERSCRIPTS.indexOf(c)))).join(""));
   s = s.replace(/√\(/g, "sqrt(").replace(/√([0-9]+|[a-z])/gi, "sqrt($1)");
-  s = s.replace(/[سصقك]/g, c => VARIABLES[c] ?? c);
+  // A variable is a letter standing alone. Inside an Arabic word it is just a
+  // letter: «سم» (cm) is not «x·م», and «١٠ سم» used to become «10xم», which no
+  // «10» could be found in.
+  s = s.replace(/(?<![ء-ي])[سصقك](?![ء-ي])/g, c => VARIABLES[c] ?? c);
   return s.toLowerCase();
+}
+
+/**
+ * A value with its unit taken off: «٦ م/ث» and «١٠ سم» are the values «٦» and
+ * «١٠». Only a unit that is a separate word (after a space) or at least two
+ * letters; a lone letter straight after a number is a variable, so «٣س» stays 3x.
+ */
+function withoutUnit(text: string): string {
+  return text.replace(/(?<=[0-9٠-٩])(?:\s+(?![سصقك]\s*$)[ء-ي][ء-ي/.]*|[ء-ي]{2,}[ء-ي/.]*)\s*$/, "");
 }
 
 /** The comparison form: no spaces, no «*» between a number and a letter, no «x =» label. */
@@ -143,7 +156,7 @@ export function linkCheck(question: GeneratedQuestion): KeyLink {
   const key = gradedKey(question);
   if (key.kind === "none") return { linked: false, why: key.why };
   if (key.kind === "exact") {
-    return key.texts.some(t => squashMath(t) === target)
+    return key.texts.some(t => squashMath(t) === target || squashMath(withoutUnit(t)) === target)
       ? { linked: true }
       : { linked: false, why: "the answer key is not the answer that was checked" };
   }
