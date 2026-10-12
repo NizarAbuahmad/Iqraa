@@ -7,7 +7,7 @@
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { isPaperQuestion, parsePaperRows, MAX_MARKS_PER_QUESTION } from "../paperExam.ts";
+import { isPaperExam, isPaperQuestion, isQuickPaperExam, paperExamIds, parsePaperRows, MAX_MARKS_PER_QUESTION } from "../paperExam.ts";
 
 const OPTS = { allowedObjectiveIds: ["obj-1", "obj-2"], maxQuestions: 50 };
 const row = (over: Record<string, unknown> = {}) => ({
@@ -72,5 +72,37 @@ describe("isPaperQuestion", () => {
 
   it("never exempts an automatically graded question", () => {
     assert.equal(isPaperQuestion({ gradingMode: "deterministic", body: {} }), false);
+  });
+});
+
+const PAPER = { gradingMode: "manual", body: {} };
+const TYPED = { gradingMode: "manual", body: { prompt: "Explain" } };
+const MCQ = { gradingMode: "deterministic", body: { stem: "2+2?" } };
+
+describe("isPaperExam / isQuickPaperExam", () => {
+  it("needs every question to be on paper, and at least one", () => {
+    assert.equal(isPaperExam([PAPER, PAPER]), true);
+    assert.equal(isPaperExam([PAPER, MCQ]), false);
+    assert.equal(isPaperExam([TYPED]), false);
+    assert.equal(isPaperExam([]), false);
+  });
+  it("is quick only with exactly one paper question", () => {
+    assert.equal(isQuickPaperExam([PAPER]), true);
+    assert.equal(isQuickPaperExam([PAPER, PAPER]), false);
+    assert.equal(isQuickPaperExam([MCQ]), false);
+    assert.equal(isQuickPaperExam([]), false);
+  });
+});
+
+describe("paperExamIds", () => {
+  it("names the exams whose questions are all on paper", () => {
+    const ids = paperExamIds([
+      { evaluationId: "a", ...PAPER },
+      { evaluationId: "a", ...PAPER },
+      { evaluationId: "b", ...PAPER },
+      { evaluationId: "b", ...MCQ },
+      { evaluationId: "c", ...MCQ },
+    ]);
+    assert.deepEqual([...ids].sort(), ["a"]);
   });
 });

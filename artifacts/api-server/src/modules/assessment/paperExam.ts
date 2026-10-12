@@ -111,3 +111,29 @@ export function isPaperQuestion(q: {
 }): boolean {
   return q.gradingMode === "manual" && Object.keys(q.body ?? {}).length === 0;
 }
+
+export type PaperQuestionShape = {
+  gradingMode: string;
+  body: Record<string, unknown> | null | undefined;
+};
+
+/**
+ * An exam sat on paper: every live question is a paper question. A family is
+ * never offered its link — `/take/:code` would open a paper with nothing on it.
+ * No column says "paper"; the question shape does, so this is the one rule.
+ */
+export function isPaperExam(questions: readonly PaperQuestionShape[]): boolean {
+  return questions.length > 0 && questions.every(isPaperQuestion);
+}
+
+/** A paper exam marked as one total per student: a single paper question worth N. */
+export function isQuickPaperExam(questions: readonly PaperQuestionShape[]): boolean {
+  return questions.length === 1 && isPaperQuestion(questions[0]!);
+}
+
+/** Which of these exams are paper exams, from their live question rows. */
+export function paperExamIds(rows: readonly ({ evaluationId: string } & PaperQuestionShape)[]): Set<string> {
+  const allPaper = new Map<string, boolean>();
+  for (const r of rows) allPaper.set(r.evaluationId, (allPaper.get(r.evaluationId) ?? true) && isPaperQuestion(r));
+  return new Set([...allPaper].filter(([, paper]) => paper).map(([id]) => id));
+}
