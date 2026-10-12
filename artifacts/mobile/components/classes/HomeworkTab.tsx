@@ -35,6 +35,7 @@ import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { confirm } from '@/services/confirm';
+import { toLatinDigits } from '@/services/latinDigits';
 import type { Evaluation } from '@/services/evaluations';
 import {
   ammanToday,
@@ -76,9 +77,6 @@ export function HomeworkTab({
   const loadSeq = useRef(0);
 
   const [open, setOpen] = useState(false);
-  // True while the delete confirmation is up: the edit modal steps aside so the
-  // confirmation (drawn by the root layout) cannot end up underneath it.
-  const [confirming, setConfirming] = useState(false);
   const [editing, setEditing] = useState<TeacherHomework | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [fieldError, setFieldError] = useState<'title' | 'dueDate' | null>(null);
@@ -192,7 +190,6 @@ export function HomeworkTab({
   const onDelete = async () => {
     if (!editing || saving) return;
     const target = editing;
-    setConfirming(true);
     const ok = await confirm({
       title: t('hwDelete'),
       message: t('hwDeleteConfirm'),
@@ -200,7 +197,6 @@ export function HomeworkTab({
       cancelLabel: t('cancel'),
       destructive: true,
     });
-    setConfirming(false);
     if (!ok) return;
     setSaving(true);
     setModalError('');
@@ -324,7 +320,7 @@ export function HomeworkTab({
 
       {/* The Android keyboard rule: a <Modal> with a text input wraps its body
           in KeyboardSafeView (see CLAUDE.md). */}
-      <Modal visible={open && !confirming} transparent animationType="fade" onRequestClose={close}>
+      <Modal visible={open} transparent animationType="fade" onRequestClose={close}>
         <KeyboardSafeView>
           <View style={styles.backdrop}>
             <View style={[styles.card, { backgroundColor: colors.card }]}>
@@ -363,7 +359,8 @@ export function HomeworkTab({
                   <Text style={labelStyle}>{t('hwFieldDue')}</Text>
                   <TextInput
                     value={draft.dueDate}
-                    onChangeText={v => patch({ dueDate: v })}
+                    // Arabic number pads emit ٠-٩; isValidYmd and the preset match want 0-9.
+                    onChangeText={v => patch({ dueDate: toLatinDigits(v) })}
                     placeholder={t('hwDueFormat')}
                     placeholderTextColor={colors.mutedForeground}
                     maxLength={10}
