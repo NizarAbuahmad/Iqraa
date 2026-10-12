@@ -70,8 +70,8 @@ export function examDateText(i: { examTitle: string; className: string; notice: 
   const n = i.notice;
   if (n.kind === "cleared") {
     return {
-      student: { title: titled("أُلغي موعد امتحان: ", name), body: `لم يعد له موعد محدّد — ${i.className}.` },
-      guardian: child => ({ title: forChild(child, "أُلغي موعد امتحان"), body: `${quoted} لم يعد له موعد محدّد — ${i.className}.` }),
+      student: { title: titled("أُزيل موعد امتحان: ", name), body: `لم يعد له موعد محدّد — ${i.className}.` },
+      guardian: child => ({ title: forChild(child, "أُزيل موعد امتحان"), body: `${quoted} لم يعد له موعد محدّد — ${i.className}.` }),
     };
   }
   const when = `يوم ${pushDay(n.examDate)}${n.examTime ? ` الساعة ${pushTime(n.examTime)}` : ""}`;

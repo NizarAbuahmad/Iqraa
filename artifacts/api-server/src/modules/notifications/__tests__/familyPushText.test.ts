@@ -57,7 +57,7 @@ describe("examDateText", () => {
     assert.equal(changed.student.title, "تغيّر موعد امتحان: x");
     assert.equal(changed.guardian("آدم").title, "آدم: تغيّر موعد امتحان");
     const cleared = examDateText({ examTitle: "x", className: "c", notice: { kind: "cleared", examDate: null, examTime: null } });
-    assert.equal(cleared.student.title, "أُلغي موعد امتحان: x");
+    assert.equal(cleared.student.title, "أُزيل موعد امتحان: x");
     assert.ok(cleared.student.body.includes("لم يعد له موعد محدّد"));
   });
   it("keeps every title within TITLE_MAX", () => {
@@ -66,5 +66,8 @@ describe("examDateText", () => {
       titleFits(t.student.title);
       titleFits(t.guardian(LONG).title);
     }
+    const cleared = examDateText({ examTitle: LONG, className: LONG, notice: { kind: "cleared", examDate: null, examTime: null } });
+    titleFits(cleared.student.title);
+    titleFits(cleared.guardian(LONG).title);
   });
 });

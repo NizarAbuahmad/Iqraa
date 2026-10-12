@@ -79,7 +79,7 @@ describeDb("exam date pushes, against a real database", () => {
 
   it("tells a cleared date, then a date set again", async () => {
     await ok(patch(x.exams.exDated, { examDate: null }));
-    assert.equal(sentTo(stub.messages(), "studentA")[0]?.title, `أُلغي موعد امتحان: ${EX_TITLES.exDated}`);
+    assert.equal(sentTo(stub.messages(), "studentA")[0]?.title, `أُزيل موعد امتحان: ${EX_TITLES.exDated}`);
     stub.clear();
     await ok(patch(x.exams.exDated, { examDate: ammanDay(8), examTime: "09:00" }));
     assert.equal(sentTo(stub.messages(), "studentA")[0]?.title, `موعد امتحان: ${EX_TITLES.exDated}`);
@@ -151,6 +151,6 @@ describeDb("exam date pushes, against a real database", () => {
     await ok(patch(x.exams.exC3, { examDate: ammanDay(-2) }));
     assert.deepEqual(await stub.settle(200), [], "back-dated: quiet");
     await ok(patch(x.exams.exC3, { examDate: null }));
-    assert.equal(sentTo(stub.messages(), "studentB")[0]?.title, `أُلغي موعد امتحان: ${EX_TITLES.exC3}`);
+    assert.equal(sentTo(stub.messages(), "studentB")[0]?.title, `أُزيل موعد امتحان: ${EX_TITLES.exC3}`);
   });
 });

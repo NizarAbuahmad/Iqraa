@@ -530,7 +530,9 @@ router.get("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
  * do nothing, which is exactly the bug `pickDefined` was extracted to prevent.
  *
  * A date that moves on an exam families can see is pushed to them
- * (modules/notifications/examDateNotice.ts) — once, even under racing saves.
+ * (modules/notifications/examDateNotice.ts). The announcing write is conditional
+ * on the values the request read, so a racing save with the same values should
+ * announce at most once — no test could be made to show that it matters.
  */
 router.patch("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
   try {
