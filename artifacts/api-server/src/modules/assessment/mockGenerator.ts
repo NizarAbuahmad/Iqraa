@@ -32,6 +32,11 @@ import {
   type CurriculumSource,
   type SourceKind,
 } from "@workspace/curriculum";
+import {
+  bookCitation,
+  bookStatusLabel,
+  takeBookItem,
+} from "@workspace/curriculum/bookItems";
 import type { Difficulty, QuestionType } from "@workspace/db";
 import {
   allocateQuestions,
@@ -442,6 +447,84 @@ function bankMultipleChoice(
 }
 
 /**
+ * A real question from the NCCD books, for the objective's own lesson.
+ *
+ * Joined by `objective.lessonId`, never by title. Unit-test multiple choice
+ * self-marks; an exercise becomes a short answer the teacher marks against the
+ * key. Neither carries a `check`: only `verified` items may reach the
+ * verification pass, and a `computed` key proves nothing about whether the
+ * stem was read correctly — so it must not earn the «تم التحقق» badge.
+ *
+ * Returns null whenever the lesson has no item of a requested shape, so the
+ * caller falls through to the generated bank exactly as it did before.
+ */
+function bookQuestion(args: {
+  objective: CurriculumObjective;
+  competency: CompetencyKey;
+  difficulty: Difficulty;
+  marks: number;
+  wantChoice: boolean;
+  wantShort: boolean;
+  session: Set<string>;
+  rng: () => number;
+}): GeneratedQuestion | null {
+  const { objective, competency, difficulty, marks, session, rng } = args;
+  const lessonId = objective.lessonId;
+  if (!lessonId) return null;
+  const tier = BANK_TIER[difficulty];
+  const item =
+    (args.wantChoice && takeBookItem({ lessonId, kind: "unit-test-mcq", tier, session, rng })) ||
+    (args.wantShort && takeBookItem({ lessonId, kind: "exercise", tier, session, rng })) ||
+    null;
+  if (!item) return null;
+
+  const prompt = `${item.instruction}\n${item.stem}`;
+  const common = {
+    objectiveId: objective.id,
+    competencyKey: competency,
+    difficulty,
+    marks,
+    skill: objective.skills?.[0] ?? null,
+    check: null,
+    aiMetadata: {
+      generator: "book",
+      note: `from the NCCD ${bookCitation(item, "en")}; not model-authored`,
+      bookItemId: item.id,
+      bookStatus: item.status,
+      bookCitationAr: bookCitation(item, "ar"),
+      bookCitationEn: bookCitation(item, "en"),
+      bookLabelAr: bookStatusLabel(item, "ar"),
+      bookLabelEn: bookStatusLabel(item, "en"),
+      objectiveBloomsSource: objective.bloomsSource,
+    },
+  };
+
+  if (item.kind === "unit-test-mcq") {
+    const options = (item.options ?? []).map((text, i) => ({ id: `o${i}`, text }));
+    const correct = options.findIndex(o => o.text === item.computedAnswer);
+    // An answer not among the options would mark a correct student wrong, for
+    // the whole class, with nothing to show why. Spend the item and fall through.
+    if (options.length < 3 || correct < 0) return null;
+    return {
+      ...common,
+      type: "multiple_choice",
+      body: { stem: prompt, multiSelect: false, options },
+      expectedAnswer: { optionIds: [options[correct]!.id] },
+      rubric: null,
+      gradingMode: QUESTION_TYPES["multiple_choice"].defaultGradingMode,
+    };
+  }
+  return {
+    ...common,
+    type: "short_answer",
+    body: { prompt },
+    expectedAnswer: { modelAnswer: item.computedAnswer, keyConcepts: [item.computedAnswer] },
+    rubric: buildRubric(competency, marks),
+    gradingMode: QUESTION_TYPES["short_answer"].defaultGradingMode,
+  };
+}
+
+/**
  * Open-response type best suited to a competency. Recall and comprehension fit
  * a short answer; application and analysis need room to show working.
  */
@@ -544,6 +627,13 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
 
   let objectiveCursor = 0;
   const mcqAvailable = available.includes("multiple_choice");
+  // Real book items fill at most half a paper, so a quiz does not become a
+  // photocopy of the exercise book; the generated bank fills the rest. Only
+  // maths has book items. They share `bookSession` with nothing else: the
+  // generated bank's own session set spends bank ids, not these.
+  const bookQuota = req.subjectId === "mathematics" ? Math.floor(req.count / 2) : 0;
+  const bookSession = new Set<string>();
+  let bookUsed = 0;
 
   for (const competency of COMPETENCY_KEYS) {
     const wanted = allocation[competency];
@@ -568,6 +658,24 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
 
       const topic = objective.descriptionAr || objective.description;
       const marks = MARKS_BY_COMPETENCY[competency];
+
+      if (bookUsed < bookQuota) {
+        const book = bookQuestion({
+          objective,
+          competency,
+          difficulty: req.difficulty,
+          marks,
+          wantChoice: mcqAvailable,
+          wantShort: available.includes("short_answer"),
+          session: bookSession,
+          rng,
+        });
+        if (book) {
+          questions.push(book);
+          bookUsed += 1;
+          continue;
+        }
+      }
 
       // The bank first, when the subject has one. A question that marks itself
       // is worth more to a teacher than a prose prompt they mark by hand, so
