@@ -2263,6 +2263,15 @@ design, when nothing was narrowed** — an account with no saved selection (e.g.
 every subject sees the full grade, as the chips already did. Students and
 parents are unaffected: they pick a grade, not subjects.
 
+
+**Follow-up, 2026-10-12 — a stale chip emptied the list.** The Library tab stays
+mounted while grades are edited on the profile page. The grade already fell back
+(`resources.tsx`), but the picked subject and lesson did not: a subject chosen on
+grade 10 stayed in state after the account moved to grade 9, matched no chip, and
+the screen read «٠ موارد» with no chip highlighted. Both are now derived on render
+through `keepIfPresent` (`services/teacherCatalogFilter.ts`) and fall back to
+«all». A reload used to be the only cure.
+
 ## The Science Lab: a shelf in the library, 2026-10-06
 
 **What a teacher can use today.** `/curriculum/resources` has a «المختبر» card
