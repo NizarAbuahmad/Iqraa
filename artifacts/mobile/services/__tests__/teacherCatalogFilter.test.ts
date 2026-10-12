@@ -158,6 +158,8 @@ describe('subjectHideReason', () => {
   it('is null for a subject that is shown, or an index past the end', () => {
     assert.equal(subjectHideReason([false, true], [false, true], 0), null);
     assert.equal(subjectHideReason([false], [false], 5), null);
+  });
+});
 
 describe('keepIfPresent', () => {
   it('keeps an id that is still among the options', () => {
