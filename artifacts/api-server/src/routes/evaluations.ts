@@ -41,6 +41,7 @@ import {
 import { logger } from "../lib/logger";
 import { masteryGateEnabled } from "../lib/features.js";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
+import { resolveExamPatch } from "../lib/examDate.js";
 import { passedLessonIds, unlockState } from "../modules/assessment/lessonProgress.ts";
 import { findLiveClass } from "../lib/classOwnership.js";
 import { archiveDecision } from "../lib/evaluationArchive";
@@ -62,6 +63,7 @@ import {
   type GenerationResult,
 } from "../modules/assessment/mockGenerator";
 import { validateGenerated } from "../modules/assessment/validator";
+import { inPaperOrder } from "../modules/assessment/paperOrder";
 import { contradictionWarning, verificationAfterEdit, verifyAnswerKeys } from "../modules/assessment/keyVerification.ts";
 import { relateAnswerKey } from "../lib/mathVerifierClient.ts";
 import { QUESTION_TYPES } from "../modules/assessment/questionTypes";
@@ -507,7 +509,9 @@ router.get("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
 // ─── Generation ──────────────────────────────────────────────────────────────
 
 /**
- * Attach this exam to a class, or detach it.
+ * Attach this exam to a class, or detach it — and/or set when it is planned to
+ * be sat (`examDate`, `examTime`; `null` clears), which is what the school exam
+ * calendar reads. Any one of the three may be sent alone.
  *
  * Attaching happens here rather than at authoring time for the same reason it
  * does for materials: a teacher does not know which section a paper is for
@@ -527,14 +531,31 @@ router.patch("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
     }
 
     const raw = req.body?.classGroupId;
-    if (raw === undefined) {
-      res.status(400).json({ error: "classGroupId is required" });
+    const touchesSchedule = req.body?.examDate !== undefined || req.body?.examTime !== undefined;
+    if (raw === undefined && !touchesSchedule) {
+      res.status(400).json({ error: "classGroupId, examDate or examTime is required" });
       return;
     }
-    const classGroupId = raw === null ? null : trimmed(raw);
+
+    // The planned sitting (examDate/examTime) is independent of the class: either
+    // may arrive alone. A message string thrown here is a 400, not a 500.
+    let schedule: { examDate: string | null; examTime: string | null };
+    try {
+      schedule = resolveExamPatch(
+        { examDate: evaluation.examDate, examTime: evaluation.examTime },
+        { examDate: req.body?.examDate, examTime: req.body?.examTime },
+      );
+    } catch (msg) {
+      res.status(400).json({ error: String(msg) });
+      return;
+    }
+
+    const classGroupId = raw === undefined ? evaluation.classGroupId : raw === null ? null : trimmed(raw);
     // Owned and not archived — the same lookup the roster routes use, so an
     // exam cannot be attached to a class the teacher has already removed.
-    if (classGroupId && !(await findLiveClass(classGroupId, req.user!.id))) {
+    // Only when the class is actually being changed: a schedule-only update on an
+    // exam whose class has since been archived must not 404 on the old class.
+    if (raw !== undefined && classGroupId && !(await findLiveClass(classGroupId, req.user!.id))) {
       res.status(404).json({ error: "Class not found" });
       return;
     }
@@ -568,13 +589,18 @@ router.patch("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
 
     const [updated] = await db
       .update(evaluations)
-      .set({ classGroupId: classGroupId || null, updatedAt: new Date() })
+      .set({
+        classGroupId: classGroupId || null,
+        examDate: schedule.examDate,
+        examTime: schedule.examTime,
+        updatedAt: new Date(),
+      })
       .where(eq(evaluations.id, evaluation.id))
       .returning();
 
     res.json({ evaluation: updated });
   } catch (err) {
-    logger.error({ err }, "attach evaluation to class failed");
+    logger.error({ err }, "update evaluation failed");
     res.status(500).json({ error: "Failed to update the evaluation" });
   }
 });
@@ -713,12 +739,12 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
         previousQuestions.map(q => ({ text: questionStem(q.body as Record<string, unknown>) })),
       );
 
-      const runLlm = (avoidList: readonly string[], insistent: boolean) => generateWithModel(
+      const runLlm = (avoidList: readonly string[], insistent: boolean, count = evaluation.targetQuestionCount) => generateWithModel(
         {
           objectives,
           gradeId: evaluation.gradeId,
           assessmentTypes: evaluation.assessmentTypes,
-          count: evaluation.targetQuestionCount,
+          count,
           difficulty: evaluation.difficulty,
           language: evaluation.language,
           bookExcerpts: grounding?.block,
@@ -732,7 +758,9 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
             // Room for a full paper of questions with options and rubrics. A
             // truncated response parses to something plausible, which is worse
             // than an error.
-            max_completion_tokens: 8000,
+            // Scaled to the paper: 30 questions with options and rubrics do not
+            // fit the 8000 that suits ten, and reasoning tokens bill against it.
+            max_completion_tokens: Math.min(24000, Math.max(8000, 2000 + 700 * evaluation.targetQuestionCount)),
             messages: [
               { role: "system", content: prompt.system },
               { role: "user", content: prompt.user },
@@ -765,6 +793,26 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
             "evaluation regeneration repeated most of the previous paper — retrying once",
           );
           llm = await runLlm(avoid, true);
+        }
+      }
+
+      // A reply can be well-formed and still short: asked for 20, a model will
+      // often send 10 and stop. Ask once more for only what is missing, with the
+      // stems already written so the second batch is new questions. Best effort
+      // — the paper is served short, and the shortfall warning says so, if it fails.
+      const missing = evaluation.targetQuestionCount - llm.questions.length;
+      if (missing > 0) {
+        logger.warn(
+          { evaluationId: evaluation.id, asked: evaluation.targetQuestionCount, got: llm.questions.length },
+          "evaluation came back short — asking for the rest",
+        );
+        try {
+          const have = signatureLines(llm.questions.map(q => ({ text: questionStem(q.body) })));
+          const more = await runLlm([...avoid, ...have], false, missing);
+          llm.questions.push(...more.questions);
+          llm.notes.push(...more.notes);
+        } catch (err) {
+          logger.warn({ err, evaluationId: evaluation.id }, "evaluation top-up failed - serving the short paper");
         }
       }
 
@@ -830,7 +878,12 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
         `The generator returned ${surplus} more question${surplus === 1 ? "" : "s"} than the ${evaluation.targetQuestionCount} requested; the extra ${surplus === 1 ? "one was" : "ones were"} left out.`,
       );
     }
-    // After the trim above, so the warning never names a question that is not on the paper.
+    // Stored as a ministry paper: one block per type, in the usual order. After
+    // the surplus trim above, so which questions were dropped is still the
+    // generator's own choice and not "whatever type came last".
+    keyCheck.kept = inPaperOrder(keyCheck.kept, k => k.question.type);
+    // After the trim AND the sort, so the warning never names a question that is
+    // not on the paper and its positions are the ones the review screen shows.
     const contradiction = contradictionWarning(keyCheck.kept);
     if (contradiction) generationNotes.push(contradiction);
     generationParams["keysChecked"] = keyCheck.checked;

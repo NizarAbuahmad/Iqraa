@@ -971,6 +971,148 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The Quran Corner: a shelf in the library, 2026-10-11
+
+**What a teacher or student can use.** `/curriculum/resources` has a «ركن القرآن»
+card opening `/curriculum/quran`: the 40 surahs the grade 1–10 Islamic Education
+books name for recitation, grouped under the first grade that assigns them.
+Each opens a reader (`/curriculum/quran/<n>`) showing only the ayah ranges the
+lesson titles print — 585 ayahs, 31 surahs whole and 9 in part, with a «…» where
+a surah's ranges do not touch — and a memorise page (`…/memorize`) with five hiding
+levels plus show-all, tap-to-reveal, an ayah-by-ayah repeat counter and a self-rating (جديدة /
+قيد المراجعة / محفوظة) kept on the device, per user. Below the surahs, a shelf
+of five outside links. Student-reachable through the existing `/curriculum`
+prefix allowlist, pinned in `routeGating.test.ts`. No table, no API route, no
+native module, no `app.json` version bump: the data lives in `lib/curriculum`,
+the font is a bundled asset loaded by the two screens that draw Quran text
+(`hooks/useQuranFont.ts`), not at app start, so it ships over the air and adds
+nothing to anyone's cold start.
+
+**Where the text comes from.** The King Fahd Glorious Qur'an Printing Complex's
+Mus'haf al-Madinah (Hafs), through the npm package `@quran.ws/text` 0.1.0, pinned
+as a dev dependency of `lib/curriculum` (the app never imports it).
+`scripts/build-quran-corner.ts` renders each assigned ayah with the package's own
+renderer and writes `quran_corner.json`, which records the package version and the
+SHA-256 of its data file. `quranCorner.test.ts` compares every shipped ayah to the
+package's output, regenerates the file from the package and the 20 catalogs and
+compares, checks the hand-typed surah table against the package's own surah names
+and counts, and pins 40 surahs / 77 lesson assignments / 585 ayahs. Terms: the
+Complex's published usage rights allow free use in websites and software; the
+dataset is CC BY 4.0 with attribution waived inside a product. `quran-json` was
+rejected (CC BY-SA 4.0; Uthmani text from quranenc.com), and Tanzil's text could
+not be fetched from the build sandbox. The text is drawn in the Complex's own
+font, committed unmodified as `artifacts/mobile/assets/fonts/UthmanicHafs-v-3.0.ttf`;
+`quranFontCoverage.test.ts` checks its hash and that it has a glyph for every code
+point of the text.
+
+**The surah table was typed by hand** (`SURAHS` in `scripts/quranCornerBuild.ts`:
+numbers and ayah counts, not text). The build refuses to run unless the package's
+own surah names and ayah counts agree with every row it uses, which catches two
+surahs of equal length being swapped.
+
+### What does not work, and what was not verified
+
+- **The corner is gated off in production builds.** `QURAN_CORNER_RELEASED` in
+  `artifacts/mobile/services/quranRelease.ts` is `false`: the Library card is
+  hidden and the three screens show «ركن القرآن غير متاح بعد» (`QuranGate`), so a
+  pasted URL does not reach the text either. Development builds (`__DEV__`)
+  always show it, which is how it is opened and checked. A merge to `main`
+  therefore does not release it. **To release:** a named person signs off
+  `lib/curriculum/sources/quran-ws/VERIFY.md` against an authorised printed
+  mushaf, the owner settles the font-licence and Jordan-approval items below,
+  and a reviewed one-line diff flips the constant. Nothing checks that the flip
+  follows the sign-off; the review does.
+- **Nothing here has been seen by a person in a browser or on a device.** The
+  corner sits behind sign-in and the build sandbox has no session or API, so
+  the Uthmani rendering in the Complex's font (including the sajdah mark over
+  96:19), the RTL layout, the bidi of the «n / m» subtitle and rating
+  persistence across a reload are all unchecked. A web export of the app does
+  build and its bundle contains the three screens and the font. Verification
+  was typecheck, unit tests for the pure logic, a review of each task's diff,
+  and the font and data tests.
+- **Whether Quran text in an app needs approval in Jordan** (the Ministry of
+  Awqaf or a Quran committee) is unknown and is not a code question. Open with
+  the owner.
+- **The five resource links have never been opened** (`urlCheckedAt` is null on
+  each, and the screen says so); their hosts are refused from the build
+  sandbox. The list is the planner's candidates, not an approved list.
+- **The text has NOT been verified against a printed mushaf.** The package's
+  licence puts that duty on whoever shows the text to end users, and the build
+  cannot check diacritics (the v3.0 release encodes some marks with newer code
+  points, so a mark-level comparison with older releases is inconclusive).
+  `lib/curriculum/sources/quran-ws/VERIFY.md` lists every shipped ayah for
+  a person to check against an authorised printed Mus'haf al-Madinah and
+  record who and when. **Status: not yet done. Nobody has checked it.** The corner must not be released
+  before. The package is Beta and records no origin URL for its v3.0 text package.
+- **The font's licence forbids selling it** (embedded in the file: free use,
+  copying and distribution; no sale, modification or reverse engineering).
+  Whether shipping it inside a paid product counts is the owner's call; the
+  fallback is Amiri Quran, which has a glyph for every code point of the shipped
+  text.
+- **Progress is a self-rating on one device.** The app cannot hear or check a
+  recitation, and nothing syncs or shows a teacher.
+- **The corner shows the source's text as it is.** The basmala is not part of
+  ayah 1 of any surah here (only Al-Fatiha's own ayah 1 is the basmala); the
+  corner adds none.
+- **A lesson that quotes Quran without naming a surah in its title is not
+  covered**, and so is outside the corner.
+- **Not built:** audio, speech checking, translations or tafsir text, bookmarks,
+  spaced repetition, attaching a surah to a class, a link from an Islamic lesson
+  into the corner, whole-surah text for surahs the books print in part.
+
+## Exams have a date, and teachers at one school can see each other's, 2026-10-11
+
+Before this an exam had no date at all — `evaluations` had no such column and
+`evaluation_assignments.due_at` still has no writer — and no teacher could read
+another's data, so nobody could check that a grade was not facing two exams on
+one day. The calendar (`app/calendar`) was a read-only month of timetable periods
+and plan lessons.
+
+- **A date on the exam** (migration `0006`, additive and nullable):
+  `evaluations.exam_date` ("YYYY-MM-DD") and `exam_time` ("HH:MM"), set from the
+  evaluation screen (`components/ExamDateCard.tsx`) through the existing
+  `PATCH /evaluations/:id`, which now takes any of `classGroupId`, `examDate`,
+  `examTime` (`null` clears; a time cannot exist without a date —
+  `lib/examDate.ts`). **Planning data only**: it does not open or close the
+  student link. A text box, not a picker, like the teaching-plan dates — a picker
+  is a native module and would need an `app.json` `version` bump.
+- **Schools exist, assigned by a platform admin** (`schools` table,
+  `users.school_id`): `GET/POST /admin/schools`, `PUT /admin/users/:id/school`,
+  **`system_admin` only** — narrower than the rest of `routes/admin.ts`, because
+  membership decides whose exam dates a teacher can read and a `school_admin`
+  who could assign teachers could place themselves in any school. Teachers only;
+  there is no self-service and no matching on the free-text `schoolName`, which
+  would let anyone read another school's calendar by typing its name. The
+  admin users screen gets a school picker per teacher.
+- **`GET /exam-calendar?from=&to=`** (`routes/examCalendar.ts`): the teacher's own
+  dated exams plus colleagues' at the same `school_id`. A colleague's exam is
+  **date, time, grade, subject, class name and the teacher's name — never its id,
+  title or content** (`lib/examCalendar.ts`, pinned by a test on the serialised
+  object). Closed and archived exams are left out; a draft counts once it has a
+  date. No school → own exams only, `school: null`.
+- **A clash means same school, same grade, same day** (`lib/examClashes.ts`) —
+  **not** "shared students". A student row belongs to one teacher, so the same
+  child under two teachers is two rows and real overlap cannot be computed; the
+  UI says "more than one exam for this grade", not "your students".
+- **Calendar**: a "Show school exams" switch, off by default; the teacher's own
+  exams always show, with an amber square on a clash day (still shown with the
+  switch off, so a clash with a colleague is never hidden). The evaluation screen
+  warns before saving a date that already holds another exam for the grade — a
+  warning, not a block.
+- **Verified against a real Postgres, 2026-10-11**: all seven migrations apply to
+  an empty database and `verify-schema` reports 50/50; the routes were exercised
+  end to end with a school of two teachers, one outside it and both admin roles.
+- **Found on the way — the admin users list showed $0 AI spend for everyone.** The
+  spend subquery interpolated columns, and drizzle renders those unqualified in a
+  single-table select, so it compared `ai_generations.user_id` with its own `id`.
+  A user with $1.25 of spend read 0. The school join happened to fix it; both this
+  and the new `teacherCount` subquery now spell their table names out. **Any
+  correlated subquery written with `${table.col}` inside a single-table select
+  has the same trap.**
+- **Not built**: teachers joining a school themselves, school-admin self-service,
+  clash notifications, blocking a save on a clash, student-level overlap across
+  teachers (needs students that are not owned by a single teacher).
+
 ## English says it is the national Ministry book, 2026-10-10
 
 Picking English now shows a highlighted banner — «الكتاب الوطني المعتمد من
@@ -1680,7 +1822,15 @@ teacher had linked them to a class.
   and students sign up with the teacher's code alone»), so for them the claim
   step is already done; `claim-required` remains for older and Google-created
   accounts. The pre-login intro (`onboarding.tsx`) is unchanged.
-- **Settings**: a «الصف» / «صفوف أبنائي» row opens the same screen in edit mode.
+- **Skip (2026-10-12)**: «تخطي الآن» on the first-time picker leaves it for later.
+  The account keeps the whole catalog and the gate stops asking. Remembered **on
+  the device, per account** (`services/gradeSetupSkip.ts`, key from
+  `gradeSetupSkipKey`) — no schema change, so the same account on a second
+  device is asked once more. `needsGradeSetup(user, skipped)` treats `null`
+  (flag not read yet) as "don't gate", or a skipped account would bounce to the
+  picker on every cold boot. No skip button in Settings' edit mode.
+- **Settings**: a «الصف» / «صفوف أبنائي» row opens the same screen in edit mode;
+  it reads «لم يُحدَّد» until a class is chosen.
 - **Shown**: `curriculum/browse.tsx` and `curriculum/resources.tsx` now narrow
   grades by `gradeIds` for every role (it was teachers only). A student's pick
   wins over the roster grade, which stays the fallback. **Not** narrowed:
@@ -2201,6 +2351,15 @@ design, when nothing was narrowed** — an account with no saved selection (e.g.
 `system_admin` who never ran `/setup-subjects`), a stale one, or one that picked
 every subject sees the full grade, as the chips already did. Students and
 parents are unaffected: they pick a grade, not subjects.
+
+
+**Follow-up, 2026-10-12 — a stale chip emptied the list.** The Library tab stays
+mounted while grades are edited on the profile page. The grade already fell back
+(`resources.tsx`), but the picked subject and lesson did not: a subject chosen on
+grade 10 stayed in state after the account moved to grade 9, matched no chip, and
+the screen read «٠ موارد» with no chip highlighted. Both are now derived on render
+through `keepIfPresent` (`services/teacherCatalogFilter.ts`) and fall back to
+«all». A reload used to be the only cure.
 
 ## The Science Lab: a shelf in the library, 2026-10-06
 
