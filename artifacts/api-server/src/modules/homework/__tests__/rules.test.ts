@@ -142,6 +142,15 @@ describe("due date bounds", () => {
     assert.equal(r.ok, true);
     if (r.ok) assert.equal(r.value.dueAt!.toISOString(), "2026-08-28T20:59:59.999Z");
   });
+  it("patch: 'unchanged' compares Amman calendar days, not timestamps (a row inserted by SQL/import at 09:00Z)", () => {
+    const existing = { dueAt: new Date("2026-09-01T09:00:00Z") }; // 12:00 Amman, 41 days before NOW: outside the window
+    const r = parsePatch({ title: "x", dueDate: "2026-09-01" }, NOW, existing);
+    assert.equal(r.ok, true, "same day, different time of day: the range check is skipped");
+    assert.deepEqual(parsePatch({ dueDate: "2026-09-02" }, NOW, existing), OUT, "a different old day is still refused");
+    // 22:00Z on 08-31 is already 01:00 on 09-01 in Amman, so it is the same day too.
+    assert.equal(parsePatch({ dueDate: "2026-09-01" }, NOW, { dueAt: new Date("2026-08-31T22:00:00Z") }).ok, true);
+    assert.deepEqual(parsePatch({ dueDate: "2026-08-31" }, NOW, { dueAt: new Date("2026-08-31T22:00:00Z") }), OUT);
+  });
   it("patch: a CHANGED date outside the window is still refused, with the range code", () => {
     const existing = { dueAt: dueDateToDueAt("2026-08-28")! };
     assert.deepEqual(parsePatch({ dueDate: "2026-08-29" }, NOW, existing), OUT, "another out-of-window day");

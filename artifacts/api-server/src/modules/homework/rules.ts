@@ -133,7 +133,9 @@ export function parseCreate(body: unknown, now: Date = new Date()): Parsed<Creat
 }
 
 /**
- * `existing` is the stored row. A due date equal to the stored one is not
+ * `existing` is the stored row. A due date on the same Amman calendar day as the
+ * stored one (not the same instant: a row from SQL or an import may hold any
+ * time of day) is not
  * re-bounded: the mobile edit form always resends the date, so bounding it
  * would make every edit of a homework due more than 30 days ago a 400 — a
  * teacher could not fix a typo in an old one. A CHANGED date is still bounded.
@@ -155,7 +157,7 @@ export function parsePatch(body: unknown, now: Date = new Date(), existing?: { d
   if (b["dueDate"] !== undefined) {
     const d = dueDateToDueAt(b["dueDate"]);
     if (!d) return { ok: false, error: "dueDate must be a real date, YYYY-MM-DD" };
-    const unchanged = existing !== undefined && existing.dueAt.getTime() === d.getTime();
+    const unchanged = existing !== undefined && dueAtToDueDate(existing.dueAt) === dueAtToDueDate(d);
     if (!unchanged && !dueDateInRange(b["dueDate"] as string, now)) return DUE_RANGE_FAIL;
     out.dueAt = d;
   }

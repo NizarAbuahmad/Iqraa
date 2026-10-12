@@ -334,6 +334,19 @@ describeDb("teacher homework over HTTP, against a real database", () => {
       assert.equal(back.status, 200, back.text);
     });
 
+    it("treats the date as unchanged by calendar day, whatever time of day the stored due_at has (SQL/import rows)", async () => {
+      const old = ammanDay(-45);
+      const inserted = await db.pool.query<{ id: string }>(
+        `INSERT INTO homework (teacher_id, class_group_id, title, due_at) VALUES ($1, $2, 'imported', $3) RETURNING id`,
+        [w.users.t1, w.classes.c1, `${old}T09:00:00Z`], // 12:00 Amman, not the end of the day
+      );
+      const id = inserted.rows[0]!.id;
+      const r = await call(server, "PATCH", `/homework/${id}`, w.users.t1, { title: "imported fixed", dueDate: old });
+      assert.equal(r.status, 200, r.text);
+      assert.equal(r.json.homework.title, "imported fixed");
+      assert.equal(r.json.homework.dueDate, old);
+    });
+
     it("answers 404 to another teacher and leaves the row untouched", async () => {
       const r = await call(server, "PATCH", `/homework/${mine}`, w.users.t2, { title: "hijacked" });
       assert.equal(r.status, 404);
