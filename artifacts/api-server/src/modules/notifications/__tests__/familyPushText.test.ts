@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { classLabel, examDateText, homeworkPostedText, pushDay, pushTime, TITLE_MAX } from "../familyPushText.ts";
+import { classLabel, examDateText, homeworkPostedText, homeworkReminderText, pushDay, pushTime, TITLE_MAX } from "../familyPushText.ts";
 
 const LONG = "حلّ تمارين الدرس الثاني من الوحدة الثالثة كاملةً مع التبرير ".repeat(4);
 const titleFits = (t: string) => assert.ok([...t].length <= TITLE_MAX, `${[...t].length}: ${t}`);
@@ -69,5 +69,21 @@ describe("examDateText", () => {
     const cleared = examDateText({ examTitle: LONG, className: LONG, notice: { kind: "cleared", examDate: null, examTime: null } });
     titleFits(cleared.student.title);
     titleFits(cleared.guardian(LONG).title);
+  });
+});
+
+describe("homeworkReminderText", () => {
+  const t = homeworkReminderText({ title: "حل تمارين ص 45", className: "10A maths" });
+  it("tells a student and a tracked child's guardian it is not marked done", () => {
+    assert.equal(t.student.title, "تذكير: واجب موعده غدًا");
+    assert.ok(t.student.body.includes("لم يُعلَّم كمُنجَز بعد"));
+    assert.equal(t.guardianTracked("سارة").title, "سارة: واجب موعده غدًا");
+    assert.ok(t.guardianTracked("سارة").body.includes("لم يُعلَّم كمُنجَز بعد"));
+  });
+  it("never claims 'not done' when nobody can tick it", () => {
+    const soft = t.guardianUntracked("آدم");
+    assert.equal(soft.title, "آدم: واجب موعده غدًا");
+    assert.equal(soft.body.includes("لم يُعلَّم"), false);
+    assert.ok(soft.body.includes("«حل تمارين ص 45»"));
   });
 });

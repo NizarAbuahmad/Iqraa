@@ -2,6 +2,7 @@ import { Router, type IRouter, type Request } from "express";
 import { authMiddleware, requireRole, TEACHER_ROLES } from "../middlewares/auth.js";
 import { createRateLimiter } from "../lib/rateLimit.js";
 import healthRouter from "./health";
+import internalRouter from "./internal";
 import chatRouter from "./chat";
 import generateRouter from "./generate";
 import authRouter from "./auth";
@@ -78,6 +79,9 @@ const generateLimiter = createRateLimiter({
  * unauthenticated is an open-wallet endpoint the day DEMO_MODE is turned off.
  */
 router.use(healthRouter);
+// Cloud Scheduler's endpoints, guarded by a shared key inside each handler
+// (404 without it) — never a session, so mounted before any guarded router.
+router.use("/internal", internalRouter);
 router.use("/auth", authRouter);
 router.use("/workspace", workspaceRouter);
 // Published national curriculum data — deliberately public, see curriculum.ts.

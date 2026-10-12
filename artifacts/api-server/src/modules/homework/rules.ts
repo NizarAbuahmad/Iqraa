@@ -51,7 +51,7 @@ export const DUE_FUTURE_DAYS = 366;
 const DUE_RANGE_ERROR = `dueDate must be within the last ${DUE_PAST_DAYS} days and the next year`;
 
 /** `YYYY-MM-DD` plus `days` calendar days (negative goes back). Pure date arithmetic, no clock. */
-function addDays(date: string, days: number): string {
+export function addDays(date: string, days: number): string {
   const [y, m, d] = date.split("-").map(Number) as [number, number, number];
   return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
 }

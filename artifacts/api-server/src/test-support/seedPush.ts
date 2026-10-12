@@ -64,3 +64,57 @@ export async function setPushPrefs(pool: Pool, userId: string, prefs: Record<str
 export function shownDay(ymd: string): string {
   return `⁦${ymd.slice(8, 10)}-${ymd.slice(5, 7)}-${ymd.slice(0, 4)}⁩`;
 }
+
+/** Reminder homework (homeworkReminders.db.test.ts). Unique titles, so a test can find each in a push body. */
+export const RM_TITLES = {
+  c1: "rm-c1",
+  c1Done: "rm-c1-done",
+  c3: "rm-c3",
+  c2: "rm-c2",
+  today: "rm-today",
+  dayAfter: "rm-day-after",
+  archived: "rm-archived",
+  archivedClass: "rm-archived-class",
+} as const;
+
+/** The instant a due date `offsetDays` Amman days from now is stored as: the end of that day, Amman. */
+export function ammanDueAt(offsetDays: number, now: Date = new Date()): Date {
+  const day = new Date(now.getTime() + 3 * 3_600_000 + offsetDays * 86_400_000).toISOString().slice(0, 10);
+  const [y, m, d] = day.split("-").map(Number) as [number, number, number];
+  return new Date(Date.UTC(y, m - 1, d, 23, 59, 59, 999) - 3 * 3_600_000);
+}
+
+/**
+ * Homework around "tomorrow" (Amman), each there to be reminded about or to
+ * be left alone:
+ *   c1 (t1, tomorrow)        Sara (account, not done) + Adam (no account)
+ *   c1Done (t1, tomorrow)    Sara has ticked it; Adam still has no account
+ *   c3 (t1, tomorrow)        Noor — family B
+ *   c2 (t2, tomorrow)        Sara's second row (no account) + Adam's ARCHIVED row
+ *   today / dayAfter          not tomorrow
+ *   archived / archivedClass  archived homework / homework in the archived class c4
+ */
+export async function seedReminderHomework(pool: Pool, w: FamilyWorld): Promise<Record<keyof typeof RM_TITLES, string>> {
+  const { t1, t2 } = w.users;
+  const { c1, c2, c3, c4 } = w.classes;
+  const hw = async (teacher: string, klass: string, title: string, offset: number, archived = false) =>
+    (
+      await pool.query<{ id: string }>(
+        `INSERT INTO homework (teacher_id, class_group_id, title, due_at, archived_at)
+         VALUES ($1, $2, $3, $4, CASE WHEN $5::boolean THEN now() END) RETURNING id`,
+        [teacher, klass, title, ammanDueAt(offset), archived],
+      )
+    ).rows[0].id;
+  const ids = {
+    c1: await hw(t1, c1, RM_TITLES.c1, 1),
+    c1Done: await hw(t1, c1, RM_TITLES.c1Done, 1),
+    c3: await hw(t1, c3, RM_TITLES.c3, 1),
+    c2: await hw(t2, c2, RM_TITLES.c2, 1),
+    today: await hw(t1, c1, RM_TITLES.today, 0),
+    dayAfter: await hw(t1, c1, RM_TITLES.dayAfter, 2),
+    archived: await hw(t1, c1, RM_TITLES.archived, 1, true),
+    archivedClass: await hw(t1, c4, RM_TITLES.archivedClass, 1),
+  };
+  await pool.query(`INSERT INTO homework_completions (homework_id, student_id) VALUES ($1, $2)`, [ids.c1Done, w.students.sA1]);
+  return ids;
+}

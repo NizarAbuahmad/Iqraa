@@ -29,6 +29,8 @@ const entry = path.join(serverRoot, "dist", "index.mjs");
 // bare `pnpm test` on a clean checkout stays green. CI runs build before test.
 const built = existsSync(entry);
 
+const MOUNT_ORDER_CRON_KEY = "mount-order-cron-key";
+
 describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, () => {
   let child: ChildProcess;
   let base: string;
@@ -54,6 +56,7 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
         // here calls a model. Production passes a placeholder for the same
         // reason (see render.yaml).
         OPENAI_API_KEY: "sk-test-placeholder",
+        INTERNAL_CRON_KEY: MOUNT_ORDER_CRON_KEY,
       },
       stdio: "ignore",
     });
@@ -714,6 +717,19 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
       body: JSON.stringify({ kind: "waitlist", email: "a@b.co" }),
     });
     assert.equal(res.status, 404);
+  });
+
+  it("hides the homework-reminder trigger without the shared key, and opens it with the key", async () => {
+    // Server-to-server (Cloud Scheduler). Without the key it must look like no
+    // route at all — 404, not a guarded 401 — and no session guard may sit in
+    // front of it (the scheduler has no session).
+    const post = (headers: Record<string, string>) => fetch(`${base}/internal/homework-reminders`, { method: "POST", headers });
+    assert.equal((await post({})).status, 404, "no key");
+    assert.equal((await post({ "x-internal-key": "wrong" })).status, 404, "wrong key");
+    assert.equal((await fetch(`${base}/internal/homework-reminders`)).status, 404, "GET is not a route");
+    const right = await post({ "x-internal-key": MOUNT_ORDER_CRON_KEY });
+    assert.notEqual(right.status, 404, "the right key reaches the route");
+    assert.notEqual(right.status, 401, "no session guard in front of it");
   });
 
   it("answers unknown paths with 404, not with another router's 401", async () => {

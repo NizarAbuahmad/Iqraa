@@ -86,3 +86,17 @@ export function examDateText(i: { examTitle: string; className: string; notice: 
     guardian: child => ({ title: forChild(child, "موعد امتحان"), body: `${quoted} ${when} — ${i.className}.` }),
   };
 }
+
+export function homeworkReminderText(i: { title: string; className: string }): {
+  student: PushText;
+  guardianTracked: (child: string) => PushText;
+  guardianUntracked: (child: string) => PushText;
+} {
+  const named = `«${clip(i.title, 60)}» في ${i.className}`;
+  return {
+    student: { title: "تذكير: واجب موعده غدًا", body: `${named} لم يُعلَّم كمُنجَز بعد.` },
+    guardianTracked: child => ({ title: forChild(child, "واجب موعده غدًا"), body: `${named} لم يُعلَّم كمُنجَز بعد.` }),
+    // No account can tick it: say when, never "not done".
+    guardianUntracked: child => ({ title: forChild(child, "واجب موعده غدًا"), body: `تذكير بواجب ${named}.` }),
+  };
+}
