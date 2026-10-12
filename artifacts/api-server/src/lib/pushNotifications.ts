@@ -1,8 +1,10 @@
 /**
  * Expo's push API is a single HTTPS POST — pulling in expo-server-sdk for
- * that would be a dependency for a fetch call. Fire-and-forget by design:
- * callers (routes/messaging.ts) never await this before responding, and a
- * failure here must never surface as a failed message send.
+ * that would be a dependency for a fetch call. Chat and admin callers do not
+ * await this before responding; the family pushes (lib/familyPush.ts) do,
+ * capped by lib/pushWithin.ts, because Cloud Run throttles the CPU once a
+ * response is sent. Either way a failure here must never surface as a failed
+ * request.
  *
  * Expo answers 200 OK with a per-message ticket even when an individual
  * token is dead — a non-2xx HTTP status only means the whole batch was
@@ -12,8 +14,24 @@
  */
 import { logger } from "./logger.ts";
 
-const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
+const DEFAULT_EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
 const CHUNK_SIZE = 100;
+
+/**
+ * A hung Expo call must not outlive pushWithin's cap or Cloud Run's request
+ * timeout. The abort surfaces as a thrown fetch, which the catch below turns
+ * into an "error" result per message like any other network failure.
+ */
+const EXPO_PUSH_TIMEOUT_MS = 8_000;
+
+/**
+ * Read on every call, never captured at import: the DB tests point the built
+ * server at an in-process stub (test-support/pushStub.ts) through this. Unset
+ * in production.
+ */
+function expoPushUrl(): string {
+  return process.env.EXPO_PUSH_URL || DEFAULT_EXPO_PUSH_URL;
+}
 
 /**
  * The Android notification channel each kind of push goes to, so a user can
@@ -21,12 +39,17 @@ const CHUNK_SIZE = 100;
  * creates these (PUSH_CHANNELS in artifacts/mobile/services/pushPolicy.ts,
  * whose test reads this object — keep it a flat literal of string values).
  * An id the device has not created still arrives, in Android's catch-all
- * channel, so an older app version is not cut off.
+ * channel, so an older app version is not cut off. `homework` and `exams` are
+ * the family pushes of spec Part 4; `quiet` is where any family push goes
+ * between 22:00 and 07:00 Amman (modules/notifications/quietHours.ts).
  */
 export const PUSH_CHANNEL = {
   messages: "messages",
   results: "results",
   admin: "admin",
+  homework: "homework",
+  exams: "exams",
+  quiet: "quiet",
 } as const;
 
 export interface ExpoPushMessage {
@@ -41,6 +64,12 @@ export interface ExpoPushMessage {
    * overwrite a correct count with an unrelated one.
    */
   badge?: number;
+  /**
+   * iOS only: `"default"` plays the default sound, `null` none. Android takes
+   * its sound from the channel instead — see quietHours.ts for why quiet
+   * hours also switch the channel.
+   */
+  sound?: "default" | null;
 }
 
 export interface ExpoPushResult {
@@ -58,10 +87,11 @@ export async function sendExpoPush(messages: ExpoPushMessage[]): Promise<ExpoPus
   for (let i = 0; i < valid.length; i += CHUNK_SIZE) {
     const chunk = valid.slice(i, i + CHUNK_SIZE);
     try {
-      const res = await fetch(EXPO_PUSH_URL, {
+      const res = await fetch(expoPushUrl(), {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify(chunk),
+        signal: AbortSignal.timeout(EXPO_PUSH_TIMEOUT_MS),
       });
       if (!res.ok) {
         logger.error({ status: res.status, body: await res.text() }, "Expo push request failed");
