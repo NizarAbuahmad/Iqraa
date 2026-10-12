@@ -1,10 +1,12 @@
 /**
  * Expo's push API is a single HTTPS POST — pulling in expo-server-sdk for
  * that would be a dependency for a fetch call. Chat and admin callers do not
- * await this before responding; the family pushes (lib/familyPush.ts) do,
- * capped by lib/pushWithin.ts, because Cloud Run throttles the CPU once a
- * response is sent. Either way a failure here must never surface as a failed
- * request.
+ * await this before responding; neither does the results-release announcement
+ * (lib/resultsReleaseNotify.ts), which sends after the response through the
+ * same family sender (lib/familyPush.ts). The teacher-action family pushes
+ * (homework, exam dates) do await, capped by lib/pushWithin.ts, because Cloud
+ * Run throttles the CPU once a response is sent. Either way a failure here
+ * must never surface as a failed request.
  *
  * Expo answers 200 OK with a per-message ticket even when an individual
  * token is dead — a non-2xx HTTP status only means the whole batch was

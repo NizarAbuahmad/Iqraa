@@ -10,9 +10,10 @@
  * Archived roster rows never count. The 404/empty behaviour for a row that is
  * not linked is the caller's — these only answer "which rows".
  */
-import { db, rosterLinks, students } from "@workspace/db";
+import { db, rosterLinks, students, users } from "@workspace/db";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import type { GuardianLink } from "../modules/family/children.ts";
+import type { LinkedAccount } from "../modules/notifications/familyPush.ts";
 
 /** Every live roster row this account is `self`-linked to. */
 export async function selfLinkedStudentIds(userId: string): Promise<string[]> {
@@ -56,4 +57,36 @@ export async function studentIdsWithSelfAccount(studentIds: string[]): Promise<S
       and(inArray(rosterLinks.studentId, studentIds), eq(rosterLinks.relation, "self"), isNull(students.archivedAt)),
     );
   return new Set(linked.map(l => l.studentId));
+}
+
+/**
+ * Rows → accounts: every account linked to these live roster rows, `self` and
+ * `guardian`, with what a push needs to decide about it — the child's name,
+ * the account's switches and whether it is suspended. The reverse of the two
+ * helpers above. Not filtered here: the reminder needs to know a suspended
+ * student account EXISTS (the child can tick), even though it is not pushed.
+ */
+export async function accountsLinkedTo(studentIds: readonly string[]): Promise<LinkedAccount[]> {
+  if (studentIds.length === 0) return [];
+  const rows = await db
+    .select({
+      userId: rosterLinks.userId,
+      relation: rosterLinks.relation,
+      studentId: students.id,
+      childName: students.displayName,
+      pushPrefs: users.pushPrefs,
+      suspendedAt: users.suspendedAt,
+    })
+    .from(rosterLinks)
+    .innerJoin(students, eq(students.id, rosterLinks.studentId))
+    .innerJoin(users, eq(users.id, rosterLinks.userId))
+    .where(and(inArray(rosterLinks.studentId, [...studentIds]), isNull(students.archivedAt)));
+  return rows.map(r => ({
+    userId: r.userId,
+    relation: r.relation,
+    studentId: r.studentId,
+    childName: r.childName,
+    pushPrefs: r.pushPrefs,
+    suspended: r.suspendedAt !== null,
+  }));
 }
