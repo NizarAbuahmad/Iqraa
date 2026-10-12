@@ -456,9 +456,9 @@ function bankMultipleChoice(
  * A real question from the NCCD books, for the objective's own lesson.
  *
  * Joined by `objective.lessonId`, never by title. Unit-test multiple choice
- * self-marks; an exercise becomes a short answer the teacher marks against the
- * key. Neither carries a `check`: only `verified` items may reach the
- * verification pass, and a `computed` key proves nothing about whether the
+ * self-marks; an exercise or a unit-test open question becomes a short answer
+ * the teacher marks against the key. None carries a `check`: only `verified`
+ * items may reach the verification pass, and a `computed` key proves nothing about whether the
  * stem was read correctly — so it must not earn the «تم التحقق» badge.
  *
  * Returns null whenever the lesson has no item of a requested shape, so the
@@ -484,16 +484,24 @@ export function bookQuestion(args: {
    * "Near-duplicate" — a shorter paper with a reason that is not true.
    */
   accepted: readonly GeneratedQuestion[];
+  /**
+   * Draw from this list instead of the lesson's served items — for callers (and
+   * tests) that hold their own. Absent means the lesson's items, as always.
+   */
+  pool?: readonly BookItem[];
 }): GeneratedQuestion | null {
-  const { objective, difficulty, session, rng, accepted } = args;
+  const { objective, difficulty, session, rng, accepted, pool } = args;
   const lessonId = objective.lessonId;
   if (!lessonId) return null;
   const tier = BANK_TIER[difficulty];
   // Each pass spends one item, so this is bounded by the lesson's pool.
   for (;;) {
+    // A short answer is wanted: an exercise and a unit-test open question both
+    // answer that, so they are drawn from their union (one `rng()` call either
+    // way, so a pool holding only exercises draws what it always drew).
     const item =
-      (args.wantChoice && takeBookItem({ lessonId, kind: "unit-test-mcq", tier, session, rng })) ||
-      (args.wantShort && takeBookItem({ lessonId, kind: "exercise", tier, session, rng })) ||
+      (args.wantChoice && takeBookItem({ lessonId, kind: "unit-test-mcq", tier, session, rng, ...(pool ? { pool } : {}) })) ||
+      (args.wantShort && takeBookItem({ lessonId, kind: ["exercise", "unit-test"], tier, session, rng, ...(pool ? { pool } : {}) })) ||
       null;
     if (!item) return null;
     const { competency, marks } = args.slot(item.kind);
@@ -507,6 +515,10 @@ export function bookQuestion(args: {
   }
 }
 
+/**
+ * Unit-test multiple choice becomes a self-marking choice question; `exercise`
+ * and `unit-test` (an open question from the same test) become a short answer.
+ */
 function buildBookQuestion(
   item: BookItem,
   objective: CurriculumObjective,

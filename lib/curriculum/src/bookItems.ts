@@ -2,6 +2,11 @@
  * Real items from the NCCD Grade 10 maths books — exercise-book questions and
  * the teacher guide's end-of-unit test — for the generators that build papers.
  *
+ * Three kinds: `exercise` (exercise-book question, a short answer),
+ * `unit-test-mcq` (end-of-unit multiple choice) and `unit-test` (an open,
+ * short-answer question from the same end-of-unit test; it cites as the test,
+ * not as the exercise book, and is drawn wherever a short answer is wanted).
+ *
  * The data is `scripts/extract_book_items.py`'s output, committed, so there is
  * no schema and no migration. See docs/superpowers/specs/2026-10-12-book-items-design.md.
  *
@@ -24,7 +29,7 @@ import exerciseS2 from './data/book-items/math-s2-exercise-book.json' with { typ
 import guideS1 from './data/book-items/math-s1-teacher-guide.json' with { type: 'json' };
 
 export type BookItemStatus = 'verified' | 'computed' | 'book-key' | 'quarantined';
-export type BookItemKind = 'exercise' | 'unit-test-mcq';
+export type BookItemKind = 'exercise' | 'unit-test-mcq' | 'unit-test';
 export type BookTier = 'easy' | 'medium' | 'hard';
 
 export interface BookItem {
@@ -79,16 +84,25 @@ export function bookItemsForLesson(lessonId: string | null | undefined): readonl
 
 export interface TakeBookItem {
   lessonId: string | null | undefined;
-  kind?: BookItemKind;
+  /** One kind, or several to draw from their union. Absent means any kind. */
+  kind?: BookItemKind | readonly BookItemKind[];
   tier?: BookTier;
+  /**
+   * Draw from this list instead of the lesson's served items. For callers that
+   * hold their own pool (tests, mostly); `lessonId` is then not consulted.
+   */
+  pool?: readonly BookItem[];
   /** Ids this paper has already spent; the taken id is added. Per request, never module state. */
   session: Set<string>;
   rng?: () => number;
 }
 
 /** One unspent item, preferring the tier, or null. */
-export function takeBookItem({ lessonId, kind, tier, session, rng = Math.random }: TakeBookItem): BookItem | null {
-  const pool = bookItemsForLesson(lessonId).filter(i => (!kind || i.kind === kind) && !session.has(i.id));
+export function takeBookItem({ lessonId, kind, tier, session, rng = Math.random, pool: given }: TakeBookItem): BookItem | null {
+  const kinds = kind === undefined ? null : typeof kind === 'string' ? [kind] : kind;
+  const pool = (given ?? bookItemsForLesson(lessonId)).filter(
+    i => (!kinds || kinds.includes(i.kind)) && !session.has(i.id),
+  );
   if (pool.length === 0) return null;
   const preferred = tier ? pool.filter(i => i.tier === tier) : [];
   const from = preferred.length > 0 ? preferred : pool;
@@ -117,7 +131,8 @@ const arabicDigits = (n: number) => String(n).replace(/[0-9]/g, d => '٠١٢٣٤
 /** «كتاب التمارين ص ٧٢، س ١١» — Arabic digits at display time only. */
 export function bookCitation(item: BookItem, lang: 'ar' | 'en'): string {
   const { bookPage, number, unit } = item.source;
-  if (item.kind === 'unit-test-mcq') {
+  // Both unit-test kinds cite the test; only `exercise` cites the exercise book.
+  if (item.kind === 'unit-test-mcq' || item.kind === 'unit-test') {
     return lang === 'ar'
       ? `اختبار نهاية الوحدة ${arabicDigits(unit)}، س ${arabicDigits(number)}`
       : `Unit ${unit} test, Q${number}`;

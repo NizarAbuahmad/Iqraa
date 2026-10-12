@@ -13,7 +13,8 @@
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { generateMockEvaluation } from "../mockGenerator.ts";
+import { bookQuestion, generateMockEvaluation } from "../mockGenerator.ts";
+import type { BookItem } from "@workspace/curriculum/bookItems";
 import { QUESTION_TYPES } from "../questionTypes.ts";
 import { validateGenerated } from "../validator.ts";
 import type { CurriculumObjective } from "@workspace/curriculum";
@@ -199,5 +200,71 @@ describe("evaluation generator — real book items", () => {
   it("changes nothing without a lessonId, or for another subject", () => {
     assert.equal(fromBook(generate({ objectives: [objective()] })).length, 0);
     assert.equal(fromBook(generate({ subjectId: "chemistry" })).length, 0);
+  });
+});
+
+/** A synthetic unit-test short answer: no data file holds one yet. */
+const unitTestOpen = (id: string, over: Partial<BookItem> = {}): BookItem => ({
+  id,
+  lessonId: LESSON,
+  source: { sourceId: "math-s1-teacher-guide", page: 47, bookPage: 47, unit: 1, number: 6 },
+  kind: "unit-test",
+  instruction: "أحل نظام المعادلتين الآتي",
+  stem: "y = 4x\ny = 5 - x^2",
+  printedAnswer: "(1, 4), (-5, -20)",
+  computedAnswer: "(1, 4), (-5, -20)",
+  check: null,
+  tier: "medium",
+  tierSource: "default",
+  status: "verified",
+  verificationSource: "sympy+book",
+  ...over,
+});
+
+describe("bookQuestion — the unit-test short-answer kind", () => {
+  const draw = (pool: BookItem[], over: Partial<Parameters<typeof bookQuestion>[0]> = {}) =>
+    bookQuestion({
+      objective: objective(LESSON),
+      difficulty: "standard",
+      slot: () => ({ competency: "application", marks: 3 }),
+      wantChoice: false,
+      wantShort: true,
+      session: new Set(),
+      rng: () => 0,
+      accepted: [],
+      pool,
+      ...over,
+    });
+
+  it("builds a short answer with its citation and status, and never a check", () => {
+    const q = draw([unitTestOpen("syn-1")]);
+    assert.ok(q, "a short-answer request must be able to draw a unit-test item");
+    assert.equal(q.type, "short_answer");
+    assert.equal(q.check, null);
+    assert.equal(q.aiMetadata["generator"], "book");
+    assert.equal(q.aiMetadata["bookItemId"], "syn-1");
+    assert.equal(q.aiMetadata["bookStatus"], "verified");
+    assert.equal(q.aiMetadata["bookCitationAr"], "اختبار نهاية الوحدة ١، س ٦");
+    assert.equal(q.aiMetadata["bookCitationEn"], "Unit 1 test, Q6");
+    assert.equal((q.body as { prompt: string }).prompt, "أحل نظام المعادلتين الآتي\ny = 4x\ny = 5 − x²");
+    assert.deepEqual((q.expectedAnswer as { modelAnswer: string }).modelAnswer, "(1, 4), (−5, −20)");
+  });
+
+  it("is drawn alongside exercises when a short answer is wanted, and only then", () => {
+    const pool = [unitTestOpen("syn-ut"), unitTestOpen("syn-ex", { kind: "exercise" })];
+    const seen = new Set<string>();
+    const session = new Set<string>();
+    for (let n = 0; n < 2; n++) {
+      const q = draw(pool, { session, accepted: [], rng: () => 0 });
+      if (q) seen.add(String(q.aiMetadata["bookItemId"]));
+    }
+    assert.deepEqual([...seen].sort(), ["syn-ex", "syn-ut"]);
+    assert.equal(draw([unitTestOpen("syn-ut")], { wantShort: false, wantChoice: true }), null);
+  });
+
+  it("receives the item's own kind in the slot function", () => {
+    const kinds: string[] = [];
+    draw([unitTestOpen("syn-1")], { slot: kind => (kinds.push(kind), { competency: "application", marks: 3 }) });
+    assert.deepEqual(kinds, ["unit-test"]);
   });
 });

@@ -179,3 +179,78 @@ describe('displayMath — typing notation to display notation', () => {
     assert.equal(displayMath(once), once);
   });
 });
+
+/** A synthetic unit-test short-answer item: no data file holds one yet. */
+const unitTestOpen = (id: string, over: Partial<BookItem> = {}): BookItem => ({
+  id,
+  lessonId: 'kbl-synthetic-lesson',
+  source: { sourceId: 'math-s1-teacher-guide', page: 47, bookPage: 47, unit: 1, number: 6 },
+  kind: 'unit-test',
+  instruction: 'أحل نظام المعادلتين الآتي',
+  stem: 'y = 4x\ny = 5 - x^2',
+  printedAnswer: '(1, 4), (-5, -20)',
+  computedAnswer: '(1, 4), (-5, -20)',
+  check: null,
+  tier: 'medium',
+  tierSource: 'default',
+  status: 'verified',
+  verificationSource: 'sympy+book',
+  ...over,
+});
+
+describe('book items — the unit-test short-answer kind', () => {
+  it('cites like the unit-test multiple choice, not like the exercise book', () => {
+    const open = unitTestOpen('syn-1');
+    assert.equal(bookCitation(open, 'ar'), 'اختبار نهاية الوحدة ١، س ٦');
+    assert.equal(bookCitation(open, 'en'), 'Unit 1 test, Q6');
+    const mcq = items.find(i => i.kind === 'unit-test-mcq')!;
+    const sameSlot = { ...mcq, source: { ...mcq.source, ...open.source } };
+    assert.equal(bookCitation(open, 'ar'), bookCitation(sameSlot, 'ar'));
+    assert.equal(bookCitation(open, 'en'), bookCitation(sameSlot, 'en'));
+  });
+
+  it('is taken by kind from an injected pool, once, and not by the other kinds', () => {
+    const pool = [
+      unitTestOpen('syn-a'),
+      unitTestOpen('syn-b'),
+      unitTestOpen('syn-ex', { kind: 'exercise' }),
+    ];
+    const session = new Set<string>();
+    const lessonId = 'kbl-synthetic-lesson';
+    const first = takeBookItem({ lessonId, kind: 'unit-test', session, rng: () => 0, pool });
+    assert.equal(first?.id, 'syn-a');
+    const second = takeBookItem({ lessonId, kind: 'unit-test', session, rng: () => 0, pool });
+    assert.equal(second?.id, 'syn-b');
+    assert.equal(takeBookItem({ lessonId, kind: 'unit-test', session, pool }), null);
+    assert.equal(takeBookItem({ lessonId, kind: 'unit-test-mcq', session: new Set(), pool }), null);
+  });
+
+  it('accepts a list of kinds, drawing from their union', () => {
+    const pool = [
+      unitTestOpen('syn-ex', { kind: 'exercise' }),
+      unitTestOpen('syn-ut'),
+      unitTestOpen('syn-mcq', { kind: 'unit-test-mcq' }),
+    ];
+    const lessonId = 'kbl-synthetic-lesson';
+    const got = new Set<string>();
+    const session = new Set<string>();
+    for (let n = 0; n < 3; n++) {
+      const item = takeBookItem({ lessonId, kind: ['exercise', 'unit-test'], session, rng: () => 0, pool });
+      if (item) got.add(item.id);
+    }
+    assert.deepEqual([...got].sort(), ['syn-ex', 'syn-ut']);
+  });
+
+  it('a one-element list draws exactly what the single kind draws', () => {
+    const lessonId = 'kbl-math-s1-nccd-u1_l1';
+    for (const r of [0, 0.3, 0.5, 0.99]) {
+      const single = takeBookItem({ lessonId, kind: 'exercise', session: new Set(), rng: () => r });
+      const list = takeBookItem({ lessonId, kind: ['exercise'], session: new Set(), rng: () => r });
+      assert.equal(list?.id, single?.id);
+    }
+  });
+
+  it('a pool given explicitly replaces the lesson lookup', () => {
+    assert.equal(takeBookItem({ lessonId: null, kind: 'unit-test', session: new Set(), pool: [unitTestOpen('x')] })?.id, 'x');
+  });
+});

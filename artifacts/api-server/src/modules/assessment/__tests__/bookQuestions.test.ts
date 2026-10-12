@@ -20,7 +20,7 @@
  */
 import { afterEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { bookItemsForLesson, displayMath } from "@workspace/curriculum/bookItems";
+import { bookItemsForLesson, displayMath, type BookItem } from "@workspace/curriculum/bookItems";
 import type { CurriculumObjective } from "@workspace/curriculum";
 import type { QuestionType } from "@workspace/db";
 import {
@@ -28,6 +28,7 @@ import {
   bookItemsRecord,
   drawBookQuestions,
   isBookItemsLiveOn,
+  liveSlot,
   mulberry32,
   PLAN_SEED,
   planBook,
@@ -615,5 +616,78 @@ describe("bookItemsRecord", () => {
     const empty = { byType: {}, byCompetency: {}, marks: 0 };
     assert.equal("quota" in bookItemsRecord({ enabled: false, planned: 0, supplied: empty, drawn: 0, ids: [] }), false);
     assert.equal("quota" in bookItemsRecord({ enabled: true, planned: 0, supplied: empty, quota, drawn: 0, ids: [] }), false);
+  });
+});
+
+describe("the unit-test short-answer kind on the live path", () => {
+  const lesson = "kbl-synthetic-lesson";
+  const unitTestOpen = (id: string, number: number, stem: string): BookItem => ({
+    id,
+    lessonId: lesson,
+    source: { sourceId: "math-s1-teacher-guide", page: 47, bookPage: 47, unit: 1, number },
+    kind: "unit-test",
+    instruction: "أحل نظام المعادلتين الآتي",
+    stem,
+    printedAnswer: "(1, 2)",
+    computedAnswer: "(1, 2)",
+    check: null,
+    tier: "medium",
+    tierSource: "default",
+    status: "verified",
+    verificationSource: "sympy+book",
+  });
+  // Different enough that the validator's similarity does not see them as twins.
+  const POOL = [
+    unitTestOpen("syn-a", 6, "y = 4x\ny = 5 - x^2"),
+    unitTestOpen("syn-b", 7, "y - x = 15\nx^2 + y^2 = 64"),
+    unitTestOpen("syn-c", 9, "y = -x^2 - x + 12\ny = x^2 + 7x + 12"),
+  ];
+  const itemsFor = (id: string): readonly BookItem[] => (id === lesson ? POOL : []);
+
+  it("is application, three marks", () => {
+    assert.deepEqual(liveSlot("unit-test"), { competency: "application", marks: MARKS_BY_COMPETENCY.application });
+    assert.equal(liveSlot("unit-test").marks, 3);
+    // The other kinds are unchanged.
+    assert.equal(liveSlot("exercise").competency, "application");
+    assert.equal(liveSlot("unit-test-mcq").competency, "understanding");
+  });
+
+  it("counts toward the plan for a short-answer-only request, and not for a choice-only one", () => {
+    const base = { objectives: [objective("o1", lesson)], count: 100, subjectId: "mathematics", enabled: true, itemsFor };
+    const short = planBook({ ...base, assessmentTypes: ["short_answer"] });
+    assert.ok(short.k > 0, "a unit-test item must make a short-answer request plan something");
+    assert.equal(short.supplied.byType.short_answer, short.k);
+    assert.equal(short.supplied.byCompetency.application, short.k);
+    assert.equal(short.supplied.marks, short.k * 3);
+    assert.equal(planBook({ ...base, assessmentTypes: ["multiple_choice"] }).k, 0);
+  });
+
+  it("is capped by the eligible count and by half the paper", () => {
+    const base = { objectives: [objective("o1", lesson)], assessmentTypes: ["short_answer"] as QuestionType[], subjectId: "mathematics", enabled: true, itemsFor };
+    // Never more than is eligible; it may be fewer, because the plan is what the
+    // dry run can DELIVER and short stems can read as near-duplicates.
+    const all = planBook({ ...base, count: 100 }).k;
+    assert.ok(all > 0 && all <= POOL.length, `planned ${all} of ${POOL.length}`);
+    assert.equal(planBook({ ...base, count: 4 }).k, 2);
+  });
+
+  it("is drawn with its citation and no check", () => {
+    const drawnQs = drawBookQuestions({
+      objectives: [objective("o1", lesson)],
+      assessmentTypes: ["short_answer"],
+      difficulty: "standard",
+      k: 2,
+      accepted: [],
+      rng: lcg(3),
+      itemsFor,
+    });
+    assert.equal(drawnQs.length, 2);
+    for (const q of drawnQs) {
+      assert.equal(q.type, "short_answer");
+      assert.equal(q.check, null);
+      assert.equal(q.competencyKey, "application");
+      assert.equal(q.marks, 3);
+      assert.match(String(q.aiMetadata["bookCitationAr"]), /^اختبار نهاية الوحدة ١، س /u);
+    }
   });
 });

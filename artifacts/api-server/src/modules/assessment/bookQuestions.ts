@@ -11,7 +11,7 @@
  * Ordering is the whole point of `assembleLivePaper`: the model's surplus is cut
  * BEFORE the book questions are added, so none of them is ever the one cut.
  */
-import { bookItemsForLesson } from "@workspace/curriculum/bookItems";
+import { bookItemsForLesson, type BookItem, type BookItemKind } from "@workspace/curriculum/bookItems";
 import type { CurriculumObjective } from "@workspace/curriculum";
 import type { Difficulty, QuestionType } from "@workspace/db";
 import { MARKS_BY_COMPETENCY, type CompetencyKey } from "./competency.ts";
@@ -42,6 +42,8 @@ export interface BookPlanRequest {
    * that ignored this would tell the model about a paper that will not exist.
    */
   avoidIds?: ReadonlySet<string>;
+  /** A lesson's items, when the caller holds its own (tests). Absent means the served data. */
+  itemsFor?: (lessonId: string) => readonly BookItem[];
 }
 
 /**
@@ -121,7 +123,8 @@ export function planBook(req: BookPlanRequest): { k: number; supplied: BookSuppl
   for (const o of req.objectives) if (o.lessonId) lessons.add(o.lessonId);
   let eligible = 0;
   for (const lessonId of lessons) {
-    for (const item of bookItemsForLesson(lessonId)) {
+    for (const item of (req.itemsFor ?? bookItemsForLesson)(lessonId)) {
+      // `exercise` and `unit-test` are both short answers; only the multiple choice is a choice.
       if (item.kind === "unit-test-mcq" ? wantChoice : wantShort) eligible += 1;
     }
   }
@@ -134,6 +137,7 @@ export function planBook(req: BookPlanRequest): { k: number; supplied: BookSuppl
     k: cap,
     accepted: [],
     ...(req.avoidIds ? { avoidIds: req.avoidIds } : {}),
+    ...(req.itemsFor ? { itemsFor: req.itemsFor } : {}),
     rng: mulberry32(PLAN_SEED),
   });
   const drawn = dry.slice(0, cap);
@@ -146,11 +150,13 @@ export function planBook(req: BookPlanRequest): { k: number; supplied: BookSuppl
  * from the book. Solving a system is application; picking the satisfying pair
  * is understanding.
  */
-const SLOT: Record<"exercise" | "unit-test-mcq", CompetencyKey> = {
+const SLOT: Record<BookItemKind, CompetencyKey> = {
   exercise: "application",
+  // An open question from the unit test: solving, like an exercise.
+  "unit-test": "application",
   "unit-test-mcq": "understanding",
 };
-const liveSlot = (kind: "exercise" | "unit-test-mcq") => ({
+export const liveSlot = (kind: BookItemKind) => ({
   competency: SLOT[kind],
   marks: MARKS_BY_COMPETENCY[SLOT[kind]],
 });
@@ -165,6 +171,8 @@ export interface BookDrawRequest {
   accepted: readonly GeneratedQuestion[];
   /** Book item ids the teacher has already been shown (a regeneration). */
   avoidIds?: ReadonlySet<string>;
+  /** A lesson's items, when the caller holds its own (tests). Absent means the served data. */
+  itemsFor?: (lessonId: string) => readonly BookItem[];
   rng: () => number;
 }
 
@@ -203,6 +211,7 @@ function drawPass(
         session,
         rng: req.rng,
         accepted: [...already, ...out],
+        ...(req.itemsFor ? { pool: req.itemsFor(objective.lessonId!) } : {}),
       });
       if (q) {
         out.push(q);
