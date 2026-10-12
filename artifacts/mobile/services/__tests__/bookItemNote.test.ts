@@ -28,6 +28,12 @@ describe('bookItemNote', () => {
     assert.equal(bookItemNote({ generator: 'llm' }, 'en'), null);
   });
 
+  it('says nothing once the teacher has edited the question', () => {
+    assert.equal(bookItemNote(META, 'ar', true), null);
+    assert.equal(bookItemNote(META, 'en', true), null);
+    assert.equal(bookItemNote(META, 'ar', false), 'كتاب التمارين ص ١١، س ٣ · الحل محسوب من نص السؤال');
+  });
+
   it('never throws on the bag an older question has', () => {
     for (const meta of [null, undefined, {}, { generator: 'book' }, { generator: 'book', bookCitationAr: 5 }]) {
       assert.equal(bookItemNote(meta as never, 'ar'), null);

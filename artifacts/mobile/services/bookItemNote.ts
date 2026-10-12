@@ -10,8 +10,13 @@
 export function bookItemNote(
   meta: Record<string, unknown> | null | undefined,
   lang: 'ar' | 'en',
+  /**
+   * The teacher changed the question. An edit keeps `aiMetadata`, so without
+   * this the screen would go on saying a rewritten question came from the book.
+   */
+  edited = false,
 ): string | null {
-  if (!meta || meta['generator'] !== 'book') return null;
+  if (edited || !meta || meta['generator'] !== 'book') return null;
   const pick = (ar: string, en: string): string | null => {
     const v = meta[lang === 'ar' ? ar : en];
     return typeof v === 'string' && v.trim() ? v.trim() : null;

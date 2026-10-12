@@ -618,9 +618,9 @@ export default function EvaluationDetailScreen() {
             {/* Where in the NCCD book this came from, and how its key was
                 established when that is not "verified". Nothing for a question
                 that did not come from a book. */}
-            {bookItemNote(q.aiMetadata, lang === 'ar' ? 'ar' : 'en') ? (
+            {bookItemNote(q.aiMetadata, lang === 'ar' ? 'ar' : 'en', q.source === 'ai_edited') ? (
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, marginBottom: 6, textAlign: align }}>
-                {isolateForeignRuns(bookItemNote(q.aiMetadata, lang === 'ar' ? 'ar' : 'en') ?? '')}
+                {isolateForeignRuns(bookItemNote(q.aiMetadata, lang === 'ar' ? 'ar' : 'en', q.source === 'ai_edited') ?? '')}
               </Text>
             ) : null}
             <Text
