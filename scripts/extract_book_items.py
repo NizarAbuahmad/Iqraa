@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+import unicodedata
 from dataclasses import dataclass, field
 from fractions import Fraction
 from pathlib import Path
@@ -52,13 +53,24 @@ class Entry:
     last: int
     family: str           # system | derivative | derivative_at | mcq_pair
     instruction_ar: str
-    page: int | None = None                      # mcq_pair only: the guide page holding the test
+    page: int | None = None                      # mcq_pair / unit_open: the guide page holding the test
     params: dict = field(default_factory=dict)
+    numbers: tuple[int, ...] = ()                # unit_open: exactly these items (first..last is only the span)
+    allow_none: bool = False                     # unit_open: «لا يوجد حل» is a servable answer for this row
+
+    @property
+    def items(self) -> tuple[int, ...]:
+        return self.numbers or tuple(range(self.first, self.last + 1))
 
 
 EX1, EX2, G1 = 'math-s1-exercise-book', 'math-s2-exercise-book', 'math-s1-teacher-guide'
 SYSTEM_AR = 'أحل نظام المعادلتين الآتي'
 PAIR_AR = 'أي الأزواج المرتبة الآتية يمثل حلا لنظام المعادلتين الآتي؟'
+NO_SOLUTION_PARAM_AR = 'أجد جميع قيم c التي لا يكون للنظام الآتي أي حل'
+# What the guide prints for a system with no real solution, after NFKC (the text
+# layer has it in Arabic presentation forms), and what an item with that answer stores.
+NO_SOLUTION_AR = 'لا يوجد حل'
+APPENDIX_AR = 'أنظر ملحق الإجابات'
 
 TABLE: list[Entry] = [
     Entry(EX1, 's1', 1, 2, 1, 12, 'system', SYSTEM_AR),
@@ -67,8 +79,15 @@ TABLE: list[Entry] = [
     Entry(EX2, 's2', 6, 2, 15, 16, 'derivative_at', 'أجد قيمة f′(-1) للاقتران الآتي', params={'point': '-1'}),
     Entry(G1, 's1', 1, 2, 1, 1, 'mcq_pair', PAIR_AR, page=47),
     Entry(G1, 's1', 1, 3, 2, 2, 'mcq_pair', PAIR_AR, page=47),
+    # Guide p.47, the open questions of the unit test. Items 6, 10 and 11 are linear-quadratic
+    # systems (curriculum lesson u1_l1), 8 and 9 quadratic-quadratic (u1_l2); 7 and 12 are
+    # not here on purpose: 7 opts in to «لا يوجد حل», 12 is an inequality (out of scope).
+    Entry(G1, 's1', 1, 2, 6, 10, 'unit_open', SYSTEM_AR, page=47, numbers=(6, 10)),
+    Entry(G1, 's1', 1, 2, 7, 7, 'unit_open', SYSTEM_AR, page=47, allow_none=True),
+    Entry(G1, 's1', 1, 2, 11, 11, 'unit_open', NO_SOLUTION_PARAM_AR, page=47, params={'param': 'c'}),
+    Entry(G1, 's1', 1, 3, 8, 9, 'unit_open', SYSTEM_AR, page=47),
 ]
-MAX_EXP = {'system': 12, 'derivative': 9, 'derivative_at': 9, 'mcq_pair': 9}
+MAX_EXP = {'system': 12, 'derivative': 9, 'derivative_at': 9, 'mcq_pair': 9, 'unit_open': 9}
 
 
 # ── text access ──────────────────────────────────────────────────────────────
@@ -131,6 +150,144 @@ def lead_math(body: str) -> str:
     """The body up to its first Arabic character: what follows is the next section's prose."""
     m = ARABIC.search(body)
     return (body[:m.start()] if m else body).strip()
+
+
+# ── guide p.47: the open questions of the unit test ─────────────────────────
+# This page is segmented by anchors written for THIS page only: its items are
+# not tab-marked like the exercise pages, and 10 and 11 share one system that
+# sits in the middle of their Arabic prose. Anything not found exactly once is
+# left out of the result (build() quarantines it as `item_not_found`); nothing is
+# guessed, and Arabic never reaches SymPy.
+def nfkc(s: str) -> str:
+    """The text layer gives Arabic in presentation forms; NFKC restores the letters."""
+    return unicodedata.normalize('NFKC', s)
+
+
+C_TOKEN = re.compile(r'(?<![A-Za-z])c(?![A-Za-z])')
+ITEM_END = re.compile(r'[\t ]\s*(\d{1,2})\s*$')   # an Arabic instruction line ends with its number
+
+
+def item_ends(lines: list[str]) -> dict[int, list[int]]:
+    out: dict[int, list[int]] = {}
+    for i, l in enumerate(lines):
+        if ARABIC.search(l) and (m := ITEM_END.search(l)):
+            out.setdefault(int(m.group(1)), []).append(i)
+    return out
+
+
+def split_unit_open(text: str) -> dict[int, str]:
+    """Raw Latin stems, by item number, for the items of this page that can be read."""
+    lines = text.split('\n')
+    out: dict[int, str] = {}
+    last_plain = -1
+    # Items 6-9: one line `N <first equation>` (a space, not a tab) and the equation under it.
+    for n in (6, 7, 8, 9):
+        heads = [i for i, l in enumerate(lines) if re.match(rf'{n} \S', l)]
+        if len(heads) != 1:
+            continue
+        i = heads[0]
+        second = lines[i + 1] if i + 1 < len(lines) else ''
+        first = lines[i][len(str(n)) + 1:]
+        if ARABIC.search(first) or ARABIC.search(second) or '=' not in first or '=' not in second \
+                or re.match(r'\d{1,2} ', second):
+            continue
+        out[n] = f'{first}\n{second}'
+        last_plain = max(last_plain, i + 1)
+    # Items 10 and 11: the system is the two Latin lines under the one Arabic header line that
+    # names the parameter `c`; its value is on the line `c = <v> …` that ends with the number 10,
+    # and item 11's own line ends with 11.
+    ends = {n: ix[0] for n, ix in item_ends(lines).items() if len(ix) == 1}
+    headers = [
+        i for i in range(max(last_plain, 0), len(lines) - 2)
+        if ARABIC.search(lines[i]) and C_TOKEN.search(lines[i])
+        and not ARABIC.search(lines[i + 1]) and '=' in lines[i + 1]
+        and not ARABIC.search(lines[i + 2]) and '=' in lines[i + 2]
+    ]
+    value = [(i, m) for i, l in enumerate(lines) if (m := re.match(r'c = (\d+)\b', l))]
+    if len(headers) == 1 and len(value) == 1 and ends.get(10) == value[0][0] and 11 in ends \
+            and ends[11] > value[0][0] and C_TOKEN.search(lines[ends[11]]):
+        h = headers[0]
+        system = f'{lines[h + 1]}\n{lines[h + 2]}'
+        if len(C_TOKEN.findall(system)) == 1:
+            out[11] = system
+            out[10] = C_TOKEN.sub(value[0][1].group(1), system)
+    return dict(sorted(out.items()))
+
+
+def printed_entries(text: str) -> tuple[list[str], int]:
+    """(the printed answers on guide p.47 as printed, whitespace normalised; how many ignored).
+
+    The block follows item 12's system and ends at the banner line `الوحدة`. Its order is
+    NOT the item order, and a fraction arrives split over lines, so an entry starts at a
+    line beginning `(` or `c ` or at one of the two Arabic phrases, and every other line
+    continues the entry before it. The appendix reference is recognised and ignored.
+    """
+    lines = [nfkc(l).strip() for l in text.split('\n')]
+    heads = item_ends(text.split('\n')).get(12, [])
+    stops = [i for i, l in enumerate(lines) if l == 'الوحدة']
+    if len(heads) != 1 or len(stops) != 1 or stops[0] <= heads[0]:
+        raise Reject('answer_block_not_found')
+    entries: list[list[str]] = []
+    ignored = 0
+    for l in lines[heads[0] + 1:stops[0]]:
+        if not l:
+            continue
+        phrase = l.rstrip('. ')
+        if phrase == APPENDIX_AR:
+            entries.append([])      # a marker that swallows nothing: it is dropped below
+            ignored += 1
+        elif l.startswith('(') or l.startswith('c ') or phrase == NO_SOLUTION_AR:
+            entries.append([l])
+        elif entries:
+            entries[-1].append(l)   # a continuation (a split fraction); stem lines before the first entry are not
+    out = [re.sub(r'\s+', ' ', ' '.join(e)).strip() for e in entries if e]
+    if not out:
+        raise Reject('answer_block_not_found')
+    return out, ignored
+
+
+# Matching a printed answer to an item is by VALUE. `flat` drops all whitespace and the
+# fraction bar: the text layer splits `-11/3` into «- 11» over «3», so the printed form
+# flattens to `-113` and so does ours. A collision with a different true answer would
+# need a stem that computes an integer digit-for-digit equal to the printed fraction AND a
+# solution of the same shape, for the one item that entry is being offered to - and each
+# entry is consumed once. Solution points may come in any order (the book prints them in
+# its own), so a list of `(a,b)` points is compared as a set of points; coordinates keep
+# their order, and `(2. 1)` is the decimal 2.1, never the point (2, 1).
+def flat(s: str) -> str:
+    return re.sub(r'[\s/]', '', s)
+
+
+def _points(s: str) -> list[str] | None:
+    f = flat(s)
+    pts = re.findall(r'\([^()]*\)', f)
+    return sorted(pts) if pts and ','.join(pts) == f else None
+
+
+def same_answer(printed: str, computed: str) -> bool:
+    if flat(printed) == flat(computed):
+        return True
+    a, b = _points(printed), _points(computed)
+    return a is not None and a == b
+
+
+def pair_printed(records: list[dict], entries: list[str]) -> list[str]:
+    """Attach each record's printed answer by value, in item order, each entry once.
+
+    Mutates the records (printedAnswer, status, verificationSource) and returns the
+    entries nobody took, as printed. A record that finds none stays `computed`.
+    """
+    free = list(entries)
+    for r in sorted(records, key=lambda r: r['source']['number']):
+        hit = next((e for e in free if same_answer(e, r['computedAnswer'])), None)
+        if hit is not None:
+            free.remove(hit)
+        # agreement was just established by value, so the printed side of the truth table is
+        # the computed answer; the record keeps the book's own text.
+        r['status'], r['verificationSource'] = assign_state(
+            r['computedAnswer'], r['computedAnswer'] if hit is not None else None, False)
+        r['printedAnswer'] = None if hit is None else re.sub(r'\s+', ' ', hit).strip()
+    return free
 
 
 # ── normalisation ────────────────────────────────────────────────────────────
@@ -203,7 +360,12 @@ def _prime_factors(n: int) -> list[int]:
     return out
 
 
-def solve_system(stem: str) -> str:
+def solve_system(stem: str, allow_none: bool = False) -> str:
+    """`allow_none`: a system SymPy proves has no real solution is answered «لا يوجد حل».
+
+    Only a row that opts in gets that - for an exercise it stays quarantined, because there the
+    book printed nothing to check it against. An undecidable system is never an answer.
+    """
     lines = stem.split('\n')
     if len(lines) != 2:
         raise Reject('not_two_equations')
@@ -211,11 +373,44 @@ def solve_system(stem: str) -> str:
     sols = solve([Eq(*eq_sides(l)) for l in lines], [X, Y], dict=True)
     real = [s for s in sols if len(s) == 2 and all(v.is_real is True for v in s.values())]
     if not real:
+        if allow_none and all(any(v.is_real is False for v in s.values()) for s in sols):
+            return NO_SOLUTION_AR
         raise Reject('no_real_solution')
     if not all(is_clean(v) for s in real for v in s.values()):
         raise Reject('not_closed_form')
     real.sort(key=lambda s: (float(s[X]), float(s[Y])))
     return ', '.join(f'({fmt(s[X], decimal)}, {fmt(s[Y], decimal)})' for s in real)
+
+
+def solve_param_no_solution(stem: str, param: str) -> str:
+    """The values of `param` for which the system has no real solution, as `c < a`.
+
+    One equation is linear in x, y and free of the parameter: solve it for a variable, put
+    that into the other, and the system is a quadratic in the remaining one. It has no real
+    root exactly when the discriminant is negative.
+    """
+    from sympy import Poly, S, solve_univariate_inequality  # noqa: PLC0415
+    c = Symbol(param, real=True)
+    lines = stem.split('\n')
+    if len(lines) != 2:
+        raise Reject('not_two_equations')
+    sides = [eq_sides(l) for l in lines]
+    exprs = [(l - r).subs(Symbol(param), c) for l, r in sides]
+    linear = [e for e in exprs if not e.has(c) and Poly(e, X, Y).total_degree() == 1]
+    other = [e for e in exprs if e not in linear]
+    if len(linear) != 1 or len(other) != 1:
+        raise Reject('no_linear_equation')
+    var = X if linear[0].coeff(X) != 0 else Y
+    rest = Y if var == X else X
+    quadratic = Poly(other[0].subs(var, solve(linear[0], var)[0]), rest)
+    if quadratic.degree() != 2:
+        raise Reject('not_a_quadratic')
+    a, b, k = quadratic.all_coeffs()
+    allowed = solve_univariate_inequality(b**2 - 4 * a * k < 0, c, relational=False)
+    if not (getattr(allowed, 'is_Interval', False) and allowed.start == S.NegativeInfinity
+            and allowed.right_open and allowed.end.is_Rational):
+        raise Reject('not_a_half_line')
+    return f'{param} < {fmt(allowed.end)}'
 
 
 def parse_f(stem: str):
@@ -286,20 +481,23 @@ def tier_for(number: int, first: int, last: int) -> str:
 
 
 # ── build ────────────────────────────────────────────────────────────────────
-def build() -> tuple[dict[str, list[dict]], list[dict]]:
+def build_all() -> tuple[dict[str, list[dict]], list[dict], dict]:
+    """(items by source, quarantined, the pairing facts `report.json` also carries)."""
     by_source: dict[str, list[dict]] = {}
     rejects: list[dict] = []
+    open_items: dict[tuple[str, int], list[dict]] = {}     # unit_open records waiting for their printed answers
     for e in TABLE:
         lesson_id = curriculum_lesson_id(e.semester, e.unit, e.lesson)
         if lesson_id is None:
             raise SystemExit(f'table row {e.source} u{e.unit} l{e.lesson} has no curriculum lesson')
-        if e.family == 'mcq_pair':
+        if e.family in ('mcq_pair', 'unit_open'):
             text = page_text(e.source, e.page)
-            blocks, page, book_page = split_questions(text), e.page, int(text.split('\n', 1)[0].strip())
+            split = split_questions if e.family == 'mcq_pair' else split_unit_open
+            blocks, page, book_page = split(text), e.page, int(text.split('\n', 1)[0].strip())
         else:
             page = exercise_page(e.source, e.unit, e.lesson)
             blocks, book_page = split_items(page_text(e.source, page), e.first), page
-        for n in range(e.first, e.last + 1):
+        for n in e.items:
             base = {
                 'id': f'bi-{e.source}-u{e.unit}l{e.lesson}-{n}',
                 'lessonId': lesson_id,
@@ -312,6 +510,12 @@ def build() -> tuple[dict[str, list[dict]], list[dict]]:
                     stem, options, key = solve_mcq_pair(blocks[n])
                     computed, kind, tier, tier_source = options[key], 'unit-test-mcq', 'medium', 'default'
                     extra = {'options': options}
+                elif e.family == 'unit_open':
+                    stem = normalise_stem(blocks[n], MAX_EXP[e.family])
+                    computed = (solve_param_no_solution(stem, e.params['param']) if 'param' in e.params
+                                else solve_system(stem, e.allow_none))
+                    kind, tier, tier_source = 'unit-test', 'medium', 'default'
+                    extra = {}
                 else:
                     stem = normalise_stem(lead_math(blocks[n]), MAX_EXP[e.family])
                     computed = {
@@ -322,15 +526,38 @@ def build() -> tuple[dict[str, list[dict]], list[dict]]:
                     kind, tier, tier_source = 'exercise', tier_for(n, e.first, e.last), 'position'
                     extra = {}
                 status, how = assign_state(computed, None, False)
-                by_source.setdefault(e.source, []).append({
+                record = {
                     **base, 'kind': kind, 'instruction': e.instruction_ar, 'stem': stem, **extra,
                     'printedAnswer': None, 'computedAnswer': computed, 'check': None,
                     'tier': tier, 'tierSource': tier_source, 'status': status, 'verificationSource': how,
-                })
+                }
+                by_source.setdefault(e.source, []).append(record)
+                if e.family == 'unit_open':
+                    open_items.setdefault((e.source, e.page), []).append(record)
             except Reject as r:
                 rejects.append({**base, 'family': e.family, 'reason': str(r)})
             except Exception as ex:  # noqa: BLE001 - any parse/solve failure quarantines; nothing is guessed
                 rejects.append({**base, 'family': e.family, 'reason': f'{type(ex).__name__}: {ex}'[:120]})
+    unmatched: list[str] = []
+    notes: dict[str, str] = {}
+    for (source, page), records in open_items.items():
+        try:
+            entries, _ignored = printed_entries(page_text(source, page))
+        except Reject as r:
+            entries = []
+            for rec in records:
+                notes[rec['id']] = f'{r}: no printed answer could be read from the page'
+        left = pair_printed(records, entries)
+        unmatched += left
+        for rec in records:
+            if rec['status'] == 'computed' and rec['id'] not in notes:
+                notes[rec['id']] = ('the guide prints answers on this page and none equals the computed '
+                                    'answer; see unmatchedPrinted' if entries else 'no printed answer found')
+    return by_source, rejects, {'unmatchedPrinted': unmatched, 'notes': dict(sorted(notes.items()))}
+
+
+def build() -> tuple[dict[str, list[dict]], list[dict]]:
+    by_source, rejects, _extras = build_all()
     return by_source, rejects
 
 
@@ -340,7 +567,7 @@ def _order(rec: dict) -> tuple:
 
 
 def main() -> int:
-    by_source, rejects = build()
+    by_source, rejects, extras = build_all()
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     counts: dict[str, int] = {}
     for source, items in by_source.items():
@@ -352,7 +579,7 @@ def main() -> int:
     counts['quarantined'] = counts.get('quarantined', 0) + len(rejects)
     rejects.sort(key=_order)
     (OUT_DIR / 'report.json').write_text(
-        json.dumps({'counts': counts, 'quarantined': rejects}, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+        json.dumps({'counts': counts, **extras, 'quarantined': rejects}, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     print(json.dumps(counts))
     return 0
 

@@ -6,15 +6,17 @@
  *     never more than half the paper, and never a type that was not asked for.
  *  2. Unit-test multiple choice self-marks: its own key grades correct and a
  *     distractor grades incorrect.
- *  3. A `computed` item never reaches the verification pass (`check` is null)
- *     and says so in its metadata — it must not earn «تم التحقق».
+ *  3. No book item reaches the verification pass (`check` is null). A `computed`
+ *     item says so in its metadata — it must not earn «تم التحقق» — and a
+ *     `verified` one (key confirmed by SymPy AND printed in the guide) says
+ *     nothing, as `bookStatusLabel` promises.
  *  4. Students never receive the key.
  *  5. Without a `lessonId`, or for another subject, nothing changes.
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { bookQuestion, generateMockEvaluation } from "../mockGenerator.ts";
-import type { BookItem } from "@workspace/curriculum/bookItems";
+import { bookItemsForLesson, type BookItem } from "@workspace/curriculum/bookItems";
 import { QUESTION_TYPES } from "../questionTypes.ts";
 import { validateGenerated } from "../validator.ts";
 import type { CurriculumObjective } from "@workspace/curriculum";
@@ -101,12 +103,25 @@ describe("evaluation generator — real book items", () => {
     }
   });
 
-  it("never lets a computed item reach the verification pass", () => {
-    for (const q of drawn(generate({ count: 8 }))) {
-      assert.equal(q.check ?? null, null, "a computed key must not earn the verified badge");
-      assert.equal(q.aiMetadata["bookStatus"], "computed");
-      assert.equal(q.aiMetadata["bookLabelAr"], "الحل محسوب من نص السؤال");
+  it("never lets a book item reach the verification pass, and labels only what is computed", () => {
+    const pool = bookItemsForLesson(LESSON);
+    const statuses = new Set<unknown>();
+    for (const seed of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]) {
+      for (const q of drawn(generate({ count: 8, seed }))) {
+        const item = pool.find(i => i.id === q.aiMetadata["bookItemId"])!;
+        assert.equal(q.check ?? null, null, "a book key must not go through the verification pass");
+        assert.equal(q.aiMetadata["bookStatus"], item.status);
+        statuses.add(item.status);
+        if (item.status === "computed") {
+          assert.equal(q.aiMetadata["bookLabelAr"], "الحل محسوب من نص السؤال");
+        } else {
+          assert.equal(item.status, "verified");
+          assert.equal(q.aiMetadata["bookLabelAr"], null, "a verified key carries no label");
+        }
+      }
     }
+    // Both states must have been drawn, or this proves nothing about the one it did not see.
+    assert.deepEqual([...statuses].sort(), ["computed", "verified"]);
   });
 
   it("keeps the key off the student's copy", () => {
@@ -203,7 +218,7 @@ describe("evaluation generator — real book items", () => {
   });
 });
 
-/** A synthetic unit-test short answer: no data file holds one yet. */
+/** A synthetic unit-test short answer, so the draw can be isolated from the served data. */
 const unitTestOpen = (id: string, over: Partial<BookItem> = {}): BookItem => ({
   id,
   lessonId: LESSON,
@@ -260,6 +275,28 @@ describe("bookQuestion — the unit-test short-answer kind", () => {
     }
     assert.deepEqual([...seen].sort(), ["syn-ex", "syn-ut"]);
     assert.equal(draw([unitTestOpen("syn-ut")], { wantShort: false, wantChoice: true }), null);
+  });
+
+  it("builds every served unit-test item from the data into a question the type module accepts", () => {
+    const served = ["kbl-math-s1-nccd-u1_l1", "kbl-math-s1-nccd-u1_l2"]
+      .flatMap(l => bookItemsForLesson(l)).filter(i => i.kind === "unit-test");
+    assert.deepEqual(served.map(i => i.source.number).sort((a, b) => a - b), [6, 7, 8, 9, 10, 11]);
+    const answers: Record<number, string> = {};
+    for (const item of served) {
+      const q = draw([item], { objective: objective(item.lessonId) });
+      assert.ok(q, `${item.id} was spent without being built`);
+      assert.equal(q.check, null, item.id);
+      assert.equal(q.aiMetadata["bookStatus"], item.status, item.id);
+      const errors = QUESTION_TYPES[q.type].validate({
+        type: q.type, body: q.body, expectedAnswer: q.expectedAnswer, rubric: q.rubric,
+      } as never);
+      assert.deepEqual(errors, [], `${item.id}: ${errors.join("; ")}`);
+      answers[item.source.number] = String((q.expectedAnswer as { modelAnswer: string }).modelAnswer);
+    }
+    // Shown in display notation; the Arabic answer and the inequality arrive as the book states them.
+    assert.equal(answers[7], "لا يوجد حل");
+    assert.equal(answers[11], "c < −1/3");
+    assert.equal(answers[10], "(−11/3, −7/3), (3, 1)");
   });
 
   it("receives the item's own kind in the slot function", () => {

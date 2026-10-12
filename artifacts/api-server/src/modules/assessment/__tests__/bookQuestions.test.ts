@@ -136,11 +136,13 @@ describe("planBookDraw", () => {
 
   it("plans what the draw can deliver, not how many items are eligible", () => {
     const o = [objective("o1", SYSTEMS)];
-    const eligibleShort = bookItemsForLesson(SYSTEMS).filter(i => i.kind === "exercise").length;
+    const eligibleShort = bookItemsForLesson(SYSTEMS).filter(i => i.kind === "exercise" || i.kind === "unit-test").length;
     const planned = plan({ objectives: o, assessmentTypes: ["short_answer"], count: 40 });
-    // The eight exercises are systems that read as near-duplicates of each other.
-    assert.equal(eligibleShort, 8);
-    assert.equal(planned, 4);
+    // Eight exercises and four open questions from the unit test (guide p.47, items 6, 7, 10, 11):
+    // systems that read as near-duplicates of each other, so the draw delivers 5 of the 12.
+    assert.equal(eligibleShort, 12);
+    assert.equal(planned, 5);
+    assert.ok(planned < eligibleShort);
   });
 
   it("every lesson with book items: a draw of the planned size delivers exactly the plan", () => {

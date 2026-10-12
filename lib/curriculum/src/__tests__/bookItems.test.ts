@@ -30,13 +30,35 @@ const SOURCES = ['math-s1-exercise-book', 'math-s2-exercise-book', 'math-s1-teac
 const items: BookItem[] = SOURCES.flatMap(id => read(`../data/book-items/${id}.json`).items);
 const report = read('../data/book-items/report.json') as {
   counts: Record<string, number>;
+  unmatchedPrinted: string[];
+  notes: Record<string, string>;
   quarantined: { id: string; reason: string }[];
 };
 const ARABIC = /[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/;
+/** The one Arabic answer the data may hold: what the guide prints for a system with no real solution. */
+const NO_SOLUTION = 'لا يوجد حل';
+
+/**
+ * The extractor's `flat`: no whitespace and no fraction bar, because the text layer splits
+ * `-11/3` into «- 11» over «3» and the printed form flattens to `-113`, as ours does.
+ */
+const flat = (s: string) => s.replace(/[\s/]/g, '');
+/** A list of `(a,b)` points as a sorted set; the book prints its points in its own order. */
+const points = (s: string): string[] | null => {
+  const f = flat(s);
+  const pts = f.match(/\([^()]*\)/g) ?? [];
+  return pts.length > 0 && pts.join(',') === f ? [...pts].sort() : null;
+};
+const sameValue = (printed: string, computed: string) => {
+  if (flat(printed) === flat(computed)) return true;
+  const a = points(printed);
+  const b = points(computed);
+  return a !== null && b !== null && a.join('|') === b.join('|');
+};
 
 describe('book items — the committed data', () => {
   it('has enough items that a run which quarantines everything fails here', () => {
-    assert.ok(items.length >= 20, `only ${items.length} served items`);
+    assert.ok(items.length >= 30, `only ${items.length} served items`);
   });
 
   it('joins every item to a real curriculum lesson', () => {
@@ -63,15 +85,57 @@ describe('book items — the committed data', () => {
     assert.equal(new Set(items.map(i => i.id)).size, items.length);
     for (const i of items) {
       assert.ok(i.stem.length > 0 && !ARABIC.test(i.stem), `${i.id}: ${i.stem}`);
-      assert.ok(i.computedAnswer.length > 0 && !ARABIC.test(i.computedAnswer), i.id);
+      assert.ok(i.computedAnswer.length > 0, i.id);
+      if (i.computedAnswer === NO_SOLUTION) {
+        // the sentinel is allowed on a unit-test open question only, where the book prints it
+        assert.equal(i.kind, 'unit-test', `${i.id}: «${NO_SOLUTION}» on a ${i.kind}`);
+        assert.equal(i.printedAnswer, NO_SOLUTION, i.id);
+      } else {
+        assert.ok(!ARABIC.test(i.computedAnswer), `${i.id}: ${i.computedAnswer}`);
+      }
     }
   });
 
   it('never claims verified without the book’s printed answer, and never carries a check otherwise', () => {
     for (const i of items) {
       if (i.status === 'verified') assert.ok(i.printedAnswer, `${i.id}: verified with no printed answer`);
+      if (i.status === 'verified') assert.equal(i.verificationSource, 'sympy+book', i.id);
+      if (i.status !== 'verified') assert.equal(i.printedAnswer, null, `${i.id}: a ${i.status} item has no printed answer`);
       if (i.status !== 'verified') assert.equal(i.check, null, `${i.id}: a ${i.status} item must not reach the verification pass`);
       assert.ok(SERVED_STATUSES.includes(i.status), `${i.id}: ${i.status} is not servable`);
+    }
+  });
+
+  it('verifies only where the printed answer is the computed one, compared by value', () => {
+    const verified = items.filter(i => i.status === 'verified');
+    assert.ok(verified.length >= 5, `only ${verified.length} verified`);
+    for (const i of verified) {
+      assert.ok(sameValue(i.printedAnswer!, i.computedAnswer), `${i.id}: «${i.printedAnswer}» vs «${i.computedAnswer}»`);
+      // the printed text is the book’s own, whitespace-normalised and nothing else
+      assert.equal(i.printedAnswer, i.printedAnswer!.replace(/\s+/g, ' ').trim(), i.id);
+    }
+  });
+
+  it('keeps the page-47 item whose printed answer disagrees as computed, and says so', () => {
+    const eight = items.find(i => i.id === 'bi-math-s1-teacher-guide-u1l3-8')!;
+    assert.deepEqual([eight.status, eight.printedAnswer, eight.computedAnswer], ['computed', null, '(0, 5), (2, 1)']);
+    assert.deepEqual(report.unmatchedPrinted, ['(0, 5), (2. 1)']);
+    assert.deepEqual(Object.keys(report.notes), [eight.id]);
+    for (const [id, note] of Object.entries(report.notes)) {
+      assert.equal(items.find(i => i.id === id)?.status, 'computed', id);
+      assert.ok(note.length > 0, id);
+    }
+  });
+
+  it('cites a unit-test open question as the unit test, from the guide page that prints it', () => {
+    const open = items.filter(i => i.kind === 'unit-test');
+    assert.deepEqual(open.map(i => i.source.number).sort((a, b) => a - b), [6, 7, 8, 9, 10, 11]);
+    for (const i of open) {
+      assert.deepEqual([i.source.sourceId, i.source.page, i.source.bookPage, i.source.unit], ['math-s1-teacher-guide', 47, 34, 1], i.id);
+      assert.equal(bookCitation(i, 'ar'), `اختبار نهاية الوحدة ١، س ${String(i.source.number).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[Number(d)])}`, i.id);
+      assert.equal(bookCitation(i, 'en'), `Unit 1 test, Q${i.source.number}`, i.id);
+      assert.deepEqual([i.tier, i.tierSource, i.check], ['medium', 'default', null], i.id);
+      assert.equal(i.lessonId, [8, 9].includes(i.source.number) ? 'kbl-math-s1-nccd-u1_l2' : 'kbl-math-s1-nccd-u1_l1', i.id);
     }
   });
 
@@ -180,7 +244,7 @@ describe('displayMath — typing notation to display notation', () => {
   });
 });
 
-/** A synthetic unit-test short-answer item: no data file holds one yet. */
+/** A synthetic unit-test short-answer item, so the reader can be tested apart from the served data. */
 const unitTestOpen = (id: string, over: Partial<BookItem> = {}): BookItem => ({
   id,
   lessonId: 'kbl-synthetic-lesson',
