@@ -1463,17 +1463,15 @@ export class MockAIService extends AIService {
     // classroom mini-quiz) that don't send numQuestions.
     const numQuestions = Math.max(types.length, req.numQuestions ?? types.length * 2);
     // Grouped as a ministry paper is, not interleaved: the picked types in
-    // `QUIZ_TYPE_ORDER`, the count split evenly with the remainder going to the
-    // earlier blocks. `word_problem` is a written answer, so it joins that block.
+    // `QUIZ_TYPE_ORDER`. `word_problem` is a written answer, so it joins that
+    // block. Questions are DRAWN one at a time (below) and sorted into blocks
+    // at the end, so a type whose bank runs dry hands its share to the others
+    // instead of ending the paper.
     const blockTypes = QUIZ_TYPE_ORDER.filter(t =>
       types.some(x => (x === 'word_problem' ? 'short_answer' : x) === t));
-    const plan: QuizQuestion['type'][] = blockTypes.flatMap((t, bi) =>
-      Array<QuizQuestion['type']>(Math.floor(numQuestions / blockTypes.length) + (bi < numQuestions % blockTypes.length ? 1 : 0)).fill(t));
     const basePts = Math.max(1, Math.floor(totalMarks / numQuestions));
 
     const questions: QuizQuestion[] = [];
-    let qIdx = 1;
-    let usedPts = 0;
     const usedStems = new Set<string>();
 
     const pushUnique = (factory: () => QuizQuestion): QuizQuestion => {
@@ -1491,35 +1489,49 @@ export class MockAIService extends AIService {
     };
 
     bankOnly = questionBankPolicy.required;
+    /** Types whose bank has nothing left for this lesson. */
+    const spent = new Set<QuizQuestion['type']>();
+    const made = new Map<QuizQuestion['type'], number>();
     try {
-    for (let i = 0; i < numQuestions; i++) {
-      const type = plan[i];
-      const id = `q${qIdx++}`;
-      // Last question absorbs any rounding difference
-      const isLast = qIdx > numQuestions;
-      const pts = isLast ? Math.max(1, totalMarks - usedPts) : basePts;
-      usedPts += pts;
+    while (questions.length < numQuestions) {
+      // The next question goes to the type with the fewest so far, ties to the
+      // earlier ministry block: an even split (the remainder to the earlier
+      // blocks) that a spent type simply drops out of.
+      const live = blockTypes.filter(t => !spent.has(t));
+      if (live.length === 0) break;
+      const type = live.reduce((best, t) => ((made.get(t) ?? 0) < (made.get(best) ?? 0) ? t : best), live[0]!);
+      const id = `q${questions.length + 1}`;
+      // Rounding is settled once, below, so the order questions are drawn in
+      // does not decide which one carries the remainder.
+      const pts = basePts;
 
-      const tier = quizTier(qIdx - 2);
-      // `word_problem` falls into the short-answer branch (see `plan` above).
-      if (lang === 'ar') {
-        if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_ar(topic, kb, pts, id, req.subject, tier)));
-        else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_ar(topic, kb, pts, id, req.subject, tier)));
-        else if (type === 'fill_blank') questions.push(pushUnique(() => makeQuizFB_ar(topic, kb, pts, id, req.subject, tier)));
-        else questions.push(pushUnique(() => makeQuizSA_ar(topic, kb, pts, id, req.subject, tier)));
-      } else {
-        if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_en(topic, kb, pts, id, req.subject, tier)));
-        else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_en(topic, kb, pts, id, req.subject, tier)));
-        else if (type === 'fill_blank') questions.push(pushUnique(() => makeQuizFB_en(topic, kb, pts, id, req.subject, tier)));
-        else questions.push(pushUnique(() => makeQuizSA_en(topic, kb, pts, id, req.subject, tier)));
+      const tier = quizTier(questions.length);
+      try {
+        // `word_problem` falls into the short-answer branch (see `blockTypes` above).
+        if (lang === 'ar') {
+          if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_ar(topic, kb, pts, id, req.subject, tier)));
+          else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_ar(topic, kb, pts, id, req.subject, tier)));
+          else if (type === 'fill_blank') questions.push(pushUnique(() => makeQuizFB_ar(topic, kb, pts, id, req.subject, tier)));
+          else questions.push(pushUnique(() => makeQuizSA_ar(topic, kb, pts, id, req.subject, tier)));
+        } else {
+          if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_en(topic, kb, pts, id, req.subject, tier)));
+          else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_en(topic, kb, pts, id, req.subject, tier)));
+          else if (type === 'fill_blank') questions.push(pushUnique(() => makeQuizFB_en(topic, kb, pts, id, req.subject, tier)));
+          else questions.push(pushUnique(() => makeQuizSA_en(topic, kb, pts, id, req.subject, tier)));
+        }
+        made.set(type, (made.get(type) ?? 0) + 1);
+      } catch (e) {
+        // This type's bank ran out for the lesson: the others carry on.
+        if (!(e instanceof BankSpentError)) throw e;
+        spent.add(type);
       }
     }
-    } catch (e) {
-      // The lesson's bank ran out: keep what was asked so far.
-      if (!(e instanceof BankSpentError)) throw e;
     } finally {
       bankOnly = false;
     }
+    // Into ministry blocks, stable within a type, and numbered in the order they print.
+    questions.sort((a, b) => QUIZ_TYPE_ORDER.indexOf(a.type) - QUIZ_TYPE_ORDER.indexOf(b.type));
+    questions.forEach((q, i) => { q.id = `q${i + 1}`; });
     if (questions.length === 0) throw new NoQuestionBankError(topic);
     const shortfall = questions.length < numQuestions
       ? { requested: numQuestions, produced: questions.length }

@@ -63,6 +63,7 @@ import {
   type GenerationResult,
 } from "../modules/assessment/mockGenerator";
 import { validateGenerated } from "../modules/assessment/validator";
+import { inPaperOrder } from "../modules/assessment/paperOrder";
 import { contradictionWarning, verificationAfterEdit, verifyAnswerKeys } from "../modules/assessment/keyVerification.ts";
 import {
   assembleLivePaper,
@@ -759,12 +760,13 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
       });
       const modelCount = evaluation.targetQuestionCount - bookPlanned;
 
-      const runLlm = (avoidList: readonly string[], insistent: boolean) => generateWithModel(
+      // `count` defaults to the model's share; the top-up below passes what is missing.
+      const runLlm = (avoidList: readonly string[], insistent: boolean, count = modelCount) => generateWithModel(
         {
           objectives,
           gradeId: evaluation.gradeId,
           assessmentTypes: evaluation.assessmentTypes,
-          count: modelCount,
+          count,
           difficulty: evaluation.difficulty,
           language: evaluation.language,
           bookExcerpts: grounding?.block,
@@ -778,7 +780,9 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
             // Room for a full paper of questions with options and rubrics. A
             // truncated response parses to something plausible, which is worse
             // than an error.
-            max_completion_tokens: 8000,
+            // Scaled to the paper: 30 questions with options and rubrics do not
+            // fit the 8000 that suits ten, and reasoning tokens bill against it.
+            max_completion_tokens: Math.min(24000, Math.max(8000, 2000 + 700 * evaluation.targetQuestionCount)),
             messages: [
               { role: "system", content: prompt.system },
               { role: "user", content: prompt.user },
@@ -814,6 +818,27 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
         }
       }
 
+      // A reply can be well-formed and still short: asked for 20, a model will
+      // often send 10 and stop. Ask once more for only what is missing, with the
+      // stems already written so the second batch is new questions. Best effort
+      // — the paper is served short, and the shortfall warning says so, if it fails.
+      // Measured against the model's own share, not the paper: the book supplies the rest.
+      const missing = modelCount - llm.questions.length;
+      if (missing > 0) {
+        logger.warn(
+          { evaluationId: evaluation.id, asked: modelCount, got: llm.questions.length },
+          "evaluation came back short — asking for the rest",
+        );
+        try {
+          const have = signatureLines(llm.questions.map(q => ({ text: questionStem(q.body) })));
+          const more = await runLlm([...avoid, ...have], false, missing);
+          llm.questions.push(...more.questions);
+          llm.notes.push(...more.notes);
+        } catch (err) {
+          logger.warn({ err, evaluationId: evaluation.id }, "evaluation top-up failed - serving the short paper");
+        }
+      }
+
       generator = "llm";
       modelId = llm.model;
       generationParams["promptVersion"] = GENERATION_PROMPT_VERSION;
@@ -824,14 +849,13 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
       generationNotes.push(...llm.notes);
 
       // The model's surplus is cut to its share first, then the book's questions
-      // are drawn and the paper is put into the type blocks the prompt asked for
-      // (see assembleLivePaper). With a book share the paper cannot exceed the
-      // request, so the surplus trim further down cannot fire.
+      // are drawn and appended (see assembleLivePaper). With a book share the paper
+      // cannot exceed the request, so the surplus trim further down cannot fire;
+      // `inPaperOrder` below puts the whole paper into type blocks.
       const assembled = assembleLivePaper({
         modelQuestions: llm.questions,
         requested: evaluation.targetQuestionCount,
         k: bookPlanned,
-        typeOrder: evaluation.assessmentTypes,
         draw: accepted => drawBookQuestions({
           objectives,
           assessmentTypes: evaluation.assessmentTypes,
@@ -921,7 +945,12 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
         `The generator returned ${surplus} more question${surplus === 1 ? "" : "s"} than the ${evaluation.targetQuestionCount} requested; the extra ${surplus === 1 ? "one was" : "ones were"} left out.`,
       );
     }
-    // After the trim above, so the warning never names a question that is not on the paper.
+    // Stored as a ministry paper: one block per type, in the usual order. After
+    // the surplus trim above, so which questions were dropped is still the
+    // generator's own choice and not "whatever type came last".
+    keyCheck.kept = inPaperOrder(keyCheck.kept, k => k.question.type);
+    // After the trim AND the sort, so the warning never names a question that is
+    // not on the paper and its positions are the ones the review screen shows.
     const contradiction = contradictionWarning(keyCheck.kept);
     if (contradiction) generationNotes.push(contradiction);
     generationParams["keysChecked"] = keyCheck.checked;
