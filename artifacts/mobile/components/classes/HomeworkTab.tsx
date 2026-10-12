@@ -39,6 +39,7 @@ import { toLatinDigits } from '@/services/latinDigits';
 import type { Evaluation } from '@/services/evaluations';
 import {
   ammanToday,
+  clampedDone,
   dueBadge,
   dueDatePresets,
   formatDueDate,
@@ -283,7 +284,10 @@ export function HomeworkTab({
               // Only students with an account can tick, so they — not the whole
               // roster — are what "done" is counted against.
               const noAccount = Math.max(0, item.studentCount - item.trackableCount);
-              const pct = item.trackableCount > 0 ? Math.min(100, Math.round((item.doneCount / item.trackableCount) * 100)) : 0;
+              // A completion is kept after a link is removed, so doneCount can outrun the
+              // denominator; clamp it for the text as well as the bar.
+              const doneShown = clampedDone(item.doneCount, item.trackableCount);
+              const pct = item.trackableCount > 0 ? Math.round((doneShown / item.trackableCount) * 100) : 0;
               return (
                 <Pressable
                   key={item.id}
@@ -315,7 +319,7 @@ export function HomeworkTab({
                         <View style={[styles.fill, { width: `${pct}%`, backgroundColor: ACCENT }]} />
                       </View>
                       <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
-                        {t('hwDoneCount', item.doneCount, item.trackableCount)}
+                        {t('hwDoneCount', doneShown, item.trackableCount)}
                       </Text>
                     </>
                   ) : null}

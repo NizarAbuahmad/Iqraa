@@ -34,7 +34,7 @@ import {
   applyDone,
   dueBadge,
   formatDueDate,
-  splitHomework,
+  homeworkSections,
   type ChildHomework,
   type FamilyHomework,
 } from '@/services/homework';
@@ -156,11 +156,10 @@ export default function SchoolScreen() {
   // The picker reads whichever list arrived, so it survives one of them failing.
   const pickerKids: readonly { key: string; displayName: string }[] = children ?? homework ?? [];
   const hwChild = homework ? (homework.find(c => c.key === selected) ?? homework[0] ?? null) : null;
-  const hwSplit = splitHomework(hwChild?.homework ?? []);
-  const hwEmpty = homework !== null && !hwError && hwSplit.todo.length + hwSplit.done.length === 0;
+  // Whether an item can be ticked is the ITEM's flag (ticking is per class), not the child's.
+  const hw = homeworkSections(hwChild?.homework ?? []);
+  const hwEmpty = homework !== null && !hwError && hw.sections.length === 0;
   const hwToday = ammanToday();
-  // Only a parent's child can lack an account; a student's own list is always trackable.
-  const hwUntracked = isParent && hwChild?.canTrack === false;
   const loading = (children === null && !error) || (homework === null && !hwError);
 
   return (
@@ -224,7 +223,7 @@ export default function SchoolScreen() {
             <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.body, lineHeight: 24, textAlign: align }}>
               {t(isParent ? 'hwDescParent' : 'hwDescStudent')}
             </Text>
-            {hwUntracked ? (
+            {hw.anyUntracked ? (
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.label, lineHeight: 22, textAlign: align }}>
                 {t('hwParentNoAccount', hwChild?.displayName ?? '')}
               </Text>
@@ -264,32 +263,29 @@ export default function SchoolScreen() {
             </View>
           ) : null}
 
-          {[
-            { key: 'todo', title: 'hwTodo' as const, items: hwSplit.todo },
-            { key: 'done', title: 'hwDone' as const, items: hwSplit.done },
-          ].map(group =>
-            group.items.length > 0 ? (
-              <View key={group.key} style={{ gap: SPACE.sm }}>
+          {hw.sections.map(group => (
+            <View key={group.key} style={{ gap: SPACE.sm }}>
+              {/* No heading on the flat list shown when nothing is tickable: «المطلوب» would call it actionable. */}
+              {group.key === 'all' ? null : (
                 <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.label, textAlign: align }}>
-                  {t(group.title)}
+                  {t(group.key === 'todo' ? 'hwTodo' : 'hwDone')}
                 </Text>
-                {group.items.map(item => (
-                  <HomeworkRow
-                    key={item.id}
-                    item={item}
-                    isParent={isParent}
-                    untracked={hwUntracked}
-                    today={hwToday}
-                    saving={hwSaving.has(item.id)}
-                    onToggle={() => void toggleDone(hwChild?.key ?? 'self', item)}
-                    colors={colors}
-                    isRTL={isRTL}
-                    t={t}
-                  />
-                ))}
-              </View>
-            ) : null,
-          )}
+              )}
+              {group.items.map(item => (
+                <HomeworkRow
+                  key={item.id}
+                  item={item}
+                  isParent={isParent}
+                  today={hwToday}
+                  saving={hwSaving.has(item.id)}
+                  onToggle={() => void toggleDone(hwChild?.key ?? 'self', item)}
+                  colors={colors}
+                  isRTL={isRTL}
+                  t={t}
+                />
+              ))}
+            </View>
+          ))}
         </View>
 
         <View style={{ gap: SPACE.md, marginTop: SPACE.md }}>
@@ -416,12 +412,10 @@ function PeriodRow({
 }
 
 function HomeworkRow({
-  item, isParent, untracked, today, saving, onToggle, colors, isRTL, t,
+  item, isParent, today, saving, onToggle, colors, isRTL, t,
 }: {
   item: FamilyHomework;
   isParent: boolean;
-  /** The child has no student account: show the date only, no status. */
-  untracked: boolean;
   today: string;
   saving: boolean;
   onToggle: () => void;
@@ -434,8 +428,10 @@ function HomeworkRow({
   // Which lines are cut off is not knowable up front, so a row with
   // instructions is simply tappable to show them all.
   const [expanded, setExpanded] = useState(false);
-  // Nobody can tick an untracked child's homework, so "late" would be a claim
-  // the system cannot back: the neutral date badge stands in for every kind.
+  // Nobody can tick an untracked item (no row of the child in its class has a
+  // student account), so "late" would be a claim the system cannot back: the
+  // neutral date badge stands in for every kind.
+  const untracked = !item.canTrack;
   const badge = untracked ? { kind: 'later' as const, days: 0 } : dueBadge(item.dueDate, today);
   const badgeColor =
     badge.kind === 'overdue' ? colors.destructive : badge.kind === 'today' || badge.kind === 'tomorrow' ? palette.warning : colors.mutedForeground;

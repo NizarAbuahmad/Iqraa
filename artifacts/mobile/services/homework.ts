@@ -26,15 +26,23 @@ export interface FamilyHomework {
   done: boolean;
   state: HomeworkState;
   examTitle: string | null;
+  /**
+   * Whether anyone can tick THIS item off — the server's per-item rule (some
+   * roster row of the child in this item's class has a student account). False
+   * means «متأخّر» / «لم يُنجز» would be claims the system cannot back, so the
+   * item shows its date only. Ticking is per class, so this is per item, not
+   * per child. Absent on the wire (an older server) reads as true.
+   */
+  canTrack: boolean;
 }
 
 export interface ChildHomework {
   key: string;
   displayName: string;
   /**
-   * False when none of the child's roster rows has a student account, so
-   * nobody can tick their homework: «متأخّر» and «لم يُنجز» would be claims the
-   * system cannot back. Absent on the wire (an older server) reads as true.
+   * Informational aggregate (any item trackable; with no items, any row has an
+   * account). NOT the rule for a given item — use `FamilyHomework.canTrack`.
+   * Absent on the wire (an older server) reads as true.
    */
   canTrack: boolean;
   homework: FamilyHomework[];
@@ -144,6 +152,7 @@ export function normalizeFamilyHomework(raw: unknown): FamilyHomework[] {
         // fields can never disagree on screen.
         state: normalizeState(r['state'], done),
         examTitle,
+        canTrack: r['canTrack'] !== false,
       },
     ];
   });
@@ -178,6 +187,15 @@ export function normalizeTeacherHomework(raw: unknown): TeacherHomework[] {
 /** A server that omits `trackableCount` is read as "everyone can tick" — never as "no one". */
 function trackable(raw: unknown, studentCount: number): number {
   return typeof raw === 'number' && Number.isFinite(raw) && raw >= 0 ? Math.min(raw, studentCount) : studentCount;
+}
+
+/**
+ * `doneCount` can exceed `trackableCount`: a completion is kept after the
+ * account's roster link is removed, so the numerator still counts it while the
+ * denominator no longer does. Shown as it came that reads «5 of 4».
+ */
+export function clampedDone(done: number, trackable: number): number {
+  return Math.max(0, Math.min(done, trackable));
 }
 
 /** The whole body of `GET /classes/:id/homework`. Never throws. */
@@ -229,6 +247,28 @@ export function splitHomework(items: FamilyHomework[]): { todo: FamilyHomework[]
     .filter(h => !h.done)
     .sort((a, b) => rank(a) - rank(b) || (a.dueDate < b.dueDate ? -1 : a.dueDate > b.dueDate ? 1 : 0));
   return { todo, done: items.filter(h => h.done) };
+}
+
+export type HomeworkSection = { key: 'todo' | 'done' | 'all'; items: FamilyHomework[] };
+
+/**
+ * What the family list shows. Normally the «المطلوب» / «تم إنجازه» groups. When
+ * EVERY item is untracked (`canTrack === false`) nobody can ever tick any of
+ * them, so a «المطلوب» heading would present them as actionable: the list is
+ * flat instead (`key: 'all'`, soonest due first, no heading). A mix keeps the
+ * groups. `anyUntracked` says whether to explain why some rows have no status.
+ */
+export function homeworkSections(items: FamilyHomework[]): { sections: HomeworkSection[]; anyUntracked: boolean } {
+  const anyUntracked = items.some(h => !h.canTrack);
+  if (items.length > 0 && items.every(h => !h.canTrack)) {
+    const all = [...items].sort((a, b) => (a.dueDate < b.dueDate ? -1 : a.dueDate > b.dueDate ? 1 : 0));
+    return { sections: [{ key: 'all', items: all }], anyUntracked };
+  }
+  const { todo, done } = splitHomework(items);
+  return {
+    sections: [{ key: 'todo' as const, items: todo }, { key: 'done' as const, items: done }].filter(g => g.items.length > 0),
+    anyUntracked,
+  };
 }
 
 /**

@@ -11,6 +11,8 @@ import {
   isValidYmd,
   normalizeChildHomework,
   normalizeFamilyHomework,
+  clampedDone,
+  homeworkSections,
   normalizeTeacherHomework,
   normalizeTeacherList,
   splitHomework,
@@ -27,6 +29,7 @@ const hw = (over: Partial<FamilyHomework> = {}): FamilyHomework => ({
   done: false,
   state: 'open',
   examTitle: null,
+  canTrack: true,
   ...over,
 });
 
@@ -131,8 +134,32 @@ test('normalizeFamilyHomework keeps a well-formed row', () => {
       done: true,
       state: 'done',
       examTitle: null,
+      canTrack: true,
     },
   ]);
+});
+
+test('normalizeFamilyHomework reads an item canTrack: false as false', () => {
+  assert.equal(normalizeFamilyHomework([{ ...rawItem, canTrack: false }])[0]!.canTrack, false);
+  assert.equal(normalizeFamilyHomework([{ ...rawItem, canTrack: true }])[0]!.canTrack, true);
+});
+
+test('normalizeFamilyHomework defaults an item canTrack to true when absent or not a boolean', () => {
+  // An older server never sent it; hiding state for every item would be the worse failure.
+  assert.equal(normalizeFamilyHomework([rawItem])[0]!.canTrack, true);
+  assert.equal(normalizeFamilyHomework([{ ...rawItem, canTrack: 'no' }])[0]!.canTrack, true);
+  assert.equal(normalizeFamilyHomework([{ ...rawItem, canTrack: null }])[0]!.canTrack, true);
+});
+
+test('normalizeChildHomework carries each item its own canTrack, independent of the child flag', () => {
+  const [c] = normalizeChildHomework([
+    {
+      key: 'k', displayName: 'سارة', canTrack: true,
+      homework: [{ ...rawItem, id: 'a', canTrack: true }, { ...rawItem, id: 'b', canTrack: false }],
+    },
+  ]);
+  assert.deepEqual(c!.homework.map(h => [h.id, h.canTrack]), [['a', true], ['b', false]]);
+  assert.equal(c!.canTrack, true);
 });
 
 test('normalizeFamilyHomework drops a row without an id, title or dueDate', () => {
@@ -393,4 +420,41 @@ test('formatDueDate is day-month-year, isolated left-to-right', () => {
 test('formatDueDate leaves an unparseable string untouched', () => {
   assert.equal(formatDueDate('soon'), 'soon');
   assert.equal(formatDueDate('2026-02-30'), '2026-02-30');
+});
+
+test('clampedDone never exceeds the trackable denominator, so a kept completion cannot read «5 of 4»', () => {
+  assert.equal(clampedDone(5, 4), 4);
+  assert.equal(clampedDone(3, 4), 3);
+  assert.equal(clampedDone(0, 4), 0);
+  assert.equal(clampedDone(2, 0), 0);
+  assert.equal(clampedDone(-1, 4), 0);
+});
+
+const fam = (id: string, over: Partial<FamilyHomework> = {}) => hw({ id, title: id, ...over });
+
+test('homeworkSections: all trackable keeps the todo / done groups', () => {
+  const out = homeworkSections([fam('a'), fam('b', { done: true, state: 'done' })]);
+  assert.deepEqual(out.sections.map(s => s.key), ['todo', 'done']);
+  assert.equal(out.anyUntracked, false);
+});
+
+test('homeworkSections: a mix keeps the groups and says some rows are untracked', () => {
+  const out = homeworkSections([fam('a'), fam('b', { canTrack: false })]);
+  assert.deepEqual(out.sections.map(s => s.key), ['todo']);
+  assert.equal(out.anyUntracked, true);
+});
+
+test('homeworkSections: when every item is untracked the list is flat, soonest due first, no groups', () => {
+  const out = homeworkSections([
+    fam('late', { canTrack: false, dueDate: '2026-10-20' }),
+    fam('soon', { canTrack: false, dueDate: '2026-10-13' }),
+    fam('kept', { canTrack: false, dueDate: '2026-10-16', done: true, state: 'done' }),
+  ]);
+  assert.deepEqual(out.sections.map(s => s.key), ['all']);
+  assert.deepEqual(out.sections[0]!.items.map(h => h.id), ['soon', 'kept', 'late']);
+  assert.equal(out.anyUntracked, true);
+});
+
+test('homeworkSections: no items gives no sections and no explanation', () => {
+  assert.deepEqual(homeworkSections([]), { sections: [], anyUntracked: false });
 });

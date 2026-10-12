@@ -90,3 +90,17 @@ test('countSeconds picks the language', () => {
   assert.equal(countSeconds(2, 'ar'), 'ثانيتان');
   assert.equal(countSeconds(2, 'en'), '2s');
 });
+
+test('hwParentNoAccount isolates the child name so an Arabic name inside an English sentence keeps its place', () => {
+  // First-strong isolate … pop: without it the bidi algorithm scatters «آدم»
+  // through the English sentence.
+  for (const lang of ['ar', 'en'] as const) {
+    const out = (translations[lang].hwParentNoAccount as (n: string) => string)('آدم');
+    assert.ok(out.includes('\u2068آدم\u2069'), `${lang}: ${out}`);
+  }
+});
+
+test('hwErrDueRange is defined in both languages and names the window', () => {
+  assert.match(translations.ar.hwErrDueRange, /30/);
+  assert.match(translations.en.hwErrDueRange, /30 days/);
+});
