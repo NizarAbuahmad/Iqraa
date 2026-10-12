@@ -318,7 +318,10 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   `homework_completions.student_id` is a
   `students.id` (a roster row), not a user: two accounts linked to the same row
   share their ticks, and "did this child do it" must look at every row of the
-  child *in that homework's class*. A child with no `self`-linked row
-  (`canTrack: false`) cannot tick anything, so never call their work late or
-  unfinished. Pinned by `homework.db.test.ts` and
+  child *in that homework's class*. `canTrack` is per homework ITEM, which is
+  per class: ticking only works through the account's own `self`-linked rows in
+  that item's class, so an item whose class has no such row cannot be ticked and
+  must never be called late or unfinished — even when the same child has an
+  account in another teacher's class. The child-level `canTrack` on
+  `/parent/homework` is informational only; do not gate on it. Pinned by `homework.db.test.ts` and
   `familyHomework.db.test.ts`.

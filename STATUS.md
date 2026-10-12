@@ -1228,13 +1228,16 @@ place — see its section 2).
   «متأخّر» forever while the class-2 teacher's `trackableCount` said 0. The student route's
   items are always `canTrack: true` (their rows are self-linked by definition; asserted in
   a test). On the parent screen an untracked item shows its due date in the neutral badge,
-  no done mark, no strike and no «متأخّر»; one line under the heading, «لا يوجد حساب طالب
-  لـ {name}…», appears when at least one visible item is untracked; and when **every**
+  no done mark, no strike and no «متأخّر» (and `splitHomework` ranks it by due date, not as
+  overdue); one line under the heading appears when at least one visible item is untracked —
+  «لا يوجد حساب طالب لـ {name}…» when **every** visible item is (`untrackedMode` = `all`),
+  «لا تظهر حالة الإنجاز لبعض واجبات {name}…» (`hwParentNoAccountSome`) in the mixed case; when **every**
   visible item is untracked the «المطلوب» / «تم إنجازه» headings are dropped (a flat list,
   soonest due first) so the work is not presented as actionable. An absent `canTrack` (an
   older server) reads as `true` at both levels, so a missing field never hides state. The
-  name in that line sits in first-strong isolates (U+2068…U+2069) in both languages, so an
-  Arabic name inside the English sentence stays together. The teacher's tab counts "done"
+  name in those lines sits in first-strong isolates (U+2068…U+2069) in both languages, so an
+  Arabic name inside the English sentence stays together, and the English strings start with
+  an LRM (U+200E) so the `dir="auto"` Text resolves LTR instead of following the Arabic name. The teacher's tab counts "done"
   against `trackableCount`, not the whole roster (the number shown is clamped to
   `trackableCount`: a completion kept after a link was removed no longer reads «5 of 4»),
   adds a muted «N بلا حساب» line when some students have no account, and drops the bar when
@@ -1256,7 +1259,9 @@ place — see its section 2).
   (Amman days), else 400 with `code: "due_date_out_of_range"` next to `error` (POST and
   PATCH) — a typo like 2062 is refused, and the mobile modal shows `hwErrDueRange`. **A PATCH
   that leaves the due date unchanged is not re-bounded** (`parsePatch(body, now, existing)`
-  skips the range check when the parsed `dueAt` equals the stored one): the edit form always
+  skips the range check when the parsed date falls on the same Amman calendar day as the
+  stored `dueAt` — compared by day, not instant, so a row inserted by SQL or an import at some
+  other time of day stays editable): the edit form always
   resends `dueDate`, so without this any edit of a homework due more than 30 days ago was a
   400 and a teacher could not fix a typo in an old homework. A CHANGED date outside the
   window is still refused.
@@ -1325,11 +1330,15 @@ place — see its section 2).
   | due-date range check in `parseCreate` | 1 DB test (`rejects a due date years away`) + 4 unit tests |
 - **What has been seen.** The homework UI was rendered in headless Chromium (360px, Arabic
   RTL) and create, edit, delete and tick were exercised through it against a seeded
-  database — that run is what found the unchanged-date 400 and the per-child `canTrack`
-  defect fixed here. **What changed after that run has not been rendered**: the per-item
-  neutral state and the flat list when every item is untracked, the isolated name in
-  `hwParentNoAccount`, the clamped done count and the `hwErrDueRange` message were
-  typechecked and unit- or DB-tested only.
+  database. That browser run found the English bidi defect (an Arabic name at the start of
+  `hwParentNoAccount` laid the whole English sentence out RTL), the sort position of newly
+  created homework, the checkbox offset and the 320px English tab-row cut (the last three
+  under *Known gaps*). The unchanged-date 400 and the per-child `canTrack` defect were found
+  by the **code review of the fix wave**, not by the browser run. **What changed after the
+  browser run has not been rendered**: the per-item neutral state and the flat list when every
+  item is untracked, the isolated name, the leading LRM that fixes the English bidi defect, the
+  mixed-case line `hwParentNoAccountSome`, the clamped done count and the reworded
+  `hwErrDueRange` were typechecked and unit- or DB-tested only.
 - **What has not.** Nobody has used it on a device or with a real account. Real keyboard /
   IME input in the modal and real device text scaling were not exercised. `STUDENT_ACCOUNTS`
   is already `true` in production, so this reaches real family accounts on merge — open it
@@ -1359,6 +1368,11 @@ place — see its section 2).
     newly created homework does not appear at the top of the teacher's list, because the
     list sorts by due date, newest first; the checkbox glyph sits about 13px below the
     title's centre.
+  - The teacher's done count is clamped to the trackable count, so a completion that
+    outlives a removed roster link can show «1 of 1» while the one trackable student has
+    not done it.
+  - The due-date range error (`hwErrDueRange`) appears at the bottom of the modal, away
+    from the date field it is about.
   - Not exercised: real keyboard / IME input and real device text scaling.
 
 ## Messages can be reacted to with an emoji, 2026-10-10
