@@ -33,6 +33,7 @@ import {
   type SourceKind,
 } from "@workspace/curriculum";
 import {
+  type BookItem,
   bookCitation,
   bookStatusLabel,
   takeBookItem,
@@ -47,6 +48,9 @@ import {
 import type { AnswerKeyCheck } from "@workspace/math-verify";
 import { takeConcreteChem, takeConcreteMath, takeElementaryMath, type DiffTier } from "@workspace/math-practice";
 import { mockableTypes, QUESTION_TYPES } from "./questionTypes.ts";
+// A runtime import, not a cycle: validator.ts takes `GeneratedQuestion` from
+// this file with `import type`, which is erased.
+import { DUPLICATE_THRESHOLD, promptOf, stemSimilarity } from "./validator.ts";
 
 export interface GeneratedQuestion {
   type: QuestionType;
@@ -467,17 +471,42 @@ function bookQuestion(args: {
   wantShort: boolean;
   session: Set<string>;
   rng: () => number;
+  /**
+   * Questions already accepted for this paper. A book stem is mostly shared
+   * instruction text plus short tokens the validator's similarity ignores, so
+   * two different systems can score ~1.00 and the second would be rejected as
+   * "Near-duplicate" — a shorter paper with a reason that is not true.
+   */
+  accepted: readonly GeneratedQuestion[];
 }): GeneratedQuestion | null {
-  const { objective, competency, difficulty, marks, session, rng } = args;
+  const { objective, competency, difficulty, marks, session, rng, accepted } = args;
   const lessonId = objective.lessonId;
   if (!lessonId) return null;
   const tier = BANK_TIER[difficulty];
-  const item =
-    (args.wantChoice && takeBookItem({ lessonId, kind: "unit-test-mcq", tier, session, rng })) ||
-    (args.wantShort && takeBookItem({ lessonId, kind: "exercise", tier, session, rng })) ||
-    null;
-  if (!item) return null;
+  // Each pass spends one item, so this is bounded by the lesson's pool.
+  for (;;) {
+    const item =
+      (args.wantChoice && takeBookItem({ lessonId, kind: "unit-test-mcq", tier, session, rng })) ||
+      (args.wantShort && takeBookItem({ lessonId, kind: "exercise", tier, session, rng })) ||
+      null;
+    if (!item) return null;
+    const built = buildBookQuestion(item, objective, competency, difficulty, marks);
+    // A malformed item is spent and the slot falls through, as before.
+    if (!built) return null;
+    // The validator's own measure and threshold, imported rather than copied.
+    const prompt = promptOf(built);
+    const clash = accepted.some(a => stemSimilarity(promptOf(a), prompt) > DUPLICATE_THRESHOLD);
+    if (!clash) return built;
+  }
+}
 
+function buildBookQuestion(
+  item: BookItem,
+  objective: CurriculumObjective,
+  competency: CompetencyKey,
+  difficulty: Difficulty,
+  marks: number,
+): GeneratedQuestion | null {
   const prompt = `${item.instruction}\n${item.stem}`;
   const common = {
     objectiveId: objective.id,
@@ -669,6 +698,7 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
           wantShort: available.includes("short_answer"),
           session: bookSession,
           rng,
+          accepted: questions,
         });
         if (book) {
           questions.push(book);

@@ -49,9 +49,9 @@ export function stemSimilarity(a: string, b: string): number {
   return shared / (ta.size + tb.size - shared);
 }
 
-const DUPLICATE_THRESHOLD = 0.85;
+export const DUPLICATE_THRESHOLD = 0.85;
 
-function promptOf(q: GeneratedQuestion): string {
+export function promptOf(q: GeneratedQuestion): string {
   const body = q.body;
   return (
     (body["prompt"] as string) ??

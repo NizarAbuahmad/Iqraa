@@ -15,6 +15,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { generateMockEvaluation } from "../mockGenerator.ts";
 import { QUESTION_TYPES } from "../questionTypes.ts";
+import { validateGenerated } from "../validator.ts";
 import type { CurriculumObjective } from "@workspace/curriculum";
 
 /** Book lesson 2 of unit 1: systems of equations — it has exercises and a unit-test question. */
@@ -70,6 +71,7 @@ describe("evaluation generator — real book items", () => {
 
   it("only produces the types that were asked for", () => {
     const onlyChoice = generate({ assessmentTypes: ["multiple_choice"], count: 6 });
+    assert.ok(drawn(onlyChoice).every(q => q.type === "multiple_choice"));
     assert.ok(onlyChoice.questions.every(q => q.type === "multiple_choice"));
     const onlyShort = generate({ assessmentTypes: ["short_answer"], count: 6 });
     assert.ok(drawn(onlyShort).every(q => q.type === "short_answer"));
@@ -128,6 +130,33 @@ describe("evaluation generator — real book items", () => {
   it("is reproducible for a seed", () => {
     assert.ok(drawn(generate({ seed: 21 })).length > 0);
     assert.deepEqual(withoutClock(generate({ seed: 21 })), withoutClock(generate({ seed: 21 })));
+  });
+
+  it("never has a book question rejected as a near-duplicate by the validation gate", () => {
+    const types = ["multiple_choice", "short_answer"] as const;
+    for (const lessonId of [
+      "kbl-math-s1-nccd-u1_l1",
+      "kbl-math-s1-nccd-u1_l2",
+      "kbl-math-s2-nccd-u6_l2",
+    ]) {
+      let drawnTotal = 0;
+      for (let seed = 1; seed <= 12; seed += 1) {
+        const res = generate({
+          objectives: [objective(lessonId)],
+          assessmentTypes: [...types],
+          count: 10,
+          seed,
+        });
+        const { rejected } = validateGenerated(res.questions, {
+          allowedObjectiveIds: [objective(lessonId).id],
+          allowedTypes: [...types],
+        });
+        drawnTotal += fromBook(res).length;
+        const lost = rejected.filter(r => res.questions[r.index]!.aiMetadata["generator"] === "book");
+        assert.deepEqual(lost, [], `${lessonId} seed ${seed}: a book question was rejected`);
+      }
+      assert.ok(drawnTotal > 0, `${lessonId}: no book question drawn, so this proves nothing`);
+    }
   });
 
   it("changes nothing without a lessonId, or for another subject", () => {
