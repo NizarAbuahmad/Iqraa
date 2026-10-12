@@ -306,3 +306,13 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   36 minutes), 2026-09-26 and 2026-10-05 — twice under a PR body that said
   `schema-push: done`. A database that has tables but no migration history is
   refused until baselined once; see *Schema* in `docs/deploying.md`.
+- **A homework due date is a calendar day, and a completion belongs to a roster
+  row.** The API sends and takes `dueDate: "YYYY-MM-DD"`; the server stores
+  `dueAt` as 23:59:59.999 **Asia/Amman** (a fixed UTC+3) of that day, so a client
+  that builds a `Date` and sends an instant, or reads `dueAt` to say "due
+  today", is doing the timezone arithmetic that the contract exists to avoid and
+  will be a day off near midnight. `homework_completions.student_id` is a
+  `students.id` (a roster row), not a user: two accounts linked to the same row
+  share their ticks, and "did this child do it" must look at every row of the
+  child *in that homework's class*. Pinned by `homework.db.test.ts` and
+  `familyHomework.db.test.ts`.

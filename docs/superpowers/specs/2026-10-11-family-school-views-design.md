@@ -13,13 +13,13 @@ parent sees each of their children.
 This is four sub-projects, shipped in order, each with its own migration and PR.
 Each gets its own implementation plan (`writing-plans`) when its turn comes:
 
-| # | Part | Scope |
-| --- | --- | --- |
-| 0 | Foundation | Shared family-access helper; "School" tab for students and parents |
-| 1 | Schedule | Read-only class timetable, assembled from teachers' slots |
-| 2 | Homework | New entity: teacher posts, student marks done, parent watches |
-| 3 | Exams & results | Exam date, paper marks, release, per-child results |
-| 4 | Notifications | Push for the four events below; scheduled trigger for reminders |
+| # | Part | Scope | State |
+| --- | --- | --- | --- |
+| 0 | Foundation | Shared family-access helper; "School" tab for students and parents | Built |
+| 1 | Schedule | Read-only class timetable, assembled from teachers' slots | Built |
+| 2 | Homework | New entity: teacher posts, student marks done, parent watches | Built, 2026-10-12 (no notifications yet — Part 4) |
+| 3 | Exams & results | Exam date, paper marks, release, per-child results | Not started |
+| 4 | Notifications | Push for the four events below; scheduled trigger for reminders | Not started |
 
 ## Decisions taken
 
@@ -120,26 +120,58 @@ a case in `mountOrder.test.ts`.
 New `lib/db/src/schema/homework.ts`, exported from `index.ts`; additive, so no
 `destructive-migration` flag.
 
-- `homework`: id, teacherId, classGroupId, title, instructions, dueAt,
-  `evaluationId` (nullable), createdAt, updatedAt, archivedAt.
+- `homework`: id, teacherId, classGroupId (NOT NULL, cascades), title,
+  instructions, dueAt, `evaluationId` (nullable, `set null` on exam delete),
+  createdAt, updatedAt, archivedAt.
 - `homework_completions`: homeworkId, studentId, doneAt; unique
-  (homeworkId, studentId).
+  (homeworkId, studentId). `studentId` is a **roster row** (`students.id`), not
+  an account: a child with two accounts linked to the same row shares their
+  done marks.
+- **The due date is a calendar day, not a timestamp.** The API takes and
+  returns `dueDate: "YYYY-MM-DD"`. The server stores `dueAt` as 23:59:59.999 on
+  that day in Asia/Amman (a fixed UTC+3 since Jordan dropped DST in 2022) and
+  also returns `dueAt` as ISO. Clients never do timezone arithmetic for it.
 
-`routes/homework.ts`, every guard path-scoped:
+Routes, every guard path-scoped (`routes/homework.ts`, `routes/familyHomework.ts`):
 
-- Teacher: `POST/GET/PATCH/DELETE /homework`, `GET /classes/:id/homework` (with
-  done counts). Ownership through `findLiveClass`; the same 404 for "not yours"
-  and "missing".
-- Student: `GET /student/homework`, `PUT/DELETE /student/homework/:id/done`, only
-  for homework of a class the student belongs to.
-- Parent: `GET /parent/homework` grouped per child. Cannot mark done.
-- Pure rules (visibility, overdue, done state) in `modules/homework/` with unit
-  tests.
+- Teacher: `POST /homework` (with `classGroupId` in the body),
+  `GET /classes/:id/homework` (with done and student counts),
+  `PATCH /homework/:id`, `DELETE /homework/:id` (archives). Ownership through
+  `findLiveClass`; the same 404 for "not yours" and "missing". The create is
+  `POST /homework`, not `POST /classes/:id/homework`, because the latter would
+  inherit the roster router's `requireRosterConsent` gate, which is about
+  entering child data and has nothing to do with homework.
+- Student: `GET /student/homework`, `PUT|DELETE /student/homework/:id/done`,
+  only for homework of a live class one of the student's `self`-linked roster
+  rows sits in.
+- Parent: `GET /parent/homework`, grouped per child (the same grouping as the
+  schedule). Read-only: a parent cannot mark done.
+- `STUDENT_ACCOUNTS` gate: the student and parent handlers answer
+  `403 { code: "student_accounts_disabled" }` when the flag is off, as
+  `routes/familySchedule.ts` does.
+- Pure rules (input parsing, date conversion, state, the family list builder)
+  in `modules/homework/` with unit tests.
 
-Mobile: a Homework section and create/edit modal in `classes/[id]` (the modal
-wraps its body in `KeyboardSafeView`); attaching a worksheet reuses the
-`SendWorksheetSheet` → `fromWorksheet` flow and stores the resulting
-`evaluationId`. Families get the Homework segment; students get the toggle.
+What a family sees:
+
+- **Recent homework only:** `dueAt` within the last 14 days or later, newest 200.
+  Older work drops off rather than accumulating.
+- **An attached exam's title is shown only when that exam is `published`**; a
+  draft's title is not for children. Tapping it opens the existing «اختباراتي»
+  screen, which applies the real visibility rules.
+- State is `done`, `overdue` (past the due day and not done) or `open`.
+
+**Attaching an exam = picking one already attached to the class.** The attached
+exam must be one of this teacher's, not archived, with `classGroupId` equal to
+the homework's class; anything else is one indistinguishable 400. (Creating an
+exam from a worksheet, `SendWorksheetSheet` → `fromWorksheet`, is a separate
+flow and a separate project, so homework does not reuse it.)
+
+Mobile: a «الواجبات» tab and create/edit modal in `classes/[id]` (the modal
+wraps its body in `KeyboardSafeView`; `components/classes/HomeworkTab.tsx`).
+Families get a Homework section above the timetable on the School tab
+(`app/(tabs)/school.tsx`); students get the toggle, parents the read-only list
+per child.
 
 ## 3. Exams & results
 
@@ -191,8 +223,9 @@ wraps its body in `KeyboardSafeView`); attaching a worksheet reuses the
 
 1. `STUDENT_ACCOUNTS` is already `true` in production (STATUS.md, 2026-09-07), so
    this feature reaches real parent and student accounts on merge. The School tab
-   has not been viewed on a device or browser; check it on a signed-in parent and
-   student account right after deploy.
+   and the homework screens were rendered once in headless Chromium against
+   seeded fixtures, but never on a device or by a real account; check them on a
+   signed-in parent and student account right after deploy.
 2. The assembled schedule is only as complete as teacher adoption.
 3. The reminder needs new infrastructure (Cloud Scheduler + internal endpoint).
    If unwanted, drop that one notification.

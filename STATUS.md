@@ -1058,19 +1058,21 @@ weekly timetable, read-only, from `GET /student/schedule` and
 - Behind `STUDENT_ACCOUNTS=true` like every family route (currently `true` in
   production — see «Student accounts went live, reversing the v1 decision,
   2026-09-07»).
-- **Never opened on a device or browser.** The School tab has never been opened in a browser or on a
-  device — the dev environment had no database or browser for this work. What is
-  covered: the routes' 401 guards (mount-order suite) and the pure grouping /
-  assembly / day-ordering logic (unit tests). Since 2026-10-12 the signed-in
-  family path (403 / 200 from the real routes against real rows) is also covered —
-  see «API tests can run against a real database, 2026-10-12». What is **not**: the
-  500 path (an error from the routes) has no test, and neither does the
-  screen's rendering (RTL layout, the child picker, the empty state). `STUDENT_ACCOUNTS` is
-  already `true` in production, so the tab and routes reach real family accounts
-  on merge. Look at it on a signed-in parent and a signed-in student account right
-  after deploy.
+- **Rendered once in headless Chromium, never on a device or by a real account.**
+  On 2026-10-12 the School tab was opened at 360px in Arabic RTL against seeded
+  fixtures (no console errors or failed requests) — see «Homework: teachers set it,
+  students tick it, parents watch, 2026-10-12» for what that did and did not cover.
+  Covered by tests: the routes' 401 guards (mount-order suite), the pure grouping /
+  assembly / day-ordering logic (unit tests) and, since 2026-10-12, the signed-in
+  family path (403 / 200 from the real routes against real rows — see «API tests
+  can run against a real database, 2026-10-12»). **Not** covered: the 500 path (an
+  error from the routes) has no test, and nobody has used the screen on a phone.
+  `STUDENT_ACCOUNTS` is already `true` in production, so the tab and routes reach
+  real family accounts on merge. Look at it on a signed-in parent and a signed-in
+  student account right after deploy.
 - Still to come (spec `docs/superpowers/specs/2026-10-11-family-school-views-design.md`):
-  homework, exam dates and paper marks, notifications.
+  exam dates and paper marks (Part 3), notifications (Part 4). Homework (Part 2) is
+  built — see «Homework: teachers set it, students tick it, parents watch, 2026-10-12».
 
 ## API tests can run against a real database, 2026-10-12
 
@@ -1091,8 +1093,101 @@ are seeded, so exam contents are not yet asserted).
 - **Safety:** only `iqraa_test_` + 12 hex names are created/dropped; non-local hosts are
   refused without `ALLOW_REMOTE_TEST_DB=1`. Schema comes from the migrations, never `push`.
 - **Build first:** the tests boot `dist/index.mjs`, so `pnpm build` precedes `pnpm test` (CI already does).
-- New tests for routes that need real rows (homework, exams — spec Parts 2–3) should be
-  written as `*.db.test.ts` on this harness.
+- Second and third users, 2026-10-12: `homework.db.test.ts` and `familyHomework.db.test.ts`
+  (see the homework section below). New tests for routes that need real rows (exams —
+  spec Part 3) should be written as `*.db.test.ts` on this harness.
+
+## Homework: teachers set it, students tick it, parents watch, 2026-10-12
+
+A teacher posts homework to a class; a student ticks it off; a parent sees each
+child's list read-only; the teacher sees how many have finished. Spec Part 2 of
+`docs/superpowers/specs/2026-10-11-family-school-views-design.md` (amended in
+place — see its section 2).
+
+- **Tables** (migration `0006`, additive, no destructive flag): `homework`
+  (teacher, class, title, instructions, `due_at`, optional `evaluation_id`,
+  `archived_at`) and `homework_completions` (unique per homework + roster row).
+  Schema in `lib/db/src/schema/homework.ts`.
+- **Routes**, all path-scoped: teacher `POST /homework` (the class is in the body),
+  `GET /classes/:id/homework` (with done and student counts), `PATCH|DELETE
+  /homework/:id` (delete archives; completions are kept) in `routes/homework.ts`;
+  `GET /student/homework`, `PUT|DELETE /student/homework/:id/done` and `GET
+  /parent/homework` in `routes/familyHomework.ts`. Rules and the family list builder
+  are pure, in `modules/homework/`; loaders are `lib/familyHomeworkLoad.ts` and
+  `lib/homeworkDone.ts`. The student and parent routes answer `403
+  student_accounts_disabled` when the flag is off, like the timetable.
+- **Mobile:** a «الواجبات» tab on the class screen (`components/classes/HomeworkTab.tsx`,
+  a fourth tab next to Students / Materials / Exams — the shared tab padding was
+  tightened to fit it) with a create / edit / delete modal inside a
+  `KeyboardSafeView`; a Homework section above the timetable on the School tab
+  (`app/(tabs)/school.tsx`): a tick for a student, read-only per child for a parent.
+  Logic is `services/homework.ts`, fetchers `services/homeworkApi.ts` (split, as for
+  the timetable). Copy is `hw*` in `services/i18n.ts`, ar + en.
+- **The due date is a calendar day.** The API takes and returns `dueDate:
+  "YYYY-MM-DD"`; the server stores `dueAt` as 23:59:59.999 **Asia/Amman** of that day
+  (a fixed UTC+3 — Jordan dropped DST in 2022) and also returns it as ISO. Clients
+  never do timezone arithmetic. A homework is `overdue` only once that instant has
+  passed and it is not done.
+- **A family sees the last 14 days and later**: `dueAt` within 14 days of now, newest
+  200. Older work drops off the list (it is not deleted, and the teacher still sees it).
+- **Completions are per roster row, not per account.** A child taught by two teachers
+  is two roster rows in two classes, and a homework belongs to one class, so (homework,
+  row) is unambiguous. The consequence: two accounts linked to the *same* roster row
+  share their done marks. A completion by a child who has since left the class, or whose
+  row was archived, stops counting towards the teacher's number but is not deleted.
+- **A family sees an exam's title only when it is `published`.** A teacher may attach
+  only an exam that is theirs, not archived, and already attached to *that homework's
+  class* (the spec's "send a worksheet as an exam" flow is a separate project); anything
+  else is one identical 400. Tapping the title opens «اختباراتي», which applies the
+  real visibility rules.
+- **Access rules are pinned by tests against a real Postgres**
+  (`src/routes/__tests__/homework.db.test.ts`, 18 tests; `familyHomework.db.test.ts`,
+  19 tests; plus mount-order cases that the new paths answer 401, not 404, with no
+  token). What each file pins: the teacher file — a class that is another teacher's,
+  missing or archived is one 404; a teacher cannot change or delete another teacher's
+  homework and a PATCH can never move it to another class or teacher; an exam must be
+  yours, live and in the same class; counts use live roster rows only; parents and
+  students are refused. The family file — a student sees only the classes their own
+  roster row sits in; a parent sees only their own children, grouped per child; parent
+  B sees none of A's; a draft exam's title never reaches a family; a student can tick
+  and untick only for their own row (never a classmate's; a completion by the same
+  child's row in another class does not read as done), and "not yours" is one identical 404 however it is not yours; the
+  flag-off 403. **Mutation-proven** (the rule removed, the test seen going red, then
+  restored): in the teacher file the `teacherId` ownership condition, the archived-class
+  condition, the exam's same-class condition, the archived-row and the membership
+  conditions of the counts, and `...req.body` spread into PATCH; in the family file the
+  class-membership scoping of the tick, the completion scoping (the loader and the
+  builder each filter, so the test goes red only when both are removed — the parent's
+  stray-completion case pins the builder layer), the `published` check on the exam
+  title, the archived-homework filter, and the row scoping of the undo. Reports:
+  `.superpowers/sdd/2026-10-12-family-homework/task-3-report.md` and `task-4-report.md`.
+- **What has been seen.** The School tab with the Homework section and the teacher's
+  class screen with its four tabs were rendered **once**, in headless Chromium at
+  360px, in Arabic RTL, against seeded fixtures: no console errors or failed
+  requests, and four tabs fit at 360px in both ar and en (50–65px of slack).
+- **What has not.** Nobody has used it on a device or with a real account. Keyboard
+  behaviour in the modal, and saving or creating a homework through the UI, were not
+  exercised (the routes are tested; the form driving them is not). 320px, long titles
+  and long tab counts were not looked at. `STUDENT_ACCOUNTS` is already `true` in
+  production, so this reaches real family accounts on merge — open it on a signed-in
+  teacher, parent and student right after deploy.
+- **No notifications.** Nothing tells a family that homework was posted, or that it
+  is due tomorrow: that is Part 4 (push from the create handler, and a scheduled
+  reminder that needs Cloud Scheduler and an internal endpoint). Until then a family
+  learns of homework only by opening the School tab.
+- **Known gaps** (found in review, not fixed):
+  - After a tick on the student screen, the reload that follows can briefly un-tick
+    the optimistic tick if it lands while the request is in flight; it self-heals on
+    the next load or re-tap.
+  - Dates render through the RTL bidi reorder as `DD-MM-YYYY` (the ISO string flips);
+    it reads right by accident and no explicit formatter exists.
+  - The School page header still reads as the timetable's («الجدول الأسبوعي», above the
+    homework section) — being fixed (the timetable gets its own heading, the page a
+    generic one).
+  - No test pins the 14-day boundary or the 200-item limit.
+  - The mobile `createHomework` / `updateHomework` can resolve `null` when the write
+    succeeded but the returned row failed client normalisation; callers treat that as
+    success and refetch the list.
 
 ## Messages can be reacted to with an emoji, 2026-10-10
 

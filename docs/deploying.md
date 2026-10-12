@@ -10,7 +10,7 @@ after, and it skips the web deploy entirely if either server deploy failed.
 | `iqraa-api` | Cloud Run | **Automatic** on merge to `main` |
 | `iqraa-verifier` | Cloud Run | **Automatic** on merge to `main` |
 | `iqraa-web` | Cloudflare Pages (static) | **Automatic**, gated on the two above |
-| Database | Neon | Never automatic — see *Schema* below |
+| Database | Neon | **Migrations apply automatically** on merge, before the new API revision takes traffic — see *Schema* below |
 
 **Server before client, on purpose.** A new API behind an old bundle is
 harmless: the bundle simply does not call the new route. The reverse is an
