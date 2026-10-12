@@ -49,7 +49,7 @@ import { palette } from '@/constants/colors';
 import { PROD_ORIGIN } from '@/services/siteOrigin';
 import { BackButton } from '@/components/ui/BackButton';
 import { ExamDateCard } from '@/components/ExamDateCard';
-import { isPaperExam, isQuickPaperExam } from '@/services/paperMarks';
+import { isPaperExam, isQuickPaperExam, markBookReachable } from '@/services/paperMarks';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -174,6 +174,8 @@ export default function EvaluationDetailScreen() {
   const questions = data?.questions ?? [];
   const paperExam = isPaperExam(questions);
   const quickPaper = isQuickPaperExam(questions);
+  /** The mark book opens for a published OR a closed quick paper exam (the route takes both). */
+  const markBookOpen = evaluation ? markBookReachable(evaluation.status, questions) : false;
   /** First question of each block -> its heading and marks. */
   const blockAt = new Map(
     examBlocks(questions, lang === 'ar').map(b => [b.start, { heading: b.heading, marks: examBlockMarks(b, q => q.marks) }] as const),
@@ -460,7 +462,7 @@ export default function EvaluationDetailScreen() {
 
       {evaluation?.status === 'published' && (
         <View style={{ marginHorizontal: 20, marginTop: 16, gap: 10 }}>
-          {quickPaper ? (
+          {markBookOpen ? (
             <Pressable
               accessibilityRole="button"
               onPress={() => router.push({ pathname: '/evaluations/[id]/marks', params: { id: evaluation.id } } as never)}
@@ -544,6 +546,18 @@ export default function EvaluationDetailScreen() {
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
             {t('evaluationClosedNote')}
           </Text>
+          {markBookOpen ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push({ pathname: '/evaluations/[id]/marks', params: { id: evaluation.id } } as never)}
+              style={[styles.enterAnswersBtn, { backgroundColor: ACCENT_FILL, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            >
+              <Ionicons name="create-outline" size={18} color="#fff" />
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
+                {t('marksGridBtn')}
+              </Text>
+            </Pressable>
+          ) : null}
           <Pressable
             onPress={() => router.push({ pathname: '/evaluations/[id]/results', params: { id: evaluation.id } })}
             style={[styles.resultsBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}

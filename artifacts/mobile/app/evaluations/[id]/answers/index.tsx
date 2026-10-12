@@ -15,7 +15,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { RosterError, getClass, listClasses, type ClassGroup, type RosterStudent } from '@/services/roster';
 import { getEvaluation, listAttempts, type AttemptListRow, type AttemptStatus } from '@/services/evaluations';
-import { isQuickPaperExam } from '@/services/paperMarks';
+import { markBookReachable } from '@/services/paperMarks';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
 import { filterToAudience } from '@/services/supportGroups';
@@ -70,7 +70,7 @@ export default function PickStudentScreen() {
         .then(d => {
           setAudience(d.audience ?? null);
           // Only the quick paper exam has a one-box-per-student mark book.
-          setQuickPaper(d.evaluation.status === 'published' && isQuickPaperExam(d.questions));
+          setQuickPaper(markBookReachable(d.evaluation.status, d.questions));
         })
         .catch(() => {});
     }, [id]),

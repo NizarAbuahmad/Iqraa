@@ -76,3 +76,67 @@ describe('groupChildExams', () => {
     assert.equal(groups[0]!.key, 's1');
   });
 });
+
+describe('groupChildExams: one exam under two roster rows', () => {
+  const rowsOf = (a: MyExam, b: MyExam): ChildExams[] => [
+    { key: 'k', studentId: 's1', displayName: 'سارة', exams: [a] },
+    { key: 'k', studentId: 's2', displayName: 'سارة', exams: [b] },
+  ];
+
+  it('keeps the released result when the other roster row only has the paper copy (either order)', () => {
+    const paper = exam({ evaluationId: 'x', state: 'paper', paper: true });
+    const result = exam({ evaluationId: 'x', state: 'result' });
+    for (const children of [rowsOf(paper, result), rowsOf(result, paper)]) {
+      const [g] = groupChildExams(children);
+      assert.deepEqual(g!.exams.map(e => e.state), ['result']);
+    }
+  });
+
+  it('ranks result > submitted > in_progress > available > paper > closed', () => {
+    const order = ['result', 'submitted', 'in_progress', 'available', 'paper', 'closed'] as const;
+    for (let i = 0; i < order.length; i++) {
+      for (let j = i + 1; j < order.length; j++) {
+        const hi = exam({ evaluationId: 'x', state: order[i] });
+        const lo = exam({ evaluationId: 'x', state: order[j] });
+        for (const children of [rowsOf(hi, lo), rowsOf(lo, hi)]) {
+          assert.equal(groupChildExams(children)[0]!.exams[0]!.state, order[i], `${order[i]} beats ${order[j]}`);
+        }
+      }
+    }
+  });
+
+  it('keeps the first copy when the two are equally advanced', () => {
+    const a = exam({ evaluationId: 'x', state: 'available', shareCode: null, title: 'first' });
+    const b = exam({ evaluationId: 'x', state: 'available', title: 'second' });
+    assert.equal(groupChildExams(rowsOf(a, b))[0]!.exams[0]!.title, 'first');
+  });
+});
+
+describe("groupChildExams: a child's merged list is sorted like the server's", () => {
+  const ids = (children: ChildExams[]) => groupChildExams(children)[0]!.exams.map(e => e.evaluationId);
+
+  it('puts what can be acted on first, then newest first', () => {
+    const children: ChildExams[] = [
+      { key: 'k', studentId: 's1', displayName: 'سارة', exams: [
+        exam({ evaluationId: 'old-result', state: 'result', publishedAt: '2026-09-01T00:00:00Z' }),
+        exam({ evaluationId: 'new-closed', state: 'closed', publishedAt: '2026-10-01T00:00:00Z' }),
+      ] },
+      { key: 'k', studentId: 's2', displayName: 'سارة', exams: [
+        exam({ evaluationId: 'available', state: 'available', publishedAt: '2026-08-01T00:00:00Z' }),
+        exam({ evaluationId: 'continuing', state: 'in_progress', publishedAt: '2026-07-01T00:00:00Z' }),
+      ] },
+    ];
+    assert.deepEqual(ids(children), ['continuing', 'available', 'new-closed', 'old-result']);
+  });
+
+  it('puts an undated exam after a dated one of the same band, and keeps ties in arrival order', () => {
+    const children: ChildExams[] = [
+      { key: 'k', studentId: 's1', displayName: 'س', exams: [
+        exam({ evaluationId: 'a', state: 'paper', publishedAt: null }),
+        exam({ evaluationId: 'b', state: 'paper', publishedAt: '2026-10-01T00:00:00Z' }),
+        exam({ evaluationId: 'c', state: 'paper', publishedAt: null }),
+      ] },
+    ];
+    assert.deepEqual(ids(children), ['b', 'a', 'c']);
+  });
+});

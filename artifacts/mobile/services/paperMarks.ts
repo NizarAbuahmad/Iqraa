@@ -124,17 +124,24 @@ function storedMark(a: Pick<AttemptListRow, 'submittedAt' | 'result'> | undefine
 /**
  * Bring `saved` / `pendingFinal` back in line with the server after a request
  * whose outcome is unknown (a timeout: the server may have finished), WITHOUT
- * touching what the teacher has typed. A row's status goes back to idle — a
- * tick or an error would describe an answer we never saw — and `rowState`
- * then reports the truth: a row the server did save is clean, one it did not
- * is still dirty.
+ * touching what the teacher has typed. A tick (`saved` / `cleared`) goes back
+ * to idle — it would describe an answer we never saw — and `rowState` then
+ * reports the truth: a row the server did save is clean, one it did not is
+ * still dirty. A per-row REFUSAL stays while the stored mark is the one the
+ * refusal was about: chunk 1's refusals must not vanish because chunk 2 timed
+ * out. If the stored mark moved, the refusal described the old state and goes.
  */
 export function refreshStoredMarks(
   rows: readonly GridRow[],
   attempts: readonly Pick<AttemptListRow, 'studentId' | 'submittedAt' | 'result'>[],
 ): GridRow[] {
   const byStudent = new Map(attempts.map(a => [a.studentId, a]));
-  return rows.map(row => ({ ...row, ...storedMark(byStudent.get(row.studentId)), status: { kind: 'idle' } }));
+  return rows.map(row => {
+    const stored = storedMark(byStudent.get(row.studentId));
+    const sameStored = stored.saved === row.saved && stored.pendingFinal === row.pendingFinal;
+    const status: RowStatus = row.status.kind === 'error' && sameStored ? row.status : { kind: 'idle' };
+    return { ...row, ...stored, status };
+  });
 }
 
 export function editRow(rows: readonly GridRow[], studentId: string, text: string): GridRow[] {
@@ -208,7 +215,13 @@ export function mergeTotalsResponse(
       const unchanged = cur.ok && sent.has(row.studentId) && cur.value === sent.get(row.studentId);
       if (!unchanged) return { ...row, ...stored, status: { kind: 'idle' } };
     }
-    if (r.status === 'error') return { ...row, status: { kind: 'error', code: r.code } };
+    if (r.status === 'error') {
+      // The server kept the student's own sitting, so the mark in the box (a
+      // clear, or a change) never took: show the mark it still holds, or the
+      // row stays dirty with a blank box and blocks the release for good.
+      const restore = r.code === 'kept_student_work' && row.saved !== null ? { text: formatMark(row.saved) } : {};
+      return { ...row, ...restore, status: { kind: 'error', code: r.code } };
+    }
     if (r.status === 'cleared') return { ...row, ...stored, text: '', status: { kind: 'cleared' } };
     return { ...row, ...stored, text: formatMark(r.marks), status: { kind: 'saved' } };
   });
@@ -227,6 +240,11 @@ export function gridSummary(
     if (row.status.kind === 'error') errors++;
   }
   return { total: rows.length, entered, dirty, invalid, errors };
+}
+
+/** «أُدخلت علامات 0 من لا طلبة» says nothing for an empty class: show the summary only when there are rows. */
+export function showGridSummary(summary: Pick<ReturnType<typeof gridSummary>, 'total'>): boolean {
+  return summary.total > 0;
 }
 
 /** Parse failures all read as the same sentence on the row: a mark from 0 to the total, two decimals at most. */
@@ -347,6 +365,26 @@ export function isQuickPaperExam(questions: readonly QuestionShape[]): boolean {
 }
 
 /**
+ * Whether the mark book can be opened for this exam: a quick paper exam that
+ * is published OR closed (the route takes marks for either — ruling R4). One
+ * decision for the exam screen's entry button and the answers picker, so the
+ * two cannot drift apart again (the exam screen once gated on `published`
+ * alone and a closed exam had no way in).
+ */
+export function markBookReachable(status: EvaluationStatus, questions: readonly QuestionShape[]): boolean {
+  return status !== 'draft' && isQuickPaperExam(questions);
+}
+
+/**
+ * The objective «مجموع فقط» credits the whole mark to: the first one selected.
+ * The new-exam screen names it to the teacher, so what it says and what
+ * `quickPaperQuestions` sends are the same function. `null` when none is selected.
+ */
+export function measuredObjectiveId(objectiveIds: readonly string[]): string | null {
+  return objectiveIds[0] ?? null;
+}
+
+/**
  * «مجموع فقط»: a paper exam of one question worth the total, measured against
  * the first selected objective. Its competency breakdown rests on one question,
  * which scoring reports as "not enough evidence" rather than a percentage.
@@ -357,7 +395,7 @@ export function quickPaperQuestions(
   difficulty: Difficulty,
 ): { ok: true; questions: PaperQuestionInput[] } | { ok: false } {
   const parsed = parsePaperMark(totalText, QUICK_PAPER_MAX);
-  const objectiveId = objectiveIds[0];
+  const objectiveId = measuredObjectiveId(objectiveIds);
   if (!parsed.ok || parsed.value === null || parsed.value <= 0 || !objectiveId) return { ok: false };
   return { ok: true, questions: [{ marks: parsed.value, objectiveId, competencyKey: 'understanding', difficulty }] };
 }

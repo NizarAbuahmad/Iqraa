@@ -16,7 +16,7 @@
  * it re-reads what the server holds but keeps every box as typed. A Stack screen with inputs — the root layout already wraps it in
  * KeyboardSafeView, so there is no KeyboardAvoidingView here (CLAUDE.md).
  */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -47,6 +47,7 @@ import {
   rowState,
   saveOutcomeUncertain,
   savedMarksToClear,
+  showGridSummary,
   type GridRow,
   type MarksBlocker,
 } from '@/services/paperMarks';
@@ -74,6 +75,8 @@ export default function PaperMarksScreen() {
   const [loadError, setLoadError] = useState('');
   const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [busy, setBusy] = useState<'save' | 'release' | null>(null);
+  // `busy` is state: two taps inside one frame both read null. The ref flips synchronously.
+  const savingRef = useRef(false);
 
   const load = async () => {
     if (!id) return;
@@ -102,8 +105,18 @@ export default function PaperMarksScreen() {
   const max = formatMark(maxMarks);
   const released = Boolean(evaluation?.releaseResultsToStudent);
 
+  /** Held from the first tap: the clear confirmation awaits, and a second tap in that window must not start a second save. */
   const onSave = async () => {
-    if (!id || !rows || busy) return;
+    if (!id || !rows || busy || savingRef.current) return;
+    savingRef.current = true;
+    try {
+      await saveRows(id, rows);
+    } finally {
+      savingRef.current = false;
+    }
+  };
+
+  const saveRows = async (id: string, rows: GridRow[]) => {
     const { totals, invalidIds } = buildTotalsRequest(rows, maxMarks);
     if (invalidIds.length > 0) {
       setNotice({ kind: 'error', text: t('marksGridFixInvalid') });
@@ -156,6 +169,8 @@ export default function PaperMarksScreen() {
       setBusy(null);
       // «صُحّح N من M» on the exam lists counts from the server.
       void queryClient.invalidateQueries({ queryKey: ['evaluations'] });
+      // The results dashboard reads the same marks; without this it shows the old ones until its stale time runs out.
+      void queryClient.invalidateQueries({ queryKey: ['evaluationResults', id] });
     }
   };
 
@@ -241,7 +256,7 @@ export default function PaperMarksScreen() {
               />
             ))}
 
-            {summary ? (
+            {summary && showGridSummary(summary) ? (
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
                 {[t('marksGridEntered', String(summary.entered), String(summary.total)), summary.dirty ? t('marksGridUnsaved', String(summary.dirty)) : null]
                   .filter(Boolean)

@@ -6,6 +6,7 @@ import {
   initialGridRows, isPaperExam, isQuickPaperExam, mergeTotalsResponse, paperTotalErrorText, paperTotalsFailureKey,
   parsePaperMark, quickPaperQuestions, rowState,
   MARKS_BLOCKER_KEY, countRefused, marksBlocker, refreshStoredMarks, rowProblemCode, saveOutcomeUncertain, savedMarksToClear,
+  markBookReachable, measuredObjectiveId, showGridSummary,
 } from '../paperMarks.ts';
 import translations, { getT } from '../i18n.ts';
 
@@ -506,5 +507,125 @@ describe('what the mark book screen decides (Task 9)', () => {
       assert.match(ar.marksGridClearConfirm('1', '0'), /علامة واحدة محفوظة/);
       assert.match(ar.marksGridSavedWithErrors('2'), /علامتين/);
     });
+  });
+});
+
+describe('W1: the mark book is reachable from a published or a closed quick paper exam', () => {
+  const paperQ = { gradingMode: 'manual', body: {} } as never;
+  const typedQ = { gradingMode: 'auto', body: { stem: 'x' } } as never;
+  it('is false for a draft, true for published and closed', () => {
+    assert.equal(markBookReachable('draft', [paperQ]), false);
+    assert.equal(markBookReachable('published', [paperQ]), true);
+    assert.equal(markBookReachable('closed', [paperQ]), true);
+  });
+  it('is false for anything that is not a quick paper exam', () => {
+    assert.equal(markBookReachable('published', [typedQ]), false);
+    assert.equal(markBookReachable('closed', [paperQ, paperQ]), false);
+    assert.equal(markBookReachable('closed', []), false);
+  });
+});
+
+describe('W1: «مجموع فقط» measures one objective, and says which', () => {
+  it('names the first selected objective, as quickPaperQuestions credits it', () => {
+    assert.equal(measuredObjectiveId(['o2', 'o1']), 'o2');
+    assert.equal(measuredObjectiveId([]), null);
+    const q = quickPaperQuestions('25', ['o2', 'o1'], 'standard');
+    assert.ok(q.ok);
+    assert.equal(q.ok && q.questions[0]!.objectiveId, measuredObjectiveId(['o2', 'o1']));
+  });
+  it('has the two lines in both languages, and fills the objective in', () => {
+    for (const key of ['paperTotalMeasures', 'paperTotalMeasuresMany'] as const) {
+      assert.equal(typeof ar[key], 'function', key);
+      assert.equal(typeof en[key], 'function', key);
+      assert.ok(ar[key]('هدف س').includes('هدف س'), key);
+      assert.ok(en[key]('Goal X').includes('Goal X'), key);
+    }
+  });
+});
+
+describe('W1: a refused clear gives the stored mark back to the box', () => {
+  const roster = [{ id: 's1', displayName: 'أ' }, { id: 's2', displayName: 'ب' }];
+  const stored = [{ studentId: 's1', submittedAt: '2026-10-12T10:00:00Z', result: result('9.50') }];
+  it('restores the text to the stored mark on kept_student_work, keeping the refusal', () => {
+    let rows = editRow(initialGridRows(roster, stored), 's1', '');
+    const sent = new Map([['s1', null]]);
+    rows = mergeTotalsResponse(rows, [{ studentId: 's1', status: 'error', code: 'kept_student_work' }], sent);
+    assert.equal(rows[0]!.text, '9.5');
+    assert.deepEqual(rows[0]!.status, { kind: 'error', code: 'kept_student_work' });
+    assert.equal(rowState(rows[0]!, 20).dirty, false, 'a clean row no longer blocks release');
+    assert.deepEqual(buildTotalsRequest(rows, 20).totals, []);
+  });
+  it('does so without the `sent` map too', () => {
+    const rows = mergeTotalsResponse(editRow(initialGridRows(roster, stored), 's1', ''), [
+      { studentId: 's1', status: 'error', code: 'kept_student_work' },
+    ]);
+    assert.equal(rows[0]!.text, '9.5');
+  });
+  it('restores a changed-but-refused mark too (the box would otherwise keep a value the server refused)', () => {
+    const rows = mergeTotalsResponse(editRow(initialGridRows(roster, stored), 's1', '12'), [
+      { studentId: 's1', status: 'error', code: 'kept_student_work' },
+    ], new Map([['s1', 12]]));
+    assert.equal(rows[0]!.text, '9.5');
+  });
+  it('leaves the text alone for a row with no saved mark, and for any other refusal', () => {
+    const typed = editRow(initialGridRows(roster, stored), 's2', '7');
+    const a = mergeTotalsResponse(typed, [{ studentId: 's2', status: 'error', code: 'kept_student_work' }], new Map([['s2', 7]]));
+    assert.equal(a[1]!.text, '7');
+    const b = mergeTotalsResponse(editRow(initialGridRows(roster, stored), 's1', ''), [{ studentId: 's1', status: 'error', code: 'not_in_class' }], new Map([['s1', null]]));
+    assert.equal(b[0]!.text, '');
+  });
+  it('still keeps a box edited while the request was in flight', () => {
+    let rows = editRow(initialGridRows(roster, stored), 's1', '');
+    const sent = new Map([['s1', null]]);
+    rows = editRow(rows, 's1', '11');
+    rows = mergeTotalsResponse(rows, [{ studentId: 's1', status: 'error', code: 'kept_student_work' }], sent);
+    assert.equal(rows[0]!.text, '11');
+    assert.deepEqual(rows[0]!.status, { kind: 'idle' });
+  });
+});
+
+describe('W1: re-reading the stored marks keeps a refusal that still stands', () => {
+  const roster = [{ id: 's1', displayName: 'أ' }, { id: 's2', displayName: 'ب' }, { id: 's3', displayName: 'ج' }];
+  it('keeps the error status of a row whose stored mark did not change', () => {
+    const attempts = [{ studentId: 's1', submittedAt: '2026-10-12T10:00:00Z', result: result('9.00') }];
+    let rows = editRow(initialGridRows(roster, attempts), 's1', '');
+    rows = mergeTotalsResponse(rows, [{ studentId: 's1', status: 'error', code: 'kept_student_work' }]);
+    rows = editRow(rows, 's2', '5');
+    rows = mergeTotalsResponse(rows, [{ studentId: 's2', status: 'error', code: 'not_in_class' }]);
+    const after = refreshStoredMarks(rows, attempts);
+    assert.deepEqual(after[0]!.status, { kind: 'error', code: 'kept_student_work' });
+    assert.deepEqual(after[1]!.status, { kind: 'error', code: 'not_in_class' });
+  });
+  it('drops it when the stored mark moved, and still wipes saved/cleared ticks', () => {
+    const attempts = [{ studentId: 's1', submittedAt: '2026-10-12T10:00:00Z', result: result('9.00') }];
+    let rows = editRow(initialGridRows(roster, attempts), 's1', '');
+    rows = mergeTotalsResponse(rows, [{ studentId: 's1', status: 'error', code: 'kept_student_work' }]);
+    rows = editRow(rows, 's2', '5');
+    rows = mergeTotalsResponse(rows, [{ studentId: 's2', status: 'saved', marks: 5 }]);
+    const after = refreshStoredMarks(rows, [
+      { studentId: 's1', submittedAt: '2026-10-12T10:00:00Z', result: result('12.00') },
+      { studentId: 's2', submittedAt: '2026-10-12T10:00:00Z', result: result('5.00') },
+    ]);
+    assert.deepEqual(after[0]!.status, { kind: 'idle' }, 'the mark under the refusal changed');
+    assert.deepEqual(after[1]!.status, { kind: 'idle' }, 'a tick describes an answer we never saw');
+  });
+});
+
+describe('W1: gridSummary with refusals, and when the summary shows', () => {
+  const roster = [{ id: 's1', displayName: 'أ' }, { id: 's2', displayName: 'ب' }];
+  it('counts refused rows as errors, apart from dirty and invalid', () => {
+    let rows = initialGridRows(roster, []);
+    rows = editRow(editRow(rows, 's1', '5'), 's2', '6');
+    rows = mergeTotalsResponse(rows, [
+      { studentId: 's1', status: 'error', code: 'not_in_group' },
+      { studentId: 's2', status: 'saved', marks: 6 },
+    ]);
+    assert.deepEqual(gridSummary(rows, 20), { total: 2, entered: 1, dirty: 1, invalid: 0, errors: 1 });
+    rows = editRow(rows, 's1', 'zz');
+    assert.deepEqual(gridSummary(rows, 20), { total: 2, entered: 1, dirty: 0, invalid: 1, errors: 0 }, 'editing clears the refusal');
+  });
+  it('shows no summary for an empty class', () => {
+    assert.equal(showGridSummary(gridSummary([], 20)), false);
+    assert.equal(showGridSummary(gridSummary(initialGridRows(roster, []), 20)), true);
   });
 });

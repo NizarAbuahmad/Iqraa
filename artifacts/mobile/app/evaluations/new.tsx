@@ -45,7 +45,7 @@ import type { TranslationKey } from '@/services/i18n';
 import { palette } from '@/constants/colors';
 import { SPACE } from '@/constants/theme';
 import { toLatinDigits } from '@/services/latinDigits';
-import { QUICK_PAPER_MAX, quickPaperQuestions } from '@/services/paperMarks';
+import { QUICK_PAPER_MAX, measuredObjectiveId, quickPaperQuestions } from '@/services/paperMarks';
 import { groupObjectivesByLesson } from '@/services/miniEval';
 import { BackButton } from '@/components/ui/BackButton';
 
@@ -153,6 +153,10 @@ export default function NewEvaluationScreen() {
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
   const totalOnly = mode === 'paper' && paperShape === 'total';
+  // «مجموع فقط» credits the whole mark to ONE objective (the first selected): say which.
+  const measuredId = measuredObjectiveId([...selectedObjectives]);
+  const measuredObjective = measuredId ? objectives.find(o => o.id === measuredId) : undefined;
+  const measuredLabel = measuredObjective ? (lang === 'ar' ? measuredObjective.descriptionAr || measuredObjective.description : measuredObjective.description) : '';
 
   useEffect(() => {
     listEvaluableBooks()
@@ -581,6 +585,16 @@ export default function NewEvaluationScreen() {
                 {t('selectAtLeastOneObjective')}
               </Text>
             )}
+            {measuredLabel ? (
+              <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                {t('paperTotalMeasures', measuredLabel)}
+              </Text>
+            ) : null}
+            {measuredLabel && selectedObjectives.size > 1 ? (
+              <Text style={[styles.hint, { color: palette.warning, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                {t('paperTotalMeasuresMany', measuredLabel)}
+              </Text>
+            ) : null}
           </>
         )}
 

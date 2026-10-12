@@ -285,7 +285,7 @@ instead of adding its own column:
   holding answers; the app asks for confirmation before sending a clear for a
   mark it had saved. The class mark book is `app/evaluations/[id]/marks.tsx`,
   reached from «أدخل العلامات» on the exam screen and «أدخل العلامات كجدول» on
-  the answers picker (both for a **published** quick paper exam). A multi-question
+  the answers picker (both for a **published or closed** quick paper exam). A multi-question
   paper is still marked per student.
 - **Visibility is unchanged.** `releaseResultsToStudent` + handed in + not
   provisional (`studentResultReady`), shaped by `studentExamRow` /
