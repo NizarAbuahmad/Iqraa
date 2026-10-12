@@ -309,6 +309,37 @@ pnpm --filter @workspace/api-server run start
 
 ---
 
+## DB-backed API tests
+
+Some api-server tests (`*.db.test.ts`) run against a real Postgres: each test file
+creates its own throwaway database (`iqraa_test_<hex>`), applies the repo's
+migrations, seeds rows, boots the **built bundle** against it and calls the real
+routes. They **skip** unless `TEST_DATABASE_URL` is set, and **fail** if
+`REQUIRE_DB_TESTS=true` (CI sets both).
+
+```bash
+pnpm --filter @workspace/api-server run build      # the tests boot dist/index.mjs
+TEST_DATABASE_URL=postgres://postgres@127.0.0.1:5432/postgres \
+  pnpm --filter @workspace/api-server run test
+```
+
+`TEST_DATABASE_URL` is an *admin* URL: the harness only ever `CREATE`s and
+`DROP`s databases named `iqraa_test_` + 12 hex characters, and never stores data
+in the database the URL names. It refuses any host except `localhost`,
+`127.0.0.1` and `[::1]` unless `ALLOW_REMOTE_TEST_DB=1`. Never point it at a real
+database.
+
+No Postgres handy? Start a throwaway one (Postgres refuses to run as root, hence
+`runuser`; adjust the binary path for your install):
+
+```bash
+B=/usr/lib/postgresql/16/bin; D=/tmp/pgtest-iqraa
+mkdir -p $D && chown postgres:postgres $D
+runuser -u postgres -- $B/initdb -D $D/data -A trust -U postgres
+runuser -u postgres -- $B/pg_ctl -D $D/data -o "-p 55432 -k $D -c listen_addresses=127.0.0.1" -l $D/log -w start
+# TEST_DATABASE_URL=postgres://postgres@127.0.0.1:55432/postgres
+```
+
 ## Run the frontend
 
 In a **second** terminal:

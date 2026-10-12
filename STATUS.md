@@ -1061,14 +1061,37 @@ weekly timetable, read-only, from `GET /student/schedule` and
 - **Not run, anywhere.** The School tab has never been opened in a browser or on a
   device — the dev environment had no database or browser for this work. What is
   covered: the routes' 401 guards (mount-order suite) and the pure grouping /
-  assembly / day-ordering logic (unit tests). What is **not**: the signed-in family
-  path (403 / 200 / 500 from the real routes against real rows) and the screen's
-  rendering (RTL layout, the child picker, the empty state). `STUDENT_ACCOUNTS` is
+  assembly / day-ordering logic (unit tests). Since 2026-10-12 the signed-in
+  family path (403 / 200 from the real routes against real rows) is also covered —
+  see «API tests can run against a real database, 2026-10-12». What is **not**: the
+  screen's rendering (RTL layout, the child picker, the empty state). `STUDENT_ACCOUNTS` is
   already `true` in production, so the tab and routes reach real family accounts
   on merge. Look at it on a signed-in parent and a signed-in student account right
   after deploy.
 - Still to come (spec `docs/superpowers/specs/2026-10-11-family-school-views-design.md`):
   homework, exam dates and paper marks, notifications.
+
+## API tests can run against a real database, 2026-10-12
+
+Until now **no test touched a real database** — `mountOrder.test.ts` boots the built
+bundle against a fake `DATABASE_URL` and only proves the 401s. `src/test-support/`
+adds a harness: per test file it creates a throwaway `iqraa_test_<hex>` database on
+the server named by `TEST_DATABASE_URL`, applies the real migrations, seeds rows
+with raw SQL, boots `dist/index.mjs` against it and calls routes with minted access
+tokens. First user: `src/routes/__tests__/familySchedule.db.test.ts` — cross-family
+access (a parent sees only their children; a student only their class), archived
+rows and classes excluded, teachers' private slot notes never sent, the flag-off 403,
+and which roster rows the `/parent/exams` list includes (link scoping only — no exams
+are seeded, so exam contents are not yet asserted).
+
+- **CI** (`workspace` job) now has a `postgres:16` service and sets `REQUIRE_DB_TESTS=true`,
+  so a missing database fails instead of skipping. Locally the tests skip unless
+  `TEST_DATABASE_URL` is set — see `LOCAL_SETUP.md`, «DB-backed API tests».
+- **Safety:** only `iqraa_test_` + 12 hex names are created/dropped; non-local hosts are
+  refused without `ALLOW_REMOTE_TEST_DB=1`. Schema comes from the migrations, never `push`.
+- **Build first:** the tests boot `dist/index.mjs`, so `pnpm build` precedes `pnpm test` (CI already does).
+- New tests for routes that need real rows (homework, exams — spec Parts 2–3) should be
+  written as `*.db.test.ts` on this harness.
 
 ## Messages can be reacted to with an emoji, 2026-10-10
 
