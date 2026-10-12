@@ -8,6 +8,11 @@
  * week. A parent sees one child at a time (a picker appears with more than
  * one); exams and results are one tap away on the existing «اختباراتي» screen.
  *
+ * It also carries «الواجبات» above the timetable: a student ticks homework off
+ * (optimistically, reverted if the save fails); a parent sees the same list per
+ * child, read-only. Homework and timetable load, fail and refresh independently,
+ * so one failing never blanks the other.
+ *
  * Not a Stack screen: it sits under the tab layout, which already pays for the
  * status bar — so no `insets.top` here, same as notifications.tsx.
  */
@@ -20,6 +25,15 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { getChildSchedules, getMySchedule } from '@/services/familyScheduleApi';
+import { getChildHomework, getMyHomework, setHomeworkDone } from '@/services/homeworkApi';
+import {
+  ammanToday,
+  applyDone,
+  dueBadge,
+  splitHomework,
+  type ChildHomework,
+  type FamilyHomework,
+} from '@/services/homework';
 import {
   WEEKDAY_KEYS,
   activeChild,
@@ -34,6 +48,8 @@ import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 
 const ACCENT = palette.primary;
+/** Minimum touch target for the tick box. */
+const TOUCH = 44;
 
 export default function SchoolScreen() {
   const colors = useColors();
@@ -47,6 +63,15 @@ export default function SchoolScreen() {
   const [selected, setSelected] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+
+  // Homework has its own list, error and sequence so it fails and reloads on
+  // its own; `selected` is shared because both lists use the same child keys.
+  const [homework, setHomework] = useState<ChildHomework[] | null>(null);
+  const [hwError, setHwError] = useState('');
+  // Ids whose save is in flight: the ref is the synchronous guard against a
+  // double tap, the state only drives the dimmed look.
+  const hwInFlight = useRef<Set<string>>(new Set());
+  const [hwSaving, setHwSaving] = useState<ReadonlySet<string>>(new Set());
 
   // The list to read depends on the role, so nothing loads until the session
   // has; a newer load wins over an older one still in flight (same guard as
@@ -65,22 +90,72 @@ export default function SchoolScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isParent, user?.id]);
 
-  // On every focus: a teacher may have entered their periods since last time.
+  const hwSeq = useRef(0);
+  const loadHomework = useCallback(async () => {
+    if (!user) return;
+    const seq = ++hwSeq.current;
+    setHwError('');
+    try {
+      const next = isParent ? await getChildHomework() : await getMyHomework();
+      if (seq === hwSeq.current) setHomework(next);
+    } catch (e) {
+      if (seq === hwSeq.current) setHwError(apiErrorMessage(e, 'hwLoadFailed', t));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isParent, user?.id]);
+
+  // On every focus: a teacher may have entered their periods or set homework since last time.
   useFocusEffect(
     useCallback(() => {
       void load();
-    }, [load]),
+      void loadHomework();
+    }, [load, loadHomework]),
   );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await load();
+    await Promise.all([load(), loadHomework()]);
     setRefreshing(false);
-  }, [load]);
+  }, [load, loadHomework]);
+
+  const toggleDone = useCallback(
+    async (childKey: string, item: FamilyHomework) => {
+      if (hwInFlight.current.has(item.id)) return;
+      const next = !item.done;
+      hwInFlight.current.add(item.id);
+      setHwSaving(new Set(hwInFlight.current));
+      Haptics.selectionAsync();
+      setHwError('');
+      // A load that started before this tap must not land on top of it.
+      hwSeq.current++;
+      const patch = (fn: (items: FamilyHomework[]) => FamilyHomework[]) =>
+        setHomework(prev => prev && prev.map(k => (k.key === childKey ? { ...k, homework: fn(k.homework) } : k)));
+      patch(items => applyDone(items, item.id, next));
+      try {
+        await setHomeworkDone(item.id, next);
+      } catch (e) {
+        patch(items => items.map(h => (h.id === item.id ? item : h)));
+        setHwError(apiErrorMessage(e, 'hwSaveFailed', t));
+      } finally {
+        hwInFlight.current.delete(item.id);
+        setHwSaving(new Set(hwInFlight.current));
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [t],
+  );
 
   const child = children ? activeChild(children, selected) : null;
   const today = new Date().getDay();
   const empty = children !== null && (child === null || child.schedule.days.length === 0);
+
+  // The picker reads whichever list arrived, so it survives one of them failing.
+  const pickerKids: readonly { key: string; displayName: string }[] = children ?? homework ?? [];
+  const hwChild = homework ? (homework.find(c => c.key === selected) ?? homework[0] ?? null) : null;
+  const hwSplit = splitHomework(hwChild?.homework ?? []);
+  const hwEmpty = homework !== null && !hwError && hwSplit.todo.length + hwSplit.done.length === 0;
+  const hwToday = ammanToday();
+  const loading = (children === null && !error) || (homework === null && !hwError);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -125,12 +200,12 @@ export default function SchoolScreen() {
           </View>
         ) : null}
 
-        {children === null && !error ? <ActivityIndicator color={ACCENT} style={{ marginTop: 40 }} /> : null}
+        {loading ? <ActivityIndicator color={ACCENT} style={{ marginTop: 40 }} /> : null}
 
-        {isParent && children && children.length > 1 ? (
+        {isParent && pickerKids.length > 1 ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[{ gap: 8, flexDirection: rowDir }, isRTL && { minWidth: '100%' }]}>
-            {children.map(c => {
-              const on = c.key === child?.key;
+            {pickerKids.map(c => {
+              const on = c.key === (child?.key ?? hwChild?.key);
               return (
                 <Pressable
                   key={c.key}
@@ -153,6 +228,76 @@ export default function SchoolScreen() {
             })}
           </ScrollView>
         ) : null}
+
+        <View style={{ gap: SPACE.md }}>
+          <View style={{ gap: SPACE.xs }}>
+            <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.bodyLg, textAlign: align }}>
+              {t('hwTitle')}
+            </Text>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.body, lineHeight: 24, textAlign: align }}>
+              {t(isParent ? 'hwDescParent' : 'hwDescStudent')}
+            </Text>
+          </View>
+
+          {hwError ? (
+            <View
+              style={[
+                styles.errorBanner,
+                { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: rowDir },
+              ]}
+            >
+              <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+              <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                {hwError}
+              </Text>
+              <Pressable onPress={() => void loadHomework()} hitSlop={8} accessibilityRole="button">
+                <Text style={{ color: colors.destructive, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption, textDecorationLine: 'underline' }}>
+                  {t('retry')}
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
+
+          {hwEmpty ? (
+            <View style={styles.hwEmpty}>
+              <View style={[styles.emptyIcon, { backgroundColor: ACCENT + '1F' }]}>
+                <Ionicons name="book-outline" size={30} color={ACCENT} />
+              </View>
+              <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.bodyLg, textAlign: 'center' }}>
+                {t('hwEmptyTitle')}
+              </Text>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.body, lineHeight: 24, textAlign: 'center' }}>
+                {t(isParent ? 'hwEmptyDescParent' : 'hwEmptyDesc')}
+              </Text>
+            </View>
+          ) : null}
+
+          {[
+            { key: 'todo', title: 'hwTodo' as const, items: hwSplit.todo },
+            { key: 'done', title: 'hwDone' as const, items: hwSplit.done },
+          ].map(group =>
+            group.items.length > 0 ? (
+              <View key={group.key} style={{ gap: SPACE.sm }}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.label, textAlign: align }}>
+                  {t(group.title)}
+                </Text>
+                {group.items.map(item => (
+                  <HomeworkRow
+                    key={item.id}
+                    item={item}
+                    isParent={isParent}
+                    today={hwToday}
+                    saving={hwSaving.has(item.id)}
+                    onToggle={() => void toggleDone(hwChild?.key ?? 'self', item)}
+                    colors={colors}
+                    isRTL={isRTL}
+                    t={t}
+                  />
+                ))}
+              </View>
+            ) : null,
+          )}
+        </View>
 
         {empty ? (
           <View style={styles.empty}>
@@ -247,6 +392,135 @@ function PeriodRow({
   );
 }
 
+function HomeworkRow({
+  item, isParent, today, saving, onToggle, colors, isRTL, t,
+}: {
+  item: FamilyHomework;
+  isParent: boolean;
+  today: string;
+  saving: boolean;
+  onToggle: () => void;
+  colors: ReturnType<typeof useColors>;
+  isRTL: boolean;
+  t: ReturnType<typeof useLanguage>['t'];
+}) {
+  const align = isRTL ? 'right' : 'left';
+  const rowDir = isRTL ? 'row-reverse' : 'row';
+  // Which lines are cut off is not knowable up front, so a row with
+  // instructions is simply tappable to show them all.
+  const [expanded, setExpanded] = useState(false);
+  const badge = dueBadge(item.dueDate, today);
+  const badgeColor =
+    badge.kind === 'overdue' ? colors.destructive : badge.kind === 'today' || badge.kind === 'tomorrow' ? palette.warning : colors.mutedForeground;
+  const badgeText =
+    badge.kind === 'overdue'
+      ? t('hwDueOverdue', Math.abs(badge.days))
+      : badge.kind === 'today'
+        ? t('hwDueToday')
+        : badge.kind === 'tomorrow'
+          ? t('hwDueTomorrow')
+          : t('hwDueOn', item.dueDate);
+  const meta = [item.className, item.teacherName].filter(Boolean).join(' · ');
+  const hasInstructions = item.instructions.trim() !== '';
+
+  return (
+    <View
+      style={[
+        styles.hwRow,
+        { backgroundColor: colors.card, borderColor: item.state === 'overdue' ? colors.destructive + '55' : colors.border, borderRadius: colors.radius, flexDirection: rowDir },
+      ]}
+    >
+      {isParent ? (
+        <View
+          accessible
+          accessibilityRole="image"
+          accessibilityLabel={t(item.done ? 'hwDone' : 'hwTodo')}
+          style={styles.hwMark}
+        >
+          <Ionicons
+            name={item.done ? 'checkmark-circle' : 'ellipse-outline'}
+            size={26}
+            color={item.done ? ACCENT : colors.mutedForeground}
+          />
+        </View>
+      ) : (
+        <Pressable
+          accessibilityRole="checkbox"
+          aria-checked={item.done}
+          accessibilityLabel={t(item.done ? 'hwMarkUndone' : 'hwMarkDone')}
+          hitSlop={8}
+          onPress={onToggle}
+          style={[styles.hwMark, { opacity: saving ? 0.5 : 1 }]}
+        >
+          <Ionicons
+            name={item.done ? 'checkbox' : 'square-outline'}
+            size={26}
+            color={item.done ? ACCENT : colors.mutedForeground}
+          />
+        </Pressable>
+      )}
+
+      <View style={{ flex: 1, gap: SPACE.xs }}>
+        <Pressable
+          disabled={!hasInstructions}
+          accessibilityRole={hasInstructions ? 'button' : undefined}
+          aria-expanded={hasInstructions ? expanded : undefined}
+          onPress={() => setExpanded(v => !v)}
+          style={{ gap: SPACE.xs }}
+        >
+          <Text
+            style={{
+              color: item.done ? colors.mutedForeground : colors.foreground,
+              fontFamily: 'ReadexPro_600SemiBold',
+              fontSize: TYPE.body,
+              textAlign: align,
+              textDecorationLine: item.done ? 'line-through' : 'none',
+            }}
+          >
+            {item.title}
+          </Text>
+          {meta ? (
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 21, textAlign: align }}>
+              {meta}
+            </Text>
+          ) : null}
+          <View style={{ flexDirection: rowDir }}>
+            {item.done ? (
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
+                {t('hwDueOn', item.dueDate)}
+              </Text>
+            ) : (
+              <View style={[styles.hwBadge, { backgroundColor: badgeColor + '1A' }]}>
+                <Text style={{ color: badgeColor, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption }}>{badgeText}</Text>
+              </View>
+            )}
+          </View>
+          {hasInstructions ? (
+            <Text
+              numberOfLines={expanded ? undefined : 3}
+              style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.label, lineHeight: 22, textAlign: align }}
+            >
+              {item.instructions}
+            </Text>
+          ) : null}
+        </Pressable>
+        {item.examTitle ? (
+          <Pressable
+            accessibilityRole="link"
+            hitSlop={8}
+            onPress={() => router.push('/my-exams' as never)}
+            style={{ paddingVertical: SPACE.xs }}
+          >
+            <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption, textAlign: align }}>
+              {`${t('hwOpenExam')}: ${item.examTitle}`}
+            </Text>
+          </Pressable>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: StyleSheet.hairlineWidth },
   title: { fontSize: TYPE.title },
@@ -259,5 +533,9 @@ const styles = StyleSheet.create({
   dayCard: { borderWidth: 1, padding: SPACE.lg },
   todayChip: { borderRadius: 999, paddingHorizontal: SPACE.md, paddingVertical: 2 },
   periodBadge: { width: 34, height: 34, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center' },
+  hwEmpty: { alignItems: 'center', gap: SPACE.md, paddingHorizontal: SPACE.xxl, paddingVertical: SPACE.xl },
+  hwRow: { alignItems: 'flex-start', gap: SPACE.md, borderWidth: 1, padding: SPACE.md },
+  hwMark: { width: TOUCH, height: TOUCH, alignItems: 'center', justifyContent: 'center' },
+  hwBadge: { borderRadius: RADIUS.pill, paddingHorizontal: SPACE.md, paddingVertical: SPACE.xxs },
   examsRow: { alignItems: 'center', gap: 12, borderWidth: 1, padding: SPACE.lg, marginTop: 4 },
 });
