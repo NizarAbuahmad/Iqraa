@@ -746,8 +746,8 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
       );
 
       // Real book questions are added after the model has written its share, so
-      // the model is asked for that many fewer. Off unless BOOK_ITEMS_LIVE=true,
-      // in which case `bookPlanned` is 0 and nothing below changes.
+      // the model is asked for that many fewer. When BOOK_ITEMS_LIVE is not
+      // "true" (the default), `bookPlanned` is 0 and nothing below changes.
       const bookEnabled = isBookItemsLiveOn();
       const bookPlanned = planBookDraw({
         objectives,

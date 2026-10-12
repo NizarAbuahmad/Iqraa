@@ -262,7 +262,8 @@ env: change it with `--update-env-vars KEY=VALUE`, never `--set-env-vars` —
 the latter replaces the whole environment.
 
 `BOOK_ITEMS_LIVE` is one such flag on `iqraa-api`: it lets the live model path
-add real NCCD maths book questions to an evaluation (at most half the paper).
+add real NCCD maths book questions to an evaluation (at most half the requested
+count).
 **Off by default** — only the exact string `true` turns it on, it is read per
 request (no rebuild; a new revision from `--update-env-vars` is enough), and
 `deploy.yml` does not set it. Turn it on only after a person has compared the 24

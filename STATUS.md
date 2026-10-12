@@ -982,7 +982,9 @@ served items with the printed books. Design:
 `docs/superpowers/specs/2026-10-12-book-items-live-path-design.md`.
 
 - **How.** In `POST /evaluations/:id/generate` (maths only), `planBookDraw`
-  decides how many book questions (`k`): at most `floor(count / 2)`, never more
+  decides how many book questions (`k`): at most `floor(count / 2)` of the
+  REQUESTED count (if the model under-delivers, book questions can be more than
+  half of the finished paper), never more
   than the eligible items for the requested types, and never more than a dry run
   of the real draw (fixed seed, nothing kept) can deliver, since two items whose
   stems are near-duplicates are never both drawn. The model is asked for
@@ -997,9 +999,12 @@ served items with the printed books. Design:
   `application` (3 marks), a unit-test choice `understanding` (2 marks); the model
   picks its own for the rest. Like on the mock path, a book item's cognitive
   demand is not read from the book.
-- **A regeneration prefers items the teacher has not seen** (their ids are in each
-  question's `aiMetadata.bookItemId`) and falls back to repeats, where the pool
-  and the near-duplicate check allow, rather than shorten the paper.
+- **A regeneration avoids only the items on the paper being replaced** (the live,
+  non-soft-deleted rows; their ids are in each question's
+  `aiMetadata.bookItemId`) and falls back to repeats, where the pool and the
+  near-duplicate check allow, rather than shorten the paper. It keeps no history
+  beyond that one paper, so a second regeneration can bring back the first
+  paper's items.
 - **What shows.** `evaluation.generator` stays `"llm"`; a book question is stored
   with `source: "ai"` like the model's, and is told apart by
   `aiMetadata.generator: "book"`. It shows its citation and key label on the
@@ -1007,15 +1012,33 @@ served items with the printed books. Design:
   `generationParams.bookItems = { enabled, planned, drawn, ids }` is written on
   every live maths paper (not on the mock path, not on other subjects), so "why
   no book items" is answerable from the row when the flag is unset. A paper that
-  drew fewer than planned says so in its notes.
+  drew fewer than planned says so in the response's `warnings` only: notes are
+  returned with the HTTP response and never stored, so what persists is
+  `generationParams.bookItems` `planned` against `drawn`.
 - **Not verified end to end.** The route's few lines of glue (the flag read,
   `planBookDraw`, `modelCount`, `assembleLivePaper`, the `generationParams`
   write) have no route-level test; they are covered by the typechecker and the
   helper tests in `modules/assessment/__tests__/bookQuestions.test.ts`. After
   turning the flag on, generate one maths evaluation and check
   `generationParams.bookItems` (`enabled: true`, `drawn` equal to `planned`; a
-  shortfall is also in the paper's notes) and, when the model delivered, that the
+  shortfall shows there as `drawn` below `planned`, and in the response's
+  `warnings` at generation time only) and, when the model delivered, that the
   paper is exactly the requested length.
+- **Known limits before turning the flag on.**
+  - The competency and type mix is skewed. The model is asked for `count − k` and
+    is not told the book supplies `k` questions, mostly short-answer 3-mark
+    application questions (and the odd 2-mark understanding choice), so the
+    competency targets (`COMPETENCY_TARGETS`) can be missed and the validator can
+    warn "Competency … has only 1 question". Warnings never block publishing.
+    The check after turning the flag on is to look at those warnings on one paper
+    per difficulty. Fixing it means telling the model what the book supplies, a
+    prompt change that needs a `GENERATION_PROMPT_VERSION` bump. Not done here.
+  - The model's surplus is cut before validation, so if the validator rejects one
+    of the model's kept questions the paper is one shorter than it would be with
+    the flag off (previously the surplus filled the gap).
+  - `generationParams.bookItems.drawn` and `ids` are recorded before validation.
+    That is accurate today because the validator cannot reject a drawn book
+    question.
 - **Still not covered:** the mobile offline quiz/exam generators and
   `routes/generate.ts` (worksheets, quizzes).
 

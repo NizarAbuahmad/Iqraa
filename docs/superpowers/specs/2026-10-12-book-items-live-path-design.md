@@ -57,8 +57,11 @@ Before the model call, in the route:
 - `planBookDraw({ objectives, assessmentTypes, count, subjectId, enabled })`
   returns `k` and does not draw. It counts eligible items per objective
   (`bookItemsForLesson(objective.lessonId)`, filtered by kind against the
-  requested types) and returns `min(floor(count / 2), eligible)`. It returns 0
-  when `enabled` is false or the subject is not mathematics.
+  requested types) and returns `min(floor(count / 2), what a seeded dry run of
+  the real draw delivers)`, not the raw eligible count: two near-duplicate book
+  items are never both drawn, so counting raw items would ask the model for too
+  few questions and the paper would come back short. It returns 0 when `enabled`
+  is false or the subject is not mathematics.
 - `runLlm` is called with `count: evaluation.targetQuestionCount − k`.
 - If the model is later short or fails, nothing changes: its existing error and
   shortfall handling stands.
@@ -105,8 +108,8 @@ question is acceptable, a short paper is not.
   `bookCitationAr/En`, `bookLabelAr/En`), so the evaluation screen shows the
   citation and key label with no mobile change.
 - `generationParams.bookItems = { enabled, planned, drawn, ids }` is written on
-  every maths paper, including when the flag is off, so "why did this paper have
-  no book items" is answerable from the row.
+  live-path maths papers only (not the mock path), including when the flag is
+  off, so "why did this paper have no book items" is answerable from the row.
 - One `generationNotes` line when any were drawn, in English like the route's
   other notes: "N question(s) are real items from the NCCD books, with answers
   computed by SymPy from the question text; they are labelled on each question."

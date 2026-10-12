@@ -26,6 +26,8 @@
 | --- | --- | --- |
 | Book questions are "appended after the model's" | Book questions are sorted into the paper's type blocks (`typeOrder`) instead of appended | Found in the Task 3 review: appending split the ministry blocks. |
 | The builder "moves out of `mockGenerator.ts`" | `bookQuestion` is **exported** and takes a `slot(kind)` function; the new live-path code is in `bookQuestions.ts` | Moving it would drag `buildRubric` and `BANK_TIER` along or create an import cycle, and re-review already-reviewed code, for no gain. |
+| `planBookDraw` returns `min(floor(count / 2), eligible)` (§1) | Returns `min(floor(count / 2), what a seeded dry run of the real draw delivers)` | Two near-duplicate book items are never both drawn, so counting raw eligible items asked the model for too few questions and the paper came back short. |
+| `generationParams.bookItems` is written on every maths paper (§4) | Written on live-path maths papers only, not the mock path | The mock path (`generateMockEvaluation`) records its own `seed`; the field is set only in the `if (live)` branch of the route. |
 | Test "flag off: byte-for-byte identical request and rows" | Pinned for the pure assembly (`k = 0` passes the model's paper through untouched) and by the typechecker for the route glue | The route handler needs auth, a database and an OpenAI stub; there is no existing harness for it. STATUS.md says so plainly and gives a manual check for after the flag is turned on. |
 
 ## Environment (once, before Task 1)
