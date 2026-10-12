@@ -823,12 +823,15 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
         : [];
       generationNotes.push(...llm.notes);
 
-      // The model's questions first (cut to its share), then the book's: the
-      // surplus trim further down cuts from the END, so the order matters.
+      // The model's surplus is cut to its share first, then the book's questions
+      // are drawn and the paper is put into the type blocks the prompt asked for
+      // (see assembleLivePaper). With a book share the paper cannot exceed the
+      // request, so the surplus trim further down cannot fire.
       const assembled = assembleLivePaper({
         modelQuestions: llm.questions,
         requested: evaluation.targetQuestionCount,
         k: bookPlanned,
+        typeOrder: evaluation.assessmentTypes,
         draw: accepted => drawBookQuestions({
           objectives,
           assessmentTypes: evaluation.assessmentTypes,
@@ -856,7 +859,7 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
       }
       if (assembled.drawn > 0) {
         generationNotes.push(
-          `${assembled.drawn} question${assembled.drawn === 1 ? " is a" : "s are"} real item${assembled.drawn === 1 ? "" : "s"} from the NCCD books, with answers computed by SymPy from the question text; each is labelled.`,
+          `${assembled.drawn} question${assembled.drawn === 1 ? " is a" : "s are"} real item${assembled.drawn === 1 ? "" : "s"} from the NCCD books; each is labelled with how its answer was established.`,
         );
       }
       if (assembled.drawn < bookPlanned) {

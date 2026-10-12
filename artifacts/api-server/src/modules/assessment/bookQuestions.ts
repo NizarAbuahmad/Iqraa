@@ -8,9 +8,9 @@
  *
  * Design: docs/superpowers/specs/2026-10-12-book-items-live-path-design.md.
  *
- * Ordering is the whole point of `assembleLivePaper`: the route trims a paper
- * that came back longer than asked from its END, so a book question appended
- * after an untrimmed model paper would be the first thing cut.
+ * Ordering is the whole point of `assembleLivePaper`: the model's surplus is cut
+ * BEFORE the book questions are added (so none of them is ever the one cut), and
+ * the combined paper is then put into the ministry's type blocks.
  */
 import { bookItemsForLesson } from "@workspace/curriculum/bookItems";
 import type { CurriculumObjective } from "@workspace/curriculum";
@@ -188,22 +188,57 @@ export interface LivePaper {
  * The model's questions plus the book's, exactly `requested` long when the
  * model delivered. With `k === 0` the model's questions pass through UNTOUCHED,
  * so the flag being off is byte-for-byte the behaviour before this existed.
+ *
+ * Block order: the model is told to lay the paper out as a ministry exam does,
+ * each question type in ONE consecutive block, in the order of
+ * `evaluation.assessmentTypes`. Appending the book's questions at the end would
+ * split a block (MCQ, short, T/F, then short again). So, when `typeOrder` is
+ * given and at least one book question was drawn, the combined list is stably
+ * sorted by each question's `type` index in `typeOrder`. Stable means each
+ * source keeps its own within-type order and, within a type, the model's
+ * questions come before the book's. A type missing from `typeOrder` sorts last,
+ * in relative order. With `k <= 0`, nothing drawn, or no `typeOrder`, nothing is
+ * reordered, so the model's own order is never second-guessed.
+ *
+ * This is safe because the route's final trim (which cuts from the END of the
+ * paper) cannot fire when `k > 0`: the model is cut to `requested - k` first, so
+ * the paper can never exceed `requested`. Position therefore no longer decides
+ * which question survives, and the order is free to follow the blocks.
  */
 export function assembleLivePaper(args: {
   modelQuestions: readonly GeneratedQuestion[];
   requested: number;
   k: number;
   draw: (accepted: readonly GeneratedQuestion[]) => GeneratedQuestion[];
+  /** The paper's question types in block order (`evaluation.assessmentTypes`). */
+  typeOrder?: readonly QuestionType[];
 }): LivePaper {
   if (args.k <= 0) return { questions: [...args.modelQuestions], trimmed: 0, drawn: 0 };
   const modelCap = Math.max(0, args.requested - args.k);
   const kept = args.modelQuestions.slice(0, modelCap);
   const book = args.draw(kept);
+  const combined = [...kept, ...book];
   return {
-    questions: [...kept, ...book],
+    questions: book.length > 0 && args.typeOrder ? sortIntoTypeBlocks(combined, args.typeOrder) : combined,
     trimmed: args.modelQuestions.length - kept.length,
     drawn: book.length,
   };
+}
+
+/** Stable sort by the index of each question's type in `order`; unlisted types last. */
+function sortIntoTypeBlocks(
+  questions: readonly GeneratedQuestion[],
+  order: readonly QuestionType[],
+): GeneratedQuestion[] {
+  const rank = (q: GeneratedQuestion) => {
+    const i = order.indexOf(q.type);
+    return i === -1 ? order.length : i;
+  };
+  // Decorate with the original index rather than lean on Array.sort's stability.
+  return questions
+    .map((q, at) => ({ q, at, r: rank(q) }))
+    .sort((a, b) => a.r - b.r || a.at - b.at)
+    .map(x => x.q);
 }
 
 /** The book item ids a previous version of this paper carried. */
