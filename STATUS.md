@@ -1826,11 +1826,18 @@ real family accounts — **none of it has been seen arriving on a phone.**
 - **Not seen.** Delivery to any real device; the OTA on a phone; the `quiet` channel at
   night; Cloud Scheduler firing; the Secret Manager and scheduler commands (not run from
   here); the `jsonPayload.msg` filter in the deploying.md logging command (the logger is
-  pino with the default `msg` key, but no Cloud Run log was read). The Settings card, as
-  of the commit that wrote this section, was typechecked only: its pure `pushPrefs.ts` is
-  tested, the screen and `pushPrefsApi.ts` are not (`apiClient` cannot load under
-  `node --test`). The visual check of the card (parent, teacher, student, Arabic and
-  English at 360 px) is recorded in a later commit.
+  pino with the default `msg` key, but no Cloud Run log was read). The Settings card's
+  save path against a real phone's token store, and its look in Android's own switch
+  styling (only the web build was looked at).
+- **Seen (headless Chromium, 360 px, local API + Expo web on a seeded database,
+  2026-10-12).** «إشعارات المدرسة» is shown to a parent (Arabic and English) and to a
+  student, with three switches, their hints and the note; a teacher's Settings has no such
+  card. A switch turned off was stored (`users.push_prefs`) and was still off after a
+  reload, in both languages. With the API stopped, flipping a switch shows «تعذّر حفظ
+  التغيير. حاول مرة أخرى.» and the switch is back on. The toast sits over the "About"
+  rows for its few seconds (the app's usual toast position). The first pass hit the class
+  picker (a parent with no chosen grade is sent to onboarding before `/settings`): a
+  setup step of the check, not of the card.
 - **Known gaps** (one line each, with the reason):
   - **Pushes for PAST-dated homework and exam dates are skipped by design** (a back-dated
     entry is a record, not news; the API allows homework 30 days back). A cleared exam
