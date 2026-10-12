@@ -40,6 +40,7 @@ import { useMasteryProgress } from '@/hooks/useMasteryProgress';
 import {
   MY_EXAM_STATE_KEY,
   canRetakeExam,
+  metaSegments,
   myExamAction,
   myExamTitle,
   subjectLabel,
@@ -54,6 +55,7 @@ import { apiErrorMessage } from '@/services/apiErrorKey';
 import { StudentResultCard, LEVEL_LABEL_KEY } from '@/components/StudentResultCard';
 import { palette } from '@/constants/colors';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
+import { SPACE, TYPE } from '@/constants/theme';
 import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = palette.primary;
@@ -280,8 +282,8 @@ function ExamRow({
   const align = isRTL ? 'right' : 'left';
   const action = myExamAction(exam);
   // A state a future server adds degrades to «مُغلق» instead of a blank chip.
-  const stateColor = STATE_COLOR[exam.state] ?? '#667085';
-  const stateIcon = STATE_ICON[exam.state] ?? 'lock-closed-outline';
+  const stateColor = STATE_COLOR[exam.state] ?? STATE_COLOR.closed;
+  const stateIcon = STATE_ICON[exam.state] ?? STATE_ICON.closed;
   const subject = subjectLabel(exam.subjectId, lang);
   const when =
     exam.submittedAt
@@ -292,13 +294,15 @@ function ExamRow({
   // "handed in" times are when the teacher published it and typed the mark —
   // not what a family means by either — so a paper row shows only its day.
   const examWhen = exam.examDate && isValidYmd(exam.examDate) ? t('myExamsOnDate', formatExamWhen(exam.examDate, exam.examTime)) : null;
-  const meta = [
+  // Separate pieces in a wrapping row, not one string under `numberOfLines`:
+  // that cut «· 10 …» mid-text and let a separator start a line.
+  const meta = metaSegments([
     subject,
     examWhen,
     exam.paper ? null : whenLine,
     exam.timeLimitMin && !exam.paper ? t('myExamsTimeLimit', exam.timeLimitMin) : null,
     exam.totalMarks ? t('myExamsMarks', formatMarks(exam.totalMarks)) : null,
-  ].filter(Boolean).join(' · ');
+  ]);
 
   const levelKey = exam.result?.levelKey ? LEVEL_LABEL_KEY[exam.result.levelKey] : undefined;
 
@@ -323,10 +327,14 @@ function ExamRow({
           <Text numberOfLines={2} style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, lineHeight: 23, textAlign: align }}>
             {myExamTitle(exam, lang) || t('myExamsUntitled', subject ?? '')}
           </Text>
-          {meta ? (
-            <Text numberOfLines={2} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
-              {meta}
-            </Text>
+          {meta.length > 0 ? (
+            <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', columnGap: SPACE.xs }}>
+              {meta.map((segment, i) => (
+                <Text key={i} style={{ flexShrink: 1, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 21, textAlign: align }}>
+                  {segment}
+                </Text>
+              ))}
+            </View>
           ) : null}
           <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginTop: 2, flexWrap: 'wrap' }}>
             <View style={[styles.chip, { backgroundColor: stateColor + '1A' }]}>

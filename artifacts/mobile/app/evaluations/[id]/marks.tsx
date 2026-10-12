@@ -11,6 +11,10 @@
  * A mark saved after the release shows to the family at once, with no
  * notification (STATUS.md, Part 3 known gaps) — the screen says so.
  *
+ * «حفظ الكل», the unsaved count and the outcome of a save sit in a footer
+ * outside the ScrollView, pinned above the bottom inset, so thirteen rows do
+ * not push the save button off the screen.
+ *
  * Loaded once, not on every focus: a refetch would wipe marks typed but not
  * saved. The one refetch is after a save whose outcome is unknown (a timeout):
  * it re-reads what the server holds but keeps every box as typed. A Stack screen with inputs — the root layout already wraps it in
@@ -32,9 +36,11 @@ import { apiErrorMessage } from '@/services/apiErrorKey';
 import {
   MARKS_BLOCKER_KEY,
   buildTotalsRequest,
+  appendSentence,
   chunkTotals,
   countRefused,
   editRow,
+  foldMarkText,
   formatMark,
   gridSummary,
   initialGridRows,
@@ -159,7 +165,7 @@ export default function PaperMarksScreen() {
         try {
           const attempts = await listAttempts(id);
           setRows(prev => (prev ? refreshStoredMarks(prev, attempts) : prev));
-          text = `${text} ${t('marksGridCheckedAfterFailure')}`;
+          text = appendSentence(text, t('marksGridCheckedAfterFailure'));
         } catch {
           /* still unreachable: the rows stay as typed and a retry is safe */
         }
@@ -200,6 +206,8 @@ export default function PaperMarksScreen() {
 
   const title = evaluation ? (lang === 'ar' ? evaluation.titleAr || evaluation.title : evaluation.title || evaluation.titleAr) : '';
   const holdRelease = !released && ((summary?.dirty ?? 0) > 0 || (summary?.invalid ?? 0) > 0);
+  const footerShown = Boolean(rows && !blocker);
+  const saveDisabled = busy !== null || !summary?.dirty;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -214,8 +222,10 @@ export default function PaperMarksScreen() {
       </View>
 
       <ScrollView
+        style={{ flex: 1 }}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ padding: SPACE.lg, paddingBottom: insets.bottom + SPACE.page, gap: SPACE.md, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}
+        // With the footer the bottom inset is the footer's to pay; without one (loading, blocked) the scroll still clears it.
+        contentContainerStyle={{ padding: SPACE.lg, paddingBottom: footerShown ? SPACE.section : insets.bottom + SPACE.page, gap: SPACE.md, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}
       >
         {loadError ? (
           <View style={[styles.banner, { borderColor: colors.destructive, flexDirection: rowDir }]}>
@@ -249,38 +259,12 @@ export default function PaperMarksScreen() {
                 row={row}
                 max={maxMarks}
                 locked={busy !== null}
-                onChange={text => setRows(prev => (prev ? editRow(prev, row.studentId, text) : prev))}
+                onChange={text => setRows(prev => (prev ? editRow(prev, row.studentId, foldMarkText(text)) : prev))}
                 colors={colors}
                 isRTL={isRTL}
                 t={t}
               />
             ))}
-
-            {summary && showGridSummary(summary) ? (
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
-                {[t('marksGridEntered', String(summary.entered), String(summary.total)), summary.dirty ? t('marksGridUnsaved', String(summary.dirty)) : null]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </Text>
-            ) : null}
-
-            {notice ? (
-              <Text accessibilityLiveRegion="polite" style={{ color: notice.kind === 'error' ? colors.destructive : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.label, textAlign: align }}>
-                {notice.text}
-              </Text>
-            ) : null}
-
-            <Pressable
-              onPress={() => void onSave()}
-              disabled={busy !== null || !summary?.dirty}
-              aria-disabled={busy !== null || !summary?.dirty}
-              accessibilityRole="button"
-              style={[styles.primary, { backgroundColor: ACCENT_FILL, opacity: busy !== null || !summary?.dirty ? 0.5 : 1 }]}
-            >
-              {busy === 'save' ? <ActivityIndicator color="#fff" /> : (
-                <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.body }}>{t('marksGridSaveAll')}</Text>
-              )}
-            </Pressable>
 
             <View style={[styles.releaseBox, { borderColor: colors.border, backgroundColor: colors.card }]}>
               <Text style={{ color: released ? palette.warning : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.label, lineHeight: 22, textAlign: align }}>
@@ -305,6 +289,39 @@ export default function PaperMarksScreen() {
           </>
         ) : null}
       </ScrollView>
+
+      {footerShown ? (
+        <View style={[styles.footer, { backgroundColor: colors.card, borderTopColor: colors.border, paddingBottom: insets.bottom + SPACE.md }]}>
+          <View style={{ width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', gap: SPACE.sm }}>
+            {summary && showGridSummary(summary) ? (
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
+                {[t('marksGridEntered', String(summary.entered), String(summary.total)), summary.dirty ? t('marksGridUnsaved', String(summary.dirty)) : null]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </Text>
+            ) : null}
+
+            {/* Beside the button that caused it: out of the scroll, a failed save would be announced below thirteen rows. */}
+            {notice ? (
+              <Text accessibilityLiveRegion="polite" style={{ color: notice.kind === 'error' ? colors.destructive : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.label, textAlign: align }}>
+                {notice.text}
+              </Text>
+            ) : null}
+
+            <Pressable
+              onPress={() => void onSave()}
+              disabled={saveDisabled}
+              aria-disabled={saveDisabled}
+              accessibilityRole="button"
+              style={[styles.primary, { backgroundColor: ACCENT_FILL, opacity: saveDisabled ? 0.5 : 1 }]}
+            >
+              {busy === 'save' ? <ActivityIndicator color="#fff" /> : (
+                <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.body }}>{t('marksGridSaveAll')}</Text>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -334,16 +351,20 @@ function MarkRow({
           <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 19, textAlign: align }}>{problem}</Text>
         ) : null}
       </View>
-      <TextInput
-        value={row.text}
-        onChangeText={onChange}
-        keyboardType="decimal-pad"
-        editable={!locked}
-        maxLength={6}
-        accessibilityLabel={t('marksGridMarkLabel', row.name)}
-        style={[styles.input, { color: colors.foreground, borderColor: problem ? colors.destructive : colors.border, backgroundColor: colors.background, opacity: locked ? 0.6 : 1 }]}
-      />
-      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.label }}>{`\u2066/ ${maxText}\u2069`}</Text>
+      {/* Always box-then-total, whatever the language: «[25] / 25», not «25 / [25]». */}
+      <View style={styles.markGroup}>
+        <TextInput
+          value={row.text}
+          onChangeText={onChange}
+          keyboardType="decimal-pad"
+          selectTextOnFocus
+          editable={!locked}
+          maxLength={6}
+          accessibilityLabel={t('marksGridMarkLabel', row.name)}
+          style={[styles.input, { color: colors.foreground, borderColor: problem ? colors.destructive : colors.border, backgroundColor: colors.background, opacity: locked ? 0.6 : 1 }]}
+        />
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.label }}>{`\u2066/ ${maxText}\u2069`}</Text>
+      </View>
       <View style={styles.mark}>
         {state.dirty ? (
           <View accessible accessibilityLabel={t('marksGridUnsaved', '1')}>
@@ -364,8 +385,11 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: TYPE.headline, color: '#fff' },
   banner: { alignItems: 'center', gap: SPACE.sm, padding: SPACE.md, borderWidth: 1, borderRadius: RADIUS.md },
   row: { alignItems: 'center', gap: SPACE.md, borderWidth: 1, borderRadius: RADIUS.md, paddingVertical: SPACE.sm, paddingHorizontal: SPACE.md },
-  input: { width: SPACE.hero + SPACE.xxl, borderWidth: 1, borderRadius: RADIUS.sm, paddingVertical: SPACE.sm, paddingHorizontal: SPACE.sm, fontSize: TYPE.bodyLg, textAlign: 'center', writingDirection: 'ltr' },
+  markGroup: { flexDirection: 'row', alignItems: 'center', gap: SPACE.xs },
+  // 80 wide holds «100.00» (maxLength 6) at bodyLg; 48 high is a touch target.
+  input: { width: SPACE.hero + SPACE.section, minHeight: SPACE.hero, borderWidth: 1, borderRadius: RADIUS.sm, paddingVertical: SPACE.sm, paddingHorizontal: SPACE.sm, fontSize: TYPE.bodyLg, textAlign: 'center', writingDirection: 'ltr' },
   mark: { width: SPACE.xxl, alignItems: 'center' },
+  footer: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: SPACE.md, paddingHorizontal: SPACE.lg },
   primary: { alignItems: 'center', justifyContent: 'center', paddingVertical: SPACE.md, borderRadius: RADIUS.md },
   secondary: { alignItems: 'center', justifyContent: 'center', gap: SPACE.sm, paddingVertical: SPACE.md, borderRadius: RADIUS.md, borderWidth: 1.5 },
   releaseBox: { gap: SPACE.sm, padding: SPACE.lg, borderRadius: RADIUS.md, borderWidth: 1, marginTop: SPACE.sm },

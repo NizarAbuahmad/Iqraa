@@ -6,7 +6,7 @@ import {
   initialGridRows, isPaperExam, isQuickPaperExam, mergeTotalsResponse, paperTotalErrorText, paperTotalsFailureKey,
   parsePaperMark, quickPaperQuestions, rowState,
   MARKS_BLOCKER_KEY, countRefused, marksBlocker, refreshStoredMarks, rowProblemCode, saveOutcomeUncertain, savedMarksToClear,
-  markBookReachable, measuredObjectiveId, showGridSummary,
+  markBookReachable, measuredObjectiveId, showGridSummary, foldMarkText, appendSentence,
 } from '../paperMarks.ts';
 import translations, { getT } from '../i18n.ts';
 
@@ -627,5 +627,49 @@ describe('W1: gridSummary with refusals, and when the summary shows', () => {
   it('shows no summary for an empty class', () => {
     assert.equal(showGridSummary(gridSummary([], 20)), false);
     assert.equal(showGridSummary(gridSummary(initialGridRows(roster, []), 20)), true);
+  });
+});
+
+describe('W2: what the mark box holds and how a failure reads', () => {
+  it('folds Arabic digits and decimal separators to Latin and leaves the rest alone', () => {
+    assert.equal(foldMarkText('١٥'), '15');
+    assert.equal(foldMarkText('۱۲'), '12');
+    assert.equal(foldMarkText('١٢٫٥'), '12.5');
+    assert.equal(foldMarkText('7,25'), '7.25');
+    assert.equal(foldMarkText('7،5'), '7.5');
+    // Unchanged input comes back identical (nothing for the caret to jump over), junk included.
+    for (const same of ['', '12.5', 'abc', '1.']) assert.equal(foldMarkText(same), same);
+    // What the box shows is what parses.
+    assert.deepEqual(parsePaperMark(foldMarkText('١٦٫٥'), 20), { ok: true, value: 16.5 });
+  });
+
+  it('puts a full stop between two sentences only when the first lacks one', () => {
+    assert.equal(appendSentence('تعذّر حفظ العلامات', 'لم نتأكد'), 'تعذّر حفظ العلامات. لم نتأكد');
+    assert.equal(appendSentence('تعذّر الاتصال. أعد المحاولة.', 'لم نتأكد'), 'تعذّر الاتصال. أعد المحاولة. لم نتأكد');
+    assert.equal(appendSentence("Couldn't save the marks", 'We could not confirm'), "Couldn't save the marks. We could not confirm");
+    assert.equal(appendSentence('Failed!', 'Next'), 'Failed! Next');
+    assert.equal(appendSentence('هل تعذّر؟', 'لم نتأكد'), 'هل تعذّر؟ لم نتأكد');
+    assert.equal(appendSentence('  ', 'x'), 'x');
+  });
+
+  it('joins the real strings of the uncertain-failure message in both languages', () => {
+    for (const lang of ['ar', 'en'] as const) {
+      const t = getT(lang);
+      const text = appendSentence(t('marksGridSaveFailed'), t('marksGridCheckedAfterFailure'));
+      assert.ok(text.includes(`${t('marksGridSaveFailed')}. `), `${lang}: ${text}`);
+    }
+  });
+
+  it('words the clear confirmation as a deletion, never as the scan wording, with a singular for one mark', () => {
+    for (const lang of ['ar', 'en'] as const) {
+      const t = getT(lang);
+      assert.notEqual(t('marksGridClearAction'), t('scanMarksBtn'));
+    }
+    assert.ok(!/امسح|مسح|ستُمسح/.test(ar.marksGridClearTitle + ar.marksGridClearAction + ar.marksGridClearConfirm('1', '1') + ar.marksGridClearConfirm('3', '0')));
+    assert.equal(ar.marksGridClearAction, 'احذف العلامات');
+    assert.ok(!/من الخانات/.test(ar.marksGridClearConfirm('1', '0')), 'one mark is about one box');
+    assert.match(ar.marksGridClearConfirm('3', '0'), /3 علامات محفوظة من الخانات التي تركتها فارغة/);
+    assert.ok(!/boxes/.test(en.marksGridClearConfirm('1', '0')), 'one mark is about one box');
+    assert.match(en.marksGridClearConfirm('3', '0'), /3 marks saved for the boxes/);
   });
 });

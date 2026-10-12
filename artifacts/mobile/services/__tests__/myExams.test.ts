@@ -6,6 +6,7 @@ import {
   actionableCount,
   canRetakeExam,
   myExamAction,
+  metaSegments,
   myExamTitle,
   subjectLabel,
   type MyExam,
@@ -107,5 +108,21 @@ describe('canRetakeExam', () => {
   it('never offers one to a parent, or on a quiz the server did not list', () => {
     assert.equal(canRetakeExam(shown, ['e1'], true), false);
     assert.equal(canRetakeExam(shown, [], false), false);
+  });
+});
+
+describe('metaSegments', () => {
+  it('drops empty pieces and ends every piece but the last with a no-break separator', () => {
+    assert.deepEqual(metaSegments(['الرياضيات', null, 'موعده 2026-10-17 09:30', false, '', '10 علامات']), [
+      'الرياضيات\u00A0·',
+      'موعده 2026-10-17 09:30\u00A0·',
+      '10 علامات',
+    ]);
+  });
+  it('never starts a piece with a separator, and a single piece has none', () => {
+    const segs = metaSegments(['a', 'b', 'c']);
+    for (const s of segs) assert.ok(!s.startsWith('·') && !s.startsWith('\u00A0'));
+    assert.deepEqual(metaSegments(['الرياضيات']), ['الرياضيات']);
+    assert.deepEqual(metaSegments([null, undefined, '']), []);
   });
 });

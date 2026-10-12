@@ -116,6 +116,12 @@ export function ExamDateCard({
     fontFamily: 'Almarai_400Regular',
     fontSize: 15,
     textAlign: align,
+    // A text field's own minimum width is its intrinsic one (~242px on the web
+    // build), which `flex` alone cannot shrink below: two of them overflowed a
+    // 360px card and pushed the time off the screen edge. `minWidth: 0` lets
+    // the two share the row; the height is a touch target.
+    minWidth: 0,
+    minHeight: SPACE.hero,
   } as const;
 
   return (
@@ -141,7 +147,7 @@ export function ExamDateCard({
         </Text>
       ) : null}
 
-      <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8 }}>
+      <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: SPACE.sm }}>
         <TextInput
           value={dateText}
           onChangeText={v => { setDateText(v); setSaved(false); }}

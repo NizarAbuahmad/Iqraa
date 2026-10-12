@@ -79,6 +79,28 @@ export function parsePaperMark(text: string, max: number): MarkParse {
   return { ok: true, value };
 }
 
+/**
+ * What a mark box holds after a keystroke: Arabic-Indic and Eastern digits
+ * become Latin, and «٫» / «,» / «،» become ".", so the box always shows what will be
+ * sent. The same string comes back when there is nothing to fold, so the caller
+ * can set it unconditionally and a plain keystroke does not move the caret.
+ */
+export function foldMarkText(text: string): string {
+  return toLatinDigits(text).replace(/[٫,،]/g, '.');
+}
+
+/**
+ * `first` and `next` as two sentences. A message that came from the server or
+ * a translation may or may not end in a full stop («تعذّر حفظ العلامات» does
+ * not, «تعذّر الاتصال. … أعد المحاولة.» does), so a bare `${a} ${b}` ran
+ * them together.
+ */
+export function appendSentence(first: string, next: string): string {
+  const a = first.trimEnd();
+  if (a === '') return next;
+  return /[.!?؟…]$/.test(a) ? `${a} ${next}` : `${a}. ${next}`;
+}
+
 export function formatMark(n: number): string {
   return String(Math.round(n * 100) / 100);
 }

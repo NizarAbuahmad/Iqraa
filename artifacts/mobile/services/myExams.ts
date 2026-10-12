@@ -95,3 +95,17 @@ export function subjectLabel(subjectId: string, lang: 'ar' | 'en'): string | nul
 export function actionableCount(exams: readonly MyExam[]): number {
   return exams.filter(e => myExamAction(e) === 'start' || myExamAction(e) === 'continue').length;
 }
+
+/**
+ * The facts under a row's title — subject, the exam day, when it was sent, the
+ * limit, the marks — as separate pieces for a wrapping row. One joined string
+ * under `numberOfLines` was cut mid-text («· 10 …») once the exam day joined it,
+ * and a separator at the start of a wrapped line dangled. Here every piece but
+ * the last carries its own « ·» at its END behind a no-break space, so a line
+ * can only ever begin with a word, and a piece wider than the row still wraps
+ * inside itself.
+ */
+export function metaSegments(parts: readonly (string | null | undefined | false)[]): string[] {
+  const kept = parts.filter((p): p is string => typeof p === 'string' && p.trim() !== '');
+  return kept.map((p, i) => (i < kept.length - 1 ? `${p} ·` : p));
+}

@@ -2249,11 +2249,15 @@ const translations = {
     marksGridSaveFirst: 'احفظ العلامات قبل إعلان النتائج.',
     marksGridSavedWithErrors: (n: string) => `حُفظت بقية العلامات، وتعذّر حفظ ${arMarksPhrase(n, true)} — راجع الصفوف الحمراء.`,
     marksGridCheckedAfterFailure: 'لم نتأكد من اكتمال الحفظ فأعدنا قراءة العلامات من الخادم. العلامات التي تحمل نقطة برتقالية لم تُحفظ بعد.',
-    marksGridClearTitle: 'مسح علامات محفوظة',
-    marksGridClearAction: 'امسح العلامات',
+    // «احذف», not «امسح»: «امسح العلامات من الورقة» is the camera scan on the same flow.
+    marksGridClearTitle: 'حذف علامات محفوظة',
+    marksGridClearAction: 'احذف العلامات',
     // `n` marks that are saved; «محفوظتان» for two. `released` is '1' once results are announced.
+    // One mark is about one box («خانتها»), several are «من الخانات التي تركتها فارغة».
     marksGridClearConfirm: (n: string, released: string) =>
-      `ستُمسح ${arMarksPhrase(n)} ${Number(n) === 2 ? 'محفوظتان' : 'محفوظة'} من الخانات التي تركتها فارغة، وتُزال معها ${Number(n) === 1 ? 'نتيجة الطالب' : 'نتائج الطلبة'}.` +
+      (Number(n) === 1
+        ? 'ستُحذف علامة واحدة محفوظة لأنك تركت خانتها فارغة، وتُزال معها نتيجة الطالب.'
+        : `ستُحذف ${arMarksPhrase(n)} ${Number(n) === 2 ? 'محفوظتان' : 'محفوظة'} من الخانات التي تركتها فارغة، وتُزال معها نتائج الطلبة.`) +
       (released === '1' ? ' النتائج معلنة، فلن يراها الطلبة وأولياء أمورهم بعد الآن.' : ''),
     paperMarksLabel: 'العلامة',
     paperObjectiveLabel: 'النتاج',
@@ -4777,10 +4781,12 @@ const translations = {
     marksGridSaveFirst: 'Save the marks before releasing the results.',
     marksGridSavedWithErrors: (n: string) => `The rest were saved; ${enMarksPhrase(n)} could not be saved — check the rows in red.`,
     marksGridCheckedAfterFailure: "We couldn't confirm the save finished, so the marks were reloaded from the server. Marks with an orange dot are not saved yet.",
-    marksGridClearTitle: 'Clear saved marks',
-    marksGridClearAction: 'Clear the marks',
+    marksGridClearTitle: 'Delete saved marks',
+    marksGridClearAction: 'Delete the marks',
     marksGridClearConfirm: (n: string, released: string) =>
-      `${enMarksPhrase(n)} saved for the boxes you left empty will be cleared, removing ${Number(n) === 1 ? "the student's result" : "the students' results"}.` +
+      (Number(n) === 1
+        ? "The saved mark for the box you left empty will be deleted, removing the student's result."
+        : `${enMarksPhrase(n)} saved for the boxes you left empty will be deleted, removing the students' results.`) +
       (released === '1' ? ' Results are released, so students and parents will stop seeing them.' : ''),
     paperMarksLabel: 'Marks',
     paperObjectiveLabel: 'Objective',
