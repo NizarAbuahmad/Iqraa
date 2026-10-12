@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 
 import {
   PAPER_TOTALS_CHUNK, PAPER_TOTAL_ERROR_KEY, buildTotalsRequest, chunkTotals, editRow, formatMark, gridSummary,
-  initialGridRows, isPaperExam, isQuickPaperExam, mergeTotalsResponse, paperTotalsFailureKey, parsePaperMark,
-  quickPaperQuestions, rowState,
+  initialGridRows, isPaperExam, isQuickPaperExam, mergeTotalsResponse, paperTotalErrorText, paperTotalsFailureKey,
+  parsePaperMark, quickPaperQuestions, rowState,
 } from '../paperMarks.ts';
-import translations from '../i18n.ts';
+import translations, { getT } from '../i18n.ts';
 
 const { ar, en } = translations;
 
@@ -141,14 +141,20 @@ describe('what the client will and will not send', () => {
     assert.deepEqual(buildTotalsRequest(rows, 20).totals, [{ studentId: 's2', marks: null }]);
   });
 
-  it('splits a long class into requests of at most 100 rows, in order', () => {
-    assert.equal(PAPER_TOTALS_CHUNK, 100);
+  it('splits a long class into requests of at most 50 rows, in order', () => {
+    assert.equal(PAPER_TOTALS_CHUNK, 50);
     const rows = Array.from({ length: 250 }, (_, i) => ({ studentId: `s${i}`, marks: i }));
     const chunks = chunkTotals(rows);
-    assert.deepEqual(chunks.map(c => c.length), [100, 100, 50]);
+    assert.deepEqual(chunks.map(c => c.length), [50, 50, 50, 50, 50]);
     assert.deepEqual(chunks.flat(), rows);
+    assert.deepEqual(chunkTotals(rows.slice(0, 120)).map(c => c.length), [50, 50, 20]);
     assert.deepEqual(chunkTotals([]), []);
-    assert.deepEqual(chunkTotals(rows.slice(0, 100)).map(c => c.length), [100]);
+    assert.deepEqual(chunkTotals(rows.slice(0, 50)).map(c => c.length), [50]);
+    assert.deepEqual(chunkTotals(rows.slice(0, 5), 2).map(c => c.length), [2, 2, 1]);
+  });
+
+  it('never loops forever on a size that makes no progress', () => {
+    for (const bad of [0, -1, 1.5, NaN, Infinity]) assert.throws(() => chunkTotals([1, 2, 3], bad), RangeError, String(bad));
   });
 });
 
@@ -195,5 +201,164 @@ describe('the copy', () => {
     assert.equal(entered('1', '2'), 'أُدخلت علامات 1 من طالبين');
     assert.equal((en.marksGridEntered as (a: string, b: string) => string)('3', '25'), 'Marks entered for 3 of 25 students');
     assert.equal((en.marksGridEntered as (a: string, b: string) => string)('1', '1'), 'Marks entered for 1 of 1 student');
+  });
+});
+
+describe('the grammar of a typed mark (the server reads these too)', () => {
+  it('accepts a trailing point or a leading one, with either separator', () => {
+    for (const [text, value] of [['12.', 12], ['.5', 0.5], ['٫5', 0.5], [',5', 0.5], ['١٢٫', 12], ['12,', 12]] as const) {
+      assert.deepEqual(parsePaperMark(text, 20), { ok: true, value }, text);
+    }
+    for (const bad of ['.', '٫', '..5', '5..', '+5', '1 2']) assert.equal(parsePaperMark(bad, 20).ok, false, bad);
+  });
+
+  it('allows two SIGNIFICANT decimals: trailing zeros do not count', () => {
+    assert.deepEqual(parsePaperMark('12.500', 20), { ok: true, value: 12.5 });
+    assert.deepEqual(parsePaperMark('12.50', 20), { ok: true, value: 12.5 });
+    assert.deepEqual(parsePaperMark('12.25', 20), { ok: true, value: 12.25 });
+    assert.deepEqual(parsePaperMark('12.505', 20), { ok: false, error: 'precision' });
+    assert.deepEqual(parsePaperMark('12.001', 20), { ok: false, error: 'precision' });
+  });
+
+  it('ignores direction marks a right-to-left keyboard leaves in the box', () => {
+    for (const mark of ['\u200E', '\u200F', '\u061C', '\u2066', '\u2067', '\u2068', '\u2069']) {
+      assert.deepEqual(parsePaperMark(`${mark}15${mark}`, 20), { ok: true, value: 15 }, mark.charCodeAt(0).toString(16));
+      assert.deepEqual(parsePaperMark(`\u2067١٢٫٥\u2069 ${mark}`, 20), { ok: true, value: 12.5 });
+    }
+    assert.deepEqual(parsePaperMark('\u200F\u200E', 20), { ok: true, value: null });
+    // They do not count towards the 16-character cap, and they never reach the wire (a number is sent).
+    assert.deepEqual(parsePaperMark(`\u200F${'0'.repeat(14)}15`, 20), { ok: true, value: 15 });
+  });
+});
+
+describe('merging the server answer into rows edited while it was in flight', () => {
+  const roster = [{ id: 's1', displayName: 'أ' }, { id: 's2', displayName: 'ب' }];
+  const sentOf = (rows: ReturnType<typeof initialGridRows>) =>
+    new Map(buildTotalsRequest(rows, 20).totals.map(t => [t.studentId, t.marks] as const));
+
+  it('keeps what the teacher typed after the send, and reports the row dirty against the new saved', () => {
+    let rows = editRow(initialGridRows(roster, []), 's1', '15');
+    const sent = sentOf(rows);
+    rows = editRow(rows, 's1', '16'); // corrected while «حفظ الكل» was running
+    rows = mergeTotalsResponse(rows, [{ studentId: 's1', status: 'saved', marks: 15 }], sent);
+    assert.deepEqual([rows[0]!.saved, rows[0]!.pendingFinal, rows[0]!.text, rows[0]!.status], [15, false, '16', { kind: 'idle' }]);
+    assert.deepEqual(rowState(rows[0]!, 20), { dirty: true, invalid: false, value: 16 });
+    assert.deepEqual(buildTotalsRequest(rows, 20).totals, [{ studentId: 's1', marks: 16 }]);
+  });
+
+  it('does the same for a cleared answer', () => {
+    const attempts = [{ studentId: 's1', submittedAt: '2026-10-12T10:00:00Z', result: result('9.00') }];
+    let rows = editRow(initialGridRows(roster, attempts), 's1', '');
+    const sent = sentOf(rows);
+    assert.deepEqual([...sent], [['s1', null]]);
+    rows = editRow(rows, 's1', '11');
+    rows = mergeTotalsResponse(rows, [{ studentId: 's1', status: 'cleared', marks: null }], sent);
+    assert.deepEqual([rows[0]!.saved, rows[0]!.text, rows[0]!.status], [null, '11', { kind: 'idle' }]);
+    assert.equal(rowState(rows[0]!, 20).dirty, true);
+  });
+
+  it('does not stamp a refusal of the old text on the new text, but still tells the truth about what is stored', () => {
+    const attempts = [{ studentId: 's1', submittedAt: null, result: result('8.00') }];
+    let rows = editRow(initialGridRows(roster, attempts), 's1', '14');
+    const sent = sentOf(rows);
+    rows = editRow(rows, 's1', '13');
+    rows = mergeTotalsResponse(rows, [{ studentId: 's1', status: 'error', code: 'kept_student_work' }], sent);
+    assert.deepEqual([rows[0]!.saved, rows[0]!.pendingFinal, rows[0]!.text, rows[0]!.status], [8, true, '13', { kind: 'idle' }]);
+  });
+
+  it('applies the answer as usual when the box still says what was sent', () => {
+    let rows = editRow(initialGridRows(roster, []), 's1', '١٥٫٠');
+    rows = editRow(rows, 's2', '7');
+    const sent = sentOf(rows);
+    rows = editRow(rows, 's2', '7.0'); // a different spelling of the same mark is not an edit
+    rows = mergeTotalsResponse(rows, [
+      { studentId: 's1', status: 'saved', marks: 15 },
+      { studentId: 's2', status: 'error', code: 'not_in_class' },
+    ], sent);
+    assert.deepEqual([rows[0]!.text, rows[0]!.status], ['15', { kind: 'saved' }]);
+    assert.deepEqual([rows[1]!.text, rows[1]!.status], ['7.0', { kind: 'error', code: 'not_in_class' }]);
+  });
+
+  it('treats a row that was not in the request as edited, and an emptied box as a sent null', () => {
+    let rows = editRow(initialGridRows(roster, []), 's1', '4');
+    rows = mergeTotalsResponse(rows, [{ studentId: 's1', status: 'saved', marks: 4 }], new Map());
+    assert.deepEqual([rows[0]!.text, rows[0]!.status], ['4', { kind: 'idle' }]);
+    const blank = mergeTotalsResponse(initialGridRows(roster, []), [{ studentId: 's2', status: 'cleared', marks: null }], new Map([['s2', null]]));
+    assert.deepEqual(blank[1]!.status, { kind: 'cleared' });
+  });
+
+  it('is two chunks, merged one after the other into the latest rows', () => {
+    let rows = initialGridRows(roster, []);
+    rows = editRow(editRow(rows, 's1', '1'), 's2', '2');
+    const sent1 = new Map([['s1', 1]]);
+    const sent2 = new Map([['s2', 2]]);
+    rows = mergeTotalsResponse(rows, [{ studentId: 's1', status: 'saved', marks: 1 }], sent1);
+    rows = mergeTotalsResponse(rows, [{ studentId: 's2', status: 'saved', marks: 2 }], sent2);
+    assert.deepEqual(rows.map(r => r.status.kind), ['saved', 'saved']);
+  });
+});
+
+describe('gaps in the brief', () => {
+  const roster = [{ id: 's1', displayName: 'أ' }, { id: 's2', displayName: 'ب' }, { id: 's3', displayName: 'ج' }];
+
+  it('merges the unchanged status as a saved row, and ignores a student the grid does not hold', () => {
+    const before = editRow(initialGridRows(roster, []), 's1', '12');
+    const rows = mergeTotalsResponse(before, [
+      { studentId: 's1', status: 'unchanged', marks: 12 },
+      { studentId: 'someone-else', status: 'saved', marks: 5 },
+    ]);
+    assert.deepEqual([rows[0]!.saved, rows[0]!.status], [12, { kind: 'saved' }]);
+    assert.deepEqual(rows.slice(1), before.slice(1));
+    assert.equal(rows.length, 3);
+  });
+
+  it('summarises invalid rows and rows saved but never handed in', () => {
+    const attempts = [
+      { studentId: 's1', submittedAt: '2026-10-12T10:00:00Z', result: result('10.00') },
+      { studentId: 's2', submittedAt: null, result: result('5.00') },
+    ];
+    let rows = initialGridRows(roster, attempts);
+    // entered counts only what families can see; the pending one is dirty (it still has to be handed in).
+    assert.deepEqual(gridSummary(rows, 20), { total: 3, entered: 1, dirty: 1, invalid: 0, errors: 0 });
+    rows = editRow(rows, 's3', '25');
+    assert.deepEqual(gridSummary(rows, 20), { total: 3, entered: 1, dirty: 1, invalid: 1, errors: 0 });
+    rows = editRow(rows, 's3', 'abc');
+    assert.deepEqual(gridSummary(rows, 20), { total: 3, entered: 1, dirty: 1, invalid: 1, errors: 0 });
+  });
+
+  it('pins the total of a total-only paper to 1..100', () => {
+    const ok = (text: string) => quickPaperQuestions(text, ['o'], 'standard');
+    assert.deepEqual(ok('100'), { ok: true, questions: [{ marks: 100, objectiveId: 'o', competencyKey: 'understanding', difficulty: 'standard' }] });
+    assert.deepEqual(ok('1'), { ok: true, questions: [{ marks: 1, objectiveId: 'o', competencyKey: 'understanding', difficulty: 'standard' }] });
+    for (const bad of ['101', '100.5', '0', '0.0', '-5', '', '١٠١']) assert.equal(ok(bad).ok, false, bad);
+    // The server takes a decimal total (marks > 0 and <= 100), so the app does too; the brief does not ask for an integer.
+    assert.equal(ok('12.5').ok, true);
+  });
+});
+
+describe('the words for a per-student refusal, through the real translations', () => {
+  const codes = Object.keys(PAPER_TOTAL_ERROR_KEY) as (keyof typeof PAPER_TOTAL_ERROR_KEY)[];
+  for (const lang of ['ar', 'en'] as const) {
+    it(`gives every code a real sentence in ${lang}, including the one that needs the total`, () => {
+      const t = getT(lang);
+      for (const code of codes) {
+        const text = paperTotalErrorText(t, code, 20);
+        assert.equal(typeof text, 'string', code);
+        assert.ok(text.trim().length > 0, code);
+        assert.ok(!/undefined|NaN|\[object/.test(text), `${lang}.${code}: ${text}`);
+        assert.notEqual(text, PAPER_TOTAL_ERROR_KEY[code], `${lang}.${code} fell back to its key`);
+      }
+      assert.ok(paperTotalErrorText(t, 'marks_out_of_range', 20).includes('20'));
+    });
+  }
+  it('has real words for every whole-save refusal as well', () => {
+    for (const lang of ['ar', 'en'] as const) {
+      const t = getT(lang);
+      for (const err of [{ status: 409, code: 'not_published' }, { status: 409, code: 'no_class' }, { status: 409, code: 'no_level_scale' }, { status: 409, code: 'not_quick_paper' }, new Error('x')]) {
+        const key = paperTotalsFailureKey(err);
+        const text = t(key);
+        assert.ok(text.trim().length > 0 && text !== key && !/undefined/.test(text), `${lang}.${key}`);
+      }
+    }
   });
 });

@@ -14,8 +14,12 @@ import type { AttemptListRow, Difficulty, EvaluationQuestion, PaperQuestionInput
 
 /** MAX_MARKS_PER_QUESTION in api-server/src/modules/assessment/paperExam.ts. */
 export const QUICK_PAPER_MAX = 100;
-/** Rows per request: well under the server's 300, and under apiFetch's timeout. */
-export const PAPER_TOTALS_CHUNK = 100;
+/**
+ * Rows per request. The server takes up to 100 (PAPER_TOTALS_MAX_ROWS), but
+ * each row is several queries and a hand-in, and 100 of them run close to the
+ * client's 45 s timeout; 50 leaves room.
+ */
+export const PAPER_TOTALS_CHUNK = 50;
 
 export type PaperTotalErrorCode =
   | 'not_in_class'
@@ -43,19 +47,33 @@ export const PAPER_TOTAL_ERROR_KEY = {
  * `length`: more characters than the server reads as a mark (16). The app
  * refuses it here, so a pasted megabyte never goes up in a request body.
  */
+/** Words for a per-row refusal. `marks_out_of_range` is a function key: it needs the total. */
+export function paperTotalErrorText(
+  t: (key: (typeof PAPER_TOTAL_ERROR_KEY)[PaperTotalErrorCode], ...args: string[]) => string,
+  code: PaperTotalErrorCode,
+  max: number,
+): string {
+  // Passing the total to a plain-string key is harmless; leaving it off a function key prints "undefined".
+  return t(PAPER_TOTAL_ERROR_KEY[code], String(max));
+}
+
 export type MarkParse = { ok: true; value: number | null } | { ok: false; error: 'invalid' | 'range' | 'precision' | 'length' };
 
-const NUMBER = /^\d+(\.\d+)?$/;
+/** What the server reads as a plain decimal: «12», «12.5», «12.», «.5». */
+const NUMBER = /^(?:\d+\.?\d*|\.\d+)$/;
+/** Direction marks a right-to-left keyboard or a paste can carry: LRM, RLM, ALM, and the isolates. */
+const BIDI_MARKS = /[\u200E\u200F\u061C\u2066-\u2069]/g;
 
 /** MAX_MARKS_TEXT in api-server/src/lib/paperTotals.ts. */
 const MAX_MARKS_TEXT = 16;
 
 export function parsePaperMark(text: string, max: number): MarkParse {
-  const s = toLatinDigits(text).trim().replace(/[٫,]/g, '.');
+  const s = toLatinDigits(text).replace(BIDI_MARKS, '').trim().replace(/[٫,]/g, '.');
   if (s === '') return { ok: true, value: null };
   if (s.length > MAX_MARKS_TEXT) return { ok: false, error: 'length' };
   if (!NUMBER.test(s)) return { ok: false, error: 'invalid' };
-  if ((s.split('.')[1] ?? '').length > 2) return { ok: false, error: 'precision' };
+  // At most two SIGNIFICANT decimals: «12.500» is 12.5, «12.505» is not a mark.
+  if ((s.split('.')[1] ?? '').replace(/0+$/, '').length > 2) return { ok: false, error: 'precision' };
   const value = Number(s);
   if (value < 0 || value > max) return { ok: false, error: 'range' };
   return { ok: true, value };
@@ -124,14 +142,54 @@ export function buildTotalsRequest(
   return { totals, invalidIds };
 }
 
-export function mergeTotalsResponse(rows: readonly GridRow[], results: readonly PaperTotalResult[]): GridRow[] {
+/**
+ * Fold the server's per-student answer into the grid.
+ *
+ * Called with two arguments it takes each answer at face value: the box shows
+ * what the server stored and the row says saved / cleared / refused.
+ *
+ * Pass `sent` (studentId -> the value that went up, built from
+ * `buildTotalsRequest(...).totals`) and a row the teacher edited while the
+ * request was in flight keeps what they typed. `saved` and `pendingFinal`
+ * always follow the server (it is the truth about what is stored), but when
+ * the box no longer says what was sent the text stays, the status goes back
+ * to idle (a tick or an error describes the OLD text), and `rowState` then
+ * reports the row dirty against the new `saved`. A blank box equals a sent
+ * `null`; a student missing from `sent` counts as edited.
+ *
+ * Rules for the screen (Task 9):
+ *  - Apply it with FUNCTIONAL state, once per chunk:
+ *    `setRows(prev => mergeTotalsResponse(prev, chunkResponse, sent))`.
+ *    Merging into a closed-over snapshot loses chunk 1's results when chunk 2
+ *    returns.
+ *  - Lock the inputs and the save button while saving: that is the primary
+ *    guard; the `sent` rule is only the backstop.
+ *  - A client timeout does not mean nothing was saved — the server may have
+ *    finished. Refetch the attempts before assuming; saving again is
+ *    idempotent (an unchanged mark answers `unchanged`).
+ */
+export function mergeTotalsResponse(
+  rows: readonly GridRow[],
+  results: readonly PaperTotalResult[],
+  sent?: ReadonlyMap<string, number | null>,
+): GridRow[] {
   const byStudent = new Map(results.map(r => [r.studentId, r]));
   return rows.map(row => {
     const r = byStudent.get(row.studentId);
     if (!r) return row;
+    // Server truth first; an error carries no new stored value.
+    const stored =
+      r.status === 'error'
+        ? { saved: row.saved, pendingFinal: row.pendingFinal }
+        : { saved: r.marks, pendingFinal: false };
+    if (sent) {
+      const cur = parsePaperMark(row.text, Infinity);
+      const unchanged = cur.ok && sent.has(row.studentId) && cur.value === sent.get(row.studentId);
+      if (!unchanged) return { ...row, ...stored, status: { kind: 'idle' } };
+    }
     if (r.status === 'error') return { ...row, status: { kind: 'error', code: r.code } };
-    if (r.status === 'cleared') return { ...row, saved: null, pendingFinal: false, text: '', status: { kind: 'cleared' } };
-    return { ...row, saved: r.marks, pendingFinal: false, text: formatMark(r.marks), status: { kind: 'saved' } };
+    if (r.status === 'cleared') return { ...row, ...stored, text: '', status: { kind: 'cleared' } };
+    return { ...row, ...stored, text: formatMark(r.marks), status: { kind: 'saved' } };
   });
 }
 
@@ -150,8 +208,9 @@ export function gridSummary(
   return { total: rows.length, entered, dirty, invalid, errors };
 }
 
-/** PAPER_TOTALS_MAX_ROWS in api-server/src/modules/assessment/paperTotals.ts is the server's cap; a request over it is a 400. */
+/** Split a list into requests of `size` rows (the server refuses more than its PAPER_TOTALS_MAX_ROWS = 100 with a 400). */
 export function chunkTotals<T>(rows: readonly T[], size: number = PAPER_TOTALS_CHUNK): T[][] {
+  if (!Number.isInteger(size) || size < 1) throw new RangeError(`chunkTotals needs a whole size of at least 1, got ${size}`);
   const chunks: T[][] = [];
   for (let i = 0; i < rows.length; i += size) chunks.push(rows.slice(i, i + size));
   return chunks;

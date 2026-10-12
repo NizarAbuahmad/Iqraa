@@ -556,8 +556,8 @@ export async function listAttempts(evaluationId: string): Promise<AttemptListRow
  * row never loses the others. Longer than the 15s default: each row is a mark
  * and a hand-in.
  *
- * One request is at most `PAPER_TOTALS_CHUNK` rows (the server refuses more
- * with a 400); a longer list is the caller's to split with `chunkTotals`, so
+ * One request is at most `PAPER_TOTALS_CHUNK` rows (the server would take 100,
+ * but each row is several queries); a longer list is the caller's to split with `chunkTotals`, so
  * the results of the chunks already saved are not lost to a later one failing.
  * A refusal of the whole save throws `EvaluationError` — `paperTotalsFailureKey`
  * (services/paperMarks.ts) names the copy for it.
