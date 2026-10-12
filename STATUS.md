@@ -1190,7 +1190,7 @@ child's list read-only; the teacher sees how many have finished. Spec Part 2 of
 `docs/superpowers/specs/2026-10-11-family-school-views-design.md` (amended in
 place — see its section 2).
 
-- **Tables** (migration `0006`, additive, no destructive flag): `homework`
+- **Tables** (migration `0007`, additive, no destructive flag): `homework`
   (teacher, class, title, instructions, `due_at`, optional `evaluation_id`,
   `archived_at`) and `homework_completions` (unique per homework + roster row).
   Schema in `lib/db/src/schema/homework.ts`.
@@ -1205,26 +1205,55 @@ place — see its section 2).
   `lib/homeworkDone.ts`. The student and parent routes answer `403
   student_accounts_disabled` when the flag is off, like the timetable.
 - **Mobile:** a «الواجبات» tab on the class screen (`components/classes/HomeworkTab.tsx`,
-  a fourth tab next to Students / Materials / Exams — the shared tab padding was
-  tightened to fit it) with a create / edit / delete modal inside a
-  `KeyboardSafeView`; a Homework section above the timetable on the School tab
-  (`app/(tabs)/school.tsx`): a tick for a student, read-only per child for a parent.
-  Logic is `services/homework.ts`, fetchers `services/homeworkApi.ts` (split, as for
-  the timetable). Copy is `hw*` in `services/i18n.ts`, ar + en.
+  a fourth tab next to Students / Materials / Exams) with a create / edit / delete
+  modal inside a `KeyboardSafeView`. **The shared tab padding went from 14 to
+  `SPACE.sm` (8) to fit four tabs, and that applies to every teacher's class screen,
+  not only to classes with homework**; the tab row also scrolls horizontally now, so
+  four tabs that do not fit at large font scales stay reachable (same recipe as the
+  parent's child picker). The School tab (`app/(tabs)/school.tsx`) is titled
+  «المدرسة» and has two sections, each under its own heading and with its own error
+  banner: Homework first (a tick for a student, read-only per child for a parent),
+  then the weekly timetable. Logic is `services/homework.ts`, fetchers
+  `services/homeworkApi.ts` (split, as for the timetable). Copy is `hw*` in
+  `services/i18n.ts`, ar + en.
+- **A child with no student account is not "late".** `canTrack: false` (no roster row
+  with a `self` link) means nobody can tick that child's homework. The parent screen
+  then shows each item's due date in the neutral badge, no done mark and no «متأخّر»,
+  with one line under the heading: «لا يوجد حساب طالب لـ {name}…». An absent `canTrack`
+  (an older server) reads as `true`, so a missing field never hides state. The teacher's
+  tab counts "done" against `trackableCount`, not the whole roster, adds a muted
+  «N بلا حساب» line when some students have no account, and drops the bar when none
+  do. Both defaults are pinned in `homework.test.ts`.
+- **Dates are formatted, not left to the bidi algorithm.** `formatDueDate` returns
+  `DD-MM-YYYY` inside a left-to-right isolate (U+2066…U+2069), so Arabic and English
+  show the same digits in the same order; it is used wherever a due date is displayed.
+  The date field takes `YYYY-MM-DD` only (`hwDueFormat` is that Latin string in both
+  languages) and the example date in the error is isolated too.
+- **The exam picker is narrower than the server.** The server accepts any live exam of
+  the teacher's that is attached to the class (a draft included); the mobile picker
+  offers only **published** ones. A homework already linked to an exam the picker would
+  not offer keeps that link visible as a row, so saving does not drop it.
 - **The due date is a calendar day.** The API takes and returns `dueDate:
   "YYYY-MM-DD"`; the server stores `dueAt` as 23:59:59.999 **Asia/Amman** of that day
   (a fixed UTC+3 — Jordan dropped DST in 2022) and also returns it as ISO. Clients
   never do timezone arithmetic. A homework is `overdue` only once that instant has
   passed and it is not done. A due date must lie within 30 days back and 366 days ahead
   (Amman days), else 400 — a typo like 2062 is refused.
-- **A family sees the last 14 days and later**: `dueAt` within 14 days of now, newest
-  200. Older work drops off the list (it is not deleted, and the teacher still sees it).
+- **A family sees the last 14 days and later**: `dueAt` within 14 days of now, and of
+  those the **200 earliest-due** (`ORDER BY due_at ASC LIMIT 200` in
+  `lib/familyHomeworkLoad.ts`, one limit across all the account's classes, not per
+  child). It is not "newest 200" — an earlier version of this section and of the spec
+  said so, wrongly. Earliest-due is the right set to keep: past the limit what is cut is
+  the work due furthest away, which nobody can act on yet, never the work due this
+  week. Older work drops off the list (it is not deleted, and the teacher still sees it).
 - **Completions are per roster row, not per account.** A child taught by two teachers
   is two roster rows in two classes, and a homework belongs to one class, so (homework,
   row) is unambiguous. The consequence: two accounts linked to the *same* roster row
   share their done marks. A completion by a child who has since left the class, or whose
   row was archived, stops counting towards the teacher's number but is not deleted.
-- **A family sees an exam's title only when it is `published`, not archived and still in the homework's class** (re-checked on read; a PATCH does not re-check an unchanged link). A teacher may attach
+- **A family sees an exam's title only when it is `published`, not archived and still in
+  the homework's class** (re-checked on read; a PATCH does not re-check an unchanged
+  link, so a homework stays editable after its exam is archived). A teacher may attach
   only an exam that is theirs, not archived, and already attached to *that homework's
   class* (the spec's "send a worksheet as an exam" flow is a separate project); anything
   else is one identical 400. Tapping the title opens «اختباراتي», which applies the
@@ -1241,19 +1270,37 @@ place — see its section 2).
   B sees none of A's; a draft exam's title never reaches a family; a student can tick
   and untick only for their own row (never a classmate's; a completion by the same
   child's row in another class does not read as done), and "not yours" is one identical 404 however it is not yours; the
-  flag-off 403. **Mutation-proven** (the rule removed, the test seen going red, then
-  restored): in the teacher file the `teacherId` ownership condition, the archived-class
-  condition, the exam's same-class condition, the archived-row and the membership
-  conditions of the counts, and `...req.body` spread into PATCH; in the family file the
-  class-membership scoping of the tick, the completion scoping (the loader and the
-  builder each filter, so the test goes red only when both are removed — the parent's
-  stray-completion case pins the builder layer), the `published` check on the exam
-  title, the archived-homework filter, and the row scoping of the undo. Reports:
-  `.superpowers/sdd/2026-10-12-family-homework/task-3-report.md` and `task-4-report.md`.
-- **What has been seen.** The School tab with the Homework section and the teacher's
-  class screen with its four tabs were rendered **once**, in headless Chromium at
-  360px, in Arabic RTL, against seeded fixtures: no console errors or failed
-  requests, and four tabs fit at 360px in both ar and en (50–65px of slack).
+  flag-off 403; `canTrack` per child (a child with only an archived `self` row stays
+  false); `trackableCount` per class and per item.
+  **Mutation-proven**: each rule below was removed, the named test seen going red, then
+  the rule restored (the DB tests boot the *built* bundle, so each mutation needed a
+  `pnpm build` — an un-rebuilt mutation passes falsely).
+
+  | Removed | Went red |
+  | --- | --- |
+  | `teacherId` condition in `ownedHomework` | `deleting` (1); with the PATCH update's own `teacherId` where also removed, `changing` and `deleting` (2) — the update's where is defence in depth |
+  | archived-class condition in `ownedHomework` | `changing > answers 404 for homework in an archived class` |
+  | exam's same-class condition in `examOk` | `creating > accepts only an exam…` and `changing > attaches, rejects the wrong exam…` |
+  | archived-roster-row filter in the counts | `counts > …live roster rows…` |
+  | membership join in the `doneCount` query | `counts > does not count a completion by a child who has since left the class` |
+  | `...req.body` spread into the PATCH `set` | `changing > never moves homework…` and the wrong-exam case |
+  | class intersection in `setHomeworkDone` (all self-linked rows) | the identical-404 case and the cross-account DELETE case |
+  | DELETE scoped to `homeworkId` only (no student ids) | `scopes both the tick and the undo to the account's own row` |
+  | builder counts a completion by any row | the stray-completion case; the loader's own student-id filter hides it alone, so only removing **both** layers also reddens the parent's "Sara only (not Adam)" case |
+  | `published` check on the exam title | exam-title (student) and "never exposes a draft exam" (parent) |
+  | `homework.archivedAt` filter in the loader | student list and parent grouping |
+  | exam archived / other-class check in the builder | 1 DB test (`stops showing an exam once it is archived`) + 1 unit test |
+  | `canTrack` forced true | 2 in `familyHomework.db` (which children can be tracked; a `self` link on any row counts) |
+  | `trackableCount` counted as every student | 4 in `homework.db` |
+  | PATCH skip of an unchanged exam link removed | `lets an edit through when the linked exam has since been archived` |
+  | due-date range check in `parseCreate` | 1 DB test (`rejects a due date years away`) + 4 unit tests |
+- **What has been seen.** Before the final-review fix wave, the School tab with the
+  Homework section and the teacher's class screen with its four tabs were rendered
+  **once**, in headless Chromium at 360px, in Arabic RTL, against seeded fixtures: no
+  console errors or failed requests, and four tabs fit at 360px in both ar and en
+  (50–65px of slack). **The fix wave itself has not been rendered** — the new page
+  header and section order, the no-account state, the `trackableCount` line, the
+  formatted dates and the scrolling tab row were typechecked and unit-tested only.
 - **What has not.** Nobody has used it on a device or with a real account. Keyboard
   behaviour in the modal, and saving or creating a homework through the UI, were not
   exercised (the routes are tested; the form driving them is not). 320px, long titles
@@ -1268,15 +1315,18 @@ place — see its section 2).
   - After a tick on the student screen, the reload that follows can briefly un-tick
     the optimistic tick if it lands while the request is in flight; it self-heals on
     the next load or re-tap.
-  - Dates render through the RTL bidi reorder as `DD-MM-YYYY` (the ISO string flips);
-    it reads right by accident and no explicit formatter exists.
-  - The School page header still reads as the timetable's («الجدول الأسبوعي», above the
-    homework section) — being fixed (the timetable gets its own heading, the page a
-    generic one).
   - No test pins the 14-day boundary or the 200-item limit.
   - The mobile `createHomework` / `updateHomework` can resolve `null` when the write
     succeeded but the returned row failed client normalisation; callers treat that as
     success and refetch the list.
+  - A dropped connection after the server has committed a `POST /homework` can
+    duplicate it when the teacher retries: there is no idempotency key.
+  - The teacher's numbers refresh only when the tab mounts, not while it is open.
+  - Part 4 (notifications) will need a "roster row → accounts" lookup:
+    `lib/familyAccess.ts` only goes account → roster rows.
+  - The student checkbox sits about 13px below the title's centre.
+  - Not exercised: the keyboard in the modal, creating or saving through the UI, a
+    320px screen, long titles.
 
 ## Messages can be reacted to with an emoji, 2026-10-10
 

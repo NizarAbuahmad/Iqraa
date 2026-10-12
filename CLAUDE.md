@@ -307,12 +307,18 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   `schema-push: done`. A database that has tables but no migration history is
   refused until baselined once; see *Schema* in `docs/deploying.md`.
 - **A homework due date is a calendar day, and a completion belongs to a roster
-  row.** The API sends and takes `dueDate: "YYYY-MM-DD"`; the server stores
-  `dueAt` as 23:59:59.999 **Asia/Amman** (a fixed UTC+3) of that day, so a client
-  that builds a `Date` and sends an instant, or reads `dueAt` to say "due
-  today", is doing the timezone arithmetic that the contract exists to avoid and
-  will be a day off near midnight. `homework_completions.student_id` is a
+  row.** The API sends and takes `dueDate: "YYYY-MM-DD"` and nothing else — an
+  instant, a different order or a non-day is a 400 — and stores `dueAt` as
+  23:59:59.999 **Asia/Amman** (a fixed UTC+3) of that day. So the traps are on the
+  client, not in the contract: reading `dueAt` to say "due today" (a device in
+  another zone disagrees with the server about the day near midnight; use the
+  `dueDate` and `ammanToday()`), and building a `YYYY-MM-DD` from a local-timezone
+  `Date` (`toISOString()` shifts to UTC; `new Date('YYYY-MM-DD')` shifts west of
+  it). Display goes through `formatDueDate`, never the bidi algorithm.
+  `homework_completions.student_id` is a
   `students.id` (a roster row), not a user: two accounts linked to the same row
   share their ticks, and "did this child do it" must look at every row of the
-  child *in that homework's class*. Pinned by `homework.db.test.ts` and
+  child *in that homework's class*. A child with no `self`-linked row
+  (`canTrack: false`) cannot tick anything, so never call their work late or
+  unfinished. Pinned by `homework.db.test.ts` and
   `familyHomework.db.test.ts`.

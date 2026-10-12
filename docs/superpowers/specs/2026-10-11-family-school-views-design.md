@@ -1,6 +1,6 @@
 # Schedule, homework, exams & results for students and parents — design
 
-Date: 2026-10-11 · Status: design approved in conversation, awaiting spec review
+Date: 2026-10-11 · Status: Parts 0–2 built (Part 2 on 2026-10-12, with a final-review fix wave); Part 3 is half built — the exam date and a school-wide exam calendar shipped separately (PR #1017, below) — and Parts 3 (family side, paper marks) and 4 are not started
 
 ## Why
 
@@ -18,7 +18,7 @@ Each gets its own implementation plan (`writing-plans`) when its turn comes:
 | 0 | Foundation | Shared family-access helper; "School" tab for students and parents | Built |
 | 1 | Schedule | Read-only class timetable, assembled from teachers' slots | Built |
 | 2 | Homework | New entity: teacher posts, student marks done, parent watches | Built, 2026-10-12 (no notifications yet — Part 4) |
-| 3 | Exams & results | Exam date, paper marks, release, per-child results | Not started |
+| 3 | Exams & results | Exam date, paper marks, release, per-child results | Teacher-side exam date + school exam calendar built (PR #1017); families seeing the date, paper marks, release, per-child results not started |
 | 4 | Notifications | Push for the four events below; scheduled trigger for reminders | Not started |
 
 ## Decisions taken
@@ -26,7 +26,7 @@ Each gets its own implementation plan (`writing-plans`) when its turn comes:
 | Question | Decision |
 | --- | --- |
 | How is the class timetable created | **Assembled** from each teacher's own `schedule_slots` for that class. No second place to enter it |
-| What homework is | Simple assignment: title, instructions, due date, optional link to an existing digital exam/worksheet |
+| What homework is | Simple assignment: title, instructions, due date, optional link to an exam already attached to the class (an exam only — a worksheet has to be sent as an exam first) |
 | What a student can do with homework | Mark it done / not done. No uploads, no grading |
 | What a parent can do with homework | Read only, per child, with that child's done state |
 | Paper vs digital exams | One exam record (`evaluations`) for both. Teacher types paper marks |
@@ -50,14 +50,17 @@ paper-exam table (families would get two lists of exams and results).
   `/parent` guarded by `requireRole`. Parent scoping is inline (guardian link,
   student not archived); `selfLinkedStudentIds()` serves students.
 - Exams: `evaluations.releaseResultsToStudent`, `evaluation_assignments.dueAt`,
-  `attempts.source` (`teacher_entry | student_link`). `evaluations` has **no
-  exam-date column**.
+  `attempts.source` (`teacher_entry | student_link`). Since PR #1017 (STATUS.md,
+  «Exams have a date, and teachers at one school can see each other's»)
+  `evaluations` also has `exam_date` / `exam_time` text columns, and there are a
+  `schools` table, `users.school_id` and a teacher-only `GET /exam-calendar`.
+  `/student/exams` and `/parent/exams` do not return the date yet.
 - `lib/resultsReleaseNotify.ts#announceResultsRelease` already pushes to
   children and guardians; `lib/pushNotifications.ts` is the Expo push layer.
 - Mobile gating: `services/routeGating.ts` (`NON_TEACHER_ROUTES`,
   deny-by-default) and `buildTabEntries` in `app/(tabs)/_layout.tsx`.
-- Nothing for homework, standalone grades or attendance. No scheduler in the API
-  server. Student/parent accounts sit behind `STUDENT_ACCOUNTS=true`
+- Homework did not exist when this was written and is Part 2 (built). Still
+  nothing for standalone grades or attendance. No scheduler in the API server. Student/parent accounts sit behind `STUDENT_ACCOUNTS=true`
   (`lib/features.ts`), which is currently `true` in production (STATUS.md,
   2026-09-07).
 
@@ -73,8 +76,9 @@ paper-exam table (families would get two lists of exams and results).
    pattern of `my-exams.tsx`). Filter by roster link, never by a display
    preference — STATUS.md records results being lost that way.
 3. **"School" (المدرسة) tab** for student and parent in `buildTabEntries`,
-   showing the timetable, with a row to «اختباراتي»; Part 2 adds a Homework
-   section (no segment control while there is one list and one link).
+   showing the timetable, with a row to «اختباراتي»; Part 2 put a Homework
+   section above the timetable, each under its own heading, with the page titled
+   «المدرسة» (no segment control while there is one list and one link).
    `app/(tabs)/school.tsx`, an
    `iconNameFor` case, ar + en i18n keys, sub-routes added to
    `NON_TEACHER_ROUTES` and `routeGating.test.ts`. `my-exams` stays reachable
@@ -135,7 +139,8 @@ New `lib/db/src/schema/homework.ts`, exported from `index.ts`; additive, so no
 Routes, every guard path-scoped (`routes/homework.ts`, `routes/familyHomework.ts`):
 
 - Teacher: `POST /homework` (with `classGroupId` in the body),
-  `GET /classes/:id/homework` (with done and student counts),
+  `GET /classes/:id/homework` (with done and student counts, and
+  `trackableCount`: the students who have an account and so can tick),
   `PATCH /homework/:id`, `DELETE /homework/:id` (archives). Ownership through
   `findLiveClass`; the same 404 for "not yours" and "missing". The create is
   `POST /homework`, not `POST /classes/:id/homework`, because the latter would
@@ -145,7 +150,10 @@ Routes, every guard path-scoped (`routes/homework.ts`, `routes/familyHomework.ts
   only for homework of a live class one of the student's `self`-linked roster
   rows sits in.
 - Parent: `GET /parent/homework`, grouped per child (the same grouping as the
-  schedule). Read-only: a parent cannot mark done.
+  schedule), each entry `{ key, displayName, canTrack, homework }`. Read-only: a
+  parent cannot mark done. `canTrack` is false when none of the child's roster
+  rows has a student account (a `self` link): nobody can tick that child's
+  homework, so the app shows the due date only — never «متأخّر» or a done mark.
 - `STUDENT_ACCOUNTS` gate: the student and parent handlers answer
   `403 { code: "student_accounts_disabled" }` when the flag is off, as
   `routes/familySchedule.ts` does.
@@ -154,30 +162,70 @@ Routes, every guard path-scoped (`routes/homework.ts`, `routes/familyHomework.ts
 
 What a family sees:
 
-- **Recent homework only:** `dueAt` within the last 14 days or later, newest 200.
-  Older work drops off rather than accumulating.
-- **An attached exam's title is shown only when that exam is `published`**; a
-  draft's title is not for children. Tapping it opens the existing «اختباراتي»
-  screen, which applies the real visibility rules.
+- **Recent homework only:** `dueAt` within the last 14 days or later, and of
+  those the **200 earliest-due** (`ORDER BY due_at ASC LIMIT 200` in
+  `lib/familyHomeworkLoad.ts`; one limit across all the account's classes, not per
+  child). Older work drops off rather than accumulating. Earliest-due is the right
+  set to keep: if a family is ever over the limit, what gets cut is the work due
+  furthest away, which nobody can act on yet, and never the work due this week. (An
+  earlier draft of this spec said "newest 200"; that is not what the code does, and
+  a limit that kept the latest-due would have done the opposite.)
+- **An attached exam's title is shown only when that exam is `published`, not
+  archived, and in the homework's own class**; a draft's title is not for
+  children. Tapping it opens the existing «اختباراتي» screen, which applies the
+  real visibility rules.
 - State is `done`, `overdue` (past the due day and not done) or `open`.
 
 **Attaching an exam = picking one already attached to the class.** The attached
 exam must be one of this teacher's, not archived, with `classGroupId` equal to
-the homework's class; anything else is one indistinguishable 400. (Creating an
+the homework's class; anything else is one indistinguishable 400. The server
+accepts any such live exam (draft included); the mobile picker offers only
+**published** ones, since a draft's title is hidden from families anyway. A PATCH
+that leaves the link as it is does not re-check it, so a homework stays editable
+after its exam is archived or moved.
+
+**The due date has a window:** `dueDate` must be within the last 30 days and the
+next 366 days (Amman calendar days), else 400. The API accepts only
+`YYYY-MM-DD`; the app displays it as `DD-MM-YYYY` in a left-to-right isolate. (Creating an
 exam from a worksheet, `SendWorksheetSheet` → `fromWorksheet`, is a separate
 flow and a separate project, so homework does not reuse it.)
 
 Mobile: a «الواجبات» tab and create/edit modal in `classes/[id]` (the modal
-wraps its body in `KeyboardSafeView`; `components/classes/HomeworkTab.tsx`).
-Families get a Homework section above the timetable on the School tab
+wraps its body in `KeyboardSafeView`; `components/classes/HomeworkTab.tsx`). The
+teacher's "N of M done" counts against `trackableCount`, with a muted
+"K without an account" line, and no bar at all when nobody has an account. The
+class screen's tab row scrolls horizontally when four tabs do not fit. Families
+get a Homework section above the timetable on the School tab
 (`app/(tabs)/school.tsx`); students get the toggle, parents the read-only list
 per child.
 
 ## 3. Exams & results
 
-- Additive migration: `evaluations.sitting_at timestamptz NULL`, the exam date.
-  Set on create/edit; returned by `/student/exams` and `/parent/exams`; shown as
-  an "upcoming" list and on the calendar.
+**Already built, separately (PR #1017; STATUS.md «Exams have a date, and teachers
+at one school can see each other's, 2026-10-11»).** This part builds on it
+instead of adding its own column:
+
+- `evaluations.exam_date` (`"YYYY-MM-DD"`) and `exam_time` (`"HH:MM"`), both
+  nullable **text**, set from the evaluation screen through `PATCH
+  /evaluations/:id` (`lib/examDate.ts`: `null` clears; a time needs a date).
+  Planning data only — it does not open or close the student link.
+- `schools` and `users.school_id`, assigned by a platform admin
+  (`system_admin` only); teachers at one school see each other's dated exams
+  (date, time, grade, subject, class name, teacher name — never id, title or
+  content) through the **teacher-only** `GET /exam-calendar`, and get a warning
+  when a grade would sit two exams on one day.
+- The earlier plan for this part, an additive `evaluations.sitting_at
+  timestamptz`, is dropped: the date exists, in the other shape.
+
+**Still to do in this part:**
+
+- **Show the date to families.** `/student/exams` and `/parent/exams` do not
+  return `examDate` / `examTime` yet. Add them through `studentExamRow` /
+  `guardianExamRow`, so a date appears only for an exam the child may already
+  see — a draft that has been given a
+  date for planning must not leak through the date. Then an "upcoming" list on
+  the School tab. Families do not get `/exam-calendar`: it is the teachers'
+  cross-colleague view and is guarded as such.
 - Paper exams reuse `setPaperQuestions`, `scanMarks` and
   `attempts.source = teacher_entry`. **First task of this part:** read
   `evaluations/[id]/results` and `answers/[studentId]` and confirm whether a
@@ -188,6 +236,14 @@ per child.
 - A per-child results view built on `/student/grades` — check what it already
   returns first. No term averages or report cards.
 
+**A school day is stored two ways**, and anything that compares them (the Part 4
+reminders, an "upcoming" list that mixes homework and exams) has to handle both:
+an exam's day is the text pair `exam_date` / `exam_time` with no zone (the
+teacher's local calendar day, like the schedule and plan tables), while a
+homework's day is a `timestamptz` at 23:59:59.999 Asia/Amman. Compare exam days
+as `YYYY-MM-DD` strings and homework days through their Amman date; never
+`toISOString()` an exam date, which shifts it to UTC near midnight.
+
 ## 4. Notifications
 
 - Homework posted and exam scheduled/changed: pushed from the create/update
@@ -195,6 +251,14 @@ per child.
   guardians, resolved with the Part 0 helper.
 - Results released: `announceResultsRelease` already does it; extend to paper
   marks.
+- Exam scheduled/changed has a hook already: `exam_date` / `exam_time` are
+  written by `PATCH /evaluations/:id`. Note the two day representations in Part
+  3 (text exam day, Amman end-of-day homework instant) before writing any
+  "tomorrow" logic that covers both.
+- **Part 4 will need a "roster row → accounts" lookup.** `lib/familyAccess.ts`
+  only goes account → roster rows today; a push to "the class's students and
+  their guardians" has to go the other way (class → rows → `self` / `guardian`
+  links → users), and that helper does not exist yet.
 - **Homework due tomorrow, not done:** the API server has no scheduler. Use Cloud
   Scheduler calling `POST /internal/homework-reminders`, guarded by a
   shared-secret header, mounted with a path prefix and covered in
