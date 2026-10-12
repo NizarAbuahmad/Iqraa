@@ -284,9 +284,11 @@ instead of adding its own column:
   (`kept_student_work`) for a sitting the student made through the link or one
   holding answers; the app asks for confirmation before sending a clear for a
   mark it had saved. The class mark book is `app/evaluations/[id]/marks.tsx`,
-  reached from «أدخل العلامات» on the exam screen and «أدخل العلامات كجدول» on
-  the answers picker (both for a **published or closed** quick paper exam). A multi-question
-  paper is still marked per student.
+  reached from «أدخل العلامات» on the exam screen (a **published or closed** quick
+  paper exam) and from «أدخل العلامات كجدول» on the answers picker. Only a
+  published exam's screen links to the picker; the picker's own gate accepts a
+  closed exam too, but nothing on a closed exam's screen leads there. A
+  multi-question paper is still marked per student.
 - **Visibility is unchanged.** `releaseResultsToStudent` + handed in + not
   provisional (`studentResultReady`), shaped by `studentExamRow` /
   `guardianExamRow`, so a parent sees exactly what the child sees. The teacher's
@@ -337,7 +339,9 @@ as `YYYY-MM-DD` strings and homework days through their Amman date; never
   - **Absent children stay in state `paper`** (a blank box makes no sitting), so a
     «results are out» push to such a family would point at a row with no result.
   - **`/parent/exams` `key` is a name-grouped child, not an account** (`groupChildren`);
-    resolving pushes needs the roster row → user lookup above.
+    resolving pushes needs the class-wide roster row → user helper above
+    (`resultsReleaseNotify.ts` already joins attempts → `rosterLinks` inline for one
+    exam's sittings; it is not reusable for a class).
 - **Homework due tomorrow, not done:** the API server has no scheduler. Use Cloud
   Scheduler calling `POST /internal/homework-reminders`, guarded by a
   shared-secret header, mounted with a path prefix and covered in
