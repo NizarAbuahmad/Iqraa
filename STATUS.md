@@ -990,10 +990,12 @@ served items with the printed books. Design:
   stems are near-duplicates are never both drawn. The model is asked for
   `count − k`, and `assembleLivePaper` (`modules/assessment/bookQuestions.ts`)
   cuts the model's surplus first, adds the book questions (drawn so none is a
-  near-duplicate of a model question) and sorts the combined list into the
-  paper's type blocks (`evaluation.assessmentTypes` order, stable, only when a
-  book question was drawn), so the ministry blocks are not split. The route's own
-  final trim cannot fire when a book share exists. With the flag off, or a
+  near-duplicate of a model question) and appends them. The route then puts the
+  whole finished paper into the ministry's type blocks with `inPaperOrder`
+  (`paperOrder.ts`, the same rule every stored paper gets), so the blocks are not
+  split. The route's own final trim cannot fire when a book share exists, and the
+  "ask once more for what is missing" top-up is measured against the model's share
+  (`count − k`), not the whole paper. With the flag off, or a
   non-maths subject, `k` is 0 and the model's paper passes through untouched.
 - **Competency and marks are by kind and nominal.** An exercise is
   `application` (3 marks), a unit-test choice `understanding` (2 marks); the model

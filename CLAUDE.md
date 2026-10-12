@@ -162,8 +162,9 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   offline generators and `routes/generate.ts` ignore them, so a paper differs by
   which path made it — add a family to the script's `TABLE`, never to a
   generator. On the live path the model's surplus is cut before the book
-  questions are added, and the combined list is sorted into the paper's type
-  blocks (`assembleLivePaper`).
+  questions are appended (`assembleLivePaper`); the finished paper is put into
+  type blocks by `inPaperOrder` like every stored paper, and the route's top-up
+  for a short reply is measured against the model's share (`count − k`).
 - **A teaching style shapes the whole lesson plan, in two places.** Per-style
   phases live in `artifacts/mobile/services/ai/lessonPlanBlueprints.ts` and the
   matching contract in `LESSON_STYLE_RULES_AR`/`_EN`

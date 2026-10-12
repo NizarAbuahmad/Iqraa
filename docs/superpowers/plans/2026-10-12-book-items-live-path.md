@@ -24,7 +24,7 @@
 
 | Spec said | This plan does | Why |
 | --- | --- | --- |
-| Book questions are "appended after the model's" | Book questions are sorted into the paper's type blocks (`typeOrder`) instead of appended | Found in the Task 3 review: appending split the ministry blocks. |
+| Book questions are "appended after the model's" | Appended, as planned. An interim `typeOrder` sort in `assembleLivePaper` (added after the Task 3 review found appending split the ministry blocks) was **removed again** when `main`'s `inPaperOrder` landed, which sorts every stored paper after the trim. The embedded code below still shows that interim sort and `typeOrder`; the repo is the record. | Two copies of one ordering rule would drift. |
 | The builder "moves out of `mockGenerator.ts`" | `bookQuestion` is **exported** and takes a `slot(kind)` function; the new live-path code is in `bookQuestions.ts` | Moving it would drag `buildRubric` and `BANK_TIER` along or create an import cycle, and re-review already-reviewed code, for no gain. |
 | `planBookDraw` returns `min(floor(count / 2), eligible)` (§1) | Returns `min(floor(count / 2), what a seeded dry run of the real draw delivers)` | Two near-duplicate book items are never both drawn, so counting raw eligible items asked the model for too few questions and the paper came back short. |
 | `generationParams.bookItems` is written on every maths paper (§4) | Written on live-path maths papers only, not the mock path | The mock path (`generateMockEvaluation`) records its own `seed`; the field is set only in the `if (live)` branch of the route. |
