@@ -7,6 +7,7 @@
  * pattern-matching English strings.
  */
 import { apiFetch } from './apiClient.ts';
+import { PAPER_TOTALS_CHUNK, type PaperTotalResult } from './paperMarks.ts';
 
 /**
  * Mirrors `QuestionType` in `lib/db/src/schema/evaluations.ts`.
@@ -547,6 +548,33 @@ export async function listAttempts(evaluationId: string): Promise<AttemptListRow
   const res = await apiFetch(`/evaluations/${evaluationId}/attempts`);
   const data = await readJson<{ attempts: AttemptListRow[] }>(res, 'Loading attempts');
   return data.attempts;
+}
+
+/**
+ * The class mark book: one total per student for a quick paper exam. Answers
+ * per student — saved, unchanged, cleared, or refused with a code — so one bad
+ * row never loses the others. Longer than the 15s default: each row is a mark
+ * and a hand-in.
+ *
+ * One request is at most `PAPER_TOTALS_CHUNK` rows (the server refuses more
+ * with a 400); a longer list is the caller's to split with `chunkTotals`, so
+ * the results of the chunks already saved are not lost to a later one failing.
+ * A refusal of the whole save throws `EvaluationError` — `paperTotalsFailureKey`
+ * (services/paperMarks.ts) names the copy for it.
+ */
+export async function savePaperTotals(
+  evaluationId: string,
+  totals: { studentId: string; marks: number | null }[],
+): Promise<{ maxMarks: number; results: PaperTotalResult[] }> {
+  if (totals.length > PAPER_TOTALS_CHUNK) {
+    throw new Error(`savePaperTotals takes at most ${PAPER_TOTALS_CHUNK} rows; split the list with chunkTotals`);
+  }
+  const res = await apiFetch(`/evaluations/${evaluationId}/paper-totals`, {
+    method: 'PUT',
+    body: JSON.stringify({ totals }),
+    timeoutMs: 45_000,
+  });
+  return readJson(res, 'Saving marks');
 }
 
 /**
