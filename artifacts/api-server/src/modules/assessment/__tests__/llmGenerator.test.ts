@@ -520,4 +520,51 @@ describe("buildGenerationPrompt — pressing for a checkable key", () => {
       `the worked example's check contains Arabic: ${check}`,
     );
   });
+
+  // Measured on 2026-10-12: a correct discriminant and a correct maximum were
+  // flagged because the check solved / differentiated instead of answering the
+  // stem, and 18 of 64 checks were stretched over computations that are not a
+  // topic at all. These pin the instructions that address both.
+  it("says what each topic computes, so the check answers what the stem asks", () => {
+    const { user } = buildGenerationPrompt(mathsReq);
+    assert.match(user, /What each topic computes/);
+    assert.match(user, /derivative_polynomial: the derivative expression/);
+    assert.match(user, /the solution\(s\) of that equation/);
+    assert.match(user, /SAME question the stem asks/);
+  });
+
+  it("writes several solutions with «or», because the verifier refuses a comma list", () => {
+    // The first draft of these instructions used "x = 1, 3" as its example; the
+    // model copied it and the verifier answered "multi-variable answer" for every
+    // correct two-root key (undecided went from 5 to 14 of ~30 judged).
+    const { user } = buildGenerationPrompt(mathsReq);
+    assert.match(user, /"x = 1 or x = 3"/);
+    assert.match(user, /Join several solutions with "or", never with a comma/);
+    assert.equal(user.includes('"x = 1, 3"'), false);
+  });
+
+  it("names the questions a topic does not answer, and says to leave the check out", () => {
+    const { user } = buildGenerationPrompt(mathsReq);
+    for (const asked of ["discriminant", "maximum or minimum", "vertex", "factored form", "tangent"]) {
+      assert.match(user, new RegExp(asked), `the prompt does not name "${asked}"`);
+    }
+    assert.match(user, /leave "check" out/);
+    assert.match(user, /Do not stretch a topic to fit/);
+    // A tangent length keyed "x = 12" was flagged because the equation also has -12.
+    assert.match(user, /drops one of the equation's roots/);
+  });
+
+  it("tells each type how to make its key checkable", () => {
+    const { user } = buildGenerationPrompt(mathsReq);
+    assert.match(user, /multiple choice: the check answer is what the correct option states/);
+    assert.match(user, /a question with several\s+blanks has no single check/);
+    assert.match(user, /Short answer: the model answer states the final answer/);
+  });
+
+  it("no longer says that most questions have a check, which invited stretching a topic", () => {
+    const { system } = buildGenerationPrompt(mathsReq);
+    assert.equal(system.includes("that is most of them"), false);
+    assert.match(system, /prefer phrasing a question as the\s+thing a topic computes/);
+    assert.match(system, /better than a check for the wrong question/);
+  });
 });

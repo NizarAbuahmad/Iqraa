@@ -20,9 +20,14 @@ import { LEGAL_CONTACT_EMAIL } from '@/constants/legal';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { DateRange, EMPTY_RANGE, rangeQuery, type Range } from '@/components/admin/DateRange';
 import { BackButton } from '@/components/ui/BackButton';
+import { TYPE } from '@/constants/theme';
 
 const ACCENT = '#4F46E5';
 const ADMIN_ROLES = ['school_admin', 'system_admin'];
+/** Placing teachers in schools decides whose exam dates they can read, so it is narrower than the rest of this screen (see api-server routes/admin.ts). */
+const SCHOOL_ASSIGNERS = ['system_admin'];
+
+type SchoolRow = { id: string; name: string; teacherCount: number };
 
 type UserRow = {
   id: string;
@@ -38,6 +43,8 @@ type UserRow = {
   lastLogin: string | null;
   suspendedAt: string | null;
   suspendedReason: string;
+  schoolId: string | null;
+  schoolName: string | null;
   monthSpendUsd: number;
 };
 
@@ -52,6 +59,7 @@ export default function AdminUsersScreen() {
   const ar = lang === 'ar';
   const { user, isLoading: authLoading } = useAuth();
   const isAdmin = !!user && ADMIN_ROLES.includes(user.role);
+  const canAssignSchools = !!user && SCHOOL_ASSIGNERS.includes(user.role);
 
   const [q, setQ] = useState('');
   const [onlySuspended, setOnlySuspended] = useState(false);
@@ -62,6 +70,19 @@ export default function AdminUsersScreen() {
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [blocking, setBlocking] = useState<{ id: string; reason: string } | null>(null);
+  const [schools, setSchools] = useState<SchoolRow[]>([]);
+  const [pickingSchoolFor, setPickingSchoolFor] = useState<string | null>(null);
+  const [newSchoolName, setNewSchoolName] = useState('');
+
+  const loadSchools = useCallback(async () => {
+    const res = await apiJson<{ items: SchoolRow[] }>('/admin/schools');
+    setSchools(res.items);
+  }, []);
+
+  useEffect(() => {
+    if (!canAssignSchools) return;
+    loadSchools().catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
+  }, [canAssignSchools, loadSchools]);
 
   const load = useCallback(async (offset: number) => {
     const params = `q=${encodeURIComponent(q)}&status=${onlySuspended ? 'suspended' : 'all'}&offset=${offset}${rangeQuery(range)}`;
@@ -108,6 +129,26 @@ export default function AdminUsersScreen() {
     if (!ok) return;
     setBlocking(null);
     await run(u.id, () => apiJson(`/admin/users/${u.id}/suspend`, { method: 'POST', body: JSON.stringify({ reason }) }));
+  };
+
+  const assignSchool = async (u: UserRow, schoolId: string | null) => {
+    setPickingSchoolFor(null);
+    await run(u.id, async () => {
+      await apiJson(`/admin/users/${u.id}/school`, { method: 'PUT', body: JSON.stringify({ schoolId }) });
+      await loadSchools();
+    });
+  };
+
+  const createSchool = async (u: UserRow) => {
+    const name = newSchoolName.trim();
+    if (!name) return;
+    setNewSchoolName('');
+    setPickingSchoolFor(null);
+    await run(u.id, async () => {
+      const { school } = await apiJson<{ school: SchoolRow }>('/admin/schools', { method: 'POST', body: JSON.stringify({ name }) });
+      await apiJson(`/admin/users/${u.id}/school`, { method: 'PUT', body: JSON.stringify({ schoolId: school.id }) });
+      await loadSchools();
+    });
   };
 
   const unblock = async (u: UserRow) => {
@@ -186,12 +227,25 @@ export default function AdminUsersScreen() {
                       {ar ? 'انضم عبر' : 'Joined via'} {u.signupPlatform ?? (ar ? 'غير معروف (قبل ٢ تشرين الأول)' : 'unknown (before 2 Oct)')}
                       {u.signupReferrer ? ` ← ${u.signupReferrer}` : ''}
                     </Text>
+                    {u.role === 'teacher' && (
+                      <Text numberOfLines={1} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 18, textAlign: align }}>
+                        {ar ? 'المدرسة' : 'School'}: {u.schoolName ?? (ar ? 'غير مرتبط' : 'not linked')}
+                      </Text>
+                    )}
                     {!!u.suspendedAt && (
                       <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18, textAlign: align }}>
                         {ar ? 'محظور منذ' : 'Blocked since'} {date(u.suspendedAt)}{u.suspendedReason ? ` — ${u.suspendedReason}` : ''}
                       </Text>
                     )}
                   </View>
+                  {canAssignSchools && u.role === 'teacher' && busyId !== u.id ? (
+                    <Pressable
+                      onPress={() => setPickingSchoolFor(cur => (cur === u.id ? null : u.id))}
+                      style={[styles.chip, { borderRadius: colors.radius, borderColor: colors.border }]}
+                    >
+                      <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{ar ? 'المدرسة' : 'School'}</Text>
+                    </Pressable>
+                  ) : null}
                   {busyId === u.id ? <ActivityIndicator color={ACCENT} /> : isAdminRow ? null : u.suspendedAt ? (
                     <Pressable onPress={() => unblock(u)} style={[styles.chip, { borderRadius: colors.radius, borderColor: ACCENT }]}>
                       <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{ar ? 'رفع الحظر' : 'Unblock'}</Text>
@@ -202,6 +256,54 @@ export default function AdminUsersScreen() {
                     </Pressable>
                   )}
                 </View>
+                {pickingSchoolFor === u.id && (
+                  <View style={{ gap: 8 }}>
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
+                      {ar ? 'يرى معلمو المدرسة الواحدة مواعيد امتحانات بعضهم.' : 'Teachers in one school can see each other\'s exam dates.'}
+                    </Text>
+                    <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8 }}>
+                      {schools.map(sc => {
+                        const current = sc.id === u.schoolId;
+                        return (
+                          <Pressable
+                            key={sc.id}
+                            onPress={() => void assignSchool(u, sc.id)}
+                            style={[styles.chip, { borderRadius: colors.radius, backgroundColor: current ? ACCENT : colors.card, borderColor: current ? ACCENT : colors.border }]}
+                          >
+                            <Text style={{ color: current ? '#fff' : colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
+                              {sc.name} ({sc.teacherCount})
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                      {u.schoolId ? (
+                        <Pressable
+                          onPress={() => void assignSchool(u, null)}
+                          style={[styles.chip, { borderRadius: colors.radius, borderColor: colors.destructive }]}
+                        >
+                          <Text style={{ color: colors.destructive, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{ar ? 'إزالة من المدرسة' : 'Remove from school'}</Text>
+                        </Pressable>
+                      ) : null}
+                    </View>
+                    <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'center' }}>
+                      <TextInput
+                        value={newSchoolName}
+                        onChangeText={setNewSchoolName}
+                        placeholder={ar ? 'اسم مدرسة جديدة' : 'New school name'}
+                        placeholderTextColor={colors.mutedForeground}
+                        maxLength={80}
+                        style={[styles.input, { flex: 1, borderColor: colors.border, borderRadius: colors.radius, color: colors.foreground, textAlign: align }]}
+                      />
+                      <Pressable
+                        onPress={() => void createSchool(u)}
+                        disabled={!newSchoolName.trim()}
+                        style={[styles.chip, { borderRadius: colors.radius, borderColor: ACCENT, opacity: newSchoolName.trim() ? 1 : 0.5 }]}
+                      >
+                        <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{ar ? 'إنشاء وربط' : 'Create & link'}</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                )}
                 {blocking?.id === u.id && (
                   <View style={{ gap: 8 }}>
                     <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>

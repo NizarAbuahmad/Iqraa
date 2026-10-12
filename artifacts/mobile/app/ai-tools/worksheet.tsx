@@ -18,10 +18,12 @@ import { buildDeckFromWorksheet } from '@/services/classDeck';
 import { ShortPaperNotice } from '@/components/ui/ShortPaperNotice';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
+import { workingProvenance } from '@/services/worksheetWorking';
+import { TYPE } from '@/constants/theme';
 import { VerificationSummaryRow } from '@/components/ui/VerificationSummaryRow';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
-import { groundedSubjectConflict, scopeWithoutCurriculum, scopeFromParams, subjectPickerLabels } from '@/services/lessonPrep';
+import { groundedSubjectConflict, scopeWithoutCurriculum, scopeFromParams, topicForScope, subjectPickerLabels } from '@/services/lessonPrep';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PickerField as SharedPickerField } from '@/components/ui/PickerField';
@@ -34,7 +36,7 @@ import { usePrintStyle } from '@/hooks/usePrintStyle';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
-import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
+import { aiErrorText, isAbortError } from '@/services/ai/aiProvenance';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
 import { captureGenerationScope, materialScope, reopenedGenerationScope, type GenerationScope } from '@/services/generationScope';
 import { createVerificationTracker } from '@/services/verificationTracker';
@@ -135,7 +137,7 @@ export default function WorksheetScreen() {
   // The picked subject's material language — English papers are in English.
   const lang = contentLang(subjects[subjectIdx].id, uiLang);
   const [topic, setTopic] = useState(() => topicInLang(
-    params.topic ?? '', uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
+    topicForScope(params, uiLang, teacherScope.defaultScope, teacherScope), uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
     { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
   ));
   useWarmGrounding(topic, lang);
@@ -418,10 +420,10 @@ export default function WorksheetScreen() {
     } catch (e) {
       // A cancel is the teacher's own doing, so it is reported as a stop, not
       // as a failure they need to diagnose or retry out of. The raw error text
-      // is deliberately not shown: "HTTP 500" is not a sentence in a language
-      // a teacher reads, and aiProvenance already records it for the badge.
+      // is deliberately not shown (aiProvenance records it for the badge), except
+      // when live failed and the offline path has no bank — see aiErrorText.
       if (isAbortError(e)) setCancelled(true);
-      else setError(t(aiErrorMessageKey(e)));
+      else setError(aiErrorText(e, t));
       // Hand back what was on screen; a stop or a failure is not a reason to
       // lose it. The scope goes back with it so the badges and the grounding
       // notice describe the restored paper, not the one that never came.
@@ -652,7 +654,7 @@ export default function WorksheetScreen() {
       {/* Form */}
       <View style={{ padding: 20 }}>
         <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={setGradeIdx} hidden={teacherScope.gradeHidden} colors={colors} isRTL={isRTL} accent={ACCENT} />
-        <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
+        <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t(teacherScope.strandedNoteKey(grades[gradeIdx].id, subjectIdx))} isRTL={isRTL} colors={colors} />
         <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} hidden={subjectHidden} />
 
         <TopicSelector
@@ -785,6 +787,19 @@ export default function WorksheetScreen() {
           {outcomes && verification.total > 0 && (
             <VerificationSummaryRow summary={verification} />
           )}
+        </View>
+      )}
+
+      {/* The worked example and the key's working are only as good as whoever
+          wrote them: the bank's was checked by a person, a model's was not.
+          Known the moment the paper is on screen, so unlike the answer check
+          above it does not wait for the verifier. */}
+      {result && workingProvenance(result).needsAiNote && (
+        <View style={{ marginHorizontal: 20, marginBottom: 12, gap: 8, alignItems: 'center', flexDirection: isRTL ? 'row-reverse' : 'row' }}>
+          <Ionicons name="alert-circle-outline" size={14} color={colors.warning} />
+          <Text style={{ flex: 1, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption, color: colors.warning, textAlign: isRTL ? 'right' : 'left' }}>
+            {t('workingUnreviewed')}
+          </Text>
         </View>
       )}
 

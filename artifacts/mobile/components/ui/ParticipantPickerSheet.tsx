@@ -19,10 +19,12 @@ import { getTeacherContacts } from '@/services/messaging';
 import { useStudentAccountsEnabled } from '@/services/features';
 import {
   buildPickerContacts,
+  filterByRole,
   matchesQuery,
   toggleClassSelection,
   type PickerClass,
   type PickerContact,
+  type RoleFilter,
 } from '@/services/participantPicker';
 import { palette } from '@/constants/colors';
 
@@ -52,12 +54,14 @@ export function ParticipantPickerSheet({
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [selected, setSelected] = useState<Map<string, Contact>>(new Map());
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
 
   useEffect(() => {
     if (!visible) return;
     let cancelled = false;
     setSelected(new Map());
     setQuery('');
+    setRoleFilter('all');
     setLoading(true);
     setFailed(false);
     void (async () => {
@@ -82,10 +86,13 @@ export function ParticipantPickerSheet({
   const align = isRTL ? 'right' : 'left';
 
   /** Everyone addable, before the search box narrows it. Class selection works off this, not the filtered view. */
-  const addable = useMemo(
-    () => contacts.filter(c => !excluded.has(c.userId)),
-    [contacts, excluded],
+  const notExcluded = useMemo(() => contacts.filter(c => !excluded.has(c.userId)), [contacts, excluded]);
+  // Parents/students chips only when there is a choice to make.
+  const hasBothRoles = useMemo(
+    () => notExcluded.some(c => c.role === 'parent') && notExcluded.some(c => c.role === 'student'),
+    [notExcluded],
   );
+  const addable = useMemo(() => filterByRole(notExcluded, roleFilter), [notExcluded, roleFilter]);
 
   const visible_ = useMemo(
     () => (query ? addable.filter(c => matchesQuery(c, query)) : addable),
@@ -114,6 +121,14 @@ export function ParticipantPickerSheet({
     setSelected(prev => toggleClassSelection(prev, members));
   };
 
+  /**
+   * Select / clear everyone currently listed — unlike a class chip this DOES
+   * follow the search box and the role filter, because it acts on what the
+   * teacher can see ("all parents", "everyone matching «أحمد»"). Same toggle
+   * as a class chip: all picked → clear them, otherwise add the rest.
+   */
+  const allListedPicked = visible_.length > 0 && visible_.every(c => selected.has(c.userId));
+
   const toggle = (c: Contact) => {
     setSelected(prev => {
       const next = new Map(prev);
@@ -139,7 +154,7 @@ export function ParticipantPickerSheet({
 
           {/* Search and class chips only once there is a list worth narrowing —
               on an empty or failed load they would be controls over nothing. */}
-          {!loading && !failed && addable.length > 0 ? (
+          {!loading && !failed && notExcluded.length > 0 ? (
             <View style={{ gap: 10 }}>
               <View
                 style={[
@@ -162,6 +177,30 @@ export function ParticipantPickerSheet({
                   </Pressable>
                 ) : null}
               </View>
+
+              {hasBothRoles ? (
+                <View style={[styles.chipRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                  {(['all', 'parent', 'student'] as const).map(f => {
+                    const on = roleFilter === f;
+                    return (
+                      <Pressable
+                        key={f}
+                        onPress={() => setRoleFilter(f)}
+                        accessibilityRole="button"
+                        aria-selected={on}
+                        style={[
+                          styles.chip,
+                          { borderColor: on ? ACCENT : colors.border, backgroundColor: on ? `${ACCENT}14` : 'transparent' },
+                        ]}
+                      >
+                        <Text style={{ color: on ? ACCENT : colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
+                          {f === 'all' ? t('messagingFilterAll') : f === 'parent' ? t('messagingRoleParents') : t('messagingRoleStudents')}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ) : null}
 
               {classChips.length > 0 ? (
                 <>
@@ -213,6 +252,23 @@ export function ParticipantPickerSheet({
                   })}
                 </ScrollView>
                 </>
+              ) : null}
+
+              {visible_.length > 0 ? (
+                <Pressable
+                  onPress={() => toggleClass(visible_)}
+                  accessibilityRole="button"
+                  style={[styles.selectAllRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                >
+                  <Ionicons
+                    name={allListedPicked ? 'checkbox' : 'square-outline'}
+                    size={20}
+                    color={allListedPicked ? ACCENT : colors.mutedForeground}
+                  />
+                  <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
+                    {t(allListedPicked ? 'messagingClearAll' : 'messagingSelectAll')} ({visible_.length})
+                  </Text>
+                </Pressable>
               ) : null}
             </View>
           ) : null}
@@ -328,6 +384,7 @@ const styles = StyleSheet.create({
   // No explicit height: the row sizes to the input, and a fixed one clips
   // Cairo's Arabic descenders.
   searchInput: { flex: 1, fontFamily: 'Almarai_400Regular', fontSize: 15, padding: 0 },
+  selectAllRow: { alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 4 },
   classHint: { fontSize: 11, lineHeight: 16 },
   chipRow: { gap: 6, paddingHorizontal: 16 },
   chip: { alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14, borderWidth: 1 },

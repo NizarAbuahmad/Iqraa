@@ -110,9 +110,9 @@ export const HOME_AI_TOOLS: HomeToolDef[] = [
     topicHintAr: 'سلم تقدير (Rubric)', topicHintEn: 'Assessment rubric',
   },
   {
-    id: 'exit-ticket', emoji: '🎫', labelAr: 'بطاقة خروج', labelEn: 'Exit Ticket',
+    id: 'exit-ticket', emoji: '🎫', labelAr: 'غلق الدرس', labelEn: 'Exit Ticket',
     route: '/ai-tools/activity', status: 'coming_soon', enabled: false,
-    topicHintAr: 'بطاقة خروج', topicHintEn: 'Exit ticket',
+    topicHintAr: 'غلق الدرس', topicHintEn: 'Exit ticket',
   },
   {
     id: 'summary', emoji: '📖', labelAr: 'ملخص الدرس', labelEn: 'Lesson summary',

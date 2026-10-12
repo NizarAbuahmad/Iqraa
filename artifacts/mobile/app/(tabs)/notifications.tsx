@@ -194,7 +194,7 @@ export default function NotificationsScreen() {
           {isTeacherRole(user?.role) && (
             <Pressable onPress={() => router.push('/messaging/new-group')} hitSlop={10} accessibilityRole="button" style={[styles.headerAction, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               <Ionicons name="people-circle-outline" size={20} color={colors.mutedForeground} />
-              <Text style={[styles.headerActionText, { color: colors.mutedForeground }]}>{t('messagingNewGroup')}</Text>
+              <Text style={[styles.headerActionText, { color: colors.mutedForeground }]}>{t('messagingBroadcastTitle')}</Text>
             </Pressable>
           )}
           {/*

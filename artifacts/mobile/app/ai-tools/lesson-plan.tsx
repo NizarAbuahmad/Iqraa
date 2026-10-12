@@ -19,7 +19,7 @@ import { getLessonById, getLessonsForUnit, getUnitForLesson } from '@/services/k
 import { stagesFromLessonPlan } from '@/services/ministryPlan';
 import { todayISO } from '@/services/planEntries';
 import { useAuth } from '@/context/AuthContext';
-import { groundedSubjectConflict, scopeWithoutCurriculum, scopeFromParams, subjectPickerLabels } from '@/services/lessonPrep';
+import { groundedSubjectConflict, scopeWithoutCurriculum, scopeFromParams, topicForScope, subjectPickerLabels } from '@/services/lessonPrep';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PickerField } from '@/components/ui/PickerField';
@@ -31,7 +31,7 @@ import { useGeneratorExport } from '@/hooks/useGeneratorExport';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
-import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
+import { aiErrorText, isAbortError } from '@/services/ai/aiProvenance';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
 import { captureGenerationScope, materialScope, reopenedGenerationScope, type GenerationScope } from '@/services/generationScope';
 import { readIndexParam } from '@/services/materialParams';
@@ -88,7 +88,7 @@ export default function LessonPlanScreen() {
   // The picked subject's material language — English is planned in English.
   const lang = contentLang(subjects[subjectIdx].id, uiLang);
   const [topic, setTopic] = useState(() => topicInLang(
-    params.topic ?? '', uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
+    topicForScope(params, uiLang, teacherScope.defaultScope, teacherScope), uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
     { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
   ));
   useWarmGrounding(topic, lang);
@@ -271,7 +271,7 @@ export default function LessonPlanScreen() {
       // Deliberately not the raw error: "HTTP 500" is not a sentence in any
       // language a teacher reads. The technical text is already recorded in
       // aiProvenance, where the badge carries it for support.
-      else setError(t(aiErrorMessageKey(e)));
+      else setError(aiErrorText(e, t));
       // Hand back what was on screen; a stop or a failure is not a reason to
       // lose it.
       if (held.result) {
@@ -371,11 +371,12 @@ export default function LessonPlanScreen() {
   /**
    * The plan on screen, on the Ministry's «خطة الدرس» form. The form is
    * Arabic-only, so names come from the Arabic fields whatever the UI
-   * language. Teacher-role text is this plan's own phases folded into the four
-   * stages. The plan on screen has no learner half, and a second generation
-   * would no longer match what the teacher has read and edited, so the learner
-   * column is filled from the stock per-style lines in `ministryLearnerRoles`
-   * (in the plan's language) rather than left empty.
+   * language. The roles come from the plan's own `ministryRoles`, asked for in
+   * the same call so they match what the teacher read. Once the teacher has
+   * edited a field those roles predate it, so the teacher column is then this
+   * plan's phases folded into the four stages and only the learner column
+   * stays the model's. A plan with no roles (offline, an older saved one) gets
+   * the stock per-style lines in `ministryLearnerRoles` for the learner column.
    */
   const handleMinistry = async () => {
     if (!result) return;
@@ -396,6 +397,7 @@ export default function LessonPlanScreen() {
         date: todayISO(),
         teacher: user?.name ?? '',
         stages: stagesFromLessonPlan(result, {
+          teacherFromPhases: editedFields.size > 0,
           lang: outLang === 'ar' ? 'ar' : 'en',
           style: STYLE_IDS[styleIdx],
           topic: (outLang === 'ar' ? lesson?.titleAr : lesson?.titleEn) ?? scope.topic,
@@ -447,7 +449,7 @@ export default function LessonPlanScreen() {
       {/* Form */}
       <View style={styles.form}>
         <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={setGradeIdx} hidden={teacherScope.gradeHidden} colors={colors} isRTL={isRTL} accent={ACCENT} />
-        <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
+        <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t(teacherScope.strandedNoteKey(grades[gradeIdx].id, subjectIdx))} isRTL={isRTL} colors={colors} />
         <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} hidden={subjectHidden} />
 
         {/* Topic / lesson selector */}

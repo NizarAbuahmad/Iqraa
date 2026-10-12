@@ -6,7 +6,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { isEntryRoute, isNonTeacherRoute, isPublicRoute, needsGradeSetup, needsRosterClaim, needsTeacherSetup } from '../routeGating.ts';
+import { isEntryRoute, isNonTeacherRoute, isPublicRoute, gradeSetupSkipKey, needsGradeSetup, needsRosterClaim, needsTeacherSetup } from '../routeGating.ts';
 
 describe('isEntryRoute', () => {
   it('treats the auth and onboarding routes as entries', () => {
@@ -73,6 +73,13 @@ describe('isPublicRoute', () => {
     }
   });
 
+  it('lets a signed-out visitor suggest a feature from the login screen', () => {
+    // «اقترح ميزة» is linked from login and register; bouncing a visitor with
+    // no account back to login would make the link a loop.
+    assert.equal(isPublicRoute('/suggest-feature'), true);
+    assert.equal(isPublicRoute('/suggest-features'), false);
+  });
+
   it('keeps every teacher route private', () => {
     for (const p of ['/', '/classes', '/evaluations', '/admin/dashboard', '/workspace']) {
       assert.equal(isPublicRoute(p), false, p);
@@ -127,6 +134,10 @@ describe('isNonTeacherRoute', () => {
       // prefix rule as the library above.
       '/curriculum/lab',
       '/curriculum/lab/lab-periodic-table',
+      // The Quran Corner: home, a surah, and its memorise page. Same prefix rule.
+      '/curriculum/quran',
+      '/curriculum/quran/112',
+      '/curriculum/quran/112/memorize',
       '/settings',
       '/faq',
       '/delete-account',
@@ -297,5 +308,30 @@ describe('needsGradeSetup', () => {
 describe('the class picker route', () => {
   it('is reachable by a parent or student, and is not a teacher route', () => {
     assert.equal(isNonTeacherRoute('/setup-grade'), true);
+  });
+});
+
+describe('skipping the class picker', () => {
+  const unset = { role: 'student', hasRosterLink: true, gradeIds: [] };
+
+  it('stops gating once the account has skipped', () => {
+    assert.equal(needsGradeSetup(unset, true), false);
+    assert.equal(needsGradeSetup({ ...unset, role: 'parent' }, true), false);
+  });
+
+  it('still gates an account that has not skipped', () => {
+    assert.equal(needsGradeSetup(unset, false), true);
+    assert.equal(needsGradeSetup(unset), true);
+  });
+
+  it('does not gate while the skip flag is still loading', () => {
+    // null = not read from storage yet. Redirecting now would bounce an
+    // account that already skipped back to the picker on every cold boot.
+    assert.equal(needsGradeSetup(unset, null), false);
+  });
+
+  it('keeps one flag per account, so a second account on the device is asked', () => {
+    assert.notEqual(gradeSetupSkipKey('user-a'), gradeSetupSkipKey('user-b'));
+    assert.equal(gradeSetupSkipKey('user-a'), gradeSetupSkipKey('user-a'));
   });
 });
