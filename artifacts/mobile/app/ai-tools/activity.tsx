@@ -17,7 +17,7 @@ import { isolateForeignRuns } from '@/services/mathRender';
 import { pooledVariantId } from '@/services/ai/regeneration';
 import { ActivityOutput, ActivityStep } from '@/services/ai/AIService';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
-import { groundedSubjectConflict, scopeWithoutCurriculum, scopeFromParams, subjectPickerLabels } from '@/services/lessonPrep';
+import { groundedSubjectConflict, scopeWithoutCurriculum, scopeFromParams, topicForScope, subjectPickerLabels } from '@/services/lessonPrep';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PickerField } from '@/components/ui/PickerField';
@@ -86,7 +86,7 @@ export default function ActivityScreen() {
   // The picked subject's material language — English is taught in English.
   const lang = contentLang(subjects[subjectIdx].id, uiLang);
   const [topic, setTopic] = useState(() => topicInLang(
-    params.topic ?? '', uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
+    topicForScope(params, uiLang, teacherScope.defaultScope, teacherScope), uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
     { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
   ));
   useWarmGrounding(topic, lang);
