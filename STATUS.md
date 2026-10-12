@@ -971,6 +971,29 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A waitlist signup on iqrra.com pushes the admins, 2026-10-12
+
+`POST /site/signups` (`routes/admin.ts`) now calls `notifyAdminsOfWaitlistSignup`
+(`lib/adminNotify.ts`) after storing a `kind: 'waitlist'` row, which pushes
+every `system_admin`'s devices on the `admin` channel («تسجيل جديد في قائمة
+الانتظار», body = email, plus the form's `context` when the site sends one).
+Tapping it opens «البريد المجمّع» (`data.screen: 'admin-signups'`, whitelisted in
+`notificationDeepLink.ts`). Push only — no email, since the row is already in
+the admin list and Resend. Contact and idea rows do not push.
+
+- **Not Android-specific.** It fires for every waitlist signup; whether the
+  site tags an Android page in `context` is decided by `Site_Iqra`, which is
+  not in this repo. The body shows `context` as-is, so a tag will appear once
+  the site sends one.
+- **Reaches only admins who have the app installed with push allowed** — an
+  admin with no `device_push_tokens` row gets nothing.
+- Needs no new binary: JS-only on the app side, so `version` is unchanged. An
+  installed build without the `admin-signups` whitelist entry still shows the
+  push but tapping it does nothing.
+- Verified by unit tests (`waitlistPush.test.ts`, `notificationDeepLink.test.ts`)
+  and the full api-server and mobile suites. **Not run:** a real push to a
+  device, and the live `/site/signups` call.
+
 ## Exams have a date, and teachers at one school can see each other's, 2026-10-11
 
 Before this an exam had no date at all — `evaluations` had no such column and
