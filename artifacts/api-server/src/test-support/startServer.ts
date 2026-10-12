@@ -44,6 +44,13 @@ export async function startServer(opts: {
     OPENAI_API_KEY: "sk-test-placeholder",
     // True in production; tests that need the flag off pass { STUDENT_ACCOUNTS: undefined }.
     STUDENT_ACCOUNTS: "true",
+    // No DB test may ever reach Expo: port 9 is closed, so a push sent by a
+    // test that did not ask for the stub fails at once (and is logged). Push
+    // tests pass { EXPO_PUSH_URL: stub.url }.
+    EXPO_PUSH_URL: "http://127.0.0.1:9/push-disabled-in-tests",
+    // Quiet hours would change the channel and sound at night; tests must not
+    // depend on the time of day. The rule itself is unit-tested.
+    PUSH_QUIET_HOURS: "off",
   };
   for (const [key, value] of Object.entries(opts.env ?? {})) {
     if (value === undefined) delete env[key];
