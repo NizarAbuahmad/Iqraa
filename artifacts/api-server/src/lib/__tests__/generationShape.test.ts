@@ -14,11 +14,95 @@ import {
   assertUsableGeneration,
   extractJSON,
   deckShortfalls,
+  mergeQuizTopUp,
   missingFields,
   normalizeQuiz,
+  quizShortfall,
+  quizStems,
+  quizWanted,
   REQUIRED_FIELDS,
   UnusableGenerationError,
 } from "../generationShape.ts";
+
+const mcq = (id: string, text: string) => ({ id, type: "multiple_choice", text, options: ["a", "b", "c"], correctAnswer: "a", points: 1 });
+const tf = (id: string, text: string) => ({ id, type: "true_false", text, options: ["صح", "خطأ"], correctAnswer: "صح", points: 1 });
+const sa = (id: string, text: string) => ({ id, type: "short_answer", text, correctAnswer: "x", points: 1 });
+
+describe("a quiz holds the number of questions that was asked for", () => {
+  it("trims a long paper from the biggest block, so no type disappears", () => {
+    const q = {
+      title: "t",
+      questions: [
+        ...Array.from({ length: 6 }, (_, i) => mcq(`m${i}`, `m${i}`)),
+        ...Array.from({ length: 3 }, (_, i) => tf(`t${i}`, `t${i}`)),
+        sa("s0", "s0"),
+      ],
+    };
+    const notes = normalizeQuiz(q, ["multiple_choice", "true_false", "short_answer"], 6);
+    assert.equal(q.questions.length, 6);
+    const types = new Set(q.questions.map(x => x.type));
+    assert.ok(types.has("multiple_choice") && types.has("true_false") && types.has("short_answer"));
+    assert.ok(notes.some(n => /trimmed 4/.test(n)));
+    // Cut from the end of the biggest block: the first questions survive.
+    assert.equal(q.questions[0]!.id, "m0");
+  });
+
+  it("leaves a paper of exactly the right length, or shorter, alone", () => {
+    const q = { title: "t", questions: [mcq("a", "a"), mcq("b", "b")] };
+    assert.deepEqual(normalizeQuiz(q, ["multiple_choice"], 2), []);
+    assert.deepEqual(normalizeQuiz(q, ["multiple_choice"], 10), []);
+    assert.equal(q.questions.length, 2);
+  });
+
+  it("reads the asked-for count from the request, and nothing it should not", () => {
+    assert.equal(quizWanted({ numQuestions: 20 }), 20);
+    assert.equal(quizWanted({ numQuestions: "15" }), 15);
+    assert.equal(quizWanted({ numQuestions: 0 }), null);
+    assert.equal(quizWanted({ numQuestions: 400 }), null);
+    assert.equal(quizWanted({ numQuestions: 2.5 }), null);
+    assert.equal(quizWanted({}), null);
+    assert.equal(quizWanted(undefined), null);
+  });
+
+  it("knows how many a short reply still owes", () => {
+    const q = { title: "t", questions: Array.from({ length: 10 }, (_, i) => mcq(`q${i}`, `q${i}`)) };
+    assert.equal(quizShortfall(q, { numQuestions: 20 }), 10);
+    assert.equal(quizShortfall(q, { numQuestions: 10 }), 0);
+    assert.equal(quizShortfall(q, { numQuestions: 5 }), 0);
+    assert.equal(quizShortfall(q, {}), 0);
+    assert.equal(quizShortfall({}, { numQuestions: 5 }), 5);
+  });
+
+  it("lists the stems already written, whitespace collapsed", () => {
+    const q = { title: "t", questions: [mcq("a", "ما   هو\n الناتج؟"), mcq("b", "")] };
+    assert.deepEqual(quizStems(q), ["ما هو الناتج؟"]);
+  });
+
+  it("merges a top-up in, renumbering straight on and keeping the first reply's title", () => {
+    const base = { title: "الأصل", questions: [mcq("q1", "a"), tf("q2", "b")] };
+    const extra = { title: "ثانٍ", questions: [mcq("q1", "c"), sa("q2", "d")] };
+    mergeQuizTopUp(base, extra);
+    assert.equal(base.title, "الأصل");
+    assert.deepEqual(base.questions.map(x => x.id), ["q1", "q2", "q3", "q4"]);
+    assert.deepEqual(base.questions.map(x => x.text), ["a", "b", "c", "d"]);
+  });
+
+  it("a merged and re-normalised top-up is a grouped, right-length paper", () => {
+    const base = { title: "t", questions: [mcq("q1", "a"), tf("q2", "b"), sa("q3", "c")] };
+    const extra = { title: "t", questions: [mcq("q1", "d"), tf("q2", "e"), sa("q3", "f")] };
+    mergeQuizTopUp(base, extra);
+    normalizeQuiz(base, ["multiple_choice", "true_false", "short_answer"], 6);
+    assert.deepEqual(base.questions.map(x => x.type), [
+      "multiple_choice", "multiple_choice", "true_false", "true_false", "short_answer", "short_answer",
+    ]);
+  });
+
+  it("assertUsableGeneration trims to the request's own count", () => {
+    const q = { title: "t", questions: Array.from({ length: 12 }, (_, i) => mcq(`q${i}`, `q${i}`)) };
+    assertUsableGeneration("quiz", q, { numQuestions: 8, questionTypes: ["multiple_choice"] });
+    assert.equal(q.questions.length, 8);
+  });
+});
 
 /** A quiz in the model's own order, with the shapes it actually returns. */
 const quiz = () => ({
