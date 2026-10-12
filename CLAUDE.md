@@ -201,6 +201,12 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   offline generator can only give what the lesson's bank holds (5 for a
   chemistry lesson, 17 for a maths family) — a spent type hands its share to
   the others rather than ending the paper (`quizCount.test.ts`).
+  Saved evaluations follow the same convention by a different route: the
+  generate route stores questions via `inPaperOrder`
+  (`modules/assessment/paperOrder.ts`) and the teacher's list heads each run
+  of one type from `examBlocks` (`services/examBlocks.ts`). The two
+  `EXAM_TYPE_ORDER` lists are pinned equal by `paperOrder.test.ts`; a new
+  question type needs a place in both and a direction in `examBlockDirection`.
 - **`additionalContext` is not teacher-pasted material — it is usually the
   curriculum.** Every `/ai-tools` screen fills it with `buildGeneratorContext()`
   output derived from the lesson, and the server appends its own book passages

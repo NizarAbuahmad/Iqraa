@@ -63,6 +63,7 @@ import {
   type GenerationResult,
 } from "../modules/assessment/mockGenerator";
 import { validateGenerated } from "../modules/assessment/validator";
+import { inPaperOrder } from "../modules/assessment/paperOrder";
 import { contradictionWarning, verificationAfterEdit, verifyAnswerKeys } from "../modules/assessment/keyVerification.ts";
 import { relateAnswerKey } from "../lib/mathVerifierClient.ts";
 import { QUESTION_TYPES } from "../modules/assessment/questionTypes";
@@ -877,7 +878,12 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
         `The generator returned ${surplus} more question${surplus === 1 ? "" : "s"} than the ${evaluation.targetQuestionCount} requested; the extra ${surplus === 1 ? "one was" : "ones were"} left out.`,
       );
     }
-    // After the trim above, so the warning never names a question that is not on the paper.
+    // Stored as a ministry paper: one block per type, in the usual order. After
+    // the surplus trim above, so which questions were dropped is still the
+    // generator's own choice and not "whatever type came last".
+    keyCheck.kept = inPaperOrder(keyCheck.kept, k => k.question.type);
+    // After the trim AND the sort, so the warning never names a question that is
+    // not on the paper and its positions are the ones the review screen shows.
     const contradiction = contradictionWarning(keyCheck.kept);
     if (contradiction) generationNotes.push(contradiction);
     generationParams["keysChecked"] = keyCheck.checked;
