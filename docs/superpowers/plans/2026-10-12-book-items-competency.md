@@ -73,12 +73,27 @@ and `newByCompetency`; version helper; `parseGeneratedQuestions` stamps it.
 In the live branch of `routes/evaluations.ts`: call `planBook(...)` once (replacing the
 `planBookDraw` call; keep `bookPlanned = plan.k`). When `bookPlanned > 0` compute
 `newByCompetency = allocateQuestions(target, difficulty, plan.supplied.byCompetency)` and pass
-`supplied` to `generateWithModel` via `runLlm` (the top-up call too: for the top-up pass the same
-`supplied` but with `count` = missing and `newByCompetency` re-derived or omitted — simplest
-correct choice: omit `supplied` from the top-up, since the first call already carried it; state
-the choice in a comment). Record `generationParams["promptVersion"] = generationPromptVersion(...)`
-and add `supplied` summary under `generationParams.bookItems.supplied` (so a paper's competency
-brief is auditable from the row). No route test (no harness); typecheck + helper tests carry it.
+`supplied` to `generateWithModel` via `runLlm`.
+
+**Top-up (found in the Task 2 review):** `runLlm` reuses its `count` parameter for the top-up, so
+the same `supplied` with a smaller `count` would say "Write 2 questions" beside a quota summing
+to 6. The top-up therefore passes `supplied` with a rescaled quota from a new pure helper,
+`remainingQuota(newByCompetency, written: readonly {competencyKey}[], missing)` in
+`competency.ts` or `bookQuestions.ts`: subtract per competency what the model already wrote
+(floor 0), then adjust so the total equals `missing` (reduce the largest remaining entries one
+at a time if over; if under, add to the competency with the largest remaining quota, ties by
+`COMPETENCY_ORDER`). Tested: sums to `missing` always, never negative, unchanged when nothing is
+written and `missing` equals the original total. All batches of a paper then carry
+`exam-gen-6+book`.
+
+**Version recording (found in the Task 2 review):** `recordUsage` (route line ~793) and
+`generationParams["promptVersion"]` (~844) use the constant `GENERATION_PROMPT_VERSION`; with the
+supplied block they must record `generationPromptVersion({... supplied})`. Build the supplied
+request fields once, before `runLlm`, and derive the version from them in both places.
+
+Also record the `supplied` summary under `generationParams.bookItems.supplied` (so a paper's
+competency brief is auditable from the row). No route test (no harness); typecheck + helper tests
+carry it.
 
 Docs (same commit): STATUS.md — replace the "competency/type mix can skew" known-limit with what
 now happens and what is still not covered (the real draw can differ from the dry run by a
