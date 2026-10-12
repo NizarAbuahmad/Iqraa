@@ -64,6 +64,13 @@ import {
 } from "../modules/assessment/mockGenerator";
 import { validateGenerated } from "../modules/assessment/validator";
 import { contradictionWarning, verificationAfterEdit, verifyAnswerKeys } from "../modules/assessment/keyVerification.ts";
+import {
+  assembleLivePaper,
+  drawBookQuestions,
+  isBookItemsLiveOn,
+  planBookDraw,
+  previousBookItemIds,
+} from "../modules/assessment/bookQuestions.ts";
 import { relateAnswerKey } from "../lib/mathVerifierClient.ts";
 import { QUESTION_TYPES } from "../modules/assessment/questionTypes";
 import { COMPETENCY_KEYS, competencyForBlooms, type CompetencyKey } from "../modules/assessment/competency";
@@ -738,12 +745,26 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
         previousQuestions.map(q => ({ text: questionStem(q.body as Record<string, unknown>) })),
       );
 
+      // Real book questions are added after the model has written its share, so
+      // the model is asked for that many fewer. Off unless BOOK_ITEMS_LIVE=true,
+      // in which case `bookPlanned` is 0 and nothing below changes.
+      const bookEnabled = isBookItemsLiveOn();
+      const bookPlanned = planBookDraw({
+        objectives,
+        assessmentTypes: evaluation.assessmentTypes,
+        count: evaluation.targetQuestionCount,
+        subjectId: evaluation.subjectId ?? undefined,
+        enabled: bookEnabled,
+        difficulty: evaluation.difficulty,
+      });
+      const modelCount = evaluation.targetQuestionCount - bookPlanned;
+
       const runLlm = (avoidList: readonly string[], insistent: boolean) => generateWithModel(
         {
           objectives,
           gradeId: evaluation.gradeId,
           assessmentTypes: evaluation.assessmentTypes,
-          count: evaluation.targetQuestionCount,
+          count: modelCount,
           difficulty: evaluation.difficulty,
           language: evaluation.language,
           bookExcerpts: grounding?.block,
@@ -801,13 +822,55 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
         ? grounding.sources.map(s => ({ sourceId: s.sourceId, page: s.page }))
         : [];
       generationNotes.push(...llm.notes);
+
+      // The model's questions first (cut to its share), then the book's: the
+      // surplus trim further down cuts from the END, so the order matters.
+      const assembled = assembleLivePaper({
+        modelQuestions: llm.questions,
+        requested: evaluation.targetQuestionCount,
+        k: bookPlanned,
+        draw: accepted => drawBookQuestions({
+          objectives,
+          assessmentTypes: evaluation.assessmentTypes,
+          difficulty: evaluation.difficulty,
+          k: bookPlanned,
+          accepted,
+          avoidIds: previousBookItemIds(previousQuestions),
+          rng: Math.random,
+        }),
+      });
+      if (evaluation.subjectId === "mathematics") {
+        generationParams["bookItems"] = {
+          enabled: bookEnabled,
+          planned: bookPlanned,
+          drawn: assembled.drawn,
+          ids: assembled.questions
+            .filter(q => q.aiMetadata["generator"] === "book")
+            .map(q => q.aiMetadata["bookItemId"]),
+        };
+      }
+      if (assembled.trimmed > 0) {
+        generationNotes.push(
+          `The generator returned ${assembled.trimmed} more question${assembled.trimmed === 1 ? "" : "s"} than the ${modelCount} asked of it; the extra ${assembled.trimmed === 1 ? "one was" : "ones were"} left out.`,
+        );
+      }
+      if (assembled.drawn > 0) {
+        generationNotes.push(
+          `${assembled.drawn} question${assembled.drawn === 1 ? " is a" : "s are"} real item${assembled.drawn === 1 ? "" : "s"} from the NCCD books, with answers computed by SymPy from the question text; each is labelled.`,
+        );
+      }
+      if (assembled.drawn < bookPlanned) {
+        generationNotes.push(
+          `Only ${assembled.drawn} of ${bookPlanned} planned book question${bookPlanned === 1 ? "" : "s"} could be added (the rest of the book's questions repeat ones already on the paper or the model's).`,
+        );
+      }
       result = {
-        questions: llm.questions,
+        questions: assembled.questions,
         // The model was asked for every requested type, so nothing is
         // "unavailable" the way it is for the mock — a type that came back
         // wrong is a discard, and llm.notes already says so.
         unavailableTypes: [],
-        shortfall: Math.max(0, evaluation.targetQuestionCount - llm.questions.length),
+        shortfall: Math.max(0, evaluation.targetQuestionCount - assembled.questions.length),
         notes: [],
         // Still worth carrying: the bank pointer answers "where else could I
         // look", which is useful whether or not the generator declined
