@@ -46,7 +46,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { isStudentRole, isTeacherRole, useAuth } from '@/context/AuthContext';
 import { getMyExams, getMyGradeIds } from '@/services/studentExam';
 import { actionableCount } from '@/services/myExams';
-import { narrowSubjectsForGrade, narrowToSelection, preferredGrade, scopedSubjectIds } from '@/services/teacherCatalogFilter';
+import { narrowSubjectsForGrade, narrowToSelection, preferredGrade, scopedSubjectIds, keepIfPresent } from '@/services/teacherCatalogFilter';
 import { listLibrary, type LibraryItem } from '@/services/libraryApi';
 import { getLessonById } from '@/services/knowledgeBase';
 import { openExternal } from '@/services/externalLinks';
@@ -496,9 +496,9 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isStudent, gradeId]);
-  const [subjectId, setSubjectId] = useState<string | null>(null);
+  const [pickedSubject, setSubjectId] = useState<string | null>(null);
   const [shelf, setShelf] = useState<Shelf | null>(null);
-  const [lessonId, setLessonId] = useState<string | null>(null);
+  const [pickedLesson, setLessonId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
 
   const gradeInfo = getVisibleGrades().find(g => g.id === grade);
@@ -558,6 +558,11 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
     [isTeacher, gradeSubjects, grade],
   );
 
+  // What was picked may no longer be offered (grades edited on the profile page
+  // while this tab stayed mounted): fall back to «all» instead of filtering to
+  // nothing with no chip lit.
+  const subjectId = keepIfPresent(subjects, pickedSubject);
+
   const items = useMemo(
     () => filterResources(inGrade, { subjectId: subjectId ?? undefined, subjectIds: scopeSubjectIds }),
     [inGrade, subjectId, scopeSubjectIds],
@@ -578,6 +583,11 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
     }
     return [...seen.entries()];
   }, [items, lang]);
+
+  const lessonId = keepIfPresent(
+    lessons.map(([id]) => ({ id })),
+    pickedLesson,
+  );
 
   // Search narrows on top of the chips, like every other filter here.
   const shown = useMemo(

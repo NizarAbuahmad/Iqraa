@@ -7,7 +7,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { hiddenOutsideSelection, hiddenSubjectsForGrade, narrowSubjectsForGrade, narrowToSelection, resolveSelectedId, preferredGrade, narrowBooksToTeacher, scopedSubjectIds } from '../teacherCatalogFilter.ts';
+import { hiddenOutsideSelection, hiddenSubjectsForGrade, narrowSubjectsForGrade, narrowToSelection, resolveSelectedId, preferredGrade, narrowBooksToTeacher, scopedSubjectIds, keepIfPresent } from '../teacherCatalogFilter.ts';
 
 const CATALOG = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
 
@@ -135,5 +135,23 @@ describe('scopedSubjectIds', () => {
     // rows to that list would hide rows of subjects outside the grade's own.
     assert.equal(scopedSubjectIds(CATALOG, CATALOG), undefined);
     assert.equal(scopedSubjectIds([], CATALOG), undefined);
+  });
+});
+
+describe('keepIfPresent', () => {
+  it('keeps an id that is still among the options', () => {
+    assert.equal(keepIfPresent(CATALOG, 'b'), 'b');
+  });
+
+  it('drops an id the options no longer contain, so a stale filter cannot empty the list', () => {
+    // The library tab stays mounted while grades are edited elsewhere: the
+    // subject picked on grade 10 is not a chip on grade 9, and nothing was
+    // highlighted while the list read 0.
+    assert.equal(keepIfPresent(CATALOG, 'national-education'), null);
+  });
+
+  it('passes null and undefined through as "no filter"', () => {
+    assert.equal(keepIfPresent(CATALOG, null), null);
+    assert.equal(keepIfPresent(CATALOG, undefined), null);
   });
 });
