@@ -40,8 +40,11 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
       env: {
         ...process.env,
         PORT: String(port),
-        // Never contacted: no test below reaches a route that queries them.
-        DATABASE_URL: "postgres://u:p@127.0.0.1:5432/none",
+        // Deliberately unreachable: port 1 is closed, so a route that does
+        // query the database fails with a refused connection. Not 5432 on
+        // purpose - CI runs a real Postgres there, which would no longer be
+        // unreachable.
+        DATABASE_URL: "postgres://u:p@127.0.0.1:1/none",
         // Long enough to clear the boot check in index.ts. A short one here
         // is not a test failure but a container that never starts, which
         // presents as every request below timing out.
@@ -716,7 +719,9 @@ describe("API register (student accounts enabled)", { skip: built ? false : "run
         ...process.env,
         PORT: String(port),
         STUDENT_ACCOUNTS: "true",
-        DATABASE_URL: "postgres://u:p@127.0.0.1:5432/none",
+        // Deliberately unreachable (port 1 is closed); not 5432, where CI
+        // runs a real Postgres.
+        DATABASE_URL: "postgres://u:p@127.0.0.1:1/none",
         // Long enough to clear the boot check in index.ts. A short one here
         // is not a test failure but a container that never starts, which
         // presents as every request below timing out.

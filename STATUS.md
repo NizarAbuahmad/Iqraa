@@ -1058,12 +1058,13 @@ weekly timetable, read-only, from `GET /student/schedule` and
 - Behind `STUDENT_ACCOUNTS=true` like every family route (currently `true` in
   production — see «Student accounts went live, reversing the v1 decision,
   2026-09-07»).
-- **Not run, anywhere.** The School tab has never been opened in a browser or on a
+- **Never opened on a device or browser.** The School tab has never been opened in a browser or on a
   device — the dev environment had no database or browser for this work. What is
   covered: the routes' 401 guards (mount-order suite) and the pure grouping /
   assembly / day-ordering logic (unit tests). Since 2026-10-12 the signed-in
   family path (403 / 200 from the real routes against real rows) is also covered —
   see «API tests can run against a real database, 2026-10-12». What is **not**: the
+  500 path (an error from the routes) has no test, and neither does the
   screen's rendering (RTL layout, the child picker, the empty state). `STUDENT_ACCOUNTS` is
   already `true` in production, so the tab and routes reach real family accounts
   on merge. Look at it on a signed-in parent and a signed-in student account right

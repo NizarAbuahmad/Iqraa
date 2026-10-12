@@ -32,7 +32,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     # DB-backed API tests (src/test-support) create their own iqraa_test_*
-    # databases on this server; they never touch the `postgres` database itself.
+    # databases on this server; they only use the `postgres` database as the
+    # admin connection for CREATE/DROP DATABASE and never store data in it.
     services:
       postgres:
         image: postgres:16

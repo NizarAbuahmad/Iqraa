@@ -326,8 +326,16 @@ TEST_DATABASE_URL=postgres://postgres@127.0.0.1:5432/postgres \
 `TEST_DATABASE_URL` is an *admin* URL: the harness only ever `CREATE`s and
 `DROP`s databases named `iqraa_test_` + 12 hex characters, and never stores data
 in the database the URL names. It refuses any host except `localhost`,
-`127.0.0.1` and `[::1]` unless `ALLOW_REMOTE_TEST_DB=1`. Never point it at a real
-database.
+`127.0.0.1` and `[::1]` unless `ALLOW_REMOTE_TEST_DB=1`. A URL with query parameters
+(`?sslmode=…`, `?host=…`) is refused unless `ALLOW_REMOTE_TEST_DB=1` too, because
+a `?host=` overrides the host the driver actually connects to. Postgres 13 or
+newer is required (the harness uses `DROP DATABASE … WITH (FORCE)`). Never point
+it at a real database.
+
+**`localhost` can be an SSH tunnel or a Cloud SQL proxy to a real server.** The
+host check cannot see that, and the harness would then create and drop its own
+`iqraa_test_*` databases there. Never point `TEST_DATABASE_URL` through a tunnel
+to a real server.
 
 No Postgres handy? Start a throwaway one (Postgres refuses to run as root, hence
 `runuser`; adjust the binary path for your install):
@@ -338,6 +346,8 @@ mkdir -p $D && chown postgres:postgres $D
 runuser -u postgres -- $B/initdb -D $D/data -A trust -U postgres
 runuser -u postgres -- $B/pg_ctl -D $D/data -o "-p 55432 -k $D -c listen_addresses=127.0.0.1" -l $D/log -w start
 # TEST_DATABASE_URL=postgres://postgres@127.0.0.1:55432/postgres
+# when done:
+runuser -u postgres -- $B/pg_ctl -D $D/data stop && rm -rf $D
 ```
 
 ## Run the frontend
