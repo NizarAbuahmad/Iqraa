@@ -277,6 +277,123 @@ export function mergeQuizTopUp(base: unknown, extra: unknown): void {
   obj.questions = merged;
 }
 
+// ─── Worksheet and homework counts ──────────────────────────────────────────
+//
+// The same silent shortfall as a quiz — asked for 20, a model returns 10 in a
+// valid reply — but the count means something different here, so the quiz
+// helpers above do not serve:
+//
+//  - the questions live in `sections[].questions`, with a parallel `answerKey`;
+//  - a worksheet's worked example counts INSIDE the number the teacher picked
+//    (the prompt says so: sections hold n-1 when an example is present), and a
+//    homework never has one;
+//  - a prior-knowledge review (2-3 questions) is ON TOP of the number.
+//
+// Getting any of those wrong would ask a model for questions the teacher did
+// not want, or trim ones they did.
+
+/** The review a worksheet carries on top of the count, as the prompt asks for it (2-3 questions). */
+const MIN_REVIEW_QUESTIONS = 2;
+const MAX_REVIEW_QUESTIONS = 3;
+
+function worksheetSections(parsed: unknown): { questions: Record<string, unknown>[] }[] {
+  const list = (parsed as { sections?: unknown } | null)?.sections;
+  if (!Array.isArray(list)) return [];
+  return list
+    .filter((s): s is Record<string, unknown> => !!s && typeof s === "object" && !Array.isArray(s))
+    .map(s => ({
+      ...s,
+      questions: Array.isArray(s.questions)
+        ? s.questions.filter((q): q is Record<string, unknown> => !!q && typeof q === "object")
+        : [],
+    }));
+}
+
+/** Every question across a worksheet's sections. */
+export function worksheetQuestionCount(parsed: unknown): number {
+  return worksheetSections(parsed).reduce((n, s) => n + s.questions.length, 0);
+}
+
+function reviewRequested(body: Record<string, unknown> | undefined): boolean {
+  return body?.includePriorReview === true && Array.isArray(body?.priorKnowledge) && body.priorKnowledge.length > 0;
+}
+
+/**
+ * How many more questions a worksheet or homework reply owes the teacher.
+ *
+ * The least it may hold: the picked number, less the worked example it
+ * carries, plus the review's lower bound where one was asked for. A reply at
+ * or above that owes nothing — better to miss a shortfall hidden under a
+ * longer-than-minimum review than to ask for questions nobody wanted.
+ */
+export function worksheetShortfall(parsed: unknown, body: Record<string, unknown> | undefined): number {
+  const want = quizWanted(body);
+  if (want === null) return 0;
+  const example = (parsed as { workedExample?: unknown } | null)?.workedExample ? 1 : 0;
+  const least = want - example + (reviewRequested(body) ? MIN_REVIEW_QUESTIONS : 0);
+  return Math.max(0, least - worksheetQuestionCount(parsed));
+}
+
+/** The text of every question already on the paper — what a top-up must not repeat. */
+export function worksheetStems(parsed: unknown): string[] {
+  return worksheetSections(parsed)
+    .flatMap(s => s.questions)
+    .map(q => String(q.text ?? "").replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+}
+
+/**
+ * Add a top-up reply's sections to the paper, its answer-key entries numbered
+ * straight on from the questions already there. The base keeps its title,
+ * instructions and worked example; the extra contributes only questions.
+ */
+export function mergeWorksheetTopUp(base: unknown, extra: unknown): void {
+  const obj = base as Record<string, unknown>;
+  const have = worksheetQuestionCount(base);
+  const baseKey = Array.isArray(obj.answerKey) ? (obj.answerKey as unknown[]) : [];
+  const extraKey = Array.isArray((extra as { answerKey?: unknown } | null)?.answerKey)
+    ? ((extra as { answerKey: unknown[] }).answerKey)
+    : [];
+  const added = worksheetSections(extra).filter(s => s.questions.length > 0);
+  obj.sections = [...worksheetSections(base), ...added];
+  obj.answerKey = [
+    ...baseKey,
+    ...extraKey
+      .filter((k): k is Record<string, unknown> => !!k && typeof k === "object")
+      .map((k, i) => ({ ...k, num: have + i + 1 })),
+  ];
+}
+
+/**
+ * Cut a worksheet that came back longer than asked, from the end — the last
+ * question of the last section first, dropping a section it empties — with the
+ * answer key cut to match.
+ *
+ * What the teacher's own review request adds is NOT surplus, so up to three
+ * more than the picked number is left alone when one was asked for. Returns how
+ * many questions were removed.
+ */
+export function trimWorksheet(parsed: unknown, body: Record<string, unknown> | undefined): number {
+  const want = quizWanted(body);
+  if (want === null) return 0;
+  const obj = parsed as Record<string, unknown>;
+  const example = obj.workedExample ? 1 : 0;
+  const most = want - example + (reviewRequested(body) ? MAX_REVIEW_QUESTIONS : 0);
+  const sections = worksheetSections(parsed);
+  let surplus = worksheetQuestionCount(parsed) - most;
+  if (surplus <= 0) return 0;
+  const removed = surplus;
+  while (surplus > 0 && sections.length > 0) {
+    const last = sections[sections.length - 1]!;
+    last.questions.pop();
+    surplus -= 1;
+    if (last.questions.length === 0) sections.pop();
+  }
+  obj.sections = sections;
+  if (Array.isArray(obj.answerKey)) obj.answerKey = (obj.answerKey as unknown[]).slice(0, worksheetQuestionCount(parsed));
+  return removed;
+}
+
 /** A deck shorter than this is not a lesson, whatever the teacher asked for. */
 const MIN_USABLE_DECK_SLIDES = 5;
 

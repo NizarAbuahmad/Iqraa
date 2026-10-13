@@ -14,7 +14,22 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { quizPromptAr, quizPromptEn, quizTopUpBlock, quizTypes, worksheetPromptAr, worksheetPromptEn } from "../prompts.ts";
+import { quizPromptAr, quizPromptEn, quizTopUpBlock, quizTypes, worksheetPromptAr, worksheetPromptEn, worksheetTopUpBlock } from "../prompts.ts";
+
+describe("the top-up block for a short worksheet or homework", () => {
+  const have = ["ما ناتج 2+2؟", "عرّف المول.", "احسب س."];
+  for (const [name, isAr] of [["ar", true], ["en", false]] as const) {
+    it(`${name}: names how many more, shows what is written, and where the answers number from`, () => {
+      const b = worksheetTopUpBlock(isAr, have, 12);
+      assert.match(b, /12/);
+      assert.ok(b.includes("ما ناتج 2+2؟") && b.includes("احسب س."));
+      assert.match(b, /4/, "the key must number on from the questions already there");
+      assert.match(b, isAr ? /تمارين إضافية/ : /Additional practice/);
+      assert.match(b, isAr ? /لا تكرر/ : /do not repeat/);
+      assert.match(b, /workedExample/);
+    });
+  }
+});
 import { QUIZ_TYPE_ORDER } from "../generationShape.ts";
 
 describe("the top-up block for a short reply", () => {
