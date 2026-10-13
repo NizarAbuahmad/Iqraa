@@ -108,6 +108,66 @@ export function parseClassResourceInput(body: unknown): ClassResourceInput | { e
   return { source, nativeId, title, mediaKind, url, thumbnailUrl };
 }
 
+export interface LinkClassResourceInput {
+  url: string;
+  title: string;
+  mediaKind: MediaKind;
+}
+
+const VIDEO_HOSTS = ["youtube.com", "youtu.be", "vimeo.com"];
+const EXTENSION_KIND: Record<string, MediaKind> = {
+  png: "image", jpg: "image", jpeg: "image", webp: "image", gif: "image",
+  mp4: "video", webm: "video",
+  mp3: "audio", m4a: "audio", wav: "audio", ogg: "audio",
+  pdf: "document", doc: "document", docx: "document",
+  ppt: "presentation", pptx: "presentation",
+};
+
+/**
+ * What a pasted link is, from the url alone — the server never fetches it. A
+ * Drive or Docs link says nothing about its file, so it is a `page`; that is a
+ * safe label (it opens in the browser) where a guess would be a wrong one.
+ * Hosts match on the whole name or a subdomain, never a substring, so
+ * `youtube.com.evil.test` is not a video.
+ */
+export function linkMediaKind(link: string): MediaKind {
+  let url: URL;
+  try {
+    url = new URL(link);
+  } catch {
+    return "page";
+  }
+  const host = url.hostname.toLowerCase();
+  if (VIDEO_HOSTS.some(h => host === h || host.endsWith(`.${h}`))) return "video";
+  const ext = url.pathname.split(".").pop()?.toLowerCase() ?? "";
+  return EXTENSION_KIND[ext] ?? "page";
+}
+
+/**
+ * Validates `POST /classes/:id/resources` with `kind: "link"` — a URL a teacher
+ * pasted. https only, like the Library's own links, so a tap never lands on
+ * plain http or `javascript:`; a link carrying a username or password is
+ * refused so a credential is never stored or shown on a shelf. Never clips a
+ * long url or title, which would save a link that 404s.
+ */
+export function parseLinkClassResourceInput(body: unknown): LinkClassResourceInput | { error: string } {
+  if (!body || typeof body !== "object") return { error: "A JSON body is required" };
+  const b = body as Record<string, unknown>;
+
+  const url = parseUrl(b["url"], false, MAX_URL);
+  const parsed = url ? new URL(url) : null;
+  if (!url || !parsed || parsed.username || parsed.password) {
+    return { error: `url must be an https link of at most ${MAX_URL} characters, without a username or password` };
+  }
+
+  const given = typeof b["title"] === "string" ? b["title"].trim() : "";
+  if (given.length > MAX_TITLE) return { error: `title must be at most ${MAX_TITLE} characters` };
+  // A teacher who types no title still gets a row that says where it goes.
+  const title = given || parsed.hostname.replace(/^www\./i, "");
+
+  return { url, title, mediaKind: linkMediaKind(url) };
+}
+
 /** The ids of staff uploads among `rows`, i.e. the ones the Library can later delete. */
 export function uploadedLibraryIds(
   rows: ReadonlyArray<{ librarySource: string | null; libraryNativeId: string | null }>,

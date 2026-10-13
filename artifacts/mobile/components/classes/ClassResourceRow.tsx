@@ -69,7 +69,7 @@ export function ClassResourceRow({
           <Text style={[styles.meta, { color: tint, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
             {gone
               ? t('resourceUnavailable')
-              : `${t('resourceTag')} · ${t(RESOURCE_KIND_LABEL[resource.mediaKind])}`}
+              : `${t(resource.kind === 'link' ? 'resourceTagLink' : 'resourceTag')} · ${t(RESOURCE_KIND_LABEL[resource.mediaKind])}`}
           </Text>
           {isInsecureResource(resource) ? (
             <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, textAlign: align }}>

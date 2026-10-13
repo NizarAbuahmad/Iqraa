@@ -11,12 +11,14 @@ import assert from 'node:assert/strict';
 import {
   addBodyFor,
   addLabBodyFor,
+  addLinkBodyFor,
   addedKeys,
   isInsecureResource,
   labItemsForClass,
   labShelfKey,
   mergeClassShelf,
   openTargetFor,
+  parseClassLink,
   withAddedResource,
   type ClassResource,
 } from '../classResources.ts';
@@ -384,5 +386,91 @@ describe('labItemsForClass', () => {
 
   it('is empty without a grade, rather than listing everything', () => {
     assert.deepEqual(labItemsForClass('', ['chemistry']), []);
+  });
+});
+
+describe('parseClassLink', () => {
+  const url = (input: string) => {
+    const r = parseClassLink(input);
+    assert.ok('url' in r, `expected a link, got ${JSON.stringify(r)}`);
+    return r.url;
+  };
+  const error = (input: string) => {
+    const r = parseClassLink(input);
+    assert.ok('error' in r, `expected an error, got ${JSON.stringify(r)}`);
+    return r.error;
+  };
+
+  it('accepts an https link and trims the paste', () => {
+    assert.equal(url('  https://drive.google.com/file/d/abc/view  '), 'https://drive.google.com/file/d/abc/view');
+  });
+
+  it('adds https:// when the teacher pasted a bare address', () => {
+    assert.equal(url('www.khanacademy.org/math'), 'https://www.khanacademy.org/math');
+  });
+
+  it('says insecure for plain http rather than silently upgrading it', () => {
+    assert.equal(error('http://example.test/a'), 'insecure');
+  });
+
+  it('refuses a scheme that is not a web link', () => {
+    assert.equal(error('javascript:alert(1)'), 'invalid');
+    assert.equal(error('mailto:a@example.test'), 'invalid');
+    assert.equal(error('ftp://example.test/a'), 'invalid');
+  });
+
+  it('asks for something when the box is empty or only spaces', () => {
+    assert.equal(error(''), 'empty');
+    assert.equal(error('   '), 'empty');
+  });
+
+  it('refuses text that is not an address, including a host with no dot', () => {
+    assert.equal(error('not a link'), 'invalid');
+    assert.equal(error('https://abc'), 'invalid');
+  });
+
+  it('refuses a link carrying a username or password, as the server does', () => {
+    assert.equal(error('https://teacher:secret@example.test/a'), 'invalid');
+  });
+
+  it('refuses a link the server would refuse for length, instead of letting the add fail', () => {
+    assert.equal(error(`https://example.test/${'a'.repeat(2048)}`), 'invalid');
+  });
+});
+
+describe('addLinkBodyFor', () => {
+  it('sends the url alone when the teacher gave no title', () => {
+    assert.deepEqual(addLinkBodyFor('https://example.test/a', '  '), { kind: 'link', url: 'https://example.test/a' });
+  });
+
+  it('sends the trimmed title when there is one', () => {
+    assert.deepEqual(addLinkBodyFor('https://example.test/a', ' ورقة '), {
+      kind: 'link',
+      url: 'https://example.test/a',
+      title: 'ورقة',
+    });
+  });
+});
+
+describe('link rows on the shelf', () => {
+  const link = resource({
+    id: 'l1',
+    kind: 'link',
+    source: null,
+    nativeId: null,
+    mediaKind: 'page',
+    url: 'https://drive.google.com/file/d/abc/view',
+  });
+
+  it('opens the pasted url', () => {
+    assert.deepEqual(openTargetFor(link), { kind: 'url', url: 'https://drive.google.com/file/d/abc/view' });
+  });
+
+  it('adds nothing to the already-added set, which keys catalogue items a link is not one of', () => {
+    assert.deepEqual([...addedKeys([link])], []);
+  });
+
+  it('is not flagged insecure: only https links are ever stored', () => {
+    assert.equal(isInsecureResource(link), false);
   });
 });

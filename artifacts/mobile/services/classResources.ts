@@ -16,15 +16,18 @@ import type { ResourceItem, ResourceKind, ResourceSource } from './resourceCatal
 import type { SavedMaterial } from './workspace.ts';
 
 /**
- * One Library item on a class's shelf, as the server returns it. `kind` is
- * `library` today; pasted links and device files are later pieces.
+ * One item on a class's shelf, as the server returns it. `kind` is `library`,
+ * `lab` or `link`; device files are a later piece.
  */
 export interface ClassResource {
   id: string;
-  /** `lab` is a Science Lab item; `source` is null for it and `nativeId` is the lab item id. */
-  kind: 'library' | 'lab';
+  /**
+   * `lab` is a Science Lab item; `source` is null for it and `nativeId` is the lab item id.
+   * `link` is a URL the teacher pasted: `source` and `nativeId` are both null, `url` is the link.
+   */
+  kind: 'library' | 'lab' | 'link';
   source: ResourceSource | null;
-  nativeId: string;
+  nativeId: string | null;
   /** The title the item had when it was added. */
   title: string;
   mediaKind: ResourceKind;
@@ -50,6 +53,13 @@ export interface AddResourceBody {
 export interface AddLabResourceBody {
   kind: 'lab';
   itemId: string;
+}
+
+/** The body of `POST /classes/:id/resources` for a link the teacher pasted. */
+export interface AddLinkResourceBody {
+  kind: 'link';
+  url: string;
+  title?: string;
 }
 
 export type ClassShelfEntry =
@@ -113,11 +123,13 @@ export function labShelfKey(itemId: string): string {
 }
 
 export function addedKeys(resources: ClassResource[]): Set<string> {
-  return new Set(
-    resources.map(resource =>
-      resource.kind === 'lab' ? labShelfKey(resource.nativeId) : `${resource.source}:${resource.nativeId}`,
-    ),
-  );
+  const keys = new Set<string>();
+  for (const resource of resources) {
+    // A link is not a catalogue item, so no picker asks whether it is "already added".
+    if (resource.kind === 'link' || resource.nativeId === null) continue;
+    keys.add(resource.kind === 'lab' ? labShelfKey(resource.nativeId) : `${resource.source}:${resource.nativeId}`);
+  }
+  return keys;
 }
 
 /**
@@ -152,6 +164,49 @@ export function addLabBodyFor(itemId: string): AddLabResourceBody {
   return { kind: 'lab', itemId };
 }
 
+/** Longest link the server stores (`MAX_URL` in api-server's classResource.ts). */
+const MAX_LINK = 2048;
+
+export type ClassLinkProblem = 'empty' | 'insecure' | 'invalid';
+
+/**
+ * A teacher's pasted text, made into a link the server will accept — or the
+ * reason it will not be. Checked here as well as on the server so the sheet can
+ * say what is wrong before a round trip, and so a bare `www.example.com` works.
+ *
+ * A bare address gets `https://`; `http://` is refused as `insecure` instead of
+ * being silently upgraded, because the page may not exist over https. Any other
+ * scheme (`javascript:`, `mailto:`) is `invalid`. The same limits as the server:
+ * https only, a dotted host, no username or password, at most 2048 characters.
+ */
+export function parseClassLink(input: string): { url: string } | { error: ClassLinkProblem } {
+  const raw = input.trim();
+  if (!raw) return { error: 'empty' };
+
+  const hasScheme = /^[a-z][a-z0-9+.-]*:/i.test(raw);
+  if (hasScheme && !/^[a-z][a-z0-9+.-]*:\/\//i.test(raw)) return { error: 'invalid' };
+
+  let parsed: URL;
+  try {
+    parsed = new URL(hasScheme ? raw : `https://${raw}`);
+  } catch {
+    return { error: 'invalid' };
+  }
+  if (parsed.protocol === 'http:') return { error: 'insecure' };
+  if (parsed.protocol !== 'https:') return { error: 'invalid' };
+  if (!parsed.hostname.includes('.') || parsed.username || parsed.password) return { error: 'invalid' };
+
+  const url = parsed.toString();
+  if (url.length > MAX_LINK) return { error: 'invalid' };
+  return { url };
+}
+
+/** A pasted link goes by url, with the teacher's title if they typed one; the server names the rest. */
+export function addLinkBodyFor(url: string, title: string): AddLinkResourceBody {
+  const trimmed = title.trim();
+  return { kind: 'link', url, ...(trimmed ? { title: trimmed } : {}) };
+}
+
 /**
  * The lab items a class can be offered: its grade and any of its subjects
  * (an empty list means any), as the Library picker does. No grade, no items.
@@ -172,8 +227,13 @@ export type OpenTarget =
 /** Where a tap on a resource row goes. */
 export function openTargetFor(resource: ClassResource): OpenTarget {
   if (resource.unavailable) return { kind: 'none' };
-  if (resource.kind === 'lab') return { kind: 'lab', path: labItemPath(resource.nativeId) };
-  if (resource.source === 'premade-sheet') return { kind: 'premade', id: resource.nativeId };
+  // A lab or premade row is opened by its id; one that somehow has none has nowhere to go.
+  if (resource.kind === 'lab') {
+    return resource.nativeId ? { kind: 'lab', path: labItemPath(resource.nativeId) } : { kind: 'none' };
+  }
+  if (resource.source === 'premade-sheet') {
+    return resource.nativeId ? { kind: 'premade', id: resource.nativeId } : { kind: 'none' };
+  }
   return resource.url ? { kind: 'url', url: resource.url } : { kind: 'none' };
 }
 

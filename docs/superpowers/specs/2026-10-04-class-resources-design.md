@@ -211,7 +211,7 @@ API-wide).
 
 ## Pieces #2 and #3
 
-- **#2, pasted links.** `kind = link`, using the existing `title` and `url`.
+- **#2, pasted links** *(shipped 2026-10-13 — see STATUS.md)*. `kind = link`, using the existing `title` and `url`.
   Adds an «أضف رابطًا» form to the «+» sheet and reuses the Library's https
   link check (`parseLibraryLink`). List, open and remove are unchanged. **No
   schema change.**
