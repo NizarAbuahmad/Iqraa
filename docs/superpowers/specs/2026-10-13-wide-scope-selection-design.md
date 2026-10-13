@@ -107,10 +107,12 @@ single-lesson case on these screens.
 ### 3. Grounding a wide scope
 
 `resolveGeneratorGrounding` is lesson-only and stays that way. A sibling in
-`kbContext.ts`:
+`artifacts/mobile/services/scopeGrounding.ts` (not `kbContext.ts`), whose
+optional `options` is `{ budget?: number }` (default `DIGEST_CHAR_BUDGET`) so
+the truncation path can be tested:
 
 ```ts
-resolveScopeGrounding(sel, lang, options): ScopeGrounding
+resolveScopeGrounding(sel, lang, options?): ScopeGrounding
 // { grounded: true, kind, lessons: KBLesson[], context: string,
 //   unitIds: string[] (NCCD ids only), ungroundedNote: '' }
 ```
@@ -130,15 +132,16 @@ resolveScopeGrounding(sel, lang, options): ScopeGrounding
 `AIRequest` gains an optional `scope`:
 
 ```ts
-scope?: { kind: ScopeKind; scopeKey: string; unitIds?: string[] }
+scope?: { kind: 'unit' | 'semester' | 'book'; scopeKey: string; unitIds: string[] }
 ```
 
+`scope` is typed with the three wide kinds only; `unitIds` is required.
 `unitId` / `lessonId` stay for `kind: 'lesson'` exactly as they are now.
 `additionalContext` carries the digest, `contextSource: 'curriculum'` (it is
 derived from the KB, not teacher-pasted).
 
 On the server, `withGrounding` gains a wide branch: when `scope.unitIds` has
-more than one NCCD unit it calls the existing `groundingForObjectives`-style
+one or more NCCD units it calls the existing `groundingForObjectives`-style
 pooling (`passagesForUnit` per unit, merged by score, same
 `PASSAGE_LIMIT`/`PASSAGE_CHAR_BUDGET`). It validates `scope.unitIds` with
 `isNccdUnitId` and caps the list length (request-controlled input).
