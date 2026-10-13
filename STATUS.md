@@ -1003,6 +1003,19 @@ recycles identical items, which the gate rightly rejects). Asking for 20
 multiple-choice questions on a single lesson offline will still come back short —
 now with the reason shown.
 
+## A published exam can be sent to the class chat in one tap, 2026-10-13
+
+The share card on a published exam (`ShareLinkCard`, `app/evaluations/[id]`) only
+copied the link. It now also has «أرسل إلى محادثة الشعبة»: it asks first (the
+message reaches every student in the class chat and their linked parents, and
+cannot be unsent), then posts the link, the title and the code through the
+existing `getClassThread` + `sendMessage` — no server change. The text is built
+by `services/examShareMessage.ts` (link on its own line so chat linkifies it,
+code included for a student who types it, long titles cut before the link).
+Only the owning teacher can post in a class chat by default (announcement-only),
+so this works without opening student posting. A failure says so and leaves
+«نسخ الرابط» as the fallback. Not verified in the running app.
+
 ## A waitlist signup on iqrra.com pushes the admins, 2026-10-12
 
 `POST /site/signups` (`routes/admin.ts`) now calls `notifyAdminsOfWaitlistSignup`

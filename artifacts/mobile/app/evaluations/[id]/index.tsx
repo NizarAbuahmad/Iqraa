@@ -34,6 +34,8 @@ import {
 import { summariseKeyChecks, type KeyCheckSummary } from '@/services/keyCheckSummary';
 import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 import { copyToClipboard } from '@/services/share';
+import { getClassThread, sendMessage } from '@/services/messaging';
+import { buildExamShareMessage } from '@/services/examShareMessage';
 import { AddReadAloudModal } from '@/components/AddReadAloudModal';
 import { AddDictationModal } from '@/components/AddDictationModal';
 import { EditQuestionModal } from '@/components/EditQuestionModal';
@@ -428,6 +430,9 @@ export default function EvaluationDetailScreen() {
       {evaluation?.status === 'published' && (
         <ShareLinkCard
           shareCode={evaluation.shareCode ?? null}
+          classGroupId={evaluation.classGroupId ?? null}
+          examTitle={(lang === 'ar' ? evaluation.titleAr : evaluation.title) || evaluation.titleAr || evaluation.title || ''}
+          lang={lang === 'ar' ? 'ar' : 'en'}
           attachedToClass={Boolean(evaluation.classGroupId)}
           onAttach={() => setPickingClass(true)}
           colors={colors}
@@ -880,9 +885,12 @@ function KeyCheckNotice({
 }
 
 function ShareLinkCard({
-  shareCode, attachedToClass, onAttach, colors, isRTL, align, t,
+  shareCode, classGroupId, examTitle, lang, attachedToClass, onAttach, colors, isRTL, align, t,
 }: {
   shareCode: string | null;
+  classGroupId: string | null;
+  examTitle: string;
+  lang: 'ar' | 'en';
   attachedToClass: boolean;
   onAttach: () => void;
   colors: ReturnType<typeof useColors>;
@@ -891,7 +899,32 @@ function ShareLinkCard({
   t: (key: TranslationKey, ...args: any[]) => string;
 }) {
   const [copied, setCopied] = useState(false);
+  const [posting, setPosting] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
   if (!shareCode) return null;
+
+  // One tap to the class chat. Asks first: it is a message to every student
+  // (and, in a class chat, their linked parents), and it cannot be unsent.
+  const postToClassChat = async () => {
+    if (!classGroupId || posting === 'sending') return;
+    const ok = await confirm({
+      title: t('shareExamToChat'),
+      message: t('shareExamToChatConfirm'),
+      confirmLabel: t('shareExamToChat'),
+      cancelLabel: t('cancel'),
+    });
+    if (!ok) return;
+    setPosting('sending');
+    try {
+      const thread = await getClassThread(classGroupId);
+      await sendMessage(
+        thread.id,
+        buildExamShareMessage({ title: examTitle, shareCode, origin: PROD_ORIGIN, lang }),
+      );
+      setPosting('sent');
+    } catch {
+      setPosting('failed');
+    }
+  };
 
   // Always the live site. This used to follow the host of the current page, so
   // a teacher on a local build told thirty students to visit localhost; the
@@ -948,6 +981,22 @@ function ShareLinkCard({
                 {t(copied ? 'copiedToClipboard' : 'shareExamCopyLink')}
               </Text>
             </Pressable>
+            <Pressable
+              onPress={postToClassChat}
+              disabled={posting === 'sending' || posting === 'sent'}
+              accessibilityRole="button"
+              style={[styles.shareBtn, { borderColor: ACCENT, opacity: posting === 'sending' ? 0.6 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            >
+              <Ionicons name={posting === 'sent' ? 'checkmark' : 'chatbubbles-outline'} size={16} color={ACCENT} />
+              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
+                {t(posting === 'sent' ? 'shareExamToChatSent' : 'shareExamToChat')}
+              </Text>
+            </Pressable>
+            {posting === 'failed' ? (
+              <Text style={{ color: palette.warning, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 8, textAlign: 'center' }}>
+                {t('shareExamToChatFailed')}
+              </Text>
+            ) : null}
           </>
         )}
       </View>
