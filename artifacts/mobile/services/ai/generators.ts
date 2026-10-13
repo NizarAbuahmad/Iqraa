@@ -972,9 +972,13 @@ export function buildOfflineActivity(req: AIRequest, variant = 0): ActivityOutpu
  * everything except the regeneration fields.
  */
 const lastServed = new Map<string, string>();
+/** The question stems of what was last served, for papers compared by stem. */
+const lastStems = new Map<string, Set<string>>();
 const MAX_TRACKED_REQUESTS = 200;
 /** A draw that cannot vary (a tiny bank, fixed templates) gives up after this. */
 const MAX_FRESH_ATTEMPTS = 20;
+/** Draws tried to find a paper that repeats fewer questions. Offline and instant. */
+const MAX_FRESH_STEM_ATTEMPTS = 80;
 
 /** A short fingerprint (length + FNV-1a), so the table holds hashes, not whole outputs. */
 function fingerprint(out: unknown): string {
@@ -1007,12 +1011,46 @@ function requestIdentity(kind: string, req: object): string {
  * possible draw) returns after `MAX_FRESH_ATTEMPTS` rather than looping. A
  * plain request is never compared — it is free to repeat.
  */
-async function freshOnRegenerate<T>(kind: string, req: object, produce: () => Promise<T>): Promise<T> {
+async function freshOnRegenerate<T>(
+  kind: string,
+  req: object,
+  produce: () => Promise<T>,
+  /**
+   * For a paper made of questions: how to read its stems. "Different" is then
+   * judged by the questions, not by the whole object — the same questions in
+   * another order, or with the options shuffled, are not a new paper.
+   */
+  stemsOf?: (out: T) => string[],
+): Promise<T> {
   const key = requestIdentity(kind, req);
   const previous = lastServed.get(key);
+  const previousStems = lastStems.get(key);
   let out = await produce();
   let signature = fingerprint(out);
+  let repeated = 0;
   if ((req as { regenerate?: boolean }).regenerate === true && previous !== undefined) {
+    if (stemsOf && previousStems) {
+      // Keep the draw that shares the fewest stems with what is on screen, and
+      // stop at the first that shares none. A draw identical to the last one is
+      // never kept while another exists.
+      const overlap = (o: T) => stemsOf(o).filter(s => previousStems.has(s)).length;
+      let best = out;
+      let bestOverlap = overlap(out);
+      let bestSignature = signature;
+      for (let attempt = 1; attempt < MAX_FRESH_STEM_ATTEMPTS && bestOverlap > 0; attempt++) {
+        const candidate = await produce();
+        const candidateSignature = fingerprint(candidate);
+        const o = overlap(candidate);
+        if (o < bestOverlap || (o === bestOverlap && bestSignature === previous && candidateSignature !== previous)) {
+          best = candidate;
+          bestOverlap = o;
+          bestSignature = candidateSignature;
+        }
+      }
+      out = best;
+      signature = bestSignature;
+      repeated = bestOverlap;
+    }
     for (let attempt = 1; attempt < MAX_FRESH_ATTEMPTS && signature === previous; attempt++) {
       out = await produce();
       signature = fingerprint(out);
@@ -1020,10 +1058,16 @@ async function freshOnRegenerate<T>(kind: string, req: object, produce: () => Pr
   }
   lastServed.delete(key); // re-insert last, so the oldest entry is the stalest
   lastServed.set(key, signature);
+  lastStems.delete(key);
+  if (stemsOf) lastStems.set(key, new Set(stemsOf(out)));
   if (lastServed.size > MAX_TRACKED_REQUESTS) {
-    lastServed.delete(lastServed.keys().next().value as string);
+    const oldest = lastServed.keys().next().value as string;
+    lastServed.delete(oldest);
+    lastStems.delete(oldest);
   }
-  return out;
+  const of = stemsOf ? stemsOf(out).length : 0;
+  // Only a paper compared by stem (an object) ever reaches here with repeats.
+  return repeated > 0 ? ({ ...out, repeated: { count: repeated, of } } as T) : out;
 }
 
 // ─── Main service class ───────────────────────────────────────────────────────
@@ -1437,7 +1481,7 @@ export class MockAIService extends AIService {
 
   async generateQuiz(req: AIRequest): Promise<QuizOutput> {
     await this.delay();
-    return freshOnRegenerate('quiz', req, () => this.quizOnce(req));
+    return freshOnRegenerate('quiz', req, () => this.quizOnce(req), quiz => quiz.questions.map(q => questionStemKey(q.text)));
   }
 
   private async quizOnce(req: AIRequest): Promise<QuizOutput> {
