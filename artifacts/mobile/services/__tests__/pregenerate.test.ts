@@ -1,6 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { plannedCalls, plannedTeachingCalls, reviewEntry, type Call } from '../../scripts/pregenerate.ts';
+import {
+  assertReviewFileFree,
+  hashContent,
+  plannedCalls,
+  plannedTeachingCalls,
+  reviewEntry,
+  verifyReviewEntries,
+  type Call,
+  type ReviewEntry,
+} from '../../scripts/pregenerate.ts';
 
 // A pre-generated copy only helps if it is the copy a teacher's default form
 // asks for. These pin the bits of the body that decide whether the pool matches.
@@ -72,12 +81,21 @@ test('reviewEntry shows what a student would read, and nothing else', () => {
     servedReason: 'budget',
     variantId: 'v-1',
   });
+  const content = { hook: { question: 'ما المول؟' }, concepts: [{ title: 'المول', points: ['a'] }] };
   assert.deepEqual(entry, {
     variantId: 'v-1',
     lessonId: 'kbl-x',
     lesson: 'المول',
-    content: { hook: { question: 'ما المول؟' }, concepts: [{ title: 'المول', points: ['a'] }] },
+    contentHash: hashContent(content),
+    content,
   });
+});
+
+test('reviewEntry\'s contentHash is the hash of the content it carries', () => {
+  const call: Call = { kind: 'lesson-teaching', lesson: 'المول', body: { lessonId: 'kbl-x' } };
+  const entry = reviewEntry(call, { hook: { question: 'q', teacherNote: 'n' }, variantId: 'v-1' });
+  assert.ok(entry);
+  assert.equal(entry.contentHash, hashContent(entry.content));
 });
 
 test('reviewEntry returns null for a result that was never pooled', () => {
@@ -85,4 +103,41 @@ test('reviewEntry returns null for a result that was never pooled', () => {
   assert.equal(reviewEntry(call, { hook: { question: 'q' } }), null);
   assert.equal(reviewEntry(call, null), null);
   assert.equal(reviewEntry({ ...call, body: {} }, { variantId: 'v-1' }), null);
+});
+
+test('hashContent is stable and changes when the content does', () => {
+  const a = { hook: { question: 'ما المول؟' }, concepts: [{ title: 'المول', points: ['a', 'b'] }] };
+  assert.equal(hashContent(a), hashContent(structuredClone(a)));
+  assert.match(hashContent(a), /^[0-9a-f]{64}$/);
+  assert.notEqual(hashContent(a), hashContent({ ...a, hook: { question: 'ما المول' } }));
+  assert.notEqual(hashContent(a), hashContent({ ...a, concepts: [{ title: 'المول', points: ['a'] }] }));
+});
+
+function entryFor(id: string, content: unknown): ReviewEntry {
+  return { variantId: id, lessonId: `kbl-${id}`, lesson: `درس ${id}`, contentHash: hashContent(content), content };
+}
+
+test('verifyReviewEntries separates what may be approved from what was edited or is malformed', () => {
+  const good = entryFor('v-1', { hook: { question: 'q' } });
+  const edited: ReviewEntry = { ...entryFor('v-2', { hook: { question: 'q2' } }), content: { hook: { question: 'changed' } } };
+  const noHash = { variantId: 'v-3', lessonId: 'kbl-3', lesson: 'x', content: {} };
+  const badId = { ...entryFor('v-4', {}), variantId: 4 };
+
+  const result = verifyReviewEntries([good, edited, noHash, badId, 'nope', null]);
+  assert.deepEqual(result.approvable, [good]);
+  assert.deepEqual(result.edited, [edited]);
+  assert.equal(result.malformed, 4);
+});
+
+test('verifyReviewEntries treats a file that is not an array as one malformed entry', () => {
+  for (const input of [{}, 'x', null, undefined, 3]) {
+    assert.deepEqual(verifyReviewEntries(input), { approvable: [], edited: [], malformed: 1 });
+  }
+  assert.deepEqual(verifyReviewEntries([]), { approvable: [], edited: [], malformed: 0 });
+});
+
+test('a review file that already exists is not overwritten without --force', () => {
+  assert.throws(() => assertReviewFileFree(true, false, 'pregen-review.json'), /pregen-review\.json.*--approve.*--review=.*--force/s);
+  assert.doesNotThrow(() => assertReviewFileFree(true, true, 'pregen-review.json'));
+  assert.doesNotThrow(() => assertReviewFileFree(false, false, 'pregen-review.json'));
 });

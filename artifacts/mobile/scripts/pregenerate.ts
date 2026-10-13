@@ -28,16 +28,41 @@
  *   2. A person reads the file and deletes the entries they reject. Look for
  *      wording that assumes a class or a projector ("your teacher", "the
  *      screen"), wrong maths or chemistry, and a different lesson's content.
+ *      Edits are NOT applied: each entry carries a hash of its text, and
+ *      `--approve` refuses the whole file if any entry's text no longer matches
+ *      it. To reject an entry, delete it; do not reword it.
  *   3. `pnpm run pregenerate -- --approve=pregen-review.json` marks the entries
  *      left in the file as fit for students. Needs a `system_admin` login.
  *      Nothing is approved by a run that only generates.
+ *
+ * The review file is never overwritten without `--force`: a generate run that
+ * finds it refuses, because rerunning can serve a variant you already rejected
+ * and would bring its entry back. Finish `--approve` (or delete the file)
+ * first, or write a second file with `--review=<other file>`.
+ *
+ * A bare `--go` plans the 64 worksheet and lesson-plan calls first and the
+ * lesson-teaching calls last, so the default $1 cap (100 model calls at the
+ * $0.01 estimate) can run out before the explanations are reached. Use
+ * `--only=lesson-teaching`.
+ *
+ * REPLACING A REJECTED EXPLANATION. Deleting an entry from the review file only
+ * keeps it from being approved; the stored variant stays in the pool, so the
+ * next `--go` serves the same one again and that lesson keeps showing «قريبًا».
+ * To get a fresh one, retire the variant: a `system_admin` (who may call
+ * `/generate/*`) files a report on that `variantId` with
+ * `POST /generate/variants/:id/retire` (it queues a report; it does not retire
+ * by itself), then resolves the report as `approved` on the admin
+ * artifact-reports screen (`POST /moderation/artifact-reports/:id/resolve`),
+ * which retires the row. The next `--go --only=lesson-teaching` then generates
+ * a new variant for that lesson.
  *
  * ponytail: grade 10 maths (worksheets and plans) and grade 10 maths +
  * chemistry (explanations). Other grades/subjects are the `SCOPE` and
  * `TEACHING_SCOPES` lines; other option combinations only if teachers turn out
  * to change the defaults a lot (the pool's hit rate says).
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { getPickerGrades, getPickerSubjects } from '../services/curriculumData.ts';
 import { getLessonsForUnit, getUnitsForSubjectGrade } from '../services/knowledgeBase.ts';
 import { resolveGeneratorGrounding } from '../services/kbContext.ts';
@@ -68,6 +93,7 @@ const capUsd = Number(flag('cap') ?? 1);
 const only = flag('only');
 const reviewPath = flag('review') ?? 'pregen-review.json';
 const approvePath = flag('approve');
+const force = args.includes('--force');
 
 export type Call = {
   kind: 'worksheet' | 'lesson-plan' | 'lesson-teaching';
@@ -141,7 +167,55 @@ export function plannedTeachingCalls(): Call[] {
   return calls;
 }
 
-export type ReviewEntry = { variantId: string; lessonId: string; lesson: string; content: unknown };
+export type ReviewEntry = {
+  variantId: string;
+  lessonId: string;
+  lesson: string;
+  /** sha256 of `JSON.stringify(content)` when the entry was written; `--approve` checks it. */
+  contentHash: string;
+  content: unknown;
+};
+
+/** sha256 hex of the content as it is written to the review file. */
+export function hashContent(content: unknown): string {
+  return createHash('sha256').update(JSON.stringify(content)).digest('hex');
+}
+
+/**
+ * Sort the parsed review file into what `--approve` may send and what makes it
+ * refuse. `--approve` posts only `variantId`, so an entry whose text a reviewer
+ * has changed would approve the ORIGINAL stored text — the edit would not be
+ * applied and the reviewer would not know.
+ */
+export function verifyReviewEntries(entries: unknown): {
+  approvable: ReviewEntry[];
+  edited: ReviewEntry[];
+  malformed: number;
+} {
+  if (!Array.isArray(entries)) return { approvable: [], edited: [], malformed: 1 };
+  const approvable: ReviewEntry[] = [];
+  const edited: ReviewEntry[] = [];
+  let malformed = 0;
+  for (const raw of entries as unknown[]) {
+    const e = raw as Record<string, unknown> | null;
+    if (
+      !e || typeof e !== 'object' || Array.isArray(e) ||
+      typeof e.variantId !== 'string' || typeof e.lessonId !== 'string' || typeof e.contentHash !== 'string'
+    ) { malformed++; continue; }
+    (hashContent(e.content) === e.contentHash ? approvable : edited).push(e as unknown as ReviewEntry);
+  }
+  return { approvable, edited, malformed };
+}
+
+/** A generate run must not silently replace a review file a person may be midway through. */
+export function assertReviewFileFree(exists: boolean, forced: boolean, path: string): void {
+  if (!exists || forced) return;
+  throw new Error(
+    `${path} already exists. Rerunning can serve a variant you already deleted from it, ` +
+    `so it is not overwritten. Finish \`--approve=${path}\` (or delete the file) first, ` +
+    `use \`--review=<other file>\` to write a second file, or \`--force\` to overwrite.`,
+  );
+}
 
 function withoutTeacherNotes(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(withoutTeacherNotes);
@@ -171,7 +245,8 @@ export function reviewEntry(call: Call, json: unknown): ReviewEntry | null {
   const lessonId = call.body.lessonId;
   if (typeof variantId !== 'string' || !variantId.trim()) return null;
   if (typeof lessonId !== 'string' || !lessonId) return null;
-  return { variantId, lessonId, lesson: call.lesson, content: withoutTeacherNotes(content) };
+  const shown = withoutTeacherNotes(content);
+  return { variantId, lessonId, lesson: call.lesson, contentHash: hashContent(shown), content: shown };
 }
 
 function apiEnv() {
@@ -191,12 +266,24 @@ async function login({ base, email, password }: ReturnType<typeof apiEnv>): Prom
   return ((await r.json()) as { accessToken: string }).accessToken;
 }
 
+function titles(entries: ReviewEntry[]): string {
+  const shown = entries.slice(0, 3).map(e => e.lesson).join(', ');
+  return entries.length > 3 ? `${shown}, …` : shown;
+}
+
 /** Mark the entries still in a reviewed file as fit for students. */
 async function approve(file: string): Promise<void> {
+  // Check the file before any network call: all or nothing.
+  const { approvable, edited, malformed } = verifyReviewEntries(JSON.parse(readFileSync(file, 'utf8')));
+  if (malformed > 0) {
+    throw new Error(`${malformed} malformed in ${file}: an entry has no variantId/contentHash (or the file is not a list of entries). Nothing was approved.`);
+  }
+  if (edited.length > 0) {
+    throw new Error(`${edited.length} entr${edited.length === 1 ? 'y' : 'ies'} in ${file} ${edited.length === 1 ? 'was' : 'were'} edited (${titles(edited)}): edits are not applied; delete the entry instead of editing it. Nothing was approved.`);
+  }
   const env = apiEnv();
   const token = await login(env);
-  const entries = JSON.parse(readFileSync(file, 'utf8')) as ReviewEntry[];
-  const ids = [...new Set(entries.map(e => e.variantId))];
+  const ids = [...new Set(approvable.map(e => e.variantId))];
   let approved = 0;
   for (let i = 0; i < ids.length; i += 100) {
     const r = await fetch(`${env.base}/api/moderation/lesson-explanations/approve`, {
@@ -204,7 +291,7 @@ async function approve(file: string): Promise<void> {
       headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
       body: JSON.stringify({ variantIds: ids.slice(i, i + 100) }),
     });
-    if (!r.ok) throw new Error(`approve failed: ${r.status} (needs a system_admin login)`);
+    if (!r.ok) throw new Error(`approve failed: ${r.status} (needs a system_admin login; a 400 means the file held an invalid variantId)`);
     approved += ((await r.json()) as { approved: number }).approved;
   }
   console.log(`approved ${approved} of ${ids.length} (rows already approved or retired are not counted).`);
@@ -221,6 +308,8 @@ async function main() {
   console.log(`${calls.length} calls planned (${byKind}).`);
   console.log(`Worst case at $${EST_COST_PER_CALL_USD}/call: $${(calls.length * EST_COST_PER_CALL_USD).toFixed(2)}; cap $${capUsd} allows ${maxCalls} model calls.`);
   if (!go) { console.log('Dry run — nothing sent. Add --go to send.'); return; }
+  // Only a run that will write the review file needs the file to be free.
+  if (calls.some(c => c.kind === 'lesson-teaching')) assertReviewFileFree(existsSync(reviewPath), force, reviewPath);
 
   const env = apiEnv();
   const base = env.base;
