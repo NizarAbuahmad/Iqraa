@@ -1026,6 +1026,30 @@ async function freshOnRegenerate<T>(kind: string, req: object, produce: () => Pr
   return out;
 }
 
+/**
+ * One question of a given type, for a printed worksheet or homework.
+ *
+ * `allowRepeat: false` — a printed page is not a fresh draw each time like a
+ * quiz retake. Once a lesson's concrete bank runs out of unused items, the
+ * factories fall through to their own topic-templated question (or, under
+ * `bankOnly`, stop) instead of repeating a bank item verbatim. Shared by the
+ * worksheet and the homework so the two cannot disagree on what a type means.
+ */
+function makeWorksheetQ(type: QType, lang: Lang, topic: string, kb: KBLesson | null, diff: DiffTier, subject?: string): WQ {
+  if (lang === 'ar') {
+    if (type === 'multiple_choice') return makeMCQ_ar(topic, kb, diff, subject, false);
+    if (type === 'short_answer') return makeSAQ_ar(topic, kb, diff, subject, false);
+    if (type === 'fill_blank') return makeFBQ_ar(topic, kb, diff, subject, false);
+    if (type === 'word_problem') return makeWPQ_ar(topic, kb, diff, subject, false);
+    return makeTFQ_ar(topic, kb, diff, subject, false);
+  }
+  if (type === 'multiple_choice') return makeMCQ_en(topic, kb, diff, subject, false);
+  if (type === 'short_answer') return makeSAQ_en(topic, kb, diff, subject, false);
+  if (type === 'fill_blank') return makeFBQ_en(topic, kb, diff, subject, false);
+  if (type === 'word_problem') return makeWPQ_en(topic, kb, diff, subject, false);
+  return makeTFQ_en(topic, kb, diff, subject, false);
+}
+
 // ─── Main service class ───────────────────────────────────────────────────────
 
 export class MockAIService extends AIService {
@@ -1249,20 +1273,8 @@ export class MockAIService extends AIService {
     // runs out of unused items at a family, the math factories fall through
     // to their own topic-templated question instead of repeating a bank item
     // verbatim under a different question type. See `takeFromBank`.
-    const makeGenericQ = (type: QType, diff: DiffTier): WQ => {
-      if (lang === 'ar') {
-        if (type === 'multiple_choice') return makeMCQ_ar(topic, kb, diff, req.subject, false);
-        if (type === 'short_answer') return makeSAQ_ar(topic, kb, diff, req.subject, false);
-        if (type === 'fill_blank') return makeFBQ_ar(topic, kb, diff, req.subject, false);
-        if (type === 'word_problem') return makeWPQ_ar(topic, kb, diff, req.subject, false);
-        return makeTFQ_ar(topic, kb, diff, req.subject, false);
-      }
-      if (type === 'multiple_choice') return makeMCQ_en(topic, kb, diff, req.subject, false);
-      if (type === 'short_answer') return makeSAQ_en(topic, kb, diff, req.subject, false);
-      if (type === 'fill_blank') return makeFBQ_en(topic, kb, diff, req.subject, false);
-      if (type === 'word_problem') return makeWPQ_en(topic, kb, diff, req.subject, false);
-      return makeTFQ_en(topic, kb, diff, req.subject, false);
-    };
+    const makeGenericQ = (type: QType, diff: DiffTier): WQ =>
+      makeWorksheetQ(type, lang, topic, kb, diff, req.subject);
 
     /** Main-body question via shared factories (math → concrete practice). Dedup stems. */
     const makeQ = (type: QType, diff: DiffTier): WQ => {
@@ -2693,26 +2705,54 @@ export class MockAIService extends AIService {
       ? '\n\nمساحة العمل:\n_________________________________\n_________________________________\n_________________________________'
       : '\n\nWork space:\n_________________________________\n_________________________________\n_________________________________';
 
+    // The number the teacher picked is the number of questions on the page. The
+    // challenge and the reflection are two of them, so the independent practice
+    // holds the rest — which for the picker's smallest value (5) is the three
+    // this generator used to produce for EVERY value: asking for 15 got 5, and
+    // the types ticked on the screen were ignored (always short answer).
+    const total = Math.min(20, Math.max(3, req.numQuestions ?? 5));
+    const coreN = Math.max(1, total - 2);
+    const picked = ((req.questionTypes as QType[] | undefined) ?? []).filter(Boolean);
+    const coreTypes: QType[] = picked.length ? picked : ['short_answer'];
+
     const usedStems = new Set<string>();
     const core: WQ[] = [];
-    for (let i = 0; i < 3; i++) {
-      let q: WQ | null = null;
-      for (let attempt = 0; attempt < 12; attempt++) {
-        const candidate = lang === 'ar' ? makeSAQ_ar(topic, kb, 'medium', req.subject) : makeSAQ_en(topic, kb, 'medium', req.subject);
-        const key = questionStemKey(candidate.text);
-        if (!usedStems.has(key)) {
-          usedStems.add(key);
-          q = candidate;
-          break;
+    const coreKey: WorksheetAnswerKeyItem[] = [];
+    const coreKinds = new Set<QType>();
+    let spent = false;
+    bankOnly = questionBankPolicy.required;
+    try {
+      for (let i = 0; i < coreN; i++) {
+        const type = coreTypes[i % coreTypes.length]!;
+        let q: WQ | null = null;
+        for (let attempt = 0; attempt < 12; attempt++) {
+          const candidate = makeWorksheetQ(type, lang, topic, kb, 'medium', req.subject);
+          const key = questionStemKey(candidate.text);
+          if (!usedStems.has(key)) {
+            usedStems.add(key);
+            q = candidate;
+            break;
+          }
         }
+        if (!q) q = makeWorksheetQ(type, lang, topic, kb, 'hard', req.subject);
+        // Room to write only where the answer is written; a choice is circled.
+        const written = type !== 'multiple_choice' && type !== 'true_false';
+        core.push({
+          ...withoutSteps(q),
+          text: written ? `${q.text}${workSpace}` : q.text,
+          points: type === 'multiple_choice' ? 4 : type === 'true_false' ? 2 : type === 'fill_blank' ? 3 : 8,
+        });
+        coreKey.push({ num: coreKey.length + 1, answer: q.answer ?? '—', ...(q.steps ? { solution: q.steps } : {}) });
+        coreKinds.add(type);
       }
-      if (!q) q = lang === 'ar' ? makeSAQ_ar(topic, kb, 'hard', req.subject) : makeSAQ_en(topic, kb, 'hard', req.subject);
-      core.push({
-        ...q,
-        text: `${q.text}${workSpace}`,
-        points: 8,
-      });
+    } catch (e) {
+      // The lesson's bank ran out: the practice stays short, and the page says so.
+      if (!(e instanceof BankSpentError)) throw e;
+      spent = true;
+    } finally {
+      bankOnly = false;
     }
+    if (core.length === 0) throw new NoQuestionBankError(topic);
 
     const challengePractice = math
       ? takeConcreteMath('short_answer', topic, kb, 'hard', lang, 12)
@@ -2760,7 +2800,7 @@ export class MockAIService extends AIService {
         : `Student instructions\n• Complete this assignment independently at home (not an in-class worksheet).\n• Estimated time: about ${estMinutes} minutes.\n• Due: next class.\n• Start with the independent practice, then try the challenge.\n• Show your steps — clarity matters more than speed.`,
       sections: [
         {
-          type: 'short_answer',
+          type: coreKinds.size === 1 ? [...coreKinds][0]! : 'mixed',
           title: lang === 'ar' ? '١) تدريب مستقل' : '1) Independent practice',
           questions: core,
         },
@@ -2776,10 +2816,13 @@ export class MockAIService extends AIService {
         },
       ],
       answerKey: [
-        ...core.map((q, i) => ({ num: i + 1, answer: q.answer ?? '—' })),
+        ...coreKey,
         { num: core.length + 1, answer: challenge.answer ?? '—' },
         { num: core.length + 2, answer: reflection.answer ?? '—' },
       ],
+      // The challenge and the reflection are two of the `total` questions the
+      // picker promised, so they are two of the questions produced.
+      ...(spent ? { shortfall: { requested: total, produced: core.length + 2 } } : {}),
     };
   }
 }
