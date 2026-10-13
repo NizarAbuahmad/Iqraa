@@ -1,6 +1,6 @@
 # Student lesson explanations from the shared pool — design
 
-Status: design approved in discussion 2026-10-13, awaiting spec review. Nothing is built.
+Status: design approved 2026-10-13; revised the same day after reading the code (see *Revision*). Nothing is built.
 
 ## Problem
 
@@ -26,7 +26,35 @@ deck. This spec lets a student read those stored explanations.
 | When nothing is stored | Serve-only. A student never triggers a model call. The button shows «قريبًا». |
 | How coverage is filled | A one-off prefill of the supported lessons, plus whatever teachers generate in the normal course. |
 | Approach | Look up by curriculum **lesson id**, not by recomputing the teacher's `strictKey`. |
+| Who may be shown | Only rows a `system_admin` has approved for students (`student_approved_at`). Not every stored row. |
 | Reporting | Through the existing `reportVariant` queue. A student report never retires anything by itself. |
+
+## Revision (2026-10-13, after reading the code)
+
+Three things in the first draft did not survive contact with the code:
+
+1. **Serving every stored row is unsafe.** `slides.tsx` sends
+   `lessonId = generatorLessonId(title, lang)` with no `KbScope`
+   (`app/ai-tools/slides.tsx:471`), so a row a teacher creates organically can
+   sit under the wrong lesson id — the title trap in CLAUDE.md. And a teacher
+   accepts what they read; a student is a minor. The first draft's review gate
+   was procedural ("nobody announces it until the file is read") while the
+   endpoint would have served unreviewed rows the moment it shipped. It is now
+   a data gate: `ai_artifacts.student_approved_at`, set only by a
+   `system_admin`, and the endpoint filters on it.
+2. **The prefill already exists.** `artifacts/mobile/scripts/pregenerate.ts`
+   fills the pool for worksheets and lesson plans through
+   `services/generatorRequests.ts`. The lesson-teaching prefill is a third call
+   kind there, not a new script, and the `slides.tsx` body is extracted into
+   `buildLessonTeachingRequest` so the screen and the script cannot drift.
+   The extraction is byte-identical to what the screen sends today (pinned by a
+   test), so existing teacher rows keep matching.
+3. **Two smaller corrections.** Lesson-id validation is by shape only: the
+   KB list lives in the mobile app, and an unknown id can only ever match an
+   approved row. And the deck's reveal-timer wording
+   («اكشف الحل بعد انتهاء المؤقت») is added by `lessonSlides.ts`, not by the
+   model, so the projector-wording risk is smaller than the first draft said;
+   `teacherNote` is the part that must be stripped.
 
 ## Why not recompute the teacher's key
 
@@ -61,8 +89,9 @@ wins (below), not the same version.
   `mountOrder.test.ts` gets a case: an unowned path is still 404, not 401, and
   the new path is 401 without a token and 403 for a teacher.
 - **Lookup.** `kind = 'lesson-teaching'`, `lesson_ref = :lessonId`,
-  `language` as requested (default `arabic`), `retired_at IS NULL`. Newest
-  `created_at` first; ties broken by lowest `times_served`. One row returned.
+  `language` as requested (default `arabic`), `retired_at IS NULL` **and
+  `student_approved_at IS NOT NULL`**. Newest `created_at` first; ties broken
+  by lowest `times_served`. One row returned.
 - **Response.** `{ content, variantId }`. `content` has every `teacherNote`
   field removed (see *Open point*). `404 { code: 'not_available' }` when no row
   matches.
@@ -72,67 +101,84 @@ wins (below), not the same version.
   header, because the three guards every other generation route carries are
   absent here on purpose.
 - **Serve count.** `noteServed(variantId)`, not awaited, as for teachers.
-- **Input.** `:lessonId` must be a known curriculum lesson id (checked against
-  the KB list in `lib/curriculum`); anything else is 404 before the query, so
-  the route cannot be used to probe `lesson_ref` values.
+- **Input.** `:lessonId` must match `^[A-Za-z0-9_.:-]{1,120}$`; anything else
+  is 404 before the query. It is a shape check only: the KB list lives in the
+  mobile app, and an id that is not a lesson can only ever match an approved
+  row, of which there are none.
 
 The lesson id is carried through, never re-derived from a title. Per CLAUDE.md,
 107 Arabic titles repeat across grades and `searchKBSemantic(title)` returns a
 different lesson for 16 of the 63 pickable ones.
 
-### 2. Data: one index
+### 2. Data: one column and one index
 
-A plain index on `ai_artifacts (kind, lesson_ref)`, added by editing
+A nullable `student_approved_at timestamptz` column and a plain index on
+`ai_artifacts (kind, lesson_ref)`, added by editing
 `lib/db/src/schema/aiArtifacts.ts`, running
 `pnpm --filter @workspace/db run generate`, and committing
-`lib/db/migrations/`. No columns change and nothing is dropped, so CI does not
-ask for `destructive-migration: ok`. Deploy applies it before the new API
+`lib/db/migrations/`. Adding a nullable column and an index drops, renames and
+retypes nothing, so CI does not ask for `destructive-migration: ok`. Deploy applies it before the new API
 revision takes traffic, as for every migration.
 
-### 3. Prefill
+### 2b. Approval endpoint (admin)
 
-Goal: every supported lesson (the 63 in the MVP picker set) has a stored
-explanation before students can ask for it.
+`POST /moderation/lesson-explanations/approve`, body `{ variantIds: string[] }`
+(1–200 uuids), `system_admin` only, next to the artifact-report routes in
+`routes/moderation.ts`. It sets `student_approved_at = now()` on live
+`lesson-teaching` rows that are not yet approved and returns
+`{ requested, approved }`. There is no revoke: retiring a row (an approved
+student report, `retireVariant`) already stops it being served.
 
-- **Where it runs.** `buildGeneratorContext`, `generatorLessonId` and
-  `resolveGeneratorGrounding` live in the mobile app
-  (`artifacts/mobile/services/kbContext.ts`), not the API. So the script lives
-  in `artifacts/mobile/scripts/` and calls the **live endpoint** over HTTP,
-  rather than reimplementing the body in the API.
-- **Same path as a teacher.** It builds the body exactly as `slides.tsx` does
-  for `generateLessonTeaching` (grade, subject, topic, language,
-  `additionalContext`, `unitId`, `lessonId`, `contextSource: 'curriculum'`) and
-  POSTs `/generate/lesson-teaching`. The row it creates is the row a teacher
-  would have created, through every existing guard, and shares a key with a
-  teacher's request for the same lesson.
-- **Lesson id from the list, not a title.** The script iterates the KB lesson
-  list and uses each lesson's id directly, passing the grade/subject `scope`
-  (`KbScope`), per CLAUDE.md.
-- **Token.** A `system_admin` account, so the run does not spend a teacher's
-  monthly allowance (`AI_USER_BUDGET_USD`). Live mode must be on
-  (`AI_LIVE_MODE=true`) and the global cap (`AI_BUDGET_USD`) must cover the run.
-  Estimated cost ~ $1 for all of maths S1 per the cost plan; the script prints
-  the spend it caused rather than assuming.
-- **Idempotent.** It skips a lesson that already has a live row for the request
-  key, so a rerun after a failure only fills gaps.
-- **Review gate.** The script writes what it stored to a review file (lesson id,
-  title, the text a student would see). Nothing is announced to students until
-  that file has been read; see *Open point*.
+### 3. Prefill and approval
+
+Goal: every supported lesson has a stored, **reviewed and approved**
+explanation before its button turns on.
+
+- **Where.** A third call kind, `lesson-teaching`, in
+  `artifacts/mobile/scripts/pregenerate.ts` (`pnpm run pregenerate`). It already
+  logs in, rate-limit-waits, stops at a cost cap and is safe to rerun.
+- **Same body as the screen.** `buildLessonTeachingRequest(form, grounding,
+  regen?)` is added to `services/generatorRequests.ts` and `slides.tsx` calls it
+  for `generateLessonTeaching`; the script calls it too. A test pins the builder
+  against the old inline construction for every grade 10 maths lesson, so
+  nothing teachers have already stored stops matching.
+- **Lesson id from the grounding, not the title.** The script reuses
+  `pregenerate.ts`'s existing guard: a lesson whose title grounds to a
+  different lesson id is skipped, never generated under the wrong one.
+- **Scope.** Grade 10 Mathematics and Chemistry. The existing worksheet and
+  lesson-plan calls stay maths-only and unchanged.
+- **Token.** A `system_admin` account (it can call `/generate`, and approval
+  needs it). Live mode on, and `AI_BUDGET_USD` must cover the run
+  (~$1 per the cost plan; the script prints what it actually caused).
+- **Review file.** For every `lesson-teaching` response, pool hit or fresh, the
+  script appends `{ variantId, lessonId, lesson, content }` to a review file
+  (`--review=`, default `pregen-review.json`, git-ignored). `content` omits
+  `teacherNote`, `sources`, `variantId` and `servedReason`: exactly what a
+  student would read.
+- **Approve step.** After a person has read the file and deleted the entries
+  they reject, `pnpm run pregenerate -- --approve=pregen-review.json` posts the
+  remaining `variantId`s to the approval endpoint. Nothing is approved by a
+  run that only generates.
 
 ### 4. Student app and reports
 
-- **Entry.** A «اشرح لي الدرس» button on the lesson view reached from
-  `/(tabs)/curriculum` → browse. The student's own grade is already the default
-  there. The button is student-only (`isStudentRole`).
+- **Entry.** A «اشرح لي الدرس» button on `app/curriculum/lesson-detail.tsx`,
+  the lesson page a student already reaches from the curriculum tab. It is
+  student-only (`isStudentRole`); teachers keep their own buttons. The screen is
+  `app/curriculum/lesson-explanation.tsx`, which `routeGating` already allows
+  (`/curriculum` is on the non-teacher allowlist). The `lessonId` it sends is the
+  lesson page's own `lesson.id`, the same id space as the KB lesson id the pool
+  is keyed on (pinned by a test).
 - **Screen.** Hook question, concept cards one idea each (with the
   misconception line), the worked example, then the practice problem with the
   hint shown on request and the answer behind a tap. Layout is a pure function
   from the stored content to a list of cards, in
   `artifacts/mobile/services/`, so it is testable under bare `node --test`.
-  RTL-first; maths computed in Latin `x` and converted to `س` / Arabic digits at
-  display time only.
-- **Not available.** On `404 not_available` the button reads «قريبًا» and is
-  disabled. No spinner that never resolves, no silent empty screen.
+  RTL-first. The text is shown as stored, the same as the slide deck shows it.
+- **Not available.** The button checks availability when the lesson page opens;
+  on `404 not_available` it reads «شرح الدرس قريبًا» and is disabled. A network
+  failure leaves it enabled, and the screen shows a retry. No spinner that
+  never resolves, no silent empty screen.
 - **Report.** «بلّغ عن مشكلة» calls a new `POST /student/lesson-explanation/
   :variantId/report`, which calls the existing `reportVariant` with the
   student's id. This **queues** a report for a `system_admin`
@@ -152,20 +198,30 @@ All inside the existing globs (`src/**/__tests__/**/*.test.ts` in api-server;
 `services/__tests__/**/*.test.ts` in mobile). api-server needs `pnpm build`
 first for the mount-order suite.
 
-- Lookup: returns the newest live row; skips retired rows; ties go to the least
-  served; wrong `language` finds nothing; unknown `lessonId` is 404 before any
-  query; `teacherNote` is absent from the response at every depth.
-- Roles: 401 without a token, 403 for teacher/parent, 200 for student.
-- Mount order: an unowned path is still 404, not 401.
-- No-model guarantee: the handler module does not import `generateContent` or
-  the OpenAI client (the client throws at module scope without a key, so the
-  handler must be importable under `node --test`).
-- Report: queues, does not set `retiredAt`, double-tap is a no-op.
-- Mobile: the card-layout function on a fixture with and without a book-supplied
-  example, with an empty `concepts` array, and with Arabic digits.
-- Prefill: a dry-run flag prints the bodies it would send; a test asserts the
-  body for a known lesson carries the lesson's own id and `contextSource:
-  'curriculum'`.
+- **Pure helpers** (`lib/lessonExplanation.ts`): newest approved row wins, ties
+  go to the least served, empty list is null; `teacherNote` is removed at every
+  depth and nothing else is; the approve body parser accepts 1–200 uuids,
+  dedupes, and rejects anything else; the lesson-id shape check.
+- **Mount order** (boots the built bundle): the new GET and POST are 401
+  without a token, the approve route is 401 without a token, and an unowned
+  path is still 404, not 401. Role refusal (403) is `requireRole`'s own,
+  already exercised by the existing `/student` routes; booting a signed token
+  into this suite is not worth its setup.
+- **No-model guarantee:** the route and store modules import neither
+  `generateContent` nor the OpenAI client (a source scan, because that client
+  throws at module scope without a key).
+- **Builder identity** (mobile): `buildLessonTeachingRequest` deep-equals the
+  old inline body for every grade 10 maths lesson, and a lesson id from the
+  grounding resolves through the curriculum browser's `getLessonById` (the
+  id-space pin).
+- **Prefill** (mobile): `plannedTeachingCalls()` carries the lesson's own id,
+  `contextSource: 'curriculum'`, Arabic, and one call per lesson; `reviewEntry`
+  strips the meta and `teacherNote` keys and returns null without a
+  `variantId`.
+- **Cards** (mobile): the card list for a full artifact, for a missing worked
+  example, for an empty `concepts` array, and for blank strings.
+- **Routing/i18n** (mobile): `/curriculum/lesson-explanation` is a non-teacher
+  route; Arabic and English define the same keys.
 
 ## Not in this spec
 
@@ -180,17 +236,17 @@ first for the mount-order suite.
 ## Open point
 
 `lessonTeachingPrompt.ts` writes for the classroom projector, one idea per
-slide, with a `teacherNote` per slide and a worked example that is revealed
-after a timer in the deck. A student reading alone on a phone does not need the
-note and may meet wording that assumes a class. The endpoint strips
-`teacherNote`; the rest is checked by reading the prefill review file against a
-short list: phrases addressing "the class" or "your teacher", references to a
-timer or reveal, and instructions to the projector. If more than a few lessons
+slide, with a `teacherNote` per slide. A student reading alone on a phone does
+not need the note and may meet wording that assumes a class. The endpoint
+strips `teacherNote`; the rest is checked by a person reading the review file
+against a short list: phrases addressing "the class" or "your teacher", and
+instructions to the projector. (The reveal-timer sentence is added by
+`lessonSlides.ts`, not generated, so it never reaches a student.) If more than a few lessons
 need rewording, stop and choose approach C instead of patching text by hand.
 
 ## Open items before building
 
-1. Confirm `AI_LIVE_MODE=true` and a `system_admin` token are available for the
+1. Confirm `AI_LIVE_MODE=true` and a `system_admin` login are available for the
    prefill run, and what `AI_BUDGET_USD` has left.
 2. Observe the real hit rate (`select cache_status, count(*) from
    ai_generations`) — this spec does not depend on it, but it says how many
