@@ -162,8 +162,22 @@ export default function LessonExplanationScreen() {
             hitSlop={8}
             style={styles.reportBtn}
           >
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textDecorationLine: report === 'sent' ? 'none' : 'underline' }}>
-              {report === 'sent' ? t('lessonExplainReported') : t('lessonExplainReport')}
+            <Text
+              style={[
+                align,
+                {
+                  color: report === 'failed' ? colors.destructive : colors.mutedForeground,
+                  fontFamily: 'Almarai_400Regular',
+                  fontSize: 13,
+                  textDecorationLine: report === 'sent' ? 'none' : 'underline',
+                },
+              ]}
+            >
+              {report === 'sent'
+                ? t('lessonExplainReported')
+                : report === 'failed'
+                  ? t('lessonExplainReportFailed')
+                  : t('lessonExplainReport')}
             </Text>
           </Pressable>
         </ScrollView>
