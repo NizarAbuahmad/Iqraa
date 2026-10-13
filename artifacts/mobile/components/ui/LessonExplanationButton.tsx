@@ -16,8 +16,13 @@ type State = 'checking' | 'ready' | 'soon';
  * «قريبًا» means the server said no; a network failure leaves the button
  * enabled, because the screen it opens has a retry and a dead button teaches
  * students to stop trying.
+ *
+ * `fill` is the button's background and sits under white text, so it must be a
+ * colour tuned for that (the lesson page's `colorFill`). `accent` is the
+ * subject colour tuned for text on a card; it is only forwarded to the screen,
+ * which uses it for headings.
  */
-export function LessonExplanationButton({ lessonId, accent }: { lessonId: string; accent: string }) {
+export function LessonExplanationButton({ lessonId, accent, fill }: { lessonId: string; accent: string; fill: string }) {
   const colors = useColors();
   const { t, isRTL, lang } = useLanguage();
   const [state, setState] = useState<State>('checking');
@@ -44,7 +49,7 @@ export function LessonExplanationButton({ lessonId, accent }: { lessonId: string
       style={[
         styles.button,
         {
-          backgroundColor: disabled ? colors.muted : accent,
+          backgroundColor: disabled ? colors.muted : fill,
           borderRadius: colors.radius,
           flexDirection: isRTL ? 'row-reverse' : 'row',
           opacity: state === 'checking' ? 0.7 : 1,

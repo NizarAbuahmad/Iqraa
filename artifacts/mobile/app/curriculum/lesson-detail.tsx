@@ -158,7 +158,7 @@ export default function LessonDetailScreen() {
             gets the stored, admin-approved explanation, which costs nothing to
             serve and cannot start a generation. */}
         {isStudentRole(user?.role) ? (
-          <LessonExplanationButton lessonId={lesson.id} accent={color} />
+          <LessonExplanationButton lessonId={lesson.id} accent={color} fill={colorFill} />
         ) : null}
 
         {/*

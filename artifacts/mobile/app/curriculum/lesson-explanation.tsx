@@ -11,6 +11,7 @@ import {
   reportLessonExplanation,
   type LessonExplanation,
 } from '@/services/lessonExplanation';
+import { readableOn } from '@/services/readableColor';
 import { buildExplanationCards, type ExplanationCard } from '@/services/lessonExplanationCards';
 
 type Phase = 'loading' | 'ready' | 'soon' | 'error';
@@ -31,6 +32,8 @@ export default function LessonExplanationScreen() {
   const lesson = lessonId ? getLessonById(lessonId) : undefined;
   const lessonTitle = lesson ? (lang === 'ar' ? (lesson.titleAr || lesson.title) : lesson.title) : '';
   const accent = subjectColor ?? colors.primary;
+  // `accent` is for text on the page; a fill under white text needs the readable one.
+  const accentFill = readableOn(accent, '#FFFFFF');
   const align = { textAlign: isRTL ? 'right' : 'left' } as const;
 
   const [phase, setPhase] = useState<Phase>('loading');
@@ -144,7 +147,7 @@ export default function LessonExplanationScreen() {
       ) : phase === 'error' ? (
         <View style={styles.center}>
           <Text style={[styles.notice, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>{t('lessonExplainError')}</Text>
-          <Pressable accessibilityRole="button" onPress={() => void load()} style={[styles.retry, { backgroundColor: accent, borderRadius: colors.radius }]}>
+          <Pressable accessibilityRole="button" onPress={() => void load()} style={[styles.retry, { backgroundColor: accentFill, borderRadius: colors.radius }]}>
             <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>{t('lessonExplainRetry')}</Text>
           </Pressable>
         </View>
