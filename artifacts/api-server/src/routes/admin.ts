@@ -29,6 +29,8 @@ import { RATE_LIMITS } from "../lib/rateLimit.js";
 import { parseSchoolAssignment, parseSchoolInput } from "../lib/adminSchools.js";
 import { parseDateRange, parseMetricInput, parsePublicIdea, parseSiteSignup, siteKeyMatches, toCsv, UUID } from "../lib/adminMetrics.js";
 import { notifyAdminsOfWaitlistSignup } from "../lib/adminNotify.js";
+import { sendAppInviteEmail } from "../lib/email.js";
+import { isValidEmailAddress } from "../lib/emailAddress.js";
 import {
   authMiddleware,
   requireRole,
@@ -603,6 +605,27 @@ router.get("/admin/signups", authMiddleware, requireRole(...ADMIN_ROLES), async 
     logger.error({ err }, "admin signups list failed");
     res.status(500).json({ error: "Failed to list signups" });
   }
+});
+
+/**
+ * POST /admin/invites {email} — mails the Android download link to someone who
+ * asked for it. system_admin only, and rate-limited: this sends mail from the
+ * app's own domain to an address the caller chose.
+ */
+const inviteLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 100, name: "admin-invites" });
+
+router.post("/admin/invites", authMiddleware, requireRole("system_admin"), inviteLimiter, async (req, res) => {
+  const email = typeof req.body?.email === "string" ? req.body.email.trim() : "";
+  if (!isValidEmailAddress(email)) {
+    res.status(400).json({ error: "email" });
+    return;
+  }
+  if (!(await sendAppInviteEmail(email))) {
+    res.status(502).json({ error: "send" });
+    return;
+  }
+  logger.info({ to: email }, "app invite sent");
+  res.json({ ok: true });
 });
 
 /**
