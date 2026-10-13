@@ -530,7 +530,11 @@ CI checks every PR three ways — the first two in `migrations match schema`
 `push` (`pnpm --filter @workspace/db run push`) is still there for a scratch
 local database. Never point it at production: drizzle-kit resolves drift by
 dropping columns, which is why production never auto-deployed before
-migrations existed.
+migrations existed. Since migration 0008 it is also unsafe for any database that
+has it applied: drizzle-kit 0.31 tracks RLS and policies, and the schema files
+declare none, so `push` will try to `DISABLE ROW LEVEL SECURITY` and `DROP POLICY`
+on whatever it is pointed at. Never run it against one with 0008 applied (already
+forbidden for production).
 
 ### Baseline (once per database that predates migrations)
 
@@ -576,6 +580,22 @@ default to a different owner role, which would make the check pass without testi
 Then `select current_user` must equal `tableowner` for **every** row of
 `select tablename, tableowner from pg_tables where schemaname='public'`; any other result means do not merge.
 
+**Both connection strings must name the same owner role.** The migration runs under GitHub's
+`secrets.DATABASE_URL` (`deploy.yml`, the `production migrations` job); the API runs under Cloud
+Run's `DATABASE_URL`. The migration's `SECURITY DEFINER` helpers are owned by the *migrating*
+role, and they bypass RLS only if that role also owns the tables they read. If the two secrets
+name different roles, either the API's connection is not the table owner (so it is denied, with
+no policy of its own) or the helpers run subject to the policies and return fewer rows than they
+should — the second looks like rows quietly missing, not an error. The
+migration also sets `lock_timeout = '5s'`: it takes `ACCESS EXCLUSIVE` locks on 28 tables while the
+old revision still serves, so a long-running query makes the deploy stop (retry it) rather than
+queueing every request behind it.
+
+**Do not re-run 0008 by hand outside the migrator.** It is not idempotent: `CREATE POLICY` has no
+`IF NOT EXISTS`, and `GRANT iqraa_app TO CURRENT_USER` needs `ADMIN OPTION` on the role if it
+already exists under another creator. A second run stops at the first `CREATE POLICY`
+(already exists); recover a damaged database from a Neon branch, not by editing the history table.
+
 **The switch** is one Cloud Run env var, read once at boot:
 
 ```bash
@@ -591,7 +611,7 @@ gcloud run services update iqraa-api --region europe-west1 \
 a revision; it is not a code deploy. With it off nothing about the API changes — one
 pool, no extra statements. With it on every `db` statement runs as the `iqraa_app` role
 with the signed-in user's id, and `systemDb` (the owner connection) is used by the
-thirteen files pinned in `artifacts/api-server/src/lib/__tests__/systemDbFiles.test.ts`.
+fourteen files pinned in `artifacts/api-server/src/lib/__tests__/systemDbFiles.test.ts`.
 
 **Before the first flip**, on a Neon *branch* of production (never production):
 run the migration, run `RLS_TEST_DATABASE_URL=<branch> pnpm --filter @workspace/db run test`,

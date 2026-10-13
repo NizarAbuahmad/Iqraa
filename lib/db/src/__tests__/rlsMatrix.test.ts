@@ -1,5 +1,6 @@
 // lib/db/src/__tests__/rlsMatrix.test.ts
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import { after, before, describe, test } from "node:test";
 import pg from "pg";
 import { asUser } from "../identity.ts";
@@ -178,6 +179,87 @@ describe("row-level security matrix", { skip: !TEST_URL && "RLS_TEST_DATABASE_UR
         /row-level security/,
       );
     });
+  });
+
+  test("a user cannot move their own participant row or message into a thread they are not in", async () => {
+    // RLS cannot compare old and new, so the UPDATE's WITH CHECK must re-test the new thread.
+    await as("parentA", "parent", async () => {
+      await assert.rejects(
+        scoped.query(`UPDATE chat_participants SET thread_id = $2 WHERE thread_id = $1 AND user_id = $3`, [ids.threadDirect, ids.threadOther, ids.parentA]),
+        /row-level security/,
+      );
+      // An ordinary update of the same row (hiding the thread) still works.
+      assert.equal((await scoped.query(`UPDATE chat_participants SET hidden_at = now() WHERE thread_id = $1 AND user_id = $2`, [ids.threadDirect, ids.parentA])).rowCount, 1);
+    });
+    await owner.query(`UPDATE chat_participants SET hidden_at = NULL WHERE thread_id = $1 AND user_id = $2`, [ids.threadDirect, ids.parentA]);
+    await as("teacherA", "teacher", async () => {
+      await assert.rejects(
+        scoped.query(`UPDATE chat_messages SET thread_id = $2 WHERE id = $1`, [ids.msgDirect, ids.threadOther]),
+        /row-level security/,
+      );
+      assert.equal((await scoped.query(`UPDATE chat_messages SET body = body WHERE id = $1`, [ids.msgDirect])).rowCount, 1);
+    });
+    const home = await owner.query(`SELECT thread_id FROM chat_messages WHERE id = $1`, [ids.msgDirect]);
+    assert.equal(home.rows[0].thread_id, ids.threadDirect);
+  });
+
+  test("a user cannot create a class thread for a class they do not own, nor re-type or re-point their own thread to one", async () => {
+    await as("teacherB", "teacher", async () => {
+      await assert.rejects(
+        scoped.query(`INSERT INTO chat_threads (type, created_by, class_group_id) VALUES ('class_group', $1, $2)`, [ids.teacherB, ids.classA]),
+        /row-level security/,
+      );
+      await assert.rejects(
+        scoped.query(`INSERT INTO chat_threads (type, created_by) VALUES ('class_group', $1)`, [ids.teacherB]),
+        /row-level security/,
+      );
+      // teacherB's own direct thread: re-typing it, or pointing it at teacherA's class, is refused.
+      await assert.rejects(
+        scoped.query(`UPDATE chat_threads SET type = 'class_group', class_group_id = $2 WHERE id = $1`, [ids.threadOther, ids.classA]),
+        /row-level security/,
+      );
+      await assert.rejects(
+        scoped.query(`UPDATE chat_threads SET type = 'class_group' WHERE id = $1`, [ids.threadOther]),
+        /row-level security/,
+      );
+      // An ordinary update of that thread still works.
+      assert.equal((await scoped.query(`UPDATE chat_threads SET title = 'renamed' WHERE id = $1`, [ids.threadOther])).rowCount, 1);
+    });
+    await as("teacherA", "teacher", async () => {
+      // The class owner may still update their class thread.
+      assert.equal((await scoped.query(`UPDATE chat_threads SET student_posting_enabled = student_posting_enabled WHERE id = $1`, [ids.threadClass])).rowCount, 1);
+    });
+    const after = await owner.query(`SELECT type, class_group_id, title FROM chat_threads WHERE id = $1`, [ids.threadOther]);
+    assert.equal(after.rows[0].type, "direct");
+    assert.equal(after.rows[0].class_group_id, null);
+    await owner.query(`UPDATE chat_threads SET title = '' WHERE id = $1`, [ids.threadOther]);
+  });
+
+  test("a student may delete their own submitted attempt — not an unsubmitted one, not another student's, not as a parent", async () => {
+    // attempts is unique per (evaluation, student), so each case gets its own evaluation.
+    const evals = [randomUUID(), randomUUID(), randomUUID(), randomUUID()];
+    try {
+      for (const e of evals) {
+        await owner.query(`INSERT INTO evaluations (id, teacher_id, grade_id, subject_id, book_id) VALUES ($1,$2,'g10','math','b1')`, [e, ids.teacherA]);
+      }
+      const [own, unsubmitted, others, guarded] = evals as [string, string, string, string];
+      await owner.query(
+        `INSERT INTO attempts (evaluation_id, student_id, status, submitted_at) VALUES ($1,$5,'submitted',now()), ($2,$5,'in_progress',NULL), ($3,$6,'submitted',now()), ($4,$5,'submitted',now())`,
+        [own, unsubmitted, others, guarded, ids.studentA, ids.studentB],
+      );
+      const left = async (e: string) => Number((await owner.query(`SELECT count(*) n FROM attempts WHERE evaluation_id = $1`, [e])).rows[0].n);
+      await as("studentUser", "student", async () => {
+        assert.equal((await scoped.query(`DELETE FROM attempts WHERE evaluation_id = $1`, [own])).rowCount, 1);
+        assert.equal((await scoped.query(`DELETE FROM attempts WHERE evaluation_id = $1`, [unsubmitted])).rowCount, 0);
+        assert.equal((await scoped.query(`DELETE FROM attempts WHERE evaluation_id = $1`, [others])).rowCount, 0);
+      });
+      await as("parentA", "parent", async () => {
+        assert.equal((await scoped.query(`DELETE FROM attempts WHERE evaluation_id = $1`, [guarded])).rowCount, 0);
+      });
+      assert.deepEqual([await left(own), await left(unsubmitted), await left(others), await left(guarded)], [0, 1, 1, 1]);
+    } finally {
+      await owner.query(`DELETE FROM evaluations WHERE id = ANY($1::uuid[])`, [evals]);
+    }
   });
 
   test("the class owner sees the class thread without a participant row", async () => {

@@ -2,6 +2,12 @@
 -- Row-level security foundation (scope A). Hand-written: drizzle-kit does not
 -- track roles, functions or policies, so `generate` stays quiet about them.
 
+-- This migration takes ACCESS EXCLUSIVE locks on 28 tables inside the migrator's
+-- single transaction while the old API revision is still serving. Fail fast on a
+-- lock wait (the deploy stops and can be retried) rather than queueing every
+-- request behind a long-running query.
+SET LOCAL lock_timeout = '5s';--> statement-breakpoint
+
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'iqraa_app') THEN
@@ -151,11 +157,12 @@ ALTER TABLE "chat_threads" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE POLICY "chat_threads_select" ON "chat_threads" FOR SELECT TO iqraa_app
   USING (created_by = app_uid() OR app_in_thread(id));--> statement-breakpoint
 CREATE POLICY "chat_threads_insert" ON "chat_threads" FOR INSERT TO iqraa_app
-  WITH CHECK (created_by = app_uid()
+  WITH CHECK ((created_by = app_uid() AND type <> 'class_group')
               OR (type = 'class_group' AND class_group_id IS NOT NULL AND app_owns_class(class_group_id)));--> statement-breakpoint
 CREATE POLICY "chat_threads_update" ON "chat_threads" FOR UPDATE TO iqraa_app
   USING (created_by = app_uid() OR app_owns_thread(id))
-  WITH CHECK (created_by = app_uid() OR app_owns_thread(id));--> statement-breakpoint
+  WITH CHECK ((created_by = app_uid() AND type <> 'class_group')
+              OR (type = 'class_group' AND class_group_id IS NOT NULL AND app_owns_class(class_group_id)));--> statement-breakpoint
 CREATE POLICY "chat_threads_delete" ON "chat_threads" FOR DELETE TO iqraa_app
   USING (created_by = app_uid() OR app_owns_thread(id));--> statement-breakpoint
 
@@ -165,7 +172,7 @@ CREATE POLICY "chat_participants_select" ON "chat_participants" FOR SELECT TO iq
 CREATE POLICY "chat_participants_insert" ON "chat_participants" FOR INSERT TO iqraa_app
   WITH CHECK (app_may_add_participant(thread_id, user_id));--> statement-breakpoint
 CREATE POLICY "chat_participants_update" ON "chat_participants" FOR UPDATE TO iqraa_app
-  USING (user_id = app_uid()) WITH CHECK (user_id = app_uid());--> statement-breakpoint
+  USING (user_id = app_uid()) WITH CHECK (user_id = app_uid() AND app_in_thread(thread_id));--> statement-breakpoint
 CREATE POLICY "chat_participants_delete" ON "chat_participants" FOR DELETE TO iqraa_app
   USING (user_id = app_uid() OR app_owns_thread(thread_id));--> statement-breakpoint
 
@@ -176,7 +183,7 @@ CREATE POLICY "chat_messages_insert" ON "chat_messages" FOR INSERT TO iqraa_app
   WITH CHECK (sender_id = app_uid() AND app_in_thread(thread_id));--> statement-breakpoint
 CREATE POLICY "chat_messages_update" ON "chat_messages" FOR UPDATE TO iqraa_app
   USING (sender_id = app_uid() OR app_owns_thread(thread_id))
-  WITH CHECK (sender_id = app_uid() OR app_owns_thread(thread_id));--> statement-breakpoint
+  WITH CHECK ((sender_id = app_uid() AND app_in_thread(thread_id)) OR app_owns_thread(thread_id));--> statement-breakpoint
 CREATE POLICY "chat_messages_delete" ON "chat_messages" FOR DELETE TO iqraa_app
   USING (sender_id = app_uid() OR app_owns_thread(thread_id));--> statement-breakpoint
 
@@ -186,7 +193,7 @@ CREATE POLICY "chat_message_reads_select" ON "chat_message_reads" FOR SELECT TO 
 CREATE POLICY "chat_message_reads_insert" ON "chat_message_reads" FOR INSERT TO iqraa_app
   WITH CHECK (user_id = app_uid() AND app_sees_message(message_id));--> statement-breakpoint
 CREATE POLICY "chat_message_reads_update" ON "chat_message_reads" FOR UPDATE TO iqraa_app
-  USING (user_id = app_uid()) WITH CHECK (user_id = app_uid());--> statement-breakpoint
+  USING (user_id = app_uid()) WITH CHECK (user_id = app_uid() AND app_sees_message(message_id));--> statement-breakpoint
 CREATE POLICY "chat_message_reads_delete" ON "chat_message_reads" FOR DELETE TO iqraa_app
   USING (user_id = app_uid());--> statement-breakpoint
 
@@ -196,7 +203,7 @@ CREATE POLICY "chat_message_reactions_select" ON "chat_message_reactions" FOR SE
 CREATE POLICY "chat_message_reactions_insert" ON "chat_message_reactions" FOR INSERT TO iqraa_app
   WITH CHECK (user_id = app_uid() AND app_sees_message(message_id));--> statement-breakpoint
 CREATE POLICY "chat_message_reactions_update" ON "chat_message_reactions" FOR UPDATE TO iqraa_app
-  USING (user_id = app_uid()) WITH CHECK (user_id = app_uid());--> statement-breakpoint
+  USING (user_id = app_uid()) WITH CHECK (user_id = app_uid() AND app_sees_message(message_id));--> statement-breakpoint
 CREATE POLICY "chat_message_reactions_delete" ON "chat_message_reactions" FOR DELETE TO iqraa_app
   USING (user_id = app_uid());--> statement-breakpoint
 
@@ -251,7 +258,8 @@ CREATE POLICY "attempts_update" ON "attempts" FOR UPDATE TO iqraa_app
   USING (app_teaches_evaluation(evaluation_id) OR app_is_student_self(student_id))
   WITH CHECK (app_teaches_evaluation(evaluation_id) OR app_is_student_self(student_id));--> statement-breakpoint
 CREATE POLICY "attempts_delete" ON "attempts" FOR DELETE TO iqraa_app
-  USING (app_teaches_evaluation(evaluation_id));--> statement-breakpoint
+  USING (app_teaches_evaluation(evaluation_id)
+         OR (app_is_student_self(student_id) AND submitted_at IS NOT NULL));--> statement-breakpoint
 
 ALTER TABLE "attempt_answers" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE POLICY "attempt_answers_select" ON "attempt_answers" FOR SELECT TO iqraa_app

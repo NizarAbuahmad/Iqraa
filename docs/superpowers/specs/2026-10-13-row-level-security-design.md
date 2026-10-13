@@ -234,7 +234,7 @@ real migrations.
 
 ## Amendments after prototyping (2026-10-13)
 
-The design was prototyped end to end before the plan was written; four things changed.
+The design was prototyped end to end before the plan was written; four things changed, and four more were settled in the final review (items 5–8).
 
 1. **§3 — policies are hand-written SQL, not Drizzle `pgPolicy`.** `drizzle-kit` does not
    track roles, functions or policies. `generate` stays quiet; `rlsCoverage.test.ts`
@@ -248,10 +248,19 @@ The design was prototyped end to end before the plan was written; four things ch
    `ON CONFLICT DO NOTHING`, and Postgres checks an INSERT policy before detecting the
    conflict). `roster_links` insert is teacher-only (claims run on `systemDb`; letting a user insert their own link would let them link to any student). `evaluation_questions` is teacher-only. Grade tables are written only under a
    teacher's identity; server grading uses `systemDb`. Token tables have RLS, no policy and
-   no grant. The `systemDb` list is thirteen files, not the five paths listed in §1.
+   no grant. The `systemDb` list is fourteen files, not the five paths listed in §1.
 4. **§5 — the audit is a test.** The differential test (`rlsDiff.test.ts`) replaces the
    manual read of ~41 files; reads alone found nothing, writes and fan-out found everything.
-   It compares statuses, bodies, pushes sent, rows left behind and logged errors.
+   It compares statuses, bodies, pushes sent (with the app-icon badge), rows left behind and logged errors.
+5. **Where the suites live.** In `lib/db/src/__tests__/` with their own `test` script, not under
+   `artifacts/api-server`: they need a migrated Postgres and the built API, and `lib/db` owns the schema.
+6. **What the role is granted.** The migration grants full DML on *all* public tables except the three
+   token tables, so the deferred tables (`users`, planning, shared content) stay reachable by `iqraa_app`
+   until they get policies of their own.
+7. **"Attempt is open" is not in the policies.** Whether an attempt may still be written (not submitted,
+   not expired, not released) is enforced by the API; the database only checks whose attempt it is.
+8. **The §5 "key route suites once with enforcement on" is replaced** by the differential test, which
+   covers every route it drives, with enforcement both ways, in one run.
 
 Open: added latency on Neon, and the connection ceiling with two pools per instance, are
 still unmeasured (plan Task 7, `docs/superpowers/plans/2026-10-13-row-level-security.md`).

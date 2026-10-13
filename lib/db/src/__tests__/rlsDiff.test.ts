@@ -38,7 +38,8 @@ const randomCode = (length: number) => Array.from(randomBytes(length), b => CODE
 interface Server { base: string; child: ChildProcess; logs: string[]; pushLog: string }
 
 // Preloaded into each server: records every Expo push instead of sending it, so a
-// notification that silently stops being sent shows up in the comparison. A token
+// notification that silently stops being sent shows up in the comparison, and so does a
+// wrong app-icon badge (the recipient's whole-inbox unread count). A token
 // containing "dead" is answered the way Expo answers an uninstalled app.
 const PUSH_STUB = `
 import { appendFileSync } from "node:fs";
@@ -46,7 +47,7 @@ const realFetch = globalThis.fetch;
 globalThis.fetch = async (url, init) => {
   if (String(url).includes("exp.host")) {
     const messages = JSON.parse(init.body);
-    for (const m of messages) appendFileSync(process.env.RLS_PUSH_LOG, JSON.stringify({ to: m.to, title: m.title, body: m.body }) + "\\n");
+    for (const m of messages) appendFileSync(process.env.RLS_PUSH_LOG, JSON.stringify({ to: m.to, title: m.title, body: m.body, badge: m.badge }) + "\\n");
     const data = messages.map(m => String(m.to).includes("dead")
       ? { status: "error", message: "gone", details: { error: "DeviceNotRegistered" } }
       : { status: "ok" });
@@ -73,6 +74,7 @@ async function boot(enforce: "on" | "off"): Promise<Server> {
       SITE_INGEST_KEY: SITE_KEY,
       RLS_ENFORCE: enforce,
       STUDENT_ACCOUNTS: "true", // parent and student routes answer 403 without it
+      MASTERY_GATE: "true", // the student retake route answers 403 without it
       NODE_OPTIONS: `--import ${stub}`,
       RLS_PUSH_LOG: pushLog,
     },
@@ -232,6 +234,8 @@ describe("turning row-level security on changes nothing a user can see or cause"
       grades: await count(`SELECT count(*) n FROM attempt_question_grades WHERE attempt_id IN (${attempts})`),
       results: await count(`SELECT count(*) n FROM attempt_results WHERE attempt_id IN (${attempts})`),
       signups: await count(`SELECT count(*) n FROM site_signups WHERE email = 'rls-${i.teacherA}@rls.test'`),
+      retakeSittings: await count(`SELECT count(*) n FROM attempts WHERE evaluation_id IN (SELECT id FROM evaluations WHERE teacher_id = ANY($1::uuid[]) AND id <> '${i.evalA}')`),
+      retakes: await count(`SELECT count(*) n FROM attempt_retakes WHERE student_id IN (SELECT id FROM students WHERE teacher_id = ANY($1::uuid[]))`),
     };
   }
 
@@ -273,9 +277,21 @@ describe("turning row-level security on changes nothing a user can see or cause"
       await q("INSERT INTO device_push_tokens (user_id, expo_push_token, platform) VALUES ($1, $2, 'android')", [who, `ExponentPushToken[${label}-${mode}-${prefix}]`]);
     }
 
+    // A failed, released, single-lesson quiz the student sat through their own link: the retake route
+    // deletes the attempt and records the discarded mark, as the student (the policy that allows it).
+    const evalR = randomUUID();
+    await q("INSERT INTO evaluations (id, teacher_id, grade_id, subject_id, book_id, status, share_code, release_results_to_student, objective_ids) VALUES ($1,$2,'g10','chemistry','b1','published',$3,true,$4::jsonb)", [evalR, i.teacherA, randomCode(8), JSON.stringify(["o-nccd-chem-s1-u1_l1-0"])]);
+    const { rows: [sitting] } = await q("INSERT INTO attempts (evaluation_id, student_id, source, status, submitted_at) VALUES ($1,$2,'student_link','submitted',now()) RETURNING id", [evalR, i.studentA]);
+    await q("INSERT INTO attempt_results (attempt_id, percent, total_marks, earned_marks, is_provisional) VALUES ($1, 40, 10, 4, false)", [sitting?.id]);
+
     // ── Direct messages: open from both sides (the second is the ON CONFLICT path), post, react, read ──
     await step("teacher opens DM", "teacher", "POST", "/messaging/threads", { counterpartUserId: i.parentA });
     await step("parent re-opens DM", "parent", "POST", "/messaging/threads", { counterpartUserId: i.teacherA });
+    // The teacher's post pushes parentA with a badge counting their WHOLE inbox. Put an unread
+    // message in a thread the teacher is not in, so the badge only comes out right if it is
+    // counted outside the sender's identity.
+    await q("INSERT INTO chat_participants (thread_id, user_id) VALUES ($1, $2)", [i.threadOther, i.parentA]);
+    await q("INSERT INTO chat_messages (thread_id, sender_id, body) VALUES ($1, $2, 'unread elsewhere')", [i.threadOther, i.teacherB]);
     await step("teacher posts", "teacher", "POST", `/messaging/threads/${i.threadDirect}/messages`, { body: "hello" });
     await step("parent posts", "parent", "POST", `/messaging/threads/${i.threadDirect}/messages`, { body: "reply" });
     await step("parent reacts", "parent", "PUT", `/messaging/threads/${i.threadDirect}/messages/${i.msgDirect}/reaction`, { emoji: "👍" });
@@ -343,6 +359,9 @@ describe("turning row-level security on changes nothing a user can see or cause"
     await step("teacher comments", "teacher", "PATCH", `/attempts/${i.attemptA}`, { teacherComment: "well done" });
     await step("teacher releases results", "teacher", "POST", `/evaluations/${i.evalA}/results-release`, { released: true });
     await step("student reads exams", "student", "GET", "/student/exams");
+    await step("student reads progress", "student", "GET", "/student/progress");
+    await step("student retakes the failed quiz", "student", "POST", `/student/exams/${evalR}/retake`);
+    await step("student retakes it again", "student", "POST", `/student/exams/${evalR}/retake`);
 
     // ── A student taking the exam from a shared link: no login, so no identity at all ──
     const scale = randomUUID();
@@ -383,8 +402,8 @@ describe("turning row-level security on changes nothing a user can see or cause"
       // so both runs see both fixtures' admin tokens — they normalise to the same line.)
       const pushes = (server: Server) =>
         readFileSync(server.pushLog, "utf8").split("\n").filter(Boolean)
-          .map(l => JSON.parse(l) as { to: string; title: string; body: string })
-          .map(p => `${p.to} | ${p.title} | ${p.body}`.replace(/-(on|off)-[0-9a-f]{8}\]/g, "]").replace(/rls-[0-9a-f-]{36}@rls\.test/g, "rls-X@rls.test"))
+          .map(l => JSON.parse(l) as { to: string; title: string; body: string; badge?: number })
+          .map(p => `${p.to} | ${p.title} | ${p.body} | badge ${p.badge}`.replace(/-(on|off)-[0-9a-f]{8}\]/g, "]").replace(/rls-[0-9a-f-]{36}@rls\.test/g, "rls-X@rls.test"))
           .sort();
       const offPushes = pushes(off);
       const onPushes = pushes(on);

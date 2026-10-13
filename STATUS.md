@@ -976,7 +976,8 @@ an announcement by default» below.
 
 ## Row-level security is built and switched off, 2026-10-13
 
-**State: off. No behaviour changes — but merging DOES run the migration in production** (`deploy.yml` migrates before the API ships): it creates the `iqraa_app` role, grants, and turns row-level security on for 28 tables. If the API's connection is the table owner, RLS does not apply to it (there is no `FORCE`) and nothing changes — **that is the assumption to verify: the role in Cloud Run's `DATABASE_URL` must own those tables.** It has not been checked: confirm it on a Neon branch before merging (`docs/superpowers/plans/2026-10-13-row-level-security.md`, Task 7 Step 0). The `iqraa_app` role, sixteen
+**State: off. No behaviour changes — but merging DOES run the migration in production** (`deploy.yml` migrates before the API ships): it creates the `iqraa_app` role, grants, and turns row-level security on for 28 tables. If the API's connection is the table owner, RLS does not apply to it (there is no `FORCE`) and nothing changes — **that is the assumption to verify: the role in Cloud Run's `DATABASE_URL` must own those tables.** It has not been checked: confirm it on a Neon branch before merging (`docs/superpowers/plans/2026-10-13-row-level-security.md`, Task 7 Step 0).
+**Both connection strings must name that same owner role:** the migration runs under GitHub's `secrets.DATABASE_URL` (`deploy.yml`, the `production migrations` job), while the API runs under Cloud Run's `DATABASE_URL`. The fifteen `SECURITY DEFINER` helpers are owned by the *migrating* role, and bypass RLS only if that role also owns the tables — if the two secrets name different roles, the helpers read as a role that is subject to the policies. The `iqraa_app` role, sixteen
 helper functions and 65 policies exist (migration `0008_row_level_security.sql`); the API
 carries each request's user to Postgres; and `RLS_ENFORCE` — unset, so off — decides
 whether any of it applies. Spec: `docs/superpowers/specs/2026-10-13-row-level-security-design.md`;
@@ -985,7 +986,7 @@ how to flip it: *Row-level security* in `docs/deploying.md`.
 **Verified locally on Postgres 16, and run by the new `rls` CI job on every push:** the policy matrix, a coverage guard that fails on an
 unclassified table, and a differential test that boots the built API with enforcement off
 and on and finds no difference in what users see, which pushes are sent, which rows are
-left behind, or what is logged — across 56 reads for six identities and 50 write steps.
+left behind, or what is logged — across 56 reads for six identities and 53 write steps (a student's retake and the push badge included).
 
 **Not verified, and the reason it is off:** enforcement has never run against Neon (the migration will, at merge). Added latency
 across the Cloud Run → Neon hop is unmeasured (≈ two extra round trips per statement; +0.24 ms
@@ -994,11 +995,16 @@ walked the teacher / parent / student flows with it on in a real environment.
 
 **What it does not cover yet:** `users` (every roster and chat screen reads names from it),
 the teacher-owned planning tables, and the shared content tables are *deferred* by name in
-`rlsCoverage.test.ts`. Thirteen files use `systemDb`, which bypasses it — they are pinned in
+`rlsCoverage.test.ts`. Fourteen files use `systemDb`, which bypasses it — they are pinned in
 `systemDbFiles.test.ts` with a reason each. This guards against a forgotten `where`, not
 against SQL injection: the session user is still the owner and could `RESET ROLE`. RLS limits
 rows, not columns: a student's own attempt row is writable by them at the database level (status,
 `teacher_comment`, …), so the API remains the control on which columns a student may set.
+
+**Known limits of the policies (found in the final review, deliberately left):**
+- A student's own attempt rows can be inserted, or re-pointed at another `evaluation_id`, for their own student id at the database level: RLS cannot compare old and new values, and an assignment-aware predicate is a follow-up. The API is the gate.
+- RLS does not enforce *who may message whom*: any user may create a thread and, as its owner, add anyone. The API's connected-teacher rule is unchanged and is the control. Note for the `users` follow-up.
+- `attempt_answers` / `attempts` writes by a student's own account have no "attempt is open" check at the database level (submitted, expired, released); the API enforces it.
 
 ## A waitlist signup on iqrra.com pushes the admins, 2026-10-12
 

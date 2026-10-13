@@ -44,6 +44,11 @@ function scopeSql(): string {
  * - On the `connect()` path scoping starts at the caller's `BEGIN`, so a client
  *   that is checked out and queried without a transaction runs unscoped, as the
  *   owner.
+ *
+ * And one trap on the identity side: `res.on("close")` and any other callback
+ * fired outside the request's async chain do not inherit the identity store, so
+ * a statement issued from one runs with no identity and sees nothing. Capture
+ * what you need before registering it, or use `systemDb`.
  */
 export class ScopedPool extends pg.Pool {
   private enforce: boolean;
