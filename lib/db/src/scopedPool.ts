@@ -6,13 +6,17 @@ const BEGIN_RE = /^\s*begin\b/i;
 
 /**
  * The statements that make a transaction act as the current request's user.
- * No identity still switches role — it just sets no user, so every policy
- * evaluates false and the query sees nothing (fail closed).
+ * Both settings are always written, so nothing an earlier borrower left in the
+ * connection's session state can survive into this transaction. No identity
+ * still switches role — it sets both to '' (app_uid() reads '' as NULL), so
+ * every policy evaluates false and the query sees nothing (fail closed).
  */
 function scopeSql(): string {
   const identity = currentIdentity();
   const toRole = "SET LOCAL ROLE iqraa_app";
-  if (!identity) return toRole;
+  if (!identity) {
+    return `${toRole}; SELECT set_config('app.user_id', '', true), set_config('app.role', '', true)`;
+  }
   return (
     `${toRole}; SELECT set_config('app.user_id', '${identity.userId}', true), ` +
     `set_config('app.role', '${identity.role}', true)`
@@ -33,6 +37,13 @@ function scopeSql(): string {
  * borrower of the connection.
  *
  * With `enforce` false it is exactly a pg.Pool.
+ *
+ * Two fail-open edges, both unused in this repo (Drizzle never does either):
+ * - A call that passes a callback (`pool.query(sql, cb)`, `pool.connect(cb)`,
+ *   `client.query(sql, cb)`) is NOT scoped, even with enforcement on.
+ * - On the `connect()` path scoping starts at the caller's `BEGIN`, so a client
+ *   that is checked out and queried without a transaction runs unscoped, as the
+ *   owner.
  */
 export class ScopedPool extends pg.Pool {
   private enforce: boolean;
@@ -81,16 +92,29 @@ export class ScopedPool extends pg.Pool {
     const scope = scopeSql(); // fixed at checkout: a transaction keeps its caller's identity
     const originalQuery = client.query.bind(client) as (...a: any[]) => any;
     const poolRelease = client.release;
+    let released = false;
 
     (client as any).query = async (...a: any[]) => {
       if (typeof a[a.length - 1] === "function") return originalQuery(...a);
       const result = await originalQuery(...a);
       const first = a[0];
       const text = typeof first === "string" ? first : first?.text;
-      if (typeof text === "string" && BEGIN_RE.test(text)) await originalQuery(scope);
+      if (typeof text === "string" && BEGIN_RE.test(text)) {
+        try {
+          await originalQuery(scope);
+        } catch (err) {
+          // Drizzle runs `begin` outside its try/finally, so it will never release
+          // a client whose scope failed: the open transaction would leak the
+          // connection. Destroy it here and surface the original error.
+          client.release(true);
+          throw err;
+        }
+      }
       return result;
     };
     client.release = (err?: Error | boolean) => {
+      if (released) return; // idempotent: a caller's own finally must not double-release
+      released = true;
       delete (client as any).query; // back to the prototype method for the next borrower
       return poolRelease.call(client, err);
     };

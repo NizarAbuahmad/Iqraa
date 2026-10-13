@@ -9,9 +9,10 @@ import { seed, TEST_URL, type Fixture } from "../testing/rlsHarness.ts";
 // Needs a migrated Postgres. Without RLS_TEST_DATABASE_URL (the `workspace` CI
 // job has no database) the suite skips; the `migrations` job supplies one.
 describe("row-level security matrix", { skip: !TEST_URL && "RLS_TEST_DATABASE_URL not set" }, () => {
-  let owner: pg.Pool;
-  let scoped: ScopedPool;
-  let fx: Fixture;
+  // Definitely-assigned in before(); after() uses `?.` because before() may have failed part-way.
+  let owner!: pg.Pool;
+  let scoped!: ScopedPool;
+  let fx!: Fixture;
   let ids: Fixture["ids"];
 
   before(async () => {
@@ -21,9 +22,9 @@ describe("row-level security matrix", { skip: !TEST_URL && "RLS_TEST_DATABASE_UR
     ids = fx.ids;
   });
   after(async () => {
-    await fx.cleanup();
-    await scoped.end();
-    await owner.end();
+    await fx?.cleanup();
+    await scoped?.end();
+    await owner?.end();
   });
 
   const as = <T>(key: keyof Fixture["ids"], role: string, fn: () => Promise<T>) =>
@@ -248,6 +249,29 @@ describe("row-level security matrix", { skip: !TEST_URL && "RLS_TEST_DATABASE_UR
     const after = await scoped.query(`SELECT current_user AS u, app_uid() AS uid`);
     assert.equal(after.rows[0].u, "iqraa_app");
     assert.equal(after.rows[0].uid, null);
+  });
+
+  test("a failed scope destroys the connection instead of leaking it", async () => {
+    // A login role that is not a member of iqraa_app: `SET LOCAL ROLE iqraa_app` fails after `begin` succeeds.
+    await owner.query(`DROP ROLE IF EXISTS rls_no_member`);
+    await owner.query(`CREATE ROLE rls_no_member LOGIN`);
+    const url = new URL(TEST_URL!);
+    url.username = "rls_no_member";
+    url.password = "";
+    const pool = new ScopedPool({ connectionString: url.toString(), max: 1, connectionTimeoutMillis: 3000 }, true);
+    try {
+      const c = await pool.connect();
+      await assert.rejects(c.query("begin"), /permission denied|set role/i);
+      // Drizzle never releases a client whose `begin` failed; with max 1 a leak would time out here.
+      const again = await pool.connect();
+      again.release();
+      assert.equal(pool.totalCount, 1); // the failed client is gone; only the fresh one remains
+      assert.equal(pool.idleCount, 1);
+      assert.doesNotThrow(() => c.release()); // idempotent: a caller's own finally must not throw
+    } finally {
+      await pool.end();
+      await owner.query(`DROP ROLE IF EXISTS rls_no_member`);
+    }
   });
 
   test("a failed statement rolls back and the connection stays usable", () =>
