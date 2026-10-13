@@ -28,6 +28,7 @@ import { currentPeriodStart } from "../lib/aiUsageLog.js";
 import { RATE_LIMITS } from "../lib/rateLimit.js";
 import { parseSchoolAssignment, parseSchoolInput } from "../lib/adminSchools.js";
 import { parseDateRange, parseMetricInput, parsePublicIdea, parseSiteSignup, siteKeyMatches, toCsv, UUID } from "../lib/adminMetrics.js";
+import { notifyAdminsOfWaitlistSignup } from "../lib/adminNotify.js";
 import {
   authMiddleware,
   requireRole,
@@ -729,6 +730,11 @@ router.post("/site/signups", siteSignupLimiter, async (req, res) => {
   try {
     await db.insert(siteSignups).values(parsed);
     res.json({ ok: true });
+    // After the answer, fire-and-forget: a push failure must not fail a signup
+    // that is already stored. Contact messages are not pushed.
+    if (parsed.kind === "waitlist") {
+      void notifyAdminsOfWaitlistSignup({ email: parsed.email, context: parsed.context });
+    }
   } catch (err) {
     logger.error({ err }, "site signup insert failed");
     res.status(500).json({ error: "Failed to store signup" });
