@@ -83,8 +83,8 @@ export const DOCUMENT_QUICK_ACTIONS: DocQuickAction[] = [
     promptEn: 'Rewrite the explanation in a clearer classroom-ready style',
   },
   {
-    id: 'exit', emoji: '📋', labelAr: 'بطاقة خروج', labelEn: 'Exit Ticket',
-    promptAr: 'حضّر بطاقة خروج قصيرة للتحقق من الفهم',
+    id: 'exit', emoji: '📋', labelAr: 'غلق الدرس', labelEn: 'Exit Ticket',
+    promptAr: 'حضّر غلق درس قصيرًا للتحقق من الفهم',
     promptEn: 'Prepare a short exit ticket to check understanding',
   },
 ];

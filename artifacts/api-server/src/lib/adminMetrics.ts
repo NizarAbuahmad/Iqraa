@@ -54,6 +54,29 @@ export function parseSiteSignup(body: unknown):
   return row;
 }
 
+/**
+ * «اقترح ميزة» from someone with no account — POST /site/ideas, the only
+ * write in this API that takes no key and no session. Stored as a
+ * `site_signups` row of kind `idea`, beside the waitlist and contact forms, so
+ * it shows in the admin «المسجّلون» list with no new table.
+ *
+ * `website` is a honeypot: the form renders it hidden, so a person never fills
+ * it and a form-filling bot usually does. That returns `{ spam: true }`, and
+ * the route answers 200 and stores nothing, so the bot is not told it failed.
+ */
+export function parsePublicIdea(body: unknown):
+  | { kind: "idea"; email: string; name: string; message: string; context: string }
+  | { spam: true }
+  | { error: "message" | "email" } {
+  const b = (body && typeof body === "object" ? body : {}) as Record<string, unknown>;
+  if (clip(b.website, 200)) return { spam: true };
+  const message = clip(b.message, 2000);
+  if (message.length < 5) return { error: "message" };
+  const email = clip(b.email, 200);
+  if (email && !EMAIL_RE.test(email)) return { error: "email" };
+  return { kind: "idea", email, name: clip(b.name, 200), message, context: clip(b.context, 500) };
+}
+
 /** Constant-time check of the shared key the iqrra.com functions send. */
 export function siteKeyMatches(expected: string | undefined, given: unknown): boolean {
   if (!expected || typeof given !== "string") return false;

@@ -6,13 +6,20 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { isEntryRoute, isNonTeacherRoute, isPublicRoute, needsGradeSetup, needsRosterClaim, needsTeacherSetup } from '../routeGating.ts';
+import { isEntryRoute, isNonTeacherRoute, isPublicRoute, gradeSetupSkipKey, needsGradeSetup, needsRosterClaim, needsTeacherSetup } from '../routeGating.ts';
 
 describe('isEntryRoute', () => {
   it('treats the auth and onboarding routes as entries', () => {
     for (const p of ['/login', '/register', '/onboarding']) {
       assert.equal(isEntryRoute(p), true, p);
     }
+  });
+
+  it('treats sign-in with an account code as an entry — once it works the person is signed in', () => {
+    // A parent or student who signed up from a teacher's code has no email or
+    // password; this is their sign-in screen. Left out of the list, a reload
+    // after signing in would strand them on it instead of handing them over.
+    assert.equal(isEntryRoute('/login-code'), true);
   });
 
   it('treats the app root and an unresolved path as entries', () => {
@@ -64,6 +71,13 @@ describe('isPublicRoute', () => {
     for (const p of ['/legal', '/legal/privacy', '/legal/terms']) {
       assert.equal(isPublicRoute(p), true, p);
     }
+  });
+
+  it('lets a signed-out visitor suggest a feature from the login screen', () => {
+    // «اقترح ميزة» is linked from login and register; bouncing a visitor with
+    // no account back to login would make the link a loop.
+    assert.equal(isPublicRoute('/suggest-feature'), true);
+    assert.equal(isPublicRoute('/suggest-features'), false);
   });
 
   it('keeps every teacher route private', () => {
@@ -123,6 +137,10 @@ describe('isNonTeacherRoute', () => {
       // The Math Corner hub and a tool (a shareable URL). Same prefix rule.
       '/curriculum/math',
       '/curriculum/math/calculator',
+      // The Quran Corner: home, a surah, and its memorise page. Same prefix rule.
+      '/curriculum/quran',
+      '/curriculum/quran/112',
+      '/curriculum/quran/112/memorize',
       '/settings',
       '/faq',
       '/delete-account',
@@ -130,6 +148,8 @@ describe('isNonTeacherRoute', () => {
       '/profile',
       '/join-class',
       '/claim-required',
+      // Adding an email to a code-only account: only a parent or student can be one.
+      '/add-email',
     ]) {
       assert.equal(isNonTeacherRoute(p), true, p);
     }
@@ -291,5 +311,30 @@ describe('needsGradeSetup', () => {
 describe('the class picker route', () => {
   it('is reachable by a parent or student, and is not a teacher route', () => {
     assert.equal(isNonTeacherRoute('/setup-grade'), true);
+  });
+});
+
+describe('skipping the class picker', () => {
+  const unset = { role: 'student', hasRosterLink: true, gradeIds: [] };
+
+  it('stops gating once the account has skipped', () => {
+    assert.equal(needsGradeSetup(unset, true), false);
+    assert.equal(needsGradeSetup({ ...unset, role: 'parent' }, true), false);
+  });
+
+  it('still gates an account that has not skipped', () => {
+    assert.equal(needsGradeSetup(unset, false), true);
+    assert.equal(needsGradeSetup(unset), true);
+  });
+
+  it('does not gate while the skip flag is still loading', () => {
+    // null = not read from storage yet. Redirecting now would bounce an
+    // account that already skipped back to the picker on every cold boot.
+    assert.equal(needsGradeSetup(unset, null), false);
+  });
+
+  it('keeps one flag per account, so a second account on the device is asked', () => {
+    assert.notEqual(gradeSetupSkipKey('user-a'), gradeSetupSkipKey('user-b'));
+    assert.equal(gradeSetupSkipKey('user-a'), gradeSetupSkipKey('user-a'));
   });
 });

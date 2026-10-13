@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { parseDateRange, parseMetricInput, parseSiteSignup, signupSource, siteKeyMatches, toCsv } from "../adminMetrics.ts";
+import { parseDateRange, parseMetricInput, parsePublicIdea, parseSiteSignup, signupSource, siteKeyMatches, toCsv } from "../adminMetrics.ts";
 
 describe("parseDateRange", () => {
   it("is open-ended when absent and makes `to` inclusive of its day", () => {
@@ -69,5 +69,40 @@ describe("toCsv", () => {
   it("quotes commas/quotes/newlines and defuses formulas", () => {
     const csv = toCsv(["a", "b"], [["x,y", 'say "hi"'], ["=HYPERLINK(1)", "-2\nz"]]);
     assert.equal(csv, 'a,b\r\n"x,y","say ""hi"""\r\n\'=HYPERLINK(1),"\'-2\nz"\r\n');
+  });
+});
+
+// «اقترح ميزة» from a visitor with no account (POST /site/ideas). Public, so the
+// parser is the first line of defence: a honeypot, a floor and a ceiling on the
+// message, and an email that is optional but must look like one if given.
+describe("parsePublicIdea", () => {
+  it("accepts an idea with no email, tagged as an idea", () => {
+    const r = parsePublicIdea({ message: "  تصدير ورقة العمل إلى Word  " });
+    assert.deepEqual(r, { kind: "idea", email: "", name: "", message: "تصدير ورقة العمل إلى Word", context: "" });
+  });
+  it("keeps a valid email and a clipped context", () => {
+    const r = parsePublicIdea({ message: "dark mode please", email: " t@school.jo ", context: "x".repeat(900) });
+    assert.ok(!("error" in r) && !("spam" in r));
+    if ("kind" in r) {
+      assert.equal(r.email, "t@school.jo");
+      assert.equal(r.context.length, 500);
+    }
+  });
+  it("refuses a malformed email instead of storing it", () => {
+    assert.deepEqual(parsePublicIdea({ message: "dark mode please", email: "nope" }), { error: "email" });
+  });
+  it("needs a message that says something, and caps a runaway paste", () => {
+    for (const message of [undefined, "", "   ", "hi"]) {
+      assert.deepEqual(parsePublicIdea({ message }), { error: "message" }, String(message));
+    }
+    const r = parsePublicIdea({ message: "x".repeat(5000) });
+    assert.equal("kind" in r && r.message.length, 2000);
+  });
+  it("flags a filled honeypot as spam, so the route can answer ok and store nothing", () => {
+    assert.deepEqual(parsePublicIdea({ message: "buy cheap watches", website: "http://spam.example" }), { spam: true });
+  });
+  it("survives a non-object body", () => {
+    assert.deepEqual(parsePublicIdea(null), { error: "message" });
+    assert.deepEqual(parsePublicIdea("idea"), { error: "message" });
   });
 });

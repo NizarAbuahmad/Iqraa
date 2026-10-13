@@ -29,6 +29,18 @@ export interface GroundingVerdict {
 }
 
 const MIN_WORDS = 2;
+
+/**
+ * The only types whose key states a fact the book either says or does not.
+ *
+ * Measured on 2026-10-11 over eight units (all Arabic language): at 0.5, 3–8 of
+ * 10 questions per paper came back `weak`, and reading them showed why — an
+ * open-ended question's model answer paraphrases the book on purpose, a rubric
+ * describes what a good answer contains, and a grammar item's example sentence
+ * is invented by design. None of those is a hallucination, so none is judged.
+ * What is left is the recall item with a short, stated answer.
+ */
+const FACTUAL_TYPES: ReadonlySet<string> = new Set(["multiple_choice", "true_false", "fill_blank"]);
 /** Below this, most of the answer's vocabulary is absent from every page we hold. */
 export const WEAK_BELOW = 0.5;
 
@@ -86,7 +98,7 @@ export function checkGrounding(
 ): GroundingVerdict[] {
   const source = sourceWordSet(sourceText);
   return questions.map((q, index) => {
-    const support = supportIn(claimText(q), source);
+    const support = FACTUAL_TYPES.has(q.type) ? supportIn(claimText(q), source) : null;
     if (support === null) return { index, status: "uncheckable" };
     return { index, status: support < WEAK_BELOW ? "weak" : "supported", support };
   });

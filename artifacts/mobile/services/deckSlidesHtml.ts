@@ -22,12 +22,10 @@ import { resolveSlideLayout } from './slideLayout.ts';
 import { deckIconSvg, iconForGlyph, type DeckIconName } from './deckIcons.ts';
 import { slideTeacherNotes } from './deckNotes.ts';
 import type { ActivitySlide, ClassroomActivity } from './ai/AIService.ts';
+import { creditSegments, type PhotoCredit } from './photoCredit.ts';
 import { hasRenderableMath, isolateForeignRuns, mathLineToHtml, MATH_HTML_STYLES, prettifySymPy } from './mathRender.ts';
 
-import {
-  DECK_ACCENT, DECK_BG, DECK_BLOB, DECK_BORDER, DECK_CARD_BG, DECK_MUTED,
-  DECK_PINK, DECK_TEAL, DECK_TEXT, slideTypeAccent as deckSlideAccent,
-} from './deckTheme.ts';
+import { resolveDeckTheme, slideTypeAccent as deckSlideAccent } from './deckTheme.ts';
 
 /** Escape only. For attribute values — above all the media and video URLs,
  *  which must not carry the directional isolates `esc` adds. */
@@ -107,9 +105,22 @@ function deckHeroLayer(mediaUrl: string | undefined, mediaCaption?: string): str
  * ~100 characters — wraps to a second line, and a fixed offset chosen to clear
  * a 30px footer stops clearing it the moment that happens.
  */
-function deckHeroCredit(mediaUrl: string | undefined, mediaCaption?: string): string {
+function deckHeroCredit(mediaUrl: string | undefined, mediaCaption?: string, credit?: PhotoCredit): string {
   if (!mediaUrl || !mediaCaption) return '';
-  return `<div class="deck-hero-credit">${esc(mediaCaption)}</div>`;
+  return `<div class="deck-hero-credit">${captionHtml(mediaCaption, credit)}</div>`;
+}
+
+/**
+ * A caption, with the Unsplash credit's two runs as links when `credit` still
+ * matches it (see `creditSegments`). Links survive in the PDF, and the colour is
+ * inherited so they read as part of the line rather than as default blue.
+ */
+function captionHtml(caption: string, credit?: PhotoCredit): string {
+  const segs = creditSegments(caption, credit);
+  if (!segs) return esc(caption);
+  return segs
+    .map(s => (s.url ? `<a href="${escAttr(s.url)}" style="color:inherit;text-decoration:underline">${esc(s.text)}</a>` : esc(s.text)))
+    .join('');
 }
 
 /**
@@ -209,6 +220,8 @@ function deckStem(content: string): string {
 }
 
 export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): string {
+  // One theme for the whole file: the one the deck carries, else its subject's.
+  const T = resolveDeckTheme(deck);
   const dir = isAr ? 'rtl' : 'ltr';
   const L = (ar: string, en: string) => (isAr ? ar : en);
   const total = deck.slides.length;
@@ -230,19 +243,19 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
         ${meta ? `<div class="deck-title-meta">${esc(meta)}</div>` : ''}
         ${rest.length ? `<div class="deck-title-summary">${esc(rest.join(' '))}</div>` : ''}
       </div>
-      ${deckHeroCredit(slide.mediaUrl, slide.mediaCaption)}
+      ${deckHeroCredit(slide.mediaUrl, slide.mediaCaption, slide.mediaCredit)}
       ${footer(num)}</div>`;
   };
 
   const dividerSlide = (slide: ActivitySlide, num: number) => {
-    const accent = deckSlideAccent('divider');
+    const accent = deckSlideAccent('divider', T);
     return `<div class="deck-slide deck-divider-slide" style="${slide.mediaUrl ? '' : `background:${accent}`}">
       ${deckHeroLayer(slide.mediaUrl, slide.mediaCaption)}
       <div class="deck-divider-content">
         <h1 class="deck-divider-title">${esc(slide.title)}</h1>
         ${slide.content ? `<div class="deck-divider-subtitle">${esc(slide.content)}</div>` : ''}
       </div>
-      ${deckHeroCredit(slide.mediaUrl, slide.mediaCaption)}
+      ${deckHeroCredit(slide.mediaUrl, slide.mediaCaption, slide.mediaCredit)}
       ${footer(num)}</div>`;
   };
 
@@ -261,7 +274,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
   };
 
   const graphSlide = (slide: ActivitySlide, num: number) => {
-    const accent = deckSlideAccent('graph');
+    const accent = deckSlideAccent('graph', T);
     const commands = slide.graphCommands ?? [];
     const [context] = slide.content.split('\n\n');
     // The curve itself, drawn as inline SVG. Until this existed the export
@@ -291,10 +304,10 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
   };
 
   const challengeSlide = (slide: ActivitySlide, num: number) => {
-    const accent = deckSlideAccent('challenge');
+    const accent = deckSlideAccent('challenge', T);
     const verifiedBadge = slide.verified ? `
-      <div class="deck-verified" style="color:${slide.verifiedBy === 'symbolic' ? '#22C55E' : DECK_MUTED}">
-        ${inlineIcon(slide.verifiedBy === 'symbolic' ? 'shield' : 'books', slide.verifiedBy === 'symbolic' ? '#22C55E' : DECK_MUTED, 15)}
+      <div class="deck-verified" style="color:${slide.verifiedBy === 'symbolic' ? '#22C55E' : T.muted}">
+        ${inlineIcon(slide.verifiedBy === 'symbolic' ? 'shield' : 'books', slide.verifiedBy === 'symbolic' ? '#22C55E' : T.muted, 15)}
         ${slide.verifiedBy === 'symbolic' ? L('تم التحقق من الإجابة رياضيًا (SymPy)', 'Answer symbolically verified (SymPy)') : L('من بنك الأسئلة المُراجَع', 'From the reviewed question bank')}
         ${slide.verifiedBy === 'symbolic' && slide.computedAnswer ? `<div class="deck-evidence">${L('حسبها المُحقِّق مستقلًّا', 'Verifier computed independently')}: ${mathLineToHtml(prettifySymPy(slide.computedAnswer))}</div>` : ''}
       </div>` : '';
@@ -314,12 +327,12 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
   };
 
   const mediaSlide = (slide: ActivitySlide, num: number) => {
-    const accent = deckSlideAccent(slide.type);
+    const accent = deckSlideAccent(slide.type, T);
     return `<div class="deck-slide">
       ${deckHeader(slide.title, accent)}
       <div class="deck-body deck-body-center deck-body-media">
         <img class="deck-media-img" src="${escAttr(slide.mediaUrl ?? '')}" alt="${esc(slide.mediaCaption ?? '')}" />
-        ${slide.mediaCaption ? `<div class="deck-media-caption">${esc(slide.mediaCaption)}</div>` : ''}
+        ${slide.mediaCaption ? `<div class="deck-media-caption">${captionHtml(slide.mediaCaption, slide.mediaCredit)}</div>` : ''}
       </div>
       ${footer(num)}</div>`;
   };
@@ -391,12 +404,12 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
    * and the live presenter is where the reveal is held back.
    */
   const questionSlide = (slide: ActivitySlide, num: number) => {
-    const accent = deckSlideAccent('question');
+    const accent = deckSlideAccent('question', T);
     const options = slide.options ?? [];
     const letters = isAr ? ['أ', 'ب', 'ج', 'د', 'هـ'] : ['A', 'B', 'C', 'D', 'E'];
     const verifiedBadge = slide.verified ? `
-      <div class="deck-verified" style="color:${slide.verifiedBy === 'symbolic' ? '#22C55E' : DECK_MUTED}">
-        ${inlineIcon(slide.verifiedBy === 'symbolic' ? 'shield' : 'books', slide.verifiedBy === 'symbolic' ? '#22C55E' : DECK_MUTED, 15)}
+      <div class="deck-verified" style="color:${slide.verifiedBy === 'symbolic' ? '#22C55E' : T.muted}">
+        ${inlineIcon(slide.verifiedBy === 'symbolic' ? 'shield' : 'books', slide.verifiedBy === 'symbolic' ? '#22C55E' : T.muted, 15)}
         ${slide.verifiedBy === 'symbolic' ? L('تم التحقق من الإجابة رياضيًا (SymPy)', 'Answer symbolically verified (SymPy)') : L('من بنك الأسئلة المُراجَع', 'From the reviewed question bank')}
       </div>` : '';
     return `<div class="deck-slide">
@@ -430,7 +443,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
   const layoutSlide = (slide: ActivitySlide, num: number): string | null => {
     const layout = resolveSlideLayout(slide);
     if (!layout) return null;
-    const accent = deckSlideAccent(slide.type);
+    const accent = deckSlideAccent(slide.type, T);
     const head = esc(splitEmoji(slide.title)[1]);
 
     if (layout.kind === 'statement') {
@@ -482,7 +495,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
   };
 
   const contentSlide = (slide: ActivitySlide, num: number) => {
-    const accent = deckSlideAccent(slide.type);
+    const accent = deckSlideAccent(slide.type, T);
     const lines = slide.content.split('\n').filter(Boolean);
     const body = `${lines.map(l => deckBodyLine(l, accent)).join('')}
         ${/* Any slide may carry a visual, not just graph slides. A chart
@@ -500,7 +513,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
         <div class="split-text">${body}</div>
         <figure class="split-fig">
           <img src="${escAttr(slide.sideImageUrl)}" alt="${esc(slide.sideImageCaption ?? '')}"/>
-          ${slide.sideImageCaption ? `<figcaption>${esc(slide.sideImageCaption)}</figcaption>` : ''}
+          ${slide.sideImageCaption ? `<figcaption>${captionHtml(slide.sideImageCaption, slide.sideImageCredit)}</figcaption>` : ''}
         </figure>
       </div>
       ${footer(num)}</div>`;
@@ -588,7 +601,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
    the same product as the projector. (Until 2026-10-08 it named a heading face
    the app never loads, so the PDF's headings were in a different typeface from
    the projected deck's.) Arial stays as the offline fallback. */
-body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${DECK_BORDER}; }
+body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${T.border}; }
 .deck-title-badge, .deck-title-main, .deck-divider-title, .deck-eyebrow,
 .deck-eq, .deck-answer-label, .deck-chip, .deck-video-link,
 .deck-option-letter, .deck-title-meta,
@@ -603,20 +616,20 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${DECK_BOR
    direction-agnostic — never row-reverse, per this file's own rule. */
 .deck-body.deck-statement, .deck-body.deck-stat { justify-content:center; gap:4px; }
 .deck-statement-text { font-size:40px; line-height:1.5; font-weight:700; text-align:start; }
-.deck-statement-sub { font-size:24px; line-height:1.6; color:${DECK_MUTED}; margin-top:12px; text-align:start; }
+.deck-statement-sub { font-size:24px; line-height:1.6; color:${T.muted}; margin-top:12px; text-align:start; }
 .deck-stat-value { font-size:96px; line-height:1.1; font-weight:700; text-align:start; }
 .deck-stat-label { font-size:26px; line-height:1.5; font-weight:600; text-align:start; }
-.deck-stat-source { font-size:14px; line-height:1.6; color:${DECK_MUTED}; margin-top:10px; text-align:start; }
+.deck-stat-source { font-size:14px; line-height:1.6; color:${T.muted}; margin-top:10px; text-align:start; }
 .deck-body.deck-compare { display:flex; flex-direction:row; gap:18px; align-items:stretch; }
-.deck-compare-col { flex:1; border:2px solid ${DECK_BORDER}; border-radius:18px; padding:24px 28px; background:${DECK_CARD_BG}; }
-.deck-compare-head { font-size:30px; line-height:1.4; font-weight:700; color:${DECK_MUTED}; margin-bottom:12px; text-align:start; }
+.deck-compare-col { flex:1; border:2px solid ${T.border}; border-radius:18px; padding:24px 28px; background:${T.card}; }
+.deck-compare-head { font-size:30px; line-height:1.4; font-weight:700; color:${T.muted}; margin-bottom:12px; text-align:start; }
 .deck-compare-item { font-size:24px; line-height:1.7; margin-bottom:8px; text-align:start; }
 .deck-steps { gap:18px; }
 .deck-step { display:flex; flex-direction:row; align-items:center; gap:16px; }
 .deck-step-num { flex-shrink:0; width:56px; height:56px; border-radius:50%; color:#fff; font-size:28px; font-weight:700; display:flex; align-items:center; justify-content:center; }
 .deck-step-text { font-size:28px; line-height:1.6; text-align:start; }
-.deck-slide { width:297mm; height:210mm; background:${DECK_BG}; color:${DECK_TEXT}; position:relative; overflow:hidden; page-break-after:always; display:flex; flex-direction:column; }
-.deck-title-slide { background:radial-gradient(circle at 30% 20%, ${DECK_BLOB}, transparent 60%), ${DECK_BG}; }
+.deck-slide { width:297mm; height:210mm; background:${T.bg}; color:${T.text}; position:relative; overflow:hidden; page-break-after:always; display:flex; flex-direction:column; }
+.deck-title-slide { background:radial-gradient(circle at 30% 20%, ${T.blob}, transparent 60%), ${T.bg}; }
 .deck-hero-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
 .deck-hero-gradient { position:absolute; inset:0; z-index:1; background:linear-gradient(180deg, rgba(13,13,20,0.35), rgba(13,13,20,0.92)); }
 /* A flow child above the footer, not an overlay pinned near it: PhET's required
@@ -628,18 +641,18 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${DECK_BOR
 /* The projected deck sits on two low-contrast circles; pseudo-elements keep
    them out of the markup. Not on title or divider slides — those carry a photo
    or a flat accent panel and the circles would muddy both. */
-.deck-slide:not(.deck-title-slide):not(.deck-divider-slide)::before { content:''; position:absolute; top:-95px; inset-inline-start:-70px; width:300px; height:300px; border-radius:50%; background:${DECK_BLOB}; z-index:0; }
-.deck-slide:not(.deck-title-slide):not(.deck-divider-slide)::after { content:''; position:absolute; bottom:-130px; inset-inline-end:-90px; width:340px; height:340px; border-radius:50%; background:${DECK_BLOB}; z-index:0; }
+.deck-slide:not(.deck-title-slide):not(.deck-divider-slide)::before { content:''; position:absolute; top:-95px; inset-inline-start:-70px; width:300px; height:300px; border-radius:50%; background:${T.blob}; z-index:0; }
+.deck-slide:not(.deck-title-slide):not(.deck-divider-slide)::after { content:''; position:absolute; bottom:-130px; inset-inline-end:-90px; width:340px; height:340px; border-radius:50%; background:${T.blob}; z-index:0; }
 .deck-divider-content { position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:50px; text-align:center; }
 .deck-divider-title { font-size:56px; font-weight:700; color:#fff; line-height:1.35; max-width:860px; }
-.deck-title-rule { width:74px; height:5px; border-radius:3px; background:${DECK_PINK}; margin:0 0 18px; }
+.deck-title-rule { width:74px; height:5px; border-radius:3px; background:${T.secondary}; margin:0 0 18px; }
 .deck-on-photo .deck-title-main, .deck-on-photo .deck-title-meta, .deck-on-photo .deck-title-summary { color:#fff; }
 .deck-on-photo .deck-title-badge { background:rgba(255,255,255,0.16); color:#fff; }
 .deck-divider-subtitle { font-size:24px; color:rgba(255,255,255,0.85); margin-top:14px; }
-.deck-title-badge { background:${DECK_ACCENT}1F; color:${DECK_ACCENT}; font-size:14px; letter-spacing:3px; font-weight:700; padding:5px 18px; border-radius:20px; margin-bottom:24px; }
-.deck-title-main { font-size:54px; font-weight:700; color:${DECK_TEXT}; line-height:1.3; margin-bottom:18px; max-width:860px; }
-.deck-title-meta { font-size:24px; line-height:1.6; max-width:760px; color:${DECK_MUTED}; margin-bottom:12px; }
-.deck-title-summary { font-size:18px; color:${DECK_MUTED}; max-width:720px; line-height:1.7; }
+.deck-title-badge { background:${T.accent}1F; color:${T.accent}; font-size:14px; letter-spacing:3px; font-weight:700; padding:5px 18px; border-radius:20px; margin-bottom:24px; }
+.deck-title-main { font-size:54px; font-weight:700; color:${T.text}; line-height:1.3; margin-bottom:18px; max-width:860px; }
+.deck-title-meta { font-size:24px; line-height:1.6; max-width:760px; color:${T.muted}; margin-bottom:12px; }
+.deck-title-summary { font-size:18px; color:${T.muted}; max-width:720px; line-height:1.7; }
 .deck-header { position:relative; z-index:2; display:flex; align-items:center; gap:10px; min-height:96px; flex-shrink:0; padding:16px 48px; border-bottom:1.5px solid; }
 .deck-emoji { font-size:32px; display:inline-flex; align-items:center; }
 .deck-icon { display:block; }
@@ -665,13 +678,13 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${DECK_BOR
 .deck-fit .deck-line, .deck-fit .deck-card-text { font-size:var(--fit); }
 /* A lone plain line is a value or a sentence, not a list: centre it too. */
 .deck-fit .deck-line:only-child { text-align:center; }
-.deck-line { font-size:26px; line-height:1.8; color:${DECK_TEXT}; }
-.deck-card { display:flex; align-items:center; gap:14px; background:${DECK_CARD_BG}; border:1px solid ${DECK_BORDER}; border-radius:14px; padding:16px 22px; }
+.deck-line { font-size:26px; line-height:1.8; color:${T.text}; }
+.deck-card { display:flex; align-items:center; gap:14px; background:${T.card}; border:1px solid ${T.border}; border-radius:14px; padding:16px 22px; }
 .deck-card-bar { width:5px; align-self:stretch; border-radius:3px; flex-shrink:0; }
 .deck-card-text { flex:1; font-size:26px; line-height:1.7; }
-.deck-formula { background:${DECK_CARD_BG}; border:1px solid ${DECK_BORDER}; border-radius:16px; padding:18px 20px; text-align:center; font-size:32px; font-weight:700; color:${DECK_TEXT}; font-family:'Readex Pro','Arial','Tahoma',sans-serif; }
-.deck-eq { font-size:32px; font-weight:700; color:${DECK_TEXT}; text-align:center; line-height:1.6; }
-.deck-answer { margin-top:22px; border:1.5px solid; border-radius:12px; padding:16px 24px; background:${DECK_CARD_BG}; min-width:320px; }
+.deck-formula { background:${T.card}; border:1px solid ${T.border}; border-radius:16px; padding:18px 20px; text-align:center; font-size:32px; font-weight:700; color:${T.text}; font-family:'Readex Pro','Arial','Tahoma',sans-serif; }
+.deck-eq { font-size:32px; font-weight:700; color:${T.text}; text-align:center; line-height:1.6; }
+.deck-answer { margin-top:22px; border:1.5px solid; border-radius:12px; padding:16px 24px; background:${T.card}; min-width:320px; }
 .deck-answer-label { font-size:14px; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; }
 /* Worked-example answer: the working one numbered row per step, the result set
    apart beneath. Row direction is left to the document's own dir — never
@@ -683,39 +696,39 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${DECK_BOR
 .deck-final { border-top:1.5px solid; padding-top:10px; }
 .deck-plot { margin:14px auto 0; max-width:660px; }
 .deck-verified { margin-top:12px; font-size:11px; font-weight:600; display:flex; flex-direction:column; align-items:center; gap:4px; }
-.deck-evidence { font-size:10px; color:${DECK_MUTED}; font-weight:400; }
+.deck-evidence { font-size:10px; color:${T.muted}; font-weight:400; }
 .deck-options { display:flex; flex-direction:column; gap:10px; margin-top:22px; min-width:560px; }
-.deck-option { display:flex; align-items:center; gap:12px; border:1.5px solid ${DECK_BORDER}; border-radius:12px; padding:14px 22px; font-size:22px; color:${DECK_TEXT}; background:${DECK_CARD_BG}; }
-.deck-option-correct { background:${DECK_ACCENT}14; border-color:${DECK_ACCENT}; font-weight:700; }
+.deck-option { display:flex; align-items:center; gap:12px; border:1.5px solid ${T.border}; border-radius:12px; padding:14px 22px; font-size:22px; color:${T.text}; background:${T.card}; }
+.deck-option-correct { background:${T.accent}14; border-color:${T.accent}; font-weight:700; }
 .deck-option-letter { font-size:22px; font-weight:700; min-width:20px; }
 .deck-option-text { flex:1; }
 .deck-option-tick { font-size:22px; font-weight:700; }
 .deck-chip-row { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-bottom:18px; }
 .deck-chip { border:1.5px solid; border-radius:8px; padding:5px 12px; font-size:13px; font-weight:700; }
-.deck-graph-note { font-size:11px; color:${DECK_MUTED}; max-width:420px; line-height:1.7; }
+.deck-graph-note { font-size:11px; color:${T.muted}; max-width:420px; line-height:1.7; }
 .deck-body-media { gap:16px; }
 .deck-media-img { max-width:80%; max-height:130mm; object-fit:cover; border-radius:12px; box-shadow:0 8px 24px rgba(34,48,60,0.18); }
-.deck-media-caption { font-size:11px; color:${DECK_MUTED}; }
-.deck-video-title { font-size:15px; color:${DECK_TEXT}; max-width:520px; line-height:1.6; margin-bottom:20px; }
+.deck-media-caption { font-size:11px; color:${T.muted}; }
+.deck-video-title { font-size:15px; color:${T.text}; max-width:520px; line-height:1.6; margin-bottom:20px; }
 .deck-video-link { display:inline-block; border:1.5px solid; border-radius:10px; padding:10px 22px; font-size:15px; font-weight:700; text-decoration:none; }
-.deck-video-url { font-size:10px; color:${DECK_MUTED}; margin-top:14px; word-break:break-all; max-width:420px; }
-.deck-video-note { font-size:11px; color:${DECK_MUTED}; margin-top:12px; }
+.deck-video-url { font-size:10px; color:${T.muted}; margin-top:14px; word-break:break-all; max-width:420px; }
+.deck-video-note { font-size:11px; color:${T.muted}; margin-top:12px; }
 /* 13px, not the 9px it was: the credit line and page counter are read from the
    back of a room, and 9px is below what a projector resolves. The two dark
    surfaces (the photo slides and the flat teal divider) need light text — muted
    brown on teal was close to invisible. */
-.deck-footer { position:relative; z-index:2; height:40px; border-top:1px solid ${DECK_BORDER}; display:flex; align-items:center; justify-content:space-between; padding:0 32px; flex-shrink:0; }
-.deck-footer span { font-size:13px; color:${DECK_MUTED}; }
+.deck-footer { position:relative; z-index:2; height:40px; border-top:1px solid ${T.border}; display:flex; align-items:center; justify-content:space-between; padding:0 32px; flex-shrink:0; }
+.deck-footer span { font-size:13px; color:${T.muted}; }
 .deck-divider-slide .deck-footer, .deck-on-photo .deck-footer { border-top-color:rgba(255,255,255,0.35); }
 .deck-divider-slide .deck-footer span, .deck-on-photo .deck-footer span { color:rgba(255,255,255,0.9); }
 /* Teacher notes: ordinary flowing pages after the deck, paginated by the
    browser, each slide's block kept whole. Body-sized type — these are read at
    a desk, not off a wall. */
-.notes-pages { page-break-before:always; background:${DECK_CARD_BG}; color:${DECK_TEXT}; padding:18mm 20mm; }
-.notes-heading { font-size:26px; font-weight:700; color:${DECK_TEAL}; margin-bottom:18px; font-family:'Readex Pro','Arial','Tahoma',sans-serif; }
-.notes-slide { break-inside:avoid; page-break-inside:avoid; border-top:1px solid ${DECK_BORDER}; padding:14px 0 10px; }
+.notes-pages { page-break-before:always; background:${T.card}; color:${T.text}; padding:18mm 20mm; }
+.notes-heading { font-size:26px; font-weight:700; color:${T.primary}; margin-bottom:18px; font-family:'Readex Pro','Arial','Tahoma',sans-serif; }
+.notes-slide { break-inside:avoid; page-break-inside:avoid; border-top:1px solid ${T.border}; padding:14px 0 10px; }
 .notes-title { font-size:17px; font-weight:700; margin-bottom:8px; font-family:'Readex Pro','Arial','Tahoma',sans-serif; }
-.notes-label { font-size:11px; font-weight:700; color:${DECK_MUTED}; text-transform:uppercase; letter-spacing:1px; margin-top:8px; }
+.notes-label { font-size:11px; font-weight:700; color:${T.muted}; text-transform:uppercase; letter-spacing:1px; margin-top:8px; }
 .notes-text { font-size:14px; line-height:1.7; }
 ${MATH_HTML_STYLES}
 </style>

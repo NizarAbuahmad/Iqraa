@@ -313,7 +313,7 @@ function lpObjectivesAr(topic: string, kb: KBLesson | null, custom?: string, kin
 function bookFigureCue(kb: KBLesson | null, lang: Lang): string {
   if (!kb?.id || figuresForLesson(kb.id).length === 0) return '';
   return lang === 'ar'
-    ? ' اعرض شكل الكتاب المدرسي في شريحة «من كتاب الطالب» وناقش ما يراه الطلبة فيه.'
+    ? ' وسأعرض شكل الكتاب المدرسي في شريحة «من كتاب الطالب» وأناقش ما يراه الطلبة فيه.'
     : " Show the student-book figure on the “From the Student Book” slide and discuss what students notice in it.";
 }
 
@@ -327,34 +327,34 @@ function bookFigureCue(kb: KBLesson | null, lang: Lang): string {
 function kindIntro(kind: LessonKind, topic: string, lang: Lang): string[] | null {
   const ar: Partial<Record<LessonKind, string[]>> = {
     science: [
-      `ابدأ بظاهرة قصيرة أو صورة مثيرة مرتبطة بـ«${topic}» دون أن تفسّرها، واسأل: «ماذا ترون؟ وماذا تتوقعون أن يحدث بعد ذلك؟» وسجّل التوقعات على السبورة لنعود إليها في نهاية الحصة.`,
-      `اسأل الطلبة: «أين صادفتم “${topic}” في بيتكم أو في الطبيعة؟» ثم اختر مثالًا واحدًا وحوّله إلى سؤال يبحث عنه الدرس: «لماذا يحدث هذا؟»`,
-      `اعرض شيئًا أو صورة مرتبطة بـ«${topic}» واطلب من كل طالب أن يكتب سؤالًا واحدًا يريد أن يعرف جوابه، ثم اجمع الأسئلة وأعلن أن الحصة ستجيب عن بعضها.`,
+      `سأبدأ بظاهرة قصيرة أو صورة مثيرة مرتبطة بـ«${topic}» دون أن أفسّرها، ثم أسأل: «ماذا ترون؟ وماذا تتوقعون أن يحدث بعد ذلك؟» وسأسجّل التوقعات على السبورة لنعود إليها في نهاية الحصة.`,
+      `سأسأل الطلبة: «أين صادفتم “${topic}” في بيتكم أو في الطبيعة؟» ثم أختار مثالًا واحدًا وأحوّله إلى سؤال يبحث عنه الدرس: «لماذا يحدث هذا؟»`,
+      `سأعرض شيئًا أو صورة مرتبطة بـ«${topic}» وأطلب من كل طالب أن يكتب سؤالًا واحدًا يريد أن يعرف جوابه، ثم أجمع الأسئلة وأعلن أن الحصة ستجيب عن بعضها.`,
     ],
     social: [
-      `اعرض صورة أو خريطة أو سطرًا قصيرًا من مصدر الدرس عن «${topic}»، واسأل: «ماذا نلاحظ؟ وما الذي يثير تساؤلكم؟» ودوّن أسئلة الطلبة لنحاول الإجابة عنها خلال الحصة.`,
-      `اطرح موقفًا قريبًا من حياة الطلبة له علاقة بـ«${topic}» واسأل: «ماذا كنتم ستفعلون؟ ولماذا؟» ثم اربط إجاباتهم بما سندرسه اليوم.`,
-      `اسأل: «ماذا نعرف عن “${topic}”؟ ومن أين عرفنا ذلك؟» ثم ميّز مع الطلبة بين ما نعرفه بدليل وما سمعناه فقط، وأعلن أننا سنتحقّق منه بالمصدر.`,
+      `سأعرض صورة أو خريطة أو سطرًا قصيرًا من مصدر الدرس عن «${topic}»، ثم أسأل: «ماذا نلاحظ؟ وما الذي يثير تساؤلكم؟» وسأدوّن أسئلة الطلبة لنحاول الإجابة عنها خلال الحصة.`,
+      `سأطرح موقفًا قريبًا من حياة الطلبة له علاقة بـ«${topic}» وأسأل: «ماذا كنتم ستفعلون؟ ولماذا؟» ثم أربط إجاباتهم بما سندرسه اليوم.`,
+      `سأسأل: «ماذا نعرف عن “${topic}”؟ ومن أين عرفنا ذلك؟» ثم أميّز مع الطلبة بين ما نعرفه بدليل وما سمعناه فقط، وأعلن أننا سنتحقّق منه بالمصدر.`,
     ],
     recitation: [
-      `ابدأ بتهيئة هادئة: استمع دقيقتين إلى ما يعرفه الطلبة عن «${topic}»، ثم أعلن هدف الحصة: أن نقرأ قراءة سليمة، ونفهم المعنى، ونعمل بما نتعلّم.`,
-      `اسأل: «لماذا نتعلّم “${topic}”؟ وماذا نتوقع أن يتغيّر في سلوكنا؟» ثم أخبر الطلبة أنهم سيقرؤون ما تقرّر من آيات أو حديث ثم يتأمّلون معناه معًا.`,
+      `سأبدأ بتهيئة هادئة: أستمع دقيقتين إلى ما يعرفه الطلبة عن «${topic}»، ثم أعلن هدف الحصة: أن نقرأ قراءة سليمة، ونفهم المعنى، ونعمل بما نتعلّم.`,
+      `سأسأل: «لماذا نتعلّم “${topic}”؟ وماذا نتوقع أن يتغيّر في سلوكنا؟» ثم أخبر الطلبة أنهم سيقرؤون ما تقرّر من آيات أو حديث ثم يتأمّلون معناه معًا.`,
     ],
     movement: [
-      `ابدأ بسؤال: «أين نستعمل مهارة “${topic}” في الألعاب أو في حياتنا؟» ثم نبّه الطلبة إلى قواعد السلامة قبل الإحماء.`,
-      `اعرض أداءً سريعًا للمهارة (بنفسك أو بطالب متقن) واسأل: «ما أهم ما لاحظتموه في الحركة؟» ثم اربط ملاحظاتهم بأهداف الدرس.`,
+      `سأبدأ بسؤال: «أين نستعمل مهارة “${topic}” في الألعاب أو في حياتنا؟» ثم أنبّه الطلبة إلى قواعد السلامة قبل الإحماء.`,
+      `سأعرض أداءً سريعًا للمهارة (بنفسي أو بطالب متقن) وأسأل: «ما أهم ما لاحظتموه في الحركة؟» ثم أربط ملاحظاتهم بأهداف الدرس.`,
     ],
     arabic: [
-      `ابدأ بسؤال يهيّئ النص: «ماذا تتوقعون أن يتحدث عنه درس “${topic}”؟» ودوّن توقعات الطلبة ثم اربطها بعنوان الدرس.`,
-      `اقرأ جملة أو عنوانًا من الدرس بصوت معبّر واسأل: «ما الذي لفت انتباهكم؟» ثم اربط إجاباتهم بهدف الحصة.`,
+      `سأبدأ بسؤال يهيّئ النص: «ماذا تتوقعون أن يتحدث عنه درس “${topic}”؟» وأدوّن توقعات الطلبة ثم أربطها بعنوان الدرس.`,
+      `سأقرأ جملة أو عنوانًا من الدرس بصوت معبّر وأسأل: «ما الذي لفت انتباهكم؟» ثم أربط إجاباتهم بهدف الحصة.`,
     ],
     english: [
-      `ابدأ بإحماء قصير: أسئلة سريعة أو صورة تستثير مفردات «${topic}» قبل تقديم اللغة الجديدة، وشجّع الإجابة بأي لغة يتقنونها.`,
-      `اسأل بالإنجليزية الميسّرة أو بالإشارة: ماذا نعرف عن «${topic}»؟ واكتب ما يعرفونه من كلمات على السبورة ليبني عليه الدرس.`,
+      `سأبدأ بإحماء قصير: أسئلة سريعة أو صورة تستثير مفردات «${topic}» قبل تقديم اللغة الجديدة، وسأشجّع الإجابة بأي لغة يتقنونها.`,
+      `سأسأل بالإنجليزية الميسّرة أو بالإشارة: ماذا نعرف عن «${topic}»؟ وأكتب ما يعرفونه من كلمات على السبورة ليبني عليه الدرس.`,
     ],
     making: [
-      `اعرض عملًا منجزًا يتصل بـ«${topic}» واسأل: «ما الذي يعجبكم فيه؟ وكيف ترون أنه صُنع؟» ثم اربط ملاحظاتهم بأهداف الدرس.`,
-      `اسأل: «أين نرى “${topic}” في حياتنا أو حولنا؟» ودوّن الأمثلة، ثم أعلن ما سيصنعه الطلبة اليوم.`,
+      `سأعرض عملًا منجزًا يتصل بـ«${topic}» وأسأل: «ما الذي يعجبكم فيه؟ وكيف ترون أنه صُنع؟» ثم أربط ملاحظاتهم بأهداف الدرس.`,
+      `سأسأل: «أين نرى “${topic}” في حياتنا أو حولنا؟» وأدوّن الأمثلة، ثم أعلن ما سيصنعه الطلبة اليوم.`,
     ],
   };
   const en: Partial<Record<LessonKind, string[]>> = {
@@ -396,20 +396,20 @@ function lpIntroAr(topic: string, kb: KBLesson | null, kind: LessonKind = 'calc'
   const own = kindIntro(kind, topic, 'ar');
   if (own) return pick(own) + bookFigureCue(kb, 'ar');
   if (kb) return pick([
-    `ابدأ بطرح السؤال: "أين نلتقي ${arPrefixed('ب', topic)} في حياتنا اليومية؟" سجّل إجابات الطلبة على السبورة.${bookFigureCue(kb, 'ar')} ثم اربط إجاباتهم بأهداف الدرس.`,
-    `لعبة "ما أعرفه / ما أريد تعلّمه": يكتب الطلبة على ورقة ما يعرفونه عن ${kb.titleAr} (دقيقتان). تُشارك بعض الإجابات ثم يُحدد المعلم ما سنكتشفه معًا.`,
-    `"التنبؤ والاستكشاف": اعرض موقفًا حياتيًا مرتبطًا ${arPrefixed('ب', topic)} واطلب من الطلبة التنبؤ بالتفسير. استخدم تنبؤاتهم كنقطة انطلاق لأهداف الدرس.`,
+    `سأبدأ بطرح السؤال: "أين نلتقي ${arPrefixed('ب', topic)} في حياتنا اليومية؟" وأسجّل إجابات الطلبة على السبورة.${bookFigureCue(kb, 'ar')} ثم أربط إجاباتهم بأهداف الدرس.`,
+    `لعبة "ما أعرفه / ما أريد تعلّمه": يكتب الطلبة على ورقة ما يعرفونه عن ${kb.titleAr} (دقيقتان). تُشارك بعض الإجابات ثم أحدّد ما سنكتشفه معًا.`,
+    `"التنبؤ والاستكشاف": سأعرض موقفًا حياتيًا مرتبطًا ${arPrefixed('ب', topic)} وأطلب من الطلبة التنبؤ بالتفسير، ثم أستخدم تنبؤاتهم كنقطة انطلاق لأهداف الدرس.`,
   ]);
   return pick([
-    `ابدأ بسؤال تحفيزي: "كيف يرتبط ${topic} بحياتنا اليومية؟" استمع لمشاركات 3-4 طلبة وسجّلها على السبورة، ثم ابنِ عليها مدخلًا للدرس.`,
+    `سأبدأ بسؤال تحفيزي: "كيف يرتبط ${topic} بحياتنا اليومية؟" وأستمع لمشاركات 3-4 طلبة وأسجّلها على السبورة، ثم أبني عليها مدخلًا للدرس.`,
     `"فكّر – زاوج – شارك": يفكر كل طالب 30 ثانية فيما يعرفه عن ${topic}، يشارك زميله، ثم تُطرح بعض الإجابات على الصف.`,
   ]);
 }
 function lpClosureAr(topic: string, dur: number): string {
   const t = Math.round(dur * 0.1);
   return pick([
-    `(${arMinutes(t)}) بطاقة الخروج:\n• أهم شيء تعلمته اليوم عن ${topic}.\n• سؤال لا يزال يراوده.\nاجمع البطاقات عند الخروج.`,
-    `(${arMinutes(t)}) "3-2-1":\n• 3 أشياء تعلمتها\n• 2 مفاهيم أريد فهمها أكثر\n• 1 سؤال لديّ عن ${topic}`,
+    `(${arMinutes(t)}) غلق الدرس:\n• أهم شيء تعلمته اليوم عن ${topic}.\n• سؤال لا يزال يراوده.\nوسأجمع البطاقات عند الخروج.`,
+    `(${arMinutes(t)}) "3-2-1": سأطلب من كل طالب أن يكتب قبل الخروج:\n• 3 أشياء تعلمها\n• 2 مفاهيم يريد فهمها أكثر\n• 1 سؤال لديه عن ${topic}`,
   ]);
 }
 
@@ -498,8 +498,8 @@ function lpPriorReview(priorConcepts: string[], notes: string, lang: Lang): stri
   const hasNotes = notes.trim().length > 0;
   if (!hasConcepts && !hasNotes) return undefined;
   if (lang === 'ar') {
-    const parts = ['خصّص 5-10 دقائق في بداية الحصة لمراجعة سريعة قبل الانتقال إلى الدرس الجديد.'];
-    if (hasConcepts) parts.push(`راجع هذه المفاهيم من المنهاج: ${priorConcepts.join('، ')}.`);
+    const parts = ['سأخصّص 5-10 دقائق في بداية الحصة لمراجعة سريعة قبل الانتقال إلى الدرس الجديد.'];
+    if (hasConcepts) parts.push(`وسأراجع هذه المفاهيم من المنهاج: ${priorConcepts.join('، ')}.`);
     if (hasNotes) parts.push(`بحسب ملاحظات المعلم: ${notes.trim()}`);
     return parts.join(' ');
   }
@@ -1085,8 +1085,8 @@ export class MockAIService extends AIService {
           ],
           ...(priorReview ? { priorReview } : {}),
           introduction:
-            `اعتمادًا على ${fileLabel}: ابدأ بعرض فكرة من الملف واسأل: «ماذا نعرف عن ${topic}؟»`
-            + (conceptLine ? ` سجّل المفاهيم الظاهرة: ${conceptLine}.` : '')
+            `اعتمادًا على ${fileLabel}: سأبدأ بعرض فكرة من الملف وأسأل: «ماذا نعرف عن ${topic}؟»`
+            + (conceptLine ? ` وسأسجّل المفاهيم الظاهرة: ${conceptLine}.` : '')
             + (docs.summary ? ` ملخص الملف: ${docs.summary}` : ''),
           mainActivity: styleBlueprint.mainActivity
             + (exampleLine ? `\n\nمثال جاهز من الملف:\n• ${exampleLine}` : ''),
@@ -1419,6 +1419,7 @@ export class MockAIService extends AIService {
               problem: exampleItem.problem,
               steps: exampleItem.steps,
               answer: exampleItem.answer,
+              fromBank: true as const,
               selfExplain: lang === 'ar'
                 ? 'اشرح بجملة واحدة: لماذا كانت الخطوة الأولى صحيحة؟'
                 : 'In one sentence, explain why the first step was valid.',
@@ -1462,17 +1463,15 @@ export class MockAIService extends AIService {
     // classroom mini-quiz) that don't send numQuestions.
     const numQuestions = Math.max(types.length, req.numQuestions ?? types.length * 2);
     // Grouped as a ministry paper is, not interleaved: the picked types in
-    // `QUIZ_TYPE_ORDER`, the count split evenly with the remainder going to the
-    // earlier blocks. `word_problem` is a written answer, so it joins that block.
+    // `QUIZ_TYPE_ORDER`. `word_problem` is a written answer, so it joins that
+    // block. Questions are DRAWN one at a time (below) and sorted into blocks
+    // at the end, so a type whose bank runs dry hands its share to the others
+    // instead of ending the paper.
     const blockTypes = QUIZ_TYPE_ORDER.filter(t =>
       types.some(x => (x === 'word_problem' ? 'short_answer' : x) === t));
-    const plan: QuizQuestion['type'][] = blockTypes.flatMap((t, bi) =>
-      Array<QuizQuestion['type']>(Math.floor(numQuestions / blockTypes.length) + (bi < numQuestions % blockTypes.length ? 1 : 0)).fill(t));
     const basePts = Math.max(1, Math.floor(totalMarks / numQuestions));
 
     const questions: QuizQuestion[] = [];
-    let qIdx = 1;
-    let usedPts = 0;
     const usedStems = new Set<string>();
 
     const pushUnique = (factory: () => QuizQuestion): QuizQuestion => {
@@ -1490,35 +1489,49 @@ export class MockAIService extends AIService {
     };
 
     bankOnly = questionBankPolicy.required;
+    /** Types whose bank has nothing left for this lesson. */
+    const spent = new Set<QuizQuestion['type']>();
+    const made = new Map<QuizQuestion['type'], number>();
     try {
-    for (let i = 0; i < numQuestions; i++) {
-      const type = plan[i];
-      const id = `q${qIdx++}`;
-      // Last question absorbs any rounding difference
-      const isLast = qIdx > numQuestions;
-      const pts = isLast ? Math.max(1, totalMarks - usedPts) : basePts;
-      usedPts += pts;
+    while (questions.length < numQuestions) {
+      // The next question goes to the type with the fewest so far, ties to the
+      // earlier ministry block: an even split (the remainder to the earlier
+      // blocks) that a spent type simply drops out of.
+      const live = blockTypes.filter(t => !spent.has(t));
+      if (live.length === 0) break;
+      const type = live.reduce((best, t) => ((made.get(t) ?? 0) < (made.get(best) ?? 0) ? t : best), live[0]!);
+      const id = `q${questions.length + 1}`;
+      // Rounding is settled once, below, so the order questions are drawn in
+      // does not decide which one carries the remainder.
+      const pts = basePts;
 
-      const tier = quizTier(qIdx - 2);
-      // `word_problem` falls into the short-answer branch (see `plan` above).
-      if (lang === 'ar') {
-        if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_ar(topic, kb, pts, id, req.subject, tier)));
-        else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_ar(topic, kb, pts, id, req.subject, tier)));
-        else if (type === 'fill_blank') questions.push(pushUnique(() => makeQuizFB_ar(topic, kb, pts, id, req.subject, tier)));
-        else questions.push(pushUnique(() => makeQuizSA_ar(topic, kb, pts, id, req.subject, tier)));
-      } else {
-        if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_en(topic, kb, pts, id, req.subject, tier)));
-        else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_en(topic, kb, pts, id, req.subject, tier)));
-        else if (type === 'fill_blank') questions.push(pushUnique(() => makeQuizFB_en(topic, kb, pts, id, req.subject, tier)));
-        else questions.push(pushUnique(() => makeQuizSA_en(topic, kb, pts, id, req.subject, tier)));
+      const tier = quizTier(questions.length);
+      try {
+        // `word_problem` falls into the short-answer branch (see `blockTypes` above).
+        if (lang === 'ar') {
+          if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_ar(topic, kb, pts, id, req.subject, tier)));
+          else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_ar(topic, kb, pts, id, req.subject, tier)));
+          else if (type === 'fill_blank') questions.push(pushUnique(() => makeQuizFB_ar(topic, kb, pts, id, req.subject, tier)));
+          else questions.push(pushUnique(() => makeQuizSA_ar(topic, kb, pts, id, req.subject, tier)));
+        } else {
+          if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_en(topic, kb, pts, id, req.subject, tier)));
+          else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_en(topic, kb, pts, id, req.subject, tier)));
+          else if (type === 'fill_blank') questions.push(pushUnique(() => makeQuizFB_en(topic, kb, pts, id, req.subject, tier)));
+          else questions.push(pushUnique(() => makeQuizSA_en(topic, kb, pts, id, req.subject, tier)));
+        }
+        made.set(type, (made.get(type) ?? 0) + 1);
+      } catch (e) {
+        // This type's bank ran out for the lesson: the others carry on.
+        if (!(e instanceof BankSpentError)) throw e;
+        spent.add(type);
       }
     }
-    } catch (e) {
-      // The lesson's bank ran out: keep what was asked so far.
-      if (!(e instanceof BankSpentError)) throw e;
     } finally {
       bankOnly = false;
     }
+    // Into ministry blocks, stable within a type, and numbered in the order they print.
+    questions.sort((a, b) => QUIZ_TYPE_ORDER.indexOf(a.type) - QUIZ_TYPE_ORDER.indexOf(b.type));
+    questions.forEach((q, i) => { q.id = `q${i + 1}`; });
     if (questions.length === 0) throw new NoQuestionBankError(topic);
     const shortfall = questions.length < numQuestions
       ? { requested: numQuestions, produced: questions.length }
@@ -2245,20 +2258,20 @@ export class MockAIService extends AIService {
     if (actType === 'exit-ticket') {
       if (isAr) {
         return {
-          activityName: `بطاقة الخروج – ${topic}`,
+          activityName: `غلق الدرس – ${topic}`,
           activityType: 'exit-ticket',
           grade: req.grade, subject: req.subject, lesson: topic, duration: dur,
           difficulty: req.difficulty, groupType: req.groupType,
           learningObjective: `التحقق من مستوى فهم الطلبة لـ${topic} في نهاية الحصة`,
-          materials: ['ورقة بطاقة الخروج المطبوعة (1 لكل طالب)', 'قلم'],
-          teacherPreparation: 'اطبع بطاقة الخروج (3-4 أسئلة). خصّص 5-7 دقائق في نهاية الحصة.',
+          materials: ['ورقة غلق الدرس المطبوعة (1 لكل طالب)', 'قلم'],
+          teacherPreparation: 'اطبع ورقة غلق الدرس (3-4 أسئلة). خصّص 5-7 دقائق في نهاية الحصة.',
           teacherNotes: ['اجمع البطاقات عند الباب', 'راجعها قبل الحصة القادمة لتعديل خطة التدريس'],
           answerKey: ['السؤال 1: التعريف الأساسي', 'السؤال 2: التطبيق', 'السؤال 3: التفكير الناقد', 'السؤال 4: التقييم الذاتي'],
-          printables: ['بطاقة الخروج (نسخة لكل طالب)'],
+          printables: ['ورقة غلق الدرس (نسخة لكل طالب)'],
           assessment: 'افرز البطاقات إلى 3 مجموعات: فهم كامل / فهم جزئي / يحتاج دعمًا.',
           extensionChallenge: `استخدم نتائج البطاقة لتصميم نشاط علاجي في بداية الحصة القادمة.`,
           slides: [
-            { slideNumber: 1, type: 'intro', title: '🎫 بطاقة الخروج', content: `الوقت المتبقي: ${dur} دقائق\n\nقبل أن تغادر الفصل اليوم،\nأثبت ما تعلمته عن ${topic}.\n\n3 أسئلة سريعة — عمل فردي\nاجمع ورقتك عند الباب عند انتهاء الوقت.`, durationSeconds: 0 },
+            { slideNumber: 1, type: 'intro', title: '🎫 غلق الدرس', content: `الوقت المتبقي: ${dur} دقائق\n\nقبل أن تغادر الفصل اليوم،\nأثبت ما تعلمته عن ${topic}.\n\n3 أسئلة سريعة — عمل فردي\nاجمع ورقتك عند الباب عند انتهاء الوقت.`, durationSeconds: 0 },
             {
               slideNumber: 2, type: 'challenge',
               title: '❓ السؤال 1 – تذكّر',

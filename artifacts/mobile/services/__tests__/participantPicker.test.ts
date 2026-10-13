@@ -11,6 +11,7 @@ import assert from 'node:assert/strict';
 
 import {
   buildPickerContacts,
+  filterByRole,
   matchesQuery,
   normalizeAr,
   toggleClassSelection,
@@ -174,5 +175,24 @@ describe('buildPickerContacts tolerates rows without contacts', () => {
     const { contacts, classes } = buildPickerContacts(rows);
     assert.deepEqual(contacts.map(c => c.userId), ['p1']);
     assert.deepEqual(classes.map(c => c.id), ['c-a', 'c-b']);
+  });
+});
+
+describe('filterByRole', () => {
+  const people = [
+    parent('p1', 'هدى'),
+    { ...parent('s1', 'ليث'), role: 'student' as const },
+    parent('p2', 'سامي'),
+  ];
+
+  it('keeps only parents or only students', () => {
+    assert.deepEqual(filterByRole(people, 'parent').map(c => c.userId), ['p1', 'p2']);
+    assert.deepEqual(filterByRole(people, 'student').map(c => c.userId), ['s1']);
+  });
+
+  it('returns everyone for "all", as a copy', () => {
+    const all = filterByRole(people, 'all');
+    assert.equal(all.length, 3);
+    assert.notEqual(all, people);
   });
 });

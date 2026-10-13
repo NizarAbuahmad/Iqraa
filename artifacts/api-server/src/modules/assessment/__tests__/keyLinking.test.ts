@@ -8,7 +8,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { gradedKey, linkCheck, squashMath, toLatinMath } from "../keyLinking.ts";
+import { answerParts, gradedKey, linkCheck, squashMath, toLatinMath } from "../keyLinking.ts";
 import { verifyAnswerKeys, verificationAfterEdit, type RelateKeyFn } from "../keyVerification.ts";
 import type { GeneratedQuestion } from "../mockGenerator.ts";
 
@@ -78,6 +78,74 @@ describe("a model answer written as prose", () => {
   it("is not linked when there is no model answer to compare with", () => {
     assert.equal(linkCheck(shortAnswer("", "3x^2 - 4")).linked, false);
   });
+
+  it("is linked when the sentence ends in a full stop", () => {
+    assert.equal(linkCheck(shortAnswer("المشتقة هي ٣س² − ٤.", "3x^2 - 4")).linked, true);
+  });
+
+  it("still does not find «5» inside «5.5», or inside «15.»", () => {
+    assert.equal(linkCheck(shortAnswer("الناتج هو 5.5", "5")).linked, false);
+    assert.equal(linkCheck(shortAnswer("الناتج هو 15.", "5")).linked, false);
+    assert.equal(linkCheck(shortAnswer("الناتج هو 5.", "5")).linked, true);
+  });
+});
+
+describe("a list of roots", () => {
+  it("is split into its separate answers, but a point stays one", () => {
+    assert.deepEqual(answerParts("x = 1, 3"), ["1", "3"]);
+    assert.deepEqual(answerParts("x = 5 or x = -5"), ["5", "-5"]);
+    assert.deepEqual(answerParts("(3, -4)"), ["(3,-4)"]);
+    assert.deepEqual(answerParts("4"), ["4"]);
+  });
+
+  it("is linked when the prose states every root, however it joins them", () => {
+    assert.equal(linkCheck(shortAnswer("حلّا المعادلة هما س = ١ و س = ٣", "x = 1, 3")).linked, true);
+    assert.equal(linkCheck(shortAnswer("س = ٠ أو س = ٢", "x = 0, 2")).linked, true);
+    assert.equal(linkCheck(shortAnswer("س = ٥ أو س = −٥", "x = 5, -5")).linked, true);
+  });
+
+  it("is not linked when the prose states only some of the roots, or a different one", () => {
+    assert.equal(linkCheck(shortAnswer("س = ١", "x = 1, 3")).linked, false);
+    assert.equal(linkCheck(shortAnswer("س = ١ و س = ٤", "x = 1, 3")).linked, false);
+  });
+
+  it("does not take «0» out of «10» or «3» out of «13»", () => {
+    assert.equal(linkCheck(shortAnswer("س = ١٠ و س = ١٣", "x = 0, 3")).linked, false);
+  });
+
+  it("a roots-with-± answer is still not linked — that needs algebra, not matching", () => {
+    assert.equal(linkCheck(shortAnswer("س = ٢ ± √٢", "x = 2 - sqrt(2), 2 + sqrt(2)")).linked, false);
+  });
+
+  it("reads the fraction slash «⁄» as a «/»", () => {
+    assert.equal(squashMath("−١⁄٢"), "-1/2");
+    assert.equal(linkCheck(shortAnswer("س = ٢ أو س = −١⁄٢", "x = 2 or x = -1/2")).linked, true);
+  });
+});
+
+describe("a value followed by its unit", () => {
+  it("is found in prose — «سم» is a unit, not x times م", () => {
+    assert.equal(linkCheck(shortAnswer("طول نصف الوتر يساوي ٦ سم", "x = 6")).linked, true);
+    assert.equal(linkCheck(shortAnswer("السرعة ٨ وحدات/ثانية", "8")).linked, true);
+  });
+
+  it("still finds a real variable standing alone, and does not read a unit into one", () => {
+    assert.equal(squashMath("٣س² − ٤"), "3x^2-4");
+    assert.equal(squashMath("ق(س) = ٢س"), "2x");
+    assert.equal(linkCheck(shortAnswer("المشتقة هي ٣س", "3x")).linked, true);
+    assert.equal(linkCheck(shortAnswer("المشتقة هي ٣س", "3")).linked, false);
+  });
+
+  it("is the same answer as the bare value for a multiple-choice option", () => {
+    assert.equal(linkCheck(mcq(["٣ م/ث", "٦ م/ث", "٩ م/ث"], 1, "6")).linked, true);
+    assert.equal(linkCheck(mcq(["٣ سم", "٦ سم"], 1, "6")).linked, true);
+    assert.equal(linkCheck(mcq(["٣ وحدات", "٦ وحدات"], 0, "3")).linked, true);
+  });
+
+  it("does not turn «٣س» into «3», or a different value into the checked one", () => {
+    assert.equal(linkCheck(mcq(["٣س", "٦س"], 0, "3")).linked, false);
+    assert.equal(linkCheck(mcq(["٣ م/ث", "٦ م/ث"], 1, "3")).linked, false);
+  });
 });
 
 describe("a short key (multiple choice, one blank)", () => {
@@ -142,11 +210,13 @@ describe("what verifyAnswerKeys does with a question that is not linked", () => 
     assert.equal(calls.length, 1);
   });
 
-  it("a contradicted linked key is still dropped", async () => {
+  it("a contradicted linked key is kept and flagged, not dropped", async () => {
     const distinct: RelateKeyFn = async () => ({ relation: "distinct", computed_answer: "3*x**2 - 4", error: null });
     const out = await verifyAnswerKeys([shortAnswer("المشتقة هي ٣س² − ٤", "3x^2 - 4")], distinct);
-    assert.equal(out.kept.length, 0);
-    assert.equal(out.dropped.length, 1);
+    assert.equal(out.kept.length, 1);
+    assert.equal(out.contradicted, 1);
+    assert.equal(out.kept[0]!.verification.code, "contradicted");
+    assert.equal(out.kept[0]!.verification.verified, false);
   });
 });
 

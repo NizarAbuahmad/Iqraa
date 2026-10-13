@@ -7,7 +7,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { hiddenOutsideSelection, hiddenSubjectsForGrade, narrowSubjectsForGrade, narrowToSelection, resolveSelectedId, preferredGrade, narrowBooksToTeacher } from '../teacherCatalogFilter.ts';
+import { hiddenOutsideSelection, hiddenSubjectsForGrade, narrowSubjectsForGrade, narrowToSelection, resolveSelectedId, preferredGrade, narrowBooksToTeacher, scopedSubjectIds, keepIfPresent, subjectHideReason } from '../teacherCatalogFilter.ts';
 
 const CATALOG = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
 
@@ -122,5 +122,59 @@ describe('narrowBooksToTeacher', () => {
   it('returns everything when nothing is selected or nothing would match', () => {
     assert.equal(narrowBooksToTeacher(books, undefined, undefined, undefined).length, 4);
     assert.equal(narrowBooksToTeacher(books, ['grade-1'], undefined, undefined).length, 4);
+  });
+});
+
+describe('scopedSubjectIds', () => {
+  it('returns the narrowed ids when narrowing actually removed subjects', () => {
+    assert.deepEqual(scopedSubjectIds([{ id: 'a' }, { id: 'b' }], CATALOG), ['a', 'b']);
+  });
+
+  it('returns undefined when nothing was narrowed, so the filter is a no-op', () => {
+    // No selection (or a stale one) falls back to the full list; restricting
+    // rows to that list would hide rows of subjects outside the grade's own.
+    assert.equal(scopedSubjectIds(CATALOG, CATALOG), undefined);
+    assert.equal(scopedSubjectIds([], CATALOG), undefined);
+  });
+});
+
+describe('subjectHideReason', () => {
+  // Two different facts hid the same picker row, and the note under the grade
+  // picker said «no curriculum» for both — telling a teacher that Grade 4
+  // Mathematics has no book when the book exists and their own /setup-subjects
+  // selection was what hid it.
+  it('names a missing book as noBook', () => {
+    assert.equal(subjectHideReason([true, false], [false, false], 0), 'noBook');
+  });
+
+  it('names the teacher\'s own selection as notTaught', () => {
+    assert.equal(subjectHideReason([false, false], [true, false], 0), 'notTaught');
+  });
+
+  it('prefers noBook when both apply — that one is true whoever is looking', () => {
+    assert.equal(subjectHideReason([true], [true], 0), 'noBook');
+  });
+
+  it('is null for a subject that is shown, or an index past the end', () => {
+    assert.equal(subjectHideReason([false, true], [false, true], 0), null);
+    assert.equal(subjectHideReason([false], [false], 5), null);
+  });
+});
+
+describe('keepIfPresent', () => {
+  it('keeps an id that is still among the options', () => {
+    assert.equal(keepIfPresent(CATALOG, 'b'), 'b');
+  });
+
+  it('drops an id the options no longer contain, so a stale filter cannot empty the list', () => {
+    // The library tab stays mounted while grades are edited elsewhere: the
+    // subject picked on grade 10 is not a chip on grade 9, and nothing was
+    // highlighted while the list read 0.
+    assert.equal(keepIfPresent(CATALOG, 'national-education'), null);
+  });
+
+  it('passes null and undefined through as "no filter"', () => {
+    assert.equal(keepIfPresent(CATALOG, null), null);
+    assert.equal(keepIfPresent(CATALOG, undefined), null);
   });
 });

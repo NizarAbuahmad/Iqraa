@@ -170,7 +170,7 @@ function serializeLessonContext(
  *
  * An adaptation is an instruction about HOW to write every section, not a
  * thing the students should be able to do by the end. It needs its own field
- * and its own framing, pointed at the التمايز/differentiation slot the output
+ * and its own framing, pointed at the فروق فردية/differentiation slot the output
  * schema already has.
  *
  * Returns '' for empty input so callers can `.filter(Boolean)` it away.
@@ -180,7 +180,7 @@ export function buildAdaptationsDirective(text: string, lang: 'ar' | 'en'): stri
   if (!body) return '';
   return lang === 'ar'
     ? `تعليمات المعلّم — طبّقها في كل أقسام الخطة (التمهيد، النشاط، التدريب، الختام، التقييم)، `
-      + `وفصّلها صراحةً في حقل "التمايز". هذه تعليمات تنفيذ وليست نتاجات تعلّم، `
+      + `وفصّلها صراحةً في حقل "فروق فردية". هذه تعليمات تنفيذ وليست نتاجات تعلّم، `
       + `فلا تُدرجها ضمن الأهداف:\n${body}`
     : `Teacher instructions — apply these across every section of the plan `
       + `(introduction, activity, practice, closure, assessment) and spell them out `

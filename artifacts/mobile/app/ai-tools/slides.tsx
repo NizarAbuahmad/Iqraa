@@ -22,7 +22,7 @@ import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PickerField } from '@/components/ui/PickerField';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
-import { aiErrorMessageKey, isAbortError, throwIfAborted } from '@/services/ai/aiProvenance';
+import { aiErrorText, isAbortError, throwIfAborted } from '@/services/ai/aiProvenance';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { Button } from '@/components/ui/Button';
 import { Toast } from '@/components/ui/Toast';
@@ -59,10 +59,11 @@ import { useDeckWorkspace, type DeckWorkspaceSnapshot } from '@/hooks/useDeckWor
 import { useSlideEditor } from '@/hooks/useSlideEditor';
 import { DeckOutline } from '@/components/slides/DeckOutline';
 import { DeckActions } from '@/components/slides/DeckActions';
+import { DeckThemePicker } from '@/components/slides/DeckThemePicker';
 import { SlideEditModal } from '@/components/slides/SlideEditModal';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
-import { groundedSubjectConflict, scopeWithoutCurriculum, subjectPickerLabels, topicPickerParams, scopeFromParams } from '@/services/lessonPrep';
+import { groundedSubjectConflict, scopeWithoutCurriculum, subjectPickerLabels, topicPickerParams, scopeFromParams, topicForScope } from '@/services/lessonPrep';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
@@ -97,7 +98,7 @@ export default function SlidesScreen() {
   // `scopeFromParams`. Grounding the topic is what recovers the right scope.
   // Only the grades/subjects this teacher picked on /setup-subjects are offered.
   const teacherScope = useTeacherScope();
-  const [initialScope] = useState(() => scopeFromParams(params, uiLang, teacherScope.defaultScope));
+  const [initialScope] = useState(() => scopeFromParams(params, uiLang, teacherScope.defaultScope, teacherScope));
   const [gradeIdx, setGradeIdx] = useState(initialScope.gradeIdx);
   // Index-aligned flags rather than a pre-filtered `subjects`: these positions
   // are persisted as subjectIdx, so entries are dropped at render time only.
@@ -111,7 +112,7 @@ export default function SlidesScreen() {
   const lang = contentLang(subjects[subjectIdx].id, uiLang);
   const isAr = lang === 'ar';
   const [topic, setTopic] = useState(() => topicInLang(
-    params.topic ?? '', uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
+    topicForScope(params, uiLang, teacherScope.defaultScope, teacherScope), uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
     { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
   ));
   useWarmGrounding(topic, lang);
@@ -597,7 +598,7 @@ export default function SlidesScreen() {
         // are spend on a deck that will never exist — and teaching is live AI
         // even in demo mode. They were left to run to completion.
         controller.abort();
-        setError(t(aiErrorMessageKey(planError)));
+        setError(aiErrorText(planError, t));
         if (previous) restoreDeck(previous);
         return;
       }
@@ -721,9 +722,7 @@ export default function SlidesScreen() {
           const { attachBackgroundImage, buildMediaSlide, deckPhotoQueries, insertVideoSlide } =
             await import('@/services/classMedia');
           const [titleQuery, dividerQuery] = deckPhotoQueries(subjects[subjectIdx].id, subjects[subjectIdx].name);
-          const captionFor = (photographer: string) => (isAr
-            ? `📷 ${photographer} · Unsplash`
-            : `📷 Photo by ${photographer} on Unsplash`);
+          const { creditFromPhoto, photoCreditText } = await import('@/services/photoCredit');
 
           // The video query uses the lesson topic, not the subject: a generic
           // "mathematics" video is no use mid-lesson, where the point is to
@@ -755,10 +754,10 @@ export default function SlidesScreen() {
             // since regenerated — same identity check the verify pass uses.
             if (!cur || cur.slides[0] !== built.slides[0]) return cur;
             let slides = cur.slides;
-            if (titlePhoto) slides = attachBackgroundImage(slides, 0, titlePhoto.url, captionFor(titlePhoto.photographer));
+            if (titlePhoto) slides = attachBackgroundImage(slides, 0, titlePhoto.url, photoCreditText(titlePhoto, isAr), creditFromPhoto(titlePhoto));
             const dividerIdx = slides.findIndex(s => s.type === 'divider');
             if (dividerPhoto && dividerIdx >= 0) {
-              slides = attachBackgroundImage(slides, dividerIdx, dividerPhoto.url, captionFor(dividerPhoto.photographer));
+              slides = attachBackgroundImage(slides, dividerIdx, dividerPhoto.url, photoCreditText(dividerPhoto, isAr), creditFromPhoto(dividerPhoto));
             }
             if (video) {
               // Two different jobs, so two different fields. `mediaCaption`
@@ -794,7 +793,7 @@ export default function SlidesScreen() {
       // Reached only by a cancel today: every other failure inside is handled
       // where it happens, because a partial deck still has value.
       if (isAbortError(e)) setCancelled(true);
-      else setError(t(aiErrorMessageKey(e)));
+      else setError(aiErrorText(e, t));
       // The draft was a promise of the full deck, and the status box now
       // says that promise was not kept («لم يُنشأ أي محتوى»). Leaving the
       // draft under that message would contradict it — but the deck the
@@ -907,7 +906,7 @@ export default function SlidesScreen() {
 
         <View style={styles.form}>
           <PickerField label={t('grade')} value={uiLang === 'ar' ? grades[gradeIdx].nameAr : grades[gradeIdx].name} options={grades.map(g => (uiLang === 'ar' ? g.nameAr : g.name))} onChange={setGradeIdx} hidden={teacherScope.gradeHidden} colors={colors} isRTL={isRTL} accent={ACCENT} maxHeight={220} selectedTint={ACCENT + '15'} />
-          <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
+          <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t(teacherScope.strandedNoteKey(grades[gradeIdx].id, subjectIdx))} isRTL={isRTL} colors={colors} />
           <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} hidden={subjectHidden} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} maxHeight={220} selectedTint={ACCENT + '15'} />
 
           <TopicSelector
@@ -1089,6 +1088,7 @@ export default function SlidesScreen() {
               />
             </View>
 
+            <DeckThemePicker deck={deck} setDeck={setDeck} isRTL={isRTL} isAr={isAr} colors={colors} t={t} />
             <DeckActions workspace={workspace} onPresent={present} showToast={showToast} isRTL={isRTL} colors={colors} t={t} />
           </View>
         )}

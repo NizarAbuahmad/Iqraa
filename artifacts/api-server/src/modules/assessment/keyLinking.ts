@@ -37,14 +37,27 @@ export function toLatinMath(input: string): string {
   s = s.replace(/[٠-٩]/g, d => String(ARABIC_DIGITS.indexOf(d)));
   s = s.replace(/[۰-۹]/g, d => String(PERSIAN_DIGITS.indexOf(d)));
   s = s.replace(/٫/g, ".").replace(/٬/g, "").replace(/،/g, ",");
-  s = s.replace(/[−–—‒﹣]/g, "-").replace(/[×·⋅∙]/g, "*").replace(/÷/g, "/");
+  // «⁄» (U+2044) is the fraction slash a model writes in «−١⁄٢»; it is a «/».
+  s = s.replace(/[−–—‒﹣]/g, "-").replace(/[×·⋅∙]/g, "*").replace(/[÷⁄]/g, "/");
   s = s.replace(/[½¼¾⅓⅔]/g, f => FRACTIONS[f] ?? f);
   // «x¹⁰» and «x⁻²» are runs, not one digit each.
   s = s.replace(/[⁻⁰¹²³⁴⁵⁶⁷⁸⁹]+/g, run =>
     "^" + [...run].map(c => (c === "⁻" ? "-" : String(SUPERSCRIPTS.indexOf(c)))).join(""));
   s = s.replace(/√\(/g, "sqrt(").replace(/√([0-9]+|[a-z])/gi, "sqrt($1)");
-  s = s.replace(/[سصقك]/g, c => VARIABLES[c] ?? c);
+  // A variable is a letter standing alone. Inside an Arabic word it is just a
+  // letter: «سم» (cm) is not «x·م», and «١٠ سم» used to become «10xم», which no
+  // «10» could be found in.
+  s = s.replace(/(?<![ء-ي])[سصقك](?![ء-ي])/g, c => VARIABLES[c] ?? c);
   return s.toLowerCase();
+}
+
+/**
+ * A value with its unit taken off: «٦ م/ث» and «١٠ سم» are the values «٦» and
+ * «١٠». Only a unit that is a separate word (after a space) or at least two
+ * letters; a lone letter straight after a number is a variable, so «٣س» stays 3x.
+ */
+function withoutUnit(text: string): string {
+  return text.replace(/(?<=[0-9٠-٩])(?:\s+(?![سصقك]\s*$)[ء-ي][ء-ي/.]*|[ء-ي]{2,}[ء-ي/.]*)\s*$/, "");
 }
 
 /** The comparison form: no spaces, no «*» between a number and a letter, no «x =» label. */
@@ -58,10 +71,44 @@ export function squashMath(input: string): string {
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-/** Is `needle` in `haystack` as a whole expression — «5» is not found in «15». */
+/**
+ * Is `needle` in `haystack` as a whole expression — «5» is not found in «15».
+ *
+ * A «.» straight after it ends the match only when a digit follows («5» is not
+ * in «5.5»); a full stop closing the sentence does not. It used to block both,
+ * so «المشتقة هي ٣س² − ٤.» was refused for a key it plainly states — measured on
+ * 2026-10-12, where the same sentence without the stop linked.
+ */
 function containsExpression(haystack: string, needle: string): boolean {
   if (!needle) return false;
-  return new RegExp(`(?<![a-z0-9.^])${escapeRe(needle)}(?![a-z0-9.^])`).test(haystack);
+  return new RegExp(`(?<![a-z0-9.^])${escapeRe(needle)}(?![a-z0-9^]|\\.[a-z0-9])`).test(haystack);
+}
+
+/** More answers than this in one check is not a list of roots. */
+const MAX_LIST_PARTS = 4;
+
+/**
+ * The separate answers a check states: «x = 1, 3» and «x = 5 or x = -5» are two,
+ * «(3, -4)» is one. Each part is in the comparison form, so the label on «x = 5»
+ * is gone and the part can be looked for on its own.
+ */
+export function answerParts(answer: string): string[] {
+  const text = toLatinMath(answer).replace(/\s+(?:or|and)\s+/g, ",");
+  const parts: string[] = [];
+  let depth = 0;
+  let current = "";
+  for (const ch of text) {
+    if ("([{".includes(ch)) depth += 1;
+    if (")]}".includes(ch)) depth -= 1;
+    if (ch === "," && depth === 0) {
+      parts.push(current);
+      current = "";
+    } else {
+      current += ch;
+    }
+  }
+  parts.push(current);
+  return parts.map(squashMath).filter(Boolean);
 }
 
 type GradedKey =
@@ -109,11 +156,18 @@ export function linkCheck(question: GeneratedQuestion): KeyLink {
   const key = gradedKey(question);
   if (key.kind === "none") return { linked: false, why: key.why };
   if (key.kind === "exact") {
-    return key.texts.some(t => squashMath(t) === target)
+    return key.texts.some(t => squashMath(t) === target || squashMath(withoutUnit(t)) === target)
       ? { linked: true }
       : { linked: false, why: "the answer key is not the answer that was checked" };
   }
-  return containsExpression(squashMath(key.text), target)
+  // A list of roots is stated in prose as «س = ١ و س = ٣», never as «x = 1, 3», so
+  // each root is looked for on its own — all of them, as whole expressions.
+  const haystack = squashMath(key.text);
+  const parts = answerParts(check.answer);
+  const stated = parts.length > 1 && parts.length <= MAX_LIST_PARTS
+    ? parts.every(part => containsExpression(haystack, part))
+    : containsExpression(haystack, target);
+  return stated
     ? { linked: true }
     : { linked: false, why: "the model answer does not state the answer that was checked" };
 }

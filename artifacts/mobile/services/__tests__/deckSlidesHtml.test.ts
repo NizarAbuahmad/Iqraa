@@ -12,6 +12,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { buildDeckSlidesHTML } from '../deckSlidesHtml.ts';
+import { DECK_THEMES, DECK_THEME_ORDER } from '../deckTheme.ts';
 import type { ActivitySlide, ClassroomActivity } from '../ai/AIService.ts';
 
 /**
@@ -99,6 +100,36 @@ describe('buildDeckSlidesHTML — media attribution', () => {
       { ...withPhoto, slideNumber: 2, type: 'divider', title: 'الوحدة 2' },
     ]), true)));
     assert.ok(html.includes(credit));
+  });
+
+  it('links the photographer and Unsplash when the slide carries the credit links', () => {
+    const linked: ActivitySlide = {
+      ...withPhoto,
+      mediaCaption: '📷 Photo by Jane Roe on Unsplash',
+      mediaCredit: {
+        photographer: 'Jane Roe',
+        photographerUrl: 'https://unsplash.com/@jane?utm_source=iqraa&utm_medium=referral',
+        unsplashUrl: 'https://unsplash.com/photos/abc?utm_source=iqraa&utm_medium=referral',
+      },
+    };
+    const html = markup(stripIsolates(buildDeckSlidesHTML(deck([linked]), false)));
+    assert.match(html, /<a href="https:\/\/unsplash\.com\/@jane\?utm_source=iqraa&amp;utm_medium=referral"[^>]*>Jane Roe<\/a>/);
+    assert.match(html, /<a href="https:\/\/unsplash\.com\/photos\/abc[^"]*"[^>]*>Unsplash<\/a>/);
+  });
+
+  it('drops the links when the caption was edited after generation', () => {
+    const edited: ActivitySlide = {
+      ...withPhoto,
+      mediaCaption: 'My own caption',
+      mediaCredit: {
+        photographer: 'Jane Roe',
+        photographerUrl: 'https://unsplash.com/@jane',
+        unsplashUrl: 'https://unsplash.com/photos/abc',
+      },
+    };
+    const html = markup(stripIsolates(buildDeckSlidesHTML(deck([edited]), false)));
+    assert.doesNotMatch(html, /<a href/);
+    assert.ok(html.includes('My own caption'));
   });
 
   it('describes the image to a screen reader instead of alt=""', () => {
@@ -642,5 +673,42 @@ describe('buildDeckSlidesHTML — multi-line stems', () => {
     ]), true));
     assert.match(html, /deck-line">المعطيات: نقطتان<\/div><div class="deck-line">أوجد الميل/);
     assert.match(html, /deck-line">السطر الأول<\/div><div class="deck-line">السطر الثاني/);
+  });
+});
+
+describe('buildDeckSlidesHTML — themes', () => {
+  const themed = (over: Partial<ClassroomActivity>) => ({ ...deck([titleSlide]), ...over });
+  const withDivider: ActivitySlide[] = [
+    titleSlide,
+    { slideNumber: 2, type: 'divider', title: 'فاصل', content: 'قسم', durationSeconds: 0 },
+    { slideNumber: 3, type: 'summary', title: 'الخلاصة', content: '• أ\n• ب', durationSeconds: 0 },
+  ];
+
+  it('draws a maths deck in the ocean theme without being asked', () => {
+    const html = buildDeckSlidesHTML({ ...deck(withDivider), subject: 'الرياضيات' }, true);
+    assert.match(html, new RegExp(DECK_THEMES.ocean.bg, 'i'));
+    assert.match(html, new RegExp(DECK_THEMES.ocean.primary, 'i'));
+    assert.doesNotMatch(html, new RegExp(DECK_THEMES.iqraa.bg, 'i'), 'no cream leaking into an ocean deck');
+  });
+
+  it('a theme the deck carries wins over its subject', () => {
+    const html = buildDeckSlidesHTML({ ...deck(withDivider), subject: 'الرياضيات', themeId: 'parchment' }, true);
+    assert.match(html, new RegExp(DECK_THEMES.parchment.bg, 'i'));
+    assert.doesNotMatch(html, new RegExp(DECK_THEMES.ocean.bg, 'i'));
+  });
+
+  it('an unknown subject keeps the original palette, byte for byte in its colours', () => {
+    const html = buildDeckSlidesHTML({ ...deck(withDivider), subject: 'شيء غير معروف' }, true);
+    for (const k of ['bg', 'primary', 'secondary', 'blob'] as const) {
+      assert.match(html, new RegExp(DECK_THEMES.iqraa[k], 'i'), k);
+    }
+  });
+
+  it('every theme produces a complete file with its own divider ground', () => {
+    for (const id of DECK_THEME_ORDER) {
+      const html = buildDeckSlidesHTML(themed({ slides: withDivider, themeId: id }), true);
+      assert.match(html, new RegExp(`deck-divider-slide" style="background:${DECK_THEMES[id].primary}`, 'i'), id);
+      assert.ok(html.includes('</html>'), id);
+    }
   });
 });
