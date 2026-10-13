@@ -10,6 +10,7 @@
 import React from 'react';
 import { Text, View } from 'react-native';
 import type { StudentResult } from '@/services/studentExam';
+import { formatMarks } from '@/services/studentAnswers';
 import type { TranslationKey } from '@/services/i18n';
 import { palette } from '@/constants/colors';
 import type { useColors } from '@/hooks/useColors';
@@ -58,8 +59,8 @@ export function StudentResultCard({
         </Text>
       )}
       <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15 }}>
-        {t('marksLabel')}: {result.earnedMarks} / {result.totalMarks}
-        {' '}({result.percent}%)
+        {t('marksLabel')}: {formatMarks(result.earnedMarks)} / {formatMarks(result.totalMarks)}
+        {' '}({formatMarks(result.percent)}%)
       </Text>
       <View style={{ width: '100%', borderTopWidth: 1, borderColor: colors.border, marginTop: 4, paddingTop: 10, gap: 6 }}>
         {COMPETENCY_ORDER.map(key => {
@@ -70,7 +71,7 @@ export function StudentResultCard({
                 {t(COMPETENCY_LABEL_KEY[key])}
               </Text>
               <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
-                {c?.sufficient ? `${c.percent}%` : t('insufficientEvidence')}
+                {c?.sufficient ? `${formatMarks(c.percent)}%` : t('insufficientEvidence')}
               </Text>
             </View>
           );
