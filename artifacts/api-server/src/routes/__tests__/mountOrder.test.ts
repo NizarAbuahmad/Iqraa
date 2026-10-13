@@ -84,7 +84,7 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(res.status, 200);
   });
 
-  it("guards the student lesson-explanation routes", async () => {
+  it("guards the student lesson-explanation routes and the approval route", async () => {
     // No token: refused before any database access (DATABASE_URL is a dead
     // address here), so these prove the guards are mounted, not that a query
     // works. Role refusal (403) is requireRole's own and is exercised by the
@@ -96,6 +96,12 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
       { method: "POST" },
     );
     assert.equal(report.status, 401);
+    const approve = await fetch(`${base}/moderation/lesson-explanations/approve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ variantIds: [] }),
+    });
+    assert.equal(approve.status, 401);
   });
 
   it("keeps the bank catalog public, and free of what it cannot serve", async () => {
