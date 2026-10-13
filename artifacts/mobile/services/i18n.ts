@@ -2234,6 +2234,7 @@ const translations = {
     deleteSlideTitle: 'حذف الشريحة؟',
     deleteLabel: 'حذف',
     slideUpdated: 'تم تعديل الشريحة',
+    deckThemeLabel: 'مظهر العرض',
 
     // Onboarding carousel — first-run intro, before login
     onboardingSkip: 'تخطي',
@@ -2470,6 +2471,8 @@ const translations = {
     messagingBroadcastDone: (sent: number, skipped: number) =>
       skipped > 0 ? `أُرسلت الرسالة إلى ${sent}، وتعذّر الإرسال إلى ${skipped}.` : `أُرسلت الرسالة إلى ${sent}.`,
     messagingRoleParents: 'أولياء الأمور',
+    messagingSelectAll: 'تحديد الكل',
+    messagingClearAll: 'إلغاء تحديد الكل',
     messagingRoleStudents: 'الطلبة',
     messagingManageMembers: 'إدارة الأعضاء',
     messagingStudentCodes: 'رمز الربط',
@@ -4697,6 +4700,7 @@ const translations = {
     deleteSlideTitle: 'Delete slide?',
     deleteLabel: 'Delete',
     slideUpdated: 'Slide updated',
+    deckThemeLabel: 'Deck look',
 
     // Onboarding carousel — first-run intro, before login
     onboardingSkip: 'Skip',
@@ -4924,6 +4928,8 @@ const translations = {
     messagingBroadcastDone: (sent: number, skipped: number) =>
       skipped > 0 ? `Sent to ${sent}; ${skipped} could not be reached.` : `Sent to ${sent}.`,
     messagingRoleParents: 'Parents',
+    messagingSelectAll: 'Select all',
+    messagingClearAll: 'Clear all',
     messagingRoleStudents: 'Students',
     messagingManageMembers: 'Manage members',
     messagingStudentCodes: 'Link code',

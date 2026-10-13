@@ -371,11 +371,12 @@ export default function LessonPlanScreen() {
   /**
    * The plan on screen, on the Ministry's «خطة الدرس» form. The form is
    * Arabic-only, so names come from the Arabic fields whatever the UI
-   * language. Teacher-role text is this plan's own phases folded into the four
-   * stages. The plan on screen has no learner half, and a second generation
-   * would no longer match what the teacher has read and edited, so the learner
-   * column is filled from the stock per-style lines in `ministryLearnerRoles`
-   * (in the plan's language) rather than left empty.
+   * language. The roles come from the plan's own `ministryRoles`, asked for in
+   * the same call so they match what the teacher read. Once the teacher has
+   * edited a field those roles predate it, so the teacher column is then this
+   * plan's phases folded into the four stages and only the learner column
+   * stays the model's. A plan with no roles (offline, an older saved one) gets
+   * the stock per-style lines in `ministryLearnerRoles` for the learner column.
    */
   const handleMinistry = async () => {
     if (!result) return;
@@ -396,6 +397,7 @@ export default function LessonPlanScreen() {
         date: todayISO(),
         teacher: user?.name ?? '',
         stages: stagesFromLessonPlan(result, {
+          teacherFromPhases: editedFields.size > 0,
           lang: outLang === 'ar' ? 'ar' : 'en',
           style: STYLE_IDS[styleIdx],
           topic: (outLang === 'ar' ? lesson?.titleAr : lesson?.titleEn) ?? scope.topic,
