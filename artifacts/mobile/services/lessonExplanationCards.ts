@@ -27,7 +27,7 @@ export function buildExplanationCards(content: LessonTeachingOutput | null | und
   const hook = clean(content.hook?.question);
   if (hook) cards.push({ kind: 'hook', text: hook });
 
-  for (const concept of content.concepts ?? []) {
+  for (const concept of Array.isArray(content.concepts) ? content.concepts : []) {
     const title = clean(concept?.title);
     if (!title) continue;
     const misconception = clean(concept.misconception);

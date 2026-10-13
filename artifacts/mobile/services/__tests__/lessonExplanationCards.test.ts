@@ -46,3 +46,20 @@ test('nothing usable gives no cards, so the screen can say so instead of renderi
   // A concept with no title is not a card: a title is the idea itself.
   assert.deepEqual(buildExplanationCards({ concepts: [{ points: ['x'] }] }), []);
 });
+
+test('malformed stored content is skipped, not thrown on, and valid siblings survive', () => {
+  // The artifact is JSON read back from storage, not a shape the compiler checked.
+  const hook = { question: 'سؤال' };
+  assert.deepEqual(buildExplanationCards({ hook, concepts: { title: 'ليس قائمة' } } as never), [{ kind: 'hook', text: 'سؤال' }]);
+  assert.deepEqual(buildExplanationCards({ hook, concepts: 7 } as never), [{ kind: 'hook', text: 'سؤال' }]);
+  // A null entry is skipped; the valid concept beside it is kept.
+  assert.deepEqual(
+    buildExplanationCards({ concepts: [null, { title: 'مفهوم', points: ['نقطة'] }] } as never),
+    [{ kind: 'concept', title: 'مفهوم', points: ['نقطة'] }],
+  );
+  // Non-string points are dropped; the string point is kept.
+  assert.deepEqual(
+    buildExplanationCards({ concepts: [{ title: 'مفهوم', points: [null, 3, { a: 1 }, 'نقطة'] }] } as never),
+    [{ kind: 'concept', title: 'مفهوم', points: ['نقطة'] }],
+  );
+});
