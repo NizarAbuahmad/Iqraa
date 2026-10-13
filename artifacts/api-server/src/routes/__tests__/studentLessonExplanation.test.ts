@@ -33,7 +33,21 @@ describe("student lesson-explanation modules make no model call", () => {
     assert.doesNotMatch(source, /router\.use\(\s*authMiddleware/);
   });
 
-  it("serves only approved rows", () => {
-    assert.match(read(FILES.store), /isNotNull\(aiArtifacts\.studentApprovedAt\)/);
+  it("every student-facing query filters to live, approved lesson-teaching rows", () => {
+    const source = read(FILES.store);
+    // Slice from `export async function <name>` to the next export (or EOF),
+    // so a filter present in one function cannot vouch for another.
+    const body = (name: string): string => {
+      const start = source.indexOf(`export async function ${name}`);
+      assert.notEqual(start, -1, `${name} not found in the store`);
+      const next = source.indexOf("export async function", start + 1);
+      return source.slice(start, next === -1 ? undefined : next);
+    };
+    for (const name of ["readApprovedExplanations", "isStudentVisibleExplanation"]) {
+      const fn = body(name);
+      assert.ok(fn.includes("isNotNull(aiArtifacts.studentApprovedAt)"), `${name} must filter on studentApprovedAt`);
+      assert.ok(fn.includes("isNull(aiArtifacts.retiredAt)"), `${name} must exclude retired rows`);
+      assert.ok(fn.includes('eq(aiArtifacts.kind, "lesson-teaching")'), `${name} must restrict to lesson-teaching`);
+    }
   });
 });
