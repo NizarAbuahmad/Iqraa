@@ -18022,8 +18022,8 @@ What is true, checked against the code and the suites:
 - **Only approved rows are shown.** `ai_artifacts.student_approved_at` is set
   by a `system_admin` through `POST /moderation/lesson-explanations/approve`.
   A teacher's stored row is not shown to students until then, because
-  `slides.tsx` used to derive the lesson id from the title, so a stored row can
-  sit under the wrong lesson.
+  `slides.tsx` derives the lesson id from the title (`generatorLessonId(title, lang)`,
+  no `KbScope`), so a stored row can sit under the wrong lesson.
 - **Looked up by lesson id,** not by recomputing the teacher's `strictKey`, so a
   model or `PROMPT_VERSION` bump does not empty the student view. The newest
   approved row wins.
@@ -18058,6 +18058,11 @@ What is true, checked against the code and the suites:
 
 **Needs the migration:** `ai_artifacts` gains `student_approved_at` and an index
 (`ai_artifacts_kind_lesson_idx` on `(kind, lesson_ref)`). It deploys as a
-migration (`lib/db/migrations/0007_opposite_lord_hawal.sql`); until it has
-applied, the student route returns 500 (the column does not exist) and
-teachers are unaffected.
+migration (`lib/db/migrations/0007_opposite_lord_hawal.sql`), and `deploy.yml`
+applies migrations before the new API ships. Until it has applied, the student
+read returns 500 (the column does not exist). Teachers' generation still works,
+but nothing new is stored in the shared pool: `storeVariant`
+(`artifacts/api-server/src/lib/artifactCache.ts`) names every column in its
+insert, so the insert fails, and the error is caught and logged as "artifact
+cache unavailable — generation continues uncached". Teacher pool reads and
+retire use explicit columns and are unaffected.
