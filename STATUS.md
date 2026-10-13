@@ -4023,6 +4023,10 @@ objective) and one judgement (are these three questions any good). Review is
 because the classroom-activity generator already owns both `quick-check` and
 `exit-ticket` as `activityType`s — **two features cannot share a name**, and that
 collision also cost an existing test file, which was overwritten and restored.
+**Update 2026-10-13: the standalone «تقييم سريع» card was removed from the class
+exams tab.** The `/evaluations/mini` screen stays, because two other entry points
+route to it: the student record's «تحقق سريع» and the support group's «تحقق
+للمجموعة». It is no longer reachable from the exams tab itself.
 
 **The default paper was the most expensive one.** `new.tsx` pre-selected
 `short_answer` + `open_ended`, both types `gradeAttempt` leaves out entirely, so

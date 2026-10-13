@@ -1749,7 +1749,6 @@ const translations = {
     // generator already owns both of those (`activityType: 'quick-check'` and
     // `'exit-ticket'`). This one belongs to the evaluations family, produces a
     // per-student record, and is named from that side of the app.
-    miniEvalBtn: 'تقييم سريع',
     miniEvalTitle: 'تقييم سريع',
     miniEvalSubtitle: 'ثلاثة أسئلة تُصحَّح تلقائيًا، دون إدخال علامات',
     miniEvalLessonHint: (lesson: string) => `هذا التقييم لدرس: ${lesson}`,
@@ -4227,7 +4226,6 @@ const translations = {
     parentContactsAllGood: "Every student's family got a letter this month, and none has heard only concerns.",
     parentContactsTapHint: 'Tap a name to write to their family.',
     parentContactsUnread: (n: string) => `In-app letter not opened for 2+ days (${n})`,
-    miniEvalBtn: 'Quick evaluation',
     miniEvalTitle: 'Quick evaluation',
     miniEvalSubtitle: 'Three questions that mark themselves — no marks to enter',
     miniEvalLessonHint: (lesson: string) => `This check is for the lesson: ${lesson}`,
