@@ -84,6 +84,20 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(res.status, 200);
   });
 
+  it("guards the student lesson-explanation routes", async () => {
+    // No token: refused before any database access (DATABASE_URL is a dead
+    // address here), so these prove the guards are mounted, not that a query
+    // works. Role refusal (403) is requireRole's own and is exercised by the
+    // existing /student routes.
+    const read = await fetch(`${base}/student/lesson-explanation/kbl-x`);
+    assert.equal(read.status, 401);
+    const report = await fetch(
+      `${base}/student/lesson-explanation/00000000-0000-4000-8000-000000000000/report`,
+      { method: "POST" },
+    );
+    assert.equal(report.status, 401);
+  });
+
   it("keeps the bank catalog public, and free of what it cannot serve", async () => {
     // Same reasoning as curriculum: titles and provenance, not documents.
     const res = await fetch(`${base}/bank/items?kind=exam`);
