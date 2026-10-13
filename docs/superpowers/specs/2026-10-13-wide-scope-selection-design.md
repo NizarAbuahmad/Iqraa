@@ -98,8 +98,9 @@ single-lesson case on these screens.
 - Replaces `onChange(topic: string)`-only with a new `onScopeChange(sel | null)`.
   `onChange(topic)` stays (computed from `scopeLabel`) so the screens that have
   not migrated keep compiling; `onSelectionDetail` is kept for chat.
-- A new prop `allowedKinds: ScopeKind[]` (default `['lesson']` until a screen
-  opts in) controls which of the four are offered. This is what makes the staged
+- A new prop `allowedKinds: ScopeKind[]` (default = today's kinds
+  `['lesson','unit','book']`; `semester` only when a screen passes it) controls
+  which of the four are offered. This is what makes the staged
   rollout safe.
 - The existing "reset on grade/subject change" guard is kept as is.
 
@@ -129,7 +130,7 @@ resolveScopeGrounding(sel, lang, options): ScopeGrounding
 `AIRequest` gains an optional `scope`:
 
 ```ts
-scope?: { kind: ScopeKind; scopeKey: string; unitIds?: string[]; lessonIds?: string[] }
+scope?: { kind: ScopeKind; scopeKey: string; unitIds?: string[] }
 ```
 
 `unitId` / `lessonId` stay for `kind: 'lesson'` exactly as they are now.
@@ -145,7 +146,8 @@ pooling (`passagesForUnit` per unit, merged by score, same
 ### 5. Artifact pool key
 
 `generationKey.ts` hashes `lessonId`/topic today. Hash `scopeKey` into
-**both** the strict and the coarse key and bump `PROMPT_VERSION`. A "semester 1" request
+**both** the strict and the coarse key (no `PROMPT_VERSION` bump needed: an
+absent `scope` leaves existing keys unchanged). A "semester 1" request
 and a lesson request then can never share a slot. `lessonRefOf` (browse label
 only) returns `scopeKey` for wide kinds.
 
@@ -164,10 +166,9 @@ special case.
 
 ## Risks / things not yet verified
 
-- **Digest size.** I have not measured lessons per semester per subject. If a
-  full G10 maths semester exceeds the budget, the digest drops to
-  *unit titles + lesson titles only* beyond the budget. To be measured when
-  writing the plan.
+- **Digest size (measured 2026-10-13).** G10 maths is 4 units / 18 lessons per
+  semester; G10 chemistry S1 9 / S2 8; G9 chemistry 4 / 4; G10 English S1 65
+  lessons in 35 units, S2 35 in 5. The digest is tiered, not one size fits all.
 - **NCCD id coverage.** Only the G10 maths S1/S2 units are in the NCCD id space
   (`nccdUnitId` returns undefined for legacy rows like `kbu-chem-1`). A semester
   of a subject with no NCCD ids is grounded by the app-side digest only, with no
@@ -180,9 +181,9 @@ special case.
 
 ## Rollout
 
-Piece 1 ships with `allowedKinds` still `['lesson']` on every screen except
-those that have already been taught a wide scope. So piece 1 on its own changes
-nothing a teacher sees, except that the single-lesson path now carries the id.
+Piece 1 ships with `allowedKinds` left at its legacy default on every screen
+except those that have already been taught a wide scope. So piece 1 on its own
+changes nothing a teacher sees; screens adopt `onScopeChange` in piece 2.
 Piece 2 turns on `['lesson','unit','semester','book']` for quiz, worksheet,
 homework and game; piece 3 for the rest.
 
@@ -210,6 +211,6 @@ homework and game; piece 3 for the rest.
    book in the KB — it would equal «الكتاب كاملًا». `semestersAvailable` is
    derived from `KB_BOOKS`, never hard-coded.
 2. Wide scopes stay **off under `DEMO_MODE`** until piece 2 teaches the offline
-   generators. `TopicSelector` intersects `allowedKinds` with `['lesson']` when
-   `DEMO_MODE` is true, so the offline path can never receive a scope it cannot
-   honour.
+   generators. `TopicSelector` removes `semester` from `allowedKinds` when
+   `DEMO_MODE` is true (today's book/unit entries are unchanged until piece 2),
+   so the offline path can never receive a scope it cannot honour.
