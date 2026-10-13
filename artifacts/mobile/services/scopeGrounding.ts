@@ -21,6 +21,10 @@ export type ScopeGrounding = {
   kind: ScopeKind;
   scopeKey: string;
   grounded: boolean;
+  /**
+   * Always the complete list of lessons in scope — even when `truncated` is
+   * true and `context` lists fewer of them.
+   */
   lessons: KBLesson[];
   /** The prompt block; '' when ungrounded. */
   context: string;
@@ -60,7 +64,17 @@ function render(sel: ScopeSelection, lang: 'ar' | 'en', total: number, tier: Tie
   return lines;
 }
 
-export function resolveScopeGrounding(sel: ScopeSelection, lang: 'ar' | 'en'): ScopeGrounding {
+export type ScopeGroundingOptions = {
+  /** Character budget for the digest; defaults to `DIGEST_CHAR_BUDGET`. Injectable so the cut path can be tested. */
+  budget?: number;
+};
+
+export function resolveScopeGrounding(
+  sel: ScopeSelection,
+  lang: 'ar' | 'en',
+  options: ScopeGroundingOptions = {},
+): ScopeGrounding {
+  const budget = options.budget ?? DIGEST_CHAR_BUDGET;
   const lessons = lessonsInScope(sel);
   const key = (() => {
     try { return scopeKey(sel); } catch { return ''; }
@@ -90,7 +104,7 @@ export function resolveScopeGrounding(sel: ScopeSelection, lang: 'ar' | 'en'): S
   let lines: string[] = [];
   for (const tier of TIERS) {
     lines = render(sel, lang, lessons.length, tier);
-    if (lines.join('\n').length <= DIGEST_CHAR_BUDGET) {
+    if (lines.join('\n').length <= budget) {
       return { kind: sel.kind, scopeKey: key, grounded: true, lessons, context: lines.join('\n'), unitIds, truncated: false, ungroundedNote: '' };
     }
   }
@@ -100,7 +114,7 @@ export function resolveScopeGrounding(sel: ScopeSelection, lang: 'ar' | 'en'): S
   const kept: string[] = [];
   let spent = note.length;
   for (const line of lines) {
-    if (spent + line.length + 1 > DIGEST_CHAR_BUDGET) break;
+    if (spent + line.length + 1 > budget) break;
     kept.push(line);
     spent += line.length + 1;
   }
