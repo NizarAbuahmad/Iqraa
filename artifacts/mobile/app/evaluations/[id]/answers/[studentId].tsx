@@ -447,7 +447,7 @@ export default function AnswerEntryScreen() {
             {scanning ? (
               <ActivityIndicator size="small" color={ACCENT} />
             ) : (
-              <Ionicons name="camera-outline" size={18} color={ACCENT} />
+              <Ionicons name="cloud-upload-outline" size={18} color={ACCENT} />
             )}
             <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
               {scanning ? t('scanReading') : t('scanMarksBtn')}
