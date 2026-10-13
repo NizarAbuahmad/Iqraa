@@ -4,7 +4,7 @@
  * written by anything and are ignored here; an evaluation's class is still
  * `evaluations.class_group_id`. See modules/assessment/audience.ts for the rule.
  */
-import { db, evaluationAssignments } from "@workspace/db";
+import { db, systemDb, evaluationAssignments } from "@workspace/db";
 import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import { audienceFor, type Audience } from "../modules/assessment/audience.ts";
 
@@ -13,7 +13,10 @@ export async function assignedStudentsByEvaluation(
 ): Promise<Map<string, string[]>> {
   const out = new Map<string, string[]>();
   if (evaluationIds.length === 0) return out;
-  const rows = await db
+  // systemDb: this also runs for a student opening an exam from its link, who has no
+  // login and so no identity. Under row-level security the read would come back empty,
+  // and an empty audience means "everyone" — a restricted exam would open to the class.
+  const rows = await systemDb
     .select({ evaluationId: evaluationAssignments.evaluationId, studentId: evaluationAssignments.studentId })
     .from(evaluationAssignments)
     .where(and(inArray(evaluationAssignments.evaluationId, [...evaluationIds]), isNotNull(evaluationAssignments.studentId)));
