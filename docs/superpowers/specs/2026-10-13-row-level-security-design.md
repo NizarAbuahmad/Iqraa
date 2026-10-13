@@ -231,3 +231,27 @@ real migrations.
    `docs/deploying.md` (switch, rollback, how to add a table) in the PR that
    introduces the mechanism, per the repo's rule that STATUS moves with the
    change.
+
+## Amendments after prototyping (2026-10-13)
+
+The design was prototyped end to end before the plan was written; four things changed.
+
+1. **§3 — policies are hand-written SQL, not Drizzle `pgPolicy`.** `drizzle-kit` does not
+   track roles, functions or policies. `generate` stays quiet; `rlsCoverage.test.ts`
+   proves RLS is on.
+2. **§1 — the wrapper is a `pg.Pool` subclass.** Drizzle's node-postgres driver calls
+   `pool.query()` for plain statements and `pool.connect()` + `begin` for `db.transaction()`;
+   overriding those two covers both, including savepoints. Files move to the owner
+   connection with `import { systemDb as db }`.
+3. **§2 — policies the prototype forced.** `chat_participants` insert: either party of a
+   direct thread may add either party (`openDirectThread` inserts both rows with
+   `ON CONFLICT DO NOTHING`, and Postgres checks an INSERT policy before detecting the
+   conflict). `roster_links` insert is teacher-only (claims run on `systemDb`; letting a user insert their own link would let them link to any student). `evaluation_questions` is teacher-only. Grade tables are written only under a
+   teacher's identity; server grading uses `systemDb`. Token tables have RLS, no policy and
+   no grant. The `systemDb` list is thirteen files, not the five paths listed in §1.
+4. **§5 — the audit is a test.** The differential test (`rlsDiff.test.ts`) replaces the
+   manual read of ~41 files; reads alone found nothing, writes and fan-out found everything.
+   It compares statuses, bodies, pushes sent, rows left behind and logged errors.
+
+Open: added latency on Neon, and the connection ceiling with two pools per instance, are
+still unmeasured (plan Task 7).

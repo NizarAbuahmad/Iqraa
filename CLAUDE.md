@@ -349,3 +349,14 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   36 minutes), 2026-09-26 and 2026-10-05 — twice under a PR body that said
   `schema-push: done`. A database that has tables but no migration history is
   refused until baselined once; see *Schema* in `docs/deploying.md`.
+- **Row-level security fails quietly, and `systemDb` is the hole in it (since 2026-10-13).**
+  A query that reads *another user's* rows does not error under RLS — it returns fewer
+  rows. In the prototype that meant: no push notifications at all (recipients' tokens),
+  a blocked user able to open a thread (the block is the other person's row), and a student
+  excluded from a restricted exam able to take it from its share link (the audience read came
+  back empty, and an empty audience means «everyone»). Statuses alone cannot see any of
+  that, so `lib/db/src/__tests__/rlsDiff.test.ts` also diffs the pushes sent and the rows
+  left behind. `RLS_ENFORCE` is off by default; `systemDb` (the owner connection) is for
+  paths that act without a user or must read other users' rows to decide something, and the
+  files that use it are pinned in `systemDbFiles.test.ts`. A new table must be classified in
+  `rlsCoverage.test.ts`, and a new table gets **no** grant to `iqraa_app` automatically.

@@ -559,6 +559,53 @@ drifted on one of those, a later migration touching it can fail — in CI it
 will pass (the empty database matches), at deploy it rolls back and names the
 statement. Fix production to match by hand, then re-run the deploy.
 
+## Row-level security
+
+Postgres enforces who may read a row on the tables that hold students, rosters,
+parent contact history, chat, exams and attempts (spec:
+`docs/superpowers/specs/2026-10-13-row-level-security-design.md`). It is a second line
+of defence behind the API's own checks, and it is **off until you turn it on**.
+
+**The switch** is one Cloud Run env var, read once at boot:
+
+```bash
+# on
+gcloud run services update iqraa-api --region europe-west1 \
+  --project iqraa-auth-507315 --update-env-vars RLS_ENFORCE=on
+# off — the whole rollback
+gcloud run services update iqraa-api --region europe-west1 \
+  --project iqraa-auth-507315 --update-env-vars RLS_ENFORCE=off
+```
+
+`--update-env-vars`, never `--set-env-vars` (see *Rotating a secret*). Changing it rolls
+a revision; it is not a code deploy. With it off nothing about the API changes — one
+pool, no extra statements. With it on every `db` statement runs as the `iqraa_app` role
+with the signed-in user's id, and `systemDb` (the owner connection) is used by the
+thirteen files pinned in `artifacts/api-server/src/lib/__tests__/systemDbFiles.test.ts`.
+
+**Before the first flip**, on a Neon *branch* of production (never production):
+run the migration, run `RLS_TEST_DATABASE_URL=<branch> pnpm --filter @workspace/db run test`,
+walk the teacher / parent / student flows by hand, and **measure the added latency per
+statement** — the wrapper costs about two extra round trips each, which is ~0.25 ms on
+loopback and unmeasured across the Cloud Run → Neon hop. Also check the database's
+connection limit: with enforcement on an instance holds two pools. See the plan's Task 7
+for the gates.
+
+**What goes wrong, and how it looks.** A query that reads *another user's* rows does not
+fail under RLS — it returns fewer rows. So the symptom is rarely a 500; it is a
+notification not sent, a block not honoured, a restricted exam that opens to the class.
+`lib/db/src/__tests__/rlsDiff.test.ts` is the guard: it boots the built API with
+enforcement off and on and diffs statuses, bodies, pushes and rows left behind. After any
+route change that touches a protected table, run it (`pnpm --filter @workspace/api-server
+run build` first) and add a scenario for what you added.
+
+**Adding a table.** `rlsCoverage.test.ts` fails until the table is classified: *protected*
+(add policies in a migration, put the name in `PROTECTED`), *locked* (RLS, no policy, no
+grant — only `systemDb` reads it), or *deferred* (named in `DEFERRED` — still open to
+`iqraa_app`, with the grant a new migration must add by hand, since there are no default
+privileges on purpose). **Adding a `systemDb` use** means editing `systemDbFiles.test.ts`
+and writing the reason.
+
 ## Point-of-no-return changes go up as drafts
 
 Some changes cannot be undone by reverting the commit — removing a service

@@ -974,6 +974,32 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Row-level security is built and switched off, 2026-10-13
+
+**State: shipped inert. Nothing in production changed.** The `iqraa_app` role, sixteen
+helper functions and 65 policies exist (migration `0008_row_level_security.sql`); the API
+carries each request's user to Postgres; and `RLS_ENFORCE` — unset, so off — decides
+whether any of it applies. Spec: `docs/superpowers/specs/2026-10-13-row-level-security-design.md`;
+how to flip it: *Row-level security* in `docs/deploying.md`.
+
+**Verified (CI, Postgres 16):** the policy matrix, a coverage guard that fails on an
+unclassified table, and a differential test that boots the built API with enforcement off
+and on and finds no difference in what users see, which pushes are sent, which rows are
+left behind, or what is logged — across 56 reads for six identities and 50 write steps.
+
+**Not verified, and the reason it is off:** it has never run against Neon. Added latency
+across the Cloud Run → Neon hop is unmeasured (≈ two extra round trips per statement; +0.24 ms
+on loopback). The connection ceiling with two pools per instance is unchecked. No one has
+walked the teacher / parent / student flows with it on in a real environment.
+
+**What it does not cover yet:** `users` (every roster and chat screen reads names from it),
+the teacher-owned planning tables, and the shared content tables are *deferred* by name in
+`rlsCoverage.test.ts`. Thirteen files use `systemDb`, which bypasses it — they are pinned in
+`systemDbFiles.test.ts` with a reason each. This guards against a forgotten `where`, not
+against SQL injection: the session user is still the owner and could `RESET ROLE`. RLS limits
+rows, not columns: a student's own attempt row is writable by them at the database level (status,
+`teacher_comment`, …), so the API remains the control on which columns a student may set.
+
 ## A waitlist signup on iqrra.com pushes the admins, 2026-10-12
 
 `POST /site/signups` (`routes/admin.ts`) now calls `notifyAdminsOfWaitlistSignup`
