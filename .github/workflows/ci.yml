@@ -126,6 +126,9 @@ jobs:
   # job proves, while the change is still a PR, that they are complete and that
   # they apply. It replaced a job that only asked the author to write
   # `schema-push: done` in the PR body — PR #815 cleared it with a wrong answer.
+  # This workflow must not read the PR body: it runs on the default
+  # pull_request events, so a body edit would never reach it (see
+  # destructive-migration-ack.yml).
   migrations:
     name: migrations match schema
     runs-on: ubuntu-latest
@@ -174,30 +177,9 @@ jobs:
           pnpm --filter @workspace/db run migrate -- --from-env
           pnpm --filter @workspace/db run verify-schema -- --from-env
 
-      # deploy.yml migrates BEFORE the new API revision takes traffic, so the
-      # old revision serves against the new schema for a few minutes. Adding is
-      # safe; dropping, renaming or tightening a column breaks the running code.
-      # Ship those as a second PR once nothing reads the old shape, and say so.
-      - name: Destructive migrations are acknowledged
-        if: github.event_name == 'pull_request'
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          # Untrusted input: through the environment, never interpolated.
-          PR_BODY: ${{ github.event.pull_request.body }}
-        run: |
-          set -euo pipefail
-          NEW=$(git diff --name-only --diff-filter=A "$BASE_SHA...$HEAD_SHA" -- 'lib/db/migrations/*.sql')
-          [ -z "$NEW" ] && exit 0
-          HITS=$(grep -n -i -E 'DROP (TABLE|COLUMN)|RENAME|SET NOT NULL|SET DATA TYPE' $NEW || true)
-          [ -z "$HITS" ] && exit 0
-          echo "$HITS"
-          if printf '%s' "$PR_BODY" | grep -qiE '^[[:space:]]*destructive-migration:[[:space:]]*ok'; then
-            echo "Acknowledged in the PR body."
-            exit 0
-          fi
-          echo "::error::This migration drops, renames or tightens something the running API may still use. Split it out, or add 'destructive-migration: ok' to the PR body once nothing reads the old shape."
-          exit 1
+      # The destructive-SQL acknowledgement (`destructive-migration: ok` in the
+      # PR body) is its own workflow, destructive-migration-ack.yml, so that
+      # editing the body re-checks it. This workflow never sees `edited`.
 
   verifier:
     name: math verifier

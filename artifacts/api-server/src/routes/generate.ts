@@ -17,6 +17,7 @@ import {
   quizPromptAr,
   quizPromptEn,
   quizTopUpBlock,
+  worksheetTopUpBlock,
   worksheetPromptAr,
   worksheetPromptEn,
 } from "../lib/prompts.ts";
@@ -83,11 +84,15 @@ import {
   deckShortfalls,
   extractJSON,
   mergeQuizTopUp,
+  mergeWorksheetTopUp,
   normalizeQuiz,
   quizShortfall,
   quizStems,
   quizWanted,
   sanitizeWorksheetExtras,
+  trimWorksheet,
+  worksheetShortfall,
+  worksheetStems,
   UnusableGenerationError,
   type GenerationKind,
 } from "../lib/generationShape.ts";
@@ -122,6 +127,16 @@ const GENERATION_TOKENS = 8000;
 function quizTokens(body: Record<string, unknown>): number {
   const n = quizWanted(body) ?? 10;
   return Math.min(24000, Math.max(GENERATION_TOKENS, 2500 + 800 * n));
+}
+
+/**
+ * A worksheet's or homework's output ceiling, scaled to the count — as
+ * `quizTokens`, but a little higher per question: every answer-key entry can
+ * carry a `solution` of several lines on top of the question itself.
+ */
+function worksheetTokens(body: Record<string, unknown>): number {
+  const n = quizWanted(body) ?? 10;
+  return Math.min(24000, Math.max(GENERATION_TOKENS, 3000 + 900 * n));
 }
 
 /** Two completions' usage as one, for the single row the artifact is billed on. */
@@ -496,6 +511,47 @@ async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
       }
     }
 
+    // The same for a worksheet or homework — see `worksheetShortfall` for what
+    // counts as "short": the worked example sits inside the picked number, and
+    // a prior-knowledge review sits on top of it.
+    if (kind === "worksheet" || kind === "homework") {
+      const missing = worksheetShortfall(chosen.parsed, body);
+      if (missing > 0) {
+        const have = worksheetStems(chosen.parsed);
+        logger.warn(
+          { kind, strictKey: keys.strictKey, asked: quizWanted(body), got: have.length },
+          "worksheet came back short — asking for the rest",
+        );
+        try {
+          const more = await completeOnce({
+            ...completionArgs,
+            userPrompt:
+              args.userPrompt
+              + variationBlock({ variantIndex: decision.variantIndex, isArabic: args.isAr, avoid })
+              + worksheetTopUpBlock(args.isAr, have, missing),
+          });
+          mergeWorksheetTopUp(chosen.parsed, more.parsed);
+          chosen = {
+            ...chosen,
+            usage: sumUsage(chosen.usage, more.usage),
+            durationMs: chosen.durationMs + more.durationMs,
+          };
+        } catch (err) {
+          logger.warn({ err, kind, strictKey: keys.strictKey }, "worksheet top-up failed — serving the short paper");
+        }
+      }
+      // A reply (or a top-up) that overshoots is cut back, never past a review the teacher asked for.
+      const trimmed = trimWorksheet(chosen.parsed, body);
+      if (trimmed > 0) logger.info({ kind, strictKey: keys.strictKey, trimmed }, "worksheet trimmed to the count asked for");
+      const still = worksheetShortfall(chosen.parsed, body);
+      if (still > 0) {
+        (chosen.parsed as Record<string, unknown>).shortfall = {
+          requested: quizWanted(body),
+          produced: quizWanted(body)! - still,
+        };
+      }
+    }
+
     // Stored only once, and only the artifact actually being served. Storing
     // inside the completion helper meant a retry wrote the *rejected* attempt
     // into the pool first and then lost the slot to its own unique index — so
@@ -636,7 +692,7 @@ generateRouter.post("/generate/worksheet", async (req: AuthenticatedRequest, res
     const prompt = isAr ? worksheetPromptAr(body) : worksheetPromptEn(body);
     const result = await generateContent({
       kind: "worksheet", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
-      maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
+      maxCompletionTokens: worksheetTokens(body), body, isAr, userId: req.user?.id,
     });
     res.json(withMeta(result, grounding));
   } catch (err) {
@@ -671,7 +727,7 @@ generateRouter.post("/generate/homework", async (req: AuthenticatedRequest, res)
     // not hand one out for the other.
     const result = await generateContent({
       kind: "homework", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
-      maxCompletionTokens: GENERATION_TOKENS, body: { ...body, homework: true }, isAr,
+      maxCompletionTokens: worksheetTokens(body), body: { ...body, homework: true }, isAr,
       userId: req.user?.id,
     });
     res.json(withMeta(result, grounding));

@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   WEAK_PERCENT, displayPercent, examStatusKey, focusObjectives, lessonAction, paperAction,
-  recheckAction, sittingsLine, worksheetAction,
+  sittingsLine, worksheetAction,
   type StudentRecordExam, type StudentRecordObjective,
 } from '../studentRecord.ts';
 import { formatListDate } from '../evaluationRow.ts';
@@ -83,10 +83,7 @@ describe('student record — actions', () => {
     assert.equal(worksheetAction(obj({ lessonId: 'kbl-nope' })), null);
     assert.equal(lessonAction(obj({ lessonId: null })), null);
   });
-  it('opens the lesson and the quick re-check for this class', () => {
+  it('opens the lesson', () => {
     assert.deepEqual(lessonAction(obj({})), { pathname: '/curriculum/lesson-detail', params: { lessonId: CHEM } });
-    assert.deepEqual(recheckAction('c1', obj({})), {
-      pathname: '/evaluations/mini', params: { classId: 'c1', objectiveId: 'o-nccd-chem-s1-u1_l1-0' },
-    });
   });
 });

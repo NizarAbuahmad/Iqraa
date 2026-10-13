@@ -136,6 +136,45 @@ export function buildLessonPlanRequest(form: LessonPlanForm, grounding: Generato
   };
 }
 
+export type LessonTeachingForm = {
+  /** Localised grade name — display-only, carried into the content verbatim. */
+  gradeName: string;
+  /** English subject name — the string the generators branch on. */
+  subjectName: string;
+  topic: string;
+  lang: Lang;
+};
+
+/**
+ * The `/generate/lesson-teaching` body: the explanation section of a Slides
+ * Maker deck, which the student lesson page reads back from the pool.
+ *
+ * Extracted from `slides.tsx`, which built this inline. It must send what that
+ * code sent, so explanations teachers have already stored keep matching.
+ * `lessonTeachingRequest.test.ts` pins that for the Arabic, grounded, grade 10
+ * Mathematics path only (deep-equal to a copy of the old inline body); the
+ * English and ungrounded paths match by construction (the same fields, read
+ * from `slides.tsx` before the extraction), not by a test. The lesson id comes
+ * from the grounding the caller already resolved, not from the title.
+ */
+export function buildLessonTeachingRequest(
+  form: LessonTeachingForm,
+  grounding: GeneratorGrounding,
+  regen: ReturnType<typeof regenerationFields> = {},
+): AIRequest {
+  return {
+    grade: form.gradeName,
+    subject: form.subjectName,
+    topic: form.topic.trim(),
+    language: form.lang === 'ar' ? 'arabic' : 'english',
+    additionalContext: grounding.grounded ? grounding.context : grounding.ungroundedNote,
+    unitId: nccdUnitId(grounding.lesson?.unitId),
+    lessonId: grounding.lesson?.id,
+    contextSource: 'curriculum' as const,
+    ...regen,
+  };
+}
+
 export type ActivityForm = {
   /** Localised grade name — display-only, carried into the content verbatim. */
   gradeName: string;

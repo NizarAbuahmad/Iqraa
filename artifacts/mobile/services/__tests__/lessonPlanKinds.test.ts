@@ -113,9 +113,9 @@ describe('the teaching style still shapes every kind', () => {
   it('inquiry on a non-maths lesson looks for an idea, not «the rule»', async () => {
     const p = await planFor('science', 'inquiry', 'arabic');
     assert.doesNotMatch(text(p), /القاعدة/);
-    assert.match(p.guidedPractice, /لا تشرح الفكرة/);
+    assert.match(p.guidedPractice, /لن أشرح الفكرة/);
     // Language lessons do have rules.
-    assert.match((await planFor('arabic', 'inquiry', 'arabic')).guidedPractice, /لا تشرح القاعدة/);
+    assert.match((await planFor('arabic', 'inquiry', 'arabic')).guidedPractice, /لن أشرح القاعدة/);
   });
 });
 

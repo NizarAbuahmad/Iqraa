@@ -11,7 +11,7 @@ import { palette } from '@/constants/colors';
 import { formatListDate } from '@/services/evaluationRow';
 import { trackEvent } from '@/services/analytics';
 import {
-  groupCheckAction, groupDraftAction, groupWorksheetAction, membersBelowLabel, outcomeKey,
+  groupDraftAction, groupWorksheetAction, membersBelowLabel, outcomeKey,
   visibleGroups, type CheckOutcome, type SupportGroup,
 } from '@/services/supportGroups';
 
@@ -101,14 +101,7 @@ export function SupportGroupsSection({
 
             <View style={[styles.wrap, { flexDirection: row, marginTop: 4 }]}>
               {ws ? <Pill label={t('supportGroupWorksheet')} onPress={() => go('worksheet', ws)} /> : null}
-              {draft ? (
-                <Pill label={t('supportGroupFinishCheck')} onPress={() => go('check', draft)} />
-              ) : (
-                <Pill
-                  label={t(g.latestCheck ? 'supportGroupNewCheck' : 'supportGroupCheck')}
-                  onPress={() => go('check', groupCheckAction(classId, g))}
-                />
-              )}
+              {draft ? <Pill label={t('supportGroupFinishCheck')} onPress={() => go('check', draft)} /> : null}
             </View>
           </View>
         );
