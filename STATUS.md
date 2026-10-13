@@ -18015,3 +18015,91 @@ mapping; typecheck; the full api-server and mobile suites.
 **Not verified:** the route handlers themselves — they need a database the suite
 does not have, so their wiring is covered by typecheck and review, not a test —
 and the screen on a device. `schema-push:` none.
+
+## Students can read a stored lesson explanation, 2026-10-13
+
+A student opens a lesson page and taps «اشرح لي الدرس». They get the
+`lesson-teaching` explanation the teacher pool already holds — hook, concept
+cards, worked example, practice problem with hint and answer — with no model
+call. Spec: `docs/superpowers/specs/2026-10-13-student-lesson-explanations-design.md`.
+
+What is true, checked against the code and the suites:
+
+- **Serve-only.** `GET /student/lesson-explanation/:lessonId` reads
+  `ai_artifacts` and bumps the served row's `timesServed`; it writes nothing
+  else and imports no generation, budget or OpenAI code (a test scans for it).
+  A student cannot cause a paid call.
+- **Only approved rows are shown.** `ai_artifacts.student_approved_at` is set
+  by a `system_admin` through `POST /moderation/lesson-explanations/approve`.
+  A teacher's stored row is not shown to students until then, because
+  `slides.tsx` derives the lesson id from the title (`generatorLessonId(title, lang)`,
+  no `KbScope`), so a stored row can sit under the wrong lesson.
+- **Looked up by lesson id,** not by recomputing the teacher's `strictKey`, so a
+  model or `PROMPT_VERSION` bump does not empty the student view. The newest
+  approved row wins.
+- **A student report queues, it does not retire.** It goes to the existing
+  `reportVariant` queue for a `system_admin`.
+- **Filling and approving the pool is a manual, three-step job** in
+  `artifacts/mobile/scripts/pregenerate.ts` (run as `pnpm run pregenerate` from
+  `artifacts/mobile`): `--go --only=lesson-teaching` generates and writes
+  `pregen-review.json` (`--review=` renames it); a person reads it and deletes
+  what they reject; `--approve=<file>` approves the rest. Grade 10 Mathematics
+  and Chemistry only. The generate step refuses to overwrite an existing
+  `pregen-review.json` (`--force` overrides, `--review=<other file>` writes a
+  second one), because a rerun can serve a variant a reviewer already deleted.
+  Each entry carries a hash of its text and `--approve` refuses the whole file
+  if any entry was edited or malformed: **edits are not applied, delete the
+  entry instead.** A bare `--go` plans the 64 worksheet and lesson-plan calls
+  before the 49 explanations, so the default $1 cap can stop before reaching
+  them; use `--only=lesson-teaching`.
+- **Replacing a rejected explanation.** Deleting an entry from the review file
+  does not remove the stored variant, so the next `--go` serves it again and the
+  lesson stays «قريبًا». A `system_admin` files a report on that `variantId` with
+  `POST /generate/variants/:id/retire` (the route name says retire; it calls
+  `reportVariant` and only queues a report) and then resolves the report as
+  approved (`POST /moderation/artifact-reports/:id/resolve`, screen
+  `artifacts/mobile/app/admin/artifact-reports.tsx`), which retires the row.
+  The next `--go --only=lesson-teaching` generates a fresh variant.
+- `Slides Maker` and the prefill now build the request through
+  `buildLessonTeachingRequest` (`artifacts/mobile/services/generatorRequests.ts`).
+  `lessonTeachingRequest.test.ts` pins it deep-equal to the old inline body for
+  the Arabic, grounded, grade 10 Mathematics path only; the English and
+  ungrounded paths match by construction (read from the old `slides.tsx`), not
+  by a test.
+
+**Not built, and worth knowing:**
+- Nothing has been generated or approved in production yet, so every lesson
+  shows «شرح الدرس قريبًا» until the prefill, the review and the approval are run.
+- The wording was written for a classroom projector. Whether it reads well to a
+  student alone is checked only by a person reading the review file; if more
+  than a few lessons need rewording the answer is a separate student prompt, not
+  hand-edited text.
+- **Three paths always show «شرح الدرس قريبًا».** Of the 53 grade 10
+  Mathematics (36) and Chemistry (17) lessons the student browser lists, the
+  prefill covers 49 (32 maths + 17 chemistry). The rest never get an explanation
+  from it:
+  1. The 4 maths lessons whose titles ground to a different lesson and are
+     skipped on purpose (`u1_l3` تبسيط المقادير الأسية, `u3_l1` النسب المثلثية,
+     `u5_l5` المتتاليات, `u7_l2` جمع المتجهات وطرحها), so no row exists for them.
+  2. A student whose UI language is English asks for `english`; the prefill is
+     Arabic-only, so every lesson is «coming soon» for that student.
+  3. A lesson whose only explanation was rejected, until the replacement
+     recovery above is done.
+- Student chat is still never pooled. Parent summaries and hints on exam
+  questions are separate specs.
+- The student screen and button were built and checked by the typechecker, the
+  i18n/routing/design-scale tests and the card-model tests, but were never
+  exercised in a running app (no database was available when they were written).
+  Open a lesson as a student, with one approved row in the database, before
+  telling anyone it works.
+
+**Needs the migration:** `ai_artifacts` gains `student_approved_at` and an index
+(`ai_artifacts_kind_lesson_idx` on `(kind, lesson_ref)`). It deploys as a
+migration (`lib/db/migrations/0007_opposite_lord_hawal.sql`), and `deploy.yml`
+applies migrations before the new API ships. Until it has applied, the student
+read returns 500 (the column does not exist). Teachers' generation still works,
+but nothing new is stored in the shared pool: `storeVariant`
+(`artifacts/api-server/src/lib/artifactCache.ts`) names every column in its
+insert, so the insert fails, and the error is caught and logged as "artifact
+cache unavailable — generation continues uncached". Teacher pool reads and
+retire use explicit columns and are unaffected.
