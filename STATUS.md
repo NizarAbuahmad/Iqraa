@@ -53,6 +53,16 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **Wide-scope selection, foundation only (2026-10-13; spec
+  `docs/superpowers/specs/2026-10-13-wide-scope-selection-design.md`).**
+  `services/scopeSelection.ts` (what a unit / semester / book scope covers),
+  `services/scopeGrounding.ts` (tiered, ≤ 6 000-char digest), `AIRequest.scope`,
+  server-side page pooling and `scopeKey` in the artifact cache key all exist
+  and are tested, and `TopicSelector` can offer «الفصل كاملًا». **No generator
+  screen opts in yet**, so nothing a teacher sees has changed: «الكتاب كاملًا»
+  and «الوحدة كاملةً» still only set a topic string and are still ungrounded
+  until pieces 2 (quiz, worksheet, homework, game) and 3 (the rest) adopt
+  `onScopeChange` + `scopeRequestFields`.
 - **API credentials are Secret Manager references** (2026-10-08, live since
   `iqraa-api-00283-twr`). The ten credentials (`SESSION_SECRET`,
   `DATABASE_URL`, `OPENAI_API_KEY`, both R2 keys, Unsplash, YouTube,
