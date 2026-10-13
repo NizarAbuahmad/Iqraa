@@ -25,7 +25,7 @@
 
 ## Deviations found while prototyping
 
-The plan below was prototyped end to end in a throwaway worktree against Postgres 16 before it was written; every file embedded here is the file that was run. Four things differ from the spec:
+The plan below was prototyped end to end in a throwaway worktree against Postgres 16 before it was written; every file embedded here is the file that was run. Five things differ from the spec:
 
 1. **Policies are hand-written SQL, not Drizzle `pgPolicy`** (spec §3). `drizzle-kit` does not track roles, functions or policies, so `generate` stays quiet and there is nothing to diff. The schema file no longer shows RLS; `rlsCoverage.test.ts` is what proves it is on.
 2. **The wrapper is a `pg.Pool` subclass, not a Drizzle wrapper** (spec §1). Drizzle 0.45's node-postgres driver calls `pool.query()` for plain statements and `pool.connect()` + `begin` for `db.transaction()`; overriding those two methods covers both, including nested savepoints, with no change to any call site. Files switch to the owner connection with `import { systemDb as db }`, which leaves every call site untouched.
@@ -34,13 +34,14 @@ The plan below was prototyped end to end in a throwaway worktree against Postgre
    - `evaluation_questions` is teacher-only (it carries the answer key; students read their paper from `attempts.question_snapshot`).
    - Grade tables (`attempt_question_grades`, `attempt_results`, `recommendations`, `grade_overrides`, `grading_jobs`) are written only under a teacher's identity; server-side grading runs on `systemDb`.
    - The three auth token tables have RLS on, **no policy and no grant**, so a mistaken `db` use fails loudly (`permission denied`) instead of quietly returning nothing.
-4. **The audit is a test.** The spec said to find cross-user reads by reading ~41 files. A read-only diff found nothing (reads mostly select the caller's own data); the writes and fan-out found everything. See Task 4.
+4. **`roster_links` insert is teacher-only** (found in Task 2's review). The spec let a linked user insert their own link; that would let any signed-in user link themselves to any student id, read it, and — as `'self'` — write its attempts. Claims run on `systemDb`, so nothing needs it.
+5. **The audit is a test.** The spec said to find cross-user reads by reading ~41 files. A read-only diff found nothing (reads mostly select the caller's own data); the writes and fan-out found everything. See Task 4.
 
 ## What the prototype proved
 
 | Check | Result |
 | --- | --- |
-| Policy matrix against real Postgres 16 | 21 tests: tenancy, parent/student visibility, answer key hidden, grades teacher-only, chat membership and sender spoofing, blocks invisible to the blocked, admin sees `chat_reports` but not students, token tables closed, fail-closed with no identity, `INSERT … RETURNING`, transaction and savepoint scoping, no leak to the next borrower, off-mode is a plain pool |
+| Policy matrix against real Postgres 16 | 23 tests: tenancy, parent/student visibility, answer key hidden, grades teacher-only, chat membership and sender spoofing, blocks invisible to the blocked, admin sees `chat_reports` but not students, token tables closed, fail-closed with no identity, `INSERT … RETURNING`, transaction and savepoint scoping, no leak to the next borrower, off-mode is a plain pool |
 | Coverage guard | Fails on a new unclassified table, and on RLS enabled where the lists say it is not (both demonstrated) |
 | Differential test, reads | 56 requests across 6 identities identical on/off; positive control proves the "on" server really runs as `iqraa_app` |
 | Differential test, writes | 50 steps (DMs, groups, blocks, device handoff, login/refresh, claim, roster, exams, release, admin, link-based exam) identical on/off in status, **pushes sent**, **rows left behind** and logged errors |
@@ -549,8 +550,12 @@ CREATE POLICY "class_memberships_delete" ON "class_memberships" FOR DELETE TO iq
 ALTER TABLE "roster_links" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE POLICY "roster_links_select" ON "roster_links" FOR SELECT TO iqraa_app
   USING (user_id = app_uid() OR app_teaches_student(student_id));--> statement-breakpoint
+-- Under a user's own identity only the student's teacher may create a link. A user claiming
+-- a student goes through systemDb (/auth/claim, /auth/redeem); letting any user insert a link
+-- for themselves would let them link to any student id and then read it — and, as 'self',
+-- write its attempts.
 CREATE POLICY "roster_links_insert" ON "roster_links" FOR INSERT TO iqraa_app
-  WITH CHECK (user_id = app_uid() OR app_teaches_student(student_id));--> statement-breakpoint
+  WITH CHECK (app_teaches_student(student_id));--> statement-breakpoint
 CREATE POLICY "roster_links_delete" ON "roster_links" FOR DELETE TO iqraa_app
   USING (user_id = app_uid() OR app_teaches_student(student_id));--> statement-breakpoint
 
@@ -854,6 +859,29 @@ describe("row-level security matrix", { skip: !TEST_URL && "RLS_TEST_DATABASE_UR
       assert.deepEqual(await col(`SELECT id FROM parent_contacts`), []);
     }));
 
+  test("a user cannot link themselves to a student they do not teach", () =>
+    as("parentB", "parent", async () => {
+      for (const relation of ["guardian", "self"]) {
+        await assert.rejects(
+          scoped.query(`INSERT INTO roster_links (student_id, user_id, relation) VALUES ($1, $2, $3)`, [ids.studentB, ids.parentB, relation]),
+          /row-level security/,
+        );
+      }
+      assert.deepEqual(await col(`SELECT id FROM students WHERE id = $1`, [ids.studentB]), []);
+    }));
+
+  test("a teacher may link an account to their own student, and only theirs", async () => {
+    await as("teacherA", "teacher", async () => {
+      const ok = await scoped.query(`INSERT INTO roster_links (student_id, user_id, relation) VALUES ($1, $2, 'guardian') RETURNING id`, [ids.studentA, ids.parentB]);
+      assert.equal(ok.rowCount, 1);
+      await assert.rejects(
+        scoped.query(`INSERT INTO roster_links (student_id, user_id, relation) VALUES ($1, $2, 'guardian')`, [ids.studentB, ids.parentB]),
+        /row-level security/,
+      );
+      assert.equal((await scoped.query(`DELETE FROM roster_links WHERE student_id = $1 AND user_id = $2`, [ids.studentA, ids.parentB])).rowCount, 1);
+    });
+  });
+
   test("a student sees their own record but never the answer key", () =>
     as("studentUser", "student", async () => {
       assert.deepEqual(await col(`SELECT id FROM students WHERE id = ANY($1)`, [[ids.studentA, ids.studentB]]), [ids.studentA]);
@@ -1118,7 +1146,7 @@ export class ScopedPool extends pg.Pool {
 - [ ] **Step 4: Run the matrix.**
 
 Run: `pnpm --filter @workspace/db run test`
-Expected: PASS — 33 tests (6 identity, 6 coverage, 21 matrix).
+Expected: PASS — 35 tests (6 identity, 6 coverage, 23 matrix).
 
 - [ ] **Step 5: Wire `db` and `systemDb`.** Edit `lib/db/src/index.ts` so it reads exactly:
 
@@ -1978,7 +2006,7 @@ pnpm --filter @workspace/api-server run build
 pnpm --filter @workspace/db run test
 pnpm --filter @workspace/api-server run test
 ```
-Expected: typecheck clean; `lib/db`: 36 tests pass (6 identity, 6 coverage, 21 matrix, 3 differential); api-server: all pass including `systemDbFiles`.
+Expected: typecheck clean; `lib/db`: 38 tests pass (6 identity, 6 coverage, 23 matrix, 3 differential); api-server: all pass including `systemDbFiles`.
 
 - [ ] **Step 7: Mutation check** (run once, do not commit). For each of the swaps in Steps 2–5, revert just that swap (`systemDb` → `db`), rebuild, rerun `rlsDiff.test.ts`, and confirm it goes red; restore it. Expected: 16 of the 17 swaps are caught; the exception is the middleware lookup (no observable difference while `users` has no RLS — it stays for the round-trip saving) and the `broadcast` lookup (deliberately not swapped). A swap that no scenario can catch is either unnecessary or a missing scenario — add the scenario to `rlsDiff.test.ts`, do not leave it unproven.
 
@@ -2141,7 +2169,9 @@ walked the teacher / parent / student flows with it on in a real environment.
 the teacher-owned planning tables, and the shared content tables are *deferred* by name in
 `rlsCoverage.test.ts`. Thirteen files use `systemDb`, which bypasses it — they are pinned in
 `systemDbFiles.test.ts` with a reason each. This guards against a forgotten `where`, not
-against SQL injection: the session user is still the owner and could `RESET ROLE`.
+against SQL injection: the session user is still the owner and could `RESET ROLE`. RLS limits
+rows, not columns: a student's own attempt row is writable by them at the database level (status,
+`teacher_comment`, …), so the API remains the control on which columns a student may set.
 ```
 
 - [ ] **Step 4: `LOCAL_SETUP.md`.** After the `AI_BUDGET_USD` row of the environment table add:
@@ -2183,7 +2213,7 @@ The design was prototyped end to end before the plan was written; four things ch
 3. **§2 — policies the prototype forced.** `chat_participants` insert: either party of a
    direct thread may add either party (`openDirectThread` inserts both rows with
    `ON CONFLICT DO NOTHING`, and Postgres checks an INSERT policy before detecting the
-   conflict). `evaluation_questions` is teacher-only. Grade tables are written only under a
+   conflict). `roster_links` insert is teacher-only (claims run on `systemDb`; letting a user insert their own link would let them link to any student). `evaluation_questions` is teacher-only. Grade tables are written only under a
    teacher's identity; server grading uses `systemDb`. Token tables have RLS, no policy and
    no grant. The `systemDb` list is thirteen files, not the five paths listed in §1.
 4. **§5 — the audit is a test.** The differential test (`rlsDiff.test.ts`) replaces the
@@ -2222,7 +2252,7 @@ Expected: applies `0008`. This proves the Neon owner role can `CREATE ROLE` and 
 ```bash
 RLS_TEST_DATABASE_URL="$BRANCH_URL" pnpm --filter @workspace/db run test
 ```
-Expected: all 36 pass. This proves `SET LOCAL ROLE` and `set_config(…, true)` survive the pooler. (The suites create throwaway users and delete them; on a branch that is safe.) If this fails behind the pooler, stop: try the direct endpoint, and report which one production uses.
+Expected: all 38 pass. This proves `SET LOCAL ROLE` and `set_config(…, true)` survive the pooler. (The suites create throwaway users and delete them; on a branch that is safe.) If this fails behind the pooler, stop: try the direct endpoint, and report which one production uses.
 
 - [ ] **Step 3: Measure the added latency from where the API runs.** From a Cloud Run job (or the API's own region), against the branch:
 
