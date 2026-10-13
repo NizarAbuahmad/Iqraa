@@ -44,7 +44,7 @@ import {
 import type { TranslationKey } from '@/services/i18n';
 import { palette } from '@/constants/colors';
 import { toLatinDigits } from '@/services/latinDigits';
-import { groupObjectivesByLesson } from '@/services/miniEval';
+import { groupObjectivesByLesson } from '@/services/objectiveLessons';
 import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = palette.primary;
