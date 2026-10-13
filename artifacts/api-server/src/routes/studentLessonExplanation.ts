@@ -67,10 +67,12 @@ router.get("/student/lesson-explanation/:lessonId", async (req: AuthenticatedReq
  * POST /student/lesson-explanation/:variantId/report
  *
  * Queues a report for a `system_admin` (`routes/moderation.ts`). It does NOT
- * retire the row: a teacher may withdraw a bad paper at once because they are
- * the person holding it, but one student's tap removing an explanation for
- * every classmate — with nothing regenerating it, since a student cannot
- * trigger generation — is a bad trade. The row keeps serving until reviewed.
+ * retire the row, exactly as a teacher's report does not
+ * (`/generate/variants/:id/retire` calls the same `reportVariant`); only the
+ * admin's resolve route retires. The row keeps serving until reviewed. What
+ * differs is the reporter: a teacher can ask for a fresh paper straight away,
+ * but a student cannot trigger generation, so nothing replaces the explanation
+ * for them while the report waits.
  */
 router.post("/student/lesson-explanation/:variantId/report", async (req: AuthenticatedRequest, res) => {
   const variantId = one(req.params["variantId"]);

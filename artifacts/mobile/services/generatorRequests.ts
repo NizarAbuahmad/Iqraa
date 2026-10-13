@@ -149,10 +149,13 @@ export type LessonTeachingForm = {
  * The `/generate/lesson-teaching` body: the explanation section of a Slides
  * Maker deck, which the student lesson page reads back from the pool.
  *
- * Extracted from `slides.tsx`, which built this inline. Byte-identical to what
- * it sent (pinned by `lessonTeachingRequest.test.ts`), so explanations
- * teachers have already stored keep matching. The lesson id comes from the
- * grounding the caller already resolved, not from the title.
+ * Extracted from `slides.tsx`, which built this inline. It must send what that
+ * code sent, so explanations teachers have already stored keep matching.
+ * `lessonTeachingRequest.test.ts` pins that for the Arabic, grounded, grade 10
+ * Mathematics path only (deep-equal to a copy of the old inline body); the
+ * English and ungrounded paths match by construction (the same fields, read
+ * from `slides.tsx` before the extraction), not by a test. The lesson id comes
+ * from the grounding the caller already resolved, not from the title.
  */
 export function buildLessonTeachingRequest(
   form: LessonTeachingForm,

@@ -1,8 +1,10 @@
 /**
  * The student routes read a pool somebody else paid for. They must never be
  * able to cause a paid call, and the OpenAI client throws at module scope
- * without a key, so these files must also stay importable under `node --test`.
- * A source scan is the cheapest proof that neither import can creep in.
+ * without a key. A source scan is the cheapest proof that neither import can
+ * creep in. What it proves is textual: these three files name no generation,
+ * budget or OpenAI import. It does not make them importable under `node --test`
+ * (the route imports `adminNotify`, which loads `@workspace/db` at module scope).
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";

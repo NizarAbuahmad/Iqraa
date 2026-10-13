@@ -18034,12 +18034,28 @@ What is true, checked against the code and the suites:
   `artifacts/mobile`): `--go --only=lesson-teaching` generates and writes
   `pregen-review.json` (`--review=` renames it); a person reads it and deletes
   what they reject; `--approve=<file>` approves the rest. Grade 10 Mathematics
-  and Chemistry only. Rerunning the generate step rewrites `pregen-review.json`,
-  so entries a reviewer deleted come back: finish reviewing and `--approve`
-  before rerunning.
+  and Chemistry only. The generate step refuses to overwrite an existing
+  `pregen-review.json` (`--force` overrides, `--review=<other file>` writes a
+  second one), because a rerun can serve a variant a reviewer already deleted.
+  Each entry carries a hash of its text and `--approve` refuses the whole file
+  if any entry was edited or malformed: **edits are not applied, delete the
+  entry instead.** A bare `--go` plans the 64 worksheet and lesson-plan calls
+  before the 49 explanations, so the default $1 cap can stop before reaching
+  them; use `--only=lesson-teaching`.
+- **Replacing a rejected explanation.** Deleting an entry from the review file
+  does not remove the stored variant, so the next `--go` serves it again and the
+  lesson stays «قريبًا». A `system_admin` files a report on that `variantId` with
+  `POST /generate/variants/:id/retire` (the route name says retire; it calls
+  `reportVariant` and only queues a report) and then resolves the report as
+  approved (`POST /moderation/artifact-reports/:id/resolve`, screen
+  `artifacts/mobile/app/admin/artifact-reports.tsx`), which retires the row.
+  The next `--go --only=lesson-teaching` generates a fresh variant.
 - `Slides Maker` and the prefill now build the request through
-  `buildLessonTeachingRequest` (`artifacts/mobile/services/generatorRequests.ts`),
-  and a test pins it deep-equal to the old inline body.
+  `buildLessonTeachingRequest` (`artifacts/mobile/services/generatorRequests.ts`).
+  `lessonTeachingRequest.test.ts` pins it deep-equal to the old inline body for
+  the Arabic, grounded, grade 10 Mathematics path only; the English and
+  ungrounded paths match by construction (read from the old `slides.tsx`), not
+  by a test.
 
 **Not built, and worth knowing:**
 - Nothing has been generated or approved in production yet, so every lesson
@@ -18048,6 +18064,17 @@ What is true, checked against the code and the suites:
   student alone is checked only by a person reading the review file; if more
   than a few lessons need rewording the answer is a separate student prompt, not
   hand-edited text.
+- **Three paths always show «شرح الدرس قريبًا».** Of the 53 grade 10
+  Mathematics (36) and Chemistry (17) lessons the student browser lists, the
+  prefill covers 49 (32 maths + 17 chemistry). The rest never get an explanation
+  from it:
+  1. The 4 maths lessons whose titles ground to a different lesson and are
+     skipped on purpose (`u1_l3` تبسيط المقادير الأسية, `u3_l1` النسب المثلثية,
+     `u5_l5` المتتاليات, `u7_l2` جمع المتجهات وطرحها), so no row exists for them.
+  2. A student whose UI language is English asks for `english`; the prefill is
+     Arabic-only, so every lesson is «coming soon» for that student.
+  3. A lesson whose only explanation was rejected, until the replacement
+     recovery above is done.
 - Student chat is still never pooled. Parent summaries and hints on exam
   questions are separate specs.
 - The student screen and button were built and checked by the typechecker, the

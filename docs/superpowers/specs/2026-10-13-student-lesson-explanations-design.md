@@ -186,11 +186,14 @@ explanation before its button turns on.
   the row. Unlike the teacher route there is no immediate personal replacement,
   because a student cannot trigger generation. `reportVariant` already makes a
   duplicate open report from the same user a no-op.
-- **Why not instant retire.** Teachers may retire immediately because the person
-  holding the bad paper is the one who knows. A student's single tap removing an
-  explanation for every classmate, with nothing regenerating it, is a bad trade;
-  the queue keeps the bad text in circulation until reviewed, which is why the
-  prefill review gate matters.
+- **Why not instant retire.** Nothing retires at once for anyone. The teacher
+  route `POST /generate/variants/:id/retire` also only calls `reportVariant`,
+  which queues a report; `retireVariant` runs only when an admin resolves the
+  report as approved. So a student's report works exactly as a teacher's does.
+  The difference that matters is that a student cannot trigger generation: a
+  teacher can ask for a replacement straight away, a student has none while the
+  report waits. The queue keeps the bad text in circulation until reviewed,
+  which is why the prefill review gate matters.
 
 ## Testing
 

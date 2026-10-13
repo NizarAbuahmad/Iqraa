@@ -56,7 +56,7 @@ test('regeneration fields are merged last, as the screen spread them', () => {
   assert.deepEqual(buildLessonTeachingRequest(form, grounding, regen), { ...plain, ...regen });
 });
 
-test('an English request is keyed English and carries the same lesson id', () => {
+test('an English request is keyed english and an Arabic one arabic', () => {
   const topic = [...grade10MathTopics()][0]!;
   const ar = buildLessonTeachingRequest(
     { gradeName: grade.nameAr, subjectName: subject.name, topic, lang: 'ar' },
