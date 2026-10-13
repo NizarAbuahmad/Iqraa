@@ -13,7 +13,7 @@
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { getObjectivesForUnit, G10_SOURCES } from "@workspace/curriculum";
+import { getObjectivesForUnit, G10_SOURCES, isNccdUnitId } from "@workspace/curriculum";
 import { groundingFor, groundingForObjectives, parseWideScope, withGrounding } from "../grounding.ts";
 
 /** الدائرة — extracted, and the unit with the most material on file. */
@@ -247,6 +247,15 @@ describe("parseWideScope", () => {
     const parsed = parseWideScope({ ...ok, unitIds: [CIRCLE, CIRCLE, "kbu-chem-1", 7, "'; drop table", NO_SUCH_UNIT] });
     assert.deepEqual(parsed?.unitIds, [CIRCLE, NO_SUCH_UNIT]);
   });
+
+  it("caps a scope at 24 units, keeping the first 24 in order (request-controlled input)", () => {
+    // isNccdUnitId is a regex, so 30 distinct well-formed ids need no real unit behind them.
+    const thirty = Array.from({ length: 30 }, (_, i) => `kbu-math-s1-nccd-u${i + 1}`);
+    assert.ok(thirty.every(isNccdUnitId), "precondition: every synthetic id is a valid NCCD unit id");
+    const parsed = parseWideScope({ kind: "book", scopeKey: "k", unitIds: thirty });
+    assert.equal(parsed?.unitIds.length, 24);
+    assert.deepEqual(parsed?.unitIds, thirty.slice(0, 24));
+  });
 });
 
 describe("groundingFor — wide scope", () => {
@@ -257,6 +266,12 @@ describe("groundingFor — wide scope", () => {
     assert.ok(g, "no grounding for a wide scope whose unit has extracted text");
     assert.equal(g.unitId, CIRCLE);
     assert.ok(g.sources.length > 0 && g.sources.length <= 6);
+  });
+
+  it("takes at most two pages from a unit, however long its book text is", () => {
+    const g = groundingFor({ scope: scope([CIRCLE]), topic: "x" }, true);
+    assert.ok(g);
+    assert.ok(g.sources.length > 0 && g.sources.length <= 2, `${g.sources.length} pages from one unit`);
   });
 
   it("fails closed: a scope with no usable unit never falls back to the topic", () => {
