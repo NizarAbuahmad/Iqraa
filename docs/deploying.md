@@ -511,7 +511,8 @@ every table, column and unique exists, and only then does the API deploy. A
 failed migration rolls back whole, the API and web jobs are skipped, and the
 old revision keeps serving.
 
-CI (`migrations match schema` in `ci.yml`) checks every PR three ways:
+CI checks every PR three ways — the first two in `migrations match schema`
+(`ci.yml`), the third in `destructive-migration-ack.yml`:
 
 - **A schema edit without its migration fails.** `generate` runs and must
   produce nothing new.
@@ -522,8 +523,9 @@ CI (`migrations match schema` in `ci.yml`) checks every PR three ways:
   `RENAME`, `SET NOT NULL` and type changes break the running revision. Ship
   the code that stops using the old shape first, then the destructive
   migration in a later PR whose body has a line `destructive-migration: ok`.
-  That line is matched literally at the start of a line, and editing the body
-  does not re-run the check — only a new commit does.
+  That line is matched literally at the start of a line. Editing the body
+  re-runs this check on its own (it listens for `edited`), so adding the line
+  clears it without a new commit — the reason it is a separate workflow.
 
 `push` (`pnpm --filter @workspace/db run push`) is still there for a scratch
 local database. Never point it at production: drizzle-kit resolves drift by

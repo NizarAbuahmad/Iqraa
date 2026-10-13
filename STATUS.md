@@ -87,7 +87,10 @@ an announcement by default» below.
   48-table schema; `deploy.yml` runs `migrate` before `verify-schema` and the
   API. CI rejects a schema edit without its migration, applies every migration
   to an empty Postgres, and holds destructive SQL for `destructive-migration:
-  ok`. Verified locally against throwaway databases: fresh migrate (48/48 by
+  ok` — a check that, since 2026-10-11, lives in its own
+  `destructive-migration-ack.yml` so that editing the PR body re-runs it
+  (`ci.yml` never sees `edited`; the old `schema-push:` check held #779 red
+  for an hour after the push was done for exactly that reason). Verified locally against throwaway databases: fresh migrate (48/48 by
   `verify-schema`), re-run is a no-op, a push-built database is refused, then
   baselined (idempotent), then a follow-up `ADD COLUMN` migration applies on
   top. In production: the first deploy refused as designed, production was
