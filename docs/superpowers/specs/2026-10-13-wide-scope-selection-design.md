@@ -204,9 +204,12 @@ homework and game; piece 3 for the rest.
 - `grounding` — wide branch pools across units, rejects non-NCCD ids, caps list
   length.
 
-## Open questions for review
+## Decisions (resolved in review, 2026-10-13)
 
-1. Should «الفصل كاملًا» appear when a grade+subject has only one semester's book
-   in the KB? (Proposed: no — it would equal «الكتاب كاملًا».)
-2. Should a wide scope be allowed under `DEMO_MODE` before piece 2 teaches the
-   offline generators? (Proposed: no, via `allowedKinds`.)
+1. «الفصل كاملًا» is **hidden** when a grade + subject has only one semester's
+   book in the KB — it would equal «الكتاب كاملًا». `semestersAvailable` is
+   derived from `KB_BOOKS`, never hard-coded.
+2. Wide scopes stay **off under `DEMO_MODE`** until piece 2 teaches the offline
+   generators. `TopicSelector` intersects `allowedKinds` with `['lesson']` when
+   `DEMO_MODE` is true, so the offline path can never receive a scope it cannot
+   honour.
