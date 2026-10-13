@@ -1215,7 +1215,9 @@ router.post("/messaging/threads/:id/messages", sendMessageLimiter, async (req: A
       })
       .returning();
 
-    await db.update(chatThreads).set({ updatedAt: new Date() }).where(eq(chatThreads.id, threadId));
+    // systemDb: the post is already authorised, and the inbox sorts by this column — a participant
+    // who did not create the thread may not update it, so under RLS the bump matched no row.
+    await systemDb.update(chatThreads).set({ updatedAt: new Date() }).where(eq(chatThreads.id, threadId));
     await db
       .update(chatParticipants)
       .set({ lastReadAt: new Date() })
@@ -1296,7 +1298,8 @@ router.post("/messaging/threads/broadcast", sendMessageLimiter, async (req: Auth
       const thread = await openDirectThread(teacherId, id);
       const now = new Date();
       await db.insert(chatMessages).values({ threadId: thread.id, senderId: teacherId, body });
-      await db.update(chatThreads).set({ updatedAt: now }).where(eq(chatThreads.id, thread.id));
+      // systemDb: as above — the thread may have been opened by the recipient.
+      await systemDb.update(chatThreads).set({ updatedAt: now }).where(eq(chatThreads.id, thread.id));
       await db
         .update(chatParticipants)
         .set({ lastReadAt: now })

@@ -977,8 +977,9 @@ an announcement by default» below.
 ## Row-level security is built and switched off, 2026-10-13
 
 **State: off. No behaviour changes — but merging DOES run the migration in production** (`deploy.yml` migrates before the API ships): it creates the `iqraa_app` role, grants, and turns row-level security on for 28 tables. If the API's connection is the table owner, RLS does not apply to it (there is no `FORCE`) and nothing changes — **that is the assumption to verify: the role in Cloud Run's `DATABASE_URL` must own those tables.** It has not been checked: confirm it on a Neon branch before merging (`docs/superpowers/plans/2026-10-13-row-level-security.md`, Task 7 Step 0).
-**Both connection strings must name that same owner role:** the migration runs under GitHub's `secrets.DATABASE_URL` (`deploy.yml`, the `production migrations` job), while the API runs under Cloud Run's `DATABASE_URL`. The fifteen `SECURITY DEFINER` helpers are owned by the *migrating* role, and bypass RLS only if that role also owns the tables — if the two secrets name different roles, the helpers read as a role that is subject to the policies. The `iqraa_app` role, sixteen
-helper functions and 65 policies exist (migration `0008_row_level_security.sql`); the API
+**Both connection strings must name that same owner role:** the migration runs under GitHub's `secrets.DATABASE_URL` (`deploy.yml`, the `production migrations` job), while the API runs under Cloud Run's `DATABASE_URL`. The fifteen `SECURITY DEFINER` helpers are owned by the *migrating* role, and bypass RLS only if that role also owns the tables — if the two secrets name different roles, the helpers read as a role that is subject to the policies.
+
+The `iqraa_app` role, sixteen helper functions and 65 policies exist (migration `0008_row_level_security.sql`); the API
 carries each request's user to Postgres; and `RLS_ENFORCE` — unset, so off — decides
 whether any of it applies. Spec: `docs/superpowers/specs/2026-10-13-row-level-security-design.md`;
 how to flip it: *Row-level security* in `docs/deploying.md`.
@@ -986,7 +987,7 @@ how to flip it: *Row-level security* in `docs/deploying.md`.
 **Verified locally on Postgres 16, and run by the new `rls` CI job on every push:** the policy matrix, a coverage guard that fails on an
 unclassified table, and a differential test that boots the built API with enforcement off
 and on and finds no difference in what users see, which pushes are sent, which rows are
-left behind, or what is logged — across 56 reads for six identities and 53 write steps (a student's retake and the push badge included).
+left behind, or what is logged — across 56 reads for six identities and 53 write steps (a student's retake, the push badge and the inbox order a reply bumps included).
 
 **Not verified, and the reason it is off:** enforcement has never run against Neon (the migration will, at merge). Added latency
 across the Cloud Run → Neon hop is unmeasured (≈ two extra round trips per statement; +0.24 ms

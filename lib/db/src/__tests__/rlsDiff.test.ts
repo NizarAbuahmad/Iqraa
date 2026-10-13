@@ -293,7 +293,12 @@ describe("turning row-level security on changes nothing a user can see or cause"
     await q("INSERT INTO chat_participants (thread_id, user_id) VALUES ($1, $2)", [i.threadOther, i.parentA]);
     await q("INSERT INTO chat_messages (thread_id, sender_id, body) VALUES ($1, $2, 'unread elsewhere')", [i.threadOther, i.teacherB]);
     await step("teacher posts", "teacher", "POST", `/messaging/threads/${i.threadDirect}/messages`, { body: "hello" });
+    // The inbox sorts by the thread's updatedAt, and the parent did not create this thread: a bump
+    // that matches no row under enforcement raises no error and leaves the thread where it was.
+    await q("UPDATE chat_threads SET updated_at = '2000-01-01' WHERE id = $1", [i.threadDirect]);
     await step("parent posts", "parent", "POST", `/messaging/threads/${i.threadDirect}/messages`, { body: "reply" });
+    const { rows: [bumped] } = await q("SELECT updated_at > '2001-01-01' AS moved FROM chat_threads WHERE id = $1", [i.threadDirect]);
+    steps.push(`thread moved up after the parent's post: ${bumped?.moved}`);
     await step("parent reacts", "parent", "PUT", `/messaging/threads/${i.threadDirect}/messages/${i.msgDirect}/reaction`, { emoji: "👍" });
     await step("parent unreacts", "parent", "DELETE", `/messaging/threads/${i.threadDirect}/messages/${i.msgDirect}/reaction`);
     await step("teacher marks read", "teacher", "POST", `/messaging/threads/${i.threadDirect}/read`);
