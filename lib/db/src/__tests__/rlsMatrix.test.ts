@@ -254,21 +254,26 @@ describe("row-level security matrix", { skip: !TEST_URL && "RLS_TEST_DATABASE_UR
   test("a failed scope destroys the connection instead of leaking it", async () => {
     // A login role that is not a member of iqraa_app: `SET LOCAL ROLE iqraa_app` fails after `begin` succeeds.
     await owner.query(`DROP ROLE IF EXISTS rls_no_member`);
-    await owner.query(`CREATE ROLE rls_no_member LOGIN`);
-    const url = new URL(TEST_URL!);
+    // With a password: CI's postgres service authenticates over TCP with scram, trust auth is only local.
+    await owner.query(`CREATE ROLE rls_no_member LOGIN PASSWORD 'rls_no_member_pw'`);
+    const url = new URL(TEST_URL!); // keeps host/port/database; only the credentials are swapped
     url.username = "rls_no_member";
-    url.password = "";
+    url.password = "rls_no_member_pw";
     const pool = new ScopedPool({ connectionString: url.toString(), max: 1, connectionTimeoutMillis: 3000 }, true);
+    let c: pg.PoolClient | undefined;
     try {
-      const c = await pool.connect();
+      c = await pool.connect();
       await assert.rejects(c.query("begin"), /permission denied|set role/i);
       // Drizzle never releases a client whose `begin` failed; with max 1 a leak would time out here.
       const again = await pool.connect();
       again.release();
       assert.equal(pool.totalCount, 1); // the failed client is gone; only the fresh one remains
       assert.equal(pool.idleCount, 1);
-      assert.doesNotThrow(() => c.release()); // idempotent: a caller's own finally must not throw
+      assert.doesNotThrow(() => c?.release()); // idempotent: a caller's own finally must not throw
     } finally {
+      // Release before ending: were the destroy fix to regress, a still-checked-out client
+      // would make pool.end() wait forever and the DROP ROLE below never run.
+      c?.release(true); // idempotent: a no-op when the pool already destroyed it
       await pool.end();
       await owner.query(`DROP ROLE IF EXISTS rls_no_member`);
     }
