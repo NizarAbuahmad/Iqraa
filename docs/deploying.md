@@ -566,6 +566,13 @@ parent contact history, chat, exams and attempts (spec:
 `docs/superpowers/specs/2026-10-13-row-level-security-design.md`). It is a second line
 of defence behind the API's own checks, and it is **off until you turn it on**.
 
+**Merging this ships the migration.** `deploy.yml` migrates production before the API takes
+traffic, so the merge creates the `iqraa_app` role and enables row-level security on 28 tables.
+It is dormant for the owner role (there is no `FORCE`), so nothing changes *provided the role in
+Cloud Run's `DATABASE_URL` owns those tables*; a non-owner role would have no policy and be denied.
+**Before merging**, against a Neon branch of production, compare
+`select tablename, tableowner from pg_tables where schemaname='public'` with `select current_user`.
+
 **The switch** is one Cloud Run env var, read once at boot:
 
 ```bash
@@ -589,7 +596,7 @@ walk the teacher / parent / student flows by hand, and **measure the added laten
 statement** — the wrapper costs about two extra round trips each, which is ~0.25 ms on
 loopback and unmeasured across the Cloud Run → Neon hop. Also check the database's
 connection limit: with enforcement on an instance holds two pools. See the plan's Task 7
-for the gates.
+(`docs/superpowers/plans/2026-10-13-row-level-security.md`) for the gates.
 
 **What goes wrong, and how it looks.** A query that reads *another user's* rows does not
 fail under RLS — it returns fewer rows. So the symptom is rarely a 500; it is a

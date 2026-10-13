@@ -254,4 +254,4 @@ The design was prototyped end to end before the plan was written; four things ch
    It compares statuses, bodies, pushes sent, rows left behind and logged errors.
 
 Open: added latency on Neon, and the connection ceiling with two pools per instance, are
-still unmeasured (plan Task 7).
+still unmeasured (plan Task 7, `docs/superpowers/plans/2026-10-13-row-level-security.md`).
