@@ -1863,7 +1863,7 @@ function MasterySection({
     .slice(0, 5);
 
   return (
-    <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, gap: 10 }]}>
+    <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, gap: 10, flexDirection: 'column', alignItems: 'stretch' }]}>
       <View style={{ gap: 2 }}>
         <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
           {t('masteryTitle')}
