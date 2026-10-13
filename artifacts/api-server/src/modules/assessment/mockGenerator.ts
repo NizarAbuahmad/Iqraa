@@ -654,10 +654,9 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
     }
   }
 
+  // No "Produced N of M" note here: this count is taken before the validator,
+  // which can still drop some. The route states the final one.
   const shortfall = req.count - questions.length;
-  if (shortfall > 0) {
-    notes.push(`Produced ${questions.length} of ${req.count} requested questions.`);
-  }
 
   return { questions, seed, unavailableTypes, shortfall: Math.max(0, shortfall), notes, bankContext };
 }

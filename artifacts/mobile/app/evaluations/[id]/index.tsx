@@ -402,6 +402,20 @@ export default function EvaluationDetailScreen() {
         )}
       </View>
 
+      {/* A draft that holds fewer questions than were asked for says so, for as
+          long as it is true — the generator's own warnings ride a route param and
+          are gone after a reload, which is how "20" quietly became 3. */}
+      {evaluation?.status === 'draft' && questions.length > 0 && questions.length < evaluation.targetQuestionCount && (
+        <View style={{ paddingHorizontal: 20, paddingTop: 12 }}>
+          <View style={[styles.verifySummary, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'flex-start', gap: 8 }]}>
+            <Ionicons name="alert-circle-outline" size={16} color={colors.mutedForeground} />
+            <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: align }}>
+              {t('evalShortOfTarget', questions.length, evaluation.targetQuestionCount)}
+            </Text>
+          </View>
+        </View>
+      )}
+
       {displayError ? (
         <View style={[styles.errorBox, { borderColor: colors.destructive, margin: 20, marginBottom: 0 }]}>
           <Ionicons name="alert-circle-outline" size={18} color={colors.destructive} />

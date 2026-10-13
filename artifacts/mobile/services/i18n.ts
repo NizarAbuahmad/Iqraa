@@ -1860,6 +1860,8 @@ const translations = {
     evalStatusPublished: 'منشور',
     evalStatusClosed: 'مغلق',
     evalQuestionCount: (n: number) => arCountPhrase(n, 'سؤال', 'سؤالان', 'أسئلة'),
+    evalShortOfTarget: (have: number, want: number) =>
+      `طلبتَ ${arQuestionsPhrase(want)}، والمتوفّر ${arQuestionsPhrase(have)} فقط — أضف أسئلة بنفسك أو أعد الإنشاء.`,
     evalTotalMarks: (n: string) => arMarksPhrase(n),
     evalRowQuestions: (n: number) => arCountPhrase(n, 'سؤال', 'سؤالان', 'أسئلة'),
     evalRowMarked: (n: number) => `صُحّحت ${arCountPhrase(n, 'ورقة', 'ورقتان', 'أوراق')}`,
@@ -4337,6 +4339,8 @@ const translations = {
     evalStatusPublished: 'Published',
     evalStatusClosed: 'Closed',
     evalQuestionCount: (n: number) => `${n} ${n === 1 ? 'question' : 'questions'}`,
+    evalShortOfTarget: (have: number, want: number) =>
+      `You asked for ${want}, but only ${have} could be made — add your own or regenerate.`,
     evalTotalMarks: (n: string) => enMarksPhrase(n),
     evalRowQuestions: (n: number) => `${n} ${n === 1 ? 'question' : 'questions'}`,
     evalRowMarked: (n: number) => `${n} marked`,
