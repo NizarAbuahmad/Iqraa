@@ -570,8 +570,11 @@ of defence behind the API's own checks, and it is **off until you turn it on**.
 traffic, so the merge creates the `iqraa_app` role and enables row-level security on 28 tables.
 It is dormant for the owner role (there is no `FORCE`), so nothing changes *provided the role in
 Cloud Run's `DATABASE_URL` owns those tables*; a non-owner role would have no policy and be denied.
-**Before merging**, against a Neon branch of production, compare
-`select tablename, tableowner from pg_tables where schemaname='public'` with `select current_user`.
+**Before merging**, connect to a Neon branch of production with the *exact* `DATABASE_URL` Cloud Run
+uses (same role and credentials, only the host pointed at the branch; a branch made in the Neon console may
+default to a different owner role, which would make the check pass without testing the API's role).
+Then `select current_user` must equal `tableowner` for **every** row of
+`select tablename, tableowner from pg_tables where schemaname='public'`; any other result means do not merge.
 
 **The switch** is one Cloud Run env var, read once at boot:
 

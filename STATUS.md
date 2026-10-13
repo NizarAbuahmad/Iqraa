@@ -976,7 +976,7 @@ an announcement by default» below.
 
 ## Row-level security is built and switched off, 2026-10-13
 
-**State: off. No behaviour changes — but merging DOES run the migration in production** (`deploy.yml` migrates before the API ships): it creates the `iqraa_app` role, grants, and turns row-level security on for 28 tables. The API's connection is the table owner, which RLS does not apply to (there is no `FORCE`), so nothing changes **provided the role in Cloud Run's `DATABASE_URL` owns those tables**. That has not been checked: confirm it on a Neon branch before merging (`docs/superpowers/plans/2026-10-13-row-level-security.md`, Task 7 Step 2). The `iqraa_app` role, sixteen
+**State: off. No behaviour changes — but merging DOES run the migration in production** (`deploy.yml` migrates before the API ships): it creates the `iqraa_app` role, grants, and turns row-level security on for 28 tables. If the API's connection is the table owner, RLS does not apply to it (there is no `FORCE`) and nothing changes — **that is the assumption to verify: the role in Cloud Run's `DATABASE_URL` must own those tables.** It has not been checked: confirm it on a Neon branch before merging (`docs/superpowers/plans/2026-10-13-row-level-security.md`, Task 7 Step 0). The `iqraa_app` role, sixteen
 helper functions and 65 policies exist (migration `0008_row_level_security.sql`); the API
 carries each request's user to Postgres; and `RLS_ENFORCE` — unset, so off — decides
 whether any of it applies. Spec: `docs/superpowers/specs/2026-10-13-row-level-security-design.md`;
@@ -987,7 +987,7 @@ unclassified table, and a differential test that boots the built API with enforc
 and on and finds no difference in what users see, which pushes are sent, which rows are
 left behind, or what is logged — across 56 reads for six identities and 50 write steps.
 
-**Not verified, and the reason it is off:** it has never run against Neon. Added latency
+**Not verified, and the reason it is off:** enforcement has never run against Neon (the migration will, at merge). Added latency
 across the Cloud Run → Neon hop is unmeasured (≈ two extra round trips per statement; +0.24 ms
 on loopback). The connection ceiling with two pools per instance is unchecked. No one has
 walked the teacher / parent / student flows with it on in a real environment.
