@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 
 import {
   isUuid,
+  linkMediaKind,
   parseClassResourceInput,
+  parseLinkClassResourceInput,
   presentClassResource,
   uploadedLibraryIds,
 } from "../classResource.ts";
@@ -264,5 +266,109 @@ describe("presentClassResource — lab rows", () => {
       presentClassResource(uploaded, new Set(["3f2b8c1e-9d4a-4e6b-8a57-0c1d2e3f4a5b"])).unavailable,
       false,
     );
+  });
+});
+
+describe("a teacher-pasted link", () => {
+  function okLink(input: unknown) {
+    const parsed = parseLinkClassResourceInput(input);
+    assert.ok(!("error" in parsed), `expected ok, got ${JSON.stringify(parsed)}`);
+    return parsed;
+  }
+  function badLink(input: unknown): string {
+    const parsed = parseLinkClassResourceInput(input);
+    assert.ok("error" in parsed, `expected an error, got ${JSON.stringify(parsed)}`);
+    return parsed.error;
+  }
+
+  it("accepts an https link and trims the title the teacher gave it", () => {
+    const parsed = okLink({ kind: "link", url: " https://drive.google.com/file/d/abc/view ", title: "  ورقة الوحدة  " });
+    assert.equal(parsed.url, "https://drive.google.com/file/d/abc/view");
+    assert.equal(parsed.title, "ورقة الوحدة");
+  });
+
+  it("names an untitled link after its site, without a leading www.", () => {
+    assert.equal(okLink({ kind: "link", url: "https://www.khanacademy.org/math" }).title, "khanacademy.org");
+    assert.equal(okLink({ kind: "link", url: "https://example.test/a", title: "   " }).title, "example.test");
+  });
+
+  it("refuses plain http, javascript: and anything that is not a link, so a tap never lands there", () => {
+    assert.match(badLink({ kind: "link", url: "http://example.test/a" }), /url/);
+    assert.match(badLink({ kind: "link", url: "javascript:alert(1)" }), /url/);
+    assert.match(badLink({ kind: "link", url: "not a link" }), /url/);
+    assert.match(badLink({ kind: "link" }), /url/);
+  });
+
+  it("refuses a link that carries a username or password", () => {
+    assert.match(badLink({ kind: "link", url: "https://teacher:secret@example.test/a" }), /url/);
+  });
+
+  it("refuses a url longer than 2048 characters rather than clipping it into a dead link", () => {
+    assert.match(badLink({ kind: "link", url: `https://example.test/${"a".repeat(2048)}` }), /url/);
+  });
+
+  it("refuses an over-long title instead of silently trimming it", () => {
+    assert.match(badLink({ kind: "link", url: "https://example.test/a", title: "ا".repeat(201) }), /title/);
+  });
+
+  it("refuses a body that is not an object", () => {
+    assert.match(badLink(null), /body/);
+    assert.match(badLink("https://example.test"), /body/);
+  });
+
+  describe("what the link is, judged from the url alone", () => {
+    it("calls YouTube and Vimeo video", () => {
+      assert.equal(linkMediaKind("https://www.youtube.com/watch?v=jNQXAC9IVRw"), "video");
+      assert.equal(linkMediaKind("https://youtu.be/jNQXAC9IVRw"), "video");
+      assert.equal(linkMediaKind("https://vimeo.com/76979871"), "video");
+      assert.equal(linkMediaKind("https://example.test/clip.mp4"), "video");
+    });
+
+    it("calls an image file an image, ignoring the query string", () => {
+      assert.equal(linkMediaKind("https://example.test/a/diagram.PNG?w=800"), "image");
+    });
+
+    it("calls PDFs and Word files documents, and PowerPoint a presentation", () => {
+      assert.equal(linkMediaKind("https://example.test/w.pdf"), "document");
+      assert.equal(linkMediaKind("https://example.test/w.docx"), "document");
+      assert.equal(linkMediaKind("https://example.test/s.pptx"), "presentation");
+    });
+
+    it("falls back to a page, because a Drive or Docs link says nothing about its file", () => {
+      assert.equal(linkMediaKind("https://drive.google.com/file/d/abc/view"), "page");
+      assert.equal(linkMediaKind("https://example.test/"), "page");
+    });
+
+    it("travels with the parsed link, so the route needs no second look", () => {
+      assert.equal(okLink({ kind: "link", url: "https://youtu.be/jNQXAC9IVRw" }).mediaKind, "video");
+    });
+
+    it("never calls a host video just because its name contains youtube", () => {
+      assert.equal(linkMediaKind("https://notyoutube.com/a"), "page");
+      assert.equal(linkMediaKind("https://youtube.com.evil.test/a"), "page");
+    });
+  });
+});
+
+describe("presentClassResource — link rows", () => {
+  const linkRow = {
+    id: "22222222-2222-4222-8222-222222222222",
+    kind: "link",
+    librarySource: null,
+    libraryNativeId: null,
+    title: "ورقة الوحدة",
+    mediaKind: "page",
+    url: "https://drive.google.com/file/d/abc/view",
+    thumbnailUrl: null,
+    createdAt: new Date("2026-10-13T08:00:00.000Z"),
+  };
+
+  it("is never unavailable: the link is the teacher's own and nothing in the app can delete it", () => {
+    const r = presentClassResource(linkRow, new Set());
+    assert.equal(r.unavailable, false);
+    assert.equal(r.kind, "link");
+    assert.equal(r.source, null);
+    assert.equal(r.nativeId, null);
+    assert.equal(r.url, "https://drive.google.com/file/d/abc/view");
   });
 });

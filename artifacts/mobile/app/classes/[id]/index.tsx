@@ -80,11 +80,13 @@ import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { ClassResourceRow } from '@/components/classes/ClassResourceRow';
 import { LibraryPickerSheet } from '@/components/classes/LibraryPickerSheet';
 import { LabPickerSheet } from '@/components/classes/LabPickerSheet';
+import { LinkSheet } from '@/components/classes/LinkSheet';
 import { SupportGroupsSection } from '@/components/classes/SupportGroupsSection';
 import type { SupportGroup } from '@/services/supportGroups';
 import {
   addBodyFor,
   addLabBodyFor,
+  addLinkBodyFor,
   addedKeys,
   labItemsForClass,
   mergeClassShelf,
@@ -153,6 +155,8 @@ export default function ClassDetailScreen() {
   const [showLibrary, setShowLibrary] = useState(false);
   const [showLab, setShowLab] = useState(false);
   const [addingLabId, setAddingLabId] = useState<string | null>(null);
+  const [showLink, setShowLink] = useState(false);
+  const [addingLink, setAddingLink] = useState(false);
   const [addingKey, setAddingKey] = useState<string | null>(null);
   const [pickerError, setPickerError] = useState('');
   const [savedCount, setSavedCount] = useState(0);
@@ -655,6 +659,37 @@ export default function ClassDetailScreen() {
       if (added) setResources(prev => withAddedResource(prev, added));
     }
     setAddingLabId(null);
+  };
+
+  /** A link the teacher pasted: it goes on the shelf as a pointer, nothing is uploaded. */
+  const onAddLink = async (url: string, linkTitle: string) => {
+    if (!id || addingLink) return;
+    setAddingLink(true);
+    setPickerError('');
+    let added: ClassResource | null;
+    try {
+      added = await addClassResource(id, addLinkBodyFor(url, linkTitle));
+    } catch {
+      // Shown inside the sheet: a toast on this screen would sit behind its Modal.
+      setPickerError(t('classResourceFailed'));
+      setAddingLink(false);
+      return;
+    }
+    // `null` is the 409 "already there": say so, and keep the sheet open to fix it.
+    if (!added) {
+      setPickerError(t('linkAlreadyAdded'));
+      setAddingLink(false);
+      return;
+    }
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    trackEvent('class_resource_added', { source: 'link', mediaKind: added.mediaKind });
+    setShowLink(false);
+    try {
+      setResources(await listClassResources(id));
+    } catch {
+      setResources(prev => withAddedResource(prev, added!));
+    }
+    setAddingLink(false);
   };
 
   const onRemoveResource = async (resource: ClassResource) => {
@@ -1620,6 +1655,30 @@ export default function ClassDetailScreen() {
                 {t('fromLibrary')}
               </Text>
             </Pressable>
+            <Pressable
+              onPress={() => {
+                setShowAttach(false);
+                setPickerError('');
+                setShowLink(true);
+              }}
+              accessibilityRole="button"
+              style={[
+                styles.createRow,
+                { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' },
+              ]}
+            >
+              <Ionicons name="link-outline" size={18} color={ACCENT} />
+              <Text
+                style={{
+                  color: ACCENT,
+                  fontFamily: 'ReadexPro_600SemiBold',
+                  flex: 1,
+                  textAlign: align,
+                }}
+              >
+                {t('fromLink')}
+              </Text>
+            </Pressable>
             {hasLabItems ? (
               <Pressable
                 onPress={() => {
@@ -1701,6 +1760,17 @@ export default function ClassDetailScreen() {
         onClose={() => {
           setPickerError('');
           setShowLibrary(false);
+        }}
+      />
+
+      <LinkSheet
+        visible={showLink}
+        busy={addingLink}
+        error={pickerError}
+        onAdd={(url, linkTitle) => { void onAddLink(url, linkTitle); }}
+        onClose={() => {
+          setPickerError('');
+          setShowLink(false);
         }}
       />
 

@@ -974,6 +974,46 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A teacher can put a pasted link in front of a class, 2026-10-13
+
+The class «+» sheet («أرفق ملفًا») offered saved materials, the Library, the Lab
+and «أنشئ ملفًا جديدًا» — no way to bring in something the app does not hold, such
+as a Drive file, a YouTube video or a school site. It now has **«من رابط»**: the
+teacher pastes a URL (and optionally a title) and it joins the class's الموارد
+shelf beside Library and Lab rows, tagged «رابط».
+
+**It stores the link, never the file.** That is the point: no upload, no bucket,
+no AI cost. A teacher's PC file reaches a class by going to their own Drive (or
+similar) first and pasting its share link. **Uploading from a device is still not
+available** — `DOCUMENT_UPLOAD_ENABLED` stays `false` and the device-file piece
+(#3 in `docs/superpowers/specs/2026-10-04-class-resources-design.md`) is not built.
+
+**Rules, in two places that must agree.** `parseClassLink`
+(`artifacts/mobile/services/classResources.ts`) explains a bad paste before any
+request; `parseLinkClassResourceInput` (`artifacts/api-server/src/lib/classResource.ts`)
+is what enforces it: https only (a bare `www.x.com` gets `https://`, `http://` is
+refused as insecure, not upgraded), a dotted host, no username or password, at
+most 2048 characters, a title of at most 200 characters (never clipped). An
+untitled link is named after its site. The media kind (video / image / document /
+presentation / page) is judged by the server from the URL alone — it never
+fetches the link — and a Drive or Docs link is a `page`. A repeat of the same URL
+on one class answers 409 and the sheet says «مضاف مسبقًا». There is no unique
+index for links (that would be DDL), so the route checks, as it does for lab rows.
+
+**No migration.** `class_resources.kind` is plain text and `url` was already
+nullable; a link row is `kind='link'` with null `library_source` / `library_native_id`.
+The comment in `lib/db/src/schema/classResources.ts` still calls `link`
+"reserved for later pieces" — left alone because CI gates any schema-file edit on
+a migration; fix it with the next real schema change. `ClassResource.nativeId` is
+now `string | null` on the app side.
+
+**Verified:** unit tests for both parsers, the media-kind judgement (including
+that `youtube.com.evil.test` is not a video), the request body, and how link rows
+sit on the shelf; `pnpm run typecheck`; both suites. **Not verified:** the sheet
+and the new route were not driven in a running app or against a live database,
+and nothing was checked on a device — open a class → «+» → «من رابط» on the web
+build before relying on it.
+
 ## A waitlist signup on iqrra.com pushes the admins, 2026-10-12
 
 `POST /site/signups` (`routes/admin.ts`) now calls `notifyAdminsOfWaitlistSignup`

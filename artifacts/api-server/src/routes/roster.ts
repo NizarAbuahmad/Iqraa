@@ -68,6 +68,7 @@ import { publicUrl } from "../lib/r2.js";
 import {
   isUuid,
   parseClassResourceInput,
+  parseLinkClassResourceInput,
   presentClassResource,
   uploadedLibraryIds,
 } from "../lib/classResource.js";
@@ -940,6 +941,47 @@ router.post("/classes/:id/resources", async (req: AuthenticatedRequest, res) => 
           librarySource: null,
           libraryNativeId: lab.itemId,
           ...snap,
+        })
+        .returning();
+      res.status(201).json({ resource: presentClassResource(row!, new Set()) });
+      return;
+    }
+
+    // A link the teacher pasted: validated here, never fetched. Like lab rows it
+    // has no unique index (that would be DDL), so the route checks for a repeat.
+    if (req.body && typeof req.body === "object" && (req.body as Record<string, unknown>)["kind"] === "link") {
+      const link = parseLinkClassResourceInput(req.body);
+      if ("error" in link) {
+        res.status(400).json({ error: link.error });
+        return;
+      }
+      const [existing] = await db
+        .select({ id: classResources.id })
+        .from(classResources)
+        .where(
+          and(
+            eq(classResources.classGroupId, classId),
+            eq(classResources.kind, "link"),
+            eq(classResources.url, link.url),
+          ),
+        )
+        .limit(1);
+      if (existing) {
+        res.status(409).json({ code: "already_added", error: "Already added to this class" });
+        return;
+      }
+      const [row] = await db
+        .insert(classResources)
+        .values({
+          classGroupId: classId,
+          teacherId: req.user!.id,
+          kind: "link",
+          librarySource: null,
+          libraryNativeId: null,
+          title: link.title,
+          mediaKind: link.mediaKind,
+          url: link.url,
+          thumbnailUrl: null,
         })
         .returning();
       res.status(201).json({ resource: presentClassResource(row!, new Set()) });
