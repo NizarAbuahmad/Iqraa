@@ -158,6 +158,15 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   (`services/documents/extractMeta.ts`) or it silently exercises the ordinary
   path instead. `introduction`/`closure`/`assessment`/`homework` vary randomly
   via `pick()`, so asserting "the styles differ" on them proves nothing.
+  **The teacher's text is first person, future (since 2026-10-12).** The plan's
+  Arabic teacher fields read «اعرض… اسأل… فسّر…», which landed in the Ministry
+  form's «دور المُعلم» column as commands to someone else; they now say «سأعرض…
+  ثم سأسأل…». Words spoken to students stay quoted in «» and imperative. It is
+  two places again: the offline blueprints (`lessonPlanBlueprints.ts`,
+  `lessonPlanNative.ts`, the intro/closure/prior-review in `generators.ts`) and
+  `teacherVoiceAr` in `prompts.ts`. `lessonPlanTeacherVoice.test.ts` fails on a
+  bare imperative; it cannot list form-IV imperatives («أعلن», «أضف»), whose
+  unvowelled spelling is also the first-person verb, so write those by hand.
 - **A worksheet's structure lives in two places, and its count is the total.**
   The worked example, the half-solved first question and the key's working are
   built by `generateWorksheet` (`artifacts/mobile/services/ai/generators.ts`)

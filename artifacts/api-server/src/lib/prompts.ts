@@ -245,6 +245,20 @@ The structure this style requires — follow it across EVERY field of the plan, 
 ${LESSON_STYLE_RULES_EN[key]}`;
 }
 
+/**
+ * The teacher's voice in the Arabic plan: «سأعرض… ثم سأسأل…», not «اعرض… اسأل…».
+ *
+ * The plan is the teacher's own record of what they WILL do, and its stages are
+ * copied into the «دور المُعلم» column of the Ministry form; written as
+ * commands it read as instructions handed to somebody else. The offline plan
+ * says the same thing (`artifacts/mobile/services/ai/lessonPlanBlueprints.ts`,
+ * pinned by `lessonPlanTeacherVoice.test.ts`) — change one, change the other.
+ * Words spoken to students stay quoted and imperative, so only the teacher's
+ * own actions move. English is unchanged.
+ */
+const teacherVoiceAr = (b: any, hasPriorReview: boolean) => `صيغة النص — بصيغة المتكلم: المعلم هو الذي يكتب ما سيفعله في الحصة، فاكتب كل ما يفعله هو في ${hasPriorReview ? '"priorReview" و' : ""}"introduction" و"mainActivity" و"guidedPractice" و"independentPractice" و"closure" و"assessment" و"differentiation"${b.ministryRoles ? " وفي حقل \"ministryRoles\" (\"teacher\")" : ""} بضمير المتكلم وبصيغة المضارع المستقبل: «سأعرض الظاهرة دون أن أفسّرها، ثم سأسأل: «ماذا لاحظتم؟»، وسأسجّل التوقعات على السبورة»، ولا تستخدم صيغة الأمر («اعرض، اسأل، فسّر، صحّح»).
+أما ما يفعله الطلبة فاكتبه بصيغة الغائب («يكتب كل طالب…»)، وما يقوله المعلم لهم حرفيًا فضعه بين «» كما هو.`;
+
 // ─── Prompt builders ─────────────────────────────────────────────────────────
 /** The subject-kind clause on its own lines, or nothing for maths and unknown subjects. */
 const kindBlockAr = (b: any) => { const c = lessonKindClauseAr(b); return c ? `\n${c}` : ""; };
@@ -260,6 +274,7 @@ export function lessonPlanPromptAr(b: any): string {
 ${b.objectives ? `الأهداف المحددة:\n${b.objectives}` : ""}
 ${b.additionalContext ? `سياق إضافي: ${b.additionalContext}` : ""}
 ${lessonStyleClauseAr(b)}${kindBlockAr(b)}
+${teacherVoiceAr(b, hasPriorReview)}
 ${hasPriorReview ? `
 خصّص 5-10 دقائق في بداية الحصة لمراجعة معارف سابقة قد لا يتقنها بعض الطلبة، واكتب خطة هذه المراجعة في حقل "priorReview". هذه مراجعة تمهيدية وليست من أهداف هذا الدرس، فلا تُدرجها ضمن "objectives".
 ${priorConcepts ? `مفاهيم من المنهج يجب مراجعتها حرفيًا (لا تختلق غيرها):\n- ${priorConcepts.join("\n- ")}` : ""}
@@ -283,10 +298,10 @@ ${priorNotes ? `ملاحظات المعلم عن موضوعات سابقة (قد
   "differentiation": "استراتيجيات التمييز",
   "homework": "الواجب البيتي المقترح"${b.ministryRoles ? `,
   "ministryRoles": [
-    { "teacher": "دور المعلم في مرحلة التهيئة والاندماج", "learner": "دور المتعلم في المرحلة نفسها" },
-    { "teacher": "دور المعلم في مرحلة الشرح والتفسير", "learner": "دور المتعلم في المرحلة نفسها" },
-    { "teacher": "دور المعلم في مرحلة التوسع ودعم التميز", "learner": "دور المتعلم في المرحلة نفسها" },
-    { "teacher": "دور المعلم في مرحلة تأكيد التعلم", "learner": "دور المتعلم في المرحلة نفسها" }
+    { "teacher": "ما سأفعله أنا المعلم في مرحلة التهيئة والاندماج (بصيغة سأ…)", "learner": "دور المتعلم في المرحلة نفسها" },
+    { "teacher": "ما سأفعله أنا المعلم في مرحلة الشرح والتفسير (بصيغة سأ…)", "learner": "دور المتعلم في المرحلة نفسها" },
+    { "teacher": "ما سأفعله أنا المعلم في مرحلة التوسع ودعم التميز (بصيغة سأ…)", "learner": "دور المتعلم في المرحلة نفسها" },
+    { "teacher": "ما سأفعله أنا المعلم في مرحلة تأكيد التعلم (بصيغة سأ…)", "learner": "دور المتعلم في المرحلة نفسها" }
   ]` : ""}
 }`;
 }

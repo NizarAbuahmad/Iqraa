@@ -98,3 +98,33 @@ describe("lesson plan prompts — ministryRoles", () => {
     }
   });
 });
+
+describe("lesson plan prompts — the teacher's voice", () => {
+  // The offline plan says «سأعرض… ثم سأسأل…» (artifacts/mobile/services/__tests__/
+  // lessonPlanTeacherVoice.test.ts); the live one has to be asked for the same,
+  // or the Ministry form's «دور المُعلم» column changes voice with the AI switch.
+  it("ar: asks for first-person future teacher text in every field the teacher acts in", () => {
+    const p = lessonPlanPromptAr({ ...BASE, ministryRoles: true });
+    assert.match(p, /بصيغة المتكلم/);
+    assert.match(p, /سأعرض/);
+    assert.match(p, /ولا تستخدم صيغة الأمر/);
+    // It must name the fields it governs, including the Ministry column.
+    for (const field of ["introduction", "mainActivity", "guidedPractice", "assessment", "ministryRoles"]) {
+      const clause = p.slice(p.indexOf("بصيغة المتكلم"));
+      assert.ok(clause.includes(field), `the voice rule does not name ${field}`);
+    }
+  });
+
+  it("ar: the rule is there with or without ministryRoles", () => {
+    assert.match(lessonPlanPromptAr(BASE), /بصيغة المتكلم/);
+  });
+
+  it("en: unchanged — the English plan has no voice rule", () => {
+    assert.ok(!/first person/i.test(lessonPlanPromptEn(BASE)));
+  });
+
+  it("ar: the ministryRoles example says the teacher speaks as «I»", () => {
+    const p = lessonPlanPromptAr({ ...BASE, ministryRoles: true });
+    assert.match(p, /"teacher": "[^"]*سأ/);
+  });
+});

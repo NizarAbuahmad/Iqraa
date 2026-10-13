@@ -59,6 +59,7 @@ import { useDeckWorkspace, type DeckWorkspaceSnapshot } from '@/hooks/useDeckWor
 import { useSlideEditor } from '@/hooks/useSlideEditor';
 import { DeckOutline } from '@/components/slides/DeckOutline';
 import { DeckActions } from '@/components/slides/DeckActions';
+import { DeckThemePicker } from '@/components/slides/DeckThemePicker';
 import { SlideEditModal } from '@/components/slides/SlideEditModal';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
@@ -1087,6 +1088,7 @@ export default function SlidesScreen() {
               />
             </View>
 
+            <DeckThemePicker deck={deck} setDeck={setDeck} isRTL={isRTL} isAr={isAr} colors={colors} t={t} />
             <DeckActions workspace={workspace} onPresent={present} showToast={showToast} isRTL={isRTL} colors={colors} t={t} />
           </View>
         )}
