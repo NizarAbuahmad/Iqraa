@@ -293,6 +293,10 @@ export interface QuizOutput {
   /** Present when the lesson's question bank ran out before the requested
    *  count — see `WorksheetOutput.shortfall`. */
   shortfall?: { requested: number; produced: number };
+  /** Present on an offline regenerate whose bank could not avoid repeating
+   *  some of the questions already on screen: `count` of `of` are the same as
+   *  the paper before. The screen says so rather than pass it off as new. */
+  repeated?: { count: number; of: number };
 }
 
 export interface QuizQuestion {

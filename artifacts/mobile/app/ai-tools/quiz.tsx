@@ -437,7 +437,8 @@ export default function QuizScreen() {
     // Built once: the two branches below used to each spell out the payload.
     const payload = {
       title, subject: subjects[scope.subjectIdx].name, grade: grades[scope.gradeIdx].name,
-      topic: scope.topic, language: outLang, content: JSON.stringify(result), formState,
+      // `repeated` describes a regenerate, not the paper: reopened later it would be stale.
+      topic: scope.topic, language: outLang, content: JSON.stringify({ ...result, repeated: undefined }), formState,
     };
     // `updateItem` answers false when the material is no longer there — the
     // teacher deleted it from موادي while this screen still held its id. The
@@ -635,7 +636,7 @@ export default function QuizScreen() {
             </View>
           </View>
 
-          <ShortPaperNotice shortfall={result.shortfall} />
+          <ShortPaperNotice shortfall={result.shortfall} repeated={result.repeated} />
 
           {/* Class Mode: project this quiz as whole-class response slides.
               Phones are banned in class, so students answer from their seats
