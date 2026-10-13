@@ -37,11 +37,13 @@ The plan below was prototyped end to end in a throwaway worktree against Postgre
 4. **`roster_links` insert is teacher-only** (found in Task 2's review). The spec let a linked user insert their own link; that would let any signed-in user link themselves to any student id, read it, and — as `'self'` — write its attempts. Claims run on `systemDb`, so nothing needs it.
 5. **The audit is a test.** The spec said to find cross-user reads by reading ~41 files. A read-only diff found nothing (reads mostly select the caller's own data); the writes and fan-out found everything. See Task 4.
 
+6. **Corrections from the final review (applied to `0008` in place — it had not shipped).** `SET LOCAL lock_timeout = '5s'` first; `chat_threads` insert/update cannot create or re-type a `class_group` thread for a class the user does not own; the chat UPDATE policies mirror their INSERT predicates in `WITH CHECK` (RLS cannot compare old and new, so a row could be re-parented otherwise); `attempts_delete` also lets a student delete their *own submitted* attempt (the retake route does); `unreadTotals` (`lib/inboxSummary.ts`) and the two post-time `chat_threads.updated_at` bumps in `routes/messaging.ts` run on `systemDb`. The differential test now records the push `badge`, runs a `MASTERY_GATE` retake, and checks that a non-creator's reply moves the thread up the inbox.
+
 ## What the prototype proved
 
 | Check | Result |
 | --- | --- |
-| Policy matrix against real Postgres 16 | 24 tests: tenancy, parent/student visibility, answer key hidden, grades teacher-only, chat membership and sender spoofing, blocks invisible to the blocked, admin sees `chat_reports` but not students, token tables closed, fail-closed with no identity, `INSERT … RETURNING`, transaction and savepoint scoping, no leak to the next borrower, a failed scope destroys the connection instead of leaking it, off-mode is a plain pool |
+| Policy matrix against real Postgres 16 | 27 tests: tenancy, parent/student visibility, answer key hidden, grades teacher-only, chat membership and sender spoofing, blocks invisible to the blocked, admin sees `chat_reports` but not students, token tables closed, fail-closed with no identity, `INSERT … RETURNING`, transaction and savepoint scoping, no leak to the next borrower, a failed scope destroys the connection instead of leaking it, off-mode is a plain pool |
 | Coverage guard | Fails on a new unclassified table, and on RLS enabled where the lists say it is not (both demonstrated) |
 | Differential test, reads | 56 requests across 6 identities identical on/off; positive control proves the "on" server really runs as `iqraa_app` |
 | Differential test, writes | 50 steps (DMs, groups, blocks, device handoff, login/refresh, claim, roster, exams, release, admin, link-based exam) identical on/off in status, **pushes sent**, **rows left behind** and logged errors |
@@ -571,11 +573,12 @@ ALTER TABLE "chat_threads" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE POLICY "chat_threads_select" ON "chat_threads" FOR SELECT TO iqraa_app
   USING (created_by = app_uid() OR app_in_thread(id));--> statement-breakpoint
 CREATE POLICY "chat_threads_insert" ON "chat_threads" FOR INSERT TO iqraa_app
-  WITH CHECK (created_by = app_uid()
+  WITH CHECK ((created_by = app_uid() AND type <> 'class_group')
               OR (type = 'class_group' AND class_group_id IS NOT NULL AND app_owns_class(class_group_id)));--> statement-breakpoint
 CREATE POLICY "chat_threads_update" ON "chat_threads" FOR UPDATE TO iqraa_app
   USING (created_by = app_uid() OR app_owns_thread(id))
-  WITH CHECK (created_by = app_uid() OR app_owns_thread(id));--> statement-breakpoint
+  WITH CHECK ((created_by = app_uid() AND type <> 'class_group')
+              OR (type = 'class_group' AND class_group_id IS NOT NULL AND app_owns_class(class_group_id)));--> statement-breakpoint
 CREATE POLICY "chat_threads_delete" ON "chat_threads" FOR DELETE TO iqraa_app
   USING (created_by = app_uid() OR app_owns_thread(id));--> statement-breakpoint
 
@@ -585,7 +588,7 @@ CREATE POLICY "chat_participants_select" ON "chat_participants" FOR SELECT TO iq
 CREATE POLICY "chat_participants_insert" ON "chat_participants" FOR INSERT TO iqraa_app
   WITH CHECK (app_may_add_participant(thread_id, user_id));--> statement-breakpoint
 CREATE POLICY "chat_participants_update" ON "chat_participants" FOR UPDATE TO iqraa_app
-  USING (user_id = app_uid()) WITH CHECK (user_id = app_uid());--> statement-breakpoint
+  USING (user_id = app_uid()) WITH CHECK (user_id = app_uid() AND app_in_thread(thread_id));--> statement-breakpoint
 CREATE POLICY "chat_participants_delete" ON "chat_participants" FOR DELETE TO iqraa_app
   USING (user_id = app_uid() OR app_owns_thread(thread_id));--> statement-breakpoint
 
@@ -596,7 +599,7 @@ CREATE POLICY "chat_messages_insert" ON "chat_messages" FOR INSERT TO iqraa_app
   WITH CHECK (sender_id = app_uid() AND app_in_thread(thread_id));--> statement-breakpoint
 CREATE POLICY "chat_messages_update" ON "chat_messages" FOR UPDATE TO iqraa_app
   USING (sender_id = app_uid() OR app_owns_thread(thread_id))
-  WITH CHECK (sender_id = app_uid() OR app_owns_thread(thread_id));--> statement-breakpoint
+  WITH CHECK ((sender_id = app_uid() AND app_in_thread(thread_id)) OR app_owns_thread(thread_id));--> statement-breakpoint
 CREATE POLICY "chat_messages_delete" ON "chat_messages" FOR DELETE TO iqraa_app
   USING (sender_id = app_uid() OR app_owns_thread(thread_id));--> statement-breakpoint
 
@@ -606,7 +609,7 @@ CREATE POLICY "chat_message_reads_select" ON "chat_message_reads" FOR SELECT TO 
 CREATE POLICY "chat_message_reads_insert" ON "chat_message_reads" FOR INSERT TO iqraa_app
   WITH CHECK (user_id = app_uid() AND app_sees_message(message_id));--> statement-breakpoint
 CREATE POLICY "chat_message_reads_update" ON "chat_message_reads" FOR UPDATE TO iqraa_app
-  USING (user_id = app_uid()) WITH CHECK (user_id = app_uid());--> statement-breakpoint
+  USING (user_id = app_uid()) WITH CHECK (user_id = app_uid() AND app_sees_message(message_id));--> statement-breakpoint
 CREATE POLICY "chat_message_reads_delete" ON "chat_message_reads" FOR DELETE TO iqraa_app
   USING (user_id = app_uid());--> statement-breakpoint
 
@@ -616,7 +619,7 @@ CREATE POLICY "chat_message_reactions_select" ON "chat_message_reactions" FOR SE
 CREATE POLICY "chat_message_reactions_insert" ON "chat_message_reactions" FOR INSERT TO iqraa_app
   WITH CHECK (user_id = app_uid() AND app_sees_message(message_id));--> statement-breakpoint
 CREATE POLICY "chat_message_reactions_update" ON "chat_message_reactions" FOR UPDATE TO iqraa_app
-  USING (user_id = app_uid()) WITH CHECK (user_id = app_uid());--> statement-breakpoint
+  USING (user_id = app_uid()) WITH CHECK (user_id = app_uid() AND app_sees_message(message_id));--> statement-breakpoint
 CREATE POLICY "chat_message_reactions_delete" ON "chat_message_reactions" FOR DELETE TO iqraa_app
   USING (user_id = app_uid());--> statement-breakpoint
 
@@ -671,7 +674,8 @@ CREATE POLICY "attempts_update" ON "attempts" FOR UPDATE TO iqraa_app
   USING (app_teaches_evaluation(evaluation_id) OR app_is_student_self(student_id))
   WITH CHECK (app_teaches_evaluation(evaluation_id) OR app_is_student_self(student_id));--> statement-breakpoint
 CREATE POLICY "attempts_delete" ON "attempts" FOR DELETE TO iqraa_app
-  USING (app_teaches_evaluation(evaluation_id));--> statement-breakpoint
+  USING (app_teaches_evaluation(evaluation_id)
+         OR (app_is_student_self(student_id) AND submitted_at IS NOT NULL));--> statement-breakpoint
 
 ALTER TABLE "attempt_answers" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE POLICY "attempt_answers_select" ON "attempt_answers" FOR SELECT TO iqraa_app
@@ -1201,7 +1205,7 @@ export class ScopedPool extends pg.Pool {
 - [ ] **Step 4: Run the matrix.**
 
 Run: `pnpm --filter @workspace/db run test`
-Expected: PASS — 36 tests (6 identity, 6 coverage, 24 matrix).
+Expected: PASS — 36 tests (6 identity, 6 coverage, 24 matrix) at the end of Task 3; the final fix wave brought the matrix to 27.
 
 - [ ] **Step 5: Wire `db` and `systemDb`.** Edit `lib/db/src/index.ts` so it reads exactly:
 
@@ -2061,7 +2065,7 @@ pnpm --filter @workspace/api-server run build
 pnpm --filter @workspace/db run test
 pnpm --filter @workspace/api-server run test
 ```
-Expected: typecheck clean; `lib/db`: 39 tests pass (6 identity, 6 coverage, 24 matrix, 3 differential); api-server: all pass including `systemDbFiles`.
+Expected: typecheck clean; `lib/db`: 42 tests pass at the end of the branch (6 identity, 6 coverage, 27 matrix, 3 differential; 39 when Task 5 landed); api-server: all pass including `systemDbFiles`.
 
 - [ ] **Step 7: Mutation check** (run once, do not commit). For each of the swaps in Steps 2–5, revert just that swap (`systemDb` → `db`), rebuild, rerun `rlsDiff.test.ts`, and confirm it goes red; restore it. Expected: 16 of the 17 swaps are caught; the exception is the middleware lookup (no observable difference while `users` has no RLS — it stays for the round-trip saving) and the `broadcast` lookup (deliberately not swapped). A swap that no scenario can catch is either unnecessary or a missing scenario — add the scenario to `rlsDiff.test.ts`, do not leave it unproven.
 
@@ -2173,7 +2177,7 @@ gcloud run services update iqraa-api --region europe-west1 \
 a revision; it is not a code deploy. With it off nothing about the API changes — one
 pool, no extra statements. With it on every `db` statement runs as the `iqraa_app` role
 with the signed-in user's id, and `systemDb` (the owner connection) is used by the
-thirteen files pinned in `artifacts/api-server/src/lib/__tests__/systemDbFiles.test.ts`.
+fourteen files pinned in `artifacts/api-server/src/lib/__tests__/systemDbFiles.test.ts`.
 
 **Before the first flip**, on a Neon *branch* of production (never production):
 run the migration, run `RLS_TEST_DATABASE_URL=<branch> pnpm --filter @workspace/db run test`,
@@ -2270,7 +2274,7 @@ The design was prototyped end to end before the plan was written; four things ch
    `ON CONFLICT DO NOTHING`, and Postgres checks an INSERT policy before detecting the
    conflict). `roster_links` insert is teacher-only (claims run on `systemDb`; letting a user insert their own link would let them link to any student). `evaluation_questions` is teacher-only. Grade tables are written only under a
    teacher's identity; server grading uses `systemDb`. Token tables have RLS, no policy and
-   no grant. The `systemDb` list is thirteen files, not the five paths listed in §1.
+   no grant. The `systemDb` list is fourteen files, not the five paths listed in §1.
 4. **§5 — the audit is a test.** The differential test (`rlsDiff.test.ts`) replaces the
    manual read of ~41 files; reads alone found nothing, writes and fan-out found everything.
    It compares statuses, bodies, pushes sent, rows left behind and logged errors.
@@ -2317,7 +2321,7 @@ Expected: applies `0008`. This proves the Neon owner role can `CREATE ROLE` and 
 ```bash
 RLS_TEST_DATABASE_URL="$BRANCH_URL" pnpm --filter @workspace/db run test
 ```
-Expected: all 39 pass. This proves `SET LOCAL ROLE` and `set_config(…, true)` survive the pooler. (The suites create throwaway users and delete them; on a branch that is safe.) If this fails behind the pooler, stop: try the direct endpoint, and report which one production uses.
+Expected: all 42 pass. This proves `SET LOCAL ROLE` and `set_config(…, true)` survive the pooler. (The suites create throwaway users and delete them; on a branch that is safe.) If this fails behind the pooler, stop: try the direct endpoint, and report which one production uses.
 
 - [ ] **Step 3: Measure the added latency from where the API runs.** From a Cloud Run job (or the API's own region), against the branch:
 
