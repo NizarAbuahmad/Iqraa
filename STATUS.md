@@ -1658,7 +1658,7 @@ A sitting a student already holds always stays visible to them.
 
 **In the app.**
 - Each card shows member chips (each opens the student record) and «ورقة علاجية» (the lesson's own grade and subject).
-- «تحقق للمجموعة» opens the quick check with the members ticked. The teacher can untick. The audience is set before questions are generated, so a failed audience leaves only an empty draft in the class list (no questions), which the teacher can delete.
+- *(Removed 2026-10-13 — see the quick-evaluation note below.)* «تحقق للمجموعة» opened the quick check with the members ticked. The teacher can untick. The audience is set before questions are generated, so a failed audience leaves only an empty draft in the class list (no questions), which the teacher can delete.
 - Once a check exists, the card shows its outcome per member: «تجاوز», «ما زال يحتاج دعمًا» or «لم يقدّمه بعد». The button becomes «تحقق جديد», or «أكمل التحقق» while a draft is open.
 - The review screen says «للمجموعة: N».
 - The marking list shows the group only.
@@ -1878,7 +1878,7 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
 | --- | --- |
 | Main job | Plan remediation, not parent meetings or term reports |
 | Scope | This class's evaluations only |
-| Actions on a weak objective | Remedial worksheet, quick re-check, open the lesson |
+| Actions on a weak objective | Remedial worksheet, open the lesson *(the quick re-check was removed 2026-10-13)* |
 | Architecture | One route returning the whole record |
 | Provisional papers | Counted in the rollup, as the class view does, with a line saying so |
 | Entry point | Tapping the row opens the record; the row's pencil icon still opens the note box |
@@ -1913,9 +1913,8 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
   - «ورقة علاجية» opens the worksheet screen with the lesson's own grade and
     subject (`lessonPickerParams`). It is hidden when the lesson can't be
     resolved.
-  - «تحقق سريع» opens `/evaluations/mini?classId&objectiveId`. The screen
-    preselects that objective and its book (`miniEvalPreset`), but only when
-    the class offers that book.
+  - *(Removed 2026-10-13.)* «تحقق سريع» opened `/evaluations/mini`; the
+    screen no longer exists.
   - «افتح الدرس» opens the lesson page.
   - «رسالة لولي الأمر» opens the parent message with the name prefilled.
   - A paper row opens the marking screen. **A not-sat row is not tappable**,
@@ -1944,7 +1943,6 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
     papers;
   - the bar fills from the right;
   - the worksheet opens on الصف العاشر / الكيمياء;
-  - the quick check opens with the objective selected;
   - the lesson and the paper both open;
   - tapping a not-sat row does nothing, and the `attempts` count stayed at 2;
   - the other student sees the empty state;
@@ -4023,6 +4021,18 @@ objective) and one judgement (are these three questions any good). Review is
 because the classroom-activity generator already owns both `quick-check` and
 `exit-ticket` as `activityType`s — **two features cannot share a name**, and that
 collision also cost an existing test file, which was overwritten and restored.
+**Removed 2026-10-13: the whole quick evaluation.** The «تقييم سريع» card on the
+class exams tab, the `/evaluations/mini` screen, `services/miniEval.ts` and the
+two entry points that routed to it — the student record's «تحقق سريع» /
+«تحقق سريع» per objective and the support group's «تحقق للمجموعة» — are gone, with
+their strings and tests (including the API's `miniEvalGraders.test.ts`).
+`groupObjectivesByLesson`, which `evaluations/new.tsx` still uses, moved to
+`services/objectiveLessons.ts`. **Left in place on purpose:** the server's
+`PUT /evaluations/:id/audience`, `setEvaluationAudience`, the support-group
+`draftCheck` / «أكمل التحقق» path and the group `latestCheck` outcomes, so a
+group check created before the removal can still be finished and read. Nothing
+in the app creates a new one now. The concrete maths bank in
+`@workspace/math-practice` stays: the ordinary evaluation generator uses it.
 
 **The default paper was the most expensive one.** `new.tsx` pre-selected
 `short_answer` + `open_ended`, both types `gradeAttempt` leaves out entirely, so
