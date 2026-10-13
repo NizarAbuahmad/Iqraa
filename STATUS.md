@@ -974,6 +974,48 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A paper of 20 questions no longer shrinks to 3 without saying so, 2026-10-13
+
+A teacher asked for 20 and the draft held 3. Reproduced against the offline
+generator (grade 10 maths, one lesson, multiple-choice only), and the live path
+shares two of the three causes:
+
+- **The duplicate gate threw away the maths.** `stemSimilarity`
+  (`modules/assessment/validator.ts`) kept only tokens longer than two
+  characters, i.e. no digit, variable or symbol — so «حل النظام: x + y = 5 …» and
+  «حل النظام: y = 2 …» compared as identical and every one after the first was
+  rejected as a "near-duplicate". It now drops only short Arabic *words*, and
+  compares adjacent word pairs too so «y = 3x − 1» and «x − y = 1» differ.
+- **The top-up counted the raw reply.** `/evaluations/:id/generate` asked the
+  model for the missing questions by comparing its reply to the target, *before*
+  the validator ran, so questions dropped afterwards were never replaced. It now
+  counts what survives (`missingAfterValidation`).
+- **Nobody was told.** `produced`/`requested`/`rejected` in the response were
+  read by nothing, the mock's "Produced N of M" note was taken before the
+  validator, and the detail screen only printed the count it had. The route now
+  states the final count and the rejection reasons, and a draft holding fewer
+  than `targetQuestionCount` says so on the detail screen for as long as it is true.
+
+**What is still a genuine limit, not a bug:** the offline generator can only give
+what the lesson's bank holds. One objective of «حل نظام معادلة خطية وتربيعية»
+yields 8 distinct multiple-choice questions however many are asked for (the bank
+recycles identical items, which the gate rightly rejects). Asking for 20
+multiple-choice questions on a single lesson offline will still come back short —
+now with the reason shown.
+
+## A published exam can be sent to the class chat in one tap, 2026-10-13
+
+The share card on a published exam (`ShareLinkCard`, `app/evaluations/[id]`) only
+copied the link. It now also has «أرسل إلى محادثة الشعبة»: it asks first (the
+message reaches every student in the class chat and their linked parents, and
+cannot be unsent), then posts the link, the title and the code through the
+existing `getClassThread` + `sendMessage` — no server change. The text is built
+by `services/examShareMessage.ts` (link on its own line so chat linkifies it,
+code included for a student who types it, long titles cut before the link).
+Only the owning teacher can post in a class chat by default (announcement-only),
+so this works without opening student posting. A failure says so and leaves
+«نسخ الرابط» as the fallback. Not verified in the running app.
+
 ## A waitlist signup on iqrra.com pushes the admins, 2026-10-12
 
 `POST /site/signups` (`routes/admin.ts`) now calls `notifyAdminsOfWaitlistSignup`

@@ -62,7 +62,7 @@ import {
   generateMockEvaluation,
   type GenerationResult,
 } from "../modules/assessment/mockGenerator";
-import { validateGenerated } from "../modules/assessment/validator";
+import { missingAfterValidation, validateGenerated } from "../modules/assessment/validator";
 import { inPaperOrder } from "../modules/assessment/paperOrder";
 import { contradictionWarning, verificationAfterEdit, verifyAnswerKeys } from "../modules/assessment/keyVerification.ts";
 import { relateAnswerKey } from "../lib/mathVerifierClient.ts";
@@ -800,7 +800,13 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
       // often send 10 and stop. Ask once more for only what is missing, with the
       // stems already written so the second batch is new questions. Best effort
       // — the paper is served short, and the shortfall warning says so, if it fails.
-      const missing = evaluation.targetQuestionCount - llm.questions.length;
+      // Counted after validation, not in the raw reply: a model that sends 20
+      // with 8 near-duplicates or off-scope has not sent 20.
+      const missing = missingAfterValidation(
+        llm.questions,
+        { allowedObjectiveIds: evaluation.objectiveIds, allowedTypes: evaluation.assessmentTypes },
+        evaluation.targetQuestionCount,
+      );
       if (missing > 0) {
         logger.warn(
           { evaluationId: evaluation.id, asked: evaluation.targetQuestionCount, got: llm.questions.length },
@@ -882,6 +888,17 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
     // the surplus trim above, so which questions were dropped is still the
     // generator's own choice and not "whatever type came last".
     keyCheck.kept = inPaperOrder(keyCheck.kept, k => k.question.type);
+    // The one honest count: what is actually on the paper against what was asked
+    // for. `result.shortfall` is taken before the validator and says nothing
+    // about the questions it dropped.
+    if (keyCheck.kept.length < evaluation.targetQuestionCount) {
+      generationNotes.push(
+        `Produced ${keyCheck.kept.length} of the ${evaluation.targetQuestionCount} questions requested`
+          + (validation.rejected.length > 0
+            ? ` (${validation.rejected.length} generated question${validation.rejected.length === 1 ? " was" : "s were"} rejected: ${[...new Set(validation.rejected.map(r => r.reason))].slice(0, 3).join("; ")}).`
+            : "."),
+      );
+    }
     // After the trim AND the sort, so the warning never names a question that is
     // not on the paper and its positions are the ones the review screen shows.
     const contradiction = contradictionWarning(keyCheck.kept);

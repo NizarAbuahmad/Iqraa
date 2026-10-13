@@ -27,22 +27,32 @@ export interface ValidationResult {
 }
 
 /**
- * Similarity of two stems, 0–1, on normalized token overlap (Jaccard).
+ * Similarity of two stems, 0–1, on normalized word and word-pair overlap (Jaccard).
  *
  * Cheap and good enough for the job: two questions generated from the same
  * objective differ by a word or two, and that is exactly the duplicate a
  * teacher would otherwise have to spot by reading all fifteen.
+ *
+ * Only short Arabic *words* are dropped (في، من، ما — they carry nothing). A
+ * short token that is a digit, a variable or a symbol IS the question in
+ * mathematics: dropping every token of two characters or fewer made «حل النظام:
+ * x + y = 5 …» and «حل النظام: y = 2 …» identical, and a paper of 20 shrank to 3.
  */
 export function stemSimilarity(a: string, b: string): number {
-  const tokens = (s: string) =>
-    new Set(
-      normalizeArabic(s)
-        .toLowerCase()
-        .split(/[\s،,.:؛?؟!]+/)
-        .filter(w => w.length > 2),
-    );
-  const ta = tokens(a);
-  const tb = tokens(b);
+  const stopWord = /^[\u0621-\u064A]{1,2}$/;
+  // Words AND adjacent pairs of words. Words alone ignore order, and in maths
+  // order is the question: «y = 3x − 1» and «x − y = 1» use the same symbols.
+  const features = (s: string) => {
+    const words = normalizeArabic(s)
+      .toLowerCase()
+      .split(/[\s،,.:؛?؟!]+/)
+      .filter(w => w.length > 0 && !stopWord.test(w));
+    const out = new Set(words);
+    for (let i = 0; i + 1 < words.length; i += 1) out.add(`${words[i]} ${words[i + 1]}`);
+    return out;
+  };
+  const ta = features(a);
+  const tb = features(b);
   if (ta.size === 0 || tb.size === 0) return 0;
   let shared = 0;
   for (const t of ta) if (tb.has(t)) shared += 1;
@@ -50,6 +60,20 @@ export function stemSimilarity(a: string, b: string): number {
 }
 
 const DUPLICATE_THRESHOLD = 0.85;
+
+/**
+ * How many more questions a paper needs, counted AFTER the validator has had its
+ * say. Counting the generator's raw reply is how a request for 20 ended at 12:
+ * the reply had 20, the top-up saw nothing missing, and the validator then
+ * dropped 8 with nobody left to replace them.
+ */
+export function missingAfterValidation(
+  questions: GeneratedQuestion[],
+  options: ValidateOptions,
+  target: number,
+): number {
+  return Math.max(0, target - validateGenerated(questions, options).accepted.length);
+}
 
 function promptOf(q: GeneratedQuestion): string {
   const body = q.body;
