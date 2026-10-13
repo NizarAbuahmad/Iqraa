@@ -2293,7 +2293,17 @@ git commit -m "docs+ci: row-level security — CI job, deploy notes, status, spe
 
 ### Task 7: Rehearse on Neon, then flip (manual — no code)
 
-This task is a checklist for a person with Neon and Cloud Run access. Nothing here ships in the PR; do not flip the switch until every gate passes.
+This task is a checklist for a person with Neon and Cloud Run access. Nothing here ships in the PR. **Step 0 is a gate on merging**, because merging runs the migration in production; the rest gate flipping the switch — do not flip it until every gate passes.
+
+- [ ] **Step 0: Before merging this PR — check which role owns the tables.** Merging runs migration `0008` in production (`deploy.yml` migrates before the API ships). It turns row-level security on for 28 tables with no `FORCE`, so the API is unaffected **only if the role in Cloud Run's `DATABASE_URL` owns them** (owners bypass RLS). On a Neon branch of production, connected with the **exact** `DATABASE_URL` Cloud Run uses (same role and credentials; only its host points at the branch — a branch opened from the Neon console may default to a different owner, and the check would then pass without testing the role the API uses):
+
+```bash
+psql "$CLOUD_RUN_DATABASE_URL_POINTED_AT_THE_BRANCH" \
+  -c "select current_user" \
+  -c "select tablename, tableowner from pg_tables where schemaname='public' order by 1"
+```
+
+**Gate:** `current_user` equals `tableowner` on every row. If not, do not merge: either make that role the owner (`ALTER TABLE … OWNER TO …`, a separate reviewed change) or give the policies a path for it. Also run Step 2 (the migration on the branch) before merging, so the first time `0008` runs against Neon is not production.
 
 - [ ] **Step 1: Branch production** in Neon (a copy-on-write branch — never the production database). Note its connection string as `BRANCH_URL`.
 
