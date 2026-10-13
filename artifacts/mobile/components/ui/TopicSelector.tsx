@@ -152,6 +152,7 @@ export function TopicSelector({
     setSelectedUnitId(null);
     setSelectedLessonId(null);
     onChange('');
+    onScopeChange?.(null);
   }, [subjectId, gradeId]);
 
   // Derive the topic string whenever selections change.
