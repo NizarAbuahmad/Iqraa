@@ -56,6 +56,7 @@ import { toLatinDigits } from '@/services/latinDigits';
 import { getClass } from '@/services/roster';
 import { playUri } from '@/services/englishAudio';
 import { isPaperQuestion } from '@/services/paperQuestion';
+import { formatMarks } from '@/services/studentAnswers';
 import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = palette.primary;
@@ -581,7 +582,7 @@ function ResultCard({
                 {t('resultPercentLabel', tidyPercent(result.percent))}
               </Text>
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 }}>
-                {result.earnedMarks} / {result.totalMarks}
+                {formatMarks(result.earnedMarks)} / {formatMarks(result.totalMarks)}
               </Text>
             </View>
             {result.isProvisional && (
