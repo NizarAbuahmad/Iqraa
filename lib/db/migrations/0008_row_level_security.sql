@@ -130,8 +130,12 @@ CREATE POLICY "class_memberships_delete" ON "class_memberships" FOR DELETE TO iq
 ALTER TABLE "roster_links" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE POLICY "roster_links_select" ON "roster_links" FOR SELECT TO iqraa_app
   USING (user_id = app_uid() OR app_teaches_student(student_id));--> statement-breakpoint
+-- Under a user's own identity only the student's teacher may create a link. A user claiming
+-- a student goes through systemDb (/auth/claim, /auth/redeem); letting any user insert a link
+-- for themselves would let them link to any student id and then read it — and, as 'self',
+-- write its attempts.
 CREATE POLICY "roster_links_insert" ON "roster_links" FOR INSERT TO iqraa_app
-  WITH CHECK (user_id = app_uid() OR app_teaches_student(student_id));--> statement-breakpoint
+  WITH CHECK (app_teaches_student(student_id));--> statement-breakpoint
 CREATE POLICY "roster_links_delete" ON "roster_links" FOR DELETE TO iqraa_app
   USING (user_id = app_uid() OR app_teaches_student(student_id));--> statement-breakpoint
 
