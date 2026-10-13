@@ -41,7 +41,7 @@ The plan below was prototyped end to end in a throwaway worktree against Postgre
 
 | Check | Result |
 | --- | --- |
-| Policy matrix against real Postgres 16 | 23 tests: tenancy, parent/student visibility, answer key hidden, grades teacher-only, chat membership and sender spoofing, blocks invisible to the blocked, admin sees `chat_reports` but not students, token tables closed, fail-closed with no identity, `INSERT … RETURNING`, transaction and savepoint scoping, no leak to the next borrower, off-mode is a plain pool |
+| Policy matrix against real Postgres 16 | 24 tests: tenancy, parent/student visibility, answer key hidden, grades teacher-only, chat membership and sender spoofing, blocks invisible to the blocked, admin sees `chat_reports` but not students, token tables closed, fail-closed with no identity, `INSERT … RETURNING`, transaction and savepoint scoping, no leak to the next borrower, a failed scope destroys the connection instead of leaking it, off-mode is a plain pool |
 | Coverage guard | Fails on a new unclassified table, and on RLS enabled where the lists say it is not (both demonstrated) |
 | Differential test, reads | 56 requests across 6 identities identical on/off; positive control proves the "on" server really runs as `iqraa_app` |
 | Differential test, writes | 50 steps (DMs, groups, blocks, device handoff, login/refresh, claim, roster, exams, release, admin, link-based exam) identical on/off in status, **pushes sent**, **rows left behind** and logged errors |
@@ -775,6 +775,7 @@ git commit -m "feat(db): iqraa_app role, helper functions and row-level-security
 
 ```ts
 // lib/db/src/__tests__/rlsMatrix.test.ts
+// lib/db/src/__tests__/rlsMatrix.test.ts
 import assert from "node:assert/strict";
 import { after, before, describe, test } from "node:test";
 import pg from "pg";
@@ -785,9 +786,10 @@ import { seed, TEST_URL, type Fixture } from "../testing/rlsHarness.ts";
 // Needs a migrated Postgres. Without RLS_TEST_DATABASE_URL (the `workspace` CI
 // job has no database) the suite skips; the `migrations` job supplies one.
 describe("row-level security matrix", { skip: !TEST_URL && "RLS_TEST_DATABASE_URL not set" }, () => {
-  let owner: pg.Pool;
-  let scoped: ScopedPool;
-  let fx: Fixture;
+  // Definitely-assigned in before(); after() uses `?.` because before() may have failed part-way.
+  let owner!: pg.Pool;
+  let scoped!: ScopedPool;
+  let fx!: Fixture;
   let ids: Fixture["ids"];
 
   before(async () => {
@@ -797,9 +799,9 @@ describe("row-level security matrix", { skip: !TEST_URL && "RLS_TEST_DATABASE_UR
     ids = fx.ids;
   });
   after(async () => {
-    await fx.cleanup();
-    await scoped.end();
-    await owner.end();
+    await fx?.cleanup();
+    await scoped?.end();
+    await owner?.end();
   });
 
   const as = <T>(key: keyof Fixture["ids"], role: string, fn: () => Promise<T>) =>
@@ -1026,6 +1028,34 @@ describe("row-level security matrix", { skip: !TEST_URL && "RLS_TEST_DATABASE_UR
     assert.equal(after.rows[0].uid, null);
   });
 
+  test("a failed scope destroys the connection instead of leaking it", async () => {
+    // A login role that is not a member of iqraa_app: `SET LOCAL ROLE iqraa_app` fails after `begin` succeeds.
+    await owner.query(`DROP ROLE IF EXISTS rls_no_member`);
+    // With a password: CI's postgres service authenticates over TCP with scram, trust auth is only local.
+    await owner.query(`CREATE ROLE rls_no_member LOGIN PASSWORD 'rls_no_member_pw'`);
+    const url = new URL(TEST_URL!); // keeps host/port/database; only the credentials are swapped
+    url.username = "rls_no_member";
+    url.password = "rls_no_member_pw";
+    const pool = new ScopedPool({ connectionString: url.toString(), max: 1, connectionTimeoutMillis: 3000 }, true);
+    let c: pg.PoolClient | undefined;
+    try {
+      c = await pool.connect();
+      await assert.rejects(c.query("begin"), /permission denied|set role/i);
+      // Drizzle never releases a client whose `begin` failed; with max 1 a leak would time out here.
+      const again = await pool.connect();
+      again.release();
+      assert.equal(pool.totalCount, 1); // the failed client is gone; only the fresh one remains
+      assert.equal(pool.idleCount, 1);
+      assert.doesNotThrow(() => c?.release()); // idempotent: a caller's own finally must not throw
+    } finally {
+      // Release before ending: were the destroy fix to regress, a still-checked-out client
+      // would make pool.end() wait forever and the DROP ROLE below never run.
+      c?.release(true); // idempotent: a no-op when the pool already destroyed it
+      await pool.end();
+      await owner.query(`DROP ROLE IF EXISTS rls_no_member`);
+    }
+  });
+
   test("a failed statement rolls back and the connection stays usable", () =>
     as("teacherA", "teacher", async () => {
       await assert.rejects(scoped.query(`INSERT INTO students (teacher_id) VALUES ($1)`, [ids.teacherA])); // display_name is NOT NULL
@@ -1043,6 +1073,7 @@ Expected: FAIL — `Cannot find module '../scopedPool.ts'`.
 
 ```ts
 // lib/db/src/scopedPool.ts
+// lib/db/src/scopedPool.ts
 import pg from "pg";
 import { currentIdentity } from "./identity.ts";
 
@@ -1050,13 +1081,17 @@ const BEGIN_RE = /^\s*begin\b/i;
 
 /**
  * The statements that make a transaction act as the current request's user.
- * No identity still switches role — it just sets no user, so every policy
- * evaluates false and the query sees nothing (fail closed).
+ * Both settings are always written, so nothing an earlier borrower left in the
+ * connection's session state can survive into this transaction. No identity
+ * still switches role — it sets both to '' (app_uid() reads '' as NULL), so
+ * every policy evaluates false and the query sees nothing (fail closed).
  */
 function scopeSql(): string {
   const identity = currentIdentity();
   const toRole = "SET LOCAL ROLE iqraa_app";
-  if (!identity) return toRole;
+  if (!identity) {
+    return `${toRole}; SELECT set_config('app.user_id', '', true), set_config('app.role', '', true)`;
+  }
   return (
     `${toRole}; SELECT set_config('app.user_id', '${identity.userId}', true), ` +
     `set_config('app.role', '${identity.role}', true)`
@@ -1077,6 +1112,13 @@ function scopeSql(): string {
  * borrower of the connection.
  *
  * With `enforce` false it is exactly a pg.Pool.
+ *
+ * Two fail-open edges, both unused in this repo (Drizzle never does either):
+ * - A call that passes a callback (`pool.query(sql, cb)`, `pool.connect(cb)`,
+ *   `client.query(sql, cb)`) is NOT scoped, even with enforcement on.
+ * - On the `connect()` path scoping starts at the caller's `BEGIN`, so a client
+ *   that is checked out and queried without a transaction runs unscoped, as the
+ *   owner.
  */
 export class ScopedPool extends pg.Pool {
   private enforce: boolean;
@@ -1125,16 +1167,29 @@ export class ScopedPool extends pg.Pool {
     const scope = scopeSql(); // fixed at checkout: a transaction keeps its caller's identity
     const originalQuery = client.query.bind(client) as (...a: any[]) => any;
     const poolRelease = client.release;
+    let released = false;
 
     (client as any).query = async (...a: any[]) => {
       if (typeof a[a.length - 1] === "function") return originalQuery(...a);
       const result = await originalQuery(...a);
       const first = a[0];
       const text = typeof first === "string" ? first : first?.text;
-      if (typeof text === "string" && BEGIN_RE.test(text)) await originalQuery(scope);
+      if (typeof text === "string" && BEGIN_RE.test(text)) {
+        try {
+          await originalQuery(scope);
+        } catch (err) {
+          // Drizzle runs `begin` outside its try/finally, so it will never release
+          // a client whose scope failed: the open transaction would leak the
+          // connection. Destroy it here and surface the original error.
+          client.release(true);
+          throw err;
+        }
+      }
       return result;
     };
     client.release = (err?: Error | boolean) => {
+      if (released) return; // idempotent: a caller's own finally must not double-release
+      released = true;
       delete (client as any).query; // back to the prototype method for the next borrower
       return poolRelease.call(client, err);
     };
@@ -1146,7 +1201,7 @@ export class ScopedPool extends pg.Pool {
 - [ ] **Step 4: Run the matrix.**
 
 Run: `pnpm --filter @workspace/db run test`
-Expected: PASS — 35 tests (6 identity, 6 coverage, 23 matrix).
+Expected: PASS — 36 tests (6 identity, 6 coverage, 24 matrix).
 
 - [ ] **Step 5: Wire `db` and `systemDb`.** Edit `lib/db/src/index.ts` so it reads exactly:
 
@@ -2006,7 +2061,7 @@ pnpm --filter @workspace/api-server run build
 pnpm --filter @workspace/db run test
 pnpm --filter @workspace/api-server run test
 ```
-Expected: typecheck clean; `lib/db`: 38 tests pass (6 identity, 6 coverage, 23 matrix, 3 differential); api-server: all pass including `systemDbFiles`.
+Expected: typecheck clean; `lib/db`: 39 tests pass (6 identity, 6 coverage, 24 matrix, 3 differential); api-server: all pass including `systemDbFiles`.
 
 - [ ] **Step 7: Mutation check** (run once, do not commit). For each of the swaps in Steps 2–5, revert just that swap (`systemDb` → `db`), rebuild, rerun `rlsDiff.test.ts`, and confirm it goes red; restore it. Expected: 16 of the 17 swaps are caught; the exception is the middleware lookup (no observable difference while `users` has no RLS — it stays for the round-trip saving) and the `broadcast` lookup (deliberately not swapped). A swap that no scenario can catch is either unnecessary or a missing scenario — add the scenario to `rlsDiff.test.ts`, do not leave it unproven.
 
@@ -2252,7 +2307,7 @@ Expected: applies `0008`. This proves the Neon owner role can `CREATE ROLE` and 
 ```bash
 RLS_TEST_DATABASE_URL="$BRANCH_URL" pnpm --filter @workspace/db run test
 ```
-Expected: all 38 pass. This proves `SET LOCAL ROLE` and `set_config(…, true)` survive the pooler. (The suites create throwaway users and delete them; on a branch that is safe.) If this fails behind the pooler, stop: try the direct endpoint, and report which one production uses.
+Expected: all 39 pass. This proves `SET LOCAL ROLE` and `set_config(…, true)` survive the pooler. (The suites create throwaway users and delete them; on a branch that is safe.) If this fails behind the pooler, stop: try the direct endpoint, and report which one production uses.
 
 - [ ] **Step 3: Measure the added latency from where the API runs.** From a Cloud Run job (or the API's own region), against the branch:
 
