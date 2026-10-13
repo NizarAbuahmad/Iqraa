@@ -4,9 +4,13 @@
  * teaching plan's own per-lesson calendar dates (services/planEntries.ts).
  * See services/scheduleCalendar.ts for why they're shown side by side rather
  * than merged into one interleaved timeline.
+ *
+ * A third source sits beside them: exam dates (services/examCalendar.ts). The
+ * teacher's own always show; colleagues' at the same school show behind a
+ * toggle, so a grade is not put through two exams on one day.
  */
 import React, { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,11 +19,14 @@ import { useLanguage } from '@/context/LanguageContext';
 import { getSchedule, type SchedulePeriod, type ScheduleSlot } from '@/services/schedule';
 import { listTeachingPlans, type TeachingPlan } from '@/services/teachingPlans';
 import { listClasses, type ClassGroup } from '@/services/roster';
-import { periodClassLabel } from '@/services/classSubjects';
+import { gradeLabel, periodClassLabel, subjectLabel } from '@/services/classSubjects';
+import { getExamCalendar } from '@/services/examCalendar';
+import { clashDates, examDates, examsOnDate, monthFetchRange } from '@/services/examCalendarModel';
 import { getLessonById } from '@/services/knowledgeBase';
 import { buildDayAgenda, dayHasAgenda, isInMonth, monthGridDates } from '@/services/scheduleCalendar';
 import { todayISO } from '@/services/planEntries';
 import { palette } from '@/constants/colors';
+import { RADIUS, SPACE } from '@/constants/theme';
 import { LoadError } from '@/components/ui/LoadError';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { dateLocale } from '@/services/dateLabels';
@@ -77,6 +84,7 @@ export default function CalendarScreen() {
   const [viewYear, setViewYear] = useState(todayDate.getFullYear());
   const [viewMonth, setViewMonth] = useState(todayDate.getMonth());
   const [selectedDate, setSelectedDate] = useState(today);
+  const [showSchoolExams, setShowSchoolExams] = useState(false);
 
   const {
     data: calendarData,
@@ -130,6 +138,18 @@ export default function CalendarScreen() {
   });
 
   const gridDates = monthGridDates(viewYear, viewMonth);
+  const { from: examFrom, to: examTo } = monthFetchRange(gridDates);
+  // Its own query, not part of loadCalendarData: a colleague-exam failure (or an
+  // API that predates exam dates) must not blank the timetable and lessons.
+  const { data: examData, isError: examsFailed } = useQuery({
+    queryKey: ['exam-calendar', examFrom, examTo],
+    queryFn: () => getExamCalendar(examFrom, examTo),
+    staleTime: CALENDAR_STALE_MS,
+  });
+  const exams = examData?.exams ?? [];
+  const examDays = examDates(exams, showSchoolExams);
+  const clashDays = clashDates(exams, showSchoolExams);
+  const selectedExams = examsOnDate(selectedDate, exams, showSchoolExams);
   const selectedAgenda = buildDayAgenda(selectedDate, periods, slots, plans);
   const align = isRTL ? 'right' : 'left';
   const rowDir = isRTL ? 'row-reverse' as const : 'row' as const;
@@ -193,6 +213,8 @@ export default function CalendarScreen() {
                     const isToday = date === today;
                     const isSelected = date === selectedDate;
                     const hasAgenda = inMonth && dayHasAgenda(buildDayAgenda(date, periods, slots, plans));
+                    const hasExam = inMonth && examDays.has(date);
+                    const hasClash = inMonth && clashDays.has(date);
                     const dayNum = Number(date.slice(-2));
                     return (
                       <Pressable
@@ -214,13 +236,18 @@ export default function CalendarScreen() {
                         >
                           {dayNum}
                         </Text>
-                        {hasAgenda ? (
-                          <View
-                            style={{
-                              width: 4, height: 4, borderRadius: 2, marginTop: 2,
-                              backgroundColor: isSelected ? '#fff' : ACCENT,
-                            }}
-                          />
+                        {hasAgenda || hasExam ? (
+                          <View style={{ flexDirection: rowDir, gap: SPACE.xs, marginTop: 2 }}>
+                            {hasAgenda ? (
+                              <View style={{ width: 4, height: 4, borderRadius: RADIUS.xs, backgroundColor: isSelected ? '#fff' : ACCENT }} />
+                            ) : null}
+                            {hasExam ? (
+                              // Square, so an exam day reads differently from a
+                              // lesson day without relying on colour alone; amber
+                              // when another exam for the grade sits on the day.
+                              <View style={{ width: 5, height: 5, backgroundColor: hasClash ? colors.warning : isSelected ? '#fff' : colors.foreground }} />
+                            ) : null}
+                          </View>
                         ) : null}
                       </Pressable>
                     );
@@ -230,18 +257,83 @@ export default function CalendarScreen() {
             </View>
           </View>
 
+          {/* School exams toggle. Off by default so colleagues' exams do not
+              crowd a teacher's own calendar; their own exams show regardless. */}
+          <View style={{ gap: SPACE.sm }}>
+            <View style={{ flexDirection: rowDir, alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: align }}>
+                {t('calendarShowSchoolExams')}
+              </Text>
+              <Switch
+                value={showSchoolExams}
+                onValueChange={setShowSchoolExams}
+                accessibilityLabel={t('calendarShowSchoolExams')}
+                trackColor={{ true: ACCENT, false: colors.border }}
+              />
+            </View>
+            {examsFailed ? (
+              <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: align }}>
+                {t('calendarExamsLoadFailed')}
+              </Text>
+            ) : showSchoolExams && examData && !examData.school ? (
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: align }}>
+                {t('calendarExamsNoSchool')}
+              </Text>
+            ) : null}
+          </View>
+
           {/* Selected day's agenda */}
           <View style={{ gap: 10, marginTop: 8 }}>
             <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
               {dateHeading}
             </Text>
 
-            {selectedAgenda.periods.length === 0 && selectedAgenda.lessons.length === 0 ? (
+            {selectedAgenda.periods.length === 0 && selectedAgenda.lessons.length === 0 && selectedExams.length === 0 ? (
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
                 {t('calendarNoActivity')}
               </Text>
             ) : (
               <>
+                {selectedExams.length > 0 ? (
+                  <View style={{ gap: SPACE.sm }}>
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: align }}>
+                      {t('calendarExamsSection')}
+                    </Text>
+                    {selectedExams.map((e, i) => {
+                      const grade = gradeLabel(e.gradeId, lang);
+                      const cls = (lang === 'ar' && e.classNameAr ? e.classNameAr : e.className) || '';
+                      const subject = subjectLabel(e.subjectId, lang);
+                      const title = e.own ? (lang === 'ar' ? e.titleAr || e.title : e.title || e.titleAr) : '';
+                      return (
+                        <View
+                          key={e.own ? e.id : `${e.examDate}|${e.gradeId}|${e.className}|${e.teacherName}|${i}`}
+                          style={{
+                            padding: SPACE.md, borderRadius: RADIUS.sm, borderWidth: 1.5, gap: SPACE.xxs,
+                            // A colleague's row is lighter: read-only, not the teacher's to edit.
+                            borderColor: e.clash ? colors.warning : colors.border,
+                            backgroundColor: e.own ? colors.card : 'transparent',
+                          }}
+                        >
+                          <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: align }}>
+                            {[e.examTime, [grade, cls].filter(Boolean).join(' · '), subject].filter(Boolean).join(' · ')}
+                          </Text>
+                          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: align }}>
+                            {e.own ? [t('calendarExamMine'), title].filter(Boolean).join(' · ') : t('calendarExamTeacher', e.teacherName)}
+                          </Text>
+                          {e.clash ? (
+                            <View style={{ flexDirection: rowDir, alignItems: 'center', gap: SPACE.sm }}>
+                              <Ionicons name="warning-outline" size={14} color={colors.warning} />
+                              <Text style={{ flex: 1, color: colors.warning, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: align }}>
+                                {t('calendarExamClash', grade)}
+                              </Text>
+                            </View>
+                          ) : null}
+                        </View>
+                      );
+                    })}
+                  </View>
+                ) : null}
+
                 {selectedAgenda.periods.length > 0 ? (
                   <View style={{ gap: 6 }}>
                     <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: align }}>

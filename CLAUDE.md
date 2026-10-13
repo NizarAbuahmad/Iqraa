@@ -158,6 +158,15 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   (`services/documents/extractMeta.ts`) or it silently exercises the ordinary
   path instead. `introduction`/`closure`/`assessment`/`homework` vary randomly
   via `pick()`, so asserting "the styles differ" on them proves nothing.
+  **The teacher's text is first person, future (since 2026-10-12).** The plan's
+  Arabic teacher fields read «اعرض… اسأل… فسّر…», which landed in the Ministry
+  form's «دور المُعلم» column as commands to someone else; they now say «سأعرض…
+  ثم سأسأل…». Words spoken to students stay quoted in «» and imperative. It is
+  two places again: the offline blueprints (`lessonPlanBlueprints.ts`,
+  `lessonPlanNative.ts`, the intro/closure/prior-review in `generators.ts`) and
+  `teacherVoiceAr` in `prompts.ts`. `lessonPlanTeacherVoice.test.ts` fails on a
+  bare imperative; it cannot list form-IV imperatives («أعلن», «أضف»), whose
+  unvowelled spelling is also the first-person verb, so write those by hand.
 - **A worksheet's structure lives in two places, and its count is the total.**
   The worked example, the half-solved first question and the key's working are
   built by `generateWorksheet` (`artifacts/mobile/services/ai/generators.ts`)
@@ -192,6 +201,21 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   The exports print a «السؤال الأول: …» heading per block from `quizBlocks`.
   A new quiz type needs an entry in all of them, and the type contract in the
   prompt, or the model is never told what the type looks like.
+  **The count is enforced too.** A model asked for 20 questions often returns
+  10 in a perfectly valid reply, so the quiz route counts (`quizShortfall`),
+  asks once more for only the missing ones (`quizTopUpBlock`, merged by
+  `mergeQuizTopUp`), trims a surplus from the biggest block, and scales the
+  output ceiling with the count (`quizTokens`); evaluations do the same in
+  `/evaluations/:id/generate`. If it is still short, `shortfall` says so. The
+  offline generator can only give what the lesson's bank holds (5 for a
+  chemistry lesson, 17 for a maths family) — a spent type hands its share to
+  the others rather than ending the paper (`quizCount.test.ts`).
+  Saved evaluations follow the same convention by a different route: the
+  generate route stores questions via `inPaperOrder`
+  (`modules/assessment/paperOrder.ts`) and the teacher's list heads each run
+  of one type from `examBlocks` (`services/examBlocks.ts`). The two
+  `EXAM_TYPE_ORDER` lists are pinned equal by `paperOrder.test.ts`; a new
+  question type needs a place in both and a direction in `examBlockDirection`.
 - **`additionalContext` is not teacher-pasted material — it is usually the
   curriculum.** Every `/ai-tools` screen fills it with `buildGeneratorContext()`
   output derived from the lesson, and the server appends its own book passages

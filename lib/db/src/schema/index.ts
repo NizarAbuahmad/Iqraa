@@ -16,6 +16,7 @@
 // Export your models here. Add one export per file
 export * from "./conversations";
 export * from "./messages";
+export * from "./schools";
 export * from "./users";
 export * from "./savedMaterials";
 

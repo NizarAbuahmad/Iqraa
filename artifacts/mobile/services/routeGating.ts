@@ -36,8 +36,13 @@
  * reason. It calls no API: the words ship in the bundle, the audio is in the
  * public bucket, and progress stays on the device. Only this subtree is public;
  * the rest of `/curriculum` still needs an account.
+ *
+ * `/suggest-feature` («اقترح ميزة») is linked from the login and register
+ * screens, so a visitor without an account can tell us what would make them
+ * sign up. Signed out it posts to the public, rate-limited `POST /site/ideas`;
+ * signed in, to `/feedback` as before.
  */
-const PUBLIC_ROUTES = ['/take', '/legal', '/play', '/curriculum/english'];
+const PUBLIC_ROUTES = ['/take', '/legal', '/play', '/curriculum/english', '/suggest-feature'];
 
 export function isPublicRoute(pathname: string | null | undefined): boolean {
   if (!pathname) return false;
@@ -156,13 +161,30 @@ export const GRADE_SETUP_ROUTE = '/setup-grade';
  * on the link for the same reason `needsRosterClaim` uses it — `undefined` is
  * "not answered yet", and must not strand the account on a second screen.
  * Teachers and admins are never gated; they pick on `/setup-subjects`.
+ *
+ * `skipped` is whether this account chose «تخطي» on the picker, kept on the
+ * device (see `gradeSetupSkipKey`). `null` means the flag has not been read
+ * from storage yet: no gate until it is, or an account that already skipped
+ * would be bounced back to the picker on every cold boot before the read lands.
  */
 export function needsGradeSetup(
   user: { role: string; gradeIds?: string[]; hasRosterLink?: boolean } | null | undefined,
+  skipped: boolean | null = false,
 ): boolean {
   if (!user || (user.role !== 'parent' && user.role !== 'student')) return false;
   if (user.hasRosterLink === false) return false;
+  if (skipped !== false) return false;
   return (user.gradeIds?.length ?? 0) === 0;
+}
+
+/**
+ * Storage key for "this account skipped the class picker". Per account, not
+ * per device: a second account signing in on the same phone has not been
+ * asked yet. Kept here, not beside the AsyncStorage calls, because this file
+ * is the one `node --test` can load.
+ */
+export function gradeSetupSkipKey(userId: string): string {
+  return `@iqra_grade_setup_skipped_v1:${userId}`;
 }
 
 /** The mandatory screen a brand-new teacher picks their grades/subjects on. */

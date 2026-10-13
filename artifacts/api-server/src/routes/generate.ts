@@ -16,6 +16,7 @@ import {
   lessonPlanPromptEn,
   quizPromptAr,
   quizPromptEn,
+  quizTopUpBlock,
   worksheetPromptAr,
   worksheetPromptEn,
 } from "../lib/prompts.ts";
@@ -81,6 +82,11 @@ import {
   assertUsableGeneration,
   deckShortfalls,
   extractJSON,
+  mergeQuizTopUp,
+  normalizeQuiz,
+  quizShortfall,
+  quizStems,
+  quizWanted,
   sanitizeWorksheetExtras,
   UnusableGenerationError,
   type GenerationKind,
@@ -102,6 +108,33 @@ const generateRouter = Router();
  * limits spend.
  */
 const GENERATION_TOKENS = 8000;
+
+/**
+ * A quiz's output ceiling, scaled to the count the teacher asked for.
+ *
+ * A flat 8000 is generous for 10 questions and tight for 20 — an Arabic
+ * question with four options and an explanation runs a few hundred tokens, and
+ * reasoning tokens bill against the same ceiling (see the note on
+ * `QUESTIONS_TOKENS`). A reply that hits it is cut short or fails to parse, so
+ * a big paper is the one most likely to arrive short. It is a ceiling, not a
+ * spend: a reply that finishes early costs what it used.
+ */
+function quizTokens(body: Record<string, unknown>): number {
+  const n = quizWanted(body) ?? 10;
+  return Math.min(24000, Math.max(GENERATION_TOKENS, 2500 + 800 * n));
+}
+
+/** Two completions' usage as one, for the single row the artifact is billed on. */
+function sumUsage(
+  a: Completion["usage"],
+  b: Completion["usage"],
+): Completion["usage"] {
+  if (!a || !b) return a ?? b;
+  return {
+    prompt_tokens: (a.prompt_tokens ?? 0) + (b.prompt_tokens ?? 0),
+    completion_tokens: (a.completion_tokens ?? 0) + (b.completion_tokens ?? 0),
+  };
+}
 
 /**
  * The prompt-slides ceiling, which is deliberately higher than the shared one.
@@ -420,6 +453,49 @@ async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
       });
     }
 
+    // A reply can be well-formed and still short: asked for 20 questions, a
+    // model will often return 10 and stop, and nothing above can tell. Count,
+    // and ask once more for only what is missing — with the stems already on
+    // the paper, so the second batch is new questions. Best effort: if the
+    // second call fails the short paper is still served (with its shortfall
+    // stated), because throwing away a usable paper over it would be worse.
+    if (kind === "quiz") {
+      const missing = quizShortfall(chosen.parsed, body);
+      if (missing > 0) {
+        const have = quizStems(chosen.parsed);
+        logger.warn(
+          { kind, strictKey: keys.strictKey, asked: quizWanted(body), got: have.length },
+          "quiz came back short — asking for the rest",
+        );
+        try {
+          const more = await completeOnce({
+            ...completionArgs,
+            userPrompt:
+              args.userPrompt
+              + variationBlock({ variantIndex: decision.variantIndex, isArabic: args.isAr, avoid })
+              + quizTopUpBlock(args.isAr, have, missing),
+          });
+          mergeQuizTopUp(chosen.parsed, more.parsed);
+          normalizeQuiz(chosen.parsed, body.questionTypes, quizWanted(body));
+          chosen = {
+            ...chosen,
+            usage: sumUsage(chosen.usage, more.usage),
+            durationMs: chosen.durationMs + more.durationMs,
+          };
+        } catch (err) {
+          logger.warn({ err, kind, strictKey: keys.strictKey }, "quiz top-up failed — serving the short paper");
+        }
+        // Whatever the paper holds now, say if it is still not what was asked.
+        const still = quizShortfall(chosen.parsed, body);
+        if (still > 0) {
+          (chosen.parsed as Record<string, unknown>).shortfall = {
+            requested: quizWanted(body),
+            produced: quizWanted(body)! - still,
+          };
+        }
+      }
+    }
+
     // Stored only once, and only the artifact actually being served. Storing
     // inside the completion helper meant a retry wrote the *rejected* attempt
     // into the pool first and then lost the slot to its own unique index — so
@@ -576,7 +652,7 @@ generateRouter.post("/generate/quiz", async (req: AuthenticatedRequest, res) => 
     const prompt = isAr ? quizPromptAr(body) : quizPromptEn(body);
     const result = await generateContent({
       kind: "quiz", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
-      maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
+      maxCompletionTokens: quizTokens(body), body, isAr, userId: req.user?.id,
     });
     res.json(withMeta(result, grounding));
   } catch (err) {

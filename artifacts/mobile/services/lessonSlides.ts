@@ -939,14 +939,14 @@ export function buildLessonDeck(
   if (exitChecks.length > 0) {
     push({
       type: 'divider',
-      title: L('تذكرة الخروج', 'Exit Ticket'),
+      title: L('غلق الدرس', 'Exit Ticket'),
       content: title,
       durationSeconds: 0,
     });
     exitChecks.forEach((check, i) => {
       push(asCheckSlide(
         check,
-        L(`🎫 تذكرة الخروج ${i + 1}`, `Exit Ticket ${i + 1}`),
+        L(`🎫 غلق الدرس ${i + 1}`, `Exit Ticket ${i + 1}`),
       ));
     });
   }
@@ -1020,7 +1020,7 @@ export function buildLessonDeck(
  * Two kinds of slide carry an answer. Worked examples are numbered as
  * examples, the way they always were. Check questions are keyed by their own
  * title instead, because their number is meaningful only within their section
- * — "تذكرة الخروج 1" is the first exit-ticket question, not the first
+ * — "غلق الدرس 1" is the first exit-ticket question, not the first
  * question in the deck, and renumbering them into one sequence would make the
  * printed key impossible to line up with the projected slides.
  *

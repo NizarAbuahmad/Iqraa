@@ -11,6 +11,7 @@ import { inflateRawSync } from 'node:zlib';
 import * as docx from 'docx';
 
 import { buildMinistryPlanDocx, ministryDayAndDate, stagesFromLessonPlan, type MinistryLessonPage } from '../ministryPlan.ts';
+import { learnerRoles } from '../ministryLearnerRoles.ts';
 
 const page: MinistryLessonPage = {
   subject: 'الرياضيات',
@@ -95,7 +96,35 @@ describe('stagesFromLessonPlan', () => {
   it('folds the phases into the teacher column, skipping blanks', () => {
     const st = stagesFromLessonPlan(base);
     assert.deepEqual(st.map(s => s.teacher), ['a', 'b\nc', 'd', 'e']);
-    assert.ok(st.every(s => s.learner === ''));
+  });
+
+  it('never leaves a learner cell empty when the model gave no split', () => {
+    for (const opts of [undefined, { lang: 'en' as const }, { lang: 'ar' as const, style: 'inquiry' as const }]) {
+      const st = stagesFromLessonPlan(base, opts);
+      assert.equal(st.length, 4);
+      assert.ok(st.every(s => s.learner.trim() !== ''), JSON.stringify(opts));
+    }
+  });
+
+  it("fills the learner column in the plan's language and teaching style", () => {
+    const en = stagesFromLessonPlan(base, { lang: 'en', style: 'collaborative', topic: 'Vocabulary' });
+    assert.ok(en.every(s => /[A-Za-z]/.test(s.learner) && !/[\u0600-\u06FF]/.test(s.learner)));
+    const ar = stagesFromLessonPlan(base, { lang: 'ar' });
+    assert.ok(ar.every(s => /[\u0600-\u06FF]/.test(s.learner)));
+  });
+
+  it("keeps the model's learner text and fills only a blank learner cell", () => {
+    const roles = [
+      { teacher: 't1', learner: 'real learner' },
+      { teacher: 't2', learner: '' },
+      { teacher: 't3', learner: '  ' },
+      { teacher: 't4', learner: 'l4' },
+    ];
+    const st = stagesFromLessonPlan({ ...base, ministryRoles: roles }, { lang: 'en' });
+    assert.equal(st[0].learner, 'real learner');
+    assert.equal(st[3].learner, 'l4');
+    assert.deepEqual(st.map(s => s.teacher), ['t1', 't2', 't3', 't4']);
+    assert.ok(st[1].learner.trim() !== '' && st[2].learner.trim() !== '');
   });
 
   it("prefers the model's teacher/learner split when it is whole", () => {
@@ -103,9 +132,59 @@ describe('stagesFromLessonPlan', () => {
     assert.deepEqual(stagesFromLessonPlan({ ...base, ministryRoles: roles }), roles);
   });
 
+  it("takes the teacher column from the phases, and the learner column from the model, when the teacher edited the plan", () => {
+    const roles = [1, 2, 3, 4].map(i => ({ teacher: `model teacher ${i}`, learner: `model learner ${i}` }));
+    const st = stagesFromLessonPlan({ ...base, ministryRoles: roles }, { teacherFromPhases: true });
+    assert.deepEqual(st.map(s => s.teacher), ['a', 'b\nc', 'd', 'e']);
+    assert.deepEqual(st.map(s => s.learner), roles.map(r => r.learner));
+  });
+
+  it('keeps the model teacher text when the plan was not edited', () => {
+    const roles = [1, 2, 3, 4].map(i => ({ teacher: `model teacher ${i}`, learner: `model learner ${i}` }));
+    assert.deepEqual(
+      stagesFromLessonPlan({ ...base, ministryRoles: roles }, { teacherFromPhases: false }).map(s => s.teacher),
+      roles.map(r => r.teacher),
+    );
+  });
+
   it('falls back to the folded phases when the split is short or empty', () => {
     assert.equal(stagesFromLessonPlan({ ...base, ministryRoles: [{ teacher: 'x', learner: 'y' }] })[0].teacher, 'a');
     const blank = [1, 2, 3, 4].map(() => ({ teacher: ' ', learner: '' }));
     assert.equal(stagesFromLessonPlan({ ...base, ministryRoles: blank })[1].teacher, 'b\nc');
+  });
+});
+
+describe('learnerRoles', () => {
+  const STYLES = ['direct', 'inquiry', 'collaborative'] as const;
+
+  it('gives four non-empty stages for every style and language', () => {
+    for (const lang of ['ar', 'en'] as const) {
+      for (const style of STYLES) {
+        const r = learnerRoles({ lang, style });
+        assert.equal(r.length, 4);
+        assert.ok(r.every(x => x.trim() !== ''), `${lang}/${style}`);
+      }
+    }
+  });
+
+  it('differs by style where the style changes what students do (explain, expand)', () => {
+    for (const lang of ['ar', 'en'] as const) {
+      for (const stage of [1, 2]) {
+        const texts = STYLES.map(style => learnerRoles({ lang, style })[stage]);
+        assert.equal(new Set(texts).size, STYLES.length, `${lang} stage ${stage}`);
+      }
+    }
+  });
+
+  it('puts students in groups for the collaborative style only', () => {
+    assert.match(learnerRoles({ lang: 'en', style: 'collaborative' })[1], /group/i);
+    assert.doesNotMatch(learnerRoles({ lang: 'en', style: 'direct' })[1], /group/i);
+    assert.match(learnerRoles({ lang: 'ar', style: 'collaborative' })[1], /مجموعات/);
+  });
+
+  it('names the lesson in the explain stage when it is known', () => {
+    assert.ok(learnerRoles({ lang: 'en', topic: 'Vocabulary' })[1].includes('Vocabulary'));
+    assert.ok(learnerRoles({ lang: 'ar', topic: 'قانون الجيوب' })[1].includes('قانون الجيوب'));
+    assert.ok(learnerRoles({ lang: 'en' })[1].trim() !== '');
   });
 });

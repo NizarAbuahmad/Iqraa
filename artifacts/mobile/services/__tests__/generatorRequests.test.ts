@@ -7,7 +7,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildActivityRequest } from '../generatorRequests.ts';
+import { buildActivityRequest, buildLessonPlanRequest } from '../generatorRequests.ts';
 import { resolveGeneratorGrounding } from '../kbContext.ts';
 import { getLessonById } from '../knowledgeBase.ts';
 
@@ -51,5 +51,41 @@ describe('buildActivityRequest', () => {
     const previous = { title: 'old' };
     const req = buildActivityRequest({ ...form, regenerate: true, previous }, resolveGeneratorGrounding(form.topic, 'ar'));
     assert.equal(req.regenerate, true);
+  });
+});
+
+describe('buildLessonPlanRequest', () => {
+  const planForm = {
+    gradeName: 'الصف العاشر',
+    subjectName: 'Mathematics',
+    topic: LESSON.titleAr,
+    lang: 'ar' as const,
+    durationMinutes: 45,
+    teachingStyle: 'direct' as const,
+    objectives: '',
+    adaptations: '',
+    priorTopicsNotes: '',
+    includePriorReview: false,
+  };
+
+  // The Ministry form needs a learner role per stage, and a second generation
+  // at export time would no longer match the plan the teacher read and edited.
+  // pregenerate.ts builds through this too, so the pooled plan and the one the
+  // screen asks for hash to the same artifact.
+  it('asks for the Ministry teacher/learner roles in the same call as the plan', () => {
+    const req = buildLessonPlanRequest(planForm, resolveGeneratorGrounding(planForm.topic, 'ar'));
+    assert.equal(req.ministryRoles, true);
+  });
+
+  it('asks for them whatever the teaching style, language or prior-review choice', () => {
+    for (const teachingStyle of ['direct', 'inquiry', 'collaborative'] as const) {
+      for (const lang of ['ar', 'en'] as const) {
+        const req = buildLessonPlanRequest(
+          { ...planForm, teachingStyle, lang, includePriorReview: true },
+          resolveGeneratorGrounding(planForm.topic, lang),
+        );
+        assert.equal(req.ministryRoles, true, `${teachingStyle}/${lang}`);
+      }
+    }
   });
 });
