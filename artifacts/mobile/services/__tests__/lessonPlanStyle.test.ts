@@ -87,7 +87,7 @@ describe('a plan does not contradict its own style', () => {
   it('inquiry does not hand over the rule before students look for it', async () => {
     const out = await plan(AR, 'inquiry');
     assert.match(out.mainActivity, /تخمين/, 'expected students to record a conjecture');
-    assert.match(out.guidedPractice, /لا تشرح القاعدة/, 'expected the guided phase to withhold the rule');
+    assert.match(out.guidedPractice, /لن أشرح القاعدة/, 'expected the guided phase to withhold the rule');
     assert.match(out.independentPractice, /حالة جديدة|لم تُناقَش/, 'expected the conclusion to be tested on a new case');
   });
 
