@@ -144,8 +144,8 @@ pooling (`passagesForUnit` per unit, merged by score, same
 
 ### 5. Artifact pool key
 
-`generationKey.ts` hashes `lessonId`/topic today. Add `scopeKey` to
-**both** keys' strict field set and bump `PROMPT_VERSION`. A "semester 1" request
+`generationKey.ts` hashes `lessonId`/topic today. Hash `scopeKey` into
+**both** the strict and the coarse key and bump `PROMPT_VERSION`. A "semester 1" request
 and a lesson request then can never share a slot. `lessonRefOf` (browse label
 only) returns `scopeKey` for wide kinds.
 
