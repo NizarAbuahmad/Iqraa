@@ -235,6 +235,15 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   teachers since 2026-09-02 as «بلّغ عن مشكلة» in `GeneratorResultActions`. It
   is deliberately open to any authenticated teacher, and it retires
   immediately rather than queuing a review.
+- **Students are shown only what an admin approved (since 2026-10-13).** The
+  pool serves a teacher whatever is stored, but a stored row can be under the
+  wrong lesson id and a student is a minor, so `GET /student/lesson-explanation/…`
+  filters on `ai_artifacts.student_approved_at`, which only
+  `POST /moderation/lesson-explanations/approve` sets. A new student-facing read
+  of the pool needs the same gate, and must not import generation code — a
+  student route that can reach `generateContent` is a student who can spend the
+  budget. `artifacts/mobile/scripts/pregenerate.ts` fills it; approval is a
+  separate step on purpose.
 - **`app.json`'s `version` is the OTA compatibility key, not a label.**
   `runtimeVersion.policy` is `appVersion`, so every build and every published
   update carries `"1.0.0"` until someone edits that string. An update only

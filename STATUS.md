@@ -18005,3 +18005,59 @@ mapping; typecheck; the full api-server and mobile suites.
 **Not verified:** the route handlers themselves — they need a database the suite
 does not have, so their wiring is covered by typecheck and review, not a test —
 and the screen on a device. `schema-push:` none.
+
+## Students can read a stored lesson explanation, 2026-10-13
+
+A student opens a lesson page and taps «اشرح لي الدرس». They get the
+`lesson-teaching` explanation the teacher pool already holds — hook, concept
+cards, worked example, practice problem with hint and answer — with no model
+call. Spec: `docs/superpowers/specs/2026-10-13-student-lesson-explanations-design.md`.
+
+What is true, checked against the code and the suites:
+
+- **Serve-only.** `GET /student/lesson-explanation/:lessonId` reads
+  `ai_artifacts` and bumps the served row's `timesServed`; it writes nothing
+  else and imports no generation, budget or OpenAI code (a test scans for it).
+  A student cannot cause a paid call.
+- **Only approved rows are shown.** `ai_artifacts.student_approved_at` is set
+  by a `system_admin` through `POST /moderation/lesson-explanations/approve`.
+  A teacher's stored row is not shown to students until then, because
+  `slides.tsx` used to derive the lesson id from the title, so a stored row can
+  sit under the wrong lesson.
+- **Looked up by lesson id,** not by recomputing the teacher's `strictKey`, so a
+  model or `PROMPT_VERSION` bump does not empty the student view. The newest
+  approved row wins.
+- **A student report queues, it does not retire.** It goes to the existing
+  `reportVariant` queue for a `system_admin`.
+- **Filling and approving the pool is a manual, three-step job** in
+  `artifacts/mobile/scripts/pregenerate.ts` (run as `pnpm run pregenerate` from
+  `artifacts/mobile`): `--go --only=lesson-teaching` generates and writes
+  `pregen-review.json` (`--review=` renames it); a person reads it and deletes
+  what they reject; `--approve=<file>` approves the rest. Grade 10 Mathematics
+  and Chemistry only. Rerunning the generate step rewrites `pregen-review.json`,
+  so entries a reviewer deleted come back: finish reviewing and `--approve`
+  before rerunning.
+- `Slides Maker` and the prefill now build the request through
+  `buildLessonTeachingRequest` (`artifacts/mobile/services/generatorRequests.ts`),
+  and a test pins it deep-equal to the old inline body.
+
+**Not built, and worth knowing:**
+- Nothing has been generated or approved in production yet, so every lesson
+  shows «شرح الدرس قريبًا» until the prefill, the review and the approval are run.
+- The wording was written for a classroom projector. Whether it reads well to a
+  student alone is checked only by a person reading the review file; if more
+  than a few lessons need rewording the answer is a separate student prompt, not
+  hand-edited text.
+- Student chat is still never pooled. Parent summaries and hints on exam
+  questions are separate specs.
+- The student screen and button were built and checked by the typechecker, the
+  i18n/routing/design-scale tests and the card-model tests, but were never
+  exercised in a running app (no database was available when they were written).
+  Open a lesson as a student, with one approved row in the database, before
+  telling anyone it works.
+
+**Needs the migration:** `ai_artifacts` gains `student_approved_at` and an index
+(`ai_artifacts_kind_lesson_idx` on `(kind, lesson_ref)`). It deploys as a
+migration (`lib/db/migrations/0007_opposite_lord_hawal.sql`); until it has
+applied, the student route returns 500 (the column does not exist) and
+teachers are unaffected.
