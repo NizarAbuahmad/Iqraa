@@ -34,6 +34,16 @@ export interface AIRequest {
    */
   lessonId?: string;
   /**
+   * A scope wider than one lesson — a unit, a semester or the whole book.
+   *
+   * `scopeKey` is id-only and part of the artifact pool's cache key, so a
+   * «الفصل الأول كاملًا» paper is never served as one lesson's. `unitIds` are
+   * the NCCD units in range (the server pools book pages across them); the
+   * digest itself travels in `additionalContext`. Absent for a single lesson,
+   * which keeps using `lessonId` / `unitId` exactly as before.
+   */
+  scope?: { kind: 'unit' | 'semester' | 'book'; scopeKey: string; unitIds: string[] };
+  /**
    * How many student-book figures this lesson has (`figuresForLesson().length`).
    *
    * The server cannot work this out: the crops and `figure-lesson-map.json`

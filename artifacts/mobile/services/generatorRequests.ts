@@ -19,6 +19,7 @@ import {
   type GeneratorGrounding,
 } from './kbContext.ts';
 import type { KbScope } from './knowledgeBase.ts';
+import type { ScopeGrounding } from './scopeGrounding.ts';
 
 type Lang = 'ar' | 'en';
 
@@ -64,6 +65,23 @@ export function buildWorksheetRequest(form: WorksheetForm, grounding: GeneratorG
     ...regenerationFields(form.regenerate === true, form.previous),
     includePriorReview: usePrior,
     priorKnowledge: usePrior ? unitPrior : undefined,
+  };
+}
+
+/**
+ * The request fields a wide scope adds on top of a screen's own.
+ *
+ * Empty for a single lesson: the screen already sends `lessonId` / `unitId` and
+ * its lesson context, and this PR must not change that request.
+ */
+export function scopeRequestFields(
+  g: ScopeGrounding,
+): Pick<AIRequest, 'scope' | 'additionalContext' | 'contextSource'> {
+  if (g.kind === 'lesson') return {};
+  return {
+    scope: g.grounded ? { kind: g.kind, scopeKey: g.scopeKey, unitIds: g.unitIds } : undefined,
+    additionalContext: (g.grounded ? g.context : g.ungroundedNote) || undefined,
+    contextSource: 'curriculum',
   };
 }
 
