@@ -29,6 +29,7 @@
 import type { Lang } from './mathPractice.ts';
 import type { LessonKind } from './lessonPlanKinds.ts';
 import { nativeDirectBlueprint } from './lessonPlanNative.ts';
+import { collaborativeAr1, directAr1, inquiryAr1, nativeDirectVariant1 } from './lessonPlanVariantsAr.ts';
 import {
   concepts, firstConcept, fromDoc, phaseMinutes, term,
   type LessonStyleBlueprint, type LessonStyleContext,
@@ -174,6 +175,13 @@ const BUILDERS: Record<LessonStyleId, Record<Lang, (ctx: LessonStyleContext) => 
   collaborative: { ar: collaborativeAr, en: collaborativeEn },
 };
 
+/** The Arabic alternatives, per style (the kinds with their own direct plan are in `nativeDirectVariant1`). */
+const VARIANT_1_AR: Record<LessonStyleId, (ctx: LessonStyleContext) => LessonStyleBlueprint> = {
+  direct: directAr1,
+  inquiry: inquiryAr1,
+  collaborative: collaborativeAr1,
+};
+
 /**
  * Phases for one teaching style.
  *
@@ -186,11 +194,15 @@ export function buildLessonStyleBlueprint(
   ctx: LessonStyleContext,
 ): LessonStyleBlueprint {
   const key: LessonStyleId = isLessonStyleId(style) ? style : 'direct';
+  // The alternative wording a regenerate may ask for. Arabic only, and variant 0
+  // (what every first generation gets) never reaches it.
+  const alternative = ctx.lang === 'ar' && ctx.variant === 1;
   // Direct instruction is the routine each subject is actually taught with:
   // mathematics keeps its worked examples, every other kind gets its own.
   if (key === 'direct') {
-    const native = nativeDirectBlueprint(ctx);
+    const native = alternative ? nativeDirectVariant1(ctx) : nativeDirectBlueprint(ctx);
     if (native) return native;
   }
-  return forKind(BUILDERS[key][ctx.lang](ctx), ctx);
+  const build = alternative ? VARIANT_1_AR[key] : BUILDERS[key][ctx.lang];
+  return forKind(build(ctx), ctx);
 }

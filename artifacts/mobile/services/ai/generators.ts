@@ -1021,6 +1021,13 @@ async function freshOnRegenerate<T>(
    * another order, or with the options shuffled, are not a new paper.
    */
   stemsOf?: (out: T) => string[],
+  /**
+   * How many draws to try for a paper that shares fewer stems. The loop stops at
+   * the first draw that shares none, so a larger budget costs nothing where that
+   * is reachable (an Arabic lesson plan: ~1 draw in 16 changes all eight
+   * sections, and 80 attempts missed it about once in a hundred regenerations).
+   */
+  maxStemDraws: number = MAX_FRESH_STEM_ATTEMPTS,
 ): Promise<T> {
   const key = requestIdentity(kind, req);
   const previous = lastServed.get(key);
@@ -1037,7 +1044,7 @@ async function freshOnRegenerate<T>(
       let best = out;
       let bestOverlap = overlap(out);
       let bestSignature = signature;
-      for (let attempt = 1; attempt < MAX_FRESH_STEM_ATTEMPTS && bestOverlap > 0; attempt++) {
+      for (let attempt = 1; attempt < maxStemDraws && bestOverlap > 0; attempt++) {
         const candidate = await produce();
         const candidateSignature = fingerprint(candidate);
         const o = overlap(candidate);
@@ -1127,7 +1134,10 @@ export class MockAIService extends AIService {
 
   async generateLessonPlan(req: AIRequest): Promise<LessonPlanOutput> {
     await this.delay();
-    return freshOnRegenerate('lessonPlan', req, () => this.lessonPlanOnce(req), lessonPlanSections);
+    // Only the Arabic plan has a second wording to find; English keeps the default
+    // budget, since its five fixed sections mean no draw can ever share none.
+    return freshOnRegenerate('lessonPlan', req, () => this.lessonPlanOnce(req), lessonPlanSections,
+      req.language === 'arabic' ? 300 : MAX_FRESH_STEM_ATTEMPTS);
   }
 
   private async lessonPlanOnce(req: AIRequest): Promise<LessonPlanOutput> {
@@ -1160,8 +1170,13 @@ export class MockAIService extends AIService {
     // the caller's subject name is only the fallback for a typed topic.
     const subjectId = (kb ? getBookForLesson(kb)?.subjectId : subjectIdFromName(req.subject)) ?? undefined;
     const kind = lessonKindFor(subjectId);
+    // A first generation is variant 0 — the plan as it has always been. A
+    // regenerate may draw either wording of the five style-owned sections;
+    // `freshOnRegenerate` then keeps the draw that differs most from the plan on
+    // screen, so pressing the button again alternates.
+    const variant = req.regenerate === true && Math.random() < 0.5 ? 1 : 0;
     const styleBlueprint = buildLessonStyleBlueprint(style, {
-      topic, kb, lang, subject: req.subject, duration: dur, doc: docCtx, kind, subjectId,
+      topic, kb, lang, subject: req.subject, duration: dur, doc: docCtx, kind, subjectId, variant,
     });
 
     // Document-grounded lesson plan (Demo Mode) — prefer uploaded materials over KB soft pin

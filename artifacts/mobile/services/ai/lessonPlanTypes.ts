@@ -30,6 +30,13 @@ export interface LessonStyleContext {
   /** Present when the teacher attached materials; phases draw on these
    *  instead of the KB, but the STYLE still decides their shape. */
   doc?: LessonDocContext | null;
+  /**
+   * Which wording of the five style-owned sections to build: 0 (the default, and
+   * what a plan has always had) or 1, the alternative a regenerate may draw —
+   * see `lessonPlanVariantsAr.ts`. Only Arabic has a variant 1; anything else
+   * builds variant 0.
+   */
+  variant?: number;
 }
 
 export interface LessonStyleBlueprint {
