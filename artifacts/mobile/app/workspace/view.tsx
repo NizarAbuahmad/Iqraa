@@ -35,6 +35,7 @@ import { normalizeQuestionOptions, optionLetter } from '@/services/optionLabels'
 import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { resolveGeneratorGrounding } from '@/services/kbContext';
+import { isWideScopeFormState } from '@/services/materialLessonId';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import {
@@ -152,6 +153,13 @@ export default function WorkspaceViewScreen() {
   const docRTL = docLang === 'ar';
   const docT = getT(docLang);
 
+  // A unit / semester / book paper is not one lesson. `lessonId` is not stamped
+  // on it any more (workspace.ts), but a copy saved before that fix may carry
+  // another lesson's id, and "send to students" would offer that lesson's
+  // objectives — so ignore it here as well.
+  const wideMaterial = isWideScopeFormState(item.formState);
+  const sendLessonId: string | undefined = wideMaterial ? undefined : item.formState?.lessonId;
+
   const accent = MATERIAL_COLOR[kind as keyof typeof MATERIAL_COLOR] ?? colors.primary;
 
   const editRoute =
@@ -189,9 +197,13 @@ export default function WorkspaceViewScreen() {
    * material — and a quiz saved for next week's exam printed without the
    * diagrams its own questions refer to. Re-resolved rather than stored,
    * because a saved material predates the field and would have none.
+   *
+   * A unit / semester / book paper has no single lesson: its topic is the
+   * scope's label, which would ground to some lesson (possibly another
+   * grade's) and print that lesson's figures. It gets none.
    */
   const getExportFigures = () =>
-    bookFigureRefsForLesson(resolveGeneratorGrounding(item.topic ?? '', docLang).lesson?.id, isAr);
+    wideMaterial ? [] : bookFigureRefsForLesson(resolveGeneratorGrounding(item.topic ?? '', docLang).lesson?.id, isAr);
 
   const getHTML = () => {
     if (!content) return '<p></p>';
@@ -358,7 +370,7 @@ export default function WorkspaceViewScreen() {
         ) : kind === 'activity' ? (
           <ActivityView activity={content as ActivityOutput} colors={colors} isRTL={docRTL} t={docT} accent={accent} isAr={isAr} />
         ) : kind === 'worksheet' ? (
-          <WorksheetView ws={content as WorksheetOutput} lessonId={item.formState?.lessonId} colors={colors} isRTL={docRTL} t={docT} accent={accent} />
+          <WorksheetView ws={content as WorksheetOutput} lessonId={sendLessonId} colors={colors} isRTL={docRTL} t={docT} accent={accent} />
         ) : kind === 'flow' ? (
           <FlowView flow={content as unknown as LessonFlowOutput} colors={colors} isRTL={docRTL} lang={docLang} accent={accent} />
         ) : kind === 'slides' || kind === 'prompt-slides' ? (
@@ -393,7 +405,7 @@ export default function WorkspaceViewScreen() {
       <SendWorksheetSheet
         visible={showSend}
         worksheet={content as WorksheetOutput}
-        lessonId={item.formState?.lessonId}
+        lessonId={sendLessonId}
         language={docLang === 'en' ? 'en' : 'ar'}
         accent={accent}
         colors={colors}
