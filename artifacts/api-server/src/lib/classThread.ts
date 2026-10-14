@@ -8,7 +8,8 @@
  * it wrong the moment the same user is self-linked to another child in the same
  * class. Derivation lives here; both routes call it.
  */
-import { db } from "@workspace/db";
+// Acts without (or beyond) the caller's identity — see lib/db/src/scopedPool.ts.
+import { systemDb as db } from "@workspace/db";
 import {
   chatThreads,
   chatParticipants,

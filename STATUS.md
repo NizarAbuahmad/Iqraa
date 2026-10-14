@@ -53,6 +53,21 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **Wide-scope selection, foundation only (2026-10-13; spec
+  `docs/superpowers/specs/2026-10-13-wide-scope-selection-design.md`).**
+  `services/scopeSelection.ts` (what a unit / semester / book scope covers),
+  `services/scopeGrounding.ts` (tiered, ≤ 6 000-char digest), `AIRequest.scope`,
+  server-side page pooling and `scopeKey` in the artifact cache key all exist
+  and are tested. `TopicSelector`'s «الفصل كاملًا» entry is verified by code
+  read only — there is no browser in the build container, so it was never run.
+  **No generator screen opts in yet**, so nothing a teacher sees has changed:
+  «الوحدة كاملةً» sets the unit title as the topic, which
+  `resolveGeneratorGrounding` grounds to one lesson or none (not to the unit),
+  and «الكتاب كاملًا» stays ungrounded — its topic text matches nothing.
+  **Restoring a saved / reopened scope (spec §6, goal 5) is not done:**
+  `parseScope` exists, but wiring saved state to it is piece 2's job. Pieces 2
+  (quiz, worksheet, homework, game) and 3 (the rest) also have to adopt
+  `onScopeChange` + `scopeRequestFields` before anything above is reachable.
 - **API credentials are Secret Manager references** (2026-10-08, live since
   `iqraa-api-00283-twr`). The ten credentials (`SESSION_SECRET`,
   `DATABASE_URL`, `OPENAI_API_KEY`, both R2 keys, Unsplash, YouTube,
@@ -253,6 +268,22 @@ an announcement by default» below.
   policy — honest, but the classroom builder would then error in demo mode for
   those subjects) or to author real per-subject templates. Tests:
   `offlineRegenerate.test.ts`. Not looked at in a browser.
+- **Quiz «أعد التجهيز» now changes the questions, and says when it cannot**
+  (2026-10-13). The offline regenerate only checked that the whole quiz JSON
+  differed from the last one, so the same stems in another order — or with the
+  options shuffled — counted as «fresh». On the periodic-table lesson (bank:
+  5 MC, 5 T/F, 3 short-answer) a teacher on the web build (`DEMO_MODE` on)
+  saw 2.4 of 5 questions repeat on average, and 3 papers in 30 repeated all
+  five. `freshOnRegenerate` now takes `stemsOf` and keeps the draw that shares
+  the fewest stems with what is on screen (up to 80 draws, offline and
+  instant). What it cannot fix is a bank with nothing else to offer: that lesson
+  holds one medium short-answer question, so any paper containing one repeats
+  it. Such a paper carries `repeated: { count, of }` and `ShortPaperNotice`
+  says «تكرّر N من M…» instead of passing it off as new; `quiz.tsx` strips it on
+  save, since it describes a regenerate, not the paper. **Quiz only** —
+  worksheet and homework still compare whole objects. Live AI is unchanged (it
+  has its own `avoid` / overlap check server-side). Tests:
+  `quizRegenerateStems.test.ts`. Not looked at in a browser.
 - **"No question bank" after a failed live call now says so, with the reason**
   (2026-10-11). With live AI on, a failed call falls back to the offline
   generator, which has banks for maths/chemistry only — so a worksheet, quiz or
@@ -973,6 +1004,39 @@ an announcement by default» below.
     deployed. The client's timeout is 2.5s, so the first call after idle fails.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
+
+## Row-level security is built and switched off, 2026-10-13
+
+**State: off. No behaviour changes — but merging DOES run the migration in production** (`deploy.yml` migrates before the API ships): it creates the `iqraa_app` role, grants, and turns row-level security on for 28 tables. If the API's connection is the table owner, RLS does not apply to it (there is no `FORCE`) and nothing changes — **that is the assumption to verify: the role in Cloud Run's `DATABASE_URL` must own those tables.** It has not been checked: confirm it on a Neon branch before merging (`docs/superpowers/plans/2026-10-13-row-level-security.md`, Task 7 Step 0).
+**Both connection strings must name that same owner role:** the migration runs under GitHub's `secrets.DATABASE_URL` (`deploy.yml`, the `production migrations` job), while the API runs under Cloud Run's `DATABASE_URL`. The fifteen `SECURITY DEFINER` helpers are owned by the *migrating* role, and bypass RLS only if that role also owns the tables — if the two secrets name different roles, the helpers read as a role that is subject to the policies.
+
+The `iqraa_app` role, sixteen helper functions and 65 policies exist (migration `0008_row_level_security.sql`); the API
+carries each request's user to Postgres; and `RLS_ENFORCE` — unset, so off — decides
+whether any of it applies. Spec: `docs/superpowers/specs/2026-10-13-row-level-security-design.md`;
+how to flip it: *Row-level security* in `docs/deploying.md`.
+
+**Verified locally on Postgres 16, and run by the new `rls` CI job on every push:** the policy matrix, a coverage guard that fails on an
+unclassified table, and a differential test that boots the built API with enforcement off
+and on and finds no difference in what users see, which pushes are sent, which rows are
+left behind, or what is logged — across 56 reads for six identities and 53 write steps (a student's retake, the push badge and the inbox order a reply bumps included).
+
+**Not verified, and the reason it is off:** enforcement has never run against Neon (the migration will, at merge). Added latency
+across the Cloud Run → Neon hop is unmeasured (≈ two extra round trips per statement; +0.24 ms
+on loopback). The connection ceiling with two pools per instance is unchecked. No one has
+walked the teacher / parent / student flows with it on in a real environment.
+
+**What it does not cover yet:** `users` (every roster and chat screen reads names from it),
+the teacher-owned planning tables, and the shared content tables are *deferred* by name in
+`rlsCoverage.test.ts`. Fourteen files use `systemDb`, which bypasses it — they are pinned in
+`systemDbFiles.test.ts` with a reason each. This guards against a forgotten `where`, not
+against SQL injection: the session user is still the owner and could `RESET ROLE`. RLS limits
+rows, not columns: a student's own attempt row is writable by them at the database level (status,
+`teacher_comment`, …), so the API remains the control on which columns a student may set.
+
+**Known limits of the policies (found in the final review, deliberately left):**
+- A student's own attempt rows can be inserted, or re-pointed at another `evaluation_id`, for their own student id at the database level: RLS cannot compare old and new values, and an assignment-aware predicate is a follow-up. The API is the gate.
+- RLS does not enforce *who may message whom*: any user may create a thread and, as its owner, add anyone. The API's connected-teacher rule is unchanged and is the control. Note for the `users` follow-up.
+- `attempt_answers` / `attempts` writes by a student's own account have no "attempt is open" check at the database level (submitted, expired, released); the API enforces it.
 
 ## A waitlist signup on iqrra.com pushes the admins, 2026-10-12
 

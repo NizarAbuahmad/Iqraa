@@ -28,7 +28,7 @@ import {
   chatMessages,
   chatReports,
   chatThreads,
-  db,
+  systemDb as db, // Acts without (or beyond) the caller's identity — see lib/db/src/scopedPool.ts.
   users,
   type ArtifactReportStatus,
   type ChatReportStatus,
