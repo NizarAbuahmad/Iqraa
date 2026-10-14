@@ -76,6 +76,20 @@ export function contextSourceOf(body: Record<string, unknown>): ContextSource {
 }
 
 /**
+ * The id-only key of a wide scope («الفصل الأول كاملًا», «الكتاب كاملًا»), when
+ * the request carries one. It is part of both keys: a semester paper is not a
+ * lesson's, and a topic string alone («الفصل الأول كاملًا») is the same for
+ * every grade and subject. Absent for a single lesson, which is why adding it
+ * leaves every existing key — and so the whole pool — untouched.
+ */
+export function scopeKeyOf(body: Record<string, unknown>): string | undefined {
+  const scope = body.scope;
+  if (typeof scope !== "object" || scope === null) return undefined;
+  const key = (scope as Record<string, unknown>).scopeKey;
+  return typeof key === "string" && key.length > 0 && key.length <= 200 ? key : undefined;
+}
+
+/**
  * Normalise a free-text field so two spellings of one lesson are one key.
  *
  * Arabic makes this load-bearing rather than cosmetic: the same lesson title
@@ -172,6 +186,8 @@ export function generationKeys(
     promptVersion,
     // lessonId when the client sent one — a stable id beats a typed string.
     lesson: normalizeValue(body.lessonId ?? body.topic),
+    // Only present for a unit / semester / book request — see `scopeKeyOf`.
+    scope: normalizeValue(scopeKeyOf(body)),
     subject: normalizeValue(body.subject),
     grade: normalizeValue(body.grade),
     // The prompt builders' own rule (`language !== "english"`), not a
