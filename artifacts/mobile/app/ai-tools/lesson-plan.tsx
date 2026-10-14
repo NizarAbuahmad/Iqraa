@@ -39,6 +39,7 @@ import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { GeneratorResultActions, GeneratorSaveBar } from '@/components/ui/GeneratorResultActions';
+import { ShortPaperNotice } from '@/components/ui/ShortPaperNotice';
 import { buildLessonPlanHTML, buildLessonPlanSlidesHTML, exportMinistryPlanWord, formatLessonPlanText } from '@/services/share';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
@@ -311,7 +312,8 @@ export default function LessonPlanScreen() {
       grade: outLang === 'ar' ? grades[scope.gradeIdx].nameAr : grades[scope.gradeIdx].name,
       topic: scope.topic,
       language: outLang,
-      content: JSON.stringify(result),
+      // `repeated` describes a regenerate, not the plan: reopened later it would be stale.
+      content: JSON.stringify({ ...result, repeated: undefined }),
       formState,
     };
 
@@ -640,6 +642,11 @@ export default function LessonPlanScreen() {
       )}
 
       {/* Result */}
+      {result?.repeated && (
+        <View style={{ marginHorizontal: 20 }}>
+          <ShortPaperNotice repeated={result.repeated} repeatedUnit="sections" />
+        </View>
+      )}
       {result && (
         <LessonPlanResult
           plan={result}

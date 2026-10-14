@@ -16,9 +16,11 @@ import { useLanguage } from '@/context/LanguageContext';
  * regenerate whose bank had nothing else to offer, so a repeat reads as a
  * limit of the lesson and not as a button that did nothing.
  */
-export function ShortPaperNotice({ shortfall, repeated }: {
+export function ShortPaperNotice({ shortfall, repeated, repeatedUnit = 'questions' }: {
   shortfall?: { requested: number; produced: number };
   repeated?: { count: number; of: number };
+  /** What the repeated things are: a paper's questions, or a lesson plan's sections. */
+  repeatedUnit?: 'questions' | 'sections';
 }) {
   const colors = useColors();
   const { t, isRTL } = useLanguage();
@@ -35,7 +37,7 @@ export function ShortPaperNotice({ shortfall, repeated }: {
       <Text style={[styles.text, { color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left' }]}>
         {[
           short ? t('shortPaperNotice', shortfall!.produced, shortfall!.requested) : '',
-          repeats ? t('repeatedQuestionsNotice', repeated!.count, repeated!.of) : '',
+          repeats ? t(repeatedUnit === 'sections' ? 'repeatedSectionsNotice' : 'repeatedQuestionsNotice', repeated!.count, repeated!.of) : '',
         ].filter(Boolean).join(' ')}
       </Text>
     </View>
