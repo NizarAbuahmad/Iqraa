@@ -11,13 +11,16 @@
 | 7 | `out/Iqrra_07_Class_Games.mp4` | cut from the full-app tour (chapters 12, 08) | 20.0 s |
 | 8 | `out/Iqrra_08_Lesson_Slides.mp4` | cut from the full-app tour (chapter 10), demo mode | 22.6 s |
 | 9 | `out/Iqrra_09_Full_Lesson.mp4` | cut from the full-app tour (chapter 16), demo mode | 20.4 s |
+| 10 | `out/Iqrra_10_Games.mp4` | **recorded from the app** (public games hub, no login) — new brand, teal “progress race” | 21.1 s |
+| 11 | `out/Iqrra_11_Interactive_Class.mp4` | **recorded from the app**, demo account, demo-mode content — new brand, paper “numbered list” | 22.3 s |
+| 12 | `out/Iqrra_12_Curriculum.mp4` | **recorded from the app**, demo account — new brand, ink “explainer” | 24.0 s |
 
 Reels 1–4 share one layout (headline in the top safe zone, the app in a rounded card, branded end card),
 the same Chromium-rendered Arabic (Cairo / Almarai, never ffmpeg `drawtext`) and the same music bed.
 
 ## Brand — two generations
 
-**Reels 2 and 5 use the current Iqrra identity; Reels 1, 3, 4 and 6–9 still use the old one** and want the same
+**Reels 2, 5 and 10–12 use the current Iqrra identity; Reels 1, 3, 4 and 6–9 still use the old one** and want the same
 re-skin (their takes are committed, so it is a rebuild, not a re-record — except Reel 1).
 
 - *Old (Reels 1, 3, 4, 6–9):* the raster `assets/logo-wordmark.png` (from `attached_assets/0_ikraa_logo…png`: a glowing
@@ -68,6 +71,25 @@ finds headings by text so the walk does not depend on pixel offsets.
   function-composition sheet — off topic for the lesson, a gap in the offline bank).
 - `verify_reel.py` now tells light grounds from dark ones: on a light ground «content in the margin» means anything
   clearly darker than paper, not anything bright.
+
+## Reels 10–12 — features that exist today
+
+Built after the library reel's «ورقة عمل» wording was challenged: the library itself only holds real, offline-safe content
+for worksheets (24, Grade 10 maths); its infographic / image / audio / game / template / presentation shelves are empty
+until someone uploads items, and its 4 videos and 11 book sources are external links to non-maths subjects. So these three
+reels film features that run today, with nothing seeded or staged. `build_new_feature_reels.py`; takes
+`capture/r10_record.cjs`, `r11_record.cjs`, `r12_record.cjs`.
+
+- **10 «ألعاب إقرأ»** — the public hub (no sign-up) and the element-symbols game. Every tap is a correct answer, looked up
+  in the game's own data (`services/publicGames/elements.ts`); 8 of 8. A segment ticker fills as the answers land.
+  Flags / capitals need internet (`flagcdn.com`) and are not filmed.
+- **11 «الحصة التفاعلية»** — Tools tab → the activity catalogue (one activity lit at a time) → the set-up form → «النشاط جاهز
+  للعرض». Demo-mode content, so it carries the demo pill; the generated slides (maths text) are not shown.
+- **12 «المنهاج»** — library card → الرياضيات → الفصل الثاني → الاقترانات → «تركيب الاقترانات», then the lesson page.
+  The lesson page's «مكتبة الدرس» card names a real teacher who uploaded a file; it is blurred in the take and cropped out of
+  every scene. The «نتاجات التعلّم» block (English «Understand» chips in an Arabic page) is also left out.
+- Left out entirely: «ركن الإنجليزية» (Arabic glosses are AI-drafted and unreviewed; audio is silent offline) and «المختبر»
+  (not yet verified in a browser; PhET is gated until a teacher reviews it).
 
 ## Reels 6–9 — cut from the full-app tour
 

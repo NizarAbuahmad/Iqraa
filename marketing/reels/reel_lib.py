@@ -91,6 +91,8 @@ THEMES = {
                  shadow=(2, 8, 20), shadow_a=1.0, edge=(255, 255, 255, 46)),
     "paper": dict(base=(246, 245, 241), blobs=[(900, 330, 820, (0, 169, 157), .20), (120, 1700, 760, (52, 214, 198), .22)],
                   shadow=(11, 27, 51), shadow_a=0.42, edge=(11, 27, 51, 34)),
+    "ink": dict(base=(11, 27, 51), blobs=[(540, 760, 920, (0, 109, 101), .60), (90, 1810, 720, (0, 169, 157), .26)],
+                shadow=(2, 8, 20), shadow_a=1.0, edge=(255, 255, 255, 52)),
     "teal": dict(base=(0, 84, 79), blobs=[(540, 760, 980, (0, 169, 157), .75), (60, 1820, 820, (11, 27, 51), .85)],
                  shadow=(2, 22, 26), shadow_a=1.0, edge=(255, 255, 255, 64)),
 }
@@ -306,6 +308,24 @@ def build(cfg):
                 else:
                     pos = (960 - img.width, 1484)
                 frame.alpha_composite(img, (int(pos[0]), int(pos[1] - dy)))
+            for tk in cfg.get("tickers", []):
+                if not tk["on"] <= tt <= tk["off"]:
+                    continue
+                a = ease((tt - tk["on"]) / 0.2) * ease((tk["off"] - tt) / 0.15)
+                n, pw, ph, gap = tk["n"], tk.get("w", 92), tk.get("h", 26), 12
+                done = sum(1 for f in tk["fills"] if f <= tt)
+                S3 = 3
+                span = n * pw + (n - 1) * gap
+                L = Image.new("RGBA", (span * S3, ph * S3), (0, 0, 0, 0)); d = ImageDraw.Draw(L)
+                for i in range(n):                                   # filled right-to-left, like the page it sits over
+                    x0 = (span - (i + 1) * pw - i * gap) * S3
+                    on_i = i < done
+                    pop = ease((tt - tk["fills"][i]) / 0.18) if on_i else 0
+                    col = AQUA + (int(255 * a),) if on_i else (255, 255, 255, int(56 * a))
+                    inset = int((1 - pop) * 3 * S3) if on_i else 0
+                    d.rounded_rectangle((x0 + inset, inset, x0 + pw * S3 - inset, ph * S3 - inset), ph * S3 // 2, fill=col)
+                L = L.resize((span, ph), Image.LANCZOS)
+                frame.alpha_composite(L, (960 - span, tk["y"]))
             for rg in cfg.get("rings", []):
                 if rg["on"] <= tt <= rg["off"]:
                     a = ease((tt - rg["on"]) / 0.15) * ease((rg["off"] - tt) / 0.1)
