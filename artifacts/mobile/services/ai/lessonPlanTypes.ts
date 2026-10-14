@@ -33,8 +33,7 @@ export interface LessonStyleContext {
   /**
    * Which wording of the five style-owned sections to build: 0 (the default, and
    * what a plan has always had) or 1, the alternative a regenerate may draw —
-   * see `lessonPlanVariantsAr.ts`. Only Arabic has a variant 1; anything else
-   * builds variant 0.
+   * see `lessonPlanVariantsAr.ts` and `lessonPlanVariantsEn.ts`.
    */
   variant?: number;
 }

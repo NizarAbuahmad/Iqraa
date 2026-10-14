@@ -1024,7 +1024,7 @@ async function freshOnRegenerate<T>(
   /**
    * How many draws to try for a paper that shares fewer stems. The loop stops at
    * the first draw that shares none, so a larger budget costs nothing where that
-   * is reachable (an Arabic lesson plan: ~1 draw in 16 changes all eight
+   * is reachable (a lesson plan: ~1 draw in 16 changes all eight
    * sections, and 80 attempts missed it about once in a hundred regenerations).
    */
   maxStemDraws: number = MAX_FRESH_STEM_ATTEMPTS,
@@ -1134,10 +1134,7 @@ export class MockAIService extends AIService {
 
   async generateLessonPlan(req: AIRequest): Promise<LessonPlanOutput> {
     await this.delay();
-    // Only the Arabic plan has a second wording to find; English keeps the default
-    // budget, since its five fixed sections mean no draw can ever share none.
-    return freshOnRegenerate('lessonPlan', req, () => this.lessonPlanOnce(req), lessonPlanSections,
-      req.language === 'arabic' ? 300 : MAX_FRESH_STEM_ATTEMPTS);
+    return freshOnRegenerate('lessonPlan', req, () => this.lessonPlanOnce(req), lessonPlanSections, 300);
   }
 
   private async lessonPlanOnce(req: AIRequest): Promise<LessonPlanOutput> {
