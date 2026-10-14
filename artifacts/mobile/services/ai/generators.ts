@@ -1094,6 +1094,18 @@ function makeWorksheetQ(type: QType, lang: Lang, topic: string, kb: KBLesson | n
   return makeTFQ_en(topic, kb, diff, subject, false);
 }
 
+/**
+ * What a teacher reads as «the questions» of a worksheet or homework: the worked
+ * example and every question, so regenerate is judged by those and not by the
+ * order they come in or how their options are shuffled.
+ */
+function worksheetStems(w: WorksheetOutput): string[] {
+  return [
+    ...(w.workedExample ? [questionStemKey(w.workedExample.problem)] : []),
+    ...w.sections.flatMap(sec => sec.questions.map(q => questionStemKey(q.text))),
+  ];
+}
+
 // ─── Main service class ───────────────────────────────────────────────────────
 
 export class MockAIService extends AIService {
@@ -1230,7 +1242,7 @@ export class MockAIService extends AIService {
 
   async generateWorksheet(req: AIRequest): Promise<WorksheetOutput> {
     await this.delay();
-    return freshOnRegenerate('worksheet', req, () => this.worksheetOnce(req));
+    return freshOnRegenerate('worksheet', req, () => this.worksheetOnce(req), worksheetStems);
   }
 
   private async worksheetOnce(req: AIRequest): Promise<WorksheetOutput> {
@@ -2733,7 +2745,7 @@ export class MockAIService extends AIService {
 
   async generateHomework(req: AIRequest): Promise<WorksheetOutput> {
     await this.delay();
-    return freshOnRegenerate('homework', req, () => this.homeworkOnce(req));
+    return freshOnRegenerate('homework', req, () => this.homeworkOnce(req), worksheetStems);
   }
 
   private async homeworkOnce(req: AIRequest): Promise<WorksheetOutput> {

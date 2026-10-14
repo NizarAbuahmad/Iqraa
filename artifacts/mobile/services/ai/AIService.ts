@@ -228,6 +228,9 @@ export interface WorksheetOutput {
    *  count, so the paper is shorter than asked for. The screen says so — a
    *  short paper with no explanation reads as a bug. */
   shortfall?: { requested: number; produced: number };
+  /** Present on an offline regenerate whose bank could not avoid repeating some
+   *  of the questions already on screen — see `QuizOutput.repeated`. */
+  repeated?: { count: number; of: number };
   lab?: WorksheetLab;
 }
 

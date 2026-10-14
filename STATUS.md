@@ -280,10 +280,17 @@ an announcement by default» below.
   holds one medium short-answer question, so any paper containing one repeats
   it. Such a paper carries `repeated: { count, of }` and `ShortPaperNotice`
   says «تكرّر N من M…» instead of passing it off as new; `quiz.tsx` strips it on
-  save, since it describes a regenerate, not the paper. **Quiz only** —
-  worksheet and homework still compare whole objects. Live AI is unchanged (it
-  has its own `avoid` / overlap check server-side). Tests:
-  `quizRegenerateStems.test.ts`. Not looked at in a browser.
+  save, since it describes a regenerate, not the paper. **Worksheet and homework
+  follow (2026-10-14)** — same `stemsOf`, same `repeated`, judged on the worked
+  example plus every question; measured on that lesson they repeated 4.0–4.2 of 5
+  and 4.4–4.7 of 6 per regenerate, and now sit at their banks' floor (worksheet 3:
+  7 distinct stems; homework 4: three questions are fixed and the rest come from a
+  pool of three). Homework has no screen of its own — only the worksheet screen
+  shows the notice. The maths «قانون الجيوب» homework is fixed templates and
+  repeats whole, with the notice only where a screen shows it. Live AI is
+  unchanged (it has its own `avoid` / overlap check server-side). Tests:
+  `quizRegenerateStems.test.ts`, `worksheetRegenerateStems.test.ts`. Not looked
+  at in a browser.
 - **"No question bank" after a failed live call now says so, with the reason**
   (2026-10-11). With live AI on, a failed call falls back to the offline
   generator, which has banks for maths/chemistry only — so a worksheet, quiz or
