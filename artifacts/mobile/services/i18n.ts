@@ -2240,6 +2240,7 @@ const translations = {
     classScanRowSkipped: 'تُخطّيت — للطالب ورقة سابقة.',
     classScanRowSaved: 'حُفظت',
     classScanRowSaveFailed: 'تعذّر الحفظ — اضغط «احفظ العلامات» للمحاولة من جديد.',
+    classScanRowCleared: 'علامة محفوظة سابقًا أصبحت فارغة — أدخل لها قيمة ثم احفظ.',
     classScanSaveBtn: 'احفظ العلامات',
     classScanSaving: 'يحفظ…',
     classScanSummary: (saved: string, attention: string, skipped: string) =>
@@ -4753,6 +4754,7 @@ const translations = {
     classScanRowSkipped: 'Skipped — the student already has a paper.',
     classScanRowSaved: 'Saved',
     classScanRowSaveFailed: 'Could not save — press “Save the marks” to try again.',
+    classScanRowCleared: 'A mark that was already saved is now empty — enter a value for it, then save.',
     classScanSaveBtn: 'Save the marks',
     classScanSaving: 'Saving…',
     classScanSummary: (saved: string, attention: string, skipped: string) =>
