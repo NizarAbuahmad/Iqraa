@@ -1,5 +1,6 @@
 // artifacts/api-server/src/lib/adminNotify.ts
-import { db, users, devicePushTokens } from "@workspace/db";
+// Acts without (or beyond) the caller's identity — see lib/db/src/scopedPool.ts.
+import { systemDb as db, users, devicePushTokens } from "@workspace/db";
 import { eq, inArray } from "drizzle-orm";
 import { sendExpoPush, deadTokensFrom, PUSH_CHANNEL } from "./pushNotifications.ts";
 import { sendArtifactReportedEmail } from "./email.ts";

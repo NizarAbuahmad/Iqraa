@@ -85,6 +85,10 @@ jobs:
       - name: Test api-server
         run: pnpm --filter @workspace/api-server run test
 
+      # The row-level-security suites skip here (no database); the identity tests run.
+      - name: Test db
+        run: pnpm --filter @workspace/db run test
+
       - name: Test mobile
         run: pnpm --filter @workspace/mobile run test
 
@@ -180,6 +184,50 @@ jobs:
       # The destructive-SQL acknowledgement (`destructive-migration: ok` in the
       # PR body) is its own workflow, destructive-migration-ack.yml, so that
       # editing the body re-checks it. This workflow never sees `edited`.
+
+  # Row-level security needs a real Postgres and the built API: the matrix proves each
+  # policy, the coverage test stops a new table being forgotten, and the differential
+  # test boots the API with enforcement off and on and diffs what users see and cause
+  # (see docs/superpowers/specs/2026-10-13-row-level-security-design.md).
+  rls:
+    name: row-level security
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.18.0 --activate
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build api-server
+        run: pnpm --filter @workspace/api-server run build
+
+      - name: Migrate an empty database
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+        run: pnpm --filter @workspace/db run migrate -- --from-env
+
+      - name: Row-level security suites
+        env:
+          RLS_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+        run: pnpm --filter @workspace/db run test
 
   verifier:
     name: math verifier

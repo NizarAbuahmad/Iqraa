@@ -530,7 +530,11 @@ CI checks every PR three ways — the first two in `migrations match schema`
 `push` (`pnpm --filter @workspace/db run push`) is still there for a scratch
 local database. Never point it at production: drizzle-kit resolves drift by
 dropping columns, which is why production never auto-deployed before
-migrations existed.
+migrations existed. Since migration 0008 it is also unsafe for any database that
+has it applied: drizzle-kit 0.31 tracks RLS and policies, and the schema files
+declare none, so `push` will try to `DISABLE ROW LEVEL SECURITY` and `DROP POLICY`
+on whatever it is pointed at. Never run it against one with 0008 applied (already
+forbidden for production).
 
 ### Baseline (once per database that predates migrations)
 
@@ -558,6 +562,79 @@ nullability, defaults, and non-unique indexes and foreign keys. If production
 drifted on one of those, a later migration touching it can fail — in CI it
 will pass (the empty database matches), at deploy it rolls back and names the
 statement. Fix production to match by hand, then re-run the deploy.
+
+## Row-level security
+
+Postgres enforces who may read a row on the tables that hold students, rosters,
+parent contact history, chat, exams and attempts (spec:
+`docs/superpowers/specs/2026-10-13-row-level-security-design.md`). It is a second line
+of defence behind the API's own checks, and it is **off until you turn it on**.
+
+**Merging this ships the migration.** `deploy.yml` migrates production before the API takes
+traffic, so the merge creates the `iqraa_app` role and enables row-level security on 28 tables.
+It is dormant for the owner role (there is no `FORCE`), so nothing changes *provided the role in
+Cloud Run's `DATABASE_URL` owns those tables*; a non-owner role would have no policy and be denied.
+**Before merging**, connect to a Neon branch of production with the *exact* `DATABASE_URL` Cloud Run
+uses (same role and credentials, only the host pointed at the branch; a branch made in the Neon console may
+default to a different owner role, which would make the check pass without testing the API's role).
+Then `select current_user` must equal `tableowner` for **every** row of
+`select tablename, tableowner from pg_tables where schemaname='public'`; any other result means do not merge.
+
+**Both connection strings must name the same owner role.** The migration runs under GitHub's
+`secrets.DATABASE_URL` (`deploy.yml`, the `production migrations` job); the API runs under Cloud
+Run's `DATABASE_URL`. The migration's `SECURITY DEFINER` helpers are owned by the *migrating*
+role, and they bypass RLS only if that role also owns the tables they read. If the two secrets
+name different roles, either the API's connection is not the table owner (so it is denied, with
+no policy of its own) or the helpers run subject to the policies and return fewer rows than they
+should — the second looks like rows quietly missing, not an error. The
+migration also sets `lock_timeout = '5s'`: it takes `ACCESS EXCLUSIVE` locks on 28 tables while the
+old revision still serves, so a long-running query makes the deploy stop (retry it) rather than
+queueing every request behind it.
+
+**Do not re-run 0008 by hand outside the migrator.** It is not idempotent: `CREATE POLICY` has no
+`IF NOT EXISTS`, and `GRANT iqraa_app TO CURRENT_USER` needs `ADMIN OPTION` on the role if it
+already exists under another creator. A second run stops at the first `CREATE POLICY`
+(already exists); recover a damaged database from a Neon branch, not by editing the history table.
+
+**The switch** is one Cloud Run env var, read once at boot:
+
+```bash
+# on
+gcloud run services update iqraa-api --region europe-west1 \
+  --project iqraa-auth-507315 --update-env-vars RLS_ENFORCE=on
+# off — the whole rollback
+gcloud run services update iqraa-api --region europe-west1 \
+  --project iqraa-auth-507315 --update-env-vars RLS_ENFORCE=off
+```
+
+`--update-env-vars`, never `--set-env-vars` (see *Rotating a secret*). Changing it rolls
+a revision; it is not a code deploy. With it off nothing about the API changes — one
+pool, no extra statements. With it on every `db` statement runs as the `iqraa_app` role
+with the signed-in user's id, and `systemDb` (the owner connection) is used by the
+fourteen files pinned in `artifacts/api-server/src/lib/__tests__/systemDbFiles.test.ts`.
+
+**Before the first flip**, on a Neon *branch* of production (never production):
+run the migration, run `RLS_TEST_DATABASE_URL=<branch> pnpm --filter @workspace/db run test`,
+walk the teacher / parent / student flows by hand, and **measure the added latency per
+statement** — the wrapper costs about two extra round trips each, which is ~0.25 ms on
+loopback and unmeasured across the Cloud Run → Neon hop. Also check the database's
+connection limit: with enforcement on an instance holds two pools. See the plan's Task 7
+(`docs/superpowers/plans/2026-10-13-row-level-security.md`) for the gates.
+
+**What goes wrong, and how it looks.** A query that reads *another user's* rows does not
+fail under RLS — it returns fewer rows. So the symptom is rarely a 500; it is a
+notification not sent, a block not honoured, a restricted exam that opens to the class.
+`lib/db/src/__tests__/rlsDiff.test.ts` is the guard: it boots the built API with
+enforcement off and on and diffs statuses, bodies, pushes and rows left behind. After any
+route change that touches a protected table, run it (`pnpm --filter @workspace/api-server
+run build` first) and add a scenario for what you added.
+
+**Adding a table.** `rlsCoverage.test.ts` fails until the table is classified: *protected*
+(add policies in a migration, put the name in `PROTECTED`), *locked* (RLS, no policy, no
+grant — only `systemDb` reads it), or *deferred* (named in `DEFERRED` — still open to
+`iqraa_app`, with the grant a new migration must add by hand, since there are no default
+privileges on purpose). **Adding a `systemDb` use** means editing `systemDbFiles.test.ts`
+and writing the reason.
 
 ## Point-of-no-return changes go up as drafts
 
