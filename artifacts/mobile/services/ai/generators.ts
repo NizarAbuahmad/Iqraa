@@ -1106,6 +1106,18 @@ function worksheetStems(w: WorksheetOutput): string[] {
   ];
 }
 
+/**
+ * The plan's narrative sections, which regenerate is judged on. Objectives and
+ * materials are left out on purpose: they come from the lesson in the book, so
+ * repeating them is correct, not a failure to vary.
+ */
+function lessonPlanSections(p: LessonPlanOutput): string[] {
+  return [
+    p.introduction, p.mainActivity, p.guidedPractice, p.independentPractice,
+    p.closure, p.assessment, p.differentiation, p.homework,
+  ].filter(Boolean);
+}
+
 // ─── Main service class ───────────────────────────────────────────────────────
 
 export class MockAIService extends AIService {
@@ -1115,7 +1127,7 @@ export class MockAIService extends AIService {
 
   async generateLessonPlan(req: AIRequest): Promise<LessonPlanOutput> {
     await this.delay();
-    return freshOnRegenerate('lessonPlan', req, () => this.lessonPlanOnce(req));
+    return freshOnRegenerate('lessonPlan', req, () => this.lessonPlanOnce(req), lessonPlanSections);
   }
 
   private async lessonPlanOnce(req: AIRequest): Promise<LessonPlanOutput> {

@@ -291,6 +291,28 @@ an announcement by default» below.
   unchanged (it has its own `avoid` / overlap check server-side). Tests:
   `quizRegenerateStems.test.ts`, `worksheetRegenerateStems.test.ts`. Not looked
   at in a browser.
+- **Lesson plan «أعد التجهيز»: what changed, and what it cannot (2026-10-14).**
+  Measured over 30 regenerations (maths, chemistry, Arabic × direct,
+  collaborative): the offline plan has ONE phrasing for five of its eight
+  sections (main activity, guided and independent practice, assessment,
+  differentiation), so those never change; only the introduction (2–3
+  phrasings), closure and homework (2 each) vary, and `freshOnRegenerate`
+  accepted any draw whose whole object differed, so often only one of the three
+  changed. It now judges the eight narrative sections by stem and keeps the draw
+  that changes the most (always all three that can), and the plan carries
+  `repeated: { count, of }` — «تطابق ٥ أقسام من أصل ٨ مع الخطة السابقة» — shown by
+  both the lesson-plan screen and `LessonPrepPanel`. **Separate defect, same
+  button:** `LessonPrepPanel`'s «أعد التجهيز» called `generate()` with nothing, so
+  its request was byte-identical and never flagged `regenerate` (the quiz and
+  worksheet screens had been sending it); it now sends `regenerationFields`.
+  Objectives and materials are not counted — they come from the book. **Not
+  fixed, and it is content work:** the five fixed sections need real alternative
+  phrasings per teaching style (offline `lessonPlanBlueprints.ts`, in the first
+  person per `lessonPlanTeacherVoice.test.ts`; the live prompt already varies via
+  `avoid`). Until then a regenerated demo plan is at best 3 of 8 sections new.
+  Tests: `lessonPlanRegenerateStems.test.ts`; the panel itself is React Native
+  and cannot be loaded by the test runner, so its wiring is typechecked and read,
+  not run. Not looked at in a browser.
 - **"No question bank" after a failed live call now says so, with the reason**
   (2026-10-11). With live AI on, a failed call falls back to the offline
   generator, which has banks for maths/chemistry only — so a worksheet, quiz or
