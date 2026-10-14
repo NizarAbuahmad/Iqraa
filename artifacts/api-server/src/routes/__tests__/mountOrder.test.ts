@@ -104,6 +104,31 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(approve.status, 401);
   });
 
+  it("guards the two exam-scan routes, and they shadow nothing", async () => {
+    // Both read photographs of minors' papers and spend model budget, so an
+    // unguarded one would be a public vision endpoint. No token: refused before
+    // any database or model access (DATABASE_URL is a dead address here).
+    const setup = await fetch(`${base}/evaluations/scan-paper`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ images: [], objectiveIds: [] }),
+    });
+    assert.equal(setup.status, 401);
+    const batch = await fetch(
+      `${base}/evaluations/00000000-0000-4000-8000-000000000000/scan-class-paper`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: "data:image/jpeg;base64,AAAA" }),
+      },
+    );
+    assert.equal(batch.status, 401);
+    // `scan-paper` is a fixed path next to `/evaluations/:id/...` routes; a path
+    // the router does not own must still be answered by the guard, not swallowed.
+    const other = await fetch(`${base}/evaluations/scan-paper/extra`, { method: "POST" });
+    assert.ok(other.status === 401 || other.status === 404, `got ${other.status}`);
+  });
+
   it("keeps the bank catalog public, and free of what it cannot serve", async () => {
     // Same reasoning as curriculum: titles and provenance, not documents.
     const res = await fetch(`${base}/bank/items?kind=exam`);
