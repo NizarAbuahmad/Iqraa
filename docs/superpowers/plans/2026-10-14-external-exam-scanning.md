@@ -3915,3 +3915,15 @@ Not done and not doable in a sandbox. When someone has `AI_LIVE_MODE=true`, `AI_
 3. **Marks:** compare the review table to the papers. Any silently wrong mark is a bug; a blank is the safe failure.
 4. **Rate:** time a 30-photo batch. Does the limiter ever return 429? If so, lower `concurrency` or raise `ai-scan-class`.
 5. Record the answers in STATUS.md under the section above, replacing «Not verified» with what was measured.
+
+## As built — deviations from this plan
+
+The committed source is authoritative where it differs from the task text above.
+
+- **Task 3 (`a87e345`):** `confident` requires an *identical* normalized name, not an equal word-set. The word-set rule matched «علي أحمد» with «أحمد علي» and «محمد محمد» with «محمد».
+- **Task 7 (`c198b99`):** scan failures are shown beside the scan button (`scanNote` / `scanFailed`) rather than in the form-level error below the grid, where they were out of sight.
+- **Task 8 (`3b38e65`):** the runner is callback-safe — a throwing UI callback can no longer lose or duplicate a photo's outcome; the first error is rethrown after all outcomes are delivered. Two tests added.
+- **Task 9 (`778ade3`):** `classScanSave` tracks `writtenQuestionIds`; `assignStudent` resets a row's paper state; `countsAsExisting` stops a row's own half-made paper being skipped; a cleared-after-write mark or an invalid box fails the row loudly. Ten tests added.
+- **Task 10 (`b21ab00`):** row handlers are inert while saving; new i18n key `classScanRowCleared`, next to `classScanRowSaveFailed`.
+- **Totals:** the expected totals became api-server 1695 and mobile 4272 passing (4282 total, 10 skipped), not 1691 / 4260.
+- **Manual smoke:** the browser smoke steps in Tasks 7 and 10 were skipped (they need a teacher login and a seeded database); the screens are typechecked but have never been rendered.
