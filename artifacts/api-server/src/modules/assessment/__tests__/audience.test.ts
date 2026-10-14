@@ -6,7 +6,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
-  audienceFor, audienceRequestDecision, classChangeAllowed, examVisibleTo, inAudience, MAX_AUDIENCE,
+  audienceFor, classChangeAllowed, examVisibleTo, inAudience,
 } from "../audience.ts";
 
 describe("audienceFor / inAudience", () => {
@@ -34,52 +34,6 @@ describe("examVisibleTo", () => {
   });
   it("keeps an exam the student already holds an attempt on", () => {
     assert.equal(examVisibleTo(["s1"], ["s9"], true), true);
-  });
-});
-
-describe("audienceRequestDecision", () => {
-  const base = { status: "draft", classGroupId: "c1", memberIds: new Set(["s1", "s2"]) };
-  it("accepts members of a draft attached to a class", () => {
-    assert.deepEqual(audienceRequestDecision({ ...base, studentIds: ["s1", "s2"] }), { ok: true, studentIds: ["s1", "s2"] });
-  });
-  it("refuses an empty, malformed or duplicated list", () => {
-    for (const studentIds of [[], undefined, "s1", [1], ["s1", "s1"], ["s1", " "]]) {
-      const d = audienceRequestDecision({ ...base, studentIds });
-      assert.equal(d.ok, false);
-      if (!d.ok) assert.equal(d.status, 400);
-    }
-  });
-  it("refuses once published, and without a class", () => {
-    const published = audienceRequestDecision({ ...base, status: "published", studentIds: ["s1"] });
-    assert.equal(published.ok, false);
-    if (!published.ok) { assert.equal(published.status, 409); assert.equal(published.code, "audience_locked"); }
-    const noClass = audienceRequestDecision({ ...base, classGroupId: null, studentIds: ["s1"] });
-    assert.equal(noClass.ok, false);
-    if (!noClass.ok) { assert.equal(noClass.status, 409); assert.equal(noClass.code, "audience_no_class"); }
-  });
-  it("refuses a student who is not a live member of the class", () => {
-    const d = audienceRequestDecision({ ...base, studentIds: ["s1", "s3"] });
-    assert.equal(d.ok, false);
-    if (!d.ok) { assert.equal(d.status, 400); assert.equal(d.code, "audience_not_member"); }
-  });
-});
-
-describe("audienceRequestDecision — size", () => {
-  it("refuses more than MAX_AUDIENCE ids with 400 audience_too_large", () => {
-    assert.equal(MAX_AUDIENCE, 200);
-    const ids = Array.from({ length: MAX_AUDIENCE + 1 }, (_, i) => `s${i}`);
-    const d = audienceRequestDecision({
-      status: "draft", classGroupId: "c1", memberIds: new Set(ids), studentIds: ids,
-    });
-    assert.equal(d.ok, false);
-    if (!d.ok) { assert.equal(d.status, 400); assert.equal(d.code, "audience_too_large"); }
-  });
-  it("accepts exactly MAX_AUDIENCE ids", () => {
-    const ids = Array.from({ length: MAX_AUDIENCE }, (_, i) => `s${i}`);
-    const d = audienceRequestDecision({
-      status: "draft", classGroupId: "c1", memberIds: new Set(ids), studentIds: ids,
-    });
-    assert.equal(d.ok, true);
   });
 });
 

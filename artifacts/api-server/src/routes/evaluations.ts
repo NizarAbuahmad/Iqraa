@@ -46,16 +46,12 @@ import { passedLessonIds, unlockState } from "../modules/assessment/lessonProgre
 import { findLiveClass } from "../lib/classOwnership.js";
 import { archiveDecision } from "../lib/evaluationArchive";
 import {
-  audienceRequestDecision,
   classChangeAllowed,
   inAudience,
-  MAX_AUDIENCE,
 } from "../modules/assessment/audience.ts";
-import { isUuid } from "../lib/classResource.ts";
 import {
   assignedStudentsByEvaluation,
   evaluationAudience,
-  replaceEvaluationAudience,
 } from "../lib/evaluationAudience.ts";
 import {
   bankContextFor,
@@ -709,56 +705,6 @@ router.patch("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
   } catch (err) {
     logger.error({ err }, "update evaluation failed");
     res.status(500).json({ error: "Failed to update the evaluation" });
-  }
-});
-
-/**
- * Who a group check is for (support groups, 2026-10-09): replaces the
- * evaluation's student-level assignments. Only while it is a draft attached to
- * a class, and only with live members of that class — see audience.ts.
- */
-router.put("/evaluations/:id/audience", async (req: AuthenticatedRequest, res) => {
-  try {
-    const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
-    if (!evaluation) {
-      res.status(404).json({ error: "Evaluation not found" });
-      return;
-    }
-    const requested = Array.isArray(req.body?.studentIds)
-      ? (req.body.studentIds as unknown[]).filter((v): v is string => typeof v === "string").map(v => v.trim()).filter(Boolean).filter(isUuid)
-      : [];
-    // A non-uuid id would be a 500 from the uuid column; it is simply not a
-    // member, and the decision below answers 400 audience_not_member. An
-    // oversized list is refused by the decision without a lookup.
-    const members = evaluation.classGroupId && requested.length && requested.length <= MAX_AUDIENCE
-      ? await db
-          .select({ id: students.id })
-          .from(classMemberships)
-          .innerJoin(students, eq(students.id, classMemberships.studentId))
-          .where(
-            and(
-              eq(classMemberships.classGroupId, evaluation.classGroupId),
-              inArray(classMemberships.studentId, requested),
-              eq(students.teacherId, req.user!.id),
-              isNull(students.archivedAt),
-            ),
-          )
-      : [];
-    const decision = audienceRequestDecision({
-      status: evaluation.status,
-      classGroupId: evaluation.classGroupId,
-      studentIds: req.body?.studentIds,
-      memberIds: new Set(members.map(m => m.id)),
-    });
-    if (!decision.ok) {
-      res.status(decision.status).json({ error: decision.error, code: decision.code });
-      return;
-    }
-    await replaceEvaluationAudience(evaluation.id, decision.studentIds, req.user!.id);
-    res.json({ audience: decision.studentIds });
-  } catch (err) {
-    logger.error({ err }, "set evaluation audience failed");
-    res.status(500).json({ error: "Failed to set who this check is for" });
   }
 });
 

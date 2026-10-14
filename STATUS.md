@@ -1919,7 +1919,7 @@ shows each member's result on it.
 
 A sitting a student already holds always stays visible to them.
 
-**Setting it.** `PUT /evaluations/:id/audience` accepts the students only while the check is a draft attached to a class, and only if each one is a live member of that class. A group check can be detached from its class, or attached to a class that holds all its students; moving it to a class missing any of them is refused (409 `audience_class_locked`). The list endpoint returns `audienceSize` so «صُحّح N من M» counts the group. `GET /evaluations/:id` returns `audience`.
+**Setting it.** *(The endpoint was removed 2026-10-14 — see the quick-evaluation note below; the rules here still describe the reads.)* `PUT /evaluations/:id/audience` accepted the students only while the check is a draft attached to a class, and only if each one is a live member of that class. A group check can be detached from its class, or attached to a class that holds all its students; moving it to a class missing any of them is refused (409 `audience_class_locked`). The list endpoint returns `audienceSize` so «صُحّح N من M» counts the group. `GET /evaluations/:id` returns `audience`.
 
 **Schema.** Migration `0001` adds a unique `(evaluation_id, student_id)` on `evaluation_assignments`. It is additive, and the table had no writer before this, so production holds no duplicates.
 
@@ -1950,7 +1950,7 @@ Against a real Postgres, migrated the way production will be (`migrate --baselin
   - the card shows the two weak students, weakest first;
   - the worksheet opens on الكيمياء;
   - unticking one student created a draft whose audience is the other only;
-  - «أكمل التحقق» opened that draft;
+  - «أكمل التحقق» opened that draft *(button removed 2026-10-14)*;
   - marking the member 3/3 showed «تجاوز · 100%» while his overall moved 30% → 46%, so he stays in the group by design;
   - the marking list shows the group only.
 
@@ -4294,12 +4294,19 @@ two entry points that routed to it — the student record's «تحقق سريع�
 «تحقق سريع» per objective and the support group's «تحقق للمجموعة» — are gone, with
 their strings and tests (including the API's `miniEvalGraders.test.ts`).
 `groupObjectivesByLesson`, which `evaluations/new.tsx` still uses, moved to
-`services/objectiveLessons.ts`. **Left in place on purpose:** the server's
-`PUT /evaluations/:id/audience`, `setEvaluationAudience`, the support-group
-`draftCheck` / «أكمل التحقق» path and the group `latestCheck` outcomes, so a
-group check created before the removal can still be finished and read. Nothing
-in the app creates a new one now. The concrete maths bank in
-`@workspace/math-practice` stays: the ordinary evaluation generator uses it.
+`services/objectiveLessons.ts`.
+**Removed 2026-10-14: the group-check write side.** `PUT /evaluations/:id/audience`
+(and `audienceRequestDecision`, `MAX_AUDIENCE`, `replaceEvaluationAudience`), the
+mobile `setEvaluationAudience`, the support group's `draftCheck` and its «أكمل
+التحقق» button. A draft group check made earlier is still an ordinary draft in
+the teacher's exam list and publishes from there. **Kept on purpose — do not
+"finish the cleanup":** everything that *reads* an audience (`evaluationAudience`,
+`inAudience`, `examVisibleTo`, `classChangeAllowed`, `audienceSize`, the group
+`latestCheck` outcomes) and the `evaluation_assignments` table. Rows written before
+the removal still restrict their exams; an empty read means «everyone», so deleting
+the read would open every restricted exam to the whole class. The rows are now
+unmanageable from the app (no endpoint edits or clears them). The concrete maths
+bank in `@workspace/math-practice` stays: the ordinary evaluation generator uses it.
 
 **The default paper was the most expensive one.** `new.tsx` pre-selected
 `short_answer` + `open_ended`, both types `gradeAttempt` leaves out entirely, so
