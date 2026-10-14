@@ -29,7 +29,7 @@
  * voice, and no subject content — this is teaching method, built from the
  * lesson's own concepts. It has NOT been read by a teacher; that is the gate.
  *
- * The English plan has no variant 1 yet.
+ * The English plan's variant 1 is in `lessonPlanVariantsEn.ts`.
  */
 import {
   concepts, conceptList, firstConcept, fromDoc, phaseMinutes, term,
