@@ -27,7 +27,15 @@ describe('coveredNamesText', () => {
   it('appends the localized suffix only when names were cut', () => {
     assert.equal(coveredNamesText(names(3), ', ', k => en('coveredLessonsMore', k)), 'L1, L2, L3');
     assert.equal(coveredNamesText(names(60), ', ', k => en('coveredLessonsMore', k)), 'L1, L2, L3, L4, L5, L6 and 54 more');
-    assert.equal(coveredNamesText(names(7), '، ', k => ar('coveredLessonsMore', k)), 'L1، L2، L3، L4، L5، L6 و1 أخرى');
+    assert.equal(coveredNamesText(names(7), '، ', k => ar('coveredLessonsMore', k)), 'L1، L2، L3، L4، L5، L6 ودرس آخر');
+  });
+  it('the Arabic suffix agrees with the number of hidden lessons', () => {
+    assert.equal(ar('coveredLessonsMore', 1), 'ودرس آخر');
+    assert.equal(ar('coveredLessonsMore', 2), 'ودرسان آخران');
+    assert.equal(ar('coveredLessonsMore', 3), 'و3 دروس أخرى');
+    assert.equal(ar('coveredLessonsMore', 10), 'و10 دروس أخرى');
+    assert.equal(ar('coveredLessonsMore', 11), 'و11 درسًا آخر');
+    assert.equal(ar('coveredLessonsMore', 54), 'و54 درسًا آخر');
   });
 });
 

@@ -118,4 +118,21 @@ describe('tagging a live reply', () => {
     const out = { title: 't', duration: 1, totalPoints: 1, questions: [{ id: 'q1', lesson: 'L1' }] } as unknown as QuizOutput;
     assert.equal(tagQuizLessons(out, {} as AIRequest).questions[0]!.lessonId, undefined);
   });
+
+  it('a malformed live reply is left alone, never thrown on', () => {
+    const wideReq = { coverage: { lessons: [{ code: 'L1', id: 'x1', unitId: 'u', title: 'a' }] } } as unknown as AIRequest;
+    for (const bad of [{ title: 't' }, { title: 't', questions: 'nope' }, { title: 't', questions: null }]) {
+      assert.doesNotThrow(() => tagQuizLessons(bad as unknown as QuizOutput, wideReq));
+    }
+    for (const bad of [
+      { title: 't' },
+      { title: 't', sections: 'nope' },
+      { title: 't', sections: [null, { title: 's' }, { title: 's', questions: 'x' }] },
+    ]) {
+      assert.doesNotThrow(() => tagWorksheetLessons(bad as unknown as WorksheetOutput, wideReq));
+    }
+    // a well-formed section beside a malformed one is still tagged
+    const mixed = { title: 't', sections: [{ title: 's' }, { questions: [{ text: 'a', lesson: 'L1' }] }] } as unknown as WorksheetOutput;
+    assert.equal(tagWorksheetLessons(mixed, wideReq).sections[1]!.questions[0]!.lessonId, 'x1');
+  });
 });

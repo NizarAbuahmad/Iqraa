@@ -1050,9 +1050,15 @@ function fingerprint(out: unknown): string {
   return `${text.length}:${h.toString(16)}`;
 }
 
-function requestIdentity(kind: string, req: object): string {
-  const { regenerate: _r, avoid: _a, excludeVariantIds: _e, ...rest } = req as Record<string, unknown>;
-  return `${kind}|${JSON.stringify(rest)}`;
+export function requestIdentity(kind: string, req: object): string {
+  const { regenerate: _r, avoid: _a, excludeVariantIds: _e, coverage, ...rest } = req as Record<string, unknown>;
+  // A wide paper's `coverage.slots` is re-planned with a random offset on every
+  // Regenerate, so keeping it in the identity made each Regenerate a "new"
+  // request: nothing was remembered to compare against, and the offline
+  // generator could hand back the paper already on screen. The lesson table
+  // (what the paper is OF) stays; the plan for one draw does not.
+  const stable = coverage && typeof coverage === 'object' ? { ...rest, coverage: { ...coverage, slots: undefined } } : rest;
+  return `${kind}|${JSON.stringify(stable)}`;
 }
 
 /**

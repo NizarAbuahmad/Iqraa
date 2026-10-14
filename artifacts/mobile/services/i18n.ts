@@ -1037,7 +1037,7 @@ const translations = {
     wideScopeUngrounded: 'لا يمكن ربط هذا النطاق بالمنهاج، فلم يُنشأ شيء. اختر درسًا أو وحدة أو فصلًا دراسيًا آخر.',
     coveredLessons: (n: number, total: number, names: string) => `الدروس المغطاة (${n} من ${total}): ${names}.`,
     uncoveredLessons: (n: number) => n === 1 ? 'لم يُغطَّ درس واحد.' : n === 2 ? 'لم يُغطَّ درسان.' : n <= 10 ? `لم تُغطَّ ${n} دروس.` : `لم يُغطَّ ${n} درسًا.`,
-    coveredLessonsMore: (k: number) => `و${k} أخرى`,
+    coveredLessonsMore: (k: number) => k === 1 ? 'ودرس آخر' : k === 2 ? 'ودرسان آخران' : k <= 10 ? `و${k} دروس أخرى` : `و${k} درسًا آخر`,
     coverageModelReported: 'هذه القائمة بحسب ما أفاد به الذكاء الاصطناعي وقد لا تكون دقيقة.',
     numQuestionsLabel: 'عدد الأسئلة',
     numQuestionsIncludesExample: 'يشمل المثال المحلول والسؤال نصف المحلول متى توفّرا للدرس.',

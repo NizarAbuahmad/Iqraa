@@ -93,16 +93,22 @@ export function scopeFormState(sel: ScopeSelection | null, mode: Distribution): 
   return { scope: JSON.stringify(sel), distribution: mode };
 }
 
-/** Map the model's lesson codes on a live quiz to lesson ids. A no-op without a coverage table. */
+/**
+ * Map the model's lesson codes on a live quiz to lesson ids. A no-op without a
+ * coverage table, and for a reply whose shape is not the one asked for (the
+ * paper then fails its own checks downstream; tagging must not throw first).
+ */
 export function tagQuizLessons(out: QuizOutput, req: AIRequest): QuizOutput {
-  if (req.coverage?.lessons.length) lessonIdsFromTags(out.questions, req.coverage.lessons);
+  if (req.coverage?.lessons.length && Array.isArray(out?.questions)) lessonIdsFromTags(out.questions, req.coverage.lessons);
   return out;
 }
 
 /** The same for a live worksheet or homework. */
 export function tagWorksheetLessons(out: WorksheetOutput, req: AIRequest): WorksheetOutput {
-  if (req.coverage?.lessons.length) {
-    for (const section of out.sections) lessonIdsFromTags(section.questions, req.coverage.lessons);
+  if (req.coverage?.lessons.length && Array.isArray(out?.sections)) {
+    for (const section of out.sections) {
+      if (Array.isArray(section?.questions)) lessonIdsFromTags(section.questions, req.coverage.lessons);
+    }
   }
   return out;
 }

@@ -430,7 +430,8 @@ export default function WorksheetScreen() {
         difficulty: DIFFICULTY_MAP[DIFFICULTY_IDS[diffIdx]],
         numQuestions: NUM_Q_OPTIONS[effNumQIdx],
         questionTypes: Array.from(selectedTypes),
-        includePriorReview,
+        // The checkbox is hidden on a wide scope; a stale tick must not split the cache key.
+        includePriorReview: wide ? false : includePriorReview,
         regenerate: opts?.regenerate === true,
         previous,
       }, grounding);

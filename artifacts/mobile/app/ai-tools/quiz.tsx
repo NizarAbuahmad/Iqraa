@@ -923,6 +923,8 @@ export default function QuizScreen() {
           materialType="quiz"
           toolId="quiz"
           topic={scope.topic}
+          // Its chips open other tools with this label as a bare topic they re-ground.
+          hideRelated={wideFrozen !== null}
         />
       )}
     </ScrollView>
