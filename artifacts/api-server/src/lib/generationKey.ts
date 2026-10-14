@@ -53,8 +53,10 @@ const STRICT_ONLY_FIELDS = [
   "classroomSetup",
   // How a wide scope's questions are spread over its lessons. A balanced paper
   // and a random one for the same semester are different artifacts. The lesson
-  // table and the plan are NOT here: they are a pure function of `scopeKey` and
-  // `numQuestions`. Absent for a single lesson, so no existing key changes.
+  // table and the plan are NOT here: they follow from `scopeKey` and
+  // `numQuestions`, up to the rotation a Regenerate applies. Any rotation is an
+  // equally valid plan, so it is deliberately not in the key. Absent for a
+  // single lesson, so no existing key changes.
   "distribution",
 ] as const;
 

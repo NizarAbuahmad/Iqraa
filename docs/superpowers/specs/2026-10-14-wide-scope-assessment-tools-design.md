@@ -87,7 +87,9 @@ that turns a scope into that pool.
   repeats only after every lesson was used. It does **not** promise every unit is
   covered. `opts.random` is injectable for tests.
 - `offset` rotates where the rotation starts, so an offline *Regenerate* does not
-  return the same plan. It is not sent to the server.
+  return the same plan. The offset itself is never sent, but a rotated plan's
+  per-lesson counts do reach the live prompt on Regenerate; every rotated plan is
+  still unit-balanced for the same scope and count.
 - A one-lesson pool returns `count` slots of that one lesson, so the callers need
   no special case, and a single-lesson request behaves as it does today.
 - `buildCoverage` uses `lessonsInScope` from piece 1 and nothing else: it never

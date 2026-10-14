@@ -33,7 +33,7 @@ import { aiErrorText, getLastGeneration, isAbortError } from '@/services/ai/aiPr
 import { CoverageNotice } from '@/components/ui/CoverageNotice';
 import { useWideScope } from '@/hooks/useWideScope';
 import { DISTRIBUTIONS, type CoverageLesson, type Distribution } from '@/services/coveragePlan';
-import type { ScopeSelection } from '@/services/scopeSelection';
+import { scopeLabel, type ScopeSelection } from '@/services/scopeSelection';
 import {
   ALL_QUESTION_COUNTS, buildWideRequest, clampCountIndex, scopeFormState, visibleCountOptions,
 } from '@/services/wideScopeRequest';
@@ -78,6 +78,8 @@ const DURATION_OPTIONS = [10, 15, 20, 25, 30, 45];
 const MARKS_OPTIONS = [10, 20, 25, 30, 40, 50, 100];
 // 25 and 30 are appended (saved positions keep their meaning) and shown only on a wide scope.
 const NUM_Q_OPTIONS = ALL_QUESTION_COUNTS;
+/** What a unit / semester / book paper is anchored to: the scope itself, never one lesson its label happens to match. */
+const WIDE_GROUNDING = { lesson: null, grounded: true };
 const ALL_Q_TYPES: QType[] = ['multiple_choice', 'true_false', 'fill_blank', 'short_answer'];
 const DIFFICULTY_IDS: DifficultyLevel[] = ['normal', 'high', 'difficult', 'mixed'];
 const DIFFICULTY_MAP: Record<DifficultyLevel, Difficulty> = {
@@ -132,7 +134,7 @@ export default function QuizScreen() {
     { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
   ));
   useWarmGrounding(topic, lang);
-  const wideScope = useWideScope(params);
+  const wideScope = useWideScope(params, { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id });
   /** The wide scope and distribution the paper on screen was generated under — what Save records. */
   const [wideFrozen, setWideFrozen] = useState<{ sel: ScopeSelection; distribution: Distribution } | null>(
     () => (wideScope.isWide ? { sel: wideScope.scopeSel!, distribution: wideScope.distribution } : null),
@@ -161,10 +163,10 @@ export default function QuizScreen() {
   const [marksIdx, setMarksIdx] = useState(readIndexParam(params.marksIdx, MARKS_OPTIONS.length, 1));
   const [numQIdx, setNumQIdx] = useState(readIndexParam(params.numQIdx, NUM_Q_OPTIONS.length, 2));
   const [selectedTypes, setSelectedTypes] = useState<Set<QType>>(parseTypes(params.selectedTypes));
-  // Keep the saved index inside what is offered: 25 and 30 exist on a wide scope only.
-  useEffect(() => {
-    setNumQIdx(i => clampCountIndex(i, wideScope.isWide));
-  }, [wideScope.isWide]);
+  // 25 and 30 exist on a wide scope only. Derived, not written back: the selector
+  // reports no scope for a moment mid-pick (unit A to unit B), and a reset would
+  // lose the teacher's 30 each time.
+  const effNumQIdx = clampCountIndex(numQIdx, wideScope.isWide);
   const [loading, setLoading] = useState(false);
   /**
    * Held across renders so Cancel can reach the in-flight request. A cancel
@@ -187,7 +189,15 @@ export default function QuizScreen() {
    * as «اختبار: » and re-grounded the deck from an empty topic.
    */
   const [generated, setGenerated] = useState<GenerationScope | null>(
-    () => (params.savedId ? reopenedGenerationScope(initialScope, topic, lang) : null),
+    () => {
+      if (!params.savedId) return null;
+      // A restored wide scope is anchored to the scope, not to whichever lesson its
+      // label («الفصل الأول كاملًا», a unit title) would ground to if looked up again.
+      if (wideFrozen && topic.trim()) {
+        return captureGenerationScope({ gradeIdx: initialScope.gradeIdx, subjectIdx: initialScope.subjectIdx, topic }, WIDE_GROUNDING);
+      }
+      return reopenedGenerationScope(initialScope, topic, lang);
+    },
   );
   const scope = materialScope(generated, { gradeIdx, subjectIdx, topic });
   // The quiz on screen keeps the language it was generated in, even after the
@@ -196,9 +206,12 @@ export default function QuizScreen() {
   const outT = getT(outLang);
   const outRTL = outLang === 'ar';
   const curriculumGrounded: boolean | null = generated ? generated.grounded : null;
-  const groundedLesson: string | null = generated?.lesson
-    ? (outLang === 'ar' ? generated.lesson.titleAr : generated.lesson.titleEn)
-    : null;
+  // A wide paper has no single lesson: name its scope instead of leaving the notice's tail empty.
+  const groundedLesson: string | null = wideFrozen
+    ? scopeLabel(wideFrozen.sel, outLang)
+    : generated?.lesson
+      ? (outLang === 'ar' ? generated.lesson.titleAr : generated.lesson.titleEn)
+      : null;
   /** Ids of questions the teacher has changed, so provenance stays honest. */
   const [editedQuestions, setEditedQuestions] = useState<ReadonlySet<string>>(new Set());
   const [error, setError] = useState('');
@@ -373,7 +386,7 @@ export default function QuizScreen() {
     // subject-conflict check reads a lesson, so it applies to a single lesson only.
     // A wide scope that cannot be grounded is refused here, never generated mislabeled.
     const wide = wideScope.isWide
-      ? buildWideRequest(wideScope.scopeSel!, lang, NUM_Q_OPTIONS[numQIdx]!, wideScope.distribution, { offset: opts?.regenerate ? Math.floor(Math.random() * 1000) : 0 })
+      ? buildWideRequest(wideScope.scopeSel!, lang, NUM_Q_OPTIONS[effNumQIdx]!, wideScope.distribution, { offset: opts?.regenerate ? Math.floor(Math.random() * 1000) : 0 })
       : null;
     if (wideScope.isWide && !wide) { setError(t('wideScopeUngrounded')); return; }
     if (!wide) {
@@ -390,7 +403,7 @@ export default function QuizScreen() {
     try {
       const kbScope = { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id };
       const grounding = wide
-        ? { lesson: null, grounded: true }
+        ? WIDE_GROUNDING
         : resolveGeneratorGrounding(topic.trim(), lang, { scope: kbScope });
       const additionalContext = wide ? undefined : buildGeneratorContext(topic.trim(), lang, { scope: kbScope });
       const unitId = wide ? undefined : generatorUnitId(topic.trim(), lang, kbScope);
@@ -407,7 +420,7 @@ export default function QuizScreen() {
         duration: DURATION_OPTIONS[durationIdx],
         totalMarks: MARKS_OPTIONS[marksIdx],
         questionTypes: Array.from(selectedTypes),
-        numQuestions: NUM_Q_OPTIONS[numQIdx],
+        numQuestions: NUM_Q_OPTIONS[effNumQIdx],
         difficulty: DIFFICULTY_MAP[DIFFICULTY_IDS[diffIdx]],
         additionalContext,
         unitId,
@@ -470,7 +483,7 @@ export default function QuizScreen() {
     const title = getExportTitle();
     const formState = {
       gradeIdx: scope.gradeIdx, subjectIdx: scope.subjectIdx, topic: scope.topic,
-      durationIdx, marksIdx, numQIdx, diffIdx, selectedTypes: JSON.stringify(Array.from(selectedTypes)),
+      durationIdx, marksIdx, numQIdx: effNumQIdx, diffIdx, selectedTypes: JSON.stringify(Array.from(selectedTypes)),
       // From the frozen scope, not the live pickers (a teacher can move them after generating).
       ...scopeFormState(wideFrozen?.sel ?? null, wideFrozen?.distribution ?? 'balanced'),
     };
@@ -532,6 +545,8 @@ export default function QuizScreen() {
     result,
     topic: scope.topic,
     lessonId: scope.lesson?.id,
+    // A wide paper has no figures of its own; see `noFigures`.
+    noFigures: wideFrozen !== null,
     lang: outLang,
     getTitle: getExportTitle,
     getMeta: getExportMeta,
@@ -602,7 +617,7 @@ export default function QuizScreen() {
         <PickerField label={t('levelLabel')} value={diffLabels[diffIdx]} options={diffLabels} onChange={setDiffIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('quizDurationLabel')} value={durationLabels[durationIdx]} options={durationLabels} onChange={setDurationIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('totalMarksLabel')} value={marksLabels[marksIdx]} options={marksLabels} onChange={setMarksIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
-        <PickerField label={t('numQuestionsLabel')} value={numQLabels[numQIdx]} options={numQLabels.slice(0, visibleCountOptions(wideScope.isWide))} onChange={setNumQIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
+        <PickerField label={t('numQuestionsLabel')} value={numQLabels[effNumQIdx]} options={numQLabels.slice(0, visibleCountOptions(wideScope.isWide))} onChange={setNumQIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
         <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left', marginBottom: 10 }]}>{t('questionTypesLabel')}</Text>
         <View style={[styles.checkboxGroup, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
