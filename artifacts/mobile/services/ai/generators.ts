@@ -33,6 +33,8 @@ import { arPrefixed, lessonKindFor, type LessonKind } from './lessonPlanKinds.ts
 import { arMinutes } from './lessonPlanTypes.ts';
 import { classifyVerifiableTopic } from './verifyMathGuards.ts';
 import { QUIZ_TYPE_ORDER } from '../quizPaper.ts';
+import { ScopeDrawer } from './scopeDraw.ts';
+import { planCoverage, type CoverageLesson } from '../coveragePlan.ts';
 
 /**
  * Symbolic verification, loaded lazily.
@@ -886,6 +888,61 @@ function requireQuestionBank(topic: string, kb: KBLesson | null, subject?: strin
   throw new NoQuestionBankError(topic);
 }
 
+// ─── Wide scope ──────────────────────────────────────────────────────────────
+
+/** A lesson of a wide scope as the offline makers need it: its own title and KB row. */
+type OfflineSlotLesson = { id: string; topic: string; kb: KBLesson };
+type OfflineWideScope = {
+  drawer: ScopeDrawer<OfflineSlotLesson>;
+  lessons: OfflineSlotLesson[];
+  /** Lessons dropped because they have no offline bank — reported, not hidden. */
+  skipped: CoverageLesson[];
+};
+
+/** `BankSpentError` is private to this file, so the drawer is told how to recognise it. */
+const spentOpts = {
+  isSpent: (e: unknown) => e instanceof BankSpentError,
+  error: () => new BankSpentError(),
+};
+
+/**
+ * The lessons a wide-scope request names, planned across `count` question slots.
+ *
+ * Null unless the request carries a wide scope and its lesson table: every
+ * other request goes through the single-lesson path exactly as before.
+ *
+ * The plan is re-made HERE from `coverage.lessons`, never read from
+ * `coverage.slots`: a lesson with no offline bank (a geometry lesson, say) must
+ * not make a whole-book paper throw `NoQuestionBankError`, so such lessons are
+ * dropped first and the rest are planned. For a scope whose lessons all have a
+ * bank this is the same plan the live prompt was given.
+ */
+function offlineWideScope(req: AIRequest, lang: Lang, count: number): OfflineWideScope | null {
+  const table = req.coverage?.lessons;
+  if (!req.scope || !table?.length) return null;
+  const usable: OfflineSlotLesson[] = [];
+  const pool: { id: string; unitId: string }[] = [];
+  const skipped: CoverageLesson[] = [];
+  for (const entry of table) {
+    const kb = getLessonById(entry.id);
+    if (!kb) { skipped.push(entry); continue; }
+    const topic = lang === 'ar' ? kb.titleAr : kb.titleEn;
+    try {
+      requireQuestionBank(topic, kb, req.subject);
+    } catch (e) {
+      if (!(e instanceof NoQuestionBankError)) throw e;
+      skipped.push(entry);
+      continue;
+    }
+    usable.push({ id: kb.id, topic, kb });
+    pool.push({ id: kb.id, unitId: entry.unitId });
+  }
+  if (usable.length === 0) throw new NoQuestionBankError(req.topic);
+  const offset = req.regenerate ? Math.floor(Math.random() * pool.length) : 0;
+  const plan = planCoverage(pool, count, req.distribution ?? 'balanced', { offset });
+  return { drawer: new ScopeDrawer(plan.map(i => usable[i]!), usable, spentOpts), lessons: usable, skipped };
+}
+
 /**
  * Which version of an activity a request gets.
  *
@@ -1523,12 +1580,19 @@ export class MockAIService extends AIService {
   private async quizOnce(req: AIRequest): Promise<QuizOutput> {
     beginMathPracticeSession();
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
-    const kb = groundedKb(req.topic, lang, req.lessonId);
+    const types: QType[] = (req.questionTypes as QType[]) ?? ['multiple_choice', 'true_false', 'short_answer'];
+    // Teacher-picked count, cycled evenly across the selected types; marks
+    // distributed evenly. Falls back to 2-per-type for callers (e.g. the
+    // classroom mini-quiz) that don't send numQuestions.
+    const numQuestions = Math.max(types.length, req.numQuestions ?? types.length * 2);
+    // A wide scope draws every question from the lesson its slot names; any
+    // other request is the single-lesson path below, unchanged.
+    const wide = offlineWideScope(req, lang, numQuestions);
+    const kb = wide ? null : groundedKb(req.topic, lang, req.lessonId);
     const topic = req.topic;
-    requireQuestionBank(topic, kb, req.subject);
+    if (!wide) requireQuestionBank(topic, kb, req.subject);
     const totalMarks = req.totalMarks ?? 20;
     const duration = req.duration ?? 20;
-    const types: QType[] = (req.questionTypes as QType[]) ?? ['multiple_choice', 'true_false', 'short_answer'];
     // A quiz is a flat assessment, so the requested tier applies to every
     // question — unlike the worksheet, which keeps an easy→hard progression.
     // `mixed` spreads the tiers across the paper instead of collapsing to
@@ -1538,10 +1602,6 @@ export class MockAIService extends AIService {
       return req.difficulty === 'easy' || req.difficulty === 'hard' ? req.difficulty : 'medium';
     };
 
-    // Teacher-picked count, cycled evenly across the selected types; marks
-    // distributed evenly. Falls back to 2-per-type for callers (e.g. the
-    // classroom mini-quiz) that don't send numQuestions.
-    const numQuestions = Math.max(types.length, req.numQuestions ?? types.length * 2);
     // Grouped as a ministry paper is, not interleaved: the picked types in
     // `QUIZ_TYPE_ORDER`. `word_problem` is a written answer, so it joins that
     // block. Questions are DRAWN one at a time (below) and sorted into blocks
@@ -1588,16 +1648,25 @@ export class MockAIService extends AIService {
       const tier = quizTier(questions.length);
       try {
         // `word_problem` falls into the short-answer branch (see `blockTypes` above).
+        // A wide scope draws from the lesson this slot names and, when that
+        // lesson's bank is spent for the type, from the next lesson that has
+        // some; a single lesson draws from `topic` / `kb` as it always did.
+        const draw = (make: (tp: string, k: KBLesson | null) => QuizQuestion): QuizQuestion => {
+          if (!wide) return pushUnique(() => make(topic, kb));
+          const { value, lesson } = wide.drawer.draw(questions.length, type, l => pushUnique(() => make(l.topic, l.kb)));
+          value.lessonId = lesson.id;
+          return value;
+        };
         if (lang === 'ar') {
-          if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_ar(topic, kb, pts, id, req.subject, tier)));
-          else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_ar(topic, kb, pts, id, req.subject, tier)));
-          else if (type === 'fill_blank') questions.push(pushUnique(() => makeQuizFB_ar(topic, kb, pts, id, req.subject, tier)));
-          else questions.push(pushUnique(() => makeQuizSA_ar(topic, kb, pts, id, req.subject, tier)));
+          if (type === 'multiple_choice') questions.push(draw((tp, k) => makeQuizMCQ_ar(tp, k, pts, id, req.subject, tier)));
+          else if (type === 'true_false') questions.push(draw((tp, k) => makeQuizTF_ar(tp, k, pts, id, req.subject, tier)));
+          else if (type === 'fill_blank') questions.push(draw((tp, k) => makeQuizFB_ar(tp, k, pts, id, req.subject, tier)));
+          else questions.push(draw((tp, k) => makeQuizSA_ar(tp, k, pts, id, req.subject, tier)));
         } else {
-          if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_en(topic, kb, pts, id, req.subject, tier)));
-          else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_en(topic, kb, pts, id, req.subject, tier)));
-          else if (type === 'fill_blank') questions.push(pushUnique(() => makeQuizFB_en(topic, kb, pts, id, req.subject, tier)));
-          else questions.push(pushUnique(() => makeQuizSA_en(topic, kb, pts, id, req.subject, tier)));
+          if (type === 'multiple_choice') questions.push(draw((tp, k) => makeQuizMCQ_en(tp, k, pts, id, req.subject, tier)));
+          else if (type === 'true_false') questions.push(draw((tp, k) => makeQuizTF_en(tp, k, pts, id, req.subject, tier)));
+          else if (type === 'fill_blank') questions.push(draw((tp, k) => makeQuizFB_en(tp, k, pts, id, req.subject, tier)));
+          else questions.push(draw((tp, k) => makeQuizSA_en(tp, k, pts, id, req.subject, tier)));
         }
         made.set(type, (made.get(type) ?? 0) + 1);
       } catch (e) {
