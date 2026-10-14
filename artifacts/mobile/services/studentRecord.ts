@@ -107,10 +107,6 @@ export function lessonAction(o: StudentRecordObjective) {
     : null;
 }
 
-export function recheckAction(classId: string, o: StudentRecordObjective) {
-  return { pathname: '/evaluations/mini' as const, params: { classId, objectiveId: o.objectiveId } };
-}
-
 /** Only a paper that exists: the paper screen creates an attempt for one that does not. */
 export function paperAction(exam: StudentRecordExam, studentId: string) {
   return exam.status !== 'not_sat' && exam.attemptId

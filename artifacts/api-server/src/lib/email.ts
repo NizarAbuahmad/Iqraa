@@ -288,3 +288,66 @@ function renderArtifactReportedEmailHtml(info: { kind: string; lessonRef: string
     </div>
   `);
 }
+
+/**
+ * The Android invite an admin sends to someone who asked for it (a waitlist
+ * row, or any address typed into the admin signups screen). `APP_INVITE_URL`
+ * lets the link change — the closed-test opt-in link, then the public store
+ * page — without a deploy. Same failure posture as every mail here: false
+ * for no key, a refusal or a lost request, so the admin screen can say so.
+ */
+const DEFAULT_APP_INVITE_URL = "https://play.google.com/store/apps/details?id=com.iqra.teachingassistant";
+
+export async function sendAppInviteEmail(to: string): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    logger.warn({ to }, "RESEND_API_KEY not set — app invite not sent");
+    return false;
+  }
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: process.env.RESEND_FROM_EMAIL ?? "Iqrra <onboarding@resend.dev>",
+        to,
+        subject: "دعوتك لتجربة تطبيق إقرأ / You're invited to try the Iqrra app",
+        html: renderAppInviteEmailHtml(process.env.APP_INVITE_URL || DEFAULT_APP_INVITE_URL),
+      }),
+    });
+    if (!res.ok) {
+      logger.error({ to, status: res.status, body: await res.text() }, "resend app invite send failed");
+      return false;
+    }
+    return true;
+  } catch (err) {
+    logger.error({ err, to }, "resend app invite send threw");
+    return false;
+  }
+}
+
+export function renderAppInviteEmailHtml(link: string): string {
+  const button = (label: string) =>
+    `<p style="margin:20px 0;"><a href="${link}" style="display:inline-block;background:#006D65;color:#FFFFFF;text-decoration:none;font-weight:bold;padding:12px 24px;border-radius:8px;">${label}</a></p>`;
+  return renderEmailShell(`
+    <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;font-size:15px;color:#0B1220;line-height:1.7;margin-bottom:24px;">
+      <p>مرحبًا،</p>
+      <p>شكرًا لاهتمامك بتطبيق إقرأ. يسعدنا أن ندعوك لتحميل التطبيق وتجربته على هاتفك الأندرويد.</p>
+      ${button("حمّل التطبيق من Google Play")}
+      <p>افتح الرابط من هاتفك، واضغط «تثبيت»، ثم سجّل الدخول وأنشئ أول درس أو ورقة عمل.</p>
+      <p>لأي مشكلة أو ملاحظة، راسلنا على <a href="mailto:info@iqrra.com" style="color:#006D65;">info@iqrra.com</a>.</p>
+    </div>
+    <hr style="border:none;border-top:1px solid #E2E8F0;" />
+    <div dir="ltr" style="font-family:Arial,sans-serif;font-size:15px;color:#0B1220;line-height:1.7;margin-top:24px;">
+      <p>Hi,</p>
+      <p>Thank you for your interest in Iqrra. We'd love you to download the app and try it on your Android phone.</p>
+      ${button("Download on Google Play")}
+      <p>Open the link on your phone, tap Install, then sign in and create your first lesson or worksheet.</p>
+      <p>Questions or feedback? Write to <a href="mailto:info@iqrra.com" style="color:#006D65;">info@iqrra.com</a>.</p>
+    </div>
+  `);
+}

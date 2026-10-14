@@ -473,7 +473,8 @@ export default function WorksheetScreen() {
     // Built once: the two branches below used to each spell out the payload.
     const payload = {
       title, subject: subjects[scope.subjectIdx].name, grade: grades[scope.gradeIdx].name,
-      topic: scope.topic, language: outLang, content: JSON.stringify(result), formState,
+      // `repeated` describes a regenerate, not the paper: reopened later it would be stale.
+      topic: scope.topic, language: outLang, content: JSON.stringify({ ...result, repeated: undefined }), formState,
     };
     // `updateItem` answers false when the material is no longer there — the
     // teacher deleted it from موادي while this screen still held its id. The
@@ -829,7 +830,7 @@ export default function WorksheetScreen() {
             <Text style={[{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, flex: 1, textAlign: outRTL ? 'right' : 'left' }]}>{result.title}</Text>
           </View>
 
-          <ShortPaperNotice shortfall={result.shortfall} />
+          <ShortPaperNotice shortfall={result.shortfall} repeated={result.repeated} />
 
           <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 16, lineHeight: 20, textAlign: outRTL ? 'right' : 'left' }]}>
             {result.instructions}

@@ -15,14 +15,123 @@ import {
   extractJSON,
   deckShortfalls,
   mergeQuizTopUp,
+  mergeWorksheetTopUp,
   missingFields,
   normalizeQuiz,
   quizShortfall,
   quizStems,
   quizWanted,
   REQUIRED_FIELDS,
+  trimWorksheet,
   UnusableGenerationError,
+  worksheetQuestionCount,
+  worksheetShortfall,
+  worksheetStems,
 } from "../generationShape.ts";
+
+const wq = (text: string) => ({ text, points: 1 });
+/** A worksheet of `n` questions split over two sections, with its answer key. */
+const sheet = (n: number, extra: Record<string, unknown> = {}) => ({
+  title: "t",
+  instructions: "i",
+  sections: [
+    { type: "short_answer", title: "A", questions: Array.from({ length: Math.ceil(n / 2) }, (_, i) => wq(`a${i}`)) },
+    { type: "short_answer", title: "B", questions: Array.from({ length: Math.floor(n / 2) }, (_, i) => wq(`b${i}`)) },
+  ],
+  answerKey: Array.from({ length: n }, (_, i) => ({ num: i + 1, answer: `k${i}` })),
+  ...extra,
+});
+const example = { problem: "p", steps: ["1", "2", "3"], answer: "a" };
+
+describe("a worksheet or homework holds the number of questions that was asked for", () => {
+  it("counts questions across every section", () => {
+    assert.equal(worksheetQuestionCount(sheet(7)), 7);
+    assert.equal(worksheetQuestionCount({}), 0);
+    assert.equal(worksheetQuestionCount({ sections: [null, { questions: "x" }, { questions: [wq("a")] }] }), 1);
+  });
+
+  it("owes nothing for a complete homework, and the difference for a short one", () => {
+    assert.equal(worksheetShortfall(sheet(20), { numQuestions: 20 }), 0);
+    assert.equal(worksheetShortfall(sheet(10), { numQuestions: 20 }), 10);
+    assert.equal(worksheetShortfall(sheet(10), {}), 0);
+  });
+
+  it("counts the worked example INSIDE the number picked", () => {
+    // 10 asked, an example, and 9 in the sections: complete.
+    assert.equal(worksheetShortfall(sheet(9, { workedExample: example }), { numQuestions: 10 }), 0);
+    assert.equal(worksheetShortfall(sheet(7, { workedExample: example }), { numQuestions: 10 }), 2);
+    // No example (a lesson with no procedure to model): all ten are questions.
+    assert.equal(worksheetShortfall(sheet(9), { numQuestions: 10 }), 1);
+  });
+
+  it("expects at least the review's lower bound on top when a review was asked for", () => {
+    const body = { numQuestions: 10, includePriorReview: true, priorKnowledge: ["x"] };
+    assert.equal(worksheetShortfall(sheet(12), body), 0);
+    assert.equal(worksheetShortfall(sheet(13), body), 0);
+    assert.equal(worksheetShortfall(sheet(10), body), 2);
+    // A review requested with nothing to review adds nothing to expect.
+    assert.equal(worksheetShortfall(sheet(10), { numQuestions: 10, includePriorReview: true, priorKnowledge: [] }), 0);
+  });
+
+  it("lists the stems already written, whitespace collapsed", () => {
+    const s = { sections: [{ questions: [wq("ما   هو\n الناتج؟"), wq("")] }, { questions: [wq("ثانيًا")] }] };
+    assert.deepEqual(worksheetStems(s), ["ما هو الناتج؟", "ثانيًا"]);
+  });
+
+  it("merges a top-up in as new sections, numbering its answers straight on", () => {
+    const base = sheet(4, { workedExample: example });
+    const extra = {
+      title: "x",
+      sections: [{ type: "short_answer", title: "Additional practice", questions: [wq("c0"), wq("c1")] }],
+      answerKey: [{ num: 1, answer: "n1", solution: ["s"] }, { num: 2, answer: "n2" }],
+    };
+    mergeWorksheetTopUp(base, extra);
+    assert.equal(worksheetQuestionCount(base), 6);
+    assert.equal((base.sections as unknown[]).length, 3);
+    assert.deepEqual((base.answerKey as { num: number }[]).map(k => k.num), [1, 2, 3, 4, 5, 6]);
+    assert.deepEqual((base.answerKey as { answer: string }[]).slice(4).map(k => k.answer), ["n1", "n2"]);
+    assert.ok((base as Record<string, unknown>).workedExample, "the first reply's worked example is kept");
+    assert.equal(base.title, "t");
+  });
+
+  it("a top-up with no answer key still adds its questions", () => {
+    const base = sheet(2);
+    mergeWorksheetTopUp(base, { sections: [{ questions: [wq("z")] }] });
+    assert.equal(worksheetQuestionCount(base), 3);
+    assert.equal((base.answerKey as unknown[]).length, 2);
+  });
+
+  it("trims a long paper from the end, with its key, never below the count", () => {
+    const s = sheet(14);
+    const removed = trimWorksheet(s, { numQuestions: 10 });
+    assert.equal(removed, 4);
+    assert.equal(worksheetQuestionCount(s), 10);
+    assert.equal((s.answerKey as unknown[]).length, 10);
+    // The first questions survive.
+    assert.equal(((s.sections as { questions: { text: string }[] }[])[0]!.questions[0]!.text), "a0");
+  });
+
+  it("drops a section that trimming empties", () => {
+    const s = { sections: [{ questions: [wq("a"), wq("b")] }, { questions: [wq("c")] }], answerKey: [{ num: 1 }, { num: 2 }, { num: 3 }] };
+    trimWorksheet(s, { numQuestions: 2 });
+    assert.equal((s.sections as unknown[]).length, 1);
+    assert.equal((s.answerKey as unknown[]).length, 2);
+  });
+
+  it("leaves a review the teacher asked for alone: up to three over the count is not surplus", () => {
+    const body = { numQuestions: 10, includePriorReview: true, priorKnowledge: ["x"] };
+    const s = sheet(13);
+    assert.equal(trimWorksheet(s, body), 0);
+    assert.equal(worksheetQuestionCount(s), 13);
+    assert.equal(trimWorksheet(sheet(16), body), 3);
+  });
+
+  it("does not trim anything when the request named no count, or a paper is the right length or short", () => {
+    assert.equal(trimWorksheet(sheet(14), {}), 0);
+    assert.equal(trimWorksheet(sheet(10), { numQuestions: 10 }), 0);
+    assert.equal(trimWorksheet(sheet(4), { numQuestions: 10 }), 0);
+  });
+});
 
 const mcq = (id: string, text: string) => ({ id, type: "multiple_choice", text, options: ["a", "b", "c"], correctAnswer: "a", points: 1 });
 const tf = (id: string, text: string) => ({ id, type: "true_false", text, options: ["صح", "خطأ"], correctAnswer: "صح", points: 1 });

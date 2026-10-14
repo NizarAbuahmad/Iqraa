@@ -39,13 +39,6 @@ export function outcomeKey(o: CheckOutcome): 'supportOutcomePassed' | 'supportOu
   }
 }
 
-export function groupCheckAction(classId: string, g: SupportGroup) {
-  return {
-    pathname: '/evaluations/mini' as const,
-    params: { classId, objectiveId: g.objectiveId, studentIds: g.members.map(m => m.studentId).join(',') },
-  };
-}
-
 /** An unfinished group check for this objective: finish it, do not start another. */
 export function groupDraftAction(g: SupportGroup) {
   return g.draftCheck ? { pathname: '/evaluations/[id]' as const, params: { id: g.draftCheck.evaluationId } } : null;

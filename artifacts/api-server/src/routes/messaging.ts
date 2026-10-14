@@ -39,7 +39,7 @@
  * sees the content, being a permanent participant.
  */
 import { Router } from "express";
-import { db } from "@workspace/db";
+import { db, systemDb } from "@workspace/db";
 import {
   chatThreads,
   chatParticipants,
@@ -245,7 +245,8 @@ const PUSH_BODY_PREVIEW_LENGTH = 120;
 async function pruneDeadTokens(results: Awaited<ReturnType<typeof sendExpoPush>>): Promise<void> {
   const dead = deadTokensFrom(results);
   if (dead.length === 0) return;
-  await db.delete(devicePushTokens).where(inArray(devicePushTokens.expoPushToken, dead));
+  // systemDb: a dead token belongs to whoever registered it, not to the caller.
+  await systemDb.delete(devicePushTokens).where(inArray(devicePushTokens.expoPushToken, dead));
 }
 
 /**
@@ -259,7 +260,8 @@ async function notifyThreadParticipants(threadId: string, senderId: string, body
   const recipientIds = participants.map(p => p.userId).filter(id => id !== senderId);
   if (recipientIds.length === 0) return;
 
-  const blockedByRows = await db
+  // systemDb: whether a recipient has blocked the sender is the recipient's row, not the sender's.
+  const blockedByRows = await systemDb
     .select({ blockerUserId: chatBlocks.blockerUserId })
     .from(chatBlocks)
     .where(and(inArray(chatBlocks.blockerUserId, recipientIds), eq(chatBlocks.blockedUserId, senderId)));
@@ -267,7 +269,8 @@ async function notifyThreadParticipants(threadId: string, senderId: string, body
   const notifiable = recipientIds.filter(id => !blockedBy.has(id));
   if (notifiable.length === 0) return;
 
-  const tokenRows = await db
+  // systemDb: pushing to other people needs their tokens.
+  const tokenRows = await systemDb
     .select({ userId: devicePushTokens.userId, expoPushToken: devicePushTokens.expoPushToken })
     .from(devicePushTokens)
     .where(inArray(devicePushTokens.userId, notifiable));
@@ -587,7 +590,8 @@ router.post("/messaging/threads", async (req: AuthenticatedRequest, res) => {
       return;
     }
 
-    const [existingBlock] = await db
+    // systemDb: a block in either direction stops a new thread, and one direction is the other person's row.
+    const [existingBlock] = await systemDb
       .select({ id: chatBlocks.id })
       .from(chatBlocks)
       .where(
@@ -1211,7 +1215,9 @@ router.post("/messaging/threads/:id/messages", sendMessageLimiter, async (req: A
       })
       .returning();
 
-    await db.update(chatThreads).set({ updatedAt: new Date() }).where(eq(chatThreads.id, threadId));
+    // systemDb: the post is already authorised, and the inbox sorts by this column — a participant
+    // who did not create the thread may not update it, so under RLS the bump matched no row.
+    await systemDb.update(chatThreads).set({ updatedAt: new Date() }).where(eq(chatThreads.id, threadId));
     await db
       .update(chatParticipants)
       .set({ lastReadAt: new Date() })
@@ -1292,7 +1298,8 @@ router.post("/messaging/threads/broadcast", sendMessageLimiter, async (req: Auth
       const thread = await openDirectThread(teacherId, id);
       const now = new Date();
       await db.insert(chatMessages).values({ threadId: thread.id, senderId: teacherId, body });
-      await db.update(chatThreads).set({ updatedAt: now }).where(eq(chatThreads.id, thread.id));
+      // systemDb: as above — the thread may have been opened by the recipient.
+      await systemDb.update(chatThreads).set({ updatedAt: now }).where(eq(chatThreads.id, thread.id));
       await db
         .update(chatParticipants)
         .set({ lastReadAt: now })
@@ -1576,7 +1583,8 @@ router.post("/messaging/device-tokens", async (req: AuthenticatedRequest, res) =
       return;
     }
 
-    await db
+    // systemDb: a phone handed to another account re-registers a token that still belongs to the last one.
+    await systemDb
       .insert(devicePushTokens)
       .values({ userId: req.user!.id, expoPushToken, platform })
       .onConflictDoUpdate({
