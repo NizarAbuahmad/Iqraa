@@ -13,8 +13,8 @@ to one lesson or none.
 
 This piece makes **quiz, worksheet and homework** honour a unit / semester / book
 scope, in both the offline path (the web build, `DEMO_MODE`) and the live path.
-The game needs no work of its own: `game.tsx` generates a quiz and converts it
-(`buildGameDeckFromQuiz`), so it inherits the quiz.
+The game screen needs its own adoption: `game.tsx` builds its own `generateQuiz`
+request and its own `TopicSelector` (its 5/8/10/12 count picker is unchanged).
 
 ## Goals
 
@@ -61,28 +61,37 @@ The game needs no work of its own: `game.tsx` generates a quiz and converts it
 
 ```ts
 export type Distribution = 'balanced' | 'random';
-export type CoverageSlot = { lessonId: string; unitId: string };
+export type PoolLesson = { id: string; unitId: string };
 
 planCoverage(
-  scope: ScopeSelection,          // from piece 1
+  pool: readonly PoolLesson[],    // the request's lesson table, in book order
   count: number,
   mode: Distribution,
   opts?: { offset?: number; random?: () => number },
-): CoverageSlot[]                 // length === count, one lesson per question slot
+): number[]                       // length === count, indices into pool, one lesson per question slot
+
+buildCoverage(scope: ScopeSelection, lang, count, mode, opts?)
+  // builds the pool from piece 1's lessonsInScope and returns
+  // { lessons: [{ code, id, unitId, title }], slots? }  (slots: balanced only)
 ```
+
+The plan takes a pool rather than a `ScopeSelection` because the offline
+generators only hold the request's lesson table; `buildCoverage` is the one place
+that turns a scope into that pool.
 
 - **balanced:** units in book order; every unit gets one slot before any unit
   gets a second; inside a unit, lessons rotate in book order. If `count` is less
   than the number of units, the first `count` units (rotated by `offset`) get one
   each. Deterministic for a given `(scope, count)`.
-- **random:** the same slot count, lessons drawn at random without replacement
-  until the pool is spent, then again. `opts.random` is injectable for tests.
+- **random:** the same slot count, lessons drawn without replacement; a lesson
+  repeats only after every lesson was used. It does **not** promise every unit is
+  covered. `opts.random` is injectable for tests.
 - `offset` rotates where the rotation starts, so an offline *Regenerate* does not
   return the same plan. It is not sent to the server.
-- A `lesson` scope returns `count` slots of that one lesson, so the callers need
+- A one-lesson pool returns `count` slots of that one lesson, so the callers need
   no special case, and a single-lesson request behaves as it does today.
-- It uses `lessonsInScope` / `unitsInScope` from piece 1 and nothing else: it
-  never searches by title.
+- `buildCoverage` uses `lessonsInScope` from piece 1 and nothing else: it never
+  searches by title.
 
 ### 2. Offline path (`artifacts/mobile/services/ai/generators.ts`)
 
@@ -94,6 +103,12 @@ with a maker that takes one lesson's `(topic, kb)` — `makeQuizMCQ_ar(topic, kb
   question slot**, resolve that slot's lesson (by id, `getLessonById`) and pass its
   title and `KBLesson` to the existing maker. No bank content changes; the
   per-lesson banks and the maths families are reused as they are.
+- Lessons with no offline bank (`NoQuestionBankError`, e.g. a geometry lesson)
+  are dropped from the offline plan and reported, not hidden, so one such lesson
+  cannot make a whole-book paper throw. The offline path re-plans from
+  `coverage.lessons` (it never reads `slots`).
+- The offline count caps: `worksheetOnce` and `homeworkOnce` used to clamp the
+  count to 20; both clamp at 30 so the 25 and 30 options are honoured.
 - A bank that runs out hands its share to other lessons in the plan (the existing
   rule, `quizCount.test.ts`) instead of ending the paper early. The result still
   sets `shortfall` when the whole scope's banks are spent.
@@ -113,19 +128,21 @@ with a maker that takes one lesson's `(topic, kb)` — `makeQuizMCQ_ar(topic, kb
   fields in `generationKey.ts`. `scopeKey` is already keyed (piece 1). Neither the
   code table nor the slots are hashed: the table is a pure function of the scope
   and, for `balanced`, the slots are a pure function of `(scopeKey,
-  numQuestions)`. For `random` no per-request assignment is sent, so the pool
+  numQuestions)`. The wire `coverage` is `{ lessons: [{ code, id, unitId, title }],
+  slots? }`. For `random` no per-request assignment is sent, so the pool
   still serves variants instead of every request being unique.
 - **Prompt:** `quizPromptAr/En` and `worksheetPromptAr/En` (api-server
   `lib/prompts.ts`) gain a coverage clause, used only when `body.scope` is a wide
   scope. In **both** modes the client sends a lesson-code table for the scope —
-  `lessons: [{ code: 'L1', title }, …]`, one entry per lesson in range, derived
+  `lessons: [{ code: 'L1', id, unitId, title }, …]`, one entry per lesson in range, derived
   from `lessonsInScope`, so it is a pure function of the scope and never
   differs between two requests for the same scope. For `balanced` it also sends
-  the per-slot assignment (`slots: ['L3', 'L7', …]`, from `planCoverage`) and the
-  clause tells the model to write exactly that lesson's question at each slot.
-  For `random` it sends no `slots`; the clause tells the model to spread the
-  questions across the coded lessons and leave no unit uncovered. Homework shares
-  the worksheet prompt builders.
+  the per-slot assignment (`slots: ['L3', 'L7', …]`, from `planCoverage`), but the
+  prompt renders it as **per-lesson counts** («L7: 2 questions»), not a slot
+  order: a quiz is re-sorted into ministry type blocks and a worksheet is grouped
+  by difficulty, so "question 3 is about L7" cannot hold. For `random` it sends no
+  `slots`; the clause says to choose lessons at random and repeat none before all
+  are used. Homework shares the worksheet prompt builders.
 - **Tagging:** each question is asked to carry a `lesson` field holding its `Ln`
   code. The client maps the codes back to lesson ids from the table it sent. The
   server **passes the tag through**; it does not count, trim or reject on it,
@@ -137,8 +154,8 @@ with a maker that takes one lesson's `(topic, kb)` — `makeQuizMCQ_ar(topic, kb
   clamped (see Decision 3), so a 30-question paper is expected to lean on the
   top-up call more often. That cost is to be measured, not assumed (*Risks*).
 - **Two places:** the offline plan and the live table come from the same
-  `planCoverage` call, and a test asserts that the live prompt's table lists the
-  same lessons, in the same slots, as the plan the offline generator uses.
+  `planCoverage` call, and a test asserts that the live prompt's per-lesson counts
+  match the multiset of per-lesson counts of the plan the offline generator uses.
 
 ### 4. What the teacher sees
 
@@ -156,7 +173,7 @@ with a maker that takes one lesson's `(topic, kb)` — `makeQuizMCQ_ar(topic, kb
   the way `groundedSubjectConflict` refuses a mislabeled topic. «الكتاب كاملًا» no
   longer means "an empty topic".
 
-### 5. Screens — `quiz.tsx`, `worksheet.tsx`, homework (worksheet screen, `isHomework`)
+### 5. Screens — `quiz.tsx`, `worksheet.tsx`, homework (worksheet screen, `isHomework`), `game.tsx`
 
 - `TopicSelector` gets `allowedKinds={['lesson','unit','semester','book']}`,
   `onScopeChange`, and `offlineWideScope`.
@@ -164,17 +181,19 @@ with a maker that takes one lesson's `(topic, kb)` — `makeQuizMCQ_ar(topic, kb
   `scopeRequestFields`. **`scopeRequestFields` is merged over the screen's own
   fields last** (piece 1's final review: spreading the screen's lesson-derived
   `additionalContext` over it would clobber the digest).
-- `GenerationScope` (`services/generationScope.ts`) records the scope and the
-  distribution the paper was generated under, so save, export and present read
-  that, not the live pickers — the same rule the screens already follow for
-  grade and subject.
+- Each screen freezes the wide scope and distribution in its own state at
+  generation time (`wideFrozen`), and save, export and present read that, not the
+  live pickers — the same rule the screens already follow for grade and subject.
+  `GenerationScope` is not extended, which gives the same guarantee without
+  widening a shared type.
 - `formState` saved with a material gains `scope` and `distribution`. On reopen
   `parseScope` rebuilds the scope; a material saved before this has neither and
   keeps today's behaviour. Piece 1's review: run `parseScope` before
   `scopeLabel` on saved state.
 - `TopicSelector` does not emit a scope on mount when a topic arrives as a prop
   (piece 1, by design). Screens opened with a saved scope seed it themselves.
-- Game: no change; it picks up the quiz screen's behaviour.
+- Game: `game.tsx` gets the same adoption as the quiz screen (its own request and
+  `TopicSelector`); its question-count picker (5/8/10/12) is unchanged.
 
 ### 6. Files
 
@@ -185,8 +204,7 @@ with a maker that takes one lesson's `(topic, kb)` — `makeQuizMCQ_ar(topic, kb
 | `mobile/services/ai/AIService.ts` | `AIRequest.distribution`, `coverage`; `lesson` tag on `QuizQuestion` / `WorksheetQuestion` |
 | `mobile/services/generatorRequests.ts` | send `distribution` + `coverage` |
 | `mobile/components/ui/TopicSelector.tsx` | `offlineWideScope` |
-| `mobile/app/ai-tools/{quiz,worksheet}.tsx` | picker, count options, request, saved state, coverage line |
-| `mobile/services/generationScope.ts` | scope + distribution in the frozen scope |
+| `mobile/app/ai-tools/{quiz,worksheet,game}.tsx` | picker, count options, request, saved state, coverage line |
 | `mobile/services/i18n.ts` | «توزيع الأسئلة», the two modes, «الدروس المغطاة», the refusal |
 | `api-server/src/lib/prompts.ts` | coverage clause in quiz / worksheet prompts |
 | `api-server/src/lib/generationKey.ts` | `distribution` in the strict key |
@@ -198,9 +216,10 @@ with a maker that takes one lesson's `(topic, kb)` — `makeQuizMCQ_ar(topic, kb
 - **Live adherence is not testable.** Tests can pin the table in the prompt and
   that the server preserves tags; they cannot prove the model follows the plan.
   Hence the «حسب ما أعلنه النموذج» label and no server-side rejection.
-- **`normalizeQuiz` and the worksheet normaliser may drop unknown question
-  fields.** Not read yet; if they do, passing the `lesson` tag through is part of
-  this piece, and a test must prove it survives.
+- ~~**`normalizeQuiz` and the worksheet normaliser may drop unknown question
+  fields.**~~ **Resolved:** `normalizeQuiz` mutates the model's question objects in
+  place and keeps unknown fields, so a `lesson` tag survives. A test still proves
+  it, for the quiz and the worksheet.
 - **30-question papers lean on the top-up.** The ceiling is clamped at 24 000
   tokens; extra calls cost budget (`AI_BUDGET_USD`). Measure on the live route
   before enabling 30 on the web build, and drop it if the top-up fires too often.
@@ -228,17 +247,17 @@ only after the manual check above; 25 / 30 are hidden on a lesson scope.
 
 `artifacts/mobile/services/__tests__/`:
 - `coveragePlan.test.ts` — balanced gives every unit a slot before any second,
-  rotates inside a unit, is deterministic, `count < units` covers distinct units,
-  `offset` changes it, a lesson scope gives `count` slots of one lesson, random is
-  reproducible with an injected generator and never leaves a unit out when
-  `count >= units`.
+  rotates inside a unit, is deterministic, never leaves a unit out when
+  `count >= units`, `count < units` covers distinct units, `offset` changes it, a
+  one-lesson pool gives `count` slots of that lesson; random is reproducible with
+  an injected generator and repeats no lesson until all were used.
 - `quizWideScope.test.ts`, `worksheetWideScope.test.ts`, `homeworkWideScope.test.ts`
   — offline output for a real G10 maths semester: every question's lesson is in
   scope; every unit covered at count ≥ units; the count equals the picked number
   (worked example inside it for worksheets); `shortfall` honest when banks run out;
   a lesson-scope request is unchanged.
 - `coverageLivePrompt.test.ts` — the client's code table lists the scope's lessons
-  and, for `balanced`, its `slots` match the offline plan slot for slot.
+  and, for `balanced`, the prompt's per-lesson counts match the offline plan's.
 
 `artifacts/api-server/src/**/__tests__/`:
 - prompt tests — the coverage clause appears for a wide scope and not for a lesson;
