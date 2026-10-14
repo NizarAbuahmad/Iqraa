@@ -278,6 +278,13 @@ describe("distribution in the cache key", () => {
       }
     });
 
+    it("renaming a lesson code on its own (same ids and titles) changes the strict key", () => {
+      const a = keys(withCoverage({ lessons }));
+      const renamed = keys(withCoverage({ lessons: [{ ...lessons[0]!, code: "L7" }, lessons[1]] }));
+      assert.notEqual(a.strictKey, renamed.strictKey);
+      assert.equal(a.coarseKey, renamed.coarseKey);
+    });
+
     it("the same table with a different slot plan is the SAME strict key (a Regenerate rotates the plan)", () => {
       const a = keys(withCoverage({ lessons, slots: ["L1", "L2", "L1"] }));
       const b = keys(withCoverage({ lessons, slots: ["L2", "L1", "L2"] }));

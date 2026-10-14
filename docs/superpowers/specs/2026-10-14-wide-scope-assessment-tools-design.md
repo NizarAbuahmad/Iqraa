@@ -127,10 +127,13 @@ with a maker that takes one lesson's `(topic, kb)` — `makeQuizMCQ_ar(topic, kb
 ### 3. Live path
 
 - **Request:** `distribution` (`'balanced' | 'random'`) joins the strict key
-  fields in `generationKey.ts`. `scopeKey` is already keyed (piece 1). Neither the
-  code table nor the slots are hashed: the table is a pure function of the scope
-  and, for `balanced`, the slots are a pure function of `(scopeKey,
-  numQuestions)`. The wire `coverage` is `{ lessons: [{ code, id, unitId, title }],
+  fields in `generationKey.ts`. `scopeKey` is already keyed (piece 1). The lesson
+  table (`code`, `id`, `title` per lesson, read through `parseCoverage`) IS hashed
+  into the strict key, so a crafted table cannot poison the slot an honest client
+  reads; honest clients send a table that is a pure function of scope and language,
+  so nothing is lost. The `slots` are NOT hashed: for `balanced` they are a
+  function of `(scopeKey, numQuestions)` up to the rotation a Regenerate applies,
+  and any rotation is an equally valid plan. The wire `coverage` is `{ lessons: [{ code, id, unitId, title }],
   slots? }`. For `random` no per-request assignment is sent, so the pool
   still serves variants instead of every request being unique.
 - **Prompt:** `quizPromptAr/En` and `worksheetPromptAr/En` (api-server

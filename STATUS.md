@@ -94,9 +94,15 @@ an announcement by default» below.
   paper got a Grade 9 lesson's id), so the prep board, «send to students» and the
   viewer/export figures treated it as that lesson's. The stamp is skipped for a
   unit/semester/book scope (`services/materialLessonId.ts`) and `workspace/view.tsx`
-  shows no figures and offers no lesson objectives for one; a copy saved before
-  the fix may still carry the wrong id on disk (the viewer ignores it, the prep
-  board does not). **The offline «covered» list means «drawn for that slot's
+  shows no figures and offers no lesson objectives for one; the prep board
+  (`materialsForTopic`, also behind the chat's «what is prepared») skips any
+  material whose saved scope is wide, so it is neither matched by id nor by the
+  topic fallback; a copy saved before the fix may still carry the wrong id on
+  disk, and the viewer and the board both ignore it. **Known limit (stale
+  scope):** a reopened wide paper whose saved scope no longer matches the
+  pickers drops its scope keys on re-save, and `withLessonId` then stamps a
+  lesson grounded from the label again — that re-saved copy is filed under a
+  lesson (possibly another grade's) until the scope is re-picked. **The offline «covered» list means «drawn for that slot's
   lesson», not «about that lesson exactly»:** the chemistry bank is chosen by
   keyword detection on each lesson's text, so a slot's question can come from a
   neighbouring lesson's topic. On a semester-1 balanced maths worksheet the half-solved item is
