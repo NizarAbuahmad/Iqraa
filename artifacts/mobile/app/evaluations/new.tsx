@@ -226,22 +226,25 @@ export default function NewEvaluationScreen() {
       setScanFailed(true);
       return;
     }
-    const images = await pickMarkSheetPhotos(MAX_SCAN_PAGES);
-    if (images.length === 0) return;
-    if (paperRows.some(r => r.review === false)) {
-      const ok = await confirm({
-        title: t('paperScanReplaceTitle'),
-        message: t('paperScanReplaceBody'),
-        confirmLabel: t('paperScanReplaceConfirm'),
-        cancelLabel: t('cancel'),
-      });
-      if (!ok) return;
-    }
+    // Set before the picker opens, so a second tap while it is open is refused;
+    // every way out below — cancel, declined replace, a picker that throws —
+    // passes through the finally.
     setScanning(true);
-    setError('');
-    setScanNote('');
-    setScanFailed(false);
     try {
+      const images = await pickMarkSheetPhotos(MAX_SCAN_PAGES);
+      if (images.length === 0) return;
+      if (paperRows.some(r => r.review === false)) {
+        const ok = await confirm({
+          title: t('paperScanReplaceTitle'),
+          message: t('paperScanReplaceBody'),
+          confirmLabel: t('paperScanReplaceConfirm'),
+          cancelLabel: t('cancel'),
+        });
+        if (!ok) return;
+      }
+      setError('');
+      setScanNote('');
+      setScanFailed(false);
       const res = await scanPaper(images, [...selectedObjectives]);
       if (res.rows.length === 0) {
         setScanNote(t('paperScanFoundNothing'));
@@ -253,6 +256,7 @@ export default function NewEvaluationScreen() {
       setPrintedTotal(res.printedTotal);
       setScanNote(t('paperScanFilled', String(grid.length), String(blankMarkCount(grid))));
     } catch (err) {
+      // A picker that throws is not a scan error: scanErrorKey maps it to scanFailed.
       setScanNote(t(scanErrorKey(err)));
       setScanFailed(true);
     } finally {

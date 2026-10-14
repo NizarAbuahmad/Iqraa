@@ -36,9 +36,13 @@ import { isBatchStopError, scanErrorKey, type ScanErrorKey } from '@/services/sc
 import { saveRows, type SaveDeps } from '@/services/classScanSave';
 import {
   assignStudent,
+  canDiscard,
   canSave,
+  discardRow,
+  isStudentLocked,
   newRow,
   reportRows,
+  rosterLabels,
   rowFromScan,
   rowTotal,
   saveSummary,
@@ -49,6 +53,7 @@ import {
   type RowReport,
 } from '@/services/classScanReview';
 import { filterToAudience } from '@/services/supportGroups';
+import { isPaperQuestion } from '@/services/paperQuestion';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -92,6 +97,11 @@ export default function ScanClassScreen() {
   // read current without making the loop re-create on every keystroke.
   const rowsRef = useRef<ReviewRow[]>([]);
   rowsRef.current = rows;
+  // A second tap while the picker is still open must not start a second batch;
+  // `reading` is only set once the picker returns, so a ref guards the gap.
+  const pickingRef = useRef(false);
+  // Row keys are never reused, whatever the photo count says at the time.
+  const nextKeyRef = useRef(0);
 
   useEffect(() => {
     if (!id) return;
@@ -104,6 +114,12 @@ export default function ScanClassScreen() {
         }
         if (data.evaluation.status !== 'published') {
           setLoadError(t('scanNotPublished'));
+          return;
+        }
+        // The server refuses too (`not_paper_exam`): on an exam the app marks
+        // itself, a blank box plus submit would score the question 0.
+        if (!(data.questions.length > 0 && data.questions.every(isPaperQuestion))) {
+          setLoadError(t('scanNotPaper'));
           return;
         }
         const { students } = await getClass(data.evaluation.classGroupId);
@@ -122,6 +138,11 @@ export default function ScanClassScreen() {
   const ctx = useMemo<ReviewContext>(() => ({ questions, hasAttempt }), [questions, hasAttempt]);
   const reports = useMemo(() => reportRows(rows, ctx), [rows, ctx]);
   const summary = useMemo(() => saveSummary(rows), [rows]);
+  // Two children with one name must not look identical in the chips or picker.
+  const labels = useMemo(
+    () => rosterLabels(roster.map(s => ({ id: s.id, displayName: s.displayName, externalRef: s.externalRef }))),
+    [roster],
+  );
 
   const patchRow = useCallback((key: string, patch: Partial<ReviewRow>) => {
     setRows(prev => prev.map(r => (r.key === key ? { ...r, ...patch } : r)));
@@ -131,26 +152,30 @@ export default function ScanClassScreen() {
   }, []);
 
   const onPick = async () => {
-    if (!id || reading || saving) return;
-    const room = MAX_PHOTOS - photos.length;
-    if (room <= 0) {
-      setNote(t('classScanTooMany', String(MAX_PHOTOS)));
-      return;
-    }
-    const picked = await pickMarkSheetPhotos(room);
-    if (picked.length === 0) return;
-
-    const offset = photos.length;
-    setPhotos(prev => [...prev, ...picked]);
-    setRows(prev => [...prev, ...picked.map((_, i) => newRow(`p${offset + i}`))]);
-    setReading(true);
-    setNote('');
+    if (!id || pickingRef.current || reading || saving) return;
+    pickingRef.current = true;
     try {
+      const room = MAX_PHOTOS - photos.length;
+      if (room <= 0) {
+        setNote(t('classScanTooMany', String(MAX_PHOTOS)));
+        return;
+      }
+      const picked = await pickMarkSheetPhotos(room);
+      if (picked.length === 0) return;
+
+      // Each photo's key is fixed here, and the outcome callback addresses its
+      // row by that key, never by a position computed from the photo count.
+      const keys = picked.map(() => `p${nextKeyRef.current++}`);
+      // Appended in the same tick, so photos[index] stays rows[index].
+      setPhotos(prev => [...prev, ...picked]);
+      setRows(prev => [...prev, ...keys.map(key => newRow(key))]);
+      setReading(true);
+      setNote('');
       await scanAll(
         picked.length,
         i => scanClassPaper(id, picked[i]!),
         (i, outcome) => {
-          const key = `p${offset + i}`;
+          const key = keys[i]!;
           if (outcome.state === 'read') {
             updateRow(key, r => rowFromScan(r, outcome.result));
           } else if (outcome.state === 'failed') {
@@ -161,9 +186,12 @@ export default function ScanClassScreen() {
             patchRow(key, { state: 'not_run' });
           }
         },
-        { onStart: i => patchRow(`p${offset + i}`, { state: 'reading' }) },
+        { onStart: i => patchRow(keys[i]!, { state: 'reading' }) },
       );
+    } catch {
+      setNote(t('scanFailed'));
     } finally {
+      pickingRef.current = false;
       setReading(false);
     }
   };
@@ -183,7 +211,9 @@ export default function ScanClassScreen() {
     }
   };
 
-  const readCount = rows.filter(r => r.state !== 'queued' && r.state !== 'reading').length;
+  // A photo the teacher set aside is not part of the batch any more.
+  const counted = rows.filter(r => r.state !== 'discarded');
+  const readCount = counted.filter(r => r.state !== 'queued' && r.state !== 'reading').length;
   const savedAny = summary.saved + summary.needAttention + summary.skipped > 0;
 
   if (loading) {
@@ -223,7 +253,7 @@ export default function ScanClassScreen() {
             >
               {reading ? <ActivityIndicator size="small" color={ACCENT} /> : <Ionicons name="images-outline" size={18} color={ACCENT} />}
               <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
-                {reading ? t('classScanProgress', String(readCount), String(rows.length)) : t('classScanPickBtn')}
+                {reading ? t('classScanProgress', String(readCount), String(counted.length)) : t('classScanPickBtn')}
               </Text>
             </Pressable>
 
@@ -239,11 +269,16 @@ export default function ScanClassScreen() {
                 photo={photos[index]}
                 questions={questions}
                 roster={roster}
+                labels={labels}
                 report={reports.get(row.key)}
                 disabled={saving || reading}
                 onAssign={studentId => {
                   if (saving) return;
                   updateRow(row.key, r => assignStudent(r, studentId));
+                }}
+                onDiscard={() => {
+                  if (saving || reading) return;
+                  updateRow(row.key, discardRow);
                 }}
                 onMark={(questionId, text) => {
                   if (saving) return;
@@ -286,16 +321,19 @@ export default function ScanClassScreen() {
 }
 
 function RowCard({
-  row, index, photo, questions, roster, report, disabled, onAssign, onMark, onOpenStudent, colors, isRTL, align, t,
+  row, index, photo, questions, roster, labels, report, disabled, onAssign, onDiscard, onMark, onOpenStudent, colors, isRTL, align, t,
 }: {
   row: ReviewRow;
   index: number;
   photo: string | undefined;
   questions: ReviewQuestion[];
   roster: RosterStudent[];
+  /** Student id → what the teacher sees; twins are told apart. */
+  labels: Map<string, string>;
   report: RowReport | undefined;
   disabled: boolean;
   onAssign: (studentId: string | null) => void;
+  onDiscard: () => void;
   onMark: (questionId: string, text: string) => void;
   onOpenStudent: (studentId: string) => void;
   colors: ReturnType<typeof useColors>;
@@ -305,10 +343,23 @@ function RowCard({
 }) {
   const live = row.state === 'read' || row.state === 'save_failed';
   const done = row.state === 'saved' || row.state === 'skipped_existing';
-  const studentName = roster.find(s => s.id === row.studentId)?.displayName ?? '';
+  // A row that has started a paper keeps its student (see `isStudentLocked`).
+  const locked = isStudentLocked(row);
+  const studentName = row.studentId
+    ? labels.get(row.studentId) ?? roster.find(s => s.id === row.studentId)?.displayName ?? ''
+    : '';
   const note = (text: string, color: string) => (
     <Text style={{ color, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: align }}>{text}</Text>
   );
+
+  if (row.state === 'discarded') {
+    return (
+      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row', gap: 12, alignItems: 'center' }]}>
+        {photo ? <Image source={{ uri: photo }} style={styles.thumbSmall} /> : null}
+        <View style={{ flex: 1 }}>{note(t('classScanRowDiscarded'), colors.mutedForeground)}</View>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -334,7 +385,7 @@ function RowCard({
 
       {live && (
         <>
-          {!row.studentId && row.candidates.length > 0 ? (
+          {!locked && !row.studentId && row.candidates.length > 0 ? (
             <View style={{ gap: 6, marginTop: 10 }}>
               {note(t('classScanLikely'), colors.mutedForeground)}
               <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 6 }}>
@@ -345,22 +396,40 @@ function RowCard({
                     disabled={disabled}
                     style={[styles.chip, { borderColor: ACCENT, opacity: c.hasAttempt ? 0.6 : 1 }]}
                   >
-                    <Text style={{ color: ACCENT, fontFamily: 'Almarai_400Regular', fontSize: 13 }}>{c.displayName}</Text>
+                    <Text style={{ color: ACCENT, fontFamily: 'Almarai_400Regular', fontSize: 13 }}>
+                      {labels.get(c.studentId) ?? c.displayName}
+                    </Text>
                   </Pressable>
                 ))}
               </View>
             </View>
           ) : null}
 
-          <PickerField
-            label={t('classScanPickStudent')}
-            value={studentName}
-            options={roster.map(s => s.displayName)}
-            onChange={i => onAssign(roster[i]?.id ?? null)}
-            colors={colors}
-            isRTL={isRTL}
-            accent={ACCENT}
-          />
+          {locked ? (
+            <View style={{ gap: 2, marginTop: 8 }}>
+              <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
+                {studentName}
+              </Text>
+              {note(t('classScanRowLocked'), colors.mutedForeground)}
+              {row.studentId ? (
+                <Pressable onPress={() => onOpenStudent(row.studentId!)} hitSlop={8}>
+                  <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 13, textAlign: align }}>
+                    {t('classScanOpenStudent')}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : (
+            <PickerField
+              label={t('classScanPickStudent')}
+              value={studentName}
+              options={roster.map(s => labels.get(s.id) ?? s.displayName)}
+              onChange={i => onAssign(roster[i]?.id ?? null)}
+              colors={colors}
+              isRTL={isRTL}
+              accent={ACCENT}
+            />
+          )}
 
           <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
             {questions.map(q => (
@@ -397,6 +466,14 @@ function RowCard({
           </View>
         </>
       )}
+
+      {canDiscard(row) && !disabled ? (
+        <Pressable onPress={onDiscard} hitSlop={8} style={{ marginTop: 8 }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13, textAlign: align }}>
+            {t('classScanDiscard')}
+          </Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -409,6 +486,7 @@ const styles = StyleSheet.create({
   saveBtn: { alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, borderRadius: 12, paddingVertical: 14, marginTop: 4 },
   card: { borderWidth: 1, borderRadius: 12, padding: 12 },
   thumb: { width: 64, height: 64, borderRadius: 8, backgroundColor: '#0001' },
+  thumbSmall: { width: 40, height: 40, borderRadius: 8, backgroundColor: '#0001' },
   chip: { borderWidth: 1, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6 },
   markBox: { borderWidth: 1, borderRadius: 8, minWidth: 52, paddingHorizontal: 8, paddingVertical: 6, textAlign: 'center', fontSize: 14 },
 });
