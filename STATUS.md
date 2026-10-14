@@ -335,14 +335,36 @@ an announcement by default» below.
   button:** `LessonPrepPanel`'s «أعد التجهيز» called `generate()` with nothing, so
   its request was byte-identical and never flagged `regenerate` (the quiz and
   worksheet screens had been sending it); it now sends `regenerationFields`.
-  Objectives and materials are not counted — they come from the book. **Not
-  fixed, and it is content work:** the five fixed sections need real alternative
-  phrasings per teaching style (offline `lessonPlanBlueprints.ts`, in the first
-  person per `lessonPlanTeacherVoice.test.ts`; the live prompt already varies via
-  `avoid`). Until then a regenerated demo plan is at best 3 of 8 sections new.
-  Tests: `lessonPlanRegenerateStems.test.ts`; the panel itself is React Native
-  and cannot be loaded by the test runner, so its wiring is typechecked and read,
-  not run. Not looked at in a browser.
+  Objectives and materials are not counted — they come from the book. **The five
+  fixed sections now have a second wording, Arabic and English (2026-10-14,
+  see the next entry).**
+- **Lesson plans have a second wording for the five fixed sections — Arabic and
+  English, NOT YET READ BY A TEACHER (2026-10-14).** `lessonPlanVariantsAr.ts` and
+  `lessonPlanVariantsEn.ts` hold a "variant 1" for each of the 10 blueprints
+  (maths direct, inquiry, collaborative, and the seven native direct plans:
+  science, recitation, Arabic, English, social, movement, making) — the same
+  teaching shape done another way (predict-observe-explain, meaning-first
+  recitation, test-teach-test, see-think-wonder, reverse-engineering a model…),
+  with the SAME technique in both languages. The English is not a translation:
+  the English plan is written as instructions to the teacher, the Arabic as the
+  teacher's own first person (`lessonPlanTeacherVoice.test.ts`).
+  `LessonStyleContext.variant` selects it; a first generation is always variant 0
+  (unchanged), a regenerate draws either, and `freshOnRegenerate` keeps the draw
+  that changes most (budget 300 — it stops at the first full change, ~1 draw in
+  16, and 80 missed about once per hundred regenerations). A regenerated plan, in
+  either language, now changes all eight sections and reports nothing as
+  `repeated`. Pinned by `lessonPlanVariants.test.ts` (variant 0 untouched,
+  variant 1 differs in all five fields for every style, kind and language, each
+  style's marker phrases, Arabic first-person voice, no Arabic in the English
+  plan, regenerate reaches it); the teacher-voice detector is in
+  `teacherVoiceCheck.ts`. **What no test can say:** whether the wording is good
+  teaching or fits the Ministry book — that needs a Jordanian teacher. A
+  side-by-side sheet (variant 0 against variant 1, per style and kind) was
+  generated from `buildLessonStyleBlueprint` for that read, one per language; it
+  is not kept in the repo, so it cannot go stale. **Known data gap found while
+  testing:** one maths lab lesson has an Arabic `titleEn`, so its English plan
+  carries Arabic in variant 0 too. Adding a third wording means one more builder
+  per blueprint, per language. Not looked at in a browser.
 - **"No question bank" after a failed live call now says so, with the reason**
   (2026-10-11). With live AI on, a failed call falls back to the offline
   generator, which has banks for maths/chemistry only — so a worksheet, quiz or

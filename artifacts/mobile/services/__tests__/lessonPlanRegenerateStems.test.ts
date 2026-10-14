@@ -60,7 +60,11 @@ describe('lesson plan regenerate', () => {
         assert.equal(prev.repeated, undefined, 'a first generation is never a repeat');
         for (let i = 0; i < 10; i++) {
           const next = await service.generateLessonPlan(req(c, style, { regenerate: true }));
-          assert.deepEqual(next.repeated, { count: same(prev, next).length, of: SECTIONS.length });
+          const n = same(prev, next).length;
+          // Arabic plans now have a second wording (`lessonPlanVariants.test.ts`), so
+          // a regenerate can change everything; then there is nothing to report.
+          if (n === 0) assert.equal(next.repeated, undefined);
+          else assert.deepEqual(next.repeated, { count: n, of: SECTIONS.length });
           prev = next;
         }
       });
