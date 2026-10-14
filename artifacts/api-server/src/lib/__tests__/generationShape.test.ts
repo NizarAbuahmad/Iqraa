@@ -598,9 +598,10 @@ describe("a lesson tag survives normalisation, and the counts the wide scope off
     mergeWorksheetTopUp(base, extra);
     const tags = (base.sections as { questions: { lesson?: string }[] }[]).flatMap(s => s.questions.map(q => q.lesson));
     assert.deepEqual(tags, ["L1", "L2", "L3"]);
-    trimWorksheet(base, { numQuestions: 2 });
-    const left = (base.sections as { questions: { lesson?: string }[] }[]).flatMap(s => s.questions);
-    assert.ok(left.every(q => typeof q.lesson === "string"));
+    const removed = trimWorksheet(base, { numQuestions: 2 });
+    const left = (base.sections as { questions: { text: string; lesson?: string }[] }[]).flatMap(s => s.questions);
+    assert.equal(removed, 1);
+    assert.deepEqual(left.map(q => [q.text, q.lesson]), [["1", "L1"], ["2", "L2"]]);
   });
 
   it("25 and 30 are real counts; 31 is treated as 'did not say'", () => {

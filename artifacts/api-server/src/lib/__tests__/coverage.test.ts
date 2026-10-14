@@ -81,7 +81,7 @@ describe("the coverage clause", () => {
 });
 
 describe("the four prompts", () => {
-  const wide = (b: object) => ({ ...base, ...b });
+  const wide = (b: object): Record<string, unknown> => ({ ...base, ...b });
 
   it("carry the clause for a wide scope", () => {
     for (const p of [quizPromptAr, quizPromptEn, worksheetPromptAr, worksheetPromptEn]) {
@@ -89,12 +89,69 @@ describe("the four prompts", () => {
     }
   });
 
-  it("are byte-identical to before for a lesson request", () => {
-    for (const p of [quizPromptAr, quizPromptEn, worksheetPromptAr, worksheetPromptEn]) {
-      assert.ok(!p({ ...base }).includes('"lesson"'), `${p.name} mentions the lesson tag`);
+  const builders = [
+    ["quizPromptAr", quizPromptAr, coverageClauseAr],
+    ["quizPromptEn", quizPromptEn, coverageClauseEn],
+    ["worksheetPromptAr", worksheetPromptAr, coverageClauseAr],
+    ["worksheetPromptEn", worksheetPromptEn, coverageClauseEn],
+  ] as const;
+
+  it("the clause is the ONLY difference from the same request without coverage", () => {
+    for (const [name, p, clauseOf] of builders) {
+      // Worksheet builders pass the worked-example flag (Mathematics has one), quiz builders do not.
+      const withExample = name.startsWith("worksheet");
+      const body = wide(balanced);
+      const clause = clauseOf(body, withExample);
+      assert.ok(clause.length > 0, name);
+      const { coverage: _c, scope: _s, distribution: _d, ...plain } = body;
+      assert.equal(p(body).replace(clause, ""), p(plain), `${name}: more than the clause differs`);
+      // Same with the scope but no coverage, and with context + prior review on the line the clause sits on.
+      const ctx = { ...base, additionalContext: "ctx", includePriorReview: true, priorKnowledge: ["a"], numQuestions: 5 };
+      const wideCtx = { ...ctx, ...balanced };
+      assert.equal(p(wideCtx).replace(clauseOf(wideCtx, withExample), ""), p(ctx), `${name}: context/prior variant`);
     }
-    // The clause renders to '' so the template line it sits on adds nothing but its newline.
-    assert.equal(coverageClauseAr({ ...base }), "");
+  });
+
+  it("junk or over-limit coverage produces exactly the no-coverage prompt", () => {
+    const junk = [
+      { ...balanced, coverage: { lessons: Array.from({ length: 121 }, (_, i) => ({ code: `L${i + 1}`, title: "t" })) } },
+      { ...balanced, coverage: { lessons: [{ code: "bad", title: "t" }] } },
+      { ...balanced, coverage: "L1" },
+      { ...balanced, coverage: null },
+      { ...balanced, scope: { kind: "lesson", scopeKey: "k", unitIds: [] } },
+    ];
+    for (const [name, p] of builders) {
+      for (const j of junk) {
+        const { coverage: _c, scope: _s, distribution: _d, ...plain } = wide(j);
+        assert.equal(p(wide(j)), p(plain), `${name} changed on junk coverage`);
+      }
+    }
+  });
+
+  it("a maths worksheet says the worked example counts toward the per-lesson numbers", () => {
+    assert.match(worksheetPromptEn(wide(balanced)), /worked example and the question you ask the student to complete count toward/);
+    assert.match(worksheetPromptAr(wide(balanced)), /المثال المحلول والسؤال الذي يُطلب من الطالب إكماله يُحسبان ضمن/);
+    assert.match(worksheetPromptEn(wide(balanced)), /prior-knowledge review is in addition/);
+  });
+
+  it("a subject without a worked example, a quiz, homework and a random plan do not carry it", () => {
+    const arabic = { ...wide(balanced), subject: "اللغة العربية" };
+    assert.doesNotMatch(worksheetPromptEn(arabic), /worked example and the question/);
+    assert.doesNotMatch(worksheetPromptAr(arabic), /المثال المحلول والسؤال/);
+    assert.doesNotMatch(quizPromptEn(wide(balanced)), /worked example and the question/);
+    assert.doesNotMatch(quizPromptAr(wide(balanced)), /المثال المحلول والسؤال/);
+    assert.doesNotMatch(worksheetPromptEn(wide({ ...balanced, homework: true })), /worked example and the question/);
+    assert.doesNotMatch(worksheetPromptEn(wide(random)), /worked example and the question/);
+  });
+
+  it("a random request renders as random even if slots were sent (the key says random)", () => {
+    const mixed = { ...balanced, distribution: "random" };
+    assert.equal(parseCoverage(mixed)!.counts, null);
+    assert.match(coverageClauseEn(mixed), /at random/);
+    assert.ok(!/ — \d+ question/.test(coverageClauseEn(mixed)));
+    // absent distribution keeps the balanced rendering
+    const { distribution: _d, ...absent } = balanced;
+    assert.ok(parseCoverage(absent)!.counts !== null);
   });
 
   it("homework (a worksheet with homework:true) carries it too", () => {

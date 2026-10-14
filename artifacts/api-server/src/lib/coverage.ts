@@ -54,7 +54,9 @@ export function parseCoverage(body: Record<string, unknown>): CoverageTable | nu
   }
 
   let counts: Map<string, number> | null = null;
-  if (Array.isArray(c.slots) && c.slots.length > 0 && c.slots.length <= MAX_SLOTS) {
+  // `distribution` is in the cache key, so the prompt must agree with it: a
+  // random request is rendered as random even if slots came along.
+  if (body.distribution !== "random" && Array.isArray(c.slots) && c.slots.length > 0 && c.slots.length <= MAX_SLOTS) {
     const tally = new Map<string, number>();
     for (const slot of c.slots) {
       const code = String(slot);
@@ -81,20 +83,29 @@ function tableLines(c: CoverageTable, isAr: boolean): string {
   return c.lessons.map(row).filter((r): r is string => r !== null).join("\n");
 }
 
-export function coverageClauseAr(b: Record<string, unknown>): string {
+/**
+ * `withExample`: the worksheet carries a worked example and a half-solved
+ * question, which count INSIDE the picked number (see `worksheetShortfall`).
+ * Without saying so, "exactly N" makes the model add them on top and
+ * `trimWorksheet` then cuts the last lessons' questions off the tail.
+ */
+const EXAMPLE_NOTE_AR = "\nالمثال المحلول والسؤال الذي يُطلب من الطالب إكماله يُحسبان ضمن هذه الأعداد (اكتب كلًّا منهما عن الدرس المخصَّص له)؛ أما قسم المراجعة السابقة فإضافي ولا يُحسب من هذا الجدول.";
+const EXAMPLE_NOTE_EN = "\nThe worked example and the question you ask the student to complete count toward these per-lesson numbers (write each about the lesson it is assigned); a prior-knowledge review is in addition and is not counted against this table.";
+
+export function coverageClauseAr(b: Record<string, unknown>, withExample = false): string {
   const c = parseCoverage(b);
   if (!c) return "";
   const rule = c.counts
     ? "اكتب بالضبط عدد الأسئلة المذكور لكل درس (وليس غير ذلك)، وزّعها على أنواع الأسئلة كما يلزم."
     : "وزّع الأسئلة على هذه الدروس اختيارًا عشوائيًا، ولا تكرّر درسًا قبل أن تستعمل كل الدروس.";
-  return `\nالنطاق يشمل عدة دروس. وزّع الأسئلة عليها ولا تحصرها في درس واحد:\n${tableLines(c, true)}\n${rule}\nأضف إلى كل سؤال الحقل "lesson" برمز الدرس الذي يخصّه السؤال (مثل "L3") — لا تضع نصًّا آخر فيه.`;
+  return `\nالنطاق يشمل عدة دروس. وزّع الأسئلة عليها ولا تحصرها في درس واحد:\n${tableLines(c, true)}\n${rule}${c.counts && withExample ? EXAMPLE_NOTE_AR : ""}\nأضف إلى كل سؤال الحقل "lesson" برمز الدرس الذي يخصّه السؤال (مثل "L3") — لا تضع نصًّا آخر فيه.`;
 }
 
-export function coverageClauseEn(b: Record<string, unknown>): string {
+export function coverageClauseEn(b: Record<string, unknown>, withExample = false): string {
   const c = parseCoverage(b);
   if (!c) return "";
   const rule = c.counts
     ? "Write exactly the number of questions listed for each lesson (no others), spread over the question types as needed."
     : "Spread the questions over these lessons at random, and repeat no lesson before every lesson has been used.";
-  return `\nThe scope covers several lessons. Spread the questions over them; do not confine them to one lesson:\n${tableLines(c, false)}\n${rule}\nGive every question a "lesson" field holding the code of the lesson it belongs to (e.g. "L3") — nothing else in that field.`;
+  return `\nThe scope covers several lessons. Spread the questions over them; do not confine them to one lesson:\n${tableLines(c, false)}\n${rule}${c.counts && withExample ? EXAMPLE_NOTE_EN : ""}\nGive every question a "lesson" field holding the code of the lesson it belongs to (e.g. "L3") — nothing else in that field.`;
 }

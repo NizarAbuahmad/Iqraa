@@ -432,7 +432,7 @@ export function worksheetPromptAr(b: any): string {
 ${worksheetTypeShapesAr(types)}
 ${difficultyClauseAr(b)}
 ${wantsWP ? "\nيجب تضمين مسألة حياتية واحدة على الأقل (سيناريو واقعي يتطلب تطبيق مفاهيم الدرس، بأسلوب «حل مسائل حياتية»)." : ""}
-${prior ? `\nابدأ بقسم «مراجعة سابقة» فيه سؤالان أو ثلاثة فقط مبنية حرفيًا على هذه المفاهيم السابقة (لا تختلق غيرها):\n- ${prior.join("\n- ")}` : ""}${coverageClauseAr(b)}
+${prior ? `\nابدأ بقسم «مراجعة سابقة» فيه سؤالان أو ثلاثة فقط مبنية حرفيًا على هذه المفاهيم السابقة (لا تختلق غيرها):\n- ${prior.join("\n- ")}` : ""}${coverageClauseAr(b, !!example)}
 ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه لصياغة أسئلة دقيقة ومرتبطة بالمنهج):\n${b.additionalContext}` : ""}
 ${example ? workedExampleRuleAr(n) : isHW ? "" : worksheetKindRuleAr(b, n)}
 أعد JSON بالشكل الآتي (بالعربية):
@@ -476,7 +476,7 @@ ${difficultyClauseEn(b)}
 Question types requested (use no others, and spread the questions across them): ${types.join(", ")}
 ${worksheetTypeShapesEn(types)}
 ${wantsWP ? "\nInclude at least one real-life word problem (a realistic scenario that requires applying the lesson concepts)." : ""}
-${prior ? `\nStart with a "Prior knowledge review" section of 2–3 questions drawn only from these concepts (do not invent others):\n- ${prior.join("\n- ")}` : ""}${coverageClauseEn(b)}
+${prior ? `\nStart with a "Prior knowledge review" section of 2–3 questions drawn only from these concepts (do not invent others):\n- ${prior.join("\n- ")}` : ""}${coverageClauseEn(b, !!example)}
 ${b.additionalContext ? `\nTextbook context (use this to craft accurate, curriculum-aligned questions):\n${b.additionalContext}` : ""}
 ${example ? workedExampleRuleEn(n) : isHW ? "" : worksheetKindRuleEn(b, n)}
 Return JSON in this exact shape:
