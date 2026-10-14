@@ -166,6 +166,8 @@ export default function NewEvaluationScreen() {
   const [printedTotal, setPrintedTotal] = useState<number | null>(null);
   const [scanning, setScanning] = useState(false);
   const [scanNote, setScanNote] = useState('');
+  /** The note beside the scan button reports a failure, so it reads in the destructive colour. */
+  const [scanFailed, setScanFailed] = useState(false);
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
 
@@ -219,7 +221,9 @@ export default function NewEvaluationScreen() {
   const onScanPaper = async () => {
     if (scanning) return;
     if (selectedObjectives.size === 0) {
-      setError(t('paperScanNeedObjective'));
+      // Beside the button, not in the form-level error under the grid, which is out of sight.
+      setScanNote(t('paperScanNeedObjective'));
+      setScanFailed(true);
       return;
     }
     const images = await pickMarkSheetPhotos(MAX_SCAN_PAGES);
@@ -236,6 +240,7 @@ export default function NewEvaluationScreen() {
     setScanning(true);
     setError('');
     setScanNote('');
+    setScanFailed(false);
     try {
       const res = await scanPaper(images, [...selectedObjectives]);
       if (res.rows.length === 0) {
@@ -248,7 +253,8 @@ export default function NewEvaluationScreen() {
       setPrintedTotal(res.printedTotal);
       setScanNote(t('paperScanFilled', String(grid.length), String(blankMarkCount(grid))));
     } catch (err) {
-      setError(t(scanErrorKey(err)));
+      setScanNote(t(scanErrorKey(err)));
+      setScanFailed(true);
     } finally {
       setScanning(false);
     }
@@ -605,7 +611,7 @@ export default function NewEvaluationScreen() {
               {t('paperScanHint')}
             </Text>
             {scanNote ? (
-              <Text style={[styles.hint, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+              <Text style={[styles.hint, { color: scanFailed ? colors.destructive : colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
                 {scanNote}
               </Text>
             ) : null}
