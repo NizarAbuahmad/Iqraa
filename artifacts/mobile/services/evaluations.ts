@@ -219,15 +219,6 @@ export async function setEvaluationExamSchedule(
   return data.evaluation;
 }
 
-/** Who a group check is for (support groups). Only while it is a draft. */
-export async function setEvaluationAudience(evaluationId: string, studentIds: string[]): Promise<string[]> {
-  const res = await apiFetch(`/evaluations/${evaluationId}/audience`, {
-    method: 'PUT',
-    body: JSON.stringify({ studentIds }),
-  });
-  return (await readJson<{ audience: string[] }>(res, 'Choosing the group')).audience;
-}
-
 export async function createEvaluation(input: {
   bookId: string;
   objectiveIds: string[];

@@ -11,13 +11,13 @@ import { palette } from '@/constants/colors';
 import { formatListDate } from '@/services/evaluationRow';
 import { trackEvent } from '@/services/analytics';
 import {
-  groupDraftAction, groupWorksheetAction, membersBelowLabel, outcomeKey,
+  groupWorksheetAction, membersBelowLabel, outcomeKey,
   visibleGroups, type CheckOutcome, type SupportGroup,
 } from '@/services/supportGroups';
 
 const ACCENT = palette.primary;
 
-type Kind = 'worksheet' | 'check' | 'student';
+type Kind = 'worksheet' | 'student';
 
 export function SupportGroupsSection({
   classId, groups, isRTL, align, lang, t,
@@ -53,7 +53,6 @@ export function SupportGroupsSection({
       </Text>
       {visibleGroups(groups, showAll).map(g => {
         const ws = groupWorksheetAction(g);
-        const draft = groupDraftAction(g);
         const checkDate = g.latestCheck ? formatListDate(g.latestCheck.createdAt, lang) : '';
         return (
           <View key={g.objectiveId} style={[styles.card, { borderColor: colors.border, backgroundColor: colors.card }]}>
@@ -101,7 +100,6 @@ export function SupportGroupsSection({
 
             <View style={[styles.wrap, { flexDirection: row, marginTop: 4 }]}>
               {ws ? <Pill label={t('supportGroupWorksheet')} onPress={() => go('worksheet', ws)} /> : null}
-              {draft ? <Pill label={t('supportGroupFinishCheck')} onPress={() => go('check', draft)} /> : null}
             </View>
           </View>
         );
