@@ -1,6 +1,6 @@
 # Scanning external exams (مسح الاختبارات الخارجية) — design
 
-Date: 2026-10-14 · Status: design approved in conversation, awaiting spec review
+Date: 2026-10-14 · Status: approved; amended 2026-10-14 while writing the implementation plan (see «Amendments»)
 
 ## Why
 
@@ -47,11 +47,19 @@ photo and job storage, which this app deliberately does not have — see the
 
 These shape the design and are easy to get wrong.
 
+- **The paper grid is built *before* the evaluation exists.** `app/evaluations/new.tsx`
+  collects the book, the ticked objectives and the grid in local state, then
+  calls `createEvaluation` and only afterwards `PUT .../questions/paper`. So when
+  a teacher scans their exam paper there is **no evaluation id** — the scan route
+  cannot be `/evaluations/:id/…`, and the objectives it needs travel in the body.
+  The grid's length also comes from a count picker (5–30 in steps), which a scan
+  of a 7-question paper has to override.
 - **The paper grid is editable only while the exam is a draft**
   (`PUT /evaluations/:id/questions/paper` → 409 otherwise). **Attempts can be
   started only once it is published** (`POST /evaluations/:id/attempts` → 409
-  otherwise). So the order a teacher works in is fixed: scan the paper → publish
-  → scan the class. Part 1 lives on a draft, Part 2 on a published exam.
+  otherwise). So the order a teacher works in is fixed: scan the paper (while filling in
+  the new-exam form) → create and publish → scan the class. Part 1 lives in the
+  creation form, Part 2 on a published exam.
 - **`POST /evaluations/:id/attempts` is find-or-create**, and the client's
   `startAttempt` (`services/evaluations.ts`) **discards the `created` flag**. The
   marking endpoint (`PUT /attempts/:id/grades/:questionId`) upserts. Together:
@@ -81,16 +89,19 @@ These shape the design and are easy to get wrong.
 
 ### Server
 
-`POST /evaluations/:id/scan-paper`, in `routes/evaluations.ts` (already
-path-scoped behind auth — nothing new to mount).
+`POST /evaluations/scan-paper`, in `routes/evaluations.ts` (already
+path-scoped behind auth — nothing new to mount). **Stateless**: there is no
+evaluation row to read, so nothing is owned or checked for status.
 
-- Owner only; **draft only** (409 `not_draft`, same as the grid `PUT`).
-- Body `{ images: string[] }`, 1–4 data URLs. Same guards as `scan-marks`:
+- Body `{ images: string[], objectiveIds: string[] }`, 1–4 data URLs and 1–100
+  objective ids. The ids are resolved against the curriculum
+  (`resolveObjectiveIds`); any unknown id is a 400 `unknown_objectives`, the
+  same rule every other evaluation write applies. Same guards as `scan-marks`:
   `data:image/` prefix, 8 MB per image, `assertLiveModeEnabled`,
   `assertBudgetAvailable`, `assertUserQuotaAvailable`. Total request must stay
   under the 12 MB body limit; over it answers the existing 413 advice.
-- The prompt is given the evaluation's own objectives — id and Arabic title,
-  resolved from `evaluation.objectiveIds` — and asked, per question, for: the
+- The prompt is given the ticked objectives — id and Arabic wording
+  (`descriptionAr`) — and asked, per question, for: the
   number as printed, the marks as printed, one objective id **or null**, one
   competency key **or null**, `readAs` (the characters it saw for the marks), and
   the paper's printed total if it states one. It is told it is **reading, not
@@ -98,8 +109,8 @@ path-scoped behind auth — nothing new to mount).
 - Parsed by a new pure module `modules/assessment/scanPaper.ts`:
   - marks must satisfy the same rule `parsePaperRows` uses (> 0, ≤
     `MAX_MARKS_PER_QUESTION`) — otherwise the mark is **null**, not clamped;
-  - `objectiveId` not in `evaluation.objectiveIds` → null (the model can only
-    pick from the list it was given, but the server does not take its word);
+  - `objectiveId` not in the ticked objectives → null (the model can only pick
+    from the list it was given, but the server does not take its word);
   - `competencyKey` not in `COMPETENCY_KEYS` → null;
   - question numbers are deduplicated; a **gap in numbering** (1, 2, 4) produces
     a blank row 3 and a `skipped` entry, so row N in the grid is question N on
@@ -127,7 +138,11 @@ path-scoped behind auth — nothing new to mount).
   that a question's cognitive demand is the teacher's choice and that inheriting
   or deriving it «quietly flattens the breakdown». It is pre-filled the way the
   grid's own default already is, badged, and overridable — never silent.
-- If the grid already has edited rows, the scan asks before replacing them.
+- **The grid takes the paper's length.** A scan of a 7-question paper sets the
+  grid to 7 rows, overriding the count picker; choosing a count again hands the
+  length back to the picker.
+- If the grid already has hand-edited rows, the scan asks before replacing them
+  (via the shared `confirm()` helper, which works on web).
 - If `printedTotal` is present and differs from the sum of the scanned marks,
   the grid shows a warning with both numbers. Cheap, and it catches a missed
   question or a misread mark before anything is published.
@@ -168,8 +183,10 @@ path-scoped behind auth — nothing new to mount).
   `hasAttempt` (from the existing attempts table) so the client can flag it
   before saving.
 - Response: `{ nameRead, match: { status, studentId, candidates:[{studentId,
-  displayName, score, hasAttempt}] }, proposals, skipped, printedTotal, model,
-  saved: false }`. Writes nothing.
+  displayName, score, hasAttempt}] }, proposals, skipped, writtenTotal, model,
+  saved: false }`. Writes nothing. `writtenTotal` is the total the *teacher wrote*
+  on the marked paper (the setup scan's `printedTotal` is the total the *exam*
+  prints); `buildScanPrompt`'s `readName` mode asks for both the name and it.
 - Own limiter, `ai-scan-class`, 30/minute/user, keyed like `ai-scan-marks`.
   `recordUsage(..., { promptVersion: "scan-class-paper-1" })`.
 
@@ -192,7 +209,7 @@ path-scoped behind auth — nothing new to mount).
     with no student; two rows assigned to the same student; a mark out of range.
   - **Non-blocking, flagged**: a student whose `hasAttempt` is true (the row will
     be skipped on save, with a link to that student's own screen); blank cells
-    (saved as unmarked); a total that disagrees with `printedTotal`.
+    (saved as unmarked); a total that disagrees with `writtenTotal`.
 - **Save** is a client loop over the existing endpoints, row by row:
   `startAttempt` (modified to return `created`) → if `created` is false, **skip,
   write nothing** → `setQuestionGrade` for each non-blank cell → `submitAttempt`.
@@ -231,12 +248,19 @@ globs (api-server: `src/**/__tests__/**/*.test.ts`; mobile:
 - `studentMatch.test.ts` — exact match; hamza/ta-marbuta/ya variants and
   diacritics; **two identical names → never confident**; first-name-only reads;
   unrelated name → none; empty name → none; candidates capped and ranked.
-- Route guards for both routes, modelled on `scanMarks.test.ts`: bad body,
-  oversized, another teacher's evaluation, no token (401), live mode off, wrong
-  status (draft/published), no class, and that **nothing is written**. A path
-  test that the new routes did not shadow anything (`mountOrder.test.ts`).
-- `buildScanPrompt` default output unchanged (golden string) so `scan-marks`
-  cannot drift.
+- **Route decisions as pure functions** (`scanRequest.test.ts`): bad body,
+  oversized photo(s), too many photos, bad objective list, wrong status
+  (draft/closed), no class. There is **no route-handler test harness** in this
+  repo — route files import the database and the OpenAI client at module scope,
+  which `node --test` cannot load — so a decision made inline in a handler would
+  have no test. The handlers stay thin and call these. STATUS.md's 2026-08-25
+  entry says `scan-marks` has «6 tests on the route's guards»; **no such tests
+  exist in the repository today**, and that entry is corrected in the same PR.
+- `mountOrder.test.ts` gains a no-token → 401 assertion for both routes (and that
+  `/evaluations/scan-paper/extra` is not swallowed), run against the built
+  bundle.
+- `buildScanPrompt` default output unchanged (golden string, captured from the
+  prompt as it was before `readName` existed) so `scan-marks` cannot drift.
 - Mobile `classScan.test.ts` — runner concurrency and ordering; 429 retry;
   quota error stops the batch and keeps results; `canSave` blockers (unassigned,
   duplicate student, out of range); **retry after a half-failed save reuses the
@@ -279,3 +303,22 @@ real papers.
    marks from a scan is a separate, riskier feature.
 4. Exact UI placement (the entry on the evaluation screen, the review table
    layout) is settled in the implementation plan, not here.
+
+## Amendments
+
+Made while writing the implementation plan, after reading the code the spec
+described. None changes what a teacher sees or any decision taken in review.
+
+1. **`POST /evaluations/scan-paper` is stateless and takes `objectiveIds`**, not
+   `POST /evaluations/:id/scan-paper`. The paper grid is built in the new-exam
+   form before the evaluation exists (see «Constraints found»).
+2. **The grid length follows the scan**, overriding the count picker.
+3. **`writtenTotal`** (class scan) vs **`printedTotal`** (setup scan) are two
+   different fields, named for who wrote the number.
+4. **No route-handler tests exist or can be written here**; the decisions are pure
+   functions with tests, plus a bundle-level 401 check. STATUS.md's claim of six
+   `scan-marks` route-guard tests is corrected.
+5. **Two project guards apply to the new screens:** font sizes must come from the
+   `TYPE` scale (`designScale.test.ts` ratchet), and the imperative «اقرأ» must be
+   written «اقرَأ» (`i18nTerminology.test.ts`; the brand spelling «إقرأ» is
+   reserved). Both are met in the code the plan carries.
