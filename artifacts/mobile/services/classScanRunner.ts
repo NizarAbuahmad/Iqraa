@@ -12,7 +12,9 @@
  *   fail every remaining photo identically, so the batch stops and keeps
  *   everything already read.
  * - **Nothing is lost.** Every photo ends in exactly one outcome — read, failed,
- *   or `not_run` because the batch stopped before it started.
+ *   or `not_run` because the batch stopped before it started. A caller's
+ *   callback that throws cannot break this: the first such error is held until
+ *   every photo has its outcome, and only then rethrown.
  */
 import { isBatchStopError, isRetryable } from './scanErrors.ts';
 
@@ -48,32 +50,54 @@ export async function scanAll<R>(
 
   let next = 0;
   let stopped = false;
+  // Errors thrown by the caller's callbacks. Held rather than thrown so no
+  // photo is stranded or reported twice; the first one is rethrown at the end.
+  const callbackErrors: unknown[] = [];
+
+  const deliver = (index: number, outcome: PhotoOutcome<R>) => {
+    try {
+      onOutcome(index, outcome);
+    } catch (error) {
+      callbackErrors.push(error);
+    }
+  };
+
+  // Only the scan itself is inside the try: its failures are the photo's
+  // outcome, while a throw from the caller is not.
+  async function scanWithRetries(index: number): Promise<PhotoOutcome<R>> {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return { state: 'read', result: await scanOne(index) };
+      } catch (error) {
+        if (isRetryable(error) && attempt < maxRetries) {
+          await sleep(backoff(attempt + 1));
+          continue;
+        }
+        if (isBatchStopError(error)) stopped = true;
+        return { state: 'failed', error };
+      }
+    }
+  }
 
   async function worker(): Promise<void> {
     while (!stopped) {
       const index = next++;
       if (index >= count) return;
-      opts.onStart?.(index);
-      for (let attempt = 0; ; attempt++) {
-        try {
-          onOutcome(index, { state: 'read', result: await scanOne(index) });
-          break;
-        } catch (error) {
-          if (isRetryable(error) && attempt < maxRetries) {
-            await sleep(backoff(attempt + 1));
-            continue;
-          }
-          if (isBatchStopError(error)) stopped = true;
-          onOutcome(index, { state: 'failed', error });
-          break;
-        }
+      try {
+        opts.onStart?.(index);
+      } catch (error) {
+        callbackErrors.push(error);
       }
+      deliver(index, await scanWithRetries(index));
     }
   }
 
   await Promise.all(Array.from({ length: Math.min(concurrency, count) }, worker));
 
   // Whatever was never picked up because the batch stopped.
-  for (let i = next; i < count; i++) onOutcome(i, { state: 'not_run' });
+  for (let i = next; i < count; i++) deliver(i, { state: 'not_run' });
+
+  // Every photo has its one outcome; now surface a caller's bug.
+  if (callbackErrors.length > 0) throw callbackErrors[0];
   return { stopped };
 }

@@ -86,4 +86,39 @@ describe('scanAll', () => {
     const res = await scanAll(0, async () => 'x', () => assert.fail('no outcome expected'), noWait);
     assert.equal(res.stopped, false);
   });
+
+  it('a throwing onOutcome cannot lose or duplicate a photo outcome', async () => {
+    const boom = new Error('ui bug');
+    const calls = new Map<number, number>();
+    let scanned = 0;
+    await assert.rejects(
+      scanAll(4, async i => {
+        scanned++;
+        return i;
+      }, (i, o) => {
+        calls.set(i, (calls.get(i) ?? 0) + 1);
+        if (i === 1 && o.state === 'read') throw boom;
+      }, { ...noWait, concurrency: 1 }),
+      err => err === boom,
+    );
+    assert.equal(scanned, 4, 'the other photos were still scanned');
+    for (let i = 0; i < 4; i++) assert.equal(calls.get(i), 1, `index ${i} got exactly one onOutcome call`);
+  });
+
+  it('a quota error on the first photo is never retried or slept on, and stops the batch', async () => {
+    const tries = new Map<number, number>();
+    const slept: number[] = [];
+    const { outcomes, on } = collect<string>();
+    const res = await scanAll(3, async i => {
+      tries.set(i, (tries.get(i) ?? 0) + 1);
+      if (i === 0) throw { status: 429, code: 'user_quota_exceeded' };
+      return 'ok';
+    }, on, { concurrency: 1, backoffMs: () => 0, sleep: async ms => void slept.push(ms) });
+    assert.equal(tries.get(0), 1, 'scanned exactly once');
+    assert.deepEqual(slept, [], 'no pause');
+    assert.equal(res.stopped, true);
+    assert.equal(outcomes.get(0)!.state, 'failed');
+    assert.equal(outcomes.get(1)!.state, 'not_run');
+    assert.equal(outcomes.get(2)!.state, 'not_run');
+  });
 });
