@@ -11,6 +11,7 @@
  * uses (8MB of base64). That route is left alone on purpose; if one number
  * ever has to change, change both.
  */
+import { isPaperQuestion } from "./paperExam.ts";
 
 export const MAX_SCAN_IMAGE_CHARS = 8_000_000;
 /** An exam paper is rarely one page; more than four is a different feature. */
@@ -97,11 +98,20 @@ export function parsePaperScanBody(body: unknown): PaperScanBody {
  *
  * Attempts only exist on a published exam, and the class is the roster the
  * student's name is matched against. An exam with no class has nobody to match.
+ *
+ * And only a paper exam: on an exam whose questions the app marks itself, a
+ * blank cell plus submit would machine-grade every unanswered question as 0 —
+ * a final, non-provisional score nobody read. The screen offers the scan only
+ * on paper exams, but a deep link reaches the route regardless. An empty
+ * question list passes here; the route has its own «no questions» refusal.
  */
-export function classScanGate(evaluation: {
-  status: string;
-  classGroupId: string | null;
-}): ScanRefusal | null {
+export function classScanGate(
+  evaluation: {
+    status: string;
+    classGroupId: string | null;
+  },
+  questions: ReadonlyArray<{ gradingMode: string; body: Record<string, unknown> | null | undefined }>,
+): ScanRefusal | null {
   if (evaluation.status !== "published") {
     return {
       status: 409,
@@ -114,6 +124,13 @@ export function classScanGate(evaluation: {
       status: 409,
       error: "Attach this exam to a class first — the class is the roster papers are matched against",
       code: "no_class",
+    };
+  }
+  if (questions.length > 0 && !questions.every(isPaperQuestion)) {
+    return {
+      status: 409,
+      error: "Class scanning is for paper exams only — this exam has questions the app marks itself",
+      code: "not_paper_exam",
     };
   }
   return null;

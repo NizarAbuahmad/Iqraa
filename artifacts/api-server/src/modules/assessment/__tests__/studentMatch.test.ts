@@ -120,6 +120,37 @@ describe("matchStudent — exact means an identical name, not an equal word-set"
   });
 });
 
+describe("matchStudent — a longer roster name that contains the read name", () => {
+  it("asks for a tap when the read name is also the start of another student's longer name", () => {
+    const m = matchStudent("أحمد", [r("short", "أحمد"), r("long", "أحمد علي")]);
+    assert.equal(m.status, "confirm");
+    assert.equal(m.studentId, null);
+    assert.deepEqual(m.candidates.map(c => c.studentId), ["short", "long"]);
+    assert.equal(m.candidates[0]!.score, 1);
+    assert.ok(m.candidates[1]!.score < 1, `score ${m.candidates[1]!.score} must stay below 1`);
+  });
+
+  it("stays confident for the longer name when the shorter roster name is not a superset of it", () => {
+    const m = matchStudent("أحمد علي", [r("short", "أحمد"), r("long", "أحمد علي")]);
+    assert.equal(m.status, "confident");
+    assert.equal(m.studentId, "long");
+  });
+
+  it("offers both when a two-part name is contained in a three-part one", () => {
+    const roster = [r("a", "سارة أحمد"), r("b", "سارة أحمد علي"), r("c", "ليلى حسن")];
+    const m = matchStudent("سارة أحمد", roster);
+    assert.equal(m.status, "confirm");
+    assert.equal(m.studentId, null);
+    assert.deepEqual(m.candidates.map(c => c.studentId), ["a", "b"]);
+  });
+
+  it("stays confident when no other roster name contains the read name", () => {
+    const m = matchStudent("أحمد", [r("a", "أحمد"), r("b", "ليلى")]);
+    assert.equal(m.status, "confident");
+    assert.equal(m.studentId, "a");
+  });
+});
+
 describe("matchStudent — candidates", () => {
   it("offers at most three, best first", () => {
     const roster = ["a", "b", "c", "d", "e"].map(id => r(id, `سارة ${id}`));

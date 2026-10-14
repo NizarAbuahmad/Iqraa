@@ -95,21 +95,40 @@ describe("parsePaperScanBody", () => {
 });
 
 describe("classScanGate", () => {
+  const PAPER = { gradingMode: "manual", body: {} };
+  const GENERATED = { gradingMode: "deterministic", body: { stem: "x" } };
+
   it("lets a published exam with a class through", () => {
-    assert.equal(classScanGate({ status: "published", classGroupId: "c1" }), null);
+    assert.equal(classScanGate({ status: "published", classGroupId: "c1" }, []), null);
   });
 
   it("refuses a draft or closed exam", () => {
     for (const status of ["draft", "closed"]) {
-      const r = classScanGate({ status, classGroupId: "c1" });
+      const r = classScanGate({ status, classGroupId: "c1" }, []);
       assert.equal(r?.status, 409);
       assert.equal(r?.code, "not_published");
     }
   });
 
   it("refuses an exam with no class — there is no roster to match against", () => {
-    const r = classScanGate({ status: "published", classGroupId: null });
+    const r = classScanGate({ status: "published", classGroupId: null }, []);
     assert.equal(r?.status, 409);
     assert.equal(r?.code, "no_class");
+  });
+
+  it("lets a published paper exam with a class through", () => {
+    assert.equal(classScanGate({ status: "published", classGroupId: "c1" }, [PAPER, PAPER, PAPER]), null);
+  });
+
+  it("refuses an exam with any question the app marks itself", () => {
+    // Blank cells + submit would machine-grade every unanswered question as 0.
+    const r = classScanGate({ status: "published", classGroupId: "c1" }, [PAPER, GENERATED, PAPER]);
+    assert.equal(r?.status, 409);
+    assert.equal(r?.code, "not_paper_exam");
+  });
+
+  it("still says not_published first for a draft with generated questions", () => {
+    const r = classScanGate({ status: "draft", classGroupId: "c1" }, [GENERATED]);
+    assert.equal(r?.code, "not_published");
   });
 });

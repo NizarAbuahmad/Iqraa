@@ -84,6 +84,39 @@ describe("parsePaperScanResponse", () => {
     assert.equal(res.rows[1]!.marks, 1.5);
   });
 
+  it("accepts a mark only when the whole string is one number", () => {
+    const cases: Array<[unknown, number]> = [
+      [5, 5], [2.5, 2.5], ["5", 5], ["٥", 5], ["۵", 5], ["2.5", 2.5], ["٢٫٥", 2.5], ["2,5", 2.5],
+      ["5½", 5.5], ["٥½", 5.5], ["٥ ونصف", 5.5], ["٥ و نصف", 5.5], ["5ونصف", 5.5], ["  ١٠  ", 10],
+    ];
+    for (const [marks, want] of cases) {
+      const res = parsePaperScanResponse({ questions: [q({ marks })] }, IDS);
+      assert.equal(res.rows[0]!.marks, want, JSON.stringify(marks));
+      assert.deepEqual(res.skipped, [], JSON.stringify(marks));
+    }
+  });
+
+  it("never reads a sum, a product or a phrase as its first number", () => {
+    // A model that returns "2+3" instead of 5 must not make 2 the ceiling.
+    for (const marks of ["2+3", "٢+٣", "3×2", "3x2", "5 علامات", "من 5", "5/10", "2.5.1", "5.", ".5", "½", "-2", "", "  "]) {
+      const res = parsePaperScanResponse({ questions: [q({ marks })] }, IDS);
+      assert.equal(res.rows[0]!.marks, null, JSON.stringify(marks));
+      assert.equal(res.skipped.length, 1, JSON.stringify(marks));
+      assert.match(res.skipped[0]!.reason, /could not read the marks/, JSON.stringify(marks));
+    }
+  });
+
+  it("reads the printed total with the same strict rule", () => {
+    for (const printedTotal of ["20+20", "المجموع ٤٠", "40/40"]) {
+      assert.equal(
+        parsePaperScanResponse({ questions: [q()], printedTotal }, IDS).printedTotal,
+        null,
+        JSON.stringify(printedTotal),
+      );
+    }
+    assert.equal(parsePaperScanResponse({ questions: [q()], printedTotal: "٣٧ ونصف" }, IDS).printedTotal, 37.5);
+  });
+
   it("nulls an objective that was not in the list it was given", () => {
     const res = parsePaperScanResponse({ questions: [q({ objectiveId: "obj-elsewhere" })] }, IDS);
     assert.equal(res.rows[0]!.objectiveId, null);

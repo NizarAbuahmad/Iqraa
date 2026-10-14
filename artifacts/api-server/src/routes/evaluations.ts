@@ -2037,7 +2037,9 @@ router.post(
         res.status(404).json({ error: "Evaluation not found" });
         return;
       }
-      const refused = classScanGate(evaluation) ?? checkScanImage(req.body?.image);
+      // Loaded before the gate: only a paper exam may be scanned this way.
+      const live = await liveQuestions(evaluation.id);
+      const refused = classScanGate(evaluation, live) ?? checkScanImage(req.body?.image);
       if (refused) {
         res.status(refused.status).json({ error: refused.error, code: refused.code });
         return;
@@ -2048,7 +2050,6 @@ router.post(
       assertBudgetAvailable();
       await assertUserQuotaAvailable(req.user!.id);
 
-      const live = await liveQuestions(evaluation.id);
       if (live.length === 0) {
         res.status(409).json({ error: "This evaluation has no questions" });
         return;

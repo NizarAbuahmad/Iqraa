@@ -9,7 +9,9 @@
  *
  * - **`confident` only on an exact, unique match** — the normalized name equals
  *   exactly one roster student's normalized name. Two students with the same
- *   name (or a first name shared by single-name rows) can never be confident.
+ *   name (or a first name shared by single-name rows) can never be confident,
+ *   and neither can a name another student's longer name contains («أحمد» when
+ *   the roster also holds «أحمد علي»).
  * - Everything else with a plausible candidate is **`confirm`**: the teacher is
  *   shown up to three and taps one. Nothing is assigned without that tap.
  * - A blank, or a name nothing resembles, is **`none`**.
@@ -96,15 +98,32 @@ export function matchStudent(
     };
   });
 
+  const byBest = (x: MatchCandidate, y: MatchCandidate): number =>
+    y.score - x.score || x.displayName.localeCompare(y.displayName, "ar");
+
   const exact = scored.filter(c => c.score === 1);
   if (exact.length === 1) {
     const only = exact[0]!;
-    return { status: "confident", studentId: only.studentId, candidates: [only] };
+    // «أحمد» read, and the roster holds both «أحمد» and «أحمد علي»: the paper
+    // may be the second child's with the family name left off. Any roster name
+    // that holds every part read and more besides means a tap, never a pick.
+    const longer = scored.filter((c, i) => {
+      const parts = tokens(roster[i]!.displayName);
+      return parts.length > read.length && read.every(t => parts.includes(t));
+    });
+    if (longer.length === 0) {
+      return { status: "confident", studentId: only.studentId, candidates: [only] };
+    }
+    return {
+      status: "confirm",
+      studentId: null,
+      candidates: [only, ...longer].sort(byBest).slice(0, MAX_CANDIDATES),
+    };
   }
 
   const candidates = scored
     .filter(c => c.score >= MIN_CANDIDATE_SCORE)
-    .sort((x, y) => y.score - x.score || x.displayName.localeCompare(y.displayName, "ar"))
+    .sort(byBest)
     .slice(0, MAX_CANDIDATES);
 
   return candidates.length === 0

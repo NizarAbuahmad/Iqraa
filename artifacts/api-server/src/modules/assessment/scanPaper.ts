@@ -11,7 +11,8 @@
  * reading does not throw. A mark that is wrong here becomes the ceiling every
  * student's score on that question is measured against.
  *
- * - A mark it cannot read is **null**, never a default.
+ * - A mark it cannot read is **null**, never a default — and so is a mark that
+ *   is not one number («2+3», «3×2»), never its first part.
  * - A mark outside what `parsePaperRows` would accept is **null**, not clamped.
  * - An objective the model names that is not in the list it was given is
  *   **null**; the server does not take the model's word for what exists.
@@ -108,6 +109,38 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 
 const round2 = (n: number): number => Math.round(n * 100) / 100;
 
+const PAPER_DIGITS: Record<string, string> = {
+  "٠": "0", "١": "1", "٢": "2", "٣": "3", "٤": "4",
+  "٥": "5", "٦": "6", "٧": "7", "٨": "8", "٩": "9",
+  "۰": "0", "۱": "1", "۲": "2", "۳": "3", "۴": "4",
+  "۵": "5", "۶": "6", "۷": "7", "۸": "8", "۹": "9",
+  "٫": ".", ",": ".",
+};
+
+/**
+ * A printed mark, read only when the whole string is ONE number.
+ *
+ * `parseArabicNumber` takes the first number it finds, which is right for a
+ * student's mark in a box and wrong here: a model that answers "2+3" or "3×2"
+ * despite the prompt would make 2 (or 3) the ceiling every student is scored
+ * against, and the grid does not show `readAs`. So: a finite number as is; a
+ * string only if it is digits (Latin, Arabic-Indic or Eastern Arabic-Indic)
+ * with at most one decimal separator, or a whole number followed by ½ or
+ * «و نصف». Anything else is unreadable — null, never a part of it.
+ */
+function parsePaperNumber(raw: unknown): number | null {
+  if (typeof raw === "number") return Number.isFinite(raw) ? raw : null;
+  if (typeof raw !== "string") return null;
+  const western = raw
+    .trim()
+    .split("")
+    .map(c => PAPER_DIGITS[c] ?? c)
+    .join("");
+  if (/^\d+(\.\d+)?$/.test(western)) return Number(western);
+  const half = western.match(/^(\d+)\s*(?:½|و\s*نصف)$/);
+  return half ? Number(half[1]) + 0.5 : null;
+}
+
 export function parsePaperScanResponse(
   raw: unknown,
   allowedObjectiveIds: readonly string[],
@@ -132,7 +165,7 @@ export function parsePaperScanResponse(
     if (byNumber.has(number)) continue;
 
     let marks: number | null = null;
-    const value = parseArabicNumber(row["marks"]);
+    const value = parsePaperNumber(row["marks"]);
     if (value === null) {
       skipped.push({ number, reason: "could not read the marks" });
     } else if (!(value > 0) || value > MAX_MARKS_PER_QUESTION) {
@@ -172,7 +205,7 @@ export function parsePaperScanResponse(
   }
   skipped.sort((a, b) => a.number - b.number);
 
-  const total = parseArabicNumber(root?.["printedTotal"]);
+  const total = parsePaperNumber(root?.["printedTotal"]);
   return {
     rows,
     printedTotal: total !== null && total > 0 ? round2(total) : null,
