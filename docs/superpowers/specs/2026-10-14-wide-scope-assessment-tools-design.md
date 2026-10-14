@@ -1,4 +1,4 @@
-# Wide-scope assessment tools — quiz, worksheet, homework (piece 2 of 3)
+# Wide-scope assessment tools — quiz, worksheet, homework, game (piece 2 of 3)
 
 Status: draft for review · 2026-10-14 · builds on
 `2026-10-13-wide-scope-selection-design.md` (piece 1, merged as #1045)
@@ -11,14 +11,14 @@ screen uses any of it yet.** A teacher still cannot make a paper for a semester,
 and «الكتاب كاملًا» / «الوحدة كاملةً» still only write a topic string that grounds
 to one lesson or none.
 
-This piece makes **quiz, worksheet and homework** honour a unit / semester / book
+This piece makes **quiz, worksheet, homework and game** honour a unit / semester / book
 scope, in both the offline path (the web build, `DEMO_MODE`) and the live path.
 The game screen needs its own adoption: `game.tsx` builds its own `generateQuiz`
 request and its own `TopicSelector` (its 5/8/10/12 count picker is unchanged).
 
 ## Goals
 
-1. On quiz, worksheet and homework the teacher can pick a unit, a semester or the
+1. On quiz, worksheet, homework and game the teacher can pick a unit, a semester or the
    whole book, and the paper's questions come from the lessons in that scope.
 2. The teacher chooses **how questions are spread** over those lessons («توزيع
    الأسئلة»): *balanced by unit* (default) or *random*.
@@ -120,7 +120,7 @@ with a maker that takes one lesson's `(topic, kb)` — `makeQuizMCQ_ar(topic, kb
   coverage (see §4).
 - **`DEMO_MODE`:** piece 1 hides `semester` under `DEMO_MODE` because the offline
   generators could not honour it. Once these three can, `TopicSelector` gets a
-  prop `offlineWideScope` (default `false`); quiz, worksheet and homework pass
+  prop `offlineWideScope` (default `false`); quiz, worksheet, homework and game pass
   `true`, which skips the demo gating for them. Every other screen keeps today's
   behaviour until piece 3.
 
@@ -240,10 +240,19 @@ with a maker that takes one lesson's `(topic, kb)` — `makeQuizMCQ_ar(topic, kb
 
 ## Rollout
 
-Behind nothing — quiz, worksheet and homework screens get the new options as soon
-as it merges. Mitigations: lesson scope behaves exactly as today (a test pins that
-a lesson request is byte-identical, as piece 1 did); the offline gate is lifted
-only after the manual check above; 25 / 30 are hidden on a lesson scope.
+Behind nothing — quiz, worksheet, homework and game screens get the new options as
+soon as it merges. Mitigations: lesson scope behaves exactly as today (a test pins
+that a lesson request is byte-identical, as piece 1 did); 25 / 30 are hidden on a
+lesson scope.
+
+**Offline gate — decision, amended after the final review.** This spec first said
+the offline gate (`offlineWideScope`) would be lifted only after the manual browser
+check above. It was lifted **without** that check: no browser was available, and
+production web runs `DEMO_MODE`, so with the gate off the feature would be invisible
+to everyone. The gate stays on. The consequence is a duty, not a mitigation: the
+first person to open the quiz, worksheet and game screens on the web build must
+click through the picker, the distribution control, the 25 / 30 counts, the
+coverage line, Save and reopen **before merging**.
 
 ## Tests (TDD, inside the existing globs)
 

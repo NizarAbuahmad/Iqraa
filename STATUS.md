@@ -67,20 +67,45 @@ an announcement by default» below.
   is dropped from the plan and the coverage line says how many were not
   covered. Tested: the plan, the drawer, the request builder, the offline quiz /
   worksheet / homework on a real G10 maths semester, the prompt clause, the
-  cache key (`distribution`), and the 25/30 count enforcement.
+  cache key (`distribution`, and a digest of the lesson table's code/id/title —
+  not the slot plan, which a Regenerate rotates), and the 25/30 count enforcement.
+  **Before merging — a manual check nobody has done:** the offline gate
+  (`offlineWideScope`) is ON for quiz, worksheet, homework and game, so the web
+  build (production runs `DEMO_MODE`) offers the new options the moment this
+  merges. The spec says the gate is lifted only after a browser check; it was
+  lifted **without one** (no browser was available), a decision recorded so the
+  feature is not invisible to everyone. So the first person to open the quiz,
+  worksheet and game screens on the web build must click through the picker, the
+  distribution control, the 25/30 counts, the coverage line, Save and reopen
+  **before** merging.
   **Not verified / known limits:** no browser was available, so the picker, the
   distribution control, the count options, the coverage line, Save, reopen and
   export are checked by reading and typecheck only; whether the live model
-  follows the plan (the screen says «حسب ما أعلنه النموذج» and never claims it
-  did); how often a 30-question paper needs the top-up call (output ceiling
+  follows the plan (the screen says «هذه القائمة بحسب ما أفاد به الذكاء
+  الاصطناعي وقد لا تكون دقيقة» and never claims it did); how often a 30-question paper needs the top-up call (output ceiling
   already clamped at 24 000 tokens). A reopened wide material keeps its scope,
   but `TopicSelector`'s dropdowns show placeholders and there is no coverage
-  line. On a semester-1 balanced maths worksheet the half-solved item is
+  line. **Stale saved scope:** a reopened wide paper whose saved grade/subject
+  no longer matches the pickers (`useWideScope`'s `isWide`) is treated as a
+  single lesson, and a re-save then drops the `scope`/`distribution` keys.
+  **A wide paper is not filed under a lesson (fixed 2026-10-14):** `workspace.ts`
+  used to stamp `formState.lessonId` from the topic text, which for a wide paper
+  is the scope label, grounded without a grade limit (a Grade 10 «الاقترانات»
+  paper got a Grade 9 lesson's id), so the prep board, «send to students» and the
+  viewer/export figures treated it as that lesson's. The stamp is skipped for a
+  unit/semester/book scope (`services/materialLessonId.ts`) and `workspace/view.tsx`
+  shows no figures and offers no lesson objectives for one; a copy saved before
+  the fix may still carry the wrong id on disk (the viewer ignores it, the prep
+  board does not). **The offline «covered» list means «drawn for that slot's
+  lesson», not «about that lesson exactly»:** the chemistry bank is chosen by
+  keyword detection on each lesson's text, so a slot's question can come from a
+  neighbouring lesson's topic. On a semester-1 balanced maths worksheet the half-solved item is
   dropped, because the second slot's lesson has no checked working; a lesson
   whose only question is the worked example shows as uncovered. The
-  prior-knowledge review is hidden on a wide worksheet, and so are Related
-  tools there — **the quiz screen still passes the scope label to Related tools
-  (only the worksheet sets `hideRelated`)**. Evaluations (exams) still take a
+  prior-knowledge review is hidden on a wide worksheet (and not sent), and so
+  are Related tools on a wide quiz and worksheet (`hideRelated`: their chips
+  open other tools with the scope label as a bare topic, which they would
+  re-ground to a lesson); the game has no Related panel. Evaluations (exams) still take a
   single lesson, and so do lesson plan, slides, activity, lesson-flow,
   infographic and the classroom builder (piece 3). Papers above 30 questions
   are not built.
@@ -91,13 +116,13 @@ an announcement by default» below.
   server-side page pooling and `scopeKey` in the artifact cache key all exist
   and are tested. `TopicSelector`'s «الفصل كاملًا» entry is verified by code
   read only — there is no browser in the build container, so it was never run.
-  **Since 2026-10-14 quiz, worksheet, homework and game opt in** (next bullet);
+  **Since 2026-10-14 quiz, worksheet, homework and game opt in** (the bullet above);
   every other screen still does not, so there «الوحدة كاملةً» sets the unit
   title as the topic, which `resolveGeneratorGrounding` grounds to one lesson or
   none (not to the unit), and «الكتاب كاملًا» stays ungrounded — its topic text
   matches nothing. **Piece 3 (the rest) still has to adopt `onScopeChange` +
   `scopeRequestFields`.** Restoring a saved / reopened scope (spec §6, goal 5)
-  is wired for those four via `parseScope`, with the limits in the next bullet.
+  is wired for those four via `parseScope`, with the limits in the bullet above.
 - **API credentials are Secret Manager references** (2026-10-08, live since
   `iqraa-api-00283-twr`). The ten credentials (`SESSION_SECRET`,
   `DATABASE_URL`, `OPENAI_API_KEY`, both R2 keys, Unsplash, YouTube,
