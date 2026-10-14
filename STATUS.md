@@ -53,6 +53,21 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **Wide-scope selection, foundation only (2026-10-13; spec
+  `docs/superpowers/specs/2026-10-13-wide-scope-selection-design.md`).**
+  `services/scopeSelection.ts` (what a unit / semester / book scope covers),
+  `services/scopeGrounding.ts` (tiered, ≤ 6 000-char digest), `AIRequest.scope`,
+  server-side page pooling and `scopeKey` in the artifact cache key all exist
+  and are tested. `TopicSelector`'s «الفصل كاملًا» entry is verified by code
+  read only — there is no browser in the build container, so it was never run.
+  **No generator screen opts in yet**, so nothing a teacher sees has changed:
+  «الوحدة كاملةً» sets the unit title as the topic, which
+  `resolveGeneratorGrounding` grounds to one lesson or none (not to the unit),
+  and «الكتاب كاملًا» stays ungrounded — its topic text matches nothing.
+  **Restoring a saved / reopened scope (spec §6, goal 5) is not done:**
+  `parseScope` exists, but wiring saved state to it is piece 2's job. Pieces 2
+  (quiz, worksheet, homework, game) and 3 (the rest) also have to adopt
+  `onScopeChange` + `scopeRequestFields` before anything above is reachable.
 - **API credentials are Secret Manager references** (2026-10-08, live since
   `iqraa-api-00283-twr`). The ten credentials (`SESSION_SECRET`,
   `DATABASE_URL`, `OPENAI_API_KEY`, both R2 keys, Unsplash, YouTube,
