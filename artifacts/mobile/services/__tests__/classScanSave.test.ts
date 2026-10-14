@@ -5,7 +5,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { saveRows, type SaveDeps } from '../classScanSave.ts';
-import { newRow, rowFromScan, type ReviewContext, type ReviewRow } from '../classScanReview.ts';
+import { assignStudent, newRow, rowFromScan, setMark, type ReviewContext, type ReviewRow } from '../classScanReview.ts';
 import type { ClassScanResponse } from '../evaluations.ts';
 
 const QS = [
@@ -139,5 +139,98 @@ describe('saveRows', () => {
     const s = store([unassigned, failed, saved]);
     await saveRows('e1', s.all(), ctx(), deps, s.onPatch);
     assert.deepEqual(calls, []);
+  });
+});
+
+describe('saveRows — the paper a row remembers', () => {
+  it('a reassigned row starts a fresh paper and never writes into the first student\'s', async () => {
+    let failOnce = true;
+    const { deps, calls } = fakeDeps({
+      async setGrade(a, q, m) {
+        if (q === 'q2' && failOnce) { failOnce = false; throw new Error('network'); }
+        calls.push(`grade:${a}:${q}:${m}`);
+      },
+    });
+    const s = store([row('a', 's1')]);
+    await saveRows('e1', s.all(), ctx(), deps, s.onPatch);
+    assert.equal(s.get('a').state, 'save_failed');
+    assert.equal(s.get('a').attemptId, 'att-s1');
+    assert.deepEqual(s.get('a').savedQuestionIds, ['q1']);
+
+    // The same student again: nothing the row remembers is forgotten.
+    const same = assignStudent(s.get('a'), 's1');
+    assert.equal(same.attemptId, 'att-s1');
+    assert.deepEqual(same.savedQuestionIds, ['q1']);
+
+    // A different student: the first paper is not theirs to write to.
+    s.onPatch('a', assignStudent(s.get('a'), 's2'));
+    const before = calls.length;
+    await saveRows('e1', s.all(), ctx(), deps, s.onPatch);
+    assert.deepEqual(calls.slice(before), ['start:s2', 'grade:att-s2:q1:4', 'grade:att-s2:q2:7', 'submit:att-s2']);
+    assert.equal(s.get('a').state, 'saved');
+  });
+
+  it('a box cleared after its mark was written fails loudly and is never submitted', async () => {
+    let failSubmit = true;
+    let submits = 0;
+    const { deps, calls } = fakeDeps({
+      async submit(a) {
+        submits++;
+        if (failSubmit) { failSubmit = false; throw new Error('network'); }
+        calls.push(`submit:${a}`);
+      },
+    });
+    const s = store([row('a', 's1')]);
+    await saveRows('e1', s.all(), ctx(), deps, s.onPatch);
+    assert.equal(s.get('a').state, 'save_failed');
+    assert.deepEqual(s.get('a').writtenQuestionIds, ['q1', 'q2']);
+
+    s.onPatch('a', setMark(s.get('a'), 'q1', ''));
+    await saveRows('e1', s.all(), ctx(), deps, s.onPatch);
+    assert.equal(s.get('a').state, 'save_failed');
+    assert.equal(s.get('a').error, 'cleared_after_write');
+    assert.equal(submits, 1, 'the second save never reaches submit');
+    assert.equal(calls.filter(c => c === 'grade:att-s1:q1:4').length, 1, 'q1 is not written again');
+  });
+
+  it('a blank box that was never written still saves unmarked', async () => {
+    const { deps, calls } = fakeDeps();
+    const s = store([row('a', 's1', { q2: 7 })]);
+    await saveRows('e1', s.all(), ctx(), deps, s.onPatch);
+    assert.deepEqual(calls, ['start:s1', 'grade:att-s1:q2:7', 'submit:att-s1']);
+    assert.equal(s.get('a').state, 'saved');
+  });
+
+  it('a row reaching saveRows with an out-of-range box fails loudly and is never submitted', async () => {
+    const { deps, calls } = fakeDeps();
+    const s = store([row('a', 's1', { q1: 9, q2: 7 })]);
+    await saveRows('e1', s.all(), ctx(), deps, s.onPatch);
+    assert.equal(s.get('a').state, 'save_failed');
+    assert.equal(s.get('a').error, 'invalid_mark');
+    assert.equal(calls.some(c => c.startsWith('grade') || c.startsWith('submit')), false);
+  });
+
+  it('a row holding its own half-made paper is retried even though its student has a paper', async () => {
+    const { deps, calls } = fakeDeps();
+    const s = store([{ ...row('a', 's1'), attemptId: 'att-own', state: 'save_failed' }]);
+    await saveRows('e1', s.all(), ctx(['s1']), deps, s.onPatch);
+    assert.deepEqual(calls, ['grade:att-own:q1:4', 'grade:att-own:q2:7', 'submit:att-own']);
+    assert.equal(s.get('a').state, 'saved');
+  });
+
+  it('two rows for one student with no paper of their own: the first saves, the second is skipped without a write', async () => {
+    let n = 0;
+    const { deps, calls } = fakeDeps({
+      async startAttempt(_e, studentId) {
+        calls.push(`start:${studentId}`);
+        n++;
+        return { attemptId: `att-${studentId}-${n}`, created: n === 1 };
+      },
+    });
+    const s = store([row('a', 's1'), row('b', 's1')]);
+    await saveRows('e1', s.all(), ctx(), deps, s.onPatch);
+    assert.equal(s.get('a').state, 'saved');
+    assert.equal(s.get('b').state, 'skipped_existing');
+    assert.deepEqual(calls, ['start:s1', 'grade:att-s1-1:q1:4', 'grade:att-s1-1:q2:7', 'submit:att-s1-1', 'start:s1']);
   });
 });

@@ -51,6 +51,12 @@ export interface ReviewRow {
   attemptId: string | null;
   /** Questions whose mark has been written, so a retry does not repeat them. */
   savedQuestionIds: string[];
+  /**
+   * Every question whose mark has ever been written to this row's paper. Append
+   * only: an edit does not clear it, so a box cleared after its mark reached the
+   * server is refused rather than silently left behind.
+   */
+  writtenQuestionIds: string[];
   /** A scan-error key while reading, or the save error afterwards. */
   error: string | null;
 }
@@ -73,6 +79,7 @@ export function newRow(key: string): ReviewRow {
     writtenTotal: null,
     attemptId: null,
     savedQuestionIds: [],
+    writtenQuestionIds: [],
     error: null,
   };
 }
@@ -94,8 +101,22 @@ export function rowFromScan(row: ReviewRow, res: ClassScanResponse): ReviewRow {
   };
 }
 
+/**
+ * Assign or reassign a row's student. A different student is a different paper,
+ * so whatever the row remembered about its previous paper is forgotten; the
+ * same student keeps the row as it is.
+ */
 export function assignStudent(row: ReviewRow, studentId: string | null): ReviewRow {
-  return { ...row, studentId };
+  if (studentId === row.studentId) return row;
+  return { ...row, studentId, attemptId: null, savedQuestionIds: [], writtenQuestionIds: [] };
+}
+
+/**
+ * True when the student already has a paper that this row did not start. A row
+ * holding its own `attemptId` is retrying its own paper, which is never "existing".
+ */
+export function countsAsExisting(row: ReviewRow, ctx: ReviewContext): boolean {
+  return row.studentId !== null && row.attemptId === null && ctx.hasAttempt.has(row.studentId);
 }
 
 /**
@@ -153,7 +174,7 @@ export function reportRows(
   // rows take no part in the duplicate check or the blockers.
   const claims = new Map<string, number>();
   for (const r of live) {
-    if (r.studentId && !ctx.hasAttempt.has(r.studentId)) {
+    if (r.studentId && !countsAsExisting(r, ctx)) {
       claims.set(r.studentId, (claims.get(r.studentId) ?? 0) + 1);
     }
   }
@@ -163,7 +184,7 @@ export function reportRows(
     const report: RowReport = { blockers: [], flags: [] };
     if (!r.studentId) {
       report.blockers.push('no_student');
-    } else if (ctx.hasAttempt.has(r.studentId)) {
+    } else if (countsAsExisting(r, ctx)) {
       report.flags.push('has_attempt');
     } else {
       if ((claims.get(r.studentId) ?? 0) > 1) report.blockers.push('duplicate_student');
@@ -188,7 +209,7 @@ export function reportRows(
 /** Rows the save will actually write: assigned, and not already sat. */
 export function savableRows(rows: readonly ReviewRow[], ctx: ReviewContext): ReviewRow[] {
   return rows.filter(
-    r => isSavableState(r.state) && r.studentId !== null && !ctx.hasAttempt.has(r.studentId),
+    r => isSavableState(r.state) && r.studentId !== null && !countsAsExisting(r, ctx),
   );
 }
 

@@ -16,7 +16,7 @@
  * Rows are saved one after another: the order is the teacher's, the load on the
  * API is the same as typing the marks, and a failure is easy to attribute.
  */
-import { parseMark, type ReviewContext, type ReviewRow } from './classScanReview.ts';
+import { countsAsExisting, parseMark, type ReviewContext, type ReviewRow } from './classScanReview.ts';
 
 export interface SaveDeps {
   startAttempt(evaluationId: string, studentId: string): Promise<{ attemptId: string; created: boolean }>;
@@ -34,7 +34,7 @@ export async function saveRows(
   for (const row of rows) {
     if (row.state !== 'read' && row.state !== 'save_failed') continue;
     if (!row.studentId) continue;
-    if (ctx.hasAttempt.has(row.studentId)) {
+    if (countsAsExisting(row, ctx)) {
       onPatch(row.key, { state: 'skipped_existing' });
       continue;
     }
@@ -52,14 +52,23 @@ export async function saveRows(
       }
 
       const written = new Set(row.savedQuestionIds);
+      const everWritten = new Set(row.writtenQuestionIds);
       for (const q of ctx.questions) {
-        if (written.has(q.id)) continue;
         const parsed = parseMark(row.marks[q.id] ?? '', q.maxMarks);
-        // Blank stays unmarked and invalid cannot get here (it blocks the save).
-        if (parsed.kind !== 'ok') continue;
+        // A box the reviewer should have blocked fails the row rather than being
+        // skipped: a skipped box would still end `saved` with the wrong marks.
+        if (parsed.kind === 'invalid') throw new Error('invalid_mark');
+        if (parsed.kind === 'blank') {
+          // A mark already on the server cannot be removed by this loop, so a
+          // box cleared after its write is refused. A never-written blank stays unmarked.
+          if (everWritten.has(q.id)) throw new Error('cleared_after_write');
+          continue;
+        }
+        if (written.has(q.id)) continue;
         await deps.setGrade(attemptId, q.id, parsed.value);
         written.add(q.id);
-        onPatch(row.key, { savedQuestionIds: [...written] });
+        everWritten.add(q.id);
+        onPatch(row.key, { savedQuestionIds: [...written], writtenQuestionIds: [...everWritten] });
       }
 
       await deps.submit(attemptId);

@@ -156,6 +156,31 @@ describe('setMark', () => {
     assert.deepEqual(r.savedQuestionIds, ['q2']);
     assert.equal(r.marks['q1'], '3');
   });
+
+  it('a new row has written nothing yet', () => {
+    assert.deepEqual(newRow('a').writtenQuestionIds, []);
+  });
+
+  it('keeps the record of what was written when a box is edited', () => {
+    const r = setMark(read('a', { writtenQuestionIds: ['q1'] }), 'q1', '');
+    assert.deepEqual(r.writtenQuestionIds, ['q1']);
+  });
+});
+
+describe('an own paper is never mistaken for an existing one', () => {
+  it('a row holding its own attemptId is not flagged, is not blocked, and is savable', () => {
+    const own = read('a', { attemptId: 'att-own', state: 'save_failed' });
+    const report = reportRows([own], ctx(['s1'])).get('a')!;
+    assert.deepEqual(report.flags, []);
+    assert.deepEqual(report.blockers, []);
+    assert.deepEqual(savableRows([own], ctx(['s1'])), [own]);
+  });
+
+  it('a row without its own paper in the same situation is still skipped', () => {
+    const r = read('a');
+    assert.deepEqual(reportRows([r], ctx(['s1'])).get('a')!.flags, ['has_attempt']);
+    assert.deepEqual(savableRows([r], ctx(['s1'])), []);
+  });
 });
 
 describe('rowTotal and saveSummary', () => {
