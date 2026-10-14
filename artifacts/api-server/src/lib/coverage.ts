@@ -23,10 +23,12 @@ import { parseWideScope } from "./grounding.ts";
 const MAX_LESSONS = 120;       // an English book has 100
 const MAX_SLOTS = 60;          // the largest paper is 30
 const MAX_TITLE = 160;
+const MAX_ID = 120;
 const CODE = /^L\d{1,3}$/;
 
 export interface CoverageTable {
-  lessons: { code: string; title: string }[];
+  /** `id` is not rendered into the prompt; it is here so the cache key can cover the whole table. */
+  lessons: { code: string; id: string; title: string }[];
   /** Questions per lesson code for `balanced`, in table order; `null` for `random` (no assignment is sent). */
   counts: Map<string, number> | null;
 }
@@ -42,7 +44,7 @@ export function parseCoverage(body: Record<string, unknown>): CoverageTable | nu
   const c = raw as Record<string, unknown>;
   if (!Array.isArray(c.lessons) || c.lessons.length === 0 || c.lessons.length > MAX_LESSONS) return null;
 
-  const lessons: { code: string; title: string }[] = [];
+  const lessons: { code: string; id: string; title: string }[] = [];
   const seen = new Set<string>();
   for (const item of c.lessons) {
     if (typeof item !== "object" || item === null) return null;
@@ -50,7 +52,8 @@ export function parseCoverage(body: Record<string, unknown>): CoverageTable | nu
     const title = cleanTitle((item as Record<string, unknown>).title);
     if (!CODE.test(code) || seen.has(code) || title === "") return null;
     seen.add(code);
-    lessons.push({ code, title });
+    const rawId = (item as Record<string, unknown>).id;
+    lessons.push({ code, id: typeof rawId === "string" ? rawId.slice(0, MAX_ID) : "", title });
   }
 
   let counts: Map<string, number> | null = null;
@@ -73,11 +76,25 @@ export function parseCoverage(body: Record<string, unknown>): CoverageTable | nu
   return { lessons, counts };
 }
 
+/**
+ * «سؤال واحد» / «سؤالان» / «3 أسئلة» … «10 أسئلة» / «11 سؤالًا».
+ *
+ * The same rule as `arQuestionsPhrase` (`artifacts/mobile/services/arCount.ts`);
+ * the API cannot import from the app, so the four-case rule is repeated here and
+ * pinned in `coverage.test.ts`.
+ */
+function arQuestionCount(n: number): string {
+  if (n === 1) return "سؤال واحد";
+  if (n === 2) return "سؤالان";
+  if (n >= 3 && n <= 10) return `${n} أسئلة`;
+  return `${n} سؤالًا`;
+}
+
 function tableLines(c: CoverageTable, isAr: boolean): string {
   const row = (l: { code: string; title: string }) => {
     const n = c.counts?.get(l.code);
     if (c.counts && !n) return null;
-    const suffix = n ? (isAr ? ` — ${n} ${n === 1 ? "سؤال" : "أسئلة"}` : ` — ${n} question${n === 1 ? "" : "s"}`) : "";
+    const suffix = n ? (isAr ? ` — ${arQuestionCount(n)}` : ` — ${n} question${n === 1 ? "" : "s"}`) : "";
     return `${l.code}: ${l.title}${suffix}`;
   };
   return c.lessons.map(row).filter((r): r is string => r !== null).join("\n");

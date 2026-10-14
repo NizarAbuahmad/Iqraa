@@ -20,7 +20,8 @@ import { buildWideRequest } from '../wideScopeRequest.ts';
 import { planCoverage } from '../coveragePlan.ts';
 import { lessonsInScope, unitsInScope, type ScopeSelection } from '../scopeSelection.ts';
 import { parseCoverage } from '../../../api-server/src/lib/coverage.ts';
-import { quizPromptEn } from '../../../api-server/src/lib/prompts.ts';
+import { quizPromptAr, quizPromptEn } from '../../../api-server/src/lib/prompts.ts';
+import { arQuestionsPhrase } from '../arCount.ts';
 
 const sem1: ScopeSelection = { kind: 'semester', gradeId: 'grade-10', subjectId: 'mathematics', semester: 1 };
 const sem2: ScopeSelection = { kind: 'semester', gradeId: 'grade-10', subjectId: 'mathematics', semester: 2 };
@@ -39,6 +40,38 @@ describe('the live prompt renders the plan the screen made', () => {
     const prompt = quizPromptEn(body);
     for (const [code, n] of table.counts!) assert.ok(prompt.includes(`${code}: `) && n > 0);
   });
+
+  /** Read the per-lesson numbers back OUT of the rendered prompt, the way the model would. */
+  const countsInPrompt = (prompt: string, numberOf: (suffix: string) => number | null): Map<string, number> => {
+    const got = new Map<string, number>();
+    for (const line of prompt.split('\n')) {
+      const m = /^(L\d+): .* — (.+)$/.exec(line);
+      if (!m) continue;
+      const n = numberOf(m[2]!);
+      assert.notEqual(n, null, `cannot read a count from «${m[2]}»`);
+      got.set(m[1]!, n!);
+    }
+    return got;
+  };
+
+  for (const mode of ['en', 'ar'] as const) {
+    it(`the numbers printed in the ${mode} prompt are the parsed counts, lesson for lesson`, () => {
+      for (const count of [5, 12, 25, 30]) {
+        const w = buildWideRequest(sem1, mode, count, 'balanced')!;
+        const body = { subject: 'Mathematics', grade: 'Grade 10', topic: 'Entire semester 1', numQuestions: count, ...w.fields };
+        const expected = parseCoverage(body)!.counts!;
+        const printed = mode === 'en'
+          ? countsInPrompt(quizPromptEn(body), s => { const m = /^(\d+) questions?$/.exec(s); return m ? Number(m[1]) : null; })
+          : countsInPrompt(quizPromptAr(body), s => {
+              // Invert arQuestionsPhrase: the phrase must be exactly the agreed one for the number it names.
+              const n = s === 'سؤال واحد' ? 1 : s === 'سؤالان' ? 2 : Number(/^(\d+) /.exec(s)?.[1]);
+              return Number.isFinite(n) && arQuestionsPhrase(n) === s ? n : null;
+            });
+        assert.deepEqual([...printed.entries()], [...expected.entries()], `${mode}, ${count} questions`);
+        assert.equal([...printed.values()].reduce((a, b) => a + b, 0), count);
+      }
+    });
+  }
 
   it("the counts are the plan's, lesson for lesson", () => {
     const w = buildWideRequest(sem1, 'en', 12, 'balanced')!;

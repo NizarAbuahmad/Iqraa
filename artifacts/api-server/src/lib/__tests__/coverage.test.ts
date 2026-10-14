@@ -69,6 +69,20 @@ describe("the coverage clause", () => {
     assert.ok(coverageClauseEn(balanced).includes("L2"));
   });
 
+  it("the Arabic table agrees the noun with the count; English is unchanged", () => {
+    const table = Array.from({ length: 5 }, (_, i) => ({ code: `L${i + 1}`, id: `x${i}`, unitId: "U", title: `t${i + 1}` }));
+    const slotsFor = (counts: number[]) => counts.flatMap((n, i) => Array.from({ length: n }, () => `L${i + 1}`));
+    const body = { scope, distribution: "balanced", coverage: { lessons: table, slots: slotsFor([1, 2, 3, 10, 11]) } };
+    const ar = coverageClauseAr(body);
+    assert.ok(ar.includes("L1: t1 — سؤال واحد\n"), ar);
+    assert.ok(ar.includes("L2: t2 — سؤالان\n"), ar);
+    assert.ok(ar.includes("L3: t3 — 3 أسئلة\n"), ar);
+    assert.ok(ar.includes("L4: t4 — 10 أسئلة\n"), ar);
+    assert.ok(ar.includes("L5: t5 — 11 سؤالًا\n"), ar);
+    const en = coverageClauseEn(body);
+    assert.ok(en.includes("L1: t1 — 1 question\n") && en.includes("L2: t2 — 2 questions\n") && en.includes("L5: t5 — 11 questions\n"), en);
+  });
+
   it("random lists the lessons and says to repeat none before all are used", () => {
     assert.match(coverageClauseEn(random), /random/i);
     assert.match(coverageClauseEn(random), /repeat/i);

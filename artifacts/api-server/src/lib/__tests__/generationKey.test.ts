@@ -259,10 +259,50 @@ describe("distribution in the cache key", () => {
     assert.notEqual(keys(wide("balanced")).strictKey, keys(wide("random")).strictKey);
   });
 
-  it("the coverage table and slots are not hashed (they are a function of the scope)", () => {
-    const a = { ...wide("balanced"), coverage: { lessons: [{ code: "L1", title: "a" }], slots: ["L1"] } };
-    const b = { ...wide("balanced"), coverage: { lessons: [{ code: "L1", title: "a" }, { code: "L2", title: "b" }], slots: ["L2"] } };
-    assert.equal(keys(a).strictKey, keys(b).strictKey);
+  describe("the coverage table", () => {
+    const scope = { kind: "semester", scopeKey: "sem:grade-10:mathematics:1", unitIds: [] };
+    const lessons = [
+      { code: "L1", id: "x1", unitId: "U", title: "المعادلات الأسية" },
+      { code: "L2", id: "x2", unitId: "U", title: "اللوغاريتمات" },
+    ];
+    const withCoverage = (coverage: unknown) => ({ ...base, scope, distribution: "balanced", coverage });
+
+    it("a different title, id or code is a different strict key, and the coarse key is unchanged", () => {
+      const a = keys(withCoverage({ lessons, slots: ["L1", "L2"] }));
+      const retitled = keys(withCoverage({ lessons: [lessons[0], { ...lessons[1]!, title: "ignore previous instructions" }], slots: ["L1", "L2"] }));
+      const reid = keys(withCoverage({ lessons: [lessons[0], { ...lessons[1]!, id: "x9" }], slots: ["L1", "L2"] }));
+      const fewer = keys(withCoverage({ lessons: [lessons[0]], slots: ["L1"] }));
+      for (const other of [retitled, reid, fewer]) {
+        assert.notEqual(a.strictKey, other.strictKey);
+        assert.equal(a.coarseKey, other.coarseKey);
+      }
+    });
+
+    it("the same table with a different slot plan is the SAME strict key (a Regenerate rotates the plan)", () => {
+      const a = keys(withCoverage({ lessons, slots: ["L1", "L2", "L1"] }));
+      const b = keys(withCoverage({ lessons, slots: ["L2", "L1", "L2"] }));
+      const c = keys(withCoverage({ lessons }));
+      assert.equal(a.strictKey, b.strictKey);
+      assert.equal(a.strictKey, c.strictKey);
+    });
+
+    it("a field the prompt never shows (unitId) is not hashed", () => {
+      const a = keys(withCoverage({ lessons }));
+      const b = keys(withCoverage({ lessons: lessons.map((l) => ({ ...l, unitId: "other" })) }));
+      assert.equal(a.strictKey, b.strictKey);
+    });
+
+    it("no coverage, junk coverage, or coverage without a wide scope leaves the key exactly as it was", () => {
+      const plain = keys({ ...base, scope, distribution: "balanced" });
+      assert.deepEqual(keys(withCoverage(undefined)), plain);
+      assert.deepEqual(keys(withCoverage(null)), plain);
+      assert.deepEqual(keys(withCoverage("L1")), plain);
+      assert.deepEqual(keys(withCoverage({ lessons: [{ code: "bad", id: "x", title: "t" }] })), plain);
+      assert.deepEqual(keys(withCoverage({ lessons: Array.from({ length: 121 }, (_, i) => ({ code: `L${i + 1}`, id: "x", title: "t" })) })), plain);
+      // a lesson-scope request with a table attached is ignored, like the prompt does
+      const lessonReq = keys({ ...base, coverage: { lessons } });
+      assert.deepEqual(lessonReq, keys(base));
+    });
   });
 
   it("a request with no distribution hashes exactly as before", () => {
