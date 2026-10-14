@@ -5,7 +5,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { OAuth2Client } from "google-auth-library";
-import { db } from "@workspace/db";
+// Acts without (or beyond) the caller's identity — see lib/db/src/scopedPool.ts.
+import { systemDb as db } from "@workspace/db";
 import {
   users,
   refreshTokens,

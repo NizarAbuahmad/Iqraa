@@ -29,6 +29,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { contentLang } from '@/services/contentLanguage';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import type { LessonPlanOutput } from '@/services/ai/AIService';
+import { regenerationFields } from '@/services/ai/regeneration';
 import { getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbContext';
 import {
   buildLessonPrepRequest,
@@ -58,6 +59,7 @@ import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { RelatedResourcesPanel } from '@/components/ui/RelatedResourcesPanel';
+import { ShortPaperNotice } from '@/components/ui/ShortPaperNotice';
 import { Toast } from '@/components/ui/Toast';
 import { textOn } from '@/services/readableColor';
 import { palette } from '@/constants/colors';
@@ -126,7 +128,15 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
   // "which class?" sheet. Re-saving an edit does not re-ask.
   const [classPromptFor, setClassPromptFor] = useState<string | null>(null);
 
-  const generate = async () => {
+  /**
+   * `regenerate` is the teacher asking for a replacement, not another copy. The
+   * button used to call this with nothing, so the second request was
+   * byte-identical to the first and nothing told the generators to vary — the
+   * same as the quiz and worksheet screens had before they sent it.
+   */
+  const generate = async (opts?: { regenerate?: boolean }) => {
+    // Read before the state below clears it: it is what the teacher is looking at.
+    const previous = result;
     const built = buildLessonPrepRequest({
       lessonId,
       lang: lang as 'ar' | 'en',
@@ -146,7 +156,10 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
     setEditedFields(new Set());
     setSaveLabel(savedId ? 'updated' : 'save');
     try {
-      const out = await aiService.generateLessonPlan(built.request);
+      const out = await aiService.generateLessonPlan({
+        ...built.request,
+        ...regenerationFields(opts?.regenerate === true, previous),
+      });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setGrounded(built.grounded);
       setGroundedLesson(built.groundedLessonTitle);
@@ -208,7 +221,8 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
       grade: context.gradeName,
       topic: context.topic,
       language: lang as 'ar' | 'en',
-      content: JSON.stringify(result),
+      // `repeated` describes a regenerate, not the plan: reopened later it would be stale.
+      content: JSON.stringify({ ...result, repeated: undefined }),
       formState,
     };
     if (savedId) {
@@ -436,7 +450,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
       {/* Generate — only shown before the first plan; afterwards it is Regenerate below */}
       {!result && !loading && (
         <View style={{ marginTop: 12 }}>
-          <Button label={t('generateLessonPlanBtn')} onPress={generate} fullWidth />
+          <Button label={t('generateLessonPlanBtn')} onPress={() => generate()} fullWidth />
         </View>
       )}
 
@@ -480,6 +494,8 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
               {planT('lessonPlanReady')}
             </Text>
           </View>
+
+          {result.repeated && <ShortPaperNotice repeated={result.repeated} repeatedUnit="sections" />}
 
           <LessonPlanView
             plan={result}
@@ -529,7 +545,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
             <ActionButton
               icon="refresh-outline"
               label={t('regenerateBtn')}
-              onPress={generate}
+              onPress={() => generate({ regenerate: true })}
               accent={accent}
               colors={colors}
               isRTL={isRTL}

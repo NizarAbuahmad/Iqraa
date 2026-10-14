@@ -7,6 +7,8 @@ import {
   canRetakeExam,
   myExamAction,
   myExamTitle,
+  progressSummary,
+  splitMyExams,
   subjectLabel,
   type MyExam,
 } from '../myExams.ts';
@@ -99,5 +101,50 @@ describe('canRetakeExam', () => {
   it('never offers one to a parent, or on a quiz the server did not list', () => {
     assert.equal(canRetakeExam(shown, ['e1'], true), false);
     assert.equal(canRetakeExam(shown, [], false), false);
+  });
+});
+
+describe('splitMyExams', () => {
+  it('puts open exams up front, soonest planned day first and undated last', () => {
+    const { upcoming, past } = splitMyExams([
+      exam({ evaluationId: 'undated' }),
+      exam({ evaluationId: 'later', examDate: '2026-10-25' }),
+      exam({ evaluationId: 'sooner', examDate: '2026-10-20', state: 'in_progress' }),
+      exam({ evaluationId: 'done', state: 'result', shareCode: null, result: RESULT, submittedAt: '2026-10-02T08:00:00.000Z' }),
+    ]);
+    assert.deepEqual(upcoming.map(e => e.evaluationId), ['sooner', 'later', 'undated']);
+    assert.deepEqual(past.map(e => e.evaluationId), ['done']);
+  });
+
+  it('lists what is over newest first, with a paper awaiting its mark among them', () => {
+    const { upcoming, past } = splitMyExams([
+      exam({ evaluationId: 'old', state: 'closed', shareCode: null, submittedAt: null, publishedAt: '2026-09-01T08:00:00.000Z' }),
+      exam({ evaluationId: 'new', state: 'submitted', shareCode: null, submittedAt: '2026-10-05T08:00:00.000Z' }),
+    ]);
+    assert.equal(upcoming.length, 0);
+    assert.deepEqual(past.map(e => e.evaluationId), ['new', 'old']);
+  });
+});
+
+describe('progressSummary', () => {
+  it('has nothing to average before any result is released', () => {
+    const none = progressSummary([exam(), exam({ evaluationId: 'w', state: 'submitted', shareCode: null })]);
+    assert.deepEqual(none, { taken: 0, averagePercent: null, bySubject: [] });
+  });
+
+  it('averages released results only, overall and per subject', () => {
+    const r = (percent: number) => ({ ...RESULT, percent });
+    const s = progressSummary([
+      exam({ evaluationId: 'a', state: 'result', shareCode: null, result: r(90) }),
+      exam({ evaluationId: 'b', state: 'result', shareCode: null, result: r(70) }),
+      exam({ evaluationId: 'c', state: 'result', shareCode: null, subjectId: 'chemistry', result: r(50) }),
+      exam({ evaluationId: 'waiting', state: 'submitted', shareCode: null }),
+    ]);
+    assert.equal(s.taken, 3);
+    assert.equal(s.averagePercent, 70);
+    assert.deepEqual(s.bySubject, [
+      { subjectId: 'mathematics', percent: 80, count: 2 },
+      { subjectId: 'chemistry', percent: 50, count: 1 },
+    ]);
   });
 });

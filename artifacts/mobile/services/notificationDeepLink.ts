@@ -16,6 +16,8 @@ export function threadIdFromNotificationData(data: unknown): string | null {
  */
 const SCREEN_ROUTES: Record<string, string> = {
   'artifact-reports': '/admin/artifact-reports',
+  // Someone joined the waitlist on iqrra.com (lib/adminNotify.ts).
+  'admin-signups': '/admin/signups',
   // A teacher released an exam's results (lib/resultsReleaseNotify.ts).
   'my-exams': '/my-exams',
 };

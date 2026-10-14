@@ -14,6 +14,8 @@ import {
   conflictingExams,
   examDates,
   examsOnDate,
+  maskTypedDate,
+  maskTypedTime,
   monthFetchRange,
   normalizeTypedDate,
   normalizeTypedTime,
@@ -169,5 +171,74 @@ describe('normalizeTypedTime', () => {
 
   it('returns unrecognisable input unchanged, for the validator to refuse', () => {
     assert.equal(normalizeTypedTime('half past nine'), 'half past nine');
+  });
+});
+
+describe('maskTypedDate', () => {
+  it('puts the dashes in as the teacher types digits, and keeps them', () => {
+    assert.equal(maskTypedDate('2'), '2');
+    assert.equal(maskTypedDate('2026'), '2026-');
+    assert.equal(maskTypedDate('2026-1', '2026-'), '2026-1');
+    assert.equal(maskTypedDate('2026-10', '2026-1'), '2026-10-');
+    assert.equal(maskTypedDate('2026-10-1', '2026-10-'), '2026-10-1');
+    assert.equal(maskTypedDate('2026-10-15', '2026-10-1'), '2026-10-15');
+  });
+
+  it('accepts digits only, so a letter or a stray symbol never lands in the box', () => {
+    assert.equal(maskTypedDate('20a26'), '2026-');
+    assert.equal(maskTypedDate('2026-10-15-9'), '2026-10-15');
+  });
+
+  it('formats a pasted date, whatever separator it came with', () => {
+    assert.equal(maskTypedDate('2026/10/12'), '2026-10-12');
+    assert.equal(maskTypedDate('2026.10.12'), '2026-10-12');
+    assert.equal(maskTypedDate('٢٠٢٦-١٠-١٢'), '2026-10-12');
+  });
+
+  it('lets backspace take the dash away instead of putting it straight back', () => {
+    assert.equal(maskTypedDate('2026', '2026-'), '2026');
+    assert.equal(maskTypedDate('2026-10', '2026-10-'), '2026-10');
+    assert.equal(maskTypedDate('202', '2026'), '202');
+  });
+
+  it('keeps a dash the teacher left behind after deleting the digit beside it', () => {
+    assert.equal(maskTypedDate('2026-', '2026-1'), '2026-');
+  });
+
+  it('empties cleanly', () => {
+    assert.equal(maskTypedDate(''), '');
+    assert.equal(maskTypedDate('-'), '');
+  });
+});
+
+describe('maskTypedTime', () => {
+  it('puts the colon in as the teacher types, and keeps it', () => {
+    assert.equal(maskTypedTime('1'), '1');
+    assert.equal(maskTypedTime('12'), '12:');
+    assert.equal(maskTypedTime('12:3', '12:'), '12:3');
+    assert.equal(maskTypedTime('12:30', '12:3'), '12:30');
+  });
+
+  it('pads an hour that can only be one digit', () => {
+    assert.equal(maskTypedTime('9'), '09:');
+    assert.equal(maskTypedTime('9:3', '09:'), '09:3');
+  });
+
+  it('drops anything past HH:MM and anything that is not a digit', () => {
+    assert.equal(maskTypedTime('12:300'), '12:30');
+    assert.equal(maskTypedTime('1x2'), '12:');
+  });
+
+  it('formats Arabic digits', () => {
+    assert.equal(maskTypedTime('١٢٣٠'), '12:30');
+  });
+
+  it('lets backspace take the colon away', () => {
+    assert.equal(maskTypedTime('12', '12:'), '12');
+    assert.equal(maskTypedTime('1', '12'), '1');
+  });
+
+  it('empties cleanly', () => {
+    assert.equal(maskTypedTime(''), '');
   });
 });

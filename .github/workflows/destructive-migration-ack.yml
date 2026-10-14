@@ -1,0 +1,61 @@
+# Destructive migrations need an explicit yes in the PR body.
+#
+# deploy.yml migrates production BEFORE the new API revision takes traffic, so
+# the old revision serves against the new schema for a few minutes. Adding is
+# safe; dropping, renaming or tightening a column breaks the running code. Ship
+# those as a second PR once nothing reads the old shape, and say so with a line
+# `destructive-migration: ok` in the PR body.
+#
+# This lived as a step inside ci.yml's `migrations match schema` job until
+# 2026-10-11. It moved because it reads the PR body, and ci.yml runs on the
+# default pull_request events (opened, synchronize, reopened) — never `edited`.
+# The body is taken from the event payload, and a re-run replays the same
+# payload, so adding the acknowledgement to the description could not clear the
+# check: only a new commit could. The `schema-push: done` check that preceded
+# migrations had the same flaw and held PR #779 red for an hour after the push
+# had been done. Here `edited` re-checks the body alone, without re-running
+# typecheck and tests, and without letting a description edit replace a real
+# CI result.
+name: Destructive migrations
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+
+# A body edit and a push can land together; the newest event decides.
+concurrency:
+  group: destructive-migration-ack-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  acknowledged:
+    name: destructive migrations acknowledged
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Destructive migrations are acknowledged
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          # Untrusted input: through the environment, never interpolated.
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          set -euo pipefail
+          NEW=$(git diff --name-only --diff-filter=A "$BASE_SHA...$HEAD_SHA" -- 'lib/db/migrations/*.sql')
+          [ -z "$NEW" ] && exit 0
+          HITS=$(grep -n -i -E 'DROP (TABLE|COLUMN)|RENAME|SET NOT NULL|SET DATA TYPE' $NEW || true)
+          [ -z "$HITS" ] && exit 0
+          echo "$HITS"
+          if printf '%s' "$PR_BODY" | grep -qiE '^[[:space:]]*destructive-migration:[[:space:]]*ok'; then
+            echo "Acknowledged in the PR body."
+            exit 0
+          fi
+          echo "::error::This migration drops, renames or tightens something the running API may still use. Split it out, or add 'destructive-migration: ok' to the PR body once nothing reads the old shape."
+          exit 1
