@@ -175,6 +175,10 @@ export interface LessonPlanOutput {
    *  `servedReason` in api-server's routes/generate.ts. The screen must say so
    *  rather than present a repeat as newly generated. */
   servedReason?: 'quota' | 'budget';
+  /** Present on an offline regenerate where some narrative sections could not
+   *  change (the offline generator has one phrasing for most of them) — `count`
+   *  of `of` are word-for-word the plan before. See `QuizOutput.repeated`. */
+  repeated?: { count: number; of: number };
 }
 
 /**
