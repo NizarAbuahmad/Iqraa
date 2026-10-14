@@ -268,6 +268,22 @@ an announcement by default» below.
   policy — honest, but the classroom builder would then error in demo mode for
   those subjects) or to author real per-subject templates. Tests:
   `offlineRegenerate.test.ts`. Not looked at in a browser.
+- **Quiz «أعد التجهيز» now changes the questions, and says when it cannot**
+  (2026-10-13). The offline regenerate only checked that the whole quiz JSON
+  differed from the last one, so the same stems in another order — or with the
+  options shuffled — counted as «fresh». On the periodic-table lesson (bank:
+  5 MC, 5 T/F, 3 short-answer) a teacher on the web build (`DEMO_MODE` on)
+  saw 2.4 of 5 questions repeat on average, and 3 papers in 30 repeated all
+  five. `freshOnRegenerate` now takes `stemsOf` and keeps the draw that shares
+  the fewest stems with what is on screen (up to 80 draws, offline and
+  instant). What it cannot fix is a bank with nothing else to offer: that lesson
+  holds one medium short-answer question, so any paper containing one repeats
+  it. Such a paper carries `repeated: { count, of }` and `ShortPaperNotice`
+  says «تكرّر N من M…» instead of passing it off as new; `quiz.tsx` strips it on
+  save, since it describes a regenerate, not the paper. **Quiz only** —
+  worksheet and homework still compare whole objects. Live AI is unchanged (it
+  has its own `avoid` / overlap check server-side). Tests:
+  `quizRegenerateStems.test.ts`. Not looked at in a browser.
 - **"No question bank" after a failed live call now says so, with the reason**
   (2026-10-11). With live AI on, a failed call falls back to the offline
   generator, which has banks for maths/chemistry only — so a worksheet, quiz or

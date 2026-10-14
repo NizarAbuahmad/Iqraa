@@ -1345,6 +1345,9 @@ const translations = {
     // The paper stops where the lesson's question bank does.
     shortPaperNotice: (produced: number, requested: number) =>
       `هذه الورقة أقصر مما طلبت: لا يتوفر لهذا الدرس إلا ${arCountPhrase(produced, 'سؤال واحد', 'سؤالان', 'أسئلة')} من أصل ${requested}، ولم نملأ الباقي بأسئلة عامة لا تخص الدرس.`,
+    // A regenerate whose lesson bank could not offer all-new questions.
+    repeatedQuestionsNotice: (count: number, of: number) =>
+      `تكرّر ${arCountPhrase(count, 'سؤال واحد', 'سؤالان', 'أسئلة')} من ${of} من الورقة السابقة: بنك أسئلة هذا الدرس لا يحتوي غيرها.`,
     levelsPartial: 'تعذّر بناء بعض المستويات. المستويات التي اكتملت معروضة؛ جرّب الباقي لاحقًا.',
     quizVerifiedNone: 'لم يتحقّق المُحقِّق الرمزي من أي إجابة — الإجابات من بنك الأسئلة المُراجَع',
     // Live-AI answers, and anything else not drawn from the bank: nothing and
@@ -3835,6 +3838,8 @@ const translations = {
     questionCountPill: (n: number) => `${n} ${n === 1 ? 'question' : 'questions'}`,
     shortPaperNotice: (produced: number, requested: number) =>
       `This paper is shorter than you asked for: the lesson only has ${produced} ${produced === 1 ? 'question' : 'questions'} out of ${requested}, and we didn't fill the rest with generic questions that aren't about it.`,
+    repeatedQuestionsNotice: (count: number, of: number) =>
+      `${count} of ${of} questions are the same as the previous paper: this lesson's question bank has no others.`,
     levelsPartial: 'Some levels could not be built. The ones that finished are shown; try the rest again later.',
     quizVerifiedNone: 'No answer was symbolically verified — keys come from the reviewed bank',
     answersUnreviewedAll: 'No reviewed source has checked these answers, and they were generated automatically — check them yourself before handing out',
