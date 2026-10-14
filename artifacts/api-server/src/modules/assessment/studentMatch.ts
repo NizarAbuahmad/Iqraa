@@ -30,7 +30,10 @@ export interface RosterEntry {
 export interface MatchCandidate {
   studentId: string;
   displayName: string;
-  /** 0–1. 1 is an exact name match. */
+  /**
+   * 0–1. 1 only for an identical normalized name; a reordered or repeated-word
+   * name is capped at `NEAR_MISS_CEILING`, so it can never be `confident`.
+   */
   score: number;
   hasAttempt: boolean;
 }
@@ -47,6 +50,13 @@ export interface StudentMatch {
 /** Below this a roster name is not offered at all. */
 export const MIN_CANDIDATE_SCORE = 0.5;
 export const MAX_CANDIDATES = 3;
+
+/**
+ * Ceiling for any name that is not identical after normalization. Word-set
+ * similarity alone gives 1 to «علي أحمد» against «أحمد علي», which are two
+ * different children, so only an identical string may reach 1.
+ */
+const NEAR_MISS_CEILING = 0.99;
 
 function tokens(name: string): string[] {
   return normalizeArabic(name)
@@ -77,10 +87,11 @@ export function matchStudent(
   const readKey = read.join(" ");
   const scored: MatchCandidate[] = roster.map(r => {
     const parts = tokens(r.displayName);
+    const identical = parts.join(" ") === readKey;
     return {
       studentId: r.studentId,
       displayName: r.displayName,
-      score: parts.join(" ") === readKey ? 1 : score(read, parts),
+      score: identical ? 1 : Math.min(score(read, parts), NEAR_MISS_CEILING),
       hasAttempt: r.hasAttempt,
     };
   });

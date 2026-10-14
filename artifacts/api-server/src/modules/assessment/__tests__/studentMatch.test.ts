@@ -89,6 +89,37 @@ describe("matchStudent — never guesses", () => {
   });
 });
 
+describe("matchStudent — exact means an identical name, not an equal word-set", () => {
+  it("is not confident when the words are reordered (first and father names differ)", () => {
+    const roster = [r("x", "أحمد علي"), r("y", "ليلى حسن")];
+    const m = matchStudent("علي أحمد", roster);
+    assert.equal(m.status, "confirm");
+    assert.equal(m.studentId, null);
+    const x = m.candidates.find(c => c.studentId === "x");
+    assert.ok(x, "أحمد علي is still offered as a candidate");
+    assert.ok(x.score < 1, `score ${x.score} must be below 1`);
+  });
+
+  it("is not confident when a repeated word matches a single-word name", () => {
+    const m = matchStudent("محمد محمد", [r("a", "محمد"), r("b", "ليلى حسن")]);
+    assert.equal(m.status, "confirm");
+    assert.equal(m.studentId, null);
+  });
+
+  it("is not confident when a single word matches a repeated-word name", () => {
+    const m = matchStudent("محمد", [r("a", "محمد محمد"), r("b", "ليلى حسن")]);
+    assert.equal(m.status, "confirm");
+    assert.equal(m.studentId, null);
+  });
+
+  it("prefers an identical name over a reordered one, and offers only the identical", () => {
+    const m = matchStudent("أحمد علي", [r("x", "أحمد علي"), r("y", "علي أحمد")]);
+    assert.equal(m.status, "confident");
+    assert.equal(m.studentId, "x");
+    assert.deepEqual(m.candidates.map(c => c.studentId), ["x"]);
+  });
+});
+
 describe("matchStudent — candidates", () => {
   it("offers at most three, best first", () => {
     const roster = ["a", "b", "c", "d", "e"].map(id => r(id, `سارة ${id}`));
