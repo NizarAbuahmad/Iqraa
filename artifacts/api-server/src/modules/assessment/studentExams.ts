@@ -35,6 +35,9 @@ export interface ExamForStudent {
   releaseResultsToStudent: boolean;
   publishedAt: Date | null;
   closedAt: Date | null;
+  /** The teacher's planned sitting, "YYYY-MM-DD" / "HH:MM". Planning data: it never opens or closes the link. */
+  examDate?: string | null;
+  examTime?: string | null;
 }
 
 export interface SittingForStudent {
@@ -75,6 +78,8 @@ export interface StudentExamRow {
   totalMarks: number;
   timeLimitMin: number | null;
   publishedAt: string | null;
+  examDate: string | null;
+  examTime: string | null;
   state: StudentExamState;
   /** Present only while `/take/:code` would admit the student. */
   shareCode: string | null;
@@ -122,6 +127,8 @@ export function studentExamRow(
     totalMarks: Number(exam.totalMarks) || 0,
     timeLimitMin: exam.timeLimitMin,
     publishedAt: exam.publishedAt?.toISOString() ?? null,
+    examDate: exam.examDate ?? null,
+    examTime: exam.examDate ? (exam.examTime ?? null) : null,
     state,
     shareCode: offerLink ? exam.shareCode : null,
     submittedAt: sitting?.submittedAt?.toISOString() ?? null,

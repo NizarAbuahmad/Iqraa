@@ -217,6 +217,8 @@ async function examRowsFor(studentIds: string[]): Promise<StudentExamRow[]> {
       releaseResultsToStudent: evaluations.releaseResultsToStudent,
       publishedAt: evaluations.publishedAt,
       closedAt: evaluations.closedAt,
+      examDate: evaluations.examDate,
+      examTime: evaluations.examTime,
     })
     .from(evaluations)
     .where(where);

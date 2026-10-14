@@ -1021,6 +1021,13 @@ async function freshOnRegenerate<T>(
    * another order, or with the options shuffled, are not a new paper.
    */
   stemsOf?: (out: T) => string[],
+  /**
+   * How many draws to try for a paper that shares fewer stems. The loop stops at
+   * the first draw that shares none, so a larger budget costs nothing where that
+   * is reachable (a lesson plan: ~1 draw in 16 changes all eight
+   * sections, and 80 attempts missed it about once in a hundred regenerations).
+   */
+  maxStemDraws: number = MAX_FRESH_STEM_ATTEMPTS,
 ): Promise<T> {
   const key = requestIdentity(kind, req);
   const previous = lastServed.get(key);
@@ -1037,7 +1044,7 @@ async function freshOnRegenerate<T>(
       let best = out;
       let bestOverlap = overlap(out);
       let bestSignature = signature;
-      for (let attempt = 1; attempt < MAX_FRESH_STEM_ATTEMPTS && bestOverlap > 0; attempt++) {
+      for (let attempt = 1; attempt < maxStemDraws && bestOverlap > 0; attempt++) {
         const candidate = await produce();
         const candidateSignature = fingerprint(candidate);
         const o = overlap(candidate);
@@ -1094,6 +1101,30 @@ function makeWorksheetQ(type: QType, lang: Lang, topic: string, kb: KBLesson | n
   return makeTFQ_en(topic, kb, diff, subject, false);
 }
 
+/**
+ * What a teacher reads as «the questions» of a worksheet or homework: the worked
+ * example and every question, so regenerate is judged by those and not by the
+ * order they come in or how their options are shuffled.
+ */
+function worksheetStems(w: WorksheetOutput): string[] {
+  return [
+    ...(w.workedExample ? [questionStemKey(w.workedExample.problem)] : []),
+    ...w.sections.flatMap(sec => sec.questions.map(q => questionStemKey(q.text))),
+  ];
+}
+
+/**
+ * The plan's narrative sections, which regenerate is judged on. Objectives and
+ * materials are left out on purpose: they come from the lesson in the book, so
+ * repeating them is correct, not a failure to vary.
+ */
+function lessonPlanSections(p: LessonPlanOutput): string[] {
+  return [
+    p.introduction, p.mainActivity, p.guidedPractice, p.independentPractice,
+    p.closure, p.assessment, p.differentiation, p.homework,
+  ].filter(Boolean);
+}
+
 // ─── Main service class ───────────────────────────────────────────────────────
 
 export class MockAIService extends AIService {
@@ -1103,7 +1134,7 @@ export class MockAIService extends AIService {
 
   async generateLessonPlan(req: AIRequest): Promise<LessonPlanOutput> {
     await this.delay();
-    return freshOnRegenerate('lessonPlan', req, () => this.lessonPlanOnce(req));
+    return freshOnRegenerate('lessonPlan', req, () => this.lessonPlanOnce(req), lessonPlanSections, 300);
   }
 
   private async lessonPlanOnce(req: AIRequest): Promise<LessonPlanOutput> {
@@ -1136,8 +1167,13 @@ export class MockAIService extends AIService {
     // the caller's subject name is only the fallback for a typed topic.
     const subjectId = (kb ? getBookForLesson(kb)?.subjectId : subjectIdFromName(req.subject)) ?? undefined;
     const kind = lessonKindFor(subjectId);
+    // A first generation is variant 0 — the plan as it has always been. A
+    // regenerate may draw either wording of the five style-owned sections;
+    // `freshOnRegenerate` then keeps the draw that differs most from the plan on
+    // screen, so pressing the button again alternates.
+    const variant = req.regenerate === true && Math.random() < 0.5 ? 1 : 0;
     const styleBlueprint = buildLessonStyleBlueprint(style, {
-      topic, kb, lang, subject: req.subject, duration: dur, doc: docCtx, kind, subjectId,
+      topic, kb, lang, subject: req.subject, duration: dur, doc: docCtx, kind, subjectId, variant,
     });
 
     // Document-grounded lesson plan (Demo Mode) — prefer uploaded materials over KB soft pin
@@ -1230,7 +1266,7 @@ export class MockAIService extends AIService {
 
   async generateWorksheet(req: AIRequest): Promise<WorksheetOutput> {
     await this.delay();
-    return freshOnRegenerate('worksheet', req, () => this.worksheetOnce(req));
+    return freshOnRegenerate('worksheet', req, () => this.worksheetOnce(req), worksheetStems);
   }
 
   private async worksheetOnce(req: AIRequest): Promise<WorksheetOutput> {
@@ -2733,7 +2769,7 @@ export class MockAIService extends AIService {
 
   async generateHomework(req: AIRequest): Promise<WorksheetOutput> {
     await this.delay();
-    return freshOnRegenerate('homework', req, () => this.homeworkOnce(req));
+    return freshOnRegenerate('homework', req, () => this.homeworkOnce(req), worksheetStems);
   }
 
   private async homeworkOnce(req: AIRequest): Promise<WorksheetOutput> {
