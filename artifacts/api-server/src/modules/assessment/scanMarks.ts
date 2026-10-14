@@ -47,10 +47,20 @@ export interface ScanParseResult {
   skipped: { number: number; reason: string }[];
 }
 
-export function buildScanPrompt(questions: readonly ScannableQuestion[]): {
+/**
+ * `readName` is for the class scan, where the photo arrives with no student
+ * attached and the paper itself is what says whose it is. The default (no
+ * options) is what `POST /attempts/:id/scan-marks` has always sent — a golden
+ * test pins it, so extending this cannot change that route's prompt.
+ */
+export function buildScanPrompt(
+  questions: readonly ScannableQuestion[],
+  opts: { readName?: boolean } = {},
+): {
   system: string;
   user: string;
 } {
+  const readName = opts.readName === true;
   const system = [
     "You read a teacher's handwritten marks from a photograph of a marked exam paper.",
     "",
@@ -66,8 +76,19 @@ export function buildScanPrompt(questions: readonly ScannableQuestion[]): {
     "   Report the numeric value.",
     "4. Half marks are common and are written many ways (٥٫٥, 5.5, 5½, ٥ و نصف).",
     "   Report them as a decimal.",
+    ...(readName
+      ? [
+          "5. Also transcribe the student's name exactly as written on the paper, in the",
+          "   same letters. If there is no name, or you cannot read it with confidence,",
+          "   return null. Never complete, correct or guess a name.",
+          "6. If the teacher wrote a total for the whole paper, report it as total (a",
+          "   number); otherwise null.",
+        ]
+      : []),
     "",
-    'Return JSON only: {"marks":[{"number":1,"value":3.5,"readAs":"٣٫٥"}]}',
+    readName
+      ? 'Return JSON only: {"name":"سارة أحمد","total":18,"marks":[{"number":1,"value":3.5,"readAs":"٣٫٥"}]}'
+      : 'Return JSON only: {"marks":[{"number":1,"value":3.5,"readAs":"٣٫٥"}]}',
     "No prose, no markdown fence.",
   ].join("\n");
 
@@ -180,4 +201,24 @@ export function parseScanResponse(
   skipped.sort((a, b) => a.number - b.number);
 
   return { proposals, skipped };
+}
+
+/**
+ * The student's name as the model transcribed it, or null.
+ *
+ * Trimmed and bounded: this string is only ever matched against the roster
+ * (`studentMatch.ts`) and shown back to the teacher, but it came out of a model
+ * reading a photograph, so it is not trusted to be short or to be a name.
+ */
+export function parseNameRead(raw: unknown): string | null {
+  const name = asRecord(raw)?.["name"];
+  if (typeof name !== "string") return null;
+  const trimmed = name.trim();
+  return trimmed.length >= 1 && trimmed.length <= 100 ? trimmed : null;
+}
+
+/** The total the teacher wrote for the whole paper, when they wrote one. */
+export function parseTotalRead(raw: unknown): number | null {
+  const total = parseArabicNumber(asRecord(raw)?.["total"]);
+  return total !== null && total > 0 ? Math.round(total * 100) / 100 : null;
 }
