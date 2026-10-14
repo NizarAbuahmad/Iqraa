@@ -26,6 +26,7 @@ import { describeAiError, generateWithProvenance, recordGeneration } from './aiP
 import { streamChat, type ChatParams } from './chatStreamClient';
 import type { BoardSolution } from '@workspace/math-verify';
 import { acceptSolveResponse, type SolveRequest } from '../solve';
+import { tagQuizLessons, tagWorksheetLessons } from '../wideScopeRequest';
 
 // Routes under /generate/* and /chat require auth (routes/index.ts scopes
 // authMiddleware to those prefixes) — go through apiFetch, not a bare fetch(),
@@ -118,7 +119,7 @@ export class RemoteAIService extends AIService {
   async generateWorksheet(req: AIRequest, opts?: GenerateOptions): Promise<WorksheetOutput> {
     return generateWithProvenance(
       'worksheet',
-      () => postJSON<WorksheetOutput>('/generate/worksheet', req, opts),
+      async () => tagWorksheetLessons(await postJSON<WorksheetOutput>('/generate/worksheet', req, opts), req),
       () => this.fallback.generateWorksheet(req),
     );
   }
@@ -126,7 +127,7 @@ export class RemoteAIService extends AIService {
   async generateQuiz(req: AIRequest, opts?: GenerateOptions): Promise<QuizOutput> {
     return generateWithProvenance(
       'quiz',
-      () => postJSON<QuizOutput>('/generate/quiz', req, opts),
+      async () => tagQuizLessons(await postJSON<QuizOutput>('/generate/quiz', req, opts), req),
       () => this.fallback.generateQuiz(req),
     );
   }
@@ -152,7 +153,7 @@ export class RemoteAIService extends AIService {
   async generateHomework(req: AIRequest, opts?: GenerateOptions): Promise<WorksheetOutput> {
     return generateWithProvenance(
       'homework',
-      () => postJSON<WorksheetOutput>('/generate/homework', req, opts),
+      async () => tagWorksheetLessons(await postJSON<WorksheetOutput>('/generate/homework', req, opts), req),
       () => this.fallback.generateHomework(req),
     );
   }
