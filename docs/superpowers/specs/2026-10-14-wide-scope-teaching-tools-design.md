@@ -186,7 +186,10 @@ All five `/generate/*` routes already call `withGrounding`, which handles `scope
 and pools book pages. The new text lives in `prompts.ts` / `classroomPrompts.ts`
 (§1–§3) as clauses present only when `scope` is present. `parseCoverage` is
 reused for the `coverage.lessons` table on activity and classroom (lessons only;
-`slots` are never sent by these tools).
+`slots` are never sent by these tools). The revision clause lists the lesson table
+flat, in book order, and points the model at the scope digest's unit headings: the
+server's `parseCoverage` does not carry `unitId` (it is deliberately not hashed into
+the cache key), so the clause does not group lessons by unit itself.
 
 ### 7. Tests (inside the existing globs)
 
@@ -197,8 +200,10 @@ reused for the `coverage.lessons` table on activity and classroom (lessons only;
   "left out" sentence in the introduction, first-person-future Arabic
   (`lessonPlanTeacherVoice.test.ts` still passes); a lesson plan request is
   byte-identical; the live clause is present only with `scope`.
-- Activity: every format on a wide request draws from ≥2 units; the structure
-  tests (`activityBlueprints`, `activityPrompts`) still pass; the regenerate
+- Activity: individual, group, game and warm-up draw from ≥2 units in a single
+  activity; discussion and hands-on build on one claim or item, so they are pinned
+  at ≥1 unit per version and ≥2 units across regenerates (the blueprints are
+  unchanged by decision 4); the structure tests (`activityBlueprints`, `activityPrompts`) still pass; the regenerate
   counter key includes the scope.
 - Classroom: each of the seven offline types renders without the label in a
   lesson-shaped sentence; the type/card-id pins pass.
@@ -223,10 +228,13 @@ them, which is the bug fix hiding inside this piece.
 ## Known limits
 
 - `presentation` → `whiteboard` passes `activity.lesson` (the scope label) as a
-  bare topic, and lesson-flow's «ابدأ الحصة» sends the label to the classroom
-  builder. Piece 3 does **not** fix these two links; Related-tools panels are
-  hidden on a wide result (`hideRelated`), but these direct links still carry the
-  label and can re-ground it on the receiving screen.
+  bare topic. Piece 3 does **not** fix that link; Related-tools panels are hidden
+  on a wide result (`hideRelated`), but this direct link still carries the label
+  and can re-ground it on the receiving screen. Lesson-flow's «ابدأ الحصة» (which
+  sends the label to the classroom builder) is **hidden** on a wide flow rather
+  than fixed.
+- The offline wide lesson plan is deterministic: a Regenerate returns the same
+  plan, and the screen's existing notice says it repeated.
 - A reopened wide material shows the saved scope but `TopicSelector`'s dropdowns
   show their placeholders (the component's documented prefill limit).
 - The live model's adherence to the revision clause is untestable here.
