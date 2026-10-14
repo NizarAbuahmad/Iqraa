@@ -1379,6 +1379,9 @@ export class MockAIService extends AIService {
     // Which question slot the next question fills. The worked example and the
     // half-solved item are slots 0 and 1; the practice follows.
     let slot = 0;
+    // The lesson each solved item came from (wide scope only), so the
+    // half-solved question can say which lesson it covers.
+    const solvedLesson = new Map<SolvedItem, string>();
     const takeSolved = (tier: DiffTier): SolvedItem | null => {
       if (docs.present) return null;
       const at = wide ? wide.drawer.lessonAt(slot) : null;
@@ -1387,7 +1390,7 @@ export class MockAIService extends AIService {
       let item: SolvedItem | null = null;
       if (isChemContext(tp, kbRow, req.subject)) item = takeSolvedChem(tp, kbRow, tier, lang);
       else if (isMathContext(tp, kbRow, req.subject)) item = takeSolvedMath(tp, kbRow, tier, lang);
-      if (item && wide) slot += 1;
+      if (item && at) { solvedLesson.set(item, at.id); slot += 1; }
       return item;
     };
     const exampleItem = takeSolved(band[0]);
@@ -1490,7 +1493,10 @@ export class MockAIService extends AIService {
       sections.push({
         type: 'short_answer',
         title: lang === 'ar' ? 'مثال نكمله' : 'Finish the solution',
-        questions: [{ text, answer: completionItem.answer, points: saPts(band[1]), fromBank: true }],
+        questions: [{
+          text, answer: completionItem.answer, points: saPts(band[1]), fromBank: true,
+          ...(solvedLesson.has(completionItem) ? { lessonId: solvedLesson.get(completionItem)! } : {}),
+        }],
       });
       answerKey.push({ num: qNum++, answer: completionItem.answer, solution: completionItem.steps });
     }

@@ -6,15 +6,19 @@ import { buildWideRequest } from '../wideScopeRequest.ts';
 import { lessonsInScope, type ScopeSelection } from '../scopeSelection.ts';
 
 const sem1: ScopeSelection = { kind: 'semester', gradeId: 'grade-10', subjectId: 'mathematics', semester: 1 };
+const sem2: ScopeSelection = { kind: 'semester', gradeId: 'grade-10', subjectId: 'mathematics', semester: 2 };
 const base = {
   grade: 'الصف العاشر', subject: 'Mathematics', language: 'arabic', difficulty: 'medium',
   questionTypes: ['multiple_choice', 'short_answer'] as AIRequest['questionTypes'],
 } as const;
 
-const wideReq = (count: number, mode: 'balanced' | 'random' = 'balanced') => {
-  const wide = buildWideRequest(sem1, 'ar', count, mode)!;
+const wideReq = (count: number, mode: 'balanced' | 'random' = 'balanced', sel: ScopeSelection = sem1) => {
+  const wide = buildWideRequest(sel, 'ar', count, mode)!;
   return { wide, req: { ...base, topic: 'الفصل الأول كاملًا', numQuestions: count, ...wide.fields } as AIRequest };
 };
+/** The half-solved question («مثال نكمله»), when the paper has one: `fromBank` and its own section. */
+const halfSolved = (w: WorksheetOutput): WorksheetQuestion | undefined =>
+  w.sections.find(sec => sec.title === 'مثال نكمله')?.questions[0];
 const flat = (w: WorksheetOutput): WorksheetQuestion[] => w.sections.flatMap(s => s.questions);
 
 /**
@@ -53,6 +57,18 @@ describe('offline worksheet — a wide scope', () => {
     for (const q of tagged) assert.ok(inScope.has(q.lessonId!), `foreign lesson ${q.lessonId}`);
   });
 
+  it('every question on the paper is tagged, the half-solved item included', async () => {
+    // Semester 2 has a half-solved item (see the dedicated test below); semester 1
+    // may not. Either way no question may be left without a lesson.
+    for (const sel of [sem1, sem2]) {
+      const { wide, req } = wideReq(12, 'balanced', sel);
+      const out = await aiService.generateWorksheet(req);
+      const inScope = new Set(wide.lessons.map(l => l.id));
+      const untagged = flat(out).filter(q => !q.lessonId || !inScope.has(q.lessonId));
+      assert.deepEqual(untagged.map(q => q.text.slice(0, 40)), [], `semester ${sel.kind === 'semester' ? sel.semester : ''}`);
+    }
+  });
+
   it('draws from more than one lesson (it is not the old single-lesson paper)', async () => {
     const { req } = wideReq(12);
     const out = await aiService.generateWorksheet(req);
@@ -75,11 +91,19 @@ describe('offline worksheet — a wide scope', () => {
     if (produced < 30) assert.equal(out.shortfall?.requested, 30);
   });
 
-  it('the worked example belongs to a lesson of the scope', async () => {
-    const { wide, req } = wideReq(12);
+  it('the half-solved question names a lesson of the scope', async () => {
+    // Semester 2, balanced: the first two slots' lessons both have checked
+    // working, so the paper has an example and a half-solved item (semester 1's
+    // second slot is a lesson without working, and drops the half-solved item).
+    // If the data stops giving one, say so rather than pass vacuously.
+    const wide = buildWideRequest(sem2, 'ar', 12, 'balanced')!;
+    const req = { ...base, topic: 'الفصل الثاني كاملًا', numQuestions: 12, ...wide.fields } as AIRequest;
     const out = await aiService.generateWorksheet(req);
-    if (!out.workedExample) return; // a lesson without checked working simply has none
-    assert.ok(wide.lessons.length > 0);
+    const half = halfSolved(out);
+    assert.ok(half, 'probe: the wide maths paper should have a half-solved section');
+    assert.ok(out.workedExample, 'probe: ... and the worked example it follows');
+    assert.ok(half.lessonId, 'half-solved question has no lessonId');
+    assert.ok(wide.lessons.some(l => l.id === half.lessonId), `foreign lesson ${half.lessonId}`);
   });
 });
 
