@@ -14,6 +14,7 @@ export type ScanErrorKey =
   | 'scanRateLimited'
   | 'scanNotPublished'
   | 'scanNoClass'
+  | 'scanNotPaper'
   | 'scanFailed';
 
 function parts(err: unknown): { status: number; code: string } {
@@ -34,6 +35,7 @@ export function scanErrorKey(err: unknown): ScanErrorKey {
   if (code === 'rate_limited' || status === 429) return 'scanRateLimited';
   if (code === 'not_published') return 'scanNotPublished';
   if (code === 'no_class') return 'scanNoClass';
+  if (code === 'not_paper_exam') return 'scanNotPaper';
   return 'scanFailed';
 }
 

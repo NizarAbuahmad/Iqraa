@@ -26,7 +26,9 @@ export type RowState =
   | 'not_run'
   | 'saved'
   | 'save_failed'
-  | 'skipped_existing';
+  | 'skipped_existing'
+  /** Set aside by the teacher (a second photo of one paper, a blank page). Never saved. */
+  | 'discarded';
 
 export interface ReviewQuestion {
   id: string;
@@ -102,13 +104,70 @@ export function rowFromScan(row: ReviewRow, res: ClassScanResponse): ReviewRow {
 }
 
 /**
- * Assign or reassign a row's student. A different student is a different paper,
- * so whatever the row remembered about its previous paper is forgotten; the
- * same student keeps the row as it is.
+ * A row that has started a paper is locked to that student. The paper already
+ * holds what was written from this photo, so moving the row to another child
+ * would leave those marks on the first child's paper — and the first child's
+ * own photo would then find a paper it did not make and be skipped.
+ */
+export function isStudentLocked(row: ReviewRow): boolean {
+  return row.attemptId !== null;
+}
+
+/**
+ * Assign or reassign a row's student. Free until the row has started a paper;
+ * after that it is a no-op (see `isStudentLocked`) — the paper is corrected from
+ * the student's own page, not by moving the row.
  */
 export function assignStudent(row: ReviewRow, studentId: string | null): ReviewRow {
   if (studentId === row.studentId) return row;
-  return { ...row, studentId, attemptId: null, savedQuestionIds: [], writtenQuestionIds: [] };
+  if (isStudentLocked(row)) return row;
+  return { ...row, studentId };
+}
+
+const DISCARDABLE: readonly RowState[] = ['read', 'failed', 'not_run', 'save_failed'];
+
+/**
+ * Whether the teacher may set this photo aside: a duplicate of another paper, a
+ * blank or back page. Only before it has started a paper — after that the
+ * paper exists and ignoring the photo would hide it.
+ */
+export function canDiscard(row: ReviewRow): boolean {
+  return row.attemptId === null && DISCARDABLE.includes(row.state);
+}
+
+/** Set a photo aside. A discarded row blocks nothing and is never saved. */
+export function discardRow(row: ReviewRow): ReviewRow {
+  return canDiscard(row) ? { ...row, state: 'discarded' } : row;
+}
+
+/**
+ * What the screen shows for each student, so two children with one name do not
+ * look identical in the chips and the picker. A unique name is itself; a shared
+ * one gets the school reference when every sharer has a different one, and its
+ * place among the sharers (1, 2, …, roster order) otherwise. Names are compared
+ * as displayed (trimmed), not normalised: the point is what the teacher sees.
+ */
+export function rosterLabels(
+  roster: ReadonlyArray<{ id: string; displayName: string; externalRef?: string | null }>,
+): Map<string, string> {
+  const byName = new Map<string, Array<{ id: string; shown: string; ref: string }>>();
+  for (const s of roster) {
+    const name = s.displayName.trim();
+    const group = byName.get(name) ?? [];
+    group.push({ id: s.id, shown: s.displayName, ref: (s.externalRef ?? '').trim() });
+    byName.set(name, group);
+  }
+  const labels = new Map<string, string>();
+  for (const [name, group] of byName) {
+    if (group.length === 1) {
+      labels.set(group[0]!.id, group[0]!.shown);
+      continue;
+    }
+    const refs = group.map(g => g.ref);
+    const useRefs = refs.every(r => r !== '') && new Set(refs).size === refs.length;
+    group.forEach((g, i) => labels.set(g.id, `${name} (${useRefs ? g.ref : i + 1})`));
+  }
+  return labels;
 }
 
 /**

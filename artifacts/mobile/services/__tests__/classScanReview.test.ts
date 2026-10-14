@@ -5,11 +5,14 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   assignStudent,
+  canDiscard,
   canSave,
+  discardRow,
   newRow,
   parseMark,
   reportRows,
   rowFromScan,
+  rosterLabels,
   rowTotal,
   saveSummary,
   savableRows,
@@ -199,5 +202,103 @@ describe('rowTotal and saveSummary', () => {
       { ...newRow('6'), state: 'not_run' },
     ];
     assert.deepEqual(saveSummary(rows), { saved: 2, needAttention: 3, skipped: 1 });
+  });
+});
+
+describe('discardRow — a photo the teacher can set aside', () => {
+  it('discards a read row that has no paper yet', () => {
+    const r = read('a');
+    assert.equal(canDiscard(r), true);
+    assert.equal(discardRow(r).state, 'discarded');
+  });
+
+  it('discards failed, not-run and save-failed rows without a paper', () => {
+    for (const state of ['failed', 'not_run', 'save_failed'] as const) {
+      const r = read('a', { state });
+      assert.equal(canDiscard(r), true, state);
+      assert.equal(discardRow(r).state, 'discarded', state);
+    }
+  });
+
+  it('never discards a row that has started a paper, or one still in flight or done', () => {
+    const started = read('a', { attemptId: 'att-1', state: 'save_failed' });
+    assert.equal(canDiscard(started), false);
+    assert.equal(discardRow(started), started);
+    for (const state of ['queued', 'reading', 'saved', 'skipped_existing', 'discarded'] as const) {
+      const r = read('a', { state });
+      assert.equal(canDiscard(r), false, state);
+      assert.equal(discardRow(r), r, state);
+    }
+  });
+
+  it('discarding one of two papers for one student clears the duplicate on the other', () => {
+    const rows = [read('a'), read('b')];
+    assert.equal(canSave(rows, ctx()), false);
+    const after = [rows[0]!, discardRow(rows[1]!)];
+    assert.deepEqual(reportRows(after, ctx()).get('a')!.blockers, []);
+    assert.equal(reportRows(after, ctx()).has('b'), false);
+    assert.equal(canSave(after, ctx()), true);
+    assert.deepEqual(savableRows(after, ctx()).map(r => r.key), ['a']);
+  });
+
+  it('discarding a photo with no student (a blank page) unblocks the batch', () => {
+    const junk = rowFromScan(newRow('j'), scan({ nameRead: null, match: { status: 'none', studentId: null, candidates: [] } }));
+    const rows = [read('a'), junk];
+    assert.equal(canSave(rows, ctx()), false);
+    assert.equal(canSave([rows[0]!, discardRow(junk)], ctx()), true);
+  });
+
+  it('a discarded row is neither saved nor needing attention in the summary', () => {
+    const rows: ReviewRow[] = [
+      { ...newRow('1'), state: 'saved' },
+      discardRow({ ...newRow('2'), state: 'failed' }),
+      discardRow(read('3')),
+    ];
+    assert.deepEqual(saveSummary(rows), { saved: 1, needAttention: 0, skipped: 0 });
+  });
+});
+
+describe('rosterLabels — two children with one name must look different', () => {
+  const s = (id: string, displayName: string, externalRef: string | null = null) => ({ id, displayName, externalRef });
+
+  it('leaves a unique name as it is', () => {
+    const labels = rosterLabels([s('a', 'سارة أحمد'), s('b', 'ليلى حسن', 'R7')]);
+    assert.equal(labels.get('a'), 'سارة أحمد');
+    assert.equal(labels.get('b'), 'ليلى حسن');
+  });
+
+  it('numbers twins with no reference in roster order', () => {
+    const labels = rosterLabels([s('a', 'محمد خالد'), s('x', 'ليلى'), s('b', 'محمد خالد')]);
+    assert.equal(labels.get('a'), 'محمد خالد (1)');
+    assert.equal(labels.get('b'), 'محمد خالد (2)');
+    assert.equal(labels.get('x'), 'ليلى');
+  });
+
+  it('uses the school reference when every twin has a different one', () => {
+    const labels = rosterLabels([s('a', 'محمد خالد', '1042'), s('b', 'محمد خالد', '1077')]);
+    assert.equal(labels.get('a'), 'محمد خالد (1042)');
+    assert.equal(labels.get('b'), 'محمد خالد (1077)');
+  });
+
+  it('falls back to numbers when only one twin has a reference, or the references collide', () => {
+    const one = rosterLabels([s('a', 'محمد خالد', '1042'), s('b', 'محمد خالد')]);
+    assert.equal(one.get('a'), 'محمد خالد (1)');
+    assert.equal(one.get('b'), 'محمد خالد (2)');
+    const blank = rosterLabels([s('a', 'محمد خالد', '1042'), s('b', 'محمد خالد', '  ')]);
+    assert.equal(blank.get('b'), 'محمد خالد (2)');
+    const same = rosterLabels([s('a', 'محمد خالد', '1042'), s('b', 'محمد خالد', '1042')]);
+    assert.equal(same.get('a'), 'محمد خالد (1)');
+    assert.equal(same.get('b'), 'محمد خالد (2)');
+  });
+
+  it('numbers a name that appears three times', () => {
+    const labels = rosterLabels([s('a', 'علي'), s('b', 'علي'), s('c', 'علي')]);
+    assert.deepEqual(['a', 'b', 'c'].map(id => labels.get(id)), ['علي (1)', 'علي (2)', 'علي (3)']);
+  });
+
+  it('compares names after trimming, as the teacher sees them', () => {
+    const labels = rosterLabels([s('a', 'محمد خالد '), s('b', ' محمد خالد')]);
+    assert.equal(labels.get('a'), 'محمد خالد (1)');
+    assert.equal(labels.get('b'), 'محمد خالد (2)');
   });
 });

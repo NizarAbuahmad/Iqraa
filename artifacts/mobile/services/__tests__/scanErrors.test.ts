@@ -12,6 +12,7 @@ describe('scanErrorKey', () => {
     assert.equal(scanErrorKey(err(503, 'live_mode_off')), 'scanUnavailable');
     assert.equal(scanErrorKey(err(409, 'not_published')), 'scanNotPublished');
     assert.equal(scanErrorKey(err(409, 'no_class')), 'scanNoClass');
+    assert.equal(scanErrorKey(err(409, 'not_paper_exam')), 'scanNotPaper');
     assert.equal(scanErrorKey(err(502, 'scan_unavailable')), 'scanFailed');
   });
 
