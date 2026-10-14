@@ -51,6 +51,11 @@ const STRICT_ONLY_FIELDS = [
   // no projector"; screen → "do not print the slides"), so a board deck must
   // not be served to a projector request from the pool.
   "classroomSetup",
+  // How a wide scope's questions are spread over its lessons. A balanced paper
+  // and a random one for the same semester are different artifacts. The lesson
+  // table and the plan are NOT here: they are a pure function of `scopeKey` and
+  // `numQuestions`. Absent for a single lesson, so no existing key changes.
+  "distribution",
 ] as const;
 
 const ARABIC_DIACRITICS = /[ً-ْٰـ]/g;

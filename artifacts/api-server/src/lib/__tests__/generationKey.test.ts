@@ -249,3 +249,23 @@ describe("scope in the cache key", () => {
     assert.deepEqual(keys(wide("book:grade-10:mathematics")), keys(wide("book:grade-10:mathematics")));
   });
 });
+
+describe("distribution in the cache key", () => {
+  const wide = (distribution: string) => ({
+    ...base, scope: { kind: "semester", scopeKey: "sem:grade-10:mathematics:1", unitIds: [] }, distribution,
+  });
+
+  it("balanced and random for one scope never share a slot", () => {
+    assert.notEqual(keys(wide("balanced")).strictKey, keys(wide("random")).strictKey);
+  });
+
+  it("the coverage table and slots are not hashed (they are a function of the scope)", () => {
+    const a = { ...wide("balanced"), coverage: { lessons: [{ code: "L1", title: "a" }], slots: ["L1"] } };
+    const b = { ...wide("balanced"), coverage: { lessons: [{ code: "L1", title: "a" }, { code: "L2", title: "b" }], slots: ["L2"] } };
+    assert.equal(keys(a).strictKey, keys(b).strictKey);
+  });
+
+  it("a request with no distribution hashes exactly as before", () => {
+    assert.deepEqual(keys(base), keys({ ...base, distribution: undefined }));
+  });
+});

@@ -579,3 +579,46 @@ describe("deckShortfalls — the cover is one line on purpose", () => {
     assert.ok(!deckShortfalls(deck(slides)).some(s => /single unbroken line/.test(s)));
   });
 });
+
+describe("a lesson tag survives normalisation, and the counts the wide scope offers are enforced", () => {
+  const mc = (i: number, lesson: string) => ({ id: `q${i}`, type: "multiple_choice", text: `s${i}`, options: ["a", "b", "c", "d"], correctAnswer: "a", points: 1, explanation: "", lesson });
+
+  it("normalizeQuiz keeps `lesson` on every question, including after it reorders", () => {
+    const parsed = { questions: [
+      { id: "q1", type: "short_answer", text: "w", correctAnswer: "x", points: 1, explanation: "", lesson: "L2" },
+      mc(2, "L1"),
+    ] };
+    normalizeQuiz(parsed, ["multiple_choice", "short_answer"], 2);
+    assert.deepEqual(parsed.questions.map(q => (q as { lesson?: string }).lesson), ["L1", "L2"]);
+  });
+
+  it("a worksheet's tags survive the top-up merge and the trim", () => {
+    const base = { sections: [{ type: "short_answer", title: "a", questions: [{ text: "1", points: 1, lesson: "L1" }, { text: "2", points: 1, lesson: "L2" }] }], answerKey: [] };
+    const extra = { sections: [{ type: "short_answer", title: "b", questions: [{ text: "3", points: 1, lesson: "L3" }] }], answerKey: [] };
+    mergeWorksheetTopUp(base, extra);
+    const tags = (base.sections as { questions: { lesson?: string }[] }[]).flatMap(s => s.questions.map(q => q.lesson));
+    assert.deepEqual(tags, ["L1", "L2", "L3"]);
+    trimWorksheet(base, { numQuestions: 2 });
+    const left = (base.sections as { questions: { lesson?: string }[] }[]).flatMap(s => s.questions);
+    assert.ok(left.every(q => typeof q.lesson === "string"));
+  });
+
+  it("25 and 30 are real counts; 31 is treated as 'did not say'", () => {
+    assert.equal(quizWanted({ numQuestions: 25 }), 25);
+    assert.equal(quizWanted({ numQuestions: 30 }), 30);
+    assert.equal(quizWanted({ numQuestions: 31 }), null);
+  });
+
+  it("a 25-question quiz that came back with 20 owes 5; with 30 asked and 22 back, 8", () => {
+    const q = (n: number) => ({ questions: Array.from({ length: n }, (_, i) => mc(i + 1, "L1")) });
+    assert.equal(quizShortfall(q(20), { numQuestions: 25 }), 5);
+    assert.equal(quizShortfall(q(22), { numQuestions: 30 }), 8);
+    assert.equal(quizShortfall(q(30), { numQuestions: 30 }), 0);
+  });
+
+  it("a 30-question worksheet is held to its count", () => {
+    const sheet = (n: number) => ({ sections: [{ type: "short_answer", title: "s", questions: Array.from({ length: n }, (_, i) => ({ text: `q${i}`, points: 1 })) }], answerKey: [] });
+    assert.equal(worksheetShortfall(sheet(24), { numQuestions: 30 }), 6);
+    assert.equal(worksheetShortfall(sheet(30), { numQuestions: 30 }), 0);
+  });
+});
