@@ -27,18 +27,28 @@ async function wideQuiz(count: number, mode: Distribution = 'balanced', regenera
   return { wide, out };
 }
 
-/** Lessons of the semester that can write a quiz offline at all. */
-async function bankableIds(): Promise<Set<string>> {
-  const ok = new Set<string>();
-  for (const l of lessonsInScope(sem1)) {
-    try {
-      await aiService.generateQuiz({ ...base, topic: l.titleAr, lessonId: l.id, numQuestions: 3, questionTypes: ['multiple_choice'] } as AIRequest);
-      ok.add(l.id);
-    } catch (e) {
-      if ((e as { code?: string }).code !== 'no_question_bank') throw e;
-    }
-  }
-  return ok;
+/**
+ * Lessons of the semester that can write a quiz offline at all.
+ *
+ * Probed once, concurrently: each probe pays the mock service's artificial
+ * delay, `quizOnce` has no await of its own, and its per-key state is not
+ * shared across distinct lessonIds, so the probes can overlap safely.
+ */
+let bankable: Promise<Set<string>> | undefined;
+function bankableIds(): Promise<Set<string>> {
+  bankable ??= (async () => {
+    const probed = await Promise.all(lessonsInScope(sem1).map(async l => {
+      try {
+        await aiService.generateQuiz({ ...base, topic: l.titleAr, lessonId: l.id, numQuestions: 3, questionTypes: ['multiple_choice'] } as AIRequest);
+        return l.id;
+      } catch (e) {
+        if ((e as { code?: string }).code !== 'no_question_bank') throw e;
+        return null;
+      }
+    }));
+    return new Set(probed.filter((id): id is string => id !== null));
+  })();
+  return bankable;
 }
 
 describe('offline quiz — a wide scope', () => {
@@ -49,6 +59,8 @@ describe('offline quiz — a wide scope', () => {
     for (const q of out.questions) assert.ok(q.lessonId && inScope.has(q.lessonId), `q ${q.id}: ${q.lessonId}`);
   });
 
+  // Relies on balanced + no regenerate being deterministic, and on each unit's
+  // first-slot lesson not being spent for its question type at this count.
   it('balanced covers every unit that has a bank once count >= units', async () => {
     const ok = await bankableIds();
     const { wide, out } = await wideQuiz(12);
@@ -95,7 +107,9 @@ describe('offline quiz — a wide scope', () => {
 
 describe('offline quiz — a single lesson is unchanged', () => {
   it('carries no lessonId and needs no coverage', async () => {
-    const lesson = lessonsInScope(sem1)[0]!;
+    const id = [...(await bankableIds())][0];
+    assert.ok(id, 'probe: the semester should have a lesson with a bank');
+    const lesson = lessonsInScope(sem1).find(l => l.id === id)!;
     const out: QuizOutput = await aiService.generateQuiz({
       ...base, topic: lesson.titleAr, lessonId: lesson.id, numQuestions: 5, questionTypes: ['multiple_choice'],
     } as AIRequest);
