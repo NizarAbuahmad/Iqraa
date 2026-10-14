@@ -3927,3 +3927,17 @@ The committed source is authoritative where it differs from the task text above.
 - **Task 10 (`b21ab00`):** row handlers are inert while saving; new i18n key `classScanRowCleared`, next to `classScanRowSaveFailed`.
 - **Totals:** the expected totals became api-server 1695 and mobile 4272 passing (4282 total, 10 skipped), not 1691 / 4260.
 - **Manual smoke:** the browser smoke steps in Tasks 7 and 10 were skipped (they need a teacher login and a seeded database); the screens are typechecked but have never been rendered.
+
+### Final review wave
+
+A whole-branch review after Task 10 found one Critical and six Important issues, fixed in one wave:
+
+- **Matcher superset rule (`3e817c9`):** `confident` also requires that no other roster name holds every part read and more («أحمد» with «أحمد علي» on the roster is `confirm`, exact match first). The longer name read in full stays `confident`.
+- **Paper-only gate (`3e817c9`, `8e0c8a1`):** `classScanGate(evaluation, questions)` refuses an exam with any non-paper question (409 `not_paper_exam`); the route loads the questions before the gate and reuses them. The screen refuses to load such an exam (`scanNotPaper`), and `scanErrors` maps the code.
+- **Strict marks (`3e817c9`):** `scanPaper` reads a question's marks, and the printed total, only when the whole string is one number (optionally «½» / «و نصف»); «2+3», «3×2», «5 علامات», «5/10» are null with «could not read the marks». `parseArabicNumber` is unchanged.
+- **Student lock (`9686445`, `8e0c8a1`):** a row holding an `attemptId` is locked to its student (`isStudentLocked`; `assignStudent` is a no-op). **This supersedes Task 9's reset-on-reassign bullet above**, which let a half-failed save leave B's marks on A's paper and then skip A's own photo. The screen shows the name, `classScanRowLocked` and the «افتح ورقة الطالب» link instead of the picker.
+- **Discard (`9686445`, `8e0c8a1`):** new `discarded` state; `discardRow` / `canDiscard` for a row with no paper in `read`, `failed`, `not_run` or `save_failed`. A discarded row blocks nothing, is never saved, and is not counted («تجاهل هذه الصورة»).
+- **Labels (`9686445`, `8e0c8a1`):** `rosterLabels` tells identical names apart — the school reference when every sharer has a distinct one, otherwise «(1)», «(2)» in roster order — in the chips, the picker and the locked name.
+- **Picker re-entrancy (`8e0c8a1`):** `onPick` is guarded by a ref, keys come from a monotonic counter and the outcome callback addresses rows by the keys it made, and a throwing picker or runner ends in `scanFailed`. On the new-exam form `onScanPaper` sets `scanning` before the picker and always clears it.
+- **Commits:** `3e817c9` api-server, `9686445` mobile services, `8e0c8a1` mobile screen + strings, followed by the docs commit that adds this list.
+- **Totals:** api-server 1705 passing (0 skipped), mobile 4287 passing of 4297 (10 skipped), 0 failures; `pnpm run typecheck` clean.

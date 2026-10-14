@@ -1023,7 +1023,8 @@ total that disagrees with the one the paper prints is flagged.
 `POST /evaluations/:id/scan-class-paper` returns the marks, the name as written,
 and a match against the class roster **done on the server** (the roster never goes
 to the model). A match is `confident` only when the normalized name equals exactly
-one student's; anything else is `confirm` (three candidates, a tap) or `none`. A
+one student's and no other student's longer name contains it; anything else is
+`confirm` (three candidates, a tap) or `none`. A
 review table shows every row; saving goes through the existing start-attempt,
 mark and submit endpoints.
 
@@ -1069,9 +1070,10 @@ did not change) on the server; `scanErrors`, `paperScan`, `classScanRunner`,
 `classScanReview`, `classScanSave` on the client. `scanRoutes.test.ts` reads the
 two handlers' source (they write nothing, are rate-limited, and check live mode,
 budget and quota before the model), and `mountOrder.test.ts` asserts both are
-guarded in the built bundle. Measured 2026-10-14: api-server 1695 passing (after
-`pnpm build`, which also makes the 54 mount-order tests run), mobile 4272
-passing of 4282 (10 skipped), 0 failures in both; `pnpm run typecheck` clean.
+guarded in the built bundle. Measured 2026-10-14, after the final-review fix
+wave: api-server 1705 passing (after `pnpm build`, which also makes the 54
+mount-order tests run), mobile 4287 passing of 4297 (10 skipped), 0 failures in
+both; `pnpm run typecheck` clean.
 
 ### Hardening found in review
 
@@ -1083,7 +1085,8 @@ passing of 4282 (10 skipped), 0 failures in both; `pnpm run typecheck` clean.
   throws; the first callback error is rethrown after all outcomes are delivered.
 - **Save loop, reassignment.** Reassigning a row to another student now resets
   its paper state. Before, a retry could write B's marks into A's half-made paper
-  and show B as saved.
+  and show B as saved. *(Superseded by the student lock in the final review,
+  below.)*
 - **Save loop, loud failures.** A mark that was written and then cleared, or an
   invalid box, now fails the row (`cleared_after_write` / `invalid_mark`) instead
   of submitting silently. A row's own half-made paper is never skipped as «already
@@ -1094,23 +1097,65 @@ passing of 4282 (10 skipped), 0 failures in both; `pnpm run typecheck` clean.
   round after independent review. Read the unit tests of `classScanSave` and
   `studentMatch` before changing either.
 
+**Found in the final whole-branch review, and fixed:**
+
+- **Superset names are never `confident`.** With «أحمد» and «أحمد علي» on the
+  roster, a paper reading «أحمد» used to go to «أحمد» without a word, and «أحمد علي»
+  was not even offered. A roster name holding every part read *and more* now
+  forces a tap (`confirm`, the exact match first, the longer names after). The
+  longer name read in full stays `confident`.
+- **Class scanning is for paper exams only.** The route used to accept any
+  published exam, and a deep link to a generated MCQ exam let blank cells plus
+  submit machine-grade every unanswered question as 0. `classScanGate` now
+  refuses an exam with any question the app marks itself (409
+  `not_paper_exam`), and the screen refuses to load one («مسح أوراق الصف متاح
+  للامتحانات الورقية فقط.»).
+- **Paper marks must be one number.** A model answering «2+3» or «3×2» for a
+  question's marks used to become a ceiling of 2 (or 3) — the first number in the
+  string. Setup now reads a mark only when the whole string is one number (Latin,
+  Arabic-Indic or Eastern digits, one decimal separator, optionally «½» or «و
+  نصف»); anything else is null with «could not read the marks». The printed
+  total follows the same rule.
+- **A row that has started a paper is locked to its student.** Replaces the
+  reset-on-reassign above, which let a half-failed save leave B's marks on A's
+  paper and then skip A's own photo. The picker and chips are replaced by the
+  student's name, a note, and «افتح ورقة الطالب».
+- **A photo can be ignored.** A second photo of one paper (`duplicate_student`)
+  or a blank page (`no_student`) used to block the whole batch with no way out
+  but assigning it to another child. «تجاهل هذه الصورة» sets a row aside
+  (`discarded`) as long as it has not started a paper; it is never saved and not
+  counted.
+- **Identical names are told apart on screen.** Two «محمد خالد» read the same in
+  the chips and the picker; they now show the school reference when each has a
+  different one, otherwise «(1)», «(2)» in roster order (`rosterLabels`).
+- **The pick buttons are re-entrancy-safe.** A second tap while the picker is
+  open is refused, row keys never repeat, and a picker or runner that throws
+  ends in «تعذّرت قراءة الصورة» instead of an unhandled rejection — on the
+  class-scan screen and on the new-exam form's paper scan.
+
 ### Known limits
 
-- A row reassigned away from a student after a half-failed save leaves that
-  student's partial paper unsubmitted; it then reads as «has a previous paper» and
-  is skipped, never overwritten.
+- A row that started a paper for student A and then failed stays locked to A. If
+  it was really B's paper, A's record holds the marks written so far (A's result
+  is provisional, `needs_review`) until someone opens A's paper («افتح ورقة
+  الطالب») and corrects or reassigns it with the existing per-attempt tools. The
+  batch never moves or deletes a paper.
 - There is no «unmark»: once a mark has been written, clearing the box fails the
   row until a value is entered (`SaveDeps` cannot clear a mark).
 - An invalid box is only caught at save time, after `startAttempt`, if the UI
   blocker is bypassed (a defensive path); the UI blocks it before save.
-- The pick button can be double-tapped before the picker opens, which can create
-  two overlapping reads with colliding row keys. Picker and runner rejections are
-  not caught in `onPick` (deferred; a candidate for a follow-up).
 - After a save, the last saved student may not be added to the screen's «has a
   previous paper» set until reload (the server's `created: false` guard still
   prevents any overwrite).
 - The server's `scan-class-paper` 409 «no questions» carries no `code` (unreachable
   for a published exam).
+- Photos are only downscaled on web. On a phone each photo is sent at full size
+  (JPEG quality 0.6), so 40 base64 photos held in memory, or a four-page setup,
+  can exceed the payload ceiling (10,000,000 characters altogether / the 12 MB
+  body) or the phone's memory. The combined-size refusal reuses the single-photo
+  code and wording (`image_too_large` → «الصورة كبيرة جدًا»), which names one
+  photo when the problem is all of them. Untested on a device — the first thing a
+  real Android run should try.
 
 ## Row-level security is built and switched off, 2026-10-13
 
