@@ -53,6 +53,37 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **Quiz, worksheet, homework and game take a unit, semester or whole book
+  (2026-10-14; spec
+  `docs/superpowers/specs/2026-10-14-wide-scope-assessment-tools-design.md`,
+  builds on piece 1).** The teacher picks the scope and a «توزيع الأسئلة»
+  (balanced by unit, or random); on quiz, worksheet and homework the count
+  picker adds 25 and 30 on a wide scope only (the game keeps 5/8/10/12 and shows
+  no coverage line). One `planCoverage` decides which lesson each question is
+  about; the offline generators draw each question from that lesson's bank and
+  the live prompts get the same plan as per-lesson counts, with a `lesson` tag
+  the server passes through and never enforces. Offline worksheet and homework
+  now clamp at 30 (were 20); a lesson with no offline bank (geometry, for one)
+  is dropped from the plan and the coverage line says how many were not
+  covered. Tested: the plan, the drawer, the request builder, the offline quiz /
+  worksheet / homework on a real G10 maths semester, the prompt clause, the
+  cache key (`distribution`), and the 25/30 count enforcement.
+  **Not verified / known limits:** no browser was available, so the picker, the
+  distribution control, the count options, the coverage line, Save, reopen and
+  export are checked by reading and typecheck only; whether the live model
+  follows the plan (the screen says «حسب ما أعلنه النموذج» and never claims it
+  did); how often a 30-question paper needs the top-up call (output ceiling
+  already clamped at 24 000 tokens). A reopened wide material keeps its scope,
+  but `TopicSelector`'s dropdowns show placeholders and there is no coverage
+  line. On a semester-1 balanced maths worksheet the half-solved item is
+  dropped, because the second slot's lesson has no checked working; a lesson
+  whose only question is the worked example shows as uncovered. The
+  prior-knowledge review is hidden on a wide worksheet, and so are Related
+  tools there — **the quiz screen still passes the scope label to Related tools
+  (only the worksheet sets `hideRelated`)**. Evaluations (exams) still take a
+  single lesson, and so do lesson plan, slides, activity, lesson-flow,
+  infographic and the classroom builder (piece 3). Papers above 30 questions
+  are not built.
 - **Wide-scope selection, foundation only (2026-10-13; spec
   `docs/superpowers/specs/2026-10-13-wide-scope-selection-design.md`).**
   `services/scopeSelection.ts` (what a unit / semester / book scope covers),
@@ -60,14 +91,13 @@ an announcement by default» below.
   server-side page pooling and `scopeKey` in the artifact cache key all exist
   and are tested. `TopicSelector`'s «الفصل كاملًا» entry is verified by code
   read only — there is no browser in the build container, so it was never run.
-  **No generator screen opts in yet**, so nothing a teacher sees has changed:
-  «الوحدة كاملةً» sets the unit title as the topic, which
-  `resolveGeneratorGrounding` grounds to one lesson or none (not to the unit),
-  and «الكتاب كاملًا» stays ungrounded — its topic text matches nothing.
-  **Restoring a saved / reopened scope (spec §6, goal 5) is not done:**
-  `parseScope` exists, but wiring saved state to it is piece 2's job. Pieces 2
-  (quiz, worksheet, homework, game) and 3 (the rest) also have to adopt
-  `onScopeChange` + `scopeRequestFields` before anything above is reachable.
+  **Since 2026-10-14 quiz, worksheet, homework and game opt in** (next bullet);
+  every other screen still does not, so there «الوحدة كاملةً» sets the unit
+  title as the topic, which `resolveGeneratorGrounding` grounds to one lesson or
+  none (not to the unit), and «الكتاب كاملًا» stays ungrounded — its topic text
+  matches nothing. **Piece 3 (the rest) still has to adopt `onScopeChange` +
+  `scopeRequestFields`.** Restoring a saved / reopened scope (spec §6, goal 5)
+  is wired for those four via `parseScope`, with the limits in the next bullet.
 - **API credentials are Secret Manager references** (2026-10-08, live since
   `iqraa-api-00283-twr`). The ten credentials (`SESSION_SECRET`,
   `DATABASE_URL`, `OPENAI_API_KEY`, both R2 keys, Unsplash, YouTube,
