@@ -212,7 +212,7 @@ export default function WorkspaceViewScreen() {
     if (kind === 'lesson') return buildLessonPlanHTML(content as LessonPlanOutput, item.title, meta, isAr, figures);
     if (kind === 'activity') return buildActivityHTML(content as ActivityOutput, item.title, meta, isAr, figures);
     if (kind === 'worksheet') return worksheetExports(content as WorksheetOutput, item.title, meta, isAr, docCopy, figures, printStyle).html;
-    if (kind === 'flow') return buildLessonFlowHTML(content as unknown as LessonFlowOutput, isAr, figures);
+    if (kind === 'flow') return buildLessonFlowHTML(content as unknown as LessonFlowOutput, isAr, figures, { revision: wideMaterial });
     if (kind === 'slides' || kind === 'prompt-slides') return buildDeckHTML(content as ClassroomActivity, isAr);
     return quizExports(content as QuizOutput, item.title, meta, isAr, docCopy, figures, printStyle).html;
   };
@@ -333,7 +333,9 @@ export default function WorkspaceViewScreen() {
             </Text>
           </Pressable>
         )}
-        {kind === 'flow' && content && (
+        {/* Not for a revision flow: this hands the label to the classroom builder as a
+            bare topic, which would ground it to one lesson (possibly another grade's). */}
+        {kind === 'flow' && content && !wideMaterial && (
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -372,7 +374,7 @@ export default function WorkspaceViewScreen() {
         ) : kind === 'worksheet' ? (
           <WorksheetView ws={content as WorksheetOutput} lessonId={sendLessonId} colors={colors} isRTL={docRTL} t={docT} accent={accent} />
         ) : kind === 'flow' ? (
-          <FlowView flow={content as unknown as LessonFlowOutput} colors={colors} isRTL={docRTL} lang={docLang} accent={accent} />
+          <FlowView flow={content as unknown as LessonFlowOutput} colors={colors} isRTL={docRTL} lang={docLang} accent={accent} revision={wideMaterial} />
         ) : kind === 'slides' || kind === 'prompt-slides' ? (
           <SlidesDeckView deck={content as ClassroomActivity} colors={colors} isRTL={docRTL} isAr={isAr} accent={accent} />
         ) : (
@@ -832,8 +834,10 @@ function SlidesDeckView({ deck, colors, isRTL, isAr, accent }: {
   );
 }
 
-function FlowView({ flow, colors, isRTL, lang, accent }: {
+function FlowView({ flow, colors, isRTL, lang, accent, revision }: {
   flow: LessonFlowOutput; colors: any; isRTL: boolean; lang: string; accent: string;
+  /** A unit / semester / book flow: its last section is the session's, not a lesson's. */
+  revision: boolean;
 }) {
   const sections: Array<{
     label: string; icon: keyof typeof Ionicons.glyphMap; color: string;
@@ -919,7 +923,7 @@ function FlowView({ flow, colors, isRTL, lang, accent }: {
       ),
     },
     {
-      label: lang === 'ar' ? 'غلق الدرس' : 'Exit Ticket',
+      label: lang === 'ar' ? (revision ? 'غلق الحصة' : 'غلق الدرس') : 'Exit Ticket',
       icon: 'ticket-outline', color: palette.warning,
       render: () => (
         <View style={{ gap: 6 }}>

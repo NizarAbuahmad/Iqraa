@@ -29,6 +29,9 @@ export function activityRevisionRewords(phrase: string, lang: 'ar' | 'en'): Rewo
         [`ما أهم ما تعلّمته عن ${p} في الحصة السابقة؟`, `ما أهم ما تعلّمته عن ${p} في الحصص السابقة؟`],
         [`قبل الدخول في ${p}`, `قبل مراجعة ${p}`],
         [`واليوم سنستخدمه لـ ${p}`, `واليوم سنستخدمه في مراجعة ${p}`],
+        // The warm-up's third step and its assessment name «today's lesson» / «the new lesson».
+        [`اربط بدرس اليوم`, `اربط بحصة اليوم`],
+        [`ستبدأ الدرس الجديد`, `ستبدأ جولات المراجعة`],
       ]
     : [
         [`from the “${p}” lesson`, `from ${p}`],
