@@ -24,3 +24,14 @@ export function lessonFlowFailure(
     retryable: !(code === 'no_question_bank' && !liveFailureOf(err)),
   };
 }
+
+/**
+ * The line under a failed step's name. «Retry» is only an instruction while the
+ * banner below really offers one: a failure that cannot change on a second try
+ * (`retryable` false) must not send the teacher to a button that is not there.
+ */
+export function failedStepHint(lang: string, retryable: boolean): string {
+  const ar = lang === 'ar';
+  if (retryable) return ar ? 'تعذّر إكمال الخطوة — أعد المحاولة' : 'Failed — tap Retry below';
+  return ar ? 'تعذّر إكمال هذه الخطوة' : 'This step could not be completed';
+}

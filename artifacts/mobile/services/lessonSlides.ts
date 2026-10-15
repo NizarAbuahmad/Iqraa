@@ -29,6 +29,7 @@ import { chartForLesson, visualForSlide } from './deckVisuals.ts';
 import { type BookFigure, figuresForLesson } from './bookFigures.ts';
 import { exerciseReference, exercisesForLesson } from './bookExercises.ts';
 import { inlineSteps, MAX_STAT_VALUE_CHARS } from './slideLayout.ts';
+import { englishOnly } from './englishText.ts';
 
 /**
  * Split a generated warm-up into what the class sees and what only the
@@ -328,6 +329,11 @@ function bullets(items: readonly string[] | undefined, max = 6): string[] {
     .map(s => (s ?? '').trim())
     .filter(Boolean)
     .slice(0, max);
+}
+
+/** «a», «a and b», «a, b and c». */
+function joinEn(items: readonly string[]): string {
+  return items.length <= 1 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
 }
 
 function nonEmpty(s: string | undefined | null): string {
@@ -1097,9 +1103,6 @@ export function splitExample(example: string): [problem: string, answer: string]
 
 // ─── Revision deck — a unit, a semester or the whole book ─────────────────
 
-/** Arabic letters and marks — what an English deck must not print from the curriculum data. */
-const ARABIC_SCRIPT = /[\u0600-\u06FF]/;
-
 /** What a unit / semester / whole-book deck is built from — see `buildRevisionDeck`. */
 export interface RevisionDeckOptions {
   /** The units in scope, in book order — `ScopeRequest.units` (`revisionUnits`). */
@@ -1140,14 +1143,18 @@ export function buildRevisionDeck(isAr: boolean, opts: RevisionDeckOptions): Cla
   const { units, plan = null } = opts;
   const includePractice = opts.includePractice !== false;
   const L = (ar: string, en: string) => (isAr ? ar : en);
-  // An English deck takes no Arabic-script string from the curriculum data or
-  // from an offline plan built on it: the official outcomes are Arabic only, and
-  // some English concept lists, lesson titles and terms are Arabic glosses
+  // An English deck takes no Arabic LETTER from the curriculum data or from an
+  // offline plan built on it: the official outcomes are Arabic only, and some
+  // English concept lists, lesson titles and terms are Arabic glosses
   // (measured: 629 of 1413 English scopes carried one; the offline plan's goals
-  // are the same outcomes). What is left is what the data can say in English.
-  // It filters only what this builder takes from them — a question a generator
-  // wrote is placed as it came, never dropped or rewritten here.
-  const keep = (s: string) => isAr || !ARABIC_SCRIPT.test(s);
+  // are the same outcomes). What is left is what the data can say in English —
+  // the same rule the English revision plan applies (`englishOnly`): a Quranic
+  // mark in a Latin title is content, a short letter gloss («The Letter Baa
+  // (ب)») is the lesson's name, a longer bracketed gloss is cut and the English
+  // kept. It filters only what this builder takes from the data — a question a
+  // generator wrote is placed as it came, never dropped or rewritten here.
+  const fit = (s: string): string | null => (isAr ? s : englishOnly(s));
+  const fitAll = (list: readonly string[]): string[] => list.map(fit).filter((x): x is string => x !== null);
 
   const phrase = nonEmpty(opts.phrase);
   const title = phrase ? L(`مراجعة ${phrase}`, `Revision: ${phrase}`) : L('حصة مراجعة', 'Revision session');
@@ -1161,6 +1168,9 @@ export function buildRevisionDeck(isAr: boolean, opts: RevisionDeckOptions): Cla
     slides.push({ ...slide, slideNumber: slides.length + 1 } as ActivitySlide);
   };
   const { mid: midChecks, exit: exitChecks } = splitChecks(opts.checks);
+  // The generated parts that actually became slides, in slide order — the
+  // teacher's preparation note names these and no others.
+  const generated: Array<{ ar: string; en: string }> = [];
 
   // The warm-up projects only a question the plan actually asks — the same rule
   // as the lesson deck's §3. When it does, its slide carries the introduction.
@@ -1192,8 +1202,9 @@ export function buildRevisionDeck(isAr: boolean, opts: RevisionDeckOptions): Cla
   }
 
   // ── 3. Goals ────────────────────────────────────────────────────────────
-  const objectives = bullets(plan?.objectives).filter(keep);
+  const objectives = fitAll(bullets(plan?.objectives));
   if (objectives.length > 0) {
+    generated.push({ ar: 'الأهداف', en: 'goals' });
     push({
       type: 'intro',
       title: L('🎯 أهداف المراجعة', '🎯 Revision Goals'),
@@ -1204,6 +1215,7 @@ export function buildRevisionDeck(isAr: boolean, opts: RevisionDeckOptions): Cla
 
   // ── 4. Warm-up ──────────────────────────────────────────────────────────
   if (warm && hasWarmup) {
+    generated.push({ ar: 'التمهيد', en: 'warm-up' });
     push({
       type: 'intro',
       title: L('✨ تمهيد', '✨ Warm-up'),
@@ -1232,12 +1244,12 @@ export function buildRevisionDeck(isAr: boolean, opts: RevisionDeckOptions): Cla
         : L('جولة المراجعة', 'Revision round'),
       durationSeconds: 0,
     });
-    // A unit with no English ideas left shows its lesson titles instead (see `keep`).
-    const lessonTitles = unit.lessons.map(l => nonEmpty(l.title)).filter(Boolean).filter(keep);
-    const ideas = [...new Set([...unit.outcomes, ...unit.concepts].map(s => nonEmpty(s)).filter(Boolean).filter(keep))].slice(0, 6);
+    // A unit with no English ideas left shows its lesson titles instead (see `fit`).
+    const lessonTitles = fitAll(unit.lessons.map(l => nonEmpty(l.title)).filter(Boolean));
+    const ideas = [...new Set(fitAll([...unit.outcomes, ...unit.concepts].map(s => nonEmpty(s)).filter(Boolean)))].slice(0, 6);
     const shown = ideas.length > 0 ? ideas : lessonTitles.slice(0, 6);
     if (shown.length === 0) return;
-    const terms = bullets(unit.terms.filter(keep), 3);
+    const terms = bullets(fitAll(unit.terms), 3);
     push({
       type: 'intro',
       title: `💡 ${unitTitle}`,
@@ -1256,6 +1268,7 @@ export function buildRevisionDeck(isAr: boolean, opts: RevisionDeckOptions): Cla
   });
 
   // ── 6. Checks — after the rounds: a generated check is about the scope, not one round ──
+  if (midChecks.length + exitChecks.length > 0) generated.push({ ar: 'الأسئلة', en: 'questions' });
   midChecks.forEach((check, i) => {
     push(asCheckSlide(check, L(`✋ تحقّق سريع ${i + 1}`, `Quick Check ${i + 1}`)));
   });
@@ -1263,6 +1276,8 @@ export function buildRevisionDeck(isAr: boolean, opts: RevisionDeckOptions): Cla
   // ── 7. Practice — teacher-led, as on the lesson deck (§8 there) ─────────
   if (includePractice) {
     const guided = nonEmpty(plan?.guidedPractice);
+    const independent = nonEmpty(plan?.independentPractice);
+    if (guided || independent) generated.push({ ar: 'التدريب', en: 'practice' });
     if (guided) {
       push({
         type: 'intro',
@@ -1277,7 +1292,6 @@ export function buildRevisionDeck(isAr: boolean, opts: RevisionDeckOptions): Cla
         },
       });
     }
-    const independent = nonEmpty(plan?.independentPractice);
     if (independent) {
       push({
         type: 'intro',
@@ -1319,6 +1333,7 @@ export function buildRevisionDeck(isAr: boolean, opts: RevisionDeckOptions): Cla
   // ── 10. Homework — the plan's only: no single lesson, so no exercise-book line ──
   const homework = includePractice ? nonEmpty(plan?.homework) : '';
   if (homework) {
+    generated.push({ ar: 'الواجب', en: 'homework' });
     push({ type: 'intro', title: L('🏠 الواجب', '🏠 Homework'), content: homework, durationSeconds: 0 });
   }
 
@@ -1334,9 +1349,11 @@ export function buildRevisionDeck(isAr: boolean, opts: RevisionDeckOptions): Cla
     learningObjective: objectives[0] ?? title,
     materials: bullets(plan?.materials).length > 0 ? bullets(plan?.materials) : [L('شاشة عرض', 'Projector')],
     // «الوحدات» on a one-unit deck would be a sentence about units that are not there.
+    // The generated parts named are the ones that are on the slides: a deck whose
+    // plan failed has no warm-up or practice to promise.
     teacherPreparation: L(
-      `أفكار ${units.length === 1 ? 'الوحدة' : 'الوحدات'} في هذه الشرائح مأخوذة من بيانات المنهاج، وما سواها (التمهيد والتدريب والأسئلة) مولّد — راجعها قبل الحصة وعدّل ما يلزم.`,
-      'The unit ideas on these slides come from the curriculum data; everything else (warm-up, practice, questions) is generated — review and adjust before class.',
+      `أفكار ${units.length === 1 ? 'الوحدة' : 'الوحدات'} في هذه الشرائح مأخوذة من بيانات المنهاج${generated.length > 0 ? `، وما سواها (${generated.map(g => g.ar).join(' و')}) مولّد` : ''} — راجعها قبل الحصة وعدّل ما يلزم.`,
+      `The unit ideas on these slides come from the curriculum data${generated.length > 0 ? `; everything else (${joinEn(generated.map(g => g.en))}) is generated` : ''} — review and adjust before class.`,
     ),
     teacherNotes: bullets(plan?.differentiation ? [plan.differentiation] : []),
     answerKey: rebuildAnswerKey(slides, isAr),
