@@ -1,5 +1,5 @@
 import { plainActivity } from './activityText.ts';
-import { AIService } from './AIService.ts';
+import { AIService, isRevisionRequest } from './AIService.ts';
 import type {
   ActivityOutput, ActivityStep, AIRequest,
   ClassroomActivity, ClassroomActivityRequest,
@@ -29,6 +29,7 @@ import {
 import { isChemContext, takeConcreteChem, takeConcreteChemBatch, takeSolvedChem, type SolvedItem } from './chemPractice.ts';
 import { buildActivityBlueprint } from './activityBlueprints.ts';
 import { buildLessonStyleBlueprint, type LessonDocContext } from './lessonPlanBlueprints.ts';
+import { revisionPlanFromRequest } from './lessonPlanRevision.ts';
 import { arPrefixed, lessonKindFor, type LessonKind } from './lessonPlanKinds.ts';
 import { arMinutes } from './lessonPlanTypes.ts';
 import { classifyVerifiableTopic } from './verifyMathGuards.ts';
@@ -1203,6 +1204,12 @@ export class MockAIService extends AIService {
   }
 
   private async lessonPlanOnce(req: AIRequest): Promise<LessonPlanOutput> {
+    // A unit, a semester or the whole book: one revision session over the units
+    // in scope, built from the request's lesson ids. It must come before
+    // `groundedKb`, which would ground the scope's LABEL («الفصل الأول كاملًا», a
+    // unit title) to one lesson — another grade's, for a unit title. No prior
+    // review on this path: it belongs to a single lesson's unit.
+    if (isRevisionRequest(req)) return revisionPlanFromRequest(req);
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
     const docs = docsFromReq(req);
     const rawTopic = req.topic;
