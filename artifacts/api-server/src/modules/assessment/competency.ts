@@ -101,30 +101,71 @@ export const MARKS_BY_COMPETENCY: Record<CompetencyKey, number> = {
  * score for that competency; it produces no score at all, and the teacher gets
  * a blank where they expected a bar. Being somewhat over-weighted in critical
  * thinking on a short basic paper is the better failure.
+ *
+ * **`total` is the whole paper; `supplied` is what is already on it.** Pass the
+ * questions that will be added from elsewhere (the textbook's own items) and
+ * the return value is how many NEW ones to write per competency, summing to
+ * `max(0, total − Σsupplied)`. Supplied questions count towards the two-per-
+ * competency floor and towards the shares, so the paper as a whole — not just
+ * the new part — is steered to the targets. Absent or all zero, the result is
+ * exactly what it was before this argument existed (pinned in the tests).
+ *
+ * **Small papers.** When the budget cannot seed every competency, nothing is
+ * seeded in general, but any competency the book supplies exactly one question
+ * of is first brought up to two (cost one each), so the book's lone question is
+ * paired rather than left as a single the validator warns about.
  */
 export function allocateQuestions(
   total: number,
   difficulty: Difficulty,
+  supplied: Partial<Record<CompetencyKey, number>> = {},
 ): Record<CompetencyKey, number> {
   const targets = COMPETENCY_TARGETS[difficulty];
   const counts = Object.fromEntries(COMPETENCY_KEYS.map(k => [k, 0])) as Record<
     CompetencyKey,
     number
   >;
-  if (total <= 0) return counts;
+  const have = Object.fromEntries(
+    COMPETENCY_KEYS.map(k => [k, Math.max(0, supplied[k] ?? 0)]),
+  ) as Record<CompetencyKey, number>;
 
-  let remaining = total;
+  let remaining = Math.max(0, total - COMPETENCY_KEYS.reduce((s, k) => s + have[k], 0));
+  if (remaining <= 0) return counts;
 
+  // Seed each competency up to two, supplied questions counting towards the
+  // two. All-or-nothing, as before: a partial seeding would starve some
+  // competency while pretending to protect the others.
   const MIN_PER_COMPETENCY = 2;
-  if (remaining >= MIN_PER_COMPETENCY * COMPETENCY_KEYS.length) {
+  let pairFirst = false;
+  const seedsNeeded = COMPETENCY_KEYS.reduce(
+    (s, k) => s + Math.max(0, MIN_PER_COMPETENCY - have[k]),
+    0,
+  );
+  if (remaining >= seedsNeeded) {
     for (const key of COMPETENCY_KEYS) {
-      counts[key] = MIN_PER_COMPETENCY;
-      remaining -= MIN_PER_COMPETENCY;
+      const seed = Math.max(0, MIN_PER_COMPETENCY - have[key]);
+      counts[key] = seed;
+      remaining -= seed;
+    }
+  } else if (COMPETENCY_KEYS.some(k => have[k] > 0)) {
+    pairFirst = true;
+    // The budget cannot cover every seed, so none is made — but a competency the
+    // book already supplies exactly ONE question of is a single pair away from
+    // being scored, and the greedy loop below would scatter singletons instead.
+    // Pair those up first (one question each, in competency order, as far as the
+    // budget goes). Only with something supplied: with nothing, this is the
+    // pinned behaviour of the unaware allocation.
+    for (const key of COMPETENCY_KEYS) {
+      if (remaining > 0 && have[key] === 1) {
+        counts[key] += 1;
+        remaining -= 1;
+      }
     }
   }
 
+  // Shares are of the whole paper: what is already on it plus what is added.
   const marksOf = (c: Record<CompetencyKey, number>) =>
-    COMPETENCY_KEYS.reduce((sum, k) => sum + c[k] * MARKS_BY_COMPETENCY[k], 0);
+    COMPETENCY_KEYS.reduce((sum, k) => sum + (c[k] + have[k]) * MARKS_BY_COMPETENCY[k], 0);
 
   while (remaining > 0) {
     const totalMarks = marksOf(counts);
@@ -132,7 +173,8 @@ export function allocateQuestions(
     let bestDeficit = -Infinity;
 
     for (const key of COMPETENCY_KEYS) {
-      const share = totalMarks > 0 ? (counts[key] * MARKS_BY_COMPETENCY[key]) / totalMarks : 0;
+      const share =
+        totalMarks > 0 ? ((counts[key] + have[key]) * MARKS_BY_COMPETENCY[key]) / totalMarks : 0;
       const deficit = targets[key] - share;
       if (deficit > bestDeficit) {
         bestDeficit = deficit;
@@ -140,9 +182,75 @@ export function allocateQuestions(
       }
     }
 
+    if (pairFirst && counts[best] + have[best] === 0) {
+      // Starting a competency from nothing. Two questions at once, or none: a
+      // lone one is a single the validator warns about, which the unaware split
+      // would not have made. With one question left, it goes to the competency
+      // furthest below target among those the paper already has.
+      if (remaining >= 2) {
+        counts[best] += 2;
+        remaining -= 2;
+        continue;
+      }
+      let present: CompetencyKey | undefined;
+      let presentDeficit = -Infinity;
+      for (const key of COMPETENCY_KEYS) {
+        if (counts[key] + have[key] === 0) continue;
+        const share = totalMarks > 0 ? ((counts[key] + have[key]) * MARKS_BY_COMPETENCY[key]) / totalMarks : 0;
+        const deficit = targets[key] - share;
+        if (deficit > presentDeficit) {
+          presentDeficit = deficit;
+          present = key;
+        }
+      }
+      best = present ?? best;
+    }
+
     counts[best] += 1;
     remaining -= 1;
   }
 
   return counts;
+}
+
+/**
+ * The per-competency quota for a top-up batch.
+ *
+ * A reply that is short is topped up with a second request for only the missing
+ * questions, and that request carries its own per-competency quota (which must
+ * sum to the number asked for). Start from the original quota, take off what
+ * the model already wrote in each competency (never below zero), then make the
+ * total exactly `missing`: over, reduce the largest entries one at a time; under,
+ * add to the entry with the largest remaining quota. Ties go to the earlier
+ * competency in `COMPETENCY_KEYS`, so the result is the same every time.
+ *
+ * With the original quota summing to what was first asked for, the remainder
+ * can only be at or over `missing`; "under" is a backstop, not a normal path.
+ */
+export function remainingQuota(
+  newByCompetency: Record<CompetencyKey, number>,
+  written: ReadonlyArray<{ competencyKey: CompetencyKey }>,
+  missing: number,
+): Record<CompetencyKey, number> {
+  const out = Object.fromEntries(
+    COMPETENCY_KEYS.map(k => [k, Math.max(0, newByCompetency[k] ?? 0)]),
+  ) as Record<CompetencyKey, number>;
+  for (const q of written) {
+    if (out[q.competencyKey] > 0) out[q.competencyKey] -= 1;
+  }
+
+  const want = Math.max(0, Math.floor(missing));
+  let have = COMPETENCY_KEYS.reduce((s, k) => s + out[k], 0);
+  const largest = (): CompetencyKey =>
+    COMPETENCY_KEYS.reduce((best, k) => (out[k] > out[best] ? k : best), COMPETENCY_KEYS[0]!);
+
+  while (have > want) {
+    out[largest()] -= 1;
+    have -= 1;
+  }
+  while (have < want) {
+    out[largest()] += 1;
+    have += 1;
+  }
+  return out;
 }

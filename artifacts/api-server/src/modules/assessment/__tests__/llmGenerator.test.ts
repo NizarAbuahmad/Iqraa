@@ -13,6 +13,7 @@ import {
   GENERATION_PROMPT_VERSION,
   TYPE_CONTRACTS,
   buildGenerationPrompt,
+  generationPromptVersion,
   paperIsMathematics,
   parseGeneratedQuestions,
   questionStem,
@@ -87,6 +88,8 @@ describe("buildGenerationPrompt", () => {
 
   it("asks for every requested type, grouped as a ministry paper", () => {
     const { system } = buildGenerationPrompt(REQ);
+    // The book share's block says "rule 2": keep that number and rule in step.
+    assert.match(system, /^2\. You only produce the question types listed/m);
     assert.match(system, /Spread the count across every listed type/);
     assert.match(system, /each type in one consecutive block/);
     assert.match(system, /half of any true\/false statements are false/);
@@ -150,6 +153,156 @@ describe("buildGenerationPrompt", () => {
     const retry = buildGenerationPrompt({ ...EN_REQ, avoid: ["some stem here"], insistent: true }).user;
     assert.equal(first.includes("rejected"), false);
     assert.ok(retry.includes("rejected"));
+  });
+});
+
+/** What the book supplies on a 10-question paper: 4 of the 10 are the book's. */
+const SUPPLIED = {
+  count: 4,
+  byType: { short_answer: 3, multiple_choice: 1 },
+  byCompetency: { application: 3, understanding: 1 },
+  marks: 11,
+  newByCompetency: { knowledge: 2, understanding: 1, application: 1, critical_thinking: 2 },
+  paperTotal: 10,
+} as const;
+const BOOK_REQ: LlmGenerationRequest = { ...REQ, count: 6, language: "en", supplied: SUPPLIED };
+const MARKER = "already written from the official textbook";
+
+describe("buildGenerationPrompt with a book share", () => {
+  it("states the block exactly once, in the user message and not the system one", () => {
+    const { system, user } = buildGenerationPrompt(BOOK_REQ);
+    assert.equal(user.split(MARKER).length - 1, 1);
+    assert.equal(system.includes(MARKER), false);
+  });
+
+  it("sits after 'Write N questions.' and before the objectives", () => {
+    const { user } = buildGenerationPrompt(BOOK_REQ);
+    const write = user.indexOf("Write 6 questions.");
+    const block = user.indexOf(MARKER);
+    const objectives = user.indexOf("Objectives (use these ids verbatim):");
+    assert.equal(write, 0);
+    assert.ok(write < block && block < objectives);
+  });
+
+  it("gives the paper total, the book count (as 'about'), types, competencies and marks", () => {
+    const { user } = buildGenerationPrompt(BOOK_REQ);
+    assert.match(user, /10 questions in all/);
+    assert.match(user, /About 4 of them are already written/);
+    assert.match(user, /3 short_answer/);
+    assert.match(user, /1 multiple_choice/);
+    assert.match(user, /application 3 \(9 marks\)/);
+    assert.match(user, /understanding 1 \(2 marks\)/);
+    assert.match(
+      user,
+      /You will not see them and must not try to reproduce them; write only the 6 other questions\./,
+    );
+    assert.equal(user.includes("Do not write those"), false);
+    // The per-competency marks are the only marks stated: no trailing total.
+    assert.match(user, /Those are: .*application 3 \(9 marks\)\.\n/);
+    assert.equal(/about \d+ marks/.test(user), false);
+    assert.match(user, /count them when you spread the questions across the listed types/i);
+  });
+
+  it("gives the per-competency counts to write, which add up to the request", () => {
+    const { user } = buildGenerationPrompt(BOOK_REQ);
+    assert.match(
+      user,
+      /write about: knowledge 2, understanding 1, application 1, critical_thinking 2/,
+    );
+    const n = Object.values(SUPPLIED.newByCompetency).reduce((a, b) => a + b, 0);
+    assert.equal(n, BOOK_REQ.count);
+  });
+
+  it("is added to the same prompt whatever else is present, and changes nothing else", () => {
+    const without = buildGenerationPrompt({ ...BOOK_REQ, supplied: undefined }).user;
+    const withBlock = buildGenerationPrompt({ ...BOOK_REQ, bookExcerpts: "EXCERPT" }).user;
+    const withoutExcerpt = buildGenerationPrompt(BOOK_REQ).user;
+    assert.ok(withoutExcerpt.length > without.length);
+    // Remove the block and the remainder is exactly today's prompt.
+    const start = withoutExcerpt.indexOf("This paper has");
+    const end = withoutExcerpt.indexOf("Objectives (use these ids verbatim):");
+    assert.equal(withoutExcerpt.slice(0, start) + withoutExcerpt.slice(end), without);
+    assert.ok(withBlock.includes("EXCERPT"));
+  });
+
+  it("refuses a share whose newByCompetency does not sum to the request's count", () => {
+    // A programming error, thrown before anything is sent to the model. Nothing
+    // is asserted about paperTotal: it is only text in the block.
+    const bad = { ...SUPPLIED, newByCompetency: { ...SUPPLIED.newByCompetency, knowledge: 3 } };
+    assert.throws(
+      () => buildGenerationPrompt({ ...BOOK_REQ, supplied: bad }),
+      /supplied\.newByCompetency must sum to count/,
+    );
+    const short = { ...SUPPLIED, newByCompetency: { ...SUPPLIED.newByCompetency, knowledge: 1 } };
+    assert.throws(
+      () => buildGenerationPrompt({ ...BOOK_REQ, supplied: short }),
+      /supplied\.newByCompetency must sum to count/,
+    );
+    // Whatever paperTotal says, a consistent share builds.
+    assert.doesNotThrow(() => buildGenerationPrompt({ ...BOOK_REQ, supplied: { ...SUPPLIED, paperTotal: 99 } }));
+    // A share of nothing is not a share: no block, so no sum to check.
+    assert.doesNotThrow(() =>
+      buildGenerationPrompt({
+        ...BOOK_REQ,
+        supplied: { ...SUPPLIED, count: 0, newByCompetency: { knowledge: 0, understanding: 0, application: 0, critical_thinking: 0 } },
+      }),
+    );
+  });
+
+  it("a top-up says how many the model already wrote, and that the quota is what remains of its share", () => {
+    // 10-question paper, 4 from the book, 6 asked of the model, 4 written: 2 to go.
+    const topUp = {
+      ...SUPPLIED,
+      newByCompetency: { knowledge: 1, understanding: 0, application: 0, critical_thinking: 1 },
+      alreadyWritten: 4,
+    };
+    const { user } = buildGenerationPrompt({ ...BOOK_REQ, count: 2, supplied: topUp });
+    assert.match(user, /write only the 2 other questions/);
+    assert.match(user, /You already wrote 4 questions in an earlier reply \(their stems are in the avoid list\)/);
+    assert.match(user, /the quota below is what remains of your share/);
+    // Said once, after the "other questions" line and before the quota it explains.
+    assert.equal(user.split("You already wrote").length - 1, 1);
+    assert.ok(user.indexOf("write only the 2 other") < user.indexOf("You already wrote"));
+    assert.ok(user.indexOf("You already wrote") < user.indexOf("write about:"));
+    assert.match(buildGenerationPrompt({ ...BOOK_REQ, count: 2, supplied: { ...topUp, alreadyWritten: 1 } }).user, /You already wrote 1 question in an earlier reply/);
+  });
+
+  it("says nothing about earlier replies on a first call, or when alreadyWritten is 0 or absent", () => {
+    const first = buildGenerationPrompt(BOOK_REQ).user;
+    assert.equal(first.includes("already wrote"), false);
+    for (const alreadyWritten of [0, undefined]) {
+      assert.equal(buildGenerationPrompt({ ...BOOK_REQ, supplied: { ...SUPPLIED, alreadyWritten } }).user, first);
+    }
+  });
+
+  it("is left out when the book supplies nothing", () => {
+    const base = buildGenerationPrompt({ ...REQ, count: 6, language: "en" });
+    const zero = buildGenerationPrompt({ ...BOOK_REQ, supplied: { ...SUPPLIED, count: 0 } });
+    assert.deepEqual(zero, base);
+  });
+});
+
+describe("generationPromptVersion", () => {
+  it("is the base version without a book share, and marks one with it", () => {
+    assert.equal(generationPromptVersion(REQ), GENERATION_PROMPT_VERSION);
+    assert.equal(generationPromptVersion(BOOK_REQ), `${GENERATION_PROMPT_VERSION}+book`);
+  });
+
+  it("needs only the supplied field, so the route can ask before it has a whole request", () => {
+    assert.equal(generationPromptVersion({}), GENERATION_PROMPT_VERSION);
+    assert.equal(generationPromptVersion({ supplied: undefined }), GENERATION_PROMPT_VERSION);
+    assert.equal(generationPromptVersion({ supplied: SUPPLIED }), `${GENERATION_PROMPT_VERSION}+book`);
+  });
+
+  it("follows the prompt text: a zero-count share does not change the prompt, so not the version", () => {
+    assert.equal(generationPromptVersion({ ...BOOK_REQ, supplied: { ...SUPPLIED, count: 0 } }), GENERATION_PROMPT_VERSION);
+  });
+
+  it("is what parseGeneratedQuestions stamps", () => {
+    const stamp = (req: LlmGenerationRequest) =>
+      parseGeneratedQuestions({ questions: [goodMcq] }, req, META).questions[0]!.aiMetadata["promptVersion"];
+    assert.equal(stamp(BOOK_REQ), `${GENERATION_PROMPT_VERSION}+book`);
+    assert.equal(stamp(REQ), GENERATION_PROMPT_VERSION);
   });
 });
 

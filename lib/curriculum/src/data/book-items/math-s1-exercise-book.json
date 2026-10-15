@@ -1,0 +1,341 @@
+{
+  "sourceId": "math-s1-exercise-book",
+  "items": [
+    {
+      "id": "bi-math-s1-exercise-book-u1l2-1",
+      "lessonId": "kbl-math-s1-nccd-u1_l1",
+      "source": {
+        "sourceId": "math-s1-exercise-book",
+        "page": 11,
+        "bookPage": 11,
+        "unit": 1,
+        "number": 1
+      },
+      "kind": "exercise",
+      "instruction": "أحل نظام المعادلتين الآتي",
+      "stem": "y = 7x +15\ny = 3x^2 + 5x - 2",
+      "printedAnswer": null,
+      "computedAnswer": "(1/3 - 2√13/3, 52/3 - 14√13/3), (1/3 + 2√13/3, 14√13/3 + 52/3)",
+      "check": null,
+      "tier": "easy",
+      "tierSource": "position",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s1-exercise-book-u1l2-2",
+      "lessonId": "kbl-math-s1-nccd-u1_l1",
+      "source": {
+        "sourceId": "math-s1-exercise-book",
+        "page": 11,
+        "bookPage": 11,
+        "unit": 1,
+        "number": 2
+      },
+      "kind": "exercise",
+      "instruction": "أحل نظام المعادلتين الآتي",
+      "stem": "y - x = 1\ny = 2x^2 - 11x + 16",
+      "printedAnswer": null,
+      "computedAnswer": "(3 - √6/2, 4 - √6/2), (√6/2 + 3, √6/2 + 4)",
+      "check": null,
+      "tier": "easy",
+      "tierSource": "position",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s1-exercise-book-u1l2-3",
+      "lessonId": "kbl-math-s1-nccd-u1_l1",
+      "source": {
+        "sourceId": "math-s1-exercise-book",
+        "page": 11,
+        "bookPage": 11,
+        "unit": 1,
+        "number": 3
+      },
+      "kind": "exercise",
+      "instruction": "أحل نظام المعادلتين الآتي",
+      "stem": "y - x = 10\nx^2 + y^2 = 50",
+      "printedAnswer": null,
+      "computedAnswer": "(-5, 5)",
+      "check": null,
+      "tier": "easy",
+      "tierSource": "position",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s1-exercise-book-u1l2-4",
+      "lessonId": "kbl-math-s1-nccd-u1_l1",
+      "source": {
+        "sourceId": "math-s1-exercise-book",
+        "page": 11,
+        "bookPage": 11,
+        "unit": 1,
+        "number": 4
+      },
+      "kind": "exercise",
+      "instruction": "أحل نظام المعادلتين الآتي",
+      "stem": "x + y = 20\nx^2 - y^2 = 16",
+      "printedAnswer": null,
+      "computedAnswer": "(52/5, 48/5)",
+      "check": null,
+      "tier": "easy",
+      "tierSource": "position",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s1-exercise-book-u1l2-7",
+      "lessonId": "kbl-math-s1-nccd-u1_l1",
+      "source": {
+        "sourceId": "math-s1-exercise-book",
+        "page": 11,
+        "bookPage": 11,
+        "unit": 1,
+        "number": 7
+      },
+      "kind": "exercise",
+      "instruction": "أحل نظام المعادلتين الآتي",
+      "stem": "y = x - 1\ny = x^2 - 3x + 2",
+      "printedAnswer": null,
+      "computedAnswer": "(1, 0), (3, 2)",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "position",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s1-exercise-book-u1l2-8",
+      "lessonId": "kbl-math-s1-nccd-u1_l1",
+      "source": {
+        "sourceId": "math-s1-exercise-book",
+        "page": 11,
+        "bookPage": 11,
+        "unit": 1,
+        "number": 8
+      },
+      "kind": "exercise",
+      "instruction": "أحل نظام المعادلتين الآتي",
+      "stem": "y - 2x = 1\ny = 5x^2 + 4x - 1",
+      "printedAnswer": null,
+      "computedAnswer": "(-√11/5 - 1/5, 3/5 - 2√11/5), (-1/5 + √11/5, 3/5 + 2√11/5)",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "position",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s1-exercise-book-u1l2-9",
+      "lessonId": "kbl-math-s1-nccd-u1_l1",
+      "source": {
+        "sourceId": "math-s1-exercise-book",
+        "page": 11,
+        "bookPage": 11,
+        "unit": 1,
+        "number": 9
+      },
+      "kind": "exercise",
+      "instruction": "أحل نظام المعادلتين الآتي",
+      "stem": "y - x + 1 = 0\ny = x^2 + 3x",
+      "printedAnswer": null,
+      "computedAnswer": "(-1, -2)",
+      "check": null,
+      "tier": "hard",
+      "tierSource": "position",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s1-exercise-book-u1l2-10",
+      "lessonId": "kbl-math-s1-nccd-u1_l1",
+      "source": {
+        "sourceId": "math-s1-exercise-book",
+        "page": 11,
+        "bookPage": 11,
+        "unit": 1,
+        "number": 10
+      },
+      "kind": "exercise",
+      "instruction": "أحل نظام المعادلتين الآتي",
+      "stem": "y = 2\nx^2 + y^2 = 4",
+      "printedAnswer": null,
+      "computedAnswer": "(0, 2)",
+      "check": null,
+      "tier": "hard",
+      "tierSource": "position",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s1-exercise-book-u1l3-1",
+      "lessonId": "kbl-math-s1-nccd-u1_l2",
+      "source": {
+        "sourceId": "math-s1-exercise-book",
+        "page": 12,
+        "bookPage": 12,
+        "unit": 1,
+        "number": 1
+      },
+      "kind": "exercise",
+      "instruction": "أحل نظام المعادلتين الآتي",
+      "stem": "y = x^2 - 6x + 9\ny = x^2 - 3x",
+      "printedAnswer": null,
+      "computedAnswer": "(3, 0)",
+      "check": null,
+      "tier": "easy",
+      "tierSource": "position",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s1-exercise-book-u1l3-3",
+      "lessonId": "kbl-math-s1-nccd-u1_l2",
+      "source": {
+        "sourceId": "math-s1-exercise-book",
+        "page": 12,
+        "bookPage": 12,
+        "unit": 1,
+        "number": 3
+      },
+      "kind": "exercise",
+      "instruction": "أحل نظام المعادلتين الآتي",
+      "stem": "y = 0.5x^2 + 0.5x + 1\ny = -x^2 + 2x + 4",
+      "printedAnswer": null,
+      "computedAnswer": "(-1, 1), (2, 4)",
+      "check": null,
+      "tier": "easy",
+      "tierSource": "position",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s1-exercise-book-u1l3-4",
+      "lessonId": "kbl-math-s1-nccd-u1_l2",
+      "source": {
+        "sourceId": "math-s1-exercise-book",
+        "page": 12,
+        "bookPage": 12,
+        "unit": 1,
+        "number": 4
+      },
+      "kind": "exercise",
+      "instruction": "أحل نظام المعادلتين الآتي",
+      "stem": "y = 2x^2 + 8x + 4\ny = x^2 + 2x + 4",
+      "printedAnswer": null,
+      "computedAnswer": "(-6, 28), (0, 4)",
+      "check": null,
+      "tier": "easy",
+      "tierSource": "position",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s1-exercise-book-u1l3-5",
+      "lessonId": "kbl-math-s1-nccd-u1_l2",
+      "source": {
+        "sourceId": "math-s1-exercise-book",
+        "page": 12,
+        "bookPage": 12,
+        "unit": 1,
+        "number": 5
+      },
+      "kind": "exercise",
+      "instruction": "أحل نظام المعادلتين الآتي",
+      "stem": "y - x^2 = 0\ny + x^2 = 0",
+      "printedAnswer": null,
+      "computedAnswer": "(0, 0)",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "position",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s1-exercise-book-u1l3-6",
+      "lessonId": "kbl-math-s1-nccd-u1_l2",
+      "source": {
+        "sourceId": "math-s1-exercise-book",
+        "page": 12,
+        "bookPage": 12,
+        "unit": 1,
+        "number": 6
+      },
+      "kind": "exercise",
+      "instruction": "أحل نظام المعادلتين الآتي",
+      "stem": "y = x^2 + x - 1\ny = 5 - x^2",
+      "printedAnswer": null,
+      "computedAnswer": "(-2, 1), (3/2, 11/4)",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "position",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s1-exercise-book-u1l3-8",
+      "lessonId": "kbl-math-s1-nccd-u1_l2",
+      "source": {
+        "sourceId": "math-s1-exercise-book",
+        "page": 12,
+        "bookPage": 12,
+        "unit": 1,
+        "number": 8
+      },
+      "kind": "exercise",
+      "instruction": "أحل نظام المعادلتين الآتي",
+      "stem": "y = x^2 + 2x + 2\ny = -x^2 - 2x + 2",
+      "printedAnswer": null,
+      "computedAnswer": "(-2, 2), (0, 2)",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "position",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s1-exercise-book-u1l3-9",
+      "lessonId": "kbl-math-s1-nccd-u1_l2",
+      "source": {
+        "sourceId": "math-s1-exercise-book",
+        "page": 12,
+        "bookPage": 12,
+        "unit": 1,
+        "number": 9
+      },
+      "kind": "exercise",
+      "instruction": "أحل نظام المعادلتين الآتي",
+      "stem": "y = -x^2 + 2x + 2\ny = -x^2 - 2x + 2",
+      "printedAnswer": null,
+      "computedAnswer": "(0, 2)",
+      "check": null,
+      "tier": "hard",
+      "tierSource": "position",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s1-exercise-book-u1l3-10",
+      "lessonId": "kbl-math-s1-nccd-u1_l2",
+      "source": {
+        "sourceId": "math-s1-exercise-book",
+        "page": 12,
+        "bookPage": 12,
+        "unit": 1,
+        "number": 10
+      },
+      "kind": "exercise",
+      "instruction": "أحل نظام المعادلتين الآتي",
+      "stem": "y^2 = -x^2 + 4\ny = 0.5x^2 -2",
+      "printedAnswer": null,
+      "computedAnswer": "(-2, 0), (0, -2), (2, 0)",
+      "check": null,
+      "tier": "hard",
+      "tierSource": "position",
+      "status": "computed",
+      "verificationSource": "sympy"
+    }
+  ]
+}

@@ -61,9 +61,23 @@ import {
 import { validateGenerated } from "../modules/assessment/validator";
 import { inPaperOrder } from "../modules/assessment/paperOrder";
 import { contradictionWarning, verificationAfterEdit, verifyAnswerKeys } from "../modules/assessment/keyVerification.ts";
+import {
+  assembleLivePaper,
+  drawBookQuestions,
+  isBookItemsLiveOn,
+  bookItemsRecord,
+  planBook,
+  previousBookItemIds,
+} from "../modules/assessment/bookQuestions.ts";
 import { relateAnswerKey } from "../lib/mathVerifierClient.ts";
 import { QUESTION_TYPES } from "../modules/assessment/questionTypes";
-import { COMPETENCY_KEYS, competencyForBlooms, type CompetencyKey } from "../modules/assessment/competency";
+import {
+  allocateQuestions,
+  COMPETENCY_KEYS,
+  competencyForBlooms,
+  remainingQuota,
+  type CompetencyKey,
+} from "../modules/assessment/competency";
 import { convertWorksheet } from "../modules/assessment/fromWorksheet.ts";
 import { parseWorksheetRequest } from "../modules/assessment/worksheetRequest.ts";
 import { isPaperQuestion, parsePaperRows } from "../modules/assessment/paperExam";
@@ -71,8 +85,9 @@ import { partitionForRegeneration } from "../modules/assessment/regeneration";
 import { aggregateClass, finishedAttempts } from "../modules/assessment/classInsights";
 import { generateShareCode } from "../modules/assessment/studentView";
 import {
-  GENERATION_PROMPT_VERSION,
   generateWithModel,
+  generationPromptVersion,
+  type LlmSupplied,
   paperIsMathematics,
   questionStem,
 } from "../modules/assessment/llmGenerator";
@@ -792,7 +807,55 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
         previousQuestions.map(q => ({ text: questionStem(q.body as Record<string, unknown>) })),
       );
 
-      const runLlm = (avoidList: readonly string[], insistent: boolean, count = evaluation.targetQuestionCount) => generateWithModel(
+      // Real book questions are added after the model has written its share, so
+      // the model is asked for that many fewer. When BOOK_ITEMS_LIVE is not
+      // "true" (the default), `bookPlanned` is 0 and nothing below changes.
+      const bookEnabled = isBookItemsLiveOn();
+      // The items this teacher was already shown: the dry run avoids them like
+      // the real draw below does, so the plan describes the paper that will exist.
+      const shownBookItemIds = previousBookItemIds(previousQuestions);
+      const plan = planBook({
+        objectives,
+        assessmentTypes: evaluation.assessmentTypes,
+        count: evaluation.targetQuestionCount,
+        subjectId: evaluation.subjectId ?? undefined,
+        enabled: bookEnabled,
+        difficulty: evaluation.difficulty,
+        avoidIds: shownBookItemIds,
+      });
+      const bookPlanned = plan.k;
+      const modelCount = evaluation.targetQuestionCount - bookPlanned;
+
+      // What the model is told the book supplies, and how many of each
+      // competency it should therefore write so the WHOLE paper lands on the
+      // target mix. Undefined when nothing is planned, so the request (and the
+      // prompt version) are exactly what they were before. `plan.supplied`
+      // counts the same k questions as `bookPlanned`, so the quota sums to
+      // `modelCount`; `buildGenerationPrompt` throws if that ever stops being true.
+      const supplied: LlmSupplied | undefined = bookPlanned > 0
+        ? {
+            ...plan.supplied,
+            count: bookPlanned,
+            paperTotal: evaluation.targetQuestionCount,
+            newByCompetency: allocateQuestions(
+              evaluation.targetQuestionCount,
+              evaluation.difficulty,
+              plan.supplied.byCompetency,
+            ),
+          }
+        : undefined;
+      // One value for the usage rows and the stored params: every batch of this
+      // paper (first, retry, top-up) carries the same `supplied` or none.
+      const promptVersion = generationPromptVersion({ supplied });
+
+      // `count` defaults to the model's share; the top-up below passes what is missing
+      // and a `suppliedFor` whose quota is rescaled to that count.
+      const runLlm = (
+        avoidList: readonly string[],
+        insistent: boolean,
+        count = modelCount,
+        suppliedFor: LlmSupplied | undefined = supplied,
+      ) => generateWithModel(
         {
           objectives,
           gradeId: evaluation.gradeId,
@@ -803,6 +866,7 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
           bookExcerpts: grounding?.block,
           avoid: avoidList,
           insistent,
+          ...(suppliedFor ? { supplied: suppliedFor } : {}),
         },
         async prompt => {
           const model = getGenerationModel();
@@ -821,7 +885,7 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
           });
           recordUsage(completion.usage, model, {
             kind: "quiz",
-            promptVersion: GENERATION_PROMPT_VERSION,
+            promptVersion,
             userId: req.user!.id,
           });
           return {
@@ -853,15 +917,26 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
       // often send 10 and stop. Ask once more for only what is missing, with the
       // stems already written so the second batch is new questions. Best effort
       // — the paper is served short, and the shortfall warning says so, if it fails.
-      const missing = evaluation.targetQuestionCount - llm.questions.length;
+      // Measured against the model's own share, not the paper: the book supplies the rest.
+      const missing = modelCount - llm.questions.length;
       if (missing > 0) {
         logger.warn(
-          { evaluationId: evaluation.id, asked: evaluation.targetQuestionCount, got: llm.questions.length },
+          { evaluationId: evaluation.id, asked: modelCount, got: llm.questions.length },
           "evaluation came back short — asking for the rest",
         );
         try {
           const have = signatureLines(llm.questions.map(q => ({ text: questionStem(q.body) })));
-          const more = await runLlm([...avoid, ...have], false, missing);
+          const more = await runLlm(
+            [...avoid, ...have],
+            false,
+            missing,
+            supplied && {
+              ...supplied,
+              newByCompetency: remainingQuota(supplied.newByCompetency, llm.questions, missing),
+              // The prompt then says the quota is what remains of the model's share.
+              alreadyWritten: llm.questions.length,
+            },
+          );
           llm.questions.push(...more.questions);
           llm.notes.push(...more.notes);
         } catch (err) {
@@ -871,19 +946,68 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
 
       generator = "llm";
       modelId = llm.model;
-      generationParams["promptVersion"] = GENERATION_PROMPT_VERSION;
+      generationParams["promptVersion"] = promptVersion;
       generationParams["grounded"] = Boolean(grounding);
       generationParams["groundingSources"] = grounding
         ? grounding.sources.map(s => ({ sourceId: s.sourceId, page: s.page }))
         : [];
       generationNotes.push(...llm.notes);
+
+      // The model's surplus is cut to its share first, then the book's questions
+      // are drawn and appended (see assembleLivePaper). With a book share the paper
+      // cannot exceed the request, so the surplus trim further down cannot fire;
+      // `inPaperOrder` below puts the whole paper into type blocks.
+      const assembled = assembleLivePaper({
+        modelQuestions: llm.questions,
+        requested: evaluation.targetQuestionCount,
+        k: bookPlanned,
+        draw: accepted => drawBookQuestions({
+          objectives,
+          assessmentTypes: evaluation.assessmentTypes,
+          difficulty: evaluation.difficulty,
+          k: bookPlanned,
+          accepted,
+          avoidIds: shownBookItemIds,
+          rng: Math.random,
+        }),
+      });
+      if (evaluation.subjectId === "mathematics") {
+        // `supplied` is what the model was told the book supplies (the dry run's
+        // summary, before the real draw); `quota` is the per-competency count it
+        // was asked to write. Both are empty/absent when nothing was planned.
+        generationParams["bookItems"] = bookItemsRecord({
+          enabled: bookEnabled,
+          planned: bookPlanned,
+          supplied: plan.supplied,
+          quota: supplied?.newByCompetency,
+          drawn: assembled.drawn,
+          ids: assembled.questions
+            .filter(q => q.aiMetadata["generator"] === "book")
+            .map(q => q.aiMetadata["bookItemId"]),
+        });
+      }
+      if (assembled.trimmed > 0) {
+        generationNotes.push(
+          `The generator returned ${assembled.trimmed} more question${assembled.trimmed === 1 ? "" : "s"} than the ${modelCount} asked of it; the extra ${assembled.trimmed === 1 ? "one was" : "ones were"} left out.`,
+        );
+      }
+      if (assembled.drawn > 0) {
+        generationNotes.push(
+          `${assembled.drawn} question${assembled.drawn === 1 ? " is a" : "s are"} real item${assembled.drawn === 1 ? "" : "s"} from the NCCD books; each is labelled with how its answer was established.`,
+        );
+      }
+      if (assembled.drawn < bookPlanned) {
+        generationNotes.push(
+          `Only ${assembled.drawn} of ${bookPlanned} planned book question${bookPlanned === 1 ? "" : "s"} could be added (the rest of the book's questions repeat ones already on the paper or the model's).`,
+        );
+      }
       result = {
-        questions: llm.questions,
+        questions: assembled.questions,
         // The model was asked for every requested type, so nothing is
         // "unavailable" the way it is for the mock — a type that came back
         // wrong is a discard, and llm.notes already says so.
         unavailableTypes: [],
-        shortfall: Math.max(0, evaluation.targetQuestionCount - llm.questions.length),
+        shortfall: Math.max(0, evaluation.targetQuestionCount - assembled.questions.length),
         notes: [],
         // Still worth carrying: the bank pointer answers "where else could I
         // look", which is useful whether or not the generator declined

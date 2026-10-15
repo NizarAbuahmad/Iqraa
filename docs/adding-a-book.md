@@ -14,6 +14,7 @@ and `lib/curriculum/src/curriculumIds.ts` for the reasoning behind the ids.
 | C. Catalog | units / lessons / objectives | `lib/curriculum/src/data/iqra_curriculum_*.json` + `lib/curriculum/src/catalogs/*.ts` | yes |
 | D. Figures | PNG crops + index + lesson map | `knowledge-base/<grade>-<subject>/figures/<sourceId>/`, `knowledge-base/figure-lesson-map.json` | PNGs and index yes, PDF no |
 | E. Exercises | real «تمارين ص ٧٢» references | `knowledge-base/grade-10-math/exercises/<sourceId>/index.json` | yes |
+| E2. Items | real exercise and unit-test questions, keys computed by SymPy (a key is `verified` only where the book prints the same answer) | `lib/curriculum/src/data/book-items/<sourceId>.json` | yes |
 
 Source PDFs are gitignored (`knowledge-base/**/support-pdfs/`,
 `knowledge-base/**/*.pdf`, and since 2026-09-16 `attached_assets/**/*.pdf` too —
@@ -139,6 +140,48 @@ curriculum book with its own units and lessons.
 
 23. Add to `BOOKS` in `scripts/extract_book_exercises.py`, run it, commit `index.json`, add the import in `artifacts/mobile/services/bookExercises.ts`.
 
+## E2. Items (exercise and unit-test questions)
+
+Only Grade 10 maths so far. Everything is in `scripts/extract_book_items.py`;
+read its header before adding to it.
+
+- Add a row to `TABLE`: the source, the book's unit and lesson, the item range,
+    a `family` (`system`, `derivative`, `derivative_at`, `mcq_pair` or
+    `unit_open`) and **your own** Arabic `instruction_ar`. The book's scrambled instruction line is never
+    parsed. A row must join to a curriculum lesson or the script stops.
+- A new kind of question needs a solver, a `MAX_EXP` entry and a test in
+    `scripts/test_extract_book_items.py`. Reject on ambiguity with a reason; never
+    choose a reading.
+- `unit_open` is the open questions of a guide's end-of-unit test (kind
+    `unit-test`, cited as the test, drawn wherever a short answer is wanted).
+    Only guide S1 p.47 (items 6-11) has it. The page's text layer is not
+    regular enough for a generic splitter, so `split_unit_open` finds each item
+    by hand-written anchors for that page (items 6-9 by `N ` followed by a
+    space, the `c` items by the one Arabic header line naming `c`); an anchor not
+    found exactly once leaves the item out and `build()` quarantines it as
+    `item_not_found`. A row whose items are not a contiguous range lists them in `numbers`
+    (`numbers=(6, 10)` is items 6 and 10 only, not 6 to 10), and `allow_none=True` serves «لا يوجد حل» as an answer (the exercise-book rule that quarantines
+    `no_real_solution` stays for exercises); `params={'param': 'c'}` asks for the
+    values of `c` with no solution. A new page needs its own anchors and tests.
+    The answer block is read by `printed_entries`: from item 12's number line
+    to the single line `الوحدة`, NFKC-normalised, an entry starting at a line
+    that begins `(` or `c ` or at «لا يوجد حل»; any other line continues the
+    previous entry (a split fraction); «أنظر ملحق الإجابات» is counted and
+    dropped. No block found means every item stays `computed`, never `verified`.
+    Pairing is by VALUE (`pair_printed` / `same_answer`): the block's order is not
+    the item order, so a printed entry is attached to an item only when it equals
+    what SymPy computed, each entry once; points compare as a multiset, a split
+    fraction keeps its bar as a separator. A match makes the item `verified`
+    (`sympy+book`); no match leaves it `computed` and the entry in `report.json`'s
+    `unmatchedPrinted` with the item's reason under `notes`. A near miss such as
+    `(2. 1)` is not tolerated: it needs a person with the PDF page, then a
+    reviewed correction in the script and a test. What `verified` cannot detect
+    is the book pairing answers with the wrong items.
+- `python scripts/extract_book_items.py`, then commit the three JSON files and
+    `report.json`. CI re-runs the script and fails if the committed files differ.
+- Read the new items against the printed book. No page image is reachable from a
+    fresh checkout, so this is the only check on the stem.
+
 ## F. Public download link (only when NCCD does not host the book)
 
 No credentials and no extraction. This is pure file hosting.
@@ -196,4 +239,5 @@ test; add it to `SUBJECT_ALIASES` in `artifacts/mobile/services/bookQrLinks.ts`.
 | Catalog (Islamic Education) | the Quran Corner: a lesson whose `title_ar` names a surah («سورة X» with an optional `(a-b)`) puts those ayahs in the corner. After adding or retitling one, run `pnpm --filter @workspace/curriculum run build-quran-corner` and have a person re-check the changed ayahs in `lib/curriculum/sources/quran-ws/VERIFY.md` against a printed mushaf; `quranCorner.test.ts` fails until the generated data matches. A lesson that quotes Quran but does not name a surah in its title is not covered. |
 | Figures | slides deck and Start Class (2 slides), lesson plan / worksheet / quiz / activity panel and export appendix (up to 6, lesson-level, cited by page) |
 | Exercises | practice references in lesson plans and decks |
+| Items | maths evaluations (API generator only), at most half a paper |
 | Public download link | a download chip on the book card in `app/curriculum/subjects.tsx`, and nothing else |

@@ -24,6 +24,7 @@
     "./vocabulary": "./src/vocabulary.ts",
     "./englishHub": "./src/englishHub.ts",
     "./passages": "./src/passages.ts",
+    "./bookItems": "./src/bookItems.ts",
     "./catalogs/*": "./src/catalogs/*.ts",
     "./validateCurriculum": "./src/validateCurriculum.ts"
   },
