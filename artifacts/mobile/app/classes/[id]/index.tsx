@@ -1133,29 +1133,6 @@ export default function ClassDetailScreen() {
             <View style={{ gap: 10, marginBottom: 10 }}>
               {errorBanner}
               {subjectFilter}
-              <Pressable
-                onPress={() => router.push({ pathname: '/evaluations/mini', params: { classId: id } })}
-                style={[
-                  styles.row,
-                  {
-                    backgroundColor: ACCENT + '12',
-                    borderColor: ACCENT,
-                    flexDirection: isRTL ? 'row-reverse' : 'row',
-                    alignItems: 'center',
-                    gap: 10,
-                  },
-                ]}
-              >
-                <Ionicons name="flash-outline" size={20} color={ACCENT} />
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
-                    {t('miniEvalBtn')}
-                  </Text>
-                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: align }}>
-                    {t('miniEvalSubtitle')}
-                  </Text>
-                </View>
-              </Pressable>
               <MasterySection mastery={mastery} colors={colors} isRTL={isRTL} align={align} lang={lang} t={t} />
               <SupportGroupsSection classId={id} groups={supportGroups} isRTL={isRTL} align={align} lang={lang === 'ar' ? 'ar' : 'en'} t={t} />
             </View>
@@ -1904,7 +1881,7 @@ function MasterySection({
     .slice(0, 5);
 
   return (
-    <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, gap: 10 }]}>
+    <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, gap: 10, flexDirection: 'column', alignItems: 'stretch' }]}>
       <View style={{ gap: 2 }}>
         <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
           {t('masteryTitle')}

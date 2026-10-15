@@ -46,6 +46,7 @@ import type { DeckVideo } from '@/services/youtubeVideo';
 import { summarizeVerification } from '@/services/quizVerification';
 import { confirm } from '@/services/confirm';
 import { pooledVariantId, regenerationFields } from '@/services/ai/regeneration';
+import { buildLessonTeachingRequest } from '@/services/generatorRequests';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
 import {
   captureGenerationScope, materialScope, reopenedGenerationScope, type GenerationScope,
@@ -59,6 +60,7 @@ import { useDeckWorkspace, type DeckWorkspaceSnapshot } from '@/hooks/useDeckWor
 import { useSlideEditor } from '@/hooks/useSlideEditor';
 import { DeckOutline } from '@/components/slides/DeckOutline';
 import { DeckActions } from '@/components/slides/DeckActions';
+import { DeckThemePicker } from '@/components/slides/DeckThemePicker';
 import { SlideEditModal } from '@/components/slides/SlideEditModal';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
@@ -546,17 +548,12 @@ export default function SlidesScreen() {
       // Parallel and independent like the checks: on any failure the deck is
       // built from the book and plan alone, exactly as before this existed.
       const teachingPromise = aiService
-        .generateLessonTeaching({
-          grade: isAr ? grades[gradeIdx]!.nameAr : grades[gradeIdx]!.name,
-          subject: subjects[subjectIdx].name,
+        .generateLessonTeaching(buildLessonTeachingRequest({
+          gradeName: isAr ? grades[gradeIdx]!.nameAr : grades[gradeIdx]!.name,
+          subjectName: subjects[subjectIdx].name,
           topic: trimmed,
-          language: isAr ? 'arabic' : 'english',
-          additionalContext: generatorContext,
-          unitId,
-          lessonId,
-          contextSource: 'curriculum',
-          ...regen,
-        }, { signal: controller.signal })
+          lang,
+        }, grounding, regen), { signal: controller.signal })
         .catch((): LessonTeachingOutput | null => null);
 
       let lessonPlan: LessonPlanOutput | null = null;
@@ -1087,6 +1084,7 @@ export default function SlidesScreen() {
               />
             </View>
 
+            <DeckThemePicker deck={deck} setDeck={setDeck} isRTL={isRTL} isAr={isAr} colors={colors} t={t} />
             <DeckActions workspace={workspace} onPresent={present} showToast={showToast} isRTL={isRTL} colors={colors} t={t} />
           </View>
         )}

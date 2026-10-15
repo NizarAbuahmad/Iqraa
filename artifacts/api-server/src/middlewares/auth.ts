@@ -1,7 +1,6 @@
 import { type Request, type Response, type NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { db } from "@workspace/db";
-import { users } from "@workspace/db";
+import { asUser, systemDb as db, users } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 import { suspendedMayReach } from "../lib/suspension.js";
@@ -90,7 +89,10 @@ export async function authMiddleware(
 
     const { suspendedAt: _suspendedAt, suspendedReason: _suspendedReason, ...principal } = user;
     req.user = principal;
-    next();
+    // Everything downstream — handlers, helpers, fire-and-forget work they
+    // start — runs as this user, so Postgres row-level security can tell who
+    // is asking (lib/db/src/scopedPool.ts). Inert while RLS_ENFORCE is off.
+    asUser({ userId: principal.id, role: principal.role }, () => next());
   } catch (err) {
     // An expired/malformed/wrong-secret token is routine — every client with
     // a stale token hits this, so it's not worth logging. Anything else here

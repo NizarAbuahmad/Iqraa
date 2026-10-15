@@ -10,7 +10,7 @@
  * Archived roster rows never count. The 404/empty behaviour for a row that is
  * not linked is the caller's — these only answer "which rows".
  */
-import { classGroups, classMemberships, db, rosterLinks, students, users } from "@workspace/db";
+import { classGroups, classMemberships, db, rosterLinks, students, systemDb, users } from "@workspace/db";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import type { GuardianLink } from "../modules/family/children.ts";
 import type { LinkedAccount } from "../modules/notifications/familyPush.ts";
@@ -63,12 +63,14 @@ export async function studentIdsWithSelfAccount(studentIds: string[]): Promise<S
  * Rows → accounts: every account linked to these live roster rows, `self` and
  * `guardian`, with what a push needs to decide about it — the child's name,
  * the account's switches and whether it is suspended. The reverse of the two
- * helpers above. Not filtered here: the reminder needs to know a suspended
- * student account EXISTS (the child can tick), even though it is not pushed.
+ * helpers above. Not filtered here: the caller (sendFamilyPush) drops suspended
+ * and switched-off accounts, and the reminder reads `suspended` to decide who
+ * can tick. Runs on `systemDb`: these accounts are other people, whose links
+ * and settings the calling teacher's identity cannot read under row-level security.
  */
 export async function accountsLinkedTo(studentIds: readonly string[]): Promise<LinkedAccount[]> {
   if (studentIds.length === 0) return [];
-  const rows = await db
+  const rows = await systemDb
     .select({
       userId: rosterLinks.userId,
       relation: rosterLinks.relation,
@@ -94,10 +96,11 @@ export async function accountsLinkedTo(studentIds: readonly string[]): Promise<L
 /**
  * The class's children, for a push to "the class": live roster rows that are
  * members of this class, and only while the class itself is live. Empty for
- * an archived or missing class.
+ * an archived or missing class. `systemDb`, like `accountsLinkedTo`: the
+ * children's memberships are not all visible to the one teacher asking.
  */
 export async function liveClassStudentIds(classId: string): Promise<string[]> {
-  const rows = await db
+  const rows = await systemDb
     .select({ studentId: students.id })
     .from(classMemberships)
     .innerJoin(students, eq(students.id, classMemberships.studentId))

@@ -13,7 +13,7 @@
  * moderation, and not from a sender the viewer blocked (the caller passes an
  * empty list for a teacher, who never filters — see routes/messaging.ts).
  */
-import { db, chatBlocks, chatMessages, chatParticipants, chatThreads } from "@workspace/db";
+import { db, systemDb, chatBlocks, chatMessages, chatParticipants, chatThreads } from "@workspace/db";
 import { and, eq, gt, inArray, isNull, ne, notExists, notInArray, or, sql } from "drizzle-orm";
 
 function visibleIn(threadIds: string[], blockedSenderIds: readonly string[]) {
@@ -103,7 +103,11 @@ export async function unreadTotals(
     .select({ one: sql`1` })
     .from(chatBlocks)
     .where(and(eq(chatBlocks.blockerUserId, chatParticipants.userId), eq(chatBlocks.blockedUserId, chatMessages.senderId)));
-  const rows = await db
+  // systemDb, not db: this runs under the SENDER's identity (notifyThreadParticipants), but the
+  // number is each RECIPIENT's whole-inbox count and honours the blocks THEY made. Under row-level
+  // security the sender cannot see the recipients' other threads or their blocks, so on `db` the
+  // badge would be silently wrong. The other functions here serve the viewer's own inbox and stay on `db`.
+  const rows = await systemDb
     .select({ userId: chatParticipants.userId, unread: sql<number>`count(*)::int` })
     .from(chatParticipants)
     .innerJoin(chatThreads, and(eq(chatThreads.id, chatParticipants.threadId), isNull(chatThreads.archivedAt)))

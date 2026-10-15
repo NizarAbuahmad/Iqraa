@@ -43,9 +43,12 @@ import {
   metaSegments,
   myExamAction,
   myExamTitle,
+  progressSummary,
+  splitMyExams,
   subjectLabel,
   type MyExam,
   type MyExamState,
+  type ProgressSummary,
 } from '@/services/myExams';
 import { formatListDate } from '@/services/evaluationRow';
 import { isValidYmd } from '@/services/homework';
@@ -238,28 +241,128 @@ export default function MyExamsScreen() {
                     {t('childResultsNone')}
                   </Text>
                 ) : null}
-                {group.exams.map(exam => {
-                  const openKey = `${group.key}:${exam.evaluationId}`;
-                  return (
-                    <ExamRow
-                      key={openKey}
-                      exam={exam}
-                      open={openResult === openKey}
-                      onPress={() => onRow(exam, openKey)}
-                      canRetake={canRetakeExam(exam, progress.retakeEvaluationIds, isParent)}
-                      retaking={retaking === exam.evaluationId}
-                      onRetake={() => void onRetake(exam)}
-                      colors={colors}
-                      isRTL={isRTL}
-                      lang={lang}
-                      t={t}
-                    />
-                  );
-                })}
+                {!isParent && group.exams.length > 0 ? (
+                  <ProgressCard
+                    summary={progressSummary(group.exams)}
+                    lessonsPassed={progress.enabled ? progress.passedLessonIds.length : null}
+                    colors={colors}
+                    isRTL={isRTL}
+                    lang={lang}
+                    t={t}
+                  />
+                ) : null}
+                {group.exams.length > 0
+                  ? (() => {
+                      const { upcoming, past } = splitMyExams(group.exams);
+                      const row = (exam: MyExam) => {
+                        const openKey = `${group.key}:${exam.evaluationId}`;
+                        return (
+                          <ExamRow
+                            key={openKey}
+                            exam={exam}
+                            open={openResult === openKey}
+                            onPress={() => onRow(exam, openKey)}
+                            canRetake={canRetakeExam(exam, progress.retakeEvaluationIds, isParent)}
+                            retaking={retaking === exam.evaluationId}
+                            onRetake={() => void onRetake(exam)}
+                            colors={colors}
+                            isRTL={isRTL}
+                            lang={lang}
+                            t={t}
+                          />
+                        );
+                      };
+                      return (
+                        <>
+                          <SectionTitle text={t('myExamsUpcoming')} colors={colors} align={align} />
+                          {upcoming.length > 0 ? (
+                            upcoming.map(row)
+                          ) : (
+                            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, textAlign: align }}>
+                              {t('myExamsNoUpcoming')}
+                            </Text>
+                          )}
+                          {past.length > 0 ? <SectionTitle text={t('myExamsPast')} colors={colors} align={align} /> : null}
+                          {past.map(row)}
+                        </>
+                      );
+                    })()
+                  : null}
               </View>
             ))
           : null}
       </ScrollView>
+    </View>
+  );
+}
+
+type Colors = ReturnType<typeof useColors>;
+type TFn = ReturnType<typeof useLanguage>['t'];
+
+function SectionTitle({ text, colors, align }: { text: string; colors: Colors; align: 'left' | 'right' }) {
+  return (
+    <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.bodyLg, textAlign: align, marginTop: 4 }}>
+      {text}
+    </Text>
+  );
+}
+
+/**
+ * «تقدّمي»: tests taken, average and, with the mastery gate on, lessons passed,
+ * then the average per subject. Built from released results only (see
+ * `progressSummary`), so it can never show a mark the teacher is holding back.
+ */
+function ProgressCard({
+  summary, lessonsPassed, colors, isRTL, lang, t,
+}: {
+  summary: ProgressSummary;
+  lessonsPassed: number | null;
+  colors: Colors;
+  isRTL: boolean;
+  lang: 'ar' | 'en';
+  t: TFn;
+}) {
+  const align = isRTL ? 'right' : 'left';
+  const stat = (value: string, label: string) => (
+    <View style={{ flex: 1, alignItems: 'center', gap: 2 }}>
+      <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.title }}>{value}</Text>
+      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: 'center' }}>{label}</Text>
+    </View>
+  );
+  return (
+    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, gap: 12 }]}>
+      <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.bodyLg, textAlign: align }}>
+        {t('myExamsProgressTitle')}
+      </Text>
+      {summary.averagePercent === null ? (
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: align }}>
+          {t('myExamsProgressEmpty')}
+        </Text>
+      ) : (
+        <>
+          <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row' }}>
+            {stat(String(summary.taken), t('myExamsTestsTaken'))}
+            {stat(`${summary.averagePercent}%`, t('myExamsAvgScore'))}
+            {lessonsPassed !== null ? stat(String(lessonsPassed), t('myExamsLessonsPassed')) : null}
+          </View>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: align }}>
+            {t('myExamsBySubject')}
+          </Text>
+          {summary.bySubject.map(s => (
+            <View key={s.subjectId} style={{ gap: 4 }}>
+              <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between' }}>
+                <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14 }}>
+                  {subjectLabel(s.subjectId, lang) ?? s.subjectId}
+                </Text>
+                <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{s.percent}%</Text>
+              </View>
+              <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.border, overflow: 'hidden', flexDirection: isRTL ? 'row-reverse' : 'row' }}>
+                <View style={{ width: `${Math.max(0, Math.min(100, s.percent))}%`, backgroundColor: s.percent >= 80 ? palette.success : ACCENT }} />
+              </View>
+            </View>
+          ))}
+        </>
+      )}
     </View>
   );
 }

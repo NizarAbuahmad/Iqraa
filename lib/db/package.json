@@ -9,6 +9,7 @@
   },
   "scripts": {
     "generate": "drizzle-kit generate",
+    "test": "node --experimental-strip-types --test --test-concurrency=1 \"src/**/__tests__/**/*.test.ts\"",
     "migrate": "node ./scripts/migrate.mjs",
     "push": "node ./scripts/push.mjs",
     "verify-schema": "node ./scripts/verify-schema.mjs",

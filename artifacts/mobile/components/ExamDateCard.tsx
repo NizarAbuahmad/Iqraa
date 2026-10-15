@@ -21,7 +21,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { setEvaluationExamSchedule, type Evaluation } from '@/services/evaluations';
 import { getExamCalendar } from '@/services/examCalendar';
-import { conflictingExams, normalizeTypedDate, normalizeTypedTime } from '@/services/examCalendarModel';
+import { conflictingExams, maskTypedDate, maskTypedTime, normalizeTypedDate, normalizeTypedTime } from '@/services/examCalendarModel';
 import { gradeLabel } from '@/services/classSubjects';
 import { isValidPlanDate } from '@/services/planEntries';
 import { palette } from '@/constants/colors';
@@ -150,21 +150,23 @@ export function ExamDateCard({
       <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: SPACE.sm }}>
         <TextInput
           value={dateText}
-          onChangeText={v => { setDateText(v); setSaved(false); }}
+          onChangeText={v => { setDateText(prev => maskTypedDate(v, prev)); setSaved(false); }}
           placeholder="YYYY-MM-DD"
           placeholderTextColor={colors.mutedForeground}
           maxLength={10}
-          keyboardType="numbers-and-punctuation"
+          keyboardType="number-pad"
+          inputMode="numeric"
           accessibilityLabel={t('examDateLabel')}
           style={[input, { flex: 2, borderColor: dateTyped && !dateOk ? colors.destructive : colors.border }]}
         />
         <TextInput
           value={timeText}
-          onChangeText={v => { setTimeText(v); setSaved(false); }}
+          onChangeText={v => { setTimeText(prev => maskTypedTime(v, prev)); setSaved(false); }}
           placeholder="HH:MM"
           placeholderTextColor={colors.mutedForeground}
           maxLength={5}
-          keyboardType="numbers-and-punctuation"
+          keyboardType="number-pad"
+          inputMode="numeric"
           accessibilityLabel={t('examTimeLabel')}
           style={[input, { flex: 1, borderColor: !timeOk ? colors.destructive : colors.border }]}
         />

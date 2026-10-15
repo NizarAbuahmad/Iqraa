@@ -8,7 +8,9 @@
  * Throws only on a database error; teacher actions wrap it in `pushWithin`,
  * the reminder run catches per homework, the release announcement logs.
  */
-import { db, devicePushTokens } from "@workspace/db";
+// systemDb: a recipient's device tokens belong to the recipient, not to the teacher whose
+// request triggered the push — under row-level security `db` would read none of them.
+import { systemDb as db, devicePushTokens } from "@workspace/db";
 import { inArray } from "drizzle-orm";
 import { studentAccountsEnabled } from "./features.ts";
 import { deadTokensFrom, sendExpoPush } from "./pushNotifications.ts";

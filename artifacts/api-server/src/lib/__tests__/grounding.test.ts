@@ -13,8 +13,8 @@
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { getObjectivesForUnit, G10_SOURCES } from "@workspace/curriculum";
-import { groundingFor, groundingForObjectives, withGrounding } from "../grounding.ts";
+import { getObjectivesForUnit, G10_SOURCES, isNccdUnitId } from "@workspace/curriculum";
+import { groundingFor, groundingForObjectives, parseWideScope, withGrounding } from "../grounding.ts";
 
 /** الدائرة — extracted, and the unit with the most material on file. */
 const CIRCLE = "kbu-math-s1-nccd-u2";
@@ -224,5 +224,72 @@ describe("groundingForObjectives", () => {
     const g = groundingForObjectives(getObjectivesForUnit(FINLIT), true);
     assert.ok(g, "finlit objectives ground since 2026-09-06");
     assert.ok(g.sources.every(s => s.sourceId === "finlit-s1-student-book"));
+  });
+});
+
+describe("parseWideScope", () => {
+  const ok = { kind: "unit", scopeKey: "unit:x", unitIds: [CIRCLE] };
+
+  it("accepts a well-formed wide scope", () => {
+    assert.deepEqual(parseWideScope(ok), { kind: "unit", scopeKey: "unit:x", unitIds: [CIRCLE] });
+  });
+
+  it("rejects what is not a wide scope", () => {
+    assert.equal(parseWideScope(null), null);
+    assert.equal(parseWideScope("book"), null);
+    assert.equal(parseWideScope({ ...ok, kind: "lesson" }), null); // a lesson uses lessonId/unitId
+    assert.equal(parseWideScope({ ...ok, kind: "galaxy" }), null);
+    assert.equal(parseWideScope({ ...ok, scopeKey: "" }), null);
+    assert.equal(parseWideScope({ ...ok, scopeKey: "x".repeat(201) }), null);
+  });
+
+  it("keeps only real NCCD unit ids, once each (request-controlled input)", () => {
+    const parsed = parseWideScope({ ...ok, unitIds: [CIRCLE, CIRCLE, "kbu-chem-1", 7, "'; drop table", NO_SUCH_UNIT] });
+    assert.deepEqual(parsed?.unitIds, [CIRCLE, NO_SUCH_UNIT]);
+  });
+
+  it("caps a scope at 24 units, keeping the first 24 in order (request-controlled input)", () => {
+    // isNccdUnitId is a regex, so 30 distinct well-formed ids need no real unit behind them.
+    const thirty = Array.from({ length: 30 }, (_, i) => `kbu-math-s1-nccd-u${i + 1}`);
+    assert.ok(thirty.every(isNccdUnitId), "precondition: every synthetic id is a valid NCCD unit id");
+    const parsed = parseWideScope({ kind: "book", scopeKey: "k", unitIds: thirty });
+    assert.equal(parsed?.unitIds.length, 24);
+    assert.deepEqual(parsed?.unitIds, thirty.slice(0, 24));
+  });
+});
+
+describe("groundingFor — wide scope", () => {
+  const scope = (unitIds: string[]) => ({ kind: "semester", scopeKey: "sem:grade-10:mathematics:1", unitIds });
+
+  it("pulls book pages from the scope's own units, ignoring the topic text", () => {
+    const g = groundingFor({ scope: scope([CIRCLE]), topic: "الفصل الأول كاملًا" }, true);
+    assert.ok(g, "no grounding for a wide scope whose unit has extracted text");
+    assert.equal(g.unitId, CIRCLE);
+    assert.ok(g.sources.length > 0 && g.sources.length <= 6);
+  });
+
+  it("takes at most two pages from a unit, however long its book text is", () => {
+    const g = groundingFor({ scope: scope([CIRCLE]), topic: "x" }, true);
+    assert.ok(g);
+    assert.ok(g.sources.length > 0 && g.sources.length <= 2, `${g.sources.length} pages from one unit`);
+  });
+
+  it("fails closed: a scope with no usable unit never falls back to the topic", () => {
+    // CIRCLE_LESSON would resolve a unit by title on the ordinary path.
+    assert.ok(groundingFor({ topic: CIRCLE_LESSON }, true), "precondition: this title grounds normally");
+    assert.equal(groundingFor({ scope: scope([NO_SUCH_UNIT]), topic: CIRCLE_LESSON }, true), null);
+    assert.equal(groundingFor({ scope: scope([]), topic: CIRCLE_LESSON }, true), null);
+  });
+
+  it("pools across several units and stays inside the page cap", () => {
+    const g = groundingFor({ scope: scope([CIRCLE, FINLIT]), topic: "x" }, true);
+    assert.ok(g);
+    assert.ok(g.sources.length > 0 && g.sources.length <= 6);
+  });
+
+  it("an unparseable scope is ignored and the ordinary path runs", () => {
+    const g = groundingFor({ scope: { kind: "lesson" }, topic: CIRCLE_LESSON }, true);
+    assert.ok(g);
+    assert.equal(g.unitId, CIRCLE);
   });
 });

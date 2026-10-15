@@ -38,8 +38,8 @@ export interface ExamForStudent {
   publishedAt: Date | null;
   closedAt: Date | null;
   /**
-   * Planning text the teacher set (PR #1017): the day and clock time of the
-   * exam, as typed. Absent reads as `null`.
+   * The teacher's planned sitting, "YYYY-MM-DD" / "HH:MM", as typed (PR #1017).
+   * Planning data: it never opens or closes the link. Absent reads as `null`.
    */
   examDate?: string | null;
   examTime?: string | null;
@@ -142,7 +142,7 @@ export function studentExamRow(
     timeLimitMin: exam.timeLimitMin,
     publishedAt: exam.publishedAt?.toISOString() ?? null,
     examDate: exam.examDate ?? null,
-    examTime: exam.examTime ?? null,
+    examTime: exam.examDate ? (exam.examTime ?? null) : null,
     paper,
     state,
     shareCode: offerLink ? exam.shareCode : null,

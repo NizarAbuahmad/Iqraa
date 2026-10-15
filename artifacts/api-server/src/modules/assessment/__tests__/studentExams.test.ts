@@ -142,6 +142,20 @@ describe("studentExamRow", () => {
     assert.equal(row.shareCode, null);
   });
 
+  it("carries the teacher's planned date and time, and nothing when there is none", () => {
+    const planned = rowOf(exam({ examDate: "2026-10-20", examTime: "09:30" }), null, null, NOW);
+    assert.equal(planned.examDate, "2026-10-20");
+    assert.equal(planned.examTime, "09:30");
+    const unplanned = rowOf(exam(), null, null, NOW);
+    assert.equal(unplanned.examDate, null);
+    assert.equal(unplanned.examTime, null);
+  });
+
+  it("does not let a date decide whether the exam is open", () => {
+    const row = rowOf(exam({ examDate: "2026-12-31" }), null, null, NOW);
+    assert.equal(row.state, "available");
+  });
+
   it("never lists a draft", () => {
     assert.equal(studentExamRow(exam({ status: "draft" }), null, null, NOW), null);
   });

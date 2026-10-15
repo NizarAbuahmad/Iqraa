@@ -61,6 +61,11 @@ export interface MinistryLessonPage {
  * plan's language and teaching style, so pass `opts` when the caller knows
  * them (Arabic, direct instruction otherwise). The model's own learner text,
  * where it wrote any, is never replaced.
+ *
+ * `teacherFromPhases` is for a plan the teacher edited on screen: the model's
+ * `ministryRoles` were written before those edits, so its teacher text would
+ * silently drop them. The teacher column is then the phases as they now stand;
+ * the learner column still comes from the model.
  */
 export function stagesFromLessonPlan(
   plan: {
@@ -73,25 +78,31 @@ export function stagesFromLessonPlan(
     closure: string;
     assessment: string;
   },
-  opts: Partial<LearnerRoleContext> = {},
+  opts: Partial<LearnerRoleContext> & { teacherFromPhases?: boolean } = {},
 ): MinistryStage[] {
   const fallback = learnerRoles({ lang: opts.lang ?? 'ar', style: opts.style, topic: opts.topic });
   const withLearner = (stages: MinistryStage[]): MinistryStage[] =>
     stages.map((s, i) => ({ teacher: s.teacher, learner: s.learner || fallback[i] }));
 
-  const roles = plan.ministryRoles;
-  if (Array.isArray(roles) && roles.length === MINISTRY_STAGES.length) {
-    const text = (x: unknown) => (typeof x === 'string' ? x.trim() : '');
-    const stages = roles.map(r => ({ teacher: text(r?.teacher), learner: text(r?.learner) }));
-    if (stages.every(s => s.teacher || s.learner)) return withLearner(stages);
-  }
   const join = (...xs: string[]) => xs.map(x => (x ?? '').trim()).filter(Boolean).join('\n');
-  return withLearner([
+  const folded = [
     join(plan.introduction),
     join(plan.mainActivity, plan.guidedPractice),
     join(plan.independentPractice, plan.differentiation),
     join(plan.closure, plan.assessment),
-  ].map(teacher => ({ teacher, learner: '' })));
+  ];
+
+  const roles = plan.ministryRoles;
+  if (Array.isArray(roles) && roles.length === MINISTRY_STAGES.length) {
+    const text = (x: unknown) => (typeof x === 'string' ? x.trim() : '');
+    const stages = roles.map(r => ({ teacher: text(r?.teacher), learner: text(r?.learner) }));
+    if (stages.every(s => s.teacher || s.learner)) {
+      return withLearner(opts.teacherFromPhases
+        ? stages.map((s, i) => ({ teacher: folded[i], learner: s.learner }))
+        : stages);
+    }
+  }
+  return withLearner(folded.map(teacher => ({ teacher, learner: '' })));
 }
 
 /**

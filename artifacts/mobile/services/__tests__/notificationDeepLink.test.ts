@@ -25,6 +25,10 @@ describe('routeFromNotificationData', () => {
     assert.equal(routeFromNotificationData({ screen: 'school/../admin' }), null);
   });
 
+  it('opens the collected-emails list for a waitlist-signup push', () => {
+    assert.equal(routeFromNotificationData({ screen: 'admin-signups' }), '/admin/signups');
+  });
+
   it('ignores screens that are not whitelisted and malformed data', () => {
     assert.equal(routeFromNotificationData({ screen: '/admin/dashboard' }), null);
     assert.equal(routeFromNotificationData({ screen: 'toString' }), null);

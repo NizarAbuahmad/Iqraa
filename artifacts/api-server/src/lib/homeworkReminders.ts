@@ -21,7 +21,9 @@
  * CPU then); the job retries (docs/deploying.md), and because claims are written
  * as it goes, a retry reminds only what is not yet claimed and repeats none.
  */
-import { classGroups, db, homework, homeworkCompletions, homeworkReminders } from "@workspace/db";
+// systemDb: the reminder run is called by Cloud Scheduler with no user, and reads every
+// teacher's homework and every family's ticks.
+import { classGroups, systemDb as db, homework, homeworkCompletions, homeworkReminders } from "@workspace/db";
 import { and, eq, gt, inArray, isNull, lte } from "drizzle-orm";
 import { accountsLinkedTo, liveClassStudentIds } from "./familyAccess.ts";
 import { sendFamilyPush } from "./familyPush.ts";

@@ -109,6 +109,7 @@ Without an OpenAI key, the API process will not start (AI client initializes at 
 | `EXPO_PUBLIC_POSTHOG_HOST` | `https://us.i.posthog.com` | PostHog Cloud region — use the EU host if the project is EU-hosted |
 | `AI_LIVE_MODE` | `false` (anything but literal `"true"`) | Server-side counterpart to the above — must be exactly `true` to let chat/generate/derivativeVerified call OpenAI |
 | `AI_BUDGET_USD` | `2` | Hard USD cap on estimated spend while `AI_LIVE_MODE=true`. In-process only, resets on restart |
+| `RLS_ENFORCE` | unset (off) | Exactly `on` makes the API run every statement as the `iqraa_app` Postgres role under row-level security. Leave it off locally unless you are testing it. The DB-backed suites (`pnpm --filter @workspace/db run test`) need `RLS_TEST_DATABASE_URL` pointing at a migrated, disposable Postgres 16 — see `docs/deploying.md` |
 | `AI_MODEL` | `gpt-4o-mini` | Model for the live-AI routes; cheap by default. Sets both workloads below unless one overrides it |
 | `AI_MODEL_GENERATE` | falls back to `AI_MODEL` | Lesson plans, worksheets, quizzes, activities — one long structured document per call |
 | `AI_MODEL_CHAT` | falls back to `AI_MODEL` | Chat turns — many short calls where latency and cost dominate |

@@ -21,6 +21,7 @@ import studentAttemptRouter from "./studentAttempt";
 import studentExamsRouter from "./studentExams";
 import familyScheduleRouter from "./familySchedule";
 import familyHomeworkRouter from "./familyHomework";
+import studentLessonExplanationRouter from "./studentLessonExplanation";
 import mediaRouter from "./media";
 import practiceRouter from "./practice";
 import lessonMediaRouter from "./lessonMedia";
@@ -112,6 +113,9 @@ router.use(familyScheduleRouter);
 // «الواجبات» for students and parents — path-scoped to /student/homework and
 // /parent/homework; students may tick off, parents only read.
 router.use(familyHomeworkRouter);
+// «اشرح لي الدرس» — authenticated, student-only, path-scoped to
+// /student/lesson-explanation. Read-only over the pool; makes no model call.
+router.use(studentLessonExplanationRouter);
 // Path-scoped, not `router.use(authMiddleware, chatRouter)` — that form mounts
 // the middleware at "/" and reproduces the original bug, answering 401 for
 // paths no router owns. The prefixes below cover every route these four

@@ -90,6 +90,51 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(res.status, 200);
   });
 
+  it("guards the student lesson-explanation routes and the approval route", async () => {
+    // No token: refused before any database access (DATABASE_URL is a dead
+    // address here), so these prove the guards are mounted, not that a query
+    // works. Role refusal (403) is requireRole's own and is exercised by the
+    // existing /student routes.
+    const read = await fetch(`${base}/student/lesson-explanation/kbl-x`);
+    assert.equal(read.status, 401);
+    const report = await fetch(
+      `${base}/student/lesson-explanation/00000000-0000-4000-8000-000000000000/report`,
+      { method: "POST" },
+    );
+    assert.equal(report.status, 401);
+    const approve = await fetch(`${base}/moderation/lesson-explanations/approve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ variantIds: [] }),
+    });
+    assert.equal(approve.status, 401);
+  });
+
+  it("guards the two exam-scan routes, and they shadow nothing", async () => {
+    // Both read photographs of minors' papers and spend model budget, so an
+    // unguarded one would be a public vision endpoint. No token: refused before
+    // any database or model access (DATABASE_URL is a dead address here).
+    const setup = await fetch(`${base}/evaluations/scan-paper`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ images: [], objectiveIds: [] }),
+    });
+    assert.equal(setup.status, 401);
+    const batch = await fetch(
+      `${base}/evaluations/00000000-0000-4000-8000-000000000000/scan-class-paper`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: "data:image/jpeg;base64,AAAA" }),
+      },
+    );
+    assert.equal(batch.status, 401);
+    // `scan-paper` is a fixed path next to `/evaluations/:id/...` routes; a path
+    // the router does not own must still be answered by the guard, not swallowed.
+    const other = await fetch(`${base}/evaluations/scan-paper/extra`, { method: "POST" });
+    assert.ok(other.status === 401 || other.status === 404, `got ${other.status}`);
+  });
+
   it("keeps the bank catalog public, and free of what it cannot serve", async () => {
     // Same reasoning as curriculum: titles and provenance, not documents.
     const res = await fetch(`${base}/bank/items?kind=exam`);
@@ -291,18 +336,6 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     const id = "00000000-0000-0000-0000-000000000000";
     const res = await fetch(`${base}/classes/${id}/students/${id}/record`);
     assert.equal(res.status, 401, "a student's record must require a token");
-  });
-
-  it("mounts the group-check audience inside the evaluations guard", async () => {
-    // A student list on an exam decides who may sit it; it must never be
-    // writable without a teacher token.
-    const id = "00000000-0000-0000-0000-000000000000";
-    const res = await fetch(`${base}/evaluations/${id}/audience`, {
-      method: "PUT",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ studentIds: [id] }),
-    });
-    assert.equal(res.status, 401, "setting who may sit an exam must require a token");
   });
 
   it("guards the class mark book", async () => {
