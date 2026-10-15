@@ -5,7 +5,7 @@
  * it needs a much smaller long edge than a lesson scan does.
  */
 import * as ImagePicker from 'expo-image-picker';
-import { downscaleImage } from './imageDownscale';
+import { PICK_BASE64, photoPickQuality, pickedPhotoToDataUrl } from './imageDownscale';
 
 const MAX_AVATAR_EDGE = 512;
 
@@ -16,13 +16,10 @@ export async function pickAvatarPhoto(): Promise<string | null> {
 
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
-    quality: 0.85,
-    base64: true,
+    quality: photoPickQuality(0.85),
+    base64: PICK_BASE64,
   });
   if (result.canceled || !result.assets?.length) return null;
 
-  const asset = result.assets[0]!;
-  if (!asset.base64) return null;
-  const mime = asset.mimeType || 'image/jpeg';
-  return await downscaleImage(`data:${mime};base64,${asset.base64}`, MAX_AVATAR_EDGE);
+  return pickedPhotoToDataUrl(result.assets[0]!, MAX_AVATAR_EDGE);
 }

@@ -171,6 +171,16 @@ an announcement by default» below.
   installed, an installed app is unchanged** (and a 1.2.0 app stops receiving
   OTA updates); chat/messaging (`app/messaging/[threadId].tsx`) is covered by
   the root Stack's wrapper and needs no screen change.
+- **Native photo shrinking needs a new binary: `version` 1.3.0 → 1.4.0**
+  (2026-10-15). `expo-image-manipulator` is a native module. Because
+  `runtimeVersion.policy` is `appVersion`, **every installed 1.3.0 app stops
+  receiving OTA updates from the merge until it is replaced by a 1.4.0 build**
+  (a 1.4.0 update can never reach a binary without the module, which is the
+  point). A 1.4.0 Android build is therefore needed before any of this exists on
+  a phone: `mobile-build.yml` (`workflow_dispatch`, profile `preview`).
+  **Not verified:** that any 1.3.0 binary was ever installed (so how many apps
+  this strands is unknown), the resize on a device, and the shrunk size and
+  speed for a 40-photo class scan.
 - **The schema deploys as migrations** (2026-10-08, #925, live).
   `lib/db/migrations/0000_baseline.sql` is the whole
   48-table schema; `deploy.yml` runs `migrate` before `verify-schema` and the
@@ -1305,13 +1315,24 @@ both; `pnpm run typecheck` clean.
   prevents any overwrite).
 - The server's `scan-class-paper` 409 «no questions» carries no `code` (unreachable
   for a published exam).
-- Photos are only downscaled on web. On a phone each photo is sent at full size
-  (JPEG quality 0.6), so 40 base64 photos held in memory, or a four-page setup,
-  can exceed the payload ceiling (10,000,000 characters altogether / the 12 MB
-  body) or the phone's memory. The combined-size refusal reuses the single-photo
-  code and wording (`image_too_large` → «الصورة كبيرة جدًا»), which names one
-  photo when the problem is all of them. Untested on a device — the first thing a
-  real Android run should try.
+- ~~Photos are only downscaled on web.~~ **Changed 2026-10-15:** on a phone the
+  five photo pickers now ask for a file only and shrink one photo at a time to
+  1600px (512px for avatars) / JPEG 0.72 with `expo-image-manipulator` (spec
+  `docs/superpowers/specs/2026-10-15-native-photo-downscaling-design.md`). **Not
+  verified on a device** — nothing in this repo has run it on a phone. Still true:
+  the combined-size refusal reuses the single-photo code and wording
+  (`image_too_large` → «الصورة كبيرة جدًا»). The device checks that remain are
+  listed under «On a device» in the spec's «Testing» section, and the first is
+  EXIF-rotated camera photos (the cap may land on the other axis, up to ~2133px,
+  never distorted). If the resize fails, the dimensions are unknown, or the photo
+  is already within the limit, the photo is sent as it is (not re-encoded) — a
+  failed resize logs `[photoEncode] native resize failed` and sends the original,
+  full size, at the camera's quality (the picker now runs at quality 1, so roughly
+  twice the bytes of the old quality-0.6 pick — closer to the 8,000,000-character
+  per-photo ceiling; the server's `image_too_large` names it), so check the log,
+  not the upload size, when asking whether it ran. The class-scan screen shows no
+  busy indicator during the resizes (`reading` is set after the picker returns);
+  a busy state before the picker opens is the follow-up.
 
 ## Row-level security is built and switched off, 2026-10-13
 
