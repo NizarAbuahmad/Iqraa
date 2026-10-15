@@ -1,6 +1,6 @@
 # Shrinking photos on a phone (تصغير الصور على الهاتف) — design
 
-Date: 2026-10-15 · Status: decisions taken 2026-10-15 (see the last section); ready for the implementation plan
+Date: 2026-10-15 · Status: implemented in code 2026-10-15; not verified on a device (see «On a device»)
 
 ## Why
 
