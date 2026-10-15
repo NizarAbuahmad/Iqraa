@@ -2296,16 +2296,17 @@ surahs of equal length being swapped.
 
 ### What does not work, and what was not verified
 
-- **The corner is gated off in production builds.** `QURAN_CORNER_RELEASED` in
-  `artifacts/mobile/services/quranRelease.ts` is `false`: the Library card is
-  hidden and the three screens show «ركن القرآن غير متاح بعد» (`QuranGate`), so a
-  pasted URL does not reach the text either. Development builds (`__DEV__`)
-  always show it, which is how it is opened and checked. A merge to `main`
-  therefore does not release it. **To release:** a named person signs off
-  `lib/curriculum/sources/quran-ws/VERIFY.md` against an authorised printed
-  mushaf, the owner settles the font-licence and Jordan-approval items below,
-  and a reviewed one-line diff flips the constant. Nothing checks that the flip
-  follows the sign-off; the review does.
+- **The release gate was opened on 2026-10-15, at the owner's request, before
+  the text was verified.** `QURAN_CORNER_RELEASED` in
+  `artifacts/mobile/services/quranRelease.ts` is now `true`: the Library card
+  shows and the three screens open for every signed-in user once this reaches
+  `main` (a merge deploys the web app and an over-the-air update). It was
+  `false` from the first merge on 2026-10-12 until then; `QuranGate` shows
+  «ركن القرآن غير متاح بعد» whenever it is `false` and the build is not a
+  development one. **The printed-mushaf sign-off of
+  `lib/curriculum/sources/quran-ws/VERIFY.md` has NOT happened, and the font-
+  licence and Jordan-approval items below are still open.** To pull it back,
+  set the constant to `false`: a one-line change that ships over the air.
 - **Nothing here has been seen by a person in a browser or on a device.** The
   corner sits behind sign-in and the build sandbox has no session or API, so
   the Uthmani rendering in the Complex's font (including the sajdah mark over
