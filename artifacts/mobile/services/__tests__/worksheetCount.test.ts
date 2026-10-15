@@ -91,10 +91,11 @@ describe('worksheet', () => {
   });
 
   it('reports a shortfall when it ran dry, and the produced count is honest', async () => {
-    const w = await worksheet(CHEM, 15, ['short_answer']);
+    // 30 is the most a paper can ask for and more than any chemistry family holds, so the bank has to run dry.
+    const w = await worksheet(CHEM, 30, ['short_answer']);
     assert.ok(w.shortfall, 'a chemistry lesson was expected to run out');
     const produced = count(w) + (w.workedExample ? 1 : 0);
-    assert.equal(w.shortfall!.requested, 15);
+    assert.equal(w.shortfall!.requested, 30);
     assert.equal(w.shortfall!.produced, produced);
   });
 });
