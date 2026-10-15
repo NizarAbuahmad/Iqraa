@@ -1,6 +1,6 @@
 # Shrinking photos on a phone (تصغير الصور على الهاتف) — design
 
-Date: 2026-10-15 · Status: draft, awaiting review
+Date: 2026-10-15 · Status: decisions taken 2026-10-15 (see the last section); ready for the implementation plan
 
 ## Why
 
@@ -220,15 +220,12 @@ reinstall).
 - Whether `quality: 1` on the native picker returns the original file or
   re-encodes anyway on Android. Harmless either way, unverified.
 
-## Decisions for you before the plan is written
+## Decisions taken by the owner (2026-10-15)
 
-1. **Version.** Has a 1.3.0 Android binary ever been built and installed? STATUS
-   says "which builds are installed" is unknown. If **no**, this can ride 1.3.0
-   (no installed app to strand) and no bump is needed. If **yes, or unsure**,
-   bump to 1.4.0 — the default in this spec, because the failure of guessing
-   wrong the other way is a crash-on-launch that survives restarts.
-2. **Timing.** Is anything else pending that needs a native build? If so, ship
-   them in the same 1.4.0 build so installed apps are stranded once, not twice.
-3. **Scope.** All five call sites (recommended — one helper, and the comments
-   already claim it), or the two mark-sheet helpers only (smaller blast radius
-   for the first device run; the other three stay full-size on phones).
+1. **Version: bump to 1.4.0.** Chosen over riding 1.3.0. Every installed 1.3.0
+   app stops receiving OTA updates until it is replaced by a 1.4.0 build.
+2. **Timing: not answered.** Treated as «nothing else is waiting on a native
+   build». If something is, it should join the same 1.4.0 build; the plan does
+   not depend on it.
+3. **Scope: all five helpers** — `pickMarkSheetPhoto`, `pickMarkSheetPhotos`,
+   `pickChatImage`, `pickAvatarPhoto`, `pickLessonPhotos`.
