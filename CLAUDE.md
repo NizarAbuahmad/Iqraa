@@ -173,6 +173,35 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   so the tests that pin them apart (`activityBlueprints.test.ts`,
   `activityPrompts.test.ts`) assert *every field differs from every other
   type*; a new format needs its own entry in both files or they fail.
+- **A question can come from the book, the bank or a model, and only a verifier
+  makes one `verified`.** Real book items (`lib/curriculum/src/bookItems.ts`,
+  data written by `scripts/extract_book_items.py`) join by `lessonId`, never by
+  title. A `computed` item — SymPy solved a stem read from a text layer that
+  flattens exponents and splits fractions — must never carry a `check`: the
+  existing verification pass would badge it «تم التحقق», which says the stem was
+  read correctly and nothing has checked that. `verified` exists for book items
+  only where the guide prints the answer (the `unit-test` items 6-11 on
+  teacher-guide p.47, 5 of 6): the printed answers come in a different order from
+  the items, so the extractor pairs by VALUE (printed entry equals SymPy's answer
+  for the stem it read; a misread stem finds no answer), never by position, and
+  leaves an unmatched entry `computed` and listed in `report.json`
+  (`unmatchedPrinted`), never tolerated into a match. Even then the item carries
+  no `check` and no badge. A `unit-test` item cites as the unit test and is drawn
+  wherever a short answer is wanted. `SERVED_STATUSES` is the one place
+  that decides what a paper may draw. Only the API's evaluation generator uses
+  book items: the mock path (live AI off), and the live model path only when
+  `BOOK_ITEMS_LIVE=true` (off by default, read per request; production runs
+  `AI_LIVE_MODE=true`, so no live paper has them until someone sets the flag —
+  `generationParams.bookItems` says which state a paper was made in). The mobile
+  offline generators and `routes/generate.ts` ignore them, so a paper differs by
+  which path made it — add a family to the script's `TABLE`, never to a
+  generator. On the live path the model's surplus is cut before the book
+  questions are appended (`assembleLivePaper`); the finished paper is put into
+  type blocks by `inPaperOrder` like every stored paper, and the route's top-up
+  for a short reply is measured against the model's share (`count − k`).
+  The prompt is told what the book supplies and a per-competency quota
+  (`allocateQuestions` over the whole paper, rescaled for the top-up by
+  `remainingQuota`), and such a paper records `promptVersion` `exam-gen-6+book`.
 - **A teaching style shapes the whole lesson plan, in two places.** Per-style
   phases live in `artifacts/mobile/services/ai/lessonPlanBlueprints.ts` and the
   matching contract in `LESSON_STYLE_RULES_AR`/`_EN`
@@ -330,6 +359,13 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   Related trap: tab screens sit *under* the tab layout's lesson bar / bell
   header, which already pays `insets.top` — a tab screen header must not add it
   again.
+- **Arabic-Indic digits next to operators scramble on web, and no style fixes
+  it.** react-native-web puts `dir="auto"` on every `Text` (it beats
+  `direction`), and a bidi isolate is not enough: Arabic-Indic digits are type
+  AN, so «٩٫٥ × ١٠» still prints as «١٠ × ٩٫٥». A left-to-right *override*
+  fixes the digits but reverses Arabic letters («جا» → «اج»). Use `forceLtr` /
+  `displayLtr` / `entriesToSegments` in `services/mathCalc.ts`, and check such a
+  screen in a browser, not just in tests (see STATUS.md «Math Corner»).
 - **Extensionless relative imports only work through esbuild.** Anything loaded
   directly by `node --test` needs an explicit `.ts` extension.
 - **The OpenAI client throws at module scope without a key**, which makes

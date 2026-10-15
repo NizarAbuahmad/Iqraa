@@ -32,6 +32,7 @@ import {
   type QuestionType,
 } from '@/services/evaluations';
 import { summariseKeyChecks, type KeyCheckSummary } from '@/services/keyCheckSummary';
+import { bookItemNote } from '@/services/bookItemNote';
 import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 import { copyToClipboard } from '@/services/share';
 import { AddReadAloudModal } from '@/components/AddReadAloudModal';
@@ -649,6 +650,14 @@ export default function EvaluationDetailScreen() {
             {q.verification?.verified && q.verification.computedAnswer ? (
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, marginBottom: 6, textAlign: align }}>
                 {isolateForeignRuns(t('verifiedComputed', prettifySymPy(q.verification.computedAnswer)))}
+              </Text>
+            ) : null}
+            {/* Where in the NCCD book this came from, and how its key was
+                established when that is not "verified". Nothing for a question
+                that did not come from a book. */}
+            {bookItemNote(q.aiMetadata, lang === 'ar' ? 'ar' : 'en', q.source === 'ai_edited') ? (
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, marginBottom: 4, textAlign: align }}>
+                {isolateForeignRuns(bookItemNote(q.aiMetadata, lang === 'ar' ? 'ar' : 'en', q.source === 'ai_edited') ?? '')}
               </Text>
             ) : null}
             <Text

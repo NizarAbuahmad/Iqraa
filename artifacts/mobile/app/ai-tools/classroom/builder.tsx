@@ -28,6 +28,8 @@ import { GenerationStatus } from '@/components/ui/GenerationStatus';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { ACTIVITY_CARDS, cardMetaLabel, ClassroomSetup, resolveActivityType } from '@/services/classroomRouting';
+import { useWideScope } from '@/hooks/useWideScope';
+import { buildScopeRequest } from '@/services/wideScopeRequest';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
 
@@ -68,6 +70,10 @@ export default function ClassroomBuilderScreen() {
   // The picked subject's material language — English is taught in English.
   const lang = contentLang(subjects[subjectIdx].id, uiLang);
   const [topic, setTopic] = useState('');
+  // The structured scope the topic picker reports. This screen opens from the
+  // activity cards with no saved scope, so it starts empty; the pickers are
+  // passed so a scope left over from another grade or subject reads as not wide.
+  const wideScope = useWideScope({}, { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id });
   const [durationIdx, setDurationIdx] = useState(1); // 20 min default
   const [difficulty, setDifficulty] = useState<Difficulty>('standard');
   const [groupType, setGroupType] = useState<GroupType>('groups');
@@ -116,15 +122,24 @@ export default function ClassroomBuilderScreen() {
     // claims the picked subject. Refuse and name the real subject instead.
     const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, uiLang);
     if (scope) { setError(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
-    const conflict = groundedSubjectConflict(topic.trim(), lang, subjects[subjectIdx].id);
-    if (conflict) { setError(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
+    // A unit, a semester or the whole book is a revision. Its topic is a label
+    // («الفصل الأول كاملًا»), not a lesson; this screen's grounding calls are
+    // UNSCOPED, so a unit title would ground to another grade's lesson. A wide
+    // scope skips them all and merges the scope's fields last. One that cannot
+    // be grounded is refused here, never generated mislabeled.
+    const wide = wideScope.isWide ? buildScopeRequest(wideScope.scopeSel!, lang, { contextSource: 'curriculum' }) : null;
+    if (wideScope.isWide && !wide) { setError(t('wideScopeUngrounded')); return; }
+    if (!wide) {
+      const conflict = groundedSubjectConflict(topic.trim(), lang, subjects[subjectIdx].id);
+      if (conflict) { setError(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
+    }
     setError(''); setCancelled(false);
     const controller = new AbortController();
     abortRef.current = controller;
     setLoading(true); setResult(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      const additionalContext = buildGeneratorContext(topic.trim(), lang);
+      const additionalContext = wide ? undefined : buildGeneratorContext(topic.trim(), lang);
       const out = await aiService.generateClassroomActivity({
         grade: grades[gradeIdx].name,
         subject: subjects[subjectIdx].name,
@@ -137,11 +152,14 @@ export default function ClassroomBuilderScreen() {
         classroomSetup,
         language: lang === 'ar' ? 'arabic' : 'english',
         additionalContext,
-        unitId: generatorUnitId(topic.trim(), lang),
-        lessonId: generatorLessonId(topic.trim(), lang),
-        bookFigureCount: generatorFigureCount(topic.trim(), lang),
+        unitId: wide ? undefined : generatorUnitId(topic.trim(), lang),
+        lessonId: wide ? undefined : generatorLessonId(topic.trim(), lang),
+        bookFigureCount: wide ? 0 : generatorFigureCount(topic.trim(), lang),
         contextSource: 'curriculum',
         ...regenerationFields(opts?.regenerate === true, previous),
+        // Last: the scope's digest, its lesson table and the explicit-undefined
+        // lesson ids replace the single-lesson fields.
+        ...(wide ? wide.fields : {}),
       }, { signal: controller.signal });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setOutLang(lang);
@@ -244,6 +262,9 @@ export default function ClassroomBuilderScreen() {
           gradeId={grades[gradeIdx].id}
           value={topic}
           onChange={v => { setTopic(v); setError(''); }}
+          allowedKinds={['lesson', 'unit', 'semester', 'book']}
+          onScopeChange={wideScope.setScopeSel}
+          offlineWideScope
           lang={lang}
           isRTL={isRTL}
           colors={colors}
