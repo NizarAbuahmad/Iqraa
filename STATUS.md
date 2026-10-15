@@ -1707,7 +1707,7 @@ child's list read-only; the teacher sees how many have finished. Spec Part 2 of
 `docs/superpowers/specs/2026-10-11-family-school-views-design.md` (amended in
 place — see its section 2).
 
-- **Tables** (migration `0007`, additive, no destructive flag): `homework`
+- **Tables** (migration `0009` after the main merge — first written as `0007`; additive, no destructive flag): `homework`
   (teacher, class, title, instructions, `due_at`, optional `evaluation_id`,
   `archived_at`) and `homework_completions` (unique per homework + roster row).
   Schema in `lib/db/src/schema/homework.ts`.
@@ -2249,11 +2249,16 @@ real family accounts — **none of it has been seen arriving on a phone.**
   because Cloud Run throttles CPU once a response is sent. `sendExpoPush` also gained an
   8 s abort per chunk. **The release announcement is still fire-and-forget**, as are chat
   pushes (CLAUDE.md, *Work after `res.json`*).
-- **Schema.** Migration `0008_nappy_lenny_balinger`, additive: `users.push_prefs jsonb NOT
-  NULL DEFAULT '{}'` and the `homework_reminders` table (unique on homework + due date,
-  cascading). No destructive flag was needed. Applied to an empty Postgres and
-  `verify-schema` run against it (53 of 53 tables). Main's journal had ended at idx 6 when
-  this was written: re-check before merge that nobody else took 0007/0008.
+- **Schema.** Additive: `users.push_prefs jsonb NOT NULL DEFAULT '{}'` and the
+  `homework_reminders` table (unique on homework + due date, cascading). No destructive
+  flag was needed. Originally migrations `0007` (homework) and `0008` (this); on
+  2026-10-15 `main` had taken 0007 and 0008 (row-level security), so homework and this part
+  are regenerated as ONE migration, `0009_unknown_doctor_octopus`, which also grants the
+  three new tables to `iqraa_app` and classifies them DEFERRED in `rlsCoverage.test.ts`
+  (no RLS policies yet; `rlsDiff.test.ts` has no homework or push scenario of its own).
+  The push fan-out (`lib/familyPush.ts`, `lib/familyAccess.ts`' two reverse lookups) and the
+  reminder run (`lib/homeworkReminders.ts`) use `systemDb`, pinned in
+  `systemDbFiles.test.ts`. Re-check before merge that nobody else took idx 9.
 - **App (ships by OTA, no native change, no `app.json` `version` bump).** Channels
   `homework`, `exams` and `quiet` are created at runtime from `PUSH_CHANNELS`
   (`services/pushPolicy.ts`; `quiet` is `importance: low` with no sound or vibration, and
@@ -2314,7 +2319,7 @@ real family accounts — **none of it has been seen arriving on a phone.**
   interleave. The case was deleted rather than kept as a test that proves nothing, so the
   guard is correct by construction and **unproven by any test**.
 - **Owner's checklist after merge.**
-  1. The merge deploys the API (with migration `0008`) and the web app, and
+  1. The merge deploys the API (with migration `0009`) and the web app, and
      `mobile-update.yml` publishes the OTA that carries the channels, the tap target
      and the switches. Check `/api/healthz/version` matches the merge commit.
   2. Run `docs/deploying.md` «The homework reminder» steps 1–6 in one shell, because
