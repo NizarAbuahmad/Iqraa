@@ -338,3 +338,9 @@ describe('skipping the class picker', () => {
     assert.equal(gradeSetupSkipKey('user-a'), gradeSetupSkipKey('user-a'));
   });
 });
+
+describe('the student lesson explanation screen', () => {
+  it('is reachable by a student, because /curriculum is on the non-teacher allowlist', () => {
+    assert.equal(isNonTeacherRoute('/curriculum/lesson-explanation'), true);
+  });
+});

@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { isTeacherRole, useAuth } from '@/context/AuthContext';
+import { isStudentRole, isTeacherRole, useAuth } from '@/context/AuthContext';
 import {
   getLessonById,
   getLessonsForUnit,
@@ -18,6 +18,7 @@ import { LessonPrepPanel } from '@/components/ui/LessonPrepPanel';
 import { LessonMediaPanel } from '@/components/ui/LessonMediaPanel';
 import { ReadAloudPracticePanel } from '@/components/ui/ReadAloudPracticePanel';
 import { LessonShelfPanel } from '@/components/ui/LessonShelfPanel';
+import { LessonExplanationButton } from '@/components/ui/LessonExplanationButton';
 import { VirtualLabCard } from '@/components/ui/VirtualLabCard';
 import { askAboutLessonHandoff } from '@/services/lessonShelf';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
@@ -153,6 +154,13 @@ export default function LessonDetailScreen() {
       </View>
 
       <View style={styles.body}>
+        {/* Students only. Teachers have the preparation buttons below; a student
+            gets the stored, admin-approved explanation, which costs nothing to
+            serve and cannot start a generation. */}
+        {isStudentRole(user?.role) ? (
+          <LessonExplanationButton lessonId={lesson.id} accent={color} fill={colorFill} />
+        ) : null}
+
         {/*
           Teacher-only, and not merely cosmetically.
 

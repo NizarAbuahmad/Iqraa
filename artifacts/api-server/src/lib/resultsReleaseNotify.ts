@@ -18,7 +18,7 @@
  * a failed release.
  */
 import {
-  db,
+  systemDb as db, // Acts without (or beyond) the caller's identity — see lib/db/src/scopedPool.ts.
   attempts,
   chatMessages,
   chatParticipants,

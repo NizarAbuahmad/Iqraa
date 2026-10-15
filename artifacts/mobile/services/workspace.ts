@@ -17,7 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiFetch, getAccessToken } from './apiClient';
 import { trackEvent } from './analytics';
 import { attachAcrossClasses } from './classAttach';
-import { generatorLessonId } from './kbContext';
+import { withLessonId } from './materialLessonId';
 
 // 'activity' is a first-class kind: it is stage 3 of the lesson flow, a CQV
 // artifact type ('classroom-activity'), and already has a `materialActivity`
@@ -141,25 +141,6 @@ async function apiGet<T>(path: string): Promise<T | null> {
 }
 
 // ─── Public API ────────────────────────────────────────────────────────────────
-
-/**
- * `formState` with the curriculum lesson id added, when the topic grounds to one.
- *
- * The prep board matches materials to a lesson by this id (lessonBoard.ts),
- * because a title does not identify a lesson. Stamped here, the one place every
- * screen and the chat save through, rather than in each of them. An id the
- * caller already set wins; a free-typed topic that grounds to nothing gets
- * none and the board falls back to the topic.
- */
-function withLessonId(
-  formState: Record<string, any> | undefined,
-  topic: string | undefined,
-  language: 'ar' | 'en' | undefined,
-): Record<string, any> | undefined {
-  if (!formState || formState.lessonId || !topic?.trim()) return formState;
-  const lessonId = generatorLessonId(topic.trim(), language ?? 'ar');
-  return lessonId ? { ...formState, lessonId } : formState;
-}
 
 /** Save a new material. Returns the saved item. */
 export async function saveItem(

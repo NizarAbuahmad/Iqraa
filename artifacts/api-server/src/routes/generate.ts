@@ -60,7 +60,7 @@ import {
 } from "../lib/aiBudget.ts";
 import { normalizeEscapeCodes } from "../lib/escapeCodes.ts";
 import { withGrounding, type Grounding } from "../lib/grounding.ts";
-import { PROMPT_VERSION, generationKeys, hasBookFigures, normalizeText } from "../lib/generationKey.ts";
+import { PROMPT_VERSION, generationKeys, hasBookFigures, normalizeText, scopeKeyOf } from "../lib/generationKey.ts";
 import {
   noteServed,
   readPool,
@@ -592,6 +592,8 @@ function dedupe(lines: string[]): string[] {
 /** How the pool is browsed by a human — the lesson this artifact belongs to.
  *  Not part of the key, so an imperfect value costs nothing but readability. */
 function lessonRefOf(body: Record<string, unknown>): string {
+  const scope = scopeKeyOf(body);
+  if (scope) return scope;
   const id = typeof body.lessonId === "string" ? body.lessonId.trim() : "";
   if (id) return id;
   return typeof body.topic === "string" ? normalizeText(body.topic).slice(0, 200) : "";
