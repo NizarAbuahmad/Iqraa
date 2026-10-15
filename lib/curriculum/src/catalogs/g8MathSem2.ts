@@ -33,6 +33,8 @@ export type G8MathSem2Lesson = {
   id: string;
   order: number;
   title_ar: string;
+  /** English title, when written; absent lessons fall back to `title_ar`. */
+  title_en?: string;
   main_idea_ar: string;
   periods: number | null;
   objectives: string[];
@@ -138,7 +140,7 @@ export function buildG8MathSem2Catalog(): {
         unitId: uKbId,
         order: lesson.order,
         titleAr: lesson.title_ar,
-        titleEn: lesson.title_ar,
+        titleEn: lesson.title_en ?? lesson.title_ar,
         summaryAr: lesson.main_idea_ar || objectives.join('؛ '),
         summaryEn: lesson.main_idea_ar || objectives.join('; '),
         keyConceptsAr: [...vocab],
