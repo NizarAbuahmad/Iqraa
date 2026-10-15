@@ -17,9 +17,14 @@ import { aiService } from '../ai/generators.ts';
 import { buildScopeRequest } from '../wideScopeRequest.ts';
 import { scopeLabel, semestersAvailable, type ScopeSelection } from '../scopeSelection.ts';
 import { revisionUnits, splitShown, REVISION_SHOWN_PER_UNIT } from '../revisionScope.ts';
-import { getUnitsForSubjectGrade, KB_BOOKS, KB_UNITS } from '../knowledgeBase.ts';
+import { getLessonsForUnit, getUnitsForSubjectGrade, KB_BOOKS, KB_UNITS } from '../knowledgeBase.ts';
 import { buildLessonFlowHTML } from '../exportHtml.ts';
 import { englishUnits } from '../ai/lessonPlanRevision.ts';
+import { lessonFlowFailure } from '../lessonFlowError.ts';
+import { NoQuestionBankError } from '../ai/generators.ts';
+import { LessonFlowStepError } from '../ai/lessonFlowRunner.ts';
+import { revisionActivityLesson } from '../ai/activityRevision.ts';
+import type { KBLesson } from '../knowledgeBase.ts';
 import type { LessonFlowOutput } from '../ai/AIService.ts';
 
 (aiService as unknown as { delay: () => Promise<void> }).delay = async () => {};
@@ -192,6 +197,13 @@ describe('runLessonFlowFrom — a retry', () => {
 
 /** Arabic LETTERS: not the Quranic marks a few Latin titles carry, which are real content. */
 const ARABIC_LETTER = /[ء-ي]/;
+/**
+ * The one Arabic shape an English output may keep: a bracketed one-to-three-letter gloss,
+ * «The Letter Baa (ب)», «Alif (ا, ى)», where the letter IS the lesson. The scans below
+ * remove exactly this and then look for any Arabic letter, so they stay strict about the rest.
+ */
+const LETTER_GLOSS_G = /\s*[(（]\s*[ء-ي][\u064B-\u065F]*(?:\s*[,،/\-–]\s*[ء-ي][\u064B-\u065F]*){0,2}\s*[)）]/g;
+const hasArabic = (s: string) => ARABIC_LETTER.test(s.replace(LETTER_GLOSS_G, ''));
 const LESSON_SHAPED = /درس «|أنهينا درس|ملخص الدرس|مفردات الدرس|غلق الدرس|هذا الدرس|درس اليوم|today's lesson|this lesson|Lesson Summary|Key Vocabulary/i;
 /** Also what a revision's warm-up must not say: it is not «the new lesson». */
 const ONE_LESSON = new RegExp(`${LESSON_SHAPED.source}|الدرس الجديد|the new lesson`, 'i');
@@ -265,7 +277,7 @@ describe('lesson-flow, offline, over the scopes a teacher can pick', () => {
     for (const sel of picks) {
       const { req } = flowRequest(sel, 'en');
       const out = await runLessonFlowFrom('objectives', req, real(), {}, { onStepStart: () => {}, onStepDone: () => {} });
-      assert.doesNotMatch(JSON.stringify(out.plan), ARABIC_LETTER, `${sel.subjectId} ${sel.kind}: plan`);
+      assert.ok(!hasArabic(JSON.stringify(out.plan)), `${sel.subjectId} ${sel.kind}: plan`);
     }
   });
 });
@@ -293,11 +305,11 @@ describe('lesson-flow steps 1–3 over every book, semester and unit in the data
         const { req } = flowRequest(sel, lang);
         const out = await runLessonFlowFrom('objectives', req, stubbed, {}, { onStepStart: () => {}, onStepDone: () => {} });
         const where = `${sel.subjectId} ${sel.kind} ${lang}`;
-        if (lang === 'en' && ARABIC_LETTER.test(JSON.stringify(out.plan))) offenders.push(`${where}: plan Arabic`);
+        if (lang === 'en' && hasArabic(JSON.stringify(out.plan))) offenders.push(`${where}: plan Arabic`);
         // Maths and chemistry print their banks' Arabic answers in an English activity, as a lesson does.
         if (lang === 'en' && !BANKED.has(sel.subjectId)) {
           for (const k of ['warmup', 'activity'] as const) {
-            if (ARABIC_LETTER.test(JSON.stringify(out[k]))) offenders.push(`${where}: ${k} Arabic`);
+            if (hasArabic(JSON.stringify(out[k]))) offenders.push(`${where}: ${k} Arabic`);
           }
         }
         if (ONE_LESSON.test(JSON.stringify({ plan: out.plan, warmup: out.warmup, activity: out.activity }))) offenders.push(`${where}: lesson-shaped`);
@@ -308,17 +320,63 @@ describe('lesson-flow steps 1–3 over every book, semester and unit in the data
 });
 
 describe('the English plan, where the data holds Arabic', () => {
-  it('objectives say what to review in English: an outcome that is Arabic gives way to the unit\'s English concepts, not to a generic line', async () => {
-    for (const subjectId of Object.keys(SUBJECT_NAME)) {
-      const { req } = flowRequest({ kind: 'semester', gradeId: 'grade-10', subjectId, semester: 1 }, 'en');
-      const plan = await aiService.generateLessonPlan(req);
-      assert.ok(plan.objectives.length > 0, subjectId);
-      // Mutation caught: reading `u.outcomes` alone leaves every unit its generic line.
-      for (const o of plan.objectives) assert.doesNotMatch(o, /^Review the key ideas of the/, `${subjectId}: ${o}`);
+  const REVIEW_EN = /^Review the key ideas of the “([^”]+)” unit(?:: (“[^”]+”(?:, “[^”]+”){0,2}))?$/;
+  const REVIEW_AR = /^مراجعة الأفكار الرئيسة في وحدة «([^»]+)»(?:: («[^»]+»(?:، «[^»]+»){0,2}))?$/;
+  const norm = (x: string) => x.toLowerCase().replace(/[^\p{L}\p{M}\p{N}]+/gu, ' ').trim();
+  const words = (x: string) => x.split(/\s+/).filter(Boolean).length;
+  /** The properties an objective must have, whatever its exact wording. */
+  function readable(o: string, lang: 'ar' | 'en'): string | null {
+    const review = (lang === 'ar' ? REVIEW_AR : REVIEW_EN).exec(o);
+    if (review) {
+      const title = norm(review[1]!);
+      const names = [...(review[2] ?? '').matchAll(/[“«]([^”»]+)[”»]/g)].map(m => norm(m[1]!));
+      for (const n of names) if (title.includes(n)) return `lists «${n}», which only repeats the unit's name`;
+      return null;
     }
+    const at = o.indexOf(': ');
+    if (at < 0) return 'neither a review line nor "Unit: outcome"';
+    const head = o.slice(0, at), tail = o.slice(at + 2);
+    if (norm(head) === norm(tail)) return 'repeats the unit title as its own outcome';
+    // The Arabic outcomes are the Ministry's own wording and some are a single word; only an
+    // English line is ours to judge, and it is built from English outcomes or concepts alone.
+    if (lang === 'en' && (words(tail) < 2 || tail.length < 6)) return `a fragment after the unit name: «${tail}»`;
+    return null;
+  }
+
+  it('objectives are sentences in both languages: no "Title: Title", no one-word tail, one shape for an outcome-less unit', async () => {
+    const offenders: string[] = [];
+    let reviewWithNames = 0, reviewPlain = 0, outcomeLines = 0;
+    for (const sel of allScopes()) {
+      for (const lang of ['ar', 'en'] as const) {
+        const { req } = flowRequest(sel, lang);
+        const plan = await aiService.generateLessonPlan(req);
+        for (const o of plan.objectives) {
+          const why = readable(o, lang);
+          if (why) offenders.push(`${sel.subjectId} ${sel.kind} ${lang}: ${o} (${why})`);
+          const m = (lang === 'ar' ? REVIEW_AR : REVIEW_EN).exec(o);
+          if (m) { if (m[2]) reviewWithNames++; else reviewPlain++; } else outcomeLines++;
+        }
+      }
+    }
+    assert.deepEqual(offenders.slice(0, 8), [], `${offenders.length} unreadable objectives`);
+    // Not vacuous: the scan met all three kinds of line.
+    assert.ok(reviewWithNames > 500 && reviewPlain > 0 && outcomeLines > 500, `${reviewWithNames} / ${reviewPlain} / ${outcomeLines}`);
   });
 
-  it('a lesson whose title carries an Arabic gloss is still counted and named, with the gloss cut', async () => {
+  it('a unit with real English outcomes keeps them; one without names itself and lists concepts that add to its title', async () => {
+    const english = await aiService.generateLessonPlan(flowRequest({ kind: 'semester', gradeId: 'grade-10', subjectId: 'english', semester: 1 }, 'en').req);
+    assert.ok(english.objectives.some(o => /^Looking good: I can use Present Simple/.test(o)), english.objectives.slice(0, 3).join(' | '));
+    const maths = await aiService.generateLessonPlan(flowRequest({ kind: 'semester', gradeId: 'grade-10', subjectId: 'mathematics', semester: 1 }, 'en').req);
+    // Mutation caught: falling back to `u.concepts` one by one («Circle: Chord: …») or to the bare generic line.
+    assert.ok(maths.objectives.every(o => REVIEW_EN.test(o) && /: “/.test(o)), maths.objectives.join(' | '));
+    // Arabic has the same structure for a unit with no outcomes (physical education has none).
+    const pe = await aiService.generateLessonPlan(flowRequest({ kind: 'book', gradeId: 'grade-10', subjectId: 'physical-education' }, 'ar').req);
+    const peEn = await aiService.generateLessonPlan(flowRequest({ kind: 'book', gradeId: 'grade-10', subjectId: 'physical-education' }, 'en').req);
+    assert.ok(pe.objectives.length > 0 && pe.objectives.every(o => REVIEW_AR.test(o) && /: «/.test(o)), pe.objectives.join(' | '));
+    assert.equal(pe.objectives.length, peEn.objectives.length);
+  });
+
+  it('a lesson whose title carries an Arabic gloss is still counted and named, with a long gloss cut', async () => {
     const glossed = allScopes().filter(sel => revisionUnits(sel, 'en')
       .some(u => u.lessons.some(l => ARABIC_LETTER.test(l.title))));
     assert.ok(glossed.length > 0, 'the data holds English lesson titles with Arabic letters');
@@ -328,17 +386,17 @@ describe('the English plan, where the data holds Arabic', () => {
       const left = revisionUnits(sel, 'en').flatMap(u => splitShown(u, REVISION_SHOWN_PER_UNIT).left).length;
       const said = /leaves out (\d+) lesson/.exec(plan.introduction);
       assert.equal(said ? Number(said[1]) : 0, left, `${sel.kind} ${sel.subjectId}: the count the plan states`);
-      assert.doesNotMatch(plan.introduction, ARABIC_LETTER, `${sel.kind} ${sel.subjectId}`);
+      assert.ok(!hasArabic(plan.introduction), `${sel.kind} ${sel.subjectId}`);
     }
   });
 });
 
 describe('englishUnits', () => {
-  it('cuts an Arabic gloss, names an Arabic-only title by its place, drops Arabic lines, and keeps every lesson', () => {
+  it('names an Arabic-only title by its place, drops Arabic lines, cuts a long gloss and keeps every lesson', () => {
     const unit = {
       unitId: 'u', title: 'وحدة عربية فقط',
       lessons: [
-        { id: 'a', title: 'The Letter Dhaal (ذ)', thin: false },
+        { id: 'a', title: 'Looking good (المظهر الحسن)', thin: false },
         { id: 'b', title: 'درس عربي فقط', thin: false },
         { id: 'c', title: 'Solving equations', thin: true },
       ],
@@ -346,14 +404,100 @@ describe('englishUnits', () => {
     };
     const [out] = englishUnits([unit]);
     assert.equal(out!.title, 'Unit 1');
-    assert.deepEqual(out!.lessons.map(l => l.title), ['The Letter Dhaal', 'Lesson 2', 'Solving equations']);
+    assert.deepEqual(out!.lessons.map(l => l.title), ['Looking good', 'Lesson 2', 'Solving equations']);
     assert.deepEqual(out!.lessons.map(l => l.id), ['a', 'b', 'c']);
     assert.deepEqual([out!.outcomes, out!.concepts, out!.terms], [[], ['Slope'], []]);
+  });
+
+  it('keeps a one-to-three-letter gloss, because there the letter is the lesson', () => {
+    const titles = ['The Letter Baa (ب)', 'The Elongation Letter Alif (ا, ى)', 'The Letter Waw (و)'];
+    const [out] = englishUnits([{
+      unitId: 'u', title: 'Letters (حروف)', outcomes: [], concepts: [], terms: [],
+      lessons: titles.map((title, i) => ({ id: String(i), title, thin: false })),
+    }]);
+    assert.deepEqual(out!.lessons.map(l => l.title), titles);
+    assert.equal(out!.title, 'Letters');
+    // A gloss of four letters is a word, not a letter: cut.
+    const [word] = englishUnits([{ unitId: 'u', title: 'Letters (حروفا)', lessons: [], outcomes: [], concepts: [], terms: [] }]);
+    assert.equal(word!.title, 'Letters');
+  });
+
+  it('the data\'s letter lessons come through with their letter', () => {
+    const glossed = allScopes().flatMap(sel => revisionUnits(sel, 'en')).flatMap(u => u.lessons).filter(l => new RegExp(LETTER_GLOSS_G.source).test(l.title));
+    assert.ok(glossed.length >= 30, `${glossed.length} letter lessons in the data`);
+    const [unit] = englishUnits([{ unitId: 'u', title: 'x', outcomes: [], concepts: [], terms: [], lessons: glossed }]);
+    assert.deepEqual(unit!.lessons.map(l => l.title), glossed.map(l => l.title));
   });
 
   it('keeps a Quranic mark inside a Latin title: it is content, not an Arabic word', () => {
     const [out] = englishUnits([{ unitId: 'u', title: 'Stops \u06D6 and pauses', lessons: [], outcomes: [], concepts: [], terms: [] }]);
     assert.equal(out!.title, 'Stops \u06D6 and pauses');
+  });
+});
+
+describe('the English concepts of a revision activity', () => {
+  it('drop an Arabic gloss from the key concepts AND the objectives, and keep a Quranic mark: one letters-only test for both', () => {
+    const lesson = {
+      id: 'x', unitId: 'u', keyConceptsEn: ['Stops \u06D6 and pauses', 'دراسة الجدوى', 'Recitation'],
+      keyConceptsAr: [], keyTerms: [], objectives: [], rulesAr: [], rulesEn: [],
+    } as unknown as KBLesson;
+    const out = revisionActivityLesson([{ unitId: 'u', lessons: [lesson] }], 'k', { title: { ar: 'ع', en: 'e' }, lang: 'en' });
+    // Mutation caught: the whole-script test on `objectives` drops the first concept there.
+    for (const list of [out.keyConceptsEn, out.objectives]) {
+      assert.ok(list.includes('Stops \u06D6 and pauses'), list.join(' | '));
+      assert.ok(list.includes('Recitation'), list.join(' | '));
+      assert.ok(!list.some(c => ARABIC_LETTER.test(c)), list.join(' | '));
+    }
+  });
+});
+
+describe('a failed step', () => {
+  const t = (key: string) => `[${key}]`;
+
+  it('keeps the cause\'s code and live error through the wrapper', async () => {
+    const ai: RunnerAIService = {
+      ...recording().ai,
+      generateWorksheet: async () => { throw new NoQuestionBankError('الكتاب كاملًا'); },
+    };
+    await assert.rejects(
+      () => runLessonFlowFrom('objectives', WIDE_REQ, ai, {}, noop),
+      (e: unknown) => e instanceof LessonFlowStepError && e.stepKey === 'worksheet' && e.code === 'no_question_bank' && e.liveError === undefined,
+    );
+    const live = Object.assign(new NoQuestionBankError('x'), { liveError: 'HTTP 500' });
+    assert.equal(new LessonFlowStepError('worksheet', live).liveError, 'HTTP 500');
+    assert.equal(new LessonFlowStepError('worksheet', new Error('plain')).code, undefined);
+    assert.equal(new LessonFlowStepError('worksheet', 'a string').message, 'a string');
+  });
+
+  it('a subject with no question bank shows the translated sentence and offers no Retry; a live failure keeps its Retry', () => {
+    const bank = new LessonFlowStepError('worksheet', new NoQuestionBankError('الكتاب كاملًا'));
+    // Mutation caught: showing `err.message` ("No offline question bank for …") raw.
+    assert.deepEqual(lessonFlowFailure(bank, t), { message: '[noQuestionBank]', retryable: false });
+    const live = new LessonFlowStepError('worksheet', Object.assign(new NoQuestionBankError('x'), { liveError: 'HTTP 500' }));
+    const shown = lessonFlowFailure(live, t);
+    assert.match(shown.message, /^\[noQuestionBankLiveFailed\]/);
+    assert.equal(shown.retryable, true);
+  });
+
+  it('an uncoded failure keeps its own message and its Retry, as it always did', () => {
+    assert.deepEqual(lessonFlowFailure(new LessonFlowStepError('activity', new Error('HTTP 500')), t), { message: 'HTTP 500', retryable: true });
+    assert.deepEqual(lessonFlowFailure('boom', t), { message: 'Generation failed', retryable: true });
+  });
+
+  it('a lesson flow and a wide flow on a bank-less subject fail the same way', async () => {
+    const histUnit = getUnitsForSubjectGrade('history', 'grade-10')[0]!;
+    const wide = flowRequest({ kind: 'unit', gradeId: 'grade-10', subjectId: 'history', unitId: histUnit.id }, 'ar').req;
+    const lessonKb = getLessonsForUnit(histUnit.id)[0]!;
+    const lesson: AIRequest = { grade: 'G', subject: 'History', topic: lessonKb.titleAr, language: 'arabic', lessonId: lessonKb.id };
+    const ai: RunnerAIService = {
+      generateLessonPlan: r => aiService.generateLessonPlan(r), generateActivity: r => aiService.generateActivity(r),
+      generateWorksheet: r => aiService.generateWorksheet(r), generateQuiz: r => aiService.generateQuiz(r),
+    };
+    const seen: Array<{ step: StepKey; code?: string }> = [];
+    for (const req of [wide, lesson]) {
+      try { await runLessonFlowFrom('objectives', req, ai, {}, noop); } catch (e) { const err = e as LessonFlowStepError; seen.push({ step: err.stepKey, code: err.code }); }
+    }
+    assert.deepEqual(seen, [{ step: 'worksheet', code: 'no_question_bank' }, { step: 'worksheet', code: 'no_question_bank' }]);
   });
 });
 
