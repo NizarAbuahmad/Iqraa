@@ -1348,6 +1348,8 @@ const translations = {
     lessonFlowStepGuided: 'التدريب الموجّه',
     lessonFlowStepWorksheet: 'ورقة العمل',
     lessonFlowStepExitTicket: 'غلق الدرس',
+    // The same step in a unit / semester / book flow, which closes a session, not a lesson.
+    lessonFlowStepExitTicketRevision: 'غلق الحصة',
     lessonFlowLaunchClassroom: 'اعرض على شاشة الصف',
     lessonFlowExportAll: 'صدّر الكل PDF',
     lessonFlowSaveFlow: 'احفظ المسار',
@@ -4056,6 +4058,7 @@ const translations = {
     lessonFlowStepGuided: 'Guided practice',
     lessonFlowStepWorksheet: 'Student worksheet',
     lessonFlowStepExitTicket: 'Exit ticket',
+    lessonFlowStepExitTicketRevision: 'Exit ticket',
     lessonFlowLaunchClassroom: 'Show on the class screen',
     lessonFlowExportAll: 'Export all as PDF',
     lessonFlowSaveFlow: 'Save flow',
