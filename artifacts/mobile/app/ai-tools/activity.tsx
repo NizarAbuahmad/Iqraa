@@ -12,7 +12,7 @@ import { getT } from '@/services/i18n';
 import { contentLang, topicInLang } from '@/services/contentLanguage';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { resolveGeneratorGrounding } from '@/services/kbContext';
+import { resolveGeneratorGrounding, type GeneratorGrounding } from '@/services/kbContext';
 import { isolateForeignRuns } from '@/services/mathRender';
 import { pooledVariantId } from '@/services/ai/regeneration';
 import { ActivityOutput, ActivityStep } from '@/services/ai/AIService';
@@ -38,7 +38,7 @@ import { useFavorite } from '@/hooks/useFavorite';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
 import { captureGenerationScope, materialScope, reopenedGenerationScope, savedIdAfterGeneration, type GenerationScope } from '@/services/generationScope';
 import { readIndexParam } from '@/services/materialParams';
-import { buildActivityRequest } from '@/services/generatorRequests';
+import { buildActivityRequest, type ActivityForm } from '@/services/generatorRequests';
 import { GeneratorResultActions, GeneratorSaveBar } from '@/components/ui/GeneratorResultActions';
 import { useGeneratorExport } from '@/hooks/useGeneratorExport';
 import { buildActivityHTML, buildActivitySlidesHTML, formatActivityText } from '@/services/share';
@@ -46,11 +46,16 @@ import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
 import { useWarmGrounding } from '@/hooks/useWarmGrounding';
 import { nextFrame } from '@/services/nextFrame';
+import { useWideScope } from '@/hooks/useWideScope';
+import { scopeLabel, type ScopeSelection } from '@/services/scopeSelection';
+import { buildScopeRequest, scopeFormState } from '@/services/wideScopeRequest';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
 const ACCENT_FILL = palette.hero;
 const DURATION_VALUES = [20, 30, 45, 60];
+/** What a unit / semester / book activity is anchored to: the scope itself, never one lesson its label happens to match. */
+const WIDE_GROUNDING: GeneratorGrounding = { lesson: null, grounded: true, score: 0, context: '', ungroundedNote: '' };
 type AType = ActivityTypeId;
 
 export default function ActivityScreen() {
@@ -60,6 +65,7 @@ export default function ActivityScreen() {
   const params = useLocalSearchParams<{
     savedId?: string; topic?: string;
     gradeIdx?: string; subjectIdx?: string; activityTypeIdx?: string; durationIdx?: string; objective?: string;
+    scope?: string; distribution?: string;
   }>();
   const scrollRef = useRef<ScrollView>(null);
 
@@ -90,6 +96,12 @@ export default function ActivityScreen() {
     { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
   ));
   useWarmGrounding(topic, lang);
+  // The structured scope the topic picker reports, seeded from a reopened
+  // material's saved form. The pickers are passed so a scope saved for another
+  // grade or subject reads as not wide (piece 2: stale restored scope).
+  const wideScope = useWideScope(params, { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id });
+  /** The wide scope the activity on screen was generated under — what Save records and the notice names. */
+  const [wideFrozen, setWideFrozen] = useState<ScopeSelection | null>(() => (wideScope.isWide ? wideScope.scopeSel : null));
   const [activityTypeIdx, setActivityTypeIdx] = useState(readIndexParam(params.activityTypeIdx, ACTIVITY_TYPE_IDS.length, 1));
   const [durationIdx, setDurationIdx] = useState(readIndexParam(params.durationIdx, DURATION_VALUES.length, 1));
   const [objective, setObjective] = useState(params.objective ?? '');
@@ -113,16 +125,28 @@ export default function ActivityScreen() {
    * subject as «نشاط: ».
    */
   const [generated, setGenerated] = useState<GenerationScope | null>(
-    () => (params.savedId ? reopenedGenerationScope(initialScope, topic, lang) : null),
+    () => {
+      if (!params.savedId) return null;
+      // A restored wide activity is anchored to the scope, not to whichever
+      // lesson its label («الفصل الأول كاملًا», a unit title) would ground to if
+      // looked up again.
+      if (wideFrozen && topic.trim()) {
+        return captureGenerationScope({ gradeIdx: initialScope.gradeIdx, subjectIdx: initialScope.subjectIdx, topic }, WIDE_GROUNDING);
+      }
+      return reopenedGenerationScope(initialScope, topic, lang);
+    },
   );
   const scope = materialScope(generated, { gradeIdx, subjectIdx, topic });
   // The activity on screen keeps the language it was generated in, even after
   // the pickers move on — like everything else read off `scope`.
   const outLang = contentLang(subjects[scope.subjectIdx].id, uiLang);
   const curriculumGrounded: boolean | null = generated ? generated.grounded : null;
-  const groundedLesson: string | null = generated?.lesson
-    ? (outLang === 'ar' ? generated.lesson.titleAr : generated.lesson.titleEn)
-    : null;
+  // A wide activity has no single lesson: name its scope instead of leaving the notice's tail empty.
+  const groundedLesson: string | null = wideFrozen
+    ? scopeLabel(wideFrozen, outLang)
+    : generated?.lesson
+      ? (outLang === 'ar' ? generated.lesson.titleAr : generated.lesson.titleEn)
+      : null;
   /**
    * The type, length and objective the activity on screen was built with —
    * frozen like `generated`, because the pickers stay editable afterwards.
@@ -194,16 +218,50 @@ export default function ActivityScreen() {
     const previous = result;
     // What a failed or cancelled run must hand back. It used to be cleared
     // up front and never restored, so a failed regenerate threw away the
-    // unsaved activity the teacher was looking at.
-    const held = { result, generated, builtWith };
+    // unsaved activity the teacher was looking at. The frozen scope goes back
+    // with it, so Save and the notice describe the restored activity.
+    const held = { result, generated, builtWith, wideFrozen };
     if (!topic.trim()) { setError(t('topicRequired')); return; }
+    const missing = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, uiLang);
+    if (missing) { setError(t('scopeNoCurriculum', missing.grade, missing.subject)); return; }
+    // The body comes from generatorRequests, like the worksheet's and the
+    // plan's, so the pregenerate script and this screen hash the same
+    // artifact. It also carries the localised grade name — this screen
+    // sent "Grade 10" into an Arabic activity.
+    const form: ActivityForm = {
+      gradeName: lang === 'ar' ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
+      subjectName: subjects[subjectIdx].name,
+      topic,
+      lang,
+      activityType: ACTIVITY_TYPE_IDS[activityTypeIdx],
+      durationMinutes: DURATION_VALUES[durationIdx],
+      objective,
+      regenerate: opts?.regenerate === true,
+      previous,
+    };
+    // A unit, a semester or the whole book is a revision session. Its topic is
+    // a label («الفصل الأول كاملًا»), not a lesson, so it is never grounded: the
+    // request is built against the inert WIDE_GROUNDING, and the scope's fields
+    // (digest, lesson table, explicit-undefined lesson ids) merge over it last.
+    // `own` carries what this screen decided: a typed objective keeps the
+    // request the teacher's (`contextSource: 'teacher'`, never pooled).
+    // A wide scope that cannot be grounded is refused here, never generated mislabeled.
+    const wideOwn = wideScope.isWide ? buildActivityRequest(form, WIDE_GROUNDING) : null;
+    const wide = wideOwn
+      ? buildScopeRequest(wideScope.scopeSel!, lang as 'ar' | 'en', {
+          additionalContext: wideOwn.additionalContext,
+          contextSource: wideOwn.contextSource,
+        })
+      : null;
+    if (wideScope.isWide && !wide) { setError(t('wideScopeUngrounded')); return; }
     // A topic that grounds to another subject's lesson cannot make an honest
     // activity — the KB serves that lesson's own content while the header
     // claims the picked subject. Refuse and name the real subject instead.
-    const missing = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, uiLang);
-    if (missing) { setError(t('scopeNoCurriculum', missing.grade, missing.subject)); return; }
-    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id, grades[gradeIdx].id);
-    if (conflict) { setError(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
+    // The check reads a lesson, so it applies to a single lesson only.
+    if (!wide) {
+      const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id, grades[gradeIdx].id);
+      if (conflict) { setError(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
+    }
     setError(''); setCancelled(false);
     const controller = new AbortController();
     abortRef.current = controller;
@@ -211,24 +269,17 @@ export default function ActivityScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await nextFrame();
     try {
-      const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', { scope: { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id } });
-      // The body comes from generatorRequests, like the worksheet's and the
-      // plan's, so the pregenerate script and this screen hash the same
-      // artifact. It also carries the localised grade name — this screen
-      // sent "Grade 10" into an Arabic activity.
-      const out = await aiService.generateActivity(buildActivityRequest({
-        gradeName: lang === 'ar' ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
-        subjectName: subjects[subjectIdx].name,
-        topic,
-        lang,
-        activityType: ACTIVITY_TYPE_IDS[activityTypeIdx],
-        durationMinutes: DURATION_VALUES[durationIdx],
-        objective,
-        regenerate: opts?.regenerate === true,
-        previous,
-      }, grounding), { signal: controller.signal });
+      const grounding = wide
+        ? WIDE_GROUNDING
+        : resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', { scope: { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id } });
+      const out = await aiService.generateActivity(
+        // Last: the scope's fields replace the single-lesson ones.
+        wide && wideOwn ? { ...wideOwn, ...wide.fields } : buildActivityRequest(form, grounding),
+        { signal: controller.signal },
+      );
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setGenerated(captureGenerationScope({ gradeIdx, subjectIdx, topic }, grounding));
+      setWideFrozen(wide ? wideScope.scopeSel : null);
       setBuiltWith({ activityTypeIdx, durationIdx, objective });
       setResult(out);
       // A regenerated activity is a new copy: leave the saved one alone, and
@@ -245,6 +296,7 @@ export default function ActivityScreen() {
         setResult(held.result);
         setGenerated(held.generated);
         setBuiltWith(held.builtWith);
+        setWideFrozen(held.wideFrozen);
       }
     } finally {
       abortRef.current = null;
@@ -273,7 +325,14 @@ export default function ActivityScreen() {
   const handleSave = async () => {
     if (!result) return;
     const title = getExportTitle();
-    const formState = { gradeIdx: scope.gradeIdx, subjectIdx: scope.subjectIdx, topic: scope.topic, ...(builtWith ?? { activityTypeIdx, durationIdx, objective }) };
+    const formState = {
+      gradeIdx: scope.gradeIdx, subjectIdx: scope.subjectIdx, topic: scope.topic,
+      ...(builtWith ?? { activityTypeIdx, durationIdx, objective }),
+      // From the frozen scope, not the live picker (a teacher can move it after
+      // generating). A lesson activity adds nothing — its form is unchanged —
+      // and `withLessonId` declines to stamp a lesson id on a wide one.
+      ...scopeFormState(wideFrozen, 'balanced'),
+    };
     // Built once: the two branches below used to each spell out the payload.
     // The grade is the localised name, as the lesson plan stores it.
     const payload = {
@@ -322,6 +381,9 @@ export default function ActivityScreen() {
     result,
     topic: scope.topic,
     lessonId: scope.lesson?.id,
+    // A wide activity has no figures of its own; without this an absent lesson
+    // id falls back to grounding the label (see `noFigures`).
+    noFigures: wideFrozen !== null,
     lang: outLang,
     getTitle: getExportTitle,
     getMeta: getExportMeta,
@@ -376,6 +438,9 @@ export default function ActivityScreen() {
           gradeId={grades[gradeIdx].id}
           value={topic}
           onChange={text => { setTopic(text); setError(''); }}
+          allowedKinds={['lesson', 'unit', 'semester', 'book']}
+          onScopeChange={wideScope.setScopeSel}
+          offlineWideScope
           lang={lang}
           isRTL={isRTL}
           colors={colors}
@@ -485,6 +550,8 @@ export default function ActivityScreen() {
           materialType="activity"
           toolId="activity"
           topic={scope.topic}
+          // Its chips open other tools with this label as a bare topic they re-ground.
+          hideRelated={wideFrozen !== null}
         />
       )}
     </ScrollView>

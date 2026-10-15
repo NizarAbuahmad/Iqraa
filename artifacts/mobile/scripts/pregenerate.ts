@@ -24,26 +24,39 @@
  *
  *   1. `--go --only=lesson-teaching` generates (or finds) each lesson's
  *      explanation and writes `pregen-review.json` (`--review=` to rename):
- *      for each lesson, the exact text a student would read.
+ *      for each lesson, the text a student would read. One difference: the
+ *      student cards strip one leading list marker («•», «-», «1.», «(1)») from
+ *      each concept point and worked-example step (`stripMarker`,
+ *      `lessonExplanationCards.ts`), so the file shows that text before the
+ *      strip. The strip never touches a dash or «(N)» in front of maths.
  *   2. A person reads the file and deletes the entries they reject. Look for
  *      wording that assumes a class or a projector ("your teacher", "the
  *      screen"), wrong maths or chemistry, and a different lesson's content.
- *      Edits are NOT applied: each entry carries a hash of its text, and
- *      `--approve` refuses the whole file if any entry's text no longer matches
- *      it. To reject an entry, delete it; do not reword it.
+ *      Edits are NOT applied: each entry carries a hash of its `variantId`,
+ *      `lessonId` and text, and `--approve` refuses the whole file if any
+ *      entry no longer matches it (so changing an id to approve a different
+ *      variant counts as an edit too), or if an entry is malformed (a
+ *      `variantId` that is not a uuid, no `content`). To reject an entry,
+ *      delete it; do not reword it.
  *   3. `pnpm run pregenerate -- --approve=pregen-review.json` marks the entries
  *      left in the file as fit for students. Needs a `system_admin` login.
- *      Nothing is approved by a run that only generates.
+ *      Nothing is approved by a run that only generates. `--approve` stands
+ *      alone: combined with `--go`, `--only`, `--force` or `--review` it
+ *      refuses to run rather than ignore them.
  *
  * The review file is never overwritten without `--force`: a generate run that
  * finds it refuses, because rerunning can serve a variant you already rejected
  * and would bring its entry back. Finish `--approve` (or delete the file)
- * first, or write a second file with `--review=<other file>`.
+ * first, or write a second file with `--review=<other file>`. Approving does
+ * not remove the file: it stays on disk, so a later bare `--go` (which writes
+ * a review file) is refused until you delete or rename it, or pass `--force`.
  *
  * A bare `--go` plans the 64 worksheet and lesson-plan calls first and the
- * lesson-teaching calls last, so the default $1 cap (100 model calls at the
- * $0.01 estimate) can run out before the explanations are reached. Use
- * `--only=lesson-teaching`.
+ * lesson-teaching calls last. The default $1 cap allows about 100 model calls
+ * (at the $0.01 estimate), so after the 64 earlier calls, at worst, roughly 36
+ * of the 49 teaching calls fit and the rest are cut off partway (a call the
+ * pool already holds answers in under 3 s and does not count against the
+ * cap). Use `--only=lesson-teaching`.
  *
  * REPLACING A REJECTED EXPLANATION. Deleting an entry from the review file only
  * keeps it from being approved; the stored variant stays in the pool, so the
@@ -86,17 +99,51 @@ const EST_COST_PER_CALL_USD = 0.01;
 const POOL_HIT_MS = 3000;
 
 const args = process.argv.slice(2);
-const flag = (name: string): string | undefined =>
-  args.find(a => a.startsWith(`--${name}=`))?.split('=').slice(1).join('=');
+const flag = (name: string): string | undefined => flagIn(args, name);
 const go = args.includes('--go');
 const capUsd = Number(flag('cap') ?? 1);
-const only = flag('only');
 const reviewPath = flag('review') ?? 'pregen-review.json';
 const approvePath = flag('approve');
 const force = args.includes('--force');
 
+const KINDS = ['worksheet', 'lesson-plan', 'lesson-teaching'] as const;
+export type Kind = (typeof KINDS)[number];
+
+/** The value of `--name=value`, or undefined when the flag is absent or has no `=`. */
+function flagIn(argv: string[], name: string): string | undefined {
+  return argv.find(a => a.startsWith(`--${name}=`))?.split('=').slice(1).join('=');
+}
+
+/**
+ * `--only=<kind>`. A typo used to plan 0 calls and end quietly, so anything but
+ * a known kind (including a bare `--only`) throws.
+ */
+export function parseOnly(argv: string[]): Kind | undefined {
+  const arg = argv.find(a => a === '--only' || a.startsWith('--only='));
+  if (arg === undefined) return undefined;
+  const value = flagIn(argv, 'only');
+  if (value && (KINDS as readonly string[]).includes(value)) return value as Kind;
+  throw new Error(`--only must be one of: ${KINDS.join(', ')} (got ${JSON.stringify(value ?? '')}).`);
+}
+
+/**
+ * `--approve` only posts the file's approvals. Flags that steer a generate run
+ * would be silently ignored next to it, so combining them is an error, as is
+ * `--approve` with no file (which used to fall through to a dry run).
+ */
+export function assertApproveAlone(argv: string[]): void {
+  const approve = argv.find(a => a === '--approve' || a.startsWith('--approve='));
+  if (approve === undefined) return;
+  if (!flagIn(argv, 'approve')) throw new Error('--approve needs a file: --approve=<review file>.');
+  const clash = ['go', 'only', 'force', 'review'].filter(name =>
+    argv.some(a => a === `--${name}` || a.startsWith(`--${name}=`)));
+  if (clash.length > 0) {
+    throw new Error(`--approve cannot be combined with ${clash.map(n => `--${n}`).join(', ')}: it only approves the entries in the file, and those flags would be ignored.`);
+  }
+}
+
 export type Call = {
-  kind: 'worksheet' | 'lesson-plan' | 'lesson-teaching';
+  kind: Kind;
   lesson: string;
   body: Record<string, unknown>;
 };
@@ -171,15 +218,22 @@ export type ReviewEntry = {
   variantId: string;
   lessonId: string;
   lesson: string;
-  /** sha256 of `JSON.stringify(content)` when the entry was written; `--approve` checks it. */
+  /** sha256 of `{ variantId, lessonId, content }` when the entry was written; `--approve` checks it. */
   contentHash: string;
   content: unknown;
 };
 
-/** sha256 hex of the content as it is written to the review file. */
-export function hashContent(content: unknown): string {
-  return createHash('sha256').update(JSON.stringify(content)).digest('hex');
+/**
+ * sha256 hex of what `--approve` acts on: the ids it posts and the text the
+ * reviewer read. A canonical object (fixed key order), so editing either id in
+ * the file is caught the same way as editing the text.
+ */
+export function hashContent(variantId: string, lessonId: string, content: unknown): string {
+  return createHash('sha256').update(JSON.stringify({ variantId, lessonId, content })).digest('hex');
 }
+
+/** The server's rule for a variant id (`isUuid` in api-server `lib/lessonExplanation.ts`). */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Sort the parsed review file into what `--approve` may send and what makes it
@@ -200,9 +254,10 @@ export function verifyReviewEntries(entries: unknown): {
     const e = raw as Record<string, unknown> | null;
     if (
       !e || typeof e !== 'object' || Array.isArray(e) ||
-      typeof e.variantId !== 'string' || typeof e.lessonId !== 'string' || typeof e.contentHash !== 'string'
+      typeof e.variantId !== 'string' || !UUID.test(e.variantId) ||
+      typeof e.lessonId !== 'string' || typeof e.contentHash !== 'string' || !('content' in e)
     ) { malformed++; continue; }
-    (hashContent(e.content) === e.contentHash ? approvable : edited).push(e as unknown as ReviewEntry);
+    (hashContent(e.variantId, e.lessonId, e.content) === e.contentHash ? approvable : edited).push(e as unknown as ReviewEntry);
   }
   return { approvable, edited, malformed };
 }
@@ -246,7 +301,7 @@ export function reviewEntry(call: Call, json: unknown): ReviewEntry | null {
   if (typeof variantId !== 'string' || !variantId.trim()) return null;
   if (typeof lessonId !== 'string' || !lessonId) return null;
   const shown = withoutTeacherNotes(content);
-  return { variantId, lessonId, lesson: call.lesson, contentHash: hashContent(shown), content: shown };
+  return { variantId, lessonId, lesson: call.lesson, contentHash: hashContent(variantId, lessonId, shown), content: shown };
 }
 
 function apiEnv() {
@@ -276,10 +331,10 @@ async function approve(file: string): Promise<void> {
   // Check the file before any network call: all or nothing.
   const { approvable, edited, malformed } = verifyReviewEntries(JSON.parse(readFileSync(file, 'utf8')));
   if (malformed > 0) {
-    throw new Error(`${malformed} malformed in ${file}: an entry has no variantId/contentHash (or the file is not a list of entries). Nothing was approved.`);
+    throw new Error(`${malformed} malformed in ${file}: an entry has no content/contentHash, a variantId that is not a uuid, or no lessonId (or the file is not a list of entries). Nothing was approved.`);
   }
   if (edited.length > 0) {
-    throw new Error(`${edited.length} entr${edited.length === 1 ? 'y' : 'ies'} in ${file} ${edited.length === 1 ? 'was' : 'were'} edited (${titles(edited)}): edits are not applied; delete the entry instead of editing it. Nothing was approved.`);
+    throw new Error(`${edited.length} entr${edited.length === 1 ? 'y' : 'ies'} in ${file} ${edited.length === 1 ? 'was' : 'were'} edited (${titles(edited)}): edits are not applied; delete the entry instead of editing it. (If you did not edit it, the file may have been written by an older version of this script, whose hash did not cover the ids: regenerate it.) Nothing was approved.`);
   }
   const env = apiEnv();
   const token = await login(env);
@@ -292,18 +347,22 @@ async function approve(file: string): Promise<void> {
       body: JSON.stringify({ variantIds: ids.slice(i, i + 100) }),
     });
     if (!r.ok) throw new Error(`approve failed: ${r.status} (needs a system_admin login; a 400 means the file held an invalid variantId)`);
-    approved += ((await r.json()) as { approved: number }).approved;
+    const reply = (await r.json().catch(() => ({}))) as { approved?: unknown };
+    approved += typeof reply.approved === 'number' && Number.isFinite(reply.approved) ? reply.approved : 0;
   }
   console.log(`approved ${approved} of ${ids.length} (rows already approved or retired are not counted).`);
 }
 
 async function main() {
+  // Checked here, not at import, so the test can import this file.
+  assertApproveAlone(args);
+  const only = parseOnly(args);
   if (approvePath) { await approve(approvePath); return; }
 
   const all = [...plannedCalls(), ...plannedTeachingCalls()];
   const calls = only ? all.filter(c => c.kind === only) : all;
   const maxCalls = Math.floor(capUsd / EST_COST_PER_CALL_USD);
-  const byKind = (['worksheet', 'lesson-plan', 'lesson-teaching'] as const)
+  const byKind = KINDS
     .map(k => `${calls.filter(c => c.kind === k).length} ${k}`).join(', ');
   console.log(`${calls.length} calls planned (${byKind}).`);
   console.log(`Worst case at $${EST_COST_PER_CALL_USD}/call: $${(calls.length * EST_COST_PER_CALL_USD).toFixed(2)}; cap $${capUsd} allows ${maxCalls} model calls.`);

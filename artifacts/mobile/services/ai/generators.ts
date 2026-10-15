@@ -1,5 +1,5 @@
 import { plainActivity } from './activityText.ts';
-import { AIService } from './AIService.ts';
+import { AIService, isRevisionRequest } from './AIService.ts';
 import type {
   ActivityOutput, ActivityStep, AIRequest,
   ClassroomActivity, ClassroomActivityRequest,
@@ -25,16 +25,24 @@ import {
   takeSolvedMath,
   completionSplit,
   type DiffTier,
+  type PracticeWQ,
 } from './mathPractice.ts';
 import { isChemContext, takeConcreteChem, takeConcreteChemBatch, takeSolvedChem, type SolvedItem } from './chemPractice.ts';
 import { buildActivityBlueprint } from './activityBlueprints.ts';
 import { buildLessonStyleBlueprint, type LessonDocContext } from './lessonPlanBlueprints.ts';
+import { revisionPlanFromRequest } from './lessonPlanRevision.ts';
 import { arPrefixed, lessonKindFor, type LessonKind } from './lessonPlanKinds.ts';
 import { arMinutes } from './lessonPlanTypes.ts';
 import { classifyVerifiableTopic } from './verifyMathGuards.ts';
 import { QUIZ_TYPE_ORDER } from '../quizPaper.ts';
 import { ScopeDrawer } from './scopeDraw.ts';
 import { planCoverage, type CoverageLesson } from '../coveragePlan.ts';
+import {
+  drawAcrossUnits, revisionActivityLesson, revisionLessonsByUnit,
+  type RevisionDrawLesson, type RevisionLessonGroup,
+} from './activityRevision.ts';
+import { activityRevisionRewords, classroomRevisionRewords, reviseWording } from './revisionWording.ts';
+import { revisionPhrase, scopeFromKey } from '../revisionScope.ts';
 
 /**
  * Symbolic verification, loaded lazily.
@@ -881,12 +889,18 @@ export class NoQuestionBankError extends Error {
 /** Tests that exercise the template machinery directly turn this off; nothing else should. */
 export const questionBankPolicy = { required: true };
 
+/**
+ * Whether the offline banks hold real items for this lesson. Chemistry always
+ * does. A maths lesson does only when the bank has items ABOUT it: Grade 7–9
+ * lessons and lessons the generators cannot ask (geometry, data, money…) do
+ * not, and get no stand-in from the grade's default arithmetic.
+ */
+function lessonHasOfflineBank(topic: string, kb: KBLesson | null, subject?: string): boolean {
+  return isChemContext(topic, kb, subject) || (isMathContext(topic, kb, subject) && hasMathBank(topic, kb));
+}
+
 function requireQuestionBank(topic: string, kb: KBLesson | null, subject?: string): void {
-  if (!questionBankPolicy.required || isChemContext(topic, kb, subject)) return;
-  // A maths lesson is covered only when the bank has items ABOUT it — Grade 7–9
-  // lessons and lessons the generators cannot ask (geometry, data, money…) are
-  // refused like any other subject, not served the grade's default arithmetic.
-  if (isMathContext(topic, kb, subject) && hasMathBank(topic, kb)) return;
+  if (!questionBankPolicy.required || lessonHasOfflineBank(topic, kb, subject)) return;
   throw new NoQuestionBankError(topic);
 }
 
@@ -945,6 +959,77 @@ function offlineWideScope(req: AIRequest, lang: Lang, count: number): OfflineWid
   return { drawer: new ScopeDrawer(plan.map(i => usable[i]!), usable, spentOpts), lessons: usable, skipped };
 }
 
+// ─── Revision: a wide scope on a teaching tool ───────────────────────────────
+
+/** Where each bank item of a revision came from. Filled only when a test passes one. */
+export type RevisionProbe = { drawn: Array<{ lessonId: string; unitId: string; text: string }> };
+
+/**
+ * A wide-scope request as the offline activity and classroom makers read it.
+ * Null for every other request, which then takes the single-lesson path
+ * exactly as before.
+ */
+type RevisionSource = {
+  /** The scope's phrase in the request's language — «موضوعات الفصل الأول». */
+  phrase: string;
+  phrases: { ar: string; en: string };
+  scopeKey: string;
+  /** The request's lessons grouped by unit, book order. */
+  groups: RevisionLessonGroup[];
+  /** Per unit, in `groups` order: its lessons that have an offline bank; [] for a unit with none. */
+  banked: RevisionDrawLesson[][];
+};
+
+/** Only if a scope key cannot be read back. The screen built it from a selection, so this is never expected. */
+const REVISION_FALLBACK_PHRASES = { ar: 'موضوعات المراجعة', en: 'the revision topics' };
+
+/**
+ * Null unless the request carries a wide scope. A wide request whose lesson
+ * table is missing is still a revision, with nothing to draw on. It is never
+ * turned back into its label grounded to one lesson (a unit title grounds to
+ * another grade's lesson; piece 2 measured 18 of 35).
+ */
+function revisionSource(
+  req: { scope?: AIRequest['scope']; coverage?: AIRequest['coverage']; subject?: string },
+  lang: Lang,
+): RevisionSource | null {
+  if (!isRevisionRequest(req) || !req.scope) return null;
+  const groups = revisionLessonsByUnit((req.coverage?.lessons ?? []).map(l => l.id));
+  const sel = scopeFromKey(req.scope.scopeKey);
+  const phrases = sel ? { ar: revisionPhrase(sel, 'ar'), en: revisionPhrase(sel, 'en') } : REVISION_FALLBACK_PHRASES;
+  const banked = groups.map(g => g.lessons
+    .map(kb => ({ id: kb.id, unitId: g.unitId, topic: lang === 'ar' ? kb.titleAr : kb.titleEn, kb }))
+    .filter(l => lessonHasOfflineBank(l.topic, l.kb, req.subject)));
+  return { phrase: phrases[lang], phrases, scopeKey: req.scope.scopeKey, groups, banked };
+}
+
+/**
+ * `want` bank items for a revision: one unit after another from `startUnit`,
+ * each unit's banked lessons in turn, at the batch functions' tiers (the first
+ * easy, the last hard) unless `tier` says otherwise. Each item comes from its
+ * own lesson's bank — maths or chemistry, by that lesson's own subject. A scope
+ * with no bank gets [], never `NoQuestionBankError`.
+ */
+function revisionPractice(
+  rev: RevisionSource,
+  want: number,
+  startUnit: number,
+  lang: Lang,
+  subject: string | undefined,
+  opts: { type?: 'short_answer' | 'multiple_choice'; tier?: (i: number) => DiffTier; points?: number; probe?: RevisionProbe } = {},
+): PracticeWQ[] {
+  const type = opts.type ?? 'short_answer';
+  const tierAt = opts.tier ?? ((i: number): DiffTier => (i === 0 ? 'easy' : i === want - 1 ? 'hard' : 'medium'));
+  const points = opts.points ?? 4;
+  return drawAcrossUnits(rev.banked, want, startUnit, (l, i) => {
+    const item = isMathContext(l.topic, l.kb, subject)
+      ? takeConcreteMath(type, l.topic, l.kb, tierAt(i), lang, points)
+      : takeConcreteChem(type, l.topic, l.kb, tierAt(i), lang, points);
+    if (item) opts.probe?.drawn.push({ lessonId: l.id, unitId: l.unitId, text: item.text });
+    return item;
+  });
+}
+
 /**
  * Which version of an activity a request gets.
  *
@@ -957,9 +1042,20 @@ function offlineWideScope(req: AIRequest, lang: Lang, count: number): OfflineWid
 const activityVariants = new Map<string, number>();
 const MAX_TRACKED_ACTIVITIES = 200;
 
-export function nextActivityVariant(req: AIRequest): number {
+/**
+ * The regenerate counter's key. A wide scope adds its scope key, because two
+ * grades' «الكتاب كاملًا» share a label (and have no lesson id) and must not
+ * share a counter. A lesson's key is exactly what it always was.
+ */
+export function activityVariantKey(req: AIRequest): string {
   const kind = req.activityVariant === 'warmup' ? 'warmup' : (req.activityType ?? 'group');
-  const key = [req.language, kind, req.lessonId ?? '', req.topic].join('|');
+  const parts = [req.language, kind, req.lessonId ?? '', req.topic];
+  if (req.scope?.scopeKey) parts.push(req.scope.scopeKey);
+  return parts.join('|');
+}
+
+export function nextActivityVariant(req: AIRequest): number {
+  const key = activityVariantKey(req);
   const next = req.regenerate === true ? (activityVariants.get(key) ?? 0) + 1 : 0;
   activityVariants.delete(key); // re-insert last, so the oldest entry is the stalest
   activityVariants.set(key, next);
@@ -974,7 +1070,7 @@ export function nextActivityVariant(req: AIRequest): number {
  * `MockAIService.generateActivity` adds the simulated latency and picks the
  * version; this is the part with no delay, so it can be exercised directly.
  */
-export function buildOfflineActivity(req: AIRequest, variant = 0): ActivityOutput {
+export function buildOfflineActivity(req: AIRequest, variant = 0, probe?: RevisionProbe): ActivityOutput {
   // The lesson flow generates a warm-up and then the main activity. Both
   // used to reset the session, so both drew the SAME three problems and the
   // teacher posed each of them twice in one lesson. `continueMathPractice`
@@ -982,8 +1078,16 @@ export function buildOfflineActivity(req: AIRequest, variant = 0): ActivityOutpu
   if (!req.continueMathPractice) beginMathPracticeSession();
 
   const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
-  const kb = groundedKb(req.topic, lang, req.lessonId);
-  const topic = req.topic;
+  // A unit, a semester or the whole book is a revision session (piece-3 spec
+  // §2). Its concepts, rules, outcomes and items come from every unit in
+  // scope, and its topic is the scope's phrase. Its label («الفصل الأول كاملًا»)
+  // is never grounded: that would land on one lesson, often another grade's.
+  const rev = revisionSource(req, lang);
+  const units = Math.max(1, rev?.groups.length ?? 1);
+  const kb = rev
+    ? revisionActivityLesson(rev.groups, rev.scopeKey, { title: rev.phrases, lang, termsStartUnit: (variant + 1) % units })
+    : groundedKb(req.topic, lang, req.lessonId);
+  const topic = rev ? rev.phrase : req.topic;
   const isWarmup = req.activityVariant === 'warmup';
   const actType = isWarmup ? 'warmup' : (req.activityType ?? 'group');
   const duration = req.duration ?? (isWarmup ? 8 : 30);
@@ -992,19 +1096,26 @@ export function buildOfflineActivity(req: AIRequest, variant = 0): ActivityOutpu
   // example, faded item, unaided item / game rounds) and the jigsaw four,
   // one per member of a home group.
   const wantItems = isWarmup ? 1 : actType === 'group' ? 4 : 3;
-  const practice = math
-    ? takeConcreteMathBatch(wantItems, topic, kb, lang, 'medium')
-    : isChemContext(topic, kb, req.subject)
-      ? takeConcreteChemBatch(wantItems, topic, kb, lang, 'medium')
-      : [];
+  // A revision's items, and its terms, start one unit after the one its lead
+  // concept and outcome come from (the blueprint rotates those by `variant`).
+  // That way even the one-item warm-up touches two units, and each Regenerate
+  // moves everything on by one unit.
+  const practice = rev
+    ? revisionPractice(rev, wantItems, variant + 1, lang, req.subject, { probe })
+    : math
+      ? takeConcreteMathBatch(wantItems, topic, kb, lang, 'medium')
+      : isChemContext(topic, kb, req.subject)
+        ? takeConcreteChemBatch(wantItems, topic, kb, lang, 'medium')
+        : [];
 
   const blueprint = buildActivityBlueprint(actType, {
     topic, lang, math, practice, kb, duration, variant,
     // The lesson's own subject id, else the caller's name — see `handsOnKind`.
+    // A revision's composite lesson sits in a real unit, so this is the scope's.
     subject: (kb ? getBookForLesson(kb)?.subjectId : undefined) ?? req.subject,
   });
 
-  return plainActivity({
+  const activity = plainActivity({
     title: `${topic} – ${blueprint.titleSuffix}`,
     // Report the type the caller asked for, verbatim. `activityTypeLabel`
     // already falls back to the raw value for anything the form never
@@ -1023,6 +1134,10 @@ export function buildOfflineActivity(req: AIRequest, variant = 0): ActivityOutpu
     differentiation: blueprint.differentiation,
     assessment: blueprint.assessment,
   });
+  // The blueprints were written for one lesson; the few sentences that say so
+  // («من درس …», «من الحصة السابقة») are reworded for a revision. A lesson's
+  // activity is returned exactly as before.
+  return rev ? reviseWording(activity, activityRevisionRewords(rev.phrase, lang)) : activity;
 }
 
 /**
@@ -1199,10 +1314,18 @@ export class MockAIService extends AIService {
 
   async generateLessonPlan(req: AIRequest): Promise<LessonPlanOutput> {
     await this.delay();
-    return freshOnRegenerate('lessonPlan', req, () => this.lessonPlanOnce(req), lessonPlanSections, 300);
+    // A revision plan is deterministic: redrawing 300 times cannot change it, so one
+    // draw is enough and `repeated` still reports it honestly.
+    return freshOnRegenerate('lessonPlan', req, () => this.lessonPlanOnce(req), lessonPlanSections, isRevisionRequest(req) ? 1 : 300);
   }
 
   private async lessonPlanOnce(req: AIRequest): Promise<LessonPlanOutput> {
+    // A unit, a semester or the whole book: one revision session over the units
+    // in scope, built from the request's lesson ids. It must come before
+    // `groundedKb`, which would ground the scope's LABEL («الفصل الأول كاملًا», a
+    // unit title) to one lesson — another grade's, for a unit title. No prior
+    // review on this path: it belongs to a single lesson's unit.
+    if (isRevisionRequest(req)) return revisionPlanFromRequest(req);
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
     const docs = docsFromReq(req);
     const rawTopic = req.topic;
@@ -1778,21 +1901,39 @@ export class MockAIService extends AIService {
   }
 
   private async classroomActivityOnce(req: ClassroomActivityRequest): Promise<ClassroomActivity> {
+    const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
+    // A unit, a semester or the whole book is a revision (piece-3 spec §3). The
+    // templates below take the scope's phrase and its units' composite lesson,
+    // never the picker's label, and the sentences in them that claim one lesson
+    // are reworded afterwards. A lesson's activity is returned untouched.
+    const rev = revisionSource(req, lang);
+    const out = await this.classroomActivityBody(req, rev);
+    return rev ? reviseWording(out, classroomRevisionRewords(rev.phrase, lang, rev.groups.length)) : out;
+  }
+
+  private async classroomActivityBody(req: ClassroomActivityRequest, rev: RevisionSource | null): Promise<ClassroomActivity> {
     beginMathPracticeSession();
     const isAr = req.language === 'arabic';
-    const topic = req.topic;
-    const kb = groundedKb(topic, isAr ? 'ar' : 'en', req.lessonId);
+    const topic = rev ? rev.phrase : req.topic;
+    const kb = rev
+      ? revisionActivityLesson(rev.groups, rev.scopeKey, { title: rev.phrases, lang: isAr ? 'ar' : 'en' })
+      : groundedKb(topic, isAr ? 'ar' : 'en', req.lessonId);
     const dur = req.duration ?? 20;
     const slideDuration = Math.round((dur * 60) / 5);
     const actType = req.activityType ?? 'escape-challenge';
+    // A revision's composite lesson sits in a real unit of the scope's book, so
+    // these read the scope's subject, not the screen's subject name.
     const math = isMathContext(topic, kb, req.subject);
     const chem = !math && isChemContext(topic, kb, req.subject);
     const batch = (n: number) =>
-      math
-        ? takeConcreteMathBatch(n, topic, kb, isAr ? 'ar' : 'en', 'medium')
-        : chem
-          ? takeConcreteChemBatch(n, topic, kb, isAr ? 'ar' : 'en', 'medium')
-          : [];
+      rev
+        // One item per unit in turn, from the units' banked lessons.
+        ? revisionPractice(rev, n, 0, isAr ? 'ar' : 'en', req.subject)
+        : math
+          ? takeConcreteMathBatch(n, topic, kb, isAr ? 'ar' : 'en', 'medium')
+          : chem
+            ? takeConcreteChemBatch(n, topic, kb, isAr ? 'ar' : 'en', 'medium')
+            : [];
     const bingoItems = actType === 'bingo' ? batch(8) : [];
     const relayItems = actType === 'relay' ? batch(4) : [];
 
@@ -1810,7 +1951,13 @@ export class MockAIService extends AIService {
       // bad caller cannot drain the concrete bank in one call.
       const wanted = Math.max(1, Math.min(8, Math.floor(req.numQuestions ?? 4) || 4));
       const mcqs: { text: string; options: string[]; answer: string }[] = [];
-      if (math || chem) {
+      if (rev) {
+        // A revision asks one question per unit in turn, each from its own lesson's bank.
+        const drawn = revisionPractice(rev, wanted, 0, isAr ? 'ar' : 'en', req.subject, {
+          type: 'multiple_choice', tier: () => tier, points: 0,
+        });
+        for (const q of drawn) if (q.options?.length) mcqs.push({ text: q.text, options: q.options, answer: q.answer });
+      } else if (math || chem) {
         for (let i = 0; i < wanted; i++) {
           const q = math
             ? takeConcreteMath('multiple_choice', topic, kb, tier, isAr ? 'ar' : 'en', 0)

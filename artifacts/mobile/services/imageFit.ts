@@ -32,3 +32,28 @@ export function fitWithin(
     height: Math.max(1, Math.round(height * scale)),
   };
 }
+
+/** The one dimension to give the native manipulator; it works out the other. */
+export type ResizeArg = { width: number } | { height: number };
+
+/**
+ * What to pass `resize()` so a photo's long edge becomes `maxEdge`, or `null`
+ * to leave it alone.
+ *
+ * Exactly one of `width` / `height` is returned. The manipulator derives the
+ * other from the image's own aspect ratio, so the result can never be
+ * stretched — which matters because the picker's reported width/height may be
+ * the stored (unrotated) size of an EXIF-rotated photo. If they are
+ * transposed the cap lands on the other axis and the photo ends up a little
+ * larger than `maxEdge`, never distorted.
+ *
+ * `null` covers both «already small enough» and «dimensions unknown»: in
+ * neither case is there a safe resize to ask for, and the caller falls back to
+ * the photo as it is.
+ */
+export function resizeArg(width: number, height: number, maxEdge: number): ResizeArg | null {
+  if (!Number.isFinite(width) || !Number.isFinite(height)) return null;
+  if (!(width > 0) || !(height > 0)) return null;
+  if (Math.max(width, height) <= maxEdge) return null;
+  return width >= height ? { width: maxEdge } : { height: maxEdge };
+}
