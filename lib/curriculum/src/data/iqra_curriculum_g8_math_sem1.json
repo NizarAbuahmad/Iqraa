@@ -36,6 +36,7 @@
           "id": "u1_l1",
           "order": 1,
           "title_ar": "الجذور التربيعية",
+          "title_en": "Square Roots",
           "main_idea_ar": "أجدُ قيمةَ الجذر التربيعيِّ لعددٍ، وأستخدمُهُ في حلِّ مسائلَ حياتيةٍ.",
           "periods": null,
           "objectives": [
@@ -48,6 +49,7 @@
           "id": "u1_l2",
           "order": 2,
           "title_ar": "الجذور الصماء",
+          "title_en": "Irrational Roots",
           "main_idea_ar": "أقدّرُ قيمةَ الجذر التربيعيّ.",
           "periods": null,
           "objectives": [
@@ -59,6 +61,7 @@
           "id": "u1_l3",
           "order": 3,
           "title_ar": "نظرية فيثاغورس",
+          "title_en": "The Pythagorean Theorem",
           "main_idea_ar": "أستعملُ نظريةَ فيثاغورس لإيجادِ طولِ ضلعٍ مجهولٍ في مثلثٍ قائم الزاوية.",
           "periods": null,
           "objectives": [
@@ -71,6 +74,7 @@
           "id": "u1_l4",
           "order": 4,
           "title_ar": "الأعداد الحقيقية",
+          "title_en": "Real Numbers",
           "main_idea_ar": "أميّزُ الأعدادَ النسبيةَ والأعدادَ غيرَ النسبية.",
           "periods": null,
           "objectives": [
@@ -83,6 +87,7 @@
           "id": "u1_l5",
           "order": 5,
           "title_ar": "النسبة المئوية",
+          "title_en": "Percent",
           "main_idea_ar": "أحلُّ مسائلَ على النسبةِ المئويةِ.",
           "periods": null,
           "objectives": [
@@ -111,6 +116,7 @@
           "id": "u2_l1",
           "order": 1,
           "title_ar": "التحليل بإخراج العامل المشترك الأكبر",
+          "title_en": "Factoring Out the Greatest Common Factor",
           "main_idea_ar": "أحلُّ مقاديرَ جبريةً بإخراجِ العاملِ المشتركِ الأكبرِ.",
           "periods": null,
           "objectives": [
@@ -122,6 +128,7 @@
           "id": "u2_l2",
           "order": 2,
           "title_ar": "تحليل ثلاثيات الحدود x²+bx+c",
+          "title_en": "Factoring Trinomials x²+bx+c",
           "main_idea_ar": "أحلُّ ثلاثياتِ حدودٍ على صورةِ x²+bx+c.",
           "periods": null,
           "objectives": [
@@ -133,6 +140,7 @@
           "id": "u2_l3",
           "order": 3,
           "title_ar": "تحليل ثلاثيات الحدود ax²+bx+c",
+          "title_en": "Factoring Trinomials ax²+bx+c",
           "main_idea_ar": "أحلّلُ ثلاثيَّ الحدودِ على الصورةِ ax²+bx+c.",
           "periods": null,
           "objectives": [],
@@ -142,6 +150,7 @@
           "id": "u2_l4",
           "order": 4,
           "title_ar": "حالات خاصة من التحليل",
+          "title_en": "Special Cases of Factoring",
           "main_idea_ar": "أحلّلُ مقدارًا جبريًّا يمثّلُ فرقًا بين مربّعينِ. أحلّلُ مربّعًا كاملًا ثلاثيَّ الحدودِ.",
           "periods": null,
           "objectives": [
@@ -169,6 +178,7 @@
           "id": "u3_l1",
           "order": 1,
           "title_ar": "المعادلة الخطية بالصورة القياسية",
+          "title_en": "Linear Equations in Standard Form",
           "main_idea_ar": "أتعرّفُ الصيغةَ القياسيةَ للمعادلةِ الخطيةِ. أمثّلُ المعادلةَ الخطيةَ بيانيًّا.",
           "periods": null,
           "objectives": [
@@ -183,6 +193,7 @@
           "id": "u3_l2",
           "order": 2,
           "title_ar": "ميل المستقيم",
+          "title_en": "Slope of a Line",
           "main_idea_ar": "أجدُ ميلَ المستقيمِ.",
           "periods": null,
           "objectives": [
@@ -195,6 +206,7 @@
           "id": "u3_l3",
           "order": 3,
           "title_ar": "معادلة المستقيم بصيغة الميل والمقطع",
+          "title_en": "Equation of a Line in Slope-Intercept Form",
           "main_idea_ar": "أكتبُ معادلةَ المستقيمِ بصيغةِ الميلِ والمقطعِ، وأمثّلُها بيانيًّا.",
           "periods": null,
           "objectives": [
@@ -208,6 +220,7 @@
           "id": "u3_l4",
           "order": 4,
           "title_ar": "معادلة المستقيم بصيغة الميل ونقطة",
+          "title_en": "Equation of a Line in Point-Slope Form",
           "main_idea_ar": "أكتبُ معادلةَ المستقيمِ بصيغةِ الميلِ ونقطةٍ، وأمثّلُها بيانيًّا.",
           "periods": null,
           "objectives": [
@@ -221,6 +234,7 @@
           "id": "u3_l5",
           "order": 5,
           "title_ar": "المستقيمات المتوازية والمتعامدة",
+          "title_en": "Parallel and Perpendicular Lines",
           "main_idea_ar": "أكتبُ معادلةَ المستقيمِ الماَرِّ بنقطةٍ مُعطاةٍ ويُوازي مستقيمًا معلومًا. أكتبُ معادلةَ المستقيمِ الماَرِّ بنقطةٍ مُعطاةٍ ويُعامِدُ مستقيمًا معلومًا.",
           "periods": null,
           "objectives": [
@@ -249,6 +263,7 @@
           "id": "u4_l1",
           "order": 1,
           "title_ar": "تطابق المثلثات (SSS, SAS, HL)",
+          "title_en": "Congruent Triangles (SSS, SAS, HL)",
           "main_idea_ar": "أُثبتُ تطابقَ مثلثينِ حالتي SSS وSAS. أُثبتُ تطابقَ مثلثينِ قائمَي الزاويةِ باستعمالِ حالةِ HL.",
           "periods": null,
           "objectives": [
@@ -262,6 +277,7 @@
           "id": "u4_l2",
           "order": 2,
           "title_ar": "تطابق المثلثات (ASA, AAS)",
+          "title_en": "Congruent Triangles (ASA, AAS)",
           "main_idea_ar": "أثبتُ تطابقَ مثليَينِ باستعمالِ حالتَي ASA وAAS.",
           "periods": null,
           "objectives": [
@@ -274,6 +290,7 @@
           "id": "u4_l3",
           "order": 3,
           "title_ar": "المثلثات المتطابقة الضلعين والمثلثات المتطابقة الأضلاع",
+          "title_en": "Isosceles and Equilateral Triangles",
           "main_idea_ar": "أستعملُ خصائصَ المثلثاتِ المتطابقةِ الضلعَينِ. أستعملُ خصائصَ المثلثاتِ المتطابقةِ الأضلاعِ.",
           "periods": null,
           "objectives": [

@@ -416,8 +416,15 @@ an announcement by default» below.
   side-by-side sheet (variant 0 against variant 1, per style and kind) was
   generated from `buildLessonStyleBlueprint` for that read, one per language; it
   is not kept in the repo, so it cannot go stale. **Known data gap found while
-  testing:** one maths lab lesson has an Arabic `titleEn`, so its English plan
-  carries Arabic in variant 0 too. Adding a third wording means one more builder
+  testing, since closed (2026-10-15):** English plans for Grade 7–10 maths
+  lessons carried an Arabic title, because those catalogs have no English lesson
+  titles and each builder copied `title_ar` into `titleEn`. 123 lessons now have
+  `title_en` in their `iqra_curriculum_g{7,8,9,10}_math_sem{1,2}.json` row, used
+  by the builder (`title_en ?? title_ar`); `mathLessonTitlesEn.test.ts` fails on
+  any Grade 7–10 maths lesson whose English title is empty, copied, or Arabic.
+  **Not checked:** the English wording. It was written without the Ministry's
+  English edition at hand and needs a teacher's read. (Grade 1 Arabic lessons
+  quote the letter in their English titles; that is legitimate.) Adding a third wording means one more builder
   per blueprint, per language. Not looked at in a browser.
 - **"No question bank" after a failed live call now says so, with the reason**
   (2026-10-11). With live AI on, a failed call falls back to the offline
@@ -429,6 +436,30 @@ an announcement by default» below.
   generator screens and the chat) appends «السبب: …» / «Reason: …». Nothing else
   shows raw error text; demo mode keeps the old sentence. Tests:
   `noQuestionBank.test.ts`. Not looked at in a browser.
+- **The derivative bank went from 5 items to 21, so a worksheet on a derivative
+  lesson can reach the picker's count offline** (2026-10-15). A teacher asking
+  for 15 on «القيم العظمى والقيم الصغرى» got 5 items (one studied, one
+  half-solved, three to practise) plus the review questions: the `derivative`
+  family — which serves all three Grade 10 lessons of the unit, «تقدير ميل
+  المنحنى», «الاشتقاق» and this one — held 5 items in total. Now 6 easy, 8
+  medium (one of them the secant slope) and 7 hard — power/sum/constant-multiple
+  rules, tangent slope, critical points, increasing/decreasing, min/max and an
+  absolute maximum on a closed interval — each with working in both languages
+  (`steps-math-b.ts`). Offline, 15 and 20 now come back exact; the ceiling is 21,
+  so 25 still reports a shortfall. Every key was checked with SymPy when written
+  and the Latin forms of the derivative keys run through `relate_answer_key` as
+  `equivalent` (a wrong option as `distinct`). **Not verified: a Grade 10 teacher
+  has not read these items or their working.** Stems for critical points,
+  min/max, tangent slope and the secant are not claimed by the verifier — the
+  classifier reads «f(x) = …» as a quadratic equation and SymPy then refuses it
+  (`solve_error`, which is `error`, never `distinct`), so they carry no "verified"
+  badge and are never flagged wrong; the existing critical-points item behaved
+  the same. Only the «find the derivative» stems reach the prover, and the
+  existing test pins that for the easy tier, so easy items must stay in that
+  shape. Other thin lessons are unchanged — the quiz/worksheet ceiling is still
+  whatever the lesson's family holds. Tests: `derivativeBank.test.ts`
+  (math-practice), `derivativeWorksheet.test.ts` (mobile). Not looked at in a
+  browser.
 - **Interface dates and times are written in Latin digits** (2026-10-03).
   Plain `ar-JO` defaults to Arabic-Indic digits, so the Today header read
   «٣ تشرين الأول» above a board that reads «1 من 5» and «26 آب», and other
@@ -18424,11 +18455,19 @@ What is true, checked against the code and the suites:
   and Chemistry only. The generate step refuses to overwrite an existing
   `pregen-review.json` (`--force` overrides, `--review=<other file>` writes a
   second one), because a rerun can serve a variant a reviewer already deleted.
-  Each entry carries a hash of its text and `--approve` refuses the whole file
-  if any entry was edited or malformed: **edits are not applied, delete the
-  entry instead.** A bare `--go` plans the 64 worksheet and lesson-plan calls
-  before the 49 explanations, so the default $1 cap can stop before reaching
-  them; use `--only=lesson-teaching`.
+  Each entry carries a hash of its `variantId`, `lessonId` and text, and
+  `--approve` refuses the whole file, before any request, if any entry was
+  edited (a changed id counts), or is malformed (a `variantId` that is not a
+  uuid, or no `content`): **edits are not applied, delete the entry instead.**
+  `--approve` also refuses to run combined with `--go`, `--only`, `--force` or
+  `--review`, and `--only` must be `worksheet`, `lesson-plan` or
+  `lesson-teaching`. An approved review file stays on disk, so a later bare
+  `--go` is refused until it is deleted or renamed (or `--force` is given). A
+  bare `--go` plans the 64 worksheet and lesson-plan calls before the 49
+  explanations; the default $1 cap allows about 100 model calls, so at worst
+  roughly 36 of the 49 explanations fit and the rest are cut off partway (a
+  call the pool already holds does not count against the cap). Use
+  `--only=lesson-teaching`.
 - **Replacing a rejected explanation.** Deleting an entry from the review file
   does not remove the stored variant, so the next `--go` serves it again and the
   lesson stays «قريبًا». A `system_admin` files a report on that `variantId` with
@@ -18437,6 +18476,13 @@ What is true, checked against the code and the suites:
   approved (`POST /moderation/artifact-reports/:id/resolve`, screen
   `artifacts/mobile/app/admin/artifact-reports.tsx`), which retires the row.
   The next `--go --only=lesson-teaching` generates a fresh variant.
+- **Only the server's own «not available» answer shows «قريبًا».** The service
+  (`lessonExplanation.ts`) treats a 404 as «coming soon» only when it carries
+  `code: 'not_available'` (`isNotAvailable`, `lessonExplanationErrors.ts`). Any
+  other failure, including a plain 404 from an API revision without the route,
+  rejects: the button stays enabled and the screen shows its retry. The
+  per-lesson cache lives for the module's lifetime and is not cleared on
+  sign-out (`clearLessonExplanationCache()` exists; nothing calls it).
 - `Slides Maker` and the prefill now build the request through
   `buildLessonTeachingRequest` (`artifacts/mobile/services/generatorRequests.ts`).
   `lessonTeachingRequest.test.ts` pins it deep-equal to the old inline body for

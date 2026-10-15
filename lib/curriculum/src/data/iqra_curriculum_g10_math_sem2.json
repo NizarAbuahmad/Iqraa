@@ -38,6 +38,7 @@
           "id": "u5_l1",
           "order": 1,
           "title_ar": "اقترانات كثيرات الحدود",
+          "title_en": "Polynomial Functions",
           "periods": 5,
           "objectives": [
             "تعرُّف الاقتران كثير الحدود ودرجته ومعاملاته",
@@ -60,6 +61,7 @@
           "id": "u5_l2",
           "order": 2,
           "title_ar": "قسمة كثيرات الحدود والاقترانات النسبية",
+          "title_en": "Dividing Polynomials and Rational Functions",
           "periods": 4,
           "objectives": [
             "إيجاد ناتج قسمة كثير حدود على كثير حدود آخر",
@@ -96,6 +98,7 @@
           "id": "u5_l4",
           "order": 4,
           "title_ar": "الاقتران العكسي",
+          "title_en": "Inverse Functions",
           "periods": 3,
           "objectives": [
             "تعرُّف الاقتران العكسي",
@@ -149,6 +152,7 @@
           "id": "u6_lab",
           "order": 0,
           "title_ar": "معمل برمجية جيوجبرا: استكشاف ميل مماس المنحنى",
+          "title_en": "GeoGebra Lab: Exploring the Slope of the Tangent to a Curve",
           "periods": 1,
           "type": "lab",
           "objectives": [
@@ -323,6 +327,7 @@
           "id": "u8_lab",
           "order": 0,
           "title_ar": "معمل برمجية جيوجبرا",
+          "title_en": "GeoGebra Lab",
           "periods": 1,
           "type": "lab",
           "objectives": [
@@ -363,6 +368,7 @@
           "id": "u8_l4",
           "order": 4,
           "title_ar": "احتمالات الحوادث المتنافية",
+          "title_en": "Probability of Mutually Exclusive Events",
           "periods": 3,
           "objectives": [
             "تمييز الحادثين المتنافيين من الحادثين غير المتنافيين",
@@ -382,6 +388,7 @@
           "id": "u8_l5",
           "order": 5,
           "title_ar": "احتمالات الحوادث المستقلة والحوادث غير المستقلة",
+          "title_en": "Probability of Independent and Dependent Events",
           "periods": 4,
           "objectives": [
             "تمييز الحادثين المستقلين من الحادثين غير المستقلين",
