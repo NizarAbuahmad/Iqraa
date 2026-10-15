@@ -74,6 +74,26 @@ export class LessonFlowStepError extends Error {
   }
 }
 
+// ─── Wide scope ───────────────────────────────────────────────────────────────
+
+/**
+ * What the two question steps (worksheet, exit ticket) change on a wide request.
+ *
+ * The flow asks for a 5-question worksheet and a 3-question exit ticket whatever
+ * count a `coverage.slots` plan was made for, so a plan travelling with the
+ * request would have the live prompt state per-lesson counts for another total.
+ * These steps ask for the `random` distribution over the lesson table instead:
+ * the server renders random with no counts (`parseCoverage`), and the offline
+ * generators re-plan from the table (`offlineWideScope`). `distribution` is sent
+ * explicitly because the offline planner reads an absent one as `balanced`.
+ *
+ * `{}` for a single-lesson request, so its body is exactly what it was.
+ */
+export function questionStepFields(req: AIRequest): Pick<AIRequest, 'distribution' | 'coverage'> {
+  if (!req.scope || !req.coverage?.lessons?.length) return {};
+  return { distribution: 'random', coverage: { lessons: req.coverage.lessons } };
+}
+
 // ─── Runner ───────────────────────────────────────────────────────────────────
 
 /**
@@ -146,6 +166,7 @@ export async function runLessonFlowFrom(
           const worksheet = await aiService.generateWorksheet({
             ...req,
             numQuestions: 5,
+            ...questionStepFields(req),
           });
           acc.worksheet = worksheet;
           callbacks.onStepDone(key, { worksheet });
@@ -155,6 +176,7 @@ export async function runLessonFlowFrom(
           const exitTicket = await aiService.generateQuiz({
             ...req,
             numQuestions: 3,
+            ...questionStepFields(req),
           });
           acc.exitTicket = exitTicket;
           callbacks.onStepDone(key, { exitTicket });

@@ -41,6 +41,8 @@ export type RevisionLessonOptions = {
 };
 
 const ARABIC_SCRIPT = /[\u0600-\u06FF]/;
+/** Arabic letters only (see `keyConceptsEn` below). */
+const ARABIC_LETTER = /[\u0621-\u064A]/;
 
 /** About how many entries of each kind the composite holds in all; at least two per unit. */
 const REVISION_POOL = 6;
@@ -129,7 +131,11 @@ export function revisionActivityLesson(
     summaryAr: '',
     summaryEn: '',
     keyConceptsAr: pool(l => l.keyConceptsAr, text),
-    keyConceptsEn: pool(l => l.keyConceptsEn, text),
+    // An English paper names its concepts from this list, and some books' English
+    // concepts are Arabic glosses («Explain “دراسة الجدوى”», 24 scopes): those are
+    // left out. Letters, not the whole script: a Quranic mark inside a Latin
+    // title is real content.
+    keyConceptsEn: pool(l => (opts.lang === 'en' ? l.keyConceptsEn.filter(c => !ARABIC_LETTER.test(c)) : l.keyConceptsEn), text),
     keyTerms: pool(l => l.keyTerms, t => t.ar, opts.termsStartUnit ?? 0),
     // A lesson whose book lists no outcomes (history, …) is represented by its
     // key concepts, so a warm-up's recall prompt and a quick check still name
