@@ -94,6 +94,8 @@ export interface EvaluationQuestion {
   marks: string;
   gradingMode: 'deterministic' | 'math_equivalence' | 'ai_rubric' | 'manual';
   source: 'ai' | 'teacher' | 'ai_edited';
+  /** How the question was made. Read only through `bookItemNote`; absent on older questions. */
+  aiMetadata?: Record<string, unknown> | null;
   /**
    * SymPy's verdict on this question's answer key, when there was one to
    * check. Absent on every question written before key checking existed, and

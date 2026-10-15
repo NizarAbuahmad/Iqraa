@@ -54,6 +54,7 @@ import {
 } from "../lib/passwordReset.js";
 import { resolveClaimCode, type ClaimResolution, type ClaimRole } from "../lib/rosterClaim.js";
 import { generateLoginCode, hashLoginCode } from "../lib/loginCode.ts";
+import { guardianLimitReached } from "../lib/guardianLimit.ts";
 import { namesForNewAccount, redeemRoleCheck } from "../lib/redeemPolicy.ts";
 import { studentGradeIds } from "../lib/studentGrades.ts";
 import { resyncClassGroupThreadIfExists } from "../lib/classThread.js";
@@ -333,6 +334,21 @@ async function hasLiveRosterLink(userId: string): Promise<boolean> {
 
 type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
+type ClaimWriteOutcome = "linked" | "taken" | "guardian_taken" | "guardian_limit";
+
+/**
+ * What a refused claim answers. One table for `/claim` and `/redeem`, so the two
+ * cannot word the same refusal differently — the app translates by `code`.
+ */
+const CLAIM_REFUSALS: Record<Exclude<ClaimWriteOutcome, "linked">, { error: string; code: string }> = {
+  taken: { error: "This student is already linked to an account", code: "claim_already_linked" },
+  guardian_taken: { error: "A parent account is already linked to this student", code: "claim_guardian_taken" },
+  guardian_limit: {
+    error: "This student already has the most parent accounts allowed. Ask the teacher to remove one.",
+    code: "claim_guardian_limit",
+  },
+};
+
 /**
  * The write half of claiming a roster row, shared by `POST /claim` (an account
  * that already exists) and `POST /redeem` (an account created in the same
@@ -349,7 +365,7 @@ async function linkRosterRowInTx(
   tx: DbTx,
   userId: string,
   resolved: Extract<ClaimResolution, { ok: true }>,
-): Promise<"linked" | "taken" | "guardian_taken"> {
+): Promise<ClaimWriteOutcome> {
   await tx.execute(sql`select id from ${students} where id = ${resolved.studentId} for update`);
   if (resolved.relation === "self") {
     const [taken] = await tx
@@ -381,6 +397,23 @@ async function linkRosterRowInTx(
       )
       .limit(1);
     if (other) return "guardian_taken";
+  }
+  // A ceiling on parent accounts per child (lib/guardianLimit.ts). Counted under
+  // the same lock, so two parents taking the last seat in the same second cannot
+  // both get it. Applies to a per-student code too — that is the path that is not
+  // limited above, and the one a leaked code would be abused through.
+  if (resolved.relation === "guardian") {
+    const [{ n } = { n: 0 }] = await tx
+      .select({ n: sql<number>`count(*)::int` })
+      .from(rosterLinks)
+      .where(
+        and(
+          eq(rosterLinks.studentId, resolved.studentId),
+          eq(rosterLinks.relation, "guardian"),
+          ne(rosterLinks.userId, userId),
+        ),
+      );
+    if (guardianLimitReached(n)) return "guardian_limit";
   }
   await tx
     .insert(rosterLinks)
@@ -986,18 +1019,8 @@ router.post("/claim", authMiddleware, claimLimiter, async (req: AuthenticatedReq
 
     const userId = req.user!.id;
     const outcome = await db.transaction(tx => linkRosterRowInTx(tx, userId, resolved));
-    if (outcome === "taken") {
-      res.status(409).json({
-        error: "This student is already linked to another account",
-        code: "claim_already_linked",
-      });
-      return;
-    }
-    if (outcome === "guardian_taken") {
-      res.status(409).json({
-        error: "A parent account is already linked to this student",
-        code: "claim_guardian_taken",
-      });
+    if (outcome !== "linked") {
+      res.status(409).json(CLAIM_REFUSALS[outcome]);
       return;
     }
 
@@ -1275,7 +1298,7 @@ function codeAccountUser(user: typeof users.$inferSelect, hasRosterLink: boolean
 
 /** Thrown inside the redeem transaction to roll the new user back when the roster row turns out to be taken. */
 class RedeemRefused extends Error {
-  constructor(readonly outcome: "taken" | "guardian_taken") {
+  constructor(readonly outcome: Exclude<ClaimWriteOutcome, "linked">) {
     super(outcome);
   }
 }
@@ -1396,11 +1419,7 @@ router.post("/redeem", redeemIpLimiter, redeemCodeLimiter, async (req, res) => {
       });
     } catch (err) {
       if (err instanceof RedeemRefused) {
-        res.status(409).json(
-          err.outcome === "taken"
-            ? { error: "This student is already linked to an account", code: "claim_already_linked" }
-            : { error: "A parent account is already linked to this student", code: "claim_guardian_taken" },
-        );
+        res.status(409).json(CLAIM_REFUSALS[err.outcome]);
         return;
       }
       throw err;

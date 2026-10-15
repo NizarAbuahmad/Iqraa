@@ -2694,6 +2694,7 @@ const translations = {
     // Code-only sign-up (POST /auth/redeem): a parent account is never made from
     // a class code, which is one string for a whole room.
     claimParentNeedsOwnCode: 'هذا رمز ربط للشعبة كلها. لإنشاء حساب وليّ أمر، اطلب من المعلم رمز الربط الخاص بابنك أو ابنتك.',
+    claimGuardianLimit: 'وصل هذا الطالب/ة إلى الحد الأقصى من حسابات أولياء الأمور. اطلب من المعلم إزالة أحدها ثم أعد المحاولة.',
     errInvalidLoginCode: 'رمز الدخول غير صحيح. تأكد منه وأعد المحاولة.',
     errLoginCodeIncorrect: 'رمز الدخول غير صحيح',
     errEmailAlreadySet: 'لهذا الحساب بريد إلكتروني بالفعل',
@@ -5487,6 +5488,7 @@ const translations = {
     // Code-only sign-up (POST /auth/redeem): a parent account is never made from
     // a class code, which is one string for a whole room.
     claimParentNeedsOwnCode: 'This is a link code for the whole class. To create a parent account, ask the teacher for the link code written for your child.',
+    claimGuardianLimit: 'This student already has the most parent accounts allowed. Ask the teacher to remove one, then try again.',
     errInvalidLoginCode: "That login code isn't right. Check it and try again.",
     errLoginCodeIncorrect: 'Login code is incorrect',
     errEmailAlreadySet: 'This account already has an email',

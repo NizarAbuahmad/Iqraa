@@ -79,6 +79,40 @@ describe('chemistry bank', () => {
   });
 });
 
+describe('periodic table bank depth', () => {
+  // A quiz draws its tier first and a family only holds what it holds: with 5 items (2 easy,
+  // 2 medium, 1 hard) a ten-question or an "easy" paper ran out after two questions and
+  // repeated itself. These floors are what the periodic-table lessons were raised to.
+  const items = CHEM_BANK.filter(i => i.family === 'periodic_trends');
+  const tier = (t: string) => items.filter(i => i.diff === t).length;
+
+  it('holds enough for a ten-question paper with no repeat', () => {
+    assert.ok(items.length >= 15, `only ${items.length} items`);
+  });
+
+  it('holds enough in every tier for an easy-only, medium-only or hard-only paper', () => {
+    assert.ok(tier('easy') >= 5, `easy: ${tier('easy')}`);
+    assert.ok(tier('medium') >= 6, `medium: ${tier('medium')}`);
+    assert.ok(tier('hard') >= 4, `hard: ${tier('hard')}`);
+  });
+
+  it('never repeats a question stem inside the family', () => {
+    const stems = items.map(i => i.promptAr);
+    assert.equal(new Set(stems).size, stems.length);
+  });
+
+  it('serves a ten-question paper on the unit name without repeating an item', () => {
+    const seen = new Set<string>();
+    const session = new Set<string>();
+    for (let i = 0; i < 10; i++) {
+      const q = takeConcreteChem('multiple_choice', 'الجدول الدوري وخواص العناصر', null, 'medium', 'ar', 1, session);
+      assert.ok(q, `question ${i + 1} came back empty`);
+      assert.ok(!seen.has(q.text), `question ${i + 1} repeated: ${q.text}`);
+      seen.add(q.text);
+    }
+  });
+});
+
 describe('detectChemFamily', () => {
   // Titles copied from the catalogs in lib/curriculum/src/data — if a book is
   // re-ingested with reworded titles, this is what notices.
@@ -87,6 +121,11 @@ describe('detectChemFamily', () => {
     ['النموذج الميكانيكي الموجي للذرة', 'atomic_structure'],
     ['التوزيع الإلكتروني للذرات', 'electron_config'],
     ['الخصائص الدورية للعناصر', 'periodic_trends'],
+    // The unit's own name (curriculum browser, a typed topic). It used to fall to general_chem,
+    // so a periodic-table quiz was asked about elements and compounds in general.
+    ['الجدول الدوري وخواص العناصر', 'periodic_trends'],
+    // The Grade 9 lesson names the periodic table too, but it is the electron-configuration lesson.
+    ['التوزيعُ الإلكترونيُّ والجدولُ الدوريُّ', 'electron_config'],
     ['الروابط الكيميائية وأنواعها', 'bonding'],
     ['الصيغ الكيميائية وخصائص المركبات', 'formulas'],
     ['التفاعلات الكيميائية', 'equations'],

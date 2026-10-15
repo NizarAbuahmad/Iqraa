@@ -268,3 +268,30 @@ jobs:
         env:
           PYTHONIOENCODING: utf-8
         run: python -X utf8 test_equations.py
+
+      # The book-item tests and the committed JSON contain sympy's printed
+      # forms, whose term order can change between releases. Pinned so a PyPI
+      # release cannot turn CI red with no commit behind it. To bump: change
+      # the version here, re-run scripts/extract_book_items.py, commit the JSON.
+      - name: Pin sympy for book items
+        run: pip install "sympy==1.14.0"
+
+      # Real book items: the extractor's normalisation and trust rules, then a
+      # check that the committed JSON is exactly what the script emits. A
+      # hand-edited item, or a rule change without a re-run, fails here.
+      - name: Book item extractor tests
+        working-directory: artifacts/math-verifier
+        env:
+          PYTHONIOENCODING: utf-8
+        run: python -X utf8 ../../scripts/test_extract_book_items.py
+
+      - name: Committed book items match the extractor
+        env:
+          PYTHONIOENCODING: utf-8
+        run: |
+          python -X utf8 scripts/extract_book_items.py
+          if [ -n "$(git status --porcelain -- lib/curriculum/src/data/book-items)" ]; then
+            git status --porcelain -- lib/curriculum/src/data/book-items
+            git diff -- lib/curriculum/src/data/book-items
+            exit 1
+          fi
