@@ -1117,6 +1117,158 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Scanning external exams: paper setup from photos, and a whole class at once, 2026-10-14
+
+Two things a teacher who sets their own paper exam used to do by hand.
+
+**Setting the exam up.** On the new-exam form, a paper exam's grid can be filled
+from photos of the paper (up to four pages): `POST /evaluations/scan-paper`
+returns one proposed row per question — marks, a suggested objective chosen only
+from the lessons ticked, a suggested competency — and the grid takes the paper's
+length. It is stateless (the grid is built before the evaluation exists) and
+**writes nothing**; the existing `PUT .../questions/paper` still validates and
+stores. Scanned rows read «راجع» until touched, an unread mark stays blank, and a
+total that disagrees with the one the paper prints is flagged.
+
+**Marking a class.** On a published paper exam attached to a class,
+«امسح أوراق الصف» takes up to 40 photos of marked papers, three at a time. Each
+`POST /evaluations/:id/scan-class-paper` returns the marks, the name as written,
+and a match against the class roster **done on the server** (the roster never goes
+to the model). A match is `confident` only when the normalized name equals exactly
+one student's and no other student's longer name contains it; anything else is
+`confirm` (three candidates, a tap) or `none`. A
+review table shows every row; saving goes through the existing start-attempt,
+mark and submit endpoints.
+
+**Two things in the existing API this had to design around** — both easy to get
+wrong for the next feature that writes marks in bulk:
+
+- `POST /evaluations/:id/attempts` is find-or-create and `PUT /attempts/:id/grades/:qid`
+  upserts, so writing marks into a paper you did not create silently replaces a
+  mark a teacher entered or a student earned. The mobile `startAttempt` threw
+  away the `created` flag; `startAttemptChecked` returns it, and the batch skips
+  any paper it did not make.
+- The same find-or-create breaks **retry**: after a half-failed save the paper
+  exists because of this batch, so a second start reports `created: false`. A
+  row therefore remembers its `attemptId` and never starts twice.
+
+**Decisions kept from the spec:** blank cells are saved as unmarked (the paper
+stays provisional); a student who already has a paper is skipped, never
+overwritten; photos are not stored; setup takes photos only (no PDF — the web
+build has no PDF rendering path).
+
+**Not verified: the model has never read a real exam paper or a real class set.**
+The local key is a placeholder and these routes are not deployed, so every test
+runs with live mode off — the position the original scanner shipped in. Three
+questions only a real photo answers: whether the marks and objective suggestions
+are good enough to save typing; whether handwritten names are read well enough
+for an exact match to fire at all (if almost never, every row falls back to
+`confirm` — safe, but then no faster than picking the student first); and whether
+three-at-a-time stays under the 30-per-minute `ai-scan-class` limiter in practice
+(call latency is unmeasured). Treat the feature as unproven until a real class
+has been scanned.
+
+**Not verified: the two screens have never been rendered.** The «اقرَأ الأسئلة
+من صور الورقة» button on the paper grid (`app/evaluations/new.tsx`) and the
+class-scan screen (`app/evaluations/[id]/scan-class.tsx`) were typechecked, and
+their logic is covered by unit tests of the pure services, but neither has been
+opened in a browser or on a device: the manual smoke steps were not run (they
+need a teacher login and a seeded database). Layout, RTL rendering, the
+`PickerField` inside a card, and the web photo picker are unchecked.
+
+**Tests.** The decisions are pure functions: `scanRequest`, `scanPaper`,
+`studentMatch`, `scanMarks` (a golden test pins `scan-marks`' prompt, which this
+did not change) on the server; `scanErrors`, `paperScan`, `classScanRunner`,
+`classScanReview`, `classScanSave` on the client. `scanRoutes.test.ts` reads the
+two handlers' source (they write nothing, are rate-limited, and check live mode,
+budget and quota before the model), and `mountOrder.test.ts` asserts both are
+guarded in the built bundle. Measured 2026-10-14, after the final-review fix
+wave: api-server 1705 passing (after `pnpm build`, which also makes the 54
+mount-order tests run), mobile 4287 passing of 4297 (10 skipped), 0 failures in
+both; `pnpm run typecheck` clean.
+
+### Hardening found in review
+
+- **Name matching.** `confident` required an equal *set* of words, so «علي أحمد»
+  matched «أحمد علي» and «محمد محمد» matched «محمد». It now requires an identical
+  normalized name (the token string); non-identical names are capped below 1 and
+  fall to `confirm`.
+- **Batch runner.** Every photo gets exactly one outcome even if a UI callback
+  throws; the first callback error is rethrown after all outcomes are delivered.
+- **Save loop, reassignment.** Reassigning a row to another student now resets
+  its paper state. Before, a retry could write B's marks into A's half-made paper
+  and show B as saved. *(Superseded by the student lock in the final review,
+  below.)*
+- **Save loop, loud failures.** A mark that was written and then cleared, or an
+  invalid box, now fails the row (`cleared_after_write` / `invalid_mark`) instead
+  of submitting silently. A row's own half-made paper is never skipped as «already
+  has a paper».
+- **Paper setup.** Scan errors now show next to the scan button; they used to
+  render below the whole grid, out of sight.
+- **Process.** The scan UI wiring and the save-loop rules each went through a fix
+  round after independent review. Read the unit tests of `classScanSave` and
+  `studentMatch` before changing either.
+
+**Found in the final whole-branch review, and fixed:**
+
+- **Superset names are never `confident`.** With «أحمد» and «أحمد علي» on the
+  roster, a paper reading «أحمد» used to go to «أحمد» without a word, and «أحمد علي»
+  was not even offered. A roster name holding every part read *and more* now
+  forces a tap (`confirm`, the exact match first, the longer names after). The
+  longer name read in full stays `confident`.
+- **Class scanning is for paper exams only.** The route used to accept any
+  published exam, and a deep link to a generated MCQ exam let blank cells plus
+  submit machine-grade every unanswered question as 0. `classScanGate` now
+  refuses an exam with any question the app marks itself (409
+  `not_paper_exam`), and the screen refuses to load one («مسح أوراق الصف متاح
+  للامتحانات الورقية فقط.»).
+- **Paper marks must be one number.** A model answering «2+3» or «3×2» for a
+  question's marks used to become a ceiling of 2 (or 3) — the first number in the
+  string. Setup now reads a mark only when the whole string is one number (Latin,
+  Arabic-Indic or Eastern digits, one decimal separator, optionally «½» or «و
+  نصف»); anything else is null with «could not read the marks». The printed
+  total follows the same rule.
+- **A row that has started a paper is locked to its student.** Replaces the
+  reset-on-reassign above, which let a half-failed save leave B's marks on A's
+  paper and then skip A's own photo. The picker and chips are replaced by the
+  student's name, a note, and «افتح ورقة الطالب».
+- **A photo can be ignored.** A second photo of one paper (`duplicate_student`)
+  or a blank page (`no_student`) used to block the whole batch with no way out
+  but assigning it to another child. «تجاهل هذه الصورة» sets a row aside
+  (`discarded`) as long as it has not started a paper; it is never saved and not
+  counted.
+- **Identical names are told apart on screen.** Two «محمد خالد» read the same in
+  the chips and the picker; they now show the school reference when each has a
+  different one, otherwise «(1)», «(2)» in roster order (`rosterLabels`).
+- **The pick buttons are re-entrancy-safe.** A second tap while the picker is
+  open is refused, row keys never repeat, and a picker or runner that throws
+  ends in «تعذّرت قراءة الصورة» instead of an unhandled rejection — on the
+  class-scan screen and on the new-exam form's paper scan.
+
+### Known limits
+
+- A row that started a paper for student A and then failed stays locked to A. If
+  it was really B's paper, A's record holds the marks written so far (A's result
+  is provisional, `needs_review`) until someone opens A's paper («افتح ورقة
+  الطالب») and corrects or reassigns it with the existing per-attempt tools. The
+  batch never moves or deletes a paper.
+- There is no «unmark»: once a mark has been written, clearing the box fails the
+  row until a value is entered (`SaveDeps` cannot clear a mark).
+- An invalid box is only caught at save time, after `startAttempt`, if the UI
+  blocker is bypassed (a defensive path); the UI blocks it before save.
+- After a save, the last saved student may not be added to the screen's «has a
+  previous paper» set until reload (the server's `created: false` guard still
+  prevents any overwrite).
+- The server's `scan-class-paper` 409 «no questions» carries no `code` (unreachable
+  for a published exam).
+- Photos are only downscaled on web. On a phone each photo is sent at full size
+  (JPEG quality 0.6), so 40 base64 photos held in memory, or a four-page setup,
+  can exceed the payload ceiling (10,000,000 characters altogether / the 12 MB
+  body) or the phone's memory. The combined-size refusal reuses the single-photo
+  code and wording (`image_too_large` → «الصورة كبيرة جدًا»), which names one
+  photo when the problem is all of them. Untested on a device — the first thing a
+  real Android run should try.
+
 ## Row-level security is built and switched off, 2026-10-13
 
 **State: off. No behaviour changes — but merging DOES run the migration in production** (`deploy.yml` migrates before the API ships): it creates the `iqraa_app` role, grants, and turns row-level security on for 28 tables. If the API's connection is the table owner, RLS does not apply to it (there is no `FORCE`) and nothing changes — **that is the assumption to verify: the role in Cloud Run's `DATABASE_URL` must own those tables.** It has not been checked: confirm it on a Neon branch before merging (`docs/superpowers/plans/2026-10-13-row-level-security.md`, Task 7 Step 0).
@@ -10343,6 +10495,14 @@ Found by testing the guard, not the happy path.
 13 tests on the parser, 6 on the route's guards (bad body, oversized, another
 teacher's attempt, no token, live mode off, and that none of it writes a
 grade). 256 api-server tests, 895 mobile, 0 failures.
+
+> **Correction (2026-10-14):** the «6 on the route's guards» are not in the
+> repository. `src/**/__tests__` holds the 13 parser tests (`scanMarks.test.ts`)
+> and nothing that exercises `POST /attempts/:id/scan-marks`; no route-handler
+> test harness exists (route files load the database and the OpenAI client at
+> module scope, which `node --test` cannot import). The guards it describes are
+> real in the code but untested. The 2026-10-14 scan routes avoid the gap by
+> keeping their decisions in pure functions — see the section above.
 
 **Not verified: the model actually reading a sheet.** The local key is a
 placeholder and the endpoint is not deployed yet, so every test above runs with

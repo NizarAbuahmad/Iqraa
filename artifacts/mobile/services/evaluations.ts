@@ -551,14 +551,27 @@ export async function setMasteryUnlock(evaluationId: string, studentId: string, 
   await readJson<{ ok: boolean }>(res, 'Updating the unlock');
 }
 
-/** Find-or-create: safe to call every time a teacher opens a student's entry screen. */
-export async function startAttempt(evaluationId: string, studentId: string): Promise<Attempt> {
+/**
+ * Find-or-create, and says which: `created` is false when the student already
+ * had a paper for this exam (any source). The marking endpoint upserts, so a
+ * caller that is about to WRITE marks must read this — writing into a paper it
+ * did not create silently replaces a mark a teacher entered or a student earned.
+ */
+export async function startAttemptChecked(
+  evaluationId: string,
+  studentId: string,
+): Promise<{ attempt: Attempt; created: boolean }> {
   const res = await apiFetch(`/evaluations/${evaluationId}/attempts`, {
     method: 'POST',
     body: JSON.stringify({ studentId }),
   });
-  const data = await readJson<{ attempt: Attempt }>(res, 'Starting attempt');
-  return data.attempt;
+  const data = await readJson<{ attempt: Attempt; created?: boolean }>(res, 'Starting attempt');
+  return { attempt: data.attempt, created: data.created === true };
+}
+
+/** Find-or-create: safe to call every time a teacher opens a student's entry screen. */
+export async function startAttempt(evaluationId: string, studentId: string): Promise<Attempt> {
+  return (await startAttemptChecked(evaluationId, studentId)).attempt;
 }
 
 export async function getAttempt(attemptId: string): Promise<{
@@ -643,6 +656,78 @@ export async function scanMarks(
     timeoutMs: 45_000,
   });
   return readJson(res, 'Reading the marks');
+}
+
+/** One question the model read off an exam paper. Mirrors api-server `PaperScanRow`. */
+export interface PaperScanRow {
+  /** 1-based, as printed. */
+  number: number;
+  /** Null when the pages did not state it or it could not be read — never a default. */
+  marks: number | null;
+  objectiveId: string | null;
+  competencyKey: CompetencyKey | null;
+  readAs: string;
+}
+
+/**
+ * Read the pages of an exam the teacher set, to fill the paper-exam grid.
+ *
+ * Stateless: the grid is saved together with the evaluation, so there is no
+ * evaluation yet — the objectives ticked in the form travel in the body. Saves
+ * nothing; `saved: false` comes back to say so.
+ */
+export async function scanPaper(
+  images: string[],
+  objectiveIds: string[],
+): Promise<{
+  rows: PaperScanRow[];
+  printedTotal: number | null;
+  skipped: { number: number; reason: string }[];
+  model: string;
+  saved: boolean;
+}> {
+  const res = await apiFetch('/evaluations/scan-paper', {
+    method: 'POST',
+    body: JSON.stringify({ images, objectiveIds }),
+    // Up to four pages through a vision model; a little longer than one page.
+    timeoutMs: 60_000,
+  });
+  return readJson(res, 'Reading the paper');
+}
+
+export type ScanMatchStatus = 'confident' | 'confirm' | 'none';
+
+export interface ScanCandidate {
+  studentId: string;
+  displayName: string;
+  /** 0–1; 1 is an exact name match. */
+  score: number;
+  hasAttempt: boolean;
+}
+
+export interface ClassScanResponse {
+  /** The name as the model transcribed it, or null. */
+  nameRead: string | null;
+  match: { status: ScanMatchStatus; studentId: string | null; candidates: ScanCandidate[] };
+  proposals: MarkProposal[];
+  skipped: { number: number; reason: string }[];
+  /** The total the teacher wrote on the paper, when they wrote one. */
+  writtenTotal: number | null;
+  model: string;
+  saved: boolean;
+}
+
+/**
+ * Read one student's marked paper: the marks, and whose it is. Creates nothing.
+ * Called once per photograph so one failure costs one row.
+ */
+export async function scanClassPaper(evaluationId: string, image: string): Promise<ClassScanResponse> {
+  const res = await apiFetch(`/evaluations/${evaluationId}/scan-class-paper`, {
+    method: 'POST',
+    body: JSON.stringify({ image }),
+    timeoutMs: 45_000,
+  });
+  return readJson(res, 'Reading the paper');
 }
 
 export async function setTeacherComment(attemptId: string, teacherComment: string): Promise<Attempt> {

@@ -88,3 +88,32 @@ export async function pickMarkSheetPhoto(): Promise<string | null> {
   // help — it re-compresses twelve megapixels rather than sending fewer.
   return downscaleImage(`data:${mime};base64,${asset.base64}`);
 }
+
+/**
+ * Several photos of marked papers (or of the pages of one exam), each shrunk the
+ * same way `pickMarkSheetPhoto` does. Empty on cancel or no permission.
+ *
+ * `limit` is a ceiling on the picker, and applied again to the result because
+ * `selectionLimit` is advisory on some platforms.
+ */
+export async function pickMarkSheetPhotos(limit: number): Promise<string[]> {
+  const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!perm.granted) return [];
+
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'],
+    allowsMultipleSelection: true,
+    selectionLimit: limit,
+    quality: 0.6,
+    base64: true,
+  });
+  if (result.canceled || !result.assets?.length) return [];
+
+  const out: string[] = [];
+  for (const asset of result.assets.slice(0, limit)) {
+    if (!asset.base64) continue;
+    const mime = asset.mimeType || 'image/jpeg';
+    out.push(await downscaleImage(`data:${mime};base64,${asset.base64}`));
+  }
+  return out;
+}
