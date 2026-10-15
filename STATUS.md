@@ -171,6 +171,16 @@ an announcement by default» below.
   installed, an installed app is unchanged** (and a 1.2.0 app stops receiving
   OTA updates); chat/messaging (`app/messaging/[threadId].tsx`) is covered by
   the root Stack's wrapper and needs no screen change.
+- **Native photo shrinking needs a new binary: `version` 1.3.0 → 1.4.0**
+  (2026-10-15). `expo-image-manipulator` is a native module. Because
+  `runtimeVersion.policy` is `appVersion`, **every installed 1.3.0 app stops
+  receiving OTA updates from the merge until it is replaced by a 1.4.0 build**
+  (a 1.4.0 update can never reach a binary without the module, which is the
+  point). A 1.4.0 Android build is therefore needed before any of this exists on
+  a phone: `mobile-build.yml` (`workflow_dispatch`, profile `preview`).
+  **Not verified:** that any 1.3.0 binary was ever installed (so how many apps
+  this strands is unknown), the resize on a device, and the shrunk size and
+  speed for a 40-photo class scan.
 - **The schema deploys as migrations** (2026-10-08, #925, live).
   `lib/db/migrations/0000_baseline.sql` is the whole
   48-table schema; `deploy.yml` runs `migrate` before `verify-schema` and the
@@ -1305,13 +1315,24 @@ both; `pnpm run typecheck` clean.
   prevents any overwrite).
 - The server's `scan-class-paper` 409 «no questions» carries no `code` (unreachable
   for a published exam).
-- Photos are only downscaled on web. On a phone each photo is sent at full size
-  (JPEG quality 0.6), so 40 base64 photos held in memory, or a four-page setup,
-  can exceed the payload ceiling (10,000,000 characters altogether / the 12 MB
-  body) or the phone's memory. The combined-size refusal reuses the single-photo
-  code and wording (`image_too_large` → «الصورة كبيرة جدًا»), which names one
-  photo when the problem is all of them. Untested on a device — the first thing a
-  real Android run should try.
+- ~~Photos are only downscaled on web.~~ **Changed 2026-10-15:** on a phone the
+  five photo pickers now ask for a file only and shrink one photo at a time to
+  1600px (512px for avatars) / JPEG 0.72 with `expo-image-manipulator` (spec
+  `docs/superpowers/specs/2026-10-15-native-photo-downscaling-design.md`). **Not
+  verified on a device** — nothing in this repo has run it on a phone. Still true:
+  the combined-size refusal reuses the single-photo code and wording
+  (`image_too_large` → «الصورة كبيرة جدًا»). The device checks that remain are
+  listed under «On a device» in the spec's «Testing» section, and the first is
+  EXIF-rotated camera photos (the cap may land on the other axis, up to ~2133px,
+  never distorted). If the resize fails, the dimensions are unknown, or the photo
+  is already within the limit, the photo is sent as it is (not re-encoded) — a
+  failed resize logs `[photoEncode] native resize failed` and sends the original,
+  full size, at the camera's quality (the picker now runs at quality 1, so roughly
+  twice the bytes of the old quality-0.6 pick — closer to the 8,000,000-character
+  per-photo ceiling; the server's `image_too_large` names it), so check the log,
+  not the upload size, when asking whether it ran. The class-scan screen shows no
+  busy indicator during the resizes (`reading` is set after the picker returns);
+  a busy state before the picker opens is the follow-up.
 
 ## Row-level security is built and switched off, 2026-10-13
 
@@ -18434,11 +18455,19 @@ What is true, checked against the code and the suites:
   and Chemistry only. The generate step refuses to overwrite an existing
   `pregen-review.json` (`--force` overrides, `--review=<other file>` writes a
   second one), because a rerun can serve a variant a reviewer already deleted.
-  Each entry carries a hash of its text and `--approve` refuses the whole file
-  if any entry was edited or malformed: **edits are not applied, delete the
-  entry instead.** A bare `--go` plans the 64 worksheet and lesson-plan calls
-  before the 49 explanations, so the default $1 cap can stop before reaching
-  them; use `--only=lesson-teaching`.
+  Each entry carries a hash of its `variantId`, `lessonId` and text, and
+  `--approve` refuses the whole file, before any request, if any entry was
+  edited (a changed id counts), or is malformed (a `variantId` that is not a
+  uuid, or no `content`): **edits are not applied, delete the entry instead.**
+  `--approve` also refuses to run combined with `--go`, `--only`, `--force` or
+  `--review`, and `--only` must be `worksheet`, `lesson-plan` or
+  `lesson-teaching`. An approved review file stays on disk, so a later bare
+  `--go` is refused until it is deleted or renamed (or `--force` is given). A
+  bare `--go` plans the 64 worksheet and lesson-plan calls before the 49
+  explanations; the default $1 cap allows about 100 model calls, so at worst
+  roughly 36 of the 49 explanations fit and the rest are cut off partway (a
+  call the pool already holds does not count against the cap). Use
+  `--only=lesson-teaching`.
 - **Replacing a rejected explanation.** Deleting an entry from the review file
   does not remove the stored variant, so the next `--go` serves it again and the
   lesson stays «قريبًا». A `system_admin` files a report on that `variantId` with
@@ -18447,6 +18476,13 @@ What is true, checked against the code and the suites:
   approved (`POST /moderation/artifact-reports/:id/resolve`, screen
   `artifacts/mobile/app/admin/artifact-reports.tsx`), which retires the row.
   The next `--go --only=lesson-teaching` generates a fresh variant.
+- **Only the server's own «not available» answer shows «قريبًا».** The service
+  (`lessonExplanation.ts`) treats a 404 as «coming soon» only when it carries
+  `code: 'not_available'` (`isNotAvailable`, `lessonExplanationErrors.ts`). Any
+  other failure, including a plain 404 from an API revision without the route,
+  rejects: the button stays enabled and the screen shows its retry. The
+  per-lesson cache lives for the module's lifetime and is not cleared on
+  sign-out (`clearLessonExplanationCache()` exists; nothing calls it).
 - `Slides Maker` and the prefill now build the request through
   `buildLessonTeachingRequest` (`artifacts/mobile/services/generatorRequests.ts`).
   `lessonTeachingRequest.test.ts` pins it deep-equal to the old inline body for
