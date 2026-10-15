@@ -47,6 +47,23 @@ const plan = (sel: ScopeSelection, lang: 'ar' | 'en', style: string) =>
 const roundsIn = (text: string, lang: 'ar' | 'en') =>
   (text.match(new RegExp(`^${lang === 'ar' ? ROUND_MARK_AR : ROUND_MARK_EN} \\d+ — `, 'gm')) ?? []).length;
 
+
+const allText = (p: ReturnType<typeof plan>) =>
+  [...TEXT_FIELDS.map(f => p[f]), ...p.objectives, ...p.materials].join('\n');
+
+/**
+ * What a label spliced into a lesson-shaped sentence looks like: the lesson template's
+ * «المفهوم الرئيسي», its English twin, or a semester / book label appearing at all
+ * (a unit's label is its title, which the rounds name on purpose).
+ */
+function splicedLabel(text: string, sel: ScopeSelection, lang: 'ar' | 'en'): string[] {
+  const hits: string[] = [];
+  if (text.includes('المفهوم الرئيسي')) hits.push('lesson-shaped «المفهوم الرئيسي»');
+  if (/key concept of/i.test(text)) hits.push('lesson-shaped "key concept of"');
+  if (sel.kind !== 'unit' && text.includes(scopeLabel(sel, lang))) hits.push(`label «${scopeLabel(sel, lang)}» spliced in`);
+  return hits;
+}
+
 describe('buildRevisionPlan', () => {
   for (const lang of LANGS) {
     for (const style of LESSON_STYLE_IDS) {
@@ -86,11 +103,7 @@ describe('buildRevisionPlan', () => {
       it(`${lang} · ${style}: the scope label is never spliced into a lesson-shaped sentence`, () => {
         for (const sel of SCOPES) {
           const p = plan(sel, lang, style);
-          const all = [...TEXT_FIELDS.map(f => p[f]), ...p.objectives, ...p.materials].join('\n');
-          assert.ok(!all.includes('المفهوم الرئيسي'), 'lesson-shaped «المفهوم الرئيسي»');
-          assert.ok(!/key concept of/i.test(all), 'lesson-shaped "key concept of"');
-          // A unit's label is its title, which the rounds name on purpose; a semester or book label must never appear.
-          if (sel.kind !== 'unit') assert.ok(!all.includes(scopeLabel(sel, lang)), `label «${scopeLabel(sel, lang)}» spliced in`);
+          assert.deepEqual(splicedLabel(allText(p), sel, lang), []);
         }
       });
     }
@@ -112,9 +125,23 @@ describe('buildRevisionPlan', () => {
 
   it('the three styles build three different main activities, in both languages', () => {
     for (const lang of LANGS) {
-      const mains = LESSON_STYLE_IDS.map(s => plan(sem1, lang, s).mainActivity);
-      assert.equal(new Set(mains).size, LESSON_STYLE_IDS.length, lang);
+      for (const sel of [sem1, vectors]) {
+        const mains = LESSON_STYLE_IDS.map(s => plan(sel, lang, s).mainActivity);
+        assert.equal(new Set(mains).size, LESSON_STYLE_IDS.length, `${lang} ${sel.kind}`);
+      }
     }
+  });
+
+  it('the splice detector itself bites: each way of splicing a label is reported', () => {
+    for (const lang of LANGS) {
+      for (const sel of [sem1, book]) {
+        const label = scopeLabel(sel, lang);
+        assert.equal(splicedLabel(`${plan(sel, lang, 'direct').introduction} ${label}`, sel, lang).length, 1, 'label');
+      }
+    }
+    assert.equal(splicedLabel('المفهوم الرئيسي في الفصل', sem1, 'ar').length, 1);
+    assert.equal(splicedLabel('The key concept of the book', book, 'en').length, 1);
+    assert.deepEqual(splicedLabel('كلام عادي', sem1, 'ar'), []);
   });
 
   it('an unknown style is read as direct', () => {
@@ -150,6 +177,63 @@ describe('buildRevisionPlan', () => {
   });
 });
 
+/** The guiding question of each round of an inquiry plan, read from the rendered text. */
+const guidingQuestionsIn = (text: string, lang: 'ar' | 'en') =>
+  [...text.matchAll(lang === 'ar' ? /بالقاعدة: «(.+?)» ثم يكتب/g : /restating the rule — "(.+?)" — and each trio/g)].map(m => m[1]!);
+
+describe('the inquiry guiding question', () => {
+  const wide = [sem1, sem2, chemBook, book];
+  for (const lang of LANGS) {
+    it(`${lang}: for every unit of Grade 10 maths and chemistry it names the unit and carries no KB fragment`, () => {
+      let seen = 0;
+      for (const sel of wide) {
+        const units = revisionUnits(sel, lang);
+        const qs = guidingQuestionsIn(plan(sel, lang, 'inquiry').mainActivity, lang);
+        assert.equal(qs.length, units.length, `${sel.kind}:${sel.subjectId}`);
+        units.forEach((u, i) => {
+          const q = qs[i]!;
+          assert.ok(q.includes(u.title), `«${q}» does not name «${u.title}»`);
+          // The title is the unit's own and may carry punctuation; what must be absent is a spliced KB fragment.
+          const rest = q.split(u.title).join('');
+          for (const ch of [':', '=', '(', '²']) assert.ok(!rest.includes(ch), `«${q}» carries «${ch}» (a definition fragment)`);
+          assert.match(rest.trim(), /[?؟]$/, q);
+          seen++;
+        });
+      }
+      assert.ok(seen >= 13, `only ${seen} units read`);
+    });
+  }
+});
+
+/** Phrases that only make sense with several units. */
+const MULTI_UNIT = {
+  ar: ['لكل وحدة', 'كل وحدة', 'من كل وحدة', 'الوحدات', 'وحدتين', 'وحدتها', 'وحدة غير', 'وحدة مجموعته', 'بطاقة وحدة', 'بطاقات الوحدات'],
+  en: ['each unit', 'every unit', 'per unit', 'units', 'a unit other', 'unit card', 'two units', 'its unit'],
+} as const;
+
+describe('a one-unit scope never talks as if there were several', () => {
+  for (const lang of LANGS) {
+    for (const style of LESSON_STYLE_IDS) {
+      it(`${lang} · ${style}`, () => {
+        const units = revisionUnits(vectors, lang);
+        assert.equal(units.length, 1, 'probe: one unit');
+        const p = plan(vectors, lang, style);
+        // The unit's own title may contain any word; the plan's wording may not.
+        const text = [...TEXT_FIELDS.map(f => p[f]), ...p.objectives, ...p.materials].join('\n').split(units[0]!.title).join('«T»');
+        for (const phrase of MULTI_UNIT[lang]) assert.ok(!text.includes(phrase), `«${phrase}» in a one-unit plan:\n${text}`);
+        // One round, and it does not echo the section heading's minutes.
+        const round = p.mainActivity.split('\n').find(l => l.startsWith(lang === 'ar' ? ROUND_MARK_AR : ROUND_MARK_EN))!;
+        assert.ok(!/\(\d+ |\(.*(دقيقة|دقائق)/.test(round.split(': ')[0]!), round);
+      });
+    }
+  }
+
+  it('a several-unit scope keeps the per-unit wording (the branch is not always taken)', () => {
+    assert.match(plan(sem1, 'ar', 'collaborative').independentPractice, /وحدة غير وحدة مجموعته/);
+    assert.match(plan(sem1, 'en', 'collaborative').independentPractice, /a unit other than their group's/);
+  });
+});
+
 const base = { grade: 'الصف العاشر', subject: 'Mathematics', language: 'arabic', duration: 45, teachingStyle: 'inquiry' } as const;
 const wideReq = (sel: ScopeSelection, extra: Partial<AIRequest> = {}): AIRequest => ({
   ...base, topic: scopeLabel(sel, 'ar'), ...extra, ...buildScopeRequest(sel, 'ar')!.fields,
@@ -173,7 +257,11 @@ describe('generateLessonPlan — the wide branch', () => {
   it('without a lesson table it rebuilds the units from the scope key', async () => {
     const { coverage: _c, ...noTable } = wideReq(sem2);
     const out = await aiService.generateLessonPlan(noTable as AIRequest);
-    assert.equal(roundsIn(out.mainActivity, 'ar'), revisionUnits(sem2, 'ar').length);
+    // Independent of `revisionUnits`: the rounds name the semester's units as the scope table lists them.
+    const expected = unitsInScope(sem2).map(u => u.titleAr);
+    assert.ok(expected.length >= 3, 'probe');
+    const named = [...out.mainActivity.matchAll(/^الجولة \d+ — «(.+?)»/gm)].map(m => m[1]);
+    assert.deepEqual(named, expected);
   });
 
   it('refuses a scope it cannot read rather than plan about nothing', () => {

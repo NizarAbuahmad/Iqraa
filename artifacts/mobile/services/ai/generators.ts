@@ -1200,7 +1200,9 @@ export class MockAIService extends AIService {
 
   async generateLessonPlan(req: AIRequest): Promise<LessonPlanOutput> {
     await this.delay();
-    return freshOnRegenerate('lessonPlan', req, () => this.lessonPlanOnce(req), lessonPlanSections, 300);
+    // A revision plan is deterministic: redrawing 300 times cannot change it, so one
+    // draw is enough and `repeated` still reports it honestly.
+    return freshOnRegenerate('lessonPlan', req, () => this.lessonPlanOnce(req), lessonPlanSections, isRevisionRequest(req) ? 1 : 300);
   }
 
   private async lessonPlanOnce(req: AIRequest): Promise<LessonPlanOutput> {
