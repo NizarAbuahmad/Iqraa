@@ -359,6 +359,13 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   Related trap: tab screens sit *under* the tab layout's lesson bar / bell
   header, which already pays `insets.top` — a tab screen header must not add it
   again.
+- **Arabic-Indic digits next to operators scramble on web, and no style fixes
+  it.** react-native-web puts `dir="auto"` on every `Text` (it beats
+  `direction`), and a bidi isolate is not enough: Arabic-Indic digits are type
+  AN, so «٩٫٥ × ١٠» still prints as «١٠ × ٩٫٥». A left-to-right *override*
+  fixes the digits but reverses Arabic letters («جا» → «اج»). Use `forceLtr` /
+  `displayLtr` / `entriesToSegments` in `services/mathCalc.ts`, and check such a
+  screen in a browser, not just in tests (see STATUS.md «Math Corner»).
 - **Extensionless relative imports only work through esbuild.** Anything loaded
   directly by `node --test` needs an explicit `.ts` extension.
 - **The OpenAI client throws at module scope without a key**, which makes

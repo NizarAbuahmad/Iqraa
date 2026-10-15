@@ -13,6 +13,7 @@
     "./external": "./src/external.ts",
     "./virtual-labs": "./src/virtualLabs.ts",
     "./lab": "./src/lab.ts",
+    "./math-formulas": "./src/mathFormulas.ts",
     "./quran-titles": "./src/quranTitles.ts",
     "./quran-memorize": "./src/quranMemorize.ts",
     "./quran-resources": "./src/quranResources.ts",
