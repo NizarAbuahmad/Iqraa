@@ -123,6 +123,10 @@ export function detectChemFamily(raw: string): ChemFamily {
   if (/رابطة|روابط|تساهمي|أيونية|فلزية|bond|covalent|ionic|metallic/i.test(blob)) return 'bonding';
   if (/الخصائص الدورية|نصف القطر|طاقة التأين|الكهروسالبية|periodic (trend|propert)|atomic radius|ionization|electronegativ/i.test(blob)) return 'periodic_trends';
   if (/التوزيع الإلكتروني|المستويات الفرعية|أوربيتال|electron config|orbital|subshell/i.test(blob)) return 'electron_config';
+  // The unit's own name, «الجدول الدوري وخواص العناصر». Checked after electron_config on purpose:
+  // the Grade 9 lesson «التوزيع الإلكتروني والجدول الدوري» names the table too but is that lesson.
+  // Deliberately narrow — «الجدول الدوري» alone appears in other lessons' objectives.
+  if (/الجدول الدوري وخواص|خواص العناصر|periodic table and (element )?propert/i.test(blob)) return 'periodic_trends';
   if (/نظرية بور|الطيف الذري|الميكانيكي الموجي|الكم|bohr|spectrum|quantum|wave mechanical/i.test(blob)) return 'atomic_structure';
 
   // Grade 9
@@ -274,6 +278,70 @@ export const CHEM_BANK: ConcreteItem[] = [
     answer: 'Na⁺ أصغر، لفقده مستوى الطاقة الخارجي', wrongs: ['Na⁺ أكبر، لزيادة شحنته الموجبة', 'متساويان، لأن النواة لم تتغير', 'Na⁺ أكبر، لأن التنافر بين الإلكترونات يقل'],
     promptAr: 'قارن بين نصف قطر ذرة الصوديوم Na ونصف قطر أيونها Na⁺، مع التعليل.',
     promptEn: 'Compare the radius of a sodium atom Na with its ion Na⁺, and explain.',
+  },
+  // Added 2026-10-15: the family held five items (two easy, two medium, one hard), so a
+  // ten-question or single-tier paper on the periodic-table lessons ran dry and repeated.
+  // Each distractor is a real misconception, and `wrongs[0]` is the most tempting one —
+  // the true/false form offers it as the proposed (false) answer.
+  {
+    id: 'ch-pt-e3', family: 'periodic_trends', diff: 'easy', eq: 'الفلزات القلوية (المجموعة الأولى)',
+    answer: 'إلكترون واحد', wrongs: ['إلكترونان', 'سبعة إلكترونات', 'ثمانية إلكترونات'],
+    promptAr: 'كم إلكترون تكافؤ في ذرة أيّ عنصر من الفلزات القلوية (المجموعة الأولى)؟',
+    promptEn: 'How many valence electrons does an atom of an alkali metal (group 1) have?',
+  },
+  {
+    id: 'ch-pt-e4', family: 'periodic_trends', diff: 'easy', eq: '1s² 2s² 2p⁶ 3s² 3p⁴',
+    answer: 'الدورة الثالثة', wrongs: ['الدورة الرابعة', 'الدورة الثانية', 'الدورة السادسة'],
+    promptAr: 'عنصر توزيعه الإلكتروني 1s² 2s² 2p⁶ 3s² 3p⁴. في أيّ دورة من الجدول الدوري يقع؟',
+    promptEn: 'An element has the electron configuration 1s² 2s² 2p⁶ 3s² 3p⁴. Which period of the periodic table is it in?',
+  },
+  {
+    id: 'ch-pt-e5', family: 'periodic_trends', diff: 'easy', eq: 'Na, Cl, Ar, Mg',
+    answer: 'Ar', wrongs: ['Cl', 'Na', 'Mg'],
+    promptAr: 'أيّ العناصر الآتية من الغازات النبيلة: Na، Cl، Ar، Mg؟',
+    promptEn: 'Which of these elements is a noble gas: Na, Cl, Ar, Mg?',
+  },
+  {
+    id: 'ch-pt-m3', family: 'periodic_trends', diff: 'medium', eq: 'Li و K (المجموعة نفسها)',
+    answer: 'K، لأن له مستويات طاقة أكثر', wrongs: ['Li، لأن شحنة نواته أصغر', 'Li، لأن له مستويات طاقة أكثر', 'متساويان، لأنهما في المجموعة نفسها'],
+    promptAr: 'أيّهما أكبر نصف قطر ذري: الليثيوم Li أم البوتاسيوم K؟ ولماذا؟',
+    promptEn: 'Which has the larger atomic radius, lithium Li or potassium K, and why?',
+  },
+  {
+    id: 'ch-pt-m4', family: 'periodic_trends', diff: 'medium', eq: 'طاقة التأين الأولى عند النزول في مجموعة',
+    answer: 'تقل، لأن الإلكترون الخارجي أبعد عن النواة', wrongs: ['تزداد، لأن عدد البروتونات أكبر', 'لا تتغير، لأن عدد إلكترونات التكافؤ ثابت', 'تزداد، لأن نصف القطر أكبر'],
+    promptAr: 'كيف تتغير طاقة التأين الأولى عند النزول في المجموعة الواحدة من الجدول الدوري؟ ولماذا؟',
+    promptEn: 'How does first ionization energy change moving down a group of the periodic table, and why?',
+  },
+  {
+    id: 'ch-pt-m5', family: 'periodic_trends', diff: 'medium', eq: 'Cl و Na',
+    answer: 'Cl، لأنه لافلز يميل إلى جذب الإلكترونات', wrongs: ['Na، لأنه يفقد إلكترونه بسهولة', 'Na، لأن نصف قطره أكبر', 'متساويان، لأنهما في الدورة نفسها'],
+    promptAr: 'أيّهما أعلى كهروسالبية: الكلور Cl أم الصوديوم Na؟ ولماذا؟',
+    promptEn: 'Which has the higher electronegativity, chlorine Cl or sodium Na, and why?',
+  },
+  {
+    id: 'ch-pt-m6', family: 'periodic_trends', diff: 'medium', eq: 'Na, Mg, Al, Cl',
+    answer: 'Cl', wrongs: ['Na', 'Mg', 'Al'],
+    promptAr: 'أيّ العناصر الآتية أعلى طاقة تأين أولى: Na، Mg، Al، Cl؟ (جميعها في الدورة الثالثة)',
+    promptEn: 'Which has the highest first ionization energy: Na, Mg, Al, Cl? (all in period 3)',
+  },
+  {
+    id: 'ch-pt-h2', family: 'periodic_trends', diff: 'hard', eq: 'Cl و Cl⁻',
+    answer: 'Cl⁻ أكبر، لزيادة التنافر بين الإلكترونات مع بقاء شحنة النواة', wrongs: ['Cl⁻ أصغر، لفقده مستوى الطاقة الخارجي', 'متساويان، لأن النواة لم تتغير', 'Cl⁻ أصغر، لزيادة جذب النواة للإلكترونات'],
+    promptAr: 'قارن بين نصف قطر ذرة الكلور Cl ونصف قطر أيونها Cl⁻، مع التعليل.',
+    promptEn: 'Compare the radius of a chlorine atom Cl with its ion Cl⁻, and explain.',
+  },
+  {
+    id: 'ch-pt-h3', family: 'periodic_trends', diff: 'hard', eq: 'Na⁺, Mg²⁺, Al³⁺',
+    answer: 'Na⁺، لأن شحنته النووية أقل', wrongs: ['Al³⁺، لأن شحنته أكبر', 'Mg²⁺، لأنه في الوسط', 'متساوية، لأن لها عدد الإلكترونات نفسه'],
+    promptAr: 'الأيونات Na⁺ وMg²⁺ وAl³⁺ لها عدد الإلكترونات نفسه. أيّها أكبر نصف قطر؟ ولماذا؟',
+    promptEn: 'The ions Na⁺, Mg²⁺ and Al³⁺ have the same number of electrons. Which has the largest radius, and why?',
+  },
+  {
+    id: 'ch-pt-h4', family: 'periodic_trends', diff: 'hard', eq: 'طاقة التأين عبر الدورة',
+    answer: 'لزيادة الشحنة النووية الفعالة ونقص نصف القطر', wrongs: ['لزيادة نصف القطر الذري', 'لزيادة عدد مستويات الطاقة', 'لزيادة عدد النيوترونات'],
+    promptAr: 'لماذا تزداد طاقة التأين الأولى عمومًا عند الانتقال عبر الدورة من اليسار إلى اليمين؟',
+    promptEn: 'Why does first ionization energy generally increase from left to right across a period?',
   },
 
   // ── الروابط الكيميائية ──
