@@ -276,7 +276,9 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   report as `approved` (`POST /moderation/artifact-reports/:id/resolve`, the
   only caller of `retireVariant`). The reporting teacher's client then
   regenerates, which avoids the paper they were served, so only they get a
-  replacement at once.
+  replacement at once — unless a spend/quota cap is reached, in which case the
+  route serves `pool.variants[0]` (possibly the variant just reported, tagged
+  `servedReason`) instead of generating.
 - **Students are shown only what an admin approved (since 2026-10-13).** The
   pool serves a teacher whatever is stored, but a stored row can be under the
   wrong lesson id and a student is a minor, so `GET /student/lesson-explanation/…`

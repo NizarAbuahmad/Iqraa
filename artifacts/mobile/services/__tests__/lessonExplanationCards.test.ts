@@ -144,3 +144,27 @@ test('a hook, a problem, a hint, an answer and a misconception are shown as stor
     { kind: 'practice', problem: '2) كم؟', hint: '- اقسم', answer: '3. 3 mol' },
   ]);
 });
+
+// A dash or a parenthesised number in front of maths is part of the maths:
+// stripping it after review would change what a student reads. Only strip when
+// what follows is plain words (an Arabic letter, say).
+test('stripMarker keeps a dash or «(N)» that belongs to the maths after it', () => {
+  for (const t of ['- 3x = 6', '– 5 °C', '— 7 = x', '(2) + (3) = 5', '(2) × (3)', '- x = 4', '- (x + 1)', '- + 3', '(1) = 1', '- 2 mol', '(2)(3)', '(2) ^ 2', '- /2', '- ÷ 2', '- − 3']) {
+    assert.equal(stripMarker(t), t, t);
+  }
+});
+
+test('stripMarker still removes a dash or «(N)» in front of words', () => {
+  assert.equal(stripMarker('- اقسم الطرفين'), 'اقسم الطرفين');
+  assert.equal(stripMarker('(1) اقسم'), 'اقسم');
+  assert.equal(stripMarker('– المول وحدة عدّ'), 'المول وحدة عدّ');
+  assert.equal(stripMarker('— اجمع'), 'اجمع');
+  assert.equal(stripMarker('(٢) اضرب'), 'اضرب');
+});
+
+test('bullets and «N.» / «N)» markers keep their behaviour in front of maths', () => {
+  assert.equal(stripMarker('• 3x = 6'), '3x = 6');
+  assert.equal(stripMarker('* x = 4'), 'x = 4');
+  assert.equal(stripMarker('1. 3x = 6'), '3x = 6');
+  assert.equal(stripMarker('2) x = 4'), 'x = 4');
+});

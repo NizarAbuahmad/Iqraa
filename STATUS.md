@@ -18412,8 +18412,9 @@ What is true, checked against the code and the suites:
   `lesson-teaching`. An approved review file stays on disk, so a later bare
   `--go` is refused until it is deleted or renamed (or `--force` is given). A
   bare `--go` plans the 64 worksheet and lesson-plan calls before the 49
-  explanations; the default $1 cap allows about 100 model calls, so roughly 36
-  of the 49 explanations fit and the rest are cut off partway. Use
+  explanations; the default $1 cap allows about 100 model calls, so at worst
+  roughly 36 of the 49 explanations fit and the rest are cut off partway (a
+  call the pool already holds does not count against the cap). Use
   `--only=lesson-teaching`.
 - **Replacing a rejected explanation.** Deleting an entry from the review file
   does not remove the stored variant, so the next `--go` serves it again and the

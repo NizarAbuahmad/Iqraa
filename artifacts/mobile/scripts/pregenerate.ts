@@ -24,7 +24,11 @@
  *
  *   1. `--go --only=lesson-teaching` generates (or finds) each lesson's
  *      explanation and writes `pregen-review.json` (`--review=` to rename):
- *      for each lesson, the exact text a student would read.
+ *      for each lesson, the text a student would read. One difference: the
+ *      student cards strip one leading list marker («•», «-», «1.», «(1)») from
+ *      each concept point and worked-example step (`stripMarker`,
+ *      `lessonExplanationCards.ts`), so the file shows that text before the
+ *      strip. The strip never touches a dash or «(N)» in front of maths.
  *   2. A person reads the file and deletes the entries they reject. Look for
  *      wording that assumes a class or a projector ("your teacher", "the
  *      screen"), wrong maths or chemistry, and a different lesson's content.
@@ -49,9 +53,10 @@
  *
  * A bare `--go` plans the 64 worksheet and lesson-plan calls first and the
  * lesson-teaching calls last. The default $1 cap allows about 100 model calls
- * (at the $0.01 estimate), so after the 64 earlier calls roughly 36 of the 49
- * teaching calls fit and the rest are cut off partway. Use
- * `--only=lesson-teaching`.
+ * (at the $0.01 estimate), so after the 64 earlier calls, at worst, roughly 36
+ * of the 49 teaching calls fit and the rest are cut off partway (a call the
+ * pool already holds answers in under 3 s and does not count against the
+ * cap). Use `--only=lesson-teaching`.
  *
  * REPLACING A REJECTED EXPLANATION. Deleting an entry from the review file only
  * keeps it from being approved; the stored variant stays in the pool, so the
@@ -329,7 +334,7 @@ async function approve(file: string): Promise<void> {
     throw new Error(`${malformed} malformed in ${file}: an entry has no content/contentHash, a variantId that is not a uuid, or no lessonId (or the file is not a list of entries). Nothing was approved.`);
   }
   if (edited.length > 0) {
-    throw new Error(`${edited.length} entr${edited.length === 1 ? 'y' : 'ies'} in ${file} ${edited.length === 1 ? 'was' : 'were'} edited (${titles(edited)}): edits are not applied; delete the entry instead of editing it. Nothing was approved.`);
+    throw new Error(`${edited.length} entr${edited.length === 1 ? 'y' : 'ies'} in ${file} ${edited.length === 1 ? 'was' : 'were'} edited (${titles(edited)}): edits are not applied; delete the entry instead of editing it. (If you did not edit it, the file may have been written by an older version of this script, whose hash did not cover the ids: regenerate it.) Nothing was approved.`);
   }
   const env = apiEnv();
   const token = await login(env);
