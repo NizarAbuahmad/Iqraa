@@ -115,6 +115,19 @@ an announcement by default» below.
   single lesson, and so do lesson plan, slides, activity, lesson-flow,
   infographic and the classroom builder (piece 3). Papers above 30 questions
   are not built.
+- **A browser smoke test covers the teacher-to-student journey** (2026-10-12,
+  `e2e/`, `.github/workflows/e2e.yml`). Playwright drives the real web build
+  against the real API and a Postgres: sign up → verify email → subjects →
+  class → students → generate an exam → publish → attach to the class → a
+  student with no account opens `/take/CODE`, answers and hands in → the
+  teacher's results screen shows "1 of 1 students marked". Passes locally
+  (Chrome, Windows, 3 of 3) and on a GitHub runner (PR #1032's own run
+  38263285986: migrations applied, seed ran, 1 passed in 8 s). **Not yet
+  verified:** flakiness beyond those runs — it is deliberately **not a required
+  check**; make it one after about a week without a red run. It uses the
+  Evaluation flow — the ai-tools quiz has no student link, so it cannot be
+  part of it.
+
 - **Wide-scope selection, foundation only (2026-10-13; spec
   `docs/superpowers/specs/2026-10-13-wide-scope-selection-design.md`).**
   `services/scopeSelection.ts` (what a unit / semester / book scope covers),

@@ -45,6 +45,8 @@ packages:
   - lib/*
   - lib/integrations/*
   - scripts
+  # Browser smoke test (Playwright). Not part of `typecheck` or `build`; run by e2e.yml.
+  - e2e
 
 catalog:
   '@replit/vite-plugin-cartographer': ^0.5.21
