@@ -29,6 +29,33 @@ export function activityRevisionRewords(phrase: string, lang: 'ar' | 'en'): Rewo
         [`ما أهم ما تعلّمته عن ${p} في الحصة السابقة؟`, `ما أهم ما تعلّمته عن ${p} في الحصص السابقة؟`],
         [`قبل الدخول في ${p}`, `قبل مراجعة ${p}`],
         [`واليوم سنستخدمه لـ ${p}`, `واليوم سنستخدمه في مراجعة ${p}`],
+        // The warm-up's third step and its assessment name «today's lesson» / «the new lesson».
+        [`اربط بدرس اليوم`, `اربط بحصة اليوم`],
+        [`ستبدأ الدرس الجديد`, `ستبدأ جولات المراجعة`],
+        // A revision closes the session («الحصة»), not «الدرس»: the individual
+        // activity's last step and its assessment.
+        [`غلق الدرس`, `غلق الحصة`],
+        // The hands-on card sort names «the lesson» as the source of its cards and
+        // as the thing that decides how to arrange them.
+        [`أو مثال من الدرس.`, `أو مثال منها.`],
+        [`بالطريقة التي يناسبها الدرس`, `بالطريقة التي تناسب هذه الموضوعات`],
+        // The jigsaw's task cards and the game's questions, when the book gives
+        // no concepts or bank items to ask about: each is asked of ONE idea in
+        // the scope, because «define whole-book topics» is no task. The jigsaw's
+        // «… بكلماتك» comes before the game's shorter «عرّف …» which it contains.
+        [`عرّف ${p} بكلماتك`, `اختر مفهومًا من ${p} وعرّفه بكلماتك`],
+        [`أعطِ مثالًا يوضّح ${p}`, `اختر فكرة من ${p} وأعطِ مثالًا يوضّحها`],
+        [`اذكر خطأً شائعًا في ${p}`, `اذكر خطأً شائعًا في فكرة من ${p}`],
+        [`اربط ${p} بموقف حياتي`, `اربط فكرة من ${p} بموقف حياتي`],
+        [`قارن ${p} بفكرة قريبة منه، وبيّن أين يختلفان`, `اختر فكرتين من ${p} وقارن بينهما، وبيّن أين تختلفان`],
+        [`ما الشرط الذي يجب أن يتحقق حتى تصحّ فكرة ${p}؟`, `اختر قاعدة من ${p}: ما الشرط الذي يجب أن يتحقق حتى تصحّ؟`],
+        [`لخّص ${p} في ثلاث جمل لزميل لم يحضر الحصة`, `لخّص فكرة من ${p} في ثلاث جمل لزميل لم يحضر الحصة`],
+        [`عرّف ${p}`, `اختر مفهومًا من ${p} وعرّفه`],
+        [`أعطِ مثالًا على ${p}`, `اختر فكرة من ${p} وأعطِ مثالًا عليها`],
+        [`ما الخطأ الشائع في ${p}؟`, `ما الخطأ الشائع في فكرة من ${p}؟`],
+        [`ما الفرق بين ${p} وفكرة قريبة منه؟`, `ما الفرق بين فكرتين من ${p}؟`],
+        [`متى لا تصحّ فكرة ${p}؟`, `متى لا تصحّ قاعدة من ${p}؟`],
+        [`اشرح ${p} لطالب أصغر منك سنًّا.`, `اشرح فكرة من ${p} لطالب أصغر منك سنًّا.`],
       ]
     : [
         [`from the “${p}” lesson`, `from ${p}`],
@@ -36,6 +63,25 @@ export function activityRevisionRewords(phrase: string, lang: 'ar' | 'en'): Rewo
         [`learned about ${p} last lesson?`, `learned about ${p} in earlier lessons?`],
         [`before ${p} begins`, `before the revision of ${p} begins`],
         [`today we use it for ${p}.`, `today we use it to revise ${p}.`],
+        [`example from the lesson on each card`, `example from them on each card`],
+        [`in the way the lesson calls for`, `in the way these topics call for`],
+        [`it is the content of the lesson`, `it is the content of the session`],
+        // The jigsaw's task cards and the game's questions with no concepts or
+        // bank items to ask about — see the Arabic table. «Define … in your own
+        // words» (jigsaw) comes before the game's shorter «Define …».
+        [`Define ${p} in your own words`, `Pick one concept from ${p} and define it in your own words`],
+        [`Give a worked example of ${p}`, `Pick one idea from ${p} and give a worked example of it`],
+        [`Name one common error in ${p}`, `Name one common error in an idea from ${p}`],
+        [`Link ${p} to a real situation`, `Link one idea from ${p} to a real situation`],
+        [`Compare ${p} with a nearby idea and say where they differ`, `Compare two ideas from ${p} and say where they differ`],
+        [`What must be true for ${p} to hold?`, `Pick a rule from ${p}: what must be true for it to hold?`],
+        [`Summarise ${p} in three sentences for a classmate who was absent`, `Summarise one idea from ${p} in three sentences for a classmate who was absent`],
+        [`Define ${p}`, `Pick one concept from ${p} and define it`],
+        [`Give an example of ${p}`, `Pick one idea from ${p} and give an example of it`],
+        [`What is a common error in ${p}?`, `What is a common error in an idea from ${p}?`],
+        [`How does ${p} differ from a nearby idea?`, `How do two ideas from ${p} differ?`],
+        [`When does ${p} not hold?`, `When does a rule from ${p} not hold?`],
+        [`Explain ${p} to a younger student.`, `Explain one idea from ${p} to a younger student.`],
       ];
 }
 
@@ -85,6 +131,8 @@ export function classroomRevisionRewords(phrase: string, lang: 'ar' | 'en', unit
         [`طبّق ${p} على مثال من الكتاب المدرسي`, `طبّق قاعدة من ${p} على مثال من الكتاب المدرسي`],
         [`متى لا ينجح أسلوب ${p} الذي درسناه اليوم؟`, `متى لا تنجح قاعدة من ${p} راجعناها اليوم؟`],
         [`اذكر موقفًا حياتيًا يستخدم ${p}.`, `اذكر موقفًا حياتيًا يستخدم مفهومًا من ${p}.`],
+        // The exit ticket's name, title, materials, preparation and printables.
+        [`غلق الدرس`, `غلق الحصة`],
       ]
     : [
         [`Term 1: definition of ${p}`, `Term 1: a term from ${p} and its definition`],
@@ -117,6 +165,8 @@ export function classroomRevisionRewords(phrase: string, lang: 'ar' | 'en', unit
         [`Apply ${p} to an example from the textbook`, `Apply a rule from ${p} to an example from the textbook`],
         [`When does the ${p} method we learned today NOT work?`, `When does a rule from ${p} that we revised today NOT work?`],
         [`Name a real-world situation that uses ${p}.`, `Name a real-world situation that uses a concept from ${p}.`],
+        // The exit ticket's objective and its preparation note.
+        [`at the end of the lesson`, `at the end of the session`],
       ];
 }
 

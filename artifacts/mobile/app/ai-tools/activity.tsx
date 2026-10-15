@@ -48,6 +48,7 @@ import { useWarmGrounding } from '@/hooks/useWarmGrounding';
 import { nextFrame } from '@/services/nextFrame';
 import { useWideScope } from '@/hooks/useWideScope';
 import { scopeLabel, type ScopeSelection } from '@/services/scopeSelection';
+import { activityExportTitle } from '@/services/exportTitles';
 import { buildScopeRequest, scopeFormState } from '@/services/wideScopeRequest';
 
 const ACCENT = palette.primary;
@@ -309,9 +310,9 @@ export default function ActivityScreen() {
     abortRef.current?.abort();
   };
 
-  const getExportTitle = () => outLang === 'ar'
-    ? `نشاط: ${scope.topic}`
-    : `Activity: ${scope.topic}`;
+  // A unit, semester or book activity is a revision, and says so — like the
+  // plan's («خطة حصة مراجعة: …»). From the frozen scope, not the live picker.
+  const getExportTitle = () => activityExportTitle(outLang, scope.topic, wideFrozen !== null);
 
   const getExportMeta = () => ({
     // Localised, like the picker above it. Taking `.name` straight off the

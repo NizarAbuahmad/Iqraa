@@ -18,6 +18,8 @@ import { revisionPhrase } from '../revisionScope.ts';
 import { lessonsInScope, scopeLabel, unitsInScope, type ScopeSelection } from '../scopeSelection.ts';
 import { getLessonById } from '../knowledgeBase.ts';
 import { ACTIVITY_CARDS } from '../classroomRouting.ts';
+import { parseCoverage } from '../../../api-server/src/lib/coverage.ts';
+import { revisionClauseAr } from '../../../api-server/src/lib/revision.ts';
 
 // The mock service's simulated latency is 1–2 s per call; nothing here needs it.
 (aiService as unknown as { delay: () => Promise<void> }).delay = async () => {};
@@ -72,6 +74,8 @@ const LESSON_SHAPED: Record<'ar' | 'en', string[]> = {
   'طبّق {p} على مثال من الكتاب المدرسي',
   'متى لا ينجح أسلوب {p} الذي درسناه اليوم؟',
   'اذكر موقفًا حياتيًا يستخدم {p}.',
+    // The exit ticket's name, title, materials, preparation and printables.
+    'غلق الدرس',
     // Whatever the phrase, these claim one lesson.
     'درس اليوم',
     'هذا الدرس',
@@ -106,6 +110,7 @@ const LESSON_SHAPED: Record<'ar' | 'en', string[]> = {
   'Apply {p} to an example from the textbook',
   'When does the {p} method we learned today NOT work?',
   'Name a real-world situation that uses {p}.',
+    'at the end of the lesson',
     "today's lesson",
     'this lesson',
   ],
@@ -294,5 +299,86 @@ describe('offline classroom activity — a lesson is unchanged', () => {
       // Mutation caught: keying the revision branch on `coverage` instead of `scope`.
       assert.deepEqual(await aiService.generateClassroomActivity({ ...req, coverage }), await aiService.generateClassroomActivity(req), type);
     }
+  });
+});
+
+describe('the live classroom clause lists the lessons the offline quick check draws from', () => {
+  // The quick check keeps no record of which lesson a question came from, so a
+  // question is attributed by its STEM (digits blanked): each lesson's own
+  // quick check is sampled on the lesson path, and a wide question belongs to
+  // every lesson whose sample holds its stem. Math.random is seeded so the
+  // samples, and so the test, never change from run to run.
+  const norm = (text: string) => text.replace(/[0-9٠-٩.,/]+/g, '#');
+  const questionsOf = (a: ClassroomActivity) => a.slides.filter(sl => sl.type === 'question').map(sl => norm(sl.content ?? ''));
+
+  async function withSeededRandom<T>(run: () => Promise<T>): Promise<T> {
+    const real = Math.random;
+    let a = 0x9e3779b9;
+    Math.random = () => { a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    try { return await run(); } finally { Math.random = real; }
+  }
+
+  async function stemsByLesson(sel: ScopeSelection): Promise<Map<string, Set<string>>> {
+    const out = new Map<string, Set<string>>();
+    for (const l of lessonsInScope(sel)) {
+      const set = new Set<string>();
+      for (let i = 0; i < 20; i++) {
+        const a = await aiService.generateClassroomActivity({
+          grade: 'Grade 10', subject: 'Mathematics', topic: l.titleAr, lessonId: l.id, activityType: 'quick-check',
+          duration: 20, difficulty: 'standard', groupType: 'groups', teachingGoal: 'practice', language: 'arabic',
+          numQuestions: 8, regenerate: i > 0,
+        });
+        questionsOf(a).forEach(q => set.add(q));
+      }
+      out.set(l.id, set);
+    }
+    return out;
+  }
+
+  it('a question comes from a lesson in the table the server reads, and that lesson is in the clause', async () => {
+    await withSeededRandom(async () => {
+      const stems = await stemsByLesson(mathUnit);
+      const all = lessonsInScope(mathUnit);
+      assert.ok(all.length >= 4 && [...stems.values()].every(s => s.size > 0), 'probe: a unit whose lessons all have a bank');
+      const req = { ...classReq(mathUnit, 'quick-check'), numQuestions: 8 };
+      const body = req as unknown as Record<string, unknown>;
+      const table = parseCoverage(body);
+      assert.ok(table, 'the server reads no lesson table from this request');
+      const clause = revisionClauseAr(body, 'classroom');
+      assert.notEqual(clause, '');
+      const qs = questionsOf(await aiService.generateClassroomActivity(req));
+      assert.ok(qs.length >= 4, `quick check: ${qs.length} bank questions`);
+      for (const q of qs) {
+        const from = all.filter(l => stems.get(l.id)!.has(q));
+        assert.ok(from.length > 0, `probe: «${q.slice(0, 40)}» is no lesson's question`);
+        assert.ok(from.some(l => table.lessons.some(row => row.id === l.id && clause.includes(row.title))), `«${q.slice(0, 40)}»: no source lesson is listed by the clause`);
+      }
+    });
+  });
+
+  it('a narrower table narrows both: the builder draws only from the listed lessons, and the clause lists only those', async () => {
+    await withSeededRandom(async () => {
+      const stems = await stemsByLesson(mathUnit);
+      const all = lessonsInScope(mathUnit);
+      // The first and third lessons: their question families are not shared with the other two.
+      const keep = [all[0]!, all[2]!];
+      const dropped = all.filter(l => !keep.includes(l));
+      const full = classReq(mathUnit, 'quick-check');
+      const req = {
+        ...full, numQuestions: 8,
+        coverage: { lessons: full.coverage!.lessons.filter(row => keep.some(l => l.id === row.id)) },
+      };
+      const body = req as unknown as Record<string, unknown>;
+      const clause = revisionClauseAr(body, 'classroom');
+      for (const l of keep) assert.ok(clause.includes(parseCoverage(body)!.lessons.find(r => r.id === l.id)!.title), l.id);
+      for (const l of dropped) assert.ok(!clause.includes(full.coverage!.lessons.find(r => r.id === l.id)!.title), `${l.id} still listed`);
+      const qs = questionsOf(await aiService.generateClassroomActivity(req));
+      assert.ok(qs.length >= 2);
+      for (const q of qs) {
+        // Mutation caught: the builder reading the scope's lessons (or the unit) instead of the table.
+        const from = all.filter(l => stems.get(l.id)!.has(q));
+        assert.ok(from.some(l => keep.includes(l)), `«${q.slice(0, 40)}» came from ${from.map(l => l.id).join(', ')}, not from the listed lessons`);
+      }
+    });
   });
 });

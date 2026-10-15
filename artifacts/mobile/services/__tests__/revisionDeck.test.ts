@@ -9,9 +9,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildLessonDeck, buildRevisionDeck } from '../lessonSlides.ts';
+import { LETTER_GLOSS, withoutLetterGlosses } from '../englishText.ts';
 import { revisionPhrase, revisionUnits } from '../revisionScope.ts';
 import { lessonsInScope, semestersAvailable, type ScopeSelection } from '../scopeSelection.ts';
-import { getUnitsForSubjectGrade, KB_BOOKS, KB_UNITS } from '../knowledgeBase.ts';
+import { getUnitsForSubjectGrade, KB_BOOKS, KB_LESSONS, KB_UNITS } from '../knowledgeBase.ts';
 import type { ActivitySlide, ClassroomActivity, LessonPlanOutput } from '../ai/AIService.ts';
 
 const sem1: ScopeSelection = { kind: 'semester', gradeId: 'grade-10', subjectId: 'mathematics', semester: 1 };
@@ -216,12 +217,55 @@ describe('buildRevisionDeck — English decks carry no Arabic from the data, one
       if (units.length === 0) continue;
       const deck = buildRevisionDeck(false, { units, phrase: revisionPhrase(sel, 'en'), plan: null });
       built++;
-      if (ARABIC_LETTER.test(JSON.stringify(deck))) offenders.push(`${sel.kind}:${sel.subjectId}:${sel.gradeId}`);
+      // A short letter gloss is a grade-1 lesson's NAME («The Letter Baa (ب)»): the one
+      // Arabic letter an English deck may carry, in brackets, as the plan allows.
+      if (ARABIC_LETTER.test(withoutLetterGlosses(JSON.stringify(deck)))) offenders.push(`${sel.kind}:${sel.subjectId}:${sel.gradeId}`);
       // And every round still has its ideas slide: filtering must not empty a unit.
       assert.equal(deck.slides.filter(s => s.title.startsWith('💡 ')).length, units.length, `${sel.kind} ${sel.subjectId}`);
     }
     assert.ok(built > 500, `expected the whole curriculum, got ${built}`);
     assert.deepEqual(offenders.slice(0, 5), []);
+  });
+
+  it('the letter-gloss exception is narrow: one to three letters in brackets, nothing longer', () => {
+    assert.ok(LETTER_GLOSS.test('(ب)') && LETTER_GLOSS.test('(ا, ى)'));
+    assert.ok(!LETTER_GLOSS.test('(جميل)') && !LETTER_GLOSS.test('(دراسة الجدوى)'));
+    // Mutation caught: an exception that waves any bracketed Arabic through the scan.
+    assert.ok(ARABIC_LETTER.test(withoutLetterGlosses('Looking good (جميل)')));
+    assert.ok(!ARABIC_LETTER.test(withoutLetterGlosses('The Letter Baa (ب)')));
+  });
+
+  it('keeps what the data can say in English: a Quranic mark, a letter lesson, a glossed title', () => {
+    const unit = {
+      unitId: 'u1', title: 'Letters and stops',
+      lessons: [
+        { id: 'l1', title: 'The Letter Baa (ب)', thin: false },
+        { id: 'l2', title: 'Stops ۖ and pauses', thin: false },
+        { id: 'l3', title: 'Looking good (جميل)', thin: false },
+        { id: 'l4', title: 'الحروف', thin: false },
+      ],
+      outcomes: ['يتعرف الطالب الحرف'], concepts: ['دراسة الجدوى'], terms: ['Stops ۖ', 'مصطلح (term)'],
+    };
+    const deck = buildRevisionDeck(false, { units: [unit], phrase: 'Letters', plan: null });
+    const ideas = deck.slides.find(s => s.title === '💡 Letters and stops')!;
+    // Outcomes and concepts are Arabic only, so the round shows its lesson titles.
+    // Mutation caught: the old whole-script test (drops «Stops ۖ and pauses» and «The Letter Baa (ب)»).
+    assert.equal(ideas.content, '• The Letter Baa (ب)\n• Stops ۖ and pauses\n• Looking good');
+    assert.ok(ideas.teacher?.expectedAnswer?.includes('Stops ۖ and pauses'));
+    assert.ok(ideas.teacher?.teachingTips?.includes('Terms worth asking about: Stops ۖ'), String(ideas.teacher?.teachingTips));
+    // The Arabic deck is not filtered at all.
+    const ar = buildRevisionDeck(true, { units: [unit], phrase: 'x', plan: null });
+    assert.ok(ar.slides.find(s => s.title === '💡 Letters and stops')!.content.includes('يتعرف الطالب الحرف'));
+  });
+
+  it('the grade-4 Islamic scope that holds «Muhammad ۖ» keeps that lesson in its English deck', () => {
+    const lesson = KB_LESSONS.find(l => l.titleEn.includes('\u06D6'))!;
+    assert.ok(lesson, 'probe: the data holds a Latin lesson title with a Quranic mark');
+    const unit = KB_UNITS.find(u => u.id === lesson.unitId)!;
+    const book = KB_BOOKS.find(b => b.id === unit.bookId)!;
+    const units = revisionUnits({ kind: 'unit', gradeId: book.gradeId, subjectId: book.subjectId, unitId: unit.id }, 'en');
+    const deck = buildRevisionDeck(false, { units, phrase: 'x', plan: null });
+    assert.ok(deck.slides.some(s => (s.teacher?.expectedAnswer ?? '').includes(lesson.titleEn)), 'the lesson was dropped from the round');
   });
 
   it('an English deck leaves out a plan\'s Arabic goals (an offline plan quotes the official outcomes) and keeps its English ones', () => {
@@ -246,5 +290,44 @@ describe('buildRevisionDeck — English decks carry no Arabic from the data, one
         assert.doesNotMatch(text, /الوحدات|الجولة 1 من 1|Round 1 of 1/, `${sel.subjectId} ${lang}`);
       }
     }
+  });
+});
+
+describe('buildRevisionDeck — the teacher\'s preparation note names only what is on the slides', () => {
+  const mentions = (note: string, words: string[]) => words.filter(w => note.includes(w));
+
+  it('a deck with no plan and no checks promises nothing generated', () => {
+    for (const isAr of [true, false]) {
+      const units = revisionUnits(sem1, isAr ? 'ar' : 'en');
+      const deck = buildRevisionDeck(isAr, { units, phrase: PHRASE, plan: null });
+      // Mutation caught: the fixed «warm-up, practice, questions» sentence.
+      assert.deepEqual(mentions(deck.teacherPreparation, ['التمهيد', 'التدريب', 'الأسئلة', 'warm-up', 'practice', 'questions', 'مولّد', 'generated']), [], deck.teacherPreparation);
+      assert.ok(deck.teacherPreparation.length > 20);
+    }
+  });
+
+  it('names a part exactly when its slide is there', () => {
+    const note = (o: Partial<Parameters<typeof buildRevisionDeck>[1]>) =>
+      buildRevisionDeck(true, { units: UNITS, phrase: PHRASE, plan: null, ...o }).teacherPreparation;
+    // A question warm-up, practice and checks: all three are named (and the goals and homework the plan brings).
+    const full = note({ plan: PLAN, checks: FIVE_CHECKS });
+    assert.deepEqual(mentions(full, ['الأهداف', 'التمهيد', 'التدريب', 'الأسئلة', 'الواجب']), ['الأهداف', 'التمهيد', 'التدريب', 'الأسئلة', 'الواجب']);
+    // No question in the introduction: no warm-up slide, so none promised.
+    assert.ok(!note({ plan: PLAN_NO_QUESTION, checks: FIVE_CHECKS }).includes('التمهيد'));
+    // Practice switched off: neither its slides nor its promise.
+    const noPractice = note({ plan: PLAN, checks: FIVE_CHECKS, includePractice: false });
+    assert.ok(!noPractice.includes('التدريب') && !noPractice.includes('الواجب'), noPractice);
+    // No checks came: no questions.
+    assert.ok(!note({ plan: PLAN }).includes('الأسئلة'));
+    // A plan that is only a closure promises no generated slide at all.
+    assert.ok(!note({ plan: { ...PLAN, introduction: '', objectives: [], guidedPractice: '', independentPractice: '', homework: '' } }).includes('مولّد'));
+  });
+
+  it('says the same in English, joined with commas and «and»', () => {
+    const units = revisionUnits(sem1, 'en');
+    const en = buildRevisionDeck(false, { units, phrase: 'x', plan: { ...PLAN, objectives: ['Recall each unit'], introduction: 'Ask: "What is hardest?" Then go.' }, checks: FIVE_CHECKS });
+    assert.match(en.teacherPreparation, /everything else \(goals, warm-up, questions, practice and homework\) is generated/);
+    const one = buildRevisionDeck(false, { units, phrase: 'x', plan: { ...PLAN, objectives: [], guidedPractice: '', independentPractice: '', homework: '', introduction: '' }, checks: [mcq(1)] });
+    assert.match(one.teacherPreparation, /everything else \(questions\) is generated/);
   });
 });

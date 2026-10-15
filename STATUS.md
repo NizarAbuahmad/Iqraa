@@ -5621,6 +5621,23 @@ the read would open every restricted exam to the whole class. The rows are now
 unmanageable from the app (no endpoint edits or clears them). The concrete maths
 bank in `@workspace/math-practice` stays: the ordinary evaluation generator uses it.
 
+**Decided 2026-10-15: the old audience rows stay. Do not delete them, not even for
+closed or archived checks.** Retiring them was considered and rejected, because the
+rows are also what keeps an old group check out of everyone else's view, not only
+what restricts who may sit it. With the rows gone, an exam reads as class-wide, and
+then: (1) the student record (`GET /classes/:id/students/:id/record`, `roster.ts`)
+lists every non-draft exam of the class for every student, and would add a «لم
+يقدّمه» row per old check for each classmate; (2) the student and parent exam lists
+(`examRowsFor`, `studentExams.ts`) include `closed` exams for the whole class and
+do not filter archived ones, so each old check would show as «مُغلق» to every
+student and parent; (3) the support-group cards lose their past results, which come
+from `assignedStudentIds`. Closing or archiving the exam first does not help, since
+(1) and (2) both include those. The cost of leaving them is a handful of inert rows.
+The only clean way to retire them is an explicit "group check" marker on
+`evaluations`, with every reader above moved onto it before any row is deleted —
+a schema change plus several reader edits, for no user-visible gain. Production
+data was never inspected for this decision, so the row count is unknown.
+
 **The default paper was the most expensive one.** `new.tsx` pre-selected
 `short_answer` + `open_ended`, both types `gradeAttempt` leaves out entirely, so
 accepting the defaults meant ten questions to hand-mark for every student. Now
