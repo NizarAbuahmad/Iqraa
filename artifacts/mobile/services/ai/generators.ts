@@ -183,10 +183,16 @@ function placeCorrect(correct: string, wrongs: string[]): string[] {
   return [...wrongs.slice(0, pos), correct, ...wrongs.slice(pos)];
 }
 
-/** Normalize question stem for duplicate detection (ignore answer-space padding). */
+/**
+ * Normalize question stem for duplicate detection: the answer space, and the
+ * answer a true/false item proposes, are not part of the question. Without the
+ * second, one item asked as multiple choice and again as true/false read as two
+ * different stems, and a quiz printed «دائرة نصف قطرها 10 سم، وفيها وتر طوله
+ * 12 سم…» three times (found 2026-10-15).
+ */
 function questionStemKey(text: string): string {
   return text
-    .replace(/\n\n(?:الإجابة|Answer|مساحة العمل|Work space):[\s\S]*$/u, '')
+    .replace(/\n\n(?:الإجابة المقترحة|Proposed answer|الإجابة|Answer|مساحة العمل|Work space):[\s\S]*$/u, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -1781,6 +1787,10 @@ export class MockAIService extends AIService {
     const questions: QuizQuestion[] = [];
     const usedStems = new Set<string>();
 
+    // Twelve draws that all repeat a question already on the paper mean this
+    // type has nothing new left for the lesson: it is spent, like a bank that
+    // ran dry (`takeFromBankOrStop`), and the others carry on. This used to
+    // print the thirteenth draw anyway — the same question twice on one paper.
     const pushUnique = (factory: () => QuizQuestion): QuizQuestion => {
       for (let attempt = 0; attempt < 12; attempt++) {
         const q = factory();
@@ -1790,6 +1800,7 @@ export class MockAIService extends AIService {
           return q;
         }
       }
+      if (bankOnly) throw new BankSpentError();
       const q = factory();
       usedStems.add(questionStemKey(q.text));
       return q;

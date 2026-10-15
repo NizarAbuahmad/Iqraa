@@ -36,6 +36,7 @@ export { stepsFor, solvedItemIds, completionSplit } from './steps.ts';
 export type { SolutionSteps } from './steps.ts';
 export { detectElementaryOp, elementaryOpsForTitle } from './elementary.ts';
 export { topicFor } from './topics.ts';
+export { stemFrame } from './stemFrame.ts';
 
 export interface PracticeLesson {
   id: string;
