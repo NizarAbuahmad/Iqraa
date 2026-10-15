@@ -28,6 +28,13 @@ export function useGeneratorExport<TResult, TMeta extends GeneratorExportMeta>(c
   topic: string;
   /** The lesson the material was generated under; beats re-grounding `topic`. */
   lessonId?: string;
+  /**
+   * The material spans several lessons (a unit, semester or book paper), so it
+   * has no figures of its own. Without this, an absent `lessonId` falls back to
+   * re-grounding `topic` — and a wide paper's topic is a label, which can ground
+   * to some other grade's lesson and attach ITS figures to the export.
+   */
+  noFigures?: boolean;
   lang: Lang;
   getTitle: () => string;
   getMeta: () => TMeta;
@@ -39,15 +46,16 @@ export function useGeneratorExport<TResult, TMeta extends GeneratorExportMeta>(c
   onError: (key: TranslationKey) => void;
   onCopied: (key: TranslationKey) => void;
 }) {
-  const { result, topic, lessonId, lang, getTitle, getMeta, formatText, buildHTML, buildSlidesHTML, buildWord, onError, onCopied } = config;
+  const { result, topic, lessonId, noFigures, lang, getTitle, getMeta, formatText, buildHTML, buildSlidesHTML, buildWord, onError, onCopied } = config;
   const [loadingPDF, setLoadingPDF] = useState(false);
   const [loadingWord, setLoadingWord] = useState(false);
   const [loadingSlides, setLoadingSlides] = useState(false);
   const isAr = lang === 'ar';
 
   const getExportFigures = useCallback((): BookFigureRef[] => {
+    if (noFigures) return [];
     return bookFigureRefsForLesson(lessonId ?? resolveGeneratorGrounding(topic.trim(), lang).lesson?.id, isAr);
-  }, [lessonId, topic, lang, isAr]);
+  }, [noFigures, lessonId, topic, lang, isAr]);
 
   const filenameOf = exportFilename;
 

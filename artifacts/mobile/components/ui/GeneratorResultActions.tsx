@@ -58,6 +58,14 @@ export interface GeneratorResultActionsProps {
   /** toolCatalog id, e.g. 'lesson-plan', 'worksheet', 'quiz', 'activity'. */
   toolId: string;
   topic: string;
+  /**
+   * Leave out the «create a related material» panel. Its chips open another
+   * tool with `topic` as a bare lesson title that the receiving screen
+   * re-grounds, which is wrong for a paper whose `topic` is only a label
+   * (a unit / semester / book scope): a unit title can ground to another
+   * grade's lesson. Default false: every other caller is unchanged.
+   */
+  hideRelated?: boolean;
   /** Space above the row. Screens currently vary (4 vs 8px); default matches the majority. */
   marginTop?: number;
 }
@@ -75,6 +83,7 @@ export function GeneratorResultActions({
   materialType,
   toolId,
   topic,
+  hideRelated = false,
   marginTop = 4,
 }: GeneratorResultActionsProps) {
   const colors = useColors();
@@ -233,7 +242,7 @@ export function GeneratorResultActions({
       </View>
 
       <FeedbackWidget materialType={materialType} toolId={toolId} />
-      <RelatedResourcesPanel toolId={toolId} topic={topic} isRTL={isRTL} />
+      {hideRelated ? null : <RelatedResourcesPanel toolId={toolId} topic={topic} isRTL={isRTL} />}
     </>
   );
 }

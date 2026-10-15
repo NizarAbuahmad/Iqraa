@@ -97,6 +97,13 @@ interface Props {
   allowedKinds?: readonly ScopeKind[];
   /** The structured selection (ids, not a title); null when nothing complete is picked. */
   onScopeChange?: (selection: ScopeSelection | null) => void;
+  /**
+   * The screen's offline generators can honour a unit / semester / book scope,
+   * so `availableKinds` need not drop `semester` under DEMO_MODE (the offline
+   * path is exactly what DEMO_MODE runs). Quiz, worksheet, homework and game
+   * pass it; every other screen keeps today's behaviour until piece 3.
+   */
+  offlineWideScope?: boolean;
   lang: 'ar' | 'en';
   isRTL: boolean;
   colors: any;
@@ -107,13 +114,13 @@ interface Props {
 
 export function TopicSelector({
   subjectId, gradeId, value, onChange, onSelectionDetail,
-  allowedKinds, onScopeChange,
+  allowedKinds, onScopeChange, offlineWideScope,
   lang, isRTL, colors, accent, hasError, t,
 }: Props) {
   const units = getUnitsForSubjectGrade(subjectId, gradeId);
   const kbAvailable = hasKBContent(subjectId, gradeId);
   const unitGroups = useMemo(() => groupUnitsBySemester(units, t), [units, t]);
-  const kinds = availableKinds(gradeId, subjectId, allowedKinds, DEMO_MODE);
+  const kinds = availableKinds(gradeId, subjectId, allowedKinds, DEMO_MODE && !offlineWideScope);
   const semesters = kinds.includes('semester') ? semestersAvailable(gradeId, subjectId) : [];
 
   // Whether the teacher has picked anything in *this* component yet. On mount

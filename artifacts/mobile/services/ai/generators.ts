@@ -33,6 +33,8 @@ import { arPrefixed, lessonKindFor, type LessonKind } from './lessonPlanKinds.ts
 import { arMinutes } from './lessonPlanTypes.ts';
 import { classifyVerifiableTopic } from './verifyMathGuards.ts';
 import { QUIZ_TYPE_ORDER } from '../quizPaper.ts';
+import { ScopeDrawer } from './scopeDraw.ts';
+import { planCoverage, type CoverageLesson } from '../coveragePlan.ts';
 
 /**
  * Symbolic verification, loaded lazily.
@@ -68,6 +70,8 @@ interface WQ {
   steps?: string[];
   /** See `WorksheetQuestion.fromBank`. Set by `tryMathPractice` and nowhere it isn't true. */
   fromBank?: true;
+  /** The KB lesson this question was written for — set on a wide-scope paper. */
+  lessonId?: string;
 }
 /** Carries a bank item's mark onto a quiz question, which copies fields one by one. */
 const bankMark = (q: WQ): { fromBank?: true } => (q.fromBank ? { fromBank: true } : {});
@@ -886,6 +890,61 @@ function requireQuestionBank(topic: string, kb: KBLesson | null, subject?: strin
   throw new NoQuestionBankError(topic);
 }
 
+// ─── Wide scope ──────────────────────────────────────────────────────────────
+
+/** A lesson of a wide scope as the offline makers need it: its own title and KB row. */
+type OfflineSlotLesson = { id: string; topic: string; kb: KBLesson };
+type OfflineWideScope = {
+  drawer: ScopeDrawer<OfflineSlotLesson>;
+  lessons: OfflineSlotLesson[];
+  /** Lessons dropped because they have no offline bank — reported, not hidden. */
+  skipped: CoverageLesson[];
+};
+
+/** `BankSpentError` is private to this file, so the drawer is told how to recognise it. */
+const spentOpts = {
+  isSpent: (e: unknown) => e instanceof BankSpentError,
+  error: () => new BankSpentError(),
+};
+
+/**
+ * The lessons a wide-scope request names, planned across `count` question slots.
+ *
+ * Null unless the request carries a wide scope and its lesson table: every
+ * other request goes through the single-lesson path exactly as before.
+ *
+ * The plan is re-made HERE from `coverage.lessons`, never read from
+ * `coverage.slots`: a lesson with no offline bank (a geometry lesson, say) must
+ * not make a whole-book paper throw `NoQuestionBankError`, so such lessons are
+ * dropped first and the rest are planned. For a scope whose lessons all have a
+ * bank this is the same plan the live prompt was given.
+ */
+function offlineWideScope(req: AIRequest, lang: Lang, count: number): OfflineWideScope | null {
+  const table = req.coverage?.lessons;
+  if (!req.scope || !table?.length) return null;
+  const usable: OfflineSlotLesson[] = [];
+  const pool: { id: string; unitId: string }[] = [];
+  const skipped: CoverageLesson[] = [];
+  for (const entry of table) {
+    const kb = getLessonById(entry.id);
+    if (!kb) { skipped.push(entry); continue; }
+    const topic = lang === 'ar' ? kb.titleAr : kb.titleEn;
+    try {
+      requireQuestionBank(topic, kb, req.subject);
+    } catch (e) {
+      if (!(e instanceof NoQuestionBankError)) throw e;
+      skipped.push(entry);
+      continue;
+    }
+    usable.push({ id: kb.id, topic, kb });
+    pool.push({ id: kb.id, unitId: entry.unitId });
+  }
+  if (usable.length === 0) throw new NoQuestionBankError(req.topic);
+  const offset = req.regenerate ? Math.floor(Math.random() * pool.length) : 0;
+  const plan = planCoverage(pool, count, req.distribution ?? 'balanced', { offset });
+  return { drawer: new ScopeDrawer(plan.map(i => usable[i]!), usable, spentOpts), lessons: usable, skipped };
+}
+
 /**
  * Which version of an activity a request gets.
  *
@@ -991,9 +1050,15 @@ function fingerprint(out: unknown): string {
   return `${text.length}:${h.toString(16)}`;
 }
 
-function requestIdentity(kind: string, req: object): string {
-  const { regenerate: _r, avoid: _a, excludeVariantIds: _e, ...rest } = req as Record<string, unknown>;
-  return `${kind}|${JSON.stringify(rest)}`;
+export function requestIdentity(kind: string, req: object): string {
+  const { regenerate: _r, avoid: _a, excludeVariantIds: _e, coverage, ...rest } = req as Record<string, unknown>;
+  // A wide paper's `coverage.slots` is re-planned with a random offset on every
+  // Regenerate, so keeping it in the identity made each Regenerate a "new"
+  // request: nothing was remembered to compare against, and the offline
+  // generator could hand back the paper already on screen. The lesson table
+  // (what the paper is OF) stays; the plan for one draw does not.
+  const stable = coverage && typeof coverage === 'object' ? { ...rest, coverage: { ...coverage, slots: undefined } } : rest;
+  return `${kind}|${JSON.stringify(stable)}`;
 }
 
 /**
@@ -1274,10 +1339,13 @@ export class MockAIService extends AIService {
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
     const docs = docsFromReq(req);
     const topic = (docs.present && docs.title) ? docs.title : req.topic;
+    // A wide scope draws each question from the lesson its slot names (never
+    // together with an uploaded document, which has its own grounding).
+    const wide = docs.present ? null : offlineWideScope(req, lang, Math.min(30, Math.max(5, req.numQuestions ?? 8)));
     // Prefer uploaded materials over a weakly matching KB lesson
-    const kb = docs.present ? null : groundedKb(topic, lang, req.lessonId);
+    const kb = docs.present || wide ? null : groundedKb(topic, lang, req.lessonId);
     // A paper built from the teacher's own file is grounded in that file.
-    if (!docs.present) requireQuestionBank(topic, kb, req.subject);
+    if (!docs.present && !wide) requireQuestionBank(topic, kb, req.subject);
     const selectedTypes: QType[] = (req.questionTypes as QType[])?.length
       ? (req.questionTypes as QType[])
       : ['multiple_choice', 'short_answer'];
@@ -1287,7 +1355,7 @@ export class MockAIService extends AIService {
 
     // In-class practice: progressive difficulty (easy → medium → hard)
     //
-    // The count is the picker's own range (5–20, `NUM_Q_OPTIONS` in
+    // The count is the picker's own range (5–30, `NUM_Q_OPTIONS` in
     // `app/ai-tools/worksheet.tsx`), not a private one. This used to be 6–12, so
     // asking for 5 gave 6 and asking for 15 or 20 gave 12 while the live prompt
     // honoured the number — the same teacher got a different paper by whether
@@ -1295,7 +1363,7 @@ export class MockAIService extends AIService {
     // exactly (one easy, one hard, the rest middle, plus the word problem).
     // A lesson whose bank holds fewer items than this still returns fewer: that
     // limit is `BankSpentError`, not this line.
-    const totalQ = Math.min(20, Math.max(5, req.numQuestions ?? 8));
+    const totalQ = Math.min(30, Math.max(5, req.numQuestions ?? 8));
     const priorConcepts = req.includePriorReview && req.priorKnowledge?.length
       ? req.priorKnowledge
       : [];
@@ -1325,11 +1393,23 @@ export class MockAIService extends AIService {
     // without any, or a teacher's own document, gets the paper it always did.
     // They count INSIDE `totalQ`, the number the teacher picked, so the page
     // does not outgrow the period. Homework is a separate generator.
+    //
+    // Which question slot the next question fills. The worked example and the
+    // half-solved item are slots 0 and 1; the practice follows.
+    let slot = 0;
+    // The lesson each solved item came from (wide scope only), so the
+    // half-solved question can say which lesson it covers.
+    const solvedLesson = new Map<SolvedItem, string>();
     const takeSolved = (tier: DiffTier): SolvedItem | null => {
       if (docs.present) return null;
-      if (isChemContext(topic, kb, req.subject)) return takeSolvedChem(topic, kb, tier, lang);
-      if (isMathContext(topic, kb, req.subject)) return takeSolvedMath(topic, kb, tier, lang);
-      return null;
+      const at = wide ? wide.drawer.lessonAt(slot) : null;
+      const tp = at ? at.topic : topic;
+      const kbRow = at ? at.kb : kb;
+      let item: SolvedItem | null = null;
+      if (isChemContext(tp, kbRow, req.subject)) item = takeSolvedChem(tp, kbRow, tier, lang);
+      else if (isMathContext(tp, kbRow, req.subject)) item = takeSolvedMath(tp, kbRow, tier, lang);
+      if (item && at) { solvedLesson.set(item, at.id); slot += 1; }
+      return item;
     };
     const exampleItem = takeSolved(band[0]);
     const completionItem = exampleItem ? takeSolved(band[1]) : null;
@@ -1353,20 +1433,26 @@ export class MockAIService extends AIService {
     // runs out of unused items at a family, the math factories fall through
     // to their own topic-templated question instead of repeating a bank item
     // verbatim under a different question type. See `takeFromBank`.
-    const makeGenericQ = (type: QType, diff: DiffTier): WQ =>
-      makeWorksheetQ(type, lang, topic, kb, diff, req.subject);
+    const makeGenericQ = (type: QType, diff: DiffTier, atSlot: number): WQ => {
+      if (!wide) return makeWorksheetQ(type, lang, topic, kb, diff, req.subject);
+      const { value, lesson } = wide.drawer.draw(atSlot, type, l => makeWorksheetQ(type, lang, l.topic, l.kb, diff, req.subject));
+      return { ...value, lessonId: lesson.id };
+    };
 
     /** Main-body question via shared factories (math → concrete practice). Dedup stems. */
     const makeQ = (type: QType, diff: DiffTier): WQ => {
+      // One slot per question, however many attempts the stem dedup needs.
+      const atSlot = slot;
+      slot += 1;
       for (let attempt = 0; attempt < 12; attempt++) {
-        const q = makeGenericQ(type, diff);
+        const q = makeGenericQ(type, diff, atSlot);
         const key = questionStemKey(q.text);
         if (!usedStems.has(key)) {
           usedStems.add(key);
           return q;
         }
       }
-      const fallback = makeGenericQ(type, diff);
+      const fallback = makeGenericQ(type, diff, atSlot);
       usedStems.add(questionStemKey(fallback.text));
       return fallback;
     };
@@ -1425,7 +1511,10 @@ export class MockAIService extends AIService {
       sections.push({
         type: 'short_answer',
         title: lang === 'ar' ? 'مثال نكمله' : 'Finish the solution',
-        questions: [{ text, answer: completionItem.answer, points: saPts(band[1]), fromBank: true }],
+        questions: [{
+          text, answer: completionItem.answer, points: saPts(band[1]), fromBank: true,
+          ...(solvedLesson.has(completionItem) ? { lessonId: solvedLesson.get(completionItem)! } : {}),
+        }],
       });
       answerKey.push({ num: qNum++, answer: completionItem.answer, solution: completionItem.steps });
     }
@@ -1535,12 +1624,19 @@ export class MockAIService extends AIService {
   private async quizOnce(req: AIRequest): Promise<QuizOutput> {
     beginMathPracticeSession();
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
-    const kb = groundedKb(req.topic, lang, req.lessonId);
+    const types: QType[] = (req.questionTypes as QType[]) ?? ['multiple_choice', 'true_false', 'short_answer'];
+    // Teacher-picked count, cycled evenly across the selected types; marks
+    // distributed evenly. Falls back to 2-per-type for callers (e.g. the
+    // classroom mini-quiz) that don't send numQuestions.
+    const numQuestions = Math.max(types.length, req.numQuestions ?? types.length * 2);
+    // A wide scope draws every question from the lesson its slot names; any
+    // other request is the single-lesson path below, unchanged.
+    const wide = offlineWideScope(req, lang, numQuestions);
+    const kb = wide ? null : groundedKb(req.topic, lang, req.lessonId);
     const topic = req.topic;
-    requireQuestionBank(topic, kb, req.subject);
+    if (!wide) requireQuestionBank(topic, kb, req.subject);
     const totalMarks = req.totalMarks ?? 20;
     const duration = req.duration ?? 20;
-    const types: QType[] = (req.questionTypes as QType[]) ?? ['multiple_choice', 'true_false', 'short_answer'];
     // A quiz is a flat assessment, so the requested tier applies to every
     // question — unlike the worksheet, which keeps an easy→hard progression.
     // `mixed` spreads the tiers across the paper instead of collapsing to
@@ -1550,10 +1646,6 @@ export class MockAIService extends AIService {
       return req.difficulty === 'easy' || req.difficulty === 'hard' ? req.difficulty : 'medium';
     };
 
-    // Teacher-picked count, cycled evenly across the selected types; marks
-    // distributed evenly. Falls back to 2-per-type for callers (e.g. the
-    // classroom mini-quiz) that don't send numQuestions.
-    const numQuestions = Math.max(types.length, req.numQuestions ?? types.length * 2);
     // Grouped as a ministry paper is, not interleaved: the picked types in
     // `QUIZ_TYPE_ORDER`. `word_problem` is a written answer, so it joins that
     // block. Questions are DRAWN one at a time (below) and sorted into blocks
@@ -1600,16 +1692,25 @@ export class MockAIService extends AIService {
       const tier = quizTier(questions.length);
       try {
         // `word_problem` falls into the short-answer branch (see `blockTypes` above).
+        // A wide scope draws from the lesson this slot names and, when that
+        // lesson's bank is spent for the type, from the next lesson that has
+        // some; a single lesson draws from `topic` / `kb` as it always did.
+        const draw = (make: (tp: string, k: KBLesson | null) => QuizQuestion): QuizQuestion => {
+          if (!wide) return pushUnique(() => make(topic, kb));
+          const { value, lesson } = wide.drawer.draw(questions.length, type, l => pushUnique(() => make(l.topic, l.kb)));
+          value.lessonId = lesson.id;
+          return value;
+        };
         if (lang === 'ar') {
-          if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_ar(topic, kb, pts, id, req.subject, tier)));
-          else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_ar(topic, kb, pts, id, req.subject, tier)));
-          else if (type === 'fill_blank') questions.push(pushUnique(() => makeQuizFB_ar(topic, kb, pts, id, req.subject, tier)));
-          else questions.push(pushUnique(() => makeQuizSA_ar(topic, kb, pts, id, req.subject, tier)));
+          if (type === 'multiple_choice') questions.push(draw((tp, k) => makeQuizMCQ_ar(tp, k, pts, id, req.subject, tier)));
+          else if (type === 'true_false') questions.push(draw((tp, k) => makeQuizTF_ar(tp, k, pts, id, req.subject, tier)));
+          else if (type === 'fill_blank') questions.push(draw((tp, k) => makeQuizFB_ar(tp, k, pts, id, req.subject, tier)));
+          else questions.push(draw((tp, k) => makeQuizSA_ar(tp, k, pts, id, req.subject, tier)));
         } else {
-          if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_en(topic, kb, pts, id, req.subject, tier)));
-          else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_en(topic, kb, pts, id, req.subject, tier)));
-          else if (type === 'fill_blank') questions.push(pushUnique(() => makeQuizFB_en(topic, kb, pts, id, req.subject, tier)));
-          else questions.push(pushUnique(() => makeQuizSA_en(topic, kb, pts, id, req.subject, tier)));
+          if (type === 'multiple_choice') questions.push(draw((tp, k) => makeQuizMCQ_en(tp, k, pts, id, req.subject, tier)));
+          else if (type === 'true_false') questions.push(draw((tp, k) => makeQuizTF_en(tp, k, pts, id, req.subject, tier)));
+          else if (type === 'fill_blank') questions.push(draw((tp, k) => makeQuizFB_en(tp, k, pts, id, req.subject, tier)));
+          else questions.push(draw((tp, k) => makeQuizSA_en(tp, k, pts, id, req.subject, tier)));
         }
         made.set(type, (made.get(type) ?? 0) + 1);
       } catch (e) {
@@ -2775,11 +2876,12 @@ export class MockAIService extends AIService {
   private async homeworkOnce(req: AIRequest): Promise<WorksheetOutput> {
     beginMathPracticeSession();
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
-    const kb = groundedKb(req.topic, lang, req.lessonId);
+    const count = Math.min(30, Math.max(3, req.numQuestions ?? 5));
+    const wide = offlineWideScope(req, lang, count);
+    const kb = wide ? null : groundedKb(req.topic, lang, req.lessonId);
     const topic = req.topic;
-    requireQuestionBank(topic, kb, req.subject);
+    if (!wide) requireQuestionBank(topic, kb, req.subject);
     const estMinutes = 25;
-    const math = isMathContext(topic, kb, req.subject);
 
     const workSpace = lang === 'ar'
       ? '\n\nمساحة العمل:\n_________________________________\n_________________________________\n_________________________________'
@@ -2790,7 +2892,7 @@ export class MockAIService extends AIService {
     // holds the rest — which for the picker's smallest value (5) is the three
     // this generator used to produce for EVERY value: asking for 15 got 5, and
     // the types ticked on the screen were ignored (always short answer).
-    const total = Math.min(20, Math.max(3, req.numQuestions ?? 5));
+    const total = count;
     const coreN = Math.max(1, total - 2);
     const picked = ((req.questionTypes as QType[] | undefined) ?? []).filter(Boolean);
     const coreTypes: QType[] = picked.length ? picked : ['short_answer'];
@@ -2804,9 +2906,17 @@ export class MockAIService extends AIService {
     try {
       for (let i = 0; i < coreN; i++) {
         const type = coreTypes[i % coreTypes.length]!;
+        const make = (tp: string, k: KBLesson | null, diff: DiffTier) => makeWorksheetQ(type, lang, tp, k, diff, req.subject);
+        // A wide scope draws from slot i's lesson (falling to the next lesson
+        // when that bank is spent for this type); a lesson from `topic` / `kb`.
+        const drawn = (diff: DiffTier): WQ => {
+          if (!wide) return make(topic, kb, diff);
+          const { value, lesson } = wide.drawer.draw(i, type, l => make(l.topic, l.kb, diff));
+          return { ...value, lessonId: lesson.id };
+        };
         let q: WQ | null = null;
         for (let attempt = 0; attempt < 12; attempt++) {
-          const candidate = makeWorksheetQ(type, lang, topic, kb, 'medium', req.subject);
+          const candidate = drawn('medium');
           const key = questionStemKey(candidate.text);
           if (!usedStems.has(key)) {
             usedStems.add(key);
@@ -2814,7 +2924,7 @@ export class MockAIService extends AIService {
             break;
           }
         }
-        if (!q) q = makeWorksheetQ(type, lang, topic, kb, 'hard', req.subject);
+        if (!q) q = drawn('hard');
         // Room to write only where the answer is written; a choice is circled.
         const written = type !== 'multiple_choice' && type !== 'true_false';
         core.push({
@@ -2834,10 +2944,13 @@ export class MockAIService extends AIService {
     }
     if (core.length === 0) throw new NoQuestionBankError(topic);
 
-    const challengePractice = math
-      ? takeConcreteMath('short_answer', topic, kb, 'hard', lang, 12)
-      : isChemContext(topic, kb, req.subject)
-        ? takeConcreteChem('short_answer', topic, kb, 'hard', lang, 12)
+    const challengeLesson = wide ? wide.drawer.lessonAt(coreN) : null;
+    const cTopic = challengeLesson ? challengeLesson.topic : topic;
+    const cKb = challengeLesson ? challengeLesson.kb : kb;
+    const challengePractice = isMathContext(cTopic, cKb, req.subject)
+      ? takeConcreteMath('short_answer', cTopic, cKb, 'hard', lang, 12)
+      : isChemContext(cTopic, cKb, req.subject)
+        ? takeConcreteChem('short_answer', cTopic, cKb, 'hard', lang, 12)
         : null;
     const challenge: WQ = challengePractice
       ? {
@@ -2846,6 +2959,7 @@ export class MockAIService extends AIService {
             : `Challenge question (optional but graded):\n${challengePractice.text}${workSpace}`,
           points: 12,
           answer: challengePractice.answer,
+          ...(challengeLesson ? { lessonId: challengeLesson.id } : {}),
         }
       : lang === 'ar'
         ? {
