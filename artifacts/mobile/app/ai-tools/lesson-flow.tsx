@@ -27,6 +27,7 @@ import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generat
 import { isolateForeignRuns } from '@/services/mathRender';
 import {
   ActivityOutput,
+  AIRequest,
   LessonFlowOutput,
   LessonPlanOutput,
   QuizOutput,
@@ -51,6 +52,9 @@ import { buildLessonFlowHTML, exportAsPDF } from '@/services/share';
 import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
+import { useWideScope } from '@/hooks/useWideScope';
+import type { ScopeSelection } from '@/services/scopeSelection';
+import { buildScopeRequest, scopeFormState, type ScopeRequest } from '@/services/wideScopeRequest';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -91,6 +95,8 @@ export default function LessonFlowScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const params = useLocalSearchParams<{
     topic?: string; gradeIdx?: string; subjectIdx?: string;
+    // A saved wide flow's scope (`scopeFormState`), restored by «تعديل».
+    scope?: string;
   }>();
 
   const grades = getPickerGrades();
@@ -114,11 +120,22 @@ export default function LessonFlowScreen() {
   // The picked subject's material language — English is taught in English.
   // The form is gone once building starts, so this cannot move under a flow.
   const lang = contentLang(subjects[subjectIdx].id, uiLang);
-  const [topic, setTopic] = useState(() => topicInLang(
-    topicForScope(params, uiLang, teacherScope.defaultScope, teacherScope), uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
-    { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
-  ));
+  const wideScope = useWideScope(params, { gradeId: grades[gradeIdx]?.id ?? '', subjectId: subjects[subjectIdx]?.id ?? '' });
+  const [topic, setTopic] = useState(() => {
+    const routed = topicForScope(params, uiLang, teacherScope.defaultScope, teacherScope);
+    // A reopened wide flow's topic is its scope's label, saved in the material's
+    // own language: restating it would look it up as a lesson title.
+    if (wideScope.isWide) return routed;
+    return topicInLang(
+      routed, uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
+      { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
+    );
+  });
   const [durationIdx, setDurationIdx] = useState(0);
+  /** The unit / semester / book the flow on screen was built for; null for a lesson flow. Save records it. */
+  const [wideFrozen, setWideFrozen] = useState<ScopeSelection | null>(null);
+  /** The wide fields every step is built from, held for a Retry (state would be stale inside `executeFlow`). */
+  const wideReqRef = useRef<ScopeRequest | null>(null);
 
   // Generation state
   const [phase, setPhase] = useState<Phase>('form');
@@ -172,8 +189,19 @@ export default function LessonFlowScreen() {
     // the picked subject. Refuse and name the real subject instead.
     const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, uiLang);
     if (scope) { setError(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
-    const conflict = groundedSubjectConflict(topic.trim(), lang, subjects[subjectIdx].id);
-    if (conflict) { setError(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
+    // A wide scope's topic is a label («الفصل الأول كاملًا»), not a lesson: the
+    // subject-conflict check reads a lesson, so it applies to a single lesson
+    // only. A wide scope that cannot be grounded is refused, never built mislabeled.
+    const wideSel = wideScope.isWide ? wideScope.scopeSel! : null;
+    const wide = wideSel ? buildScopeRequest(wideSel, lang) : null;
+    if (wideSel && !wide) { setError(t('wideScopeUngrounded')); return; }
+    if (!wide) {
+      const conflict = groundedSubjectConflict(topic.trim(), lang, subjects[subjectIdx].id);
+      if (conflict) { setError(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
+    }
+    // Frozen for the whole flow: a Retry runs from the same request.
+    wideReqRef.current = wide;
+    setWideFrozen(wideSel);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setPhase('building');
     setError('');
@@ -210,16 +238,26 @@ export default function LessonFlowScreen() {
     const duration = DURATION_VALUES[durationIdx];
 
     try {
-      const kbCtx = await buildGeneratorContext(topic, lang === 'ar' ? 'ar' : 'en');
-      const unitId = generatorUnitId(topic, lang === 'ar' ? 'ar' : 'en');
-      const req = {
-        grade, subject, topic, language, duration, additionalContext: kbCtx, unitId,
-        lessonId: generatorLessonId(topic, lang === 'ar' ? 'ar' : 'en'),
-        bookFigureCount: generatorFigureCount(topic, lang === 'ar' ? 'ar' : 'en'),
-        // Every step of the flow is built from the lesson alone, so each one
-        // can be served from — and fill — the shared pool.
-        contextSource: 'curriculum' as const,
-      };
+      const wide = wideReqRef.current;
+      let req: AIRequest;
+      if (wide) {
+        // A unit / semester / book flow is built from the scope's ids. Its topic
+        // is a label and the lookups below are unscoped: a unit title grounds to
+        // some lesson, possibly another grade's. The runner keeps the two
+        // question steps off any slot plan (`questionStepFields`).
+        req = { grade, subject, topic, language, duration, ...wide.fields };
+      } else {
+        const kbCtx = await buildGeneratorContext(topic, lang === 'ar' ? 'ar' : 'en');
+        const unitId = generatorUnitId(topic, lang === 'ar' ? 'ar' : 'en');
+        req = {
+          grade, subject, topic, language, duration, additionalContext: kbCtx, unitId,
+          lessonId: generatorLessonId(topic, lang === 'ar' ? 'ar' : 'en'),
+          bookFigureCount: generatorFigureCount(topic, lang === 'ar' ? 'ar' : 'en'),
+          // Every step of the flow is built from the lesson alone, so each one
+          // can be served from — and fill — the shared pool.
+          contextSource: 'curriculum' as const,
+        };
+      }
 
       await runLessonFlowFrom(startKey, req, aiService, prior, {
         onStepStart: (key) => setStep(key, 'loading'),
@@ -273,9 +311,12 @@ export default function LessonFlowScreen() {
       exitTicket,
     };
 
-    const title = lang === 'ar'
-      ? `مسار درس: ${topic}`
-      : `Lesson Flow: ${topic}`;
+    // A wide flow is a revision session, not one lesson's path.
+    const title = wideFrozen
+      ? (lang === 'ar' ? `مسار مراجعة: ${topic}` : `Revision Flow: ${topic}`)
+      : lang === 'ar'
+        ? `مسار درس: ${topic}`
+        : `Lesson Flow: ${topic}`;
 
     if (savedId) {
       // TODO: updateItem is imported from workspace when needed
@@ -290,7 +331,14 @@ export default function LessonFlowScreen() {
         topic,
         language: lang === 'ar' ? 'ar' : 'en',
         content: JSON.stringify(flow),
-        formState: { grade, subject, topic, language: lang === 'ar' ? 'arabic' : 'english', duration },
+        formState: {
+          grade, subject, topic, language: lang === 'ar' ? 'arabic' : 'english', duration,
+          // A wide flow reopens on its scope. Its label grounds to no lesson (or to
+          // another grade's), so «تعديل» could not recover the pickers from it:
+          // their positions are saved with the scope. A lesson flow saves what it
+          // always did. With `scope` present, `withLessonId` stamps no lesson id.
+          ...(wideFrozen ? { gradeIdx, subjectIdx, ...scopeFormState(wideFrozen, 'balanced') } : {}),
+        },
       });
       setSavedId(newMat.id);
       setSaveLabel('saved');
@@ -316,10 +364,15 @@ export default function LessonFlowScreen() {
       const html = buildLessonFlowHTML(
         flow,
         lang === 'ar',
-        bookFigureRefsForLesson(
-          resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en').lesson?.id,
-          lang === 'ar',
-        ),
+        // A wide flow has no single lesson, so no figure appendix: its label
+        // would ground (unscoped) to some lesson, possibly another grade's.
+        wideFrozen
+          ? []
+          : bookFigureRefsForLesson(
+            resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en').lesson?.id,
+            lang === 'ar',
+          ),
+        { revision: wideFrozen !== null },
       );
       await exportAsPDF(html, `lesson-flow-${topic}`);
     } catch {
@@ -428,6 +481,9 @@ export default function LessonFlowScreen() {
               subjectId={subjects[subjectIdx]?.id ?? ''}
               value={topic}
               onChange={setTopic}
+              allowedKinds={['lesson', 'unit', 'semester', 'book']}
+              onScopeChange={wideScope.setScopeSel}
+              offlineWideScope
               lang={lang}
               isRTL={isRTL}
               colors={colors}
@@ -516,7 +572,8 @@ export default function LessonFlowScreen() {
                 <StepCard
                   key={step.key}
                   stepNum={idx + 1}
-                  label={contentT(step.labelKey as any)}
+                  // «غلق الدرس» claims one lesson; a wide flow closes the session.
+                  label={wideFrozen && step.key === 'exitTicket' && lang === 'ar' ? 'غلق الحصة' : contentT(step.labelKey as any)}
                   icon={step.icon}
                   color={step.color}
                   status={status}
@@ -567,16 +624,20 @@ export default function LessonFlowScreen() {
         {/* ── Done: action buttons ── */}
         {isDone && (
           <View style={[styles.actionBar, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            {/* Launch Classroom */}
-            <Pressable
-              onPress={handleLaunchClassroom}
-              style={({ pressed }) => [styles.actionBtn, { backgroundColor: '#4F46E5', opacity: pressed ? 0.85 : 1, flex: 1 }]}
-            >
-              <Ionicons name="tv-outline" size={16} color="#fff" />
-              <Text style={[styles.actionBtnText, { fontFamily: 'ReadexPro_600SemiBold' }]} numberOfLines={1}>
-                {t('lessonFlowLaunchClassroom')}
-              </Text>
-            </Pressable>
+            {/* Launch Classroom. Not for a wide flow: it hands the topic to the
+                classroom builder as a bare label, which that screen would ground
+                to one lesson (possibly another grade's). */}
+            {!wideFrozen && (
+              <Pressable
+                onPress={handleLaunchClassroom}
+                style={({ pressed }) => [styles.actionBtn, { backgroundColor: '#4F46E5', opacity: pressed ? 0.85 : 1, flex: 1 }]}
+              >
+                <Ionicons name="tv-outline" size={16} color="#fff" />
+                <Text style={[styles.actionBtnText, { fontFamily: 'ReadexPro_600SemiBold' }]} numberOfLines={1}>
+                  {t('lessonFlowLaunchClassroom')}
+                </Text>
+              </Pressable>
+            )}
 
             {/* Export PDF */}
             <Pressable

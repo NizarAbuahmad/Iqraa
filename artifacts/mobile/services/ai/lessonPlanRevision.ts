@@ -107,14 +107,14 @@ function objectives(input: RevisionPlanInput, c: Ctx): string[] {
   const own = input.customObjectives?.trim();
   if (own) return own.split('\n').map(s => s.trim()).filter(Boolean);
   // Every unit gets a line; with few units, more of each unit's outcomes fit.
-  // An English plan can carry ARABIC here, in two ways, both KB gaps this code
-  // does not paper over: `outcomes` are the NCCD official outcomes, which exist
-  // in Arabic only, and a lesson or unit with no `titleEn` comes through as its
-  // Arabic title (12 of 36 Grade 10 maths lesson titles). A unit with no outcomes
-  // (outside the MVP set) gets a generic line in `lang`, not an empty objective.
+  // A unit with no outcomes (outside the MVP set) gets a generic line in `lang`,
+  // not an empty objective.
   const perUnit = c.units.length <= 2 ? 3 : 1;
-  return c.units.flatMap(u => (u.outcomes.length
-    ? u.outcomes.slice(0, perUnit).map(o => `${u.title}: ${o}`)
+  // English: the outcomes are Arabic in the data, so `revisionPlanFromRequest`
+  // leaves none; the unit's English concepts say what to review instead.
+  const lines = (u: RevisionUnit) => (c.isAr || u.outcomes.length ? u.outcomes : u.concepts);
+  return c.units.flatMap(u => (lines(u).length
+    ? lines(u).slice(0, perUnit).map(o => `${u.title}: ${o}`)
     : [c.isAr ? `مراجعة الأفكار الرئيسة في وحدة ${c.q(u.title)}` : `Review the key ideas of the ${c.q(u.title)} unit`]));
 }
 
@@ -350,6 +350,43 @@ export function buildRevisionPlan(input: RevisionPlanInput): RevisionPlanFields 
   };
 }
 
+/** Arabic LETTERS: not the Quranic marks or Arabic-Indic digits a few Latin titles carry, which are real content. */
+const ARABIC_LETTER = /[\u0621-\u064A]/;
+
+/**
+ * An English line from our own data, or null when it has nothing English in it.
+ *
+ * The NCCD outcomes exist in Arabic only, and some lessons and terms have only
+ * an Arabic title, so an English plan built straight from the units read
+ * "Circle: تعرُّف الوتر…" (measured: 624 of the 1413 book / semester / unit
+ * scopes). A bracketed Arabic gloss («The Letter Dhaal (ذ)») is cut and the
+ * English kept; a line that is Arabic through and through is dropped, never
+ * transliterated or translated.
+ */
+function englishOnly(s: string): string | null {
+  if (!ARABIC_LETTER.test(s)) return s;
+  const cut = s.replace(/\s*[(（][^()（）]*[\u0621-\u064A][^()（）]*[)）]/g, '').trim();
+  return cut && !ARABIC_LETTER.test(cut) ? cut : null;
+}
+
+/**
+ * The units as an English plan can say them. Outcomes and concepts that are
+ * Arabic are dropped (the objectives then fall back to the English concepts,
+ * else to the generic line); a lesson or unit with no English title is named by
+ * its place («Lesson 3»), so the counts the plan states stay true.
+ */
+export function englishUnits(units: RevisionUnit[]): RevisionUnit[] {
+  const keep = (list: string[]) => list.map(englishOnly).filter((x): x is string => x !== null);
+  return units.map((u, ui) => ({
+    ...u,
+    title: englishOnly(u.title) ?? `Unit ${ui + 1}`,
+    lessons: u.lessons.map((l, li) => ({ ...l, title: englishOnly(l.title) ?? `Lesson ${li + 1}` })),
+    outcomes: keep(u.outcomes),
+    concepts: keep(u.concepts),
+    terms: keep(u.terms),
+  }));
+}
+
 /**
  * The whole plan for a revision request, as `lessonPlanOnce` returns it.
  *
@@ -372,7 +409,7 @@ export function revisionPlanFromRequest(req: AIRequest): LessonPlanOutput {
   const phrase = sel ? revisionPhrase(sel, lang) : (lang === 'ar' ? 'موضوعات المراجعة' : 'the review topics');
   const duration = req.duration ?? 45;
   const fields = buildRevisionPlan({
-    units, phrase, lang, style: req.teachingStyle ?? 'direct', duration, customObjectives: req.objectives,
+    units: lang === 'en' ? englishUnits(units) : units, phrase, lang, style: req.teachingStyle ?? 'direct', duration, customObjectives: req.objectives,
   });
   return {
     title: lang === 'ar'

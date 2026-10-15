@@ -1458,6 +1458,12 @@ export function buildLessonFlowHTML(
    * printing it inside the flow did not.
    */
   figures: readonly BookFigureRef[] = [],
+  /**
+   * `revision`: the flow was built for a unit, a semester or the whole book, so
+   * the cover and the last section say «مراجعة» / "Revision" where a lesson's
+   * flow says «الدرس» / "Lesson". Omitted, the document is exactly what it was.
+   */
+  opts: { revision?: boolean } = {},
 ): string {
   const dir = isAr ? 'rtl' : 'ltr';
   const font = isAr ? `'Amiri', 'Noto Naskh Arabic', serif` : `'Inter', 'Helvetica Neue', sans-serif`;
@@ -1564,7 +1570,7 @@ export function buildLessonFlowHTML(
   <!-- Cover -->
   <div class="cover">
     <div class="cover-icon">🎯</div>
-    <div class="cover-title">${isAr ? 'مسار الدرس الكامل' : 'Complete Lesson Flow'}</div>
+    <div class="cover-title">${opts.revision ? (isAr ? 'مسار المراجعة الكامل' : 'Complete Revision Flow') : isAr ? 'مسار الدرس الكامل' : 'Complete Lesson Flow'}</div>
     <div class="cover-topic">${esc(flow.topic)}</div>
     <div class="cover-meta">${esc(meta)}</div>
   </div>
@@ -1596,7 +1602,7 @@ export function buildLessonFlowHTML(
   </div>
 
   <!-- 6. Exit Ticket -->
-  ${secHeader(isAr ? 'غلق الدرس' : 'Exit Ticket', '🎫', '#F59E0B')}
+  ${secHeader(isAr ? (opts.revision ? 'غلق الحصة' : 'غلق الدرس') : 'Exit Ticket', '🎫', '#F59E0B')}
   ${etBody}
 
   ${figuresSectionHTML(figures, isAr)}
