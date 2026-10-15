@@ -636,6 +636,23 @@ export interface ClassroomActivityRequest {
    * mid-lesson question as an exit-ticket question would measure nothing.
    */
   numQuestions?: number;
+  /** A unit / semester / book revision session — see `AIRequest.scope`. Absent for one lesson. */
+  scope?: AIRequest['scope'];
+  /** The lessons of that scope (no `slots` — see `buildScopeRequest`). Absent for one lesson. */
+  coverage?: AIRequest['coverage'];
+}
+
+/**
+ * Whether a request is for a revision session over a unit, a semester or the
+ * whole book rather than one lesson.
+ *
+ * Read from `scope` alone — there is no separate flag: the scope key is
+ * already in the cache key, and a lesson request (no `scope`) must stay
+ * byte-identical. The teaching tools' offline generators branch on this and
+ * the server's `revisionClauseAr/En` on the same field.
+ */
+export function isRevisionRequest(req: { scope?: { kind: string } | null }): boolean {
+  return !!req.scope;
 }
 
 /**

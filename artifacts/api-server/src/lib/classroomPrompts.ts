@@ -9,6 +9,8 @@
  * stopped being true once the Arabic side needed 4 more of them.
  */
 
+import { revisionClauseAr, revisionClauseEn } from './revision.ts';
+
 /**
  * The 7 activity-type ids the classroom hub can send. Kept in sync with the
  * mobile side's `ACTIVITY_CARDS` (services/classroomRouting.ts) by a test on
@@ -48,6 +50,22 @@ export function classroomSetupClause(b: any, isAr: boolean): string {
   return board
     ? '\n\nImportant: there is no projector in this room. Design the activity to run on the board with printed handouts, and list in materials only the board tools and printouts the teacher genuinely needs.'
     : '\n\nImportant: the slides are shown on a projector. Do not ask the teacher to print what the slides themselves display; list in materials the projector plus only what students need (notebook, pen, worksheet if truly required).';
+}
+
+/**
+ * The whole user prompt for `/generate/classroom-activity`: the activity
+ * type's own template, then — for a unit / semester / book revision deck only —
+ * the revision clause, then the room's setup line.
+ *
+ * The one place the clause is appended, so the 14 per-type templates (7 types
+ * × 2 languages) stay untouched; their `"lesson"` / `"activityName"` read
+ * `b.topic`, which for a wide deck is the scope label — acceptable there as a
+ * display name. Without `scope` this is exactly what the route built before.
+ */
+export function classroomActivityPrompt(b: any, isAr: boolean): string {
+  return (isAr ? classroomPromptAr(b) : classroomPromptEn(b))
+    + (isAr ? revisionClauseAr(b, 'classroom') : revisionClauseEn(b, 'classroom'))
+    + classroomSetupClause(b, isAr);
 }
 
 /**

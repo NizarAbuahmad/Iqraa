@@ -33,6 +33,11 @@ export type NccdSem1Lesson = {
   id: string;
   order: number;
   title_ar: string;
+  /**
+   * English title, when one has been written. Most lessons here have none and fall
+   * back to `title_ar`, so an English plan for them carries the Arabic title.
+   */
+  title_en?: string;
   periods: number | null;
   objectives: string[];
   vocabulary: string[];
@@ -183,7 +188,7 @@ export function buildNccdSem1Catalog(): { units: NccdKbUnit[]; lessons: NccdKbLe
         unitId: unitKbId,
         order: lesson.order,
         titleAr: lesson.title_ar,
-        titleEn: lesson.title_ar,
+        titleEn: lesson.title_en ?? lesson.title_ar,
         summaryAr: objectives.length
           ? objectives.join('؛ ')
           : titleOnly

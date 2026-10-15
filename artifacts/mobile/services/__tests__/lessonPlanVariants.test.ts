@@ -94,7 +94,7 @@ describe('variant 1 is a different way of teaching the same shape', () => {
             assert.doesNotMatch(text, /undefined|\[object|\$\{|NaN/, `${label} · ${f} has a template leak:\n${text}`);
           }
           // What the blueprint adds must be in the plan's language. The lesson's own title is
-          // data and is left out: one maths lab's `titleEn` is Arabic, in variant 0 as well.
+          // data and is left out, so this checks only what a blueprint adds.
           const own = ctxFor(l, lang).topic;
           const prose = FIVE.map(f => textOf(b, f)).join('\n').split(own).join(' ').replace(/[“"«][^”"»]*[”"»]/g, ' ');
           if (lang === 'en') assert.doesNotMatch(prose, /[؀-ۿ]/, `${label}: Arabic leaked into the English plan`);

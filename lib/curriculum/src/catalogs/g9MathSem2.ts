@@ -34,6 +34,8 @@ export type G9MathSem2Lesson = {
   id: string;
   order: number;
   title_ar: string;
+  /** English title, when written; absent lessons fall back to `title_ar`. */
+  title_en?: string;
   periods: number | null;
   objectives: string[];
   vocabulary: string[];
@@ -147,7 +149,7 @@ export function buildG9MathSem2Catalog(): {
         unitId: unitKbId,
         order: lesson.order,
         titleAr: lesson.title_ar,
-        titleEn: lesson.title_ar,
+        titleEn: lesson.title_en ?? lesson.title_ar,
         summaryAr: objectives.length
           ? objectives.join('؛ ')
           : titleOnly
