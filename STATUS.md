@@ -386,17 +386,24 @@ an announcement by default» below.
   teaches, the Arabic wording, or which distractors a student would really pick — no
   chemistry teacher has read any of it, and none of it has been seen in a browser or
   on a device.
-- **«مكوِّناتُ الذرَّةِ» no longer routes to redox (2026-10-15).** The Grade 9 lesson's
-  objectives say students "run simple experiments on electrolysis and gas discharge",
-  and `detectChemFamily` tests redox before `atom_basics`, so a quiz, worksheet or
-  quick-check for the lesson was about oxidation and cells. The title alone routed
-  correctly, which is why the title-only test cases never caught it (same blind spot as
-  the mole lesson). A narrow rule on the lesson's own name now sits ahead of redox.
-  Routing of all 25 chemistry lessons was compared before and after with the app's own
-  lesson text: only this one changed. **Seen while checking, not fixed:** other lessons
-  route oddly the same way — «التأكسد والاختزال والخلايا الجلفانية» (Grade 9 S2) goes to
-  `thermochem` and «تغيرات الطاقة في التفاعلات الكيميائية» (Grade 10 S2) goes to `mole`,
-  because their objectives mention a neighbouring topic. Not measured beyond that routing.
+- **Four chemistry lessons were routed to the wrong family; fixed (2026-10-15).**
+  `detectChemFamily` reads the lesson's title *and* objectives and key concepts, so a
+  neighbouring topic's word in the objectives could win — and the title-only test cases
+  never saw it (same blind spot as the mole lesson's «حسابات كيميائية» bug). Found by
+  comparing all 25 chemistry lessons with the app's own lesson text (`lessonTextBlob`):
+  «مكوِّناتُ الذرَّةِ» (Grade 9) went to `redox` because its objectives mention
+  electrolysis and gas discharge — now a narrow rule on its name sits ahead of redox;
+  «التأكسد والاختزال والخلايا الجلفانية» (Grade 9) went to `thermochem` because
+  `طاقة.*تفاعل` spanned two sentences — now bounded to one; «تغيرات الطاقة في التفاعلات
+  الكيميائية» (Grade 10) went to `mole` because the substring `المول` matched
+  «الطاقة **المول**ية» — now the whole word (or «المولات»); «الطاقة الممتصة والطاقة
+  المنبعثة من المادة» (Grade 10) fell to `general_chem` — calorimetry words
+  (السعة الحرارية، الحرارة النوعية، المسعر) now route it to `thermochem`. Compared before
+  and after: only those four changed, the other 21 are identical. **Not checked:** the
+  heat-capacity lesson now gets thermochemistry questions, of which only two items
+  (`q = m·c·ΔT`) fit it closely — it has no bank of its own, so a long quiz there is
+  mostly enthalpy and exo/endothermic questions. Typed topics that are not catalogue
+  lessons were not re-measured beyond the title cases in `chemistry.test.ts`.
 - **Quiz «أعد التجهيز» now changes the questions, and says when it cannot**
   (2026-10-13). The offline regenerate only checked that the whole quiz JSON
   differed from the last one, so the same stems in another order — or with the

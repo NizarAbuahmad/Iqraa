@@ -181,6 +181,48 @@ describe('detectChemFamily', () => {
     assert.equal(detectChemFamily(atomComponentsLessonBlob), 'atom_basics');
   });
 
+  // Three more lessons that routed by a neighbouring topic's words (2026-10-15), all from
+  // `lessonTextBlob` text. Each used to be asked about the wrong chemistry.
+  it('the galvanic-cell lesson is not taken by thermochem for a «طاقة … تفاعل» spanning two sentences', () => {
+    const galvanicLessonBlob = [
+      'التأكسد والاختزال والخلايا الجلفانية Oxidation-Reduction and Galvanic Cells',
+      'أوضح مفهوم كل من: التأكسد، الاختزال، العامل المختزل، العامل المؤكسد، المصعد، المهبط.',
+      'أميز من المعادلة الكيميائية المادة التي تأكسدت والتي اختزلت.',
+      'أتعرف أنواع الخلايا الكهركيميائية وتحولات الطاقة فيها. أصمم خلية جلفانية، ثم أحدد أجزاءها ومبدأ عملها.',
+      'أكتب معادلات كيميائية تمثل التفاعلات نصف الخلوية والتفاعل الكلي الذي يحدث في الخلية.',
+      'التأكسد الاختزال تفاعلات التأكسد والاختزال نصف تفاعل التأكسد نصف تفاعل الاختزال العامل المؤكسد',
+    ].join(' ');
+    assert.equal(detectChemFamily(galvanicLessonBlob), 'redox');
+  });
+
+  it('the energy-changes lesson is not taken by mole for «الطاقة المولية» (molar energy)', () => {
+    const energyChangesLessonBlob = [
+      'تغيرات الطاقة في التفاعلات الكيميائية Energy Changes in Chemical Reactions',
+      'أبين أهمية الطاقة في التفاعلات الكيميائية، وأشكالها، وتطبيقاتها.',
+      'أصنف التفاعلات الكيميائية وفق الطاقة المصاحبة لها إلى ماصة وطاردة.',
+      'المحتوى الحراري التغير في المحتوى الحراري تفاعلات طاردة للحرارة تفاعلات ماصة للحرارة',
+      'طاقة الانصهار المولية طاقة التبخر المولية طاقة التجمد المولية طاقة التكاثف المولية',
+    ].join(' ');
+    assert.equal(detectChemFamily(energyChangesLessonBlob), 'thermochem');
+  });
+
+  it('the heat-capacity lesson is thermochem, not the general fallback', () => {
+    const heatCapacityLessonBlob = [
+      'الطاقة الممتصة والطاقة المنبعثة من المادة Absorbed and Emitted Energy of Matter',
+      'أحسب كمية الطاقة التي تمتصها أو تصدرها المادة.',
+      'أجري تجارب عملية حول الطاقة الممتصة والمنبعثة من المادة.',
+      'السعة الحرارية الحرارة النوعية المسعر Heat Capacity Specific Heat Calorimeter',
+    ].join(' ');
+    assert.equal(detectChemFamily(heatCapacityLessonBlob), 'thermochem');
+  });
+
+  it('the mole still wins where the mole is the subject, plural and singular', () => {
+    assert.equal(detectChemFamily('المول والكتلة المولية'), 'mole');
+    assert.equal(detectChemFamily('أحسب عدد المولات في عينة'), 'mole');
+    assert.equal(detectChemFamily('أحسب الكتلة المولية للمركب'), 'mole');
+    assert.equal(detectChemFamily('عدد أفوجادرو'), 'mole');
+  });
+
   it('the electrolysis lesson itself is still redox', () => {
     assert.equal(detectChemFamily('خلايا التحليل الكهربائي'), 'redox');
     assert.equal(detectChemFamily('التأكسد والاختزال والخلايا الجلفانية أُنبوب التفريغ'), 'redox');

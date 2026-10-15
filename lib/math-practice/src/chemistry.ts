@@ -114,8 +114,14 @@ export function detectChemFamily(raw: string): ChemFamily {
   // last below, only once every more specific family (mole included) has had
   // its chance to claim the lesson first.
   if (/المردود|الكاشف المحدد|stoichiometr|limiting reagent|mole ratio|نسب مولية/i.test(blob)) return 'stoichiometry';
-  if (/المول|الكتلة المولية|أفوجادرو|molar mass|avogadro|\bmole\b/i.test(blob)) return 'mole';
-  if (/طاقة.*تفاعل|تفاعل.*طاقة|ماص للطاقة|طارد للطاقة|المحتوى الحراري|إنثالبي|enthalpy|exotherm|endotherm|heat of reaction/i.test(blob)) return 'thermochem';
+  // «المول» as a whole word (or its plural «المولات»). A bare substring also matched «المولية»
+  // — «طاقة الانصهار المولية», molar fusion energy, in the energy-changes lesson's key concepts —
+  // and sent that thermochemistry lesson to the mole bank. «الكتلة المولية» is listed on its own.
+  if (/المول(?:ات)?(?![\u0621-\u064A])|الكتلة المولية|أفوجادرو|molar mass|avogadro|\bmole\b/i.test(blob)) return 'mole';
+  // «طاقة … تفاعل» must stay inside one sentence: unbounded, it spanned «…تحولات الطاقة فيها.
+  // أصمم خلية جلفانية… التفاعلات نصف الخلوية» and took the galvanic-cell lesson. The calorimetry
+  // words are the heat-capacity lesson («الطاقة الممتصة والطاقة المنبعثة»), which has no reaction in it.
+  if (/طاقة[^.؟!]*تفاعل|تفاعل[^.؟!]*طاقة|ماص للطاقة|طارد للطاقة|المحتوى الحراري|إنثالبي|السعة الحرارية|الحرارة النوعية|المسعر|enthalpy|exotherm|endotherm|heat of reaction|heat capacity|specific heat|calorimet/i.test(blob)) return 'thermochem';
   if (/معادلة كيميائية|وزن المعادل|موازنة|التفاعلات الكيميائية|chemical equation|balanc|reaction type/i.test(blob)) return 'equations';
 
   // Grade 10 S1
