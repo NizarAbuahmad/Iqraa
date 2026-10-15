@@ -419,6 +419,30 @@ an announcement by default» below.
   generator screens and the chat) appends «السبب: …» / «Reason: …». Nothing else
   shows raw error text; demo mode keeps the old sentence. Tests:
   `noQuestionBank.test.ts`. Not looked at in a browser.
+- **The derivative bank went from 5 items to 21, so a worksheet on a derivative
+  lesson can reach the picker's count offline** (2026-10-15). A teacher asking
+  for 15 on «القيم العظمى والقيم الصغرى» got 5 items (one studied, one
+  half-solved, three to practise) plus the review questions: the `derivative`
+  family — which serves all three Grade 10 lessons of the unit, «تقدير ميل
+  المنحنى», «الاشتقاق» and this one — held 5 items in total. Now 6 easy, 8
+  medium (one of them the secant slope) and 7 hard — power/sum/constant-multiple
+  rules, tangent slope, critical points, increasing/decreasing, min/max and an
+  absolute maximum on a closed interval — each with working in both languages
+  (`steps-math-b.ts`). Offline, 15 and 20 now come back exact; the ceiling is 21,
+  so 25 still reports a shortfall. Every key was checked with SymPy when written
+  and the Latin forms of the derivative keys run through `relate_answer_key` as
+  `equivalent` (a wrong option as `distinct`). **Not verified: a Grade 10 teacher
+  has not read these items or their working.** Stems for critical points,
+  min/max, tangent slope and the secant are not claimed by the verifier — the
+  classifier reads «f(x) = …» as a quadratic equation and SymPy then refuses it
+  (`solve_error`, which is `error`, never `distinct`), so they carry no "verified"
+  badge and are never flagged wrong; the existing critical-points item behaved
+  the same. Only the «find the derivative» stems reach the prover, and the
+  existing test pins that for the easy tier, so easy items must stay in that
+  shape. Other thin lessons are unchanged — the quiz/worksheet ceiling is still
+  whatever the lesson's family holds. Tests: `derivativeBank.test.ts`
+  (math-practice), `derivativeWorksheet.test.ts` (mobile). Not looked at in a
+  browser.
 - **Interface dates and times are written in Latin digits** (2026-10-03).
   Plain `ar-JO` defaults to Arabic-Indic digits, so the Today header read
   «٣ تشرين الأول» above a board that reads «1 من 5» and «26 آب», and other
