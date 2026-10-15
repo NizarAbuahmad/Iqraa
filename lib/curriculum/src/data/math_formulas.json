@@ -1,0 +1,935 @@
+{
+  "_note": "Every entry is traced to a printed page of the Grade 10 student books; see mathFormulas.test.ts. Unit 1 is omitted on purpose.",
+  "items": [
+    {
+      "id": "mf-arc-length",
+      "lessonId": "kbl-math-s1-nccd-u2_l2",
+      "captionEn": "Arc length",
+      "formula": "l = (θ / 360°) × 2πr",
+      "source": {
+        "book": "s1",
+        "page": 42,
+        "contains": [
+          "l = θ 360º × 2π r"
+        ]
+      },
+      "check": {
+        "equal": [
+          "theta/360*2*pi*r",
+          "pi"
+        ],
+        "vars": {
+          "theta": 90,
+          "r": 2
+        }
+      }
+    },
+    {
+      "id": "mf-sector-area",
+      "lessonId": "kbl-math-s1-nccd-u2_l2",
+      "captionAr": "قانون مساحة القطاع",
+      "captionEn": "Sector area",
+      "formula": "A = (θ / 360°) × πr²",
+      "source": {
+        "book": "s1",
+        "page": 42,
+        "contains": [
+          "A = θ 360º × π r2"
+        ]
+      },
+      "check": {
+        "equal": [
+          "theta/360*pi*r^2",
+          "pi"
+        ],
+        "vars": {
+          "theta": 90,
+          "r": 2
+        }
+      }
+    },
+    {
+      "id": "mf-sector-perimeter",
+      "lessonId": "kbl-math-s1-nccd-u2_l2",
+      "captionAr": "قانون محيط القطاع",
+      "captionEn": "Sector perimeter",
+      "formula": "L = (θ / 360°) × 2πr + 2r",
+      "source": {
+        "book": "s1",
+        "page": 43,
+        "contains": [
+          "L = θ 360º × 2π r + 2r"
+        ]
+      },
+      "check": {
+        "equal": [
+          "theta/360*2*pi*r+2*r",
+          "pi+4"
+        ],
+        "vars": {
+          "theta": 90,
+          "r": 2
+        }
+      }
+    },
+    {
+      "id": "mf-inscribed-angle",
+      "lessonId": "kbl-math-s1-nccd-u2_l3",
+      "captionEn": "Central angle and inscribed angle on the same arc",
+      "formula": "m∠AOB = 2 · m∠ACB",
+      "source": {
+        "book": "s1",
+        "page": 47,
+        "contains": [
+          "m∠ AOB = 2m∠ ACB"
+        ]
+      }
+    },
+    {
+      "id": "mf-cyclic-quad",
+      "lessonId": "kbl-math-s1-nccd-u2_l3",
+      "captionEn": "Opposite angles of a cyclic quadrilateral",
+      "formula": "a + c = 180°,   b + d = 180°",
+      "source": {
+        "book": "s1",
+        "page": 49,
+        "contains": [
+          "b + d = 180º",
+          "a + c = 180º"
+        ]
+      }
+    },
+    {
+      "id": "mf-circle-origin",
+      "lessonId": "kbl-math-s1-nccd-u2_l4",
+      "captionEn": "Circle with its centre at the origin",
+      "formula": "x² + y² = r²",
+      "source": {
+        "book": "s1",
+        "page": 54,
+        "contains": [
+          "x2 + y2 = r2"
+        ]
+      },
+      "check": {
+        "equal": [
+          "x^2+y^2",
+          "r^2"
+        ],
+        "vars": {
+          "x": 3,
+          "y": 4,
+          "r": 5
+        }
+      }
+    },
+    {
+      "id": "mf-circle-standard",
+      "lessonId": "kbl-math-s1-nccd-u2_l4",
+      "captionEn": "Circle with centre (a, b) and radius r",
+      "formula": "(x − a)² + (y − b)² = r²",
+      "source": {
+        "book": "s1",
+        "page": 54,
+        "contains": [
+          "x - a",
+          "y - b",
+          "= r2"
+        ]
+      },
+      "check": {
+        "equal": [
+          "(x-a)^2+(y-b)^2",
+          "r^2"
+        ],
+        "vars": {
+          "a": 5,
+          "b": -3,
+          "r": 4,
+          "x": 9,
+          "y": -3
+        }
+      }
+    },
+    {
+      "id": "mf-circle-general",
+      "lessonId": "kbl-math-s1-nccd-u2_l4",
+      "captionEn": "General form of a circle's equation",
+      "formula": "x² + y² + 2fx + 2gy + c = 0",
+      "source": {
+        "book": "s1",
+        "page": 57,
+        "contains": [
+          "x 2 + y 2 + 2fx + 2gy + c = 0"
+        ]
+      },
+      "check": {
+        "equal": [
+          "(x-a)^2+(y-b)^2-r^2",
+          "x^2+y^2+2*f*x+2*g*y+c"
+        ],
+        "vars": {
+          "a": 4,
+          "b": -3,
+          "r": 9,
+          "f": "-a",
+          "g": "-b",
+          "c": "a^2+b^2-r^2",
+          "x": 2.5,
+          "y": -1.5
+        }
+      }
+    },
+    {
+      "id": "mf-trig-point",
+      "lessonId": "kbl-math-s1-nccd-u3_l1",
+      "captionEn": "A point on the unit circle",
+      "formula": "P(x, y) = P(cos θ, sin θ)",
+      "source": {
+        "book": "s1",
+        "page": 69,
+        "contains": [
+          "P(x,y) = P(cosθ, sinθ)"
+        ]
+      },
+      "check": {
+        "equal": [
+          "x^2+y^2",
+          "1"
+        ],
+        "vars": {
+          "t": 40,
+          "x": "cos(t)",
+          "y": "sin(t)"
+        }
+      }
+    },
+    {
+      "id": "mf-tan-ratio",
+      "lessonId": "kbl-math-s1-nccd-u3_l1",
+      "captionEn": "Tangent as a ratio",
+      "formula": "tan θ = sin θ / cos θ",
+      "source": {
+        "book": "s1",
+        "page": 71,
+        "contains": [
+          "tan θ = sin θ"
+        ]
+      },
+      "check": {
+        "equal": [
+          "tan(t)",
+          "sin(t)/cos(t)"
+        ],
+        "vars": {
+          "t": 40
+        }
+      }
+    },
+    {
+      "id": "mf-pythagorean-identity",
+      "lessonId": "kbl-math-s1-nccd-u3_l1",
+      "captionEn": "The Pythagorean identity",
+      "formula": "cos²θ + sin²θ = 1",
+      "source": {
+        "book": "s1",
+        "page": 71,
+        "contains": [
+          "cos2 θ + sin2 θ = 1"
+        ]
+      },
+      "check": {
+        "equal": [
+          "cos(t)^2+sin(t)^2",
+          "1"
+        ],
+        "vars": {
+          "t": 40
+        }
+      }
+    },
+    {
+      "id": "mf-sine-rule",
+      "lessonId": "kbl-math-s1-nccd-u4_l2",
+      "captionAr": "قانون الجيوب",
+      "captionEn": "Law of sines",
+      "formula": "a / sin A = b / sin B = c / sin C",
+      "source": {
+        "book": "s1",
+        "page": 107,
+        "contains": [
+          "a sin A = b sin B = c sin C"
+        ]
+      },
+      "check": {
+        "equal": [
+          "a/sin(A)",
+          "b/sin(B)",
+          "c/sin(C)"
+        ],
+        "vars": {
+          "a": 3,
+          "b": 4,
+          "c": 5,
+          "A": "asin(3/5)",
+          "B": "asin(4/5)",
+          "C": 90
+        }
+      }
+    },
+    {
+      "id": "mf-cosine-rule",
+      "lessonId": "kbl-math-s1-nccd-u4_l3",
+      "captionAr": "قانون جيوب التمام",
+      "captionEn": "Law of cosines",
+      "formula": "a² = b² + c² − 2bc cos A",
+      "source": {
+        "book": "s1",
+        "page": 114,
+        "contains": [
+          "a2 = b2 + c2 – 2 bc cos A"
+        ]
+      },
+      "check": {
+        "equal": [
+          "a^2",
+          "b^2+c^2-2*b*c*cos(A)"
+        ],
+        "vars": {
+          "a": 3,
+          "b": 4,
+          "c": 5,
+          "A": "asin(3/5)",
+          "B": "asin(4/5)",
+          "C": 90
+        }
+      }
+    },
+    {
+      "id": "mf-cosine-angle",
+      "lessonId": "kbl-math-s1-nccd-u4_l3",
+      "captionEn": "An angle from three sides",
+      "formula": "cos A = (b² + c² − a²) / (2bc)",
+      "source": {
+        "book": "s1",
+        "page": 114,
+        "contains": [
+          "cos A = b2 + c 2 – a2"
+        ]
+      },
+      "check": {
+        "equal": [
+          "cos(A)",
+          "(b^2+c^2-a^2)/(2*b*c)"
+        ],
+        "vars": {
+          "a": 3,
+          "b": 4,
+          "c": 5,
+          "A": "asin(3/5)",
+          "B": "asin(4/5)",
+          "C": 90
+        }
+      }
+    },
+    {
+      "id": "mf-triangle-area",
+      "lessonId": "kbl-math-s1-nccd-u4_l4",
+      "captionAr": "قانون مساحة المثلث",
+      "captionEn": "Area of a triangle from two sides and the angle between them",
+      "formula": "K = ½ · ab · sin C",
+      "source": {
+        "book": "s1",
+        "page": 120,
+        "contains": [
+          "K = 1 2 ab sin C"
+        ]
+      },
+      "check": {
+        "equal": [
+          "1/2*a*b*sin(C)",
+          "1/2*b*c*sin(A)",
+          "1/2*a*c*sin(B)",
+          "6"
+        ],
+        "vars": {
+          "a": 3,
+          "b": 4,
+          "c": 5,
+          "A": "asin(3/5)",
+          "B": "asin(4/5)",
+          "C": 90
+        }
+      }
+    },
+    {
+      "id": "mf-slope",
+      "lessonId": "kbl-math-s2-nccd-u6_l1",
+      "captionAr": "صيغة الميل",
+      "captionEn": "Slope between two points",
+      "formula": "m = (y₂ − y₁) / (x₂ − x₁)",
+      "source": {
+        "book": "s2",
+        "page": 57,
+        "contains": [
+          "m = y2 -y1 x2 -x1"
+        ]
+      },
+      "check": {
+        "equal": [
+          "(yb-ya)/(xb-xa)",
+          "4"
+        ],
+        "vars": {
+          "xa": 1,
+          "ya": 1,
+          "xb": 3,
+          "yb": 9
+        }
+      }
+    },
+    {
+      "id": "mf-tangent-line",
+      "lessonId": "kbl-math-s2-nccd-u6_l1",
+      "captionAr": "معادلة المماس",
+      "captionEn": "Equation of the tangent at (a, b)",
+      "formula": "y − b = m(x − a)",
+      "source": {
+        "book": "s2",
+        "page": 58,
+        "contains": [
+          "y - b = m(x-a)"
+        ]
+      },
+      "check": {
+        "equal": [
+          "y-b",
+          "m*(x-a)"
+        ],
+        "vars": {
+          "a": 1,
+          "b": 1,
+          "m": 2,
+          "x": 2,
+          "y": 3
+        }
+      }
+    },
+    {
+      "id": "mf-power-rule",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "captionAr": "قانون مشتقة القوة",
+      "captionEn": "Power rule",
+      "formula": "f′(x) = n · xⁿ⁻¹",
+      "source": {
+        "book": "s2",
+        "page": 63,
+        "contains": [
+          "f '(x) = nx"
+        ]
+      },
+      "check": {
+        "equal": [
+          "((x+h)^n-(x-h)^n)/(2*h)",
+          "n*x^(n-1)"
+        ],
+        "vars": {
+          "x": 2,
+          "n": 3,
+          "h": 1e-05
+        },
+        "tol": 1e-06
+      }
+    },
+    {
+      "id": "mf-power-multiple",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "captionAr": "قانون مشتقة مضاعف القوة",
+      "captionEn": "Derivative of a multiple of a power",
+      "formula": "f′(x) = a · n · xⁿ⁻¹",
+      "source": {
+        "book": "s2",
+        "page": 64,
+        "contains": [
+          "f '(x)= a × nx"
+        ]
+      },
+      "check": {
+        "equal": [
+          "(a*(x+h)^n-a*(x-h)^n)/(2*h)",
+          "a*n*x^(n-1)"
+        ],
+        "vars": {
+          "a": 5,
+          "n": 3,
+          "x": 2,
+          "h": 1e-05
+        },
+        "tol": 1e-06
+      }
+    },
+    {
+      "id": "mf-derivative-constant",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "captionAr": "قانون مشتقة الثابت",
+      "captionEn": "Derivative of a constant",
+      "formula": "f(x) = c   ⇒   f′(x) = 0",
+      "source": {
+        "book": "s2",
+        "page": 65,
+        "contains": [
+          "f '(x) = 0"
+        ]
+      }
+    },
+    {
+      "id": "mf-sum-rule",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "captionEn": "Derivative of a sum or difference",
+      "formula": "f′(x) = g′(x) ± h′(x)",
+      "source": {
+        "book": "s2",
+        "page": 65,
+        "contains": [
+          "f '(x) = g '(x)±h'(x)"
+        ]
+      },
+      "check": {
+        "equal": [
+          "(((x+d)^2+(x+d)^3)-((x-d)^2+(x-d)^3))/(2*d)",
+          "2*x+3*x^2"
+        ],
+        "vars": {
+          "x": 2,
+          "d": 1e-05
+        },
+        "tol": 1e-06
+      }
+    },
+    {
+      "id": "mf-vector-from-points",
+      "lessonId": "kbl-math-s2-nccd-u7_l1",
+      "captionEn": "Component form from two points",
+      "formula": "AB = ⟨x₂ − x₁, y₂ − y₁⟩",
+      "source": {
+        "book": "s2",
+        "page": 81,
+        "contains": [
+          "v = AB = 〈x2 -x1 , y2 - y1 〉"
+        ]
+      }
+    },
+    {
+      "id": "mf-vector-magnitude",
+      "lessonId": "kbl-math-s2-nccd-u7_l1",
+      "captionAr": "صيغة مقدار المتجه",
+      "captionEn": "Magnitude of a vector",
+      "formula": "|v| = √((x₂ − x₁)² + (y₂ − y₁)²)",
+      "source": {
+        "book": "s2",
+        "page": 83,
+        "contains": [
+          "| v | = √(x2 -x1 )2 + (y2"
+        ]
+      },
+      "check": {
+        "equal": [
+          "sqrt((xb-xa)^2+(yb-ya)^2)",
+          "3*sqrt(5)"
+        ],
+        "vars": {
+          "xa": 2,
+          "ya": 3,
+          "xb": 8,
+          "yb": 6
+        }
+      }
+    },
+    {
+      "id": "mf-vector-components",
+      "lessonId": "kbl-math-s2-nccd-u7_l1",
+      "captionEn": "Components from magnitude and direction",
+      "formula": "vx = |v| cos θ,   vy = |v| sin θ",
+      "source": {
+        "book": "s2",
+        "page": 85,
+        "contains": [
+          "vx = | v | cosθ",
+          "vy = | v | sinθ"
+        ]
+      },
+      "check": {
+        "equal": [
+          "(m*cos(t))^2+(m*sin(t))^2",
+          "m^2"
+        ],
+        "vars": {
+          "m": 25,
+          "t": 40
+        }
+      }
+    },
+    {
+      "id": "mf-vector-add",
+      "lessonId": "kbl-math-s2-nccd-u7_l2",
+      "captionEn": "Adding and subtracting vectors",
+      "formula": "a + b = ⟨x₁ + x₂, y₁ + y₂⟩\na − b = ⟨x₁ − x₂, y₁ − y₂⟩",
+      "source": {
+        "book": "s2",
+        "page": 92,
+        "contains": [
+          "a + b = 〈x1 +x2 , y1 +y2〉",
+          "a-b = 〈x1"
+        ]
+      }
+    },
+    {
+      "id": "mf-vector-scalar",
+      "lessonId": "kbl-math-s2-nccd-u7_l2",
+      "captionEn": "Multiplying a vector by a number",
+      "formula": "k · a = ⟨k x₁, k y₁⟩",
+      "source": {
+        "book": "s2",
+        "page": 92,
+        "contains": [
+          "k a =〈kx1"
+        ]
+      }
+    },
+    {
+      "id": "mf-dot-product",
+      "lessonId": "kbl-math-s2-nccd-u7_l3",
+      "captionAr": "صيغة الضرب القياسي",
+      "captionEn": "Dot product from components",
+      "formula": "v · w = v₁w₁ + v₂w₂",
+      "source": {
+        "book": "s2",
+        "page": 96,
+        "contains": [
+          "v · w = v1 w1 + v2 w2"
+        ]
+      },
+      "check": {
+        "equal": [
+          "va*wa+vb*wb",
+          "22"
+        ],
+        "vars": {
+          "va": 2,
+          "vb": 8,
+          "wa": -5,
+          "wb": 4
+        }
+      }
+    },
+    {
+      "id": "mf-dot-cosine",
+      "lessonId": "kbl-math-s2-nccd-u7_l3",
+      "captionEn": "Dot product from magnitudes and the angle between",
+      "formula": "a · b = |a| |b| cos θ",
+      "source": {
+        "book": "s2",
+        "page": 97,
+        "contains": [
+          "a · b = | a | | b | cos θ"
+        ]
+      },
+      "check": {
+        "equal": [
+          "va*wa+vb*wb",
+          "sqrt(va^2+vb^2)*sqrt(wa^2+wb^2)*cos(t)"
+        ],
+        "vars": {
+          "va": 1,
+          "vb": 0,
+          "wa": 1,
+          "wb": 1,
+          "t": 45
+        }
+      }
+    },
+    {
+      "id": "mf-angle-between",
+      "lessonId": "kbl-math-s2-nccd-u7_l3",
+      "captionAr": "صيغة الزاوية بين متجهين",
+      "captionEn": "Angle between two vectors",
+      "formula": "cos θ = (a · b) / (|a| |b|)",
+      "source": {
+        "book": "s2",
+        "page": 98,
+        "contains": [
+          "cosθ = a · b"
+        ]
+      },
+      "check": {
+        "equal": [
+          "cos(t)",
+          "(va*wa+vb*wb)/(sqrt(va^2+vb^2)*sqrt(wa^2+wb^2))"
+        ],
+        "vars": {
+          "va": 1,
+          "vb": 0,
+          "wa": 1,
+          "wb": 1,
+          "t": 45
+        }
+      }
+    },
+    {
+      "id": "mf-perpendicular",
+      "lessonId": "kbl-math-s2-nccd-u7_l3",
+      "captionEn": "Perpendicular vectors",
+      "formula": "u · v = 0   ⇔   u ⊥ v",
+      "source": {
+        "book": "s2",
+        "page": 99,
+        "contains": [
+          "u · v = 0"
+        ]
+      },
+      "check": {
+        "equal": [
+          "ua*va+ub*vb",
+          "0"
+        ],
+        "vars": {
+          "ua": 2,
+          "ub": 3,
+          "va": -6,
+          "vb": 4
+        }
+      }
+    },
+    {
+      "id": "mf-work",
+      "lessonId": "kbl-math-s2-nccd-u7_l3",
+      "captionAr": "قانون الشغل",
+      "captionEn": "Work done by a force",
+      "formula": "W = |F| |d| cos θ",
+      "source": {
+        "book": "s2",
+        "page": 99,
+        "contains": [
+          "W =| F | | d | cosθ"
+        ]
+      },
+      "check": {
+        "equal": [
+          "13*18*cos(t)",
+          "20"
+        ],
+        "vars": {
+          "t": "acos(20/234)"
+        }
+      }
+    },
+    {
+      "id": "mf-iqr",
+      "lessonId": "kbl-math-s2-nccd-u8_l2",
+      "captionEn": "Interquartile range",
+      "formula": "IQR = Q₃ − Q₁",
+      "source": {
+        "book": "s2",
+        "page": 119,
+        "contains": [
+          "IQR = Q3 - Q1"
+        ]
+      },
+      "check": {
+        "equal": [
+          "qu-ql",
+          "24"
+        ],
+        "vars": {
+          "qu": 77,
+          "ql": 53
+        }
+      }
+    },
+    {
+      "id": "mf-mean",
+      "lessonId": "kbl-math-s2-nccd-u8_l3",
+      "captionAr": "صيغة الوسط الحسابي",
+      "captionEn": "Mean",
+      "formula": "μ = Σx / n",
+      "source": {
+        "book": "s2",
+        "page": 124,
+        "contains": [
+          "μ = ∑x n"
+        ]
+      },
+      "check": {
+        "equal": [
+          "s/n",
+          "4"
+        ],
+        "vars": {
+          "s": "2+4+6",
+          "n": 3
+        }
+      }
+    },
+    {
+      "id": "mf-variance",
+      "lessonId": "kbl-math-s2-nccd-u8_l3",
+      "captionAr": "صيغة التباين",
+      "captionEn": "Variance",
+      "formula": "σ² = Σ(x − μ)² / n",
+      "source": {
+        "book": "s2",
+        "page": 125,
+        "contains": [
+          "σ2 = ∑(x-μ)"
+        ]
+      },
+      "check": {
+        "equal": [
+          "((2-m)^2+(4-m)^2+(6-m)^2)/n",
+          "8/3"
+        ],
+        "vars": {
+          "m": 4,
+          "n": 3
+        }
+      }
+    },
+    {
+      "id": "mf-grouped-mean",
+      "lessonId": "kbl-math-s2-nccd-u8_l3",
+      "captionEn": "Mean of grouped data",
+      "formula": "μ = Σ(x × f) / Σf",
+      "source": {
+        "book": "s2",
+        "page": 125,
+        "contains": [
+          "μ = ∑(x × f ) ∑ f"
+        ]
+      },
+      "check": {
+        "equal": [
+          "(1*1+2*2+3*1)/(1+2+1)",
+          "2"
+        ]
+      }
+    },
+    {
+      "id": "mf-grouped-variance",
+      "lessonId": "kbl-math-s2-nccd-u8_l3",
+      "captionEn": "Variance of grouped data",
+      "formula": "σ² = Σ(x² × f) / Σf − μ²",
+      "source": {
+        "book": "s2",
+        "page": 126,
+        "contains": [
+          "σ2 = ∑(x 2 × f ) ∑ f - μ"
+        ]
+      },
+      "check": {
+        "equal": [
+          "(1^2*1+2^2*2+3^2*1)/(1+2+1)-mu^2",
+          "0.5"
+        ],
+        "vars": {
+          "mu": 2
+        }
+      }
+    },
+    {
+      "id": "mf-mutex-union",
+      "lessonId": "kbl-math-s2-nccd-u8_l4",
+      "captionAr": "صيغة احتمال اتحاد حادثين متنافيين",
+      "captionEn": "Union of mutually exclusive events",
+      "formula": "P(A ∪ B) = P(A) + P(B)",
+      "source": {
+        "book": "s2",
+        "page": 133,
+        "contains": [
+          "P(A or B) = P(A∪B) = P(A) + P(B)"
+        ]
+      },
+      "check": {
+        "equal": [
+          "pa+pb",
+          "0.8"
+        ],
+        "vars": {
+          "pa": 0.3,
+          "pb": 0.5
+        }
+      }
+    },
+    {
+      "id": "mf-complement",
+      "lessonId": "kbl-math-s2-nccd-u8_l4",
+      "captionAr": "احتمال المتممة",
+      "captionEn": "Probability of the complement",
+      "formula": "P(A′) = 1 − P(A)",
+      "source": {
+        "book": "s2",
+        "page": 133,
+        "contains": [
+          "P( A ) = 1 - P(A)"
+        ]
+      },
+      "check": {
+        "equal": [
+          "1-pa",
+          "0.7"
+        ],
+        "vars": {
+          "pa": 0.3
+        }
+      }
+    },
+    {
+      "id": "mf-union-general",
+      "lessonId": "kbl-math-s2-nccd-u8_l4",
+      "captionAr": "صيغة احتمال اتحاد حادثين غير متنافيين",
+      "captionEn": "Union of events that are not mutually exclusive",
+      "formula": "P(A ∪ B) = P(A) + P(B) − P(A ∩ B)",
+      "source": {
+        "book": "s2",
+        "page": 134,
+        "contains": [
+          "P(A ∪ B) = P(A) + P(B) - P(A ∩ B)"
+        ]
+      },
+      "check": {
+        "equal": [
+          "pa+pb-pab",
+          "0.85"
+        ],
+        "vars": {
+          "pa": 0.65,
+          "pb": 0.75,
+          "pab": 0.55
+        }
+      }
+    },
+    {
+      "id": "mf-independent",
+      "lessonId": "kbl-math-s2-nccd-u8_l5",
+      "captionAr": "احتمال الحادثين المستقلين",
+      "captionEn": "Independent events",
+      "formula": "P(A ∩ B) = P(A) × P(B)",
+      "source": {
+        "book": "s2",
+        "page": 139,
+        "contains": [
+          "P(A ⋂ B) = P(A) × P(B)"
+        ]
+      },
+      "check": {
+        "equal": [
+          "pa*pb",
+          "0.2"
+        ],
+        "vars": {
+          "pa": 0.5,
+          "pb": 0.4
+        }
+      }
+    }
+  ]
+}
