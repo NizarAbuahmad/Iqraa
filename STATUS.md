@@ -1551,11 +1551,28 @@ Snap to grid is on by default, with a step from the zoom level.
   exactly-coincident point by default (`d <= 0`), which made it impossible to
   test two corners on one spot and would have hidden the «coincident» path; a
   tap merges through an explicit tiny radius.
-- **Not done:** no saving (the scene lives for the visit), 26 points at most, and
-  point names are Latin A, B, C even in Arabic — the books write أ، ب، ج, which
-  was not mapped. Two known cosmetic limits: edge-length labels can sit on an
-  axis tick label, and angle labels are hidden on edges shorter than ~44 px
-  (the panel under the canvas still lists every angle).
+- **Points are named أ، ب، ج in Arabic (since 2026-10-15) — a product call, and
+  the Grade 10 book does not do it.** The scene still names points A, B, C … and
+  everything computed stays Latin; `services/mathPointNames.ts` maps A–Z to the
+  abjad order (أ ب ج د هـ و ز ح ط ي ك ل م ن ع ف ق ر ش ت ث خ ذ ض ظ غ) at display
+  time only, and English keeps A, B, C. **س and ص are skipped** — they are the
+  axes, and a point called ص beside «(س − أ)² + (ص − ب)²» would read as a
+  variable. A shape's name has its letters **apart** («مثلث أ ب ج»), because
+  Arabic letters written together join into one word. Arabic names are not
+  forced left-to-right (an override would print أ ب ج as ج ب أ), so an angle chip
+  is two runs: the name, and the number in its own forced-LTR run.
+  **What the extracted books show (checked 2026-10-15, not proof):** the grade
+  4, 5, 6, 9 and 10 student books in `lib/curriculum/src/data/extracted/` name
+  points with Latin letters (Grade 10 semester 1 alone has ~196 three- or
+  four-letter names such as ABC) and contain **no** spaced Arabic-letter names;
+  PDF extraction can garble isolated Arabic letters, so a person should look at
+  the printed page before treating either as settled. Order past أ ب ج is the
+  standard abjad order, not taken from a book. To undo: make `pointName` return
+  its input.
+- **Not done:** no saving (the scene lives for the visit), 26 points at most.
+  Two known cosmetic limits: edge-length labels can sit on an axis tick label,
+  and angle labels are hidden on edges shorter than ~44 px (the panel under the
+  canvas still lists every angle).
 
 **The converter** (`services/mathUnits.ts`) is `from → base → to` and fails
 closed: an unknown unit, a conversion across categories, an unparseable number,
