@@ -20,6 +20,9 @@
  * Free of react-native so `node --test` can load it.
  */
 import { getLessonById, type KBLesson } from '../knowledgeBase.ts';
+// Arabic LETTERS, not the whole script: a Quranic mark inside a Latin title is
+// real content. Every English filter below uses this one test.
+import { ARABIC_LETTER } from '../englishText.ts';
 
 /** The lessons of one unit in scope, in the order the request listed them. */
 export type RevisionLessonGroup = { unitId: string; lessons: KBLesson[] };
@@ -40,11 +43,6 @@ export type RevisionLessonOptions = {
   termsStartUnit?: number;
 };
 
-/**
- * Arabic LETTERS, not the whole script: a Quranic mark inside a Latin title is
- * real content. Every English filter below uses this one test.
- */
-const ARABIC_LETTER = /[\u0621-\u064A]/;
 /** A lesson's English key concepts without the ones that are Arabic glosses. */
 const englishConcepts = (l: KBLesson): string[] => l.keyConceptsEn.filter(c => !ARABIC_LETTER.test(c));
 

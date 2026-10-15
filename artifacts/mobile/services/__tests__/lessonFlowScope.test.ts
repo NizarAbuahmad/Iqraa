@@ -7,6 +7,8 @@
  * plan: a plan made for another count would make the live prompt contradict
  * the step's own numQuestions. A single-lesson flow's requests are unchanged.
  */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -20,7 +22,7 @@ import { revisionUnits, splitShown, REVISION_SHOWN_PER_UNIT } from '../revisionS
 import { getLessonsForUnit, getUnitsForSubjectGrade, KB_BOOKS, KB_UNITS } from '../knowledgeBase.ts';
 import { buildLessonFlowHTML } from '../exportHtml.ts';
 import { englishUnits } from '../ai/lessonPlanRevision.ts';
-import { lessonFlowFailure } from '../lessonFlowError.ts';
+import { failedStepHint, lessonFlowFailure } from '../lessonFlowError.ts';
 import { NoQuestionBankError } from '../ai/generators.ts';
 import { LessonFlowStepError } from '../ai/lessonFlowRunner.ts';
 import { revisionActivityLesson } from '../ai/activityRevision.ts';
@@ -477,6 +479,31 @@ describe('a failed step', () => {
     const shown = lessonFlowFailure(live, t);
     assert.match(shown.message, /^\[noQuestionBankLiveFailed\]/);
     assert.equal(shown.retryable, true);
+  });
+
+  it('a failed step card tells the teacher to tap Retry only when the banner offers one', () => {
+    const bank = new LessonFlowStepError('worksheet', new NoQuestionBankError('الكتاب كاملًا'));
+    const live = new LessonFlowStepError('worksheet', Object.assign(new NoQuestionBankError('x'), { liveError: 'HTTP 500' }));
+    for (const lang of ['ar', 'en']) {
+      // Mutation caught: the card keeping its fixed «أعد المحاولة» / "tap Retry below".
+      const noRetry = failedStepHint(lang, lessonFlowFailure(bank, t).retryable);
+      assert.ok(noRetry.length > 0 && !/أعد المحاولة|Retry|retry/.test(noRetry), `${lang}: «${noRetry}»`);
+      // Mutation caught: dropping the sentence for the case that does have a button.
+      const withRetry = failedStepHint(lang, lessonFlowFailure(live, t).retryable);
+      assert.ok(/أعد المحاولة|Retry/.test(withRetry), `${lang}: «${withRetry}»`);
+    }
+    // The card a retryable failure always showed, word for word.
+    assert.equal(failedStepHint('ar', true), 'تعذّر إكمال الخطوة — أعد المحاولة');
+    assert.equal(failedStepHint('en', true), 'Failed — tap Retry below');
+  });
+
+  it('the lesson-flow screen asks the hint for its card, with the same flag that hides the button', () => {
+    const src = readFileSync(join(import.meta.dirname, '../../app/ai-tools/lesson-flow.tsx'), 'utf8');
+    // Mutation caught: a card still hard-coding the Retry sentence, or not told `retryable`.
+    assert.ok(src.includes('{failedStepHint(lang, retryable)}'));
+    assert.ok(src.includes('retryable={retryable}'));
+    assert.ok(!src.includes("'Failed — tap Retry below'"));
+    assert.ok(src.includes('{retryable ? ('), 'the banner button is gated by the same flag');
   });
 
   it('an uncoded failure keeps its own message and its Retry, as it always did', () => {
