@@ -24,6 +24,7 @@
  */
 import type { AIRequest, LessonPlanOutput } from './AIService.ts';
 import { arMinutes } from './lessonPlanTypes.ts';
+import { englishOnly } from '../englishText.ts';
 import {
   leftOutSentence, revisionPhrase, revisionUnits, revisionUnitsFromLessons, scopeFromKey, splitShown,
   REVISION_SHOWN_PER_UNIT, type RevisionUnit,
@@ -371,36 +372,6 @@ export function buildRevisionPlan(input: RevisionPlanInput): RevisionPlanFields 
     differentiation: differentiation(style, c),
     homework: homework(input, c),
   };
-}
-
-/** Arabic LETTERS: not the Quranic marks or Arabic-Indic digits a few Latin titles carry, which are real content. */
-const ARABIC_LETTER = /[\u0621-\u064A]/;
-
-/**
- * A bracketed gloss that IS the content: one to three Arabic letters, with
- * optional separators and marks — «The Letter Baa (ب)», «Alif (ا, ى)». The
- * grade-1 Arabic book teaches the letters themselves, so cutting them would
- * leave a lesson with no name for what it teaches. Anything longer is a gloss
- * of the English and is cut.
- */
-const LETTER_GLOSS = /^[(（]\s*[\u0621-\u064A][\u064B-\u065F]*(?:\s*[,،/\-–]\s*[\u0621-\u064A][\u064B-\u065F]*){0,2}\s*[)）]$/;
-
-/**
- * An English line from our own data, or null when it has nothing English in it.
- *
- * The NCCD outcomes exist in Arabic only, and some lessons and terms have only
- * an Arabic title, so an English plan built straight from the units read
- * "Circle: تعرُّف الوتر…" (measured: 624 of the 1413 book / semester / unit
- * scopes). A bracketed Arabic gloss («Looking good (جميل)») is cut and the
- * English kept, except a short letter gloss (`LETTER_GLOSS`); a line that is
- * Arabic through and through is dropped, never transliterated or translated.
- */
-function englishOnly(s: string): string | null {
-  if (!ARABIC_LETTER.test(s)) return s;
-  const group = /\s*[(（][^()（）]*[\u0621-\u064A][^()（）]*[)）]/g;
-  const cut = s.replace(group, m => (LETTER_GLOSS.test(m.trim()) ? m : '')).trim();
-  const outside = cut.replace(/[(（][^()（）]*[)）]/g, g => (LETTER_GLOSS.test(g) ? '' : g)).trim();
-  return outside && !ARABIC_LETTER.test(outside) ? cut : null;
 }
 
 /**
