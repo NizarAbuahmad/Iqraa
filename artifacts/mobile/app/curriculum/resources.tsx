@@ -46,7 +46,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { isStudentRole, isTeacherRole, useAuth } from '@/context/AuthContext';
 import { getMyExams, getMyGradeIds } from '@/services/studentExam';
 import { actionableCount } from '@/services/myExams';
-import { narrowSubjectsForGrade, narrowToSelection, preferredGrade, scopedSubjectIds } from '@/services/teacherCatalogFilter';
+import { narrowSubjectsForGrade, narrowToSelection, preferredGrade, scopedSubjectIds, keepIfPresent } from '@/services/teacherCatalogFilter';
 import { listLibrary, type LibraryItem } from '@/services/libraryApi';
 import { getLessonById } from '@/services/knowledgeBase';
 import { openExternal } from '@/services/externalLinks';
@@ -66,6 +66,7 @@ import { getSubjectsForGrade, getVisibleGrades } from '@workspace/curriculum';
 import { ENGLISH_HUB_GRADES } from '@workspace/curriculum/englishHub';
 import type { TranslationKey } from '@/services/i18n';
 import { cellWidthPercent, isVisualKind, libraryColumns, previewCount } from '@/services/libraryLayout';
+import { QURAN_CORNER_RELEASED, quranCornerVisible } from '@/services/quranRelease';
 import { palette } from '@/constants/colors';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { RESOURCE_KIND_ICON as KIND_ICON, RESOURCE_KIND_LABEL as KIND_LABEL } from '@/constants/resourceKind';
@@ -495,9 +496,9 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isStudent, gradeId]);
-  const [subjectId, setSubjectId] = useState<string | null>(null);
+  const [pickedSubject, setSubjectId] = useState<string | null>(null);
   const [shelf, setShelf] = useState<Shelf | null>(null);
-  const [lessonId, setLessonId] = useState<string | null>(null);
+  const [pickedLesson, setLessonId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
 
   const gradeInfo = getVisibleGrades().find(g => g.id === grade);
@@ -557,6 +558,11 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
     [isTeacher, gradeSubjects, grade],
   );
 
+  // What was picked may no longer be offered (grades edited on the profile page
+  // while this tab stayed mounted): fall back to «all» instead of filtering to
+  // nothing with no chip lit.
+  const subjectId = keepIfPresent(subjects, pickedSubject);
+
   const items = useMemo(
     () => filterResources(inGrade, { subjectId: subjectId ?? undefined, subjectIds: scopeSubjectIds }),
     [inGrade, subjectId, scopeSubjectIds],
@@ -577,6 +583,11 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
     }
     return [...seen.entries()];
   }, [items, lang]);
+
+  const lessonId = keepIfPresent(
+    lessons.map(([id]) => ({ id })),
+    pickedLesson,
+  );
 
   // Search narrows on top of the chips, like every other filter here.
   const shown = useMemo(
@@ -820,6 +831,30 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
                 {t('labEntryHint')}
               </Text>
             </Pressable>
+            {quranCornerVisible(QURAN_CORNER_RELEASED, __DEV__) ? (
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push('/curriculum/quran' as never);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`${t('quranTitle')}, ${t('quranEntryHint')}`}
+                style={({ pressed }) => [
+                  styles.tile,
+                  { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
+                ]}
+              >
+                <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
+                  <Ionicons name="book-outline" size={26} color={ACCENT} />
+                </View>
+                <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
+                  {t('quranTitle')}
+                </Text>
+                <Text numberOfLines={2} style={[styles.tileCount, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
+                  {t('quranEntryHint')}
+                </Text>
+              </Pressable>
+            ) : null}
             {isStudent || isParent ? (
               <Pressable
                 onPress={() => {

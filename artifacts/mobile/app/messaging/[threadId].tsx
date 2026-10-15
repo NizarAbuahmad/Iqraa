@@ -690,8 +690,9 @@ export default function ThreadScreen() {
                   </Pressable>
                 ) : null}
                 {/* A class group cannot be left (the roster decides who is in
-                    it), so a student or parent hides it instead. */}
-                {thread?.type === 'class_group' && !thread.isOwner ? (
+                    it), so every member hides it instead — the owning teacher
+                    included. A custom group's owner has no «leave» either. */}
+                {thread?.type === 'class_group' || isOwnerOfGroup ? (
                   <Pressable onPress={handleHide} disabled={hiding} style={styles.menuRow}>
                     <Ionicons name="eye-off-outline" size={18} color={colors.destructive} />
                     <Text style={[styles.menuText, { color: colors.destructive, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>

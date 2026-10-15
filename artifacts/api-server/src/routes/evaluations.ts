@@ -7,7 +7,7 @@
  * "stay within the selected grade and curriculum" a request rather than a
  * constraint.
  */
-import { Router } from "express";
+import { Router, type Response } from "express";
 import { createRateLimiter } from "../lib/rateLimit";
 import { db } from "@workspace/db";
 import {
@@ -46,16 +46,12 @@ import { passedLessonIds, unlockState } from "../modules/assessment/lessonProgre
 import { findLiveClass } from "../lib/classOwnership.js";
 import { archiveDecision } from "../lib/evaluationArchive";
 import {
-  audienceRequestDecision,
   classChangeAllowed,
   inAudience,
-  MAX_AUDIENCE,
 } from "../modules/assessment/audience.ts";
-import { isUuid } from "../lib/classResource.ts";
 import {
   assignedStudentsByEvaluation,
   evaluationAudience,
-  replaceEvaluationAudience,
 } from "../lib/evaluationAudience.ts";
 import {
   bankContextFor,
@@ -63,6 +59,7 @@ import {
   type GenerationResult,
 } from "../modules/assessment/mockGenerator";
 import { validateGenerated } from "../modules/assessment/validator";
+import { inPaperOrder } from "../modules/assessment/paperOrder";
 import { contradictionWarning, verificationAfterEdit, verifyAnswerKeys } from "../modules/assessment/keyVerification.ts";
 import { relateAnswerKey } from "../lib/mathVerifierClient.ts";
 import { QUESTION_TYPES } from "../modules/assessment/questionTypes";
@@ -95,6 +92,16 @@ import { extractJSON } from "../lib/generationShape.ts";
 import { groundingForObjectives } from "../lib/grounding.ts";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { recommendationsFor } from "../modules/assessment/recommend";
+import {
+  buildScanPrompt,
+  parseNameRead,
+  parseScanResponse,
+  parseTotalRead,
+  type ScannableQuestion,
+} from "../modules/assessment/scanMarks.ts";
+import { buildPaperScanPrompt, parsePaperScanResponse } from "../modules/assessment/scanPaper.ts";
+import { checkScanImage, classScanGate, parsePaperScanBody } from "../modules/assessment/scanRequest.ts";
+import { matchStudent, type RosterEntry } from "../modules/assessment/studentMatch.ts";
 import type { ObjectiveScore } from "../modules/assessment/scoring";
 
 import { resultsReleaseDecision } from "../lib/resultsRelease.ts";
@@ -116,6 +123,38 @@ const aiLimiter = createRateLimiter({
   name: "ai-evaluation-generate",
   key: (req) => (req as AuthenticatedRequest).user?.id ?? req.ip ?? "unknown",
 });
+
+// The two scan routes below read photographs, so they are model calls. A class
+// of 30–40 papers goes through the second one three at a time from the phone, so
+// this is looser than the generator's ten a minute — but still a ceiling, and
+// keyed per user like the rest.
+const scanLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 30,
+  name: "ai-scan-class",
+  key: (req) => (req as AuthenticatedRequest).user?.id ?? req.ip ?? "unknown",
+});
+
+/** The same answers `POST /attempts/:id/scan-marks` gives, so a screen maps one set of codes. */
+function respondScanError(res: Response, err: unknown, what: string): void {
+  if (err instanceof AiUserQuotaExceededError) {
+    res.status(429).json({ error: err.message, code: "user_quota_exceeded" });
+    return;
+  }
+  if (err instanceof AiBudgetExceededError) {
+    res.status(429).json({ error: err.message, code: "budget_exceeded" });
+    return;
+  }
+  if (err instanceof AiLiveModeOffError) {
+    res.status(503).json({ error: err.message, code: "live_mode_off" });
+    return;
+  }
+  logger.error({ err }, what);
+  res.status(502).json({
+    error: "Could not read that photo. Nothing was changed — try again, or enter the marks by hand.",
+    code: "scan_unavailable",
+  });
+}
 
 const ALL_TYPES = Object.keys(QUESTION_TYPES) as QuestionType[];
 
@@ -409,6 +448,71 @@ router.post("/evaluations/from-worksheet", async (req: AuthenticatedRequest, res
   }
 });
 
+/**
+ * Read the pages of an exam the teacher set, to fill the paper-exam grid.
+ *
+ * Stateless on purpose: the grid is saved together with the evaluation
+ * (`new.tsx` creates the evaluation, then `PUT .../questions/paper`), so when a
+ * teacher scans the paper there is no evaluation row to hang this off. The
+ * objectives they have ticked travel in the body instead, and are resolved here
+ * against the curriculum like every other write.
+ *
+ * **It writes nothing.** The rows pre-fill a grid the teacher edits; the paper
+ * `PUT` still validates and stores them. Photos are not stored.
+ */
+router.post("/evaluations/scan-paper", scanLimiter, async (req: AuthenticatedRequest, res) => {
+  try {
+    const body = parsePaperScanBody(req.body);
+    if (!body.ok) {
+      res.status(body.refusal.status).json({ error: body.refusal.error, code: body.refusal.code });
+      return;
+    }
+    const { found, missing } = resolveObjectiveIds(body.objectiveIds);
+    if (missing.length > 0 || found.length === 0) {
+      res.status(400).json({ error: "Unknown objective", code: "unknown_objectives", details: missing });
+      return;
+    }
+
+    assertLiveModeEnabled();
+    assertBudgetAvailable();
+    await assertUserQuotaAvailable(req.user!.id);
+
+    const prompt = buildPaperScanPrompt(
+      found.map(o => ({ id: o.id, label: o.descriptionAr || o.description })),
+    );
+    const model = getGenerationModel();
+    const completion = await openai.chat.completions.create({
+      model,
+      max_completion_tokens: 3000,
+      messages: [
+        { role: "system", content: prompt.system },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: prompt.user },
+            ...body.images.map(url => ({ type: "image_url" as const, image_url: { url } })),
+          ],
+        },
+      ],
+    });
+    recordUsage(completion.usage, model, {
+      kind: "quiz",
+      promptVersion: "scan-paper-1",
+      userId: req.user!.id,
+    });
+
+    const parsed = parsePaperScanResponse(
+      extractJSON(completion.choices[0]?.message?.content ?? "{}"),
+      found.map(o => o.id),
+    );
+    // `saved: false` is stated in the response so a client cannot present these
+    // as stored.
+    res.json({ ...parsed, model, saved: false });
+  } catch (err) {
+    respondScanError(res, err, "scan paper failed");
+  }
+});
+
 router.get("/evaluations", async (req: AuthenticatedRequest, res) => {
   try {
     const classId = trimmed(req.query["classId"]);
@@ -604,56 +708,6 @@ router.patch("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
   }
 });
 
-/**
- * Who a group check is for (support groups, 2026-10-09): replaces the
- * evaluation's student-level assignments. Only while it is a draft attached to
- * a class, and only with live members of that class — see audience.ts.
- */
-router.put("/evaluations/:id/audience", async (req: AuthenticatedRequest, res) => {
-  try {
-    const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
-    if (!evaluation) {
-      res.status(404).json({ error: "Evaluation not found" });
-      return;
-    }
-    const requested = Array.isArray(req.body?.studentIds)
-      ? (req.body.studentIds as unknown[]).filter((v): v is string => typeof v === "string").map(v => v.trim()).filter(Boolean).filter(isUuid)
-      : [];
-    // A non-uuid id would be a 500 from the uuid column; it is simply not a
-    // member, and the decision below answers 400 audience_not_member. An
-    // oversized list is refused by the decision without a lookup.
-    const members = evaluation.classGroupId && requested.length && requested.length <= MAX_AUDIENCE
-      ? await db
-          .select({ id: students.id })
-          .from(classMemberships)
-          .innerJoin(students, eq(students.id, classMemberships.studentId))
-          .where(
-            and(
-              eq(classMemberships.classGroupId, evaluation.classGroupId),
-              inArray(classMemberships.studentId, requested),
-              eq(students.teacherId, req.user!.id),
-              isNull(students.archivedAt),
-            ),
-          )
-      : [];
-    const decision = audienceRequestDecision({
-      status: evaluation.status,
-      classGroupId: evaluation.classGroupId,
-      studentIds: req.body?.studentIds,
-      memberIds: new Set(members.map(m => m.id)),
-    });
-    if (!decision.ok) {
-      res.status(decision.status).json({ error: decision.error, code: decision.code });
-      return;
-    }
-    await replaceEvaluationAudience(evaluation.id, decision.studentIds, req.user!.id);
-    res.json({ audience: decision.studentIds });
-  } catch (err) {
-    logger.error({ err }, "set evaluation audience failed");
-    res.status(500).json({ error: "Failed to set who this check is for" });
-  }
-});
-
 router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedRequest, res) => {
   try {
     const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
@@ -738,12 +792,12 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
         previousQuestions.map(q => ({ text: questionStem(q.body as Record<string, unknown>) })),
       );
 
-      const runLlm = (avoidList: readonly string[], insistent: boolean) => generateWithModel(
+      const runLlm = (avoidList: readonly string[], insistent: boolean, count = evaluation.targetQuestionCount) => generateWithModel(
         {
           objectives,
           gradeId: evaluation.gradeId,
           assessmentTypes: evaluation.assessmentTypes,
-          count: evaluation.targetQuestionCount,
+          count,
           difficulty: evaluation.difficulty,
           language: evaluation.language,
           bookExcerpts: grounding?.block,
@@ -757,7 +811,9 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
             // Room for a full paper of questions with options and rubrics. A
             // truncated response parses to something plausible, which is worse
             // than an error.
-            max_completion_tokens: 8000,
+            // Scaled to the paper: 30 questions with options and rubrics do not
+            // fit the 8000 that suits ten, and reasoning tokens bill against it.
+            max_completion_tokens: Math.min(24000, Math.max(8000, 2000 + 700 * evaluation.targetQuestionCount)),
             messages: [
               { role: "system", content: prompt.system },
               { role: "user", content: prompt.user },
@@ -790,6 +846,26 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
             "evaluation regeneration repeated most of the previous paper — retrying once",
           );
           llm = await runLlm(avoid, true);
+        }
+      }
+
+      // A reply can be well-formed and still short: asked for 20, a model will
+      // often send 10 and stop. Ask once more for only what is missing, with the
+      // stems already written so the second batch is new questions. Best effort
+      // — the paper is served short, and the shortfall warning says so, if it fails.
+      const missing = evaluation.targetQuestionCount - llm.questions.length;
+      if (missing > 0) {
+        logger.warn(
+          { evaluationId: evaluation.id, asked: evaluation.targetQuestionCount, got: llm.questions.length },
+          "evaluation came back short — asking for the rest",
+        );
+        try {
+          const have = signatureLines(llm.questions.map(q => ({ text: questionStem(q.body) })));
+          const more = await runLlm([...avoid, ...have], false, missing);
+          llm.questions.push(...more.questions);
+          llm.notes.push(...more.notes);
+        } catch (err) {
+          logger.warn({ err, evaluationId: evaluation.id }, "evaluation top-up failed - serving the short paper");
         }
       }
 
@@ -855,7 +931,12 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
         `The generator returned ${surplus} more question${surplus === 1 ? "" : "s"} than the ${evaluation.targetQuestionCount} requested; the extra ${surplus === 1 ? "one was" : "ones were"} left out.`,
       );
     }
-    // After the trim above, so the warning never names a question that is not on the paper.
+    // Stored as a ministry paper: one block per type, in the usual order. After
+    // the surplus trim above, so which questions were dropped is still the
+    // generator's own choice and not "whatever type came last".
+    keyCheck.kept = inPaperOrder(keyCheck.kept, k => k.question.type);
+    // After the trim AND the sort, so the warning never names a question that is
+    // not on the paper and its positions are the ones the review screen shows.
     const contradiction = contradictionWarning(keyCheck.kept);
     if (contradiction) generationNotes.push(contradiction);
     generationParams["keysChecked"] = keyCheck.checked;
@@ -1847,6 +1928,125 @@ router.post("/evaluations/:id/attempts", async (req: AuthenticatedRequest, res) 
     res.status(500).json({ error: "Failed to start attempt" });
   }
 });
+
+/**
+ * The class a scanned paper is matched against: current, non-archived members
+ * of the exam's class, narrowed to its audience when it is a group check — the
+ * rule `PATCH /attempts/:id` already applies when it moves a paper onto a
+ * student. `hasAttempt` lets the screen warn before a save that would skip them.
+ */
+async function scanRoster(evaluation: {
+  id: string;
+  teacherId: string;
+  classGroupId: string | null;
+}): Promise<RosterEntry[]> {
+  if (!evaluation.classGroupId) return [];
+  const members = await db
+    .select({ id: students.id, displayName: students.displayName })
+    .from(students)
+    .innerJoin(classMemberships, eq(classMemberships.studentId, students.id))
+    .where(
+      and(
+        eq(classMemberships.classGroupId, evaluation.classGroupId),
+        eq(students.teacherId, evaluation.teacherId),
+        isNull(students.archivedAt),
+      ),
+    )
+    .orderBy(asc(students.displayName));
+  const audience = await evaluationAudience(evaluation.id);
+  const sat = await db
+    .select({ studentId: attempts.studentId })
+    .from(attempts)
+    .where(eq(attempts.evaluationId, evaluation.id));
+  const hasAttempt = new Set(sat.map(a => a.studentId));
+  return members
+    .filter(m => inAudience(audience, m.id))
+    .map(m => ({ studentId: m.id, displayName: m.displayName, hasAttempt: hasAttempt.has(m.id) }));
+}
+
+/**
+ * Read one student's marked paper: the marks, and whose it is.
+ *
+ * The caller sends photos one at a time (three in flight), so one bad photo
+ * costs one row, not the batch. Nothing is created: no attempt, no grade. The
+ * response carries the name as written, a match against the class roster done
+ * here (the model never sees the roster), and the marks as proposals. A client
+ * saves them through the ordinary start-attempt and marking endpoints.
+ */
+router.post(
+  "/evaluations/:id/scan-class-paper",
+  scanLimiter,
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
+      if (!evaluation) {
+        res.status(404).json({ error: "Evaluation not found" });
+        return;
+      }
+      // Loaded before the gate: only a paper exam may be scanned this way.
+      const live = await liveQuestions(evaluation.id);
+      const refused = classScanGate(evaluation, live) ?? checkScanImage(req.body?.image);
+      if (refused) {
+        res.status(refused.status).json({ error: refused.error, code: refused.code });
+        return;
+      }
+      const image = req.body.image as string;
+
+      assertLiveModeEnabled();
+      assertBudgetAvailable();
+      await assertUserQuotaAvailable(req.user!.id);
+
+      if (live.length === 0) {
+        res.status(409).json({ error: "This evaluation has no questions" });
+        return;
+      }
+      const questions: ScannableQuestion[] = live.map((q, i) => ({
+        questionId: q.id,
+        number: i + 1,
+        maxMarks: Number(q.marks),
+        type: q.type,
+      }));
+      const roster = await scanRoster(evaluation);
+
+      const prompt = buildScanPrompt(questions, { readName: true });
+      const model = getGenerationModel();
+      const completion = await openai.chat.completions.create({
+        model,
+        max_completion_tokens: 1500,
+        messages: [
+          { role: "system", content: prompt.system },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: prompt.user },
+              { type: "image_url", image_url: { url: image } },
+            ],
+          },
+        ],
+      });
+      recordUsage(completion.usage, model, {
+        kind: "quiz",
+        promptVersion: "scan-class-paper-1",
+        userId: req.user!.id,
+      });
+
+      const raw = extractJSON(completion.choices[0]?.message?.content ?? "{}");
+      const parsed = parseScanResponse(raw, questions);
+      const nameRead = parseNameRead(raw);
+      res.json({
+        nameRead,
+        match: matchStudent(nameRead, roster),
+        proposals: parsed.proposals,
+        skipped: parsed.skipped,
+        writtenTotal: parseTotalRead(raw),
+        model,
+        saved: false,
+      });
+    } catch (err) {
+      respondScanError(res, err, "scan class paper failed");
+    }
+  },
+);
 
 /**
  * Books a teacher can actually build an evaluation from.

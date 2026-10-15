@@ -18,6 +18,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import {
   getMyContacts,
   getTeacherContacts,
+  hideThread,
   listThreads,
   startThread,
   type ChatThreadSummary,
@@ -30,6 +31,8 @@ import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { setUnreadMessages } from '@/services/unreadMessages';
 import { filterThreads, THREAD_FILTERS, type ThreadFilter } from '@/services/threadFilter';
+import { allSelected, pruneSelection, toggleSelected } from '@/services/threadSelection';
+import { confirm } from '@/services/confirm';
 import { Avatar } from '@/components/ui/Avatar';
 import { LoadError } from '@/components/ui/LoadError';
 import { relativeTime } from '@/services/relativeTime';
@@ -58,6 +61,13 @@ export default function NotificationsScreen() {
   // back to that list, so it has to work even with threads already present.
   const [newChatOpen, setNewChatOpen] = useState(false);
   const [filter, setFilter] = useState<ThreadFilter>('all');
+  // Bulk «حذف»: long-press a row (or tap «تحديد») to start. It is the same
+  // per-person hide as the thread screen's menu — nothing is deleted for anyone
+  // else — so a teacher can clear many test conversations and class groups at
+  // once instead of opening each one.
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -84,6 +94,8 @@ export default function NotificationsScreen() {
             ),
       ]);
       setThreads(list);
+      // A poll can drop a thread someone else just hid; don't act on a ghost.
+      setSelected(prev => pruneSelection(prev, list.map(th => th.id)));
       setUnreadMessages(list.reduce((sum, th) => sum + th.unreadCount, 0));
       setContacts(myContacts);
       setError('');
@@ -97,6 +109,50 @@ export default function NotificationsScreen() {
   useFocusEffect(useCallback(() => { void load(); }, [load]));
   // Keeps the inbox current without a manual reload — see hooks/usePollingRefresh.ts.
   usePollingRefresh(load);
+
+  const exitSelectMode = () => {
+    setSelectMode(false);
+    setSelected(new Set());
+  };
+
+  const onRowPress = (id: string) => {
+    if (selectMode) setSelected(prev => toggleSelected(prev, id));
+    else router.push(`/messaging/${id}`);
+  };
+
+  const onRowLongPress = (id: string) => {
+    if (bulkBusy) return;
+    setSelectMode(true);
+    setSelected(prev => (prev.has(id) ? prev : toggleSelected(prev, id)));
+  };
+
+  const hideSelected = async () => {
+    const ids = [...selected];
+    if (ids.length === 0 || bulkBusy) return;
+    const ok = await confirm({
+      title: t('messagingBulkHideConfirmTitle', ids.length),
+      message: t('messagingBulkHideConfirmDesc'),
+      confirmLabel: t('messagingBulkHide', ids.length),
+      cancelLabel: t('cancel'),
+      destructive: true,
+    });
+    if (!ok) return;
+    setBulkBusy(true);
+    try {
+      const results = await Promise.allSettled(ids.map(id => hideThread(id)));
+      const failed = ids.filter((_, i) => results[i].status === 'rejected');
+      await load();
+      if (failed.length === 0) {
+        exitSelectMode();
+      } else {
+        // Keep only the ones that did not go, so a retry is one tap.
+        setSelected(new Set(failed));
+        setError(t('messagingBulkHidePartial', failed.length));
+      }
+    } finally {
+      setBulkBusy(false);
+    }
+  };
 
   const openContact = async (userId: string) => {
     setStartingUserId(userId);
@@ -171,6 +227,7 @@ export default function NotificationsScreen() {
   const unreadCount = threads.reduce((sum, th) => sum + th.unreadCount, 0);
   const align = isRTL ? 'right' : 'left';
   const visibleThreads = filterThreads(threads, filter);
+  const everyVisibleSelected = allSelected(selected, visibleThreads.map(th => th.id));
   const filterLabel: Record<ThreadFilter, string> = {
     all: t('messagingFilterAll'),
     groups: t('messagingFilterGroups'),
@@ -184,13 +241,55 @@ export default function NotificationsScreen() {
           <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
             {t('notificationsTitle')}
           </Text>
-          {unreadCount > 0 && (
+          {selectMode ? (
+            <Text style={[styles.unreadCount, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
+              {t('messagingSelectedCount', selected.size)}
+            </Text>
+          ) : unreadCount > 0 && (
             <Text style={[styles.unreadCount, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
               {t('unread', unreadCount)}
             </Text>
           )}
         </View>
+        {selectMode ? (
+          <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 12, paddingBottom: 6, alignItems: 'center' }]}>
+            <Pressable onPress={exitSelectMode} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('cancel')}>
+              <Text style={[styles.headerActionText, { color: colors.mutedForeground }]}>{t('cancel')}</Text>
+            </Pressable>
+            <Pressable
+              onPress={() =>
+                setSelected(everyVisibleSelected ? new Set() : new Set(visibleThreads.map(th => th.id)))
+              }
+              hitSlop={10}
+              accessibilityRole="button"
+            >
+              <Text style={[styles.headerActionText, { color: colors.primary }]}>
+                {everyVisibleSelected ? t('messagingDeselectAll') : t('messagingSelectAll')}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => void hideSelected()}
+              disabled={selected.size === 0 || bulkBusy}
+              hitSlop={10}
+              accessibilityRole="button"
+              style={[styles.headerActionPrimary, { flexDirection: isRTL ? 'row-reverse' : 'row', backgroundColor: colors.destructive, opacity: selected.size === 0 || bulkBusy ? 0.5 : 1 }]}
+            >
+              {bulkBusy ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Ionicons name="trash-outline" size={18} color="#fff" />
+              )}
+              <Text style={[styles.headerActionText, { color: '#fff' }]}>{t('messagingBulkHide', selected.size)}</Text>
+            </Pressable>
+          </View>
+        ) : (
         <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 12, paddingBottom: 6, alignItems: 'center' }]}>
+          {threads.length > 0 && (
+            <Pressable onPress={() => setSelectMode(true)} hitSlop={10} accessibilityRole="button" style={[styles.headerAction, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <Ionicons name="checkmark-circle-outline" size={20} color={colors.mutedForeground} />
+              <Text style={[styles.headerActionText, { color: colors.mutedForeground }]}>{t('messagingSelect')}</Text>
+            </Pressable>
+          )}
           {isTeacherRole(user?.role) && (
             <Pressable onPress={() => router.push('/messaging/new-group')} hitSlop={10} accessibilityRole="button" style={[styles.headerAction, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               <Ionicons name="people-circle-outline" size={20} color={colors.mutedForeground} />
@@ -208,6 +307,7 @@ export default function NotificationsScreen() {
             <Text style={[styles.headerActionText, { color: '#fff' }]}>{t('messagingNewMessage')}</Text>
           </Pressable>
         </View>
+        )}
       </View>
 
       {/*
@@ -267,19 +367,29 @@ export default function NotificationsScreen() {
               ? senderName ? `${senderName}: ${item.lastMessage.body}` : item.lastMessage.body
               : '';
             const ts = item.updatedAt ? relativeTime(item.updatedAt, lang) : '';
+            const isSelected = selected.has(item.id);
             return (
               <Pressable
-                onPress={() => router.push(`/messaging/${item.id}`)}
+                onPress={() => onRowPress(item.id)}
+                onLongPress={() => onRowLongPress(item.id)}
+                aria-selected={selectMode ? isSelected : undefined}
                 style={[
                   styles.threadCard,
                   {
                     backgroundColor: item.unreadCount > 0 ? colors.secondary : colors.card,
-                    borderColor: item.unreadCount > 0 ? colors.primary + '33' : colors.border,
+                    borderColor: isSelected ? colors.primary : item.unreadCount > 0 ? colors.primary + '33' : colors.border,
                     borderRadius: colors.radius,
                     flexDirection: isRTL ? 'row-reverse' : 'row',
                   },
                 ]}
               >
+                {selectMode ? (
+                  <Ionicons
+                    name={isSelected ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={26}
+                    color={isSelected ? colors.primary : colors.mutedForeground}
+                  />
+                ) : null}
                 {isGroup ? (
                   <View style={[styles.groupIcon, { backgroundColor: colors.secondary }]}>
                     <Ionicons name="people" size={20} color={colors.primary} />

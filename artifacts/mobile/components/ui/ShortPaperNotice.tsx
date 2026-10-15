@@ -11,11 +11,22 @@ import { useLanguage } from '@/context/LanguageContext';
  * the generator now stops there rather than padding the paper with sentences
  * that read like questions and test nothing. Without this, 10 requested and 3
  * delivered looks like a bug. Renders nothing when the paper is complete.
+ *
+ * Also says «some of these are the same questions as before» after a
+ * regenerate whose bank had nothing else to offer, so a repeat reads as a
+ * limit of the lesson and not as a button that did nothing.
  */
-export function ShortPaperNotice({ shortfall }: { shortfall?: { requested: number; produced: number } }) {
+export function ShortPaperNotice({ shortfall, repeated, repeatedUnit = 'questions' }: {
+  shortfall?: { requested: number; produced: number };
+  repeated?: { count: number; of: number };
+  /** What the repeated things are: a paper's questions, or a lesson plan's sections. */
+  repeatedUnit?: 'questions' | 'sections';
+}) {
   const colors = useColors();
   const { t, isRTL } = useLanguage();
-  if (!shortfall || shortfall.produced >= shortfall.requested) return null;
+  const short = !!shortfall && shortfall.produced < shortfall.requested;
+  const repeats = !!repeated && repeated.count > 0 && repeated.of > 0;
+  if (!short && !repeats) return null;
   const row = { flexDirection: isRTL ? 'row-reverse' : 'row' } as const;
   return (
     <View
@@ -24,7 +35,10 @@ export function ShortPaperNotice({ shortfall }: { shortfall?: { requested: numbe
     >
       <Ionicons name="information-circle-outline" size={18} color={colors.mutedForeground} style={{ marginTop: 1 }} />
       <Text style={[styles.text, { color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left' }]}>
-        {t('shortPaperNotice', shortfall.produced, shortfall.requested)}
+        {[
+          short ? t('shortPaperNotice', shortfall!.produced, shortfall!.requested) : '',
+          repeats ? t(repeatedUnit === 'sections' ? 'repeatedSectionsNotice' : 'repeatedQuestionsNotice', repeated!.count, repeated!.of) : '',
+        ].filter(Boolean).join(' ')}
       </Text>
     </View>
   );

@@ -13,7 +13,8 @@
  * `/take/attempt/result` still gates on `releaseResultsToStudent` and on the
  * paper having no question left unmarked.
  */
-import { db } from "@workspace/db";
+// Acts without (or beyond) the caller's identity — see lib/db/src/scopedPool.ts.
+import { systemDb as db } from "@workspace/db";
 import {
   attemptAnswers,
   attemptQuestionGrades,

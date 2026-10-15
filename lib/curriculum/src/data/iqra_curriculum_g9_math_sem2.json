@@ -38,6 +38,7 @@
           "id": "u5_l1",
           "order": 1,
           "title_ar": "الأجزاء المتناسبة في المثلثات",
+          "title_en": "Proportional Parts in Triangles",
           "periods": 4,
           "objectives": [
             "تعرُّف الأجزاء المتناسبة في المثلث، واستعمالها لإيجاد قياسات مجهولة"
@@ -50,6 +51,7 @@
           "id": "u5_l2",
           "order": 2,
           "title_ar": "منصفات في المثلث",
+          "title_en": "Bisectors in a Triangle",
           "periods": 5,
           "objectives": [
             "تعرُّف نظرية المنصِّفات العمودية للمثلث، واستعمالها لإيجاد قياسات مجهولة",
@@ -65,6 +67,7 @@
           "id": "u5_l3",
           "order": 3,
           "title_ar": "القطع المتوسطة والارتفاعات في المثلث",
+          "title_en": "Medians and Altitudes in a Triangle",
           "periods": 4,
           "objectives": [
             "تعرُّف نظرية مركز المثلث، واستعمالها لإيجاد قياسات مجهولة",
@@ -81,6 +84,7 @@
           "id": "u5_l4",
           "order": 4,
           "title_ar": "النسب المثلثية",
+          "title_en": "Trigonometric Ratios",
           "periods": 4,
           "objectives": [
             "تعرُّف جيب الزاوية الحادة، وجيب تمامها، وظلها، بوصفها نسبًا بين أضلاع مثلث قائم الزاوية"
@@ -98,6 +102,7 @@
           "id": "u5_l5",
           "order": 5,
           "title_ar": "تطبيقات النسب المثلثية",
+          "title_en": "Applications of Trigonometric Ratios",
           "periods": 4,
           "objectives": [
             "استعمال النسب المثلثية لإيجاد قياسات مجهولة في المثلث"
@@ -124,6 +129,7 @@
           "id": "u6_l1",
           "order": 1,
           "title_ar": "تبسيط المقادير الأسية",
+          "title_en": "Simplifying Exponential Expressions",
           "periods": 4,
           "objectives": [
             "استعمال خصائص الأس الصحيحة لتبسيط مقادير أسية"
@@ -134,6 +140,7 @@
           "id": "u6_l2",
           "order": 2,
           "title_ar": "العمليات على المقادير الجذرية",
+          "title_en": "Operations on Radical Expressions",
           "periods": 5,
           "objectives": [
             "تبسيط المقادير الجذرية",
@@ -149,6 +156,7 @@
           "id": "u6_l3",
           "order": 3,
           "title_ar": "حل المعادلات الجذرية",
+          "title_en": "Solving Radical Equations",
           "periods": 4,
           "objectives": [
             "حل معادلات تحوي مقادير جذرية"
@@ -175,6 +183,7 @@
           "id": "u7_l1",
           "order": 1,
           "title_ar": "ضرب المقادير الجبرية النسبية وقسمتها",
+          "title_en": "Multiplying and Dividing Rational Algebraic Expressions",
           "periods": 4,
           "objectives": [
             "تبسيط المقادير الجبرية النسبية",
@@ -189,6 +198,7 @@
           "id": "u7_l2",
           "order": 2,
           "title_ar": "جمع المقادير الجبرية النسبية وطرحها",
+          "title_en": "Adding and Subtracting Rational Algebraic Expressions",
           "periods": 3,
           "objectives": [
             "إيجاد المضاعف المشترك الأصغر للمقادير الجبرية",
@@ -200,6 +210,7 @@
           "id": "u7_l3",
           "order": 3,
           "title_ar": "حل المعادلات النسبية",
+          "title_en": "Solving Rational Equations",
           "periods": 4,
           "objectives": [
             "حل معادلات نسبية"
@@ -225,6 +236,7 @@
           "id": "u8_l1",
           "order": 1,
           "title_ar": "مقاييس التشتت",
+          "title_en": "Measures of Dispersion",
           "periods": 5,
           "objectives": [
             "إيجاد التباين والانحراف المعياري لبيانات مفردة، وأخرى منظمة في جداول تكرارية",
@@ -240,6 +252,7 @@
           "id": "u8_l2",
           "order": 2,
           "title_ar": "الجداول التكرارية ذات الفئات",
+          "title_en": "Grouped Frequency Tables",
           "periods": 3,
           "objectives": [
             "تنظيم البيانات في جداول تكرارية ذات فئات متساوية الطول",
@@ -251,6 +264,7 @@
           "id": "u8_l3",
           "order": 3,
           "title_ar": "المدرجات التكرارية",
+          "title_en": "Histograms",
           "periods": 3,
           "objectives": [
             "تمثيل البيانات المتصلة المنظمة في جداول تكرارية بمدرَّجات تكرارية"
@@ -264,6 +278,7 @@
           "id": "u8_l4",
           "order": 4,
           "title_ar": "الاحتمالات وأشكال ڤن",
+          "title_en": "Probability and Venn Diagrams",
           "periods": 4,
           "objectives": [
             "إيجاد الاحتمال باستعمال أشكال ﭬن"
@@ -278,6 +293,7 @@
           "id": "u8_l5",
           "order": 5,
           "title_ar": "الاحتمال الهندسي",
+          "title_en": "Geometric Probability",
           "periods": 3,
           "objectives": [
             "إيجاد احتمالات هندسية باستعمال الأطوال والمساحات والزوايا"

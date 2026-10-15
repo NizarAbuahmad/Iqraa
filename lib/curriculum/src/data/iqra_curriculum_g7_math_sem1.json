@@ -36,6 +36,7 @@
           "id": "u1_l1",
           "order": 1,
           "title_ar": "العدد النسبي",
+          "title_en": "Rational Numbers",
           "main_idea_ar": "أَتَعَرَّفُ العَدَدَ النِّسْبِيَّ، وأُمَثِّلُهُ عَلى خَطِّ الأعدادِ.",
           "periods": 2,
           "objectives": [
@@ -49,6 +50,7 @@
           "id": "u1_l2",
           "order": 2,
           "title_ar": "كتابة العدد النسبي بالصورة العشرية",
+          "title_en": "Writing a Rational Number in Decimal Form",
           "main_idea_ar": "أكتبُ العددَ النِّسبيَّ بالصّورةِ العشريّةِ.",
           "periods": 2,
           "objectives": [
@@ -60,6 +62,7 @@
           "id": "u1_l3",
           "order": 3,
           "title_ar": "مقارنة الأعداد النسبية وترتيبها",
+          "title_en": "Comparing and Ordering Rational Numbers",
           "main_idea_ar": "أقارنُ بينَ الأعدادِ النِّسبيَّةِ، وأرتّبُها.",
           "periods": 2,
           "objectives": [
@@ -73,6 +76,7 @@
           "id": "u1_l4",
           "order": 4,
           "title_ar": "جمع الأعداد النسبية وطرحها",
+          "title_en": "Adding and Subtracting Rational Numbers",
           "main_idea_ar": "أَجْمَعُ الأعدادَ النِّسْبِيَّةَ، وأَطْرَحُها.",
           "periods": 2,
           "objectives": [
@@ -86,6 +90,7 @@
           "id": "u1_l5",
           "order": 5,
           "title_ar": "ضرب الأعداد النسبية وقسمتها",
+          "title_en": "Multiplying and Dividing Rational Numbers",
           "main_idea_ar": "أضربُ أعدادًا نسبيّةً، وأقسِمُها.",
           "periods": 2,
           "objectives": [
@@ -98,6 +103,7 @@
           "id": "u1_l6",
           "order": 6,
           "title_ar": "خطة حل المسألة: الحل العكسي",
+          "title_en": "Problem-Solving Strategy: Work Backward",
           "main_idea_ar": "أحلُّ مسائلَ باستخدامِ خطّةِ «الحلِّ العكسيِّ».",
           "periods": 2,
           "objectives": [
@@ -125,6 +131,7 @@
           "id": "u2_l1",
           "order": 1,
           "title_ar": "قوانين الأسس الصحيحة",
+          "title_en": "Laws of Integer Exponents",
           "main_idea_ar": "أتعرَّفُ الأسَسَ، والقوى، وقواعدَ ضربِها وقسمتِها.",
           "periods": 3,
           "objectives": [
@@ -138,6 +145,7 @@
           "id": "u2_l2",
           "order": 2,
           "title_ar": "أولويات العمليات الحسابية",
+          "title_en": "Order of Operations",
           "main_idea_ar": "أستخدمُ أولوياتِ العملياتِ الحسابيّةِ وقوانينَ الأسسِ في تبسيطِ المقاديرِ العدديّةِ.",
           "periods": 2,
           "objectives": [
@@ -150,6 +158,7 @@
           "id": "u2_l3",
           "order": 3,
           "title_ar": "الحدود والمقادير الجبرية",
+          "title_en": "Terms and Algebraic Expressions",
           "main_idea_ar": "أتعرَّفُ الحدودَ والمعاملاتِ والثوابتَ في المقدارِ الجبريّ.",
           "periods": 2,
           "objectives": [
@@ -163,6 +172,7 @@
           "id": "u2_l4",
           "order": 4,
           "title_ar": "جمع المقادير الجبرية وطرحها",
+          "title_en": "Adding and Subtracting Algebraic Expressions",
           "main_idea_ar": "أُبسّطُ المقاديرَ الجبريّةَ بجمعِ الحدودِ المتشابهةِ وطرحِها.",
           "periods": 2,
           "objectives": [
@@ -175,6 +185,7 @@
           "id": "u2_l5",
           "order": 5,
           "title_ar": "ضرب المقادير الجبرية",
+          "title_en": "Multiplying Algebraic Expressions",
           "main_idea_ar": "أضربُ المقاديرَ الجبريّةَ، وأُبسّطُها.",
           "periods": 2,
           "objectives": [
@@ -186,6 +197,7 @@
           "id": "u2_l6",
           "order": 6,
           "title_ar": "حالات خاصة من ضرب المقادير الجبرية",
+          "title_en": "Special Cases of Multiplying Algebraic Expressions",
           "main_idea_ar": "أتعرَّفُ قواعدَ إيجادِ مربّعِ مجموعِ حدَّينِ ومجموعِ حدَّينِ في الفرقِ بينَهُما.",
           "periods": null,
           "objectives": [],
@@ -209,6 +221,7 @@
           "id": "u3_l1",
           "order": 1,
           "title_ar": "حل المعادلات",
+          "title_en": "Solving Equations",
           "main_idea_ar": "أحلُّ معادلةً بمتغيّرٍ واحدٍ.",
           "periods": 3,
           "objectives": [
@@ -221,6 +234,7 @@
           "id": "u3_l2",
           "order": 2,
           "title_ar": "الكسور العشرية الدورية",
+          "title_en": "Repeating Decimals",
           "main_idea_ar": "أحوّلُ الكسرَ العشريَّ الدوريَّ إلى كسرٍ فعليٍّ أوْ عددِ كسريٍّ.",
           "periods": 3,
           "objectives": [
@@ -232,6 +246,7 @@
           "id": "u3_l3",
           "order": 3,
           "title_ar": "المتتاليات",
+          "title_en": "Sequences",
           "main_idea_ar": "أكتبُ حدودًا متتاليةً، وأجدُ الحدَّ العامَّ لها.",
           "periods": 3,
           "objectives": [
@@ -261,6 +276,7 @@
           "id": "u4_l1",
           "order": 1,
           "title_ar": "العلاقات بين الزوايا",
+          "title_en": "Relationships Between Angles",
           "main_idea_ar": "أتعرَّفُ العلاقاتِ بينَ الزوايا، وأستخدمُها لحلِّ المسائلِ.",
           "periods": 3,
           "objectives": [
@@ -272,6 +288,7 @@
           "id": "u4_l2",
           "order": 2,
           "title_ar": "المستقيمات المتوازية والقاطع",
+          "title_en": "Parallel Lines and a Transversal",
           "main_idea_ar": "أتعرَّفُ العلاقاتِ بينَ الزوايا الناتجةِ منْ تقاطعِ مستقيمٍ معَ مستقيمينِ متوازيَينِ.",
           "periods": 3,
           "objectives": [
@@ -284,6 +301,7 @@
           "id": "u4_l3",
           "order": 3,
           "title_ar": "زوايا المثلث",
+          "title_en": "Angles of a Triangle",
           "main_idea_ar": "أبرزُ العلاقاتِ بينَ الزوايا الداخليةِ والزوايا الخارجيةِ في مثلّثٍ.",
           "periods": 3,
           "objectives": [
@@ -296,6 +314,7 @@
           "id": "u4_l4",
           "order": 4,
           "title_ar": "زوايا المضلع",
+          "title_en": "Angles of a Polygon",
           "main_idea_ar": "أجدُ مجموعَ قياساتِ زوايا مضلّعٍ معطى. أجدُ قياسَ الزاويةِ الداخليةِ والزاويةِ الخارجيةِ لمضلّعٍ منتظَمٍ.",
           "periods": 3,
           "objectives": [
@@ -308,6 +327,7 @@
           "id": "u4_l5",
           "order": 5,
           "title_ar": "الدوران",
+          "title_en": "Rotation",
           "main_idea_ar": "أرسمُ دورانًا على المستوى الإحداثيّ. أتعرَّفُ التماثلَ الدورانيَّ ورتبتَهُ.",
           "periods": 3,
           "objectives": [

@@ -12,6 +12,7 @@
  */
 
 import type { ClassroomActivity } from './ai/AIService.ts';
+import { isWideScopeFormState } from './materialLessonId.ts';
 
 /** The five materials the product actually pushes, in the order a teacher prepares them. */
 export type PrepType = 'lesson-plan' | 'worksheet' | 'quiz' | 'slides' | 'activity';
@@ -35,7 +36,7 @@ export type MaterialLike = {
    * workspace.ts, and the worksheet screen writes `materialKind: 'homework'`
    * for a homework, which is otherwise saved as a worksheet.
    */
-  formState?: { lessonId?: unknown; materialKind?: unknown } | null;
+  formState?: { lessonId?: unknown; materialKind?: unknown; scope?: unknown } | null;
 };
 
 export type PrepRowMeta = {
@@ -129,11 +130,16 @@ function lessonIdOf(m: MaterialLike): string | null {
  * The lesson id decides when both sides carry one — a title does not identify
  * a lesson (CLAUDE.md), and a teacher's free-typed topic that grounded to this
  * lesson should still count. The topic is the fallback for materials saved
- * before ids were stamped, and for a board that has no lesson id.
+ * before ids were stamped, and for a board that has no lesson id. A wide
+ * (unit / semester / book) paper is never a lesson's material.
  */
 export function materialsForTopic<T extends MaterialLike>(materials: T[], topic: string, lessonId?: string | null): T[] {
   return materials
     .filter(m => {
+      // A unit / semester / book paper has no lesson, and carries no lessonId,
+      // so the topic fallback below would match it to any lesson whose title
+      // equals the scope's label (49 unit titles do).
+      if (isWideScopeFormState(m.formState)) return false;
       const id = lessonIdOf(m);
       return lessonId && id ? id === lessonId : sameTopic(m.topic, topic);
     })

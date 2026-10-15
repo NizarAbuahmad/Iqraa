@@ -34,6 +34,33 @@ export interface AIRequest {
    */
   lessonId?: string;
   /**
+   * A scope wider than one lesson — a unit, a semester or the whole book.
+   *
+   * `scopeKey` is id-only and part of the artifact pool's cache key, so a
+   * «الفصل الأول كاملًا» paper is never served as one lesson's. `unitIds` are
+   * the NCCD units in range (the server pools book pages across them); the
+   * digest itself travels in `additionalContext`. Absent for a single lesson,
+   * which keeps using `lessonId` / `unitId` exactly as before.
+   */
+  scope?: { kind: 'unit' | 'semester' | 'book'; scopeKey: string; unitIds: string[] };
+  /**
+   * How a wide scope's questions are spread over its lessons. Part of the
+   * strict cache key; absent for a single lesson.
+   */
+  distribution?: 'balanced' | 'random';
+  /**
+   * The lessons of a wide scope, each with a short code the model tags a
+   * question with, and — for `balanced` only — the per-question plan as
+   * lesson codes. The offline path ignores `slots` and re-plans from `lessons`
+   * (some lessons have no offline bank); the live prompt renders the plan as
+   * per-lesson counts. Neither is hashed into the cache key: both are a pure
+   * function of the scope and the count.
+   */
+  coverage?: {
+    lessons: Array<{ code: string; id: string; unitId: string; title: string }>;
+    slots?: string[];
+  };
+  /**
    * How many student-book figures this lesson has (`figuresForLesson().length`).
    *
    * The server cannot work this out: the crops and `figure-lesson-map.json`
@@ -165,6 +192,10 @@ export interface LessonPlanOutput {
    *  `servedReason` in api-server's routes/generate.ts. The screen must say so
    *  rather than present a repeat as newly generated. */
   servedReason?: 'quota' | 'budget';
+  /** Present on an offline regenerate where some narrative sections could not
+   *  change (the offline generator has one phrasing for most of them) — `count`
+   *  of `of` are word-for-word the plan before. See `QuizOutput.repeated`. */
+  repeated?: { count: number; of: number };
 }
 
 /**
@@ -218,6 +249,9 @@ export interface WorksheetOutput {
    *  count, so the paper is shorter than asked for. The screen says so — a
    *  short paper with no explanation reads as a bug. */
   shortfall?: { requested: number; produced: number };
+  /** Present on an offline regenerate whose bank could not avoid repeating some
+   *  of the questions already on screen — see `QuizOutput.repeated`. */
+  repeated?: { count: number; of: number };
   lab?: WorksheetLab;
 }
 
@@ -254,6 +288,10 @@ export interface WorksheetQuestion {
    * answer" — never as «من بنك الأسئلة المُراجَع».
    */
   fromBank?: true;
+  /** The KB lesson this question was written for — set on a wide-scope paper. */
+  lessonId?: string;
+  /** The model's raw lesson code (`L3`). Mapped to `lessonId` on arrival and then removed. */
+  lesson?: string;
   /**
    * A figure from the lesson's own student book, attached to this question by
    * the teacher. Never set by a generator: the model that wrote the questions
@@ -293,6 +331,10 @@ export interface QuizOutput {
   /** Present when the lesson's question bank ran out before the requested
    *  count — see `WorksheetOutput.shortfall`. */
   shortfall?: { requested: number; produced: number };
+  /** Present on an offline regenerate whose bank could not avoid repeating
+   *  some of the questions already on screen: `count` of `of` are the same as
+   *  the paper before. The screen says so rather than pass it off as new. */
+  repeated?: { count: number; of: number };
 }
 
 export interface QuizQuestion {
@@ -306,6 +348,10 @@ export interface QuizQuestion {
   explanation: string;
   /** See `WorksheetQuestion.fromBank`. */
   fromBank?: true;
+  /** The KB lesson this question was written for — set on a wide-scope paper. */
+  lessonId?: string;
+  /** The model's raw lesson code (`L3`). Mapped to `lessonId` on arrival and then removed. */
+  lesson?: string;
 }
 
 export interface ActivityStep {
@@ -537,6 +583,13 @@ export interface ClassroomActivity {
    * podium), so a normal deck can never accidentally start scoring.
    */
   game?: ClassGameConfig;
+  /**
+   * The look this deck is drawn in, by `DeckThemeId`. Absent means "the
+   * subject's" — `resolveDeckTheme` picks from `subject` — so every deck built
+   * or saved before themes existed still opens, and a teacher's own choice is
+   * the only thing that ever sets it.
+   */
+  themeId?: import('../deckTheme.ts').DeckThemeId;
 }
 
 export interface ClassGameConfig {
@@ -583,6 +636,23 @@ export interface ClassroomActivityRequest {
    * mid-lesson question as an exit-ticket question would measure nothing.
    */
   numQuestions?: number;
+  /** A unit / semester / book revision session — see `AIRequest.scope`. Absent for one lesson. */
+  scope?: AIRequest['scope'];
+  /** The lessons of that scope (no `slots` — see `buildScopeRequest`). Absent for one lesson. */
+  coverage?: AIRequest['coverage'];
+}
+
+/**
+ * Whether a request is for a revision session over a unit, a semester or the
+ * whole book rather than one lesson.
+ *
+ * Read from `scope` alone — there is no separate flag: the scope key is
+ * already in the cache key, and a lesson request (no `scope`) must stay
+ * byte-identical. The teaching tools' offline generators branch on this and
+ * the server's `revisionClauseAr/En` on the same field.
+ */
+export function isRevisionRequest(req: { scope?: { kind: string } | null }): boolean {
+  return !!req.scope;
 }
 
 /**

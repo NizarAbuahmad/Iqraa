@@ -1,0 +1,9 @@
+{
+  "items": [
+    { "id": "quran-com", "provider": "Quran.com", "kind": "reader", "url": "https://quran.com", "urlCheckedAt": null },
+    { "id": "tanzil", "provider": "Tanzil", "kind": "text", "url": "https://tanzil.net", "urlCheckedAt": null },
+    { "id": "everyayah", "provider": "EveryAyah", "kind": "audio", "url": "https://everyayah.com", "urlCheckedAt": null },
+    { "id": "mp3quran", "provider": "MP3Quran", "kind": "audio", "url": "https://mp3quran.net", "urlCheckedAt": null },
+    { "id": "king-fahd-complex", "provider": "King Fahd Complex", "kind": "reader", "url": "https://qurancomplex.gov.sa", "urlCheckedAt": null }
+  ]
+}

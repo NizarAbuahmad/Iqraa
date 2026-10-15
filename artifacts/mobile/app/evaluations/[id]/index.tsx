@@ -6,6 +6,8 @@
  * server refuses question writes then, since students may be sitting it.
  */
 import React, { useState } from 'react';
+import { arMarksPhrase, enMarksPhrase } from '@/services/arCount';
+import { examBlockMarks, examBlocks } from '@/services/examBlocks';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -36,6 +38,7 @@ import { AddReadAloudModal } from '@/components/AddReadAloudModal';
 import { AddDictationModal } from '@/components/AddDictationModal';
 import { EditQuestionModal } from '@/components/EditQuestionModal';
 import { isEditableQuestion } from '@/services/questionDraft';
+import { isPaperQuestion } from '@/services/paperQuestion';
 import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { QuestionFigure } from '@/components/ui/QuestionFigure';
@@ -169,6 +172,10 @@ export default function EvaluationDetailScreen() {
   });
   const evaluation = data?.evaluation ?? null;
   const questions = data?.questions ?? [];
+  /** First question of each block -> its heading and marks. */
+  const blockAt = new Map(
+    examBlocks(questions, lang === 'ar').map(b => [b.start, { heading: b.heading, marks: examBlockMarks(b, q => q.marks) }] as const),
+  );
   const audience = data?.audience ?? null;
   const loadError = loadFailed
     ? t('evaluationLoadFailed')
@@ -459,6 +466,19 @@ export default function EvaluationDetailScreen() {
               {t('enterAnswersBtn')}
             </Text>
           </Pressable>
+          {/* A paper exam only: every question is a mark with no text. A generated
+              exam marks itself, and a scan would write teacher marks over that. */}
+          {questions.length > 0 && questions.every(isPaperQuestion) && (
+            <Pressable
+              onPress={() => router.push({ pathname: '/evaluations/[id]/scan-class', params: { id: evaluation.id } })}
+              style={[styles.resultsBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            >
+              <Ionicons name="scan-outline" size={18} color={ACCENT} />
+              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
+                {t('classScanBtn')}
+              </Text>
+            </Pressable>
+          )}
           <Pressable
             onPress={() => router.push({ pathname: '/evaluations/[id]/results', params: { id: evaluation.id } })}
             style={[styles.resultsBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
@@ -577,7 +597,17 @@ export default function EvaluationDetailScreen() {
 
       <View style={{ padding: 20, gap: 10 }}>
         {questions.map((q, i) => (
-          <View key={q.id} style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <React.Fragment key={q.id}>
+          {blockAt.get(i) ? (
+            // The ministry paper's «السؤال الأول: …» line above each run of one
+            // type, with the run's marks. Only a heading — numbering stays flat.
+            <View style={[styles.blockHead, { backgroundColor: ACCENT + '12', borderColor: ACCENT + '40' }]}>
+              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, lineHeight: 22, textAlign: align, writingDirection: isRTL ? 'rtl' : 'ltr' }}>
+                {`${blockAt.get(i)!.heading} (${lang === 'ar' ? arMarksPhrase(blockAt.get(i)!.marks) : enMarksPhrase(blockAt.get(i)!.marks)})`}
+              </Text>
+            </View>
+          ) : null}
+          <View style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={[styles.qTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               <View style={[styles.qNum, { backgroundColor: ACCENT_FILL }]}>
                 <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 12 }}>{i + 1}</Text>
@@ -636,6 +666,7 @@ export default function EvaluationDetailScreen() {
             </Text>
             <QuestionFigure body={q.body} captionColor={colors.mutedForeground} />
           </View>
+          </React.Fragment>
         ))}
       </View>
 
@@ -931,6 +962,7 @@ const styles = StyleSheet.create({
   metaRow: { alignItems: 'center', gap: 12 },
   statusPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   errorBox: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 12, borderWidth: 1 },
+  blockHead: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, marginTop: 6 },
   qCard: { borderWidth: 1, borderRadius: 12, padding: 14 },
   qTop: { alignItems: 'center', gap: 8, marginBottom: 8 },
   qNum: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },

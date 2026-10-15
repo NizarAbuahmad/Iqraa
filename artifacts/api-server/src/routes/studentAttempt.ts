@@ -30,7 +30,8 @@
  * by the teacher being able to move an attempt to the right student afterwards.
  */
 import { Router, type Response } from "express";
-import { db } from "@workspace/db";
+// Acts without (or beyond) the caller's identity — see lib/db/src/scopedPool.ts.
+import { systemDb as db } from "@workspace/db";
 import {
   attemptAnswers,
   attemptResults,
