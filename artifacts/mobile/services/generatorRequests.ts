@@ -104,10 +104,13 @@ export type LessonPlanForm = {
 export function groundLessonPlanTopic(
   form: Pick<LessonPlanForm, 'topic' | 'lang' | 'objectives'>,
   scope?: KbScope,
+  /** The lesson the teacher picked, when the screen holds it — wins over the title. */
+  lessonId?: string,
 ) {
   return resolveGeneratorGrounding(form.topic.trim(), form.lang, {
     teacherObjectives: form.objectives.trim() || undefined,
     scope,
+    lessonId,
   });
 }
 

@@ -1378,13 +1378,25 @@ out to be, and what changed:
   every request field off that one result (`slidesLessonFields`), and saves
   `lessonId` in its form state. Pinned in `slidesRequests.test.ts`, including
   that a lesson the title alone finds still sends byte-identical bodies.
-  **Not fixed: the other generator screens.** Lesson plan, worksheet, quiz,
-  activity and game pass `scope` but no lesson id, so for these repeated titles
-  every unit lands on Unit 1 (Family and Friends). `lesson-flow.tsx` (hidden)
-  has the slides bug exactly. Title-only lookups also feed `topicPickerParams`
-  and `withLessonId`. Measured by title alone: wrong lesson for 19/19 G1, 20/20
-  G2, 20/20 G5, 51/70 G8, 50/70 G9 English lessons, and 271 of 2,835 lessons in
-  other subjects.
+  **Every other generator screen had the same bug, and is fixed the same way.**
+  Lesson plan, worksheet, quiz, activity and game passed `scope` but no lesson
+  id, so for these repeated titles every unit landed on Unit 1 (Family and
+  Friends). Lesson-flow (hidden) and the classroom builder grounded the title
+  with no scope at all, like slides. All eight screens now share one mechanism:
+  `usePickedLesson` (`hooks/`, logic in `services/pickedLesson.ts`) holds the
+  tapped or carried lesson id while the topic is still its title and the
+  pickers are still on its book. They ground with `{ lessonId, scope }`, and the
+  screens that used four title lookups per request read every field off one
+  grounding (`groundingRequestFields` in `kbContext.ts`, pinned byte-identical
+  to the old lookups for every Grade 10 maths and chemistry lesson). The lesson
+  bar, home and chat pass `lessonId` to every tool. Measured by title alone:
+  wrong lesson for 19/19 G1, 20/20 G2, 20/20 G5, 51/70 G8, 50/70 G9 English
+  lessons, and 271 of 2,835 lessons in other subjects.
+  **Still by title:** `topicPickerParams`, which picks a screen's grade and
+  subject for a bare topic from chat (only a title is known there), and
+  `withLessonId`'s fallback for a save that carries no id. Every screen above
+  now saves its id, so that fallback only applies to older or free-typed
+  materials.
 - **"eraser" pronunciation — real.** The recording says /iːˈreɪsɚ/ ("EE-ray-ser").
   This was read with a phoneme recogniser (wav2vec2 espeak) and confirmed by
   Whisper; the British form is /ɪˈreɪzə/. `generate-english-audio.ts` now has a

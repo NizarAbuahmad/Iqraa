@@ -30,7 +30,8 @@ import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import type { ActivitySlide, ClassroomActivity, LessonPlanOutput, LessonTeachingOutput } from '@/services/ai/AIService';
 import { resolveGeneratorGrounding, type GeneratorGrounding } from '@/services/kbContext';
-import { getLessonById as getKbLesson } from '@/services/knowledgeBase';
+import { usePickedLesson } from '@/hooks/usePickedLesson';
+import { carriedLessonTopic } from '@/services/pickedLesson';
 import { buildLessonDeck, buildRevisionDeck } from '@/services/lessonSlides';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import {
@@ -103,8 +104,7 @@ export default function SlidesScreen() {
     includeExamples?: string; includePractice?: string; includeAttachments?: string;
     // A saved wide deck's scope (`scopeFormState`), so a reopen restores it.
     scope?: string;
-    // The lesson itself, from a lesson page, the lesson bar or a saved deck.
-    // A title does not identify a lesson — see `picked` below.
+    // The lesson itself (a lesson page, the lesson bar, a saved deck) — `usePickedLesson`.
     lessonId?: string;
   }>();
   // An index the picker list cannot honour is NOT index 0 — see
@@ -127,29 +127,19 @@ export default function SlidesScreen() {
   const [topic, setTopic] = useState(() => {
     const initial = topicForScope(params, uiLang, teacherScope.defaultScope, teacherScope);
     const initialLang = contentLang(subjects[initialScope.subjectIdx].id, uiLang);
-    // A carried lesson names itself, rather than being found again from the title passed beside it.
-    const carried = params.lessonId && initial.trim() ? getKbLesson(params.lessonId) : undefined;
-    if (carried) return initialLang === 'ar' ? carried.titleAr : carried.titleEn;
-    return topicInLang(initial, uiLang, initialLang,
-      { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id });
+    return (initial.trim() && carriedLessonTopic(params.lessonId, initialLang)) || topicInLang(
+      initial, uiLang, initialLang,
+      { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
+    );
   });
   useWarmGrounding(topic, lang);
-  /**
-   * The lesson the teacher tapped (or was sent here with), for as long as the
-   * topic is still its title. Re-finding a lesson from its title is what made
-   * this screen useless for Grade 1 English: every lesson there is "Vocabulary &
-   * Grammar" or "Listening & Speaking", and all 19 decks came from a Grade 3, 4
-   * or 9 lesson, saved under that lesson's id (a teacher's review, 2026-10-15).
-   * Typing over the topic drops it, because the comparison below then fails.
-   */
-  const [picked, setPicked] = useState<{ lessonId: string; topic: string } | null>(
-    () => (params.lessonId && topic.trim() ? { lessonId: params.lessonId, topic: topic.trim() } : null),
-  );
-  const pickedLessonId = picked && picked.topic === topic.trim() ? picked.lessonId : undefined;
-  const groundingOptions = {
-    lessonId: pickedLessonId,
-    scope: { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id },
-  };
+  // Re-finding the lesson from its title made this screen useless for Grade 1
+  // English: all 19 decks came from a Grade 3, 4 or 9 lesson and were saved under
+  // that lesson's id (a teacher's review, 2026-10-15). See `usePickedLesson`.
+  const kbScope = { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id };
+  const pickedLesson = usePickedLesson(params.lessonId, topic, kbScope);
+  const pickedLessonId = pickedLesson.lessonId;
+  const groundingOptions = { lessonId: pickedLessonId, scope: kbScope };
   const wideScope = useWideScope(params, { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id });
   /**
    * The unit / semester / book the deck on screen was built for — what Save
@@ -434,7 +424,6 @@ export default function SlidesScreen() {
       setError('');
       setValidationError('');
       setTopic('');
-      setPicked(null);
       setDeck(null);
       setGenerated(null);
       setWideFrozen(null);
@@ -982,7 +971,7 @@ export default function SlidesScreen() {
             gradeId={grades[gradeIdx].id}
             value={topic}
             onChange={v => { setTopic(v); setError(''); setValidationError(''); }}
-            onSelectionDetail={d => setPicked(d.lessonId && d.lessonTitle ? { lessonId: d.lessonId, topic: d.lessonTitle.trim() } : null)}
+            onSelectionDetail={pickedLesson.onSelectionDetail}
             allowedKinds={['lesson', 'unit', 'semester', 'book']}
             onScopeChange={wideScope.setScopeSel}
             offlineWideScope

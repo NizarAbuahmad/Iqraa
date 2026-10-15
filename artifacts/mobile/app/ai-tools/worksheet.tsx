@@ -73,6 +73,8 @@ import {
   removeWorksheetQuestionAt } from '@/services/worksheetEdits';
 import { optionMarkerState } from '@/services/quizEdits';
 import { useWarmGrounding } from '@/hooks/useWarmGrounding';
+import { usePickedLesson } from '@/hooks/usePickedLesson';
+import { carriedLessonTopic } from '@/services/pickedLesson';
 import { nextFrame } from '@/services/nextFrame';
 import { buildWorksheetRequest } from '@/services/generatorRequests';
 import { readHomeworkParam, readIndexParam } from '@/services/materialParams';
@@ -122,6 +124,8 @@ export default function WorksheetScreen() {
     topic?: string; diffIdx?: string; numQIdx?: string; selectedTypes?: string;
     isHomework?: string;
     scope?: string; distribution?: string;
+    // The lesson itself (a lesson page, the lesson bar, a saved paper) — `usePickedLesson`.
+    lessonId?: string;
   }>();
   const scrollRef = useRef<ScrollView>(null);
 
@@ -152,11 +156,17 @@ export default function WorksheetScreen() {
   const [subjectIdx, setSubjectIdx] = useState(initialScope.subjectIdx);
   // The picked subject's material language — English papers are in English.
   const lang = contentLang(subjects[subjectIdx].id, uiLang);
-  const [topic, setTopic] = useState(() => topicInLang(
-    topicForScope(params, uiLang, teacherScope.defaultScope, teacherScope), uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
-    { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
-  ));
+  const [topic, setTopic] = useState(() => {
+    const initial = topicForScope(params, uiLang, teacherScope.defaultScope, teacherScope);
+    const initialLang = contentLang(subjects[initialScope.subjectIdx].id, uiLang);
+    return (initial.trim() && carriedLessonTopic(params.lessonId, initialLang)) || topicInLang(
+      initial, uiLang, initialLang,
+      { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
+    );
+  });
   useWarmGrounding(topic, lang);
+  const kbScope = { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id };
+  const pickedLesson = usePickedLesson(params.lessonId, topic, kbScope);
   const wideScope = useWideScope(params, { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id });
   /** The wide scope and distribution the paper on screen was generated under — what Save records. */
   const [wideFrozen, setWideFrozen] = useState<{ sel: ScopeSelection; distribution: Distribution } | null>(
@@ -238,7 +248,7 @@ export default function WorksheetScreen() {
       if (wideFrozen && topic.trim()) {
         return captureGenerationScope({ gradeIdx: initialScope.gradeIdx, subjectIdx: initialScope.subjectIdx, topic }, WIDE_GROUNDING);
       }
-      return reopenedGenerationScope(initialScope, topic, lang);
+      return reopenedGenerationScope(initialScope, topic, lang, params.lessonId);
     },
   );
   const scope = materialScope(generated, { gradeIdx, subjectIdx, topic });
@@ -274,7 +284,7 @@ export default function WorksheetScreen() {
     // A wide scope has no single lesson, and its label must not be looked up as one:
     // the review option would light up for whichever lesson the label happens to match.
     if (!topic.trim() || wideScope.isWide) return [] as string[];
-    const g = resolveGeneratorGrounding(topic.trim(), lang, { scope: { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id } });
+    const g = resolveGeneratorGrounding(topic.trim(), lang, { scope: kbScope, lessonId: pickedLesson.lessonId });
     if (!g.lesson) return [] as string[];
     return getUnitPriorKnowledge(g.lesson.id);
   })();
@@ -421,7 +431,7 @@ export default function WorksheetScreen() {
     try {
       const grounding = wide
         ? WIDE_GROUNDING
-        : resolveGeneratorGrounding(topic.trim(), lang, { scope: { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id } });
+        : resolveGeneratorGrounding(topic.trim(), lang, { scope: kbScope, lessonId: pickedLesson.lessonId });
       const ownReq = buildWorksheetRequest({
         gradeName: lang === 'ar' ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
         subjectName: subjects[subjectIdx].name,
@@ -727,6 +737,7 @@ export default function WorksheetScreen() {
           gradeId={grades[gradeIdx].id}
           value={topic}
           onChange={text => { setTopic(text); setError(''); }}
+          onSelectionDetail={pickedLesson.onSelectionDetail}
           allowedKinds={['lesson', 'unit', 'semester', 'book']}
           onScopeChange={wideScope.setScopeSel}
           offlineWideScope
