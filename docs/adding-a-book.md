@@ -146,12 +146,23 @@ Only Grade 10 maths so far. Everything is in `scripts/extract_book_items.py`;
 read its header before adding to it.
 
 - Add a row to `TABLE`: the source, the book's unit and lesson, the item range,
-    a `family` (`system`, `derivative`, `derivative_at`, `mcq_pair` or
+    a `family` (`system`, `derivative`, `derivative_at`, `mcq_pair`, `reading` or
     `unit_open`) and **your own** Arabic `instruction_ar`. The book's scrambled instruction line is never
     parsed. A row must join to a curriculum lesson or the script stops.
 - A new kind of question needs a solver, a `MAX_EXP` entry and a test in
     `scripts/test_extract_book_items.py`. Reject on ambiguity with a reason; never
     choose a reading.
+- `reading` is a multiple-choice item whose exponents and fractions no rule can
+    recover (guide S1 p.47 items 3-5). You write its structure into `READINGS`
+    (stem and options, with `^`, brackets and `/` added) and name its `check`
+    (`points`, `root` or `box`). The reading is never trusted: `solve_reading`
+    refuses it unless it has exactly the page's characters (whitespace and
+    `^ ( ) * / ×` removed from both sides must be identical) with the page's own
+    brackets where the page has them, and exactly one option is correct under it.
+    It is `computed`, never `verified`, and a person compares it with the printed
+    page. Before adding one, extend `RivalReadings` in the test file: every other
+    placement of exponents that still leaves one correct option must leave the
+    same one, or the item is a guess about layout and stays quarantined.
 - `unit_open` is the open questions of a guide's end-of-unit test (kind
     `unit-test`, cited as the test, drawn wherever a short answer is wanted).
     Only guide S1 p.47 (items 6-11) has it. The page's text layer is not

@@ -187,7 +187,12 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   leaves an unmatched entry `computed` and listed in `report.json`
   (`unmatchedPrinted`), never tolerated into a match. Even then the item carries
   no `check` and no badge. A `unit-test` item cites as the unit test and is drawn
-  wherever a short answer is wanted. `SERVED_STATUSES` is the one place
+  wherever a short answer is wanted. Guide p.47 choices 3-5, whose exponents and
+  fractions the text layer flattens beyond any rule, are served `computed` from a
+  hand-written reading (`READINGS`) that is trusted for nothing: it must keep
+  exactly the page's characters and brackets and leave exactly one correct
+  option, or the item is quarantined. A reading is evidence about a layout, never
+  a key. `SERVED_STATUSES` is the one place
   that decides what a paper may draw. Only the API's evaluation generator uses
   book items: the mock path (live AI off), and the live model path only when
   `BOOK_ITEMS_LIVE=true` (off by default, read per request; production runs
