@@ -992,14 +992,18 @@ In `STATUS.md`, find the bullet beginning `- Photos are only downscaled on web. 
 ```
 - ~~Photos are only downscaled on web.~~ **Changed 2026-10-15:** on a phone the
   five photo pickers now ask for a file only and shrink one photo at a time to
-  1600px / JPEG 0.72 with `expo-image-manipulator` (spec
+  1600px (512px for avatars) / JPEG 0.72 with `expo-image-manipulator` (spec
   `docs/superpowers/specs/2026-10-15-native-photo-downscaling-design.md`). **Not
   verified on a device** — nothing in this repo has run it on a phone. Still true:
   the combined-size refusal reuses the single-photo code and wording
   (`image_too_large` → «الصورة كبيرة جدًا»). The device checks that remain are
-  listed under «Device acceptance» in the spec, and the first is EXIF-rotated
-  camera photos (the cap may land on the other axis, up to ~2133px, never
-  distorted).
+  listed under «On a device» in the spec's «Testing» section, and the first is
+  EXIF-rotated camera photos (the cap may land on the other axis, up to ~2133px,
+  never distorted). If the resize fails, the dimensions are unknown, or the photo
+  is already within the limit, the photo is sent as it is (not re-encoded) — a
+  failed resize logs `[photoEncode] native resize failed` and looks exactly like
+  the old full-size behaviour, so check the log, not the upload size, when asking
+  whether it ran.
 ```
 
 - [ ] **Step 2: Add the version entry**
