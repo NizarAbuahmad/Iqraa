@@ -35,6 +35,7 @@
           "id": "u5_l1",
           "order": 1,
           "title_ar": "كتابة المتباينات وتمثيلها",
+          "title_en": "Writing and Graphing Inequalities",
           "main_idea_ar": "أتعرَّفُ المتباينةَ، وأمثِّلُها على خطِّ الأعدادِ.",
           "periods": null,
           "objectives": [
@@ -50,6 +51,7 @@
           "id": "u5_l2",
           "order": 2,
           "title_ar": "حلّ المتباينات بالجمع والطرح",
+          "title_en": "Solving Inequalities by Addition and Subtraction",
           "main_idea_ar": "أحلُّ متبايناتٍ باستعمالِ خصائصِ الجمعِ أوِ الطرحِ، وأمثِّلُ الحلَّ على خطِّ الأعدادِ.",
           "periods": null,
           "objectives": [
@@ -61,6 +63,7 @@
           "id": "u5_l3",
           "order": 3,
           "title_ar": "حلّ المتباينات بالضرب والقسمة",
+          "title_en": "Solving Inequalities by Multiplication and Division",
           "main_idea_ar": "أحلُّ متبايناتٍ باستعمالِ خصائصِ الضربِ أوِ القسمةِ، وأمثِّلُ الحلَّ على خطِّ الأعدادِ.",
           "periods": null,
           "objectives": [
@@ -72,6 +75,7 @@
           "id": "u5_l4",
           "order": 4,
           "title_ar": "حلّ المتباينات متعددة الخطوات",
+          "title_en": "Solving Multi-Step Inequalities",
           "main_idea_ar": "أحلُّ متبايناتٍ باستعمالِ أكثرَ منْ خطوةٍ، وأمثِّلُ الحلَّ على خطِّ الأعدادِ.",
           "periods": null,
           "objectives": [
@@ -98,6 +102,7 @@
           "id": "u6_l1",
           "order": 1,
           "title_ar": "حلّ نظام من معادلتين خطّيّتين بيانيًّا",
+          "title_en": "Solving a System of Two Linear Equations by Graphing",
           "main_idea_ar": "أحلُّ نظامَ معادلاتٍ مُكوَّنًا مِنْ معادلتَينِ خطّيّتَينِ بيانيًّا.",
           "periods": null,
           "objectives": [
@@ -112,6 +117,7 @@
           "id": "u6_l2",
           "order": 2,
           "title_ar": "حلّ نظام من معادلتين خطّيّتين بالتعويض",
+          "title_en": "Solving a System of Two Linear Equations by Substitution",
           "main_idea_ar": "أحلُّ نظامَ معادلاتٍ مُكوَّنًا مِنْ معادلتَينِ خطّيّتَينِ بالتعويضِ.",
           "periods": null,
           "objectives": [
@@ -124,6 +130,7 @@
           "id": "u6_l3",
           "order": 3,
           "title_ar": "حلّ نظام من معادلتين خطّيّتين بالحذف",
+          "title_en": "Solving a System of Two Linear Equations by Elimination",
           "main_idea_ar": "أحلُّ نظامَ معادلاتٍ خطّيّةٍ مُكوَّنًا مِنْ معادلتَينِ بالحذفِ.",
           "periods": null,
           "objectives": [
@@ -151,6 +158,7 @@
           "id": "u7_l1",
           "order": 1,
           "title_ar": "إثبات توازي المستقيمات وتعامدها",
+          "title_en": "Proving Lines Parallel and Perpendicular",
           "main_idea_ar": "أُميِّزُ المستقيماتِ المتوازيةَ بناءً على علاقاتٍ بينَ أزواجٍ منَ الزوايا الناتجةِ عنْ مستقيمٍ قاطعٍ.",
           "periods": null,
           "objectives": [
@@ -164,6 +172,7 @@
           "id": "u7_l2",
           "order": 2,
           "title_ar": "متوازي الأضلاع",
+          "title_en": "Parallelograms",
           "main_idea_ar": "أتعرَّفُ خصائصَ أضلاعٍ وزوايا وأقطارِ متوازي الأضلاعِ.",
           "periods": null,
           "objectives": [
@@ -180,6 +189,7 @@
           "id": "u7_l3",
           "order": 3,
           "title_ar": "تمييز متوازي الأضلاع",
+          "title_en": "Identifying Parallelograms",
           "main_idea_ar": "أتعرَّفُ الشروطَ التي تُؤكِّدُ أنَّ شكلًا رباعيًّا متوازي أضلاعٍ.",
           "periods": null,
           "objectives": [
@@ -195,6 +205,7 @@
           "id": "u7_l4",
           "order": 4,
           "title_ar": "حالات خاصّة من متوازي الأضلاع",
+          "title_en": "Special Parallelograms",
           "main_idea_ar": "أُحدِّدُ خصائصَ كلٍّ مِنَ: المستطيلِ، والمَعينِ، والمربَّعِ. أُحدِّدُ ما إذا كانَ متوازي الأضلاعِ مستطيلًا أوْ مَعينًا أوْ مربَّعًا.",
           "periods": null,
           "objectives": [
@@ -210,6 +221,7 @@
           "id": "u7_l5",
           "order": 5,
           "title_ar": "تشابه المثلثات",
+          "title_en": "Similar Triangles",
           "main_idea_ar": "أُحدِّدُ المثلثاتِ المتشابهةَ، باستعمالِ حالاتِ التشابهِ AA وSSS وSAS.",
           "periods": null,
           "objectives": [
@@ -224,6 +236,7 @@
           "id": "u7_l6",
           "order": 6,
           "title_ar": "التمدّد",
+          "title_en": "Dilations",
           "main_idea_ar": "أرسمُ صورةً لمضلعٍ ناتجةً عنْ تمدُّدٍ في المستوى الإحداثيِّ.",
           "periods": null,
           "objectives": [
@@ -254,6 +267,7 @@
           "id": "u8_l1",
           "order": 1,
           "title_ar": "رسم الأشكال ثلاثيّة الأبعاد",
+          "title_en": "Drawing Three-Dimensional Shapes",
           "main_idea_ar": "أرسمُ أشكالًا ثلاثيةَ الأبعادِ باستعمالِ الرَّسمِ المتساوي ورسمِ المَساقطِ.",
           "periods": null,
           "objectives": [
@@ -267,6 +281,7 @@
           "id": "u8_l2",
           "order": 2,
           "title_ar": "المقاطع والمجسّمات الدّورانيّة",
+          "title_en": "Cross-Sections and Solids of Revolution",
           "main_idea_ar": "أُحدِّدُ الشكلَ الناتجَ مِنْ تقاطعِ المجسّمِ معَ مستوًى. أُحدِّدُ عددَ مستوياتِ التماثلِ للمجسّمِ. أتعرَّفُ المجسّماتِ الدَّوَرانيةَ.",
           "periods": null,
           "objectives": [
@@ -283,6 +298,7 @@
           "id": "u8_l3",
           "order": 3,
           "title_ar": "حجم الكرة ومساحة سطحها",
+          "title_en": "Volume and Surface Area of a Sphere",
           "main_idea_ar": "أجدُ مساحةَ سطحِ الكرةِ وحجمَها.",
           "periods": null,
           "objectives": [
@@ -310,6 +326,7 @@
           "id": "u9_l1",
           "order": 1,
           "title_ar": "الرُّبَيعيّات",
+          "title_en": "Quartiles",
           "main_idea_ar": "أتعرَّفُ المَدى الرُّبَيعيَّ وعلاقتَهُ بتشتُّتِ البياناتِ. أُمثِّلُ بياناتٍ بالصُّندوقِ ذي العارضتَينِ، وأُفسِّرُها.",
           "periods": null,
           "objectives": [
@@ -322,6 +339,7 @@
           "id": "u9_l2",
           "order": 2,
           "title_ar": "اختيار التمثيل الأنسب",
+          "title_en": "Choosing the Best Representation",
           "main_idea_ar": "أختارُ التمثيلَ الأنسبَ لبياناتٍ معطاةٍ. أكتبُ استدلالًا حولَ بياناتٍ ممثَّلةٍ.",
           "periods": null,
           "objectives": [
@@ -334,6 +352,7 @@
           "id": "u9_l3",
           "order": 3,
           "title_ar": "عدّ النَّواتج",
+          "title_en": "Counting Outcomes",
           "main_idea_ar": "أُحدِّدُ نواتجَ الفضاءِ العَيْنيِّ وعددَها.",
           "periods": null,
           "objectives": [
@@ -345,6 +364,7 @@
           "id": "u9_l4",
           "order": 4,
           "title_ar": "احتمال الحوادث المركَّبة",
+          "title_en": "Probability of Compound Events",
           "main_idea_ar": "أجدُ احتمالاتِ حوادثَ مركَّبةٍ.",
           "periods": null,
           "objectives": [
