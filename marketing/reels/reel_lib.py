@@ -351,10 +351,19 @@ def build(cfg):
     for r in readers.values():
         r.close()
     final = OUT / cfg["out"]
+    bed = OUT / "bed.wav"
+    if cfg.get("music") == "upbeat":
+        # Groove + accents that follow the picture: a whoosh into every scene cut and a pop on it, a riser into the
+        # end card. See music_upbeat.py. Default for new reels; the first twelve used the soft bed (make_music.py).
+        import music_upbeat
+        bed = OUT / f"_{cfg['name']}_music.wav"
+        music_upbeat.render(bed, total, hits=[sc["t0"] for sc in cfg["scenes"][1:]], end=t_end, dings=cfg.get("dings", ()))
     subprocess.run(
-        ["ffmpeg", "-v", "error", "-y", "-i", str(silent), "-i", str(OUT / "bed.wav"),
+        ["ffmpeg", "-v", "error", "-y", "-i", str(silent), "-i", str(bed),
          "-filter_complex", f"[1:a]volume=-1.5dB,afade=t=out:st={total - 1.4:.2f}:d=1.4[a]",
          "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-t", f"{total:.3f}",
          "-movflags", "+faststart", str(final)], check=True)
     silent.unlink()
+    if bed.name.startswith("_"):
+        bed.unlink()
     print("wrote", final, f"{total:.2f}s", "scene starts:", [round(s["t0"], 2) for s in cfg["scenes"]], "end at", round(t_end, 2))

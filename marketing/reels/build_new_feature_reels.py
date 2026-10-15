@@ -32,7 +32,7 @@ def starts(scenes):
     return out + [t]
 
 
-def reel10():
+def reel10(music="upbeat"):
     T = "r10_games"
     A = [6.287, 8.841, 11.383, 13.974, 16.525, 19.068, 21.643, 24.218]       # take time of each answer tap
     S2_SRC, S3_SRC, RATE = 3.5, 14.0, 1.8
@@ -52,7 +52,8 @@ def reel10():
         dict(png="r10_race", on=t[2], off=t[3], kind="head"),
         dict(png="r10_free", on=t[3], off=t[4], kind="head"),
     ]
-    return dict(name="reel10", take=T, theme="teal", end="end_t10", out="Iqrra_10_Games.mp4", end_dur=3.6,
+    return dict(name="reel10", take=T, theme="teal", end="end_t10", out="Iqrra_10_Games.mp4" if music != "upbeat" else "Iqrra_10_Games_upbeat.mp4",
+                music=music, dings=fills, end_dur=3.6,
                 scenes=sc, overlays=ov, tickers=[dict(n=8, y=1496, fills=fills, on=t[1], off=t[4])])
 
 

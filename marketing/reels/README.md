@@ -146,6 +146,14 @@ that log, so a highlight always sits where the click really landed. Cameras are 
 
 ## Music
 
-An original synthesised bed (`make_music.py`) — no third-party licence. The five stock tracks used by the
-earlier reel are not in the repo and `docs/marketing-plan.md` still lists "music licences" as unbought. To use a
-licensed track, replace `out/bed.wav` and rebuild.
+Two original synthesised beds — no third-party licence. Neither of the five stock tracks used by the earlier reel is in
+the repo, and `docs/marketing-plan.md` still lists "music licences" as unbought. To use a licensed track, replace the
+bed (`out/bed.wav`) and rebuild.
+
+- **Soft bed** — `make_music.py` (100 BPM ambient pad + plucks). Used by Reels 1–12 as shipped. Judged too flat.
+- **Upbeat** — `music_upbeat.py` (118 BPM, four-on-the-floor kick, claps, bouncing bass that ducks under the kick, plucked
+  stabs, a marimba hook, a sparkle arp from bar 5, a riser into the end card). **Default for new reels**: set
+  `music="upbeat"` in the reel's config. It also follows the picture: a whoosh into every scene cut and a pop on it, plus
+  `dings=[t, …]`, a rising-scale ding for each event (Reel 10: one per correct answer).
+  Sample: `out/Iqrra_10_Games_upbeat.mp4` (same picture as Reel 10, new music). Re-music an older reel by adding `music="upbeat"`
+  to its config and rebuilding.
