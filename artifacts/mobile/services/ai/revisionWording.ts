@@ -39,6 +39,70 @@ export function activityRevisionRewords(phrase: string, lang: 'ar' | 'en'): Rewo
       ];
 }
 
+/**
+ * The classroom templates' one-lesson sentences (`classroomActivityOnce` in
+ * generators.ts): the vocabulary bingo's clues, the unbanked relay's chain,
+ * the gallery walk's stations and the exit ticket's three questions. Each
+ * assumes a single concept or method («المفهوم الرئيسي لـ…», «أسلوب … الذي
+ * درسناه اليوم», «من وحدة …»).
+ */
+export function classroomRevisionRewords(phrase: string, lang: 'ar' | 'en'): Reword[] {
+  const p = phrase;
+  return lang === 'ar'
+    ? [
+        [`المصطلح 1: تعريف ${p}`, `المصطلح 1: مصطلح من ${p} وتعريفه`],
+        [`المصطلح 2: خاصية ${p}`, `المصطلح 2: خاصية من ${p}`],
+        [`المصطلح 3: تطبيق ${p}`, `المصطلح 3: تطبيق من ${p}`],
+        [`فكّر في تعريف ${p}`, `فكّر في تعريفات ${p}`],
+        [`من وحدة ${p}`, `من ${p}`],
+        [`خاصية: ${p} يُستخدم عندما…`, `خاصية: مفهوم من ${p} يُستخدم عندما…`],
+        [`ما الفرق بين المفهومين الرئيسيين في ${p}؟`, `ما الفرق بين مفهومين من وحدتين مختلفتين في ${p}؟`],
+        [`الفرق بين مفهومَي ${p}`, `الفرق بين مفهومين من ${p}`],
+        [`أي خاصية من خصائص ${p} تنطبق`, `أي خاصية مما راجعناه في ${p} تنطبق`],
+        [`طبّق ${p} على المعطيات التالية`, `طبّق قاعدة من ${p} على المعطيات التالية`],
+        [`القيمة الأولى (أ) من تطبيق ${p}`, `القيمة الأولى (أ) من تطبيق قاعدة من ${p}`],
+        [`الآن طبّق ${p} مرة أخرى مع (أ)`, `الآن طبّق قاعدة من وحدة أخرى في ${p} مع (أ)`],
+        [`طبّق خاصية ${p} الثانية مع (ب)`, `طبّق خاصية من ${p} مع (ب)`],
+        [`طبّق ${p} بالكامل لإيجاد الإجابة النهائية`, `اجمع ما طبّقته من ${p} لإيجاد الإجابة النهائية`],
+        [`اليوم طبّقتم ${p} في سلسلة متكاملة`, `اليوم راجعتم ${p} في سلسلة متكاملة`],
+        [`طبّق التعريف الأساسي لـ${p}`, `طبّق تعريفًا أساسيًا من ${p}`],
+        [`تطبيق مباشر للتعريف الأساسي لـ${p}`, `تطبيق مباشر لتعريف أساسي من ${p}`],
+        [`كيف يُستخدم ${p} لحل هذا الموقف الحياتي؟`, `كيف يُستخدم مفهوم من ${p} لحل هذا الموقف الحياتي؟`],
+        [`بين مفهومين رئيسيين في ${p}؟`, `بين مفهومين رئيسيين من وحدتين مختلفتين في ${p}؟`],
+        [`عرّف المفهوم الرئيسي لـ${p}.`, `اختر مفهومًا رئيسيًا من ${p} وعرّفه.`],
+        [`تعريف دقيق بكلمات الطالب لـ${p}`, `تعريف دقيق بكلمات الطالب لمفهوم من ${p}`],
+        [`طبّق ${p} على مثال من الكتاب المدرسي`, `طبّق قاعدة من ${p} على مثال من الكتاب المدرسي`],
+        [`متى لا ينجح أسلوب ${p} الذي درسناه اليوم؟`, `متى لا تنجح قاعدة من ${p} راجعناها اليوم؟`],
+        [`اذكر موقفًا حياتيًا يستخدم ${p}.`, `اذكر موقفًا حياتيًا يستخدم مفهومًا من ${p}.`],
+      ]
+    : [
+        [`Term 1: definition of ${p}`, `Term 1: a term from ${p} and its definition`],
+        [`Term 2: property of ${p}`, `Term 2: a property from ${p}`],
+        [`Term 3: application of ${p}`, `Term 3: an application from ${p}`],
+        [`Think about the definition of ${p}`, `Think about the definitions in ${p}`],
+        [`from the ${p} unit`, `from ${p}`],
+        [`Property: ${p} is used when…`, `Property: a concept from ${p} is used when…`],
+        [`What is the main difference between the two key concepts in ${p}?`, `What is the difference between two key concepts from different units of ${p}?`],
+        [`The distinction between the two concepts in ${p}`, `The distinction between two concepts from ${p}`],
+        [`Which property of ${p} applies`, `Which property from ${p} applies`],
+        [`Apply ${p} to the given data`, `Apply a rule from ${p} to the given data`],
+        [`First value (a) from applying ${p}`, `First value (a) from applying a rule from ${p}`],
+        [`Now apply ${p} again with (a)`, `Now apply a rule from another unit of ${p} with (a)`],
+        [`Apply the second property of ${p} with (b)`, `Apply a property from ${p} with (b)`],
+        [`Apply the full ${p} process to find the final answer`, `Combine what you applied from ${p} to find the final answer`],
+        [`Today you applied ${p} across a full connected chain`, `Today you revised ${p} across a full connected chain`],
+        [`Apply the core definition of ${p}`, `Apply a core definition from ${p}`],
+        [`Direct application of the core ${p} definition`, `Direct application of a core definition from ${p}`],
+        [`How does ${p} apply to this real-world scenario?`, `How does a concept from ${p} apply to this real-world scenario?`],
+        [`between the two key concepts in ${p}?`, `between two key concepts from different units of ${p}?`],
+        [`Define the main concept of ${p}.`, `Pick one key concept from ${p} and define it.`],
+        [`An accurate student-worded definition of ${p}`, `An accurate student-worded definition of a concept from ${p}`],
+        [`Apply ${p} to an example from the textbook`, `Apply a rule from ${p} to an example from the textbook`],
+        [`When does the ${p} method we learned today NOT work?`, `When does a rule from ${p} that we revised today NOT work?`],
+        [`Name a real-world situation that uses ${p}.`, `Name a real-world situation that uses a concept from ${p}.`],
+      ];
+}
+
 /** Every string inside `value` with each `from` replaced by its `to`, in table order. Other values are copied as they are. */
 export function reviseWording<T>(value: T, rewords: readonly Reword[]): T {
   const fix = (s: string) => rewords.reduce((acc, [from, to]) => acc.split(from).join(to), s);

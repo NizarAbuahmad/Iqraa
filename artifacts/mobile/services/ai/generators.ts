@@ -41,7 +41,7 @@ import {
   drawAcrossUnits, revisionActivityLesson, revisionLessonsByUnit,
   type RevisionDrawLesson, type RevisionLessonGroup,
 } from './activityRevision.ts';
-import { activityRevisionRewords, reviseWording } from './revisionWording.ts';
+import { activityRevisionRewords, classroomRevisionRewords, reviseWording } from './revisionWording.ts';
 import { revisionPhrase, scopeFromKey } from '../revisionScope.ts';
 
 /**
@@ -1901,21 +1901,39 @@ export class MockAIService extends AIService {
   }
 
   private async classroomActivityOnce(req: ClassroomActivityRequest): Promise<ClassroomActivity> {
+    const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
+    // A unit, a semester or the whole book is a revision (piece-3 spec §3). The
+    // templates below take the scope's phrase and its units' composite lesson,
+    // never the picker's label, and the sentences in them that claim one lesson
+    // are reworded afterwards. A lesson's activity is returned untouched.
+    const rev = revisionSource(req, lang);
+    const out = await this.classroomActivityBody(req, rev);
+    return rev ? reviseWording(out, classroomRevisionRewords(rev.phrase, lang)) : out;
+  }
+
+  private async classroomActivityBody(req: ClassroomActivityRequest, rev: RevisionSource | null): Promise<ClassroomActivity> {
     beginMathPracticeSession();
     const isAr = req.language === 'arabic';
-    const topic = req.topic;
-    const kb = groundedKb(topic, isAr ? 'ar' : 'en', req.lessonId);
+    const topic = rev ? rev.phrase : req.topic;
+    const kb = rev
+      ? revisionActivityLesson(rev.groups, rev.scopeKey, { title: rev.phrases })
+      : groundedKb(topic, isAr ? 'ar' : 'en', req.lessonId);
     const dur = req.duration ?? 20;
     const slideDuration = Math.round((dur * 60) / 5);
     const actType = req.activityType ?? 'escape-challenge';
+    // A revision's composite lesson sits in a real unit of the scope's book, so
+    // these read the scope's subject, not the screen's subject name.
     const math = isMathContext(topic, kb, req.subject);
     const chem = !math && isChemContext(topic, kb, req.subject);
     const batch = (n: number) =>
-      math
-        ? takeConcreteMathBatch(n, topic, kb, isAr ? 'ar' : 'en', 'medium')
-        : chem
-          ? takeConcreteChemBatch(n, topic, kb, isAr ? 'ar' : 'en', 'medium')
-          : [];
+      rev
+        // One item per unit in turn, from the units' banked lessons.
+        ? revisionPractice(rev, n, 0, isAr ? 'ar' : 'en', req.subject)
+        : math
+          ? takeConcreteMathBatch(n, topic, kb, isAr ? 'ar' : 'en', 'medium')
+          : chem
+            ? takeConcreteChemBatch(n, topic, kb, isAr ? 'ar' : 'en', 'medium')
+            : [];
     const bingoItems = actType === 'bingo' ? batch(8) : [];
     const relayItems = actType === 'relay' ? batch(4) : [];
 
@@ -1933,7 +1951,13 @@ export class MockAIService extends AIService {
       // bad caller cannot drain the concrete bank in one call.
       const wanted = Math.max(1, Math.min(8, Math.floor(req.numQuestions ?? 4) || 4));
       const mcqs: { text: string; options: string[]; answer: string }[] = [];
-      if (math || chem) {
+      if (rev) {
+        // A revision asks one question per unit in turn, each from its own lesson's bank.
+        const drawn = revisionPractice(rev, wanted, 0, isAr ? 'ar' : 'en', req.subject, {
+          type: 'multiple_choice', tier: () => tier, points: 0,
+        });
+        for (const q of drawn) if (q.options?.length) mcqs.push({ text: q.text, options: q.options, answer: q.answer });
+      } else if (math || chem) {
         for (let i = 0; i < wanted; i++) {
           const q = math
             ? takeConcreteMath('multiple_choice', topic, kb, tier, isAr ? 'ar' : 'en', 0)
