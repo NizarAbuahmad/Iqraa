@@ -1295,9 +1295,13 @@ both; `pnpm run typecheck` clean.
   EXIF-rotated camera photos (the cap may land on the other axis, up to ~2133px,
   never distorted). If the resize fails, the dimensions are unknown, or the photo
   is already within the limit, the photo is sent as it is (not re-encoded) — a
-  failed resize logs `[photoEncode] native resize failed` and looks exactly like
-  the old full-size behaviour, so check the log, not the upload size, when asking
-  whether it ran.
+  failed resize logs `[photoEncode] native resize failed` and sends the original,
+  full size, at the camera's quality (the picker now runs at quality 1, so roughly
+  twice the bytes of the old quality-0.6 pick — closer to the 8,000,000-character
+  per-photo ceiling; the server's `image_too_large` names it), so check the log,
+  not the upload size, when asking whether it ran. The class-scan screen shows no
+  busy indicator during the resizes (`reading` is set after the picker returns);
+  a busy state before the picker opens is the follow-up.
 
 ## Row-level security is built and switched off, 2026-10-13
 

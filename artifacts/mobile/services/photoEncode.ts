@@ -9,8 +9,9 @@
  *
  * On web the picker hands over base64 and a canvas shrinks it. On a phone the
  * picker hands over only a file `uri`, one photo is shrunk natively, and only
- * the *shrunk* JPEG is ever turned into a string — the full-resolution photo is
- * never held in JavaScript, which is what 40 class-scan photos need.
+ * the *shrunk* JPEG is ever turned into a string — on the happy path the
+ * full-resolution photo is never held in JavaScript, which is what 40
+ * class-scan photos need.
  */
 import { MAX_SCAN_EDGE, resizeArg, type ResizeArg } from './imageFit.ts';
 
@@ -40,9 +41,10 @@ const dataUrl = (mime: string, base64: string) => `data:${mime};base64,${base64}
  * One photo as a data URL, or `null` when it cannot be read at all (every
  * caller already treats that like a cancelled pick).
  *
- * A failed resize falls back to the original rather than losing the photo —
- * that is today's behaviour on a phone, so it is never worse than before, and
- * the server's size refusal then names the problem.
+ * A failed resize falls back to the original rather than losing the photo: the
+ * original, full size, at the camera's quality (the picker now runs at quality
+ * 1, so that is larger than the old re-encoded pick). The server's size refusal
+ * then names the problem.
  */
 export async function encodePickedPhoto(
   asset: PickedPhoto,

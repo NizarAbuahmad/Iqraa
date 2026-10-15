@@ -60,7 +60,7 @@ native:  picker(uri only)    ─▶ resize to ≤1600px, JPEG 0.72 ─▶ base64
 | Concurrency | Strictly sequential. The point is bounding peak memory to one photo; speed is secondary |
 | Size and quality | Same constants as web — `MAX_SCAN_EDGE` 1600, JPEG 0.72 — so a photo is the same size whichever platform took it. Tuning waits for a real run (see «Open for the real run») |
 | Which call sites | All five, through one shared helper (recommended — see decision 3). Each already says in its own comment that it downscales, and they share the defect. The class scan is the reason for the work, not the only beneficiary |
-| If the resize fails | Fall back to reading the **original** file, un-shrunk (today's behaviour on native — no worse than now). The server's size refusal then names the problem. If even the read fails the helper returns `null`, which every caller already treats as «cancelled» |
+| If the resize fails | Fall back to reading the **original** file: the original, full size, at the camera's quality. The native picker now runs at quality 1, so this is roughly twice the bytes of the old quality-0.6 re-encode and closer to the 8,000,000-character per-photo ceiling than before. The server's `image_too_large` refusal then names the problem. If even the read fails the helper returns `null`, which every caller already treats as «cancelled» |
 | A photo already within the limit | Read as is, no re-encode (the same rule web has: "re-encoding would only lose detail") |
 
 ## Design
@@ -109,12 +109,17 @@ thing to look at on a device.
 Native call shape (SDK 54, from the package's own type declarations):
 
 ```ts
-const ref = await ImageManipulator.manipulate(uri).resize(arg).renderAsync();
+const context = ImageManipulator.manipulate(uri);
 try {
-  const out = await ref.saveAsync({ format: SaveFormat.JPEG, compress: 0.72, base64: true });
-  return out.base64;
+  const ref = await context.resize(arg).renderAsync();
+  try {
+    const out = await ref.saveAsync({ format: SaveFormat.JPEG, compress: 0.72, base64: true });
+    return out.base64;
+  } finally {
+    ref.release();
+  }
 } finally {
-  ref.release();   // a SharedRef; hold nothing between photos
+  context.release();   // the context holds the bitmap; the ref shares it
 }
 ```
 
@@ -125,7 +130,7 @@ try {
 
 | Failure | Result |
 | --- | --- |
-| `nativeResize` throws (decode error, out of memory, module missing) | read the original via `readAsBase64`; build the data URL from it |
+| `nativeResize` throws (decode error, out of memory, module missing) | read the original via `readAsBase64`; build the data URL from it — the original, full size, at the camera's quality (larger than the old quality-0.6 pick) |
 | `readAsBase64` also throws | `null` for that photo; multi-photo helpers skip it (as they already skip an asset with no base64) |
 | User cancels, or no permission | unchanged — empty / `null` |
 | A photo still too large after shrinking | unchanged — the server answers `image_too_large` and the screen shows its existing message; shrinking only makes this rare, it does not remove the server's limits |
@@ -138,11 +143,15 @@ wording stays a known limit rather than being fixed here.
 
 ### UX
 
-A forty-photo pick now does forty native resizes before the screen has
-anything to show. The class-scan screen already has a `reading` state with a
-busy indicator while photos are picked (`scan-class.tsx`); no new UI. How long
-forty take on a mid-range Android is unmeasured — if it is more than a few
-seconds, a progress count is the follow-up, not part of this spec.
+A forty-photo pick now does up to forty native resizes before the screen has
+anything to show. The class-scan screen shows **no** busy indicator during
+them: `reading` is set only after `pickMarkSheetPhotos` returns (see the
+screen's own comment in `scan-class.tsx`). For that time the button looks idle,
+and a second tap is swallowed by `pickingRef`. This is not a regression — the
+old Android picker at quality 0.6 also re-encoded every photo at full size
+before returning. Setting a busy state before the picker opens, as
+`app/evaluations/new.tsx` does, is the follow-up and stays out of this spec.
+How long forty take on a mid-range Android is unmeasured.
 
 ## Native surface and rollout — the part that can break installed apps
 

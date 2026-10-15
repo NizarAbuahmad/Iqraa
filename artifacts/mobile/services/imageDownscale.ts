@@ -15,7 +15,9 @@
  * shrinks it (`downscaleImage`). On a phone the picker is asked for a file `uri`
  * only — no base64, no picker-side compression — and `expo-image-manipulator`
  * shrinks one photo at a time, so the full-resolution photo is never a string in
- * JavaScript. Both end as a JPEG at quality `SHRUNK_JPEG_QUALITY`. The decisions
+ * JavaScript. A photo that needed shrinking ends as a JPEG at quality
+ * `SHRUNK_JPEG_QUALITY`; one already within the limit is passed through in its
+ * own format, not re-encoded. The decisions
  * (which path, the fallback, one at a time) are in `photoEncode.ts`, which
  * tests can load; this file only supplies the platform calls.
  *
@@ -103,22 +105,40 @@ const photoDeps: PhotoDeps = {
     try {
       // Lazy: the web bundle and the node tests must never load a native module.
       const { ImageManipulator, SaveFormat } = await import('expo-image-manipulator');
-      const ref = await ImageManipulator.manipulate(uri).resize(arg).renderAsync();
+      // Two native objects, and BOTH must be released. The context holds the
+      // rendered bitmap as its last task and `renderAsync()` returns a ref to
+      // that same bitmap, so releasing only the ref frees nothing while the
+      // context lives. Hold nothing between photos. A release that throws is
+      // swallowed: a failed release must never turn a good shrunk photo into
+      // the full-size fallback.
+      const context = ImageManipulator.manipulate(uri);
       try {
-        const out = await ref.saveAsync({
-          format: SaveFormat.JPEG,
-          compress: SHRUNK_JPEG_QUALITY,
-          base64: true,
-        });
-        if (!out.base64) throw new Error('the resize produced no data');
-        return out.base64;
+        const ref = await context.resize(arg).renderAsync();
+        try {
+          const out = await ref.saveAsync({
+            format: SaveFormat.JPEG,
+            compress: SHRUNK_JPEG_QUALITY,
+            base64: true,
+          });
+          if (!out.base64) throw new Error('the resize produced no data');
+          return out.base64;
+        } finally {
+          try {
+            ref.release();
+          } catch {
+            /* nothing to free */
+          }
+        }
       } finally {
-        // A native image reference: hold nothing between photos.
-        ref.release();
+        try {
+          context.release();
+        } catch {
+          /* nothing to free */
+        }
       }
     } catch (error) {
-      // `photoEncode` falls back to the original photo, which is today's
-      // full-size behaviour. If the resize fails on every phone, that fallback
+      // `photoEncode` falls back to the original photo, full size, at the
+      // camera's own quality. If the resize fails on every phone, that fallback
       // would hide it completely — so leave a trace, then let it fall back.
       console.warn('[photoEncode] native resize failed, using the original photo:', error);
       throw error;

@@ -45,11 +45,31 @@ for (const [name, source] of Object.entries(FILES)) {
       assert.match(source, /pickedPhotos?ToDataUrls?\(/);
     });
 
+    it('never runs photos together with Promise.all', () => {
+      // Sequential on purpose: Promise.all(assets.map(pickedPhotoToDataUrl))
+      // would decode several full-size photos at once.
+      assert.doesNotMatch(source, /Promise\.all/);
+    });
+
     it('gives every base64 pick the native-safe quality', () => {
       assert.ok(
         count(source, /photoPickQuality\(/g) >= count(source, /base64:\s*PICK_BASE64/g),
         'each pick that sets base64 must also set quality through photoPickQuality()',
       );
+    });
+  });
+}
+
+// The two helpers that take several photos must go through the sequential
+// pickedPhotosToDataUrls (plural). `pickedPhotoToDataUrl(` singular would also
+// satisfy the looser pattern above, inside a Promise.all(...map(...)).
+for (const [name, source] of Object.entries({
+  'documents/pick.ts': FILES['documents/pick.ts (pickMarkSheetPhoto, pickMarkSheetPhotos)'],
+  'lessonMediaPick.ts': FILES['lessonMediaPick.ts (pickLessonPhotos)'],
+})) {
+  describe(`${name} (multi-photo)`, () => {
+    it('hands the whole batch to the sequential pickedPhotosToDataUrls', () => {
+      assert.match(source, /pickedPhotosToDataUrls\(/);
     });
   });
 }
