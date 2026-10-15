@@ -74,6 +74,7 @@
           "id": "u1_l3",
           "order": 3,
           "title_ar": "تبسيط المقادير الأسية",
+          "title_en": "Simplifying Exponential Expressions",
           "periods": 3,
           "objectives": [
             "تعرُّف الأسس النسبية وخصائصها",
@@ -87,6 +88,7 @@
           "id": "u1_l4",
           "order": 4,
           "title_ar": "حل المعادلة الأسية",
+          "title_en": "Solving Exponential Equations",
           "periods": 3,
           "objectives": [
             "حل معادلات أسية",
@@ -331,6 +333,7 @@
           "id": "u4_l3",
           "order": 3,
           "title_ar": "قانون جيب التمام",
+          "title_en": "The Law of Cosines",
           "periods": 3,
           "objectives": [
             "استنتاج قانون جيب التمام",
@@ -346,6 +349,7 @@
           "id": "u4_l4",
           "order": 4,
           "title_ar": "استعمال جيب الزاوية لإيجاد مساحة المثلث",
+          "title_en": "Using the Sine of an Angle to Find the Area of a Triangle",
           "periods": 3,
           "objectives": [
             "إيجاد مساحة مثلث عُلِم منه طولا ضلعين، وقياس زاوية محصورة بينهما",

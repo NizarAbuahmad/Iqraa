@@ -62,6 +62,8 @@ export type NccdLesson = {
   id: string;
   order: number;
   title_ar: string;
+  /** English title, when written; absent lessons fall back to `title_ar`. */
+  title_en?: string;
   periods: number | null;
   objectives: string[];
   vocabulary: string[];
@@ -137,7 +139,7 @@ export function buildNccdSem2Catalog(): { units: NccdKbUnit[]; lessons: NccdKbLe
         order: lesson.order,
         titleAr: lesson.title_ar,
         // JSON has no per-lesson English title — keep Arabic for EN UI too.
-        titleEn: lesson.title_ar,
+        titleEn: lesson.title_en ?? lesson.title_ar,
         summaryAr: objectives.length
           ? objectives.join('؛ ')
           : `درس «${lesson.title_ar}» من وحدة «${u.title_ar}».`,

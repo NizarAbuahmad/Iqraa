@@ -406,15 +406,15 @@ an announcement by default» below.
   side-by-side sheet (variant 0 against variant 1, per style and kind) was
   generated from `buildLessonStyleBlueprint` for that read, one per language; it
   is not kept in the repo, so it cannot go stale. **Known data gap found while
-  testing:** the Grade 10 maths Semester 1 lab lesson (`kbl-math-s1-nccd-u1_lab`)
-  had an Arabic `titleEn`; it now has a real one (`title_en` in
-  `iqra_curriculum_g10_math_sem1.json`, used by `buildNccdSem1Catalog`). **The
-  cause is wider and is not fixed:** the maths catalogs for Grades 7–10 have no
-  English lesson titles and copy `title_ar` into `titleEn` (122 more lessons,
-  measured 2026-10-15), so an English plan for any of them carries an Arabic
-  title. Fix it per lesson by adding `title_en` to its JSON row. (Grade 1 Arabic
-  lessons also match a naive "Arabic in `titleEn`" check, legitimately — their
-  English titles quote the letter.) Adding a third wording means one more builder
+  testing, since closed (2026-10-15):** English plans for Grade 7–10 maths
+  lessons carried an Arabic title, because those catalogs have no English lesson
+  titles and each builder copied `title_ar` into `titleEn`. 123 lessons now have
+  `title_en` in their `iqra_curriculum_g{7,8,9,10}_math_sem{1,2}.json` row, used
+  by the builder (`title_en ?? title_ar`); `mathLessonTitlesEn.test.ts` fails on
+  any Grade 7–10 maths lesson whose English title is empty, copied, or Arabic.
+  **Not checked:** the English wording. It was written without the Ministry's
+  English edition at hand and needs a teacher's read. (Grade 1 Arabic lessons
+  quote the letter in their English titles; that is legitimate.) Adding a third wording means one more builder
   per blueprint, per language. Not looked at in a browser.
 - **"No question bank" after a failed live call now says so, with the reason**
   (2026-10-11). With live AI on, a failed call falls back to the offline
