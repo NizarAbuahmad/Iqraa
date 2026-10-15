@@ -21,6 +21,9 @@ export interface TestDb {
   drop(): Promise<void>;
 }
 
+/** Arbitrary constant; any process that takes it waits for the one migrating. */
+const MIGRATE_LOCK = 7_301_123;
+
 async function withAdmin<T>(admin: URL, fn: (pool: Pool) => Promise<T>): Promise<T> {
   const pool = new pg.Pool({ connectionString: admin.toString(), max: 1 });
   try {
@@ -41,19 +44,32 @@ export async function setupTestDb(adminUrlRaw: string | undefined = process.env.
   const name = newTestDbName();
   if (!isTestDbName(name)) throw new Error(`generated an invalid test database name: ${name}`);
 
-  // The name is generated and validated above, so interpolating it is safe.
-  await withAdmin(admin, p => p.query(`CREATE DATABASE ${name}`));
   const url = urlForDatabase(admin, name);
 
-  // --from-env is mandatory: without it the script deletes DATABASE_URL and
-  // reads the repo-root .env, which could point somewhere that matters.
-  const res = spawnSync(process.execPath, [migrateScript, "--from-env"], {
-    env: { ...process.env, DATABASE_URL: url },
-    encoding: "utf8",
+  // One database is created and migrated at a time, across every test file (they run as
+  // separate processes against one server). Migration 0008 creates the cluster-wide role
+  // `iqraa_app` with an "IF NOT EXISTS" check that two concurrent migrations both pass —
+  // the second CREATE ROLE then fails — and it grants memberships and defaults that are
+  // also cluster-wide. An advisory lock taken on the admin database serialises them.
+  const failed = await withAdmin(admin, async p => {
+    await p.query("SELECT pg_advisory_lock($1)", [MIGRATE_LOCK]);
+    try {
+      // The name is generated and validated above, so interpolating it is safe.
+      await p.query(`CREATE DATABASE ${name}`);
+      // --from-env is mandatory: without it the script deletes DATABASE_URL and
+      // reads the repo-root .env, which could point somewhere that matters.
+      const res = spawnSync(process.execPath, [migrateScript, "--from-env"], {
+        env: { ...process.env, DATABASE_URL: url },
+        encoding: "utf8",
+      });
+      return res.status === 0 ? null : `migrations failed (exit ${res.status}):\n${res.stdout}\n${res.stderr}`;
+    } finally {
+      await p.query("SELECT pg_advisory_unlock($1)", [MIGRATE_LOCK]);
+    }
   });
-  if (res.status !== 0) {
+  if (failed) {
     await dropDatabase(admin, name);
-    throw new Error(`migrations failed (exit ${res.status}):\n${res.stdout}\n${res.stderr}`);
+    throw new Error(failed);
   }
 
   const pool = new pg.Pool({ connectionString: url, max: 4 });
