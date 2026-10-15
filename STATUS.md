@@ -5594,6 +5594,19 @@ lessons and 458 words across the eight G1–4 books.
   survival through a broken streak, and every badge threshold, has unit
   coverage in `englishHubGames.test.ts`. Speaking's actual recording still
   needs a real device (see above); nothing else in the hub has that gap.
+- **A teacher's two notes, 2026-10-15** (Grade 1, unit 8 «I like cakes»):
+  *the book prints every word under its picture*, so Flashcards and Speaking now
+  show the word's picture above it (`wordPicture` in `games.ts` — the same
+  curated emoji as Match the picture, so a word without one, like «lemonade»,
+  still shows text alone; it is not the book's art). And *"apples" stressed its
+  first letter, though it is a short vowel*: the recording hits the /æ/ and
+  holds it apart from «pples» (visible in its loudness envelope: a ~120 ms burst,
+  a ~60 ms gap, then the rest). The voicing prompt in
+  `generate-english-audio.ts` now forbids that, **but no word has been re-voiced
+  yet** — this session had no OpenAI/R2 keys. Until someone runs
+  `pnpm --filter @workspace/curriculum run english-audio -- --only apples,apple`
+  (and listens), the old recording plays. Other vowel-first G1–4 words were not
+  heard by a person; `eggs` and `elephant` are the next to check.
 - **Ideas looked at and not taken:** funenglishgames.com was reviewed as a
   source of game ideas/materials on 2026-09-26. Its games don't run (Flash-era,
   ad frames only), it states no reuse licence, and it's ad- and
