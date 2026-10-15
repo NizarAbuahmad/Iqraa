@@ -366,9 +366,9 @@ an announcement by default» below.
   «التوزيع الإلكتروني والجدول الدوري» stays where it was. Routing of all 25
   chemistry lessons was compared before and after with the app's own lesson text:
   only the two Grade 10 periodic-table lessons gained items, none changed family.
-  **Found while measuring, not fixed:** the Grade 9 lesson «مكوِّناتُ الذرَّةِ»
-  routes to `redox`, not `atom_basics`. The other 13 families followed the same day
-  (next entry).
+  **Found while measuring:** the Grade 9 lesson «مكوِّناتُ الذرَّةِ» routed to
+  `redox`, not `atom_basics` (fixed the same day, see the entry after next). The other
+  13 families followed the same day (next entry).
 - **All 14 chemistry families now hold 15 or more items (2026-10-15).** The 13 that
   were still 4–7 each got 128 more (easy ≥5, medium ≥6, hard ≥4 per family:
   atom_basics, atomic_structure, electron_config, bonding, formulas, equations, mole,
@@ -386,6 +386,24 @@ an announcement by default» below.
   teaches, the Arabic wording, or which distractors a student would really pick — no
   chemistry teacher has read any of it, and none of it has been seen in a browser or
   on a device.
+- **Four chemistry lessons were routed to the wrong family; fixed (2026-10-15).**
+  `detectChemFamily` reads the lesson's title *and* objectives and key concepts, so a
+  neighbouring topic's word in the objectives could win — and the title-only test cases
+  never saw it (same blind spot as the mole lesson's «حسابات كيميائية» bug). Found by
+  comparing all 25 chemistry lessons with the app's own lesson text (`lessonTextBlob`):
+  «مكوِّناتُ الذرَّةِ» (Grade 9) went to `redox` because its objectives mention
+  electrolysis and gas discharge — now a narrow rule on its name sits ahead of redox;
+  «التأكسد والاختزال والخلايا الجلفانية» (Grade 9) went to `thermochem` because
+  `طاقة.*تفاعل` spanned two sentences — now bounded to one; «تغيرات الطاقة في التفاعلات
+  الكيميائية» (Grade 10) went to `mole` because the substring `المول` matched
+  «الطاقة **المول**ية» — now the whole word (or «المولات»); «الطاقة الممتصة والطاقة
+  المنبعثة من المادة» (Grade 10) fell to `general_chem` — calorimetry words
+  (السعة الحرارية، الحرارة النوعية، المسعر) now route it to `thermochem`. Compared before
+  and after: only those four changed, the other 21 are identical. **Not checked:** the
+  heat-capacity lesson now gets thermochemistry questions, of which only two items
+  (`q = m·c·ΔT`) fit it closely — it has no bank of its own, so a long quiz there is
+  mostly enthalpy and exo/endothermic questions. Typed topics that are not catalogue
+  lessons were not re-measured beyond the title cases in `chemistry.test.ts`.
 - **Quiz «أعد التجهيز» now changes the questions, and says when it cannot**
   (2026-10-13). The offline regenerate only checked that the whole quiz JSON
   differed from the last one, so the same stems in another order — or with the
