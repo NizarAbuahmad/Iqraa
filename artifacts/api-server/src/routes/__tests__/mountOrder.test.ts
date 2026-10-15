@@ -84,6 +84,26 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(res.status, 200);
   });
 
+  it("guards the student lesson-explanation routes and the approval route", async () => {
+    // No token: refused before any database access (DATABASE_URL is a dead
+    // address here), so these prove the guards are mounted, not that a query
+    // works. Role refusal (403) is requireRole's own and is exercised by the
+    // existing /student routes.
+    const read = await fetch(`${base}/student/lesson-explanation/kbl-x`);
+    assert.equal(read.status, 401);
+    const report = await fetch(
+      `${base}/student/lesson-explanation/00000000-0000-4000-8000-000000000000/report`,
+      { method: "POST" },
+    );
+    assert.equal(report.status, 401);
+    const approve = await fetch(`${base}/moderation/lesson-explanations/approve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ variantIds: [] }),
+    });
+    assert.equal(approve.status, 401);
+  });
+
   it("keeps the bank catalog public, and free of what it cannot serve", async () => {
     // Same reasoning as curriculum: titles and provenance, not documents.
     const res = await fetch(`${base}/bank/items?kind=exam`);
@@ -285,18 +305,6 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     const id = "00000000-0000-0000-0000-000000000000";
     const res = await fetch(`${base}/classes/${id}/students/${id}/record`);
     assert.equal(res.status, 401, "a student's record must require a token");
-  });
-
-  it("mounts the group-check audience inside the evaluations guard", async () => {
-    // A student list on an exam decides who may sit it; it must never be
-    // writable without a teacher token.
-    const id = "00000000-0000-0000-0000-000000000000";
-    const res = await fetch(`${base}/evaluations/${id}/audience`, {
-      method: "PUT",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ studentIds: [id] }),
-    });
-    assert.equal(res.status, 401, "setting who may sit an exam must require a token");
   });
 
   it("mounts support groups inside the roster's guarded prefix", async () => {

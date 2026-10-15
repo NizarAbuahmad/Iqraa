@@ -28,7 +28,7 @@ import {
   chatMessages,
   chatReports,
   chatThreads,
-  db,
+  systemDb as db, // Acts without (or beyond) the caller's identity — see lib/db/src/scopedPool.ts.
   users,
   type ArtifactReportStatus,
   type ChatReportStatus,
@@ -38,6 +38,8 @@ import { alias } from "drizzle-orm/pg-core";
 import { authMiddleware, requireRole, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
 import { retireVariant } from "../lib/artifactCache.ts";
+import { APPROVE_MAX, parseApproveBody } from "../lib/lessonExplanation.ts";
+import { markApprovedForStudents } from "../lib/lessonExplanationStore.ts";
 
 const router = Router();
 const ADMIN_ROLES = ["school_admin", "system_admin"];
@@ -410,6 +412,44 @@ router.post(
     } catch (err) {
       logger.error({ err }, "resolve artifact report failed");
       res.status(500).json({ error: "Failed to resolve report" });
+    }
+  },
+);
+
+/**
+ * POST /moderation/lesson-explanations/approve
+ *
+ * Body: { variantIds: string[] }  (1..200 uuids)
+ *
+ * Marks stored `lesson-teaching` rows as fit for students
+ * (`ai_artifacts.student_approved_at`). `system_admin` only — the same role
+ * that resolves artifact reports — because what this releases is shown to
+ * minors. There is no revoke: retiring a row (an approved student report)
+ * already stops it being served.
+ *
+ * The caller is `scripts/pregenerate.ts --approve=<review file>`, run after a
+ * person has read the file and deleted the entries they reject.
+ */
+router.post(
+  "/moderation/lesson-explanations/approve",
+  authMiddleware,
+  requireRole(...ARTIFACT_ADMIN_ROLES),
+  async (req: AuthenticatedRequest, res) => {
+    const ids = parseApproveBody(req.body);
+    if (!ids) {
+      res.status(400).json({ error: `variantIds must be 1-${APPROVE_MAX} uuids` });
+      return;
+    }
+    try {
+      const approved = await markApprovedForStudents(ids);
+      logger.info(
+        { moderatorId: req.user!.id, requested: ids.length, approved },
+        "lesson explanations approved for students",
+      );
+      res.json({ requested: ids.length, approved });
+    } catch (err) {
+      logger.error({ err }, "approve lesson explanations failed");
+      res.status(500).json({ error: "Failed to approve" });
     }
   },
 );

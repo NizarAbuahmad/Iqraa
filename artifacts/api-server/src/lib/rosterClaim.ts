@@ -22,7 +22,8 @@
  * Does not insert `rosterLinks` itself: the two call sites differ in whether
  * the user row already exists, so inserting is left to them.
  */
-import { db } from "@workspace/db";
+// Acts without (or beyond) the caller's identity — see lib/db/src/scopedPool.ts.
+import { systemDb as db } from "@workspace/db";
 import { students, classGroups, classMemberships, rosterLinks } from "@workspace/db";
 import { and, eq, isNull, ne } from "drizzle-orm";
 import { normalizeShareCode } from "../modules/assessment/studentView.ts";

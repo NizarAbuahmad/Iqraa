@@ -222,3 +222,30 @@ describe("generationKeys — what the prompt reads, the key reads", () => {
     assert.notEqual(withFigs.strictKey, without.strictKey);
   });
 });
+
+describe("scope in the cache key", () => {
+  const wide = (scopeKey: string) => ({ ...base, scope: { kind: "semester", scopeKey, unitIds: [] } });
+
+  it("different scopes never share a slot, in either key", () => {
+    const a = keys(wide("sem:grade-10:mathematics:1"));
+    const b = keys(wide("sem:grade-10:mathematics:2"));
+    assert.notEqual(a.strictKey, b.strictKey);
+    assert.notEqual(a.coarseKey, b.coarseKey);
+  });
+
+  it("a scoped request never lands on the plain-lesson slot", () => {
+    const plain = keys(base);
+    const scoped = keys(wide("sem:grade-10:mathematics:1"));
+    assert.notEqual(plain.strictKey, scoped.strictKey);
+    assert.notEqual(plain.coarseKey, scoped.coarseKey);
+  });
+
+  it("a request without a scope hashes exactly as before (no pool-wide invalidation)", () => {
+    assert.deepEqual(keys(base), keys({ ...base, scope: undefined }));
+    assert.deepEqual(keys(base), keys({ ...base, scope: { kind: "book" } })); // no scopeKey → ignored
+  });
+
+  it("the same scope is the same key", () => {
+    assert.deepEqual(keys(wide("book:grade-10:mathematics")), keys(wide("book:grade-10:mathematics")));
+  });
+});

@@ -15,7 +15,7 @@
  * and for a while only the list honoured it — see that helper for the bug.
  */
 import { Router } from "express";
-import { db } from "@workspace/db";
+import { db, systemDb } from "@workspace/db";
 import {
   attemptResults,
   attempts,
@@ -1509,7 +1509,8 @@ router.post("/students/:id/links/:userId/login-code", async (req: AuthenticatedR
     }
 
     const loginCode = generateLoginCode();
-    const reissued = await db.transaction(async tx => {
+    // systemDb: it deletes the account's refresh tokens, which the app role cannot touch.
+    const reissued = await systemDb.transaction(async tx => {
       // Locked, so a sign-in racing this either finishes before the old code
       // dies or waits and finds the old code gone — never mints a session after.
       const [target] = await tx

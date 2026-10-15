@@ -187,6 +187,15 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   (`services/documents/extractMeta.ts`) or it silently exercises the ordinary
   path instead. `introduction`/`closure`/`assessment`/`homework` vary randomly
   via `pick()`, so asserting "the styles differ" on them proves nothing.
+  **The teacher's text is first person, future (since 2026-10-12).** The plan's
+  Arabic teacher fields read «اعرض… اسأل… فسّر…», which landed in the Ministry
+  form's «دور المُعلم» column as commands to someone else; they now say «سأعرض…
+  ثم سأسأل…». Words spoken to students stay quoted in «» and imperative. It is
+  two places again: the offline blueprints (`lessonPlanBlueprints.ts`,
+  `lessonPlanNative.ts`, the intro/closure/prior-review in `generators.ts`) and
+  `teacherVoiceAr` in `prompts.ts`. `lessonPlanTeacherVoice.test.ts` fails on a
+  bare imperative; it cannot list form-IV imperatives («أعلن», «أضف»), whose
+  unvowelled spelling is also the first-person verb, so write those by hand.
 - **A worksheet's structure lives in two places, and its count is the total.**
   The worked example, the half-solved first question and the key's working are
   built by `generateWorksheet` (`artifacts/mobile/services/ai/generators.ts`)
@@ -199,6 +208,16 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   before it can be studied, and `steps.test.ts` fails a family with fewer than
   two solved items. Working is dropped, not kept, when a teacher edits the
   question it belongs to (`worksheetEdits.ts`).
+  **The live route enforces that count, and homework follows the picker.** A
+  model asked for 20 often returns 10, so `/generate/worksheet|homework` counts
+  (`worksheetShortfall` — the example is inside the number, a prior-knowledge
+  review of 2–3 questions is on top), asks once more for only the missing ones
+  as one extra section (`worksheetTopUpBlock`, `mergeWorksheetTopUp`), and trims
+  a real surplus (`trimWorksheet`, which never cuts a review the teacher asked
+  for). The offline `homeworkOnce` used to ignore `numQuestions` and
+  `questionTypes` entirely (always 3 written questions + challenge +
+  reflection); the challenge and the reflection are now two of the picked
+  number and the rest follow the ticked types (`worksheetCount.test.ts`).
 - **A question's difficulty tier lives on the template, and in two prompts.**
   Every non-math question template carries its own `tier`
   (`TieredTemplate` in `artifacts/mobile/services/ai/generators.ts`), and
@@ -255,6 +274,15 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   teachers since 2026-09-02 as «بلّغ عن مشكلة» in `GeneratorResultActions`. It
   is deliberately open to any authenticated teacher, and it retires
   immediately rather than queuing a review.
+- **Students are shown only what an admin approved (since 2026-10-13).** The
+  pool serves a teacher whatever is stored, but a stored row can be under the
+  wrong lesson id and a student is a minor, so `GET /student/lesson-explanation/…`
+  filters on `ai_artifacts.student_approved_at`, which only
+  `POST /moderation/lesson-explanations/approve` sets. A new student-facing read
+  of the pool needs the same gate, and must not import generation code — a
+  student route that can reach `generateContent` is a student who can spend the
+  budget. `artifacts/mobile/scripts/pregenerate.ts` fills it; approval is a
+  separate step on purpose.
 - **`app.json`'s `version` is the OTA compatibility key, not a label.**
   `runtimeVersion.policy` is `appVersion`, so every build and every published
   update carries `"1.0.0"` until someone edits that string. An update only
@@ -350,3 +378,14 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   36 minutes), 2026-09-26 and 2026-10-05 — twice under a PR body that said
   `schema-push: done`. A database that has tables but no migration history is
   refused until baselined once; see *Schema* in `docs/deploying.md`.
+- **Row-level security fails quietly, and `systemDb` is the hole in it (since 2026-10-13).**
+  A query that reads *another user's* rows does not error under RLS — it returns fewer
+  rows. In the prototype that meant: no push notifications at all (recipients' tokens),
+  a blocked user able to open a thread (the block is the other person's row), and a student
+  excluded from a restricted exam able to take it from its share link (the audience read came
+  back empty, and an empty audience means «everyone»). Statuses alone cannot see any of
+  that, so `lib/db/src/__tests__/rlsDiff.test.ts` also diffs the pushes sent and the rows
+  left behind. `RLS_ENFORCE` is off by default; `systemDb` (the owner connection) is for
+  paths that act without a user or must read other users' rows to decide something, and the
+  files that use it are pinned in `systemDbFiles.test.ts`. A new table must be classified in
+  `rlsCoverage.test.ts`, and a new table gets **no** grant to `iqraa_app` automatically.

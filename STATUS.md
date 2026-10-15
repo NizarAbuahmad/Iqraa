@@ -53,6 +53,21 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **Wide-scope selection, foundation only (2026-10-13; spec
+  `docs/superpowers/specs/2026-10-13-wide-scope-selection-design.md`).**
+  `services/scopeSelection.ts` (what a unit / semester / book scope covers),
+  `services/scopeGrounding.ts` (tiered, ≤ 6 000-char digest), `AIRequest.scope`,
+  server-side page pooling and `scopeKey` in the artifact cache key all exist
+  and are tested. `TopicSelector`'s «الفصل كاملًا» entry is verified by code
+  read only — there is no browser in the build container, so it was never run.
+  **No generator screen opts in yet**, so nothing a teacher sees has changed:
+  «الوحدة كاملةً» sets the unit title as the topic, which
+  `resolveGeneratorGrounding` grounds to one lesson or none (not to the unit),
+  and «الكتاب كاملًا» stays ungrounded — its topic text matches nothing.
+  **Restoring a saved / reopened scope (spec §6, goal 5) is not done:**
+  `parseScope` exists, but wiring saved state to it is piece 2's job. Pieces 2
+  (quiz, worksheet, homework, game) and 3 (the rest) also have to adopt
+  `onScopeChange` + `scopeRequestFields` before anything above is reachable.
 - **API credentials are Secret Manager references** (2026-10-08, live since
   `iqraa-api-00283-twr`). The ten credentials (`SESSION_SECRET`,
   `DATABASE_URL`, `OPENAI_API_KEY`, both R2 keys, Unsplash, YouTube,
@@ -87,7 +102,10 @@ an announcement by default» below.
   48-table schema; `deploy.yml` runs `migrate` before `verify-schema` and the
   API. CI rejects a schema edit without its migration, applies every migration
   to an empty Postgres, and holds destructive SQL for `destructive-migration:
-  ok`. Verified locally against throwaway databases: fresh migrate (48/48 by
+  ok` — a check that, since 2026-10-11, lives in its own
+  `destructive-migration-ack.yml` so that editing the PR body re-runs it
+  (`ci.yml` never sees `edited`; the old `schema-push:` check held #779 red
+  for an hour after the push was done for exactly that reason). Verified locally against throwaway databases: fresh migrate (48/48 by
   `verify-schema`), re-run is a no-op, a push-built database is refused, then
   baselined (idempotent), then a follow-up `ADD COLUMN` migration applies on
   top. In production: the first deploy refused as designed, production was
@@ -250,6 +268,73 @@ an announcement by default» below.
   policy — honest, but the classroom builder would then error in demo mode for
   those subjects) or to author real per-subject templates. Tests:
   `offlineRegenerate.test.ts`. Not looked at in a browser.
+- **Quiz «أعد التجهيز» now changes the questions, and says when it cannot**
+  (2026-10-13). The offline regenerate only checked that the whole quiz JSON
+  differed from the last one, so the same stems in another order — or with the
+  options shuffled — counted as «fresh». On the periodic-table lesson (bank:
+  5 MC, 5 T/F, 3 short-answer) a teacher on the web build (`DEMO_MODE` on)
+  saw 2.4 of 5 questions repeat on average, and 3 papers in 30 repeated all
+  five. `freshOnRegenerate` now takes `stemsOf` and keeps the draw that shares
+  the fewest stems with what is on screen (up to 80 draws, offline and
+  instant). What it cannot fix is a bank with nothing else to offer: that lesson
+  holds one medium short-answer question, so any paper containing one repeats
+  it. Such a paper carries `repeated: { count, of }` and `ShortPaperNotice`
+  says «تكرّر N من M…» instead of passing it off as new; `quiz.tsx` strips it on
+  save, since it describes a regenerate, not the paper. **Worksheet and homework
+  follow (2026-10-14)** — same `stemsOf`, same `repeated`, judged on the worked
+  example plus every question; measured on that lesson they repeated 4.0–4.2 of 5
+  and 4.4–4.7 of 6 per regenerate, and now sit at their banks' floor (worksheet 3:
+  7 distinct stems; homework 4: three questions are fixed and the rest come from a
+  pool of three). Homework has no screen of its own — only the worksheet screen
+  shows the notice. The maths «قانون الجيوب» homework is fixed templates and
+  repeats whole, with the notice only where a screen shows it. Live AI is
+  unchanged (it has its own `avoid` / overlap check server-side). Tests:
+  `quizRegenerateStems.test.ts`, `worksheetRegenerateStems.test.ts`. Not looked
+  at in a browser.
+- **Lesson plan «أعد التجهيز»: what changed, and what it cannot (2026-10-14).**
+  Measured over 30 regenerations (maths, chemistry, Arabic × direct,
+  collaborative): the offline plan has ONE phrasing for five of its eight
+  sections (main activity, guided and independent practice, assessment,
+  differentiation), so those never change; only the introduction (2–3
+  phrasings), closure and homework (2 each) vary, and `freshOnRegenerate`
+  accepted any draw whose whole object differed, so often only one of the three
+  changed. It now judges the eight narrative sections by stem and keeps the draw
+  that changes the most (always all three that can), and the plan carries
+  `repeated: { count, of }` — «تطابق ٥ أقسام من أصل ٨ مع الخطة السابقة» — shown by
+  both the lesson-plan screen and `LessonPrepPanel`. **Separate defect, same
+  button:** `LessonPrepPanel`'s «أعد التجهيز» called `generate()` with nothing, so
+  its request was byte-identical and never flagged `regenerate` (the quiz and
+  worksheet screens had been sending it); it now sends `regenerationFields`.
+  Objectives and materials are not counted — they come from the book. **The five
+  fixed sections now have a second wording, Arabic and English (2026-10-14,
+  see the next entry).**
+- **Lesson plans have a second wording for the five fixed sections — Arabic and
+  English, NOT YET READ BY A TEACHER (2026-10-14).** `lessonPlanVariantsAr.ts` and
+  `lessonPlanVariantsEn.ts` hold a "variant 1" for each of the 10 blueprints
+  (maths direct, inquiry, collaborative, and the seven native direct plans:
+  science, recitation, Arabic, English, social, movement, making) — the same
+  teaching shape done another way (predict-observe-explain, meaning-first
+  recitation, test-teach-test, see-think-wonder, reverse-engineering a model…),
+  with the SAME technique in both languages. The English is not a translation:
+  the English plan is written as instructions to the teacher, the Arabic as the
+  teacher's own first person (`lessonPlanTeacherVoice.test.ts`).
+  `LessonStyleContext.variant` selects it; a first generation is always variant 0
+  (unchanged), a regenerate draws either, and `freshOnRegenerate` keeps the draw
+  that changes most (budget 300 — it stops at the first full change, ~1 draw in
+  16, and 80 missed about once per hundred regenerations). A regenerated plan, in
+  either language, now changes all eight sections and reports nothing as
+  `repeated`. Pinned by `lessonPlanVariants.test.ts` (variant 0 untouched,
+  variant 1 differs in all five fields for every style, kind and language, each
+  style's marker phrases, Arabic first-person voice, no Arabic in the English
+  plan, regenerate reaches it); the teacher-voice detector is in
+  `teacherVoiceCheck.ts`. **What no test can say:** whether the wording is good
+  teaching or fits the Ministry book — that needs a Jordanian teacher. A
+  side-by-side sheet (variant 0 against variant 1, per style and kind) was
+  generated from `buildLessonStyleBlueprint` for that read, one per language; it
+  is not kept in the repo, so it cannot go stale. **Known data gap found while
+  testing:** one maths lab lesson has an Arabic `titleEn`, so its English plan
+  carries Arabic in variant 0 too. Adding a third wording means one more builder
+  per blueprint, per language. Not looked at in a browser.
 - **"No question bank" after a failed live call now says so, with the reason**
   (2026-10-11). With live AI on, a failed call falls back to the offline
   generator, which has banks for maths/chemistry only — so a worksheet, quiz or
@@ -1164,6 +1249,62 @@ slice (items 6-11, the first `verified` ones):
   figure items; chemistry (its teacher guides have no extracted text); the rest of guide p.47 (choices 3-5, whose exponents and fractions the text layer
   flattens, item 12, an inequality, and the answer appendix its key points to).
 
+## Row-level security is built and switched off, 2026-10-13
+
+**State: off. No behaviour changes — but merging DOES run the migration in production** (`deploy.yml` migrates before the API ships): it creates the `iqraa_app` role, grants, and turns row-level security on for 28 tables. If the API's connection is the table owner, RLS does not apply to it (there is no `FORCE`) and nothing changes — **that is the assumption to verify: the role in Cloud Run's `DATABASE_URL` must own those tables.** It has not been checked: confirm it on a Neon branch before merging (`docs/superpowers/plans/2026-10-13-row-level-security.md`, Task 7 Step 0).
+**Both connection strings must name that same owner role:** the migration runs under GitHub's `secrets.DATABASE_URL` (`deploy.yml`, the `production migrations` job), while the API runs under Cloud Run's `DATABASE_URL`. The fifteen `SECURITY DEFINER` helpers are owned by the *migrating* role, and bypass RLS only if that role also owns the tables — if the two secrets name different roles, the helpers read as a role that is subject to the policies.
+
+The `iqraa_app` role, sixteen helper functions and 65 policies exist (migration `0008_row_level_security.sql`); the API
+carries each request's user to Postgres; and `RLS_ENFORCE` — unset, so off — decides
+whether any of it applies. Spec: `docs/superpowers/specs/2026-10-13-row-level-security-design.md`;
+how to flip it: *Row-level security* in `docs/deploying.md`.
+
+**Verified locally on Postgres 16, and run by the new `rls` CI job on every push:** the policy matrix, a coverage guard that fails on an
+unclassified table, and a differential test that boots the built API with enforcement off
+and on and finds no difference in what users see, which pushes are sent, which rows are
+left behind, or what is logged — across 56 reads for six identities and 53 write steps (a student's retake, the push badge and the inbox order a reply bumps included).
+
+**Not verified, and the reason it is off:** enforcement has never run against Neon (the migration will, at merge). Added latency
+across the Cloud Run → Neon hop is unmeasured (≈ two extra round trips per statement; +0.24 ms
+on loopback). The connection ceiling with two pools per instance is unchecked. No one has
+walked the teacher / parent / student flows with it on in a real environment.
+
+**What it does not cover yet:** `users` (every roster and chat screen reads names from it),
+the teacher-owned planning tables, and the shared content tables are *deferred* by name in
+`rlsCoverage.test.ts`. Fourteen files use `systemDb`, which bypasses it — they are pinned in
+`systemDbFiles.test.ts` with a reason each. This guards against a forgotten `where`, not
+against SQL injection: the session user is still the owner and could `RESET ROLE`. RLS limits
+rows, not columns: a student's own attempt row is writable by them at the database level (status,
+`teacher_comment`, …), so the API remains the control on which columns a student may set.
+
+**Known limits of the policies (found in the final review, deliberately left):**
+- A student's own attempt rows can be inserted, or re-pointed at another `evaluation_id`, for their own student id at the database level: RLS cannot compare old and new values, and an assignment-aware predicate is a follow-up. The API is the gate.
+- RLS does not enforce *who may message whom*: any user may create a thread and, as its owner, add anyone. The API's connected-teacher rule is unchanged and is the control. Note for the `users` follow-up.
+- `attempt_answers` / `attempts` writes by a student's own account have no "attempt is open" check at the database level (submitted, expired, released); the API enforces it.
+
+## A waitlist signup on iqrra.com pushes the admins, 2026-10-12
+
+`POST /site/signups` (`routes/admin.ts`) now calls `notifyAdminsOfWaitlistSignup`
+(`lib/adminNotify.ts`) after storing a `kind: 'waitlist'` row, which pushes
+every `system_admin`'s devices on the `admin` channel («تسجيل جديد في قائمة
+الانتظار», body = email, plus the form's `context` when the site sends one).
+Tapping it opens «البريد المجمّع» (`data.screen: 'admin-signups'`, whitelisted in
+`notificationDeepLink.ts`). Push only — no email, since the row is already in
+the admin list and Resend. Contact and idea rows do not push.
+
+- **Not Android-specific.** It fires for every waitlist signup; whether the
+  site tags an Android page in `context` is decided by `Site_Iqra`, which is
+  not in this repo. The body shows `context` as-is, so a tag will appear once
+  the site sends one.
+- **Reaches only admins who have the app installed with push allowed** — an
+  admin with no `device_push_tokens` row gets nothing.
+- Needs no new binary: JS-only on the app side, so `version` is unchanged. An
+  installed build without the `admin-signups` whitelist entry still shows the
+  push but tapping it does nothing.
+- Verified by unit tests (`waitlistPush.test.ts`, `notificationDeepLink.test.ts`)
+  and the full api-server and mobile suites. **Not run:** a real push to a
+  device, and the live `/site/signups` call.
+
 ## The Quran Corner: a shelf in the library, 2026-10-11
 
 **What a teacher or student can use.** `/curriculum/resources` has a «ركن القرآن»
@@ -1819,13 +1960,13 @@ shows each member's result on it.
 
 A sitting a student already holds always stays visible to them.
 
-**Setting it.** `PUT /evaluations/:id/audience` accepts the students only while the check is a draft attached to a class, and only if each one is a live member of that class. A group check can be detached from its class, or attached to a class that holds all its students; moving it to a class missing any of them is refused (409 `audience_class_locked`). The list endpoint returns `audienceSize` so «صُحّح N من M» counts the group. `GET /evaluations/:id` returns `audience`.
+**Setting it.** *(The endpoint was removed 2026-10-14 — see the quick-evaluation note below; the rules here still describe the reads.)* `PUT /evaluations/:id/audience` accepted the students only while the check is a draft attached to a class, and only if each one is a live member of that class. A group check can be detached from its class, or attached to a class that holds all its students; moving it to a class missing any of them is refused (409 `audience_class_locked`). The list endpoint returns `audienceSize` so «صُحّح N من M» counts the group. `GET /evaluations/:id` returns `audience`.
 
 **Schema.** Migration `0001` adds a unique `(evaluation_id, student_id)` on `evaluation_assignments`. It is additive, and the table had no writer before this, so production holds no duplicates.
 
 **In the app.**
 - Each card shows member chips (each opens the student record) and «ورقة علاجية» (the lesson's own grade and subject).
-- «تحقق للمجموعة» opens the quick check with the members ticked. The teacher can untick. The audience is set before questions are generated, so a failed audience leaves only an empty draft in the class list (no questions), which the teacher can delete.
+- *(Removed 2026-10-13 — see the quick-evaluation note below.)* «تحقق للمجموعة» opened the quick check with the members ticked. The teacher can untick. The audience is set before questions are generated, so a failed audience leaves only an empty draft in the class list (no questions), which the teacher can delete.
 - Once a check exists, the card shows its outcome per member: «تجاوز», «ما زال يحتاج دعمًا» or «لم يقدّمه بعد». The button becomes «تحقق جديد», or «أكمل التحقق» while a draft is open.
 - The review screen says «للمجموعة: N».
 - The marking list shows the group only.
@@ -1850,7 +1991,7 @@ Against a real Postgres, migrated the way production will be (`migrate --baselin
   - the card shows the two weak students, weakest first;
   - the worksheet opens on الكيمياء;
   - unticking one student created a draft whose audience is the other only;
-  - «أكمل التحقق» opened that draft;
+  - «أكمل التحقق» opened that draft *(button removed 2026-10-14)*;
   - marking the member 3/3 showed «تجاوز · 100%» while his overall moved 30% → 46%, so he stays in the group by design;
   - the marking list shows the group only.
 
@@ -2045,7 +2186,7 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
 | --- | --- |
 | Main job | Plan remediation, not parent meetings or term reports |
 | Scope | This class's evaluations only |
-| Actions on a weak objective | Remedial worksheet, quick re-check, open the lesson |
+| Actions on a weak objective | Remedial worksheet, open the lesson *(the quick re-check was removed 2026-10-13)* |
 | Architecture | One route returning the whole record |
 | Provisional papers | Counted in the rollup, as the class view does, with a line saying so |
 | Entry point | Tapping the row opens the record; the row's pencil icon still opens the note box |
@@ -2080,9 +2221,8 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
   - «ورقة علاجية» opens the worksheet screen with the lesson's own grade and
     subject (`lessonPickerParams`). It is hidden when the lesson can't be
     resolved.
-  - «تحقق سريع» opens `/evaluations/mini?classId&objectiveId`. The screen
-    preselects that objective and its book (`miniEvalPreset`), but only when
-    the class offers that book.
+  - *(Removed 2026-10-13.)* «تحقق سريع» opened `/evaluations/mini`; the
+    screen no longer exists.
   - «افتح الدرس» opens the lesson page.
   - «رسالة لولي الأمر» opens the parent message with the name prefilled.
   - A paper row opens the marking screen. **A not-sat row is not tappable**,
@@ -2111,7 +2251,6 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
     papers;
   - the bar fills from the right;
   - the worksheet opens on الصف العاشر / الكيمياء;
-  - the quick check opens with the objective selected;
   - the lesson and the paper both open;
   - tapping a not-sat row does nothing, and the `attempts` count stayed at 2;
   - the other student sees the empty state;
@@ -4190,6 +4329,25 @@ objective) and one judgement (are these three questions any good). Review is
 because the classroom-activity generator already owns both `quick-check` and
 `exit-ticket` as `activityType`s — **two features cannot share a name**, and that
 collision also cost an existing test file, which was overwritten and restored.
+**Removed 2026-10-13: the whole quick evaluation.** The «تقييم سريع» card on the
+class exams tab, the `/evaluations/mini` screen, `services/miniEval.ts` and the
+two entry points that routed to it — the student record's «تحقق سريع» /
+«تحقق سريع» per objective and the support group's «تحقق للمجموعة» — are gone, with
+their strings and tests (including the API's `miniEvalGraders.test.ts`).
+`groupObjectivesByLesson`, which `evaluations/new.tsx` still uses, moved to
+`services/objectiveLessons.ts`.
+**Removed 2026-10-14: the group-check write side.** `PUT /evaluations/:id/audience`
+(and `audienceRequestDecision`, `MAX_AUDIENCE`, `replaceEvaluationAudience`), the
+mobile `setEvaluationAudience`, the support group's `draftCheck` and its «أكمل
+التحقق» button. A draft group check made earlier is still an ordinary draft in
+the teacher's exam list and publishes from there. **Kept on purpose — do not
+"finish the cleanup":** everything that *reads* an audience (`evaluationAudience`,
+`inAudience`, `examVisibleTo`, `classChangeAllowed`, `audienceSize`, the group
+`latestCheck` outcomes) and the `evaluation_assignments` table. Rows written before
+the removal still restrict their exams; an empty read means «everyone», so deleting
+the read would open every restricted exam to the whole class. The rows are now
+unmanageable from the app (no endpoint edits or clears them). The concrete maths
+bank in `@workspace/math-practice` stays: the ordinary evaluation generator uses it.
 
 **The default paper was the most expensive one.** `new.tsx` pre-selected
 `short_answer` + `open_ended`, both types `gradeAttempt` leaves out entirely, so
@@ -18172,3 +18330,91 @@ mapping; typecheck; the full api-server and mobile suites.
 **Not verified:** the route handlers themselves — they need a database the suite
 does not have, so their wiring is covered by typecheck and review, not a test —
 and the screen on a device. `schema-push:` none.
+
+## Students can read a stored lesson explanation, 2026-10-13
+
+A student opens a lesson page and taps «اشرح لي الدرس». They get the
+`lesson-teaching` explanation the teacher pool already holds — hook, concept
+cards, worked example, practice problem with hint and answer — with no model
+call. Spec: `docs/superpowers/specs/2026-10-13-student-lesson-explanations-design.md`.
+
+What is true, checked against the code and the suites:
+
+- **Serve-only.** `GET /student/lesson-explanation/:lessonId` reads
+  `ai_artifacts` and bumps the served row's `timesServed`; it writes nothing
+  else and imports no generation, budget or OpenAI code (a test scans for it).
+  A student cannot cause a paid call.
+- **Only approved rows are shown.** `ai_artifacts.student_approved_at` is set
+  by a `system_admin` through `POST /moderation/lesson-explanations/approve`.
+  A teacher's stored row is not shown to students until then, because
+  `slides.tsx` derives the lesson id from the title (`generatorLessonId(title, lang)`,
+  no `KbScope`), so a stored row can sit under the wrong lesson.
+- **Looked up by lesson id,** not by recomputing the teacher's `strictKey`, so a
+  model or `PROMPT_VERSION` bump does not empty the student view. The newest
+  approved row wins.
+- **A student report queues, it does not retire.** It goes to the existing
+  `reportVariant` queue for a `system_admin`.
+- **Filling and approving the pool is a manual, three-step job** in
+  `artifacts/mobile/scripts/pregenerate.ts` (run as `pnpm run pregenerate` from
+  `artifacts/mobile`): `--go --only=lesson-teaching` generates and writes
+  `pregen-review.json` (`--review=` renames it); a person reads it and deletes
+  what they reject; `--approve=<file>` approves the rest. Grade 10 Mathematics
+  and Chemistry only. The generate step refuses to overwrite an existing
+  `pregen-review.json` (`--force` overrides, `--review=<other file>` writes a
+  second one), because a rerun can serve a variant a reviewer already deleted.
+  Each entry carries a hash of its text and `--approve` refuses the whole file
+  if any entry was edited or malformed: **edits are not applied, delete the
+  entry instead.** A bare `--go` plans the 64 worksheet and lesson-plan calls
+  before the 49 explanations, so the default $1 cap can stop before reaching
+  them; use `--only=lesson-teaching`.
+- **Replacing a rejected explanation.** Deleting an entry from the review file
+  does not remove the stored variant, so the next `--go` serves it again and the
+  lesson stays «قريبًا». A `system_admin` files a report on that `variantId` with
+  `POST /generate/variants/:id/retire` (the route name says retire; it calls
+  `reportVariant` and only queues a report) and then resolves the report as
+  approved (`POST /moderation/artifact-reports/:id/resolve`, screen
+  `artifacts/mobile/app/admin/artifact-reports.tsx`), which retires the row.
+  The next `--go --only=lesson-teaching` generates a fresh variant.
+- `Slides Maker` and the prefill now build the request through
+  `buildLessonTeachingRequest` (`artifacts/mobile/services/generatorRequests.ts`).
+  `lessonTeachingRequest.test.ts` pins it deep-equal to the old inline body for
+  the Arabic, grounded, grade 10 Mathematics path only; the English and
+  ungrounded paths match by construction (read from the old `slides.tsx`), not
+  by a test.
+
+**Not built, and worth knowing:**
+- Nothing has been generated or approved in production yet, so every lesson
+  shows «شرح الدرس قريبًا» until the prefill, the review and the approval are run.
+- The wording was written for a classroom projector. Whether it reads well to a
+  student alone is checked only by a person reading the review file; if more
+  than a few lessons need rewording the answer is a separate student prompt, not
+  hand-edited text.
+- **Three paths always show «شرح الدرس قريبًا».** Of the 53 grade 10
+  Mathematics (36) and Chemistry (17) lessons the student browser lists, the
+  prefill covers 49 (32 maths + 17 chemistry). The rest never get an explanation
+  from it:
+  1. The 4 maths lessons whose titles ground to a different lesson and are
+     skipped on purpose (`u1_l3` تبسيط المقادير الأسية, `u3_l1` النسب المثلثية,
+     `u5_l5` المتتاليات, `u7_l2` جمع المتجهات وطرحها), so no row exists for them.
+  2. A student whose UI language is English asks for `english`; the prefill is
+     Arabic-only, so every lesson is «coming soon» for that student.
+  3. A lesson whose only explanation was rejected, until the replacement
+     recovery above is done.
+- Student chat is still never pooled. Parent summaries and hints on exam
+  questions are separate specs.
+- The student screen and button were built and checked by the typechecker, the
+  i18n/routing/design-scale tests and the card-model tests, but were never
+  exercised in a running app (no database was available when they were written).
+  Open a lesson as a student, with one approved row in the database, before
+  telling anyone it works.
+
+**Needs the migration:** `ai_artifacts` gains `student_approved_at` and an index
+(`ai_artifacts_kind_lesson_idx` on `(kind, lesson_ref)`). It deploys as a
+migration (`lib/db/migrations/0007_opposite_lord_hawal.sql`), and `deploy.yml`
+applies migrations before the new API ships. Until it has applied, the student
+read returns 500 (the column does not exist). Teachers' generation still works,
+but nothing new is stored in the shared pool: `storeVariant`
+(`artifacts/api-server/src/lib/artifactCache.ts`) names every column in its
+insert, so the insert fails, and the error is caught and logged as "artifact
+cache unavailable — generation continues uncached". Teacher pool reads and
+retire use explicit columns and are unaffected.

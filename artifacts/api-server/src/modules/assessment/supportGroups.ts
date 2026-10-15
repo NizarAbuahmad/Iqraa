@@ -48,7 +48,6 @@ export interface SupportGroup {
     createdAt: string;
     outcomes: { studentId: string; displayName: string; outcome: CheckOutcome; percent: number | null }[];
   };
-  draftCheck: null | { evaluationId: string };
 }
 
 const MARKED: ReadonlySet<AttemptStatus> = new Set<AttemptStatus>(["graded", "needs_review"]);
@@ -91,7 +90,6 @@ export function supportGroups(
       .filter(c => !c.archived && c.objectiveIds.length === 1 && c.objectiveIds[0] === objectiveId)
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime() || a.evaluationId.localeCompare(b.evaluationId));
     const latest = forObjective.find(c => c.status !== "draft") ?? null;
-    const draft = forObjective.find(c => c.status === "draft") ?? null;
     const info = describe(objectiveId);
     groups.push({
       objectiveId,
@@ -112,7 +110,6 @@ export function supportGroups(
               .sort((a, b) => a.displayName.localeCompare(b.displayName) || a.studentId.localeCompare(b.studentId)),
           }
         : null,
-      draftCheck: draft ? { evaluationId: draft.evaluationId } : null,
     });
   }
 

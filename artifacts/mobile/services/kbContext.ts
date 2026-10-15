@@ -65,6 +65,19 @@ export type GeneratorGrounding = {
   ungroundedNote: string;
 };
 
+/**
+ * The official outcomes for a lesson: NCCD semester-2 data, else semester-1,
+ * else the KB's own list. One place, so the single-lesson serializer and the
+ * wide-scope digest can never disagree about which outcomes a lesson has.
+ */
+export function curriculumObjectivesFor(lesson: KBLesson): string[] {
+  const s2 = findNccdLessonByKbId(lesson.id);
+  if (s2?.objectives?.length) return s2.objectives;
+  const s1 = findNccdSem1LessonByKbId(lesson.id);
+  if (s1?.objectives?.length) return s1.objectives;
+  return lesson.objectives?.length ? lesson.objectives : [];
+}
+
 function serializeLessonContext(
   lesson: KBLesson,
   lang: 'ar' | 'en',
@@ -89,11 +102,7 @@ function serializeLessonContext(
   const titleOnlyUnit =
     !!nccdS1Unit && isNccdSem1TitleOnlyTier(nccdS1Unit.data_tier);
 
-  const curriculumObjectives = nccdS2?.objectives?.length
-    ? nccdS2.objectives
-    : nccdS1?.objectives?.length
-      ? nccdS1.objectives
-      : (lesson.objectives?.length ? lesson.objectives : []);
+  const curriculumObjectives = curriculumObjectivesFor(lesson);
   const vocabulary = nccdS2?.vocabulary?.length
     ? nccdS2.vocabulary
     : nccdS1?.vocabulary?.length

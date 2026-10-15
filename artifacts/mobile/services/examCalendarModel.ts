@@ -109,6 +109,50 @@ export function normalizeTypedDate(input: string): string {
   return latinDigits(input).trim().replace(/[/.]/g, '-');
 }
 
+/**
+ * Lays `digits` out in groups of `sizes`, joined by `sep`, and appends the
+ * separator after a finished group so it is already on screen when the next
+ * digit comes. `deleting` (the new text is shorter than the old) suppresses
+ * that trailing separator — or backspace would delete it and it would be put
+ * straight back — unless the teacher's own text still ends with one.
+ */
+function maskGroups(digits: string, sizes: readonly number[], sep: string, next: string, prev: string): string {
+  const groups: string[] = [];
+  let at = 0;
+  for (const size of sizes) {
+    if (at >= digits.length) break;
+    groups.push(digits.slice(at, at + size));
+    at += size;
+  }
+  let out = groups.join(sep);
+  const last = groups[groups.length - 1];
+  const finished = last !== undefined && last.length === sizes[groups.length - 1] && groups.length < sizes.length;
+  const deleting = next.length < prev.length;
+  if (finished && (!deleting || /\D$/.test(next))) out += sep;
+  return out;
+}
+
+/**
+ * The date box as the teacher types: digits only, with the dashes put in and
+ * kept — "20261015" shows as "2026-10-15". The mobile keyboard has no easy dash
+ * (Android ignores `numbers-and-punctuation`), so the box supplies it. Pass the
+ * previous text so a backspace over a dash is honoured, not undone.
+ */
+export function maskTypedDate(next: string, prev = ''): string {
+  const digits = latinDigits(next).replace(/\D/g, '').slice(0, 8);
+  return maskGroups(digits, [4, 2, 2], '-', next, prev);
+}
+
+/**
+ * The same for the time box: "1230" shows as "12:30". A first digit of 3–9 can
+ * only be a one-digit hour, so it is padded at once ("9" → "09:").
+ */
+export function maskTypedTime(next: string, prev = ''): string {
+  let digits = latinDigits(next).replace(/\D/g, '');
+  if (digits[0] !== undefined && digits[0] > '2') digits = `0${digits}`;
+  return maskGroups(digits.slice(0, 4), [2, 2], ':', next, prev);
+}
+
 /** The same for the time box: "9:30" and "٩:٣٠" both become "09:30". */
 export function normalizeTypedTime(input: string): string {
   const text = latinDigits(input).trim();

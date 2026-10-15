@@ -52,6 +52,36 @@ const PASSAGE_LIMIT = 3;
  */
 const PASSAGE_CHAR_BUDGET = 6_000;
 
+/** Wide scopes: two pages per unit so one unit cannot crowd out the rest, six in all. */
+const WIDE_PER_UNIT = 2;
+const WIDE_PASSAGE_LIMIT = 6;
+/** Units honoured from a request — it is request-controlled input. */
+const MAX_SCOPE_UNITS = 24;
+
+export interface WideScope {
+  kind: "unit" | "semester" | "book";
+  scopeKey: string;
+  unitIds: string[];
+}
+
+/**
+ * A unit / semester / book scope from a request body, or null.
+ *
+ * `lesson` is not a wide scope — a single lesson travels as `lessonId` /
+ * `unitId` — so it parses to null and the ordinary path runs. Unit ids are
+ * filtered through `isNccdUnitId`: anything else would reach `passagesForUnit`.
+ */
+export function parseWideScope(raw: unknown): WideScope | null {
+  if (typeof raw !== "object" || raw === null) return null;
+  const r = raw as Record<string, unknown>;
+  if (r.kind !== "unit" && r.kind !== "semester" && r.kind !== "book") return null;
+  if (typeof r.scopeKey !== "string" || r.scopeKey.length === 0 || r.scopeKey.length > 200) return null;
+  const ids = Array.isArray(r.unitIds) ? r.unitIds : [];
+  const unitIds = [...new Set(ids.filter((u): u is string => typeof u === "string" && isNccdUnitId(u)))]
+    .slice(0, MAX_SCOPE_UNITS);
+  return { kind: r.kind, scopeKey: r.scopeKey, unitIds };
+}
+
 export interface GroundedSource {
   sourceId: string;
   /** The document as a teacher would name it. */
@@ -129,9 +159,16 @@ function renderBlock(passages: Passage[], isAr: boolean): { block: string; used:
  * as authoritative and is worse than no grounding at all.
  */
 export function groundingFor(
-  input: { unitId?: unknown; topic?: unknown },
+  input: { unitId?: unknown; topic?: unknown; scope?: unknown },
   isAr: boolean,
 ): Grounding | null {
+  // A wide scope names its own units. Its topic is a label («الفصل الأول
+  // كاملًا»), not a lesson — resolving it by title would attach some other
+  // unit's book to a prompt that reads as authoritative, so there is no
+  // fall-back: no usable unit means no grounding.
+  const wide = parseWideScope(input.scope);
+  if (wide) return pooledGrounding(wide.unitIds, isAr, WIDE_PER_UNIT, WIDE_PASSAGE_LIMIT);
+
   // An explicit unit id beats a title match — the caller knows which lesson the
   // teacher picked, and a resolver working from free text can only infer it.
   const explicit = typeof input.unitId === "string" && isNccdUnitId(input.unitId)
@@ -176,16 +213,22 @@ export function groundingForObjectives(
   isAr: boolean,
 ): Grounding | null {
   const unitIds = [...new Set(objectives.map(o => o.unitId).filter(isNccdUnitId))];
-  if (!unitIds.length) return null;
+  return pooledGrounding(unitIds, isAr, PASSAGE_LIMIT, PASSAGE_LIMIT);
+}
 
+/**
+ * Pages pooled across units, re-ranked by the one score. Scores from
+ * `passagesForUnit` are comparable only within one query, but the scale is the
+ * same function of the same term lengths, so across units of one corpus this
+ * orders sensibly. Ties break on id then page so a paper generated twice reads
+ * the same pages twice.
+ */
+function pooledGrounding(unitIds: string[], isAr: boolean, perUnit: number, total: number): Grounding | null {
+  if (!unitIds.length) return null;
   const pooled = unitIds
-    .flatMap(unitId => passagesForUnit({ unitId, limit: PASSAGE_LIMIT, quotableOnly: true }))
-    // Scores from `passagesForUnit` are only comparable within one query, but
-    // the scale is the same function of the same term lengths, so across units
-    // of the same corpus this orders sensibly. Ties break on id then page so a
-    // paper generated twice reads the same pages twice.
+    .flatMap(unitId => passagesForUnit({ unitId, limit: perUnit, quotableOnly: true }))
     .sort((a, b) => b.score - a.score || a.sourceId.localeCompare(b.sourceId) || a.page - b.page)
-    .slice(0, PASSAGE_LIMIT);
+    .slice(0, total);
   if (!pooled.length) return null;
 
   const { block, used } = renderBlock(pooled, isAr);
