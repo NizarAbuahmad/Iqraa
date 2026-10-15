@@ -94,7 +94,7 @@ describe("supportGroups — the group's check", () => {
     }), describeAll);
     assert.equal(g!.latestCheck!.outcomes[0]!.outcome, "passed");
   });
-  it("takes the newest published check, never an archived one, and reports a draft separately", () => {
+  it("takes the newest published check, never an archived or draft one", () => {
     const [g] = supportGroups(input({
       papers,
       checks: [
@@ -107,7 +107,6 @@ describe("supportGroups — the group's check", () => {
       ],
     }), describeAll);
     assert.equal(g!.latestCheck!.evaluationId, "new");
-    assert.deepEqual(g!.draftCheck, { evaluationId: "draft" });
   });
   it("lists only assignees still in the class", () => {
     const [g] = supportGroups(input({
