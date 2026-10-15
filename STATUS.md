@@ -53,6 +53,134 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **Lesson plan, slides, activity, lesson-flow and the classroom builder take a
+  unit, semester or whole book — as one revision session (2026-10-14; spec
+  `docs/superpowers/specs/2026-10-14-wide-scope-teaching-tools-design.md`,
+  builds on pieces 1–2). Merged without anyone opening them in a browser —
+  see «Not yet clicked» below.** The five screens used to offer «الوحدة كاملةً»
+  and «الكتاب كاملًا» as label strings and re-ground them (on slides, lesson-flow
+  and the builder unscoped, so a unit title could land on another grade's
+  lesson). They now give `TopicSelector` `allowedKinds` lesson/unit/semester/book,
+  `onScopeChange` and `offlineWideScope`, take the structured scope, and never
+  look the label up: every `resolveGeneratorGrounding` / `buildGeneratorContext`
+  / `generatorLessonId` / `generatorUnitId` / `generatorFigureCount` call on them
+  sits behind the wide check. A wide request (`buildScopeRequest`) carries the
+  scope, the curriculum digest followed by the teacher's own typed text where
+  the screen has any (the plan's objectives and adaptations, the activity's
+  objective — these keep `contextSource: 'teacher'`; slides, lesson-flow and the
+  builder have none), and the scope's lesson table with no slot plan, `unitId` /
+  `lessonId` explicitly undefined and `bookFigureCount: 0`.
+  **A wide scope means one selective revision session.** *Lesson plan:* the
+  plan's own fields, no new ones; the main activity is a round per unit in each
+  teaching style's own form (direct a worked review, inquiry one guiding
+  question, collaborative one group card); the introduction names the scope and
+  what the session leaves out (offline, `leftOutSentence` computes it from the
+  lesson table; live, it is the model's own statement); no prior-knowledge
+  review (`includePriorReview: false` is sent, prior-topics notes dropped) and no
+  Ministry-form export; the Arabic teacher fields are first person, future.
+  **The offline wide plan is deterministic, so Regenerate repeats it** — the
+  existing «repeated» notice says so (8 of 8). *Activity:* every format
+  (individual, jigsaw, discussion, hands-on, game) and the warm-up keeps its
+  structure; the multi-item ones draw from two units or more in one activity,
+  discussion and hands-on build on one item and each Regenerate moves to
+  another unit, and the regenerate counter is keyed by the scope. *Classroom
+  builder:* its seven offline types take a revision phrase («موضوعات الفصل الأول»,
+  «موضوعات وحدة «…»») instead of the label. *Live prompts:* one revision clause
+  per kind (plan, activity, classroom; `artifacts/api-server/src/lib/revision.ts`),
+  present only when the request carries a valid wide `scope`; without it every
+  lesson prompt is byte-identical (tests assert `prompt.replace(clause, '')`
+  equals the lesson prompt).
+  *Slides* builds a wide deck from the wide plan and the wide quick-check only
+  (`buildRevisionDeck`): title, the units covered, the plan's goals, its warm-up
+  question when it asks one, a divider and an ideas slide per unit (official
+  outcomes and key ideas from the curriculum data, six at most), the checks,
+  practice, a summary naming the units, the exit ticket and the plan's homework.
+  No book figures, vocabulary, rules or worked examples, no pinned resources,
+  uploads or lab items, no explainer-video search (the two topical photos still
+  come), and `generateLessonTeaching` is skipped — that prompt is single-lesson
+  by design. A failed plan still leaves the unit rounds.
+  *Lesson-flow* sends the scope with every AI step (guided practice reads the
+  wide plan); its 5-question worksheet and 3-question exit ticket ask for the
+  `random` distribution with no slot plan (`questionStepFields`), so the live
+  prompt never states per-lesson counts for another total, and the exit-ticket
+  step reads «غلق الحصة». **A wide lesson-flow completes offline only for maths
+  (grades 1–10) and chemistry (grades 9–10).** Any other subject stops at step 5,
+  the worksheet, because it has no offline question bank: the card shows the
+  translated «no question bank» sentence, offers no Retry (it cannot succeed; a
+  live-AI failure keeps its Retry) and there is nothing to Save or export. A
+  single lesson of such a subject already stopped there; piece 3 widened how
+  often it happens. Measured over every book, semester and unit in the data
+  (1,140 scopes, the same in both languages): 140 complete (125 maths, 15
+  chemistry), 1,000 stop. A completed wide flow saves its picker positions and
+  scope — «تعديل» reopens the *form* on them (lesson-flow has never reloaded a
+  saved flow's content) — prints no book figures, and hides the class-screen
+  button («اعرض على شاشة الصف» on the screen, «الحصة» in the saved view), which
+  would hand the label to the classroom builder.
+  *On every screen* a wide result names its scope in the grounding notice, is
+  not filed under a lesson (it saves `scopeFormState`, so `withLessonId` stamps
+  nothing), shows no book figures, and shows no Related tools (the plan and
+  activity pass `hideRelated`; the other three have no such panel). Saved titles
+  say «مراجعة»: «خطة حصة مراجعة: …» / "Revision Lesson Plan: …", «نشاط مراجعة: …» /
+  "Revision Activity: …", «مسار مراجعة: …» / "Revision Flow: …", and a deck's
+  «مراجعة <phrase>» / "Revision: <phrase>". Nothing carries a scope from one tool
+  to the next: the teacher re-picks. The builder has no Save and starts with no
+  saved scope (`useWideScope({}, …)`); on the other four a saved scope whose
+  grade/subject no longer matches the pickers reads as a single lesson.
+  Tested: `buildScopeRequest` (teacher text keeps `'teacher'`); the wide plan
+  (a round per unit for each style, the left-out sentence, first-person-future
+  Arabic); every activity and classroom format (no sentence that claims one
+  lesson survives, in either language); the live clauses present only with
+  `scope`; `buildRevisionDeck` and the slides request bodies (lesson bodies
+  byte-identical, scope on both calls, no explanation call); the runner's step
+  fields, the failed-step wording, and whole semester flows run offline end to
+  end. Also swept by script for this entry (not committed as tests): 31,920
+  offline wide plans, activities and classroom activities over all 1,140 scopes
+  in both languages, and 280 completed flows with their PDF HTML, contain no
+  «غلق الدرس», "this lesson" or "from the lesson".
+  **Not yet clicked — a manual check nobody has done:** `offlineWideScope` is on
+  for all five screens, so the web build (production runs `DEMO_MODE`) offers
+  the unit, semester and book entries now, and none of them was ever run in a
+  browser (none in the build container). **Someone must click through each of
+  the five screens on the web preview:** pick a unit, a semester and the whole
+  book; generate; Regenerate; Save; reopen from موادي; export — and on slides,
+  Present; on lesson-flow, a Retry and the PDF.
+  **Not verified / known limits:** the screens are checked by reading and
+  typecheck only; the live model's adherence to the revision clause is untestable
+  here, and a live discussion or hands-on activity is asked to cover every unit
+  where an offline one covers one per version. Presentation → whiteboard still
+  passes the activity's `lesson` string as a bare topic, and the whiteboard files
+  its save by grounding it: offline that is the scope phrase or the deck's
+  «مراجعة …» title, which grounded to no lesson in a check of all 713 Arabic and
+  656 English phrases; live, the builder's `lesson` is the label itself, which
+  **can re-ground** (the final review found 7 of 60 labels did; not
+  re-measured). The chat (`iqra.tsx`) — the only place an infographic is made —
+  still takes a label; evaluations (exams) still take one lesson. A reopened
+  wide material keeps its scope but `TopicSelector`'s dropdowns show their
+  placeholders, and a stale reopen can lose the wide marker (the frozen scope is
+  seeded from the pickers' check), so a plan, activity or deck — like a quiz or
+  worksheet — then re-saves as a lesson; from reading `topicInLang`, reopening in
+  a UI language other than the material's can also re-ground a unit label (not
+  reproduced).
+  *Data and wording:* an English maths or chemistry activity, worksheet and exit
+  ticket print the banks' Arabic items and options (as a lesson does); the
+  English plan keeps a short letter gloss («The Letter Baa (ب)») but cuts a
+  tatweel one (`The Letter Haa'`), and the activity drops any concept that holds
+  an Arabic letter; English wording that wraps a unit title reads awkwardly for
+  the 52 of 841 unit titles that begin with “The” and the 32 called “Unit One”,
+  “Unit Two”… ("the “The Environment” unit", "“Unit One” unit topics"); a unit
+  with no outcomes, concepts or terms gets generic phrase-based tasks; Arabic
+  text nests «» (a unit phrase quoted again, or a data title that already carries
+  «»; on the 1,140 Arabic scopes: every discussion activity, 841 warm-ups, 312
+  individual and 312 hands-on activities, 26 plans); error-detective and
+  escape-challenge are fixed quadratic-equation cards whatever the subject (as
+  for a lesson). The offline plan rarely asks a warm-up question, so only 19 of
+  1,140 Arabic and 17 of 1,140 English decks have a warm-up slide; the deck's
+  preparation note lists the goals as generated though the offline goals are
+  curriculum outcomes; a wide deck has less per-concept narration than a lesson
+  deck (no explanation call); on lesson-flow the random question steps need not
+  touch every unit; the live "what is left out" sentence is not checked against
+  the lessons. `TopicSelector`'s own doc comment on `offlineWideScope` still
+  lists only quiz, worksheet, homework and game.
 - **Quiz, worksheet, homework and game take a unit, semester or whole book
   (2026-10-14; spec
   `docs/superpowers/specs/2026-10-14-wide-scope-assessment-tools-design.md`,
@@ -111,9 +239,9 @@ an announcement by default» below.
   prior-knowledge review is hidden on a wide worksheet (and not sent), and so
   are Related tools on a wide quiz and worksheet (`hideRelated`: their chips
   open other tools with the scope label as a bare topic, which they would
-  re-ground to a lesson); the game has no Related panel. Evaluations (exams) still take a
-  single lesson, and so do lesson plan, slides, activity, lesson-flow,
-  infographic and the classroom builder (piece 3). Papers above 30 questions
+  re-ground to a lesson); the game has no Related panel. Evaluations (exams) and
+  the infographic still take a single lesson (the five teaching tools took the
+  same scopes in piece 3 — the bullet above). Papers above 30 questions
   are not built.
 - **A browser smoke test covers the teacher-to-student journey** (2026-10-12,
   `e2e/`, `.github/workflows/e2e.yml`). Playwright drives the real web build
@@ -135,13 +263,14 @@ an announcement by default» below.
   server-side page pooling and `scopeKey` in the artifact cache key all exist
   and are tested. `TopicSelector`'s «الفصل كاملًا» entry is verified by code
   read only — there is no browser in the build container, so it was never run.
-  **Since 2026-10-14 quiz, worksheet, homework and game opt in** (the bullet above);
-  every other screen still does not, so there «الوحدة كاملةً» sets the unit
-  title as the topic, which `resolveGeneratorGrounding` grounds to one lesson or
-  none (not to the unit), and «الكتاب كاملًا» stays ungrounded — its topic text
-  matches nothing. **Piece 3 (the rest) still has to adopt `onScopeChange` +
-  `scopeRequestFields`.** Restoring a saved / reopened scope (spec §6, goal 5)
-  is wired for those four via `parseScope`, with the limits in the bullet above.
+  **Since 2026-10-14 quiz, worksheet, homework and game opt in, and so do lesson
+  plan, slides, activity, lesson-flow and the classroom builder** (the two
+  bullets above). Only the chat (`iqra.tsx`) still does not, so there «الوحدة
+  كاملةً» sets the unit title as the topic, which `resolveGeneratorGrounding`
+  grounds to one lesson or none (not to the unit), and «الكتاب كاملًا» stays
+  ungrounded — its topic text matches nothing. Restoring a saved / reopened
+  scope (spec §6, goal 5) is wired via `parseScope` on the screens that read
+  `scope` from their route, with the limits in the bullets above.
 - **API credentials are Secret Manager references** (2026-10-08, live since
   `iqraa-api-00283-twr`). The ten credentials (`SESSION_SECRET`,
   `DATABASE_URL`, `OPENAI_API_KEY`, both R2 keys, Unsplash, YouTube,
@@ -394,7 +523,15 @@ an announcement by default» below.
   repeats whole, with the notice only where a screen shows it. Live AI is
   unchanged (it has its own `avoid` / overlap check server-side). Tests:
   `quizRegenerateStems.test.ts`, `worksheetRegenerateStems.test.ts`. Not looked
-  at in a browser.
+  at in a browser. **Known flake (checked 2026-10-15):**
+  `worksheetRegenerateStems.test.ts` fails about 1 run in 10 (3 of 30 isolated
+  runs on this branch, and it has failed in CI): "the notice counts exactly the
+  questions that repeated" sees `repeated: { count: 1, of: 6 }` where its own
+  count is 0. The test compares raw `q.text`; the generator judges repeats by
+  `questionStemKey`, which strips the answer-space padding, so two questions
+  that differ only in that padding repeat to one and not to the other (read
+  from the code, not isolated). Not fixed; a red run of that one file is not a
+  regression — re-run it.
 - **Lesson plan «أعد التجهيز»: what changed, and what it cannot (2026-10-14).**
   Measured over 30 regenerations (maths, chemistry, Arabic × direct,
   collaborative): the offline plan has ONE phrasing for five of its eight
