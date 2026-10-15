@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,7 +23,19 @@ type ReportState = 'idle' | 'sending' | 'sent' | 'failed';
  * Read-only. The practice problem's hint and answer sit behind a tap so a
  * student tries first. Nothing here can start a generation; the server
  * answers from the pool or says it has nothing.
+ *
+ * Per-explanation state (revealed hints, report sent) is keyed by the loaded
+ * `variantId`, so it can never carry from one explanation to another. Only the
+ * latest `load()` may set state, and none may after the screen has unmounted.
  */
+
+// Unicode first-strong isolates. A value of Latin maths next to Arabic text in
+// one `Text` reorders visually in RTL («2 mol» jumping to the other side of its
+// label); isolating the model's text keeps the label where it is.
+const FSI = '⁨';
+const PDI = '⁩';
+const isolate = (text: string) => `${FSI}${text}${PDI}`;
+
 export default function LessonExplanationScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -38,33 +50,47 @@ export default function LessonExplanationScreen() {
 
   const [phase, setPhase] = useState<Phase>('loading');
   const [explanation, setExplanation] = useState<LessonExplanation | null>(null);
-  const [report, setReport] = useState<ReportState>('idle');
+  // Keyed by variantId (see the screen's comment): a different explanation
+  // starts with nothing revealed and nothing reported.
+  const [reports, setReports] = useState<Record<string, ReportState>>({});
   const [shown, setShown] = useState<Record<string, boolean>>({});
+  // The latest load() wins: a slow earlier response (before a language change
+  // or a retry) must not overwrite a newer one, and nothing lands after unmount.
+  const latestLoad = useRef(0);
 
   const load = useCallback(async () => {
-    if (!lessonId) { setPhase('soon'); return; }
+    const mine = ++latestLoad.current;
+    if (!lessonId) { setExplanation(null); setPhase('soon'); return; }
     setPhase('loading');
     try {
       const result = await getLessonExplanation(lessonId, lang === 'ar' ? 'ar' : 'en');
+      if (mine !== latestLoad.current) return;
       if (result.status === 'ok') { setExplanation(result.explanation); setPhase('ready'); }
-      else setPhase('soon');
+      else { setExplanation(null); setPhase('soon'); }
     } catch {
+      if (mine !== latestLoad.current) return;
       setPhase('error');
     }
   }, [lessonId, lang]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    void load();
+    return () => { latestLoad.current += 1; };
+  }, [load]);
 
   const cards: ExplanationCard[] = explanation ? buildExplanationCards(explanation.content) : [];
+  const variantId = explanation?.variantId ?? '';
+  const report: ReportState = reports[variantId] ?? 'idle';
 
   const sendReport = async () => {
-    if (!explanation || report === 'sending' || report === 'sent') return;
-    setReport('sending');
+    if (!variantId || report === 'sending' || report === 'sent') return;
+    const setFor = (state: ReportState) => setReports(r => ({ ...r, [variantId]: state }));
+    setFor('sending');
     try {
-      await reportLessonExplanation(explanation.variantId);
-      setReport('sent');
+      await reportLessonExplanation(variantId);
+      setFor('sent');
     } catch {
-      setReport('failed');
+      setFor('failed');
     }
   };
 
@@ -73,23 +99,61 @@ export default function LessonExplanationScreen() {
     <Text style={[styles.cardLabel, align, { color: accent, fontFamily: 'ReadexPro_600SemiBold' }]}>{text}</Text>
   );
   const body = [styles.body, align, { color: colors.foreground, fontFamily: 'Almarai_400Regular' }];
-  const reveal = (key: string, label: string, content: string) =>
-    shown[key] ? (
-      <View style={[styles.revealed, { backgroundColor: colors.muted, borderRadius: colors.radius }]}>
-        <Text style={[styles.cardLabel, align, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>{label}</Text>
-        <Text style={body}>{content}</Text>
-      </View>
-    ) : (
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => setShown(s => ({ ...s, [key]: true }))}
-        style={[styles.revealBtn, { borderColor: accent, borderRadius: colors.radius }]}
-      >
-        <Text style={{ color: accent, fontFamily: 'ReadexPro_500Medium', fontSize: 14 }}>
-          {key.endsWith('hint') ? t('lessonExplainShowHint') : t('lessonExplainShowAnswer')}
-        </Text>
-      </Pressable>
+  // A disclosure button: it stays after the tap (so a screen reader hears
+  // «expanded») and a second tap hides the content again.
+  const reveal = (key: string, label: string, content: string) => {
+    const id = `${variantId}:${key}`;
+    const open = shown[id] === true;
+    return (
+      <>
+        <Pressable
+          accessibilityRole="button"
+          aria-expanded={open}
+          onPress={() => setShown(s => ({ ...s, [id]: !s[id] }))}
+          style={[styles.revealBtn, { borderColor: accent, borderRadius: colors.radius }]}
+        >
+          <Text style={{ color: accent, fontFamily: 'ReadexPro_500Medium', fontSize: 14 }}>
+            {key.endsWith('hint') ? t('lessonExplainShowHint') : t('lessonExplainShowAnswer')}
+          </Text>
+        </Pressable>
+        {open ? (
+          <View style={[styles.revealed, { backgroundColor: colors.muted, borderRadius: colors.radius }]}>
+            <Text style={[styles.cardLabel, align, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>{label}</Text>
+            <Text style={body}>{content}</Text>
+          </View>
+        ) : null}
+      </>
     );
+  };
+
+  const reportLink = (
+    <Pressable
+      accessibilityRole="button"
+      aria-disabled={report === 'sending' || report === 'sent'}
+      disabled={report === 'sending' || report === 'sent'}
+      onPress={() => void sendReport()}
+      hitSlop={8}
+      style={styles.reportBtn}
+    >
+      <Text
+        style={[
+          align,
+          {
+            color: report === 'failed' ? colors.destructive : colors.mutedForeground,
+            fontFamily: 'Almarai_400Regular',
+            fontSize: 13,
+            textDecorationLine: report === 'sent' ? 'none' : 'underline',
+          },
+        ]}
+      >
+        {report === 'sent'
+          ? t('lessonExplainReported')
+          : report === 'failed'
+            ? t('lessonExplainReportFailed')
+            : t('lessonExplainReport')}
+      </Text>
+    </Pressable>
+  );
 
   const renderCard = (c: ExplanationCard, i: number) => {
     switch (c.kind) {
@@ -118,8 +182,8 @@ export default function LessonExplanationScreen() {
           <View key={i} style={card}>
             {heading(t('lessonExplainExample'))}
             <Text style={[body, styles.strong]}>{c.problem}</Text>
-            {c.steps.map((s, j) => <Text key={j} style={body}>{`${j + 1}. ${s}`}</Text>)}
-            {c.answer ? <Text style={[body, styles.strong, { color: accent }]}>{`${t('lessonExplainAnswer')}: ${c.answer}`}</Text> : null}
+            {c.steps.map((s, j) => <Text key={j} style={body}>{`${j + 1}. ${isolate(s)}`}</Text>)}
+            {c.answer ? <Text style={[body, styles.strong, { color: accent }]}>{`${t('lessonExplainAnswer')}: ${isolate(c.answer)}`}</Text> : null}
           </View>
         );
       case 'practice':
@@ -143,7 +207,7 @@ export default function LessonExplanationScreen() {
       </View>
 
       {phase === 'loading' ? (
-        <View style={styles.center}><ActivityIndicator color={accent} /></View>
+        <View style={styles.center} aria-busy><ActivityIndicator color={accent} /></View>
       ) : phase === 'error' ? (
         <View style={styles.center}>
           <Text style={[styles.notice, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>{t('lessonExplainError')}</Text>
@@ -151,38 +215,21 @@ export default function LessonExplanationScreen() {
             <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>{t('lessonExplainRetry')}</Text>
           </Pressable>
         </View>
-      ) : phase === 'soon' || cards.length === 0 ? (
+      ) : phase === 'soon' ? (
         <View style={styles.center}>
           <Text style={[styles.notice, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>{t('lessonExplainEmpty')}</Text>
         </View>
+      ) : cards.length === 0 ? (
+        // An approved row with nothing usable in it: say so, and still let the
+        // student report it so an admin can look.
+        <View style={styles.center}>
+          <Text style={[styles.notice, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>{t('lessonExplainEmpty')}</Text>
+          {reportLink}
+        </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: 48 + insets.bottom }]} showsVerticalScrollIndicator={false}>
           {cards.map(renderCard)}
-          <Pressable
-            accessibilityRole="button"
-            disabled={report === 'sending' || report === 'sent'}
-            onPress={() => void sendReport()}
-            hitSlop={8}
-            style={styles.reportBtn}
-          >
-            <Text
-              style={[
-                align,
-                {
-                  color: report === 'failed' ? colors.destructive : colors.mutedForeground,
-                  fontFamily: 'Almarai_400Regular',
-                  fontSize: 13,
-                  textDecorationLine: report === 'sent' ? 'none' : 'underline',
-                },
-              ]}
-            >
-              {report === 'sent'
-                ? t('lessonExplainReported')
-                : report === 'failed'
-                  ? t('lessonExplainReportFailed')
-                  : t('lessonExplainReport')}
-            </Text>
-          </Pressable>
+          {reportLink}
         </ScrollView>
       )}
     </View>
@@ -205,6 +252,6 @@ const styles = StyleSheet.create({
   hook: { fontSize: 17, lineHeight: 28 },
   strong: { fontFamily: 'ReadexPro_500Medium' },
   revealed: { padding: 12, gap: 4 },
-  revealBtn: { borderWidth: 1, paddingVertical: 12, alignItems: 'center' },
-  reportBtn: { alignSelf: 'center', paddingVertical: 12 },
+  revealBtn: { borderWidth: 1, paddingVertical: 12, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  reportBtn: { alignSelf: 'center', paddingVertical: 12, minHeight: 44, justifyContent: 'center' },
 });
