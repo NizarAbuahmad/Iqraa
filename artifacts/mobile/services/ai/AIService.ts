@@ -44,6 +44,23 @@ export interface AIRequest {
    */
   scope?: { kind: 'unit' | 'semester' | 'book'; scopeKey: string; unitIds: string[] };
   /**
+   * How a wide scope's questions are spread over its lessons. Part of the
+   * strict cache key; absent for a single lesson.
+   */
+  distribution?: 'balanced' | 'random';
+  /**
+   * The lessons of a wide scope, each with a short code the model tags a
+   * question with, and — for `balanced` only — the per-question plan as
+   * lesson codes. The offline path ignores `slots` and re-plans from `lessons`
+   * (some lessons have no offline bank); the live prompt renders the plan as
+   * per-lesson counts. Neither is hashed into the cache key: both are a pure
+   * function of the scope and the count.
+   */
+  coverage?: {
+    lessons: Array<{ code: string; id: string; unitId: string; title: string }>;
+    slots?: string[];
+  };
+  /**
    * How many student-book figures this lesson has (`figuresForLesson().length`).
    *
    * The server cannot work this out: the crops and `figure-lesson-map.json`
@@ -271,6 +288,10 @@ export interface WorksheetQuestion {
    * answer" — never as «من بنك الأسئلة المُراجَع».
    */
   fromBank?: true;
+  /** The KB lesson this question was written for — set on a wide-scope paper. */
+  lessonId?: string;
+  /** The model's raw lesson code (`L3`). Mapped to `lessonId` on arrival and then removed. */
+  lesson?: string;
   /**
    * A figure from the lesson's own student book, attached to this question by
    * the teacher. Never set by a generator: the model that wrote the questions
@@ -327,6 +348,10 @@ export interface QuizQuestion {
   explanation: string;
   /** See `WorksheetQuestion.fromBank`. */
   fromBank?: true;
+  /** The KB lesson this question was written for — set on a wide-scope paper. */
+  lessonId?: string;
+  /** The model's raw lesson code (`L3`). Mapped to `lessonId` on arrival and then removed. */
+  lesson?: string;
 }
 
 export interface ActivityStep {
