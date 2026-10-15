@@ -48,6 +48,7 @@ import { nextFrame } from '@/services/nextFrame';
 import { buildLessonPlanRequest, groundLessonPlanTopic } from '@/services/generatorRequests';
 import { useWideScope } from '@/hooks/useWideScope';
 import { scopeLabel, type ScopeSelection } from '@/services/scopeSelection';
+import { lessonPlanExportTitle } from '@/services/exportTitles';
 import { buildWideLessonPlanRequest, scopeFormState } from '@/services/wideScopeRequest';
 
 const ACCENT = palette.primary;
@@ -187,7 +188,9 @@ export default function LessonPlanScreen() {
   const [savedId, setSavedId] = useState<string | undefined>(params.savedId);
   const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
   const [showMore, setShowMore] = useState(false);
-  const moreOpen = showMore || !!(objectives.trim() || adaptations.trim() || priorTopicsNotes.trim());
+  // The prior-topics field is hidden on a wide scope, so text left in it from before
+  // the switch must not keep the section open around nothing the teacher can see.
+  const moreOpen = showMore || !!(objectives.trim() || adaptations.trim() || (!wideScope.isWide && priorTopicsNotes.trim()));
   const [showExport, setShowExport] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
@@ -340,7 +343,10 @@ export default function LessonPlanScreen() {
     const title = getExportTitle();
     const formState = {
       gradeIdx: scope.gradeIdx, subjectIdx: scope.subjectIdx, topic: scope.topic,
-      durationIdx, styleIdx, objectives, adaptations, priorTopicsNotes,
+      durationIdx, styleIdx, objectives, adaptations,
+      // A revision has no prior review: its field is hidden and was never sent, so
+      // text typed before the switch to a wide scope is not saved with the plan.
+      priorTopicsNotes: wideFrozen ? '' : priorTopicsNotes,
       includePriorReview: includePriorReview ? '1' : '0',
       // From the frozen scope, not the live picker (a teacher can move it after generating).
       // `distribution` is written by the shared helper and ignored by this tool.
@@ -391,9 +397,7 @@ export default function LessonPlanScreen() {
     duration: DURATION_VALUES[durationIdx],
   });
 
-  const getExportTitle = () => (wideFrozen
-    ? (outLang === 'ar' ? `خطة حصة مراجعة: ${scope.topic}` : `Revision Lesson Plan: ${scope.topic}`)
-    : (outLang === 'ar' ? `خطة درس: ${scope.topic}` : `Lesson Plan: ${scope.topic}`));
+  const getExportTitle = () => lessonPlanExportTitle(outLang, scope.topic, !!wideFrozen);
 
   const {
     getExportFigures,

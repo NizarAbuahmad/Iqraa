@@ -29,6 +29,9 @@ const ALLOWED: Record<string, string> = {
   "lib/classThread.ts": "reconciles who is in a class thread: a student claiming cannot see the thread or the other members' links",
   "lib/rosterClaim.ts": "resolves a claim code before any roster link for the claimer exists",
   "lib/resultsReleaseNotify.ts": "notifies every linked student and parent, none of whom is the teacher whose request triggered it",
+  "lib/familyAccess.ts": "accountsLinkedTo / liveClassStudentIds find the accounts and children a teacher's action is about — other people's roster links and settings, which that teacher cannot see",
+  "lib/familyPush.ts": "reads the recipients' device tokens (each belongs to the recipient) and prunes the dead ones; the caller is a teacher",
+  "lib/homeworkReminders.ts": "the day-before reminder is run by Cloud Scheduler with no user, over every teacher's homework and every family's ticks",
   "lib/adminNotify.ts": "notifies every system admin from a public, unauthenticated request",
   "modules/assessment/attemptGrading.ts": "server-side grading writes the grade tables, which only a teacher's identity may write directly",
 };

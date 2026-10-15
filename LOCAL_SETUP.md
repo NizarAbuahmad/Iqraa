@@ -149,6 +149,20 @@ restart. For a cap that survives that (and covers you if this guard has a
 bug), also set a hard usage limit on the OpenAI account itself under
 Settings → Billing → Usage limits.
 
+### Family push notifications (optional)
+
+Homework posted, exam dates, results and the day-before homework reminder are
+pushed through `lib/familyPush.ts` (spec Part 4). Three variables touch them,
+none needed for ordinary local work:
+
+| Variable | Default | Notes |
+|----------|---------|--------|
+| `EXPO_PUSH_URL` | unset → `https://exp.host/--/api/v2/push/send` | A **test seam**, read on every send by `sendExpoPush` (`lib/pushNotifications.ts`). Point it at a local catcher to see the requests leave; the DB tests point the built server at an in-process stub (`test-support/pushStub.ts`) and `startServer.ts` sets it to a dead port by default, so a test can never reach Expo. Leave it unset in production. |
+| `PUSH_QUIET_HOURS` | unset (quiet hours on) | Exactly `off` disables the 22:00–07:00 Amman window in which family pushes go to the silent `quiet` channel (`modules/notifications/quietHours.ts`). The DB tests set it so no assertion depends on the time of day. Chat and admin pushes ignore it. |
+| `INTERNAL_CRON_KEY` | unset → the route answers 404 | The shared key Cloud Scheduler sends as `x-internal-key` to `POST /api/internal/homework-reminders` (`routes/internal.ts`). Unset, empty or wrong all look the same: 404. Locally, set any string and `curl -X POST -H "x-internal-key: <it>" localhost:8080/api/internal/homework-reminders` runs the reminder (it needs `STUDENT_ACCOUNTS=true` and a database). In production it is a Secret Manager secret attached by hand — `docs/deploying.md`, «The homework reminder». |
+
+Family pushes also need `STUDENT_ACCOUNTS=true`; with it off they send nothing.
+
 ### Legacy / Replit-only (not required locally)
 
 | Variable | Status |
@@ -310,6 +324,47 @@ pnpm --filter @workspace/api-server run start
 ```
 
 ---
+
+## DB-backed API tests
+
+Some api-server tests (`*.db.test.ts`) run against a real Postgres: each test file
+creates its own throwaway database (`iqraa_test_<hex>`), applies the repo's
+migrations, seeds rows, boots the **built bundle** against it and calls the real
+routes. They **skip** unless `TEST_DATABASE_URL` is set, and **fail** if
+`REQUIRE_DB_TESTS=true` (CI sets both).
+
+```bash
+pnpm --filter @workspace/api-server run build      # the tests boot dist/index.mjs
+TEST_DATABASE_URL=postgres://postgres@127.0.0.1:5432/postgres \
+  pnpm --filter @workspace/api-server run test
+```
+
+`TEST_DATABASE_URL` is an *admin* URL: the harness only ever `CREATE`s and
+`DROP`s databases named `iqraa_test_` + 12 hex characters, and never stores data
+in the database the URL names. It refuses any host except `localhost`,
+`127.0.0.1` and `[::1]` unless `ALLOW_REMOTE_TEST_DB=1`. A URL with query parameters
+(`?sslmode=…`, `?host=…`) is refused unless `ALLOW_REMOTE_TEST_DB=1` too, because
+a `?host=` overrides the host the driver actually connects to. Postgres 13 or
+newer is required (the harness uses `DROP DATABASE … WITH (FORCE)`). Never point
+it at a real database.
+
+**`localhost` can be an SSH tunnel or a Cloud SQL proxy to a real server.** The
+host check cannot see that, and the harness would then create and drop its own
+`iqraa_test_*` databases there. Never point `TEST_DATABASE_URL` through a tunnel
+to a real server.
+
+No Postgres handy? Start a throwaway one (Postgres refuses to run as root, hence
+`runuser`; adjust the binary path for your install):
+
+```bash
+B=/usr/lib/postgresql/16/bin; D=/tmp/pgtest-iqraa
+mkdir -p $D && chown postgres:postgres $D
+runuser -u postgres -- $B/initdb -D $D/data -A trust -U postgres
+runuser -u postgres -- $B/pg_ctl -D $D/data -o "-p 55432 -k $D -c listen_addresses=127.0.0.1" -l $D/log -w start
+# TEST_DATABASE_URL=postgres://postgres@127.0.0.1:55432/postgres
+# when done:
+runuser -u postgres -- $B/pg_ctl -D $D/data stop && rm -rf $D
+```
 
 ## Run the frontend
 

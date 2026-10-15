@@ -103,6 +103,33 @@ describe("revisionClauseAr / revisionClauseEn", () => {
     assert.match(en, /"introduction"/);
   });
 
+  it("a scope may be a single unit: nothing says several units, and the plan's voice rule is where it really is", () => {
+    for (const kind of KINDS) {
+      const ar = revisionClauseAr({ ...base, ...wideFields }, kind);
+      const en = revisionClauseEn({ ...base, ...wideFields }, kind);
+      // Mutation caught: the old «عدة وحدات» / "several units" in the activity and classroom contracts.
+      assert.doesNotMatch(ar, /عدة وحدات/, `${kind} ar`);
+      assert.doesNotMatch(en, /several units/i, `${kind} en`);
+    }
+    for (const kind of ["activity", "classroom"] as const) {
+      assert.match(revisionClauseAr({ ...base, ...wideFields }, kind), /وحدة أو أكثر/, `${kind} ar`);
+      assert.match(revisionClauseEn({ ...base, ...wideFields }, kind), /one or more units/, `${kind} en`);
+      // A single unit is spread over its lessons, not left without a share.
+      assert.match(revisionClauseAr({ ...base, ...wideFields }, kind), /وحدة واحدة فوزّع/, `${kind} ar`);
+      assert.match(revisionClauseEn({ ...base, ...wideFields }, kind), /single unit/, `${kind} en`);
+    }
+    // The teaching-style structure sits ABOVE the clause and the teacher's voice rule BELOW it.
+    const wide = { ...base, teachingStyle: "direct", ...wideFields };
+    const prompt = lessonPlanPromptAr(wide);
+    const clause = revisionClauseAr(wide, "plan");
+    const styleAt = prompt.indexOf("أسلوب التدريس");
+    const voiceAt = prompt.indexOf("صيغة النص — بصيغة المتكلم");
+    const clauseAt = prompt.indexOf(clause);
+    assert.ok(styleAt >= 0 && styleAt < clauseAt && clauseAt < voiceAt, "probe: the prompt's order moved");
+    // Mutation caught: «أعلاه» for the voice rule that follows the clause.
+    assert.match(clause, /بنية أسلوب التدريس كما وردت أعلاه، وعلى صيغة المتكلم المستقبل للمعلم كما وردت أدناه/);
+  });
+
   it("the activity rewords the textbook page for a revision only inside the clause", () => {
     assert.match(revisionClauseAr({ ...base, ...wideFields }, "activity"), /«صفحة الكتاب»/);
     assert.match(revisionClauseEn({ ...base, ...wideFields }, "activity"), /"the textbook page"/);

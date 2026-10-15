@@ -67,10 +67,22 @@ export interface StepCallbacks {
  */
 export class LessonFlowStepError extends Error {
   readonly stepKey: StepKey;
+  /**
+   * The cause's `code` and `liveError`, when it had them, so a screen can still
+   * map the failure to a sentence (`aiErrorMessageKey` reads these two).
+   * Wrapping used to keep only the message.
+   */
+  readonly code?: string;
+  readonly liveError?: string;
   constructor(stepKey: StepKey, cause: unknown) {
     super(cause instanceof Error ? cause.message : String(cause));
     this.name = 'LessonFlowStepError';
     this.stepKey = stepKey;
+    const c = cause as { code?: unknown; liveError?: unknown } | null | undefined;
+    if (c && typeof c === 'object') {
+      if (typeof c.code === 'string') this.code = c.code;
+      if (typeof c.liveError === 'string') this.liveError = c.liveError;
+    }
   }
 }
 

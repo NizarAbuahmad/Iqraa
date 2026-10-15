@@ -10,7 +10,7 @@
 import { SUBJECTS } from '@workspace/curriculum';
 import type { StudentResult } from './studentExam.ts';
 
-export type MyExamState = 'available' | 'in_progress' | 'submitted' | 'result' | 'closed';
+export type MyExamState = 'available' | 'in_progress' | 'submitted' | 'result' | 'closed' | 'paper';
 
 export interface MyExam {
   evaluationId: string;
@@ -21,20 +21,24 @@ export interface MyExam {
   totalMarks: number;
   timeLimitMin: number | null;
   publishedAt: string | null;
-  /** The teacher's planned day, "YYYY-MM-DD"; planning only, it never opens or closes the exam. */
-  examDate?: string | null;
-  /** "HH:MM", only ever set together with `examDate`. */
-  examTime?: string | null;
   state: MyExamState;
   /** Present only while the exam link admits the student. */
   shareCode: string | null;
   submittedAt: string | null;
   deadlineAt: string | null;
   result: StudentResult | null;
+  /** 'YYYY-MM-DD', a calendar day with no zone — compare as a string, never through `Date`. Absent from an older server. */
+  examDate?: string | null;
+  /** 'HH:MM', the teacher's wall-clock time. Absent from an older server. */
+  examTime?: string | null;
+  /** Sat on paper; never has a link. Absent from an older server. */
+  paper?: boolean;
 }
 
 /** One child's list, as `GET /parent/exams` returns it — no row carries a link. */
 export interface ChildExams {
+  /** The server's child key — one child's rows under two teachers share it; absent from an older server. */
+  key?: string;
   studentId: string;
   displayName: string;
   exams: MyExam[];
@@ -46,6 +50,7 @@ export const MY_EXAM_STATE_KEY = {
   submitted: 'myExamsStateSubmitted',
   result: 'myExamsStateResult',
   closed: 'myExamsStateClosed',
+  paper: 'myExamsStatePaper',
 } as const satisfies Record<MyExamState, string>;
 
 export type MyExamAction = 'start' | 'continue' | 'toggle_result' | null;
@@ -57,6 +62,7 @@ export type MyExamAction = 'start' | 'continue' | 'toggle_result' | null;
  */
 export function myExamAction(exam: MyExam): MyExamAction {
   if (exam.state === 'result' && exam.result) return 'toggle_result';
+  if (exam.state === 'paper') return null;
   if (!exam.shareCode) return null;
   if (exam.state === 'available') return 'start';
   if (exam.state === 'in_progress') return 'continue';
@@ -146,4 +152,18 @@ export function progressSummary(exams: readonly MyExam[]): ProgressSummary {
 /** How many rows want something from the student now — for the entry tile. */
 export function actionableCount(exams: readonly MyExam[]): number {
   return exams.filter(e => myExamAction(e) === 'start' || myExamAction(e) === 'continue').length;
+}
+
+/**
+ * The facts under a row's title — subject, the exam day, when it was sent, the
+ * limit, the marks — as separate pieces for a wrapping row, in order, with the
+ * empty ones dropped. The row spaces them with a gap and draws no separator
+ * character: a joined string under `numberOfLines` was cut mid-text («· 10 …»)
+ * once the exam day joined it, and a « ·» glued to the end of each piece left a
+ * line ending in a dangling dot wherever the row wrapped. With spacing only, no
+ * line can begin or end on punctuation, and a piece wider than the row still
+ * wraps inside itself.
+ */
+export function metaSegments(parts: readonly (string | null | undefined | false)[]): string[] {
+  return parts.filter((p): p is string => typeof p === 'string' && p.trim() !== '');
 }

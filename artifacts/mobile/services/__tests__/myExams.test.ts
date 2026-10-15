@@ -6,6 +6,7 @@ import {
   actionableCount,
   canRetakeExam,
   myExamAction,
+  metaSegments,
   myExamTitle,
   progressSummary,
   splitMyExams,
@@ -52,6 +53,14 @@ describe('myExamAction', () => {
   it('does nothing for a paper waiting to be marked', () => {
     assert.equal(myExamAction(exam({ state: 'submitted' })), null);
   });
+
+  // A pin, not a RED test: a paper row carries no share code, so the existing
+  // `!shareCode` line already returns null. It holds the rule if that line moves.
+  it('never offers anything on a paper exam', () => {
+    assert.equal(myExamAction(exam({ state: 'paper', shareCode: null, paper: true })), null);
+    // Even if an older server still sent a code.
+    assert.equal(myExamAction(exam({ state: 'paper', shareCode: 'ABC234', paper: true })), null);
+  });
 });
 
 describe('actionableCount', () => {
@@ -71,7 +80,7 @@ describe('actionableCount', () => {
 
 describe('labels', () => {
   it('names every state the server can send', () => {
-    for (const s of ['available', 'in_progress', 'submitted', 'result', 'closed'] as const) {
+    for (const s of ['available', 'in_progress', 'submitted', 'result', 'closed', 'paper'] as const) {
       assert.ok(MY_EXAM_STATE_KEY[s], s);
     }
   });
@@ -101,6 +110,21 @@ describe('canRetakeExam', () => {
   it('never offers one to a parent, or on a quiz the server did not list', () => {
     assert.equal(canRetakeExam(shown, ['e1'], true), false);
     assert.equal(canRetakeExam(shown, [], false), false);
+  });
+});
+
+describe('metaSegments', () => {
+  it('keeps the pieces in order and drops the empty ones', () => {
+    assert.deepEqual(metaSegments(['الرياضيات', null, 'موعده 2026-10-17 09:30', false, '', '   ', undefined, '10 علامات']), [
+      'الرياضيات',
+      'موعده 2026-10-17 09:30',
+      '10 علامات',
+    ]);
+    assert.deepEqual(metaSegments([null, undefined, '']), []);
+  });
+  it('carries no separator character, so no wrapped line can end or start on a dot', () => {
+    for (const s of metaSegments(['a', 'b', 'c'])) assert.ok(!/[·\u00A0]/.test(s), s);
+    assert.deepEqual(metaSegments(['الرياضيات']), ['الرياضيات']);
   });
 });
 

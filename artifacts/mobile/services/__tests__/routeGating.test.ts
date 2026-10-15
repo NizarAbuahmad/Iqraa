@@ -37,6 +37,10 @@ describe('isEntryRoute', () => {
       '/ai-tools/slides',
       '/ai-tools/classroom/presentation',
       '/evaluations/abc123/results',
+      // A pin, not a fix: nothing in routeGating.ts names /evaluations, so this
+      // cannot fail today; it fails if someone adds a blanket rule that would
+      // bounce a reload of the mark book to the tabs.
+      '/evaluations/abc123/marks',
       '/curriculum/lesson-detail',
     ]) {
       assert.equal(isEntryRoute(p), false, p);
@@ -145,6 +149,8 @@ describe('isNonTeacherRoute', () => {
       '/faq',
       '/delete-account',
       '/my-exams',
+      '/school',
+      '/school/anything',
       '/profile',
       '/join-class',
       '/claim-required',
@@ -197,6 +203,7 @@ describe('isNonTeacherRoute', () => {
     assert.equal(isNonTeacherRoute('/profiles'), false);
     assert.equal(isNonTeacherRoute('/curriculum-admin'), false);
     assert.equal(isNonTeacherRoute('/notificationsettings'), false);
+    assert.equal(isNonTeacherRoute('/schools'), false);
   });
 
   it('fails closed on no path', () => {
@@ -311,6 +318,13 @@ describe('needsGradeSetup', () => {
 describe('the class picker route', () => {
   it('is reachable by a parent or student, and is not a teacher route', () => {
     assert.equal(isNonTeacherRoute('/setup-grade'), true);
+  });
+});
+
+describe('the mark book route', () => {
+  it('is a teacher route: a non-teacher is bounced from it', () => {
+    // Pinned with the other /evaluations screens; the server refuses a non-teacher anyway.
+    assert.equal(isNonTeacherRoute('/evaluations/abc123/marks'), false);
   });
 });
 

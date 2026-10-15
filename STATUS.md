@@ -53,6 +53,134 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **Lesson plan, slides, activity, lesson-flow and the classroom builder take a
+  unit, semester or whole book — as one revision session (2026-10-14; spec
+  `docs/superpowers/specs/2026-10-14-wide-scope-teaching-tools-design.md`,
+  builds on pieces 1–2). Merged without anyone opening them in a browser —
+  see «Not yet clicked» below.** The five screens used to offer «الوحدة كاملةً»
+  and «الكتاب كاملًا» as label strings and re-ground them (on slides, lesson-flow
+  and the builder unscoped, so a unit title could land on another grade's
+  lesson). They now give `TopicSelector` `allowedKinds` lesson/unit/semester/book,
+  `onScopeChange` and `offlineWideScope`, take the structured scope, and never
+  look the label up: every `resolveGeneratorGrounding` / `buildGeneratorContext`
+  / `generatorLessonId` / `generatorUnitId` / `generatorFigureCount` call on them
+  sits behind the wide check. A wide request (`buildScopeRequest`) carries the
+  scope, the curriculum digest followed by the teacher's own typed text where
+  the screen has any (the plan's objectives and adaptations, the activity's
+  objective — these keep `contextSource: 'teacher'`; slides, lesson-flow and the
+  builder have none), and the scope's lesson table with no slot plan, `unitId` /
+  `lessonId` explicitly undefined and `bookFigureCount: 0`.
+  **A wide scope means one selective revision session.** *Lesson plan:* the
+  plan's own fields, no new ones; the main activity is a round per unit in each
+  teaching style's own form (direct a worked review, inquiry one guiding
+  question, collaborative one group card); the introduction names the scope and
+  what the session leaves out (offline, `leftOutSentence` computes it from the
+  lesson table; live, it is the model's own statement); no prior-knowledge
+  review (`includePriorReview: false` is sent, prior-topics notes dropped) and no
+  Ministry-form export; the Arabic teacher fields are first person, future.
+  **The offline wide plan is deterministic, so Regenerate repeats it** — the
+  existing «repeated» notice says so (8 of 8). *Activity:* every format
+  (individual, jigsaw, discussion, hands-on, game) and the warm-up keeps its
+  structure; the multi-item ones draw from two units or more in one activity,
+  discussion and hands-on build on one item and each Regenerate moves to
+  another unit, and the regenerate counter is keyed by the scope. *Classroom
+  builder:* its seven offline types take a revision phrase («موضوعات الفصل الأول»,
+  «موضوعات وحدة «…»») instead of the label. *Live prompts:* one revision clause
+  per kind (plan, activity, classroom; `artifacts/api-server/src/lib/revision.ts`),
+  present only when the request carries a valid wide `scope`; without it every
+  lesson prompt is byte-identical (tests assert `prompt.replace(clause, '')`
+  equals the lesson prompt).
+  *Slides* builds a wide deck from the wide plan and the wide quick-check only
+  (`buildRevisionDeck`): title, the units covered, the plan's goals, its warm-up
+  question when it asks one, a divider and an ideas slide per unit (official
+  outcomes and key ideas from the curriculum data, six at most), the checks,
+  practice, a summary naming the units, the exit ticket and the plan's homework.
+  No book figures, vocabulary, rules or worked examples, no pinned resources,
+  uploads or lab items, no explainer-video search (the two topical photos still
+  come), and `generateLessonTeaching` is skipped — that prompt is single-lesson
+  by design. A failed plan still leaves the unit rounds.
+  *Lesson-flow* sends the scope with every AI step (guided practice reads the
+  wide plan); its 5-question worksheet and 3-question exit ticket ask for the
+  `random` distribution with no slot plan (`questionStepFields`), so the live
+  prompt never states per-lesson counts for another total, and the exit-ticket
+  step reads «غلق الحصة». **A wide lesson-flow completes offline only for maths
+  (grades 1–10) and chemistry (grades 9–10).** Any other subject stops at step 5,
+  the worksheet, because it has no offline question bank: the card shows the
+  translated «no question bank» sentence, offers no Retry (it cannot succeed; a
+  live-AI failure keeps its Retry) and there is nothing to Save or export. A
+  single lesson of such a subject already stopped there; piece 3 widened how
+  often it happens. Measured over every book, semester and unit in the data
+  (1,140 scopes, the same in both languages): 140 complete (125 maths, 15
+  chemistry), 1,000 stop. A completed wide flow saves its picker positions and
+  scope — «تعديل» reopens the *form* on them (lesson-flow has never reloaded a
+  saved flow's content) — prints no book figures, and hides the class-screen
+  button («اعرض على شاشة الصف» on the screen, «الحصة» in the saved view), which
+  would hand the label to the classroom builder.
+  *On every screen* a wide result names its scope in the grounding notice, is
+  not filed under a lesson (it saves `scopeFormState`, so `withLessonId` stamps
+  nothing), shows no book figures, and shows no Related tools (the plan and
+  activity pass `hideRelated`; the other three have no such panel). Saved titles
+  say «مراجعة»: «خطة حصة مراجعة: …» / "Revision Lesson Plan: …", «نشاط مراجعة: …» /
+  "Revision Activity: …", «مسار مراجعة: …» / "Revision Flow: …", and a deck's
+  «مراجعة <phrase>» / "Revision: <phrase>". Nothing carries a scope from one tool
+  to the next: the teacher re-picks. The builder has no Save and starts with no
+  saved scope (`useWideScope({}, …)`); on the other four a saved scope whose
+  grade/subject no longer matches the pickers reads as a single lesson.
+  Tested: `buildScopeRequest` (teacher text keeps `'teacher'`); the wide plan
+  (a round per unit for each style, the left-out sentence, first-person-future
+  Arabic); every activity and classroom format (no sentence that claims one
+  lesson survives, in either language); the live clauses present only with
+  `scope`; `buildRevisionDeck` and the slides request bodies (lesson bodies
+  byte-identical, scope on both calls, no explanation call); the runner's step
+  fields, the failed-step wording, and whole semester flows run offline end to
+  end. Also swept by script for this entry (not committed as tests): 31,920
+  offline wide plans, activities and classroom activities over all 1,140 scopes
+  in both languages, and 280 completed flows with their PDF HTML, contain no
+  «غلق الدرس», "this lesson" or "from the lesson".
+  **Not yet clicked — a manual check nobody has done:** `offlineWideScope` is on
+  for all five screens, so the web build (production runs `DEMO_MODE`) offers
+  the unit, semester and book entries now, and none of them was ever run in a
+  browser (none in the build container). **Someone must click through each of
+  the five screens on the web preview:** pick a unit, a semester and the whole
+  book; generate; Regenerate; Save; reopen from موادي; export — and on slides,
+  Present; on lesson-flow, a Retry and the PDF.
+  **Not verified / known limits:** the screens are checked by reading and
+  typecheck only; the live model's adherence to the revision clause is untestable
+  here, and a live discussion or hands-on activity is asked to cover every unit
+  where an offline one covers one per version. Presentation → whiteboard still
+  passes the activity's `lesson` string as a bare topic, and the whiteboard files
+  its save by grounding it: offline that is the scope phrase or the deck's
+  «مراجعة …» title, which grounded to no lesson in a check of all 713 Arabic and
+  656 English phrases; live, the builder's `lesson` is the label itself, which
+  **can re-ground** (the final review found 7 of 60 labels did; not
+  re-measured). The chat (`iqra.tsx`) — the only place an infographic is made —
+  still takes a label; evaluations (exams) still take one lesson. A reopened
+  wide material keeps its scope but `TopicSelector`'s dropdowns show their
+  placeholders, and a stale reopen can lose the wide marker (the frozen scope is
+  seeded from the pickers' check), so a plan, activity or deck — like a quiz or
+  worksheet — then re-saves as a lesson; from reading `topicInLang`, reopening in
+  a UI language other than the material's can also re-ground a unit label (not
+  reproduced).
+  *Data and wording:* an English maths or chemistry activity, worksheet and exit
+  ticket print the banks' Arabic items and options (as a lesson does); the
+  English plan keeps a short letter gloss («The Letter Baa (ب)») but cuts a
+  tatweel one (`The Letter Haa'`), and the activity drops any concept that holds
+  an Arabic letter; English wording that wraps a unit title reads awkwardly for
+  the 52 of 841 unit titles that begin with “The” and the 32 called “Unit One”,
+  “Unit Two”… ("the “The Environment” unit", "“Unit One” unit topics"); a unit
+  with no outcomes, concepts or terms gets generic phrase-based tasks; Arabic
+  text nests «» (a unit phrase quoted again, or a data title that already carries
+  «»; on the 1,140 Arabic scopes: every discussion activity, 841 warm-ups, 312
+  individual and 312 hands-on activities, 26 plans); error-detective and
+  escape-challenge are fixed quadratic-equation cards whatever the subject (as
+  for a lesson). The offline plan rarely asks a warm-up question, so only 19 of
+  1,140 Arabic and 17 of 1,140 English decks have a warm-up slide; the deck's
+  preparation note lists the goals as generated though the offline goals are
+  curriculum outcomes; a wide deck has less per-concept narration than a lesson
+  deck (no explanation call); on lesson-flow the random question steps need not
+  touch every unit; the live "what is left out" sentence is not checked against
+  the lessons. `TopicSelector`'s own doc comment on `offlineWideScope` still
+  lists only quiz, worksheet, homework and game.
 - **Quiz, worksheet, homework and game take a unit, semester or whole book
   (2026-10-14; spec
   `docs/superpowers/specs/2026-10-14-wide-scope-assessment-tools-design.md`,
@@ -111,9 +239,9 @@ an announcement by default» below.
   prior-knowledge review is hidden on a wide worksheet (and not sent), and so
   are Related tools on a wide quiz and worksheet (`hideRelated`: their chips
   open other tools with the scope label as a bare topic, which they would
-  re-ground to a lesson); the game has no Related panel. Evaluations (exams) still take a
-  single lesson, and so do lesson plan, slides, activity, lesson-flow,
-  infographic and the classroom builder (piece 3). Papers above 30 questions
+  re-ground to a lesson); the game has no Related panel. Evaluations (exams) and
+  the infographic still take a single lesson (the five teaching tools took the
+  same scopes in piece 3 — the bullet above). Papers above 30 questions
   are not built.
 - **A browser smoke test covers the teacher-to-student journey** (2026-10-12,
   `e2e/`, `.github/workflows/e2e.yml`). Playwright drives the real web build
@@ -135,13 +263,14 @@ an announcement by default» below.
   server-side page pooling and `scopeKey` in the artifact cache key all exist
   and are tested. `TopicSelector`'s «الفصل كاملًا» entry is verified by code
   read only — there is no browser in the build container, so it was never run.
-  **Since 2026-10-14 quiz, worksheet, homework and game opt in** (the bullet above);
-  every other screen still does not, so there «الوحدة كاملةً» sets the unit
-  title as the topic, which `resolveGeneratorGrounding` grounds to one lesson or
-  none (not to the unit), and «الكتاب كاملًا» stays ungrounded — its topic text
-  matches nothing. **Piece 3 (the rest) still has to adopt `onScopeChange` +
-  `scopeRequestFields`.** Restoring a saved / reopened scope (spec §6, goal 5)
-  is wired for those four via `parseScope`, with the limits in the bullet above.
+  **Since 2026-10-14 quiz, worksheet, homework and game opt in, and so do lesson
+  plan, slides, activity, lesson-flow and the classroom builder** (the two
+  bullets above). Only the chat (`iqra.tsx`) still does not, so there «الوحدة
+  كاملةً» sets the unit title as the topic, which `resolveGeneratorGrounding`
+  grounds to one lesson or none (not to the unit), and «الكتاب كاملًا» stays
+  ungrounded — its topic text matches nothing. Restoring a saved / reopened
+  scope (spec §6, goal 5) is wired via `parseScope` on the screens that read
+  `scope` from their route, with the limits in the bullets above.
 - **API credentials are Secret Manager references** (2026-10-08, live since
   `iqraa-api-00283-twr`). The ten credentials (`SESSION_SECRET`,
   `DATABASE_URL`, `OPENAI_API_KEY`, both R2 keys, Unsplash, YouTube,
@@ -366,12 +495,44 @@ an announcement by default» below.
   «التوزيع الإلكتروني والجدول الدوري» stays where it was. Routing of all 25
   chemistry lessons was compared before and after with the app's own lesson text:
   only the two Grade 10 periodic-table lessons gained items, none changed family.
-  **Not done:** the other 13 families are still 4–7 items each, so every other
-  chemistry lesson still tops out near 5 questions. **Found while measuring, not
-  fixed:** the Grade 9 lesson «مكوِّناتُ الذرَّةِ» routes to `redox`, not
-  `atom_basics`. **Not checked:** the chemistry itself and its Arabic wording have
-  not been read by a chemistry teacher; the new items have no worked steps, so they
-  are quiz questions only, not worksheet worked examples.
+  **Found while measuring:** the Grade 9 lesson «مكوِّناتُ الذرَّةِ» routed to
+  `redox`, not `atom_basics` (fixed the same day, see the entry after next). The other
+  13 families followed the same day (next entry).
+- **All 14 chemistry families now hold 15 or more items (2026-10-15).** The 13 that
+  were still 4–7 each got 128 more (easy ≥5, medium ≥6, hard ≥4 per family:
+  atom_basics, atomic_structure, electron_config, bonding, formulas, equations, mole,
+  stoichiometry, thermochem, acids_bases, metal_activity, redox, general_chem), so a
+  quiz of 10–15 questions on any chemistry lesson is full instead of topping out at
+  ~5. Every one of the 138 new items (these plus the 10 periodic-table ones) has
+  worked steps in `steps-chem-a.ts` / `steps-chem-b.ts` — without them
+  `takeConcreteChem` handed a worksheet an answer with no working, and
+  `solved.test.ts` failed. `chemistryBankDepth.test.ts` pins the floors and checks
+  what a machine can: no repeated stem, every `→` answer atom-balanced and no
+  distractor balanced, electron counts of the configuration items, and the numeric
+  answers (masses, moles, particles) recomputed from the atomic masses. It caught
+  one wrong distractor (`ch-eq-e4`). Routing of the 25 chemistry lessons is
+  unchanged. **Not checked:** whether the chemistry is what the Jordanian textbook
+  teaches, the Arabic wording, or which distractors a student would really pick — no
+  chemistry teacher has read any of it, and none of it has been seen in a browser or
+  on a device.
+- **Four chemistry lessons were routed to the wrong family; fixed (2026-10-15).**
+  `detectChemFamily` reads the lesson's title *and* objectives and key concepts, so a
+  neighbouring topic's word in the objectives could win — and the title-only test cases
+  never saw it (same blind spot as the mole lesson's «حسابات كيميائية» bug). Found by
+  comparing all 25 chemistry lessons with the app's own lesson text (`lessonTextBlob`):
+  «مكوِّناتُ الذرَّةِ» (Grade 9) went to `redox` because its objectives mention
+  electrolysis and gas discharge — now a narrow rule on its name sits ahead of redox;
+  «التأكسد والاختزال والخلايا الجلفانية» (Grade 9) went to `thermochem` because
+  `طاقة.*تفاعل` spanned two sentences — now bounded to one; «تغيرات الطاقة في التفاعلات
+  الكيميائية» (Grade 10) went to `mole` because the substring `المول` matched
+  «الطاقة **المول**ية» — now the whole word (or «المولات»); «الطاقة الممتصة والطاقة
+  المنبعثة من المادة» (Grade 10) fell to `general_chem` — calorimetry words
+  (السعة الحرارية، الحرارة النوعية، المسعر) now route it to `thermochem`. Compared before
+  and after: only those four changed, the other 21 are identical. **Not checked:** the
+  heat-capacity lesson now gets thermochemistry questions, of which only two items
+  (`q = m·c·ΔT`) fit it closely — it has no bank of its own, so a long quiz there is
+  mostly enthalpy and exo/endothermic questions. Typed topics that are not catalogue
+  lessons were not re-measured beyond the title cases in `chemistry.test.ts`.
 - **Quiz «أعد التجهيز» now changes the questions, and says when it cannot**
   (2026-10-13). The offline regenerate only checked that the whole quiz JSON
   differed from the last one, so the same stems in another order — or with the
@@ -394,7 +555,15 @@ an announcement by default» below.
   repeats whole, with the notice only where a screen shows it. Live AI is
   unchanged (it has its own `avoid` / overlap check server-side). Tests:
   `quizRegenerateStems.test.ts`, `worksheetRegenerateStems.test.ts`. Not looked
-  at in a browser.
+  at in a browser. **Known flake (checked 2026-10-15):**
+  `worksheetRegenerateStems.test.ts` fails about 1 run in 10 (3 of 30 isolated
+  runs on this branch, and it has failed in CI): "the notice counts exactly the
+  questions that repeated" sees `repeated: { count: 1, of: 6 }` where its own
+  count is 0. The test compares raw `q.text`; the generator judges repeats by
+  `questionStemKey`, which strips the answer-space padding, so two questions
+  that differ only in that padding repeat to one and not to the other (read
+  from the code, not isolated). Not fixed; a red run of that one file is not a
+  regression — re-run it.
 - **Lesson plan «أعد التجهيز»: what changed, and what it cannot (2026-10-14).**
   Measured over 30 regenerations (maths, chemistry, Arabic × direct,
   collaborative): the offline plan has ONE phrasing for five of its eight
@@ -1574,11 +1743,28 @@ Snap to grid is on by default, with a step from the zoom level.
   exactly-coincident point by default (`d <= 0`), which made it impossible to
   test two corners on one spot and would have hidden the «coincident» path; a
   tap merges through an explicit tiny radius.
-- **Not done:** no saving (the scene lives for the visit), 26 points at most, and
-  point names are Latin A, B, C even in Arabic — the books write أ، ب، ج, which
-  was not mapped. Two known cosmetic limits: edge-length labels can sit on an
-  axis tick label, and angle labels are hidden on edges shorter than ~44 px
-  (the panel under the canvas still lists every angle).
+- **Points are named أ، ب، ج in Arabic (since 2026-10-15) — a product call, and
+  the Grade 10 book does not do it.** The scene still names points A, B, C … and
+  everything computed stays Latin; `services/mathPointNames.ts` maps A–Z to the
+  abjad order (أ ب ج د هـ و ز ح ط ي ك ل م ن ع ف ق ر ش ت ث خ ذ ض ظ غ) at display
+  time only, and English keeps A, B, C. **س and ص are skipped** — they are the
+  axes, and a point called ص beside «(س − أ)² + (ص − ب)²» would read as a
+  variable. A shape's name has its letters **apart** («مثلث أ ب ج»), because
+  Arabic letters written together join into one word. Arabic names are not
+  forced left-to-right (an override would print أ ب ج as ج ب أ), so an angle chip
+  is two runs: the name, and the number in its own forced-LTR run.
+  **What the extracted books show (checked 2026-10-15, not proof):** the grade
+  4, 5, 6, 9 and 10 student books in `lib/curriculum/src/data/extracted/` name
+  points with Latin letters (Grade 10 semester 1 alone has ~196 three- or
+  four-letter names such as ABC) and contain **no** spaced Arabic-letter names;
+  PDF extraction can garble isolated Arabic letters, so a person should look at
+  the printed page before treating either as settled. Order past أ ب ج is the
+  standard abjad order, not taken from a book. To undo: make `pointName` return
+  its input.
+- **Not done:** no saving (the scene lives for the visit), 26 points at most.
+  Two known cosmetic limits: edge-length labels can sit on an axis tick label,
+  and angle labels are hidden on edges shorter than ~44 px (the panel under the
+  canvas still lists every angle).
 
 **The converter** (`services/mathUnits.ts`) is `from → base → to` and fails
 closed: an unknown unit, a conversion across categories, an unparseable number,
@@ -1941,7 +2127,10 @@ and plan lessons.
   `examTime` (`null` clears; a time cannot exist without a date —
   `lib/examDate.ts`). **Planning data only**: it does not open or close the
   student link. A text box, not a picker, like the teaching-plan dates — a picker
-  is a native module and would need an `app.json` `version` bump.
+  is a native module and would need an `app.json` `version` bump. **Since
+  2026-10-12 families see it too**, on the exam rows they already get and in an
+  upcoming list on the School tab — only for an exam they may already see; see
+  «Exam dates and paper marks reach families, 2026-10-12».
 - **Schools exist, assigned by a platform admin** (`schools` table,
   `users.school_id`): `GET/POST /admin/schools`, `PUT /admin/users/:id/school`,
   **`system_admin` only** — narrower than the rest of `routes/admin.ts`, because
@@ -2085,6 +2274,768 @@ which is what actually proves who they are. Now the code is the sign-up.
   class code with the «is this you?» step, teacher re-issue. **Not run on a
   device**, and no DB-backed test exists in the repo, so the route logic itself
   is covered by that manual run rather than a committed test.
+
+## Students and parents see the weekly timetable, 2026-10-11
+
+Parents and students have a **المدرسة** tab (`app/(tabs)/school.tsx`) showing the
+weekly timetable, read-only, from `GET /student/schedule` and
+`GET /parent/schedule` (`routes/familySchedule.ts`). No new tables.
+
+- **It is the union of the teachers who have filled theirs in.** A class belongs to
+  one teacher, so an account sees only the slots of classes its linked roster rows
+  sit in. A student who has claimed one teacher's code sees one teacher's periods
+  until they claim the rest (`POST /auth/claim`). The empty state says the schedule
+  is "not entered yet" and may stay incomplete until the account is linked to all
+  its teachers' classes — never "no lessons".
+- **A parent's children are grouped by name** (`modules/family/children.ts`) for the
+  schedule, because the same child under two teachers is two roster rows.
+  `/parent/exams` still returns one entry per roster row, but since 2026-10-12 each
+  carries the child's `key` and «اختباراتي» groups them per child — see «Exam dates and
+  paper marks reach families, 2026-10-12».
+- Times come from each slot's own teacher (`schedule_periods`); they are never merged.
+- **Teachers' slot notes (`schedule_slots.notes`) are private and never sent to families** — the loader does not even select the column. They are written in the teacher's own timetable and can concern individual children; showing them to families would need a deliberate, separately-labelled teacher field.
+- **Tab and routing:** a fourth tab for parent/student only (`visible: !isTeacher`);
+  the teacher tab bar is unchanged. `/school` is on the `NON_TEACHER_ROUTES`
+  allowlist. The mobile fetchers are in `services/familyScheduleApi.ts`, split from
+  the pure `services/familySchedule.ts`, because `apiClient.ts` pulls `react-native`
+  into module scope and `node --test` cannot load it.
+- Behind `STUDENT_ACCOUNTS=true` like every family route (currently `true` in
+  production — see «Student accounts went live, reversing the v1 decision,
+  2026-09-07»).
+- **Rendered once in headless Chromium, never on a device or by a real account.**
+  On 2026-10-12 the School tab was opened at 360px in Arabic RTL against seeded
+  fixtures (no console errors or failed requests) — see «Homework: teachers set it,
+  students tick it, parents watch, 2026-10-12» for what that did and did not cover.
+  Covered by tests: the routes' 401 guards (mount-order suite), the pure grouping /
+  assembly / day-ordering logic (unit tests) and, since 2026-10-12, the signed-in
+  family path (403 / 200 from the real routes against real rows — see «API tests
+  can run against a real database, 2026-10-12»). **Not** covered: the 500 path (an
+  error from the routes) has no test, and nobody has used the screen on a phone.
+  `STUDENT_ACCOUNTS` is already `true` in production, so the tab and routes reach
+  real family accounts on merge. Look at it on a signed-in parent and a signed-in
+  student account right after deploy.
+- Nothing is left to come from the spec
+  (`docs/superpowers/specs/2026-10-11-family-school-views-design.md`). Homework (Part 2),
+  exam dates / paper marks (Part 3) and notifications (Part 4) are built — see «Homework:
+  teachers set it, students tick it, parents watch, 2026-10-12», «Exam dates and paper marks
+  reach families, 2026-10-12» and «Families are told: homework, exam dates, results, and a
+  reminder the day before, 2026-10-12».
+
+## API tests can run against a real database, 2026-10-12
+
+Until now **no test touched a real database** — `mountOrder.test.ts` boots the built
+bundle against a fake `DATABASE_URL` and only proves the 401s. `src/test-support/`
+adds a harness: per test file it creates a throwaway `iqraa_test_<hex>` database on
+the server named by `TEST_DATABASE_URL`, applies the real migrations, seeds rows
+with raw SQL, boots `dist/index.mjs` against it and calls routes with minted access
+tokens. First user: `src/routes/__tests__/familySchedule.db.test.ts` — cross-family
+access (a parent sees only their children; a student only their class), archived
+rows and classes excluded, teachers' private slot notes never sent, the flag-off 403,
+and which roster rows the `/parent/exams` list includes (link scoping only — no exams
+were seeded in that file; the exam rows are asserted in `familyExams.db.test.ts`, below).
+
+- **CI** (`workspace` job) now has a `postgres:16` service and sets `REQUIRE_DB_TESTS=true`,
+  so a missing database fails instead of skipping. Locally the tests skip unless
+  `TEST_DATABASE_URL` is set — see `LOCAL_SETUP.md`, «DB-backed API tests».
+- **Safety:** only `iqraa_test_` + 12 hex names are created/dropped; non-local hosts are
+  refused without `ALLOW_REMOTE_TEST_DB=1`. Schema comes from the migrations, never `push`.
+- **Build first:** the tests boot `dist/index.mjs`, so `pnpm build` precedes `pnpm test` (CI already does).
+- Second and third users, 2026-10-12: `homework.db.test.ts` and `familyHomework.db.test.ts`
+  (see the homework section below). New tests for routes that need real rows should be written as
+  `*.db.test.ts` on this harness; Part 3 (exams) did, with `src/test-support/seedExams.ts`
+  as the exam fixture — see «Exam dates and paper marks reach families, 2026-10-12».
+
+## Homework: teachers set it, students tick it, parents watch, 2026-10-12
+
+A teacher posts homework to a class; a student ticks it off; a parent sees each
+child's list read-only; the teacher sees how many have finished. Spec Part 2 of
+`docs/superpowers/specs/2026-10-11-family-school-views-design.md` (amended in
+place — see its section 2).
+
+- **Tables** (migration `0009` after the main merge — first written as `0007`; additive, no destructive flag): `homework`
+  (teacher, class, title, instructions, `due_at`, optional `evaluation_id`,
+  `archived_at`) and `homework_completions` (unique per homework + roster row).
+  Schema in `lib/db/src/schema/homework.ts`.
+- **Routes**, all path-scoped: teacher `POST /homework` (the class is in the body),
+  `GET /classes/:id/homework` (with done, student and `trackableCount` — the rows that have a student account), `PATCH|DELETE
+  /homework/:id` (delete archives; completions are kept) in `routes/homework.ts`;
+  `GET /student/homework`, `PUT|DELETE /student/homework/:id/done` and `GET
+  /parent/homework` (per child `{ key, displayName, canTrack, homework }`, where every item
+  also carries its own `canTrack` — see below) in `routes/familyHomework.ts`. Rules and the family list builder
+  are pure, in `modules/homework/`; loaders are `lib/familyHomeworkLoad.ts` and
+  `lib/homeworkDone.ts`. The student and parent routes answer `403
+  student_accounts_disabled` when the flag is off, like the timetable.
+- **Mobile:** a «الواجبات» tab on the class screen (`components/classes/HomeworkTab.tsx`,
+  a fourth tab next to Students / Materials / Exams) with a create / edit / delete
+  modal inside a `KeyboardSafeView`. **The shared tab padding went from 14 to
+  `SPACE.sm` (8) to fit four tabs, and that applies to every teacher's class screen,
+  not only to classes with homework**; the tab row also scrolls horizontally now, so
+  four tabs that do not fit at large font scales stay reachable (same recipe as the
+  parent's child picker). The School tab (`app/(tabs)/school.tsx`) is titled
+  «المدرسة» and has two sections, each under its own heading and with its own error
+  banner: Homework first (a tick for a student, read-only per child for a parent),
+  then the weekly timetable (since 2026-10-12 «الاختبارات القادمة» sits between them). Logic is `services/homework.ts`, fetchers
+  `services/homeworkApi.ts` (split, as for the timetable). Copy is `hw*` in
+  `services/i18n.ts`, ar + en.
+- **An item nobody can tick is not "late" — decided per ITEM, not per child.** Ticking is
+  per class (`lib/homeworkDone.ts` ticks only the account's own rows that are members of
+  the homework's class), so each family item carries `canTrack`: true iff a roster row of
+  the child **that is a member of that item's class** has a `self` link
+  (`buildFamilyHomework`, from `memberships` + `withAccount`, the set the loader gets from
+  `studentIdsWithSelfAccount`). The child-level `canTrack` on the parent response is only
+  an **informational aggregate** (any item trackable; with no items, any live row has an
+  account) — it is not the rule for any item. The case that forced this: Sara has row A1
+  in class 1 (self-linked) and A2 in class 2 (no self link); a child-level flag says
+  `true`, yet class-2 homework can never be ticked, so the parent saw class-2 work as
+  «متأخّر» forever while the class-2 teacher's `trackableCount` said 0. The student route's
+  items are always `canTrack: true` (their rows are self-linked by definition; asserted in
+  a test). On the parent screen an untracked item shows its due date in the neutral badge,
+  no done mark, no strike and no «متأخّر» (and `splitHomework` ranks it by due date, not as
+  overdue); one line under the heading appears when at least one visible item is untracked —
+  «لا يوجد حساب طالب لـ {name}…» when **every** visible item is (`untrackedMode` = `all`),
+  «لا تظهر حالة الإنجاز لبعض واجبات {name}…» (`hwParentNoAccountSome`) in the mixed case; when **every**
+  visible item is untracked the «المطلوب» / «تم إنجازه» headings are dropped (a flat list,
+  soonest due first) so the work is not presented as actionable. An absent `canTrack` (an
+  older server) reads as `true` at both levels, so a missing field never hides state. The
+  name in those lines sits in first-strong isolates (U+2068…U+2069) in both languages, so an
+  Arabic name inside the English sentence stays together, and the English strings start with
+  an LRM (U+200E) so the `dir="auto"` Text resolves LTR instead of following the Arabic name. The teacher's tab counts "done"
+  against `trackableCount`, not the whole roster (the number shown is clamped to
+  `trackableCount`: a completion kept after a link was removed no longer reads «5 of 4»),
+  adds a muted «N بلا حساب» line when some students have no account, and drops the bar when
+  none do. The defaults are pinned in `homework.test.ts`.
+- **Dates are formatted, not left to the bidi algorithm.** `formatDueDate` returns
+  `DD-MM-YYYY` inside a left-to-right isolate (U+2066…U+2069), so Arabic and English
+  show the same digits in the same order; it is used wherever a due date is displayed.
+  The date field takes `YYYY-MM-DD` only (`hwDueFormat` is that Latin string in both
+  languages) and the example date in the error is isolated too.
+- **The exam picker is narrower than the server.** The server accepts any live exam of
+  the teacher's that is attached to the class (a draft included); the mobile picker
+  offers only **published** ones. A homework already linked to an exam the picker would
+  not offer keeps that link visible as a row, so saving does not drop it.
+- **The due date is a calendar day.** The API takes and returns `dueDate:
+  "YYYY-MM-DD"`; the server stores `dueAt` as 23:59:59.999 **Asia/Amman** of that day
+  (a fixed UTC+3 — Jordan dropped DST in 2022) and also returns it as ISO. Clients
+  never do timezone arithmetic. A homework is `overdue` only once that instant has
+  passed and it is not done. A due date must lie within 30 days back and 366 days ahead
+  (Amman days), else 400 with `code: "due_date_out_of_range"` next to `error` (POST and
+  PATCH) — a typo like 2062 is refused, and the mobile modal shows `hwErrDueRange`. **A PATCH
+  that leaves the due date unchanged is not re-bounded** (`parsePatch(body, now, existing)`
+  skips the range check when the parsed date falls on the same Amman calendar day as the
+  stored `dueAt` — compared by day, not instant, so a row inserted by SQL or an import at some
+  other time of day stays editable): the edit form always
+  resends `dueDate`, so without this any edit of a homework due more than 30 days ago was a
+  400 and a teacher could not fix a typo in an old homework. A CHANGED date outside the
+  window is still refused.
+- **A family sees the last 14 days and later**: `dueAt` within 14 days of now, and of
+  those the **200 earliest-due** (`ORDER BY due_at ASC LIMIT 200` in
+  `lib/familyHomeworkLoad.ts`). The limit is **per call, so per child for a parent**:
+  `routes/familyHomework.ts` loads each child separately, so a parent with three children can
+  receive up to 600 items; it is account-wide only for a student (one call for all their
+  rows). It is not "newest 200" — an earlier version of this section and of the spec
+  said so, wrongly. Earliest-due is the right set to keep: past the limit what is cut is
+  the work due furthest away, which nobody can act on yet, never the work due this
+  week. Older work drops off the list (it is not deleted, and the teacher still sees it).
+- **Completions are per roster row, not per account.** A child taught by two teachers
+  is two roster rows in two classes, and a homework belongs to one class, so (homework,
+  row) is unambiguous. The consequence: two accounts linked to the *same* roster row
+  share their done marks. A completion by a child who has since left the class, or whose
+  row was archived, stops counting towards the teacher's number but is not deleted.
+- **A family sees an exam's title only when it is `published`, not archived and still in
+  the homework's class** (re-checked on read; a PATCH does not re-check an unchanged
+  link, so a homework stays editable after its exam is archived). A teacher may attach
+  only an exam that is theirs, not archived, and already attached to *that homework's
+  class* (the spec's "send a worksheet as an exam" flow is a separate project); anything
+  else is one identical 400. Tapping the title opens «اختباراتي», which applies the
+  real visibility rules.
+- **Access rules are pinned by tests against a real Postgres**
+  (`src/routes/__tests__/homework.db.test.ts`, 24 tests; `familyHomework.db.test.ts`,
+  25 tests; plus mount-order cases that the new paths answer 401, not 404, with no
+  token). What each file pins: the teacher file — a class that is another teacher's,
+  missing or archived is one 404; a teacher cannot change or delete another teacher's
+  homework and a PATCH can never move it to another class or teacher; an exam must be
+  yours, live and in the same class; counts use live roster rows only; parents and
+  students are refused. The family file — a student sees only the classes their own
+  roster row sits in; a parent sees only their own children, grouped per child; parent
+  B sees none of A's; a draft exam's title never reaches a family; a student can tick
+  and untick only for their own row (never a classmate's; a completion by the same
+  child's row in another class does not read as done), and "not yours" is one identical 404 however it is not yours; the
+  flag-off 403; `canTrack` per item (Sara's class-1 item true, her class-2 item false;
+  Adam's false; Noor's true, Yazan's false; an account on her second row flips the class-2
+  item; a `self` link on an archived row changes nothing) with the child-level aggregate
+  checked separately, including the no-items case; a student's items always true; an old
+  homework (due 45 days ago) is editable with its date resent unchanged, a changed
+  out-of-window date is 400 with the code; `trackableCount` per class and per item.
+  **Mutation-proven**: each rule below was removed, the named test seen going red, then
+  the rule restored (the DB tests boot the *built* bundle, so each mutation needed a
+  `pnpm build` — an un-rebuilt mutation passes falsely).
+
+  | Removed | Went red |
+  | --- | --- |
+  | `teacherId` condition in `ownedHomework` | `deleting` (1); with the PATCH update's own `teacherId` where also removed, `changing` and `deleting` (2) — the update's where is defence in depth |
+  | archived-class condition in `ownedHomework` | `changing > answers 404 for homework in an archived class` |
+  | exam's same-class condition in `examOk` | `creating > accepts only an exam…` and `changing > attaches, rejects the wrong exam…` |
+  | archived-roster-row filter in the counts | `counts > …live roster rows…` |
+  | membership join in the `doneCount` query | `counts > does not count a completion by a child who has since left the class` |
+  | `...req.body` spread into the PATCH `set` | `changing > never moves homework…` and the wrong-exam case |
+  | class intersection in `setHomeworkDone` (all self-linked rows) | the identical-404 case and the cross-account DELETE case |
+  | DELETE scoped to `homeworkId` only (no student ids) | `scopes both the tick and the undo to the account's own row` |
+  | builder counts a completion by any row | the stray-completion case; the loader's own student-id filter hides it alone, so only removing **both** layers also reddens the parent's "Sara only (not Adam)" case |
+  | `published` check on the exam title | exam-title (student) and "never exposes a draft exam" (parent) |
+  | `homework.archivedAt` filter in the loader | student list and parent grouping |
+  | exam archived / other-class check in the builder | 1 DB test (`stops showing an exam once it is archived`) + 1 unit test |
+  | `canTrack` forced true | 2 in `familyHomework.db` (which items can be tracked; a `self` link on any row counts) |
+  | item `canTrack` computed from the child's rows in ANY class instead of that item's class | 1 in `familyHomework.db` (`says per item…`) + 1 unit test in `familyHomework.test.ts` |
+  | unchanged-due-date skip in `parsePatch` removed | `changing > lets a homework that is already past the 30-day window be edited…` + 1 unit test |
+  | `trackableCount` counted as every student | 4 in `homework.db` |
+  | PATCH skip of an unchanged exam link removed | `lets an edit through when the linked exam has since been archived` |
+  | due-date range check in `parseCreate` | 1 DB test (`rejects a due date years away`) + 4 unit tests |
+- **What has been seen.** The homework UI was rendered in headless Chromium (360px, Arabic
+  RTL) and create, edit, delete and tick were exercised through it against a seeded
+  database. That browser run found the English bidi defect (an Arabic name at the start of
+  `hwParentNoAccount` laid the whole English sentence out RTL), the sort position of newly
+  created homework, the checkbox offset and the 320px English tab-row cut (the last three
+  under *Known gaps*). The unchanged-date 400 and the per-child `canTrack` defect were found
+  by the **code review of the fix wave**, not by the browser run. **A third browser run
+  (2026-10-12) rendered** the per-item neutral state, the flat list for an all-untracked child, the
+  clamped done count, editing an old homework and the range message. **Not rendered since the
+  last fix round**: the mixed-case line `hwParentNoAccountSome`, the ranking of untracked
+  items in a mixed list and the reworded `hwErrDueRange` (typechecked and unit-tested only). The
+  leading LRM on the English name sentences was checked in Chromium's own layout engine in
+  isolation (`dir="auto"` resolves `rtl` without it and `ltr` with it) but not in the app.
+- **What has not.** Nobody has used it on a device or with a real account. Real keyboard /
+  IME input in the modal and real device text scaling were not exercised. `STUDENT_ACCOUNTS`
+  is already `true` in production, so this reaches real family accounts on merge — open it
+  on a signed-in teacher, parent and student right after deploy.
+- **Notifications** (added the same day, Part 4): posting homework pushes the class's
+  students and guardians, and a Cloud Scheduler job reminds them the day before it is due
+  — see «Families are told: homework, exam dates, results, and a reminder the day before,
+  2026-10-12». **The reminder is inert until the owner creates the scheduler job**
+  (`docs/deploying.md`); until then a family learns of due-tomorrow work only by opening
+  the School tab.
+- **Known gaps** (found in review, not fixed):
+  - After a tick on the student screen, the reload that follows can briefly un-tick
+    the optimistic tick if it lands while the request is in flight; it self-heals on
+    the next load or re-tap.
+  - No test pins the 14-day boundary or the 200-item limit.
+  - The mobile `createHomework` / `updateHomework` can resolve `null` when the write
+    succeeded but the returned row failed client normalisation; callers treat that as
+    success and refetch the list.
+  - A dropped connection after the server has committed a `POST /homework` can
+    duplicate it when the teacher retries: there is no idempotency key.
+  - The teacher's numbers refresh only when the tab mounts, not while it is open.
+  - ~~Part 4 needs a "roster row → user ids" lookup.~~ **Built (2026-10-12):**
+    `accountsLinkedTo` and `liveClassStudentIds` in `lib/familyAccess.ts`.
+  - From the real browser run (360px, Arabic RTL, Chromium): at a 320px width the English
+    tab row cuts the last label mid-letter with no fade (it is reachable by scroll); a
+    newly created homework does not appear at the top of the teacher's list, because the
+    list sorts by due date, newest first; the checkbox glyph sits about 13px below the
+    title's centre.
+  - The teacher's done count is clamped to the trackable count, so a completion that
+    outlives a removed roster link can show «1 of 1» while the one trackable student has
+    not done it.
+  - The due-date range error (`hwErrDueRange`) appears at the bottom of the modal, away
+    from the date field it is about.
+  - Not exercised: real keyboard / IME input and real device text scaling.
+
+## Exam dates and paper marks reach families, 2026-10-12
+
+A student and a parent now see when an exam is, in an upcoming list on the School
+tab; a paper exam never offers a link; and a teacher types a paper exam's marks for
+the whole class in one screen, released like any digital result. Spec Part 3 of
+`docs/superpowers/specs/2026-10-11-family-school-views-design.md` (rewritten as
+built — see its section 3). **No migration**: the date columns came with «Exams have
+a date, and teachers at one school can see each other's, 2026-10-11», and a paper
+exam is a question shape, not a column. Before this, that section's date was
+planning-only and **not returned to families**; it still opens and closes nothing.
+
+- **Rows.** `/student/exams` and `/parent/exams` rows (`studentExamRow` in
+  `modules/assessment/studentExams.ts`, loaded by `examRowsFor` in
+  `routes/studentExams.ts`) carry `examDate`, `examTime` and `paper`, plus a new
+  state `paper`. A date therefore appears only on an exam the child may already see
+  (published or closed, in a live class of theirs, or one they hold a sitting on):
+  a dated draft and a dated exam with no class reach nobody. `/parent/exams` is
+  still one entry per roster row, now each with `key` — the `groupChildren` key
+  `/parent/homework` and `/parent/schedule` use — so one child under two teachers
+  is one section. Families still do not get `/exam-calendar`.
+- **Paper = every live question is a paper question** (`isPaperExam`,
+  `modules/assessment/paperExam.ts`: manual grading and an empty body). A paper
+  exam row has `paper: true`, `shareCode: null` for everyone, and state `paper`
+  («امتحان ورقي») until a handed-in sitting exists; after that it is `submitted` /
+  `result` like any exam, whatever its status.
+- **«الاختبارات القادمة»** (`app/(tabs)/school.tsx`, `services/upcomingExams.ts`):
+  a section between homework and the timetable with the child's exams whose
+  `examDate` is today or later — compared as `YYYY-MM-DD` **strings** against
+  `ammanToday()`, never through `new Date()` — in **any** state, soonest first
+  (then time, a missing time last, then title). Its own error banner and empty
+  state; a parent's picker is per child by `key`. A row opens «اختباراتي»
+  (`app/my-exams.tsx`), which now shows «موعده …» and groups a parent's rows per
+  child (`groupChildExams`). The teacher's `ExamDateCard` says when a date cannot
+  reach families: «no class», or a dated draft.
+- **`PUT /evaluations/:id/paper-totals`** (`routes/evaluations.ts`,
+  `lib/paperTotals.ts`, pure rules in `modules/assessment/paperTotals.ts`): body
+  `{ totals: [{ studentId, marks }] }`, answer `{ maxMarks, results }` with one
+  result per row, in order — `saved`, `unchanged`, `cleared`, or `error` with a
+  `code` (`not_in_class`, `not_in_group`, `marks_out_of_range`,
+  `kept_student_work`, `not_quick_paper`, `failed`). One total per student for a
+  **quick paper exam**: a paper exam with exactly one question worth N (0 < N ≤ 100,
+  decimals allowed). Accepts an exam that is `published` **or** `closed`; draft →
+  `409 not_published`; no class / not a quick paper / no level scale → `409
+  no_class` / `not_quick_paper` / `no_level_scale`; not yours, missing, malformed or
+  archived → one identical 404; a malformed body → 400 (`invalid_paper_totals`,
+  `too_many_rows`, `duplicate_student`). **Limits:** ≤ **100 rows** per request (the
+  app sends chunks of **50**), a mark string ≤ **16 characters** (checked before any
+  regex or `Number()` runs; the regex is linear), **60 requests/minute per user**
+  (`paper-totals` limiter, `429`). Each row is found-or-created as a
+  `teacher_entry` sitting, marked, and handed in with `gradeSubmission` — which
+  stamps `submittedAt` and builds the result; rows are saved one after another and
+  independently, so one bad row never costs the rest. A repeat of the same mark is
+  `unchanged` only when the stored result also stands; a handed-in sitting whose
+  result is missing, stale or provisional is repaired and reported `saved`.
+  **Clearing** (`marks: null`) deletes a teacher-entered sitting with no answers —
+  and with it its result and its `grade_overrides` audit rows — and is refused
+  (`kept_student_work`) for a sitting the student made or one holding answers.
+- **`lib/teacherEntry.ts`** now holds the find-or-start, frozen-template and
+  write-a-mark code that `POST /evaluations/:id/attempts` and the per-student mark
+  and submit routes used to carry inline (`routes/evaluations.ts`,
+  `routes/attempts.ts`); the mark book calls the same functions. It was extracted
+  after characterisation tests were written against the old routes, which passed
+  unchanged on both sides. `writeTeacherMark` does **not** check ownership — the
+  caller must.
+- **Mobile.** `app/evaluations/[id]/marks.tsx` is the class mark book. «أدخل
+  العلامات» on the exam screen opens it for a **published or closed** quick paper
+  exam (`markBookReachable`). «أدخل العلامات كجدول» on the answers picker opens it
+  too, but only the **published** exam's screen links to the picker: nothing on a
+  closed exam's screen does, so the picker's own gate (which does accept closed)
+  is reached only by URL or back-navigation. Logic is
+  `services/paperMarks.ts`, the fetcher `savePaperTotals` in
+  `services/evaluations.ts`. «مجموع فقط» is the default shape for a new paper exam
+  (`app/evaluations/new.tsx`): one question worth the typed total, on the first
+  selected objective, competency `understanding`. A published paper exam's screen
+  shows no share code. The grid folds Arabic-Indic digits and «٫» / «,» to Latin
+  **as they are typed** (`foldMarkText`; the server refuses non-Latin digits), locks
+  its inputs while saving, keeps edits typed during a save, and asks for confirmation
+  before sending a clear for a mark it had saved («احذف العلامات» — «امسح العلامات من
+  الورقة» is the camera scan on the same screen). Each row reads `[box] / N` in both
+  languages and the students are listed by name with digits read as numbers
+  (`sortRoster`: «طالب رقم 2» before «10»). «حفظ الكل», the unsaved count and the
+  outcome of a save sit in a footer **outside** the ScrollView, locked while a save
+  runs (the release control stays in the scroll). The footer pays the bottom inset
+  only while the keyboard is closed (`useKeyboardVisible`; the root
+  `KeyboardSafeView` has already lifted it, as with chat's composer) and its notice
+  is capped at 3 lines. The two sentences of a failed save are joined by
+  `appendSentence`, which adds the full stop only when the first lacks one — the
+  two banners (`marksGridSaveFailed`, `marksGridLoadFailed`) now carry their own. A
+  429 on a save reads «محاولات كثيرة…» (`apiErrorMessage` keys on the status), not
+  the generic save-failed copy. «اختباراتي» renders a row's facts as separate
+  wrapping pieces (`metaSegments`: in order, empty ones dropped) spaced by a gap
+  with no separator character, so no wrapped line ends or begins on a dot. Copy is `marksGrid*` / `paperShape*` / `upcomingExams*` / `myExamsStatePaper`
+  in `services/i18n.ts`, ar + en.
+- **Visibility is exactly as before.** `releaseResultsToStudent` + handed in + not
+  provisional (`studentResultReady`), through `studentExamRow` / `guardianExamRow`:
+  a parent sees what the child sees, and only after the teacher releases results. A
+  typed total is invisible to a family until its sitting is **handed in** — which only
+  `gradeSubmission` does on the teacher side. **No new results route**: the spec's
+  earlier "a per-child view on `/student/grades`" was wrong — that route returns the
+  student's curriculum grade ids (`{ gradeIds }`), not marks. The result is the
+  `result{…}` on the rows «اختباراتي» already shows.
+- **Access rules are pinned by tests against a real Postgres** (the harness of «API
+  tests can run against a real database, 2026-10-12»): `familyExams.db.test.ts`
+  (9 tests) — the date reaches a family only on an exam they may see (a dated draft
+  and a dated classless exam reach nobody), each family sees only its own classes, a
+  parent is never handed a link, a paper exam has no link and no «ابدأ», an exam is
+  paper only when every live question is (a mixed exam and a zero-question exam are
+  not; a soft-deleted digital question does not make a paper exam mixed), a mark
+  shows only once released and only on the child who sat, and a parent entry
+  carries the same child `key` as the homework list; `teacherEntry.db.test.ts` (6) — the shared
+  sitting/mark code (created once, refused when unpublished / not the teacher's
+  student / not their exam / outside a group / no scale / no questions, range check,
+  audit only on a re-mark, hand-in stamped once); `paperTotals.db.test.ts` (22) —
+  who may call (401 / 403 / identical 404s), which exams (the 409s, the 400s), per-row
+  refusals (not in the class, archived student, another teacher's student with a
+  stray membership row, group check, out-of-range or non-numeric), the 16-character
+  cap and a hostile string answered in constant time, a typed total becoming a
+  handed-in result that families see only after release, `unchanged` and the repair
+  of a stale result, rounding, a mixed batch, a row that throws, clearing (teacher
+  sitting deleted, student's own kept, a sitting with answers kept, a released one
+  deleted with its audit rows), a closed exam, and the 60/minute limit; plus a
+  mount-order case that the new path answers 401. Pure rules: `studentExams.test.ts`,
+  `paperExam.test.ts`, `paperTotals.test.ts` (api); `upcomingExams.test.ts`,
+  `paperMarks.test.ts`, `myExams.test.ts` (mobile).
+  **Mutation-proven**: each rule below was removed, the named test seen going red,
+  then restored (the DB tests boot the *built* bundle, so each mutation needed a
+  `pnpm build`).
+
+  | Removed | Went red |
+  | --- | --- |
+  | `!paper &&` in `offerLink` | unit `never offers a link once a student has handed one in` (the DB test cannot see it: state `paper` already withholds the link) |
+  | `.map(guardianExamRow)` in `/parent/exams` | `never hands a parent a link` |
+  | `"draft"` allowed in the family status list and the early return in `studentExamRow` | `never lists a dated draft, to anyone` |
+  | `examDate` in the loader's select | `carries each exam's planned day and time` and `offers no link and no Start on a paper exam` |
+  | group check in `findOrStartTeacherEntry` | `keeps a group check to its group` |
+  | override-audit insert in `writeTeacherMark` | `checks the range, and audits only a re-mark` |
+  | case folding on `studentId` in the totals parser | 2 unit tests (lower-casing, duplicate by case) |
+  | class-membership check | `refuses, row by row, anyone who is not a live student…` |
+  | `gradeSubmission` replaced by `recomputeResult` | `turns a typed total into a handed-in, final result…` |
+  | `archivedAt` check on the exam | `404 alike … an archived exam` |
+  | `clearDecision` always `delete` | `null clears a typed paper, and refuses to clear a student's own work` |
+  | `skipIfUnchanged` | `re-saving the same mark changes nothing…` |
+  | numeric-string guard | `refuses a mark outside 0..N, or not a number` |
+  | route accepts `published` only | both `after the sitting` cases (closed exam) |
+  | rate limit raised to 61 | `allows 60 requests a minute per teacher, then 429` |
+  | rethrow in the per-row catch | `a row that fails is reported as failed…` (needed a throwing fixture; a refusal alone stayed green) |
+  | `students.teacherId` filter | `refuses a student of another teacher even if a membership row…` (needed the stray-membership fixture) |
+  | the 16-character cap (and the old quadratic regex) | `reads a hostile mark string in constant time` (4.8 s on 100k digits + `x` before the fix) and `the text cap is 16 characters` |
+  | the stale-result repair | `repairs a handed-in sitting whose result is missing, stale or provisional…` |
+  | `isNull(students.archivedAt)` | `refuses an archived student of the teacher's own…` |
+  | `hasAnswers` hard-coded false | `keeps a teacher-entry sitting that holds an answer…` |
+  | merge ignoring edits made during a save, and the total missing from the out-of-range copy | 6 tests in `paperMarks.test.ts` |
+- **What has been seen.** Typecheck, the unit tests and the DB tests above, and a
+  **headless-Chromium run (360x800, Arabic RTL; English only on the parent's School
+  tab in the saved captures) against a seeded database, 2026-10-12** — no device, no
+  real account. It established:
+  - **Families.** The parent's and student's School tab shows «الاختبارات القادمة»
+    (date pill, time, kind, «امتحان ورقي» label), its empty state «لا اختبارات بموعد
+    قادم.» and its own 500 banner. «اختباراتي» groups a parent's rows per child (one
+    child once), shows a paper exam as a chip with no action, and shows a released
+    result on the right child only. The `ExamDateCard` hints behave: none on an
+    attached published exam, «أرفق الامتحان بشعبة…» with no class, «لا يرى الطلبة… حتى
+    تنشر الامتحان» on a dated draft.
+  - **Teacher.** A quick paper exam was created through the UI («مجموع فقط»; a total
+    typed in Arabic-Indic digits was accepted), published and attached to a class. In
+    the mark book: typed Arabic digits were read as Latin, 16.5 saved, 30 and `abc`
+    went red, a blank box was skipped; the **database** showed `teacher_entry`
+    sittings, graded, `submitted_at` set, with a non-provisional result. The clear
+    confirmation appeared, **cancel sent nothing** and confirm sent only that row.
+  - **Release.** Before it the family row said «سُلِّم — بانتظار النتيجة»; after it
+    the child's result («نامٍ · 60%») appeared for that child's student and parent
+    only, the other child's family saw nothing.
+  - **Failure.** A forced 500 and a forced timeout on the totals request kept every
+    typed value and left the database untouched.
+  - **Also seen:** a closed exam had **no** entry button while its marks URL opened and
+    saved (fixed since: published or closed reach the mark book); an exam with no
+    level scale opens the grid and fails only on Save, with a specific message.
+
+  **Not re-rendered after the fixes that followed.** The run's layout findings were
+  fixed afterwards by reasoning from the code and the screenshots, and the screens
+  were not rendered again: `ExamDateCard`'s HH:MM field (the two inputs kept an
+  intrinsic ~242px minimum width and pushed the time off the left edge at 360px;
+  now `minWidth: 0`, 48 high), the «اختباراتي» meta line, the mark book's input
+  size, `[box] / N` order and sticky save footer, and the banner punctuation. A
+  third wave then changed, again unrendered: the footer drops its bottom inset
+  while the keyboard is open and caps its notice at 3 lines, the mark book's row
+  order, the «اختباراتي» meta line (now spacing only) and the «مجموع فقط» hint
+  wording. They are typechecked and their pure parts logic-tested only. No claim
+  is made about 320px, a real keyboard, the footer over an open keyboard on
+  Android (`useKeyboardVisible` has no events on web, so the browser run could not
+  have shown it either), or the bottom inset on a device.
+- **Known gaps** (found in review or in the browser run, not fixed; each checked
+  against the code on 2026-10-12):
+  - ~~**No push when marks arrive after release, and none when an exam is scheduled or
+    changed.**~~ **Both are pushed now (Part 4, 2026-10-12)** — see «Families are told:
+    homework, exam dates, results, and a reminder the day before, 2026-10-12».
+  - **A dated exam with no class reaches no family** (nothing to hang it on; only the
+    teacher's hint says so). Part 4 pushes nothing for it either.
+  - **A total-only paper measures one objective and one competency**: all marks go to
+    the first selected objective with competency `understanding`, so the teacher's
+    objective breakdown for that exam means "the total" and the family's competency
+    card says "not enough evidence". The new-exam screen names the objective
+    (`paperTotalMeasures`) and warns when more than one is selected
+    (`paperTotalMeasuresMany`) — and that warning shows whenever the selection holds
+    several objectives, which ticking even a single lesson usually does (a lesson
+    selects all of its objectives).
+  - **A quick paper exam's total is capped at 100**, as every paper question is.
+  - **A published paper exam still has a share code server-side.** Publishing
+    generates one (`routes/evaluations.ts`) and `GET /take/:code` admits a student who
+    has it. Families' rows (`shareCode: null`) and the teacher's screen no longer show
+    it; the endpoint was not changed.
+  - **`/student/progress` (the mastery gate) counts a published paper exam as an open
+    quiz** for its lesson: its open-exam query has no paper test. Only matters with
+    `MASTERY_GATE=true`.
+  - **Old app builds show a blank chip for the new `paper` state** until they update
+    (an OTA carrying this work reaches them — no `app.json` `version` bump was needed,
+    no native module changed). They still offer no link: `shareCode` is null.
+  - **A typed total for a student whose own link sitting is open is accepted** and
+    hands that sitting in — the teacher decides — and re-saving through the grid a
+    sitting the student made grades it as the teacher's mark, as the per-student
+    screen already did. Clearing such a sitting is refused (`kept_student_work`).
+  - **Clearing a saved mark deletes the sitting and its `grade_overrides` audit rows,
+    even after release** (cascade). The server does not refuse; the app asks first and
+    adds "families will stop seeing it" when results are released. Same precedent as
+    `DELETE /attempts/:id`.
+  - **A closed paper exam with no sitting reads `paper` forever**: the row carries no
+    status, so the chip cannot say it is over. The same holds for a child who did not
+    sit it (a blank box creates no sitting), so an absent child's row stays `paper`.
+  - **Before release a family can tell marked from not-yet**: a handed-in sitting is
+    `submitted` («سُلِّم — بانتظار النتيجة»), an exam with none is `paper`. The mark
+    itself stays hidden, but the difference shows (`studentExamRow`).
+  - **A refused clear leaves a stored-but-never-handed-in mark unsaved.** A
+    `kept_student_work` refusal puts the stored mark back in the box, but a row that
+    was saved and never handed in (`pendingFinal`) stays dirty (orange dot, holding
+    the release) until «حفظ الكل» is pressed again. That second save sends the
+    **stored** mark, not a clear, and `saveOne` hands it in through `gradeSubmission`,
+    so it succeeds; only a second **clear** of the box would be refused again.
+  - **Changing an exam's class after typing marks leaves the old class's marks on
+    it.** `PATCH /evaluations/:id` moves `classGroupId` and touches no sitting; the
+    grid lists only the current class, so it cannot clear them. Clear them per student
+    on the per-student screen.
+  - **An exam with no level scale shows the grid** and fails only on Save, with the
+    409 `no_level_scale` message (`marksBlocker` cannot see it).
+  - **Ticks on saved rows are transient**: the green tick belongs to the session; a
+    reload shows the stored value with no tick.
+  - **The exam-conflict line has a tatweel**: «يوجد امتحان آخر لـالصف العاشر…» — the
+    `examDateConflict` copy from #1017 glues «لـ» to the grade label. Not fixed.
+  - **The new-exam screen's total-too-large error shows at the bottom**, away from the
+    field; and an archived class shows the mark book's generic load error (not
+    re-checked).
+  - **School tab**: when a parent's picker key matches no child, the first child's
+    exams are shown instead of an empty state (`examChild` falls back to `exams[0]`);
+    the exams state is not reset on an account change (same as homework).
+  - **`findOrStartTeacherEntry` has a unique-violation race** on two concurrent creates
+    of the same sitting (a teacher's second device, or a student's link claim landing
+    between its read and its insert): a per-row `failed` in the mark book, which saves
+    rows one after another and reports a throw as `failed`, and a 500 on
+    `POST /evaluations/:id/attempts` (the per-student route).
+  - **The SQL paper flag and `isPaperQuestion` differ for odd bodies.** The family
+    loader tests `grading_mode = 'manual' AND body = '{}'::jsonb`; the JS rule is
+    `Object.keys(body ?? {}).length === 0`, which also counts a JSON `null`, `[]` or
+    `""` body as paper. The API never writes such a body (the column is `NOT NULL`
+    with default `{}`), so the two agree on every stored row today.
+  - **Test gaps**: `teacherEntry.db.test.ts` pins each refusal but not the ORDER of
+    the checks (already-exists, then group, then no questions, then no scale);
+    `upcomingExams` has no case for a malformed time inside the sort or a same-title
+    tie.
+- **Part 4 notes** (what a notification PR must know; each checked against the code;
+  **all addressed by Part 4, 2026-10-12** — each is now pinned by a test in the section
+  named above, and kept here as the reasons behind them):
+  - Marks saved **after** release have no hook: the paper-totals route would have to
+    announce the rows that answer `saved` while `releaseResultsToStudent` is on.
+  - `announceResultsRelease` selects every handed-in sitting (`submittedAt` set) of
+    the exam, **provisional results included**, and fires again after a hide → release
+    (the flip from `false` to `true` is its only trigger).
+  - An exam's day is zone-less text (`exam_date` / `exam_time`) compared as a string
+    with `ammanToday()`; a homework's is an Amman end-of-day instant.
+  - A dated draft and an exam with no class must **not** push «scheduled»: no family
+    can see them (`studentExamRow`, `examRowsFor`).
+  - Absent children stay in state `paper`, so a «results are out» push to a child who
+    never sat would point at a row with no result.
+  - `/parent/exams` `key` is a name-grouped child (`groupChildren`), not an account:
+    resolving pushes needs the users behind a roster row (`self` / `guardian`
+    links). `resultsReleaseNotify.ts` already joins attempts → `rosterLinks` inline
+    for the sittings of one exam; what does not exist is a reusable **class-wide**
+    helper (class → rows → user ids) for a scheduled / changed push. (Built since:
+    `accountsLinkedTo` / `liveClassStudentIds`.)
+
+## Families are told: homework, exam dates, results, and a reminder the day before, 2026-10-12
+
+A student and their guardians now get a push when a teacher posts homework, sets,
+changes or clears an exam's date, or releases a result (or types a paper mark after
+the release), and a reminder the afternoon before homework is due. Spec Part 4 of
+`docs/superpowers/specs/2026-10-11-family-school-views-design.md` (rewritten as built
+— see its section 4). **The reminder is built but inert: nothing sends it until the
+owner creates `INTERNAL_CRON_KEY` and a Cloud Scheduler job** (checklist below). The
+other three pushes need no setup beyond the merge. Everything is gated on
+`STUDENT_ACCOUNTS`, which is already `true` in production, so on merge these reach
+real family accounts — **none of it has been seen arriving on a phone.**
+
+- **What exists, per push.** All four go through one sender, `lib/familyPush.ts`
+  (`sendFamilyPush`): the caller says which roster rows the news is about, the sender
+  finds the accounts linked to them (`self` and `guardian`, via `accountsLinkedTo` /
+  `liveClassStudentIds` in `lib/familyAccess.ts` — the "roster row → accounts" lookup
+  Part 3 asked for), drops suspended accounts and anyone who switched that category
+  off, sends to every device of each, and deletes the tokens Expo says are dead.
+  The parent `key` of `/parent/exams` is a name-grouped child and is never used: pushes
+  resolve through roster rows. A guardian of two children gets one push per child, the
+  child named first («سارة: واجب جديد», so no verb has to agree with a name); a student
+  gets the generic text. Texts are Arabic only (`modules/notifications/familyPushText.ts`).
+  - **Homework posted** (`POST /homework`): the class's live students and their guardians,
+    channel `homework`. Changing a due date pushes nothing.
+  - **Exam date set / changed / cleared** (`PATCH /evaluations/:id`): only when the stored
+    date or time actually moves, on an exam families can see (published or closed,
+    attached to a live class, not archived), to that exam's audience (a group check
+    reaches its own students). A class newly attached to a dated exam hears the date as
+    `set`; publishing a dated draft announces it as `set`; a dated draft or an exam with
+    no class pushes nothing. Channel `exams`. Moving a dated exam to another class tells
+    the new class only.
+  - **Results**: `announceResultsRelease` moved onto the shared sender, so it now skips
+    provisional sittings, suspended accounts and switched-off accounts; it still
+    announces again after hide → release. A mark typed **after** the release
+    (`PUT /evaluations/:id/paper-totals`, rows that answer `saved`) gets the same text,
+    to that child's family only. Channel `results`. **It is now gated on
+    `STUDENT_ACCOUNTS` like the others** (a review ruling: the exemption the plan gave it
+    contradicted its own reason, because `/student/exams` and `/parent/exams` answer 403
+    while the flag is off) — the plan's "results keep their old behaviour" is no longer
+    true on that one point.
+  - **Reminder** (`POST /internal/homework-reminders`, `routes/internal.ts` →
+    `lib/homeworkReminders.ts`): homework due tomorrow (Amman day), not archived, in a
+    live class, per live roster row. Ticked → nothing. Not ticked and the row has an
+    account that can tick (a **non-suspended** `self` link) → the student and guardians are
+    told it is not marked done. No such account → guardians only, told when it is due,
+    never that it is "not done". Claimed per (homework, due day) in `homework_reminders`
+    **before** sending, so a double fire or a scheduler retry sends nothing twice; a send
+    that fails after the claim is lost for that day, and a failed claim for one homework
+    does not stop the run. Guarded by `x-internal-key` = `INTERNAL_CRON_KEY`
+    (constant-time compare; **404 for a wrong, missing or unset key**), mounted as
+    `router.use("/internal", …)` with a path prefix and covered by a `mountOrder.test.ts`
+    case (404, never 401).
+- **Switches.** `users.push_prefs` (jsonb, `{}` = all on, only an explicit `false` turns
+  one off; `modules/notifications/pushPrefs.ts`), `GET|PUT /auth/me/push-preferences` for
+  any signed-in account (`{ preferences: { homework, exams, results } }`; a PUT stores
+  only the keys sent; unknown keys beside a known one are dropped, a body with none is
+  400), and three switches in Settings for parents and students («الواجبات»,
+  «مواعيد الامتحانات», «النتائج»), web included. The homework switch also governs the
+  reminder. Chat messages are not governed by them.
+- **Quiet hours.** 22:00–07:00 Asia/Amman (`modules/notifications/quietHours.ts`): the push
+  is still sent, to the new silent Android channel `quiet` with `sound: null` — the
+  channel, not the message, because on Android 8+ the sound belongs to the channel.
+  `PUSH_QUIET_HOURS=off` disables it (the tests do). Chat and admin pushes are untouched.
+- **`pushWithin`** (`lib/pushWithin.ts`): the teacher-triggered pushes (homework, exam
+  date, paper marks) are awaited before the response, capped at 4 s and never throwing,
+  because Cloud Run throttles CPU once a response is sent. `sendExpoPush` also gained an
+  8 s abort per chunk. **The release announcement is still fire-and-forget**, as are chat
+  pushes (CLAUDE.md, *Work after `res.json`*).
+- **Schema.** Additive: `users.push_prefs jsonb NOT NULL DEFAULT '{}'` and the
+  `homework_reminders` table (unique on homework + due date, cascading). No destructive
+  flag was needed. Originally migrations `0007` (homework) and `0008` (this); on
+  2026-10-15 `main` had taken 0007 and 0008 (row-level security), so homework and this part
+  are regenerated as ONE migration, `0009_unknown_doctor_octopus`, which also grants the
+  three new tables to `iqraa_app` and classifies them DEFERRED in `rlsCoverage.test.ts`
+  (no RLS policies yet; `rlsDiff.test.ts` has no homework or push scenario of its own).
+  The push fan-out (`lib/familyPush.ts`, `lib/familyAccess.ts`' two reverse lookups) and the
+  reminder run (`lib/homeworkReminders.ts`) use `systemDb`, pinned in
+  `systemDbFiles.test.ts`. Re-check before merge that nobody else took idx 9.
+- **App (ships by OTA, no native change, no `app.json` `version` bump).** Channels
+  `homework`, `exams` and `quiet` are created at runtime from `PUSH_CHANNELS`
+  (`services/pushPolicy.ts`; `quiet` is `importance: low` with no sound or vibration, and
+  a parity test pins the app's list against the server's `PUSH_CHANNEL`).
+  `data.screen: "school"` opens the School tab (`services/notificationDeepLink.ts`). The
+  permission prompt now mentions homework and exam dates. Settings: `pushPrefs*` copy,
+  `services/pushPrefs.ts`, `services/pushPrefsApi.ts`.
+- **Pinned by tests** (DB files run the built bundle against a real Postgres and an
+  in-process Expo stub, `test-support/pushStub.ts`; **47 DB tests across the six files**):
+  `pushPreferences.db.test.ts` (7), `resultsPush.db.test.ts` (8), `homeworkPush.db.test.ts`
+  (8), `examDatePush.db.test.ts` (12), `paperTotalsPush.db.test.ts` (7),
+  `homeworkReminders.db.test.ts` (5); pure rules in `modules/notifications/__tests__/`
+  (`pushPrefs`, `quietHours`, `familyPush`, `familyPushText`, `examDateNotice`,
+  `reminders`), `lib/__tests__/pushWithin.test.ts`, `pushNotifications.test.ts`; mobile
+  `pushPolicy`, `pushPrefs`, `notificationDeepLink`. **Counts as of the commit that wrote
+  this section:** api-server 1894 tests, 1894 pass, 0 fail, 0 skipped (built bundle,
+  Postgres on `127.0.0.1:55432`, `REQUIRE_DB_TESTS=true`); mobile 4150 tests, 4140 pass, 0
+  fail, 10 skipped (the 10 skips predate this work); `pnpm run typecheck` clean.
+  **Mutation-proven** — each rule removed, rebuilt, the named test seen red, then restored:
+
+  | Removed | Went red |
+  | --- | --- |
+  | merge of a switch change replaced by an overwrite | `merges a second change…`, `turns a switch back on` (pushPreferences) |
+  | the refusal body in `PUT /me/push-preferences` | `refuses a body that changes nothing…` |
+  | `authMiddleware` on the PUT | mountOrder `guards the notification switches` |
+  | `>=` → `>` at 22:00 | quietHours `starts at 22:00 Amman` |
+  | `quiet` removed from the app's channels | `has a silent night channel`, `creates every channel the server sends to` |
+  | second `then` in `pushWithin` | `never throws, whether the work rejects or throws synchronously` |
+  | the abort `signal` on the Expo fetch | the two abort tests in `pushNotifications.test.ts` |
+  | dead-token branch of the Expo stub | `answers DeviceNotRegistered for a token marked dead` |
+  | `isProvisional = false` in `finalResultStudentIds` | `tells nobody about a paper still being marked` |
+  | suspended-account drop in the sender | unit `drops a suspended account` + DB `skips a suspended guardian` |
+  | the per-category switch check | unit `drops an account that switched THIS category off` + DB `honours the results switch` |
+  | pruning of dead tokens | resultsPush pruning case |
+  | `await pushWithin(…)` around the homework push | tests 1–5 and 8 of `homeworkPush` |
+  | `void` instead of `await` | `waits for the push before answering` |
+  | `archivedAt` filter on roster rows | `never reaches an archived roster row` |
+  | the `STUDENT_ACCOUNTS` check in the sender | `pushes nothing … while student accounts are off` |
+  | the past-due-day guard (`<` and `<=` variants) | homework test 8; exam `saves a date in the past…`, `still pushes a date that is today` |
+  | `examVisibleToFamilies` → "has a class" | the draft cases (unit + 2 DB) |
+  | audience filter on a group check | `tells a group check's students only` |
+  | the equality line (nothing moved → nothing said) | unit + DB `says nothing when a save does not move…` |
+  | `releaseResultsToStudent &&` in paper-totals | `pushes nothing for a mark typed before the release` |
+  | `status !== "error"` instead of `saved` only | `says nothing when the same mark is saved again` |
+  | `claimed.length === 0` skip | reminders: second run, and cases 4–5 |
+  | `gte` for `gt` in the due window | case 2 (`rm-today` appears) |
+  | "no account" read as tracked | unit + 2 DB cases |
+  | `if (row.done) return null` | unit + DB case 2 |
+  | route open when the key is unset | case 1 (and 2) |
+  | suspended self links counted as accounts | case 5 (suspended student) |
+  | `Object.hasOwn(SCREEN_ROUTES, …)` → `in` | `ignores screens that are not whitelisted` |
+
+  **The racing-PATCH guard did not go red.** The exam PATCH's announcing write is
+  conditional on what the request read (`stillHolds` on class, date, time), so two
+  identical racing saves *should* announce at most once. Removing all three conditions
+  left the race case green three times, and an eight-way version three more times: the
+  requests serialise too tightly in this harness for the read and the write to
+  interleave. The case was deleted rather than kept as a test that proves nothing, so the
+  guard is correct by construction and **unproven by any test**.
+- **Owner's checklist after merge.**
+  1. The merge deploys the API (with migration `0009`) and the web app, and
+     `mobile-update.yml` publishes the OTA that carries the channels, the tap target
+     and the switches. Check `/api/healthz/version` matches the merge commit.
+  2. Run `docs/deploying.md` «The homework reminder» steps 1–6 in one shell, because
+     **until then no reminder is ever sent**. Step 4 sends real pushes if any
+     homework is due tomorrow.
+  3. On a real Android phone: sign in as a parent of a child in a class, grant
+     notifications, then from the teacher account post homework to that class. The push
+     should appear under «الواجبات», and tapping it should open «المدرسة». Set an exam
+     date and confirm «موعد امتحان» arrives. Type a paper mark after releasing and
+     confirm «نتيجة …» arrives. Turn «الواجبات» off in Settings, post again, and confirm
+     nothing arrives. Do it once after 22:00 Amman as well, to see the silent channel.
+  4. The next day after 16:00 Amman, read the `homework reminders run` log line
+     (`gcloud logging read` in the deploying.md section).
+  5. Acknowledge two decisions the code made for you: a guardian's lock-screen text
+     carries the child's roster name («نتيجة سارة» was already the precedent), and the
+     Arabic push copy was written without a native reader.
+- **Not seen.** Delivery to any real device; the OTA on a phone; the `quiet` channel at
+  night; Cloud Scheduler firing; the Secret Manager and scheduler commands (not run from
+  here); the `jsonPayload.msg` filter in the deploying.md logging command (the logger is
+  pino with the default `msg` key, but no Cloud Run log was read). The Settings card's
+  save path against a real phone's token store, and its look in Android's own switch
+  styling (only the web build was looked at).
+- **Seen (headless Chromium, 360 px, local API + Expo web on a seeded database,
+  2026-10-12).** «إشعارات المدرسة» is shown to a parent (Arabic and English) and to a
+  student, with three switches, their hints and the note; a teacher's Settings has no such
+  card. A switch turned off was stored (`users.push_prefs`) and was still off after a
+  reload, in both languages. With the API stopped, flipping a switch shows «تعذّر حفظ
+  التغيير. حاول مرة أخرى.» and the switch is back on. The toast sits over the "About"
+  rows for its few seconds (the app's usual toast position). The first pass hit the class
+  picker (a parent with no chosen grade is sent to onboarding before `/settings`): a
+  setup step of the check, not of the card.
+- **Known gaps** (one line each, with the reason):
+  - **Pushes for PAST-dated homework and exam dates are skipped by design** (a back-dated
+    entry is a record, not news; the API allows homework 30 days back). A cleared exam
+    date is always told.
+  - Two simultaneous publishes of one dated draft can both announce (a conditional write
+    inside the share-code retry loop would fix it; left out on purpose).
+  - Two simultaneous PATCHes of one exam with DIFFERENT dates: the loser's value is
+    stored without an announcement (families can briefly hold the other date). Identical
+    races *should* announce once, **unproven** — see above.
+  - A sitting handed in after the release through `POST /attempts/:id/submit` or the
+    student link is not pushed. A child with no final result row (never sat, or still
+    provisional) is never pushed.
+  - Hide → release announces again; a corrected paper mark after the release is
+    announced again (no memory of past announcements without a column).
+  - Moving a dated exam to another class tells the new class only.
+  - Night pushes land in `quiet`, so an Android-level mute of «الواجبات» does not
+    silence them (the in-app switch does). **An app on a build from before this OTA** has
+    no `quiet`, `homework` or `exams` channel: its pushes arrive in Android's fallback
+    channel, and a *night* push there **rings with sound**. Never seen on a device;
+    expo-notifications falls back rather than dropping it (the fallback described in
+    «Push: asked for in context, one Android channel per kind…, 2026-10-06»).
+  - Lock-screen texts carry the child's roster name for guardians (precedent «نتيجة
+    سارة») — for the owner to acknowledge.
+  - The Arabic push copy has not been read by a native speaker.
+  - A reminder whose send fails after its claim is lost for that day.
+  - The reminder run is sequential and could exceed Cloud Scheduler's 300 s attempt
+    deadline for a very large school; the handler may not carry on after its request ends
+    (Cloud Run throttles CPU), so the scheduler job is created with `--max-retry-attempts 3`
+    and a retry reminds only what is not yet claimed (claims are written as it goes).
+  - The reminder's `hasAccount` counts only non-suspended `self` links, so a suspended
+    student's guardians get the softer "when it is due" text, not "not done".
+  - The release announcement and chat pushes are still fire-and-forget, so Cloud Run's CPU
+    throttling can delay them.
+  - Pushes are Arabic only; `preferredLanguage` is ignored, as before.
+  - Test gaps: the reminder case "moved to tomorrow" cannot show a homework that was
+    claimed and then moved; date tests compare the test's Amman "today" with the server's
+    and could flake in a run that straddles Amman midnight; the mountOrder right-key case
+    cannot tell a 200 from a 500; there is no integration case for a guardian with two
+    final children, and none for a `set` with a past date after publish.
+  - A mobile test run reports 10 skips — pre-existing, none from this work.
 
 ## Messages can be reacted to with an emoji, 2026-10-10
 
@@ -18721,6 +19672,8 @@ against the local stack:
 
 ## Students are told when results are released; state reaches screen readers, 2026-10-04
 
+*Since 2026-10-12 this announcement goes through the shared family sender and also skips provisional papers, suspended accounts and switched-off accounts — see «Families are told…», 2026-10-12.*
+
 **A release now announces itself.** When «أعلن النتائج للطلبة» turns a
 release on (`lib/resultsReleaseNotify.ts`, after the route has answered):
 
@@ -18808,7 +19761,9 @@ to system settings once Android will no longer prompt.
 
 **Android channels.** Every push used to land in Android's single catch-all
 channel, so muting one kind muted all of them. There are now `messages`,
-`results`, `reminders`, and `admin` (system admins only). They are created and
+`results`, `reminders`, and `admin` (system admins only), and since 2026-10-12
+also `homework`, `exams` and the silent night channel `quiet` (see «Families are
+told…»). They are created and
 named in the app's language by the tab layout. The server names a channel on
 every push (`PUSH_CHANNEL` in `lib/pushNotifications.ts`), and the English
 Hub's local reminder names `reminders`. `pushPolicy.test.ts` reads the
