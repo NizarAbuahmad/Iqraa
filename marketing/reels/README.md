@@ -150,10 +150,11 @@ Two original synthesised beds — no third-party licence. Neither of the five st
 the repo, and `docs/marketing-plan.md` still lists "music licences" as unbought. To use a licensed track, replace the
 bed (`out/bed.wav`) and rebuild.
 
-- **Soft bed** — `make_music.py` (100 BPM ambient pad + plucks). Used by Reels 1–12 as shipped. Judged too flat.
+- **Soft bed** — `make_music.py` (100 BPM ambient pad + plucks). Still on Reels 1, 3, 4, 6–9. Judged too flat.
 - **Upbeat** — `music_upbeat.py` (118 BPM, four-on-the-floor kick, claps, bouncing bass that ducks under the kick, plucked
   stabs, a marimba hook, a sparkle arp from bar 5, a riser into the end card). **Default for new reels**: set
   `music="upbeat"` in the reel's config. It also follows the picture: a whoosh into every scene cut and a pop on it, plus
   `dings=[t, …]`, a rising-scale ding for each event (Reel 10: one per correct answer).
-  Sample: `out/Iqrra_10_Games_upbeat.mp4` (same picture as Reel 10, new music). Re-music an older reel by adding `music="upbeat"`
-  to its config and rebuilding.
+  **Reels 2, 5, 10, 11, 12 use it** (dings: Reel 5 on each countdown number, the reveal and each key line; Reel 10 on each
+  correct answer; Reel 11 on each activity as it lights up). Re-music an older reel by adding `music="upbeat"` to its
+  config and rebuilding.

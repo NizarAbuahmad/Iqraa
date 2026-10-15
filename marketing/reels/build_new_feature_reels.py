@@ -32,7 +32,7 @@ def starts(scenes):
     return out + [t]
 
 
-def reel10(music="upbeat"):
+def reel10():
     T = "r10_games"
     A = [6.287, 8.841, 11.383, 13.974, 16.525, 19.068, 21.643, 24.218]       # take time of each answer tap
     S2_SRC, S3_SRC, RATE = 3.5, 14.0, 1.8
@@ -52,8 +52,8 @@ def reel10(music="upbeat"):
         dict(png="r10_race", on=t[2], off=t[3], kind="head"),
         dict(png="r10_free", on=t[3], off=t[4], kind="head"),
     ]
-    return dict(name="reel10", take=T, theme="teal", end="end_t10", out="Iqrra_10_Games.mp4" if music != "upbeat" else "Iqrra_10_Games_upbeat.mp4",
-                music=music, dings=fills, end_dur=3.6,
+    return dict(name="reel10", take=T, theme="teal", end="end_t10", out="Iqrra_10_Games.mp4",
+                music="upbeat", dings=fills, end_dur=3.6,
                 scenes=sc, overlays=ov, tickers=[dict(n=8, y=1496, fills=fills, on=t[1], off=t[4])])
 
 
@@ -82,8 +82,9 @@ def reel11():
         dict(png="r11_ready", on=t[4], off=t[5], kind="head"),
         dict(png="pill_p11", on=t[3], off=t[5], kind="pill"),
     ]
+    dings = [t[1] + 0.15, t[2] + 0.1, t[2] + 1.4, t[2] + 2.7]            # one per activity as it lights up
     return dict(name="reel11", take=T, theme="paper", end="end_p11", out="Iqrra_11_Interactive_Class.mp4", end_dur=3.6,
-                scenes=sc, overlays=ov)
+                music="upbeat", dings=dings, scenes=sc, overlays=ov)
 
 
 def reel12():
@@ -112,7 +113,7 @@ def reel12():
     ov[3] = dict(png="chip_n5", on=t[5], off=t[7], kind="chip", y=Y2)
     ov.append(dict(png="chip_n5", on=t[7], off=t[8], kind="chip", y=Y1))
     return dict(name="reel12", take=T, theme="ink", end="end_k12", out="Iqrra_12_Curriculum.mp4", end_dur=3.6,
-                scenes=sc, overlays=ov)
+                music="upbeat", dings=[t[5] + 0.4], scenes=sc, overlays=ov)
 
 
 REELS = {"10": reel10, "11": reel11, "12": reel12}

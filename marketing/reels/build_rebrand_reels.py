@@ -52,7 +52,7 @@ def reel2():
     ov = [dict(png=n, on=t[i], off=t[i + 1], kind="head", first=(i == 0)) for i, n in enumerate(names)]
     ov.append(dict(png="chip_n2", on=t[3], off=t[6], kind="chip", y=290 + 124 + 16))
     return dict(name="reel2n", take=T, theme="paper", end="end_n2", out="Iqrra_02_Library.mp4", end_dur=3.6,
-                scenes=sc, overlays=ov)
+                music="upbeat", scenes=sc, overlays=ov)
 
 
 def reel5():
@@ -82,8 +82,10 @@ def reel5():
         dict(png="n5_steps", on=t[2] + 3.9, off=t[3], kind="head"),
         dict(png="n5_lib", on=t[3], off=t[4], kind="head"),
     ]
+    # a rising ding on each countdown number and a bright one on the reveal, then one per key line
+    dings = [t[1] + 0.2, t[1] + 1.3, t[1] + 2.4, t[2] + 0.4, t[2] + 3.9, t[2] + 5.4, t[2] + 6.9]
     return dict(name="reel5n", take="r5n_quiz", theme="teal", end="end_n5", out="Iqrra_05_Quiz.mp4", end_dur=3.6,
-                scenes=sc, overlays=ov, rings=[dict(on=t[1] + 0.2, off=t[2] - 0.05, cx=510, cy=650, r=82)])
+                music="upbeat", dings=dings, scenes=sc, overlays=ov, rings=[dict(on=t[1] + 0.2, off=t[2] - 0.05, cx=510, cy=650, r=82)])
 
 
 REELS = {"2": reel2, "5": reel5}
