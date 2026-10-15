@@ -366,9 +366,9 @@ an announcement by default» below.
   «التوزيع الإلكتروني والجدول الدوري» stays where it was. Routing of all 25
   chemistry lessons was compared before and after with the app's own lesson text:
   only the two Grade 10 periodic-table lessons gained items, none changed family.
-  **Found while measuring, not fixed:** the Grade 9 lesson «مكوِّناتُ الذرَّةِ»
-  routes to `redox`, not `atom_basics`. The other 13 families followed the same day
-  (next entry).
+  **Found while measuring:** the Grade 9 lesson «مكوِّناتُ الذرَّةِ» routed to
+  `redox`, not `atom_basics` (fixed the same day, see the entry after next). The other
+  13 families followed the same day (next entry).
 - **All 14 chemistry families now hold 15 or more items (2026-10-15).** The 13 that
   were still 4–7 each got 128 more (easy ≥5, medium ≥6, hard ≥4 per family:
   atom_basics, atomic_structure, electron_config, bonding, formulas, equations, mole,
@@ -386,6 +386,17 @@ an announcement by default» below.
   teaches, the Arabic wording, or which distractors a student would really pick — no
   chemistry teacher has read any of it, and none of it has been seen in a browser or
   on a device.
+- **«مكوِّناتُ الذرَّةِ» no longer routes to redox (2026-10-15).** The Grade 9 lesson's
+  objectives say students "run simple experiments on electrolysis and gas discharge",
+  and `detectChemFamily` tests redox before `atom_basics`, so a quiz, worksheet or
+  quick-check for the lesson was about oxidation and cells. The title alone routed
+  correctly, which is why the title-only test cases never caught it (same blind spot as
+  the mole lesson). A narrow rule on the lesson's own name now sits ahead of redox.
+  Routing of all 25 chemistry lessons was compared before and after with the app's own
+  lesson text: only this one changed. **Seen while checking, not fixed:** other lessons
+  route oddly the same way — «التأكسد والاختزال والخلايا الجلفانية» (Grade 9 S2) goes to
+  `thermochem` and «تغيرات الطاقة في التفاعلات الكيميائية» (Grade 10 S2) goes to `mole`,
+  because their objectives mention a neighbouring topic. Not measured beyond that routing.
 - **Quiz «أعد التجهيز» now changes the questions, and says when it cannot**
   (2026-10-13). The offline regenerate only checked that the whole quiz JSON
   differed from the last one, so the same stems in another order — or with the

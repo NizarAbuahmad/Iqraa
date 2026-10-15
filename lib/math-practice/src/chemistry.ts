@@ -130,6 +130,10 @@ export function detectChemFamily(raw: string): ChemFamily {
   if (/نظرية بور|الطيف الذري|الميكانيكي الموجي|الكم|bohr|spectrum|quantum|wave mechanical/i.test(blob)) return 'atomic_structure';
 
   // Grade 9
+  // The lesson's own name, ahead of redox on purpose: its objectives say students "run simple
+  // experiments on electrolysis and gas discharge", which the redox pattern below would take as
+  // an electrolysis lesson. Deliberately narrow — only the name of the lesson, not its topic words.
+  if (/مكونات الذرة|components of (the )?atom\b/i.test(blob)) return 'atom_basics';
   if (/تأكسد|اختزال|جلفاني|التحليل الكهربائي|خلية|redox|oxidation|reduction|galvanic|electroly/i.test(blob)) return 'redox';
   if (/نشاط الفلزات|سلسلة النشاط|تآكل|صدأ|activity series|corrosion|rust/i.test(blob)) return 'metal_activity';
   if (/حمض|حموض|قاعدة|قواعد|أملاح|تعادل|قلوي|acid|base|alkali|neutralis|neutraliz|\bpH\b/i.test(blob)) return 'acids_bases';

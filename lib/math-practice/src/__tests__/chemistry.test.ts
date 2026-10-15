@@ -165,6 +165,27 @@ describe('detectChemFamily', () => {
     assert.equal(detectChemFamily(moleLessonBlob), 'mole');
   });
 
+  // Found 2026-10-15: the Grade 9 lesson «مكوِّناتُ الذرَّةِ» says its students "run simple
+  // experiments on electrolysis and gas discharge", and the redox check ran before atom_basics,
+  // so every quick-check for the lesson was a redox question. The title-only case above passed
+  // the whole time — same blind spot as the mole lesson. Text is the lesson's own, from
+  // `lessonTextBlob` (title, ids, objectives, key concepts).
+  it('the atom-components lesson is not taken by redox for mentioning electrolysis', () => {
+    const atomComponentsLessonBlob = [
+      'مكوِّناتُ الذرَّةِ Components of Atom',
+      'أتتبَّعُ تطوُّرَ النماذجِ الذرِّيّةِ المختلفةِ. أستقصي مكوِّناتِ الذرَّةِ. أُحدِّدُ أماكنَ وجودِ مكوِّناتِ الذرَّةِ.',
+      'أتمكّنُ منْ إجراءِ تجارِبَ بسيطةٍ حولَ التحليلِ الكهربائيِّ والتفريغِ الكهربائيِّ.',
+      'أُقدِّرُ دورَ العلماءِ في التوصُّلِ إلى المعرفةِ العلميّةِ، واكتِشافِ مكوِّناتِ الذرَّةِ.',
+      'النموذجُ الذرِّيُّ نموذجُ دالتون أُنبوبُ التفريغِ الكهربائيِّ نموذجُ ثومسون جُسيماتُ ألفا نموذجُ رذرفورد النواةُ',
+    ].join(' ');
+    assert.equal(detectChemFamily(atomComponentsLessonBlob), 'atom_basics');
+  });
+
+  it('the electrolysis lesson itself is still redox', () => {
+    assert.equal(detectChemFamily('خلايا التحليل الكهربائي'), 'redox');
+    assert.equal(detectChemFamily('التأكسد والاختزال والخلايا الجلفانية أُنبوب التفريغ'), 'redox');
+  });
+
   it('still resolves the stoichiometry lesson itself by its own objectives', () => {
     const stoichiometryLessonBlob = [
       'الحسابات الكيميائية',
