@@ -39,7 +39,7 @@
  * sees the content, being a permanent participant.
  */
 import { Router } from "express";
-import { db } from "@workspace/db";
+import { db, systemDb } from "@workspace/db";
 import {
   chatThreads,
   chatParticipants,
@@ -245,7 +245,8 @@ const PUSH_BODY_PREVIEW_LENGTH = 120;
 async function pruneDeadTokens(results: Awaited<ReturnType<typeof sendExpoPush>>): Promise<void> {
   const dead = deadTokensFrom(results);
   if (dead.length === 0) return;
-  await db.delete(devicePushTokens).where(inArray(devicePushTokens.expoPushToken, dead));
+  // systemDb: a dead token belongs to whoever registered it, not to the caller.
+  await systemDb.delete(devicePushTokens).where(inArray(devicePushTokens.expoPushToken, dead));
 }
 
 /**
@@ -259,7 +260,8 @@ async function notifyThreadParticipants(threadId: string, senderId: string, body
   const recipientIds = participants.map(p => p.userId).filter(id => id !== senderId);
   if (recipientIds.length === 0) return;
 
-  const blockedByRows = await db
+  // systemDb: whether a recipient has blocked the sender is the recipient's row, not the sender's.
+  const blockedByRows = await systemDb
     .select({ blockerUserId: chatBlocks.blockerUserId })
     .from(chatBlocks)
     .where(and(inArray(chatBlocks.blockerUserId, recipientIds), eq(chatBlocks.blockedUserId, senderId)));
@@ -267,7 +269,8 @@ async function notifyThreadParticipants(threadId: string, senderId: string, body
   const notifiable = recipientIds.filter(id => !blockedBy.has(id));
   if (notifiable.length === 0) return;
 
-  const tokenRows = await db
+  // systemDb: pushing to other people needs their tokens.
+  const tokenRows = await systemDb
     .select({ userId: devicePushTokens.userId, expoPushToken: devicePushTokens.expoPushToken })
     .from(devicePushTokens)
     .where(inArray(devicePushTokens.userId, notifiable));
@@ -507,6 +510,46 @@ router.get("/messaging/threads", async (req: AuthenticatedRequest, res) => {
 });
 
 /**
+ * Get-or-create the direct thread between two accounts and make sure `userId`
+ * has it in their inbox. Shared by POST /messaging/threads and the broadcast
+ * route below — both callers have already checked the pair is allowed.
+ */
+async function openDirectThread(userId: string, counterpartUserId: string): Promise<typeof chatThreads.$inferSelect> {
+  const directKey = [userId, counterpartUserId].sort().join(":");
+
+  let [thread] = await db.select().from(chatThreads).where(eq(chatThreads.directKey, directKey)).limit(1);
+  if (!thread) {
+    const inserted = await db
+      .insert(chatThreads)
+      .values({ type: "direct", directKey, createdBy: userId })
+      .onConflictDoNothing()
+      .returning();
+    thread = inserted[0];
+    if (!thread) {
+      // Lost a create race to a concurrent request — the row exists now.
+      [thread] = await db.select().from(chatThreads).where(eq(chatThreads.directKey, directKey)).limit(1);
+    }
+  }
+  if (!thread) throw new Error("Failed to create thread");
+
+  await db
+    .insert(chatParticipants)
+    .values([
+      { threadId: thread.id, userId },
+      { threadId: thread.id, userId: counterpartUserId },
+    ])
+    .onConflictDoNothing();
+
+  // Opening the conversation again is asking for it back.
+  await db
+    .update(chatParticipants)
+    .set({ hiddenAt: null })
+    .where(and(eq(chatParticipants.threadId, thread.id), eq(chatParticipants.userId, userId)));
+
+  return thread;
+}
+
+/**
  * Get-or-create a direct thread. The only rule that matters here: exactly one
  * side must be a teacher, and the two must already be connected through a
  * claimed roster link — see the file header.
@@ -547,7 +590,8 @@ router.post("/messaging/threads", async (req: AuthenticatedRequest, res) => {
       return;
     }
 
-    const [existingBlock] = await db
+    // systemDb: a block in either direction stops a new thread, and one direction is the other person's row.
+    const [existingBlock] = await systemDb
       .select({ id: chatBlocks.id })
       .from(chatBlocks)
       .where(
@@ -562,36 +606,7 @@ router.post("/messaging/threads", async (req: AuthenticatedRequest, res) => {
       return;
     }
 
-    const directKey = [req.user!.id, counterpartUserId].sort().join(":");
-
-    let [thread] = await db.select().from(chatThreads).where(eq(chatThreads.directKey, directKey)).limit(1);
-    if (!thread) {
-      const inserted = await db
-        .insert(chatThreads)
-        .values({ type: "direct", directKey, createdBy: req.user!.id })
-        .onConflictDoNothing()
-        .returning();
-      thread = inserted[0];
-      if (!thread) {
-        // Lost a create race to a concurrent request — the row exists now.
-        [thread] = await db.select().from(chatThreads).where(eq(chatThreads.directKey, directKey)).limit(1);
-      }
-    }
-    if (!thread) throw new Error("Failed to create thread");
-
-    await db
-      .insert(chatParticipants)
-      .values([
-        { threadId: thread.id, userId: req.user!.id },
-        { threadId: thread.id, userId: counterpartUserId },
-      ])
-      .onConflictDoNothing();
-
-    // Opening the conversation again is asking for it back.
-    await db
-      .update(chatParticipants)
-      .set({ hiddenAt: null })
-      .where(and(eq(chatParticipants.threadId, thread.id), eq(chatParticipants.userId, req.user!.id)));
+    const thread = await openDirectThread(req.user!.id, counterpartUserId);
 
     res.status(201).json({ thread });
   } catch (err) {
@@ -1200,7 +1215,9 @@ router.post("/messaging/threads/:id/messages", sendMessageLimiter, async (req: A
       })
       .returning();
 
-    await db.update(chatThreads).set({ updatedAt: new Date() }).where(eq(chatThreads.id, threadId));
+    // systemDb: the post is already authorised, and the inbox sorts by this column — a participant
+    // who did not create the thread may not update it, so under RLS the bump matched no row.
+    await systemDb.update(chatThreads).set({ updatedAt: new Date() }).where(eq(chatThreads.id, threadId));
     await db
       .update(chatParticipants)
       .set({ lastReadAt: new Date() })
@@ -1213,6 +1230,96 @@ router.post("/messaging/threads/:id/messages", sendMessageLimiter, async (req: A
     );
   } catch (err) {
     failMessaging(res, err, "send message", "Failed to send message");
+  }
+});
+
+/**
+ * Teacher-only broadcast: one message to a hand-picked set of people, each
+ * landing in their own private direct thread. The difference from a custom
+ * group is the reply — in a group everyone reads everyone, here a parent's
+ * answer goes to the teacher alone. Same trust boundary as a direct thread
+ * (connected through a claimed roster link); a blocked pair is skipped, not
+ * failed, so one block cannot sink the other 39 sends. Text only.
+ * One call counts once against sendMessageLimiter, bounded by the member cap.
+ */
+router.post("/messaging/threads/broadcast", sendMessageLimiter, async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!isTeacherRole(req.user!.role)) {
+      res.status(403).json({ error: "Only a teacher can send a broadcast", code: "teacher_only" });
+      return;
+    }
+    const teacherId = req.user!.id;
+
+    const body = trimmed(req.body?.body);
+    const recipientIds = [...new Set(Array.isArray(req.body?.participantUserIds) ? req.body.participantUserIds : [])]
+      .filter((id): id is string => typeof id === "string" && id !== teacherId);
+    if (!body || recipientIds.length === 0) {
+      res.status(400).json({ error: "body and at least one recipient are required", code: "missing_fields" });
+      return;
+    }
+    if (body.length > MAX_BODY_LENGTH) {
+      res.status(400).json({ error: `body must be at most ${MAX_BODY_LENGTH} characters`, code: "too_long" });
+      return;
+    }
+    if (recipientIds.length > MAX_CUSTOM_GROUP_MEMBERS) {
+      res.status(400).json({ error: `A broadcast can reach at most ${MAX_CUSTOM_GROUP_MEMBERS} people`, code: "group_too_large" });
+      return;
+    }
+    // A malformed id reaches Postgres as a uuid cast error and 500s.
+    if (recipientIds.some(id => !UUID.test(id))) {
+      res.status(400).json({ error: "participantUserIds must be user ids", code: "invalid_input" });
+      return;
+    }
+
+    const connected = await Promise.all(recipientIds.map(id => isConnected(teacherId, id)));
+    if (connected.some(ok => !ok)) {
+      res.status(403).json({ error: "You are not connected to every person in this list", code: "not_connected" });
+      return;
+    }
+
+    // Direct threads are teacher↔parent/student only (file header, rule 1).
+    const roles = await db.select({ id: users.id, role: users.role }).from(users).where(inArray(users.id, recipientIds));
+    const eligible = new Set(roles.filter(u => !isTeacherRole(u.role)).map(u => u.id));
+
+    const blockRows = await db
+      .select({ blocker: chatBlocks.blockerUserId, blocked: chatBlocks.blockedUserId })
+      .from(chatBlocks)
+      .where(
+        or(
+          and(eq(chatBlocks.blockerUserId, teacherId), inArray(chatBlocks.blockedUserId, recipientIds)),
+          and(eq(chatBlocks.blockedUserId, teacherId), inArray(chatBlocks.blockerUserId, recipientIds)),
+        ),
+      );
+    const blockedIds = new Set(blockRows.map(r => (r.blocker === teacherId ? r.blocked : r.blocker)));
+
+    const sentThreadIds: string[] = [];
+    for (const id of recipientIds) {
+      if (!eligible.has(id) || blockedIds.has(id)) continue;
+      const thread = await openDirectThread(teacherId, id);
+      const now = new Date();
+      await db.insert(chatMessages).values({ threadId: thread.id, senderId: teacherId, body });
+      // systemDb: as above — the thread may have been opened by the recipient.
+      await systemDb.update(chatThreads).set({ updatedAt: now }).where(eq(chatThreads.id, thread.id));
+      await db
+        .update(chatParticipants)
+        .set({ lastReadAt: now })
+        .where(and(eq(chatParticipants.threadId, thread.id), eq(chatParticipants.userId, teacherId)));
+      sentThreadIds.push(thread.id);
+    }
+
+    res.status(201).json({ sent: sentThreadIds.length, skipped: recipientIds.length - sentThreadIds.length });
+
+    // After the response and one at a time: a push failure must never fail a
+    // send, and 100 parallel Expo calls are not worth the seconds saved.
+    void (async () => {
+      for (const threadId of sentThreadIds) {
+        await notifyThreadParticipants(threadId, teacherId, body).catch(err =>
+          logger.error({ err }, "broadcast push notify failed"),
+        );
+      }
+    })();
+  } catch (err) {
+    failMessaging(res, err, "send broadcast", "Failed to send message");
   }
 });
 
@@ -1476,7 +1583,8 @@ router.post("/messaging/device-tokens", async (req: AuthenticatedRequest, res) =
       return;
     }
 
-    await db
+    // systemDb: a phone handed to another account re-registers a token that still belongs to the last one.
+    await systemDb
       .insert(devicePushTokens)
       .values({ userId: req.user!.id, expoPushToken, platform })
       .onConflictDoUpdate({

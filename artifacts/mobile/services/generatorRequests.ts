@@ -19,6 +19,7 @@ import {
   type GeneratorGrounding,
 } from './kbContext.ts';
 import type { KbScope } from './knowledgeBase.ts';
+import type { ScopeGrounding } from './scopeGrounding.ts';
 
 type Lang = 'ar' | 'en';
 
@@ -64,6 +65,23 @@ export function buildWorksheetRequest(form: WorksheetForm, grounding: GeneratorG
     ...regenerationFields(form.regenerate === true, form.previous),
     includePriorReview: usePrior,
     priorKnowledge: usePrior ? unitPrior : undefined,
+  };
+}
+
+/**
+ * The request fields a wide scope adds on top of a screen's own.
+ *
+ * Empty for a single lesson: the screen already sends `lessonId` / `unitId` and
+ * its lesson context, and this PR must not change that request.
+ */
+export function scopeRequestFields(
+  g: ScopeGrounding,
+): Pick<AIRequest, 'scope' | 'additionalContext' | 'contextSource'> {
+  if (g.kind === 'lesson') return {};
+  return {
+    scope: g.grounded ? { kind: g.kind, scopeKey: g.scopeKey, unitIds: g.unitIds } : undefined,
+    additionalContext: (g.grounded ? g.context : g.ungroundedNote) || undefined,
+    contextSource: 'curriculum',
   };
 }
 
@@ -127,6 +145,51 @@ export function buildLessonPlanRequest(form: LessonPlanForm, grounding: Generato
     includePriorReview: usePrior || undefined,
     priorKnowledge: usePrior ? unitPrior : undefined,
     priorTopicsNotes: form.priorTopicsNotes.trim() || undefined,
+    // The Ministry form needs a learner role per stage. Asked for in the same
+    // call as the plan, so the roles match what the teacher reads — exporting
+    // later would mean a second generation that no longer does. Part of the
+    // strict cache key, and `pregenerate.ts` builds through here, so the pooled
+    // plan and the one this screen asks for are the same artifact.
+    ministryRoles: true,
+  };
+}
+
+export type LessonTeachingForm = {
+  /** Localised grade name — display-only, carried into the content verbatim. */
+  gradeName: string;
+  /** English subject name — the string the generators branch on. */
+  subjectName: string;
+  topic: string;
+  lang: Lang;
+};
+
+/**
+ * The `/generate/lesson-teaching` body: the explanation section of a Slides
+ * Maker deck, which the student lesson page reads back from the pool.
+ *
+ * Extracted from `slides.tsx`, which built this inline. It must send what that
+ * code sent, so explanations teachers have already stored keep matching.
+ * `lessonTeachingRequest.test.ts` pins that for the Arabic, grounded, grade 10
+ * Mathematics path only (deep-equal to a copy of the old inline body); the
+ * English and ungrounded paths match by construction (the same fields, read
+ * from `slides.tsx` before the extraction), not by a test. The lesson id comes
+ * from the grounding the caller already resolved, not from the title.
+ */
+export function buildLessonTeachingRequest(
+  form: LessonTeachingForm,
+  grounding: GeneratorGrounding,
+  regen: ReturnType<typeof regenerationFields> = {},
+): AIRequest {
+  return {
+    grade: form.gradeName,
+    subject: form.subjectName,
+    topic: form.topic.trim(),
+    language: form.lang === 'ar' ? 'arabic' : 'english',
+    additionalContext: grounding.grounded ? grounding.context : grounding.ungroundedNote,
+    unitId: nccdUnitId(grounding.lesson?.unitId),
+    lessonId: grounding.lesson?.id,
+    contextSource: 'curriculum' as const,
+    ...regen,
   };
 }
 

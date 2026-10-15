@@ -27,6 +27,7 @@ import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generat
 import { isolateForeignRuns } from '@/services/mathRender';
 import {
   ActivityOutput,
+  AIRequest,
   LessonFlowOutput,
   LessonPlanOutput,
   QuizOutput,
@@ -37,7 +38,7 @@ import {
   type LessonFlowPrior,
   type StepKey } from '@/services/ai/lessonFlowRunner';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
-import { groundedSubjectConflict, scopeWithoutCurriculum, scopeFromParams, subjectPickerLabels } from '@/services/lessonPrep';
+import { groundedSubjectConflict, scopeWithoutCurriculum, scopeFromParams, topicForScope, subjectPickerLabels } from '@/services/lessonPrep';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
@@ -48,9 +49,13 @@ import { Toast } from '@/components/ui/Toast';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { buildLessonFlowHTML, exportAsPDF } from '@/services/share';
+import { failedStepHint, lessonFlowFailure } from '@/services/lessonFlowError';
 import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
+import { useWideScope } from '@/hooks/useWideScope';
+import { scopeLabel, type ScopeSelection } from '@/services/scopeSelection';
+import { buildScopeRequest, scopeFormState, type ScopeRequest } from '@/services/wideScopeRequest';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -91,6 +96,8 @@ export default function LessonFlowScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const params = useLocalSearchParams<{
     topic?: string; gradeIdx?: string; subjectIdx?: string;
+    // A saved wide flow's scope (`scopeFormState`), restored by «تعديل».
+    scope?: string;
   }>();
 
   const grades = getPickerGrades();
@@ -114,17 +121,35 @@ export default function LessonFlowScreen() {
   // The picked subject's material language — English is taught in English.
   // The form is gone once building starts, so this cannot move under a flow.
   const lang = contentLang(subjects[subjectIdx].id, uiLang);
-  const [topic, setTopic] = useState(() => topicInLang(
-    params.topic ?? '', uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
-    { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
-  ));
+  const wideScope = useWideScope(params, { gradeId: grades[gradeIdx]?.id ?? '', subjectId: subjects[subjectIdx]?.id ?? '' });
+  const [topic, setTopic] = useState(() => {
+    const routed = topicForScope(params, uiLang, teacherScope.defaultScope, teacherScope);
+    // A reopened wide flow's topic is its scope's label, saved in the material's
+    // own language: restating it would look it up as a lesson title.
+    if (wideScope.isWide) return routed;
+    return topicInLang(
+      routed, uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
+      { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
+    );
+  });
   const [durationIdx, setDurationIdx] = useState(0);
+  /** The unit / semester / book the flow on screen was built for; null for a lesson flow. Save records it. */
+  const [wideFrozen, setWideFrozen] = useState<ScopeSelection | null>(null);
+  /**
+   * The wide fields every step is built from, and the scope's label in the material's
+   * language, held for a Retry (state would be stale inside `executeFlow`). The label is
+   * derived from the scope, not read from the saved topic: a flow reopened after the
+   * interface language changed would otherwise print the other language's label.
+   */
+  const wideRef = useRef<{ request: ScopeRequest; label: string } | null>(null);
 
   // Generation state
   const [phase, setPhase] = useState<Phase>('form');
   const [stepStatus, setStepStatus] = useState<StepState>(INITIAL_STEP_STATE);
   const [error, setError] = useState('');
   const [failedStep, setFailedStep] = useState<StepKey | null>(null);
+  /** False when a second try cannot help (no question bank for the subject): the banner then offers no Retry. */
+  const [retryable, setRetryable] = useState(true);
 
   // Holds the raw LessonPlanOutput across steps so guided-practice can reuse it on retry
   const planRef = React.useRef<LessonPlanOutput | null>(null);
@@ -172,12 +197,26 @@ export default function LessonFlowScreen() {
     // the picked subject. Refuse and name the real subject instead.
     const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, uiLang);
     if (scope) { setError(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
-    const conflict = groundedSubjectConflict(topic.trim(), lang, subjects[subjectIdx].id);
-    if (conflict) { setError(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
+    // A wide scope's topic is a label («الفصل الأول كاملًا»), not a lesson: the
+    // subject-conflict check reads a lesson, so it applies to a single lesson
+    // only. A wide scope that cannot be grounded is refused, never built mislabeled.
+    const wideSel = wideScope.isWide ? wideScope.scopeSel! : null;
+    const wide = wideSel ? buildScopeRequest(wideSel, lang) : null;
+    if (wideSel && !wide) { setError(t('wideScopeUngrounded')); return; }
+    if (!wide) {
+      const conflict = groundedSubjectConflict(topic.trim(), lang, subjects[subjectIdx].id);
+      if (conflict) { setError(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
+    }
+    // Frozen for the whole flow: a Retry runs from the same request.
+    wideRef.current = wide && wideSel ? { request: wide, label: scopeLabel(wideSel, lang) } : null;
+    setWideFrozen(wideSel);
+    // The form is gone from here on; Save and the PDF read `topic`.
+    if (wideSel) setTopic(scopeLabel(wideSel, lang));
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setPhase('building');
     setError('');
     setFailedStep(null);
+    setRetryable(true);
     setStepStatus(INITIAL_STEP_STATE);
     setObjectives(null); setWarmup(null); setActivity(null);
     setGuidedPractice(null); setWorksheet(null); setExitTicket(null);
@@ -191,6 +230,7 @@ export default function LessonFlowScreen() {
     setError('');
     setStep(failedStep, 'pending');
     setFailedStep(null);
+    setRetryable(true);
     const prior: LessonFlowPrior = {
       plan: planRef.current ?? undefined,
       objectives: objectives ?? undefined,
@@ -210,16 +250,26 @@ export default function LessonFlowScreen() {
     const duration = DURATION_VALUES[durationIdx];
 
     try {
-      const kbCtx = await buildGeneratorContext(topic, lang === 'ar' ? 'ar' : 'en');
-      const unitId = generatorUnitId(topic, lang === 'ar' ? 'ar' : 'en');
-      const req = {
-        grade, subject, topic, language, duration, additionalContext: kbCtx, unitId,
-        lessonId: generatorLessonId(topic, lang === 'ar' ? 'ar' : 'en'),
-        bookFigureCount: generatorFigureCount(topic, lang === 'ar' ? 'ar' : 'en'),
-        // Every step of the flow is built from the lesson alone, so each one
-        // can be served from — and fill — the shared pool.
-        contextSource: 'curriculum' as const,
-      };
+      const wide = wideRef.current;
+      let req: AIRequest;
+      if (wide) {
+        // A unit / semester / book flow is built from the scope's ids. Its topic
+        // is a label and the lookups below are unscoped: a unit title grounds to
+        // some lesson, possibly another grade's. The runner keeps the two
+        // question steps off any slot plan (`questionStepFields`).
+        req = { grade, subject, topic: wide.label, language, duration, ...wide.request.fields };
+      } else {
+        const kbCtx = await buildGeneratorContext(topic, lang === 'ar' ? 'ar' : 'en');
+        const unitId = generatorUnitId(topic, lang === 'ar' ? 'ar' : 'en');
+        req = {
+          grade, subject, topic, language, duration, additionalContext: kbCtx, unitId,
+          lessonId: generatorLessonId(topic, lang === 'ar' ? 'ar' : 'en'),
+          bookFigureCount: generatorFigureCount(topic, lang === 'ar' ? 'ar' : 'en'),
+          // Every step of the flow is built from the lesson alone, so each one
+          // can be served from — and fill — the shared pool.
+          contextSource: 'curriculum' as const,
+        };
+      }
 
       await runLessonFlowFrom(startKey, req, aiService, prior, {
         onStepStart: (key) => setStep(key, 'loading'),
@@ -245,7 +295,9 @@ export default function LessonFlowScreen() {
         setStep(err.stepKey, 'error');
         setFailedStep(err.stepKey);
       }
-      setError(err instanceof Error ? err.message : 'Generation failed');
+      const failure = lessonFlowFailure(err, t);
+      setError(failure.message);
+      setRetryable(failure.retryable);
       // Stay on 'building' phase — completed steps remain visible
     }
   };
@@ -273,9 +325,12 @@ export default function LessonFlowScreen() {
       exitTicket,
     };
 
-    const title = lang === 'ar'
-      ? `مسار درس: ${topic}`
-      : `Lesson Flow: ${topic}`;
+    // A wide flow is a revision session, not one lesson's path.
+    const title = wideFrozen
+      ? (lang === 'ar' ? `مسار مراجعة: ${topic}` : `Revision Flow: ${topic}`)
+      : lang === 'ar'
+        ? `مسار درس: ${topic}`
+        : `Lesson Flow: ${topic}`;
 
     if (savedId) {
       // TODO: updateItem is imported from workspace when needed
@@ -290,7 +345,14 @@ export default function LessonFlowScreen() {
         topic,
         language: lang === 'ar' ? 'ar' : 'en',
         content: JSON.stringify(flow),
-        formState: { grade, subject, topic, language: lang === 'ar' ? 'arabic' : 'english', duration },
+        formState: {
+          grade, subject, topic, language: lang === 'ar' ? 'arabic' : 'english', duration,
+          // A wide flow reopens on its scope. Its label grounds to no lesson (or to
+          // another grade's), so «تعديل» could not recover the pickers from it:
+          // their positions are saved with the scope. A lesson flow saves what it
+          // always did. With `scope` present, `withLessonId` stamps no lesson id.
+          ...(wideFrozen ? { gradeIdx, subjectIdx, ...scopeFormState(wideFrozen, 'balanced') } : {}),
+        },
       });
       setSavedId(newMat.id);
       setSaveLabel('saved');
@@ -316,10 +378,15 @@ export default function LessonFlowScreen() {
       const html = buildLessonFlowHTML(
         flow,
         lang === 'ar',
-        bookFigureRefsForLesson(
-          resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en').lesson?.id,
-          lang === 'ar',
-        ),
+        // A wide flow has no single lesson, so no figure appendix: its label
+        // would ground (unscoped) to some lesson, possibly another grade's.
+        wideFrozen
+          ? []
+          : bookFigureRefsForLesson(
+            resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en').lesson?.id,
+            lang === 'ar',
+          ),
+        { revision: wideFrozen !== null },
       );
       await exportAsPDF(html, `lesson-flow-${topic}`);
     } catch {
@@ -428,6 +495,9 @@ export default function LessonFlowScreen() {
               subjectId={subjects[subjectIdx]?.id ?? ''}
               value={topic}
               onChange={setTopic}
+              allowedKinds={['lesson', 'unit', 'semester', 'book']}
+              onScopeChange={wideScope.setScopeSel}
+              offlineWideScope
               lang={lang}
               isRTL={isRTL}
               colors={colors}
@@ -447,7 +517,7 @@ export default function LessonFlowScreen() {
                 </Pressable>
               ))}
             </ScrollView>
-            <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
+            <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t(teacherScope.strandedNoteKey(grades[gradeIdx].id, subjectIdx))} isRTL={isRTL} colors={colors} />
 
             {/* Subject */}
             <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', marginTop: 16, textAlign: isRTL ? 'right' : 'left' }]}>
@@ -516,7 +586,8 @@ export default function LessonFlowScreen() {
                 <StepCard
                   key={step.key}
                   stepNum={idx + 1}
-                  label={contentT(step.labelKey as any)}
+                  // «غلق الدرس» claims one lesson; a wide flow closes the session.
+                  label={contentT((wideFrozen && step.key === 'exitTicket' ? 'lessonFlowStepExitTicketRevision' : step.labelKey) as any)}
                   icon={step.icon}
                   color={step.color}
                   status={status}
@@ -525,6 +596,7 @@ export default function LessonFlowScreen() {
                   colors={colors}
                   collapsed={collapsed[step.key]}
                   onToggleCollapse={() => setCollapsed(prev => ({ ...prev, [step.key]: !prev[step.key] }))}
+                  retryable={retryable}
                 >
                   {status === 'done' && (
                     <StepContent
@@ -553,30 +625,36 @@ export default function LessonFlowScreen() {
             <Text style={{ flex: 1, color: palette.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' }}>
               {error}
             </Text>
-            <Pressable
-              onPress={handleRetry}
-              style={({ pressed }) => ({ backgroundColor: '#D92D20', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, opacity: pressed ? 0.8 : 1 })}
-            >
-              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
-                {uiLang === 'ar' ? 'أعد المحاولة' : 'Retry'}
-              </Text>
-            </Pressable>
+            {retryable ? (
+              <Pressable
+                onPress={handleRetry}
+                style={({ pressed }) => ({ backgroundColor: '#D92D20', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, opacity: pressed ? 0.8 : 1 })}
+              >
+                <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
+                  {uiLang === 'ar' ? 'أعد المحاولة' : 'Retry'}
+                </Text>
+              </Pressable>
+            ) : null}
           </View>
         )}
 
         {/* ── Done: action buttons ── */}
         {isDone && (
           <View style={[styles.actionBar, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            {/* Launch Classroom */}
-            <Pressable
-              onPress={handleLaunchClassroom}
-              style={({ pressed }) => [styles.actionBtn, { backgroundColor: '#4F46E5', opacity: pressed ? 0.85 : 1, flex: 1 }]}
-            >
-              <Ionicons name="tv-outline" size={16} color="#fff" />
-              <Text style={[styles.actionBtnText, { fontFamily: 'ReadexPro_600SemiBold' }]} numberOfLines={1}>
-                {t('lessonFlowLaunchClassroom')}
-              </Text>
-            </Pressable>
+            {/* Launch Classroom. Not for a wide flow: it hands the topic to the
+                classroom builder as a bare label, which that screen would ground
+                to one lesson (possibly another grade's). */}
+            {!wideFrozen && (
+              <Pressable
+                onPress={handleLaunchClassroom}
+                style={({ pressed }) => [styles.actionBtn, { backgroundColor: '#4F46E5', opacity: pressed ? 0.85 : 1, flex: 1 }]}
+              >
+                <Ionicons name="tv-outline" size={16} color="#fff" />
+                <Text style={[styles.actionBtnText, { fontFamily: 'ReadexPro_600SemiBold' }]} numberOfLines={1}>
+                  {t('lessonFlowLaunchClassroom')}
+                </Text>
+              </Pressable>
+            )}
 
             {/* Export PDF */}
             <Pressable
@@ -638,10 +716,12 @@ interface StepCardProps {
   colors: ReturnType<typeof import('@/hooks/useColors').useColors>;
   collapsed: boolean;
   onToggleCollapse: () => void;
+  /** False when the banner offers no Retry, so the card must not tell the teacher to tap it. */
+  retryable: boolean;
   children?: React.ReactNode;
 }
 
-function StepCard({ stepNum, label, icon, color, status, isRTL, lang, colors, collapsed, onToggleCollapse, children }: StepCardProps) {
+function StepCard({ stepNum, label, icon, color, status, isRTL, lang, colors, collapsed, onToggleCollapse, retryable, children }: StepCardProps) {
   const borderColor =
     status === 'done' ? color + '40' :
     status === 'error' ? '#EF444450' :
@@ -685,7 +765,7 @@ function StepCard({ stepNum, label, icon, color, status, isRTL, lang, colors, co
           )}
           {status === 'error' && (
             <Text style={{ color: palette.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>
-              {lang === 'ar' ? 'تعذّر إكمال الخطوة — أعد المحاولة' : 'Failed — tap Retry below'}
+              {failedStepHint(lang, retryable)}
             </Text>
           )}
         </View>

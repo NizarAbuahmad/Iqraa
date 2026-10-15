@@ -4,7 +4,12 @@
 
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import { downscaleImage } from '../imageDownscale';
+import {
+  PICK_BASE64,
+  photoPickQuality,
+  pickedPhotoToDataUrl,
+  pickedPhotosToDataUrls,
+} from '../imageDownscale';
 import type { PickedFile } from './session';
 
 export async function pickTeachingDocuments(): Promise<PickedFile[]> {
@@ -59,14 +64,15 @@ export async function pickTeachingImages(): Promise<PickedFile[]> {
 /**
  * One photo of a marked paper, as a data URL.
  *
- * `base64: true` rather than reading the file afterwards, because the two
- * platforms disagree about what a `uri` is — on web it is a blob URL, on
- * device a file path — and the caller only ever wants the bytes inline. There
- * is no object storage in this app, so a data URL is the whole transport.
+ * There is no object storage in this app, so a data URL is the whole transport.
+ * On web the picker is asked for base64 (a blob URL is not readable later); on
+ * a phone it is asked for the file only, and the photo is shrunk to 1600px
+ * before it ever becomes a string — a default phone photo is megabytes, and
+ * the first real scan in production was refused for size. `quality` alone does
+ * not help: it re-compresses twelve megapixels rather than sending fewer.
  *
- * Quality is deliberately lower than the teaching-image picker: this is
- * handwriting on paper, not a diagram to display, and every extra pixel is
- * base64 inflated by a third and then paid for by the token.
+ * Quality is deliberately lower than the teaching-image picker on web: this is
+ * handwriting on paper, not a diagram to display.
  */
 export async function pickMarkSheetPhoto(): Promise<string | null> {
   const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -75,16 +81,34 @@ export async function pickMarkSheetPhoto(): Promise<string | null> {
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
     allowsMultipleSelection: false,
-    quality: 0.6,
-    base64: true,
+    quality: photoPickQuality(0.6),
+    base64: PICK_BASE64,
   });
   if (result.canceled || !result.assets?.length) return null;
 
-  const asset = result.assets[0]!;
-  if (!asset.base64) return null;
-  const mime = asset.mimeType || 'image/jpeg';
-  // Shrunk before it leaves: a default phone photo is megabytes, and the first
-  // real scan in production was refused for size. `quality` alone does not
-  // help — it re-compresses twelve megapixels rather than sending fewer.
-  return downscaleImage(`data:${mime};base64,${asset.base64}`);
+  return pickedPhotoToDataUrl(result.assets[0]!);
+}
+
+/**
+ * Several photos of marked papers (or of the pages of one exam), each shrunk the
+ * same way `pickMarkSheetPhoto` does, one at a time. Empty on cancel or no
+ * permission.
+ *
+ * `limit` is a ceiling on the picker, and applied again to the result because
+ * `selectionLimit` is advisory on some platforms.
+ */
+export async function pickMarkSheetPhotos(limit: number): Promise<string[]> {
+  const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!perm.granted) return [];
+
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'],
+    allowsMultipleSelection: true,
+    selectionLimit: limit,
+    quality: photoPickQuality(0.6),
+    base64: PICK_BASE64,
+  });
+  if (result.canceled || !result.assets?.length) return [];
+
+  return pickedPhotosToDataUrls(result.assets.slice(0, limit));
 }

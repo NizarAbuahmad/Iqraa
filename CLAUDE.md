@@ -56,6 +56,32 @@ React Native transform, so anything importing `react-native` or `expo-*` at
 module scope cannot be loaded at all — which is why `routeGating.ts` and
 `fetchWithTimeout.ts` are split out of the files that use them.
 
+**Browser smoke test** (`e2e/`, Playwright, `.github/workflows/e2e.yml`): a teacher
+signs up, makes a class, publishes an exam, a student with no account hands it in
+through `/take/CODE`, and the teacher sees it. The shareable "quiz" is an
+*Evaluation*, not the ai-tools quiz, which can only be exported. To run it
+locally, against a **throwaway** database (the test creates users and truncates
+`rate_limit_buckets`):
+
+```bash
+# 1. empty Postgres database, then (db scripts IGNORE a shell DATABASE_URL when a
+#    repo-root .env exists — run these from a checkout without one, or use CI's way)
+DATABASE_URL=<throwaway> pnpm --filter @workspace/db run migrate -- --from-env
+DATABASE_URL=<throwaway> pnpm --filter @workspace/db run seed:assessment
+# 2. build what it drives
+pnpm --filter @workspace/api-server run build
+cd artifacts/mobile && EXPO_PUBLIC_API_BASE_URL=http://localhost:8099/api EXPO_PUBLIC_DEMO_MODE=true pnpm run build:web
+# 3. run (Playwright starts the API and a static server itself; uses your installed Chrome)
+cd e2e && E2E_DATABASE_URL=<throwaway> pnpm test
+```
+
+It sets the UI to English and skips the intro through `localStorage` keys, drives
+real screens (React Native Web inputs need `pressSequentially`, not `fill`, for
+multiline fields), and plants the email-verification code in Postgres because
+the real one is only ever emailed. It asserts "did it arrive", never copy or
+scores. On a slow machine a request can time out and leave a screen on its error
+text with no retry; the exam-builder step reloads for that, deliberately.
+
 Local setup, env vars and troubleshooting: [`LOCAL_SETUP.md`](./LOCAL_SETUP.md).
 Before a live demo: [`docs/demo-checklist.md`](./docs/demo-checklist.md).
 Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
@@ -147,6 +173,35 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   so the tests that pin them apart (`activityBlueprints.test.ts`,
   `activityPrompts.test.ts`) assert *every field differs from every other
   type*; a new format needs its own entry in both files or they fail.
+- **A question can come from the book, the bank or a model, and only a verifier
+  makes one `verified`.** Real book items (`lib/curriculum/src/bookItems.ts`,
+  data written by `scripts/extract_book_items.py`) join by `lessonId`, never by
+  title. A `computed` item — SymPy solved a stem read from a text layer that
+  flattens exponents and splits fractions — must never carry a `check`: the
+  existing verification pass would badge it «تم التحقق», which says the stem was
+  read correctly and nothing has checked that. `verified` exists for book items
+  only where the guide prints the answer (the `unit-test` items 6-11 on
+  teacher-guide p.47, 5 of 6): the printed answers come in a different order from
+  the items, so the extractor pairs by VALUE (printed entry equals SymPy's answer
+  for the stem it read; a misread stem finds no answer), never by position, and
+  leaves an unmatched entry `computed` and listed in `report.json`
+  (`unmatchedPrinted`), never tolerated into a match. Even then the item carries
+  no `check` and no badge. A `unit-test` item cites as the unit test and is drawn
+  wherever a short answer is wanted. `SERVED_STATUSES` is the one place
+  that decides what a paper may draw. Only the API's evaluation generator uses
+  book items: the mock path (live AI off), and the live model path only when
+  `BOOK_ITEMS_LIVE=true` (off by default, read per request; production runs
+  `AI_LIVE_MODE=true`, so no live paper has them until someone sets the flag —
+  `generationParams.bookItems` says which state a paper was made in). The mobile
+  offline generators and `routes/generate.ts` ignore them, so a paper differs by
+  which path made it — add a family to the script's `TABLE`, never to a
+  generator. On the live path the model's surplus is cut before the book
+  questions are appended (`assembleLivePaper`); the finished paper is put into
+  type blocks by `inPaperOrder` like every stored paper, and the route's top-up
+  for a short reply is measured against the model's share (`count − k`).
+  The prompt is told what the book supplies and a per-competency quota
+  (`allocateQuestions` over the whole paper, rescaled for the top-up by
+  `remainingQuota`), and such a paper records `promptVersion` `exam-gen-6+book`.
 - **A teaching style shapes the whole lesson plan, in two places.** Per-style
   phases live in `artifacts/mobile/services/ai/lessonPlanBlueprints.ts` and the
   matching contract in `LESSON_STYLE_RULES_AR`/`_EN`
@@ -158,6 +213,15 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   (`services/documents/extractMeta.ts`) or it silently exercises the ordinary
   path instead. `introduction`/`closure`/`assessment`/`homework` vary randomly
   via `pick()`, so asserting "the styles differ" on them proves nothing.
+  **The teacher's text is first person, future (since 2026-10-12).** The plan's
+  Arabic teacher fields read «اعرض… اسأل… فسّر…», which landed in the Ministry
+  form's «دور المُعلم» column as commands to someone else; they now say «سأعرض…
+  ثم سأسأل…». Words spoken to students stay quoted in «» and imperative. It is
+  two places again: the offline blueprints (`lessonPlanBlueprints.ts`,
+  `lessonPlanNative.ts`, the intro/closure/prior-review in `generators.ts`) and
+  `teacherVoiceAr` in `prompts.ts`. `lessonPlanTeacherVoice.test.ts` fails on a
+  bare imperative; it cannot list form-IV imperatives («أعلن», «أضف»), whose
+  unvowelled spelling is also the first-person verb, so write those by hand.
 - **A worksheet's structure lives in two places, and its count is the total.**
   The worked example, the half-solved first question and the key's working are
   built by `generateWorksheet` (`artifacts/mobile/services/ai/generators.ts`)
@@ -170,6 +234,16 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   before it can be studied, and `steps.test.ts` fails a family with fewer than
   two solved items. Working is dropped, not kept, when a teacher edits the
   question it belongs to (`worksheetEdits.ts`).
+  **The live route enforces that count, and homework follows the picker.** A
+  model asked for 20 often returns 10, so `/generate/worksheet|homework` counts
+  (`worksheetShortfall` — the example is inside the number, a prior-knowledge
+  review of 2–3 questions is on top), asks once more for only the missing ones
+  as one extra section (`worksheetTopUpBlock`, `mergeWorksheetTopUp`), and trims
+  a real surplus (`trimWorksheet`, which never cuts a review the teacher asked
+  for). The offline `homeworkOnce` used to ignore `numQuestions` and
+  `questionTypes` entirely (always 3 written questions + challenge +
+  reflection); the challenge and the reflection are now two of the picked
+  number and the rest follow the ticked types (`worksheetCount.test.ts`).
 - **A question's difficulty tier lives on the template, and in two prompts.**
   Every non-math question template carries its own `tier`
   (`TieredTemplate` in `artifacts/mobile/services/ai/generators.ts`), and
@@ -192,6 +266,21 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   The exports print a «السؤال الأول: …» heading per block from `quizBlocks`.
   A new quiz type needs an entry in all of them, and the type contract in the
   prompt, or the model is never told what the type looks like.
+  **The count is enforced too.** A model asked for 20 questions often returns
+  10 in a perfectly valid reply, so the quiz route counts (`quizShortfall`),
+  asks once more for only the missing ones (`quizTopUpBlock`, merged by
+  `mergeQuizTopUp`), trims a surplus from the biggest block, and scales the
+  output ceiling with the count (`quizTokens`); evaluations do the same in
+  `/evaluations/:id/generate`. If it is still short, `shortfall` says so. The
+  offline generator can only give what the lesson's bank holds (5 for a
+  chemistry lesson, 17 for a maths family) — a spent type hands its share to
+  the others rather than ending the paper (`quizCount.test.ts`).
+  Saved evaluations follow the same convention by a different route: the
+  generate route stores questions via `inPaperOrder`
+  (`modules/assessment/paperOrder.ts`) and the teacher's list heads each run
+  of one type from `examBlocks` (`services/examBlocks.ts`). The two
+  `EXAM_TYPE_ORDER` lists are pinned equal by `paperOrder.test.ts`; a new
+  question type needs a place in both and a direction in `examBlockDirection`.
 - **`additionalContext` is not teacher-pasted material — it is usually the
   curriculum.** Every `/ai-tools` screen fills it with `buildGeneratorContext()`
   output derived from the lesson, and the server appends its own book passages
@@ -209,8 +298,25 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   catch a *malformed* artifact, never a well-formed worksheet with a wrong
   answer. The way back out is `POST /generate/variants/:id/retire`, offered to
   teachers since 2026-09-02 as «بلّغ عن مشكلة» in `GeneratorResultActions`. It
-  is deliberately open to any authenticated teacher, and it retires
-  immediately rather than queuing a review.
+  is deliberately open to any authenticated teacher (any `TEACHER_ROLES` role —
+  the `/generate` guard), but since the artifact-report change it **queues a
+  report** (`reportVariant`) for a `system_admin` and retires nothing: the
+  artifact keeps being served to everyone else until an admin resolves the
+  report as `approved` (`POST /moderation/artifact-reports/:id/resolve`, the
+  only caller of `retireVariant`). The reporting teacher's client then
+  regenerates, which avoids the paper they were served, so only they get a
+  replacement at once — unless a spend/quota cap is reached, in which case the
+  route serves `pool.variants[0]` (possibly the variant just reported, tagged
+  `servedReason`) instead of generating.
+- **Students are shown only what an admin approved (since 2026-10-13).** The
+  pool serves a teacher whatever is stored, but a stored row can be under the
+  wrong lesson id and a student is a minor, so `GET /student/lesson-explanation/…`
+  filters on `ai_artifacts.student_approved_at`, which only
+  `POST /moderation/lesson-explanations/approve` sets. A new student-facing read
+  of the pool needs the same gate, and must not import generation code — a
+  student route that can reach `generateContent` is a student who can spend the
+  budget. `artifacts/mobile/scripts/pregenerate.ts` fills it; approval is a
+  separate step on purpose.
 - **`app.json`'s `version` is the OTA compatibility key, not a label.**
   `runtimeVersion.policy` is `appVersion`, so every build and every published
   update carries `"1.0.0"` until someone edits that string. An update only
@@ -253,6 +359,13 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   Related trap: tab screens sit *under* the tab layout's lesson bar / bell
   header, which already pays `insets.top` — a tab screen header must not add it
   again.
+- **Arabic-Indic digits next to operators scramble on web, and no style fixes
+  it.** react-native-web puts `dir="auto"` on every `Text` (it beats
+  `direction`), and a bidi isolate is not enough: Arabic-Indic digits are type
+  AN, so «٩٫٥ × ١٠» still prints as «١٠ × ٩٫٥». A left-to-right *override*
+  fixes the digits but reverses Arabic letters («جا» → «اج»). Use `forceLtr` /
+  `displayLtr` / `entriesToSegments` in `services/mathCalc.ts`, and check such a
+  screen in a browser, not just in tests (see STATUS.md «Math Corner»).
 - **Extensionless relative imports only work through esbuild.** Anything loaded
   directly by `node --test` needs an explicit `.ts` extension.
 - **The OpenAI client throws at module scope without a key**, which makes
@@ -306,3 +419,65 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   36 minutes), 2026-09-26 and 2026-10-05 — twice under a PR body that said
   `schema-push: done`. A database that has tables but no migration history is
   refused until baselined once; see *Schema* in `docs/deploying.md`.
+- **A homework due date is a calendar day, and a completion belongs to a roster
+  row.** The API sends and takes `dueDate: "YYYY-MM-DD"` and nothing else — an
+  instant, a different order or a non-day is a 400 — and stores `dueAt` as
+  23:59:59.999 **Asia/Amman** (a fixed UTC+3) of that day. So the traps are on the
+  client, not in the contract: reading `dueAt` to say "due today" (a device in
+  another zone disagrees with the server about the day near midnight; use the
+  `dueDate` and `ammanToday()`), and building a `YYYY-MM-DD` from a local-timezone
+  `Date` (`toISOString()` shifts to UTC; `new Date('YYYY-MM-DD')` shifts west of
+  it). Display goes through `formatDueDate`, never the bidi algorithm.
+  `homework_completions.student_id` is a
+  `students.id` (a roster row), not a user: two accounts linked to the same row
+  share their ticks, and "did this child do it" must look at every row of the
+  child *in that homework's class*. `canTrack` is per homework ITEM, which is
+  per class: ticking only works through the account's own `self`-linked rows in
+  that item's class, so an item whose class has no such row cannot be ticked and
+  must never be called late or unfinished — even when the same child has an
+  account in another teacher's class. The child-level `canTrack` on
+  `/parent/homework` is informational only; do not gate on it. Pinned by `homework.db.test.ts` and
+  `familyHomework.db.test.ts`.
+- **A mark a teacher types is invisible to a family until its sitting is handed
+  in — writing the grade is not enough.** `studentExamRow` shows a result only
+  when the attempt has `submittedAt` *and* results are released. On the teacher
+  side only `gradeSubmission` (`modules/assessment/attemptGrading.ts`) stamps
+  `submittedAt` and builds the result; `writeTeacherMark` writes the grade and
+  stops, so a route that calls it alone passes its own tests (the grade rows are
+  there) while the family's row never leaves its pre-mark state (`paper`,
+  `available`…) and shows no mark. The paper-totals mark book
+  (`lib/paperTotals.ts`) calls both for that reason. `writeTeacherMark` also
+  does not check ownership — the caller must. Pinned by `paperTotals.db.test.ts`.
+- **Work after `res.json` may never run on Cloud Run.** The API deploys
+  without `--no-cpu-throttling`, so once a response is sent the instance's CPU
+  is throttled and fire-and-forget work (`promise.catch(log)` after
+  `res.json`) can stall until some later request wakes it. The family pushes
+  (homework posted, exam date, paper marks) therefore `await pushWithin(…)`
+  before answering — capped at 4 s, never throwing (`lib/pushWithin.ts`). The
+  chat and release-announcement pushes are still fire-and-forget; move them
+  the same way if their delivery ever looks late.
+- **A secret ref in `deploy.yml` before the secret exists fails every deploy.**
+  `gcloud run deploy --update-secrets NAME=NAME:latest` refuses a secret Secret
+  Manager does not have, and that breaks every merge, not just the one that
+  added it. New secrets are attached by hand once (`gcloud run services update
+  --update-secrets`), and `--update-env-vars` deploys keep them — see
+  `INTERNAL_CRON_KEY` in docs/deploying.md. Code reading one must work, or
+  fail closed, while it is unset.
+- **Row-level security fails quietly, and `systemDb` is the hole in it (since 2026-10-13).**
+  A query that reads *another user's* rows does not error under RLS — it returns fewer
+  rows. In the prototype that meant: no push notifications at all (recipients' tokens),
+  a blocked user able to open a thread (the block is the other person's row), and a student
+  excluded from a restricted exam able to take it from its share link (the audience read came
+  back empty, and an empty audience means «everyone»). Statuses alone cannot see any of
+  that, so `lib/db/src/__tests__/rlsDiff.test.ts` also diffs the pushes sent and the rows
+  left behind. `RLS_ENFORCE` is off by default; `systemDb` (the owner connection) is for
+  paths that act without a user or must read other users' rows to decide something, and the
+  files that use it are pinned in `systemDbFiles.test.ts`. A new table must be classified in
+  `rlsCoverage.test.ts`, and a new table gets **no** grant to `iqraa_app` automatically.
+- **`startAttempt` is find-or-create and the marking endpoint upserts (found
+  2026-10-14, designing the class scan — it had not bitten yet).** Writing marks
+  into a paper you did not create replaces a teacher's or a student's mark with
+  no error, and `startAttempt` (mobile) hides which case you are in. Use
+  `startAttemptChecked` and read `created`; and remember the `attemptId` you got
+  so a retry does not start again and mistake its own half-saved paper for
+  someone else's. `services/classScanSave.ts` is the worked example.

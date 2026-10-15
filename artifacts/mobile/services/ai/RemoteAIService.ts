@@ -27,6 +27,7 @@ import { describeAiError, generateWithProvenance, recordGeneration } from './aiP
 import { streamChat, type ChatParams } from './chatStreamClient';
 import type { BoardSolution } from '@workspace/math-verify';
 import { acceptSolveResponse, type SolveRequest } from '../solve';
+import { tagQuizLessons, tagWorksheetLessons } from '../wideScopeRequest';
 
 // Routes under /generate/* and /chat require auth (routes/index.ts scopes
 // authMiddleware to those prefixes) — go through apiFetch, not a bare fetch(),
@@ -122,8 +123,12 @@ export class RemoteAIService extends AIService {
       // The model is asked for neither the format kinds nor their count; the
       // bank adds them afterwards. The fallback gets the ORIGINAL request —
       // the offline generator builds the formats itself.
+      //
+      // Lesson tags are mapped BEFORE the formats are appended: they are the
+      // model's own codes for its own questions, and a bank-built format
+      // question carries none. (On a wide scope no format is built anyway.)
       async () => appendFormats(
-        await postJSON<WorksheetOutput>('/generate/worksheet', requestWithoutFormats(req), opts),
+        tagWorksheetLessons(await postJSON<WorksheetOutput>('/generate/worksheet', requestWithoutFormats(req), opts), req),
         req,
         splitFormatTypes(req.questionTypes ?? []).formats,
       ),
@@ -134,7 +139,7 @@ export class RemoteAIService extends AIService {
   async generateQuiz(req: AIRequest, opts?: GenerateOptions): Promise<QuizOutput> {
     return generateWithProvenance(
       'quiz',
-      () => postJSON<QuizOutput>('/generate/quiz', req, opts),
+      async () => tagQuizLessons(await postJSON<QuizOutput>('/generate/quiz', req, opts), req),
       () => this.fallback.generateQuiz(req),
     );
   }
@@ -160,7 +165,7 @@ export class RemoteAIService extends AIService {
   async generateHomework(req: AIRequest, opts?: GenerateOptions): Promise<WorksheetOutput> {
     return generateWithProvenance(
       'homework',
-      () => postJSON<WorksheetOutput>('/generate/homework', req, opts),
+      async () => tagWorksheetLessons(await postJSON<WorksheetOutput>('/generate/homework', req, opts), req),
       () => this.fallback.generateHomework(req),
     );
   }

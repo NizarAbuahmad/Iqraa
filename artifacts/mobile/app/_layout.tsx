@@ -39,7 +39,7 @@ import { subscribeToGenerations } from '@/services/ai/aiProvenance';
 SplashScreen.preventAutoHideAsync();
 
 function RootLayoutNav() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, gradeSetupSkipped } = useAuth();
   const pathname = usePathname();
   // Only navigate on auth transitions (boot / login / logout) — never bounce
   // away from Workspace, Profile, or AI tools on every user truthy render.
@@ -99,7 +99,7 @@ function RootLayoutNav() {
 
     // A parent or student who has not said which class they are in — the same
     // mandatory shape, after the claim gate (see needsGradeSetup).
-    if (signedIn && user && needsGradeSetup(user) && pathname !== GRADE_SETUP_ROUTE) {
+    if (signedIn && user && needsGradeSetup(user, gradeSetupSkipped) && pathname !== GRADE_SETUP_ROUTE) {
       router.replace(GRADE_SETUP_ROUTE as any);
       wasLoading.current = false;
       wasSignedIn.current = signedIn;
@@ -147,7 +147,7 @@ function RootLayoutNav() {
 
     wasLoading.current = false;
     wasSignedIn.current = signedIn;
-  }, [user, isLoading, pathname]);
+  }, [user, isLoading, pathname, gradeSetupSkipped]);
 
   // One screen-view event per route change — covers every screen in the app
   // (not just AI tools) without instrumenting each one individually.
@@ -192,6 +192,7 @@ function RootLayoutNav() {
       <Stack.Screen name="curriculum/lessons" options={{ headerShown: false }} />
       <Stack.Screen name="curriculum/unit" options={{ headerShown: false }} />
       <Stack.Screen name="curriculum/lesson-detail" options={{ headerShown: false }} />
+      <Stack.Screen name="curriculum/lesson-explanation" options={{ headerShown: false }} />
       <Stack.Screen name="curriculum/english/index" options={{ headerShown: false }} />
       <Stack.Screen name="curriculum/english/[lessonId]" options={{ headerShown: false }} />
       <Stack.Screen name="ai-tools/lesson-plan" options={{ headerShown: false }} />

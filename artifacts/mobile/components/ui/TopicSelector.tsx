@@ -21,9 +21,18 @@ import {
   getLessonsForUnit, getUnitsForSubjectGrade, hasKBContent,
   type KBUnit,
 } from '@/services/knowledgeBase';
+import { DEMO_MODE } from '@/services/ai/demoMode';
+import {
+  availableKinds, scopeLabel, semestersAvailable,
+  type ScopeKind, type ScopeSelection, type Semester,
+} from '@/services/scopeSelection';
 
 const ENTIRE_BOOK = '__entire_book__';
 const ENTIRE_UNIT = '__entire_unit__';
+/** Pseudo unit ids for «الفصل كاملًا»; they never reach getLessonsForUnit. */
+const entireSemesterId = (s: Semester) => `__entire_sem_${s}__`;
+const semesterFromId = (id: string | null): Semester | null =>
+  id === entireSemesterId(1) ? 1 : id === entireSemesterId(2) ? 2 : null;
 
 type UnitSemesterGroup = {
   semester: 1 | 2;
@@ -80,6 +89,21 @@ interface Props {
   onChange: (topic: string) => void;
   /** Optional structured selection info alongside the topic string. */
   onSelectionDetail?: (detail: TopicSelectionDetail) => void;
+  /**
+   * Which scopes to offer. Absent = what the picker has always offered (lesson,
+   * entire unit, entire book). `'semester'` is opt-in, and is dropped when
+   * there is only one semester or DEMO_MODE is on — see `availableKinds`.
+   */
+  allowedKinds?: readonly ScopeKind[];
+  /** The structured selection (ids, not a title); null when nothing complete is picked. */
+  onScopeChange?: (selection: ScopeSelection | null) => void;
+  /**
+   * The screen's offline generators can honour a unit / semester / book scope,
+   * so `availableKinds` need not drop `semester` under DEMO_MODE (the offline
+   * path is exactly what DEMO_MODE runs). Quiz, worksheet, homework and game
+   * pass it; every other screen keeps today's behaviour until piece 3.
+   */
+  offlineWideScope?: boolean;
   lang: 'ar' | 'en';
   isRTL: boolean;
   colors: any;
@@ -90,11 +114,14 @@ interface Props {
 
 export function TopicSelector({
   subjectId, gradeId, value, onChange, onSelectionDetail,
+  allowedKinds, onScopeChange, offlineWideScope,
   lang, isRTL, colors, accent, hasError, t,
 }: Props) {
   const units = getUnitsForSubjectGrade(subjectId, gradeId);
   const kbAvailable = hasKBContent(subjectId, gradeId);
   const unitGroups = useMemo(() => groupUnitsBySemester(units, t), [units, t]);
+  const kinds = availableKinds(gradeId, subjectId, allowedKinds, DEMO_MODE && !offlineWideScope);
+  const semesters = kinds.includes('semester') ? semestersAvailable(gradeId, subjectId) : [];
 
   // Whether the teacher has picked anything in *this* component yet. On mount
   // nothing is selected, which is not the same as a selection being cleared —
@@ -105,9 +132,10 @@ export function TopicSelector({
   const [unitOpen, setUnitOpen] = useState(false);
   const [lessonOpen, setLessonOpen] = useState(false);
 
-  const lessons = selectedUnitId && selectedUnitId !== ENTIRE_BOOK
-    ? getLessonsForUnit(selectedUnitId)
-    : [];
+  const pickedSemester = semesterFromId(selectedUnitId);
+  // «الكتاب كاملًا» and «الفصل كاملًا» pick no single unit, so no lesson picker follows.
+  const isWide = selectedUnitId === ENTIRE_BOOK || pickedSemester !== null;
+  const lessons = selectedUnitId && !isWide ? getLessonsForUnit(selectedUnitId) : [];
 
   // Reset selections when subject/grade changes.
   //
@@ -131,6 +159,7 @@ export function TopicSelector({
     setSelectedUnitId(null);
     setSelectedLessonId(null);
     onChange('');
+    onScopeChange?.(null);
   }, [subjectId, gradeId]);
 
   // Derive the topic string whenever selections change.
@@ -138,6 +167,7 @@ export function TopicSelector({
   // unit-only selection used to set the unit title (e.g. wrong "المعادلات").
   useEffect(() => {
     const noDetail: TopicSelectionDetail = { unitOrder: null, unitTitle: null, lessonTitle: null, lessonId: null };
+    const base = { gradeId, subjectId };
     if (!kbAvailable) return;
     if (!selectedUnitId) {
       // Mount with a topic already passed in: leave it alone. Only a selection
@@ -145,12 +175,27 @@ export function TopicSelector({
       if (!touched.current) return;
       onChange('');
       onSelectionDetail?.(noDetail);
+      onScopeChange?.(null);
       return;
     }
 
     if (selectedUnitId === ENTIRE_BOOK) {
-      onChange(t('entireBook'));
+      // The topic is in the subject's language (`lang`), like the semester's and
+      // the unit's; `t` is the interface language, which an English-subject
+      // teacher on an Arabic interface does not share («Activity: الكتاب كاملًا»).
+      const sel: ScopeSelection = { kind: 'book', ...base };
+      onChange(scopeLabel(sel, lang));
       onSelectionDetail?.(noDetail);
+      onScopeChange?.(sel);
+      return;
+    }
+
+    const semester = semesterFromId(selectedUnitId);
+    if (semester) {
+      const sel: ScopeSelection = { kind: 'semester', ...base, semester };
+      onChange(scopeLabel(sel, lang));
+      onSelectionDetail?.(noDetail);
+      onScopeChange?.(sel);
       return;
     }
 
@@ -162,12 +207,14 @@ export function TopicSelector({
     if (!selectedLessonId) {
       onChange('');
       onSelectionDetail?.({ unitOrder: unit.order, unitTitle, lessonTitle: null, lessonId: null });
+      onScopeChange?.(null);
       return;
     }
 
     if (selectedLessonId === ENTIRE_UNIT) {
       onChange(unitTitle);
       onSelectionDetail?.({ unitOrder: unit.order, unitTitle, lessonTitle: unitTitle, lessonId: null });
+      onScopeChange?.({ kind: 'unit', ...base, unitId: unit.id });
       return;
     }
 
@@ -177,6 +224,7 @@ export function TopicSelector({
       const lessonTitle = lang === 'ar' ? lesson.titleAr : lesson.titleEn;
       onChange(lessonTitle);
       onSelectionDetail?.({ unitOrder: unit.order, unitTitle, lessonTitle, lessonId: lesson.id });
+      onScopeChange?.({ kind: 'lesson', ...base, lessonId: lesson.id });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedUnitId, selectedLessonId, lang]);
@@ -214,7 +262,7 @@ export function TopicSelector({
   }
 
   // ── KB cascade ────────────────────────────────────────────────────────────
-  const selectedUnit = selectedUnitId && selectedUnitId !== ENTIRE_BOOK
+  const selectedUnit = selectedUnitId && !isWide
     ? units.find(u => u.id === selectedUnitId)
     : undefined;
   const selectedSemesterLabel = selectedUnit
@@ -230,9 +278,11 @@ export function TopicSelector({
   const unitTitle = selectedUnit ? shownTitle(selectedUnit) : '';
   const unitDisplayValue = selectedUnitId === ENTIRE_BOOK
     ? t('entireBook')
-    : selectedUnit
-      ? (selectedSemesterLabel ? `${selectedSemesterLabel} · ${unitTitle}` : unitTitle)
-      : '';
+    : pickedSemester
+      ? scopeLabel({ kind: 'semester', gradeId, subjectId, semester: pickedSemester }, lang)
+      : selectedUnit
+        ? (selectedSemesterLabel ? `${selectedSemesterLabel} · ${unitTitle}` : unitTitle)
+        : '';
 
   const lessonDisplayValue = selectedLessonId === ENTIRE_UNIT
     ? t('entireUnit')
@@ -281,12 +331,23 @@ export function TopicSelector({
       {unitOpen && (
         <View style={[s.dropdown, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
           <ScrollView nestedScrollEnabled style={{ maxHeight: 280 }}>
-            <DropdownItem
-              label={`📚  ${t('entireBook')}`}
-              selected={selectedUnitId === ENTIRE_BOOK}
-              onPress={() => handleUnitSelect(ENTIRE_BOOK)}
-              accent={accent} colors={colors} isRTL={isRTL}
-            />
+            {kinds.includes('book') && (
+              <DropdownItem
+                label={`📚  ${t('entireBook')}`}
+                selected={selectedUnitId === ENTIRE_BOOK}
+                onPress={() => handleUnitSelect(ENTIRE_BOOK)}
+                accent={accent} colors={colors} isRTL={isRTL}
+              />
+            )}
+            {semesters.map(semester => (
+              <DropdownItem
+                key={`entire-sem-${semester}`}
+                label={`🗓️  ${scopeLabel({ kind: 'semester', gradeId, subjectId, semester }, lang)}`}
+                selected={selectedUnitId === entireSemesterId(semester)}
+                onPress={() => handleUnitSelect(entireSemesterId(semester))}
+                accent={accent} colors={colors} isRTL={isRTL}
+              />
+            ))}
             {unitGroups.map(group => (
               <View key={`sem-${group.semester}`}>
                 <SemesterSectionHeader
@@ -310,7 +371,7 @@ export function TopicSelector({
       )}
 
       {/* ── Lesson picker (only when a specific unit is chosen) ─────────── */}
-      {selectedUnitId && selectedUnitId !== ENTIRE_BOOK && (
+      {selectedUnitId && !isWide && (
         <View style={{ marginTop: 4, marginBottom: 8 }}>
           <Text style={[s.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('selectLesson')}
@@ -337,12 +398,14 @@ export function TopicSelector({
           {lessonOpen && (
             <View style={[s.dropdown, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
               <ScrollView nestedScrollEnabled style={{ maxHeight: 230 }}>
-                <DropdownItem
-                  label={`📖  ${t('entireUnit')}`}
-                  selected={selectedLessonId === ENTIRE_UNIT}
-                  onPress={() => { setSelectedLessonId(ENTIRE_UNIT); setLessonOpen(false); }}
-                  accent={accent} colors={colors} isRTL={isRTL}
-                />
+                {kinds.includes('unit') && (
+                  <DropdownItem
+                    label={`📖  ${t('entireUnit')}`}
+                    selected={selectedLessonId === ENTIRE_UNIT}
+                    onPress={() => { setSelectedLessonId(ENTIRE_UNIT); setLessonOpen(false); }}
+                    accent={accent} colors={colors} isRTL={isRTL}
+                  />
+                )}
                 {lessons.map(lesson => (
                   <DropdownItem
                     key={lesson.id}

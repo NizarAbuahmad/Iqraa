@@ -123,7 +123,7 @@ export function assertUsableGeneration(
   const missing = missingFields(kind, parsed);
   if (missing.length > 0) throw new UnusableGenerationError(kind, missing);
   if (kind === "prompt-slides") assertUsableDeck(parsed);
-  if (kind === "quiz") return normalizeQuiz(parsed, body?.questionTypes);
+  if (kind === "quiz") return normalizeQuiz(parsed, body?.questionTypes, quizWanted(body));
   return [];
 }
 
@@ -178,7 +178,7 @@ function quizTypeOf(raw: unknown, options: unknown[]): QuizType | null {
  * Throws when nothing survives: an all-MCQ reply to a صح/خطأ request is not a
  * quiz the teacher can use, and serving it would also pool it.
  */
-export function normalizeQuiz(parsed: unknown, requested: unknown): string[] {
+export function normalizeQuiz(parsed: unknown, requested: unknown, count?: number | null): string[] {
   const obj = parsed as Record<string, unknown>;
   const list = Array.isArray(obj.questions) ? (obj.questions as unknown[]) : [];
   const asked = Array.isArray(requested)
@@ -221,8 +221,177 @@ export function normalizeQuiz(parsed: unknown, requested: unknown): string[] {
   if (dropped.length) notes.push(`dropped ${dropped.length} question(s) of unrequested types: ${dropped.join(", ")}`);
   const ordered = kept.map((k, i) => ({ ...k, i })).sort((a, b) => a.rank - b.rank || a.i - b.i).map(k => k.q);
   if (ordered.some((q, i) => q !== kept[i]!.q)) notes.push("reordered questions into ministry type order");
+  // More than the teacher asked for changes the paper's length and marks. Cut
+  // from the largest block, last question first, so no type disappears the way
+  // it would if the tail were simply sliced off (the written block is last).
+  if (count && ordered.length > count) {
+    const before = ordered.length;
+    while (ordered.length > count) {
+      const sizes = new Map<unknown, number>();
+      for (const q of ordered) sizes.set(q.type, (sizes.get(q.type) ?? 0) + 1);
+      const biggest = [...sizes.entries()].reduce((a, b) => (b[1] > a[1] ? b : a))[0];
+      const at = ordered.map(q => q.type).lastIndexOf(biggest as string);
+      ordered.splice(at, 1);
+    }
+    notes.push(`trimmed ${before - ordered.length} surplus question(s) to the ${count} requested`);
+  }
   obj.questions = ordered;
   return notes;
+}
+
+/** How many questions the teacher asked for; `null` when the request did not say (or said nonsense). */
+export function quizWanted(body: Record<string, unknown> | undefined): number | null {
+  const n = Number(body?.numQuestions);
+  return Number.isInteger(n) && n >= 1 && n <= 30 ? n : null;
+}
+
+/** The questions a parsed quiz holds, or [] for anything that is not one. */
+function quizQuestions(parsed: unknown): Record<string, unknown>[] {
+  const list = (parsed as { questions?: unknown } | null)?.questions;
+  return Array.isArray(list) ? list.filter((q): q is Record<string, unknown> => !!q && typeof q === "object") : [];
+}
+
+/** How many more questions a reply owes the teacher; 0 when it is complete or the request named no count. */
+export function quizShortfall(parsed: unknown, body: Record<string, unknown> | undefined): number {
+  const want = quizWanted(body);
+  return want === null ? 0 : Math.max(0, want - quizQuestions(parsed).length);
+}
+
+/**
+ * The stems already on the paper — what a top-up must not repeat. Only the
+ * text: a whole paper in the prompt would cost more input than the call.
+ */
+export function quizStems(parsed: unknown): string[] {
+  return quizQuestions(parsed).map(q => String(q.text ?? "").replace(/\s+/g, " ").trim()).filter(Boolean);
+}
+
+/**
+ * Add a top-up reply's questions to the paper, numbered straight on.
+ * The base keeps its title, duration and total; the extra contributes only
+ * questions. Ids are rewritten because a second call numbers from q1 again.
+ */
+export function mergeQuizTopUp(base: unknown, extra: unknown): void {
+  const obj = base as Record<string, unknown>;
+  const merged = [...quizQuestions(base), ...quizQuestions(extra)];
+  merged.forEach((q, i) => { q.id = `q${i + 1}`; });
+  obj.questions = merged;
+}
+
+// ─── Worksheet and homework counts ──────────────────────────────────────────
+//
+// The same silent shortfall as a quiz — asked for 20, a model returns 10 in a
+// valid reply — but the count means something different here, so the quiz
+// helpers above do not serve:
+//
+//  - the questions live in `sections[].questions`, with a parallel `answerKey`;
+//  - a worksheet's worked example counts INSIDE the number the teacher picked
+//    (the prompt says so: sections hold n-1 when an example is present), and a
+//    homework never has one;
+//  - a prior-knowledge review (2-3 questions) is ON TOP of the number.
+//
+// Getting any of those wrong would ask a model for questions the teacher did
+// not want, or trim ones they did.
+
+/** The review a worksheet carries on top of the count, as the prompt asks for it (2-3 questions). */
+const MIN_REVIEW_QUESTIONS = 2;
+const MAX_REVIEW_QUESTIONS = 3;
+
+function worksheetSections(parsed: unknown): { questions: Record<string, unknown>[] }[] {
+  const list = (parsed as { sections?: unknown } | null)?.sections;
+  if (!Array.isArray(list)) return [];
+  return list
+    .filter((s): s is Record<string, unknown> => !!s && typeof s === "object" && !Array.isArray(s))
+    .map(s => ({
+      ...s,
+      questions: Array.isArray(s.questions)
+        ? s.questions.filter((q): q is Record<string, unknown> => !!q && typeof q === "object")
+        : [],
+    }));
+}
+
+/** Every question across a worksheet's sections. */
+export function worksheetQuestionCount(parsed: unknown): number {
+  return worksheetSections(parsed).reduce((n, s) => n + s.questions.length, 0);
+}
+
+function reviewRequested(body: Record<string, unknown> | undefined): boolean {
+  return body?.includePriorReview === true && Array.isArray(body?.priorKnowledge) && body.priorKnowledge.length > 0;
+}
+
+/**
+ * How many more questions a worksheet or homework reply owes the teacher.
+ *
+ * The least it may hold: the picked number, less the worked example it
+ * carries, plus the review's lower bound where one was asked for. A reply at
+ * or above that owes nothing — better to miss a shortfall hidden under a
+ * longer-than-minimum review than to ask for questions nobody wanted.
+ */
+export function worksheetShortfall(parsed: unknown, body: Record<string, unknown> | undefined): number {
+  const want = quizWanted(body);
+  if (want === null) return 0;
+  const example = (parsed as { workedExample?: unknown } | null)?.workedExample ? 1 : 0;
+  const least = want - example + (reviewRequested(body) ? MIN_REVIEW_QUESTIONS : 0);
+  return Math.max(0, least - worksheetQuestionCount(parsed));
+}
+
+/** The text of every question already on the paper — what a top-up must not repeat. */
+export function worksheetStems(parsed: unknown): string[] {
+  return worksheetSections(parsed)
+    .flatMap(s => s.questions)
+    .map(q => String(q.text ?? "").replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+}
+
+/**
+ * Add a top-up reply's sections to the paper, its answer-key entries numbered
+ * straight on from the questions already there. The base keeps its title,
+ * instructions and worked example; the extra contributes only questions.
+ */
+export function mergeWorksheetTopUp(base: unknown, extra: unknown): void {
+  const obj = base as Record<string, unknown>;
+  const have = worksheetQuestionCount(base);
+  const baseKey = Array.isArray(obj.answerKey) ? (obj.answerKey as unknown[]) : [];
+  const extraKey = Array.isArray((extra as { answerKey?: unknown } | null)?.answerKey)
+    ? ((extra as { answerKey: unknown[] }).answerKey)
+    : [];
+  const added = worksheetSections(extra).filter(s => s.questions.length > 0);
+  obj.sections = [...worksheetSections(base), ...added];
+  obj.answerKey = [
+    ...baseKey,
+    ...extraKey
+      .filter((k): k is Record<string, unknown> => !!k && typeof k === "object")
+      .map((k, i) => ({ ...k, num: have + i + 1 })),
+  ];
+}
+
+/**
+ * Cut a worksheet that came back longer than asked, from the end — the last
+ * question of the last section first, dropping a section it empties — with the
+ * answer key cut to match.
+ *
+ * What the teacher's own review request adds is NOT surplus, so up to three
+ * more than the picked number is left alone when one was asked for. Returns how
+ * many questions were removed.
+ */
+export function trimWorksheet(parsed: unknown, body: Record<string, unknown> | undefined): number {
+  const want = quizWanted(body);
+  if (want === null) return 0;
+  const obj = parsed as Record<string, unknown>;
+  const example = obj.workedExample ? 1 : 0;
+  const most = want - example + (reviewRequested(body) ? MAX_REVIEW_QUESTIONS : 0);
+  const sections = worksheetSections(parsed);
+  let surplus = worksheetQuestionCount(parsed) - most;
+  if (surplus <= 0) return 0;
+  const removed = surplus;
+  while (surplus > 0 && sections.length > 0) {
+    const last = sections[sections.length - 1]!;
+    last.questions.pop();
+    surplus -= 1;
+    if (last.questions.length === 0) sections.pop();
+  }
+  obj.sections = sections;
+  if (Array.isArray(obj.answerKey)) obj.answerKey = (obj.answerKey as unknown[]).slice(0, worksheetQuestionCount(parsed));
+  return removed;
 }
 
 /** A deck shorter than this is not a lesson, whatever the teacher asked for. */

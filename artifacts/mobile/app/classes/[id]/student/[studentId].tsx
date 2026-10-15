@@ -12,7 +12,7 @@ import { trackEvent } from '@/services/analytics';
 import { formatListDate } from '@/services/evaluationRow';
 import { palette } from '@/constants/colors';
 import {
-  WEAK_PERCENT, displayPercent, examStatusKey, focusObjectives, lessonAction, paperAction, recheckAction,
+  WEAK_PERCENT, displayPercent, examStatusKey, focusObjectives, lessonAction, paperAction,
   sittingsLine, worksheetAction, type StudentRecordObjective,
 } from '@/services/studentRecord';
 import { BackButton } from '@/components/ui/BackButton';
@@ -21,7 +21,7 @@ const ACCENT = palette.primary;
 const ACCENT_FILL = palette.hero;
 
 type Target = { pathname: string; params: Record<string, string> } | null;
-type ActionKind = 'worksheet' | 'recheck' | 'lesson' | 'parent' | 'paper';
+type ActionKind = 'worksheet' | 'lesson' | 'parent' | 'paper';
 
 const isNotFound = (err: unknown) => err instanceof RosterError && err.status === 404;
 
@@ -34,10 +34,9 @@ function Pill({ label, onPress }: { label: string; onPress: () => void }) {
 }
 
 function ObjectiveCard({
-  o, classId, go,
+  o, go,
 }: {
   o: StudentRecordObjective;
-  classId: string;
   go: (kind: ActionKind, target: Target) => void;
 }) {
   const colors = useColors();
@@ -58,7 +57,6 @@ function ObjectiveCard({
       </Text>
       <View style={[styles.actions, { flexDirection: row }]}>
         {ws ? <Pill label={t('studentRecordWorksheet')} onPress={() => go('worksheet', ws)} /> : null}
-        <Pill label={t('studentRecordRecheck')} onPress={() => go('recheck', recheckAction(classId, o))} />
         {lesson ? <Pill label={t('studentRecordOpenLesson')} onPress={() => go('lesson', lesson)} /> : null}
       </View>
     </View>
@@ -174,17 +172,12 @@ export default function StudentRecordScreen() {
           </View>
 
           {data.objectives.length === 0 ? (
-            <View style={{ gap: 10 }}>
-              <Text style={[styles.empty, { color: colors.mutedForeground, textAlign: align }]}>{t('studentRecordEmpty')}</Text>
-              <View style={[styles.actions, { flexDirection: row }]}>
-                <Pill label={t('studentRecordQuickCheck')} onPress={() => go('recheck', { pathname: '/evaluations/mini', params: { classId: id } })} />
-              </View>
-            </View>
+            <Text style={[styles.empty, { color: colors.mutedForeground, textAlign: align }]}>{t('studentRecordEmpty')}</Text>
           ) : (
             <View style={{ gap: 10 }}>
               <Text style={sectionStyle}>{t('studentRecordNeedsSupport')}</Text>
               {focus.allClear ? <Text style={[styles.meta, { color: colors.mutedForeground, textAlign: align }]}>{t('studentRecordAllClear')}</Text> : null}
-              {focus.shown.map(o => <ObjectiveCard key={o.objectiveId} o={o} classId={id} go={go} />)}
+              {focus.shown.map(o => <ObjectiveCard key={o.objectiveId} o={o} go={go} />)}
               {data.provisionalCount > 0 ? <Text style={[styles.meta, { color: colors.mutedForeground, textAlign: align }]}>{t('studentRecordProvisionalNote')}</Text> : null}
 
               <Pressable onPress={() => setShowAll(v => !v)} accessibilityRole="button" aria-expanded={showAll} style={[styles.toggle, { flexDirection: row }]}>

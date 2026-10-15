@@ -16,6 +16,8 @@ import {
   lessonKindClauseAr, lessonKindClauseEn, usesWorkedExample, worksheetKindRuleAr, worksheetKindRuleEn,
 } from "./lessonKinds.ts";
 import { QUIZ_TYPE_ORDER, type QuizType } from "./generationShape.ts";
+import { coverageClauseAr, coverageClauseEn } from "./coverage.ts";
+import { revisionClauseAr, revisionClauseEn } from "./revision.ts";
 
 /** «السؤال الأول» … — how a ministry paper numbers its question blocks. */
 const ORDINAL_AR = ["الأول", "الثاني", "الثالث", "الرابع", "الخامس", "السادس"];
@@ -245,6 +247,20 @@ The structure this style requires — follow it across EVERY field of the plan, 
 ${LESSON_STYLE_RULES_EN[key]}`;
 }
 
+/**
+ * The teacher's voice in the Arabic plan: «سأعرض… ثم سأسأل…», not «اعرض… اسأل…».
+ *
+ * The plan is the teacher's own record of what they WILL do, and its stages are
+ * copied into the «دور المُعلم» column of the Ministry form; written as
+ * commands it read as instructions handed to somebody else. The offline plan
+ * says the same thing (`artifacts/mobile/services/ai/lessonPlanBlueprints.ts`,
+ * pinned by `lessonPlanTeacherVoice.test.ts`) — change one, change the other.
+ * Words spoken to students stay quoted and imperative, so only the teacher's
+ * own actions move. English is unchanged.
+ */
+const teacherVoiceAr = (b: any, hasPriorReview: boolean) => `صيغة النص — بصيغة المتكلم: المعلم هو الذي يكتب ما سيفعله في الحصة، فاكتب كل ما يفعله هو في ${hasPriorReview ? '"priorReview" و' : ""}"introduction" و"mainActivity" و"guidedPractice" و"independentPractice" و"closure" و"assessment" و"differentiation"${b.ministryRoles ? " وفي حقل \"ministryRoles\" (\"teacher\")" : ""} بضمير المتكلم وبصيغة المضارع المستقبل: «سأعرض الظاهرة دون أن أفسّرها، ثم سأسأل: «ماذا لاحظتم؟»، وسأسجّل التوقعات على السبورة»، ولا تستخدم صيغة الأمر («اعرض، اسأل، فسّر، صحّح»).
+أما ما يفعله الطلبة فاكتبه بصيغة الغائب («يكتب كل طالب…»)، وما يقوله المعلم لهم حرفيًا فضعه بين «» كما هو.`;
+
 // ─── Prompt builders ─────────────────────────────────────────────────────────
 /** The subject-kind clause on its own lines, or nothing for maths and unknown subjects. */
 const kindBlockAr = (b: any) => { const c = lessonKindClauseAr(b); return c ? `\n${c}` : ""; };
@@ -259,7 +275,8 @@ export function lessonPlanPromptAr(b: any): string {
   return `أنشئ خطة درس كاملة لمادة ${b.subject} للصف ${b.grade} حول موضوع "${b.topic}"، مدتها ${b.duration ?? 45} دقيقة.
 ${b.objectives ? `الأهداف المحددة:\n${b.objectives}` : ""}
 ${b.additionalContext ? `سياق إضافي: ${b.additionalContext}` : ""}
-${lessonStyleClauseAr(b)}${kindBlockAr(b)}
+${lessonStyleClauseAr(b)}${kindBlockAr(b)}${revisionClauseAr(b, "plan")}
+${teacherVoiceAr(b, hasPriorReview)}
 ${hasPriorReview ? `
 خصّص 5-10 دقائق في بداية الحصة لمراجعة معارف سابقة قد لا يتقنها بعض الطلبة، واكتب خطة هذه المراجعة في حقل "priorReview". هذه مراجعة تمهيدية وليست من أهداف هذا الدرس، فلا تُدرجها ضمن "objectives".
 ${priorConcepts ? `مفاهيم من المنهج يجب مراجعتها حرفيًا (لا تختلق غيرها):\n- ${priorConcepts.join("\n- ")}` : ""}
@@ -283,10 +300,10 @@ ${priorNotes ? `ملاحظات المعلم عن موضوعات سابقة (قد
   "differentiation": "استراتيجيات التمييز",
   "homework": "الواجب البيتي المقترح"${b.ministryRoles ? `,
   "ministryRoles": [
-    { "teacher": "دور المعلم في مرحلة التهيئة والاندماج", "learner": "دور المتعلم في المرحلة نفسها" },
-    { "teacher": "دور المعلم في مرحلة الشرح والتفسير", "learner": "دور المتعلم في المرحلة نفسها" },
-    { "teacher": "دور المعلم في مرحلة التوسع ودعم التميز", "learner": "دور المتعلم في المرحلة نفسها" },
-    { "teacher": "دور المعلم في مرحلة تأكيد التعلم", "learner": "دور المتعلم في المرحلة نفسها" }
+    { "teacher": "ما سأفعله أنا المعلم في مرحلة التهيئة والاندماج (بصيغة سأ…)", "learner": "دور المتعلم في المرحلة نفسها" },
+    { "teacher": "ما سأفعله أنا المعلم في مرحلة الشرح والتفسير (بصيغة سأ…)", "learner": "دور المتعلم في المرحلة نفسها" },
+    { "teacher": "ما سأفعله أنا المعلم في مرحلة التوسع ودعم التميز (بصيغة سأ…)", "learner": "دور المتعلم في المرحلة نفسها" },
+    { "teacher": "ما سأفعله أنا المعلم في مرحلة تأكيد التعلم (بصيغة سأ…)", "learner": "دور المتعلم في المرحلة نفسها" }
   ]` : ""}
 }`;
 }
@@ -300,7 +317,7 @@ export function lessonPlanPromptEn(b: any): string {
   return `Create a complete lesson plan for ${b.subject}, ${b.grade}, on the topic "${b.topic}", duration ${b.duration ?? 45} minutes.
 ${b.objectives ? `Specified objectives:\n${b.objectives}` : ""}
 ${b.additionalContext ? `Additional context: ${b.additionalContext}` : ""}
-${lessonStyleClauseEn(b)}${kindBlockEn(b)}
+${lessonStyleClauseEn(b)}${kindBlockEn(b)}${revisionClauseEn(b, "plan")}
 ${hasPriorReview ? `
 Set aside 5-10 minutes at the start of the lesson to review prior material some students may not have fully grasped, and put that review plan in a "priorReview" field. This is a warm-up review, not one of this lesson's own objectives — do not list it under "objectives".
 ${priorConcepts ? `Curriculum concepts to review verbatim (do not invent others):\n- ${priorConcepts.join("\n- ")}` : ""}
@@ -431,7 +448,7 @@ export function worksheetPromptAr(b: any): string {
 ${worksheetTypeShapesAr(types)}
 ${difficultyClauseAr(b)}
 ${wantsWP ? "\nيجب تضمين مسألة حياتية واحدة على الأقل (سيناريو واقعي يتطلب تطبيق مفاهيم الدرس، بأسلوب «حل مسائل حياتية»)." : ""}
-${prior ? `\nابدأ بقسم «مراجعة سابقة» فيه سؤالان أو ثلاثة فقط مبنية حرفيًا على هذه المفاهيم السابقة (لا تختلق غيرها):\n- ${prior.join("\n- ")}` : ""}
+${prior ? `\nابدأ بقسم «مراجعة سابقة» فيه سؤالان أو ثلاثة فقط مبنية حرفيًا على هذه المفاهيم السابقة (لا تختلق غيرها):\n- ${prior.join("\n- ")}` : ""}${coverageClauseAr(b, !!example)}
 ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه لصياغة أسئلة دقيقة ومرتبطة بالمنهج):\n${b.additionalContext}` : ""}
 ${example ? workedExampleRuleAr(n) : isHW ? "" : worksheetKindRuleAr(b, n)}
 أعد JSON بالشكل الآتي (بالعربية):
@@ -475,7 +492,7 @@ ${difficultyClauseEn(b)}
 Question types requested (use no others, and spread the questions across them): ${types.join(", ")}
 ${worksheetTypeShapesEn(types)}
 ${wantsWP ? "\nInclude at least one real-life word problem (a realistic scenario that requires applying the lesson concepts)." : ""}
-${prior ? `\nStart with a "Prior knowledge review" section of 2–3 questions drawn only from these concepts (do not invent others):\n- ${prior.join("\n- ")}` : ""}
+${prior ? `\nStart with a "Prior knowledge review" section of 2–3 questions drawn only from these concepts (do not invent others):\n- ${prior.join("\n- ")}` : ""}${coverageClauseEn(b, !!example)}
 ${b.additionalContext ? `\nTextbook context (use this to craft accurate, curriculum-aligned questions):\n${b.additionalContext}` : ""}
 ${example ? workedExampleRuleEn(n) : isHW ? "" : worksheetKindRuleEn(b, n)}
 Return JSON in this exact shape:
@@ -575,7 +592,7 @@ ${quizDifficultyClauseAr(b)}
 ${types.map(t => `- ${QUIZ_TYPE_CONTRACT_AR[t]}`).join("\n")}
 العلامات: مجموع "points" لكل الأسئلة يساوي ${marks} بالضبط؛ أسئلة الاختيار وصح/خطأ وأكمل علامة أو علامتان للسؤال، والأسئلة المفتوحة أكثر.
 
-${QUIZ_VARIETY_RULE_AR}
+${QUIZ_VARIETY_RULE_AR}${coverageClauseAr(b)}
 ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه لصياغة أسئلة دقيقة ومرتبطة بالمنهج):\n${b.additionalContext}` : ""}
 أعد JSON بالشكل الآتي (بالعربية):
 {
@@ -611,7 +628,7 @@ The JSON shape of each type:
 ${types.map(t => `- ${QUIZ_TYPE_CONTRACT_EN[t]}`).join("\n")}
 Marks: the "points" of all questions sum to exactly ${marks}; choice, true/false and fill-blank items carry one or two marks each, open questions more.
 
-${QUIZ_VARIETY_RULE_EN}
+${QUIZ_VARIETY_RULE_EN}${coverageClauseEn(b)}
 ${b.additionalContext ? `\nTextbook context (use this to craft accurate, curriculum-aligned questions):\n${b.additionalContext}` : ""}
 Return JSON in this exact shape:
 {
@@ -630,6 +647,60 @@ Return JSON in this exact shape:
     }
   ]
 }`;
+}
+
+/**
+ * The block appended to a quiz request when the first reply came back short.
+ *
+ * A model asked for 20 questions will often return 10 and call it done, in a
+ * perfectly valid reply that nothing downstream can tell is incomplete. The
+ * route counts, and asks again for only what is missing — with the stems it
+ * already has, so the second batch is new questions and not a rewording of the
+ * first. The reply is shaped like the original (a title is still required to
+ * pass the shape check) but its `questions` holds only the new ones.
+ */
+export function quizTopUpBlock(isAr: boolean, have: string[], missing: number): string {
+  const list = have.map((t, i) => `${i + 1}. ${t.slice(0, 160)}`).join("\n");
+  return isAr
+    ? `
+
+الورقة تحتوي حاليًا على ${have.length} سؤالًا، وهذه نصوصها:
+${list}
+
+اكتب ${missing} سؤالًا إضافيًا بالضبط، من الأنواع المطلوبة نفسها وبالشكل نفسه، عن أفكار وحقائق مختلفة عمّا سبق ولا تكرر أيًّا منها ولا تعد صياغته. أعد JSON بالشكل نفسه لكن "questions" فيه الأسئلة الجديدة وحدها (ترقيمها من q${have.length + 1}).`
+    : `
+
+The paper so far has ${have.length} questions, with these texts:
+${list}
+
+Write exactly ${missing} MORE questions, of the same requested types and in the same shape, about different ideas and facts from the above — do not repeat or reword any of them. Return the same JSON shape, but "questions" holds only the new questions (numbered from q${have.length + 1}).`;
+}
+
+/**
+ * The block appended to a worksheet or homework request when the first reply
+ * came back short — the quiz's counterpart (`quizTopUpBlock`), for a paper whose
+ * questions sit in sections beside an answer key.
+ *
+ * The new questions arrive as ONE extra section, so the merge never has to
+ * guess where they belong; the answer key carries only their entries, numbered
+ * on from the questions already there. No worked example: the first reply
+ * already has whatever it was going to have.
+ */
+export function worksheetTopUpBlock(isAr: boolean, have: string[], missing: number): string {
+  const list = have.map((t, i) => `${i + 1}. ${t.slice(0, 160)}`).join("\n");
+  return isAr
+    ? `
+
+الورقة تحتوي حاليًا على ${have.length} سؤالًا، وهذه نصوصها:
+${list}
+
+اكتب ${missing} سؤالًا إضافيًا بالضبط، من أنواع الأسئلة المطلوبة نفسها وبالشكل نفسه، عن أفكار مختلفة عمّا سبق ولا تكرر أيًّا منها ولا تعد صياغته. أعد JSON بالشكل نفسه (مع "title" و"instructions" كما هما بإيجاز) لكن "sections" فيه قسم واحد جديد عنوانه «تمارين إضافية» يضم الأسئلة الجديدة وحدها، و"answerKey" فيه إجابات الأسئلة الجديدة وحدها بترقيم "num" يبدأ من ${have.length + 1}. بلا "workedExample".`
+    : `
+
+The paper so far has ${have.length} questions, with these texts:
+${list}
+
+Write exactly ${missing} MORE questions, of the same requested types and in the same shape, about different ideas from the above — do not repeat or reword any of them. Return the same JSON shape (with "title" and "instructions" repeated briefly), but "sections" holds ONE new section titled "Additional practice" with only the new questions, and "answerKey" holds only the new questions' answers, with "num" numbered from ${have.length + 1}. No "workedExample".`;
 }
 
 // ─── Difficulty ──────────────────────────────────────────────────────────────
@@ -767,7 +838,7 @@ ${b.objectives ? `هدف النشاط: ${b.objectives}` : ""}
 ${b.additionalContext ? `\nسياق الكتاب المدرسي:\n${b.additionalContext}` : ""}
 
 بنية هذا النوع من الأنشطة — التزم بها ولا تستبدلها ببنية عامة:
-${rule}
+${rule}${revisionClauseAr(b, "activity")}
 
 قواعد عامة:
 - مجموع durationMin لكل الخطوات يجب أن يساوي ${dur} بالضبط.
@@ -801,7 +872,7 @@ ${b.objectives ? `Lesson objective: ${b.objectives}` : ""}
 ${b.additionalContext ? `\nTextbook context:\n${b.additionalContext}` : ""}
 
 Structure required for this format — follow it, do not substitute a generic one:
-${rule}
+${rule}${revisionClauseEn(b, "activity")}
 
 General rules:
 - The durationMin values must sum to exactly ${dur}.

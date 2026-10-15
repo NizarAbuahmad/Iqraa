@@ -68,6 +68,18 @@ export const aiArtifacts = pgTable(
      * so the next request regenerates into its place.
      */
     retiredAt: timestamp("retired_at", { withTimezone: true }),
+    /**
+     * Set by a `system_admin` who has read this explanation and judged it fit
+     * for students. `GET /student/lesson-explanation/:lessonId` serves only rows
+     * with this set. Teachers are unaffected: the pool a teacher is served from
+     * does not look at it.
+     *
+     * A gate on the data, not on a procedure. A teacher's `lesson-teaching` row
+     * can be stored under the wrong lesson id (`slides.tsx` re-derives it from
+     * the title), and a teacher accepts what they read where a student is a
+     * minor, so "everything stored" is not the same as "everything shown".
+     */
+    studentApprovedAt: timestamp("student_approved_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [
@@ -78,6 +90,9 @@ export const aiArtifacts = pgTable(
     // can run more than one. This constraint is what makes the race safe
     // across processes: the loser's insert fails and it serves the winner's row.
     uniqueIndex("ai_artifacts_key_variant_idx").on(t.strictKey, t.variantIndex),
+    // The student lookup: one lesson's rows of one kind, without re-deriving a
+    // strictKey that changes with the model and the prompt version.
+    index("ai_artifacts_kind_lesson_idx").on(t.kind, t.lessonRef),
   ],
 );
 

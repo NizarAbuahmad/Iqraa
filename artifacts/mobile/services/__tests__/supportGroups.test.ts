@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  SUPPORT_GROUPS_SHOWN, filterToAudience, groupCheckAction, groupDraftAction, groupSizeLabel,
+  SUPPORT_GROUPS_SHOWN, filterToAudience, groupSizeLabel,
   groupWorksheetAction, membersBelowLabel, outcomeKey, parseStudentIds, visibleGroups,
   type SupportGroup,
 } from '../supportGroups.ts';
@@ -14,7 +14,7 @@ function group(over: Partial<SupportGroup>): SupportGroup {
   return {
     objectiveId: 'o1', titleAr: 'هدف', lessonId: CHEM, lessonTitleAr: 'درس', classPercent: 40,
     members: [{ studentId: 's1', displayName: 'أحمد', percent: 30 }, { studentId: 's2', displayName: 'ليلى', percent: 50 }],
-    latestCheck: null, draftCheck: null, ...over,
+    latestCheck: null, ...over,
   };
 }
 
@@ -28,17 +28,6 @@ describe('visibleGroups', () => {
 });
 
 describe('card actions', () => {
-  it('sends the group check to the quick check with the members', () => {
-    assert.deepEqual(groupCheckAction('c1', group({})), {
-      pathname: '/evaluations/mini', params: { classId: 'c1', objectiveId: 'o1', studentIds: 's1,s2' },
-    });
-  });
-  it('opens an unfinished draft instead of a new check', () => {
-    assert.equal(groupDraftAction(group({})), null);
-    assert.deepEqual(groupDraftAction(group({ draftCheck: { evaluationId: 'e9' } })), {
-      pathname: '/evaluations/[id]', params: { id: 'e9' },
-    });
-  });
   it("opens the worksheet on the lesson's own subject, and hides it without a lesson", () => {
     const chem = groupWorksheetAction(group({}))!;
     const math = groupWorksheetAction(group({ lessonId: MATH }))!;

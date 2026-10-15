@@ -41,18 +41,26 @@ import { bookFigureUri } from '@/services/bookFigureUri';
 import { createGame, MAX_TEAMS, MIN_TEAMS } from '@/services/classGame';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
-import { groundedSubjectConflict, scopeWithoutCurriculum, subjectPickerLabels, topicPickerParams, scopeFromParams } from '@/services/lessonPrep';
+import { groundedSubjectConflict, scopeWithoutCurriculum, subjectPickerLabels, topicPickerParams, scopeFromParams, topicForScope } from '@/services/lessonPrep';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { readableOn } from '@/services/readableColor';
 import { palette } from '@/constants/colors';
 import { useWarmGrounding } from '@/hooks/useWarmGrounding';
 import { nextFrame } from '@/services/nextFrame';
+import { useWideScope } from '@/hooks/useWideScope';
+import { DISTRIBUTIONS } from '@/services/coveragePlan';
+import { scopeLabel } from '@/services/scopeSelection';
+import { buildWideRequest } from '@/services/wideScopeRequest';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
 const ACCENT_FILL = palette.hero;
+// Not widened for a unit / semester / book (no 25 / 30): a game is a few minutes
+// at a projector, and `buildCoverage` spreads whatever count is picked.
 const QUESTION_COUNTS = [5, 8, 10, 12];
+/** What a unit / semester / book game is anchored to: the scope itself, never one lesson its label happens to match. */
+const WIDE_GROUNDING: GeneratorGrounding = { lesson: null, grounded: true, score: 0, context: '', ungroundedNote: '' };
 
 export default function ClassGameScreen() {
   const colors = useColors();
@@ -89,10 +97,15 @@ export default function ClassGameScreen() {
   const lang = contentLang(subjects[subjectIdx].id, uiLang);
   const isAr = lang === 'ar';
   const [topic, setTopic] = useState(() => topicInLang(
-    params.topic ?? '', uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
+    topicForScope(params, uiLang, teacherScope.defaultScope, teacherScope), uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
     { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
   ));
   useWarmGrounding(topic, lang);
+  // This screen has no save / reopen and nothing routes to it with a scope, so
+  // there is nothing to seed from the route: the scope is whatever the picker
+  // reports. The grade / subject check still drops a scope picked under a
+  // book the pickers have since left.
+  const wideScope = useWideScope({}, { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id });
   const [teamCount, setTeamCount] = useState(4);
   // Read at the moment a deck is built, not when generation was tapped: the
   // pill stays live while a request is in flight, and a deck built with the
@@ -105,6 +118,8 @@ export default function ClassGameScreen() {
   const [deck, setDeck] = useState<ClassroomActivity | null>(null);
   const [grounded, setGrounded] = useState(false);
   const [groundedLesson, setGroundedLesson] = useState('');
+  /** The scope label the deck on screen was generated under, or null for a single lesson. Frozen at generation: the picker moves on while the deck stays. */
+  const [wideLabel, setWideLabel] = useState<string | null>(null);
   const [error, setError] = useState('');
   const abortRef = useRef<AbortController | null>(null);
   useAbortOnUnmount(abortRef);
@@ -142,7 +157,7 @@ export default function ClassGameScreen() {
     const previous = previousQuizRef.current;
     // What a failed or cancelled run must hand back — the deck was cleared
     // up front and never restored.
-    const held = { deck, quiz: previousQuizRef.current, grounding: groundingRef.current };
+    const held = { deck, quiz: previousQuizRef.current, grounding: groundingRef.current, wideLabel };
     const trimmed = topic.trim();
     if (!trimmed) { setError(t('topicRequired')); return; }
     // A topic that grounds to another subject's lesson cannot make an honest
@@ -150,8 +165,17 @@ export default function ClassGameScreen() {
     // the picked subject. Refuse and name the real subject instead.
     const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, uiLang);
     if (scope) { setError(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
-    const conflict = groundedSubjectConflict(trimmed, lang, subjects[subjectIdx].id, grades[gradeIdx].id);
-    if (conflict) { setError(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
+    // A wide scope's topic is a label («الفصل الأول كاملًا»), not a lesson: the
+    // subject-conflict check reads a lesson, so it applies to a single lesson only.
+    // A wide scope that cannot be grounded is refused here, never generated mislabeled.
+    const wide = wideScope.isWide
+      ? buildWideRequest(wideScope.scopeSel!, lang as 'ar' | 'en', questionCount, wideScope.distribution, { offset: opts?.regenerate ? Math.floor(Math.random() * 1000) : 0 })
+      : null;
+    if (wideScope.isWide && !wide) { setError(t('wideScopeUngrounded')); return; }
+    if (!wide) {
+      const conflict = groundedSubjectConflict(trimmed, lang, subjects[subjectIdx].id, grades[gradeIdx].id);
+      if (conflict) { setError(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
+    }
     setError(''); setCancelled(false); setLoading(true); setDeck(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await nextFrame();
@@ -164,9 +188,14 @@ export default function ClassGameScreen() {
     // `contextSource: 'curriculum'`, which stores the quiz in the pool every
     // teacher is served from. Same rule as quiz.tsx.
     const kbScope = { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id };
-    const grounding = resolveGeneratorGrounding(trimmed, lang as 'ar' | 'en', { scope: kbScope });
+    // A wide game never re-grounds its label: a unit title can ground to another
+    // grade's lesson, and the lesson would then supply the figures and the notice.
+    const grounding: GeneratorGrounding = wide
+      ? WIDE_GROUNDING
+      : resolveGeneratorGrounding(trimmed, lang as 'ar' | 'en', { scope: kbScope });
     setGrounded(grounding.grounded);
     setGroundedLesson(grounding.lesson ? (isAr ? grounding.lesson.titleAr : grounding.lesson.titleEn) : '');
+    setWideLabel(wide ? scopeLabel(wideScope.scopeSel!, lang as 'ar' | 'en') : null);
     const restore = () => {
       if (!held.deck) return;
       setDeck(held.deck);
@@ -174,6 +203,7 @@ export default function ClassGameScreen() {
       groundingRef.current = held.grounding;
       setGrounded(held.grounding?.grounded ?? false);
       setGroundedLesson(held.grounding?.lesson ? (isAr ? held.grounding.lesson.titleAr : held.grounding.lesson.titleEn) : '');
+      setWideLabel(held.wideLabel);
     };
 
     try {
@@ -188,16 +218,19 @@ export default function ClassGameScreen() {
         numQuestions: questionCount,
         questionTypes: ['multiple_choice'],
         language: isAr ? 'arabic' : 'english',
-        additionalContext: buildGeneratorContext(trimmed, lang as 'ar' | 'en', { scope: kbScope }),
-        unitId: generatorUnitId(trimmed, lang as 'ar' | 'en', kbScope),
-        lessonId: generatorLessonId(trimmed, lang as 'ar' | 'en', kbScope),
+        additionalContext: wide ? undefined : buildGeneratorContext(trimmed, lang as 'ar' | 'en', { scope: kbScope }),
+        unitId: wide ? undefined : generatorUnitId(trimmed, lang as 'ar' | 'en', kbScope),
+        lessonId: wide ? undefined : generatorLessonId(trimmed, lang as 'ar' | 'en', kbScope),
         // The quiz screen asks for the book's figures; this one did not, so
         // a game on a figure-heavy lesson had none to show.
-        bookFigureCount: generatorFigureCount(trimmed, lang as 'ar' | 'en', kbScope),
+        bookFigureCount: wide ? undefined : generatorFigureCount(trimmed, lang as 'ar' | 'en', kbScope),
         // Nothing here but the lesson the teacher picked, so the quiz behind
         // the deck can be shared with every other teacher who picks it.
         contextSource: 'curriculum',
         ...regenerationFields(opts?.regenerate === true, previous),
+        // Last: the wide scope's digest replaces the lesson-derived context, and
+        // its explicit-undefined lessonId / unitId clear the single-lesson fields.
+        ...(wide ? wide.fields : {}),
       }, { signal: controller.signal });
       // The deck draws its own أ/ب/ج badges, and the live quiz prompt asks for
       // options already lettered («أ) 3») with a lettered key — projected as
@@ -312,7 +345,7 @@ export default function ClassGameScreen() {
             accent={ACCENT}
             pillStyle={styles.pill}
           />
-          <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
+          <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t(teacherScope.strandedNoteKey(grades[gradeIdx].id, subjectIdx))} isRTL={isRTL} colors={colors} />
           <PillSelector
             label={t('subjects')}
             options={subjects.map((s, i) => ({ value: i, label: subjectNames[i] })).filter(o => !subjectHidden[o.value])}
@@ -329,6 +362,9 @@ export default function ClassGameScreen() {
             gradeId={grades[gradeIdx].id}
             value={topic}
             onChange={v => { setTopic(v); setError(''); }}
+            allowedKinds={['lesson', 'unit', 'semester', 'book']}
+            onScopeChange={wideScope.setScopeSel}
+            offlineWideScope
             lang={lang as 'ar' | 'en'}
             isRTL={isRTL}
             colors={colors}
@@ -336,6 +372,19 @@ export default function ClassGameScreen() {
             hasError={!!error && !topic}
             t={t}
           />
+
+          {wideScope.isWide && (
+            <PillSelector
+              label={t('distributionLabel')}
+              options={DISTRIBUTIONS.map(d => ({ value: d, label: t(d === 'balanced' ? 'distributionBalanced' : 'distributionRandom') }))}
+              value={wideScope.distribution}
+              onChange={wideScope.setDistribution}
+              colors={colors}
+              isRTL={isRTL}
+              accent={ACCENT}
+              pillStyle={styles.pill}
+            />
+          )}
 
           {/* Teams */}
           <View style={{ marginBottom: 18 }}>
@@ -428,7 +477,7 @@ export default function ClassGameScreen() {
             <View style={{ marginBottom: 12 }}>
               <GroundingNotice
                 grounded={grounded}
-                lessonTitle={groundedLesson}
+                lessonTitle={wideLabel ?? groundedLesson}
                 isRTL={isRTL}
                 colors={colors}
                 labels={{

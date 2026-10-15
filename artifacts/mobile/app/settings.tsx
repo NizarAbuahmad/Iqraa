@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +22,15 @@ import { dateLocale } from '@/services/dateLabels';
 import { askForPushPermission, getPushPermissionState, pushAskCopy, type PushPermissionState } from '@/services/pushTokens';
 import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { BackButton } from '@/components/ui/BackButton';
+import { SPACE, TYPE } from '@/constants/theme';
+import { PUSH_PREF_ROWS, showsFamilyPushPrefs, withPref, type PushPrefCategory, type PushPrefs } from '@/services/pushPrefs';
+import { fetchPushPrefs, savePushPref } from '@/services/pushPrefsApi';
+
+const PREF_ICON: Record<PushPrefCategory, keyof typeof Ionicons.glyphMap> = {
+  homework: 'book-outline',
+  exams: 'calendar-outline',
+  results: 'ribbon-outline',
+};
 
 type AiUsage = { spentUsd: number | null; limitUsd: number; resetsAt: string };
 
@@ -51,9 +60,53 @@ export default function SettingsScreen() {
   useEffect(() => { void loadPushState(); }, [loadPushState]);
   usePollingRefresh(loadPushState);
 
+  // School notifications (homework, exam dates, results): an ACCOUNT setting
+  // on the server (GET/PUT /auth/me/push-preferences), so it is shown on web
+  // too — it decides what reaches this account's phones. Only parents and
+  // students are sent these pushes. Re-read when the open account changes.
+  const showsSchoolPrefs = showsFamilyPushPrefs(user?.role);
+  const [schoolPrefs, setSchoolPrefs] = useState<PushPrefs | null>(null);
+  const [schoolPrefsFailed, setSchoolPrefsFailed] = useState(false);
+  const [savingPref, setSavingPref] = useState<PushPrefCategory | null>(null);
+  useEffect(() => {
+    setSchoolPrefs(null);
+    setSchoolPrefsFailed(false);
+    if (!showsSchoolPrefs) return;
+    let cancelled = false;
+    fetchPushPrefs()
+      .then(p => { if (!cancelled) setSchoolPrefs(p); })
+      .catch(() => { if (!cancelled) setSchoolPrefsFailed(true); });
+    return () => { cancelled = true; };
+  }, [showsSchoolPrefs, user?.id]);
+
+  // The account a save belongs to: if the open account changes while a save is
+  // in flight, its answer must not be written into the new account's card.
+  const prefsOwner = useRef(user?.id);
+  prefsOwner.current = user?.id;
+
+  // Optimistic: the switch moves at once; a failed save puts it back and says so.
+  const handleSchoolPref = async (category: PushPrefCategory, on: boolean) => {
+    if (!schoolPrefs || savingPref) return;
+    const owner = user?.id;
+    const before = schoolPrefs;
+    setSchoolPrefs(withPref(schoolPrefs, category, on));
+    setSavingPref(category);
+    try {
+      const saved = await savePushPref(category, on);
+      if (prefsOwner.current === owner) setSchoolPrefs(saved);
+    } catch {
+      if (prefsOwner.current !== owner) return;
+      setSchoolPrefs(before);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setToast(t('pushPrefsSaveFailed'));
+    } finally {
+      setSavingPref(null);
+    }
+  };
+
   // Off: our explanation, then the OS prompt — or system settings once
   // Android no longer prompts. On: system settings, where the per-kind
-  // channels (messages, results, reminders) can be muted one by one.
+  // channels (messages, homework, exam dates, results, reminders) can be muted one by one.
   const handlePushRow = async () => {
     if (pushState === 'granted') {
       void Linking.openSettings();
@@ -262,7 +315,7 @@ export default function SettingsScreen() {
                 label={t(user.role === 'parent' ? 'classSettingRowParent' : 'classSettingRow')}
                 isRTL={isRTL}
                 colors={colors}
-                right={<Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{classSummary}</Text>}
+                right={<Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{classSummary || t('classSettingNotSet')}</Text>}
                 onPress={() => router.push({ pathname: '/setup-grade', params: { mode: 'edit' } } as any)}
               />
             </View>
@@ -296,7 +349,7 @@ export default function SettingsScreen() {
             on every visit. A control that lies is worse than none, so the
             section holds only rows backed by something real: the OS
             permission (pushState) and the test send. Both are native-only
-            (web never registers a push token), so web has no section at all. */}
+            (web never registers a push token), so web has no such section. */}
         {Platform.OS !== 'web' && (
           <>
             <SectionLabel label={t('notificationsSection')} isRTL={isRTL} colors={colors} top />
@@ -325,6 +378,57 @@ export default function SettingsScreen() {
                 right={sendingTest ? <ActivityIndicator size="small" color={colors.primary} /> : undefined}
               />
             </View>
+          </>
+        )}
+
+        {/* School notifications: three server-backed switches (not the OS
+            permission above, and not native-only — they are an account
+            setting). Unlike the notifications section's old switches, every
+            control here reads and writes the server. */}
+        {showsSchoolPrefs && (
+          <>
+            <SectionLabel label={t('pushPrefsSection')} isRTL={isRTL} colors={colors} top />
+            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+              {schoolPrefs === null ? (
+                <View style={{ padding: SPACE.lg }}>
+                  {schoolPrefsFailed ? (
+                    <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: isRTL ? 'right' : 'left' }}>
+                      {t('pushPrefsLoadFailed')}
+                    </Text>
+                  ) : (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  )}
+                </View>
+              ) : (
+                PUSH_PREF_ROWS.map((row, i) => (
+                  <React.Fragment key={row.category}>
+                    {i > 0 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
+                    <View style={[styles.settingRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                      <Ionicons name={PREF_ICON[row.category]} size={20} color={colors.primary} />
+                      <View style={{ flex: 1, gap: SPACE.xxs }}>
+                        <Text style={[styles.settingLabel, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+                          {t(row.labelKey)}
+                        </Text>
+                        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}>
+                          {t(row.hintKey)}
+                        </Text>
+                      </View>
+                      <Switch
+                        value={schoolPrefs[row.category]}
+                        onValueChange={on => void handleSchoolPref(row.category, on)}
+                        disabled={savingPref !== null}
+                        accessibilityLabel={t(row.labelKey)}
+                        aria-checked={schoolPrefs[row.category]}
+                        trackColor={{ true: colors.primary, false: colors.border }}
+                      />
+                    </View>
+                  </React.Fragment>
+                ))
+              )}
+            </View>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 21, marginTop: SPACE.sm, textAlign: isRTL ? 'right' : 'left' }}>
+              {t('pushPrefsNote')}
+            </Text>
           </>
         )}
 

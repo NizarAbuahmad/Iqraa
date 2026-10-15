@@ -31,6 +31,17 @@ jobs:
     name: typecheck + tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # DB-backed API tests (src/test-support) create their own iqraa_test_*
+    # databases on this server; they only use the `postgres` database as the
+    # admin connection for CREATE/DROP DATABASE and never store data in it.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
@@ -82,8 +93,18 @@ jobs:
       - name: Build api-server
         run: pnpm --filter @workspace/api-server run build
 
+      # REQUIRE_DB_TESTS makes a missing database a FAILURE, not a skip: a
+      # pipeline that loses its Postgres service must not quietly stop testing
+      # cross-family access.
       - name: Test api-server
         run: pnpm --filter @workspace/api-server run test
+        env:
+          TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+          REQUIRE_DB_TESTS: 'true'
+
+      # The row-level-security suites skip here (no database); the identity tests run.
+      - name: Test db
+        run: pnpm --filter @workspace/db run test
 
       - name: Test mobile
         run: pnpm --filter @workspace/mobile run test
@@ -126,6 +147,9 @@ jobs:
   # job proves, while the change is still a PR, that they are complete and that
   # they apply. It replaced a job that only asked the author to write
   # `schema-push: done` in the PR body — PR #815 cleared it with a wrong answer.
+  # This workflow must not read the PR body: it runs on the default
+  # pull_request events, so a body edit would never reach it (see
+  # destructive-migration-ack.yml).
   migrations:
     name: migrations match schema
     runs-on: ubuntu-latest
@@ -174,30 +198,53 @@ jobs:
           pnpm --filter @workspace/db run migrate -- --from-env
           pnpm --filter @workspace/db run verify-schema -- --from-env
 
-      # deploy.yml migrates BEFORE the new API revision takes traffic, so the
-      # old revision serves against the new schema for a few minutes. Adding is
-      # safe; dropping, renaming or tightening a column breaks the running code.
-      # Ship those as a second PR once nothing reads the old shape, and say so.
-      - name: Destructive migrations are acknowledged
-        if: github.event_name == 'pull_request'
+      # The destructive-SQL acknowledgement (`destructive-migration: ok` in the
+      # PR body) is its own workflow, destructive-migration-ack.yml, so that
+      # editing the body re-checks it. This workflow never sees `edited`.
+
+  # Row-level security needs a real Postgres and the built API: the matrix proves each
+  # policy, the coverage test stops a new table being forgotten, and the differential
+  # test boots the API with enforcement off and on and diffs what users see and cause
+  # (see docs/superpowers/specs/2026-10-13-row-level-security-design.md).
+  rls:
+    name: row-level security
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          # Untrusted input: through the environment, never interpolated.
-          PR_BODY: ${{ github.event.pull_request.body }}
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+
+      - name: Enable pnpm
         run: |
-          set -euo pipefail
-          NEW=$(git diff --name-only --diff-filter=A "$BASE_SHA...$HEAD_SHA" -- 'lib/db/migrations/*.sql')
-          [ -z "$NEW" ] && exit 0
-          HITS=$(grep -n -i -E 'DROP (TABLE|COLUMN)|RENAME|SET NOT NULL|SET DATA TYPE' $NEW || true)
-          [ -z "$HITS" ] && exit 0
-          echo "$HITS"
-          if printf '%s' "$PR_BODY" | grep -qiE '^[[:space:]]*destructive-migration:[[:space:]]*ok'; then
-            echo "Acknowledged in the PR body."
-            exit 0
-          fi
-          echo "::error::This migration drops, renames or tightens something the running API may still use. Split it out, or add 'destructive-migration: ok' to the PR body once nothing reads the old shape."
-          exit 1
+          corepack enable
+          corepack prepare pnpm@11.18.0 --activate
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build api-server
+        run: pnpm --filter @workspace/api-server run build
+
+      - name: Migrate an empty database
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+        run: pnpm --filter @workspace/db run migrate -- --from-env
+
+      - name: Row-level security suites
+        env:
+          RLS_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+        run: pnpm --filter @workspace/db run test
 
   verifier:
     name: math verifier
@@ -221,3 +268,30 @@ jobs:
         env:
           PYTHONIOENCODING: utf-8
         run: python -X utf8 test_equations.py
+
+      # The book-item tests and the committed JSON contain sympy's printed
+      # forms, whose term order can change between releases. Pinned so a PyPI
+      # release cannot turn CI red with no commit behind it. To bump: change
+      # the version here, re-run scripts/extract_book_items.py, commit the JSON.
+      - name: Pin sympy for book items
+        run: pip install "sympy==1.14.0"
+
+      # Real book items: the extractor's normalisation and trust rules, then a
+      # check that the committed JSON is exactly what the script emits. A
+      # hand-edited item, or a rule change without a re-run, fails here.
+      - name: Book item extractor tests
+        working-directory: artifacts/math-verifier
+        env:
+          PYTHONIOENCODING: utf-8
+        run: python -X utf8 ../../scripts/test_extract_book_items.py
+
+      - name: Committed book items match the extractor
+        env:
+          PYTHONIOENCODING: utf-8
+        run: |
+          python -X utf8 scripts/extract_book_items.py
+          if [ -n "$(git status --porcelain -- lib/curriculum/src/data/book-items)" ]; then
+            git status --porcelain -- lib/curriculum/src/data/book-items
+            git diff -- lib/curriculum/src/data/book-items
+            exit 1
+          fi

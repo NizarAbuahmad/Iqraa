@@ -1,5 +1,5 @@
 import { plainActivity } from './activityText.ts';
-import { AIService } from './AIService.ts';
+import { AIService, isRevisionRequest } from './AIService.ts';
 import type {
   ActivityOutput, ActivityStep, AIRequest,
   ClassroomActivity, ClassroomActivityRequest,
@@ -25,16 +25,26 @@ import {
   takeSolvedMath,
   completionSplit,
   type DiffTier,
+  type PracticeWQ,
 } from './mathPractice.ts';
 import { isChemContext, takeConcreteChem, takeConcreteChemBatch, takeSolvedChem, type SolvedItem } from './chemPractice.ts';
 import { buildActivityBlueprint } from './activityBlueprints.ts';
 import { buildLessonStyleBlueprint, type LessonDocContext } from './lessonPlanBlueprints.ts';
+import { revisionPlanFromRequest } from './lessonPlanRevision.ts';
 import { arPrefixed, lessonKindFor, type LessonKind } from './lessonPlanKinds.ts';
 import { arMinutes } from './lessonPlanTypes.ts';
 import { classifyVerifiableTopic } from './verifyMathGuards.ts';
 import { QUIZ_TYPE_ORDER } from '../quizPaper.ts';
 import { splitFormatTypes, fitFormats, formatPoints, worksheetTotal, buildFormatSet } from './worksheetFormats.ts';
 import { MISSTEPS, ORDER_SAFE, currentSession, type FormatKind } from '@workspace/math-practice';
+import { ScopeDrawer } from './scopeDraw.ts';
+import { planCoverage, type CoverageLesson } from '../coveragePlan.ts';
+import {
+  drawAcrossUnits, revisionActivityLesson, revisionLessonsByUnit,
+  type RevisionDrawLesson, type RevisionLessonGroup,
+} from './activityRevision.ts';
+import { activityRevisionRewords, classroomRevisionRewords, reviseWording } from './revisionWording.ts';
+import { revisionPhrase, scopeFromKey } from '../revisionScope.ts';
 
 /**
  * Symbolic verification, loaded lazily.
@@ -70,6 +80,8 @@ interface WQ {
   steps?: string[];
   /** See `WorksheetQuestion.fromBank`. Set by `tryMathPractice` and nowhere it isn't true. */
   fromBank?: true;
+  /** The KB lesson this question was written for — set on a wide-scope paper. */
+  lessonId?: string;
 }
 /** Carries a bank item's mark onto a quiz question, which copies fields one by one. */
 const bankMark = (q: WQ): { fromBank?: true } => (q.fromBank ? { fromBank: true } : {});
@@ -315,7 +327,7 @@ function lpObjectivesAr(topic: string, kb: KBLesson | null, custom?: string, kin
 function bookFigureCue(kb: KBLesson | null, lang: Lang): string {
   if (!kb?.id || figuresForLesson(kb.id).length === 0) return '';
   return lang === 'ar'
-    ? ' اعرض شكل الكتاب المدرسي في شريحة «من كتاب الطالب» وناقش ما يراه الطلبة فيه.'
+    ? ' وسأعرض شكل الكتاب المدرسي في شريحة «من كتاب الطالب» وأناقش ما يراه الطلبة فيه.'
     : " Show the student-book figure on the “From the Student Book” slide and discuss what students notice in it.";
 }
 
@@ -329,34 +341,34 @@ function bookFigureCue(kb: KBLesson | null, lang: Lang): string {
 function kindIntro(kind: LessonKind, topic: string, lang: Lang): string[] | null {
   const ar: Partial<Record<LessonKind, string[]>> = {
     science: [
-      `ابدأ بظاهرة قصيرة أو صورة مثيرة مرتبطة بـ«${topic}» دون أن تفسّرها، واسأل: «ماذا ترون؟ وماذا تتوقعون أن يحدث بعد ذلك؟» وسجّل التوقعات على السبورة لنعود إليها في نهاية الحصة.`,
-      `اسأل الطلبة: «أين صادفتم “${topic}” في بيتكم أو في الطبيعة؟» ثم اختر مثالًا واحدًا وحوّله إلى سؤال يبحث عنه الدرس: «لماذا يحدث هذا؟»`,
-      `اعرض شيئًا أو صورة مرتبطة بـ«${topic}» واطلب من كل طالب أن يكتب سؤالًا واحدًا يريد أن يعرف جوابه، ثم اجمع الأسئلة وأعلن أن الحصة ستجيب عن بعضها.`,
+      `سأبدأ بظاهرة قصيرة أو صورة مثيرة مرتبطة بـ«${topic}» دون أن أفسّرها، ثم أسأل: «ماذا ترون؟ وماذا تتوقعون أن يحدث بعد ذلك؟» وسأسجّل التوقعات على السبورة لنعود إليها في نهاية الحصة.`,
+      `سأسأل الطلبة: «أين صادفتم “${topic}” في بيتكم أو في الطبيعة؟» ثم أختار مثالًا واحدًا وأحوّله إلى سؤال يبحث عنه الدرس: «لماذا يحدث هذا؟»`,
+      `سأعرض شيئًا أو صورة مرتبطة بـ«${topic}» وأطلب من كل طالب أن يكتب سؤالًا واحدًا يريد أن يعرف جوابه، ثم أجمع الأسئلة وأعلن أن الحصة ستجيب عن بعضها.`,
     ],
     social: [
-      `اعرض صورة أو خريطة أو سطرًا قصيرًا من مصدر الدرس عن «${topic}»، واسأل: «ماذا نلاحظ؟ وما الذي يثير تساؤلكم؟» ودوّن أسئلة الطلبة لنحاول الإجابة عنها خلال الحصة.`,
-      `اطرح موقفًا قريبًا من حياة الطلبة له علاقة بـ«${topic}» واسأل: «ماذا كنتم ستفعلون؟ ولماذا؟» ثم اربط إجاباتهم بما سندرسه اليوم.`,
-      `اسأل: «ماذا نعرف عن “${topic}”؟ ومن أين عرفنا ذلك؟» ثم ميّز مع الطلبة بين ما نعرفه بدليل وما سمعناه فقط، وأعلن أننا سنتحقّق منه بالمصدر.`,
+      `سأعرض صورة أو خريطة أو سطرًا قصيرًا من مصدر الدرس عن «${topic}»، ثم أسأل: «ماذا نلاحظ؟ وما الذي يثير تساؤلكم؟» وسأدوّن أسئلة الطلبة لنحاول الإجابة عنها خلال الحصة.`,
+      `سأطرح موقفًا قريبًا من حياة الطلبة له علاقة بـ«${topic}» وأسأل: «ماذا كنتم ستفعلون؟ ولماذا؟» ثم أربط إجاباتهم بما سندرسه اليوم.`,
+      `سأسأل: «ماذا نعرف عن “${topic}”؟ ومن أين عرفنا ذلك؟» ثم أميّز مع الطلبة بين ما نعرفه بدليل وما سمعناه فقط، وأعلن أننا سنتحقّق منه بالمصدر.`,
     ],
     recitation: [
-      `ابدأ بتهيئة هادئة: استمع دقيقتين إلى ما يعرفه الطلبة عن «${topic}»، ثم أعلن هدف الحصة: أن نقرأ قراءة سليمة، ونفهم المعنى، ونعمل بما نتعلّم.`,
-      `اسأل: «لماذا نتعلّم “${topic}”؟ وماذا نتوقع أن يتغيّر في سلوكنا؟» ثم أخبر الطلبة أنهم سيقرؤون ما تقرّر من آيات أو حديث ثم يتأمّلون معناه معًا.`,
+      `سأبدأ بتهيئة هادئة: أستمع دقيقتين إلى ما يعرفه الطلبة عن «${topic}»، ثم أعلن هدف الحصة: أن نقرأ قراءة سليمة، ونفهم المعنى، ونعمل بما نتعلّم.`,
+      `سأسأل: «لماذا نتعلّم “${topic}”؟ وماذا نتوقع أن يتغيّر في سلوكنا؟» ثم أخبر الطلبة أنهم سيقرؤون ما تقرّر من آيات أو حديث ثم يتأمّلون معناه معًا.`,
     ],
     movement: [
-      `ابدأ بسؤال: «أين نستعمل مهارة “${topic}” في الألعاب أو في حياتنا؟» ثم نبّه الطلبة إلى قواعد السلامة قبل الإحماء.`,
-      `اعرض أداءً سريعًا للمهارة (بنفسك أو بطالب متقن) واسأل: «ما أهم ما لاحظتموه في الحركة؟» ثم اربط ملاحظاتهم بأهداف الدرس.`,
+      `سأبدأ بسؤال: «أين نستعمل مهارة “${topic}” في الألعاب أو في حياتنا؟» ثم أنبّه الطلبة إلى قواعد السلامة قبل الإحماء.`,
+      `سأعرض أداءً سريعًا للمهارة (بنفسي أو بطالب متقن) وأسأل: «ما أهم ما لاحظتموه في الحركة؟» ثم أربط ملاحظاتهم بأهداف الدرس.`,
     ],
     arabic: [
-      `ابدأ بسؤال يهيّئ النص: «ماذا تتوقعون أن يتحدث عنه درس “${topic}”؟» ودوّن توقعات الطلبة ثم اربطها بعنوان الدرس.`,
-      `اقرأ جملة أو عنوانًا من الدرس بصوت معبّر واسأل: «ما الذي لفت انتباهكم؟» ثم اربط إجاباتهم بهدف الحصة.`,
+      `سأبدأ بسؤال يهيّئ النص: «ماذا تتوقعون أن يتحدث عنه درس “${topic}”؟» وأدوّن توقعات الطلبة ثم أربطها بعنوان الدرس.`,
+      `سأقرأ جملة أو عنوانًا من الدرس بصوت معبّر وأسأل: «ما الذي لفت انتباهكم؟» ثم أربط إجاباتهم بهدف الحصة.`,
     ],
     english: [
-      `ابدأ بإحماء قصير: أسئلة سريعة أو صورة تستثير مفردات «${topic}» قبل تقديم اللغة الجديدة، وشجّع الإجابة بأي لغة يتقنونها.`,
-      `اسأل بالإنجليزية الميسّرة أو بالإشارة: ماذا نعرف عن «${topic}»؟ واكتب ما يعرفونه من كلمات على السبورة ليبني عليه الدرس.`,
+      `سأبدأ بإحماء قصير: أسئلة سريعة أو صورة تستثير مفردات «${topic}» قبل تقديم اللغة الجديدة، وسأشجّع الإجابة بأي لغة يتقنونها.`,
+      `سأسأل بالإنجليزية الميسّرة أو بالإشارة: ماذا نعرف عن «${topic}»؟ وأكتب ما يعرفونه من كلمات على السبورة ليبني عليه الدرس.`,
     ],
     making: [
-      `اعرض عملًا منجزًا يتصل بـ«${topic}» واسأل: «ما الذي يعجبكم فيه؟ وكيف ترون أنه صُنع؟» ثم اربط ملاحظاتهم بأهداف الدرس.`,
-      `اسأل: «أين نرى “${topic}” في حياتنا أو حولنا؟» ودوّن الأمثلة، ثم أعلن ما سيصنعه الطلبة اليوم.`,
+      `سأعرض عملًا منجزًا يتصل بـ«${topic}» وأسأل: «ما الذي يعجبكم فيه؟ وكيف ترون أنه صُنع؟» ثم أربط ملاحظاتهم بأهداف الدرس.`,
+      `سأسأل: «أين نرى “${topic}” في حياتنا أو حولنا؟» وأدوّن الأمثلة، ثم أعلن ما سيصنعه الطلبة اليوم.`,
     ],
   };
   const en: Partial<Record<LessonKind, string[]>> = {
@@ -398,20 +410,20 @@ function lpIntroAr(topic: string, kb: KBLesson | null, kind: LessonKind = 'calc'
   const own = kindIntro(kind, topic, 'ar');
   if (own) return pick(own) + bookFigureCue(kb, 'ar');
   if (kb) return pick([
-    `ابدأ بطرح السؤال: "أين نلتقي ${arPrefixed('ب', topic)} في حياتنا اليومية؟" سجّل إجابات الطلبة على السبورة.${bookFigureCue(kb, 'ar')} ثم اربط إجاباتهم بأهداف الدرس.`,
-    `لعبة "ما أعرفه / ما أريد تعلّمه": يكتب الطلبة على ورقة ما يعرفونه عن ${kb.titleAr} (دقيقتان). تُشارك بعض الإجابات ثم يُحدد المعلم ما سنكتشفه معًا.`,
-    `"التنبؤ والاستكشاف": اعرض موقفًا حياتيًا مرتبطًا ${arPrefixed('ب', topic)} واطلب من الطلبة التنبؤ بالتفسير. استخدم تنبؤاتهم كنقطة انطلاق لأهداف الدرس.`,
+    `سأبدأ بطرح السؤال: "أين نلتقي ${arPrefixed('ب', topic)} في حياتنا اليومية؟" وأسجّل إجابات الطلبة على السبورة.${bookFigureCue(kb, 'ar')} ثم أربط إجاباتهم بأهداف الدرس.`,
+    `لعبة "ما أعرفه / ما أريد تعلّمه": يكتب الطلبة على ورقة ما يعرفونه عن ${kb.titleAr} (دقيقتان). تُشارك بعض الإجابات ثم أحدّد ما سنكتشفه معًا.`,
+    `"التنبؤ والاستكشاف": سأعرض موقفًا حياتيًا مرتبطًا ${arPrefixed('ب', topic)} وأطلب من الطلبة التنبؤ بالتفسير، ثم أستخدم تنبؤاتهم كنقطة انطلاق لأهداف الدرس.`,
   ]);
   return pick([
-    `ابدأ بسؤال تحفيزي: "كيف يرتبط ${topic} بحياتنا اليومية؟" استمع لمشاركات 3-4 طلبة وسجّلها على السبورة، ثم ابنِ عليها مدخلًا للدرس.`,
+    `سأبدأ بسؤال تحفيزي: "كيف يرتبط ${topic} بحياتنا اليومية؟" وأستمع لمشاركات 3-4 طلبة وأسجّلها على السبورة، ثم أبني عليها مدخلًا للدرس.`,
     `"فكّر – زاوج – شارك": يفكر كل طالب 30 ثانية فيما يعرفه عن ${topic}، يشارك زميله، ثم تُطرح بعض الإجابات على الصف.`,
   ]);
 }
 function lpClosureAr(topic: string, dur: number): string {
   const t = Math.round(dur * 0.1);
   return pick([
-    `(${arMinutes(t)}) غلق الدرس:\n• أهم شيء تعلمته اليوم عن ${topic}.\n• سؤال لا يزال يراوده.\nاجمع البطاقات عند الخروج.`,
-    `(${arMinutes(t)}) "3-2-1":\n• 3 أشياء تعلمتها\n• 2 مفاهيم أريد فهمها أكثر\n• 1 سؤال لديّ عن ${topic}`,
+    `(${arMinutes(t)}) غلق الدرس:\n• أهم شيء تعلمته اليوم عن ${topic}.\n• سؤال لا يزال يراوده.\nوسأجمع البطاقات عند الخروج.`,
+    `(${arMinutes(t)}) "3-2-1": سأطلب من كل طالب أن يكتب قبل الخروج:\n• 3 أشياء تعلمها\n• 2 مفاهيم يريد فهمها أكثر\n• 1 سؤال لديه عن ${topic}`,
   ]);
 }
 
@@ -500,8 +512,8 @@ function lpPriorReview(priorConcepts: string[], notes: string, lang: Lang): stri
   const hasNotes = notes.trim().length > 0;
   if (!hasConcepts && !hasNotes) return undefined;
   if (lang === 'ar') {
-    const parts = ['خصّص 5-10 دقائق في بداية الحصة لمراجعة سريعة قبل الانتقال إلى الدرس الجديد.'];
-    if (hasConcepts) parts.push(`راجع هذه المفاهيم من المنهاج: ${priorConcepts.join('، ')}.`);
+    const parts = ['سأخصّص 5-10 دقائق في بداية الحصة لمراجعة سريعة قبل الانتقال إلى الدرس الجديد.'];
+    if (hasConcepts) parts.push(`وسأراجع هذه المفاهيم من المنهاج: ${priorConcepts.join('، ')}.`);
     if (hasNotes) parts.push(`بحسب ملاحظات المعلم: ${notes.trim()}`);
     return parts.join(' ');
   }
@@ -879,13 +891,145 @@ export class NoQuestionBankError extends Error {
 /** Tests that exercise the template machinery directly turn this off; nothing else should. */
 export const questionBankPolicy = { required: true };
 
+/**
+ * Whether the offline banks hold real items for this lesson. Chemistry always
+ * does. A maths lesson does only when the bank has items ABOUT it: Grade 7–9
+ * lessons and lessons the generators cannot ask (geometry, data, money…) do
+ * not, and get no stand-in from the grade's default arithmetic.
+ */
+function lessonHasOfflineBank(topic: string, kb: KBLesson | null, subject?: string): boolean {
+  return isChemContext(topic, kb, subject) || (isMathContext(topic, kb, subject) && hasMathBank(topic, kb));
+}
+
 function requireQuestionBank(topic: string, kb: KBLesson | null, subject?: string): void {
-  if (!questionBankPolicy.required || isChemContext(topic, kb, subject)) return;
-  // A maths lesson is covered only when the bank has items ABOUT it — Grade 7–9
-  // lessons and lessons the generators cannot ask (geometry, data, money…) are
-  // refused like any other subject, not served the grade's default arithmetic.
-  if (isMathContext(topic, kb, subject) && hasMathBank(topic, kb)) return;
+  if (!questionBankPolicy.required || lessonHasOfflineBank(topic, kb, subject)) return;
   throw new NoQuestionBankError(topic);
+}
+
+// ─── Wide scope ──────────────────────────────────────────────────────────────
+
+/** A lesson of a wide scope as the offline makers need it: its own title and KB row. */
+type OfflineSlotLesson = { id: string; topic: string; kb: KBLesson };
+type OfflineWideScope = {
+  drawer: ScopeDrawer<OfflineSlotLesson>;
+  lessons: OfflineSlotLesson[];
+  /** Lessons dropped because they have no offline bank — reported, not hidden. */
+  skipped: CoverageLesson[];
+};
+
+/** `BankSpentError` is private to this file, so the drawer is told how to recognise it. */
+const spentOpts = {
+  isSpent: (e: unknown) => e instanceof BankSpentError,
+  error: () => new BankSpentError(),
+};
+
+/**
+ * The lessons a wide-scope request names, planned across `count` question slots.
+ *
+ * Null unless the request carries a wide scope and its lesson table: every
+ * other request goes through the single-lesson path exactly as before.
+ *
+ * The plan is re-made HERE from `coverage.lessons`, never read from
+ * `coverage.slots`: a lesson with no offline bank (a geometry lesson, say) must
+ * not make a whole-book paper throw `NoQuestionBankError`, so such lessons are
+ * dropped first and the rest are planned. For a scope whose lessons all have a
+ * bank this is the same plan the live prompt was given.
+ */
+function offlineWideScope(req: AIRequest, lang: Lang, count: number): OfflineWideScope | null {
+  const table = req.coverage?.lessons;
+  if (!req.scope || !table?.length) return null;
+  const usable: OfflineSlotLesson[] = [];
+  const pool: { id: string; unitId: string }[] = [];
+  const skipped: CoverageLesson[] = [];
+  for (const entry of table) {
+    const kb = getLessonById(entry.id);
+    if (!kb) { skipped.push(entry); continue; }
+    const topic = lang === 'ar' ? kb.titleAr : kb.titleEn;
+    try {
+      requireQuestionBank(topic, kb, req.subject);
+    } catch (e) {
+      if (!(e instanceof NoQuestionBankError)) throw e;
+      skipped.push(entry);
+      continue;
+    }
+    usable.push({ id: kb.id, topic, kb });
+    pool.push({ id: kb.id, unitId: entry.unitId });
+  }
+  if (usable.length === 0) throw new NoQuestionBankError(req.topic);
+  const offset = req.regenerate ? Math.floor(Math.random() * pool.length) : 0;
+  const plan = planCoverage(pool, count, req.distribution ?? 'balanced', { offset });
+  return { drawer: new ScopeDrawer(plan.map(i => usable[i]!), usable, spentOpts), lessons: usable, skipped };
+}
+
+// ─── Revision: a wide scope on a teaching tool ───────────────────────────────
+
+/** Where each bank item of a revision came from. Filled only when a test passes one. */
+export type RevisionProbe = { drawn: Array<{ lessonId: string; unitId: string; text: string }> };
+
+/**
+ * A wide-scope request as the offline activity and classroom makers read it.
+ * Null for every other request, which then takes the single-lesson path
+ * exactly as before.
+ */
+type RevisionSource = {
+  /** The scope's phrase in the request's language — «موضوعات الفصل الأول». */
+  phrase: string;
+  phrases: { ar: string; en: string };
+  scopeKey: string;
+  /** The request's lessons grouped by unit, book order. */
+  groups: RevisionLessonGroup[];
+  /** Per unit, in `groups` order: its lessons that have an offline bank; [] for a unit with none. */
+  banked: RevisionDrawLesson[][];
+};
+
+/** Only if a scope key cannot be read back. The screen built it from a selection, so this is never expected. */
+const REVISION_FALLBACK_PHRASES = { ar: 'موضوعات المراجعة', en: 'the revision topics' };
+
+/**
+ * Null unless the request carries a wide scope. A wide request whose lesson
+ * table is missing is still a revision, with nothing to draw on. It is never
+ * turned back into its label grounded to one lesson (a unit title grounds to
+ * another grade's lesson; piece 2 measured 18 of 35).
+ */
+function revisionSource(
+  req: { scope?: AIRequest['scope']; coverage?: AIRequest['coverage']; subject?: string },
+  lang: Lang,
+): RevisionSource | null {
+  if (!isRevisionRequest(req) || !req.scope) return null;
+  const groups = revisionLessonsByUnit((req.coverage?.lessons ?? []).map(l => l.id));
+  const sel = scopeFromKey(req.scope.scopeKey);
+  const phrases = sel ? { ar: revisionPhrase(sel, 'ar'), en: revisionPhrase(sel, 'en') } : REVISION_FALLBACK_PHRASES;
+  const banked = groups.map(g => g.lessons
+    .map(kb => ({ id: kb.id, unitId: g.unitId, topic: lang === 'ar' ? kb.titleAr : kb.titleEn, kb }))
+    .filter(l => lessonHasOfflineBank(l.topic, l.kb, req.subject)));
+  return { phrase: phrases[lang], phrases, scopeKey: req.scope.scopeKey, groups, banked };
+}
+
+/**
+ * `want` bank items for a revision: one unit after another from `startUnit`,
+ * each unit's banked lessons in turn, at the batch functions' tiers (the first
+ * easy, the last hard) unless `tier` says otherwise. Each item comes from its
+ * own lesson's bank — maths or chemistry, by that lesson's own subject. A scope
+ * with no bank gets [], never `NoQuestionBankError`.
+ */
+function revisionPractice(
+  rev: RevisionSource,
+  want: number,
+  startUnit: number,
+  lang: Lang,
+  subject: string | undefined,
+  opts: { type?: 'short_answer' | 'multiple_choice'; tier?: (i: number) => DiffTier; points?: number; probe?: RevisionProbe } = {},
+): PracticeWQ[] {
+  const type = opts.type ?? 'short_answer';
+  const tierAt = opts.tier ?? ((i: number): DiffTier => (i === 0 ? 'easy' : i === want - 1 ? 'hard' : 'medium'));
+  const points = opts.points ?? 4;
+  return drawAcrossUnits(rev.banked, want, startUnit, (l, i) => {
+    const item = isMathContext(l.topic, l.kb, subject)
+      ? takeConcreteMath(type, l.topic, l.kb, tierAt(i), lang, points)
+      : takeConcreteChem(type, l.topic, l.kb, tierAt(i), lang, points);
+    if (item) opts.probe?.drawn.push({ lessonId: l.id, unitId: l.unitId, text: item.text });
+    return item;
+  });
 }
 
 /**
@@ -900,9 +1044,20 @@ function requireQuestionBank(topic: string, kb: KBLesson | null, subject?: strin
 const activityVariants = new Map<string, number>();
 const MAX_TRACKED_ACTIVITIES = 200;
 
-export function nextActivityVariant(req: AIRequest): number {
+/**
+ * The regenerate counter's key. A wide scope adds its scope key, because two
+ * grades' «الكتاب كاملًا» share a label (and have no lesson id) and must not
+ * share a counter. A lesson's key is exactly what it always was.
+ */
+export function activityVariantKey(req: AIRequest): string {
   const kind = req.activityVariant === 'warmup' ? 'warmup' : (req.activityType ?? 'group');
-  const key = [req.language, kind, req.lessonId ?? '', req.topic].join('|');
+  const parts = [req.language, kind, req.lessonId ?? '', req.topic];
+  if (req.scope?.scopeKey) parts.push(req.scope.scopeKey);
+  return parts.join('|');
+}
+
+export function nextActivityVariant(req: AIRequest): number {
+  const key = activityVariantKey(req);
   const next = req.regenerate === true ? (activityVariants.get(key) ?? 0) + 1 : 0;
   activityVariants.delete(key); // re-insert last, so the oldest entry is the stalest
   activityVariants.set(key, next);
@@ -917,7 +1072,7 @@ export function nextActivityVariant(req: AIRequest): number {
  * `MockAIService.generateActivity` adds the simulated latency and picks the
  * version; this is the part with no delay, so it can be exercised directly.
  */
-export function buildOfflineActivity(req: AIRequest, variant = 0): ActivityOutput {
+export function buildOfflineActivity(req: AIRequest, variant = 0, probe?: RevisionProbe): ActivityOutput {
   // The lesson flow generates a warm-up and then the main activity. Both
   // used to reset the session, so both drew the SAME three problems and the
   // teacher posed each of them twice in one lesson. `continueMathPractice`
@@ -925,8 +1080,16 @@ export function buildOfflineActivity(req: AIRequest, variant = 0): ActivityOutpu
   if (!req.continueMathPractice) beginMathPracticeSession();
 
   const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
-  const kb = groundedKb(req.topic, lang, req.lessonId);
-  const topic = req.topic;
+  // A unit, a semester or the whole book is a revision session (piece-3 spec
+  // §2). Its concepts, rules, outcomes and items come from every unit in
+  // scope, and its topic is the scope's phrase. Its label («الفصل الأول كاملًا»)
+  // is never grounded: that would land on one lesson, often another grade's.
+  const rev = revisionSource(req, lang);
+  const units = Math.max(1, rev?.groups.length ?? 1);
+  const kb = rev
+    ? revisionActivityLesson(rev.groups, rev.scopeKey, { title: rev.phrases, lang, termsStartUnit: (variant + 1) % units })
+    : groundedKb(req.topic, lang, req.lessonId);
+  const topic = rev ? rev.phrase : req.topic;
   const isWarmup = req.activityVariant === 'warmup';
   const actType = isWarmup ? 'warmup' : (req.activityType ?? 'group');
   const duration = req.duration ?? (isWarmup ? 8 : 30);
@@ -935,19 +1098,26 @@ export function buildOfflineActivity(req: AIRequest, variant = 0): ActivityOutpu
   // example, faded item, unaided item / game rounds) and the jigsaw four,
   // one per member of a home group.
   const wantItems = isWarmup ? 1 : actType === 'group' ? 4 : 3;
-  const practice = math
-    ? takeConcreteMathBatch(wantItems, topic, kb, lang, 'medium')
-    : isChemContext(topic, kb, req.subject)
-      ? takeConcreteChemBatch(wantItems, topic, kb, lang, 'medium')
-      : [];
+  // A revision's items, and its terms, start one unit after the one its lead
+  // concept and outcome come from (the blueprint rotates those by `variant`).
+  // That way even the one-item warm-up touches two units, and each Regenerate
+  // moves everything on by one unit.
+  const practice = rev
+    ? revisionPractice(rev, wantItems, variant + 1, lang, req.subject, { probe })
+    : math
+      ? takeConcreteMathBatch(wantItems, topic, kb, lang, 'medium')
+      : isChemContext(topic, kb, req.subject)
+        ? takeConcreteChemBatch(wantItems, topic, kb, lang, 'medium')
+        : [];
 
   const blueprint = buildActivityBlueprint(actType, {
     topic, lang, math, practice, kb, duration, variant,
     // The lesson's own subject id, else the caller's name — see `handsOnKind`.
+    // A revision's composite lesson sits in a real unit, so this is the scope's.
     subject: (kb ? getBookForLesson(kb)?.subjectId : undefined) ?? req.subject,
   });
 
-  return plainActivity({
+  const activity = plainActivity({
     title: `${topic} – ${blueprint.titleSuffix}`,
     // Report the type the caller asked for, verbatim. `activityTypeLabel`
     // already falls back to the raw value for anything the form never
@@ -966,6 +1136,10 @@ export function buildOfflineActivity(req: AIRequest, variant = 0): ActivityOutpu
     differentiation: blueprint.differentiation,
     assessment: blueprint.assessment,
   });
+  // The blueprints were written for one lesson; the few sentences that say so
+  // («من درس …», «من الحصة السابقة») are reworded for a revision. A lesson's
+  // activity is returned exactly as before.
+  return rev ? reviseWording(activity, activityRevisionRewords(rev.phrase, lang)) : activity;
 }
 
 /**
@@ -974,9 +1148,13 @@ export function buildOfflineActivity(req: AIRequest, variant = 0): ActivityOutpu
  * everything except the regeneration fields.
  */
 const lastServed = new Map<string, string>();
+/** The question stems of what was last served, for papers compared by stem. */
+const lastStems = new Map<string, Set<string>>();
 const MAX_TRACKED_REQUESTS = 200;
 /** A draw that cannot vary (a tiny bank, fixed templates) gives up after this. */
 const MAX_FRESH_ATTEMPTS = 20;
+/** Draws tried to find a paper that repeats fewer questions. Offline and instant. */
+const MAX_FRESH_STEM_ATTEMPTS = 80;
 
 /** A short fingerprint (length + FNV-1a), so the table holds hashes, not whole outputs. */
 function fingerprint(out: unknown): string {
@@ -989,9 +1167,15 @@ function fingerprint(out: unknown): string {
   return `${text.length}:${h.toString(16)}`;
 }
 
-function requestIdentity(kind: string, req: object): string {
-  const { regenerate: _r, avoid: _a, excludeVariantIds: _e, ...rest } = req as Record<string, unknown>;
-  return `${kind}|${JSON.stringify(rest)}`;
+export function requestIdentity(kind: string, req: object): string {
+  const { regenerate: _r, avoid: _a, excludeVariantIds: _e, coverage, ...rest } = req as Record<string, unknown>;
+  // A wide paper's `coverage.slots` is re-planned with a random offset on every
+  // Regenerate, so keeping it in the identity made each Regenerate a "new"
+  // request: nothing was remembered to compare against, and the offline
+  // generator could hand back the paper already on screen. The lesson table
+  // (what the paper is OF) stays; the plan for one draw does not.
+  const stable = coverage && typeof coverage === 'object' ? { ...rest, coverage: { ...coverage, slots: undefined } } : rest;
+  return `${kind}|${JSON.stringify(stable)}`;
 }
 
 /**
@@ -1009,12 +1193,53 @@ function requestIdentity(kind: string, req: object): string {
  * possible draw) returns after `MAX_FRESH_ATTEMPTS` rather than looping. A
  * plain request is never compared — it is free to repeat.
  */
-async function freshOnRegenerate<T>(kind: string, req: object, produce: () => Promise<T>): Promise<T> {
+async function freshOnRegenerate<T>(
+  kind: string,
+  req: object,
+  produce: () => Promise<T>,
+  /**
+   * For a paper made of questions: how to read its stems. "Different" is then
+   * judged by the questions, not by the whole object — the same questions in
+   * another order, or with the options shuffled, are not a new paper.
+   */
+  stemsOf?: (out: T) => string[],
+  /**
+   * How many draws to try for a paper that shares fewer stems. The loop stops at
+   * the first draw that shares none, so a larger budget costs nothing where that
+   * is reachable (a lesson plan: ~1 draw in 16 changes all eight
+   * sections, and 80 attempts missed it about once in a hundred regenerations).
+   */
+  maxStemDraws: number = MAX_FRESH_STEM_ATTEMPTS,
+): Promise<T> {
   const key = requestIdentity(kind, req);
   const previous = lastServed.get(key);
+  const previousStems = lastStems.get(key);
   let out = await produce();
   let signature = fingerprint(out);
+  let repeated = 0;
   if ((req as { regenerate?: boolean }).regenerate === true && previous !== undefined) {
+    if (stemsOf && previousStems) {
+      // Keep the draw that shares the fewest stems with what is on screen, and
+      // stop at the first that shares none. A draw identical to the last one is
+      // never kept while another exists.
+      const overlap = (o: T) => stemsOf(o).filter(s => previousStems.has(s)).length;
+      let best = out;
+      let bestOverlap = overlap(out);
+      let bestSignature = signature;
+      for (let attempt = 1; attempt < maxStemDraws && bestOverlap > 0; attempt++) {
+        const candidate = await produce();
+        const candidateSignature = fingerprint(candidate);
+        const o = overlap(candidate);
+        if (o < bestOverlap || (o === bestOverlap && bestSignature === previous && candidateSignature !== previous)) {
+          best = candidate;
+          bestOverlap = o;
+          bestSignature = candidateSignature;
+        }
+      }
+      out = best;
+      signature = bestSignature;
+      repeated = bestOverlap;
+    }
     for (let attempt = 1; attempt < MAX_FRESH_ATTEMPTS && signature === previous; attempt++) {
       out = await produce();
       signature = fingerprint(out);
@@ -1022,10 +1247,64 @@ async function freshOnRegenerate<T>(kind: string, req: object, produce: () => Pr
   }
   lastServed.delete(key); // re-insert last, so the oldest entry is the stalest
   lastServed.set(key, signature);
+  lastStems.delete(key);
+  if (stemsOf) lastStems.set(key, new Set(stemsOf(out)));
   if (lastServed.size > MAX_TRACKED_REQUESTS) {
-    lastServed.delete(lastServed.keys().next().value as string);
+    const oldest = lastServed.keys().next().value as string;
+    lastServed.delete(oldest);
+    lastStems.delete(oldest);
   }
-  return out;
+  const of = stemsOf ? stemsOf(out).length : 0;
+  // Only a paper compared by stem (an object) ever reaches here with repeats.
+  return repeated > 0 ? ({ ...out, repeated: { count: repeated, of } } as T) : out;
+}
+
+/**
+ * One question of a given type, for a printed worksheet or homework.
+ *
+ * `allowRepeat: false` — a printed page is not a fresh draw each time like a
+ * quiz retake. Once a lesson's concrete bank runs out of unused items, the
+ * factories fall through to their own topic-templated question (or, under
+ * `bankOnly`, stop) instead of repeating a bank item verbatim. Shared by the
+ * worksheet and the homework so the two cannot disagree on what a type means.
+ */
+function makeWorksheetQ(type: QType, lang: Lang, topic: string, kb: KBLesson | null, diff: DiffTier, subject?: string): WQ {
+  if (lang === 'ar') {
+    if (type === 'multiple_choice') return makeMCQ_ar(topic, kb, diff, subject, false);
+    if (type === 'short_answer') return makeSAQ_ar(topic, kb, diff, subject, false);
+    if (type === 'fill_blank') return makeFBQ_ar(topic, kb, diff, subject, false);
+    if (type === 'word_problem') return makeWPQ_ar(topic, kb, diff, subject, false);
+    return makeTFQ_ar(topic, kb, diff, subject, false);
+  }
+  if (type === 'multiple_choice') return makeMCQ_en(topic, kb, diff, subject, false);
+  if (type === 'short_answer') return makeSAQ_en(topic, kb, diff, subject, false);
+  if (type === 'fill_blank') return makeFBQ_en(topic, kb, diff, subject, false);
+  if (type === 'word_problem') return makeWPQ_en(topic, kb, diff, subject, false);
+  return makeTFQ_en(topic, kb, diff, subject, false);
+}
+
+/**
+ * What a teacher reads as «the questions» of a worksheet or homework: the worked
+ * example and every question, so regenerate is judged by those and not by the
+ * order they come in or how their options are shuffled.
+ */
+function worksheetStems(w: WorksheetOutput): string[] {
+  return [
+    ...(w.workedExample ? [questionStemKey(w.workedExample.problem)] : []),
+    ...w.sections.flatMap(sec => sec.questions.map(q => questionStemKey(q.text))),
+  ];
+}
+
+/**
+ * The plan's narrative sections, which regenerate is judged on. Objectives and
+ * materials are left out on purpose: they come from the lesson in the book, so
+ * repeating them is correct, not a failure to vary.
+ */
+function lessonPlanSections(p: LessonPlanOutput): string[] {
+  return [
+    p.introduction, p.mainActivity, p.guidedPractice, p.independentPractice,
+    p.closure, p.assessment, p.differentiation, p.homework,
+  ].filter(Boolean);
 }
 
 // ─── Main service class ───────────────────────────────────────────────────────
@@ -1037,10 +1316,18 @@ export class MockAIService extends AIService {
 
   async generateLessonPlan(req: AIRequest): Promise<LessonPlanOutput> {
     await this.delay();
-    return freshOnRegenerate('lessonPlan', req, () => this.lessonPlanOnce(req));
+    // A revision plan is deterministic: redrawing 300 times cannot change it, so one
+    // draw is enough and `repeated` still reports it honestly.
+    return freshOnRegenerate('lessonPlan', req, () => this.lessonPlanOnce(req), lessonPlanSections, isRevisionRequest(req) ? 1 : 300);
   }
 
   private async lessonPlanOnce(req: AIRequest): Promise<LessonPlanOutput> {
+    // A unit, a semester or the whole book: one revision session over the units
+    // in scope, built from the request's lesson ids. It must come before
+    // `groundedKb`, which would ground the scope's LABEL («الفصل الأول كاملًا», a
+    // unit title) to one lesson — another grade's, for a unit title. No prior
+    // review on this path: it belongs to a single lesson's unit.
+    if (isRevisionRequest(req)) return revisionPlanFromRequest(req);
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
     const docs = docsFromReq(req);
     const rawTopic = req.topic;
@@ -1070,8 +1357,13 @@ export class MockAIService extends AIService {
     // the caller's subject name is only the fallback for a typed topic.
     const subjectId = (kb ? getBookForLesson(kb)?.subjectId : subjectIdFromName(req.subject)) ?? undefined;
     const kind = lessonKindFor(subjectId);
+    // A first generation is variant 0 — the plan as it has always been. A
+    // regenerate may draw either wording of the five style-owned sections;
+    // `freshOnRegenerate` then keeps the draw that differs most from the plan on
+    // screen, so pressing the button again alternates.
+    const variant = req.regenerate === true && Math.random() < 0.5 ? 1 : 0;
     const styleBlueprint = buildLessonStyleBlueprint(style, {
-      topic, kb, lang, subject: req.subject, duration: dur, doc: docCtx, kind, subjectId,
+      topic, kb, lang, subject: req.subject, duration: dur, doc: docCtx, kind, subjectId, variant,
     });
 
     // Document-grounded lesson plan (Demo Mode) — prefer uploaded materials over KB soft pin
@@ -1087,8 +1379,8 @@ export class MockAIService extends AIService {
           ],
           ...(priorReview ? { priorReview } : {}),
           introduction:
-            `اعتمادًا على ${fileLabel}: ابدأ بعرض فكرة من الملف واسأل: «ماذا نعرف عن ${topic}؟»`
-            + (conceptLine ? ` سجّل المفاهيم الظاهرة: ${conceptLine}.` : '')
+            `اعتمادًا على ${fileLabel}: سأبدأ بعرض فكرة من الملف وأسأل: «ماذا نعرف عن ${topic}؟»`
+            + (conceptLine ? ` وسأسجّل المفاهيم الظاهرة: ${conceptLine}.` : '')
             + (docs.summary ? ` ملخص الملف: ${docs.summary}` : ''),
           mainActivity: styleBlueprint.mainActivity
             + (exampleLine ? `\n\nمثال جاهز من الملف:\n• ${exampleLine}` : ''),
@@ -1164,7 +1456,7 @@ export class MockAIService extends AIService {
 
   async generateWorksheet(req: AIRequest): Promise<WorksheetOutput> {
     await this.delay();
-    return freshOnRegenerate('worksheet', req, () => this.worksheetOnce(req));
+    return freshOnRegenerate('worksheet', req, () => this.worksheetOnce(req), worksheetStems);
   }
 
   private async worksheetOnce(req: AIRequest): Promise<WorksheetOutput> {
@@ -1172,10 +1464,13 @@ export class MockAIService extends AIService {
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
     const docs = docsFromReq(req);
     const topic = (docs.present && docs.title) ? docs.title : req.topic;
+    // A wide scope draws each question from the lesson its slot names (never
+    // together with an uploaded document, which has its own grounding).
+    const wide = docs.present ? null : offlineWideScope(req, lang, worksheetTotal(req));
     // Prefer uploaded materials over a weakly matching KB lesson
-    const kb = docs.present ? null : groundedKb(topic, lang, req.lessonId);
+    const kb = docs.present || wide ? null : groundedKb(topic, lang, req.lessonId);
     // A paper built from the teacher's own file is grounded in that file.
-    if (!docs.present) requireQuestionBank(topic, kb, req.subject);
+    if (!docs.present && !wide) requireQuestionBank(topic, kb, req.subject);
     const selectedTypes: string[] = req.questionTypes?.length
       ? req.questionTypes
       : ['multiple_choice', 'short_answer'];
@@ -1191,7 +1486,7 @@ export class MockAIService extends AIService {
 
     // In-class practice: progressive difficulty (easy → medium → hard)
     //
-    // The count is the picker's own range (5–20, `NUM_Q_OPTIONS` in
+    // The count is the picker's own range (5–30, `NUM_Q_OPTIONS` in
     // `app/ai-tools/worksheet.tsx`), not a private one. This used to be 6–12, so
     // asking for 5 gave 6 and asking for 15 or 20 gave 12 while the live prompt
     // honoured the number — the same teacher got a different paper by whether
@@ -1239,21 +1534,35 @@ export class MockAIService extends AIService {
     const spotIds = new Set(formats.includes('spot_error') ? MISSTEPS.map(m => m.itemId) : []);
     const formatIds = new Set([...spotIds, ...(formats.includes('order') ? ORDER_SAFE : [])]);
     const avoidInTurn = [formatIds, spotIds].filter(ids => ids.size > 0);
-    const takeSolvedIn = (tier: DiffTier, session?: Set<string>): SolvedItem | null => {
+
+    // Which question slot the next question fills. The worked example and the
+    // half-solved item are slots 0 and 1; the practice follows.
+    let slot = 0;
+    // The lesson each solved item came from (wide scope only), so the
+    // half-solved question can say which lesson it covers.
+    const solvedLesson = new Map<SolvedItem, string>();
+    const takeSolvedIn = (tier: DiffTier, at: OfflineSlotLesson | null, session?: Set<string>): SolvedItem | null => {
       if (docs.present) return null;
-      if (isChemContext(topic, kb, req.subject)) return takeSolvedChem(topic, kb, tier, lang, session);
-      if (isMathContext(topic, kb, req.subject)) return takeSolvedMath(topic, kb, tier, lang, session);
+      const tp = at ? at.topic : topic;
+      const kbRow = at ? at.kb : kb;
+      if (isChemContext(tp, kbRow, req.subject)) return takeSolvedChem(tp, kbRow, tier, lang, session);
+      if (isMathContext(tp, kbRow, req.subject)) return takeSolvedMath(tp, kbRow, tier, lang, session);
       return null;
     };
     const takeSolved = (tier: DiffTier): SolvedItem | null => {
+      // The slot's lesson is read once: the masked passes below try the SAME slot.
+      const at = wide ? wide.drawer.lessonAt(slot) : null;
+      let item: SolvedItem | null = null;
       for (const avoid of avoidInTurn) {
-        const item = takeSolvedIn(tier, new Set([...currentSession(), ...avoid]));
+        item = takeSolvedIn(tier, at, new Set([...currentSession(), ...avoid]));
         if (item) {
           currentSession().add(item.id);
-          return item;
+          break;
         }
       }
-      return takeSolvedIn(tier);
+      item ??= takeSolvedIn(tier, at);
+      if (item && at) { solvedLesson.set(item, at.id); slot += 1; }
+      return item;
     };
     const exampleItem = takeSolved(band[0]);
     const completionItem = exampleItem ? takeSolved(band[1]) : null;
@@ -1288,32 +1597,26 @@ export class MockAIService extends AIService {
     // runs out of unused items at a family, the math factories fall through
     // to their own topic-templated question instead of repeating a bank item
     // verbatim under a different question type. See `takeFromBank`.
-    const makeGenericQ = (type: QType, diff: DiffTier): WQ => {
-      if (lang === 'ar') {
-        if (type === 'multiple_choice') return makeMCQ_ar(topic, kb, diff, req.subject, false);
-        if (type === 'short_answer') return makeSAQ_ar(topic, kb, diff, req.subject, false);
-        if (type === 'fill_blank') return makeFBQ_ar(topic, kb, diff, req.subject, false);
-        if (type === 'word_problem') return makeWPQ_ar(topic, kb, diff, req.subject, false);
-        return makeTFQ_ar(topic, kb, diff, req.subject, false);
-      }
-      if (type === 'multiple_choice') return makeMCQ_en(topic, kb, diff, req.subject, false);
-      if (type === 'short_answer') return makeSAQ_en(topic, kb, diff, req.subject, false);
-      if (type === 'fill_blank') return makeFBQ_en(topic, kb, diff, req.subject, false);
-      if (type === 'word_problem') return makeWPQ_en(topic, kb, diff, req.subject, false);
-      return makeTFQ_en(topic, kb, diff, req.subject, false);
+    const makeGenericQ = (type: QType, diff: DiffTier, atSlot: number): WQ => {
+      if (!wide) return makeWorksheetQ(type, lang, topic, kb, diff, req.subject);
+      const { value, lesson } = wide.drawer.draw(atSlot, type, l => makeWorksheetQ(type, lang, l.topic, l.kb, diff, req.subject));
+      return { ...value, lessonId: lesson.id };
     };
 
     /** Main-body question via shared factories (math → concrete practice). Dedup stems. */
     const makeQ = (type: QType, diff: DiffTier): WQ => {
+      // One slot per question, however many attempts the stem dedup needs.
+      const atSlot = slot;
+      slot += 1;
       for (let attempt = 0; attempt < 12; attempt++) {
-        const q = makeGenericQ(type, diff);
+        const q = makeGenericQ(type, diff, atSlot);
         const key = questionStemKey(q.text);
         if (!usedStems.has(key)) {
           usedStems.add(key);
           return q;
         }
       }
-      const fallback = makeGenericQ(type, diff);
+      const fallback = makeGenericQ(type, diff, atSlot);
       usedStems.add(questionStemKey(fallback.text));
       return fallback;
     };
@@ -1372,7 +1675,10 @@ export class MockAIService extends AIService {
       sections.push({
         type: 'short_answer',
         title: lang === 'ar' ? 'مثال نكمله' : 'Finish the solution',
-        questions: [{ text, answer: completionItem.answer, points: saPts(band[1]), fromBank: true }],
+        questions: [{
+          text, answer: completionItem.answer, points: saPts(band[1]), fromBank: true,
+          ...(solvedLesson.has(completionItem) ? { lessonId: solvedLesson.get(completionItem)! } : {}),
+        }],
       });
       answerKey.push({ num: qNum++, answer: completionItem.answer, solution: completionItem.steps });
     }
@@ -1494,18 +1800,25 @@ export class MockAIService extends AIService {
 
   async generateQuiz(req: AIRequest): Promise<QuizOutput> {
     await this.delay();
-    return freshOnRegenerate('quiz', req, () => this.quizOnce(req));
+    return freshOnRegenerate('quiz', req, () => this.quizOnce(req), quiz => quiz.questions.map(q => questionStemKey(q.text)));
   }
 
   private async quizOnce(req: AIRequest): Promise<QuizOutput> {
     beginMathPracticeSession();
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
-    const kb = groundedKb(req.topic, lang, req.lessonId);
+    const types: QType[] = (req.questionTypes as QType[]) ?? ['multiple_choice', 'true_false', 'short_answer'];
+    // Teacher-picked count, cycled evenly across the selected types; marks
+    // distributed evenly. Falls back to 2-per-type for callers (e.g. the
+    // classroom mini-quiz) that don't send numQuestions.
+    const numQuestions = Math.max(types.length, req.numQuestions ?? types.length * 2);
+    // A wide scope draws every question from the lesson its slot names; any
+    // other request is the single-lesson path below, unchanged.
+    const wide = offlineWideScope(req, lang, numQuestions);
+    const kb = wide ? null : groundedKb(req.topic, lang, req.lessonId);
     const topic = req.topic;
-    requireQuestionBank(topic, kb, req.subject);
+    if (!wide) requireQuestionBank(topic, kb, req.subject);
     const totalMarks = req.totalMarks ?? 20;
     const duration = req.duration ?? 20;
-    const types: QType[] = (req.questionTypes as QType[]) ?? ['multiple_choice', 'true_false', 'short_answer'];
     // A quiz is a flat assessment, so the requested tier applies to every
     // question — unlike the worksheet, which keeps an easy→hard progression.
     // `mixed` spreads the tiers across the paper instead of collapsing to
@@ -1515,22 +1828,16 @@ export class MockAIService extends AIService {
       return req.difficulty === 'easy' || req.difficulty === 'hard' ? req.difficulty : 'medium';
     };
 
-    // Teacher-picked count, cycled evenly across the selected types; marks
-    // distributed evenly. Falls back to 2-per-type for callers (e.g. the
-    // classroom mini-quiz) that don't send numQuestions.
-    const numQuestions = Math.max(types.length, req.numQuestions ?? types.length * 2);
     // Grouped as a ministry paper is, not interleaved: the picked types in
-    // `QUIZ_TYPE_ORDER`, the count split evenly with the remainder going to the
-    // earlier blocks. `word_problem` is a written answer, so it joins that block.
+    // `QUIZ_TYPE_ORDER`. `word_problem` is a written answer, so it joins that
+    // block. Questions are DRAWN one at a time (below) and sorted into blocks
+    // at the end, so a type whose bank runs dry hands its share to the others
+    // instead of ending the paper.
     const blockTypes = QUIZ_TYPE_ORDER.filter(t =>
       types.some(x => (x === 'word_problem' ? 'short_answer' : x) === t));
-    const plan: QuizQuestion['type'][] = blockTypes.flatMap((t, bi) =>
-      Array<QuizQuestion['type']>(Math.floor(numQuestions / blockTypes.length) + (bi < numQuestions % blockTypes.length ? 1 : 0)).fill(t));
     const basePts = Math.max(1, Math.floor(totalMarks / numQuestions));
 
     const questions: QuizQuestion[] = [];
-    let qIdx = 1;
-    let usedPts = 0;
     const usedStems = new Set<string>();
 
     const pushUnique = (factory: () => QuizQuestion): QuizQuestion => {
@@ -1548,35 +1855,58 @@ export class MockAIService extends AIService {
     };
 
     bankOnly = questionBankPolicy.required;
+    /** Types whose bank has nothing left for this lesson. */
+    const spent = new Set<QuizQuestion['type']>();
+    const made = new Map<QuizQuestion['type'], number>();
     try {
-    for (let i = 0; i < numQuestions; i++) {
-      const type = plan[i];
-      const id = `q${qIdx++}`;
-      // Last question absorbs any rounding difference
-      const isLast = qIdx > numQuestions;
-      const pts = isLast ? Math.max(1, totalMarks - usedPts) : basePts;
-      usedPts += pts;
+    while (questions.length < numQuestions) {
+      // The next question goes to the type with the fewest so far, ties to the
+      // earlier ministry block: an even split (the remainder to the earlier
+      // blocks) that a spent type simply drops out of.
+      const live = blockTypes.filter(t => !spent.has(t));
+      if (live.length === 0) break;
+      const type = live.reduce((best, t) => ((made.get(t) ?? 0) < (made.get(best) ?? 0) ? t : best), live[0]!);
+      const id = `q${questions.length + 1}`;
+      // Rounding is settled once, below, so the order questions are drawn in
+      // does not decide which one carries the remainder.
+      const pts = basePts;
 
-      const tier = quizTier(qIdx - 2);
-      // `word_problem` falls into the short-answer branch (see `plan` above).
-      if (lang === 'ar') {
-        if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_ar(topic, kb, pts, id, req.subject, tier)));
-        else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_ar(topic, kb, pts, id, req.subject, tier)));
-        else if (type === 'fill_blank') questions.push(pushUnique(() => makeQuizFB_ar(topic, kb, pts, id, req.subject, tier)));
-        else questions.push(pushUnique(() => makeQuizSA_ar(topic, kb, pts, id, req.subject, tier)));
-      } else {
-        if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_en(topic, kb, pts, id, req.subject, tier)));
-        else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_en(topic, kb, pts, id, req.subject, tier)));
-        else if (type === 'fill_blank') questions.push(pushUnique(() => makeQuizFB_en(topic, kb, pts, id, req.subject, tier)));
-        else questions.push(pushUnique(() => makeQuizSA_en(topic, kb, pts, id, req.subject, tier)));
+      const tier = quizTier(questions.length);
+      try {
+        // `word_problem` falls into the short-answer branch (see `blockTypes` above).
+        // A wide scope draws from the lesson this slot names and, when that
+        // lesson's bank is spent for the type, from the next lesson that has
+        // some; a single lesson draws from `topic` / `kb` as it always did.
+        const draw = (make: (tp: string, k: KBLesson | null) => QuizQuestion): QuizQuestion => {
+          if (!wide) return pushUnique(() => make(topic, kb));
+          const { value, lesson } = wide.drawer.draw(questions.length, type, l => pushUnique(() => make(l.topic, l.kb)));
+          value.lessonId = lesson.id;
+          return value;
+        };
+        if (lang === 'ar') {
+          if (type === 'multiple_choice') questions.push(draw((tp, k) => makeQuizMCQ_ar(tp, k, pts, id, req.subject, tier)));
+          else if (type === 'true_false') questions.push(draw((tp, k) => makeQuizTF_ar(tp, k, pts, id, req.subject, tier)));
+          else if (type === 'fill_blank') questions.push(draw((tp, k) => makeQuizFB_ar(tp, k, pts, id, req.subject, tier)));
+          else questions.push(draw((tp, k) => makeQuizSA_ar(tp, k, pts, id, req.subject, tier)));
+        } else {
+          if (type === 'multiple_choice') questions.push(draw((tp, k) => makeQuizMCQ_en(tp, k, pts, id, req.subject, tier)));
+          else if (type === 'true_false') questions.push(draw((tp, k) => makeQuizTF_en(tp, k, pts, id, req.subject, tier)));
+          else if (type === 'fill_blank') questions.push(draw((tp, k) => makeQuizFB_en(tp, k, pts, id, req.subject, tier)));
+          else questions.push(draw((tp, k) => makeQuizSA_en(tp, k, pts, id, req.subject, tier)));
+        }
+        made.set(type, (made.get(type) ?? 0) + 1);
+      } catch (e) {
+        // This type's bank ran out for the lesson: the others carry on.
+        if (!(e instanceof BankSpentError)) throw e;
+        spent.add(type);
       }
     }
-    } catch (e) {
-      // The lesson's bank ran out: keep what was asked so far.
-      if (!(e instanceof BankSpentError)) throw e;
     } finally {
       bankOnly = false;
     }
+    // Into ministry blocks, stable within a type, and numbered in the order they print.
+    questions.sort((a, b) => QUIZ_TYPE_ORDER.indexOf(a.type) - QUIZ_TYPE_ORDER.indexOf(b.type));
+    questions.forEach((q, i) => { q.id = `q${i + 1}`; });
     if (questions.length === 0) throw new NoQuestionBankError(topic);
     const shortfall = questions.length < numQuestions
       ? { requested: numQuestions, produced: questions.length }
@@ -1630,21 +1960,39 @@ export class MockAIService extends AIService {
   }
 
   private async classroomActivityOnce(req: ClassroomActivityRequest): Promise<ClassroomActivity> {
+    const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
+    // A unit, a semester or the whole book is a revision (piece-3 spec §3). The
+    // templates below take the scope's phrase and its units' composite lesson,
+    // never the picker's label, and the sentences in them that claim one lesson
+    // are reworded afterwards. A lesson's activity is returned untouched.
+    const rev = revisionSource(req, lang);
+    const out = await this.classroomActivityBody(req, rev);
+    return rev ? reviseWording(out, classroomRevisionRewords(rev.phrase, lang, rev.groups.length)) : out;
+  }
+
+  private async classroomActivityBody(req: ClassroomActivityRequest, rev: RevisionSource | null): Promise<ClassroomActivity> {
     beginMathPracticeSession();
     const isAr = req.language === 'arabic';
-    const topic = req.topic;
-    const kb = groundedKb(topic, isAr ? 'ar' : 'en', req.lessonId);
+    const topic = rev ? rev.phrase : req.topic;
+    const kb = rev
+      ? revisionActivityLesson(rev.groups, rev.scopeKey, { title: rev.phrases, lang: isAr ? 'ar' : 'en' })
+      : groundedKb(topic, isAr ? 'ar' : 'en', req.lessonId);
     const dur = req.duration ?? 20;
     const slideDuration = Math.round((dur * 60) / 5);
     const actType = req.activityType ?? 'escape-challenge';
+    // A revision's composite lesson sits in a real unit of the scope's book, so
+    // these read the scope's subject, not the screen's subject name.
     const math = isMathContext(topic, kb, req.subject);
     const chem = !math && isChemContext(topic, kb, req.subject);
     const batch = (n: number) =>
-      math
-        ? takeConcreteMathBatch(n, topic, kb, isAr ? 'ar' : 'en', 'medium')
-        : chem
-          ? takeConcreteChemBatch(n, topic, kb, isAr ? 'ar' : 'en', 'medium')
-          : [];
+      rev
+        // One item per unit in turn, from the units' banked lessons.
+        ? revisionPractice(rev, n, 0, isAr ? 'ar' : 'en', req.subject)
+        : math
+          ? takeConcreteMathBatch(n, topic, kb, isAr ? 'ar' : 'en', 'medium')
+          : chem
+            ? takeConcreteChemBatch(n, topic, kb, isAr ? 'ar' : 'en', 'medium')
+            : [];
     const bingoItems = actType === 'bingo' ? batch(8) : [];
     const relayItems = actType === 'relay' ? batch(4) : [];
 
@@ -1662,7 +2010,13 @@ export class MockAIService extends AIService {
       // bad caller cannot drain the concrete bank in one call.
       const wanted = Math.max(1, Math.min(8, Math.floor(req.numQuestions ?? 4) || 4));
       const mcqs: { text: string; options: string[]; answer: string }[] = [];
-      if (math || chem) {
+      if (rev) {
+        // A revision asks one question per unit in turn, each from its own lesson's bank.
+        const drawn = revisionPractice(rev, wanted, 0, isAr ? 'ar' : 'en', req.subject, {
+          type: 'multiple_choice', tier: () => tier, points: 0,
+        });
+        for (const q of drawn) if (q.options?.length) mcqs.push({ text: q.text, options: q.options, answer: q.answer });
+      } else if (math || chem) {
         for (let i = 0; i < wanted; i++) {
           const q = math
             ? takeConcreteMath('multiple_choice', topic, kb, tier, isAr ? 'ar' : 'en', 0)
@@ -2722,47 +3076,87 @@ export class MockAIService extends AIService {
 
   async generateHomework(req: AIRequest): Promise<WorksheetOutput> {
     await this.delay();
-    return freshOnRegenerate('homework', req, () => this.homeworkOnce(req));
+    return freshOnRegenerate('homework', req, () => this.homeworkOnce(req), worksheetStems);
   }
 
   private async homeworkOnce(req: AIRequest): Promise<WorksheetOutput> {
     beginMathPracticeSession();
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
-    const kb = groundedKb(req.topic, lang, req.lessonId);
+    const count = Math.min(30, Math.max(3, req.numQuestions ?? 5));
+    const wide = offlineWideScope(req, lang, count);
+    const kb = wide ? null : groundedKb(req.topic, lang, req.lessonId);
     const topic = req.topic;
-    requireQuestionBank(topic, kb, req.subject);
+    if (!wide) requireQuestionBank(topic, kb, req.subject);
     const estMinutes = 25;
-    const math = isMathContext(topic, kb, req.subject);
 
     const workSpace = lang === 'ar'
       ? '\n\nمساحة العمل:\n_________________________________\n_________________________________\n_________________________________'
       : '\n\nWork space:\n_________________________________\n_________________________________\n_________________________________';
 
+    // The number the teacher picked is the number of questions on the page. The
+    // challenge and the reflection are two of them, so the independent practice
+    // holds the rest — which for the picker's smallest value (5) is the three
+    // this generator used to produce for EVERY value: asking for 15 got 5, and
+    // the types ticked on the screen were ignored (always short answer).
+    const total = count;
+    const coreN = Math.max(1, total - 2);
+    const picked = ((req.questionTypes as QType[] | undefined) ?? []).filter(Boolean);
+    const coreTypes: QType[] = picked.length ? picked : ['short_answer'];
+
     const usedStems = new Set<string>();
     const core: WQ[] = [];
-    for (let i = 0; i < 3; i++) {
-      let q: WQ | null = null;
-      for (let attempt = 0; attempt < 12; attempt++) {
-        const candidate = lang === 'ar' ? makeSAQ_ar(topic, kb, 'medium', req.subject) : makeSAQ_en(topic, kb, 'medium', req.subject);
-        const key = questionStemKey(candidate.text);
-        if (!usedStems.has(key)) {
-          usedStems.add(key);
-          q = candidate;
-          break;
+    const coreKey: WorksheetAnswerKeyItem[] = [];
+    const coreKinds = new Set<QType>();
+    let spent = false;
+    bankOnly = questionBankPolicy.required;
+    try {
+      for (let i = 0; i < coreN; i++) {
+        const type = coreTypes[i % coreTypes.length]!;
+        const make = (tp: string, k: KBLesson | null, diff: DiffTier) => makeWorksheetQ(type, lang, tp, k, diff, req.subject);
+        // A wide scope draws from slot i's lesson (falling to the next lesson
+        // when that bank is spent for this type); a lesson from `topic` / `kb`.
+        const drawn = (diff: DiffTier): WQ => {
+          if (!wide) return make(topic, kb, diff);
+          const { value, lesson } = wide.drawer.draw(i, type, l => make(l.topic, l.kb, diff));
+          return { ...value, lessonId: lesson.id };
+        };
+        let q: WQ | null = null;
+        for (let attempt = 0; attempt < 12; attempt++) {
+          const candidate = drawn('medium');
+          const key = questionStemKey(candidate.text);
+          if (!usedStems.has(key)) {
+            usedStems.add(key);
+            q = candidate;
+            break;
+          }
         }
+        if (!q) q = drawn('hard');
+        // Room to write only where the answer is written; a choice is circled.
+        const written = type !== 'multiple_choice' && type !== 'true_false';
+        core.push({
+          ...withoutSteps(q),
+          text: written ? `${q.text}${workSpace}` : q.text,
+          points: type === 'multiple_choice' ? 4 : type === 'true_false' ? 2 : type === 'fill_blank' ? 3 : 8,
+        });
+        coreKey.push({ num: coreKey.length + 1, answer: q.answer ?? '—', ...(q.steps ? { solution: q.steps } : {}) });
+        coreKinds.add(type);
       }
-      if (!q) q = lang === 'ar' ? makeSAQ_ar(topic, kb, 'hard', req.subject) : makeSAQ_en(topic, kb, 'hard', req.subject);
-      core.push({
-        ...q,
-        text: `${q.text}${workSpace}`,
-        points: 8,
-      });
+    } catch (e) {
+      // The lesson's bank ran out: the practice stays short, and the page says so.
+      if (!(e instanceof BankSpentError)) throw e;
+      spent = true;
+    } finally {
+      bankOnly = false;
     }
+    if (core.length === 0) throw new NoQuestionBankError(topic);
 
-    const challengePractice = math
-      ? takeConcreteMath('short_answer', topic, kb, 'hard', lang, 12)
-      : isChemContext(topic, kb, req.subject)
-        ? takeConcreteChem('short_answer', topic, kb, 'hard', lang, 12)
+    const challengeLesson = wide ? wide.drawer.lessonAt(coreN) : null;
+    const cTopic = challengeLesson ? challengeLesson.topic : topic;
+    const cKb = challengeLesson ? challengeLesson.kb : kb;
+    const challengePractice = isMathContext(cTopic, cKb, req.subject)
+      ? takeConcreteMath('short_answer', cTopic, cKb, 'hard', lang, 12)
+      : isChemContext(cTopic, cKb, req.subject)
+        ? takeConcreteChem('short_answer', cTopic, cKb, 'hard', lang, 12)
         : null;
     const challenge: WQ = challengePractice
       ? {
@@ -2771,6 +3165,7 @@ export class MockAIService extends AIService {
             : `Challenge question (optional but graded):\n${challengePractice.text}${workSpace}`,
           points: 12,
           answer: challengePractice.answer,
+          ...(challengeLesson ? { lessonId: challengeLesson.id } : {}),
         }
       : lang === 'ar'
         ? {
@@ -2805,7 +3200,7 @@ export class MockAIService extends AIService {
         : `Student instructions\n• Complete this assignment independently at home (not an in-class worksheet).\n• Estimated time: about ${estMinutes} minutes.\n• Due: next class.\n• Start with the independent practice, then try the challenge.\n• Show your steps — clarity matters more than speed.`,
       sections: [
         {
-          type: 'short_answer',
+          type: coreKinds.size === 1 ? [...coreKinds][0]! : 'mixed',
           title: lang === 'ar' ? '١) تدريب مستقل' : '1) Independent practice',
           questions: core,
         },
@@ -2821,10 +3216,13 @@ export class MockAIService extends AIService {
         },
       ],
       answerKey: [
-        ...core.map((q, i) => ({ num: i + 1, answer: q.answer ?? '—' })),
+        ...coreKey,
         { num: core.length + 1, answer: challenge.answer ?? '—' },
         { num: core.length + 2, answer: reflection.answer ?? '—' },
       ],
+      // The challenge and the reflection are two of the `total` questions the
+      // picker promised, so they are two of the questions produced.
+      ...(spent ? { shortfall: { requested: total, produced: core.length + 2 } } : {}),
     };
   }
 }

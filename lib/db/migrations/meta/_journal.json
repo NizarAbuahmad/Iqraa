@@ -43,6 +43,34 @@
       "when": 1791729034553,
       "tag": "0005_adorable_supreme_intelligence",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791734054767,
+      "tag": "0006_lovely_morph",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791873459089,
+      "tag": "0007_opposite_lord_hawal",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791910924194,
+      "tag": "0008_row_level_security",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792050234215,
+      "tag": "0009_unknown_doctor_octopus",
+      "breakpoints": true
     }
   ]
 }

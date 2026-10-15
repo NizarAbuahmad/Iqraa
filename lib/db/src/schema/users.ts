@@ -1,6 +1,7 @@
-import { pgTable, text, boolean, timestamp, uuid, integer, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, boolean, timestamp, uuid, integer, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { schools } from "./schools";
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -109,9 +110,28 @@ export const users = pgTable("users", {
    * instead of every subject the teacher has ever picked for any grade.
    */
   teachingAssignments: jsonb("teaching_assignments").$type<{ gradeId: string; subjectIds: string[] }[]>().notNull().default([]),
+  /**
+   * The school a platform admin put this teacher in — null for everyone else,
+   * and for every teacher until an admin acts. Set only by
+   * `PUT /admin/users/:id/school`; there is deliberately no self-service path,
+   * because membership is what lets a teacher read colleagues' exam dates.
+   * `SET NULL` so deleting a school returns its teachers to "no school" rather
+   * than deleting them.
+   */
+  schoolId: uuid("school_id").references(() => schools.id, { onDelete: "set null" }),
+  /**
+   * Which school notifications this account wants — `homework` (posted, and
+   * the reminder the day before), `exams` (a date set or changed), `results`
+   * (released, or a mark typed after the release). Opt-outs: a missing key is
+   * ON, so `{}` — every account made before 2026-10-12 — gets all three, and
+   * only `false` turns one off. Chat is not governed here. Read through
+   * api-server `modules/notifications/pushPrefs.ts`; written only by
+   * `PUT /auth/me/push-preferences`, which merges with `||` in SQL.
+   */
+  pushPrefs: jsonb("push_prefs").$type<Partial<Record<"homework" | "exams" | "results", boolean>>>().notNull().default({}),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   lastLogin: timestamp("last_login", { withTimezone: true }),
-});
+}, t => [index("users_school_idx").on(t.schoolId)]);
 
 export const refreshTokens = pgTable("refresh_tokens", {
   id: uuid("id").primaryKey().defaultRandom(),

@@ -36,6 +36,7 @@
           "id": "u5_l1",
           "order": 1,
           "title_ar": "معدل الوحدة",
+          "title_en": "Unit Rate",
           "main_idea_ar": "أجدُ معدَّلَ الوحدةِ مِنْ نِسَبٍ كسريةٍ.",
           "periods": 3,
           "objectives": [
@@ -48,6 +49,7 @@
           "id": "u5_l2",
           "order": 2,
           "title_ar": "التناسب",
+          "title_en": "Proportion",
           "main_idea_ar": "أُميِّزُ التناسُبَ مِنْ خِلالِ نِسبتَينِ معلومتَينِ، وأحُلُّهُ.",
           "periods": 2,
           "objectives": [
@@ -62,6 +64,7 @@
           "id": "u5_l3",
           "order": 3,
           "title_ar": "العلاقات التناسبية",
+          "title_en": "Proportional Relationships",
           "main_idea_ar": "أتعرَّفُ علاقةَ التناسُبِ، وأُمثِّلُها في المستوى الإحداثيّ.",
           "periods": 3,
           "objectives": [
@@ -77,6 +80,7 @@
           "id": "u5_l4",
           "order": 4,
           "title_ar": "التغيّر الطردي",
+          "title_en": "Direct Variation",
           "main_idea_ar": "أُميِّزُ التغيّرَ الطرديَّ، وأكتُبُ معادلتَهُ بإيجادِ ثابتِ التغيّرِ.",
           "periods": 2,
           "objectives": [
@@ -92,6 +96,7 @@
           "id": "u5_l5",
           "order": 5,
           "title_ar": "التغيّر العكسي",
+          "title_en": "Inverse Variation",
           "main_idea_ar": "أُميِّزُ التغيّرَ العكسيَّ، وأكتُبُ معادلتَهُ بإيجادِ ثابتِ التغيّرِ.",
           "periods": 2,
           "objectives": [
@@ -106,6 +111,7 @@
           "id": "u5_l6",
           "order": 6,
           "title_ar": "التقسيم التناسبي",
+          "title_en": "Proportional Division",
           "main_idea_ar": "أستعملُ التقسيمَ التناسُبيَّ في حلِّ مسائلَ حياتيةٍ.",
           "periods": 3,
           "objectives": [
@@ -118,6 +124,7 @@
           "id": "u5_l7",
           "order": 7,
           "title_ar": "تطبيقات مالية",
+          "title_en": "Financial Applications",
           "main_idea_ar": "أحُلُّ مسائلَ ماليّةً تتضمّنُ: البيعَ والشراءَ، ومقارنةَ الأسعارِ.",
           "periods": 2,
           "objectives": [
@@ -146,6 +153,7 @@
           "id": "u6_l1",
           "order": 1,
           "title_ar": "التطابق",
+          "title_en": "Congruence",
           "main_idea_ar": "أُميِّزُ المضلَّعاتِ المتطابقةَ، وأحُلُّ مسائلَ تعتمدُ على مفهومِ التطابقِ.",
           "periods": 3,
           "objectives": [
@@ -159,6 +167,7 @@
           "id": "u6_l2",
           "order": 2,
           "title_ar": "مقياس الرسم",
+          "title_en": "Scale Drawings",
           "main_idea_ar": "أحُلُّ مسائلَ مستعملًا مقياسَ الرسمِ.",
           "periods": 3,
           "objectives": [
@@ -173,6 +182,7 @@
           "id": "u6_l3",
           "order": 3,
           "title_ar": "التشابه",
+          "title_en": "Similarity",
           "main_idea_ar": "أُميِّزُ المضلَّعاتِ المتشابهةَ، وأحُلُّ مسائلَ تعتمدُ على مفهومِ التشابهِ.",
           "periods": 3,
           "objectives": [
@@ -187,6 +197,7 @@
           "id": "u6_l4",
           "order": 4,
           "title_ar": "التكبير",
+          "title_en": "Enlargement",
           "main_idea_ar": "أرسمُ شكلًا تحتَ تأثيرِ تكبيرٍ بمعاملٍ صحيحٍ موجبٍ.",
           "periods": 2,
           "objectives": [
@@ -200,6 +211,7 @@
           "id": "u6_l5",
           "order": 5,
           "title_ar": "خطة حل المسألة: الرسم",
+          "title_en": "Problem-Solving Strategy: Draw a Diagram",
           "main_idea_ar": "حلُّ المسألةِ باستخدامِ خطةِ «الرسمِ».",
           "periods": 2,
           "objectives": [
@@ -227,6 +239,7 @@
           "id": "u7_l1",
           "order": 1,
           "title_ar": "محيط الدائرة",
+          "title_en": "Circumference of a Circle",
           "main_idea_ar": "أحسُبُ محيطَ الدائرةِ.",
           "periods": 2,
           "objectives": [
@@ -239,6 +252,7 @@
           "id": "u7_l2",
           "order": 2,
           "title_ar": "مساحة الدائرة",
+          "title_en": "Area of a Circle",
           "main_idea_ar": "أحسُبُ مساحةَ الدائرةِ.",
           "periods": 2,
           "objectives": [
@@ -251,6 +265,7 @@
           "id": "u7_l3",
           "order": 3,
           "title_ar": "حجم المنشور والأسطوانة",
+          "title_en": "Volume of a Prism and a Cylinder",
           "main_idea_ar": "أجدُ حجمَ المنشورِ والأسطوانةِ.",
           "periods": 2,
           "objectives": [
@@ -264,6 +279,7 @@
           "id": "u7_l4",
           "order": 4,
           "title_ar": "حجم الهرم والمخروط",
+          "title_en": "Volume of a Pyramid and a Cone",
           "main_idea_ar": "أجدُ حجمَ الهرَمِ وَالمخروطِ.",
           "periods": 2,
           "objectives": [
@@ -277,6 +293,7 @@
           "id": "u7_l5",
           "order": 5,
           "title_ar": "مساحة سطح المنشور والأسطوانة",
+          "title_en": "Surface Area of a Prism and a Cylinder",
           "main_idea_ar": "أجدُ المساحةَ الجانبيةَ والمساحةَ الكليةَ لسطحِ المنشورِ والأسطوانةِ.",
           "periods": 2,
           "objectives": [
@@ -292,6 +309,7 @@
           "id": "u7_l6",
           "order": 6,
           "title_ar": "مساحة سطح الهرم والمخروط",
+          "title_en": "Surface Area of a Pyramid and a Cone",
           "main_idea_ar": "أجدُ المساحةَ الجانبيةَ والمساحةَ الكليةَ لسطحِ الهرَمِ المنتظمِ والمخروطِ.",
           "periods": 2,
           "objectives": [
@@ -323,6 +341,7 @@
           "id": "u8_l1",
           "order": 1,
           "title_ar": "الوسط الحسابي",
+          "title_en": "The Mean",
           "main_idea_ar": "أصفُ أثرَ القيمةِ المتطرِّفةِ على الوسطِ الحسابيِّ لمجموعةِ بياناتٍ.",
           "periods": 2,
           "objectives": [
@@ -336,6 +355,7 @@
           "id": "u8_l2",
           "order": 2,
           "title_ar": "الوسيط، والمنوال، والمدى",
+          "title_en": "Median, Mode, and Range",
           "main_idea_ar": "أحسُبُ الوسيطَ والمنوالَ والمدى، وأحدِّدُ المقياسَ الأنسبَ لوصفِ البياناتِ.",
           "periods": 3,
           "objectives": [
@@ -348,6 +368,7 @@
           "id": "u8_l3",
           "order": 3,
           "title_ar": "التمثيل بالساق والورقة",
+          "title_en": "Stem-and-Leaf Plots",
           "main_idea_ar": "أُمثِّلُ البياناتِ بمخططِ الساقِ والورقةِ، وأختبرُ صحةَ فرضيةٍ بالاعتمادِ على بياناتٍ معطاةٍ.",
           "periods": 2,
           "objectives": [
@@ -360,6 +381,7 @@
           "id": "u8_l4",
           "order": 4,
           "title_ar": "الاحتمالات",
+          "title_en": "Probability",
           "main_idea_ar": "أحسُبُ احتمالاتِ وقوعِ الحوادثِ.",
           "periods": 2,
           "objectives": [
@@ -373,6 +395,7 @@
           "id": "u8_l5",
           "order": 5,
           "title_ar": "الاحتمال التجريبي",
+          "title_en": "Experimental Probability",
           "main_idea_ar": "أجدُ الاحتمالَ التجريبيَّ لوقوعِ حادثٍ.",
           "periods": 2,
           "objectives": [

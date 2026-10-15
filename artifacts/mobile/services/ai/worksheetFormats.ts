@@ -220,11 +220,12 @@ export function splitFormatTypes(types: string[]): { formats: FormatKind[]; rest
 }
 
 /**
- * The paper's total — the picker's own range (5-20, `NUM_Q_OPTIONS`). One
+ * The paper's total — the picker's own range (5–30, `ALL_QUESTION_COUNTS` in
+ * `wideScopeRequest.ts`; 25 and 30 are offered on a wide scope only). One
  * clamp for the offline and the live path, so they cannot disagree on it.
  */
 export function worksheetTotal(req: { numQuestions?: number }): number {
-  return Math.min(20, Math.max(5, req.numQuestions ?? 8));
+  return Math.min(30, Math.max(5, req.numQuestions ?? 8));
 }
 
 /**

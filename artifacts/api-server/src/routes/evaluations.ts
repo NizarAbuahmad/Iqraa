@@ -7,7 +7,7 @@
  * "stay within the selected grade and curriculum" a request rather than a
  * constraint.
  */
-import { Router } from "express";
+import { Router, type Response } from "express";
 import { createRateLimiter } from "../lib/rateLimit";
 import { db } from "@workspace/db";
 import {
@@ -16,13 +16,13 @@ import {
   classMemberships,
   evaluations,
   evaluationQuestions,
-  levelBands,
   levelScales,
   masteryOverrides,
   students,
 } from "@workspace/db";
 import type { Difficulty, QuestionType } from "@workspace/db";
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import {
   getBookById,
   getEvaluableBookIds,
@@ -41,20 +41,18 @@ import {
 import { logger } from "../lib/logger";
 import { masteryGateEnabled } from "../lib/features.js";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
+import { resolveExamPatch } from "../lib/examDate.js";
 import { passedLessonIds, unlockState } from "../modules/assessment/lessonProgress.ts";
 import { findLiveClass } from "../lib/classOwnership.js";
+import { isUuid } from "../lib/classResource.ts";
 import { archiveDecision } from "../lib/evaluationArchive";
 import {
-  audienceRequestDecision,
   classChangeAllowed,
   inAudience,
-  MAX_AUDIENCE,
 } from "../modules/assessment/audience.ts";
-import { isUuid } from "../lib/classResource.ts";
 import {
   assignedStudentsByEvaluation,
   evaluationAudience,
-  replaceEvaluationAudience,
 } from "../lib/evaluationAudience.ts";
 import {
   bankContextFor,
@@ -62,10 +60,25 @@ import {
   type GenerationResult,
 } from "../modules/assessment/mockGenerator";
 import { validateGenerated } from "../modules/assessment/validator";
+import { inPaperOrder } from "../modules/assessment/paperOrder";
 import { contradictionWarning, verificationAfterEdit, verifyAnswerKeys } from "../modules/assessment/keyVerification.ts";
+import {
+  assembleLivePaper,
+  drawBookQuestions,
+  isBookItemsLiveOn,
+  bookItemsRecord,
+  planBook,
+  previousBookItemIds,
+} from "../modules/assessment/bookQuestions.ts";
 import { relateAnswerKey } from "../lib/mathVerifierClient.ts";
 import { QUESTION_TYPES } from "../modules/assessment/questionTypes";
-import { COMPETENCY_KEYS, competencyForBlooms, type CompetencyKey } from "../modules/assessment/competency";
+import {
+  allocateQuestions,
+  COMPETENCY_KEYS,
+  competencyForBlooms,
+  remainingQuota,
+  type CompetencyKey,
+} from "../modules/assessment/competency";
 import { convertWorksheet } from "../modules/assessment/fromWorksheet.ts";
 import { parseWorksheetRequest } from "../modules/assessment/worksheetRequest.ts";
 import { isPaperQuestion, parsePaperRows } from "../modules/assessment/paperExam";
@@ -73,8 +86,9 @@ import { partitionForRegeneration } from "../modules/assessment/regeneration";
 import { aggregateClass, finishedAttempts } from "../modules/assessment/classInsights";
 import { generateShareCode } from "../modules/assessment/studentView";
 import {
-  GENERATION_PROMPT_VERSION,
   generateWithModel,
+  generationPromptVersion,
+  type LlmSupplied,
   paperIsMathematics,
   questionStem,
 } from "../modules/assessment/llmGenerator";
@@ -94,10 +108,26 @@ import { extractJSON } from "../lib/generationShape.ts";
 import { groundingForObjectives } from "../lib/grounding.ts";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { recommendationsFor } from "../modules/assessment/recommend";
+import {
+  buildScanPrompt,
+  parseNameRead,
+  parseScanResponse,
+  parseTotalRead,
+  type ScannableQuestion,
+} from "../modules/assessment/scanMarks.ts";
+import { buildPaperScanPrompt, parsePaperScanResponse } from "../modules/assessment/scanPaper.ts";
+import { checkScanImage, classScanGate, parsePaperScanBody } from "../modules/assessment/scanRequest.ts";
+import { matchStudent, type RosterEntry } from "../modules/assessment/studentMatch.ts";
 import type { ObjectiveScore } from "../modules/assessment/scoring";
 
+import { findOrStartTeacherEntry } from "../lib/teacherEntry.ts";
+import { savePaperTotals } from "../lib/paperTotals.ts";
+import { parsePaperTotals, PAPER_TOTALS_REFUSAL } from "../modules/assessment/paperTotals.ts";
 import { resultsReleaseDecision } from "../lib/resultsRelease.ts";
 import { announceResultsRelease } from "../lib/resultsReleaseNotify.ts";
+import { pushWithin } from "../lib/pushWithin.ts";
+import { announceExamDate, announcePaperResults } from "../lib/familyPushEvents.ts";
+import { examDateNotice, publishNotice } from "../modules/notifications/examDateNotice.ts";
 const router = Router();
 // Path-scoped — see the note in roster.ts. Unscoped, this swallowed every
 // request reaching it, including routes belonging to later routers.
@@ -115,6 +145,38 @@ const aiLimiter = createRateLimiter({
   name: "ai-evaluation-generate",
   key: (req) => (req as AuthenticatedRequest).user?.id ?? req.ip ?? "unknown",
 });
+
+// The two scan routes below read photographs, so they are model calls. A class
+// of 30–40 papers goes through the second one three at a time from the phone, so
+// this is looser than the generator's ten a minute — but still a ceiling, and
+// keyed per user like the rest.
+const scanLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 30,
+  name: "ai-scan-class",
+  key: (req) => (req as AuthenticatedRequest).user?.id ?? req.ip ?? "unknown",
+});
+
+/** The same answers `POST /attempts/:id/scan-marks` gives, so a screen maps one set of codes. */
+function respondScanError(res: Response, err: unknown, what: string): void {
+  if (err instanceof AiUserQuotaExceededError) {
+    res.status(429).json({ error: err.message, code: "user_quota_exceeded" });
+    return;
+  }
+  if (err instanceof AiBudgetExceededError) {
+    res.status(429).json({ error: err.message, code: "budget_exceeded" });
+    return;
+  }
+  if (err instanceof AiLiveModeOffError) {
+    res.status(503).json({ error: err.message, code: "live_mode_off" });
+    return;
+  }
+  logger.error({ err }, what);
+  res.status(502).json({
+    error: "Could not read that photo. Nothing was changed — try again, or enter the marks by hand.",
+    code: "scan_unavailable",
+  });
+}
 
 const ALL_TYPES = Object.keys(QUESTION_TYPES) as QuestionType[];
 
@@ -156,6 +218,9 @@ const MAX_QUESTIONS = 50;
 const SHARE_CODE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 const trimmed = (v: unknown): string => (typeof v === "string" ? v.trim() : "");
+
+/** "This column still holds what the request read" — null included. */
+const stillHolds = (col: AnyPgColumn, value: string | null) => sql`${col} IS NOT DISTINCT FROM ${value}`;
 
 /** Owned-or-404. Never distinguish "not yours" from "not there". */
 async function ownedEvaluation(id: string, teacherId: string) {
@@ -408,6 +473,71 @@ router.post("/evaluations/from-worksheet", async (req: AuthenticatedRequest, res
   }
 });
 
+/**
+ * Read the pages of an exam the teacher set, to fill the paper-exam grid.
+ *
+ * Stateless on purpose: the grid is saved together with the evaluation
+ * (`new.tsx` creates the evaluation, then `PUT .../questions/paper`), so when a
+ * teacher scans the paper there is no evaluation row to hang this off. The
+ * objectives they have ticked travel in the body instead, and are resolved here
+ * against the curriculum like every other write.
+ *
+ * **It writes nothing.** The rows pre-fill a grid the teacher edits; the paper
+ * `PUT` still validates and stores them. Photos are not stored.
+ */
+router.post("/evaluations/scan-paper", scanLimiter, async (req: AuthenticatedRequest, res) => {
+  try {
+    const body = parsePaperScanBody(req.body);
+    if (!body.ok) {
+      res.status(body.refusal.status).json({ error: body.refusal.error, code: body.refusal.code });
+      return;
+    }
+    const { found, missing } = resolveObjectiveIds(body.objectiveIds);
+    if (missing.length > 0 || found.length === 0) {
+      res.status(400).json({ error: "Unknown objective", code: "unknown_objectives", details: missing });
+      return;
+    }
+
+    assertLiveModeEnabled();
+    assertBudgetAvailable();
+    await assertUserQuotaAvailable(req.user!.id);
+
+    const prompt = buildPaperScanPrompt(
+      found.map(o => ({ id: o.id, label: o.descriptionAr || o.description })),
+    );
+    const model = getGenerationModel();
+    const completion = await openai.chat.completions.create({
+      model,
+      max_completion_tokens: 3000,
+      messages: [
+        { role: "system", content: prompt.system },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: prompt.user },
+            ...body.images.map(url => ({ type: "image_url" as const, image_url: { url } })),
+          ],
+        },
+      ],
+    });
+    recordUsage(completion.usage, model, {
+      kind: "quiz",
+      promptVersion: "scan-paper-1",
+      userId: req.user!.id,
+    });
+
+    const parsed = parsePaperScanResponse(
+      extractJSON(completion.choices[0]?.message?.content ?? "{}"),
+      found.map(o => o.id),
+    );
+    // `saved: false` is stated in the response so a client cannot present these
+    // as stored.
+    res.json({ ...parsed, model, saved: false });
+  } catch (err) {
+    respondScanError(res, err, "scan paper failed");
+  }
+});
+
 router.get("/evaluations", async (req: AuthenticatedRequest, res) => {
   try {
     const classId = trimmed(req.query["classId"]);
@@ -507,7 +637,9 @@ router.get("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
 // ─── Generation ──────────────────────────────────────────────────────────────
 
 /**
- * Attach this exam to a class, or detach it.
+ * Attach this exam to a class, or detach it — and/or set when it is planned to
+ * be sat (`examDate`, `examTime`; `null` clears), which is what the school exam
+ * calendar reads. Any one of the three may be sent alone.
  *
  * Attaching happens here rather than at authoring time for the same reason it
  * does for materials: a teacher does not know which section a paper is for
@@ -517,6 +649,11 @@ router.get("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
  * `classGroupId: null` detaches. The check is `!== undefined`, not truthiness —
  * treating null as "not provided" would make attach work and detach silently
  * do nothing, which is exactly the bug `pickDefined` was extracted to prevent.
+ *
+ * A date that moves on an exam families can see is pushed to them
+ * (modules/notifications/examDateNotice.ts). The announcing write is conditional
+ * on the values the request read, so a racing save with the same values should
+ * announce at most once — no test could be made to show that it matters.
  */
 router.patch("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
   try {
@@ -527,14 +664,31 @@ router.patch("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
     }
 
     const raw = req.body?.classGroupId;
-    if (raw === undefined) {
-      res.status(400).json({ error: "classGroupId is required" });
+    const touchesSchedule = req.body?.examDate !== undefined || req.body?.examTime !== undefined;
+    if (raw === undefined && !touchesSchedule) {
+      res.status(400).json({ error: "classGroupId, examDate or examTime is required" });
       return;
     }
-    const classGroupId = raw === null ? null : trimmed(raw);
+
+    // The planned sitting (examDate/examTime) is independent of the class: either
+    // may arrive alone. A message string thrown here is a 400, not a 500.
+    let schedule: { examDate: string | null; examTime: string | null };
+    try {
+      schedule = resolveExamPatch(
+        { examDate: evaluation.examDate, examTime: evaluation.examTime },
+        { examDate: req.body?.examDate, examTime: req.body?.examTime },
+      );
+    } catch (msg) {
+      res.status(400).json({ error: String(msg) });
+      return;
+    }
+
+    const classGroupId = raw === undefined ? evaluation.classGroupId : raw === null ? null : trimmed(raw);
     // Owned and not archived — the same lookup the roster routes use, so an
     // exam cannot be attached to a class the teacher has already removed.
-    if (classGroupId && !(await findLiveClass(classGroupId, req.user!.id))) {
+    // Only when the class is actually being changed: a schedule-only update on an
+    // exam whose class has since been archived must not 404 on the old class.
+    if (raw !== undefined && classGroupId && !(await findLiveClass(classGroupId, req.user!.id))) {
       res.status(404).json({ error: "Class not found" });
       return;
     }
@@ -566,66 +720,36 @@ router.patch("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
       }
     }
 
-    const [updated] = await db
-      .update(evaluations)
-      .set({ classGroupId: classGroupId || null, updatedAt: new Date() })
-      .where(eq(evaluations.id, evaluation.id))
-      .returning();
+    const next = { classGroupId: classGroupId || null, examDate: schedule.examDate, examTime: schedule.examTime };
+    const values = { ...next, updatedAt: new Date() };
+    // Families hear about a date only when it actually moved on an exam they
+    // can see (examDateNotice). The write that announces is conditional on
+    // the values this request read, so two PATCHes racing each other cannot
+    // both announce: the loser falls through to the plain write and stays quiet.
+    const notice = examDateNotice(evaluation, next);
+    const [claimed] = notice
+      ? await db
+          .update(evaluations)
+          .set(values)
+          .where(
+            and(
+              eq(evaluations.id, evaluation.id),
+              stillHolds(evaluations.classGroupId, evaluation.classGroupId),
+              stillHolds(evaluations.examDate, evaluation.examDate),
+              stillHolds(evaluations.examTime, evaluation.examTime),
+            ),
+          )
+          .returning()
+      : [];
+    const [updated] = claimed
+      ? [claimed]
+      : await db.update(evaluations).set(values).where(eq(evaluations.id, evaluation.id)).returning();
+    if (claimed && notice) await pushWithin("exam date", () => announceExamDate(claimed, notice));
 
     res.json({ evaluation: updated });
   } catch (err) {
-    logger.error({ err }, "attach evaluation to class failed");
+    logger.error({ err }, "update evaluation failed");
     res.status(500).json({ error: "Failed to update the evaluation" });
-  }
-});
-
-/**
- * Who a group check is for (support groups, 2026-10-09): replaces the
- * evaluation's student-level assignments. Only while it is a draft attached to
- * a class, and only with live members of that class — see audience.ts.
- */
-router.put("/evaluations/:id/audience", async (req: AuthenticatedRequest, res) => {
-  try {
-    const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
-    if (!evaluation) {
-      res.status(404).json({ error: "Evaluation not found" });
-      return;
-    }
-    const requested = Array.isArray(req.body?.studentIds)
-      ? (req.body.studentIds as unknown[]).filter((v): v is string => typeof v === "string").map(v => v.trim()).filter(Boolean).filter(isUuid)
-      : [];
-    // A non-uuid id would be a 500 from the uuid column; it is simply not a
-    // member, and the decision below answers 400 audience_not_member. An
-    // oversized list is refused by the decision without a lookup.
-    const members = evaluation.classGroupId && requested.length && requested.length <= MAX_AUDIENCE
-      ? await db
-          .select({ id: students.id })
-          .from(classMemberships)
-          .innerJoin(students, eq(students.id, classMemberships.studentId))
-          .where(
-            and(
-              eq(classMemberships.classGroupId, evaluation.classGroupId),
-              inArray(classMemberships.studentId, requested),
-              eq(students.teacherId, req.user!.id),
-              isNull(students.archivedAt),
-            ),
-          )
-      : [];
-    const decision = audienceRequestDecision({
-      status: evaluation.status,
-      classGroupId: evaluation.classGroupId,
-      studentIds: req.body?.studentIds,
-      memberIds: new Set(members.map(m => m.id)),
-    });
-    if (!decision.ok) {
-      res.status(decision.status).json({ error: decision.error, code: decision.code });
-      return;
-    }
-    await replaceEvaluationAudience(evaluation.id, decision.studentIds, req.user!.id);
-    res.json({ audience: decision.studentIds });
-  } catch (err) {
-    logger.error({ err }, "set evaluation audience failed");
-    res.status(500).json({ error: "Failed to set who this check is for" });
   }
 });
 
@@ -713,17 +837,66 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
         previousQuestions.map(q => ({ text: questionStem(q.body as Record<string, unknown>) })),
       );
 
-      const runLlm = (avoidList: readonly string[], insistent: boolean) => generateWithModel(
+      // Real book questions are added after the model has written its share, so
+      // the model is asked for that many fewer. When BOOK_ITEMS_LIVE is not
+      // "true" (the default), `bookPlanned` is 0 and nothing below changes.
+      const bookEnabled = isBookItemsLiveOn();
+      // The items this teacher was already shown: the dry run avoids them like
+      // the real draw below does, so the plan describes the paper that will exist.
+      const shownBookItemIds = previousBookItemIds(previousQuestions);
+      const plan = planBook({
+        objectives,
+        assessmentTypes: evaluation.assessmentTypes,
+        count: evaluation.targetQuestionCount,
+        subjectId: evaluation.subjectId ?? undefined,
+        enabled: bookEnabled,
+        difficulty: evaluation.difficulty,
+        avoidIds: shownBookItemIds,
+      });
+      const bookPlanned = plan.k;
+      const modelCount = evaluation.targetQuestionCount - bookPlanned;
+
+      // What the model is told the book supplies, and how many of each
+      // competency it should therefore write so the WHOLE paper lands on the
+      // target mix. Undefined when nothing is planned, so the request (and the
+      // prompt version) are exactly what they were before. `plan.supplied`
+      // counts the same k questions as `bookPlanned`, so the quota sums to
+      // `modelCount`; `buildGenerationPrompt` throws if that ever stops being true.
+      const supplied: LlmSupplied | undefined = bookPlanned > 0
+        ? {
+            ...plan.supplied,
+            count: bookPlanned,
+            paperTotal: evaluation.targetQuestionCount,
+            newByCompetency: allocateQuestions(
+              evaluation.targetQuestionCount,
+              evaluation.difficulty,
+              plan.supplied.byCompetency,
+            ),
+          }
+        : undefined;
+      // One value for the usage rows and the stored params: every batch of this
+      // paper (first, retry, top-up) carries the same `supplied` or none.
+      const promptVersion = generationPromptVersion({ supplied });
+
+      // `count` defaults to the model's share; the top-up below passes what is missing
+      // and a `suppliedFor` whose quota is rescaled to that count.
+      const runLlm = (
+        avoidList: readonly string[],
+        insistent: boolean,
+        count = modelCount,
+        suppliedFor: LlmSupplied | undefined = supplied,
+      ) => generateWithModel(
         {
           objectives,
           gradeId: evaluation.gradeId,
           assessmentTypes: evaluation.assessmentTypes,
-          count: evaluation.targetQuestionCount,
+          count,
           difficulty: evaluation.difficulty,
           language: evaluation.language,
           bookExcerpts: grounding?.block,
           avoid: avoidList,
           insistent,
+          ...(suppliedFor ? { supplied: suppliedFor } : {}),
         },
         async prompt => {
           const model = getGenerationModel();
@@ -732,7 +905,9 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
             // Room for a full paper of questions with options and rubrics. A
             // truncated response parses to something plausible, which is worse
             // than an error.
-            max_completion_tokens: 8000,
+            // Scaled to the paper: 30 questions with options and rubrics do not
+            // fit the 8000 that suits ten, and reasoning tokens bill against it.
+            max_completion_tokens: Math.min(24000, Math.max(8000, 2000 + 700 * evaluation.targetQuestionCount)),
             messages: [
               { role: "system", content: prompt.system },
               { role: "user", content: prompt.user },
@@ -740,7 +915,7 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
           });
           recordUsage(completion.usage, model, {
             kind: "quiz",
-            promptVersion: GENERATION_PROMPT_VERSION,
+            promptVersion,
             userId: req.user!.id,
           });
           return {
@@ -768,21 +943,101 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
         }
       }
 
+      // A reply can be well-formed and still short: asked for 20, a model will
+      // often send 10 and stop. Ask once more for only what is missing, with the
+      // stems already written so the second batch is new questions. Best effort
+      // — the paper is served short, and the shortfall warning says so, if it fails.
+      // Measured against the model's own share, not the paper: the book supplies the rest.
+      const missing = modelCount - llm.questions.length;
+      if (missing > 0) {
+        logger.warn(
+          { evaluationId: evaluation.id, asked: modelCount, got: llm.questions.length },
+          "evaluation came back short — asking for the rest",
+        );
+        try {
+          const have = signatureLines(llm.questions.map(q => ({ text: questionStem(q.body) })));
+          const more = await runLlm(
+            [...avoid, ...have],
+            false,
+            missing,
+            supplied && {
+              ...supplied,
+              newByCompetency: remainingQuota(supplied.newByCompetency, llm.questions, missing),
+              // The prompt then says the quota is what remains of the model's share.
+              alreadyWritten: llm.questions.length,
+            },
+          );
+          llm.questions.push(...more.questions);
+          llm.notes.push(...more.notes);
+        } catch (err) {
+          logger.warn({ err, evaluationId: evaluation.id }, "evaluation top-up failed - serving the short paper");
+        }
+      }
+
       generator = "llm";
       modelId = llm.model;
-      generationParams["promptVersion"] = GENERATION_PROMPT_VERSION;
+      generationParams["promptVersion"] = promptVersion;
       generationParams["grounded"] = Boolean(grounding);
       generationParams["groundingSources"] = grounding
         ? grounding.sources.map(s => ({ sourceId: s.sourceId, page: s.page }))
         : [];
       generationNotes.push(...llm.notes);
+
+      // The model's surplus is cut to its share first, then the book's questions
+      // are drawn and appended (see assembleLivePaper). With a book share the paper
+      // cannot exceed the request, so the surplus trim further down cannot fire;
+      // `inPaperOrder` below puts the whole paper into type blocks.
+      const assembled = assembleLivePaper({
+        modelQuestions: llm.questions,
+        requested: evaluation.targetQuestionCount,
+        k: bookPlanned,
+        draw: accepted => drawBookQuestions({
+          objectives,
+          assessmentTypes: evaluation.assessmentTypes,
+          difficulty: evaluation.difficulty,
+          k: bookPlanned,
+          accepted,
+          avoidIds: shownBookItemIds,
+          rng: Math.random,
+        }),
+      });
+      if (evaluation.subjectId === "mathematics") {
+        // `supplied` is what the model was told the book supplies (the dry run's
+        // summary, before the real draw); `quota` is the per-competency count it
+        // was asked to write. Both are empty/absent when nothing was planned.
+        generationParams["bookItems"] = bookItemsRecord({
+          enabled: bookEnabled,
+          planned: bookPlanned,
+          supplied: plan.supplied,
+          quota: supplied?.newByCompetency,
+          drawn: assembled.drawn,
+          ids: assembled.questions
+            .filter(q => q.aiMetadata["generator"] === "book")
+            .map(q => q.aiMetadata["bookItemId"]),
+        });
+      }
+      if (assembled.trimmed > 0) {
+        generationNotes.push(
+          `The generator returned ${assembled.trimmed} more question${assembled.trimmed === 1 ? "" : "s"} than the ${modelCount} asked of it; the extra ${assembled.trimmed === 1 ? "one was" : "ones were"} left out.`,
+        );
+      }
+      if (assembled.drawn > 0) {
+        generationNotes.push(
+          `${assembled.drawn} question${assembled.drawn === 1 ? " is a" : "s are"} real item${assembled.drawn === 1 ? "" : "s"} from the NCCD books; each is labelled with how its answer was established.`,
+        );
+      }
+      if (assembled.drawn < bookPlanned) {
+        generationNotes.push(
+          `Only ${assembled.drawn} of ${bookPlanned} planned book question${bookPlanned === 1 ? "" : "s"} could be added (the rest of the book's questions repeat ones already on the paper or the model's).`,
+        );
+      }
       result = {
-        questions: llm.questions,
+        questions: assembled.questions,
         // The model was asked for every requested type, so nothing is
         // "unavailable" the way it is for the mock — a type that came back
         // wrong is a discard, and llm.notes already says so.
         unavailableTypes: [],
-        shortfall: Math.max(0, evaluation.targetQuestionCount - llm.questions.length),
+        shortfall: Math.max(0, evaluation.targetQuestionCount - assembled.questions.length),
         notes: [],
         // Still worth carrying: the bank pointer answers "where else could I
         // look", which is useful whether or not the generator declined
@@ -830,7 +1085,12 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
         `The generator returned ${surplus} more question${surplus === 1 ? "" : "s"} than the ${evaluation.targetQuestionCount} requested; the extra ${surplus === 1 ? "one was" : "ones were"} left out.`,
       );
     }
-    // After the trim above, so the warning never names a question that is not on the paper.
+    // Stored as a ministry paper: one block per type, in the usual order. After
+    // the surplus trim above, so which questions were dropped is still the
+    // generator's own choice and not "whatever type came last".
+    keyCheck.kept = inPaperOrder(keyCheck.kept, k => k.question.type);
+    // After the trim AND the sort, so the warning never names a question that is
+    // not on the paper and its positions are the ones the review screen shows.
     const contradiction = contradictionWarning(keyCheck.kept);
     if (contradiction) generationNotes.push(contradiction);
     generationParams["keysChecked"] = keyCheck.checked;
@@ -1445,6 +1705,14 @@ router.post("/evaluations/:id/publish", async (req: AuthenticatedRequest, res) =
       return;
     }
 
+    // A dated draft leaving draft is the moment its date reaches families.
+    // Not made race-safe, by choice (a known gap): two publishes of one draft
+    // racing each other can both announce. A conditional write is possible inside
+    // the share-code retry loop (first attempt `status = draft`, a zero-row result
+    // is not an exception so the retry stays intact) but it was left out of this
+    // part to keep the publish path unchanged.
+    const notice = publishNotice(evaluation);
+    if (notice) await pushWithin("exam published with a date", () => announceExamDate(updated, notice));
     res.json({ evaluation: updated });
   } catch (err) {
     logger.error({ err }, "publish failed");
@@ -1760,68 +2028,210 @@ router.post("/evaluations/:id/attempts", async (req: AuthenticatedRequest, res) 
       return;
     }
 
-    // Any source, not just teacher entry: the schema allows one attempt per
-    // student per evaluation, so a student who already sat via the link has
-    // the only paper there will be. Filtering on source made the insert below
-    // hit that constraint and answer 500, with no way for the teacher to open
-    // the paper from here.
-    const [existing] = await db
-      .select()
-      .from(attempts)
-      .where(and(eq(attempts.evaluationId, evaluation.id), eq(attempts.studentId, studentId)))
-      .limit(1);
-    if (existing) {
-      res.json({ attempt: existing, created: false });
+    const started = await findOrStartTeacherEntry({ evaluation, studentId, teacherId: req.user!.id });
+    if (!started.ok) {
+      if (started.code === "not_in_group") {
+        res.status(403).json({ error: "This check is for a group; this student is not in it", code: "not_in_group" });
+      } else if (started.code === "no_questions") {
+        res.status(409).json({ error: "This evaluation has no questions" });
+      } else {
+        res.status(409).json({ error: "No level scale is configured for this evaluation" });
+      }
       return;
     }
-
-    // A group check is for its group only — the same rule the share link and
-    // the student's own list apply (audience.ts).
-    if (!inAudience(await evaluationAudience(evaluation.id), studentId)) {
-      res.status(403).json({ error: "This check is for a group; this student is not in it", code: "not_in_group" });
-      return;
-    }
-
-    const questions = await liveQuestions(evaluation.id);
-    if (questions.length === 0) {
-      res.status(409).json({ error: "This evaluation has no questions" });
-      return;
-    }
-
-    // Frozen at start, per the plan: a later edit to the evaluation or the
-    // scale must not retroactively change what this attempt is graded against.
-    const bands = evaluation.levelScaleId
-      ? await db
-          .select()
-          .from(levelBands)
-          .where(eq(levelBands.scaleId, evaluation.levelScaleId))
-          .orderBy(asc(levelBands.sortOrder))
-      : [];
-    if (bands.length === 0) {
-      res.status(409).json({ error: "No level scale is configured for this evaluation" });
-      return;
-    }
-
-    const [row] = await db
-      .insert(attempts)
-      .values({
-        evaluationId: evaluation.id,
-        studentId,
-        source: "teacher_entry",
-        enteredBy: req.user!.id,
-        status: "in_progress",
-        startedAt: new Date(),
-        questionSnapshot: questions,
-        levelScaleSnapshot: { scaleId: evaluation.levelScaleId, bands },
-      })
-      .returning();
-
-    res.status(201).json({ attempt: row, created: true });
+    if (started.created) res.status(201).json({ attempt: started.attempt, created: true });
+    else res.json({ attempt: started.attempt, created: false });
   } catch (err) {
     logger.error({ err }, "create attempt failed");
     res.status(500).json({ error: "Failed to start attempt" });
   }
 });
+
+// A whole class per request, each row a find-or-create, a mark and a hand-in;
+// generous for a teacher saving a mark book, a wall for a loop.
+const paperTotalsLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 60,
+  name: "paper-totals",
+  key: (req) => (req as AuthenticatedRequest).user?.id ?? req.ip ?? "unknown",
+});
+
+/**
+ * The class mark book: one typed total per student for a quick paper exam
+ * (exactly one paper question, worth N) — see lib/paperTotals.ts. Each row is
+ * saved, refused or cleared on its own and reported back; a saved row is
+ * handed in, so it reaches the student and their parents once — and only once
+ * — the teacher releases results.
+ *
+ * Published or closed: a teacher may close a paper exam after the sitting and
+ * then type the totals. A draft has nothing to mark yet.
+ *
+ * Archived counts as "not found" here, like a missing or malformed id: the
+ * exam has left the teacher's lists, and a mark book must not write to it.
+ *
+ * Clearing (`marks: null`) deletes a teacher-entered sitting even after
+ * results are released — the app asks the teacher to confirm first; the
+ * server does not refuse (the paper was never the student's).
+ *
+ * A row saved while results are released is pushed to that child's family
+ * (lib/familyPushEvents.ts). A sitting handed in after the release through
+ * `POST /attempts/:id/submit` or the student link is not — a known gap.
+ */
+router.put("/evaluations/:id/paper-totals", paperTotalsLimiter, async (req: AuthenticatedRequest, res) => {
+  try {
+    const id = req.params["id"] as string;
+    const evaluation = isUuid(id) ? await ownedEvaluation(id, req.user!.id) : undefined;
+    if (!evaluation || evaluation.archivedAt) {
+      res.status(404).json({ error: "Evaluation not found" });
+      return;
+    }
+    if (evaluation.status !== "published" && evaluation.status !== "closed") {
+      res.status(409).json({ code: "not_published", error: "Publish this evaluation before entering marks" });
+      return;
+    }
+    const parsed = parsePaperTotals(req.body);
+    if (!parsed.ok) {
+      res.status(400).json({ code: parsed.code, error: parsed.error, ...(parsed.index === undefined ? {} : { index: parsed.index }) });
+      return;
+    }
+    const outcome = await savePaperTotals({ evaluation, teacherId: req.user!.id, rows: parsed.rows });
+    if (!outcome.ok) {
+      res.status(409).json({ code: outcome.code, error: PAPER_TOTALS_REFUSAL[outcome.code] });
+      return;
+    }
+    // A mark typed after the release is visible to the family at once
+    // (studentResultReady), and the release's own announcement has already
+    // gone — so announce it now. Only rows this request changed: a re-save of
+    // the same total answers "unchanged" and says nothing.
+    const saved = outcome.results.filter(r => r.status === "saved").map(r => r.studentId);
+    if (evaluation.releaseResultsToStudent && saved.length > 0) {
+      await pushWithin("paper results", () => announcePaperResults(evaluation, saved));
+    }
+    res.json({ maxMarks: outcome.maxMarks, results: outcome.results });
+  } catch (err) {
+    logger.error({ err }, "save paper totals failed");
+    res.status(500).json({ error: "Failed to save the marks" });
+  }
+});
+
+/**
+ * The class a scanned paper is matched against: current, non-archived members
+ * of the exam's class, narrowed to its audience when it is a group check — the
+ * rule `PATCH /attempts/:id` already applies when it moves a paper onto a
+ * student. `hasAttempt` lets the screen warn before a save that would skip them.
+ */
+async function scanRoster(evaluation: {
+  id: string;
+  teacherId: string;
+  classGroupId: string | null;
+}): Promise<RosterEntry[]> {
+  if (!evaluation.classGroupId) return [];
+  const members = await db
+    .select({ id: students.id, displayName: students.displayName })
+    .from(students)
+    .innerJoin(classMemberships, eq(classMemberships.studentId, students.id))
+    .where(
+      and(
+        eq(classMemberships.classGroupId, evaluation.classGroupId),
+        eq(students.teacherId, evaluation.teacherId),
+        isNull(students.archivedAt),
+      ),
+    )
+    .orderBy(asc(students.displayName));
+  const audience = await evaluationAudience(evaluation.id);
+  const sat = await db
+    .select({ studentId: attempts.studentId })
+    .from(attempts)
+    .where(eq(attempts.evaluationId, evaluation.id));
+  const hasAttempt = new Set(sat.map(a => a.studentId));
+  return members
+    .filter(m => inAudience(audience, m.id))
+    .map(m => ({ studentId: m.id, displayName: m.displayName, hasAttempt: hasAttempt.has(m.id) }));
+}
+
+/**
+ * Read one student's marked paper: the marks, and whose it is.
+ *
+ * The caller sends photos one at a time (three in flight), so one bad photo
+ * costs one row, not the batch. Nothing is created: no attempt, no grade. The
+ * response carries the name as written, a match against the class roster done
+ * here (the model never sees the roster), and the marks as proposals. A client
+ * saves them through the ordinary start-attempt and marking endpoints.
+ */
+router.post(
+  "/evaluations/:id/scan-class-paper",
+  scanLimiter,
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
+      if (!evaluation) {
+        res.status(404).json({ error: "Evaluation not found" });
+        return;
+      }
+      // Loaded before the gate: only a paper exam may be scanned this way.
+      const live = await liveQuestions(evaluation.id);
+      const refused = classScanGate(evaluation, live) ?? checkScanImage(req.body?.image);
+      if (refused) {
+        res.status(refused.status).json({ error: refused.error, code: refused.code });
+        return;
+      }
+      const image = req.body.image as string;
+
+      assertLiveModeEnabled();
+      assertBudgetAvailable();
+      await assertUserQuotaAvailable(req.user!.id);
+
+      if (live.length === 0) {
+        res.status(409).json({ error: "This evaluation has no questions" });
+        return;
+      }
+      const questions: ScannableQuestion[] = live.map((q, i) => ({
+        questionId: q.id,
+        number: i + 1,
+        maxMarks: Number(q.marks),
+        type: q.type,
+      }));
+      const roster = await scanRoster(evaluation);
+
+      const prompt = buildScanPrompt(questions, { readName: true });
+      const model = getGenerationModel();
+      const completion = await openai.chat.completions.create({
+        model,
+        max_completion_tokens: 1500,
+        messages: [
+          { role: "system", content: prompt.system },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: prompt.user },
+              { type: "image_url", image_url: { url: image } },
+            ],
+          },
+        ],
+      });
+      recordUsage(completion.usage, model, {
+        kind: "quiz",
+        promptVersion: "scan-class-paper-1",
+        userId: req.user!.id,
+      });
+
+      const raw = extractJSON(completion.choices[0]?.message?.content ?? "{}");
+      const parsed = parseScanResponse(raw, questions);
+      const nameRead = parseNameRead(raw);
+      res.json({
+        nameRead,
+        match: matchStudent(nameRead, roster),
+        proposals: parsed.proposals,
+        skipped: parsed.skipped,
+        writtenTotal: parseTotalRead(raw),
+        model,
+        saved: false,
+      });
+    } catch (err) {
+      respondScanError(res, err, "scan class paper failed");
+    }
+  },
+);
 
 /**
  * Books a teacher can actually build an evaluation from.

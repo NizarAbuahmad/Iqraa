@@ -26,10 +26,12 @@ import {
   prepSummary,
   missingPrepView,
   savedDeckFor,
+  savedPrepArtifacts,
   sameTopic,
   withoutBoardTools,
   type MaterialLike,
 } from '../lessonBoard.ts';
+import { scopeFormState } from '../wideScopeRequest.ts';
 
 const TOPIC = 'تركيب الاقترانات';
 
@@ -277,5 +279,39 @@ describe('savedDeckFor', () => {
       null,
     );
     assert.equal(savedDeckFor([saved({ type: 'slides', content: deck('x') })], ''), null);
+  });
+});
+
+describe('a wide paper is not a lesson\'s material', () => {
+  const unitSel = { kind: 'unit', gradeId: 'grade-10', subjectId: 'mathematics', unitId: 'kbu-math-s1-nccd-u2' } as const;
+  const lessonSel = { kind: 'lesson', gradeId: 'grade-9', subjectId: 'mathematics', lessonId: 'kbl-g9-math-s1-nccd-u2_l1' } as const;
+  const G9_LESSON = 'kbl-g9-math-s1-nccd-u2_l1';
+  const mk = (id: string, formState: Record<string, unknown> | null) => ({
+    id, type: 'quiz', title: 'اختبار', topic: 'الاقترانات', savedAt: '2026-10-14T10:00:00Z', formState,
+  });
+
+  it('a unit / semester / book paper whose label equals the lesson title is NOT matched, by topic or by id', () => {
+    const unit = mk('unit', scopeFormState(unitSel, 'balanced'));
+    const sem = mk('sem', scopeFormState({ kind: 'semester', gradeId: 'grade-10', subjectId: 'mathematics', semester: 1 }, 'random'));
+    const book = mk('book', scopeFormState({ kind: 'book', gradeId: 'grade-10', subjectId: 'mathematics' }, 'balanced'));
+    for (const m of [unit, sem, book]) {
+      assert.deepEqual(materialsForTopic([m], 'الاقترانات', G9_LESSON), [], m.id);
+      assert.deepEqual(materialsForTopic([m], 'الاقترانات'), [], m.id);
+      assert.equal(buildPrepBoard([m], 'الاقترانات', G9_LESSON).find(r => r.type === 'quiz')!.done, false);
+      assert.deepEqual(savedPrepArtifacts([m], 'الاقترانات', G9_LESSON), [], 'the chat must not think a quiz was prepared');
+    }
+  });
+
+  it('a lesson-scope or old (no-scope) material with the same topic still matches', () => {
+    const lessonScoped = mk('lesson', scopeFormState(lessonSel, 'balanced')); // records nothing
+    const old = mk('old', null);
+    const noState = mk('nostate', {});
+    const malformed = mk('bad', { scope: '{not json' });
+    for (const m of [lessonScoped, old, noState, malformed]) {
+      assert.deepEqual(materialsForTopic([m], 'الاقترانات', G9_LESSON).map(x => x.id), [m.id], m.id);
+    }
+    // and a wide paper beside a real one does not hide it
+    const both = materialsForTopic([mk('unit', scopeFormState(unitSel, 'balanced')), old], 'الاقترانات', G9_LESSON);
+    assert.deepEqual(both.map(x => x.id), ['old']);
   });
 });

@@ -1,0 +1,2 @@
+ALTER TABLE "ai_artifacts" ADD COLUMN "student_approved_at" timestamp with time zone;--> statement-breakpoint
+CREATE INDEX "ai_artifacts_kind_lesson_idx" ON "ai_artifacts" USING btree ("kind","lesson_ref");
