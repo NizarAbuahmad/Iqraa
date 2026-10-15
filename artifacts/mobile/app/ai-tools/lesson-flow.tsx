@@ -49,7 +49,7 @@ import { Toast } from '@/components/ui/Toast';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { buildLessonFlowHTML, exportAsPDF } from '@/services/share';
-import { lessonFlowFailure } from '@/services/lessonFlowError';
+import { failedStepHint, lessonFlowFailure } from '@/services/lessonFlowError';
 import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
@@ -596,6 +596,7 @@ export default function LessonFlowScreen() {
                   colors={colors}
                   collapsed={collapsed[step.key]}
                   onToggleCollapse={() => setCollapsed(prev => ({ ...prev, [step.key]: !prev[step.key] }))}
+                  retryable={retryable}
                 >
                   {status === 'done' && (
                     <StepContent
@@ -715,10 +716,12 @@ interface StepCardProps {
   colors: ReturnType<typeof import('@/hooks/useColors').useColors>;
   collapsed: boolean;
   onToggleCollapse: () => void;
+  /** False when the banner offers no Retry, so the card must not tell the teacher to tap it. */
+  retryable: boolean;
   children?: React.ReactNode;
 }
 
-function StepCard({ stepNum, label, icon, color, status, isRTL, lang, colors, collapsed, onToggleCollapse, children }: StepCardProps) {
+function StepCard({ stepNum, label, icon, color, status, isRTL, lang, colors, collapsed, onToggleCollapse, retryable, children }: StepCardProps) {
   const borderColor =
     status === 'done' ? color + '40' :
     status === 'error' ? '#EF444450' :
@@ -762,7 +765,7 @@ function StepCard({ stepNum, label, icon, color, status, isRTL, lang, colors, co
           )}
           {status === 'error' && (
             <Text style={{ color: palette.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>
-              {lang === 'ar' ? 'تعذّر إكمال الخطوة — أعد المحاولة' : 'Failed — tap Retry below'}
+              {failedStepHint(lang, retryable)}
             </Text>
           )}
         </View>
