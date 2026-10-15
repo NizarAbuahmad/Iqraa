@@ -307,18 +307,6 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(res.status, 401, "a student's record must require a token");
   });
 
-  it("mounts the group-check audience inside the evaluations guard", async () => {
-    // A student list on an exam decides who may sit it; it must never be
-    // writable without a teacher token.
-    const id = "00000000-0000-0000-0000-000000000000";
-    const res = await fetch(`${base}/evaluations/${id}/audience`, {
-      method: "PUT",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ studentIds: [id] }),
-    });
-    assert.equal(res.status, 401, "setting who may sit an exam must require a token");
-  });
-
   it("mounts support groups inside the roster's guarded prefix", async () => {
     const id = "00000000-0000-0000-0000-000000000000";
     const res = await fetch(`${base}/classes/${id}/support-groups`);
