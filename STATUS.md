@@ -406,8 +406,15 @@ an announcement by default» below.
   side-by-side sheet (variant 0 against variant 1, per style and kind) was
   generated from `buildLessonStyleBlueprint` for that read, one per language; it
   is not kept in the repo, so it cannot go stale. **Known data gap found while
-  testing:** one maths lab lesson has an Arabic `titleEn`, so its English plan
-  carries Arabic in variant 0 too. Adding a third wording means one more builder
+  testing:** the Grade 10 maths Semester 1 lab lesson (`kbl-math-s1-nccd-u1_lab`)
+  had an Arabic `titleEn`; it now has a real one (`title_en` in
+  `iqra_curriculum_g10_math_sem1.json`, used by `buildNccdSem1Catalog`). **The
+  cause is wider and is not fixed:** the maths catalogs for Grades 7–10 have no
+  English lesson titles and copy `title_ar` into `titleEn` (122 more lessons,
+  measured 2026-10-15), so an English plan for any of them carries an Arabic
+  title. Fix it per lesson by adding `title_en` to its JSON row. (Grade 1 Arabic
+  lessons also match a naive "Arabic in `titleEn`" check, legitimately — their
+  English titles quote the letter.) Adding a third wording means one more builder
   per blueprint, per language. Not looked at in a browser.
 - **"No question bank" after a failed live call now says so, with the reason**
   (2026-10-11). With live AI on, a failed call falls back to the offline

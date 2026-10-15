@@ -38,6 +38,7 @@
           "id": "u1_lab",
           "order": 0,
           "title_ar": "معمل برمجية جيوجبرا: حل أنظمة المعادلات بيانياً",
+          "title_en": "GeoGebra Lab: Solving Systems of Equations Graphically",
           "periods": 1,
           "type": "lab",
           "objectives": [
