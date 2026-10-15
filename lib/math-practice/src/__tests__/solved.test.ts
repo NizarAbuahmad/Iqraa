@@ -11,6 +11,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { takeConcreteChem, takeSolvedChem, takeSolvedMath } from '../index.ts';
+import { CHEM_BANK } from '../chemistry.ts';
 import { completionSplit, solvedItemIds, stepsFor } from '../steps.ts';
 
 const MOLE = 'المول والكتلة المولية';
@@ -47,7 +48,9 @@ describe('takeSolvedChem', () => {
       seen.add(s.id);
       taken += 1;
     }
-    assert.equal(taken, 7, 'the mole family holds seven solved items');
+    const moleSolved = CHEM_BANK.filter(i => i.family === 'mole' && solvedItemIds().includes(i.id)).length;
+    assert.equal(taken, moleSolved, 'the pass serves every solved item in the family, once');
+    assert.ok(moleSolved >= 15, `the mole family holds ${moleSolved} solved items`);
     assert.equal(takeSolvedChem(MOLE, null, 'medium', 'ar', session), null);
   });
 

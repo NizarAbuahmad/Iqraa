@@ -254,10 +254,13 @@ describe('takeConcreteChem', () => {
       assert.ok(q);
       ids.add(q.text);
     }
-    // Every bonding stem names a bond or a compound; a general_chem item would
-    // be about elements and mixtures instead.
+    // Every stem must be one of the bonding family's own prompts; a general_chem
+    // item would be about elements and mixtures instead. (This used to be a keyword
+    // regex over the stem, which broke the first time a bonding question was worded
+    // without «رابطة» — the family is the thing to check, so check it.)
+    const bonding = new Set(CHEM_BANK.filter(i => i.family === 'bonding').map(i => i.promptAr));
     for (const text of ids) {
-      assert.match(text, /رابطة|الروابط|NaCl|Cl₂|H₂O|HCl|فلز/u, `left the family: ${text}`);
+      assert.ok(bonding.has(text), `left the family: ${text}`);
     }
   });
 });

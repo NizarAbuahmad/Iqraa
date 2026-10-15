@@ -538,4 +538,879 @@ export const CHEM_A_STEPS: Record<string, SolutionSteps> = {
       'So the equation must be balanced, because atoms are neither destroyed nor created, so their number is conserved on both sides',
     ],
   },
+  // ── depth added 2026-10-15 ──
+  'ch-ab-e3': {
+    ar: [
+      'الذرة تتكون من بروتونات ونيوترونات وإلكترونات',
+      'البروتونات جسيمات موجبة الشحنة في النواة',
+      'إذن شحنة البروتون: موجبة (+1)',
+    ],
+    en: [
+      'An atom is made of protons, neutrons and electrons',
+      'Protons are positively charged particles in the nucleus',
+      'So the charge of a proton is positive (+1)',
+    ],
+  },
+  'ch-ab-e4': {
+    ar: [
+      'في الذرة المتعادلة: عدد الإلكترونات = عدد البروتونات = العدد الذري',
+      'عدد الإلكترونات = 9',
+      'إذن في الذرة 9 إلكترونات',
+    ],
+    en: [
+      'In a neutral atom: electrons = protons = atomic number',
+      'Number of electrons = 9',
+      'So the atom has 9 electrons',
+    ],
+  },
+  'ch-ab-e5': {
+    ar: [
+      'النواة تحتوي على البروتونات والنيوترونات، وكل منها أثقل بكثير من الإلكترون',
+      'الإلكترونات تضيف كتلة ضئيلة جدًا',
+      'إذن معظم كتلة الذرة تتركز في النواة',
+    ],
+    en: [
+      'The nucleus holds protons and neutrons, each far heavier than an electron',
+      'The electrons add almost no mass',
+      'So most of the atom\'s mass is concentrated in the nucleus',
+    ],
+  },
+  'ch-ab-m3': {
+    ar: [
+      'عدد النيوترونات = العدد الكتلي − العدد الذري',
+      'n = A − Z = 27 − 13 = 14',
+      'إذن عدد النيوترونات = 14 نيوترونًا',
+    ],
+    en: [
+      'Number of neutrons = mass number − atomic number',
+      'n = A − Z = 27 − 13 = 14',
+      'So the atom has 14 neutrons',
+    ],
+  },
+  'ch-ab-m4': {
+    ar: [
+      'في ذرة Na المتعادلة: عدد الإلكترونات = 11',
+      'الشحنة 1+ تعني أن الأيون فقد إلكترونًا واحدًا',
+      'عدد الإلكترونات = 11 − 1 = 10',
+      'إذن في الأيون Na⁺ 10 إلكترونات',
+    ],
+    en: [
+      'In a neutral Na atom: electrons = 11',
+      'The charge 1+ means the ion lost one electron',
+      'Electrons = 11 − 1 = 10',
+      'So the ion Na⁺ has 10 electrons',
+    ],
+  },
+  'ch-ab-m5': {
+    ar: [
+      'عدد البروتونات = العدد الذري = 6 في أي نظير للكربون',
+      'عدد النيوترونات = A − Z = 14 − 6 = 8',
+      'إذن في ¹⁴C 6 بروتونات و8 نيوترونات',
+    ],
+    en: [
+      'Number of protons = atomic number = 6 in any carbon isotope',
+      'Number of neutrons = A − Z = 14 − 6 = 8',
+      'So ¹⁴C has 6 protons and 8 neutrons',
+    ],
+  },
+  'ch-ab-m6': {
+    ar: [
+      'عدد البروتونات في الذرة يساوي عدد الإلكترونات',
+      'الشحنة الموجبة الكلية للبروتونات تلغي الشحنة السالبة الكلية للإلكترونات',
+      'إذن الذرة متعادلة لأن عدد البروتونات الموجبة يساوي عدد الإلكترونات السالبة',
+    ],
+    en: [
+      'The number of protons in an atom equals the number of electrons',
+      'The total positive charge of the protons cancels the total negative charge of the electrons',
+      'So the atom is neutral because the number of positive protons equals the number of negative electrons',
+    ],
+  },
+  'ch-ab-h2': {
+    ar: [
+      'العدد الذري هو عدد البروتونات، وهو الذي يحدد نوع العنصر',
+      'الكربون Z = 6، فكل من ¹²C و¹⁴C فيه 6 بروتونات، أما ¹⁴N فعدده الذري 7',
+      'تساوي العدد الكتلي (14) في ¹⁴C و¹⁴N لا يعني تساوي العدد الذري',
+      'إذن ¹²C و¹⁴C، لأن لكل منهما 6 بروتونات',
+    ],
+    en: [
+      'The atomic number is the number of protons, and it decides the element',
+      'Carbon has Z = 6, so ¹²C and ¹⁴C each have 6 protons, while ¹⁴N has atomic number 7',
+      'Equal mass numbers (14) in ¹⁴C and ¹⁴N do not mean equal atomic numbers',
+      'So ¹²C and ¹⁴C, because each has 6 protons',
+    ],
+  },
+  'ch-ab-h3': {
+    ar: [
+      'عدد النيوترونات n = 16 والعدد الكتلي A = 31',
+      'العدد الذري Z = A − n = 31 − 16 = 15',
+      'في الذرة المتعادلة عدد الإلكترونات = Z = 15',
+      'إذن العدد الذري 15 وعدد الإلكترونات 15',
+    ],
+    en: [
+      'Neutrons n = 16 and mass number A = 31',
+      'Atomic number Z = A − n = 31 − 16 = 15',
+      'In a neutral atom the number of electrons = Z = 15',
+      'So the atomic number is 15 and the number of electrons is 15',
+    ],
+  },
+  'ch-ab-h4': {
+    ar: [
+      'عدد البروتونات = 17، فالعنصر هو الكلور',
+      'عدد الإلكترونات (18) أكبر من عدد البروتونات (17) بواحد',
+      'الشحنة = 17 − 18 = −1',
+      'إذن الجسيم أيون سالب شحنته 1−',
+    ],
+    en: [
+      'The number of protons is 17, so the element is chlorine',
+      'There are 18 electrons, one more than the 17 protons',
+      'Charge = 17 − 18 = −1',
+      'So the particle is a negative ion with charge 1−',
+    ],
+  },
+  'ch-as-e3': {
+    ar: [
+      'عدد الإلكترونات الأقصى في المستوى n هو 2n²',
+      'n = 2 ⟹ 2 × 2² = 2 × 4 = 8',
+      'إذن يتسع المستوى الثاني لـ 8 إلكترونات',
+    ],
+    en: [
+      'The maximum number of electrons in level n is 2n²',
+      'n = 2 ⟹ 2 × 2² = 2 × 4 = 8',
+      'So the second level holds 8 electrons',
+    ],
+  },
+  'ch-as-e4': {
+    ar: [
+      'الانتقال من مستوى أعلى (n = 3) إلى مستوى أدنى (n = 1) تقل فيه طاقة الإلكترون',
+      'فرق الطاقة يُطلق خارج الذرة',
+      'إذن ينبعث منه طاقة على شكل ضوء',
+    ],
+    en: [
+      'Moving from a higher level (n = 3) to a lower one (n = 1) lowers the electron\'s energy',
+      'The energy difference is given out by the atom',
+      'So energy is emitted as light',
+    ],
+  },
+  'ch-as-e5': {
+    ar: [
+      'يميل الإلكترون إلى أقل طاقة ممكنة',
+      'أقل مستوى طاقة هو الأقرب إلى النواة، أي n = 1',
+      'إذن الحالة المستقرة في المستوى n = 1',
+    ],
+    en: [
+      'An electron tends toward the lowest possible energy',
+      'The lowest level is the one nearest the nucleus, n = 1',
+      'So the ground state is level n = 1',
+    ],
+  },
+  'ch-as-m3': {
+    ar: [
+      'E = −13.6 / n²',
+      'n = 3 ⟹ E = −13.6 / 9',
+      'E ≈ −1.51 eV',
+      'إذن طاقة المستوى n = 3 هي −1.51 eV',
+    ],
+    en: [
+      'E = −13.6 / n²',
+      'n = 3 ⟹ E = −13.6 / 9',
+      'E ≈ −1.51 eV',
+      'So the energy of level n = 3 is −1.51 eV',
+    ],
+  },
+  'ch-as-m4': {
+    ar: [
+      'E₁ = −13.6 eV وE₃ = −13.6/9 ≈ −1.51 eV',
+      'الطاقة الأقل هي الأكثر سالبية: −13.6 < −1.51',
+      'المستوى n = 1 هو الأقرب إلى النواة',
+      'إذن الأقل طاقة n = 1، لأنه الأقرب إلى النواة',
+    ],
+    en: [
+      'E₁ = −13.6 eV and E₃ = −13.6/9 ≈ −1.51 eV',
+      'The lower energy is the more negative one: −13.6 < −1.51',
+      'Level n = 1 is the closest to the nucleus',
+      'So n = 1 has the lower energy, because it is closest to the nucleus',
+    ],
+  },
+  'ch-as-m5': {
+    ar: [
+      'المستوى الرئيس n يضم n من المستويات الفرعية',
+      'n = 3 ⟹ 3 مستويات فرعية: s وp وd',
+      'إذن في المستوى الثالث 3 مستويات فرعية (s وp وd)',
+    ],
+    en: [
+      'Main level n contains n subshells',
+      'n = 3 ⟹ 3 subshells: s, p and d',
+      'So the third level has 3 subshells (s, p and d)',
+    ],
+  },
+  'ch-as-m6': {
+    ar: [
+      'أعداد الكم الأربعة هي n وℓ وm وms',
+      'n هو العدد الرئيس: يحدد مستوى الطاقة وحجم الأوربيتال',
+      'إذن n، ويحدد مستوى الطاقة وحجم الأوربيتال',
+    ],
+    en: [
+      'The four quantum numbers are n, ℓ, m and ms',
+      'n is the principal number: it fixes the energy level and the size of the orbital',
+      'So it is n, which fixes the energy level and the size of the orbital',
+    ],
+  },
+  'ch-as-h2': {
+    ar: [
+      'المستوى الفرعي d يضم 5 أوربيتالات',
+      'كل أوربيتال يتسع لإلكترونين',
+      'عدد الإلكترونات = 5 × 2 = 10',
+      'إذن في المستوى d 5 أوربيتالات تتسع لـ10 إلكترونات',
+    ],
+    en: [
+      'A d subshell has 5 orbitals',
+      'Each orbital holds 2 electrons',
+      'Electrons = 5 × 2 = 10',
+      'So a d subshell has 5 orbitals holding 10 electrons',
+    ],
+  },
+  'ch-as-h3': {
+    ar: [
+      'لكل إلكترون عدد كم مغزلي ms يصف اتجاه دورانه حول محوره',
+      'لا يوجد إلا اتجاهان ممكنان للدوران',
+      'إذن ms = +½ أو −½',
+    ],
+    en: [
+      'Every electron has a spin quantum number ms describing the direction of its spin',
+      'Only two spin directions are possible',
+      'So ms = +½ or −½',
+    ],
+  },
+  'ch-as-h4': {
+    ar: [
+      'وفق بور يدور الإلكترون في مستويات طاقة محددة ومستقرة',
+      'في المستوى الواحد تبقى طاقته ثابتة، ولا تُمتص أو تُشع طاقة إلا عند الانتقال بين مستويين',
+      'إذن لا يُشعّ طاقة لأن طاقته ثابتة ما دام في مستوى طاقة محدد',
+    ],
+    en: [
+      'In Bohr\'s theory an electron moves in fixed, stable energy levels',
+      'Within one level its energy stays constant; energy is absorbed or emitted only when it moves between levels',
+      'So it does not radiate, because its energy is constant while it stays in one energy level',
+    ],
+  },
+  'ch-ec-e3': {
+    ar: [
+      'Z = 11 ⟹ 11 إلكترونًا',
+      'نملأ بالترتيب: 1s² ثم 2s² ثم 2p⁶ ثم 3s¹',
+      'المجموع: 2 + 2 + 6 + 1 = 11',
+      'إذن التوزيع الإلكتروني للصوديوم: 1s² 2s² 2p⁶ 3s¹',
+    ],
+    en: [
+      'Z = 11 ⟹ 11 electrons',
+      'Fill in order: 1s², then 2s², then 2p⁶, then 3s¹',
+      'Total: 2 + 2 + 6 + 1 = 11',
+      'So sodium is 1s² 2s² 2p⁶ 3s¹',
+    ],
+  },
+  'ch-ec-e4': {
+    ar: [
+      'Z = 8 ⟹ 8 إلكترونات',
+      'نملأ بالترتيب: 1s² (2) ثم 2s² (4 في المجموع) ثم 2p',
+      'المتبقي 8 − 4 = 4 إلكترونات تذهب إلى 2p',
+      'إذن التوزيع الإلكتروني للأكسجين: 1s² 2s² 2p⁴',
+    ],
+    en: [
+      'Z = 8 ⟹ 8 electrons',
+      'Fill in order: 1s² (2), then 2s² (4 so far), then 2p',
+      'The remaining 8 − 4 = 4 electrons go into 2p',
+      'So oxygen is 1s² 2s² 2p⁴',
+    ],
+  },
+  'ch-ec-e5': {
+    ar: [
+      'المستوى الفرعي p يضم 3 أوربيتالات',
+      'كل أوربيتال يتسع لإلكترونين: 3 × 2 = 6',
+      'إذن يتسع 2p لـ 6 إلكترونات',
+    ],
+    en: [
+      'A p subshell has 3 orbitals',
+      'Each orbital holds 2 electrons: 3 × 2 = 6',
+      'So a full 2p holds 6 electrons',
+    ],
+  },
+  'ch-ec-m3': {
+    ar: [
+      'Z = 13 ⟹ 13 إلكترونًا',
+      'نملأ بالترتيب: 1s² 2s² 2p⁶ (10 إلكترونات)',
+      'المتبقي 13 − 10 = 3: اثنان في 3s وواحد في 3p',
+      'إذن التوزيع الإلكتروني للألمنيوم: 1s² 2s² 2p⁶ 3s² 3p¹',
+    ],
+    en: [
+      'Z = 13 ⟹ 13 electrons',
+      'Fill in order: 1s² 2s² 2p⁶ (10 electrons)',
+      'The remaining 13 − 10 = 3: two in 3s and one in 3p',
+      'So aluminium is 1s² 2s² 2p⁶ 3s² 3p¹',
+    ],
+  },
+  'ch-ec-m4': {
+    ar: [
+      'توزيع ذرة Na المتعادلة: 1s² 2s² 2p⁶ 3s¹',
+      'الشحنة 1+ تعني فقد إلكترون واحد، ويُفقد من المستوى الأخير 3s',
+      'يبقى 10 إلكترونات',
+      'إذن توزيع Na⁺: 1s² 2s² 2p⁶',
+    ],
+    en: [
+      'The neutral Na atom: 1s² 2s² 2p⁶ 3s¹',
+      'The charge 1+ means one electron is lost, taken from the outermost level 3s',
+      '10 electrons remain',
+      'So Na⁺ is 1s² 2s² 2p⁶',
+    ],
+  },
+  'ch-ec-m5': {
+    ar: [
+      'توزيع ذرة Cl المتعادلة: 1s² 2s² 2p⁶ 3s² 3p⁵',
+      'الشحنة 1− تعني اكتساب إلكترون واحد فيصبح 3p⁶',
+      'عدد الإلكترونات 18',
+      'إذن توزيع Cl⁻: 1s² 2s² 2p⁶ 3s² 3p⁶',
+    ],
+    en: [
+      'The neutral Cl atom: 1s² 2s² 2p⁶ 3s² 3p⁵',
+      'The charge 1− means one electron is gained, so 3p becomes 3p⁶',
+      'There are 18 electrons',
+      'So Cl⁻ is 1s² 2s² 2p⁶ 3s² 3p⁶',
+    ],
+  },
+  'ch-ec-m6': {
+    ar: [
+      'ترتيب الملء يتبع طاقة المستويات الفرعية: 3p ثم 4s ثم 3d',
+      'طاقة 4s أقل قليلًا من طاقة 3d في الذرة المتعادلة',
+      'إذن يُملأ أولًا المستوى 4s',
+    ],
+    en: [
+      'Filling follows subshell energy: 3p, then 4s, then 3d',
+      'The energy of 4s is slightly lower than that of 3d in a neutral atom',
+      'So 4s is filled first',
+    ],
+  },
+  'ch-ec-h2': {
+    ar: [
+      'Z = 26 ⟹ 26 إلكترونًا',
+      'نملأ 1s² 2s² 2p⁶ 3s² 3p⁶ (18 إلكترونًا) ثم 4s² (20 إلكترونًا)',
+      'المتبقي 26 − 20 = 6 إلكترونات تذهب إلى 3d',
+      'إذن التوزيع: 1s² 2s² 2p⁶ 3s² 3p⁶ 4s² 3d⁶',
+    ],
+    en: [
+      'Z = 26 ⟹ 26 electrons',
+      'Fill 1s² 2s² 2p⁶ 3s² 3p⁶ (18 electrons), then 4s² (20 electrons)',
+      'The remaining 26 − 20 = 6 electrons go into 3d',
+      'So iron is 1s² 2s² 2p⁶ 3s² 3p⁶ 4s² 3d⁶',
+    ],
+  },
+  'ch-ec-h3': {
+    ar: [
+      'عدد الإلكترونات = 2 + 2 + 6 + 2 + 6 = 18 ⟹ Z = 18، فالعنصر هو الأرجون',
+      'المستوى الخارجي 3s² 3p⁶ يضم 8 إلكترونات، أي أنه ممتلئ',
+      'إذن العنصر الأرجون Ar، غاز نبيل لأن مستواه الخارجي ممتلئ',
+    ],
+    en: [
+      'Number of electrons = 2 + 2 + 6 + 2 + 6 = 18 ⟹ Z = 18, so the element is argon',
+      'The outer level 3s² 3p⁶ holds 8 electrons, so it is full',
+      'So the element is argon, Ar, a noble gas because its outer level is full',
+    ],
+  },
+  'ch-ec-h4': {
+    ar: [
+      '1s² 2s² 2p³: ثلاثة إلكترونات في المستوى 2p الذي يضم 3 أوربيتالات',
+      'حسب قاعدة هوند يوضع إلكترون واحد في كل أوربيتال قبل أن يحدث الازدواج',
+      'إذن في ذرة النيتروجين 3 إلكترونات غير مزدوجة',
+    ],
+    en: [
+      '1s² 2s² 2p³: three electrons in the 2p subshell, which has 3 orbitals',
+      'By Hund\'s rule one electron goes into each orbital before any pairing',
+      'So a nitrogen atom has 3 unpaired electrons',
+    ],
+  },
+  'ch-bd-e3': {
+    ar: [
+      'النحاس فلز، وذراته تتشارك إلكترونات التكافؤ في «بحر» من الإلكترونات',
+      'هذا وصف الرابطة الفلزية',
+      'إذن الرابطة بين ذراته رابطة فلزية',
+    ],
+    en: [
+      'Copper is a metal; its atoms share their valence electrons in a "sea" of electrons',
+      'That describes a metallic bond',
+      'So the bond between its atoms is a metallic bond',
+    ],
+  },
+  'ch-bd-e4': {
+    ar: [
+      'ذرة الكلور فيها 7 إلكترونات تكافؤ وتحتاج إلى إلكترون واحد لتكمل 8',
+      'تتشارك كل ذرة بإلكترون واحد',
+      'إذن في Cl₂ زوج واحد',
+    ],
+    en: [
+      'A chlorine atom has 7 valence electrons and needs one more to reach 8',
+      'Each atom contributes one electron',
+      'So Cl₂ has one shared pair',
+    ],
+  },
+  'ch-bd-e5': {
+    ar: [
+      'المركب الأيوني يتكوّن من فلز ولافلز',
+      'K فلز وBr لافلز، أما HCl وCH₄ وCO₂ فمركبات من لافلزات',
+      'إذن المركب الأيوني هو KBr',
+    ],
+    en: [
+      'An ionic compound is made of a metal and a non-metal',
+      'K is a metal and Br a non-metal, while HCl, CH₄ and CO₂ are made only of non-metals',
+      'So the ionic compound is KBr',
+    ],
+  },
+  'ch-bd-m3': {
+    ar: [
+      'H وCl لافلزان، فالرابطة تساهمية',
+      'كهروسالبية Cl أعلى من H، فيُسحب الزوج المشترك نحو Cl',
+      'فيصبح طرف الجزيء سالبًا جزئيًا والطرف الآخر موجبًا جزئيًا',
+      'إذن الرابطة تساهمية قطبية، لأن الكلور أعلى كهروسالبية من الهيدروجين',
+    ],
+    en: [
+      'H and Cl are non-metals, so the bond is covalent',
+      'Cl is more electronegative than H, so the shared pair is pulled toward Cl',
+      'One end of the molecule becomes partly negative and the other partly positive',
+      'So the bond is polar covalent, because chlorine is more electronegative than hydrogen',
+    ],
+  },
+  'ch-bd-m4': {
+    ar: [
+      'ذرة النيتروجين فيها 5 إلكترونات تكافؤ وتحتاج إلى 3 لتكمل 8',
+      'تتشارك الذرتان بثلاثة إلكترونات من كل ذرة',
+      'إذن في N₂ رابطة ثلاثية (3 أزواج مشتركة)',
+    ],
+    en: [
+      'A nitrogen atom has 5 valence electrons and needs 3 more to reach 8',
+      'The two atoms share three electrons each',
+      'So N₂ has a triple bond (3 shared pairs)',
+    ],
+  },
+  'ch-bd-m5': {
+    ar: [
+      'NaCl الصلب شبكة من أيونات Na⁺ وCl⁻ متجاورة',
+      'التوصيل الكهربائي يحتاج إلى جسيمات مشحونة حرة الحركة',
+      'الأيونات في الشبكة الصلبة مثبتة في أماكنها',
+      'إذن لا يوصل الكهرباء لأن أيوناته مثبتة في مواقعها ولا تتحرك',
+    ],
+    en: [
+      'Solid NaCl is a lattice of neighbouring Na⁺ and Cl⁻ ions',
+      'Conduction needs charged particles that are free to move',
+      'The ions in the solid lattice are fixed in place',
+      'So it does not conduct, because its ions are held in position and cannot move',
+    ],
+  },
+  'ch-bd-m6': {
+    ar: [
+      'توزيع Mg: 1s² 2s² 2p⁶ 3s²',
+      'لتصل إلى توزيع الغاز النبيل تفقد الإلكترونين الخارجيين في 3s',
+      'إذن تفقد ذرة المغنيسيوم إلكترونين',
+    ],
+    en: [
+      'Mg is 1s² 2s² 2p⁶ 3s²',
+      'To reach the noble-gas configuration it loses the two outer electrons in 3s',
+      'So a magnesium atom loses two electrons',
+    ],
+  },
+  'ch-bd-h2': {
+    ar: [
+      'في المركب الأيوني تجاذب كهروستاتيكي قوي بين الأيونات الموجبة والسالبة',
+      'فصل الأيونات عن شبكتها يحتاج إلى طاقة كبيرة',
+      'إذن درجة الانصهار مرتفعة لقوة التجاذب الكهروستاتيكي بين الأيونات المتعاكسة الشحنة',
+    ],
+    en: [
+      'In an ionic compound there is a strong electrostatic attraction between positive and negative ions',
+      'Separating the ions from the lattice takes a lot of energy',
+      'So the melting point is high because of the strong electrostatic attraction between oppositely charged ions',
+    ],
+  },
+  'ch-bd-h3': {
+    ar: [
+      'إلكترونات التكافؤ في الفلز غير مرتبطة بذرة محددة',
+      'تشكّل «بحرًا» من الإلكترونات تتحرك بحرية بين الأيونات الموجبة',
+      'حركة هذه الإلكترونات هي التي تحمل التيار الكهربائي',
+      'إذن توصل الفلزات الكهرباء لوجود إلكترونات تكافؤ حرة الحركة (بحر من الإلكترونات)',
+    ],
+    en: [
+      'Valence electrons in a metal are not tied to one atom',
+      'They form a "sea" of electrons moving freely among the positive ions',
+      'The movement of these electrons carries the current',
+      'So metals conduct because they have free-moving valence electrons (a sea of electrons)',
+    ],
+  },
+  'ch-bd-h4': {
+    ar: [
+      'NaCl مركب أيوني: تجاذب قوي بين الأيونات يحتاج إلى طاقة كبيرة للتغلب عليه',
+      'CH₄ جزيئات تساهمية غير قطبية، والقوى بين جزيئاتها ضعيفة',
+      'فالمركب الأيوني أعلى انصهارًا',
+      'إذن NaCl، لأنه مركب أيوني والتجاذب بين أيوناته كبير',
+    ],
+    en: [
+      'NaCl is ionic: a strong attraction between ions that takes a lot of energy to overcome',
+      'CH₄ is made of non-polar covalent molecules with weak forces between them',
+      'So the ionic compound melts higher',
+      'So NaCl, because it is an ionic compound with strong attraction between its ions',
+    ],
+  },
+  'ch-fm-e3': {
+    ar: [
+      'شحنة Na⁺ تساوي +1 وشحنة Cl⁻ تساوي −1',
+      'مجموع الشحنات صفر بنسبة 1 : 1',
+      'إذن الصيغة NaCl',
+    ],
+    en: [
+      'Na⁺ has charge +1 and Cl⁻ has charge −1',
+      'The charges cancel in a 1 : 1 ratio',
+      'So the formula is NaCl',
+    ],
+  },
+  'ch-fm-e4': {
+    ar: [
+      'MgO مركب من المغنيسيوم والأكسجين',
+      'اسم المركب الثنائي: «أكسيد» ثم اسم الفلز',
+      'إذن اسمه أكسيد المغنيسيوم',
+    ],
+    en: [
+      'MgO is made of magnesium and oxygen',
+      'A binary compound is named "oxide" first and then the metal',
+      'So its name is magnesium oxide',
+    ],
+  },
+  'ch-fm-e5': {
+    ar: [
+      'شحنة Na⁺ هي +1 وشحنة OH⁻ هي −1',
+      'النسبة 1 : 1 فلا حاجة إلى أقواس أو أرقام سفلية',
+      'إذن صيغته NaOH',
+    ],
+    en: [
+      'Na⁺ has charge +1 and OH⁻ has charge −1',
+      'The ratio is 1 : 1, so no brackets or subscripts are needed',
+      'So its formula is NaOH',
+    ],
+  },
+  'ch-fm-m3': {
+    ar: [
+      'شحنة K⁺ هي +1 وشحنة SO₄²⁻ هي −2',
+      'لتعادل الشحنات نحتاج أيونَي K⁺ لكل SO₄²⁻: 2 × (+1) + (−2) = 0',
+      'إذن الصيغة K₂SO₄',
+    ],
+    en: [
+      'K⁺ has charge +1 and SO₄²⁻ has charge −2',
+      'To balance the charges we need two K⁺ for each SO₄²⁻: 2 × (+1) + (−2) = 0',
+      'So the formula is K₂SO₄',
+    ],
+  },
+  'ch-fm-m4': {
+    ar: [
+      'شحنة Ca²⁺ هي +2 وشحنة PO₄³⁻ هي −3',
+      'أصغر مضاعف مشترك للشحنتين هو 6: نحتاج 3 أيونات Ca²⁺ و2 من PO₄³⁻',
+      '3 × (+2) + 2 × (−3) = 0',
+      'إذن الصيغة Ca₃(PO₄)₂',
+    ],
+    en: [
+      'Ca²⁺ has charge +2 and PO₄³⁻ has charge −3',
+      'The lowest common multiple of 2 and 3 is 6: we need 3 Ca²⁺ and 2 PO₄³⁻',
+      '3 × (+2) + 2 × (−3) = 0',
+      'So the formula is Ca₃(PO₄)₂',
+    ],
+  },
+  'ch-fm-m5': {
+    ar: [
+      'NH₄⁺ أيون الأمونيوم وCl⁻ أيون الكلوريد',
+      'نبدأ باسم الأيون السالب ثم نذكر الأيون الموجب',
+      'إذن اسمه كلوريد الأمونيوم',
+    ],
+    en: [
+      'NH₄⁺ is the ammonium ion and Cl⁻ is the chloride ion',
+      'We name the negative ion first, then the positive ion',
+      'So its name is ammonium chloride',
+    ],
+  },
+  'ch-fm-m6': {
+    ar: [
+      'CaCO₃ يتكوّن من Ca²⁺ وCO₃²⁻',
+      'CO₃²⁻ هو أيون الكربونات',
+      'إذن اسمه كربونات الكالسيوم',
+    ],
+    en: [
+      'CaCO₃ is made of Ca²⁺ and CO₃²⁻',
+      'CO₃²⁻ is the carbonate ion',
+      'So its name is calcium carbonate',
+    ],
+  },
+  'ch-fm-h2': {
+    ar: [
+      '(NH₄)₂SO₄ يحتوي على أيونَي NH₄⁺',
+      'كل أيون NH₄⁺ فيه 4 ذرات هيدروجين',
+      'عدد ذرات H = 2 × 4 = 8',
+      'إذن عدد ذرات الهيدروجين 8 ذرات',
+    ],
+    en: [
+      '(NH₄)₂SO₄ contains two NH₄⁺ ions',
+      'Each NH₄⁺ ion has 4 hydrogen atoms',
+      'Number of H atoms = 2 × 4 = 8',
+      'So there are 8 hydrogen atoms',
+    ],
+  },
+  'ch-fm-h3': {
+    ar: [
+      'Al₂(SO₄)₃: ذرتا Al أي 2',
+      '(SO₄)₃: ثلاث مجموعات فيها 3 ذرات S و3 × 4 = 12 ذرة O',
+      'المجموع = 2 + 3 + 12 = 17',
+      'إذن العدد الكلي 17 ذرة',
+    ],
+    en: [
+      'Al₂(SO₄)₃: two Al atoms, so 2',
+      '(SO₄)₃: three groups holding 3 S atoms and 3 × 4 = 12 O atoms',
+      'Total = 2 + 3 + 12 = 17',
+      'So the total is 17 atoms',
+    ],
+  },
+  'ch-fm-h4': {
+    ar: [
+      'شحنة Mg²⁺ هي +2 وشحنة NO₃⁻ هي −1',
+      'نحتاج أيونَي NO₃⁻ لكل Mg²⁺، ونضعهما بين قوسين',
+      'إذن الصيغة Mg(NO₃)₂',
+    ],
+    en: [
+      'Mg²⁺ has charge +2 and NO₃⁻ has charge −1',
+      'We need two NO₃⁻ for each Mg²⁺, written in brackets',
+      'So the formula is Mg(NO₃)₂',
+    ],
+  },
+  'ch-eq-e3': {
+    ar: [
+      'نوازن Cl: توجد ذرتان في Cl₂ فنضع 2 أمام NaCl',
+      'نوازن Na: يلزم 2 أمام Na',
+      'إذن المعادلة الموزونة: 2Na + Cl₂ → 2NaCl',
+    ],
+    en: [
+      'Balance Cl: Cl₂ has two atoms, so put 2 in front of NaCl',
+      'Balance Na: put 2 in front of Na',
+      'So the balanced equation is 2Na + Cl₂ → 2NaCl',
+    ],
+  },
+  'ch-eq-e4': {
+    ar: [
+      'نوازن O: توجد ذرتان في O₂ فنضع 2 أمام MgO',
+      'نوازن Mg: يلزم 2 أمام Mg',
+      'إذن المعادلة الموزونة: 2Mg + O₂ → 2MgO',
+    ],
+    en: [
+      'Balance O: O₂ has two atoms, so put 2 in front of MgO',
+      'Balance Mg: put 2 in front of Mg',
+      'So the balanced equation is 2Mg + O₂ → 2MgO',
+    ],
+  },
+  'ch-eq-e5': {
+    ar: [
+      'المتفاعلان عنصران (Na وCl₂) والناتج مركب واحد',
+      'اتحاد مادتين لتكوين مادة واحدة هو تفاعل اتحاد',
+      'إذن نوع التفاعل تفاعل اتحاد',
+    ],
+    en: [
+      'The reactants are two elements (Na and Cl₂) and there is one product',
+      'Two substances combining to give one is a combination reaction',
+      'So it is a combination reaction',
+    ],
+  },
+  'ch-eq-m3': {
+    ar: [
+      'نوازن Cl: توجد ذرتان في ZnCl₂ فنضع 2 أمام HCl',
+      'نتحقق من H: ذرتان في الطرفين',
+      'إذن المعادلة الموزونة: Zn + 2HCl → ZnCl₂ + H₂',
+    ],
+    en: [
+      'Balance Cl: ZnCl₂ has two atoms, so put 2 in front of HCl',
+      'Check H: two atoms on each side',
+      'So the balanced equation is Zn + 2HCl → ZnCl₂ + H₂',
+    ],
+  },
+  'ch-eq-m4': {
+    ar: [
+      'فلز حرّ (Zn) حلّ محلّ فلز آخر (Cu) في مركبه',
+      'هذا تفاعل إحلال بسيط',
+      'إذن نوع التفاعل تفاعل إحلال بسيط',
+    ],
+    en: [
+      'A free metal (Zn) displaced another metal (Cu) from its compound',
+      'That is a single displacement reaction',
+      'So it is a single displacement reaction',
+    ],
+  },
+  'ch-eq-m5': {
+    ar: [
+      'مركبان يتبادلان الأيونات: Ag⁺ مع Cl⁻ وNa⁺ مع NO₃⁻',
+      'تبادل الأيونات بين مركبين هو إحلال مزدوج',
+      'إذن نوع التفاعل تفاعل إحلال مزدوج',
+    ],
+    en: [
+      'Two compounds swap ions: Ag⁺ with Cl⁻ and Na⁺ with NO₃⁻',
+      'Swapping ions between two compounds is double displacement',
+      'So it is a double displacement reaction',
+    ],
+  },
+  'ch-eq-m6': {
+    ar: [
+      'نوازن C: 3 ذرات فنضع 3 أمام CO₂',
+      'نوازن H: 8 ذرات فنضع 4 أمام H₂O',
+      'نوازن O: 3 × 2 + 4 = 10 ذرات فنضع 5 أمام O₂',
+      'إذن المعادلة الموزونة: C₃H₈ + 5O₂ → 3CO₂ + 4H₂O',
+    ],
+    en: [
+      'Balance C: 3 atoms, so put 3 in front of CO₂',
+      'Balance H: 8 atoms, so put 4 in front of H₂O',
+      'Balance O: 3 × 2 + 4 = 10 atoms, so put 5 in front of O₂',
+      'So the balanced equation is C₃H₈ + 5O₂ → 3CO₂ + 4H₂O',
+    ],
+  },
+  'ch-eq-h3': {
+    ar: [
+      'نوازن O: أصغر مضاعف مشترك للعددين 2 و3 هو 6: نضع 3 أمام O₂ و2 أمام Al₂O₃',
+      'نوازن Al: يوجد الآن 4 ذرات Al في 2Al₂O₃ فنضع 4 أمام Al',
+      'إذن المعادلة الموزونة: 4Al + 3O₂ → 2Al₂O₃',
+    ],
+    en: [
+      'Balance O: the lowest common multiple of 2 and 3 is 6, so put 3 in front of O₂ and 2 in front of Al₂O₃',
+      'Balance Al: 2Al₂O₃ holds 4 Al atoms, so put 4 in front of Al',
+      'So the balanced equation is 4Al + 3O₂ → 2Al₂O₃',
+    ],
+  },
+  'ch-eq-h4': {
+    ar: [
+      'نوازن Fe: ذرتان في Fe₂O₃ فنضع 2 أمام Fe',
+      'نوازن O: ثلاث ذرات O في Fe₂O₃ تحتاج 3CO فنضع 3 أمام CO',
+      'نوازن C: نضع 3 أمام CO₂',
+      'إذن المعادلة الموزونة: Fe₂O₃ + 3CO → 2Fe + 3CO₂',
+    ],
+    en: [
+      'Balance Fe: Fe₂O₃ has two atoms, so put 2 in front of Fe',
+      'Balance O: the three O atoms in Fe₂O₃ need 3CO, so put 3 in front of CO',
+      'Balance C: put 3 in front of CO₂',
+      'So the balanced equation is Fe₂O₃ + 3CO → 2Fe + 3CO₂',
+    ],
+  },
+  'ch-pt-e3': {
+    ar: [
+      'الفلزات القلوية تقع في المجموعة الأولى',
+      'رقم المجموعة الأولى يعني إلكترونًا واحدًا في مستوى التكافؤ',
+      'إذن عدد إلكترونات التكافؤ إلكترون واحد',
+    ],
+    en: [
+      'The alkali metals are in the first group',
+      'The first group means one electron in the valence level',
+      'So the number of valence electrons is one',
+    ],
+  },
+  'ch-pt-e4': {
+    ar: [
+      'أعلى مستوى طاقة مشغول هنا هو n = 3 (3s² 3p⁴)',
+      'رقم الدورة يساوي رقم أعلى مستوى طاقة مشغول',
+      'إذن العنصر في الدورة الثالثة',
+    ],
+    en: [
+      'The highest occupied energy level here is n = 3 (3s² 3p⁴)',
+      'The period number equals the highest occupied energy level',
+      'So the element is in the third period',
+    ],
+  },
+  'ch-pt-e5': {
+    ar: [
+      'الغازات النبيلة مستوياتها الخارجية ممتلئة وهي خاملة',
+      'Ar غاز نبيل، أما Na وMg فلزان وCl هالوجين',
+      'إذن الغاز النبيل هو Ar',
+    ],
+    en: [
+      'Noble gases have full outer levels and are unreactive',
+      'Ar is a noble gas, Na and Mg are metals and Cl is a halogen',
+      'So the noble gas is Ar',
+    ],
+  },
+  'ch-pt-m3': {
+    ar: [
+      'Li وK في المجموعة نفسها، وK تحت Li',
+      'النزول في المجموعة يزيد عدد مستويات الطاقة',
+      'إذن الأكبر K، لأن له مستويات طاقة أكثر',
+    ],
+    en: [
+      'Li and K are in the same group, with K below Li',
+      'Going down a group adds energy levels',
+      'So the larger atom is K, because it has more energy levels',
+    ],
+  },
+  'ch-pt-m4': {
+    ar: [
+      'عند النزول في المجموعة يزداد نصف القطر',
+      'الإلكترون الخارجي أبعد عن النواة فيسهل نزعه',
+      'إذن طاقة التأين تقل، لأن الإلكترون الخارجي أبعد عن النواة',
+    ],
+    en: [
+      'Going down a group the radius increases',
+      'The outer electron is farther from the nucleus, so it is easier to remove',
+      'So the ionization energy decreases, because the outer electron is farther from the nucleus',
+    ],
+  },
+  'ch-pt-m5': {
+    ar: [
+      'Cl لافلز على يمين الدورة الثالثة وNa فلز على يسارها',
+      'الكهروسالبية تزداد عبر الدورة من اليسار إلى اليمين',
+      'إذن الأعلى كهروسالبية Cl، لأنه لافلز يميل إلى جذب الإلكترونات',
+    ],
+    en: [
+      'Cl is a non-metal on the right of period 3 and Na a metal on the left',
+      'Electronegativity increases across a period from left to right',
+      'So the higher electronegativity is Cl, because it is a non-metal that tends to attract electrons',
+    ],
+  },
+  'ch-pt-m6': {
+    ar: [
+      'العناصر كلها في الدورة الثالثة، وطاقة التأين تزداد عمومًا عبر الدورة',
+      'Cl أقصى اليمين بينها',
+      'إذن الأعلى طاقة تأين أولى Cl',
+    ],
+    en: [
+      'All the elements are in period 3, and ionization energy generally rises across a period',
+      'Cl is furthest to the right of them',
+      'So the highest first ionization energy is Cl',
+    ],
+  },
+  'ch-pt-h2': {
+    ar: [
+      'Cl⁻ اكتسب إلكترونًا فصار فيه 18 إلكترونًا وشحنة نواته 17+ كما هي',
+      'يزداد التنافر بين الإلكترونات الخارجية فيتمدد السحاب الإلكتروني',
+      'إذن Cl⁻ أكبر، لزيادة التنافر بين الإلكترونات مع بقاء شحنة النواة',
+    ],
+    en: [
+      'Cl⁻ gained an electron, so it has 18 electrons while its nuclear charge is still 17+',
+      'The repulsion among the outer electrons grows and the electron cloud expands',
+      'So Cl⁻ is larger, because of the greater repulsion between electrons with the nuclear charge unchanged',
+    ],
+  },
+  'ch-pt-h3': {
+    ar: [
+      'الأيونات الثلاثة فيها 10 إلكترونات، لكن عدد بروتوناتها 11 و12 و13',
+      'كلما زادت شحنة النواة مع ثبات عدد الإلكترونات زاد الجذب وصغر نصف القطر',
+      'إذن الأكبر Na⁺، لأن شحنته النووية أقل',
+    ],
+    en: [
+      'All three ions have 10 electrons, but 11, 12 and 13 protons',
+      'The greater the nuclear charge with the same number of electrons, the stronger the pull and the smaller the radius',
+      'So the largest is Na⁺, because its nuclear charge is the smallest',
+    ],
+  },
+  'ch-pt-h4': {
+    ar: [
+      'عبر الدورة تزداد شحنة النواة الموجبة',
+      'الإلكترونات الخارجية تبقى في المستوى نفسه فيقل نصف القطر ويزداد جذب النواة لها',
+      'فنزع الإلكترون يحتاج طاقة أكبر',
+      'إذن تزداد لزيادة الشحنة النووية الفعالة ونقص نصف القطر',
+    ],
+    en: [
+      'Across a period the positive nuclear charge increases',
+      'The outer electrons stay in the same level, so the radius shrinks and the pull on them grows',
+      'So removing an electron takes more energy',
+      'So it increases because of the greater effective nuclear charge and the smaller radius',
+    ],
+  },
 };
