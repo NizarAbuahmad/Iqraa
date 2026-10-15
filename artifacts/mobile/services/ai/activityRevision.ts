@@ -30,9 +30,17 @@ export type RevisionDrawLesson = { id: string; unitId: string; topic: string; kb
 export type RevisionLessonOptions = {
   /** The scope's revision phrase in both languages — the composite's title. */
   title: { ar: string; en: string };
+  /**
+   * The language the paper is written in. `objectives` are Arabic outcomes (or,
+   * where a book lists none, Arabic key concepts), so an English paper cannot
+   * read them: it takes the English key concepts instead.
+   */
+  lang: 'ar' | 'en';
   /** The unit the key terms start from (default 0). See `buildOfflineActivity`. */
   termsStartUnit?: number;
 };
+
+const ARABIC_SCRIPT = /[\u0600-\u06FF]/;
 
 /** About how many entries of each kind the composite holds in all; at least two per unit. */
 const REVISION_POOL = 6;
@@ -125,8 +133,13 @@ export function revisionActivityLesson(
     keyTerms: pool(l => l.keyTerms, t => t.ar, opts.termsStartUnit ?? 0),
     // A lesson whose book lists no outcomes (history, …) is represented by its
     // key concepts, so a warm-up's recall prompt and a quick check still name
-    // the units instead of falling back to the scope's phrase.
-    objectives: pool(l => (l.objectives.length ? l.objectives : l.keyConceptsAr), text),
+    // the units instead of falling back to the scope's phrase. An English paper
+    // never reads the Arabic outcomes (a one-lesson English quick check prints
+    // them untranslated only where the book has them): it is represented by the
+    // English key concepts, with any that are themselves Arabic left out.
+    objectives: opts.lang === 'en'
+      ? pool(l => l.keyConceptsEn.filter(c => !ARABIC_SCRIPT.test(c)), text)
+      : pool(l => (l.objectives.length ? l.objectives : l.keyConceptsAr), text),
     periods: null,
     rulesAr: pool(l => l.rulesAr, text),
     rulesEn: pool(l => l.rulesEn, text),

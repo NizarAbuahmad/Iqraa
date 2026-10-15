@@ -44,10 +44,14 @@ export function activityRevisionRewords(phrase: string, lang: 'ar' | 'en'): Rewo
  * generators.ts): the vocabulary bingo's clues, the unbanked relay's chain,
  * the gallery walk's stations and the exit ticket's three questions. Each
  * assumes a single concept or method («المفهوم الرئيسي لـ…», «أسلوب … الذي
- * درسناه اليوم», «من وحدة …»).
+ * درسناه اليوم», «من وحدة …»). `units` is how many units the scope has: a unit
+ * scope has one, and must not be told it holds «another unit».
  */
-export function classroomRevisionRewords(phrase: string, lang: 'ar' | 'en'): Reword[] {
+export function classroomRevisionRewords(phrase: string, lang: 'ar' | 'en', units: number): Reword[] {
   const p = phrase;
+  // A unit scope has ONE unit, so «two different units» / «another unit» would
+  // be false there: the same sentences speak of two topics / another rule of it.
+  const several = units > 1;
   return lang === 'ar'
     ? [
         [`المصطلح 1: تعريف ${p}`, `المصطلح 1: مصطلح من ${p} وتعريفه`],
@@ -56,19 +60,26 @@ export function classroomRevisionRewords(phrase: string, lang: 'ar' | 'en'): Rew
         [`فكّر في تعريف ${p}`, `فكّر في تعريفات ${p}`],
         [`من وحدة ${p}`, `من ${p}`],
         [`خاصية: ${p} يُستخدم عندما…`, `خاصية: مفهوم من ${p} يُستخدم عندما…`],
-        [`ما الفرق بين المفهومين الرئيسيين في ${p}؟`, `ما الفرق بين مفهومين من وحدتين مختلفتين في ${p}؟`],
+        [`ما الفرق بين المفهومين الرئيسيين في ${p}؟`, several ? `ما الفرق بين مفهومين من وحدتين مختلفتين في ${p}؟` : `ما الفرق بين مفهومين من موضوعين مختلفين في ${p}؟`],
         [`الفرق بين مفهومَي ${p}`, `الفرق بين مفهومين من ${p}`],
         [`أي خاصية من خصائص ${p} تنطبق`, `أي خاصية مما راجعناه في ${p} تنطبق`],
         [`طبّق ${p} على المعطيات التالية`, `طبّق قاعدة من ${p} على المعطيات التالية`],
         [`القيمة الأولى (أ) من تطبيق ${p}`, `القيمة الأولى (أ) من تطبيق قاعدة من ${p}`],
-        [`الآن طبّق ${p} مرة أخرى مع (أ)`, `الآن طبّق قاعدة من وحدة أخرى في ${p} مع (أ)`],
+        [`الآن طبّق ${p} مرة أخرى مع (أ)`, several ? `الآن طبّق قاعدة من وحدة أخرى في ${p} مع (أ)` : `الآن طبّق قاعدة أخرى من ${p} مع (أ)`],
         [`طبّق خاصية ${p} الثانية مع (ب)`, `طبّق خاصية من ${p} مع (ب)`],
         [`طبّق ${p} بالكامل لإيجاد الإجابة النهائية`, `اجمع ما طبّقته من ${p} لإيجاد الإجابة النهائية`],
         [`اليوم طبّقتم ${p} في سلسلة متكاملة`, `اليوم راجعتم ${p} في سلسلة متكاملة`],
+        // The hints and tips that point back at «the lesson» we «studied».
+        [`هل تتذكر هذا المصطلح من الدرس؟`, `هل تتذكر هذا المصطلح مما راجعناه؟`],
+        [`أين طبّقنا هذا في الدرس؟`, `أين طبّقنا هذا فيما راجعناه؟`],
+        [`تذكّر صيغ وحدتنا`, `تذكّر الصيغ التي راجعناها`],
+        [`اربط السؤال بخطوة الحل التي درسناها`, `اربط السؤال بخطوة الحل التي راجعناها`],
+        [`استخدم الخطوات التي درسناها اليوم`, `استخدم الخطوات التي راجعناها اليوم`],
+        [`تذكّر الخاصية الثانية التي درسناها`, `تذكّر الخاصية الثانية التي راجعناها`],
         [`طبّق التعريف الأساسي لـ${p}`, `طبّق تعريفًا أساسيًا من ${p}`],
         [`تطبيق مباشر للتعريف الأساسي لـ${p}`, `تطبيق مباشر لتعريف أساسي من ${p}`],
         [`كيف يُستخدم ${p} لحل هذا الموقف الحياتي؟`, `كيف يُستخدم مفهوم من ${p} لحل هذا الموقف الحياتي؟`],
-        [`بين مفهومين رئيسيين في ${p}؟`, `بين مفهومين رئيسيين من وحدتين مختلفتين في ${p}؟`],
+        [`بين مفهومين رئيسيين في ${p}؟`, several ? `بين مفهومين رئيسيين من وحدتين مختلفتين في ${p}؟` : `بين مفهومين رئيسيين من موضوعين مختلفين في ${p}؟`],
         [`عرّف المفهوم الرئيسي لـ${p}.`, `اختر مفهومًا رئيسيًا من ${p} وعرّفه.`],
         [`تعريف دقيق بكلمات الطالب لـ${p}`, `تعريف دقيق بكلمات الطالب لمفهوم من ${p}`],
         [`طبّق ${p} على مثال من الكتاب المدرسي`, `طبّق قاعدة من ${p} على مثال من الكتاب المدرسي`],
@@ -82,19 +93,25 @@ export function classroomRevisionRewords(phrase: string, lang: 'ar' | 'en'): Rew
         [`Think about the definition of ${p}`, `Think about the definitions in ${p}`],
         [`from the ${p} unit`, `from ${p}`],
         [`Property: ${p} is used when…`, `Property: a concept from ${p} is used when…`],
-        [`What is the main difference between the two key concepts in ${p}?`, `What is the difference between two key concepts from different units of ${p}?`],
         [`The distinction between the two concepts in ${p}`, `The distinction between two concepts from ${p}`],
         [`Which property of ${p} applies`, `Which property from ${p} applies`],
         [`Apply ${p} to the given data`, `Apply a rule from ${p} to the given data`],
         [`First value (a) from applying ${p}`, `First value (a) from applying a rule from ${p}`],
-        [`Now apply ${p} again with (a)`, `Now apply a rule from another unit of ${p} with (a)`],
+        [`Now apply ${p} again with (a)`, several ? `Now apply a rule from another unit of ${p} with (a)` : `Now apply another rule from ${p} with (a)`],
         [`Apply the second property of ${p} with (b)`, `Apply a property from ${p} with (b)`],
         [`Apply the full ${p} process to find the final answer`, `Combine what you applied from ${p} to find the final answer`],
         [`Today you applied ${p} across a full connected chain`, `Today you revised ${p} across a full connected chain`],
+        [`Do you remember this term from the lesson?`, `Do you remember this term from what we revised?`],
+        [`Recall the formulas from our unit`, `Recall the formulas we revised`],
+        [`Connect the clue to the solution steps we studied`, `Connect the clue to the solution steps we revised`],
+        [`Use the steps we practised today`, `Use the steps we revised today`],
+        [`Recall the second property we studied`, `Recall the second property we revised`],
+        [`Think about what we covered at the start of the lesson`, `Think about what we reviewed at the start of the session`],
         [`Apply the core definition of ${p}`, `Apply a core definition from ${p}`],
         [`Direct application of the core ${p} definition`, `Direct application of a core definition from ${p}`],
         [`How does ${p} apply to this real-world scenario?`, `How does a concept from ${p} apply to this real-world scenario?`],
-        [`between the two key concepts in ${p}?`, `between two key concepts from different units of ${p}?`],
+        // Also the tail of «What is the main difference between the two key concepts in …?».
+        [`between the two key concepts in ${p}?`, several ? `between two key concepts from different units of ${p}?` : `between two key concepts from two different topics in ${p}?`],
         [`Define the main concept of ${p}.`, `Pick one key concept from ${p} and define it.`],
         [`An accurate student-worded definition of ${p}`, `An accurate student-worded definition of a concept from ${p}`],
         [`Apply ${p} to an example from the textbook`, `Apply a rule from ${p} to an example from the textbook`],

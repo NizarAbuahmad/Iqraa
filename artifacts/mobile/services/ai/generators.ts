@@ -1085,7 +1085,7 @@ export function buildOfflineActivity(req: AIRequest, variant = 0, probe?: Revisi
   const rev = revisionSource(req, lang);
   const units = Math.max(1, rev?.groups.length ?? 1);
   const kb = rev
-    ? revisionActivityLesson(rev.groups, rev.scopeKey, { title: rev.phrases, termsStartUnit: (variant + 1) % units })
+    ? revisionActivityLesson(rev.groups, rev.scopeKey, { title: rev.phrases, lang, termsStartUnit: (variant + 1) % units })
     : groundedKb(req.topic, lang, req.lessonId);
   const topic = rev ? rev.phrase : req.topic;
   const isWarmup = req.activityVariant === 'warmup';
@@ -1908,7 +1908,7 @@ export class MockAIService extends AIService {
     // are reworded afterwards. A lesson's activity is returned untouched.
     const rev = revisionSource(req, lang);
     const out = await this.classroomActivityBody(req, rev);
-    return rev ? reviseWording(out, classroomRevisionRewords(rev.phrase, lang)) : out;
+    return rev ? reviseWording(out, classroomRevisionRewords(rev.phrase, lang, rev.groups.length)) : out;
   }
 
   private async classroomActivityBody(req: ClassroomActivityRequest, rev: RevisionSource | null): Promise<ClassroomActivity> {
@@ -1916,7 +1916,7 @@ export class MockAIService extends AIService {
     const isAr = req.language === 'arabic';
     const topic = rev ? rev.phrase : req.topic;
     const kb = rev
-      ? revisionActivityLesson(rev.groups, rev.scopeKey, { title: rev.phrases })
+      ? revisionActivityLesson(rev.groups, rev.scopeKey, { title: rev.phrases, lang: isAr ? 'ar' : 'en' })
       : groundedKb(topic, isAr ? 'ar' : 'en', req.lessonId);
     const dur = req.duration ?? 20;
     const slideDuration = Math.round((dur * 60) / 5);

@@ -40,7 +40,7 @@ describe('revisionLessonsByUnit', () => {
 
 describe('revisionActivityLesson — the composite a blueprint reads', () => {
   const groups = revisionLessonsByUnit(ids(mathSem1));
-  const kb = revisionActivityLesson(groups, scopeKey(mathSem1), { title: TITLE });
+  const kb = revisionActivityLesson(groups, scopeKey(mathSem1), { title: TITLE, lang: 'ar' });
 
   it('is filed under the scope, and under a real unit of its book', () => {
     assert.equal(kb.id, 'scope:sem:grade-10:mathematics:1');
@@ -71,7 +71,7 @@ describe('revisionActivityLesson — the composite a blueprint reads', () => {
 
   it('its terms start at the unit it is told', () => {
     const terms = (l: KBLesson) => l.keyTerms.map(t => t.ar);
-    const shifted = revisionActivityLesson(groups, scopeKey(mathSem1), { title: TITLE, termsStartUnit: 1 });
+    const shifted = revisionActivityLesson(groups, scopeKey(mathSem1), { title: TITLE, lang: 'ar', termsStartUnit: 1 });
     assert.deepEqual(ownersOf(groups, terms, kb.keyTerms[0]!.ar), [groups[0]!.unitId]);
     assert.deepEqual(ownersOf(groups, terms, shifted.keyTerms[0]!.ar), [groups[1]!.unitId]);
   });
@@ -79,14 +79,28 @@ describe('revisionActivityLesson — the composite a blueprint reads', () => {
   it('a lesson whose book lists no outcomes is represented by its key concepts', () => {
     const hist = revisionLessonsByUnit(ids(histSem1));
     assert.ok(hist.every(g => g.lessons.every(l => l.objectives.length === 0)), 'probe: the history book lists no outcomes');
-    const h = revisionActivityLesson(hist, scopeKey(histSem1), { title: TITLE });
+    const h = revisionActivityLesson(hist, scopeKey(histSem1), { title: TITLE, lang: 'ar' });
     assert.ok(h.objectives.length >= 2, `${h.objectives.length}`);
     for (const o of h.objectives) assert.ok(hist.some(g => g.lessons.some(l => l.keyConceptsAr.includes(o))), o);
     assert.equal(new Set(h.objectives.flatMap(o => ownersOf(hist, l => l.keyConceptsAr, o))).size, hist.length);
   });
 
+  it('an English paper\'s objectives are English key concepts, never the Arabic outcomes', () => {
+    // Mutation caught: dropping the `lang === 'en'` branch hands an English
+    // quick check and warm-up «Explain in your own words: الإمبراطوريّةُ…».
+    for (const sel of [histSem1, mathSem1]) {
+      const g = revisionLessonsByUnit(ids(sel));
+      const en = revisionActivityLesson(g, scopeKey(sel), { title: TITLE, lang: 'en' });
+      assert.ok(en.objectives.length >= 2, `${sel.subjectId}: ${en.objectives.length}`);
+      for (const o of en.objectives) {
+        assert.ok(!/[\u0600-\u06FF]/.test(o), o);
+        assert.ok(g.some(x => x.lessons.some(l => l.keyConceptsEn.includes(o))), o);
+      }
+    }
+  });
+
   it('a single unit still offers enough to fill a jigsaw', () => {
-    const one = revisionActivityLesson(revisionLessonsByUnit(ids(circle)), scopeKey(circle), { title: TITLE });
+    const one = revisionActivityLesson(revisionLessonsByUnit(ids(circle)), scopeKey(circle), { title: TITLE, lang: 'ar' });
     // Mutation caught: a fixed two entries per unit — a one-unit revision would
     // then have two concepts, and the jigsaw pads its four parts with
     // phrase-shaped fillers.

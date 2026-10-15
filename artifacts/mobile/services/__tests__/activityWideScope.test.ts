@@ -233,3 +233,40 @@ describe('the live clause lists every lesson the offline activity drew from', ()
     }
   });
 });
+
+describe('offline activity — an English paper holds no Arabic outcome or concept', () => {
+  const ARABIC = /[؀-ۿ]/;
+  /** The Arabic text a lesson's objectives and key concepts hold: what `objectives` once filled an English paper with. */
+  const arabicSource = (sel: ScopeSelection): string[] => lessonsInScope(sel)
+    .flatMap(l => [...l.objectives, ...l.keyConceptsAr])
+    .map(t => t.trim()).filter(t => t.length > 4);
+
+  it('a history scope, which has no bank, is Arabic-free in every format (as the lesson path is)', () => {
+    // Probe: the lesson path in English, for each history lesson of the scope.
+    const lessonArabic = lessonsInScope(histSem1).flatMap(l => FORMATS.map(f => {
+      const a = buildOfflineActivity({
+        grade: 'Grade 10', subject: 'History', topic: l.titleEn, lessonId: l.id, language: 'english', ...formatFields(f),
+      } as AIRequest);
+      return ARABIC.test(textOf(a));
+    }));
+    assert.ok(lessonArabic.every(x => !x), 'probe: the lesson path prints Arabic in English for history');
+    for (const sel of [histSem1, { kind: 'book', gradeId: 'grade-10', subjectId: 'history' } as ScopeSelection]) {
+      for (const format of FORMATS) {
+        const text = textOf(buildOfflineActivity(wideReq(sel, format, 'en')));
+        // Mutation caught: `objectives` read from the Arabic concepts in an English paper.
+        assert.ok(!ARABIC.test(text), `${sel.kind} ${format}: ${text.match(/[^\n]*[؀-ۿ][^\n]*/)?.[0]}`);
+      }
+    }
+  });
+
+  it('no scope puts one of its Arabic outcomes or concepts into an English paper', () => {
+    for (const sel of [histSem1, mathSem1, chemSem1, circle]) {
+      const source = arabicSource(sel);
+      assert.ok(source.length > 0, `probe: ${sel.subjectId} has Arabic outcomes`);
+      for (const format of FORMATS) {
+        const text = textOf(buildOfflineActivity(wideReq(sel, format, 'en')));
+        for (const t of source) assert.ok(!text.includes(t), `${sel.kind} ${sel.subjectId} ${format}: «${t}»`);
+      }
+    }
+  });
+});
