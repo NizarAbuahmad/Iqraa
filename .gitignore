@@ -125,4 +125,4 @@ marketing/tutorial/out/
 marketing/tutorial/segments/
 
 # Output of scripts/pregenerate.ts (lesson explanations awaiting review)
-artifacts/mobile/pregen-review.json
+artifacts/mobile/pregen-review*.json

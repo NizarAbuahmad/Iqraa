@@ -11,7 +11,7 @@ import * as ImagePicker from 'expo-image-picker';
 // point that keeps it, and is simpler here than adopting the new API for one
 // call site.
 import { readAsStringAsync } from 'expo-file-system/legacy';
-import { downscaleImage } from './imageDownscale';
+import { PICK_BASE64, photoPickQuality, pickedPhotosToDataUrls } from './imageDownscale';
 
 /** Reads an arbitrary picked-file `uri` into a `data:` URL — audio/documents have no built-in base64 picker option, unlike images. */
 async function uriToDataUrl(uri: string, mimeType: string): Promise<string> {
@@ -29,7 +29,7 @@ async function uriToDataUrl(uri: string, mimeType: string): Promise<string> {
   return `data:${mimeType};base64,${base64}`;
 }
 
-/** One or more photos from the library, downscaled the same way `pickMarkSheetPhoto` does. Empty on cancel/no permission. */
+/** One or more photos from the library, downscaled the same way `pickMarkSheetPhoto` does, one at a time. Empty on cancel/no permission. */
 export async function pickLessonPhotos(): Promise<string[]> {
   const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!perm.granted) return [];
@@ -37,18 +37,12 @@ export async function pickLessonPhotos(): Promise<string[]> {
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
     allowsMultipleSelection: true,
-    quality: 0.85,
-    base64: true,
+    quality: photoPickQuality(0.85),
+    base64: PICK_BASE64,
   });
   if (result.canceled || !result.assets?.length) return [];
 
-  const out: string[] = [];
-  for (const asset of result.assets) {
-    if (!asset.base64) continue;
-    const mime = asset.mimeType || 'image/jpeg';
-    out.push(await downscaleImage(`data:${mime};base64,${asset.base64}`));
-  }
-  return out;
+  return pickedPhotosToDataUrls(result.assets);
 }
 
 /** One or more audio/document files. Empty on cancel. */
