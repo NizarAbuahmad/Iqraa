@@ -42,6 +42,7 @@ export type ChemFamily =
   | 'mole'
   | 'stoichiometry'
   | 'thermochem'
+  | 'calorimetry'
   | 'acids_bases'
   | 'metal_activity'
   | 'redox'
@@ -120,8 +121,13 @@ export function detectChemFamily(raw: string): ChemFamily {
   if (/المول(?:ات)?(?![\u0621-\u064A])|الكتلة المولية|أفوجادرو|molar mass|avogadro|\bmole\b/i.test(blob)) return 'mole';
   // «طاقة … تفاعل» must stay inside one sentence: unbounded, it spanned «…تحولات الطاقة فيها.
   // أصمم خلية جلفانية… التفاعلات نصف الخلوية» and took the galvanic-cell lesson. The calorimetry
-  // words are the heat-capacity lesson («الطاقة الممتصة والطاقة المنبعثة»), which has no reaction in it.
-  if (/طاقة[^.؟!]*تفاعل|تفاعل[^.؟!]*طاقة|ماص للطاقة|طارد للطاقة|المحتوى الحراري|إنثالبي|السعة الحرارية|الحرارة النوعية|المسعر|enthalpy|exotherm|endotherm|heat of reaction|heat capacity|specific heat|calorimet/i.test(blob)) return 'thermochem';
+  // (The heat-capacity lesson, «الطاقة الممتصة والطاقة المنبعثة», has no reaction in it: it is
+  // `calorimetry`, claimed just above.)
+  // Heat capacity, specific heat and the calorimeter: the Grade 10 lesson «الطاقة الممتصة والطاقة
+  // المنبعثة من المادة» has its own bank (q = m·c·ΔT, mixing, calorimeter). Ahead of thermochem, which
+  // would otherwise answer it with enthalpy and exo/endothermic questions.
+  if (/السعة الحرارية|الحرارة النوعية|المسعر|heat capacity|specific heat|calorimet/i.test(blob)) return 'calorimetry';
+  if (/طاقة[^.؟!]*تفاعل|تفاعل[^.؟!]*طاقة|ماص للطاقة|طارد للطاقة|المحتوى الحراري|إنثالبي|enthalpy|exotherm|endotherm|heat of reaction/i.test(blob)) return 'thermochem';
   if (/معادلة كيميائية|وزن المعادل|موازنة|التفاعلات الكيميائية|chemical equation|balanc|reaction type/i.test(blob)) return 'equations';
 
   // Grade 10 S1
@@ -1470,5 +1476,96 @@ export const CHEM_BANK: ConcreteItem[] = [
     answer: '20 g', wrongs: ['10 g', '2 g', '180 g'],
     promptAr: 'كم غرامًا من الملح في 200 g من محلول ملحي تركيزه الكتلي 10%؟',
     promptEn: 'How many grams of salt are in 200 g of a salt solution of mass concentration 10%?',
+  },
+  // ── calorimetry (grade 10, «الطاقة الممتصة والطاقة المنبعثة من المادة») ──
+  {
+    id: 'ch-ca-e1', family: 'calorimetry', diff: 'easy', eq: 'الحرارة النوعية',
+    answer: 'كمية الطاقة اللازمة لرفع درجة حرارة 1 g من المادة درجة سلسيوس واحدة', wrongs: ['كمية الطاقة اللازمة لرفع درجة حرارة المادة كلها درجة سلسيوس واحدة', 'درجة الحرارة التي تنصهر عندها المادة', 'كتلة المادة التي تمتص 1 J من الطاقة'],
+    promptAr: 'ما المقصود بالحرارة النوعية لمادة ما؟',
+    promptEn: 'What is meant by the specific heat of a substance?',
+  },
+  {
+    id: 'ch-ca-e2', family: 'calorimetry', diff: 'easy', eq: 'وحدة الحرارة النوعية',
+    answer: 'J/g·°C', wrongs: ['J/°C', 'g/J', '°C/J'],
+    promptAr: 'ما وحدة قياس الحرارة النوعية؟',
+    promptEn: 'What is the unit of specific heat?',
+  },
+  {
+    id: 'ch-ca-e3', family: 'calorimetry', diff: 'easy', eq: 'المسعر',
+    answer: 'المسعر (الكالوريميتر)', wrongs: ['الباروميتر', 'المخبار المدرج', 'الميزان ذو الكفتين'],
+    promptAr: 'ما الجهاز المستخدم لقياس كمية الطاقة الممتصة أو المنبعثة في تفاعل أو تغير فيزيائي؟',
+    promptEn: 'Which device is used to measure the energy absorbed or released in a reaction or physical change?',
+  },
+  {
+    id: 'ch-ca-e4', family: 'calorimetry', diff: 'easy', eq: 'c(حديد) = 0.45، c(ماء) = 4.18',
+    answer: 'الحديد', wrongs: ['الماء', 'يتساويان', 'لا ترتفع حرارة أي منهما'],
+    promptAr: 'زُوّدت كتلتان متساويتان من الحديد ومن الماء بالمقدار نفسه من الطاقة. أيهما ترتفع درجة حرارته أكثر؟ (الحرارة النوعية للحديد 0.45 J/g·°C وللماء 4.18 J/g·°C)',
+    promptEn: 'Equal masses of iron and water are given the same amount of energy. Which rises more in temperature? (Specific heat of iron 0.45 J/g·°C, of water 4.18 J/g·°C)',
+  },
+  {
+    id: 'ch-ca-e5', family: 'calorimetry', diff: 'easy', eq: 'q > 0 أم q < 0',
+    answer: 'موجبة', wrongs: ['سالبة', 'صفرًا', 'لا تتغير'],
+    promptAr: 'عندما تمتص مادة طاقة من محيطها، تكون إشارة q لها:',
+    promptEn: 'When a substance absorbs energy from its surroundings, the sign of its q is:',
+  },
+  {
+    id: 'ch-ca-m1', family: 'calorimetry', diff: 'medium', eq: 'q = m·c·ΔT، m = 150 g، ΔT = 20 °C',
+    answer: '12540 J', wrongs: ['627 J', '1254 J', '3135 J'],
+    promptAr: 'سُخّن 150 g من الماء فارتفعت درجة حرارته 20 °C. أوجد الطاقة الممتصة بالعلاقة q = m·c·ΔT علمًا أن c = 4.18 J/g·°C.',
+    promptEn: '150 g of water is heated by 20 °C. Find the energy absorbed using q = m·c·ΔT with c = 4.18 J/g·°C.',
+  },
+  {
+    id: 'ch-ca-m2', family: 'calorimetry', diff: 'medium', eq: 'q = 1150 J، m = 50 g، ΔT = 50 °C',
+    answer: '0.46 J/g·°C', wrongs: ['23 J/g·°C', '2.17 J/g·°C', '0.92 J/g·°C'],
+    promptAr: 'امتصت قطعة فلز كتلتها 50 g طاقة مقدارها 1150 J فارتفعت درجة حرارتها 50 °C. ما الحرارة النوعية للفلز؟',
+    promptEn: 'A 50 g piece of metal absorbs 1150 J and its temperature rises by 50 °C. What is the specific heat of the metal?',
+  },
+  {
+    id: 'ch-ca-m3', family: 'calorimetry', diff: 'medium', eq: 'q = 2400 J، ΔT = 6 °C',
+    answer: '400 J/°C', wrongs: ['14400 J/°C', '0.0025 J/°C', '2394 J/°C'],
+    promptAr: 'امتص جسم طاقة مقدارها 2400 J فارتفعت درجة حرارته 6 °C. ما السعة الحرارية للجسم؟',
+    promptEn: 'An object absorbs 2400 J and its temperature rises by 6 °C. What is its heat capacity?',
+  },
+  {
+    id: 'ch-ca-m4', family: 'calorimetry', diff: 'medium', eq: 'q = 8360 J، m = 100 g، T₁ = 25 °C',
+    answer: '45 °C', wrongs: ['20 °C', '5 °C', '83.6 °C'],
+    promptAr: 'امتص 100 g من الماء طاقة مقدارها 8360 J، وكانت درجة حرارته الابتدائية 25 °C. ما درجة حرارته النهائية؟ (c = 4.18 J/g·°C)',
+    promptEn: '100 g of water absorbs 8360 J and starts at 25 °C. What is its final temperature? (c = 4.18 J/g·°C)',
+  },
+  {
+    id: 'ch-ca-m5', family: 'calorimetry', diff: 'medium', eq: 'q = 6270 J، ΔT = 15 °C',
+    answer: '100 g', wrongs: ['418 g', '10 g', '1000 g'],
+    promptAr: 'امتص مقدار من الماء طاقة مقدارها 6270 J فارتفعت درجة حرارته 15 °C. ما كتلة الماء؟ (c = 4.18 J/g·°C)',
+    promptEn: 'A sample of water absorbs 6270 J and its temperature rises by 15 °C. What is its mass? (c = 4.18 J/g·°C)',
+  },
+  {
+    id: 'ch-ca-m6', family: 'calorimetry', diff: 'medium', eq: 'm = 200 g، من 60 °C إلى 40 °C',
+    answer: '16720 J', wrongs: ['8360 J', '836 J', '33440 J'],
+    promptAr: 'برد 200 g من الماء من 60 °C إلى 40 °C. ما مقدار الطاقة التي فقدها الماء؟ (c = 4.18 J/g·°C)',
+    promptEn: '200 g of water cools from 60 °C to 40 °C. How much energy does the water lose? (c = 4.18 J/g·°C)',
+  },
+  {
+    id: 'ch-ca-h1', family: 'calorimetry', diff: 'hard', eq: 'فلز 50 g عند 100 °C في 100 g ماء عند 20 °C، الاتزان 24 °C',
+    answer: '0.44 J/g·°C', wrongs: ['8.36 J/g·°C', '4.18 J/g·°C', '0.84 J/g·°C'],
+    promptAr: 'وُضعت قطعة فلز كتلتها 50 g ودرجة حرارتها 100 °C في مسعر يحتوي 100 g من الماء درجة حرارته 20 °C، فاستقرت درجة حرارة المزيج عند 24 °C. ما الحرارة النوعية للفلز؟ (c للماء = 4.18 J/g·°C، وأهمل الطاقة التي يمتصها المسعر نفسه)',
+    promptEn: 'A 50 g piece of metal at 100 °C is placed in a calorimeter holding 100 g of water at 20 °C, and the mixture settles at 24 °C. What is the specific heat of the metal? (c of water = 4.18 J/g·°C; ignore energy taken by the calorimeter)',
+  },
+  {
+    id: 'ch-ca-h2', family: 'calorimetry', diff: 'hard', eq: '200 g عند 60 °C + 100 g عند 30 °C',
+    answer: '50 °C', wrongs: ['45 °C', '40 °C', '55 °C'],
+    promptAr: 'خُلط 200 g من الماء عند 60 °C مع 100 g من الماء عند 30 °C في وعاء معزول. ما درجة حرارة المزيج عند الاتزان؟',
+    promptEn: '200 g of water at 60 °C is mixed with 100 g of water at 30 °C in an insulated container. What is the final temperature of the mixture?',
+  },
+  {
+    id: 'ch-ca-h3', family: 'calorimetry', diff: 'hard', eq: 'احتراق 2 g في مسعر فيه 500 g ماء، ΔT = 10 °C',
+    answer: '10.45 kJ/g', wrongs: ['20.9 kJ/g', '10450 kJ/g', '5.23 kJ/g'],
+    promptAr: 'احترق 2 g من وقود في مسعر يحتوي 500 g من الماء، فارتفعت درجة حرارة الماء 10 °C. ما الطاقة المنبعثة لكل غرام من الوقود؟ (c للماء = 4.18 J/g·°C، وأهمل الطاقة التي يمتصها المسعر نفسه، وافترض أن كل الطاقة المنبعثة انتقلت إلى الماء)',
+    promptEn: '2 g of a fuel burns in a calorimeter holding 500 g of water, and the water temperature rises by 10 °C. How much energy is released per gram of fuel? (c of water = 4.18 J/g·°C; ignore the energy taken by the calorimeter itself and assume all the energy released goes into the water)',
+  },
+  {
+    id: 'ch-ca-h4', family: 'calorimetry', diff: 'hard', eq: 'm = 250 g، c = 0.8 J/g·°C',
+    answer: '200 J/°C', wrongs: ['312.5 J/°C', '0.0032 J/°C', '250.8 J/°C'],
+    promptAr: 'جسم كتلته 250 g وحرارته النوعية 0.8 J/g·°C. ما سعته الحرارية؟',
+    promptEn: 'An object has mass 250 g and specific heat 0.8 J/g·°C. What is its heat capacity?',
   },
 ];
