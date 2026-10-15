@@ -24,6 +24,7 @@
  */
 import type { AIRequest, LessonPlanOutput } from './AIService.ts';
 import { arMinutes } from './lessonPlanTypes.ts';
+import { englishOnly } from '../englishText.ts';
 import {
   leftOutSentence, revisionPhrase, revisionUnits, revisionUnitsFromLessons, scopeFromKey, splitShown,
   REVISION_SHOWN_PER_UNIT, type RevisionUnit,
@@ -103,19 +104,42 @@ function roundHead(c: Ctx, u: RevisionUnit, i: number): string {
   return `${c.isAr ? ROUND_MARK_AR : ROUND_MARK_EN} ${i + 1} — ${c.q(u.title)}${mins}`;
 }
 
+/**
+ * Concept names worth listing beside a unit: not the unit's own title, and not
+ * a piece of it («Wave» under «Wave Motion»), which would only repeat it.
+ */
+function conceptNames(u: RevisionUnit, max: number): string[] {
+  const norm = (x: string) => x.toLowerCase().replace(/[^\p{L}\p{M}\p{N}]+/gu, ' ').trim();
+  const title = norm(u.title);
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const concept of u.concepts) {
+    const n = norm(concept);
+    if (!n || title.includes(n) || seen.has(n)) continue;
+    seen.add(n);
+    out.push(concept.trim());
+    if (out.length >= max) break;
+  }
+  return out;
+}
+
 function objectives(input: RevisionPlanInput, c: Ctx): string[] {
   const own = input.customObjectives?.trim();
   if (own) return own.split('\n').map(s => s.trim()).filter(Boolean);
   // Every unit gets a line; with few units, more of each unit's outcomes fit.
-  // A unit with no outcomes (outside the MVP set) gets a generic line in `lang`,
-  // not an empty objective.
+  // A unit with real outcomes (the NCCD ones in Arabic, an English book's "I can…")
+  // uses them. One without gets ONE sentence in `lang`, never an empty objective
+  // and never a bare concept after its unit's name («Fluids: Fluids»): it names
+  // the unit and lists up to a few of its concepts that say more than the title.
   const perUnit = c.units.length <= 2 ? 3 : 1;
-  // English: the outcomes are Arabic in the data, so `revisionPlanFromRequest`
-  // leaves none; the unit's English concepts say what to review instead.
-  const lines = (u: RevisionUnit) => (c.isAr || u.outcomes.length ? u.outcomes : u.concepts);
-  return c.units.flatMap(u => (lines(u).length
-    ? lines(u).slice(0, perUnit).map(o => `${u.title}: ${o}`)
-    : [c.isAr ? `مراجعة الأفكار الرئيسة في وحدة ${c.q(u.title)}` : `Review the key ideas of the ${c.q(u.title)} unit`]));
+  return c.units.flatMap(u => {
+    if (u.outcomes.length) return u.outcomes.slice(0, perUnit).map(o => `${u.title}: ${o}`);
+    const names = conceptNames(u, c.units.length <= 2 ? 3 : 2);
+    const tail = names.length ? `: ${c.list(names.map(c.q))}` : '';
+    return [c.isAr
+      ? `مراجعة الأفكار الرئيسة في وحدة ${c.q(u.title)}${tail}`
+      : `Review the key ideas of the ${c.q(u.title)} unit${tail}`];
+  });
 }
 
 function introduction(input: RevisionPlanInput, c: Ctx): string {
@@ -350,29 +374,10 @@ export function buildRevisionPlan(input: RevisionPlanInput): RevisionPlanFields 
   };
 }
 
-/** Arabic LETTERS: not the Quranic marks or Arabic-Indic digits a few Latin titles carry, which are real content. */
-const ARABIC_LETTER = /[\u0621-\u064A]/;
-
-/**
- * An English line from our own data, or null when it has nothing English in it.
- *
- * The NCCD outcomes exist in Arabic only, and some lessons and terms have only
- * an Arabic title, so an English plan built straight from the units read
- * "Circle: تعرُّف الوتر…" (measured: 624 of the 1413 book / semester / unit
- * scopes). A bracketed Arabic gloss («The Letter Dhaal (ذ)») is cut and the
- * English kept; a line that is Arabic through and through is dropped, never
- * transliterated or translated.
- */
-function englishOnly(s: string): string | null {
-  if (!ARABIC_LETTER.test(s)) return s;
-  const cut = s.replace(/\s*[(（][^()（）]*[\u0621-\u064A][^()（）]*[)）]/g, '').trim();
-  return cut && !ARABIC_LETTER.test(cut) ? cut : null;
-}
-
 /**
  * The units as an English plan can say them. Outcomes and concepts that are
- * Arabic are dropped (the objectives then fall back to the English concepts,
- * else to the generic line); a lesson or unit with no English title is named by
+ * Arabic are dropped (the objectives then name the unit and list its English
+ * concepts, `objectives`); a lesson or unit with no English title is named by
  * its place («Lesson 3»), so the counts the plan states stay true.
  */
 export function englishUnits(units: RevisionUnit[]): RevisionUnit[] {

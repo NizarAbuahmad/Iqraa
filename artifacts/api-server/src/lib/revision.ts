@@ -51,13 +51,13 @@ const CONTRACT_AR: Record<RevisionKind, string> = {
 - اصرف الوقت على الأفكار الرئيسة لكل وحدة، ولا تحاول تغطية كل درس.
 - اذكر في "introduction" النطاق الذي تراجعه الحصة، وما الذي لن تتّسع له، بأسماء الدروس.
 - اجعل "objectives" من نتاجات الوحدات المذكورة في النطاق، لا أهدافًا عامة.
-- حافظ على صيغة المتكلم المستقبل للمعلم وعلى بنية أسلوب التدريس كما وردتا أعلاه.`,
-  activity: `هذا النشاط لحصة مراجعة تغطي عدة وحدات، لا درسًا واحدًا:
-- استمدّ محتواه من دروس الوحدات المذكورة، وأعطِ كل وحدة نصيبًا منه، ولا تحصره في درس واحد.
+- حافظ على بنية أسلوب التدريس كما وردت أعلاه، وعلى صيغة المتكلم المستقبل للمعلم كما وردت أدناه.`,
+  activity: `هذا النشاط لحصة مراجعة تغطي وحدة أو أكثر، لا درسًا واحدًا:
+- استمدّ محتواه من دروس الوحدات المذكورة، وأعطِ كل وحدة نصيبًا منه (فإن كانت وحدة واحدة فوزّعه على دروسها)، ولا تحصره في درس واحد.
 - حافظ على بنية هذا النوع من الأنشطة كما وردت أعلاه؛ تتغيّر المادة لا البنية.
 - حيث تذكر البنية «صفحة الكتاب»، فالمقصود صفحات الكتاب الخاصة بكل وحدة من الوحدات المذكورة.`,
-  classroom: `هذا النشاط الصفي لحصة مراجعة تغطي عدة وحدات، لا درسًا واحدًا:
-- وزّع بطاقاته أو أسئلته أو تحدياته على الوحدات المذكورة، وأعطِ كل وحدة نصيبًا منها، ولا تحصرها في درس واحد.
+  classroom: `هذا النشاط الصفي لحصة مراجعة تغطي وحدة أو أكثر، لا درسًا واحدًا:
+- وزّع بطاقاته أو أسئلته أو تحدياته على الوحدات المذكورة، وأعطِ كل وحدة نصيبًا منها (فإن كانت وحدة واحدة فوزّعها على دروسها)، ولا تحصرها في درس واحد.
 - حافظ على بنية النشاط وشكل JSON المطلوب أعلاه كما هما.`,
 };
 
@@ -68,12 +68,12 @@ const CONTRACT_EN: Record<RevisionKind, string> = {
 - State in "introduction" the scope the session reviews and, by lesson name, what it cannot fit.
 - Draw "objectives" from the outcomes of the units in scope, not generic aims.
 - Keep the teaching-style structure required above.`,
-  activity: `This activity is for a revision session over several units, not one lesson:
-- Draw its content from the lessons of the units in scope, give each unit a share, and do not confine it to one lesson.
+  activity: `This activity is for a revision session over one or more units, not one lesson:
+- Draw its content from the lessons of the units in scope, give each unit a share (for a single unit, spread it over that unit's lessons), and do not confine it to one lesson.
 - Keep this format's structure as required above; the material changes, not the structure.
 - Where the structure mentions "the textbook page", read it as each unit's own pages in the book.`,
-  classroom: `This classroom activity is for a revision session over several units, not one lesson:
-- Spread its cards, questions or challenges over the units in scope, give each unit a share, and do not confine them to one lesson.
+  classroom: `This classroom activity is for a revision session over one or more units, not one lesson:
+- Spread its cards, questions or challenges over the units in scope, give each unit a share (for a single unit, spread them over that unit's lessons), and do not confine them to one lesson.
 - Keep the activity's structure and the required JSON shape above unchanged.`,
 };
 

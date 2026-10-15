@@ -180,9 +180,13 @@ export function TopicSelector({
     }
 
     if (selectedUnitId === ENTIRE_BOOK) {
-      onChange(t('entireBook'));
+      // The topic is in the subject's language (`lang`), like the semester's and
+      // the unit's; `t` is the interface language, which an English-subject
+      // teacher on an Arabic interface does not share («Activity: الكتاب كاملًا»).
+      const sel: ScopeSelection = { kind: 'book', ...base };
+      onChange(scopeLabel(sel, lang));
       onSelectionDetail?.(noDetail);
-      onScopeChange?.({ kind: 'book', ...base });
+      onScopeChange?.(sel);
       return;
     }
 

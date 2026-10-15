@@ -49,11 +49,12 @@ import { Toast } from '@/components/ui/Toast';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { buildLessonFlowHTML, exportAsPDF } from '@/services/share';
+import { failedStepHint, lessonFlowFailure } from '@/services/lessonFlowError';
 import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { useWideScope } from '@/hooks/useWideScope';
-import type { ScopeSelection } from '@/services/scopeSelection';
+import { scopeLabel, type ScopeSelection } from '@/services/scopeSelection';
 import { buildScopeRequest, scopeFormState, type ScopeRequest } from '@/services/wideScopeRequest';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -134,14 +135,21 @@ export default function LessonFlowScreen() {
   const [durationIdx, setDurationIdx] = useState(0);
   /** The unit / semester / book the flow on screen was built for; null for a lesson flow. Save records it. */
   const [wideFrozen, setWideFrozen] = useState<ScopeSelection | null>(null);
-  /** The wide fields every step is built from, held for a Retry (state would be stale inside `executeFlow`). */
-  const wideReqRef = useRef<ScopeRequest | null>(null);
+  /**
+   * The wide fields every step is built from, and the scope's label in the material's
+   * language, held for a Retry (state would be stale inside `executeFlow`). The label is
+   * derived from the scope, not read from the saved topic: a flow reopened after the
+   * interface language changed would otherwise print the other language's label.
+   */
+  const wideRef = useRef<{ request: ScopeRequest; label: string } | null>(null);
 
   // Generation state
   const [phase, setPhase] = useState<Phase>('form');
   const [stepStatus, setStepStatus] = useState<StepState>(INITIAL_STEP_STATE);
   const [error, setError] = useState('');
   const [failedStep, setFailedStep] = useState<StepKey | null>(null);
+  /** False when a second try cannot help (no question bank for the subject): the banner then offers no Retry. */
+  const [retryable, setRetryable] = useState(true);
 
   // Holds the raw LessonPlanOutput across steps so guided-practice can reuse it on retry
   const planRef = React.useRef<LessonPlanOutput | null>(null);
@@ -200,12 +208,15 @@ export default function LessonFlowScreen() {
       if (conflict) { setError(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     }
     // Frozen for the whole flow: a Retry runs from the same request.
-    wideReqRef.current = wide;
+    wideRef.current = wide && wideSel ? { request: wide, label: scopeLabel(wideSel, lang) } : null;
     setWideFrozen(wideSel);
+    // The form is gone from here on; Save and the PDF read `topic`.
+    if (wideSel) setTopic(scopeLabel(wideSel, lang));
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setPhase('building');
     setError('');
     setFailedStep(null);
+    setRetryable(true);
     setStepStatus(INITIAL_STEP_STATE);
     setObjectives(null); setWarmup(null); setActivity(null);
     setGuidedPractice(null); setWorksheet(null); setExitTicket(null);
@@ -219,6 +230,7 @@ export default function LessonFlowScreen() {
     setError('');
     setStep(failedStep, 'pending');
     setFailedStep(null);
+    setRetryable(true);
     const prior: LessonFlowPrior = {
       plan: planRef.current ?? undefined,
       objectives: objectives ?? undefined,
@@ -238,14 +250,14 @@ export default function LessonFlowScreen() {
     const duration = DURATION_VALUES[durationIdx];
 
     try {
-      const wide = wideReqRef.current;
+      const wide = wideRef.current;
       let req: AIRequest;
       if (wide) {
         // A unit / semester / book flow is built from the scope's ids. Its topic
         // is a label and the lookups below are unscoped: a unit title grounds to
         // some lesson, possibly another grade's. The runner keeps the two
         // question steps off any slot plan (`questionStepFields`).
-        req = { grade, subject, topic, language, duration, ...wide.fields };
+        req = { grade, subject, topic: wide.label, language, duration, ...wide.request.fields };
       } else {
         const kbCtx = await buildGeneratorContext(topic, lang === 'ar' ? 'ar' : 'en');
         const unitId = generatorUnitId(topic, lang === 'ar' ? 'ar' : 'en');
@@ -283,7 +295,9 @@ export default function LessonFlowScreen() {
         setStep(err.stepKey, 'error');
         setFailedStep(err.stepKey);
       }
-      setError(err instanceof Error ? err.message : 'Generation failed');
+      const failure = lessonFlowFailure(err, t);
+      setError(failure.message);
+      setRetryable(failure.retryable);
       // Stay on 'building' phase — completed steps remain visible
     }
   };
@@ -573,7 +587,7 @@ export default function LessonFlowScreen() {
                   key={step.key}
                   stepNum={idx + 1}
                   // «غلق الدرس» claims one lesson; a wide flow closes the session.
-                  label={wideFrozen && step.key === 'exitTicket' && lang === 'ar' ? 'غلق الحصة' : contentT(step.labelKey as any)}
+                  label={contentT((wideFrozen && step.key === 'exitTicket' ? 'lessonFlowStepExitTicketRevision' : step.labelKey) as any)}
                   icon={step.icon}
                   color={step.color}
                   status={status}
@@ -582,6 +596,7 @@ export default function LessonFlowScreen() {
                   colors={colors}
                   collapsed={collapsed[step.key]}
                   onToggleCollapse={() => setCollapsed(prev => ({ ...prev, [step.key]: !prev[step.key] }))}
+                  retryable={retryable}
                 >
                   {status === 'done' && (
                     <StepContent
@@ -610,14 +625,16 @@ export default function LessonFlowScreen() {
             <Text style={{ flex: 1, color: palette.destructive, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' }}>
               {error}
             </Text>
-            <Pressable
-              onPress={handleRetry}
-              style={({ pressed }) => ({ backgroundColor: '#D92D20', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, opacity: pressed ? 0.8 : 1 })}
-            >
-              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
-                {uiLang === 'ar' ? 'أعد المحاولة' : 'Retry'}
-              </Text>
-            </Pressable>
+            {retryable ? (
+              <Pressable
+                onPress={handleRetry}
+                style={({ pressed }) => ({ backgroundColor: '#D92D20', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, opacity: pressed ? 0.8 : 1 })}
+              >
+                <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
+                  {uiLang === 'ar' ? 'أعد المحاولة' : 'Retry'}
+                </Text>
+              </Pressable>
+            ) : null}
           </View>
         )}
 
@@ -699,10 +716,12 @@ interface StepCardProps {
   colors: ReturnType<typeof import('@/hooks/useColors').useColors>;
   collapsed: boolean;
   onToggleCollapse: () => void;
+  /** False when the banner offers no Retry, so the card must not tell the teacher to tap it. */
+  retryable: boolean;
   children?: React.ReactNode;
 }
 
-function StepCard({ stepNum, label, icon, color, status, isRTL, lang, colors, collapsed, onToggleCollapse, children }: StepCardProps) {
+function StepCard({ stepNum, label, icon, color, status, isRTL, lang, colors, collapsed, onToggleCollapse, retryable, children }: StepCardProps) {
   const borderColor =
     status === 'done' ? color + '40' :
     status === 'error' ? '#EF444450' :
@@ -746,7 +765,7 @@ function StepCard({ stepNum, label, icon, color, status, isRTL, lang, colors, co
           )}
           {status === 'error' && (
             <Text style={{ color: palette.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>
-              {lang === 'ar' ? 'تعذّر إكمال الخطوة — أعد المحاولة' : 'Failed — tap Retry below'}
+              {failedStepHint(lang, retryable)}
             </Text>
           )}
         </View>

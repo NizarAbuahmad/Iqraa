@@ -7,6 +7,8 @@
  * The assertions are derived from the KB itself rather than hard-coded lesson
  * ids, so they keep holding when a book's lessons change.
  */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -14,6 +16,7 @@ import {
   semestersAvailable, unitsInScope, type ScopeSelection,
 } from '../scopeSelection.ts';
 import { getLessonsForUnit, getUnitsForSubjectGrade } from '../knowledgeBase.ts';
+import translations from '../i18n.ts';
 
 const G = 'grade-10';
 const S = 'mathematics';
@@ -119,6 +122,22 @@ describe('scopeLabel', () => {
     const lesson = getLessonsForUnit(firstUnit.id)[0]!;
     assert.equal(scopeLabel({ kind: 'unit', gradeId: G, subjectId: S, unitId: firstUnit.id }, 'ar'), firstUnit.titleAr);
     assert.equal(scopeLabel({ kind: 'lesson', gradeId: G, subjectId: S, lessonId: lesson.id }, 'en'), lesson.titleEn);
+  });
+});
+
+describe('the picker saves the book in the subject\'s language', () => {
+  it('scopeLabel is the interface sentence in the same language, so nothing changes where the two agree', () => {
+    for (const lang of ['ar', 'en'] as const) {
+      assert.equal(scopeLabel(book, lang), (translations as any)[lang].entireBook, lang);
+    }
+  });
+
+  it('TopicSelector fills the topic from scopeLabel(lang), not from the interface-language t()', () => {
+    const src = readFileSync(join(import.meta.dirname, '../../components/ui/TopicSelector.tsx'), 'utf8');
+    // Mutation caught: `onChange(t('entireBook'))` back in the effect — an English-subject
+    // teacher on an Arabic interface then saves «Activity: الكتاب كاملًا».
+    assert.ok(!src.includes("onChange(t('entireBook'))"));
+    assert.ok(src.includes("const sel: ScopeSelection = { kind: 'book', ...base };\n      onChange(scopeLabel(sel, lang));"));
   });
 });
 

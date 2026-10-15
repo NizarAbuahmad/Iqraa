@@ -152,6 +152,18 @@ describe('a paper shorter than asked for carries the reason', () => {
 
 import { generateWithProvenance, aiErrorText, resetGenerationLog } from '../ai/aiProvenance.ts';
 
+describe('the no-bank sentences fit a unit, a semester and a book as well as a lesson', () => {
+  it('say "topic", not "this lesson", in both languages', () => {
+    const tr = translations as any;
+    // Mutation caught: restoring «لهذا الدرس» / "for this lesson" — a wide flow's step 5 shows it.
+    for (const key of ['noQuestionBank', 'noQuestionBankLiveFailed']) {
+      assert.ok(tr.ar[key].includes('لهذا الموضوع') && !tr.ar[key].includes('لهذا الدرس'), `ar ${key}: ${tr.ar[key]}`);
+      assert.ok(tr.en[key].includes('for this topic') && !tr.en[key].includes('for this lesson'), `en ${key}: ${tr.en[key]}`);
+    }
+    assert.ok(!tr.ar.noQuestionBank.includes('لا تخص الدرس'));
+  });
+});
+
 describe('live failure followed by a bank-less offline refusal', () => {
   const live = async () => { throw new Error('HTTP 500'); };
   const mock = () => service.generateWorksheet(ISLAMIC);
