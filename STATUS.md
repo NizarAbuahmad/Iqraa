@@ -1171,6 +1171,203 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Math Corner: calculator, grapher, geometry sketchpad, unit converter and formula sheet in the library, 2026-10-12
+
+**What a user can do today.** The library (`/curriculum/resources`) has a
+«زاوية الرياضيات» tile opening `/curriculum/math`, a hub with four first-party
+tools — a scientific calculator, a function grapher, a geometry sketchpad, a
+unit converter and a Grade 10 formula sheet (`/curriculum/math/calculator`,
+`/grapher`, `/sketchpad`, `/converter`, `/formulas`, each with a copyable link) — and a «افتح GeoGebra» card. Everyone who can see the library can open
+it; no gating change (`/curriculum` is already on the non-teacher prefix
+allowlist, pinned in `routeGating.test.ts`). The hub lists only what exists
+(`MATH_TOOL_IDS` in `services/mathTools.ts`; `MathTool.tsx` is a `Record` over
+it, so an id without a component does not compile).
+
+**GeoGebra is a link, never an embed.** The card calls `openGeogebraGraphing()`
+(new tab on web, in-app browser on Android). The embed was removed on
+2026-09-11 over GeoGebra's licence (see «The GeoGebra embed is gone»); the
+grapher and sketchpad are first-party for the same reason.
+
+**The engine fails closed.** `services/mathExpr.ts` is a hand-written
+tokenizer + recursive-descent evaluator (no `eval`, no `Function`; a test greps
+for both). Every failure is a named reason (`divide-by-zero`, `domain`,
+`unbalanced`, `function-needs-brackets`, …), never a number, and an unknown word
+is refused rather than read as a product of letters. It is deliberately **not**
+`deckVisuals.compileExpression`, whose tests pin `log`/`sqrt` as unsupported.
+Choices a teacher may question:
+- Degrees by default (the books write «جا ٣٠ = ٠٫٥»), exact at every multiple of
+  30°; `tan 90°` is a domain error, not 1.6e16. Radian mode snaps results under
+  1e-15 to 0 (`sin π`).
+- Results are tidied to 15 significant digits, so `0.1+0.2` is 0.3.
+- `%` is `/100`; `1/2x` is `(1/2)·x`; `^` is right-associative and binds tighter
+  than unary minus (`-2^2 = -4`).
+- Arabic input is folded in `normaliseInput` (digits, `٫`, `×÷−`, `س`, `π`, `√`,
+  جا/جتا/ظا). Compute is latin; Arabic digits appear only at display
+  (`mathCalc.ts`).
+
+**Arabic-Indic digits are not safe in an RTL page, and no style fixes it.**
+Found only by rendering the screen, not by any test. Two separate causes:
+1. react-native-web stamps `dir="auto"` on every `Text`, which beats the CSS
+   `direction`/`writingDirection`. So «٩٫٥ × ١٠» printed as «١٠ × ٩٫٥» and a lone
+   «(» was drawn as «)».
+2. A bidi *isolate* (U+2066 … U+2069, what `isolateForeignRuns` uses for Latin maths) is
+   not enough for Arabic-Indic digits: they are type AN, which has no
+   «weak → L» rule, so the neutrals between two numbers still resolve RTL and
+   the runs swap places. It needs a left-to-right **override** (U+202D … U+202C).
+   But an override also reverses Arabic *letters* («جا» → «اج»).
+`mathCalc.ts` therefore has `forceLtr` (override), `displayLtr` (override unless
+the text has Arabic letters) and `entriesToSegments`, which gives each Arabic
+function word its own run so the screen lays the runs out in a flex row in typed
+order. Any new screen that shows Arabic-Indic digits next to operators needs the
+same. Measured per-character, not by eye.
+
+**The formula sheet is traced to the printed books, not to memory.**
+`lib/curriculum/src/data/math_formulas.json` holds 40 formulas. Each names its
+lesson by `kbl-*` id, the book and printed page, and the fragments that page
+prints. `lib/curriculum/.../mathFormulas.test.ts` reads the extracted student
+books and checks that the page lies inside that lesson's printed range (found
+from the «الدرس» headings, not a hand-kept table), that the page prints the
+fragments, that the page number is the number printed on it, and that any
+Arabic caption is printed intact in that lesson. `services/__tests__/
+mathFormulas.test.ts` then runs 34 numeric identities through the calculator's
+own engine, using the book's worked examples where it prints one (the 3-4-5
+triangle, circle (5, −3) with r = 4, v = ⟨2, 8⟩·w = ⟨−5, 4⟩ = 22,
+0.85 = 0.65 + 0.75 − 0.55). Both were mutation-checked: a wrong page, a typo'd
+fragment, a wrong lesson, a wrong caption and two wrong identities each fail.
+What this does **not** prove: the display `formula` text itself is typed by us
+(the fragments it is checked against are the book's extraction, which breaks
+fractions and drops overlines), so a typo there is caught only by a person.
+Every title a student sees comes from the knowledge base; an Arabic caption is
+the book's own phrase or absent, and several are absent because extraction
+mangles them (e.g. «قانون طول القوس»).
+- **The book's notation, not a textbook's.** The circle is centred at (a, b),
+  the triangle's area is `K = ½ ab sin C`, the vector product is `v · w`, and
+  the cosine rule's lesson is «قانون جيوب التمام».
+- **Unit 1 is deliberately absent.** The book's first unit prints three
+  lessons and the catalog lists four, so a lesson id there cannot be tied to a
+  page range; the test refuses a formula filed on one.
+- **Grade 10 sequences have no formula to list.** Planning assumed arithmetic
+  and geometric term/sum formulas; the lesson (units 5, lesson 5) is about
+  finding the general term of quadratic and cubic sequences. Reading the book
+  first is what caught it.
+- **Grade scope.** The sheet is Grade 10 only and says so; the library is
+  visible to every grade. Filtering by the viewer's grade is not done.
+
+**The grapher** (`components/math/MathGrapher.tsx`) draws up to four functions
+with react-native-svg on an equal-aspect plane, so a circle is round. Drag pans,
+two fingers pinch, the wheel zooms, a tap reads the point off every curve, and
+the zeros, maximum and minimum values, y-intercept and pairwise intersections
+are found and marked. Everything that is arithmetic is a tested pure module:
+`mathExpr.compile` (a function of x; refuses only what is wrong whatever x is,
+so `sqrt(x-5)` compiles but `sqrt(-x^2-1)+` does not), `mathViewport`,
+`mathGraph` and `mathGeogebra`. Typing `x = 3` is a vertical line and an
+implicit equation such as `x²+y²=25` is **refused by name** rather than graphed
+as something else; circles belong to the sketchpad.
+- **A pole between two samples broke the first version.** The curve is broken
+  where the function is undefined *or* where it changes sign across more than a
+  canvas height. The first threshold was 3× the height, and every test passed
+  because every pole in the tests happened to land exactly on a sample (value
+  undefined, so it split anyway). At ordinary zoom `1/(x−0.05)` jumps only
+  ~650 px, so a line was drawn through the asymptote. Found by asking why a
+  mutation of that rule failed no test; the threshold is now one height and the
+  tests put poles *between* samples. The same trap applies to roots and
+  extrema (a sign change across a pole is not a root; a "peak" next to a pole is
+  not an extremum) and each guard has a test that fails without it.
+- **Trig graphs need a free aspect.** The book draws sin x over 0°…360° and
+  −1…1, which no equal-aspect view can, so the «sin» button switches to a
+  degree- or radian-axis view and the «1:1» button goes back. Degree ticks fall
+  on 15°/30°/45°/90°.
+- **A canvas inside a ScrollView needs a scroll lock.** `MathFrame` is
+  `LabFrame` plus a context: the grapher locks the page while a finger is on
+  the canvas. Verified: dragging the canvas leaves `scrollTop` unchanged.
+- **The mouse wheel was silently dead in the first build.** The canvas mounts
+  only after its first layout and the wheel listener was attached once at mount,
+  to an element that did not exist yet. A callback ref fixes it. Only driving the
+  real page caught it.
+- **«Open in GeoGebra» translates, it does not just forward.** GeoGebra's trig
+  takes radians (a degree argument gets a `°`), its `log` is the natural log
+  (base 10 is `lg`) and a two-argument `log` puts the base first.
+  `services/mathGeogebra.ts` does these; anything it cannot say faithfully
+  (percent, `nPr`, unbalanced brackets) is left out and the screen says so.
+  **The `?command=` URL itself is existing code that was not re-verified against
+  geogebra.org** from here.
+- Curves use the slide palette on light and brighter relatives on dark: the
+  slide teal was dim on the dark card (seen, then fixed).
+- Cost: roots, extrema and intersections are computed from the last *settled*
+  view (finger up, wheel stopped, button pressed), ~600 samples each, not on
+  every frame of a drag.
+
+**The sketchpad** (`components/math/MathSketchpad.tsx`) draws points, segments,
+polygons of 3–8 corners and circles on the grapher's plane (`PlaneGrid`, now
+shared) and works out lengths, interior angles, perimeter, area, a triangle's
+class and a circle's centre, radius, circumference, area and equation. The model
+is `services/mathGeometry.ts` (51 tests): a shape names its points by id, so
+dragging a point moves every shape through it and deleting a point deletes those
+shapes. Shapes are made by tapping their points, not by dragging; Move drags a
+point (one undo step per drag), and a second finger pinches the view instead.
+Snap to grid is on by default, with a step from the zoom level.
+- **It fails closed on the shapes the shoelace formula lies about.** A polygon
+  that crosses itself (a bow-tie) or touches itself gets «الشكل يقطع نفسه» and no
+  area or angles; collinear points get area 0 and no angles; two corners on one
+  spot make the angle there «coincident». A concave corner reports its reflex
+  angle (270°, not its 90° mirror), and angle sums are (n−2)·180 in both
+  orientations. Mutation-checked: turning off the self-intersection guard, the
+  reflex rule, the duplicate/degenerate/zero-radius refusals and the drag step
+  each fails a test.
+- **Lengths are in grid units**, and the screen says so: the grid is the ruler.
+  There is no «cm» because nothing here knows what a unit is.
+- **The circle's numbers are the book's:** centre (a, b), and r² in
+  (x − a)² + (y − b)² = r², written with س and ص and Arabic-Indic digits in
+  Arabic. The equation is a left-to-right override; that is safe here only
+  because the variables are single letters (see the digits note above).
+- **`addPoint` merges only when asked.** The first version merged an
+  exactly-coincident point by default (`d <= 0`), which made it impossible to
+  test two corners on one spot and would have hidden the «coincident» path; a
+  tap merges through an explicit tiny radius.
+- **Not done:** no saving (the scene lives for the visit), 26 points at most, and
+  point names are Latin A, B, C even in Arabic — the books write أ، ب، ج, which
+  was not mapped. Two known cosmetic limits: edge-length labels can sit on an
+  axis tick label, and angle labels are hidden on edges shorter than ~44 px
+  (the panel under the canvas still lists every angle).
+
+**The converter** (`services/mathUnits.ts`) is `from → base → to` and fails
+closed: an unknown unit, a conversion across categories, an unparseable number,
+a temperature below absolute zero and an overflow are named reasons, never a
+number. The Jordanian **dunum is 1000 m²** — a unit name and a factor we have
+not had a teacher confirm. The unit names are our own chrome text. There is a
+± button because a decimal keypad has no minus.
+
+**Also learned the hard way:** `accessibilityState` is banned by `ariaState.test.ts`
+(react-native-web ignores it; use `aria-*`); `designScale.test.ts` caps off-scale
+font sizes, radii and spacing, so new screens use `TYPE`/`SPACE`/`RADIUS` from
+`constants/theme.ts`; `i18nTerminology.test.ts` wants «ًا», not «اً».
+
+**What was and was not verified.** Unit tests: ~4,120 mobile tests and 349
+curriculum tests pass, typecheck clean. Rendered with the Expo web build at
+360 px wide in Arabic (RTL) and English: the hub, the calculator (rest, result,
+error, scientific notation, a 30-digit line, expanded rows), the converter (empty,
+length, temperature, below absolute zero), the formula sheet (whole, and filtered
+to derivatives, vectors and statistics, which use the least common glyphs) and
+the grapher (one and two functions with intersections, tan in a degree view,
+a pole between samples, errors, a vertical line; light and dark; Arabic and
+English). The grapher's interactions were driven in a real browser: mouse drag,
+wheel zoom, zoom buttons, a tap, and a genuine two-finger pinch sent as touch
+events, with the page's scroll position checked. The sketchpad was driven the
+same way at 360 px in Arabic/light and English/dark: a 3-4-5 triangle by taps
+(right-angle marker, 36.87° / 90° / 53.13°, area 24), a mouse drag and a touch
+drag of a corner, undo of the drag, a circle with its equation, a bow-tie
+refused by name, a two-finger pinch, and the page's scroll position unchanged.
+**Not verified:** the sketchpad's Delete tool and snap switch (the code paths are unit-tested, the buttons were not clicked through), the polygon ✓ button's look, a full 26-point scene, the library tile itself (it needs a signed-in session; it is a
+copy of the Lab tile), 390 px after the final fixes, anything on Android or a
+real touch screen (the pinch was emulated, so `PanResponder`'s multi-touch on a
+phone is unconfirmed), screen-reader output, the calculator's history rows, the
+converter's ± button and chips (screenshotted, not tapped through), the
+grapher's keyboard on a phone, and the GeoGebra link-out URL. The Arabic strings
+have not been through the Arabic copy reviewer.
+
+No table, no native module, no `app.json` version bump, no schema push: ships
+over the air. Not yet decided: whether calculator history should persist.
+
 ## Scanning external exams: paper setup from photos, and a whole class at once, 2026-10-14
 
 Two things a teacher who sets their own paper exam used to do by hand.
