@@ -31,6 +31,11 @@ describe('apiErrorKey', () => {
     assert.equal(apiErrorKey(err('email_unavailable', 503), 'fb'), 'errEmailNotSent');
   });
 
+  it('maps a homework due date outside the allowed window to its own message', () => {
+    // Both ApiError and HomeworkError carry the server's `code`.
+    assert.equal(apiErrorKey(err('due_date_out_of_range', 400), 'hwSaveFailed'), 'hwErrDueRange');
+  });
+
   it('maps the messaging refusals', () => {
     assert.equal(apiErrorKey(err('not_connected', 403), 'fb'), 'errNotConnected');
     assert.equal(apiErrorKey(err('group_read_only', 403), 'fb'), 'messagingReadOnlyGroup');

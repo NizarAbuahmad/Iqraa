@@ -16,13 +16,13 @@ import {
   classMemberships,
   evaluations,
   evaluationQuestions,
-  levelBands,
   levelScales,
   masteryOverrides,
   students,
 } from "@workspace/db";
 import type { Difficulty, QuestionType } from "@workspace/db";
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import {
   getBookById,
   getEvaluableBookIds,
@@ -44,6 +44,7 @@ import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { resolveExamPatch } from "../lib/examDate.js";
 import { passedLessonIds, unlockState } from "../modules/assessment/lessonProgress.ts";
 import { findLiveClass } from "../lib/classOwnership.js";
+import { isUuid } from "../lib/classResource.ts";
 import { archiveDecision } from "../lib/evaluationArchive";
 import {
   classChangeAllowed,
@@ -119,8 +120,14 @@ import { checkScanImage, classScanGate, parsePaperScanBody } from "../modules/as
 import { matchStudent, type RosterEntry } from "../modules/assessment/studentMatch.ts";
 import type { ObjectiveScore } from "../modules/assessment/scoring";
 
+import { findOrStartTeacherEntry } from "../lib/teacherEntry.ts";
+import { savePaperTotals } from "../lib/paperTotals.ts";
+import { parsePaperTotals, PAPER_TOTALS_REFUSAL } from "../modules/assessment/paperTotals.ts";
 import { resultsReleaseDecision } from "../lib/resultsRelease.ts";
 import { announceResultsRelease } from "../lib/resultsReleaseNotify.ts";
+import { pushWithin } from "../lib/pushWithin.ts";
+import { announceExamDate, announcePaperResults } from "../lib/familyPushEvents.ts";
+import { examDateNotice, publishNotice } from "../modules/notifications/examDateNotice.ts";
 const router = Router();
 // Path-scoped — see the note in roster.ts. Unscoped, this swallowed every
 // request reaching it, including routes belonging to later routers.
@@ -211,6 +218,9 @@ const MAX_QUESTIONS = 50;
 const SHARE_CODE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 const trimmed = (v: unknown): string => (typeof v === "string" ? v.trim() : "");
+
+/** "This column still holds what the request read" — null included. */
+const stillHolds = (col: AnyPgColumn, value: string | null) => sql`${col} IS NOT DISTINCT FROM ${value}`;
 
 /** Owned-or-404. Never distinguish "not yours" from "not there". */
 async function ownedEvaluation(id: string, teacherId: string) {
@@ -639,6 +649,11 @@ router.get("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
  * `classGroupId: null` detaches. The check is `!== undefined`, not truthiness —
  * treating null as "not provided" would make attach work and detach silently
  * do nothing, which is exactly the bug `pickDefined` was extracted to prevent.
+ *
+ * A date that moves on an exam families can see is pushed to them
+ * (modules/notifications/examDateNotice.ts). The announcing write is conditional
+ * on the values the request read, so a racing save with the same values should
+ * announce at most once — no test could be made to show that it matters.
  */
 router.patch("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
   try {
@@ -705,16 +720,31 @@ router.patch("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
       }
     }
 
-    const [updated] = await db
-      .update(evaluations)
-      .set({
-        classGroupId: classGroupId || null,
-        examDate: schedule.examDate,
-        examTime: schedule.examTime,
-        updatedAt: new Date(),
-      })
-      .where(eq(evaluations.id, evaluation.id))
-      .returning();
+    const next = { classGroupId: classGroupId || null, examDate: schedule.examDate, examTime: schedule.examTime };
+    const values = { ...next, updatedAt: new Date() };
+    // Families hear about a date only when it actually moved on an exam they
+    // can see (examDateNotice). The write that announces is conditional on
+    // the values this request read, so two PATCHes racing each other cannot
+    // both announce: the loser falls through to the plain write and stays quiet.
+    const notice = examDateNotice(evaluation, next);
+    const [claimed] = notice
+      ? await db
+          .update(evaluations)
+          .set(values)
+          .where(
+            and(
+              eq(evaluations.id, evaluation.id),
+              stillHolds(evaluations.classGroupId, evaluation.classGroupId),
+              stillHolds(evaluations.examDate, evaluation.examDate),
+              stillHolds(evaluations.examTime, evaluation.examTime),
+            ),
+          )
+          .returning()
+      : [];
+    const [updated] = claimed
+      ? [claimed]
+      : await db.update(evaluations).set(values).where(eq(evaluations.id, evaluation.id)).returning();
+    if (claimed && notice) await pushWithin("exam date", () => announceExamDate(claimed, notice));
 
     res.json({ evaluation: updated });
   } catch (err) {
@@ -1675,6 +1705,14 @@ router.post("/evaluations/:id/publish", async (req: AuthenticatedRequest, res) =
       return;
     }
 
+    // A dated draft leaving draft is the moment its date reaches families.
+    // Not made race-safe, by choice (a known gap): two publishes of one draft
+    // racing each other can both announce. A conditional write is possible inside
+    // the share-code retry loop (first attempt `status = draft`, a zero-row result
+    // is not an exception so the retry stays intact) but it was left out of this
+    // part to keep the publish path unchanged.
+    const notice = publishNotice(evaluation);
+    if (notice) await pushWithin("exam published with a date", () => announceExamDate(updated, notice));
     res.json({ evaluation: updated });
   } catch (err) {
     logger.error({ err }, "publish failed");
@@ -1990,66 +2028,89 @@ router.post("/evaluations/:id/attempts", async (req: AuthenticatedRequest, res) 
       return;
     }
 
-    // Any source, not just teacher entry: the schema allows one attempt per
-    // student per evaluation, so a student who already sat via the link has
-    // the only paper there will be. Filtering on source made the insert below
-    // hit that constraint and answer 500, with no way for the teacher to open
-    // the paper from here.
-    const [existing] = await db
-      .select()
-      .from(attempts)
-      .where(and(eq(attempts.evaluationId, evaluation.id), eq(attempts.studentId, studentId)))
-      .limit(1);
-    if (existing) {
-      res.json({ attempt: existing, created: false });
+    const started = await findOrStartTeacherEntry({ evaluation, studentId, teacherId: req.user!.id });
+    if (!started.ok) {
+      if (started.code === "not_in_group") {
+        res.status(403).json({ error: "This check is for a group; this student is not in it", code: "not_in_group" });
+      } else if (started.code === "no_questions") {
+        res.status(409).json({ error: "This evaluation has no questions" });
+      } else {
+        res.status(409).json({ error: "No level scale is configured for this evaluation" });
+      }
       return;
     }
-
-    // A group check is for its group only — the same rule the share link and
-    // the student's own list apply (audience.ts).
-    if (!inAudience(await evaluationAudience(evaluation.id), studentId)) {
-      res.status(403).json({ error: "This check is for a group; this student is not in it", code: "not_in_group" });
-      return;
-    }
-
-    const questions = await liveQuestions(evaluation.id);
-    if (questions.length === 0) {
-      res.status(409).json({ error: "This evaluation has no questions" });
-      return;
-    }
-
-    // Frozen at start, per the plan: a later edit to the evaluation or the
-    // scale must not retroactively change what this attempt is graded against.
-    const bands = evaluation.levelScaleId
-      ? await db
-          .select()
-          .from(levelBands)
-          .where(eq(levelBands.scaleId, evaluation.levelScaleId))
-          .orderBy(asc(levelBands.sortOrder))
-      : [];
-    if (bands.length === 0) {
-      res.status(409).json({ error: "No level scale is configured for this evaluation" });
-      return;
-    }
-
-    const [row] = await db
-      .insert(attempts)
-      .values({
-        evaluationId: evaluation.id,
-        studentId,
-        source: "teacher_entry",
-        enteredBy: req.user!.id,
-        status: "in_progress",
-        startedAt: new Date(),
-        questionSnapshot: questions,
-        levelScaleSnapshot: { scaleId: evaluation.levelScaleId, bands },
-      })
-      .returning();
-
-    res.status(201).json({ attempt: row, created: true });
+    if (started.created) res.status(201).json({ attempt: started.attempt, created: true });
+    else res.json({ attempt: started.attempt, created: false });
   } catch (err) {
     logger.error({ err }, "create attempt failed");
     res.status(500).json({ error: "Failed to start attempt" });
+  }
+});
+
+// A whole class per request, each row a find-or-create, a mark and a hand-in;
+// generous for a teacher saving a mark book, a wall for a loop.
+const paperTotalsLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 60,
+  name: "paper-totals",
+  key: (req) => (req as AuthenticatedRequest).user?.id ?? req.ip ?? "unknown",
+});
+
+/**
+ * The class mark book: one typed total per student for a quick paper exam
+ * (exactly one paper question, worth N) — see lib/paperTotals.ts. Each row is
+ * saved, refused or cleared on its own and reported back; a saved row is
+ * handed in, so it reaches the student and their parents once — and only once
+ * — the teacher releases results.
+ *
+ * Published or closed: a teacher may close a paper exam after the sitting and
+ * then type the totals. A draft has nothing to mark yet.
+ *
+ * Archived counts as "not found" here, like a missing or malformed id: the
+ * exam has left the teacher's lists, and a mark book must not write to it.
+ *
+ * Clearing (`marks: null`) deletes a teacher-entered sitting even after
+ * results are released — the app asks the teacher to confirm first; the
+ * server does not refuse (the paper was never the student's).
+ *
+ * A row saved while results are released is pushed to that child's family
+ * (lib/familyPushEvents.ts). A sitting handed in after the release through
+ * `POST /attempts/:id/submit` or the student link is not — a known gap.
+ */
+router.put("/evaluations/:id/paper-totals", paperTotalsLimiter, async (req: AuthenticatedRequest, res) => {
+  try {
+    const id = req.params["id"] as string;
+    const evaluation = isUuid(id) ? await ownedEvaluation(id, req.user!.id) : undefined;
+    if (!evaluation || evaluation.archivedAt) {
+      res.status(404).json({ error: "Evaluation not found" });
+      return;
+    }
+    if (evaluation.status !== "published" && evaluation.status !== "closed") {
+      res.status(409).json({ code: "not_published", error: "Publish this evaluation before entering marks" });
+      return;
+    }
+    const parsed = parsePaperTotals(req.body);
+    if (!parsed.ok) {
+      res.status(400).json({ code: parsed.code, error: parsed.error, ...(parsed.index === undefined ? {} : { index: parsed.index }) });
+      return;
+    }
+    const outcome = await savePaperTotals({ evaluation, teacherId: req.user!.id, rows: parsed.rows });
+    if (!outcome.ok) {
+      res.status(409).json({ code: outcome.code, error: PAPER_TOTALS_REFUSAL[outcome.code] });
+      return;
+    }
+    // A mark typed after the release is visible to the family at once
+    // (studentResultReady), and the release's own announcement has already
+    // gone — so announce it now. Only rows this request changed: a re-save of
+    // the same total answers "unchanged" and says nothing.
+    const saved = outcome.results.filter(r => r.status === "saved").map(r => r.studentId);
+    if (evaluation.releaseResultsToStudent && saved.length > 0) {
+      await pushWithin("paper results", () => announcePaperResults(evaluation, saved));
+    }
+    res.json({ maxMarks: outcome.maxMarks, results: outcome.results });
+  } catch (err) {
+    logger.error({ err }, "save paper totals failed");
+    res.status(500).json({ error: "Failed to save the marks" });
   }
 });
 

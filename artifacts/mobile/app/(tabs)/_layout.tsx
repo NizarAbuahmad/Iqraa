@@ -33,6 +33,7 @@ function iconNameFor(name: string): string {
   switch (name) {
     case 'index': return 'grid-outline';
     case 'iqra': return 'chatbubble-ellipses-outline';
+    case 'school': return 'school-outline';
     case 'curriculum': return 'library-outline';
     case 'ai-tools': return 'sparkles-outline';
     case 'notifications': return 'mail-outline';
@@ -92,6 +93,19 @@ function buildTabEntries(isTeacher: boolean, isDesktop: boolean, unread: number)
           />
         ) : (
           <Ionicons name={focused ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline'} size={22} color={color} />
+        ),
+    },
+    {
+      // Parents and students only: the weekly timetable (homework joins it
+      // later). A teacher has the timetable under the profile tab already.
+      name: 'school',
+      titleKey: 'tabSchool',
+      visible: !isTeacher,
+      icon: ({ color, focused, isIOS }) =>
+        isIOS ? (
+          <SymbolView name={focused ? 'graduationcap.fill' : 'graduationcap'} tintColor={color} size={22} />
+        ) : (
+          <Ionicons name={focused ? 'school' : 'school-outline'} size={22} color={color} />
         ),
     },
     {

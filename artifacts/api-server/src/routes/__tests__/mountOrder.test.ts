@@ -29,6 +29,8 @@ const entry = path.join(serverRoot, "dist", "index.mjs");
 // bare `pnpm test` on a clean checkout stays green. CI runs build before test.
 const built = existsSync(entry);
 
+const MOUNT_ORDER_CRON_KEY = "mount-order-cron-key";
+
 describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, () => {
   let child: ChildProcess;
   let base: string;
@@ -40,8 +42,11 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
       env: {
         ...process.env,
         PORT: String(port),
-        // Never contacted: no test below reaches a route that queries them.
-        DATABASE_URL: "postgres://u:p@127.0.0.1:5432/none",
+        // Deliberately unreachable: port 1 is closed, so a route that does
+        // query the database fails with a refused connection. Not 5432 on
+        // purpose - CI runs a real Postgres there, which would no longer be
+        // unreachable.
+        DATABASE_URL: "postgres://u:p@127.0.0.1:1/none",
         // Long enough to clear the boot check in index.ts. A short one here
         // is not a test failure but a container that never starts, which
         // presents as every request below timing out.
@@ -51,6 +56,7 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
         // here calls a model. Production passes a placeholder for the same
         // reason (see render.yaml).
         OPENAI_API_KEY: "sk-test-placeholder",
+        INTERNAL_CRON_KEY: MOUNT_ORDER_CRON_KEY,
       },
       stdio: "ignore",
     });
@@ -332,6 +338,37 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(res.status, 401, "a student's record must require a token");
   });
 
+  it("guards the class mark book", async () => {
+    // Writes marks for a whole class; it must never answer without a teacher
+    // token. This pins the `/evaluations` prefix guard, not the route itself:
+    // it passes before the route exists, because the guard answers 401 first.
+    const id = "00000000-0000-0000-0000-000000000000";
+    const res = await fetch(`${base}/evaluations/${id}/paper-totals`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ totals: [{ studentId: id, marks: 1 }] }),
+    });
+    assert.equal(res.status, 401, "typing a class's marks must require a token");
+  });
+
+  it("guards the teacher homework routes", async () => {
+    // /homework is path-scoped inside its own router and the class read carries
+    // its guards on the route. A 404 here would mean the mount was lost; a 200
+    // or 5xx would mean a teacher's homework (and its counts) is open.
+    const id = "00000000-0000-0000-0000-000000000000";
+    const json = { "Content-Type": "application/json" };
+    const cases: Array<[string, string, RequestInit]> = [
+      ["POST", "/homework", { method: "POST", headers: json, body: "{}" }],
+      ["PATCH", "/homework/x", { method: "PATCH", headers: json, body: "{}" }],
+      ["DELETE", "/homework/x", { method: "DELETE" }],
+      ["GET", `/classes/${id}/homework`, {}],
+    ];
+    for (const [method, route, init] of cases) {
+      const res = await fetch(`${base}${route}`, init);
+      assert.equal(res.status, 401, `${method} ${route} must require a token`);
+    }
+  });
+
   it("mounts support groups inside the roster's guarded prefix", async () => {
     const id = "00000000-0000-0000-0000-000000000000";
     const res = await fetch(`${base}/classes/${id}/support-groups`);
@@ -359,6 +396,19 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
       body: JSON.stringify({ role: "teacher" }),
     });
     assert.equal(res.status, 401, "the account-type switch must exist and require a token");
+  });
+
+  it("guards the notification switches — signed-in only, any role", async () => {
+    // Account-level, under /auth beside /me. A 404 would mean the routes were
+    // never mounted; a 200 that anyone could read or flip them.
+    const get = await fetch(`${base}/auth/me/push-preferences`);
+    assert.equal(get.status, 401, "reading the switches must require a token");
+    const put = await fetch(`${base}/auth/me/push-preferences`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ homework: false }),
+    });
+    assert.equal(put.status, 401, "changing the switches must require a token");
   });
 
   it("keeps the unverified-email routes public, since the caller has no session yet", async () => {
@@ -563,6 +613,34 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(theirs.status, 401, "/parent/exams must require a token");
   });
 
+  it("guards the family schedule, for both roles", async () => {
+    // Same two traps as «اختباراتي»: refuse an anonymous caller, and never
+    // answer for a path the teacher router owns. /schedule (teacher) and
+    // /student/schedule (family) share a word and nothing else.
+    for (const p of ["/student/schedule", "/parent/schedule"]) {
+      const res = await fetch(`${base}${p}`);
+      assert.equal(res.status, 401, `${p} must require a token`);
+    }
+    const teacher = await fetch(`${base}/schedule`);
+    assert.equal(teacher.status, 401, "the teacher timetable keeps its own guard");
+  });
+
+  it("guards family homework, for both roles and the done toggle", async () => {
+    // Same shape as the schedule: refuse anonymous callers on every verb, and
+    // never answer for the teacher's /homework, which shares a word and nothing else.
+    for (const [method, p] of [
+      ["GET", "/student/homework"],
+      ["PUT", "/student/homework/x/done"],
+      ["DELETE", "/student/homework/x/done"],
+      ["GET", "/parent/homework"],
+    ] as const) {
+      const res = await fetch(`${base}${p}`, { method });
+      assert.equal(res.status, 401, `${method} ${p} must require a token`);
+    }
+    const teacher = await fetch(`${base}/homework`, { method: "POST" });
+    assert.equal(teacher.status, 401, "the teacher homework route keeps its own guard");
+  });
+
   it("keeps the class join-code lookup public, and closed while student accounts are off", async () => {
     // The trap this guards: roster.ts mounts
     // `router.use(["/classes","/students"], authMiddleware, …)`, and Express
@@ -674,6 +752,19 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(res.status, 404);
   });
 
+  it("hides the homework-reminder trigger without the shared key, and opens it with the key", async () => {
+    // Server-to-server (Cloud Scheduler). Without the key it must look like no
+    // route at all — 404, not a guarded 401 — and no session guard may sit in
+    // front of it (the scheduler has no session).
+    const post = (headers: Record<string, string>) => fetch(`${base}/internal/homework-reminders`, { method: "POST", headers });
+    assert.equal((await post({})).status, 404, "no key");
+    assert.equal((await post({ "x-internal-key": "wrong" })).status, 404, "wrong key");
+    assert.equal((await fetch(`${base}/internal/homework-reminders`)).status, 404, "GET is not a route");
+    const right = await post({ "x-internal-key": MOUNT_ORDER_CRON_KEY });
+    assert.notEqual(right.status, 404, "the right key reaches the route");
+    assert.notEqual(right.status, 401, "no session guard in front of it");
+  });
+
   it("answers unknown paths with 404, not with another router's 401", async () => {
     // The tell for the original bug: a path no router owns came back 401,
     // because a root-mounted guard replied before routing finished.
@@ -758,7 +849,9 @@ describe("API register (student accounts enabled)", { skip: built ? false : "run
         ...process.env,
         PORT: String(port),
         STUDENT_ACCOUNTS: "true",
-        DATABASE_URL: "postgres://u:p@127.0.0.1:5432/none",
+        // Deliberately unreachable (port 1 is closed); not 5432, where CI
+        // runs a real Postgres.
+        DATABASE_URL: "postgres://u:p@127.0.0.1:1/none",
         // Long enough to clear the boot check in index.ts. A short one here
         // is not a test failure but a container that never starts, which
         // presents as every request below timing out.

@@ -119,6 +119,16 @@ export const users = pgTable("users", {
    * than deleting them.
    */
   schoolId: uuid("school_id").references(() => schools.id, { onDelete: "set null" }),
+  /**
+   * Which school notifications this account wants — `homework` (posted, and
+   * the reminder the day before), `exams` (a date set or changed), `results`
+   * (released, or a mark typed after the release). Opt-outs: a missing key is
+   * ON, so `{}` — every account made before 2026-10-12 — gets all three, and
+   * only `false` turns one off. Chat is not governed here. Read through
+   * api-server `modules/notifications/pushPrefs.ts`; written only by
+   * `PUT /auth/me/push-preferences`, which merges with `||` in SQL.
+   */
+  pushPrefs: jsonb("push_prefs").$type<Partial<Record<"homework" | "exams" | "results", boolean>>>().notNull().default({}),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   lastLogin: timestamp("last_login", { withTimezone: true }),
 }, t => [index("users_school_idx").on(t.schoolId)]);

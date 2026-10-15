@@ -31,6 +31,17 @@ jobs:
     name: typecheck + tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # DB-backed API tests (src/test-support) create their own iqraa_test_*
+    # databases on this server; they only use the `postgres` database as the
+    # admin connection for CREATE/DROP DATABASE and never store data in it.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
@@ -82,8 +93,14 @@ jobs:
       - name: Build api-server
         run: pnpm --filter @workspace/api-server run build
 
+      # REQUIRE_DB_TESTS makes a missing database a FAILURE, not a skip: a
+      # pipeline that loses its Postgres service must not quietly stop testing
+      # cross-family access.
       - name: Test api-server
         run: pnpm --filter @workspace/api-server run test
+        env:
+          TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+          REQUIRE_DB_TESTS: 'true'
 
       # The row-level-security suites skip here (no database); the identity tests run.
       - name: Test db
