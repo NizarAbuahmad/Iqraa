@@ -2034,7 +2034,8 @@ appends the four to `ALL_Q_TYPES`, which is persisted order. A tick is greyed
 with «غير متاح لهذا الدرس: لا توجد في البنك أسئلة كافية لهذا النوع.» only once
 a lesson is grounded. A greyed tick keeps its place in the stored selection
 but is dropped from the request. The ticks are hidden on homework, and a carried-in
-selection is stripped there.
+selection is stripped there. Since the merge with main (below) they are hidden on a
+unit, semester or whole-book scope too, and dropped from that request.
 
 **Everywhere else it goes:**
 
@@ -2222,8 +2223,37 @@ selection is stripped there.
   match the `بيانيا` keyword, and `u8_lab` routes on «جيوجبرا». This is
   pre-existing routing and was left out of scope.
 - **`formatAvailability`** returns booleans with one generic reason, not a
-  reason per kind. On a teacher-document paper, formats can still build if
-  the document's title routes to a family.
+  reason per kind. ~~On a teacher-document paper, formats can still build if
+  the document's title routes to a family.~~ **No longer true (2026-10-15):**
+  a document paper builds no format (see below).
+
+**Merged with main, 2026-10-15** (main's 59 commits, PR #1019):
+
+- **The total is 5–30.** Main's #1033 / #1054 made the picker 5–30 (25 and 30
+  on a wide scope only, `ALL_QUESTION_COUNTS`). `worksheetTotal()` follows it,
+  so the offline paper, the live request and `formatRoom` agree; it used to
+  clamp at 20, which would have cut a 25-question paper to 20 on both paths.
+- **No single lesson, no format.** A unit / semester / book paper (`req.scope`)
+  or a teacher's document has no lesson whose bank a format can come from.
+  `formatsHaveNoLesson` (`worksheetFormats.ts`) gates both paths: offline
+  builds none and gives the room back to ordinary questions; live asks the
+  model for the whole total and `appendFormats` appends nothing. Either way
+  every ticked kind is reported in `missingFormats` («لم تُضف هذه الأنواع»).
+  The screen hides the ticks on a wide scope (as it hides the prior-knowledge
+  review there) and strips them from the request; the stored selection keeps
+  them, so they come back when the scope returns to a lesson.
+- **Wide scope and the worked example together.** `worksheetOnce` keeps
+  main's slot drawing (`wide.drawer.lessonAt(slot)`, `solvedLesson`) and the
+  branch's masked passes (`avoidInTurn`): each solved item reads its slot's
+  lesson once and every pass tries that lesson.
+- **Live order.** `appendFormats(tagWorksheetLessons(model, req), req, formats)`:
+  lesson tags are the model's codes for its own questions, so they are mapped
+  before the bank-built formats are added. On a wide scope nothing is added.
+- **Checks after the merge.** Root typecheck clean. Mobile 5781 tests: 5771
+  pass, 0 fail, 10 skipped. api-server (built first) 2050 / 2050.
+  `lib/math-practice` 860 / 860. `db generate`: «No schema changes». New:
+  `worksheetFormatsScope.test.ts` (10); `worksheetFormatsGenerator.test.ts`'s
+  `formatRoom` range now runs to 30.
 
 ## The Quran Corner: a shelf in the library, 2026-10-11
 

@@ -9,6 +9,14 @@
  * ticks are not offered there AND a selection carried in (a saved material, a
  * route param) is stripped before a request is built — hiding the ticks alone
  * would leave a stale one riding along invisibly.
+ *
+ * A unit, semester or whole-book paper (a wide scope) has no single lesson to
+ * build a format from, so the ticks are hidden there too, the way the screen
+ * hides the prior-knowledge review, and stripped from the request. Unlike
+ * homework the STORED selection keeps them: the scope selector reports no
+ * scope for a moment mid-pick, and the teacher's ticks come back with a lesson.
+ * The generators report any format that still reaches them on a wide scope in
+ * `missingFormats` (`formatsHaveNoLesson`), so none is dropped silently.
  */
 import type { FormatKind } from '@workspace/math-practice';
 import { FORMAT_KINDS, isFormatKind } from './ai/worksheetFormats.ts';
@@ -17,6 +25,8 @@ export type FormatAvailabilityMap = Record<FormatKind, boolean>;
 
 export interface TickContext {
   isHomework: boolean;
+  /** A unit, semester or whole-book scope: no single lesson, so no format. */
+  isWide?: boolean;
   /**
    * What the grounded lesson can supply, or null when no lesson is grounded
    * (empty or half-typed topic). Null judges nothing: a tick is only greyed
@@ -29,7 +39,7 @@ export interface TickContext {
 export const DEFAULT_QUESTION_TYPES = ['multiple_choice', 'short_answer'] as const;
 
 export function formatTicks(ctx: TickContext): { shown: FormatKind[]; greyed: FormatKind[] } {
-  if (ctx.isHomework) return { shown: [], greyed: [] };
+  if (ctx.isHomework || ctx.isWide) return { shown: [], greyed: [] };
   const shown = [...FORMAT_KINDS];
   const availability = ctx.availability;
   return { shown, greyed: availability ? shown.filter(k => !availability[k]) : [] };
@@ -46,7 +56,8 @@ export function isTickChecked<T extends string>(type: T, selected: Set<T>, ctx: 
 }
 
 /**
- * The selection with unavailable formats removed (all formats, for homework).
+ * The selection with unavailable formats removed (all formats, for homework
+ * and on a wide scope).
  * Used for the REQUEST, and — with `availability: null`, which leaves only the
  * homework rule — for the stored selection. Greyed formats are not stripped
  * from the stored selection (see `isTickChecked`). Returns the SAME set when
@@ -55,7 +66,7 @@ export function isTickChecked<T extends string>(type: T, selected: Set<T>, ctx: 
  */
 export function sanitizeQuestionTypes<T extends string>(selected: Set<T>, ctx: TickContext): Set<T> {
   const greyed = new Set<string>(formatTicks(ctx).greyed);
-  const keep = [...selected].filter(t => !isFormatKind(t) || (!ctx.isHomework && !greyed.has(t)));
+  const keep = [...selected].filter(t => !isFormatKind(t) || (!ctx.isHomework && !ctx.isWide && !greyed.has(t)));
   if (keep.length === selected.size) return selected;
   return new Set<T>(keep.length ? keep : (DEFAULT_QUESTION_TYPES as readonly string[] as T[]));
 }

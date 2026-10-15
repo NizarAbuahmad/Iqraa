@@ -332,7 +332,9 @@ export default function WorksheetScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [topic, groundedKbId, subjectName],
   );
-  const tickCtx = { isHomework, availability };
+  // A wide scope hides the ticks and drops them from the request; the stored
+  // selection keeps them (`worksheetFormatTicks.ts`).
+  const tickCtx = { isHomework, isWide: wideScope.isWide, availability };
   const { shown: shownFormats, greyed: greyedFormats } = formatTicks(tickCtx);
 
   // Homework never builds formats, so a carried-in tick leaves the stored

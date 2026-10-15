@@ -35,7 +35,7 @@ import { arPrefixed, lessonKindFor, type LessonKind } from './lessonPlanKinds.ts
 import { arMinutes } from './lessonPlanTypes.ts';
 import { classifyVerifiableTopic } from './verifyMathGuards.ts';
 import { QUIZ_TYPE_ORDER } from '../quizPaper.ts';
-import { splitFormatTypes, fitFormats, formatPoints, worksheetTotal, buildFormatSet } from './worksheetFormats.ts';
+import { splitFormatTypes, fitFormats, formatPoints, worksheetTotal, buildFormatSet, formatsHaveNoLesson } from './worksheetFormats.ts';
 import { MISSTEPS, ORDER_SAFE, currentSession, type FormatKind } from '@workspace/math-practice';
 import { ScopeDrawer } from './scopeDraw.ts';
 import { planCoverage, type CoverageLesson } from '../coveragePlan.ts';
@@ -1530,7 +1530,11 @@ export class MockAIService extends AIService {
     // They steer clear of the items a ticked scarce format needs — «أين الخطأ؟»
     // has a couple of misstep items a family, «رتّب» only the `ORDER_SAFE`
     // ones — and fall back to them only when nothing else is left.
-    const { taken: formats, trimmed } = fitFormats(ticked, rest, totalQ);
+    // A teacher's document or a wide scope has no single lesson to build a format
+    // from: every ticked one is reported, as the live path does (`appendFormats`).
+    const { taken: formats, trimmed } = formatsHaveNoLesson(req)
+      ? { taken: [] as FormatKind[], trimmed: ticked }
+      : fitFormats(ticked, rest, totalQ);
     const spotIds = new Set(formats.includes('spot_error') ? MISSTEPS.map(m => m.itemId) : []);
     const formatIds = new Set([...spotIds, ...(formats.includes('order') ? ORDER_SAFE : [])]);
     const avoidInTurn = [formatIds, spotIds].filter(ids => ids.size > 0);

@@ -42,7 +42,7 @@ describe('worksheet formats in the generator', () => {
     assert.equal(formatRoom(5, false), 2);
     assert.equal(formatRoom(5, true), 1);
     assert.equal(formatRoom(20, false), 17);
-    for (let t = 5; t <= 20; t++) assert.ok(formatRoom(t, true) >= 0);
+    for (let t = 5; t <= 30; t++) assert.ok(formatRoom(t, true) >= 0);
   });
 
   it('a small total trims the formats, offline and live, and says so', async () => {

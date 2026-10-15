@@ -211,6 +211,21 @@ export function buildFormatQuestion(
   };
 }
 
+/**
+ * Whether a request has no single bank lesson to build formats from: a
+ * teacher's own document, or a unit / semester / book (`req.scope`). A format
+ * question is one lesson's bank items, so neither path builds one then — and
+ * every ticked kind is reported in `missingFormats`, never dropped silently.
+ *
+ * Read from `scope` alone, like `isRevisionRequest`: a scoped request with no
+ * lesson table still has no lesson, and its topic is a label («الفصل الأول
+ * كاملًا») that must not be grounded to whichever lesson it happens to match.
+ * A document used to build formats whenever its title routed to a family.
+ */
+export function formatsHaveNoLesson(req: Pick<AIRequest, 'scope' | 'additionalContext'>): boolean {
+  return !!req.scope || parseDocumentGrounding(req.additionalContext).present;
+}
+
 /** Pull the format kinds out of a ticked question-type list. */
 export function splitFormatTypes(types: string[]): { formats: FormatKind[]; rest: string[] } {
   return {
@@ -258,12 +273,14 @@ export function fitFormats(
  * bank builds those (see `appendFormats`, and the filter in the api-server's
  * `worksheetPromptAr/En`) — and the count it is asked for is the teacher's
  * total minus the formats that fit, so formats count INSIDE the number picked.
+ * A request with no single lesson (`formatsHaveNoLesson`) gets no formats, so
+ * the model is asked for the whole total.
  */
 export function requestWithoutFormats(req: AIRequest): AIRequest {
   const { formats, rest } = splitFormatTypes(req.questionTypes ?? []);
   if (formats.length === 0) return req;
   const totalQ = worksheetTotal(req);
-  const { taken } = fitFormats(formats, rest, totalQ);
+  const taken = formatsHaveNoLesson(req) ? [] : fitFormats(formats, rest, totalQ).taken;
   return {
     ...req,
     questionTypes: (rest.length ? rest : ['short_answer']) as AIRequest['questionTypes'],
@@ -310,6 +327,8 @@ export function buildFormatSet(kinds: FormatKind[], ctx: FormatCtx): { built: Bu
  */
 export function appendFormats(ws: WorksheetOutput, req: AIRequest, formats: FormatKind[]): WorksheetOutput {
   if (formats.length === 0) return ws;
+  // No single lesson (a document, or a wide scope): nothing to build from.
+  if (formatsHaveNoLesson(req)) return { ...ws, missingFormats: [...(ws.missingFormats ?? []), ...formats] };
   const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
   // Same grounding as the offline paper: a teacher's own file has no bank lesson.
   const docs = parseDocumentGrounding(req.additionalContext);
