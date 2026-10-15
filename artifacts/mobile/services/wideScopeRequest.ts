@@ -8,7 +8,8 @@
 import type { AIRequest, QuizOutput, WorksheetOutput } from './ai/AIService.ts';
 import { buildCoverage, coverageLessons, DISTRIBUTIONS, lessonIdsFromTags, type CoverageLesson, type Distribution } from './coveragePlan.ts';
 import { revisionUnits, type RevisionUnit } from './revisionScope.ts';
-import { scopeRequestFields } from './generatorRequests.ts';
+import { buildLessonPlanRequest, scopeRequestFields, type LessonPlanForm } from './generatorRequests.ts';
+import type { GeneratorGrounding } from './kbContext.ts';
 import { resolveScopeGrounding, type ScopeGrounding } from './scopeGrounding.ts';
 import { parseScope, type ScopeSelection } from './scopeSelection.ts';
 
@@ -119,6 +120,37 @@ export function buildScopeRequest(
       bookFigureCount: 0,
     },
   };
+}
+
+/**
+ * Inert grounding for a wide request: no lesson, no lesson context, so
+ * `buildLessonPlanRequest` contributes only the form's own fields and the
+ * teacher's text — never ids, figures or a prior review re-derived from the
+ * scope's label.
+ */
+const SCOPE_GROUNDING: GeneratorGrounding = { lesson: null, grounded: true, score: 0, context: '', ungroundedNote: '' };
+
+/**
+ * The lesson-plan screen's request for a unit / semester / book: the form's
+ * own request (style, duration, objectives, adaptations, Ministry roles,
+ * regeneration) with the scope's fields merged LAST.
+ *
+ * `own.additionalContext` is the teacher's text ALONE (the adaptations
+ * directive): `SCOPE_GROUNDING.context` is empty, so no single lesson's
+ * context rides after the scope's digest.
+ *
+ * A wide plan has no prior-knowledge review (it belongs to one lesson's unit),
+ * so `priorTopicsNotes` is dropped here, before the teacher-text rule runs:
+ * notes that are not sent must not make the plan private. `includePriorReview`
+ * is sent as an explicit `false`, never `undefined`, and `priorKnowledge` is
+ * empty, so neither the live prompt nor the offline plan can add a review.
+ * Null when `buildScopeRequest` is (a lesson scope, or one that does not
+ * ground) — the screen then refuses with `wideScopeUngrounded`.
+ */
+export function buildWideLessonPlanRequest(form: LessonPlanForm, sel: ScopeSelection): AIRequest | null {
+  const own = buildLessonPlanRequest({ ...form, priorTopicsNotes: '', includePriorReview: false }, SCOPE_GROUNDING);
+  const wide = buildScopeRequest(sel, form.lang, { additionalContext: own.additionalContext, contextSource: own.contextSource });
+  return wide ? { ...own, includePriorReview: false, ...wide.fields } : null;
 }
 
 /** The picker's counts. 25 and 30 are APPENDED: saved indices must keep their meaning. */
