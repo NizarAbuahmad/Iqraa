@@ -40,9 +40,13 @@ export type RevisionLessonOptions = {
   termsStartUnit?: number;
 };
 
-const ARABIC_SCRIPT = /[\u0600-\u06FF]/;
-/** Arabic letters only (see `keyConceptsEn` below). */
+/**
+ * Arabic LETTERS, not the whole script: a Quranic mark inside a Latin title is
+ * real content. Every English filter below uses this one test.
+ */
 const ARABIC_LETTER = /[\u0621-\u064A]/;
+/** A lesson's English key concepts without the ones that are Arabic glosses. */
+const englishConcepts = (l: KBLesson): string[] => l.keyConceptsEn.filter(c => !ARABIC_LETTER.test(c));
 
 /** About how many entries of each kind the composite holds in all; at least two per unit. */
 const REVISION_POOL = 6;
@@ -135,7 +139,7 @@ export function revisionActivityLesson(
     // concepts are Arabic glosses («Explain “دراسة الجدوى”», 24 scopes): those are
     // left out. Letters, not the whole script: a Quranic mark inside a Latin
     // title is real content.
-    keyConceptsEn: pool(l => (opts.lang === 'en' ? l.keyConceptsEn.filter(c => !ARABIC_LETTER.test(c)) : l.keyConceptsEn), text),
+    keyConceptsEn: pool(l => (opts.lang === 'en' ? englishConcepts(l) : l.keyConceptsEn), text),
     keyTerms: pool(l => l.keyTerms, t => t.ar, opts.termsStartUnit ?? 0),
     // A lesson whose book lists no outcomes (history, …) is represented by its
     // key concepts, so a warm-up's recall prompt and a quick check still name
@@ -144,7 +148,7 @@ export function revisionActivityLesson(
     // them untranslated only where the book has them): it is represented by the
     // English key concepts, with any that are themselves Arabic left out.
     objectives: opts.lang === 'en'
-      ? pool(l => l.keyConceptsEn.filter(c => !ARABIC_SCRIPT.test(c)), text)
+      ? pool(englishConcepts, text)
       : pool(l => (l.objectives.length ? l.objectives : l.keyConceptsAr), text),
     periods: null,
     rulesAr: pool(l => l.rulesAr, text),
