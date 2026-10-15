@@ -352,6 +352,26 @@ an announcement by default» below.
   policy — honest, but the classroom builder would then error in demo mode for
   those subjects) or to author real per-subject templates. Tests:
   `offlineRegenerate.test.ts`. Not looked at in a browser.
+- **The periodic-table question family went from 5 to 15 items (2026-10-15).** Every
+  chemistry family in `lib/math-practice/src/chemistry.ts` held 4–7 items (2 easy,
+  2 medium, 1 hard), and an offline quiz can never be longer than its family: a
+  10-, 15- or 20-question quiz on «الجدول الدوري وخواص العناصر» came back with
+  5 (measured). `periodic_trends` now has 15 (easy 5, medium 6, hard 4: valence
+  electrons by group, period from a configuration, atomic radius and first
+  ionization energy down a group and across a period, electronegativity, ion
+  against atom radius, isoelectronic ions); 10 → 10, 15 → 15, 20 → 15 (the family's
+  size, not a bug). The unit's own name used to fall to `general_chem`
+  («العنصر والمركب», «المخلوط»); `detectChemFamily` now sends it to
+  `periodic_trends`, placed after `electron_config` so the Grade 9 lesson
+  «التوزيع الإلكتروني والجدول الدوري» stays where it was. Routing of all 25
+  chemistry lessons was compared before and after with the app's own lesson text:
+  only the two Grade 10 periodic-table lessons gained items, none changed family.
+  **Not done:** the other 13 families are still 4–7 items each, so every other
+  chemistry lesson still tops out near 5 questions. **Found while measuring, not
+  fixed:** the Grade 9 lesson «مكوِّناتُ الذرَّةِ» routes to `redox`, not
+  `atom_basics`. **Not checked:** the chemistry itself and its Arabic wording have
+  not been read by a chemistry teacher; the new items have no worked steps, so they
+  are quiz questions only, not worksheet worked examples.
 - **Quiz «أعد التجهيز» now changes the questions, and says when it cannot**
   (2026-10-13). The offline regenerate only checked that the whole quiz JSON
   differed from the last one, so the same stems in another order — or with the
