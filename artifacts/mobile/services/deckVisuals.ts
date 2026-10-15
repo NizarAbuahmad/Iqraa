@@ -667,7 +667,21 @@ export type VisualSource = {
   type?: string;
   graphCommands?: string[] | undefined;
   visual?: VisualBlock | undefined;
+  /** The visual is the answer: draw it only after the reveal. */
+  visualOnReveal?: boolean | undefined;
 };
+
+/**
+ * The visual an export (PDF slides, PowerPoint) draws for a slide. An export
+ * has no reveal, so a `visualOnReveal` visual — ارسم's curve, which IS the
+ * answer — is drawn only on a slide that prints its answer too: a challenge
+ * slide with an answer, the teacher's copy. Anywhere else it would hand the
+ * class the answer on the question face.
+ */
+export function visualForExport(slide: VisualSource & { answer?: string | undefined }): VisualBlock | null {
+  if (slide.visualOnReveal && !(slide.type === 'challenge' && slide.answer)) return null;
+  return visualForSlide(slide);
+}
 
 /**
  * The visual a slide should draw, if any.

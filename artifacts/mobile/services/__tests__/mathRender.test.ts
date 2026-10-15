@@ -207,6 +207,14 @@ describe('mathLineToUnicode', () => {
 });
 
 describe('isolateForeignRuns', () => {
+  it('a sentence\'s closing full stop stays outside the isolate', () => {
+    assert.equal(
+      isolateForeignRuns('العدد 3 يُضرب في كل حد داخل القوس: 3(x − 1) = 3x − 3.'),
+      'العدد 3 يُضرب في كل حد داخل القوس: ⁦3(x − 1) = 3x − 3⁩.',
+    );
+    assert.equal(isolateForeignRuns('x = 2.5'), '⁦x = 2.5⁩', 'a decimal point inside the run is kept');
+    assert.equal(isolateForeignRuns('أ.'), 'أ.', 'a lone dot is still left alone');
+  });
   it('wraps each Latin/math run embedded in Arabic prose in bidi isolates', () => {
     const out = isolateForeignRuns('إذا كان f(x) = 2x + 3 و g(x) = x²');
     assert.equal(out, 'إذا كان ⁦f(x) = 2x + 3⁩ و ⁦g(x) = x²⁩');
