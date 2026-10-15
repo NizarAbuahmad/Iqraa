@@ -269,8 +269,16 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   catch a *malformed* artifact, never a well-formed worksheet with a wrong
   answer. The way back out is `POST /generate/variants/:id/retire`, offered to
   teachers since 2026-09-02 as «بلّغ عن مشكلة» in `GeneratorResultActions`. It
-  is deliberately open to any authenticated teacher, and it retires
-  immediately rather than queuing a review.
+  is deliberately open to any authenticated teacher (any `TEACHER_ROLES` role —
+  the `/generate` guard), but since the artifact-report change it **queues a
+  report** (`reportVariant`) for a `system_admin` and retires nothing: the
+  artifact keeps being served to everyone else until an admin resolves the
+  report as `approved` (`POST /moderation/artifact-reports/:id/resolve`, the
+  only caller of `retireVariant`). The reporting teacher's client then
+  regenerates, which avoids the paper they were served, so only they get a
+  replacement at once — unless a spend/quota cap is reached, in which case the
+  route serves `pool.variants[0]` (possibly the variant just reported, tagged
+  `servedReason`) instead of generating.
 - **Students are shown only what an admin approved (since 2026-10-13).** The
   pool serves a teacher whatever is stored, but a stored row can be under the
   wrong lesson id and a student is a minor, so `GET /student/lesson-explanation/…`

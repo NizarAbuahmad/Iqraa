@@ -18434,11 +18434,19 @@ What is true, checked against the code and the suites:
   and Chemistry only. The generate step refuses to overwrite an existing
   `pregen-review.json` (`--force` overrides, `--review=<other file>` writes a
   second one), because a rerun can serve a variant a reviewer already deleted.
-  Each entry carries a hash of its text and `--approve` refuses the whole file
-  if any entry was edited or malformed: **edits are not applied, delete the
-  entry instead.** A bare `--go` plans the 64 worksheet and lesson-plan calls
-  before the 49 explanations, so the default $1 cap can stop before reaching
-  them; use `--only=lesson-teaching`.
+  Each entry carries a hash of its `variantId`, `lessonId` and text, and
+  `--approve` refuses the whole file, before any request, if any entry was
+  edited (a changed id counts), or is malformed (a `variantId` that is not a
+  uuid, or no `content`): **edits are not applied, delete the entry instead.**
+  `--approve` also refuses to run combined with `--go`, `--only`, `--force` or
+  `--review`, and `--only` must be `worksheet`, `lesson-plan` or
+  `lesson-teaching`. An approved review file stays on disk, so a later bare
+  `--go` is refused until it is deleted or renamed (or `--force` is given). A
+  bare `--go` plans the 64 worksheet and lesson-plan calls before the 49
+  explanations; the default $1 cap allows about 100 model calls, so at worst
+  roughly 36 of the 49 explanations fit and the rest are cut off partway (a
+  call the pool already holds does not count against the cap). Use
+  `--only=lesson-teaching`.
 - **Replacing a rejected explanation.** Deleting an entry from the review file
   does not remove the stored variant, so the next `--go` serves it again and the
   lesson stays «قريبًا». A `system_admin` files a report on that `variantId` with
@@ -18447,6 +18455,13 @@ What is true, checked against the code and the suites:
   approved (`POST /moderation/artifact-reports/:id/resolve`, screen
   `artifacts/mobile/app/admin/artifact-reports.tsx`), which retires the row.
   The next `--go --only=lesson-teaching` generates a fresh variant.
+- **Only the server's own «not available» answer shows «قريبًا».** The service
+  (`lessonExplanation.ts`) treats a 404 as «coming soon» only when it carries
+  `code: 'not_available'` (`isNotAvailable`, `lessonExplanationErrors.ts`). Any
+  other failure, including a plain 404 from an API revision without the route,
+  rejects: the button stays enabled and the screen shows its retry. The
+  per-lesson cache lives for the module's lifetime and is not cleared on
+  sign-out (`clearLessonExplanationCache()` exists; nothing calls it).
 - `Slides Maker` and the prefill now build the request through
   `buildLessonTeachingRequest` (`artifacts/mobile/services/generatorRequests.ts`).
   `lessonTeachingRequest.test.ts` pins it deep-equal to the old inline body for
