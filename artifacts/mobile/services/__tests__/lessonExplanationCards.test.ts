@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildExplanationCards } from '../lessonExplanationCards.ts';
+import { buildExplanationCards, stripMarker } from '../lessonExplanationCards.ts';
 
 const full = {
   hook: { question: ' ما الذي يربط عدد الجسيمات بالكتلة؟ ' },
@@ -62,4 +62,85 @@ test('malformed stored content is skipped, not thrown on, and valid siblings sur
     buildExplanationCards({ concepts: [{ title: 'مفهوم', points: [null, 3, { a: 1 }, 'نقطة'] }] } as never),
     [{ kind: 'concept', title: 'مفهوم', points: ['نقطة'] }],
   );
+});
+
+test('stripMarker removes one leading bullet or dash marker', () => {
+  for (const marker of ['• ', '- ', '* ', '– ', '— ']) {
+    assert.equal(stripMarker(`${marker}المول وحدة عدّ`), 'المول وحدة عدّ', marker);
+  }
+  assert.equal(stripMarker('•المول وحدة عدّ'), 'المول وحدة عدّ');
+  assert.equal(stripMarker('  -   اقسم على 12  '), 'اقسم على 12');
+});
+
+test('stripMarker removes a leading number marker, Latin or Arabic-Indic', () => {
+  assert.equal(stripMarker('1. اقسم'), 'اقسم');
+  assert.equal(stripMarker('2) اضرب'), 'اضرب');
+  assert.equal(stripMarker('(3) اجمع'), 'اجمع');
+  assert.equal(stripMarker('١. اقسم'), 'اقسم');
+  assert.equal(stripMarker('٢) اضرب'), 'اضرب');
+  assert.equal(stripMarker('(٣) اجمع'), 'اجمع');
+  assert.equal(stripMarker('۴. اقسم'), 'اقسم');
+  assert.equal(stripMarker('12. اقسم'), 'اقسم');
+});
+
+test('stripMarker removes only ONE marker', () => {
+  assert.equal(stripMarker('- 1. اقسم'), '1. اقسم');
+  assert.equal(stripMarker('1. 2. اقسم'), '2. اقسم');
+});
+
+test('stripMarker leaves text with no marker alone', () => {
+  for (const t of ['المول وحدة عدّ', 'n = m / M', 'x - 3 = 0', 'a * b', 'عدد * ثابت']) {
+    assert.equal(stripMarker(t), t);
+  }
+  assert.equal(stripMarker(''), '');
+  assert.equal(stripMarker('   '), '');
+});
+
+test('stripMarker keeps a number that is part of the sentence', () => {
+  for (const t of ['2 mol من الكربون', '2.5 g من الماء', '2.5 g', '12 g من الكربون', '٢ مول من الماء', '1.5 مول', '10²³ جسيمًا', '2024. سنة', '2x + 1 = 5']) {
+    assert.equal(stripMarker(t), t, t);
+  }
+});
+
+test('stripMarker keeps a negative number or a sign glued to its operand', () => {
+  for (const t of ['-3 + 5 = 2', '−3 + 5 = 2', '-x = 4', '*x', '–5 °C', '(2x + 1)(x - 3)', '(3)(x + 1)']) {
+    assert.equal(stripMarker(t), t, t);
+  }
+});
+
+test('a line that is only a marker becomes empty', () => {
+  for (const t of ['-', '•', '1.', '(2)', '١)']) assert.equal(stripMarker(t), '', t);
+});
+
+test('points and steps lose a leading marker; a step already numbered is not numbered twice', () => {
+  const [concept, example] = buildExplanationCards({
+    concepts: [{ title: 'المول', points: ['• المول وحدة عدّ', '- الكتلة المولية', '2.5 g من الماء', '١. نقطة'] }],
+    workedExample: { problem: 'مسألة', steps: ['1. اقسم', '2) اضرب', '- اجمع', 'n = 24 / 12', '2 mol'], answer: '2 mol' },
+  } as never);
+  assert.deepEqual((concept as { points: string[] }).points, ['المول وحدة عدّ', 'الكتلة المولية', '2.5 g من الماء', 'نقطة']);
+  assert.deepEqual((example as { steps: string[] }).steps, ['اقسم', 'اضرب', 'اجمع', 'n = 24 / 12', '2 mol']);
+});
+
+test('a point or step that is only a marker is dropped like a blank', () => {
+  const cards = buildExplanationCards({
+    concepts: [{ title: 'ت', points: ['• ', 'نص'] }],
+    workedExample: { problem: 'م', steps: ['1. ', 'خطوة'], answer: 'a' },
+  } as never);
+  assert.deepEqual((cards[0] as { points: string[] }).points, ['نص']);
+  assert.deepEqual((cards[1] as { steps: string[] }).steps, ['خطوة']);
+});
+
+test('a hook, a problem, a hint, an answer and a misconception are shown as stored', () => {
+  const cards = buildExplanationCards({
+    hook: { question: '- ما المول؟' },
+    concepts: [{ title: 'المول', points: ['a'], misconception: '1. ليس كتلة' }],
+    workedExample: { problem: '1. كم مولًا؟', steps: ['x'], answer: '- 2 mol' },
+    practice: { problem: '2) كم؟', hint: '- اقسم', answer: '3. 3 mol' },
+  } as never);
+  assert.deepEqual(cards, [
+    { kind: 'hook', text: '- ما المول؟' },
+    { kind: 'concept', title: 'المول', points: ['a'], misconception: '1. ليس كتلة' },
+    { kind: 'example', problem: '1. كم مولًا؟', steps: ['x'], answer: '- 2 mol' },
+    { kind: 'practice', problem: '2) كم؟', hint: '- اقسم', answer: '3. 3 mol' },
+  ]);
 });

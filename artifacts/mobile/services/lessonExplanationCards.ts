@@ -4,7 +4,8 @@
  *
  * Pure, with a type-only import, so it runs under bare `node --test` (the
  * screen itself cannot). The text is shown as stored, the same as the slide
- * deck shows it. Anything blank is dropped here, so the screen never renders
+ * deck shows it, except that a leading list marker on a point or a step is
+ * removed (`stripMarker`). Anything blank is dropped here, so the screen never renders
  * an empty card; an artifact with nothing usable yields no cards and the
  * screen says so.
  */
@@ -17,8 +18,27 @@ export type ExplanationCard =
   | { kind: 'practice'; problem: string; hint?: string; answer?: string };
 
 const clean = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
+
+// A leading list marker: a bullet or dash followed by a space, or a number in
+// Latin or Arabic-Indic digits written «1.» «1)» «(1)» followed by a space (or
+// by nothing, for a line that is only a marker). The space is required, so
+// «-3 + 5», «2.5 g» and «2 mol» are sentences, not lists. A bare «•» may touch
+// its text. Up to two digits: «2024. …» is not a marker.
+const DIGITS = '[0-9\\u0660-\\u0669\\u06F0-\\u06F9]{1,2}';
+const MARKER = new RegExp(`^(?:•\\s*|(?:[-*–—]|${DIGITS}[.)]|\\(${DIGITS}\\))(?:\\s+|$))`, 'u');
+
+/**
+ * Remove ONE leading list marker. The model sometimes writes its own bullet or
+ * number, and the screen adds the number itself, which showed «1. 1. اقسم».
+ * The slide deck strips bullets the same way (`usableTeaching`). A line that
+ * is only a marker becomes empty, and the card builder drops it like a blank.
+ */
+export function stripMarker(text: string): string {
+  return text.trim().replace(MARKER, '').trim();
+}
+
 const cleanList = (values: unknown): string[] =>
-  Array.isArray(values) ? values.map(clean).filter(Boolean) : [];
+  Array.isArray(values) ? values.map(v => stripMarker(clean(v))).filter(Boolean) : [];
 
 export function buildExplanationCards(content: LessonTeachingOutput | null | undefined): ExplanationCard[] {
   if (!content) return [];
