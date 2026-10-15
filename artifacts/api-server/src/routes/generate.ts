@@ -22,8 +22,7 @@ import {
   worksheetPromptEn,
 } from "../lib/prompts.ts";
 import {
-  classroomPromptAr,
-  classroomPromptEn,
+  classroomActivityPrompt,
   classroomSetupClause,
   stripUnearnedVerification,
 } from "../lib/classroomPrompts.ts";
@@ -784,8 +783,7 @@ generateRouter.post('/generate/classroom-activity', async (req: AuthenticatedReq
   const isAr = (req.body as Record<string, unknown>).language !== 'english';
   const { body, grounding } = withGrounding(req.body as Record<string, unknown>, isAr);
   try {
-    const prompt = (isAr ? classroomPromptAr(body) : classroomPromptEn(body))
-      + classroomSetupClause(body, isAr);
+    const prompt = classroomActivityPrompt(body, isAr);
     const result = await generateContent({
       kind: "classroom-activity", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
       maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
