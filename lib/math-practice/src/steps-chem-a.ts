@@ -683,12 +683,12 @@ export const CHEM_A_STEPS: Record<string, SolutionSteps> = {
     ar: [
       'الانتقال من مستوى أعلى (n = 3) إلى مستوى أدنى (n = 1) تقل فيه طاقة الإلكترون',
       'فرق الطاقة يُطلق خارج الذرة',
-      'إذن ينبعث منه طاقة على شكل ضوء',
+      'إذن ينبعث منه طاقة على شكل إشعاع (فوتون)',
     ],
     en: [
       'Moving from a higher level (n = 3) to a lower one (n = 1) lowers the electron\'s energy',
       'The energy difference is given out by the atom',
-      'So energy is emitted as light',
+      'So energy is emitted as radiation (a photon)',
     ],
   },
   'ch-as-e5': {
@@ -1073,7 +1073,7 @@ export const CHEM_A_STEPS: Record<string, SolutionSteps> = {
     ],
     en: [
       'MgO is made of magnesium and oxygen',
-      'A binary compound is named "oxide" first and then the metal',
+      'MgO is the oxide of magnesium: Mg²⁺ with O²⁻ (the Arabic name puts the anion first, the English name the metal)',
       'So its name is magnesium oxide',
     ],
   },
@@ -1123,7 +1123,7 @@ export const CHEM_A_STEPS: Record<string, SolutionSteps> = {
     ],
     en: [
       'NH₄⁺ is the ammonium ion and Cl⁻ is the chloride ion',
-      'We name the negative ion first, then the positive ion',
+      'In English the positive ion is named first (ammonium), then the negative ion (chloride)',
       'So its name is ammonium chloride',
     ],
   },

@@ -750,7 +750,7 @@ export const CHEM_BANK: ConcreteItem[] = [
   },
   {
     id: 'ch-as-e4', family: 'atomic_structure', diff: 'easy', eq: 'n = 3 → n = 1',
-    answer: 'ينبعث منه طاقة على شكل ضوء', wrongs: ['يمتص طاقة', 'لا تتغير طاقته', 'يخرج من الذرة'],
+    answer: 'ينبعث منه طاقة على شكل إشعاع (فوتون)', wrongs: ['يمتص طاقة', 'لا تتغير طاقته', 'يخرج من الذرة'],
     promptAr: 'ينتقل إلكترون في ذرة الهيدروجين من المستوى n = 3 إلى المستوى n = 1. ماذا يحدث؟',
     promptEn: 'An electron in a hydrogen atom moves from n = 3 to n = 1. What happens?',
   },
@@ -1214,7 +1214,7 @@ export const CHEM_BANK: ConcreteItem[] = [
   // ── الحموض والقواعد (تتمة) ──
   {
     id: 'ch-ac-e3', family: 'acids_bases', diff: 'easy', eq: 'pH = 7',
-    answer: 'محلول متعادل', wrongs: ['محلول حمضي', 'محلول قاعدي', 'محلول ملحي'],
+    answer: 'محلول متعادل', wrongs: ['محلول حمضي', 'محلول قاعدي', 'محلول شديد القاعدية'],
     promptAr: 'محلول رقمه الهيدروجيني pH = 7. ما نوعه؟',
     promptEn: 'A solution has pH = 7. What type is it?',
   },
