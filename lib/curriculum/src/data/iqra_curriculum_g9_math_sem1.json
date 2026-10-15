@@ -45,6 +45,7 @@
           "id": "u1_l1",
           "order": 1,
           "title_ar": "المجموعات والفترات",
+          "title_en": "Sets and Intervals",
           "periods": 3,
           "objectives": [
             "كتابة المجموعة بطريقة سرد جميع عناصرها، وبطريقة الصفة المميزة لعناصرها",
@@ -72,6 +73,7 @@
           "id": "u1_l2",
           "order": 2,
           "title_ar": "حل المتباينات المركبة",
+          "title_en": "Solving Compound Inequalities",
           "periods": 4,
           "objectives": [
             "تعرُّف المتباينة المركبة",
@@ -93,6 +95,7 @@
           "id": "u1_l3",
           "order": 3,
           "title_ar": "تمثيل المتباينات الخطية بمتغيرين بيانيًا",
+          "title_en": "Graphing Linear Inequalities in Two Variables",
           "periods": 3,
           "objectives": [
             "تعرُّف المتباينة الخطية بمتغيرين ومجموعة حلها",
@@ -111,6 +114,7 @@
           "id": "u1_lab",
           "order": 4,
           "title_ar": "معمل برمجية جيوجبرا: تمثيل المتباينات الخطية بمتغيرين بيانيًا",
+          "title_en": "GeoGebra Lab: Graphing Linear Inequalities in Two Variables",
           "periods": 1,
           "type": "lab",
           "objectives": [
@@ -138,6 +142,7 @@
           "id": "u2_l1",
           "order": 1,
           "title_ar": "الاقترانات",
+          "title_en": "Functions",
           "periods": 5,
           "objectives": [
             "تعرُّف العلاقة، وتحديد ما إذا كانت العلاقة اقترانًا أم لا",
@@ -158,6 +163,7 @@
           "id": "u2_l2",
           "order": 2,
           "title_ar": "تفسير التمثيلات البيانية",
+          "title_en": "Interpreting Graphs",
           "periods": 3,
           "objectives": [
             "تفسير التمثيلات البيانية للعلاقات"
@@ -171,6 +177,7 @@
           "id": "u2_l3",
           "order": 3,
           "title_ar": "الاقتران التربيعي",
+          "title_en": "The Quadratic Function",
           "periods": 5,
           "objectives": [
             "تعرُّف الاقتران التربيعي وخصائصه",
@@ -191,6 +198,7 @@
           "id": "u2_lab",
           "order": 4,
           "title_ar": "معمل برمجية جيوجبرا: استكشاف التحويلات الهندسية للاقتران التربيعي",
+          "title_en": "GeoGebra Lab: Exploring Transformations of the Quadratic Function",
           "periods": 1,
           "type": "lab",
           "objectives": [
@@ -202,6 +210,7 @@
           "id": "u2_l4",
           "order": 5,
           "title_ar": "التحويلات الهندسية للاقترانات التربيعية",
+          "title_en": "Transformations of Quadratic Functions",
           "periods": 4,
           "objectives": [
             "تمثيل منحنيات الاقترانات التربيعية الناتجة عن تطبيق تحويل هندسي أو أكثر على منحنى الاقتران الرئيس"
@@ -234,6 +243,7 @@
           "id": "u3_l1",
           "order": 1,
           "title_ar": "حل المعادلات التربيعية بيانيًا",
+          "title_en": "Solving Quadratic Equations by Graphing",
           "periods": 4,
           "objectives": [
             "تعرُّف الصورة القياسية للمعادلة التربيعية",
@@ -251,6 +261,7 @@
           "id": "u3_l2",
           "order": 2,
           "title_ar": "حل المعادلات التربيعية بالتحليل",
+          "title_en": "Solving Quadratic Equations by Factoring",
           "periods": 8,
           "objectives": [
             "تعرُّف خاصية الضرب الصفري، واستعمالها في حل المعادلات",
@@ -271,6 +282,7 @@
           "id": "u3_l3",
           "order": 3,
           "title_ar": "حل المعادلات التربيعية بإكمال المربع",
+          "title_en": "Solving Quadratic Equations by Completing the Square",
           "periods": 3,
           "objectives": [
             "تحويل المقدار التربيعي الذي على صورة x² + bx إلى مربع كامل ثلاثي الحدود باستعمال عملية إكمال المربع",
@@ -284,6 +296,7 @@
           "id": "u3_l4",
           "order": 4,
           "title_ar": "حل المعادلات التربيعية باستعمال القانون العام",
+          "title_en": "Solving Quadratic Equations Using the Quadratic Formula",
           "periods": 3,
           "objectives": [
             "حل معادلات على صورة ax² + bx + c = 0 باستخدام القانون العام",
@@ -314,6 +327,7 @@
           "id": "u4_l1",
           "order": 1,
           "title_ar": "المسافة في المستوى الإحداثي",
+          "title_en": "Distance in the Coordinate Plane",
           "periods": 4,
           "objectives": [
             "تعرُّف مفهوم المسافة بين نقطتين على خط الأعداد",
@@ -336,6 +350,7 @@
           "id": "u4_l2",
           "order": 2,
           "title_ar": "البعد بين نقطة ومستقيم",
+          "title_en": "Distance Between a Point and a Line",
           "periods": 4,
           "objectives": [
             "تمييز قانون البعد بين نقطة ومستقيم في المستوى الإحداثي",

@@ -294,6 +294,74 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
       'So critical points at x = ±1',
     ],
   },
+  'd-e3': {
+    ar: ['قاعدة القوة: (xⁿ)\' = n·xⁿ⁻¹', 'هنا n = 3، فتصبح المشتقة 3·x²', "إذن f'(x) = 3x²"],
+    en: ['Power rule: (xⁿ)\' = n·xⁿ⁻¹', 'Here n = 3, so the derivative is 3·x²', "So f'(x) = 3x²"],
+  },
+  'd-e4': {
+    ar: ['نشتق كل حد على حدة', "(x)' = 1، ومشتقة الثابت 7 تساوي صفراً", "إذن f'(x) = 1"],
+    en: ['Differentiate term by term', "(x)' = 1, and the derivative of the constant 7 is zero", "So f'(x) = 1"],
+  },
+  'd-e5': {
+    ar: ['قاعدة الثابت × اقتران: (c·g)\' = c·g\'', 'قاعدة القوة: (x²)\' = 2x', 'نضرب: 4 × 2x = 8x', "إذن f'(x) = 8x"],
+    en: ['Constant multiple rule: (c·g)\' = c·g\'', 'Power rule: (x²)\' = 2x', 'Multiply: 4 × 2x = 8x', "So f'(x) = 8x"],
+  },
+  'd-e6': {
+    ar: ['قاعدة القوة: (xⁿ)\' = n·xⁿ⁻¹', 'هنا n = 5، فتصبح المشتقة 5·x⁴', "إذن f'(x) = 5x⁴"],
+    en: ['Power rule: (xⁿ)\' = n·xⁿ⁻¹', 'Here n = 5, so the derivative is 5·x⁴', "So f'(x) = 5x⁴"],
+  },
+  'd-m3': {
+    ar: ['نشتق كل حد على حدة', 'قاعدة القوة: (x⁴)\' = 4x³', 'قاعدة الثابت × اقتران: (2x²)\' = 4x', "إذن f'(x) = 4x³ − 4x"],
+    en: ['Differentiate term by term', 'Power rule: (x⁴)\' = 4x³', 'Constant multiple rule: (2x²)\' = 4x', "So f'(x) = 4x³ − 4x"],
+  },
+  'd-m4': {
+    ar: ['نشتق كل حد على حدة', '(3x²)\' = 6x و (2x)\' = 2', 'مشتقة الثابت −5 تساوي 0', "إذن f'(x) = 6x + 2"],
+    en: ['Differentiate term by term', '(3x²)\' = 6x and (2x)\' = 2', 'The derivative of the constant −5 is 0', "So f'(x) = 6x + 2"],
+  },
+  'd-m5': {
+    ar: ['ميل المماس عند x = a يساوي المشتقة عند a', 'نشتق بقاعدة القوة: y\' = 3x²', 'نعوّض x = 2: y\' = 3 × 4 = 12', 'إذن الميل = 12'],
+    en: ['The slope of the tangent at x = a equals the derivative at a', 'Differentiate with the power rule: y\' = 3x²', 'Substitute x = 2: y\' = 3 × 4 = 12', 'So the slope = 12'],
+  },
+  'd-m6': {
+    ar: ['ميل المماس عند x = a يساوي المشتقة عند a', "نشتق: y' = 2x − 4", 'نعوّض x = 5: y\' = 2 × 5 − 4 = 6', 'إذن الميل = 6'],
+    en: ['The slope of the tangent at x = a equals the derivative at a', "Differentiate: y' = 2x − 4", 'Substitute x = 5: y\' = 2 × 5 − 4 = 6', 'So the slope = 6'],
+  },
+  'd-m7': {
+    ar: ['المماس الأفقي ميله صفر، أي f\'(x) = 0', "نشتق: f'(x) = 2x − 6", 'نحل 2x − 6 = 0 فنجد 2x = 6', 'إذن x = 3'],
+    en: ['A horizontal tangent has slope zero, so f\'(x) = 0', "Differentiate: f'(x) = 2x − 6", 'Solve 2x − 6 = 0, so 2x = 6', 'So x = 3'],
+  },
+  'd-m8': {
+    ar: ['القيمة الحرجة هي قيمة x التي تكون عندها f\'(x) = 0', "نشتق: f'(x) = 2x − 4", 'نحل 2x − 4 = 0 فنجد 2x = 4', 'إذن x = 2'],
+    en: ['A critical point is a value of x where f\'(x) = 0', "Differentiate: f'(x) = 2x − 4", 'Solve 2x − 4 = 0, so 2x = 4', 'So x = 2'],
+  },
+  'd-m9': {
+    ar: ['ميل القاطع = (f(b) − f(a)) ÷ (b − a)', 'f(3) = 9 و f(1) = 1', 'الميل = (9 − 1) ÷ (3 − 1) = 8 ÷ 2', 'إذن الميل = 4'],
+    en: ['Slope of the secant = (f(b) − f(a)) ÷ (b − a)', 'f(3) = 9 and f(1) = 1', 'Slope = (9 − 1) ÷ (3 − 1) = 8 ÷ 2', 'So the slope = 4'],
+  },
+  'd-h2': {
+    ar: ["نشتق: f'(x) = 2x − 4", 'نضع المشتقة تساوي صفراً: x = 2', 'الاقتران تربيعي مفتوح للأعلى، فالقيمة الصغرى عند x = 2', 'نعوّض: f(2) = 4 − 8 + 3', 'إذن القيمة الصغرى = −1'],
+    en: ["Differentiate: f'(x) = 2x − 4", 'Set the derivative to zero: x = 2', 'The parabola opens upward, so the minimum is at x = 2', 'Substitute: f(2) = 4 − 8 + 3', 'So the minimum value = −1'],
+  },
+  'd-h3': {
+    ar: ['القيم الحرجة هي قيم x التي تكون عندها f\'(x) = 0', "نشتق: f'(x) = 3x² − 12", 'نضع المشتقة تساوي صفراً: 3x² − 12 = 0', 'نقسم على 3: x² = 4', 'إذن قيم حرجة عند x = ±2'],
+    en: ['Critical points are the values of x where f\'(x) = 0', "Differentiate: f'(x) = 3x² − 12", 'Set the derivative equal to zero: 3x² − 12 = 0', 'Divide by 3: x² = 4', 'So critical points at x = ±2'],
+  },
+  'd-h4': {
+    ar: ["نشتق: f'(x) = −2x + 6", 'نضع المشتقة تساوي صفراً: x = 3', 'الاقتران تربيعي مفتوح للأسفل، فالقيمة العظمى عند x = 3', 'نعوّض: f(3) = −9 + 18', 'إذن القيمة العظمى = 9'],
+    en: ["Differentiate: f'(x) = −2x + 6", 'Set the derivative to zero: x = 3', 'The parabola opens downward, so the maximum is at x = 3', 'Substitute: f(3) = −9 + 18', 'So the maximum value = 9'],
+  },
+  'd-h5': {
+    ar: ["نشتق: f'(x) = 3x² − 6x", 'نضع المشتقة تساوي صفراً ونحلل: 3x(x − 2) = 0', 'إذن x = 0 أو x = 2', 'إذن قيم حرجة عند x = 0 و x = 2'],
+    en: ["Differentiate: f'(x) = 3x² − 6x", 'Set the derivative to zero and factor: 3x(x − 2) = 0', 'So x = 0 or x = 2', 'So critical points at x = 0 and x = 2'],
+  },
+  'd-h6': {
+    ar: ["نشتق: f'(x) = 3x² − 3، فالقيم الحرجة x = ±1", 'x = −1 خارج الفترة [0 ، 2]، فنبقي x = 1 فقط', 'نحسب الاقتران عند طرفي الفترة والقيمة الحرجة: f(0) = 0 و f(1) = −2 و f(2) = 2', 'أكبر قيمة بينها هي 2', 'إذن القيمة العظمى المطلقة = 2'],
+    en: ["Differentiate: f'(x) = 3x² − 3, so the critical points are x = ±1", 'x = −1 lies outside [0, 2], so keep x = 1 only', 'Evaluate at the endpoints and the critical point: f(0) = 0, f(1) = −2, f(2) = 2', 'The largest of these is 2', 'So the absolute maximum = 2'],
+  },
+  'd-h7': {
+    ar: ["نشتق: f'(x) = 2x − 4", 'الاقتران متناقص حيث تكون المشتقة سالبة: 2x − 4 < 0', 'نحل المتباينة: x < 2', 'إذن متناقص عندما x < 2'],
+    en: ["Differentiate: f'(x) = 2x − 4", 'The function is decreasing where the derivative is negative: 2x − 4 < 0', 'Solve the inequality: x < 2', 'So decreasing when x < 2'],
+  },
 
   // ── Vectors ──
   'v-e1': {

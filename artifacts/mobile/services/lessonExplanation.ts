@@ -7,7 +7,8 @@
  * `studentExam.ts`: this is an account route, and the server requires the
  * student role.
  */
-import { ApiError, apiJson } from './apiClient.ts';
+import { apiJson } from './apiClient.ts';
+import { isNotAvailable } from './lessonExplanationErrors.ts';
 import type { LessonTeachingOutput } from './ai/AIService.ts';
 
 export type LessonExplanation = { content: LessonTeachingOutput; variantId: string };
@@ -16,10 +17,19 @@ export type ExplanationResult =
   | { status: 'ok'; explanation: LessonExplanation }
   | { status: 'unavailable' };
 
-// Per session. The lesson page checks availability and the screen then asks
-// for the same content; only a found explanation is remembered, so a lesson
-// that was «قريبًا» is asked again the next time it is opened.
+// For the lifetime of the module — until the app is reloaded or
+// `clearLessonExplanationCache()` is called; sign-out does not clear it. The
+// lesson page checks availability and the screen then asks for the same
+// content; only a found explanation is remembered, so a lesson that was
+// «قريبًا» is asked again the next time it is opened. What is cached is
+// approved lesson content, the same for every student, not anything about the
+// signed-in account.
 const cache = new Map<string, LessonExplanation>();
+
+/** Forget every remembered explanation. Nothing calls it yet. */
+export function clearLessonExplanationCache(): void {
+  cache.clear();
+}
 
 export async function getLessonExplanation(lessonId: string, lang: 'ar' | 'en'): Promise<ExplanationResult> {
   const key = `${lessonId}:${lang}`;
@@ -32,9 +42,11 @@ export async function getLessonExplanation(lessonId: string, lang: 'ar' | 'en'):
     cache.set(key, explanation);
     return { status: 'ok', explanation };
   } catch (e) {
-    // 404 is the server saying "nothing approved for this lesson yet", which
-    // is an answer, not a failure. Anything else is a failure and rejects.
-    if (e instanceof ApiError && e.status === 404) return { status: 'unavailable' };
+    // The server's `not_available` 404 means "nothing approved for this lesson
+    // yet", which is an answer, not a failure. Anything else — including a 404
+    // without that code, as from an API revision with no such route — is a
+    // failure and rejects.
+    if (isNotAvailable(e)) return { status: 'unavailable' };
     throw e;
   }
 }
