@@ -53,6 +53,68 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **Quiz, worksheet, homework and game take a unit, semester or whole book
+  (2026-10-14; spec
+  `docs/superpowers/specs/2026-10-14-wide-scope-assessment-tools-design.md`,
+  builds on piece 1).** The teacher picks the scope and a «توزيع الأسئلة»
+  (balanced by unit, or random); on quiz, worksheet and homework the count
+  picker adds 25 and 30 on a wide scope only (the game keeps 5/8/10/12 and shows
+  no coverage line). One `planCoverage` decides which lesson each question is
+  about; the offline generators draw each question from that lesson's bank and
+  the live prompts get the same plan as per-lesson counts, with a `lesson` tag
+  the server passes through and never enforces. Offline worksheet and homework
+  now clamp at 30 (were 20); a lesson with no offline bank (geometry, for one)
+  is dropped from the plan and the coverage line says how many were not
+  covered. Tested: the plan, the drawer, the request builder, the offline quiz /
+  worksheet / homework on a real G10 maths semester, the prompt clause, the
+  cache key (`distribution`, and a digest of the lesson table's code/id/title —
+  not the slot plan, which a Regenerate rotates), and the 25/30 count enforcement.
+  **Before merging — a manual check nobody has done:** the offline gate
+  (`offlineWideScope`) is ON for quiz, worksheet, homework and game, so the web
+  build (production runs `DEMO_MODE`) offers the new options the moment this
+  merges. The spec says the gate is lifted only after a browser check; it was
+  lifted **without one** (no browser was available), a decision recorded so the
+  feature is not invisible to everyone. So the first person to open the quiz,
+  worksheet and game screens on the web build must click through the picker, the
+  distribution control, the 25/30 counts, the coverage line, Save and reopen
+  **before** merging.
+  **Not verified / known limits:** no browser was available, so the picker, the
+  distribution control, the count options, the coverage line, Save, reopen and
+  export are checked by reading and typecheck only; whether the live model
+  follows the plan (the screen says «هذه القائمة بحسب ما أفاد به الذكاء
+  الاصطناعي وقد لا تكون دقيقة» and never claims it did); how often a 30-question paper needs the top-up call (output ceiling
+  already clamped at 24 000 tokens). A reopened wide material keeps its scope,
+  but `TopicSelector`'s dropdowns show placeholders and there is no coverage
+  line. **Stale saved scope:** a reopened wide paper whose saved grade/subject
+  no longer matches the pickers (`useWideScope`'s `isWide`) is treated as a
+  single lesson, and a re-save then drops the `scope`/`distribution` keys.
+  **A wide paper is not filed under a lesson (fixed 2026-10-14):** `workspace.ts`
+  used to stamp `formState.lessonId` from the topic text, which for a wide paper
+  is the scope label, grounded without a grade limit (a Grade 10 «الاقترانات»
+  paper got a Grade 9 lesson's id), so the prep board, «send to students» and the
+  viewer/export figures treated it as that lesson's. The stamp is skipped for a
+  unit/semester/book scope (`services/materialLessonId.ts`) and `workspace/view.tsx`
+  shows no figures and offers no lesson objectives for one; the prep board
+  (`materialsForTopic`, also behind the chat's «what is prepared») skips any
+  material whose saved scope is wide, so it is neither matched by id nor by the
+  topic fallback; a copy saved before the fix may still carry the wrong id on
+  disk, and the viewer and the board both ignore it. **Known limit (stale
+  scope):** a reopened wide paper whose saved scope no longer matches the
+  pickers drops its scope keys on re-save, and `withLessonId` then stamps a
+  lesson grounded from the label again — that re-saved copy is filed under a
+  lesson (possibly another grade's) until the scope is re-picked. **The offline «covered» list means «drawn for that slot's
+  lesson», not «about that lesson exactly»:** the chemistry bank is chosen by
+  keyword detection on each lesson's text, so a slot's question can come from a
+  neighbouring lesson's topic. On a semester-1 balanced maths worksheet the half-solved item is
+  dropped, because the second slot's lesson has no checked working; a lesson
+  whose only question is the worked example shows as uncovered. The
+  prior-knowledge review is hidden on a wide worksheet (and not sent), and so
+  are Related tools on a wide quiz and worksheet (`hideRelated`: their chips
+  open other tools with the scope label as a bare topic, which they would
+  re-ground to a lesson); the game has no Related panel. Evaluations (exams) still take a
+  single lesson, and so do lesson plan, slides, activity, lesson-flow,
+  infographic and the classroom builder (piece 3). Papers above 30 questions
+  are not built.
 - **Wide-scope selection, foundation only (2026-10-13; spec
   `docs/superpowers/specs/2026-10-13-wide-scope-selection-design.md`).**
   `services/scopeSelection.ts` (what a unit / semester / book scope covers),
@@ -60,14 +122,13 @@ an announcement by default» below.
   server-side page pooling and `scopeKey` in the artifact cache key all exist
   and are tested. `TopicSelector`'s «الفصل كاملًا» entry is verified by code
   read only — there is no browser in the build container, so it was never run.
-  **No generator screen opts in yet**, so nothing a teacher sees has changed:
-  «الوحدة كاملةً» sets the unit title as the topic, which
-  `resolveGeneratorGrounding` grounds to one lesson or none (not to the unit),
-  and «الكتاب كاملًا» stays ungrounded — its topic text matches nothing.
-  **Restoring a saved / reopened scope (spec §6, goal 5) is not done:**
-  `parseScope` exists, but wiring saved state to it is piece 2's job. Pieces 2
-  (quiz, worksheet, homework, game) and 3 (the rest) also have to adopt
-  `onScopeChange` + `scopeRequestFields` before anything above is reachable.
+  **Since 2026-10-14 quiz, worksheet, homework and game opt in** (the bullet above);
+  every other screen still does not, so there «الوحدة كاملةً» sets the unit
+  title as the topic, which `resolveGeneratorGrounding` grounds to one lesson or
+  none (not to the unit), and «الكتاب كاملًا» stays ungrounded — its topic text
+  matches nothing. **Piece 3 (the rest) still has to adopt `onScopeChange` +
+  `scopeRequestFields`.** Restoring a saved / reopened scope (spec §6, goal 5)
+  is wired for those four via `parseScope`, with the limits in the bullet above.
 - **API credentials are Secret Manager references** (2026-10-08, live since
   `iqraa-api-00283-twr`). The ten credentials (`SESSION_SECRET`,
   `DATABASE_URL`, `OPENAI_API_KEY`, both R2 keys, Unsplash, YouTube,
@@ -1248,6 +1309,158 @@ slice (items 6-11, the first `verified` ones):
   curriculum lesson, so its 18 exercises (15 of them equation items) cannot be joined; Arabic word problems;
   figure items; chemistry (its teacher guides have no extracted text); the rest of guide p.47 (choices 3-5, whose exponents and fractions the text layer
   flattens, item 12, an inequality, and the answer appendix its key points to).
+
+## Scanning external exams: paper setup from photos, and a whole class at once, 2026-10-14
+
+Two things a teacher who sets their own paper exam used to do by hand.
+
+**Setting the exam up.** On the new-exam form, a paper exam's grid can be filled
+from photos of the paper (up to four pages): `POST /evaluations/scan-paper`
+returns one proposed row per question — marks, a suggested objective chosen only
+from the lessons ticked, a suggested competency — and the grid takes the paper's
+length. It is stateless (the grid is built before the evaluation exists) and
+**writes nothing**; the existing `PUT .../questions/paper` still validates and
+stores. Scanned rows read «راجع» until touched, an unread mark stays blank, and a
+total that disagrees with the one the paper prints is flagged.
+
+**Marking a class.** On a published paper exam attached to a class,
+«امسح أوراق الصف» takes up to 40 photos of marked papers, three at a time. Each
+`POST /evaluations/:id/scan-class-paper` returns the marks, the name as written,
+and a match against the class roster **done on the server** (the roster never goes
+to the model). A match is `confident` only when the normalized name equals exactly
+one student's and no other student's longer name contains it; anything else is
+`confirm` (three candidates, a tap) or `none`. A
+review table shows every row; saving goes through the existing start-attempt,
+mark and submit endpoints.
+
+**Two things in the existing API this had to design around** — both easy to get
+wrong for the next feature that writes marks in bulk:
+
+- `POST /evaluations/:id/attempts` is find-or-create and `PUT /attempts/:id/grades/:qid`
+  upserts, so writing marks into a paper you did not create silently replaces a
+  mark a teacher entered or a student earned. The mobile `startAttempt` threw
+  away the `created` flag; `startAttemptChecked` returns it, and the batch skips
+  any paper it did not make.
+- The same find-or-create breaks **retry**: after a half-failed save the paper
+  exists because of this batch, so a second start reports `created: false`. A
+  row therefore remembers its `attemptId` and never starts twice.
+
+**Decisions kept from the spec:** blank cells are saved as unmarked (the paper
+stays provisional); a student who already has a paper is skipped, never
+overwritten; photos are not stored; setup takes photos only (no PDF — the web
+build has no PDF rendering path).
+
+**Not verified: the model has never read a real exam paper or a real class set.**
+The local key is a placeholder and these routes are not deployed, so every test
+runs with live mode off — the position the original scanner shipped in. Three
+questions only a real photo answers: whether the marks and objective suggestions
+are good enough to save typing; whether handwritten names are read well enough
+for an exact match to fire at all (if almost never, every row falls back to
+`confirm` — safe, but then no faster than picking the student first); and whether
+three-at-a-time stays under the 30-per-minute `ai-scan-class` limiter in practice
+(call latency is unmeasured). Treat the feature as unproven until a real class
+has been scanned.
+
+**Not verified: the two screens have never been rendered.** The «اقرَأ الأسئلة
+من صور الورقة» button on the paper grid (`app/evaluations/new.tsx`) and the
+class-scan screen (`app/evaluations/[id]/scan-class.tsx`) were typechecked, and
+their logic is covered by unit tests of the pure services, but neither has been
+opened in a browser or on a device: the manual smoke steps were not run (they
+need a teacher login and a seeded database). Layout, RTL rendering, the
+`PickerField` inside a card, and the web photo picker are unchecked.
+
+**Tests.** The decisions are pure functions: `scanRequest`, `scanPaper`,
+`studentMatch`, `scanMarks` (a golden test pins `scan-marks`' prompt, which this
+did not change) on the server; `scanErrors`, `paperScan`, `classScanRunner`,
+`classScanReview`, `classScanSave` on the client. `scanRoutes.test.ts` reads the
+two handlers' source (they write nothing, are rate-limited, and check live mode,
+budget and quota before the model), and `mountOrder.test.ts` asserts both are
+guarded in the built bundle. Measured 2026-10-14, after the final-review fix
+wave: api-server 1705 passing (after `pnpm build`, which also makes the 54
+mount-order tests run), mobile 4287 passing of 4297 (10 skipped), 0 failures in
+both; `pnpm run typecheck` clean.
+
+### Hardening found in review
+
+- **Name matching.** `confident` required an equal *set* of words, so «علي أحمد»
+  matched «أحمد علي» and «محمد محمد» matched «محمد». It now requires an identical
+  normalized name (the token string); non-identical names are capped below 1 and
+  fall to `confirm`.
+- **Batch runner.** Every photo gets exactly one outcome even if a UI callback
+  throws; the first callback error is rethrown after all outcomes are delivered.
+- **Save loop, reassignment.** Reassigning a row to another student now resets
+  its paper state. Before, a retry could write B's marks into A's half-made paper
+  and show B as saved. *(Superseded by the student lock in the final review,
+  below.)*
+- **Save loop, loud failures.** A mark that was written and then cleared, or an
+  invalid box, now fails the row (`cleared_after_write` / `invalid_mark`) instead
+  of submitting silently. A row's own half-made paper is never skipped as «already
+  has a paper».
+- **Paper setup.** Scan errors now show next to the scan button; they used to
+  render below the whole grid, out of sight.
+- **Process.** The scan UI wiring and the save-loop rules each went through a fix
+  round after independent review. Read the unit tests of `classScanSave` and
+  `studentMatch` before changing either.
+
+**Found in the final whole-branch review, and fixed:**
+
+- **Superset names are never `confident`.** With «أحمد» and «أحمد علي» on the
+  roster, a paper reading «أحمد» used to go to «أحمد» without a word, and «أحمد علي»
+  was not even offered. A roster name holding every part read *and more* now
+  forces a tap (`confirm`, the exact match first, the longer names after). The
+  longer name read in full stays `confident`.
+- **Class scanning is for paper exams only.** The route used to accept any
+  published exam, and a deep link to a generated MCQ exam let blank cells plus
+  submit machine-grade every unanswered question as 0. `classScanGate` now
+  refuses an exam with any question the app marks itself (409
+  `not_paper_exam`), and the screen refuses to load one («مسح أوراق الصف متاح
+  للامتحانات الورقية فقط.»).
+- **Paper marks must be one number.** A model answering «2+3» or «3×2» for a
+  question's marks used to become a ceiling of 2 (or 3) — the first number in the
+  string. Setup now reads a mark only when the whole string is one number (Latin,
+  Arabic-Indic or Eastern digits, one decimal separator, optionally «½» or «و
+  نصف»); anything else is null with «could not read the marks». The printed
+  total follows the same rule.
+- **A row that has started a paper is locked to its student.** Replaces the
+  reset-on-reassign above, which let a half-failed save leave B's marks on A's
+  paper and then skip A's own photo. The picker and chips are replaced by the
+  student's name, a note, and «افتح ورقة الطالب».
+- **A photo can be ignored.** A second photo of one paper (`duplicate_student`)
+  or a blank page (`no_student`) used to block the whole batch with no way out
+  but assigning it to another child. «تجاهل هذه الصورة» sets a row aside
+  (`discarded`) as long as it has not started a paper; it is never saved and not
+  counted.
+- **Identical names are told apart on screen.** Two «محمد خالد» read the same in
+  the chips and the picker; they now show the school reference when each has a
+  different one, otherwise «(1)», «(2)» in roster order (`rosterLabels`).
+- **The pick buttons are re-entrancy-safe.** A second tap while the picker is
+  open is refused, row keys never repeat, and a picker or runner that throws
+  ends in «تعذّرت قراءة الصورة» instead of an unhandled rejection — on the
+  class-scan screen and on the new-exam form's paper scan.
+
+### Known limits
+
+- A row that started a paper for student A and then failed stays locked to A. If
+  it was really B's paper, A's record holds the marks written so far (A's result
+  is provisional, `needs_review`) until someone opens A's paper («افتح ورقة
+  الطالب») and corrects or reassigns it with the existing per-attempt tools. The
+  batch never moves or deletes a paper.
+- There is no «unmark»: once a mark has been written, clearing the box fails the
+  row until a value is entered (`SaveDeps` cannot clear a mark).
+- An invalid box is only caught at save time, after `startAttempt`, if the UI
+  blocker is bypassed (a defensive path); the UI blocks it before save.
+- After a save, the last saved student may not be added to the screen's «has a
+  previous paper» set until reload (the server's `created: false` guard still
+  prevents any overwrite).
+- The server's `scan-class-paper` 409 «no questions» carries no `code` (unreachable
+  for a published exam).
+- Photos are only downscaled on web. On a phone each photo is sent at full size
+  (JPEG quality 0.6), so 40 base64 photos held in memory, or a four-page setup,
+  can exceed the payload ceiling (10,000,000 characters altogether / the 12 MB
+  body) or the phone's memory. The combined-size refusal reuses the single-photo
+  code and wording (`image_too_large` → «الصورة كبيرة جدًا»), which names one
+  photo when the problem is all of them. Untested on a device — the first thing a
+  real Android run should try.
 
 ## Row-level security is built and switched off, 2026-10-13
 
@@ -10475,6 +10688,14 @@ Found by testing the guard, not the happy path.
 13 tests on the parser, 6 on the route's guards (bad body, oversized, another
 teacher's attempt, no token, live mode off, and that none of it writes a
 grade). 256 api-server tests, 895 mobile, 0 failures.
+
+> **Correction (2026-10-14):** the «6 on the route's guards» are not in the
+> repository. `src/**/__tests__` holds the 13 parser tests (`scanMarks.test.ts`)
+> and nothing that exercises `POST /attempts/:id/scan-marks`; no route-handler
+> test harness exists (route files load the database and the OpenAI client at
+> module scope, which `node --test` cannot import). The guards it describes are
+> real in the code but untested. The 2026-10-14 scan routes avoid the gap by
+> keeping their decisions in pure functions — see the section above.
 
 **Not verified: the model actually reading a sheet.** The local key is a
 placeholder and the endpoint is not deployed yet, so every test above runs with

@@ -389,3 +389,10 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   paths that act without a user or must read other users' rows to decide something, and the
   files that use it are pinned in `systemDbFiles.test.ts`. A new table must be classified in
   `rlsCoverage.test.ts`, and a new table gets **no** grant to `iqraa_app` automatically.
+- **`startAttempt` is find-or-create and the marking endpoint upserts (found
+  2026-10-14, designing the class scan — it had not bitten yet).** Writing marks
+  into a paper you did not create replaces a teacher's or a student's mark with
+  no error, and `startAttempt` (mobile) hides which case you are in. Use
+  `startAttemptChecked` and read `created`; and remember the `attemptId` you got
+  so a retry does not start again and mistake its own half-saved paper for
+  someone else's. `services/classScanSave.ts` is the worked example.

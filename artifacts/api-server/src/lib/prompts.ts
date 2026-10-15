@@ -16,6 +16,7 @@ import {
   lessonKindClauseAr, lessonKindClauseEn, usesWorkedExample, worksheetKindRuleAr, worksheetKindRuleEn,
 } from "./lessonKinds.ts";
 import { QUIZ_TYPE_ORDER, type QuizType } from "./generationShape.ts";
+import { coverageClauseAr, coverageClauseEn } from "./coverage.ts";
 
 /** «السؤال الأول» … — how a ministry paper numbers its question blocks. */
 const ORDINAL_AR = ["الأول", "الثاني", "الثالث", "الرابع", "الخامس", "السادس"];
@@ -431,7 +432,7 @@ export function worksheetPromptAr(b: any): string {
 ${worksheetTypeShapesAr(types)}
 ${difficultyClauseAr(b)}
 ${wantsWP ? "\nيجب تضمين مسألة حياتية واحدة على الأقل (سيناريو واقعي يتطلب تطبيق مفاهيم الدرس، بأسلوب «حل مسائل حياتية»)." : ""}
-${prior ? `\nابدأ بقسم «مراجعة سابقة» فيه سؤالان أو ثلاثة فقط مبنية حرفيًا على هذه المفاهيم السابقة (لا تختلق غيرها):\n- ${prior.join("\n- ")}` : ""}
+${prior ? `\nابدأ بقسم «مراجعة سابقة» فيه سؤالان أو ثلاثة فقط مبنية حرفيًا على هذه المفاهيم السابقة (لا تختلق غيرها):\n- ${prior.join("\n- ")}` : ""}${coverageClauseAr(b, !!example)}
 ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه لصياغة أسئلة دقيقة ومرتبطة بالمنهج):\n${b.additionalContext}` : ""}
 ${example ? workedExampleRuleAr(n) : isHW ? "" : worksheetKindRuleAr(b, n)}
 أعد JSON بالشكل الآتي (بالعربية):
@@ -475,7 +476,7 @@ ${difficultyClauseEn(b)}
 Question types requested (use no others, and spread the questions across them): ${types.join(", ")}
 ${worksheetTypeShapesEn(types)}
 ${wantsWP ? "\nInclude at least one real-life word problem (a realistic scenario that requires applying the lesson concepts)." : ""}
-${prior ? `\nStart with a "Prior knowledge review" section of 2–3 questions drawn only from these concepts (do not invent others):\n- ${prior.join("\n- ")}` : ""}
+${prior ? `\nStart with a "Prior knowledge review" section of 2–3 questions drawn only from these concepts (do not invent others):\n- ${prior.join("\n- ")}` : ""}${coverageClauseEn(b, !!example)}
 ${b.additionalContext ? `\nTextbook context (use this to craft accurate, curriculum-aligned questions):\n${b.additionalContext}` : ""}
 ${example ? workedExampleRuleEn(n) : isHW ? "" : worksheetKindRuleEn(b, n)}
 Return JSON in this exact shape:
@@ -575,7 +576,7 @@ ${quizDifficultyClauseAr(b)}
 ${types.map(t => `- ${QUIZ_TYPE_CONTRACT_AR[t]}`).join("\n")}
 العلامات: مجموع "points" لكل الأسئلة يساوي ${marks} بالضبط؛ أسئلة الاختيار وصح/خطأ وأكمل علامة أو علامتان للسؤال، والأسئلة المفتوحة أكثر.
 
-${QUIZ_VARIETY_RULE_AR}
+${QUIZ_VARIETY_RULE_AR}${coverageClauseAr(b)}
 ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه لصياغة أسئلة دقيقة ومرتبطة بالمنهج):\n${b.additionalContext}` : ""}
 أعد JSON بالشكل الآتي (بالعربية):
 {
@@ -611,7 +612,7 @@ The JSON shape of each type:
 ${types.map(t => `- ${QUIZ_TYPE_CONTRACT_EN[t]}`).join("\n")}
 Marks: the "points" of all questions sum to exactly ${marks}; choice, true/false and fill-blank items carry one or two marks each, open questions more.
 
-${QUIZ_VARIETY_RULE_EN}
+${QUIZ_VARIETY_RULE_EN}${coverageClauseEn(b)}
 ${b.additionalContext ? `\nTextbook context (use this to craft accurate, curriculum-aligned questions):\n${b.additionalContext}` : ""}
 Return JSON in this exact shape:
 {

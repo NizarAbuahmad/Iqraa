@@ -16,6 +16,8 @@
  */
 import { createHash } from "node:crypto";
 
+import { parseCoverage } from "./coverage.ts";
+
 /**
  * Bump when a prompt changes in a way that makes previously generated
  * artifacts wrong or stale. It is part of both keys, so a bump partitions new
@@ -51,6 +53,11 @@ const STRICT_ONLY_FIELDS = [
   // no projector"; screen → "do not print the slides"), so a board deck must
   // not be served to a projector request from the pool.
   "classroomSetup",
+  // How a wide scope's questions are spread over its lessons. A balanced paper
+  // and a random one for the same semester are different artifacts. Absent for
+  // a single lesson, so no existing key changes. (The lesson TABLE is hashed
+  // separately, as `coverageHash` below; the slot plan is not hashed at all.)
+  "distribution",
 ] as const;
 
 const ARABIC_DIACRITICS = /[ً-ْٰـ]/g;
@@ -211,6 +218,25 @@ export function generationKeys(
   // The system prompt differs on it (whether «انظر الشكل» is allowed), so a
   // paper that cites a figure must not reach a client that has none.
   strict.bookFigures = hasBookFigures(body);
+  // The lesson table is rendered into the prompt (code, title) and tags every
+  // question (id), so a request that sends a different table asks for a
+  // different paper under the same scope key and must not share its slot — or
+  // a crafted table would poison the key an honest client reads. An honest
+  // client's table follows from scope + language, so honest keys are unchanged
+  // by it. Only code / id / title: NOT the slot plan, which a Regenerate
+  // rotates, and any rotation is an equally valid plan. Read through
+  // `parseCoverage`, the prompt's own parser, so what is hashed is what the
+  // model is shown, and junk coverage (which renders nothing) contributes
+  // nothing. Titles are hashed as rendered, like `additionalContext`, not
+  // normalised: two spellings are two prompts. Absent for a single lesson, so
+  // no existing key changes.
+  const coverage = parseCoverage(body);
+  if (coverage) {
+    strict.coverageHash = createHash("sha256")
+      .update(JSON.stringify(coverage.lessons.map((l) => [l.code, l.id, l.title])))
+      .digest("hex")
+      .slice(0, 16);
+  }
   if (context.length > 0) {
     strict.contextHash = createHash("sha256").update(context).digest("hex").slice(0, 16);
   }

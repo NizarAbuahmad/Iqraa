@@ -48,3 +48,10 @@ export function arQuestionsPhrase(n: number): string {
   if (n >= 11) return `${n} سؤالًا`;
   return arCountPhrase(n, 'سؤال', 'سؤالان', 'أسئلة');
 }
+
+/** «درس واحد» / «درسان» / «7 دروس» / «15 درسًا». */
+export function arLessonsPhrase(n: number): string {
+  if (n === 1) return 'درس واحد';
+  if (n >= 11) return `${n} درسًا`;
+  return arCountPhrase(n, 'درس', 'درسان', 'دروس');
+}

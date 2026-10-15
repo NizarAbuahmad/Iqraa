@@ -35,6 +35,7 @@ import {
   createEvaluation,
   generateEvaluation,
   listEvaluableBooks,
+  scanPaper,
   setPaperQuestions,
   type CompetencyKey,
   type Difficulty,
@@ -44,6 +45,10 @@ import {
 import type { TranslationKey } from '@/services/i18n';
 import { palette } from '@/constants/colors';
 import { toLatinDigits } from '@/services/latinDigits';
+import { confirm } from '@/services/confirm';
+import { pickMarkSheetPhotos } from '@/services/documents/pick';
+import { blankMarkCount, gridFromScan, totalMismatch } from '@/services/paperScan';
+import { scanErrorKey } from '@/services/scanErrors';
 import { groupObjectivesByLesson } from '@/services/objectiveLessons';
 import { BackButton } from '@/components/ui/BackButton';
 
@@ -103,7 +108,19 @@ const QUESTION_COUNTS = [5, 10, 15, 20, 25, 30];
 type Mode = 'generate' | 'paper';
 
 /** One row of the paper grid, as it sits in the form. */
-type PaperRow = { marks: string; objectiveId: string; competencyKey: CompetencyKey };
+type PaperRow = {
+  marks: string;
+  objectiveId: string;
+  competencyKey: CompetencyKey;
+  /**
+   * Came from a photo of the paper and the teacher has not touched it yet. Set
+   * by a scan, cleared by any edit; `false` means "edited by hand", which is
+   * what makes a rescan ask before it replaces the grid.
+   */
+  review?: boolean;
+};
+/** Pages of one exam a single scan will take. */
+const MAX_SCAN_PAGES = 4;
 
 const COMPETENCIES: CompetencyKey[] = ['knowledge', 'understanding', 'application', 'critical_thinking'];
 const COMPETENCY_KEY: Record<CompetencyKey, TranslationKey> = {
@@ -144,6 +161,13 @@ export default function NewEvaluationScreen() {
   const [title, setTitle] = useState('');
   const [mode, setMode] = useState<Mode>('generate');
   const [paperRows, setPaperRows] = useState<PaperRow[]>([]);
+  /** Set by a scan: the grid is as long as the paper was, not as long as the count picker says. */
+  const [scannedCount, setScannedCount] = useState<number | null>(null);
+  const [printedTotal, setPrintedTotal] = useState<number | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [scanNote, setScanNote] = useState('');
+  /** The note beside the scan button reports a failure, so it reads in the destructive colour. */
+  const [scanFailed, setScanFailed] = useState(false);
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
 
@@ -170,7 +194,7 @@ export default function NewEvaluationScreen() {
     if (mode !== 'paper') return;
     const objectiveIds = [...selectedObjectives];
     const fallback = objectiveIds[0] ?? '';
-    const count = QUESTION_COUNTS[countIdx] ?? 10;
+    const count = scannedCount ?? QUESTION_COUNTS[countIdx] ?? 10;
     setPaperRows(prev =>
       Array.from({ length: count }, (_, i): PaperRow => {
         const row = prev[i];
@@ -179,14 +203,66 @@ export default function NewEvaluationScreen() {
           marks: row?.marks ?? DEFAULT_MARKS,
           objectiveId: keepObjective ? row.objectiveId : fallback,
           competencyKey: row?.competencyKey ?? 'understanding',
+          review: row?.review,
         };
       }),
     );
-  }, [mode, countIdx, selectedObjectives]);
+  }, [mode, countIdx, selectedObjectives, scannedCount]);
 
   const setPaperRow = useCallback((index: number, patch: Partial<PaperRow>) => {
-    setPaperRows(prev => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)));
+    setPaperRows(prev => prev.map((r, i) => (i === index ? { ...r, ...patch, review: false } : r)));
   }, []);
+
+  /**
+   * Fill the grid from photos of the exam paper. Saves nothing: the rows land in
+   * the grid, flagged «راجع», and the existing create path validates them.
+   * Unread marks stay blank, so the grid's own check names the row.
+   */
+  const onScanPaper = async () => {
+    if (scanning) return;
+    if (selectedObjectives.size === 0) {
+      // Beside the button, not in the form-level error under the grid, which is out of sight.
+      setScanNote(t('paperScanNeedObjective'));
+      setScanFailed(true);
+      return;
+    }
+    // Set before the picker opens, so a second tap while it is open is refused;
+    // every way out below — cancel, declined replace, a picker that throws —
+    // passes through the finally.
+    setScanning(true);
+    try {
+      const images = await pickMarkSheetPhotos(MAX_SCAN_PAGES);
+      if (images.length === 0) return;
+      if (paperRows.some(r => r.review === false)) {
+        const ok = await confirm({
+          title: t('paperScanReplaceTitle'),
+          message: t('paperScanReplaceBody'),
+          confirmLabel: t('paperScanReplaceConfirm'),
+          cancelLabel: t('cancel'),
+        });
+        if (!ok) return;
+      }
+      setError('');
+      setScanNote('');
+      setScanFailed(false);
+      const res = await scanPaper(images, [...selectedObjectives]);
+      if (res.rows.length === 0) {
+        setScanNote(t('paperScanFoundNothing'));
+        return;
+      }
+      const grid = gridFromScan(res.rows, [...selectedObjectives], 'understanding');
+      setScannedCount(grid.length);
+      setPaperRows(grid);
+      setPrintedTotal(res.printedTotal);
+      setScanNote(t('paperScanFilled', String(grid.length), String(blankMarkCount(grid))));
+    } catch (err) {
+      // A picker that throws is not a scan error: scanErrorKey maps it to scanFailed.
+      setScanNote(t(scanErrorKey(err)));
+      setScanFailed(true);
+    } finally {
+      setScanning(false);
+    }
+  };
 
   // Teachers think in lessons, not objectives: the picker lists lessons, and
   // ticking one selects every objective it carries. Downstream (paper rows,
@@ -502,7 +578,12 @@ export default function NewEvaluationScreen() {
           label={t('questionCountLabel')}
           value={String(QUESTION_COUNTS[countIdx])}
           options={QUESTION_COUNTS.map(String)}
-          onChange={setCountIdx}
+          onChange={i => {
+            setCountIdx(i);
+            // Choosing a count is choosing the grid's length again.
+            setScannedCount(null);
+            setPrintedTotal(null);
+          }}
           colors={colors}
           isRTL={isRTL}
           accent={ACCENT}
@@ -516,6 +597,36 @@ export default function NewEvaluationScreen() {
             <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
               {t('paperGridHint')}
             </Text>
+            <Pressable
+              onPress={onScanPaper}
+              disabled={scanning}
+              style={[styles.scanPaperBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: scanning ? 0.6 : 1 }]}
+            >
+              {scanning ? (
+                <ActivityIndicator size="small" color={ACCENT} />
+              ) : (
+                <Ionicons name="scan-outline" size={18} color={ACCENT} />
+              )}
+              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, flexShrink: 1, textAlign: 'center' }}>
+                {scanning ? t('paperScanReading') : t('paperScanBtn')}
+              </Text>
+            </Pressable>
+            <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+              {t('paperScanHint')}
+            </Text>
+            {scanNote ? (
+              <Text style={[styles.hint, { color: scanFailed ? colors.destructive : colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                {scanNote}
+              </Text>
+            ) : null}
+            {(() => {
+              const mismatch = totalMismatch(paperRows, printedTotal);
+              return mismatch ? (
+                <Text style={[styles.hint, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                  {t('paperTotalMismatch', String(mismatch.sum), String(mismatch.printed))}
+                </Text>
+              ) : null;
+            })()}
             {selectedObjectives.size === 0 ? (
               <Text style={[styles.hint, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
                 {t('selectAtLeastOneObjective')}
@@ -602,6 +713,9 @@ function PaperRowEditor({
         <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
           {t('paperMarksLabel')}
         </Text>
+        {row.review ? (
+          <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{t('paperRowReview')}</Text>
+        ) : null}
         <TextInput
           value={row.marks}
           onChangeText={v => onChange({ marks: v })}
@@ -701,6 +815,7 @@ const styles = StyleSheet.create({
   modeRow: { gap: 8, marginBottom: 8 },
   modeChip: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10, borderWidth: 1 },
   paperRow: { borderWidth: 1, borderRadius: 12, padding: 12, marginBottom: 10 },
+  scanPaperBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 12, marginBottom: 6 },
   paperNum: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   paperMarks: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, minWidth: 64, textAlign: 'center', fontSize: 14 },
   compChip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 1 },

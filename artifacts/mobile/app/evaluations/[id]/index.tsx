@@ -39,6 +39,7 @@ import { AddReadAloudModal } from '@/components/AddReadAloudModal';
 import { AddDictationModal } from '@/components/AddDictationModal';
 import { EditQuestionModal } from '@/components/EditQuestionModal';
 import { isEditableQuestion } from '@/services/questionDraft';
+import { isPaperQuestion } from '@/services/paperQuestion';
 import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { QuestionFigure } from '@/components/ui/QuestionFigure';
@@ -466,6 +467,19 @@ export default function EvaluationDetailScreen() {
               {t('enterAnswersBtn')}
             </Text>
           </Pressable>
+          {/* A paper exam only: every question is a mark with no text. A generated
+              exam marks itself, and a scan would write teacher marks over that. */}
+          {questions.length > 0 && questions.every(isPaperQuestion) && (
+            <Pressable
+              onPress={() => router.push({ pathname: '/evaluations/[id]/scan-class', params: { id: evaluation.id } })}
+              style={[styles.resultsBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            >
+              <Ionicons name="scan-outline" size={18} color={ACCENT} />
+              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
+                {t('classScanBtn')}
+              </Text>
+            </Pressable>
+          )}
           <Pressable
             onPress={() => router.push({ pathname: '/evaluations/[id]/results', params: { id: evaluation.id } })}
             style={[styles.resultsBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}

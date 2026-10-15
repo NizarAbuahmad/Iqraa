@@ -11,7 +11,7 @@ import { getT } from '@/services/i18n';
 import { contentLang, topicInLang } from '@/services/contentLanguage';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbContext';
+import { getUnitPriorKnowledge, resolveGeneratorGrounding, type GeneratorGrounding } from '@/services/kbContext';
 import { pooledVariantId } from '@/services/ai/regeneration';
 import { WorksheetOutput, type QuestionFigure } from '@/services/ai/AIService';
 import { buildDeckFromWorksheet } from '@/services/classDeck';
@@ -36,7 +36,14 @@ import { usePrintStyle } from '@/hooks/usePrintStyle';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
-import { aiErrorText, isAbortError } from '@/services/ai/aiProvenance';
+import { aiErrorText, getLastGeneration, isAbortError } from '@/services/ai/aiProvenance';
+import { CoverageNotice } from '@/components/ui/CoverageNotice';
+import { useWideScope } from '@/hooks/useWideScope';
+import { DISTRIBUTIONS, type CoverageLesson, type Distribution } from '@/services/coveragePlan';
+import { scopeLabel, type ScopeSelection } from '@/services/scopeSelection';
+import {
+  ALL_QUESTION_COUNTS, buildWideRequest, clampCountIndex, scopeFormState, visibleCountOptions,
+} from '@/services/wideScopeRequest';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
 import { captureGenerationScope, materialScope, reopenedGenerationScope, type GenerationScope } from '@/services/generationScope';
 import { createVerificationTracker } from '@/services/verificationTracker';
@@ -84,7 +91,15 @@ const DIFFICULTY_MAP: Record<DifficultyLevel, Difficulty> = {
   high: 'medium',
   difficult: 'hard',
 };
-const NUM_Q_OPTIONS = [5, 8, 10, 12, 15, 20];
+// 25 and 30 are appended (saved positions keep their meaning) and shown only on a wide scope.
+const NUM_Q_OPTIONS = ALL_QUESTION_COUNTS;
+/**
+ * What a unit / semester / book paper is anchored to: the scope itself, never one
+ * lesson its label happens to match. Complete (not just lesson + grounded) because
+ * `buildWorksheetRequest` takes a full grounding; null lesson skips prior knowledge
+ * and lesson ids, empty context leaves `additionalContext` to `wide.fields`.
+ */
+const WIDE_GROUNDING: GeneratorGrounding = { lesson: null, grounded: true, score: 0, context: '', ungroundedNote: '' };
 const ALL_Q_TYPES: QType[] = ['multiple_choice', 'short_answer', 'fill_blank', 'true_false', 'word_problem'];
 
 type Level = 'easy' | 'medium' | 'hard';
@@ -106,6 +121,7 @@ export default function WorksheetScreen() {
     savedId?: string; gradeIdx?: string; subjectIdx?: string;
     topic?: string; diffIdx?: string; numQIdx?: string; selectedTypes?: string;
     isHomework?: string;
+    scope?: string; distribution?: string;
   }>();
   const scrollRef = useRef<ScrollView>(null);
 
@@ -141,6 +157,13 @@ export default function WorksheetScreen() {
     { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
   ));
   useWarmGrounding(topic, lang);
+  const wideScope = useWideScope(params, { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id });
+  /** The wide scope and distribution the paper on screen was generated under — what Save records. */
+  const [wideFrozen, setWideFrozen] = useState<{ sel: ScopeSelection; distribution: Distribution } | null>(
+    () => (wideScope.isWide ? { sel: wideScope.scopeSel!, distribution: wideScope.distribution } : null),
+  );
+  /** Which lessons the paper covers, and whether that is exact (offline) or the model's own word (live). */
+  const [coverageInfo, setCoverageInfo] = useState<{ lessons: CoverageLesson[]; modelReported: boolean } | null>(null);
   const [diffIdx, setDiffIdx] = useState(readIndexParam(params.diffIdx, DIFFICULTY_IDS.length, 0));
 
   // Reset topic when grade or subject changes
@@ -157,6 +180,10 @@ export default function WorksheetScreen() {
     }
   }, [gradeIdx, subjectIdx]);
   const [numQIdx, setNumQIdx] = useState(readIndexParam(params.numQIdx, NUM_Q_OPTIONS.length, 2));
+  // 25 and 30 exist on a wide scope only. Derived, not written back: the selector
+  // reports no scope for a moment mid-pick (unit A to unit B), and a reset would
+  // lose the teacher's 30 each time.
+  const effNumQIdx = clampCountIndex(numQIdx, wideScope.isWide);
   const [selectedTypes, setSelectedTypes] = useState<Set<QType>>(parseTypes(params.selectedTypes));
   const [includePriorReview, setIncludePriorReview] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -204,7 +231,15 @@ export default function WorksheetScreen() {
    * subject as «ورقة عمل: » and re-grounded the deck from an empty topic.
    */
   const [generated, setGenerated] = useState<GenerationScope | null>(
-    () => (params.savedId ? reopenedGenerationScope(initialScope, topic, lang) : null),
+    () => {
+      if (!params.savedId) return null;
+      // A restored wide scope is anchored to the scope, not to whichever lesson its
+      // label («الفصل الأول كاملًا», a unit title) would ground to if looked up again.
+      if (wideFrozen && topic.trim()) {
+        return captureGenerationScope({ gradeIdx: initialScope.gradeIdx, subjectIdx: initialScope.subjectIdx, topic }, WIDE_GROUNDING);
+      }
+      return reopenedGenerationScope(initialScope, topic, lang);
+    },
   );
   const scope = materialScope(generated, { gradeIdx, subjectIdx, topic });
   // The paper on screen keeps the language it was generated in, even after the
@@ -213,9 +248,12 @@ export default function WorksheetScreen() {
   const outT = getT(outLang);
   const outRTL = outLang === 'ar';
   const curriculumGrounded: boolean | null = generated ? generated.grounded : null;
-  const groundedLesson: string | null = generated?.lesson
-    ? (outLang === 'ar' ? generated.lesson.titleAr : generated.lesson.titleEn)
-    : null;
+  // A wide paper has no single lesson: name its scope instead of leaving the notice's tail empty.
+  const groundedLesson: string | null = wideFrozen
+    ? scopeLabel(wideFrozen.sel, outLang)
+    : generated?.lesson
+      ? (outLang === 'ar' ? generated.lesson.titleAr : generated.lesson.titleEn)
+      : null;
   const [error, setError] = useState('');
   const [savedId, setSavedId] = useState<string | undefined>(params.savedId);
   const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
@@ -233,7 +271,9 @@ export default function WorksheetScreen() {
 
   // Prior-knowledge availability for the currently selected lesson (no fabrication)
   const priorKnowledge = (() => {
-    if (!topic.trim()) return [] as string[];
+    // A wide scope has no single lesson, and its label must not be looked up as one:
+    // the review option would light up for whichever lesson the label happens to match.
+    if (!topic.trim() || wideScope.isWide) return [] as string[];
     const g = resolveGeneratorGrounding(topic.trim(), lang, { scope: { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id } });
     if (!g.lesson) return [] as string[];
     return getUnitPriorKnowledge(g.lesson.id);
@@ -347,15 +387,24 @@ export default function WorksheetScreen() {
     // badges, edits and levels, and the scope it was generated under. It
     // used to be cleared up front and never restored, so Cancel on a
     // regenerate threw away the unsaved paper the teacher was looking at.
-    const held = { result, outcomes, editedFlatIndexes, levels, savedId, generated };
+    const held = { result, outcomes, editedFlatIndexes, levels, savedId, generated, wideFrozen, coverageInfo };
     if (!topic.trim()) { setError(t('topicRequired')); return; }
     // A topic that grounds to another subject's lesson cannot make an honest
     // paper — the KB serves that lesson's own content while the header claims
     // the picked subject. Refuse and name the real subject instead.
     const missing = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, uiLang);
     if (missing) { setError(t('scopeNoCurriculum', missing.grade, missing.subject)); return; }
-    const conflict = groundedSubjectConflict(topic.trim(), lang, subjects[subjectIdx].id, grades[gradeIdx].id);
-    if (conflict) { setError(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
+    // A wide scope's topic is a label («الفصل الأول كاملًا»), not a lesson: the
+    // subject-conflict check reads a lesson, so it applies to a single lesson only.
+    // A wide scope that cannot be grounded is refused here, never generated mislabeled.
+    const wide = wideScope.isWide
+      ? buildWideRequest(wideScope.scopeSel!, lang, NUM_Q_OPTIONS[effNumQIdx]!, wideScope.distribution, { offset: opts?.regenerate ? Math.floor(Math.random() * 1000) : 0 })
+      : null;
+    if (wideScope.isWide && !wide) { setError(t('wideScopeUngrounded')); return; }
+    if (!wide) {
+      const conflict = groundedSubjectConflict(topic.trim(), lang, subjects[subjectIdx].id, grades[gradeIdx].id);
+      if (conflict) { setError(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
+    }
     setError(''); setCancelled(false);
     const controller = new AbortController();
     abortRef.current = controller;
@@ -370,19 +419,26 @@ export default function WorksheetScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await nextFrame();
     try {
-      const grounding = resolveGeneratorGrounding(topic.trim(), lang, { scope: { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id } });
-      const baseReq = buildWorksheetRequest({
+      const grounding = wide
+        ? WIDE_GROUNDING
+        : resolveGeneratorGrounding(topic.trim(), lang, { scope: { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id } });
+      const ownReq = buildWorksheetRequest({
         gradeName: lang === 'ar' ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
         subjectName: subjects[subjectIdx].name,
         topic,
         lang,
         difficulty: DIFFICULTY_MAP[DIFFICULTY_IDS[diffIdx]],
-        numQuestions: NUM_Q_OPTIONS[numQIdx],
+        numQuestions: NUM_Q_OPTIONS[effNumQIdx],
         questionTypes: Array.from(selectedTypes),
-        includePriorReview,
+        // The checkbox is hidden on a wide scope; a stale tick must not split the cache key.
+        includePriorReview: wide ? false : includePriorReview,
         regenerate: opts?.regenerate === true,
         previous,
       }, grounding);
+      // Last: the wide scope's digest replaces the lesson-derived context, and its
+      // explicit-undefined lessonId / unitId clear the single-lesson fields. It also
+      // carries `distribution` and `coverage` through the three-level spreads below.
+      const baseReq = wide ? { ...ownReq, ...wide.fields } : ownReq;
       // Homework uses a distinct generator — not a worksheet clone.
       const call = (req: typeof baseReq) => isHomework
         ? aiService.generateHomework(req, { signal: controller.signal })
@@ -414,6 +470,8 @@ export default function WorksheetScreen() {
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setGenerated(captureGenerationScope({ gradeIdx, subjectIdx, topic }, grounding));
+      setWideFrozen(wide ? { sel: wideScope.scopeSel!, distribution: wideScope.distribution } : null);
+      setCoverageInfo(wide ? { lessons: wide.lessons, modelReported: getLastGeneration()?.source === 'live' } : null);
       setResult(out);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
       verifyKeys(out);
@@ -434,6 +492,8 @@ export default function WorksheetScreen() {
         setLevels(held.levels);
         setSavedId(held.savedId);
         setGenerated(held.generated);
+        setWideFrozen(held.wideFrozen);
+        setCoverageInfo(held.coverageInfo);
         if (held.outcomes) verifyRef.current.begin(held.result);
       }
     } finally {
@@ -466,7 +526,9 @@ export default function WorksheetScreen() {
     const title = materialTitle();
     const formState = {
       gradeIdx: scope.gradeIdx, subjectIdx: scope.subjectIdx, topic: scope.topic,
-      diffIdx, numQIdx, selectedTypes: JSON.stringify(Array.from(selectedTypes)),
+      diffIdx, numQIdx: effNumQIdx, selectedTypes: JSON.stringify(Array.from(selectedTypes)),
+      // From the frozen scope, not the live pickers (a teacher can move them after generating).
+      ...scopeFormState(wideFrozen?.sel ?? null, wideFrozen?.distribution ?? 'balanced'),
       materialKind: isHomework ? 'homework' : 'worksheet',
       isHomework,
     };
@@ -615,6 +677,8 @@ export default function WorksheetScreen() {
     result,
     topic: scope.topic,
     lessonId: scope.lesson?.id,
+    // A wide paper has no figures of its own; see `noFigures`.
+    noFigures: wideFrozen !== null,
     lang: outLang,
     getTitle: getExportTitle,
     getMeta: getExportMeta,
@@ -663,6 +727,9 @@ export default function WorksheetScreen() {
           gradeId={grades[gradeIdx].id}
           value={topic}
           onChange={text => { setTopic(text); setError(''); }}
+          allowedKinds={['lesson', 'unit', 'semester', 'book']}
+          onScopeChange={wideScope.setScopeSel}
+          offlineWideScope
           lang={lang}
           isRTL={isRTL}
           colors={colors}
@@ -671,11 +738,21 @@ export default function WorksheetScreen() {
           t={t}
         />
 
+        {wideScope.isWide && (
+          <PickerField
+            label={t('distributionLabel')}
+            value={t(wideScope.distribution === 'balanced' ? 'distributionBalanced' : 'distributionRandom')}
+            options={[t('distributionBalanced'), t('distributionRandom')]}
+            onChange={i => wideScope.setDistribution(DISTRIBUTIONS[i]!)}
+            colors={colors} isRTL={isRTL} accent={ACCENT}
+          />
+        )}
+
         {/* In three-level mode the difficulty IS the active tab, so the picker
             switches papers instead of relabelling the one on screen — which
             filed it under the wrong level on the next tab tap. */}
         <PickerField label={t('difficultyLabel')} value={diffLabels[diffIdx]} options={diffLabels} onChange={i => (levels ? showLevel(i) : setDiffIdx(i))} colors={colors} isRTL={isRTL} accent={ACCENT} />
-        <PickerField label={t('numQuestionsLabel')} value={numQLabels[numQIdx]} options={numQLabels} onChange={setNumQIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
+        <PickerField label={t('numQuestionsLabel')} value={numQLabels[effNumQIdx]} options={numQLabels.slice(0, visibleCountOptions(wideScope.isWide))} onChange={setNumQIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
         {isHomework ? null : (
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, marginTop: -8, marginBottom: 14, textAlign: isRTL ? 'right' : 'left' }}>
             {t('numQuestionsIncludesExample')}
@@ -689,28 +766,31 @@ export default function WorksheetScreen() {
           ))}
         </View>
 
-        <View style={[styles.checkboxGroup, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: priorReviewAvailable ? 1 : 0.55 }]}>
-          <CheckboxRow
-            label={t('includePriorReviewLabel')}
-            checked={includePriorReview && priorReviewAvailable}
-            onToggle={() => { if (priorReviewAvailable) setIncludePriorReview(v => !v); }}
-            accent={ACCENT}
-            colors={colors}
-            isRTL={isRTL}
-            disabled={!priorReviewAvailable}
-          />
-          {!priorReviewAvailable ? (
-            <Text style={{
-              color: colors.mutedForeground,
-              fontFamily: 'Almarai_400Regular',
-              fontSize: 13, lineHeight: 21,
-              marginTop: 2,
-              textAlign: isRTL ? 'right' : 'left',
-            }}>
-              {t('priorReviewUnavailableNote')}
-            </Text>
-          ) : null}
-        </View>
+        {/* A prior-knowledge review is built from one lesson's unit; a wide scope has none, so the option is not offered. */}
+        {wideScope.isWide ? null : (
+          <View style={[styles.checkboxGroup, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: priorReviewAvailable ? 1 : 0.55 }]}>
+            <CheckboxRow
+              label={t('includePriorReviewLabel')}
+              checked={includePriorReview && priorReviewAvailable}
+              onToggle={() => { if (priorReviewAvailable) setIncludePriorReview(v => !v); }}
+              accent={ACCENT}
+              colors={colors}
+              isRTL={isRTL}
+              disabled={!priorReviewAvailable}
+            />
+            {!priorReviewAvailable ? (
+              <Text style={{
+                color: colors.mutedForeground,
+                fontFamily: 'Almarai_400Regular',
+                fontSize: 13, lineHeight: 21,
+                marginTop: 2,
+                textAlign: isRTL ? 'right' : 'left',
+              }}>
+                {t('priorReviewUnavailableNote')}
+              </Text>
+            ) : null}
+          </View>
+        )}
 
         {/*
           The validation error (an empty topic) stays here, next to the field
@@ -831,6 +911,13 @@ export default function WorksheetScreen() {
           </View>
 
           <ShortPaperNotice shortfall={result.shortfall} repeated={result.repeated} />
+          {coverageInfo && result && (
+            <CoverageNotice
+              lessons={coverageInfo.lessons}
+              questions={result.sections.flatMap(s => s.questions)}
+              modelReported={coverageInfo.modelReported}
+            />
+          )}
 
           <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 16, lineHeight: 20, textAlign: outRTL ? 'right' : 'left' }]}>
             {result.instructions}
@@ -1143,6 +1230,8 @@ export default function WorksheetScreen() {
           materialType="worksheet"
           toolId={isHomework ? 'homework' : 'worksheet'}
           topic={scope.topic}
+          // Its chips open other tools with this label as a bare topic they re-ground.
+          hideRelated={wideFrozen !== null}
           marginTop={8}
         />
       )}
