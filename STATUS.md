@@ -1360,6 +1360,65 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A Grade 1 English teacher's review, 2026-10-15
+
+A teacher went through English Grade 1 and sent nine notes. What each one turned
+out to be, and what changed:
+
+- **Lesson slides «غير فعال» — real, and not only Grade 1.** The slides screen
+  re-found its lesson from the title, and every Grade 1 English lesson is
+  "Vocabulary & Grammar" or "Listening & Speaking" (the Welcome one is
+  "Vocabulary"). So 19 of 19 decks were built from a Grade 3, 4 or 9 lesson
+  under a cover that said Grade 1, and were saved under that other lesson's id,
+  so the Grade 1 lesson's «عرض الحصة» row never ticked and «ابدأ الحصة الآن» never
+  found the deck. Nothing was refused, so it looked like the button did nothing.
+  `slides.tsx` now carries the tapped lesson's id (TopicSelector's
+  `onSelectionDetail`, or a `lessonId` route param from the lesson bar, home,
+  chat and a reopened deck), grounds **once** with `{ lessonId, scope }`, reads
+  every request field off that one result (`slidesLessonFields`), and saves
+  `lessonId` in its form state. Pinned in `slidesRequests.test.ts`, including
+  that a lesson the title alone finds still sends byte-identical bodies.
+  **Not fixed: the other generator screens.** Lesson plan, worksheet, quiz,
+  activity and game pass `scope` but no lesson id, so for these repeated titles
+  every unit lands on Unit 1 (Family and Friends). `lesson-flow.tsx` (hidden)
+  has the slides bug exactly. Title-only lookups also feed `topicPickerParams`
+  and `withLessonId`. Measured by title alone: wrong lesson for 19/19 G1, 20/20
+  G2, 20/20 G5, 51/70 G8, 50/70 G9 English lessons, and 271 of 2,835 lessons in
+  other subjects.
+- **"eraser" pronunciation — real.** The recording says /iːˈreɪsɚ/ ("EE-ray-ser").
+  This was read with a phoneme recogniser (wav2vec2 espeak) and confirmed by
+  Whisper; the British form is /ɪˈreɪzə/. `generate-english-audio.ts` now has a
+  `PRONUNCIATION` hint per word and voices any Grade 1–4 word in a young-child
+  register (the original 2026-09-25 prompt was never committed, so this is a
+  rewrite of it, not a copy). **The file is not re-voiced yet**: that needs the
+  OpenAI and R2 keys, `pnpm --filter @workspace/curriculum run english-audio --
+  --only eraser`. The other Grade 1 words were checked the same way. The
+  recogniser is noisy on very short clips ("two", "six", "blue"), and Whisper
+  hears each one correctly, so nothing else is flagged.
+- **"robot" → «رجل آلي»** in Grade 1 (both semesters) and Grade 2.
+- **Match the picture missing in Units 3 and 5.** By design, under 4 picturable
+  words. Added 🧑‍🏫 teacher and 🧱 wall (Unit 3), 💪💪 arms, 👐 hands, 🦵🦵 legs and
+  🦶🦶 feet (Unit 5), so both now offer it.
+- **Unit 6 "jacket" shown as a coat.** 🧥 is a coat; there is no jacket emoji, so
+  "jacket" has no picture and 🧥 now stands for Grade 2's "coat". 👕 is a
+  T-shirt, so it moved from "shirt" (now 👔) to "T-shirt".
+- **Unit 8 plurals shown singular.** A plural word now shows two of the thing
+  (🍎🍎 apples, 🍰🍰 cakes, 🥕🥕, 🍋🍋, 🍬🍬, and boots, shoes, eggs, keys,
+  sandwiches, teeth in other grades). A test fails any plural with a one-glyph
+  picture, unless that glyph already shows several (🧦 👀 🍇 …).
+- **Unit names in English.** An English unit is named by the book's English title
+  in either UI, with the Arabic gloss as a second line in Arabic. Applies in the
+  English corner and in the curriculum browser (`unitNames` in
+  `contentLanguage.ts`). Lesson titles («المفردات والقواعد») are unchanged.
+- **Match the meaning in two columns.** English cards sit in one column and
+  Arabic in the other, each shuffled on its own. Match the picture got the same
+  layout: pictures on one side, words on the other.
+- **Grammar and reading activities in the library.** Not built. The corner
+  drills words only. The book's grammar targets are already in the data (the
+  `objectives` of each "Vocabulary & Grammar" lesson: «I've got …», «What's this?
+  It's a …»), but sentence items need writing and a teacher's read, so this is
+  a product decision, not a fix.
+
 ## Real book items on the live model path, behind `BOOK_ITEMS_LIVE`, 2026-10-12
 
 The 30 served book items (see the next section) now also reach evaluations the
@@ -5566,7 +5625,8 @@ lessons and 458 words across the eight G1–4 books.
   permission, a real file, playback — cannot be verified without a physical
   Android device;** this is the one thing in the whole hub so far that a
   browser and `node --test` genuinely cannot confirm.
-- **The Arabic meanings are new.** Every G1–4 vocabulary entry had `ar: ""`.
+- **The Arabic meanings are new.** (A teacher's first corrections landed
+  2026-10-15 — see «A Grade 1 English teacher's review» above.) Every G1–4 vocabulary entry had `ar: ""`.
   They were glossed by hand on 2026-09-25 and **have not been reviewed by a
   teacher yet**. Entries that are topic labels rather than words ("Numbers
   11-20", "fair/brown/red/black hair") are dropped by `isDrillableWord`.

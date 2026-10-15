@@ -12,7 +12,7 @@
 import type { AIRequest, ClassroomActivityRequest } from './ai/AIService.ts';
 import { regenerationFields } from './ai/regeneration.ts';
 import { buildLessonTeachingRequest } from './generatorRequests.ts';
-import type { GeneratorGrounding } from './kbContext.ts';
+import { figureCountForLesson, nccdUnitId, type GeneratorGrounding } from './kbContext.ts';
 import { EXIT_TICKET_MAX, MID_LESSON_CHECK_MAX } from './lessonSlides.ts';
 import type { ScopeRequestFields } from './wideScopeRequest.ts';
 
@@ -33,6 +33,23 @@ export type SlidesLessonFields = {
   lessonId?: string;
   bookFigureCount?: number;
 };
+
+/**
+ * A single-lesson deck's fields, read off the grounding the screen already
+ * resolved — never by grounding the title again. Grade 1 English titles every
+ * lesson "Vocabulary & Grammar" or "Listening & Speaking", so a second lookup
+ * by title landed on a Grade 3, 4 or 9 lesson even when the first one had been
+ * given the tapped lesson's id. For a lesson the title alone finds, the fields
+ * are exactly what the four title lookups gave (the shared pool keys on them).
+ */
+export function slidesLessonFields(grounding: GeneratorGrounding): SlidesLessonFields {
+  return {
+    additionalContext: grounding.grounded ? grounding.context : grounding.ungroundedNote,
+    unitId: nccdUnitId(grounding.lesson?.unitId),
+    lessonId: grounding.lesson?.id,
+    bookFigureCount: figureCountForLesson(grounding.lesson?.id),
+  };
+}
 
 /** The lesson plan the deck's connective tissue comes from. */
 export function slidesPlanRequest(

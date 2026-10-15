@@ -10,8 +10,8 @@ import {
   MATCH_PAIRS,
   badgesEarned,
   buildListenRound,
-  buildMatchDeck,
-  buildPictureDeck,
+  buildMatchBoard,
+  buildPictureBoard,
   buildScrambleRound,
   buildSpeakingRound,
   buildSpellRound,
@@ -26,6 +26,7 @@ import {
   newlyEarnedBadges,
   normaliseSpelling,
   parseProgress,
+  pictureFor,
   recordResult,
   starsFor,
 } from '../englishHub/games.ts';
@@ -53,13 +54,24 @@ describe('listen and choose', () => {
 describe('match', () => {
   it('pairs every English card with its own Arabic meaning', () => {
     const lesson = ENGLISH_HUB_LESSONS[0];
-    const deck = buildMatchDeck(lesson.words, makeRng(3));
-    assert.equal(deck.length, 2 * Math.min(MATCH_PAIRS, lesson.words.length));
-    for (const en of deck.filter(c => c.lang === 'en')) {
-      const ar = deck.find(c => c.lang === 'ar' && c.pairId === en.pairId)!;
+    const { en: enCol, ar: arCol } = buildMatchBoard(lesson.words, makeRng(3));
+    assert.equal(enCol.length, Math.min(MATCH_PAIRS, lesson.words.length));
+    for (const en of enCol) {
+      const ar = arCol.find(c => c.pairId === en.pairId)!;
       assert.equal(lesson.words.find(w => w.en === en.text)!.ar, ar.text);
       assert.ok(isMatchPair(en, ar));
       assert.ok(!isMatchPair(en, en));
+    }
+  });
+
+  // A teacher's review (2026-10-15): one mixed grid of English and Arabic
+  // cards confused Grade 1 pupils. Each language gets its own column.
+  it('keeps English in one column and Arabic in the other, one card per pair each', () => {
+    for (const lesson of ENGLISH_HUB_LESSONS) {
+      const { en, ar } = buildMatchBoard(lesson.words, makeRng(9));
+      assert.ok(en.every(c => c.lang === 'en') && ar.every(c => c.lang === 'ar'), lesson.id);
+      assert.deepEqual(en.map(c => c.pairId).sort(), ar.map(c => c.pairId).sort(), lesson.id);
+      assert.equal(new Set(en.map(c => c.pairId)).size, en.length, lesson.id);
     }
   });
 });
@@ -127,11 +139,13 @@ describe('picture matching', () => {
     for (const lesson of ENGLISH_HUB_LESSONS) {
       if (!lessonHasPictureMatch(lesson.words)) continue;
       sawAny = true;
-      const deck = buildPictureDeck(lesson.words, makeRng(3));
-      assert.ok(deck.length >= 8 && deck.length % 2 === 0, lesson.id);
-      for (const emoji of deck.filter(c => c.kind === 'emoji')) {
-        const word = deck.find(c => c.kind === 'word' && c.pairId === emoji.pairId)!;
+      const { pictures, words } = buildPictureBoard(lesson.words, makeRng(3));
+      assert.ok(pictures.length >= 4 && pictures.length === words.length, lesson.id);
+      assert.ok(pictures.every(c => c.kind === 'emoji') && words.every(c => c.kind === 'word'), lesson.id);
+      for (const emoji of pictures) {
+        const word = words.find(c => c.pairId === emoji.pairId)!;
         assert.ok(lesson.words.some(w => w.en === word.text), `${word.text} not in ${lesson.id}`);
+        assert.equal(emoji.text, pictureFor(word.text));
         assert.ok(isPictureMatch(emoji, word));
         assert.ok(!isPictureMatch(emoji, emoji));
       }
@@ -144,6 +158,49 @@ describe('picture matching', () => {
       const picturable = lesson.words.filter(w => isPicturable(w.en));
       assert.equal(lessonHasPictureMatch(lesson.words), picturable.length >= 4, lesson.id);
     }
+  });
+
+  it('never shows two different words the same picture', () => {
+    const seen = new Map<string, string>();
+    for (const lesson of ENGLISH_HUB_LESSONS) {
+      for (const w of lesson.words) {
+        const p = pictureFor(w.en);
+        if (!p) continue;
+        const prev = seen.get(p);
+        assert.ok(!prev || prev === w.en, `${prev} and ${w.en} are both ${p}`);
+        seen.set(p, w.en);
+      }
+    }
+  });
+
+  // From a Grade 1 teacher's review, 2026-10-15.
+  it('offers Grade 1 Units 3 and 5 (classroom, body), which had too few pictures', () => {
+    for (const unit of [3, 5]) {
+      const lesson = ENGLISH_HUB_LESSONS.find(l => l.grade === 1 && l.unitNumber === unit)!;
+      assert.ok(lessonHasPictureMatch(lesson.words), `G1 unit ${unit}`);
+    }
+  });
+
+  it('does not show a coat for "jacket" — 🧥 is a coat, and a jacket is shorter', () => {
+    assert.equal(pictureFor('jacket'), undefined);
+    assert.equal(pictureFor('coat'), '🧥');
+    assert.equal(pictureFor('T-shirt'), '👕');
+  });
+
+  it('shows a plural word as more than one thing', () => {
+    // Plural in form but one picture already shows several, or one object.
+    const oneGlyphIsEnough = new Set(['socks', 'jeans', 'glasses', 'scissors', 'eyes', 'grapes', 'noodles', 'olives', 'hands']);
+    const notPlural = new Set(['dress', 'bus', 'the United Arab Emirates']);
+    const glyphs = (s: string) => [...new Intl.Segmenter('en', { granularity: 'grapheme' }).segment(s)].length;
+    let checked = 0;
+    for (const w of new Set(ENGLISH_HUB_LESSONS.flatMap(l => l.words.map(x => x.en)))) {
+      const p = pictureFor(w);
+      if (!p || !/(s|feet|teeth)$/.test(w) || oneGlyphIsEnough.has(w) || notPlural.has(w)) continue;
+      checked += 1;
+      assert.ok(glyphs(p) >= 2, `${w} is plural but its picture ${p} shows one`);
+    }
+    for (const w of ['apples', 'cakes', 'carrots', 'lemons']) assert.ok(glyphs(pictureFor(w)!) >= 2, w);
+    assert.ok(checked >= 10, `only ${checked} plural words checked`);
   });
 });
 

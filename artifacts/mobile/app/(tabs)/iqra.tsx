@@ -3491,7 +3491,9 @@ export default function IqraScreen() {
     const idx =
       lessonPickerParams(currentLessonView?.lessonId, lang as 'ar' | 'en') ??
       topicPickerParams(topic, lang as 'ar' | 'en');
-    const toolParams = { ...(topic ? { topic } : {}), ...(idx ?? {}) };
+    // The lesson id too: a title does not identify a lesson (Slides reads it).
+    const lessonId = currentLessonView?.lessonId;
+    const toolParams = { ...(topic ? { topic } : {}), ...(idx ?? {}), ...(lessonId && topic ? { lessonId } : {}) };
     return (
       <View style={{ width: '100%', marginTop: 14, gap: 8 }}>
         {/* A phone was never asked to set up a class or a timetable: the

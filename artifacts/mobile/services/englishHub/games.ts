@@ -47,14 +47,33 @@ export interface MatchCard {
   pairId: number;
 }
 
-/** English face-up against its Arabic meaning — the memory game, with words. */
-export function buildMatchDeck(words: readonly HubWord[], rng: () => number = Math.random): MatchCard[] {
+/** A matching board: one column per side, each shuffled on its own. */
+interface MatchBoard<T> {
+  left: T[];
+  right: T[];
+}
+
+/**
+ * Pairs split into two columns, each in its own random order. One mixed grid
+ * of English and Arabic cards confused Grade 1 pupils (a teacher's review,
+ * 2026-10-15): a column per language says which side a card belongs to before
+ * the child has read it.
+ */
+function twoColumns<T>(pairs: [T, T][], rng: () => number): MatchBoard<T> {
+  return { left: shuffle(pairs.map(p => p[0]), rng), right: shuffle(pairs.map(p => p[1]), rng) };
+}
+
+/** English against its Arabic meaning, a column each. */
+export function buildMatchBoard(words: readonly HubWord[], rng: () => number = Math.random): { en: MatchCard[]; ar: MatchCard[] } {
   const picked = sample([...words], MATCH_PAIRS, rng);
-  const cards = picked.flatMap((w, pairId): MatchCard[] => [
-    { id: `${pairId}-en`, text: w.en, lang: 'en', pairId },
-    { id: `${pairId}-ar`, text: w.ar, lang: 'ar', pairId },
-  ]);
-  return shuffle(cards, rng);
+  const { left, right } = twoColumns(
+    picked.map((w, pairId): [MatchCard, MatchCard] => [
+      { id: `${pairId}-en`, text: w.en, lang: 'en', pairId },
+      { id: `${pairId}-ar`, text: w.ar, lang: 'ar', pairId },
+    ]),
+    rng,
+  );
+  return { en: left, ar: right };
 }
 
 export function isMatchPair(a: MatchCard, b: MatchCard): boolean {
@@ -146,6 +165,15 @@ export function isScrambleSolved(tiles: readonly ScrambleTile[], word: string): 
  *
  * Values are unique — two different words never share an emoji — so two cards
  * in the same round are never visually identical for different reasons.
+ *
+ * A plural word shows more than one of the thing (🍎🍎 for "apples"): the
+ * book teaches "apples", and a single apple beside it says "apple". A glyph
+ * that already shows several (🧦, 👀, 🍇) stands as it is.
+ *
+ * 🧥 is a coat, so it stands for "coat", not "jacket" — a jacket is shorter,
+ * and there is no jacket emoji, so "jacket" has no picture. 👕 is a T-shirt;
+ * "shirt" gets the collared 👔. (Both from a Grade 1 teacher's review,
+ * 2026-10-15, with the plurals above.)
  */
 const WORD_EMOJI: Record<string, string> = {
   one: '1️⃣', two: '2️⃣', three: '3️⃣', four: '4️⃣', five: '5️⃣',
@@ -164,17 +192,18 @@ const WORD_EMOJI: Record<string, string> = {
   dinosaur: '🦕', robot: '🤖', teddy: '🧸', doll: '🪆',
   book: '📖', crayon: '🖍️', pen: '🖊️', pencil: '✏️',
   ruler: '📏', scissors: '✂️', computer: '💻', chair: '🪑', door: '🚪',
-  window: '🪟', ball: '⚽', car: '🚗', train: '🚂', plane: '✈️',
+  window: '🪟', teacher: '🧑‍🏫', wall: '🧱', ball: '⚽', car: '🚗', train: '🚂', plane: '✈️',
   kite: '🪁', bike: '🚲', scooter: '🛴', puzzle: '🧩', yoyo: '🪀',
-  boots: '👢', dress: '👗', jacket: '🧥', jeans: '👖', shirt: '👕',
-  shoes: '👟', hat: '🎩', scarf: '🧣', socks: '🧦', glasses: '👓',
+  boots: '👢👢', dress: '👗', coat: '🧥', jeans: '👖', shirt: '👔', 'T-shirt': '👕',
+  shoes: '👟👟', hat: '🎩', scarf: '🧣', socks: '🧦', glasses: '👓',
   backpack: '🎒', phone: '📱',
-  apple: '🍎', apples: '🍎', banana: '🍌', carrot: '🥕', carrots: '🥕',
+  arms: '💪💪', hands: '👐', legs: '🦵🦵', feet: '🦶🦶',
+  apple: '🍎', apples: '🍎🍎', banana: '🍌', carrot: '🥕', carrots: '🥕🥕',
   grapes: '🍇', potato: '🥔', rice: '🍚', tomato: '🍅', bread: '🍞',
-  cheese: '🧀', chicken: '🍗', eggs: '🥚', milk: '🥛', water: '💧',
-  juice: '🧃', lemons: '🍋', cakes: '🎂', sweets: '🍬', coconut: '🥥',
+  cheese: '🧀', chicken: '🍗', eggs: '🥚🥚', milk: '🥛', water: '💧',
+  juice: '🧃', lemons: '🍋🍋', cakes: '🍰🍰', sweets: '🍬🍬', coconut: '🥥',
   burger: '🍔', kiwi: '🥝', mango: '🥭', cereal: '🥣', noodles: '🍜',
-  olives: '🫒', salad: '🥗', sandwiches: '🥪', vegetables: '🥦',
+  olives: '🫒', salad: '🥗', sandwiches: '🥪🥪', vegetables: '🥦🥕',
   coffee: '☕', tea: '🍵',
   sunny: '☀️', rainy: '🌧️', cloudy: '☁️', snowy: '❄️', windy: '💨',
   hot: '🥵', cold: '🥶',
@@ -186,14 +215,14 @@ const WORD_EMOJI: Record<string, string> = {
   pilot: '🧑‍✈️', 'police officer': '👮', builder: '👷', chef: '🧑‍🍳',
   artist: '🧑‍🎨', farmer: '🧑‍🌾', scientist: '🧑‍🔬', carpenter: '🔨',
   bus: '🚌', boat: '⛵', motorbike: '🏍️', underground: '🚇',
-  eyes: '👀', mouth: '👄', nose: '👃', teeth: '🦷',
+  eyes: '👀', mouth: '👄', nose: '👃', teeth: '🦷🦷',
   Egypt: '🇪🇬', Jordan: '🇯🇴', Qatar: '🇶🇦', Spain: '🇪🇸',
   'the United Kingdom': '🇬🇧', 'the United Arab Emirates': '🇦🇪',
   happy: '😊', sad: '😢',
   candle: '🕯️', present: '🎁', invitation: '💌', wedding: '💍',
   'big wheel': '🎡', rollercoaster: '🎢', costume: '🎭',
   sofa: '🛋️', television: '📺', mirror: '🪞', clock: '🕐',
-  keys: '🔑', handbag: '👜',
+  keys: '🔑🔑', handbag: '👜',
 };
 
 const MIN_PICTURE_WORDS = 4;
@@ -201,6 +230,11 @@ const MIN_PICTURE_WORDS = 4;
 /** Whether a word has a curated emoji at all — exported so the "renders nothing" floor is testable directly. */
 export function isPicturable(word: string): boolean {
   return !!WORD_EMOJI[word];
+}
+
+/** The picture a word is shown as, if it has one. */
+export function pictureFor(word: string): string | undefined {
+  return WORD_EMOJI[word];
 }
 
 export interface PictureCard {
@@ -211,15 +245,18 @@ export interface PictureCard {
   pairId: number;
 }
 
-/** Same layout as `buildMatchDeck`, emoji↔English instead of English↔Arabic. */
-export function buildPictureDeck(words: readonly HubWord[], rng: () => number = Math.random): PictureCard[] {
+/** Same layout as `buildMatchBoard`: pictures in one column, English words in the other. */
+export function buildPictureBoard(words: readonly HubWord[], rng: () => number = Math.random): { pictures: PictureCard[]; words: PictureCard[] } {
   const picturable = words.filter(w => WORD_EMOJI[w.en]);
   const picked = sample(picturable, MATCH_PAIRS, rng);
-  const cards = picked.flatMap((w, pairId): PictureCard[] => [
-    { id: `${pairId}-emoji`, kind: 'emoji', text: WORD_EMOJI[w.en], pairId },
-    { id: `${pairId}-word`, kind: 'word', text: w.en, pairId },
-  ]);
-  return shuffle(cards, rng);
+  const { left, right } = twoColumns(
+    picked.map((w, pairId): [PictureCard, PictureCard] => [
+      { id: `${pairId}-emoji`, kind: 'emoji', text: WORD_EMOJI[w.en], pairId },
+      { id: `${pairId}-word`, kind: 'word', text: w.en, pairId },
+    ]),
+    rng,
+  );
+  return { pictures: left, words: right };
 }
 
 export function isPictureMatch(a: PictureCard, b: PictureCard): boolean {

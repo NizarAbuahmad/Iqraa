@@ -220,7 +220,9 @@ function LessonWorkspace() {
     const idx =
       lessonPickerParams(active?.lessonId, lang as 'ar' | 'en') ??
       scopePickerParams(active?.gradeId, active?.subjectId);
-    return { ...(topic ? { topic } : {}), ...(idx ?? {}) };
+    // The lesson id too: a title does not identify a lesson (Slides reads it).
+    const lessonId: Record<string, string> = idx && active?.lessonId ? { lessonId: active.lessonId } : {};
+    return { ...(topic ? { topic } : {}), ...(idx ?? {}), ...lessonId };
   }, [active?.lessonId, active?.gradeId, active?.subjectId, topic, lang]);
 
   const openLessonPicker = useCallback(() => {
