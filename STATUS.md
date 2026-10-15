@@ -1350,9 +1350,10 @@ slice (items 6-11, the first `verified` ones):
   extractor has a small hand-written table (`READINGS`) giving each item's stem
   and options with that structure added, and **trusts none of it**. A reading is
   accepted only if (1) it has exactly the page's characters — whitespace and the
-  structure characters `^ ( ) * / ×` removed from both sides they must be
-  identical, so no digit or letter can be added, dropped, changed or moved — and
-  the page's own brackets stay where the page has them, and (2) exactly one
+  structure characters `^ ( ) /` removed from both sides they must be
+  identical, so no digit, letter or operator (`×` included) can be added, dropped,
+  changed or moved — and each of the page's own bracket pairs stays as the page
+  has it (same two places, matched to each other), and (2) exactly one
   option is correct under it (SymPy). Failing either quarantines the item
   (`reading_changes_characters`, `reading_moves_brackets`, `key_not_unique`);
   nothing falls back to a looser reading. Item 3 (two exponential equations,
@@ -1370,11 +1371,14 @@ slice (items 6-11, the first `verified` ones):
   2x⁴y). Writing that test found a real gap: `(2y/x²)` has the same characters
   as `(2y/x)²`, one unique key, and a different one (option b), so the
   unique-key gate alone would have served a wrong answer; the bracket rule exists
-  because of it. That is still evidence about the layout, not a look at the page:
+  because of it. An independent review then found two ways round the first
+  version of the gates, both closed and pinned: `core()` ignored the page's `×`, so
+  `3^(5x) / 9^y` passed and served (1, 1) for item 3; and the bracket rule matched
+  positions but not pairing, so `(2y/(x)^2)` passed and served option b for item 5. That is still evidence about the layout, not a look at the page:
   **a person should compare these three with the printed book**, item 5 first (its
   layout, the bar and the position of the box, is the most inferred). Display:
   `displayMath` turns `^2` into `²` but leaves `^(2x+1)` as written, so item 4's
-  options read `5^(2x+1) = 25`.
+  options read `5^(2x+1) = 25` and item 3's stem reads `3^(5x) × 9^y = 27` (the page's `×`).
 - **Item 8 stays `computed`.** The guide prints `(0, 5), (2. 1)` for it; SymPy
   gives `(0, 5), (2, 1)`. `2. 1` is the decimal 2.1, not the point (2, 1), and no
   tolerance was added, because whether the printed page has a comma or a typo

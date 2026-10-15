@@ -26,8 +26,9 @@ is not extracted), so none of these can be `verified`.
    `scripts/extract_book_items.py`), not a looser normaliser. The reading is the stem lines
    and options with exponent and fraction structure added. It is accepted only when
    (a) **it contains exactly the page's characters**: with whitespace and the structure
-   characters `^ ( ) * × /` removed, the reading equals the page block (so nothing can be
-   added, dropped or changed except structure), and (b) **exactly one option is correct
+   characters `^ ( ) /` removed, the reading equals the page block (so no digit, letter or
+   operator, `×` included, can be added, dropped or changed - only structure), and each of the
+   page's own bracket pairs stays in the same two places and matched to each other, and (b) **exactly one option is correct
    under it** (SymPy). Either failing fails the build with the reason; nothing falls back.
 2. **Why the reading is believed, and what is not claimed.** A wrong placement of exponents
    would almost never leave exactly one correct option: the tests record, for each item,
@@ -40,7 +41,7 @@ is not extracted), so none of these can be `verified`.
    Items 3 and 4 → `u1_l4`; item 5 → `u1_l3`.
 4. **Kind `unit-test-mcq`** (they are multiple choice), tier `medium`, `tierSource: "default"`,
    our own Arabic instruction (never the scrambled line): item 3 the existing pair
-   instruction; item 4 «أي المعادلات الأسية الآتية يكون الحل الآتي حلًا لها؟» with stem
+   instruction; item 4 «أي المعادلات الأسية الآتية يكون العدد الآتي حلا لها؟» with stem
    `x = -1`; item 5 «ما المقدار الجبري الذي يجب وضعه في المربع الفارغ ليتحقق التساوي؟».
 5. **Display.** `displayMath` turns `^2` into `²` but leaves `^(2x+1)` as `5^(2x+1)`. That is
    readable Latin maths and is kept (no new Unicode letters); the limit is stated in STATUS.
@@ -63,3 +64,10 @@ is not extracted), so none of these can be `verified`.
 
 Items 12 and the answer appendix; the other unit-test items on p.48 (13–30, mixed
 exponent and word problems); promoting item 8 (needs the PDF).
+
+## Amendment after independent review (same day)
+
+The first version ignored the page's `×` and checked bracket positions without pairing; a reviewer
+showed `3^(5x) / 9^y` (serves (1, 1)) and `(2y/(x)^2)` (serves option b) passing both gates. Both are
+closed (`×` is meaning; brackets are compared as matched pairs) and pinned by tests. Item 3's stem is
+stored with the page's `×`.

@@ -67,7 +67,7 @@ class Entry:
 EX1, EX2, G1 = 'math-s1-exercise-book', 'math-s2-exercise-book', 'math-s1-teacher-guide'
 SYSTEM_AR = 'أحل نظام المعادلتين الآتي'
 PAIR_AR = 'أي الأزواج المرتبة الآتية يمثل حلا لنظام المعادلتين الآتي؟'
-ROOT_AR = 'أي المعادلات الأسية الآتية يكون الحل الآتي حلا لها؟'
+ROOT_AR = 'أي المعادلات الأسية الآتية يكون العدد الآتي حلا لها؟'
 BOX_AR = 'ما المقدار الجبري الذي يجب وضعه في المربع الفارغ ليتحقق التساوي؟'
 NO_SOLUTION_PARAM_AR = 'أجد جميع قيم c التي لا يكون للنظام الآتي أي حل'
 # What the guide prints for a system with no real solution, after NFKC (the text
@@ -310,19 +310,22 @@ def pair_printed(records: list[dict], entries: list[str]) -> list[str]:
 # was cannot be derived by any rule, so `normalise_stem` rightly rejects all three. A READING is a
 # person's statement of that structure. It is not trusted; it must pass two gates, and failing
 # either stops the item (quarantined, with the reason) - nothing falls back to a looser reading:
-#   1. SAME CHARACTERS. Strip whitespace and the structure characters `^ ( ) * / ×` from the
+#   1. SAME CHARACTERS. Strip whitespace and the structure characters `^ ( ) /` from the
 #      reading and from the page's own Latin text, and the two must be identical. A reading can
-#      therefore add exponents, brackets and bars, and nothing else: no digit or letter can be
-#      added, dropped, changed or moved. The page's OWN brackets are structure too, but they are
-#      evidence, so each must stay where the page has it (after the same number of meaning
-#      characters): `(2y/x)^2` follows the page's `(2y` `x )2`, while `(2y/x^2)` has the same
-#      characters and one unique, different key (option b) - only this rule stops it.
+#      therefore add exponents, brackets and bars, and nothing else: no digit, letter or
+#      operator (`×` included) can be added, dropped, changed or moved. The page's OWN brackets
+#      are structure too, but they are evidence, so each PAIR must stay as the page has it: the
+#      same two places, and matched to each other. `(2y/x)^2` follows the page's `(2y` `x )2`,
+#      while `(2y/x^2)` and `(2y/(x)^2)` have the same characters and one unique, different key
+#      (option b) - only this rule stops them.
 #   2. ONE KEY. Exactly one option must be correct under the reading (SymPy). Moving an exponent
 #      or a bar almost always leaves none or several, which is what `test_extract_book_items.py`
 #      shows for rival readings of each item.
 # Passing is evidence, not proof - no page image has been compared - so the item is `computed`,
 # never `verified`, and is on the list a person compares with the printed book.
-STRUCTURE = re.compile(r'[\s^()*/]')
+STRUCTURE = re.compile(r'[\s^()/]')
+LABEL = re.compile(r'(?m)(^|\t)[ ]*[a-d]\)')
+DASHES = str.maketrans({'−': '-', '–': '-', '‒': '-', '—': '-'})
 
 
 @dataclass(frozen=True)
@@ -340,19 +343,36 @@ LABELS = ('a)', 'b)', 'c)', 'd)')
 
 
 def core(s: str) -> str:
-    """The characters that carry meaning: no whitespace, no structure characters."""
-    return STRUCTURE.sub('', s.translate(MINUS).replace('×', ''))
+    """The characters that carry meaning: no whitespace, no structure characters.
+
+    Dashes are unified and nothing else is: `×` and `÷` are meaning, so a reading cannot
+    swap the page's `×` for a `/` (3^(5x) / 9^y has a different key).
+    """
+    return STRUCTURE.sub('', s.translate(DASHES))
 
 
-def bracket_marks(s: str) -> list[tuple[int, str]]:
-    """Each bracket with the number of meaning characters before it."""
-    marks, seen = [], 0
-    for ch in s.translate(MINUS):
-        if ch in '()':
-            marks.append((seen, ch))
-        elif not STRUCTURE.match(ch) and ch != '×':
+def bracket_pairs(s: str) -> Counter:
+    """Each matched bracket pair as (meaning characters before the opener, before the closer).
+
+    Pairs, not single brackets: `(2y/(x)^2)` has a `(` and a `)` where the page's `(2y` `x )2`
+    has them, but they close different brackets. Unbalanced text raises.
+    """
+    pairs: Counter = Counter()
+    stack: list[int] = []
+    seen = 0
+    # an option label `a)` is a closing bracket with no opener: it is a label, not structure
+    for ch in LABEL.sub(r'\1', s.translate(DASHES)):
+        if ch == '(':
+            stack.append(seen)
+        elif ch == ')':
+            if not stack:
+                raise Reject('unbalanced_brackets')
+            pairs[(stack.pop(), seen)] += 1
+        elif not STRUCTURE.match(ch):
             seen += 1
-    return marks
+    if stack:
+        raise Reject('unbalanced_brackets')
+    return pairs
 
 
 def page_latin(text: str, n: int) -> str:
@@ -376,13 +396,14 @@ def page_latin(text: str, n: int) -> str:
     raise Reject('options_not_found')
 
 
-def split_readings(text: str, numbers: tuple[int, ...]) -> dict[int, str]:
-    out = {}
+def split_readings(text: str, numbers: tuple[int, ...]) -> dict[int, str | Reject]:
+    """The page's Latin text by item number; an item that cannot be cut out maps to its Reject."""
+    out: dict[int, str | Reject] = {}
     for n in numbers:
         try:
             out[n] = page_latin(text, n)
-        except Reject:
-            pass
+        except Reject as r:
+            out[n] = r
     return out
 
 
@@ -394,19 +415,23 @@ def solve_reading(n: int, page: str, check: str) -> tuple[str, list[str], int]:
     written = '\n'.join([*r.stem, *(f'{l} {o}' for l, o in zip(LABELS, r.options))])
     if core(written) != core(page):
         raise Reject('reading_changes_characters')
-    if Counter(bracket_marks(page)) - Counter(bracket_marks(written)):
+    if bracket_pairs(page) - bracket_pairs(written):
         raise Reject('reading_moves_brackets')
-    stem = '\n'.join(l.translate(MINUS) for l in r.stem)
+    stem = '\n'.join(l.translate(DASHES) for l in r.stem)
     hits = [i for i, o in enumerate(r.options) if option_holds(check, stem, o)]
     if len(hits) != 1:
         raise Reject('key_not_unique')
-    options = [re.sub(r'\s+', ' ', o.translate(MINUS)) for o in r.options]
+    options = [re.sub(r'\s+', ' ', o.translate(DASHES)) for o in r.options]
     return stem, options, hits[0]
 
 
 def option_holds(check: str, stem: str, option: str) -> bool:
-    """Does `option` answer `stem` correctly? Exact (SymPy); an unparsable option is an error, not a no."""
-    lines = stem.split('\n')
+    """Does `option` answer `stem` correctly? Exact (SymPy); an unparsable option is an error, not a no.
+
+    Principal roots only: a reading with fractional exponents of negative numbers would be judged
+    by SymPy's principal value, so none is accepted without a test of its own.
+    """
+    lines = [l.translate(MINUS) for l in stem.split('\n')]    # `×` to `*` for SymPy only
     if check == 'points':       # options are points; each stem line is an equation in x and y
         sides = [eq_sides(l) for l in lines]
         a, b = (parse(p) for p in option.translate(MINUS).strip('()').split(','))
@@ -665,6 +690,8 @@ def build_all() -> tuple[dict[str, list[dict]], list[dict], dict]:
             try:
                 if n not in blocks:
                     raise Reject('item_not_found')
+                if isinstance(blocks[n], Reject):
+                    raise blocks[n]
                 if e.family == 'mcq_pair':
                     stem, options, key = solve_mcq_pair(blocks[n])
                     computed, kind, tier, tier_source = options[key], 'unit-test-mcq', 'medium', 'default'

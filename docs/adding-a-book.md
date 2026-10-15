@@ -157,8 +157,10 @@ read its header before adding to it.
     (stem and options, with `^`, brackets and `/` added) and name its `check`
     (`points`, `root` or `box`). The reading is never trusted: `solve_reading`
     refuses it unless it has exactly the page's characters (whitespace and
-    `^ ( ) * / ×` removed from both sides must be identical) with the page's own
-    brackets where the page has them, and exactly one option is correct under it.
+    `^ ( ) /` removed from both sides must be identical, so an operator such as
+    `×` cannot be swapped for a `/`), with each of the page's own bracket pairs
+    in the same two places and matched to each other, and exactly one option is
+    correct under it.
     It is `computed`, never `verified`, and a person compares it with the printed
     page. Before adding one, extend `RivalReadings` in the test file: every other
     placement of exponents that still leaves one correct option must leave the
