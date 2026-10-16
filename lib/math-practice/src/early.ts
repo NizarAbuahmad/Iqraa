@@ -161,7 +161,7 @@ const numberChart = T('number_chart', /^لوحه الاعداد$/, [1, 1], ({ rn
       const col = (n - 1) % 10 + 1, r = n + (down ? 10 : -10) * rows + (right ? 1 : -1) * steps;
       if (r < 1 || r > 100 || (right ? col + steps > 10 : col - steps < 1)) continue;
       const tens = (down ? 10 : -10) * rows, ones = (right ? 1 : -1) * steps;
-      return { eq: `${n}, ${tens}, ${ones}`, answer: String(r), wrongs: ints(r, [n + tens - ones, n - tens + ones, n + (down ? 1 : -1) * rows + (right ? 10 : -10) * steps, r + 10, r - 10, r + 1]), ar: `ابدأ من العدد ${n} في لوحة الأعداد من 1 إلى 100، و${down ? 'انزل' : 'اصعد'} ${CHART_ROWS(rows)} في العمود نفسه، ثم تحرّك ${CHART_STEPS(steps)} إلى ${right ? 'اليمين' : 'اليسار'} في الصف نفسه. عند أي عدد تصل؟ (في كل صف 10 أعداد)`, en: `Start at ${n} on the 1–100 number chart (10 numbers in each row), go ${down ? 'down' : 'up'} ${rows} row${rows === 1 ? '' : 's'} in the same column, then move ${steps} step${steps === 1 ? '' : 's'} to the ${right ? 'right' : 'left'} in the same row. Which number do you reach?` };
+      return { eq: `${n}, ${r}`, answer: String(r), wrongs: ints(r, [n + tens - ones, n - tens + ones, n + (down ? 1 : -1) * rows + (right ? 10 : -10) * steps, r + 10, r - 10, r + 1]), ar: `ابدأ من العدد ${n} في لوحة الأعداد من 1 إلى 100، و${down ? 'انزل' : 'اصعد'} ${CHART_ROWS(rows)} في العمود نفسه، ثم تحرّك ${CHART_STEPS(steps)} إلى ${right ? 'اليمين' : 'اليسار'} في الصف نفسه. عند أي عدد تصل؟ (في كل صف 10 أعداد)`, en: `Start at ${n} on the 1–100 number chart (10 numbers in each row), go ${down ? 'down' : 'up'} ${rows} row${rows === 1 ? '' : 's'} in the same column, then move ${steps} step${steps === 1 ? '' : 's'} to the ${right ? 'right' : 'left'} in the same row. Which number do you reach?` };
     }
   }
   if (k === 5) {
@@ -468,7 +468,7 @@ const fractionOfSetG3 = T('fraction_of_set_g3', /^الكسر كجزء من مج�
     let r = 0, b = 0, red = true;
     do { r = int(rng, 1, 7); b = int(rng, 1, 7); red = rng() < 0.5; } while (r + b < 3 || r + b > 10 || gcd(red ? r : b, r + b) !== 1);
     const top = red ? r : b, all = r + b, ans = `${top}/${all}`;
-    return { eq: `${r}, ${b}`, answer: ans, wrongs: wrongsFrom(ans, [`${top}/${all - top}`, `${all - top}/${all}`, `${all}/${top}`, `${top}/${all + 1}`], j => `${top}/${all + 1 + Math.abs(j)}`), ar: `في كيس ${redBalls(r)} و ${blueBalls(b)}. ما الكسر الذي يمثل الكرات ${red ? 'الحمراء' : 'الزرقاء'} من كرات الكيس كلها؟`, en: `A bag holds ${r} red ball${r === 1 ? '' : 's'} and ${b} blue ball${b === 1 ? '' : 's'}. What fraction of all the balls in the bag are ${red ? 'red' : 'blue'}?` };
+    return { eq: `${r}, ${b}`, answer: ans, wrongs: wrongsFrom(ans, [`${top}/${all - top}`, `${all - top}/${all}`, `${all}/${top}`, `${top}/${all + 1}`], j => `${top}/${all + 1 + Math.abs(j)}`), ar: `في كيس ${redBalls(r)} و${b > 2 ? ' ' : ''}${blueBalls(b)}. ما الكسر الذي يمثل الكرات ${red ? 'الحمراء' : 'الزرقاء'} من كرات الكيس كلها؟`, en: `A bag holds ${r} red ball${r === 1 ? '' : 's'} and ${b} blue ball${b === 1 ? '' : 's'}. What fraction of all the balls in the bag are ${red ? 'red' : 'blue'}?` };
   }
   if (kind === 1) return { eq: `${a}/${d}, ${n}`, answer: String(a * q), wrongs: ints(a * q, [q, n - a * q, a + n / d, n - q]), ar: `ما ${a}/${d} من العدد ${n}؟`, en: `What is ${a}/${d} of ${n}?` };
   // a class of 3–10 students («طلاب»), some of them in hats; ask for those with or without one
@@ -837,7 +837,17 @@ const coins = (id: string, match: RegExp) => T(id, match, [1, 1], ({ rng }) => {
 });
 
 const dinar = T('dinar', /^الدينار$/, [2, 2], ({ rng }) => {
-  const d = int(rng, 2, 9), k = pick(rng, [0, 1]);
+  const d = int(rng, 2, 9), k = pick(rng, [0, 1, 2, 2, 3, 3]);
+  if (k === 2) {
+    // change from one dinar: 100 − the price
+    const p = 5 * int(rng, 3, 19);
+    return { eq: `100, ${p}`, answer: String(100 - p), wrongs: ints(100 - p, [p, 100 + p, 100 - p + 10, 100 - p - 10]), ar: `اشترت ليلى دفترًا بـ ${qirsh(p)}، ودفعت للبائع دينارًا واحدًا. كم قرشًا يعيد لها البائع؟ (الدينار الواحد = 100 قرش)`, en: `Layla buys a notebook for ${p} qirsh and pays one dinar. How many qirsh change does she get? (1 dinar = 100 qirsh)` };
+  }
+  if (k === 3) {
+    // a price in dinars, money in qirsh: how much more is needed
+    const price = int(rng, 2, 5), m = 10 * int(rng, 1, 9), have = price * 100 - m;
+    return { eq: `${price}, ${have}`, answer: String(m), wrongs: ints(m, [100 - m, m + 100, m + 10, m - 10]), ar: `ثمن لعبة ${dinars(price)}، ومع رامي ${qirsh(have)}. كم قرشًا ينقصه ليشتري اللعبة؟ (الدينار الواحد = 100 قرش)`, en: `A toy costs ${price} dinars and Rami has ${have} qirsh. How many more qirsh does he need to buy it? (1 dinar = 100 qirsh)` };
+  }
   if (k === 0) return { eq: `${d}`, answer: String(d * 100), wrongs: ints(d * 100, [d * 10, d, d * 1000, d * 100 + 100]), ar: `إذا كان الدينار الواحد = 100 قرش فكم قرشًا في ${dinars(d)}؟`, en: `If 1 dinar = 100 qirsh, how many qirsh are in ${d} dinars?` };
   return { eq: `${d * 100}`, answer: String(d), wrongs: ints(d, [d * 10, d + 1, d - 1, d * 100]), ar: `إذا كان الدينار الواحد = 100 قرش فكم دينارًا في ${d * 100} قرش؟`, en: `If 1 dinar = 100 qirsh, how many dinars are in ${d * 100} qirsh?` };
 });
@@ -951,9 +961,22 @@ const calendar = T('calendar', /^التقويم$/, [3, 3], ({ rng }) => {
   return { eq: `${DAYS[i]}, ${j}`, answer: ans, wrongs: others(rng, ans, DAYS), ar: `اليوم ${DAYS[i]}. ما اليوم بعد ${j} يومًا؟`, en: `Today is ${DAYS[i]}. Which day will it be after ${j} days? (Arabic day names)` };
 });
 
+/**
+ * A thing measured in a big non-standard unit, and the big unit is two small
+ * ones: how many small units is it? (3–7 big units, so the plural noun fits.)
+ */
+const UNIT_STORY: Record<string, (n: number) => [string, string]> = {
+  length: n => [`طول طاولة ${n} أقلام طويلة، وطول القلم الطويل يساوي طول قلمين قصيرين. كم قلمًا قصيرًا طول الطاولة؟`, `A table is ${n} long pencils long, and a long pencil is as long as two short pencils. How many short pencils long is the table?`],
+  mass: n => [`كتلة حقيبة ${n} مكعبات كبيرة، وكتلة المكعب الكبير تساوي كتلة مكعبين صغيرين. كم مكعبًا صغيرًا كتلة الحقيبة؟`, `A bag has the mass of ${n} big cubes, and a big cube has the mass of two small cubes. How many small cubes is the mass of the bag?`],
+  capacity: n => [`سعة دلو ${n} أكواب كبيرة، وسعة الكوب الكبير تساوي سعة كوبين صغيرين. كم كوبًا صغيرًا سعة الدلو؟`, `A bucket holds ${n} big cups, and a big cup holds as much as two small cups. How many small cups does the bucket hold?`],
+};
 const compareMeasure = (id: string, match: RegExp, what: string, bigWord: string, en: string, big: string, what3: string) => T(id, match, [1, 1], ({ rng }) => {
   const a = int(rng, 2, 14); let b = int(rng, 2, 14); while (b === a) b = int(rng, 2, 14);
-  const k = pick(rng, [0, 1, 2]);
+  const k = pick(rng, [0, 1, 2, 3, 3]);
+  if (k === 3) {
+    const n = int(rng, 3, 7), [ar, enS] = UNIT_STORY[en]!(n);
+    return { eq: `${n}, 2`, answer: String(2 * n), wrongs: ints(2 * n, [n, n + 2, 2 * n + 1, 2 * n - 1, n * n]), ar, en: enS };
+  }
   if (k === 2) {
     // order three things: ascending puts the smallest first, descending the largest
     let c = int(rng, 2, 14); while (c === a || c === b) c = int(rng, 2, 14);
@@ -965,8 +988,20 @@ const compareMeasure = (id: string, match: RegExp, what: string, bigWord: string
   return { eq: `${a}, ${b}`, answer: String(d), wrongs: ints(d, [a + b, Math.max(a, b), d + 1, Math.min(a, b)]), ar: `قيست ${what} شيئين بالوحدة نفسها: الأول: ${a}، الثاني: ${b}. بكم يزيد الأكبر قياسًا على الأصغر؟`, en: `The ${en} of two things is measured with the same unit: first: ${a}, second: ${b}. By how much does the larger measure exceed the smaller?` };
 });
 
+/** Things to measure, for choosing the unit: [quantity, things for the small unit, things for the big unit, other units as slips]. */
+const UNIT_FIT: Record<string, [string, Array<[string, string]>, Array<[string, string]>, string[]]> = {
+  'متر': ['طول', [['قلم الرصاص', 'a pencil'], ['الممحاة', 'an eraser'], ['إصبع اليد', 'a finger']], [['ملعب المدرسة', 'the school playground'], ['ممر المدرسة', 'the school corridor'], ['سور الحديقة', 'the garden wall']], ['الكيلوغرام', 'اللتر']],
+  'كيلوغرام': ['كتلة', [['تفاحة', 'an apple'], ['قلم الرصاص', 'a pencil'], ['ملعقة', 'a spoon']], [['كيس أرز كبير', 'a big bag of rice'], ['بطيخة كبيرة', 'a big watermelon'], ['حقيبة سفر', 'a suitcase']], ['المتر', 'اللتر']],
+  'لتر': ['كمية الماء في', [['ملعقة دواء', 'a medicine spoon'], ['قطّارة العين', 'an eye dropper'], ['فنجان قهوة صغير', 'a small coffee cup']], [['خزان ماء', 'a water tank'], ['حوض استحمام', 'a bathtub'], ['دلو كبير', 'a big bucket']], ['المتر', 'الكيلوغرام']],
+};
 const unitsG2 = (id: string, match: RegExp, big: string, small: string, f: number, bigEn: string, smallEn: string) => T(id, match, [2, 2], ({ rng }) => {
-  const n = int(rng, 2, 9), k = pick(rng, [0, 1, 2, 3]), fact = `1 ${big} = ${f} ${small}.`, factEn = `1 ${bigEn} = ${f} ${smallEn}.`;
+  const n = int(rng, 2, 9), k = pick(rng, [0, 1, 2, 3, 4, 4]), fact = `1 ${big} = ${f} ${small}.`, factEn = `1 ${bigEn} = ${f} ${smallEn}.`;
+  if (k === 4) {
+    // the unit that fits: a small thing in the small unit, a big thing in the big one
+    const [what, smallThings, bigThings, slips] = UNIT_FIT[big]!, isBig = rng() < 0.5, [thing, thingEn] = pick(rng, isBig ? bigThings : smallThings);
+    const ans = `ال${isBig ? big : small}`, other = `ال${isBig ? small : big}`;
+    return { eq: thing, answer: ans, wrongs: [other, ...slips], ar: `ما الوحدة المناسبة لقياس ${what} ${thing}: ال${big} أم ال${small}؟`, en: `Which unit fits for measuring ${what === 'طول' ? 'the length of' : what === 'كتلة' ? 'the mass of' : 'the water in'} ${thingEn}: the ${bigEn} or the ${smallEn.replace(/s$/, '')}?` };
+  }
   // a part of the big unit: 10–90 cm, or 100–900 g / mL
   const m = int(rng, 1, 9) * (f / 10);
   if (k === 2) { const w = int(rng, 1, 5), v = w * f + m; return { eq: `${w}, ${m}`, answer: String(v), wrongs: ints(v, [w * f, w + m, w * f + m * 10, (w + 1) * f + m]), ar: `${fact} كم ${small} في ${w} ${big} و ${m} ${small}؟`, en: `${factEn} How many ${smallEn} are in ${w} ${bigEn} and ${m} ${smallEn}?` }; }

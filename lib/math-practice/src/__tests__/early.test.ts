@@ -143,6 +143,15 @@ describe('counting and place value: answers recomputed', () => {
       const kinds = new Set<string>();
       for (const item of draws(id)) {
         const p = item.promptAr!, wantEven = has(p, 'زوجي'), a = Number(item.answer);
+        if (has(p, 'كم عددًا')) {
+          kinds.add(`count ${wantEven}`);
+          const [from, to] = nums(p);
+          let c = 0;
+          for (let v = from!; v <= to!; v++) if ((v % 2 === 0) === wantEven) c++;
+          assert.equal(a, c, p);
+          assert.ok(to! - from! >= 4 && to! <= (id === 'even_odd_g1' ? 20 : 999), p);
+          continue;
+        }
         assert.equal(a % 2 === 0, wantEven, p);
         if (has(p, 'أول عدد')) {
           kinds.add(`next ${wantEven}`);
@@ -156,26 +165,58 @@ describe('counting and place value: answers recomputed', () => {
         assert.equal(list.filter(v => (v % 2 === 0) === wantEven).length, 1, p);
         assert.ok(list.includes(a));
       }
-      assert.equal(kinds.size, 4, `${id}: ${[...kinds]}`);
+      assert.equal(kinds.size, 6, `${id}: ${[...kinds]}`);
     }
-    for (const item of draws('number_chart')) {
-      const p = item.promptAr!, n = nums(p.slice(p.indexOf('؟') - 20))[0] ?? 0;
-      const x = Number(p.match(/العدد (\d+) مباشرة/)![1]), a = Number(item.answer);
-      void n;
+    const chart = new Set<string>();
+    const COUNT_W: Record<string, number> = { 'صفًا واحدًا': 1, 'صفين': 2, 'خطوة واحدة': 1, 'خطوتين': 2 };
+    const counted = (s: string) => COUNT_W[s] ?? Number(s.match(/^(\d+) /)![1]);
+    for (const item of draws('number_chart', 300)) {
+      const p = item.promptAr!, a = Number(item.answer);
+      if (has(p, 'ابدأ من')) {
+        chart.add('moves');
+        const m = p.match(/ابدأ من العدد (\d+) .*?و(انزل|اصعد) (.+?) في العمود نفسه، ثم تحرّك (.+?) إلى (اليمين|اليسار)/)!;
+        const start = Number(m[1]), rows = counted(m[3]!), steps = counted(m[4]!);
+        const mid = start + (m[2] === 'انزل' ? 10 : -10) * rows, col = (mid - 1) % 10;
+        assert.ok(mid >= 1 && mid <= 100, p);
+        assert.equal(a, mid + (m[5] === 'اليمين' ? steps : -steps), p);
+        assert.equal(Math.floor((a - 1) / 10), Math.floor((mid - 1) / 10), `${p}: left the row`);
+        void col;
+        continue;
+      }
+      if (has(p, 'بأي عدد يبدأ')) {
+        chart.add('row start');
+        const x = nums(p).slice(-1)[0]!;
+        let first = x; while (first % 10 !== 1) first--;
+        assert.equal(a, first, p);
+        continue;
+      }
+      chart.add('neighbour');
+      const x = Number(p.match(/العدد (\d+) مباشرة/)![1]);
       if (has(p, 'تحت')) assert.equal(a, x + 10);
       else if (has(p, 'فوق')) assert.equal(a, x - 10);
       else if (has(p, 'يمين')) { assert.equal(a, x + 1); assert.notEqual(x % 10, 0); }
       else { assert.equal(a, x - 1); assert.notEqual(x % 10, 1); }
     }
+    assert.equal(chart.size, 3, [...chart].join(', '));
     const upDown = new Set<string>();
     for (const item of draws('count_up_down')) {
       const p = item.promptAr!, s = nums(p), up = has(p, 'تصاعديًا'), a = Number(item.answer);
+      if (has(p, 'نسيته')) {
+        upDown.add(`forgot ${up}`);
+        assert.equal(s.length, 4, p);
+        const steps = s.slice(1).map((v, i) => v - s[i]!), at = steps.findIndex(x => Math.abs(x) === 2);
+        assert.equal(steps.filter(x => x === (up ? 1 : -1)).length, 2, p);
+        assert.equal(steps[at], up ? 2 : -2, p);
+        assert.equal(a, s[at]! + (up ? 1 : -1), p);
+        assert.ok(Math.min(...s) >= 0 && Math.max(...s) <= 20, p);
+        continue;
+      }
       if (has(p, 'ابدأ من')) { upDown.add(`from ${up}`); assert.equal(a, s[0]! + (up ? s[1]! : -s[1]!), p); assert.ok(a >= 0 && a <= 20); continue; }
       upDown.add(`seq ${up}`);
       assert.equal(a, s[2]! + (up ? 1 : -1));
       assert.ok(s[1]! - s[0]! === (up ? 1 : -1) && s[2]! - s[1]! === (up ? 1 : -1));
     }
-    assert.equal(upDown.size, 4);
+    assert.equal(upDown.size, 6, [...upDown].join(', '));
     for (const [id, grade, limit] of [['skip_g1', 1, 100], ['skip_g2', 2, 999], ['skip_g3', 3, 9999]] as const) {
       const kinds = new Set<string>();
       for (const item of draws(id)) {
@@ -192,9 +233,19 @@ describe('counting and place value: answers recomputed', () => {
       }
       assert.equal(kinds.size, 4, `${id} (G${grade}): ${[...kinds]}`);
     }
-    for (const id of ['before_after_g1', 'before_after_g2']) for (const item of draws(id)) {
+    for (const id of ['before_after_g1', 'before_after_g2']) {
+      const kinds = new Set<string>();
+      for (const item of draws(id)) {
       const p = item.promptAr!, n = nums(p), a = Number(item.answer);
+      kinds.add(has(p, 'كم عددًا') ? 'count' : has(p, 'السابق') || has(p, 'التالي') ? 'next' : 'between');
+      if (has(p, 'كم عددًا يقع بين')) {
+        let c = 0; for (let v = n[0]! + 1; v < n[1]!; v++) c++;
+        assert.equal(a, c, p); assert.ok(n[1]! <= (id === 'before_after_g1' ? 99 : 999) && c >= 2, p);
+        continue;
+      }
       if (has(p, 'السابق')) assert.equal(a, n[0]! - 1); else if (has(p, 'التالي')) assert.equal(a, n[0]! + 1); else { assert.equal(n[1], n[0]! + 2); assert.equal(a, n[0]! + 1); }
+      }
+      assert.equal(kinds.size, 3, `${id}: ${[...kinds]}`);
     }
     const near = new Set<string>();
     for (const item of draws('nearest_ten_g1')) {
@@ -246,10 +297,20 @@ describe('early arithmetic: answers recomputed', () => {
       else { dbl1.add('double+1'); assert.equal(a, 2 * n[0]! + 1); }
     }
     assert.equal(dbl1.size, 3);
+    const dbl3 = new Set<string>();
     for (const item of draws('doubling_g3')) {
       const p = item.promptAr!, n = nums(p)[0]!, a = Number(item.answer);
+      dbl3.add(has(p, 'استعمل المضاعفة') ? 'near' : has(p, 'أكمل') ? 'parts' : has(p, 'ضعفه') ? 'half' : 'double');
+      if (has(p, 'استعمل المضاعفة')) { const [x, y] = nums(p); assert.equal(y, x! + 1, p); assert.equal(a, x! + y!, p); continue; }
+      if (has(p, 'أكمل: ضعف')) {
+        const [whole, big, ones, onesDbl] = nums(p);
+        assert.equal(big! + ones!, whole, p); assert.ok(ones! >= 1 && ones! <= 9 && big! % 10 === 0, p); assert.equal(onesDbl, 2 * ones!, p);
+        assert.equal(a + onesDbl!, 2 * whole!, p);
+        continue;
+      }
       if (has(p, 'ضعف ضعف')) assert.equal(a, 4 * n); else if (has(p, 'ما العدد الذي ضعفه')) assert.equal(a * 2, n); else assert.equal(a, 2 * n);
     }
+    assert.equal(dbl3.size, 4, [...dbl3].join(', '));
     const ten = new Set<string>();
     for (const item of draws('make_ten', 300)) {
       const p = item.promptAr!;
@@ -431,10 +492,30 @@ describe('early arithmetic: answers recomputed', () => {
       }
       assert.equal(kinds.size, id === 'mul_regroup' ? 5 : 4, `${id}: ${[...kinds]}`);
     }
-    for (const item of draws('two_way_table')) {
-      const [bt, bj, gt, gj] = nums(item.promptAr!.split('.')[0]!), p = item.promptAr!, a = Number(item.answer);
+    const table = new Set<string>();
+    for (const item of draws('two_way_table', 300)) {
+      const p = item.promptAr!, a = Number(item.answer);
+      assert.doesNotMatch(p, /(^|[^\d])[12] (أولاد|بنات)/, `«أولاد» / «بنات» needs 3–10: ${p}`);
+      if (has(p, 'العدد المفقود')) {
+        table.add('missing');
+        const m = p.match(/الأولاد: الشاي (\d+|___)، العصير (\d+|___)، المجموع (\d+)\. البنات: الشاي (\d+|___)، العصير (\d+|___)، المجموع (\d+)\./)!;
+        const cells = [m[1], m[2], m[4], m[5]], hole = cells.indexOf('___'), totals = [Number(m[3]), Number(m[6])];
+        assert.equal(cells.filter(c => c === '___').length, 1, p);
+        assert.equal(a + Number(cells[hole ^ 1]), totals[hole >> 1], p);
+        continue;
+      }
+      if (has(p, 'الرياضة المفضلة')) {
+        table.add('compare rows');
+        const m = p.match(/كرة القدم يحبها (\d+) أولاد و (\d+) بنات، والسباحة يحبها (\d+) أولاد و (\d+) بنات\. بكم يزيد عدد محبي (كرة القدم|السباحة)/)!;
+        const foot = Number(m[1]) + Number(m[2]), swim = Number(m[3]) + Number(m[4]);
+        assert.equal(a, m[5] === 'كرة القدم' ? foot - swim : swim - foot, p); assert.ok(a > 0, p);
+        continue;
+      }
+      table.add('totals');
+      const [bt, bj, gt, gj] = nums(p.split('.')[0]!);
       assert.equal(a, has(p, 'كم ولدًا') ? bt! + bj! : has(p, 'كم بنتًا') ? gt! + gj! : has(p, 'يحبون العصير؟') ? bj! + gj! : bt! + bj! + gt! + gj!);
     }
+    assert.equal(table.size, 3, [...table].join(', '));
   });
 });
 
@@ -467,13 +548,24 @@ describe('shapes, fractions, patterns: answers recomputed', () => {
         else { geo.add('sticks-count'); assert.equal(Number(a), t1! + (last - 1) * d, p); }
         continue;
       }
+      if (has(p, 'جدول المدخلات')) {
+        geo.add('table gap');
+        const cells = [...p.matchAll(/(\d+) ← (\d+|___)/g)].map(m => [Number(m[1]), m[2]!] as const);
+        assert.deepEqual(cells.map(c => c[0]), [1, 2, 3, 4, 5], p);
+        const known = cells.filter(c => c[1] !== '___').map(c => [c[0], Number(c[1])] as const), hole = cells.find(c => c[1] === '___')![0];
+        const step = (known[known.length - 1]![1] - known[0]![1]) / (known[known.length - 1]![0] - known[0]![0]);
+        known.forEach(([i, v]) => assert.equal(v, known[0]![1] + (i - known[0]![0]) * step, p));
+        assert.equal(Number(a), known[0]![1] + (hole - known[0]![0]) * step, p);
+        continue;
+      }
+      if (has(p, 'نمط من المربعات')) { geo.add('squares'); const m = nums(p).slice(-1)[0]!; assert.equal(Number(a), m * m, p); continue; }
       if (has(p, 'وحدة النمط')) { geo.add('unit'); const seq = p.slice(p.indexOf(':') + 1, p.indexOf('؟')).trim().split(' '); assert.equal(Number(a), period(seq), p); continue; }
       const seq = item.eq.split(' '), len = period(seq);
       if (has(p, 'الشكل رقم')) { geo.add('position'); const pos = nums(p)[0]!; assert.ok(pos > seq.length, p); assert.equal(a, N[seq[(pos - 1) % len]!], p); continue; }
       geo.add('next');
       assert.equal(a, N[seq[seq.length % len]!], p);
     }
-    assert.equal(geo.size, 6, [...geo].join(', '));
+    assert.equal(geo.size, 8, [...geo].join(', '));
   });
 
   it('half, quarter, parts, fractions of a set, unit fractions, fractions of a whole', () => {
@@ -498,17 +590,43 @@ describe('shapes, fractions, patterns: answers recomputed', () => {
       else { parts.add('name'); assert.equal(item.answer, NAMES[d]); }
     }
     assert.equal(parts.size, 3);
-    for (const item of draws('fraction_of_set_g1')) { const n = nums(item.promptAr!)[0]!, d = has(item.promptAr!, 'نصف') ? 2 : has(item.promptAr!, 'ثلث') ? 3 : 4; assert.equal(Number(item.answer) * d, n); }
+    const set1 = new Set<string>();
+    const BALLS: Record<string, number> = { 'كرة واحدة': 1, 'كرتان': 2, 'كرة حمراء واحدة': 1, 'كرتان حمراوان': 2 };
+    const ballCount = (s: string) => BALLS[s] ?? Number(s.match(/^(\d+) /)![1]);
+    for (const item of draws('fraction_of_set_g1')) {
+      const p = item.promptAr!, d = has(p, 'نصف') ? 2 : has(p, 'ثلث') ? 3 : 4;
+      assert.doesNotMatch(p, /(1[1-9]|[2-9]\d) كرات/, p);
+      if (has(p, 'أخذ سامي')) { set1.add('whole'); const q = ballCount(p.match(/فكان معه (.+?)\./)![1]!); assert.equal(Number(item.answer), q * d, p); continue; }
+      if (has(p, 'ما الجزء')) {
+        set1.add('name');
+        const m = p.match(/في مجموعة (\d+) \S+، منها (.+?)\./)!, whole = Number(m[1]), part = ballCount(m[2]!);
+        const NAME: Record<number, string> = { 2: 'النصف', 3: 'الثلث', 4: 'الربع' };
+        assert.equal(whole % part, 0, p); assert.equal(item.answer, NAME[whole / part], p);
+        continue;
+      }
+      set1.add('part');
+      const n = nums(p)[0]!; assert.equal(Number(item.answer) * d, n);
+    }
+    assert.equal(set1.size, 3, [...set1].join(', '));
     const set3 = new Set<string>();
     for (const item of draws('fraction_of_set_g3', 300)) {
       const p = item.promptAr!, n = nums(p);
+      if (has(p, 'في كيس')) {
+        set3.add('bag');
+        const m = p.match(/في كيس (.+?) و ?(كرة زرقاء واحدة|كرتان زرقاوان|\d+ كرات زرقاء)\./)!;
+        const count = (x: string) => (/واحدة/.test(x) ? 1 : /^كرتان/.test(x) ? 2 : Number(x.match(/\d+/)![0]));
+        const red = count(m[1]!), blue = count(m[2]!), top = has(p, 'الحمراء من') ? red : blue;
+        assert.equal(item.answer, `${top}/${red + blue}`, p); assert.equal(gcd(top, red + blue), 1, p);
+        item.wrongs.filter(w => /^\d+\/\d+$/.test(w)).forEach(w => assert.notEqual(frac(w), top / (red + blue), w));
+        continue;
+      }
       if (/^ما \d+\/\d+ من/.test(p)) { set3.add('of'); assert.equal(Number(item.answer), (n[0]! * n[2]!) / n[1]!); assert.ok(Number.isInteger(Number(item.answer))); continue; }
       const c = n[0]!, k = n[1] ?? (has(p, 'يلبس واحد') ? 1 : NaN), top = has(p, 'لا يلبسون') ? c - k : k;
       set3.add(has(p, 'لا يلبسون') ? 'without' : 'with');
       assert.ok(c >= 3 && c <= 10, `«طلاب» needs 3–10: ${p}`);
       assert.equal(item.answer, `${top}/${c}`, p); assert.equal(gcd(top, c), 1);
     }
-    assert.equal(set3.size, 3);
+    assert.equal(set3.size, 4, [...set3].join(', '));
     const unit = new Set<string>();
     for (const item of draws('unit_fraction')) {
       const p = item.promptAr!, n = nums(p);
@@ -569,11 +687,35 @@ describe('shapes, fractions, patterns: answers recomputed', () => {
 
   it('angles, lines, patterns and tables', () => {
     const PT: Record<string, number> = { 'القطعة المستقيمة': 2, 'الشعاع': 1, 'المستقيم': 0 };
-    for (const item of draws('point_line_ray')) assert.equal(Number(item.answer), PT[item.eq]);
+    const plr = new Set<string>();
+    const NAMED: Array<[RegExp, string]> = [[/له نقطتا نهاية/, 'قطعة مستقيمة'], [/نقطة بداية واحدة.*اتجاه واحد/, 'شعاع'], [/في الاتجاهين/, 'مستقيم'], [/ليس له طول/, 'نقطة']];
+    const COUNTS: Array<[RegExp, number]> = [[/^قطعة مستقيمة واحدة$|^شعاع واحد$|^مستقيم واحد$/, 1], [/^قطعتان مستقيمتان$|^شعاعان$|^مستقيمان$/, 2], [/^(\d+) /, -1]];
+    const howMany = (x: string) => { for (const [re, v] of COUNTS) { const m = x.match(re); if (m) return v > 0 ? v : Number(m[1]); } return assert.fail(x); };
+    for (const item of draws('point_line_ray', 300)) {
+      const p = item.promptAr!;
+      if (has(p, 'ماذا يسمّى')) { plr.add('name'); const hit = NAMED.filter(([re]) => re.test(p)); assert.equal(hit.length, 1, p); assert.equal(item.answer, hit[0]![1], p); continue; }
+      if (has(p, 'في الرسم كله')) {
+        plr.add('drawing');
+        const list = p.slice('في رسم '.length, p.indexOf('، ولا')).split(/ و ?(?=\d|قطع|شعاع|مستقيم)/);
+        let ends = 0;
+        for (const part of list) { const n = howMany(part.trim()); ends += /قطع/.test(part) ? 2 * n : /شعاع|أشعة/.test(part) ? n : 0; }
+        assert.equal(Number(item.answer), ends, p);
+        continue;
+      }
+      plr.add('endpoints');
+      assert.equal(Number(item.answer), PT[item.eq]);
+    }
+    assert.equal(plr.size, 3, [...plr].join(', '));
     const kindOf = (a: number) => (a < 90 ? 'حادة' : a === 90 ? 'قائمة' : 'منفرجة');
     const angles = new Set<string>();
     for (const item of draws('angle_kind_g3', 300)) {
       const p = item.promptAr!;
+      if (has(p, 'عقربي الساعة')) {
+        angles.add('clock');
+        const h = Number(p.match(/(\d+):00/)![1]), between = Math.abs(h * 30 - 0), small = Math.min(between, 360 - between);
+        assert.notEqual(small, 180, p); assert.equal(item.answer, kindOf(small), p);
+        continue;
+      }
       if (has(p, 'أي القياسات')) {
         const want = p.match(/قياس زاوية (\S+):/)![1]!, list = nums(p.slice(p.indexOf(':')));
         angles.add(`which ${want}`);
@@ -584,9 +726,27 @@ describe('shapes, fractions, patterns: answers recomputed', () => {
       angles.add('name');
       const a = nums(p)[0]!; assert.equal(item.answer, kindOf(a));
     }
-    assert.equal(angles.size, 4, [...angles].join(', '));
+    assert.equal(angles.size, 5, [...angles].join(', '));
     const REL: Array<[string, string]> = [['لا يلتقيان', 'متوازيان'], ['زاوية التقاطع بينهما قائمة', 'متعامدان'], ['ليست قائمة', 'متقاطعان']];
-    for (const id of ['lines_g3', 'lines_g4']) for (const item of draws(id)) assert.equal(item.answer, REL.find(([k]) => item.promptAr!.includes(k))![1]);
+    const THINGS: Record<string, string> = { 'قضيبا سكة القطار': 'متوازيان', 'الحافتان الطويلتان للمسطرة': 'متوازيان', 'حافتان متجاورتان لصفحة الكتاب': 'متعامدان', 'خطّا إشارة الجمع (+)': 'متعامدان', 'شفرتا المقص وهو مفتوح قليلًا': 'متقاطعان' };
+    for (const id of ['lines_g3', 'lines_g4']) {
+      const kinds = new Set<string>();
+      for (const item of draws(id)) {
+        const p = item.promptAr!;
+        if (has(p, 'هل هما')) { kinds.add('thing'); assert.equal(item.answer, THINGS[p.slice(0, p.indexOf(':'))], p); continue; }
+        if (has(p, 'حول نقطة التقاطع')) {
+          kinds.add('angles');
+          // four angles at the crossing: right ones only when perpendicular, else two acute and two obtuse
+          const perp = has(p, 'مستقيمان متعامدان'), ask = p.match(/كم زاوية (\S+)/)![1]!;
+          const four = perp ? ['قائمة', 'قائمة', 'قائمة', 'قائمة'] : ['حادة', 'منفرجة', 'حادة', 'منفرجة'];
+          assert.equal(Number(item.answer), four.filter(x => x === ask).length, p);
+          continue;
+        }
+        kinds.add('describe');
+        assert.equal(item.answer, REL.find(([k]) => p.includes(k))![1]);
+      }
+      assert.equal(kinds.size, 3, `${id}: ${[...kinds]}`);
+    }
     for (const item of draws('angle_measure', 300)) {
       const p = item.promptAr!, n = nums(p), a = Number(item.answer.replace('°', ''));
       if (has(p, 'متجاورتان')) assert.equal(a, n[0]! + n[1]!); else if (has(p, 'على مستقيم')) assert.equal(a, 180 - n[0]!); else if (has(p, 'تتمم')) assert.equal(a, 90 - n[0]!); else assert.equal(a, n[0]! - n[1]!);
@@ -664,21 +824,43 @@ describe('money, time and measurement: answers recomputed', () => {
   });
 
   it('days, months, clock times, calendar', () => {
-    for (const item of draws('week_days')) {
+    const days = new Set<string>();
+    for (const item of draws('week_days', 300)) {
       const p = item.promptAr!, i = DAYS.findIndex(d => p.includes(`يوم ${d}`));
+      days.add(has(p, 'ترتيب') ? 'place' : has(p, 'أمس') ? 'two steps' : has(p, 'كم يومًا') ? 'count' : 'next');
+      if (has(p, 'ترتيب')) { assert.equal(item.answer, ORD[i], p); continue; }
+      if (has(p, 'إذا كان أمس')) { assert.equal(item.answer, DAYS[(i + 2) % 7], p); continue; }
+      if (has(p, 'إذا كان غدًا')) { assert.equal(item.answer, DAYS[(i + 5) % 7], p); continue; }
       if (has(p, 'كم يومًا')) assert.equal(item.answer, '7'); else assert.equal(item.answer, DAYS[(i + (has(p, 'بعد') ? 1 : 6)) % 7]);
     }
     const mins = (s: string) => { const [h, m] = s.split(':').map(Number); return (h! % 12) * 60 + m!; };
-    for (const item of draws('hour_full')) { const [h, j] = [Number(item.promptAr!.match(/(\d+):00/)![1]), has(item.promptAr!, 'ساعتين') ? 2 : has(item.promptAr!, '3 ساعات') ? 3 : 1]; assert.equal(mins(item.answer), mins(`${h}:00`) + j * 60 === 0 ? 0 : (mins(`${h}:00`) + j * 60) % 720); }
+    assert.equal(days.size, 4, [...days].join(', '));
+    const full = new Set<string>();
+    for (const item of draws('hour_full')) {
+      const p = item.promptAr!;
+      if (has(p, 'عقرب الدقائق عند العدد 12')) { full.add('hands'); const h = Number(p.match(/عقرب الساعات عند العدد (\d+)/)![1]); assert.equal(item.answer, `${h}:00`, p); continue; }
+      if (has(p, 'كم ساعة')) { full.add('duration'); const [s0, e0] = [...p.matchAll(/(\d+):00/g)].map(m => Number(m[1])); assert.equal(Number(item.answer), e0! - s0!, p); assert.ok(e0! > s0! && e0! <= 12, p); continue; }
+      full.add('after');
+      const [h, j] = [Number(p.match(/(\d+):00/)![1]), has(p, 'ساعتين') ? 2 : has(p, '3 ساعات') ? 3 : 1]; assert.equal(mins(item.answer), mins(`${h}:00`) + j * 60 === 0 ? 0 : (mins(`${h}:00`) + j * 60) % 720);
+    }
+    assert.equal(full.size, 3, [...full].join(', '));
+    const SAID = ['الواحدة', 'الثانية', 'الثالثة', 'الرابعة', 'الخامسة', 'السادسة', 'السابعة', 'الثامنة', 'التاسعة', 'العاشرة', 'الحادية عشرة', 'الثانية عشرة'];
     const halfKinds = new Set<string>();
     for (const item of draws('hour_half')) {
       const p = item.promptAr!;
+      if (has(p, 'ساعة رقمية')) {
+        halfKinds.add('say');
+        const [h, m] = p.match(/(\d+):(\d+)/)!.slice(1).map(Number);
+        assert.equal(m, 30, p); assert.equal(item.answer, `${SAID[h! - 1]} والنصف`, p);
+        item.wrongs.forEach(w => assert.notEqual(w, item.answer));
+        continue;
+      }
       if (has(p, 'عقرب الساعات')) { halfKinds.add('hands'); const [h, nx, mark] = nums(p); assert.equal(nx, h! % 12 + 1); assert.equal(mark, 6); assert.equal(item.answer, `${h}:${String(mark! * 5).padStart(2, '0')}`); continue; }
       if (has(p, 'قبل نصف ساعة')) { halfKinds.add('before'); const h = Number(p.match(/(\d+):30/)![1]); assert.equal(mins(item.answer), (mins(`${h}:30`) - 30 + 720) % 720); continue; }
       halfKinds.add('after');
       const h = Number(p.match(/(\d+):00/)![1]); assert.equal(mins(item.answer), (mins(`${h}:00`) + 30) % 720);
     }
-    assert.equal(halfKinds.size, 3);
+    assert.equal(halfKinds.size, 4, [...halfKinds].join(', '));
     for (const [id, step] of [['time_5', 5], ['time_15', 15]] as const) {
       const kinds = new Set<string>();
       for (const item of draws(id, 400)) {

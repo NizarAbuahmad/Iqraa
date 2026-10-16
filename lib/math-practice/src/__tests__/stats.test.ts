@@ -223,9 +223,44 @@ describe('probability and counting: answers recomputed', () => {
   });
 
   it('Venn diagrams', () => {
+    const kinds: Record<string, Set<string>> = { venn_g3: new Set(), venn_g4: new Set(), venn_g9: new Set() };
     for (const id of ['venn_g3', 'venn_g4', 'venn_g9']) for (const item of draws(id, 300)) {
-      const [total, A, B, both] = nums(item.promptAr!);
       const p = item.promptAr!;
+      if (has(p, 'أين يُكتب')) {
+        // which region a number belongs in
+        kinds[id]!.add('place');
+        assert.notEqual(id, 'venn_g9', p);
+        const x = Number(p.match(/يُكتب العدد (\d+)/)![1]), m = Number(p.match(/لمضاعفات العدد (\d+)/)![1]);
+        const inA = has(p, 'للأعداد الزوجية') ? x % 2 === 0 : x % 2 === 1, inB = x % m === 0;
+        const want = inA && inB ? 'في الجزء المشترك' : inA ? `في دائرة الأعداد ${has(p, 'للأعداد الزوجية') ? 'الزوجية' : 'الفردية'} وحدها` : inB ? `في دائرة مضاعفات العدد ${m} وحدها` : 'خارج الدائرتين';
+        assert.equal(item.answer, want, p);
+        assert.ok(x <= Number(p.match(/من 1 إلى (\d+)/)![1]), p);
+        continue;
+      }
+      if (has(p, 'في شكل ڤن لدائرتين')) {
+        // the regions are given: both, A only, B only, neither
+        kinds[id]!.add('regions');
+        const [both, onlyA, onlyB, none] = nums(p), q = p.slice(p.lastIndexOf('. ') + 2);
+        const name = p.match(/دائرة لمن يحبون (.+?) ودائرة/)![1]!;
+        assert.ok(has(q, name) || has(q, 'كلها'), p);
+        const whole = both! + onlyA! + onlyB! + none!, inA = both! + onlyA!;
+        if (id === 'venn_g9') assert.ok(Math.abs(frac(item.answer) - inA / whole) < 1e-9, `${p} → ${item.answer}`);
+        else assert.equal(Number(item.answer), has(q, 'كلها') ? whole : inA, p);
+        continue;
+      }
+      if (has(p, 'P(A)')) {
+        // P(A ∪ B) = P(A) + P(B) − P(A ∩ B), solved for whichever is asked
+        kinds[id]!.add('additionRule');
+        assert.equal(id, 'venn_g9', p);
+        const P = (k: string) => frac(p.match(new RegExp(`P\\(${k}\\) = (\\d+(?:/\\d+)?)`))![1]!);
+        const want = has(p, 'فما P(A ∪ B)') ? P('A') + P('B') - P('A ∩ B') : P('A') + P('B') - P('A ∪ B');
+        assert.ok(Math.abs(frac(item.answer) - want) < 1e-9, `${p} → ${item.answer}`);
+        assert.ok(want > 0 && want <= 1, p);
+        if (has(p, 'فما P(A ∪ B)')) assert.ok(item.wrongs.every(w => frac(w) > 0 && frac(w) <= 1), `a probability above 1 is no option: ${p} → ${item.wrongs}`);
+        continue;
+      }
+      kinds[id]!.add('sets');
+      const [total, A, B, both] = nums(item.promptAr!);
       const q = p.slice(p.indexOf('. ') + 2);
       let val: number;
       if (has(q, 'على الأقل')) val = A! + B! - both!;
@@ -237,6 +272,7 @@ describe('probability and counting: answers recomputed', () => {
       if (id === 'venn_g9') assert.ok(Math.abs(frac(item.answer) - val / total!) < 1e-9, `${p} → ${item.answer}`);
       else assert.equal(Number(item.answer), val, p);
     }
+    for (const [id, k] of Object.entries(kinds)) assert.equal(k.size, 3, `${id} kinds: ${[...k]}`);
   });
 
   it('geometric probability', () => {
@@ -279,7 +315,15 @@ describe('statistics: answers recomputed', () => {
     const mmKinds = new Set<string>();
     for (const id of ['median_mode_g5', 'range_g5', 'median_mode_range_g7']) for (const item of draws(id, 300)) {
       const p = item.promptAr!, xs = dataList(p);
-      if (has(p, 'ووسيطها')) {
+      if (has(p, 'النزعة المركزية')) {
+        // distinct values, so there is no mode; one far from the rest (further than the rest spread) pulls the mean → median
+        mmKinds.add(`${id}:bestMeasure`);
+        const s = sorted(xs), spread = (v: number[]) => Math.max(...v) - Math.min(...v);
+        assert.equal(new Set(xs).size, xs.length, p);
+        const outlier = s.at(-1)! - s.at(-2)! > spread(s.slice(0, -1)) || s[1]! - s[0]! > spread(s.slice(1));
+        assert.equal(item.answer, outlier ? 'الوسيط' : 'الوسط الحسابي', p);
+        assert.deepEqual(item.wrongs.slice().sort(), ['الوسط الحسابي', 'الوسيط', 'المنوال'].filter(m => m !== item.answer).sort(), p);
+      } else if (has(p, 'ووسيطها')) {
         mmKinds.add(`${id}:medianMissing`);
         const shown = p.slice(p.indexOf(':') + 1, p.indexOf('، ووسيطها')).split('،').map(s => s.trim());
         const md = Number(p.match(/ووسيطها (\d+)/)![1]), h = shown.length / 2, xi = shown.indexOf('x');
@@ -308,23 +352,82 @@ describe('statistics: answers recomputed', () => {
         assert.equal(Number(item.answer), top[0]![0], p);
       }
     }
-    for (const k of ['median_mode_g5:median', 'median_mode_g5:mode', 'median_mode_g5:medianMissing', 'median_mode_g5:modeContext', 'range_g5:range', 'range_g5:rangeTable', 'range_g5:rangeEnd'])
+    for (const k of ['median_mode_range_g7:median', 'median_mode_range_g7:medianMissing', 'median_mode_range_g7:bestMeasure', 'median_mode_g5:median', 'median_mode_g5:mode', 'median_mode_g5:medianMissing', 'median_mode_g5:modeContext', 'range_g5:range', 'range_g5:rangeTable', 'range_g5:rangeEnd'])
       assert.ok(mmKinds.has(k), `${k} never drawn: ${[...mmKinds]}`);
   });
 
   it('stem-and-leaf plots', () => {
+    const kinds = new Set<string>();
     for (const item of draws('stem_leaf', 300)) {
-      const lines = item.eq.split('\n');
+      const p = item.promptAr!;
+      if (has(p, 'عند تمثيل العلامات')) {
+        // building the plot: the leaves on a stem are the values with that tens digit
+        kinds.add('build');
+        const xs = nums(p.slice(p.indexOf('):') + 2, p.lastIndexOf('،'))), s = Number(p.match(/أمام الساق (\d+)/)![1]);
+        assert.equal(Number(item.answer), xs.filter(x => Math.floor(x / 10) === s).length, p);
+        assert.ok(Number(item.answer) > 0, p);
+        continue;
+      }
+      // the plot, read back from the printed lines «3 | 1 4 7»
+      const lines = p.split('\n').filter(l => l.includes(' | '));
       const xs = lines.flatMap(l => { const [s, rest] = l.split(' | '); return rest!.split(' ').map(leaf => Number(s) * 10 + Number(leaf)); });
-      const q = item.promptAr!.split('\n').pop()!;
+      const q = p.split('\n').pop()!;
+      if (has(q, 'الفرضية')) {
+        // «more than half scored c or more»
+        kinds.add('hypothesis');
+        const c = Number(q.match(/العلامة (\d+) فأكثر/)![1]), above = xs.filter(x => x >= c).length;
+        assert.notEqual(2 * above, xs.length, `exactly half is no test: ${p}`);
+        assert.equal(item.answer, 2 * above > xs.length ? 'نعم' : 'لا', p);
+        continue;
+      }
+      kinds.add('read');
       const want = has(q, 'أعلى') ? Math.max(...xs) : has(q, 'مدى') ? Math.max(...xs) - Math.min(...xs) : has(q, 'وسيط') ? median(xs) : xs.length;
       assert.equal(Number(item.answer), want, item.promptAr);
     }
+    assert.equal(kinds.size, 3, `stem_leaf kinds: ${[...kinds]}`);
+    const verdicts = new Set(draws('stem_leaf', 300).filter(i => has(i.promptAr!, 'الفرضية')).map(i => i.answer));
+    assert.equal(verdicts.size, 2, 'the hypothesis is sometimes true, sometimes false');
   });
 
   it('reading a table of counts', () => {
+    const kinds: Record<number, Set<string>> = { 1: new Set(), 2: new Set() };
     for (const id of ['read_data_g12', 'read_data_g34']) for (const item of draws(id, 300)) {
-      const p = item.promptAr!;
+      const p = item.promptAr!, g = item.id.split('-')[2]!;
+      const kind = (k: string) => { assert.equal(id, 'read_data_g12', p); kinds[Number(g)]!.add(k); };
+      if (has(p, 'عدد الأقلام')) {
+        // organising raw data: how many times the value occurs
+        kind('raw');
+        const xs = nums(p.slice(p.indexOf(':') + 1, p.indexOf('. '))), v = Number(p.match(/في حقيبته (\d+)/)![1]);
+        assert.equal(Number(item.answer), xs.filter(x => x === v).length, p);
+        assert.ok(Number(item.answer) > 0, p);
+        continue;
+      }
+      if (has(p, 'للطيور')) {
+        // two rows of a picture graph: the difference in pictures times what one picture stands for
+        kind('compare');
+        const per = has(p, 'طائرين') ? 2 : 1;
+        const rows = new Map([...p.matchAll(/(العصافير|الحمام|البط): (\d+)/g)].map(m => [m[1]!, Number(m[2]) * per]));
+        const [, big, small] = p.match(/بكم يزيد عدد (\S+) على عدد (\S+)؟/)!;
+        assert.equal(Number(item.answer), rows.get(big!)! - rows.get(small!)!, p);
+        assert.ok(Number(item.answer) > 0, p);
+        continue;
+      }
+      if (has(p, 'جدول الإشارات')) {
+        // a bundle of a tally is five
+        kind('tally');
+        const [per, bundles, single] = nums(p);
+        assert.equal(Number(item.answer), per! * bundles! + single!, p);
+        continue;
+      }
+      if (has(p, 'كم صورة')) {
+        // the number divided by what one picture stands for
+        kind('draw');
+        const per = has(p, 'طالبين') ? 2 : nums(p)[0]!, v = nums(p).pop()!;
+        assert.equal(Number(item.answer), v / per, p);
+        assert.ok(Number.isInteger(v / per), p);
+        continue;
+      }
+      if (id === 'read_data_g12') kinds[Number(g)]!.add(has(p, 'جدول الصور') ? 'pictures' : 'table');
       const cats = [...p.matchAll(/(التفاح|الموز|البرتقال|العنب|الكرز): (\d+)/g)].map(m => [m[1]!, Number(m[2])] as const);
       const key = has(p, 'كل صورة تمثل 2') ? 2 : 1;
       const vals = cats.map(([, c]) => c * key);
@@ -335,6 +438,8 @@ describe('statistics: answers recomputed', () => {
       else assert.equal(Number(item.answer), sum(vals));
       assert.equal(new Set(vals).size, vals.length, 'counts are distinct so the answer is unique');
     }
+    assert.deepEqual([...kinds[1]!].sort(), ['compare', 'raw', 'table'], 'Grade 1 kinds');
+    assert.deepEqual([...kinds[2]!].sort(), ['compare', 'draw', 'pictures', 'raw', 'table', 'tally'], 'Grade 2 kinds');
   });
 
   it('frequency tables and grouped data', () => {

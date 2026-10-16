@@ -271,7 +271,7 @@ const venn = (id: string, match: RegExp, grades: [number, number]) => T(id, matc
   }
   if (k === 5 && prob) { // the addition rule, with the probabilities given
     const pa = sfrac(A, total), pb = sfrac(B, total), pab = sfrac(both, total), pu = sfrac(A + B - both, total);
-    if (rng() < 0.6) return { eq: `${pa}, ${pb}, ${pab}`, answer: pu, wrongs: fracOpts(A + B - both, total, [sfrac(A + B, total), sfrac(A + B - 2 * both, total), sfrac(A + B + both, total), sfrac(A * B, total * total)].filter(x => x !== pu)), ar: `إذا كان A و B حادثين في تجربة عشوائية، وكان P(A) = ${pa} و P(B) = ${pb} و P(A ∩ B) = ${pab}، فما P(A ∪ B)؟`, en: `A and B are events in a random experiment with P(A) = ${pa}, P(B) = ${pb} and P(A ∩ B) = ${pab}. What is P(A ∪ B)?` };
+    if (rng() < 0.6) return { eq: `${pa}, ${pb}, ${pab}`, answer: pu, wrongs: wrongsFrom(pu, [...(A + B <= total ? [sfrac(A + B, total)] : []), sfrac(A + B - 2 * both, total), sfrac(A * B, total * total), sfrac(Math.max(A, B), total)], j => (A + B - both - Math.abs(j) > 0 ? sfrac(A + B - both - Math.abs(j), total) : '')), ar: `إذا كان A و B حادثين في تجربة عشوائية، وكان P(A) = ${pa} و P(B) = ${pb} و P(A ∩ B) = ${pab}، فما P(A ∪ B)؟`, en: `A and B are events in a random experiment with P(A) = ${pa}, P(B) = ${pb} and P(A ∩ B) = ${pab}. What is P(A ∪ B)?` };
     return { eq: `${pa}, ${pb}, ${pu}`, answer: pab, wrongs: fracOpts(both, total, [sfrac(onlyB, total), sfrac(onlyA, total), sfrac(A * B, total * total), sfrac(both + 1, total)].filter(x => x !== pab)), ar: `إذا كان A و B حادثين في تجربة عشوائية، وكان P(A) = ${pa} و P(B) = ${pb} و P(A ∪ B) = ${pu}، فما P(A ∩ B)؟`, en: `A and B are events in a random experiment with P(A) = ${pa}, P(B) = ${pb} and P(A ∪ B) = ${pu}. What is P(A ∩ B)?` };
   }
   if (k === 5) { // place a number in the diagram: which region does it belong to?
@@ -380,8 +380,10 @@ const medianModeT = (id: string, match: RegExp, grades: [number, number], kinds:
     // distinct values (so there is no mode), close together — or the same with one far above them,
     // which pulls the mean away and leaves the median describing the data (Grade 7's rule)
     const outlier = rng() < 0.5, n = int(rng, 5, 7);
-    const rest = shuffle(rng, Array.from({ length: 21 }, (_, i) => 300 + 10 * i)).slice(0, outlier ? n - 1 : n);
-    const xs = outlier ? shuffle(rng, [...rest, 100 * int(rng, 15, 30)]) : rest;
+    // steps of 20–40 dinars: no gap is wider than the spread of the others, so nothing stands out
+    const rest: number[] = [10 * int(rng, 28, 40)];
+    while (rest.length < (outlier ? n - 1 : n)) rest.push(rest[rest.length - 1]! + 10 * int(rng, 2, 4));
+    const xs = shuffle(rng, outlier ? [...rest, 100 * int(rng, 15, 30)] : rest);
     const ans = outlier ? 'الوسيط' : 'الوسط الحسابي';
     return { eq: list(xs), answer: ans, wrongs: MEASURES.filter(m => m !== ans), ar: `الرواتب الشهرية بالدينار لموظفي شركة صغيرة: ${list(xs)}. أي مقاييس النزعة المركزية أنسب لوصف هذه الرواتب: الوسط الحسابي، أم الوسيط، أم المنوال؟`, en: `The monthly salaries in dinars of a small company's staff are ${listEn(xs)}. Which measure of central tendency best describes them: the mean, the median or the mode?` };
   }
@@ -504,7 +506,7 @@ const readData = (id: string, match: RegExp, grades: [number, number]) => T(id, 
   }
   if (q === 6) { // a tally: each bundle is five marks
     const bundles = int(rng, 1, 4), single = int(rng, 1, 4), v = 5 * bundles + single;
-    return { eq: `${bundles}, ${single}`, answer: String(v), wrongs: countOpts(v, [bundles + single, 4 * bundles + single, 5 * bundles, 5 * (bundles + 1)]), ar: `في جدول الإشارات تمثل كل حزمة 5 إشارات. سجّل سامر السيارات الحمراء التي مرّت أمام المدرسة، فكان عدد الحزم ${bundles} وعدد الإشارات المنفردة ${single}. كم سيارة حمراء مرّت أمام المدرسة؟`, en: `In a tally chart each bundle stands for 5 marks. Samer tallied the red cars passing the school: ${bundles} bundles and ${single} single marks. How many red cars passed the school?` };
+    return { eq: `${bundles}, ${single}`, answer: String(v), wrongs: countOpts(v, [bundles + single, 4 * bundles + single, 5 * bundles, 5 * (bundles + 1)]), ar: `في جدول الإشارات تمثل كل حزمة 5 إشارات. سجّل سامر السيارات الحمراء التي مرّت أمام المدرسة، فكان عدد الحزم ${bundles} وعدد الإشارات المنفردة ${single}. كم سيارة حمراء مرّت أمام المدرسة؟`, en: `In a tally chart each bundle stands for 5 marks. Samer tallied the red cars passing the school: ${bundles} bundle${bundles > 1 ? 's' : ''} and ${single} single mark${single > 1 ? 's' : ''}. How many red cars passed the school?` };
   }
   if (q === 7) { // represent: how many pictures to draw for a number
     const pk = pick(rng, [2, 5, 10]), pics = int(rng, 2, 9), v = pk * pics;
