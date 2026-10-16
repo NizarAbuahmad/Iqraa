@@ -100,7 +100,7 @@ const directVar = T('direct_variation', /^التغير الطردي$/, [7, 7], (
     const v = 10 * int(rng, 4, span(diff, 6, 8, 9)), t1 = int(rng, 3, 6), t2 = int(rng, 3, 10);
     if (t1 === t2) return directVar.make({ rng, diff, grade: 7 });
     const d = v * t2;
-    return { eq: `${v * t1}, ${t1}, ${t2}`, answer: String(d), wrongs: ints(d, [v * t1 + (t2 - t1), d + v, v * t1 * t2, v + t2]), ar: `المسافة التي تقطعها سيارة تسير بسرعة ثابتة تتغير طرديًا مع زمن سيرها. إذا قطعت السيارة ${v * t1} كم في ${t1} ساعات، فكم كيلومترًا تقطع في ${t2} ساعات؟`, en: `The distance a car covers at a steady speed varies directly with the time it drives. If it covers ${v * t1} km in ${t1} hours, how many kilometres does it cover in ${t2} hours?` };
+    return { eq: `${v * t1}, ${t1}, ${t2}`, answer: String(d), wrongs: ints(d, [v * t1 + (t2 - t1), d + v, v * Math.abs(t2 - t1), v + t2]), ar: `المسافة التي تقطعها سيارة تسير بسرعة ثابتة تتغير طرديًا مع زمن سيرها. إذا قطعت السيارة ${v * t1} كم في ${t1} ساعات، فكم كيلومترًا تقطع في ${t2} ساعات؟`, en: `The distance a car covers at a steady speed varies directly with the time it drives. If it covers ${v * t1} km in ${t1} hours, how many kilometres does it cover in ${t2} hours?` };
   }
   const given = `y يتغير طرديًا مع x، وعندما x = ${x1} فإن y = ${k * x1}.`, givenEn = `y varies directly with x, and y = ${k * x1} when x = ${x1}.`;
   if (kind === 2) { const ans = `y = ${k}x`; return { eq: `${x1}, ${k * x1}`, answer: ans, wrongs: eqOpts(ans, [`y = ${k * x1}x`, `y = x + ${k * x1 - x1}`, `x = ${k}y`], j => `y = ${k + Math.abs(j)}x`), ar: `${given} ما معادلة التغير الطردي؟`, en: `${givenEn} What is the direct variation equation?` }; }
