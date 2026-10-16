@@ -1490,12 +1490,12 @@ out to be, and what changed:
 
 ## Real book items on the live model path, behind `BOOK_ITEMS_LIVE`, 2026-10-12
 
-The 30 served book items (see the next section) now also reach evaluations the
+The 33 served book items (see the next section) now also reach evaluations the
 model writes, not just the mock generator's. **Off by default**: nothing changes
 in production until `BOOK_ITEMS_LIVE=true` is set on iqraa-api (exactly `"true"`,
 read per request, so no rebuild; declared in `LOCAL_SETUP.md` and
 `docs/deploying.md`), and that should wait until a person has compared the
-25 `computed` served items with the printed books (the 5 `verified` ones were
+28 `computed` served items with the printed books (the 5 `verified` ones were
 cross-checked against the book's own printed answers; see the next section). Design:
 `docs/superpowers/specs/2026-10-12-book-items-live-path-design.md`.
 
@@ -1589,7 +1589,7 @@ cross-checked against the book's own printed answers; see the next section). Des
 - **Still not covered:** the mobile offline quiz/exam generators and
   `routes/generate.ts` (worksheets, quizzes).
 
-## Real book items in the mock evaluation generator: 30 served, 5 verified, 2026-10-12
+## Real book items in the mock evaluation generator: 33 served, 5 verified, 2026-10-12
 
 A Grade 10 maths evaluation used to be built from generated templates only.
 It now also draws **real NCCD items** — exercise-book questions and the teacher
@@ -1598,7 +1598,8 @@ guide's end-of-unit test — for the objective's own lesson. Reader:
 `scripts/extract_book_items.py`. Design:
 `docs/superpowers/specs/2026-10-12-book-items-design.md`; the guide-page-47
 slice (items 6-11, the first `verified` ones):
-`docs/superpowers/specs/2026-10-12-book-items-unit-test-open-design.md`.
+`docs/superpowers/specs/2026-10-12-book-items-unit-test-open-design.md`; and items 3-5 (written readings,
+2026-10-15): `docs/superpowers/specs/2026-10-15-book-items-unit-test-exp-design.md`.
 
 - **Mock path only until the section above.** `generateMockEvaluation` has one
   caller, the non-live `else` branch of `POST /evaluations/:id/generate`
@@ -1607,12 +1608,12 @@ slice (items 6-11, the first `verified` ones):
   items** unless `BOOK_ITEMS_LIVE=true` is set (off by default; the live model
   path then draws the same items). The mobile offline quiz/exam generators do not
   use them.
-- **What is in it.** 30 served items (`report.json` counts: 25 `computed`, 5
+- **What is in it.** 33 served items (`report.json` counts: 28 `computed`, 5
   `verified`): systems of equations (S1 unit 1, two lessons), polynomial
-  derivatives (S2 unit 6), the unit-test choices 1-2 and the unit-test open
+  derivatives (S2 unit 6), the unit-test choices 1-5 and the unit-test open
   questions 6-11 (guide p.47). 14 more were quarantined, each with its reason in
   `report.json` (no real solution, an exponent the text layer made ambiguous, a
-  fraction split across lines); that list is unchanged by the p.47 slice.
+  fraction split across lines); that list is unchanged by the p.47 slices.
 - **The new kind `unit-test`** is an open question from the end-of-unit test. It
   cites as the test («اختبار نهاية الوحدة ١، س ٦»), not as the exercise book, and
   is drawn wherever a paper wants a short answer, from the union with `exercise`
@@ -1641,6 +1642,42 @@ slice (items 6-11, the first `verified` ones):
   `verified` book item still carries `check: null`, so it does not reach the
   verification pass and earns no «تم التحقق» badge; the teacher sees its citation
   and no key label.
+- **Choices 3-5 are served from a written reading, not a rule (2026-10-15).**
+  Their maths is what the text layer destroys: `3 5x × 9y = 27` is
+  3^(5x) × 9^y = 27, `42-x` is 4^(2-x), `x4y` is x⁴y, and where the fraction bar
+  was is not recoverable by any pattern, so the normaliser rejects all three. The
+  extractor has a small hand-written table (`READINGS`) giving each item's stem
+  and options with that structure added, and **trusts none of it**. A reading is
+  accepted only if (1) it has exactly the page's characters — whitespace and the
+  structure characters `^ ( ) /` removed from both sides they must be
+  identical, so no digit, letter or operator (`×` included) can be added, dropped,
+  changed or moved — and each of the page's own bracket pairs stays as the page
+  has it (same two places, matched to each other), and (2) exactly one
+  option is correct under it (SymPy). Failing either quarantines the item
+  (`reading_changes_characters`, `reading_moves_brackets`, `key_not_unique`);
+  nothing falls back to a looser reading. Item 3 (two exponential equations,
+  options are points; key (1, -1)) and item 4 (which exponential equation has
+  x = -1 as a solution; key d, `4^(2-x) = 64`) join lesson `u1_l4`; item 5 (what
+  goes in the empty square of 8x²y³ / □ = (2y/x)²; key `2x⁴y`) joins `u1_l3`. All three are
+  `unit-test-mcq`, `computed`, no `check`, labelled «الحل محسوب من نص السؤال»: the answers
+  for choices 1-5 are in the answer appendix, which is not extracted, so none can
+  be `verified`.
+  **What is evidence and what is not.** `RivalReadings` in
+  `scripts/test_extract_book_items.py` enumerates the other ways to place
+  exponents over the page's characters (up to two groups per equation, the page's
+  brackets fixed) and requires that every rival which still leaves one correct
+  option leaves the same one — which they do (item 3: (1, -1); item 4: d; item 5:
+  2x⁴y). Writing that test found a real gap: `(2y/x²)` has the same characters
+  as `(2y/x)²`, one unique key, and a different one (option b), so the
+  unique-key gate alone would have served a wrong answer; the bracket rule exists
+  because of it. An independent review then found two ways round the first
+  version of the gates, both closed and pinned: `core()` ignored the page's `×`, so
+  `3^(5x) / 9^y` passed and served (1, 1) for item 3; and the bracket rule matched
+  positions but not pairing, so `(2y/(x)^2)` passed and served option b for item 5. That is still evidence about the layout, not a look at the page:
+  **a person should compare these three with the printed book**, item 5 first (its
+  layout, the bar and the position of the box, is the most inferred). Display:
+  `displayMath` turns `^2` into `²` but leaves `^(2x+1)` as written, so item 4's
+  options read `5^(2x+1) = 25` and item 3's stem reads `3^(5x) × 9^y = 27` (the page's `×`).
 - **Item 8 stays `computed`.** The guide prints `(0, 5), (2. 1)` for it; SymPy
   gives `(0, 5), (2, 1)`. `2. 1` is the decimal 2.1, not the point (2, 1), and no
   tolerance was added, because whether the printed page has a comma or a typo
@@ -1653,14 +1690,14 @@ slice (items 6-11, the first `verified` ones):
   regenerating. If the page prints `(2, 1)` the text layer
   dropped a comma and the item becomes `verified`; if it really prints `2.1` that
   is a typo in the book and the item stays `computed`.
-- **The 25 `computed` items are not cross-checked.** SymPy's answer is the only
-  one: the exercise-book systems and derivatives, unit-test choices 1-2 and
+- **The 28 `computed` items are not cross-checked.** SymPy's answer is the only
+  one: the exercise-book systems and derivatives, unit-test choices 1-5 and
   item 8. They are labelled to the teacher «الحل محسوب من نص السؤال» and carry no
   `check`, so they cannot earn the verified badge.
-- **No stem of the 25 `computed` items has been compared with a page image.**
+- **No stem of the 28 `computed` items has been compared with a page image.**
   The text layer flattens exponents (`24x3` is 24x³) and splits fractions, and
   the book PDFs are not in a fresh checkout. The extractor refuses anything
-  ambiguous rather than choosing a reading, but a person should read those 25
+  ambiguous rather than choosing a reading, but a person should read those 28
   against the books. The PR that introduced this lists them. Compare first
   `s1-exercise-book-u1l2-1`, `-2`, `-8` and `-10` (surd answers; the final review
   asked for them to be eyeballed). The 5 `verified` ones are the exception: each
@@ -1680,8 +1717,8 @@ slice (items 6-11, the first `verified` ones):
   competency breakdown is nominal for book questions.
 - **Not covered.** S1 unit 1's first lesson («حل معادلات خاصة») has no
   curriculum lesson, so its 18 exercises (15 of them equation items) cannot be joined; Arabic word problems;
-  figure items; chemistry (its teacher guides have no extracted text); the rest of guide p.47 (choices 3-5, whose exponents and fractions the text layer
-  flattens, item 12, an inequality, and the answer appendix its key points to).
+  figure items; chemistry (its teacher guides have no extracted text); the rest of guide p.47 (item 12, an inequality, and the answer appendix its key points to);
+  the unit test's later items on p.48.
 
 ## Math Corner: calculator, grapher, geometry sketchpad, unit converter and formula sheet in the library, 2026-10-12
 
