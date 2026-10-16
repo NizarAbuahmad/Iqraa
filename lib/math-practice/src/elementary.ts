@@ -1171,7 +1171,9 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
     case 'dec_div': {
       if (int(rng, 0, 3) > 0) return decDivKinds(base, diff, rng);
       const b = int(rng, 2, 9);
-      const Q = int(rng, 11, 99);
+      // A dividend whose tenths are 0 prints as a whole number («40 ÷ 8»): not a decimal.
+      let Q = int(rng, 11, 99);
+      while ((Q * b) % 10 === 0) Q = int(rng, 11, 99);
       return {
         ...base, eq: `${fmtDec(Q * b, 1)} ÷ ${b}`, answer: fmtDec(Q, 1),
         wrongs: distinctDecimals(fmtDec(Q, 1), [fmtDec(Q, 2), fmtDec(Q, 0), fmtDec(Q + 1, 1), fmtDec(Q - 1, 1)]),

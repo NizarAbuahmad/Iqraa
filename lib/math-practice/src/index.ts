@@ -132,9 +132,14 @@ export function beginMathPracticeSession(): void {
 /** The module-level used-id set, so offline worksheet formats dedupe against the same set as every other question on the sheet. */
 export function currentSession(): Set<string> { return usedIds; }
 
-/** The lesson's name and nothing else — what routing reads. See `elementaryOpsForTitle`. */
+/**
+ * The lesson's name and nothing else — what routing reads. See `elementaryOpsForTitle`.
+ * Each distinct name once: the topic is usually the lesson's own Arabic title, and
+ * joining it twice let a pattern match across the seam («…والقسمة الكسور والقسمة»
+ * read as dividing fractions).
+ */
 export function lessonTitleBlob(topic: string, kb: KBLesson | null): string {
-  return [topic, kb?.titleAr ?? '', kb?.titleEn ?? ''].join(' ');
+  return [...new Set([topic, kb?.titleAr ?? '', kb?.titleEn ?? ''].filter(Boolean))].join(' ');
 }
 
 /**
