@@ -32,11 +32,21 @@ const sines: Partial<AIRequest> = { subject: 'Mathematics', topic: 'قانون �
 const req = (c: Partial<AIRequest>, extra: Partial<AIRequest> = {}) =>
   ({ grade: 'الصف العاشر', language: 'arabic', duration: 30, numQuestions: 6, difficulty: 'medium', ...c, ...extra }) as AIRequest;
 
-/** Every question a teacher reads, the worked example included. */
+/**
+ * Every question a teacher reads, the worked example included — without its
+ * answer space, as the generator's `questionStemKey` reads it. Compared whole,
+ * one item drawn once with writing lines under it and once without counted as
+ * two questions, and the notice test failed about once in 6000 regenerations.
+ */
+const stemKey = (t: string) =>
+  t
+    .replace(/\n\n(?:الإجابة المقترحة|Proposed answer|الإجابة|Answer|مساحة العمل|Work space):[\s\S]*$/u, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 const stems = (w: WorksheetOutput) => [
   ...(w.workedExample ? [w.workedExample.problem] : []),
   ...w.sections.flatMap(s => s.questions.map(q => q.text)),
-];
+].map(stemKey);
 const shared = (a: WorksheetOutput, b: WorksheetOutput) => stems(b).filter(t => stems(a).includes(t)).length;
 
 /** [name, generator, the average-repeat ceiling: just above the bank's floor, below the unfixed average]. */
