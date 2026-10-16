@@ -968,7 +968,26 @@ const standardForm = topic('line_standard', /^المعادله الخطيه با
   return { eq, answer: signed(yi), wrongs: num(yi, [-yi, xi, C, yi + 1].filter(v => v !== yi)), ar: `ما المقطع الصادي للمستقيم ${eq}؟`, en: `What is the y-intercept of ${eq}?` };
 });
 
+/** Grade 8: the slope through two points — and since 2026-10-16 a rate of change read as a slope, and a missing coordinate from a given slope. */
 const slope = topic('line_slope', /^ميل المستقيم$/, [8, 8], ({ rng, diff }) => {
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) {
+    const r = int(rng, 2, 12), dt = int(rng, 1, 4), t1 = int(rng, 6, 11 - dt), h1 = r * dt + int(rng, 5, 60), up = rng() < 0.5;
+    const h2 = up ? h1 + r * dt : h1 - r * dt, ans = up ? r : -r;
+    return {
+      eq: `(${t1} ، ${h1}) ، (${t1 + dt} ، ${h2})`, answer: signed(ans), wrongs: num(ans, [-ans, h2 - h1, Math.round(h2 / (t1 + dt)), ans + 1]),
+      ar: `كان ارتفاع الماء في خزان ${h1} سم عند الساعة ${t1} صباحًا، وأصبح ${h2} سم عند الساعة ${t1 + dt} صباحًا. ما معدّل التغيّر في ارتفاع الماء بالسنتيمتر لكل ساعة؟`,
+      en: `The water in a tank was ${h1} cm deep at ${t1} a.m. and ${h2} cm deep at ${t1 + dt} a.m. What is the rate of change of the depth, in cm per hour?`,
+    };
+  }
+  if (form === 2) {
+    const x1 = int(rng, -5, 5), y1 = int(rng, -5, 5), dx = nz(rng, 4), m = nz(rng, 4), x2 = x1 + dx, k = y1 + m * dx;
+    return {
+      eq: `${pair(x1, y1)} ، (${signed(x2)} ، k)`, answer: signed(k), wrongs: num(k, [m * dx, y1 - m * dx, y1 + m, -k]),
+      ar: `ما قيمة k التي تجعل ميل المستقيم المار بالنقطتين ${pair(x1, y1)} و (${signed(x2)} ، k) يساوي ${signed(m)}؟`,
+      en: `What value of k makes the slope of the line through ${pair(x1, y1)} and (${signed(x2)} ، k) equal to ${signed(m)}?`,
+    };
+  }
   for (;;) {
     const x1 = int(rng, -5, 5), y1 = int(rng, -5, 5), dx = nz(rng, span(diff) > 6 ? 6 : 4), dy = int(rng, -6, 6);
     if (dy === 0 && tier(diff) < 2) continue;
@@ -979,21 +998,55 @@ const slope = topic('line_slope', /^ميل المستقيم$/, [8, 8], ({ rng, d
   }
 });
 
+/** Grade 8: write y = mx + b from the slope and intercept, from two points, and (since 2026-10-16) from Ax + By = C. */
 const slopeIntercept = topic('line_slope_int', /^معادله المستقيم بصيغه الميل والمقطع$/, [8, 8], ({ rng, diff }) => {
   const m = nz(rng, 5), b = nz(rng, 9);
   const ans = `y = ${polyStr([b, m])}`;
-  if (tier(diff) < 2) {
+  const form = pick(rng, tier(diff) === 0 ? [0, 2] : [0, 1, 2]);
+  if (form === 2) {
+    const B = pick(rng, [1, 1, 2, 3]), A = -m * B, C = b * B;
+    const eq = lineEq(A, B, C);
+    return { eq, answer: ans, wrongs: wrongsFrom(ans, [`y = ${polyStr([b, -m])}`, `y = ${polyStr([C, -A])}`, `y = ${polyStr([-b, m])}`], k => `y = ${polyStr([b + Math.abs(k), m])}`), ar: `اكتب المعادلة ${eq} بصيغة الميل والمقطع.`, en: `Write ${eq} in slope-intercept form.` };
+  }
+  if (form === 0) {
     return { eq: ans, answer: ans, wrongs: wrongsFrom(ans, [`y = ${polyStr([m, b])}`, `y = ${polyStr([-b, m])}`, `y = ${polyStr([b, -m])}`], k => `y = ${polyStr([b + Math.abs(k), m])}`), ar: `اكتب معادلة المستقيم الذي ميله ${signed(m)} ويقطع المحور y عند ${signed(b)}.`, en: `Write the equation of the line with slope ${signed(m)} and y-intercept ${signed(b)}.` };
   }
   const x1 = int(rng, -3, 3), y1 = m * x1 + b, x2 = x1 + int(rng, 1, 3), y2 = m * x2 + b;
   return { eq: ans, answer: ans, wrongs: wrongsFrom(ans, [`y = ${polyStr([m, b])}`, `y = ${polyStr([y1, m])}`, `y = ${polyStr([b, -m])}`], k => `y = ${polyStr([b + Math.abs(k), m])}`), ar: `اكتب معادلة المستقيم المار بالنقطتين ${pair(x1, y1)} و ${pair(x2, y2)} بصيغة الميل والمقطع.`, en: `Write the equation of the line through ${pair(x1, y1)} and ${pair(x2, y2)} in slope-intercept form.` };
 });
 
+/** «y − 3 = 2(x + 1)» — point-slope form through (x1, y1). */
+const sideStr = (v: string, k: number) => `${v} ${k < 0 ? '+' : '−'} ${Math.abs(k)}`;
+const psForm = (m: number, x1: number, y1: number) => `${sideStr('y', y1)} = ${m < 0 ? `(${signed(m)})` : String(m)}(${sideStr('x', x1)})`;
+
+/** Grade 8: point-slope form from a slope and a point, from two points, and (since 2026-10-16) rewritten as y = mx + b. */
 const pointSlope = topic('line_point_slope', /^معادله المستقيم بصيغه الميل ونقطه$/, [8, 8], ({ rng }) => {
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) {
+    const m = nz(rng, 4), x1 = nz(rng, 7), y1 = nz(rng, 7), dx = nz(rng, 3), x2 = x1 + dx, y2 = y1 + m * dx;
+    const ans = psForm(m, x1, y1);
+    // a candidate through a point of the line with the line's slope would be a second right answer
+    const sameLine = (mm: number, px: number, py: number) => mm === m && py - y1 === m * (px - x1);
+    const cands = ([[-m, x1, y1], [m, -x1, -y1], [m, x2, y1], [m, x1, y2]] as Array<[number, number, number]>)
+      .filter(([mm, px, py]) => px !== 0 && py !== 0 && !sameLine(mm, px, py)).map(([mm, px, py]) => psForm(mm, px, py));
+    return {
+      eq: ans, answer: ans, wrongs: wrongsFrom(ans, cands, k => psForm(m + Math.abs(k), x1, y1)),
+      ar: `اكتب بصيغة الميل ونقطة معادلة المستقيم المار بالنقطتين ${pair(x1, y1)} و ${pair(x2, y2)}، مستعملًا النقطة ${pair(x1, y1)}.`,
+      en: `Write, in point-slope form using ${pair(x1, y1)}, the equation of the line through ${pair(x1, y1)} and ${pair(x2, y2)}.`,
+    };
+  }
   const m = nz(rng, 6), x1 = nz(rng, 7), y1 = nz(rng, 7);
+  if (form === 2) {
+    const ps = psForm(m, x1, y1), b = y1 - m * x1;
+    const ans = `y = ${polyStr([b, m])}`;
+    return {
+      eq: ps, answer: ans, wrongs: wrongsFrom(ans, [`y = ${polyStr([y1 + m * x1, m])}`, `y = ${polyStr([m * x1 - y1, m])}`, `y = ${polyStr([y1 - x1, m])}`, `y = ${polyStr([b, -m])}`], k => `y = ${polyStr([b + Math.abs(k), m])}`),
+      ar: `اكتب المعادلة ${ps} بصيغة الميل والمقطع.`, en: `Write ${ps} in slope-intercept form.`,
+    };
+  }
   // with m = −1 the swapped-coordinates distractor is the same line
   if (m === -1) return pointSlope.make({ rng, diff: 'easy', grade: 8 });
-  const side = (v: string, k: number) => `${v} ${k < 0 ? '+' : '−'} ${Math.abs(k)}`;
+  const side = sideStr;
   const mm = m < 0 ? `(${signed(m)})` : String(m);
   const ans = `${side('y', y1)} = ${mm}(${side('x', x1)})`;
   return {
