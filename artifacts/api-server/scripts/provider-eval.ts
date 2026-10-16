@@ -21,7 +21,7 @@
  *     not evidence.
  *
  * Run:
- *   OPENAI_API_KEY=... ANTHROPIC_API_KEY=... DEEPSEEK_API_KEY=... \
+ *   OPENAI_API_KEY=... ANTHROPIC_API_KEY=... DEEPSEEK_API_KEY=... GEMINI_API_KEY=... \
  *     node --experimental-strip-types artifacts/api-server/scripts/provider-eval.ts
  *
  * Any provider whose key is absent is skipped, so this is usable with one key.
@@ -176,6 +176,7 @@ type Completion = { text: string; inputTokens: number; outputTokens: number };
 const openaiModel = process.env.OPENAI_EVAL_MODEL || "gpt-4o-mini";
 const anthropicModel = process.env.ANTHROPIC_EVAL_MODEL || "claude-opus-5";
 const deepseekModel = process.env.DEEPSEEK_EVAL_MODEL || "deepseek-chat";
+const geminiModel = process.env.GEMINI_EVAL_MODEL || "gemini-3.8-flash";
 const effort = process.env.ANTHROPIC_EVAL_EFFORT || "medium";
 
 // Standard short-context rates, developers.openai.com/api/docs/pricing,
@@ -264,6 +265,12 @@ function buildProviders(): Provider[] {
     out.push(openaiCompatible("deepseek", deepseekModel, process.env.DEEPSEEK_API_KEY,
       "https://api.deepseek.com", null));
   }
+  if (process.env.GEMINI_API_KEY) {
+    // Gemini serves an OpenAI-compatible API (ai.google.dev/gemini-api/docs/openai,
+    // checked 2026-10-16). Pricing null for the same reason as DeepSeek.
+    out.push(openaiCompatible("gemini", geminiModel, process.env.GEMINI_API_KEY,
+      "https://generativelanguage.googleapis.com/v1beta/openai/", null));
+  }
   return out;
 }
 
@@ -335,7 +342,7 @@ type ChatRow = {
 const providers = buildProviders();
 if (providers.length === 0) {
   console.error(
-    "No provider keys found. Set at least one of OPENAI_API_KEY, ANTHROPIC_API_KEY, DEEPSEEK_API_KEY.",
+    "No provider keys found. Set at least one of OPENAI_API_KEY, ANTHROPIC_API_KEY, DEEPSEEK_API_KEY, GEMINI_API_KEY.",
   );
   process.exit(1);
 }
