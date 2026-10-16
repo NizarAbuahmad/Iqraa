@@ -31,6 +31,7 @@ import {
   MAX_PROMPT_SLIDE_IMAGES,
   promptSlidesPromptAr,
   promptSlidesPromptEn,
+  sanitizeDeckStructure,
 } from "../lib/promptSlidesPrompt.ts";
 import { lessonTeachingPromptAr, lessonTeachingPromptEn } from "../lib/lessonTeachingPrompt.ts";
 import {
@@ -942,7 +943,9 @@ generateRouter.post('/generate/prompt-slides', async (req: AuthenticatedRequest,
       model: getPromptSlidesModel(),
       body, isAr, userId: req.user?.id,
     });
-    const finalized = await finalizePromptSlides(result.content, req.user?.id);
+    // `icon` and a chart `visual` are optional extras the model chose: keep the
+    // ones this app can draw and delete the rest, before anything reads the deck.
+    const finalized = sanitizeDeckStructure(await finalizePromptSlides(result.content, req.user?.id));
     // Quality bars we will not refuse a paid deck over, but do want to see —
     // a run of these in the logs means the prompt needs another pass.
     const shortfalls = deckShortfalls(finalized);
