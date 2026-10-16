@@ -20,6 +20,8 @@ import { resolveSurahParam } from '@/services/quranLinks';
 import { toArabicDigits } from '@/services/labFormat';
 import { LabFrame } from '@/components/lab/LabFrame';
 import { QuranGate } from '@/components/quran/QuranGate';
+import { QuranAudioNote, QuranListenButton } from '@/components/quran/QuranAudioControls';
+import { useQuranAudio } from '@/hooks/useQuranAudio';
 import type { TranslationKey } from '@/services/i18n';
 
 const LEVEL_LABEL: Record<HideLevel, TranslationKey> = {
@@ -61,6 +63,7 @@ function Memorize({ surah }: { surah: QuranSurah }) {
   const colors = useColors();
   const { t, lang, isRTL } = useLanguage();
   const { progress, loaded, rate } = useQuranProgress();
+  const audio = useQuranAudio();
   const [index, setIndex] = useState(0);
   const [level, setLevel] = useState<HideLevel>('every3');
   const [revealed, setRevealed] = useState<ReadonlySet<number>>(new Set());
@@ -75,6 +78,7 @@ function Memorize({ surah }: { surah: QuranSurah }) {
   const done = countMemorised(progress, surah.number, surah.ayahs.map(a => a.n));
 
   const goTo = (i: number) => {
+    audio.stop();
     setIndex(i);
     setRevealed(new Set());
     setRepeats(0);
@@ -124,9 +128,18 @@ function Memorize({ surah }: { surah: QuranSurah }) {
       </View>
 
       <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: TYPE.caption, textAlign: align }}>
-          {t('quranAyahsLabel')} {digits(ayah.n)} · {t(STATE_LABEL[state])}
-        </Text>
+        <View style={[styles.rowEnd, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: TYPE.caption, flex: 1, textAlign: align }}>
+            {t('quranAyahsLabel')} {digits(ayah.n)} · {t(STATE_LABEL[state])}
+          </Text>
+          {audio.visible ? (
+            <QuranListenButton
+              label={audio.playing ? t('quranStopAudio') : t('quranListen')}
+              active={audio.playing !== null}
+              onPress={() => (audio.playing ? audio.stop() : audio.playAyah(surah.number, ayah.n))}
+            />
+          ) : null}
+        </View>
         {/* Fixed row-reverse: the Quran reads right to left in every interface language. */}
         <View style={[styles.words, { flexDirection: 'row-reverse' }]}>
           {words.map((w, i) => {
@@ -159,6 +172,7 @@ function Memorize({ surah }: { surah: QuranSurah }) {
           </View>
         ) : null}
       </View>
+      {audio.visible ? <QuranAudioNote error={audio.error} /> : null}
 
       <View style={[styles.rowEnd, { flexDirection: isRTL ? 'row-reverse' : 'row', paddingHorizontal: 16 }]}>
         <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 14, flex: 1, textAlign: align }}>
