@@ -644,15 +644,21 @@ an announcement by default» below.
   repeats whole, with the notice only where a screen shows it. Live AI is
   unchanged (it has its own `avoid` / overlap check server-side). Tests:
   `quizRegenerateStems.test.ts`, `worksheetRegenerateStems.test.ts`. Not looked
-  at in a browser. **Known flake (checked 2026-10-15):**
-  `worksheetRegenerateStems.test.ts` fails about 1 run in 10 (3 of 30 isolated
-  runs on this branch, and it has failed in CI): "the notice counts exactly the
-  questions that repeated" sees `repeated: { count: 1, of: 6 }` where its own
-  count is 0. The test compares raw `q.text`; the generator judges repeats by
-  `questionStemKey`, which strips the answer-space padding, so two questions
-  that differ only in that padding repeat to one and not to the other (read
-  from the code, not isolated). Not fixed; a red run of that one file is not a
-  regression — re-run it.
+  at in a browser. **Flake, seen 2026-10-15 and not reproducible since** (checked
+  2026-10-16 on `main` at 40dec336): `worksheetRegenerateStems.test.ts` failed about 1 run
+  in 10 (3 of 30 and 3 of 40 isolated runs, and once in CI): "the notice counts
+  exactly the questions that repeated" saw `repeated: { count: 1, of: 6 }` where
+  its own count was 0. On 40dec336 it passed 100 of 100 runs of the file, and a
+  probe of 6,000 worksheet and homework regenerations (maths and chemistry)
+  found no case where the notice and a raw-text count disagree. So the cause was
+  not isolated, and no test change was made. Between the two checks #1083 made
+  `questionStemKey` also strip the proposed-answer line, which may be why it
+  went away (not confirmed). The test
+  still counts repeats on raw `q.text` while the generator uses
+  `questionStemKey`, so if it comes back, look there first: two questions that
+  differ only in their answer-space padding or proposed-answer line would count
+  as a repeat for one and not the other. A red run of that one file is still
+  worth one re-run before it is treated as a regression.
 - **Lesson plan «أعد التجهيز»: what changed, and what it cannot (2026-10-14).**
   Measured over 30 regenerations (maths, chemistry, Arabic × direct,
   collaborative): the offline plan has ONE phrasing for five of its eight
