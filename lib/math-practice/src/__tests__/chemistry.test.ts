@@ -223,6 +223,32 @@ describe('detectChemFamily', () => {
     assert.equal(detectChemFamily('عدد أفوجادرو'), 'mole');
   });
 
+  // Found 2026-10-16, from the teacher review sheet's routing table: «التوزيع الإلكتروني للذرات»
+  // (Aufbau, Hund's rule) was answered with periodic-trends questions because its key terms list
+  // «طاقة التأين», one of periodic_trends' words, and that family is tested first. Text is the
+  // two neighbouring lessons' own, from `lessonTextBlob`.
+  it('the electron-configuration lesson is not taken by periodic trends for listing «طاقة التأين»', () => {
+    const electronConfigLessonBlob = [
+      'التوزيع الإلكتروني للذرات Electronic Configuration',
+      'أكتب التوزيع الإلكتروني لمجموعة من العناصر وأيوناتها. أحدد الصفات المميزة للعناصر بحسب توزيعها.',
+      'أوضح العلاقة بين موقع العنصر وخصائصه وصفاته.',
+      'مبدأ أوفباو قاعدة هوند العناصر الممثلة العناصر الانتقالية طاقة التأين',
+      "Aufbau Principle Hund's Rule The Representative Elements Transition Elements Ionization Energy",
+    ].join(' ');
+    assert.equal(detectChemFamily(electronConfigLessonBlob), 'electron_config');
+  });
+
+  it('the periodic-properties lesson itself is still periodic trends', () => {
+    const periodicLessonBlob = [
+      'الخصائص الدورية للعناصر Periodic Properties of the Elements',
+      'أتنبأ بدورية الصفات لعناصر الدورة والمجموعة في الجدول الدوري.',
+      'نصف القطر الذري شحنة النواة الفعالة طاقة التأين السالبية الكهربائية',
+      'Atomic Radius Effective Nuclear Charge Ionization Energy Electronegativity',
+    ].join(' ');
+    assert.equal(detectChemFamily(periodicLessonBlob), 'periodic_trends');
+    assert.equal(detectChemFamily('الخصائص الدورية للعناصر'), 'periodic_trends');
+  });
+
   it('the electrolysis lesson itself is still redox', () => {
     assert.equal(detectChemFamily('خلايا التحليل الكهربائي'), 'redox');
     assert.equal(detectChemFamily('التأكسد والاختزال والخلايا الجلفانية أُنبوب التفريغ'), 'redox');
@@ -237,6 +263,50 @@ describe('detectChemFamily', () => {
       'أحسب المردود المئوي للتفاعل.',
     ].join(' ');
     assert.equal(detectChemFamily(stoichiometryLessonBlob), 'stoichiometry');
+  });
+
+  // A topic a teacher TYPES has no lesson text behind it, so the whole decision is made by the
+  // few words typed. Each case below was measured on 2026-10-16 (a probe of ~150 typed topics);
+  // the first group went to the WRONG family, the rest to general chemistry although the
+  // curriculum has a family for them.
+  it('does not read «قاعدة» (a rule) as «قاعدة» (a base)', () => {
+    assert.equal(detectChemFamily('قاعدة هوند'), 'electron_config');
+    assert.equal(detectChemFamily('قاعدة الثمانية'), 'bonding');
+    assert.equal(detectChemFamily('مبدأ أوفباو'), 'electron_config');
+    assert.equal(detectChemFamily('مبدأ باولي للاستبعاد'), 'electron_config');
+    assert.equal(detectChemFamily('Aufbau principle'), 'electron_config');
+    // …and the real base still is one.
+    assert.equal(detectChemFamily('القواعد وخصائصها'), 'acids_bases');
+    assert.equal(detectChemFamily('قاعدة قوية وقاعدة ضعيفة'), 'acids_bases');
+  });
+
+  it('does not take «الكمية» (quantity) for quantum theory', () => {
+    assert.equal(detectChemFamily('الكمية'), 'general_chem');
+    assert.equal(detectChemFamily('كمية المادة'), 'mole');
+    // The quantum vocabulary is still atomic structure.
+    assert.equal(detectChemFamily('الأعداد الكمية'), 'atomic_structure');
+    assert.equal(detectChemFamily('نظرية الكم'), 'atomic_structure');
+    assert.equal(detectChemFamily('نموذج بور'), 'atomic_structure');
+    assert.equal(detectChemFamily('الأطياف الذرية'), 'atomic_structure');
+  });
+
+  it('recognises the plural and inflected forms of curriculum vocabulary', () => {
+    assert.equal(detectChemFamily('المعادلات الكيميائية'), 'equations');
+    assert.equal(detectChemFamily('قانون حفظ الكتلة'), 'equations');
+    assert.equal(detectChemFamily('الخلايا الكهروكيميائية'), 'redox');
+    assert.equal(detectChemFamily('الرقم الهيدروجيني'), 'acids_bases');
+    assert.equal(detectChemFamily('تراكيب لويس'), 'bonding');
+    assert.equal(detectChemFamily('المتفاعل المحدد'), 'stoichiometry');
+    assert.equal(detectChemFamily('النسب المولية'), 'stoichiometry');
+    assert.equal(detectChemFamily('حجم الغاز المولي'), 'mole');
+    assert.equal(detectChemFamily('التفاعلات الطاردة والماصة للحرارة'), 'thermochem');
+    assert.equal(detectChemFamily('كمية الحرارة'), 'calorimetry');
+  });
+
+  it('leaves an unrelated typed topic in general chemistry', () => {
+    for (const t of ['الاتزان الكيميائي', 'سرعة التفاعل', 'المحاليل', 'الغازات', 'الكيمياء العضوية', 'الكثافة']) {
+      assert.equal(detectChemFamily(t), 'general_chem', t);
+    }
   });
 });
 

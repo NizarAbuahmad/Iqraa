@@ -39,3 +39,16 @@ export function workingProvenance(out: Pick<WorksheetOutput, 'workedExample' | '
     needsAiNote: example === 'ai' || unreviewedKeyLines > 0,
   };
 }
+
+/**
+ * The one sentence every teacher-side surface uses for the printed/exported key
+ * (print, text, slides) and the class deck's teacher panel, so the wording
+ * cannot drift between them. The on-screen row has its own string
+ * (`workingUnreviewed`) because it also says "before handing out" to a reader
+ * who has not yet printed anything.
+ */
+export function keyWorkingNote(isAr: boolean): string {
+  return isAr
+    ? 'خطوات الحل في هذا المفتاح وُلِّدت بالذكاء الاصطناعي ولم يراجعها أحد — راجعها قبل التوزيع.'
+    : 'The working in this key was written by AI and nobody has reviewed it. Check it before handing out.';
+}

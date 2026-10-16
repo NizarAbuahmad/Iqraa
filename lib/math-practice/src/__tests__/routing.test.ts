@@ -57,6 +57,16 @@ describe('primary lessons: the ops come from the title', () => {
     it(`refuses «${title}»`, () => assert.equal(ops(title), '-'));
   }
 
+  // The app routes on `lessonTitleBlob(topic, kb)`, and the topic is usually the
+  // lesson's own title — so the blob held the title twice, and a pattern could match
+  // across the seam: «…والقسمة الكسور والقسمة» read as dividing fractions (2026-10-16).
+  it('refuses the same lessons when the title reaches it twice, as it does from a lesson', () => {
+    for (const title of refused) {
+      const kb = { id: 'x', titleAr: title, titleEn: '', objectives: [], keyConceptsAr: [], keyConceptsEn: [] };
+      assert.equal(ops(lessonTitleBlob(title, kb)), '-', title);
+    }
+  });
+
   it('takeElementaryMath gives a refused lesson no items at all', () => {
     assert.equal(takeElementaryMath('multiple_choice', 'أضلاع الأشكال المستوية', null, 1, 'easy', 'ar', 1, new Set()), null);
   });
