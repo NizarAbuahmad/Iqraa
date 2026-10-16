@@ -105,8 +105,30 @@ an announcement by default» below.
   system by substitution (that its points solve both equations and that none is
   missing), recomputes the solution counts and the tangent k, and pins all seven
   at three kinds or more; the generators' new answers are recomputed from the
-  printed stem in `geometry.test.ts` / `stats.test.ts`. Other lessons — most of
-  grades 1–9 — still ask one kind (~68% one sentence on those quizzes).
+  printed stem in `geometry.test.ts` / `stats.test.ts`.
+  **Every grade 1–9 maths lesson the offline generators serve now asks three
+  kinds or more (2026-10-16).** Of 414 served lessons, 302 could ask only one or
+  two — «أوجد ناتج: 2 × 6» with new numbers, ten times. Each generator in
+  `lib/math-practice` (`early`, `elementary`, `topics`, `algebra`, `geometry`,
+  `stats`, `proportion`) was given the kinds its lessons' NCCD outcomes list: a
+  missing number, a word problem, the inverse question, «which of these…» (options
+  written into the stem, so it still works as short answer), boundary rounding,
+  a number-line description, and so on. On 10-question offline papers across the
+  413 served lessons: kinds per paper 2.46 → 4.88, the commonest sentence 69% →
+  31% of a paper, lessons under three kinds 302 → 0. Every new kind's answer is
+  computed from the stem and recomputed from the printed Arabic in that
+  generator's test; `mathLessonKinds.test.ts` (mobile, through
+  `takeElementaryMath`) pins every served lesson at three. Number–noun agreement
+  goes through `tamyiz` / `dinars` (`topicKit.ts`) and `tamyiz.test.ts` reads
+  every generator's stems for it («18 تذكرةً», «300 دينار»). Found on the way:
+  `lessonTitleBlob` joined a title to itself when the KB title matched, and the
+  seam «…والقسمة الكسور والقسمة» routed Grade 3 «الكسور والقسمة» to a
+  generator; it is refused again (`routing.test.ts`). Still open: a kind that
+  differs from another only in where the unknown sits («2/3 = ؟/12» vs
+  «2/3 = 8/؟») has the same `stemFrame`, so it needs different words to count;
+  and some kinds come in several sentences (one per operation), which
+  `makeTopicItem` serves first as "least used" — algebra weights those down
+  (`wpick`), the other generators do not yet.
 
 - **Lesson plan, slides, activity, lesson-flow and the classroom builder take a
   unit, semester or whole book — as one revision session (2026-10-14; spec
@@ -553,7 +575,7 @@ an announcement by default» below.
   **Found while measuring:** the Grade 9 lesson «مكوِّناتُ الذرَّةِ» routed to
   `redox`, not `atom_basics` (fixed the same day, see the entry after next). The other
   13 families followed the same day (next entry).
-- **All 14 chemistry families now hold 15 or more items (2026-10-15).** The 13 that
+- **All chemistry families now hold 15 or more items (2026-10-15).** The 13 that
   were still 4–7 each got 128 more (easy ≥5, medium ≥6, hard ≥4 per family:
   atom_basics, atomic_structure, electron_config, bonding, formulas, equations, mole,
   stoichiometry, thermochem, acids_bases, metal_activity, redox, general_chem), so a
@@ -581,13 +603,25 @@ an announcement by default» below.
   `طاقة.*تفاعل` spanned two sentences — now bounded to one; «تغيرات الطاقة في التفاعلات
   الكيميائية» (Grade 10) went to `mole` because the substring `المول` matched
   «الطاقة **المول**ية» — now the whole word (or «المولات»); «الطاقة الممتصة والطاقة
-  المنبعثة من المادة» (Grade 10) fell to `general_chem` — calorimetry words
-  (السعة الحرارية، الحرارة النوعية، المسعر) now route it to `thermochem`. Compared before
-  and after: only those four changed, the other 21 are identical. **Not checked:** the
-  heat-capacity lesson now gets thermochemistry questions, of which only two items
-  (`q = m·c·ΔT`) fit it closely — it has no bank of its own, so a long quiz there is
-  mostly enthalpy and exo/endothermic questions. Typed topics that are not catalogue
+  المنبعثة من المادة» (Grade 10) fell to `general_chem` — it now has its own `calorimetry`
+  family (next entry). Compared before and after: only those four changed, the other 21
+  are identical. **Not checked:** Typed topics that are not catalogue
   lessons were not re-measured beyond the title cases in `chemistry.test.ts`.
+- **The heat-capacity lesson has its own question family (2026-10-15).** «الطاقة الممتصة
+  والطاقة المنبعثة من المادة» (Grade 10) is a heat-capacity and calorimeter lesson, but
+  the nearest bank, `thermochem`, is enthalpy and exo/endothermic questions with only two
+  `q = m·c·ΔT` items. `calorimetry` is a 15th chemistry family (15 items: easy 5, medium
+  6, hard 4; specific heat against heat capacity and their units, the calorimeter,
+  `q = m·c·ΔT` forwards and backwards, heat lost = heat gained, mixing two water samples,
+  energy per gram of fuel), each with worked steps. السعة الحرارية، الحرارة النوعية،
+  المسعر (and the English words) route to it ahead of `thermochem`; of the 25 lessons only
+  this one changed route («حسابات الطاقة في التفاعلات الكيميائية» stays `thermochem`). A
+  15-question quiz on the lesson returns 15 distinct questions. An independent read of the
+  items found two real flaws (an item that did not say to ignore the calorimeter's own
+  heat; a vague step), both fixed. `chemistryBankDepth.test.ts` recomputes the numeric
+  answers. **Not checked:** the items follow the lesson's stated objectives, not the
+  textbook's own worked examples; no chemistry teacher has read them; they say nothing
+  about the lesson's lab.
 - **Quiz «أعد التجهيز» now changes the questions, and says when it cannot**
   (2026-10-13). The offline regenerate only checked that the whole quiz JSON
   differed from the last one, so the same stems in another order — or with the
@@ -610,15 +644,21 @@ an announcement by default» below.
   repeats whole, with the notice only where a screen shows it. Live AI is
   unchanged (it has its own `avoid` / overlap check server-side). Tests:
   `quizRegenerateStems.test.ts`, `worksheetRegenerateStems.test.ts`. Not looked
-  at in a browser. **Known flake (checked 2026-10-15):**
-  `worksheetRegenerateStems.test.ts` fails about 1 run in 10 (3 of 30 isolated
-  runs on this branch, and it has failed in CI): "the notice counts exactly the
-  questions that repeated" sees `repeated: { count: 1, of: 6 }` where its own
-  count is 0. The test compares raw `q.text`; the generator judges repeats by
-  `questionStemKey`, which strips the answer-space padding, so two questions
-  that differ only in that padding repeat to one and not to the other (read
-  from the code, not isolated). Not fixed; a red run of that one file is not a
-  regression — re-run it.
+  at in a browser. **Flake, seen 2026-10-15 and not reproducible since** (checked
+  2026-10-16 on `main` at 40dec336): `worksheetRegenerateStems.test.ts` failed about 1 run
+  in 10 (3 of 30 and 3 of 40 isolated runs, and once in CI): "the notice counts
+  exactly the questions that repeated" saw `repeated: { count: 1, of: 6 }` where
+  its own count was 0. On 40dec336 it passed 100 of 100 runs of the file, and a
+  probe of 6,000 worksheet and homework regenerations (maths and chemistry)
+  found no case where the notice and a raw-text count disagree. So the cause was
+  not isolated, and no test change was made. Between the two checks #1083 made
+  `questionStemKey` also strip the proposed-answer line, which may be why it
+  went away (not confirmed). The test
+  still counts repeats on raw `q.text` while the generator uses
+  `questionStemKey`, so if it comes back, look there first: two questions that
+  differ only in their answer-space padding or proposed-answer line would count
+  as a repeat for one and not the other. A red run of that one file is still
+  worth one re-run before it is treated as a regression.
 - **Lesson plan «أعد التجهيز»: what changed, and what it cannot (2026-10-14).**
   Measured over 30 regenerations (maths, chemistry, Arabic × direct,
   collaborative): the offline plan has ONE phrasing for five of its eight
@@ -1490,12 +1530,12 @@ out to be, and what changed:
 
 ## Real book items on the live model path, behind `BOOK_ITEMS_LIVE`, 2026-10-12
 
-The 30 served book items (see the next section) now also reach evaluations the
+The 33 served book items (see the next section) now also reach evaluations the
 model writes, not just the mock generator's. **Off by default**: nothing changes
 in production until `BOOK_ITEMS_LIVE=true` is set on iqraa-api (exactly `"true"`,
 read per request, so no rebuild; declared in `LOCAL_SETUP.md` and
 `docs/deploying.md`), and that should wait until a person has compared the
-25 `computed` served items with the printed books (the 5 `verified` ones were
+28 `computed` served items with the printed books (the 5 `verified` ones were
 cross-checked against the book's own printed answers; see the next section). Design:
 `docs/superpowers/specs/2026-10-12-book-items-live-path-design.md`.
 
@@ -1589,7 +1629,7 @@ cross-checked against the book's own printed answers; see the next section). Des
 - **Still not covered:** the mobile offline quiz/exam generators and
   `routes/generate.ts` (worksheets, quizzes).
 
-## Real book items in the mock evaluation generator: 30 served, 5 verified, 2026-10-12
+## Real book items in the mock evaluation generator: 33 served, 5 verified, 2026-10-12
 
 A Grade 10 maths evaluation used to be built from generated templates only.
 It now also draws **real NCCD items** — exercise-book questions and the teacher
@@ -1598,7 +1638,8 @@ guide's end-of-unit test — for the objective's own lesson. Reader:
 `scripts/extract_book_items.py`. Design:
 `docs/superpowers/specs/2026-10-12-book-items-design.md`; the guide-page-47
 slice (items 6-11, the first `verified` ones):
-`docs/superpowers/specs/2026-10-12-book-items-unit-test-open-design.md`.
+`docs/superpowers/specs/2026-10-12-book-items-unit-test-open-design.md`; and items 3-5 (written readings,
+2026-10-15): `docs/superpowers/specs/2026-10-15-book-items-unit-test-exp-design.md`.
 
 - **Mock path only until the section above.** `generateMockEvaluation` has one
   caller, the non-live `else` branch of `POST /evaluations/:id/generate`
@@ -1607,12 +1648,12 @@ slice (items 6-11, the first `verified` ones):
   items** unless `BOOK_ITEMS_LIVE=true` is set (off by default; the live model
   path then draws the same items). The mobile offline quiz/exam generators do not
   use them.
-- **What is in it.** 30 served items (`report.json` counts: 25 `computed`, 5
+- **What is in it.** 33 served items (`report.json` counts: 28 `computed`, 5
   `verified`): systems of equations (S1 unit 1, two lessons), polynomial
-  derivatives (S2 unit 6), the unit-test choices 1-2 and the unit-test open
+  derivatives (S2 unit 6), the unit-test choices 1-5 and the unit-test open
   questions 6-11 (guide p.47). 14 more were quarantined, each with its reason in
   `report.json` (no real solution, an exponent the text layer made ambiguous, a
-  fraction split across lines); that list is unchanged by the p.47 slice.
+  fraction split across lines); that list is unchanged by the p.47 slices.
 - **The new kind `unit-test`** is an open question from the end-of-unit test. It
   cites as the test («اختبار نهاية الوحدة ١، س ٦»), not as the exercise book, and
   is drawn wherever a paper wants a short answer, from the union with `exercise`
@@ -1641,6 +1682,42 @@ slice (items 6-11, the first `verified` ones):
   `verified` book item still carries `check: null`, so it does not reach the
   verification pass and earns no «تم التحقق» badge; the teacher sees its citation
   and no key label.
+- **Choices 3-5 are served from a written reading, not a rule (2026-10-15).**
+  Their maths is what the text layer destroys: `3 5x × 9y = 27` is
+  3^(5x) × 9^y = 27, `42-x` is 4^(2-x), `x4y` is x⁴y, and where the fraction bar
+  was is not recoverable by any pattern, so the normaliser rejects all three. The
+  extractor has a small hand-written table (`READINGS`) giving each item's stem
+  and options with that structure added, and **trusts none of it**. A reading is
+  accepted only if (1) it has exactly the page's characters — whitespace and the
+  structure characters `^ ( ) /` removed from both sides they must be
+  identical, so no digit, letter or operator (`×` included) can be added, dropped,
+  changed or moved — and each of the page's own bracket pairs stays as the page
+  has it (same two places, matched to each other), and (2) exactly one
+  option is correct under it (SymPy). Failing either quarantines the item
+  (`reading_changes_characters`, `reading_moves_brackets`, `key_not_unique`);
+  nothing falls back to a looser reading. Item 3 (two exponential equations,
+  options are points; key (1, -1)) and item 4 (which exponential equation has
+  x = -1 as a solution; key d, `4^(2-x) = 64`) join lesson `u1_l4`; item 5 (what
+  goes in the empty square of 8x²y³ / □ = (2y/x)²; key `2x⁴y`) joins `u1_l3`. All three are
+  `unit-test-mcq`, `computed`, no `check`, labelled «الحل محسوب من نص السؤال»: the answers
+  for choices 1-5 are in the answer appendix, which is not extracted, so none can
+  be `verified`.
+  **What is evidence and what is not.** `RivalReadings` in
+  `scripts/test_extract_book_items.py` enumerates the other ways to place
+  exponents over the page's characters (up to two groups per equation, the page's
+  brackets fixed) and requires that every rival which still leaves one correct
+  option leaves the same one — which they do (item 3: (1, -1); item 4: d; item 5:
+  2x⁴y). Writing that test found a real gap: `(2y/x²)` has the same characters
+  as `(2y/x)²`, one unique key, and a different one (option b), so the
+  unique-key gate alone would have served a wrong answer; the bracket rule exists
+  because of it. An independent review then found two ways round the first
+  version of the gates, both closed and pinned: `core()` ignored the page's `×`, so
+  `3^(5x) / 9^y` passed and served (1, 1) for item 3; and the bracket rule matched
+  positions but not pairing, so `(2y/(x)^2)` passed and served option b for item 5. That is still evidence about the layout, not a look at the page:
+  **a person should compare these three with the printed book**, item 5 first (its
+  layout, the bar and the position of the box, is the most inferred). Display:
+  `displayMath` turns `^2` into `²` but leaves `^(2x+1)` as written, so item 4's
+  options read `5^(2x+1) = 25` and item 3's stem reads `3^(5x) × 9^y = 27` (the page's `×`).
 - **Item 8 stays `computed`.** The guide prints `(0, 5), (2. 1)` for it; SymPy
   gives `(0, 5), (2, 1)`. `2. 1` is the decimal 2.1, not the point (2, 1), and no
   tolerance was added, because whether the printed page has a comma or a typo
@@ -1653,14 +1730,14 @@ slice (items 6-11, the first `verified` ones):
   regenerating. If the page prints `(2, 1)` the text layer
   dropped a comma and the item becomes `verified`; if it really prints `2.1` that
   is a typo in the book and the item stays `computed`.
-- **The 25 `computed` items are not cross-checked.** SymPy's answer is the only
-  one: the exercise-book systems and derivatives, unit-test choices 1-2 and
+- **The 28 `computed` items are not cross-checked.** SymPy's answer is the only
+  one: the exercise-book systems and derivatives, unit-test choices 1-5 and
   item 8. They are labelled to the teacher «الحل محسوب من نص السؤال» and carry no
   `check`, so they cannot earn the verified badge.
-- **No stem of the 25 `computed` items has been compared with a page image.**
+- **No stem of the 28 `computed` items has been compared with a page image.**
   The text layer flattens exponents (`24x3` is 24x³) and splits fractions, and
   the book PDFs are not in a fresh checkout. The extractor refuses anything
-  ambiguous rather than choosing a reading, but a person should read those 25
+  ambiguous rather than choosing a reading, but a person should read those 28
   against the books. The PR that introduced this lists them. Compare first
   `s1-exercise-book-u1l2-1`, `-2`, `-8` and `-10` (surd answers; the final review
   asked for them to be eyeballed). The 5 `verified` ones are the exception: each
@@ -1680,8 +1757,8 @@ slice (items 6-11, the first `verified` ones):
   competency breakdown is nominal for book questions.
 - **Not covered.** S1 unit 1's first lesson («حل معادلات خاصة») has no
   curriculum lesson, so its 18 exercises (15 of them equation items) cannot be joined; Arabic word problems;
-  figure items; chemistry (its teacher guides have no extracted text); the rest of guide p.47 (choices 3-5, whose exponents and fractions the text layer
-  flattens, item 12, an inequality, and the answer appendix its key points to).
+  figure items; chemistry (its teacher guides have no extracted text); the rest of guide p.47 (item 12, an inequality, and the answer appendix its key points to);
+  the unit test's later items on p.48.
 
 ## Math Corner: calculator, grapher, geometry sketchpad, unit converter and formula sheet in the library, 2026-10-12
 
@@ -2055,7 +2132,7 @@ both; `pnpm run typecheck` clean.
 
 ## Row-level security is built and switched off, 2026-10-13
 
-**State: off. No behaviour changes — but merging DOES run the migration in production** (`deploy.yml` migrates before the API ships): it creates the `iqraa_app` role, grants, and turns row-level security on for 28 tables. If the API's connection is the table owner, RLS does not apply to it (there is no `FORCE`) and nothing changes — **that is the assumption to verify: the role in Cloud Run's `DATABASE_URL` must own those tables.** It has not been checked: confirm it on a Neon branch before merging (`docs/superpowers/plans/2026-10-13-row-level-security.md`, Task 7 Step 0).
+**State: off, and the migration has shipped.** PR #1048 merged on 2026-10-14 and `deploy.yml` ran migration `0008` in production (run 38492809309, green): the `iqraa_app` role, grants, and row-level security on 28 tables now exist. Behaviour is unchanged only if the API's connection is the table owner (there is no `FORCE`, so an owner bypasses RLS) — **that is still unverified: the role in Cloud Run's `DATABASE_URL` must own those tables**, and nobody has run the ownership check. Nothing is enforced until `RLS_ENFORCE=on`, and nobody has rehearsed that on Neon or measured its latency. The steps, as a tick-list: [`docs/rls-rollout-checklist.md`](./docs/rls-rollout-checklist.md).
 **Both connection strings must name that same owner role:** the migration runs under GitHub's `secrets.DATABASE_URL` (`deploy.yml`, the `production migrations` job), while the API runs under Cloud Run's `DATABASE_URL`. The fifteen `SECURITY DEFINER` helpers are owned by the *migrating* role, and bypass RLS only if that role also owns the tables — if the two secrets name different roles, the helpers read as a role that is subject to the policies.
 
 The `iqraa_app` role, sixteen helper functions and 65 policies exist (migration `0008_row_level_security.sql`); the API
@@ -5211,10 +5288,31 @@ the model writes its own, so a teacher could take unchecked working for checked.
   removes the mark from every worksheet, homework and quiz question; the worked
   example was already whitelisted. Artifacts already in the pool were stored
   before this and are not rewritten.
-- Not covered: the shared text export, the slide export and the live class deck
-  carry the working but not the note. Seen in the browser with a stubbed
-  live-shaped response (no live key here), not on a device.
+- Seen in the browser with a stubbed live-shaped response (no live key here), not
+  on a device. (The text export, slide export and live class deck were left out
+  of this first change; they carry the note since 2026-10-16, below.)
 - Mobile 3861 pass / 0 fail / 10 skipped; api-server 1484 pass.
+
+### The other three surfaces carry the note too, 2026-10-16
+
+Live AI on Android was confirmed on 2026-10-16: the owner generated a worksheet
+in the Android app and the header badge said live. So Android teachers get
+model-written working, which the 165-solution review does not cover (it covers
+only the offline bank, i.e. the web build). The note is now on every surface
+that carries worksheet working, always on the teacher's side:
+
+- **Text export:** one «⚠» line under the answer-key heading, only when the key
+  has unreviewed working. Not on the student copy, not when the key is left out.
+- **Slide export (`buildWorksheetSlidesHTML`):** on the first key slide only.
+- **Live class deck (`buildDeckFromWorksheet`):** in the teacher panel, never on
+  the wall. A question whose working is unreviewed gets the line above «خطوات
+  الحل»; an AI-written worked example gets a teacher panel carrying it (a bank
+  example still gets no panel).
+- The sentence is `keyWorkingNote` in `services/worksheetWorking.ts`, shared with
+  the printed key, so the wording cannot drift. The on-screen row keeps its own
+  string (`workingUnreviewed`).
+- Not checked on a device. 16 new cases in `worksheetWorkingSurfaces.test.ts`,
+  written first and failing first. Mobile 5806 pass / 0 fail / 10 skipped.
 
 ## The English projector split an equation across two lines, 2026-10-05
 
