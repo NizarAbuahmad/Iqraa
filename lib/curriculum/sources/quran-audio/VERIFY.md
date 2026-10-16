@@ -4,9 +4,11 @@ Hand-written. (`../quran-ws/VERIFY.md` is the generated text sheet; this is sepa
 
 Nothing below has been done. The recordings have not been fetched, played or
 measured by anyone building this: the build sandbox cannot reach the source.
-`QURAN_AUDIO_UPLOADED` in `artifacts/mobile/services/quranAudioRelease.ts` stays
-`false` until every box is ticked, in the order below: upload, listen,
-device checks in a development build, and only then the flip.
+`QURAN_AUDIO_UPLOADED` in `artifacts/mobile/services/quranAudioRelease.ts` was
+flipped to `true` on 2026-10-16 at the owner's request, BEFORE any box below was
+ticked (see STATUS.md). The intended order was: upload, listen, device checks in a
+development build, and only then the flip; do the boxes now, and set the constant
+back to `false` if the recordings are not in the bucket.
 
 ## Before anything is uploaded
 

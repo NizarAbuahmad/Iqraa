@@ -2635,11 +2635,16 @@ native module, no `app.json` version bump). The key shape is
 `services/quranPlaylist.ts`; a flashcard word and a recitation are designed not to play together
 (`services/audioExclusive.ts`).
 
-- **The listen controls are hidden in production.** `QURAN_AUDIO_UPLOADED`
-  (`artifacts/mobile/services/quranAudioRelease.ts`) is `false`; `__DEV__` shows them.
-  Flip it only after the checklist in
-  `lib/curriculum/sources/quran-audio/VERIFY.md` is done, device checks (in a
-  development build, which shows the controls without changing the constant) first.
+- **The audio gate was opened on 2026-10-16, at the owner's request, before the
+  checklist was done.** `QURAN_AUDIO_UPLOADED`
+  (`artifacts/mobile/services/quranAudioRelease.ts`) is `true`, so once this reaches
+  `main` every signed-in user sees the listen controls (a merge deploys the web app and
+  an over-the-air update). When it was flipped `sources/quran-audio/MANIFEST.json` was
+  not in the repo, so the upload had not been committed: **if the recordings are not in
+  the bucket, each listen tap ends in the quiet "couldn't play" line.** The checklist in
+  `lib/curriculum/sources/quran-audio/VERIFY.md` (licence, upload, a reciter's
+  spot-check, device checks) is NOT done. To pull it back, set the constant to
+  `false`: a one-line change that ships over the air.
 - **No recording has been fetched, played or measured.** The build sandbox's proxy
   refuses the source host, so the script was unit-tested against a fake fetch and a
   fake bucket and has never touched the real source or the real bucket. Whether each
@@ -4312,6 +4317,49 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
 - When the worksheet screen is opened with a lesson, its unit dropdown still
   shows the placeholder (the documented gap in `TopicSelector.tsx`). The topic
   itself is held.
+## Four new slide layouts: timeline, stats, table, flow, 2026-10-18
+
+A deck had four shapes (a statement, one figure, a two-column comparison, numbered
+steps) and the rest was a stack of bullet cards. Four more, the ones the model can
+fill from text alone:
+
+- **`timeline`** — 3 to 6 events, each a short label (a date or stage) and one
+  sentence. Across on a wide screen, down the reading edge on a phone.
+- **`stats`** — 2 to 4 figures side by side, each with a caption.
+- **`table`** — 2 to 4 columns by 2 to 6 rows. The PowerPoint export is a REAL
+  table, so a teacher can edit a cell.
+- **`flow`** — 3 to 6 boxes joined by arrows; `cycle: true` adds «ثم تتكرر الدورة»
+  for a process that returns to its start (the water cycle). It is a caption, not
+  a drawn return arrow, which would cross the boxes.
+
+**Everything keys off one gate.** `resolveSlideLayout` (`services/slideLayout.ts`)
+decides whether a layout's data is good enough, and all three renderers ask it.
+It refuses the whole layout, never repairs it: a timeline with one event missing
+its date, a table row with too few or too many cells (padding would shift values
+under the wrong heading), a list over the limit. A refusal falls back to the
+slide's own words — `polishDeck` keeps the slide's one-sentence `content` and
+appends the payload as up to six bullets (`payloadLines`), so a refused layout is
+an ordinary list, never a blank slide. A layout on a question, challenge or
+divider is removed outright, because it would hide the options, the answer or the
+photo; the server does the same and leaves payload judgment to the app.
+
+**Sizes for the wall.** The layouts use `DECK_DISPLAY_TYPE` (deckTheme.ts) — type
+sized for a projector, deliberately outside the app's UI `TYPE` scale, which
+sizes a phone screen. Tables and timelines in the PDF read the document's own
+direction (flex rows and table cells); the arrow is mirrored in CSS, because the
+icon table has no direction. `arrow` and `refresh` are inline marks, not names a
+model may pick for a heading.
+
+**Verified by running, not just reading.** The PDF was rendered in both languages
+and looked at (centred timeline, one-row flow of five boxes). The PowerPoint
+exporter was run in Node with only the native modules stubbed and the files
+inspected: six slides, six speaker-notes pages, a real 4x3 table with the
+Arabic columns reversed onto the reading edge, the right arrow count, every XML
+part well-formed. **Not verified:** how the PowerPoint slides *look* (no
+PowerPoint or LibreOffice here), the presenter on a device, and a live model
+actually choosing these layouts sensibly — the prompt is untested against the
+real model. Not done: `quote`, two-column and a full-bleed image layout.
+
 ## The model chooses a deck's icons and charts, 2026-10-17
 
 Themes changed a deck's colour; every deck still had the same body. Two of the

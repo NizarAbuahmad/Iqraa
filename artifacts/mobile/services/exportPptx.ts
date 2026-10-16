@@ -404,6 +404,114 @@ export async function exportDeckAsPptx(
         continue;
       }
 
+      if (layout.kind === 'timeline') {
+        // Positions are absolute, so the reading order is applied here: in an
+        // Arabic deck the first event belongs on the right.
+        const n = layout.events.length;
+        const colW = 8.9 / n;
+        const railY = 2.0;
+        s.addShape('rect', {
+          x: 0.55, y: railY - 0.025, w: 8.9, h: 0.05, fill: { color: accent, transparency: 55 },
+        });
+        layout.events.forEach((ev, i) => {
+          const x = 0.55 + (isAr ? n - 1 - i : i) * colW;
+          s.addShape('ellipse', {
+            x: x + (colW - 0.3) / 2, y: railY - 0.15, w: 0.3, h: 0.3,
+            fill: { color: P.card }, line: { color: accent, width: 3 },
+          });
+          s.addText(ev.label, {
+            x: x + 0.05, y: railY + 0.3, w: colW - 0.1, h: 0.5, align: 'center', valign: 'middle',
+            fontSize: 20, bold: true, color: accent, fontFace: HEAD_FONT,
+          });
+          s.addText(ev.text, {
+            x: x + 0.05, y: railY + 0.85, w: colW - 0.1, h: 2.2, align: 'center', valign: 'top',
+            fontSize: n > 4 ? 12 : 14, color: P.text, fontFace: BODY_FONT,
+          });
+        });
+        continue;
+      }
+
+      if (layout.kind === 'stats') {
+        const n = layout.items.length;
+        const gap = 0.3;
+        const cardW = Math.min(2.9, (8.9 - gap * (n - 1)) / n);
+        const x0 = 0.55 + (8.9 - (cardW * n + gap * (n - 1))) / 2;
+        layout.items.forEach((it, i) => {
+          const x = x0 + (isAr ? n - 1 - i : i) * (cardW + gap);
+          s.addShape('roundRect', {
+            x, y: 1.5, w: cardW, h: 3.0,
+            fill: { color: P.card }, line: { color: P.border, width: 1 }, rectRadius: 0.2,
+          });
+          s.addText(it.value, {
+            x, y: 1.75, w: cardW, h: 1.3, align: 'center', valign: 'middle',
+            fontSize: n > 3 ? 36 : 44, bold: true, color: accent, fontFace: HEAD_FONT,
+          });
+          s.addText(it.label, {
+            x: x + 0.15, y: 3.1, w: cardW - 0.3, h: 1.2, align: 'center', valign: 'top',
+            fontSize: 14, color: P.text, fontFace: BODY_FONT,
+          });
+        });
+        continue;
+      }
+
+      if (layout.kind === 'table') {
+        // A real PowerPoint table — the teacher can edit a cell. It does not
+        // mirror for a right-to-left deck, so the first column is put on the
+        // reading edge by reversing each row here.
+        const inReadingOrder = (cells: string[]) => (isAr ? [...cells].reverse() : cells);
+        const cols = layout.headers.length;
+        const head = inReadingOrder(layout.headers).map(h => ({
+          text: h,
+          options: {
+            bold: true, color: 'FFFFFF', fill: { color: accent }, fontFace: HEAD_FONT, fontSize: 16,
+            align: rtlAlign, valign: 'middle' as const, rtlMode: isAr,
+          },
+        }));
+        const body = layout.rows.map((row, ri) => inReadingOrder(row).map(c => ({
+          text: c,
+          options: {
+            color: P.text, fill: { color: ri % 2 === 0 ? P.card : P.bg }, fontFace: BODY_FONT, fontSize: 14,
+            align: rtlAlign, valign: 'middle' as const, rtlMode: isAr,
+          },
+        })));
+        s.addTable([head, ...body], {
+          x: 0.55, y: 1.3, w: 8.9, colW: Array(cols).fill(8.9 / cols), rowH: 0.5,
+          border: { type: 'solid', pt: 1, color: P.border },
+        });
+        continue;
+      }
+
+      if (layout.kind === 'flow') {
+        const n = layout.nodes.length;
+        const arrowW = 0.4;
+        const pad = 0.08;
+        const nodeW = (8.9 - (n - 1) * (arrowW + 2 * pad)) / n;
+        const y = 2.1;
+        layout.nodes.forEach((node, i) => {
+          const x = 0.55 + (isAr ? n - 1 - i : i) * (nodeW + arrowW + 2 * pad);
+          s.addShape('roundRect', {
+            x, y, w: nodeW, h: 1.4, fill: { color: P.card }, line: { color: accent, width: 2.25 }, rectRadius: 0.15,
+          });
+          s.addText(node, {
+            x: x + 0.05, y, w: nodeW - 0.1, h: 1.4, align: 'center', valign: 'middle',
+            fontSize: n > 4 ? 12 : 15, bold: true, color: P.text, fontFace: HEAD_FONT,
+          });
+          if (i < n - 1) {
+            s.addShape(isAr ? 'leftArrow' : 'rightArrow', {
+              x: isAr ? x - pad - arrowW : x + nodeW + pad, y: y + 0.45, w: arrowW, h: 0.5,
+              fill: { color: accent }, line: { color: accent },
+            });
+          }
+        });
+        if (layout.cycle) {
+          s.addText(`\u21BB  ${L('ثم تتكرر الدورة', 'then the cycle repeats')}`, {
+            x: 2.5, y: 3.9, w: 5.0, h: 0.5, align: 'center', valign: 'middle',
+            fontSize: 16, bold: true, color: accent, fontFace: HEAD_FONT,
+          });
+        }
+        continue;
+      }
+
       // steps
       const STEP_TOP = 1.15;
       const STEP_GAP = 0.12;

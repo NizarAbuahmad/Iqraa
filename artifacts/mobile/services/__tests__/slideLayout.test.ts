@@ -16,6 +16,7 @@ import assert from 'node:assert/strict';
 
 import { resolveSlideLayout, SLIDE_LAYOUTS } from '../slideLayout.ts';
 import type { ActivitySlide } from '../ai/AIService.ts';
+import { payloadLines, MAX_FLOW_NODES, MAX_STATS, MAX_TABLE_ROWS, MAX_TIMELINE_EVENTS } from '../slideLayout.ts';
 
 const slide = (over: Partial<ActivitySlide> = {}): ActivitySlide => ({
   slideNumber: 1, type: 'intro', title: 'عنوان', content: '', durationSeconds: 0, ...over,
@@ -154,6 +155,13 @@ describe('SLIDE_LAYOUTS', () => {
         compare: { leftTitle: 'أ', left: ['١'], rightTitle: 'ب', right: ['٢'] },
       }),
       steps: slide({ layout: 'steps', content: '• أ\n• ب' }),
+      timeline: slide({
+        layout: 'timeline',
+        timeline: [{ label: '١', text: 'أ' }, { label: '٢', text: 'ب' }, { label: '٣', text: 'ج' }],
+      }),
+      stats: slide({ layout: 'stats', stats: [{ value: '٣', label: 'أ' }, { value: '٤', label: 'ب' }] }),
+      table: slide({ layout: 'table', table: { headers: ['أ', 'ب'], rows: [['١', '٢'], ['٣', '٤']] } }),
+      flow: slide({ layout: 'flow', flow: { steps: ['أ', 'ب', 'ج'] } }),
     };
     for (const name of SLIDE_LAYOUTS) {
       assert.equal(resolveSlideLayout(samples[name])?.kind, name, `${name} should resolve`);
@@ -199,5 +207,141 @@ describe('inlineSteps', () => {
 
   it('refuses a step with nothing in it', () => {
     assert.equal(inlineSteps('1) اقرأ 2)  3) تحقّق'), null);
+  });
+});
+
+describe('timeline', () => {
+  const ev = (n: number) => Array.from({ length: n }, (_, i) => ({ label: `١٩٠${i}`, text: `حدث ${i + 1}` }));
+
+  it('takes three to six events with a label and a description each', () => {
+    const out = resolveSlideLayout(slide({ layout: 'timeline', timeline: ev(4) }));
+    assert.equal(out?.kind, 'timeline');
+    assert.equal(out && out.kind === 'timeline' ? out.events.length : 0, 4);
+  });
+
+  it('trims, strips a bullet, and reads a numeric label as text', () => {
+    const out = resolveSlideLayout(slide({
+      layout: 'timeline',
+      timeline: [{ label: 1948 as never, text: '  • بدأ  ' }, ...ev(2)],
+    }));
+    assert.deepEqual(out && out.kind === 'timeline' ? out.events[0] : null, { label: '1948', text: 'بدأ' });
+  });
+
+  it('refuses a pair, and a list too long to read as a line', () => {
+    assert.equal(resolveSlideLayout(slide({ layout: 'timeline', timeline: ev(2) })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'timeline', timeline: ev(MAX_TIMELINE_EVENTS + 1) })), null);
+  });
+
+  it('refuses the whole timeline when one event is missing its date or its words', () => {
+    // Dropping the bad one would quietly turn a sequence into a different sequence.
+    const bad = [...ev(3), { label: '', text: 'بلا تاريخ' }];
+    assert.equal(resolveSlideLayout(slide({ layout: 'timeline', timeline: bad })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'timeline', timeline: [...ev(3), { label: 'س', text: '' }] })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'timeline', timeline: [...ev(3), null as never] })), null);
+  });
+
+  it('refuses an over-long label or description, and a payload that is not a list', () => {
+    assert.equal(resolveSlideLayout(slide({ layout: 'timeline', timeline: [...ev(3), { label: 'x'.repeat(25), text: 'ن' }] })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'timeline', timeline: [...ev(3), { label: 'س', text: 'x'.repeat(121) }] })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'timeline', timeline: 'many' as never })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'timeline' })), null);
+  });
+});
+
+describe('stats', () => {
+  const st = (n: number) => Array.from({ length: n }, (_, i) => ({ value: `${10 * (i + 1)}%`, label: `بند ${i + 1}` }));
+
+  it('takes two to four figures', () => {
+    for (const n of [2, 3, MAX_STATS]) {
+      const out = resolveSlideLayout(slide({ layout: 'stats', stats: st(n) }));
+      assert.equal(out && out.kind === 'stats' ? out.items.length : 0, n);
+    }
+  });
+
+  it('reads a bare number as the figure it is', () => {
+    const out = resolveSlideLayout(slide({ layout: 'stats', stats: [{ value: 1969 as never, label: 'سنة' }, ...st(1)] }));
+    assert.equal(out && out.kind === 'stats' ? out.items[0]!.value : null, '1969');
+  });
+
+  it('refuses one figure (that is `stat`), five, and any item without a short value and a label', () => {
+    assert.equal(resolveSlideLayout(slide({ layout: 'stats', stats: st(1) })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'stats', stats: st(MAX_STATS + 1) })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'stats', stats: [...st(2), { value: '', label: 'x' }] })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'stats', stats: [...st(2), { value: '5', label: '' }] })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'stats', stats: [...st(2), { value: '1,234,567,890,123', label: 'x' }] })), null);
+  });
+});
+
+describe('table', () => {
+  const table = { headers: ['الدولة', 'العاصمة'], rows: [['الأردن', 'عمّان'], ['مصر', 'القاهرة'], ['لبنان', 'بيروت']] };
+
+  it('takes a grid with a cell under every header', () => {
+    const out = resolveSlideLayout(slide({ layout: 'table', table }));
+    assert.deepEqual(out, { kind: 'table', headers: table.headers, rows: table.rows });
+  });
+
+  it('reads numbers in cells as their text', () => {
+    const out = resolveSlideLayout(slide({
+      layout: 'table', table: { headers: ['السنة', 'العدد'], rows: [[2020 as never, 15 as never], ['2021', '18']] },
+    }));
+    assert.deepEqual(out && out.kind === 'table' ? out.rows[0] : null, ['2020', '15']);
+  });
+
+  it('refuses a row that is short or long — padding it would shift values under the wrong heading', () => {
+    assert.equal(resolveSlideLayout(slide({ layout: 'table', table: { ...table, rows: [...table.rows, ['فقط']] } })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'table', table: { ...table, rows: [...table.rows, ['أ', 'ب', 'ج']] } })), null);
+  });
+
+  it('refuses a blank cell or header, too few or too many columns and rows, or a non-grid', () => {
+    assert.equal(resolveSlideLayout(slide({ layout: 'table', table: { ...table, rows: [['أ', ''], ['ب', 'ج']] } })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'table', table: { ...table, headers: ['وحيد'] , rows: [['أ'], ['ب']] } })), null);
+    const wide = { headers: ['1', '2', '3', '4', '5'], rows: [['a', 'b', 'c', 'd', 'e'], ['a', 'b', 'c', 'd', 'e']] };
+    assert.equal(resolveSlideLayout(slide({ layout: 'table', table: wide })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'table', table: { ...table, rows: [table.rows[0]!] } })), null);
+    const tall = Array.from({ length: MAX_TABLE_ROWS + 1 }, () => ['أ', 'ب']);
+    assert.equal(resolveSlideLayout(slide({ layout: 'table', table: { ...table, rows: tall } })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'table', table: { ...table, rows: 'x' as never } })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'table' })), null);
+  });
+});
+
+describe('flow', () => {
+  const nodes = ['تبخّر', 'تكاثف', 'هطول', 'جريان'];
+
+  it('takes three to six nodes, and remembers whether it loops', () => {
+    assert.deepEqual(resolveSlideLayout(slide({ layout: 'flow', flow: { steps: nodes } })), { kind: 'flow', nodes, cycle: false });
+    assert.equal(resolveSlideLayout(slide({ layout: 'flow', flow: { steps: nodes, cycle: true } }))?.kind, 'flow');
+    const out = resolveSlideLayout(slide({ layout: 'flow', flow: { steps: nodes, cycle: true } }));
+    assert.equal(out && out.kind === 'flow' ? out.cycle : null, true);
+  });
+
+  it('only a literal true loops it — a string "false" must not', () => {
+    const out = resolveSlideLayout(slide({ layout: 'flow', flow: { steps: nodes, cycle: 'false' as never } }));
+    assert.equal(out && out.kind === 'flow' ? out.cycle : null, false);
+  });
+
+  it('refuses two nodes, seven, a blank node, or an over-long one', () => {
+    assert.equal(resolveSlideLayout(slide({ layout: 'flow', flow: { steps: ['أ', 'ب'] } })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'flow', flow: { steps: Array.from({ length: MAX_FLOW_NODES + 1 }, (_, i) => `ن${i}`) } })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'flow', flow: { steps: [...nodes, ' '] } })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'flow', flow: { steps: [...nodes, 'x'.repeat(61)] } })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'flow' })), null);
+  });
+});
+
+describe('payloadLines — a refused layout still leaves the teacher the words', () => {
+  it('turns each payload into bullet-ready lines', () => {
+    assert.deepEqual(payloadLines(slide({ timeline: [{ label: '١٩٤٨', text: 'حدث' }] })), ['١٩٤٨ — حدث']);
+    assert.deepEqual(payloadLines(slide({ stats: [{ value: '40%', label: 'سكن' }] })), ['40% — سكن']);
+    assert.deepEqual(payloadLines(slide({ flow: { steps: ['أ', 'ب'] } })), ['أ', 'ب']);
+    assert.deepEqual(
+      payloadLines(slide({ table: { headers: ['س', 'ص'], rows: [['١', '٢']] } })),
+      ['س: ١ — ص: ٢'],
+    );
+  });
+
+  it('survives junk instead of throwing', () => {
+    assert.deepEqual(payloadLines(slide({ timeline: [null, { label: 5 }] as never, stats: 'x' as never })), []);
+    assert.deepEqual(payloadLines(slide()), []);
   });
 });

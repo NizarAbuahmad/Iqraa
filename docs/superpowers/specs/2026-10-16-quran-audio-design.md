@@ -136,7 +136,7 @@ export function quranAudioVisible(uploaded: boolean, dev: boolean): boolean {
 }
 ```
 
-The constant starts `false`; the checklist for flipping it is `sources/quran-audio/VERIFY.md`.
+The constant started `false` and was flipped to `true` on 2026-10-16 at the owner's request before the checklist in `sources/quran-audio/VERIFY.md` was done (see STATUS.md).
 
 The same shape as `QURAN_CORNER_RELEASED`: a source constant, **not** an
 `EXPO_PUBLIC_*` variable (those need declaring in three places, CLAUDE.md), and
