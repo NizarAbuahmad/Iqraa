@@ -621,6 +621,25 @@ an announcement by default» below.
   family (next entry). Compared before and after: only those four changed, the other 21
   are identical. **Not checked:** Typed topics that are not catalogue
   lessons were not re-measured beyond the title cases in `chemistry.test.ts`.
+- **Typed chemistry topics measured and 18 of 44 misroutes fixed (2026-10-16).** A topic a teacher
+  types has no lesson text behind it, so a few words decide the family. Probed ~117 realistic Arabic
+  and English topics against what a chemistry teacher would expect: 44 differed. Two went to the
+  WRONG family: «قاعدة هوند» and «قاعدة الثمانية» to acids/bases («قاعدة» = a base), and «الكمية»
+  (quantity) to quantum theory, because «الكم» matched inside it. Fixed: Hund/Aufbau/Pauli to
+  electron configuration, the octet rule and Lewis structures to bonding, «الكم» only as a whole word
+  with the quantum phrases written out, «كمية المادة» to the mole. The rest were curriculum words in
+  a form the patterns missed — plurals and definite forms: «المعادلات الكيميائية», «الخلايا الكهروكيميائية»,
+  «الرقم الهيدروجيني», «المتفاعل المحدد», «النسب المولية», «حجم الغاز المولي», «التفاعلات الطاردة
+  والماصة», «نموذج بور», «الأطياف الذرية», «حفظ الكتلة», «كمية الحرارة». **The two weakest of these
+  sit LAST, on purpose:** the redox lesson's objectives say «أكتب معادلات كيميائية» and a thermochemistry
+  lesson mentions «كمية الحرارة», and as early rules each took its lesson away (one was caught by an
+  existing test, one by the 25-lesson diff). With the fix all 25 lessons route as before.
+  **Still go to `general_chem` (26):** «الجدول الدوري», «الذرة», «تصنيف العناصر», «الأيونات»,
+  «شكل الجزيئات», «قانون هس», «حرارة التكوين», «تفاعلات الاحتراق», «التركيز المولاري» and others —
+  too broad to claim safely (the table is named in other lessons' objectives) or outside the two
+  books; `general_chem` is the honest fallback. «المركبات الأيونية وتسميتها» goes to bonding, not
+  formulas. A typed topic that grounds to a catalogue lesson is routed on that lesson's text too,
+  not on the typed words alone; only an ungrounded topic is decided by them.
 - **The electron-configuration lesson was answered with periodic-trends questions; fixed (2026-10-16).**
   Found while building the teacher review sheet's lesson-to-questions table, and missed in the
   25-lesson comparison before it: «التوزيع الإلكتروني للذرات» (Grade 10; Aufbau, Hund's rule) listed
