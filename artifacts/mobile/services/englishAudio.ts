@@ -18,6 +18,7 @@ import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-aud
 import { Platform } from 'react-native';
 import { audioSlug } from '@workspace/curriculum/englishHub';
 import { playRecordingOrSpeak } from './wordSpeech';
+import { claimAudio, registerAudioStop } from './audioExclusive';
 
 export const ENGLISH_AUDIO_BASE_URL = 'https://pub-d9ddd8f74e734a21824518b812652124.r2.dev/english-audio';
 
@@ -35,6 +36,18 @@ function stopWeb(): void {
   stopWebWord = null;
 }
 
+// Another audio (the Quran Corner's recitation) starting cuts a word off, and
+// the reverse is `claimAudio('word')` below — one at a time, as the header of
+// `playLocalUri` says.
+registerAudioStop('word', () => {
+  try {
+    player?.pause();
+  } catch {
+    // Nothing playing.
+  }
+  stopWeb();
+});
+
 /**
  * One player, reused: tapping a second word cuts off the first rather than talking over it.
  *
@@ -46,6 +59,7 @@ function stopWeb(): void {
  */
 export async function playWord(word: string): Promise<void> {
   try {
+    claimAudio('word');
     if (Platform.OS === 'web') {
       player?.pause();
       stopWeb();
@@ -85,6 +99,7 @@ export async function playLocalUri(uri: string): Promise<void> {
  */
 export async function playUri(uri: string): Promise<void> {
   try {
+    claimAudio('word');
     stopWeb(); // a web word still playing would talk over the recording
     if (!modeSet) {
       modeSet = true;
