@@ -66,6 +66,8 @@ export interface Evaluation {
   questionCount?: number;
   /** The student link's code. Issued at publish; null before that. */
   shareCode?: string | null;
+  /** When the link stops opening (ISO). Every publish pushes it a week out; null = never. */
+  shareCodeExpiresAt?: string | null;
   title: string;
   titleAr: string;
   gradeId: string;

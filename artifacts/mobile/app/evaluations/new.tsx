@@ -21,7 +21,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
@@ -36,6 +36,7 @@ import {
   generateEvaluation,
   listEvaluableBooks,
   scanPaper,
+  setEvaluationClass,
   setPaperQuestions,
   type CompetencyKey,
   type Difficulty,
@@ -138,6 +139,8 @@ export default function NewEvaluationScreen() {
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
   const align = isRTL ? 'right' : 'left';
+  /** Set when opened from a class: the new exam lands in that class. */
+  const { classId } = useLocalSearchParams<{ classId?: string }>();
 
   const [books, setBooks] = useState<EvaluableBook[]>([]);
   const [loadingBooks, setLoadingBooks] = useState(true);
@@ -378,6 +381,8 @@ export default function NewEvaluationScreen() {
         difficulty,
         titleAr: title.trim() || undefined,
       });
+      // Best effort: if it fails, the exam page still offers «أرفقه بشعبة الآن».
+      if (classId) await setEvaluationClass(evaluation.id, classId).catch(() => {});
       let warnings: string[] = [];
       if (mode === 'paper') {
         await setPaperQuestions(
