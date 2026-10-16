@@ -595,7 +595,7 @@ const factorMonic = topic('factor_monic', /ثلاثيات الحدود x.\+bx\+c
   const form = pick(rng, [0, 1, 2]);
   if (form === 1) {
     return {
-      eq: `${p * q} ، ${p + q}`, answer: rootPair(p, q), wrongs: [rootPair(-p, -q), rootPair(p, -q), rootPair(-p, q)],
+      eq: `${signed(p * q)} ، ${signed(p + q)}`, answer: rootPair(p, q), wrongs: [rootPair(-p, -q), rootPair(p, -q), rootPair(-p, q)],
       ar: `لتحليل المقدار ${polyStr(co)}، ما العددان اللذان حاصل ضربهما ${signed(p * q)} ومجموعهما ${signed(p + q)}؟`,
       en: `To factor ${polyStr(co)}, which two numbers have product ${signed(p * q)} and sum ${signed(p + q)}?`,
     };
@@ -642,7 +642,7 @@ const factorGeneral = topic('factor_general', /ثلاثيات الحدود ax.\+
       }
       for (let j = 2; out.length < 3; j++) { const str = rootPair(m * q + j, n * p); if (!out.includes(str)) out.push(str); }
       return {
-        eq: `${ac} ، ${b}`, answer: pairAns, wrongs: out.slice(0, 3),
+        eq: `${signed(ac)} ، ${signed(b)}`, answer: pairAns, wrongs: out.slice(0, 3),
         ar: `لتحليل المقدار ${polyStr(co)} بتجزئة الحدّ الأوسط، ما العددان اللذان حاصل ضربهما ${signed(ac)} ومجموعهما ${signed(b)}؟`,
         en: `To factor ${polyStr(co)} by splitting the middle term, which two numbers have product ${signed(ac)} and sum ${signed(b)}?`,
       };
@@ -1208,7 +1208,7 @@ const quadFunction = topic('quad_function', /^الاقتران التربيعي$
 
 /** «y = 2(x − 3)² + 1»; h = 0 prints «x²», k = 0 drops the constant. */
 const vform = (a: number, h: number, k: number) =>
-  `y = ${a === 1 ? '' : a === -1 ? '−' : a}${h === 0 ? 'x' : `(x ${h < 0 ? '+' : '−'} ${Math.abs(h)})`}²${k === 0 ? '' : ` ${k < 0 ? '−' : '+'} ${Math.abs(k)}`}`;
+  `y = ${a === 1 ? '' : a === -1 ? '−' : signed(a)}${h === 0 ? 'x' : `(x ${h < 0 ? '+' : '−'} ${Math.abs(h)})`}²${k === 0 ? '' : ` ${k < 0 ? '−' : '+'} ${Math.abs(k)}`}`;
 
 /**
  * Grade 9 transformations of y = x²: the vertex — and since 2026-10-16 the
@@ -1393,7 +1393,7 @@ const ratMulDiv = topic('rat_expr_muldiv', /^ضرب المقادير الجبر�
   if (form === 1) {
     if (b === -c) return ratMulDiv.make({ rng, diff: 'easy', grade: 9 });
     const expr = `(${lin(1, a)})/(${fac(1, b)}${fac(1, c)})`;
-    return { eq: expr, answer: rootPair(-b, -c), wrongs: [rootPair(b, c), [-a, -b, -c].sort((p, q) => p - q).map(signed).join(' ، '), signed(-a)], ar: `ما القيم التي تجعل المقدار ${expr} غير معرّف؟`, en: `For which values of x is ${expr} undefined?` };
+    return { eq: expr, answer: rootPair(-b, -c), wrongs: [rootPair(b, c), [-a, -b, -c].sort((p, q) => p - q).map(signed).join(' ، '), signed(-a)], ar: `ما القيم التي تجعل المقدار ${expr} غير معرّف؟`, en: `For which values of x is ${expr} not defined?` };
   }
   if (form === 2) {
     const top = polyStr(mul([a, 1], [b, 1])), bottom = polyStr(mul([a, 1], [c, 1]));
@@ -1480,9 +1480,12 @@ const ratEq = topic('rat_eq', /^حل المعادلات النسبيه$/, [9, 9]
 
 // ─── Grade 8: roots and real numbers ────────────────────────────────────────
 
+/** Grade 8: square roots — and since 2026-10-16 the lesson's situations: a square plot's side and perimeter from its area. */
 const squareRoots = topic('sqrt_basic', /^الجذور التربيعيه$/, [8, 8], ({ rng, diff }) => {
   const r = int(rng, 2, span(diff) + 6);
-  const k = pick(rng, [0, 1, 2]);
+  const k = pick(rng, [0, 1, 2, 3, 4]);
+  if (k === 3) return { eq: `√${r * r}`, answer: String(r), wrongs: num(r, [(r * r) / 2, 2 * r, (r * r) / 4, r + 1].filter(Number.isInteger), String), ar: `حديقة مربعة الشكل مساحتها ${r * r} م². ما طول ضلعها بالمتر؟`, en: `A square garden has an area of ${r * r} m². How long is its side, in metres?` };
+  if (k === 4) return { eq: `4√${r * r}`, answer: String(4 * r), wrongs: num(4 * r, [r, 2 * r, r * r, (r * r) / 4].filter(Number.isInteger), String), ar: `قطعة أرض مربعة الشكل مساحتها ${r * r} م². ما محيطها بالمتر؟`, en: `A square plot of land has an area of ${r * r} m². What is its perimeter in metres?` };
   if (k === 0) return { eq: `x² = ${r * r}`, answer: `±${r}`, wrongs: [`${r}`, `${r * r}`, `±${r * 2}`], ar: `حلّ المعادلة x² = ${r * r}.`, en: `Solve x² = ${r * r}.` };
   if (k === 1) return { eq: `−√${r * r}`, answer: signed(-r), wrongs: num(-r, [r, -r * r, r * r, -r - 1]), ar: `أوجد قيمة −√${r * r}.`, en: `Find −√${r * r}.` };
   const d = pick(rng, [2, 3, 4, 5, 7]), n = int(rng, 1, d - 1);
@@ -1491,14 +1494,52 @@ const squareRoots = topic('sqrt_basic', /^الجذور التربيعيه$/, [8,
   return { eq: `√(${n * n}/${d * d})`, answer: ans, wrongs: wrongsFrom(ans, [`${n * n}/${d}`, `${n}/${d * d}`, `${d}/${n}`], j => `${n + Math.abs(j)}/${d}`), ar: `أوجد قيمة √(${n * n}/${d * d}).`, en: `Find √(${n * n}/${d * d}).` };
 });
 
+/** Grade 8: estimate a square root — between two integers, and since 2026-10-16 to the nearest integer and the nearest tenth. */
 const irrational = topic('sqrt_between', /^الجذور الصماء$/, [8, 8], ({ rng, diff }) => {
   const k = int(rng, 2, span(diff) + 4);
   const n = int(rng, k * k + 1, (k + 1) * (k + 1) - 1);
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) {
+    const near = Math.round(Math.sqrt(n));
+    return { eq: `√${n}`, answer: String(near), wrongs: num(near, [near === k ? k + 1 : k, Math.round(n / 2), k - 1, k + 2], String), ar: `ما أقرب عدد صحيح إلى √${n}؟`, en: `What is the nearest whole number to √${n}?` };
+  }
+  if (form === 2) {
+    // 10√n is never a half (n is not a square), so rounding to tenths has no tie
+    const t = Math.round(Math.sqrt(n) * 10), f = (v: number) => (v / 10).toFixed(1);
+    return { eq: `√${n}`, answer: f(t), wrongs: wrongsFrom(f(t), [f(t + 1), f(t - 1), f(10 * k + 5), f(5 * n)], j => f(t + 2 * Math.abs(j))), ar: `قدّر قيمة √${n} لأقرب جزء من عشرة.`, en: `Estimate √${n} to the nearest tenth.` };
+  }
   const ans = `${k} و ${k + 1}`;
   return { eq: `√${n}`, answer: ans, wrongs: [`${k - 1} و ${k}`, `${k + 1} و ${k + 2}`, `${k - 1} و ${k + 1}`], ar: `بين أي عددين صحيحين متتاليين يقع √${n}؟`, en: `Between which two consecutive integers does √${n} lie?` };
 });
 
+/** Grade 8: the smallest set a number belongs to — and since 2026-10-16 telling rational from irrational, and ordering real numbers. */
 const realNumbers = topic('real_numbers', /^الاعداد الحقيقيه$/, [8, 8], ({ rng }) => {
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) {
+    const d = pick(rng, [3, 4, 5, 7]), n = int(rng, 1, d - 1);
+    const RAT = shuffled(rng, [`√${pick(rng, [4, 9, 16, 25, 36, 49, 64])}`, `${n}/${d}`, `${int(rng, 1, 9)}.${int(rng, 1, 9)}`, signed(-int(rng, 1, 30)), `−${n}/${d}`]);
+    const IRR = shuffled(rng, ['√2', '√3', '√5', '√7', '√10', '√11', 'π', '−√6']);
+    const irr = rng() < 0.6;
+    const [ans, wr] = irr ? [IRR[0]!, RAT.slice(0, 3)] : [RAT[0]!, IRR.slice(0, 3)];
+    const listed = shuffled(rng, [ans, ...wr]).join('، ');
+    return { eq: listed, answer: ans, wrongs: wr, ar: `أيّ الأعداد الآتية عدد ${irr ? 'غير نسبي' : 'نسبي'}: ${listed}؟`, en: `Which of these numbers is ${irr ? 'irrational' : 'rational'}: ${listed}?` };
+  }
+  if (form === 2) {
+    for (;;) {
+      const r = int(rng, 2, 80);
+      if (Number.isInteger(Math.sqrt(r))) continue;
+      const w = int(rng, 1, 8), t = int(rng, 1, 9), d = pick(rng, [2, 3, 4, 5, 7]), nn = int(rng, d + 1, 8 * d);
+      if (gcd(nn, d) !== 1) continue;
+      const neg = int(rng, 1, 9);
+      const items: Array<[string, number]> = [[`√${r}`, Math.sqrt(r)], [`${w}.${t}`, w + t / 10], [`${nn}/${d}`, nn / d], rng() < 0.5 ? ['π', Math.PI] : [signed(-neg), -neg]];
+      const byValue = [...items].sort((p, q) => p[1] - q[1]);
+      if (byValue.some((it, i) => i > 0 && it[1] - byValue[i - 1]![1] < 0.05)) continue;
+      const big = rng() < 0.5;
+      const ans = (big ? byValue[3]! : byValue[0]!)[0];
+      const listed = shuffled(rng, items.map(it => it[0])).join('، ');
+      return { eq: listed, answer: ans, wrongs: items.map(it => it[0]).filter(x => x !== ans), ar: `ما ${big ? 'أكبر' : 'أصغر'} الأعداد الآتية: ${listed}؟`, en: `Which is the ${big ? 'largest' : 'smallest'} of these numbers: ${listed}?` };
+    }
+  }
   const SETS = ['الأعداد الطبيعية', 'الأعداد الصحيحة', 'الأعداد النسبية', 'الأعداد الحقيقية'];
   const d = pick(rng, [2, 3, 4, 5, 7]), n = int(rng, 1, d - 1); // a proper fraction is never a whole number
   const tenth = int(rng, 1, 9), whole = int(rng, 1, 9);
