@@ -3265,8 +3265,11 @@ A student and their guardians now get a push when a teacher posts homework, sets
 changes or clears an exam's date, or releases a result (or types a paper mark after
 the release), and a reminder the afternoon before homework is due. Spec Part 4 of
 `docs/superpowers/specs/2026-10-11-family-school-views-design.md` (rewritten as built
-— see its section 4). **The reminder is built but inert: nothing sends it until the
-owner creates `INTERNAL_CRON_KEY` and a Cloud Scheduler job** (checklist below). The
+— see its section 4). **The reminder is set up (2026-10-16):** `INTERNAL_CRON_KEY` is on
+`iqraa-api` (revision `iqraa-api-00354-2bz`) and the Cloud Scheduler job
+`homework-reminders` is `ENABLED` at `0 16 * * *` Asia/Amman, first run 2026-10-16
+13:00 UTC. The first key leaked into a transcript through `gcloud scheduler jobs create`'s
+output and was to be rotated before that run (deploying.md now passes `--format=none`). The
 other three pushes need no setup beyond the merge. Everything is gated on
 `STUDENT_ACCOUNTS`, which is already `true` in production, so on merge these reach
 real family accounts — **none of it has been seen arriving on a phone.**
@@ -3415,8 +3418,8 @@ real family accounts — **none of it has been seen arriving on a phone.**
      carries the child's roster name («نتيجة سارة» was already the precedent), and the
      Arabic push copy was written without a native reader.
 - **Not seen.** Delivery to any real device; the OTA on a phone; the `quiet` channel at
-  night; Cloud Scheduler firing; the Secret Manager and scheduler commands (not run from
-  here); the `jsonPayload.msg` filter in the deploying.md logging command (the logger is
+  night; Cloud Scheduler firing (the job exists — no run has been read yet); the
+  `jsonPayload.msg` filter in the deploying.md logging command (the logger is
   pino with the default `msg` key, but no Cloud Run log was read). The Settings card's
   save path against a real phone's token store, and its look in Android's own switch
   styling (only the web build was looked at).
