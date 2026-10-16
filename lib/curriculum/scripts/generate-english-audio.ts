@@ -38,14 +38,24 @@ const VOICE = 'coral';
 // was made in. A word that appears in any Grade 1–4 lesson is voiced for a young
 // child (so `--only eraser` stays in the voice of the rest of its lesson);
 // `--force` re-voices everything — decide that on purpose.
+//
+// Both end on a teacher's correction (2026-10-15): "apples" came out with its
+// first sound hit hard and held apart from the rest ("A… pples"), which teaches
+// a long, stressed vowel where the word has a short /æ/. "Clearly" on its own
+// invites that over-articulation. A word already voiced keeps its recording
+// until re-voiced with `--only`.
+const SMOOTH =
+  'Say it as one smooth word, the way it sounds in ordinary speech: do not stretch, ' +
+  'hit or separate the first sound or any single letter, and keep short vowels short ' +
+  '(the a in "apples" is a quick, short sound).';
 const YOUNG_INSTRUCTIONS =
   'You are reading a vocabulary card to a six-year-old child learning English. ' +
   'Say only the given word or phrase, once, clearly and a little slowly, ' +
-  'in a warm, friendly tone, with a British accent.';
+  'in a warm, friendly tone, with a British accent. ' + SMOOTH;
 const TEEN_INSTRUCTIONS =
   'You are reading a vocabulary card to a teenage student learning English. ' +
   'Say only the given word or phrase, once, clearly and at a natural, unhurried pace, ' +
-  'in a warm but not childish tone, with a British accent.';
+  'in a warm but not childish tone, with a British accent. ' + SMOOTH;
 
 /**
  * Words the model has said wrongly, with how to say them. Added to the

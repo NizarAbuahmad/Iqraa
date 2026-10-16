@@ -35,6 +35,8 @@ import { arPrefixed, lessonKindFor, type LessonKind } from './lessonPlanKinds.ts
 import { arMinutes } from './lessonPlanTypes.ts';
 import { classifyVerifiableTopic } from './verifyMathGuards.ts';
 import { QUIZ_TYPE_ORDER } from '../quizPaper.ts';
+import { splitFormatTypes, fitFormats, formatPoints, worksheetTotal, buildFormatSet, formatsHaveNoLesson } from './worksheetFormats.ts';
+import { MISSTEPS, ORDER_SAFE, currentSession, type FormatKind } from '@workspace/math-practice';
 import { ScopeDrawer } from './scopeDraw.ts';
 import { planCoverage, type CoverageLesson } from '../coveragePlan.ts';
 import {
@@ -1464,16 +1466,22 @@ export class MockAIService extends AIService {
     const topic = (docs.present && docs.title) ? docs.title : req.topic;
     // A wide scope draws each question from the lesson its slot names (never
     // together with an uploaded document, which has its own grounding).
-    const wide = docs.present ? null : offlineWideScope(req, lang, Math.min(30, Math.max(5, req.numQuestions ?? 8)));
+    const wide = docs.present ? null : offlineWideScope(req, lang, worksheetTotal(req));
     // Prefer uploaded materials over a weakly matching KB lesson
     const kb = docs.present || wide ? null : groundedKb(topic, lang, req.lessonId);
     // A paper built from the teacher's own file is grounded in that file.
     if (!docs.present && !wide) requireQuestionBank(topic, kb, req.subject);
-    const selectedTypes: QType[] = (req.questionTypes as QType[])?.length
-      ? (req.questionTypes as QType[])
+    const selectedTypes: string[] = req.questionTypes?.length
+      ? req.questionTypes
       : ['multiple_choice', 'short_answer'];
-    const wantsWordProblem = selectedTypes.includes('word_problem');
-    const mainTypes = selectedTypes.filter(t => t !== 'word_problem');
+    // The four structured formats (صِل، رتّب، أين الخطأ؟، ارسم) are built by
+    // `worksheetFormats.ts`, one question each, INSIDE the teacher's total.
+    // They never enter the rotation below, and the live prompt is never asked
+    // for them (`requestWithoutFormats`, `prompts.ts`).
+    const { formats: ticked, rest } = splitFormatTypes(selectedTypes);
+    const restTypes = rest as QType[];
+    const wantsWordProblem = restTypes.includes('word_problem');
+    const mainTypes = restTypes.filter(t => t !== 'word_problem');
     if (mainTypes.length === 0) mainTypes.push('short_answer');
 
     // In-class practice: progressive difficulty (easy → medium → hard)
@@ -1486,7 +1494,7 @@ export class MockAIService extends AIService {
     // exactly (one easy, one hard, the rest middle, plus the word problem).
     // A lesson whose bank holds fewer items than this still returns fewer: that
     // limit is `BankSpentError`, not this line.
-    const totalQ = Math.min(30, Math.max(5, req.numQuestions ?? 8));
+    const totalQ = worksheetTotal(req);
     const priorConcepts = req.includePriorReview && req.priorKnowledge?.length
       ? req.priorKnowledge
       : [];
@@ -1508,7 +1516,9 @@ export class MockAIService extends AIService {
     const requested = req.difficulty === 'easy' || req.difficulty === 'hard' ? req.difficulty : 'medium';
     const band = BANDS[requested];
 
-    // The worked example, and the half-solved item that follows it.
+    // The worked example, and the half-solved item that follows it — taken
+    // FIRST, so a small bank still opens with a worked example, as the live
+    // paper (which keeps the model's) does.
     //
     // Taken before any practice question so the pass's session set spends them:
     // what the class studies cannot come back as a question two sections later.
@@ -1517,27 +1527,62 @@ export class MockAIService extends AIService {
     // They count INSIDE `totalQ`, the number the teacher picked, so the page
     // does not outgrow the period. Homework is a separate generator.
     //
+    // They steer clear of the items a ticked scarce format needs — «أين الخطأ؟»
+    // has a couple of misstep items a family, «رتّب» only the `ORDER_SAFE`
+    // ones — and fall back to them only when nothing else is left.
+    // A teacher's document or a wide scope has no single lesson to build a format
+    // from: every ticked one is reported, as the live path does (`appendFormats`).
+    const { taken: formats, trimmed } = formatsHaveNoLesson(req)
+      ? { taken: [] as FormatKind[], trimmed: ticked }
+      : fitFormats(ticked, rest, totalQ);
+    const spotIds = new Set(formats.includes('spot_error') ? MISSTEPS.map(m => m.itemId) : []);
+    const formatIds = new Set([...spotIds, ...(formats.includes('order') ? ORDER_SAFE : [])]);
+    const avoidInTurn = [formatIds, spotIds].filter(ids => ids.size > 0);
+
     // Which question slot the next question fills. The worked example and the
     // half-solved item are slots 0 and 1; the practice follows.
     let slot = 0;
     // The lesson each solved item came from (wide scope only), so the
     // half-solved question can say which lesson it covers.
     const solvedLesson = new Map<SolvedItem, string>();
-    const takeSolved = (tier: DiffTier): SolvedItem | null => {
+    const takeSolvedIn = (tier: DiffTier, at: OfflineSlotLesson | null, session?: Set<string>): SolvedItem | null => {
       if (docs.present) return null;
-      const at = wide ? wide.drawer.lessonAt(slot) : null;
       const tp = at ? at.topic : topic;
       const kbRow = at ? at.kb : kb;
+      if (isChemContext(tp, kbRow, req.subject)) return takeSolvedChem(tp, kbRow, tier, lang, session);
+      if (isMathContext(tp, kbRow, req.subject)) return takeSolvedMath(tp, kbRow, tier, lang, session);
+      return null;
+    };
+    const takeSolved = (tier: DiffTier): SolvedItem | null => {
+      // The slot's lesson is read once: the masked passes below try the SAME slot.
+      const at = wide ? wide.drawer.lessonAt(slot) : null;
       let item: SolvedItem | null = null;
-      if (isChemContext(tp, kbRow, req.subject)) item = takeSolvedChem(tp, kbRow, tier, lang);
-      else if (isMathContext(tp, kbRow, req.subject)) item = takeSolvedMath(tp, kbRow, tier, lang);
+      for (const avoid of avoidInTurn) {
+        item = takeSolvedIn(tier, at, new Set([...currentSession(), ...avoid]));
+        if (item) {
+          currentSession().add(item.id);
+          break;
+        }
+      }
+      item ??= takeSolvedIn(tier, at);
       if (item && at) { solvedLesson.set(item, at.id); slot += 1; }
       return item;
     };
     const exampleItem = takeSolved(band[0]);
     const completionItem = exampleItem ? takeSolved(band[1]) : null;
+
+    // Then the ticked formats, before any practice question, and only pushed
+    // (in display order) after the word problem. Their bank items are scarce —
+    // «أين الخطأ؟» has two candidates in the exponential-equations family — and
+    // a format that picks last finds them spent by the practice sections, so a
+    // ticked, supported format came back «missing» about half the time.
+    // Formats beyond what the total can hold are trimmed and reported, not
+    // squeezed in (`formatRoom`, the same rule as the live path).
+    // `session: undefined` is the pass's shared session.
+    const { built: builtFormats, missing: unbuilt } = buildFormatSet(formats, { topic, kb, lang, subject: req.subject, session: undefined, points: formatPoints(requested) });
+    const missingFormats: FormatKind[] = [...trimmed, ...unbuilt];
     const reserved = (exampleItem ? 1 : 0) + (completionItem ? 1 : 0);
-    const mainTotal = Math.max(0, totalQ - reserved - (wantsWordProblem ? 1 : 0));
+    const mainTotal = Math.max(0, totalQ - reserved - (wantsWordProblem ? 1 : 0) - formats.length);
 
     const answerSpace = lang === 'ar'
       ? '\n\nالإجابة:\n_________________________________\n_________________________________'
@@ -1693,20 +1738,37 @@ export class MockAIService extends AIService {
       }
     }
 
-    // At least one life-application word problem when selected
+    // At least one life-application word problem when selected. Its own try:
+    // a word problem the spent bank cannot supply is a shortfall, reported like
+    // any other — it used to escape to the catch below and take every built
+    // format with it, with no note.
     if (wantsWordProblem && !spent) {
-      const q = pushQuestion('word_problem', makeQ('word_problem', 'medium'), true);
-      sections.push({
-        type: 'word_problem',
-        title: lang === 'ar' ? 'مسألة حياتية' : 'Real-life word problem',
-        questions: [withoutSteps(q)],
-      });
-      answerKey.push({ num: qNum++, answer: q.answer ?? '—', ...(q.steps ? { solution: q.steps } : {}) });
+      try {
+        const q = pushQuestion('word_problem', makeQ('word_problem', 'medium'), true);
+        sections.push({
+          type: 'word_problem',
+          title: lang === 'ar' ? 'مسألة حياتية' : 'Real-life word problem',
+          questions: [withoutSteps(q)],
+        });
+        answerKey.push({ num: qNum++, answer: q.answer ?? '—', ...(q.steps ? { solution: q.steps } : {}) });
+      } catch (e) {
+        if (!(e instanceof BankSpentError)) throw e;
+        spent = true;
+      }
     }
     } catch (e) {
       if (!(e instanceof BankSpentError)) throw e;
+      spent = true;
     } finally {
       bankOnly = false;
+    }
+
+    // The ticked formats picked above, one question each, after the practice.
+    // Outside the try: they are already built, so nothing the bank does to the
+    // practice sections can cost them.
+    for (const built of builtFormats) {
+      sections.push(built.section);
+      answerKey.push({ num: qNum++, ...built.key });
     }
     if (sections.every(sec => sec.questions.length === 0)) throw new NoQuestionBankError(topic);
 
@@ -1736,6 +1798,7 @@ export class MockAIService extends AIService {
       // is one of the items produced — without it a three-item paper asked of
       // twelve would be reported as two.
       ...(spent ? { shortfall: { requested: totalQ, produced: qNum - 1 - priorCount + (exampleItem ? 1 : 0) } } : {}),
+      ...(missingFormats.length ? { missingFormats } : {}),
     };
   }
 

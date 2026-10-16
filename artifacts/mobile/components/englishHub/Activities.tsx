@@ -16,7 +16,7 @@ import { playLocalUri, playWord } from '@/services/englishAudio';
 import { useSpeakingRecorder } from '@/hooks/useSpeakingRecorder';
 import {
   buildListenRound,
-  buildMatchBoard,
+  buildMatchColumns,
   buildPictureBoard,
   buildScrambleRound,
   buildSpellRound,
@@ -27,6 +27,7 @@ import {
   type MatchCard,
   type PictureCard,
   type ScrambleTile,
+  wordPicture,
 } from '@/services/englishHub/games';
 
 const RIGHT = '#16A34A';
@@ -51,6 +52,24 @@ function HearButton({ word, big }: { word: string; big?: boolean }) {
     >
       <Ionicons name="volume-high" size={big ? 40 : 22} color="#fff" />
     </Pressable>
+  );
+}
+
+/**
+ * The emoji is artwork standing in for the book's picture, not text, so it is
+ * sized as a picture rather than taken from the TYPE scale (whose largest step
+ * is a heading).
+ */
+const PICTURE_SIZE = 72;
+
+/** The book prints each word under its picture; a word with none shows text alone. */
+function WordPicture({ word }: { word: string }) {
+  const pic = wordPicture(word);
+  if (!pic) return null;
+  return (
+    <Text style={styles.picture} accessible={false}>
+      {pic}
+    </Text>
   );
 }
 
@@ -82,6 +101,7 @@ export function Flashcards({ words }: { words: HubWord[] }) {
         accessibilityHint={t('hubTapToFlip')}
         style={[styles.flash, { backgroundColor: colors.card, borderColor: colors.border }]}
       >
+        <WordPicture word={w.en} />
         {flipped ? (
           <Text style={[styles.flashAr, { color: colors.foreground }]}>{w.ar}</Text>
         ) : (
@@ -181,13 +201,13 @@ function useTimers() {
 
 export function MatchMeaning({ words, onFinish }: { words: HubWord[]; onFinish: Finish }) {
   const { colors, t } = useUi();
-  const board = useMemo(() => buildMatchBoard(words), [words]);
+  const columns = useMemo(() => buildMatchColumns(words), [words]);
   const timers = useTimers();
   const [selected, setSelected] = useState<MatchCard | null>(null);
   const [matched, setMatched] = useState<Set<number>>(new Set());
   const [miss, setMiss] = useState<string[]>([]);
   const [moves, setMoves] = useState(0);
-  const pairs = board.en.length;
+  const pairs = columns.en.length;
 
   const tap = (c: MatchCard) => {
     if (matched.has(c.pairId) || miss.length) return;
@@ -212,8 +232,8 @@ export function MatchMeaning({ words, onFinish }: { words: HubWord[]; onFinish: 
     <View style={{ gap: 12 }}>
       <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13, textAlign: 'center' }}>{t('hubMoves', moves)}</Text>
       <MatchColumns
-        left={board.en}
-        right={board.ar}
+        left={columns.en}
+        right={columns.ar}
         render={c => (
           <Text
             style={{
@@ -235,10 +255,10 @@ export function MatchMeaning({ words, onFinish }: { words: HubWord[]; onFinish: 
 }
 
 /**
- * The two columns both matching games share: the left side's cards in one
- * column, the right side's in the other. Fixed left/right whatever the UI
- * direction — English reads left to right, and the columns are labelled by
- * their content, not by where an Arabic reader starts.
+ * The two columns both matching games share: English (or the picture) left,
+ * Arabic (or the word) right, whatever the UI language. A plain `row` (not
+ * `useUi().row`) on purpose: the app lays out physically left-to-right and
+ * flips by hand, so this never mirrors.
  */
 function MatchColumns<T extends { id: string }>({
   left,
@@ -255,7 +275,7 @@ function MatchColumns<T extends { id: string }>({
 }) {
   const { colors } = useUi();
   const column = (cards: T[]) => (
-    <View style={styles.column}>
+    <View style={styles.matchColumn}>
       {cards.map(c => {
         const { done, bad, on } = state(c);
         const border = done ? RIGHT : bad ? WRONG : on ? colors.primary : colors.border;
@@ -263,7 +283,7 @@ function MatchColumns<T extends { id: string }>({
           <Pressable
             key={c.id}
             onPress={() => onTap(c)}
-            style={[styles.matchCard, { borderColor: border, backgroundColor: done ? RIGHT + '18' : on ? colors.selected : colors.card, opacity: done ? 0.7 : 1 }]}
+            style={[styles.matchCard, styles.matchCardInColumn, { borderColor: border, backgroundColor: done ? RIGHT + '18' : on ? colors.selected : colors.card, opacity: done ? 0.7 : 1 }]}
           >
             {render(c)}
           </Pressable>
@@ -272,7 +292,7 @@ function MatchColumns<T extends { id: string }>({
     </View>
   );
   return (
-    <View style={styles.columns}>
+    <View style={styles.matchColumns}>
       {column(left)}
       {column(right)}
     </View>
@@ -534,6 +554,7 @@ export function Speaking({ words }: { words: HubWord[] }) {
   return (
     <View style={{ gap: 16, alignItems: 'center' }}>
       <Progress i={i} n={words.length} />
+      <WordPicture word={w.en} />
       <Text style={[styles.flashEn, { color: colors.foreground }]}>{w.en}</Text>
       <View style={{ flexDirection: row, alignItems: 'center', gap: 20 }}>
         <HearButton word={w.en} />
@@ -572,6 +593,7 @@ export function Speaking({ words }: { words: HubWord[] }) {
 const styles = StyleSheet.create({
   hear: { borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   flash: { width: '100%', minHeight: 200, borderWidth: 1.5, borderRadius: 20, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
+  picture: { fontSize: PICTURE_SIZE, lineHeight: PICTURE_SIZE + 16, textAlign: 'center' },
   flashEn: { fontFamily: 'ReadexPro_700Bold', fontSize: 40, textAlign: 'center' },
   flashAr: { fontFamily: 'ReadexPro_700Bold', fontSize: 34, lineHeight: 56, textAlign: 'center', writingDirection: 'rtl' },
   navBtn: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 },
@@ -580,9 +602,11 @@ const styles = StyleSheet.create({
   optionText: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 20, textAlign: 'center' },
   primary: { borderRadius: 14, paddingVertical: 12, paddingHorizontal: 32 },
   primaryText: { color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 16 },
-  columns: { flexDirection: 'row', gap: 10 },
-  column: { flex: 1, gap: 10 },
   matchCard: { minHeight: 64, borderWidth: 1.5, borderRadius: 14, alignItems: 'center', justifyContent: 'center', padding: 10 },
+  // Both matching games: two columns of cards. The columns, not the cards, share the width.
+  matchColumns: { flexDirection: 'row', gap: 12 },
+  matchColumn: { flex: 1, gap: 12 },
+  matchCardInColumn: { width: '100%' },
   input: { width: '100%', borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, fontSize: 24, fontFamily: 'ReadexPro_600SemiBold', textAlign: 'center', writingDirection: 'ltr' },
   tileRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
   tile: { width: 44, height: 44, borderWidth: 1.5, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },

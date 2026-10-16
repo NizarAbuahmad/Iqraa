@@ -62,6 +62,14 @@ export function workingSteps(answer: string): { steps: string[]; final: string }
 }
 
 /**
+ * A multi-line reveal answer as its non-empty lines. A single line (or none)
+ * returns at most one entry, so callers can keep their one-line rendering.
+ */
+export function answerLines(answer: string): string[] {
+  return (answer ?? '').split('\n').map(l => l.trim()).filter(Boolean);
+}
+
+/**
  * Whether a line should be laid out as mathematics (its own boxed, centred,
  * larger block) rather than prose. A bullet never is: a list item that happens
  * to mention `x` is still a list item.

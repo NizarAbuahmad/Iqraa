@@ -22,7 +22,6 @@ import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 import type { TranslationKey } from '@/services/i18n';
 import { toArabicDigits } from '@/services/labFormat';
 import { forceLtr, formatCalcNumber } from '@/services/mathCalc';
-import { pointName } from '@/services/mathPointNames';
 import {
   MAX_POINTS,
   circleEquationText,
@@ -260,10 +259,10 @@ function SketchCanvas({
             {isPending ? <Circle cx={q.x} cy={q.y} r={10} fill="none" stroke={ink} strokeWidth={2} /> : null}
             <Circle cx={q.x} cy={q.y} r={5} fill={colors.foreground} stroke={colors.card} strokeWidth={1.5} />
             <SvgText x={spot.x} y={spot.y} textAnchor="middle" {...text} {...halo} fill={colors.card}>
-              {pointName(p.label, lang)}
+              {p.label}
             </SvgText>
             <SvgText x={spot.x} y={spot.y} textAnchor="middle" {...text} fontFamily="ReadexPro_600SemiBold" fill={colors.foreground}>
-              {pointName(p.label, lang)}
+              {p.label}
             </SvgText>
           </React.Fragment>
         );
@@ -413,22 +412,13 @@ export function MathSketchpad() {
       <Text style={[styles.chipText, { color: colors.foreground }]}>{text}</Text>
     </View>
   );
-  const angleChip = (key: string, vertex: string, degrees: string) => (
-    <View key={key} style={[styles.chip, styles.angleChip, { backgroundColor: colors.muted, borderColor: colors.border, flexDirection: rowDir }]}>
-      {nameText(vertex)}
-      <Text style={[styles.chipText, { color: colors.foreground }]}>{forceLtr(degrees)}</Text>
-    </View>
-  );
   const valueRow = (label: string, value: string) => (
     <View style={[styles.valueRow, { flexDirection: rowDir }]}>
       <Text style={[styles.valueLabel, { color: colors.mutedForeground }]}>{label}</Text>
       <Text style={[styles.value, { color: colors.foreground }]}>{forceLtr(value)}</Text>
     </View>
   );
-  // The books' أ ب ج are Arabic letters: an LTR override would lay أ ب ج out as ج ب أ. English keeps its Latin letters forced LTR.
-  const nameText = (name: string) => (
-    <Text style={[styles.name, { color: colors.foreground }]}>{lang === 'ar' ? pointName(name, 'ar') : forceLtr(name)}</Text>
-  );
+  const nameText = (name: string) => <Text style={[styles.name, { color: colors.foreground }]}>{forceLtr(name)}</Text>;
 
   const triangleChips = (m: Extract<Measure, { kind: 'polygon' }>) => {
     if (!m.triangle) return null;
@@ -495,7 +485,7 @@ export function MathSketchpad() {
             {heading(t('mathSketchAngles'))}
             <View style={[styles.chipWrap, { flexDirection: rowDir }]}>
               {m.angles.map((a, i) =>
-                a.degrees.ok ? angleChip(`${a.vertex}${i}`, a.vertex, `${fmt(a.degrees.value, lang)}°`) : null,
+                a.degrees.ok ? chip(`${a.vertex}${i}`, forceLtr(`${a.vertex} ${fmt(a.degrees.value, lang)}°`)) : null,
               )}
             </View>
           </>
@@ -616,5 +606,4 @@ const styles = StyleSheet.create({
   chipWrap: { flexWrap: 'wrap', gap: SPACE.sm, alignItems: 'center' },
   chip: { borderWidth: 1, borderRadius: RADIUS.pill, paddingHorizontal: SPACE.md, paddingVertical: SPACE.xs },
   chipText: { fontSize: TYPE.label, fontFamily: 'ReadexPro_500Medium' },
-  angleChip: { gap: SPACE.sm, alignItems: 'center' },
 });

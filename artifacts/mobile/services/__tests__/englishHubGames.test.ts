@@ -10,7 +10,7 @@ import {
   MATCH_PAIRS,
   badgesEarned,
   buildListenRound,
-  buildMatchBoard,
+  buildMatchColumns,
   buildPictureBoard,
   buildScrambleRound,
   buildSpeakingRound,
@@ -25,8 +25,8 @@ import {
   lessonStars,
   newlyEarnedBadges,
   normaliseSpelling,
+  wordPicture,
   parseProgress,
-  pictureFor,
   recordResult,
   starsFor,
 } from '../englishHub/games.ts';
@@ -54,25 +54,52 @@ describe('listen and choose', () => {
 describe('match', () => {
   it('pairs every English card with its own Arabic meaning', () => {
     const lesson = ENGLISH_HUB_LESSONS[0];
-    const { en: enCol, ar: arCol } = buildMatchBoard(lesson.words, makeRng(3));
-    assert.equal(enCol.length, Math.min(MATCH_PAIRS, lesson.words.length));
-    for (const en of enCol) {
-      const ar = arCol.find(c => c.pairId === en.pairId)!;
+    const { en: left, ar: right } = buildMatchColumns(lesson.words, makeRng(3));
+    assert.equal(left.length, Math.min(MATCH_PAIRS, lesson.words.length));
+    assert.equal(right.length, left.length);
+    for (const en of left) {
+      const ar = right.find(c => c.pairId === en.pairId)!;
       assert.equal(lesson.words.find(w => w.en === en.text)!.ar, ar.text);
       assert.ok(isMatchPair(en, ar));
       assert.ok(!isMatchPair(en, en));
     }
   });
 
-  // A teacher's review (2026-10-15): one mixed grid of English and Arabic
-  // cards confused Grade 1 pupils. Each language gets its own column.
-  it('keeps English in one column and Arabic in the other, one card per pair each', () => {
+  it('puts every English card in one column and every Arabic card in the other', () => {
     for (const lesson of ENGLISH_HUB_LESSONS) {
-      const { en, ar } = buildMatchBoard(lesson.words, makeRng(9));
-      assert.ok(en.every(c => c.lang === 'en') && ar.every(c => c.lang === 'ar'), lesson.id);
-      assert.deepEqual(en.map(c => c.pairId).sort(), ar.map(c => c.pairId).sort(), lesson.id);
-      assert.equal(new Set(en.map(c => c.pairId)).size, en.length, lesson.id);
+      const { en, ar } = buildMatchColumns(lesson.words, makeRng(9));
+      assert.ok(en.every(c => c.lang === 'en'), lesson.id);
+      assert.ok(ar.every(c => c.lang === 'ar'), lesson.id);
     }
+  });
+
+  it('never sets a card beside its own answer, for any lesson or seed', () => {
+    // Two independent shuffles line a pair up by chance; side by side that is
+    // the answer handed over, so a row must never face its own match.
+    for (const lesson of ENGLISH_HUB_LESSONS) {
+      for (let seed = 1; seed <= 25; seed += 1) {
+        const { en, ar } = buildMatchColumns(lesson.words, makeRng(seed));
+        for (let row = 0; row < en.length; row += 1) {
+          assert.notEqual(en[row].pairId, ar[row].pairId, `${lesson.id} seed ${seed} row ${row}`);
+        }
+      }
+    }
+  });
+
+  it('still never faces a pair when the random source is stuck', () => {
+    // A constant rng shuffles every column the same way, so the reshuffles can
+    // never separate the pairs and the rotation fallback has to.
+    for (const rng of [() => 0, () => 0.999999]) {
+      const { en, ar } = buildMatchColumns(ENGLISH_HUB_LESSONS[0].words, rng);
+      assert.equal(new Set(en.map(c => c.pairId)).size, en.length);
+      assert.equal(new Set(ar.map(c => c.pairId)).size, ar.length, 'every pair appears once on the right');
+      for (let row = 0; row < en.length; row += 1) assert.notEqual(en[row].pairId, ar[row].pairId);
+    }
+  });
+
+  it('is reproducible for a seed', () => {
+    const words = ENGLISH_HUB_LESSONS[0].words;
+    assert.deepEqual(buildMatchColumns(words, makeRng(4)), buildMatchColumns(words, makeRng(4)));
   });
 });
 
@@ -145,7 +172,7 @@ describe('picture matching', () => {
       for (const emoji of pictures) {
         const word = words.find(c => c.pairId === emoji.pairId)!;
         assert.ok(lesson.words.some(w => w.en === word.text), `${word.text} not in ${lesson.id}`);
-        assert.equal(emoji.text, pictureFor(word.text));
+        assert.equal(emoji.text, wordPicture(word.text));
         assert.ok(isPictureMatch(emoji, word));
         assert.ok(!isPictureMatch(emoji, emoji));
       }
@@ -164,7 +191,7 @@ describe('picture matching', () => {
     const seen = new Map<string, string>();
     for (const lesson of ENGLISH_HUB_LESSONS) {
       for (const w of lesson.words) {
-        const p = pictureFor(w.en);
+        const p = wordPicture(w.en);
         if (!p) continue;
         const prev = seen.get(p);
         assert.ok(!prev || prev === w.en, `${prev} and ${w.en} are both ${p}`);
@@ -182,9 +209,9 @@ describe('picture matching', () => {
   });
 
   it('does not show a coat for "jacket" — 🧥 is a coat, and a jacket is shorter', () => {
-    assert.equal(pictureFor('jacket'), undefined);
-    assert.equal(pictureFor('coat'), '🧥');
-    assert.equal(pictureFor('T-shirt'), '👕');
+    assert.equal(wordPicture('jacket'), null);
+    assert.equal(wordPicture('coat'), '🧥');
+    assert.equal(wordPicture('T-shirt'), '👕');
   });
 
   it('shows a plural word as more than one thing', () => {
@@ -194,13 +221,29 @@ describe('picture matching', () => {
     const glyphs = (s: string) => [...new Intl.Segmenter('en', { granularity: 'grapheme' }).segment(s)].length;
     let checked = 0;
     for (const w of new Set(ENGLISH_HUB_LESSONS.flatMap(l => l.words.map(x => x.en)))) {
-      const p = pictureFor(w);
+      const p = wordPicture(w);
       if (!p || !/(s|feet|teeth)$/.test(w) || oneGlyphIsEnough.has(w) || notPlural.has(w)) continue;
       checked += 1;
       assert.ok(glyphs(p) >= 2, `${w} is plural but its picture ${p} shows one`);
     }
-    for (const w of ['apples', 'cakes', 'carrots', 'lemons']) assert.ok(glyphs(pictureFor(w)!) >= 2, w);
+    for (const w of ['apples', 'cakes', 'carrots', 'lemons']) assert.ok(glyphs(wordPicture(w)!) >= 2, w);
     assert.ok(checked >= 10, `only ${checked} plural words checked`);
+  });
+});
+
+describe('flashcard pictures', () => {
+  // A teacher's note (2026-10-15): the book teaches each word as a picture with
+  // the word under it, so the flashcard shows the picture the hub already has.
+  it('gives the curated picture for a picturable word, and nothing otherwise', () => {
+    assert.equal(wordPicture('apples'), '🍎🍎');
+    assert.equal(wordPicture('cakes'), '🍰🍰');
+    assert.equal(wordPicture('carefully'), null);
+  });
+
+  it('agrees with isPicturable for every hub word', () => {
+    for (const lesson of ENGLISH_HUB_LESSONS) {
+      for (const w of lesson.words) assert.equal(wordPicture(w.en) !== null, isPicturable(w.en), w.en);
+    }
   });
 });
 

@@ -26,7 +26,6 @@ import {
   publishEvaluation,
   setResultsReleased,
   setEvaluationClass,
-  showBlanks,
   type Evaluation,
   type EvaluationQuestion,
   type QuestionType,
@@ -34,6 +33,7 @@ import {
 import { summariseKeyChecks, type KeyCheckSummary } from '@/services/keyCheckSummary';
 import { bookItemNote } from '@/services/bookItemNote';
 import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
+import { questionText as questionTextFor } from '@/services/evaluationQuestionText';
 import { copyToClipboard } from '@/services/share';
 import { AddReadAloudModal } from '@/components/AddReadAloudModal';
 import { AddDictationModal } from '@/components/AddDictationModal';
@@ -85,56 +85,6 @@ const TYPE_LABEL_KEY: Record<QuestionType, TranslationKey> = {
   read_aloud: 'typeReadAloud',
   dictation: 'typeDictation',
 };
-
-/**
- * The one field worth showing per type, regardless of shape.
- *
- * Isolated here rather than at the render site because every branch below
- * returns model-written Arabic that can carry an equation, and an unisolated
- * «f(x) = 2x⁴ - x² + 3» comes out of the bidi algorithm reordered against the
- * Arabic around it — a wrong question, not just an ugly one.
- */
-function questionText(q: EvaluationQuestion): string {
-  const body = q.body;
-  const template = body['template'] as string | undefined;
-  return isolateForeignRuns(
-    (body['stem'] as string | undefined)
-    ?? (body['statement'] as string | undefined)
-    ?? (template === undefined ? undefined : showBlanks(template))
-    ?? (body['prompt'] as string | undefined)
-    // A matching body has none of the four above, so it used to fall through
-    // to '' and print as a dash — a teacher reviewing a paper could see that a
-    // matching question existed but not what it asked. The left column is what
-    // it asks about.
-    ?? matchingLeftText(body['left'])
-    // A read-aloud body keeps its text in `passage` and printed as «—».
-    ?? (body['passage'] as string | undefined)
-    // A dictation body has none of the above — the prompt is spoken, not
-    // written. On the teacher's own screen the dictated text IS what the
-    // question asks, and showing it here is what lets a teacher read the list
-    // aloud to the class when there is no audio (which is the normal case, and
-    // the only one that works on a native device).
-    ?? dictationText(q)
-    ?? '',
-  );
-}
-
-function dictationText(q: EvaluationQuestion): string | undefined {
-  if (q.type !== 'dictation') return undefined;
-  if (q.body['mode'] === 'choice') {
-    const options = Array.isArray(q.body['options']) ? q.body['options'] : [];
-    const labels = options.map(o => (o as { text?: string })?.text).filter(Boolean);
-    return labels.length > 0 ? labels.join(' · ') : undefined;
-  }
-  const text = q.expectedAnswer['text'];
-  return typeof text === 'string' && text.trim() ? text.trim() : undefined;
-}
-
-function matchingLeftText(left: unknown): string | undefined {
-  if (!Array.isArray(left)) return undefined;
-  const labels = left.map(l => (l as { text?: string })?.text).filter(Boolean);
-  return labels.length > 0 ? labels.join(' · ') : undefined;
-}
 
 export default function EvaluationDetailScreen() {
   const colors = useColors();
@@ -220,7 +170,7 @@ export default function EvaluationDetailScreen() {
     if (!id || busy) return;
     const ok = await confirm({
       title: t('questionDeleteConfirm'),
-      message: questionText(q) || undefined,
+      message: questionTextFor(q, lang === 'ar') || undefined,
       confirmLabel: t('questionDeleteBtn'),
       cancelLabel: t('cancel'),
       destructive: true,
@@ -707,7 +657,7 @@ export default function EvaluationDetailScreen() {
                 },
               ]}
             >
-              {questionText(q) || '—'}
+              {questionTextFor(q, lang === 'ar') || '—'}
             </Text>
             <QuestionFigure body={q.body} captionColor={colors.mutedForeground} />
           </View>

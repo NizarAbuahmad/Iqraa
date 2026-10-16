@@ -16,10 +16,15 @@ import type {
   ClassroomActivity,
   QuizOutput,
   WorksheetOutput,
+  WorksheetQuestionFormat,
 } from './ai/AIService.ts';
 import type { KBLesson } from './knowledgeBase.ts';
 import type { BookFigure } from './bookFigures.ts';
 import { bookFigureSlides } from './lessonSlides.ts';
+import { toArabicDigits } from './labFormat.ts';
+import { optionLetter } from './optionLabels.ts';
+import { samplePlot } from './deckVisuals.ts';
+import { exprsMissingFromStem, normalizePlotExpr } from './ai/worksheetFormats.ts';
 
 const THINK_SECONDS = 45;
 
@@ -272,6 +277,39 @@ export function buildDeckFromQuiz(
   };
 }
 
+/**
+ * What the class reads for a structured worksheet question: the stem, then the
+ * format's own lines laid out for a screen. **Nothing here is an answer** —
+ * `pairs`, `order`, `wrongStep`, `fix` and `why` are never read, and the
+ * graph's curve rides separately as `visual` + `visualOnReveal`. The key goes
+ * in the slide's `answer`, which the presenter shows only on reveal.
+ */
+function formatDeckContent(f: WorksheetQuestionFormat, isAr: boolean): string {
+  const num = (i: number) => (isAr ? toArabicDigits(String(i + 1)) : String(i + 1));
+  const lines: string[] = [];
+  switch (f.kind) {
+    case 'match': {
+      // Two blocks, never one row each: `right` is shuffled, so an arrow or a
+      // shared row would tell the class left[i] pairs with right[i].
+      f.left.forEach((l, i) => lines.push(`${num(i)}) ${l}`));
+      lines.push('');
+      f.right.forEach((r, i) => lines.push(`${optionLetter(i, isAr)}) ${r}`));
+      break;
+    }
+    case 'order':
+      f.steps.forEach((s, i) => lines.push(`${optionLetter(i, isAr)}) ${s}`));
+      break;
+    case 'spot_error':
+      f.steps.forEach((s, i) => lines.push(`${num(i)}) ${s}`));
+      break;
+    case 'graph':
+      // Only what the stem lacks, in the paper's latin «y = …».
+      lines.push(...exprsMissingFromStem(f.stem, f.exprs));
+      break;
+  }
+  return lines.length ? [f.stem, '', ...lines].join('\n') : f.stem;
+}
+
 /** Worksheet → projectable deck (same rules; sections are flattened). */
 export function buildDeckFromWorksheet(
   ws: WorksheetOutput,
@@ -332,9 +370,21 @@ export function buildDeckFromWorksheet(
   for (const section of ws.sections ?? []) {
     for (const q of section.questions ?? []) {
       qNum += 1;
-      const hasOptions = Array.isArray(q.options) && q.options.length >= 2;
-      const answer = answerByPosition.get(qNum) ?? '';
-      answers.push(isAr ? `سؤال ${qNum}: ${answer}` : `Q${qNum}: ${answer}`);
+      const fmt = q.format;
+      // A structured format is an open question: it never becomes a choice
+      // slide, even if a stray `options` array rode along.
+      const hasOptions = !fmt && Array.isArray(q.options) && q.options.length >= 2;
+      const keyAnswer = answerByPosition.get(qNum) ?? '';
+      // An order or a spot-the-error is answered with its working: the ordered
+      // steps, or the wrong step beside its correction. Plain lines, not the
+      // «→» form `workingSteps` would turn into a chain.
+      const answer = (fmt?.kind === 'order' || fmt?.kind === 'spot_error') && keyAnswer && solutionByPosition.get(qNum)?.length
+        ? [keyAnswer, ...solutionByPosition.get(qNum)!].join('\n')
+        : keyAnswer;
+      // One line per question: the summary is read line by line, so a
+      // multi-line key (أين الخطأ؟'s reason) is joined onto its question's line.
+      const summary = keyAnswer.split('\n').map(l => l.trim()).filter(Boolean).join(' — ');
+      answers.push(isAr ? `سؤال ${qNum}: ${summary}` : `Q${qNum}: ${summary}`);
       // Same rule as buildDeckFromQuiz: a key naming no option is shown as an
       // open question carrying the key, never as option A.
       const correct = hasOptions ? indexOfAnswer(q.options!, answer) : -1;
@@ -343,7 +393,23 @@ export function buildDeckFromWorksheet(
         slideNumber: slides.length + 1,
         type: asChoice ? 'question' : 'challenge',
         title: isAr ? `سؤال ${qNum}` : `Question ${qNum}`,
-        content: q.text,
+        // The stem alone for a formatted question: `q.text` is the whole
+        // question in plain text and would print the steps a second time.
+        content: fmt ? formatDeckContent(fmt, isAr) : q.text,
+        // A graph question's curve IS the answer, so it rides on the slide but
+        // the presenter holds it back until the reveal (`visualOnReveal`).
+        ...(fmt?.kind === 'graph'
+          ? {
+              visual: {
+                kind: 'plot' as const,
+                series: fmt.exprs.map(e => ({
+                  label: `y = ${e}`,
+                  points: samplePlot(normalizePlotExpr(e), { from: fmt.window.xMin, to: fmt.window.xMax, steps: 120 }) ?? [],
+                })),
+              },
+              visualOnReveal: true,
+            }
+          : {}),
         ...(asChoice
           ? {
               options: q.options,
@@ -360,10 +426,10 @@ export function buildDeckFromWorksheet(
             ? { answer }
             : {}),
         durationSeconds: THINK_SECONDS,
-        ...(answer
+        ...(keyAnswer
           ? {
               teacher: {
-                expectedAnswer: answer,
+                expectedAnswer: keyAnswer,
                 teachingTips: [
                   isAr ? 'الكل يجيب معًا عند انتهاء المؤقت.' : 'Everyone answers together when the timer ends.',
                   ...(solutionByPosition.get(qNum)?.length
