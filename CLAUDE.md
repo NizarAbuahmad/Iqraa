@@ -100,7 +100,10 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
 - Arabic is the product language; the UI is RTL-first. Compute maths in latin
   `x` and convert to `س` / Arabic digits **only at display time**.
 - `DEMO_MODE = true` in `artifacts/mobile/services/ai/demoMode.ts` mocks all
-  prose generation. Do not flip it without a decision — see STATUS.md.
+  prose generation. Do not flip the code default without a decision — see
+  STATUS.md. Every shipped build overrides it with `EXPO_PUBLIC_DEMO_MODE=false`:
+  Android (`eas.json`, `mobile-update.yml`) and, since 2026-10-16, the web
+  (`deploy.yml`).
 
 ## Things that have bitten before
 
