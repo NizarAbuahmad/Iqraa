@@ -126,6 +126,12 @@ const termsStr = (ts: Array<[number, number]>) =>
  * (`makeTopicItem`), so a kind printed in several sentences — one per operation,
  * one per comparison word — would crowd the others out at equal weight. Such
  * kinds are drawn less often instead.
+ *
+ * Since 2026-10-16 a paper spreads by kind (`sameKind`), so a kind's sentences
+ * share one turn and these weights only tilt the draw. Measured then (20–200
+ * ten-item papers per lesson): expr_g4's 0.25 left its phrase kind off 2 of 20
+ * papers once the lesson had four kinds, so it was flattened; the rest still put
+ * every kind on 98% of papers or more and were kept.
  */
 function wpick<T>(rng: Rng, xs: ReadonlyArray<readonly [T, number]>): T {
   let r = rng() * xs.reduce((s, [, w]) => s + w, 0);
@@ -187,8 +193,8 @@ const exprG4 = topic('expr_g4', /^المقادير والمتغيرات$/, [4, 4
     const m = int(rng, 3, 9), put = rng() < 0.5;
     const E = { add: `${v} + ${m}`, sub: `${v} − ${m}`, rsub: `${m} − ${v}`, mul: `${m} × ${v}` };
     return put
-      ? { eq: E.add, answer: E.add, wrongs: [E.sub, E.mul, E.rsub], ar: `في صندوق ${v} كرة، ثم وضع فيه أحمد ${m} كرات أخرى. اكتب مقدارًا جبريًا يعبّر عن عدد الكرات في الصندوق الآن.`, en: `A box holds ${v} marbles and Ahmad puts in ${m} more. Write an algebraic expression for the number of marbles in the box now.` }
-      : { eq: E.sub, answer: E.sub, wrongs: [E.rsub, E.add, E.mul], ar: `في صندوق ${v} كرة، ثم أخرج منه أحمد ${m} كرات. اكتب مقدارًا جبريًا يعبّر عن عدد الكرات في الصندوق الآن.`, en: `A box holds ${v} marbles and Ahmad takes ${m} out. Write an algebraic expression for the number of marbles in the box now.` };
+      ? { eq: E.add, answer: E.add, wrongs: [E.sub, E.mul, E.rsub], ar: `في صندوق ${v} من الكرات، ثم وضع فيه أحمد ${m} كرات أخرى. اكتب مقدارًا جبريًا يعبّر عن عدد الكرات في الصندوق الآن.`, en: `A box holds ${v} marbles and Ahmad puts in ${m} more. Write an algebraic expression for the number of marbles in the box now.` }
+      : { eq: E.sub, answer: E.sub, wrongs: [E.rsub, E.add, E.mul], ar: `في صندوق ${v} من الكرات، ثم أخرج منه أحمد ${m} كرات. اكتب مقدارًا جبريًا يعبّر عن عدد الكرات في الصندوق الآن.`, en: `A box holds ${v} marbles and Ahmad takes ${m} out. Write an algebraic expression for the number of marbles in the box now.` };
   }
   if (kind === 2) {
     const p = int(rng, 2, 9), q = int(rng, 2, 9), r = int(rng, 1, 20);
@@ -1052,7 +1058,7 @@ const standardForm = topic('line_standard', /^المعادله الخطيه با
     const eq = lineEq(A, B, C), ans = balls ? C / A : C / B;
     return {
       eq, answer: String(ans), wrongs: num(ans, [balls ? C / B : C / A, C - (balls ? A : B), C, ans + 1].filter(v => v !== ans), String),
-      ar: `تمثّل المعادلة ${eq} شراء x كرة و y مضربًا بمبلغ ${dinars(C)}، سعر الكرة ${dinars(A)} وسعر المضرب ${dinars(B)}. ${balls ? 'كم كرةً يمكن شراؤها بالمبلغ كله إذا لم يُشترَ أيّ مضرب؟' : 'كم مضربًا يمكن شراؤه بالمبلغ كله إذا لم تُشترَ أيّ كرة؟'}`,
+      ar: `تمثّل المعادلة ${eq} شراء x من الكرات و y من المضارب بمبلغ ${dinars(C)}، سعر الكرة ${dinars(A)} وسعر المضرب ${dinars(B)}. ${balls ? 'كم كرةً يمكن شراؤها بالمبلغ كله إذا لم يُشترَ أيّ مضرب؟' : 'كم مضربًا يمكن شراؤه بالمبلغ كله إذا لم تُشترَ أيّ كرة؟'}`,
       en: `The equation ${eq} describes buying x balls and y rackets for ${C} dinars: a ball costs ${A} dinars and a racket ${B}. ${balls ? 'How many balls can be bought with all the money if no racket is bought?' : 'How many rackets can be bought with all the money if no ball is bought?'}`,
     };
   }
