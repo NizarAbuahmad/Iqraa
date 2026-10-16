@@ -10,7 +10,7 @@
  */
 import { getObjectivesForLesson, type CurriculumObjective } from '@workspace/curriculum';
 
-import type { WorksheetOutput } from './ai/AIService.ts';
+import type { WorksheetOutput, WorksheetQuestionFormat } from './ai/AIService.ts';
 
 /**
  * The objectives the sheet can be filed under: its own lesson's. The KB lesson
@@ -40,7 +40,16 @@ export function classesForSend<T extends { gradeId: string; subjectId: string; s
 
 export interface WorksheetSendBody {
   title: string;
-  sections: { questions: { text: string; options?: string[]; points: number; figure?: { uri: string; caption: string } }[] }[];
+  sections: {
+    questions: {
+      text: string;
+      options?: string[];
+      points: number;
+      figure?: { uri: string; caption: string };
+      /** Carried whole: the server rebuilds it field by field and falls back to `text` if it is malformed. */
+      format?: WorksheetQuestionFormat;
+    }[];
+  }[];
   answerKey: { num: number; answer: string; solution?: string[] }[];
 }
 
@@ -58,6 +67,7 @@ export function worksheetSendPayload(ws: WorksheetOutput): WorksheetSendBody {
         ...(q.options?.length ? { options: q.options } : {}),
         points: q.points,
         ...(q.figure ? { figure: { uri: q.figure.uri, caption: q.figure.caption } } : {}),
+        ...(q.format ? { format: q.format } : {}),
       })),
     })),
     answerKey: ws.answerKey.map(k => ({

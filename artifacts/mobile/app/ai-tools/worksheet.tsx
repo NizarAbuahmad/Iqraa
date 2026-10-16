@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,6 +14,8 @@ import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { getUnitPriorKnowledge, resolveGeneratorGrounding, type GeneratorGrounding } from '@/services/kbContext';
 import { pooledVariantId } from '@/services/ai/regeneration';
 import { WorksheetOutput, type QuestionFigure } from '@/services/ai/AIService';
+import { formatAvailability, isFormatKind } from '@/services/ai/worksheetFormats';
+import { formatTicks, isTickChecked, sanitizeQuestionTypes } from '@/services/worksheetFormatTicks';
 import { buildDeckFromWorksheet } from '@/services/classDeck';
 import { ShortPaperNotice } from '@/components/ui/ShortPaperNotice';
 import { bookFigureUri } from '@/services/bookFigureUri';
@@ -83,7 +85,11 @@ const ACCENT_FILL = palette.hero;
 
 type DifficultyLevel = 'normal' | 'high' | 'difficult';
 type Difficulty = 'easy' | 'medium' | 'hard' | 'mixed';
-type QType = 'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem';
+// The four formats are APPENDED: selected types are persisted in formState, so
+// inserting would silently re-mean a saved selection. They are the bank's
+// structured questions (see worksheetFormats.ts), not rotation types.
+type QType = 'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem'
+  | 'match' | 'order' | 'spot_error' | 'graph';
 
 const DIFFICULTY_IDS: DifficultyLevel[] = ['normal', 'high', 'difficult'];
 const DIFFICULTY_MAP: Record<DifficultyLevel, Difficulty> = {
@@ -100,7 +106,7 @@ const NUM_Q_OPTIONS = ALL_QUESTION_COUNTS;
  * and lesson ids, empty context leaves `additionalContext` to `wide.fields`.
  */
 const WIDE_GROUNDING: GeneratorGrounding = { lesson: null, grounded: true, score: 0, context: '', ungroundedNote: '' };
-const ALL_Q_TYPES: QType[] = ['multiple_choice', 'short_answer', 'fill_blank', 'true_false', 'word_problem'];
+const ALL_Q_TYPES: QType[] = ['multiple_choice', 'short_answer', 'fill_blank', 'true_false', 'word_problem', 'match', 'order', 'spot_error', 'graph'];
 
 type Level = 'easy' | 'medium' | 'hard';
 /** Index-aligned with DIFFICULTY_IDS, so `diffIdx` doubles as the active level tab. */
@@ -269,15 +275,15 @@ export default function WorksheetScreen() {
   const { favorited, setFavorited, toggle: handleToggleFavorite } =
     useFavorite(savedId, key => showToast(t(key)));
 
+  // The lesson the topic grounds to, in the picked grade/subject. Resolved once
+  // per render: prior-knowledge availability and the format ticks both read it.
+  // A wide scope has no single lesson, and its label must not be looked up as one:
+  // the review option would light up for whichever lesson the label happens to match.
+  const groundedKb = topic.trim() && !wideScope.isWide
+    ? resolveGeneratorGrounding(topic.trim(), lang, { scope: { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id } }).lesson
+    : null;
   // Prior-knowledge availability for the currently selected lesson (no fabrication)
-  const priorKnowledge = (() => {
-    // A wide scope has no single lesson, and its label must not be looked up as one:
-    // the review option would light up for whichever lesson the label happens to match.
-    if (!topic.trim() || wideScope.isWide) return [] as string[];
-    const g = resolveGeneratorGrounding(topic.trim(), lang, { scope: { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id } });
-    if (!g.lesson) return [] as string[];
-    return getUnitPriorKnowledge(g.lesson.id);
-  })();
+  const priorKnowledge = groundedKb ? getUnitPriorKnowledge(groundedKb.id) : [];
   const priorReviewAvailable = priorKnowledge.length > 0;
 
   useEffect(() => {
@@ -313,6 +319,30 @@ export default function WorksheetScreen() {
   };
 
   const isHomework = readHomeworkParam(params.isHomework);
+
+  // The four formats come from the lesson's question bank, so a lesson with
+  // too little of it cannot offer them. Judged only once a lesson is GROUNDED:
+  // a half-typed title grounds to nothing, which says nothing about the bank.
+  // Subject is the one the request carries, so the tick and the generator agree.
+  const subjectName = subjects[subjectIdx].name;
+  const groundedKbId = groundedKb?.id;
+  const availability = useMemo(
+    () => (groundedKb ? formatAvailability(topic.trim(), groundedKb, subjectName) : null),
+    // groundedKb is a fresh object each render; its id is what identifies it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [topic, groundedKbId, subjectName],
+  );
+  // A wide scope hides the ticks and drops them from the request; the stored
+  // selection keeps them (`worksheetFormatTicks.ts`).
+  const tickCtx = { isHomework, isWide: wideScope.isWide, availability };
+  const { shown: shownFormats, greyed: greyedFormats } = formatTicks(tickCtx);
+
+  // Homework never builds formats, so a carried-in tick leaves the stored
+  // selection. A GREYED tick does not: it draws unchecked and is dropped from
+  // the request below, but stays selected so typing a title cannot wipe it.
+  useEffect(() => {
+    setSelectedTypes(prev => sanitizeQuestionTypes(prev, { isHomework, availability: null }));
+  }, [isHomework]);
 
   /**
    * A hand-edit invalidates whatever the verifier proved about that question
@@ -429,7 +459,7 @@ export default function WorksheetScreen() {
         lang,
         difficulty: DIFFICULTY_MAP[DIFFICULTY_IDS[diffIdx]],
         numQuestions: NUM_Q_OPTIONS[effNumQIdx],
-        questionTypes: Array.from(selectedTypes),
+        questionTypes: Array.from(sanitizeQuestionTypes(selectedTypes, tickCtx)),
         // The checkbox is hidden on a wide scope; a stale tick must not split the cache key.
         includePriorReview: wide ? false : includePriorReview,
         regenerate: opts?.regenerate === true,
@@ -640,6 +670,10 @@ export default function WorksheetScreen() {
     fill_blank: t('typeFillBlank'),
     true_false: t('typeTrueFalse'),
     word_problem: t('typeWordProblem'),
+    match: t('typeMatch'),
+    order: t('typeOrder'),
+    spot_error: t('typeSpotError'),
+    graph: t('typeGraph'),
   };
 
   // An English material saved in Arabic (before 2026-10-04) is redone in
@@ -761,9 +795,27 @@ export default function WorksheetScreen() {
 
         <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left', marginBottom: 10 }]}>{t('questionTypesLabel')}</Text>
         <View style={[styles.checkboxGroup, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-          {ALL_Q_TYPES.map(type => (
-            <CheckboxRow key={type} label={typeLabels[type]} checked={selectedTypes.has(type)} onToggle={() => toggleType(type)} accent={ACCENT} colors={colors} isRTL={isRTL} />
-          ))}
+          {ALL_Q_TYPES.filter(type => !isFormatKind(type) || shownFormats.includes(type)).map(type => {
+            const greyed = isFormatKind(type) && greyedFormats.includes(type);
+            return (
+              <CheckboxRow
+                key={type}
+                label={typeLabels[type]}
+                checked={isTickChecked(type, selectedTypes, tickCtx)}
+                onToggle={() => toggleType(type)}
+                accent={ACCENT}
+                colors={colors}
+                isRTL={isRTL}
+                disabled={greyed}
+                disabledOpacity={0.5}
+              />
+            );
+          })}
+          {greyedFormats.length > 0 ? (
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>
+              {t('formatUnavailable')}
+            </Text>
+          ) : null}
         </View>
 
         {/* A prior-knowledge review is built from one lesson's unit; a wide scope has none, so the option is not offered. */}
@@ -911,6 +963,17 @@ export default function WorksheetScreen() {
           </View>
 
           <ShortPaperNotice shortfall={result.shortfall} repeated={result.repeated} />
+          {result.missingFormats?.length ? (
+            <View
+              style={[styles.noticeBox, { flexDirection: isRTL ? 'row-reverse' : 'row', borderColor: colors.border, backgroundColor: colors.card, borderRadius: colors.radius }]}
+              accessibilityRole="alert"
+            >
+              <Ionicons name="information-circle-outline" size={18} color={colors.mutedForeground} style={{ marginTop: 2 }} />
+              <Text style={[styles.noticeText, { color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left' }]}>
+                {t('formatsMissing', result.missingFormats.map(k => typeLabels[k]).join(isRTL ? '، ' : ', '))}
+              </Text>
+            </View>
+          ) : null}
           {coverageInfo && result && (
             <CoverageNotice
               lessons={coverageInfo.lessons}
@@ -1288,16 +1351,17 @@ export default function WorksheetScreen() {
   );
 }
 
-function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL, disabled }: {
+function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL, disabled, disabledOpacity = 0.6 }: {
   label: string; checked: boolean; onToggle: () => void;
   accent: string; colors: ReturnType<typeof useColors>; isRTL: boolean;
   disabled?: boolean;
+  disabledOpacity?: number;
 }) {
   return (
     <Pressable
       onPress={disabled ? undefined : onToggle}
       disabled={disabled}
-      style={[styles.checkRow, { flexDirection: isRTL ? 'row-reverse' : 'row', opacity: disabled ? 0.6 : 1 }]}
+      style={[styles.checkRow, { flexDirection: isRTL ? 'row-reverse' : 'row', opacity: disabled ? disabledOpacity : 1 }]}
     >
       <View style={[styles.checkbox, { borderColor: checked ? accent : colors.border, backgroundColor: checked ? accent : 'transparent' }]}>
         {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
@@ -1329,6 +1393,8 @@ const styles = StyleSheet.create({
   label: { fontSize: 13, marginBottom: 6 },
   checkboxGroup: { borderWidth: 1, padding: 14, marginBottom: 16, gap: 4 },
   checkRow: { alignItems: 'center', gap: 10, paddingVertical: 6 },
+  noticeBox: { alignItems: 'flex-start', gap: 12, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 12 },
+  noticeText: { flex: 1, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20 },
   checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   successBanner: { alignItems: 'center', gap: 10, padding: 14, borderWidth: 1, marginBottom: 12 },
   levelTabs: { borderWidth: 1, padding: 4, gap: 4, marginBottom: 12 },

@@ -124,7 +124,8 @@ export interface AIRequest {
   // Worksheet extras
   difficulty?: 'easy' | 'medium' | 'hard' | 'mixed';
   numQuestions?: number;
-  questionTypes?: Array<'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem'>;
+  /** The four format kinds ('match' …) are worksheet-only: the bank builds them (see worksheetFormats.ts). */
+  questionTypes?: Array<'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem' | 'match' | 'order' | 'spot_error' | 'graph'>;
   /** When true and priorKnowledge is non-empty, prepend a "مراجعة سابقة" warm-up.
    *  Shared by worksheet and lesson-plan generation. */
   includePriorReview?: boolean;
@@ -253,6 +254,9 @@ export interface WorksheetOutput {
    *  of the questions already on screen — see `QuizOutput.repeated`. */
   repeated?: { count: number; of: number };
   lab?: WorksheetLab;
+  /** Formats the teacher asked for that this lesson's bank cannot supply, so the
+   *  screen can say so instead of silently handing back a plainer paper. */
+  missingFormats?: FormatKind[];
 }
 
 export interface WorksheetSection {
@@ -271,10 +275,18 @@ export interface WorksheetSection {
    * `'mixed'` — so a live-generated mixed section can still carry a single
    * type. Fix that there if this field ever gains a consumer.
    */
-  type: 'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem' | 'mixed';
+  type: 'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem' | 'mixed'
+    | 'match' | 'order' | 'spot_error' | 'graph';
   title: string;
   questions: WorksheetQuestion[];
 }
+
+/** A structured question format (spec 2026-10-11), beside the plain-text kinds. */
+export type WorksheetQuestionFormat =
+  | { kind: 'match'; stem: string; left: string[]; right: string[]; pairs: number[] }
+  | { kind: 'order'; stem: string; steps: string[]; order: number[] }
+  | { kind: 'spot_error'; stem: string; steps: string[]; wrongStep: number; fix: string; why: string }
+  | { kind: 'graph'; stem: string; exprs: string[]; window: { xMin: number; xMax: number; yMin: number; yMax: number } };
 
 export interface WorksheetQuestion {
   text: string;
@@ -299,6 +311,8 @@ export interface WorksheetQuestion {
    * item — a person matches them, as `BookFiguresPanel` explains.
    */
   figure?: QuestionFigure;
+  /** A structured format (spec 2026-10-11). `text` is still the whole question in plain text. */
+  format?: WorksheetQuestionFormat;
 }
 
 /** A book figure as a question carries it — the same shape as `BookFigureRef`. */
@@ -465,6 +479,8 @@ export interface ActivitySlide {
    * the picture too.
    */
   visual?: import('../deckVisuals.ts').VisualBlock;
+  /** The visual is the answer: the presenter draws it only after the reveal. */
+  visualOnReveal?: boolean;
   /** Media payload for type 'media' — projected image, video, audio, or a linked document. */
   /**
    * A picture that sits BESIDE this slide's text rather than replacing it.
@@ -749,6 +765,7 @@ export interface GenerateOptions {
 
 export type { InfographicOutput } from './infographic.ts';
 import type { InfographicOutput } from './infographic.ts';
+import type { FormatKind } from '@workspace/math-practice';
 import type { PhotoCredit } from '../photoCredit.ts';
 
 export abstract class AIService {
