@@ -34,8 +34,14 @@ export type { ChemFamily } from './chemistry.ts';
 export { subjectIdFromName } from './subjects.ts';
 export { stepsFor, solvedItemIds, completionSplit } from './steps.ts';
 export type { SolutionSteps } from './steps.ts';
+export { MISSTEPS, misstepsFor } from './missteps.ts';
+export { ORDER_SAFE } from './orderSafe.ts';
+export { pickForFormat, formatSupported } from './formatsBank.ts';
+export type { FormatKind, MatchPick, OrderPick, SpotErrorPick, GraphPick } from './formatsBank.ts';
+export type { Misstep } from './missteps.ts';
 export { detectElementaryOp, elementaryOpsForTitle } from './elementary.ts';
 export { topicFor } from './topics.ts';
+export { stemFrame } from './stemFrame.ts';
 
 export interface PracticeLesson {
   id: string;
@@ -122,6 +128,9 @@ const usedIds = new Set<string>();
 export function beginMathPracticeSession(): void {
   usedIds.clear();
 }
+
+/** The module-level used-id set, so offline worksheet formats dedupe against the same set as every other question on the sheet. */
+export function currentSession(): Set<string> { return usedIds; }
 
 /** The lesson's name and nothing else — what routing reads. See `elementaryOpsForTitle`. */
 export function lessonTitleBlob(topic: string, kb: KBLesson | null): string {
@@ -363,12 +372,32 @@ export const MATH_BANK: ConcreteItem[] = [
   { id: 'lq-m2', family: 'linear_quad', diff: 'medium', eq: 'y = −x + 4', eq2: 'y = x² − x', answer: '(−2 ، 6) و (2 ، 2)', wrongs: ['(0 ، 4)', '(1 ، 3)', 'لا حل'], kind: 'system' },
   { id: 'lq-h1', family: 'linear_quad', diff: 'hard', eq: 'y = 3x − 1', eq2: 'y = x² + x − 1', answer: '(0 ، −1) و (2 ، 5)', wrongs: ['(1 ، 2)', '(−1 ، −4)', 'لا حل'], kind: 'system' },
   { id: 'lq-h2', family: 'linear_quad', diff: 'hard', eq: 'x + y = 5', eq2: 'y = x² − 1', answer: '(2 ، 3) و (−3 ، 8)', wrongs: ['(1 ، 4)', '(0 ، 5)', 'لا حل'], kind: 'system', promptAr: 'حل النظام:\nx + y = 5\ny = x² − 1', promptEn: 'Solve:\nx + y = 5\ny = x² − 1' },
+  // How many solutions, the tangent case, and the real-life model — the lesson's
+  // other two objectives («تعرُّف عدد الحلول الممكنة»، «نمذجة مسألة حياتية»), which
+  // the solve items above never asked (2026-10-15). Answers checked in SymPy.
+  { id: 'lq-n1', family: 'linear_quad', diff: 'easy', eq: 'y = 3x − 2', eq2: 'y = x²', answer: 'حلّان', wrongs: ['حل واحد', 'لا يوجد حل', 'عدد لا نهائي من الحلول'], promptAr: 'كم حلًّا للنظام الآتي؟\ny = 3x − 2\ny = x²', promptEn: 'How many solutions does this system have?\ny = 3x − 2\ny = x²' },
+  { id: 'lq-n2', family: 'linear_quad', diff: 'medium', eq: 'y = 2x − 1', eq2: 'y = x²', answer: 'حل واحد', wrongs: ['حلّان', 'لا يوجد حل', 'عدد لا نهائي من الحلول'], promptAr: 'كم حلًّا للنظام الآتي؟\ny = 2x − 1\ny = x²', promptEn: 'How many solutions does this system have?\ny = 2x − 1\ny = x²' },
+  { id: 'lq-n3', family: 'linear_quad', diff: 'medium', eq: 'y = x − 3', eq2: 'y = x²', answer: 'لا يوجد حل', wrongs: ['حل واحد', 'حلّان', 'عدد لا نهائي من الحلول'], promptAr: 'كم حلًّا للنظام الآتي؟\ny = x − 3\ny = x²', promptEn: 'How many solutions does this system have?\ny = x − 3\ny = x²' },
+  { id: 'lq-k1', family: 'linear_quad', diff: 'hard', eq: 'y = 2x + k', eq2: 'y = x²', answer: '−1', wrongs: ['1', '0', '−2'], promptAr: 'ما قيمة k التي تجعل المستقيم y = 2x + k يمسّ المنحنى y = x² (حل واحد فقط)؟', promptEn: 'What value of k makes the line y = 2x + k touch the curve y = x² (exactly one solution)?' },
+  { id: 'lq-k2', family: 'linear_quad', diff: 'hard', eq: 'y = 6x + k', eq2: 'y = x² + 1', answer: '−8', wrongs: ['8', '−9', '10'], promptAr: 'ما قيمة k التي تجعل المستقيم y = 6x + k يمسّ المنحنى y = x² + 1 (حل واحد فقط)؟', promptEn: 'What value of k makes the line y = 6x + k touch the curve y = x² + 1 (exactly one solution)?' },
+  { id: 'lq-w1', family: 'linear_quad', diff: 'medium', eq: 'x + y = 7', eq2: 'xy = 12', answer: '3 و 4', wrongs: ['2 و 5', '1 و 6', '3 و 5'], kind: 'word', wordAr: 'عددان موجبان مجموعهما 7 وحاصل ضربهما 12. ما العددان؟', wordEn: 'Two positive numbers add up to 7 and multiply to 12. What are they?' },
+  { id: 'lq-w2', family: 'linear_quad', diff: 'hard', eq: '2(l + w) = 20', eq2: 'lw = 24', answer: '4 م و 6 م', wrongs: ['3 م و 8 م', '2 م و 12 م', '5 م و 5 م'], kind: 'word', wordAr: 'قطعة أرض مستطيلة الشكل محيطها 20 م ومساحتها 24 م². ما بُعداها؟', wordEn: 'A rectangular plot has perimeter 20 m and area 24 m². What are its dimensions?' },
 
   // ── Two quadratics ──
   { id: 'qq-e1', family: 'quad_system', diff: 'easy', eq: 'y = x²', eq2: 'y = 4', answer: '(−2 ، 4) و (2 ، 4)', wrongs: ['(4 ، 16)', '(0 ، 0)', 'لا حل'], kind: 'system' },
   { id: 'qq-m1', family: 'quad_system', diff: 'medium', eq: 'y = x² − 4', eq2: 'y = −x² + 4', answer: '(−2 ، 0) و (2 ، 0)', wrongs: ['(0 ، −4)', '(1 ، −3)', 'لا حل'], kind: 'system' },
   { id: 'qq-m2', family: 'quad_system', diff: 'medium', eq: 'y = x² + 1', eq2: 'y = 2x² − 3', answer: '(−2 ، 5) و (2 ، 5)', wrongs: ['(0 ، 1)', '(1 ، 2)', 'لا حل'], kind: 'system' },
   { id: 'qq-h1', family: 'quad_system', diff: 'hard', eq: 'y = x² − 2x', eq2: 'y = −x² + 4', answer: '(−1 ، 3) و (2 ، 0)', wrongs: ['(0 ، 0)', '(1 ، −1)', 'لا حل'], kind: 'system' },
+  // More systems to solve (the family held four), how many solutions, and the
+  // subtraction step the lesson teaches for equal x² coefficients. Checked in SymPy.
+  { id: 'qq-m3', family: 'quad_system', diff: 'medium', eq: 'y = x² + 2x', eq2: 'y = x² − 4x + 6', answer: '(1 ، 3)', wrongs: ['(3 ، 15)', '(1 ، 3) و (−1 ، −1)', 'لا حل'], kind: 'system' },
+  { id: 'qq-m4', family: 'quad_system', diff: 'medium', eq: 'y = x² − 2x + 1', eq2: 'y = −x² + 2x + 1', answer: '(0 ، 1) و (2 ، 1)', wrongs: ['(0 ، 1)', '(1 ، 0)', 'لا حل'], kind: 'system' },
+  { id: 'qq-h2', family: 'quad_system', diff: 'hard', eq: 'y = x² + x', eq2: 'y = −x² + 3x + 4', answer: '(−1 ، 0) و (2 ، 6)', wrongs: ['(1 ، 2) و (−2 ، 2)', '(−1 ، 0)', 'لا حل'], kind: 'system' },
+  { id: 'qq-h3', family: 'quad_system', diff: 'hard', eq: 'y = 2x² − x', eq2: 'y = x² + x + 3', answer: '(−1 ، 3) و (3 ، 15)', wrongs: ['(1 ، 1) و (3 ، 15)', '(−1 ، 3)', 'لا حل'], kind: 'system' },
+  { id: 'qq-n1', family: 'quad_system', diff: 'easy', eq: 'y = x² − 1', eq2: 'y = −x² + 1', answer: 'حلّان', wrongs: ['حل واحد', 'لا يوجد حل', 'أربعة حلول'], promptAr: 'كم حلًّا للنظام الآتي؟\ny = x² − 1\ny = −x² + 1', promptEn: 'How many solutions does this system have?\ny = x² − 1\ny = −x² + 1' },
+  { id: 'qq-n2', family: 'quad_system', diff: 'medium', eq: 'y = x²', eq2: 'y = −x²', answer: 'حل واحد', wrongs: ['حلّان', 'لا يوجد حل', 'أربعة حلول'], promptAr: 'كم حلًّا للنظام الآتي؟\ny = x²\ny = −x²', promptEn: 'How many solutions does this system have?\ny = x²\ny = −x²' },
+  { id: 'qq-n3', family: 'quad_system', diff: 'medium', eq: 'y = x² + 1', eq2: 'y = −x² − 1', answer: 'لا يوجد حل', wrongs: ['حل واحد', 'حلّان', 'أربعة حلول'], promptAr: 'كم حلًّا للنظام الآتي؟\ny = x² + 1\ny = −x² − 1', promptEn: 'How many solutions does this system have?\ny = x² + 1\ny = −x² − 1' },
+  { id: 'qq-s1', family: 'quad_system', diff: 'easy', eq: 'y = x² + 4x', eq2: 'y = x² − 2x + 12', answer: '2', wrongs: ['−2', '12', '6'], promptAr: 'في النظام الآتي اطرح المعادلتين للتخلص من x². ما قيمة x الناتجة؟\ny = x² + 4x\ny = x² − 2x + 12', promptEn: 'Subtract the two equations to eliminate x². What value of x do you get?\ny = x² + 4x\ny = x² − 2x + 12' },
 
   // ── Simplify exponents ──
   { id: 'se-e1', family: 'simplify_exp', diff: 'easy', eq: '2^3 · 2^4', answer: '2^7 = 128', wrongs: ['2^{12}', '8^4', '2^1'], kind: 'simplify', promptAr: 'بسّط: 2³ · 2⁴', promptEn: 'Simplify: 2³ · 2⁴' },
@@ -379,6 +408,16 @@ export const MATH_BANK: ConcreteItem[] = [
   { id: 'se-m3', family: 'simplify_exp', diff: 'medium', eq: '(2^3 · 2^{-1}) / 2', answer: '2', wrongs: ['4', '1', '8'], kind: 'simplify', promptAr: 'بسّط: (2³ · 2⁻¹) ÷ 2', promptEn: 'Simplify: (2³ · 2⁻¹) ÷ 2' },
   { id: 'se-h1', family: 'simplify_exp', diff: 'hard', eq: '(16^{3/4}) / (8^{1/3})', answer: '4', wrongs: ['2', '8', '1'], kind: 'simplify', promptAr: 'بسّط: 16^(3/4) ÷ 8^(1/3)', promptEn: 'Simplify: 16^(3/4) ÷ 8^(1/3)' },
   { id: 'se-h2', family: 'simplify_exp', diff: 'hard', eq: 'a^5 · a^{-2} / a', answer: 'a^2', wrongs: ['a^3', 'a^4', 'a'], kind: 'simplify', promptAr: 'بسّط: a⁵ · a⁻² ÷ a', promptEn: 'Simplify: a⁵ · a⁻² ÷ a' },
+  // Rational exponents as the lesson defines them — radical ↔ exponent form and
+  // evaluation — and an exponent found from the laws; the family only simplified
+  // (2026-10-15). Checked in SymPy.
+  { id: 'se-r1', family: 'simplify_exp', diff: 'easy', eq: '7^{2/3}', answer: '∛(7²)', wrongs: ['√(7³)', '∛(7³)', '2∛7'], promptAr: 'اكتب 7^(2/3) بالصورة الجذرية.', promptEn: 'Write 7^(2/3) in radical form.' },
+  { id: 'se-r2', family: 'simplify_exp', diff: 'medium', eq: '\\sqrt[5]{x^3}', answer: 'x^(3/5)', wrongs: ['x^(5/3)', 'x^(1/15)', 'x^15'], promptAr: 'اكتب ⁵√(x³) بالصورة الأسية.', promptEn: 'Write ⁵√(x³) in exponent form.' },
+  { id: 'se-v1', family: 'simplify_exp', diff: 'easy', eq: '81^{3/4}', answer: '27', wrongs: ['9', '60.75', '243'], promptAr: 'احسب قيمة 81^(3/4).', promptEn: 'Evaluate 81^(3/4).' },
+  { id: 'se-v2', family: 'simplify_exp', diff: 'medium', eq: '16^{-1/2}', answer: '1/4', wrongs: ['−4', '4', '−1/4'], promptAr: 'احسب قيمة 16^(−1/2).', promptEn: 'Evaluate 16^(−1/2).' },
+  { id: 'se-v3', family: 'simplify_exp', diff: 'hard', eq: '125^{-2/3}', answer: '1/25', wrongs: ['25', '−1/25', '1/5'], promptAr: 'احسب قيمة 125^(−2/3).', promptEn: 'Evaluate 125^(−2/3).' },
+  { id: 'se-a1', family: 'simplify_exp', diff: 'medium', eq: '2^a · 2^3 = 2^{10}', answer: '7', wrongs: ['13', '30', '10/3'], promptAr: 'إذا كان 2^a × 2³ = 2¹⁰، فما قيمة a؟', promptEn: 'If 2^a × 2³ = 2¹⁰, what is a?' },
+  { id: 'se-a2', family: 'simplify_exp', diff: 'hard', eq: '(3^a)^2 = 3^8', answer: '4', wrongs: ['6', '16', '10'], promptAr: 'إذا كان (3^a)² = 3⁸، فما قيمة a؟', promptEn: 'If (3^a)² = 3⁸, what is a?' },
 
   // ── Circle ──
   { id: 'c-e1', family: 'circle', diff: 'easy', eq: 'r = 5', answer: 'محيط = 10π', wrongs: ['5π', '25π', '20π'], promptAr: 'دائرة نصف قطرها 5. أوجد محيطها بدلالة π.', promptEn: 'A circle has radius 5. Find its circumference in terms of π.' },
@@ -421,6 +460,23 @@ export const MATH_BANK: ConcreteItem[] = [
   { id: 'd-m1', family: 'derivative', diff: 'medium', eq: 'f(x)=x³ − 4x', answer: "f'(x) = 3x² − 4", wrongs: ['3x²', 'x² − 4', '3x − 4'], promptAr: 'أوجد f′(x) إذا كان f(x) = x³ − 4x.', promptEn: 'Find f′(x) for f(x) = x³ − 4x.' },
   { id: 'd-m2', family: 'derivative', diff: 'medium', eq: 'f(x)=x², slope at x=3', answer: 'الميل = 6', wrongs: ['3', '9', '2'], promptAr: 'ما ميل مماس منحنى y = x² عند x = 3؟', promptEn: 'What is the slope of the tangent to y = x² at x = 3?' },
   { id: 'd-h1', family: 'derivative', diff: 'hard', eq: 'f(x)=x³ − 3x', answer: 'قيم حرجة عند x = ±1', wrongs: ['x = 0 فقط', 'x = 3', 'لا قيم حرجة'], promptAr: 'أوجد القيم الحرجة لـ f(x) = x³ − 3x.', promptEn: 'Find the critical points of f(x) = x³ − 3x.' },
+  { id: 'd-e3', family: 'derivative', diff: 'easy', eq: 'f(x)=x³', answer: "f'(x) = 3x²", wrongs: ['3x', 'x²', '3x³'], promptAr: 'أوجد مشتقة f(x) = x³.', promptEn: 'Find the derivative of f(x) = x³.' },
+  { id: 'd-e4', family: 'derivative', diff: 'easy', eq: 'f(x)=x + 7', answer: "f'(x) = 1", wrongs: ['7', 'x', '0'], promptAr: 'أوجد مشتقة f(x) = x + 7.', promptEn: 'Find the derivative of f(x) = x + 7.' },
+  { id: 'd-e5', family: 'derivative', diff: 'easy', eq: 'f(x)=4x²', answer: "f'(x) = 8x", wrongs: ['4x', '8', '2x'], promptAr: 'أوجد مشتقة f(x) = 4x².', promptEn: 'Find the derivative of f(x) = 4x².' },
+  { id: 'd-e6', family: 'derivative', diff: 'easy', eq: 'f(x)=x⁵', answer: "f'(x) = 5x⁴", wrongs: ['5x', 'x⁴', '5x⁵'], promptAr: 'أوجد مشتقة f(x) = x⁵.', promptEn: 'Find the derivative of f(x) = x⁵.' },
+  { id: 'd-m3', family: 'derivative', diff: 'medium', eq: 'f(x)=x⁴ − 2x²', answer: "f'(x) = 4x³ − 4x", wrongs: ['4x³ − 2x', 'x³ − 4x', '4x³ − 2x²'], promptAr: 'أوجد f′(x) إذا كان f(x) = x⁴ − 2x².', promptEn: 'Find f′(x) for f(x) = x⁴ − 2x².' },
+  { id: 'd-m4', family: 'derivative', diff: 'medium', eq: 'f(x)=3x² + 2x − 5', answer: "f'(x) = 6x + 2", wrongs: ['6x', '3x + 2', '6x − 5'], promptAr: 'أوجد f′(x) إذا كان f(x) = 3x² + 2x − 5.', promptEn: 'Find f′(x) for f(x) = 3x² + 2x − 5.' },
+  { id: 'd-m5', family: 'derivative', diff: 'medium', eq: 'f(x)=x³, slope at x=2', answer: 'الميل = 12', wrongs: ['8', '6', '4'], promptAr: 'ما ميل مماس منحنى y = x³ عند x = 2؟', promptEn: 'What is the slope of the tangent to y = x³ at x = 2?' },
+  { id: 'd-m6', family: 'derivative', diff: 'medium', eq: 'f(x)=x² − 4x, slope at x=5', answer: 'الميل = 6', wrongs: ['5', '10', '1'], promptAr: 'ما ميل مماس منحنى y = x² − 4x عند x = 5؟', promptEn: 'What is the slope of the tangent to y = x² − 4x at x = 5?' },
+  { id: 'd-m7', family: 'derivative', diff: 'medium', eq: 'f(x)=x² − 6x, horizontal tangent', answer: 'x = 3', wrongs: ['x = 6', 'x = −3', 'x = 0'], promptAr: 'عند أي قيمة لـ x يكون مماس منحنى f(x) = x² − 6x أفقيًا؟', promptEn: 'At which value of x is the tangent to f(x) = x² − 6x horizontal?' },
+  { id: 'd-m8', family: 'derivative', diff: 'medium', eq: 'f(x)=x² − 4x + 3, critical point', answer: 'x = 2', wrongs: ['x = −2', 'x = 4', 'x = 3'], promptAr: 'أوجد القيمة الحرجة لـ f(x) = x² − 4x + 3.', promptEn: 'Find the critical point of f(x) = x² − 4x + 3.' },
+  { id: 'd-m9', family: 'derivative', diff: 'medium', eq: 'f(x)=x², secant x=1 to x=3', answer: 'الميل = 4', wrongs: ['8', '2', '6'], promptAr: 'ما ميل القاطع المار بالنقطتين على منحنى f(x) = x² عند x = 1 وx = 3؟', promptEn: 'What is the slope of the secant line through the points on the curve f(x) = x² at x = 1 and x = 3?' },
+  { id: 'd-h2', family: 'derivative', diff: 'hard', eq: 'f(x)=x² − 4x + 3, minimum value', answer: '−1', wrongs: ['2', '3', '−4'], promptAr: 'ما القيمة الصغرى للاقتران f(x) = x² − 4x + 3؟', promptEn: 'What is the minimum value of f(x) = x² − 4x + 3?' },
+  { id: 'd-h3', family: 'derivative', diff: 'hard', eq: 'f(x)=x³ − 12x', answer: 'قيم حرجة عند x = ±2', wrongs: ['x = 0 فقط', 'x = ±4', 'لا قيم حرجة'], promptAr: 'أوجد القيم الحرجة لـ f(x) = x³ − 12x.', promptEn: 'Find the critical points of f(x) = x³ − 12x.' },
+  { id: 'd-h4', family: 'derivative', diff: 'hard', eq: 'f(x)=−x² + 6x, maximum value', answer: '9', wrongs: ['3', '6', '18'], promptAr: 'ما القيمة العظمى للاقتران f(x) = −x² + 6x؟', promptEn: 'What is the maximum value of f(x) = −x² + 6x?' },
+  { id: 'd-h5', family: 'derivative', diff: 'hard', eq: 'f(x)=x³ − 3x²', answer: 'قيم حرجة عند x = 0 و x = 2', wrongs: ['x = 0 فقط', 'x = 2 فقط', 'x = 3'], promptAr: 'أوجد القيم الحرجة لـ f(x) = x³ − 3x².', promptEn: 'Find the critical points of f(x) = x³ − 3x².' },
+  { id: 'd-h6', family: 'derivative', diff: 'hard', eq: 'f(x)=x³ − 3x on [0,2], absolute maximum', answer: '2', wrongs: ['0', '−2', '8'], promptAr: 'أوجد القيمة العظمى المطلقة للاقتران f(x) = x³ − 3x على الفترة [0 ، 2].', promptEn: 'Find the absolute maximum of f(x) = x³ − 3x on the interval [0, 2].' },
+  { id: 'd-h7', family: 'derivative', diff: 'hard', eq: 'f(x)=x² − 4x, decreasing', answer: 'متناقص عندما x < 2', wrongs: ['متناقص عندما x > 2', 'متزايد عندما x < 2', 'متناقص عندما x < 4'], promptAr: 'متى يكون الاقتران f(x) = x² − 4x متناقصًا؟', promptEn: 'When is f(x) = x² − 4x decreasing?' },
 
   // ── Vectors ──
   { id: 'v-e1', family: 'vectors', diff: 'easy', eq: 'A(1,2), B(4,6)', answer: 'AB⃗ = ⟨3 ، 4⟩', wrongs: ['⟨5 ، 8⟩', '⟨−3 ، −4⟩', '⟨4 ، 3⟩'], promptAr: 'أوجد المتجه AB⃗ من A(1,2) إلى B(4,6).', promptEn: 'Find vector AB from A(1,2) to B(4,6).' },
@@ -468,7 +524,7 @@ const BANK = MATH_BANK;
  * One stem, every type. Items with no prompt fall back to wording chosen by
  * what the item actually is rather than one phrase covering everything.
  */
-function itemStem(item: ConcreteItem, isAr: boolean): string {
+export function itemStem(item: ConcreteItem, isAr: boolean): string {
   if (item.kind === 'word' && (item.wordAr || item.wordEn)) {
     return isAr ? (item.wordAr ?? item.eq) : (item.wordEn ?? item.eq);
   }

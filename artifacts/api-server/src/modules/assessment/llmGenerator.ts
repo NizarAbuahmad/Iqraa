@@ -32,12 +32,43 @@ import {
   isMathematicsSubject,
   parseAnswerKeyCheck,
 } from "@workspace/math-verify";
-import { competencyForBlooms, type CompetencyKey } from "./competency.ts";
+import { MARKS_BY_COMPETENCY, competencyForBlooms, type CompetencyKey } from "./competency.ts";
+import type { BookSupplied } from "./bookQuestions.ts";
 import type { GeneratedQuestion } from "./mockGenerator.ts";
 import { variationBlock } from "../../lib/variation.ts";
 
 /** Bumped when the prompt changes shape, so usage rows stay comparable. */
-export const GENERATION_PROMPT_VERSION = "exam-gen-6";
+export const GENERATION_PROMPT_VERSION = "exam-gen-7";
+
+/**
+ * What the model is told the official textbook already supplies for this paper
+ * (see `planBook` in `bookQuestions.ts`). Absent, or `count === 0`, the prompt is
+ * exactly what it was before this existed.
+ */
+export interface LlmSupplied extends BookSupplied {
+  /** About how many of the paper's questions the book writes. */
+  count: number;
+  /** How many of each competency the model should write so the whole paper lands on target. Sums to the request's `count`. */
+  newByCompetency: Record<CompetencyKey, number>;
+  /** The whole paper: the model's questions plus the book's. */
+  paperTotal: number;
+  /**
+   * A top-up only: how many questions the model already wrote in an earlier reply
+   * (their stems are in the avoid list). Then `newByCompetency` is what remains
+   * of its share, and the block says so. Absent or 0 on a first call.
+   */
+  alreadyWritten?: number;
+}
+
+const hasSupplied = (req: LlmGenerationRequest): req is LlmGenerationRequest & { supplied: LlmSupplied } =>
+  req.supplied !== undefined && req.supplied.count > 0;
+
+/** The prompt version to record for a paper made from `req`: the block changes the text, so it changes the version. */
+export function generationPromptVersion(req: Pick<LlmGenerationRequest, "supplied">): string {
+  return req.supplied !== undefined && req.supplied.count > 0
+    ? `${GENERATION_PROMPT_VERSION}+book`
+    : GENERATION_PROMPT_VERSION;
+}
 
 export interface LlmGenerationRequest {
   objectives: CurriculumObjective[];
@@ -70,6 +101,12 @@ export interface LlmGenerationRequest {
   avoid?: readonly string[];
   /** Set on the one retry after the first attempt repeated most of `avoid`. */
   insistent?: boolean;
+  /**
+   * Real textbook questions that will be added after the model's, so the model
+   * can write the rest of the paper around them. Only text for the user message;
+   * the model is told counts, never the book's stems.
+   */
+  supplied?: LlmSupplied;
 }
 
 /**
@@ -169,10 +206,57 @@ export function gradeClause(gradeId: string | undefined): string {
   return Number.isInteger(n) && n >= 1 && n <= 12 ? `, Grade ${n}` : "";
 }
 
+const COMPETENCY_ORDER: readonly CompetencyKey[] = [
+  "knowledge",
+  "understanding",
+  "application",
+  "critical_thinking",
+];
+
+/**
+ * The paragraph that tells the model what the textbook already supplies.
+ * English, like the rest of the prompt's instructions. Every number is "about":
+ * the real draw is made after the model answers and can differ by a question.
+ * `count` is what the model is asked to write (the request's own count).
+ */
+function suppliedBlock(s: LlmSupplied, count: number): string[] {
+  const types = Object.entries(s.byType)
+    .filter(([, n]) => (n ?? 0) > 0)
+    .map(([t, n]) => `${n} ${t}`)
+    .join(", ");
+  const competencies = COMPETENCY_ORDER.filter(c => (s.byCompetency[c] ?? 0) > 0)
+    .map(c => `${c} ${s.byCompetency[c]} (${s.byCompetency[c]! * MARKS_BY_COMPETENCY[c]} marks)`)
+    .join(", ");
+  const toWrite = COMPETENCY_ORDER.map(c => `${c} ${s.newByCompetency[c] ?? 0}`).join(", ");
+  return [
+    `This paper has ${s.paperTotal} questions in all. About ${s.count} of them are already written from the official textbook `
+      + "and will be added after yours.",
+    `Those are: ${types}; by competency ${competencies}.`,
+    `You will not see them and must not try to reproduce them; write only the ${count} other questions. `
+      + "Count them when you spread the questions across the listed types "
+      + "(rule 2 applies to the whole paper, not only to your share).",
+    ...((s.alreadyWritten ?? 0) > 0
+      ? [
+        `You already wrote ${s.alreadyWritten} question${s.alreadyWritten === 1 ? "" : "s"} in an earlier reply `
+          + "(their stems are in the avoid list); the quota below is what remains of your share.",
+      ]
+      : []),
+    `To bring the whole paper to its target mix, write about: ${toWrite}.`,
+    "",
+  ];
+}
+
 export function buildGenerationPrompt(req: LlmGenerationRequest): {
   system: string;
   user: string;
 } {
+  // A programming error, caught before anything is sent: the per-competency
+  // targets are what the model is asked to write, so they must add up to it.
+  // (`paperTotal` is only text in the block; nothing is asserted about it.)
+  if (hasSupplied(req)) {
+    const toWrite = COMPETENCY_ORDER.reduce((n, c) => n + (req.supplied.newByCompetency[c] ?? 0), 0);
+    if (toWrite !== req.count) throw new Error("supplied.newByCompetency must sum to count");
+  }
   const arabic = req.language !== "en";
   const contracts = req.assessmentTypes
     .map(t => `- ${t}: ${TYPE_CONTRACTS[t] ?? "{}"}`)
@@ -201,7 +285,12 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
       + "any true/false statements are false, each wrong in a specific detail.",
     "3. Distractors are plausible wrong answers a real student would pick — never filler, never obviously absurd, never 'none of the above'.",
     "4. Never write a question whose answer is a matter of opinion unless the type is open_ended.",
-    "5. Do not repeat yourself. Two questions that test the same fact in the same way are one question.",
+    // The quarter is the line `dominantFrame` (validator.ts) warns the teacher at,
+    // so the model is told the same rule the paper is checked against.
+    "5. Do not repeat yourself. Two questions that test the same fact or skill in the same way are one question, "
+      + "however differently they are worded. Spread the paper over different parts of the objectives, and vary the "
+      + "form of the questions: no more than a quarter of them may open with the same words or be the same sentence "
+      + "with different numbers.",
     "6. Whenever a question's answer is symbolic — an expression, a value, a solution set, a point — you "
       + "include \"check\", in Latin notation. It is verified by a computer algebra system before any "
       + "teacher sees the question, so a key you are not sure of is worth more to us checked than omitted. "
@@ -239,6 +328,7 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
   const user = [
     `Write ${req.count} questions.`,
     "",
+    ...(hasSupplied(req) ? suppliedBlock(req.supplied, req.count) : []),
     "Objectives (use these ids verbatim):",
     objectives,
     "",
@@ -438,7 +528,7 @@ export function parseGeneratedQuestions(
       // `evaluations.generator` records the same at the evaluation level.
       aiMetadata: {
         model: meta.model,
-        promptVersion: GENERATION_PROMPT_VERSION,
+        promptVersion: generationPromptVersion(req),
         source: "llm",
       },
     });

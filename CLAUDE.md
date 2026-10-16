@@ -127,6 +127,12 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   the `scope` option (`KbScope`) — the generator screens, the reopened-material
   scope and `groundedSubjectConflict` do — and derive `lessonId`/`unitId` from
   the grounding you already resolved, never by re-grounding the title.
+  **Scope is not enough either (found 2026-10-15):** every Grade 1 English lesson
+  is "Vocabulary & Grammar" or "Listening & Speaking", so a scoped title still
+  lands every unit on Unit 1. The generator screens hold the tapped or carried
+  lesson's id with `usePickedLesson` and ground with `{ lessonId, scope }`; read
+  request fields off that one grounding with `groundingRequestFields`. A new
+  generator screen needs the same, and a route into one should pass `lessonId`.
 - **Generators branch on the subject NAME.** `isMathContext` tests the string,
   so passing `subject: 'Mathematics'` for a chemistry lesson serves it maths
   questions from the concrete bank, titled with the chemistry lesson. Anything
@@ -173,6 +179,44 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   so the tests that pin them apart (`activityBlueprints.test.ts`,
   `activityPrompts.test.ts`) assert *every field differs from every other
   type*; a new format needs its own entry in both files or they fail.
+- **"Same question" is the stem, with its numbers kept (found 2026-10-15).** A
+  true/false item's «الإجابة المقترحة» is not part of its question —
+  `questionStemKey` strips it, or one item prints twice (once per type) and
+  regenerate counts a re-rolled proposed answer as a new question. And a
+  duplicate measure must keep numbers: `stemSimilarity` once dropped every short
+  token, so two different equations scored 1.0 and one was rejected. "Same
+  sentence, different numbers" is a third thing — `stemFrame` — which is
+  practice, not a duplicate, and is only warned about when it carries a paper
+  (`dominantFrame`).
+- **A question can come from the book, the bank or a model, and only a verifier
+  makes one `verified`.** Real book items (`lib/curriculum/src/bookItems.ts`,
+  data written by `scripts/extract_book_items.py`) join by `lessonId`, never by
+  title. A `computed` item — SymPy solved a stem read from a text layer that
+  flattens exponents and splits fractions — must never carry a `check`: the
+  existing verification pass would badge it «تم التحقق», which says the stem was
+  read correctly and nothing has checked that. `verified` exists for book items
+  only where the guide prints the answer (the `unit-test` items 6-11 on
+  teacher-guide p.47, 5 of 6): the printed answers come in a different order from
+  the items, so the extractor pairs by VALUE (printed entry equals SymPy's answer
+  for the stem it read; a misread stem finds no answer), never by position, and
+  leaves an unmatched entry `computed` and listed in `report.json`
+  (`unmatchedPrinted`), never tolerated into a match. Even then the item carries
+  no `check` and no badge. A `unit-test` item cites as the unit test and is drawn
+  wherever a short answer is wanted. `SERVED_STATUSES` is the one place
+  that decides what a paper may draw. Only the API's evaluation generator uses
+  book items: the mock path (live AI off), and the live model path only when
+  `BOOK_ITEMS_LIVE=true` (off by default, read per request; production runs
+  `AI_LIVE_MODE=true`, so no live paper has them until someone sets the flag —
+  `generationParams.bookItems` says which state a paper was made in). The mobile
+  offline generators and `routes/generate.ts` ignore them, so a paper differs by
+  which path made it — add a family to the script's `TABLE`, never to a
+  generator. On the live path the model's surplus is cut before the book
+  questions are appended (`assembleLivePaper`); the finished paper is put into
+  type blocks by `inPaperOrder` like every stored paper, and the route's top-up
+  for a short reply is measured against the model's share (`count − k`).
+  The prompt is told what the book supplies and a per-competency quota
+  (`allocateQuestions` over the whole paper, rescaled for the top-up by
+  `remainingQuota`), and such a paper records `promptVersion` `exam-gen-7+book`.
 - **A teaching style shapes the whole lesson plan, in two places.** Per-style
   phases live in `artifacts/mobile/services/ai/lessonPlanBlueprints.ts` and the
   matching contract in `LESSON_STYLE_RULES_AR`/`_EN`
@@ -269,8 +313,16 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   catch a *malformed* artifact, never a well-formed worksheet with a wrong
   answer. The way back out is `POST /generate/variants/:id/retire`, offered to
   teachers since 2026-09-02 as «بلّغ عن مشكلة» in `GeneratorResultActions`. It
-  is deliberately open to any authenticated teacher, and it retires
-  immediately rather than queuing a review.
+  is deliberately open to any authenticated teacher (any `TEACHER_ROLES` role —
+  the `/generate` guard), but since the artifact-report change it **queues a
+  report** (`reportVariant`) for a `system_admin` and retires nothing: the
+  artifact keeps being served to everyone else until an admin resolves the
+  report as `approved` (`POST /moderation/artifact-reports/:id/resolve`, the
+  only caller of `retireVariant`). The reporting teacher's client then
+  regenerates, which avoids the paper they were served, so only they get a
+  replacement at once — unless a spend/quota cap is reached, in which case the
+  route serves `pool.variants[0]` (possibly the variant just reported, tagged
+  `servedReason`) instead of generating.
 - **Students are shown only what an admin approved (since 2026-10-13).** The
   pool serves a teacher whatever is stored, but a stored row can be under the
   wrong lesson id and a student is a minor, so `GET /student/lesson-explanation/…`
@@ -322,6 +374,13 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   Related trap: tab screens sit *under* the tab layout's lesson bar / bell
   header, which already pays `insets.top` — a tab screen header must not add it
   again.
+- **Arabic-Indic digits next to operators scramble on web, and no style fixes
+  it.** react-native-web puts `dir="auto"` on every `Text` (it beats
+  `direction`), and a bidi isolate is not enough: Arabic-Indic digits are type
+  AN, so «٩٫٥ × ١٠» still prints as «١٠ × ٩٫٥». A left-to-right *override*
+  fixes the digits but reverses Arabic letters («جا» → «اج»). Use `forceLtr` /
+  `displayLtr` / `entriesToSegments` in `services/mathCalc.ts`, and check such a
+  screen in a browser, not just in tests (see STATUS.md «Math Corner»).
 - **Extensionless relative imports only work through esbuild.** Anything loaded
   directly by `node --test` needs an explicit `.ts` extension.
 - **The OpenAI client throws at module scope without a key**, which makes
@@ -375,6 +434,50 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   36 minutes), 2026-09-26 and 2026-10-05 — twice under a PR body that said
   `schema-push: done`. A database that has tables but no migration history is
   refused until baselined once; see *Schema* in `docs/deploying.md`.
+- **A homework due date is a calendar day, and a completion belongs to a roster
+  row.** The API sends and takes `dueDate: "YYYY-MM-DD"` and nothing else — an
+  instant, a different order or a non-day is a 400 — and stores `dueAt` as
+  23:59:59.999 **Asia/Amman** (a fixed UTC+3) of that day. So the traps are on the
+  client, not in the contract: reading `dueAt` to say "due today" (a device in
+  another zone disagrees with the server about the day near midnight; use the
+  `dueDate` and `ammanToday()`), and building a `YYYY-MM-DD` from a local-timezone
+  `Date` (`toISOString()` shifts to UTC; `new Date('YYYY-MM-DD')` shifts west of
+  it). Display goes through `formatDueDate`, never the bidi algorithm.
+  `homework_completions.student_id` is a
+  `students.id` (a roster row), not a user: two accounts linked to the same row
+  share their ticks, and "did this child do it" must look at every row of the
+  child *in that homework's class*. `canTrack` is per homework ITEM, which is
+  per class: ticking only works through the account's own `self`-linked rows in
+  that item's class, so an item whose class has no such row cannot be ticked and
+  must never be called late or unfinished — even when the same child has an
+  account in another teacher's class. The child-level `canTrack` on
+  `/parent/homework` is informational only; do not gate on it. Pinned by `homework.db.test.ts` and
+  `familyHomework.db.test.ts`.
+- **A mark a teacher types is invisible to a family until its sitting is handed
+  in — writing the grade is not enough.** `studentExamRow` shows a result only
+  when the attempt has `submittedAt` *and* results are released. On the teacher
+  side only `gradeSubmission` (`modules/assessment/attemptGrading.ts`) stamps
+  `submittedAt` and builds the result; `writeTeacherMark` writes the grade and
+  stops, so a route that calls it alone passes its own tests (the grade rows are
+  there) while the family's row never leaves its pre-mark state (`paper`,
+  `available`…) and shows no mark. The paper-totals mark book
+  (`lib/paperTotals.ts`) calls both for that reason. `writeTeacherMark` also
+  does not check ownership — the caller must. Pinned by `paperTotals.db.test.ts`.
+- **Work after `res.json` may never run on Cloud Run.** The API deploys
+  without `--no-cpu-throttling`, so once a response is sent the instance's CPU
+  is throttled and fire-and-forget work (`promise.catch(log)` after
+  `res.json`) can stall until some later request wakes it. The family pushes
+  (homework posted, exam date, paper marks) therefore `await pushWithin(…)`
+  before answering — capped at 4 s, never throwing (`lib/pushWithin.ts`). The
+  chat and release-announcement pushes are still fire-and-forget; move them
+  the same way if their delivery ever looks late.
+- **A secret ref in `deploy.yml` before the secret exists fails every deploy.**
+  `gcloud run deploy --update-secrets NAME=NAME:latest` refuses a secret Secret
+  Manager does not have, and that breaks every merge, not just the one that
+  added it. New secrets are attached by hand once (`gcloud run services update
+  --update-secrets`), and `--update-env-vars` deploys keep them — see
+  `INTERNAL_CRON_KEY` in docs/deploying.md. Code reading one must work, or
+  fail closed, while it is unset.
 - **Row-level security fails quietly, and `systemDb` is the hole in it (since 2026-10-13).**
   A query that reads *another user's* rows does not error under RLS — it returns fewer
   rows. In the prototype that meant: no push notifications at all (recipients' tokens),

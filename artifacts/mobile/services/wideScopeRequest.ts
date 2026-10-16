@@ -6,8 +6,10 @@
  * `useWideScope` are thin wrappers around it.
  */
 import type { AIRequest, QuizOutput, WorksheetOutput } from './ai/AIService.ts';
-import { buildCoverage, DISTRIBUTIONS, lessonIdsFromTags, type CoverageLesson, type Distribution } from './coveragePlan.ts';
-import { scopeRequestFields } from './generatorRequests.ts';
+import { buildCoverage, coverageLessons, DISTRIBUTIONS, lessonIdsFromTags, type CoverageLesson, type Distribution } from './coveragePlan.ts';
+import { revisionUnits, type RevisionUnit } from './revisionScope.ts';
+import { buildLessonPlanRequest, scopeRequestFields, type LessonPlanForm } from './generatorRequests.ts';
+import type { GeneratorGrounding } from './kbContext.ts';
 import { resolveScopeGrounding, type ScopeGrounding } from './scopeGrounding.ts';
 import { parseScope, type ScopeSelection } from './scopeSelection.ts';
 
@@ -58,6 +60,97 @@ export function buildWideRequest(
       coverage,
     },
   };
+}
+
+export type ScopeRequestFields = Pick<
+  AIRequest,
+  'scope' | 'additionalContext' | 'contextSource' | 'coverage' | 'unitId' | 'lessonId' | 'bookFigureCount'
+>;
+
+export type ScopeRequest = { fields: ScopeRequestFields; grounding: ScopeGrounding; units: RevisionUnit[] };
+
+/**
+ * The teaching tools' counterpart of `buildWideRequest`: lesson plan, activity,
+ * classroom builder, slides and lesson-flow, when the teacher picked a unit, a
+ * semester or the whole book. Returns the fields to MERGE LAST over the
+ * screen's own request.
+ *
+ * Not `buildWideRequest`: that one wants a question count, plans `slots`, and
+ * REPLACES `additionalContext` with `contextSource: 'curriculum'` — on a
+ * teaching tool that would silently drop the teacher's typed objectives,
+ * adaptations and notes, and pool a plan written from them. Here `own` is what
+ * the screen already put in its request (the teacher's text folded into
+ * `additionalContext`, and the `contextSource` it decided), and it is kept:
+ *
+ * - `additionalContext` = the scope digest, then a blank line, then the
+ *   screen's own text (either may be absent);
+ * - `contextSource` = `'teacher'` when the screen said so, or when it sent text
+ *   without saying who wrote it (absent is read as the teacher's, fail closed —
+ *   the server's own rule); otherwise `'curriculum'`;
+ * - `coverage` = `{ lessons }` only — no `slots`: a teaching tool has no
+ *   question slots, and the offline path rebuilds its units from these ids;
+ * - `unitId` / `lessonId` present and `undefined`, `bookFigureCount: 0`, for
+ *   the reason given on `buildWideRequest`.
+ *
+ * Null for a lesson scope and for a wide scope that does not ground: the
+ * screen refuses (`wideScopeUngrounded`) rather than generate a mislabeled
+ * session.
+ */
+export function buildScopeRequest(
+  sel: ScopeSelection,
+  lang: 'ar' | 'en',
+  own: { additionalContext?: string; contextSource?: 'teacher' | 'curriculum' } = {},
+): ScopeRequest | null {
+  if (sel.kind === 'lesson') return null;
+  const grounding = resolveScopeGrounding(sel, lang);
+  if (!grounding.grounded) return null;
+  const digest = scopeRequestFields(grounding);
+  const ownText = own.additionalContext?.trim() ?? '';
+  const teacher = own.contextSource === 'teacher' || (ownText !== '' && own.contextSource === undefined);
+  return {
+    grounding,
+    units: revisionUnits(sel, lang),
+    fields: {
+      scope: digest.scope,
+      additionalContext: [digest.additionalContext ?? '', ownText].filter(Boolean).join('\n\n') || undefined,
+      contextSource: teacher ? 'teacher' : 'curriculum',
+      coverage: { lessons: coverageLessons(sel, lang) },
+      unitId: undefined,
+      lessonId: undefined,
+      bookFigureCount: 0,
+    },
+  };
+}
+
+/**
+ * Inert grounding for a wide request: no lesson, no lesson context, so
+ * `buildLessonPlanRequest` contributes only the form's own fields and the
+ * teacher's text — never ids, figures or a prior review re-derived from the
+ * scope's label.
+ */
+const SCOPE_GROUNDING: GeneratorGrounding = { lesson: null, grounded: true, score: 0, context: '', ungroundedNote: '' };
+
+/**
+ * The lesson-plan screen's request for a unit / semester / book: the form's
+ * own request (style, duration, objectives, adaptations, Ministry roles,
+ * regeneration) with the scope's fields merged LAST.
+ *
+ * `own.additionalContext` is the teacher's text ALONE (the adaptations
+ * directive): `SCOPE_GROUNDING.context` is empty, so no single lesson's
+ * context rides after the scope's digest.
+ *
+ * A wide plan has no prior-knowledge review (it belongs to one lesson's unit),
+ * so `priorTopicsNotes` is dropped here, before the teacher-text rule runs:
+ * notes that are not sent must not make the plan private. `includePriorReview`
+ * is sent as an explicit `false`, never `undefined`, and `priorKnowledge` is
+ * empty, so neither the live prompt nor the offline plan can add a review.
+ * Null when `buildScopeRequest` is (a lesson scope, or one that does not
+ * ground) — the screen then refuses with `wideScopeUngrounded`.
+ */
+export function buildWideLessonPlanRequest(form: LessonPlanForm, sel: ScopeSelection): AIRequest | null {
+  const own = buildLessonPlanRequest({ ...form, priorTopicsNotes: '', includePriorReview: false }, SCOPE_GROUNDING);
+  const wide = buildScopeRequest(sel, form.lang, { additionalContext: own.additionalContext, contextSource: own.contextSource });
+  return wide ? { ...own, includePriorReview: false, ...wide.fields } : null;
 }
 
 /** The picker's counts. 25 and 30 are APPENDED: saved indices must keep their meaning. */

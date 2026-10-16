@@ -31,6 +31,17 @@ jobs:
     name: typecheck + tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # DB-backed API tests (src/test-support) create their own iqraa_test_*
+    # databases on this server; they only use the `postgres` database as the
+    # admin connection for CREATE/DROP DATABASE and never store data in it.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
@@ -82,8 +93,14 @@ jobs:
       - name: Build api-server
         run: pnpm --filter @workspace/api-server run build
 
+      # REQUIRE_DB_TESTS makes a missing database a FAILURE, not a skip: a
+      # pipeline that loses its Postgres service must not quietly stop testing
+      # cross-family access.
       - name: Test api-server
         run: pnpm --filter @workspace/api-server run test
+        env:
+          TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+          REQUIRE_DB_TESTS: 'true'
 
       # The row-level-security suites skip here (no database); the identity tests run.
       - name: Test db
@@ -251,3 +268,30 @@ jobs:
         env:
           PYTHONIOENCODING: utf-8
         run: python -X utf8 test_equations.py
+
+      # The book-item tests and the committed JSON contain sympy's printed
+      # forms, whose term order can change between releases. Pinned so a PyPI
+      # release cannot turn CI red with no commit behind it. To bump: change
+      # the version here, re-run scripts/extract_book_items.py, commit the JSON.
+      - name: Pin sympy for book items
+        run: pip install "sympy==1.14.0"
+
+      # Real book items: the extractor's normalisation and trust rules, then a
+      # check that the committed JSON is exactly what the script emits. A
+      # hand-edited item, or a rule change without a re-run, fails here.
+      - name: Book item extractor tests
+        working-directory: artifacts/math-verifier
+        env:
+          PYTHONIOENCODING: utf-8
+        run: python -X utf8 ../../scripts/test_extract_book_items.py
+
+      - name: Committed book items match the extractor
+        env:
+          PYTHONIOENCODING: utf-8
+        run: |
+          python -X utf8 scripts/extract_book_items.py
+          if [ -n "$(git status --porcelain -- lib/curriculum/src/data/book-items)" ]; then
+            git status --porcelain -- lib/curriculum/src/data/book-items
+            git diff -- lib/curriculum/src/data/book-items
+            exit 1
+          fi

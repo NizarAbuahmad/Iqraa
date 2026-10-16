@@ -111,3 +111,41 @@ export function isPaperQuestion(q: {
 }): boolean {
   return q.gradingMode === "manual" && Object.keys(q.body ?? {}).length === 0;
 }
+
+export type PaperQuestionShape = {
+  gradingMode: string;
+  body: Record<string, unknown> | null | undefined;
+};
+
+/**
+ * An exam sat on paper: every live question is a paper question. A family is
+ * never offered its link — `/take/:code` would open a paper with nothing on it.
+ * No column says "paper"; the question shape does, so this is the one rule.
+ */
+export function isPaperExam(questions: readonly PaperQuestionShape[]): boolean {
+  return questions.length > 0 && questions.every(isPaperQuestion);
+}
+
+/** A paper exam marked as one total per student: a single paper question worth N. */
+export function isQuickPaperExam(questions: readonly PaperQuestionShape[]): boolean {
+  return questions.length === 1 && isPaperQuestion(questions[0]!);
+}
+
+/**
+ * Which exams are paper exams, from one flag per live question row: an exam is
+ * paper when it has at least one live question and every one is a paper
+ * question. The aggregation `paperExamIds` and the family loader share. The
+ * loader computes the flag in SQL (`grading_mode = 'manual' AND body = '{}'`,
+ * `isPaperQuestion`'s rule) so it never pulls every question's body just to
+ * ask whether it is empty.
+ */
+export function paperExamIdsFromFlags(rows: readonly { evaluationId: string; isPaper: boolean }[]): Set<string> {
+  const allPaper = new Map<string, boolean>();
+  for (const r of rows) allPaper.set(r.evaluationId, (allPaper.get(r.evaluationId) ?? true) && r.isPaper);
+  return new Set([...allPaper].filter(([, paper]) => paper).map(([id]) => id));
+}
+
+/** Which of these exams are paper exams, from their live question rows. */
+export function paperExamIds(rows: readonly ({ evaluationId: string } & PaperQuestionShape)[]): Set<string> {
+  return paperExamIdsFromFlags(rows.map(r => ({ evaluationId: r.evaluationId, isPaper: isPaperQuestion(r) })));
+}

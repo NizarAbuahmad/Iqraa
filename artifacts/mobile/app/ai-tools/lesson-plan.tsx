@@ -11,7 +11,7 @@ import { getT } from '@/services/i18n';
 import { contentLang, topicInLang } from '@/services/contentLanguage';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbContext';
+import { getUnitPriorKnowledge, resolveGeneratorGrounding, type GeneratorGrounding } from '@/services/kbContext';
 import { pooledVariantId } from '@/services/ai/regeneration';
 import { LessonPlanOutput } from '@/services/ai/AIService';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
@@ -44,13 +44,25 @@ import { buildLessonPlanHTML, buildLessonPlanSlidesHTML, exportMinistryPlanWord,
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
 import { useWarmGrounding } from '@/hooks/useWarmGrounding';
+import { usePickedLesson } from '@/hooks/usePickedLesson';
+import { carriedLessonTopic } from '@/services/pickedLesson';
 import { nextFrame } from '@/services/nextFrame';
 import { buildLessonPlanRequest, groundLessonPlanTopic } from '@/services/generatorRequests';
+import { useWideScope } from '@/hooks/useWideScope';
+import { scopeLabel, type ScopeSelection } from '@/services/scopeSelection';
+import { lessonPlanExportTitle } from '@/services/exportTitles';
+import { buildWideLessonPlanRequest, scopeFormState } from '@/services/wideScopeRequest';
 
 const ACCENT = palette.primary;
 
 const DURATION_VALUES = [30, 45, 60, 90];
 const STYLE_IDS = ['direct', 'inquiry', 'collaborative'] as const;
+/**
+ * What a unit / semester / book plan is anchored to: the scope itself, never one
+ * lesson its label happens to match. A full grounding because `captureGenerationScope`
+ * freezes it; a null lesson means no lesson id, no figures, no Ministry unit.
+ */
+const WIDE_GROUNDING: GeneratorGrounding = { lesson: null, grounded: true, score: 0, context: '', ungroundedNote: '' };
 
 export default function LessonPlanScreen() {
   const colors = useColors();
@@ -63,6 +75,9 @@ export default function LessonPlanScreen() {
     adaptations?: string;
     priorTopicsNotes?: string;
    includePriorReview?: string;
+    scope?: string; distribution?: string;
+    // The lesson itself (a lesson page, the lesson bar, a saved plan) — `usePickedLesson`.
+    lessonId?: string;
   }>();
   const scrollRef = useRef<ScrollView>(null);
 
@@ -88,11 +103,23 @@ export default function LessonPlanScreen() {
   const [subjectIdx, setSubjectIdx] = useState(initialScope.subjectIdx);
   // The picked subject's material language — English is planned in English.
   const lang = contentLang(subjects[subjectIdx].id, uiLang);
-  const [topic, setTopic] = useState(() => topicInLang(
-    topicForScope(params, uiLang, teacherScope.defaultScope, teacherScope), uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
-    { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
-  ));
+  const [topic, setTopic] = useState(() => {
+    const initial = topicForScope(params, uiLang, teacherScope.defaultScope, teacherScope);
+    const initialLang = contentLang(subjects[initialScope.subjectIdx].id, uiLang);
+    return (initial.trim() && carriedLessonTopic(params.lessonId, initialLang)) || topicInLang(
+      initial, uiLang, initialLang,
+      { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
+    );
+  });
   useWarmGrounding(topic, lang);
+  const kbScope = { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id };
+  const pickedLesson = usePickedLesson(params.lessonId, topic, kbScope);
+  // The teaching tools ignore `distribution`: a revision session has no question slots.
+  const wideScope = useWideScope(params, { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id });
+  /** The wide scope the plan on screen was generated under — what Save records, and what hides the Ministry form. */
+  const [wideFrozen, setWideFrozen] = useState<ScopeSelection | null>(
+    () => (wideScope.isWide ? wideScope.scopeSel! : null),
+  );
 
   // Reset topic when grade or subject changes so stale KB selections are cleared
   const prevGradeRef = React.useRef(gradeIdx);
@@ -136,7 +163,15 @@ export default function LessonPlanScreen() {
    * that point stored it under the new subject as «خطة درس: ».
    */
   const [generated, setGenerated] = useState<GenerationScope | null>(
-    () => (params.savedId ? reopenedGenerationScope(initialScope, topic, lang) : null),
+    () => {
+      if (!params.savedId) return null;
+      // A restored wide plan is anchored to the scope, not to whichever lesson its
+      // label («الفصل الأول كاملًا», a unit title) would ground to if looked up again.
+      if (wideFrozen && topic.trim()) {
+        return captureGenerationScope({ gradeIdx: initialScope.gradeIdx, subjectIdx: initialScope.subjectIdx, topic }, WIDE_GROUNDING);
+      }
+      return reopenedGenerationScope(initialScope, topic, lang, params.lessonId);
+    },
   );
   const scope = materialScope(generated, { gradeIdx, subjectIdx, topic });
   // The plan on screen keeps the language it was generated in, even after the
@@ -144,11 +179,14 @@ export default function LessonPlanScreen() {
   const outLang = contentLang(subjects[scope.subjectIdx].id, uiLang);
   const outT = getT(outLang);
   const curriculumGrounded: boolean | null = generated ? generated.grounded : null;
-  const groundedLesson: string | null = generated?.lesson
-    ? (outLang === 'ar' ? generated.lesson.titleAr : generated.lesson.titleEn)
-    : null;
-  /** KB id of that lesson — the Ministry form needs its unit and period count. */
-  const groundedLessonId: string | null = generated?.lesson?.id ?? null;
+  // A wide plan has no single lesson: name its scope instead of leaving the notice's tail empty.
+  const groundedLesson: string | null = wideFrozen
+    ? scopeLabel(wideFrozen, outLang)
+    : generated?.lesson
+      ? (outLang === 'ar' ? generated.lesson.titleAr : generated.lesson.titleEn)
+      : null;
+  /** KB id of that lesson — the Ministry form needs its unit and period count. A wide plan has none. */
+  const groundedLessonId: string | null = wideFrozen ? null : (generated?.lesson?.id ?? null);
   const [loadingMinistry, setLoadingMinistry] = useState(false);
   /**
    * Fields the teacher has changed. Kept so provenance stays honest — a plan
@@ -160,7 +198,9 @@ export default function LessonPlanScreen() {
   const [savedId, setSavedId] = useState<string | undefined>(params.savedId);
   const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
   const [showMore, setShowMore] = useState(false);
-  const moreOpen = showMore || !!(objectives.trim() || adaptations.trim() || priorTopicsNotes.trim());
+  // The prior-topics field is hidden on a wide scope, so text left in it from before
+  // the switch must not keep the section open around nothing the teacher can see.
+  const moreOpen = showMore || !!(objectives.trim() || adaptations.trim() || (!wideScope.isWide && priorTopicsNotes.trim()));
   const [showExport, setShowExport] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
@@ -171,16 +211,20 @@ export default function LessonPlanScreen() {
 
   // Prior-knowledge availability for the currently selected lesson (no fabrication)
   const priorKnowledge = (() => {
-    if (!topic.trim()) return [] as string[];
-    const g = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', { scope: { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id } });
+    // A wide scope has no single lesson, and its label must not be looked up as one:
+    // the review option would light up for whichever lesson the label happens to match.
+    if (!topic.trim() || wideScope.isWide) return [] as string[];
+    const g = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', { scope: kbScope, lessonId: pickedLesson.lessonId });
     if (!g.lesson) return [] as string[];
     return getUnitPriorKnowledge(g.lesson.id);
   })();
   const priorReviewAvailable = priorKnowledge.length > 0;
 
+  // Not on a wide scope: there the box is hidden and the request drops the review
+  // anyway, so a detour through a unit must not cost the teacher their tick.
   useEffect(() => {
-    if (!priorReviewAvailable && includePriorReview) setIncludePriorReview(false);
-  }, [priorReviewAvailable, includePriorReview]);
+    if (!wideScope.isWide && !priorReviewAvailable && includePriorReview) setIncludePriorReview(false);
+  }, [wideScope.isWide, priorReviewAvailable, includePriorReview]);
 
   // If editing a saved item, load it and restore its result
   useEffect(() => {
@@ -225,15 +269,34 @@ export default function LessonPlanScreen() {
     // What a failed or cancelled run must hand back. It used to be cleared
     // up front and never restored, so Cancel on a regenerate threw away the
     // unsaved plan the teacher was looking at.
-    const held = { result, editedFields, generated };
+    const held = { result, editedFields, generated, wideFrozen };
     if (!topic.trim()) { setError(t('topicRequired')); return; }
     // A topic that grounds to another subject's lesson cannot make an honest
     // plan — the KB serves that lesson's own content while the header claims
     // the picked subject. Refuse and name the real subject instead.
     const missing = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, uiLang);
     if (missing) { setError(t('scopeNoCurriculum', missing.grade, missing.subject)); return; }
-    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id, grades[gradeIdx].id);
-    if (conflict) { setError(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
+    const form = {
+      gradeName: lang === 'ar' ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
+      subjectName: subjects[subjectIdx].name,
+      topic,
+      lang,
+      durationMinutes: DURATION_VALUES[durationIdx],
+      teachingStyle: STYLE_IDS[styleIdx],
+      objectives, adaptations, priorTopicsNotes, includePriorReview,
+      regenerate: opts?.regenerate === true,
+      previous,
+    };
+    // A wide scope's topic is a label («الفصل الأول كاملًا»), not a lesson: the
+    // subject-conflict check reads a lesson, so it applies to a single lesson only.
+    // A wide scope that cannot be grounded is refused here, never generated mislabeled.
+    const wideSel = wideScope.isWide ? wideScope.scopeSel! : null;
+    const wideReq = wideSel ? buildWideLessonPlanRequest(form, wideSel) : null;
+    if (wideSel && !wideReq) { setError(t('wideScopeUngrounded')); return; }
+    if (!wideReq) {
+      const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id, grades[gradeIdx].id);
+      if (conflict) { setError(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
+    }
     setError('');
     setCancelled(false);
     const controller = new AbortController();
@@ -245,24 +308,17 @@ export default function LessonPlanScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await nextFrame();
     try {
-      const form = {
-        gradeName: lang === 'ar' ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
-        subjectName: subjects[subjectIdx].name,
-        topic,
-        lang,
-        durationMinutes: DURATION_VALUES[durationIdx],
-        teachingStyle: STYLE_IDS[styleIdx],
-        objectives, adaptations, priorTopicsNotes, includePriorReview,
-        regenerate: opts?.regenerate === true,
-        previous,
-      };
-      const grounding = groundLessonPlanTopic(form, { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id });
+      // Wide: the topic is never grounded — it is the scope's label.
+      const grounding = wideReq
+        ? WIDE_GROUNDING
+        : groundLessonPlanTopic(form, kbScope, pickedLesson.lessonId);
       const out = await aiService.generateLessonPlan(
-        buildLessonPlanRequest(form, grounding),
+        wideReq ?? buildLessonPlanRequest(form, grounding),
         { signal: controller.signal },
       );
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setGenerated(captureGenerationScope({ gradeIdx, subjectIdx, topic }, grounding));
+      setWideFrozen(wideReq ? wideSel : null);
       setResult(out);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
     } catch (e) {
@@ -279,6 +335,7 @@ export default function LessonPlanScreen() {
         setResult(held.result);
         setEditedFields(held.editedFields);
         setGenerated(held.generated);
+        setWideFrozen(held.wideFrozen);
       }
     } finally {
       abortRef.current = null;
@@ -296,8 +353,14 @@ export default function LessonPlanScreen() {
     const title = getExportTitle();
     const formState = {
       gradeIdx: scope.gradeIdx, subjectIdx: scope.subjectIdx, topic: scope.topic,
-      durationIdx, styleIdx, objectives, adaptations, priorTopicsNotes,
+      durationIdx, styleIdx, objectives, adaptations,
+      // A revision has no prior review: its field is hidden and was never sent, so
+      // text typed before the switch to a wide scope is not saved with the plan.
+      priorTopicsNotes: wideFrozen ? '' : priorTopicsNotes,
       includePriorReview: includePriorReview ? '1' : '0',
+      // From the frozen scope, not the live picker (a teacher can move it after generating).
+      // `distribution` is written by the shared helper and ignored by this tool.
+      ...scopeFormState(wideFrozen, 'balanced'),
     };
     // Built once: the two branches below used to each spell out the payload
     // and its five-line comment.
@@ -344,7 +407,7 @@ export default function LessonPlanScreen() {
     duration: DURATION_VALUES[durationIdx],
   });
 
-  const getExportTitle = () => outLang === 'ar' ? `خطة درس: ${scope.topic}` : `Lesson Plan: ${scope.topic}`;
+  const getExportTitle = () => lessonPlanExportTitle(outLang, scope.topic, !!wideFrozen);
 
   const {
     getExportFigures,
@@ -360,6 +423,8 @@ export default function LessonPlanScreen() {
     result,
     topic: scope.topic,
     lessonId: scope.lesson?.id,
+    // A wide plan has no figures of its own; see `noFigures`.
+    noFigures: wideFrozen !== null,
     lang: outLang,
     getTitle: getExportTitle,
     getMeta: getExportMeta,
@@ -381,7 +446,8 @@ export default function LessonPlanScreen() {
    * the stock per-style lines in `ministryLearnerRoles` for the learner column.
    */
   const handleMinistry = async () => {
-    if (!result) return;
+    // Hidden for a wide plan (the form needs one lesson's unit, periods and prior learning).
+    if (!result || wideFrozen) return;
     setLoadingMinistry(true);
     try {
       const lesson = groundedLessonId ? getLessonById(groundedLessonId) : undefined;
@@ -460,11 +526,15 @@ export default function LessonPlanScreen() {
           gradeId={grades[gradeIdx].id}
           value={topic}
           onChange={text => { setTopic(text); setError(''); }}
+          onSelectionDetail={pickedLesson.onSelectionDetail}
           lang={lang}
           isRTL={isRTL}
           colors={colors}
           accent={ACCENT}
           hasError={!!error && !topic}
+          allowedKinds={['lesson', 'unit', 'semester', 'book']}
+          onScopeChange={wideScope.setScopeSel}
+          offlineWideScope
           t={t}
         />
 
@@ -538,7 +608,10 @@ export default function LessonPlanScreen() {
         {/* Prior topics to re-explain (optional).
             Separate from adaptations: this is content to revisit at the start
             of the lesson — earlier material some students haven't grasped —
-            not an instruction about how to deliver today's new material. */}
+            not an instruction about how to deliver today's new material.
+            Hidden on a wide scope: a revision session has no prior review. */}
+        {wideScope.isWide ? null : (
+          <>
         <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('priorTopicsLabel')}
         </Text>
@@ -552,10 +625,13 @@ export default function LessonPlanScreen() {
             multiline
           />
         </View>
+          </>
+        )}
 
           </>
         ) : null}
 
+        {wideScope.isWide ? null : (
         <View style={[styles.checkboxGroup, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: priorReviewAvailable ? 1 : 0.55 }]}>
           <CheckboxRow
             label={t('includePriorReviewPlanLabel')}
@@ -578,6 +654,7 @@ export default function LessonPlanScreen() {
             </Text>
           ) : null}
         </View>
+        )}
 
         {/* Duration picker */}
         <PickerField label={t('durationLabel')} value={durationLabels[durationIdx]} options={durationLabels} onChange={setDurationIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
@@ -672,6 +749,8 @@ export default function LessonPlanScreen() {
           materialType="lesson"
           toolId="lesson-plan"
           topic={scope.topic}
+          // Its chips open other tools with this label as a bare topic they re-ground.
+          hideRelated={wideFrozen !== null}
         />
       )}
     </ScrollView>
@@ -687,7 +766,8 @@ export default function LessonPlanScreen() {
       onPDF={handlePDF}
       onWord={handleWord}
       onSlides={handleSlides}
-      onMinistry={handleMinistry}
+      // The Ministry form needs one lesson's unit, periods and prior learning (spec open item 1).
+      onMinistry={wideFrozen ? undefined : handleMinistry}
       isRTL={isRTL}
       loadingPDF={loadingPDF}
       loadingWord={loadingWord}

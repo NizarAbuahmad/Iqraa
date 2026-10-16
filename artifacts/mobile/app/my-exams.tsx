@@ -40,6 +40,7 @@ import { useMasteryProgress } from '@/hooks/useMasteryProgress';
 import {
   MY_EXAM_STATE_KEY,
   canRetakeExam,
+  metaSegments,
   myExamAction,
   myExamTitle,
   progressSummary,
@@ -50,12 +51,14 @@ import {
   type ProgressSummary,
 } from '@/services/myExams';
 import { formatListDate } from '@/services/evaluationRow';
+import { isValidYmd } from '@/services/homework';
+import { formatExamWhen, groupChildExams } from '@/services/upcomingExams';
 import { formatMarks } from '@/services/studentAnswers';
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { StudentResultCard, LEVEL_LABEL_KEY } from '@/components/StudentResultCard';
 import { palette } from '@/constants/colors';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
-import { TYPE } from '@/constants/theme';
+import { SPACE, TYPE } from '@/constants/theme';
 import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = palette.primary;
@@ -67,6 +70,7 @@ const STATE_COLOR: Record<MyExamState, string> = {
   submitted: '#475467',
   result: palette.success,
   closed: '#667085',
+  paper: '#475467',
 };
 
 const STATE_ICON: Record<MyExamState, keyof typeof Ionicons.glyphMap> = {
@@ -75,6 +79,7 @@ const STATE_ICON: Record<MyExamState, keyof typeof Ionicons.glyphMap> = {
   submitted: 'hourglass-outline',
   result: 'ribbon-outline',
   closed: 'lock-closed-outline',
+  paper: 'document-text-outline',
 };
 
 /** A child's section for a parent; the student's own list is one unnamed group. */
@@ -110,7 +115,7 @@ export default function MyExamsScreen() {
     setError('');
     try {
       const next = isParent
-        ? (await getChildExams()).map(c => ({ key: c.studentId, name: c.displayName, exams: c.exams }))
+        ? groupChildExams(await getChildExams()).map(g => ({ key: g.key, name: g.displayName, exams: g.exams }))
         : [{ key: 'self', name: null, exams: await getMyExams() }];
       if (seq === loadSeq.current) setGroups(next);
     } catch (e) {
@@ -379,26 +384,29 @@ function ExamRow({
 }) {
   const align = isRTL ? 'right' : 'left';
   const action = myExamAction(exam);
-  const stateColor = STATE_COLOR[exam.state];
+  // A state a future server adds degrades to «مُغلق» instead of a blank chip.
+  const stateColor = STATE_COLOR[exam.state] ?? STATE_COLOR.closed;
+  const stateIcon = STATE_ICON[exam.state] ?? STATE_ICON.closed;
   const subject = subjectLabel(exam.subjectId, lang);
   const when =
     exam.submittedAt
       ? formatListDate(exam.submittedAt, lang)
       : formatListDate(exam.publishedAt, lang);
   const whenLine = when ? t(exam.submittedAt ? 'myExamsHandedInOn' : 'myExamsSentOn', when) : null;
-  // The planned day, only while there is still something to sit. Appended "T00:00:00"
-  // keeps the bare date in local time, so it cannot slide a day.
-  const planned =
-    exam.examDate && (exam.state === 'available' || exam.state === 'in_progress')
-      ? formatListDate(`${exam.examDate}T00:00:00`, lang)
-      : null;
-  const plannedLine = planned ? t('myExamsPlannedOn', exam.examTime ? `${planned} · ${exam.examTime}` : planned) : null;
-  const meta = [
+  // The planned day, when the teacher set one. A paper exam's "sent" and
+  // "handed in" times are when the teacher published it and typed the mark —
+  // not what a family means by either — so a paper row shows only its day.
+  const examWhen = exam.examDate && isValidYmd(exam.examDate) ? t('myExamsOnDate', formatExamWhen(exam.examDate, exam.examTime)) : null;
+  // Separate pieces in a wrapping row, spaced by a gap and with no separator
+  // character: one string under `numberOfLines` cut «· 10 …» mid-text, and a
+  // « ·» at the end of a piece dangled at the end of a wrapped line.
+  const meta = metaSegments([
     subject,
-    plannedLine ?? whenLine,
-    exam.timeLimitMin ? t('myExamsTimeLimit', exam.timeLimitMin) : null,
+    examWhen,
+    exam.paper ? null : whenLine,
+    exam.timeLimitMin && !exam.paper ? t('myExamsTimeLimit', exam.timeLimitMin) : null,
     exam.totalMarks ? t('myExamsMarks', formatMarks(exam.totalMarks)) : null,
-  ].filter(Boolean).join(' · ');
+  ]);
 
   const levelKey = exam.result?.levelKey ? LEVEL_LABEL_KEY[exam.result.levelKey] : undefined;
 
@@ -417,21 +425,25 @@ function ExamRow({
     >
       <View style={[styles.rowTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <View style={[styles.stateIcon, { backgroundColor: stateColor + '1F' }]}>
-          <Ionicons name={STATE_ICON[exam.state]} size={20} color={stateColor} />
+          <Ionicons name={stateIcon} size={20} color={stateColor} />
         </View>
         <View style={{ flex: 1, gap: 4 }}>
           <Text numberOfLines={2} style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, lineHeight: 23, textAlign: align }}>
             {myExamTitle(exam, lang) || t('myExamsUntitled', subject ?? '')}
           </Text>
-          {meta ? (
-            <Text numberOfLines={2} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
-              {meta}
-            </Text>
+          {meta.length > 0 ? (
+            <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', columnGap: SPACE.md, rowGap: SPACE.xxs }}>
+              {meta.map((segment, i) => (
+                <Text key={i} style={{ flexShrink: 1, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 21, textAlign: align }}>
+                  {segment}
+                </Text>
+              ))}
+            </View>
           ) : null}
           <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginTop: 2, flexWrap: 'wrap' }}>
             <View style={[styles.chip, { backgroundColor: stateColor + '1A' }]}>
               <Text style={{ color: stateColor, fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>
-                {t(MY_EXAM_STATE_KEY[exam.state])}
+                {t(MY_EXAM_STATE_KEY[exam.state] ?? 'myExamsStateClosed')}
               </Text>
             </View>
             {exam.result ? (

@@ -112,3 +112,91 @@ test("sendExpoPush passes channelId and badge through to Expo", async () => {
     { to: "ExponentPushToken[bbb]", title: "t", body: "b", channelId: "results" },
   ]);
 });
+
+test("sendExpoPush passes sound through, null included", async () => {
+  let sent: unknown[] = [];
+  globalThis.fetch = mock.fn(async (_url: string, init: RequestInit) => {
+    sent = JSON.parse(init.body as string) as unknown[];
+    return jsonResponse(200, { data: sent.map(() => ({ status: "ok" })) });
+  }) as unknown as typeof fetch;
+
+  await sendExpoPush([
+    { to: "ExponentPushToken[aaa]", title: "t", body: "b", channelId: PUSH_CHANNEL.homework, sound: "default" },
+    { to: "ExponentPushToken[bbb]", title: "t", body: "b", channelId: PUSH_CHANNEL.quiet, sound: null },
+  ]);
+
+  assert.deepEqual(sent, [
+    { to: "ExponentPushToken[aaa]", title: "t", body: "b", channelId: "homework", sound: "default" },
+    { to: "ExponentPushToken[bbb]", title: "t", body: "b", channelId: "quiet", sound: null },
+  ]);
+});
+
+test("sendExpoPush posts to EXPO_PUSH_URL when it is set, and to Expo otherwise", async () => {
+  const urls: string[] = [];
+  globalThis.fetch = mock.fn(async (url: string, init: RequestInit) => {
+    urls.push(String(url));
+    const sent = JSON.parse(init.body as string) as unknown[];
+    return jsonResponse(200, { data: sent.map(() => ({ status: "ok" })) });
+  }) as unknown as typeof fetch;
+  const saved = process.env.EXPO_PUSH_URL;
+  try {
+    delete process.env.EXPO_PUSH_URL;
+    await sendExpoPush([{ to: "ExponentPushToken[a]", title: "t", body: "b" }]);
+    process.env.EXPO_PUSH_URL = "http://127.0.0.1:9/stub";
+    await sendExpoPush([{ to: "ExponentPushToken[a]", title: "t", body: "b" }]);
+  } finally {
+    if (saved === undefined) delete process.env.EXPO_PUSH_URL;
+    else process.env.EXPO_PUSH_URL = saved;
+  }
+  assert.deepEqual(urls, ["https://exp.host/--/api/v2/push/send", "http://127.0.0.1:9/stub"]);
+});
+
+// A hung Expo call must not outlive pushWithin's cap or Cloud Run's request
+// timeout, so the POST carries an abort signal. An abort is just another
+// fetch failure: error results, no throw.
+test("sendExpoPush passes an abort signal to fetch", async () => {
+  let signal: AbortSignal | null | undefined;
+  globalThis.fetch = mock.fn(async (_url: string, init: RequestInit) => {
+    signal = init.signal;
+    const sent = JSON.parse(init.body as string) as unknown[];
+    return jsonResponse(200, { data: sent.map(() => ({ status: "ok" })) });
+  }) as unknown as typeof fetch;
+
+  await sendExpoPush([{ to: "ExponentPushToken[a]", title: "t", body: "b" }]);
+
+  assert.ok(signal instanceof AbortSignal, "fetch got a signal");
+  assert.equal(signal.aborted, false);
+});
+
+test("sendExpoPush treats a timed-out (aborted) request like any other network failure", async () => {
+  for (const name of ["TimeoutError", "AbortError"]) {
+    globalThis.fetch = mock.fn(async () => {
+      throw new DOMException("The operation was aborted", name);
+    }) as unknown as typeof fetch;
+
+    const results = await sendExpoPush([{ to: "ExponentPushToken[aaa]", title: "t", body: "b" }]);
+
+    assert.deepEqual(results, [{ to: "ExponentPushToken[aaa]", status: "error" }], name);
+  }
+});
+
+test("sendExpoPush really gives up on a hung Expo (the signal is wired to a timeout)", async () => {
+  // A fetch that never settles on its own, only when its signal fires.
+  globalThis.fetch = mock.fn(
+    (_url: string, init: RequestInit) =>
+      new Promise<Response>((_resolve, reject) => {
+        const signal = init.signal;
+        if (!signal) return; // no signal: hangs, and the test times out
+        if (signal.aborted) return reject(signal.reason);
+        signal.addEventListener("abort", () => reject(signal.reason));
+      }),
+  ) as unknown as typeof fetch;
+  const realTimeout = AbortSignal.timeout;
+  AbortSignal.timeout = (() => AbortSignal.abort(new DOMException("timed out", "TimeoutError"))) as typeof AbortSignal.timeout;
+  try {
+    const results = await sendExpoPush([{ to: "ExponentPushToken[aaa]", title: "t", body: "b" }]);
+    assert.deepEqual(results, [{ to: "ExponentPushToken[aaa]", status: "error" }]);
+  } finally {
+    AbortSignal.timeout = realTimeout;
+  }
+});

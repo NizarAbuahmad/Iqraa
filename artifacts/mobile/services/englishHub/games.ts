@@ -47,14 +47,52 @@ export interface MatchCard {
   pairId: number;
 }
 
-/** English face-up against its Arabic meaning — the memory game, with words. */
-export function buildMatchDeck(words: readonly HubWord[], rng: () => number = Math.random): MatchCard[] {
+export interface MatchColumns {
+  en: MatchCard[];
+  ar: MatchCard[];
+}
+
+/**
+ * Two columns of cards, each in its own random order, where no row faces its
+ * own match. Both matching games use it: one mixed grid confused Grade 1
+ * pupils (a teacher's review, 2026-10-15), and a column per side says which
+ * side a card belongs to before the child has read it.
+ *
+ * Two independent shuffles will sometimes put a pair on the same row, and side
+ * by side that is the answer handed over. So: reshuffle the right column a few
+ * times, and if that keeps failing fall back to the left order rotated by one,
+ * which cannot line up for two or more pairs. Lessons always have at least
+ * `MIN_HUB_WORDS`.
+ */
+function columnsWithNoGiveaway<T extends { pairId: number }>(
+  leftCards: T[],
+  rightCards: T[],
+  rng: () => number,
+): { left: T[]; right: T[] } {
+  const left = shuffle(leftCards, rng);
+  const faced = (right: T[]) => right.some((c, row) => c.pairId === left[row].pairId);
+  let right = shuffle(rightCards, rng);
+  for (let tries = 0; tries < 20 && faced(right); tries += 1) right = shuffle(rightCards, rng);
+  if (faced(right) && left.length > 1) {
+    const byPair = new Map(rightCards.map(c => [c.pairId, c]));
+    right = left.map((_, row) => byPair.get(left[(row + 1) % left.length].pairId)!);
+  }
+  return { left, right };
+}
+
+/**
+ * English in one column, its Arabic meanings in the other — "match the
+ * meaning" as a student expects to read it. (This was a single shuffled grid,
+ * memory-game style, so a word's two halves could land in either column.)
+ */
+export function buildMatchColumns(words: readonly HubWord[], rng: () => number = Math.random): MatchColumns {
   const picked = sample([...words], MATCH_PAIRS, rng);
-  const cards = picked.flatMap((w, pairId): MatchCard[] => [
-    { id: `${pairId}-en`, text: w.en, lang: 'en', pairId },
-    { id: `${pairId}-ar`, text: w.ar, lang: 'ar', pairId },
-  ]);
-  return shuffle(cards, rng);
+  const { left, right } = columnsWithNoGiveaway(
+    picked.map((w, pairId): MatchCard => ({ id: `${pairId}-en`, text: w.en, lang: 'en', pairId })),
+    picked.map((w, pairId): MatchCard => ({ id: `${pairId}-ar`, text: w.ar, lang: 'ar', pairId })),
+    rng,
+  );
+  return { en: left, ar: right };
 }
 
 export function isMatchPair(a: MatchCard, b: MatchCard): boolean {
@@ -146,6 +184,15 @@ export function isScrambleSolved(tiles: readonly ScrambleTile[], word: string): 
  *
  * Values are unique — two different words never share an emoji — so two cards
  * in the same round are never visually identical for different reasons.
+ *
+ * A plural word shows more than one of the thing (🍎🍎 for "apples"): the
+ * book teaches "apples", and a single apple beside it says "apple". A glyph
+ * that already shows several (🧦, 👀, 🍇) stands as it is.
+ *
+ * 🧥 is a coat, so it stands for "coat", not "jacket" — a jacket is shorter,
+ * and there is no jacket emoji, so "jacket" has no picture. 👕 is a T-shirt;
+ * "shirt" gets the collared 👔. (Both from a Grade 1 teacher's review,
+ * 2026-10-15, with the plurals above.)
  */
 const WORD_EMOJI: Record<string, string> = {
   one: '1️⃣', two: '2️⃣', three: '3️⃣', four: '4️⃣', five: '5️⃣',
@@ -164,17 +211,18 @@ const WORD_EMOJI: Record<string, string> = {
   dinosaur: '🦕', robot: '🤖', teddy: '🧸', doll: '🪆',
   book: '📖', crayon: '🖍️', pen: '🖊️', pencil: '✏️',
   ruler: '📏', scissors: '✂️', computer: '💻', chair: '🪑', door: '🚪',
-  window: '🪟', ball: '⚽', car: '🚗', train: '🚂', plane: '✈️',
+  window: '🪟', teacher: '🧑‍🏫', wall: '🧱', ball: '⚽', car: '🚗', train: '🚂', plane: '✈️',
   kite: '🪁', bike: '🚲', scooter: '🛴', puzzle: '🧩', yoyo: '🪀',
-  boots: '👢', dress: '👗', jacket: '🧥', jeans: '👖', shirt: '👕',
-  shoes: '👟', hat: '🎩', scarf: '🧣', socks: '🧦', glasses: '👓',
+  boots: '👢👢', dress: '👗', coat: '🧥', jeans: '👖', shirt: '👔', 'T-shirt': '👕',
+  shoes: '👟👟', hat: '🎩', scarf: '🧣', socks: '🧦', glasses: '👓',
   backpack: '🎒', phone: '📱',
-  apple: '🍎', apples: '🍎', banana: '🍌', carrot: '🥕', carrots: '🥕',
+  arms: '💪💪', hands: '👐', legs: '🦵🦵', feet: '🦶🦶',
+  apple: '🍎', apples: '🍎🍎', banana: '🍌', carrot: '🥕', carrots: '🥕🥕',
   grapes: '🍇', potato: '🥔', rice: '🍚', tomato: '🍅', bread: '🍞',
-  cheese: '🧀', chicken: '🍗', eggs: '🥚', milk: '🥛', water: '💧',
-  juice: '🧃', lemons: '🍋', cakes: '🎂', sweets: '🍬', coconut: '🥥',
+  cheese: '🧀', chicken: '🍗', eggs: '🥚🥚', milk: '🥛', water: '💧',
+  juice: '🧃', lemons: '🍋🍋', cakes: '🍰🍰', sweets: '🍬🍬', coconut: '🥥',
   burger: '🍔', kiwi: '🥝', mango: '🥭', cereal: '🥣', noodles: '🍜',
-  olives: '🫒', salad: '🥗', sandwiches: '🥪', vegetables: '🥦',
+  olives: '🫒', salad: '🥗', sandwiches: '🥪🥪', vegetables: '🥦🥕',
   coffee: '☕', tea: '🍵',
   sunny: '☀️', rainy: '🌧️', cloudy: '☁️', snowy: '❄️', windy: '💨',
   hot: '🥵', cold: '🥶',
@@ -186,21 +234,30 @@ const WORD_EMOJI: Record<string, string> = {
   pilot: '🧑‍✈️', 'police officer': '👮', builder: '👷', chef: '🧑‍🍳',
   artist: '🧑‍🎨', farmer: '🧑‍🌾', scientist: '🧑‍🔬', carpenter: '🔨',
   bus: '🚌', boat: '⛵', motorbike: '🏍️', underground: '🚇',
-  eyes: '👀', mouth: '👄', nose: '👃', teeth: '🦷',
+  eyes: '👀', mouth: '👄', nose: '👃', teeth: '🦷🦷',
   Egypt: '🇪🇬', Jordan: '🇯🇴', Qatar: '🇶🇦', Spain: '🇪🇸',
   'the United Kingdom': '🇬🇧', 'the United Arab Emirates': '🇦🇪',
   happy: '😊', sad: '😢',
   candle: '🕯️', present: '🎁', invitation: '💌', wedding: '💍',
   'big wheel': '🎡', rollercoaster: '🎢', costume: '🎭',
   sofa: '🛋️', television: '📺', mirror: '🪞', clock: '🕐',
-  keys: '🔑', handbag: '👜',
+  keys: '🔑🔑', handbag: '👜',
 };
 
 const MIN_PICTURE_WORDS = 4;
 
+/**
+ * The curated picture for a word, or null. Flashcards and Speaking show it
+ * above the word, the way the book prints each word under its picture — an
+ * emoji standing in for the book's art, so a word with none shows text alone.
+ */
+export function wordPicture(word: string): string | null {
+  return WORD_EMOJI[word] ?? null;
+}
+
 /** Whether a word has a curated emoji at all — exported so the "renders nothing" floor is testable directly. */
 export function isPicturable(word: string): boolean {
-  return !!WORD_EMOJI[word];
+  return wordPicture(word) !== null;
 }
 
 export interface PictureCard {
@@ -211,15 +268,16 @@ export interface PictureCard {
   pairId: number;
 }
 
-/** Same layout as `buildMatchDeck`, emoji↔English instead of English↔Arabic. */
-export function buildPictureDeck(words: readonly HubWord[], rng: () => number = Math.random): PictureCard[] {
+/** Same layout as `buildMatchColumns`: pictures in one column, English words in the other. */
+export function buildPictureBoard(words: readonly HubWord[], rng: () => number = Math.random): { pictures: PictureCard[]; words: PictureCard[] } {
   const picturable = words.filter(w => WORD_EMOJI[w.en]);
   const picked = sample(picturable, MATCH_PAIRS, rng);
-  const cards = picked.flatMap((w, pairId): PictureCard[] => [
-    { id: `${pairId}-emoji`, kind: 'emoji', text: WORD_EMOJI[w.en], pairId },
-    { id: `${pairId}-word`, kind: 'word', text: w.en, pairId },
-  ]);
-  return shuffle(cards, rng);
+  const { left, right } = columnsWithNoGiveaway(
+    picked.map((w, pairId): PictureCard => ({ id: `${pairId}-emoji`, kind: 'emoji', text: WORD_EMOJI[w.en], pairId })),
+    picked.map((w, pairId): PictureCard => ({ id: `${pairId}-word`, kind: 'word', text: w.en, pairId })),
+    rng,
+  );
+  return { pictures: left, words: right };
 }
 
 export function isPictureMatch(a: PictureCard, b: PictureCard): boolean {

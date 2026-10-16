@@ -27,8 +27,10 @@ import { arCountPhrase } from './arCount.ts';
 import { dateLocale } from './dateLabels.ts';
 import { quizBlockPoints, quizBlocks, quizInstructions, quizMarkRows, quizMarksTotal, quizStudentFields, quizTypeLabel } from './quizPaper.ts';
 import { isolateForeignRuns, normalizeExponents } from './mathRender.ts';
+import { esc, escAttr, escLines } from './htmlEscape.ts';
 import { labQrSvg } from './labQr.ts';
 import { printStyleCss, type PrintStyle } from './printStyle.ts';
+import { FORMAT_CSS, formatBodyHTML, formatKeyExtraHTML } from './formatPrintHtml.ts';
 import { blankLine, hasOwnBlanks, optionColumns, unattachedFigures, worksheetInstructions, worksheetPointsTotal } from './worksheetPaper.ts';
 import { displayObjective } from './objectiveDisplay.ts';
 import type {
@@ -215,7 +217,7 @@ function htmlBase(
     }
     /* Writing room: a worksheet a student answers ON needs ruled space. */
     .q-lines { margin-top: 8px; }
-    .q-rule { border-bottom: 1px solid #d1d5db; height: 20px; }
+    .q-rule { border-bottom: 1px solid #d1d5db; height: 20px; }${FORMAT_CSS}
     /* Answer key stays green — it is the one block that is not about the
        document's own accent but about being obviously the teacher's half. */
     .answer-key {
@@ -311,61 +313,8 @@ function htmlBase(
 </html>`;
 }
 
-/** Escape only. For attribute values — above all URLs, which must not carry
- *  the directional isolates `esc` adds. */
-function escAttr(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-/**
- * Escape *and* bidi-isolate. Every text node in this file is model-written
- * Arabic that can carry an equation, and a printed worksheet reordering
- * «f(x) = 2x⁴ - x² + 3» is the same bug the screens had — a teacher hands it
- * to a class on paper, where nobody can reload to check. Isolation belongs
- * here rather than at the 57 call sites so a new builder cannot forget it;
- * `escAttr` is the deliberate opt-out for the one URL attribute.
- */
-function esc(s: string): string {
-  // Null-safe via isolateForeignRuns, which two builders here relied on when
-  // they each carried their own `s ?? ''` copy of this function.
-  //
-  // Exponents are normalised BEFORE isolating, so «2^{12}» becomes «2¹²» and the
-  // run is then isolated as a whole. Doing it here rather than at each option
-  // and key line is the same argument as the isolation itself: 57 call sites,
-  // and a new builder must not be able to forget.
-  return raiseExponents(escAttr(isolateForeignRuns(normalizeExponents(s))));
-}
-
-/**
- * Whatever `normalizeExponents` could not turn into Unicode — a letter or a
- * bracketed exponent, «5^x», «3^(2x)», «4^(x+1)» — raised with `<sup>`. Unicode
- * has no superscript for most letters, so those reached the paper with a
- * literal caret: every question on the exponential-equations worksheet, while
- * the screen raised them. Runs on escaped text, so it is text-node only; an
- * attribute takes `escAttr`.
- */
-function raiseExponents(html: string): string {
-  // A bracketed exponent is matched to ITS closing bracket, so «2^(2(x+1))»
-  // raises «2(x+1)» whole; an unclosed one is left as written.
-  let out = '';
-  for (let i = 0; i < html.length; i++) {
-    if (html[i] === '^' && html[i + 1] === '(') {
-      let depth = 0;
-      let j = i + 1;
-      for (; j < html.length; j++) {
-        if (html[j] === '(') depth++;
-        else if (html[j] === ')' && --depth === 0) break;
-      }
-      if (j < html.length) {
-        out += `<sup>${html.slice(i + 2, j)}</sup>`;
-        i = j;
-        continue;
-      }
-    }
-    out += html[i];
-  }
-  return out.replace(/\^([+\-\u2212]?[A-Za-z0-9]+)/g, '<sup>$1</sup>');
-}
+/** Re-exported so existing importers of `esc` from here are unchanged. */
+export { esc };
 
 /**
  * A book figure ready to print — already resolved to a loadable URI and
@@ -625,7 +574,11 @@ export function buildWorksheetHTML(
       const options = q.options
         ? `<div class="q-options${cols > 1 ? ` q-options-${cols}` : ''}">${q.options.map((o, oi) => optionRowHTML(o, oi, isAr)).join('')}</div>`
         : '';
-      const text = printableQuestionText(q.text);
+      // A structured format brings its own body and its own writing space, and
+      // its head is the stem alone: `q.text` is the whole question in plain
+      // text, which would print the steps or pairs a second time.
+      const fmt = q.format;
+      const text = printableQuestionText(fmt ? fmt.stem : q.text);
       // Somewhere to write. A worksheet is the one document a student fills
       // in, and this printed multiple-choice options or nothing at all — so
       // every short-answer question arrived as a sentence floating above the
@@ -633,10 +586,10 @@ export function buildWorksheetHTML(
       // Options mean the answer goes in the margin, so the rules are only for
       // questions that have none.
       // A half-solved question already has its numbered blanks to write on.
-      const room = q.options || hasOwnBlanks(text) ? '' : `<div class="q-lines">${ANSWER_RULES.map(() => '<div class="q-rule"></div>').join('')}</div>`;
+      const room = fmt || q.options || hasOwnBlanks(text) ? '' : `<div class="q-lines">${ANSWER_RULES.map(() => '<div class="q-rule"></div>').join('')}</div>`;
       const html = `<div class="q-card">`
         + `<div class="q-head"><span class="q-num">${qNum}</span><span class="q-text q-break">${questionBodyHTML(text)}</span></div>`
-        + `${questionFigureHTML(q.figure)}${options}${room}`
+        + `${questionFigureHTML(q.figure)}${fmt ? formatBodyHTML(fmt, isAr) : options}${room}`
         + `<div class="q-pts">${L(arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط'), `${q.points} pts`)}</div>`
         + `</div>`;
       qNum++;
@@ -645,12 +598,21 @@ export function buildWorksheetHTML(
     return `<div class="section">${sectionBand(sec.title, SECTION_GLYPHS[si % SECTION_GLYPHS.length]!, DOC_ACCENT.worksheet, isAr)}${questions}</div>`;
   }).join('');
 
+  // Key rows map to questions by flat position, as `buildDeckFromWorksheet` does.
+  const flat = ws.sections.flatMap(sec => sec.questions);
   const akRows = includeAnswers
-    ? ws.answerKey?.map(item => item.solution?.length
-      ? `<div class="answer-row"><span class="answer-num">${item.num}.</span><div class="answer-body"><span>${esc(item.answer)}</span>`
-        + `<ol class="solution">${item.solution.map(line => `<li>${esc(line)}</li>`).join('')}</ol></div></div>`
-      : `<div class="answer-row"><span class="answer-num">${item.num}.</span><span>${esc(item.answer)}</span></div>`
-    ).join('') ?? ''
+    ? ws.answerKey?.map(item => {
+      const extra = formatKeyExtraHTML(flat[item.num - 1]?.format ?? null, isAr);
+      // A row carrying a drawn graph is one unbreakable block, so the web PDF
+      // never cuts the graph across two pages.
+      const row = extra ? 'answer-row ak-graph' : 'answer-row';
+      return item.solution?.length
+        ? `<div class="${row}"><span class="answer-num">${item.num}.</span><div class="answer-body"><span>${escLines(item.answer)}</span>`
+          + `<ol class="solution">${item.solution.map(line => `<li>${esc(line)}</li>`).join('')}</ol>${extra}</div></div>`
+        : extra
+          ? `<div class="${row}"><span class="answer-num">${item.num}.</span><div class="answer-body"><span>${escLines(item.answer)}</span>${extra}</div></div>`
+          : `<div class="answer-row"><span class="answer-num">${item.num}.</span><span>${escLines(item.answer)}</span></div>`;
+    }).join('') ?? ''
     : '';
 
   // Working a model wrote is not working a person checked. The key is the
@@ -1163,8 +1125,9 @@ export function buildWorksheetSlidesHTML(
   // Total: title + (instructions if present: 1) + sections + answer key
   const hasInstructions = !!ws.instructions;
   const showAnswerKey = includeAnswers && !!ws.answerKey && ws.answerKey.length > 0;
+  const keyPages = showAnswerKey ? planKeySlides(ws) : [];
   const TOTAL = 1 + (hasInstructions ? 1 : 0) + (ws.workedExample ? 1 : 0) + ws.sections.length
-    + (showAnswerKey ? 1 : 0) + (figures.length ? 1 : 0);
+    + keyPages.length + (figures.length ? 1 : 0);
 
   const footer = (num: number) => `
     <div class="slide-footer">
@@ -1220,10 +1183,16 @@ export function buildWorksheetSlidesHTML(
   let qCounter = 1;
   const sectionSlides = ws.sections.map(sec => {
     const questionsHtml = sec.questions.map(q => {
-      const opts = q.options
-        ? `<div class="q-opts">${q.options.map((o, oi) => `<div class="q-opt">${e(labelOptionLine(o, oi, isAr))}</div>`).join('')}</div>`
-        : '';
-      const html = `<div class="q-card"><span class="q-num">${qCounter}.</span> <span class="q-text q-break">${e(printableQuestionText(q.text))}</span>${questionFigureHTML(q.figure)}${opts}<span class="q-pts">${L(arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط'), `${q.points} pts`)}</span></div>`;
+      // As on paper: a structured format prints its stem and its own empty
+      // body (never `pairs`, `order`, `fix`, `why` or a curve), and its options
+      // are not drawn.
+      const fmt = q.format;
+      const opts = fmt
+        ? formatBodyHTML(fmt, isAr)
+        : q.options
+          ? `<div class="q-opts">${q.options.map((o, oi) => `<div class="q-opt">${e(labelOptionLine(o, oi, isAr))}</div>`).join('')}</div>`
+          : '';
+      const html = `<div class="q-card"><span class="q-num">${qCounter}.</span> <span class="q-text q-break">${e(printableQuestionText(fmt ? fmt.stem : q.text))}</span>${questionFigureHTML(q.figure)}${opts}<span class="q-pts">${L(arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط'), `${q.points} pts`)}</span></div>`;
       qCounter++;
       return html;
     }).join('');
@@ -1237,15 +1206,29 @@ export function buildWorksheetSlidesHTML(
     return slide;
   });
 
-  // Answer key slide
-  const akSlide = showAnswerKey ? `<div class="slide">
+  // Answer key slide. Key rows map to questions by flat position, as on paper;
+  // the drawn curve is only ever built here, and only when answers are shown.
+  const flat = ws.sections.flatMap(sec => sec.questions);
+  const akRow = (item: { num: number; answer: string; solution?: string[] }) => {
+    const extra = formatKeyExtraHTML(flat[item.num - 1]?.format ?? null, isAr);
+    // The working, as print renders it: an order's steps, a spot-the-error's
+    // reason and corrected solution.
+    const working = item.solution?.length
+      ? `<ol class="solution">${item.solution.map(line => `<li>${e(line)}</li>`).join('')}</ol>`
+      : '';
+    return `<div class="ak-row${extra || working ? ' ak-wide' : ''}"><span class="ak-num">${item.num}.</span><span class="ak-ans">${escLines(item.answer)}${working}${extra}</span></div>`;
+  };
+  // As many key slides as the rows need: a slide is a fixed page with
+  // `overflow: hidden`, and one slide for the whole key silently cut off the
+  // working and the drawn graph of the last questions (driven 2026-10-11).
+  const akSlide = keyPages.map(page => `<div class="slide">
     ${header(L('مفتاح الإجابات', 'Answer Key'))}
     <div class="slide-body">
       <div class="ak-grid">
-        ${ws.answerKey!.map(item => `<div class="ak-row"><span class="ak-num">${item.num}.</span><span class="ak-ans">${e(item.answer)}</span></div>`).join('')}
+        ${page.map(akRow).join('')}
       </div>
     </div>
-    ${footer(slideNum++)}</div>` : '';
+    ${footer(slideNum++)}</div>`).join('\n');
 
   return `<!DOCTYPE html>
 <html dir="${dir}" lang="${isAr ? 'ar' : 'en'}">
@@ -1286,6 +1269,21 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 .ak-row { display:flex; gap:6px; align-items:baseline; background:#FBF6EC; border:1px solid ${ACCENT}22; border-radius:6px; padding:6px 10px; font-size:11.5px; }
 .ak-num { font-weight:700; color:${ACCENT}; flex-shrink:0; }
 .ak-ans { color:#374151; }
+.ak-wide { grid-column:1 / -1; }
+.ak-wide .solution { margin-top:3px; padding-${isAr ? 'right' : 'left'}:18px; color:#4b5563; }
+.ak-wide .solution li { font-size:10.5px; margin-bottom:1px; }
+.ak-wide .fmt-grid-wrap { width:300px !important; margin:6px 0; }
+${FORMAT_CSS}
+.q-card .fmt-match, .q-card .fmt-order, .q-card .fmt-steps, .q-card .fmt-line, .q-card .fmt-label, .q-card .q-lines { width:100%; }
+/* On a slide the empty grid is the question: its own row, at projector size. */
+.q-card .fmt-grid-row { width:100%; }
+.q-card .fmt-grid-wrap { width:400px !important; }
+.q-card .g-lbl { font-size:13px; line-height:14px; width:34px; }
+.q-card .g-lbl-middle { margin-left:-17px; }
+.q-card .g-lbl-end { margin-left:-34px; }
+.q-card .fmt-steps li, .q-card .fmt-card, .q-card .fmt-match, .q-card .fmt-line, .q-card .fmt-label { font-size:11px; }
+.q-rule { border-bottom:1px solid #d1d5db; height:16px; }
+.exam-blank { flex:1; border-bottom:1px solid #9ca3af; height:16px; }
 .slide-footer { height:26px; border-top:1px solid #f3f4f6; display:flex; align-items:center; justify-content:space-between; padding:0 26px; flex-shrink:0; }
 .slide-footer span { font-size:9px; color:#9ca3af; }
 </style>
@@ -1299,6 +1297,48 @@ ${akSlide}
 ${figuresSlideHTML(figures, isAr, header, footer(TOTAL))}
 </body>
 </html>`;
+}
+
+/**
+ * The worksheet slides' answer key, cut into slides. Layout cannot be measured
+ * in a string builder, so rows are costed in CSS px of the key slide (rendered
+ * and checked in Chromium for the formats' worst cases): a row with working or
+ * a graph spans the slide (`ak-wide`) and grows with its lines; plain rows
+ * share grid lines, `KEY_COLS` to a line. A row that alone exceeds the budget
+ * still gets a slide of its own rather than being dropped.
+ */
+const KEY_BUDGET = 620;
+const KEY_COLS = 6;
+const KEY_LINE = 17;
+
+export function planKeySlides(ws: WorksheetOutput): WorksheetOutput['answerKey'][] {
+  const flat = ws.sections.flatMap(sec => sec.questions);
+  const pages: WorksheetOutput['answerKey'][] = [];
+  let page: WorksheetOutput['answerKey'] = [];
+  let used = 0;
+  let compactRun = 0; // plain rows on the current, unfinished grid line
+  for (const item of ws.answerKey ?? []) {
+    const graph = flat[item.num - 1]?.format?.kind === 'graph';
+    const lines = (item.solution?.length ?? 0) + item.answer.split('\n').length - 1;
+    const wide = graph || lines > 0;
+    const cost = wide
+      ? 30 + KEY_LINE * lines + (graph ? 340 : 0)
+      : compactRun % KEY_COLS === 0 ? 42 : 0;
+    if (page.length && used + cost > KEY_BUDGET) {
+      pages.push(page);
+      page = [];
+      used = 0;
+      compactRun = 0;
+      // A plain row opening a slide starts a grid line of its own.
+      used += wide ? 30 + KEY_LINE * lines + (graph ? 340 : 0) : 42;
+    } else {
+      used += cost;
+    }
+    compactRun = wide ? 0 : compactRun + 1;
+    page.push(item);
+  }
+  if (page.length) pages.push(page);
+  return pages;
 }
 
 // ─── Slides HTML (quiz) ───────────────────────────────────────────────────────
@@ -1458,6 +1498,12 @@ export function buildLessonFlowHTML(
    * printing it inside the flow did not.
    */
   figures: readonly BookFigureRef[] = [],
+  /**
+   * `revision`: the flow was built for a unit, a semester or the whole book, so
+   * the cover and the last section say «مراجعة» / "Revision" where a lesson's
+   * flow says «الدرس» / "Lesson". Omitted, the document is exactly what it was.
+   */
+  opts: { revision?: boolean } = {},
 ): string {
   const dir = isAr ? 'rtl' : 'ltr';
   const font = isAr ? `'Amiri', 'Noto Naskh Arabic', serif` : `'Inter', 'Helvetica Neue', sans-serif`;
@@ -1564,7 +1610,7 @@ export function buildLessonFlowHTML(
   <!-- Cover -->
   <div class="cover">
     <div class="cover-icon">🎯</div>
-    <div class="cover-title">${isAr ? 'مسار الدرس الكامل' : 'Complete Lesson Flow'}</div>
+    <div class="cover-title">${opts.revision ? (isAr ? 'مسار المراجعة الكامل' : 'Complete Revision Flow') : isAr ? 'مسار الدرس الكامل' : 'Complete Lesson Flow'}</div>
     <div class="cover-topic">${esc(flow.topic)}</div>
     <div class="cover-meta">${esc(meta)}</div>
   </div>
@@ -1596,7 +1642,7 @@ export function buildLessonFlowHTML(
   </div>
 
   <!-- 6. Exit Ticket -->
-  ${secHeader(isAr ? 'غلق الدرس' : 'Exit Ticket', '🎫', '#F59E0B')}
+  ${secHeader(isAr ? (opts.revision ? 'غلق الحصة' : 'غلق الدرس') : 'Exit Ticket', '🎫', '#F59E0B')}
   ${etBody}
 
   ${figuresSectionHTML(figures, isAr)}

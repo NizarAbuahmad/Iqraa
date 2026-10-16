@@ -330,7 +330,27 @@ function correlation(pts: Array<[number, number]>): number {
   return sxy / Math.sqrt(sxx * syy);
 }
 const CORR = ['ارتباط طردي (موجب)', 'ارتباط عكسي (سالب)', 'لا يوجد ارتباط'];
+/**
+ * The lesson's objectives, one kind each since 2026-10-15: read the correlation
+ * from the points, use the line of best fit to estimate y or x, and find its
+ * slope from two points on it. It used to ask the correlation only.
+ */
 const scatter = T('scatter', /^اشكال الانتشار$/, [10, 10], ({ rng }) => {
+  const k = pick(rng, [0, 1, 2, 3]);
+  if (k === 1 || k === 2) {
+    const m = pick(rng, [2, 3, 4, 5, -2, -3]), b = m > 0 ? int(rng, 1, 12) : int(rng, 40, 60);
+    const x = int(rng, 2, 12), y = m * x + b;
+    if (y <= 0) return scatter.make({ rng, diff: 'easy', grade: 10 });
+    const line = `y = ${signed(m)}x + ${b}`;
+    if (k === 1) return { eq: `${m}, ${b}, x=${x}`, answer: String(y), wrongs: countOpts(y, [m * x, x + b, m + x + b, y + m]), ar: `معادلة المستقيم الأفضل مطابقة لشكل انتشار هي ${line}. ما القيمة التقديرية لـ y عندما x = ${x}؟`, en: `The line of best fit for a scatter plot is ${line}. Estimate y when x = ${x}.` };
+    return { eq: `${m}, ${b}, y=${y}`, answer: String(x), wrongs: countOpts(x, [Math.abs(y - b), y + b, Math.round(y / Math.abs(m)), x + 1]), ar: `معادلة المستقيم الأفضل مطابقة لشكل انتشار هي ${line}. ما القيمة التقديرية لـ x عندما y = ${y}؟`, en: `The line of best fit for a scatter plot is ${line}. Estimate x when y = ${y}.` };
+  }
+  if (k === 3) {
+    const m = pick(rng, [1, 2, 3, 4, -1, -2, -3]), d = int(rng, 2, 6);
+    const x1 = int(rng, 1, 6), y1 = m > 0 ? int(rng, 2, 15) : int(rng, 25, 40);
+    const x2 = x1 + d, y2 = y1 + m * d;
+    return { eq: `${x1}, ${y1}, ${x2}, ${y2}`, answer: signed(m), wrongs: numWrongs(m, [-m, d, y2 - y1, m + 1], signed), ar: `يمرّ المستقيم الأفضل مطابقة لشكل انتشار بالنقطتين (${x1} ، ${y1}) و (${x2} ، ${y2}). ما ميله؟`, en: `The line of best fit for a scatter plot passes through (${x1}, ${y1}) and (${x2}, ${y2}). What is its slope?` };
+  }
   for (;;) {
     const kind = int(rng, 0, 2), n = 7;
     const xs = Array.from({ length: n }, (_, i) => i + 1);
@@ -345,18 +365,40 @@ const scatter = T('scatter', /^اشكال الانتشار$/, [10, 10], ({ rng }
   }
 });
 
+/**
+ * Cumulative frequency, the median class — and since 2026-10-15 the rest of the
+ * lesson: the position of a quartile, the interquartile range, and a percentile
+ * rank read off the curve.
+ */
 const cumulative = T('cumulative', /^المنحني التكراري التراكمي$/, [10, 10], ({ rng, diff }) => {
-  const w = pick(rng, [10, 20]), k = span(diff, 4, 5, 6);
-  const f = Array.from({ length: k }, () => int(rng, 2, 12));
+  const k = pick(rng, [0, 1, 2, 3, 4]);
+  if (k === 3) {
+    const q1 = int(rng, 20, 55), q3 = q1 + int(rng, 8, 30), d = q3 - q1;
+    return { eq: `${q1}, ${q3}`, answer: String(d), wrongs: countOpts(d, [q1 + q3, q3, q1, Math.round((q1 + q3) / 2)]), ar: `من المنحنى التكراري التراكمي لعلامات طلبة صف: الربيع الأول Q1 = ${q1} والربيع الثالث Q3 = ${q3}. ما المدى الربيعي؟`, en: `From the cumulative frequency curve of a class's marks, Q1 = ${q1} and Q3 = ${q3}. What is the interquartile range?` };
+  }
+  if (k === 4) {
+    const n = pick(rng, [40, 60, 80, 120, 200]), pct = pick(rng, [10, 20, 25, 30, 40, 60, 70, 75, 80, 90]);
+    const c = (n * pct) / 100;
+    if (!Number.isInteger(c)) return cumulative.make({ rng, diff, grade: 10 });
+    const score = 5 * int(rng, 8, 18);
+    return { eq: `${n}, ${score}, ${c}`, answer: `${pct}%`, wrongs: wrongsFrom(`${pct}%`, [...(c <= 100 ? [`${c}%`] : []), `${100 - pct}%`, `${score}%`], j => `${pct + 5 * Math.abs(j)}%`), ar: `في المنحنى التكراري التراكمي لعلامات ${n} ${n % 100 === 0 ? 'طالب' : 'طالبًا'}، التكرار التراكمي المقابل للعلامة ${score} هو ${c}. ما الرتبة المئينية للعلامة ${score}؟`, en: `On the cumulative frequency curve of ${n} students' marks, the cumulative frequency at a mark of ${score} is ${c}. What is the percentile rank of ${score}?` };
+  }
+  const w = pick(rng, [10, 20]), size = span(diff, 4, 5, 6);
+  const f = Array.from({ length: size }, () => int(rng, 2, 12));
   const label = (i: number) => `${i * w}–${(i + 1) * w - 1}`;
   const table = f.map((v, i) => `${label(i)}: ${v}`).join('، ');
   const tableEn = f.map((v, i) => `${label(i)}: ${v}`).join(', ');
   const n = sum(f);
-  const j = int(rng, 1, k - 2);
-  if (rng() < 0.55) { const c = sum(f.slice(0, j + 1)); return { eq: table, answer: String(c), wrongs: countOpts(c, [f[j]!, c + f[j + 1]!, c - f[0]!, n]), ar: `الجدول التكراري (الفئة: التكرار): ${table}. ما التكرار التراكمي حتى نهاية الفئة ${label(j)}؟`, en: `Frequency table (class: frequency): ${tableEn}. What is the cumulative frequency up to the end of the class ${label(j)}?` }; }
+  if (k === 2) {
+    if (n % 4 !== 0) return cumulative.make({ rng, diff, grade: 10 });
+    const third = rng() < 0.5, at = third ? (3 * n) / 4 : n / 4;
+    return { eq: table, answer: String(at), wrongs: countOpts(at, [third ? n / 4 : (3 * n) / 4, n / 2, n, at + 1]), ar: `الجدول التكراري (الفئة: التكرار): ${table}. ما ترتيب ${third ? 'الربيع الثالث Q3' : 'الربيع الأول Q1'} بين البيانات مرتّبةً تصاعديًا؟`, en: `Frequency table (class: frequency): ${tableEn}. What is the position of ${third ? 'the upper quartile Q3' : 'the lower quartile Q1'} in the data in ascending order?` };
+  }
+  const j = int(rng, 1, size - 2);
+  if (k === 0) { const c = sum(f.slice(0, j + 1)); return { eq: table, answer: String(c), wrongs: countOpts(c, [f[j]!, c + f[j + 1]!, c - f[0]!, n]), ar: `الجدول التكراري (الفئة: التكرار): ${table}. ما التكرار التراكمي حتى نهاية الفئة ${label(j)}؟`, en: `Frequency table (class: frequency): ${tableEn}. What is the cumulative frequency up to the end of the class ${label(j)}?` }; }
   let acc = 0, mc = 0;
-  for (let i = 0; i < k; i++) { acc += f[i]!; if (acc >= n / 2) { mc = i; break; } }
-  const others = Array.from({ length: k }, (_, i) => i).filter(i => i !== mc).map(label);
+  for (let i = 0; i < size; i++) { acc += f[i]!; if (acc >= n / 2) { mc = i; break; } }
+  const others = Array.from({ length: size }, (_, i) => i).filter(i => i !== mc).map(label);
   return { eq: table, answer: label(mc), wrongs: others.slice(0, 3), ar: `الجدول التكراري (الفئة: التكرار): ${table}. في أي فئة يقع الوسيط (القيمة التي ترتيبها n/2)؟`, en: `Frequency table (class: frequency): ${tableEn}. In which class does the median (the value in position n/2) lie?` };
 });
 

@@ -26,13 +26,14 @@ import {
   publishEvaluation,
   setResultsReleased,
   setEvaluationClass,
-  showBlanks,
   type Evaluation,
   type EvaluationQuestion,
   type QuestionType,
 } from '@/services/evaluations';
 import { summariseKeyChecks, type KeyCheckSummary } from '@/services/keyCheckSummary';
+import { bookItemNote } from '@/services/bookItemNote';
 import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
+import { questionText as questionTextFor } from '@/services/evaluationQuestionText';
 import { copyToClipboard } from '@/services/share';
 import { AddReadAloudModal } from '@/components/AddReadAloudModal';
 import { AddDictationModal } from '@/components/AddDictationModal';
@@ -50,6 +51,7 @@ import { palette } from '@/constants/colors';
 import { PROD_ORIGIN } from '@/services/siteOrigin';
 import { BackButton } from '@/components/ui/BackButton';
 import { ExamDateCard } from '@/components/ExamDateCard';
+import { isPaperExam, isQuickPaperExam, markBookReachable } from '@/services/paperMarks';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -83,56 +85,6 @@ const TYPE_LABEL_KEY: Record<QuestionType, TranslationKey> = {
   read_aloud: 'typeReadAloud',
   dictation: 'typeDictation',
 };
-
-/**
- * The one field worth showing per type, regardless of shape.
- *
- * Isolated here rather than at the render site because every branch below
- * returns model-written Arabic that can carry an equation, and an unisolated
- * «f(x) = 2x⁴ - x² + 3» comes out of the bidi algorithm reordered against the
- * Arabic around it — a wrong question, not just an ugly one.
- */
-function questionText(q: EvaluationQuestion): string {
-  const body = q.body;
-  const template = body['template'] as string | undefined;
-  return isolateForeignRuns(
-    (body['stem'] as string | undefined)
-    ?? (body['statement'] as string | undefined)
-    ?? (template === undefined ? undefined : showBlanks(template))
-    ?? (body['prompt'] as string | undefined)
-    // A matching body has none of the four above, so it used to fall through
-    // to '' and print as a dash — a teacher reviewing a paper could see that a
-    // matching question existed but not what it asked. The left column is what
-    // it asks about.
-    ?? matchingLeftText(body['left'])
-    // A read-aloud body keeps its text in `passage` and printed as «—».
-    ?? (body['passage'] as string | undefined)
-    // A dictation body has none of the above — the prompt is spoken, not
-    // written. On the teacher's own screen the dictated text IS what the
-    // question asks, and showing it here is what lets a teacher read the list
-    // aloud to the class when there is no audio (which is the normal case, and
-    // the only one that works on a native device).
-    ?? dictationText(q)
-    ?? '',
-  );
-}
-
-function dictationText(q: EvaluationQuestion): string | undefined {
-  if (q.type !== 'dictation') return undefined;
-  if (q.body['mode'] === 'choice') {
-    const options = Array.isArray(q.body['options']) ? q.body['options'] : [];
-    const labels = options.map(o => (o as { text?: string })?.text).filter(Boolean);
-    return labels.length > 0 ? labels.join(' · ') : undefined;
-  }
-  const text = q.expectedAnswer['text'];
-  return typeof text === 'string' && text.trim() ? text.trim() : undefined;
-}
-
-function matchingLeftText(left: unknown): string | undefined {
-  if (!Array.isArray(left)) return undefined;
-  const labels = left.map(l => (l as { text?: string })?.text).filter(Boolean);
-  return labels.length > 0 ? labels.join(' · ') : undefined;
-}
 
 export default function EvaluationDetailScreen() {
   const colors = useColors();
@@ -172,6 +124,10 @@ export default function EvaluationDetailScreen() {
   });
   const evaluation = data?.evaluation ?? null;
   const questions = data?.questions ?? [];
+  const paperExam = isPaperExam(questions);
+  const quickPaper = isQuickPaperExam(questions);
+  /** The mark book opens for a published OR a closed quick paper exam (the route takes both). */
+  const markBookOpen = evaluation ? markBookReachable(evaluation.status, questions) : false;
   /** First question of each block -> its heading and marks. */
   const blockAt = new Map(
     examBlocks(questions, lang === 'ar').map(b => [b.start, { heading: b.heading, marks: examBlockMarks(b, q => q.marks) }] as const),
@@ -214,7 +170,7 @@ export default function EvaluationDetailScreen() {
     if (!id || busy) return;
     const ok = await confirm({
       title: t('questionDeleteConfirm'),
-      message: questionText(q) || undefined,
+      message: questionTextFor(q, lang === 'ar') || undefined,
       confirmLabel: t('questionDeleteBtn'),
       cancelLabel: t('cancel'),
       destructive: true,
@@ -416,6 +372,7 @@ export default function EvaluationDetailScreen() {
         <ShareLinkCard
           shareCode={evaluation.shareCode ?? null}
           attachedToClass={Boolean(evaluation.classGroupId)}
+          paper={paperExam}
           onAttach={() => setPickingClass(true)}
           colors={colors}
           isRTL={isRTL}
@@ -457,12 +414,30 @@ export default function EvaluationDetailScreen() {
 
       {evaluation?.status === 'published' && (
         <View style={{ marginHorizontal: 20, marginTop: 16, gap: 10 }}>
+          {markBookOpen ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push({ pathname: '/evaluations/[id]/marks', params: { id: evaluation.id } } as never)}
+              style={[styles.enterAnswersBtn, { backgroundColor: ACCENT_FILL, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            >
+              <Ionicons name="create-outline" size={18} color="#fff" />
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
+                {t('marksGridBtn')}
+              </Text>
+            </Pressable>
+          ) : null}
+          {/* A quick paper exam is marked from the mark book above; the per-student
+              entry stays for a paper with details to fill, as the quieter button. */}
           <Pressable
             onPress={() => router.push({ pathname: '/evaluations/[id]/answers', params: { id: evaluation.id } })}
-            style={[styles.enterAnswersBtn, { backgroundColor: ACCENT_FILL, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            style={
+              quickPaper
+                ? [styles.resultsBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]
+                : [styles.enterAnswersBtn, { backgroundColor: ACCENT_FILL, flexDirection: isRTL ? 'row-reverse' : 'row' }]
+            }
           >
-            <Ionicons name="create-outline" size={18} color="#fff" />
-            <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
+            <Ionicons name="create-outline" size={18} color={quickPaper ? ACCENT : '#fff'} />
+            <Text style={{ color: quickPaper ? ACCENT : '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
               {t('enterAnswersBtn')}
             </Text>
           </Pressable>
@@ -536,6 +511,18 @@ export default function EvaluationDetailScreen() {
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
             {t('evaluationClosedNote')}
           </Text>
+          {markBookOpen ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push({ pathname: '/evaluations/[id]/marks', params: { id: evaluation.id } } as never)}
+              style={[styles.enterAnswersBtn, { backgroundColor: ACCENT_FILL, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            >
+              <Ionicons name="create-outline" size={18} color="#fff" />
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
+                {t('marksGridBtn')}
+              </Text>
+            </Pressable>
+          ) : null}
           <Pressable
             onPress={() => router.push({ pathname: '/evaluations/[id]/results', params: { id: evaluation.id } })}
             style={[styles.resultsBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
@@ -651,6 +638,14 @@ export default function EvaluationDetailScreen() {
                 {isolateForeignRuns(t('verifiedComputed', prettifySymPy(q.verification.computedAnswer)))}
               </Text>
             ) : null}
+            {/* Where in the NCCD book this came from, and how its key was
+                established when that is not "verified". Nothing for a question
+                that did not come from a book. */}
+            {bookItemNote(q.aiMetadata, lang === 'ar' ? 'ar' : 'en', q.source === 'ai_edited') ? (
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, marginBottom: 4, textAlign: align }}>
+                {isolateForeignRuns(bookItemNote(q.aiMetadata, lang === 'ar' ? 'ar' : 'en', q.source === 'ai_edited') ?? '')}
+              </Text>
+            ) : null}
             <Text
               style={[
                 styles.qText,
@@ -662,7 +657,7 @@ export default function EvaluationDetailScreen() {
                 },
               ]}
             >
-              {questionText(q) || '—'}
+              {questionTextFor(q, lang === 'ar') || '—'}
             </Text>
             <QuestionFigure body={q.body} captionColor={colors.mutedForeground} />
           </View>
@@ -880,10 +875,12 @@ function KeyCheckNotice({
 }
 
 function ShareLinkCard({
-  shareCode, attachedToClass, onAttach, colors, isRTL, align, t,
+  shareCode, attachedToClass, paper, onAttach, colors, isRTL, align, t,
 }: {
   shareCode: string | null;
   attachedToClass: boolean;
+  /** A paper exam is sat in class: it has no code to hand out. */
+  paper: boolean;
   onAttach: () => void;
   colors: ReturnType<typeof useColors>;
   isRTL: boolean;
@@ -891,6 +888,25 @@ function ShareLinkCard({
   t: (key: TranslationKey, ...args: any[]) => string;
 }) {
   const [copied, setCopied] = useState(false);
+  // A paper exam is sat in class: its code would open a paper with nothing on
+  // it, so the card offers no code — only the class it still needs. After the
+  // hook above, never before it: `questions` loads, so `paper` flips false → true.
+  if (paper) {
+    if (attachedToClass) return null;
+    return (
+      <View style={{ marginHorizontal: 20, marginTop: 16 }}>
+        <View style={[styles.shareCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={{ color: palette.warning, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
+            {t('marksGridNeedsClass')}
+          </Text>
+          <Pressable onPress={onAttach} style={[styles.shareBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <Ionicons name="people-outline" size={16} color={ACCENT} />
+            <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{t('shareExamAttachNow')}</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
   if (!shareCode) return null;
 
   // Always the live site. This used to follow the host of the current page, so

@@ -52,6 +52,8 @@ const BY_CODE = {
   unsupported_type: 'errUnsupportedType',
   messaging_storage_unavailable: 'errMessagingUnavailable',
   not_found: 'errNotFound',
+  // Homework: a due date outside the last 30 days / next year (POST and PATCH /homework).
+  due_date_out_of_range: 'hwErrDueRange',
   // Anywhere.
   rate_limited: 'errTooManyRequests',
 } as const;
