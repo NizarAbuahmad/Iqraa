@@ -222,9 +222,18 @@ const WORD_EMOJI: Record<string, string> = {
 
 const MIN_PICTURE_WORDS = 4;
 
+/**
+ * The curated picture for a word, or null. Flashcards and Speaking show it
+ * above the word, the way the book prints each word under its picture — an
+ * emoji standing in for the book's art, so a word with none shows text alone.
+ */
+export function wordPicture(word: string): string | null {
+  return WORD_EMOJI[word] ?? null;
+}
+
 /** Whether a word has a curated emoji at all — exported so the "renders nothing" floor is testable directly. */
 export function isPicturable(word: string): boolean {
-  return !!WORD_EMOJI[word];
+  return wordPicture(word) !== null;
 }
 
 export interface PictureCard {

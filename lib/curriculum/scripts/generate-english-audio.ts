@@ -37,10 +37,19 @@ const VOICE = 'coral';
 // recording, and a word both age groups share stays in its Grade 1–4 voice.
 // `--force` would re-voice ALL of them in this register — decide that on
 // purpose.
+//
+// The last sentence is a teacher's correction (2026-10-15): "apples" came out
+// with its first sound hit hard and held apart from the rest ("A… pples"),
+// which teaches a long, stressed vowel where the word has a short /æ/. "Clearly"
+// on its own invites that over-articulation. A word already voiced keeps its
+// recording until re-voiced with `--only`.
 const INSTRUCTIONS =
   'You are reading a vocabulary card to a teenage student learning English. ' +
   'Say only the given word or phrase, once, clearly and at a natural, unhurried pace, ' +
-  'in a warm but not childish tone, with a British accent.';
+  'in a warm but not childish tone, with a British accent. ' +
+  'Say it as one smooth word, the way it sounds in ordinary speech: do not stretch, ' +
+  'hit or separate the first sound or any single letter, and keep short vowels short ' +
+  '(the a in "apples" is a quick, short sound).';
 
 const force = process.argv.includes('--force');
 const dryRun = process.argv.includes('--dry-run');

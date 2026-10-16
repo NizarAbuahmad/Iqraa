@@ -27,6 +27,7 @@ import {
   type MatchCard,
   type PictureCard,
   type ScrambleTile,
+  wordPicture,
 } from '@/services/englishHub/games';
 
 const RIGHT = '#16A34A';
@@ -51,6 +52,24 @@ function HearButton({ word, big }: { word: string; big?: boolean }) {
     >
       <Ionicons name="volume-high" size={big ? 40 : 22} color="#fff" />
     </Pressable>
+  );
+}
+
+/**
+ * The emoji is artwork standing in for the book's picture, not text, so it is
+ * sized as a picture rather than taken from the TYPE scale (whose largest step
+ * is a heading).
+ */
+const PICTURE_SIZE = 72;
+
+/** The book prints each word under its picture; a word with none shows text alone. */
+function WordPicture({ word }: { word: string }) {
+  const pic = wordPicture(word);
+  if (!pic) return null;
+  return (
+    <Text style={styles.picture} accessible={false}>
+      {pic}
+    </Text>
   );
 }
 
@@ -82,6 +101,7 @@ export function Flashcards({ words }: { words: HubWord[] }) {
         accessibilityHint={t('hubTapToFlip')}
         style={[styles.flash, { backgroundColor: colors.card, borderColor: colors.border }]}
       >
+        <WordPicture word={w.en} />
         {flipped ? (
           <Text style={[styles.flashAr, { color: colors.foreground }]}>{w.ar}</Text>
         ) : (
@@ -512,6 +532,7 @@ export function Speaking({ words }: { words: HubWord[] }) {
   return (
     <View style={{ gap: 16, alignItems: 'center' }}>
       <Progress i={i} n={words.length} />
+      <WordPicture word={w.en} />
       <Text style={[styles.flashEn, { color: colors.foreground }]}>{w.en}</Text>
       <View style={{ flexDirection: row, alignItems: 'center', gap: 20 }}>
         <HearButton word={w.en} />
@@ -550,6 +571,7 @@ export function Speaking({ words }: { words: HubWord[] }) {
 const styles = StyleSheet.create({
   hear: { borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   flash: { width: '100%', minHeight: 200, borderWidth: 1.5, borderRadius: 20, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
+  picture: { fontSize: PICTURE_SIZE, lineHeight: PICTURE_SIZE + 16, textAlign: 'center' },
   flashEn: { fontFamily: 'ReadexPro_700Bold', fontSize: 40, textAlign: 'center' },
   flashAr: { fontFamily: 'ReadexPro_700Bold', fontSize: 34, lineHeight: 56, textAlign: 'center', writingDirection: 'rtl' },
   navBtn: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 },

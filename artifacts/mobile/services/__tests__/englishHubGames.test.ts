@@ -25,6 +25,7 @@ import {
   lessonStars,
   newlyEarnedBadges,
   normaliseSpelling,
+  wordPicture,
   parseProgress,
   recordResult,
   starsFor,
@@ -181,6 +182,22 @@ describe('picture matching', () => {
     for (const lesson of ENGLISH_HUB_LESSONS) {
       const picturable = lesson.words.filter(w => isPicturable(w.en));
       assert.equal(lessonHasPictureMatch(lesson.words), picturable.length >= 4, lesson.id);
+    }
+  });
+});
+
+describe('flashcard pictures', () => {
+  // A teacher's note (2026-10-15): the book teaches each word as a picture with
+  // the word under it, so the flashcard shows the picture the hub already has.
+  it('gives the curated picture for a picturable word, and nothing otherwise', () => {
+    assert.equal(wordPicture('apples'), '🍎');
+    assert.equal(wordPicture('cakes'), '🎂');
+    assert.equal(wordPicture('carefully'), null);
+  });
+
+  it('agrees with isPicturable for every hub word', () => {
+    for (const lesson of ENGLISH_HUB_LESSONS) {
+      for (const w of lesson.words) assert.equal(wordPicture(w.en) !== null, isPicturable(w.en), w.en);
     }
   });
 });

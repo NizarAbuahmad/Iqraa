@@ -74,4 +74,19 @@ describe('worksheetSendPayload', () => {
       answerKey: [{ num: 1, answer: '2' }, { num: 2, answer: '5', solution: ['خطوة'] }],
     });
   });
+
+  it('copies a question format through unchanged', () => {
+    const format = { kind: 'order' as const, stem: 'رتّب', steps: ['b', 'a'], order: [1, 0] };
+    const withFormat = {
+      ...ws,
+      sections: [{ ...ws.sections[0], questions: [{ text: 'س', points: 2, format }] }],
+    } as unknown as WorksheetOutput;
+    const q = worksheetSendPayload(withFormat).sections[0]!.questions[0]!;
+    assert.deepEqual(q.format, format);
+    assert.equal(q.text, 'س');
+  });
+
+  it('adds no format key to a question without one', () => {
+    for (const q of worksheetSendPayload(ws).sections[0]!.questions) assert.equal('format' in q, false);
+  });
 });
