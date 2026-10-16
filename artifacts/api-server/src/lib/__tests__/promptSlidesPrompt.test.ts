@@ -31,6 +31,7 @@ import {
   MAX_PROMPT_SLIDE_CHARTS,
   sanitizeDeckStructure,
 } from "../promptSlidesPrompt.ts";
+import { DECK_LAYOUT_NAMES } from "../promptSlidesPrompt.ts";
 
 const baseBody = {
   subject: "Science",
@@ -423,5 +424,80 @@ describe("sanitizeDeckStructure — optional extras are kept only where they can
     for (const junk of [null, undefined, "deck", 3, [], { slides: "no" }]) {
       assert.deepEqual(sanitizeDeckStructure(junk), junk);
     }
+  });
+});
+
+describe("structure layouts — timeline, stats, table, flow", () => {
+  for (const [label, build] of BOTH) {
+    describe(label, () => {
+      const prompt = build(baseBody);
+
+      it("names all four, with the JSON shape each one needs", () => {
+        for (const name of ["timeline", "stats", "table", "flow"]) assert.ok(prompt.includes(`"${name}"`), name);
+        assert.match(prompt, /"timeline": \[\{"label"/);
+        assert.match(prompt, /"stats": \[\{"value"/);
+        assert.match(prompt, /"table": \{"headers"/);
+        assert.match(prompt, /"flow": \{"steps"/);
+        assert.match(prompt, /"cycle"/);
+      });
+
+      it("demands one cell under every header, and forbids inventing figures or dates", () => {
+        assert.match(prompt, label === "ar" ? /خلية واحدة بالضبط تحت كل عنوان/ : /exactly one cell under every header/);
+        assert.match(prompt, label === "ar" ? /لا تخترع أرقامًا أبدًا/ : /Never invent a figure/);
+        assert.match(prompt, label === "ar" ? /لا مخترَعة/ : /never invented/);
+      });
+
+      it("asks for one sentence of content on these slides, and lists them as an exception to the two-line rule", () => {
+        assert.match(prompt, label === "ar" ? /جملة واحدة تلخّص الشريحة/ : /ONE sentence that sums the slide up/);
+        assert.match(prompt, label === "ar"
+          ? /"timeline" أو "stats" أو "table" أو "flow"، فهذه سطر واحد عمدًا/
+          : /"timeline", "stats", "table" or "flow", which are one line on purpose/);
+      });
+    });
+  }
+
+  it("the layout list the server accepts is the app's SLIDE_LAYOUTS — read out of the app's source", () => {
+    const here = dirname(fileURLToPath(import.meta.url));
+    const source = readFileSync(join(here, "../../../../mobile/services/slideLayout.ts"), "utf8");
+    const block = source.match(/export const SLIDE_LAYOUTS = \[([\s\S]*?)\] as const/);
+    assert.ok(block, "SLIDE_LAYOUTS not found in the app's slideLayout.ts");
+    const appNames = [...block![1]!.matchAll(/'([a-z]+)'/g)].map(m => m[1]);
+    assert.deepEqual([...DECK_LAYOUT_NAMES].sort(), [...appNames].sort());
+  });
+});
+
+describe("sanitizeDeckStructure — layouts", () => {
+  const deckOf = (slides: Record<string, unknown>[]) => ({ activityName: "x", slides });
+  const slidesOf = (d: unknown) => (d as { slides: Record<string, unknown>[] }).slides;
+  const timeline = [{ label: "1", text: "a" }, { label: "2", text: "b" }, { label: "3", text: "c" }];
+
+  it("keeps a known layout on a prose slide, payload and all", () => {
+    for (const type of ["intro", "summary"]) {
+      const out = slidesOf(sanitizeDeckStructure(deckOf([{ type, layout: "timeline", timeline }])));
+      assert.equal(out[0]!.layout, "timeline");
+      assert.deepEqual(out[0]!.timeline, timeline);
+    }
+  });
+
+  it("deletes a layout name the app does not know", () => {
+    for (const bad of ["carousel", "", "toString", 4, null]) {
+      const out = slidesOf(sanitizeDeckStructure(deckOf([{ type: "intro", layout: bad }])));
+      assert.equal("layout" in out[0]!, false, String(bad));
+    }
+  });
+
+  it("deletes a layout from a question, challenge or divider — it would hide the options, the answer or the photo", () => {
+    for (const type of ["question", "challenge", "divider", "graph", "media"]) {
+      const out = slidesOf(sanitizeDeckStructure(deckOf([{ type, layout: "stats", stats: [{ value: "1", label: "a" }], options: ["a", "b"] }])));
+      assert.equal("layout" in out[0]!, false, type);
+      assert.deepEqual(out[0]!.options, ["a", "b"], "the question's own fields are untouched");
+    }
+  });
+
+  it("does not judge the payload — the app re-checks it with the real limits", () => {
+    const thin = [{ label: "1", text: "only one" }];
+    const out = slidesOf(sanitizeDeckStructure(deckOf([{ type: "intro", layout: "timeline", timeline: thin }])));
+    assert.equal(out[0]!.layout, "timeline");
+    assert.deepEqual(out[0]!.timeline, thin);
   });
 });

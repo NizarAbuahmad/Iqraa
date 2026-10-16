@@ -2579,6 +2579,7 @@ const translations = {
     deleteLabel: 'حذف',
     slideUpdated: 'تم تعديل الشريحة',
     deckThemeLabel: 'مظهر العرض',
+    deckFlowLoop: 'ثم تتكرر الدورة',
 
     // Onboarding carousel — first-run intro, before login
     onboardingSkip: 'تخطي',
@@ -5401,6 +5402,7 @@ const translations = {
     deleteLabel: 'Delete',
     slideUpdated: 'Slide updated',
     deckThemeLabel: 'Deck look',
+    deckFlowLoop: 'then the cycle repeats',
 
     // Onboarding carousel — first-run intro, before login
     onboardingSkip: 'Skip',
