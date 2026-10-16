@@ -4,10 +4,14 @@
  *
  * Measured 2026-10-16: of 414 such lessons, 203 could ask only one kind — every
  * item the same sentence with new numbers («أوجد ناتج: 2 × 6», twenty times) — and
- * 99 only two. A "kind" is a `stemFrame`: the stem with its numbers masked. The
- * generators were given the kinds their lessons' NCCD outcomes list (a missing
- * number, a word problem, the inverse question…); this keeps any lesson from
- * sliding back to one sentence, including a new lesson routed to an old generator.
+ * 99 only two. The generators were given the kinds their lessons' NCCD outcomes
+ * list (a missing number, a word problem, the inverse question…); this keeps any
+ * lesson from sliding back, including a new lesson routed to an old generator.
+ *
+ * A kind is a group of `stemFrame`s (the stem with its numbers masked) that
+ * `sameKind` links: sentences a few words apart are one ask. Counted by frame
+ * alone, 64 lessons passed on rewordings — «بعد ساعتين» / «بعد 3 ساعات», sin /
+ * cos / tan of one triangle — and were given real kinds the same day.
  *
  * Draws go through `takeElementaryMath`, the route a quiz or worksheet takes for
  * these grades. Grade 10 is pinned in lib/math-practice (`lessonKinds.test.ts`).
@@ -15,7 +19,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { beginMathPracticeSession, elementaryOpsForTitle, lessonTitleBlob, stemFrame, takeElementaryMath, topicFor } from '@workspace/math-practice';
+import { beginMathPracticeSession, elementaryOpsForTitle, lessonTitleBlob, sameKind, stemFrame, takeElementaryMath, topicFor } from '@workspace/math-practice';
 import { KB_LESSONS } from '../knowledgeBase.ts';
 
 const TIERS = ['easy', 'medium', 'hard'] as const;
@@ -30,7 +34,15 @@ function kinds(lesson: (typeof KB_LESSONS)[number], grade: number): number {
       frames.add(stemFrame(q.text));
     }
   }
-  return frames.size;
+  // Group linked frames (single linkage: `sameKind` is not transitive).
+  const kinds: string[][] = [];
+  for (const f of frames) {
+    const near = kinds.filter(k => k.some(g => sameKind(f, g)));
+    if (near.length === 0) { kinds.push([f]); continue; }
+    near[0]!.push(f, ...near.slice(1).flat());
+    for (const k of near.slice(1)) kinds.splice(kinds.indexOf(k), 1);
+  }
+  return kinds.length;
 }
 
 describe('grade 1–9 maths lessons ask several kinds of question', () => {

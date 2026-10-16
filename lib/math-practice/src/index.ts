@@ -41,7 +41,7 @@ export type { FormatKind, MatchPick, OrderPick, SpotErrorPick, GraphPick } from 
 export type { Misstep } from './missteps.ts';
 export { detectElementaryOp, elementaryOpsForTitle } from './elementary.ts';
 export { topicFor } from './topics.ts';
-export { stemFrame } from './stemFrame.ts';
+export { sameKind, stemFrame } from './stemFrame.ts';
 
 export interface PracticeLesson {
   id: string;
