@@ -37,8 +37,9 @@ never marks anything as correct.
 - **Whether each file is exactly its ayah.** The source's per-ayah files may or
   may not begin with the basmalah for ayah 1 of a surah (Al-Fatiha's ayah 1 *is*
   the basmalah). That is a property of the recordings and is not assumed. It is
-  an owner check (see *Owner items*) and goes into `sources/quran-ws/VERIFY.md`
-  as an unticked section, so it is not lost.
+  an owner check (see *Owner items*) and goes into
+  `lib/curriculum/sources/quran-audio/VERIFY.md` — a separate, hand-written sheet,
+  because `sources/quran-ws/VERIFY.md` is generated and says not to edit it.
 
 ## Components
 
@@ -50,8 +51,10 @@ never marks anything as correct.
   script and the app both use it, so they cannot drift.
 - `quranAudioAyahs()` → the list of `{ surah, ayah }` the corner holds, derived
   from `quran_corner.json`, never hand-listed.
-- Exported as `@workspace/curriculum/quranAudio` (new subpath, like `/quran`).
-- Validation: surah in 1–114, ayah ≥ 1; anything else throws, so a bad call fails
+- Exported as `@workspace/curriculum/quran-audio` (new subpath, named like the other
+  `quran-*` ones). Also exports `QURAN_AUDIO_ORIGIN` and `quranAyahAudioUrl`.
+- Validation: surah an integer 1–114, ayah an integer 1–286 (Al-Baqarah, the longest
+  surah); anything else throws a `RangeError`, so a bad call fails
   in a test rather than as a 404 in a student's hand.
 
 ### 2. Upload script: `lib/curriculum/scripts/upload-quran-audio-r2.ts`
@@ -98,8 +101,9 @@ Modelled on `upload-figures-r2.ts` and `generate-english-audio.ts`:
 - **Sequencing is a pure function** in `services/quranPlaylist.ts` (no
   `react-native` import, so it runs under `services/__tests__`): given the ayah
   list and `repeat`, it returns the ordered play queue and the "what plays next"
-  step. The player calls it; it is the part with real logic and it is the part
-  that is tested.
+  step. It is a small reducer (`startPlaylist`, `advancePlaylist`, `currentOf`)
+  whose idle state also makes a late "finished" event after Stop a no-op. The player
+  calls it; it is the part with real logic and it is the part that is tested.
 - Playing from the bucket needs the network. There is no download or cache in
   this slice (see *Not in this slice*). A student offline gets the same quiet
   "couldn't play" line; reading and hiding still work.
@@ -131,6 +135,8 @@ export function quranAudioVisible(uploaded: boolean, dev: boolean): boolean {
 }
 ```
 
+The constant starts `false`; the checklist for flipping it is `sources/quran-audio/VERIFY.md`.
+
 The same shape as `QURAN_CORNER_RELEASED`: a source constant, **not** an
 `EXPO_PUBLIC_*` variable (those need declaring in three places, CLAUDE.md), and
 `__DEV__` always shows it so the owner can test before flipping. With the gate
@@ -156,8 +162,9 @@ first set was.
   touches only those ayahs.
 - `quranPlaylist.test.ts` (mobile services): order, repeat counts, a range that
   spans one ayah, the empty range, and "stop" mid-queue.
-- `quranAudioRelease.test.ts`: the three combinations, and that the constant is
-  `false` until the owner flips it.
+- `quranAudioRelease.test.ts`: the three combinations, and that the constant is a
+  boolean (not its value: pinning `false` would turn the owner's one-line flip into
+  a two-file change, and `quranRelease.test.ts` does not pin its value either).
 - `audioExclusive.test.ts`: claiming stops the others and never the claimant;
   an unregistered name is ignored; a stop that throws does not block the rest.
 - The app and the script both import `quranAudioKey` from `lib/curriculum`; neither
