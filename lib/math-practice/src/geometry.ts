@@ -821,20 +821,76 @@ const pointLine = T('distance_point_line', /^البعد بين نقطه ومست
 const proportionalParts = T('proportional_parts', /^الاجزاء المتناسبه في المثلثات$/, [9, 9], ({ rng, diff }) => {
   const a = int(rng, 2, 8), k = int(rng, 2, 4), c = int(rng, 2, span(diff, 6, 9, 12));
   const b = a * k, e = c * k;
-  const which = rng() < 0.7;
-  if (which) return { eq: `${a}, ${b}, ${c}`, answer: String(c * k), wrongs: pos(c * k, [a + b + c, b + c - a, c + k, (a * c) / b | 0, a * b]), ar: `في المثلث ABC، النقطة D على AB والنقطة E على AC وDE ∥ BC. إذا كان AD = ${a} سم و DB = ${b} سم و AE = ${c} سم، فما طول EC؟`, en: `In triangle ABC, D lies on AB and E on AC with DE ∥ BC. If AD = ${a} cm, DB = ${b} cm and AE = ${c} cm, what is EC?` };
+  // 0 EC, 1 AE; 2 DE from BC, 3 the midsegment, 4 three parallel lines cut by two transversals.
+  const kind = pick(rng, [0, 1, 2, 3, 4]);
+  if (kind === 2) {
+    const db = int(rng, 2, 9), t = int(rng, 2, span(diff, 4, 6, 8)), BC = (a + db) * t;
+    return { eq: `DE ${a}, ${db}, ${BC}`, answer: String(a * t), wrongs: pos(a * t, [db * t, BC - a, (BC * a) / db, a * t + t, BC - db]), ar: `في المثلث ABC، النقطة D على AB والنقطة E على AC وDE ∥ BC. إذا كان AD = ${a} سم و DB = ${db} سم و BC = ${BC} سم، فما طول DE؟`, en: `In triangle ABC, D lies on AB and E on AC with DE ∥ BC. If AD = ${a} cm, DB = ${db} cm and BC = ${BC} cm, what is DE?` };
+  }
+  if (kind === 3) {
+    const BC = 2 * int(rng, 3, span(diff, 8, 12, 16));
+    return { eq: `mid ${BC}`, answer: String(BC / 2), wrongs: pos(BC / 2, [BC, 2 * BC, BC / 2 + 2, BC - 2]), ar: `في المثلث ABC، النقطتان D و E منتصفا الضلعين AB و AC على الترتيب، وطول BC يساوي ${BC} سم. ما طول DE؟`, en: `In triangle ABC, D and E are the midpoints of AB and AC, and BC = ${BC} cm. How long is DE?` };
+  }
+  if (kind === 4) {
+    const s1 = int(rng, 2, 8);
+    let s2 = int(rng, 2, 9);
+    if (s2 === s1) s2 += 1;
+    const u1 = s1 * k, u2 = s2 * k;
+    return { eq: `lines ${s1}, ${s2}, ${u1}`, answer: String(u2), wrongs: pos(u2, [u1 + s2 - s1, s2, s1 * s2, u2 + 1, u1]), ar: `ثلاثة مستقيمات متوازية يقطعها قاطعان، فتقسم القاطع الأول إلى قطعتين طولاهما ${s1} سم و ${s2} سم، وتقسم القاطع الثاني إلى قطعتين طول الأولى منهما ${u1} سم. ما طول القطعة الثانية؟`, en: `Three parallel lines cut two transversals. On the first they cut segments of ${s1} cm and ${s2} cm; on the second the first segment is ${u1} cm. How long is the second segment?` };
+  }
+  if (kind === 0) return { eq: `${a}, ${b}, ${c}`, answer: String(c * k), wrongs: pos(c * k, [a + b + c, b + c - a, c + k, (a * c) / b | 0, a * b]), ar: `في المثلث ABC، النقطة D على AB والنقطة E على AC وDE ∥ BC. إذا كان AD = ${a} سم و DB = ${b} سم و AE = ${c} سم، فما طول EC؟`, en: `In triangle ABC, D lies on AB and E on AC with DE ∥ BC. If AD = ${a} cm, DB = ${b} cm and AE = ${c} cm, what is EC?` };
   return { eq: `${a}, ${b}, ${e}`, answer: String(c), wrongs: pos(c, [e - 1, e + 1, a + b, (a * b) / e | 0, e - a]), ar: `في المثلث ABC، النقطة D على AB والنقطة E على AC وDE ∥ BC. إذا كان AD = ${a} سم و DB = ${b} سم و EC = ${e} سم، فما طول AE؟`, en: `In triangle ABC, D lies on AB and E on AC with DE ∥ BC. If AD = ${a} cm, DB = ${b} cm and EC = ${e} cm, what is AE?` };
 });
 
 const bisector = T('angle_bisector_thm', /^منصفات في المثلث$/, [9, 9], ({ rng, diff }) => {
   const a = int(rng, 2, 7), k = int(rng, 2, 4), bd = int(rng, 2, span(diff, 6, 9, 12));
   const b = a * k, dc = bd * k;
+  // 0 the angle bisector theorem; 1 a point on a perpendicular bisector, 2 a point on an angle bisector (both equidistant); 3 the incentre's distance from a side.
+  const kind = pick(rng, [0, 1, 2, 3]);
+  if (kind === 1 || kind === 2) {
+    const x = int(rng, 2, span(diff, 8, 12, 15)), p = int(rng, 2, 5), q = int(rng, 1, p - 1), c1 = int(rng, 1, 12), c2 = c1 + (p - q) * x;
+    const wr = pos(x, [x + 2, x - 2, c2 - c1, (c1 + c2) / (p + q) | 0, p * x + c1]);
+    if (kind === 1) return { eq: `perp ${p}, ${c1}, ${q}, ${c2}`, answer: String(x), wrongs: wr, ar: `النقطة P تقع على المنصِّف العمودي للقطعة المستقيمة AB. إذا كان PA = ${lin(p, c1)} و PB = ${lin(q, c2)}، فما قيمة x؟`, en: `Point P lies on the perpendicular bisector of segment AB. If PA = ${lin(p, c1)} and PB = ${lin(q, c2)}, what is x?` };
+    return { eq: `bis ${p}, ${c1}, ${q}, ${c2}`, answer: String(x), wrongs: wr, ar: `النقطة P تقع على منصِّف الزاوية ABC، وبُعدها عن الضلع BA يساوي ${lin(p, c1)}، وبُعدها عن الضلع BC يساوي ${lin(q, c2)}. ما قيمة x؟`, en: `Point P lies on the bisector of angle ABC. Its distance from side BA is ${lin(p, c1)} and from side BC is ${lin(q, c2)}. What is x?` };
+  }
+  if (kind === 3) {
+    const [r, f, h] = pick(rng, [[3, 4, 5], [4, 3, 5], [6, 8, 10], [8, 6, 10], [5, 12, 13], [12, 5, 13], [8, 15, 17]] as Array<[number, number, number]>);
+    return { eq: `in ${h}, ${f}`, answer: String(r), wrongs: pos(r, [h - f, f, h, r + 1, h + f]), ar: `النقطة I ملتقى منصِّفات زوايا المثلث ABC، والنقطة F على الضلع AB بحيث IF ⊥ AB. إذا كان IA = ${h} سم و AF = ${f} سم، فما بُعد النقطة I عن الضلع BC؟`, en: `I is the point where the angle bisectors of triangle ABC meet, and F is on AB with IF ⊥ AB. If IA = ${h} cm and AF = ${f} cm, how far is I from side BC?` };
+  }
   return { eq: `${a}, ${b}, ${bd}`, answer: String(dc), wrongs: pos(dc, [bd + (b - a), a + b + bd, (a * bd) / b | 0, dc + 1]), ar: `في المثلث ABC، AD منصف للزاوية A ويقطع BC في D. إذا كان AB = ${a} سم و AC = ${b} سم و BD = ${bd} سم، فما طول DC؟`, en: `In triangle ABC, AD bisects angle A and meets BC at D. If AB = ${a} cm, AC = ${b} cm and BD = ${bd} cm, what is DC?` };
 });
 
 const medians = T('medians_centroid', /^القطع المتوسطه والارتفاعات في المثلث$/, [9, 9], ({ rng }) => {
+  // 0 AG, 1 GD from the median; 2 the median from AG; 3 the centroid's coordinates; 4 the orthocentre's coordinates.
+  const kind = pick(rng, [0, 1, 2, 3, 4]);
+  if (kind === 2) {
+    const ag = 2 * int(rng, 2, 12), ad = (3 * ag) / 2;
+    return { eq: `AD ${ag}`, answer: String(ad), wrongs: pos(ad, [2 * ag, ag / 2, 3 * ag, ag + 2, ag]), ar: `في المثلث ABC، AD قطعة متوسطة، و G مركز المثلث. إذا كان AG = ${ag} سم، فما طول AD؟`, en: `In triangle ABC, AD is a median and G is the centroid. If AG = ${ag} cm, how long is AD?` };
+  }
+  if (kind === 3) {
+    let A: [number, number] = [0, 0], B: [number, number] = [0, 0], C: [number, number] = [0, 0], G: [number, number] = [0, 0];
+    do {
+      G = [int(rng, -3, 4), int(rng, -3, 4)]; A = [int(rng, -6, 6), int(rng, -6, 6)]; B = [int(rng, -6, 6), int(rng, -6, 6)];
+      C = [3 * G[0] - A[0] - B[0], 3 * G[1] - A[1] - B[1]];
+    } while ((B[0] - A[0]) * (C[1] - A[1]) - (B[1] - A[1]) * (C[0] - A[0]) === 0 || Math.abs(C[0]) > 9 || Math.abs(C[1]) > 9);
+    const S: [number, number] = [A[0] + B[0] + C[0], A[1] + B[1] + C[1]];
+    return { eq: `G ${pt(...A)}, ${pt(...B)}, ${pt(...C)}`, answer: pt(...G), wrongs: ptOpts(G, ([S, [S[0] / 2, S[1] / 2], [G[1], G[0]], [G[0], -G[1]]] as Array<[number, number]>).filter(isIntPt)), ar: `ما إحداثيات مركز المثلث الذي رؤوسه A${pt(...A)} و B${pt(...B)} و C${pt(...C)}؟`, en: `What are the coordinates of the centroid of the triangle with vertices A${pt(...A)}, B${pt(...B)} and C${pt(...C)}?` };
+  }
+  if (kind === 4) {
+    // BC is horizontal (y = c), so the altitude from A is the vertical line x = p; it meets the altitude from B where (H − B)·(C − A) = 0.
+    for (let i = 0; i < 60; i++) {
+      const c = int(rng, -3, 3), q = c + nz(rng, 6), b = int(rng, -6, 0), e = int(rng, 1, 7), p = int(rng, -5, 7);
+      const num = (p - b) * (e - p);
+      if (num % (c - q) !== 0) continue;
+      const y = c - num / (c - q) || 0;
+      if (Math.abs(y) > 12) continue;
+      const A: [number, number] = [p, q], B: [number, number] = [b, c], C: [number, number] = [e, c], H: [number, number] = [p, y];
+      const G: [number, number] = [(p + b + e) / 3, (q + 2 * c) / 3];
+      return { eq: `H ${pt(...A)}, ${pt(...B)}, ${pt(...C)}`, answer: pt(...H), wrongs: ptOpts(H, ([G, A, [p, c], [y, p], [p, -y], [p, y + 1]] as Array<[number, number]>).filter(isIntPt)), ar: `ما إحداثيات نقطة تلاقي ارتفاعات المثلث الذي رؤوسه A${pt(...A)} و B${pt(...B)} و C${pt(...C)}؟`, en: `What are the coordinates of the orthocentre of the triangle with vertices A${pt(...A)}, B${pt(...B)} and C${pt(...C)}?` };
+    }
+  }
   const m = 3 * int(rng, 2, 12);
-  const k = rng() < 0.5;
+  const k = kind === 0 || (kind === 4 && rng() < 0.5);
   const ans = k ? (2 * m) / 3 : m / 3;
   return { eq: `${m}`, answer: String(ans), wrongs: pos(ans, [m / 2, m, k ? m / 3 : (2 * m) / 3, ans + 1, m - 1]), ar: `في المثلث ABC، القطعة المتوسطة من الرأس A طولها ${m} سم، ومركز المثلث G. ما طول ${k ? 'AG' : 'GD (حيث D منتصف BC)'}؟`, en: `In triangle ABC the median from vertex A is ${m} cm long, and G is the centroid. What is the length of ${k ? 'AG' : 'GD (where D is the midpoint of BC)'}?` };
 });

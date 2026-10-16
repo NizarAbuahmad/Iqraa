@@ -555,7 +555,6 @@ const divisionQ = (id: string, match: RegExp, twoDigit: boolean, withRemainder: 
     : { eq: `${n} ÷ ${d}`, answer: String(r), wrongs: ints(r, [q, d - r, r + 1, d]), ar: `ما الباقي عند قسمة ${n} على ${d}؟`, en: `What is the remainder of ${n} ÷ ${d}?` };
 });
 
-/** «في 3 صناديق» — at least three, so the plural is always right. */
 const tensMulG3 = T('tens_mul_g3', /^الضرب في مضاعفات العدد 10$/, [3, 3], ({ rng }) => {
   const a = int(rng, 2, 9), b = int(rng, 2, 9), p = a * b * 10, k = pick(rng, [0, 1, 2, 3]);
   if (k === 2) return { eq: `${a} × ${b * 10}`, answer: String(p), wrongs: ints(p, [a * b, p * 10, a * b + 10, p + 10]), ar: `إذا كان ${a} × ${b} = ${a * b}، فما ناتج ${a} × ${b * 10}؟`, en: `If ${a} × ${b} = ${a * b}, what is ${a} × ${b * 10}?` };
@@ -612,7 +611,14 @@ const pointLineRay = T('point_line_ray', /^النقطه والمستقيم وا�
 
 const ANGLE_NAMES = ['حادة', 'قائمة', 'منفرجة'];
 const angleG3 = T('angle_kind_g3', /^الزوايا$/, [3, 3], ({ rng }) => {
-  const kind = pick(rng, [0, 1, 2]), a = kind === 0 ? int(rng, 10, 85) : kind === 1 ? 90 : int(rng, 95, 175);
+  const kind = pick(rng, [0, 1, 2]), measure = (t: number) => (t === 0 ? 5 * int(rng, 2, 17) : t === 1 ? 90 : 5 * int(rng, 19, 35)), a = kind === 0 ? int(rng, 10, 85) : kind === 1 ? 90 : int(rng, 95, 175);
+  if (rng() < 0.4) {
+    // four measures, exactly one of the asked kind
+    const list = new Set<number>([measure(kind)]);
+    while (list.size < 4) list.add(measure(pick(rng, [0, 1, 2].filter(t => t !== kind && (t !== 1 || !list.has(90))))));
+    const xs = shuffle(rng, [...list]), ans = xs.find(x => (x < 90 ? 0 : x === 90 ? 1 : 2) === kind)!;
+    return { eq: xs.join(', '), answer: `${ans}°`, wrongs: xs.filter(x => x !== ans).map(x => `${x}°`), ar: `أي القياسات الآتية قياس زاوية ${ANGLE_NAMES[kind]}: ${xs.map(x => `${x}°`).join('، ')}؟`, en: `Which of these is the measure of a${kind === 0 ? 'n acute' : kind === 1 ? ' right' : 'n obtuse'} angle: ${xs.map(x => `${x}°`).join(', ')}?` };
+  }
   return { eq: `${a}°`, answer: ANGLE_NAMES[kind]!, wrongs: [...ANGLE_NAMES.filter((_, i) => i !== kind), 'مستقيمة'], ar: `زاوية قياسها ${a}°. ما نوعها؟`, en: `An angle measures ${a}°. What kind is it? (حادة = acute, قائمة = right, منفرجة = obtuse, مستقيمة = straight)` };
 });
 
@@ -638,8 +644,14 @@ const numberPatterns = T('number_patterns_g4', /^الانماط$/, [4, 4], ({ rn
   const d = int(rng, 2, span(diff, 6, 9, 12)), a = int(rng, 1, 30), up = rng() < 0.7 || a < 5 * d;
   const seq = [0, 1, 2, 3].map(i => (up ? a + i * d : a + 4 * d - i * d));
   const next = up ? seq[3]! + d : seq[3]! - d;
-  const k = pick(rng, [0, 1]);
+  const k = pick(rng, [0, 1, 2, 3]);
   const rule = `${up ? '+' : '−'}${d}`;
+  if (k === 2) return { eq: seq.join(', '), answer: String(seq[2]), wrongs: ints(seq[2]!, [seq[2]! + d, seq[2]! - d, seq[1]! + 1, seq[3]! + d]), ar: `ما العدد المفقود في النمط: ${seq[0]}، ${seq[1]}، ___، ${seq[3]}؟`, en: `What is the missing number in the pattern ${seq[0]}, ${seq[1]}, ___, ${seq[3]}?` };
+  if (k === 3) {
+    // the rule is given: build the pattern from its first number to the fifth
+    const fifth = up ? seq[0]! + 4 * d : seq[0]! - 4 * d;
+    return { eq: `${seq[0]}, ${rule}`, answer: String(fifth), wrongs: ints(fifth, [up ? fifth + d : fifth - d, up ? fifth - d : fifth + d, up ? seq[0]! + 5 * d : seq[0]! - 5 * d, seq[0]! + d]), ar: `نمط يبدأ بالعدد ${seq[0]}، وقاعدته «${up ? 'أضف' : 'اطرح'} ${d}». ما العدد الخامس في النمط؟`, en: `A pattern starts at ${seq[0]} and its rule is «${up ? 'add' : 'subtract'} ${d}». What is the fifth number in the pattern?` };
+  }
   if (k === 0) return { eq: seq.join(', '), answer: String(next), wrongs: ints(next, [next + d, next - d, seq[3]! + 1, up ? next - 1 : next + 1]), ar: `ما العدد التالي في النمط: ${seq.join('، ')}، ___؟`, en: `What number comes next in the pattern ${seq.join(', ')}, ___?` };
   return { eq: seq.join(', '), answer: rule, wrongs: wrongsFrom(rule, [`${up ? '−' : '+'}${d}`, `${up ? '+' : '−'}${d + 1}`, `${up ? '+' : '−'}${d - 1 > 0 ? d - 1 : d + 2}`, `×${d}`], j => `${up ? '+' : '−'}${d + 1 + Math.abs(j)}`), ar: `ما قاعدة النمط: ${seq.join('، ')}؟`, en: `What is the rule of the pattern ${seq.join(', ')}?` };
 });
@@ -650,6 +662,11 @@ const inputOutput = T('input_output', /^جداول المدخلات والمخر
   const xs = shuffle(rng, [1, 2, 3, 4, 5, 6, 7, 8, 9]).slice(0, 4);
   const [x1, x2, x3, q] = xs as [number, number, number, number];
   const rule = mul ? `ضرب في ${c}` : `جمع ${c}`;
+  if (rng() < 0.3) {
+    // work backwards: the rule and an output are known, find the input
+    const y = f(q);
+    return { eq: `${rule}, ${y}`, answer: String(q), wrongs: ints(q, mul ? [y * c, y - c, y, q + 1] : [y + c, y, q + 1, q - 1]), ar: `جدول مدخلات ومخرجات قاعدته «${rule}». ما المدخل إذا كان المخرج ${y}؟`, en: `An input–output table has the rule «${mul ? `multiply by ${c}` : `add ${c}`}». What is the input when the output is ${y}?` };
+  }
   if (rng() < 0.7) return { eq: `${x1}, ${x2}, ${x3}, ${q}`, answer: String(f(q)), wrongs: ints(f(q), [mul ? q + c : q * c, f(q) + 1, f(q) - 1, f(q) + c]), ar: `جدول مدخلات ومخرجات: المدخل ${x1} ← المخرج ${f(x1)}، والمدخل ${x2} ← المخرج ${f(x2)}، والمدخل ${x3} ← المخرج ${f(x3)}. ما المخرج عندما يكون المدخل ${q}؟`, en: `Input–output table: input ${x1} gives output ${f(x1)}, input ${x2} gives ${f(x2)}, input ${x3} gives ${f(x3)}. What is the output when the input is ${q}?` };
   const alt = mul ? `جمع ${c}` : `ضرب في ${c}`;
   return { eq: `${x1}, ${x2}`, answer: rule, wrongs: [alt, mul ? `ضرب في ${c + 1}` : `جمع ${c + 1}`, `طرح ${c}`], ar: `جدول مدخلات ومخرجات: المدخل ${x1} ← المخرج ${f(x1)}، والمدخل ${x2} ← المخرج ${f(x2)}. ما القاعدة؟`, en: `Input–output table: input ${x1} gives output ${f(x1)} and input ${x2} gives ${f(x2)}. What is the rule? (جمع = add, ضرب في = multiply by)` };
@@ -697,10 +714,25 @@ const weekDays = T('week_days', /^ايام الاسبوع$/, [1, 1], ({ rng }) =
 const hourTime = (id: string, match: RegExp, half: boolean) => T(id, match, [1, 1], ({ rng }) => {
   const h = int(rng, 1, 11), j = int(rng, 1, 3), hh = (h + j - 1) % 12 + 1;
   if (!half) return { eq: `${h}:00, ${j}`, answer: `${hh}:00`, wrongs: wrongsFrom(`${hh}:00`, [`${h}:00`, `${hh % 12 + 1}:00`, `${(hh + 10) % 12 + 1}:00`, `${h}:30`], k => `${(hh + Math.abs(k)) % 12 + 1}:00`), ar: `الساعة الآن ${h}:00. ما الوقت بعد ${j === 1 ? 'ساعة واحدة' : j === 2 ? 'ساعتين' : '3 ساعات'}؟`, en: `It is ${h}:00 now. What time will it be in ${j} hour${j === 1 ? '' : 's'}?` };
+  const k = pick(rng, [0, 1, 2]);
+  if (k === 1) {
+    // the hands of a clock face, described: hour hand halfway between h and the next hour, minute hand on 6
+    const g = int(rng, 1, 12), next = g % 12 + 1;
+    return { eq: `${g}:30`, answer: `${g}:30`, wrongs: wrongsFrom(`${g}:30`, [`${next}:30`, `${g}:06`, `6:${String((g * 5) % 60).padStart(2, '0')}`, `${g}:00`], j => `${(g + Math.abs(j)) % 12 + 1}:30`), ar: `عقرب الساعات بين ${g} و ${next}، وعقرب الدقائق عند العدد 6. ما الوقت؟`, en: `The hour hand is between ${g} and ${next} and the minute hand points to 6. What time is it?` };
+  }
+  if (k === 2) return { eq: `${h}:30`, answer: `${h}:00`, wrongs: wrongsFrom(`${h}:00`, [`${h}:30`, `${h % 12 + 1}:00`, `${(h + 10) % 12 + 1}:30`, `${h}:15`], j => `${(h + Math.abs(j)) % 12 + 1}:00`), ar: `تشير الساعة إلى ${h}:30. ما الوقت قبل نصف ساعة؟`, en: `A clock shows ${h}:30. What time was it half an hour earlier?` };
   return { eq: `${h}:00`, answer: `${h}:30`, wrongs: wrongsFrom(`${h}:30`, [`${h}:00`, `${h % 12 + 1}:00`, `${h}:15`, `${h % 12 + 1}:30`], k => `${(h + Math.abs(k)) % 12 + 1}:30`), ar: `الساعة الآن ${h}:00. ما الوقت بعد نصف ساعة؟`, en: `It is ${h}:00 now. What time will it be in half an hour?` };
 });
 
 const nearestMinutes = (id: string, match: RegExp, step: 5 | 15) => T(id, match, [2, 2], ({ rng }) => {
+  const kind = pick(rng, [0, 1, 2]);
+  if (kind > 0) {
+    // the minute hand on a number of the clock face: each number is 5 minutes on from the last
+    const h = int(rng, 1, 12), m = step * int(rng, 1, 60 / step - 1), mark = m / 5, next = h % 12 + 1;
+    const fmt = (x: number, y: number) => `${x}:${String(y).padStart(2, '0')}`;
+    if (kind === 1) return { eq: fmt(h, m), answer: fmt(h, m), wrongs: wrongsFrom(fmt(h, m), [fmt(next, m), fmt(h, mark), fmt(h, (m + step) % 60 || step)], j => fmt(h, (m + step * (Math.abs(j) + 1)) % 60)), ar: `عقرب الساعات بين ${h} و ${next}، وعقرب الدقائق عند العدد ${mark}. ما الوقت؟`, en: `The hour hand is between ${h} and ${next} and the minute hand points to ${mark}. What time is it?` };
+    return { eq: `${mark}`, answer: String(m), wrongs: ints(m, [mark, m + 5, m - 5, mark * 10]), ar: `يشير عقرب الدقائق إلى العدد ${mark}. كم دقيقة مضت بعد رأس الساعة؟`, en: `The minute hand points to ${mark}. How many minutes past the hour is it?` };
+  }
   for (;;) {
     const h = int(rng, 1, 12), m = int(rng, 1, 58);
     const lo = Math.floor(m / step) * step, hi = lo + step, d1 = m - lo, d2 = hi - m;
@@ -723,7 +755,13 @@ const monthsOfYear = T('months', /^اشهر السنه$/, [2, 2], ({ rng }) => {
 });
 
 const amPm = T('am_pm', /^قبل الظهر بعد الظهر$/, [3, 3], ({ rng }) => {
-  const a = int(rng, 5, 11), b = int(rng, 1, 9), k = pick(rng, [0, 1]);
+  const a = int(rng, 5, 11), b = int(rng, 1, 9), k = pick(rng, [0, 1, 2, 3]);
+  if (k === 2) return { eq: `${b + 12}`, answer: String(b), wrongs: ints(b, [b + 12, b + 2, b + 1, b - 1]), ar: `الساعة ${b + 12}:00 بنظام 24 ساعة. كم تكون الساعة بعد الظهر؟ (اكتب العدد قبل «:00»)`, en: `It is ${b + 12}:00 in 24-hour time. What time is it in the afternoon? (write the number before ':00')` };
+  if (k === 3) {
+    // a morning start that runs past noon
+    const s = int(rng, 7, 11), len = int(rng, Math.max(3, 13 - s), 10), end = s + len - 12;
+    return { eq: `${s}, ${len}`, answer: String(end), wrongs: ints(end, [s + len, end + 1, end - 1, len]), ar: `بدأت رحلة الساعة ${s}:00 قبل الظهر واستمرت ${len} ساعات. في أي ساعة بعد الظهر انتهت؟ (اكتب العدد قبل «:00»)`, en: `A trip starts at ${s}:00 a.m. and lasts ${len} hours. At what hour p.m. does it end? (write the number before ':00')` };
+  }
   if (k === 0) return { eq: `${a}, ${b}`, answer: String(12 - a + b), wrongs: ints(12 - a + b, [b - a > 0 ? b - a : 2, 12 - a, a + b, 12 - a + b + 1]), ar: `بدأ نشاط الساعة ${a}:00 قبل الظهر وانتهى الساعة ${b}:00 بعد الظهر. كم ساعة استغرق؟`, en: `An activity starts at ${a}:00 a.m. and ends at ${b}:00 p.m. How many hours does it last?` };
   return { eq: `${b}`, answer: String(b + 12), wrongs: ints(b + 12, [b, b + 10, 12 - b > 0 ? 12 - b : 11, b + 11]), ar: `الساعة ${b}:00 بعد الظهر. كم تبلغ الساعة بنظام 24 ساعة؟ (اكتب العدد قبل «:00»)`, en: `It is ${b}:00 p.m. What is the hour in 24-hour time? (write the number before ':00')` };
 });
