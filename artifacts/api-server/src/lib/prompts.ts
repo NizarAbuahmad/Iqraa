@@ -417,10 +417,25 @@ function worksheetTypeShapesEn(types: string[]): string {
   return lines.length ? `The shape of each type (and every section's "type" is one of these only):\n${lines.join("\n")}` : "";
 }
 
+/**
+ * Question types the MODEL is asked to write. صِل / رتّب / أين الخطأ؟ / ارسم
+ * are built from the question bank by the app (`worksheetFormats.ts` in
+ * artifacts/mobile) and appended to the paper afterwards — each counts inside
+ * the teacher's total, which the client has already reduced by that many. A
+ * model told to write them would invent unverified items, so they never reach
+ * the prompt; a list left empty falls back to short answer.
+ */
+const BANK_ONLY_TYPES = new Set(["match", "order", "spot_error", "graph"]);
+function worksheetModelTypes(raw: unknown): string[] {
+  const types = (Array.isArray(raw) && raw.length ? (raw as string[]) : ["short_answer"]).filter(t => !BANK_ONLY_TYPES.has(t));
+  if (types.length === 0) types.push("short_answer");
+  return types;
+}
+
 export function worksheetPromptAr(b: any): string {
   const n = b.numQuestions ?? 8;
   const isHW = b.homework;
-  const types = b.questionTypes ?? ["short_answer"];
+  const types = worksheetModelTypes(b.questionTypes);
   const wantsWP = types.includes("word_problem");
   // Worked example, half-solved question and `solution` rows only where there is a calculation to model.
   const example = !isHW && usesWorkedExample(b);
@@ -465,7 +480,7 @@ ${example ? workedExampleRuleAr(n) : isHW ? "" : worksheetKindRuleAr(b, n)}
 export function worksheetPromptEn(b: any): string {
   const n = b.numQuestions ?? 8;
   const isHW = b.homework;
-  const types = b.questionTypes ?? ["short_answer"];
+  const types = worksheetModelTypes(b.questionTypes);
   const wantsWP = types.includes("word_problem");
   const example = !isHW && usesWorkedExample(b);
   const prior = b.includePriorReview && Array.isArray(b.priorKnowledge) && b.priorKnowledge.length

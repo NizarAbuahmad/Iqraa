@@ -53,6 +53,8 @@ export function reopenedGenerationScope(
   saved: Pick<FormScope, 'gradeIdx' | 'subjectIdx'>,
   topic: string | undefined,
   lang: 'ar' | 'en',
+  /** The lesson it was saved for, when the saved state says — wins over the title. */
+  lessonId?: string,
 ): GenerationScope | null {
   const trimmed = topic?.trim();
   if (!trimmed) return null;
@@ -65,7 +67,7 @@ export function reopenedGenerationScope(
   };
   return captureGenerationScope(
     { gradeIdx: saved.gradeIdx, subjectIdx: saved.subjectIdx, topic: trimmed },
-    resolveGeneratorGrounding(trimmed, lang, { scope }),
+    resolveGeneratorGrounding(trimmed, lang, { scope, lessonId }),
   );
 }
 

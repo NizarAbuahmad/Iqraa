@@ -16,6 +16,15 @@ describe('routeFromNotificationData', () => {
     assert.equal(routeFromNotificationData({ screen: 'my-exams' }), '/my-exams');
   });
 
+  it('opens the School tab for a homework, reminder or exam-date push', () => {
+    assert.equal(routeFromNotificationData({ screen: 'school' }), '/school');
+  });
+
+  it('still ignores a screen that only looks like the School tab', () => {
+    assert.equal(routeFromNotificationData({ screen: '/school' }), null);
+    assert.equal(routeFromNotificationData({ screen: 'school/../admin' }), null);
+  });
+
   it('opens the collected-emails list for a waitlist-signup push', () => {
     assert.equal(routeFromNotificationData({ screen: 'admin-signups' }), '/admin/signups');
   });

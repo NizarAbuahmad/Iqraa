@@ -20,7 +20,7 @@ import { Platform } from 'react-native';
 import * as Sharing from 'expo-sharing';
 import { File, Paths } from 'expo-file-system';
 
-import { visualForSlide } from './deckVisuals.ts';
+import { visualForExport, visualForSlide } from './deckVisuals.ts';
 import { isBulletLine, looksLikeEquation, stripBullet, workingSteps } from './deckText.ts';
 import { resolveSlideLayout } from './slideLayout.ts';
 import { slideTeacherNotesText } from './deckNotes.ts';
@@ -471,7 +471,9 @@ export async function exportDeckAsPptx(
     // Any slide may carry a visual, not just graph slides. A chart attached to
     // a content slide reached neither export until this existed — the drawing
     // was only ever wired into the graph branch above.
-    const slideVisual = visualForSlide(slide);
+    // `visualForExport`: ارسم's curve (`visualOnReveal`) is its answer, so it
+    // is drawn only on a challenge slide that prints the answer beside it.
+    const slideVisual = visualForExport(slide);
     // A plotted curve on a question or challenge slide: a check whose stem
     // says «في الرسم البياني الظاهر…» carries the commands for that figure
     // (see lessonSlides.ts), and those branches lay themselves out around it

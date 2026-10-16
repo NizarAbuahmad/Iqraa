@@ -44,7 +44,9 @@ import {
 } from '@/services/evaluations';
 import type { TranslationKey } from '@/services/i18n';
 import { palette } from '@/constants/colors';
+import { SPACE } from '@/constants/theme';
 import { toLatinDigits } from '@/services/latinDigits';
+import { QUICK_PAPER_MAX, measuredObjectiveId, quickPaperQuestions } from '@/services/paperMarks';
 import { confirm } from '@/services/confirm';
 import { pickMarkSheetPhotos } from '@/services/documents/pick';
 import { blankMarkCount, gridFromScan, totalMismatch } from '@/services/paperScan';
@@ -160,6 +162,10 @@ export default function NewEvaluationScreen() {
   const [countIdx, setCountIdx] = useState(1); // 10
   const [title, setTitle] = useState('');
   const [mode, setMode] = useState<Mode>('generate');
+  // Total-only is the common case for a teacher's own paper: one mark per
+  // student out of a total, no per-question grid to fill in.
+  const [paperShape, setPaperShape] = useState<'questions' | 'total'>('total');
+  const [paperTotal, setPaperTotal] = useState('20');
   const [paperRows, setPaperRows] = useState<PaperRow[]>([]);
   /** Set by a scan: the grid is as long as the paper was, not as long as the count picker says. */
   const [scannedCount, setScannedCount] = useState<number | null>(null);
@@ -170,6 +176,11 @@ export default function NewEvaluationScreen() {
   const [scanFailed, setScanFailed] = useState(false);
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
+  const totalOnly = mode === 'paper' && paperShape === 'total';
+  // «مجموع فقط» credits the whole mark to ONE objective (the first selected): say which.
+  const measuredId = measuredObjectiveId([...selectedObjectives]);
+  const measuredObjective = measuredId ? objectives.find(o => o.id === measuredId) : undefined;
+  const measuredLabel = measuredObjective ? (lang === 'ar' ? measuredObjective.descriptionAr || measuredObjective.description : measuredObjective.description) : '';
 
   useEffect(() => {
     listEvaluableBooks()
@@ -339,7 +350,12 @@ export default function NewEvaluationScreen() {
       setError(t('selectAtLeastOneType'));
       return;
     }
-    if (mode === 'paper') {
+    const quick = totalOnly ? quickPaperQuestions(paperTotal, [...selectedObjectives], difficulty) : null;
+    if (quick && !quick.ok) {
+      setError(t('paperTotalInvalid', String(QUICK_PAPER_MAX)));
+      return;
+    }
+    if (mode === 'paper' && !totalOnly) {
       // Named row, not "check your marks" — on a 30-row grid the teacher
       // should not have to hunt for the one that is wrong.
       const bad = paperRows.findIndex(r => !(Number(toLatinDigits(r.marks)) > 0));
@@ -358,7 +374,7 @@ export default function NewEvaluationScreen() {
         // A paper question carries no text, so its type is the one with no
         // automatic grader — the teacher marks every one of them by hand.
         assessmentTypes: mode === 'paper' ? ['open_ended'] : [...selectedTypes],
-        targetQuestionCount: mode === 'paper' ? paperRows.length : QUESTION_COUNTS[countIdx],
+        targetQuestionCount: mode === 'paper' ? (totalOnly ? 1 : paperRows.length) : QUESTION_COUNTS[countIdx],
         difficulty,
         titleAr: title.trim() || undefined,
       });
@@ -366,12 +382,14 @@ export default function NewEvaluationScreen() {
       if (mode === 'paper') {
         await setPaperQuestions(
           evaluation.id,
-          paperRows.map(r => ({
-            marks: Number(toLatinDigits(r.marks)),
-            objectiveId: r.objectiveId,
-            competencyKey: r.competencyKey,
-            difficulty,
-          })),
+          quick?.ok
+            ? quick.questions
+            : paperRows.map(r => ({
+                marks: Number(toLatinDigits(r.marks)),
+                objectiveId: r.objectiveId,
+                competencyKey: r.competencyKey,
+                difficulty,
+              })),
         );
       } else {
         warnings = (await generateEvaluation(evaluation.id)).warnings ?? [];
@@ -439,6 +457,34 @@ export default function NewEvaluationScreen() {
         <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
           {t(mode === 'generate' ? 'evalModeGenerateHint' : 'evalModePaperHint')}
         </Text>
+
+        {mode === 'paper' && (
+          <>
+            <View style={[styles.modeRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              {(['total', 'questions'] as const).map(shape => {
+                const active = paperShape === shape;
+                return (
+                  <Pressable
+                    key={shape}
+                    onPress={() => setPaperShape(shape)}
+                    accessibilityRole="button"
+                    aria-selected={active}
+                    style={[styles.modeChip, { borderColor: active ? ACCENT : colors.border, backgroundColor: active ? ACCENT : colors.card }]}
+                  >
+                    <Text style={{ color: active ? palette.primaryForeground : colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
+                      {t(shape === 'total' ? 'paperShapeTotal' : 'paperShapeQuestions')}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            {totalOnly && (
+              <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                {t('paperShapeTotalHint')}
+              </Text>
+            )}
+          </>
+        )}
 
         {!loadingBooks && gradeIds.length > 1 && (
           <PickerField
@@ -574,22 +620,66 @@ export default function NewEvaluationScreen() {
           isRTL={isRTL}
           accent={ACCENT}
         />
-        <PickerField
-          label={t('questionCountLabel')}
-          value={String(QUESTION_COUNTS[countIdx])}
-          options={QUESTION_COUNTS.map(String)}
-          onChange={i => {
-            setCountIdx(i);
-            // Choosing a count is choosing the grid's length again.
-            setScannedCount(null);
-            setPrintedTotal(null);
-          }}
-          colors={colors}
-          isRTL={isRTL}
-          accent={ACCENT}
-        />
+        {!totalOnly && (
+          <PickerField
+            label={t('questionCountLabel')}
+            value={String(QUESTION_COUNTS[countIdx])}
+            options={QUESTION_COUNTS.map(String)}
+            onChange={i => {
+              setCountIdx(i);
+              // Choosing a count is choosing the grid's length again.
+              setScannedCount(null);
+              setPrintedTotal(null);
+            }}
+            colors={colors}
+            isRTL={isRTL}
+            accent={ACCENT}
+          />
+        )}
 
-        {mode === 'paper' && (
+        {totalOnly && (
+          <>
+            <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
+              {t('paperTotalLabel')}
+            </Text>
+            <TextInput
+              value={paperTotal}
+              onChangeText={setPaperTotal}
+              keyboardType="decimal-pad"
+              maxLength={6}
+              accessibilityLabel={t('paperTotalLabel')}
+              placeholderTextColor={colors.mutedForeground}
+              style={[
+                styles.input,
+                {
+                  color: colors.foreground,
+                  borderColor: colors.border,
+                  backgroundColor: colors.card,
+                  fontFamily: 'Almarai_400Regular',
+                  textAlign: 'center',
+                  width: SPACE.hero * 2,
+                },
+              ]}
+            />
+            {selectedObjectives.size === 0 && (
+              <Text style={[styles.hint, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                {t('selectAtLeastOneObjective')}
+              </Text>
+            )}
+            {measuredLabel ? (
+              <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                {t('paperTotalMeasures', measuredLabel)}
+              </Text>
+            ) : null}
+            {measuredLabel && selectedObjectives.size > 1 ? (
+              <Text style={[styles.hint, { color: palette.warning, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                {t('paperTotalMeasuresMany')}
+              </Text>
+            ) : null}
+          </>
+        )}
+
+        {mode === 'paper' && !totalOnly && (
           <>
             <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: align }]}>
               {t('paperGridLabel')}

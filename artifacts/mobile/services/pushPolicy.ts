@@ -5,12 +5,12 @@
  * cannot load (see CLAUDE.md).
  */
 
-export type PushChannelId = 'messages' | 'results' | 'reminders' | 'admin';
+export type PushChannelId = 'messages' | 'results' | 'reminders' | 'admin' | 'homework' | 'exams' | 'quiet';
 
 export interface PushChannel {
   id: PushChannelId;
-  /** 'high' shows a heads-up banner; 'default' only lands in the shade. */
-  importance: 'high' | 'default';
+  /** 'high' shows a heads-up banner; 'default' only lands in the shade; 'low' lands in the shade with no sound or vibration. */
+  importance: 'high' | 'default' | 'low';
   nameAr: string;
   nameEn: string;
   descriptionAr: string;
@@ -50,6 +50,33 @@ export const PUSH_CHANNELS: readonly PushChannel[] = [
     nameEn: 'Daily practice reminder',
     descriptionAr: 'تذكير مساءً إن لم يكتمل تدريب اليوم',
     descriptionEn: "An evening reminder if today's practice isn't done",
+  },
+  {
+    id: 'homework',
+    importance: 'default',
+    nameAr: 'الواجبات',
+    nameEn: 'Homework',
+    descriptionAr: 'واجب جديد من المعلّم، وتذكير قبل موعده بيوم',
+    descriptionEn: 'New homework from a teacher, and a reminder the day before it is due',
+  },
+  {
+    id: 'exams',
+    importance: 'high',
+    nameAr: 'مواعيد الامتحانات',
+    nameEn: 'Exam dates',
+    descriptionAr: 'عند تحديد موعد امتحان أو تغييره',
+    descriptionEn: 'When an exam is scheduled or its date changes',
+  },
+  {
+    // The server sends every family push here between 22:00 and 07:00 Amman
+    // (quietHours.ts on the API): Android takes sound from the channel, so a
+    // silent night needs a silent channel.
+    id: 'quiet',
+    importance: 'low',
+    nameAr: 'ليلًا (بلا صوت)',
+    nameEn: 'At night (silent)',
+    descriptionAr: 'ما يصل من المدرسة بين العاشرة مساءً والسابعة صباحًا، بلا صوت',
+    descriptionEn: 'School notifications that arrive between 10 pm and 7 am, without sound',
   },
   {
     id: 'admin',

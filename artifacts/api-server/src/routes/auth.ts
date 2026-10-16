@@ -64,6 +64,7 @@ import { extensionForAvatarMime, MAX_AVATAR_DATA_URL_LENGTH } from "../lib/avata
 import { parseDataUrl } from "../lib/lessonMediaUpload.js";
 import { getUserBudgetLimitUsd } from "../lib/aiBudget.js";
 import { currentPeriodStart, readUserPeriodSpendUsd } from "../lib/aiUsageLog.js";
+import { parsePushPrefsPatch, readPushPrefs } from "../modules/notifications/pushPrefs.ts";
 
 const router = Router();
 
@@ -2157,6 +2158,49 @@ router.get("/me/ai-usage", authMiddleware, async (req: AuthenticatedRequest, res
     limitUsd: getUserBudgetLimitUsd(req.user!.role),
     resetsAt: new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 1)).toISOString(),
   });
+});
+
+// GET|PUT /auth/me/push-preferences — the account's school-notification
+// switches (homework, exam dates, results). Any signed-in role: only parents
+// and students are sent these pushes, but a switch is harmless on a teacher.
+// Chat is not governed by them. See modules/notifications/pushPrefs.ts.
+router.get("/me/push-preferences", authMiddleware, async (req: AuthenticatedRequest, res) => {
+  try {
+    const [row] = await db.select({ pushPrefs: users.pushPrefs }).from(users).where(eq(users.id, req.user!.id)).limit(1);
+    if (!row) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    res.json({ preferences: readPushPrefs(row.pushPrefs) });
+  } catch (err) {
+    logger.error({ err }, "read push preferences failed");
+    res.status(500).json({ error: "Failed to read notification settings" });
+  }
+});
+
+router.put("/me/push-preferences", authMiddleware, async (req: AuthenticatedRequest, res) => {
+  const parsed = parsePushPrefsPatch(req.body);
+  if (!parsed.ok) {
+    res.status(400).json({ error: parsed.error, code: "invalid_input" });
+    return;
+  }
+  try {
+    // Merged in SQL, not read-modify-write: two switches flipped at once from
+    // two devices must not overwrite each other.
+    const [row] = await db
+      .update(users)
+      .set({ pushPrefs: sql`${users.pushPrefs} || ${JSON.stringify(parsed.value)}::jsonb` })
+      .where(eq(users.id, req.user!.id))
+      .returning({ pushPrefs: users.pushPrefs });
+    if (!row) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    res.json({ preferences: readPushPrefs(row.pushPrefs) });
+  } catch (err) {
+    logger.error({ err }, "save push preferences failed");
+    res.status(500).json({ error: "Failed to save notification settings" });
+  }
 });
 
 const VALID_GRADE_IDS = new Set(GRADES.map(g => g.id));

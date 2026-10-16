@@ -7,7 +7,8 @@
  * re-voices everything (after changing the voice or instructions — the key is
  * the word, not the recording). `--only chair,cheese` re-voices just those
  * words, for a recording that came out wrong (the model said "share" for
- * "chair"). `--dry-run` reports and touches nothing.
+ * "chair" — or "EE-ray-ser" for "eraser"; give the word a `PRONUNCIATION` hint
+ * first). `--dry-run` reports and touches nothing.
  *
  *   pnpm --filter @workspace/curriculum run english-audio [-- --dry-run | --force | --only a,b]
  *
@@ -19,7 +20,7 @@ import path from 'node:path';
 import { ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 
 import { loadEnvFile } from '../../../scripts/load-env.mjs';
-import { allHubWords, audioSlug } from '../src/englishHub.ts';
+import { ENGLISH_HUB_LESSONS, allHubWords, audioSlug } from '../src/englishHub.ts';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 loadEnvFile(path.join(HERE, '..', '..', '..', '.env'));
@@ -31,16 +32,53 @@ const MODEL = 'gpt-4o-mini-tts';
 const VOICE = 'coral';
 // The books are British ("mum", "colourful", "trainers"), so the voice is too.
 //
-// Pitched at teenagers (Grades 9–10), not young children. The 458 Grade 1–4
-// words were voiced on 2026-09-25 with a "reading to a young child" prompt;
-// a normal run skips words that already have a file, so they keep that
-// recording, and a word both age groups share stays in its Grade 1–4 voice.
-// `--force` would re-voice ALL of them in this register — decide that on
-// purpose.
-const INSTRUCTIONS =
+// Two registers. The 458 Grade 1–4 words were first voiced on 2026-09-25 with a
+// "reading to a young child" prompt; the Grade 9–10 words with the teenage one.
+// A normal run skips words that already have a file, so each keeps the voice it
+// was made in. A word that appears in any Grade 1–4 lesson is voiced for a young
+// child (so `--only eraser` stays in the voice of the rest of its lesson);
+// `--force` re-voices everything — decide that on purpose.
+//
+// Both end on a teacher's correction (2026-10-15): "apples" came out with its
+// first sound hit hard and held apart from the rest ("A… pples"), which teaches
+// a long, stressed vowel where the word has a short /æ/. "Clearly" on its own
+// invites that over-articulation. A word already voiced keeps its recording
+// until re-voiced with `--only`.
+const SMOOTH =
+  'Say it as one smooth word, the way it sounds in ordinary speech: do not stretch, ' +
+  'hit or separate the first sound or any single letter, and keep short vowels short ' +
+  '(the a in "apples" is a quick, short sound).';
+const YOUNG_INSTRUCTIONS =
+  'You are reading a vocabulary card to a six-year-old child learning English. ' +
+  'Say only the given word or phrase, once, clearly and a little slowly, ' +
+  'in a warm, friendly tone, with a British accent. ' + SMOOTH;
+const TEEN_INSTRUCTIONS =
   'You are reading a vocabulary card to a teenage student learning English. ' +
   'Say only the given word or phrase, once, clearly and at a natural, unhurried pace, ' +
-  'in a warm but not childish tone, with a British accent.';
+  'in a warm but not childish tone, with a British accent. ' + SMOOTH;
+
+/**
+ * Words the model has said wrongly, with how to say them. Added to the
+ * instructions for that word only; re-voice with `--only <word>` after adding
+ * one. Checked by ear or by a phoneme recogniser, never assumed.
+ */
+const PRONUNCIATION: Record<string, string> = {
+  // A Grade 1 teacher flagged it (2026-10-15); the recording says /iːˈreɪsɚ/,
+  // "EE-ray-ser".
+  eraser:
+    'Pronounce it the British way, ih-RAY-zuh (/ɪˈreɪzə/): a short "i" at the start, not "ee"; ' +
+    'stress on "RAY"; a "z" sound in the middle, not "s"; no "r" sound at the end.',
+};
+
+const YOUNG_WORDS = new Set(
+  ENGLISH_HUB_LESSONS.filter(l => l.grade <= 4).flatMap(l => l.words.map(w => audioSlug(w.en))),
+);
+
+function instructionsFor(word: string): string {
+  const base = YOUNG_WORDS.has(audioSlug(word)) ? YOUNG_INSTRUCTIONS : TEEN_INSTRUCTIONS;
+  const hint = PRONUNCIATION[word.toLowerCase().trim()];
+  return hint ? `${base} ${hint}` : base;
+}
 
 const force = process.argv.includes('--force');
 const dryRun = process.argv.includes('--dry-run');
@@ -86,7 +124,7 @@ async function speak(text: string): Promise<Buffer> {
     const res = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
       headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: MODEL, voice: VOICE, input: text, instructions: INSTRUCTIONS, response_format: 'mp3' }),
+      body: JSON.stringify({ model: MODEL, voice: VOICE, input: text, instructions: instructionsFor(text), response_format: 'mp3' }),
     });
     if (res.ok) return Buffer.from(await res.arrayBuffer());
     // A bad key, a missing scope or a project that can't use the model fails

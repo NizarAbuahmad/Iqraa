@@ -34,7 +34,7 @@ import { DECK_ICON_SHAPES, iconForGlyph, type DeckIconName } from '@/services/de
 import { chartGeometry, plotGeometry, seriesColor, visualForSlide } from '@/services/deckVisuals';
 // Shared with both exports so the projected slide and the exported one cannot
 // disagree about what a bullet, an equation or a section glyph is.
-import { isBulletLine, looksLikeEquation, splitEmoji, stripBullet, workingSteps } from '@/services/deckText';
+import { answerLines, isBulletLine, looksLikeEquation, splitEmoji, stripBullet, workingSteps } from '@/services/deckText';
 import { resolveSlideLayout } from '@/services/slideLayout';
 import { openGeogebraWithCommands } from '@/services/geogebra';
 import { youtubeEmbedUrl } from '@/services/classMedia';
@@ -1387,7 +1387,7 @@ export default function PresentationScreen() {
           {/* An explicit visual — a finance chart, a stats bar. Graph slides are
               excluded because GraphView draws the same VisualView itself, under
               the command pills; rendering it here too would double the plot. */}
-          {slide.type !== 'graph' && <VisualView slide={slide} />}
+          {slide.type !== 'graph' && (!slide.visualOnReveal || answerVisible) && <VisualView slide={slide} />}
           {slide.type === 'media' && (
             <MediaView slide={slide} isRTL={isRTL} t={t} zoomed={zoomed} setZoomed={setZoomed} />
           )}
@@ -1503,6 +1503,39 @@ export default function PresentationScreen() {
                 <View style={[styles.revealContent, { borderColor: TIMER_GREEN + '40', backgroundColor: TIMER_GREEN + '10' }]}>
                   {workingSteps(slide.answer) ? (
                     <WorkingAnswer answer={slide.answer} isRTL={slideRTL} />
+                  ) : hasRenderableMath(slide.answer) && answerLines(slide.answer).length > 1 ? (
+                    // A multi-line answer (an order's steps, a spot-the-error's
+                    // correction): MathText lays one string out as ONE row, so
+                    // each line gets its own — maths where it has some, plain
+                    // text where it has none.
+                    <View style={{ gap: 6 }}>
+                      {answerLines(slide.answer).map((line, i) => (
+                        hasRenderableMath(line) ? (
+                          <MathText
+                            key={i}
+                            text={line}
+                            fontSize={18}
+                            color={T.text}
+                            fontFamily="ReadexPro_700Bold"
+                            isRTL={slideRTL}
+                          />
+                        ) : (
+                          <Text
+                            key={i}
+                            style={[
+                              styles.revealText,
+                              {
+                                textAlign: slideRTL ? 'right' : 'left',
+                                writingDirection: slideRTL ? 'rtl' : 'ltr',
+                                fontFamily: 'ReadexPro_700Bold',
+                              },
+                            ]}
+                          >
+                            {isolateForeignRuns(line)}
+                          </Text>
+                        )
+                      ))}
+                    </View>
                   ) : hasRenderableMath(slide.answer) ? (
                     <MathText
                       text={slide.answer}

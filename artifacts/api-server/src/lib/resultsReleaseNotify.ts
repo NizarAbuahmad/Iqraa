@@ -3,9 +3,11 @@
  * only by happening to open «اختباراتي».
  *
  * Two channels, because a push reaches only the Android app:
- *   - a push to every account linked to a roster row that handed a paper in:
- *     the student themself (`self`), and each parent (`guardian`), whose push
- *     names the child — a parent can hold several;
+ *   - a push to every account linked to a roster row whose paper is handed in
+ *     and finally marked (not provisional), except suspended accounts and
+ *     anyone who switched results off: the student themself (`self`), and
+ *     each parent (`guardian`), whose push names the child — a parent can
+ *     hold several;
  *   - one line in the exam's class group, under the teacher's name, which the
  *     web app's inbox shows too. Not pushed again: the students it would
  *     reach already got the push above.
@@ -19,19 +21,46 @@
  */
 import {
   systemDb as db, // Acts without (or beyond) the caller's identity — see lib/db/src/scopedPool.ts.
+  attemptResults,
   attempts,
   chatMessages,
   chatParticipants,
   chatThreads,
   classGroups,
-  devicePushTokens,
-  rosterLinks,
   students,
 } from "@workspace/db";
 import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { syncClassGroupThread } from "./classThread.ts";
-import { deadTokensFrom, PUSH_CHANNEL, sendExpoPush } from "./pushNotifications.ts";
+import { accountsLinkedTo } from "./familyAccess.ts";
+import { sendFamilyPush } from "./familyPush.ts";
 import { releaseAnnouncement } from "./resultsRelease.ts";
+
+/**
+ * Live roster rows whose result on this exam a family can now open: handed in
+ * AND final (a handed-in attempt with no result row yet is left out too, as
+ * `studentResultReady` leaves it out; it also needs the release, which the callers
+ * check). A provisional paper is still being marked; telling its family
+ * "results are out" would point them at a row with no result. `only` narrows
+ * to rows a caller just saved (paper marks typed after the release).
+ */
+export async function finalResultStudentIds(evaluationId: string, only?: readonly string[]): Promise<string[]> {
+  if (only && only.length === 0) return [];
+  const rows = await db
+    .select({ studentId: attempts.studentId })
+    .from(attempts)
+    .innerJoin(attemptResults, eq(attemptResults.attemptId, attempts.id))
+    .innerJoin(students, eq(students.id, attempts.studentId))
+    .where(
+      and(
+        eq(attempts.evaluationId, evaluationId),
+        isNotNull(attempts.submittedAt),
+        eq(attemptResults.isProvisional, false),
+        isNull(students.archivedAt),
+        only ? inArray(attempts.studentId, [...only]) : undefined,
+      ),
+    );
+  return [...new Set(rows.map(r => r.studentId))];
+}
 
 export async function announceResultsRelease(evaluation: {
   id: string;
@@ -42,34 +71,15 @@ export async function announceResultsRelease(evaluation: {
 }): Promise<void> {
   const text = releaseAnnouncement(evaluation);
 
-  const sat = await db
-    .select({ userId: rosterLinks.userId, relation: rosterLinks.relation, childName: students.displayName })
-    .from(attempts)
-    .innerJoin(students, eq(students.id, attempts.studentId))
-    .innerJoin(rosterLinks, eq(rosterLinks.studentId, attempts.studentId))
-    .where(and(eq(attempts.evaluationId, evaluation.id), isNotNull(attempts.submittedAt), isNull(students.archivedAt)));
-  const userIds = [...new Set(sat.map(r => r.userId))];
-
-  if (userIds.length > 0) {
-    const tokens = await db
-      .select({ userId: devicePushTokens.userId, expoPushToken: devicePushTokens.expoPushToken })
-      .from(devicePushTokens)
-      .where(inArray(devicePushTokens.userId, userIds));
-    const messages = sat.flatMap(link => {
-      const { title, body } =
-        link.relation === "guardian"
-          ? text.guardianPush(link.childName)
-          : { title: text.pushTitle, body: text.pushBody };
-      return tokens
-        .filter(t => t.userId === link.userId)
-        .map(t => ({ to: t.expoPushToken, title, body, data: { screen: "my-exams" }, channelId: PUSH_CHANNEL.results }));
-    });
-    if (messages.length > 0) {
-      const results = await sendExpoPush(messages);
-      const dead = deadTokensFrom(results);
-      if (dead.length > 0) await db.delete(devicePushTokens).where(inArray(devicePushTokens.expoPushToken, dead));
-    }
-  }
+  // Through the shared family sender (lib/familyPush.ts): suspended accounts
+  // and anyone who switched results off are left out, a quiet-hours push is
+  // silent, dead devices are pruned.
+  await sendFamilyPush({
+    category: "results",
+    accounts: await accountsLinkedTo(await finalResultStudentIds(evaluation.id)),
+    data: { screen: "my-exams" },
+    text: r => (r.relation === "guardian" ? text.guardianPush(r.childName) : { title: text.pushTitle, body: text.pushBody }),
+  });
 
   if (!evaluation.classGroupId) return;
   const [group] = await db

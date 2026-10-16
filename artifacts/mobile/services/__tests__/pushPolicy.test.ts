@@ -47,6 +47,23 @@ describe('notification channels', () => {
     }
   });
 
+  it('creates a homework and an exams channel for families', () => {
+    for (const id of ['homework', 'exams'] as const) {
+      const c = PUSH_CHANNELS.find(ch => ch.id === id);
+      assert.ok(c, id);
+      assert.equal(c.adminOnly, undefined);
+    }
+  });
+
+  // Quiet hours (22:00–07:00 Amman) send to this channel: on Android the sound
+  // is the channel's, not the message's, so this one must be silent.
+  it('has a silent night channel that every account gets', () => {
+    const quiet = PUSH_CHANNELS.find(c => c.id === 'quiet');
+    assert.ok(quiet);
+    assert.equal(quiet.importance, 'low');
+    assert.ok(channelsFor(false).some(c => c.id === 'quiet'));
+  });
+
   it('shows the content-report channel to system admins only', () => {
     assert.ok(!channelsFor(false).some(c => c.id === 'admin'));
     assert.ok(channelsFor(true).some(c => c.id === 'admin'));

@@ -10,7 +10,7 @@ after, and it skips the web deploy entirely if either server deploy failed.
 | `iqraa-api` | Cloud Run | **Automatic** on merge to `main` |
 | `iqraa-verifier` | Cloud Run | **Automatic** on merge to `main` |
 | `iqraa-web` | Cloudflare Pages (static) | **Automatic**, gated on the two above |
-| Database | Neon | Never automatic — see *Schema* below |
+| Database | Neon | **Migrations apply automatically** on merge, before the new API revision takes traffic — see *Schema* below |
 
 **Server before client, on purpose.** A new API behind an old bundle is
 harmless: the bundle simply does not call the new route. The reverse is an
@@ -274,7 +274,7 @@ effect is visible on the paper itself: `generationParams.bookItems` is
 `{ enabled, planned, supplied, drawn, ids }` on every live maths evaluation, so an
 unset flag reads `enabled: false` rather than looking like a bug. A paper made
 with book items tells the model what the book supplies and records
-`promptVersion` `exam-gen-6+book`, so usage rows with and without the flag stay
+`promptVersion` `exam-gen-7+book` (`exam-gen-6+book` before 2026-10-15), so usage rows with and without the flag stay
 comparable. Then generate one
 maths evaluation and check it; see "Real book items on the live model path" in
 `STATUS.md`.
@@ -474,6 +474,85 @@ Rotating a credential retires its old value from those revisions too, which is
 the real fix. `gcloud secrets versions access` prints the value by design — it
 is the one command that should, so never run it into a transcript.
 
+### The homework reminder (Cloud Scheduler) — manual, once
+
+`POST /api/internal/homework-reminders` sends the day-before homework reminder
+(spec Part 4). It answers **404 to everyone until `INTERNAL_CRON_KEY` is on the
+service** — so after a merge it is deployed but inert. Nothing in `deploy.yml`
+refers to the secret, on purpose: a `--update-secrets` ref to a secret that does
+not exist yet fails every Cloud Run deploy. Attach it by hand; `deploy.yml`'s
+`--update-env-vars` keeps it from then on, like the other ten.
+
+**The key value must never be echoed, printed or pasted into a transcript** —
+which is why this recipe generates it into a shell variable and never reads it
+back from Secret Manager (`gcloud secrets versions access` prints it; see the
+warning above). Run steps 1–5 in **one shell session**, so `$KEY` is still set
+when steps 4 and 5 need it. If the session is lost before step 5, do not read
+the secret back: rotate (see the end of this section).
+
+```bash
+P=--project=iqraa-auth-507315   # one word, so it also works unquoted in zsh
+URL=https://iqraa-api-613126375862.europe-west1.run.app/api/internal/homework-reminders
+# 1. The secret: a long random value, kept in $KEY (never echo it), no trailing newline.
+KEY=$(openssl rand -hex 32)
+printf %s "$KEY" | gcloud secrets create INTERNAL_CRON_KEY --data-file=- $P
+# 2. Let the API's runtime account read it.
+gcloud secrets add-iam-policy-binding INTERNAL_CRON_KEY $P \
+  --member=serviceAccount:613126375862-compute@developer.gserviceaccount.com \
+  --role=roles/secretmanager.secretAccessor
+# 3. Put it on the service (rolls a new revision).
+gcloud run services update iqraa-api --region europe-west1 $P \
+  --update-secrets=INTERNAL_CRON_KEY=INTERNAL_CRON_KEY:latest
+# 4. Check by hand — this SENDS real pushes and CLAIMS tomorrow's homework for the reminder, so the
+#    scheduled run later today sends nothing for the same homework. {"homework":N,"pushed":M}; 404 = step 3 missing.
+curl -sS -X POST -H "x-internal-key: $KEY" "$URL"
+# 5. The daily job: 16:00 Amman. (`gcloud services enable cloudscheduler.googleapis.com $P` first if asked.)
+gcloud scheduler jobs create http homework-reminders $P \
+  --location europe-west1 \
+  --schedule "0 16 * * *" --time-zone "Asia/Amman" \
+  --uri "$URL" \
+  --http-method POST \
+  --headers "x-internal-key=$KEY,Content-Type=application/json" \
+  --message-body '{}' \
+  --attempt-deadline 300s \
+  --max-retry-attempts 3 --min-backoff 60s
+# 6. Fire it once now, and see that it ran (a second run the same day claims nothing).
+gcloud scheduler jobs run homework-reminders --location europe-west1 $P
+gcloud scheduler jobs describe homework-reminders --location europe-west1 $P \
+  --format='value(lastAttemptTime,status)'
+gcloud logging read 'resource.labels.service_name="iqraa-api" AND jsonPayload.msg="homework reminders run"' \
+  $P --limit 5 --freshness 1d
+unset KEY   # when done
+```
+
+The job stores the key in its own config, readable by anyone with
+`cloudscheduler.jobs.get`. **Rotate both together**, never by reading the old
+value back:
+
+```bash
+P=--project=iqraa-auth-507315   # set these again in a fresh shell
+URL=https://iqraa-api-613126375862.europe-west1.run.app/api/internal/homework-reminders
+KEY=$(openssl rand -hex 32)
+printf %s "$KEY" | gcloud secrets versions add INTERNAL_CRON_KEY --data-file=- $P
+gcloud run services update iqraa-api --region europe-west1 $P \
+  --update-secrets=INTERNAL_CRON_KEY=INTERNAL_CRON_KEY:latest --update-labels rotated=$(date +%Y%m%d)
+gcloud scheduler jobs update http homework-reminders --location europe-west1 $P \
+  --update-headers "x-internal-key=$KEY,Content-Type=application/json"
+```
+
+This rotation is also the way out if the shell session was lost before step 5 —
+but if the scheduler job does not exist yet, run step 5 (with the new `$KEY`)
+instead of the last `update` command.
+
+A rerun the same day is safe: each homework is reminded at most once per due day
+(`homework_reminders`, claimed before sending), and a send that fails after its
+claim is not retried. One failing homework does not stop the run. The job retries
+up to three times (`--max-retry-attempts 3`), which is safe because of those
+claims: a retry after a failed or timed-out run reminds only the homework not yet
+claimed and repeats none. The run is sequential, so a very large school could
+outlast the job's 300 s attempt deadline; do not rely on the handler carrying on
+after its request ends (Cloud Run throttles CPU then) — rely on the retry.
+
 ## The Android app (Google Play)
 
 **Nothing publishes the Android app automatically, on any path.** Both build
@@ -638,6 +717,7 @@ statement** — the wrapper costs about two extra round trips each, which is ~0.
 loopback and unmeasured across the Cloud Run → Neon hop. Also check the database's
 connection limit: with enforcement on an instance holds two pools. See the plan's Task 7
 (`docs/superpowers/plans/2026-10-13-row-level-security.md`) for the gates.
+The same steps as a tick-list: [`docs/rls-rollout-checklist.md`](./rls-rollout-checklist.md).
 
 **What goes wrong, and how it looks.** A query that reads *another user's* rows does not
 fail under RLS — it returns fewer rows. So the symptom is rarely a 500; it is a

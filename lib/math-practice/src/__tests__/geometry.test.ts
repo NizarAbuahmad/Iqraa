@@ -388,15 +388,49 @@ describe('geometry generators: answers recomputed from the stem', () => {
       else if (has(p, 'ما قياس الزاوية المحيطية')) assert.equal(dg(item.answer), a! / 2);
       else assert.equal(dg(item.answer), a! * 2);
     }
+    const mod = (n: number) => ((n % 360) + 360) % 360;
+    const COMPASS: Record<string, number> = { 'الشمال الشرقي': 45, 'الجنوب الشرقي': 135, 'الجنوب الغربي': 225, 'الشمال الغربي': 315, 'الشرق': 90, 'الجنوب': 180, 'الغرب': 270 };
+    const kinds = new Set<string>();
     for (const item of draws('bearing')) {
-      const b = Number(item.eq);
-      assert.equal(Number(item.answer.replace('°', '')), (b + 180) % 360);
-      assert.match(item.answer, /^\d{3}°$/);
+      const p = item.promptAr!;
+      const n = nums(p);
+      if (has(p, 'ما اتجاه A من B')) { kinds.add('back'); assert.equal(dg(item.answer), mod(n[0]! + 180), p); }
+      else if (has(p, 'لجهة')) { kinds.add('compass'); assert.equal(dg(item.answer), COMPASS[p.match(/لجهة (.+)؟/)![1]!], p); }
+      else if (has(p, 'تنعطف')) { kinds.add('turn'); assert.equal(dg(item.answer), mod(n[0]! + (has(p, ' مع ') ? n[1]! : -n[1]!)), p); }
+      else if (has(p, 'كيلومترًا')) { kinds.add('distance'); assert.equal(Number(item.answer), Math.hypot(n[0]!, n[2]!), p); }
+      else if (has(p, 'الزاوية BAC')) { kinds.add('angle'); assert.equal(dg(item.answer), n[1]! - n[0]!, p); }
+      else assert.fail(`unknown bearing stem: ${p}`);
+      if (!has(p, 'كيلومترًا') && !has(p, 'الزاوية BAC')) assert.match(item.answer, /^\d{3}°$/, p);
+      for (const w of item.wrongs) assert.notEqual(w, item.answer, p);
     }
+    assert.equal(kinds.size, 5, `bearing kinds drawn: ${[...kinds]}`);
+    const heron = (a: number, b: number, c: number) => { const s = (a + b + c) / 2; return Math.sqrt(s * (s - a) * (s - b) * (s - c)); };
+    const areaKinds = new Set<string>();
     for (const item of draws('sine_area')) {
-      const [a, b, C] = item.eq.split(', ').map(Number);
-      assert.equal(Number(item.answer), Math.round(0.5 * a! * b! * Math.sin((C! * Math.PI) / 180) * 1e6) / 1e6);
+      const p = item.promptAr!;
+      const n = nums(p);
+      if (has(p, 'أطوال أضلاعه')) {
+        areaKinds.add('heron');
+        const [a, b, c] = n;
+        assert.ok(a! + b! > c! && a! + c! > b! && b! + c! > a!, `impossible triangle: ${p}`);
+        assert.equal(Number(item.answer), heron(a!, b!, c!), p);
+      } else if (has(p, 'ما طول الضلع الآخر')) {
+        areaKinds.add('side');
+        const [A, a, C] = n;
+        assert.equal(Number(item.answer), (2 * A!) / (a! * Math.round(Math.sin((C! * Math.PI) / 180) * 2) / 2), p);
+      } else if (has(p, 'ما قياس الزاوية')) {
+        areaKinds.add('angle');
+        const [a, b, A] = n;
+        const sinC = (2 * A!) / (a! * b!);
+        assert.equal(dg(item.answer), has(p, 'الحادة') ? 30 : 90, p);
+        assert.ok(Math.abs(Math.sin((dg(item.answer) * Math.PI) / 180) - sinC) < 1e-9, p);
+      } else {
+        areaKinds.add('included');
+        const [a, b, C] = item.eq.split(', ').map(Number);
+        assert.equal(Number(item.answer), Math.round(0.5 * a! * b! * Math.sin((C! * Math.PI) / 180) * 1e6) / 1e6);
+      }
     }
+    assert.equal(areaKinds.size, 4, `area kinds drawn: ${[...areaKinds]}`);
   });
 
   it('units and time', () => {

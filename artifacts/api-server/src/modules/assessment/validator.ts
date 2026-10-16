@@ -12,6 +12,7 @@
  */
 import type { QuestionType } from "@workspace/db";
 import { normalizeArabic } from "@workspace/curriculum";
+import { stemFrame } from "@workspace/math-practice";
 import { QUESTION_TYPES } from "./questionTypes.ts";
 import type { GeneratedQuestion } from "./mockGenerator.ts";
 
@@ -32,6 +33,14 @@ export interface ValidationResult {
  * Cheap and good enough for the job: two questions generated from the same
  * objective differ by a word or two, and that is exactly the duplicate a
  * teacher would otherwise have to spot by reading all fifteen.
+ *
+ * Short words («في», «ما») are noise and are dropped, but a number or a piece
+ * of maths is kept whatever its length. Dropping those too made «حلّ المعادلة
+ * x² + 3x − 18 = 0 بالتحليل» and «… x² − 11x + 28 = 0 …» score 1.0, so a
+ * second, different equation was rejected as a duplicate — up to a third of a
+ * maths paper's bank questions (measured 2026-10-15). The same sentence with
+ * different numbers is a different question; `dominantFrame` is what notices
+ * when a paper has too many of them.
  */
 export function stemSimilarity(a: string, b: string): number {
   const tokens = (s: string) =>
@@ -39,7 +48,7 @@ export function stemSimilarity(a: string, b: string): number {
       normalizeArabic(s)
         .toLowerCase()
         .split(/[\s،,.:؛?؟!]+/)
-        .filter(w => w.length > 2),
+        .filter(w => w.length > 2 || /[^\p{L}]/u.test(w)),
     );
   const ta = tokens(a);
   const tb = tokens(b);
@@ -162,5 +171,37 @@ export function validateGenerated(
     }
   }
 
+  // 9. One sentence carrying the paper. Not a rejection: each question is a
+  // real one, and two «حلّ المعادلة … بالتحليل» with different numbers is
+  // ordinary practice. But when that one sentence is a quarter of the paper,
+  // the teacher should know before they publish what reads like a long exam
+  // and measures one skill.
+  const sameSentence = dominantFrame(accepted.map(promptOf));
+  if (sameSentence) {
+    warnings.push(
+      `${sameSentence.count} of ${accepted.length} questions are the same sentence with different ` +
+        `numbers: «${sameSentence.example}»`,
+    );
+  }
+
   return { accepted, rejected, warnings };
+}
+
+/**
+ * The sentence most of a paper is written in, when it is at least three
+ * questions and more than a quarter of them (see `stemFrame`). Stems that are
+ * only symbols — «٣ + ٤ = ؟» — have no sentence to share and are not counted.
+ */
+export function dominantFrame(prompts: readonly string[]): { count: number; example: string } | null {
+  const groups = new Map<string, string[]>();
+  for (const prompt of prompts) {
+    const frame = stemFrame(prompt);
+    if (!/\p{L}/u.test(frame)) continue;
+    groups.set(frame, [...(groups.get(frame) ?? []), prompt]);
+  }
+  let top: string[] = [];
+  for (const group of groups.values()) if (group.length > top.length) top = group;
+  return top.length >= 3 && top.length * 4 > prompts.length
+    ? { count: top.length, example: top[0]! }
+    : null;
 }
