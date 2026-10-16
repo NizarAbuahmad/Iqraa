@@ -3906,6 +3906,17 @@ student's mark, and the grade steps say «add» where the teacher said «change�
 typo «langute» in the first screenshot, because matching misspellings would also
 match real requests.
 
+**A grade with its accusative ending (2026-10-16).** On app.iqrra.com «كيف أضيف
+صفاً جديداً؟» was asked «أيّ مادة تقصد؟» while «كيف اضيف صف جديد» got the steps:
+`normalize` drops the tanween mark but not the alif under it, so «صفا جديدا»
+matched nothing. `foldAccusative` (`services/appHelp.ts`, app-help matching only)
+drops a marked ending (اً / ًا) from any word, and an unmarked one only from
+«صف», «جديد», «إضافي» and the ordinals, since an alif ending is otherwise part of
+the word («جبل الصفا» stays). Each accusative form is pinned to get exactly its
+plain twin's answer. Not changed, and older than this: «كيف اضيف صف الى
+المصفوفة» (a matrix row) goes to the grade steps through the «اضيف صف» keyword,
+and now so does its accusative form.
+
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
 Step 4 of the worksheet review, agreed in chat. A worksheet was paper only: to
