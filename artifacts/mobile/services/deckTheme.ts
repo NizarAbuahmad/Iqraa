@@ -165,6 +165,25 @@ export function slideTypeAccent(type: ActivitySlide['type'], theme: DeckTheme = 
   return theme.primary;
 }
 
+/**
+ * Type sizes for the structure layouts when they are PROJECTED. Deliberately
+ * not the app's UI `TYPE` scale (constants/theme.ts): that scale sizes a phone
+ * screen read at arm's length, and a slide is read from the back of a room — the
+ * presenter's older display sizes (a 96 stat, a 40 cover title) already sit
+ * outside it for the same reason. Kept here, next to the colours every renderer
+ * shares, so the layouts have one place to be sized.
+ */
+export const DECK_DISPLAY_TYPE = {
+  timelineLabel: 24,
+  timelineText: 20,
+  statsValue: 56,
+  statsLabel: 20,
+  tableHead: 20,
+  tableCell: 20,
+  flowNode: 22,
+  flowLoop: 17,
+} as const;
+
 /** `#1E8E8E` → `1E8E8E`. pptxgenjs rejects the hash. */
 export function pptxHex(color: string): string {
   return color.replace('#', '');

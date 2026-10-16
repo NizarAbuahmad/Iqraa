@@ -13,7 +13,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { RADIUS, SPACE, TYPE } from '../../constants/theme.ts';
 
-const CEILING = { fontSize: 324, borderRadius: 336, spacing: 1371 };
+const CEILING = { fontSize: 324, borderRadius: 336, spacing: 1369 };
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
