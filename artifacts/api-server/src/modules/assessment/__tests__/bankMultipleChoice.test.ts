@@ -231,7 +231,9 @@ describe("mock generator — primary grades", () => {
     for (const q of res.questions) {
       const text = JSON.stringify(q.body);
       assert.doesNotMatch(text, /x\s*[=²^]|\^|√/, `algebra reached grade 2: ${text}`);
-      assert.match(text, /\d+ \+ \d+/, `expected addition: ${text}`);
+      // An addition lesson asks several kinds since 2026-10-16: a sum, a
+      // missing addend («؟ + 84 = 238») and a word problem with no sign at all.
+      assert.match(text, /(\d+|؟) \+ (\d+|؟)|كم [^"]*؟/, `expected addition: ${text}`);
       const draft = { type: q.type, body: q.body, expectedAnswer: q.expectedAnswer, rubric: q.rubric } as never;
       assert.deepEqual(QUESTION_TYPES["multiple_choice"].validate(draft), []);
       const correctIds = q.expectedAnswer["optionIds"] as string[];

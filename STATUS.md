@@ -105,8 +105,30 @@ an announcement by default» below.
   system by substitution (that its points solve both equations and that none is
   missing), recomputes the solution counts and the tangent k, and pins all seven
   at three kinds or more; the generators' new answers are recomputed from the
-  printed stem in `geometry.test.ts` / `stats.test.ts`. Other lessons — most of
-  grades 1–9 — still ask one kind (~68% one sentence on those quizzes).
+  printed stem in `geometry.test.ts` / `stats.test.ts`.
+  **Every grade 1–9 maths lesson the offline generators serve now asks three
+  kinds or more (2026-10-16).** Of 414 served lessons, 302 could ask only one or
+  two — «أوجد ناتج: 2 × 6» with new numbers, ten times. Each generator in
+  `lib/math-practice` (`early`, `elementary`, `topics`, `algebra`, `geometry`,
+  `stats`, `proportion`) was given the kinds its lessons' NCCD outcomes list: a
+  missing number, a word problem, the inverse question, «which of these…» (options
+  written into the stem, so it still works as short answer), boundary rounding,
+  a number-line description, and so on. On 10-question offline papers across the
+  413 served lessons: kinds per paper 2.46 → 4.88, the commonest sentence 69% →
+  31% of a paper, lessons under three kinds 302 → 0. Every new kind's answer is
+  computed from the stem and recomputed from the printed Arabic in that
+  generator's test; `mathLessonKinds.test.ts` (mobile, through
+  `takeElementaryMath`) pins every served lesson at three. Number–noun agreement
+  goes through `tamyiz` / `dinars` (`topicKit.ts`) and `tamyiz.test.ts` reads
+  every generator's stems for it («18 تذكرةً», «300 دينار»). Found on the way:
+  `lessonTitleBlob` joined a title to itself when the KB title matched, and the
+  seam «…والقسمة الكسور والقسمة» routed Grade 3 «الكسور والقسمة» to a
+  generator; it is refused again (`routing.test.ts`). Still open: a kind that
+  differs from another only in where the unknown sits («2/3 = ؟/12» vs
+  «2/3 = 8/؟») has the same `stemFrame`, so it needs different words to count;
+  and some kinds come in several sentences (one per operation), which
+  `makeTopicItem` serves first as "least used" — algebra weights those down
+  (`wpick`), the other generators do not yet.
 
 - **Lesson plan, slides, activity, lesson-flow and the classroom builder take a
   unit, semester or whole book — as one revision session (2026-10-14; spec
