@@ -5780,8 +5780,11 @@ and from «العب بكلمات هذا الدرس» on the matching lesson page
 lessons and 458 words across the eight G1–4 books.
 
 - **Seven activities**, all pure logic in `services/englishHub/games.ts`: flashcards,
-  listen-and-choose, match the English word to its Arabic meaning, spell it,
-  unscramble it (tap letter tiles into order, tap a placed tile to send it back
+  listen-and-choose, match the English word to its Arabic meaning (**two
+  columns since 2026-10-15** — English left, Arabic right, each shuffled on its
+  own, and no row ever faces its own match; `buildMatchColumns`. It was one
+  shuffled grid, which put either language in either column. Match the picture
+  is still the single grid), spell it, unscramble it (tap letter tiles into order, tap a placed tile to send it back
   to the tray), and, added 2026-09-26: **match the picture** (English word ↔
   a curated emoji, 188 of the 458 words have one — no real book figures exist
   for G1–4 English, figure extraction only starts at grade 7, so this is

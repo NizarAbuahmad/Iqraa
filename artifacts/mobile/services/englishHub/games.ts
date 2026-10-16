@@ -47,14 +47,38 @@ export interface MatchCard {
   pairId: number;
 }
 
-/** English face-up against its Arabic meaning — the memory game, with words. */
-export function buildMatchDeck(words: readonly HubWord[], rng: () => number = Math.random): MatchCard[] {
+export interface MatchColumns {
+  en: MatchCard[];
+  ar: MatchCard[];
+}
+
+/**
+ * English in one column, its Arabic meanings in the other, each column in its
+ * own random order — "match the meaning" as a student expects to read it.
+ * (This was a single shuffled grid, memory-game style, so a word's two halves
+ * could land in either column.)
+ *
+ * Two independent shuffles will sometimes put a pair on the same row, and side
+ * by side that is the answer handed over. So no row ever faces its own match:
+ * reshuffle the Arabic column a few times, and if that keeps failing fall back
+ * to the English order rotated by one, which cannot line up for two or more
+ * pairs. Lessons always have at least `MIN_HUB_WORDS`.
+ */
+export function buildMatchColumns(words: readonly HubWord[], rng: () => number = Math.random): MatchColumns {
   const picked = sample([...words], MATCH_PAIRS, rng);
-  const cards = picked.flatMap((w, pairId): MatchCard[] => [
-    { id: `${pairId}-en`, text: w.en, lang: 'en', pairId },
-    { id: `${pairId}-ar`, text: w.ar, lang: 'ar', pairId },
-  ]);
-  return shuffle(cards, rng);
+  const en = shuffle(
+    picked.map((w, pairId): MatchCard => ({ id: `${pairId}-en`, text: w.en, lang: 'en', pairId })),
+    rng,
+  );
+  const ar = picked.map((w, pairId): MatchCard => ({ id: `${pairId}-ar`, text: w.ar, lang: 'ar', pairId }));
+  const faced = (right: MatchCard[]) => right.some((c, row) => c.pairId === en[row].pairId);
+  let right = shuffle(ar, rng);
+  for (let tries = 0; tries < 20 && faced(right); tries += 1) right = shuffle(ar, rng);
+  if (faced(right) && en.length > 1) {
+    const byPair = new Map(ar.map(c => [c.pairId, c]));
+    right = en.map((_, row) => byPair.get(en[(row + 1) % en.length].pairId)!);
+  }
+  return { en, ar: right };
 }
 
 export function isMatchPair(a: MatchCard, b: MatchCard): boolean {
@@ -220,7 +244,7 @@ export interface PictureCard {
   pairId: number;
 }
 
-/** Same layout as `buildMatchDeck`, emoji↔English instead of English↔Arabic. */
+/** One shuffled grid of cards (memory-game style), emoji↔English instead of English↔Arabic. */
 export function buildPictureDeck(words: readonly HubWord[], rng: () => number = Math.random): PictureCard[] {
   const picturable = words.filter(w => WORD_EMOJI[w.en]);
   const picked = sample(picturable, MATCH_PAIRS, rng);
