@@ -8,7 +8,7 @@
  * Three-way answers (certain / possible / impossible) have two wrong options,
  * not three; the rest have three.
  */
-import { gcd, int, numWrongs, pick, sfrac, signed, tier, wrongsFrom, type Draft, type Rng, type Topic } from './topicKit.ts';
+import { gcd, int, numWrongs, pick, sfrac, signed, tamyiz, tier, wrongsFrom, type Draft, type Rng, type Topic } from './topicKit.ts';
 
 type D = 'easy' | 'medium' | 'hard';
 type Gen = (c: { rng: Rng; diff: D; grade: number }) => Draft;
@@ -29,11 +29,6 @@ const decOpts = (ans: number, cands: number[], step = 1) =>
 const countOpts = (ans: number, cands: number[]) => numWrongs(ans, cands);
 const fracOpts = (n: number, d: number, cands: string[]) => wrongsFrom(sfrac(n, d), cands, k => sfrac(n + Math.abs(k), d));
 
-/** «8 مباريات» / «12 مباراة»: the counted noun after a numeral, as a Jordanian textbook writes it. */
-const tamyiz = (n: number, plural: string, singularAcc: string, singularGen: string) => {
-  const r = n % 100;
-  return r >= 3 && r <= 10 ? plural : n >= 100 && r <= 2 ? singularGen : singularAcc;
-};
 
 const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
 const sorted = (xs: number[]) => xs.slice().sort((a, b) => a - b);

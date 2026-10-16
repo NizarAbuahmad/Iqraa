@@ -814,7 +814,7 @@ describe('algebra generators: kinds added 2026-10-16', () => {
     let kinds = new Set<string>();
     for (const item of draws('quad_vertex', 300)) {
       const p = stem(item);
-      const k = kindOf(p, { vertex: /^ما رأس/, which: /^ما التحويل/, write: /^اكتب معادلة/, axis: /محور التماثل/ });
+      const k = kindOf(p, { vertex: /^ما رأس/, which: /^ما التحويل/, write: /^انسحب منحنى/, axis: /محور التماثل/ });
       kinds.add(k);
       if (k === 'which') {
         const [h, v] = vertexOf(p.match(/إلى منحنى الاقتران y = (.+)؟$/)![1]!);
@@ -823,8 +823,7 @@ describe('algebra generators: kinds added 2026-10-16', () => {
         assert.ok(unitsOf(m[1]!) === Math.abs(h || v) && m[2] === want, `${p} → ${item.answer}`);
         for (const w of item.wrongs) assert.ok(!w.endsWith(`إلى ${want}`), `${w} also says ${p}`);
       } else if (k === 'write') {
-        const m = p.match(/بمقدار (.+?) إلى (\S+?)، ثم بمقدار (.+?) إلى (\S+?)\.$/)!;
-        const want: [number, number] = [unitsOf(m[1]!) * (m[2] === 'اليمين' ? 1 : -1), unitsOf(m[3]!) * (m[4] === 'الأعلى' ? 1 : -1)];
+        const want = pairsIn(p)[0]!;
         const f = item.answer.slice(4);
         assert.ok(quad(f)[2] === 1, `${item.answer} is not a translation of y = x²`);
         assert.deepEqual(vertexOf(f), want, `${p} → ${item.answer}`);

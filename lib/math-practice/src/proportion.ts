@@ -5,13 +5,15 @@
  * Every figure is chosen so the answer is a whole number or a one-place
  * decimal, then printed in the stem.
  */
-import { gcd, int, numWrongs, pick, wrongsFrom, type Draft, type Rng, type Topic } from './topicKit.ts';
+import { dinars, gcd, int, numWrongs, pick, tamyiz, wrongsFrom, type Draft, type Rng, type Topic } from './topicKit.ts';
 
 type D = 'easy' | 'medium' | 'hard';
 type Gen = (c: { rng: Rng; diff: D; grade: number }) => Draft;
 const T = (id: string, match: RegExp, grades: [number, number], make: Gen): Topic => ({ id, match, grades, make });
 const span = (diff: D, a: number, b: number, c: number) => (diff === 'easy' ? a : diff === 'medium' ? b : c);
 const n1 = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
+/** A price: a whole amount takes the counted noun («5 دنانير», «210 دنانير», «300 دينار»). */
+const money = (v: number) => (Number.isInteger(v) ? dinars(v) : `${n1(v)} دينارًا`);
 const ints = (ans: number, cands: number[]) => numWrongs(ans, cands.filter(Number.isInteger));
 const decs = (ans: number, cands: number[], step = 0.5) =>
   wrongsFrom(n1(ans), cands.filter(c => Number.isFinite(c) && c > 0).map(n1), k => n1(ans + Math.abs(k) * step));
@@ -19,12 +21,6 @@ const deg = (ans: number, cands: number[]) =>
   wrongsFrom(`${ans}°`, cands.filter(c => Number.isInteger(c) && c > 0 && c < 180).map(c => `${c}°`), k => `${ans + 5 * Math.abs(k)}°`);
 /** Equation options such as «y = 3x»: the near fallback keeps the form, so there are always three. */
 const eqOpts = (ans: string, cands: string[], near: (k: number) => string) => wrongsFrom(ans, cands, near);
-/** «5 أقلام» / «12 قلمًا» / «100 قلم»: the counted noun after a numeral. */
-const tamyiz = (n: number, plural: string, singularAcc: string, singularGen: string) => {
-  const r = n % 100;
-  return r >= 3 && r <= 10 ? plural : n >= 100 && r <= 2 ? singularGen : singularAcc;
-};
-const dinars = (n: number) => `${n} ${tamyiz(n, 'دنانير', 'دينارًا', 'دينار')}`;
 
 const unitRate = T('unit_rate', /^معدل الوحده$/, [7, 7], ({ rng, diff }) => {
   const k = pick(rng, [0, 1, 2]);
@@ -216,10 +212,10 @@ const percent = T('percent_g8', /^النسبه المئويه$/, [8, 8], ({ rng,
   const p = pick(rng, [5, 10, 15, 20, 25, 30, 40, 50, 60, 75]), base = int(rng, 1, 12) * 20;
   if (k === 0) { const v = (base * p) / 100; return { eq: `${p}%, ${base}`, answer: n1(v), wrongs: decs(v, [base + p, v * 10, base - v, v / 2]), ar: `ما ${p}% من ${base}؟`, en: `What is ${p}% of ${base}?` }; }
   if (k === 1) { const v = (base * p) / 100; return { eq: `${v}, ${base}`, answer: `${p}%`, wrongs: wrongsFrom(`${p}%`, [`${(base / v) * 10 | 0}%`, `${100 - p}%`, `${p * 2}%`, `${p + 10}%`], j => `${p + 5 * Math.abs(j)}%`), ar: `ما النسبة المئوية التي يمثلها ${n1(v)} من ${base}؟`, en: `What percent of ${base} is ${n1(v)}?` }; }
-  if (k === 2) { const up = rng() < 0.5, v = (base * p) / 100, fin = up ? base + v : base - v; return { eq: `${base}, ${fin}`, answer: `${p}%`, wrongs: wrongsFrom(`${p}%`, [`${Math.round((v / fin) * 100)}%`, `${100 - p}%`, `${p + 10}%`, `${p * 2}%`], j => `${p + 5 * Math.abs(j)}%`), ar: `${up ? 'ارتفع' : 'انخفض'} سعر سلعة من ${base} إلى ${n1(fin)} دينارًا. ما نسبة ${up ? 'الزيادة' : 'النقصان'} المئوية؟`, en: `The price of an item ${up ? 'rose' : 'fell'} from ${base} to ${n1(fin)} dinars. What is the percent ${up ? 'increase' : 'decrease'}?` }; }
+  if (k === 2) { const up = rng() < 0.5, v = (base * p) / 100, fin = up ? base + v : base - v; return { eq: `${base}, ${fin}`, answer: `${p}%`, wrongs: wrongsFrom(`${p}%`, [`${Math.round((v / fin) * 100)}%`, `${100 - p}%`, `${p + 10}%`, `${p * 2}%`], j => `${p + 5 * Math.abs(j)}%`), ar: `${up ? 'ارتفع' : 'انخفض'} سعر سلعة من ${base} إلى ${money(fin)}. ما نسبة ${up ? 'الزيادة' : 'النقصان'} المئوية؟`, en: `The price of an item ${up ? 'rose' : 'fell'} from ${base} to ${n1(fin)} dinars. What is the percent ${up ? 'increase' : 'decrease'}?` }; }
   if (k === 3) { const v = (base * p) / 100; return { eq: `${p}%, ${v}`, answer: String(base), wrongs: ints(base, [v * 100 / (100 + p) | 0, v * p, base + v, base - v]), ar: `${p}% من عدد يساوي ${n1(v)}. ما العدد؟`, en: `${p}% of a number is ${n1(v)}. What is the number?` }; }
   const fin = base + (base * p) / 100;
-  return { eq: `${p}%, ${fin}`, answer: String(base), wrongs: ints(base, [fin - p, Math.round(fin * (1 - p / 100)), fin - (fin * p) / 100 | 0, fin + p]), ar: `بعد زيادة ${p}% أصبح سعر سلعة ${n1(fin)} دينارًا. ما سعرها الأصلي؟`, en: `After a ${p}% increase an item costs ${n1(fin)} dinars. What was its original price?` };
+  return { eq: `${p}%, ${fin}`, answer: String(base), wrongs: ints(base, [fin - p, Math.round(fin * (1 - p / 100)), fin - (fin * p) / 100 | 0, fin + p]), ar: `بعد زيادة ${p}% أصبح سعر سلعة ${money(fin)}. ما سعرها الأصلي؟`, en: `After a ${p}% increase an item costs ${n1(fin)} dinars. What was its original price?` };
 });
 
 export const PROPORTION_TOPICS: readonly Topic[] = [

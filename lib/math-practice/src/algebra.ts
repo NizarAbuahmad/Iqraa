@@ -8,7 +8,7 @@
  * product), so the answer is known by construction — and `algebra.test.ts`
  * recomputes it from the printed stem by a different route.
  */
-import { gcd, int, lcm, nz, pick, sfrac, signed, sup, tier, wrongsFrom, type Draft, type Rng, type Topic } from './topicKit.ts';
+import { dinars, gcd, int, lcm, nz, pick, sfrac, signed, sup, tamyiz, tier, wrongsFrom, type Draft, type Rng, type Topic } from './topicKit.ts';
 
 // ─── polynomial and expression formatting ───────────────────────────────────
 
@@ -109,7 +109,6 @@ const whichSolves = (eq: string, ans: number, wrong: number[]): Draft => ({
 
 /** «3 وحدات», «وحدتين», «وحدة واحدة», «12 وحدة» — the noun agrees with the number. */
 const units = (n: number) => (n === 1 ? 'وحدة واحدة' : n === 2 ? 'وحدتين' : n <= 10 ? `${n} وحدات` : `${n} وحدة`);
-const unitsEn = (n: number) => `${n} unit${n === 1 ? '' : 's'}`;
 const hours = (n: number) => (n === 1 ? 'ساعة واحدة' : n === 2 ? 'ساعتين' : n <= 10 ? `${n} ساعات` : `${n} ساعة`);
 
 /** The four answers to «how many real solutions»; the last is never right for a quadratic. */
@@ -121,6 +120,18 @@ const nsolDraft = (eq: string, kind: 0 | 1 | 2, ar: string, en: string): Draft =
 const mono = (a: number, p: number) => (p === 0 ? String(a) : `${a === 1 ? '' : a}x${p === 1 ? '' : sup(p)}`);
 const termsStr = (ts: Array<[number, number]>) =>
   ts.map(([c, p], i) => (i === 0 ? `${c < 0 ? '−' : ''}${mono(Math.abs(c), p)}` : ` ${c < 0 ? '−' : '+'} ${mono(Math.abs(c), p)}`)).join('');
+
+/**
+ * A weighted choice of kind. A paper prefers a sentence it has not served yet
+ * (`makeTopicItem`), so a kind printed in several sentences — one per operation,
+ * one per comparison word — would crowd the others out at equal weight. Such
+ * kinds are drawn less often instead.
+ */
+function wpick<T>(rng: Rng, xs: ReadonlyArray<readonly [T, number]>): T {
+  let r = rng() * xs.reduce((s, [, w]) => s + w, 0);
+  for (const [x, w] of xs) { r -= w; if (r < 0) return x; }
+  return xs[xs.length - 1]![0];
+}
 
 /** A deterministic shuffle under the item's rng. */
 function shuffled<T>(rng: Rng, xs: readonly T[]): T[] {
@@ -150,7 +161,7 @@ function phraseDraft(rng: Rng, v: string, a: number, ops: ReadonlyArray<'+' | '�
 const exprG4 = topic('expr_g4', /^المقادير والمتغيرات$/, [4, 4], ({ rng, diff }) => {
   const v = pick(rng, ['n', 'x', 'a', 'b']);
   const k = int(rng, 2, span(diff)), a = int(rng, 2, 9);
-  const kind = pick(rng, [0, 1, 2]);
+  const kind = wpick(rng, [[0, 1], [1, 0.25], [2, 1]] as const);
   if (kind === 1) return phraseDraft(rng, v, a, ['+', '−', '×']);
   if (kind === 2) {
     const p = int(rng, 2, 9), q = int(rng, 2, 9), r = int(rng, 1, 20);
@@ -170,7 +181,7 @@ const exprG4 = topic('expr_g4', /^المقادير والمتغيرات$/, [4, 4
 /** Grade 5: write an expression with symbols, and find its value — bare, or as what a shopper pays. */
 const exprEval = topic('expr_eval', /قيمه المقدار الجبري/, [5, 6], ({ rng, diff }) => {
   const x = int(rng, 2, span(diff)), y = int(rng, 2, 9), a = int(rng, 2, 9), b = int(rng, 1, 9);
-  const kind = pick(rng, [0, 1, 2]);
+  const kind = wpick(rng, [[0, 1], [1, 0.2], [2, 1]] as const);
   if (kind === 1) return phraseDraft(rng, 'x', a, ['+', '−', '×', '÷']);
   if (kind === 2) {
     const n = int(rng, 2, span(diff) + 3), v = a * n + b;
@@ -205,7 +216,9 @@ const oneStep = (id: string, match: RegExp, kinds: Array<'add' | 'sub' | 'mul' |
       : kind === 'sub' ? [`x − ${a} = ${x}`, x + a, [x - a, x, a]]
       : kind === 'mul' ? [`${a}x = ${a * x}`, x, [a * x - a, a * x, a]]
       : [`x ÷ ${a} = ${x}`, x * a, [x + a, x, x - a]]) as [string, number, number[]];
-    const form = pick(rng, [0, 1, 2, 3]);
+    // the story and the written equation are one sentence per operation
+    const per = kinds.length > 2 ? 0.4 : 0.6;
+    const form = wpick(rng, [[0, 1], [1, 1], [2, per], [3, per]] as const);
     if (form === 1) return whichSolves(eq, ans, others(ans, w, true));
     if (form === 2) {
       const [ar, en] = kind === 'add' ? [`فكّرت سلمى في عدد، ثم أضافت إليه ${a} فكان الناتج ${x + a}. ما العدد الذي فكّرت فيه؟`, `Salma thinks of a number and adds ${a} to it; the result is ${x + a}. What is her number?`]
@@ -742,7 +755,7 @@ const ineqAdd = topic('ineq_add', /^حل المتباينات بالجمع وا�
     if (rng() < 0.5) {
       const T = int(rng, 4, 12) * 10, a = int(rng, 11, T - 11);
       const ans = `x ≥ ${T - a}`;
-      return { eq: `x + ${a} ≥ ${T}`, answer: ans, wrongs: [`x ≤ ${T - a}`, `x ≥ ${T + a}`, `x > ${T - a}`], ar: `يحتاج فريق إلى ${T} نقطة على الأقل للتأهل، وقد جمع حتى الآن ${a} نقطة. ما المتباينة التي تمثّل عدد النقاط x التي ما زال يحتاج إليها؟`, en: `A team needs at least ${T} points to qualify and has ${a} so far. Which inequality gives the number of points x it still needs?` };
+      return { eq: `x + ${a} ≥ ${T}`, answer: ans, wrongs: [`x ≤ ${T - a}`, `x ≥ ${T + a}`, `x > ${T - a}`], ar: `يحتاج فريق إلى ${T} ${tamyiz(T, 'نقاط', 'نقطةً', 'نقطة')} على الأقل للتأهل، وقد جمع حتى الآن ${a} ${tamyiz(a, 'نقاط', 'نقطةً', 'نقطة')}. ما المتباينة التي تمثّل عدد النقاط x التي ما زال يحتاج إليها؟`, en: `A team needs at least ${T} points to qualify and has ${a} so far. Which inequality gives the number of points x it still needs?` };
     }
     const T = int(rng, 2, 4) * 10, a = int(rng, 5, T - 5);
     const ans = `x ≤ ${T - a}`;
@@ -767,8 +780,8 @@ const ineqMul = topic('ineq_mul', /^حل المتباينات بالضرب وا�
   const form = pick(rng, [0, 1, 2, 3]);
   if (form === 3) {
     const p = int(rng, 3, 10), k = int(rng, 4, 12), M = p * k;
-    if (rng() < 0.5) return { eq: `${p}x ≤ ${M}`, answer: `x ≤ ${k}`, wrongs: [`x ≥ ${k}`, `x ≤ ${M - p}`, `x < ${k}`], ar: `سعر تذكرة الدخول إلى مدينة الألعاب ${p} دنانير، ومع سامي ${M} دينارًا. ما المتباينة التي تمثّل عدد التذاكر x التي يستطيع شراءها؟`, en: `A ticket to the funfair costs ${p} dinars and Sami has ${M} dinars. Which inequality gives the number of tickets x he can buy?` };
-    return { eq: `${p}x ≥ ${M}`, answer: `x ≥ ${k}`, wrongs: [`x ≤ ${k}`, `x ≥ ${M - p}`, `x > ${k}`], ar: `يريد نادٍ أن يجمع ${M} دينارًا على الأقل من بيع تذاكر سعر الواحدة منها ${p} دنانير. ما المتباينة التي تمثّل عدد التذاكر x التي يجب أن يبيعها؟`, en: `A club wants to raise at least ${M} dinars selling tickets at ${p} dinars each. Which inequality gives the number of tickets x it must sell?` };
+    if (rng() < 0.5) return { eq: `${p}x ≤ ${M}`, answer: `x ≤ ${k}`, wrongs: [`x ≥ ${k}`, `x ≤ ${M - p}`, `x < ${k}`], ar: `سعر تذكرة الدخول إلى مدينة الألعاب ${dinars(p)}، ومع سامي ${dinars(M)}. ما المتباينة التي تمثّل عدد التذاكر x التي يستطيع شراءها؟`, en: `A ticket to the funfair costs ${p} dinars and Sami has ${M} dinars. Which inequality gives the number of tickets x he can buy?` };
+    return { eq: `${p}x ≥ ${M}`, answer: `x ≥ ${k}`, wrongs: [`x ≤ ${k}`, `x ≥ ${M - p}`, `x > ${k}`], ar: `يريد نادٍ أن يجمع ${dinars(M)} على الأقل من بيع تذاكر سعر الواحدة منها ${dinars(p)}. ما المتباينة التي تمثّل عدد التذاكر x التي يجب أن يبيعها؟`, en: `A club wants to raise at least ${M} dinars selling tickets at ${p} dinars each. Which inequality gives the number of tickets x it must sell?` };
   }
   const x0 = int(rng, -6, 9), a = nz(rng, span(diff) > 6 ? 7 : 5);
   if (Math.abs(a) === 1) return ineqMul.make({ rng, diff, grade: 8 });
@@ -788,7 +801,8 @@ const ineqMul = topic('ineq_mul', /^حل المتباينات بالضرب وا�
 
 /** Grade 8: multi-step — and check a number, draw the solution, and a number described in words. */
 const ineqMulti = topic('ineq_multi', /^حل المتباينات متعدده الخطوات$/, [8, 8], ({ rng, diff }) => {
-  const form = pick(rng, [0, 1, 2, 3]);
+  // the story is one sentence per comparison word and per operation
+  const form = wpick(rng, [[0, 1], [1, 1], [2, 1], [3, 0.2]] as const);
   if (form === 3) {
     const a = int(rng, 2, 6), b = int(rng, 1, 12), x0 = int(rng, -5, 9), plus = rng() < 0.5;
     const c = plus ? a * x0 + b : a * x0 - b;
@@ -822,7 +836,8 @@ const swapStrict = (s: string) => (s === '<' ? '≤' : s === '≤' ? '<' : s ===
 /** Grade 9: solve a compound inequality — and since 2026-10-16 write one from words, and give the solution as an interval. */
 const compound = topic('ineq_compound', /^حل المتباينات المركبه$/, [9, 9], ({ rng, diff }) => {
   const lo = int(rng, -6, 4), hi = lo + int(rng, 2, 9), a = int(rng, 2, 4), b = nz(rng, 7);
-  const form = pick(rng, [0, 1, 2, 3]);
+  // the words kind is one sentence per pair of comparison words
+  const form = wpick(rng, [[0, 1], [1, 0.7], [2, 0.3], [3, 1.2]] as const);
   if (form === 2) {
     if (rng() < 0.6) {
       const [s1, s2] = pick(rng, [['<', '<'], ['<', '≤'], ['≤', '<'], ['≤', '≤']] as const);
@@ -911,15 +926,14 @@ const sysWrongs = (x: number, y: number) => {
 const systemTopic = (id: string, match: RegExp, mode: 'graph' | 'sub' | 'elim') => topic(id, match, [8, 8], ({ rng, diff }) => {
   const form = pick(rng, [0, 1, 2, 3]);
   if (form === 2) {
-    const L = int(rng, 10, 40), s = int(rng, 2, L - 1), S = L + s, D = L - s, big = rng() < 0.5;
-    const ans = big ? L : s;
-    return { eq: `x + y = ${S} ، x − y = ${D}`, answer: String(ans), wrongs: num(ans, [big ? s : L, D, S - D, Math.floor(S / 2)], String), ar: `مجموع عددين ${S}، والفرق بينهما ${D}. ما العدد ${big ? 'الأكبر' : 'الأصغر'}؟`, en: `Two numbers have sum ${S} and difference ${D}. What is the ${big ? 'larger' : 'smaller'} number?` };
+    const L = int(rng, 10, 40), s = int(rng, 2, L - 1), S = L + s, D = L - s;
+    return { eq: `x + y = ${S} ، x − y = ${D}`, answer: String(L), wrongs: num(L, [s, D, S - D, Math.floor(S / 2)], String), ar: `مجموع عددين ${S}، والفرق بينهما ${D}. ما العدد الأكبر؟`, en: `Two numbers have sum ${S} and difference ${D}. What is the larger number?` };
   }
   if (form === 3) {
     const A = int(rng, 4, 10), C = int(rng, 3, A - 1), n = int(rng, 12, 40), ad = int(rng, 1, n - 1), T = A * ad + C * (n - ad);
     return {
       eq: `x + y = ${n} ، ${A}x + ${C}y = ${T}`, answer: String(ad), wrongs: num(ad, [n - ad, Math.floor(T / A), Math.floor(T / (A + C)), ad + 1], String),
-      ar: `باعت مدرسة ${n} تذكرة لحفل خيري، سعر تذكرة الكبار ${A} دنانير وسعر تذكرة الصغار ${C} دنانير، فكان ثمنها كلها ${T} دينارًا. كم تذكرةً بيعت للكبار؟`,
+      ar: `باعت مدرسة ${n} ${tamyiz(n, 'تذاكر', 'تذكرةً', 'تذكرة')} لحفل خيري، سعر تذكرة الكبار ${dinars(A)} وسعر تذكرة الصغار ${dinars(C)}، فكان ثمنها كلها ${dinars(T)}. كم تذكرةً بيعت للكبار؟`,
       en: `A school sold ${n} tickets for a charity concert: adult tickets cost ${A} dinars and child tickets ${C} dinars, ${T} dinars in all. How many adult tickets were sold?`,
     };
   }
@@ -1236,8 +1250,8 @@ const quadVertex = topic('quad_vertex', /التحويلات الهندسيه.*ا
     const ans = vform(1, h, k);
     return {
       eq: ans, answer: ans, wrongs: [vform(1, -h, k), vform(1, h, -k), vform(1, -h, -k)],
-      ar: `اكتب معادلة الاقتران الناتج عن انسحاب منحنى الاقتران y = x² بمقدار ${units(Math.abs(h))} إلى ${h > 0 ? 'اليمين' : 'اليسار'}، ثم بمقدار ${units(Math.abs(k))} إلى ${k > 0 ? 'الأعلى' : 'الأسفل'}.`,
-      en: `Write the function whose graph is y = x² translated ${unitsEn(Math.abs(h))} ${h > 0 ? 'right' : 'left'}, then ${unitsEn(Math.abs(k))} ${k > 0 ? 'up' : 'down'}.`,
+      ar: `انسحب منحنى الاقتران y = x² فأصبح رأسه النقطة ${pair(h, k)}. ما قاعدة الاقتران الناتج؟`,
+      en: `The graph of y = x² is translated so that its vertex is ${pair(h, k)}. What is the new function?`,
     };
   }
   if (form === 3) {
@@ -1321,7 +1335,7 @@ function monoStr(c: number, p: number): string {
 /** Grade 9: simplify with the exponent laws — and since 2026-10-16 the value of a negative power, and a missing exponent. */
 const simplifyExp = topic('exp_simplify', /^تبسيط المقادير الاسيه$/, [9, 9], ({ rng, diff }) => {
   const a = int(rng, 2, 5), b = int(rng, 2, 5), m = int(rng, 2, 5), n = int(rng, 2, 5);
-  const k = tier(diff) === 0 ? pick(rng, [0, 2, 4, 5]) : pick(rng, [0, 1, 2, 3, 4, 5]);
+  const k = wpick(rng, (tier(diff) === 0 ? [[0, 1], [2, 1], [4, 1], [5, 0.5]] : [[0, 1], [1, 1], [2, 1], [3, 1], [4, 1], [5, 0.5]]) as Array<[number, number]>);
   if (k === 4) {
     const e = int(rng, 1, 3), v = a ** e, ans = `1/${v}`;
     return { eq: `${a}${sup(-e)}`, answer: ans, wrongs: wrongsFrom(ans, [`−${v}`, signed(-a * e), `1/${a * e}`], j => `1/${v + Math.abs(j) + 1}`), ar: `أوجد قيمة ${a}${sup(-e)}.`, en: `Find the value of ${a}${sup(-e)}.` };
@@ -1455,7 +1469,8 @@ const ratAddSub = topic('rat_expr_addsub', /^جمع المقادير الجبر�
 });
 
 /** Grade 9: rational equations — and since 2026-10-16 cross-multiplication with x on both sides, and a shared-work problem. */
-const WORK: Array<[number, number]> = [[3, 6], [6, 3], [4, 12], [12, 4], [6, 12], [12, 6], [10, 15], [15, 10], [4, 4], [6, 6], [8, 8], [10, 10], [12, 12], [5, 20], [20, 5]];
+// 3–10 hours each, so the noun is «ساعات» throughout and the sentence never changes shape
+const WORK: Array<[number, number]> = [[3, 6], [6, 3], [4, 4], [6, 6], [8, 8], [10, 10]];
 const ratEq = topic('rat_eq', /^حل المعادلات النسبيه$/, [9, 9], ({ rng }) => {
   const x = int(rng, -5, 9), b = nz(rng, 6);
   const form = pick(rng, [0, 1, 2]);
