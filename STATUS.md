@@ -1415,6 +1415,52 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Grade 1 grammar in the English corner — built, shown to nobody yet, 2026-10-16
+
+The teacher's review above asked for grammar practice. Each Grade 1 lesson that
+has a grammar line in the book now has three activities under a «القواعد»
+heading: **Choose the word**, **Build the sentence** and **True or false**.
+**Every unit is `reviewedBy: null`, so no pupil, visitor or teacher sees them
+yet.** Spec: `docs/superpowers/specs/2026-10-16-english-corner-grammar-g1-design.md`.
+
+- **Sentences are generated, not written one by one.**
+  `lib/curriculum/src/englishGrammar.ts` holds each unit's book patterns («I've
+  got {a:thing}.», «The {s:object} are on the {place}.») and per-lesson slot
+  lists. A slot may name only words from its own lesson or an earlier Grade 1
+  lesson; a test fails anything else. Articles (a/an) and plurals are worked
+  out, with plural-form words («boots», «apples») taking neither. The set is
+  finite: 9 units, every sentence listed.
+- **The teacher's sheet is the review.** `docs/english-grammar-g1-sheet.md`
+  (`pnpm --filter @workspace/curriculum run grammar-sheet`) lists every sentence
+  a unit can show, with its picture, the wrong option it is offered beside, and
+  the wrong picture True or false uses. A test fails if the committed sheet
+  differs from the generator, so a sign-off always refers to what ships.
+- **Pictures** are the corner's emoji (`englishPictures.ts`, moved from the app
+  so the sheet and the app agree). A marker shows the contrast: ✅/❌ for got
+  and like, 👦/👧 for he and she, two of a thing for are and they're. A word
+  without a picture still appears in Build the sentence, never in a picture
+  item. So **Unit 1 has no True or false**: only mum and dad have pictures.
+- **Semester 2 Unit 0 differs from the spec.** It has no family words, so it
+  uses the Unit 2 (I've got) and Unit 4 (favourite toy) patterns.
+- **Scored like the other games** (`SCORED_ACTIVITIES`, stars and badges, kept
+  on the device only). The round builders are in `services/englishHub/games.ts`
+  and the screens in `components/englishHub/GrammarActivities.tsx`.
+- **Checked in a browser** at 390 px, in Arabic and English, with every unit
+  signed off in the working tree only: all three activities, the finish card,
+  and Unit 1's missing True or false card. Inside the Arabic feedback line, the
+  English answer is wrapped in an LRI…PDI isolate. Without it, the full stop
+  jumped to the left end of the sentence.
+
+**To switch a unit on** (in this order):
+1. Voice its sentences: `pnpm --filter @workspace/curriculum run english-audio`.
+   This needs the OpenAI and R2 keys; the script now includes every grammar
+   sentence, in the young register. Until then, web speaks a sentence with the
+   browser's voice and native is silent.
+2. A Grade 1 English teacher reads that unit's table in
+   `docs/english-grammar-g1-sheet.md`.
+3. Set the unit's `reviewedBy: { name, date }` in `englishGrammar.ts` and merge.
+   That is the only switch: there is no flag and no role check.
+
 ## A Grade 1 English teacher's review, 2026-10-15
 
 A teacher went through English Grade 1 and sent nine notes. What each one turned
@@ -1482,11 +1528,9 @@ out to be, and what changed:
   This landed separately in #1082 (`buildMatchColumns`). This PR gives Match the
   picture the same layout, through the same no-giveaway column builder: pictures
   on one side, words on the other.
-- **Grammar and reading activities in the library.** Not built. The corner
-  drills words only. The book's grammar targets are already in the data (the
-  `objectives` of each "Vocabulary & Grammar" lesson: «I've got …», «What's this?
-  It's a …»), but sentence items need writing and a teacher's read, so this is
-  a product decision, not a fix.
+- **Grammar and reading activities in the library.** Grammar is built for
+  Grade 1 and hidden until a teacher reviews it. See «Grade 1 grammar in the
+  English corner» above. Reading is not built.
 
 ## Real book items on the live model path, behind `BOOK_ITEMS_LIVE`, 2026-10-12
 

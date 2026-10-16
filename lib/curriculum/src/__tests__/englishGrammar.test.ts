@@ -8,9 +8,9 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import {
-  GRAMMAR_UNITS, grammarUnit, offeredGrammar, pluralOf, renderGrammarSheet, unitSentences, withArticle,
+  GRAMMAR_UNITS, allGrammarSentences, grammarUnit, offeredGrammar, pluralOf, renderGrammarSheet, unitSentences, withArticle,
 } from '../englishGrammar.ts';
-import { hubLessonsForGrade } from '../englishHub.ts';
+import { allHubWords, audioSlug, hubLessonsForGrade } from '../englishHub.ts';
 import { wordPicture } from '../englishPictures.ts';
 
 const G1 = hubLessonsForGrade(1);
@@ -91,6 +91,18 @@ test('an unreviewed unit is offered to nobody', () => {
   }
   assert.equal(offeredGrammar('kbl-g1-eng-s1-nccd-u0_l1'), null);
   assert.equal(grammarUnit('nope'), undefined);
+});
+
+test('every sentence has its own recording key, shared with no other sentence or word', () => {
+  // `playWord(sentence)` plays `<audioSlug>.mp3`; a collision would play another sentence.
+  const words = new Set(allHubWords().map(audioSlug));
+  const seen = new Map<string, string>();
+  for (const text of allGrammarSentences()) {
+    const slug = audioSlug(text);
+    assert.ok(!words.has(slug), `${text} → ${slug} is a word's recording`);
+    assert.equal(seen.get(slug) ?? text, text, `${text} and ${seen.get(slug)} share ${slug}`);
+    seen.set(slug, text);
+  }
 });
 
 test("the committed teacher's sheet is exactly what the generator produces", () => {
