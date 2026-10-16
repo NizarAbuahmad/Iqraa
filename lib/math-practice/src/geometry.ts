@@ -815,7 +815,7 @@ const pointLine = T('distance_point_line', /^البعد بين نقطه ومست
   const d = int(rng, 1, 6);
   const num = d * N * (rng() < 0.5 ? 1 : -1);
   const C = num - A * x0 - B * y0; // so that Ax0 + By0 + C = num
-  const line = `${A}x + ${B}y ${C < 0 ? '−' : '+'} ${Math.abs(C)} = 0`;
+  const line = C === 0 ? `${A}x + ${B}y = 0` : `${A}x + ${B}y ${C < 0 ? '−' : '+'} ${Math.abs(C)} = 0`;
   return { eq: `${pt(x0, y0)}, ${line}`, answer: String(d), wrongs: pos(d, [d * N, d + 1, Math.abs(num) / (A + B) | 0, d * N / 2 | 0, d - 1]), ar: `ما بُعد النقطة ${pt(x0, y0)} عن المستقيم ${line}؟`, en: `What is the distance from the point ${pt(x0, y0)} to the line ${line}?` };
 });
 
