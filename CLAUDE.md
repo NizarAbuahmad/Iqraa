@@ -173,6 +173,15 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   so the tests that pin them apart (`activityBlueprints.test.ts`,
   `activityPrompts.test.ts`) assert *every field differs from every other
   type*; a new format needs its own entry in both files or they fail.
+- **"Same question" is the stem, with its numbers kept (found 2026-10-15).** A
+  true/false item's «الإجابة المقترحة» is not part of its question —
+  `questionStemKey` strips it, or one item prints twice (once per type) and
+  regenerate counts a re-rolled proposed answer as a new question. And a
+  duplicate measure must keep numbers: `stemSimilarity` once dropped every short
+  token, so two different equations scored 1.0 and one was rejected. "Same
+  sentence, different numbers" is a third thing — `stemFrame` — which is
+  practice, not a duplicate, and is only warned about when it carries a paper
+  (`dominantFrame`).
 - **A question can come from the book, the bank or a model, and only a verifier
   makes one `verified`.** Real book items (`lib/curriculum/src/bookItems.ts`,
   data written by `scripts/extract_book_items.py`) join by `lessonId`, never by
@@ -206,7 +215,7 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   for a short reply is measured against the model's share (`count − k`).
   The prompt is told what the book supplies and a per-competency quota
   (`allocateQuestions` over the whole paper, rescaled for the top-up by
-  `remainingQuota`), and such a paper records `promptVersion` `exam-gen-6+book`.
+  `remainingQuota`), and such a paper records `promptVersion` `exam-gen-7+book`.
 - **A teaching style shapes the whole lesson plan, in two places.** Per-style
   phases live in `artifacts/mobile/services/ai/lessonPlanBlueprints.ts` and the
   matching contract in `LESSON_STYLE_RULES_AR`/`_EN`
