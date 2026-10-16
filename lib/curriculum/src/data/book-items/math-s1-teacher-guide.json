@@ -180,6 +180,87 @@
       "tierSource": "default",
       "status": "verified",
       "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s1-teacher-guide-u1l4-5",
+      "lessonId": "kbl-math-s1-nccd-u1_l3",
+      "source": {
+        "sourceId": "math-s1-teacher-guide",
+        "page": 47,
+        "bookPage": 34,
+        "unit": 1,
+        "number": 5
+      },
+      "kind": "unit-test-mcq",
+      "instruction": "ما المقدار الجبري الذي يجب وضعه في المربع الفارغ ليتحقق التساوي؟",
+      "stem": "8x^2y^3 / □ = (2y/x)^2",
+      "options": [
+        "2x^4y",
+        "4x^4y^2",
+        "2xy",
+        "x^2y^2"
+      ],
+      "printedAnswer": null,
+      "computedAnswer": "2x^4y",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "default",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s1-teacher-guide-u1l5-3",
+      "lessonId": "kbl-math-s1-nccd-u1_l4",
+      "source": {
+        "sourceId": "math-s1-teacher-guide",
+        "page": 47,
+        "bookPage": 34,
+        "unit": 1,
+        "number": 3
+      },
+      "kind": "unit-test-mcq",
+      "instruction": "أي الأزواج المرتبة الآتية يمثل حلا لنظام المعادلتين الآتي؟",
+      "stem": "3^(5x) × 9^y = 27\n5^(3x) × 5^y = 25",
+      "options": [
+        "(-1, -1)",
+        "(1, 1)",
+        "(-1, 1)",
+        "(1, -1)"
+      ],
+      "printedAnswer": null,
+      "computedAnswer": "(1, -1)",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "default",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s1-teacher-guide-u1l5-4",
+      "lessonId": "kbl-math-s1-nccd-u1_l4",
+      "source": {
+        "sourceId": "math-s1-teacher-guide",
+        "page": 47,
+        "bookPage": 34,
+        "unit": 1,
+        "number": 4
+      },
+      "kind": "unit-test-mcq",
+      "instruction": "أي المعادلات الأسية الآتية يكون العدد الآتي حلا لها؟",
+      "stem": "x = -1",
+      "options": [
+        "5^(2x+1) = 25",
+        "3^(1+x) = 81",
+        "7^(3-2x) = 49",
+        "4^(2-x) = 64"
+      ],
+      "printedAnswer": null,
+      "computedAnswer": "4^(2-x) = 64",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "default",
+      "status": "computed",
+      "verificationSource": "sympy"
     }
   ]
 }
