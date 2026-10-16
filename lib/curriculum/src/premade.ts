@@ -84,7 +84,13 @@ export interface PremadeWorksheetSection {
     | 'fill_blank'
     | 'true_false'
     | 'word_problem'
-    | 'mixed';
+    | 'mixed'
+    // Structured formats (spec 2026-10-11): kept so the mirror still accepts a
+    // WorksheetSection. Pre-made sheets are built without them.
+    | 'match'
+    | 'order'
+    | 'spot_error'
+    | 'graph';
   title: string;
   questions: PremadeWorksheetQuestion[];
 }

@@ -86,7 +86,7 @@ describe('isEnglishSlideContent', () => {
   });
 });
 
-import { workingSteps } from '../deckText.ts';
+import { answerLines, workingSteps } from '../deckText.ts';
 
 describe('workingSteps', () => {
   it('splits the book’s working chain into steps and the result', () => {
@@ -118,5 +118,15 @@ describe('workingSteps', () => {
   it('refuses a chain longer than the renderers have room for', () => {
     assert.equal(workingSteps('a=1 → b=2 → c=3 → d=4 → e=5 → f=6'), null);
     assert.ok(workingSteps('a=1 → b=2 → c=3 → d=4 → e=5'), 'five parts is the limit');
+  });
+});
+
+describe('answerLines', () => {
+  it('splits a multi-line answer into its non-empty trimmed lines', () => {
+    assert.deepEqual(answerLines('ج، أ، ب\n 2^x = 8 \n\nx = 3'), ['ج، أ، ب', '2^x = 8', 'x = 3']);
+  });
+  it('a single line stays one line, and nothing gives none', () => {
+    assert.deepEqual(answerLines('x = 3'), ['x = 3']);
+    assert.deepEqual(answerLines(''), []);
   });
 });
