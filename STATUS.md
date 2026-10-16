@@ -3615,9 +3615,9 @@ language» was followed by an offer to plan a lesson. The app-help message now
 carries `appHelp: true` and the strip is hidden while it is the last message
 (`app/(tabs)/iqra.tsx`). The نسخ / تصدير footer under the same reply went the
 same way (2026-10-11, same flag), and so did the long press that opened the
-export sheet. Not changed: the tool-ask reply («أريد ورقة عمل» pointing at the
-generator), which is built the same way and still shows the strip, the footer
-and the long press. Checked in a local web build
+export sheet. The tool-ask reply («أريد ورقة عمل» pointing at the generator)
+lost the strip and the footer on 2026-10-16 through its own flag, `toolAsk`; it
+keeps the long press, because that was not asked for. Checked in a local web build
 against the live API (chips gone after an app answer, present after a teaching
 one); no test, because `iqra.tsx` cannot be loaded by the bare `node --test`
 runner.
