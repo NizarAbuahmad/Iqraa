@@ -25,6 +25,7 @@ import {
   chartGeometry,
   type VisualBlock,
 } from '../deckVisuals.ts';
+import { usableChartVisual } from '../deckVisuals.ts';
 
 const at = (src: string, x: number) => compileExpression(src)?.(x);
 
@@ -499,7 +500,7 @@ describe('chartGeometry — one layout for the projector and the PDF', () => {
     const g = chartGeometry({ kind: 'chart', chartType: 'pie', categories: ['سكن', 'طعام', 'نقل'], values: [50, 30, 20] }, 640, 320);
     assert.ok(g && g.kind === 'pie');
     assert.equal(g.slices.length, 3);
-    assert.deepEqual(g.legend.map(l => l.label), ['سكن 50%', 'طعام 30%', 'نقل 20%']);
+    assert.deepEqual(g.legend.map(l => l.label), ['50% سكن', '30% طعام', '20% نقل']);
     assert.equal(new Set(g.slices.map(s => s.fill)).size, 3);
   });
 
@@ -524,6 +525,46 @@ describe('chartGeometry — one layout for the projector and the PDF', () => {
 
   it('puts the pie legend into the SVG too', () => {
     const svg = visualToSvg({ kind: 'chart', chartType: 'pie', categories: ['سكن', 'طعام', 'نقل'], values: [50, 30, 20] });
-    assert.match(svg, /سكن 50%/);
+    assert.match(svg, /50% سكن/);
+  });
+});
+
+describe('usableChartVisual — a chart the model wrote', () => {
+  const ok = { kind: 'chart', chartType: 'bar', categories: ['سكن', 'طعام', 'نقل'], values: [400, 250, 150] };
+
+  it('accepts a well-formed bar and pie, returning a clean copy', () => {
+    const bar = usableChartVisual({ ...ok, extra: 'ignored', caption: '  مصروف الأسرة ' });
+    assert.deepEqual(bar, { ...ok, caption: 'مصروف الأسرة' });
+    assert.ok(usableChartVisual({ ...ok, chartType: 'pie', values: [50, 30, 20] }));
+  });
+
+  it('reads numeric strings, including Arabic-Indic digits, and nothing else as a number', () => {
+    const v = usableChartVisual({ ...ok, values: ['٤٠٠', '250', '1,5'] });
+    assert.deepEqual(v && v.kind === 'chart' ? v.values : null, [400, 250, 1.5]);
+    assert.equal(usableChartVisual({ ...ok, values: ['12abc', 5, 6] }), null);
+    assert.equal(usableChartVisual({ ...ok, values: [null, 5, 6] }), null);
+  });
+
+  it('refuses ragged, tiny, huge or empty data', () => {
+    assert.equal(usableChartVisual({ ...ok, values: [1, 2] }), null, 'ragged');
+    assert.equal(usableChartVisual({ ...ok, categories: ['a'], values: [1] }), null, 'one bar is not a chart');
+    const nine = Array.from({ length: 9 }, (_, i) => `c${i}`);
+    assert.equal(usableChartVisual({ ...ok, categories: nine, values: nine.map(() => 1) }), null, 'too many to read');
+    assert.equal(usableChartVisual({ ...ok, values: [0, 0, 0] }), null, 'all zero');
+  });
+
+  it('refuses negatives, non-finite values, blank or repeated labels', () => {
+    assert.equal(usableChartVisual({ ...ok, values: [10, -5, 3] }), null);
+    assert.equal(usableChartVisual({ ...ok, values: [10, Infinity, 3] }), null);
+    assert.equal(usableChartVisual({ ...ok, values: [10, NaN, 3] }), null);
+    assert.equal(usableChartVisual({ ...ok, categories: ['a', ' ', 'c'] }), null);
+    assert.equal(usableChartVisual({ ...ok, categories: ['a', 'a', 'c'] }), null);
+  });
+
+  it('refuses kinds and chart types this build does not draw honestly', () => {
+    assert.equal(usableChartVisual({ ...ok, chartType: 'line' }), null, 'a line would be drawn as bars');
+    assert.equal(usableChartVisual({ ...ok, chartType: 'radar' }), null);
+    assert.equal(usableChartVisual({ ...ok, kind: 'plot' }), null);
+    for (const junk of [null, undefined, 'chart', 7, [], true]) assert.equal(usableChartVisual(junk), null);
   });
 });

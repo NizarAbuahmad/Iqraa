@@ -515,7 +515,8 @@ gcloud scheduler jobs create http homework-reminders $P \
   --headers "x-internal-key=$KEY,Content-Type=application/json" \
   --message-body '{}' \
   --attempt-deadline 300s \
-  --max-retry-attempts 3 --min-backoff 60s
+  --max-retry-attempts 3 --min-backoff 60s \
+  --format=none   # without this gcloud prints the job, x-internal-key included
 # 6. Fire it once now, and see that it ran (a second run the same day claims nothing).
 gcloud scheduler jobs run homework-reminders --location europe-west1 $P
 gcloud scheduler jobs describe homework-reminders --location europe-west1 $P \
@@ -537,8 +538,19 @@ printf %s "$KEY" | gcloud secrets versions add INTERNAL_CRON_KEY --data-file=- $
 gcloud run services update iqraa-api --region europe-west1 $P \
   --update-secrets=INTERNAL_CRON_KEY=INTERNAL_CRON_KEY:latest --update-labels rotated=$(date +%Y%m%d)
 gcloud scheduler jobs update http homework-reminders --location europe-west1 $P \
-  --update-headers "x-internal-key=$KEY,Content-Type=application/json"
+  --update-headers "x-internal-key=$KEY,Content-Type=application/json" \
+  --format=none   # without this gcloud prints the job, x-internal-key included
+unset KEY
+# The service now reads the new version; disable the old one(s) so a leaked key is dead.
+gcloud secrets versions list INTERNAL_CRON_KEY $P --filter=state=enabled \
+  --sort-by=~createTime --format='value(name.basename())' | tail -n +2 \
+  | xargs -r -n1 gcloud secrets versions disable --secret=INTERNAL_CRON_KEY $P
 ```
+
+**Any `gcloud scheduler jobs create|update|describe` without `--format`
+prints the stored key** (the 2026-10-16 setup leaked it that way and had to
+rotate). Keep `--format=none` on writes and a `value(...)` format that omits
+`httpTarget` on reads.
 
 This rotation is also the way out if the shell session was lost before step 5 —
 but if the scheduler job does not exist yet, run step 5 (with the new `$KEY`)

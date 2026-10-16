@@ -479,6 +479,15 @@ export interface ActivitySlide {
    * the picture too.
    */
   visual?: import('../deckVisuals.ts').VisualBlock;
+  /**
+   * A picture for the slide's heading, by name — chosen by the model for what
+   * the slide is ABOUT (an atom for atomic structure, a leaf for photosynthesis).
+   * Drawn in the heading chip when the title carries no emoji of its own, and
+   * on a section break. Anything not in `DECK_SECTION_ICONS` is dropped on the
+   * server and again by `polishDeck`, so a renderer only ever sees a name it can
+   * draw.
+   */
+  icon?: import('../deckIcons.ts').DeckIconName;
   /** The visual is the answer: the presenter draws it only after the reveal. */
   visualOnReveal?: boolean;
   /** Media payload for type 'media' — projected image, video, audio, or a linked document. */
