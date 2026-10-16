@@ -206,14 +206,14 @@ describe('detectChemFamily', () => {
     assert.equal(detectChemFamily(energyChangesLessonBlob), 'thermochem');
   });
 
-  it('the heat-capacity lesson is thermochem, not the general fallback', () => {
+  it('the heat-capacity lesson has its own calorimetry family, not the general fallback', () => {
     const heatCapacityLessonBlob = [
       'الطاقة الممتصة والطاقة المنبعثة من المادة Absorbed and Emitted Energy of Matter',
       'أحسب كمية الطاقة التي تمتصها أو تصدرها المادة.',
       'أجري تجارب عملية حول الطاقة الممتصة والمنبعثة من المادة.',
       'السعة الحرارية الحرارة النوعية المسعر Heat Capacity Specific Heat Calorimeter',
     ].join(' ');
-    assert.equal(detectChemFamily(heatCapacityLessonBlob), 'thermochem');
+    assert.equal(detectChemFamily(heatCapacityLessonBlob), 'calorimetry');
   });
 
   it('the mole still wins where the mole is the subject, plural and singular', () => {

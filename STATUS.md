@@ -105,8 +105,30 @@ an announcement by default» below.
   system by substitution (that its points solve both equations and that none is
   missing), recomputes the solution counts and the tangent k, and pins all seven
   at three kinds or more; the generators' new answers are recomputed from the
-  printed stem in `geometry.test.ts` / `stats.test.ts`. Other lessons — most of
-  grades 1–9 — still ask one kind (~68% one sentence on those quizzes).
+  printed stem in `geometry.test.ts` / `stats.test.ts`.
+  **Every grade 1–9 maths lesson the offline generators serve now asks three
+  kinds or more (2026-10-16).** Of 414 served lessons, 302 could ask only one or
+  two — «أوجد ناتج: 2 × 6» with new numbers, ten times. Each generator in
+  `lib/math-practice` (`early`, `elementary`, `topics`, `algebra`, `geometry`,
+  `stats`, `proportion`) was given the kinds its lessons' NCCD outcomes list: a
+  missing number, a word problem, the inverse question, «which of these…» (options
+  written into the stem, so it still works as short answer), boundary rounding,
+  a number-line description, and so on. On 10-question offline papers across the
+  413 served lessons: kinds per paper 2.46 → 4.88, the commonest sentence 69% →
+  31% of a paper, lessons under three kinds 302 → 0. Every new kind's answer is
+  computed from the stem and recomputed from the printed Arabic in that
+  generator's test; `mathLessonKinds.test.ts` (mobile, through
+  `takeElementaryMath`) pins every served lesson at three. Number–noun agreement
+  goes through `tamyiz` / `dinars` (`topicKit.ts`) and `tamyiz.test.ts` reads
+  every generator's stems for it («18 تذكرةً», «300 دينار»). Found on the way:
+  `lessonTitleBlob` joined a title to itself when the KB title matched, and the
+  seam «…والقسمة الكسور والقسمة» routed Grade 3 «الكسور والقسمة» to a
+  generator; it is refused again (`routing.test.ts`). Still open: a kind that
+  differs from another only in where the unknown sits («2/3 = ؟/12» vs
+  «2/3 = 8/؟») has the same `stemFrame`, so it needs different words to count;
+  and some kinds come in several sentences (one per operation), which
+  `makeTopicItem` serves first as "least used" — algebra weights those down
+  (`wpick`), the other generators do not yet.
 
 - **Lesson plan, slides, activity, lesson-flow and the classroom builder take a
   unit, semester or whole book — as one revision session (2026-10-14; spec
@@ -553,7 +575,7 @@ an announcement by default» below.
   **Found while measuring:** the Grade 9 lesson «مكوِّناتُ الذرَّةِ» routed to
   `redox`, not `atom_basics` (fixed the same day, see the entry after next). The other
   13 families followed the same day (next entry).
-- **All 14 chemistry families now hold 15 or more items (2026-10-15).** The 13 that
+- **All chemistry families now hold 15 or more items (2026-10-15).** The 13 that
   were still 4–7 each got 128 more (easy ≥5, medium ≥6, hard ≥4 per family:
   atom_basics, atomic_structure, electron_config, bonding, formulas, equations, mole,
   stoichiometry, thermochem, acids_bases, metal_activity, redox, general_chem), so a
@@ -581,13 +603,25 @@ an announcement by default» below.
   `طاقة.*تفاعل` spanned two sentences — now bounded to one; «تغيرات الطاقة في التفاعلات
   الكيميائية» (Grade 10) went to `mole` because the substring `المول` matched
   «الطاقة **المول**ية» — now the whole word (or «المولات»); «الطاقة الممتصة والطاقة
-  المنبعثة من المادة» (Grade 10) fell to `general_chem` — calorimetry words
-  (السعة الحرارية، الحرارة النوعية، المسعر) now route it to `thermochem`. Compared before
-  and after: only those four changed, the other 21 are identical. **Not checked:** the
-  heat-capacity lesson now gets thermochemistry questions, of which only two items
-  (`q = m·c·ΔT`) fit it closely — it has no bank of its own, so a long quiz there is
-  mostly enthalpy and exo/endothermic questions. Typed topics that are not catalogue
+  المنبعثة من المادة» (Grade 10) fell to `general_chem` — it now has its own `calorimetry`
+  family (next entry). Compared before and after: only those four changed, the other 21
+  are identical. **Not checked:** Typed topics that are not catalogue
   lessons were not re-measured beyond the title cases in `chemistry.test.ts`.
+- **The heat-capacity lesson has its own question family (2026-10-15).** «الطاقة الممتصة
+  والطاقة المنبعثة من المادة» (Grade 10) is a heat-capacity and calorimeter lesson, but
+  the nearest bank, `thermochem`, is enthalpy and exo/endothermic questions with only two
+  `q = m·c·ΔT` items. `calorimetry` is a 15th chemistry family (15 items: easy 5, medium
+  6, hard 4; specific heat against heat capacity and their units, the calorimeter,
+  `q = m·c·ΔT` forwards and backwards, heat lost = heat gained, mixing two water samples,
+  energy per gram of fuel), each with worked steps. السعة الحرارية، الحرارة النوعية،
+  المسعر (and the English words) route to it ahead of `thermochem`; of the 25 lessons only
+  this one changed route («حسابات الطاقة في التفاعلات الكيميائية» stays `thermochem`). A
+  15-question quiz on the lesson returns 15 distinct questions. An independent read of the
+  items found two real flaws (an item that did not say to ignore the calorimeter's own
+  heat; a vague step), both fixed. `chemistryBankDepth.test.ts` recomputes the numeric
+  answers. **Not checked:** the items follow the lesson's stated objectives, not the
+  textbook's own worked examples; no chemistry teacher has read them; they say nothing
+  about the lesson's lab.
 - **Quiz «أعد التجهيز» now changes the questions, and says when it cannot**
   (2026-10-13). The offline regenerate only checked that the whole quiz JSON
   differed from the last one, so the same stems in another order — or with the
@@ -610,15 +644,21 @@ an announcement by default» below.
   repeats whole, with the notice only where a screen shows it. Live AI is
   unchanged (it has its own `avoid` / overlap check server-side). Tests:
   `quizRegenerateStems.test.ts`, `worksheetRegenerateStems.test.ts`. Not looked
-  at in a browser. **Known flake (checked 2026-10-15):**
-  `worksheetRegenerateStems.test.ts` fails about 1 run in 10 (3 of 30 isolated
-  runs on this branch, and it has failed in CI): "the notice counts exactly the
-  questions that repeated" sees `repeated: { count: 1, of: 6 }` where its own
-  count is 0. The test compares raw `q.text`; the generator judges repeats by
-  `questionStemKey`, which strips the answer-space padding, so two questions
-  that differ only in that padding repeat to one and not to the other (read
-  from the code, not isolated). Not fixed; a red run of that one file is not a
-  regression — re-run it.
+  at in a browser. **Flake, seen 2026-10-15 and not reproducible since** (checked
+  2026-10-16 on `main` at 40dec336): `worksheetRegenerateStems.test.ts` failed about 1 run
+  in 10 (3 of 30 and 3 of 40 isolated runs, and once in CI): "the notice counts
+  exactly the questions that repeated" saw `repeated: { count: 1, of: 6 }` where
+  its own count was 0. On 40dec336 it passed 100 of 100 runs of the file, and a
+  probe of 6,000 worksheet and homework regenerations (maths and chemistry)
+  found no case where the notice and a raw-text count disagree. So the cause was
+  not isolated, and no test change was made. Between the two checks #1083 made
+  `questionStemKey` also strip the proposed-answer line, which may be why it
+  went away (not confirmed). The test
+  still counts repeats on raw `q.text` while the generator uses
+  `questionStemKey`, so if it comes back, look there first: two questions that
+  differ only in their answer-space padding or proposed-answer line would count
+  as a repeat for one and not the other. A red run of that one file is still
+  worth one re-run before it is treated as a regression.
 - **Lesson plan «أعد التجهيز»: what changed, and what it cannot (2026-10-14).**
   Measured over 30 regenerations (maths, chemistry, Arabic × direct,
   collaborative): the offline plan has ONE phrasing for five of its eight
@@ -5298,10 +5338,31 @@ the model writes its own, so a teacher could take unchecked working for checked.
   removes the mark from every worksheet, homework and quiz question; the worked
   example was already whitelisted. Artifacts already in the pool were stored
   before this and are not rewritten.
-- Not covered: the shared text export, the slide export and the live class deck
-  carry the working but not the note. Seen in the browser with a stubbed
-  live-shaped response (no live key here), not on a device.
+- Seen in the browser with a stubbed live-shaped response (no live key here), not
+  on a device. (The text export, slide export and live class deck were left out
+  of this first change; they carry the note since 2026-10-16, below.)
 - Mobile 3861 pass / 0 fail / 10 skipped; api-server 1484 pass.
+
+### The other three surfaces carry the note too, 2026-10-16
+
+Live AI on Android was confirmed on 2026-10-16: the owner generated a worksheet
+in the Android app and the header badge said live. So Android teachers get
+model-written working, which the 165-solution review does not cover (it covers
+only the offline bank, i.e. the web build). The note is now on every surface
+that carries worksheet working, always on the teacher's side:
+
+- **Text export:** one «⚠» line under the answer-key heading, only when the key
+  has unreviewed working. Not on the student copy, not when the key is left out.
+- **Slide export (`buildWorksheetSlidesHTML`):** on the first key slide only.
+- **Live class deck (`buildDeckFromWorksheet`):** in the teacher panel, never on
+  the wall. A question whose working is unreviewed gets the line above «خطوات
+  الحل»; an AI-written worked example gets a teacher panel carrying it (a bank
+  example still gets no panel).
+- The sentence is `keyWorkingNote` in `services/worksheetWorking.ts`, shared with
+  the printed key, so the wording cannot drift. The on-screen row keeps its own
+  string (`workingUnreviewed`).
+- Not checked on a device. 16 new cases in `worksheetWorkingSurfaces.test.ts`,
+  written first and failing first. Mobile 5806 pass / 0 fail / 10 skipped.
 
 ## The English projector split an equation across two lines, 2026-10-05
 
