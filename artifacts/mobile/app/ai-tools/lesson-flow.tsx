@@ -23,7 +23,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { getT } from '@/services/i18n';
 import { contentLang, topicInLang } from '@/services/contentLanguage';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
+import { groundingRequestFields, resolveGeneratorGrounding } from '@/services/kbContext';
 import { isolateForeignRuns } from '@/services/mathRender';
 import {
   ActivityOutput,
@@ -54,6 +54,8 @@ import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
 import { useWideScope } from '@/hooks/useWideScope';
+import { usePickedLesson } from '@/hooks/usePickedLesson';
+import { carriedLessonTopic } from '@/services/pickedLesson';
 import { scopeLabel, type ScopeSelection } from '@/services/scopeSelection';
 import { buildScopeRequest, scopeFormState, type ScopeRequest } from '@/services/wideScopeRequest';
 
@@ -98,6 +100,8 @@ export default function LessonFlowScreen() {
     topic?: string; gradeIdx?: string; subjectIdx?: string;
     // A saved wide flow's scope (`scopeFormState`), restored by «تعديل».
     scope?: string;
+    // The lesson itself (a lesson page, the lesson bar, a saved flow) — `usePickedLesson`.
+    lessonId?: string;
   }>();
 
   const grades = getPickerGrades();
@@ -127,11 +131,17 @@ export default function LessonFlowScreen() {
     // A reopened wide flow's topic is its scope's label, saved in the material's
     // own language: restating it would look it up as a lesson title.
     if (wideScope.isWide) return routed;
-    return topicInLang(
-      routed, uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
+    const initialLang = contentLang(subjects[initialScope.subjectIdx].id, uiLang);
+    return (routed.trim() && carriedLessonTopic(params.lessonId, initialLang)) || topicInLang(
+      routed, uiLang, initialLang,
       { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
     );
   });
+  const kbScope = { gradeId: grades[gradeIdx]?.id ?? '', subjectId: subjects[subjectIdx]?.id ?? '' };
+  const pickedLesson = usePickedLesson(params.lessonId, topic, kbScope);
+  /** Grounded once on the picked lesson when there is one — every request field and the figures come from it. */
+  const groundTopic = (text: string) =>
+    resolveGeneratorGrounding(text, lang === 'ar' ? 'ar' : 'en', { scope: kbScope, lessonId: pickedLesson.lessonId });
   const [durationIdx, setDurationIdx] = useState(0);
   /** The unit / semester / book the flow on screen was built for; null for a lesson flow. Save records it. */
   const [wideFrozen, setWideFrozen] = useState<ScopeSelection | null>(null);
@@ -204,7 +214,7 @@ export default function LessonFlowScreen() {
     const wide = wideSel ? buildScopeRequest(wideSel, lang) : null;
     if (wideSel && !wide) { setError(t('wideScopeUngrounded')); return; }
     if (!wide) {
-      const conflict = groundedSubjectConflict(topic.trim(), lang, subjects[subjectIdx].id);
+      const conflict = groundedSubjectConflict(topic.trim(), lang, subjects[subjectIdx].id, grades[gradeIdx].id);
       if (conflict) { setError(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     }
     // Frozen for the whole flow: a Retry runs from the same request.
@@ -259,12 +269,9 @@ export default function LessonFlowScreen() {
         // question steps off any slot plan (`questionStepFields`).
         req = { grade, subject, topic: wide.label, language, duration, ...wide.request.fields };
       } else {
-        const kbCtx = await buildGeneratorContext(topic, lang === 'ar' ? 'ar' : 'en');
-        const unitId = generatorUnitId(topic, lang === 'ar' ? 'ar' : 'en');
         req = {
-          grade, subject, topic, language, duration, additionalContext: kbCtx, unitId,
-          lessonId: generatorLessonId(topic, lang === 'ar' ? 'ar' : 'en'),
-          bookFigureCount: generatorFigureCount(topic, lang === 'ar' ? 'ar' : 'en'),
+          grade, subject, topic, language, duration,
+          ...groundingRequestFields(groundTopic(topic)),
           // Every step of the flow is built from the lesson alone, so each one
           // can be served from — and fill — the shared pool.
           contextSource: 'curriculum' as const,
@@ -350,8 +357,12 @@ export default function LessonFlowScreen() {
           // A wide flow reopens on its scope. Its label grounds to no lesson (or to
           // another grade's), so «تعديل» could not recover the pickers from it:
           // their positions are saved with the scope. A lesson flow saves what it
-          // always did. With `scope` present, `withLessonId` stamps no lesson id.
-          ...(wideFrozen ? { gradeIdx, subjectIdx, ...scopeFormState(wideFrozen, 'balanced') } : {}),
+          // always did, plus the lesson it was built from, so the save is filed under
+          // that lesson and not whichever its title finds. With `scope` present,
+          // `withLessonId` stamps no lesson id.
+          ...(wideFrozen
+            ? { gradeIdx, subjectIdx, ...scopeFormState(wideFrozen, 'balanced') }
+            : pickedLesson.lessonId ? { lessonId: pickedLesson.lessonId } : {}),
         },
       });
       setSavedId(newMat.id);
@@ -383,7 +394,7 @@ export default function LessonFlowScreen() {
         wideFrozen
           ? []
           : bookFigureRefsForLesson(
-            resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en').lesson?.id,
+            groundTopic(topic.trim()).lesson?.id,
             lang === 'ar',
           ),
         { revision: wideFrozen !== null },
@@ -495,6 +506,7 @@ export default function LessonFlowScreen() {
               subjectId={subjects[subjectIdx]?.id ?? ''}
               value={topic}
               onChange={setTopic}
+              onSelectionDetail={pickedLesson.onSelectionDetail}
               allowedKinds={['lesson', 'unit', 'semester', 'book']}
               onScopeChange={wideScope.setScopeSel}
               offlineWideScope

@@ -20,7 +20,8 @@ import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { ClassroomActivity } from '@/services/ai/AIService';
 import { isolateForeignRuns } from '@/services/mathRender';
 import { regenerationFields } from '@/services/ai/regeneration';
-import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId } from '@/services/kbContext';
+import { groundingRequestFields, resolveGeneratorGrounding } from '@/services/kbContext';
+import { usePickedLesson } from '@/hooks/usePickedLesson';
 import { groundedSubjectConflict, scopeWithoutCurriculum, subjectPickerLabels } from '@/services/lessonPrep';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { aiErrorText, isAbortError } from '@/services/ai/aiProvenance';
@@ -70,6 +71,11 @@ export default function ClassroomBuilderScreen() {
   // The picked subject's material language — English is taught in English.
   const lang = contentLang(subjects[subjectIdx].id, uiLang);
   const [topic, setTopic] = useState('');
+  // The lesson tapped in the picker, by id — a title cannot tell one unit's
+  // "Vocabulary & Grammar" from the next (see `usePickedLesson`). Nothing routes
+  // here with a lesson, so there is no id to carry in.
+  const kbScope = { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id };
+  const pickedLesson = usePickedLesson(undefined, topic, kbScope);
   // The structured scope the topic picker reports. This screen opens from the
   // activity cards with no saved scope, so it starts empty; the pickers are
   // passed so a scope left over from another grade or subject reads as not wide.
@@ -123,14 +129,14 @@ export default function ClassroomBuilderScreen() {
     const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, uiLang);
     if (scope) { setError(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
     // A unit, a semester or the whole book is a revision. Its topic is a label
-    // («الفصل الأول كاملًا»), not a lesson; this screen's grounding calls are
-    // UNSCOPED, so a unit title would ground to another grade's lesson. A wide
-    // scope skips them all and merges the scope's fields last. One that cannot
-    // be grounded is refused here, never generated mislabeled.
+    // («الفصل الأول كاملًا»), not a lesson, and a unit title would ground to some
+    // lesson, possibly another grade's. A wide scope skips the grounding and
+    // merges the scope's fields last. One that cannot be grounded is refused
+    // here, never generated mislabeled.
     const wide = wideScope.isWide ? buildScopeRequest(wideScope.scopeSel!, lang, { contextSource: 'curriculum' }) : null;
     if (wideScope.isWide && !wide) { setError(t('wideScopeUngrounded')); return; }
     if (!wide) {
-      const conflict = groundedSubjectConflict(topic.trim(), lang, subjects[subjectIdx].id);
+      const conflict = groundedSubjectConflict(topic.trim(), lang, subjects[subjectIdx].id, grades[gradeIdx].id);
       if (conflict) { setError(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     }
     setError(''); setCancelled(false);
@@ -139,7 +145,11 @@ export default function ClassroomBuilderScreen() {
     setLoading(true); setResult(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      const additionalContext = wide ? undefined : buildGeneratorContext(topic.trim(), lang);
+      // Grounded once — in the picked scope, on the picked lesson when there is
+      // one — and every field read off it (`groundingRequestFields`).
+      const lessonFields = wide
+        ? undefined
+        : groundingRequestFields(resolveGeneratorGrounding(topic.trim(), lang, { scope: kbScope, lessonId: pickedLesson.lessonId }));
       const out = await aiService.generateClassroomActivity({
         grade: grades[gradeIdx].name,
         subject: subjects[subjectIdx].name,
@@ -151,10 +161,10 @@ export default function ClassroomBuilderScreen() {
         teachingGoal,
         classroomSetup,
         language: lang === 'ar' ? 'arabic' : 'english',
-        additionalContext,
-        unitId: wide ? undefined : generatorUnitId(topic.trim(), lang),
-        lessonId: wide ? undefined : generatorLessonId(topic.trim(), lang),
-        bookFigureCount: wide ? 0 : generatorFigureCount(topic.trim(), lang),
+        additionalContext: lessonFields?.additionalContext,
+        unitId: lessonFields?.unitId,
+        lessonId: lessonFields?.lessonId,
+        bookFigureCount: lessonFields ? lessonFields.bookFigureCount : 0,
         contextSource: 'curriculum',
         ...regenerationFields(opts?.regenerate === true, previous),
         // Last: the scope's digest, its lesson table and the explicit-undefined
@@ -262,6 +272,7 @@ export default function ClassroomBuilderScreen() {
           gradeId={grades[gradeIdx].id}
           value={topic}
           onChange={v => { setTopic(v); setError(''); }}
+          onSelectionDetail={pickedLesson.onSelectionDetail}
           allowedKinds={['lesson', 'unit', 'semester', 'book']}
           onScopeChange={wideScope.setScopeSel}
           offlineWideScope

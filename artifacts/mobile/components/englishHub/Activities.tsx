@@ -17,7 +17,7 @@ import { useSpeakingRecorder } from '@/hooks/useSpeakingRecorder';
 import {
   buildListenRound,
   buildMatchColumns,
-  buildPictureDeck,
+  buildPictureBoard,
   buildScrambleRound,
   buildSpellRound,
   isMatchPair,
@@ -231,40 +231,70 @@ export function MatchMeaning({ words, onFinish }: { words: HubWord[]; onFinish: 
   return (
     <View style={{ gap: 12 }}>
       <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13, textAlign: 'center' }}>{t('hubMoves', moves)}</Text>
-      {/* English left, Arabic right, whatever the UI language. A plain `row` (not
-          `useUi().row`) on purpose: the app lays out physically left-to-right and
-          flips by hand, so this never mirrors. */}
-      <View style={styles.matchColumns}>
-        {[columns.en, columns.ar].map(column => (
-          <View key={column[0]?.lang ?? 'empty'} style={styles.matchColumn}>
-            {column.map(c => {
-              const done = matched.has(c.pairId);
-              const bad = miss.includes(c.id);
-              const on = selected?.id === c.id;
-              const border = done ? RIGHT : bad ? WRONG : on ? colors.primary : colors.border;
-              return (
-                <Pressable
-                  key={c.id}
-                  onPress={() => tap(c)}
-                  style={[styles.matchCard, styles.matchCardInColumn, { borderColor: border, backgroundColor: done ? RIGHT + '18' : on ? colors.selected : colors.card, opacity: done ? 0.7 : 1 }]}
-                >
-                  <Text
-                    style={{
-                      color: colors.foreground,
-                      fontFamily: c.lang === 'ar' ? 'Almarai_400Regular' : 'ReadexPro_600SemiBold',
-                      fontSize: 15,
-                      textAlign: 'center',
-                      writingDirection: c.lang === 'ar' ? 'rtl' : 'ltr',
-                    }}
-                  >
-                    {c.text}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        ))}
-      </View>
+      <MatchColumns
+        left={columns.en}
+        right={columns.ar}
+        render={c => (
+          <Text
+            style={{
+              color: colors.foreground,
+              fontFamily: c.lang === 'ar' ? 'Almarai_400Regular' : 'ReadexPro_600SemiBold',
+              fontSize: 15,
+              textAlign: 'center',
+              writingDirection: c.lang === 'ar' ? 'rtl' : 'ltr',
+            }}
+          >
+            {c.text}
+          </Text>
+        )}
+        state={c => ({ done: matched.has(c.pairId), bad: miss.includes(c.id), on: selected?.id === c.id })}
+        onTap={tap}
+      />
+    </View>
+  );
+}
+
+/**
+ * The two columns both matching games share: English (or the picture) left,
+ * Arabic (or the word) right, whatever the UI language. A plain `row` (not
+ * `useUi().row`) on purpose: the app lays out physically left-to-right and
+ * flips by hand, so this never mirrors.
+ */
+function MatchColumns<T extends { id: string }>({
+  left,
+  right,
+  render,
+  state,
+  onTap,
+}: {
+  left: T[];
+  right: T[];
+  render: (c: T) => React.ReactNode;
+  state: (c: T) => { done: boolean; bad: boolean; on: boolean };
+  onTap: (c: T) => void;
+}) {
+  const { colors } = useUi();
+  const column = (cards: T[]) => (
+    <View style={styles.matchColumn}>
+      {cards.map(c => {
+        const { done, bad, on } = state(c);
+        const border = done ? RIGHT : bad ? WRONG : on ? colors.primary : colors.border;
+        return (
+          <Pressable
+            key={c.id}
+            onPress={() => onTap(c)}
+            style={[styles.matchCard, styles.matchCardInColumn, { borderColor: border, backgroundColor: done ? RIGHT + '18' : on ? colors.selected : colors.card, opacity: done ? 0.7 : 1 }]}
+          >
+            {render(c)}
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+  return (
+    <View style={styles.matchColumns}>
+      {column(left)}
+      {column(right)}
     </View>
   );
 }
@@ -448,13 +478,13 @@ export function Scramble({ words, onFinish }: { words: HubWord[]; onFinish: Fini
 
 export function PictureMatch({ words, onFinish }: { words: HubWord[]; onFinish: Finish }) {
   const { colors, t } = useUi();
-  const deck = useMemo(() => buildPictureDeck(words), [words]);
+  const board = useMemo(() => buildPictureBoard(words), [words]);
   const timers = useTimers();
   const [selected, setSelected] = useState<PictureCard | null>(null);
   const [matched, setMatched] = useState<Set<number>>(new Set());
   const [miss, setMiss] = useState<string[]>([]);
   const [moves, setMoves] = useState(0);
-  const pairs = deck.length / 2;
+  const pairs = board.pictures.length;
 
   const tap = (c: PictureCard) => {
     if (matched.has(c.pairId) || miss.length) return;
@@ -477,27 +507,19 @@ export function PictureMatch({ words, onFinish }: { words: HubWord[]; onFinish: 
   return (
     <View style={{ gap: 12 }}>
       <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13, textAlign: 'center' }}>{t('hubMoves', moves)}</Text>
-      <View style={styles.grid}>
-        {deck.map(c => {
-          const done = matched.has(c.pairId);
-          const bad = miss.includes(c.id);
-          const on = selected?.id === c.id;
-          const border = done ? RIGHT : bad ? WRONG : on ? colors.primary : colors.border;
-          return (
-            <Pressable
-              key={c.id}
-              onPress={() => tap(c)}
-              style={[styles.matchCard, { borderColor: border, backgroundColor: done ? RIGHT + '18' : on ? colors.selected : colors.card, opacity: done ? 0.7 : 1 }]}
-            >
-              {c.kind === 'emoji' ? (
-                <Text style={{ fontSize: 32 }}>{c.text}</Text>
-              ) : (
-                <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: 'center' }}>{c.text}</Text>
-              )}
-            </Pressable>
-          );
-        })}
-      </View>
+      <MatchColumns
+        left={board.pictures}
+        right={board.words}
+        render={c =>
+          c.kind === 'emoji' ? (
+            <Text style={{ fontSize: 32 }}>{c.text}</Text>
+          ) : (
+            <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: 'center' }}>{c.text}</Text>
+          )
+        }
+        state={c => ({ done: matched.has(c.pairId), bad: miss.includes(c.id), on: selected?.id === c.id })}
+        onTap={tap}
+      />
     </View>
   );
 }
@@ -580,9 +602,8 @@ const styles = StyleSheet.create({
   optionText: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 20, textAlign: 'center' },
   primary: { borderRadius: 14, paddingVertical: 12, paddingHorizontal: 32 },
   primaryText: { color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 16 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
-  matchCard: { width: '47%', minHeight: 64, borderWidth: 1.5, borderRadius: 14, alignItems: 'center', justifyContent: 'center', padding: 10 },
-  // Match the meaning: two columns of cards. The columns, not the cards, share the width.
+  matchCard: { minHeight: 64, borderWidth: 1.5, borderRadius: 14, alignItems: 'center', justifyContent: 'center', padding: 10 },
+  // Both matching games: two columns of cards. The columns, not the cards, share the width.
   matchColumns: { flexDirection: 'row', gap: 12 },
   matchColumn: { flex: 1, gap: 12 },
   matchCardInColumn: { width: '100%' },

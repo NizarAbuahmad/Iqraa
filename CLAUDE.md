@@ -127,6 +127,12 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   the `scope` option (`KbScope`) — the generator screens, the reopened-material
   scope and `groundedSubjectConflict` do — and derive `lessonId`/`unitId` from
   the grounding you already resolved, never by re-grounding the title.
+  **Scope is not enough either (found 2026-10-15):** every Grade 1 English lesson
+  is "Vocabulary & Grammar" or "Listening & Speaking", so a scoped title still
+  lands every unit on Unit 1. The generator screens hold the tapped or carried
+  lesson's id with `usePickedLesson` and ground with `{ lessonId, scope }`; read
+  request fields off that one grounding with `groundingRequestFields`. A new
+  generator screen needs the same, and a route into one should pass `lessonId`.
 - **Generators branch on the subject NAME.** `isMathContext` tests the string,
   so passing `subject: 'Mathematics'` for a chemistry lesson serves it maths
   questions from the concrete bank, titled with the chemistry lesson. Anything

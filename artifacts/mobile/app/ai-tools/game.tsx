@@ -32,7 +32,7 @@ import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { aiErrorText, isAbortError } from '@/services/ai/aiProvenance';
 import { isolateForeignRuns } from '@/services/mathRender';
 import type { ClassroomActivity, QuizOutput } from '@/services/ai/AIService';
-import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId, resolveGeneratorGrounding, type GeneratorGrounding } from '@/services/kbContext';
+import { groundingRequestFields, resolveGeneratorGrounding, type GeneratorGrounding } from '@/services/kbContext';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
 import { regenerationFields } from '@/services/ai/regeneration';
 import { normalizeQuestionOptions } from '@/services/optionLabels';
@@ -47,6 +47,8 @@ import { ToolHeader } from '@/components/ui/ToolHeader';
 import { readableOn } from '@/services/readableColor';
 import { palette } from '@/constants/colors';
 import { useWarmGrounding } from '@/hooks/useWarmGrounding';
+import { usePickedLesson } from '@/hooks/usePickedLesson';
+import { carriedLessonTopic } from '@/services/pickedLesson';
 import { nextFrame } from '@/services/nextFrame';
 import { useWideScope } from '@/hooks/useWideScope';
 import { DISTRIBUTIONS } from '@/services/coveragePlan';
@@ -77,6 +79,8 @@ export default function ClassGameScreen() {
   // all three and default to grade 10 / mathematics / no topic.
   const params = useLocalSearchParams<{
     gradeIdx?: string; subjectIdx?: string; topic?: string;
+    // The lesson itself (a lesson page, the lesson bar) — `usePickedLesson`.
+    lessonId?: string;
   }>();
   // An index the picker list cannot honour is NOT index 0 — see
   // `scopeFromParams`. Grounding the topic is what recovers the right scope.
@@ -96,11 +100,17 @@ export default function ClassGameScreen() {
   // English. A subject change clears the deck, so the deck always shares it.
   const lang = contentLang(subjects[subjectIdx].id, uiLang);
   const isAr = lang === 'ar';
-  const [topic, setTopic] = useState(() => topicInLang(
-    topicForScope(params, uiLang, teacherScope.defaultScope, teacherScope), uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
-    { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
-  ));
+  const [topic, setTopic] = useState(() => {
+    const initial = topicForScope(params, uiLang, teacherScope.defaultScope, teacherScope);
+    const initialLang = contentLang(subjects[initialScope.subjectIdx].id, uiLang);
+    return (initial.trim() && carriedLessonTopic(params.lessonId, initialLang)) || topicInLang(
+      initial, uiLang, initialLang,
+      { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
+    );
+  });
   useWarmGrounding(topic, lang);
+  const kbScope = { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id };
+  const pickedLesson = usePickedLesson(params.lessonId, topic, kbScope);
   // This screen has no save / reopen and nothing routes to it with a scope, so
   // there is nothing to seed from the route: the scope is whatever the picker
   // reports. The grade / subject check still drops a scope picked under a
@@ -186,13 +196,14 @@ export default function ClassGameScreen() {
     // titles repeat across the grade 1–10 books, so a bare title can be
     // another grade's lesson — and `lessonId` goes to the server with
     // `contextSource: 'curriculum'`, which stores the quiz in the pool every
-    // teacher is served from. Same rule as quiz.tsx.
-    const kbScope = { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id };
+    // teacher is served from. Same rule as quiz.tsx. The picked lesson's id wins
+    // over the title, which cannot tell one unit's "Vocabulary & Grammar" from the next.
     // A wide game never re-grounds its label: a unit title can ground to another
     // grade's lesson, and the lesson would then supply the figures and the notice.
     const grounding: GeneratorGrounding = wide
       ? WIDE_GROUNDING
-      : resolveGeneratorGrounding(trimmed, lang as 'ar' | 'en', { scope: kbScope });
+      : resolveGeneratorGrounding(trimmed, lang as 'ar' | 'en', { scope: kbScope, lessonId: pickedLesson.lessonId });
+    const lessonFields = wide ? undefined : groundingRequestFields(grounding);
     setGrounded(grounding.grounded);
     setGroundedLesson(grounding.lesson ? (isAr ? grounding.lesson.titleAr : grounding.lesson.titleEn) : '');
     setWideLabel(wide ? scopeLabel(wideScope.scopeSel!, lang as 'ar' | 'en') : null);
@@ -218,12 +229,12 @@ export default function ClassGameScreen() {
         numQuestions: questionCount,
         questionTypes: ['multiple_choice'],
         language: isAr ? 'arabic' : 'english',
-        additionalContext: wide ? undefined : buildGeneratorContext(trimmed, lang as 'ar' | 'en', { scope: kbScope }),
-        unitId: wide ? undefined : generatorUnitId(trimmed, lang as 'ar' | 'en', kbScope),
-        lessonId: wide ? undefined : generatorLessonId(trimmed, lang as 'ar' | 'en', kbScope),
+        additionalContext: lessonFields?.additionalContext,
+        unitId: lessonFields?.unitId,
+        lessonId: lessonFields?.lessonId,
         // The quiz screen asks for the book's figures; this one did not, so
         // a game on a figure-heavy lesson had none to show.
-        bookFigureCount: wide ? undefined : generatorFigureCount(trimmed, lang as 'ar' | 'en', kbScope),
+        bookFigureCount: lessonFields?.bookFigureCount,
         // Nothing here but the lesson the teacher picked, so the quiz behind
         // the deck can be shared with every other teacher who picks it.
         contextSource: 'curriculum',
@@ -362,6 +373,7 @@ export default function ClassGameScreen() {
             gradeId={grades[gradeIdx].id}
             value={topic}
             onChange={v => { setTopic(v); setError(''); }}
+            onSelectionDetail={pickedLesson.onSelectionDetail}
             allowedKinds={['lesson', 'unit', 'semester', 'book']}
             onScopeChange={wideScope.setScopeSel}
             offlineWideScope

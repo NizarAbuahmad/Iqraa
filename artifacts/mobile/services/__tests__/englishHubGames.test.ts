@@ -11,7 +11,7 @@ import {
   badgesEarned,
   buildListenRound,
   buildMatchColumns,
-  buildPictureDeck,
+  buildPictureBoard,
   buildScrambleRound,
   buildSpeakingRound,
   buildSpellRound,
@@ -166,11 +166,13 @@ describe('picture matching', () => {
     for (const lesson of ENGLISH_HUB_LESSONS) {
       if (!lessonHasPictureMatch(lesson.words)) continue;
       sawAny = true;
-      const deck = buildPictureDeck(lesson.words, makeRng(3));
-      assert.ok(deck.length >= 8 && deck.length % 2 === 0, lesson.id);
-      for (const emoji of deck.filter(c => c.kind === 'emoji')) {
-        const word = deck.find(c => c.kind === 'word' && c.pairId === emoji.pairId)!;
+      const { pictures, words } = buildPictureBoard(lesson.words, makeRng(3));
+      assert.ok(pictures.length >= 4 && pictures.length === words.length, lesson.id);
+      assert.ok(pictures.every(c => c.kind === 'emoji') && words.every(c => c.kind === 'word'), lesson.id);
+      for (const emoji of pictures) {
+        const word = words.find(c => c.pairId === emoji.pairId)!;
         assert.ok(lesson.words.some(w => w.en === word.text), `${word.text} not in ${lesson.id}`);
+        assert.equal(emoji.text, wordPicture(word.text));
         assert.ok(isPictureMatch(emoji, word));
         assert.ok(!isPictureMatch(emoji, emoji));
       }
@@ -184,14 +186,57 @@ describe('picture matching', () => {
       assert.equal(lessonHasPictureMatch(lesson.words), picturable.length >= 4, lesson.id);
     }
   });
+
+  it('never shows two different words the same picture', () => {
+    const seen = new Map<string, string>();
+    for (const lesson of ENGLISH_HUB_LESSONS) {
+      for (const w of lesson.words) {
+        const p = wordPicture(w.en);
+        if (!p) continue;
+        const prev = seen.get(p);
+        assert.ok(!prev || prev === w.en, `${prev} and ${w.en} are both ${p}`);
+        seen.set(p, w.en);
+      }
+    }
+  });
+
+  // From a Grade 1 teacher's review, 2026-10-15.
+  it('offers Grade 1 Units 3 and 5 (classroom, body), which had too few pictures', () => {
+    for (const unit of [3, 5]) {
+      const lesson = ENGLISH_HUB_LESSONS.find(l => l.grade === 1 && l.unitNumber === unit)!;
+      assert.ok(lessonHasPictureMatch(lesson.words), `G1 unit ${unit}`);
+    }
+  });
+
+  it('does not show a coat for "jacket" — 🧥 is a coat, and a jacket is shorter', () => {
+    assert.equal(wordPicture('jacket'), null);
+    assert.equal(wordPicture('coat'), '🧥');
+    assert.equal(wordPicture('T-shirt'), '👕');
+  });
+
+  it('shows a plural word as more than one thing', () => {
+    // Plural in form but one picture already shows several, or one object.
+    const oneGlyphIsEnough = new Set(['socks', 'jeans', 'glasses', 'scissors', 'eyes', 'grapes', 'noodles', 'olives', 'hands']);
+    const notPlural = new Set(['dress', 'bus', 'the United Arab Emirates']);
+    const glyphs = (s: string) => [...new Intl.Segmenter('en', { granularity: 'grapheme' }).segment(s)].length;
+    let checked = 0;
+    for (const w of new Set(ENGLISH_HUB_LESSONS.flatMap(l => l.words.map(x => x.en)))) {
+      const p = wordPicture(w);
+      if (!p || !/(s|feet|teeth)$/.test(w) || oneGlyphIsEnough.has(w) || notPlural.has(w)) continue;
+      checked += 1;
+      assert.ok(glyphs(p) >= 2, `${w} is plural but its picture ${p} shows one`);
+    }
+    for (const w of ['apples', 'cakes', 'carrots', 'lemons']) assert.ok(glyphs(wordPicture(w)!) >= 2, w);
+    assert.ok(checked >= 10, `only ${checked} plural words checked`);
+  });
 });
 
 describe('flashcard pictures', () => {
   // A teacher's note (2026-10-15): the book teaches each word as a picture with
   // the word under it, so the flashcard shows the picture the hub already has.
   it('gives the curated picture for a picturable word, and nothing otherwise', () => {
-    assert.equal(wordPicture('apples'), '🍎');
-    assert.equal(wordPicture('cakes'), '🎂');
+    assert.equal(wordPicture('apples'), '🍎🍎');
+    assert.equal(wordPicture('cakes'), '🍰🍰');
     assert.equal(wordPicture('carefully'), null);
   });
 
