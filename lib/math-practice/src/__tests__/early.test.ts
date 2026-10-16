@@ -809,11 +809,23 @@ describe('money, time and measurement: answers recomputed', () => {
       const p = item.promptAr!, n = nums(p), a = Number(item.answer);
       if (has(p, 'كم قطعة')) assert.equal(a * n[0]!, n[1]); else if (has(p, 'و ') && n.length === 4) assert.equal(a, n[0]! * n[1]! + n[2]! * n[3]!); else assert.equal(a, n[0]! * n[1]!);
     }
-    for (const item of draws('dinar')) {
+    const din = new Set<string>();
+    for (const item of draws('dinar', 300)) {
       const p = item.promptAr!, a = Number(item.answer);
       const words = (w: string) => (w === 'دينار واحد' ? 1 : w === 'ديناران' ? 2 : Number(w.match(/\d+/)![0]));
+      assert.ok(has(p, 'الدينار الواحد = 100 قرش'), p);
+      if (has(p, 'يعيد لها')) { din.add('change'); const price = Number(p.match(/بـ (\d+) قرشًا/)![1]); assert.ok(price >= 11, p); assert.equal(a + price, 100, p); continue; }
+      if (has(p, 'ينقصه')) {
+        din.add('short');
+        const price = words(p.match(/ثمن لعبة (.+?)،/)![1]!), m = p.match(/ومع رامي (\d+) (قرشًا|قروش|قرش)\./)!, have = Number(m[1]);
+        assert.equal(m[2], have % 100 >= 3 && have % 100 <= 10 ? 'قروش' : have % 100 <= 2 ? 'قرش' : 'قرشًا', p);
+        assert.equal(a + have, price * 100, p); assert.ok(a > 0, p);
+        continue;
+      }
+      din.add('convert');
       if (has(p, 'كم قرشًا')) assert.equal(a, words(p.match(/في (.+?)؟/)![1]!) * 100); else assert.equal(a * 100, Number(p.match(/في (\d+) قرش/)![1]));
     }
+    assert.equal(din.size, 3, [...din].join(', '));
     for (const item of draws('banknotes', 300)) {
       const p = item.promptAr!, a = Number(item.answer);
       const money = (s: string) => (s.includes('دينار واحد') ? 1 : s.includes('ديناران') ? 2 : Number(s.match(/\d+/)![0]));
@@ -826,7 +838,7 @@ describe('money, time and measurement: answers recomputed', () => {
   it('days, months, clock times, calendar', () => {
     const days = new Set<string>();
     for (const item of draws('week_days', 300)) {
-      const p = item.promptAr!, i = DAYS.findIndex(d => p.includes(`يوم ${d}`));
+      const p = item.promptAr!, i = DAYS.findIndex(d => p.includes(` يوم ${d}`));
       days.add(has(p, 'ترتيب') ? 'place' : has(p, 'أمس') ? 'two steps' : has(p, 'كم يومًا') ? 'count' : 'next');
       if (has(p, 'ترتيب')) { assert.equal(item.answer, ORD[i], p); continue; }
       if (has(p, 'إذا كان أمس')) { assert.equal(item.answer, DAYS[(i + 2) % 7], p); continue; }
@@ -902,13 +914,20 @@ describe('money, time and measurement: answers recomputed', () => {
       const kinds = new Set<string>();
       for (const item of draws(id)) {
         const p = item.promptAr!, n = nums(p), v = Number(item.answer);
+        if (/قصير|صغير/.test(p)) {
+          // a big non-standard unit is two small ones
+          kinds.add('small unit');
+          assert.ok(has(p, 'قلمين قصيرين') || has(p, 'مكعبين صغيرين') || has(p, 'كوبين صغيرين'), p);
+          assert.equal(n.length, 1, p); assert.equal(v, 2 * n[0]!, p); assert.ok(n[0]! >= 3 && n[0]! <= 10, p);
+          continue;
+        }
         assert.equal(new Set(n).size, n.length, p);
         if (has(p, 'ثلاثة أشياء')) { const up = has(p, 'تصاعديًا'); kinds.add(`order ${up}`); assert.equal(n.length, 3); assert.equal(v, up ? Math.min(...n) : Math.max(...n)); continue; }
         const [a, b] = n;
         kinds.add(has(p, 'بكم') ? 'difference' : 'larger');
         assert.equal(v, has(p, 'بكم') ? Math.abs(a! - b!) : Math.max(a!, b!));
       }
-      assert.equal(kinds.size, 4, `${id}: ${[...kinds]}`);
+      assert.equal(kinds.size, 5, `${id}: ${[...kinds]}`);
     }
     for (const item of draws('cm_lengths', 300)) {
       const p = item.promptAr!, n = nums(p), a = Number(item.answer);
@@ -918,13 +937,26 @@ describe('money, time and measurement: answers recomputed', () => {
       const kinds = new Set<string>(), big = ['متر', 'كيلوغرام', 'لتر'][id === 'units_m_g2' ? 0 : id === 'units_kg_g2' ? 1 : 2];
       for (const item of draws(id)) {
         const p = item.promptAr!, n = nums(p), a = Number(item.answer);
+        if (has(p, 'الوحدة المناسبة')) {
+          // small things in the small unit, big things in the big one
+          kinds.add('fit');
+          const SMALL = ['قلم الرصاص', 'الممحاة', 'إصبع اليد', 'تفاحة', 'ملعقة', 'ملعقة دواء', 'قطّارة العين', 'فنجان قهوة صغير'];
+          const BIG = ['ملعب المدرسة', 'ممر المدرسة', 'سور الحديقة', 'كيس أرز كبير', 'بطيخة كبيرة', 'حقيبة سفر', 'خزان ماء', 'حوض استحمام', 'دلو كبير'];
+          const thing = p.match(/لقياس (?:طول|كتلة|كمية الماء في) (.+?):/)![1]!, small = ({ 'متر': 'سنتيمتر', 'كيلوغرام': 'غرام', 'لتر': 'مليلتر' } as Record<string, string>)[big!]!;
+          assert.ok(SMALL.includes(thing) !== BIG.includes(thing), p);
+          assert.equal(item.answer, `ال${BIG.includes(thing) ? big : small}`, p);
+          assert.ok(item.wrongs.includes(`ال${BIG.includes(thing) ? small : big}`), p);
+          continue;
+        }
         assert.equal(n[0], 1); assert.equal(n[1], f);
-        if (has(p, 'نضيف')) { kinds.add('complete'); assert.equal(a + n[2]!, f * n[3]!); assert.equal(n[3], 1); assert.ok(n[2]! > 0 && n[2]! < f); }
-        else if (has(p, ` ${big} و `)) { kinds.add('mixed'); assert.equal(a, n[2]! * f + n[3]!); assert.ok(n[3]! < f); }
-        else if (has(p, 'في ' + n[2] + ' ' + big)) { kinds.add('to small'); assert.equal(a, n[2]! * f); }
+        // «كم مترًا في 900 سنتيمتر؟» asks for the big unit; «كم سنتيمترًا في 5 أمتار؟» for the small one.
+        const asksBig = has(p, `كم ${({ 'متر': 'مترًا', 'كيلوغرام': 'كيلوغرامًا', 'لتر': 'لترًا' } as Record<string, string>)[big!]}`);
+        if (has(p, 'نضيف')) { kinds.add('complete'); assert.equal(a + n[2]!, f); assert.ok(has(p, `على ${big} واحد`), p); assert.ok(n[2]! > 0 && n[2]! < f); }
+        else if (n.length === 4) { kinds.add('mixed'); assert.equal(a, n[2]! * f + n[3]!); assert.ok(n[3]! < f); }
+        else if (!asksBig) { kinds.add('to small'); assert.equal(a, n[2]! * f); }
         else { kinds.add('to big'); assert.equal(a * f, n[2]); }
       }
-      assert.equal(kinds.size, 4, `${id}: ${[...kinds]}`);
+      assert.equal(kinds.size, 5, `${id}: ${[...kinds]}`);
     }
   });
 });

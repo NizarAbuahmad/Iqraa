@@ -132,7 +132,7 @@ describe('geometry generators: answers recomputed from the stem', () => {
         // through the centre: a diameter; from the centre to the circle: a radius; any other segment between two points of it: a chord
         saw('circle_parts', 'name');
         assert.equal(item.answer, has(p, 'وتمر بمركزها') ? 'القطر' : has(p, 'ومركزها') ? 'نصف القطر' : 'الوتر', p);
-        assert.ok(item.wrongs.includes('المركز') || item.answer === 'المركز', p);
+        assert.ok(item.wrongs.includes('المركز'), `the centre is offered too: ${p}`);
         continue;
       }
       if (has(p, 'المثلث MAB')) {
@@ -361,7 +361,7 @@ describe('geometry generators: answers recomputed from the stem', () => {
         assert.equal(Number(m[1]) * Number(item.answer) + Number(m[2]), Number(m[3]), item.promptAr);
       } else {
         const a = n[0]!;
-        assert.equal(dg(item.answer), has(item.promptAr!, 'متحالفتان') ? 180 - a : a, item.promptAr);
+        assert.equal(dg(item.answer), has(item.promptAr!, 'متحالفتين') ? 180 - a : a, item.promptAr);
       }
     }
     for (const item of draws('triangle_angle_sum')) {
@@ -888,9 +888,11 @@ describe('geometry generators: answers recomputed from the stem', () => {
 
   it('units and time', () => {
     // «حوّل N A إلى B.» either way; «كم Xًا في a … و b …؟» (compound); «… بقي …؟» (what is left after taking b away)
-    const FACTOR: Record<string, number> = { 'متر>سنتيمتر': 100, 'كيلومتر>متر': 1000, 'كيلوغرام>غرام': 1000, 'لتر>مليلتر': 1000 };
+    // Units by symbol, the litre by its word in any of its counted forms.
+    const FACTOR: Record<string, number> = { 'م>سم': 100, 'كم>م': 1000, 'كغ>غ': 1000, 'لتر>مل': 1000 };
+    const unit = (u: string) => (/^لتر/.test(u) ? 'لتر' : u);
     const PER_BIG: Record<string, number> = { 'سنتيمترًا': 100, 'مترًا': 1000, 'غرامًا': 1000, 'مليلترًا': 1000 };
-    const FAMILY: Record<string, string[]> = { units_m: ['متر'], units_km: ['متر'], units_mass: ['غرام'], units_volume: ['لتر'], units_length: ['متر'], units_mass_g45: ['غرام'], units_capacity: ['لتر'], units_capacity_length: ['متر', 'لتر'] };
+    const FAMILY: Record<string, string[]> = { units_m: ['سم', 'سنتيمتر'], units_km: [' كم', 'مترًا'], units_mass: [' كغ', ' غ', 'غرام'], units_volume: ['لتر', ' مل'], units_length: ['سم', 'سنتيمتر', ' كم'], units_mass_g45: [' كغ', ' غ', 'غرام'], units_capacity: ['لتر', ' مل'], units_capacity_length: ['سم', 'سنتيمتر', 'لتر', ' مل'] };
     for (const id of Object.keys(FAMILY)) {
       const unitKinds = new Set<string>();
       for (const item of draws(id)) {
@@ -901,7 +903,7 @@ describe('geometry generators: answers recomputed from the stem', () => {
         const conv = p.match(/^حوّل \d+ (\S+) إلى (\S+)\.$/);
         let want: number;
         if (conv) {
-          const down = FACTOR[`${conv[1]}>${conv[2]}`], up = FACTOR[`${conv[2]}>${conv[1]}`];
+          const down = FACTOR[`${unit(conv[1]!)}>${unit(conv[2]!)}`], up = FACTOR[`${unit(conv[2]!)}>${unit(conv[1]!)}`];
           assert.ok(down || up, p);
           unitKinds.add(down ? 'down' : 'up');
           want = down ? n[0]! * down : n[0]! / up!;

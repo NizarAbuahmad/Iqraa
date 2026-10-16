@@ -9,7 +9,7 @@
  * Lengths are in cm and areas in cm² throughout, written into the stem, so an
  * answer is a bare number (or «Nπ» when the lesson works in terms of π).
  */
-import { gcd, int, nz, pick, sfrac, signed, tier, wrongsFrom, type Draft, type Rng, type Topic } from './topicKit.ts';
+import { gcd, int, nz, pick, sfrac, signed, tamyiz, tier, wrongsFrom, type Draft, type Rng, type Topic } from './topicKit.ts';
 
 type D = 'easy' | 'medium' | 'hard';
 type Gen = (c: { rng: Rng; diff: D; grade: number }) => Draft;
@@ -37,6 +37,7 @@ const names = (rng: Rng, ans: string, all: string[]) => shuffle(rng, all.filter(
 const minAr = (n: number) => (n === 1 ? 'دقيقة واحدة' : n === 2 ? 'دقيقتين' : n <= 10 ? `${n} دقائق` : `${n} دقيقة`);
 const hourAr = (n: number) => (n === 1 ? 'ساعة واحدة' : n === 2 ? 'ساعتين' : n <= 10 ? `${n} ساعات` : `${n} ساعة`);
 const unitAr = (n: number) => (n === 1 ? 'وحدة واحدة' : n === 2 ? 'وحدتين' : n <= 10 ? `${n} وحدات` : `${n} وحدة`);
+const unitEn = (n: number) => (n === 1 ? '1 unit' : `${n} units`);
 const span = (diff: D, a: number, b: number, c: number) => (diff === 'easy' ? a : diff === 'medium' ? b : c);
 /** Signed whole-number options that never offer 0. */
 const sgn = (ans: number, cands: number[]) =>
@@ -187,9 +188,9 @@ const rectPrism = T('prism_rect', /^حجم المنشور الرباعي ومس�
  * sentence so naming them is one kind of question; the centre stays an option.
  */
 const CIRCLE_PARTS: Array<[string, string, string]> = [
-  ['نصف القطر', 'نقطة على الدائرة ومركزها', 'a point on the circle and its centre'],
-  ['القطر', 'نقطتين على الدائرة وتمر بمركزها', 'two points on the circle, passing through its centre'],
-  ['الوتر', 'نقطتين على الدائرة ولا تمر بمركزها', 'two points on the circle, not passing through its centre'],
+  ['نصف القطر', 'نقطة على الدائرة ومركزها', 'joins a point on the circle to its centre'],
+  ['القطر', 'نقطتين على الدائرة وتمر بمركزها', 'joins two points on the circle and passes through its centre'],
+  ['الوتر', 'نقطتين على الدائرة ولا تمر بمركزها', 'joins two points on the circle without passing through its centre'],
 ];
 const CIRCLE_PART_NAMES = ['المركز', 'نصف القطر', 'القطر', 'الوتر'];
 const circleParts = T('circle_parts', /^الدائره واجزاؤها$/, [6, 6], ({ rng, diff }) => {
@@ -200,7 +201,7 @@ const circleParts = T('circle_parts', /^الدائره واجزاؤها$/, [6, 6
   if (k === 1) return { eq: `${r}`, answer: String(2 * r), wrongs: pos(2 * r, [r, r * r, 4 * r, r + 2]), ar: `نصف قطر دائرة ${r} سم. ما طول قطرها؟`, en: `A circle has radius ${r} cm. What is its diameter?` };
   if (k === 3) {
     const [name, ar, en] = pick(rng, CIRCLE_PARTS);
-    return { eq: `part ${name}`, answer: name, wrongs: CIRCLE_PART_NAMES.filter(n => n !== name), ar: `ما اسم القطعة المستقيمة التي تصل بين ${ar}؟`, en: `What is the segment joining ${en} called?` };
+    return { eq: `part ${name}`, answer: name, wrongs: CIRCLE_PART_NAMES.filter(n => n !== name), ar: `ما اسم القطعة المستقيمة التي تصل بين ${ar}؟`, en: `What do we call the segment that ${en}?` };
   }
   if (k === 4) {
     const rr = int(rng, 3, span(diff, 9, 15, 25)), c = int(rng, 2, 2 * rr - 1), P = 2 * rr + c;
@@ -552,7 +553,7 @@ const transversal = T('parallel_transversal', /^المستقيمات المتو�
     return { eq: `eight ${b}, ${large}`, answer: `${ans}°`, wrongs: deg(ans, [180 - ans, 360 - b, 90, b + 10, ans + 20]), ar: `قطع مستقيمٌ مستقيمين متوازيين فتكوّنت ثماني زوايا، قياس إحداها ${b}°. ما قياس ${large ? 'أكبر' : 'أصغر'} زاوية من هذه الزوايا الثماني؟`, en: `A line cuts two parallel lines, making eight angles. One of them measures ${b}°. What does the ${large ? 'largest' : 'smallest'} of the eight angles measure?` };
   }
   const a = int(rng, 40, 140);
-  const rel: Array<[string, string, number]> = [['متناظرتان', 'corresponding', a], ['متبادلتان داخليًا', 'alternate interior', a], ['متحالفتان (داخليتان على جهة واحدة من القاطع)', 'co-interior (same-side interior)', 180 - a], ['متبادلتان خارجيًا', 'alternate exterior', a]];
+  const rel: Array<[string, string, number]> = [['متناظرتين', 'corresponding', a], ['متبادلتين داخليًا', 'alternate interior', a], ['متحالفتين (داخليتين على جهة واحدة من القاطع)', 'co-interior (same-side interior)', 180 - a], ['متبادلتين خارجيًا', 'alternate exterior', a]];
   const [ar, en, ans] = pick(rng, rel);
   if (diff === 'hard' && rng() < 0.5 && ans === a) {
     const x = int(rng, 5, 25), p = int(rng, 2, 4), c = int(rng, 1, 20);
@@ -794,12 +795,12 @@ const translate = (id: string, match: RegExp, grade: number) => T(id, match, [gr
   const ans: [number, number] = [x + dx, y + dy];
   // 0 the image; 1 the point before the translation, from its image; 2 the translation itself, from a point and its image.
   const k = pick(rng, [0, 1, 2]);
-  if (k === 1) return { eq: `pre ${pt(...ans)}, ${dx}, ${dy}`, answer: pt(x, y), wrongs: ptOpts([x, y], ([[ans[0] + dx, ans[1] + dy], [ans[0] - dy, ans[1] - dx], [x, ans[1]], [ans[0], y]] as Array<[number, number]>).filter(c => grade !== 5 || (c[0] > 0 && c[1] > 0))), ar: `بعد انسحاب ${unitAr(Math.abs(dx))} إلى ${hDir} و ${unitAr(Math.abs(dy))} إلى ${vDir} وصلت النقطة A إلى الموقع ${pt(...ans)}. أين كانت النقطة A قبل الانسحاب؟`, en: `After a translation of ${Math.abs(dx)} units ${hDirEn} and ${Math.abs(dy)} units ${vDirEn}, point A is at ${pt(...ans)}. Where was A before the translation?` };
+  if (k === 1) return { eq: `pre ${pt(...ans)}, ${dx}, ${dy}`, answer: pt(x, y), wrongs: ptOpts([x, y], ([[ans[0] + dx, ans[1] + dy], [ans[0] - dy, ans[1] - dx], [x, ans[1]], [ans[0], y]] as Array<[number, number]>).filter(c => grade !== 5 || (c[0] > 0 && c[1] > 0))), ar: `بعد انسحاب ${unitAr(Math.abs(dx))} إلى ${hDir} و ${unitAr(Math.abs(dy))} إلى ${vDir} وصلت النقطة A إلى الموقع ${pt(...ans)}. أين كانت النقطة A قبل الانسحاب؟`, en: `After a translation of ${unitEn(Math.abs(dx))} ${hDirEn} and ${unitEn(Math.abs(dy))} ${vDirEn}, point A is at ${pt(...ans)}. Where was A before the translation?` };
   if (k === 2) {
     const say = (h: number, v: number) => `${unitAr(Math.abs(h))} إلى ${h >= 0 ? 'اليمين' : 'اليسار'} و ${unitAr(Math.abs(v))} إلى ${v >= 0 ? 'الأعلى' : 'الأسفل'}`;
     return { eq: `move ${pt(x, y)}, ${pt(...ans)}`, answer: say(dx, dy), wrongs: wrongsFrom(say(dx, dy), [say(-dx, -dy), say(dy, dx), say(-dx, dy), say(dx, -dy)], j => say(dx + Math.sign(dx) * Math.abs(j), dy)), ar: `انسحبت النقطة ${pt(x, y)} فكانت صورتها ${pt(...ans)}. بكم وحدة انسحبت أفقيًا ورأسيًا، وفي أي اتجاه؟`, en: `The point ${pt(x, y)} was translated to ${pt(...ans)}. By how many units did it move across and up or down, and in which directions?` };
   }
-  return { eq: pt(x, y), answer: pt(...ans), wrongs: ptOpts(ans, [[x - dx, y - dy], [x + dy, y + dx], [x + dx, y], [x, y + dy], [x - dx, y + dy]]), ar: `انسحبت النقطة ${pt(x, y)} بمقدار ${unitAr(Math.abs(dx))} إلى ${hDir} و ${unitAr(Math.abs(dy))} إلى ${vDir}. ما إحداثيات صورتها؟`, en: `The point ${pt(x, y)} is translated ${Math.abs(dx)} units ${hDirEn} and ${Math.abs(dy)} units ${vDirEn}. What are the coordinates of its image?` };
+  return { eq: pt(x, y), answer: pt(...ans), wrongs: ptOpts(ans, ([[x - dx, y - dy], [x + dy, y + dx], [x + dx, y], [x, y + dy], [x - dx, y + dy]] as Array<[number, number]>).filter(c => grade !== 5 || (c[0] > 0 && c[1] > 0))), ar: `انسحبت النقطة ${pt(x, y)} بمقدار ${unitAr(Math.abs(dx))} إلى ${hDir} و ${unitAr(Math.abs(dy))} إلى ${vDir}. ما إحداثيات صورتها؟`, en: `The point ${pt(x, y)} is translated ${unitEn(Math.abs(dx))} ${hDirEn} and ${unitEn(Math.abs(dy))} ${vDirEn}. What are the coordinates of its image?` };
 });
 
 const reflectAxes = T('reflect_axes', /^الانعكاس في المستوي الاحداثي$/, [6, 6], ({ rng }) => {
@@ -824,7 +825,7 @@ const coordPlane6 = T('coord_plane_g6', /^المستوي الاحداثي$/, [6,
   if (k === 1) {
     const dx = int(rng, 3, 9), dy = int(rng, 3, 9), sx = rng() < 0.5 ? 1 : -1, sy = rng() < 0.5 ? 1 : -1;
     const ans: [number, number] = [sx * dx, sy * dy];
-    return { eq: `walk ${pt(...ans)}`, answer: pt(...ans), wrongs: ptOpts(ans, [[sy * dy, sx * dx], [-sx * dx, sy * dy], [sx * dx, -sy * dy], [-sx * dx, -sy * dy]]), ar: `انطلقت نملة من نقطة الأصل، فتحرّكت ${dx} وحدات إلى ${sx > 0 ? 'اليمين' : 'اليسار'} ثم ${dy} وحدات إلى ${sy > 0 ? 'الأعلى' : 'الأسفل'}. ما إحداثيات النقطة التي وصلت إليها؟`, en: `An ant starts at the origin and moves ${dx} units ${sx > 0 ? 'right' : 'left'}, then ${dy} units ${sy > 0 ? 'up' : 'down'}. What are the coordinates of the point it reaches?` };
+    return { eq: `walk ${pt(...ans)}`, answer: pt(...ans), wrongs: ptOpts(ans, [[sy * dy, sx * dx], [-sx * dx, sy * dy], [sx * dx, -sy * dy], [-sx * dx, -sy * dy]]), ar: `انطلقت نملة من نقطة الأصل، فتحرّكت ${dx} وحدات إلى ${sx > 0 ? 'اليمين' : 'اليسار'} ثم ${dy} وحدات إلى ${sy > 0 ? 'الأعلى' : 'الأسفل'}. ما إحداثيات النقطة التي وصلت إليها؟`, en: `An ant starts at the origin and moves ${unitEn(dx)} ${sx > 0 ? 'right' : 'left'}, then ${unitEn(dy)} ${sy > 0 ? 'up' : 'down'}. What are the coordinates of the point it reaches?` };
   }
   if (k === 2) {
     const a = -int(rng, 1, 9), b = int(rng, 1, 9), c = (rng() < 0.5 ? -1 : 1) * int(rng, 1, 9), vert = rng() < 0.5;
@@ -844,7 +845,7 @@ const coordPlane5 = T('coord_plane_g5', /^المستوي الاحداثي$/, [5,
   if (k === 1) return { eq: pt(x, y), answer: String(y), wrongs: pos(y, [x, y + 1, x * y, x + y]), ar: `ما الإحداثي الصادي للنقطة (${x} ، ${y})؟`, en: `What is the y-coordinate of the point (${x}, ${y})?` };
   if (k === 3) {
     const dx = int(rng, 1, 9), dy = int(rng, 1, 9), ans: [number, number] = [dx, dy];
-    return { eq: `walk ${pt(dx, dy)}`, answer: pt(...ans), wrongs: ptOpts(ans, [[dy, dx], [dx, 0], [0, dy], [dx + dy, dy], [dx, dx + dy]]), ar: `انطلق سامر من نقطة الأصل، فتحرّك ${unitAr(dx)} إلى اليمين ثم ${unitAr(dy)} إلى الأعلى. ما إحداثيات النقطة التي وصل إليها؟`, en: `Samer starts at the origin and moves ${dx} units right, then ${dy} units up. What are the coordinates of the point he reaches?` };
+    return { eq: `walk ${pt(dx, dy)}`, answer: pt(...ans), wrongs: ptOpts(ans, [[dy, dx], [dx, 0], [0, dy], [dx + dy, dy], [dx, dx + dy]]), ar: `انطلق سامر من نقطة الأصل، فتحرّك ${unitAr(dx)} إلى اليمين ثم ${unitAr(dy)} إلى الأعلى. ما إحداثيات النقطة التي وصل إليها؟`, en: `Samer starts at the origin and moves ${unitEn(dx)} right, then ${unitEn(dy)} up. What are the coordinates of the point he reaches?` };
   }
   if (k === 4) {
     const x1 = int(rng, 1, 5), x2 = x1 + int(rng, 2, 4), y1 = int(rng, 1, 5), y2 = y1 + int(rng, 2, 4);
@@ -1108,7 +1109,7 @@ const trigApplications = T('trig_applications', /^تطبيقات النسب ال
   if (k === 5) {
     // cos A = foot / ladder = 1/2 gives 60°; sin A = top / ladder = 1/2 gives 30°.
     const h = int(rng, 2, 9), foot = rng() < 0.5, ans = foot ? 60 : 30;
-    return { eq: `lean ${h}, ${foot}`, answer: `${ans}°`, wrongs: deg(ans, [90 - ans, 45, 90, 120]), ar: `سلم طوله ${2 * h} م يستند إلى حائط رأسي، ${foot ? `وتبعد قاعدته ${h} م عن الحائط` : `وتصل قمته إلى ارتفاع ${h} م عن الأرض`}. ما قياس الزاوية التي يصنعها السلم مع الأرض؟`, en: `A ${2 * h} m ladder leans on a vertical wall${foot ? `, its foot ${h} m from the wall` : `, its top ${h} m above the ground`}. What angle does the ladder make with the ground?` };
+    return { eq: `lean ${h}, ${foot}`, answer: `${ans}°`, wrongs: deg(ans, [90 - ans, 45, 90, 120]), ar: `سلم طوله ${2 * h} م يستند إلى حائط رأسي، ${foot ? `وتبعد قاعدته ${h} م عن الحائط` : `وتصل قمته إلى ارتفاع ${h} م عن الأرض`}. ما قياس الزاوية التي يصنعها السلم مع الأرض؟`, en: `A ladder ${2 * h} m long leans on a vertical wall${foot ? `, its foot ${h} m from the wall` : `, its top ${h} m above the ground`}. What angle does the ladder make with the ground?` };
   }
   const s = int(rng, 2, 12);
   return { eq: `${s}√2`, answer: String(s), wrongs: pos(s, [2 * s, s + 2, s * s, s - 1]), ar: `مثلث ABC قائم الزاوية في C، فيه A = 45° والوتر AB = ${s}√2 سم. ما طول الضلع BC؟`, en: `Triangle ABC is right-angled at C with A = 45° and hypotenuse AB = ${s}√2 cm. What is BC?` };
@@ -1219,50 +1220,58 @@ const UNIT_WORDS: Record<string, { big: string; small: string; acc: string; stor
   length_m: { big: 'م', small: 'سم', acc: 'سنتيمترًا', story: (n, p) => [`شريط طوله ${n} م، قُصَّت منه قطعة طولها ${p} سم. كم سنتيمترًا بقي من الشريط؟`, `A ribbon is ${n} m long and a piece ${p} cm long is cut off. How many centimetres of ribbon are left?`] },
   length_km: { big: 'كم', small: 'م', acc: 'مترًا', story: (n, p) => [`يريد عدّاء أن يركض مسافة ${n} كم، وقد ركض منها ${p} م. كم مترًا بقي عليه أن يركض؟`, `A runner wants to run ${n} km and has run ${p} m of it. How many metres are left to run?`] },
   mass: { big: 'كغ', small: 'غ', acc: 'غرامًا', story: (n, p) => [`في كيس ${n} كغ من الأرز، استُعمل منه ${p} غ. كم غرامًا بقي في الكيس؟`, `A bag holds ${n} kg of rice and ${p} g of it is used. How many grams are left in the bag?`] },
-  volume: { big: 'لتر', small: 'مل', acc: 'مليلترًا', story: (n, p) => [`في إبريق ${n} لتر من الماء، سُكب منه ${p} مل. كم مليلترًا بقي في الإبريق؟`, `A jug holds ${n} L of water and ${p} mL is poured out. How many millilitres are left in the jug?`] },
+  volume: { big: 'لتر', small: 'مل', acc: 'مليلترًا', story: (n, p) => [`في إبريق ${bigAmount('volume', n)} من الماء، سُكب منه ${p} مل. كم مليلترًا بقي في الإبريق؟`, `A jug holds ${n} L of water and ${p} mL is poured out. How many millilitres are left in the jug?`] },
 };
+/**
+ * A whole number of the big unit. Every unit is written with its symbol except
+ * the litre, whose word agrees with the number: «5 لترات», «12 لترًا», «300 لتر».
+ * One and two take their own words, so a litre count starts at 3 (`bigMin`).
+ */
+const bigAmount = (set: string, n: number) => (set === 'volume' ? `${n} ${tamyiz(n, 'لترات', 'لترًا', 'لتر')}` : `${n} ${UNIT_WORDS[set]!.big}`);
+const bigTarget = (set: string) => (set === 'volume' ? 'لترات' : UNIT_WORDS[set]!.big);
+const bigMin = (set: string, min: number) => (set === 'volume' ? Math.max(3, min) : min);
 /** «كم غرامًا في 3 كغ و 250 غ؟» — a compound measure written in the small unit. */
 const unitCompound = (rng: Rng, diff: D, set: string): Draft => {
   const [, , bigEn, smallEn, f] = UNIT_SETS[set]!, w = UNIT_WORDS[set]!;
-  const a = int(rng, 1, span(diff, 5, 9, 15)), b = f === 100 ? int(rng, 1, 99) : 10 * int(rng, 1, 99);
-  return { eq: `${a}, ${b}`, answer: String(a * f + b), wrongs: pos(a * f + b, [a + b, a * f * b, a * 10 + b, (a * f + b) * 10, a * f - b]), ar: `كم ${w.acc} في ${a} ${w.big} و ${b} ${w.small}؟`, en: `How many ${smallEn} are in ${a} ${bigEn} ${b} ${smallEn}?` };
+  const a = int(rng, bigMin(set, 1), span(diff, 5, 9, 15)), b = f === 100 ? int(rng, 1, 99) : 10 * int(rng, 1, 99);
+  return { eq: `${a}, ${b}`, answer: String(a * f + b), wrongs: pos(a * f + b, [a + b, a * f * b, a * 10 + b, (a * f + b) * 10, a * f - b]), ar: `كم ${w.acc} في ${bigAmount(set, a)} و ${b} ${w.small}؟`, en: `How many ${smallEn} are in ${a} ${bigEn} ${b} ${smallEn}?` };
 };
 /** A whole number of the big unit, less a part in the small unit: convert, then subtract. */
 const unitStory = (rng: Rng, diff: D, set: string): Draft => {
   const f = UNIT_SETS[set]![4];
-  const n = int(rng, 2, span(diff, 5, 9, 15)), p = f === 100 ? 10 * int(rng, 1, 9) : 50 * int(rng, 1, 19);
+  const n = int(rng, bigMin(set, 2), span(diff, 5, 9, 15)), p = f === 100 ? 10 * int(rng, 1, 9) : 50 * int(rng, 1, 19);
   const left = n * f - p;
   const [ar, en] = UNIT_WORDS[set]!.story(n, p);
   return { eq: `left ${n}, ${p}`, answer: String(left), wrongs: pos(left, [n * f + p, n * f, n * f - 10 * p, (n - 1) * f, left + f / 10]), ar, en };
 };
 const convertGen = (id: string, match: RegExp, sets: string[], grades: [number, number]) => T(id, match, grades, ({ rng, diff }) => {
   const set = pick(rng, sets);
-  const [bigAr, smallAr, bigEn, smallEn, f] = UNIT_SETS[set]!;
+  const [, , bigEn, smallEn, f] = UNIT_SETS[set]!;
   // 0 big → small, 1 small → big; 2 a compound measure in the small unit, 3 what is left (real life).
   const k = pick(rng, [0, 1, 2, 3]);
   if (k === 2) return unitCompound(rng, diff, set);
   if (k === 3) return unitStory(rng, diff, set);
-  const n = int(rng, 2, span(diff, 9, 25, 90));
-  if (k === 0) return { eq: `${n}`, answer: String(n * f), wrongs: pos(n * f, [n * f * 10, (n * f) / 10, n + f, n * f / 100 | 0, n * 10]), ar: `حوّل ${n} ${bigAr} إلى ${smallAr}.`, en: `Convert ${n} ${bigEn} to ${smallEn}.` };
+  const n = int(rng, bigMin(set, 2), span(diff, 9, 25, 90));
+  if (k === 0) return { eq: `${n}`, answer: String(n * f), wrongs: pos(n * f, [n * f * 10, (n * f) / 10, n + f, n * f / 100 | 0, n * 10]), ar: `حوّل ${bigAmount(set, n)} إلى ${UNIT_WORDS[set]!.small}.`, en: `Convert ${n} ${bigEn} to ${smallEn}.` };
   const q = int(rng, 2, span(diff, 9, 25, 60));
   const small = q * f;
-  return { eq: `${small}`, answer: String(q), wrongs: pos(q, [q * 10, small / 10, q * 100, q + 1, small]), ar: `حوّل ${small} ${smallAr} إلى ${bigAr}.`, en: `Convert ${small} ${smallEn} to ${bigEn}.` };
+  return { eq: `${small}`, answer: String(q), wrongs: pos(q, [q * 10, small / 10, q * 100, q + 1, small]), ar: `حوّل ${small} ${UNIT_WORDS[set]!.small} إلى ${bigTarget(set)}.`, en: `Convert ${small} ${smallEn} to ${bigEn}.` };
 });
 
 /** The lesson names the quantity — length, mass or capacity — and only that quantity's units appear. */
 const unitsMixed = (id: string, match: RegExp, sets: string[]) => T(id, match, [4, 5], ({ rng, diff, grade }) => {
   const set = pick(rng, sets);
-  const [bigAr, smallAr, bigEn, smallEn, f] = UNIT_SETS[set]!;
+  const [, , bigEn, smallEn, f] = UNIT_SETS[set]!;
   // 0 big → small, 1 a compound measure → small, 2 small → big, 3 what is left (real life).
   const k = pick(rng, diff === 'easy' && grade === 4 ? [0, 2, 3] : [0, 1, 2, 3]);
   if (k === 1) return unitCompound(rng, diff, set);
   if (k === 3) return unitStory(rng, diff, set);
   if (k === 2) {
     const q = int(rng, 2, span(diff, 9, 30, 60)), small = q * f;
-    return { eq: `${small}`, answer: String(q), wrongs: pos(q, [q * 10, small / 10, q * 100, q + 1, small]), ar: `حوّل ${small} ${smallAr} إلى ${bigAr}.`, en: `Convert ${small} ${smallEn} to ${bigEn}.` };
+    return { eq: `${small}`, answer: String(q), wrongs: pos(q, [q * 10, small / 10, q * 100, q + 1, small]), ar: `حوّل ${small} ${UNIT_WORDS[set]!.small} إلى ${bigTarget(set)}.`, en: `Convert ${small} ${smallEn} to ${bigEn}.` };
   }
-  const n = int(rng, 2, span(diff, 9, 30, 90));
-  return { eq: `${n}`, answer: String(n * f), wrongs: pos(n * f, [n * f * 10, (n * f) / 10, n + f, n * 10]), ar: `حوّل ${n} ${bigAr} إلى ${smallAr}.`, en: `Convert ${n} ${bigEn} to ${smallEn}.` };
+  const n = int(rng, bigMin(set, 2), span(diff, 9, 30, 90));
+  return { eq: `${n}`, answer: String(n * f), wrongs: pos(n * f, [n * f * 10, (n * f) / 10, n + f, n * 10]), ar: `حوّل ${bigAmount(set, n)} إلى ${UNIT_WORDS[set]!.small}.`, en: `Convert ${n} ${bigEn} to ${smallEn}.` };
 });
 
 const clock = (h: number, m: number) => `${h}:${String(m).padStart(2, '0')}`;

@@ -365,8 +365,8 @@ const PLANE: Array<[string, number]> = [['المثلث', 3], ['المربع', 4]
 const planeShapes = (id: string, match: RegExp, grades: [number, number]) => T(id, match, grades, ({ rng }) => {
   const k = pick(rng, [0, 1, 2]);
   const [name, n] = pick(rng, PLANE);
-  if (k === 0) return { eq: name, answer: String(n), wrongs: ints(n, [n + 1, n - 1, n + 2, 2 * n]), ar: `كم ضلعًا لـ ${name}؟`, en: `How many sides does the ${name} have?` };
-  if (k === 1) return { eq: name, answer: String(n), wrongs: ints(n, [n + 1, n - 1, n + 2, 2 * n]), ar: `كم رأسًا لـ ${name}؟`, en: `How many vertices does the ${name} have?` };
+  if (k === 0) return { eq: name, answer: String(n), wrongs: ints(n, [n + 1, n - 1, n + 2, 2 * n]), ar: `كم ضلعًا ${li(name)}؟`, en: `How many sides does the ${name} have?` };
+  if (k === 1) return { eq: name, answer: String(n), wrongs: ints(n, [n + 1, n - 1, n + 2, 2 * n]), ar: `كم رأسًا ${li(name)}؟`, en: `How many vertices does the ${name} have?` };
   const uniq = PLANE.filter(([, c]) => c !== 4);
   const [nm, c] = pick(rng, uniq);
   return { eq: `${c}`, answer: nm, wrongs: others(rng, nm, [...uniq.map(u => u[0]), 'المربع']), ar: `أي شكل له ${c} أضلاع و ${c} رؤوس؟`, en: `Which shape has ${c} sides and ${c} vertices?` };
@@ -376,7 +376,7 @@ const SOLID_FEV: Array<[string, number, number, number]> = [['المكعب', 6, 
 const solidParts = T('solid_parts', /^الاحرف والاوجه والرؤوس$/, [2, 2], ({ rng }) => {
   const [name, f, e, v] = pick(rng, SOLID_FEV), k = pick(rng, [0, 1, 2]);
   const [val, ar, en] = k === 0 ? [f, 'وجهًا', 'faces'] : k === 1 ? [e, 'حرفًا', 'edges'] : [v, 'رأسًا', 'vertices'];
-  return { eq: name, answer: String(val), wrongs: ints(val, [val + 1, val - 1, val + 2, val * 2, f + e + v]), ar: `كم ${ar} لـ ${name}؟`, en: `How many ${en} does the ${name} have?` };
+  return { eq: name, answer: String(val), wrongs: ints(val, [val + 1, val - 1, val + 2, val * 2, f + e + v]), ar: `كم ${ar} ${li(name)}؟`, en: `How many ${en} does the ${name} have?` };
 });
 
 const SHAPES3 = ['◯', '△', '□', '◇'];
@@ -724,7 +724,7 @@ const pointLineRay = T('point_line_ray', /^النقطه والمستقيم وا�
     return { eq: `${sg}, ${ry}, ${ln}`, answer: String(ans), wrongs: ints(ans, [sg + ry + ln, sg + ry, 2 * sg + ry + 2 * ln, ans + 1, ans - 1]), ar: `في رسم ${parts.map((x, i) => (i === 0 ? x : /^\d/.test(x) ? ` و ${x}` : ` و${x}`)).join('')}، ولا يلتقي أي منها بغيره. كم نقطة نهاية في الرسم كله؟`, en: `A drawing has ${sg} line segment${sg === 1 ? '' : 's'}, ${ry} ray${ry === 1 ? '' : 's'}${ln ? ` and ${ln} line${ln === 1 ? '' : 's'}` : ''}, none touching another. How many endpoints are in the whole drawing?` };
   }
   const [name, n] = pick(rng, LINE_PARTS);
-  return { eq: name, answer: String(n), wrongs: ints(n, [n + 1, n + 2, 3, n === 0 ? 4 : n - 1]), ar: `كم نقطة نهاية لـ ${name}؟`, en: `How many endpoints does ${name === 'الشعاع' ? 'a ray' : name === 'المستقيم' ? 'a line' : 'a line segment'} have?` };
+  return { eq: name, answer: String(n), wrongs: ints(n, [n + 1, n + 2, 3, n === 0 ? 4 : n - 1]), ar: `كم نقطة نهاية ${li(name)}؟`, en: `How many endpoints does ${name === 'الشعاع' ? 'a ray' : name === 'المستقيم' ? 'a line' : 'a line segment'} have?` };
 });
 
 const ANGLE_NAMES = ['حادة', 'قائمة', 'منفرجة'];
@@ -988,14 +988,25 @@ const compareMeasure = (id: string, match: RegExp, what: string, bigWord: string
   return { eq: `${a}, ${b}`, answer: String(d), wrongs: ints(d, [a + b, Math.max(a, b), d + 1, Math.min(a, b)]), ar: `قيست ${what} شيئين بالوحدة نفسها: الأول: ${a}، الثاني: ${b}. بكم يزيد الأكبر قياسًا على الأصغر؟`, en: `The ${en} of two things is measured with the same unit: first: ${a}, second: ${b}. By how much does the larger measure exceed the smaller?` };
 });
 
+/** «لـ» before a word: «للمثلث», «للشعاع» — the article's alif drops after it. */
+const li = (w: string) => (w.startsWith('ال') ? `لل${w.slice(2)}` : `لـ${w}`);
+
 /** Things to measure, for choosing the unit: [quantity, things for the small unit, things for the big unit, other units as slips]. */
 const UNIT_FIT: Record<string, [string, Array<[string, string]>, Array<[string, string]>, string[]]> = {
   'متر': ['طول', [['قلم الرصاص', 'a pencil'], ['الممحاة', 'an eraser'], ['إصبع اليد', 'a finger']], [['ملعب المدرسة', 'the school playground'], ['ممر المدرسة', 'the school corridor'], ['سور الحديقة', 'the garden wall']], ['الكيلوغرام', 'اللتر']],
   'كيلوغرام': ['كتلة', [['تفاحة', 'an apple'], ['قلم الرصاص', 'a pencil'], ['ملعقة', 'a spoon']], [['كيس أرز كبير', 'a big bag of rice'], ['بطيخة كبيرة', 'a big watermelon'], ['حقيبة سفر', 'a suitcase']], ['المتر', 'اللتر']],
   'لتر': ['كمية الماء في', [['ملعقة دواء', 'a medicine spoon'], ['قطّارة العين', 'an eye dropper'], ['فنجان قهوة صغير', 'a small coffee cup']], [['خزان ماء', 'a water tank'], ['حوض استحمام', 'a bathtub'], ['دلو كبير', 'a big bucket']], ['المتر', 'الكيلوغرام']],
 };
+/** A unit's plural and accusative singular: «5 أمتار», «كم مترًا», «20 سنتيمترًا», «300 غرام». */
+const UNIT_NOUN: Record<string, [string, string]> = {
+  'متر': ['أمتار', 'مترًا'], 'سنتيمتر': ['سنتيمترات', 'سنتيمترًا'], 'كيلوغرام': ['كيلوغرامات', 'كيلوغرامًا'],
+  'غرام': ['غرامات', 'غرامًا'], 'لتر': ['لترات', 'لترًا'], 'مليلتر': ['مليلترات', 'مليلترًا'],
+};
+/** A measure of 3 or more: one and two take their own words, so counts start at 3. */
+const measure = (n: number, unit: string) => `${n} ${tamyiz(n, UNIT_NOUN[unit]![0], UNIT_NOUN[unit]![1], unit)}`;
+const howMany = (unit: string) => `كم ${UNIT_NOUN[unit]![1]}`;
 const unitsG2 = (id: string, match: RegExp, big: string, small: string, f: number, bigEn: string, smallEn: string) => T(id, match, [2, 2], ({ rng }) => {
-  const n = int(rng, 2, 9), k = pick(rng, [0, 1, 2, 3, 4, 4]), fact = `1 ${big} = ${f} ${small}.`, factEn = `1 ${bigEn} = ${f} ${smallEn}.`;
+  const n = int(rng, 3, 9), k = pick(rng, [0, 1, 2, 3, 4, 4]), fact = `1 ${big} = ${f} ${small}.`, factEn = `1 ${bigEn} = ${f} ${smallEn}.`;
   if (k === 4) {
     // the unit that fits: a small thing in the small unit, a big thing in the big one
     const [what, smallThings, bigThings, slips] = UNIT_FIT[big]!, isBig = rng() < 0.5, [thing, thingEn] = pick(rng, isBig ? bigThings : smallThings);
@@ -1004,10 +1015,10 @@ const unitsG2 = (id: string, match: RegExp, big: string, small: string, f: numbe
   }
   // a part of the big unit: 10–90 cm, or 100–900 g / mL
   const m = int(rng, 1, 9) * (f / 10);
-  if (k === 2) { const w = int(rng, 1, 5), v = w * f + m; return { eq: `${w}, ${m}`, answer: String(v), wrongs: ints(v, [w * f, w + m, w * f + m * 10, (w + 1) * f + m]), ar: `${fact} كم ${small} في ${w} ${big} و ${m} ${small}؟`, en: `${factEn} How many ${smallEn} are in ${w} ${bigEn} and ${m} ${smallEn}?` }; }
-  if (k === 3) return { eq: `${m}`, answer: String(f - m), wrongs: ints(f - m, [m, f + m, f - m + f / 10, f - m - f / 10]), ar: `${fact} كم ${small} نضيف إلى ${m} ${small} لنحصل على 1 ${big}؟`, en: `${factEn} How many ${smallEn} do we add to ${m} ${smallEn} to make 1 ${bigEn}?` };
-  if (k === 0) return { eq: `${n}`, answer: String(n * f), wrongs: ints(n * f, [n * f * 10, n * f / 10, n + f, n * f + f]), ar: `1 ${big} = ${f} ${small}. كم ${small} في ${n} ${big}؟`, en: `1 ${bigEn} = ${f} ${smallEn}. How many ${smallEn} are in ${n} ${bigEn}?` };
-  return { eq: `${n * f}`, answer: String(n), wrongs: ints(n, [n * 10, n + 1, n - 1, n * f]), ar: `1 ${big} = ${f} ${small}. كم ${big} في ${n * f} ${small}؟`, en: `1 ${bigEn} = ${f} ${smallEn}. How many ${bigEn} are in ${n * f} ${smallEn}?` };
+  if (k === 2) { const w = int(rng, 3, 5), v = w * f + m; return { eq: `${w}, ${m}`, answer: String(v), wrongs: ints(v, [w * f, w + m, w * f + m * 10, (w + 1) * f + m]), ar: `${fact} ${howMany(small)} في ${measure(w, big)} و ${measure(m, small)}؟`, en: `${factEn} How many ${smallEn} are in ${w} ${bigEn} and ${m} ${smallEn}?` }; }
+  if (k === 3) return { eq: `${m}`, answer: String(f - m), wrongs: ints(f - m, [m, f + m, f - m + f / 10, f - m - f / 10]), ar: `${fact} ${howMany(small)} نضيف إلى ${measure(m, small)} لنحصل على ${big} واحد؟`, en: `${factEn} How many ${smallEn} do we add to ${m} ${smallEn} to make 1 ${bigEn}?` };
+  if (k === 0) return { eq: `${n}`, answer: String(n * f), wrongs: ints(n * f, [n * f * 10, n * f / 10, n + f, n * f + f]), ar: `${fact} ${howMany(small)} في ${measure(n, big)}؟`, en: `1 ${bigEn} = ${f} ${smallEn}. How many ${smallEn} are in ${n} ${bigEn}?` };
+  return { eq: `${n * f}`, answer: String(n), wrongs: ints(n, [n * 10, n + 1, n - 1, n * f]), ar: `${fact} ${howMany(big)} في ${measure(n * f, small)}؟`, en: `1 ${bigEn} = ${f} ${smallEn}. How many ${bigEn} are in ${n * f} ${smallEn}?` };
 });
 const centimetre = T('cm_lengths', /^السنتيمتر$/, [2, 2], ({ rng }) => {
   const a = int(rng, 5, 30), b = int(rng, 3, 25), k = pick(rng, [0, 1, 2]);
@@ -1047,8 +1058,8 @@ export const EARLY_TOPICS: readonly Topic[] = [
   weekDays, hourTime('hour_full', /^الوقت بالساعات الكامله$/, false), hourTime('hour_half', /^الوقت بنصف الساعه$/, true),
   nearestMinutes('time_5', /^الوقت لاقرب 5 دقائق$/, 5), nearestMinutes('time_15', /^الوقت لاقرب ربع ساعه$/, 15), monthsOfYear, amPm, calendar,
   compareMeasure('compare_len', /^مقارنه الاطوال وترتيبها$|^وحدات الطول غير القياسيه$/, 'أطوال', 'الأطول', 'length', 'longest', 'أطوال'),
-  compareMeasure('compare_mass', /^مقارنه الكتل وترتيبها$|^وحدات الكتله غير القياسيه$/, 'كتلتي', 'الأثقل', 'mass', 'heaviest', 'كتل'),
-  compareMeasure('compare_cap', /^مقارنه السعات وترتيبها$|^وحدات السعه غير القياسيه$/, 'سعتي', 'الأكبر سعة', 'capacity', 'largest', 'سعات'),
+  compareMeasure('compare_mass', /^مقارنه الكتل وترتيبها$|^وحدات الكتله غير القياسيه$/, 'كتلتا', 'الأثقل', 'mass', 'heaviest', 'كتل'),
+  compareMeasure('compare_cap', /^مقارنه السعات وترتيبها$|^وحدات السعه غير القياسيه$/, 'سعتا', 'الأكبر سعة', 'capacity', 'largest', 'سعات'),
   centimetre, unitsG2('units_m_g2', /^المتر$/, 'متر', 'سنتيمتر', 100, 'metre', 'centimetres'),
   unitsG2('units_kg_g2', /^الغرام والكيلوغرام$/, 'كيلوغرام', 'غرام', 1000, 'kilogram', 'grams'), unitsG2('units_l_g2', /^اللتر والمليلتر$/, 'لتر', 'مليلتر', 1000, 'litre', 'millilitres'),
 ];
