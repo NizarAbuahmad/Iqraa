@@ -12,7 +12,7 @@
 import type { AIRequest, ClassroomActivityRequest } from './ai/AIService.ts';
 import { regenerationFields } from './ai/regeneration.ts';
 import { buildLessonTeachingRequest } from './generatorRequests.ts';
-import type { GeneratorGrounding } from './kbContext.ts';
+import { groundingRequestFields, type GeneratorGrounding } from './kbContext.ts';
 import { EXIT_TICKET_MAX, MID_LESSON_CHECK_MAX } from './lessonSlides.ts';
 import type { ScopeRequestFields } from './wideScopeRequest.ts';
 
@@ -33,6 +33,11 @@ export type SlidesLessonFields = {
   lessonId?: string;
   bookFigureCount?: number;
 };
+
+/** A single-lesson deck's fields, read off the one grounding the screen resolved — see `groundingRequestFields`. */
+export function slidesLessonFields(grounding: GeneratorGrounding): SlidesLessonFields {
+  return groundingRequestFields(grounding);
+}
 
 /** The lesson plan the deck's connective tissue comes from. */
 export function slidesPlanRequest(

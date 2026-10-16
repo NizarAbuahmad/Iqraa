@@ -17,8 +17,9 @@ import {
 import { buildLessonTeachingRequest } from '../generatorRequests.ts';
 import { regenerationFields } from '../ai/regeneration.ts';
 import {
-  slidesChecksRequest, slidesPlanRequest, slidesTeachingRequest, type SlidesLessonFields,
+  slidesChecksRequest, slidesLessonFields, slidesPlanRequest, slidesTeachingRequest, type SlidesLessonFields,
 } from '../slidesRequests.ts';
+import { reopenedGenerationScope } from '../generationScope.ts';
 import { buildScopeRequest } from '../wideScopeRequest.ts';
 import { revisionPhrase } from '../revisionScope.ts';
 import { buildRevisionDeck } from '../lessonSlides.ts';
@@ -206,5 +207,44 @@ describe('slides requests — the whole offline pipeline over the scopes a teach
       const own = deck.slides.filter(s => !isCheck(s.title));
       assert.doesNotMatch(JSON.stringify({ ...deck, slides: own, answerKey: [] }), ARABIC_LETTER, where);
     }
+  });
+});
+
+// A Grade 1 English teacher found «شرائح الدرس» doing nothing (2026-10-15).
+// Every Grade 1 English lesson is titled "Vocabulary & Grammar" or "Listening &
+// Speaking", and the screen re-found its lesson from that title: 19 of 19 decks
+// were built from a Grade 3, 4 or 9 lesson and saved under that lesson's id, so
+// the Grade 1 lesson never showed a deck. The tapped lesson's id is carried now.
+describe('slides lesson fields — the lesson the teacher picked, not its title', () => {
+  const g1English = getUnitsForSubjectGrade('english', 'grade-1').flatMap(u => getLessonsForUnit(u.id));
+
+  it('builds the same fields as before from a grounding the title alone finds', () => {
+    let checked = 0;
+    for (const topic of grade10MathTopics()) {
+      assert.deepEqual(slidesLessonFields(resolveGeneratorGrounding(topic, 'ar')), lessonFieldsFor(topic), topic);
+      checked += 1;
+    }
+    assert.ok(checked > 20, `only ${checked} topics`);
+  });
+
+  it('anchors every Grade 1 English lesson to itself when its id is carried', () => {
+    assert.ok(g1English.length >= 19, `${g1English.length} lessons`);
+    const scope = { gradeId: 'grade-1', subjectId: 'english' };
+    let titleWouldDrift = 0;
+    for (const lesson of g1English) {
+      const fields = slidesLessonFields(resolveGeneratorGrounding(lesson.titleEn, 'en', { lessonId: lesson.id, scope }));
+      assert.equal(fields.lessonId, lesson.id);
+      assert.match(fields.additionalContext ?? '', /📚 Lesson:/);
+      if (generatorLessonId(lesson.titleEn, 'en') !== lesson.id) titleWouldDrift += 1;
+    }
+    // The trap this guards: the title alone lands somewhere else.
+    assert.ok(titleWouldDrift >= 19, `${titleWouldDrift}`);
+  });
+
+  it('reopens a saved deck on the lesson it was saved for', () => {
+    const lesson = g1English.find(l => l.id.endsWith('-u2_l1'))!;
+    const gradeIdx = getPickerGrades().findIndex(g => g.id === 'grade-1');
+    const subjectIdx = getPickerSubjects().findIndex(s => s.id === 'english');
+    assert.equal(reopenedGenerationScope({ gradeIdx, subjectIdx }, lesson.titleEn, 'en', lesson.id)?.lesson?.id, lesson.id);
   });
 });

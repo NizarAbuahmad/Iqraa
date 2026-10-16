@@ -29,7 +29,9 @@ import { Toast } from '@/components/ui/Toast';
 import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import type { ActivitySlide, ClassroomActivity, LessonPlanOutput, LessonTeachingOutput } from '@/services/ai/AIService';
-import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId, resolveGeneratorGrounding, type GeneratorGrounding } from '@/services/kbContext';
+import { resolveGeneratorGrounding, type GeneratorGrounding } from '@/services/kbContext';
+import { usePickedLesson } from '@/hooks/usePickedLesson';
+import { carriedLessonTopic } from '@/services/pickedLesson';
 import { buildLessonDeck, buildRevisionDeck } from '@/services/lessonSlides';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import {
@@ -46,7 +48,7 @@ import type { DeckVideo } from '@/services/youtubeVideo';
 import { summarizeVerification } from '@/services/quizVerification';
 import { confirm } from '@/services/confirm';
 import { pooledVariantId, regenerationFields } from '@/services/ai/regeneration';
-import { slidesChecksRequest, slidesPlanRequest, slidesTeachingRequest, type SlidesLessonFields } from '@/services/slidesRequests';
+import { slidesChecksRequest, slidesLessonFields, slidesPlanRequest, slidesTeachingRequest, type SlidesLessonFields } from '@/services/slidesRequests';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
 import {
   captureGenerationScope, materialScope, reopenedGenerationScope, type GenerationScope,
@@ -102,6 +104,8 @@ export default function SlidesScreen() {
     includeExamples?: string; includePractice?: string; includeAttachments?: string;
     // A saved wide deck's scope (`scopeFormState`), so a reopen restores it.
     scope?: string;
+    // The lesson itself (a lesson page, the lesson bar, a saved deck) — `usePickedLesson`.
+    lessonId?: string;
   }>();
   // An index the picker list cannot honour is NOT index 0 — see
   // `scopeFromParams`. Grounding the topic is what recovers the right scope.
@@ -120,11 +124,22 @@ export default function SlidesScreen() {
   // The picked subject's material language — English decks are built in English.
   const lang = contentLang(subjects[subjectIdx].id, uiLang);
   const isAr = lang === 'ar';
-  const [topic, setTopic] = useState(() => topicInLang(
-    topicForScope(params, uiLang, teacherScope.defaultScope, teacherScope), uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
-    { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
-  ));
+  const [topic, setTopic] = useState(() => {
+    const initial = topicForScope(params, uiLang, teacherScope.defaultScope, teacherScope);
+    const initialLang = contentLang(subjects[initialScope.subjectIdx].id, uiLang);
+    return (initial.trim() && carriedLessonTopic(params.lessonId, initialLang)) || topicInLang(
+      initial, uiLang, initialLang,
+      { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
+    );
+  });
   useWarmGrounding(topic, lang);
+  // Re-finding the lesson from its title made this screen useless for Grade 1
+  // English: all 19 decks came from a Grade 3, 4 or 9 lesson and were saved under
+  // that lesson's id (a teacher's review, 2026-10-15). See `usePickedLesson`.
+  const kbScope = { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id };
+  const pickedLesson = usePickedLesson(params.lessonId, topic, kbScope);
+  const pickedLessonId = pickedLesson.lessonId;
+  const groundingOptions = { lessonId: pickedLessonId, scope: kbScope };
   const wideScope = useWideScope(params, { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id });
   /**
    * The unit / semester / book the deck on screen was built for — what Save
@@ -138,8 +153,9 @@ export default function SlidesScreen() {
   // wide scope: the lookup is unscoped, and a unit title lands on another
   // grade's lesson, whose attachments and lab items would then be offered.
   const groundedLessonId = useMemo(
-    () => (wideScope.isWide ? '' : resolveGeneratorGrounding(topic.trim(), lang).lesson?.id ?? ''),
-    [topic, lang, wideScope.isWide],
+    () => (wideScope.isWide ? '' : resolveGeneratorGrounding(topic.trim(), lang, groundingOptions).lesson?.id ?? ''),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [topic, lang, wideScope.isWide, pickedLessonId, gradeIdx, subjectIdx],
   );
   // A reopened deck comes back with the toggles it was built with.
   const [includeExamples, setIncludeExamples] = useState(() => readFlagParam(params.includeExamples, true));
@@ -287,8 +303,11 @@ export default function SlidesScreen() {
     return {
       gradeIdx: s.gradeIdx, subjectIdx: s.subjectIdx, topic: s.topic,
       ...(generated?.options ?? { includeExamples, includePractice, includeAttachments }),
-      // From the frozen scope, not the live picker. A lesson deck records nothing
-      // here, as before; a wide one is then never filed under a lesson (`withLessonId`).
+      // The lesson it was built from, so the save is filed under it rather than
+      // under whatever its title grounds to (`withLessonId` keeps an id it is given).
+      ...(!wideFrozen && s.lesson ? { lessonId: s.lesson.id } : {}),
+      // From the frozen scope, not the live picker. A wide deck is then never
+      // filed under a lesson (`withLessonId`).
       ...scopeFormState(wideFrozen, 'balanced'),
     };
   };
@@ -334,7 +353,7 @@ export default function SlidesScreen() {
       // unit title) is never looked up again — it grounds to some lesson.
       const regrounded = wideFrozen && topic.trim()
         ? captureGenerationScope({ gradeIdx: initialScope.gradeIdx, subjectIdx: initialScope.subjectIdx, topic }, WIDE_GROUNDING)
-        : reopenedGenerationScope(initialScope, topic, lang);
+        : reopenedGenerationScope(initialScope, topic, lang, params.lessonId);
       // Without a saved topic there is nothing to re-ground: the live form.
       const scope = materialScope(regrounded, {
         gradeIdx: initialScope.gradeIdx, subjectIdx: initialScope.subjectIdx, topic,
@@ -472,7 +491,7 @@ export default function SlidesScreen() {
     const wide = wideSel ? buildScopeRequest(wideSel, lang) : null;
     if (wideSel && !wide) { refuse(t('wideScopeUngrounded')); return; }
     if (!wide) {
-      const conflict = groundedSubjectConflict(trimmed, lang, subjects[subjectIdx].id);
+      const conflict = groundedSubjectConflict(trimmed, lang, subjects[subjectIdx].id, grades[gradeIdx].id);
       if (conflict) { refuse(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     }
     setValidationError(''); setError(''); setCancelled(false);
@@ -505,15 +524,12 @@ export default function SlidesScreen() {
     // The grade/subject reset may have superseded this run during the frame.
     if (!isCurrent()) return;
 
-    // A wide deck never grounds its label: these lookups are unscoped, and a
-    // unit title lands on another grade's lesson (piece 2 measured 18 of 35).
-    const grounding = wide ? WIDE_GROUNDING : resolveGeneratorGrounding(trimmed, lang);
-    const lessonFields: SlidesLessonFields = wide ? {} : {
-      additionalContext: buildGeneratorContext(trimmed, lang),
-      unitId: generatorUnitId(trimmed, lang),
-      lessonId: generatorLessonId(trimmed, lang),
-      bookFigureCount: generatorFigureCount(trimmed, lang),
-    };
+    // A wide deck never grounds its label: a unit title lands on another
+    // grade's lesson (piece 2 measured 18 of 35). A lesson deck is grounded
+    // once, on the picked lesson when there is one, and every field is read
+    // off that one result.
+    const grounding = wide ? WIDE_GROUNDING : resolveGeneratorGrounding(trimmed, lang, groundingOptions);
+    const lessonFields: SlidesLessonFields = wide ? {} : slidesLessonFields(grounding);
     const form = {
       gradeName: isAr ? grades[gradeIdx]!.nameAr : grades[gradeIdx]!.name,
       subjectName: subjects[subjectIdx].name,
@@ -955,6 +971,7 @@ export default function SlidesScreen() {
             gradeId={grades[gradeIdx].id}
             value={topic}
             onChange={v => { setTopic(v); setError(''); setValidationError(''); }}
+            onSelectionDetail={pickedLesson.onSelectionDetail}
             allowedKinds={['lesson', 'unit', 'semester', 'book']}
             onScopeChange={wideScope.setScopeSel}
             offlineWideScope

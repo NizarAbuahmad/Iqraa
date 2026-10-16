@@ -11,7 +11,7 @@ import { getT } from '@/services/i18n';
 import { contentLang, topicInLang } from '@/services/contentLanguage';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
+import { groundingRequestFields, resolveGeneratorGrounding } from '@/services/kbContext';
 import { pooledVariantId, regenerationFields } from '@/services/ai/regeneration';
 import { QuizOutput, QuizQuestion } from '@/services/ai/AIService';
 import { buildDeckFromQuiz } from '@/services/classDeck';
@@ -64,6 +64,8 @@ import { buildQuizDocx } from '@/services/quizDocx';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
 import { useWarmGrounding } from '@/hooks/useWarmGrounding';
+import { usePickedLesson } from '@/hooks/usePickedLesson';
+import { carriedLessonTopic } from '@/services/pickedLesson';
 import { nextFrame } from '@/services/nextFrame';
 
 const ACCENT = palette.primary;
@@ -97,6 +99,8 @@ export default function QuizScreen() {
     savedId?: string; gradeIdx?: string; subjectIdx?: string;
     topic?: string; durationIdx?: string; marksIdx?: string; numQIdx?: string; diffIdx?: string; selectedTypes?: string;
     scope?: string; distribution?: string;
+    // The lesson itself (a lesson page, the lesson bar, a saved quiz) — `usePickedLesson`.
+    lessonId?: string;
   }>();
   const scrollRef = useRef<ScrollView>(null);
 
@@ -129,11 +133,17 @@ export default function QuizScreen() {
   const [subjectIdx, setSubjectIdx] = useState(initialScope.subjectIdx);
   // The picked subject's material language — English quizzes are in English.
   const lang = contentLang(subjects[subjectIdx].id, uiLang);
-  const [topic, setTopic] = useState(() => topicInLang(
-    topicForScope(params, uiLang, teacherScope.defaultScope, teacherScope), uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
-    { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
-  ));
+  const [topic, setTopic] = useState(() => {
+    const initial = topicForScope(params, uiLang, teacherScope.defaultScope, teacherScope);
+    const initialLang = contentLang(subjects[initialScope.subjectIdx].id, uiLang);
+    return (initial.trim() && carriedLessonTopic(params.lessonId, initialLang)) || topicInLang(
+      initial, uiLang, initialLang,
+      { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
+    );
+  });
   useWarmGrounding(topic, lang);
+  const kbScope = { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id };
+  const pickedLesson = usePickedLesson(params.lessonId, topic, kbScope);
   const wideScope = useWideScope(params, { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id });
   /** The wide scope and distribution the paper on screen was generated under — what Save records. */
   const [wideFrozen, setWideFrozen] = useState<{ sel: ScopeSelection; distribution: Distribution } | null>(
@@ -196,7 +206,7 @@ export default function QuizScreen() {
       if (wideFrozen && topic.trim()) {
         return captureGenerationScope({ gradeIdx: initialScope.gradeIdx, subjectIdx: initialScope.subjectIdx, topic }, WIDE_GROUNDING);
       }
-      return reopenedGenerationScope(initialScope, topic, lang);
+      return reopenedGenerationScope(initialScope, topic, lang, params.lessonId);
     },
   );
   const scope = materialScope(generated, { gradeIdx, subjectIdx, topic });
@@ -401,12 +411,12 @@ export default function QuizScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await nextFrame();
     try {
-      const kbScope = { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id };
-      const grounding = wide
-        ? WIDE_GROUNDING
-        : resolveGeneratorGrounding(topic.trim(), lang, { scope: kbScope });
-      const additionalContext = wide ? undefined : buildGeneratorContext(topic.trim(), lang, { scope: kbScope });
-      const unitId = wide ? undefined : generatorUnitId(topic.trim(), lang, kbScope);
+      const lessonGrounding = wide
+        ? null
+        : resolveGeneratorGrounding(topic.trim(), lang, { scope: kbScope, lessonId: pickedLesson.lessonId });
+      const grounding = lessonGrounding ?? WIDE_GROUNDING;
+      // Every field from that one grounding — never the title again (`groundingRequestFields`).
+      const lessonFields = lessonGrounding ? groundingRequestFields(lessonGrounding) : undefined;
       const out = await aiService.generateQuiz({
         // Localised: this string is carried into generated content verbatim —
         // the Arabic worksheet header printed «الصف: Grade 10». `grade` is never
@@ -422,10 +432,10 @@ export default function QuizScreen() {
         questionTypes: Array.from(selectedTypes),
         numQuestions: NUM_Q_OPTIONS[effNumQIdx],
         difficulty: DIFFICULTY_MAP[DIFFICULTY_IDS[diffIdx]],
-        additionalContext,
-        unitId,
-        lessonId: generatorLessonId(topic.trim(), lang, kbScope),
-        bookFigureCount: generatorFigureCount(topic.trim(), lang, kbScope),
+        additionalContext: lessonFields?.additionalContext,
+        unitId: lessonFields?.unitId,
+        lessonId: lessonFields?.lessonId,
+        bookFigureCount: lessonFields?.bookFigureCount,
         // Curriculum-derived, so the artifact may be shared with any teacher
         // who asks the same question — see AIRequest.contextSource.
         contextSource: 'curriculum',
@@ -593,6 +603,7 @@ export default function QuizScreen() {
           gradeId={grades[gradeIdx].id}
           value={topic}
           onChange={text => { setTopic(text); setError(''); }}
+          onSelectionDetail={pickedLesson.onSelectionDetail}
           allowedKinds={['lesson', 'unit', 'semester', 'book']}
           onScopeChange={wideScope.setScopeSel}
           offlineWideScope

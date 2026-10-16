@@ -17,6 +17,7 @@ import { ENGLISH_HUB_GRADES, hubLessonsForGrade } from '@workspace/curriculum/en
 import { BADGE_IDS, badgesEarned, currentStreak, dayOf, lessonStars } from '@/services/englishHub/games';
 import { useHubProgress } from '@/services/englishHub/progressStore';
 import { goBack } from '@/services/navigation';
+import { unitNames } from '@/services/contentLanguage';
 import { BADGE_META } from '@/components/englishHub/badgeMeta';
 import { disableDailyReminder, enableDailyReminder, isReminderEnabled, syncDailyReminder } from '@/services/englishHub/dailyReminder';
 import { BackButton } from '@/components/ui/BackButton';
@@ -132,10 +133,12 @@ export default function EnglishHubScreen() {
       <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 4, paddingBottom: 60, gap: 10 }}>
         {lessons.map(l => {
           const stars = lessonStars(progress, l.id);
+          const names = unitNames({ name: l.unitTitle, nameAr: l.unitTitleAr }, 'english', lang);
           return (
             // Titled by unit, not lesson: every Grade 1–4 hub lesson is the
             // unit's "Vocabulary & Grammar" one, so the lesson title tells a
-            // child nothing and the unit title ("Look at my toys!") does.
+            // child nothing and the unit title ("Look at my toys!") does —
+            // in English, as the book prints it (`unitNames`).
             <Pressable
                 key={l.id}
                 onPress={() => router.push({ pathname: '/curriculum/english/[lessonId]', params: { lessonId: l.id } } as never)}
@@ -149,8 +152,13 @@ export default function EnglishHubScreen() {
                     {(perUnit.get(unitKey(l)) ?? 0) > 1 ? ` · ${lang === 'ar' ? l.titleAr || l.title : l.title}` : ''}
                   </Text>
                   <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: align }} numberOfLines={2}>
-                    {lang === 'ar' ? l.unitTitleAr || l.unitTitle : l.unitTitle}
+                    {names.title}
                   </Text>
+                  {names.gloss ? (
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }} numberOfLines={1}>
+                      {names.gloss}
+                    </Text>
+                  ) : null}
                   <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>
                     {t('hubWords', l.words.length)} · {l.words.slice(0, 4).map(w => w.en).join(', ')}…
                   </Text>

@@ -45,6 +45,8 @@ import { buildActivityHTML, buildActivitySlidesHTML, formatActivityText } from '
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
 import { useWarmGrounding } from '@/hooks/useWarmGrounding';
+import { usePickedLesson } from '@/hooks/usePickedLesson';
+import { carriedLessonTopic } from '@/services/pickedLesson';
 import { nextFrame } from '@/services/nextFrame';
 import { useWideScope } from '@/hooks/useWideScope';
 import { scopeLabel, type ScopeSelection } from '@/services/scopeSelection';
@@ -67,6 +69,8 @@ export default function ActivityScreen() {
     savedId?: string; topic?: string;
     gradeIdx?: string; subjectIdx?: string; activityTypeIdx?: string; durationIdx?: string; objective?: string;
     scope?: string; distribution?: string;
+    // The lesson itself (a lesson page, the lesson bar, a saved activity) — `usePickedLesson`.
+    lessonId?: string;
   }>();
   const scrollRef = useRef<ScrollView>(null);
 
@@ -92,11 +96,17 @@ export default function ActivityScreen() {
   const [subjectIdx, setSubjectIdx] = useState(initialScope.subjectIdx);
   // The picked subject's material language — English is taught in English.
   const lang = contentLang(subjects[subjectIdx].id, uiLang);
-  const [topic, setTopic] = useState(() => topicInLang(
-    topicForScope(params, uiLang, teacherScope.defaultScope, teacherScope), uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
-    { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
-  ));
+  const [topic, setTopic] = useState(() => {
+    const initial = topicForScope(params, uiLang, teacherScope.defaultScope, teacherScope);
+    const initialLang = contentLang(subjects[initialScope.subjectIdx].id, uiLang);
+    return (initial.trim() && carriedLessonTopic(params.lessonId, initialLang)) || topicInLang(
+      initial, uiLang, initialLang,
+      { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
+    );
+  });
   useWarmGrounding(topic, lang);
+  const kbScope = { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id };
+  const pickedLesson = usePickedLesson(params.lessonId, topic, kbScope);
   // The structured scope the topic picker reports, seeded from a reopened
   // material's saved form. The pickers are passed so a scope saved for another
   // grade or subject reads as not wide (piece 2: stale restored scope).
@@ -134,7 +144,7 @@ export default function ActivityScreen() {
       if (wideFrozen && topic.trim()) {
         return captureGenerationScope({ gradeIdx: initialScope.gradeIdx, subjectIdx: initialScope.subjectIdx, topic }, WIDE_GROUNDING);
       }
-      return reopenedGenerationScope(initialScope, topic, lang);
+      return reopenedGenerationScope(initialScope, topic, lang, params.lessonId);
     },
   );
   const scope = materialScope(generated, { gradeIdx, subjectIdx, topic });
@@ -272,7 +282,7 @@ export default function ActivityScreen() {
     try {
       const grounding = wide
         ? WIDE_GROUNDING
-        : resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', { scope: { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id } });
+        : resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', { scope: kbScope, lessonId: pickedLesson.lessonId });
       const out = await aiService.generateActivity(
         // Last: the scope's fields replace the single-lesson ones.
         wide && wideOwn ? { ...wideOwn, ...wide.fields } : buildActivityRequest(form, grounding),
@@ -439,6 +449,7 @@ export default function ActivityScreen() {
           gradeId={grades[gradeIdx].id}
           value={topic}
           onChange={text => { setTopic(text); setError(''); }}
+          onSelectionDetail={pickedLesson.onSelectionDetail}
           allowedKinds={['lesson', 'unit', 'semester', 'book']}
           onScopeChange={wideScope.setScopeSel}
           offlineWideScope

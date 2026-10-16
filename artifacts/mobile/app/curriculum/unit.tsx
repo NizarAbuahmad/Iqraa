@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import {
+  getBookById,
   getLessonsForUnit,
   getUnitById,
   isBrowserLessonTitleOnly,
@@ -16,6 +17,7 @@ import { confirm } from '@/services/confirm';
 import { lockState } from '@/services/lessonLock';
 import { useMasteryProgress } from '@/hooks/useMasteryProgress';
 import { readableOn } from '@/services/readableColor';
+import { unitNames } from '@/services/contentLanguage';
 import { BackButton } from '@/components/ui/BackButton';
 
 export default function UnitLessonsScreen() {
@@ -47,7 +49,7 @@ export default function UnitLessonsScreen() {
 
   const lessons = getLessonsForUnit(unit.id);
   const { locked, awaiting } = lockState(lessons.map(l => l.id), masteryProgress);
-  const unitName = lang === 'ar' ? (unit.nameAr || unit.name) : unit.name;
+  const unitName = unitNames(unit, getBookById(unit.bookId)?.subjectId, lang).title;
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { backgroundColor: colorFill, paddingTop: insets.top + 12 }]}>
