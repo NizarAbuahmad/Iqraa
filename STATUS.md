@@ -553,7 +553,7 @@ an announcement by default» below.
   **Found while measuring:** the Grade 9 lesson «مكوِّناتُ الذرَّةِ» routed to
   `redox`, not `atom_basics` (fixed the same day, see the entry after next). The other
   13 families followed the same day (next entry).
-- **All 14 chemistry families now hold 15 or more items (2026-10-15).** The 13 that
+- **All chemistry families now hold 15 or more items (2026-10-15).** The 13 that
   were still 4–7 each got 128 more (easy ≥5, medium ≥6, hard ≥4 per family:
   atom_basics, atomic_structure, electron_config, bonding, formulas, equations, mole,
   stoichiometry, thermochem, acids_bases, metal_activity, redox, general_chem), so a
@@ -581,13 +581,25 @@ an announcement by default» below.
   `طاقة.*تفاعل` spanned two sentences — now bounded to one; «تغيرات الطاقة في التفاعلات
   الكيميائية» (Grade 10) went to `mole` because the substring `المول` matched
   «الطاقة **المول**ية» — now the whole word (or «المولات»); «الطاقة الممتصة والطاقة
-  المنبعثة من المادة» (Grade 10) fell to `general_chem` — calorimetry words
-  (السعة الحرارية، الحرارة النوعية، المسعر) now route it to `thermochem`. Compared before
-  and after: only those four changed, the other 21 are identical. **Not checked:** the
-  heat-capacity lesson now gets thermochemistry questions, of which only two items
-  (`q = m·c·ΔT`) fit it closely — it has no bank of its own, so a long quiz there is
-  mostly enthalpy and exo/endothermic questions. Typed topics that are not catalogue
+  المنبعثة من المادة» (Grade 10) fell to `general_chem` — it now has its own `calorimetry`
+  family (next entry). Compared before and after: only those four changed, the other 21
+  are identical. **Not checked:** Typed topics that are not catalogue
   lessons were not re-measured beyond the title cases in `chemistry.test.ts`.
+- **The heat-capacity lesson has its own question family (2026-10-15).** «الطاقة الممتصة
+  والطاقة المنبعثة من المادة» (Grade 10) is a heat-capacity and calorimeter lesson, but
+  the nearest bank, `thermochem`, is enthalpy and exo/endothermic questions with only two
+  `q = m·c·ΔT` items. `calorimetry` is a 15th chemistry family (15 items: easy 5, medium
+  6, hard 4; specific heat against heat capacity and their units, the calorimeter,
+  `q = m·c·ΔT` forwards and backwards, heat lost = heat gained, mixing two water samples,
+  energy per gram of fuel), each with worked steps. السعة الحرارية، الحرارة النوعية،
+  المسعر (and the English words) route to it ahead of `thermochem`; of the 25 lessons only
+  this one changed route («حسابات الطاقة في التفاعلات الكيميائية» stays `thermochem`). A
+  15-question quiz on the lesson returns 15 distinct questions. An independent read of the
+  items found two real flaws (an item that did not say to ignore the calorimeter's own
+  heat; a vague step), both fixed. `chemistryBankDepth.test.ts` recomputes the numeric
+  answers. **Not checked:** the items follow the lesson's stated objectives, not the
+  textbook's own worked examples; no chemistry teacher has read them; they say nothing
+  about the lesson's lab.
 - **Quiz «أعد التجهيز» now changes the questions, and says when it cannot**
   (2026-10-13). The offline regenerate only checked that the whole quiz JSON
   differed from the last one, so the same stems in another order — or with the
