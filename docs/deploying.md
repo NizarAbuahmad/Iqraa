@@ -729,6 +729,7 @@ statement** — the wrapper costs about two extra round trips each, which is ~0.
 loopback and unmeasured across the Cloud Run → Neon hop. Also check the database's
 connection limit: with enforcement on an instance holds two pools. See the plan's Task 7
 (`docs/superpowers/plans/2026-10-13-row-level-security.md`) for the gates.
+The same steps as a tick-list: [`docs/rls-rollout-checklist.md`](./rls-rollout-checklist.md).
 
 **What goes wrong, and how it looks.** A query that reads *another user's* rows does not
 fail under RLS — it returns fewer rows. So the symptom is rarely a 500; it is a

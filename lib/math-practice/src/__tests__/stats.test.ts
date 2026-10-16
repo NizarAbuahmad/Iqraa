@@ -110,12 +110,31 @@ describe('probability and counting: answers recomputed', () => {
       else { const m = p.match(/تكون (?:الكرة )?(حمراء|زرقاء|خضراء|صفراء)/)!; want = counts[COLORS.indexOf(m[1]!)]! / t; }
       assert.ok(Math.abs(frac(item.answer) - want) < 1e-9, `${p} → ${item.answer}`);
     }
-    for (const item of draws('experimental')) {
-      const n = nums(item.promptAr!);
-      if (has(item.promptAr!, 'الاحتمال التجريبي')) assert.ok(Math.abs(frac(item.answer) - n[1]! / n[0]!) < 1e-9 || true);
-      if (has(item.promptAr!, 'الاحتمال التجريبي')) { const [N, k] = n; assert.ok(Math.abs(frac(item.answer) - k! / N!) < 1e-9, item.promptAr); }
-      else { const [k, N, M] = n; assert.equal(Number(item.answer), (M! * k!) / N!, item.promptAr); assert.ok(Number.isInteger(Number(item.answer))); }
+    const expKinds = new Set<string>();
+    for (const item of draws('experimental', 300)) {
+      const p = item.promptAr!, n = nums(p);
+      if (has(p, 'فكانت النتائج')) {
+        expKinds.add('table');
+        const res = COLORS.map(c => Number(p.match(new RegExp(`${c}: (\\d+)`))?.[1] ?? 0));
+        assert.equal(sum(res), n[0], `the results add up to the number of draws: ${p}`);
+        const c = p.match(/لسحب كرة (حمراء|زرقاء|خضراء|صفراء)/)![1]!;
+        assert.ok(Math.abs(frac(item.answer) - res[COLORS.indexOf(c)]! / n[0]!) < 1e-9, p);
+      } else if (has(p, 'الاحتمال النظري')) {
+        expKinds.add('theoretical');
+        const [T, , , face, c] = n; // T, «1 إلى 6», the face, its count
+        assert.equal(face, n[5], p);
+        assert.ok(Math.abs(frac(item.answer) - 1 / 6) < 1e-9, p);
+        assert.ok(item.wrongs.some(w => Math.abs(frac(w) - c! / T!) < 1e-9), `the experimental value is offered as the slip: ${p}`);
+      } else if (has(p, 'عادلة')) {
+        expKinds.add('fair');
+        const angles = [...p.matchAll(/(\d+)°/g)].map(m => Number(m[1]));
+        assert.equal(sum(angles), 360, p);
+        assert.equal(angles.length, n[0], p);
+        assert.equal(item.answer, new Set(angles).size === 1 ? 'نعم' : 'لا', p);
+      } else if (has(p, 'الاحتمال التجريبي')) { expKinds.add('experimental'); const [N, k] = n; assert.ok(Math.abs(frac(item.answer) - k! / N!) < 1e-9, p); }
+      else { expKinds.add('expected'); const [k, N, M] = n; assert.equal(Number(item.answer), (M! * k!) / N!, p); assert.ok(Number.isInteger(Number(item.answer))); }
     }
+    assert.equal(expKinds.size, 5, `experimental kinds drawn: ${[...expKinds]}`);
   });
 
   it('counting: the multiplication principle, arrangements, permutations and combinations', () => {
@@ -174,22 +193,65 @@ describe('probability and counting: answers recomputed', () => {
 
 describe('statistics: answers recomputed', () => {
   it('mean, median, mode, range', () => {
+    const meanKinds: Record<string, Set<string>> = { mean_g5: new Set(), mean_g7: new Set() };
     for (const id of ['mean_g5', 'mean_g7']) for (const item of draws(id, 300)) {
-      const p = item.promptAr!;
-      if (has(p, 'ما العدد الأخير')) { const m = Number(p.match(/هو (\d+)\./)![1]), n = Number(p.match(/لـ (\d+) أعداد/)![1]); const known = nums(p.slice(p.indexOf('منها:'))); assert.equal(Number(item.answer), m * n - sum(known), p); }
-      else { const xs = dataList(p); assert.equal(Number(item.answer), sum(xs) / xs.length, p); assert.ok(Number.isInteger(Number(item.answer))); }
+      const p = item.promptAr!, n = nums(p), kinds = meanKinds[id]!;
+      if (has(p, 'ما العدد الأخير')) { kinds.add('missing'); const m = Number(p.match(/هو (\d+)\./)![1]), n = Number(p.match(/لـ (\d+) أعداد/)![1]); const known = nums(p.slice(p.indexOf('منها:'))); assert.equal(Number(item.answer), m * n - sum(known), p); }
+      else if (has(p, 'مجموع علامات')) { kinds.add('fromSum'); const [count, S] = n; assert.equal(Number(item.answer), S! / count!, p); }
+      else if (has(p, 'ما مجموع')) { kinds.add('toSum'); const [count, m] = n; assert.equal(Number(item.answer), m! * count!, p); }
+      else if (has(p, 'الجدول التكراري')) {
+        kinds.add('table');
+        const rows = [...p.matchAll(/(\d+): (\d+)/g)].map(m => [Number(m[1]), Number(m[2])] as const);
+        assert.equal(Number(item.answer), sum(rows.map(([v, f]) => v * f)) / sum(rows.map(([, f]) => f)), p);
+      } else if (has(p, 'قيمة متطرفة')) {
+        const xs = dataList(p);
+        // the outlier is the value farthest from the median of the rest, and it is far from all of them
+        const far = (v: number) => { const rest = xs.filter((_, i) => i !== xs.indexOf(v)); return Math.min(...rest.map(r => Math.abs(r - v))); };
+        const out = xs.reduce((a, b) => (far(b) > far(a) ? b : a));
+        const rest = xs.slice(); rest.splice(xs.indexOf(out), 1);
+        assert.ok(far(out) > Math.max(...rest) - Math.min(...rest), `not clearly an outlier: ${p}`);
+        if (has(p, 'بعد حذف')) { kinds.add('withoutOutlier'); assert.equal(Number(item.answer), sum(rest) / rest.length, p); }
+        else { kinds.add('outlier'); assert.equal(Number(item.answer), out, p); }
+      } else if (has(p, 'أُضيف')) { kinds.add('added'); const [count, m, v] = n; assert.equal(Number(item.answer), (m! * count! + v!) / (count! + 1), p); }
+      else { kinds.add('mean'); const xs = dataList(p); assert.equal(Number(item.answer), sum(xs) / xs.length, p); }
+      assert.ok(Number.isInteger(Number(item.answer)), p);
     }
+    assert.equal(meanKinds.mean_g5!.size, 4, `mean_g5 kinds: ${[...meanKinds.mean_g5!]}`);
+    assert.equal(meanKinds.mean_g7!.size, 8, `mean_g7 kinds: ${[...meanKinds.mean_g7!]}`);
+    const mmKinds = new Set<string>();
     for (const id of ['median_mode_g5', 'range_g5', 'median_mode_range_g7']) for (const item of draws(id, 300)) {
       const p = item.promptAr!, xs = dataList(p);
-      if (has(p, 'الوسيط')) assert.equal(Number(item.answer), median(xs), p);
-      else if (has(p, 'المدى')) assert.equal(Number(item.answer), Math.max(...xs) - Math.min(...xs), p);
+      if (has(p, 'ووسيطها')) {
+        mmKinds.add(`${id}:medianMissing`);
+        const shown = p.slice(p.indexOf(':') + 1, p.indexOf('، ووسيطها')).split('،').map(s => s.trim());
+        const md = Number(p.match(/ووسيطها (\d+)/)![1]), h = shown.length / 2, xi = shown.indexOf('x');
+        assert.ok(shown.length % 2 === 0 && (xi === h || xi === h - 1), p);
+        const other = Number(shown[xi === h ? h - 1 : h]);
+        const x = 2 * md - other;
+        assert.equal(Number(item.answer), x, p);
+        const filled = shown.map(s => (s === 'x' ? x : Number(s)));
+        assert.deepEqual(filled, sorted(filled), `x keeps the list in order: ${p}`);
+      } else if (has(p, 'العمر بالسنوات')) {
+        mmKinds.add(`${id}:rangeTable`);
+        const ages = [...p.matchAll(/(\d+): (\d+)/g)].map(m => Number(m[1]));
+        assert.equal(Number(item.answer), Math.max(...ages) - Math.min(...ages), p);
+      } else if (has(p, 'مدى مجموعة')) {
+        mmKinds.add(`${id}:rangeEnd`);
+        const [r, v] = nums(p);
+        assert.equal(Number(item.answer), has(p, 'وأصغر قيمة') ? v! + r! : v! - r!, p);
+        assert.ok(Number(item.answer) > 0, p);
+      } else if (has(p, 'الوسيط')) { mmKinds.add(`${id}:median`); assert.equal(Number(item.answer), median(xs), p); }
+      else if (has(p, 'المدى')) { mmKinds.add(`${id}:range`); assert.equal(Number(item.answer), Math.max(...xs) - Math.min(...xs), p); }
       else {
+        mmKinds.add(`${id}:${has(p, 'الأهداف') ? 'modeContext' : 'mode'}`);
         const c = new Map<number, number>(); xs.forEach(x => c.set(x, (c.get(x) ?? 0) + 1));
         const top = [...c.entries()].sort((a, b) => b[1] - a[1]);
         assert.ok(top.length === 1 || top[0]![1] > top[1]![1], `mode is not unique: ${p}`);
         assert.equal(Number(item.answer), top[0]![0], p);
       }
     }
+    for (const k of ['median_mode_g5:median', 'median_mode_g5:mode', 'median_mode_g5:medianMissing', 'median_mode_g5:modeContext', 'range_g5:range', 'range_g5:rangeTable', 'range_g5:rangeEnd'])
+      assert.ok(mmKinds.has(k), `${k} never drawn: ${[...mmKinds]}`);
   });
 
   it('stem-and-leaf plots', () => {
@@ -218,24 +280,69 @@ describe('statistics: answers recomputed', () => {
   });
 
   it('frequency tables and grouped data', () => {
+    const freqKinds = new Set<string>();
     for (const item of draws('freq_table', 300)) {
       const p = item.promptAr!, xs = dataList(p);
-      if (has(p, 'ما تكرار القيمة')) { const v = Number(p.match(/القيمة (\d+)/)![1]); assert.equal(Number(item.answer), xs.filter(x => x === v).length, p); }
-      else { const c = new Map<number, number>(); xs.forEach(x => c.set(x, (c.get(x) ?? 0) + 1)); const top = [...c.entries()].sort((a, b) => b[1] - a[1]); assert.ok(top[0]![1] > (top[1]?.[1] ?? 0)); assert.equal(Number(item.answer), top[0]![0]); }
+      if (has(p, 'حجم')) {
+        freqKinds.add('sample');
+        const [P, s] = nums(p);
+        assert.ok(s! < P!, p);
+        assert.equal(Number(item.answer), has(p, 'حجم العينة') ? s : P, p);
+      } else if (has(p, 'عدد الكتب: عدد الطلاب')) {
+        const rows = [...p.matchAll(/(\d+): (\d+)/g)].map(m => [Number(m[1]), Number(m[2])] as const);
+        const all = rows.flatMap(([v, f]) => Array<number>(f).fill(v));
+        if (has(p, 'الوسط الحسابي')) { freqKinds.add('tableMean'); assert.equal(Number(item.answer), sum(all) / all.length, p); }
+        else { freqKinds.add('tableMedian'); assert.equal(Number(item.answer), median(all), p); }
+      } else if (has(p, 'ما تكرار القيمة')) { freqKinds.add('frequency'); const v = Number(p.match(/القيمة (\d+)/)![1]); assert.equal(Number(item.answer), xs.filter(x => x === v).length, p); }
+      else { freqKinds.add('mode'); const c = new Map<number, number>(); xs.forEach(x => c.set(x, (c.get(x) ?? 0) + 1)); const top = [...c.entries()].sort((a, b) => b[1] - a[1]); assert.ok(top[0]![1] > (top[1]?.[1] ?? 0)); assert.equal(Number(item.answer), top[0]![0]); }
     }
+    assert.equal(freqKinds.size, 5, `freq_table kinds drawn: ${[...freqKinds]}`);
+    const groupedKinds: Record<string, Set<string>> = { grouped_g6: new Set(), grouped_g9: new Set() };
     for (const id of ['grouped_g6', 'grouped_g9']) for (const item of draws(id, 300)) {
-      const p = item.promptAr!;
+      const p = item.promptAr!, kinds = groupedKinds[id]!;
+      if (has(p, 'ما مركز الفئة')) {
+        kinds.add('midpoint');
+        const [a, b] = nums(p);
+        assert.equal(Number(item.answer), (a! + b!) / 2, p);
+        continue;
+      }
+      if (!has(p, 'طول كل منها')) {
+        const rows = [...p.matchAll(/(\d+)–(\d+): (\d+)/g)].map(m => ({ lo: Number(m[1]), hi: Number(m[2]), f: Number(m[3]) }));
+        assert.ok(rows.length >= 4 && rows.every((r, i) => i === 0 || r.lo === rows[i - 1]!.hi + 1), `classes are contiguous: ${p}`);
+        const N = sum(rows.map(r => r.f));
+        if (has(p, 'كم طالبًا علامته')) {
+          kinds.add('atLeast');
+          const cut = Number(p.match(/علامته (?:أقل من )?(\d+)/)![1]);
+          const want = has(p, 'فأكثر') ? sum(rows.filter(r => r.lo >= cut).map(r => r.f)) : sum(rows.filter(r => r.hi < cut).map(r => r.f));
+          assert.equal(Number(item.answer), want, p);
+        } else if (has(p, 'ما عدد النباتات الكلي')) { kinds.add('histTotal'); assert.equal(Number(item.answer), N, p); }
+        else if (has(p, 'أطول عمود')) {
+          kinds.add('histTallest');
+          const top = Math.max(...rows.map(r => r.f));
+          assert.equal(rows.filter(r => r.f === top).length, 1, `one tallest bar: ${p}`);
+          const r = rows.find(r => r.f === top)!;
+          assert.equal(item.answer, `${r.lo}–${r.hi}`, p);
+        } else {
+          kinds.add('groupedMean');
+          assert.ok(has(p, 'مراكز الفئات'), p);
+          assert.equal(Number(item.answer), sum(rows.map(r => r.f * (r.lo + r.hi) / 2)) / N, p);
+        }
+        continue;
+      }
       const w = Number(p.match(/طول كل منها (\d+)/)![1]);
       const xs = nums(p.slice(p.indexOf(':') + 1, p.indexOf('. ')));
       const cls = (a: number) => xs.filter(x => x >= a && x <= a + w - 1).length;
-      if (has(p, 'ما تكرار الفئة')) { const a = Number(p.match(/الفئة (\d+)–/)![1]); assert.equal(Number(item.answer), cls(a), p); }
+      if (has(p, 'ما تكرار الفئة')) { kinds.add('classFrequency'); const a = Number(p.match(/الفئة (\d+)–/)![1]); assert.equal(Number(item.answer), cls(a), p); }
       else {
+        kinds.add('modalClass');
         const starts = [...new Set(xs.map(x => Math.floor(x / w) * w))];
         const best = starts.sort((a, b) => cls(b) - cls(a));
         assert.ok(cls(best[0]!) > cls(best[1]!), 'modal class is unique');
         assert.equal(item.answer, `${best[0]}–${best[0]! + w - 1}`, p);
       }
     }
+    assert.equal(groupedKinds.grouped_g6!.size, 5, `grouped_g6 kinds: ${[...groupedKinds.grouped_g6!]}`);
+    assert.equal(groupedKinds.grouped_g9!.size, 7, `grouped_g9 kinds: ${[...groupedKinds.grouped_g9!]}`);
   });
 
   it('dispersion', () => {
@@ -312,39 +419,90 @@ describe('proportion and percent: answers recomputed', () => {
       if (has(p, 'العرض الأول')) { const [q1, c1, q2, c2] = n; const first = c1! / q1! < c2! / q2!; assert.equal(item.answer, first ? 'العرض الأول' : 'العرض الثاني'); assert.notEqual(c1! / q1!, c2! / q2!); }
       else assert.equal(Number(item.answer), has(p, 'ثمن') ? n[1]! / n[0]! : n[0]! / n[1]!, p);
     }
+    const propKinds = new Set<string>();
     for (const item of draws('proportion', 300)) {
-      const n = nums(item.promptAr!);
-      if (has(item.promptAr!, 'x في التناسب')) assert.equal(n[0]! * Number(item.answer), n[1]! * n[2]!, item.promptAr);
-      else assert.equal(n[0]! * Number(item.answer), n[1]! * n[2]!, item.promptAr);
+      const p = item.promptAr!, n = nums(p);
+      if (has(p, 'تناسبًا؟')) { propKinds.add('isProportion'); const [a, b, c, d] = n; assert.equal(item.answer, a! * d! === b! * c! ? 'نعم' : 'لا', p); }
+      else if (has(p, 'وصفة')) { propKinds.add('recipe'); const [f, e, F] = n; assert.equal(Number(item.answer), (e! * F!) / f!, p); assert.ok(Number.isInteger(Number(item.answer)), p); }
+      else { propKinds.add(has(p, 'x في التناسب') ? 'solve' : 'pens'); assert.equal(n[0]! * Number(item.answer), n[1]! * n[2]!, p); }
     }
+    assert.equal(propKinds.size, 4, `proportion kinds drawn: ${[...propKinds]}`);
+    const relKinds = new Set<string>();
     for (const item of draws('proportional_relation', 300)) {
-      const p = item.promptAr!;
+      const p = item.promptAr!, n = nums(p);
+      if (has(p, 'أجر عامل')) { relKinds.add('pay'); const [pay, h, h2] = n; assert.equal(Number(item.answer), (pay! / h!) * h2!, p); continue; }
+      if (has(p, 'نقطة الأصل')) { relKinds.add('graph'); const [x, y] = n; assert.equal(Number(item.answer), y! / x!, p); continue; }
       const pairs = [...p.matchAll(/(\d+) → (\d+)/g)].map(m => [Number(m[1]), Number(m[2])] as const);
       const k = pairs[0]![1] / pairs[0]![0];
       const proportional = pairs.every(([x, y]) => y === k * x);
-      if (has(p, 'تناسبية؟')) assert.equal(item.answer, proportional ? 'نعم' : 'لا', p);
-      else { assert.ok(proportional); assert.equal(Number(item.answer), k); }
+      if (has(p, 'تناسبية؟')) { relKinds.add('isProportional'); assert.equal(item.answer, proportional ? 'نعم' : 'لا', p); continue; }
+      assert.ok(proportional, p);
+      if (has(p, 'ما قيمة y عندما')) { relKinds.add('complete'); assert.equal(Number(item.answer), k * Number(p.match(/x = (\d+)؟/)![1]), p); }
+      else if (has(p, 'ما المعادلة')) { relKinds.add('equation'); assert.equal(item.answer, `y = ${k}x`, p); }
+      else { relKinds.add('constant'); assert.equal(Number(item.answer), k, p); }
     }
+    assert.equal(relKinds.size, 6, `proportional_relation kinds drawn: ${[...relKinds]}`);
   });
 
   it('variation and proportional division', () => {
+    const dirKinds = new Set<string>();
     for (const item of draws('direct_variation', 300)) {
-      const n = nums(item.promptAr!), x1 = n[0]!, y1 = n[1]!;
-      assert.equal(Number(item.answer), has(item.promptAr!, 'ثابت') ? y1 / x1 : (y1 / x1) * n[2]!, item.promptAr);
+      const p = item.promptAr!, n = nums(p);
+      if (has(p, 'هل تمثل المعادلة')) {
+        dirKinds.add('isDirect');
+        const eq = p.match(/المعادلة (.+) تغيرًا/)![1]!;
+        assert.equal(item.answer, /^y = \d+x$/.test(eq) ? 'نعم' : 'لا', p);
+        continue;
+      }
+      const x1 = n[0]!, y1 = n[1]!, k = y1 / x1;
+      if (has(p, 'معادلة التغير')) { dirKinds.add('equation'); assert.equal(item.answer, `y = ${k}x`, p); }
+      else if (has(p, 'ما قيمة x')) { dirKinds.add('findX'); assert.equal(Number(item.answer), n[2]! / k, p); }
+      else if (has(p, 'ثابت')) { dirKinds.add('constant'); assert.equal(Number(item.answer), k, p); }
+      else { dirKinds.add('findY'); assert.equal(Number(item.answer), k * n[2]!, p); }
+      assert.ok(item.answer.startsWith('y = ') || Number.isInteger(Number(item.answer)), p);
     }
+    assert.equal(dirKinds.size, 5, `direct_variation kinds drawn: ${[...dirKinds]}`);
+    const invKinds = new Set<string>();
     for (const item of draws('inverse_variation', 300)) {
-      const [x1, y1, x2] = nums(item.promptAr!);
-      assert.equal(Number(item.answer), (x1! * y1!) / x2!, item.promptAr);
+      const p = item.promptAr!, n = nums(p);
+      if (has(p, 'عمال') || has(p, 'عاملًا')) { invKinds.add('workers'); const [w1, d1, w2] = n; assert.equal(Number(item.answer), (w1! * d1!) / w2!, p); assert.ok(Number.isInteger(Number(item.answer)), p); continue; }
+      if (has(p, 'الجدول')) {
+        invKinds.add('isInverse');
+        const pairs = [...p.matchAll(/(\d+) → (\d+)/g)].map(m => Number(m[1]) * Number(m[2]));
+        assert.equal(item.answer, new Set(pairs).size === 1 ? 'نعم' : 'لا', p);
+        continue;
+      }
+      const [x1, y1] = n, K = x1! * y1!;
+      if (has(p, 'ثابت التغير')) { invKinds.add('constant'); assert.equal(Number(item.answer), K, p); }
+      else if (has(p, 'معادلة التغير')) { invKinds.add('equation'); assert.equal(item.answer, `y = ${K}/x`, p); }
+      else { invKinds.add('findY'); assert.equal(Number(item.answer), K / n[2]!, p); }
     }
+    assert.equal(invKinds.size, 5, `inverse_variation kinds drawn: ${[...invKinds]}`);
+    const divKinds = new Set<string>();
     for (const item of draws('proportional_division', 300)) {
-      const p = item.promptAr!, [total, ...rest] = nums(p.split('.')[0]!.replace(/ دينارًا/, ''));
-      const ratio = p.match(/بنسبة ([\d : ]+)\./)![1]!.split(' : ').map(Number);
-      void rest;
-      const unit = total! / sum(ratio);
-      assert.ok(Number.isInteger(unit));
+      const p = item.promptAr!;
+      const ratio = p.match(/بنسبة ([\d : ]+)[.،]/)![1]!.trim().split(' : ').map(Number);
+      if (has(p, 'زوايا مثلث')) {
+        divKinds.add('triangle');
+        const u = 180 / sum(ratio);
+        assert.ok(Number.isInteger(u), p);
+        assert.equal(item.answer, `${(has(p, 'أكبر') ? Math.max(...ratio) : Math.min(...ratio)) * u}°`, p);
+        continue;
+      }
+      if (has(p, 'نصيب الأول')) {
+        divKinds.add('fromShare');
+        const share = nums(p.slice(p.indexOf('نصيب الأول')))[0]!;
+        assert.equal(Number(item.answer), (share / ratio[0]!) * sum(ratio), p);
+        assert.ok(Number.isInteger(share / ratio[0]!), p);
+        continue;
+      }
+      const total = nums(p)[0]!, unit = total / sum(ratio);
+      assert.ok(Number.isInteger(unit), p);
       assert.equal(gcd(...(ratio as [number, number])) === 1 || ratio.length === 3, true);
-      assert.equal(Number(item.answer), (has(p, 'الأكبر') ? Math.max(...ratio) : Math.min(...ratio)) * unit, p);
+      if (has(p, 'بكم دينارًا يزيد')) { divKinds.add('difference'); assert.equal(Number(item.answer), (Math.max(...ratio) - Math.min(...ratio)) * unit, p); }
+      else { divKinds.add('share'); assert.equal(Number(item.answer), (has(p, 'الأكبر') ? Math.max(...ratio) : Math.min(...ratio)) * unit, p); }
     }
+    assert.equal(divKinds.size, 4, `proportional_division kinds drawn: ${[...divKinds]}`);
   });
 
   it('money, scale, similarity, percent', () => {
@@ -355,16 +513,30 @@ describe('proportion and percent: answers recomputed', () => {
       else if (has(p, 'نسبة الربح')) assert.equal(Number(item.answer.replace('%', '')), ((n[1]! - n[0]!) / n[0]!) * 100, p);
       else assert.equal(Number(item.answer), n[0]! + (n[0]! * n[1]!) / 100, p);
     }
+    const scaleKinds = new Set<string>();
     for (const item of draws('map_scale', 300)) {
-      const n = nums(item.promptAr!);
-      const km = n[1]!, other = n[2]!;
-      assert.equal(Number(item.answer), has(item.promptAr!, 'ما المسافة الحقيقية') ? km * other : other / km, item.promptAr);
+      const p = item.promptAr!, n = nums(p);
+      if (has(p, 'كم كيلومترًا يمثل')) { scaleKinds.add('findScale'); const [cm, real] = n; assert.equal(Number(item.answer), real! / cm!, p); }
+      else if (has(p, 'الطول الحقيقي')) { scaleKinds.add('modelToReal'); const [, s, L] = n; assert.equal(Number(item.answer), (L! * s!) / 100, p); } // cm → m
+      else if (has(p, 'ما طول النموذج')) { scaleKinds.add('realToModel'); const [R, , s] = n; assert.equal(Number(item.answer), (R! * 100) / s!, p); } // m → cm
+      else { const km = n[1]!, other = n[2]!; scaleKinds.add(has(p, 'ما المسافة الحقيقية') ? 'real' : 'map'); assert.equal(Number(item.answer), has(p, 'ما المسافة الحقيقية') ? km * other : other / km, p); }
+      assert.ok(Number.isInteger(Number(item.answer)), p);
     }
+    assert.equal(scaleKinds.size, 5, `map_scale kinds drawn: ${[...scaleKinds]}`);
+    const simKinds = new Set<string>();
     for (const item of draws('similar_figures', 300)) {
-      const n = nums(item.promptAr!);
-      if (has(item.promptAr!, 'معامل التشابه')) assert.equal(Number(item.answer), n[1]! / n[0]!);
-      else assert.equal(Number(item.answer), (n[1]! * n[3]!) / n[0]!, item.promptAr);
+      const p = item.promptAr!, n = nums(p);
+      if (has(p, 'يشابه المثلث')) {
+        simKinds.add('angles');
+        const [A, B] = n;
+        assert.equal(item.answer, `${p.endsWith('الزاوية F؟') ? 180 - A! - B! : B}°`, p);
+      } else if (has(p, 'ظل')) { simKinds.add('shadow'); const [h, s, S] = n; assert.equal(Number(item.answer), (h! * S!) / s!, p); }
+      else if (has(p, 'هل المستطيلان متشابهان')) { simKinds.add('isSimilar'); const [a, b, c, d] = n; assert.equal(item.answer, a! * d! === b! * c! || a! * c! === b! * d! ? 'نعم' : 'لا', p); }
+      else if (has(p, 'محيط')) { simKinds.add('perimeter'); const [k, P] = n; assert.equal(Number(item.answer), k! * P!, p); }
+      else if (has(p, 'معامل التشابه')) { simKinds.add('factor'); assert.equal(Number(item.answer), n[1]! / n[0]!, p); }
+      else { simKinds.add('side'); assert.equal(Number(item.answer), (n[1]! * n[3]!) / n[0]!, p); }
     }
+    assert.equal(simKinds.size, 6, `similar_figures kinds drawn: ${[...simKinds]}`);
     for (const item of draws('percent_g8', 400)) {
       const p = item.promptAr!, n = nums(p);
       if (has(p, 'ما النسبة المئوية التي يمثلها')) assert.equal(Number(item.answer.replace('%', '')), (n[0]! / n[1]!) * 100, p);

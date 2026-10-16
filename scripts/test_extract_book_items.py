@@ -464,7 +464,339 @@ class UnitOpenPage(unittest.TestCase):
 
     def test_the_guide_items_are_all_accounted_for(self):
         ids = {r['id'] for r in self.items.values() if r['source']['page'] == 47}
-        self.assertEqual({r['source']['number'] for r in self.items.values() if r['id'] in ids}, {1, 2, 6, 7, 8, 9, 10, 11})
+        self.assertEqual({r['source']['number'] for r in self.items.values() if r['id'] in ids}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11})
+
+
+# ── guide p.47 items 3-5: written readings, accepted only if they pass two gates ─────────────
+class Readings(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.by_source, cls.rejects, cls.extras = x.build_all()
+        cls.items = {r['id']: r for rs in cls.by_source.values() for r in rs}
+        cls.text = p47()
+        cls.page = {n: x.page_latin(cls.text, n) for n in (3, 4, 5)}
+
+    def solve(self, n, reading, check):
+        """solve_reading for item `n` with READINGS[n] replaced by `reading`, then restored."""
+        real = x.READINGS[n]
+        x.READINGS[n] = reading
+        try:
+            return x.solve_reading(n, self.page[n], check)
+        finally:
+            x.READINGS[n] = real
+
+    def test_the_page_text_each_reading_is_checked_against(self):
+        # the Latin text of the page, Arabic removed; item 4's `x = -1` is printed in its heading line
+        self.assertEqual(x.core(self.page[3]), '35x×9y=27' '5' '3x×5y=25' 'a-1,-1b1,1c-1,1d1,-1')
+        self.assertEqual(x.core(self.page[4]), 'x=-1' 'a52x+1=25b3' '1+x=81c73-2x=49d42-x=64')
+        self.assertEqual(x.core(self.page[5]), '8x2y3□=2yx2a2x4yb4x4y2c2xydx2y2')
+
+    def test_the_three_are_served_computed_and_never_verified(self):
+        for id_, key in (('u1l5-3', '(1, -1)'), ('u1l5-4', '4^(2-x) = 64'), ('u1l4-5', '2x^4y')):
+            r = self.items[f'bi-math-s1-teacher-guide-{id_}']
+            self.assertEqual((r['kind'], r['status'], r['verificationSource'], r['check'], r['printedAnswer']),
+                             ('unit-test-mcq', 'computed', 'sympy', None, None), id_)
+            self.assertEqual(r['computedAnswer'], key, id_)
+            self.assertIn(r['computedAnswer'], r['options'], id_)
+            self.assertEqual((r['tier'], r['tierSource']), ('medium', 'default'), id_)
+            self.assertEqual(r['source']['bookPage'], 34, id_)
+
+    def test_lessons_follow_the_book_lesson(self):
+        self.assertEqual(self.items['bi-math-s1-teacher-guide-u1l5-3']['lessonId'], 'kbl-math-s1-nccd-u1_l4')
+        self.assertEqual(self.items['bi-math-s1-teacher-guide-u1l5-4']['lessonId'], 'kbl-math-s1-nccd-u1_l4')
+        self.assertEqual(self.items['bi-math-s1-teacher-guide-u1l4-5']['lessonId'], 'kbl-math-s1-nccd-u1_l3')
+
+    def test_golden_stems_are_the_readings(self):
+        self.assertEqual(self.items['bi-math-s1-teacher-guide-u1l5-3']['stem'], '3^(5x) × 9^y = 27\n5^(3x) × 5^y = 25')
+        self.assertEqual(self.items['bi-math-s1-teacher-guide-u1l5-4']['stem'], 'x = -1')
+        self.assertEqual(self.items['bi-math-s1-teacher-guide-u1l4-5']['stem'], '8x^2y^3 / □ = (2y/x)^2')
+
+    def test_every_option_of_every_reading_is_reachable_and_exactly_one_is_correct(self):
+        for n, check in ((3, 'points'), (4, 'root'), (5, 'box')):
+            stem, options, key = x.solve_reading(n, self.page[n], check)
+            holds = [x.option_holds(check, stem, o) for o in options]
+            self.assertEqual(holds.count(True), 1, n)
+            self.assertTrue(holds[key], n)
+
+    # gate 1: the same characters
+    def test_a_reading_that_changes_a_digit_is_refused(self):
+        r = x.READINGS[3]
+        for stem in (('3^(5x) × 9^y = 28', r.stem[1]), ('3^(5x) × 9^y = 27', '5^(3x) × 5^y = 24')):
+            with self.subTest(stem=stem), self.assertRaises(x.Reject) as ctx:
+                self.solve(3, x.Reading(stem, r.options), 'points')
+            self.assertEqual(str(ctx.exception), 'reading_changes_characters')
+
+    def test_a_reading_that_drops_adds_or_moves_a_character_is_refused(self):
+        r = x.READINGS[4]
+        cases = {
+            'dropped': x.Reading(r.stem, ('5^(2x+1) = 25', '3^(1+x) = 81', '7^(3-2x) = 49', '4^2-x = 6')),
+            'added': x.Reading(r.stem, ('5^(2x+1) = 25', '3^(1+x) = 81', '7^(3-2x) = 49', '4^(2-x) = 64 + 0')),
+            'moved': x.Reading(r.stem, ('5^(1+2x) = 25', '3^(1+x) = 81', '7^(3-2x) = 49', '4^(2-x) = 64')),
+            'sign': x.Reading(('x = 1',), r.options),
+        }
+        for name, reading in cases.items():
+            with self.subTest(name), self.assertRaises(x.Reject) as ctx:
+                self.solve(4, reading, 'root')
+            self.assertEqual(str(ctx.exception), 'reading_changes_characters')
+
+    def test_structure_characters_alone_never_change_the_core(self):
+        self.assertEqual(x.core('3^(5x) × 9^y'), x.core('3 5x × 9y'))
+        self.assertNotEqual(x.core('3^(5x) × 9^y'), x.core('3^(5x) / 9^y'))   # an operator is meaning
+        self.assertEqual(x.core('(2y/x)^2'), x.core('(2y\nx )2'))
+
+    # gate 2: exactly one key. These readings keep every character, so only gate 2 can stop them.
+    def test_rival_readings_that_pass_gate_1_but_have_no_unique_key_are_refused_by_gate_2(self):
+        # item 3: no exponents at all (a product read as written), and the lone `5` as a coefficient
+        flat3 = x.Reading(('3 5x × 9y = 27', '5 3x × 5y = 25'), x.READINGS[3].options)
+        # item 4: bases and exponents glued the other way round
+        flat4 = x.Reading(x.READINGS[4].stem, ('5^(2)x+1 = 25', '3^(1)+x = 81', '7^(3)-2x = 49', '4^(2)-x = 64'))
+        # item 5: the same characters with a different exponent structure on the left (x^(2y^3))
+        flat5 = x.Reading(('8x^(2y^3) / □ = (2y/x)^2',), x.READINGS[5].options)
+        for n, check, reading in ((3, 'points', flat3), (4, 'root', flat4), (5, 'box', flat5)):
+            with self.subTest(n):
+                try:
+                    self.solve(n, reading, check)
+                except x.Reject as r:
+                    self.assertEqual(str(r), 'key_not_unique', n)
+                else:
+                    self.fail(f'item {n}: a rival reading was accepted')
+
+    def test_a_rival_that_reorders_the_characters_is_refused_by_gate_1(self):
+        # the box moved across the equals sign: structure alone cannot move a character
+        moved = x.Reading(('8x^2y^3 = □ / (2y/x)^2',), x.READINGS[5].options)
+        with self.assertRaises(x.Reject) as ctx:
+            self.solve(5, moved, 'box')
+        self.assertEqual(str(ctx.exception), 'reading_changes_characters')
+
+    def test_an_exponent_one_place_off_breaks_item_3(self):
+        # 9^y read as 9y (a product) leaves no correct point
+        off = x.Reading(('3^(5x) × 9y = 27', '5^(3x) × 5^y = 25'), x.READINGS[3].options)
+        with self.assertRaises(x.Reject) as ctx:
+            self.solve(3, off, 'points')
+        self.assertEqual(str(ctx.exception), 'key_not_unique')
+
+    def test_item_5_bracket_in_a_different_place_has_a_unique_key_and_only_the_bracket_rule_stops_it(self):
+        # (2y/x^2) keeps every character, and under it option b is the unique correct one - a wrong
+        # answer that gate 2 alone would serve. The page prints `(2y` ... `x )2`, so the bracket
+        # closes AFTER the 2, which `(2y/x)^2` honours and these do not.
+        for stem in ('8x^2y^3 / □ = (2y/x^2)', '8x^2y^3 / □ = 2y/x^2'):
+            with self.subTest(stem=stem):
+                self.assertTrue(x.option_holds('box', stem, '4x^4y^2'))
+                self.assertEqual(sum(x.option_holds('box', stem, o) for o in x.READINGS[5].options), 1)
+                with self.assertRaises(x.Reject) as ctx:
+                    self.solve(5, x.Reading((stem,), x.READINGS[5].options), 'box')
+                self.assertEqual(str(ctx.exception), 'reading_moves_brackets')
+
+    def test_bracket_pairs_are_counted_in_meaning_characters(self):
+        want = {(7, 10): 1}
+        self.assertEqual(dict(x.bracket_pairs('8x2y3\n□ = (2y\nx )2')), want)
+        self.assertEqual(dict(x.bracket_pairs('8x^2y^3 / □ = (2y/x)^2')), want)
+        self.assertEqual(dict(x.bracket_pairs('5 2x+1 = 25')), {})
+        # an option label is not a bracket; a bracket after a letter inside a line still is
+        self.assertEqual(dict(x.bracket_pairs('a) (1, 3) \tb) (0, 2)')), {(0, 3): 1, (3, 6): 1})
+        with self.assertRaises(x.Reject):
+            x.bracket_pairs('2 (a) b)')
+
+    def test_unbalanced_brackets_are_an_error_not_a_pair(self):
+        for s in ('(2y', '2y)', ')(', '((2y)'):
+            with self.subTest(s), self.assertRaises(x.Reject) as ctx:
+                x.bracket_pairs(s)
+            self.assertEqual(str(ctx.exception), 'unbalanced_brackets')
+
+    def test_the_operator_of_the_page_cannot_be_swapped_for_a_bar(self):
+        # 3^(5x) / 9^y = 27 and 5^(3x) / 5^y = 25 have one correct option, (1, 1) - a wrong answer
+        # that gate 2 alone would serve, and that gate 1 used to let through by ignoring `×`.
+        swapped = x.Reading(('3^(5x) / 9^y = 27', '5^(3x) / 5^y = 25'), x.READINGS[3].options)
+        stem = '\n'.join(swapped.stem)
+        self.assertEqual([i for i, o in enumerate(swapped.options) if x.option_holds('points', stem, o)], [1])
+        with self.assertRaises(x.Reject) as ctx:
+            self.solve(3, swapped, 'points')
+        self.assertEqual(str(ctx.exception), 'reading_changes_characters')
+        for op in ('*', '+', ''):       # dropping or replacing the `×` is refused too
+            dropped = x.Reading((f'3^(5x) {op} 9^y = 27', f'5^(3x) {op} 5^y = 25'), x.READINGS[3].options)
+            with self.subTest(op), self.assertRaises(x.Reject) as ctx:
+                self.solve(3, dropped, 'points')
+            self.assertEqual(str(ctx.exception), 'reading_changes_characters')
+
+    def test_a_bracket_that_closes_a_different_bracket_is_refused(self):
+        # (2y/(x)^2): a `(` and a `)` sit where the page's do, but the `)` closes the inner bracket.
+        # Under it option b is the unique key - the answer the bracket rule exists to stop.
+        stem = '8x^2y^3 / □ = (2y/(x)^2)'
+        self.assertTrue(x.option_holds('box', stem, '4x^4y^2'))
+        with self.assertRaises(x.Reject) as ctx:
+            self.solve(5, x.Reading((stem,), x.READINGS[5].options), 'box')
+        self.assertEqual(str(ctx.exception), 'reading_moves_brackets')
+
+    def test_two_correct_options_or_none_is_not_a_key(self):
+        # the page text is the reading itself, so gate 1 passes and only gate 2 can speak
+        stem = ('x = -1',)
+        for name, options in (
+            ('two', ('2^(x+1) = 1', '3^(x+1) = 1', '5^(2x+1) = 25', '4^(2-x) = 63')),
+            ('none', ('2^(x+1) = 2', '3^(x+1) = 2', '5^(2x+1) = 25', '4^(2-x) = 63')),
+        ):
+            reading = x.Reading(stem, options)
+            page = '\n'.join([*stem, *(f'{l} {o}' for l, o in zip(x.LABELS, options))])
+            real = x.READINGS[4]
+            x.READINGS[4] = reading
+            try:
+                with self.subTest(name), self.assertRaises(x.Reject) as ctx:
+                    x.solve_reading(4, page, 'root')
+            finally:
+                x.READINGS[4] = real
+            self.assertEqual(str(ctx.exception), 'key_not_unique')
+
+    def test_unknown_check_and_missing_reading_are_refused(self):
+        with self.assertRaises(x.Reject) as ctx:
+            x.solve_reading(99, '', 'points')
+        self.assertEqual(str(ctx.exception), 'no_reading')
+        with self.assertRaises(x.Reject) as ctx:
+            x.option_holds('nonsense', 'x = 1', '1')
+        self.assertEqual(str(ctx.exception), 'unknown_check')
+
+    # the page itself
+    def test_a_missing_or_repeated_heading_finds_nothing(self):
+        with self.assertRaises(x.Reject):
+            x.page_latin('no items here', 3)
+        found = x.split_readings('no items here', (3, 4, 5))
+        self.assertEqual({n: str(r) for n, r in found.items()}, {3: 'item_not_found', 4: 'item_not_found', 5: 'item_not_found'})
+        doubled = self.text + '\n' + self.text
+        with self.assertRaises(x.Reject):
+            x.page_latin(doubled, 3)
+
+    def test_a_page_without_option_d_is_refused(self):
+        cut = '\n'.join(l for l in self.text.split('\n') if 'd)' not in l)
+        with self.assertRaises(x.Reject) as ctx:
+            x.page_latin(cut, 3)
+        self.assertEqual(str(ctx.exception), 'options_not_found')
+
+    def test_a_changed_page_quarantines_the_item_instead_of_serving_it(self):
+        real = x.page_text
+        changed = self.text.replace('3x × 5y = 25', '3x × 5y = 26')
+        x.page_text = lambda s, p: changed if (s, p) == GUIDE_P47 else real(s, p)
+        try:
+            by_source, rejects, _ = x.build_all()
+        finally:
+            x.page_text = real
+        served = {r['id'] for rs in by_source.values() for r in rs}
+        self.assertNotIn('bi-math-s1-teacher-guide-u1l5-3', served)
+        self.assertEqual({q['id']: q['reason'] for q in rejects}['bi-math-s1-teacher-guide-u1l5-3'], 'reading_changes_characters')
+        self.assertIn('bi-math-s1-teacher-guide-u1l5-4', served)    # its neighbours are untouched
+
+    def test_nothing_is_guessed_for_the_other_unit_test_items(self):
+        # items 12-18 of the page are not rows; a reading row for them would need its own reading
+        self.assertEqual(set(x.READINGS), {3, 4, 5})
+        rows = [e for e in x.TABLE if e.family == 'reading']
+        self.assertEqual(sorted(n for e in rows for n in e.items), [3, 4, 5])
+
+    def test_the_report_counts_the_new_items_as_computed(self):
+        counts = {}
+        for rs in self.by_source.values():
+            for r in rs:
+                counts[r['status']] = counts.get(r['status'], 0) + 1
+        self.assertEqual((counts['verified'], counts['computed']), (5, 28))
+
+
+class RivalReadings(unittest.TestCase):
+    """Every other way to place exponents over the page's own characters.
+
+    The chosen readings are not trusted because they look right: this enumerates the rivals (up to
+    two exponent groups per equation, plus one fraction bar anywhere for items 3 and 4) and requires
+    that any rival which still leaves exactly one correct option leaves the SAME one. Operators and
+    the page's brackets are held fixed here because the character and bracket gates already fix
+    them (see Readings), and the lone `5` of item 3 stays the second equation's base. Item 5's
+    bar is part of its reading, so its search fixes the page's bracket and varies exponents. A rival that disagreed would mean
+    the key depends on a guess about the layout, and the item would have to be quarantined.
+    """
+
+    @staticmethod
+    def variants(s, max_groups=2, bars=True):
+        """Exponent groups (up to `max_groups`), and with `bars` also one fraction bar anywhere."""
+        import itertools
+        import re
+        spans = [(i, j) for i in range(1, len(s)) for j in range(i + 1, len(s) + 1)
+                 if not re.search(r'[*=]', s[i:j])]
+        out = {s}
+        for k in range(1, max_groups + 1):
+            for comb in itertools.combinations(spans, k):
+                ordered = sorted(comb)
+                if all(ordered[a][1] <= ordered[a + 1][0] for a in range(k - 1)):
+                    t = s
+                    for i, j in sorted(comb, reverse=True):
+                        t = t[:i] + '^(' + t[i:j] + ')' + t[j:]
+                    out.add(t)
+        if bars:
+            for v in list(out):
+                for i in range(1, len(v)):
+                    if v[i - 1] not in '=*' and v[i] not in '=*':
+                        out.add(v[:i] + '/' + v[i:])
+        return out
+
+    def test_item_3_every_unique_rival_reading_gives_the_same_point(self):
+        from sympy import simplify
+        pts = ['(-1,-1)', '(1,1)', '(-1,1)', '(1,-1)']
+
+        def truth(eq):
+            l, r = x.eq_sides(eq)
+            out = []
+            for p in pts:
+                a, b = (x.parse(c) for c in p.strip('()').split(','))
+                out.append(simplify((l - r).subs({x.X: a, x.Y: b})) == 0)
+            return out
+
+        def table(base):
+            rows = {}
+            for v in self.variants(base):
+                try:
+                    rows[v] = truth(v)
+                except Exception:       # a reading SymPy cannot parse is not a rival
+                    pass
+            return rows
+
+        first, second = table('35x*9y=27'), table('53x*5y=25')
+        keys = set()
+        for ta in first.values():
+            for tb in second.values():
+                sat = [a and b for a, b in zip(ta, tb)]
+                if sum(sat) == 1:
+                    keys.add(pts[sat.index(True)])
+        self.assertEqual(keys, {'(1,-1)'})
+
+    def test_item_4_every_unique_rival_reading_gives_the_same_option(self):
+        from sympy import simplify
+        rows = []
+        for raw in ('52x+1=25', '31+x=81', '73-2x=49', '42-x=64'):
+            seen = set()
+            for v in self.variants(raw, 1):   # one exponent group and one bar
+                try:
+                    l, r = x.eq_sides(v)
+                    seen.add(simplify((l - r).subs(x.X, -1)) == 0)
+                except Exception:
+                    pass
+            rows.append(seen)
+        keys = set()
+        for combo in __import__('itertools').product([True, False], repeat=4):
+            if combo.count(True) == 1 and all(c in seen for c, seen in zip(combo, rows)):
+                keys.add(combo.index(True))
+        self.assertEqual(keys, {3})      # d) only
+
+    def test_item_5_every_unique_rival_reading_with_the_pages_brackets_gives_the_same_expression(self):
+        from sympy import Eq, Symbol, simplify, solve
+        keys = set()
+        for left in self.variants('8x2y3', 2, bars=False):
+            for sep in ('/', '*', ''):
+                for inner in ('2y/x', '2y*x', '2yx'):
+                    for tail in ('^2', '2', '^(2)'):
+                        try:
+                            l, r = x.eq_sides(f'{left}{sep}B=({inner}){tail}')
+                            sol = solve(Eq(l, r), Symbol('B'))
+                            if len(sol) != 1:
+                                continue
+                            hit = [o for o in x.READINGS[5].options if simplify(x.parse(o) - sol[0]) == 0]
+                            if len(hit) == 1:
+                                keys.add(hit[0])
+                        except Exception:
+                            pass
+        self.assertEqual(keys, {'2x^4y'})
 
 
 if __name__ == '__main__':

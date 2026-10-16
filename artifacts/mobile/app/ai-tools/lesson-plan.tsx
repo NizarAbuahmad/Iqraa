@@ -44,6 +44,8 @@ import { buildLessonPlanHTML, buildLessonPlanSlidesHTML, exportMinistryPlanWord,
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
 import { useWarmGrounding } from '@/hooks/useWarmGrounding';
+import { usePickedLesson } from '@/hooks/usePickedLesson';
+import { carriedLessonTopic } from '@/services/pickedLesson';
 import { nextFrame } from '@/services/nextFrame';
 import { buildLessonPlanRequest, groundLessonPlanTopic } from '@/services/generatorRequests';
 import { useWideScope } from '@/hooks/useWideScope';
@@ -74,6 +76,8 @@ export default function LessonPlanScreen() {
     priorTopicsNotes?: string;
    includePriorReview?: string;
     scope?: string; distribution?: string;
+    // The lesson itself (a lesson page, the lesson bar, a saved plan) — `usePickedLesson`.
+    lessonId?: string;
   }>();
   const scrollRef = useRef<ScrollView>(null);
 
@@ -99,11 +103,17 @@ export default function LessonPlanScreen() {
   const [subjectIdx, setSubjectIdx] = useState(initialScope.subjectIdx);
   // The picked subject's material language — English is planned in English.
   const lang = contentLang(subjects[subjectIdx].id, uiLang);
-  const [topic, setTopic] = useState(() => topicInLang(
-    topicForScope(params, uiLang, teacherScope.defaultScope, teacherScope), uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
-    { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
-  ));
+  const [topic, setTopic] = useState(() => {
+    const initial = topicForScope(params, uiLang, teacherScope.defaultScope, teacherScope);
+    const initialLang = contentLang(subjects[initialScope.subjectIdx].id, uiLang);
+    return (initial.trim() && carriedLessonTopic(params.lessonId, initialLang)) || topicInLang(
+      initial, uiLang, initialLang,
+      { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
+    );
+  });
   useWarmGrounding(topic, lang);
+  const kbScope = { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id };
+  const pickedLesson = usePickedLesson(params.lessonId, topic, kbScope);
   // The teaching tools ignore `distribution`: a revision session has no question slots.
   const wideScope = useWideScope(params, { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id });
   /** The wide scope the plan on screen was generated under — what Save records, and what hides the Ministry form. */
@@ -160,7 +170,7 @@ export default function LessonPlanScreen() {
       if (wideFrozen && topic.trim()) {
         return captureGenerationScope({ gradeIdx: initialScope.gradeIdx, subjectIdx: initialScope.subjectIdx, topic }, WIDE_GROUNDING);
       }
-      return reopenedGenerationScope(initialScope, topic, lang);
+      return reopenedGenerationScope(initialScope, topic, lang, params.lessonId);
     },
   );
   const scope = materialScope(generated, { gradeIdx, subjectIdx, topic });
@@ -204,7 +214,7 @@ export default function LessonPlanScreen() {
     // A wide scope has no single lesson, and its label must not be looked up as one:
     // the review option would light up for whichever lesson the label happens to match.
     if (!topic.trim() || wideScope.isWide) return [] as string[];
-    const g = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', { scope: { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id } });
+    const g = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', { scope: kbScope, lessonId: pickedLesson.lessonId });
     if (!g.lesson) return [] as string[];
     return getUnitPriorKnowledge(g.lesson.id);
   })();
@@ -301,7 +311,7 @@ export default function LessonPlanScreen() {
       // Wide: the topic is never grounded — it is the scope's label.
       const grounding = wideReq
         ? WIDE_GROUNDING
-        : groundLessonPlanTopic(form, { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id });
+        : groundLessonPlanTopic(form, kbScope, pickedLesson.lessonId);
       const out = await aiService.generateLessonPlan(
         wideReq ?? buildLessonPlanRequest(form, grounding),
         { signal: controller.signal },
@@ -516,6 +526,7 @@ export default function LessonPlanScreen() {
           gradeId={grades[gradeIdx].id}
           value={topic}
           onChange={text => { setTopic(text); setError(''); }}
+          onSelectionDetail={pickedLesson.onSelectionDetail}
           lang={lang}
           isRTL={isRTL}
           colors={colors}

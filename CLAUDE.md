@@ -127,6 +127,12 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   the `scope` option (`KbScope`) — the generator screens, the reopened-material
   scope and `groundedSubjectConflict` do — and derive `lessonId`/`unitId` from
   the grounding you already resolved, never by re-grounding the title.
+  **Scope is not enough either (found 2026-10-15):** every Grade 1 English lesson
+  is "Vocabulary & Grammar" or "Listening & Speaking", so a scoped title still
+  lands every unit on Unit 1. The generator screens hold the tapped or carried
+  lesson's id with `usePickedLesson` and ground with `{ lessonId, scope }`; read
+  request fields off that one grounding with `groundingRequestFields`. A new
+  generator screen needs the same, and a route into one should pass `lessonId`.
 - **Generators branch on the subject NAME.** `isMathContext` tests the string,
   so passing `subject: 'Mathematics'` for a chemistry lesson serves it maths
   questions from the concrete bank, titled with the chemistry lesson. Anything
@@ -196,7 +202,12 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   leaves an unmatched entry `computed` and listed in `report.json`
   (`unmatchedPrinted`), never tolerated into a match. Even then the item carries
   no `check` and no badge. A `unit-test` item cites as the unit test and is drawn
-  wherever a short answer is wanted. `SERVED_STATUSES` is the one place
+  wherever a short answer is wanted. Guide p.47 choices 3-5, whose exponents and
+  fractions the text layer flattens beyond any rule, are served `computed` from a
+  hand-written reading (`READINGS`) that is trusted for nothing: it must keep
+  exactly the page's characters and brackets and leave exactly one correct
+  option, or the item is quarantined. A reading is evidence about a layout, never
+  a key. `SERVED_STATUSES` is the one place
   that decides what a paper may draw. Only the API's evaluation generator uses
   book items: the mock path (live AI off), and the live model path only when
   `BOOK_ITEMS_LIVE=true` (off by default, read per request; production runs

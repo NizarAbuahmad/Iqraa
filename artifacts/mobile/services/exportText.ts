@@ -11,6 +11,7 @@ import { labelAnswer, labelOptionLine } from './optionLabels.ts';
 import { arCountPhrase } from './arCount.ts';
 import { quizBlockPoints, quizBlocks, quizStudentFields } from './quizPaper.ts';
 import { worksheetInstructions } from './worksheetPaper.ts';
+import { keyWorkingNote, workingProvenance } from './worksheetWorking.ts';
 import type {
   ActivityOutput,
   LessonPlanOutput,
@@ -128,6 +129,9 @@ export function formatWorksheetText(
   if (includeAnswers && ws.answerKey && ws.answerKey.length > 0) {
     lines.push(`\n${SEP}`);
     lines.push(isAr ? 'مفتاح الإجابات' : 'ANSWER KEY');
+    // Working a model wrote is not working a person checked; the key is the
+    // teacher's section, so the warning stands here and nowhere else.
+    if (workingProvenance(ws).unreviewedKeyLines > 0) lines.push(`⚠ ${keyWorkingNote(isAr)}`);
     ws.answerKey.forEach(item => {
       lines.push(`${item.num}. ${item.answer}`);
       item.solution?.forEach((step, i) => lines.push(`   ${i + 1}) ${step}`));
