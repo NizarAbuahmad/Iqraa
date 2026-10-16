@@ -154,6 +154,7 @@ const triangleArea = T('area_triangle', /^مساحه المثلث$/, [6, 6], ({ 
 const trapezoidArea = T('area_trapezoid', /^مساحه شبه المنحرف$/, [6, 6], ({ rng, diff }) => {
   const a = int(rng, 3, span(diff, 9, 13, 18));
   let b = int(rng, 3, span(diff, 9, 13, 18)), h = int(rng, 2, span(diff, 8, 12, 16));
+  if (b === a) b += 1; // equal parallel sides would make a parallelogram
   if (((a + b) * h) % 2) h += 1;
   const A = ((a + b) * h) / 2;
   // 0 area, 1 height from the area, 2 the other base from the area, 3 a plot of land.
@@ -1009,21 +1010,57 @@ const UNIT_SETS: Record<string, Unit> = {
   mass: ['كيلوغرام', 'غرام', 'kg', 'g', 1000],
   volume: ['لتر', 'مليلتر', 'L', 'mL', 1000],
 };
-const convertGen = (id: string, match: RegExp, sets: string[], grades: [number, number]) => T(id, match, grades, ({ rng, diff, grade }) => {
-  const [bigAr, smallAr, bigEn, smallEn, f] = UNIT_SETS[pick(rng, sets)]!;
+/**
+ * The unit symbols a story or a compound measure is written with (no number–noun
+ * agreement to get wrong), the accusative «كم …» asks with, and a real-life
+ * «what is left» story per quantity.
+ */
+const UNIT_WORDS: Record<string, { big: string; small: string; acc: string; story: (n: number, p: number) => [string, string] }> = {
+  length_m: { big: 'م', small: 'سم', acc: 'سنتيمترًا', story: (n, p) => [`شريط طوله ${n} م، قُصَّت منه قطعة طولها ${p} سم. كم سنتيمترًا بقي من الشريط؟`, `A ribbon is ${n} m long and a piece ${p} cm long is cut off. How many centimetres of ribbon are left?`] },
+  length_km: { big: 'كم', small: 'م', acc: 'مترًا', story: (n, p) => [`يريد عدّاء أن يركض مسافة ${n} كم، وقد ركض منها ${p} م. كم مترًا بقي عليه أن يركض؟`, `A runner wants to run ${n} km and has run ${p} m of it. How many metres are left to run?`] },
+  mass: { big: 'كغ', small: 'غ', acc: 'غرامًا', story: (n, p) => [`في كيس ${n} كغ من الأرز، استُعمل منه ${p} غ. كم غرامًا بقي في الكيس؟`, `A bag holds ${n} kg of rice and ${p} g of it is used. How many grams are left in the bag?`] },
+  volume: { big: 'لتر', small: 'مل', acc: 'مليلترًا', story: (n, p) => [`في إبريق ${n} لتر من الماء، سُكب منه ${p} مل. كم مليلترًا بقي في الإبريق؟`, `A jug holds ${n} L of water and ${p} mL is poured out. How many millilitres are left in the jug?`] },
+};
+/** «كم غرامًا في 3 كغ و 250 غ؟» — a compound measure written in the small unit. */
+const unitCompound = (rng: Rng, diff: D, set: string): Draft => {
+  const [, , bigEn, smallEn, f] = UNIT_SETS[set]!, w = UNIT_WORDS[set]!;
+  const a = int(rng, 1, span(diff, 5, 9, 15)), b = f === 100 ? int(rng, 1, 99) : 10 * int(rng, 1, 99);
+  return { eq: `${a}, ${b}`, answer: String(a * f + b), wrongs: pos(a * f + b, [a + b, a * f * b, a * 10 + b, (a * f + b) * 10, a * f - b]), ar: `كم ${w.acc} في ${a} ${w.big} و ${b} ${w.small}؟`, en: `How many ${smallEn} are in ${a} ${bigEn} ${b} ${smallEn}?` };
+};
+/** A whole number of the big unit, less a part in the small unit: convert, then subtract. */
+const unitStory = (rng: Rng, diff: D, set: string): Draft => {
+  const f = UNIT_SETS[set]![4];
+  const n = int(rng, 2, span(diff, 5, 9, 15)), p = f === 100 ? 10 * int(rng, 1, 9) : 50 * int(rng, 1, 19);
+  const left = n * f - p;
+  const [ar, en] = UNIT_WORDS[set]!.story(n, p);
+  return { eq: `left ${n}, ${p}`, answer: String(left), wrongs: pos(left, [n * f + p, n * f, n * f - 10 * p, (n - 1) * f, left + f / 10]), ar, en };
+};
+const convertGen = (id: string, match: RegExp, sets: string[], grades: [number, number]) => T(id, match, grades, ({ rng, diff }) => {
+  const set = pick(rng, sets);
+  const [bigAr, smallAr, bigEn, smallEn, f] = UNIT_SETS[set]!;
+  // 0 big → small, 1 small → big; 2 a compound measure in the small unit, 3 what is left (real life).
+  const k = pick(rng, [0, 1, 2, 3]);
+  if (k === 2) return unitCompound(rng, diff, set);
+  if (k === 3) return unitStory(rng, diff, set);
   const n = int(rng, 2, span(diff, 9, 25, 90));
-  if (rng() < 0.5) return { eq: `${n}`, answer: String(n * f), wrongs: pos(n * f, [n * f * 10, (n * f) / 10, n + f, n * f / 100 | 0, n * 10]), ar: `حوّل ${n} ${bigAr} إلى ${smallAr}.`, en: `Convert ${n} ${bigEn} to ${smallEn}.` };
+  if (k === 0) return { eq: `${n}`, answer: String(n * f), wrongs: pos(n * f, [n * f * 10, (n * f) / 10, n + f, n * f / 100 | 0, n * 10]), ar: `حوّل ${n} ${bigAr} إلى ${smallAr}.`, en: `Convert ${n} ${bigEn} to ${smallEn}.` };
   const q = int(rng, 2, span(diff, 9, 25, 60));
   const small = q * f;
-  void grade;
   return { eq: `${small}`, answer: String(q), wrongs: pos(q, [q * 10, small / 10, q * 100, q + 1, small]), ar: `حوّل ${small} ${smallAr} إلى ${bigAr}.`, en: `Convert ${small} ${smallEn} to ${bigEn}.` };
 });
 
 /** The lesson names the quantity — length, mass or capacity — and only that quantity's units appear. */
 const unitsMixed = (id: string, match: RegExp, sets: string[]) => T(id, match, [4, 5], ({ rng, diff, grade }) => {
-  const [bigAr, smallAr, bigEn, smallEn, f] = UNIT_SETS[pick(rng, sets)]!;
-  const a = int(rng, 1, span(diff, 5, 9, 15)), b = int(rng, 1, f / 10 - 1) * (f >= 1000 ? 10 : 1);
-  if (rng() < 0.4 && (diff !== 'easy' || grade === 5)) return { eq: `${a}, ${b}`, answer: String(a * f + b), wrongs: pos(a * f + b, [a + b, a * f * b, a * 10 + b, (a * f + b) * 10, a * f - b]), ar: `كم ${smallAr} في ${a} ${bigAr} و ${b} ${smallAr}؟`, en: `How many ${smallEn} are in ${a} ${bigEn} ${b} ${smallEn}?` };
+  const set = pick(rng, sets);
+  const [bigAr, smallAr, bigEn, smallEn, f] = UNIT_SETS[set]!;
+  // 0 big → small, 1 a compound measure → small, 2 small → big, 3 what is left (real life).
+  const k = pick(rng, diff === 'easy' && grade === 4 ? [0, 2, 3] : [0, 1, 2, 3]);
+  if (k === 1) return unitCompound(rng, diff, set);
+  if (k === 3) return unitStory(rng, diff, set);
+  if (k === 2) {
+    const q = int(rng, 2, span(diff, 9, 30, 60)), small = q * f;
+    return { eq: `${small}`, answer: String(q), wrongs: pos(q, [q * 10, small / 10, q * 100, q + 1, small]), ar: `حوّل ${small} ${smallAr} إلى ${bigAr}.`, en: `Convert ${small} ${smallEn} to ${bigEn}.` };
+  }
   const n = int(rng, 2, span(diff, 9, 30, 90));
   return { eq: `${n}`, answer: String(n * f), wrongs: pos(n * f, [n * f * 10, (n * f) / 10, n + f, n * 10]), ar: `حوّل ${n} ${bigAr} إلى ${smallAr}.`, en: `Convert ${n} ${bigEn} to ${smallEn}.` };
 });

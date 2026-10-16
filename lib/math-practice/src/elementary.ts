@@ -676,9 +676,10 @@ function fracAddKinds(base: Base, grade: number, rng: Rng): ConcreteItem {
     const x = int(rng, 1, d - 2);
     return [x, d, int(rng, 1, d - x - 1), d] as [number, number, number, number];
   })();
-  const sn = a * d2 + b * d1;
-  const sd = d1 * d2;
-  const S = unlike ? frac(sn, sd) : `${a + b}/${d1}`;
+  // Like fractions keep their own denominator, so a slip reads «5/8», not «45/64».
+  const sn = unlike ? a * d2 + b * d1 : a + b;
+  const sd = unlike ? d1 * d2 : d1;
+  const S = unlike ? frac(sn, sd) : `${sn}/${sd}`;
   switch (int(rng, 1, 3)) {
     case 1: {
       const eq = `${a}/${d1} + ؟ = ${S}`;
@@ -686,7 +687,7 @@ function fracAddKinds(base: Base, grade: number, rng: Rng): ConcreteItem {
         `أوجد العدد المجهول: ${eq}`, `Find the missing number: ${q(eq)}`);
     }
     case 2: {
-      const item = fractionItem(base, `word:${a}/${d1} + ${b}/${d2}`, sn, sd, [`${a + b}/${d1 + d2}`, frac(Math.abs(a * d2 - b * d1), sd), frac(sn + 1, sd)]);
+      const item = fractionItem(base, `word:${a}/${d1} + ${b}/${d2}`, sn, sd, [`${a + b}/${d1 + d2}`, frac(unlike ? Math.abs(a * d2 - b * d1) : Math.abs(a - b), sd), frac(sn + 1, sd)]);
       if (sn <= sd && rng() < 0.5) {
         const boy = choose(rng, BOYS);
         return withText(item,
@@ -732,23 +733,23 @@ function fracSubKinds(base: Base, grade: number, rng: Rng): ConcreteItem {
     b = int(rng, 1, a - 1);
     d1 = d2 = d;
   }
-  const dn = a * d2 - b * d1;
-  const dd = d1 * d2;
-  const D = unlike ? frac(dn, dd) : `${a - b}/${d1}`;
+  const dn = unlike ? a * d2 - b * d1 : a - b;
+  const dd = unlike ? d1 * d2 : d1;
+  const D = unlike ? frac(dn, dd) : `${dn}/${dd}`;
   switch (int(rng, 1, 3)) {
     case 1: {
       const eq = `${a}/${d1} − ؟ = ${D}`;
-      return withText(fractionItem(base, eq, b, d2, [D, `${a}/${d1}`, frac(a * d2 + dn, dd)]),
+      return withText(fractionItem(base, eq, b, d2, [D, `${a}/${d1}`, frac(unlike ? a * d2 + dn : a + dn, dd)]),
         `أوجد العدد المجهول: ${eq}`, `Find the missing number: ${q(eq)}`);
     }
     case 2: {
       const boy = choose(rng, BOYS);
-      return withText(fractionItem(base, `word:${a}/${d1} − ${b}/${d2}`, dn, dd, [frac(Math.abs(a - b), Math.abs(d1 - d2) || d1), frac(a * d2 + b * d1, dd), frac(dn + 1, dd)]),
+      return withText(fractionItem(base, `word:${a}/${d1} − ${b}/${d2}`, dn, dd, [frac(Math.abs(a - b), Math.abs(d1 - d2) || d1), frac(unlike ? a * d2 + b * d1 : a + b, dd), frac(dn + 1, dd)]),
         `في إبريق ${a}/${d1} لتر من الحليب، شرب ${boy} منه ${b}/${d2} لتر. كم لترًا بقي في الإبريق؟`,
         `A jug holds ${a}/${d1} litre of milk and ${EN_NAME[boy]} drinks ${b}/${d2} litre. How much milk is left?`, true);
     }
     default:
-      return withText(fractionItem(base, `more:${a}/${d1} − ${b}/${d2}`, dn, dd, [frac(a * d2 + b * d1, dd), frac(Math.abs(a - b), Math.abs(d1 - d2) || d1), frac(dn + 1, dd)]),
+      return withText(fractionItem(base, `more:${a}/${d1} − ${b}/${d2}`, dn, dd, [frac(unlike ? a * d2 + b * d1 : a + b, dd), frac(Math.abs(a - b), Math.abs(d1 - d2) || d1), frac(dn + 1, dd)]),
         `بكم يزيد الكسر ${a}/${d1} على الكسر ${b}/${d2}؟`,
         `How much greater is ${a}/${d1} than ${b}/${d2}?`);
   }
@@ -875,7 +876,7 @@ function decSubKinds(base: Base, diff: DiffTier, rng: Rng): ConcreteItem {
   }
   const boy = choose(rng, BOYS);
   return withText(decimalItem(base, `word:${fmtDec(A, places)} − ${fmtDec(B, places)}`, D, places, [A + B, D + 1, D - 1, D + scale]),
-    `كان مع ${boy} ${fmtDec(A, places)} دينار، اشترى منها كتابًا بـ ${fmtDec(B, places)} دينار. كم دينارًا بقي معه؟`,
+    `كان مع ${boy} ${fmtDec(A, places)} دينار، فاشترى كتابًا بـ ${fmtDec(B, places)} دينار. كم دينارًا بقي معه؟`,
     `${EN_NAME[boy]} had ${fmtDec(A, places)} dinars and bought a book for ${fmtDec(B, places)} dinars. How much money is left?`, true);
 }
 
@@ -933,7 +934,7 @@ function decDivKinds(base: Base, diff: DiffTier, rng: Rng): ConcreteItem {
       const qq = int(rng, 2, 30);
       return ask(base, `dd:${fmtDec(qq * D, 1)} ÷ ${fmtDec(D, 1)}`, String(qq),
         distinctDecimals(String(qq), [fmtDec(qq, 1), String(qq * 10), String(qq + 1)]),
-        `ما ناتج قسمة العدد العشري ${fmtDec(qq * D, 1)} على العدد العشري ${fmtDec(D, 1)}؟`,
+        `ما ناتج قسمة ${fmtDec(qq * D, 1)} على العدد العشري ${fmtDec(D, 1)}؟`,
         `What is ${fmtDec(qq * D, 1)} ÷ ${fmtDec(D, 1)}?`);
     }
     default: {

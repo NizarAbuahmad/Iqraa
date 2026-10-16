@@ -78,11 +78,86 @@ const topic = (id: string, match: RegExp, grades: [number, number], make: Gen): 
 const num = (answer: number, cands: number[], fmt: (n: number) => string = signed) =>
   wrongsFrom(fmt(answer), cands.filter(c => Number.isFinite(c) && (fmt === signed || c >= 0)).map(fmt), k => fmt(answer + Math.abs(k)));
 
+// ─── shared kinds of question (added 2026-10-16) ────────────────────────────
+// Most of these lessons could ask one sentence with different numbers. The
+// helpers below are the kinds several lessons share: «which of these numbers
+// is a solution», a number-line description, «how many real solutions».
+
+/** «−2، 0، 3، 5» — numbers printed in a stem, ascending. */
+const listAr = (xs: number[]) => [...xs].sort((p, q) => p - q).map(signed).join('، ');
+const listEn = (xs: number[]) => [...xs].sort((p, q) => p - q).map(signed).join(', ');
+/** «{−2 ، 0 ، 3}» — a set in roster form, sorted, without repeats. */
+const setStr = (xs: number[]) => `{${[...new Set(xs)].sort((p, q) => p - q).map(signed).join(' ، ')}}`;
+/** Two roots, ascending: «−3 ، 4». */
+const rootPair = (r1: number, r2: number) => [r1, r2].sort((p, q) => p - q).map(signed).join(' ، ');
+
+/** Three integers that are not `ans`: the candidates first, then its neighbours. */
+function others(ans: number, cands: number[], nonNeg = false): number[] {
+  const out: number[] = [];
+  const take = (v: number) => { if (out.length < 3 && Number.isInteger(v) && v !== ans && !out.includes(v) && (!nonNeg || v >= 0)) out.push(v); };
+  cands.forEach(take);
+  for (let k = 1; out.length < 3; k++) { take(ans + k); take(ans - k); }
+  return out;
+}
+
+/** «Which of these numbers is a solution?» — the solution and three that are not, all listed in the stem. */
+const whichSolves = (eq: string, ans: number, wrong: number[]): Draft => ({
+  eq, answer: signed(ans), wrongs: wrong.map(signed),
+  ar: `أيّ الأعداد الآتية حلٌّ للمعادلة ${eq}: ${listAr([ans, ...wrong])}؟`,
+  en: `Which of these numbers is a solution of ${eq}: ${listEn([ans, ...wrong])}?`,
+});
+
+/** «3 وحدات», «وحدتين», «وحدة واحدة», «12 وحدة» — the noun agrees with the number. */
+const units = (n: number) => (n === 1 ? 'وحدة واحدة' : n === 2 ? 'وحدتين' : n <= 10 ? `${n} وحدات` : `${n} وحدة`);
+const unitsEn = (n: number) => `${n} unit${n === 1 ? '' : 's'}`;
+const hours = (n: number) => (n === 1 ? 'ساعة واحدة' : n === 2 ? 'ساعتين' : n <= 10 ? `${n} ساعات` : `${n} ساعة`);
+
+/** The four answers to «how many real solutions»; the last is never right for a quadratic. */
+const NSOL = ['حلّان حقيقيان مختلفان', 'حلّ حقيقي واحد', 'لا توجد حلول حقيقية', 'عدد لا نهائي من الحلول'] as const;
+const nsolDraft = (eq: string, kind: 0 | 1 | 2, ar: string, en: string): Draft =>
+  ({ eq, answer: NSOL[kind], wrongs: NSOL.filter((_, i) => i !== kind), ar, en });
+
+/** A sum of monomials printed in the order given, like terms not yet collected: «3x² − 2x + 5 − x²». */
+const mono = (a: number, p: number) => (p === 0 ? String(a) : `${a === 1 ? '' : a}x${p === 1 ? '' : sup(p)}`);
+const termsStr = (ts: Array<[number, number]>) =>
+  ts.map(([c, p], i) => (i === 0 ? `${c < 0 ? '−' : ''}${mono(Math.abs(c), p)}` : ` ${c < 0 ? '−' : '+'} ${mono(Math.abs(c), p)}`)).join('');
+
+/** A deterministic shuffle under the item's rng. */
+function shuffled<T>(rng: Rng, xs: readonly T[]): T[] {
+  const out = xs.slice();
+  for (let i = out.length - 1; i > 0; i--) { const j = int(rng, 0, i); [out[i], out[j]] = [out[j]!, out[i]!]; }
+  return out;
+}
+
 // ─── Grades 4–7: expressions, equations, sequences ──────────────────────────
 
+/** «اكتب مقدارًا جبريًا يعبّر عن: …» — a phrase in words, its expression, and the slips a pupil makes. */
+function phraseDraft(rng: Rng, v: string, a: number, ops: ReadonlyArray<'+' | '−' | '×' | '÷'>): Draft {
+  const op = pick(rng, ops);
+  const E = { add: `${v} + ${a}`, sub: `${v} − ${a}`, rsub: `${a} − ${v}`, mul: `${a} × ${v}`, div: `${v} ÷ ${a}`, rdiv: `${a} ÷ ${v}` };
+  const [ans, ar, en, wr] = op === '+' ? [E.add, `ناتج جمع العدد ${v} و ${a}`, `the sum of ${v} and ${a}`, [E.sub, E.mul, E.rsub]]
+    : op === '−' ? [E.sub, `ناتج طرح ${a} من العدد ${v}`, `${a} subtracted from ${v}`, [E.rsub, E.add, E.mul]]
+    : op === '×' ? [E.mul, `ناتج ضرب العدد ${v} في ${a}`, `${v} multiplied by ${a}`, [E.add, E.sub, E.rsub]]
+    : [E.div, `ناتج قسمة العدد ${v} على ${a}`, `${v} divided by ${a}`, [E.rdiv, E.mul, E.sub]];
+  return { eq: ans, answer: ans, wrongs: wr, ar: `اكتب مقدارًا جبريًا يعبّر عن: ${ar}.`, en: `Write an algebraic expression for: ${en}.` };
+}
+
+/**
+ * Grade 4: the value of an expression — and since 2026-10-16 the lesson's other
+ * outcomes: a sentence written as an algebraic expression, and the value of a
+ * numerical expression.
+ */
 const exprG4 = topic('expr_g4', /^المقادير والمتغيرات$/, [4, 4], ({ rng, diff }) => {
   const v = pick(rng, ['n', 'x', 'a', 'b']);
   const k = int(rng, 2, span(diff)), a = int(rng, 2, 9);
+  const kind = pick(rng, [0, 1, 2]);
+  if (kind === 1) return phraseDraft(rng, v, a, ['+', '−', '×']);
+  if (kind === 2) {
+    const p = int(rng, 2, 9), q = int(rng, 2, 9), r = int(rng, 1, 20);
+    const minus = rng() < 0.4 && p * q > r;
+    const text = `${p} × ${q} ${minus ? '−' : '+'} ${r}`, val = p * q + (minus ? -r : r);
+    return { eq: text, answer: String(val), wrongs: num(val, [p * (q + (minus ? -r : r)), p + q + (minus ? -r : r), p * q, val + 1], String), ar: `أوجد قيمة المقدار العددي ${text}.`, en: `Find the value of the numerical expression ${text}.` };
+  }
   const form = pick(rng, [0, 1, 2]);
   const [text, ans] = form === 0 ? [`${v} + ${a}`, k + a] : form === 1 ? [`${a} × ${v}`, a * k] : [`${v} − ${a}`, k - a];
   if (form === 2 && k <= a) return exprG4.make({ rng, diff, grade: 4 });
@@ -92,8 +167,19 @@ const exprG4 = topic('expr_g4', /^المقادير والمتغيرات$/, [4, 4
   };
 });
 
+/** Grade 5: write an expression with symbols, and find its value — bare, or as what a shopper pays. */
 const exprEval = topic('expr_eval', /قيمه المقدار الجبري/, [5, 6], ({ rng, diff }) => {
   const x = int(rng, 2, span(diff)), y = int(rng, 2, 9), a = int(rng, 2, 9), b = int(rng, 1, 9);
+  const kind = pick(rng, [0, 1, 2]);
+  if (kind === 1) return phraseDraft(rng, 'x', a, ['+', '−', '×', '÷']);
+  if (kind === 2) {
+    const n = int(rng, 2, span(diff) + 3), v = a * n + b;
+    return {
+      eq: `${a}n + ${b}`, answer: String(v), wrongs: num(v, [a + n + b, a * (n + b), a * n, v + a], String),
+      ar: `يمثّل المقدار ${a}n + ${b} ما يدفعه أحمد بالدينار ثمنًا لِـ n من الكتب مع أجرة التوصيل. كم دينارًا يدفع إذا اشترى ${n} من الكتب؟`,
+      en: `The expression ${a}n + ${b} is what Ahmad pays, in dinars, for n books including delivery. How many dinars does he pay for ${n} books?`,
+    };
+  }
   const two = tier(diff) >= 1 && rng() < 0.6;
   if (two) {
     const text = `${a}x + ${b}y`;

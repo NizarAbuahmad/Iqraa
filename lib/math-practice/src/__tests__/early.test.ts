@@ -34,6 +34,14 @@ const frac = (s: string) => { const [a, b] = s.split('/').map(Number); return b 
 const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
 const ORD = ['الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس', 'السابع', 'الثامن', 'التاسع', 'العاشر'];
 const DAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+/** Arabic number words read back to a number, written apart from the generator's own table. */
+const WORD: Record<string, number> = { 'صفر': 0, 'واحد': 1, 'أحد': 1, 'اثنان': 2, 'اثنا': 2, 'ثلاثة': 3, 'أربعة': 4, 'خمسة': 5, 'ستة': 6, 'سبعة': 7, 'ثمانية': 8, 'تسعة': 9, 'عشرة': 10, 'عشرون': 20, 'ثلاثون': 30, 'أربعون': 40, 'خمسون': 50, 'ستون': 60, 'سبعون': 70, 'ثمانون': 80, 'تسعون': 90, 'مئة': 100, 'مئتان': 200, 'ثلاثمئة': 300, 'أربعمئة': 400, 'خمسمئة': 500, 'ستمئة': 600, 'سبعمئة': 700, 'ثمانمئة': 800, 'تسعمئة': 900 };
+const readWords = (s: string) => s.split(' و').reduce((sum, part) => {
+  const teen = part.match(/^(\S+) عشر$/);
+  if (teen) return sum + WORD[teen[1]!]! + 10;
+  assert.ok(part in WORD, `unknown number word «${part}» in «${s}»`);
+  return sum + WORD[part]!;
+}, 0);
 const MONTHS = ['كانون الثاني', 'شباط', 'آذار', 'نيسان', 'أيار', 'حزيران', 'تموز', 'آب', 'أيلول', 'تشرين الأول', 'تشرين الثاني', 'كانون الأول'];
 
 describe('early generators: shape', () => {
@@ -60,19 +68,28 @@ describe('early generators: shape', () => {
 describe('counting and place value: answers recomputed', () => {
   it('counting ranges, zero, ordinals', () => {
     const R: Record<string, [number, number]> = { count_123: [1, 3], count_45: [4, 5], count_678: [6, 8], count_910: [9, 10] };
-    for (const [id, [lo, hi]] of Object.entries(R)) for (const item of draws(id)) {
-      const p = item.promptAr!, n = nums(p), a = Number(item.answer);
-      if (has(p, 'بعد')) assert.equal(a, n[0]! + 1);
-      else if (has(p, 'قبل')) assert.equal(a, n[0]! - 1);
-      else { assert.equal(n[1], n[0]! + 2); assert.equal(a, n[0]! + 1); }
-      assert.ok(a >= lo && a <= hi && n.every(v => v >= lo && v <= hi), `${p} leaves ${lo}–${hi}`);
+    for (const [id, [lo, hi]] of Object.entries(R)) {
+      const kinds = new Set<string>();
+      for (const item of draws(id)) {
+        const p = item.promptAr!, n = nums(p), a = Number(item.answer);
+        if (has(p, 'نجمة')) { kinds.add('stars'); assert.equal(a, p.split('★').length - 1, p); }
+        else if (has(p, 'بالأرقام')) { kinds.add('word'); assert.equal(a, WORD[p.match(/«(.+)»/)![1]!], p); }
+        else if (has(p, 'بعد')) { kinds.add('after'); assert.equal(a, n[0]! + 1); }
+        else if (has(p, 'قبل')) { kinds.add('before'); assert.equal(a, n[0]! - 1); }
+        else { kinds.add('between'); assert.equal(n[1], n[0]! + 2); assert.equal(a, n[0]! + 1); }
+        assert.ok(a >= lo && a <= hi && n.every(v => v >= lo && v <= hi), `${p} leaves ${lo}–${hi}`);
+      }
+      assert.equal(kinds.size, hi - lo >= 2 ? 5 : 4, `${id}: ${[...kinds]}`);
     }
+    const zeroKinds = new Set<string>();
     for (const item of draws('count_zero')) {
       const p = item.promptAr!, n = nums(p);
-      if (has(p, 'ما العدد الذي يدل')) assert.equal(item.answer, '0');
-      else if (has(p, ' − ') && n[0] === n[1]) assert.equal(item.answer, '0');
-      else assert.equal(Number(item.answer), n[0]);
+      if (has(p, 'ما العدد الذي يدل')) { zeroKinds.add('meaning'); assert.equal(item.answer, '0'); }
+      else if (has(p, 'أُخرجت الكرات كلها')) { zeroKinds.add('story'); assert.equal(Number(item.answer), n[0]! - n[0]!); }
+      else if (has(p, ' − ') && n[0] === n[1]) { zeroKinds.add('n−n'); assert.equal(item.answer, '0'); }
+      else { zeroKinds.add('±0'); assert.equal(Number(item.answer), n[0]); }
     }
+    assert.equal(zeroKinds.size, 4);
     for (const item of draws('ordinal')) {
       const p = item.promptAr!;
       const idx = ORD.findIndex(o => p.includes(`«${o}»`) || p.includes(`المكان ${o}`));
@@ -96,7 +113,22 @@ describe('counting and place value: answers recomputed', () => {
       else if (has(p, 'رقم العشرات')) assert.equal(a, Math.floor(n[0]! / 10) % 10);
       else assert.equal(a, Math.floor(n[0]! / 100));
     }
-    for (const item of draws('expanded_form')) assert.equal(Number(item.answer), nums(item.promptAr!).reduce((x, y) => x + y, 0), item.promptAr);
+    for (const grade of [1, 2]) {
+      const kinds = new Set<string>();
+      for (const item of draws('expanded_form', 240, grade)) {
+        const p = item.promptAr!, n = nums(p);
+        if (has(p, 'كيف نقرأ')) { kinds.add('read'); assert.equal(readWords(item.answer), n[0], p); item.wrongs.forEach(w => assert.notEqual(readWords(w), n[0])); }
+        else if (has(p, 'قيمة الرقم')) {
+          kinds.add('value');
+          const [d, x] = n, digits = String(x).split('').map(Number), at = digits.indexOf(d!);
+          assert.equal(digits.filter(v => v === d).length, 1, `${p}: the digit must be unambiguous`);
+          assert.equal(Number(item.answer), d! * 10 ** (digits.length - 1 - at), p);
+        }
+        else { kinds.add('expanded'); assert.equal(Number(item.answer), n.reduce((x, y) => x + y, 0), p); }
+        assert.ok(n[n.length - 1]! < (grade === 1 ? 100 : 1000), p);
+      }
+      assert.equal(kinds.size, 3, `grade ${grade}: ${[...kinds]}`);
+    }
     for (const item of draws('thousands')) {
       const p = item.promptAr!, n = nums(p), a = Number(item.answer);
       if (has(p, 'ما رقم الألوف')) assert.equal(a, Math.floor(n[0]! / 1000));
@@ -106,12 +138,24 @@ describe('counting and place value: answers recomputed', () => {
   });
 
   it('even and odd, number chart, counting up and down, skip counting', () => {
-    for (const id of ['even_odd_g1', 'even_odd_g2']) for (const item of draws(id)) {
-      const p = item.promptAr!, list = nums(p.slice(p.indexOf(':')));
-      const wantEven = has(p, 'زوجي');
-      assert.equal(list.filter(v => (v % 2 === 0) === wantEven).length, 1, p);
-      assert.equal(Number(item.answer) % 2 === 0, wantEven);
-      assert.ok(list.includes(Number(item.answer)));
+    for (const id of ['even_odd_g1', 'even_odd_g2']) {
+      const kinds = new Set<string>();
+      for (const item of draws(id)) {
+        const p = item.promptAr!, wantEven = has(p, 'زوجي'), a = Number(item.answer);
+        assert.equal(a % 2 === 0, wantEven, p);
+        if (has(p, 'أول عدد')) {
+          kinds.add(`next ${wantEven}`);
+          const n = nums(p)[0]!;
+          assert.ok(a > n && a <= n + 2, p);
+          for (let v = n + 1; v < a; v++) assert.notEqual(v % 2 === 0, wantEven, `${v} comes first: ${p}`);
+          continue;
+        }
+        kinds.add(`list ${wantEven}`);
+        const list = nums(p.slice(p.indexOf(':')));
+        assert.equal(list.filter(v => (v % 2 === 0) === wantEven).length, 1, p);
+        assert.ok(list.includes(a));
+      }
+      assert.equal(kinds.size, 4, `${id}: ${[...kinds]}`);
     }
     for (const item of draws('number_chart')) {
       const p = item.promptAr!, n = nums(p.slice(p.indexOf('؟') - 20))[0] ?? 0;
@@ -122,52 +166,119 @@ describe('counting and place value: answers recomputed', () => {
       else if (has(p, 'يمين')) { assert.equal(a, x + 1); assert.notEqual(x % 10, 0); }
       else { assert.equal(a, x - 1); assert.notEqual(x % 10, 1); }
     }
+    const upDown = new Set<string>();
     for (const item of draws('count_up_down')) {
-      const s = nums(item.promptAr!), up = has(item.promptAr!, 'تصاعديًا');
-      assert.equal(Number(item.answer), s[2]! + (up ? 1 : -1));
+      const p = item.promptAr!, s = nums(p), up = has(p, 'تصاعديًا'), a = Number(item.answer);
+      if (has(p, 'ابدأ من')) { upDown.add(`from ${up}`); assert.equal(a, s[0]! + (up ? s[1]! : -s[1]!), p); assert.ok(a >= 0 && a <= 20); continue; }
+      upDown.add(`seq ${up}`);
+      assert.equal(a, s[2]! + (up ? 1 : -1));
       assert.ok(s[1]! - s[0]! === (up ? 1 : -1) && s[2]! - s[1]! === (up ? 1 : -1));
     }
-    for (const id of ['skip_g1', 'skip_g2', 'skip_g3']) for (const item of draws(id)) {
-      const shown = item.promptAr!.slice(item.promptAr!.indexOf(':') + 1).split('،').map(s => s.trim());
-      const hole = shown.indexOf('___'), v = shown.map(Number);
-      const step = v[1]! - v[0]!;
-      assert.ok(step > 0 && v[2]! - v[1]! === step, item.promptAr);
-      assert.equal(Number(item.answer), v[0]! + hole * step, item.promptAr);
+    assert.equal(upDown.size, 4);
+    for (const [id, grade, limit] of [['skip_g1', 1, 100], ['skip_g2', 2, 999], ['skip_g3', 3, 9999]] as const) {
+      const kinds = new Set<string>();
+      for (const item of draws(id)) {
+        const p = item.promptAr!, a = Number(item.answer);
+        if (has(p, 'مقدار القفزة')) { kinds.add('step'); const v = nums(p); assert.ok(v.every((x, i) => i === 0 || x - v[i - 1]! === a), p); assert.ok(a > 0); continue; }
+        if (has(p, 'خط الأعداد')) { kinds.add('line'); const [st, size, jumps] = nums(p); assert.equal(a, st! + size! * jumps!, p); assert.ok(a <= limit, p); continue; }
+        const shown = p.slice(p.indexOf(':') + 1).split('،').map(s => s.trim());
+        const hole = shown.indexOf('___'), v = shown.map(Number);
+        const step = v[1]! - v[0]!, down = has(p, 'التنازلي');
+        kinds.add(down ? 'down' : 'up');
+        assert.ok((down ? step < 0 : step > 0) && v[2]! - v[1]! === step, p);
+        assert.equal(a, v[0]! + hole * step, p);
+        assert.ok(a >= 0 && Math.max(...v.filter(Number.isFinite)) <= limit, p);
+      }
+      assert.equal(kinds.size, 4, `${id} (G${grade}): ${[...kinds]}`);
     }
     for (const id of ['before_after_g1', 'before_after_g2']) for (const item of draws(id)) {
       const p = item.promptAr!, n = nums(p), a = Number(item.answer);
       if (has(p, 'السابق')) assert.equal(a, n[0]! - 1); else if (has(p, 'التالي')) assert.equal(a, n[0]! + 1); else { assert.equal(n[1], n[0]! + 2); assert.equal(a, n[0]! + 1); }
     }
+    const near = new Set<string>();
     for (const item of draws('nearest_ten_g1')) {
-      const n = Number(item.eq), a = Number(item.answer);
+      const p = item.promptAr!;
+      if (has(p, 'بين أي عشرتين')) { near.add('between'); const n = nums(p)[0]!, [lo, hi] = nums(item.answer); assert.equal(lo, Math.floor(n / 10) * 10, p); assert.equal(hi, lo! + 10); continue; }
+      if (has(p, 'أي الأعداد الآتية')) {
+        near.add('closest');
+        const [ten, ...list] = nums(p), dist = (v: number) => Math.abs(v - ten!);
+        assert.equal(list.length, 4, p);
+        list.filter(v => v !== Number(item.answer)).forEach(v => assert.ok(dist(v) > dist(Number(item.answer)), p));
+        continue;
+      }
+      near.add('tens');
+      const n = nums(p)[0]!, a = Number(item.answer);
       assert.ok(a % 10 === 0 && Math.abs(n - a) < 5, `${n} → ${a}`);
     }
+    assert.equal(near.size, 3);
   });
 });
 
 describe('early arithmetic: answers recomputed', () => {
   it('number line, doubles, make ten, properties, related facts, missing numbers, mental maths', () => {
-    for (const item of draws('line_add')) { const [a, b] = nums(item.promptAr!); assert.equal(Number(item.answer), a! + b!); assert.ok(a! + b! <= 20); }
-    for (const item of draws('line_sub')) { const [a, b] = nums(item.promptAr!); assert.equal(Number(item.answer), a! - b!); assert.ok(a! - b! >= 0); }
-    for (const item of draws('double_a')) assert.equal(Number(item.answer), 2 * nums(item.promptAr!)[0]!);
-    for (const item of draws('double_b')) assert.equal(Number(item.answer), 2 * nums(item.promptAr!)[0]! + 1);
+    for (const add of [true, false]) {
+      const kinds = new Set<string>(), sign = add ? 1 : -1;
+      for (const item of draws(add ? 'line_add' : 'line_sub')) {
+        const p = item.promptAr!, n = nums(p), a = Number(item.answer);
+        if (has(p, 'كم قفزة')) { kinds.add('jumps'); assert.equal(n[0]! + sign * a, n[1], p); }
+        else if (has(p, 'من أي عدد بدأت')) { kinds.add('start'); assert.equal(a + sign * n[0]!, n[n.length - 1], p); }
+        else { kinds.add(has(p, 'استعمل') ? 'sentence' : 'walk'); assert.equal(a, n[0]! + sign * n[1]!, p); }
+        assert.ok(n.every(v => v >= 0 && v <= 20) && a >= 0 && a <= 20, p);
+        assert.ok(!/ [12] قفزات/.test(p), `${p}: «قفزات» after 1 or 2`);
+      }
+      assert.equal(kinds.size, 4, `${add}: ${[...kinds]}`);
+    }
+    const dbl = new Set<string>();
+    for (const item of draws('double_a')) {
+      const p = item.promptAr!, n = nums(p)[0]!, a = Number(item.answer);
+      if (has(p, 'ما العدد الذي ضعفه')) { dbl.add('half'); assert.equal(2 * a, n); }
+      else if (has(p, 'العدد نفسه')) { dbl.add('story'); assert.equal(a, n + n); }
+      else { dbl.add('double'); assert.equal(a, 2 * n); }
+      assert.ok(Math.min(a, n) <= 10, `doubles up to 10: ${p}`);
+    }
+    assert.equal(dbl.size, 3);
+    const dbl1 = new Set<string>();
+    for (const item of draws('double_b')) {
+      const p = item.promptAr!, n = nums(p), a = Number(item.answer);
+      if (has(p, 'ضعف ___')) { dbl1.add('blank'); assert.equal(n[0]! + n[1]!, 2 * a + 1, p); assert.equal(n[1], n[0]! + 1); }
+      else if (has(p, 'لإيجاد')) { dbl1.add('use'); assert.equal(a, n[0]! + n[1]!, p); assert.equal(n[1], n[0]! + 1); }
+      else { dbl1.add('double+1'); assert.equal(a, 2 * n[0]! + 1); }
+    }
+    assert.equal(dbl1.size, 3);
     for (const item of draws('doubling_g3')) {
       const p = item.promptAr!, n = nums(p)[0]!, a = Number(item.answer);
       if (has(p, 'ضعف ضعف')) assert.equal(a, 4 * n); else if (has(p, 'ما العدد الذي ضعفه')) assert.equal(a * 2, n); else assert.equal(a, 2 * n);
     }
+    const ten = new Set<string>();
     for (const item of draws('make_ten', 300)) {
       const p = item.promptAr!;
+      ten.add(stemFrame(p));
       if (has(p, 'أي جمع')) { const sum = (s: string) => s.split(' + ').map(Number).reduce((x, y) => x + y, 0); assert.equal(sum(item.answer), 10); item.wrongs.forEach(w => assert.notEqual(sum(w), 10, `${w} also makes 10`)); }
       else { const a = nums(p.replace('10', ''))[0]!; assert.equal(Number(item.answer), 10 - a); }
     }
-    for (const id of ['add_props_g1', 'add_props_g2']) for (const item of draws(id)) {
-      const p = item.promptAr!, n = nums(p), a = Number(item.answer);
-      if (has(p, '= ___ +')) assert.equal(a, n[1]); else if (has(p, '+ 0')) assert.equal(a, n[0]); else assert.equal(a, n[2]);
+    assert.ok(ten.size >= 4, [...ten].join(' | '));
+    for (const id of ['add_props_g1', 'add_props_g2']) {
+      const kinds = new Set<string>();
+      for (const item of draws(id)) {
+        const p = item.promptAr!, n = nums(p), a = Number(item.answer);
+        if (has(p, 'فما ناتج')) { kinds.add('order'); assert.equal(n[0]! + n[1]!, n[2]); assert.equal(a, n[3]! + n[4]!); assert.equal(a, n[2]); }
+        else if (has(p, 'أسهل طريقة')) { kinds.add('three'); assert.equal(a, n[0]! + n[1]! + n[2]!); assert.equal((n[0]! + n[2]!) % 10, 0, p); }
+        else if (has(p, '= ___ +')) { kinds.add('swap'); assert.equal(a, n[1]); }
+        else if (has(p, '+ 0')) { kinds.add('zero'); assert.equal(a, n[0]); }
+        else { kinds.add('group'); assert.equal(a, n[2]); }
+      }
+      assert.equal(kinds.size, 5, `${id}: ${[...kinds]}`);
     }
-    for (const id of ['related_g1', 'related_g3']) for (const item of draws(id)) {
-      const p = item.promptAr!, n = nums(p), a = Number(item.answer), mul = id === 'related_g3';
-      if (has(p, 'فإن') && has(p, mul ? '× ' : '+ ') && p.indexOf(mul ? '×' : '+') < p.indexOf('فإن')) { assert.equal((mul ? n[0]! * n[1]! : n[0]! + n[1]!), n[2]); assert.equal(a, n[1]); }
-      else { assert.equal(a, mul ? n[1]! * n[2]! : n[1]! + n[2]!); }
+    for (const id of ['related_g1', 'related_g3']) {
+      const kinds = new Set<string>(), mul = id === 'related_g3';
+      for (const item of draws(id)) {
+        const p = item.promptAr!, n = nums(p), a = Number(item.answer);
+        if (has(p, 'مثلث الحقائق')) { kinds.add('triangle'); assert.equal(mul ? n[0]! * n[1]! : n[0]! + n[1]!, n[2]); assert.equal(n[3], n[2]); assert.equal(a, mul ? n[3]! / n[4]! : n[3]! - n[4]!); }
+        else if (has(p, 'العدد المفقود')) { kinds.add('missing'); assert.equal(mul ? a * n[0]! : n[0]! - a, n[1], p); }
+        else if (has(p, 'فإن') && has(p, mul ? '× ' : '+ ') && p.indexOf(mul ? '×' : '+') < p.indexOf('فإن')) { kinds.add('if1'); assert.equal((mul ? n[0]! * n[1]! : n[0]! + n[1]!), n[2]); assert.equal(a, n[1]); }
+        else { kinds.add('if2'); assert.equal(a, mul ? n[1]! * n[2]! : n[1]! + n[2]!); }
+      }
+      assert.equal(kinds.size, 4, `${id}: ${[...kinds]}`);
     }
     for (const item of draws('missing_number')) {
       const p = item.promptAr!, n = nums(p), a = Number(item.answer);

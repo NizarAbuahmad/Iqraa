@@ -6,7 +6,32 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { detectElementaryOp, lessonTable, makeElementaryItem } from '../elementary.ts';
-import { takeElementaryMath, type DiffTier } from '../index.ts';
+import { itemStem, stemFrame, takeElementaryMath, type DiffTier } from '../index.ts';
+import type { ConcreteItem } from '../index.ts';
+
+/** mulberry32 — a seeded rng so a failure names a reproducible draw. */
+function seeded(seed: number) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** A counted noun written as a dual carries no digit: «في كل صف شجرتان» is two trees. */
+const DUAL = 'شجرتان|قلمان|مربعان|بيضتان|طالبَين|مدرستَين|ديناران|كتابان|بطاقتان|لتران|كعكتان|تفاحتان|طالبان';
+const TOKEN = new RegExp(`\\d+(?:\\.\\d+)?(?:/\\d+)?|${DUAL}`, 'g');
+/** The numbers of a stem in reading order: whole, decimal, «a/b» as its value, a dual as 2. */
+const tokens = (s: string) => s.match(TOKEN) ?? [];
+const value = (s: string): number => {
+  if (new RegExp(`^(?:${DUAL})$`).test(s)) return 2;
+  const t = s.replace(/%$/, '');
+  const [n, d] = t.split('/').map(Number);
+  return d === undefined ? n! : n! / d;
+};
+const nums = (s: string) => tokens(s).map(value);
 
 /** Recompute an item's answer from its own stem — the key must never be typed. */
 function recompute(eq: string): string | null {
@@ -81,9 +106,23 @@ describe('numbers fit the grade', () => {
   it('grade 2 stays within 1000', () => assert.ok(largest(2) <= 1000));
 
   it('«الضرب في 2» drills the 2 times table only', () => {
+    // Every kind — the product, the missing factor, repeated addition, the word
+    // problem — keeps 2 as the known factor.
     const used = new Set<string>();
-    for (let i = 0; i < 20; i++) {
-      assert.match(makeElementaryItem('الضَّرْبُ في 2', 3, 'medium', used).eq, /^2 × \d+$/);
+    for (let i = 0; i < 60; i++) {
+      assert.match(makeElementaryItem('الضَّرْبُ في 2', 3, 'medium', used).eq, /(?:^|[^\d.])2 ×|× 2$/);
+    }
+  });
+
+  it('grade 1 never sees a three-digit number, and adds and compares within 20', () => {
+    const rng = seeded(11);
+    for (const title of ['الجمع', 'الطرح', 'مقارنة الأعداد', 'ترتيب الأعداد', 'القيمة المنزلية']) {
+      for (let i = 0; i < 300; i++) {
+        const item = makeElementaryItem(title, 1, (['easy', 'medium', 'hard'] as const)[i % 3], new Set(), rng);
+        const stem = itemStem(item, true);
+        const limit = /منزلي/.test(title) ? 99 : 20;
+        for (const n of nums(stem)) assert.ok(n <= limit, `${title}: ${stem}`);
+      }
     }
   });
 });
