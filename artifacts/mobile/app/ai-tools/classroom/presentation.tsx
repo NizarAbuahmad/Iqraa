@@ -18,7 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import {
-  DEFAULT_DECK_THEME, resolveDeckTheme, slideTypeAccent, TIMER_AMBER, TIMER_GREEN, type DeckTheme,
+  DECK_DISPLAY_TYPE as D, DEFAULT_DECK_THEME, resolveDeckTheme, slideTypeAccent, TIMER_AMBER, TIMER_GREEN, type DeckTheme,
 } from '@/services/deckTheme';
 import { NATIVE_DRIVER } from '@/constants/animation';
 import { useLanguage } from '@/context/LanguageContext';
@@ -641,6 +641,160 @@ function WorkingAnswer({ answer, isRTL }: { answer: string; isRTL: boolean }) {
   );
 }
 
+
+// ─── Structure layouts (services/slideLayout.ts) ─────────────────────────────
+// Each takes the already-resolved, already-validated data from `resolveSlideLayout`
+// and only draws it. Direction is `row-reverse` here and nowhere in the printed
+// exports: React Native has no document direction to inherit.
+
+/** Events along a line — across on a wide screen, down the reading edge on a phone. */
+function TimelineView({ events, accent, isRTL }: {
+  events: { label: string; text: string }[];
+  accent: string;
+  isRTL: boolean;
+}) {
+  const T = useContext(ThemeContext);
+  const { slideStyles } = sheetsFor(T);
+  const { width } = useWindowDimensions();
+  const align = isRTL ? ('right' as const) : ('left' as const);
+  const dir = isRTL ? ('rtl' as const) : ('ltr' as const);
+  const row = isRTL ? ('row-reverse' as const) : ('row' as const);
+
+  if (width >= 720) {
+    return (
+      <View style={{ flexDirection: row, alignSelf: 'stretch' }}>
+        {events.map((e, i) => (
+          <View key={i} style={slideStyles.tlCol}>
+            <View style={{ flexDirection: row, alignItems: 'center' }}>
+              <View style={[slideStyles.tlDot, { borderColor: accent, backgroundColor: T.card }]} />
+              <View style={[slideStyles.tlLine, { backgroundColor: accent + '55', opacity: i === events.length - 1 ? 0 : 1 }]} />
+            </View>
+            <Text style={[slideStyles.tlLabel, { color: accent, textAlign: align, writingDirection: dir }]}>
+              {isolateForeignRuns(e.label)}
+            </Text>
+            <Text style={[slideStyles.tlText, { textAlign: align, writingDirection: dir }]}>
+              {isolateForeignRuns(e.text)}
+            </Text>
+          </View>
+        ))}
+      </View>
+    );
+  }
+  return (
+    <View style={{ alignSelf: 'stretch' }}>
+      {events.map((e, i) => (
+        <View key={i} style={{ flexDirection: row, gap: 16 }}>
+          <View style={{ alignItems: 'center', width: 24 }}>
+            <View style={[slideStyles.tlDot, { borderColor: accent, backgroundColor: T.card }]} />
+            <View style={[slideStyles.tlVLine, { backgroundColor: accent + '55', opacity: i === events.length - 1 ? 0 : 1 }]} />
+          </View>
+          <View style={{ flex: 1, paddingBottom: 16 }}>
+            <Text style={[slideStyles.tlLabel, { color: accent, textAlign: align, writingDirection: dir }]}>
+              {isolateForeignRuns(e.label)}
+            </Text>
+            <Text style={[slideStyles.tlText, { textAlign: align, writingDirection: dir }]}>
+              {isolateForeignRuns(e.text)}
+            </Text>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/** Two to four figures side by side, each a card. */
+function StatsRowView({ items, accent, isRTL }: {
+  items: { value: string; label: string }[];
+  accent: string;
+  isRTL: boolean;
+}) {
+  const T = useContext(ThemeContext);
+  const { slideStyles } = sheetsFor(T);
+  return (
+    <View style={[slideStyles.statsRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+      {items.map((it, i) => (
+        <View key={i} style={slideStyles.statsCard}>
+          <Text style={[slideStyles.statsValue, { color: accent }]}>{isolateForeignRuns(it.value)}</Text>
+          <Text style={slideStyles.statsLabel}>{isolateForeignRuns(it.label)}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/** A grid: accent header row, banded body, first column on the reading edge. */
+function TableView({ headers, rows, accent, isRTL }: {
+  headers: string[];
+  rows: string[][];
+  accent: string;
+  isRTL: boolean;
+}) {
+  const T = useContext(ThemeContext);
+  const { slideStyles } = sheetsFor(T);
+  const align = isRTL ? ('right' as const) : ('left' as const);
+  const dir = isRTL ? ('rtl' as const) : ('ltr' as const);
+  const row = isRTL ? ('row-reverse' as const) : ('row' as const);
+  return (
+    <View style={slideStyles.tableWrap}>
+      <View style={[slideStyles.tableRow, { flexDirection: row, backgroundColor: accent }]}>
+        {headers.map((h, c) => (
+          <Text key={c} style={[slideStyles.tableHead, { textAlign: align, writingDirection: dir }]}>
+            {isolateForeignRuns(h)}
+          </Text>
+        ))}
+      </View>
+      {rows.map((cells, r) => (
+        <View
+          key={r}
+          style={[slideStyles.tableRow, { flexDirection: row, backgroundColor: r % 2 === 0 ? T.card : 'transparent' }]}
+        >
+          {cells.map((cell, c) => (
+            <Text key={c} style={[slideStyles.tableCell, { textAlign: align, writingDirection: dir }]}>
+              {isolateForeignRuns(cell)}
+            </Text>
+          ))}
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/** Boxes and arrows; a cycle says so under the last box instead of drawing a curve that would collide. */
+function FlowView({ nodes, cycle, accent, isRTL, loopLabel }: {
+  nodes: string[];
+  cycle: boolean;
+  accent: string;
+  isRTL: boolean;
+  loopLabel: string;
+}) {
+  const T = useContext(ThemeContext);
+  const { slideStyles } = sheetsFor(T);
+  const dir = isRTL ? ('rtl' as const) : ('ltr' as const);
+  return (
+    <View style={{ alignSelf: 'stretch' }}>
+      <View style={[slideStyles.flowRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+        {nodes.map((n, i) => (
+          <React.Fragment key={i}>
+            <View style={[slideStyles.flowNode, { borderColor: accent }]}>
+              <Text style={[slideStyles.flowText, { writingDirection: dir }]}>{isolateForeignRuns(n)}</Text>
+            </View>
+            {i < nodes.length - 1 && (
+              <Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={28} color={accent} />
+            )}
+          </React.Fragment>
+        ))}
+      </View>
+      {cycle && (
+        <View style={[slideStyles.flowLoop, { borderColor: accent, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <Ionicons name="refresh" size={20} color={accent} />
+          <Text style={[slideStyles.flowLoopText, { color: accent, writingDirection: dir }]}>{loopLabel}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+
 /**
  * `isRTL` is the slide's own direction (`slideIsRTL`, computed once by the
  * screen), not the app's — an English-subject check reads left-to-right even
@@ -716,7 +870,7 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
 
         {layout.kind === 'compare' && (
           <>
-            <Text style={[slideStyles.title, { color: accent, textAlign: align, writingDirection: dir, marginBottom: 18 }]}>
+            <Text style={[slideStyles.title, { color: accent, textAlign: align, writingDirection: dir, marginBottom: 16 }]}>
               {isolateForeignRuns(heading)}
             </Text>
             <View style={[slideStyles.compareRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -745,7 +899,7 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
 
         {layout.kind === 'steps' && (
           <>
-            <Text style={[slideStyles.title, { color: accent, textAlign: align, writingDirection: dir, marginBottom: 18 }]}>
+            <Text style={[slideStyles.title, { color: accent, textAlign: align, writingDirection: dir, marginBottom: 16 }]}>
               {isolateForeignRuns(heading)}
             </Text>
             <View style={{ gap: 14, alignSelf: 'stretch' }}>
@@ -763,6 +917,48 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
                 </View>
               ))}
             </View>
+          </>
+        )}
+
+        {layout.kind === 'timeline' && (
+          <>
+            <Text style={[slideStyles.title, { color: accent, textAlign: align, writingDirection: dir, marginBottom: 16 }]}>
+              {isolateForeignRuns(heading)}
+            </Text>
+            <TimelineView events={layout.events} accent={accent} isRTL={isRTL} />
+          </>
+        )}
+
+        {layout.kind === 'stats' && (
+          <>
+            <Text style={[slideStyles.title, { color: accent, textAlign: align, writingDirection: dir, marginBottom: 16 }]}>
+              {isolateForeignRuns(heading)}
+            </Text>
+            <StatsRowView items={layout.items} accent={accent} isRTL={isRTL} />
+          </>
+        )}
+
+        {layout.kind === 'table' && (
+          <>
+            <Text style={[slideStyles.title, { color: accent, textAlign: align, writingDirection: dir, marginBottom: 16 }]}>
+              {isolateForeignRuns(heading)}
+            </Text>
+            <TableView headers={layout.headers} rows={layout.rows} accent={accent} isRTL={isRTL} />
+          </>
+        )}
+
+        {layout.kind === 'flow' && (
+          <>
+            <Text style={[slideStyles.title, { color: accent, textAlign: align, writingDirection: dir, marginBottom: 16 }]}>
+              {isolateForeignRuns(heading)}
+            </Text>
+            <FlowView
+              nodes={layout.nodes}
+              cycle={layout.cycle}
+              accent={accent}
+              isRTL={isRTL}
+              loopLabel={t('deckFlowLoop')}
+            />
           </>
         )}
       </View>
@@ -1827,6 +2023,32 @@ const makeSlideStyles = (T: DeckTheme) => StyleSheet.create({
   stepNum: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   stepNumText: { fontSize: 22, color: '#fff', fontFamily: 'ReadexPro_700Bold' },
   stepText: { flex: 1, fontSize: 22, lineHeight: 36, color: T.text, fontFamily: 'Almarai_400Regular' },
+  // Structure layouts. Sizes come from DECK_DISPLAY_TYPE — projector type, not UI type.
+  tlCol: { flex: 1, gap: 8 },
+  tlDot: { width: 24, height: 24, borderRadius: 12, borderWidth: 5, marginHorizontal: 8 },
+  tlLine: { flex: 1, height: 4, borderRadius: 4 },
+  tlVLine: { flex: 1, width: 4, minHeight: 24, borderRadius: 4 },
+  tlLabel: { fontSize: D.timelineLabel, lineHeight: 34, marginHorizontal: 8, fontFamily: 'ReadexPro_700Bold' },
+  tlText: { fontSize: D.timelineText, lineHeight: 30, marginHorizontal: 8, color: T.text, fontFamily: 'Almarai_400Regular' },
+  statsRow: { gap: 16, alignSelf: 'stretch', flexWrap: 'wrap' },
+  statsCard: {
+    flexGrow: 1, flexBasis: 150, alignItems: 'center', gap: 8, padding: 20,
+    backgroundColor: T.card, borderRadius: 24, borderWidth: 1, borderColor: T.border,
+  },
+  statsValue: { fontSize: D.statsValue, lineHeight: 72, fontFamily: 'ReadexPro_700Bold', textAlign: 'center' },
+  statsLabel: { fontSize: D.statsLabel, lineHeight: 28, color: T.text, textAlign: 'center', fontFamily: 'Almarai_400Regular' },
+  tableWrap: { alignSelf: 'stretch', borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: T.border },
+  tableRow: { alignItems: 'stretch' },
+  tableHead: { flex: 1, padding: 12, fontSize: D.tableHead, lineHeight: 28, color: '#FFFFFF', fontFamily: 'ReadexPro_700Bold' },
+  tableCell: { flex: 1, padding: 12, fontSize: D.tableCell, lineHeight: 28, color: T.text, fontFamily: 'Almarai_400Regular' },
+  flowRow: { alignSelf: 'stretch', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 12 },
+  flowNode: {
+    minWidth: 110, maxWidth: 220, padding: 16, alignItems: 'center',
+    backgroundColor: T.card, borderRadius: 16, borderWidth: 2,
+  },
+  flowText: { fontSize: D.flowNode, lineHeight: 30, color: T.text, textAlign: 'center', fontFamily: 'ReadexPro_600SemiBold' },
+  flowLoop: { alignSelf: 'center', alignItems: 'center', gap: 8, marginTop: 20, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 999, borderWidth: 2 },
+  flowLoopText: { fontSize: D.flowLoop, fontFamily: 'ReadexPro_600SemiBold' },
   headRow: { alignItems: 'center', gap: 12 },
   glyphChip: { width: 44, height: 44, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   glyph: { fontSize: 21 },

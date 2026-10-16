@@ -29,6 +29,7 @@ import {
   worksheetStems,
 } from "../generationShape.ts";
 
+
 const wq = (text: string) => ({ text, points: 1 });
 /** A worksheet of `n` questions split over two sections, with its answer key. */
 const sheet = (n: number, extra: Record<string, unknown> = {}) => ({
@@ -621,5 +622,31 @@ describe("a lesson tag survives normalisation, and the counts the wide scope off
     const sheet = (n: number) => ({ sections: [{ type: "short_answer", title: "s", questions: Array.from({ length: n }, (_, i) => ({ text: `q${i}`, points: 1 })) }], answerKey: [] });
     assert.equal(worksheetShortfall(sheet(24), { numQuestions: 30 }), 6);
     assert.equal(worksheetShortfall(sheet(30), { numQuestions: 30 }), 0);
+  });
+});
+
+describe("prompt-slides — the structure layouts keep their words in a payload", () => {
+  const withBody = (over: Record<string, unknown>) => deck([...fiveSlides(), slide({ content: "", ...over })]);
+
+  it("accepts a timeline, stats, table or flow slide whose body is only its payload", () => {
+    for (const over of [
+      { layout: "timeline", timeline: [{ label: "1", text: "a" }] },
+      { layout: "stats", stats: [{ value: "1", label: "a" }] },
+      { layout: "table", table: { headers: ["a", "b"], rows: [["1", "2"]] } },
+      { layout: "flow", flow: { steps: ["a", "b", "c"] } },
+    ]) {
+      assert.doesNotThrow(() => assertUsableGeneration("prompt-slides", withBody(over)), JSON.stringify(over));
+    }
+  });
+
+  it("still refuses a slide that names a layout and has neither a payload nor a sentence", () => {
+    for (const over of [
+      { layout: "timeline", timeline: [] },
+      { layout: "stats" },
+      { layout: "table", table: { headers: [], rows: [] } },
+      { layout: "flow", flow: { steps: [] } },
+    ]) {
+      assert.throws(() => assertUsableGeneration("prompt-slides", withBody(over)), UnusableGenerationError, JSON.stringify(over));
+    }
   });
 });

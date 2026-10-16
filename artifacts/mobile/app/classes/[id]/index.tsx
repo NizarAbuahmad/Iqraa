@@ -1140,13 +1140,10 @@ export default function ClassDetailScreen() {
             const draft = item.status !== 'published';
             return (
               <Pressable
-                onPress={() =>
-                  router.push(
-                    draft
-                      ? { pathname: '/evaluations/[id]', params: { id: item.id } }
-                      : { pathname: '/evaluations/[id]/answers', params: { id: item.id } },
-                  )
-                }
+                // Always the exam page: it holds the student link, its expiry,
+                // answers and results. Opening a published exam straight on the
+                // per-student entry list hid the link and read as "not sent".
+                onPress={() => router.push({ pathname: '/evaluations/[id]', params: { id: item.id } })}
                 style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
               >
                 <View style={{ flex: 1 }}>
@@ -1816,7 +1813,7 @@ export default function ClassDetailScreen() {
             <Pressable
               onPress={() => {
                 setShowAttachExam(false);
-                router.push('/evaluations/new');
+                router.push({ pathname: '/evaluations/new', params: { classId: id } });
               }}
               style={[
                 styles.createRow,

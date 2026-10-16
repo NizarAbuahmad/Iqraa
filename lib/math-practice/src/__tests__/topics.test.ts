@@ -190,15 +190,37 @@ describe('answers recomputed from the stem', () => {
       const kinds = new Set<string>();
       for (const { item } of draws(id, 300)) {
         const p = item.promptAr!;
+        const sub = has(p, '−') || has(p, 'الباقية') || has(p, 'طرحت');
+        if (id === 'est_add') assert.ok(!sub, p);
+        if (id === 'est_sub') assert.ok(sub, p);
+        if (has(p, 'أقرب إلى ناتج')) {
+          // the listed round number nearest the exact result, and no other as near
+          kinds.add('closest');
+          const [a, b] = nums(p.split(':')[0]!);
+          const exact = sub ? a! - b! : a! + b!;
+          const listed = listOf(p).map(Number);
+          assert.ok(listed.includes(Number(item.answer)) && item.wrongs.every(w => listed.includes(Number(w))), p);
+          const gap = (x: number) => Math.abs(x - exact);
+          for (const o of listed) if (o !== Number(item.answer)) assert.ok(gap(o) > gap(Number(item.answer)), `${p}: ${o} is as near`);
+          continue;
+        }
+        if (has(p, 'قرّبت سلمى')) {
+          // the estimate less the shown number rounded (sum), or the shown number rounded less the estimate (difference)
+          kinds.add('back');
+          const [est, shown] = nums(p);
+          const place = placeIn(p);
+          const r = Math.round(shown! / place) * place;
+          const want = sub ? r - est! : est! - r;
+          assert.ok(want > 0 && want % place === 0, p);
+          assert.equal(Number(item.answer), want, p);
+          continue;
+        }
         const [a, b] = nums(p);
-        const sub = has(p, '−') || has(p, 'الباقية');
         const r = has(p, 'أكبر منزلة') ? lead : (n: number) => Math.round(n / placeIn(p)) * placeIn(p);
         kinds.add(has(p, 'أكبر منزلة') ? 'lead' : has(p, 'زوّار') || has(p, 'مكتبة') ? 'word' : 'place');
         assert.equal(Number(item.answer), sub ? r(a!) - r(b!) : r(a!) + r(b!), p);
-        if (id === 'est_add') assert.ok(!sub, p);
-        if (id === 'est_sub') assert.ok(sub, p);
       }
-      assert.equal(kinds.size, 3, `${id}: ${[...kinds].join()}`);
+      assert.equal(kinds.size, 5, `${id}: ${[...kinds].join()}`);
     }
   });
 
@@ -349,6 +371,7 @@ describe('answers recomputed from the stem', () => {
     const kinds = new Set<string>();
     for (const { item } of draws('divisibility', 300)) {
       const p = item.promptAr!;
+      if (has(p, 'أصغر عدد أكبر من') || has(p, 'من بين الأعداد')) continue; // recomputed below
       const d = Number(p.match(/على (\d+)/)![1]);
       if (has(p, 'رقم يوضع')) {
         kinds.add('digit');
@@ -365,7 +388,27 @@ describe('answers recomputed from the stem', () => {
         assert.equal(Number(item.answer), listOf(p).filter(o => Number(o) % d === 0).length, p);
       } else assert.fail(`unknown stem: ${p}`);
     }
-    assert.equal(kinds.size, 3, [...kinds].join());
+    for (const { item } of draws('divisibility', 300)) {
+      const p = item.promptAr!;
+      if (has(p, 'أصغر عدد أكبر من')) {
+        // count up from n until the division comes out whole
+        kinds.add('next');
+        const [n, d] = nums(p);
+        let x = n! + 1;
+        while (x % d! !== 0) x++;
+        assert.equal(Number(item.answer), x, p);
+        assert.ok(item.wrongs.every(w => !(Number(w) > n! && Number(w) % d! === 0 && Number(w) <= x)), `${p}: ${item.wrongs}`);
+      } else if (has(p, 'من بين الأعداد')) {
+        kinds.add('which divisors');
+        const [n, ...pool] = nums(p);
+        assert.ok(pool.join() === '2,3,5,10' || pool.join() === '4,6,9', p);
+        const want = pool.filter(q => n! % q === 0);
+        assert.ok(want.length > 0, p);
+        assert.deepEqual(item.answer.split(' ، ').map(Number), want, p);
+        assert.ok(!item.wrongs.includes(want.join(' ، ')), p);
+      }
+    }
+    assert.equal(kinds.size, 5, [...kinds].join());
   });
 
   it('prime factorisation: factorise, the number from its factors, the largest prime factor', () => {

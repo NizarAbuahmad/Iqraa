@@ -2251,6 +2251,8 @@ const translations = {
     shareExamNeedsClass: 'أرفق هذا الامتحان بشعبة أولًا — الطالب يختار اسمه من قائمة الشعبة.',
     shareExamCopyLink: 'انسخ الرابط',
     shareExamAttachNow: 'أرفقه بشعبة الآن',
+    shareExamExpired: 'انتهت صلاحية رابط الاختبار، فلا يراه الطلبة الآن ولا يستطيعون فتحه.',
+    shareExamRenew: 'جدّد الرابط لأسبوع',
     takeLinkFailed: 'هذا الرابط غير متاح.',
     takeAskTeacher: 'اسأل معلّمك عن الرابط الصحيح.',
     takeStartFailed: 'تعذّر بدء الامتحان.',
@@ -2586,6 +2588,7 @@ const translations = {
     deleteLabel: 'حذف',
     slideUpdated: 'تم تعديل الشريحة',
     deckThemeLabel: 'مظهر العرض',
+    deckFlowLoop: 'ثم تتكرر الدورة',
 
     // Onboarding carousel — first-run intro, before login
     onboardingSkip: 'تخطي',
@@ -5085,6 +5088,8 @@ const translations = {
     shareExamNeedsClass: 'Attach this exam to a class first — students pick their name from the class list.',
     shareExamCopyLink: 'Copy the link',
     shareExamAttachNow: 'Attach it to a class now',
+    shareExamExpired: 'This exam\'s link has expired, so students cannot see or open it right now.',
+    shareExamRenew: 'Renew the link for a week',
     takeLinkFailed: 'This link is not available.',
     takeAskTeacher: 'Ask your teacher for the right link.',
     takeStartFailed: 'Could not start the exam.',
@@ -5415,6 +5420,7 @@ const translations = {
     deleteLabel: 'Delete',
     slideUpdated: 'Slide updated',
     deckThemeLabel: 'Deck look',
+    deckFlowLoop: 'then the cycle repeats',
 
     // Onboarding carousel — first-run intro, before login
     onboardingSkip: 'Skip',

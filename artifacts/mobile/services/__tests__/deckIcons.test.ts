@@ -15,6 +15,7 @@ import { buildDeckSlidesHTML } from '../deckSlidesHtml.ts';
 import type { ActivitySlide, ClassroomActivity } from '../ai/AIService.ts';
 import { DECK_SECTION_ICONS, isSectionIconName } from '../deckIcons.ts';
 
+
 describe('iconForGlyph', () => {
   it('maps the lesson deck’s section markers to icons', () => {
     assert.equal(iconForGlyph('🎯'), 'target');
@@ -225,5 +226,16 @@ describe('DECK_SECTION_ICONS — the names a model may ask for', () => {
     // would push an orbit off the edge of the chip without any error.
     const nums = DECK_ICON_SHAPES.atom.flatMap(s => (s.t === 'path' ? s.d.match(/-?\d+(?:\.\d+)?/g) ?? [] : [])).map(Number);
     assert.ok(nums.every(n => Math.abs(n) <= 24 || [60, -60].includes(n)));
+  });
+});
+
+describe('arrow and refresh — inline marks for the flow diagram', () => {
+  it('are drawable, and are NOT names a model may pick for a heading', () => {
+    for (const name of ['arrow', 'refresh'] as const) {
+      assert.ok(DECK_ICON_SHAPES[name].length > 0, name);
+      assert.match(deckIconSvg(name, '#000', 24), /<path/);
+      assert.equal(isSectionIconName(name), false, `${name} sits inside a line, not in a title`);
+      assert.ok(!(DECK_SECTION_ICONS as readonly string[]).includes(name));
+    }
   });
 });
