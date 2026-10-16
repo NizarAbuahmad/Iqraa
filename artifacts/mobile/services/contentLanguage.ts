@@ -19,6 +19,24 @@ export function contentLang(subjectId: string | null | undefined, uiLang: Lang):
 }
 
 /**
+ * What a unit is called on screen. An English unit goes by the book's English
+ * title in either UI — the pupil's book prints «My School Bag», not
+ * «حقيبتي المدرسية» (a Grade 1 English teacher's review, 2026-10-15) — with the
+ * Arabic gloss as a second line in an Arabic UI. Every other subject follows
+ * the UI, as before.
+ */
+export function unitNames(
+  unit: { name: string; nameAr: string },
+  subjectId: string | null | undefined,
+  uiLang: Lang,
+): { title: string; gloss: string | null } {
+  const lang = contentLang(subjectId, uiLang);
+  const title = lang === 'ar' ? unit.nameAr || unit.name : unit.name || unit.nameAr;
+  const gloss = lang !== uiLang && uiLang === 'ar' && unit.nameAr && unit.nameAr !== title ? unit.nameAr : null;
+  return { title, gloss };
+}
+
+/**
  * A topic handed over in one language, restated in another — the lesson's own
  * title when the topic names one, unchanged otherwise.
  *

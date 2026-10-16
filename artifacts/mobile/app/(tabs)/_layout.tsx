@@ -403,6 +403,7 @@ function ClassicTabLayout() {
           activeLesson
             ? {
                 topic: activeLesson.topic,
+                ...(activeLesson.lessonId ? { lessonId: activeLesson.lessonId } : {}),
                 ...(lessonPickerParams(activeLesson.lessonId, lang as 'ar' | 'en') ??
                   scopePickerParams(activeLesson.gradeId, activeLesson.subjectId) ??
                   {}),

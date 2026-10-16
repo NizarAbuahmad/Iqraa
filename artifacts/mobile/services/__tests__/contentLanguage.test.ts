@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { contentLang, isPreEnglishMaterial, materialSubjectId, topicInLang } from '../contentLanguage.ts';
+import { contentLang, isPreEnglishMaterial, materialSubjectId, topicInLang, unitNames } from '../contentLanguage.ts';
 import { getPickerSubjects } from '../curriculumData.ts';
 import { getBookForLesson, getLessonById } from '../knowledgeBase.ts';
 
@@ -55,5 +55,26 @@ describe('isPreEnglishMaterial', () => {
 
   it('does not read an empty picker position as the first subject', () => {
     assert.equal(materialSubjectId({ subject: '', formState: { subjectIdx: '' } }), undefined);
+  });
+});
+
+// A Grade 1 English teacher's review (2026-10-15): unit names should be in English.
+describe('unitNames', () => {
+  const unit = { name: 'My School Bag', nameAr: 'حقيبتي المدرسية' };
+
+  it("names an English unit by the book's English title, with the Arabic gloss beneath in an Arabic UI", () => {
+    assert.deepEqual(unitNames(unit, 'english', 'ar'), { title: 'My School Bag', gloss: 'حقيبتي المدرسية' });
+    assert.deepEqual(unitNames(unit, 'english', 'en'), { title: 'My School Bag', gloss: null });
+  });
+
+  it('leaves every other subject on the UI language, with no gloss', () => {
+    assert.deepEqual(unitNames(unit, 'mathematics', 'ar'), { title: 'حقيبتي المدرسية', gloss: null });
+    assert.deepEqual(unitNames(unit, 'mathematics', 'en'), { title: 'My School Bag', gloss: null });
+  });
+
+  it('falls back to whichever name exists, and never repeats it as its own gloss', () => {
+    assert.deepEqual(unitNames({ name: '', nameAr: 'وحدة' }, 'english', 'ar'), { title: 'وحدة', gloss: null });
+    assert.deepEqual(unitNames({ name: 'Unit', nameAr: 'Unit' }, 'english', 'ar'), { title: 'Unit', gloss: null });
+    assert.deepEqual(unitNames({ name: 'Unit', nameAr: '' }, 'mathematics', 'ar'), { title: 'Unit', gloss: null });
   });
 });

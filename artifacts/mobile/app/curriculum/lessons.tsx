@@ -15,6 +15,7 @@ import {
   isCurriculumBookVisible,
 } from '@/services/curriculumData';
 import { readableOn } from '@/services/readableColor';
+import { unitNames } from '@/services/contentLanguage';
 import { BackButton } from '@/components/ui/BackButton';
 
 /** Unit picker for a selected semester (book). */
@@ -86,7 +87,7 @@ export default function LessonsScreen() {
           </View>
         }
         renderItem={({ item: unit }) => {
-          const unitName = lang === 'ar' ? (unit.nameAr || unit.name) : unit.name;
+          const { title: unitName, gloss: unitGloss } = unitNames(unit, book?.subjectId, lang);
           const unitDesc = lang === 'ar' ? (unit.descriptionAr || unit.description) : unit.description;
           const lessonCount = getLessonsForUnit(unit.id).length;
 
@@ -133,6 +134,11 @@ export default function LessonsScreen() {
                     </View>
                   ) : null}
                 </View>
+                {unitGloss ? (
+                  <Text style={[styles.unitMeta, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>
+                    {unitGloss}
+                  </Text>
+                ) : null}
                 <Text
                   style={[styles.unitDesc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}
                   numberOfLines={2}

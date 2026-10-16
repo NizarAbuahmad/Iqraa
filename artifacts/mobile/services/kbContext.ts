@@ -342,6 +342,30 @@ export function figureCountForLesson(lessonId: string | undefined): number {
 }
 
 /**
+ * A single-lesson request's curriculum fields, read off the grounding the
+ * screen already resolved. Never ground the title a second time for these: a
+ * screen that grounded on the picked lesson's id would otherwise send that
+ * lesson's context beside another lesson's id (every Grade 1 English lesson is
+ * "Vocabulary & Grammar" or "Listening & Speaking"). For a lesson the title
+ * alone finds, the fields equal what `buildGeneratorContext`, `generatorUnitId`,
+ * `generatorLessonId` and `generatorFigureCount` gave — the shared pool keys
+ * on them, so that must hold.
+ */
+export function groundingRequestFields(grounding: GeneratorGrounding): {
+  additionalContext: string;
+  unitId: string | undefined;
+  lessonId: string | undefined;
+  bookFigureCount: number;
+} {
+  return {
+    additionalContext: grounding.grounded ? grounding.context : grounding.ungroundedNote,
+    unitId: nccdUnitId(grounding.lesson?.unitId),
+    lessonId: grounding.lesson?.id,
+    bookFigureCount: figureCountForLesson(grounding.lesson?.id),
+  };
+}
+
+/**
  * A unit id the knowledge bank can index by, or `undefined`.
  *
  * The KB carries two unit-id namespaces: NCCD-derived lessons use

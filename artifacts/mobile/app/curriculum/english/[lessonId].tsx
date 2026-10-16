@@ -13,6 +13,7 @@ import type { TranslationKey } from '@/services/i18n';
 import { HUB_ACTIVITIES, dayOf, lessonHasPictureMatch, newlyEarnedBadges, progressKey, recordResult, starsFor, type BadgeId, type HubActivity } from '@/services/englishHub/games';
 import { useHubProgress } from '@/services/englishHub/progressStore';
 import { goBack } from '@/services/navigation';
+import { unitNames } from '@/services/contentLanguage';
 import { Flashcards, ListenChoose, MatchMeaning, PictureMatch, Scramble, Speaking, SpellIt } from '@/components/englishHub/Activities';
 import { BADGE_META } from '@/components/englishHub/badgeMeta';
 
@@ -157,7 +158,7 @@ export default function EnglishHubLessonScreen() {
           {t('hubGrade', lesson.grade)} · {t('hubUnit', lesson.unitNumber)}
         </Text>
         <Text style={[styles.title, { textAlign: align }]} numberOfLines={2}>
-          {activity ? t(META[activity].title) : lang === 'ar' ? lesson.unitTitleAr || lesson.unitTitle : lesson.unitTitle}
+          {activity ? t(META[activity].title) : unitNames({ name: lesson.unitTitle, nameAr: lesson.unitTitleAr }, 'english', lang).title}
         </Text>
       </View>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
