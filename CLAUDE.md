@@ -476,9 +476,12 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   is throttled and fire-and-forget work (`promise.catch(log)` after
   `res.json`) can stall until some later request wakes it. The family pushes
   (homework posted, exam date, paper marks) therefore `await pushWithin(…)`
-  before answering — capped at 4 s, never throwing (`lib/pushWithin.ts`). The
-  chat and release-announcement pushes are still fire-and-forget; move them
-  the same way if their delivery ever looks late.
+  before answering — capped at 4 s, never throwing (`lib/pushWithin.ts`). So
+  do chat messages and broadcasts since 2026-10-16: a chat push sent after the
+  response also raced the caller's next request (an unblock straight after a
+  post decided who was pushed — `rlsDiff.test.ts` caught it 1 run in 15). The
+  release-announcement push is still fire-and-forget; move it the same way if
+  its delivery ever looks late.
 - **A secret ref in `deploy.yml` before the secret exists fails every deploy.**
   `gcloud run deploy --update-secrets NAME=NAME:latest` refuses a secret Secret
   Manager does not have, and that breaks every merge, not just the one that

@@ -87,6 +87,17 @@ export const numWrongs = (answer: number, cands: number[], fmt: (n: number) => s
 };
 
 
+/**
+ * The counted noun after a numeral, as a Jordanian textbook writes it: «5 أقلام»,
+ * «12 قلمًا», «100 قلم». It goes by the last two digits. Only for n ≥ 3 — one and
+ * two take their own forms.
+ */
+export const tamyiz = (n: number, plural: string, singularAcc: string, singularGen: string) => {
+  const r = n % 100;
+  return r >= 3 && r <= 10 ? plural : n >= 100 && r <= 2 ? singularGen : singularAcc;
+};
+/** «5 دنانير» / «12 دينارًا» / «300 دينار». */
+export const dinars = (n: number) => `${n} ${tamyiz(n, 'دنانير', 'دينارًا', 'دينار')}`;
 export const nz = (rng: Rng, m: number) => { const v = int(rng, 1, m); return rng() < 0.5 ? -v : v; };
 /** A non-zero numerator in lowest terms over `d`, so the fraction is shown as it would be written. */
 export function numerator(rng: Rng, d: number, m: number): number {

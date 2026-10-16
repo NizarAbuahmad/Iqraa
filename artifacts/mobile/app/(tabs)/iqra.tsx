@@ -301,6 +301,13 @@ interface Message {
    * answer already carries the one button that matters.
    */
   appHelp?: boolean;
+  /**
+   * Set on the reply to «أريد ورقة عمل» that points at the generator instead of
+   * making one. Like `appHelp`, it carries its own button, so the starter chips
+   * and the copy / export footer stay away from it. Unlike `appHelp`, the long
+   * press is left alone.
+   */
+  toolAsk?: boolean;
   pedagogicalClarification?: ClarificationOption[];
   clarificationQuery?: string;
   showLessonPrep?: boolean;
@@ -1122,7 +1129,7 @@ function MessageBubble({
   }
   // Not under an answer about the app: a how-to is not a document to file, and
   // «تصدير» under «where is Settings» offers to export a sentence.
-  if (onCopy && onExport && !message.appHelp
+  if (onCopy && onExport && !message.appHelp && !message.toolAsk
     && (canAct || infographic || message.text.trim().length > 60)) {
     messageActions.push(
       {
@@ -2130,6 +2137,7 @@ export default function IqraScreen() {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
           text: toolAskReply(toolAsk, lang as 'ar' | 'en', topic),
+          toolAsk: true,
           placeLinks: [{
             id: `tool-ask-${toolAsk}`,
             label: t(target.labelKey as TranslationKey),
@@ -3919,7 +3927,7 @@ export default function IqraScreen() {
         Settings» offers a lesson to someone who asked for a screen.
       */}
       {ephemeralSuggestions.length === 0 && !isThinking && messages.length > 1
-        && !messages[messages.length - 1]?.appHelp ? (
+        && !messages[messages.length - 1]?.appHelp && !messages[messages.length - 1]?.toolAsk ? (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}

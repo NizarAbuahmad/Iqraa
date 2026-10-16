@@ -13,6 +13,8 @@ import { DECK_ICON_SHAPES, deckIconSvg, iconForGlyph, type DeckIconName } from '
 import { splitEmoji } from '../deckText.ts';
 import { buildDeckSlidesHTML } from '../deckSlidesHtml.ts';
 import type { ActivitySlide, ClassroomActivity } from '../ai/AIService.ts';
+import { DECK_SECTION_ICONS, isSectionIconName } from '../deckIcons.ts';
+
 
 describe('iconForGlyph', () => {
   it('maps the lesson deck’s section markers to icons', () => {
@@ -186,6 +188,54 @@ describe('inline icons in the HTML export', () => {
   it('only names icons the table can draw', () => {
     for (const name of ['shield', 'play', 'file', 'tick', 'books'] as const) {
       assert.ok(DECK_ICON_SHAPES[name].length > 0, name);
+    }
+  });
+});
+
+describe('DECK_SECTION_ICONS — the names a model may ask for', () => {
+  it('every name has a drawing, and every drawing makes real SVG', () => {
+    for (const name of DECK_SECTION_ICONS) {
+      assert.ok(DECK_ICON_SHAPES[name]?.length > 0, `${name} has no shapes`);
+      const svg = deckIconSvg(name, '#0B5894', 40);
+      assert.match(svg, /^<svg /);
+      assert.ok(/<(path|circle|rect)/.test(svg), `${name} drew nothing`);
+    }
+  });
+
+  it('has no duplicates and none of the inline marks', () => {
+    assert.equal(new Set(DECK_SECTION_ICONS).size, DECK_SECTION_ICONS.length);
+    for (const inline of ['shield', 'play', 'file', 'tick']) {
+      assert.ok(!(DECK_SECTION_ICONS as readonly string[]).includes(inline), inline);
+    }
+  });
+
+  it('reaches past the generic markers into what a lesson is about', () => {
+    for (const subject of ['atom', 'flask', 'leaf', 'globe', 'calculator', 'clock', 'pin', 'heart', 'star', 'sun', 'drop', 'laptop']) {
+      assert.ok(isSectionIconName(subject), subject);
+    }
+  });
+
+  it('refuses anything else, including values a model could invent', () => {
+    for (const bad of ['rocket', '', 'Atom', 'shield', 'toString', '__proto__', 7, null, undefined, {}]) {
+      assert.equal(isSectionIconName(bad), false, String(bad));
+    }
+  });
+
+  it('keeps the tilted atom orbits inside the 24-unit grid', () => {
+    // The two slanted ellipses use SVG arc rotation; a typo in an endpoint
+    // would push an orbit off the edge of the chip without any error.
+    const nums = DECK_ICON_SHAPES.atom.flatMap(s => (s.t === 'path' ? s.d.match(/-?\d+(?:\.\d+)?/g) ?? [] : [])).map(Number);
+    assert.ok(nums.every(n => Math.abs(n) <= 24 || [60, -60].includes(n)));
+  });
+});
+
+describe('arrow and refresh — inline marks for the flow diagram', () => {
+  it('are drawable, and are NOT names a model may pick for a heading', () => {
+    for (const name of ['arrow', 'refresh'] as const) {
+      assert.ok(DECK_ICON_SHAPES[name].length > 0, name);
+      assert.match(deckIconSvg(name, '#000', 24), /<path/);
+      assert.equal(isSectionIconName(name), false, `${name} sits inside a line, not in a title`);
+      assert.ok(!(DECK_SECTION_ICONS as readonly string[]).includes(name));
     }
   });
 });

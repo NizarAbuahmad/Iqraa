@@ -479,6 +479,15 @@ export interface ActivitySlide {
    * the picture too.
    */
   visual?: import('../deckVisuals.ts').VisualBlock;
+  /**
+   * A picture for the slide's heading, by name — chosen by the model for what
+   * the slide is ABOUT (an atom for atomic structure, a leaf for photosynthesis).
+   * Drawn in the heading chip when the title carries no emoji of its own, and
+   * on a section break. Anything not in `DECK_SECTION_ICONS` is dropped on the
+   * server and again by `polishDeck`, so a renderer only ever sees a name it can
+   * draw.
+   */
+  icon?: import('../deckIcons.ts').DeckIconName;
   /** The visual is the answer: the presenter draws it only after the reveal. */
   visualOnReveal?: boolean;
   /** Media payload for type 'media' — projected image, video, audio, or a linked document. */
@@ -520,11 +529,19 @@ export interface ActivitySlide {
    * `services/slideLayout.ts` decides whether a layout's data is complete
    * enough to draw; all three renderers ask it rather than checking fields.
    */
-  layout?: 'statement' | 'stat' | 'compare' | 'steps';
+  layout?: 'statement' | 'stat' | 'compare' | 'steps' | 'timeline' | 'stats' | 'table' | 'flow';
   /** The figure and its caption, for `layout: 'stat'`. */
   stat?: { value: string; label: string; source?: string };
   /** The two sides, for `layout: 'compare'`. */
   compare?: { leftTitle: string; left: string[]; rightTitle: string; right: string[] };
+  /** The dated or ordered events, for `layout: 'timeline'`. */
+  timeline?: { label: string; text: string }[];
+  /** Two to four figures side by side, for `layout: 'stats'`. */
+  stats?: { value: string; label: string }[];
+  /** A small grid, for `layout: 'table'`: every row has one cell per header. */
+  table?: { headers: string[]; rows: string[][] };
+  /** A process drawn as boxes and arrows, for `layout: 'flow'`; `cycle` loops it back to the start. */
+  flow?: { steps: string[]; cycle?: boolean };
   /**
    * A short English photo-search phrase the generator asked for on this slide.
    *

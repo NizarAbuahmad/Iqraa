@@ -29,7 +29,11 @@ export type ResolvedLayout =
   | { kind: 'statement'; text: string }
   | { kind: 'stat'; value: string; label: string; source?: string }
   | { kind: 'compare'; leftTitle: string; left: string[]; rightTitle: string; right: string[] }
-  | { kind: 'steps'; steps: string[] };
+  | { kind: 'steps'; steps: string[] }
+  | { kind: 'timeline'; events: { label: string; text: string }[] }
+  | { kind: 'stats'; items: { value: string; label: string }[] }
+  | { kind: 'table'; headers: string[]; rows: string[][] }
+  | { kind: 'flow'; nodes: string[]; cycle: boolean };
 
 /**
  * A statement is one sentence, not a paragraph with the bullets removed.
@@ -44,6 +48,55 @@ export const MAX_STAT_VALUE_CHARS = 12;
 
 /** Two steps are a pair, not a process; below this the numbering is noise. */
 const MIN_STEPS = 2;
+
+// ─── Limits of the four structure layouts ────────────────────────────────────
+// Each is a legibility ceiling, not a taste: past it the layout stops being the
+// readable object it was chosen to be and becomes a wall of small text, which
+// is the thing the ordinary layout would have been honest about.
+
+/** A timeline of two is a pair; of seven is a list. */
+export const MIN_TIMELINE_EVENTS = 3;
+export const MAX_TIMELINE_EVENTS = 6;
+export const MAX_TIMELINE_LABEL_CHARS = 24;
+export const MAX_TIMELINE_TEXT_CHARS = 120;
+
+export const MIN_STATS = 2;
+export const MAX_STATS = 4;
+export const MAX_STAT_LABEL_CHARS = 60;
+
+export const MIN_TABLE_COLUMNS = 2;
+export const MAX_TABLE_COLUMNS = 4;
+export const MIN_TABLE_ROWS = 2;
+export const MAX_TABLE_ROWS = 6;
+export const MAX_TABLE_HEADER_CHARS = 30;
+export const MAX_TABLE_CELL_CHARS = 80;
+
+/** A flow of two is an arrow; seven boxes no longer fit on one slide. */
+export const MIN_FLOW_NODES = 3;
+export const MAX_FLOW_NODES = 6;
+export const MAX_FLOW_NODE_CHARS = 60;
+
+/** A required string: trimmed, bullet-stripped, non-empty, within `max`. Anything else is `null`. */
+function needText(v: unknown, max: number): string | null {
+  // A bare number is a normal thing for a model to put in a table cell or a
+  // stat's value; read it as the text it would have been.
+  if (typeof v === 'number' && Number.isFinite(v)) v = String(v);
+  if (typeof v !== 'string') return null;
+  const t = stripBullet(v).trim();
+  return t && t.length <= max ? t : null;
+}
+
+/** Every item through `needText`, or `null` if any single one fails — a list with a hole is not repaired. */
+function needTexts(items: unknown, max: number): string[] | null {
+  if (!Array.isArray(items)) return null;
+  const out: string[] = [];
+  for (const i of items) {
+    const t = needText(i, max);
+    if (t === null) return null;
+    out.push(t);
+  }
+  return out;
+}
 
 function lines(content: string | undefined): string[] {
   return (content ?? '').split('\n').map(l => l.trim()).filter(Boolean);
@@ -103,9 +156,89 @@ export function resolveSlideLayout(slide: ActivitySlide): ResolvedLayout | null 
       return { kind: 'steps', steps };
     }
 
+    case 'timeline': {
+      if (!Array.isArray(slide.timeline)) return null;
+      const events: { label: string; text: string }[] = [];
+      for (const e of slide.timeline) {
+        const label = needText((e as { label?: unknown } | null)?.label, MAX_TIMELINE_LABEL_CHARS);
+        const text = needText((e as { text?: unknown } | null)?.text, MAX_TIMELINE_TEXT_CHARS);
+        // An event with no date or no description is not drawn short — the whole
+        // timeline is refused, because a missing one reorders nothing visibly
+        // and quietly makes the sequence a different sequence.
+        if (label === null || text === null) return null;
+        events.push({ label, text });
+      }
+      if (events.length < MIN_TIMELINE_EVENTS || events.length > MAX_TIMELINE_EVENTS) return null;
+      return { kind: 'timeline', events };
+    }
+
+    case 'stats': {
+      if (!Array.isArray(slide.stats)) return null;
+      const items: { value: string; label: string }[] = [];
+      for (const st of slide.stats) {
+        const value = needText((st as { value?: unknown } | null)?.value, MAX_STAT_VALUE_CHARS);
+        const label = needText((st as { label?: unknown } | null)?.label, MAX_STAT_LABEL_CHARS);
+        if (value === null || label === null) return null;
+        items.push({ value, label });
+      }
+      if (items.length < MIN_STATS || items.length > MAX_STATS) return null;
+      return { kind: 'stats', items };
+    }
+
+    case 'table': {
+      const headers = needTexts(slide.table?.headers, MAX_TABLE_HEADER_CHARS);
+      if (!headers || headers.length < MIN_TABLE_COLUMNS || headers.length > MAX_TABLE_COLUMNS) return null;
+      const rawRows = slide.table?.rows;
+      if (!Array.isArray(rawRows) || rawRows.length < MIN_TABLE_ROWS || rawRows.length > MAX_TABLE_ROWS) return null;
+      const rows: string[][] = [];
+      for (const raw of rawRows) {
+        const cells = needTexts(raw, MAX_TABLE_CELL_CHARS);
+        // One cell per header, exactly. A short row padded with blanks or a long
+        // one cut would shift every value after the gap under the wrong heading.
+        if (!cells || cells.length !== headers.length) return null;
+        rows.push(cells);
+      }
+      return { kind: 'table', headers, rows };
+    }
+
+    case 'flow': {
+      const nodes = needTexts(slide.flow?.steps, MAX_FLOW_NODE_CHARS);
+      if (!nodes || nodes.length < MIN_FLOW_NODES || nodes.length > MAX_FLOW_NODES) return null;
+      return { kind: 'flow', nodes, cycle: slide.flow?.cycle === true };
+    }
+
     default:
       return null;
   }
+}
+
+/** The layouts whose data lives in a field of its own rather than in `content`. */
+export const PAYLOAD_LAYOUTS = ['stat', 'compare', 'timeline', 'stats', 'table', 'flow'] as const;
+
+/**
+ * A slide's own words as bullet lines, from whichever payload it carries — for
+ * a slide that asked for a layout the gate refused and has no `content` to fall
+ * back on. Without this, refusing a thin timeline would leave a blank slide;
+ * with it the teacher sees the events as a list, which is the ordinary layout
+ * doing its job.
+ */
+export function payloadLines(slide: ActivitySlide): string[] {
+  const str = (v: unknown) => (typeof v === 'string' ? stripBullet(v).trim() : '');
+  const out: string[] = [];
+  const add = (...parts: unknown[]) => {
+    const joined = parts.map(str).filter(Boolean).join(' — ');
+    if (joined) out.push(joined);
+  };
+  for (const e of Array.isArray(slide.timeline) ? slide.timeline : []) add(e?.label, e?.text);
+  for (const st of Array.isArray(slide.stats) ? slide.stats : []) add(st?.value, st?.label);
+  if (slide.table && Array.isArray(slide.table.rows)) {
+    const headers = Array.isArray(slide.table.headers) ? slide.table.headers : [];
+    for (const row of slide.table.rows) {
+      if (Array.isArray(row)) add(...row.map((c, i) => (headers[i] ? `${str(headers[i])}: ${str(c)}` : c)));
+    }
+  }
+  for (const step of Array.isArray(slide.flow?.steps) ? slide.flow!.steps : []) add(step);
+  return out;
 }
 
 /** Arabic-Indic digits to a number, so «١) … ٢)» numbers like «1) … 2)». */
@@ -153,4 +286,4 @@ export function inlineSteps(text: string): string[] | null {
 }
 
 /** Every layout a generator may ask for — the prompt and the tests share this. */
-export const SLIDE_LAYOUTS = ['statement', 'stat', 'compare', 'steps'] as const;
+export const SLIDE_LAYOUTS = ['statement', 'stat', 'compare', 'steps', 'timeline', 'stats', 'table', 'flow'] as const;
