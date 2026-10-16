@@ -133,6 +133,10 @@ export function detectChemFamily(raw: string): ChemFamily {
   // Grade 10 S1
   if (/الصيغ الكيميائية|الصيغة الكيميائية|تسمية المركب|chemical formula|nomenclature/i.test(blob)) return 'formulas';
   if (/رابطة|روابط|تساهمي|أيونية|فلزية|bond|covalent|ionic|metallic/i.test(blob)) return 'bonding';
+  // The lesson's own name, ahead of periodic trends on purpose: its key terms include «طاقة التأين»
+  // (ionization energy), which the periodic-trends pattern below would take as that lesson. Deliberately
+  // narrow — the name of the lesson, not its topic words, so the periodic-properties lesson is untouched.
+  if (/التوزيع الإلكتروني للذرات|electronic configuration/i.test(blob)) return 'electron_config';
   if (/الخصائص الدورية|نصف القطر|طاقة التأين|الكهروسالبية|periodic (trend|propert)|atomic radius|ionization|electronegativ/i.test(blob)) return 'periodic_trends';
   if (/التوزيع الإلكتروني|المستويات الفرعية|أوربيتال|electron config|orbital|subshell/i.test(blob)) return 'electron_config';
   // The unit's own name, «الجدول الدوري وخواص العناصر». Checked after electron_config on purpose:
