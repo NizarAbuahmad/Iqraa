@@ -5,9 +5,17 @@ Arabic-native AI teaching assistant for the Jordanian national curriculum
 
 ## Read this first
 
-**[`STATUS.md`](./STATUS.md) is the single source of truth for project state.**
-Read it before acting. When something in it stops being true, edit it in the
-same PR that changed it.
+**[`STATUS.md`](./STATUS.md) is the single source of truth for what is true
+right now** — a short page (about 120 lines): production, how a change ships,
+what is open. Read it before acting. When a line in it stops being true, edit it
+in the same PR that changed it.
+
+The long form — what each change built, what was and was not verified, its known
+limits — is [`docs/status-log.md`](./docs/status-log.md) (20,000+ lines, the old
+`STATUS.md` kept word for word). **A PR adds its write-up to the TOP of the
+log**, not to `STATUS.md`. Anywhere you see «see STATUS.md «X»» — in code
+comments, workflows and design docs — it means the entry titled X in the log:
+search for the title there.
 
 Older audits live in `docs/archive/` — historical snapshots, do not act on them.
 `.agents/memory/` holds deeper notes: `iqra-architecture.md`,
@@ -100,7 +108,8 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
 - Arabic is the product language; the UI is RTL-first. Compute maths in latin
   `x` and convert to `س` / Arabic digits **only at display time**.
 - `DEMO_MODE = true` in `artifacts/mobile/services/ai/demoMode.ts` mocks all
-  prose generation. Do not flip it without a decision — see STATUS.md.
+  prose generation. Do not flip it without a decision — see STATUS.md
+  («Production right now») and the log's «Strategy» section.
 
 ## Things that have bitten before
 
