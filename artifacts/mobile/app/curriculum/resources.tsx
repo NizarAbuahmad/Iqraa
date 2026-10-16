@@ -33,7 +33,7 @@
  * titled by its book and located by its printed page, since a bare «صفحة ٣٥»
  * means nothing once it sits among the other videos.
  */
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -584,6 +584,26 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
     return [...seen.entries()];
   }, [items, lang]);
 
+  // The Arabic row is `row-reverse`, whose start is its RIGHT end, but a
+  // horizontal scroller opens at scroll offset 0 — the left — so «كل الدروس»
+  // sat out of sight on the right with a long scroll back to it. Jump to the
+  // far end when the set of chips changes (not on a tap, so choosing a chip
+  // never undoes a scroll). The timer is for web, where the content-size event
+  // can fire before the scroller has a width to scroll within. Same fix as the
+  // FAQ's chip row.
+  const lessonScroller = useRef<ScrollView>(null);
+  const scrolledFor = useRef('');
+  const lessonKey = lessons.map(([id]) => id).join('|');
+  const scrollLessonsToStart = useCallback(() => {
+    lessonScroller.current?.scrollToEnd({ animated: false });
+  }, []);
+  useEffect(() => {
+    if (!isRTL || lessons.length < 2) return;
+    scrolledFor.current = lessonKey;
+    const id = setTimeout(scrollLessonsToStart, 60);
+    return () => clearTimeout(id);
+  }, [isRTL, lessonKey, lessons.length, scrollLessonsToStart]);
+
   const lessonId = keepIfPresent(
     lessons.map(([id]) => ({ id })),
     pickedLesson,
@@ -719,8 +739,15 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
 
         {lessons.length > 1 ? (
           <ScrollView
+            ref={lessonScroller}
             horizontal
             showsHorizontalScrollIndicator={false}
+            onContentSizeChange={() => {
+              if (isRTL && scrolledFor.current !== lessonKey) {
+                scrolledFor.current = lessonKey;
+                scrollLessonsToStart();
+              }
+            }}
             // minWidth fills the track so row-reverse packs the chips against
             // the right edge; without it a short list hugs the left in RTL.
             contentContainerStyle={[styles.chipRow, isRTL && { flexDirection: 'row-reverse', minWidth: '100%' }]}

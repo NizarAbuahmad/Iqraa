@@ -36,7 +36,7 @@ export type DeckIconName =
   | 'atom' | 'flask' | 'leaf' | 'globe' | 'calculator' | 'clock' | 'pin' | 'heart' | 'star' | 'sun' | 'drop' | 'laptop'
   // Inline marks rather than section markers — they sit in a line of text (a
   // link, a badge, a correct-answer tick), not in a heading chip.
-  | 'shield' | 'play' | 'file' | 'tick';
+  | 'shield' | 'play' | 'file' | 'tick' | 'arrow' | 'refresh';
 
 const path = (d: string): IconShape => ({ t: 'path', d });
 const circle = (cx: number, cy: number, r: number): IconShape => ({ t: 'circle', cx, cy, r });
@@ -85,6 +85,9 @@ export const DECK_ICON_SHAPES: Record<DeckIconName, readonly IconShape[]> = {
   play: [path('M7 4.5v15l12-7.5z')],
   file: [path('M6 3h8l4 4v14H6z'), path('M14 3v4h4M9 12h6M9 16h6')],
   tick: [path('M5 12.5l4.5 4.5L19 7.5')],
+  // Drawn pointing right. A right-to-left page mirrors it in CSS — the shape table has no direction.
+  arrow: [path('M5 12h14'), path('M13 6l6 6-6 6')],
+  refresh: [path('M20 11a8 8 0 1 0-2.3 5.7'), path('M20 4v7h-7')],
   // Three orbits and a nucleus. The arcs use SVG's own x-axis-rotation, so the
   // two tilted ellipses need no transform — this table has none to offer.
   atom: [

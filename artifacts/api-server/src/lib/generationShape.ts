@@ -432,7 +432,12 @@ export function assertUsableDeck(parsed: unknown): void {
     const hasStat = typeof stat?.value === "string" && stat.value.trim() !== "";
     const hasCompare = Array.isArray(compare?.left) && compare.left.length > 0
       && Array.isArray(compare?.right) && compare.right.length > 0;
-    return !title || !(content || hasStat || hasCompare);
+    // The four structure layouts keep their words in a payload of their own too.
+    const filled = (v: unknown) => Array.isArray(v) && v.length > 0;
+    const hasStructure = filled(slide.timeline) || filled(slide.stats)
+      || filled((slide.table as { rows?: unknown } | undefined)?.rows)
+      || filled((slide.flow as { steps?: unknown } | undefined)?.steps);
+    return !title || !(content || hasStat || hasCompare || hasStructure);
   });
   if (blank.length > 0) {
     throw new UnusableGenerationError("prompt-slides", [

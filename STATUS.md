@@ -621,6 +621,14 @@ an announcement by default» below.
   family (next entry). Compared before and after: only those four changed, the other 21
   are identical. **Not checked:** Typed topics that are not catalogue
   lessons were not re-measured beyond the title cases in `chemistry.test.ts`.
+- **The electron-configuration lesson was answered with periodic-trends questions; fixed (2026-10-16).**
+  Found while building the teacher review sheet's lesson-to-questions table, and missed in the
+  25-lesson comparison before it: «التوزيع الإلكتروني للذرات» (Grade 10; Aufbau, Hund's rule) listed
+  «طاقة التأين» among its key terms, `periodic_trends` is tested before `electron_config`, and that
+  one term decided it. A narrow rule on the lesson's own name now sits ahead of periodic trends; the
+  periodic-properties lesson itself («الخصائص الدورية للعناصر») still routes there. Compared before
+  and after with the app's own lesson text: only this lesson changed, the other 24 are identical.
+  **Not checked:** typed topics that are not catalogue lessons beyond the title cases in the tests.
 - **The heat-capacity lesson has its own question family (2026-10-15).** «الطاقة الممتصة
   والطاقة المنبعثة من المادة» (Grade 10) is a heat-capacity and calorimeter lesson, but
   the nearest bank, `thermochem`, is enthalpy and exo/endothermic questions with only two
@@ -636,6 +644,20 @@ an announcement by default» below.
   answers. **Not checked:** the items follow the lesson's stated objectives, not the
   textbook's own worked examples; no chemistry teacher has read them; they say nothing
   about the lesson's lab.
+- **A decimal over a power drew as a broken fraction (2026-10-16, found on the live site).**
+  A hydrogen-energy question stored as «E = −13.6/n²» showed «−13.» then a stacked 6 over n
+  then a stray ² — on app.iqrra.com, in a student-facing quiz, and it read as −13.(6/n)².
+  `parseMathLine` (`services/mathRender.ts`) read a fraction's numerator as «a run of digits and
+  letters», which stops at a decimal point, so only «6» was taken; the denominator stopped at a
+  Unicode power. A decimal (point or comma, a digit on both sides) is now one number on either
+  side of the bar, and a Unicode power stays with its denominator when the base is a real token;
+  a sentence-ending point («x = 5. 6/n») still does not join. Every stem with a decimal over a
+  variable was affected, in every subject — the bank had at least two such items
+  (`ch-as-m1`, `ch-as-m3`). Checked by rendering the markup in Chromium against the screenshot.
+  **Seen, not changed:** a unit like «J/g·°C» still draws as a stacked J over g, because a single
+  letter over a single letter counts as a fraction; whether that is wanted is a design call.
+  **Not checked:** the native (React Native) renderer was not looked at, only the web markup; and
+  a power written with «^» over a decimal («13.6/n^2») was not examined.
 - **Quiz «أعد التجهيز» now changes the questions, and says when it cannot**
   (2026-10-13). The offline regenerate only checked that the whole quiz JSON
   differed from the last one, so the same stems in another order — or with the
@@ -1469,6 +1491,65 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Chat pushes are sent before the send is answered, 2026-10-16
+
+A chat message's push (and a teacher broadcast's) went out after `res.json`, fire-and-forget.
+Besides Cloud Run throttling the CPU once a response is out, it raced the caller's next request:
+the push reads who has blocked the sender only when it runs, so an unblock sent straight after a
+post decided who was notified. `lib/db`'s `rlsDiff.test.ts` caught it on CI as an extra push to a
+parent who had blocked the sender (measured locally: 1 run in 15 on `main`). Both handlers now
+`await pushWithin(…)` before answering, like the family pushes: capped at 4 s, and a failed push
+still sends the message. After the change, 0 failures in 30 runs. Pinned by
+`routes/__tests__/chatPush.db.test.ts`, which holds the push stub's answer for 800 ms and checks
+the send waited for it. Cost: a send now answers after its push, usually a few hundred ms, at
+most 4 s.
+
+## Grade 1 grammar in the English corner — built, shown to nobody yet, 2026-10-16
+
+The teacher's review above asked for grammar practice. Each Grade 1 lesson that
+has a grammar line in the book now has three activities under a «القواعد»
+heading: **Choose the word**, **Build the sentence** and **True or false**.
+**Every unit is `reviewedBy: null`, so no pupil, visitor or teacher sees them
+yet.** Spec: `docs/superpowers/specs/2026-10-16-english-corner-grammar-g1-design.md`.
+
+- **Sentences are generated, not written one by one.**
+  `lib/curriculum/src/englishGrammar.ts` holds each unit's book patterns («I've
+  got {a:thing}.», «The {s:object} are on the {place}.») and per-lesson slot
+  lists. A slot may name only words from its own lesson or an earlier Grade 1
+  lesson; a test fails anything else. Articles (a/an) and plurals are worked
+  out, with plural-form words («boots», «apples») taking neither. The set is
+  finite: 9 units, every sentence listed.
+- **The teacher's sheet is the review.** `docs/english-grammar-g1-sheet.md`
+  (`pnpm --filter @workspace/curriculum run grammar-sheet`) lists every sentence
+  a unit can show, with its picture, the wrong option it is offered beside, and
+  the wrong picture True or false uses. A test fails if the committed sheet
+  differs from the generator, so a sign-off always refers to what ships.
+- **Pictures** are the corner's emoji (`englishPictures.ts`, moved from the app
+  so the sheet and the app agree). A marker shows the contrast: ✅/❌ for got
+  and like, 👦/👧 for he and she, two of a thing for are and they're. A word
+  without a picture still appears in Build the sentence, never in a picture
+  item. So **Unit 1 has no True or false**: only mum and dad have pictures.
+- **Semester 2 Unit 0 differs from the spec.** It has no family words, so it
+  uses the Unit 2 (I've got) and Unit 4 (favourite toy) patterns.
+- **Scored like the other games** (`SCORED_ACTIVITIES`, stars and badges, kept
+  on the device only). The round builders are in `services/englishHub/games.ts`
+  and the screens in `components/englishHub/GrammarActivities.tsx`.
+- **Checked in a browser** at 390 px, in Arabic and English, with every unit
+  signed off in the working tree only: all three activities, the finish card,
+  and Unit 1's missing True or false card. Inside the Arabic feedback line, the
+  English answer is wrapped in an LRI…PDI isolate. Without it, the full stop
+  jumped to the left end of the sentence.
+
+**To switch a unit on** (in this order):
+1. Voice its sentences: `pnpm --filter @workspace/curriculum run english-audio`.
+   This needs the OpenAI and R2 keys; the script now includes every grammar
+   sentence, in the young register. Until then, web speaks a sentence with the
+   browser's voice and native is silent.
+2. A Grade 1 English teacher reads that unit's table in
+   `docs/english-grammar-g1-sheet.md`.
+3. Set the unit's `reviewedBy: { name, date }` in `englishGrammar.ts` and merge.
+   That is the only switch: there is no flag and no role check.
+
 ## A Grade 1 English teacher's review, 2026-10-15
 
 A teacher went through English Grade 1 and sent nine notes. What each one turned
@@ -1536,11 +1617,9 @@ out to be, and what changed:
   This landed separately in #1082 (`buildMatchColumns`). This PR gives Match the
   picture the same layout, through the same no-giveaway column builder: pictures
   on one side, words on the other.
-- **Grammar and reading activities in the library.** Not built. The corner
-  drills words only. The book's grammar targets are already in the data (the
-  `objectives` of each "Vocabulary & Grammar" lesson: «I've got …», «What's this?
-  It's a …»), but sentence items need writing and a teacher's read, so this is
-  a product decision, not a fix.
+- **Grammar and reading activities in the library.** Grammar is built for
+  Grade 1 and hidden until a teacher reviews it. See «Grade 1 grammar in the
+  English corner» above. Reading is not built.
 
 ## Real book items on the live model path, behind `BOOK_ITEMS_LIVE`, 2026-10-12
 
@@ -2559,6 +2638,42 @@ surahs of equal length being swapped.
   spaced repetition, attaching a surah to a class, a link from an Islamic lesson
   into the corner, whole-surah text for surahs the books print in part.
 
+### Recitation audio (2026-10-16): built, gated off, never played
+
+Sheikh Mahmoud Khalil Al-Husary's murattal, one MP3 per ayah for the 585 ayahs the
+corner holds, copied into `iqraa-public/quran-audio/husary/` by an owner-run script
+(`pnpm --filter @workspace/curriculum run quran-audio`) and played by
+`artifacts/mobile/services/quranAudio.ts` (`expo-audio` native, `<audio>` on web — no
+native module, no `app.json` version bump). The key shape is
+`lib/curriculum/src/quranAudio.ts`; the play queue is the tested reducer
+`services/quranPlaylist.ts`; a flashcard word and a recitation are designed not to play together
+(`services/audioExclusive.ts`).
+
+- **The audio gate was opened on 2026-10-16, at the owner's request, before the
+  checklist was done.** `QURAN_AUDIO_UPLOADED`
+  (`artifacts/mobile/services/quranAudioRelease.ts`) is `true`, so once this reaches
+  `main` every signed-in user sees the listen controls (a merge deploys the web app and
+  an over-the-air update). When it was flipped `sources/quran-audio/MANIFEST.json` was
+  not in the repo, so the upload had not been committed: **if the recordings are not in
+  the bucket, each listen tap ends in the quiet "couldn't play" line.** The checklist in
+  `lib/curriculum/sources/quran-audio/VERIFY.md` (licence, upload, a reciter's
+  spot-check, device checks) is NOT done. To pull it back, set the constant to
+  `false`: a one-line change that ships over the air.
+- **No recording has been fetched, played or measured.** The build sandbox's proxy
+  refuses the source host, so the script was unit-tested against a fake fetch and a
+  fake bucket and has never touched the real source or the real bucket. Whether each
+  file is exactly its ayah (a basmalah spliced into or out of ayah 1, a clipped end)
+  is unknown.
+- **The screens were typechecked, not seen or heard**, and the native
+  "just finished" status event that advances a multi-ayah queue has not run on a
+  device. Verification was unit tests for the key builder, the upload decisions, the
+  registry, the playlist and the gate, plus typecheck, i18n and design-scale tests.
+- **Known gaps, reviewed and deliberately not fixed:** there is no stall watchdog once a recording has started (a connection that drops mid-ayah leaves it 'playing' until Stop is tapped); the web player has no load timeout; on iOS Safari the next ayah of a multi-ayah sequence may be blocked because it starts outside a user gesture; the playing-row highlight shares its colour with an unmemorised ayah's badge. Each is listed as a device check in `lib/curriculum/sources/quran-audio/VERIFY.md`.
+- **The licence for re-hosting the recordings in a paid product is not answered
+  here**, nor is approval in Jordan. Both are the owner's.
+- Needs the network; no download or cache. A student offline sees one quiet line and
+  can still read and hide.
+
 ## Exams have a date, and teachers at one school can see each other's, 2026-10-11
 
 Before this an exam had no date at all — `evaluations` had no such column and
@@ -3342,8 +3457,9 @@ real family accounts — **none of it has been seen arriving on a phone.**
 - **`pushWithin`** (`lib/pushWithin.ts`): the teacher-triggered pushes (homework, exam
   date, paper marks) are awaited before the response, capped at 4 s and never throwing,
   because Cloud Run throttles CPU once a response is sent. `sendExpoPush` also gained an
-  8 s abort per chunk. **The release announcement is still fire-and-forget**, as are chat
-  pushes (CLAUDE.md, *Work after `res.json`*).
+  8 s abort per chunk. **The release announcement is still fire-and-forget** (CLAUDE.md,
+  *Work after `res.json`*). Chat pushes were too, until 2026-10-16 (see «Chat pushes are
+  sent before the send is answered»).
 - **Schema.** Additive: `users.push_prefs jsonb NOT NULL DEFAULT '{}'` and the
   `homework_reminders` table (unique on homework + due date, cascading). No destructive
   flag was needed. Originally migrations `0007` (homework) and `0008` (this); on
@@ -3477,8 +3593,8 @@ real family accounts — **none of it has been seen arriving on a phone.**
     and a retry reminds only what is not yet claimed (claims are written as it goes).
   - The reminder's `hasAccount` counts only non-suspended `self` links, so a suspended
     student's guardians get the softer "when it is due" text, not "not done".
-  - The release announcement and chat pushes are still fire-and-forget, so Cloud Run's CPU
-    throttling can delay them.
+  - The release announcement is still fire-and-forget, so Cloud Run's CPU throttling can
+    delay it. (Chat pushes were too, until 2026-10-16.)
   - Pushes are Arabic only; `preferredLanguage` is ignored, as before.
   - Test gaps: the reminder case "moved to tomorrow" cannot show a homework that was
     claimed and then moved; date tests compare the test's Amman "today" with the server's
@@ -3709,9 +3825,9 @@ language» was followed by an offer to plan a lesson. The app-help message now
 carries `appHelp: true` and the strip is hidden while it is the last message
 (`app/(tabs)/iqra.tsx`). The نسخ / تصدير footer under the same reply went the
 same way (2026-10-11, same flag), and so did the long press that opened the
-export sheet. Not changed: the tool-ask reply («أريد ورقة عمل» pointing at the
-generator), which is built the same way and still shows the strip, the footer
-and the long press. Checked in a local web build
+export sheet. The tool-ask reply («أريد ورقة عمل» pointing at the generator)
+lost the strip and the footer on 2026-10-16 through its own flag, `toolAsk`; it
+keeps the long press, because that was not asked for. Checked in a local web build
 against the live API (chips gone after an app answer, present after a teaching
 one); no test, because `iqra.tsx` cannot be loaded by the bare `node --test`
 runner.
@@ -4215,6 +4331,49 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
 - When the worksheet screen is opened with a lesson, its unit dropdown still
   shows the placeholder (the documented gap in `TopicSelector.tsx`). The topic
   itself is held.
+## Four new slide layouts: timeline, stats, table, flow, 2026-10-18
+
+A deck had four shapes (a statement, one figure, a two-column comparison, numbered
+steps) and the rest was a stack of bullet cards. Four more, the ones the model can
+fill from text alone:
+
+- **`timeline`** — 3 to 6 events, each a short label (a date or stage) and one
+  sentence. Across on a wide screen, down the reading edge on a phone.
+- **`stats`** — 2 to 4 figures side by side, each with a caption.
+- **`table`** — 2 to 4 columns by 2 to 6 rows. The PowerPoint export is a REAL
+  table, so a teacher can edit a cell.
+- **`flow`** — 3 to 6 boxes joined by arrows; `cycle: true` adds «ثم تتكرر الدورة»
+  for a process that returns to its start (the water cycle). It is a caption, not
+  a drawn return arrow, which would cross the boxes.
+
+**Everything keys off one gate.** `resolveSlideLayout` (`services/slideLayout.ts`)
+decides whether a layout's data is good enough, and all three renderers ask it.
+It refuses the whole layout, never repairs it: a timeline with one event missing
+its date, a table row with too few or too many cells (padding would shift values
+under the wrong heading), a list over the limit. A refusal falls back to the
+slide's own words — `polishDeck` keeps the slide's one-sentence `content` and
+appends the payload as up to six bullets (`payloadLines`), so a refused layout is
+an ordinary list, never a blank slide. A layout on a question, challenge or
+divider is removed outright, because it would hide the options, the answer or the
+photo; the server does the same and leaves payload judgment to the app.
+
+**Sizes for the wall.** The layouts use `DECK_DISPLAY_TYPE` (deckTheme.ts) — type
+sized for a projector, deliberately outside the app's UI `TYPE` scale, which
+sizes a phone screen. Tables and timelines in the PDF read the document's own
+direction (flex rows and table cells); the arrow is mirrored in CSS, because the
+icon table has no direction. `arrow` and `refresh` are inline marks, not names a
+model may pick for a heading.
+
+**Verified by running, not just reading.** The PDF was rendered in both languages
+and looked at (centred timeline, one-row flow of five boxes). The PowerPoint
+exporter was run in Node with only the native modules stubbed and the files
+inspected: six slides, six speaker-notes pages, a real 4x3 table with the
+Arabic columns reversed onto the reading edge, the right arrow count, every XML
+part well-formed. **Not verified:** how the PowerPoint slides *look* (no
+PowerPoint or LibreOffice here), the presenter on a device, and a live model
+actually choosing these layouts sensibly — the prompt is untested against the
+real model. Not done: `quote`, two-column and a full-bleed image layout.
+
 ## The model chooses a deck's icons and charts, 2026-10-17
 
 Themes changed a deck's colour; every deck still had the same body. Two of the
@@ -4627,6 +4786,19 @@ search), whole-monorepo `pnpm run typecheck` clean, mobile suite 2982 pass /
 0 fail, real-manifest distribution above. **Not seen in a browser**: the screen
 sits behind sign-in and this session had no API/Postgres, so the search field's
 look in RTL and the new row subtitle are unviewed.
+
+## The Library's lesson chips open at «كل الدروس» in Arabic, 2026-10-16
+
+In Arabic the lesson chip row is `row-reverse`, whose start is its right end, but
+a horizontal `ScrollView` opens at offset 0 — the left — so the first chip
+(«كل الدروس») sat clipped past the right edge and the row looked as if it began
+mid-list. Nothing was unreachable; it was only opened at the wrong end. The row
+now jumps to its far end (`scrollToEnd`) when the set of lessons changes, not on
+a tap, with the same 60 ms timer + content-size guard the FAQ chip row uses
+(`app/faq.tsx`). **Checked on real react-native-web in Chromium** with 3, 14 and
+40 chips: the first chip is fully visible with a 20 px margin, the last is
+still reachable by scrolling, and a short row stays on the right. **Not seen on
+the live site or an Android device** — the screen sits behind sign-in.
 
 ## «من بنك الأسئلة المُراجَع» only under answers that came from it, 2026-10-06
 

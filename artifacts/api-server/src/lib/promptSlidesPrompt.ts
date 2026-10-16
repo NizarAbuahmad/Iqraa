@@ -58,6 +58,10 @@ export const DECK_ICON_NAMES = [
   "atom", "flask", "leaf", "globe", "calculator", "clock", "pin", "heart", "star", "sun", "drop", "laptop",
 ] as const;
 
+/** Every shape a slide may ask for — a copy of `SLIDE_LAYOUTS` in the app's `slideLayout.ts`. */
+export const DECK_LAYOUT_NAMES = ["statement", "stat", "compare", "steps", "timeline", "stats", "table", "flow"] as const;
+const LAYOUT_SLIDE_TYPES = ["intro", "summary", "reveal"];
+
 /** Charts the prompt asks for at most; the server keeps three before it cuts. */
 export const MAX_PROMPT_SLIDE_CHARTS = 2;
 const MAX_CHARTS_KEPT = 3;
@@ -106,6 +110,18 @@ export function sanitizeDeckStructure(activity: unknown): unknown {
   const slides = deck.slides.map(raw => {
     if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return raw;
     const slide = { ...(raw as Record<string, unknown>) };
+    // A layout fills the screen in every renderer and is drawn before the slide's
+    // type is looked at, so one on a question or a challenge would hide its
+    // options or its answer. Only prose slides may carry one, and only a name the
+    // renderers know. The payload is left for the app to judge: it re-checks every
+    // field with the real limits and falls back to the slide's own words.
+    // A slide with no `type` at all draws as an ordinary content slide, so only a
+    // type that is present and not prose counts against the layout.
+    const proseOrUntyped = typeof slide.type !== "string" || LAYOUT_SLIDE_TYPES.includes(slide.type);
+    if (slide.layout !== undefined && (!(DECK_LAYOUT_NAMES as readonly string[]).includes(slide.layout as string)
+      || !proseOrUntyped)) {
+      delete slide.layout;
+    }
     if (slide.icon !== undefined && !(DECK_ICON_NAMES as readonly string[]).includes(slide.icon as string)) delete slide.icon;
     if (slide.visual !== undefined) {
       const chart = slide.layout ? null : cleanChart(slide.visual);
@@ -269,6 +285,11 @@ ${slideCountLine(b, true)}
   لا تخترع إحصاءات. استخدم فقط أرقامًا من صميم الموضوع (عدد القوانين، قيمة ثابت، سنة، نسبة واردة في الوصف). إن لم يكن لديك رقم حقيقي فلا تستخدم هذا الشكل.
 - "compare": مقارنة حقيقية بين طرفين (قبل/بعد، صواب/خطأ، طريقتان). أضف "compare": {"leftTitle":"","left":["",""],"rightTitle":"","right":["",""]}. الطرفان ممتلئان دائمًا.
 - "steps": خطوات مرتّبة لعملية. "content" أسطر تبدأ بـ "• " بالترتيب، سطران على الأقل.
+- "timeline": ٣ إلى ٦ أحداث أو مراحل مرتّبة زمنيًا. أضف "timeline": [{"label":"التاريخ أو المرحلة، قصيرة","text":"ما حدث في جملة واحدة"}, ...]. فقط حين تكون التواريخ والمراحل حقيقية وواردة في الموضوع، لا مخترَعة.
+- "stats": ٢ إلى ٤ أرقام حقيقية تُعرض معًا. أضف "stats": [{"value":"الرقم، قصير","label":"ماذا يعني"}, ...]. لا تخترع أرقامًا أبدًا. (رقم واحد فقط؟ استخدم "stat".)
+- "table": مقارنة منظّمة بين عدة عناصر على عدة صفات. أضف "table": {"headers":["..",".."],"rows":[["..",".."],["..",".."]]}: من ٢ إلى ٤ أعمدة ومن ٢ إلى ٦ صفوف، وفي كل صف خلية واحدة بالضبط تحت كل عنوان، وكل خلية قصيرة.
+- "flow": عملية أو دورة تُرسم صناديقَ وأسهمًا، من ٣ إلى ٦ مراحل. أضف "flow": {"steps":["..","..",".."],"cycle":false}، واجعل "cycle": true حين تعود العملية إلى بدايتها (دورة الماء، دورة الخلية).
+الأشكال الأربعة الأخيرة: "content" فيها جملة واحدة تلخّص الشريحة (تُستعمل إن تعذّر الرسم)، و"type" يبقى "intro" أو "summary"، ولا يُضاف "mediaPrompt" ولا "visual".
 لا تُلبس أكثر من نصف شرائح الشرح شكلًا خاصًا — التنويع هو المقصود، لا الفوضى.
 
 الأيقونة والرسم البياني — بنية يختارها العرض نفسه لا قالب واحد لكل الشرائح:
@@ -277,7 +298,7 @@ ${slideCountLine(b, true)}
 
 قواعد إلزامية:
 - كل شريحة بلا استثناء تحمل كائن "teacher" غير فارغ. الشريحة بلا teacher تظهر للمعلّم بزرّ ملاحظات لا يفتح شيئًا.
-- "content" متعدّد الأسطر: افصل بـ \\n وابدأ أسطر القوائم بـ "• ". لا تكتب فقرة واحدة متّصلة، ولا تقلّ أي شريحة عن سطرين — إلا شريحة "statement" وشريحة الغلاف، فهما سطر واحد عمدًا.
+- "content" متعدّد الأسطر: افصل بـ \\n وابدأ أسطر القوائم بـ "• ". لا تكتب فقرة واحدة متّصلة، ولا تقلّ أي شريحة عن سطرين — إلا شريحة "statement" وشريحة الغلاف وكل شريحة بشكل "timeline" أو "stats" أو "table" أو "flow"، فهذه سطر واحد عمدًا.
   الشريحة ذات السطر الواحد مرفوضة. إن لم تجد ما تقوله في سطرين فادمج الشريحة مع التي تليها واجعل العرض أقصر — ست شرائح ممتلئة أفضل من عشر أنصاف فارغة.
 - لا تضع "mediaPrompt" على شريحة تحمل "layout": تلك الشريحة تملأ الشاشة بشكلها الخاص ولا مكان فيها للصورة.
 - شريحة الشرح فكرة واحدة فقط. إن كان لديك فكرتان فاجعلهما شريحتين.
@@ -408,6 +429,11 @@ Add a "layout" field to a concept slide when its shape fits; otherwise leave it 
   Never invent statistics. Use only numbers intrinsic to the subject (how many laws, the value of a constant, a year, a percentage the teacher's description supplied). With no real number, do not use this shape.
 - "compare": a genuine two-sided contrast (before/after, right/wrong, two methods). Add "compare": {"leftTitle":"","left":["",""],"rightTitle":"","right":["",""]}. Both sides always filled.
 - "steps": the ordered stages of a process. "content" is "• " lines in order, at least two.
+- "timeline": 3 to 6 events or stages in time order. Add "timeline": [{"label":"the date or stage, short","text":"what happened, one sentence"}, ...]. Only when the dates and stages are real and part of the topic — never invented.
+- "stats": 2 to 4 real figures shown together. Add "stats": [{"value":"the figure, short","label":"what it means"}, ...]. Never invent a figure. (Only one figure? Use "stat".)
+- "table": a structured comparison of several things across several attributes. Add "table": {"headers":["..",".."],"rows":[["..",".."],["..",".."]]}: 2 to 4 columns and 2 to 6 rows, exactly one cell under every header in every row, every cell short.
+- "flow": a process or cycle drawn as boxes and arrows, 3 to 6 stages. Add "flow": {"steps":["..","..",".."],"cycle":false}, and set "cycle": true when the process returns to its start (the water cycle, the cell cycle).
+For the last four shapes: "content" is ONE sentence that sums the slide up (it is what shows if the shape cannot be drawn), "type" stays "intro" or "summary", and there is no "mediaPrompt" and no "visual".
 Give a special shape to no more than half the concept slides — the point is variety, not chaos.
 
 Icons and charts — structure the deck chooses for itself, not one template for every slide:
@@ -416,7 +442,7 @@ Icons and charts — structure the deck chooses for itself, not one template for
 
 Mandatory rules:
 - Every slide without exception carries a non-empty "teacher" object. A slide without one shows the teacher a notes button that opens nothing.
-- "content" is multi-line: separate with \\n and start list lines with "• ". Never one unbroken paragraph, and never fewer than two lines on any slide — except a "statement" slide and the cover, which are one line on purpose.
+- "content" is multi-line: separate with \\n and start list lines with "• ". Never one unbroken paragraph, and never fewer than two lines on any slide — except a "statement" slide, the cover, and a slide shaped "timeline", "stats", "table" or "flow", which are one line on purpose.
   A one-line slide is rejected. If you cannot find two lines worth saying, merge that slide into the next one and make the deck shorter — six full slides beat ten half-empty ones.
 - Never put "mediaPrompt" on a slide that carries a "layout": that slide fills the screen with its own shape and has nowhere to put a picture.
 - A concept slide carries exactly one idea. If you have two ideas, make two slides.

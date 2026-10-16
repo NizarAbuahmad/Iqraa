@@ -1,20 +1,24 @@
 /**
- * One lesson in the English hub: its four activities, and the end-of-round card.
+ * One lesson in the English hub: its vocabulary activities, its grammar
+ * activities once a teacher has reviewed the unit (`offeredGrammar`), and the
+ * end-of-round card.
  */
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { hubLesson } from '@workspace/curriculum/englishHub';
+import { offeredGrammar } from '@workspace/curriculum/englishGrammar';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import type { TranslationKey } from '@/services/i18n';
-import { HUB_ACTIVITIES, dayOf, lessonHasPictureMatch, newlyEarnedBadges, progressKey, recordResult, starsFor, type BadgeId, type HubActivity } from '@/services/englishHub/games';
+import { GRAMMAR_ACTIVITIES, HUB_ACTIVITIES, dayOf, grammarActivityAvailable, lessonHasPictureMatch, newlyEarnedBadges, progressKey, recordResult, starsFor, type BadgeId, type HubActivity } from '@/services/englishHub/games';
 import { useHubProgress } from '@/services/englishHub/progressStore';
 import { goBack } from '@/services/navigation';
 import { unitNames } from '@/services/contentLanguage';
 import { Flashcards, ListenChoose, MatchMeaning, PictureMatch, Scramble, Speaking, SpellIt } from '@/components/englishHub/Activities';
+import { BuildSentence, GrammarChoose, TrueFalse } from '@/components/englishHub/GrammarActivities';
 import { BADGE_META } from '@/components/englishHub/badgeMeta';
 
 const META: Record<HubActivity, { icon: keyof typeof Ionicons.glyphMap; title: TranslationKey; desc: TranslationKey }> = {
@@ -25,6 +29,9 @@ const META: Record<HubActivity, { icon: keyof typeof Ionicons.glyphMap; title: T
   scramble: { icon: 'shuffle-outline', title: 'hubScramble', desc: 'hubScrambleDesc' },
   picture: { icon: 'image-outline', title: 'hubPicture', desc: 'hubPictureDesc' },
   speaking: { icon: 'mic-outline', title: 'hubSpeaking', desc: 'hubSpeakingDesc' },
+  'grammar-choose': { icon: 'checkbox-outline', title: 'hubGChoose', desc: 'hubGChooseDesc' },
+  'grammar-build': { icon: 'reorder-four-outline', title: 'hubGBuild', desc: 'hubGBuildDesc' },
+  'grammar-true': { icon: 'thumbs-up-outline', title: 'hubGTrue', desc: 'hubGTrueDesc' },
 };
 
 /** Never scored — no star count, no place in `lessonStars`. Kept separate from
@@ -45,6 +52,9 @@ export default function EnglishHubLessonScreen() {
   const [round, setRound] = useState(0);
   const [result, setResult] = useState<{ correct: number; total: number; stars: number } | null>(null);
   const [unlocked, setUnlocked] = useState<BadgeId[]>([]);
+  // Null until a teacher has signed the unit off — the only switch. Memoised so a
+  // re-render (a progress write) does not hand the activity a new list and reshuffle it.
+  const grammar = useMemo(() => offeredGrammar(lessonId ?? ''), [lessonId]);
   const row = isRTL ? 'row-reverse' : 'row';
   const align = isRTL ? 'right' : 'left';
 
@@ -119,31 +129,43 @@ export default function EnglishHubLessonScreen() {
     if (activity === 'spell') return <SpellIt key={round} {...props} />;
     if (activity === 'scramble') return <Scramble key={round} {...props} />;
     if (activity === 'picture') return <PictureMatch key={round} {...props} />;
+    if (grammar && activity === 'grammar-choose') return <GrammarChoose key={round} sentences={grammar} onFinish={finish} />;
+    if (grammar && activity === 'grammar-build') return <BuildSentence key={round} sentences={grammar} onFinish={finish} />;
+    if (grammar && activity === 'grammar-true') return <TrueFalse key={round} sentences={grammar} onFinish={finish} />;
+
+    const card = (a: HubActivity) => {
+      const best = UNSCORED.includes(a) ? 0 : progress.stars[progressKey(lesson.id, a)] ?? 0;
+      return (
+        <Pressable
+          key={a}
+          onPress={() => { setActivity(a); setRound(r => r + 1); }}
+          style={({ pressed }) => [
+            styles.card,
+            { flexDirection: row, backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.85 : 1 },
+          ]}
+        >
+          <View style={[styles.icon, { backgroundColor: colors.primary + '18' }]}>
+            <Ionicons name={META[a].icon} size={24} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 16, textAlign: align }}>{t(META[a].title)}</Text>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>{t(META[a].desc)}</Text>
+          </View>
+          {best > 0 ? <Text style={{ fontSize: 14 }}>{'⭐'.repeat(best)}</Text> : null}
+        </Pressable>
+      );
+    };
+    const grammarCards = grammar ? GRAMMAR_ACTIVITIES.filter(a => grammarActivityAvailable(a, grammar)) : [];
 
     return (
       <View style={{ gap: 10 }}>
-        {HUB_ACTIVITIES.filter(a => a !== 'picture' || lessonHasPictureMatch(lesson.words)).map(a => {
-          const best = UNSCORED.includes(a) ? 0 : progress.stars[progressKey(lesson.id, a)] ?? 0;
-          return (
-            <Pressable
-              key={a}
-              onPress={() => { setActivity(a); setRound(r => r + 1); }}
-              style={({ pressed }) => [
-                styles.card,
-                { flexDirection: row, backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.85 : 1 },
-              ]}
-            >
-              <View style={[styles.icon, { backgroundColor: colors.primary + '18' }]}>
-                <Ionicons name={META[a].icon} size={24} color={colors.primary} />
-              </View>
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 16, textAlign: align }}>{t(META[a].title)}</Text>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>{t(META[a].desc)}</Text>
-              </View>
-              {best > 0 ? <Text style={{ fontSize: 14 }}>{'⭐'.repeat(best)}</Text> : null}
-            </Pressable>
-          );
-        })}
+        {HUB_ACTIVITIES.filter(a => a !== 'picture' || lessonHasPictureMatch(lesson.words)).map(card)}
+        {grammarCards.length > 0 ? (
+          <>
+            <Text style={[styles.section, { color: colors.foreground, textAlign: align }]}>{t('hubGrammar')}</Text>
+            {grammarCards.map(card)}
+          </>
+        ) : null}
       </View>
     );
   };
@@ -174,6 +196,7 @@ const styles = StyleSheet.create({
   eyebrow: { color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 15, marginBottom: 4 },
   title: { color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 22 },
   card: { alignItems: 'center', gap: 12, borderWidth: 1, padding: 14 },
+  section: { fontFamily: 'ReadexPro_700Bold', fontSize: 17, marginTop: 12 },
   icon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   done: { alignItems: 'center', gap: 12, paddingTop: 24 },
   unlockRow: { flexWrap: 'wrap', justifyContent: 'center', gap: 8 },
