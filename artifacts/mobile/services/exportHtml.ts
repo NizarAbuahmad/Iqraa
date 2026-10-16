@@ -22,7 +22,7 @@
  * `row-reverse` is correct because RN has no document direction to inherit.
  */
 import { labelAnswerParts, labelOption, labelOptionLine } from './optionLabels.ts';
-import { workingProvenance } from './worksheetWorking.ts';
+import { keyWorkingNote, workingProvenance } from './worksheetWorking.ts';
 import { arCountPhrase } from './arCount.ts';
 import { dateLocale } from './dateLabels.ts';
 import { quizBlockPoints, quizBlocks, quizInstructions, quizMarkRows, quizMarksTotal, quizStudentFields, quizTypeLabel } from './quizPaper.ts';
@@ -618,10 +618,7 @@ export function buildWorksheetHTML(
   // Working a model wrote is not working a person checked. The key is the
   // teacher's page, so the warning goes here and never on the student copy.
   const aiWorkingNote = akRows && workingProvenance(ws).unreviewedKeyLines > 0
-    ? `<div class="working-note">${L(
-        'خطوات الحل في هذا المفتاح وُلِّدت بالذكاء الاصطناعي ولم يراجعها أحد — راجعها قبل التوزيع.',
-        'The working in this key was written by AI and nobody has reviewed it. Check it before handing out.',
-      )}</div>`
+    ? `<div class="working-note">${esc(keyWorkingNote(isAr))}</div>`
     : '';
   const answerKey = akRows
     ? `<div class="key-page"><div class="answer-key"><div class="section-title">${L('مفتاح الإجابات', 'Answer Key')}</div>${aiWorkingNote}${akRows}</div></div>`
@@ -1221,9 +1218,15 @@ export function buildWorksheetSlidesHTML(
   // As many key slides as the rows need: a slide is a fixed page with
   // `overflow: hidden`, and one slide for the whole key silently cut off the
   // working and the drawn graph of the last questions (driven 2026-10-11).
-  const akSlide = keyPages.map(page => `<div class="slide">
+  // Working a model wrote is not working a person checked: the note rides the
+  // first key slide (the teacher's), never the question slides.
+  const aiWorkingNote = workingProvenance(ws).unreviewedKeyLines > 0
+    ? `<div class="working-note">${keyWorkingNote(isAr)}</div>`
+    : '';
+  const akSlide = keyPages.map((page, pi) => `<div class="slide">
     ${header(L('مفتاح الإجابات', 'Answer Key'))}
     <div class="slide-body">
+      ${pi === 0 ? aiWorkingNote : ''}
       <div class="ak-grid">
         ${page.map(akRow).join('')}
       </div>
@@ -1251,6 +1254,7 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 .slide-eyebrow { font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:${ACCENT}; font-weight:600; margin-bottom:3px; }
 .slide-topic { font-size:13px; font-weight:700; color:#111827; }
 .slide-body { flex:1; padding:18px 26px; overflow:hidden; }
+.working-note { margin:0 0 10px; padding:6px 10px; border:1px solid #b45309; border-radius:6px; color:#92400e; font-size:11.5px; }
 .section-block { margin-bottom:12px; }
 .section-label { display:flex; align-items:center; gap:7px; font-size:12px; font-weight:700; color:${ACCENT}; margin-bottom:8px; padding-bottom:5px; border-bottom:1.5px solid ${ACCENT}33; }
 .section-icon { font-size:13px; }
