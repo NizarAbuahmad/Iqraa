@@ -41,9 +41,10 @@ export interface QuranAudioState {
 
 /**
  * How long a recording may take to START PLAYING before we say it cannot play.
- * Nothing else catches a recording that loads but never plays: expo-audio
- * reports `isLoaded: true` even for a failed file, and a stalled connection
- * never errors. Cleared at the first `playing: true` (see `startNative`).
+ * Nothing else catches a recording that loads but never plays: on Android
+ * (observed in expo-audio 1.1.1's AudioPlayer.kt) a failed load reports loaded,
+ * and a stalled connection never errors. Cleared at the first `playing: true`
+ * (see `startNative`).
  */
 const LOAD_TIMEOUT_MS = 10_000;
 
@@ -208,12 +209,21 @@ function playCurrent(): void {
     halt(false);
     return;
   }
+  // First, so an out-of-range ref halts cleanly instead of throwing out of
+  // `playSequence` with the store already showing 'playing'.
+  let url: string;
+  try {
+    url = quranAyahAudioUrl(current.surah, current.ayah);
+  } catch {
+    halt(true);
+    return;
+  }
   playback?.stop();
   const gen = ++generation;
   publish({ playing: current, error: false });
   const start = Platform.OS === 'web' ? startWeb : startNative;
   playback = start(
-    quranAyahAudioUrl(current.surah, current.ayah),
+    url,
     () => {
       if (gen !== generation) return;
       state = advancePlaylist(state);
