@@ -189,7 +189,7 @@ function solveMissing(eq: string): number {
 }
 
 const PLACE = ['الآحاد', 'العشرات', 'المئات', 'الألوف'];
-const listOf = (p: string) => p.slice(p.lastIndexOf(':') + 1).replace(/[؟.]/g, '').split('،').map(x => x.trim());
+const listOf = (p: string) => p.slice(p.lastIndexOf(':') + 1).replace(/[؟.]\s*$/, '').split('،').map(x => x.trim());
 
 /** [kind, expected answer] from the Arabic stem alone. */
 function solve(p: string): [string, number | string] {
@@ -342,7 +342,7 @@ describe('every kind of question: the key is recomputed from the printed stem', 
         for (const o of all) {
           assert.doesNotMatch(o, /NaN|undefined|Infinity|-|\/1$|\.\d{5,}/, `${stem}: odd option ${o}`);
         }
-        assert.doesNotMatch(stem, /NaN|undefined|-|\b1 (?:دينار|كتاب|قلم)/, stem);
+        assert.doesNotMatch(stem, /NaN|undefined|-|(?<![\d.])1 (?:دينار|كتاب|قلم)/, stem);
       }
       assert.deepEqual([...seen].sort(), [...kinds].sort(), `kinds drawn for ${title}`);
       assert.ok(frames.size >= 3, `${title}: ${frames.size} frames`);

@@ -363,7 +363,7 @@ const polyAddSub = topic('poly_addsub', /^جمع المقادير الجبريه
     return {
       eq: sides.map(s => `(${s})`).join(' + '), answer: polyStr(ans),
       wrongs: polyOpts(ans, [add(S[0]!, S[1]!), [S.reduce((s, t) => s + Math.abs(t[0]!), 0), ans[1]!], [0, ans[0]! + ans[1]!]]),
-      ar: `مثلث أطوال أضلاعه بالسنتيمتر: ${sides.join('، و ')}. اكتب مقدارًا جبريًا يمثّل محيطه.`,
+      ar: `مثلث أطوال أضلاعه بالسنتيمتر: ${sides.map(s => `(${s})`).join(' و ')}. اكتب مقدارًا جبريًا يمثّل محيطه.`,
       en: `A triangle has sides ${sides.join(', ')} (in cm). Write an algebraic expression for its perimeter.`,
     };
   }
@@ -391,7 +391,33 @@ const polyAddSub = topic('poly_addsub', /^جمع المقادير الجبريه
   };
 });
 
+/** Grade 7: multiply expressions — and a rectangle's area, multiply-then-simplify, and one coefficient of a product. */
 const polyMul = topic('poly_mul', /^ضرب المقادير الجبريه$/, [7, 7], ({ rng, diff }) => {
+  const form = pick(rng, [0, 1, 2, 3]);
+  if (form === 1) {
+    const p = nz(rng, 7);
+    if (tier(diff) === 2) {
+      const q = nz(rng, 7);
+      const ans = mul([p, 1], [q, 1]);
+      return { eq: `${fac(1, p)}${fac(1, q)}`, answer: polyStr(ans), wrongs: polyOpts(ans, [[p * q, 0, 1], [2 * (p + q), 4], [p + q, p * q, 1]]), ar: `مستطيل طوله ${fac(1, p)} سم وعرضه ${fac(1, q)} سم. اكتب مقدارًا جبريًا يمثّل مساحته.`, en: `A rectangle is ${fac(1, p)} cm long and ${fac(1, q)} cm wide. Write an algebraic expression for its area.` };
+    }
+    const a = int(rng, 2, 6);
+    const ans = mul([0, a], [p, 1]);
+    return { eq: `${a}x${fac(1, p)}`, answer: polyStr(ans), wrongs: polyOpts(ans, [[a * p, a], [0, p, a], [2 * p, 2 + 2 * a]]), ar: `مستطيل طوله ${fac(1, p)} سم وعرضه ${a}x سم. اكتب مقدارًا جبريًا يمثّل مساحته.`, en: `A rectangle is ${fac(1, p)} cm long and ${a}x cm wide. Write an algebraic expression for its area.` };
+  }
+  if (form === 2) {
+    const a = int(rng, 2, 6), c = nz(rng, 5), b = nz(rng, 7), d = nz(rng, 7);
+    if (a + c === 0) return polyMul.make({ rng, diff, grade: 7 });
+    const text = `${a}(${lin(1, b)}) ${c < 0 ? '−' : '+'} ${Math.abs(c) === 1 ? '' : Math.abs(c)}(${lin(1, d)})`;
+    const ans = [a * b + c * d, a + c];
+    return { eq: text, answer: polyStr(ans), wrongs: polyOpts(ans, [[b + c * d, a + c], [a * b - c * d, a + c], [a * b + c * d, a - c]]), ar: `اضرب ثم بسّط: ${text}`, en: `Multiply out and simplify: ${text}` };
+  }
+  if (form === 3) {
+    const m = pick(rng, [1, 2]), n = pick(rng, [1, 1, 3]), p = nz(rng, 7), q = nz(rng, 7);
+    const co = m * q + n * p;
+    if (co === 0) return polyMul.make({ rng, diff, grade: 7 });
+    return { eq: `${fac(m, p)}${fac(n, q)}`, answer: signed(co), wrongs: num(co, [p + q, p * q, m * n, -co]), ar: `ما معامل x في ناتج ${fac(m, p)}${fac(n, q)}؟`, en: `What is the coefficient of x in ${fac(m, p)}${fac(n, q)}?` };
+  }
   const k = tier(diff) === 0 ? 0 : tier(diff) === 1 ? pick(rng, [0, 1]) : pick(rng, [1, 2]);
   if (k === 0) {
     const a = int(rng, 2, 9), b = int(rng, 2, 9), m = int(rng, 1, 4), n = int(rng, 1, 4);
@@ -415,7 +441,19 @@ const polyMul = topic('poly_mul', /^ضرب المقادير الجبريه$/, [7
   };
 });
 
+/** Grade 7: (a ± b)² and (a + b)(a − b) — expanded, and since 2026-10-16 used for mental arithmetic (21², 23 × 17). */
 const special = topic('poly_special', /^حالات خاصه من ضرب المقادير الجبريه$/, [7, 7], ({ rng, diff }) => {
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) {
+    const t = int(rng, 2, 9), u = int(rng, 1, 3), s = rng() < 0.5 ? 1 : -1;
+    const n = 10 * t + s * u, ans = n * n;
+    return { eq: `${n}²`, answer: String(ans), wrongs: num(ans, [100 * t * t + u * u, 100 * t * t + s * 10 * t * u + u * u, 100 * t * t - u * u], String), ar: `استعمل ${s > 0 ? 'مربع مجموع حدّين' : 'مربع الفرق بين حدّين'} لإيجاد ناتج ${n}².`, en: `Use the square of a ${s > 0 ? 'sum' : 'difference'} to find ${n}².` };
+  }
+  if (form === 2) {
+    const t = int(rng, 2, 9), u = int(rng, 1, 4);
+    const A = 10 * t + u, B = 10 * t - u, ans = A * B;
+    return { eq: `${A} × ${B}`, answer: String(ans), wrongs: num(ans, [100 * t * t + u * u, 100 * t * t, 100 * t * t - 2 * u], String), ar: `استعمل ناتج ضرب مجموع حدّين في الفرق بينهما لإيجاد ناتج ${A} × ${B}.`, en: `Use (a + b)(a − b) = a² − b² to find ${A} × ${B}.` };
+  }
   const a = int(rng, 1, span(diff) > 6 ? 9 : 6), m = tier(diff) === 2 ? int(rng, 1, 3) : 1;
   const k = pick(rng, [0, 1, 2]);
   if (k === 2) {
@@ -431,7 +469,37 @@ const special = topic('poly_special', /^حالات خاصه من ضرب المق
   };
 });
 
+/** Grade 7: solve — and since 2026-10-16 the lesson's situations written as equations: a number puzzle, consecutive integers, a perimeter. */
 const solveEq = topic('solve_eq', /^حل المعادلات$/, [7, 7], ({ rng, diff }) => {
+  const form = pick(rng, [0, 1, 2, 3]);
+  if (form === 1) {
+    const x = int(rng, 1, 12), a = int(rng, 2, 6), b = int(rng, 1, 15);
+    const plus = rng() < 0.5 || a * x <= b;
+    const c = plus ? a * x + b : a * x - b;
+    const eq = `${a}x ${plus ? '+' : '−'} ${b} = ${c}`;
+    return {
+      eq, answer: signed(x), wrongs: num(x, [(plus ? c + b : c - b) / a, plus ? c - b : c + b, c / a, x + 1].filter(Number.isInteger)),
+      ar: `عدد إذا ضُرب في ${a} ثم ${plus ? 'أُضيف إلى الناتج' : 'طُرح من الناتج'} ${b} أصبح الناتج ${c}. ما العدد؟`,
+      en: `A number is multiplied by ${a}, then ${b} is ${plus ? 'added' : 'subtracted'}; the result is ${c}. What is the number?`,
+    };
+  }
+  if (form === 2) {
+    const n = int(rng, 1, 30), largest = rng() < 0.5, s = 3 * n + 3, ans = largest ? n + 2 : n;
+    const eq = largest ? `(x − 2) + (x − 1) + x = ${s}` : `x + (x + 1) + (x + 2) = ${s}`;
+    return {
+      eq, answer: String(ans), wrongs: num(ans, [n + 1, largest ? n : n + 2, s - 3, ans + 3], String),
+      ar: `مجموع ثلاثة أعداد صحيحة متتالية يساوي ${s}. ما ${largest ? 'أكبر' : 'أصغر'} هذه الأعداد؟`,
+      en: `The sum of three consecutive integers is ${s}. What is the ${largest ? 'largest' : 'smallest'} of them?`,
+    };
+  }
+  if (form === 3) {
+    const w = int(rng, 2, 15), d = int(rng, 1, 10), P = 4 * w + 2 * d;
+    return {
+      eq: `2(x + ${d}) + 2x = ${P}`, answer: String(w), wrongs: num(w, [w + d, P / 4, P / 2 - d, (P - d) / 2].filter(Number.isInteger), String),
+      ar: `مستطيل محيطه ${P} سم، وطوله يزيد على عرضه بمقدار ${d} سم. ما عرضه بالسنتيمتر؟`,
+      en: `A rectangle has a perimeter of ${P} cm, and its length is ${d} cm more than its width. What is its width in cm?`,
+    };
+  }
   const x = int(rng, -8, 9);
   const t = tier(diff);
   let eq: string;
@@ -460,6 +528,28 @@ const factorGcf = topic('factor_gcf', /^التحليل باخراج العامل
   const g = int(rng, 2, 7), u = int(rng, 1, 5), v = int(rng, 1, 5);
   // g must be the GREATEST common factor: u and v share nothing, and differ so the swap is a different answer
   if (u === v || gcd(u, v) !== 1) return factorGcf.make({ rng, diff, grade: 8 });
+  // since 2026-10-16: the GCF of two monomials on its own, and the bracket of a factorisation to complete
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) {
+    const p = int(rng, 1, 3), q = int(rng, 1, 3), lo = Math.min(p, q), hi = Math.max(p, q);
+    const A = monoStr(g * u, p), B = monoStr(g * v, q), ans = monoStr(g, lo);
+    return {
+      eq: `${A} ، ${B}`, answer: ans,
+      wrongs: wrongsFrom(ans, [String(g), monoStr(g, hi), monoStr(1, lo), monoStr(g * u * v, lo)], k => monoStr(g * (Math.abs(k) + 1), lo)),
+      ar: `ما العامل المشترك الأكبر للحدّين ${A} و ${B}؟`, en: `What is the greatest common factor of ${A} and ${B}?`,
+    };
+  }
+  if (form === 2) {
+    const x = rng() < 0.5;
+    const co = x ? [0, g * v, g * u] : [g * v, g * u];
+    const out = x ? `${g}x` : String(g);
+    const ans = polyStr([v, u]);
+    return {
+      eq: polyStr(co), answer: ans,
+      wrongs: wrongsFrom(ans, [polyStr([g * v, u]), polyStr([v, g * u]), x ? polyStr([0, v, u]) : polyStr([u, v])], k => polyStr([v + Math.abs(k), u])),
+      ar: `ما المقدار الذي يُكتب داخل القوسين: ${polyStr(co)} = ${out}( … )؟`, en: `What goes inside the brackets: ${polyStr(co)} = ${out}( … )?`,
+    };
+  }
   const withX = tier(diff) >= 1 && rng() < 0.7;
   const [a, b] = [g * u, g * v];
   if (withX) {
@@ -501,6 +591,23 @@ const factorMonic = topic('factor_monic', /ثلاثيات الحدود x.\+bx\+c
     wr.push(factorPair([1, a], [1, b]));
   }
   for (let k = 1; wr.length < 3; k++) { const a = p + k, b = q; if (a !== b && a !== 0 && !seen.has(key(a + b, a * b))) { seen.add(key(a + b, a * b)); wr.push(factorPair([1, a], [1, b])); } }
+  // since 2026-10-16: the step before the answer (the two numbers), and the other factor given one
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) {
+    return {
+      eq: `${p * q} ، ${p + q}`, answer: rootPair(p, q), wrongs: [rootPair(-p, -q), rootPair(p, -q), rootPair(-p, q)],
+      ar: `لتحليل المقدار ${polyStr(co)}، ما العددان اللذان حاصل ضربهما ${signed(p * q)} ومجموعهما ${signed(p + q)}؟`,
+      en: `To factor ${polyStr(co)}, which two numbers have product ${signed(p * q)} and sum ${signed(p + q)}?`,
+    };
+  }
+  if (form === 2) {
+    const other = fac(1, q);
+    const cands = [fac(1, -q), fac(1, p + q), fac(1, p * q)].filter(s => s !== fac(1, p));
+    return {
+      eq: polyStr(co), answer: other, wrongs: wrongsFrom(other, cands, k => (q + k === 0 || q + k === p ? '' : fac(1, q + k))),
+      ar: `إذا كان ${fac(1, p)} أحد عاملي المقدار ${polyStr(co)}، فما العامل الآخر؟`, en: `If ${fac(1, p)} is one factor of ${polyStr(co)}, what is the other?`,
+    };
+  }
   return { eq: polyStr(co), answer: ans, wrongs: wr, ar: `حلّل: ${polyStr(co)}`, en: `Factor: ${polyStr(co)}` };
 });
 
@@ -523,13 +630,57 @@ const factorGeneral = topic('factor_general', /ثلاثيات الحدود ax.\+
     take([m, q], [n, p]); take([m, -p], [n, -q]); take([m, p], [n, -q]); take([m, -p], [n, q]); take([n, p], [m, q]);
     for (let k = 1; wr.length < 3 && k < 9; k++) take([m, p + k], [n, q]);
     if (wr.length < 3) continue;
+    // since 2026-10-16: the split of the middle term (two numbers, product ac and sum b), and the other factor given one
+    const form = pick(rng, [0, 1, 2]);
+    if (form === 1) {
+      const ac = co[2]! * co[0]!, b = co[1]!;
+      const pairAns = rootPair(m * q, n * p);
+      const out: string[] = [];
+      for (const [s, t] of [[-m * q, -n * p], [co[2]!, co[0]!], [m * p, n * q], [-co[2]!, -co[0]!], [m * q + 1, n * p], [m * q, n * p + 1]] as Array<[number, number]>) {
+        const str = rootPair(s, t);
+        if ((s + t !== b || s * t !== ac) && str !== pairAns && !out.includes(str)) out.push(str);
+      }
+      for (let j = 2; out.length < 3; j++) { const str = rootPair(m * q + j, n * p); if (!out.includes(str)) out.push(str); }
+      return {
+        eq: `${ac} ، ${b}`, answer: pairAns, wrongs: out.slice(0, 3),
+        ar: `لتحليل المقدار ${polyStr(co)} بتجزئة الحدّ الأوسط، ما العددان اللذان حاصل ضربهما ${signed(ac)} ومجموعهما ${signed(b)}؟`,
+        en: `To factor ${polyStr(co)} by splitting the middle term, which two numbers have product ${signed(ac)} and sum ${signed(b)}?`,
+      };
+    }
+    if (form === 2) {
+      const other = fac(n, q), given = fac(m, p);
+      const cands = [fac(n, -q), fac(m, q), fac(n + 1, q), q + 1 === 0 ? '' : fac(n, q + 1), q - 1 === 0 ? '' : fac(n, q - 1)].filter(s => s && s !== given);
+      return {
+        eq: polyStr(co), answer: other, wrongs: wrongsFrom(other, cands, k => (q + 2 * k === 0 ? '' : fac(n, q + 2 * k))),
+        ar: `إذا كان ${given} أحد عاملي المقدار ${polyStr(co)}، فما العامل الآخر؟`, en: `If ${given} is one factor of ${polyStr(co)}, what is the other?`,
+      };
+    }
     return { eq: polyStr(co), answer: ans, wrongs: wr.slice(0, 3), ar: `حلّل: ${polyStr(co)}`, en: `Factor: ${polyStr(co)}` };
   }
   return factorMonic.make({ rng, diff, grade: 8 });
 });
 
+/**
+ * Grade 8: a difference of squares and a perfect-square trinomial — factored, and
+ * since 2026-10-16 the missing c or b that makes a perfect square, and a
+ * difference of squares used to work out A² − B².
+ */
 const factorSpecial = topic('factor_special', /^حالات خاصه من التحليل$/, [8, 8], ({ rng, diff }) => {
   const a = int(rng, 1, 9), m = tier(diff) === 2 ? int(rng, 1, 4) : 1;
+  const form = pick(rng, [0, 1, 2, 3]);
+  if (form === 1) {
+    const s = rng() < 0.5 ? 1 : -1;
+    const head = polyStr([0, 2 * s * a * m, m * m]);
+    return { eq: `${head} + c`, answer: String(a * a), wrongs: num(a * a, [2 * a * m, a, 4 * a * a, (2 * a * m) ** 2], String), ar: `ما قيمة c التي تجعل المقدار ${head} + c مربعًا كاملًا؟`, en: `What value of c makes ${head} + c a perfect square?` };
+  }
+  if (form === 2) {
+    const lead = m * m === 1 ? 'x²' : `${m * m}x²`;
+    return { eq: `${lead} + bx + ${a * a}`, answer: String(2 * a * m), wrongs: num(2 * a * m, [a * m, a * a, 4 * a * m, a + m], String), ar: `ما قيمة b الموجبة التي تجعل المقدار ${lead} + bx + ${a * a} مربعًا كاملًا؟`, en: `What positive value of b makes ${lead} + bx + ${a * a} a perfect square?` };
+  }
+  if (form === 3) {
+    const A = int(rng, 15, 60), B = A - int(rng, 1, 9), ans = A * A - B * B;
+    return { eq: `${A}² − ${B}²`, answer: String(ans), wrongs: num(ans, [(A - B) ** 2, 2 * (A - B), A * A - B], String), ar: `استعمل تحليل الفرق بين مربعين لإيجاد قيمة ${A}² − ${B}².`, en: `Use the difference of two squares to find ${A}² − ${B}².` };
+  }
   const k = pick(rng, [0, 1, 2]);
   if (k === 0) {
     const co = [-(a * a), 0, m * m];
