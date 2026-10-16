@@ -5,8 +5,8 @@
  * a list or a small table — there is no chart to look at — so every stem is
  * self-contained.
  *
- * Three-way answers (certain / possible / impossible) have two wrong options,
- * not three; the rest have three.
+ * Three-way answers (certain / possible / impossible; mean / median / mode)
+ * have two wrong options, yes / no one, the rest three.
  */
 import { gcd, int, numWrongs, pick, sfrac, signed, tamyiz, tier, wrongsFrom, type Draft, type Rng, type Topic } from './topicKit.ts';
 
