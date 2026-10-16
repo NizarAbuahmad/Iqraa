@@ -1030,7 +1030,7 @@ const pointSlope = topic('line_point_slope', /^معادله المستقيم ب�
     const cands = ([[-m, x1, y1], [m, -x1, -y1], [m, x2, y1], [m, x1, y2]] as Array<[number, number, number]>)
       .filter(([mm, px, py]) => px !== 0 && py !== 0 && !sameLine(mm, px, py)).map(([mm, px, py]) => psForm(mm, px, py));
     return {
-      eq: ans, answer: ans, wrongs: wrongsFrom(ans, cands, k => psForm(m + Math.abs(k), x1, y1)),
+      eq: ans, answer: ans, wrongs: wrongsFrom(ans, cands, k => psForm(m + Math.sign(m) * Math.abs(k), x1, y1)),
       ar: `اكتب بصيغة الميل ونقطة معادلة المستقيم المار بالنقطتين ${pair(x1, y1)} و ${pair(x2, y2)}، مستعملًا النقطة ${pair(x1, y1)}.`,
       en: `Write, in point-slope form using ${pair(x1, y1)}, the equation of the line through ${pair(x1, y1)} and ${pair(x2, y2)}.`,
     };
@@ -1091,12 +1091,73 @@ const rootWrongs = (m: number, n: number, p: number, q: number) => {
   return [f(p, m, q, n), f(-p, m, q, n), f(p, m, -q, n), f(-p, n, -q, m), f(-p, m, -q + n, n)];
 };
 
-const quadSolve = (id: string, match: RegExp, how: [string, string]) => topic(id, match, [9, 9], ({ rng, diff }) => {
+type Extra = (rng: Rng, diff: DiffTierLike) => Draft;
+
+/** A quadratic solved by a named method; `extras` are the lesson's other kinds of question, drawn as often as it. */
+const quadSolve = (id: string, match: RegExp, how: [string, string], extras: Extra[] = []) => topic(id, match, [9, 9], ({ rng, diff }) => {
+  const form = int(rng, 0, extras.length);
+  if (form > 0) return extras[form - 1]!(rng, diff);
   const { m, n, p, q, co, rootStr } = quadFromRoots(rng, diff, true);
   const eq = `${polyStr(co)} = 0`;
   const wr = rootWrongs(m, n, p, q).filter((w, i, s) => w !== rootStr && s.indexOf(w) === i);
-  return { eq, answer: rootStr, wrongs: wrongsFrom(rootStr, wr, k => `${p + Math.abs(k)} ، ${q}`), ar: `حلّ المعادلة ${eq} ${how[0]}.`, en: `Solve ${eq} ${how[1]}.` };
+  return { eq, answer: rootStr, wrongs: wrongsFrom(rootStr, wr, k => `${signed(p + Math.abs(k))} ، ${signed(q)}`), ar: `حلّ المعادلة ${eq} ${how[0]}.`, en: `Solve ${eq} ${how[1]}.` };
 });
+
+// ── the factoring lesson's other outcomes (since 2026-10-16) ──
+
+/** ax² − atx = 0: take out the GCF, roots 0 and t. */
+const gcfQuad: Extra = rng => {
+  const a = int(rng, 1, 3), t = nz(rng, 8);
+  const eq = `${polyStr([0, -a * t, a])} = 0`, ans = rootPair(0, t);
+  return { eq, answer: ans, wrongs: wrongsFrom(ans, [rootPair(0, -t), signed(t), rootPair(0, a * t)], k => (t + k === 0 ? '' : rootPair(0, t + k))), ar: `حلّ المعادلة ${eq} بإخراج العامل المشترك الأكبر.`, en: `Solve ${eq} by taking out the greatest common factor.` };
+};
+
+/** (x − h)² = r²: square roots, roots h ± r. */
+const sqrtQuad: Extra = rng => {
+  const h = int(rng, -5, 5), r = int(rng, 1, 8);
+  const sq = h === 0 ? 'x²' : `(x ${h < 0 ? '+' : '−'} ${Math.abs(h)})²`;
+  const ans = rootPair(h - r, h + r);
+  return {
+    eq: `${polyStr([h * h - r * r, -2 * h, 1])} = 0`, answer: ans,
+    wrongs: wrongsFrom(ans, [rootPair(-h - r, -h + r), signed(h + r), rootPair(h - r * r, h + r * r)], k => rootPair(h - r - Math.abs(k), h + r)),
+    ar: `حلّ المعادلة ${sq} = ${r * r} باستعمال الجذر التربيعي.`, en: `Solve ${sq} = ${r * r} using square roots.`,
+  };
+};
+
+/** (mx + p)(nx + q) = 0: the zero-product property. */
+const zeroProduct: Extra = (rng, diff) => {
+  const { m, n, p, q, co, rootStr } = quadFromRoots(rng, diff, true);
+  const wr = rootWrongs(m, n, p, q).filter((w, i, s) => w !== rootStr && s.indexOf(w) === i);
+  return { eq: `${polyStr(co)} = 0`, answer: rootStr, wrongs: wrongsFrom(rootStr, wr, k => rootPair(-p + Math.abs(k), -q)), ar: `ما حلول المعادلة ${fac(m, p)}${fac(n, q)} = 0؟`, en: `What are the solutions of ${fac(m, p)}${fac(n, q)} = 0?` };
+};
+
+/** A rectangle w by w + d of area A: x(x + d) = A, the positive root. */
+const rectQuad: Extra = rng => {
+  const w = int(rng, 2, 12), d = int(rng, 1, 8), A = w * (w + d);
+  return {
+    eq: `${polyStr([-A, d, 1])} = 0`, answer: String(w), wrongs: num(w, [w + d, Math.floor(Math.sqrt(A)), A / d, w + 1].filter(Number.isInteger), String),
+    ar: `مستطيل طوله يزيد على عرضه بمقدار ${d} سم، ومساحته ${A} سم². ما عرضه بالسنتيمتر؟`,
+    en: `A rectangle is ${d} cm longer than it is wide and has an area of ${A} cm². What is its width in cm?`,
+  };
+};
+
+// ── the graphing lesson's other outcomes (since 2026-10-16) ──
+
+/** a(x − h)² + k = 0 given its vertex: two, one or no real solutions. */
+const vertexCount: Extra = rng => {
+  const a = pick(rng, [1, -1]), h = int(rng, -4, 4), kind = pick(rng, [0, 1, 2] as const);
+  const k = kind === 1 ? 0 : (kind === 0 ? -a : a) * int(rng, 1, 9);
+  const eq = `${polyStr([a * h * h + k, -2 * a * h, a])} = 0`;
+  return nsolDraft(eq, kind, `رأس منحنى الاقتران المرتبط بالمعادلة ${eq} هو النقطة ${pair(h, k)}. كم حلًّا حقيقيًّا للمعادلة؟`, `The vertex of the parabola of ${eq} is ${pair(h, k)}. How many real solutions does the equation have?`);
+};
+
+/** x² = −bx − c (or x² + bx = −c) rearranged to x² + bx + c = 0. */
+const standardQuad: Extra = rng => {
+  const b = nz(rng, 9), c = nz(rng, 12);
+  const given = rng() < 0.5 ? `x² = ${polyStr([-c, -b])}` : `${polyStr([0, b, 1])} = ${signed(-c)}`;
+  const S = (cc: number, bb: number) => `${polyStr([cc, bb, 1])} = 0`;
+  return { eq: given, answer: S(c, b), wrongs: [S(-c, b), S(c, -b), S(-c, -b)], ar: `اكتب المعادلة ${given} بالصورة القياسية ax² + bx + c = 0.`, en: `Write ${given} in the standard form ax² + bx + c = 0.` };
+};
 
 const quadComplete = topic('quad_complete', /^حل المعادلات التربيعيه باكمال المربع$/, [9, 9], ({ rng, diff }) => {
   const h = int(rng, 1, span(diff) > 6 ? 7 : 5), b = 2 * h;
@@ -1113,8 +1174,18 @@ const quadComplete = topic('quad_complete', /^حل المعادلات الترب
   return { eq, answer: ans, wrongs: wrongsFrom(ans, [`${signed(h - r)} ، ${signed(h + r)}`, `${signed(-h - r)} ، ${signed(r)}`, `${signed(-h)} ، ${signed(r)}`], j => `${signed(roots[0]! + Math.abs(j))} ، ${signed(roots[1]!)}`), ar: `حلّ المعادلة ${eq} بإكمال المربع.`, en: `Solve ${eq} by completing the square.` };
 });
 
+/** Grade 9: the quadratic formula, the discriminant — and since 2026-10-16 the number of real solutions the discriminant's sign gives. */
 const quadFormula = topic('quad_formula', /^حل المعادلات التربيعيه باستعمال القانون العام$/, [9, 9], ({ rng, diff }) => {
-  if (rng() < 0.45) {
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 2) {
+    const kind = pick(rng, [0, 1, 2] as const);
+    let co: number[];
+    if (kind === 1) { const p = int(rng, 1, 3), q = nz(rng, 5); co = [q * q, 2 * p * q, p * p]; }
+    else for (;;) { const a = int(rng, 1, 3), b = int(rng, -8, 8), c = nz(rng, 6); const d = b * b - 4 * a * c; if (kind === 0 ? d > 0 : d < 0) { co = [c, b, a]; break; } }
+    const eq = `${polyStr(co)} = 0`;
+    return nsolDraft(eq, kind, `استعمل المميز لتحديد عدد الحلول الحقيقية للمعادلة ${eq}.`, `Use the discriminant to find how many real solutions ${eq} has.`);
+  }
+  if (form === 1) {
     const a = int(rng, 1, 3), b = int(rng, -8, 8), c = nz(rng, 6);
     const d = b * b - 4 * a * c;
     return { eq: `${polyStr([c, b, a])} = 0`, answer: signed(d), wrongs: num(d, [b * b + 4 * a * c, b * b - 4 * c, -b * b - 4 * a * c, d + 2 * a]), ar: `أوجد قيمة المميز b² − 4ac للمعادلة ${polyStr([c, b, a])} = 0.`, en: `Find the discriminant b² − 4ac of ${polyStr([c, b, a])} = 0.` };
@@ -1122,7 +1193,7 @@ const quadFormula = topic('quad_formula', /^حل المعادلات التربي
   const { m, n, p, q, co, rootStr } = quadFromRoots(rng, diff, true);
   const eq = `${polyStr(co)} = 0`;
   const wr = rootWrongs(m, n, p, q).filter((w, i, s) => w !== rootStr && s.indexOf(w) === i);
-  return { eq, answer: rootStr, wrongs: wrongsFrom(rootStr, wr, k => `${p + Math.abs(k)} ، ${q}`), ar: `حلّ المعادلة ${eq} باستعمال القانون العام.`, en: `Solve ${eq} using the quadratic formula.` };
+  return { eq, answer: rootStr, wrongs: wrongsFrom(rootStr, wr, k => `${signed(p + Math.abs(k))} ، ${signed(q)}`), ar: `حلّ المعادلة ${eq} باستعمال القانون العام.`, en: `Solve ${eq} using the quadratic formula.` };
 });
 
 const quadFunction = topic('quad_function', /^الاقتران التربيعي$/, [9, 9], ({ rng, diff }) => {
@@ -1135,14 +1206,93 @@ const quadFunction = topic('quad_function', /^الاقتران التربيعي$
   return { eq: f, answer: signed(c), wrongs: num(c, [-c, b, a, c + 1].filter(x => x !== c)), ar: `أوجد المقطع y للمنحنى ${f}.`, en: `Find the y-intercept of ${f}.` };
 });
 
+/** «y = 2(x − 3)² + 1»; h = 0 prints «x²», k = 0 drops the constant. */
+const vform = (a: number, h: number, k: number) =>
+  `y = ${a === 1 ? '' : a === -1 ? '−' : a}${h === 0 ? 'x' : `(x ${h < 0 ? '+' : '−'} ${Math.abs(h)})`}²${k === 0 ? '' : ` ${k < 0 ? '−' : '+'} ${Math.abs(k)}`}`;
+
+/**
+ * Grade 9 transformations of y = x²: the vertex — and since 2026-10-16 the
+ * translation that gives a curve, the curve a translation gives, and the axis of
+ * symmetry.
+ */
 const quadVertex = topic('quad_vertex', /التحويلات الهندسيه.*التربيعي/, [9, 9], ({ rng }) => {
+  const form = pick(rng, [0, 1, 2, 3]);
+  if (form === 1) {
+    const n = int(rng, 1, 6), pos = rng() < 0.5, horiz = rng() < 0.5;
+    const f = horiz ? vform(1, pos ? n : -n, 0) : vform(1, 0, pos ? n : -n);
+    const [d1, d2] = horiz ? (pos ? ['اليمين', 'اليسار'] : ['اليسار', 'اليمين']) : (pos ? ['الأعلى', 'الأسفل'] : ['الأسفل', 'الأعلى']);
+    const [o1, o2] = horiz ? ['الأعلى', 'الأسفل'] : ['اليمين', 'اليسار'];
+    const T = (d: string) => `انسحاب ${units(n)} إلى ${d}`;
+    return { eq: f, answer: T(d1!), wrongs: [T(d2!), T(o1!), T(o2!)], ar: `ما التحويل الهندسي الذي ينقل منحنى الاقتران y = x² إلى منحنى الاقتران ${f}؟`, en: `Which transformation takes the graph of y = x² to the graph of ${f}?` };
+  }
+  if (form === 2) {
+    const h = nz(rng, 6), k = nz(rng, 7);
+    const ans = vform(1, h, k);
+    return {
+      eq: ans, answer: ans, wrongs: [vform(1, -h, k), vform(1, h, -k), vform(1, -h, -k)],
+      ar: `اكتب معادلة الاقتران الناتج عن انسحاب منحنى الاقتران y = x² بمقدار ${units(Math.abs(h))} إلى ${h > 0 ? 'اليمين' : 'اليسار'}، ثم بمقدار ${units(Math.abs(k))} إلى ${k > 0 ? 'الأعلى' : 'الأسفل'}.`,
+      en: `Write the function whose graph is y = x² translated ${unitsEn(Math.abs(h))} ${h > 0 ? 'right' : 'left'}, then ${unitsEn(Math.abs(k))} ${k > 0 ? 'up' : 'down'}.`,
+    };
+  }
+  if (form === 3) {
+    const a = pick(rng, [1, 2, -1, 3, -2]), h = nz(rng, 6), k = nz(rng, 7);
+    const f = vform(a, h, k), ans = `x = ${signed(h)}`;
+    return { eq: f, answer: ans, wrongs: wrongsFrom(ans, [`x = ${signed(-h)}`, `y = ${signed(k)}`, `x = ${signed(k)}`], j => `x = ${signed(h + Math.abs(j))}`), ar: `ما معادلة محور التماثل لمنحنى الاقتران ${f}؟`, en: `What is the equation of the axis of symmetry of ${f}?` };
+  }
   const a = pick(rng, [1, 2, -1, 3]), h = nz(rng, 6), k = nz(rng, 7);
   const f = `y = ${a === 1 ? '' : a === -1 ? '−' : a}(x ${h < 0 ? '+' : '−'} ${Math.abs(h)})² ${k < 0 ? '−' : '+'} ${Math.abs(k)}`;
   const ans = pair(h, k);
   return { eq: f, answer: ans, wrongs: wrongsFrom(ans, [pair(-h, k), pair(k, h), pair(-h, -k)], j => pair(h, k + Math.abs(j))), ar: `ما رأس القطع المكافئ ${f}؟`, en: `What is the vertex of the parabola ${f}?` };
 });
 
+/** «{(1 ، 2)، (3 ، −4)}» */
+const relStr = (ps: Array<[number, number]>) => `{${ps.map(([x, y]) => pair(x, y)).join('، ')}}`;
+
+/**
+ * Grade 9 functions: evaluate f — and since 2026-10-16 the lesson's own
+ * outcomes: the domain or range of a relation, the range of f on a finite
+ * domain, and which pair keeps a relation a function.
+ */
 const functions = topic('fn_eval', /^الاقترانات$/, [9, 9], ({ rng, diff }) => {
+  const form = pick(rng, [0, 1, 2, 3]);
+  const distinct = (n: number, lo: number, hi: number) => { const xs: number[] = []; while (xs.length < n) { const v = int(rng, lo, hi); if (!xs.includes(v)) xs.push(v); } return xs; };
+  /** Up to three wrong sets: candidates first, never equal to the answer or each other. */
+  const sets = (ans: string, cands: number[][]) => {
+    const out: string[] = [];
+    for (const c of cands) { const s = setStr(c); if (s !== ans && !out.includes(s) && out.length < 3) out.push(s); }
+    return out;
+  };
+  if (form === 1) {
+    for (;;) {
+      const xs = distinct(int(rng, 3, 4), -5, 8), ys = xs.map(() => int(rng, -5, 8));
+      const R = relStr(xs.map((x, i) => [x, ys[i]!]));
+      const dom = rng() < 0.5;
+      const [want, other] = dom ? [xs, ys] : [ys, xs];
+      const ans = setStr(want);
+      const wr = sets(ans, [other, [...xs, ...ys], want.slice(1), want.map(v => v + 1)]);
+      if (wr.length < 3) continue;
+      return { eq: R, answer: ans, wrongs: wr, ar: `ما ${dom ? 'مجال' : 'مدى'} العلاقة ${R}؟`, en: `What is the ${dom ? 'domain' : 'range'} of the relation ${R}?` };
+    }
+  }
+  if (form === 2) {
+    for (;;) {
+      const a = nz(rng, 4), b = nz(rng, 6), D = distinct(3, -3, 4);
+      const f = (x: number) => a * x + b;
+      const ans = setStr(D.map(f));
+      const wr = sets(ans, [D, D.map(x => a * x), D.map(x => a * x - b), D.map(x => x + b), D.map(x => f(x) + 1)]);
+      if (wr.length < 3) continue;
+      return { eq: `f(x) = ${polyStr([b, a])}`, answer: ans, wrongs: wr, ar: `إذا كان f(x) = ${polyStr([b, a])} ومجاله ${setStr(D)}، فما مداه؟`, en: `If f(x) = ${polyStr([b, a])} has domain ${setStr(D)}, what is its range?` };
+    }
+  }
+  if (form === 3) {
+    const xs = distinct(4, -5, 8), ys = xs.map(() => int(rng, -5, 8));
+    const R = relStr(xs.slice(0, 3).map((x, i) => [x, ys[i]!]));
+    const ans = pair(xs[3]!, ys[3]!);
+    // the same first coordinate with a different second one: no longer a function
+    const wr = xs.slice(0, 3).map((x, i) => pair(x, ys[i]! + int(rng, 1, 4) * (rng() < 0.5 ? 1 : -1)));
+    const listed = [ans, ...wr].sort().join('، ');
+    return { eq: R, answer: ans, wrongs: wr, ar: `أيّ الأزواج المرتبة الآتية يمكن إضافته إلى العلاقة ${R} فتبقى اقترانًا: ${listed}؟`, en: `Which of these ordered pairs can be added to the relation ${R} so that it is still a function: ${listed}?` };
+  }
   const x = int(rng, -4, 6), a = nz(rng, 5), b = nz(rng, 9);
   if (tier(diff) === 2 || rng() < 0.4) {
     const v = a * x * x + b;
@@ -1294,8 +1444,8 @@ export const ALGEBRA_TOPICS: readonly Topic[] = [
   writeIneq, ineqAdd, ineqMul, ineqMulti, compound, intervals,
   systemTopic('sys_graph', /^حل نظام من معادلتين خطيتين بيانيا$/, 'graph'), systemTopic('sys_sub', /^حل نظام من معادلتين خطيتين بالتعويض$/, 'sub'), systemTopic('sys_elim', /^حل نظام من معادلتين خطيتين بالحذف$/, 'elim'),
   standardForm, slope, slopeIntercept, pointSlope, parallel,
-  quadSolve('quad_factor', /^حل المعادلات التربيعيه بالتحليل$/, ['بالتحليل', 'by factoring']),
-  quadSolve('quad_graph', /^حل المعادلات التربيعيه بيانيا$/, ['بيانيًا (جذراها هما الإحداثيان السينيان لنقطتي تقاطع المنحنى مع المحور x)', 'by graphing (the roots are the x-intercepts of the parabola)']),
+  quadSolve('quad_factor', /^حل المعادلات التربيعيه بالتحليل$/, ['بالتحليل', 'by factoring'], [gcfQuad, sqrtQuad, zeroProduct, rectQuad]),
+  quadSolve('quad_graph', /^حل المعادلات التربيعيه بيانيا$/, ['بيانيًا (جذراها هما الإحداثيان السينيان لنقطتي تقاطع المنحنى مع المحور x)', 'by graphing (the roots are the x-intercepts of the parabola)'], [vertexCount, standardQuad]),
   quadComplete, quadFormula, quadFunction, quadVertex, functions,
   simplifyExp, radicalOps, radicalEq, ratMulDiv, ratAddSub, ratEq,
   squareRoots, irrational, realNumbers,

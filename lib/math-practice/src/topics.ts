@@ -232,7 +232,7 @@ const estSumDec: Topic = {
       return {
         eq: `${hi} ${op} ${lo}`, answer: String(est),
         wrongs: numWrongs(est, [Math.round(exact * 10) / 10 === est ? NaN : Math.round(exact), Math.floor(exact), est + 10, Math.max(0, est - 10)].filter(v => v !== est)),
-        ar: `قدّر ناتج ${hi} ${op} ${lo} بتقريب كل عدد إلى أقرب عدد صحيح.`,
+        ar: `قدّر ناتج ${hi} ${op} ${lo} بتقريب كل عدد إلى أقرب عدد كلي.`,
         en: `Estimate ${hi} ${op} ${lo} by rounding each number to the nearest whole number.`,
       };
     }
@@ -293,10 +293,11 @@ const estProd: Topic = {
     }
     const wrongs = numWrongs(est, [a * b, est * 10, est / 10, lead(a) * b]);
     if (k === 1) {
+      if (b < 3) return estProd.make({ rng, diff, grade }); // «صندوقان» takes no numeral
       return {
         eq: `${a} × ${b}`, answer: String(est), wrongs,
-        ar: `عدد صفوف المقاعد في مسرح المدرسة ${b}، وفي كل صف ${counted(a, 'مقاعد', 'مقعدًا', 'مقعد')}. قدّر عدد مقاعد المسرح بتقريب كل عدد إلى أكبر منزلة له.`,
-        en: `A school theatre has ${b} rows of ${a} seats. Estimate the number of seats by rounding each number to its greatest place.`,
+        ar: `في مستودع ${counted(b, 'صناديق', 'صندوقًا', 'صندوق')}، في كل منها ${counted(a, 'أقلام', 'قلمًا', 'قلم')}. قدّر عدد الأقلام في المستودع بتقريب كل عدد إلى أكبر منزلة له.`,
+        en: `A store room has ${b} boxes with ${a} pens in each. Estimate the number of pens by rounding each number to its greatest place.`,
       };
     }
     return {
@@ -331,13 +332,14 @@ const estQuot: Topic = {
       };
     }
     const noise = int(rng, -(unit / 2 - 1), unit / 2 - 1);
+    if (noise === 0) return estQuot.make({ rng, diff, grade }); // a dividend already rounded leaves nothing to estimate
     const n = d * q * unit + noise;
     const wrongs = numWrongs(est, [Math.floor(n / d), est * 10, est / 10, est + unit].filter(v => v !== est));
     if (k === 2) {
       return {
         eq: `${n} ÷ ${d}`, answer: String(est), wrongs,
-        ar: `دفعت مدرسة ${counted(n, 'دنانير', 'دينارًا', 'دينار')} ثمنًا لـ ${d} حواسيب متماثلة. قدّر ثمن الحاسوب الواحد بالدينار بتقريب ${n} إلى أقرب ${PLACE_AR[unit]}.`,
-        en: `A school paid ${n} dinars for ${d} identical computers. Estimate the price of one computer by rounding ${n} to the nearest ${PLACE_EN[unit]}.`,
+        ar: `دفع نادٍ ${counted(n, 'دنانير', 'دينارًا', 'دينار')} ثمنًا لـ ${d} دراجات هوائية متماثلة. قدّر ثمن الدراجة الواحدة بالدينار بتقريب ${n} إلى أقرب ${PLACE_AR[unit]}.`,
+        en: `A club paid ${n} dinars for ${d} identical bicycles. Estimate the price of one bicycle by rounding ${n} to the nearest ${PLACE_EN[unit]}.`,
       };
     }
     return {
@@ -1049,7 +1051,7 @@ const intOp = (id: string, match: RegExp, op: '+' | '−' | '×÷'): Topic => ({
     if (k === 1) {
       if (op === '+') {
         if (rng() < 0.5) {
-          const t = nz(rng, m), ch = nz(rng, m);
+          const t = -int(rng, 1, m), ch = nz(rng, m);
           const ans = t + ch;
           return {
             eq: `${signed(t)} + ${paren(ch)}`, answer: signed(ans),
@@ -1083,7 +1085,7 @@ const intOp = (id: string, match: RegExp, op: '+' | '−' | '×÷'): Topic => ({
     if (k === 2) {
       const a = nz(rng, m);
       let c = nz(rng, m);
-      if (op === '−' && c === a) c = -c;
+      if (c === a) c = -c;
       // + : a + x = c, so x = c − a ;  − : a − x = c, so x = a − c
       const x = op === '+' ? c - a : a - c;
       return op === '+'
@@ -1113,11 +1115,18 @@ const intOp = (id: string, match: RegExp, op: '+' | '−' | '×÷'): Topic => ({
 
 // ─── fractions, decimals, percent, ratio ────────────────────────────────────
 
-/** Fractions «a/b» that differ in value from `answer` and from each other — wrong options for a fraction answer. */
+/**
+ * Fractions «a/b» that differ in value from `answer` (a fraction or a whole
+ * number) and from each other — wrong options for a fraction answer. The
+ * candidates come first; if they run short, the answer ± 1, ± 2…
+ */
 function fracWrongs(answer: string, cands: string[]): string[] {
   const seen = [valueOf(answer)!];
   const out: string[] = [];
-  for (const c of cands) {
+  const m = answer.replace('−', '-').match(/^(-?\d+)(?:\/(\d+))?$/);
+  const [p, q] = m ? [Number(m[1]), Number(m[2] ?? 1)] : [0, 1];
+  const near = m ? Array.from({ length: 6 }, (_, i) => sfrac(p + (i % 2 ? -1 : 1) * (Math.floor(i / 2) + 1) * q, q)) : [];
+  for (const c of [...cands, ...near]) {
     const v = valueOf(c);
     if (v === null || out.length === 3 || out.includes(c) || seen.some(s => Math.abs(s - v) < 1e-9)) continue;
     seen.push(v); out.push(c);
@@ -1194,14 +1203,16 @@ const mixedImproper: Topic = {
       // one improper fraction among proper ones (its reciprocal is one of them)
       const ans = `${n}/${d}`;
       const props = new Set<string>([`${d}/${n}`]);
-      while (props.size < 3) { const q = int(rng, 3, 10); const p = int(rng, 1, q - 1); props.add(`${p}/${q}`); }
+      while (props.size < 3) { const q = int(rng, 3, 10); const p = int(rng, 1, q - 1); if (gcd(p, q) === 1) props.add(`${p}/${q}`); }
       const wrongs = [...props];
       const L = listed(rng, ans, wrongs);
       return { eq: L.en, answer: ans, wrongs, ar: `أيّ الكسور الآتية كسر غير فعلي: ${L.ar}؟`, en: `Which of these fractions is improper: ${L.en}?` };
     }
     if (k === 0 || k === 3) {
       const ans = `${w} ${r}/${d}`;
-      const wrongs = wrongsFrom(ans, [`${w + 1} ${r}/${d}`, `${w} ${d - r}/${d}`, `${w} ${r + 1 < d ? r + 1 : r - 1}/${d}`, `${r} ${w}/${d}`], j => `${w + Math.abs(j) + 1} ${r}/${d}`);
+      // only well-formed mixed numbers: a whole part, then a proper fraction that is not zero
+      const ok = (x: string) => { const m = x.match(/^(\d+) (\d+)\/(\d+)$/); return !!m && Number(m[2]) > 0 && Number(m[2]) < Number(m[3]); };
+      const wrongs = wrongsFrom(ans, [`${w + 1} ${r}/${d}`, `${w} ${d - r}/${d}`, `${w} ${r + 1}/${d}`, `${w} ${r - 1}/${d}`, `${r} ${w}/${d}`].filter(ok), j => `${w + Math.abs(j) + 1} ${r}/${d}`);
       return k === 0
         ? { eq: `${n}/${d}`, answer: ans, wrongs, ar: `اكتب الكسر غير الفعلي ${n}/${d} على صورة عدد كسري.`, en: `Write the improper fraction ${n}/${d} as a mixed number.` }
         : {
@@ -1397,7 +1408,7 @@ const mixedOp = (id: string, match: RegExp, ops: Array<'+' | '−' | '×' | '÷'
     const k = pick(rng, [0, 1, 2]);
     if (k === 2 && op === '÷') {
       const ans = sfrac(ad, an);
-      const wrongs = fracWrongs(ans, [`${an}/${ad}`, A.r > 1 ? `${A.w} ${A.d}/${A.r}` : '', sfrac(A.d, A.r), `1/${an}`, `${ad}/${an + 1}`]);
+      const wrongs = fracWrongs(ans, [`${an}/${ad}`, sfrac(A.d, A.r), `1/${an}`, `${ad}/${an + 1}`]);
       if (wrongs.length < 3) return again();
       return {
         eq: `1 ÷ ${showMixed(A)}`, answer: ans, wrongs,
@@ -1556,8 +1567,8 @@ const ratioEquiv: Topic = {
       const L = listed(rng, right, wrongs);
       return {
         eq: `${a} : ${b}`, answer: right, wrongs,
-        ar: `أيّ النسب الآتية تكافئ النسبة ${a} : ${b}: ${L.ar}؟`,
-        en: `Which of these ratios is equivalent to ${a} : ${b}: ${L.en}?`,
+        ar: `أيّ النسب الآتية تكافئ النسبة ${a} : ${b}؟\n${L.ar}`,
+        en: `Which of these ratios is equivalent to ${a} : ${b}?\n${L.en}`,
       };
     }
     const wrongs = numWrongs(ans, [b + k, b + a * k - a, ans + b, a * k * b]);
@@ -1660,7 +1671,7 @@ const ratOp = (id: string, match: RegExp, ops: Array<'+' | '−' | '×' | '÷'>)
       const step = `${Math.abs(n2)}/${d2}`;
       return {
         eq: `${f(n1, d1)} + ${f(n2, d2)}`, answer: ans,
-        wrongs: fracWrongs(ans, [sfrac(n1 * d2 - n2 * d1, d1 * d2), sfrac(-(n1 * d2 + n2 * d1), d1 * d2), sfrac(n1 + n2, d1 + d2), sfrac(n1 * d2 + n2 * d1 + d1 * d2, d1 * d2)]),
+        wrongs: fracWrongs(ans, [sfrac(n1 * d2 - n2 * d1, d1 * d2), sfrac(-(n1 * d2 + n2 * d1), d1 * d2), sfrac(n1 + n2, d1 + d2), sfrac(n1, d1), sfrac(n2, d2)]),
         ar: `يقف جندب على خط الأعداد عند النقطة ${sfrac(n1, d1)}، ثم قفز ${step} وحدة نحو ${right ? 'اليمين' : 'اليسار'}. عند أيّ نقطة أصبح؟`,
         en: `A grasshopper on the number line is at ${sfrac(n1, d1)} and jumps ${step} of a unit to the ${right ? 'right' : 'left'}. Where does it land?`,
       };
