@@ -1312,9 +1312,18 @@ function monoStr(c: number, p: number): string {
   return `${c}/${base}`;
 }
 
+/** Grade 9: simplify with the exponent laws — and since 2026-10-16 the value of a negative power, and a missing exponent. */
 const simplifyExp = topic('exp_simplify', /^تبسيط المقادير الاسيه$/, [9, 9], ({ rng, diff }) => {
   const a = int(rng, 2, 5), b = int(rng, 2, 5), m = int(rng, 2, 5), n = int(rng, 2, 5);
-  const k = tier(diff) === 0 ? pick(rng, [0, 2]) : pick(rng, [0, 1, 2, 3]);
+  const k = tier(diff) === 0 ? pick(rng, [0, 2, 4, 5]) : pick(rng, [0, 1, 2, 3, 4, 5]);
+  if (k === 4) {
+    const e = int(rng, 1, 3), v = a ** e, ans = `1/${v}`;
+    return { eq: `${a}${sup(-e)}`, answer: ans, wrongs: wrongsFrom(ans, [`−${v}`, signed(-a * e), `1/${a * e}`], j => `1/${v + Math.abs(j) + 1}`), ar: `أوجد قيمة ${a}${sup(-e)}.`, en: `Find the value of ${a}${sup(-e)}.` };
+  }
+  if (k === 5) {
+    if (rng() < 0.5) return { eq: `x${sup(m)} · xⁿ = x${sup(m + n)}`, answer: String(n), wrongs: num(n, [m + n, Math.abs(m - n), (m + n) / m, n + 1].filter(Number.isInteger), String), ar: `ما قيمة n التي تجعل x${sup(m)} · xⁿ = x${sup(m + n)}؟`, en: `What value of n makes x${sup(m)} · xⁿ = x${sup(m + n)}?` };
+    return { eq: `(x${sup(m)})ⁿ = x${sup(m * n)}`, answer: String(n), wrongs: num(n, [m * n - m, m * n, m + n, n + 1], String), ar: `ما قيمة n التي تجعل (x${sup(m)})ⁿ = x${sup(m * n)}؟`, en: `What value of n makes (x${sup(m)})ⁿ = x${sup(m * n)}?` };
+  }
   if (k === 0) { const ans = monoStr(a * b, m + n); return { eq: `${a}x${sup(m)} · ${b}x${sup(n)}`, answer: ans, wrongs: wrongsFrom(ans, [monoStr(a + b, m + n), monoStr(a * b, m * n), monoStr(a * b, m + n + 1)], j => monoStr(a * b + Math.abs(j), m + n)), ar: `بسّط: ${a}x${sup(m)} · ${b}x${sup(n)}`, en: `Simplify: ${a}x${sup(m)} · ${b}x${sup(n)}` }; }
   if (k === 1) { const e = int(rng, 2, 3); const ans = monoStr(a ** e, m * e); return { eq: `(${a}x${sup(m)})${sup(e)}`, answer: ans, wrongs: wrongsFrom(ans, [monoStr(a, m * e), monoStr(a * e, m * e), monoStr(a ** e, m + e)], j => monoStr(a ** e + Math.abs(j), m * e)), ar: `بسّط: (${a}x${sup(m)})${sup(e)}`, en: `Simplify: (${a}x${sup(m)})${sup(e)}` }; }
   if (k === 2) {
@@ -1327,9 +1336,18 @@ const simplifyExp = topic('exp_simplify', /^تبسيط المقادير الاس
 });
 
 const SQFREE = [2, 3, 5, 6, 7, 10];
+/** Grade 9: simplify, add, multiply radicals — and since 2026-10-16 rationalise a denominator, and a perimeter in surds. */
 const radicalOps = topic('radical_ops', /^العمليات علي المقادير الجذريه$/, [9, 9], ({ rng, diff }) => {
   const m = pick(rng, SQFREE), k = int(rng, 2, 6), a = int(rng, 1, 7), b = nz(rng, 7);
-  const t = pick(rng, tier(diff) === 0 ? [0, 1] : [0, 1, 2]);
+  const t = pick(rng, tier(diff) === 0 ? [0, 1, 3, 4] : [0, 1, 2, 3, 4]);
+  if (t === 3) {
+    const top = k * m;
+    return { eq: `${top}/√${m}`, answer: rad(k, m), wrongs: [rad(top, m), String(k), String(top)], ar: `أنطِق مقام الكسر ${top}/√${m}، ثم بسّط.`, en: `Rationalise the denominator of ${top}/√${m} and simplify.` };
+  }
+  if (t === 4) {
+    const w = int(rng, 1, 7);
+    return { eq: `2(${rad(a, m)} + ${rad(w, m)})`, answer: rad(2 * (a + w), m), wrongs: wrongsFrom(rad(2 * (a + w), m), [rad(a + w, m), String(a * w * m), rad(4 * (a + w), m)], j => rad(2 * (a + w) + Math.abs(j), m)), ar: `مستطيل طوله ${rad(a, m)} سم وعرضه ${rad(w, m)} سم. ما محيطه بالسنتيمتر؟`, en: `A rectangle is ${rad(a, m)} cm long and ${rad(w, m)} cm wide. What is its perimeter in cm?` };
+  }
   if (t === 0) return { eq: `√${k * k * m}`, answer: rad(k, m), wrongs: [rad(k * k, m), rad(k, k * m), `${k + m}`], ar: `بسّط: √${k * k * m}`, en: `Simplify: √${k * k * m}` };
   if (t === 1) {
     if (a + b === 0) return radicalOps.make({ rng, diff, grade: 9 });
@@ -1341,8 +1359,21 @@ const radicalOps = topic('radical_ops', /^العمليات علي المقادي
   return { eq: `${c}√${m} × ${d}√${m}`, answer: String(c * d * m), wrongs: num(c * d * m, [c * d, c * d * m * m, c * d * 2 * m], String), ar: `أوجد ناتج ${c}√${m} × ${d}√${m}`, en: `Find ${c}√${m} × ${d}√${m}` };
 });
 
+/** Grade 9: radical equations — and since 2026-10-16 one with an extraneous root to reject, and a number described in words. */
 const radicalEq = topic('radical_eq', /^حل المعادلات الجذريه$/, [9, 9], ({ rng, diff }) => {
   const b = int(rng, 2, 7), a = nz(rng, 9);
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) {
+    // √(x + c) = x − d with x0 = d + s (s ≥ 2): squaring adds the root 2d + 1 − x0, where x − d < 0
+    const d = int(rng, 1, 5), s = int(rng, 2, 5), x0 = d + s, c = s * s - x0, x1 = 2 * d + 1 - x0;
+    const root = c === 0 ? '√x' : `√(x ${c < 0 ? '−' : '+'} ${Math.abs(c)})`;
+    const eq = `${root} = x − ${d}`;
+    return { eq, answer: signed(x0), wrongs: wrongsFrom(signed(x0), [signed(x1), rootPair(x0, x1), signed(s)], j => signed(x0 + Math.abs(j))), ar: `حلّ المعادلة ${eq}، وتحقّق من الحلول الدخيلة.`, en: `Solve ${eq} and check for extraneous solutions.` };
+  }
+  if (form === 2) {
+    const plus = a > 0, x = b * b - a;
+    return { eq: `√(x ${plus ? '+' : '−'} ${Math.abs(a)}) = ${b}`, answer: signed(x), wrongs: num(x, [b - a, b + a, b * b + a, x + 1]), ar: `عدد إذا ${plus ? `أُضيف إليه ${a}` : `طُرح منه ${-a}`} ثم أُخذ الجذر التربيعي للناتج كان ${b}. ما العدد؟`, en: `A number has ${Math.abs(a)} ${plus ? 'added to it' : 'subtracted from it'}, and the square root of the result is ${b}. What is the number?` };
+  }
   const t = tier(diff);
   if (t === 2) {
     const c = int(rng, 1, 5);
@@ -1354,9 +1385,21 @@ const radicalEq = topic('radical_eq', /^حل المعادلات الجذريه$/
   return { eq, answer: signed(x), wrongs: num(x, [b - a, b + a, b * b + a, x + 1]), ar: `حلّ المعادلة: ${eq}`, en: `Solve: ${eq}` };
 });
 
+/** Grade 9: multiply and divide rational expressions — and since 2026-10-16 the values that leave one undefined, and one simplified by factoring. */
 const ratMulDiv = topic('rat_expr_muldiv', /^ضرب المقادير الجبريه النسبيه وقسمتها$/, [9, 9], ({ rng }) => {
   const [a, b, c] = [nz(rng, 7), nz(rng, 7), nz(rng, 7)];
   if (new Set([a, b, c]).size < 3) return ratMulDiv.make({ rng, diff: 'easy', grade: 9 });
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) {
+    if (b === -c) return ratMulDiv.make({ rng, diff: 'easy', grade: 9 });
+    const expr = `(${lin(1, a)})/(${fac(1, b)}${fac(1, c)})`;
+    return { eq: expr, answer: rootPair(-b, -c), wrongs: [rootPair(b, c), [-a, -b, -c].sort((p, q) => p - q).map(signed).join(' ، '), signed(-a)], ar: `ما القيم التي تجعل المقدار ${expr} غير معرّف؟`, en: `For which values of x is ${expr} undefined?` };
+  }
+  if (form === 2) {
+    const top = polyStr(mul([a, 1], [b, 1])), bottom = polyStr(mul([a, 1], [c, 1]));
+    const G = (u: number, v: number) => `(${lin(1, u)})/(${lin(1, v)})`;
+    return { eq: `(${top})/(${bottom})`, answer: G(b, c), wrongs: [G(c, b), `(${polyStr([a * b, a + b])})/(${polyStr([a * c, a + c])})`, G(a, c)], ar: `اكتب المقدار (${top})/(${bottom}) في أبسط صورة.`, en: `Write (${top})/(${bottom}) in simplest form.` };
+  }
   const div = rng() < 0.5;
   const F = (u: number, v: number) => `(${lin(1, u)})/(${lin(1, v)})`;
   const eq = div ? `${F(a, b)} ÷ ${F(c, b)}` : `${F(a, b)} × ${F(b, c)}`;
@@ -1364,7 +1407,30 @@ const ratMulDiv = topic('rat_expr_muldiv', /^ضرب المقادير الجبر�
   return { eq, answer: ans, wrongs: [F(c, a), F(a, b), F(b, c)].filter(w => w !== ans), ar: `بسّط: ${eq}`, en: `Simplify: ${eq}` };
 });
 
+/** Grade 9: add and subtract over a common denominator — and since 2026-10-16 the LCM of two monomials, and unlike denominators. */
 const ratAddSub = topic('rat_expr_addsub', /^جمع المقادير الجبريه النسبيه وطرحها$/, [9, 9], ({ rng }) => {
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) {
+    const p = int(rng, 2, 12), q = int(rng, 2, 12), i = int(rng, 1, 4), j = int(rng, 1, 4);
+    if (p === q) return ratAddSub.make({ rng, diff: 'easy', grade: 9 });
+    const L = lcm(p, q), hi = Math.max(i, j), ans = monoStr(L, hi);
+    return { eq: `${monoStr(p, i)} ، ${monoStr(q, j)}`, answer: ans, wrongs: wrongsFrom(ans, [monoStr(p * q, hi), monoStr(L, i + j), monoStr(gcd(p, q), Math.min(i, j)), monoStr(L, Math.min(i, j))], k => monoStr(L * (Math.abs(k) + 1), hi)), ar: `ما المضاعف المشترك الأصغر للحدّين ${monoStr(p, i)} و ${monoStr(q, j)}؟`, en: `What is the least common multiple of ${monoStr(p, i)} and ${monoStr(q, j)}?` };
+  }
+  if (form === 2) {
+    for (;;) {
+      const a = int(rng, 1, 5), b = int(rng, 1, 5), p = nz(rng, 6), q = nz(rng, 6), sub = rng() < 0.5;
+      if (p === q || (sub && a === b)) continue;
+      const s = sub ? -1 : 1, nx = a + s * b, n0 = a * q + s * b * p;
+      const expr = `${a}/(${lin(1, p)}) ${sub ? '−' : '+'} ${b}/(${lin(1, q)})`;
+      const den = `${fac(1, p)}${fac(1, q)}`;
+      const F = (u: number, v: number) => `(${polyStr([v, u])})/(${den})`;
+      const ans = F(nx, n0);
+      const wr = [nx === 0 ? '' : `${signed(nx)}/(${polyStr([p + q, 2])})`, F(nx, a * p + s * b * q), F(nx, n0 + 1), `(${polyStr([n0, nx])})/(${lin(1, p + q)})`]
+        .filter((w, i, all) => w && w !== ans && all.indexOf(w) === i);
+      if (wr.length < 3) continue;
+      return { eq: expr, answer: ans, wrongs: wr.slice(0, 3), ar: `أوجد ناتج ${expr} في أبسط صورة.`, en: `Find ${expr} in simplest form.` };
+    }
+  }
   for (;;) {
     const a = nz(rng, 4), b = nz(rng, 7), c = nz(rng, 4), d = nz(rng, 7), e = nz(rng, 6);
     const sub = rng() < 0.5;
@@ -1382,8 +1448,22 @@ const ratAddSub = topic('rat_expr_addsub', /^جمع المقادير الجبر�
   }
 });
 
+/** Grade 9: rational equations — and since 2026-10-16 cross-multiplication with x on both sides, and a shared-work problem. */
+const WORK: Array<[number, number]> = [[3, 6], [6, 3], [4, 12], [12, 4], [6, 12], [12, 6], [10, 15], [15, 10], [4, 4], [6, 6], [8, 8], [10, 10], [12, 12], [5, 20], [20, 5]];
 const ratEq = topic('rat_eq', /^حل المعادلات النسبيه$/, [9, 9], ({ rng }) => {
   const x = int(rng, -5, 9), b = nz(rng, 6);
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) {
+    const p = nz(rng, 6), q = nz(rng, 6), t = int(rng, 1, 3);
+    const u = x + p, v = x + q;
+    if (p === q || u <= 0 || v <= 0) return ratEq.make({ rng, diff: 'easy', grade: 9 });
+    const eq = `${t * u}/(${lin(1, p)}) = ${t * v}/(${lin(1, q)})`;
+    return { eq, answer: signed(x), wrongs: num(x, [-x, x + 1, t * (u - v), u + v]), ar: `حلّ المعادلة باستعمال الضرب التبادلي: ${eq}`, en: `Solve by cross-multiplying: ${eq}` };
+  }
+  if (form === 2) {
+    const [h1, h2] = pick(rng, WORK), T = (h1 * h2) / (h1 + h2);
+    return { eq: `1/${h1} + 1/${h2} = 1/x`, answer: String(T), wrongs: num(T, [h1 + h2, (h1 + h2) / 2, Math.abs(h1 - h2), Math.min(h1, h2)].filter(v => Number.isInteger(v) && v > 0), String), ar: `يُنجز أحمد عملًا وحده في ${hours(h1)}، ويُنجزه سامر وحده في ${hours(h2)}. في كم ساعة يُنجزان العمل معًا؟`, en: `Ahmad does a job alone in ${h1} hours and Samer in ${h2} hours. How many hours do they take together?` };
+  }
   if (rng() < 0.5) {
     const m = int(rng, 2, 6);
     if (x + b === 0) return ratEq.make({ rng, diff: 'easy', grade: 9 });
