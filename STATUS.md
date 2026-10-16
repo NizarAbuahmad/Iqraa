@@ -21,6 +21,14 @@ math answer keys (`artifacts/math-verifier`), RTL/Arabic-first UX.
 Investor demo with **real, visible math verification**; all prose/content
 generation stays mocked (`DEMO_MODE = true` in
 `artifacts/mobile/services/ai/demoMode.ts` — do not flip it without a decision).
+
+> **Superseded for the web on 2026-10-16: the web build runs live AI.** Teachers
+> use the web app, and there the chat was the offline keyword assistant and
+> every generator was mocked. `deploy.yml` now sets
+> `EXPO_PUBLIC_DEMO_MODE: "false"`, as `eas.json` and `mobile-update.yml`
+> already did, so web and Android behave alike. The code default stays `true`
+> (local dev and the e2e build). See «The chat answers teachers, on the web too,
+> 2026-10-16».
 Vision screens (student/parent/school dashboards) are deprioritized — though
 students and parents stopped being purely notional on 2026-09-04, when
 messaging gave them real accounts. See «In-app messaging ships, and a group is
@@ -1509,6 +1517,51 @@ an announcement by default» below.
     deployed. The client's timeout is 2.5s, so the first call after idle fails.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
+
+## The chat answers teachers, on the web too, 2026-10-16
+
+Teachers said the chat «isn't smart». Three causes, all measured:
+
+- **The web chat had no model behind it.** Production web shipped `DEMO_MODE`
+  on, so every web message went to `runTeachingAssistant()` — keyword lookup in
+  the bundled curriculum. `/api/healthz/ai-budget` showed $0.56 of live spend for
+  the whole month. `deploy.yml` now builds the web with
+  `EXPO_PUBLIC_DEMO_MODE: "false"`; every AI button on the web goes live with it,
+  not only chat. Spend stays capped by `AI_BUDGET_USD` and the per-user
+  `AI_USER_BUDGET_USD=1` / `AI_STUDENT_BUDGET_USD=0.20`, set in the same file.
+- **Chat ran `gpt-5.4-nano`**, set by hand on Cloud Run and never measured for
+  chat. `deploy.yml` now sets `AI_MODEL_CHAT=gpt-5.4-mini` (~3.7× nano per
+  turn) so a console edit cannot drift it again.
+- **Keyword noise was handed to the model as the textbook, or stopped the
+  question.** The search returns lessons for almost any sentence: «كيف أتعامل مع
+  طالب مشاغب في الصف؟» ranked English for hospitality (11), the quadratic
+  formula (10.5) and gravity (9.5). With no lesson on the card, that spread of
+  subjects triggered «سؤالك قد يخص أكثر من مادة. أيّ مادة تقصد؟» before any model
+  call — and so did «اشرح لي قانون جيب التمام», because a physics lesson on
+  Newton's laws scored 28 next to the right lesson's 69. With a lesson on the
+  card, the noise went to the model under «مرجع الكتاب المدرسي (استخدمه أساسًا
+  لإجابتك)». Now, for a `teaching` question with live AI on (`liveTeaching` in
+  `iqra.tsx`), the subject menu, the «which lesson?» ask and the out-of-scope
+  reply are skipped — the model answers or asks its own question — and only
+  `liveChatGrounding` (`services/kbContext.ts`) lessons are sent: a lesson the
+  teacher chose, a confident subject-scoped search, or a top hit ≥
+  `KB_CONFIDENT_SCORE` with no other subject within half its score. The same
+  list drives the lesson pin and the follow-up chips, so a stray match no longer
+  becomes «the lesson». Artifacts, refinements and the offline assistant read
+  `results` exactly as before. `liveChatGrounding.test.ts` pins the measured
+  questions.
+
+**Verified in a browser** (web export with `EXPO_PUBLIC_DEMO_MODE=false`,
+Chromium 390×844, API stubbed by Playwright, the `/chat` request body captured),
+before and after the change on the same probe: before, both questions above got
+the subject menu and `/chat` was never called; after, both reached `/chat` —
+the first with no curriculum context at all, the second with only «قانون جيب
+التمام». **Not checked:** a real model's answers (no OpenAI key here; the reply
+was stubbed), and whether `CHAT_MAX_TOKENS = 1200`, which also caps the model's
+hidden reasoning, cuts mini's replies short — the route does not log
+`finish_reason`. **Watch:** a teacher's $1/month allowance now covers web
+generation and chat together on mini; a teacher who hits it gets the quota
+message, not an answer.
 
 ## Chat pushes are sent before the send is answered, 2026-10-16
 
@@ -4154,7 +4207,8 @@ cause, and Stop is told apart from a timeout by state, not by error name.
 
 **Reaches native builds and OTA updates only.** Production web still ships
 `DEMO_MODE` on (deploy.yml), so web chat is the local teaching assistant
-and never streams; nothing about that decision changed here.
+and never streams; nothing about that decision changed here. *(No longer true
+from 2026-10-16: the web ships live AI, and the web chat streams too.)*
 
 Not done: the generators still return whole JSON; the list still scrolls
 to the end on every content change (it follows the growing bubble, which
@@ -14951,7 +15005,9 @@ constraint. Revisit if a real complaint appears, not on principle.
 **What this decision does NOT cover: chat.** The harness only exercises
 lesson-plan, worksheet and quiz. `AI_MODEL_CHAT` currently inherits
 `AI_MODEL`, so chat runs gpt-5.4-mini by default and has never been measured
-against anything. Chat is many short turns where latency and cost dominate —
+against anything. *(Found 2026-10-16: production had `AI_MODEL_CHAT` set by
+hand to `gpt-5.4-nano` — `GET /api/healthz/ai-budget` said so. `deploy.yml`
+now sets it to `gpt-5.4-mini` on every deploy.)* Chat is many short turns where latency and cost dominate —
 `gpt-5.4-nano` is ~3.7× cheaper on both axes and completely untested here.
 That is an open question, and answering it needs chat coverage in the eval
 first.
