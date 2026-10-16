@@ -1224,7 +1224,7 @@ const mixedImproper: Topic = {
     const ans = `${n}/${d}`;
     return {
       eq: `${w} ${r}/${d}`, answer: ans,
-      wrongs: wrongsFrom(ans, [`${w + r}/${d}`, `${w * r + d}/${d}`, `${n - d}/${d}`, `${n}/${r}`], j => `${n + j}/${d}`),
+      wrongs: wrongsFrom(ans, [`${w + r}/${d}`, `${w * r + d}/${d}`, `${n - d}/${d}`, r > 1 ? `${n}/${r}` : ''], j => `${n + j}/${d}`),
       ar: `اكتب العدد الكسري ${w} ${r}/${d} على صورة كسر غير فعلي.`, en: `Write the mixed number ${w} ${r}/${d} as an improper fraction.`,
     };
   },
@@ -1249,7 +1249,7 @@ function expanded(rng: Rng, places: number, whole: number) {
  * Fraction ↔ decimal; for Grades 4–6 also expanded → standard form and the
  * place value of a digit (the «أجزاء العشرة/المئة/الألف» objectives); for
  * Grade 7 (the rational-number lessons) also which two integers a rational lies
- * between on the number line, and a mixed number as a/b.
+ * between on the number line, and a mixed number as an improper fraction.
  */
 const fracDec: Topic = {
   id: 'frac_dec', match: /التحويل بين الكسور والاعداد العشريه|اجزاء (?:العشره|المئه|الالف)|العدد النسبي$|كتابه العدد النسبي بالصوره العشريه/, grades: [4, 7],
@@ -1311,8 +1311,8 @@ const fracDec: Topic = {
       const wrongs = fracWrongs(ans, [sfrac(s * (w * d - r), d), sfrac(-s * (w * d + r), d), sfrac(s * (w + r), d), sfrac(s * (w * r + d), d), sfrac(s * (w * d + r + 1), d)]);
       return {
         eq: `${neg ? '−' : ''}${w} ${r}/${d}`, answer: ans, wrongs,
-        ar: `اكتب العدد ${neg ? '−' : ''}${w} ${r}/${d} على صورة كسر a/b في أبسط صورة.`,
-        en: `Write ${neg ? '−' : ''}${w} ${r}/${d} as a fraction a/b in simplest form.`,
+        ar: `اكتب العدد ${neg ? '−' : ''}${w} ${r}/${d} على صورة كسر غير فعلي في أبسط صورة.`,
+        en: `Write ${neg ? '−' : ''}${w} ${r}/${d} as an improper fraction in simplest form.`,
       };
     }
     const [d, places] = pick(rng, diff === 'easy' ? TERMINATING.slice(0, 5) : grade <= 4 ? TERMINATING.slice(0, 8) : TERMINATING);

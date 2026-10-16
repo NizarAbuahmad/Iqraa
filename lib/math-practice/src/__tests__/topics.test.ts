@@ -495,8 +495,8 @@ describe('answers recomputed from the stem', () => {
         else if (has(p, 'أُضيف إلى')) { k.add('missing'); assert.equal(a! + ans, b, p); }
         else if (has(p, 'طُرح من')) { k.add('missing'); assert.equal(a! - ans, b, p); }
         else if (has(p, 'بكم درجة')) { k.add('difference'); assert.ok(a! > b!, p); assert.equal(ans, a! - b!, p); }
-        else if (has(p, 'كل ساعة')) { k.add('rate'); assert.equal(ans, -a! * b!, p); }
         else if (has(p, 'بالتساوي')) { k.add('share'); assert.equal(ans, a! / b!, p); }
+        else if (has(p, 'كل ساعة')) { k.add('rate'); assert.equal(ans, -a! * b!, p); }
         else assert.fail(`unknown stem: ${p}`);
       }
     }
@@ -660,8 +660,8 @@ describe('answers recomputed from the stem', () => {
         const [lo, hi] = item.answer.split(' ، ').map(num);
         assert.equal(hi, lo! + 1, p);
         assert.ok(lo! < f && f < hi!, p);
-      } else if (has(p, 'كسر a/b')) {
-        kinds.add('mixed to a/b');
+      } else if (has(p, 'كسر غير فعلي')) {
+        kinds.add('mixed to improper');
         assert.ok(close(value(item.answer)!, sval(p.match(/العدد (−?\d+ \d+\/\d+)/)![1]!)), p);
         lowest(item.answer);
       } else {
