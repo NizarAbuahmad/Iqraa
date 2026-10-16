@@ -31,6 +31,9 @@ export type IconShape =
 export type DeckIconName =
   | 'target' | 'book' | 'books' | 'bulb' | 'ruler' | 'flag' | 'home' | 'users'
   | 'help' | 'pencil' | 'ticket' | 'sparkles' | 'trophy' | 'bars' | 'trend' | 'check'
+  // Subject icons (2026-10-17): the model picks one per slide by name, so the set has to
+  // reach past the generic section markers above into what a lesson is *about*.
+  | 'atom' | 'flask' | 'leaf' | 'globe' | 'calculator' | 'clock' | 'pin' | 'heart' | 'star' | 'sun' | 'drop' | 'laptop'
   // Inline marks rather than section markers — they sit in a line of text (a
   // link, a badge, a correct-answer tick), not in a heading chip.
   | 'shield' | 'play' | 'file' | 'tick';
@@ -82,7 +85,57 @@ export const DECK_ICON_SHAPES: Record<DeckIconName, readonly IconShape[]> = {
   play: [path('M7 4.5v15l12-7.5z')],
   file: [path('M6 3h8l4 4v14H6z'), path('M14 3v4h4M9 12h6M9 16h6')],
   tick: [path('M5 12.5l4.5 4.5L19 7.5')],
+  // Three orbits and a nucleus. The arcs use SVG's own x-axis-rotation, so the
+  // two tilted ellipses need no transform — this table has none to offer.
+  atom: [
+    circle(12, 12, 1.8),
+    path('M2 12A10 4 0 0 1 22 12A10 4 0 0 1 2 12z'),
+    path('M7 3.34A10 4 60 0 1 17 20.66A10 4 60 0 1 7 3.34z'),
+    path('M17 3.34A10 4 -60 0 1 7 20.66A10 4 -60 0 1 17 3.34z'),
+  ],
+  flask: [path('M9 3h6'), path('M10 3v6L4.5 19a2 2 0 0 0 1.8 3h11.4a2 2 0 0 0 1.8-3L14 9V3'), path('M7.5 15h9')],
+  leaf: [path('M5 19C5 10 10 5 20 4c0 10-5 15-15 15z'), path('M5 19c2-5 5-8 9-10')],
+  globe: [
+    circle(12, 12, 10),
+    path('M2 12h20'),
+    path('M12 2c3 3 4.5 6.5 4.5 10S15 19 12 22c-3-3-4.5-6.5-4.5-10S9 5 12 2z'),
+  ],
+  calculator: [
+    rect(5, 2, 14, 20),
+    rect(8, 5, 8, 4),
+    path('M8 13h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01M16 17h.01'),
+  ],
+  clock: [circle(12, 12, 10), path('M12 6v6l4 2')],
+  pin: [path('M12 22s7-6.5 7-12a7 7 0 0 0-14 0c0 5.5 7 12 7 12z'), circle(12, 10, 2.5)],
+  heart: [path('M12 21s-8-5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6-8 11-8 11z')],
+  star: [path('M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z')],
+  sun: [
+    circle(12, 12, 4),
+    path('M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4'),
+  ],
+  drop: [path('M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z')],
+  laptop: [rect(4, 5, 16, 11), path('M2 20h20')],
 };
+
+/**
+ * The names a deck may carry in `slide.icon` — the section markers and subject
+ * icons, NOT the inline marks (a shield, a play button, a file, a tick), which
+ * sit inside a line of text rather than naming a slide's idea.
+ *
+ * The API server's prompt lists the same names and cannot import this file, so
+ * `promptSlidesPrompt.test.ts` reads this array out of the source and fails if
+ * the two ever differ. Add an icon here and there in the same change.
+ */
+export const DECK_SECTION_ICONS = [
+  'target', 'book', 'books', 'bulb', 'ruler', 'flag', 'home', 'users',
+  'help', 'pencil', 'ticket', 'sparkles', 'trophy', 'bars', 'trend', 'check',
+  'atom', 'flask', 'leaf', 'globe', 'calculator', 'clock', 'pin', 'heart', 'star', 'sun', 'drop', 'laptop',
+] as const;
+
+/** Whether a value from a model is a name this build can draw. */
+export function isSectionIconName(v: unknown): v is DeckIconName {
+  return typeof v === 'string' && (DECK_SECTION_ICONS as readonly string[]).includes(v);
+}
 
 /**
  * Which icon each heading emoji stands for.

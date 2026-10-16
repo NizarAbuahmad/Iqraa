@@ -29,6 +29,8 @@ import type { ActivitySlide, ClassroomActivity } from './ai/AIService.ts';
 import { isBulletLine, looksLikeEquation, stripBullet } from './deckText.ts';
 import { MAX_STATEMENT_CHARS, inlineSteps, resolveSlideLayout } from './slideLayout.ts';
 import { rebuildAnswerKey } from './lessonSlides.ts';
+import { isSectionIconName } from './deckIcons.ts';
+import { usableChartVisual } from './deckVisuals.ts';
 
 /**
  * Below this a slide body is not short, it is absent — a heading with a
@@ -115,6 +117,40 @@ function inferLayout(slide: ActivitySlide, index: number): InferredLayout | unde
   return undefined;
 }
 
+/**
+ * The two structural fields a model may add to a slide — `icon` and a chart
+ * `visual` — reduced to what a renderer can draw.
+ *
+ * The server strips the same things, and this runs again because a deck reaches
+ * the screen from places the server never saw (a saved copy, an older build's
+ * output). A name that is not in the icon table or a chart that fails
+ * `usableChartVisual` is deleted, never repaired. Two combinations are settled
+ * here rather than left to the renderers to disagree about:
+ *
+ * - a chart on a slide with a `layout` is dropped — the layout branch fills the
+ *   slide in all three renderers and only the presenter would still draw it;
+ * - a chart displaces `mediaPrompt` — a photo beside a chart beside bullets is a
+ *   page, and the chart is the part the teacher's figures made.
+ */
+function cleanStructure(slide: ActivitySlide): ActivitySlide {
+  let next = slide;
+  if (next.icon !== undefined && !isSectionIconName(next.icon)) {
+    const { icon: _drop, ...rest } = next;
+    next = rest;
+  }
+  if (next.visual !== undefined) {
+    const chart = next.layout ? null : usableChartVisual(next.visual);
+    if (!chart) {
+      const { visual: _drop, visualOnReveal: _reveal, ...rest } = next;
+      next = rest;
+    } else {
+      const { mediaPrompt: _photo, ...rest } = next;
+      next = { ...rest, visual: chart };
+    }
+  }
+  return next;
+}
+
 /** A slide whose body says nothing — see `MIN_CONTENT_CHARS`. */
 function isHollow(slide: ActivitySlide): boolean {
   return lines(slide.content).map(stripBullet).join(' ').length < MIN_CONTENT_CHARS;
@@ -159,11 +195,14 @@ function repairQuestion(slide: ActivitySlide): ActivitySlide {
  * teacher can see them and delete them, which beats handing back a deck
  * shorter than the one the server certified.
  */
-export function polishDeck(deck: ClassroomActivity, isAr = true): ClassroomActivity {
+export function polishDeck(source: ClassroomActivity, isAr = true): ClassroomActivity {
+  const deck: ClassroomActivity = { ...source, slides: source.slides.map(cleanStructure) };
   const hollow = new Set<number>();
   deck.slides.forEach((slide, index) => {
     if (index === 0 || slide.type === 'summary') return;
     if (!PROSE_TYPES.has(slide.type)) return;
+    // A chart is the slide's substance — its body may be one short caption line.
+    if (slide.visual) return;
     // A slide the model gave a layout keeps its substance somewhere other than
     // `content` — the figure and its caption live in `stat`, the two columns in
     // `compare` — so measuring its body would drop the best slide in the deck.
