@@ -38,7 +38,7 @@ import type { GeneratedQuestion } from "./mockGenerator.ts";
 import { variationBlock } from "../../lib/variation.ts";
 
 /** Bumped when the prompt changes shape, so usage rows stay comparable. */
-export const GENERATION_PROMPT_VERSION = "exam-gen-6";
+export const GENERATION_PROMPT_VERSION = "exam-gen-7";
 
 /**
  * What the model is told the official textbook already supplies for this paper
@@ -285,7 +285,12 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
       + "any true/false statements are false, each wrong in a specific detail.",
     "3. Distractors are plausible wrong answers a real student would pick — never filler, never obviously absurd, never 'none of the above'.",
     "4. Never write a question whose answer is a matter of opinion unless the type is open_ended.",
-    "5. Do not repeat yourself. Two questions that test the same fact in the same way are one question.",
+    // The quarter is the line `dominantFrame` (validator.ts) warns the teacher at,
+    // so the model is told the same rule the paper is checked against.
+    "5. Do not repeat yourself. Two questions that test the same fact or skill in the same way are one question, "
+      + "however differently they are worded. Spread the paper over different parts of the objectives, and vary the "
+      + "form of the questions: no more than a quarter of them may open with the same words or be the same sentence "
+      + "with different numbers.",
     "6. Whenever a question's answer is symbolic — an expression, a value, a solution set, a point — you "
       + "include \"check\", in Latin notation. It is verified by a computer algebra system before any "
       + "teacher sees the question, so a key you are not sure of is worth more to us checked than omitted. "

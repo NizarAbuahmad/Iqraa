@@ -478,10 +478,11 @@ export function bookQuestion(args: {
   session: Set<string>;
   rng: () => number;
   /**
-   * Questions already accepted for this paper. A book stem is mostly shared
-   * instruction text plus short tokens the validator's similarity ignores, so
-   * two different systems can score ~1.00 and the second would be rejected as
-   * "Near-duplicate" — a shorter paper with a reason that is not true.
+   * Questions already accepted for this paper. A book item the validator would
+   * reject as a near-duplicate of one of these is skipped here instead, so the
+   * paper is not shortened by a rejection. (Until 2026-10-15 the similarity
+   * dropped every number, so two different systems scored ~1.00 and this was
+   * the only thing keeping the second one off the paper with a false reason.)
    */
   accepted: readonly GeneratedQuestion[];
   /**
@@ -578,6 +579,16 @@ function buildBookQuestion(
     rubric: buildRubric(competency, marks),
     gradingMode: QUESTION_TYPES["short_answer"].defaultGradingMode,
   };
+}
+
+/**
+ * The objective's wording as a template sentence takes it. Objectives end with a
+ * full stop (a few with a question mark), and the templates add their own
+ * punctuation after the topic, so stems printed «…وكيفية تشكلها.؟ اذكرها.» and
+ * «…بالصيغ الكيميائية.، مع مثال».
+ */
+function stemTopic(objective: CurriculumObjective): string {
+  return (objective.descriptionAr || objective.description).trim().replace(/[\s.،,؛;:?؟!]+$/u, "");
 }
 
 /**
@@ -682,6 +693,15 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
   }
 
   let objectiveCursor = 0;
+  // Which objectives already have a template question at each competency. The
+  // phrasings of one competency are one ask in different verbs — «اذكر
+  // المفاهيم…» and «ما المفاهيم… اذكرها» — so a second template question on the
+  // same objective at the same level is the same question again, however it is
+  // worded. A paper asking for more than the objectives can supply used to fill
+  // the gap with exactly that: a 20-question paper on a one-objective lesson
+  // restated it in every phrasing there is (found 2026-10-15).
+  const templated = new Map<CompetencyKey, Set<string>>(COMPETENCY_KEYS.map(c => [c, new Set<string>()]));
+  let restatementsSkipped = 0;
   const mcqAvailable = available.includes("multiple_choice");
   // Real book items fill at most half a paper, so a quiz does not become a
   // photocopy of the exercise book; the generated bank fills the rest. Only
@@ -708,11 +728,12 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
     const variantOffset = Math.floor(rng() * variants.length);
 
     for (let i = 0; i < wanted; i += 1) {
-      const objective = objectives[objectiveCursor % objectives.length]!;
+      // Book and bank items are distinct questions whatever their objective, so
+      // they take the slot's own; only the template may move on to an objective
+      // it has not yet asked about at this competency (see `templated` above).
+      let objective = objectives[objectiveCursor % objectives.length]!;
       objectiveCursor += 1;
       const variant = variants[(variantOffset + i) % variants.length]!;
-
-      const topic = objective.descriptionAr || objective.description;
       const marks = MARKS_BY_COMPETENCY[competency];
 
       if (bookUsed < bookQuota) {
@@ -773,6 +794,17 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
       }
 
       if (!type) continue;
+      const askedHere = templated.get(competency)!;
+      if (askedHere.has(objective.id)) {
+        const fresh = objectives.find(o => !askedHere.has(o.id));
+        if (!fresh) {
+          restatementsSkipped += 1;
+          continue;
+        }
+        objective = fresh;
+      }
+      askedHere.add(objective.id);
+      const topic = stemTopic(objective);
       const typeModule = QUESTION_TYPES[type];
       const needsRubric = typeModule.defaultGradingMode === "ai_rubric";
 
@@ -821,6 +853,13 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
   const shortfall = req.count - questions.length;
   if (shortfall > 0) {
     notes.push(`Produced ${questions.length} of ${req.count} requested questions.`);
+  }
+  if (restatementsSkipped > 0) {
+    notes.push(
+      `${restatementsSkipped} question${restatementsSkipped === 1 ? " was" : "s were"} left out rather than ` +
+        `asking about the same objective at the same level a second time in other words. ` +
+        `Choose more objectives, or switch the generator to a real model, for a longer paper.`,
+    );
   }
 
   return { questions, seed, unavailableTypes, shortfall: Math.max(0, shortfall), notes, bankContext };

@@ -274,7 +274,7 @@ effect is visible on the paper itself: `generationParams.bookItems` is
 `{ enabled, planned, supplied, drawn, ids }` on every live maths evaluation, so an
 unset flag reads `enabled: false` rather than looking like a bug. A paper made
 with book items tells the model what the book supplies and records
-`promptVersion` `exam-gen-6+book`, so usage rows with and without the flag stay
+`promptVersion` `exam-gen-7+book` (`exam-gen-6+book` before 2026-10-15), so usage rows with and without the flag stay
 comparable. Then generate one
 maths evaluation and check it; see "Real book items on the live model path" in
 `STATUS.md`.

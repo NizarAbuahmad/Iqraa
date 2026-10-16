@@ -52,7 +52,7 @@ describe('data and proportion generators: shape', () => {
       for (const item of draws(id)) {
         const where = `${id} «${item.promptAr}» → ${item.answer} | ${item.wrongs.join(' | ')}`;
         assert.ok(item.answer && item.promptAr && item.promptEn, where);
-        const want = ['أكيد', 'ممكن', 'مستحيل'].includes(item.answer) || item.answer.startsWith('العرض') || id === 'scatter' ? 2 : ['نعم', 'لا'].includes(item.answer) ? 1 : 3;
+        const want = ['أكيد', 'ممكن', 'مستحيل'].includes(item.answer) || item.answer.startsWith('العرض') || item.answer.startsWith('ارتباط') || item.answer === 'لا يوجد ارتباط' ? 2 : ['نعم', 'لا'].includes(item.answer) ? 1 : 3;
         assert.equal(item.wrongs.length, want, where);
         assert.equal(new Set([item.answer, ...item.wrongs]).size, want + 1, `not distinct: ${where}`);
         for (const s of [item.answer, ...item.wrongs, item.promptAr!, item.promptEn!]) {
@@ -248,20 +248,51 @@ describe('statistics: answers recomputed', () => {
   });
 
   it('Grade 10: scatter, cumulative frequency, grouped data', () => {
+    const num = (s: string) => Number(s.replace('−', '-'));
+    /** «y = −2x + 50» → [−2, 50] */
+    const line = (p: string) => { const m = p.match(/y = (−?\d+)x \+ (\d+)/)!; return [num(m[1]!), Number(m[2])] as const; };
+    const scatterKinds = new Set<string>();
     for (const item of draws('scatter', 300)) {
-      const pts = [...item.promptAr!.matchAll(/\((\d+) ، (\d+)\)/g)].map(m => [Number(m[1]), Number(m[2])] as const);
+      const p = item.promptAr!;
+      if (has(p, 'المستقيم الأفضل مطابقة لشكل انتشار هي')) {
+        const [m, b] = line(p);
+        if (has(p, 'لـ y عندما')) { scatterKinds.add('predict-y'); assert.equal(Number(item.answer), m * Number(p.match(/x = (\d+)/)![1]) + b, p); }
+        else { scatterKinds.add('predict-x'); assert.equal(Number(item.answer), (Number(p.match(/y = (\d+)؟/)![1]) - b) / m, p); }
+        continue;
+      }
+      const pts = [...p.matchAll(/\((\d+) ، (\d+)\)/g)].map(m => [Number(m[1]), Number(m[2])] as const);
+      if (has(p, 'ما ميله')) {
+        scatterKinds.add('slope');
+        const [[x1, y1], [x2, y2]] = pts as [readonly [number, number], readonly [number, number]];
+        assert.equal(num(item.answer), (y2 - y1) / (x2 - x1), p);
+        continue;
+      }
+      scatterKinds.add('correlation');
       const n = pts.length, mx = sum(pts.map(p => p[0])) / n, my = sum(pts.map(p => p[1])) / n;
       const r = sum(pts.map(([x, y]) => (x - mx) * (y - my))) / Math.sqrt(sum(pts.map(([x]) => (x - mx) ** 2)) * sum(pts.map(([, y]) => (y - my) ** 2)));
       assert.equal(item.answer, r > 0.85 ? 'ارتباط طردي (موجب)' : r < -0.85 ? 'ارتباط عكسي (سالب)' : 'لا يوجد ارتباط');
       assert.ok(Math.abs(r) > 0.85 || Math.abs(r) < 0.3, `ambiguous correlation ${r}`);
     }
+    assert.equal(scatterKinds.size, 4, `scatter kinds drawn: ${[...scatterKinds]}`);
+    const cumKinds = new Set<string>();
     for (const item of draws('cumulative', 300)) {
       const p = item.promptAr!;
+      if (has(p, 'المدى الربيعي')) { cumKinds.add('iqr'); const [q1, q3] = nums(p.replace(/Q[13]/g, '')); assert.equal(Number(item.answer), q3! - q1!, p); continue; }
+      if (has(p, 'الرتبة المئينية')) {
+        cumKinds.add('percentile');
+        const [n, score, c, score2] = nums(p);
+        assert.equal(score, score2, p);
+        assert.equal(item.answer, `${(100 * c!) / n!}%`, p);
+        assert.ok(c! <= n!, p);
+        continue;
+      }
       const rows = [...p.matchAll(/(\d+)–(\d+): (\d+)/g)].slice(0, 8).map(m => [Number(m[1]), Number(m[3])] as const);
       const f = rows.map(r => r[1]), n = sum(f);
-      if (has(p, 'التكرار التراكمي')) { const end = Number(p.match(/الفئة (\d+)–/)![1]); const upto = rows.findIndex(r => r[0] === end); assert.equal(Number(item.answer), sum(f.slice(0, upto + 1)), p); }
-      else { let acc = 0, mc = 0; for (let i = 0; i < f.length; i++) { acc += f[i]!; if (acc >= n / 2) { mc = i; break; } } assert.equal(item.answer, `${rows[mc]![0]}–${rows[mc]![0] + (rows[1]![0] - rows[0]![0]) - 1}`, p); }
+      if (has(p, 'ما ترتيب')) { cumKinds.add('quartile'); assert.equal(Number(item.answer), has(p, 'Q3') ? (3 * n) / 4 : n / 4, p); assert.ok(Number.isInteger(Number(item.answer)), p); }
+      else if (has(p, 'التكرار التراكمي')) { cumKinds.add('cf'); const end = Number(p.match(/الفئة (\d+)–/)![1]); const upto = rows.findIndex(r => r[0] === end); assert.equal(Number(item.answer), sum(f.slice(0, upto + 1)), p); }
+      else { cumKinds.add('median'); let acc = 0, mc = 0; for (let i = 0; i < f.length; i++) { acc += f[i]!; if (acc >= n / 2) { mc = i; break; } } assert.equal(item.answer, `${rows[mc]![0]}–${rows[mc]![0] + (rows[1]![0] - rows[0]![0]) - 1}`, p); }
     }
+    assert.equal(cumKinds.size, 5, `cumulative kinds drawn: ${[...cumKinds]}`);
     for (const item of draws('grouped_mean', 300)) {
       const p = item.promptAr!;
       const rows = [...p.matchAll(/(\d+) إلى أقل من (\d+): (\d+)/g)].map(m => ({ lo: Number(m[1]), hi: Number(m[2]), f: Number(m[3]) }));
