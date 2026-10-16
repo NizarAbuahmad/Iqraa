@@ -123,12 +123,25 @@ an announcement by default» below.
   every generator's stems for it («18 تذكرةً», «300 دينار»). Found on the way:
   `lessonTitleBlob` joined a title to itself when the KB title matched, and the
   seam «…والقسمة الكسور والقسمة» routed Grade 3 «الكسور والقسمة» to a
-  generator; it is refused again (`routing.test.ts`). Still open: a kind that
-  differs from another only in where the unknown sits («2/3 = ؟/12» vs
-  «2/3 = 8/؟») has the same `stemFrame`, so it needs different words to count;
-  and some kinds come in several sentences (one per operation), which
-  `makeTopicItem` serves first as "least used" — algebra weights those down
-  (`wpick`), the other generators do not yet.
+  generator; it is refused again (`routing.test.ts`).
+  **…and a reworded sentence is not a new kind (also 2026-10-16).** Counted by
+  `stemFrame`, those 3+ kinds included rewordings — «بعد ساعتين / بعد 3 ساعات»,
+  sin / cos / tan of one triangle, «إلى اليمين / اليسار» — and spreading by
+  frame gave a kind written four ways four turns on a paper. `sameKind`
+  (`stemFrame.ts`) groups frames at most 37% of their words apart (measured:
+  rewordings of one ask change 20–36%, different asks 50%+; an interval written
+  as an inequality and back, or the additive vs multiplicative inverse, count
+  as one), `spreadScore` spreads a paper by kind and then by sentence, and both
+  `makeTopicItem` and `makeElementaryItem` (which had no spreading at all) use
+  it. Grouped that way, 65 served lessons had fewer than three kinds; all got
+  real ones from their objectives (`mathLessonKinds.test.ts` now counts kinds,
+  not frames). On 10-item papers: lessons under three kinds 65 → 0, kinds per
+  paper 3.46 → 3.84, the commonest kind 45% → 34%. `stemFrame` also keeps a
+  blank («؟», «▢», «■», «___») as `?`, so «2/3 = ؟/12» and «2/3 = 8/؟» are two
+  frames. Found on the way: unit counts without agreement («كم متر في 9
+  متر», «حوّل 20 متر إلى سنتيمتر») — the conversions now use the symbols the
+  rest of those generators use («حوّل 20 م إلى سم»), and `tamyiz.test.ts`
+  reads units too.
 
 - **Lesson plan, slides, activity, lesson-flow and the classroom builder take a
   unit, semester or whole book — as one revision session (2026-10-14; spec
