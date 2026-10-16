@@ -4672,6 +4672,19 @@ search), whole-monorepo `pnpm run typecheck` clean, mobile suite 2982 pass /
 sits behind sign-in and this session had no API/Postgres, so the search field's
 look in RTL and the new row subtitle are unviewed.
 
+## The Library's lesson chips open at «كل الدروس» in Arabic, 2026-10-16
+
+In Arabic the lesson chip row is `row-reverse`, whose start is its right end, but
+a horizontal `ScrollView` opens at offset 0 — the left — so the first chip
+(«كل الدروس») sat clipped past the right edge and the row looked as if it began
+mid-list. Nothing was unreachable; it was only opened at the wrong end. The row
+now jumps to its far end (`scrollToEnd`) when the set of lessons changes, not on
+a tap, with the same 60 ms timer + content-size guard the FAQ chip row uses
+(`app/faq.tsx`). **Checked on real react-native-web in Chromium** with 3, 14 and
+40 chips: the first chip is fully visible with a 20 px margin, the last is
+still reachable by scrolling, and a short row stays on the right. **Not seen on
+the live site or an Android device** — the screen sits behind sign-in.
+
 ## «من بنك الأسئلة المُراجَع» only under answers that came from it, 2026-10-06
 
 A live-AI history worksheet (الإمبراطورية الفارسية, true/false) was captioned
