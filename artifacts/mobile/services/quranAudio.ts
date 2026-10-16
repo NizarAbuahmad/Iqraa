@@ -39,7 +39,12 @@ export interface QuranAudioState {
   error: boolean;
 }
 
-/** How long a recording may take to start before we say it cannot play (a stalled connection never errors). */
+/**
+ * How long a recording may take to START PLAYING before we say it cannot play.
+ * Nothing else catches a recording that loads but never plays: expo-audio
+ * reports `isLoaded: true` even for a failed file, and a stalled connection
+ * never errors. Cleared at the first `playing: true` (see `startNative`).
+ */
 const LOAD_TIMEOUT_MS = 10_000;
 
 // ─── the store ───────────────────────────────────────────────────────────────
@@ -124,10 +129,14 @@ let onStatus: ((s: AudioStatus) => void) | null = null;
 
 const startNative: StartPlayback = (url, onEnded, onError) => {
   let dead = false;
-  let loaded = false;
   let started = false;
+  // The only guard against a recording that loads but never plays (a 404 on
+  // Android reports `isLoaded: true` and no error ever follows). Cleared at the
+  // first `playing: true`, never on `isLoaded`. A stale `playing: true` queued
+  // from the PREVIOUS recording could still clear it early: rarer, and only
+  // verifiable on a device.
   const timer = setTimeout(() => {
-    if (!dead && !loaded) onError();
+    if (!dead && !started) onError();
   }, LOAD_TIMEOUT_MS);
 
   void (async () => {
@@ -141,11 +150,10 @@ const startNative: StartPlayback = (url, onEnded, onError) => {
       if (dead) return;
       onStatus = status => {
         if (dead) return;
-        if (status.isLoaded && !loaded) {
-          loaded = true;
+        if (status.playing && !started) {
+          started = true;
           clearTimeout(timer);
         }
-        if (status.playing) started = true;
         // Only a finish AFTER this playback began counts: the previous
         // recording's own "finished" must not skip this one.
         if (status.didJustFinish && started) onEnded();
