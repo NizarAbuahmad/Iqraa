@@ -114,11 +114,11 @@ export function detectChemFamily(raw: string): ChemFamily {
   // reagent and % yield, never mole/Avogadro. That generic phrase is checked
   // last below, only once every more specific family (mole included) has had
   // its chance to claim the lesson first.
-  if (/المردود|الكاشف المحدد|stoichiometr|limiting reagent|mole ratio|نسب مولية/i.test(blob)) return 'stoichiometry';
+  if (/المردود|الكاشف المحدد|المتفاعل المحدد|stoichiometr|limiting reagent|mole ratio|نسب[ةه]? (ال)?مولية/i.test(blob)) return 'stoichiometry';
   // «المول» as a whole word (or its plural «المولات»). A bare substring also matched «المولية»
   // — «طاقة الانصهار المولية», molar fusion energy, in the energy-changes lesson's key concepts —
   // and sent that thermochemistry lesson to the mole bank. «الكتلة المولية» is listed on its own.
-  if (/المول(?:ات)?(?![\u0621-\u064A])|الكتلة المولية|أفوجادرو|molar mass|avogadro|\bmole\b/i.test(blob)) return 'mole';
+  if (/المول(?:ات)?(?![\u0621-\u064A])|الكتلة المولية|أفوجادرو|كمية المادة|الحجم المولي|الغاز المولي|molar mass|molar volume|amount of substance|avogadro|\bmole\b/i.test(blob)) return 'mole';
   // «طاقة … تفاعل» must stay inside one sentence: unbounded, it spanned «…تحولات الطاقة فيها.
   // أصمم خلية جلفانية… التفاعلات نصف الخلوية» and took the galvanic-cell lesson. The calorimetry
   // (The heat-capacity lesson, «الطاقة الممتصة والطاقة المنبعثة», has no reaction in it: it is
@@ -127,32 +127,32 @@ export function detectChemFamily(raw: string): ChemFamily {
   // المنبعثة من المادة» has its own bank (q = m·c·ΔT, mixing, calorimeter). Ahead of thermochem, which
   // would otherwise answer it with enthalpy and exo/endothermic questions.
   if (/السعة الحرارية|الحرارة النوعية|المسعر|heat capacity|specific heat|calorimet/i.test(blob)) return 'calorimetry';
-  if (/طاقة[^.؟!]*تفاعل|تفاعل[^.؟!]*طاقة|ماص للطاقة|طارد للطاقة|المحتوى الحراري|إنثالبي|enthalpy|exotherm|endotherm|heat of reaction/i.test(blob)) return 'thermochem';
+  if (/طاقة[^.؟!]*تفاعل|تفاعل[^.؟!]*طاقة|ماص للطاقة|طارد للطاقة|الطاردة|الماصة|المحتوى الحراري|إنثالبي|enthalpy|exotherm|endotherm|heat of reaction/i.test(blob)) return 'thermochem';
   if (/معادلة كيميائية|وزن المعادل|موازنة|التفاعلات الكيميائية|chemical equation|balanc|reaction type/i.test(blob)) return 'equations';
 
   // Grade 10 S1
   if (/الصيغ الكيميائية|الصيغة الكيميائية|تسمية المركب|chemical formula|nomenclature/i.test(blob)) return 'formulas';
-  if (/رابطة|روابط|تساهمي|أيونية|فلزية|bond|covalent|ionic|metallic/i.test(blob)) return 'bonding';
+  if (/رابطة|روابط|تساهمي|أيونية|فلزية|قاعدة الثمان|الثمانيات|تراكيب لويس|bond|covalent|ionic|metallic|octet|lewis/i.test(blob)) return 'bonding';
   // The lesson's own name, ahead of periodic trends on purpose: its key terms include «طاقة التأين»
   // (ionization energy), which the periodic-trends pattern below would take as that lesson. Deliberately
   // narrow — the name of the lesson, not its topic words, so the periodic-properties lesson is untouched.
   if (/التوزيع الإلكتروني للذرات|electronic configuration/i.test(blob)) return 'electron_config';
   if (/الخصائص الدورية|نصف القطر|طاقة التأين|الكهروسالبية|periodic (trend|propert)|atomic radius|ionization|electronegativ/i.test(blob)) return 'periodic_trends';
-  if (/التوزيع الإلكتروني|المستويات الفرعية|أوربيتال|electron config|orbital|subshell/i.test(blob)) return 'electron_config';
+  if (/التوزيع الإلكتروني|المستويات الفرعية|أوربيتال|قاعدة هوند|أوفباو|باولي|electron config|orbital|subshell|hund|aufbau|pauli/i.test(blob)) return 'electron_config';
   // The unit's own name, «الجدول الدوري وخواص العناصر». Checked after electron_config on purpose:
   // the Grade 9 lesson «التوزيع الإلكتروني والجدول الدوري» names the table too but is that lesson.
   // Deliberately narrow — «الجدول الدوري» alone appears in other lessons' objectives.
   if (/الجدول الدوري وخواص|خواص العناصر|periodic table and (element )?propert/i.test(blob)) return 'periodic_trends';
-  if (/نظرية بور|الطيف الذري|الميكانيكي الموجي|الكم|bohr|spectrum|quantum|wave mechanical/i.test(blob)) return 'atomic_structure';
+  if (/نظرية بور|نموذج بور|الطيف الذري|الأطياف الذرية|الميكانيكي الموجي|الكم(?![\u0621-\u064A])|الأعداد الكمية|النظرية الكمية|bohr|spectrum|quantum|wave mechanical/i.test(blob)) return 'atomic_structure';
 
   // Grade 9
   // The lesson's own name, ahead of redox on purpose: its objectives say students "run simple
   // experiments on electrolysis and gas discharge", which the redox pattern below would take as
   // an electrolysis lesson. Deliberately narrow — only the name of the lesson, not its topic words.
   if (/مكونات الذرة|components of (the )?atom\b/i.test(blob)) return 'atom_basics';
-  if (/تأكسد|اختزال|جلفاني|التحليل الكهربائي|خلية|redox|oxidation|reduction|galvanic|electroly/i.test(blob)) return 'redox';
+  if (/تأكسد|اختزال|جلفاني|التحليل الكهربائي|خلية|خلايا|كهروكيميائ|redox|electrochem|oxidation|reduction|galvanic|electroly/i.test(blob)) return 'redox';
   if (/نشاط الفلزات|سلسلة النشاط|تآكل|صدأ|activity series|corrosion|rust/i.test(blob)) return 'metal_activity';
-  if (/حمض|حموض|قاعدة|قواعد|أملاح|تعادل|قلوي|acid|base|alkali|neutralis|neutraliz|\bpH\b/i.test(blob)) return 'acids_bases';
+  if (/حمض|حموض|قاعدة|قواعد|أملاح|تعادل|قلوي|الرقم الهيدروجيني|acid|base|alkali|neutralis|neutraliz|\bpH\b/i.test(blob)) return 'acids_bases';
   if (/مكونات الذرة|العدد الذري|العدد الكتلي|نظائر|بروتون|نيوترون|atomic number|mass number|isotope|proton|neutron/i.test(blob)) return 'atom_basics';
 
   // The generic "chemical calculations" phrase, last: it is the unit's own
@@ -160,6 +160,14 @@ export function detectChemFamily(raw: string): ChemFamily {
   // sharper family above has already claimed — which is exactly the bare
   // lesson title «الحسابات الكيميائية» itself.
   if (/(ال)?حسابات (ال)?كيميائية/i.test(blob)) return 'stoichiometry';
+  // The plural «المعادلات الكيميائية» and «حفظ الكتلة», last for the same reason: the redox lesson's
+  // objectives say «أكتب معادلات كيميائية تمثل التفاعلات نصف الخلوية», so up with the singular they took
+  // that lesson into the equations bank. They only decide a topic nothing sharper has claimed — which is
+  // a teacher typing «المعادلات الكيميائية», with no lesson text behind it.
+  if (/المعادلات الكيميائية|معادلات كيميائية|حفظ الكتلة|conservation of mass/i.test(blob)) return 'equations';
+  // «كمية الحرارة» likewise: a thermochemistry lesson mentions it in passing, so as a rule of its own
+  // ahead of thermochem it moved that lesson into the calorimetry bank. Typed alone, it is calorimetry.
+  if (/كمية الحرارة|كمية الطاقة الحرارية/i.test(blob)) return 'calorimetry';
 
   return 'general_chem';
 }
