@@ -90,6 +90,42 @@ describe('parseMathLine — fractions', () => {
     }
   });
 
+  // Live bug (2026-10-16, the hydrogen-energy quiz question): «E = −13.6/n²» drew «−13.» then a
+  // stacked 6 over n then a stray ². The numerator was read as a run of digits and letters, which
+  // stops at the decimal point, so only «6» was taken; the denominator stopped at the Unicode ².
+  it('takes a whole decimal as the numerator, and a Unicode power as part of the denominator', () => {
+    assert.deepEqual(parseMathLine('E = −13.6/n²'), [
+      { kind: 'text', text: 'E = −' },
+      { kind: 'frac', num: [{ kind: 'text', text: '13.6' }], den: [{ kind: 'text', text: 'n²' }] },
+    ]);
+  });
+
+  it('takes decimals on either side of the bar, with a point or a comma', () => {
+    assert.deepEqual(parseMathLine('13.6/2'), [{ kind: 'frac', num: [{ kind: 'text', text: '13.6' }], den: [{ kind: 'text', text: '2' }] }]);
+    assert.deepEqual(parseMathLine('1/2.5'), [{ kind: 'frac', num: [{ kind: 'text', text: '1' }], den: [{ kind: 'text', text: '2.5' }] }]);
+    assert.deepEqual(parseMathLine('4,18/2'), [{ kind: 'frac', num: [{ kind: 'text', text: '4,18' }], den: [{ kind: 'text', text: '2' }] }]);
+    assert.deepEqual(parseMathLine('٣.٦/٢'), [{ kind: 'frac', num: [{ kind: 'text', text: '٣.٦' }], den: [{ kind: 'text', text: '٢' }] }]);
+  });
+
+  it('does not glue a sentence-ending point to the number after it', () => {
+    // «5.» is the end of a sentence, not the start of a decimal: only «6» is the numerator.
+    assert.deepEqual(parseMathLine('x = 5. 6/n'), [
+      { kind: 'text', text: 'x = 5. ' },
+      { kind: 'frac', num: [{ kind: 'text', text: '6' }], den: [{ kind: 'text', text: 'n' }] },
+    ]);
+    // a point with a letter on one side is not a decimal either
+    assert.deepEqual(parseMathLine('a.6/n'), [
+      { kind: 'text', text: 'a.' },
+      { kind: 'frac', num: [{ kind: 'text', text: '6' }], den: [{ kind: 'text', text: 'n' }] },
+    ]);
+  });
+
+  it('keeps a power on the denominator only when what it sits on is a simple token', () => {
+    assert.deepEqual(parseMathLine('3/4²'), [{ kind: 'frac', num: [{ kind: 'text', text: '3' }], den: [{ kind: 'text', text: '4²' }] }]);
+    // a lone power with no base is not a denominator
+    assert.deepEqual(parseMathLine('3/²'), [{ kind: 'text', text: '3/²' }]);
+  });
+
   it('leaves date-like or wordy slashes alone', () => {
     // "ص/م" style abbreviations: single letters DO match, but a slash next to
     // a space or multi-word text must not become a fraction.

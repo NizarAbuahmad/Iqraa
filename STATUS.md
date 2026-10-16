@@ -622,6 +622,20 @@ an announcement by default» below.
   answers. **Not checked:** the items follow the lesson's stated objectives, not the
   textbook's own worked examples; no chemistry teacher has read them; they say nothing
   about the lesson's lab.
+- **A decimal over a power drew as a broken fraction (2026-10-16, found on the live site).**
+  A hydrogen-energy question stored as «E = −13.6/n²» showed «−13.» then a stacked 6 over n
+  then a stray ² — on app.iqrra.com, in a student-facing quiz, and it read as −13.(6/n)².
+  `parseMathLine` (`services/mathRender.ts`) read a fraction's numerator as «a run of digits and
+  letters», which stops at a decimal point, so only «6» was taken; the denominator stopped at a
+  Unicode power. A decimal (point or comma, a digit on both sides) is now one number on either
+  side of the bar, and a Unicode power stays with its denominator when the base is a real token;
+  a sentence-ending point («x = 5. 6/n») still does not join. Every stem with a decimal over a
+  variable was affected, in every subject — the bank had at least two such items
+  (`ch-as-m1`, `ch-as-m3`). Checked by rendering the markup in Chromium against the screenshot.
+  **Seen, not changed:** a unit like «J/g·°C» still draws as a stacked J over g, because a single
+  letter over a single letter counts as a fraction; whether that is wanted is a design call.
+  **Not checked:** the native (React Native) renderer was not looked at, only the web markup; and
+  a power written with «^» over a decimal («13.6/n^2») was not examined.
 - **Quiz «أعد التجهيز» now changes the questions, and says when it cannot**
   (2026-10-13). The offline regenerate only checked that the whole quiz JSON
   differed from the last one, so the same stems in another order — or with the
