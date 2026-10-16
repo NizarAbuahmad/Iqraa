@@ -887,13 +887,9 @@ export default function WorksheetScreen() {
           A greyed-out primary button with nothing next to it reads as a broken
           product rather than an unmet precondition. It says which one.
         */}
-        {!topic.trim() ? (
+        {!topic.trim() || noBank ? (
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
-            {t('needTopicHint')}
-          </Text>
-        ) : noBank ? (
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
-            {t('noQuestionBank')}
+            {t(!topic.trim() ? 'needTopicHint' : 'noQuestionBank')}
           </Text>
         ) : null}
       </View>
