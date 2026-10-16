@@ -26,7 +26,7 @@
  * reach the source host. Run it where you can, then follow
  * `sources/quran-audio/VERIFY.md` before flipping `QURAN_AUDIO_UPLOADED`.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -60,6 +60,13 @@ const flagValue = (name: string): string | undefined => {
 };
 const concurrency = Number(flagValue('--concurrency')) || 4;
 
+// `--only` with no value would read as absent and silently run the default job.
+const onlyAt = argv.indexOf('--only');
+if (onlyAt !== -1 && (argv[onlyAt + 1] === undefined || argv[onlyAt + 1].startsWith('--'))) {
+  console.error('--only needs a value like 1:1,112:3');
+  process.exit(2);
+}
+
 let only;
 try {
   only = parseOnly(flagValue('--only'));
@@ -87,14 +94,18 @@ let manifest: ManifestEntry[] = readManifest();
 /** Rewritten after EVERY upload, so an interrupted run still leaves each stored file recorded. */
 function writeManifest(): void {
   mkdirSync(path.dirname(MANIFEST_PATH), { recursive: true });
+  // Write beside it and rename over it: a crash mid-write must not leave
+  // invalid JSON, which the next run would refuse to read.
+  const tmp = `${MANIFEST_PATH}.tmp`;
   writeFileSync(
-    MANIFEST_PATH,
+    tmp,
     JSON.stringify(
       { reciter: QURAN_AUDIO_RECITER, sourceBase: QURAN_AUDIO_SOURCE_BASE, files: manifest },
       null,
       2,
     ) + '\n',
   );
+  renameSync(tmp, MANIFEST_PATH);
 }
 
 const { R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY } = process.env;
