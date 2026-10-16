@@ -37,6 +37,7 @@ import { questionText as questionTextFor } from '@/services/evaluationQuestionTe
 import { copyToClipboard } from '@/services/share';
 import { AddReadAloudModal } from '@/components/AddReadAloudModal';
 import { AddDictationModal } from '@/components/AddDictationModal';
+import { showsDictation, showsReadAloud } from '@/services/contentLanguage';
 import { EditQuestionModal } from '@/components/EditQuestionModal';
 import { isEditableQuestion } from '@/services/questionDraft';
 import { isPaperQuestion } from '@/services/paperQuestion';
@@ -729,7 +730,9 @@ export default function EvaluationDetailScreen() {
             </Text>
           </Pressable>
           {/* Hand-written questions, this one included, are appended and
-              survive "regenerate": it replaces only generated questions. */}
+              survive "regenerate": it replaces only generated questions.
+              Read-aloud and إملاء only make sense in a language subject. */}
+          {showsReadAloud(evaluation?.subjectId) && (
           <Pressable
             onPress={() => setAddingReadAloud(true)}
             disabled={!!busy}
@@ -740,8 +743,10 @@ export default function EvaluationDetailScreen() {
               {t('addReadAloudBtn')}
             </Text>
           </Pressable>
+          )}
           {/* Dictation is appended for the same reason, and adds a whole list
               at once: a teacher dictates ten words, not one. */}
+          {showsDictation(evaluation?.subjectId) && (
           <Pressable
             onPress={() => setAddingDictation(true)}
             disabled={!!busy}
@@ -752,6 +757,7 @@ export default function EvaluationDetailScreen() {
               {t('addDictationBtn')}
             </Text>
           </Pressable>
+          )}
         </View>
       )}
 
