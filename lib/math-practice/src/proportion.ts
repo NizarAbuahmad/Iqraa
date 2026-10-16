@@ -29,11 +29,11 @@ const dinars = (n: number) => `${n} ${tamyiz(n, 'دنانير', 'دينارًا'
 const unitRate = T('unit_rate', /^معدل الوحده$/, [7, 7], ({ rng, diff }) => {
   const k = pick(rng, [0, 1, 2]);
   if (k === 0) { const v = int(rng, 20, span(diff, 60, 90, 120)), h = int(rng, 2, 6); return { eq: `${v * h}, ${h}`, answer: String(v), wrongs: ints(v, [v * h, v + h, v * h - h, h]), ar: `قطعت سيارة ${v * h} كم في ${h} ساعات بسرعة ثابتة. ما سرعتها بالكيلومتر لكل ساعة؟`, en: `A car travels ${v * h} km in ${h} hours at a steady speed. What is its speed in km per hour?` }; }
-  if (k === 1) { const p = int(rng, 2, span(diff, 9, 15, 30)), q = int(rng, 3, 9); return { eq: `${p * q}, ${q}`, answer: String(p), wrongs: ints(p, [p * q, p + q, p * q - q, q]), ar: `ثمن ${q} كيلوغرامات من التفاح ${p * q} دينارًا. كم ثمن الكيلوغرام الواحد بالدينار؟`, en: `${q} kg of apples cost ${p * q} dinars. What is the price of 1 kg in dinars?` }; }
+  if (k === 1) { const p = int(rng, 2, span(diff, 9, 15, 30)), q = int(rng, 3, 9); return { eq: `${p * q}, ${q}`, answer: String(p), wrongs: ints(p, [p * q, p + q, p * q - q, q]), ar: `ثمن ${q} كيلوغرامات من التفاح ${dinars(p * q)}. كم ثمن الكيلوغرام الواحد بالدينار؟`, en: `${q} kg of apples cost ${p * q} dinars. What is the price of 1 kg in dinars?` }; }
   const q1 = int(rng, 2, 5), u1 = int(rng, 3, 9), q2 = q1 + int(rng, 1, 3), u2 = u1 + int(rng, 1, 2);
   // offer 1: q1 kg for q1*u1; offer 2: q2 kg for q2*u2 — compare the unit prices u1 and u2
   const first = u1 < u2;
-  return { eq: `${q1 * u1}/${q1}, ${q2 * u2}/${q2}`, answer: first ? 'العرض الأول' : 'العرض الثاني', wrongs: [first ? 'العرض الثاني' : 'العرض الأول', 'السعر نفسه'], ar: `العرض الأول: ${q1} كغم بـ ${q1 * u1} دينارًا. العرض الثاني: ${q2} كغم بـ ${q2 * u2} دينارًا. أي العرضين أرخص للكيلوغرام الواحد؟`, en: `Offer 1: ${q1} kg for ${q1 * u1} dinars. Offer 2: ${q2} kg for ${q2 * u2} dinars. Which offer is cheaper per kilogram?` };
+  return { eq: `${q1 * u1}/${q1}, ${q2 * u2}/${q2}`, answer: first ? 'العرض الأول' : 'العرض الثاني', wrongs: [first ? 'العرض الثاني' : 'العرض الأول', 'السعر نفسه'], ar: `العرض الأول: ${q1} كغم بـ ${dinars(q1 * u1)}. العرض الثاني: ${q2} كغم بـ ${dinars(q2 * u2)}. أي العرضين أرخص للكيلوغرام الواحد؟`, en: `Offer 1: ${q1} kg for ${q1 * u1} dinars. Offer 2: ${q2} kg for ${q2 * u2} dinars. Which offer is cheaper per kilogram?` };
 });
 
 const proportion = T('proportion', /^التناسب$/, [7, 7], ({ rng, diff }) => {
@@ -52,7 +52,10 @@ const proportion = T('proportion', /^التناسب$/, [7, 7], ({ rng, diff }) =
     return { eq: `${f}, ${e}, ${F}`, answer: String(E), wrongs: ints(E, [e + (F - f), F, (F * f) / e, E + k]), ar: `تحتاج وصفة كعك إلى ${f} أكواب من الطحين لكل ${e} بيضات. كم بيضة تلزم إذا استُعمل ${F} ${tamyiz(F, 'أكواب', 'كوبًا', 'كوب')} من الطحين بالنسبة نفسها؟`, en: `A cake recipe uses ${f} cups of flour for every ${e} eggs. How many eggs are needed for ${F} cups of flour in the same ratio?` };
   }
   if (kind === 0) return { eq: `${a}/${b} = ${c}/x`, answer: String(x), wrongs: ints(x, [b + (c - a), c + b, (c * a) / b | 0, x + k]), ar: `أوجد قيمة x في التناسب: ${a}/${b} = ${c}/x`, en: `Find x in the proportion ${a}/${b} = ${c}/x.` };
-  return { eq: `${a}, ${b}, ${c}`, answer: String(x), wrongs: ints(x, [b + (c - a), c + b, (c * a) / b | 0, x + k]), ar: `إذا كانت ${a} أقلام تكلف ${b} دنانير، فكم دينارًا تكلف ${c} قلمًا بالسعر نفسه؟`, en: `If ${a} pens cost ${b} dinars, how many dinars do ${c} pens cost at the same rate?` };
+  // 2 takes the dual («قلمان»), which cannot be written as a numeral, so the pens start at 3.
+  if (a < 3 || b < 3) return proportion.make({ rng, diff, grade: 7 });
+  const pens = (n: number) => `${n} ${tamyiz(n, 'أقلام', 'قلمًا', 'قلم')}`;
+  return { eq: `${a}, ${b}, ${c}`, answer: String(x), wrongs: ints(x, [b + (c - a), c + b, (c * a) / b | 0, x + k]), ar: `إذا كان ثمن ${pens(a)} ${dinars(b)}، فكم دينارًا ثمن ${pens(c)} بالسعر نفسه؟`, en: `If ${a} pens cost ${b} dinars, how many dinars do ${c} pens cost at the same rate?` };
 });
 
 const proportionalRelation = T('proportional_relation', /^العلاقات التناسبيه$/, [7, 7], ({ rng, diff }) => {
@@ -149,16 +152,16 @@ const proportionalDivision = T('proportional_division', /^التقسيم الت�
   const big = Math.max(...rs) * unit, small = Math.min(...rs) * unit;
   const ratio = rs.join(' : ');
   const largest = rng() < 0.5;
-  return { eq: `${total}, ${ratio}`, answer: String(largest ? big : small), wrongs: ints(largest ? big : small, [total / parts, largest ? small : big, unit, total - (largest ? big : small)]), ar: `قُسّم مبلغ ${total} دينارًا بين أشخاص بنسبة ${ratio}. كم دينارًا يأخذ صاحب ${largest ? 'النصيب الأكبر' : 'النصيب الأصغر'}؟`, en: `${total} dinars is shared in the ratio ${ratio}. How many dinars does the person with the ${largest ? 'largest' : 'smallest'} share get?` };
+  return { eq: `${total}, ${ratio}`, answer: String(largest ? big : small), wrongs: ints(largest ? big : small, [total / parts, largest ? small : big, unit, total - (largest ? big : small)]), ar: `قُسّم مبلغ ${dinars(total)} بين أشخاص بنسبة ${ratio}. كم دينارًا يأخذ صاحب ${largest ? 'النصيب الأكبر' : 'النصيب الأصغر'}؟`, en: `${total} dinars is shared in the ratio ${ratio}. How many dinars does the person with the ${largest ? 'largest' : 'smallest'} share get?` };
 });
 
 const financial = T('financial_math', /^تطبيقات ماليه$/, [7, 7], ({ rng, diff }) => {
   const k = pick(rng, [0, 1, 2, 3]);
-  if (k === 0) { const P = int(rng, 2, 20) * 100, r = int(rng, 2, span(diff, 6, 8, 10)), t = int(rng, 1, 5); const I = (P * r * t) / 100; return { eq: `${P}, ${r}, ${t}`, answer: String(I), wrongs: ints(I, [P * r * t, I + P, (P * r) / 100, I * 2]), ar: `ما الفائدة البسيطة على مبلغ ${P} دينارًا بمعدل ${r}% سنويًا لمدة ${t === 1 ? 'سنة واحدة' : t === 2 ? 'سنتين' : `${t} سنوات`}؟`, en: `What is the simple interest on ${P} dinars at ${r}% per year for ${t} year${t === 1 ? '' : 's'}?` }; }
-  if (k === 1) { const price = int(rng, 2, 20) * 20, d = pick(rng, [10, 20, 25, 50]); const now = price - (price * d) / 100; return { eq: `${price}, ${d}`, answer: String(now), wrongs: ints(now, [(price * d) / 100, price - d, price + (price * d) / 100, now + d]), ar: `ثمن سلعة ${price} دينارًا، وعليها خصم ${d}%. ما ثمنها بعد الخصم؟`, en: `An item costs ${price} dinars with a ${d}% discount. What is its price after the discount?` }; }
-  if (k === 2) { const cost = int(rng, 2, 20) * 20, p = pick(rng, [10, 20, 25, 50]); const sell = cost + (cost * p) / 100; return { eq: `${cost}, ${p}`, answer: String(sell), wrongs: ints(sell, [(cost * p) / 100, cost + p, cost - (cost * p) / 100, sell + p]), ar: `اشترى تاجر سلعة بـ ${cost} دينارًا وباعها بربح ${p}%. بكم باعها؟`, en: `A trader buys an item for ${cost} dinars and sells it at a ${p}% profit. What is the selling price?` }; }
+  if (k === 0) { const P = int(rng, 2, 20) * 100, r = int(rng, 2, span(diff, 6, 8, 10)), t = int(rng, 1, 5); const I = (P * r * t) / 100; return { eq: `${P}, ${r}, ${t}`, answer: String(I), wrongs: ints(I, [P * r * t, I + P, (P * r) / 100, I * 2]), ar: `ما الفائدة البسيطة على مبلغ ${dinars(P)} بمعدل ${r}% سنويًا لمدة ${t === 1 ? 'سنة واحدة' : t === 2 ? 'سنتين' : `${t} سنوات`}؟`, en: `What is the simple interest on ${P} dinars at ${r}% per year for ${t} year${t === 1 ? '' : 's'}?` }; }
+  if (k === 1) { const price = int(rng, 2, 20) * 20, d = pick(rng, [10, 20, 25, 50]); const now = price - (price * d) / 100; return { eq: `${price}, ${d}`, answer: String(now), wrongs: ints(now, [(price * d) / 100, price - d, price + (price * d) / 100, now + d]), ar: `ثمن سلعة ${dinars(price)}، وعليها خصم ${d}%. ما ثمنها بعد الخصم؟`, en: `An item costs ${price} dinars with a ${d}% discount. What is its price after the discount?` }; }
+  if (k === 2) { const cost = int(rng, 2, 20) * 20, p = pick(rng, [10, 20, 25, 50]); const sell = cost + (cost * p) / 100; return { eq: `${cost}, ${p}`, answer: String(sell), wrongs: ints(sell, [(cost * p) / 100, cost + p, cost - (cost * p) / 100, sell + p]), ar: `اشترى تاجر سلعة بـ ${dinars(cost)} وباعها بربح ${p}%. بكم باعها؟`, en: `A trader buys an item for ${cost} dinars and sells it at a ${p}% profit. What is the selling price?` }; }
   const cost = int(rng, 2, 20) * 20, p = pick(rng, [10, 20, 25, 50]), profit = (cost * p) / 100;
-  return { eq: `${cost}, ${cost + profit}`, answer: `${p}%`, wrongs: wrongsFrom(`${p}%`, [`${profit}%`, `${100 - p}%`, `${p * 2}%`, `${p + 10}%`], k2 => `${p + 5 * Math.abs(k2)}%`), ar: `اشترى تاجر سلعة بـ ${cost} دينارًا وباعها بـ ${cost + profit} دينارًا. ما نسبة الربح المئوية؟`, en: `A trader buys an item for ${cost} dinars and sells it for ${cost + profit} dinars. What is the percentage profit?` };
+  return { eq: `${cost}, ${cost + profit}`, answer: `${p}%`, wrongs: wrongsFrom(`${p}%`, [`${profit}%`, `${100 - p}%`, `${p * 2}%`, `${p + 10}%`], k2 => `${p + 5 * Math.abs(k2)}%`), ar: `اشترى تاجر سلعة بـ ${dinars(cost)} وباعها بـ ${dinars(cost + profit)}. ما نسبة الربح المئوية؟`, en: `A trader buys an item for ${cost} dinars and sells it for ${cost + profit} dinars. What is the percentage profit?` };
 });
 
 const scale = T('map_scale', /^مقياس الرسم$/, [7, 7], ({ rng, diff }) => {
