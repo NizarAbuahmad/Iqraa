@@ -789,9 +789,11 @@ function QuestionCard({
   // Isolated at the source: this is the paper a student actually sits, so an
   // equation reordered by the bidi algorithm is a wrong question in front of
   // someone who cannot ask why it looks odd.
-  // Matching and fill-blank are absent here on purpose: neither body carries a
-  // prompt field, and their inputs below render their own text. Falling back to
-  // an empty string used to leave a matching question as a blank card.
+  // Fill-blank is absent here on purpose: its body carries no prompt field and
+  // its input renders its own text. A matching body may carry an optional
+  // `stem` (a worksheet's «صِل» / «رتّب»: the instruction and the problem),
+  // which the stem ?? statement ?? prompt chain below reads; one without a
+  // stem falls back to an empty string, and its columns render themselves.
   const prompt = isolateForeignRuns(
     (body['stem'] as string) ??
     (body['statement'] as string) ??

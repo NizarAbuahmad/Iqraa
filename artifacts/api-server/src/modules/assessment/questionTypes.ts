@@ -205,7 +205,13 @@ const matching: TypeModule = {
     // Order here is the stored one. `shuffleForDelivery` in `studentView.ts`
     // reorders the right-hand column on the way out — it needs the question id
     // to keep that order stable across a resume, and a draft has no id.
-    return { left: q.body["left"], right: q.body["right"] };
+    //
+    // `stem` is optional and only a worksheet's «صِل» / «رتّب» carries one: it
+    // is the instruction and the problem, which the two columns are
+    // meaningless without (an order question is the steps of a solution to a
+    // problem only the stem states). The take screen already reads `stem`.
+    const stem = str(q.body["stem"]);
+    return { ...(stem ? { stem } : {}), left: q.body["left"], right: q.body["right"] };
   },
   grade(q, response) {
     const given = asList(response["pairs"]);

@@ -1743,24 +1743,17 @@ Snap to grid is on by default, with a step from the zoom level.
   exactly-coincident point by default (`d <= 0`), which made it impossible to
   test two corners on one spot and would have hidden the «coincident» path; a
   tap merges through an explicit tiny radius.
-- **Points are named أ، ب، ج in Arabic (since 2026-10-15) — a product call, and
-  the Grade 10 book does not do it.** The scene still names points A, B, C … and
-  everything computed stays Latin; `services/mathPointNames.ts` maps A–Z to the
-  abjad order (أ ب ج د هـ و ز ح ط ي ك ل م ن ع ف ق ر ش ت ث خ ذ ض ظ غ) at display
-  time only, and English keeps A, B, C. **س and ص are skipped** — they are the
-  axes, and a point called ص beside «(س − أ)² + (ص − ب)²» would read as a
-  variable. A shape's name has its letters **apart** («مثلث أ ب ج»), because
-  Arabic letters written together join into one word. Arabic names are not
-  forced left-to-right (an override would print أ ب ج as ج ب أ), so an angle chip
-  is two runs: the name, and the number in its own forced-LTR run.
-  **What the extracted books show (checked 2026-10-15, not proof):** the grade
-  4, 5, 6, 9 and 10 student books in `lib/curriculum/src/data/extracted/` name
-  points with Latin letters (Grade 10 semester 1 alone has ~196 three- or
-  four-letter names such as ABC) and contain **no** spaced Arabic-letter names;
-  PDF extraction can garble isolated Arabic letters, so a person should look at
-  the printed page before treating either as settled. Order past أ ب ج is the
-  standard abjad order, not taken from a book. To undo: make `pointName` return
-  its input.
+- **Point names stay Latin (A, B, C) in Arabic — mapping them to أ، ب، ج was
+  tried and reverted (2026-10-15).** It shipped as #1070 and was reverted at the
+  owner's request. What was learned, so nobody redoes it blind: the grade 4, 5,
+  6, 9 and 10 student books in `lib/curriculum/src/data/extracted/` name points
+  with Latin letters (Grade 10 semester 1 alone has ~196 three- or four-letter
+  names such as ABC) and contain no spaced Arabic-letter names. PDF extraction
+  can garble isolated Arabic letters, so that is evidence, not proof; look at
+  the printed page before trying again. If it is tried again: skip س and ص (the
+  axes), write a shape's letters apart («أ ب ج») so they do not join into a word,
+  and do **not** force Arabic names left-to-right (an override prints أ ب ج as
+  ج ب أ) — the angle chip then needs the name and the number as two runs.
 - **Not done:** no saving (the scene lives for the visit), 26 points at most.
   Two known cosmetic limits: edge-length labels can sit on an axis tick label,
   and angle labels are hidden on edges shorter than ~44 px (the panel under the
@@ -2023,6 +2016,275 @@ the admin list and Resend. Contact and idea rows do not push.
   and the full api-server and mobile suites. **Not run:** a real push to a
   device, and the live `/site/signups` call.
 
+## Four new worksheet formats: صِل، رتّب، أين الخطأ؟، ارسم, 2026-10-11
+
+Step 5 of the worksheet review, agreed in chat on 2026-10-10/11. Spec:
+`docs/superpowers/specs/2026-10-11-worksheet-formats-design.md`. The worksheet
+screen's «أنواع الأسئلة» gains four ticks. Each ticked format adds one
+question, in its own section, and that question counts inside the number the
+teacher picked.
+
+- **صِل (match).** 4–5 solved bank items of the lesson's family, with distinct
+  short answers. The problems are numbered on the right with a box for the
+  letter, and the answers are shuffled and lettered on the left. Key:
+  «١-أ، ٢-ج، …».
+- **رتّب الخطوات (order).** One solved item's 3–6 working steps as lettered
+  cards. The last step (the answer line) is kept last. Only items in the
+  hand-audited `ORDER_SAFE` allowlist (`lib/math-practice/src/orderSafe.ts`)
+  are drawn, since their steps have exactly one valid order (see the final
+  review below). Key: the letters in order, plus the ordered working.
+- **أين الخطأ؟ (spot_error).** One item's working with one step replaced by
+  a hand-written misstep: 28 entries, two for each of the 14 maths families
+  that have working (`lib/math-practice/src/missteps.ts`). The paper asks for
+  the step number and two lines for the correction. Key: «الخطوة ن: …», the
+  reason, and the corrected working.
+- **ارسم (graph).** Bank items with graph answers (`system_graph`). The
+  equations and an empty SVG grid sized to the answer points and curves, with
+  Arabic-Indic tick digits and «س»/«ص» axes on an Arabic paper. The key draws
+  the curves on the same grid.
+
+**Bank only, no AI.** Content comes from `pickForFormat`
+(`lib/math-practice/src/formatsBank.ts`) through `buildFormatQuestion`
+(`artifacts/mobile/services/ai/worksheetFormats.ts`), and is deduped against
+the sheet's own math-practice session. Offline, `generateWorksheet` takes the
+worked example and the half-solved item first, then builds the formats
+scarcest first, then the rest of the sheet (the final review's R14 revision). Live,
+`RemoteAIService.generateWorksheet` asks the model for `total − formats`
+ordinary questions with the format types removed from the request, then
+appends the same builder's questions and renumbers the key. A pooled sheet
+therefore gets fresh bank items on every serve. `worksheetFormatPrompt.test.ts`
+asserts the format kinds never reach the prompt. Both paths share
+`formatRoom` (room = total − 3, − 1 more with a word problem) and
+`formatPoints` (4 / 6 / 10 by difficulty). A format that does not fit, or that
+the bank cannot build, is named under the sheet as «لم تُضف هذه الأنواع: …».
+Nothing is invented.
+
+**The screen** (`app/ai-tools/worksheet.tsx` + `services/worksheetFormatTicks.ts`)
+appends the four to `ALL_Q_TYPES`, which is persisted order. A tick is greyed
+with «غير متاح لهذا الدرس: لا توجد في البنك أسئلة كافية لهذا النوع.» only once
+a lesson is grounded. A greyed tick keeps its place in the stored selection
+but is dropped from the request. The ticks are hidden on homework, and a carried-in
+selection is stripped there. Since the merge with main (below) they are hidden on a
+unit, semester or whole-book scope too, and dropped from that request.
+
+**Everywhere else it goes:**
+
+- **Print.** `services/formatPrintHtml.ts` (table, cards, numbered working,
+  grid), called from `buildWorksheetHTML`. `esc` moved to the leaf
+  `services/htmlEscape.ts`.
+- **Slides export.** `buildWorksheetSlidesHTML`. The key slide carries the
+  working.
+- **Live deck.** `buildDeckFromWorksheet` in `classDeck.ts`. صِل is two
+  blocks, never paired rows. The رتّب and أين الخطأ؟ reveal is the key plus
+  its working, split one line per row by `answerLines` (`services/deckText.ts`).
+  The graph rides on the slide as a plot with the new `visualOnReveal` flag,
+  which `presentation.tsx` honours.
+- **Send to class.** `worksheetAssignment.ts` sends `format`,
+  `worksheetRequest.ts` parses it, and `fromWorksheet.ts` converts it:
+  - صِل → `matching`.
+  - رتّب → `matching` against «الأولى…السادسة». An order of more than 6
+    steps falls back to a teacher-marked short answer.
+  - أين الخطأ؟ → `multiple_choice` over «الخطوة ١…ن». The correction is not
+    marked.
+  - ارسم → `short_answer` for the teacher.
+
+  `questionTypes.ts`'s matching student projection now carries the `stem`.
+  Without it, رتّب reached students with no problem to order. No schema
+  change; `db generate` reports none.
+
+**Verified 2026-10-11, after one fix round (below).**
+
+- **Checks.** Root typecheck clean. Mobile suite 3884 tests, 3874 pass,
+  0 fail, 10 skipped. api-server (built first) 1478 / 1478.
+  `lib/math-practice` 802 / 802. `pnpm --filter @workspace/db run generate`:
+  «No schema changes». The new and changed files:
+  - Mobile: `worksheetFormats.test.ts` (14), `worksheetFormatsGenerator.test.ts`
+    (13), `worksheetFormatTicks.test.ts` (11), `worksheetFormatEdits.test.ts`
+    (2), `formatPrintHtml.test.ts` (16), `formatSlides.test.ts` (22),
+    `exportHtml.test.ts` (47), `deckText.test.ts` (20),
+    `worksheetAssignment.test.ts` (7), `evaluationQuestionText.test.ts` (5),
+    `mathRender.test.ts` (90, one new).
+  - api-server: `worksheetFormatPrompt.test.ts` (3), `fromWorksheet.test.ts`
+    (29), `worksheetRequest.test.ts` (26).
+  - `lib/math-practice`: `missteps.test.ts` (3), `formatsBank.test.ts` (7).
+- **Driven in Chromium twice**, before and after the fixes, against a local
+  app: Postgres with migrations and `seed:assessment`, the API, and Expo web in
+  demo mode, so the offline path. A real sign-in at 390×844; the projector at
+  1280×800. The PDFs checked are the ones the app's «تصدير PDF» and «تصدير
+  شرائح» actually downloaded (html2canvas), rasterised page by page.
+  - **«حل المعادلة الأسية».** The picker has no lesson titled «المعادلات
+    الأسية». ارسم was greyed with its reason and could not be ticked.
+  - **صِل، رتّب، أين الخطأ؟** were ticked on a 10-question sheet, and all
+    three came out with correct keys.
+  - **Sent to a class:** 7 of 9 questions auto-marked; the half-solved
+    question and a «x = 3/2» short answer went to the teacher. The review
+    screen now shows صِل's problems and answers and رتّب's steps and
+    positions.
+  - **Taken as a student, both runs.** The database marked صِل `correct` 4/4,
+    رتّب `correct` 4/4, and a wrong step on أين الخطأ؟ `incorrect` 0/4, all by
+    the `deterministic` grader.
+  - **The unit-1 GeoGebra lab (`u1_lab`), with ارسم ticked.** The bank gave 8
+    of the 10 questions, and the shortfall note said so.
+  - **The ارسم grid.** The downloaded student PDF shows the whole empty grid.
+    The key PDF draws the curves whole, with a legend whose swatches match
+    them, in colour, ink-saver (dashed) and large print. Each key graph sits on
+    one page.
+  - **The slides PDF** shows the empty grid at projector size, and the key
+    over two slides with nothing cut off.
+  - **The live deck** shows no plot until «أظهر الإجابة». The sent question
+    is a teacher-marked `short_answer` whose prompt states each equation once.
+
+**Fix round 1 (same day): found by the first drive, now fixed:**
+
+- **Web PDF cut the ارسم grid off.** html2canvas cut an inline SVG holding
+  `<text>` part-way across, which lost the key's (3, 3) intersection. The tick
+  and axis labels are now HTML laid over the SVG, positioned in percent
+  (`gridSvg`, `formatPrintHtml.ts`). The grid and a key row carrying a graph
+  are `break-inside: avoid`, so the web PDF's page planner never splits a
+  graph.
+- **The slides-export key clipped.** It was one fixed slide with
+  `overflow: hidden`. `planKeySlides` (`exportHtml.ts`) now costs the rows and
+  flows them onto as many key slides as they need. The footer total counts
+  them all.
+- **The slides-export ارسم slide** drew a 190 px grid beside the text. The
+  grid is now its own row, 400 px wide, with 13 px ticks.
+- **Systems lost their line break.** In the صِل table, the step cards and the
+  numbered working they now keep it, as `<br>` between separately isolated
+  lines (`escLines`, `htmlEscape.ts`). So does a key answer.
+- **Graph equations appeared twice.** The live deck (`classDeck.ts`) and the
+  class prompt (`fromWorksheet.ts`) now append only the equations the stem
+  lacks, compared without spacing or notation, as latin «y = …». The print
+  key's legend is «y = …» with a swatch per curve. «ص» now appears only as the
+  grid's axis label.
+- **The review screen hid صِل and رتّب.** `questionText` moved to
+  `services/evaluationQuestionText.ts`. A matching question with a stem lists
+  its left column numbered and its right column lettered under it.
+- **The reason was numbered as working step 1.** أين الخطأ؟'s key answer is
+  now «الخطوة N: <fix>» plus the reason on the next line. `solution` is the
+  corrected working only, so item N is step N on every key.
+- **A full stop after an equation** stays outside the isolate
+  (`isolateForeignRuns`), so «3x − 3.» no longer prints as «.3x − 3». Only a
+  run with an operator gives its dot back. A label such as «A.» keeps its dot,
+  and so do latin-only runs such as «x.» or «CO₂.», where the dot can still
+  print on the wrong side. The change is app-wide, not only on worksheets.
+
+**Not fixed:**
+
+- **The web PDF mirrors brackets inside isolated maths.** It prints
+  «2x = 3)x − 1(», which on an أين الخطأ؟ paper reads as a planted error.
+  Seen again after the fixes, in «(y = 0)». This is html2canvas with LRI/PDI,
+  not the format code, and it hits any bracketed maths on the web PDF.
+- **Raw notation on the take and review screens** (pre-existing): `2^{x+1}`,
+  `3^{2x}`. The in-app worksheet key also shows «(3^2)».
+- **A section of many questions overflows its single slide** in the slides
+  export (pre-existing, not the key). Seen only with a synthetic 20-question
+  section.
+
+**Not done or not checked:**
+
+- No device run.
+- No live-AI run (demo mode only, so the live append path is covered by tests
+  alone).
+- No chemistry missteps, so أين الخطأ؟ is maths-only.
+- No drawing on the phone: ارسم is text-only on the take screen.
+- Word export and the English UI were not driven.
+- The graph sheet was sent but not taken.
+- The live deck's dedupe of a two-equation system was checked by
+  `formatSlides.test.ts` with the reported stem. The second drive drew a
+  one-curve item («y = x² − 4» with «(y = 0)»), which was also not repeated.
+
+**Final whole-branch review, fixed (2026-10-11):**
+
+- **Offline, a word problem that spent the bank dropped every format** (C1).
+  `makeQ('word_problem')` threw `BankSpentError` inside the same `try` as the
+  format push, and the outer catch swallowed it. There was no
+  `missingFormats` and no shortfall. Reproduced on «المعادلات الأسية» at n=14,
+  15 and 18. The word problem now has its own `try`, which reports the
+  shortfall, and built formats are pushed after the `try`.
+- **رتّب marked a valid order wrong** (I2). Many items have steps that can
+  swap: c-m1's h/k/r, d-m1's two terms, t-m1's quadrants, the formula and the
+  givens in most chemistry items. The converter auto-marks one order.
+  `ORDER_SAFE` (`lib/math-practice/src/orderSafe.ts`) is a hand-audited
+  allowlist. All 164 solved items with 3–6 steps were read: 92 maths and 72
+  chemistry. It lists 78: 65 maths and 13 chemistry, chosen where each step
+  uses the one before it. When unsure, an item was left out. As a result:
+  - Every maths family keeps رتّب. 25 of 36 grade-10 maths lessons offer it,
+    the same as before.
+  - Chemistry drops from 17 to 8 of 17 grade-10 lessons. The nine that lose it
+    are the two unit-1 lessons and their lab, the two unit-2 lessons and their
+    lab, «المول والكتلة المولية», «تغيرات الطاقة في التفاعلات الكيميائية»
+    and «الطاقة الممتصة والطاقة المنبعثة من المادة». The last two route to
+    the mole and general families, which is pre-existing routing.
+- **A short or gapped model key moved the format keys** (I3). `appendFormats`
+  numbers from the flat question count, not from the model's largest `num`.
+- **Correcting a format's key left students marked against the old one** (I4).
+  An answer edit now drops the `format` of صِل، رتّب and أين الخطأ؟, as a
+  text edit does. ارسم keeps its format, because its equations are the stem's
+  and its key is the answer.
+- **R14 revised: the worked example comes first offline.** Formats picked
+  first could leave a small bank's paper with no worked example, while live
+  kept the model's. The example and the half-solved item are now taken first.
+  They avoid the misstep items when أين الخطأ؟ is ticked and the
+  `ORDER_SAFE` items when رتّب is, falling back to them only when nothing
+  else is left. Formats follow, scarcest first, then practice. On
+  «المتتاليات الحسابية» (7 solved items) at n=10 with صِل + رتّب + أين الخطأ؟,
+  the paper keeps its example, رتّب and أين الخطأ؟, and reports صِل missing.
+- **Minor fixes:**
+  - The PDF and PowerPoint deck exports draw a `visualOnReveal` plot only on
+    a slide that prints its answer (`visualForExport`; inside the answer card
+    in HTML).
+  - The converted أين الخطأ؟ stem numbers its steps «١)» on an Arabic paper.
+  - `exprsMissingFromStem` (app and api) needs a whole equation: «y = x» is
+    not found inside «y = x + 1».
+  - The live deck's answer summary keeps a multi-line key on one line.
+- **Checks after the fixes.** Root typecheck clean. Mobile 3895 tests: 3885
+  pass, 0 fail, 10 skipped. api-server (built first) 1479 / 1479.
+  `lib/math-practice` 807 / 807.
+
+**Known limits, recorded at the final review:**
+
+- **`planKeySlides`** splits the key by estimated row heights. A single row
+  taller than a slide still overflows.
+- **The in-app result card shows «١ (»** for a label before a maths run
+  (pre-existing).
+- **«بلّغ عن مشكلة» on a live paper** retires the pooled model paper, not a
+  bank format, so a bank error persists into the next paper.
+- **ارسم is reachable on 2 of 36 grade-10 maths lessons.** «بيانيًا» does not
+  match the `بيانيا` keyword, and `u8_lab` routes on «جيوجبرا». This is
+  pre-existing routing and was left out of scope.
+- **`formatAvailability`** returns booleans with one generic reason, not a
+  reason per kind. ~~On a teacher-document paper, formats can still build if
+  the document's title routes to a family.~~ **No longer true (2026-10-15):**
+  a document paper builds no format (see below).
+
+**Merged with main, 2026-10-15** (main's 59 commits, PR #1019):
+
+- **The total is 5–30.** Main's #1033 / #1054 made the picker 5–30 (25 and 30
+  on a wide scope only, `ALL_QUESTION_COUNTS`). `worksheetTotal()` follows it,
+  so the offline paper, the live request and `formatRoom` agree; it used to
+  clamp at 20, which would have cut a 25-question paper to 20 on both paths.
+- **No single lesson, no format.** A unit / semester / book paper (`req.scope`)
+  or a teacher's document has no lesson whose bank a format can come from.
+  `formatsHaveNoLesson` (`worksheetFormats.ts`) gates both paths: offline
+  builds none and gives the room back to ordinary questions; live asks the
+  model for the whole total and `appendFormats` appends nothing. Either way
+  every ticked kind is reported in `missingFormats` («لم تُضف هذه الأنواع»).
+  The screen hides the ticks on a wide scope (as it hides the prior-knowledge
+  review there) and strips them from the request; the stored selection keeps
+  them, so they come back when the scope returns to a lesson.
+- **Wide scope and the worked example together.** `worksheetOnce` keeps
+  main's slot drawing (`wide.drawer.lessonAt(slot)`, `solvedLesson`) and the
+  branch's masked passes (`avoidInTurn`): each solved item reads its slot's
+  lesson once and every pass tries that lesson.
+- **Live order.** `appendFormats(tagWorksheetLessons(model, req), req, formats)`:
+  lesson tags are the model's codes for its own questions, so they are mapped
+  before the bank-built formats are added. On a wide scope nothing is added.
+- **Checks after the merge.** Root typecheck clean. Mobile 5781 tests: 5771
+  pass, 0 fail, 10 skipped. api-server (built first) 2050 / 2050.
+  `lib/math-practice` 860 / 860. `db generate`: «No schema changes». New:
+  `worksheetFormatsScope.test.ts` (10); `worksheetFormatsGenerator.test.ts`'s
+  `formatRoom` range now runs to 30.
+
 ## The Quran Corner: a shelf in the library, 2026-10-11
 
 **What a teacher or student can use.** `/curriculum/resources` has a «ركن القرآن»
@@ -2064,16 +2326,17 @@ surahs of equal length being swapped.
 
 ### What does not work, and what was not verified
 
-- **The corner is gated off in production builds.** `QURAN_CORNER_RELEASED` in
-  `artifacts/mobile/services/quranRelease.ts` is `false`: the Library card is
-  hidden and the three screens show «ركن القرآن غير متاح بعد» (`QuranGate`), so a
-  pasted URL does not reach the text either. Development builds (`__DEV__`)
-  always show it, which is how it is opened and checked. A merge to `main`
-  therefore does not release it. **To release:** a named person signs off
-  `lib/curriculum/sources/quran-ws/VERIFY.md` against an authorised printed
-  mushaf, the owner settles the font-licence and Jordan-approval items below,
-  and a reviewed one-line diff flips the constant. Nothing checks that the flip
-  follows the sign-off; the review does.
+- **The release gate was opened on 2026-10-15, at the owner's request, before
+  the text was verified.** `QURAN_CORNER_RELEASED` in
+  `artifacts/mobile/services/quranRelease.ts` is now `true`: the Library card
+  shows and the three screens open for every signed-in user once this reaches
+  `main` (a merge deploys the web app and an over-the-air update). It was
+  `false` from the first merge on 2026-10-12 until then; `QuranGate` shows
+  «ركن القرآن غير متاح بعد» whenever it is `false` and the build is not a
+  development one. **The printed-mushaf sign-off of
+  `lib/curriculum/sources/quran-ws/VERIFY.md` has NOT happened, and the font-
+  licence and Jordan-approval items below are still open.** To pull it back,
+  set the constant to `false`: a one-line change that ships over the air.
 - **Nothing here has been seen by a person in a browser or on a device.** The
   corner sits behind sign-in and the build sandbox has no session or API, so
   the Uthmani rendering in the Complex's font (including the sajdah mark over
@@ -5554,8 +5817,11 @@ and from «العب بكلمات هذا الدرس» on the matching lesson page
 lessons and 458 words across the eight G1–4 books.
 
 - **Seven activities**, all pure logic in `services/englishHub/games.ts`: flashcards,
-  listen-and-choose, match the English word to its Arabic meaning, spell it,
-  unscramble it (tap letter tiles into order, tap a placed tile to send it back
+  listen-and-choose, match the English word to its Arabic meaning (**two
+  columns since 2026-10-15** — English left, Arabic right, each shuffled on its
+  own, and no row ever faces its own match; `buildMatchColumns`. It was one
+  shuffled grid, which put either language in either column. Match the picture
+  is still the single grid), spell it, unscramble it (tap letter tiles into order, tap a placed tile to send it back
   to the tray), and, added 2026-09-26: **match the picture** (English word ↔
   a curated emoji, 188 of the 458 words have one — no real book figures exist
   for G1–4 English, figure extraction only starts at grade 7, so this is
@@ -5631,6 +5897,19 @@ lessons and 458 words across the eight G1–4 books.
   survival through a broken streak, and every badge threshold, has unit
   coverage in `englishHubGames.test.ts`. Speaking's actual recording still
   needs a real device (see above); nothing else in the hub has that gap.
+- **A teacher's two notes, 2026-10-15** (Grade 1, unit 8 «I like cakes»):
+  *the book prints every word under its picture*, so Flashcards and Speaking now
+  show the word's picture above it (`wordPicture` in `games.ts` — the same
+  curated emoji as Match the picture, so a word without one, like «lemonade»,
+  still shows text alone; it is not the book's art). And *"apples" stressed its
+  first letter, though it is a short vowel*: the recording hits the /æ/ and
+  holds it apart from «pples» (visible in its loudness envelope: a ~120 ms burst,
+  a ~60 ms gap, then the rest). The voicing prompt in
+  `generate-english-audio.ts` now forbids that, **but no word has been re-voiced
+  yet** — this session had no OpenAI/R2 keys. Until someone runs
+  `pnpm --filter @workspace/curriculum run english-audio -- --only apples,apple`
+  (and listens), the old recording plays. Other vowel-first G1–4 words were not
+  heard by a person; `eggs` and `elephant` are the next to check.
 - **Ideas looked at and not taken:** funenglishgames.com was reviewed as a
   source of game ideas/materials on 2026-09-26. Its games don't run (Flash-era,
   ad frames only), it states no reuse licence, and it's ad- and
