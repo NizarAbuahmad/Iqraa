@@ -78,6 +78,11 @@ From session notes **(notes)**:
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
 - 2026-10-17 — The model chooses a deck's icons and charts
+- 2026-10-16 — The electron-configuration lesson was answered with periodic-trends questions; fixed
+- 2026-10-16 — A decimal over a power drew as a broken fraction
+- 2026-10-16 — Chat pushes are sent before the send is answered
+- 2026-10-16 — Grade 1 grammar in the English corner — built, shown to nobody yet
+- 2026-10-16 — The Library's lesson chips open at «كل الدروس» in Arabic
 - 2026-10-15 — Exam and evaluation papers stop repeating themselves
 - 2026-10-15 — Native photo shrinking needs a new binary: `version` 1.3.0 → 1.4.0
 - 2026-10-15 — The periodic-table question family went from 5 to 15 items
@@ -102,15 +107,10 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-12 — A waitlist signup on iqrra.com pushes the admins
 - 2026-10-12 — API tests can run against a real database
 - 2026-10-12 — Homework: teachers set it, students tick it, parents watch
-- 2026-10-12 — Exam dates and paper marks reach families
-- 2026-10-12 — Families are told: homework, exam dates, results, and a reminder the day before
-- 2026-10-11 — "No question bank" after a failed live call now says so, with the reason
-- 2026-10-11 — Four new worksheet formats: صِل، رتّب، أين الخطأ؟، ارسم
-- 2026-10-11 — The Quran Corner: a shelf in the library
 
 ## Finding older detail, and recording new work
 
-- The log has 311 sections. Anything cited elsewhere as
+- The log has 314 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line

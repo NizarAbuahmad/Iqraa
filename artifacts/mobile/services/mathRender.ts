@@ -47,12 +47,28 @@ function isTokenChar(c: string): boolean {
   return new RegExp(`[${DIGIT}${VAR}]`, 'u').test(c);
 }
 
-/** Read a maximal digit/letter run ending at position `end` (exclusive). */
+function isDigitChar(c: string | undefined): boolean {
+  return c !== undefined && new RegExp(`[${DIGIT}]`, 'u').test(c);
+}
+
+/**
+ * A decimal separator inside a number: a point or comma with a digit on BOTH sides. «13.6» is one
+ * number; the point in «x = 5. 6/n» ends a sentence and the one in «a.6» follows a letter, so
+ * neither joins. Without this a numerator «13.6» was read as «6».
+ */
+function isDecimalSeparatorAt(s: string, i: number): boolean {
+  return (s[i] === '.' || s[i] === ',') && isDigitChar(s[i - 1]) && isDigitChar(s[i + 1]);
+}
+
+/** Read a maximal digit/letter run (a decimal counts as one run) ending at position `end` (exclusive). */
 function tokenEndingAt(s: string, end: number): string {
   let start = end;
-  while (start > 0 && isTokenChar(s[start - 1])) start--;
+  while (start > 0 && (isTokenChar(s[start - 1]) || isDecimalSeparatorAt(s, start - 1))) start--;
   return s.slice(start, end);
 }
+
+/** Unicode superscript digits and signs — the form the question banks write a power in («n²»). */
+const SUPERSCRIPT = /[⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻]/u;
 
 /**
  * The exponent's base in `12x^3` is `x`, not `12x` — a trailing variable
@@ -157,9 +173,12 @@ export function parseMathLine(line: string): MathNode[] {
       const num = tokenEndingAt(buf, buf.length);
       if (num && SIMPLE_TOKEN.test(num)) {
         let k = i + 1;
-        while (k < s.length && isTokenChar(s[k])) k++;
+        while (k < s.length && (isTokenChar(s[k]) || isDecimalSeparatorAt(s, k))) k++;
+        const core = s.slice(i + 1, k);
+        // A power written as Unicode («n²») belongs to the denominator, but only on a real base.
+        while (core && k < s.length && SUPERSCRIPT.test(s[k]!)) k++;
         const den = s.slice(i + 1, k);
-        if (den && SIMPLE_TOKEN.test(den)) {
+        if (core && SIMPLE_TOKEN.test(core)) {
           const before = buf.slice(0, buf.length - num.length);
           pushText(nodes, before); buf = '';
           nodes.push({

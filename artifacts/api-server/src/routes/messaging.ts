@@ -75,6 +75,7 @@ import { isR2Configured, newChatMediaKey, presignedGetUrl, putObject } from "../
 import { syncClassGroupThread } from "../lib/classThread.js";
 import { pairKey, studentNamesByPair } from "../lib/chatThreadContext.js";
 import { resolveReport } from "../lib/reportDecision.js";
+import { pushWithin } from "../lib/pushWithin.ts";
 import { EXTENSION_BY_MIME, MAX_DATA_URL_LENGTH, kindForMime, parseDataUrl } from "../lib/lessonMediaUpload.js";
 
 const router = Router();
@@ -250,10 +251,13 @@ async function pruneDeadTokens(results: Awaited<ReturnType<typeof sendExpoPush>>
 }
 
 /**
- * Fire-and-forget: routes/messaging.ts's send-message handler calls this
- * after responding, never before — a push failure must never turn into a
- * failed message send. Skips anyone who has blocked the sender, same as the
- * in-app view does (see blockedSenderIds).
+ * The send-message and broadcast handlers await this through `pushWithin`
+ * BEFORE answering: capped, and a push failure never fails the send. After the
+ * response it raced the caller's next request — the block list below was read
+ * whenever it ran, so an unblock sent straight after a post decided who got the
+ * push — and Cloud Run throttles CPU once a response is out.
+ * Skips anyone who has blocked the sender, same as the in-app view does (see
+ * blockedSenderIds).
  */
 async function notifyThreadParticipants(threadId: string, senderId: string, body: string): Promise<void> {
   const participants = await participantsOf(threadId);
@@ -1223,11 +1227,8 @@ router.post("/messaging/threads/:id/messages", sendMessageLimiter, async (req: A
       .set({ lastReadAt: new Date() })
       .where(and(eq(chatParticipants.threadId, threadId), eq(chatParticipants.userId, req.user!.id)));
 
+    await pushWithin("chat message", () => notifyThreadParticipants(threadId, req.user!.id, body || "📎"));
     res.status(201).json({ message: await toClientMessage(message!) });
-
-    notifyThreadParticipants(threadId, req.user!.id, body || "📎").catch(err =>
-      logger.error({ err }, "push notify failed"),
-    );
   } catch (err) {
     failMessaging(res, err, "send message", "Failed to send message");
   }
@@ -1307,17 +1308,18 @@ router.post("/messaging/threads/broadcast", sendMessageLimiter, async (req: Auth
       sentThreadIds.push(thread.id);
     }
 
-    res.status(201).json({ sent: sentThreadIds.length, skipped: recipientIds.length - sentThreadIds.length });
-
-    // After the response and one at a time: a push failure must never fail a
-    // send, and 100 parallel Expo calls are not worth the seconds saved.
-    void (async () => {
+    // Before the response, like a single message (see notifyThreadParticipants),
+    // and one at a time: 100 parallel Expo calls are not worth the seconds saved.
+    // One failed recipient must not stop the rest; past the cap the remainder
+    // carries on as best it can.
+    await pushWithin("chat broadcast", async () => {
       for (const threadId of sentThreadIds) {
         await notifyThreadParticipants(threadId, teacherId, body).catch(err =>
           logger.error({ err }, "broadcast push notify failed"),
         );
       }
-    })();
+    });
+    res.status(201).json({ sent: sentThreadIds.length, skipped: recipientIds.length - sentThreadIds.length });
   } catch (err) {
     failMessaging(res, err, "send broadcast", "Failed to send message");
   }

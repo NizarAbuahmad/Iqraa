@@ -223,6 +223,32 @@ describe('detectChemFamily', () => {
     assert.equal(detectChemFamily('عدد أفوجادرو'), 'mole');
   });
 
+  // Found 2026-10-16, from the teacher review sheet's routing table: «التوزيع الإلكتروني للذرات»
+  // (Aufbau, Hund's rule) was answered with periodic-trends questions because its key terms list
+  // «طاقة التأين», one of periodic_trends' words, and that family is tested first. Text is the
+  // two neighbouring lessons' own, from `lessonTextBlob`.
+  it('the electron-configuration lesson is not taken by periodic trends for listing «طاقة التأين»', () => {
+    const electronConfigLessonBlob = [
+      'التوزيع الإلكتروني للذرات Electronic Configuration',
+      'أكتب التوزيع الإلكتروني لمجموعة من العناصر وأيوناتها. أحدد الصفات المميزة للعناصر بحسب توزيعها.',
+      'أوضح العلاقة بين موقع العنصر وخصائصه وصفاته.',
+      'مبدأ أوفباو قاعدة هوند العناصر الممثلة العناصر الانتقالية طاقة التأين',
+      "Aufbau Principle Hund's Rule The Representative Elements Transition Elements Ionization Energy",
+    ].join(' ');
+    assert.equal(detectChemFamily(electronConfigLessonBlob), 'electron_config');
+  });
+
+  it('the periodic-properties lesson itself is still periodic trends', () => {
+    const periodicLessonBlob = [
+      'الخصائص الدورية للعناصر Periodic Properties of the Elements',
+      'أتنبأ بدورية الصفات لعناصر الدورة والمجموعة في الجدول الدوري.',
+      'نصف القطر الذري شحنة النواة الفعالة طاقة التأين السالبية الكهربائية',
+      'Atomic Radius Effective Nuclear Charge Ionization Energy Electronegativity',
+    ].join(' ');
+    assert.equal(detectChemFamily(periodicLessonBlob), 'periodic_trends');
+    assert.equal(detectChemFamily('الخصائص الدورية للعناصر'), 'periodic_trends');
+  });
+
   it('the electrolysis lesson itself is still redox', () => {
     assert.equal(detectChemFamily('خلايا التحليل الكهربائي'), 'redox');
     assert.equal(detectChemFamily('التأكسد والاختزال والخلايا الجلفانية أُنبوب التفريغ'), 'redox');
