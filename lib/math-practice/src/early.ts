@@ -300,6 +300,99 @@ const mentalG1 = (id: string, match: RegExp, add: boolean) => T(id, match, [1, 1
   return { eq: `${m}, 9`, answer: String(r9), wrongs: ints(r9, [add ? m + 10 : m - 10, add ? m + 8 : m - 8, r9 + 2, r9 - 2]), ar: `${m} ${add ? '+' : '−'} 9 = ___ (فكّر: ${add ? 'أضف 10 ثم انقص 1' : 'انقص 10 ثم أضف 1'})`, en: `${m} ${add ? '+' : '−'} 9 = ___ (think: ${add ? 'add 10 then take away 1' : 'take away 10 then add 1'})` };
 });
 
+// ─── position and direction ─────────────────────────────────────────────────
+
+// The book draws a scene and asks where things are. Here the scene is told in
+// one sentence and the answer is read off the order it states, so nothing needs
+// a picture. Left and right are only asked where they cannot flip with the
+// viewer: things on a shelf (no front of their own), two children facing the
+// same board, or one child turning round.
+const DIR = ['فوق', 'تحت', 'أمام', 'خلف', 'يمين', 'يسار'];
+const DIR_EN: Record<string, string> = { فوق: 'above', تحت: 'under', أمام: 'in front', خلف: 'behind', يمين: 'right', يسار: 'left' };
+const OPPOSITE: Record<string, string> = { فوق: 'تحت', تحت: 'فوق', أمام: 'خلف', خلف: 'أمام', يمين: 'يسار', يسار: 'يمين' };
+/** [what is on top, what it rests on or hangs over] */
+const ON_TOP: Array<[string, string, string, string]> = [
+  ['الكتاب', 'الطاولة', 'book', 'table'], ['القطة', 'الكرسي', 'cat', 'chair'], ['العصفور', 'الشجرة', 'bird', 'tree'],
+  ['الغيمة', 'الجبل', 'cloud', 'mountain'], ['المصباح', 'السرير', 'lamp', 'bed'], ['الطائرة', 'البيت', 'plane', 'house'],
+];
+const THINGS = ['الكتاب', 'الكوب', 'الساعة', 'الكرة', 'الدمية', 'السيارة', 'القلم', 'المزهرية'];
+const BOYS = ['سامي', 'خالد', 'عمر', 'أحمد'];
+const GIRLS = ['ليلى', 'سلمى', 'هند', 'ريم'];
+const KIDS = [...BOYS, ...GIRLS];
+const isGirl = (n: string) => GIRLS.includes(n);
+/** Three distinct names from a list, in random order. */
+const three = (rng: Rng, xs: readonly string[]) => shuffle(rng, [...xs]).slice(0, 3) as [string, string, string];
+/** Wrong options for a named answer: the other two in the scene, then one name that is not in it. */
+const sceneWrongs = (rng: Rng, ans: string, scene: readonly string[], all: readonly string[]) =>
+  [...scene.filter(x => x !== ans), pick(rng, all.filter(x => !scene.includes(x)))];
+
+const positionDirection = T('position_direction', /^الموقع والاتجاه$/, [1, 1], ({ rng, diff }) => {
+  const kind = pick(rng, diff === 'easy' ? [0, 1, 1] : diff === 'medium' ? [1, 2, 3, 4] : [2, 3, 4, 5]);
+  if (kind === 0) {
+    const w = pick(rng, DIR), ans = OPPOSITE[w]!;
+    return { eq: w, answer: ans, wrongs: others(rng, ans, DIR.filter(x => x !== w)), ar: `ما عكس كلمة «${w}»؟`, en: `What is the opposite of «${w}» (${DIR_EN[w]})?` };
+  }
+  if (kind === 1) {
+    const axis = pick(rng, [0, 1, 2]);
+    if (axis === 0) {
+      const [a, b, aEn, bEn] = pick(rng, ON_TOP);
+      if (rng() < 0.5) return { eq: `${a}, ${b}`, answer: 'تحت', wrongs: others(rng, 'تحت', DIR), ar: `${a} فوق ${b}. أين ${b} بالنسبة إلى ${a}؟`, en: `The ${aEn} is above the ${bEn}. Where is the ${bEn} compared with the ${aEn}?` };
+      return { eq: `${b}, ${a}`, answer: 'فوق', wrongs: others(rng, 'فوق', DIR), ar: `${b} تحت ${a}. أين ${a} بالنسبة إلى ${b}؟`, en: `The ${bEn} is under the ${aEn}. Where is the ${aEn} compared with the ${bEn}?` };
+    }
+    const [p, q] = three(rng, KIDS), w = pick(rng, axis === 1 ? ['أمام', 'خلف'] : ['يمين', 'يسار']), ans = OPPOSITE[w]!;
+    if (axis === 1) {
+      return { eq: `${p}, ${q}`, answer: ans, wrongs: others(rng, ans, DIR), ar: `${isGirl(p) ? 'تقف' : 'يقف'} ${p} ${w} ${q} في الطابور. أين ${isGirl(q) ? 'تقف' : 'يقف'} ${q} بالنسبة إلى ${p}؟`, en: `${p} stands ${DIR_EN[w]} of ${q} in the line. Where does ${q} stand compared with ${p}?` };
+    }
+    // Two children of one gender, so the dual and its verb agree.
+    const [x, y] = three(rng, rng() < 0.5 ? BOYS : GIRLS), g = isGirl(x);
+    return {
+      eq: `${x}, ${y}`, answer: ans, wrongs: others(rng, ans, DIR),
+      ar: `${g ? 'تجلس' : 'يجلس'} ${x} و${y} ${g ? 'متجاورتين وتنظران' : 'متجاورين وينظران'} إلى السبورة، و${x} على ${w} ${y}. في أي جهة ${g ? 'تجلس' : 'يجلس'} ${y} بالنسبة إلى ${x}؟`,
+      en: `${x} and ${y} sit side by side facing the board, and ${x} is on the ${DIR_EN[w]} of ${y}. On which side of ${x} does ${y} sit?`,
+    };
+  }
+  if (kind === 2) {
+    const [a, b, c] = three(rng, THINGS), k = pick(rng, [0, 1, 2]);
+    const scene = `على الرف ثلاثة أشياء مرتبة من اليمين إلى اليسار: ${a}، ثم ${b}، ثم ${c}.`;
+    const sceneEn = `Three things stand on a shelf, from right to left: ${a}, then ${b}, then ${c}.`;
+    if (k === 0) { const w = pick(rng, ['يمين', 'يسار']), ans = w === 'يمين' ? a : c; return { eq: `${a}, ${b}, ${c}`, answer: ans, wrongs: sceneWrongs(rng, ans, [a, b, c], THINGS), ar: `${scene} ما الشيء الذي على ${w} ${b}؟`, en: `${sceneEn} What is on the ${DIR_EN[w]} of ${b}?` }; }
+    if (k === 1) { const w = pick(rng, ['يمين', 'يسار']), ans = w === 'يمين' ? a : c; return { eq: `${a}, ${b}, ${c}`, answer: ans, wrongs: sceneWrongs(rng, ans, [a, b, c], THINGS), ar: `${scene} ما الشيء الذي في أقصى ال${w}؟`, en: `${sceneEn} What is at the far ${DIR_EN[w]}?` }; }
+    const [from, to] = rng() < 0.5 ? [a, c] : [c, a], ans = from === a ? 'يمين' : 'يسار';
+    return { eq: `${a}, ${b}, ${c}`, answer: ans, wrongs: others(rng, ans, DIR), ar: `${scene} في أي جهة من ${to} نجد ${from}؟`, en: `${sceneEn} On which side of ${to} is ${from}?` };
+  }
+  if (kind === 3) {
+    const [a, b, c] = three(rng, THINGS), k = pick(rng, [0, 1]);
+    const scene = `في الخزانة ثلاثة رفوف: على الرف العلوي ${a}، وعلى الرف الأوسط ${b}، وعلى الرف السفلي ${c}.`;
+    const sceneEn = `A cupboard has three shelves: ${a} on the top shelf, ${b} on the middle shelf, ${c} on the bottom shelf.`;
+    if (k === 0) { const w = pick(rng, ['فوق', 'تحت']), ans = w === 'فوق' ? a : c; return { eq: `${a}, ${b}, ${c}`, answer: ans, wrongs: sceneWrongs(rng, ans, [a, b, c], THINGS), ar: `${scene} ما الشيء الذي ${w} ${b} مباشرة؟`, en: `${sceneEn} What is directly ${DIR_EN[w]} ${b}?` }; }
+    const [from, to] = rng() < 0.5 ? [a, c] : [c, a], ans = from === a ? 'فوق' : 'تحت';
+    return { eq: `${a}, ${b}, ${c}`, answer: ans, wrongs: others(rng, ans, DIR), ar: `${scene} أين ${from} بالنسبة إلى ${to}؟`, en: `${sceneEn} Where is ${from} compared with ${to}?` };
+  }
+  if (kind === 4) {
+    const [p, q, r] = three(rng, KIDS), k = pick(rng, [0, 1]);
+    const scene = `يقف ثلاثة أطفال في طابور المقصف: في المقدمة ${p}، ثم ${q}، ثم ${r} في الآخر.`;
+    const sceneEn = `Three children stand in the canteen line: ${p} at the front, then ${q}, then ${r} at the back.`;
+    if (k === 0) { const w = pick(rng, ['أمام', 'خلف']), ans = w === 'أمام' ? p : r; return { eq: `${p}, ${q}, ${r}`, answer: ans, wrongs: sceneWrongs(rng, ans, [p, q, r], KIDS), ar: `${scene} من يقف ${w} ${q} مباشرة؟`, en: `${sceneEn} Who stands directly ${DIR_EN[w]} ${w === 'أمام' ? 'of ' : ''}${q}?` }; }
+    const [from, to] = rng() < 0.5 ? [p, r] : [r, p], ans = from === p ? 'أمام' : 'خلف';
+    return { eq: `${p}, ${q}, ${r}`, answer: ans, wrongs: others(rng, ans, DIR), ar: `${scene} أين ${isGirl(from) ? 'تقف' : 'يقف'} ${from} بالنسبة إلى ${to}؟`, en: `${sceneEn} Where does ${from} stand compared with ${to}?` };
+  }
+  // Turning round swaps front with back and right with left.
+  const kid = pick(rng, KIDS), g = isGirl(kid);
+  if (rng() < 0.5) {
+    return {
+      eq: kid, answer: 'خلف', wrongs: others(rng, 'خلف', DIR),
+      ar: `${g ? 'تقف' : 'يقف'} ${kid} ${g ? 'وتنظر' : 'وينظر'} إلى الباب، والنافذة ${g ? 'خلفها' : 'خلفه'}. ${g ? 'استدارت' : 'استدار'} ${kid} ${g ? 'لتنظر' : 'لينظر'} إلى النافذة. أين يصبح الباب الآن بالنسبة ${g ? 'إليها' : 'إليه'}؟`,
+      en: `${kid} looks at the door, with the window behind. ${kid} turns round to look at the window. Where is the door now?`,
+    };
+  }
+  const w = pick(rng, ['يمين', 'يسار']), ans = OPPOSITE[w]!;
+  return {
+    eq: `${kid}, ${w}`, answer: ans, wrongs: others(rng, ans, DIR),
+    ar: `${g ? 'تقف' : 'يقف'} ${kid} والباب على ${g ? `${w}ها` : `${w}ه`}. ${g ? 'استدارت' : 'استدار'} ${kid} ${g ? 'لتواجه' : 'ليواجه'} الجهة المعاكسة. في أي جهة يصبح الباب الآن؟`,
+    en: `${kid} stands with the door on the ${DIR_EN[w]}. ${kid} turns round to face the other way. On which side is the door now?`,
+  };
+});
+
 // ─── shapes ─────────────────────────────────────────────────────────────────
 
 const SOLIDS: Array<[string, string]> = [['كرة القدم', 'كرة'], ['حجر النرد', 'مكعب'], ['علبة المعلبات', 'أسطوانة'], ['قبعة الحفلات المدببة', 'مخروط'], ['علبة الأحذية', 'متوازي مستطيلات']];
@@ -812,7 +905,7 @@ const centimetre = T('cm_lengths', /^السنتيمتر$/, [2, 2], ({ rng }) => 
 
 export const EARLY_TOPICS: readonly Topic[] = [
   countingRange('count_123', /^الاعداد 1 2 3$/, 1, 3), countingRange('count_45', /^العددان 4 5$/, 4, 5), countingRange('count_678', /^الاعداد 6 7 8$/, 6, 8), countingRange('count_910', /^العددان 9 10$/, 9, 10),
-  zero, ordinal, tensOnes('tens_ones_a', /^العشرات$/), tensOnes('tens_ones_b', /^الاحاد والعشرات$/), tensOnes('tens_ones_c', /^تمثيل الاعداد ضمن منزلتين$/),
+  positionDirection, zero, ordinal, tensOnes('tens_ones_a', /^العشرات$/), tensOnes('tens_ones_b', /^الاحاد والعشرات$/), tensOnes('tens_ones_c', /^تمثيل الاعداد ضمن منزلتين$/),
   hundreds('hundreds_a', /^المئات$/), hundreds('hundreds_b', /^الاعداد ضمن ثلاث منازل$/), readWrite, thousands,
   evenOdd('even_odd_g1', /^الاعداد الزوجيه والاعداد الفرديه$/, 1), evenOdd('even_odd_g2', /^الاعداد الزوجيه والاعداد الفرديه$/, 2),
   numberChart, countUpDown,

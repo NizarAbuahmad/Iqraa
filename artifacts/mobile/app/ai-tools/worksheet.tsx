@@ -15,6 +15,8 @@ import { getUnitPriorKnowledge, resolveGeneratorGrounding, type GeneratorGroundi
 import { pooledVariantId } from '@/services/ai/regeneration';
 import { WorksheetOutput, type QuestionFigure } from '@/services/ai/AIService';
 import { formatAvailability, isFormatKind } from '@/services/ai/worksheetFormats';
+import { offlineBankRefuses } from '@/services/ai/generators';
+import { DEMO_MODE } from '@/services/ai/demoMode';
 import { formatTicks, isTickChecked, sanitizeQuestionTypes } from '@/services/worksheetFormatTicks';
 import { buildDeckFromWorksheet } from '@/services/classDeck';
 import { ShortPaperNotice } from '@/components/ui/ShortPaperNotice';
@@ -347,6 +349,11 @@ export default function WorksheetScreen() {
   // selection keeps them (`worksheetFormatTicks.ts`).
   const tickCtx = { isHomework, isWide: wideScope.isWide, availability };
   const { shown: shownFormats, greyed: greyedFormats } = formatTicks(tickCtx);
+
+  // With no live AI the offline bank is all there is: a lesson it would refuse
+  // greys the buttons now instead of failing after the press. Grounded lessons
+  // only, like the format ticks; a wide scope has its own per-lesson rule.
+  const noBank = DEMO_MODE && !wideScope.isWide && !!groundedKb && offlineBankRefuses(topic.trim(), groundedKb, subjectName);
 
   // Homework never builds formats, so a carried-in tick leaves the stored
   // selection. A GREYED tick does not: it draws unchecked and is dropped from
@@ -863,7 +870,7 @@ export default function WorksheetScreen() {
           out of sight of the button that had just been pressed.
         */}
         {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontSize: 15, lineHeight: 24, fontFamily: 'Almarai_400Regular', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
-        <Button label={loading ? t('generating') : t('createWorksheetBtn')} onPress={() => generate()} loading={loading} disabled={!topic.trim()} fullWidth />
+        <Button label={loading ? t('generating') : t('createWorksheetBtn')} onPress={() => generate()} loading={loading} disabled={!topic.trim() || noBank} fullWidth />
         {/* The same paper at every difficulty, for a class that is not one
             level. Costs three generations the first time a lesson is asked
             for; every teacher after that is served from the pools. */}
@@ -871,7 +878,7 @@ export default function WorksheetScreen() {
           label={loading ? t('generating') : t('worksheetThreeLevelsBtn')}
           onPress={() => generate({ levels: true })}
           loading={loading}
-          disabled={!topic.trim()}
+          disabled={!topic.trim() || noBank}
           variant="secondary"
           fullWidth
           style={{ marginTop: 8 }}
@@ -883,6 +890,10 @@ export default function WorksheetScreen() {
         {!topic.trim() ? (
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
             {t('needTopicHint')}
+          </Text>
+        ) : noBank ? (
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
+            {t('noQuestionBank')}
           </Text>
         ) : null}
       </View>

@@ -907,9 +907,13 @@ function lessonHasOfflineBank(topic: string, kb: KBLesson | null, subject?: stri
   return isChemContext(topic, kb, subject) || (isMathContext(topic, kb, subject) && hasMathBank(topic, kb));
 }
 
+/** Would the offline generator refuse this lesson? Screens grey their button on it before the teacher presses. */
+export function offlineBankRefuses(topic: string, kb: KBLesson | null, subject?: string): boolean {
+  return questionBankPolicy.required && !lessonHasOfflineBank(topic, kb, subject);
+}
+
 function requireQuestionBank(topic: string, kb: KBLesson | null, subject?: string): void {
-  if (!questionBankPolicy.required || lessonHasOfflineBank(topic, kb, subject)) return;
-  throw new NoQuestionBankError(topic);
+  if (offlineBankRefuses(topic, kb, subject)) throw new NoQuestionBankError(topic);
 }
 
 // ─── Wide scope ──────────────────────────────────────────────────────────────
