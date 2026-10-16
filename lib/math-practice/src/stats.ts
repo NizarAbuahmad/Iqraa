@@ -43,21 +43,52 @@ function mode(xs: number[]): number | null {
 }
 
 const COLORS: Array<[string, string]> = [['حمراء', 'red'], ['زرقاء', 'blue'], ['خضراء', 'green'], ['صفراء', 'yellow']];
-const bagAr = (cs: number[]) => cs.map((c, i) => `${c} كرات ${COLORS[i]![0]}`).join(' و ');
+const DUAL = ['حمراوان', 'زرقاوان', 'خضراوان', 'صفراوان'];
+/** «5 كرات حمراء», «كرتان زرقاوان», «12 كرةً خضراء» — two balls are «كرتان», never «2 كرات». */
+const balls = (n: number, i: number) => (n === 2 ? `كرتان ${DUAL[i]}` : `${n} ${tamyiz(n, 'كرات', 'كرةً', 'كرة')} ${COLORS[i]![0]}`);
+const bagAr = (cs: number[]) => cs.map((c, i) => balls(c, i)).join(' و ').replace(/ و (?=\D)/gu, ' و');
 const bagEn = (cs: number[]) => cs.map((c, i) => `${c} ${COLORS[i]![1]} balls`).join(', ').replace(/, ([^,]*)$/, ' and $1');
 
 // ─── chance and probability ─────────────────────────────────────────────────
 
 const LIKELY = ['أكيد', 'ممكن', 'مستحيل'];
 const LIKELY_EN: Record<string, string> = { 'أكيد': 'certain', 'ممكن': 'possible', 'مستحيل': 'impossible' };
+/** Events on one roll of a 1–6 die: impossible (no face), possible (some) or certain (every face). */
+const DIE_CERTAINTY: Array<[string, string, (v: number) => boolean]> = [
+  ['العدد 7', 'a 7', v => v === 7], ['عدد أكبر من 6', 'a number greater than 6', v => v > 6], ['العدد 0', 'a 0', v => v === 0],
+  ['عدد أصغر من 7', 'a number less than 7', v => v < 7], ['عدد من 1 إلى 6', 'a number from 1 to 6', v => v >= 1 && v <= 6],
+  ['عدد زوجي', 'an even number', v => v % 2 === 0], ['العدد 4', 'a 4', v => v === 4], ['عدد أكبر من 3', 'a number greater than 3', v => v > 3],
+];
+/**
+ * Since 2026-10-16 also an event on a die (no bag to look into), and the
+ * reverse ask: how many balls to take out so that drawing a colour becomes
+ * certain or impossible.
+ */
 const certainty = (id: string, match: RegExp, grades: [number, number]) => T(id, match, grades, ({ rng }) => {
   const present = pick(rng, [1, 2, 3]);
   const counts = Array.from({ length: present }, () => int(rng, 3, 9));
   const ci = int(rng, 0, 3);
-  const kind = pick(rng, [0, 0, 1]);
+  const kind = pick(rng, [0, 0, 1, 2, 3]);
   const has = ci < present;
-  let ans: string, ar: string, en: string;
-  if (kind === 0) {
+  let ans: string, ar: string, en: string, eq = counts.join(', ');
+  if (kind === 2) {
+    const [evAr, evEn, f] = pick(rng, DIE_CERTAINTY);
+    eq = evAr;
+    const c = [1, 2, 3, 4, 5, 6].filter(f).length;
+    ans = c === 0 ? 'مستحيل' : c === 6 ? 'أكيد' : 'ممكن';
+    ar = `رُمي مكعب مرقم من 1 إلى 6 مرة واحدة. ظهور ${evAr}: أكيد أم ممكن أم مستحيل؟`;
+    en = `A 1–6 die is rolled once. Rolling ${evEn} is certain, possible or impossible?`;
+  } else if (kind === 3) {
+    // two or three colours, so there is something to take out either way
+    const cs = Array.from({ length: pick(rng, [2, 3]) }, () => int(rng, 3, 9));
+    const i = int(rng, 0, cs.length - 1), t = sum(cs), certain = rng() < 0.5;
+    const n = certain ? t - cs[i]! : cs[i]!;
+    return {
+      eq: cs.join(', '), answer: String(n), wrongs: countOpts(n, [certain ? cs[i]! : t - cs[i]!, t, n + 1, n - 1]),
+      ar: `في كيس ${bagAr(cs)}. ما أقل عدد من الكرات يجب إخراجه من الكيس ليصبح سحب كرة ${COLORS[i]![0]} ${certain ? 'أكيدًا' : 'مستحيلًا'}؟`,
+      en: `A bag holds ${bagEn(cs)}. What is the fewest balls that must be taken out of the bag to make drawing a ${COLORS[i]![1]} ball ${certain ? 'certain' : 'impossible'}?`,
+    };
+  } else if (kind === 0) {
     ans = !has ? 'مستحيل' : present === 1 ? 'أكيد' : 'ممكن';
     ar = `في كيس ${bagAr(counts)}. سُحبت كرة دون النظر. سحب كرة ${COLORS[ci]![0]}: أكيد أم ممكن أم مستحيل؟`;
     en = `A bag holds ${bagEn(counts)}. A ball is drawn without looking. Drawing a ${COLORS[ci]![1]} ball is certain, possible or impossible?`;
@@ -66,7 +97,7 @@ const certainty = (id: string, match: RegExp, grades: [number, number]) => T(id,
     ar = `في كيس ${bagAr(counts)}. سُحبت كرة دون النظر. سحب كرة لونها أحد ألوان الكرات الموجودة في الكيس: أكيد أم ممكن أم مستحيل؟`;
     en = `A bag holds ${bagEn(counts)}. A ball is drawn without looking. Drawing a ball whose colour is one of those in the bag is certain, possible or impossible?`;
   }
-  return { eq: counts.join(', '), answer: ans, wrongs: LIKELY.filter(x => x !== ans), ar, en };
+  return { eq, answer: ans, wrongs: LIKELY.filter(x => x !== ans), ar, en };
 });
 
 const outcomes = T('outcomes', /^التجربه العشوائيه وانواع الحوادث$/, [4, 4], ({ rng, diff }) => {
@@ -79,7 +110,39 @@ const outcomes = T('outcomes', /^التجربه العشوائيه وانواع 
   return { eq: counts.join(', '), answer: '2', wrongs: ['1', String(t), '3'], ar: `في كيس ${bagAr(counts)}. سُحبت كرة واحدة. ما عدد الألوان الممكنة للكرة المسحوبة؟`, en: `A bag holds ${bagEn(counts)}. One ball is drawn. How many different colours could it be?` };
 });
 
+/** Die events and how many of the six faces each covers — for «equal chances?». */
+const DIE_CHANCE: Array<[string, string, number]> = [
+  ['عدد زوجي', 'an even number', 3], ['عدد فردي', 'an odd number', 3], ['عدد أكبر من 4', 'a number greater than 4', 2], ['عدد أصغر من 3', 'a number less than 3', 2],
+  ['العدد 6', 'a 6', 1], ['العدد 1', 'a 1', 1], ['عدد أكبر من 2', 'a number greater than 2', 4], ['عدد أصغر من 5', 'a number less than 5', 4],
+];
+/**
+ * Which colour is most or least likely — and since 2026-10-16 the lesson's own
+ * question, whether two events have equal chances: two colours in a bag, or
+ * two events on a die.
+ */
 const likelihood = T('likelihood', /^فرص الحدوث$/, [5, 5], ({ rng, diff }) => {
+  const k = pick(rng, [0, 0, 1, 2]);
+  if (k === 1) {
+    const counts = Array.from({ length: 3 }, () => int(rng, 3, 9));
+    const [i, j] = shuffle(rng, [0, 1, 2]).slice(0, 2) as [number, number];
+    const equal = rng() < 0.5;
+    if (equal) counts[j] = counts[i]!;
+    else if (counts[j] === counts[i]) counts[j] = counts[i]! === 9 ? 8 : counts[i]! + 1;
+    return {
+      eq: counts.join(', '), answer: equal ? 'نعم' : 'لا', wrongs: [equal ? 'لا' : 'نعم'],
+      ar: `في كيس ${bagAr(counts)}. سُحبت كرة دون النظر. هل فرصة سحب كرة ${COLORS[i]![0]} تساوي فرصة سحب كرة ${COLORS[j]![0]}؟ (نعم / لا)`,
+      en: `A bag holds ${bagEn(counts)}. A ball is drawn without looking. Is drawing a ${COLORS[i]![1]} ball exactly as likely as drawing a ${COLORS[j]![1]} ball? (yes / no)`,
+    };
+  }
+  if (k === 2) {
+    const a = pick(rng, DIE_CHANCE), equal = rng() < 0.5;
+    const b = pick(rng, DIE_CHANCE.filter(e => e !== a && (e[2] === a[2]) === equal));
+    return {
+      eq: `${a[0]}; ${b[0]}`, answer: equal ? 'نعم' : 'لا', wrongs: [equal ? 'لا' : 'نعم'],
+      ar: `رُمي مكعب مرقم من 1 إلى 6 مرة واحدة. هل فرصة ظهور ${a[0]} تساوي فرصة ظهور ${b[0]}؟ (نعم / لا)`,
+      en: `A 1–6 die is rolled once. Is rolling ${a[1]} exactly as likely as rolling ${b[1]}? (yes / no)`,
+    };
+  }
   const counts = shuffle(rng, [2, 3, 4, 5, 6, 7, 8, 9, 10]).slice(0, span(diff, 3, 4, 4));
   const most = rng() < 0.5;
   const target = most ? Math.max(...counts) : Math.min(...counts);
@@ -97,8 +160,22 @@ const DICE_EVENTS: Array<[string, string, (v: number) => boolean]> = [
   ['عدد أكبر من 4', 'a number greater than 4', v => v > 4], ['عدد أصغر من 3', 'a number less than 3', v => v < 3],
   ['العدد 6', 'a 6', v => v === 6], ['عدد يقبل القسمة على 3', 'a multiple of 3', v => v % 3 === 0], ['عدد أولي', 'a prime number', v => [2, 3, 5].includes(v)],
 ];
+/** The probability scale, from impossible to certain. */
+const SCALE = ['عند 0', 'بين 0 و 1/2', 'عند 1/2', 'بين 1/2 و 1', 'عند 1'];
+/** Grade 6 also places a probability on the scale (since 2026-10-16). */
 const probability = (id: string, match: RegExp, grade: number) => T(id, match, [grade, grade], ({ rng, diff }) => {
-  const k = pick(rng, grade === 6 ? [0, 0, 1] : [0, 1, 2, 3]);
+  const k = pick(rng, grade === 6 ? [0, 0, 1, 4] : [0, 1, 2, 3]);
+  if (k === 4) { // where a probability sits on the scale from 0 to 1
+    const shape = pick(rng, ['zero', 'one', 'half', 'other', 'other']);
+    let cs: number[], i: number;
+    if (shape === 'one') { cs = [int(rng, 3, 9)]; i = 0; }
+    else if (shape === 'half') { cs = rng() < 0.5 ? [int(rng, 3, 9)] : [0, int(rng, 3, 5), int(rng, 3, 5)]; if (cs.length === 1) cs.push(cs[0]!); else cs[0] = cs[1]! + cs[2]!; i = 0; }
+    else { cs = Array.from({ length: pick(rng, [2, 3]) }, () => int(rng, 3, 9)); i = shape === 'zero' ? 3 : int(rng, 0, cs.length - 1); }
+    const c = cs[i] ?? 0, t = sum(cs);
+    const at = c === 0 ? 0 : c === t ? 4 : 2 * c === t ? 2 : 2 * c < t ? 1 : 3;
+    const wrongs = [0, 1, 2, 3, 4].filter(j => j !== at).sort((x, y) => Math.abs(x - at) - Math.abs(y - at)).slice(0, 3).map(j => SCALE[j]!);
+    return { eq: cs.join(', '), answer: SCALE[at]!, wrongs, ar: `على مقياس الاحتمال من 0 إلى 1، أين يقع احتمال سحب كرة ${COLORS[i]![0]} من كيس فيه ${bagAr(cs)}: عند 0، أم بين 0 و 1/2، أم عند 1/2، أم بين 1/2 و 1، أم عند 1؟`, en: `On the probability scale from 0 to 1, where does the probability of drawing a ${COLORS[i]![1]} ball from a bag holding ${bagEn(cs)} lie: at 0, between 0 and 1/2, at 1/2, between 1/2 and 1, or at 1?` };
+  }
   if (k === 0) {
     const counts = Array.from({ length: pick(rng, [2, 3, 4]) }, () => int(rng, 2, span(diff, 6, 9, 10)));
     const i = int(rng, 0, counts.length - 1), t = sum(counts);
@@ -165,11 +242,16 @@ const compound = T('compound_prob', /^احتمال الحوادث المركبه
   const k = pick(rng, diff === 'easy' ? [0, 1] : [0, 1, 2, 3]);
   if (k === 0) { const [ar, en, f] = pick(rng, DICE_EVENTS.slice(0, 4)); const c = [1, 2, 3, 4, 5, 6].filter(f).length; const ans = sfrac(c, 12); return { eq: ar, answer: ans, wrongs: fracOpts(c, 12, [sfrac(c, 6), sfrac(c + 1, 12), sfrac(1, 12), sfrac(c, 8)].filter(x => x !== ans)), ar: `رُميت قطعة نقد ومكعب مرقم من 1 إلى 6. ما احتمال ظهور شعار على القطعة و${ar} على المكعب؟`, en: `A coin is tossed and a 1–6 die is rolled. What is the probability of a head and ${en}?` }; }
   if (k === 1) { const a = int(rng, 1, 5), b = int(rng, 2, 6), c = int(rng, 1, 5), d = int(rng, 2, 6); if (a >= b || c >= d) return compound.make({ rng, diff, grade: 8 }); const n = a * c, den = b * d; return { eq: `${a}/${b}, ${c}/${d}`, answer: sfrac(n, den), wrongs: fracOpts(n, den, [sfrac(a * d + c * b, b * d), sfrac(a + c, b + d), sfrac(a * d, b * c), sfrac(n, den + 1)].filter(x => x !== sfrac(n, den))), ar: `حادثتان مستقلتان احتمال الأولى ${a}/${b} واحتمال الثانية ${c}/${d}. ما احتمال وقوعهما معًا؟`, en: `Two independent events have probabilities ${a}/${b} and ${c}/${d}. What is the probability that both happen?` }; }
-  if (k === 2) { const r = int(rng, 3, 7), o = int(rng, 2, 6), t = r + o; const n = r * (r - 1), den = t * (t - 1); return { eq: `${r}, ${o}`, answer: sfrac(n, den), wrongs: fracOpts(n, den, [sfrac(r * r, t * t), sfrac(r, t), sfrac(r * (r - 1), t * t), sfrac(2 * r, t)].filter(x => x !== sfrac(n, den))), ar: `في كيس ${r} كرات حمراء و ${o} كرات زرقاء. سُحبت كرتان الواحدة بعد الأخرى دون إرجاع. ما احتمال أن تكون الكرتان حمراوين؟`, en: `A bag holds ${r} red balls and ${o} blue balls. Two balls are drawn one after the other without replacement. What is the probability that both are red?` }; }
+  if (k === 2) { const r = int(rng, 3, 7), o = int(rng, 2, 6), t = r + o; const n = r * (r - 1), den = t * (t - 1); return { eq: `${r}, ${o}`, answer: sfrac(n, den), wrongs: fracOpts(n, den, [sfrac(r * r, t * t), sfrac(r, t), sfrac(r * (r - 1), t * t), sfrac(2 * r, t)].filter(x => x !== sfrac(n, den))), ar: `في كيس ${bagAr([r, o])}. سُحبت كرتان الواحدة بعد الأخرى دون إرجاع. ما احتمال أن تكون الكرتان حمراوين؟`, en: `A bag holds ${r} red balls and ${o} blue balls. Two balls are drawn one after the other without replacement. What is the probability that both are red?` }; }
   const counts = [int(rng, 2, 7), int(rng, 2, 7), int(rng, 2, 7)], t = sum(counts);
   return { eq: counts.join(', '), answer: sfrac(counts[0]! + counts[1]!, t), wrongs: fracOpts(counts[0]! + counts[1]!, t, [sfrac(counts[0]! * counts[1]!, t * t), sfrac(counts[2]!, t), sfrac(counts[0]! + counts[1]!, t - 1), sfrac(counts[0]!, t)].filter(x => x !== sfrac(counts[0]! + counts[1]!, t))), ar: `في كيس ${bagAr(counts)}. سُحبت كرة واحدة عشوائيًا. ما احتمال أن تكون حمراء أو زرقاء؟`, en: `A bag holds ${bagEn(counts)}. One ball is drawn at random. What is the probability that it is red or blue?` };
 });
 
+/**
+ * Counts and probabilities from the sizes of two sets — and since 2026-10-16
+ * reading a diagram whose regions are given, placing a number in a diagram
+ * (Grades 3–4) and the addition rule P(A ∪ B) = P(A) + P(B) − P(A ∩ B) (Grade 9).
+ */
 const venn = (id: string, match: RegExp, grades: [number, number]) => T(id, match, grades, ({ rng, diff, grade }) => {
   const both = int(rng, 2, 8), onlyA = int(rng, 2, 10), onlyB = int(rng, 2, 10), none = int(rng, 1, 8);
   const A = onlyA + both, B = onlyB + both, total = A + B - both + none;
@@ -177,7 +259,31 @@ const venn = (id: string, match: RegExp, grades: [number, number]) => T(id, matc
   const subjects = pick(rng, [['كرة القدم', 'السباحة', 'football', 'swimming'], ['الرسم', 'القراءة', 'drawing', 'reading'], ['الشاي', 'القهوة', 'tea', 'coffee']] as const);
   const head = `في مجموعة من ${total} شخصًا، ${A} منهم يحبون ${subjects[0]} و ${B} منهم يحبون ${subjects[1]} و ${both} يحبون الاثنين معًا`;
   const headEn = `In a group of ${total} people, ${A} like ${subjects[2]}, ${B} like ${subjects[3]} and ${both} like both`;
-  const k = pick(rng, diff === 'easy' ? [0, 1] : [0, 1, 2, 3]);
+  const k = pick(rng, diff === 'easy' ? [0, 1, 4, 5] : [0, 1, 2, 3, 4, 5]);
+  if (k === 4) { // read the diagram: the number written in each region is given, the sets are not
+    const dia = `في شكل ڤن لدائرتين، دائرة لمن يحبون ${subjects[0]} ودائرة لمن يحبون ${subjects[1]}: العدد في الجزء المشترك ${both}، وفي دائرة ${subjects[0]} وحدها ${onlyA}، وفي دائرة ${subjects[1]} وحدها ${onlyB}، وخارج الدائرتين ${none}`;
+    const diaEn = `A Venn diagram has a circle for people who like ${subjects[2]} and one for people who like ${subjects[3]}: ${both} in the overlap, ${onlyA} in the ${subjects[2]} circle only, ${onlyB} in the ${subjects[3]} circle only and ${none} outside both`;
+    const whole = !prob && rng() < 0.4;
+    if (whole) return { eq: `${both}, ${onlyA}, ${onlyB}, ${none}`, answer: String(total), wrongs: countOpts(total, [total - none, total - both, total + both, A + B]), ar: `${dia}. كم شخصًا في المجموعة كلها؟`, en: `${diaEn}. How many people are in the group altogether?` };
+    if (!prob) return { eq: `${both}, ${onlyA}, ${onlyB}, ${none}`, answer: String(A), wrongs: countOpts(A, [onlyA, A + onlyB, both, total - A]), ar: `${dia}. كم شخصًا يحب ${subjects[0]}؟`, en: `${diaEn}. How many people like ${subjects[2]}?` };
+    const ans = sfrac(A, total);
+    return { eq: `${both}, ${onlyA}, ${onlyB}, ${none}`, answer: ans, wrongs: fracOpts(A, total, [sfrac(onlyA, total), sfrac(A, total - none), sfrac(both, total), sfrac(A + onlyB, total)].filter(x => x !== ans)), ar: `${dia}. اختير شخص من المجموعة عشوائيًا. ما احتمال أن يحب ${subjects[0]}؟`, en: `${diaEn}. One person is chosen at random. What is the probability that they like ${subjects[2]}?` };
+  }
+  if (k === 5 && prob) { // the addition rule, with the probabilities given
+    const pa = sfrac(A, total), pb = sfrac(B, total), pab = sfrac(both, total), pu = sfrac(A + B - both, total);
+    if (rng() < 0.6) return { eq: `${pa}, ${pb}, ${pab}`, answer: pu, wrongs: fracOpts(A + B - both, total, [sfrac(A + B, total), sfrac(A + B - 2 * both, total), sfrac(A + B + both, total), sfrac(A * B, total * total)].filter(x => x !== pu)), ar: `إذا كان A و B حادثين في تجربة عشوائية، وكان P(A) = ${pa} و P(B) = ${pb} و P(A ∩ B) = ${pab}، فما P(A ∪ B)؟`, en: `A and B are events in a random experiment with P(A) = ${pa}, P(B) = ${pb} and P(A ∩ B) = ${pab}. What is P(A ∪ B)?` };
+    return { eq: `${pa}, ${pb}, ${pu}`, answer: pab, wrongs: fracOpts(both, total, [sfrac(onlyB, total), sfrac(onlyA, total), sfrac(A * B, total * total), sfrac(both + 1, total)].filter(x => x !== pab)), ar: `إذا كان A و B حادثين في تجربة عشوائية، وكان P(A) = ${pa} و P(B) = ${pb} و P(A ∪ B) = ${pu}، فما P(A ∩ B)؟`, en: `A and B are events in a random experiment with P(A) = ${pa}, P(B) = ${pb} and P(A ∪ B) = ${pu}. What is P(A ∩ B)?` };
+  }
+  if (k === 5) { // place a number in the diagram: which region does it belong to?
+    const [aAr, aEn, fa] = pick(rng, [['الزوجية', 'even numbers', (v: number) => v % 2 === 0], ['الفردية', 'odd numbers', (v: number) => v % 2 === 1]] as const);
+    const m = pick(rng, [3, 5]), fb = (v: number) => v % m === 0;
+    const region = (v: number) => (fa(v) ? (fb(v) ? 2 : 0) : fb(v) ? 1 : 3);
+    const want = int(rng, 0, 3), top = grade <= 3 ? 30 : 50;
+    const x = pick(rng, Array.from({ length: top }, (_, i) => i + 1).filter(v => region(v) === want));
+    const bAr = `مضاعفات العدد ${m}`, bEn = `multiples of ${m}`;
+    const labels = [`في دائرة الأعداد ${aAr} وحدها`, `في دائرة ${bAr} وحدها`, 'في الجزء المشترك', 'خارج الدائرتين'];
+    return { eq: `${x}; ${m}`, answer: labels[want]!, wrongs: labels.filter((_, i) => i !== want), ar: `في شكل ڤن دائرة للأعداد ${aAr} من 1 إلى ${top} ودائرة ل${bAr} من 1 إلى ${top}. أين يُكتب العدد ${x}: ${labels.join('، أم ')}؟`, en: `A Venn diagram has a circle for the ${aEn} from 1 to ${top} and a circle for the ${bEn} from 1 to ${top}. Where is the number ${x} written: in the ${aEn} circle only, in the ${bEn} circle only, in the overlap, or outside both circles?` };
+  }
   if (!prob || k < 2) {
     const [val, ar, en] = k === 0 ? [A + B - both, 'يحب أحد النشاطين على الأقل', 'like at least one of the two'] : k === 1 ? [onlyA, `يحبون ${subjects[0]} فقط`, `like only ${subjects[2]}`] : [none, 'لا يحبون أيًّا منهما', 'like neither'];
     if (prob) { const ans = sfrac(val, total); return { eq: `${total}, ${A}, ${B}, ${both}`, answer: ans, wrongs: fracOpts(val, total, [sfrac(A + B, total), sfrac(val, total - 1), sfrac(both, total), sfrac(val + 1, total)].filter(x => x !== ans)), ar: `${head}. اختير شخص عشوائيًا. ما احتمال أن ${k === 0 ? 'يحب أحد النشاطين على الأقل' : k === 1 ? `يحب ${subjects[0]} فقط` : 'لا يحب أيًّا منهما'}؟`, en: `${headEn}. One person is chosen at random. What is the probability that they ${en.replace('like ', 'like ').replace('only', 'only')}?` }; }
@@ -259,14 +365,26 @@ const meanT = (id: string, match: RegExp, grades: [number, number]) => T(id, mat
   return { eq: list(x), answer: String(m), wrongs: countOpts(m, [median(xs), Math.max(...xs), sum(xs), Math.min(...xs), m + 1]), ar: `ما الوسط الحسابي للأعداد: ${list(x)}؟`, en: `What is the mean of ${listEn(x)}?` };
 });
 
-type MMKind = 'median' | 'mode' | 'range' | 'medianMissing' | 'modeContext' | 'rangeTable' | 'rangeEnd';
+type MMKind = 'median' | 'mode' | 'range' | 'medianMissing' | 'modeContext' | 'rangeTable' | 'rangeEnd' | 'bestMeasure';
+const MEASURES = ['الوسط الحسابي', 'الوسيط', 'المنوال'];
 /**
  * Since 2026-10-16 a Grade 5 lesson asks more than one sentence: a missing
  * value from the median, the mode of data with a context, the range of a
  * frequency table (values, not frequencies) and an end value from the range.
+ * Grade 7 also finds a missing value from the median and chooses the measure
+ * that best describes data with or without an outlier.
  */
 const medianModeT = (id: string, match: RegExp, grades: [number, number], kinds: MMKind[]): Topic => T(id, match, grades, ({ rng, diff }) => {
   const kind = pick(rng, kinds);
+  if (kind === 'bestMeasure') {
+    // distinct values (so there is no mode), close together — or the same with one far above them,
+    // which pulls the mean away and leaves the median describing the data (Grade 7's rule)
+    const outlier = rng() < 0.5, n = int(rng, 5, 7);
+    const rest = shuffle(rng, Array.from({ length: 21 }, (_, i) => 300 + 10 * i)).slice(0, outlier ? n - 1 : n);
+    const xs = outlier ? shuffle(rng, [...rest, 100 * int(rng, 15, 30)]) : rest;
+    const ans = outlier ? 'الوسيط' : 'الوسط الحسابي';
+    return { eq: list(xs), answer: ans, wrongs: MEASURES.filter(m => m !== ans), ar: `الرواتب الشهرية بالدينار لموظفي شركة صغيرة: ${list(xs)}. أي مقاييس النزعة المركزية أنسب لوصف هذه الرواتب: الوسط الحسابي، أم الوسيط، أم المنوال؟`, en: `The monthly salaries in dinars of a small company's staff are ${listEn(xs)}. Which measure of central tendency best describes them: the mean, the median or the mode?` };
+  }
   if (kind === 'medianMissing') {
     // even count, ordered, the upper middle value hidden: median = (lower middle + x) / 2
     for (;;) {
@@ -320,12 +438,24 @@ const medianModeT = (id: string, match: RegExp, grades: [number, number], kinds:
   return { eq: list(xs), answer: String(r), wrongs: countOpts(r, [Math.max(...xs), r + 1, r - 1, Math.max(...xs) + Math.min(...xs), sum(xs) / n | 0]), ar: `ما المدى للأعداد: ${list(xs)}؟`, en: `What is the range of ${listEn(xs)}?` };
 });
 
+/** Reading the plot — and since 2026-10-16 building one and testing a claim against it. */
 const stemLeaf = T('stem_leaf', /^التمثيل بالساق والورقه$/, [7, 7], ({ rng, diff }) => {
   const n = int(rng, 9, span(diff, 11, 13, 16));
   const xs = Array.from({ length: n }, () => int(rng, 10, 59));
   const stems = [...new Set(xs.map(x => Math.floor(x / 10)))].sort((a, b) => a - b);
   const table = stems.map(s => `${s} | ${sorted(xs.filter(x => Math.floor(x / 10) === s)).map(x => x % 10).join(' ')}`).join('\n');
-  const k = pick(rng, [0, 1, 2, 3]);
+  const k = pick(rng, [0, 1, 2, 3, 4, 5]);
+  if (k === 4) { // build the plot: how many leaves go on a stem
+    const s = pick(rng, stems), c = xs.filter(x => Math.floor(x / 10) === s).length;
+    const other = stems.find(t => t !== s && xs.filter(x => Math.floor(x / 10) === t).length !== c);
+    return { eq: list(xs), answer: String(c), wrongs: countOpts(c, [n, stems.length, ...(other !== undefined ? [xs.filter(x => Math.floor(x / 10) === other).length] : []), c + 1, c - 1]), ar: `عند تمثيل العلامات الآتية بالساق والورقة (الساق للعشرات والورقة للآحاد): ${list(xs)}، كم ورقة تُكتب أمام الساق ${s}؟`, en: `When the marks ${listEn(xs)} are shown in a stem-and-leaf plot (stem = tens, leaf = units), how many leaves go next to the stem ${s}?` };
+  }
+  if (k === 5) { // test a claim against the plot
+    const cuts = [20, 25, 30, 35, 40, 45, 50].filter(c => 2 * xs.filter(x => x >= c).length !== n && xs.some(x => x >= c) && xs.some(x => x < c));
+    const cut = pick(rng, cuts.length ? cuts : [20]), above = xs.filter(x => x >= cut).length;
+    const yes = 2 * above > n;
+    return { eq: `${table}; ${cut}`, answer: yes ? 'نعم' : 'لا', wrongs: [yes ? 'لا' : 'نعم'], ar: `سجّل معلم علامات طلابه في اختبار ومثّلها بالساق والورقة (الساق للعشرات والورقة للآحاد):\n${table}\nافترض المعلم أن أكثر من نصف الطلاب حصلوا على العلامة ${cut} فأكثر. هل هذه الفرضية صحيحة؟ (نعم / لا)`, en: `A teacher recorded his students' test marks in a stem-and-leaf plot (stem = tens, leaf = units):\n${table}\nHe supposes that more than half of the students scored ${cut} or more. Is this hypothesis true? (yes / no)` };
+  }
   const head = `يبين التمثيل بالساق والورقة الآتي علامات مجموعة من الطلاب (الساق للعشرات والورقة للآحاد):\n${table}\n`;
   const headEn = `The stem-and-leaf plot shows students' marks (stem = tens, leaf = units):\n${table}\n`;
   if (k === 0) { const v = Math.max(...xs); return { eq: table, answer: String(v), wrongs: countOpts(v, [Math.min(...xs), v - 1, median(xs), stems[stems.length - 1]!]), ar: `${head}ما أعلى علامة؟`, en: `${headEn}What is the highest mark?` }; }
@@ -336,7 +466,14 @@ const stemLeaf = T('stem_leaf', /^التمثيل بالساق والورقه$/, 
 
 // ─── reading data tables ────────────────────────────────────────────────────
 
+const BIRDS: Array<[string, string]> = [['العصافير', 'sparrows'], ['الحمام', 'pigeons'], ['البط', 'ducks']];
 const CATS: Array<[string, string]> = [['التفاح', 'apples'], ['الموز', 'bananas'], ['البرتقال', 'oranges'], ['العنب', 'grapes'], ['الكرز', 'cherries']];
+/**
+ * Reading a table of counts (most, least, total, a difference) — and since
+ * 2026-10-16, for Grades 1–2: organising raw data, comparing two rows of a
+ * picture graph, reading a tally (Grade 2) and choosing how many pictures to
+ * draw (Grade 2).
+ */
 const readData = (id: string, match: RegExp, grades: [number, number]) => T(id, match, grades, ({ rng, diff, grade }) => {
   const m = grade <= 1 ? 6 : grade === 2 ? 9 : span(diff, 12, 20, 30);
   const k = grade <= 2 ? 3 : 4;
@@ -349,7 +486,30 @@ const readData = (id: string, match: RegExp, grades: [number, number]) => T(id, 
   const whereEn = key === 2 ? `In a picture graph each picture stands for ${key} fruits; the numbers of pictures are: ` : 'The table shows how many students prefer each fruit: ';
   const tab = cats.map((c, i) => `${c[0]}: ${counts[i]}`).join('، ');
   const tabEn = cats.map((c, i) => `${c[1]}: ${counts[i]}`).join(', ');
-  const q = pick(rng, grade <= 2 ? [0, 1, 3] : [0, 1, 2, 3]);
+  const q = pick(rng, grade === 1 ? [0, 1, 3, 4, 5] : grade === 2 ? [0, 1, 3, 4, 5, 6, 7] : [0, 1, 2, 3]);
+  if (q === 4) { // organise raw data: how often one value occurs
+    const L = grade <= 1 ? int(rng, 6, 8) : int(rng, 8, 10), top = grade <= 1 ? 6 : 9;
+    const xs = Array.from({ length: L }, () => int(rng, 3, top)), v = pick(rng, xs), c = xs.filter(x => x === v).length;
+    return { eq: list(xs), answer: String(c), wrongs: countOpts(c, [L, v, c + 1, c - 1]), ar: `سجّلت المعلمة عدد الأقلام في حقيبة كل طالب: ${list(xs)}. عند تنظيم هذه البيانات في جدول، كم طالبًا في حقيبته ${v} ${tamyiz(v, 'أقلام', 'قلمًا', 'قلم')}؟`, en: `A teacher recorded how many pencils are in each pupil's bag: ${listEn(xs)}. When the data are put in a table, how many pupils have ${v} pencils in their bag?` };
+  }
+  if (q === 5) { // compare two rows of a picture graph
+    const pk = grade === 2 && rng() < 0.6 ? 2 : 1;
+    const [b1, b2] = shuffle(rng, BIRDS).slice(0, 2) as [[string, string], [string, string]];
+    const a = int(rng, 3, 9);
+    let b = int(rng, 3, 8);
+    if (b >= a) b += 1;
+    const big = a > b ? b1 : b2, small = a > b ? b2 : b1, d = Math.abs(a - b) * pk;
+    const pics = (x: number) => `${x} ${tamyiz(x, 'صور', 'صورةً', 'صورة')}`;
+    return { eq: `${a}, ${b}, ${pk}`, answer: String(d), wrongs: countOpts(d, [...(pk === 2 ? [Math.abs(a - b)] : []), (a + b) * pk, Math.max(a, b) * pk, d + 1, d - 1]), ar: `في تمثيل بالصور للطيور التي شاهدها طلاب في رحلة، كل صورة تمثل ${pk === 1 ? 'طائرًا واحدًا' : 'طائرين'}: ${b1[0]}: ${pics(a)}، ${b2[0]}: ${pics(b)}. بكم يزيد عدد ${big[0]} على عدد ${small[0]}؟`, en: `In a picture graph of the birds pupils saw on a trip, each picture stands for ${pk === 1 ? 'one bird' : 'two birds'}: ${b1[1]}: ${a} pictures, ${b2[1]}: ${b} pictures. How many more ${big[1]} than ${small[1]} were there?` };
+  }
+  if (q === 6) { // a tally: each bundle is five marks
+    const bundles = int(rng, 1, 4), single = int(rng, 1, 4), v = 5 * bundles + single;
+    return { eq: `${bundles}, ${single}`, answer: String(v), wrongs: countOpts(v, [bundles + single, 4 * bundles + single, 5 * bundles, 5 * (bundles + 1)]), ar: `في جدول الإشارات تمثل كل حزمة 5 إشارات. سجّل سامر السيارات الحمراء التي مرّت أمام المدرسة، فكان عدد الحزم ${bundles} وعدد الإشارات المنفردة ${single}. كم سيارة حمراء مرّت أمام المدرسة؟`, en: `In a tally chart each bundle stands for 5 marks. Samer tallied the red cars passing the school: ${bundles} bundles and ${single} single marks. How many red cars passed the school?` };
+  }
+  if (q === 7) { // represent: how many pictures to draw for a number
+    const pk = pick(rng, [2, 5, 10]), pics = int(rng, 2, 9), v = pk * pics;
+    return { eq: `${v}, ${pk}`, answer: String(pics), wrongs: countOpts(pics, [v, v - pk, pics + 1, pics - 1]), ar: `في تمثيل بالصور تمثل كل صورة ${pk === 2 ? 'طالبين' : `${pk} طلاب`}. إذا كان عدد الطلاب الذين يحبون الرسم ${v}، فكم صورة تُرسم لتمثيلهم؟`, en: `In a picture graph each picture stands for ${pk} pupils. If ${v} pupils like drawing, how many pictures are drawn to show them?` };
+  }
   const hi = vals.indexOf(Math.max(...vals)), lo = vals.indexOf(Math.min(...vals));
   // the other categories first, then fruits not in the table, so there are always three wrong options
   const others = (i: number) => [...cats.filter((_, j) => j !== i), ...CATS.filter(c => !cats.includes(c))].map(c => c[0]).slice(0, 3);
@@ -604,7 +764,7 @@ export const STATS_TOPICS: readonly Topic[] = [
   venn('venn_g3', /^اشكال ڤن$/, [3, 3]), venn('venn_g4', /^تمثيل البيانات باشكال ڤن$/, [4, 4]), venn('venn_g9', /^الاحتمالات واشكال ڤن$/, [9, 9]), geometricProb,
   meanT('mean_g5', /^الوسط الحسابي$/, [5, 5]), meanT('mean_g7', /^الوسط الحسابي$/, [7, 7]),
   medianModeT('median_mode_g5', /^الوسيط والمنوال$/, [5, 5], ['median', 'mode', 'medianMissing', 'modeContext']), medianModeT('range_g5', /^المدي$/, [5, 5], ['range', 'rangeTable', 'rangeEnd']),
-  medianModeT('median_mode_range_g7', /^الوسيط والمنوال والمدي$/, [7, 7], ['median', 'mode', 'range']),
+  medianModeT('median_mode_range_g7', /^الوسيط والمنوال والمدي$/, [7, 7], ['median', 'mode', 'range', 'medianMissing', 'bestMeasure']),
   stemLeaf,
   readData('read_data_g12', /^(?:جداول البيانات|تمثيل البيانات بالصور|تفسير بيانات ممثله بالصور|تفسير البيانات الممثله بالصور|تفسير البيانات الممثله بجدول الاشارات|جمع البيانات وتنظيمها)$/, [1, 2]),
   readData('read_data_g34', /^(?:تمثيل البيانات بالاعمده|تفسير البيانات الممثله بالاعمده|تمثيل البيانات بالنقاط)$/, [3, 4]),

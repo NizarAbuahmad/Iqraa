@@ -179,7 +179,43 @@ const estSum = (id: string, match: RegExp, mode: 'add' | 'sub' | 'both'): Topic 
     const exact = add ? a + b : a - b;
     const op = add ? '+' : '−';
     const byLead = add ? lead(a) + lead(b) : lead(a) - lead(b);
-    const k = pick(rng, [0, 1, 2]);
+    const k = pick(rng, [0, 1, 2, 3, 4]);
+    if (k === 3) {
+      // judging an answer's size: which round number is nearest the real result
+      const place = digits === 2 ? 10 : pick(rng, [10, 100]);
+      const ans = roundTo(exact, place);
+      if (exact % place === place / 2 || ans <= 0) return make(c);
+      const near = shuffle(rng, [ans - place, ans + place]).filter(x => x > 0);
+      const far = shuffle(rng, [ans + 2 * place, ans - 2 * place]).filter(x => x > 0);
+      const wrongs = [...near, ...far, ans + 3 * place].slice(0, 3).map(String);
+      const L = listed(rng, String(ans), wrongs);
+      return {
+        eq: `${a} ${op} ${b}`, answer: String(ans), wrongs,
+        ar: `أيّ الأعداد الآتية أقرب إلى ناتج ${a} ${op} ${b}: ${L.ar}؟`,
+        en: `Which of these numbers is closest to ${a} ${op} ${b}: ${L.en}?`,
+      };
+    }
+    if (k === 4) {
+      // working back from an estimate: the other number, rounded
+      const place = digits === 2 ? 10 : pick(rng, [10, 100]);
+      const ra = roundTo(a, place), rb = roundTo(b, place);
+      const est = add ? ra + rb : ra - rb;
+      if (est <= 0 || rb <= 0) return make(c);
+      const P = PLACE_AR[place]!, PE = PLACE_EN[place]!;
+      const slip = add ? est - a : a - est; // the shown number used without rounding it
+      const wrongs = numWrongs(rb, [slip, rb + place, rb - place, b].filter(x => x > 0 && x !== rb));
+      return add
+        ? {
+          eq: `${a}, ${est}`, answer: String(rb), wrongs,
+          ar: `قرّبت سلمى عددين إلى أقرب ${P} ثم جمعتهما، فكان التقدير ${est}. إذا كان أحد العددين ${a}، فما العدد الآخر بعد تقريبه؟`,
+          en: `Salma rounded two numbers to the nearest ${PE} and added them; her estimate was ${est}. If one number is ${a}, what is the other number after rounding?`,
+        }
+        : {
+          eq: `${a}, ${est}`, answer: String(rb), wrongs,
+          ar: `قرّبت سلمى عددين إلى أقرب ${P} ثم طرحت الأصغر من الأكبر، فكان التقدير ${est}. إذا كان العدد الأكبر ${a}، فما العدد الأصغر بعد تقريبه؟`,
+          en: `Salma rounded two numbers to the nearest ${PE} and subtracted the smaller from the larger; her estimate was ${est}. If the larger number is ${a}, what is the smaller number after rounding?`,
+        };
+    }
     if (k === 0) {
       return {
         eq: `${a} ${op} ${b}`, answer: String(byLead),
@@ -532,9 +568,35 @@ const divisibility: Topic = {
     const pool = grade <= 4 ? [2, 3, 5, 10] : [4, 6, 9];
     const d = pick(rng, pool);
     const len = diff === 'easy' ? 3 : 4;
-    const k = pick(rng, [0, 1, 2]);
+    const lo = 10 ** (len - 1), hi = 10 ** len - 1;
+    const k = pick(rng, [0, 1, 2, 3, 4]);
+    if (k === 3) {
+      // the next multiple: test the numbers after n with the rule until one passes
+      const n = int(rng, lo, hi - 2 * d);
+      const ans = (Math.floor(n / d) + 1) * d;
+      return {
+        eq: `${n}`, answer: String(ans),
+        wrongs: numWrongs(ans, [ans - d, ans + d, n + 1, ans + 1].filter(x => x !== ans)),
+        ar: `ما أصغر عدد أكبر من ${n} يقبل القسمة على ${d}؟`,
+        en: `What is the smallest number greater than ${n} that is divisible by ${d}?`,
+      };
+    }
+    if (k === 4) {
+      // one number against every rule of the lesson
+      const p0 = pick(rng, pool), n = p0 * int(rng, Math.ceil(lo / p0), Math.floor(hi / p0));
+      const yes = pool.filter(p => n % p === 0);
+      const show = (xs: number[]) => xs.join(' ، ');
+      // the other answers some number could have (never 10 without 2 and 5, or 4 and 9 without 6), one rule away first
+      const subsets = [...new Set(range(1, 180).map(x => show(pool.filter(p => x % p === 0))))].filter(Boolean).map(t => t.split(' ، ').map(Number));
+      const away = (xs: number[]) => pool.filter(p => xs.includes(p) !== yes.includes(p)).length;
+      const cands = shuffle(rng, subsets.filter(xs => away(xs) > 0)).sort((x, y) => away(x) - away(y));
+      return {
+        eq: `${n}`, answer: show(yes), wrongs: cands.slice(0, 3).map(show),
+        ar: `اكتب الأعداد التي يقبل العدد ${n} القسمة عليها من بين الأعداد ${show(pool)}.`,
+        en: `List the numbers among ${pool.join(', ')} that ${n} is divisible by.`,
+      };
+    }
     if (k > 0) {
-      const lo = 10 ** (len - 1), hi = 10 ** len - 1;
       const multiple = () => d * int(rng, Math.ceil(lo / d), Math.floor(hi / d));
       // a near miss: divisible by the number d is confused with, but not by d
       const miss = () => { for (;;) { const x = int(rng, lo, hi); const p = pick(rng, NEAR_DIVISOR[d]!); if (x % d !== 0 && x % p === 0) return x; } };
