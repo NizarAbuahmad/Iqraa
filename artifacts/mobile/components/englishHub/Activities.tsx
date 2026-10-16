@@ -16,7 +16,7 @@ import { playLocalUri, playWord } from '@/services/englishAudio';
 import { useSpeakingRecorder } from '@/hooks/useSpeakingRecorder';
 import {
   buildListenRound,
-  buildMatchDeck,
+  buildMatchColumns,
   buildPictureDeck,
   buildScrambleRound,
   buildSpellRound,
@@ -201,13 +201,13 @@ function useTimers() {
 
 export function MatchMeaning({ words, onFinish }: { words: HubWord[]; onFinish: Finish }) {
   const { colors, t } = useUi();
-  const deck = useMemo(() => buildMatchDeck(words), [words]);
+  const columns = useMemo(() => buildMatchColumns(words), [words]);
   const timers = useTimers();
   const [selected, setSelected] = useState<MatchCard | null>(null);
   const [matched, setMatched] = useState<Set<number>>(new Set());
   const [miss, setMiss] = useState<string[]>([]);
   const [moves, setMoves] = useState(0);
-  const pairs = deck.length / 2;
+  const pairs = columns.en.length;
 
   const tap = (c: MatchCard) => {
     if (matched.has(c.pairId) || miss.length) return;
@@ -231,32 +231,39 @@ export function MatchMeaning({ words, onFinish }: { words: HubWord[]; onFinish: 
   return (
     <View style={{ gap: 12 }}>
       <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13, textAlign: 'center' }}>{t('hubMoves', moves)}</Text>
-      <View style={styles.grid}>
-        {deck.map(c => {
-          const done = matched.has(c.pairId);
-          const bad = miss.includes(c.id);
-          const on = selected?.id === c.id;
-          const border = done ? RIGHT : bad ? WRONG : on ? colors.primary : colors.border;
-          return (
-            <Pressable
-              key={c.id}
-              onPress={() => tap(c)}
-              style={[styles.matchCard, { borderColor: border, backgroundColor: done ? RIGHT + '18' : on ? colors.selected : colors.card, opacity: done ? 0.7 : 1 }]}
-            >
-              <Text
-                style={{
-                  color: colors.foreground,
-                  fontFamily: c.lang === 'ar' ? 'Almarai_400Regular' : 'ReadexPro_600SemiBold',
-                  fontSize: 15,
-                  textAlign: 'center',
-                  writingDirection: c.lang === 'ar' ? 'rtl' : 'ltr',
-                }}
-              >
-                {c.text}
-              </Text>
-            </Pressable>
-          );
-        })}
+      {/* English left, Arabic right, whatever the UI language. A plain `row` (not
+          `useUi().row`) on purpose: the app lays out physically left-to-right and
+          flips by hand, so this never mirrors. */}
+      <View style={styles.matchColumns}>
+        {[columns.en, columns.ar].map(column => (
+          <View key={column[0]?.lang ?? 'empty'} style={styles.matchColumn}>
+            {column.map(c => {
+              const done = matched.has(c.pairId);
+              const bad = miss.includes(c.id);
+              const on = selected?.id === c.id;
+              const border = done ? RIGHT : bad ? WRONG : on ? colors.primary : colors.border;
+              return (
+                <Pressable
+                  key={c.id}
+                  onPress={() => tap(c)}
+                  style={[styles.matchCard, styles.matchCardInColumn, { borderColor: border, backgroundColor: done ? RIGHT + '18' : on ? colors.selected : colors.card, opacity: done ? 0.7 : 1 }]}
+                >
+                  <Text
+                    style={{
+                      color: colors.foreground,
+                      fontFamily: c.lang === 'ar' ? 'Almarai_400Regular' : 'ReadexPro_600SemiBold',
+                      fontSize: 15,
+                      textAlign: 'center',
+                      writingDirection: c.lang === 'ar' ? 'rtl' : 'ltr',
+                    }}
+                  >
+                    {c.text}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ))}
       </View>
     </View>
   );
@@ -575,6 +582,10 @@ const styles = StyleSheet.create({
   primaryText: { color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 16 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
   matchCard: { width: '47%', minHeight: 64, borderWidth: 1.5, borderRadius: 14, alignItems: 'center', justifyContent: 'center', padding: 10 },
+  // Match the meaning: two columns of cards. The columns, not the cards, share the width.
+  matchColumns: { flexDirection: 'row', gap: 12 },
+  matchColumn: { flex: 1, gap: 12 },
+  matchCardInColumn: { width: '100%' },
   input: { width: '100%', borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, fontSize: 24, fontFamily: 'ReadexPro_600SemiBold', textAlign: 'center', writingDirection: 'ltr' },
   tileRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
   tile: { width: 44, height: 44, borderWidth: 1.5, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },

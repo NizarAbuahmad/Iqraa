@@ -10,7 +10,7 @@ import {
   MATCH_PAIRS,
   badgesEarned,
   buildListenRound,
-  buildMatchDeck,
+  buildMatchColumns,
   buildPictureDeck,
   buildScrambleRound,
   buildSpeakingRound,
@@ -54,14 +54,52 @@ describe('listen and choose', () => {
 describe('match', () => {
   it('pairs every English card with its own Arabic meaning', () => {
     const lesson = ENGLISH_HUB_LESSONS[0];
-    const deck = buildMatchDeck(lesson.words, makeRng(3));
-    assert.equal(deck.length, 2 * Math.min(MATCH_PAIRS, lesson.words.length));
-    for (const en of deck.filter(c => c.lang === 'en')) {
-      const ar = deck.find(c => c.lang === 'ar' && c.pairId === en.pairId)!;
+    const { en: left, ar: right } = buildMatchColumns(lesson.words, makeRng(3));
+    assert.equal(left.length, Math.min(MATCH_PAIRS, lesson.words.length));
+    assert.equal(right.length, left.length);
+    for (const en of left) {
+      const ar = right.find(c => c.pairId === en.pairId)!;
       assert.equal(lesson.words.find(w => w.en === en.text)!.ar, ar.text);
       assert.ok(isMatchPair(en, ar));
       assert.ok(!isMatchPair(en, en));
     }
+  });
+
+  it('puts every English card in one column and every Arabic card in the other', () => {
+    for (const lesson of ENGLISH_HUB_LESSONS) {
+      const { en, ar } = buildMatchColumns(lesson.words, makeRng(9));
+      assert.ok(en.every(c => c.lang === 'en'), lesson.id);
+      assert.ok(ar.every(c => c.lang === 'ar'), lesson.id);
+    }
+  });
+
+  it('never sets a card beside its own answer, for any lesson or seed', () => {
+    // Two independent shuffles line a pair up by chance; side by side that is
+    // the answer handed over, so a row must never face its own match.
+    for (const lesson of ENGLISH_HUB_LESSONS) {
+      for (let seed = 1; seed <= 25; seed += 1) {
+        const { en, ar } = buildMatchColumns(lesson.words, makeRng(seed));
+        for (let row = 0; row < en.length; row += 1) {
+          assert.notEqual(en[row].pairId, ar[row].pairId, `${lesson.id} seed ${seed} row ${row}`);
+        }
+      }
+    }
+  });
+
+  it('still never faces a pair when the random source is stuck', () => {
+    // A constant rng shuffles every column the same way, so the reshuffles can
+    // never separate the pairs and the rotation fallback has to.
+    for (const rng of [() => 0, () => 0.999999]) {
+      const { en, ar } = buildMatchColumns(ENGLISH_HUB_LESSONS[0].words, rng);
+      assert.equal(new Set(en.map(c => c.pairId)).size, en.length);
+      assert.equal(new Set(ar.map(c => c.pairId)).size, ar.length, 'every pair appears once on the right');
+      for (let row = 0; row < en.length; row += 1) assert.notEqual(en[row].pairId, ar[row].pairId);
+    }
+  });
+
+  it('is reproducible for a seed', () => {
+    const words = ENGLISH_HUB_LESSONS[0].words;
+    assert.deepEqual(buildMatchColumns(words, makeRng(4)), buildMatchColumns(words, makeRng(4)));
   });
 });
 

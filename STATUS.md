@@ -1748,24 +1748,17 @@ Snap to grid is on by default, with a step from the zoom level.
   exactly-coincident point by default (`d <= 0`), which made it impossible to
   test two corners on one spot and would have hidden the «coincident» path; a
   tap merges through an explicit tiny radius.
-- **Points are named أ، ب، ج in Arabic (since 2026-10-15) — a product call, and
-  the Grade 10 book does not do it.** The scene still names points A, B, C … and
-  everything computed stays Latin; `services/mathPointNames.ts` maps A–Z to the
-  abjad order (أ ب ج د هـ و ز ح ط ي ك ل م ن ع ف ق ر ش ت ث خ ذ ض ظ غ) at display
-  time only, and English keeps A, B, C. **س and ص are skipped** — they are the
-  axes, and a point called ص beside «(س − أ)² + (ص − ب)²» would read as a
-  variable. A shape's name has its letters **apart** («مثلث أ ب ج»), because
-  Arabic letters written together join into one word. Arabic names are not
-  forced left-to-right (an override would print أ ب ج as ج ب أ), so an angle chip
-  is two runs: the name, and the number in its own forced-LTR run.
-  **What the extracted books show (checked 2026-10-15, not proof):** the grade
-  4, 5, 6, 9 and 10 student books in `lib/curriculum/src/data/extracted/` name
-  points with Latin letters (Grade 10 semester 1 alone has ~196 three- or
-  four-letter names such as ABC) and contain **no** spaced Arabic-letter names;
-  PDF extraction can garble isolated Arabic letters, so a person should look at
-  the printed page before treating either as settled. Order past أ ب ج is the
-  standard abjad order, not taken from a book. To undo: make `pointName` return
-  its input.
+- **Point names stay Latin (A, B, C) in Arabic — mapping them to أ، ب، ج was
+  tried and reverted (2026-10-15).** It shipped as #1070 and was reverted at the
+  owner's request. What was learned, so nobody redoes it blind: the grade 4, 5,
+  6, 9 and 10 student books in `lib/curriculum/src/data/extracted/` name points
+  with Latin letters (Grade 10 semester 1 alone has ~196 three- or four-letter
+  names such as ABC) and contain no spaced Arabic-letter names. PDF extraction
+  can garble isolated Arabic letters, so that is evidence, not proof; look at
+  the printed page before trying again. If it is tried again: skip س and ص (the
+  axes), write a shape's letters apart («أ ب ج») so they do not join into a word,
+  and do **not** force Arabic names left-to-right (an override prints أ ب ج as
+  ج ب أ) — the angle chip then needs the name and the number as two runs.
 - **Not done:** no saving (the scene lives for the visit), 26 points at most.
   Two known cosmetic limits: edge-length labels can sit on an axis tick label,
   and angle labels are hidden on edges shorter than ~44 px (the panel under the
@@ -5829,8 +5822,11 @@ and from «العب بكلمات هذا الدرس» on the matching lesson page
 lessons and 458 words across the eight G1–4 books.
 
 - **Seven activities**, all pure logic in `services/englishHub/games.ts`: flashcards,
-  listen-and-choose, match the English word to its Arabic meaning, spell it,
-  unscramble it (tap letter tiles into order, tap a placed tile to send it back
+  listen-and-choose, match the English word to its Arabic meaning (**two
+  columns since 2026-10-15** — English left, Arabic right, each shuffled on its
+  own, and no row ever faces its own match; `buildMatchColumns`. It was one
+  shuffled grid, which put either language in either column. Match the picture
+  is still the single grid), spell it, unscramble it (tap letter tiles into order, tap a placed tile to send it back
   to the tray), and, added 2026-09-26: **match the picture** (English word ↔
   a curated emoji, 188 of the 458 words have one — no real book figures exist
   for G1–4 English, figure extraction only starts at grade 7, so this is
