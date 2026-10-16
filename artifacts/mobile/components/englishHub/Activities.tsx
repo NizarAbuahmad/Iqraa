@@ -30,8 +30,8 @@ import {
   wordPicture,
 } from '@/services/englishHub/games';
 
-const RIGHT = '#16A34A';
-const WRONG = '#DC2626';
+export const RIGHT = '#16A34A';
+export const WRONG = '#DC2626';
 
 type Finish = (correct: number, total: number) => void;
 
@@ -41,7 +41,7 @@ function useUi() {
   return { colors, t, row: (isRTL ? 'row-reverse' : 'row') as 'row' | 'row-reverse' };
 }
 
-function HearButton({ word, big }: { word: string; big?: boolean }) {
+export function HearButton({ word, big }: { word: string; big?: boolean }) {
   const { colors, t } = useUi();
   return (
     <Pressable
@@ -73,7 +73,7 @@ function WordPicture({ word }: { word: string }) {
   );
 }
 
-function Progress({ i, n }: { i: number; n: number }) {
+export function Progress({ i, n }: { i: number; n: number }) {
   const { colors, t } = useUi();
   return <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13, textAlign: 'center' }}>{t('hubQuestion', i + 1, n)}</Text>;
 }
