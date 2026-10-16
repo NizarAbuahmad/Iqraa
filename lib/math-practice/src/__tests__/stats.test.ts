@@ -390,10 +390,42 @@ describe('statistics: answers recomputed', () => {
   });
 
   it('reading a table of counts', () => {
-    const kinds: Record<number, Set<string>> = { 1: new Set(), 2: new Set() };
+    const kinds: Record<number, Set<string>> = { 1: new Set(), 2: new Set(), 3: new Set(), 4: new Set() };
     for (const id of ['read_data_g12', 'read_data_g34']) for (const item of draws(id, 300)) {
       const p = item.promptAr!, g = item.id.split('-')[2]!;
       const kind = (k: string) => { assert.equal(id, 'read_data_g12', p); kinds[Number(g)]!.add(k); };
+      const upper = (k: string) => { assert.equal(id, 'read_data_g34', p); kinds[Number(g)]!.add(k); };
+      if (has(p, 'في منتصف المسافة')) {
+        // halfway between two lines of the scale, which are one step apart
+        upper('halfStep');
+        const [step, lo, hi] = nums(p);
+        assert.equal(hi! - lo!, step, p);
+        assert.equal(lo! % step!, 0, p);
+        assert.equal(Number(item.answer), (lo! + hi!) / 2, p);
+        assert.ok(Number.isInteger(Number(item.answer)), p);
+        continue;
+      }
+      if (has(p, 'ورقة مربعات')) {
+        // the count divided by what one square stands for
+        upper('squares');
+        const per = has(p, 'طالبين') ? 2 : nums(p)[0]!, v = nums(p).pop()!;
+        assert.equal(Number(item.answer), v / per, p);
+        assert.ok(Number.isInteger(v / per), p);
+        continue;
+      }
+      if (has(p, 'التمثيل بالنقاط')) {
+        // count the dots over every value from the asked one up
+        upper('dots');
+        assert.equal(g, '4', `dot plots are a Grade 4 lesson: ${p}`);
+        const rows = [...p.matchAll(/(\d+): (●*)/g)].map(m => [Number(m[1]), m[2]!.length] as const);
+        assert.equal(rows.length, 6, p);
+        const v = Number(p.match(/قرأ (\d+) ساعات أو أكثر/)![1]);
+        const want = rows.filter(([h]) => h >= v).reduce((t, [, c]) => t + c, 0);
+        assert.equal(Number(item.answer), want, p);
+        assert.ok(rows.some(([h, c]) => h === v && c > 0), `«or more» and «more than» differ: ${p}`);
+        continue;
+      }
+      if (id === 'read_data_g34') kinds[Number(g)]!.add('table');
       if (has(p, 'عدد الأقلام')) {
         // organising raw data: how many times the value occurs
         kind('raw');
@@ -440,6 +472,8 @@ describe('statistics: answers recomputed', () => {
     }
     assert.deepEqual([...kinds[1]!].sort(), ['compare', 'raw', 'table'], 'Grade 1 kinds');
     assert.deepEqual([...kinds[2]!].sort(), ['compare', 'draw', 'pictures', 'raw', 'table', 'tally'], 'Grade 2 kinds');
+    assert.deepEqual([...kinds[3]!].sort(), ['halfStep', 'squares', 'table'], 'Grade 3 kinds');
+    assert.deepEqual([...kinds[4]!].sort(), ['dots', 'halfStep', 'squares', 'table'], 'Grade 4 kinds');
   });
 
   it('frequency tables and grouped data', () => {
@@ -609,8 +643,30 @@ describe('proportion and percent: answers recomputed', () => {
 
   it('variation and proportional division', () => {
     const dirKinds = new Set<string>();
-    for (const item of draws('direct_variation', 300)) {
+    for (const item of draws('direct_variation', 400)) {
       const p = item.promptAr!, n = nums(p);
+      if (has(p, 'القيمة المفقودة')) {
+        // k from a complete row, then the missing x or y — and every complete row has the same k
+        dirKinds.add('table');
+        const rows = [...p.matchAll(/(\d+|؟) → (\d+|؟)/g)].map(m => [m[1]!, m[2]!] as const);
+        assert.equal(rows.length, 4, p);
+        const full = rows.filter(([x, y]) => x !== '؟' && y !== '؟').map(([x, y]) => [Number(x), Number(y)] as const);
+        assert.equal(full.length, 3, p);
+        const k = full[0]![1] / full[0]![0];
+        assert.ok(full.every(([x, y]) => y === k * x), p);
+        const [mx, my] = rows.find(([x, y]) => x === '؟' || y === '؟')!;
+        assert.equal(Number(item.answer), mx === '؟' ? Number(my) / k : k * Number(mx), p);
+        assert.ok(Number.isInteger(Number(item.answer)), p);
+        continue;
+      }
+      if (has(p, 'سيارة')) {
+        // distance per hour from the given trip, times the new time
+        dirKinds.add('distance');
+        const [d1, t1, t2] = n;
+        assert.equal(Number(item.answer), (d1! / t1!) * t2!, p);
+        assert.notEqual(t1, t2, p);
+        continue;
+      }
       if (has(p, 'هل تمثل المعادلة')) {
         dirKinds.add('isDirect');
         const eq = p.match(/المعادلة (.+) تغيرًا/)![1]!;
@@ -624,7 +680,7 @@ describe('proportion and percent: answers recomputed', () => {
       else { dirKinds.add('findY'); assert.equal(Number(item.answer), k * n[2]!, p); }
       assert.ok(item.answer.startsWith('y = ') || Number.isInteger(Number(item.answer)), p);
     }
-    assert.equal(dirKinds.size, 5, `direct_variation kinds drawn: ${[...dirKinds]}`);
+    assert.equal(dirKinds.size, 7, `direct_variation kinds drawn: ${[...dirKinds]}`);
     const invKinds = new Set<string>();
     for (const item of draws('inverse_variation', 300)) {
       const p = item.promptAr!, n = nums(p);

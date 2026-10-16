@@ -312,10 +312,27 @@ describe('geometry generators: answers recomputed from the stem', () => {
       const want = sum !== 180 ? 'لا يمكن أن يكون مثلثًا' : s.some(v => v === 90) ? 'قائم الزاوية' : s.some(v => v > 90) ? 'منفرج الزاوية' : 'حاد الزوايا';
       assert.equal(item.answer, want, item.promptAr);
     }
-    for (const item of draws('symmetry_lines')) {
+    // letters with a line of symmetry as printed, listed apart from the generator
+    const SYMMETRIC = new Set('AHMTUVWOXYI'.split('')), ASYMMETRIC = new Set('FGJLNPQRSZ'.split(''));
+    const symKinds = new Set<string>();
+    for (const item of draws('symmetry_lines', 300)) {
+      const p = item.promptAr!;
+      if (has(p, 'أيّ الحروف')) {
+        // exactly one printed letter answers the ask, and it is the answer
+        symKinds.add('letters');
+        const letters = p.match(/[A-Z]/g)!, want = has(p, 'ليس له') ? ASYMMETRIC : SYMMETRIC;
+        assert.equal(letters.length, 4, p);
+        assert.ok(letters.every(l => SYMMETRIC.has(l) || ASYMMETRIC.has(l)), p);
+        assert.deepEqual(letters.filter(l => want.has(l)), [item.answer], p);
+        assert.deepEqual([...item.wrongs].sort(), letters.filter(l => l !== item.answer).sort(), p);
+        continue;
+      }
+      if (has(p, 'النقطة المقابلة')) { symKinds.add('mirror'); assert.equal(Number(item.answer), 2 * nums(p)[0]!, p); continue; }
+      symKinds.add('count');
       const table: Record<string, number> = { 'المثلث المتساوي الأضلاع': 3, 'المربع': 4, 'المستطيل غير المربع': 2, 'المثلث المتساوي الساقين غير المتساوي الأضلاع': 1, 'الخماسي المنتظم': 5, 'السداسي المنتظم': 6 };
-      assert.equal(Number(item.answer), table[item.eq], item.promptAr);
+      assert.equal(Number(item.answer), table[p.match(/^كم محور تماثل في (.+)؟$/)![1]!], p);
     }
+    assert.equal(symKinds.size, 3, `symmetry_lines kinds drawn: ${[...symKinds]}`);
     for (const item of draws('angle_relations')) {
       const n = nums(item.promptAr!), p = item.promptAr!;
       if (has(p, 'الفرق بين قياسيهما')) {
@@ -930,12 +947,45 @@ describe('geometry generators: answers recomputed from the stem', () => {
         assert.equal(Number(item.answer), word(m[1]!) * 60 + word(m[2]!), p);
       }
     }
-    for (const item of draws('time_words')) {
-      const HOURS = ['', 'الواحدة', 'الثانية', 'الثالثة', 'الرابعة', 'الخامسة', 'السادسة', 'السابعة', 'الثامنة', 'التاسعة', 'العاشرة', 'الحادية عشرة', 'الثانية عشرة'];
-      const h = HOURS.map((w, i) => [w, i] as const).filter(([w, i]) => i > 0 && item.eq.startsWith(`${w} `)).sort((a, b) => b[0].length - a[0].length)[0]![1];
-      const off = has(item.eq, 'والنصف') ? 30 : has(item.eq, 'والربع') ? 15 : has(item.eq, 'إلا ربعًا') ? -15 : has(item.eq, 'وخمس') ? 5 : has(item.eq, 'وعشر') ? 10 : has(item.eq, 'إلا خمس') ? -5 : has(item.eq, 'إلا عشر') ? -10 : has(item.eq, 'وثلث') ? 20 : -20;
-      assert.equal(wrap(min(item.answer)), wrap(h * 60 + off), item.eq);
+    const HOURS = ['', 'الواحدة', 'الثانية', 'الثالثة', 'الرابعة', 'الخامسة', 'السادسة', 'السابعة', 'الثامنة', 'التاسعة', 'العاشرة', 'الحادية عشرة', 'الثانية عشرة'];
+    /** «الثامنة إلا ربعًا» → minutes after 12:00 */
+    const spoken = (s: string) => {
+      const h = HOURS.map((w, i) => [w, i] as const).filter(([w, i]) => i > 0 && s.startsWith(`${w} `)).sort((a, b) => b[0].length - a[0].length)[0]![1];
+      const off = has(s, 'والنصف') ? 30 : has(s, 'والربع') ? 15 : has(s, 'إلا ربعًا') ? -15 : has(s, 'وخمس') ? 5 : has(s, 'وعشر') ? 10 : has(s, 'إلا خمس') ? -5 : has(s, 'إلا عشر') ? -10 : has(s, 'وثلث') ? 20 : -20;
+      return wrap(h * 60 + off);
+    };
+    const timeKinds = new Set<string>();
+    for (const item of draws('time_words', 300)) {
+      const p = item.promptAr!;
+      if (has(p, 'بالكلمات')) {
+        // digits into words: the words name the printed time, with the word the stem asks for
+        timeKinds.add('words');
+        const t = p.match(/(\d+:\d\d)/)![1]!, illa = has(p, '(إلا)');
+        assert.equal(spoken(item.answer), wrap(min(t)), p);
+        assert.equal(has(item.answer, 'إلا'), illa, p);
+        for (const w of item.wrongs) assert.notEqual(spoken(w), wrap(min(t)), `${w}: ${p}`);
+        continue;
+      }
+      if (has(p, 'عقرب الدقائق')) {
+        // the minute hand's number times five, the hour the hand has passed
+        timeKinds.add('hands');
+        const [mn, h, nx] = nums(p);
+        assert.equal(nx, (h! % 12) + 1, p);
+        assert.equal(item.answer, `${h}:${String(5 * mn!).padStart(2, '0')}`, p);
+        continue;
+      }
+      if (has(p, 'كم دقيقة بقيت')) {
+        // to the next hour, which is the hour the stem names
+        timeKinds.add('left');
+        const t = p.match(/(\d+):(\d\d)/)!, next = HOURS.indexOf(p.match(/على الساعة (.+)؟$/)![1]!);
+        assert.equal(next, (Number(t[1]) % 12) + 1, p);
+        assert.equal(Number(item.answer), 60 - Number(t[2]), p);
+        continue;
+      }
+      timeKinds.add('digits');
+      assert.equal(wrap(min(item.answer)), spoken(item.eq), item.eq);
     }
+    assert.equal(timeKinds.size, 4, `time_words kinds drawn: ${[...timeKinds]}`);
   });
 });
 

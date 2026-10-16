@@ -474,7 +474,8 @@ const CATS: Array<[string, string]> = [['التفاح', 'apples'], ['الموز'
  * Reading a table of counts (most, least, total, a difference) — and since
  * 2026-10-16, for Grades 1–2: organising raw data, comparing two rows of a
  * picture graph, reading a tally (Grade 2) and choosing how many pictures to
- * draw (Grade 2).
+ * draw (Grade 2); and for Grades 3–4, reading a bar that ends between two lines
+ * of its scale, how many squares a bar takes, and (Grade 4) counting a dot plot.
  */
 const readData = (id: string, match: RegExp, grades: [number, number]) => T(id, match, grades, ({ rng, diff, grade }) => {
   const m = grade <= 1 ? 6 : grade === 2 ? 9 : span(diff, 12, 20, 30);
@@ -488,7 +489,25 @@ const readData = (id: string, match: RegExp, grades: [number, number]) => T(id, 
   const whereEn = key === 2 ? `In a picture graph each picture stands for ${key} fruits; the numbers of pictures are: ` : 'The table shows how many students prefer each fruit: ';
   const tab = cats.map((c, i) => `${c[0]}: ${counts[i]}`).join('، ');
   const tabEn = cats.map((c, i) => `${c[1]}: ${counts[i]}`).join(', ');
-  const q = pick(rng, grade === 1 ? [0, 1, 3, 4, 5] : grade === 2 ? [0, 1, 3, 4, 5, 6, 7] : [0, 1, 2, 3]);
+  const q = pick(rng, grade === 1 ? [0, 1, 3, 4, 5] : grade === 2 ? [0, 1, 3, 4, 5, 6, 7] : grade === 3 ? [0, 1, 2, 3, 8, 9] : [0, 1, 2, 3, 8, 9, 10]);
+  if (q === 8) { // read a bar that ends halfway between two lines of the scale
+    const step = pick(rng, [2, 10]), lo = step * int(rng, 1, span(diff, 4, 6, 8)), v = lo + step / 2, [f, fEn] = pick(rng, CATS);
+    return { eq: `${step}, ${lo}, ${lo + step}`, answer: String(v), wrongs: countOpts(v, [lo, lo + step, lo + 1, v + step]), ar: `في تمثيل بالأعمدة لعدد الطلاب الذين يفضلون كل نوع من الفاكهة، يزيد تدريج المحور الرأسي ${step} عند كل خط. ينتهي عمود ${f} في منتصف المسافة بين الخطين ${lo} و ${lo + step}. كم طالبًا يفضّل ${f}؟`, en: `In a bar graph of the fruits pupils prefer, the vertical scale goes up by ${step} at each line. The bar for ${fEn} ends halfway between the lines ${lo} and ${lo + step}. How many pupils prefer ${fEn}?` };
+  }
+  if (q === 9) { // represent: how many squares a bar takes when each square stands for several pupils
+    const per = pick(rng, [2, 5, 10]), sq = int(rng, 2, 9), v = per * sq, [f, fEn] = pick(rng, CATS);
+    return { eq: `${v}, ${per}`, answer: String(sq), wrongs: countOpts(sq, [v, v - per, sq + 1, sq - 1, per]), ar: `تمثّل ريم بيانات صفها بالأعمدة على ورقة مربعات، ويمثل كل مربع في العمود ${per === 2 ? 'طالبين' : `${per} طلاب`}. إذا كان عدد الطلاب الذين يفضلون ${f} ${v}، فكم مربعًا يكون طول عموده؟`, en: `Reem draws her class's data as a bar graph on squared paper, and each square of a bar stands for ${per} pupils. If ${v} pupils prefer ${fEn}, how many squares tall is its bar?` };
+  }
+  if (q === 10) { // a dot plot: count the dots at or above a value
+    const top = 6, cs = Array.from({ length: top }, () => int(rng, 0, span(diff, 4, 5, 6))), v = int(rng, 3, 5);
+    cs[v - 1] = Math.max(1, cs[v - 1]!); // a dot at the value itself, so «or more» differs from «more than»
+    const below = int(rng, 0, v - 2);
+    cs[below] = Math.max(1, cs[below]!);
+    const dots = (c: number) => (c ? '●'.repeat(c) : '(لا نقاط)'), plot = cs.map((c, i) => `${i + 1}: ${dots(c)}`).join('، ');
+    const plotEn = cs.map((c, i) => `${i + 1}: ${c ? '●'.repeat(c) : '(no dots)'}`).join(', ');
+    const at = sum(cs.slice(v - 1)), above = sum(cs.slice(v)), all = sum(cs);
+    return { eq: plot, answer: String(at), wrongs: countOpts(at, [above, all - at, all, at + 1]), ar: `يبين التمثيل بالنقاط الآتي عدد الساعات التي قضاها كل طالب في القراءة خلال أسبوع، وكل نقطة تمثل طالبًا واحدًا: ${plot}. كم طالبًا قرأ ${v} ساعات أو أكثر؟`, en: `The dot plot shows how many hours each pupil spent reading in a week, one dot per pupil: ${plotEn}. How many pupils read for ${v} hours or more?` };
+  }
   if (q === 4) { // organise raw data: how often one value occurs
     const L = grade <= 1 ? int(rng, 6, 8) : int(rng, 8, 10), top = grade <= 1 ? 6 : 9;
     const xs = Array.from({ length: L }, () => int(rng, 3, top)), v = pick(rng, xs), c = xs.filter(x => x === v).length;

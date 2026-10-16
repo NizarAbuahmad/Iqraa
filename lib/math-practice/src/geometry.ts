@@ -505,11 +505,25 @@ const prismPyramid = T('prism_pyramid_parts', /^المنشور والهرم$/, [
   return { eq: `${n}`, answer: String(ans), wrongs: pos(ans as number, wr as number[]), ar: `كم عدد ${arW} ${prism ? `منشور قاعدته ${ar}` : `هرم قاعدته ${ar}`}؟`, en: `How many ${enW} does a ${prism ? 'prism' : 'pyramid'} with a ${en} base have?` };
 });
 
+/** Capital letters with a line of symmetry as printed (a vertical one), and letters with none (N, S, Z only turn onto themselves). */
+const SYM_LETTERS = ['A', 'H', 'M', 'T', 'U', 'V', 'W', 'O', 'X', 'Y', 'I'];
+const NO_SYM_LETTERS = ['F', 'G', 'J', 'L', 'N', 'P', 'Q', 'R', 'S', 'Z'];
+/** How many lines of symmetry a shape has — and since 2026-10-16 which letter has one, and how far a point is from its match across the axis. */
 const symmetry = T('symmetry_lines', /^التماثل$/, [4, 4], ({ rng }) => {
   const shapes: Array<[string, string, number]> = [
     ['المثلث المتساوي الأضلاع', 'equilateral triangle', 3], ['المربع', 'square', 4], ['المستطيل غير المربع', 'non-square rectangle', 2],
     ['المثلث المتساوي الساقين غير المتساوي الأضلاع', 'isosceles triangle that is not equilateral', 1], ['الخماسي المنتظم', 'regular pentagon', 5], ['السداسي المنتظم', 'regular hexagon', 6],
   ];
+  const ask = pick(rng, [0, 1, 2]);
+  if (ask === 1) { // which letter has (or has not) a line of symmetry — the options are in the stem
+    const has = rng() < 0.6, [one, rest] = has ? [SYM_LETTERS, NO_SYM_LETTERS] : [NO_SYM_LETTERS, SYM_LETTERS];
+    const ans = pick(rng, one), opts = shuffle(rng, [ans, ...shuffle(rng, rest).slice(0, 3)]);
+    return { eq: opts.join(' '), answer: ans, wrongs: opts.filter(o => o !== ans), ar: `أيّ الحروف الآتية ${has ? 'له' : 'ليس له'} محور تماثل: ${opts.join('، ')}؟`, en: `Which of these letters ${has ? 'has' : 'has no'} line of symmetry: ${opts.join(', ')}?` };
+  }
+  if (ask === 2) { // a point and its match are the same distance from the axis, on either side
+    const d = int(rng, 3, 9);
+    return { eq: `mirror ${d}`, answer: String(2 * d), wrongs: pos(2 * d, [d, 2 * d + 1, 2 * d - 1, d + 2]), ar: `رُسم شكل له محور تماثل رأسي على ورقة مربعات. تبعد النقطة A من الشكل ${d} مربعات عن المحور إلى يساره. كم مربعًا بين A والنقطة المقابلة لها على الجهة الأخرى من المحور؟`, en: `A shape with a vertical line of symmetry is drawn on squared paper. Point A of the shape is ${d} squares to the left of the line. How many squares apart are A and the matching point on the other side of the line?` };
+  }
   const [ar, en, k] = pick(rng, shapes);
   return { eq: ar, answer: String(k), wrongs: pos(k, [k + 1, k - 1, 2 * k, k + 2, 4]), ar: `كم محور تماثل في ${ar}؟`, en: `How many lines of symmetry does a ${en} have?` };
 });
@@ -1296,11 +1310,30 @@ const timeGen = (id: string, match: RegExp, grades: [number, number]) => T(id, m
 });
 
 const HOURS_AR = ['', 'الواحدة', 'الثانية', 'الثالثة', 'الرابعة', 'الخامسة', 'السادسة', 'السابعة', 'الثامنة', 'التاسعة', 'العاشرة', 'الحادية عشرة', 'الثانية عشرة'];
+/**
+ * Arabic clock words into digits — and since 2026-10-16 digits into words, the
+ * time read off the hands, and the minutes left to the hour («إلا»).
+ */
 const clockWords = T('time_words', /^قراءه الوقت/, [3, 3], ({ rng }) => {
   const h = int(rng, 1, 12);
   const forms: Array<[string, number]> = [['والنصف', 30], ['والربع', 15], ['إلا ربعًا', -15], ['وخمس دقائق', 5], ['وعشر دقائق', 10], ['إلا خمس دقائق', -5], ['إلا عشر دقائق', -10], ['وثلث', 20], ['إلا ثلثًا', -20]];
+  const ask = pick(rng, [0, 1, 2, 3]);
+  if (ask === 2) { // the hands of a clock: the minute hand on a number, the hour hand between two
+    const mn = pick(rng, [1, 2, 3, 4, 6, 8, 9, 10, 11]), mm = 5 * mn, nx = (h % 12) + 1;
+    return { eq: `hands ${h}, ${mn}`, answer: clock(h, mm), wrongs: wrongsFrom(clock(h, mm), [clock(nx, mm), clock(h, mn), ...(h * 5 < 60 && mn !== h ? [clock(mn, h * 5)] : [])], j => clock(h, (mm + 5 * Math.abs(j)) % 60)), ar: `يشير عقرب الدقائق إلى العدد ${mn}، ويقع عقرب الساعات بين العددين ${h} و ${nx}. ما الوقت بالأرقام؟`, en: `The minute hand points to ${mn} and the hour hand is between ${h} and ${nx}. What is the time in digits?` };
+  }
+  if (ask === 3) { // «إلا»: how many minutes are left to the next hour
+    const m = 5 * int(rng, 7, 11), nx = (h % 12) + 1, left = 60 - m;
+    return { eq: `${clock(h, m)} → ${nx}`, answer: String(left), wrongs: pos(left, [m, left + 5, left - 5, 100 - m]), ar: `الساعة الآن ${clock(h, m)}. كم دقيقة بقيت على الساعة ${HOURS_AR[nx]}؟`, en: `It is ${clock(h, m)} now. How many minutes are left until ${nx} o'clock?` };
+  }
   const [word, off] = pick(rng, forms);
   const [h2, m2] = addMinutes(h, 0, off);
+  if (ask === 1) { // the other way: digits into words, with the word the stem names
+    const other = off < 0 ? h2 : (h % 12) + 1, mirror = forms.find(f => f[1] === -off)?.[0];
+    const ans = `${HOURS_AR[h]} ${word}`;
+    const cands = [`${HOURS_AR[other]} ${word}`, ...(mirror ? [`${HOURS_AR[h]} ${mirror}`, `${HOURS_AR[other]} ${mirror}`] : [`${HOURS_AR[h]} والربع`, `${HOURS_AR[other]} إلا ربعًا`])];
+    return { eq: clock(h2, m2), answer: ans, wrongs: wrongsFrom(ans, cands, j => `${HOURS_AR[((h + j + 23) % 12) + 1]} ${word}`), ar: `اكتب الوقت ${clock(h2, m2)} بالكلمات باستعمال (${off < 0 ? 'إلا' : 'و'}).`, en: `Write the time ${clock(h2, m2)} in Arabic words using «${off < 0 ? 'إلا' : 'و'}».` };
+  }
   return { eq: `${HOURS_AR[h]} ${word}`, answer: clock(h2, m2), wrongs: wrongsFrom(clock(h2, m2), [clock(...addMinutes(h, 0, -off)), clock(h, 0), clock(...addMinutes(h, 0, off + 5)), clock(...addMinutes(h, 0, off - 5))], j => clock(...addMinutes(h, 0, off + 5 * Math.abs(j) + 10))), ar: `كيف تُكتب الساعة «${HOURS_AR[h]} ${word}» بالأرقام؟`, en: `How is the time «${HOURS_AR[h]} ${word}» (Arabic wording) written in digits?` };
 });
 

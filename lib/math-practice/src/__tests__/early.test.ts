@@ -404,15 +404,39 @@ describe('early arithmetic: answers recomputed', () => {
       assert.equal(kinds.size, 3, `G${grade}: ${[...kinds]}`);
     }
     const mulKinds = new Set<string>();
-    for (const item of draws('mul_properties', 300)) {
+    const PROPS = ['خاصية التبديل', 'خاصية التجميع', 'خاصية التوزيع', 'خاصية العنصر المحايد', 'خاصية الضرب في الصفر'];
+    for (const item of draws('mul_properties', 400)) {
       const p = item.promptAr!, n = nums(p), a = Number(item.answer);
+      if (has(p, 'ما الخاصية المستعملة')) {
+        // read the property off the shape of the equation, and check the equation holds
+        mulKinds.add('name');
+        const eq = p.slice(p.indexOf(':') + 1).replace('؟', '').trim();
+        const [l, r] = eq.split(' = ');
+        const ev = (s: string) => s.split(' + ').reduce((t, term) => t + term.replace(/[()]/g, '').split(' × ').reduce((x, f) => x * Number(f), 1), 0);
+        const want = eq.includes('+') ? 'خاصية التوزيع' : eq.includes('(') ? 'خاصية التجميع' : / × 0 = /.test(eq) ? 'خاصية الضرب في الصفر' : / × 1 = /.test(eq) ? 'خاصية العنصر المحايد' : 'خاصية التبديل';
+        assert.equal(item.answer, want, p);
+        if (!eq.includes('+') && eq.includes('(')) assert.equal(ev(l!.replace(/[()]/g, '')), ev(r!.replace(/[()]/g, '')), p);
+        else if (eq.includes('+')) { const [x, y, z] = nums(l!); assert.equal(x! * (y! + z!), ev(r!), p); }
+        else assert.equal(ev(l!), ev(r!), p);
+        if (want === 'خاصية التبديل') assert.notEqual(n[0], n[1], p);
+        assert.ok(item.wrongs.every(w => PROPS.includes(w)), p);
+        continue;
+      }
+      if (has(p, 'ذهنيًا')) {
+        // the product of the printed factors
+        mulKinds.add(has(p, 'التوزيع') ? 'mentalDist' : 'mentalAssoc');
+        assert.equal(a, n.reduce((x, y) => x * y, 1), p);
+        if (has(p, 'التوزيع')) assert.ok(n[1]! > 10 && n[1]! < 20, p);
+        else assert.ok(n.some(x => x === 5) && n.some(x => x % 2 === 0 && x <= 4), `a pair that makes 10 or 20: ${p}`);
+        continue;
+      }
       if (has(p, '× 1')) { mulKinds.add('one'); assert.equal(a, n[0]); }
       else if (has(p, '× 0')) { mulKinds.add('zero'); assert.equal(a, 0); }
       else if (has(p, ') × ')) { mulKinds.add('assoc'); assert.ok(has(p, 'التجميع')); assert.equal(a, n[2]); assert.equal(n[0]! * n[1]! * n[2]!, n[3]! * n[4]! * a); }
       else if (has(p, ' × (')) { mulKinds.add('dist'); assert.ok(has(p, 'التوزيع')); assert.equal(n[0]! * (n[1]! + n[2]!), n[3]! * n[4]! + n[5]! * a); }
-      else { mulKinds.add('comm'); assert.ok(has(p, 'التبديل')); assert.equal(n[0]! * n[1]!, a * n[2]!); }
+      else { mulKinds.add('comm'); assert.ok(has(p, 'التبديل')); assert.equal(n[0]! * n[1]!, a * n[2]!); assert.notEqual(n[0], n[1], p); }
     }
-    assert.equal(mulKinds.size, 5);
+    assert.equal(mulKinds.size, 8, `mul_properties kinds drawn: ${[...mulKinds]}`);
     const divKinds = new Set<string>();
     for (const item of draws('div_properties')) {
       const p = item.promptAr!, n = nums(p), a = Number(item.answer);

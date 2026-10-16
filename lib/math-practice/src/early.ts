@@ -585,9 +585,33 @@ const divisionRelation = T('division_relation', /^العلاقه بين القس
 
 // ─── Grade 3 multiplication and division ────────────────────────────────────
 
+const MUL_PROPS = ['خاصية التبديل', 'خاصية التجميع', 'خاصية التوزيع', 'خاصية العنصر المحايد', 'خاصية الضرب في الصفر'];
+/**
+ * Completing a property, a product by 1 or 0 — and since 2026-10-16 naming
+ * the property an equation shows, and using the properties to multiply in the
+ * head (a pair that makes 10 or 20 first; a two-digit factor split into tens
+ * and ones).
+ */
 const mulProps = T('mul_properties', /^خواص الضرب$/, [3, 3], ({ rng }) => {
-  const a = int(rng, 2, 9), b = int(rng, 2, 9), c = int(rng, 2, 9), k = pick(rng, [0, 1, 2, 3, 4]);
-  if (k === 0) return { eq: `${a} × ${b}`, answer: String(a), wrongs: ints(a, [b, a * b, a + 1, a - 1]), ar: `أكمل باستعمال خاصية التبديل: ${b} × ${a} = ___ × ${b}`, en: `Complete using the commutative property: ${b} × ${a} = ___ × ${b}` };
+  const a = int(rng, 2, 9), b = int(rng, 2, 9), c = int(rng, 2, 9), k = pick(rng, [0, 1, 2, 3, 4, 5, 6]);
+  if (k === 5) { // name the property
+    const which = int(rng, 0, 4), x = which === 0 && a === b ? (a % 9) + 2 : a;
+    const eq = which === 0 ? `${x} × ${b} = ${b} × ${x}` : which === 1 ? `(${a} × ${b}) × ${c} = ${a} × (${b} × ${c})` : which === 2 ? `${a} × (${b} + ${c}) = ${a} × ${b} + ${a} × ${c}` : which === 3 ? `${a} × 1 = ${a}` : `${a} × 0 = 0`;
+    const ans = MUL_PROPS[which]!;
+    return { eq, answer: ans, wrongs: others(rng, ans, MUL_PROPS), ar: `ما الخاصية المستعملة في المساواة: ${eq}؟`, en: `Which property does the equation ${eq} show?` };
+  }
+  if (k === 6) { // multiply in the head with the properties
+    if (rng() < 0.5) { // 2 × 7 × 5: group the pair that makes 10 or 20
+      const [p, q] = pick(rng, [[2, 5], [5, 2], [4, 5], [5, 4]] as const), r = int(rng, 3, 9), t = p * q * r;
+      return { eq: `${p} × ${r} × ${q}`, answer: String(t), wrongs: ints(t, [p * r + q, p + r * q, r * q, t + 10]), ar: `استعمل خواص الضرب لإيجاد ناتج ${p} × ${r} × ${q} ذهنيًا.`, en: `Use the properties of multiplication to work out ${p} × ${r} × ${q} in your head.` };
+    }
+    const u = int(rng, 1, 9), n = 10 + u, t = a * n;
+    return { eq: `${a} × ${n}`, answer: String(t), wrongs: ints(t, [a * 10 + u, a * u, a * 10, t + a]), ar: `استعمل خاصية التوزيع لإيجاد ناتج ${a} × ${n} ذهنيًا.`, en: `Use the distributive property to work out ${a} × ${n} in your head.` };
+  }
+  if (k === 0) { // two different factors, or «3 × 3 = ___ × 3» says nothing about order
+    const b2 = b === a ? (b % 9) + 2 : b;
+    return { eq: `${a} × ${b2}`, answer: String(a), wrongs: ints(a, [b2, a * b2, a + 1, a - 1]), ar: `أكمل باستعمال خاصية التبديل: ${b2} × ${a} = ___ × ${b2}`, en: `Complete using the commutative property: ${b2} × ${a} = ___ × ${b2}` };
+  }
   if (k === 1) return { eq: `${a} × 1`, answer: String(a), wrongs: ints(a, [1, 0, a + 1, 2 * a]), ar: `ما ناتج ${a} × 1؟`, en: `What is ${a} × 1?` };
   if (k === 2) return { eq: `${a} × 0`, answer: '0', wrongs: ints(0, [a, 1, 2 * a, a - 1]), ar: `ما ناتج ${a} × 0؟`, en: `What is ${a} × 0?` };
   if (k === 3) return { eq: `${a}, ${b}, ${c}`, answer: String(c), wrongs: ints(c, [b, a, c + 1, b + c]), ar: `أكمل باستعمال خاصية التوزيع: ${a} × (${b} + ${c}) = ${a} × ${b} + ${a} × ___`, en: `Complete using the distributive property: ${a} × (${b} + ${c}) = ${a} × ${b} + ${a} × ___` };
