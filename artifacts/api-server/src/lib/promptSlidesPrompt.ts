@@ -46,6 +46,82 @@ const DEFAULT_PROMPT_SLIDES = 10;
  */
 export const MAX_PROMPT_SLIDE_IMAGES = 3;
 
+/**
+ * The icon names a slide may carry. This is a copy of `DECK_SECTION_ICONS` in
+ * `artifacts/mobile/services/deckIcons.ts` — the API server cannot import the
+ * app — and `promptSlidesPrompt.test.ts` reads that array out of the app's
+ * source and fails if the two differ.
+ */
+export const DECK_ICON_NAMES = [
+  "target", "book", "books", "bulb", "ruler", "flag", "home", "users",
+  "help", "pencil", "ticket", "sparkles", "trophy", "bars", "trend", "check",
+  "atom", "flask", "leaf", "globe", "calculator", "clock", "pin", "heart", "star", "sun", "drop", "laptop",
+] as const;
+
+/** Charts the prompt asks for at most; the server keeps three before it cuts. */
+export const MAX_PROMPT_SLIDE_CHARTS = 2;
+const MAX_CHARTS_KEPT = 3;
+const MAX_CHART_ITEMS = 8;
+
+const ARABIC_DIGITS = "٠١٢٣٤٥٦٧٨٩";
+
+function chartNumber(v: unknown): number {
+  if (typeof v === "number") return v;
+  if (typeof v === "string" && /^\s*[0-9٠-٩]+(?:[.,٫][0-9٠-٩]+)?\s*$/.test(v)) {
+    return Number(v.replace(/[٠-٩]/g, d => String(ARABIC_DIGITS.indexOf(d))).replace(/[,٫]/, "."));
+  }
+  return NaN;
+}
+
+/** A chart this app can draw, cleaned — or null. The app re-checks with `usableChartVisual`. */
+function cleanChart(raw: unknown): Record<string, unknown> | null {
+  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const v = raw as Record<string, unknown>;
+  if (v.kind !== "chart" || (v.chartType !== "bar" && v.chartType !== "pie")) return null;
+  if (!Array.isArray(v.categories) || !Array.isArray(v.values)) return null;
+  if (v.categories.length !== v.values.length || v.categories.length < 2 || v.categories.length > MAX_CHART_ITEMS) return null;
+  const categories = v.categories.map(c => (typeof c === "string" ? c.trim() : ""));
+  if (categories.some(c => !c || c.length > 40) || new Set(categories).size !== categories.length) return null;
+  const values = v.values.map(chartNumber);
+  if (values.some(n => !Number.isFinite(n) || n < 0) || !values.some(n => n > 0)) return null;
+  const caption = typeof v.caption === "string" ? v.caption.trim() : "";
+  return { kind: "chart", chartType: v.chartType, categories, values, ...(caption ? { caption } : {}) };
+}
+
+/**
+ * Keeps the structural fields a model added to its slides — `icon` and a chart
+ * `visual` — only where this app can draw them.
+ *
+ * Both are optional extras, so a bad one is deleted, never a reason to refuse a
+ * paid deck: an icon outside the table, a chart with ragged arrays or a
+ * negative bar, a chart on a slide whose `layout` already fills the screen.
+ * More than three charts is cut to the first three — the prompt asks for two,
+ * and a deck of charts is not the deck that was asked for.
+ */
+export function sanitizeDeckStructure(activity: unknown): unknown {
+  if (activity === null || typeof activity !== "object" || Array.isArray(activity)) return activity;
+  const deck = activity as Record<string, unknown>;
+  if (!Array.isArray(deck.slides)) return activity;
+  let charts = 0;
+  const slides = deck.slides.map(raw => {
+    if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return raw;
+    const slide = { ...(raw as Record<string, unknown>) };
+    if (slide.icon !== undefined && !(DECK_ICON_NAMES as readonly string[]).includes(slide.icon as string)) delete slide.icon;
+    if (slide.visual !== undefined) {
+      const chart = slide.layout ? null : cleanChart(slide.visual);
+      if (chart && charts < MAX_CHARTS_KEPT) {
+        slide.visual = chart;
+        charts += 1;
+      } else {
+        delete slide.visual;
+        delete slide.visualOnReveal;
+      }
+    }
+    return slide;
+  });
+  return { ...deck, slides };
+}
+
 function slideCountLine(b: any, isAr: boolean): string {
   const n = Number(b.slideCount);
   if (!Number.isFinite(n) || n <= 0) {
@@ -147,6 +223,7 @@ ${slideCountLine(b, true)}
       "slideNumber": 5, "type": "intro",
       "title": "الفكرة معبَّرًا عنها كجملة خبرية لا كعنوان",
       "content": "• السطر الأول من الشرح\\n• السطر الثاني\\n• مثال قصير أو حالة خاصة",
+      "icon": "bulb",
       "mediaPrompt": "short english photo search query",
       "durationSeconds": 0,
       "teacher": { "teachingTips": "ما الذي تؤكّد عليه هنا", "commonMisconceptions": "الخطأ الشائع في هذه الفكرة تحديدًا", "expectedAnswer": "الصياغة الدقيقة للفكرة" }
@@ -172,6 +249,7 @@ ${slideCountLine(b, true)}
     {
       "slideNumber": 10, "type": "summary",
       "title": "الخلاصة",
+      "icon": "flag",
       "content": "• الفكرة الأولى\\n• الفكرة الثانية\\n• الفكرة الثالثة",
       "durationSeconds": 0,
       "teacher": { "teachingTips": "ما الذي يُبنى على هذا لاحقًا" }
@@ -192,6 +270,10 @@ ${slideCountLine(b, true)}
 - "compare": مقارنة حقيقية بين طرفين (قبل/بعد، صواب/خطأ، طريقتان). أضف "compare": {"leftTitle":"","left":["",""],"rightTitle":"","right":["",""]}. الطرفان ممتلئان دائمًا.
 - "steps": خطوات مرتّبة لعملية. "content" أسطر تبدأ بـ "• " بالترتيب، سطران على الأقل.
 لا تُلبس أكثر من نصف شرائح الشرح شكلًا خاصًا — التنويع هو المقصود، لا الفوضى.
+
+الأيقونة والرسم البياني — بنية يختارها العرض نفسه لا قالب واحد لكل الشرائح:
+- "icon": اسم أيقونة واحد على كل شريحة شرح وكل شريحة فاصلة وشريحة الخلاصة، وليس على الغلاف. اختر من هذه القائمة فقط: ${DECK_ICON_NAMES.join(", ")}. اختر الأقرب لما تتحدّث عنه الشريحة نفسها لا لمادة العرض كلها (atom لبنية الذرة، leaf للنبات، globe للجغرافيا، calculator للحساب، clock للزمن، drop للماء، pin لمكان، heart للصحة، sun للطاقة، laptop للتقنية، flask للتجربة). لا تكرّر الأيقونة نفسها على شريحتين متتاليتين، ولا تضع إيموجي في العنوان — الأيقونة هي رمز العنوان.
+- "visual": رسم بياني، وفقط حين يحوي وصف المعلّم أو نصّه المصدري أرقامًا حقيقية قابلة للمقارنة. شكله: {"kind":"chart","chartType":"bar","categories":["بند","بند"],"values":[10,20]}. من ٢ إلى ٨ بنود، و"values" أرقام غير سالبة (لا نصوص)، وعدد البنود يساوي عدد القيم. "pie" فقط حين تكون القيم أجزاءً من كل (مجموعها نحو ١٠٠ أو نسب مئوية)، وإلا "bar". لا تخترع أرقامًا أبدًا: إن لم تجد في الوصف أو النص أرقامًا حقيقية فلا تضع "visual" في العرض كلّه، وهذا هو الأصل لا الاستثناء. لا يزيد عدد الشرائح ذات الرسم عن ${MAX_PROMPT_SLIDE_CHARTS}، ولا يوضع على شريحة تحمل "layout" أو "mediaPrompt". اكتب في "content" سطرين يقولان ما الذي يُقرأ من الرسم.
 
 قواعد إلزامية:
 - كل شريحة بلا استثناء تحمل كائن "teacher" غير فارغ. الشريحة بلا teacher تظهر للمعلّم بزرّ ملاحظات لا يفتح شيئًا.
@@ -280,6 +362,7 @@ Return JSON in this exact shape (all text in English; mediaPrompt is English too
       "slideNumber": 5, "type": "intro",
       "title": "The idea stated as a claim, not a label",
       "content": "• First line of the explanation\\n• Second line\\n• A short example or special case",
+      "icon": "bulb",
       "mediaPrompt": "short english photo search query",
       "durationSeconds": 0,
       "teacher": { "teachingTips": "What to stress here", "commonMisconceptions": "The specific error on this idea", "expectedAnswer": "The precise statement of the idea" }
@@ -305,6 +388,7 @@ Return JSON in this exact shape (all text in English; mediaPrompt is English too
     {
       "slideNumber": 10, "type": "summary",
       "title": "Summary",
+      "icon": "flag",
       "content": "• First takeaway\\n• Second takeaway\\n• Third takeaway",
       "durationSeconds": 0,
       "teacher": { "teachingTips": "What gets built on this afterwards" }
@@ -325,6 +409,10 @@ Add a "layout" field to a concept slide when its shape fits; otherwise leave it 
 - "compare": a genuine two-sided contrast (before/after, right/wrong, two methods). Add "compare": {"leftTitle":"","left":["",""],"rightTitle":"","right":["",""]}. Both sides always filled.
 - "steps": the ordered stages of a process. "content" is "• " lines in order, at least two.
 Give a special shape to no more than half the concept slides — the point is variety, not chaos.
+
+Icons and charts — structure the deck chooses for itself, not one template for every slide:
+- "icon": one icon name on every concept slide, every section break and the summary — not the cover. Choose from this list only: ${DECK_ICON_NAMES.join(", ")}. Pick the one closest to what THAT slide is about, not to the deck's subject as a whole (atom for atomic structure, leaf for plants, globe for geography, calculator for arithmetic, clock for time, drop for water, pin for a place, heart for health, sun for energy, laptop for technology, flask for an experiment). Never the same icon on two consecutive slides, and no emoji in a title — the icon is the title's symbol.
+- "visual": a chart, and only when the teacher's description or pasted source contains real, comparable figures. Shape: {"kind":"chart","chartType":"bar","categories":["item","item"],"values":[10,20]}. 2 to 8 items; "values" are non-negative numbers (never strings); as many items as values. Use "pie" only when the values are parts of one whole (they sum to about 100, or are percentages), otherwise "bar". Never invent figures: if the description and source hold no real numbers, put no "visual" anywhere in the deck — that is the default, not the exception. At most ${MAX_PROMPT_SLIDE_CHARTS} slides, and never on a slide that carries a "layout" or a "mediaPrompt". Write two lines of "content" saying what the chart shows.
 
 Mandatory rules:
 - Every slide without exception carries a non-empty "teacher" object. A slide without one shows the teacher a notes button that opens nothing.

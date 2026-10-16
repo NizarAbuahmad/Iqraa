@@ -572,10 +572,12 @@ export function chartGeometry(
       return { d, fill, label: categories[i]! };
     });
     const legend = categories.map((label, i) => ({
-      label: `${label} ${Math.round((Math.max(0, values[i]!) / total) * 100)}%`,
+      // Figure first: the legend is pinned left-to-right (see `chartSvg`), and a
+      // trailing «%» beside Arabic has two plausible reading orders. This has one.
+      label: `${Math.round((Math.max(0, values[i]!) / total) * 100)}% ${label}`,
       fill: seriesColor(i),
       x: pad + w * 0.66,
-      y: pad + 12 + i * 22,
+      y: pad + 14 + i * 28,
     }));
     return { kind: 'pie', slices, legend };
   }
@@ -602,13 +604,16 @@ function chartSvg(block: Extract<VisualBlock, { kind: 'chart' }>, width: number,
   if (g.kind === 'pie') {
     return g.slices.map(s => `<path d="${s.d}" fill="${s.fill}" opacity="0.9"/>`).join('')
       + g.legend.map(l =>
-        `<rect x="${num(l.x)}" y="${num(l.y - 11)}" width="12" height="12" rx="2" fill="${l.fill}"/>`
-        + `<text x="${num(l.x + 18)}" y="${num(l.y)}" font-size="13" fill="#4B5563">${esc(l.label)}</text>`).join('');
+        `<rect x="${num(l.x)}" y="${num(l.y - 13)}" width="15" height="15" rx="3" fill="${l.fill}"/>`
+        // direction="ltr": in a right-to-left page SVG flips what `start` means, and
+        // the label ran leftwards across its own swatch. The label's Arabic still
+        // shapes right-to-left inside it; only where it begins is pinned.
+        + `<text x="${num(l.x + 22)}" y="${num(l.y)}" font-size="17" direction="ltr" text-anchor="start" fill="#374151">${esc(l.label)}</text>`).join('');
   }
   return g.bars
     .map(b =>
       `<rect x="${num(b.x)}" y="${num(b.y)}" width="${num(b.w)}" height="${num(b.h)}" fill="${b.fill}" rx="3"/>`
-      + `<text x="${num(b.labelX)}" y="${num(b.labelY)}" font-size="11" text-anchor="middle" fill="#6B7280">${esc(b.label)}</text>`)
+      + `<text x="${num(b.labelX)}" y="${num(b.labelY)}" font-size="15" text-anchor="middle" fill="#4B5563">${esc(b.label)}</text>`)
     .join('');
 }
 
@@ -713,6 +718,57 @@ export function visualForSlide(slide: VisualSource): VisualBlock | null {
     if (points) series.push({ label: command, points });
   }
   return series.length ? { kind: 'plot', series } : null;
+}
+
+// ─── Chart written by the model ──────────────────────────────────────────────
+
+/**
+ * A chart the model put on a slide, or null when it is not one this build can
+ * draw honestly.
+ *
+ * The model is asked for a `visual` only when the teacher's description or
+ * pasted source contains real figures — it must never invent them — so what
+ * arrives here is untrusted: a ragged pair of arrays, a string where a number
+ * should be, a negative bar, a pie of shares that add to nothing. Each of those
+ * drew a broken or misleading picture on a wall in front of a class, so this
+ * refuses all of them and returns a clean copy of the rest. Same fail-closed
+ * posture as `extractChartData`: no chart beats a wrong one.
+ *
+ * Only bar and pie: `line` is in the type for the future but every renderer
+ * draws it as bars today, which would misstate a trend.
+ */
+export function usableChartVisual(raw: unknown): VisualBlock | null {
+  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const v = raw as Record<string, unknown>;
+  if (v.kind !== 'chart') return null;
+  if (v.chartType !== 'bar' && v.chartType !== 'pie') return null;
+  if (!Array.isArray(v.categories) || !Array.isArray(v.values)) return null;
+  if (v.categories.length !== v.values.length) return null;
+  if (v.categories.length < 2 || v.categories.length > MAX_CATEGORIES) return null;
+
+  const categories = v.categories.map(c => (typeof c === 'string' ? c.trim() : ''));
+  if (categories.some(c => !c || c.length > 40)) return null;
+  // «٢٥» arrives from a model as often as 25 — read both, nothing else.
+  const values = v.values.map(n => {
+    if (typeof n === 'number') return n;
+    if (typeof n === 'string' && /^\s*[0-9٠-٩]+(?:[.,٫][0-9٠-٩]+)?\s*$/.test(n)) {
+      const latin = n.replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/[,٫]/, '.');
+      return Number(latin);
+    }
+    return NaN;
+  });
+  if (values.some(n => !Number.isFinite(n) || n < 0)) return null;
+  if (!values.some(n => n > 0)) return null;
+  if (new Set(categories).size !== categories.length) return null;
+
+  const caption = typeof v.caption === 'string' ? v.caption.trim() : '';
+  return {
+    kind: 'chart',
+    chartType: v.chartType,
+    categories,
+    values,
+    ...(caption ? { caption } : {}),
+  };
 }
 
 // ─── Chart extraction ────────────────────────────────────────────────────────
