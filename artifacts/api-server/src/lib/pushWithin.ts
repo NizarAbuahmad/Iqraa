@@ -5,9 +5,9 @@
  * Cloud Run throttles a revision's CPU once the response has been sent
  * (deploy.yml does not pass --no-cpu-throttling), so work left running after
  * `res.json` — the old fire-and-forget pattern — can stall until the next
- * request arrives. Teacher actions that tell families something therefore
- * await it here, capped: past `ms` the request answers anyway and the work
- * carries on as best it can. Errors are logged, never thrown.
+ * request arrives. Teacher actions that tell families something, and chat
+ * messages, therefore await it here, capped: past `ms` the request answers
+ * anyway and the work carries on as best it can. Errors are logged, never thrown.
  */
 import { logger } from "./logger.ts";
 
@@ -23,7 +23,7 @@ export async function pushWithin(label: string, work: () => Promise<unknown>, ms
     .then(
       () => "done" as const,
       err => {
-        logger.error({ err, label }, "family push failed");
+        logger.error({ err, label }, "push failed");
         return "failed" as const;
       },
     );
@@ -32,5 +32,5 @@ export async function pushWithin(label: string, work: () => Promise<unknown>, ms
   });
   const outcome = await Promise.race([running, capped]);
   clearTimeout(timer);
-  if (outcome === "capped") logger.warn({ label, ms }, "family push still running when the response went out");
+  if (outcome === "capped") logger.warn({ label, ms }, "push still running when the response went out");
 }
