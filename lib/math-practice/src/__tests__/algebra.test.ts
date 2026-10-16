@@ -37,7 +37,7 @@ const SUPD = '⁰¹²³⁴⁵⁶⁷⁸⁹';
 function js(s: string): string {
   let t = s.replace(/−/g, '-').replace(/[×·]/g, '*').replace(/÷/g, '/');
   t = t.replace(/⁻?[⁰¹²³⁴⁵⁶⁷⁸⁹]+/g, m => { const d = [...m.replace('⁻', '')].map(c => SUPD.indexOf(c)).join(''); return m.startsWith('⁻') ? `**(-${d})` : `**${d}`; });
-  t = t.replace(/(\d*)√\(([^()]*)\)/g, (_, k, r) => `(${k || 1}*Math.sqrt(${r}))`).replace(/(\d*)√(\d+)/g, (_, k, r) => `(${k || 1}*Math.sqrt(${r}))`);
+  t = t.replace(/(\d*)√\(([^()]*)\)/g, (_, k, r) => `(${k || 1}*Math.sqrt(${r}))`).replace(/(\d*)√(\d+|[xy])/g, (_, k, r) => `(${k || 1}*Math.sqrt(${r}))`);
   // ratios first: (a)/(b) is one unit, or `p/q ÷ r/s` would associate wrongly
   t = t.replace(/\(([^()]*)\)\/\(([^()]*)\)/g, '(($1)/($2))');
   // wrap every power in brackets so a leading minus never sits directly before **
@@ -55,6 +55,11 @@ const fn = (s: string) => {
 const same = (a: number, b: number) => Math.abs(a - b) < 1e-7 || (Number.isNaN(a) && Number.isNaN(b));
 const num = (s: string) => Number(s.replace('−', '-'));
 const nums = (s: string) => (s.match(/\d+/g) ?? []).map(Number);
+/** Signed integers in printed order: «−3 ، 4» → [−3, 4]. */
+const snums = (s: string) => (s.match(/−?\d+/g) ?? []).map(num);
+const has = (p: string, w: string) => p.includes(w);
+/** The kinds added on 2026-10-16 are recomputed in their own block below; the checks here are the original kinds'. */
+const stem = (item: ConcreteItem) => item.promptAr!;
 const POINTS = [-4, -3, -2, -1, 0.5, 1, 2, 3, 5, 7];
 /** Two printed expressions are the same function of x. */
 const equivalent = (a: string, b: string) => POINTS.every(x => same(fn(a)(x), fn(b)(x)));
@@ -67,6 +72,11 @@ function chain(clause: string, x: number): boolean {
   const ops = parts.filter((_, i) => i % 2 === 1);
   return ops.every((o, i) => cmp(vals[i]!, o, vals[i + 1]!));
 }
+const inInterval = (s: string, x: number) => {
+  const m = s.match(/^([([])(.+?) ، (.+?)([)\]])$/)!;
+  const lo = m[2] === '−∞' ? -Infinity : num(m[2]!), hi = m[3] === '∞' ? Infinity : num(m[3]!);
+  return (m[1] === '(' ? x > lo : x >= lo) && (m[4] === ')' ? x < hi : x <= hi);
+};
 const holds = (s: string, x: number) => s.split(' أو ').some(c => c.split(' و ').every(p => chain(p, x)));
 const sameSet = (a: string, b: string) => GRID.every(x => holds(a, x) === holds(b, x));
 
@@ -102,11 +112,11 @@ describe('algebra generators: shape', () => {
 
 describe('algebra generators: answers', () => {
   it('evaluating an expression', () => {
-    for (const item of draws('expr_g4')) {
+    for (const item of draws('expr_g4').filter(i => has(stem(i), 'عندما'))) {
       const [, v, val] = item.promptAr!.match(/عندما (\w) = (\d+)/)!;
       assert.equal(num(item.answer), new Function(v!, `return ${js(item.eq)}`)(Number(val)), item.promptAr);
     }
-    for (const item of draws('expr_eval')) {
+    for (const item of draws('expr_eval').filter(i => has(stem(i), 'عندما'))) {
       const xs = Number(item.promptAr!.match(/x = (\d+)/)![1]), ys = Number(item.promptAr!.match(/y = (\d+)/)?.[1] ?? 0);
       assert.equal(num(item.answer), fn(item.eq)(xs, ys), item.promptAr);
     }
@@ -123,9 +133,10 @@ describe('algebra generators: answers', () => {
 
   it('equations: the answer satisfies it and no wrong option does', () => {
     for (const id of ['eq_add_sub', 'eq_mul_div', 'eq_mixed', 'solve_eq', 'rat_eq', 'radical_eq']) {
-      for (const item of draws(id, 300)) {
+      for (const item of draws(id, 300).filter(i => !has(stem(i), 'اكتب معادلة'))) {
         const [l, r] = item.eq.split(' = ');
-        const ok = (v: number) => same(fn(l!)(v), fn(r!)(v));
+        // a listed pair of roots («7 ، 4») is not a number, so it satisfies nothing
+        const ok = (v: number) => Number.isFinite(v) && same(fn(l!)(v), fn(r!)(v));
         assert.ok(ok(num(item.answer)), `${id}: ${item.eq} ≠ ${item.answer}`);
         for (const w of item.wrongs) assert.ok(!ok(num(w)), `${id}: wrong option ${w} satisfies ${item.eq}`);
       }
@@ -133,7 +144,7 @@ describe('algebra generators: answers', () => {
   });
 
   it('sequences', () => {
-    for (const item of draws('seq_basic', 300)) {
+    for (const item of draws('seq_basic', 300).filter(i => /^ما الحد (التالي|رقم)/.test(stem(i)))) {
       const t = item.eq.split(', ').map(num);
       const d = t[1]! - t[0]!;
       const arithmetic = t.every((v, i) => i === 0 || v - t[i - 1]! === d);
@@ -145,7 +156,7 @@ describe('algebra generators: answers', () => {
 
   it('polynomial results: the answer is the stem, expanded', () => {
     for (const id of ['distribute', 'poly_addsub', 'poly_mul', 'poly_special', 'exp_simplify']) {
-      for (const item of draws(id, 300)) {
+      for (const item of draws(id, 300).filter(i => !/^ما (الخاصية|معامل|قيمة n)/.test(stem(i)))) {
         assert.ok(equivalent(item.eq, item.answer), `${id}: ${item.eq} ≠ ${item.answer}`);
         for (const w of item.wrongs) assert.ok(!equivalent(item.eq, w), `${id}: wrong option ${w} equals ${item.eq}`);
       }
@@ -153,20 +164,21 @@ describe('algebra generators: answers', () => {
   });
 
   it('factoring: the answer multiplies back, the wrong options do not', () => {
+    const factoring = (i: ConcreteItem) => /^(حلّل|استعمل)/.test(stem(i));
     for (const id of ['factor_gcf', 'factor_monic', 'factor_general', 'factor_special']) {
-      for (const item of draws(id, 300)) {
+      for (const item of draws(id, 300).filter(factoring)) {
         assert.ok(equivalent(item.eq, item.answer), `${id}: ${item.eq} ≠ ${item.answer}`);
         // a half-done GCF is the same polynomial; it is wrong because it is not the GREATEST factor
         if (id !== 'factor_gcf') for (const w of item.wrongs) assert.ok(!equivalent(item.eq, w), `${id}: wrong factoring ${w} equals ${item.eq}`);
       }
     }
     // a «trinomial» lesson never serves a binomial, and no wrong factor is «x + 0»
-    for (const item of draws('factor_monic')) {
+    for (const item of draws('factor_monic').filter(factoring)) {
       assert.match(item.eq, /^x² [+−] \d*x [+−] \d+$/, item.eq);
       assert.ok(!item.wrongs.some(w => /[+−] 0\)/.test(w)), item.wrongs.join(' | '));
     }
     // the GCF really is the greatest
-    for (const item of draws('factor_gcf')) {
+    for (const item of draws('factor_gcf').filter(factoring)) {
       const g = Number(item.answer.match(/^(\d+)/)![1]);
       const inner = item.answer.match(/\((.+)\)$/)![1]!;
       const fi = fn(inner);
@@ -179,7 +191,7 @@ describe('algebra generators: answers', () => {
 
   it('rational expressions simplify to the printed answer', () => {
     for (const id of ['rat_expr_muldiv', 'rat_expr_addsub']) {
-      for (const item of draws(id, 300)) {
+      for (const item of draws(id, 300).filter(i => !/غير معرّف|المضاعف المشترك/.test(stem(i)))) {
         const pts = [-6.5, -2.5, 0.5, 1.5, 3.5, 8.5];
         assert.ok(pts.every(x => same(fn(item.eq)(x), fn(item.answer)(x))), `${id}: ${item.eq} ≠ ${item.answer}`);
         for (const w of item.wrongs) assert.ok(!pts.every(x => same(fn(item.eq)(x), fn(w)(x))), `${id}: wrong ${w} equals ${item.eq}`);
@@ -189,7 +201,7 @@ describe('algebra generators: answers', () => {
 
   it('inequalities: same solution set as the stem; wrong options are different sets', () => {
     for (const id of ['ineq_add', 'ineq_mul', 'ineq_multi', 'ineq_compound']) {
-      for (const item of draws(id, 300)) {
+      for (const item of draws(id, 300).filter(i => !/أيّ الأعداد|صِف تمثيل|الفترات/.test(stem(i)))) {
         const stem = id === 'ineq_compound' ? item.eq : item.eq;
         assert.ok(sameSet(stem, item.answer), `${id}: ${stem} vs ${item.answer}`);
         for (const w of item.wrongs) assert.ok(!sameSet(stem, w), `${id}: wrong ${w} has the solution set of ${stem}`);
@@ -203,12 +215,7 @@ describe('algebra generators: answers', () => {
   });
 
   it('intervals match the inequality', () => {
-    const inInterval = (s: string, x: number) => {
-      const m = s.match(/^([([])(.+?) ، (.+?)([)\]])$/)!;
-      const lo = m[2] === '−∞' ? -Infinity : num(m[2]!), hi = m[3] === '∞' ? Infinity : num(m[3]!);
-      return (m[1] === '(' ? x > lo : x >= lo) && (m[4] === ')' ? x < hi : x <= hi);
-    };
-    for (const item of draws('intervals', 300)) {
+    for (const item of draws('intervals', 300).filter(i => has(stem(i), 'على صورة فترة'))) {
       assert.ok(GRID.every(x => inInterval(item.answer, x) === holds(item.eq, x)), `${item.eq} vs ${item.answer}`);
       for (const w of item.wrongs) assert.ok(!GRID.every(x => inInterval(w, x) === holds(item.eq, x)), `${w} is also ${item.eq}`);
     }
@@ -216,7 +223,7 @@ describe('algebra generators: answers', () => {
 
   it('systems: the answer satisfies both equations, no wrong option does', () => {
     for (const id of ['sys_graph', 'sys_sub', 'sys_elim']) {
-      for (const item of draws(id, 300)) {
+      for (const item of draws(id, 300).filter(i => /^(حلّ النظام|أيّ الأزواج)/.test(stem(i)))) {
         const eqs = item.eq.split(' ، ');
         assert.equal(eqs.length, 2);
         const sat = (p: string) => {
@@ -230,7 +237,7 @@ describe('algebra generators: answers', () => {
   });
 
   it('lines', () => {
-    for (const item of draws('line_slope', 300)) {
+    for (const item of draws('line_slope', 300).filter(i => has(stem(i), 'أوجد ميل'))) {
       const [[x1, y1], [x2, y2]] = [...item.eq.matchAll(/\((−?\d+) ، (−?\d+)\)/g)].map(m => [num(m[1]!), num(m[2]!)]) as [number, number][];
       const v = (s: string) => (s.includes('/') ? num(s.split('/')[0]!) / num(s.split('/')[1]!) : num(s));
       assert.ok(same(v(item.answer), (y2! - y1!) / (x2! - x1!)), item.eq);
@@ -240,9 +247,9 @@ describe('algebra generators: answers', () => {
     for (const item of draws('line_slope_int', 300)) {
       const pts = [...item.promptAr!.matchAll(/\((−?\d+) ، (−?\d+)\)/g)].map(m => [num(m[1]!), num(m[2]!)]) as [number, number][];
       if (pts.length === 2) assert.ok(pts.every(([x, y]) => onLine(item.answer, x, y!)), `${item.answer} misses ${pts}`);
-      else { const [, m, b] = item.promptAr!.match(/ميله (−?\d+) .* عند (−?\d+)/)!; assert.ok(onLine(item.answer, 0, num(b!)) && onLine(item.answer, 1, num(b!) + num(m!)), item.promptAr); }
+      else if (has(stem(item), 'ميله')) { const [, m, b] = item.promptAr!.match(/ميله (−?\d+) .* عند (−?\d+)/)!; assert.ok(onLine(item.answer, 0, num(b!)) && onLine(item.answer, 1, num(b!) + num(m!)), item.promptAr); }
     }
-    for (const item of draws('line_point_slope', 300)) {
+    for (const item of draws('line_point_slope', 300).filter(i => has(stem(i), 'ميله'))) {
       const m = num(item.promptAr!.match(/ميله (−?\d+)/)![1]!);
       const [x1, y1] = item.promptAr!.match(/\((−?\d+) ، (−?\d+)\)/)!.slice(1).map(num) as [number, number];
       assert.ok(onLine(item.answer, x1, y1) && onLine(item.answer, x1 + 1, y1 + m) && !onLine(item.answer, x1 + 1, y1), item.answer);
@@ -276,7 +283,7 @@ describe('algebra generators: answers', () => {
   it('quadratic equations: both printed roots satisfy it, no wrong list does', () => {
     const root = (s: string) => (s.includes('/') ? num(s.split('/')[0]!) / num(s.split('/')[1]!) : num(s));
     for (const id of ['quad_factor', 'quad_graph']) {
-      for (const item of draws(id, 300)) {
+      for (const item of draws(id, 300).filter(i => /^(حلّ المعادلة|ما حلول)/.test(stem(i)))) {
         const f = fn(item.eq.replace(' = 0', ''));
         const rs = item.answer.split(' ، ').map(root);
         assert.equal(rs.length, 2, item.eq);
@@ -301,7 +308,7 @@ describe('algebra generators: answers', () => {
         assert.equal(num(item.answer), (b / 2) ** 2, item.eq);
       }
     }
-    for (const item of draws('quad_formula', 300)) {
+    for (const item of draws('quad_formula', 300).filter(i => !has(stem(i), 'عدد الحلول'))) {
       if (item.promptAr!.includes('المميز')) {
         const [c, b, a] = quad(item.eq.replace(' = 0', ''));
         assert.equal(num(item.answer), b * b - 4 * a * c, item.eq);
@@ -321,14 +328,14 @@ describe('algebra generators: answers', () => {
       const want = item.promptAr!.includes('السيني') ? h : item.promptAr!.includes('المقطع') ? c : f(h);
       assert.equal(num(item.answer), want + 0, `${item.eq}: ${item.promptAr}`);
     }
-    for (const item of draws('quad_vertex', 300)) {
+    for (const item of draws('quad_vertex', 300).filter(i => has(stem(i), 'ما رأس'))) {
       const f = fn(item.eq.slice(4));
       const [h, k] = item.answer.slice(1, -1).split(' ، ').map(num) as [number, number];
       assert.ok(same(f(h), k), `${item.eq} → ${item.answer}`);
       // a vertex is an extremum: the value one step either way is on the same side
       assert.ok((f(h + 1) - k) * (f(h - 1) - k) > 0 && same(f(h + 1), f(h - 1)), item.eq);
     }
-    for (const item of draws('fn_eval', 300)) {
+    for (const item of draws('fn_eval', 300).filter(i => has(stem(i), 'فأوجد'))) {
       const [, body, at] = item.promptAr!.match(/f\(x\) = (.+?) فأوجد f\((−?\d+)\)/)!;
       assert.equal(num(item.answer), fn(body!)(num(at!)), item.promptAr);
     }
@@ -344,17 +351,17 @@ describe('algebra generators: answers', () => {
         for (let p = 2; p * p <= m; p++) assert.notEqual(m % (p * p), 0, `${item.answer} is not fully simplified`);
       }
     }
-    for (const item of draws('sqrt_basic', 300)) {
+    for (const item of draws('sqrt_basic', 300).filter(i => !has(stem(i), 'مربعة الشكل'))) {
       if (item.eq.startsWith('x² =')) assert.equal(Number(item.answer.slice(1)) ** 2, Number(item.eq.slice(5)));
       else if (item.eq.startsWith('−√')) assert.equal(-Math.sqrt(Number(item.eq.slice(2))), num(item.answer));
       else { const [a, b] = item.answer.split('/').map(Number); assert.ok(same(Math.sqrt(val(item.eq.slice(2, -1).replace('/', '/'))), a! / b!)); }
     }
-    for (const item of draws('sqrt_between', 300)) {
+    for (const item of draws('sqrt_between', 300).filter(i => has(stem(i), 'بين أي'))) {
       const n = Number(item.eq.slice(1)), [k, k1] = nums(item.answer);
       assert.ok(k! * k! < n && n < k1! * k1! && k1 === k! + 1, item.eq);
     }
     const SETS = ['الأعداد الطبيعية', 'الأعداد الصحيحة', 'الأعداد النسبية', 'الأعداد الحقيقية'];
-    for (const item of draws('real_numbers', 300)) {
+    for (const item of draws('real_numbers', 300).filter(i => has(stem(i), 'أصغر مجموعة'))) {
       const s = item.eq;
       const root = s.match(/^√(\d+)$/);
       const want = s === 'π' || (root && !Number.isInteger(Math.sqrt(Number(root[1])))) ? 3

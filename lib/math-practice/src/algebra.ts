@@ -729,7 +729,7 @@ function ineqExtras(rng: Rng, kind: 'check' | 'line', eq: string, rs: string, bo
   return { eq, answer: say(!strict, up), wrongs: [say(strict, up), say(!strict, !up), say(strict, !up)], ar: `صِف تمثيل مجموعة حلّ المتباينة ${eq} على خط الأعداد.`, en: `Describe how the solution set of ${eq} is drawn on a number line.` };
 }
 
-/** Grade 8: solve by adding or subtracting — and check a number, draw the solution, and a points/lift story. */
+/** Grade 8: solve by adding or subtracting — and check a number, draw the solution, and a points/luggage story. */
 const ineqAdd = topic('ineq_add', /^حل المتباينات بالجمع والطرح$/, [8, 8], ({ rng, diff }) => {
   const form = pick(rng, [0, 1, 2, 3]);
   if (form === 3) {
@@ -738,9 +738,9 @@ const ineqAdd = topic('ineq_add', /^حل المتباينات بالجمع وا�
       const ans = `x ≥ ${T - a}`;
       return { eq: `x + ${a} ≥ ${T}`, answer: ans, wrongs: [`x ≤ ${T - a}`, `x ≥ ${T + a}`, `x > ${T - a}`], ar: `يحتاج فريق إلى ${T} نقطة على الأقل للتأهل، وقد جمع حتى الآن ${a} نقطة. ما المتباينة التي تمثّل عدد النقاط x التي ما زال يحتاج إليها؟`, en: `A team needs at least ${T} points to qualify and has ${a} so far. Which inequality gives the number of points x it still needs?` };
     }
-    const T = int(rng, 3, 8) * 100, a = int(rng, 60, T - 60);
+    const T = int(rng, 2, 4) * 10, a = int(rng, 5, T - 5);
     const ans = `x ≤ ${T - a}`;
-    return { eq: `x + ${a} ≤ ${T}`, answer: ans, wrongs: [`x ≥ ${T - a}`, `x ≤ ${T + a}`, `x < ${T - a}`], ar: `أقصى حمولة لمصعد ${T} كغم، وفيه الآن أشخاص كتلتهم معًا ${a} كغم. ما المتباينة التي تمثّل الكتلة x (بالكيلوغرام) التي يمكن إضافتها؟`, en: `A lift can carry at most ${T} kg and already carries ${a} kg. Which inequality gives the mass x (in kg) that can still be added?` };
+    return { eq: `x + ${a} ≤ ${T}`, answer: ans, wrongs: [`x ≥ ${T - a}`, `x ≤ ${T + a}`, `x < ${T - a}`], ar: `يُسمح لمسافر بحقيبة لا تزيد كتلتها على ${T} كغم، وقد وضع فيها حتى الآن ${a} كغم. ما المتباينة التي تمثّل الكتلة x (بالكيلوغرام) التي يمكن أن يضيفها؟`, en: `A traveller's bag may weigh at most ${T} kg and already holds ${a} kg. Which inequality gives the mass x (in kg) that can still be added?` };
   }
   const x0 = int(rng, -6, 12), a = int(rng, 1, span(diff) + 3);
   const s = pick(rng, SYM);
