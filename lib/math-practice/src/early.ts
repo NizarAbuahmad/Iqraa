@@ -676,9 +676,13 @@ const inputOutput = T('input_output', /^جداول المدخلات والمخر
 
 const decimalMoney = T('decimal_money', /^الاعداد العشريه والنقود$/, [4, 4], ({ rng, diff }) => {
   const a = int(rng, 105, span(diff, 450, 900, 1900)), b = int(rng, 105, span(diff, 450, 900, 1900)), k = pick(rng, [0, 1, 2]);
+  // Prices are never a whole number of dinars (that would print «2 دينارًا»); the amount
+  // paid is, and takes the counted noun: «5 دنانير», «15 دينارًا».
+  if (a % 100 === 0 || b % 100 === 0) return decimalMoney.make({ rng, diff, grade: 4 });
   const dec = (v: number) => fmtDec(v, 2);
+  const money = (v: number) => (v % 100 === 0 ? dinars(v / 100) : `${dec(v)} دينارًا`);
   if (k === 0) return { eq: `${dec(a)}, ${dec(b)}`, answer: dec(a + b), wrongs: wrongsFrom(dec(a + b), [dec(a + b + 10), dec(a + b - 10), dec(Math.abs(a - b)), dec(a + b + 100)], j => dec(a + b + Math.abs(j))), ar: `اشترى سامر قلمًا بـ ${dec(a)} دينارًا ودفترًا بـ ${dec(b)} دينارًا. كم دينارًا دفع؟`, en: `Sami bought a pen for ${dec(a)} dinars and a notebook for ${dec(b)} dinars. How many dinars did he pay?` };
-  if (k === 1) { const pay = Math.ceil((a + 1) / 500) * 500, change = pay - a; return { eq: `${dec(pay)}, ${dec(a)}`, answer: dec(change), wrongs: wrongsFrom(dec(change), [dec(change + 10), dec(change > 10 ? change - 10 : change + 20), dec(pay + a), dec(change + 50)], j => dec(change + Math.abs(j))), ar: `دفع خالد ${dec(pay)} دينارًا ثمن سلعة ثمنها ${dec(a)} دينارًا. كم دينارًا يستردّ؟`, en: `Khaled pays ${dec(pay)} dinars for an item costing ${dec(a)} dinars. How many dinars does he get back?` }; }
+  if (k === 1) { const pay = Math.ceil((a + 1) / 500) * 500, change = pay - a; return { eq: `${dec(pay)}, ${dec(a)}`, answer: dec(change), wrongs: wrongsFrom(dec(change), [dec(change + 10), dec(change > 10 ? change - 10 : change + 20), dec(pay + a), dec(change + 50)], j => dec(change + Math.abs(j))), ar: `دفع خالد ${money(pay)} ثمن سلعة ثمنها ${dec(a)} دينارًا. كم دينارًا يستردّ؟`, en: `Khaled pays ${dec(pay)} dinars for an item costing ${dec(a)} dinars. How many dinars does he get back?` }; }
   const hi = Math.max(a, b), lo = Math.min(a, b);
   if (hi === lo) return decimalMoney.make({ rng, diff, grade: 4 });
   return { eq: `${dec(a)}, ${dec(b)}`, answer: dec(hi), wrongs: wrongsFrom(dec(hi), [dec(lo), dec(hi + 10), dec(hi - 10), dec(hi + lo)], j => dec(hi + Math.abs(j))), ar: `أي المبلغين أكبر: ${dec(a)} دينارًا أم ${dec(b)} دينارًا؟ (اكتب المبلغ الأكبر)`, en: `Which amount is larger: ${dec(a)} dinars or ${dec(b)} dinars? (write the larger amount)` };

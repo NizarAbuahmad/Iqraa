@@ -640,9 +640,9 @@ describe('shapes, fractions, patterns: answers recomputed', () => {
 describe('money, time and measurement: answers recomputed', () => {
   it('decimal money, coins, dinars, banknotes', () => {
     for (const item of draws('decimal_money', 300)) {
-      const p = item.promptAr!, d = p.match(/\d+\.\d+|\d+(?= دينار)/g)!.map(Number), a = Number(item.answer);
+      const p = item.promptAr!, d = p.match(/\d+\.\d+|\d+(?= (?:دينار|دنانير))/g)!.map(Number), a = Number(item.answer);
       if (has(p, 'كم دينارًا دفع')) assert.ok(Math.abs(a - (d[0]! + d[1]!)) < 1e-9, p);
-      else if (has(p, 'يستردّ')) assert.ok(Math.abs(a - (d[0]! - d[1]!)) < 1e-9 && a > 0, p);
+      else if (has(p, 'يستردّ')) { assert.ok(Math.abs(a - (d[0]! - d[1]!)) < 1e-9 && a > 0, p); assert.doesNotMatch(p, /(^|[^.\d])([3-9]|10) دينارًا/, p); }
       else assert.equal(a, Math.max(d[0]!, d[1]!), p);
     }
     for (const id of ['coins_a', 'coins_b', 'coins_c']) for (const item of draws(id)) {
