@@ -242,7 +242,7 @@ describe('early arithmetic: answers recomputed', () => {
     for (const item of draws('double_b')) {
       const p = item.promptAr!, n = nums(p), a = Number(item.answer);
       if (has(p, 'ضعف ___')) { dbl1.add('blank'); assert.equal(n[0]! + n[1]!, 2 * a + 1, p); assert.equal(n[1], n[0]! + 1); }
-      else if (has(p, 'لإيجاد')) { dbl1.add('use'); assert.equal(a, n[0]! + n[1]!, p); assert.equal(n[1], n[0]! + 1); }
+      else if (has(p, 'لإيجاد')) { dbl1.add('use'); const [x, y] = n.slice(-2); assert.equal(a, x! + y!, p); assert.equal(y, x! + 1); }
       else { dbl1.add('double+1'); assert.equal(a, 2 * n[0]! + 1); }
     }
     assert.equal(dbl1.size, 3);

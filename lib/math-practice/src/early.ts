@@ -473,15 +473,17 @@ const mentalMultiples = (id: string, match: RegExp, add: boolean, grade: number)
     // a 3-digit (Grade 2) or 4-digit (Grade 3) number, and a multiple of `place` that changes only that digit — so it is done in the head
     const lo = grade === 2 ? 100 : 1000, hi = grade === 2 ? 999 : 9999;
     let N = 0, dg = 0;
-    do { N = int(rng, lo, hi); dg = Math.floor(N / place) % 10; } while (add ? dg > 8 : dg < 1);
-    const b = add ? int(rng, 1, 9 - dg) : int(rng, 1, dg), m = b * place, R = add ? N + m : N - m;
+    do { N = int(rng, lo, hi); dg = Math.floor(N / place) % 10; } while (add ? dg > 8 : dg < 1 || N === place);
+    // never take N down to nothing (200 − 200): when N is only that digit, stop one short of it
+    const b = int(rng, 1, add ? 9 - dg : N === dg * place ? dg - 1 : dg), m = b * place, R = add ? N + m : N - m;
     const wrongR = ints(R, [add ? N - m : N + m, add ? R + place : R - place, add ? N + b : N - b, add ? R - place : R + place]);
     if (k === 1) return { eq: `${N}, ${m}`, answer: String(R), wrongs: wrongR, ar: `ما ناتج ${N} ${op} ${m} ذهنيًا؟`, en: `Work out ${N} ${op} ${m} in your head.` };
     if (k === 2) return { eq: `${N}, ${m}`, answer: String(R), wrongs: wrongR, ar: `ما العدد الذي ${add ? 'يزيد على' : 'يقل عن'} ${N} بمقدار ${m}؟`, en: `Which number is ${m} ${add ? 'more' : 'less'} than ${N}?` };
     return { eq: `${N}, ${R}`, answer: String(m), wrongs: ints(m, [b, m * 10, m / 10, m + place, R]), ar: `أي عدد ${add ? 'نضيفه إلى' : 'نطرحه من'} ${N} لنحصل على ${R}؟`, en: `Which number do we ${add ? 'add to' : 'take away from'} ${N} to get ${R}?` };
   }
   let a = 0, b = 0;
-  do { a = int(rng, 1, 9); b = int(rng, 1, 9); } while (!add && a <= b);
+  // Grade 2 works within three places, so 900 + 600 is out of reach there
+  do { a = int(rng, 1, 9); b = int(rng, 1, 9); } while (add ? grade === 2 && place === 100 && a + b > 9 : a <= b);
   const x = a * place, y = b * place, r = add ? x + y : x - y;
   return { eq: `${x}, ${y}`, answer: String(r), wrongs: ints(r, [r * 10, r / 10, add ? x - y : x + y, r + place]), ar: `${x} ${op} ${y} = ___`, en: `${x} ${op} ${y} = ___` };
 });

@@ -403,10 +403,24 @@ describe('geometry generators: answers recomputed from the stem', () => {
   });
 
   it('transformations and the coordinate plane', () => {
+    const kinds: Record<string, Set<string>> = {};
+    const saw = (id: string, k: string) => (kinds[id] ??= new Set()).add(k);
     for (const item of draws('reflect_line')) {
-      const [x, y] = pt(item.eq);
-      const a = nums(item.promptAr!.match(/x = (\d+)/)![0])[0]!;
-      assert.deepEqual(pt(item.answer), [2 * a - x!, y]);
+      const p = item.promptAr!, P = pts(p);
+      if (has(p, 'الأفقي')) {
+        saw('reflect_line', 'horizontal');
+        const b = Number(p.match(/y = (\d+)/)![1]);
+        assert.deepEqual(pt(item.answer), [P[0]![0], 2 * b - P[0]![1]], p);
+      } else if (has(p, 'معادلة محور')) {
+        saw('reflect_line', 'mirror line');
+        assert.equal(P[0]![1], P[1]![1], p);
+        assert.equal(item.answer, `x = ${(P[0]![0] + P[1]![0]) / 2}`, p);
+      } else {
+        const a = Number(p.match(/x = (\d+)/)![1]);
+        if (has(p, 'المسافة')) { saw('reflect_line', 'distance'); assert.equal(Number(item.answer), 2 * Math.abs(a - P[0]![0]), p); }
+        else { saw('reflect_line', 'vertical'); assert.deepEqual(pt(item.answer), [2 * a - P[0]![0], P[0]![1]], p); }
+      }
+      assert.ok(pt(item.answer).every(v => v > 0), `Grade 4 stays in the first quadrant: ${p} → ${item.answer}`);
     }
     for (const id of ['translate_g5', 'translate_g6']) for (const item of draws(id)) {
       const [x, y] = pt(item.eq);
@@ -417,12 +431,30 @@ describe('geometry generators: answers recomputed from the stem', () => {
       if (id === 'translate_g5') assert.ok(pt(item.answer).every(v => v > 0), 'Grade 5 stays in the first quadrant');
     }
     for (const item of draws('reflect_axes')) {
-      const [x, y] = pt(item.eq);
-      assert.deepEqual(pt(item.answer), has(item.promptAr!, 'السيني') ? [x, -y!] : [-x!, y]);
+      const p = item.promptAr!;
+      const [x, y] = pts(p)[0]!;
+      const xAxis = has(p, 'السيني');
+      const reflect = (q: number[]) => (xAxis ? [q[0]!, -q[1]!] : [-q[0]!, q[1]!]);
+      if (has(p, 'المسافة')) { saw('reflect_axes', 'distance'); assert.equal(Number(item.answer), 2 * Math.abs(xAxis ? y : x), p); }
+      else if (has(p, 'ما إحداثيات النقطة A')) { saw('reflect_axes', 'original'); assert.deepEqual(reflect(pt(item.answer)), [x, y], p); }
+      else { saw('reflect_axes', 'image'); assert.deepEqual(pt(item.answer), reflect([x, y]), p); }
     }
     for (const item of draws('coord_plane_g6')) {
-      const [x, y] = pt(item.eq);
-      assert.equal(item.answer, ['الربع الأول', 'الربع الثاني', 'الربع الثالث', 'الربع الرابع'][x! > 0 ? (y! > 0 ? 0 : 3) : (y! > 0 ? 1 : 2)]);
+      const p = item.promptAr!;
+      if (has(p, 'نقطة الأصل')) {
+        saw('coord_plane_g6', 'moves');
+        const [dx, dy] = nums(p);
+        assert.deepEqual(pt(item.answer), [(has(p, 'اليسار') ? -1 : 1) * dx!, (has(p, 'الأسفل') ? -1 : 1) * dy!], p);
+      } else if (has(p, 'المسافة')) {
+        saw('coord_plane_g6', 'distance');
+        const [A, B] = pts(p);
+        assert.ok(A![0] === B![0] || A![1] === B![1], p);
+        assert.equal(Number(item.answer), Math.abs(A![0] - B![0]) + Math.abs(A![1] - B![1]), p);
+      } else {
+        saw('coord_plane_g6', 'quadrant');
+        const [x, y] = pts(p)[0]!;
+        assert.equal(item.answer, ['الربع الأول', 'الربع الثاني', 'الربع الثالث', 'الربع الرابع'][x > 0 ? (y > 0 ? 0 : 3) : (y > 0 ? 1 : 2)]);
+      }
     }
     for (const item of draws('coord_plane_g5')) {
       const n = nums(item.promptAr!);
@@ -436,20 +468,90 @@ describe('geometry generators: answers recomputed from the stem', () => {
       assert.deepEqual(pt(item.answer), want, p);
     }
     for (const id of ['dilate_g7', 'dilate_g8']) for (const item of draws(id)) {
-      const [x, y] = pt(item.eq);
-      const m = item.promptAr!.match(/معامل تمدد (\d+(?:\/\d+)?)/)!;
-      const k = m[1]!.includes('/') ? 0.5 : Number(m[1]);
-      assert.deepEqual(pt(item.answer), [x! * k, y! * k], item.promptAr);
+      const p = item.promptAr!, P = pts(p);
+      if (has(p, 'ما معامل')) {
+        saw(id, 'factor');
+        const k = val(item.answer);
+        assert.deepEqual(P[0], [P[1]![0] * k, P[1]![1] * k], p);
+      } else if (has(p, 'النقطة الأصلية')) {
+        saw(id, 'original');
+        const k = val(p.match(/ومعامله (\d+(?:\/\d+)?)/)![1]!);
+        const o = pt(item.answer);
+        assert.deepEqual([o[0]! * k, o[1]! * k], P[0], p);
+      } else if (has(p, 'محيط')) {
+        saw(id, 'photo');
+        const n = nums(p);
+        assert.equal(Number(item.answer), 2 * (n[0]! + n[1]!) * n[2]!, p);
+      } else if (has(p, 'ومعامله −')) {
+        saw(id, 'negative');
+        const k = -Number(p.match(/ومعامله −(\d+)/)![1]);
+        assert.deepEqual(pt(item.answer), [P[0]![0] * k, P[0]![1] * k], p);
+      } else {
+        saw(id, 'image');
+        const [x, y] = P[0]!;
+        const k = val(p.match(/معامل تمدد (\d+(?:\/\d+)?)/)![1]!);
+        assert.deepEqual(pt(item.answer), [x * k, y * k], p);
+      }
     }
+    const want = { reflect_line: 4, reflect_axes: 3, coord_plane_g6: 3, dilate_g7: 4, dilate_g8: 5 };
+    for (const [id, k] of Object.entries(want)) assert.equal(kinds[id]?.size, k, `${id} kinds drawn: ${[...(kinds[id] ?? [])]}`);
   });
 
   it('Grade 9: distance, proportional parts, trigonometry', () => {
+    const kinds: Record<string, Set<string>> = {};
+    const saw = (id: string, k: string) => (kinds[id] ??= new Set()).add(k);
     for (const item of draws('distance_plane')) {
-      const [x1, y1, x2, y2] = pt(item.eq);
-      const d2 = (x2! - x1!) ** 2 + (y2! - y1!) ** 2;
-      assert.ok(item.answer === `√${d2}` || Number(item.answer) ** 2 === d2, `${item.eq} → ${item.answer}`);
+      const p = item.promptAr!, P = pts(p);
+      if (has(p, 'تمثل النقطة A العدد')) {
+        saw('distance_plane', 'number line distance');
+        const [u, v] = [...p.matchAll(/العدد (−?\d+)/g)].map(m => sn(m[1]!));
+        assert.equal(Number(item.answer), Math.abs(u! - v!), p);
+      } else if (has(p, 'بين العددين')) {
+        saw('distance_plane', 'number line midpoint');
+        const m = p.match(/العددين (−?\d+) و (−?\d+)/)!;
+        assert.equal(sn(item.answer), (sn(m[1]!) + sn(m[2]!)) / 2, p);
+      } else if (has(p, 'ما إحداثيا نقطة منتصف')) {
+        saw('distance_plane', 'midpoint');
+        assert.deepEqual(pt(item.answer), [(P[0]![0] + P[1]![0]) / 2, (P[0]![1] + P[1]![1]) / 2], p);
+      } else if (has(p, 'ما إحداثيات النقطة B')) {
+        saw('distance_plane', 'endpoint');
+        const [M, A] = P;
+        const B = pt(item.answer);
+        assert.deepEqual([(A![0] + B[0]!) / 2, (A![1] + B[1]!) / 2], M, p);
+      } else {
+        saw('distance_plane', 'distance');
+        const [[x1, y1], [x2, y2]] = P as [[number, number], [number, number]];
+        const d2 = (x2 - x1) ** 2 + (y2 - y1) ** 2;
+        assert.ok(item.answer === `√${d2}` || Number(item.answer) ** 2 === d2, `${p} → ${item.answer}`);
+      }
     }
+    /** |Ax0 + By0 + C| / √(A² + B²) for a line printed as «3x + 4y − 5 = 0», «y = −2» or «x = 4». */
+    const LINE = /\d+x \+ \d+y(?: [+−] \d+)? = 0|[xy] = −?\d+/g;
+    const lineParts = (line: string) => {
+      const h = line.match(/^y = (−?\d+)$/), v = line.match(/^x = (−?\d+)$/);
+      if (h) return [0, 1, -sn(h[1]!)];
+      if (v) return [1, 0, -sn(v[1]!)];
+      const m = line.match(/^(\d+)x \+ (\d+)y(?: ([+−]) (\d+))? = 0$/)!;
+      return [Number(m[1]), Number(m[2]), m[3] ? (m[3] === '−' ? -1 : 1) * Number(m[4]) : 0];
+    };
+    const lineDist = (line: string, x0: number, y0: number) => { const [A, B, C] = lineParts(line); return Math.abs(A! * x0 + B! * y0 + C!) / Math.hypot(A!, B!); };
     for (const item of draws('distance_point_line')) {
+      const p = item.promptAr!, lines = p.match(LINE)!;
+      if (has(p, 'المتوازيين')) {
+        saw('distance_point_line', 'parallel lines');
+        const [l1, l2] = lines.map(lineParts);
+        assert.deepEqual([l1![0], l1![1]], [l2![0], l2![1]], `not parallel: ${p}`);
+        assert.equal(Number(item.answer), Math.abs(l1![2]! - l2![2]!) / Math.hypot(l1![0]!, l1![1]!), p);
+        continue;
+      }
+      if (has(p, 'نقطة الأصل')) { saw('distance_point_line', 'origin'); assert.equal(Number(item.answer), lineDist(lines[0]!, 0, 0), p); continue; }
+      if (has(p, 'مساحة المثلث')) {
+        saw('distance_point_line', 'triangle area');
+        const [x0, y0] = pts(p)[0]!, base = Number(p.match(/وطوله (\d+)/)![1]);
+        assert.equal(Number(item.answer), (base * lineDist(lines[0]!, x0, y0)) / 2, p);
+        continue;
+      }
+      saw('distance_point_line', 'point');
       const [x0, y0] = pt(item.eq.split(', ')[0]!.concat(')').replace('))', ')'));
       const line = item.eq.split('), ')[1] ?? item.eq.split(', ').slice(2).join(', ');
       let want: number;
@@ -460,15 +562,53 @@ describe('geometry generators: answers recomputed from the stem', () => {
       assert.equal(Number(item.answer), want, item.eq);
     }
     for (const item of draws('proportional_parts')) {
+      const p = item.promptAr!;
       const [a, b, c] = nums(item.promptAr!.replace(/ABC|DE|AD|DB|AE|EC|BC/g, ''));
+      if (has(p, 'منتصفا')) { saw('proportional_parts', 'midsegment'); assert.equal(Number(item.answer), a! / 2, p); continue; }
+      if (has(p, 'ثلاثة مستقيمات')) { saw('proportional_parts', 'parallel lines'); assert.equal(Number(item.answer), (b! * c!) / a!, p); continue; }
+      if (has(p, 'فما طول DE')) { saw('proportional_parts', 'DE'); assert.equal(Number(item.answer) / c!, a! / (a! + b!), p); continue; }
       const ec = has(item.promptAr!, 'فما طول EC');
+      saw('proportional_parts', ec ? 'EC' : 'AE');
       assert.equal(Number(item.answer), ec ? (b! * c!) / a! : (a! * c!) / b!, item.promptAr);
     }
     for (const item of draws('angle_bisector_thm')) {
+      const p = item.promptAr!;
+      if (has(p, 'x')) {
+        // a point on a perpendicular bisector is as far from A as from B; on an angle bisector, as far from both sides
+        saw('angle_bisector_thm', has(p, 'العمودي') ? 'perpendicular bisector' : 'angle bisector point');
+        const [l, r] = linPair(p, Number(item.answer));
+        assert.equal(l, r, p);
+        continue;
+      }
+      if (has(p, 'ملتقى')) {
+        // the incentre is as far from BC as from AB, and IF ⊥ AB makes IAF right-angled at F
+        saw('angle_bisector_thm', 'incentre');
+        const [ia, af] = nums(p);
+        assert.equal(Number(item.answer), Math.sqrt(ia! ** 2 - af! ** 2), p);
+        continue;
+      }
+      saw('angle_bisector_thm', 'ratio');
       const [ab, ac, bd] = nums(item.promptAr!.replace(/ABC|AD|BC|DC|AB|AC|BD/g, m => `_${m}_`).replace(/_[A-Z]+_/g, ' '));
       assert.equal(Number(item.answer), (ac! * bd!) / ab!, item.promptAr);
     }
     for (const item of draws('medians_centroid')) {
+      const p = item.promptAr!;
+      if (has(p, 'تلاقي ارتفاعات')) {
+        saw('medians_centroid', 'orthocentre');
+        const [A, B, C] = pts(p), H = pt(item.answer);
+        const dot = (u: number[], v: number[], w: number[], z: number[]) => (u[0]! - v[0]!) * (w[0]! - z[0]!) + (u[1]! - v[1]!) * (w[1]! - z[1]!);
+        assert.equal(dot(H, A!, C!, B!), 0, `AH ⟂ BC: ${p}`);
+        assert.equal(dot(H, B!, C!, A!), 0, `BH ⟂ AC: ${p}`);
+        continue;
+      }
+      if (has(p, 'رؤوسه')) {
+        saw('medians_centroid', 'centroid');
+        const [A, B, C] = pts(p), G = pt(item.answer);
+        assert.deepEqual([3 * G[0]!, 3 * G[1]!], [A![0] + B![0] + C![0], A![1] + B![1] + C![1]], p);
+        continue;
+      }
+      if (has(p, 'فما طول AD')) { saw('medians_centroid', 'AD'); assert.equal(Number(item.answer), (3 * nums(p)[0]!) / 2, p); continue; }
+      saw('medians_centroid', has(p, 'ما طول AG') ? 'AG' : 'GD');
       const [m] = nums(item.promptAr!.replace(/ABC/g, ''));
       assert.equal(Number(item.answer), has(item.promptAr!, 'AG') ? (2 * m!) / 3 : m! / 3, item.promptAr);
     }
@@ -484,6 +624,8 @@ describe('geometry generators: answers recomputed from the stem', () => {
       const n = nums(item.promptAr!.replace(/ABC|AB|BC|AC/g, ''));
       if (has(item.promptAr!, '√2')) assert.equal(Number(item.answer), n[n.length - 1]! === 2 ? n[n.length - 2]! : n[0]!);
     }
+    const want = { distance_plane: 5, distance_point_line: 4, proportional_parts: 5, angle_bisector_thm: 4, medians_centroid: 5 };
+    for (const [id, k] of Object.entries(want)) assert.equal(kinds[id]?.size, k, `${id} kinds drawn: ${[...(kinds[id] ?? [])]}`);
   });
 
   it('Grade 10: circles, bearings, area by sine', () => {
@@ -548,22 +690,33 @@ describe('geometry generators: answers recomputed from the stem', () => {
   });
 
   it('units and time', () => {
-    for (const id of ['units_m', 'units_km', 'units_mass', 'units_volume']) for (const item of draws(id)) {
-      const f = id === 'units_m' ? 100 : 1000;
-      const [v] = nums(item.promptAr!);
-      const big = { units_m: 'متر', units_km: 'كيلومتر', units_mass: 'كيلوغرام', units_volume: 'لتر' }[id]!;
-      const toSmall = item.promptAr!.startsWith(`حوّل ${v} ${big} إلى`);
-      assert.equal(Number(item.answer), toSmall ? v! * f : v! / f, item.promptAr);
-    }
-    const FAMILY: Record<string, string[]> = { units_length: ['متر'], units_mass_g45: ['غرام'], units_capacity: ['لتر'], units_capacity_length: ['متر', 'لتر'] };
-    for (const id of Object.keys(FAMILY)) for (const item of draws(id)) {
-      assert.ok(FAMILY[id]!.some(w => item.promptAr!.includes(w)), `${id}: ${item.promptAr}`);
-      if (id === 'units_mass_g45') assert.ok(!item.promptAr!.includes('لتر') && !item.promptAr!.includes('متر'), item.promptAr);
-      if (id === 'units_capacity') assert.ok(!item.promptAr!.includes('غرام') && !item.promptAr!.includes('متر'), item.promptAr);
-      const n = nums(item.promptAr!);
-      const big = n.length === 2;
-      const f = has(item.promptAr!, 'سنتيمتر') ? 100 : 1000;
-      assert.equal(Number(item.answer), big ? n[0]! * f + n[1]! : n[0]! * f, item.promptAr);
+    // «حوّل N A إلى B.» either way; «كم Xًا في a … و b …؟» (compound); «… بقي …؟» (what is left after taking b away)
+    const FACTOR: Record<string, number> = { 'متر>سنتيمتر': 100, 'كيلومتر>متر': 1000, 'كيلوغرام>غرام': 1000, 'لتر>مليلتر': 1000 };
+    const PER_BIG: Record<string, number> = { 'سنتيمترًا': 100, 'مترًا': 1000, 'غرامًا': 1000, 'مليلترًا': 1000 };
+    const FAMILY: Record<string, string[]> = { units_m: ['متر'], units_km: ['متر'], units_mass: ['غرام'], units_volume: ['لتر'], units_length: ['متر'], units_mass_g45: ['غرام'], units_capacity: ['لتر'], units_capacity_length: ['متر', 'لتر'] };
+    for (const id of Object.keys(FAMILY)) {
+      const unitKinds = new Set<string>();
+      for (const item of draws(id)) {
+        const p = item.promptAr!, n = nums(p);
+        assert.ok(FAMILY[id]!.some(w => p.includes(w)), `${id}: ${p}`);
+        if (id === 'units_mass_g45' || id === 'units_mass') assert.ok(!p.includes('لتر') && !p.includes('متر'), p);
+        if (id === 'units_capacity' || id === 'units_volume') assert.ok(!p.includes('غرام') && !p.includes('متر'), p);
+        const conv = p.match(/^حوّل \d+ (\S+) إلى (\S+)\.$/);
+        let want: number;
+        if (conv) {
+          const down = FACTOR[`${conv[1]}>${conv[2]}`], up = FACTOR[`${conv[2]}>${conv[1]}`];
+          assert.ok(down || up, p);
+          unitKinds.add(down ? 'down' : 'up');
+          want = down ? n[0]! * down : n[0]! / up!;
+        } else {
+          const f = PER_BIG[p.match(/كم (سنتيمترًا|مترًا|غرامًا|مليلترًا)/)![1]!]!;
+          assert.ok(n[1]! < f, `the small part is less than one big unit: ${p}`);
+          if (has(p, 'بقي')) { unitKinds.add('left'); want = n[0]! * f - n[1]!; }
+          else { unitKinds.add('compound'); want = n[0]! * f + n[1]!; }
+        }
+        assert.equal(Number(item.answer), want, p);
+      }
+      assert.equal(unitKinds.size, 4, `${id} kinds drawn: ${[...unitKinds]}`);
     }
     const min = (s: string) => { const [h, m] = s.split(':').map(Number); return h! * 60 + m!; };
     const wrap = (t: number) => ((t % 720) + 720) % 720;

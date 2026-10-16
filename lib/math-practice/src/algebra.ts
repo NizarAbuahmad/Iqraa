@@ -711,11 +711,42 @@ const writeIneq = topic('ineq_write', /^كتابه المتباينات وتمث
   return { eq: ans, answer: ans, wrongs: ineqWrongs(s, signed(n)), ar: `اكتب متباينة تعبّر عن: العدد x ${ar} ${signed(n)}.`, en: `Write an inequality for: the number x is ${en} ${signed(n)}.` };
 });
 
+/**
+ * Two kinds every one-variable inequality lesson shares (since 2026-10-16), for an
+ * inequality `eq` whose solution set is «x rs bound»: which listed number
+ * satisfies it, and how its solution set is drawn on the number line.
+ */
+function ineqExtras(rng: Rng, kind: 'check' | 'line', eq: string, rs: string, bound: number): Draft {
+  const up = rs === '>' || rs === '≥', strict = rs === '<' || rs === '>';
+  const dir = up ? 1 : -1;
+  if (kind === 'check') {
+    const good = bound + dir * int(rng, strict ? 1 : 0, 3);
+    // a strict inequality's boundary is the classic wrong pick
+    const bad = strict ? [bound, bound - dir * int(rng, 1, 2), bound - dir * int(rng, 3, 5)] : [bound - dir, bound - dir * int(rng, 2, 3), bound - dir * int(rng, 4, 6)];
+    return { eq, answer: signed(good), wrongs: bad.map(signed), ar: `أيّ الأعداد الآتية يحقّق المتباينة ${eq}: ${listAr([good, ...bad])}؟`, en: `Which of these numbers satisfies ${eq}: ${listEn([good, ...bad])}?` };
+  }
+  const say = (closed: boolean, u: boolean) => `دائرة ${closed ? 'مغلقة' : 'مفتوحة'} عند ${signed(bound)}، والتظليل نحو الأعداد ${u ? 'الأكبر' : 'الأصغر'}`;
+  return { eq, answer: say(!strict, up), wrongs: [say(strict, up), say(!strict, !up), say(strict, !up)], ar: `صِف تمثيل مجموعة حلّ المتباينة ${eq} على خط الأعداد.`, en: `Describe how the solution set of ${eq} is drawn on a number line.` };
+}
+
+/** Grade 8: solve by adding or subtracting — and check a number, draw the solution, and a points/lift story. */
 const ineqAdd = topic('ineq_add', /^حل المتباينات بالجمع والطرح$/, [8, 8], ({ rng, diff }) => {
+  const form = pick(rng, [0, 1, 2, 3]);
+  if (form === 3) {
+    if (rng() < 0.5) {
+      const T = int(rng, 4, 12) * 10, a = int(rng, 11, T - 11);
+      const ans = `x ≥ ${T - a}`;
+      return { eq: `x + ${a} ≥ ${T}`, answer: ans, wrongs: [`x ≤ ${T - a}`, `x ≥ ${T + a}`, `x > ${T - a}`], ar: `يحتاج فريق إلى ${T} نقطة على الأقل للتأهل، وقد جمع حتى الآن ${a} نقطة. ما المتباينة التي تمثّل عدد النقاط x التي ما زال يحتاج إليها؟`, en: `A team needs at least ${T} points to qualify and has ${a} so far. Which inequality gives the number of points x it still needs?` };
+    }
+    const T = int(rng, 3, 8) * 100, a = int(rng, 60, T - 60);
+    const ans = `x ≤ ${T - a}`;
+    return { eq: `x + ${a} ≤ ${T}`, answer: ans, wrongs: [`x ≥ ${T - a}`, `x ≤ ${T + a}`, `x < ${T - a}`], ar: `أقصى حمولة لمصعد ${T} كغم، وفيه الآن أشخاص كتلتهم معًا ${a} كغم. ما المتباينة التي تمثّل الكتلة x (بالكيلوغرام) التي يمكن إضافتها؟`, en: `A lift can carry at most ${T} kg and already carries ${a} kg. Which inequality gives the mass x (in kg) that can still be added?` };
+  }
   const x0 = int(rng, -6, 12), a = int(rng, 1, span(diff) + 3);
   const s = pick(rng, SYM);
   const plus = rng() < 0.5;
   const eq = `x ${plus ? '+' : '−'} ${a} ${s} ${signed(plus ? x0 + a : x0 - a)}`;
+  if (form > 0) return ineqExtras(rng, form === 1 ? 'check' : 'line', eq, s, x0);
   const ans = `x ${s} ${signed(x0)}`;
   const wrongBound = plus ? x0 + 2 * a : x0 - 2 * a;
   return {
@@ -725,7 +756,14 @@ const ineqAdd = topic('ineq_add', /^حل المتباينات بالجمع وا�
   };
 });
 
+/** Grade 8: solve by multiplying or dividing — and check a number, draw the solution, and a tickets story. */
 const ineqMul = topic('ineq_mul', /^حل المتباينات بالضرب والقسمه$/, [8, 8], ({ rng, diff }) => {
+  const form = pick(rng, [0, 1, 2, 3]);
+  if (form === 3) {
+    const p = int(rng, 3, 10), k = int(rng, 4, 12), M = p * k;
+    if (rng() < 0.5) return { eq: `${p}x ≤ ${M}`, answer: `x ≤ ${k}`, wrongs: [`x ≥ ${k}`, `x ≤ ${M - p}`, `x < ${k}`], ar: `سعر تذكرة الدخول إلى مدينة الألعاب ${p} دنانير، ومع سامي ${M} دينارًا. ما المتباينة التي تمثّل عدد التذاكر x التي يستطيع شراءها؟`, en: `A ticket to the funfair costs ${p} dinars and Sami has ${M} dinars. Which inequality gives the number of tickets x he can buy?` };
+    return { eq: `${p}x ≥ ${M}`, answer: `x ≥ ${k}`, wrongs: [`x ≤ ${k}`, `x ≥ ${M - p}`, `x > ${k}`], ar: `يريد نادٍ أن يجمع ${M} دينارًا على الأقل من بيع تذاكر سعر الواحدة منها ${p} دنانير. ما المتباينة التي تمثّل عدد التذاكر x التي يجب أن يبيعها؟`, en: `A club wants to raise at least ${M} dinars selling tickets at ${p} dinars each. Which inequality gives the number of tickets x it must sell?` };
+  }
   const x0 = int(rng, -6, 9), a = nz(rng, span(diff) > 6 ? 7 : 5);
   if (Math.abs(a) === 1) return ineqMul.make({ rng, diff, grade: 8 });
   const s = pick(rng, SYM);
@@ -733,6 +771,7 @@ const ineqMul = topic('ineq_mul', /^حل المتباينات بالضرب وا�
   const eq = div ? `x ÷ ${signed(a)} ${s} ${signed(x0)}` : `${signed(a)}x ${s} ${signed(a * x0)}`;
   const bound = div ? a * x0 : x0;
   const rs = a < 0 ? flip(s) : s;
+  if (form > 0) return ineqExtras(rng, form === 1 ? 'check' : 'line', eq, rs, bound);
   const ans = `x ${rs} ${signed(bound)}`;
   return {
     eq, answer: ans,
@@ -741,12 +780,27 @@ const ineqMul = topic('ineq_mul', /^حل المتباينات بالضرب وا�
   };
 });
 
+/** Grade 8: multi-step — and check a number, draw the solution, and a number described in words. */
 const ineqMulti = topic('ineq_multi', /^حل المتباينات متعدده الخطوات$/, [8, 8], ({ rng, diff }) => {
+  const form = pick(rng, [0, 1, 2, 3]);
+  if (form === 3) {
+    const a = int(rng, 2, 6), b = int(rng, 1, 12), x0 = int(rng, -5, 9), plus = rng() < 0.5;
+    const c = plus ? a * x0 + b : a * x0 - b;
+    const [s, w, we] = pick(rng, [['>', 'أكبر من', 'greater than'], ['<', 'أقل من', 'less than'], ['≥', 'لا يقل عن', 'at least'], ['≤', 'لا يزيد على', 'at most']] as const);
+    const ans = `x ${s} ${signed(x0)}`;
+    return {
+      eq: `${a}x ${plus ? '+' : '−'} ${b} ${s} ${signed(c)}`, answer: ans,
+      wrongs: wrongsFrom(ans, [`x ${flip(s)} ${signed(x0)}`, `x ${s} ${signed(plus ? c - b : c + b)}`, `x ${SYM.find(t => t !== s && t !== flip(s))!} ${signed(x0)}`], k => `x ${s} ${signed(x0 + Math.abs(k))}`),
+      ar: `عدد إذا ضُرب في ${a} ثم ${plus ? 'أُضيف إلى الناتج' : 'طُرح من الناتج'} ${b} كان الناتج ${w} ${signed(c)}. ما المتباينة التي تمثّل قيم هذا العدد x؟`,
+      en: `A number is multiplied by ${a}, then ${b} is ${plus ? 'added' : 'subtracted'}; the result is ${we} ${signed(c)}. Which inequality gives the values of the number x?`,
+    };
+  }
   const x0 = int(rng, -5, 9), a = nz(rng, 6), b = nz(rng, 9);
   if (Math.abs(a) === 1) return ineqMulti.make({ rng, diff, grade: 8 });
   const s = pick(rng, SYM);
   const eq = `${polyStr([b, a])} ${s} ${signed(a * x0 + b)}`;
   const rs = a < 0 ? flip(s) : s;
+  if (form > 0) return ineqExtras(rng, form === 1 ? 'check' : 'line', eq, rs, x0);
   const ans = `x ${rs} ${signed(x0)}`;
   return {
     eq, answer: ans,
@@ -755,9 +809,35 @@ const ineqMulti = topic('ineq_multi', /^حل المتباينات متعدده �
   };
 });
 
+/** «(» or «[» for the end of an interval a strict or non-strict inequality closes. */
+const brk = (s: string, side: 'l' | 'r') => (side === 'l' ? (s === '<' ? '(' : '[') : (s === '<' ? ')' : ']'));
+const swapStrict = (s: string) => (s === '<' ? '≤' : s === '≤' ? '<' : s === '>' ? '≥' : '>');
+
+/** Grade 9: solve a compound inequality — and since 2026-10-16 write one from words, and give the solution as an interval. */
 const compound = topic('ineq_compound', /^حل المتباينات المركبه$/, [9, 9], ({ rng, diff }) => {
   const lo = int(rng, -6, 4), hi = lo + int(rng, 2, 9), a = int(rng, 2, 4), b = nz(rng, 7);
-  if (rng() < 0.6) {
+  const form = pick(rng, [0, 1, 2, 3]);
+  if (form === 2) {
+    if (rng() < 0.6) {
+      const [s1, s2] = pick(rng, [['<', '<'], ['<', '≤'], ['≤', '<'], ['≤', '≤']] as const);
+      const L = s1 === '<' ? 'أكبر من' : 'أكبر من أو يساوي', U = s2 === '<' ? 'أقل من' : 'أقل من أو يساوي';
+      const Le = s1 === '<' ? 'greater than' : 'greater than or equal to', Ue = s2 === '<' ? 'less than' : 'less than or equal to';
+      const chain = (p: string, q: string) => `${signed(lo)} ${p} x ${q} ${signed(hi)}`;
+      const ans = chain(s1, s2);
+      return { eq: ans, answer: ans, wrongs: [chain(swapStrict(s1), s2), chain(s1, swapStrict(s2)), chain(swapStrict(s1), swapStrict(s2))], ar: `اكتب متباينة مركبة تعبّر عن: العدد x ${L} ${signed(lo)} و${U} ${signed(hi)}.`, en: `Write a compound inequality for: the number x is ${Le} ${signed(lo)} and ${Ue} ${signed(hi)}.` };
+    }
+    const ls = pick(rng, ['<', '≤'] as const), us = pick(rng, ['>', '≥'] as const);
+    const either = (p: string, q: string, join = 'أو') => `x ${p} ${signed(lo)} ${join} x ${q} ${signed(hi)}`;
+    const ans = either(ls, us);
+    return { eq: ans, answer: ans, wrongs: [either(swapStrict(ls), us), either(ls, swapStrict(us)), either(ls, us, 'و')], ar: `اكتب متباينة مركبة تعبّر عن: العدد x ${ls === '<' ? 'أقل من' : 'أقل من أو يساوي'} ${signed(lo)} أو ${us === '>' ? 'أكبر من' : 'أكبر من أو يساوي'} ${signed(hi)}.`, en: `Write a compound inequality for: the number x is ${ls === '<' ? 'less than' : 'at most'} ${signed(lo)} or ${us === '>' ? 'greater than' : 'at least'} ${signed(hi)}.` };
+  }
+  if (form === 3) {
+    const [s1, s2] = pick(rng, [['<', '<'], ['<', '≤'], ['≤', '<'], ['≤', '≤']] as const);
+    const eq = `${signed(a * lo + b)} ${s1} ${polyStr([b, a])} ${s2} ${signed(a * hi + b)}`;
+    const iv = (p: string, q: string, u = lo, v = hi) => `${brk(p, 'l')}${signed(u)} ، ${signed(v)}${brk(q, 'r')}`;
+    return { eq, answer: iv(s1, s2), wrongs: [iv(swapStrict(s1), s2), iv(s1, swapStrict(s2)), iv(s1, s2, a * lo + b, a * hi + b)], ar: `اكتب مجموعة حلّ المتباينة المركبة ${eq} باستعمال الفترات.`, en: `Write the solution set of ${eq} in interval notation.` };
+  }
+  if (form === 0) {
     const [s1, s2] = pick(rng, [['<', '<'], ['<', '≤'], ['≤', '<'], ['≤', '≤']] as const);
     const eq = `${signed(a * lo + b)} ${s1} ${polyStr([b, a])} ${s2} ${signed(a * hi + b)}`;
     const ans = `${signed(lo)} ${s1} x ${s2} ${signed(hi)}`;
@@ -770,8 +850,33 @@ const compound = topic('ineq_compound', /^حل المتباينات المركب
   return { eq, answer: ans, wrongs: [`x > ${signed(c1)} أو x ≤ ${c2}`, `x < ${signed(c1)} و x ≥ ${c2}`, `x < ${signed(c1 + a)} أو x ≥ ${a * c2}`], ar: `حلّ المتباينة المركبة: ${eq}`, en: `Solve the compound inequality: ${eq.replace('أو', 'or')}` };
 });
 
+/** Grade 9: an inequality as an interval — and since 2026-10-16 an interval as an inequality, and a set of integers in roster form. */
 const intervals = topic('intervals', /^المجموعات والفترات$/, [9, 9], ({ rng }) => {
   const a = int(rng, -6, 5), b = a + int(rng, 2, 8);
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) {
+    if (rng() < 0.4) {
+      const s = pick(rng, SYM);
+      const iv = s === '>' ? `(${signed(a)} ، ∞)` : s === '≥' ? `[${signed(a)} ، ∞)` : s === '<' ? `(−∞ ، ${signed(a)})` : `(−∞ ، ${signed(a)}]`;
+      const ans = `x ${s} ${signed(a)}`;
+      return { eq: ans, answer: ans, wrongs: ineqWrongs(s, signed(a)), ar: `اكتب الفترة ${iv} على صورة متباينة.`, en: `Write the interval ${iv} as an inequality.` };
+    }
+    const [s1, s2] = pick(rng, [['<', '<'], ['<', '≤'], ['≤', '<'], ['≤', '≤']] as const);
+    const chain = (p: string, q: string) => `${signed(a)} ${p} x ${q} ${signed(b)}`;
+    const ans = chain(s1, s2);
+    return { eq: ans, answer: ans, wrongs: [chain(swapStrict(s1), s2), chain(s1, swapStrict(s2)), chain(swapStrict(s1), swapStrict(s2))], ar: `اكتب الفترة ${brk(s1, 'l')}${signed(a)} ، ${signed(b)}${brk(s2, 'r')} على صورة متباينة.`, en: `Write the interval ${brk(s1, 'l')}${signed(a)} ، ${signed(b)}${brk(s2, 'r')} as an inequality.` };
+  }
+  if (form === 2) {
+    const hi = a + int(rng, 2, 6);
+    const [s1, s2] = pick(rng, [['<', '<'], ['<', '≤'], ['≤', '<'], ['≤', '≤']] as const);
+    const roster = (p: string, q: string) => {
+      const xs: number[] = [];
+      for (let x = a; x <= hi; x++) if ((p === '<' ? x > a : x >= a) && (q === '<' ? x < hi : x <= hi)) xs.push(x);
+      return setStr(xs);
+    };
+    const cond = `${signed(a)} ${s1} x ${s2} ${signed(hi)}`;
+    return { eq: cond, answer: roster(s1, s2), wrongs: [roster(swapStrict(s1), s2), roster(s1, swapStrict(s2)), roster(swapStrict(s1), swapStrict(s2))], ar: `اكتب بطريقة سرد العناصر مجموعة الأعداد الصحيحة x التي تحقّق ${cond}.`, en: `List the elements of the set of integers x with ${cond}.` };
+  }
   const k = pick(rng, [0, 1, 2, 3]);
   if (k === 0) { const s = pick(rng, ['>', '≥']); const ans = `${s === '>' ? '(' : '['}${signed(a)} ، ∞)`; return { eq: `x ${s} ${signed(a)}`, answer: ans, wrongs: [`${s === '>' ? '[' : '('}${signed(a)} ، ∞)`, `(−∞ ، ${signed(a)}${s === '>' ? ')' : ']'}`, `(−∞ ، ${signed(a)}${s === '>' ? ']' : ')'}`], ar: `اكتب المتباينة x ${s} ${signed(a)} على صورة فترة.`, en: `Write x ${s} ${signed(a)} in interval notation.` }; }
   if (k === 1) { const s = pick(rng, ['<', '≤']); const ans = `(−∞ ، ${signed(a)}${s === '<' ? ')' : ']'}`; return { eq: `x ${s} ${signed(a)}`, answer: ans, wrongs: [`(−∞ ، ${signed(a)}${s === '<' ? ']' : ')'}`, `${s === '<' ? '(' : '['}${signed(a)} ، ∞)`, `${s === '<' ? '[' : '('}${signed(a)} ، ∞)`], ar: `اكتب المتباينة x ${s} ${signed(a)} على صورة فترة.`, en: `Write x ${s} ${signed(a)} in interval notation.` }; }
@@ -792,7 +897,26 @@ const sysWrongs = (x: number, y: number) => {
   return out.slice(0, 3);
 };
 
+/**
+ * Grade 8 systems, one generator per method. Since 2026-10-16 each lesson also
+ * asks which listed pair solves a system (the graph lesson's «التحقق»), and the
+ * lessons' situations: two numbers from their sum and difference, and tickets.
+ */
 const systemTopic = (id: string, match: RegExp, mode: 'graph' | 'sub' | 'elim') => topic(id, match, [8, 8], ({ rng, diff }) => {
+  const form = pick(rng, [0, 1, 2, 3]);
+  if (form === 2) {
+    const L = int(rng, 10, 40), s = int(rng, 2, L - 1), S = L + s, D = L - s, big = rng() < 0.5;
+    const ans = big ? L : s;
+    return { eq: `x + y = ${S} ، x − y = ${D}`, answer: String(ans), wrongs: num(ans, [big ? s : L, D, S - D, Math.floor(S / 2)], String), ar: `مجموع عددين ${S}، والفرق بينهما ${D}. ما العدد ${big ? 'الأكبر' : 'الأصغر'}؟`, en: `Two numbers have sum ${S} and difference ${D}. What is the ${big ? 'larger' : 'smaller'} number?` };
+  }
+  if (form === 3) {
+    const A = int(rng, 4, 10), C = int(rng, 3, A - 1), n = int(rng, 12, 40), ad = int(rng, 1, n - 1), T = A * ad + C * (n - ad);
+    return {
+      eq: `x + y = ${n} ، ${A}x + ${C}y = ${T}`, answer: String(ad), wrongs: num(ad, [n - ad, Math.floor(T / A), Math.floor(T / (A + C)), ad + 1], String),
+      ar: `باعت مدرسة ${n} تذكرة لحفل خيري، سعر تذكرة الكبار ${A} دنانير وسعر تذكرة الصغار ${C} دنانير، فكان ثمنها كلها ${T} دينارًا. كم تذكرةً بيعت للكبار؟`,
+      en: `A school sold ${n} tickets for a charity concert: adult tickets cost ${A} dinars and child tickets ${C} dinars, ${T} dinars in all. How many adult tickets were sold?`,
+    };
+  }
   for (let attempt = 0; attempt < 100; attempt++) {
     const x = int(rng, -4, 6), y = int(rng, -4, 6);
     const yEq = (m: number) => `y = ${polyStr([y - m * x, m])}`;
@@ -816,6 +940,11 @@ const systemTopic = (id: string, match: RegExp, mode: 'graph' | 'sub' | 'elim') 
     }
     const how = mode === 'graph' ? 'بيانيًا' : mode === 'sub' ? 'بالتعويض' : 'بالحذف';
     const howEn = mode === 'graph' ? 'by graphing' : mode === 'sub' ? 'by substitution' : 'by elimination';
+    if (form === 1) {
+      const wr = sysWrongs(x, y);
+      const listed = [pair(x, y), ...wr].sort().join('، ');
+      return { eq: `${e1} ، ${e2}`, answer: pair(x, y), wrongs: wr, ar: `أيّ الأزواج المرتبة الآتية حلٌّ للنظام: ${listed}؟\n${e1}\n${e2}`, en: `Which of these ordered pairs solves the system: ${listed}?\n${e1}\n${e2}` };
+    }
     return { eq: `${e1} ، ${e2}`, answer: pair(x, y), wrongs: sysWrongs(x, y), ar: `حلّ النظام الآتي ${how}:\n${e1}\n${e2}`, en: `Solve the system ${howEn}:\n${e1}\n${e2}` };
   }
   throw new Error('system generator found no draw');
