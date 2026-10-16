@@ -25,6 +25,7 @@ import { toArabicDigits } from './labFormat.ts';
 import { optionLetter } from './optionLabels.ts';
 import { samplePlot } from './deckVisuals.ts';
 import { exprsMissingFromStem, normalizePlotExpr } from './ai/worksheetFormats.ts';
+import { keyWorkingNote } from './worksheetWorking.ts';
 
 const THINK_SECONDS = 45;
 
@@ -362,6 +363,10 @@ export function buildDeckFromWorksheet(
       title: isAr ? '✍️ مثال محلول' : '✍️ Worked example',
       content: [ex.problem, '', ...ex.steps.map((step, i) => `${i + 1}) ${step}`), ...(ex.selfExplain ? ['', ex.selfExplain] : [])].join('\n'),
       durationSeconds: 0,
+      // The class reads the example off the wall, so the warning goes in the
+      // teacher panel. Only an example a model wrote needs it: a bank example
+      // was checked by a person and gets no panel at all.
+      ...(ex.fromBank ? {} : { teacher: { expectedAnswer: ex.answer, teachingTips: keyWorkingNote(isAr) } }),
     });
   }
 
@@ -433,7 +438,12 @@ export function buildDeckFromWorksheet(
                 teachingTips: [
                   isAr ? 'الكل يجيب معًا عند انتهاء المؤقت.' : 'Everyone answers together when the timer ends.',
                   ...(solutionByPosition.get(qNum)?.length
-                    ? [isAr ? 'خطوات الحل:' : 'Working:', ...solutionByPosition.get(qNum)!.map((step, i) => `${i + 1}) ${step}`)]
+                    ? [
+                        // Working a model wrote is not working a person checked.
+                        ...(q.fromBank === true ? [] : [keyWorkingNote(isAr)]),
+                        isAr ? 'خطوات الحل:' : 'Working:',
+                        ...solutionByPosition.get(qNum)!.map((step, i) => `${i + 1}) ${step}`),
+                      ]
                     : []),
                 ].join('\n'),
               },

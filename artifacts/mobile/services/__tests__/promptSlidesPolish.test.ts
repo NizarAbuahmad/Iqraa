@@ -11,6 +11,8 @@ import assert from 'node:assert/strict';
 import { polishDeck } from '../promptSlidesPolish.ts';
 import { resolveSlideLayout } from '../slideLayout.ts';
 import type { ActivitySlide, ClassroomActivity } from '../ai/AIService.ts';
+import type { VisualBlock } from '../deckVisuals.ts';
+
 
 const slide = (over: Partial<ActivitySlide> = {}): ActivitySlide => ({
   slideNumber: 1, type: 'intro', title: 'عنوان', content: '• سطر أول\n• سطر ثانٍ', durationSeconds: 0, ...over,
@@ -204,5 +206,77 @@ describe('polishDeck — a procedure written on one line', () => {
   it('leaves a one-line slide with only two numbered clauses as an ordinary statement', () => {
     const out = polishDeck(deck([slide(), slide({ content: 'تعرّف أولًا 1) الفكرة 2) والمثال' }), ...padding(4)]));
     assert.equal(out.slides[1]!.layout, 'statement');
+  });
+});
+
+describe('polishDeck — the structure a model chose', () => {
+  const chart: VisualBlock = { kind: 'chart', chartType: 'pie', categories: ['سكن', 'طعام', 'نقل'], values: [50, 30, 20] };
+
+  it('keeps an icon the app can draw and deletes one it cannot', () => {
+    const out = polishDeck(deck([
+      slide(),
+      slide({ title: 'ذرة', icon: 'atom' }),
+      slide({ title: 'صاروخ', icon: 'rocket' as never }),
+      ...padding(4),
+    ]));
+    assert.equal(out.slides[1]!.icon, 'atom');
+    assert.equal('icon' in out.slides[2]!, false);
+  });
+
+  it('keeps a valid chart and cleans it', () => {
+    const out = polishDeck(deck([
+      slide(),
+      slide({ title: 'مصروف الأسرة', visual: { ...chart, values: ['50', '30', '20'] as never } }),
+      ...padding(4),
+    ]));
+    assert.deepEqual(out.slides[1]!.visual, chart);
+  });
+
+  it('deletes a chart that fails the gate, and the reveal flag that went with it', () => {
+    const out = polishDeck(deck([
+      slide(),
+      slide({ visual: { ...chart, values: [1, 2] } as never, visualOnReveal: true }),
+      ...padding(4),
+    ]));
+    assert.equal('visual' in out.slides[1]!, false);
+    assert.equal('visualOnReveal' in out.slides[1]!, false);
+  });
+
+  it('never drops a chart slide for having a short body — the chart is the substance', () => {
+    const out = polishDeck(deck([
+      slide(),
+      slide({ title: 'الأرقام', content: 'انظر', visual: chart }),
+      ...padding(5),
+    ]));
+    assert.equal(out.slides.length, 7);
+    assert.ok(out.slides[1]!.visual);
+  });
+
+  it('a chart on a laid-out slide is dropped — the layout fills the slide in all three renderers', () => {
+    const out = polishDeck(deck([
+      slide(),
+      slide({ layout: 'statement', content: 'جملة واحدة قصيرة', visual: chart }),
+      ...padding(4),
+    ]));
+    assert.equal(out.slides[1]!.layout, 'statement');
+    assert.equal('visual' in out.slides[1]!, false);
+  });
+
+  it('a chart displaces the photo request on its slide', () => {
+    const out = polishDeck(deck([
+      slide(),
+      slide({ visual: chart, mediaPrompt: 'household budget' }),
+      slide({ mediaPrompt: 'river delta' }),
+      ...padding(3),
+    ]));
+    assert.equal('mediaPrompt' in out.slides[1]!, false);
+    assert.equal(out.slides[2]!.mediaPrompt, 'river delta');
+  });
+
+  it('does not touch a deck that carries neither', () => {
+    const before = deck([slide(), ...padding(5)]);
+    const out = polishDeck(before);
+    assert.deepEqual(out.slides.map(s => s.title), before.slides.map(s => s.title));
+    assert.ok(out.slides.every(s => !('icon' in s) && !('visual' in s)));
   });
 });
