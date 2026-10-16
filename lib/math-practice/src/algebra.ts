@@ -191,7 +191,11 @@ const exprEval = topic('expr_eval', /قيمه المقدار الجبري/, [5, 
   return { eq: text, answer: String(v), wrongs: num(v, [a + x + b, a * (x + b), a + b * x, v + a], String), ar: `أوجد قيمة المقدار ${text} عندما x = ${x}.`, en: `Find the value of ${text} when x = ${x}.` };
 });
 
-/** One-step equations from a chosen solution. */
+/**
+ * One-step equations from a chosen solution. Four kinds since 2026-10-16:
+ * solve it, pick the solution from a list, the «I thought of a number» story,
+ * and write the equation a sentence describes (the Grade 4 outcome «أكتبها»).
+ */
 const oneStep = (id: string, match: RegExp, kinds: Array<'add' | 'sub' | 'mul' | 'div'>, grades: [number, number]) =>
   topic(id, match, grades, ({ rng, diff }) => {
     const x = int(rng, 2, span(diff) + 6), a = int(rng, 2, span(diff));
@@ -201,18 +205,56 @@ const oneStep = (id: string, match: RegExp, kinds: Array<'add' | 'sub' | 'mul' |
       : kind === 'sub' ? [`x − ${a} = ${x}`, x + a, [x - a, x, a]]
       : kind === 'mul' ? [`${a}x = ${a * x}`, x, [a * x - a, a * x, a]]
       : [`x ÷ ${a} = ${x}`, x * a, [x + a, x, x - a]]) as [string, number, number[]];
+    const form = pick(rng, [0, 1, 2, 3]);
+    if (form === 1) return whichSolves(eq, ans, others(ans, w, true));
+    if (form === 2) {
+      const [ar, en] = kind === 'add' ? [`فكّرت سلمى في عدد، ثم أضافت إليه ${a} فكان الناتج ${x + a}. ما العدد الذي فكّرت فيه؟`, `Salma thinks of a number and adds ${a} to it; the result is ${x + a}. What is her number?`]
+        : kind === 'sub' ? [`فكّر عمر في عدد، ثم طرح منه ${a} فكان الناتج ${x}. ما العدد الذي فكّر فيه؟`, `Omar thinks of a number and subtracts ${a} from it; the result is ${x}. What is his number?`]
+        : kind === 'mul' ? [`فكّرت ليلى في عدد، ثم ضربته في ${a} فكان الناتج ${a * x}. ما العدد الذي فكّرت فيه؟`, `Layla thinks of a number and multiplies it by ${a}; the result is ${a * x}. What is her number?`]
+        : [`فكّر يزن في عدد، ثم قسمه على ${a} فكان الناتج ${x}. ما العدد الذي فكّر فيه؟`, `Yazan thinks of a number and divides it by ${a}; the result is ${x}. What is his number?`];
+      return { eq, answer: String(ans), wrongs: num(ans, w, String), ar, en };
+    }
+    if (form === 3) {
+      const R = eq.split(' = ')[1]!;
+      const E = { add: `x + ${a} = ${R}`, sub: `x − ${a} = ${R}`, rsub: `${a} − x = ${R}`, mul: `${a}x = ${R}`, div: `x ÷ ${a} = ${R}`, rdiv: `${a} ÷ x = ${R}` };
+      const [ans2, ar, en, wr] = kind === 'add' ? [E.add, `ناتج جمع العدد x و ${a} يساوي ${R}`, `the sum of x and ${a} is ${R}`, [E.sub, E.mul, E.div]]
+        : kind === 'sub' ? [E.sub, `ناتج طرح ${a} من العدد x يساوي ${R}`, `${a} subtracted from x is ${R}`, [E.rsub, E.add, E.div]]
+        : kind === 'mul' ? [E.mul, `ناتج ضرب العدد x في ${a} يساوي ${R}`, `x multiplied by ${a} is ${R}`, [E.add, E.div, E.sub]]
+        : [E.div, `ناتج قسمة العدد x على ${a} يساوي ${R}`, `x divided by ${a} is ${R}`, [E.rdiv, E.mul, E.sub]];
+      return { eq: ans2, answer: ans2, wrongs: wr, ar: `اكتب معادلة تعبّر عن الجملة: ${ar}.`, en: `Write an equation for: ${en}.` };
+    }
     return { eq, answer: String(ans), wrongs: num(ans, w, String), ar: `حلّ المعادلة: ${eq}`, en: `Solve the equation: ${eq}` };
   });
 
 const equations = topic('eq_mixed', /^المعادلات$/, [4, 6], ({ rng, diff, grade }) => {
   if (grade < 6) return oneStep('x', /./, ['add', 'sub', 'mul', 'div'], [4, 5]).make({ rng, diff, grade });
   const x = int(rng, 1, 9), a = int(rng, 2, 6), b = int(rng, 1, 12);
-  const eq = `${a}x + ${b} = ${a * x + b}`;
+  const c = a * x + b;
+  const eq = `${a}x + ${b} = ${c}`;
+  const w = [c - a, (c + b) / a, x + b, x + a, c - b];
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) return whichSolves(eq, x, others(x, w, true));
+  if (form === 2) return { eq, answer: String(x), wrongs: num(x, w.filter(Number.isInteger), String), ar: `فكّر خالد في عدد، ثم ضربه في ${a} وأضاف إلى الناتج ${b} فكان الناتج ${c}. ما العدد الذي فكّر فيه؟`, en: `Khaled thinks of a number, multiplies it by ${a} and adds ${b}; the result is ${c}. What is his number?` };
   return { eq, answer: String(x), wrongs: num(x, [a * x + b - a, (a * x) / a + b, x + b, x + a], String), ar: `حلّ المعادلة: ${eq}`, en: `Solve the equation: ${eq}` };
 });
 
+/** Grade 6: name the property an equality uses, simplify with commutative + associative, and distribute. */
 const properties = topic('distribute', /^الخصائص الجبريه$/, [6, 6], ({ rng, diff }) => {
   const a = int(rng, 2, 9), b = int(rng, 2, span(diff) > 6 ? 5 : 3), c = int(rng, 1, 9);
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) {
+    const PROPS = ['الخاصية التبديلية', 'الخاصية التجميعية', 'الخاصية التوزيعية', 'خاصية العنصر المحايد'];
+    const p = int(rng, 0, 2), o = rng() < 0.5 ? '×' : '+';
+    const eq = p === 0 ? `${a} ${o} x = x ${o} ${a}` : p === 1 ? `(x ${o} ${a}) ${o} ${c} = x ${o} (${a} ${o} ${c})` : `${a}(x + ${c}) = ${a}x + ${a * c}`;
+    return { eq, answer: PROPS[p]!, wrongs: PROPS.filter((_, i) => i !== p), ar: `ما الخاصية المستعملة في المساواة: ${eq}؟`, en: `Which property is used in: ${eq}?` };
+  }
+  if (form === 2) {
+    const times = rng() < 0.5;
+    const text = times ? `${a} × x × ${c + 1}` : `${a} + x + ${c}`;
+    const ans = times ? [0, a * (c + 1)] : [a + c, 1];
+    const cands = times ? [[0, a + c + 1], [a * (c + 1), 1], [0, 0, a * (c + 1)]] : [[0, a + c], [a * c, 1], [a + c, 2]];
+    return { eq: text, answer: polyStr(ans), wrongs: polyOpts(ans, cands), ar: `بسّط مستعملًا الخاصيتين التبديلية والتجميعية: ${text}`, en: `Simplify using the commutative and associative properties: ${text}` };
+  }
   const minus = rng() < 0.4;
   const text = `${a}(${b === 1 ? '' : b}x ${minus ? '−' : '+'} ${c})`;
   const ans = [(minus ? -c : c) * a, a * b];
@@ -223,7 +265,39 @@ const properties = topic('distribute', /^الخصائص الجبريه$/, [6, 6]
   };
 });
 
+/**
+ * Sequences: the next term or the nth — and since 2026-10-16 a missing term, the
+ * rule from one term to the next (Grade 6 «أكمل»), and for Grade 7 the general
+ * term written algebraically.
+ */
 const sequences = topic('seq_basic', /^المتتاليات$/, [6, 7], ({ rng, diff, grade }) => {
+  const form = pick(rng, grade >= 7 ? [0, 1, 2, 3] : [0, 1, 2]);
+  if (form > 0) {
+    const a = int(rng, -3, 12), d = nz(rng, span(diff) > 6 ? 9 : 5);
+    const t = [0, 1, 2, 3, 4].map(i => a + i * d);
+    const four = t.slice(0, 4).map(signed);
+    if (form === 1) {
+      const i = int(rng, 1, 3), ans = t[i]!;
+      const shown = t.map((v, j) => (j === i ? '___' : signed(v)));
+      return { eq: shown.join(', '), answer: signed(ans), wrongs: num(ans, [ans + 1, ans - 1, t[4]! + d]), ar: `ما العدد المفقود في المتتالية: ${shown.join('، ')}؟`, en: `What is the missing number in the sequence ${shown.join(', ')}?` };
+    }
+    if (form === 2) {
+      const rule = (k: number) => (k > 0 ? `أضف ${k}` : `اطرح ${-k}`);
+      const step = d > 0 ? 1 : -1, m = Math.abs(d);
+      const ans = rule(d);
+      return {
+        eq: four.join(', '), answer: ans,
+        wrongs: wrongsFrom(ans, [rule(-d), rule(d + step), `اضرب في ${m === 1 ? 2 : m}`], k => rule(d + step * (Math.abs(k) + 1))),
+        ar: `ما القاعدة التي تنقل كل حدّ إلى الحدّ الذي يليه في المتتالية: ${four.join('، ')}، …؟`, en: `What rule takes each term to the next in the sequence ${four.join(', ')}, …?`,
+      };
+    }
+    const ans = polyStr([a - d, d], 'n');
+    return {
+      eq: four.join(', '), answer: ans,
+      wrongs: wrongsFrom(ans, [polyStr([a, d], 'n'), polyStr([d, a], 'n'), polyStr([a + d, d], 'n')], k => polyStr([a - d + k, d], 'n')),
+      ar: `ما قاعدة الحدّ العام (الحدّ النوني) للمتتالية الحسابية: ${four.join('، ')}، …؟`, en: `What is the general (nth) term of the arithmetic sequence ${four.join(', ')}, …?`,
+    };
+  }
   const geometric = grade >= 7 && tier(diff) >= 1 && rng() < 0.4;
   if (geometric) {
     const a = int(rng, 1, 5), r = int(rng, 2, 3);
@@ -257,13 +331,56 @@ const terms = topic('alg_terms', /^الحدود والمقادير الجبري�
   return { eq: expr, answer: signed(v), wrongs: num(v, [a * x + b * x + c, a * 2 * x + b * x + c, -v, v + a]), ar: `أوجد قيمة المقدار ${expr} عندما x = ${signed(x)}.`, en: `Find the value of ${expr} when x = ${signed(x)}.` };
 });
 
+/** «بسّط المقدار بتجميع الحدود المتشابهة» — two terms of every power, shuffled. */
+function likeTermsDraft(rng: Rng, deg: number): Draft {
+  for (;;) {
+    const ts: Array<[number, number]> = [];
+    for (let p = 0; p <= deg; p++) ts.push([nz(rng, 9), p], [nz(rng, 9), p]);
+    const terms = shuffled(rng, ts);
+    if (terms[0]![0] < 0) terms[0] = [-terms[0]![0], terms[0]![1]];
+    const ans = new Array(deg + 1).fill(0) as number[];
+    const abs = new Array(deg + 1).fill(0) as number[];
+    for (const [c, p] of terms) { ans[p]! += c; abs[p]! += Math.abs(c); }
+    if (trim(ans).length === 0) continue;
+    const text = termsStr(terms);
+    return {
+      eq: text, answer: polyStr(ans),
+      wrongs: polyOpts(ans, [abs, [0, ans.reduce((s, c) => s + c, 0)], ans.map((c, p) => (p === 0 ? -c : c))]),
+      ar: `بسّط المقدار بتجميع الحدود المتشابهة: ${text}`, en: `Simplify by collecting like terms: ${text}`,
+    };
+  }
+}
+
+/** Grade 7: collect like terms, add and subtract expressions, «subtract A from B», and a perimeter. */
 const polyAddSub = topic('poly_addsub', /^جمع المقادير الجبريه وطرحها$/, [7, 7], ({ rng, diff }) => {
-  const sub = rng() < 0.5;
   const deg = tier(diff) === 0 ? 1 : 2;
+  const form = pick(rng, [0, 1, 2, 3]);
+  if (form === 1) return likeTermsDraft(rng, deg);
+  if (form === 3) {
+    const S = [0, 1, 2].map(() => [nz(rng, 9), int(rng, 1, 5)]);
+    const ans = S.reduce((s, t) => add(s, t), [0, 0]);
+    const sides = S.map(s => polyStr(s));
+    return {
+      eq: sides.map(s => `(${s})`).join(' + '), answer: polyStr(ans),
+      wrongs: polyOpts(ans, [add(S[0]!, S[1]!), [S.reduce((s, t) => s + Math.abs(t[0]!), 0), ans[1]!], [0, ans[0]! + ans[1]!]]),
+      ar: `مثلث أطوال أضلاعه بالسنتيمتر: ${sides.join('، و ')}. اكتب مقدارًا جبريًا يمثّل محيطه.`,
+      en: `A triangle has sides ${sides.join(', ')} (in cm). Write an algebraic expression for its perimeter.`,
+    };
+  }
+  const sub = rng() < 0.5;
   const mk = () => Array.from({ length: deg + 1 }, () => int(rng, -9, 9));
   let A = mk(), B = mk();
   if (!A[deg] || !B[deg]) { A[deg] = int(rng, 1, 9); B[deg] = int(rng, 1, 9); }
   const as = polyStr(A), bs = polyStr(B);
+  if (form === 2) {
+    const ans = add(B, A, -1);
+    if (trim(ans).length === 0) return polyAddSub.make({ rng, diff, grade: 7 });
+    return {
+      eq: `(${bs}) − (${as})`, answer: polyStr(ans),
+      wrongs: polyOpts(ans, [add(A, B, -1), add(A, B, 1), B.map((x, i) => (i === deg ? x - A[i]! : x + A[i]!))]),
+      ar: `اطرح (${as}) من (${bs}).`, en: `Subtract (${as}) from (${bs}).`,
+    };
+  }
   const ans = add(A, B, sub ? -1 : 1);
   if (trim(ans).length === 0) return polyAddSub.make({ rng, diff, grade: 7 });
   const slip = sub ? A.map((x, i) => (i === 0 ? x - B[i]! : x + B[i]!)) : add(A, B, -1);
