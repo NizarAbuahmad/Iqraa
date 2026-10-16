@@ -96,6 +96,12 @@ export interface RunDeps {
   put(key: string, body: Uint8Array): Promise<void>;
   now(): Date;
   log(line: string): void;
+  /**
+   * Called right after each successful `put`, so the manifest can be written
+   * per upload and an interrupted run still leaves every stored file recorded.
+   * If it throws, the run stops: nothing more is stored that could not be recorded.
+   */
+  onUploaded?(entry: ManifestEntry): void;
 }
 
 export interface RunReport {
@@ -149,7 +155,7 @@ export async function runUpload(
         report.rejected.push({ key, reason: `upload failed: ${(err as Error).message}` });
         continue;
       }
-      report.uploaded.push({
+      const entry: ManifestEntry = {
         surah: a.surah,
         ayah: a.ayah,
         key,
@@ -157,8 +163,15 @@ export async function runUpload(
         sha256: createHash('sha256').update(got.bytes).digest('hex'),
         sourceUrl: url,
         fetchedAt: deps.now().toISOString(),
-      });
+      };
+      report.uploaded.push(entry);
       deps.log(`  ${key}`);
+      try {
+        deps.onUploaded?.(entry);
+      } catch (err) {
+        report.aborted = `manifest write failed: ${(err as Error).message}`;
+        return;
+      }
     }
   }
 

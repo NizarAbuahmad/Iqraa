@@ -178,6 +178,33 @@ describe('runUpload', () => {
     assert.equal(r.uploaded.length, 0);
   });
 
+  it('calls onUploaded once per successful upload, in order, with the entry that lands in the report', async () => {
+    const html = { status: 200, contentType: 'text/html', bytes: new TextEncoder().encode('<html>') };
+    let n = 0;
+    const seen: ManifestEntry[] = [];
+    const { deps } = fakeDeps({
+      fetchAudio: async () => (++n === 2 ? html : good()),
+      onUploaded: e => {
+        seen.push(e);
+      },
+    });
+    const r = await runUpload(todo, deps, { concurrency: 1 });
+    assert.deepEqual(seen.map(e => e.key), [quranAudioKey(1, 1), quranAudioKey(1, 3)]);
+    assert.deepEqual(seen, r.uploaded);
+  });
+
+  it('aborts when onUploaded throws, and fetches nothing more', async () => {
+    const { deps, fetched, put } = fakeDeps({
+      onUploaded: () => {
+        throw new Error('disk full');
+      },
+    });
+    const r = await runUpload(todo, deps, { concurrency: 1 });
+    assert.match(r.aborted ?? '', /^manifest write failed: disk full/);
+    assert.equal(fetched.length, 1);
+    assert.equal(put.length, 1);
+  });
+
   it('--dry-run neither fetches nor stores', async () => {
     const { deps, fetched, put } = fakeDeps();
     const r = await runUpload(todo, deps, { dryRun: true });

@@ -68,6 +68,35 @@ try {
   process.exit(2);
 }
 
+// Read the manifest before any network, and refuse one we cannot read: writing
+// over it would lose the record of what is already in the bucket.
+function readManifest(): ManifestEntry[] {
+  if (!existsSync(MANIFEST_PATH)) return [];
+  try {
+    const parsed = JSON.parse(readFileSync(MANIFEST_PATH, 'utf8')) as { files?: unknown };
+    if (!parsed || !Array.isArray(parsed.files)) throw new Error('no "files" array');
+    return parsed.files as ManifestEntry[];
+  } catch (err) {
+    console.error(`cannot read ${MANIFEST_PATH}: ${(err as Error).message}`);
+    console.error('fix or restore it (git checkout) and run again; it was not touched.');
+    process.exit(2);
+  }
+}
+let manifest: ManifestEntry[] = readManifest();
+
+/** Rewritten after EVERY upload, so an interrupted run still leaves each stored file recorded. */
+function writeManifest(): void {
+  mkdirSync(path.dirname(MANIFEST_PATH), { recursive: true });
+  writeFileSync(
+    MANIFEST_PATH,
+    JSON.stringify(
+      { reciter: QURAN_AUDIO_RECITER, sourceBase: QURAN_AUDIO_SOURCE_BASE, files: manifest },
+      null,
+      2,
+    ) + '\n',
+  );
+}
+
 const { R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY } = process.env;
 if (!R2_ENDPOINT || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
   console.error('R2 is not configured — set R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY in .env.');
@@ -154,6 +183,10 @@ const report = await runUpload(
     },
     now: () => new Date(),
     log: line => console.log(line),
+    onUploaded(entry) {
+      manifest = mergeManifest(manifest, [entry]);
+      writeManifest();
+    },
   },
   { concurrency, dryRun },
 );
@@ -164,22 +197,6 @@ if (dryRun) {
 }
 
 if (report.uploaded.length > 0) {
-  const existing: ManifestEntry[] = existsSync(MANIFEST_PATH)
-    ? (JSON.parse(readFileSync(MANIFEST_PATH, 'utf8')) as { files: ManifestEntry[] }).files
-    : [];
-  mkdirSync(path.dirname(MANIFEST_PATH), { recursive: true });
-  writeFileSync(
-    MANIFEST_PATH,
-    JSON.stringify(
-      {
-        reciter: QURAN_AUDIO_RECITER,
-        sourceBase: QURAN_AUDIO_SOURCE_BASE,
-        files: mergeManifest(existing, report.uploaded),
-      },
-      null,
-      2,
-    ) + '\n',
-  );
   console.log(`uploaded ${report.uploaded.length} → ${BUCKET}/${QURAN_AUDIO_PREFIX}/ ; wrote ${MANIFEST_PATH} — commit it.`);
 }
 
