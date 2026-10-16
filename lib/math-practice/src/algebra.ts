@@ -215,12 +215,18 @@ const oneStep = (id: string, match: RegExp, kinds: Array<'add' | 'sub' | 'mul' |
       return { eq, answer: String(ans), wrongs: num(ans, w, String), ar, en };
     }
     if (form === 3) {
-      const R = eq.split(' = ')[1]!;
-      const E = { add: `x + ${a} = ${R}`, sub: `x − ${a} = ${R}`, rsub: `${a} − x = ${R}`, mul: `${a}x = ${R}`, div: `x ÷ ${a} = ${R}`, rdiv: `${a} ÷ x = ${R}` };
-      const [ans2, ar, en, wr] = kind === 'add' ? [E.add, `ناتج جمع العدد x و ${a} يساوي ${R}`, `the sum of x and ${a} is ${R}`, [E.sub, E.mul, E.div]]
-        : kind === 'sub' ? [E.sub, `ناتج طرح ${a} من العدد x يساوي ${R}`, `${a} subtracted from x is ${R}`, [E.rsub, E.add, E.div]]
-        : kind === 'mul' ? [E.mul, `ناتج ضرب العدد x في ${a} يساوي ${R}`, `x multiplied by ${a} is ${R}`, [E.add, E.div, E.sub]]
-        : [E.div, `ناتج قسمة العدد x على ${a} يساوي ${R}`, `x divided by ${a} is ${R}`, [E.rdiv, E.mul, E.sub]];
+      const R = Number(eq.split(' = ')[1]);
+      // each candidate equation with its solution: a wrong one must not be true of the number the sentence describes
+      const E: Record<string, [string, number]> = {
+        add: [`x + ${a} = ${R}`, R - a], sub: [`x − ${a} = ${R}`, R + a], rsub: [`${a} − x = ${R}`, a - R],
+        mul: [`${a}x = ${R}`, R / a], div: [`x ÷ ${a} = ${R}`, R * a], rdiv: [`${a} ÷ x = ${R}`, a / R],
+      };
+      const [key, ar, en, prefer] = kind === 'add' ? ['add', `ناتج جمع العدد x و ${a} يساوي ${R}`, `the sum of x and ${a} is ${R}`, ['sub', 'mul', 'div']]
+        : kind === 'sub' ? ['sub', `ناتج طرح ${a} من العدد x يساوي ${R}`, `${a} subtracted from x is ${R}`, ['rsub', 'add', 'div']]
+        : kind === 'mul' ? ['mul', `ناتج ضرب العدد x في ${a} يساوي ${R}`, `x multiplied by ${a} is ${R}`, ['add', 'div', 'sub']]
+        : ['div', `ناتج قسمة العدد x على ${a} يساوي ${R}`, `x divided by ${a} is ${R}`, ['rdiv', 'mul', 'sub']];
+      const [ans2, sol] = E[key]!;
+      const wr = [...prefer, ...Object.keys(E)].filter((k, i, all) => k !== key && all.indexOf(k) === i && E[k]![1] !== sol).slice(0, 3).map(k => E[k]![0]);
       return { eq: ans2, answer: ans2, wrongs: wr, ar: `اكتب معادلة تعبّر عن الجملة: ${ar}.`, en: `Write an equation for: ${en}.` };
     }
     return { eq, answer: String(ans), wrongs: num(ans, w, String), ar: `حلّ المعادلة: ${eq}`, en: `Solve the equation: ${eq}` };
