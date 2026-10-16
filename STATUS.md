@@ -3279,8 +3279,11 @@ A student and their guardians now get a push when a teacher posts homework, sets
 changes or clears an exam's date, or releases a result (or types a paper mark after
 the release), and a reminder the afternoon before homework is due. Spec Part 4 of
 `docs/superpowers/specs/2026-10-11-family-school-views-design.md` (rewritten as built
-— see its section 4). **The reminder is built but inert: nothing sends it until the
-owner creates `INTERNAL_CRON_KEY` and a Cloud Scheduler job** (checklist below). The
+— see its section 4). **The reminder is set up (2026-10-16):** `INTERNAL_CRON_KEY` is on
+`iqraa-api` (revision `iqraa-api-00354-2bz`) and the Cloud Scheduler job
+`homework-reminders` is `ENABLED` at `0 16 * * *` Asia/Amman, first run 2026-10-16
+13:00 UTC. The first key leaked into a transcript through `gcloud scheduler jobs create`'s
+output and was to be rotated before that run (deploying.md now passes `--format=none`). The
 other three pushes need no setup beyond the merge. Everything is gated on
 `STUDENT_ACCOUNTS`, which is already `true` in production, so on merge these reach
 real family accounts — **none of it has been seen arriving on a phone.**
@@ -3429,8 +3432,8 @@ real family accounts — **none of it has been seen arriving on a phone.**
      carries the child's roster name («نتيجة سارة» was already the precedent), and the
      Arabic push copy was written without a native reader.
 - **Not seen.** Delivery to any real device; the OTA on a phone; the `quiet` channel at
-  night; Cloud Scheduler firing; the Secret Manager and scheduler commands (not run from
-  here); the `jsonPayload.msg` filter in the deploying.md logging command (the logger is
+  night; Cloud Scheduler firing (the job exists — no run has been read yet); the
+  `jsonPayload.msg` filter in the deploying.md logging command (the logger is
   pino with the default `msg` key, but no Cloud Run log was read). The Settings card's
   save path against a real phone's token store, and its look in Android's own switch
   styling (only the web build was looked at).
@@ -4212,6 +4215,56 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
 - When the worksheet screen is opened with a lesson, its unit dropdown still
   shows the placeholder (the documented gap in `TopicSelector.tsx`). The topic
   itself is held.
+## The model chooses a deck's icons and charts, 2026-10-17
+
+Themes changed a deck's colour; every deck still had the same body. Two of the
+structural choices now belong to the model, per slide, in the Prompt Slides
+prompt (Arabic and English):
+
+- **`icon`** — one name from `DECK_SECTION_ICONS`, picked for what THAT slide is
+  about, on every concept slide, section break and summary (not the cover).
+  The list grew from 16 section markers to 28: twelve subject icons were added
+  (atom, flask, leaf, globe, calculator, clock, pin, heart, star, sun, drop,
+  laptop), because a set that could not say «ذرة» or «نبات» gave the model
+  nothing to choose. The presenter and the PDF draw it in the heading chip when
+  the title has no emoji of its own (an emoji already in the title wins), and
+  large above a section break's title. The PPTX does not draw icons —
+  pptxgenjs has no way to draw a path shape.
+- **`visual`** — a bar or pie chart `{kind, chartType, categories, values}`, only
+  when the teacher's description or pasted source holds real figures; the prompt
+  forbids inventing any and makes "no chart anywhere" the default. At most two
+  are asked for. All three renderers already drew `visual`; nothing generated
+  one except a regex over the deck's own prose.
+
+**Nothing from the model is trusted.** `sanitizeDeckStructure` (API, in
+`promptSlidesPrompt.ts`) deletes an icon not in the list and a chart that is
+ragged, negative, blank-labelled, repeated, one item or nine, or of any other
+kind or type, and keeps at most three charts; it only prunes and never refuses
+a paid deck. `polishDeck` repeats the gate on the device with the real tables
+(`isSectionIconName`, `usableChartVisual`) and settles two collisions: a chart
+on a slide with a `layout` is dropped (the layout fills the slide in every
+renderer and only the presenter would still have drawn it), and a chart
+displaces that slide's `mediaPrompt`. A chart slide is never dropped as "hollow".
+`line` is deliberately not accepted: every renderer draws it as bars, which
+would misstate a trend.
+
+**Two lists, one source.** The API cannot import the app, so `DECK_ICON_NAMES`
+is a copy of `DECK_SECTION_ICONS`; `promptSlidesPrompt.test.ts` reads the
+array out of the app's source and fails if they differ.
+
+**A PDF chart bug found while checking this.** A chart on a content slide
+rendered at thumbnail size: its box has auto side margins, which stop a flex item
+stretching, so it shrank to the SVG's intrinsic size. The box is now
+`width:100%`. The pie legend also ran leftwards across its own swatch in a
+right-to-left page (SVG flips what `text-anchor:start` means) and is now pinned
+left-to-right with the figure first («40% السكن»), and legend and bar labels went
+from 11–13px to 15–17px for a projector.
+
+Not verified: the presenter on a device or the web build (the change there is
+the heading chip, the divider icon and the chart text sizes), and a live model
+actually choosing sensible icons and charts — the prompt is untested against the
+real model, so the first real decks are the test.
+
 ## Decks have themes, 2026-10-11
 
 Every deck was the same cream-and-teal slide, whatever the subject. The look is

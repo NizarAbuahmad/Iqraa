@@ -19,7 +19,7 @@
 import { visualForSlide, visualToSvg } from './deckVisuals.ts';
 import { isBulletLine, looksLikeEquation, splitEmoji, stripBullet, workingSteps } from './deckText.ts';
 import { resolveSlideLayout } from './slideLayout.ts';
-import { deckIconSvg, iconForGlyph, type DeckIconName } from './deckIcons.ts';
+import { deckIconSvg, iconForGlyph, isSectionIconName, type DeckIconName } from './deckIcons.ts';
 import { slideTeacherNotes } from './deckNotes.ts';
 import type { ActivitySlide, ClassroomActivity } from './ai/AIService.ts';
 import { creditSegments, type PhotoCredit } from './photoCredit.ts';
@@ -67,14 +67,16 @@ const inlineIcon = (name: DeckIconName, color: string, size = 16) =>
  * No glyph of our own when the title has none — the presenter draws none
  * either, and a per-type fallback put the same 🎯 on every concept slide.
  */
-function deckHeader(title: string, accent: string): string {
+function deckHeader(title: string, accent: string, slideIcon?: DeckIconName): string {
   const [glyph, heading] = splitEmoji(title);
   // A section icon in the slide's accent where the glyph has one (see
   // deckIcons.ts); the emoji itself for the playful ones that do not, which are
-  // the picture rather than a marker.
-  const icon = iconForGlyph(glyph);
+  // the picture rather than a marker. A title with no emoji of its own takes
+  // the icon the model chose for the slide, so a deck written without emoji
+  // still has a symbol in every heading.
+  const icon = glyph ? iconForGlyph(glyph) : (isSectionIconName(slideIcon) ? slideIcon : null);
   return `<div class="deck-header" style="border-color:${accent}44">
-        ${glyph ? `<span class="deck-emoji">${icon ? deckIconSvg(icon, accent, 34) : glyph}</span>` : ''}
+        ${glyph || icon ? `<span class="deck-emoji">${icon ? deckIconSvg(icon, accent, 34) : glyph}</span>` : ''}
         <span class="deck-eyebrow" style="color:${accent}">${esc(heading)}</span>
       </div>`;
 }
@@ -252,6 +254,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
     return `<div class="deck-slide deck-divider-slide" style="${slide.mediaUrl ? '' : `background:${accent}`}">
       ${deckHeroLayer(slide.mediaUrl, slide.mediaCaption)}
       <div class="deck-divider-content">
+        ${isSectionIconName(slide.icon) ? `<span class="deck-divider-icon">${deckIconSvg(slide.icon, '#FFFFFF', 64)}</span>` : ''}
         <h1 class="deck-divider-title">${esc(slide.title)}</h1>
         ${slide.content ? `<div class="deck-divider-subtitle">${esc(slide.content)}</div>` : ''}
       </div>
@@ -292,7 +295,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
       return visual ? visualToSvg(visual, 640, 320) : '';
     })();
     return `<div class="deck-slide">
-      ${deckHeader(slide.title, accent)}
+      ${deckHeader(slide.title, accent, slide.icon)}
       <div class="deck-body deck-body-center">
         ${context ? `<div class="deck-line" style="text-align:center;margin-bottom:18px">${esc(context)}</div>` : ''}
         <div class="deck-chip-row">
@@ -316,7 +319,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
         ${slide.verifiedBy === 'symbolic' && slide.computedAnswer ? `<div class="deck-evidence">${L('حسبها المُحقِّق مستقلًّا', 'Verifier computed independently')}: ${mathLineToHtml(prettifySymPy(slide.computedAnswer))}</div>` : ''}
       </div>` : '';
     return `<div class="deck-slide">
-      ${deckHeader(slide.title, accent)}
+      ${deckHeader(slide.title, accent, slide.icon)}
       <div class="deck-body deck-body-center">
         ${deckStem(slide.content)}
         ${slidePlot(slide)}
@@ -334,7 +337,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
   const mediaSlide = (slide: ActivitySlide, num: number) => {
     const accent = deckSlideAccent(slide.type, T);
     return `<div class="deck-slide">
-      ${deckHeader(slide.title, accent)}
+      ${deckHeader(slide.title, accent, slide.icon)}
       <div class="deck-body deck-body-center deck-body-media">
         <img class="deck-media-img" src="${escAttr(slide.mediaUrl ?? '')}" alt="${esc(slide.mediaCaption ?? '')}" />
         ${slide.mediaCaption ? `<div class="deck-media-caption">${captionHtml(slide.mediaCaption, slide.mediaCredit)}</div>` : ''}
@@ -352,7 +355,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
     const accent = '#B45309';
     const url = slide.mediaUrl ?? '';
     return `<div class="deck-slide">
-      ${deckHeader(slide.title, accent)}
+      ${deckHeader(slide.title, accent, slide.icon)}
       <div class="deck-body deck-body-center">
         ${slide.mediaCaption ? `<div class="deck-video-title">${esc(slide.mediaCaption)}</div>` : ''}
         <a class="deck-video-link" style="border-color:${accent}66;color:${accent}" href="${escAttr(url)}">${inlineIcon('play', accent)}${L('شاهد الفيديو', 'Watch the video')}</a>
@@ -370,7 +373,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
     const accent = '#B45309';
     const url = slide.mediaUrl ?? '';
     return `<div class="deck-slide">
-      ${deckHeader(slide.title, accent)}
+      ${deckHeader(slide.title, accent, slide.icon)}
       <div class="deck-body deck-body-center">
         ${slide.mediaCaption ? `<div class="deck-video-title">${esc(slide.mediaCaption)}</div>` : ''}
         <a class="deck-video-link" style="border-color:${accent}66;color:${accent}" href="${escAttr(url)}">${inlineIcon('play', accent)}${L('استمع للتسجيل', 'Listen to the recording')}</a>
@@ -388,7 +391,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
     const accent = '#B45309';
     const url = slide.mediaUrl ?? '';
     return `<div class="deck-slide">
-      ${deckHeader(slide.title, accent)}
+      ${deckHeader(slide.title, accent, slide.icon)}
       <div class="deck-body deck-body-center">
         ${slide.mediaCaption ? `<div class="deck-video-title">${esc(slide.mediaCaption)}</div>` : ''}
         <a class="deck-video-link" style="border-color:${accent}66;color:${accent}" href="${escAttr(url)}">${inlineIcon('file', accent)}${L('افتح المستند', 'Open the document')}</a>
@@ -418,7 +421,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
         ${slide.verifiedBy === 'symbolic' ? L('تم التحقق من الإجابة رياضيًا (SymPy)', 'Answer symbolically verified (SymPy)') : L('من بنك الأسئلة المُراجَع', 'From the reviewed question bank')}
       </div>` : '';
     return `<div class="deck-slide">
-      ${deckHeader(slide.title, accent)}
+      ${deckHeader(slide.title, accent, slide.icon)}
       <div class="deck-body deck-body-center">
         ${deckStem(slide.content)}
         ${slidePlot(slide)}
@@ -479,7 +482,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
           ${items.map(i => `<p class="deck-compare-item">${esc(i)}</p>`).join('')}
         </div>`;
       return `<div class="deck-slide">
-      ${deckHeader(slide.title, accent)}
+      ${deckHeader(slide.title, accent, slide.icon)}
       <div class="deck-body deck-compare">
         ${column(layout.leftTitle, layout.left, true)}
         ${column(layout.rightTitle, layout.right, false)}
@@ -488,7 +491,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
     }
 
     return `<div class="deck-slide">
-      ${deckHeader(slide.title, accent)}
+      ${deckHeader(slide.title, accent, slide.icon)}
       <div class="deck-body deck-steps">
         ${layout.steps.map((step, i) => `
         <div class="deck-step">
@@ -513,7 +516,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
     // the printed-page version of the same rule).
     if (slide.sideImageUrl) {
       return `<div class="deck-slide">
-      ${deckHeader(slide.title, accent)}
+      ${deckHeader(slide.title, accent, slide.icon)}
       <div class="deck-body split">
         <div class="split-text">${body}</div>
         <figure class="split-fig">
@@ -529,7 +532,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
     const fit = slidePlot(slide) ? FIT_SIZES_PX[FIT_SIZES_PX.length - 1] : fitBodyPx(lines);
     const fitted = fit > FIT_SIZES_PX[FIT_SIZES_PX.length - 1];
     return `<div class="deck-slide">
-      ${deckHeader(slide.title, accent)}
+      ${deckHeader(slide.title, accent, slide.icon)}
       <div class="deck-body${fitted ? ' deck-fit' : ''}"${fitted ? ` style="--fit:${fit}px"` : ''}>
         ${body}
       </div>
@@ -649,6 +652,7 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${T.border
 .deck-slide:not(.deck-title-slide):not(.deck-divider-slide)::before { content:''; position:absolute; top:-95px; inset-inline-start:-70px; width:300px; height:300px; border-radius:50%; background:${T.blob}; z-index:0; }
 .deck-slide:not(.deck-title-slide):not(.deck-divider-slide)::after { content:''; position:absolute; bottom:-130px; inset-inline-end:-90px; width:340px; height:340px; border-radius:50%; background:${T.blob}; z-index:0; }
 .deck-divider-content { position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:50px; text-align:center; }
+.deck-divider-icon { display:block; margin-bottom:18px; opacity:0.92; }
 .deck-divider-title { font-size:56px; font-weight:700; color:#fff; line-height:1.35; max-width:860px; }
 .deck-title-rule { width:74px; height:5px; border-radius:3px; background:${T.secondary}; margin:0 0 18px; }
 .deck-on-photo .deck-title-main, .deck-on-photo .deck-title-meta, .deck-on-photo .deck-title-summary { color:#fff; }
@@ -699,7 +703,10 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${T.border
 .deck-working-num { flex-shrink:0; width:34px; height:34px; border-radius:50%; color:#fff; font-size:18px; font-weight:700; display:flex; align-items:center; justify-content:center; font-family:'Readex Pro','Arial','Tahoma',sans-serif; }
 .deck-working-eq { text-align:start; }
 .deck-final { border-top:1.5px solid; padding-top:10px; }
-.deck-plot { margin:14px auto 0; max-width:660px; }
+/* width:100% is what makes the SVG (width:100%) fill the box: the box has auto
+   side margins, which stop a flex item stretching, so on a content slide it used
+   to shrink to the SVG's own intrinsic size — a pie the size of a thumbnail. */
+.deck-plot { width:100%; margin:14px auto 0; max-width:660px; }
 .deck-verified { margin-top:12px; font-size:11px; font-weight:600; display:flex; flex-direction:column; align-items:center; gap:4px; }
 .deck-evidence { font-size:10px; color:${T.muted}; font-weight:400; }
 .deck-options { display:flex; flex-direction:column; gap:10px; margin-top:22px; min-width:560px; }
