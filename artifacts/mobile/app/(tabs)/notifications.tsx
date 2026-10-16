@@ -237,6 +237,11 @@ export default function NotificationsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: colors.card, borderBottomColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'flex-end' }]}>
+        {/*
+          The header wraps (styles.header): a teacher's three actions beside
+          the title are wider than a phone, and an unwrapped row pushed
+          «رسالة جديدة» off the screen's edge.
+        */}
         <View style={{ alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
           <Text style={[styles.title, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>
             {t('notificationsTitle')}
@@ -252,7 +257,7 @@ export default function NotificationsScreen() {
           )}
         </View>
         {selectMode ? (
-          <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 12, paddingBottom: 6, alignItems: 'center' }]}>
+          <View style={[styles.headerActions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Pressable onPress={exitSelectMode} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('cancel')}>
               <Text style={[styles.headerActionText, { color: colors.mutedForeground }]}>{t('cancel')}</Text>
             </Pressable>
@@ -283,7 +288,7 @@ export default function NotificationsScreen() {
             </Pressable>
           </View>
         ) : (
-        <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 12, paddingBottom: 6, alignItems: 'center' }]}>
+        <View style={[styles.headerActions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           {threads.length > 0 && (
             <Pressable onPress={() => setSelectMode(true)} hitSlop={10} accessibilityRole="button" style={[styles.headerAction, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               <Ionicons name="checkmark-circle-outline" size={20} color={colors.mutedForeground} />
@@ -486,7 +491,8 @@ export default function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 1 },
+  header: { paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 1, flexWrap: 'wrap', rowGap: 10, columnGap: 12 },
+  headerActions: { flexWrap: 'wrap', gap: 12, paddingBottom: 6, alignItems: 'center', maxWidth: '100%' },
   title: { fontSize: 28 },
   unreadCount: { fontSize: 15, lineHeight: 24, marginTop: 2 },
   headerAction: { alignItems: 'center', gap: 4 },
