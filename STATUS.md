@@ -4198,6 +4198,56 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
 - When the worksheet screen is opened with a lesson, its unit dropdown still
   shows the placeholder (the documented gap in `TopicSelector.tsx`). The topic
   itself is held.
+## The model chooses a deck's icons and charts, 2026-10-17
+
+Themes changed a deck's colour; every deck still had the same body. Two of the
+structural choices now belong to the model, per slide, in the Prompt Slides
+prompt (Arabic and English):
+
+- **`icon`** — one name from `DECK_SECTION_ICONS`, picked for what THAT slide is
+  about, on every concept slide, section break and summary (not the cover).
+  The list grew from 16 section markers to 28: twelve subject icons were added
+  (atom, flask, leaf, globe, calculator, clock, pin, heart, star, sun, drop,
+  laptop), because a set that could not say «ذرة» or «نبات» gave the model
+  nothing to choose. The presenter and the PDF draw it in the heading chip when
+  the title has no emoji of its own (an emoji already in the title wins), and
+  large above a section break's title. The PPTX does not draw icons —
+  pptxgenjs has no way to draw a path shape.
+- **`visual`** — a bar or pie chart `{kind, chartType, categories, values}`, only
+  when the teacher's description or pasted source holds real figures; the prompt
+  forbids inventing any and makes "no chart anywhere" the default. At most two
+  are asked for. All three renderers already drew `visual`; nothing generated
+  one except a regex over the deck's own prose.
+
+**Nothing from the model is trusted.** `sanitizeDeckStructure` (API, in
+`promptSlidesPrompt.ts`) deletes an icon not in the list and a chart that is
+ragged, negative, blank-labelled, repeated, one item or nine, or of any other
+kind or type, and keeps at most three charts; it only prunes and never refuses
+a paid deck. `polishDeck` repeats the gate on the device with the real tables
+(`isSectionIconName`, `usableChartVisual`) and settles two collisions: a chart
+on a slide with a `layout` is dropped (the layout fills the slide in every
+renderer and only the presenter would still have drawn it), and a chart
+displaces that slide's `mediaPrompt`. A chart slide is never dropped as "hollow".
+`line` is deliberately not accepted: every renderer draws it as bars, which
+would misstate a trend.
+
+**Two lists, one source.** The API cannot import the app, so `DECK_ICON_NAMES`
+is a copy of `DECK_SECTION_ICONS`; `promptSlidesPrompt.test.ts` reads the
+array out of the app's source and fails if they differ.
+
+**A PDF chart bug found while checking this.** A chart on a content slide
+rendered at thumbnail size: its box has auto side margins, which stop a flex item
+stretching, so it shrank to the SVG's intrinsic size. The box is now
+`width:100%`. The pie legend also ran leftwards across its own swatch in a
+right-to-left page (SVG flips what `text-anchor:start` means) and is now pinned
+left-to-right with the figure first («40% السكن»), and legend and bar labels went
+from 11–13px to 15–17px for a projector.
+
+Not verified: the presenter on a device or the web build (the change there is
+the heading chip, the divider icon and the chart text sizes), and a live model
+actually choosing sensible icons and charts — the prompt is untested against the
+real model, so the first real decks are the test.
+
 ## Decks have themes, 2026-10-11
 
 Every deck was the same cream-and-teal slide, whatever the subject. The look is

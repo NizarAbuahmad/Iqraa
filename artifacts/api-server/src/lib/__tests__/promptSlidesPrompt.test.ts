@@ -23,6 +23,14 @@ import {
   promptSlidesPromptEn,
   stripUnearnedPromptSlideVerification,
 } from "../promptSlidesPrompt.ts";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import {
+  DECK_ICON_NAMES,
+  MAX_PROMPT_SLIDE_CHARTS,
+  sanitizeDeckStructure,
+} from "../promptSlidesPrompt.ts";
 
 const baseBody = {
   subject: "Science",
@@ -309,4 +317,111 @@ describe("the LaTeX ban reaches the model as text, not control characters", () =
       assert.doesNotMatch(prompt, /[\f\t]/, "a form feed or tab means an escape was swallowed");
     });
   }
+});
+
+describe("icons and charts — structure the model chooses", () => {
+  for (const [label, build] of BOTH) {
+    describe(label, () => {
+      const prompt = build(baseBody);
+
+      it("lists every icon name the app can draw, and asks for an icon on each concept slide", () => {
+        for (const name of DECK_ICON_NAMES) assert.ok(prompt.includes(name), name);
+        assert.match(prompt, /"icon"/);
+      });
+
+      it("shows the shape in the skeleton so the model has seen it", () => {
+        assert.match(prompt, /"icon": "bulb"/);
+        assert.match(prompt, /"icon": "flag"/);
+      });
+
+      it("allows a chart only on real figures and forbids inventing any", () => {
+        assert.match(prompt, /"visual"/);
+        assert.match(prompt, /"kind":"chart"/);
+        assert.match(prompt, label === "ar" ? /لا تخترع أرقامًا/ : /Never invent figures/);
+        assert.ok(prompt.includes(`${MAX_PROMPT_SLIDE_CHARTS}`));
+      });
+
+      it("keeps a chart off a laid-out or photographed slide, and emoji out of titles", () => {
+        assert.match(prompt, label === "ar" ? /يحمل "layout" أو "mediaPrompt"|تحمل "layout" أو "mediaPrompt"/ : /carries a "layout" or a "mediaPrompt"/);
+        assert.match(prompt, label === "ar" ? /ولا تضع إيموجي في العنوان/ : /no emoji in a title/);
+      });
+    });
+  }
+
+  it("the API's icon list is the app's list — read out of the app's own source", () => {
+    // The server cannot import the app, so the two lists are copies. This is
+    // the guard that makes a copy safe: add an icon to one and not the other
+    // and the model is told about a picture the app cannot draw, or never told
+    // about one it can.
+    const here = dirname(fileURLToPath(import.meta.url));
+    const source = readFileSync(join(here, "../../../../mobile/services/deckIcons.ts"), "utf8");
+    const block = source.match(/export const DECK_SECTION_ICONS = \[([\s\S]*?)\] as const/);
+    assert.ok(block, "DECK_SECTION_ICONS not found in the app's deckIcons.ts");
+    const appNames = [...block![1]!.matchAll(/'([a-z]+)'/g)].map(m => m[1]);
+    assert.deepEqual([...DECK_ICON_NAMES].sort(), [...appNames].sort());
+  });
+});
+
+describe("sanitizeDeckStructure — optional extras are kept only where they can be drawn", () => {
+  const chart = { kind: "chart", chartType: "bar", categories: ["أ", "ب", "ج"], values: [3, 5, 2] };
+  const deckOf = (slides: Record<string, unknown>[]) => ({ activityName: "x", slides });
+  const slidesOf = (d: unknown) => (d as { slides: Record<string, unknown>[] }).slides;
+
+  it("keeps a valid icon and chart untouched", () => {
+    const out = slidesOf(sanitizeDeckStructure(deckOf([{ icon: "atom", visual: chart }])));
+    assert.equal(out[0]!.icon, "atom");
+    assert.deepEqual(out[0]!.visual, chart);
+  });
+
+  it("deletes an unknown icon, including inherited object keys", () => {
+    for (const bad of ["rocket", "", "toString", "constructor", 5, null]) {
+      const out = slidesOf(sanitizeDeckStructure(deckOf([{ icon: bad }])));
+      assert.equal("icon" in out[0]!, false, String(bad));
+    }
+  });
+
+  it("deletes a chart that is ragged, negative, unlabeled, or the wrong kind — and its reveal flag", () => {
+    const bads = [
+      { ...chart, values: [1, 2] },
+      { ...chart, values: [3, -1, 2] },
+      { ...chart, categories: ["أ", "", "ج"] },
+      { ...chart, categories: ["أ", "أ", "ج"] },
+      { ...chart, chartType: "line" },
+      { ...chart, kind: "plot" },
+      "chart",
+    ];
+    for (const bad of bads) {
+      const out = slidesOf(sanitizeDeckStructure(deckOf([{ visual: bad, visualOnReveal: true }])));
+      assert.equal("visual" in out[0]!, false, JSON.stringify(bad));
+      assert.equal("visualOnReveal" in out[0]!, false);
+    }
+  });
+
+  it("reads numeric strings, and refuses prose posing as a number", () => {
+    const ok = slidesOf(sanitizeDeckStructure(deckOf([{ visual: { ...chart, values: ["٣", "5", "2.5"] } }])));
+    assert.deepEqual((ok[0]!.visual as { values: number[] }).values, [3, 5, 2.5]);
+    const bad = slidesOf(sanitizeDeckStructure(deckOf([{ visual: { ...chart, values: ["about 3", 5, 2] } }])));
+    assert.equal("visual" in bad[0]!, false);
+  });
+
+  it("drops a chart from a slide whose layout already fills the screen", () => {
+    const out = slidesOf(sanitizeDeckStructure(deckOf([{ layout: "stat", visual: chart }])));
+    assert.equal(out[0]!.layout, "stat");
+    assert.equal("visual" in out[0]!, false);
+  });
+
+  it("keeps the first three charts and cuts the rest", () => {
+    const out = slidesOf(sanitizeDeckStructure(deckOf(Array.from({ length: 5 }, () => ({ visual: chart })))));
+    assert.deepEqual(out.map(s => "visual" in s), [true, true, true, false, false]);
+  });
+
+  it("never refuses or reshapes a deck — it only prunes", () => {
+    const d = deckOf([{ title: "t", content: "c" }, "not a slide" as never]);
+    const out = sanitizeDeckStructure(d) as { activityName: string; slides: unknown[] };
+    assert.equal(out.activityName, "x");
+    assert.equal(out.slides.length, 2);
+    for (const junk of [null, undefined, "deck", 3, [], { slides: "no" }]) {
+      assert.deepEqual(sanitizeDeckStructure(junk), junk);
+    }
+  });
 });

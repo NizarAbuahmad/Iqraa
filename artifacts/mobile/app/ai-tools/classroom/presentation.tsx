@@ -30,7 +30,7 @@ import {
 } from '@/services/presentationUtils';
 import { openExternal } from '@/services/externalLinks';
 import Svg, { Circle, G, Line, Path, Polyline, Rect, Text as SvgText } from 'react-native-svg';
-import { DECK_ICON_SHAPES, iconForGlyph, type DeckIconName } from '@/services/deckIcons';
+import { DECK_ICON_SHAPES, iconForGlyph, isSectionIconName, type DeckIconName } from '@/services/deckIcons';
 import { chartGeometry, plotGeometry, seriesColor, visualForSlide } from '@/services/deckVisuals';
 // Shared with both exports so the projected slide and the exported one cannot
 // disagree about what a bullet, an equation or a section glyph is.
@@ -102,8 +102,8 @@ function VisualView({ slide }: { slide: ActivitySlide }) {
               {g.slices.map((s, i) => <Path key={i} d={s.d} fill={s.fill} opacity={0.9} />)}
               {g.legend.map((l, i) => (
                 <G key={i}>
-                  <Rect x={l.x} y={l.y - 11} width={12} height={12} rx={2} fill={l.fill} />
-                  <SvgText x={l.x + 18} y={l.y} fontSize={13} fill="#4B5563">{l.label}</SvgText>
+                  <Rect x={l.x} y={l.y - 13} width={15} height={15} rx={3} fill={l.fill} />
+                  <SvgText x={l.x + 22} y={l.y} fontSize={17} fill="#374151">{l.label}</SvgText>
                 </G>
               ))}
             </>
@@ -111,7 +111,7 @@ function VisualView({ slide }: { slide: ActivitySlide }) {
             g.bars.map((b, i) => (
               <G key={i}>
                 <Rect x={b.x} y={b.y} width={b.w} height={b.h} rx={3} fill={b.fill} />
-                <SvgText x={b.labelX} y={b.labelY} fontSize={11} textAnchor="middle" fill="#6B7280">{b.label}</SvgText>
+                <SvgText x={b.labelX} y={b.labelY} fontSize={15} textAnchor="middle" fill="#4B5563">{b.label}</SvgText>
               </G>
             ))
           )}
@@ -332,6 +332,11 @@ function HeroSlideView({ slide, accent }: { slide: ActivitySlide; accent: string
   const hasPhoto = !!slide.mediaUrl;
   const body = (
     <View style={heroStyles.textWrap}>
+      {isSectionIconName(slide.icon) && (
+        <View style={{ marginBottom: 14, opacity: 0.92 }}>
+          <DeckIcon name={slide.icon} color="#FFFFFF" size={56} />
+        </View>
+      )}
       <Text style={[heroStyles.title, { fontFamily: 'ReadexPro_700Bold' }]}>
         {isolateForeignRuns(slide.title)}
       </Text>
@@ -664,6 +669,10 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
   // The section icon the PDF draws for this glyph, from the same table; null
   // keeps the emoji for the playful glyphs that have no entry.
   const glyphIcon = iconForGlyph(glyph);
+  // No emoji in the title → the icon the model chose for this slide, if it is one
+  // we can draw. An emoji in the title always wins: a deck built from the book
+  // writes its own section markers and must not have a second one stacked on.
+  const headIcon: DeckIconName | null = glyph ? glyphIcon : (isSectionIconName(slide.icon) ? slide.icon : null);
 
   // A slide that asked to be drawn in a particular shape. Sits above the cover
   // check because a deck's first slide can legitimately be a statement, and
@@ -797,10 +806,10 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
       {/* Heading — on the reading edge, not centred. A centred pill gives the
           eye no starting point in a room reading right-to-left. */}
       <View style={[slideStyles.headRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        {!!glyph && (
+        {(!!glyph || !!headIcon) && (
           <View style={[slideStyles.glyphChip, { backgroundColor: accent + '18', borderColor: accent + '33' }]}>
-            {glyphIcon ? (
-              <DeckIcon name={glyphIcon} color={accent} size={24} />
+            {headIcon ? (
+              <DeckIcon name={headIcon} color={accent} size={24} />
             ) : (
               <Text style={slideStyles.glyph}>{glyph}</Text>
             )}
