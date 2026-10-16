@@ -2635,11 +2635,16 @@ native module, no `app.json` version bump). The key shape is
 `services/quranPlaylist.ts`; a flashcard word and a recitation are designed not to play together
 (`services/audioExclusive.ts`).
 
-- **The listen controls are hidden in production.** `QURAN_AUDIO_UPLOADED`
-  (`artifacts/mobile/services/quranAudioRelease.ts`) is `false`; `__DEV__` shows them.
-  Flip it only after the checklist in
-  `lib/curriculum/sources/quran-audio/VERIFY.md` is done, device checks (in a
-  development build, which shows the controls without changing the constant) first.
+- **The audio gate was opened on 2026-10-16, at the owner's request, before the
+  checklist was done.** `QURAN_AUDIO_UPLOADED`
+  (`artifacts/mobile/services/quranAudioRelease.ts`) is `true`, so once this reaches
+  `main` every signed-in user sees the listen controls (a merge deploys the web app and
+  an over-the-air update). When it was flipped `sources/quran-audio/MANIFEST.json` was
+  not in the repo, so the upload had not been committed: **if the recordings are not in
+  the bucket, each listen tap ends in the quiet "couldn't play" line.** The checklist in
+  `lib/curriculum/sources/quran-audio/VERIFY.md` (licence, upload, a reciter's
+  spot-check, device checks) is NOT done. To pull it back, set the constant to
+  `false`: a one-line change that ships over the air.
 - **No recording has been fetched, played or measured.** The build sandbox's proxy
   refuses the source host, so the script was unit-tested against a fake fetch and a
   fake bucket and has never touched the real source or the real bucket. Whether each
