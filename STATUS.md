@@ -83,15 +83,30 @@ an announcement by default» below.
   kind first: grades 1–9 maths quizzes dominated by one sentence fell from 88 to
   72 of 138. The bank is deliberately left uniform — on a small bank, spreading
   forces its one-item kinds onto every paper and regenerate can no longer find a
-  fresh one. **Not fixed — needs bank content, not code:** an offline maths quiz is
-  still on average ~43% one sentence on grade 10 and ~68% on grades 1–9, because
-  many lessons can only ask one kind of question. Grade 10, by kinds available:
-  one — «حل نظام مكوَّن من معادلتين تربيعيتين», «تبسيط المقادير الأسية», «الاتجاه
-  من الشمال», «استعمال جيب الزاوية لإيجاد مساحة المثلث», «أشكال الانتشار»; two —
-  «حل نظام مكوَّن من معادلة خطية ومعادلة تربيعية», «المنحنى التكراري التراكمي».
-  Chemistry quizzes were already varied (top sentence ~15% of a paper). Live
-  generation was not run (no key here); its changes are the prompt and the
-  validator warning.
+  fresh one. Chemistry quizzes were already varied (top sentence ~15% of a
+  paper). Live generation was not run (no key here); its changes are the prompt
+  and the validator warning.
+  **The seven Grade 10 lessons that could ask only one or two kinds of question
+  now ask what their NCCD objectives list (2026-10-16)** — measured on 10-question
+  offline quizzes, kinds per paper before → after, and the share of the paper in
+  its most common sentence: «حل نظام… خطية وتربيعية» 2 → 5.2 (67% → 35%; how
+  many solutions, the tangent value of k, two real-life models); «… معادلتين
+  تربيعيتين» 1 → 3 (100% → 69%; four more systems, how many solutions, the
+  subtraction step); «تبسيط المقادير الأسية» 1 → 4 (100% → 54%; radical ↔
+  exponent form, evaluating rational exponents, an exponent from the laws);
+  «الاتجاه من الشمال» 1 → 8.5 (100% → 18%; compass direction, change of course,
+  distance travelled, angle between bearings); «استعمال جيب الزاوية لإيجاد مساحة
+  المثلث» 1 → 5 (100% → 24%; Heron, a missing side, the included angle);
+  «أشكال الانتشار» 1 → 3 (100% → 40%; estimate y or x from the line of best fit,
+  its slope); «المنحنى التكراري التراكمي» 2 → 5.2 (50% → 27%; quartile position,
+  interquartile range, percentile rank). The three banked lessons also stopped
+  running out — a 10-question paper got 6, 4 and 8 questions, now 10. Banked
+  answers were checked in SymPy, and `lessonKinds.test.ts` checks every banked
+  system by substitution (that its points solve both equations and that none is
+  missing), recomputes the solution counts and the tangent k, and pins all seven
+  at three kinds or more; the generators' new answers are recomputed from the
+  printed stem in `geometry.test.ts` / `stats.test.ts`. Other lessons — most of
+  grades 1–9 — still ask one kind (~68% one sentence on those quizzes).
 
 - **Lesson plan, slides, activity, lesson-flow and the classroom builder take a
   unit, semester or whole book — as one revision session (2026-10-14; spec

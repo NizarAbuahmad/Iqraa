@@ -372,12 +372,32 @@ export const MATH_BANK: ConcreteItem[] = [
   { id: 'lq-m2', family: 'linear_quad', diff: 'medium', eq: 'y = −x + 4', eq2: 'y = x² − x', answer: '(−2 ، 6) و (2 ، 2)', wrongs: ['(0 ، 4)', '(1 ، 3)', 'لا حل'], kind: 'system' },
   { id: 'lq-h1', family: 'linear_quad', diff: 'hard', eq: 'y = 3x − 1', eq2: 'y = x² + x − 1', answer: '(0 ، −1) و (2 ، 5)', wrongs: ['(1 ، 2)', '(−1 ، −4)', 'لا حل'], kind: 'system' },
   { id: 'lq-h2', family: 'linear_quad', diff: 'hard', eq: 'x + y = 5', eq2: 'y = x² − 1', answer: '(2 ، 3) و (−3 ، 8)', wrongs: ['(1 ، 4)', '(0 ، 5)', 'لا حل'], kind: 'system', promptAr: 'حل النظام:\nx + y = 5\ny = x² − 1', promptEn: 'Solve:\nx + y = 5\ny = x² − 1' },
+  // How many solutions, the tangent case, and the real-life model — the lesson's
+  // other two objectives («تعرُّف عدد الحلول الممكنة»، «نمذجة مسألة حياتية»), which
+  // the solve items above never asked (2026-10-15). Answers checked in SymPy.
+  { id: 'lq-n1', family: 'linear_quad', diff: 'easy', eq: 'y = 3x − 2', eq2: 'y = x²', answer: 'حلّان', wrongs: ['حل واحد', 'لا يوجد حل', 'عدد لا نهائي من الحلول'], promptAr: 'كم حلًّا للنظام الآتي؟\ny = 3x − 2\ny = x²', promptEn: 'How many solutions does this system have?\ny = 3x − 2\ny = x²' },
+  { id: 'lq-n2', family: 'linear_quad', diff: 'medium', eq: 'y = 2x − 1', eq2: 'y = x²', answer: 'حل واحد', wrongs: ['حلّان', 'لا يوجد حل', 'عدد لا نهائي من الحلول'], promptAr: 'كم حلًّا للنظام الآتي؟\ny = 2x − 1\ny = x²', promptEn: 'How many solutions does this system have?\ny = 2x − 1\ny = x²' },
+  { id: 'lq-n3', family: 'linear_quad', diff: 'medium', eq: 'y = x − 3', eq2: 'y = x²', answer: 'لا يوجد حل', wrongs: ['حل واحد', 'حلّان', 'عدد لا نهائي من الحلول'], promptAr: 'كم حلًّا للنظام الآتي؟\ny = x − 3\ny = x²', promptEn: 'How many solutions does this system have?\ny = x − 3\ny = x²' },
+  { id: 'lq-k1', family: 'linear_quad', diff: 'hard', eq: 'y = 2x + k', eq2: 'y = x²', answer: '−1', wrongs: ['1', '0', '−2'], promptAr: 'ما قيمة k التي تجعل المستقيم y = 2x + k يمسّ المنحنى y = x² (حل واحد فقط)؟', promptEn: 'What value of k makes the line y = 2x + k touch the curve y = x² (exactly one solution)?' },
+  { id: 'lq-k2', family: 'linear_quad', diff: 'hard', eq: 'y = 6x + k', eq2: 'y = x² + 1', answer: '−8', wrongs: ['8', '−9', '10'], promptAr: 'ما قيمة k التي تجعل المستقيم y = 6x + k يمسّ المنحنى y = x² + 1 (حل واحد فقط)؟', promptEn: 'What value of k makes the line y = 6x + k touch the curve y = x² + 1 (exactly one solution)?' },
+  { id: 'lq-w1', family: 'linear_quad', diff: 'medium', eq: 'x + y = 7', eq2: 'xy = 12', answer: '3 و 4', wrongs: ['2 و 5', '1 و 6', '3 و 5'], kind: 'word', wordAr: 'عددان موجبان مجموعهما 7 وحاصل ضربهما 12. ما العددان؟', wordEn: 'Two positive numbers add up to 7 and multiply to 12. What are they?' },
+  { id: 'lq-w2', family: 'linear_quad', diff: 'hard', eq: '2(l + w) = 20', eq2: 'lw = 24', answer: '4 م و 6 م', wrongs: ['3 م و 8 م', '2 م و 12 م', '5 م و 5 م'], kind: 'word', wordAr: 'قطعة أرض مستطيلة الشكل محيطها 20 م ومساحتها 24 م². ما بُعداها؟', wordEn: 'A rectangular plot has perimeter 20 m and area 24 m². What are its dimensions?' },
 
   // ── Two quadratics ──
   { id: 'qq-e1', family: 'quad_system', diff: 'easy', eq: 'y = x²', eq2: 'y = 4', answer: '(−2 ، 4) و (2 ، 4)', wrongs: ['(4 ، 16)', '(0 ، 0)', 'لا حل'], kind: 'system' },
   { id: 'qq-m1', family: 'quad_system', diff: 'medium', eq: 'y = x² − 4', eq2: 'y = −x² + 4', answer: '(−2 ، 0) و (2 ، 0)', wrongs: ['(0 ، −4)', '(1 ، −3)', 'لا حل'], kind: 'system' },
   { id: 'qq-m2', family: 'quad_system', diff: 'medium', eq: 'y = x² + 1', eq2: 'y = 2x² − 3', answer: '(−2 ، 5) و (2 ، 5)', wrongs: ['(0 ، 1)', '(1 ، 2)', 'لا حل'], kind: 'system' },
   { id: 'qq-h1', family: 'quad_system', diff: 'hard', eq: 'y = x² − 2x', eq2: 'y = −x² + 4', answer: '(−1 ، 3) و (2 ، 0)', wrongs: ['(0 ، 0)', '(1 ، −1)', 'لا حل'], kind: 'system' },
+  // More systems to solve (the family held four), how many solutions, and the
+  // subtraction step the lesson teaches for equal x² coefficients. Checked in SymPy.
+  { id: 'qq-m3', family: 'quad_system', diff: 'medium', eq: 'y = x² + 2x', eq2: 'y = x² − 4x + 6', answer: '(1 ، 3)', wrongs: ['(3 ، 15)', '(1 ، 3) و (−1 ، −1)', 'لا حل'], kind: 'system' },
+  { id: 'qq-m4', family: 'quad_system', diff: 'medium', eq: 'y = x² − 2x + 1', eq2: 'y = −x² + 2x + 1', answer: '(0 ، 1) و (2 ، 1)', wrongs: ['(0 ، 1)', '(1 ، 0)', 'لا حل'], kind: 'system' },
+  { id: 'qq-h2', family: 'quad_system', diff: 'hard', eq: 'y = x² + x', eq2: 'y = −x² + 3x + 4', answer: '(−1 ، 0) و (2 ، 6)', wrongs: ['(1 ، 2) و (−2 ، 2)', '(−1 ، 0)', 'لا حل'], kind: 'system' },
+  { id: 'qq-h3', family: 'quad_system', diff: 'hard', eq: 'y = 2x² − x', eq2: 'y = x² + x + 3', answer: '(−1 ، 3) و (3 ، 15)', wrongs: ['(1 ، 1) و (3 ، 15)', '(−1 ، 3)', 'لا حل'], kind: 'system' },
+  { id: 'qq-n1', family: 'quad_system', diff: 'easy', eq: 'y = x² − 1', eq2: 'y = −x² + 1', answer: 'حلّان', wrongs: ['حل واحد', 'لا يوجد حل', 'أربعة حلول'], promptAr: 'كم حلًّا للنظام الآتي؟\ny = x² − 1\ny = −x² + 1', promptEn: 'How many solutions does this system have?\ny = x² − 1\ny = −x² + 1' },
+  { id: 'qq-n2', family: 'quad_system', diff: 'medium', eq: 'y = x²', eq2: 'y = −x²', answer: 'حل واحد', wrongs: ['حلّان', 'لا يوجد حل', 'أربعة حلول'], promptAr: 'كم حلًّا للنظام الآتي؟\ny = x²\ny = −x²', promptEn: 'How many solutions does this system have?\ny = x²\ny = −x²' },
+  { id: 'qq-n3', family: 'quad_system', diff: 'medium', eq: 'y = x² + 1', eq2: 'y = −x² − 1', answer: 'لا يوجد حل', wrongs: ['حل واحد', 'حلّان', 'أربعة حلول'], promptAr: 'كم حلًّا للنظام الآتي؟\ny = x² + 1\ny = −x² − 1', promptEn: 'How many solutions does this system have?\ny = x² + 1\ny = −x² − 1' },
+  { id: 'qq-s1', family: 'quad_system', diff: 'easy', eq: 'y = x² + 4x', eq2: 'y = x² − 2x + 12', answer: '2', wrongs: ['−2', '12', '6'], promptAr: 'في النظام الآتي اطرح المعادلتين للتخلص من x². ما قيمة x الناتجة؟\ny = x² + 4x\ny = x² − 2x + 12', promptEn: 'Subtract the two equations to eliminate x². What value of x do you get?\ny = x² + 4x\ny = x² − 2x + 12' },
 
   // ── Simplify exponents ──
   { id: 'se-e1', family: 'simplify_exp', diff: 'easy', eq: '2^3 · 2^4', answer: '2^7 = 128', wrongs: ['2^{12}', '8^4', '2^1'], kind: 'simplify', promptAr: 'بسّط: 2³ · 2⁴', promptEn: 'Simplify: 2³ · 2⁴' },
@@ -388,6 +408,16 @@ export const MATH_BANK: ConcreteItem[] = [
   { id: 'se-m3', family: 'simplify_exp', diff: 'medium', eq: '(2^3 · 2^{-1}) / 2', answer: '2', wrongs: ['4', '1', '8'], kind: 'simplify', promptAr: 'بسّط: (2³ · 2⁻¹) ÷ 2', promptEn: 'Simplify: (2³ · 2⁻¹) ÷ 2' },
   { id: 'se-h1', family: 'simplify_exp', diff: 'hard', eq: '(16^{3/4}) / (8^{1/3})', answer: '4', wrongs: ['2', '8', '1'], kind: 'simplify', promptAr: 'بسّط: 16^(3/4) ÷ 8^(1/3)', promptEn: 'Simplify: 16^(3/4) ÷ 8^(1/3)' },
   { id: 'se-h2', family: 'simplify_exp', diff: 'hard', eq: 'a^5 · a^{-2} / a', answer: 'a^2', wrongs: ['a^3', 'a^4', 'a'], kind: 'simplify', promptAr: 'بسّط: a⁵ · a⁻² ÷ a', promptEn: 'Simplify: a⁵ · a⁻² ÷ a' },
+  // Rational exponents as the lesson defines them — radical ↔ exponent form and
+  // evaluation — and an exponent found from the laws; the family only simplified
+  // (2026-10-15). Checked in SymPy.
+  { id: 'se-r1', family: 'simplify_exp', diff: 'easy', eq: '7^{2/3}', answer: '∛(7²)', wrongs: ['√(7³)', '∛(7³)', '2∛7'], promptAr: 'اكتب 7^(2/3) بالصورة الجذرية.', promptEn: 'Write 7^(2/3) in radical form.' },
+  { id: 'se-r2', family: 'simplify_exp', diff: 'medium', eq: '\\sqrt[5]{x^3}', answer: 'x^(3/5)', wrongs: ['x^(5/3)', 'x^(1/15)', 'x^15'], promptAr: 'اكتب ⁵√(x³) بالصورة الأسية.', promptEn: 'Write ⁵√(x³) in exponent form.' },
+  { id: 'se-v1', family: 'simplify_exp', diff: 'easy', eq: '81^{3/4}', answer: '27', wrongs: ['9', '60.75', '243'], promptAr: 'احسب قيمة 81^(3/4).', promptEn: 'Evaluate 81^(3/4).' },
+  { id: 'se-v2', family: 'simplify_exp', diff: 'medium', eq: '16^{-1/2}', answer: '1/4', wrongs: ['−4', '4', '−1/4'], promptAr: 'احسب قيمة 16^(−1/2).', promptEn: 'Evaluate 16^(−1/2).' },
+  { id: 'se-v3', family: 'simplify_exp', diff: 'hard', eq: '125^{-2/3}', answer: '1/25', wrongs: ['25', '−1/25', '1/5'], promptAr: 'احسب قيمة 125^(−2/3).', promptEn: 'Evaluate 125^(−2/3).' },
+  { id: 'se-a1', family: 'simplify_exp', diff: 'medium', eq: '2^a · 2^3 = 2^{10}', answer: '7', wrongs: ['13', '30', '10/3'], promptAr: 'إذا كان 2^a × 2³ = 2¹⁰، فما قيمة a؟', promptEn: 'If 2^a × 2³ = 2¹⁰, what is a?' },
+  { id: 'se-a2', family: 'simplify_exp', diff: 'hard', eq: '(3^a)^2 = 3^8', answer: '4', wrongs: ['6', '16', '10'], promptAr: 'إذا كان (3^a)² = 3⁸، فما قيمة a؟', promptEn: 'If (3^a)² = 3⁸, what is a?' },
 
   // ── Circle ──
   { id: 'c-e1', family: 'circle', diff: 'easy', eq: 'r = 5', answer: 'محيط = 10π', wrongs: ['5π', '25π', '20π'], promptAr: 'دائرة نصف قطرها 5. أوجد محيطها بدلالة π.', promptEn: 'A circle has radius 5. Find its circumference in terms of π.' },
