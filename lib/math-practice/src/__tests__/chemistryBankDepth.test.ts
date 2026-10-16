@@ -21,7 +21,7 @@ import { CHEM_BANK, type ChemFamily } from '../index.ts';
 
 const FAMILIES: ChemFamily[] = [
   'atom_basics', 'atomic_structure', 'electron_config', 'periodic_trends', 'bonding', 'formulas',
-  'equations', 'mole', 'stoichiometry', 'thermochem', 'acids_bases', 'metal_activity', 'redox', 'general_chem',
+  'equations', 'mole', 'stoichiometry', 'thermochem', 'calorimetry', 'acids_bases', 'metal_activity', 'redox', 'general_chem',
 ];
 const inFamily = (f: string) => CHEM_BANK.filter(i => i.family === f);
 const byId = (id: string) => {
@@ -211,6 +211,32 @@ describe('numeric chemistry items', () => {
     answerHas('ch-th-m6', `${500 - 650} kJ`.replace('-', '−'));
     answerHas('ch-th-h2', `${-100 + -50} kJ`.replace('-', '−'));
     answerHas('ch-th-h4', `${-572 / 2} kJ`.replace('-', '−'));
+  });
+
+  it('calorimetry: q = m·c·ΔT with water at 4.18 J/g·°C, recomputed', () => {
+    const w = 4.18;
+    const r = (x: number, d = 2) => Number(x.toFixed(d));
+    answerHas('ch-ca-m1', `${r(150 * w * 20, 0)} J`);
+    answerHas('ch-ca-m2', `${r(1150 / (50 * 50))} J/g·°C`);
+    answerHas('ch-ca-m3', `${2400 / 6} J/°C`);
+    answerHas('ch-ca-m4', `${25 + r(8360 / (100 * w), 0)} °C`);
+    answerHas('ch-ca-m5', `${r(6270 / (w * 15), 0)} g`);
+    answerHas('ch-ca-m6', `${r(200 * w * (60 - 40), 0)} J`);
+    // hot metal into water: heat gained by the water = heat lost by the metal
+    const gained = 100 * w * (24 - 20);
+    answerHas('ch-ca-h1', `${r(gained / (50 * (100 - 24)))} J/g·°C`);
+    // equal heat in, different masses: mixing 200 g at 60 °C with 100 g at 30 °C
+    answerHas('ch-ca-h2', `${(200 * 60 + 100 * 30) / (200 + 100)} °C`);
+    answerHas('ch-ca-h3', `${r((500 * w * 10) / 2 / 1000)} kJ/g`);
+    answerHas('ch-ca-h4', `${250 * 0.8} J/°C`);
+  });
+
+  it('calorimetry: no wrong option is the right number under another label', () => {
+    // numeric answers only: a distractor must not carry the answer's number, or the item has two right answers
+    const num = (s: string) => s.match(/[\d.]+/)?.[0];
+    for (const i of CHEM_BANK.filter(x => x.family === 'calorimetry' && /^[\d.]+\s/.test(x.answer))) {
+      for (const wrong of i.wrongs) assert.notEqual(num(wrong), num(i.answer), `${i.id}: «${wrong}» repeats the answer's number`);
+    }
   });
 
   it('solutions and density', () => {

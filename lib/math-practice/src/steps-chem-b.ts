@@ -1401,4 +1401,193 @@ export const CHEM_B_STEPS: Record<string, SolutionSteps> = {
       'So the mass of salt is 20 g',
     ],
   },
+  // ── calorimetry ──
+  'ch-ca-e1': {
+    ar: [
+      'الحرارة النوعية خاصية للمادة تُقاس لوحدة الكتلة (1 g)',
+      'أما السعة الحرارية فتُقاس للجسم كله',
+      'إذن الحرارة النوعية: كمية الطاقة اللازمة لرفع درجة حرارة 1 g من المادة درجة سلسيوس واحدة',
+    ],
+    en: [
+      'Specific heat is a property of the substance, measured per unit mass (1 g)',
+      'Heat capacity, by contrast, is measured for the whole object',
+      'So the specific heat is the energy needed to raise the temperature of 1 g of the substance by 1 °C',
+    ],
+  },
+  'ch-ca-e2': {
+    ar: [
+      'c = q ÷ (m × ΔT)',
+      'الوحدة = J ÷ (g × °C)',
+      'إذن الوحدة: J/g·°C',
+    ],
+    en: [
+      'c = q ÷ (m × ΔT)',
+      'Unit = J ÷ (g × °C)',
+      'So the unit of specific heat is J/g·°C',
+    ],
+  },
+  'ch-ca-e3': {
+    ar: [
+      'نضع المادة في وعاء معزول يحتوي ماءً وميزان حرارة',
+      'تحسب الطاقة من التغير في درجة حرارة الماء',
+      'إذن الجهاز: المسعر (الكالوريميتر)',
+    ],
+    en: [
+      'The material is placed in an insulated container holding water and a thermometer',
+      'The energy is worked out from the change in the water temperature',
+      'So the device is the calorimeter',
+    ],
+  },
+  'ch-ca-e4': {
+    ar: [
+      'ΔT = q ÷ (m × c)، وq وm متساويان في الحالتين',
+      'كلما قلّت الحرارة النوعية ارتفعت درجة الحرارة أكثر',
+      'الحديد حرارته النوعية (0.45) أصغر من الماء (4.18)',
+      'إذن ترتفع أكثر حرارة: الحديد',
+    ],
+    en: [
+      'ΔT = q ÷ (m × c), and q and m are the same for both',
+      'The smaller the specific heat, the larger the rise in temperature',
+      'Iron has the smaller specific heat (0.45 against 4.18)',
+      'So the temperature of iron rises more',
+    ],
+  },
+  'ch-ca-e5': {
+    ar: [
+      'q تمثل الطاقة التي اكتسبتها المادة',
+      'اكتساب الطاقة يعني q > 0',
+      'إذن إشارة q: موجبة',
+    ],
+    en: [
+      'q is the energy gained by the substance',
+      'Gaining energy means q > 0',
+      'So q is positive',
+    ],
+  },
+  'ch-ca-m1': {
+    ar: [
+      'q = m·c·ΔT',
+      'q = 150 × 4.18 × 20',
+      'إذن الطاقة الممتصة 12540 J',
+    ],
+    en: [
+      'q = m·c·ΔT',
+      'q = 150 × 4.18 × 20',
+      'So the energy absorbed is 12540 J',
+    ],
+  },
+  'ch-ca-m2': {
+    ar: [
+      'c = q ÷ (m × ΔT)',
+      'c = 1150 ÷ (50 × 50) = 1150 ÷ 2500',
+      'إذن الحرارة النوعية للفلز 0.46 J/g·°C',
+    ],
+    en: [
+      'c = q ÷ (m × ΔT)',
+      'c = 1150 ÷ (50 × 50) = 1150 ÷ 2500',
+      'So the specific heat of the metal is 0.46 J/g·°C',
+    ],
+  },
+  'ch-ca-m3': {
+    ar: [
+      'السعة الحرارية C = q ÷ ΔT',
+      'C = 2400 ÷ 6',
+      'إذن السعة الحرارية 400 J/°C',
+    ],
+    en: [
+      'Heat capacity C = q ÷ ΔT',
+      'C = 2400 ÷ 6',
+      'So the heat capacity is 400 J/°C',
+    ],
+  },
+  'ch-ca-m4': {
+    ar: [
+      'ΔT = q ÷ (m × c) = 8360 ÷ (100 × 4.18) = 20 °C',
+      'درجة الحرارة النهائية = الابتدائية + ΔT = 25 + 20',
+      'إذن درجة الحرارة النهائية 45 °C',
+    ],
+    en: [
+      'ΔT = q ÷ (m × c) = 8360 ÷ (100 × 4.18) = 20 °C',
+      'Final temperature = initial + ΔT = 25 + 20',
+      'So the final temperature is 45 °C',
+    ],
+  },
+  'ch-ca-m5': {
+    ar: [
+      'm = q ÷ (c × ΔT)',
+      'm = 6270 ÷ (4.18 × 15) = 6270 ÷ 62.7',
+      'إذن كتلة الماء 100 g',
+    ],
+    en: [
+      'm = q ÷ (c × ΔT)',
+      'm = 6270 ÷ (4.18 × 15) = 6270 ÷ 62.7',
+      'So the mass of the water is 100 g',
+    ],
+  },
+  'ch-ca-m6': {
+    ar: [
+      'مقدار التغير في درجة الحرارة = 60 − 40 = 20 °C',
+      'الطاقة المفقودة = 200 × 4.18 × 20',
+      'إذن الطاقة التي فقدها الماء 16720 J',
+    ],
+    en: [
+      'The change in temperature = 60 − 40 = 20 °C',
+      'Energy lost = 200 × 4.18 × 20',
+      'So the water loses 16720 J',
+    ],
+  },
+  'ch-ca-h1': {
+    ar: [
+      'الطاقة التي اكتسبها الماء = 100 × 4.18 × (24 − 20) = 1672 J',
+      'الطاقة التي فقدها الفلز تساويها: 1672 J، وتغير درجة حرارة الفلز = 100 − 24 = 76 °C',
+      'c = 1672 ÷ (50 × 76) = 1672 ÷ 3800',
+      'إذن الحرارة النوعية للفلز 0.44 J/g·°C',
+    ],
+    en: [
+      'Energy gained by the water = 100 × 4.18 × (24 − 20) = 1672 J',
+      'The metal lost the same 1672 J, and its temperature fell by 100 − 24 = 76 °C',
+      'c = 1672 ÷ (50 × 76) = 1672 ÷ 3800',
+      'So the specific heat of the metal is 0.44 J/g·°C',
+    ],
+  },
+  'ch-ca-h2': {
+    ar: [
+      'الطاقة المفقودة من الماء الساخن = الطاقة المكتسبة للماء البارد',
+      '200 × (60 − T) = 100 × (T − 30)',
+      '12000 − 200T = 100T − 3000، ومنه 300T = 15000',
+      'إذن درجة حرارة المزيج 50 °C',
+    ],
+    en: [
+      'Energy lost by the hot water = energy gained by the cold water',
+      '200 × (60 − T) = 100 × (T − 30)',
+      '12000 − 200T = 100T − 3000, so 300T = 15000',
+      'So the temperature of the mixture is 50 °C',
+    ],
+  },
+  'ch-ca-h3': {
+    ar: [
+      'الطاقة التي اكتسبها الماء = 500 × 4.18 × 10 = 20900 J = 20.9 kJ',
+      'الطاقة المنبعثة من الوقود = الطاقة التي اكتسبها الماء',
+      'الطاقة لكل غرام = 20.9 kJ ÷ 2 g',
+      'إذن الطاقة المنبعثة 10.45 kJ/g',
+    ],
+    en: [
+      'Energy gained by the water = 500 × 4.18 × 10 = 20900 J = 20.9 kJ',
+      'Energy released by the fuel = energy gained by the water',
+      'Energy per gram = 20.9 kJ ÷ 2 g',
+      'So the energy released is 10.45 kJ/g',
+    ],
+  },
+  'ch-ca-h4': {
+    ar: [
+      'السعة الحرارية = الكتلة × الحرارة النوعية: C = m × c',
+      'C = 250 × 0.8',
+      'إذن السعة الحرارية 200 J/°C',
+    ],
+    en: [
+      'Heat capacity = mass × specific heat: C = m × c',
+      'C = 250 × 0.8',
+      'So the heat capacity is 200 J/°C',
+    ],
+  },
 };
