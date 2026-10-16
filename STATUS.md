@@ -133,10 +133,11 @@ an announcement by default» below.
   as an inequality and back, or the additive vs multiplicative inverse, count
   as one), `spreadScore` spreads a paper by kind and then by sentence, and both
   `makeTopicItem` and `makeElementaryItem` (which had no spreading at all) use
-  it. Grouped that way, 65 served lessons had fewer than three kinds; all got
-  real ones from their objectives (`mathLessonKinds.test.ts` now counts kinds,
-  not frames). On 10-item papers: lessons under three kinds 65 → 0, kinds per
-  paper 3.46 → 3.84, the commonest kind 45% → 34%. `stemFrame` also keeps a
+  it. Grouped that way (following every link, as `mathLessonKinds.test.ts`
+  now counts), 72 served lessons had fewer than three kinds; all got real ones
+  from their objectives. On 10-item papers, grouping each sentence against a
+  kind's first one: lessons under three kinds 65 → 0, kinds per paper 3.46 →
+  3.84, the commonest kind 45% → 34%. `stemFrame` also keeps a
   blank («؟», «▢», «■», «___») as `?`, so «2/3 = ؟/12» and «2/3 = 8/؟» are two
   frames. Found on the way: unit counts without agreement («كم متر في 9
   متر», «حوّل 20 متر إلى سنتيمتر») — the conversions now use the symbols the
