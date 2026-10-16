@@ -5,7 +5,8 @@ Hand-written. (`../quran-ws/VERIFY.md` is the generated text sheet; this is sepa
 Nothing below has been done. The recordings have not been fetched, played or
 measured by anyone building this: the build sandbox cannot reach the source.
 `QURAN_AUDIO_UPLOADED` in `artifacts/mobile/services/quranAudioRelease.ts` stays
-`false` until every box is ticked.
+`false` until every box is ticked, in the order below: upload, listen,
+device checks in a development build, and only then the flip.
 
 ## Before anything is uploaded
 
@@ -37,18 +38,28 @@ clipped start or end.
 
 - [ ] 1:1 (`001001.mp3`) — should BE the basmalah
 - [ ] 1:7 (`001007.mp3`)
-- [ ] 2:183 (`002183.mp3`) — ayah 1 of a long surah is not what is shown here; this is the first ayah the books assign
+- [ ] 2:143 (`002143.mp3`) — ayah 1 of a long surah is not what is shown here; 2:143 is the first ayah the books assign
+- [ ] 2:186 (`002186.mp3`) — the last ayah of a long surah: not clipped
 - [ ] 112:1 (`112001.mp3`) — first ayah of a short surah: no basmalah in front
 - [ ] 112:4 (`112004.mp3`) — a last ayah: not clipped
 - [ ] one from each grade band the books use (ask the teacher which surahs)
 
-## Flip it
+## Before the flip: on a real device, in a development build, after the upload
 
-- [ ] Set `QURAN_AUDIO_UPLOADED = true`, merge, and on a real phone confirm: the
-      listen button plays, a second tap stops, starting a flashcard word stops it,
-      the silent switch does not mute it (iOS), offline shows the quiet error.
-- [ ] A multi-ayah «استمع للمقطع» advances from ayah to ayah on iOS and on Android (the native "just finished" status event has never run on a device), including a repeated ayah and a very short one.
+A merge to `main` deploys the web build and publishes an over-the-air update, so
+anything checked after the flip is checked in front of students. Do all of these
+first. A development build already shows the listen controls (`__DEV__`), so
+`QURAN_AUDIO_UPLOADED` is **never changed for this**: do not commit a flipped
+constant to run a check.
+
+- [ ] The listen button plays, a second tap stops, starting a flashcard word stops
+      it, the silent switch does not mute it (iOS), offline shows the quiet error.
+- [ ] A multi-ayah «استمع للمقطع» advances from ayah to ayah on iOS and on Android (the native "just finished" status event has never run on a device), including a very short ayah.
 - [ ] iOS Safari (web): a multi-ayah sequence continues past the first ayah. Each next ayah starts in a new `<audio>` element outside a user gesture and may be blocked (`NotAllowedError`), which would stop the sequence with the quiet error.
-- [ ] A missing file (turn the gate on in a dev build before upload) shows the quiet error within about 10 seconds on Android and iOS. Android reports "loaded" for a failed load, so the player relies on a timer that only a started playback cancels.
+- [ ] A missing file (in a development build, before the files are uploaded, or by pointing at a missing key) shows the quiet error within about 10 seconds on Android and iOS. Android reports "loaded" for a failed load, so the player relies on a timer that only a started playback cancels.
 - [ ] Switching ayahs while one plays does not leave the new one "playing" forever if its file is missing (a stale status from the previous recording could cancel the timer early).
 - [ ] Cosmetic: on the highlighted playing row in the reader, an unmemorised ayah's number badge and the active stop button share the row's highlight colour.
+
+## Flip it
+
+- [ ] Set `QURAN_AUDIO_UPLOADED = true`, merge, and glance at a real phone once.

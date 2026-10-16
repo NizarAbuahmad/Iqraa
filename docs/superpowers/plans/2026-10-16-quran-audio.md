@@ -1253,6 +1253,8 @@ git commit -m "Quran audio: gate hidden until the recordings are uploaded and ch
 
 ### Task 4: The player, its hook, and the English-audio claim
 
+> **Amendment (final review rounds):** the native load timer is cleared at the first `playing: true`, not on `isLoaded` — `expo-audio` can report loaded for a file that never plays (Android 404). The code block below is the original; the committed code (`e5af8a7`) differs.
+
 **Files:**
 - Create: `artifacts/mobile/services/quranAudio.ts`
 - Create: `artifacts/mobile/hooks/useQuranAudio.ts`

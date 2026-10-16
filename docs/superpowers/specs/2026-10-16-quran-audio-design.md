@@ -67,8 +67,9 @@ Modelled on `upload-figures-r2.ts` and `generate-english-audio.ts`:
 - Source URL is a constant at the top of the script
   (`https://everyayah.com/data/Husary_128kbps/SSSAAA.mp3`) so a changed source is
   a one-line, reviewed edit.
-- Checks each download before it is stored: HTTP 200, `Content-Type` audio or
-  octet-stream, size above a floor, and starts with an MP3 frame sync or an `ID3`
+- Checks each download before it is stored: HTTP 200, a `Content-Type` that is not
+  `text/*`, HTML or JSON (a missing type is accepted; the MP3 check below covers
+  the rest), size above a floor, and starts with an MP3 frame sync or an `ID3`
   tag. A failure is reported by ayah and never uploaded; the run exits non-zero.
 - Stops at the first auth refusal from R2, as the English-audio script does.
 - Writes `lib/curriculum/sources/quran-audio/MANIFEST.json`: ayah, bytes, SHA-256,
@@ -119,7 +120,7 @@ Modelled on `upload-figures-r2.ts` and `generate-english-audio.ts`:
   never autoplayed. A student who opens the screen in a quiet room gets silence
   until they ask.
 - **Credit line** under the controls on both screens, from the i18n table:
-  «تلاوة الشيخ محمود خليل الحصري (ترتيل)». Not a link.
+  «التلاوة بصوت الشيخ محمود خليل الحصري (ترتيل).» Not a link.
 - The Library card, the gate screen and the three routes are untouched.
 - The learner's rating buttons («حفظتها» / «أحتاج مراجعة») are untouched, and
   playing audio does not set progress.
@@ -157,9 +158,11 @@ first set was.
   keys are unique; the count equals the corner's ayah count; out-of-range input
   throws; padding is exact (`001001`, `002255`, `114006`).
 - Upload-script tests (against an injected fake fetch and a fake bucket): skips
-  what exists, rejects a non-MP3 body, rejects a too-small body, exits non-zero on
-  any rejection, never uploads a rejected file, `--dry-run` writes nothing, `--only`
-  touches only those ayahs.
+  what exists, rejects a non-MP3 body, rejects a too-small body, never uploads a
+  rejected file, `--dry-run` fetches and writes nothing, `--only` touches exactly
+  that set, the manifest is persisted after each upload. Exit codes live in the
+  CLI wiring, which is not unit-tested: they are verified only by the manual runs
+  with R2 unconfigured and with an unreadable manifest.
 - `quranPlaylist.test.ts` (mobile services): order, repeat counts, a range that
   spans one ayah, the empty range, and "stop" mid-queue.
 - `quranAudioRelease.test.ts`: the three combinations, and that the constant is a
@@ -200,6 +203,8 @@ audio for ayahs outside the 585.
    Al-Baqarah, Al-Ikhlas, and the last ayah of a long surah) against the printed
    text: right ayah, no basmalah spliced in or out, no clipped ending. A reciter
    or teacher should do this, not the build.
-4. **Flip `QURAN_AUDIO_UPLOADED`** to `true`, merge, and look at it on a device.
+4. **Run the device checks in a development build first** (it shows the controls
+   without changing the constant; a merge to `main` ships to students), then flip
+   `QURAN_AUDIO_UPLOADED` to `true`, merge, and look at it once on a phone.
 5. **Jordan approval** covers audio of the Quran as much as its text; the open
    item in the first spec applies to this slice too.

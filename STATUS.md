@@ -2513,13 +2513,14 @@ corner holds, copied into `iqraa-public/quran-audio/husary/` by an owner-run scr
 `artifacts/mobile/services/quranAudio.ts` (`expo-audio` native, `<audio>` on web — no
 native module, no `app.json` version bump). The key shape is
 `lib/curriculum/src/quranAudio.ts`; the play queue is the tested reducer
-`services/quranPlaylist.ts`; a flashcard word and a recitation never play together
+`services/quranPlaylist.ts`; a flashcard word and a recitation are designed not to play together
 (`services/audioExclusive.ts`).
 
 - **The listen controls are hidden in production.** `QURAN_AUDIO_UPLOADED`
   (`artifacts/mobile/services/quranAudioRelease.ts`) is `false`; `__DEV__` shows them.
   Flip it only after the checklist in
-  `lib/curriculum/sources/quran-audio/VERIFY.md` is done.
+  `lib/curriculum/sources/quran-audio/VERIFY.md` is done, device checks (in a
+  development build, which shows the controls without changing the constant) first.
 - **No recording has been fetched, played or measured.** The build sandbox's proxy
   refuses the source host, so the script was unit-tested against a fake fetch and a
   fake bucket and has never touched the real source or the real bucket. Whether each
