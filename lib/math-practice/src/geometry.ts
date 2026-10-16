@@ -571,18 +571,69 @@ const circleAngles = T('circle_angles', /^الزوايا في الدائره$/, 
 });
 
 const pad3 = (n: number) => String(n).padStart(3, '0');
+const brg = (n: number) => `${pad3(((n % 360) + 360) % 360)}°`;
+/** [ar, en, bearing] — the eight points of the compass the lesson writes as bearings. */
+const COMPASS: Array<[string, string, number]> = [
+  ['الشمال الشرقي', 'north-east', 45], ['الجنوب الشرقي', 'south-east', 135], ['الجنوب الغربي', 'south-west', 225],
+  ['الشمال الغربي', 'north-west', 315], ['الشرق', 'east', 90], ['الجنوب', 'south', 180], ['الغرب', 'west', 270],
+];
+/**
+ * The lesson's four objectives, one kind each (2026-10-15): read a compass
+ * direction as a bearing, the back bearing, a change of course, and a bearing
+ * problem — plus the angle between two bearings from one point. It used to ask
+ * the back bearing only, so a quiz was twenty copies of one sentence.
+ */
 const bearing = T('bearing', /^الاتجاه من الشمال/, [10, 10], ({ rng }) => {
+  const k = pick(rng, [0, 1, 2, 3, 4]);
+  if (k === 1) {
+    const [ar, en, b] = pick(rng, COMPASS);
+    return { eq: `compass ${b}`, answer: brg(b), wrongs: wrongsFrom(brg(b), [brg(360 - b), brg(b + 90), brg(b + 180), brg(b - 90)], j => brg(b + 15 * Math.abs(j))), ar: `ما الاتجاه من الشمال لجهة ${ar}؟ اكتبه بثلاثة أرقام.`, en: `What is the bearing of the direction ${en}? Write it in three figures.` };
+  }
+  if (k === 2) {
+    const b = int(rng, 10, 350), t = 10 * int(rng, 2, 9), cw = rng() < 0.5;
+    const nb = cw ? b + t : b - t;
+    return { eq: `turn ${b} ${cw ? '+' : '−'}${t}`, answer: brg(nb), wrongs: wrongsFrom(brg(nb), [brg(cw ? b - t : b + t), brg(b + 180), brg(t), brg(nb + 180)], j => brg(nb + 10 * Math.abs(j))), ar: `تسير سفينة بالاتجاه ${brg(b)}، ثم تنعطف ${t}° ${cw ? 'مع' : 'عكس'} اتجاه حركة عقارب الساعة. ما اتجاهها الجديد من الشمال؟`, en: `A ship on a bearing of ${brg(b)} turns ${t}° ${cw ? 'clockwise' : 'anticlockwise'}. What is its new bearing?` };
+  }
+  if (k === 3) {
+    const [a, b, c] = pick(rng, [[3, 4, 5], [6, 8, 10], [5, 12, 13], [8, 15, 17], [9, 12, 15], [12, 16, 20]] as Array<[number, number, number]>);
+    const east = rng() < 0.5;
+    return { eq: `${a}, ${b}`, answer: String(c), wrongs: pos(c, [a + b, b - a, c + 1, c - 1]), ar: `سار قارب ${a} كم بالاتجاه 000°، ثم ${b} كم بالاتجاه ${east ? '090°' : '270°'}. كم كيلومترًا يبعد القارب عن نقطة انطلاقه؟`, en: `A boat sails ${a} km on a bearing of 000°, then ${b} km on a bearing of ${east ? '090°' : '270°'}. How many kilometres is it from its starting point?` };
+  }
+  if (k === 4) {
+    const b1 = int(rng, 10, 170), d = int(rng, 20, 160), b2 = b1 + d;
+    return { eq: `${b1}, ${b2}`, answer: `${d}°`, wrongs: deg(d, [180 - d, 360 - d, b2, b1 + b2 > 360 ? b1 + b2 - 360 : 90]), ar: `من النقطة A، اتجاه النقطة B هو ${brg(b1)} واتجاه النقطة C هو ${brg(b2)}. ما قياس الزاوية BAC؟`, en: `From point A, the bearing of B is ${brg(b1)} and the bearing of C is ${brg(b2)}. What is angle BAC?` };
+  }
   const b = int(rng, 10, 350);
   const back = b < 180 ? b + 180 : b - 180;
   return { eq: pad3(b), answer: `${pad3(back)}°`, wrongs: wrongsFrom(`${pad3(back)}°`, [`${pad3(b)}°`, `${pad3((b + 90) % 360)}°`, `${pad3((360 - b) % 360)}°`, `${pad3((b + 270) % 360)}°`], k => `${pad3((back + 10 * Math.abs(k)) % 360)}°`), ar: `اتجاه النقطة B من النقطة A هو ${pad3(b)}°. ما اتجاه A من B؟`, en: `The bearing of B from A is ${pad3(b)}°. What is the bearing of A from B?` };
 });
 
+/** Triangles whose area by Heron's formula is a whole number. */
+const HERON: Array<[number, number, number]> = [[5, 5, 6], [5, 5, 8], [13, 14, 15], [6, 8, 10], [10, 10, 12], [13, 13, 10], [9, 10, 17], [5, 12, 13], [7, 15, 20], [3, 4, 5]];
+const heronArea = (a: number, b: number, c: number) => { const p = (a + b + c) / 2; return Math.sqrt(p * (p - a) * (p - b) * (p - c)); };
+/**
+ * Area from two sides and the included angle, the lesson's first objective — and
+ * since 2026-10-15 its others: from three sides (Heron), and the same formula
+ * read backwards for a missing side or the included angle.
+ */
 const sineArea = T('sine_area', /^استعمال جيب الزاويه لايجاد مساحه المثلث$/, [10, 10], ({ rng }) => {
+  const k = pick(rng, [0, 1, 2, 3]);
+  if (k === 1) {
+    const [a0, b0, c0] = pick(rng, HERON), m = pick(rng, [1, 2]);
+    const [a, b, c] = [a0 * m, b0 * m, c0 * m], A = heronArea(a, b, c);
+    return { eq: `heron ${a}, ${b}, ${c}`, answer: String(A), wrongs: pos(A, [(a * b) / 2, a + b + c, 2 * A, A / 2, (a * b * c) / 4]), ar: `مثلث أطوال أضلاعه ${a} سم و ${b} سم و ${c} سم. ما مساحته بالسنتيمتر المربع؟`, en: `A triangle has sides ${a} cm, ${b} cm and ${c} cm. What is its area in square centimetres?` };
+  }
+  // k 2 and 3 read ½·a·b·sin C backwards; sin C is 1/2 or 1, so every number stays whole.
   const C = pick(rng, [30, 150, 90]);
   const a = int(rng, 4, 16), b = int(rng, 4, 16);
-  const need = C === 90 ? (a * b) % 2 : (a * b) % 4;
-  if (need) return sineArea.make({ rng, diff: 'easy', grade: 10 });
   const A = C === 90 ? (a * b) / 2 : (a * b) / 4;
+  if (!Number.isInteger(A)) return sineArea.make({ rng, diff: 'easy', grade: 10 });
+  if (k === 2) return { eq: `side ${A}, ${a}, ${C}`, answer: String(b), wrongs: pos(b, [2 * b, (2 * A) / a, A - a, a]), ar: `مثلث مساحته ${A} سم²، وفيه ضلع طوله ${a} سم يحصر مع ضلع آخر زاوية قياسها ${C}°. ما طول الضلع الآخر؟${C === 90 ? '' : ' (sin 30° = sin 150° = 1/2)'}`, en: `A triangle has area ${A} cm². One side is ${a} cm and makes an angle of ${C}° with another side. How long is the other side?${C === 90 ? '' : ' (sin 30° = sin 150° = 1/2)'}` };
+  if (k === 3) {
+    const right = C === 90;
+    return { eq: `angle ${a}, ${b}, ${A}`, answer: right ? '90°' : '30°', wrongs: right ? deg(90, [45, 60, 30]) : deg(30, [60, 45, 150]), ar: `مثلث فيه ضلعان طولاهما ${a} سم و ${b} سم، ومساحته ${A} سم². ما قياس الزاوية ${right ? '' : 'الحادة '}المحصورة بين الضلعين؟`, en: `A triangle has two sides ${a} cm and ${b} cm and an area of ${A} cm². What is the ${right ? '' : 'acute '}angle between those sides?` };
+  }
+  if ((C === 90 ? (a * b) % 2 : (a * b) % 4) !== 0) return sineArea.make({ rng, diff: 'easy', grade: 10 });
   return { eq: `${a}, ${b}, ${C}`, answer: String(A), wrongs: pos(A, [a * b, (a * b) / 2, A * 2, A + a, a + b]), ar: `مثلث فيه ضلعان طولاهما ${a} سم و ${b} سم والزاوية المحصورة بينهما ${C}°. ما مساحته؟ (sin 30° = sin 150° = 1/2)`, en: `A triangle has two sides ${a} cm and ${b} cm with an included angle of ${C}°. What is its area? (sin 30° = sin 150° = 1/2)` };
 });
 

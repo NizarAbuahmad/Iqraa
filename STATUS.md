@@ -53,6 +53,61 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **Exam and evaluation papers stop repeating themselves (2026-10-15).** Measured
+  by generating every lesson: the offline quiz (اختبار, `quizOnce`), the template
+  evaluation generator and the evaluation validator. Found and fixed:
+  *The same question twice on one quiz* — «دائرة نصف قطرها 10 سم، وفيها وتر طوله
+  12 سم…» three times on one «أوتار الدائرة» paper. The stem key read a
+  true/false item's «الإجابة المقترحة» as part of the question, and after twelve
+  repeating draws the quiz printed the thirteenth anyway; now that type is spent
+  and the paper's `shortfall` says so (`quizNoRepeat.test.ts`). The same key is
+  what «أعد التجهيز» compares, so a regenerate that brings back a true/false
+  statement with a re-rolled proposed answer is now counted as the repeat it is:
+  the periodic-table lesson holds 6 distinct medium questions and a 5-question
+  regenerate repeated 4 of them while showing no notice; it now says so.
+  *The duplicate gate rejected different maths questions* — `stemSimilarity`
+  dropped every token of 2 characters or fewer, numbers included, so «حلّ المعادلة
+  x² + 3x − 18 = 0 بالتحليل» and «… x² − 11x + 28 = 0 …» scored 1.0 and the second
+  was rejected; up to a third of a mock maths paper's bank questions, and the
+  book's eight exercises on systems planned as 5 of 12. Numbers and maths now
+  count. *One objective restated in every phrasing* — a 20-question template paper
+  on a one-objective lesson asked «اذكر المفاهيم… X» and «ما المفاهيم… X؟ اذكرها»
+  (Jaccard ~0.55, under the 0.85 gate). Each objective is now asked once per
+  competency; the paper is shorter and a note says why (maths 10-question mock
+  papers average ~5.6 questions, most lessons having one objective). Also «.؟» /
+  «.،» where the objective's full stop met the template's punctuation.
+  *A paper in one sentence* — `stemFrame` (`lib/math-practice`) is a stem with its
+  numbers masked; the validator warns when one frame is ≥3 questions and more
+  than a quarter of the paper (live and mock), and the live prompt's rule 5 now
+  states the same quarter (`exam-gen-7`). Topic generators draw the least-served
+  kind first: grades 1–9 maths quizzes dominated by one sentence fell from 88 to
+  72 of 138. The bank is deliberately left uniform — on a small bank, spreading
+  forces its one-item kinds onto every paper and regenerate can no longer find a
+  fresh one. Chemistry quizzes were already varied (top sentence ~15% of a
+  paper). Live generation was not run (no key here); its changes are the prompt
+  and the validator warning.
+  **The seven Grade 10 lessons that could ask only one or two kinds of question
+  now ask what their NCCD objectives list (2026-10-16)** — measured on 10-question
+  offline quizzes, kinds per paper before → after, and the share of the paper in
+  its most common sentence: «حل نظام… خطية وتربيعية» 2 → 5.2 (67% → 35%; how
+  many solutions, the tangent value of k, two real-life models); «… معادلتين
+  تربيعيتين» 1 → 3 (100% → 69%; four more systems, how many solutions, the
+  subtraction step); «تبسيط المقادير الأسية» 1 → 4 (100% → 54%; radical ↔
+  exponent form, evaluating rational exponents, an exponent from the laws);
+  «الاتجاه من الشمال» 1 → 8.5 (100% → 18%; compass direction, change of course,
+  distance travelled, angle between bearings); «استعمال جيب الزاوية لإيجاد مساحة
+  المثلث» 1 → 5 (100% → 24%; Heron, a missing side, the included angle);
+  «أشكال الانتشار» 1 → 3 (100% → 40%; estimate y or x from the line of best fit,
+  its slope); «المنحنى التكراري التراكمي» 2 → 5.2 (50% → 27%; quartile position,
+  interquartile range, percentile rank). The three banked lessons also stopped
+  running out — a 10-question paper got 6, 4 and 8 questions, now 10. Banked
+  answers were checked in SymPy, and `lessonKinds.test.ts` checks every banked
+  system by substitution (that its points solve both equations and that none is
+  missing), recomputes the solution counts and the tangent k, and pins all seven
+  at three kinds or more; the generators' new answers are recomputed from the
+  printed stem in `geometry.test.ts` / `stats.test.ts`. Other lessons — most of
+  grades 1–9 — still ask one kind (~68% one sentence on those quizzes).
+
 - **Lesson plan, slides, activity, lesson-flow and the classroom builder take a
   unit, semester or whole book — as one revision session (2026-10-14; spec
   `docs/superpowers/specs/2026-10-14-wide-scope-teaching-tools-design.md`,
@@ -1475,7 +1530,9 @@ cross-checked against the book's own printed answers; see the next section). Des
   already wrote). A paper made with the block
   records `promptVersion` `exam-gen-6+book` in `generationParams` and on its
   usage rows, and the quota sent under `generationParams.bookItems.quota`; flag off, non-maths or `k = 0` sends the request and records the
-  version exactly as before (`exam-gen-6`).
+  version exactly as before (`exam-gen-6`). Both became `exam-gen-7` on
+  2026-10-15, when rule 5 (no repeats) changed — see «Exam and evaluation
+  papers stop repeating themselves».
 - **Competency and marks are by kind and nominal.** An exercise and a unit-test
   open question (`unit-test`) are `application` (3 marks), a unit-test choice
   `understanding` (2 marks); the model picks its own for the rest. Like on the mock path, a book item's cognitive
