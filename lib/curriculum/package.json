@@ -23,6 +23,8 @@
     "./premade": "./src/premade.ts",
     "./vocabulary": "./src/vocabulary.ts",
     "./englishHub": "./src/englishHub.ts",
+    "./englishPictures": "./src/englishPictures.ts",
+    "./englishGrammar": "./src/englishGrammar.ts",
     "./passages": "./src/passages.ts",
     "./bookItems": "./src/bookItems.ts",
     "./catalogs/*": "./src/catalogs/*.ts",
@@ -43,7 +45,8 @@
     "upload-book-pages-r2": "node --experimental-strip-types scripts/upload-book-pages-r2.ts",
     "english-audio": "node --experimental-strip-types scripts/generate-english-audio.ts",
     "audit-r2": "node --experimental-strip-types scripts/audit-r2.ts",
-    "build-quran-corner": "node --experimental-strip-types scripts/build-quran-corner.ts"
+    "build-quran-corner": "node --experimental-strip-types scripts/build-quran-corner.ts",
+    "grammar-sheet": "node --experimental-strip-types scripts/grammar-sheet.ts"
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.699.0",
