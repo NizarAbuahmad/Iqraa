@@ -30,23 +30,42 @@ const dinars = (n: number) => counted(n, 'دينار واحد', 'ديناران'
 
 const ORD = ['الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس', 'السابع', 'الثامن', 'التاسع', 'العاشر'];
 
+/** Number names 0–10 as a Grade 1 book writes them under the digit. */
+const NUM_WORDS = ['صفر', 'واحد', 'اثنان', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة', 'عشرة'];
+const NUM_EN = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+const TEENS_W = ['عشرة', 'أحد عشر', 'اثنا عشر', 'ثلاثة عشر', 'أربعة عشر', 'خمسة عشر', 'ستة عشر', 'سبعة عشر', 'ثمانية عشر', 'تسعة عشر'];
+const TENS_W = ['', '', 'عشرون', 'ثلاثون', 'أربعون', 'خمسون', 'ستون', 'سبعون', 'ثمانون', 'تسعون'];
+const HUNDS_W = ['', 'مئة', 'مئتان', 'ثلاثمئة', 'أربعمئة', 'خمسمئة', 'ستمئة', 'سبعمئة', 'ثمانمئة', 'تسعمئة'];
+/** «ثلاثمئة وسبعة وأربعون» — how 1–999 is read aloud (counting form). */
+const arWords = (n: number) => {
+  const h = Math.floor(n / 100), r = n % 100, parts: string[] = [];
+  if (h) parts.push(HUNDS_W[h]!);
+  if (r) parts.push(r <= 10 ? NUM_WORDS[r]! : r < 20 ? TEENS_W[r - 10]! : r % 10 ? `${NUM_WORDS[r % 10]} و${TENS_W[Math.floor(r / 10)]}` : TENS_W[r / 10]!);
+  return parts.join(' و');
+};
+/** A row of stars to count: «★ ★ ★». */
+const stars = (n: number) => Array.from({ length: n }, () => '★').join(' ');
+
 // ─── counting and place value ───────────────────────────────────────────────
 
 const countingRange = (id: string, match: RegExp, lo: number, hi: number) => T(id, match, [1, 1], ({ rng }) => {
-  const kinds = hi - lo >= 2 ? [0, 1, 2] : [0, 1];
+  const kinds = hi - lo >= 2 ? [0, 1, 2, 3, 4] : [0, 1, 3, 4];
   const k = pick(rng, kinds);
   if (k === 0) { const x = int(rng, lo, hi - 1); return { eq: `${x}`, answer: String(x + 1), wrongs: ints(x + 1, [x, x + 2, x - 1, x + 3]), ar: `ما العدد الذي يأتي بعد ${x}؟`, en: `Which number comes after ${x}?` }; }
   if (k === 1) { const x = int(rng, lo + 1, hi); return { eq: `${x}`, answer: String(x - 1), wrongs: ints(x - 1, [x, x - 2, x + 1, x - 3]), ar: `ما العدد الذي يأتي قبل ${x}؟`, en: `Which number comes before ${x}?` }; }
+  if (k === 3) { const x = int(rng, lo, hi); return { eq: stars(x), answer: String(x), wrongs: ints(x, [x + 1, x - 1, x + 2, x - 2]), ar: `كم نجمة في الصف الآتي: ${stars(x)}؟`, en: `How many stars are in this row: ${stars(x)}?` }; }
+  if (k === 4) { const x = int(rng, lo, hi); return { eq: NUM_WORDS[x]!, answer: String(x), wrongs: ints(x, [x + 1, x - 1, x + 2, x - 2]), ar: `اكتب العدد «${NUM_WORDS[x]}» بالأرقام.`, en: `Write the number «${NUM_WORDS[x]}» (${NUM_EN[x]}) in digits.` }; }
   const x = int(rng, lo, hi - 2);
   return { eq: `${x}, ${x + 2}`, answer: String(x + 1), wrongs: ints(x + 1, [x, x + 2, x + 3, x - 1]), ar: `ما العدد الذي يقع بين ${x} و ${x + 2}؟`, en: `Which number lies between ${x} and ${x + 2}?` };
 });
 
 const zero = T('count_zero', /^العدد صفر$/, [1, 1], ({ rng }) => {
-  const k = pick(rng, [0, 1, 2, 3]);
-  const n = int(rng, 2, 9);
+  const k = pick(rng, [0, 1, 2, 3, 4]);
+  const n = int(rng, 3, 9);
   if (k === 0) return { eq: `${n} − ${n}`, answer: '0', wrongs: ints(0, [n, 1, 2 * n, n - 1]), ar: `ما ناتج ${n} − ${n}؟`, en: `What is ${n} − ${n}?` };
   if (k === 1) return { eq: `${n} + 0`, answer: String(n), wrongs: ints(n, [0, n + 1, n - 1, 2 * n]), ar: `ما ناتج ${n} + 0؟`, en: `What is ${n} + 0?` };
   if (k === 2) return { eq: `${n} − 0`, answer: String(n), wrongs: ints(n, [0, n + 1, n - 1, 2 * n]), ar: `ما ناتج ${n} − 0؟`, en: `What is ${n} − 0?` };
+  if (k === 4) return { eq: `${n}`, answer: '0', wrongs: ints(0, [n, 1, n - 1, 2]), ar: `في صندوق ${n} كرات، أُخرجت الكرات كلها. كم كرة بقيت في الصندوق؟`, en: `A box has ${n} balls and all of them are taken out. How many balls are left in the box?` };
   return { eq: '', answer: '0', wrongs: ['1', '10', '2'], ar: 'ما العدد الذي يدل على عدم وجود أي شيء؟', en: 'Which number tells that there is nothing at all?' };
 });
 
@@ -74,8 +93,22 @@ const hundreds = (id: string, match: RegExp) => T(id, match, [2, 2], ({ rng }) =
 });
 
 const readWrite = T('expanded_form', /^قراءه الاعداد وكتابتها$/, [1, 2], ({ rng, grade }) => {
-  if (grade === 1) { const t = int(rng, 1, 9), o = int(rng, 1, 9), n = t * 10 + o; return { eq: `${t * 10} + ${o}`, answer: String(n), wrongs: ints(n, [t + o, o * 10 + t, n + 10, n - 1]), ar: `ما العدد ${t * 10} + ${o}؟`, en: `What number is ${t * 10} + ${o}?` }; }
-  const h = int(rng, 1, 9), t = int(rng, 1, 9), o = int(rng, 1, 9), n = h * 100 + t * 10 + o;
+  const k = pick(rng, [0, 1, 2]);
+  const h = grade === 1 ? 0 : int(rng, 1, 9), t = int(rng, 1, 9), o = int(rng, 1, 9), n = h * 100 + t * 10 + o, top = grade === 1 ? 99 : 999;
+  if (k === 1) {
+    // read it: the number in words, as the book prints it under the digits
+    const swap = grade === 1 ? o * 10 + t : o * 100 + t * 10 + h;
+    const ans = arWords(n);
+    return { eq: `${n}`, answer: ans, wrongs: wrongsFrom(ans, [swap, n + 10 <= top ? n + 10 : n - 10, n + 1 <= top ? n + 1 : n - 1].filter(v => v !== n).map(arWords), j => arWords(Math.min(top, Math.max(11, n + 2 * j)))), ar: `كيف نقرأ العدد ${n}؟`, en: `How do we read the number ${n} (in Arabic words)?` };
+  }
+  if (k === 2) {
+    // the value of one digit: pick a place whose digit appears only once in the number
+    const places = ([[h, 100], [t, 10], [o, 1]] as Array<[number, number]>).filter(([d, p]) => d > 0 && (p < 100 || grade === 2) && [h, t, o].filter(x => x === d).length === 1);
+    if (!places.length) return readWrite.make({ rng, diff: 'easy', grade });
+    const [d, p] = pick(rng, places), v = d * p;
+    return { eq: `${n}`, answer: String(v), wrongs: ints(v, [d, d * 10, d * 100, n].filter(x => x !== v)), ar: `ما قيمة الرقم ${d} في العدد ${n}؟`, en: `What is the value of the digit ${d} in ${n}?` };
+  }
+  if (grade === 1) return { eq: `${t * 10} + ${o}`, answer: String(n), wrongs: ints(n, [t + o, o * 10 + t, n + 10, n - 1]), ar: `ما العدد ${t * 10} + ${o}؟`, en: `What number is ${t * 10} + ${o}?` };
   return { eq: `${h * 100} + ${t * 10} + ${o}`, answer: String(n), wrongs: ints(n, [h + t + o, o * 100 + t * 10 + h, n + 10, n - 1]), ar: `ما العدد ${h * 100} + ${t * 10} + ${o}؟`, en: `What number is ${h * 100} + ${t * 10} + ${o}?` };
 });
 
@@ -90,6 +123,11 @@ const thousands = T('thousands', /^الالوف$/, [3, 3], ({ rng }) => {
 const evenOdd = (id: string, match: RegExp, grade: number) => T(id, match, [grade, grade], ({ rng, diff }) => {
   const hi = grade === 1 ? 20 : span(diff, 99, 500, 999);
   const even = rng() < 0.5;
+  if (rng() < 0.35) {
+    // the next even (odd) number after n, whatever n's own parity
+    const n = int(rng, 1, hi - 2), ans = (n + 1) % 2 === (even ? 0 : 1) ? n + 1 : n + 2;
+    return { eq: `${n}`, answer: String(ans), wrongs: ints(ans, [ans === n + 1 ? n + 2 : n + 1, ans + 2, n, ans + 1]), ar: `ما أول عدد ${even ? 'زوجي' : 'فردي'} يأتي بعد العدد ${n}؟`, en: `What is the first ${even ? 'even' : 'odd'} number after ${n}?` };
+  }
   const pickOf = (e: boolean) => { let v = int(rng, 1, hi); if ((v % 2 === 0) !== e) v += v < hi ? 1 : -1; return v; };
   const xs = new Set<number>([pickOf(even)]);
   while (xs.size < 4) xs.add(pickOf(!even));
@@ -109,6 +147,11 @@ const numberChart = T('number_chart', /^لوحه الاعداد$/, [1, 1], ({ rn
 
 const countUpDown = T('count_up_down', /^العد تصاعديا وتنازليا$/, [1, 1], ({ rng }) => {
   const up = rng() < 0.5, a = up ? int(rng, 1, 15) : int(rng, 8, 20);
+  if (rng() < 0.4) {
+    // count on (back) j numbers from a: where does the count stop?
+    const j = int(rng, 3, 5), r = up ? a + j : a - j;
+    return { eq: `${a}, ${j}`, answer: String(r), wrongs: ints(r, [up ? r - 1 : r + 1, up ? r + 1 : r - 1, up ? a - j : a + j, a]), ar: `ابدأ من العدد ${a} وعُدّ ${up ? 'تصاعديًا' : 'تنازليًا'} ${j} أعداد. عند أي عدد تتوقف؟`, en: `Start at ${a} and count ${up ? 'up' : 'down'} ${j} numbers. Which number do you stop at?` };
+  }
   const seq = [0, 1, 2].map(i => (up ? a + i : a - i)), next = up ? a + 3 : a - 3;
   return { eq: seq.join(', '), answer: String(next), wrongs: ints(next, [next + 1, next - 1, up ? a : a + 1, next + 2]), ar: `أكمل العدّ ${up ? 'تصاعديًا' : 'تنازليًا'}: ${seq.join('، ')}، ___`, en: `Complete the count going ${up ? 'up' : 'down'}: ${seq.join(', ')}, ___` };
 });

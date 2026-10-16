@@ -29,6 +29,12 @@ const decOpts = (ans: number, cands: number[], step = 1) =>
 const countOpts = (ans: number, cands: number[]) => numWrongs(ans, cands);
 const fracOpts = (n: number, d: number, cands: string[]) => wrongsFrom(sfrac(n, d), cands, k => sfrac(n + Math.abs(k), d));
 
+/** «8 مباريات» / «12 مباراة»: the counted noun after a numeral, as a Jordanian textbook writes it. */
+const tamyiz = (n: number, plural: string, singularAcc: string, singularGen: string) => {
+  const r = n % 100;
+  return r >= 3 && r <= 10 ? plural : n >= 100 && r <= 2 ? singularGen : singularAcc;
+};
+
 const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
 const sorted = (xs: number[]) => xs.slice().sort((a, b) => a - b);
 const median = (xs: number[]) => { const s = sorted(xs), m = s.length >> 1; return s.length % 2 ? s[m]! : (s[m - 1]! + s[m]!) / 2; };
@@ -121,9 +127,30 @@ const probability = (id: string, match: RegExp, grade: number) => T(id, match, [
 const experimental = T('experimental', /^الاحتمال التجريبي$/, [7, 7], ({ rng, diff }) => {
   const N = pick(rng, [20, 25, 40, 50, 60, 80, 100]), k = int(rng, 3, Math.floor(N * 0.7));
   const M = N * int(rng, 2, span(diff, 4, 6, 10)); // M is a multiple of N, so the prediction is whole
-  if (rng() < 0.5) return { eq: `${k}, ${N}`, answer: sfrac(k, N), wrongs: fracOpts(k, N, [sfrac(N - k, N), sfrac(k, N - k), sfrac(N, k), sfrac(k + 1, N)].filter(x => x !== sfrac(k, N))), ar: `رُمي سهم ${N} مرة فأصاب الهدف ${k} مرة. ما الاحتمال التجريبي لإصابة الهدف؟`, en: `An arrow is shot ${N} times and hits the target ${k} times. What is the experimental probability of a hit?` };
+  const kind = pick(rng, [0, 1, 2, 3, 4]);
+  if (kind === 2) { // theoretical vs experimental: the die's own probability, whatever the trial showed
+    const T6 = 6 * int(rng, 5, span(diff, 10, 15, 20)), face = int(rng, 1, 6);
+    let c = int(rng, Math.round(T6 / 10), Math.round(T6 / 4));
+    if (c * 6 === T6) c += 1;
+    return { eq: `${T6}, ${face}, ${c}`, answer: sfrac(1, 6), wrongs: fracOpts(1, 6, [sfrac(c, T6), sfrac(5, 6), sfrac(c, T6 - c), sfrac(1, T6)].filter(x => x !== sfrac(1, 6))), ar: `رُمي حجر نرد منتظم ${T6} ${tamyiz(T6, 'مرات', 'مرة', 'مرة')} (أوجهه مرقمة من 1 إلى 6)، فظهر العدد ${face} في ${c} ${tamyiz(c, 'مرات', 'مرة', 'مرة')} منها. ما الاحتمال النظري لظهور العدد ${face}؟`, en: `A fair 1–6 die is rolled ${T6} times and ${face} comes up ${c} times. What is the theoretical probability of rolling ${face}?` };
+  }
+  if (kind === 3) { // experimental probability read from a results table
+    const counts = [int(rng, 3, 20), int(rng, 3, 20), int(rng, 3, 20)], tot = sum(counts), i = int(rng, 0, 2);
+    const res = counts.map((v, j) => `${COLORS[j]![0]}: ${v}`).join('، '), resEn = counts.map((v, j) => `${COLORS[j]![1]}: ${v}`).join(', ');
+    const ans = sfrac(counts[i]!, tot);
+    return { eq: counts.join(', '), answer: ans, wrongs: fracOpts(counts[i]!, tot, [sfrac(counts[i]!, tot - counts[i]!), sfrac(1, 3), sfrac(tot - counts[i]!, tot), sfrac(counts[i]! + 1, tot)].filter(x => x !== ans)), ar: `سُحبت كرة من كيس ثم أُعيدت إليه، وتكرر ذلك ${tot} ${tamyiz(tot, 'مرات', 'مرة', 'مرة')}، فكانت النتائج: ${res}. ما الاحتمال التجريبي لسحب كرة ${COLORS[i]![0]}؟`, en: `A ball is drawn from a bag and put back, ${tot} times in all, with these results: ${resEn}. What is the experimental probability of drawing a ${COLORS[i]![1]} ball?` };
+  }
+  if (kind === 4) { // a fair experiment is one whose outcomes are equally likely: equal sectors
+    const m = pick(rng, [3, 4, 5, 6]), eq = 360 / m;
+    const fair = rng() < 0.5, d = pick(rng, [eq / 3, eq / 2].filter(Number.isInteger));
+    const angles = Array.from({ length: m }, () => eq);
+    if (!fair) { const a = int(rng, 0, m - 1), b = (a + int(rng, 1, m - 1)) % m; angles[a] = eq + d; angles[b] = eq - d; }
+    const txt = angles.map(a => `${a}°`).join('، ');
+    return { eq: angles.join(', '), answer: fair ? 'نعم' : 'لا', wrongs: [fair ? 'لا' : 'نعم'], ar: `قرص دوار مقسم إلى ${m} قطاعات بألوان مختلفة، قياسات زواياها المركزية: ${txt}. هل تدوير القرص مرة واحدة وتسجيل اللون تجربة عادلة؟ (نعم / لا)`, en: `A spinner has ${m} sectors in different colours with central angles ${angles.map(a => `${a}°`).join(', ')}. Is spinning it once and noting the colour a fair experiment? (yes / no)` };
+  }
+  if (kind === 0) return { eq: `${k}, ${N}`, answer: sfrac(k, N), wrongs: fracOpts(k, N, [sfrac(N - k, N), sfrac(k, N - k), sfrac(N, k), sfrac(k + 1, N)].filter(x => x !== sfrac(k, N))), ar: `رُمي سهم ${N} مرة فأصاب الهدف ${k} ${tamyiz(k, 'مرات', 'مرة', 'مرة')}. ما الاحتمال التجريبي لإصابة الهدف؟`, en: `An arrow is shot ${N} times and hits the target ${k} times. What is the experimental probability of a hit?` };
   const exp = (M * k) / N;
-  return { eq: `${k}, ${N}, ${M}`, answer: String(exp), wrongs: countOpts(exp, [M - exp, k * M / 10, M / N, exp + k]), ar: `أصاب لاعب الهدف ${k} مرة من ${N} محاولة. كم مرة يُتوقَّع أن يصيب الهدف في ${M} محاولة؟`, en: `A player hits the target ${k} times in ${N} attempts. How many hits are expected in ${M} attempts?` };
+  return { eq: `${k}, ${N}, ${M}`, answer: String(exp), wrongs: countOpts(exp, [M - exp, k * M / 10, M / N, exp + k]), ar: `أصاب لاعب الهدف ${k} ${tamyiz(k, 'مرات', 'مرة', 'مرة')} من ${N} محاولة. كم مرة يُتوقَّع أن يصيب الهدف في ${M} محاولة؟`, en: `A player hits the target ${k} times in ${N} attempts. How many hits are expected in ${M} attempts?` };
 });
 
 const nPr = (n: number, r: number) => { let p = 1; for (let i = 0; i < r; i++) p *= n - i; return p; };
@@ -183,19 +210,103 @@ function dataWithMean(rng: Rng, n: number, lo: number, hi: number): number[] {
   }
 }
 
-const meanT = (id: string, match: RegExp, grades: [number, number]) => T(id, match, grades, ({ rng, diff }) => {
+/** Whole-number options only: a candidate like 4.333 is not a mistake anyone writes. */
+const intOpts = (ans: number, cands: number[]) => countOpts(ans, cands.filter(Number.isInteger));
+
+/**
+ * The mean, and since 2026-10-16 the rest of the lesson: the mean from a sum,
+ * a sum from the mean, and — Grade 7 — the mean of a frequency table, an
+ * outlier and its effect on the mean, and the effect of adding a value.
+ */
+const meanT = (id: string, match: RegExp, grades: [number, number]) => T(id, match, grades, ({ rng, diff, grade }) => {
   const n = int(rng, 4, span(diff, 5, 6, 8)), hi = span(diff, 12, 25, 60);
   const xs = dataWithMean(rng, n, 1, hi), m = sum(xs) / n;
-  if (diff !== 'easy' && rng() < 0.35) {
+  const k = pick(rng, grade >= 7 ? [0, 1, 2, 3, 4, 5, 6, 7] : diff === 'easy' ? [0, 2, 3] : [0, 1, 2, 3]);
+  if (k === 1) {
     const shown = xs.slice(0, -1), miss = xs[n - 1]!;
     return { eq: `${list(shown)}; ${m}`, answer: String(miss), wrongs: countOpts(miss, [m, sum(shown), m * (n - 1) - sum(shown) + 1, miss + n]), ar: `الوسط الحسابي لـ ${n} أعداد هو ${m}. إذا كانت ${n - 1} منها: ${list(shown)} فما العدد الأخير؟`, en: `The mean of ${n} numbers is ${m}. If ${n - 1} of them are ${listEn(shown)}, what is the last number?` };
+  }
+  if (k === 2) { // mean from the total
+    const S = sum(xs);
+    return { eq: `${S}, ${n}`, answer: String(m), wrongs: intOpts(m, [S - n, S / 2, m + 1, m * 2]), ar: `مجموع علامات ${n} طلاب في اختبار هو ${S}. ما الوسط الحسابي لعلاماتهم؟`, en: `The marks of ${n} students in a test add up to ${S}. What is their mean mark?` };
+  }
+  if (k === 3) { // total from the mean
+    const S = m * n;
+    return { eq: `${m}, ${n}`, answer: String(S), wrongs: intOpts(S, [m + n, m * (n - 1), S + m, S - n]), ar: `الوسط الحسابي لأوزان ${n} صناديق هو ${m} كغ. ما مجموع أوزان الصناديق بالكيلوغرام؟`, en: `The mean mass of ${n} boxes is ${m} kg. What is their total mass in kg?` };
+  }
+  if (k === 4) { // mean of a frequency table: the values weighted by how often they occur
+    for (;;) {
+      const vals = sorted(shuffle(rng, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).slice(0, span(diff, 3, 4, 4)));
+      const f = vals.map(() => int(rng, 1, span(diff, 5, 7, 9)));
+      const N = sum(f), S = sum(vals.map((v, i) => v * f[i]!));
+      if (S % N !== 0) continue;
+      const mean = S / N;
+      if (mean === sum(vals) / vals.length) continue; // the unweighted slip must be wrong
+      const table = vals.map((v, i) => `${v}: ${f[i]}`).join('، '), tableEn = vals.map((v, i) => `${v}: ${f[i]}`).join(', ');
+      return { eq: table, answer: String(mean), wrongs: intOpts(mean, [Math.round(sum(vals) / vals.length), S / vals.length, N, mean + 1, mean - 1]), ar: `يبين الجدول التكراري الآتي (العلامة: التكرار) علامات طلاب صف في اختبار قصير: ${table}. ما الوسط الحسابي للعلامات؟`, en: `The frequency table (mark: frequency) shows a class's marks in a short quiz: ${tableEn}. What is the mean mark?` };
+    }
+  }
+  if (k === 5 || k === 6) { // an outlier, and the mean once it is taken out
+    const high = rng() < 0.7; // far above a cluster of 10–20, or far below one of 40–50
+    const rest = high ? dataWithMean(rng, n - 1, 10, 20) : dataWithMean(rng, n - 1, 40, 50), mr = sum(rest) / (n - 1);
+    const out = high ? int(rng, 60, 95) : int(rng, 1, 5);
+    const all = shuffle(rng, [...rest, out]);
+    if (k === 5) return { eq: list(all), answer: String(out), wrongs: intOpts(out, [Math.max(...rest), Math.min(...rest), mr, median(all)]), ar: `في البيانات الآتية قيمة متطرفة واحدة: ${list(all)}. ما هذه القيمة؟`, en: `The data ${listEn(all)} contain one outlier. What is it?` };
+    const withOut = sum(all) / n;
+    return { eq: list(all), answer: String(mr), wrongs: intOpts(mr, [Math.round(withOut), mr + 1, mr - 1, median(rest)]), ar: `في البيانات الآتية قيمة متطرفة واحدة: ${list(all)}. ما الوسط الحسابي للبيانات بعد حذف القيمة المتطرفة؟`, en: `The data ${listEn(all)} contain one outlier. What is the mean once the outlier is removed?` };
+  }
+  if (k === 7) { // a value added: the new value is chosen so the new mean is whole
+    const d = int(rng, 1, 4), up = rng() < 0.6 || m - d * (n + 1) <= 0;
+    const v = up ? m + d * (n + 1) : m - d * (n + 1), m2 = up ? m + d : m - d;
+    return { eq: `${m}, ${n}, ${v}`, answer: String(m2), wrongs: intOpts(m2, [(m + v) / 2, m, (m * n + v) / n, up ? m2 + 1 : m2 - 1]), ar: `الوسط الحسابي لـ ${n} أعداد هو ${m}. أُضيف إليها العدد ${v}. ما الوسط الحسابي للأعداد الجديدة؟`, en: `The mean of ${n} numbers is ${m}. The number ${v} is added to them. What is the new mean?` };
   }
   const x = shuffle(rng, xs);
   return { eq: list(x), answer: String(m), wrongs: countOpts(m, [median(xs), Math.max(...xs), sum(xs), Math.min(...xs), m + 1]), ar: `ما الوسط الحسابي للأعداد: ${list(x)}؟`, en: `What is the mean of ${listEn(x)}?` };
 });
 
-const medianModeT = (id: string, match: RegExp, grades: [number, number], kinds: Array<'median' | 'mode' | 'range'>): Topic => T(id, match, grades, ({ rng, diff }) => {
+type MMKind = 'median' | 'mode' | 'range' | 'medianMissing' | 'modeContext' | 'rangeTable' | 'rangeEnd';
+/**
+ * Since 2026-10-16 a Grade 5 lesson asks more than one sentence: a missing
+ * value from the median, the mode of data with a context, the range of a
+ * frequency table (values, not frequencies) and an end value from the range.
+ */
+const medianModeT = (id: string, match: RegExp, grades: [number, number], kinds: MMKind[]): Topic => T(id, match, grades, ({ rng, diff }) => {
   const kind = pick(rng, kinds);
+  if (kind === 'medianMissing') {
+    // even count, ordered, the upper middle value hidden: median = (lower middle + x) / 2
+    for (;;) {
+      const n = pick(rng, [4, 6]), h = n / 2;
+      const s = sorted(shuffle(rng, Array.from({ length: span(diff, 20, 30, 40) }, (_, i) => i + 1)).slice(0, n));
+      const a = s[h - 1]!, x = s[h]!;
+      if ((a + x) % 2 !== 0) continue;
+      const md = (a + x) / 2;
+      const shown = s.map((v, i) => (i === h ? 'x' : String(v)));
+      return { eq: `${shown.join(', ')}; ${md}`, answer: String(x), wrongs: countOpts(x, [md, a, a + md, x + 1, s[h + 1]!]), ar: `الأعداد الآتية مرتبة تصاعديًا: ${shown.join('، ')}، ووسيطها ${md}. ما قيمة x؟`, en: `These numbers are in ascending order: ${shown.join(', ')}, and their median is ${md}. What is x?` };
+    }
+  }
+  if (kind === 'modeContext') {
+    for (;;) {
+      const n = int(rng, 8, span(diff, 10, 12, 14));
+      const xs = Array.from({ length: n }, () => int(rng, 0, span(diff, 4, 5, 6)));
+      const m = mode(xs);
+      if (m === null) continue;
+      const times = xs.filter(v => v === m).length;
+      return { eq: list(xs), answer: String(m), wrongs: countOpts(m, [times, median(xs), Math.max(...xs), m + 1]), ar: `سجّل فريق كرة قدم عدد الأهداف التي أحرزها في ${n} ${tamyiz(n, 'مباريات', 'مباراة', 'مباراة')}: ${list(xs)}. ما منوال عدد الأهداف؟`, en: `A football team recorded its goals in ${n} matches: ${listEn(xs)}. What is the mode of the number of goals?` };
+    }
+  }
+  if (kind === 'rangeTable') {
+    // ages and how many players have each — the range is of the ages, not of the counts
+    const ages = sorted(shuffle(rng, [8, 9, 10, 11, 12, 13, 14, 15, 16]).slice(0, span(diff, 3, 4, 5)));
+    const f = ages.map(() => int(rng, 1, 9));
+    const r = ages[ages.length - 1]! - ages[0]!;
+    const table = ages.map((v, i) => `${v}: ${f[i]}`).join('، '), tableEn = ages.map((v, i) => `${v}: ${f[i]}`).join(', ');
+    return { eq: table, answer: String(r), wrongs: countOpts(r, [Math.max(...f) - Math.min(...f), ages[ages.length - 1]!, sum(f), r + 1]), ar: `يبين الجدول التكراري الآتي (العمر بالسنوات: عدد اللاعبين) أعمار لاعبي نادٍ رياضي: ${table}. ما مدى أعمار اللاعبين؟`, en: `The frequency table (age in years: number of players) shows the ages of a sports club's players: ${tableEn}. What is the range of the ages?` };
+  }
+  if (kind === 'rangeEnd') {
+    const r = int(rng, 5, span(diff, 20, 40, 60)), lo = int(rng, 2, span(diff, 20, 30, 50)), hi = lo + r;
+    if (rng() < 0.5) return { eq: `${r}, ${lo}`, answer: String(hi), wrongs: countOpts(hi, [Math.abs(r - lo), r, lo, hi + 1]), ar: `مدى مجموعة من البيانات ${r}، وأصغر قيمة فيها ${lo}. ما أكبر قيمة فيها؟`, en: `The range of a data set is ${r} and its smallest value is ${lo}. What is its largest value?` };
+    return { eq: `${r}, ${hi}`, answer: String(lo), wrongs: countOpts(lo, [hi + r, r, hi, lo + 1]), ar: `مدى مجموعة من البيانات ${r}، وأكبر قيمة فيها ${hi}. ما أصغر قيمة فيها؟`, en: `The range of a data set is ${r} and its largest value is ${hi}. What is its smallest value?` };
+  }
   if (kind === 'mode') {
     for (;;) {
       const n = int(rng, 7, span(diff, 9, 11, 13));
@@ -255,8 +366,35 @@ const readData = (id: string, match: RegExp, grades: [number, number]) => T(id, 
   return { eq: tab, answer: String(t), wrongs: countOpts(t, [t - 1, t + 1, Math.max(...vals), t + key]), ar: `${head} ما المجموع الكلي؟`, en: `${headEn} What is the total?` };
 });
 
+/**
+ * Since 2026-10-16 also the population and the sample (جمع البيانات), and the
+ * mean and median of data already organised in a frequency table.
+ */
 const freqTable = T('freq_table', /^(?:الجداول التكراريه|جمع البيانات)$/, [6, 6], ({ rng, diff }) => {
   const n = span(diff, 15, 20, 25), hi = span(diff, 4, 5, 6);
+  const kind = pick(rng, [0, 0, 1, 2, 3]); // 0: the frequency of a value, or the most frequent value
+  if (kind === 1) { // population and sample
+    const P = 100 * int(rng, 3, 9), s = 5 * int(rng, 4, 16), sample = rng() < 0.6;
+    const ans = sample ? s : P;
+    return { eq: `${P}, ${s}`, answer: String(ans), wrongs: countOpts(ans, [sample ? P : s, P - s, P + s, sample ? s * 2 : P / 2]), ar: `أراد مدير مدرسة فيها ${P} طالب معرفة الرياضة المفضلة لدى طلبتها، فاختار منهم ${s} طالبًا عشوائيًا ووزّع عليهم استبانة. ما حجم ${sample ? 'العينة' : 'المجتمع'}؟`, en: `A head teacher of a school with ${P} students wants to know their favourite sport, so picks ${s} of them at random and gives them a questionnaire. What is the size of the ${sample ? 'sample' : 'population'}?` };
+  }
+  if (kind === 2 || kind === 3) { // mean or median of a frequency table (value: frequency)
+    for (;;) {
+      const vals = Array.from({ length: hi }, (_, i) => i + 1), f = vals.map(() => int(rng, 1, 8));
+      const N = sum(f), S = sum(vals.map((v, i) => v * f[i]!));
+      const table = vals.map((v, i) => `${v}: ${f[i]}`).join('، '), tableEn = vals.map((v, i) => `${v}: ${f[i]}`).join(', ');
+      const head = `يبين الجدول التكراري الآتي (عدد الكتب: عدد الطلاب) عدد الكتب التي قرأها كل طالب في صف خلال شهر: ${table}.`;
+      const headEn = `The frequency table (books read: number of students) shows how many books each student in a class read in a month: ${tableEn}.`;
+      const unweighted = sum(vals) / vals.length, modal = mode(vals.flatMap((v, i) => Array<number>(f[i]!).fill(v)));
+      if (kind === 2) {
+        if ((10 * S) % N !== 0) continue; // a whole number or one decimal place
+        const mean = S / N;
+        return { eq: table, answer: n1(mean), wrongs: decOpts(mean, [unweighted, S / vals.length, mean + 1, ...(modal !== null ? [modal] : [])].filter(v => v !== mean), 0.5), ar: `${head} ما الوسط الحسابي لعدد الكتب؟`, en: `${headEn} What is the mean number of books?` };
+      }
+      const md = median(vals.flatMap((v, i) => Array<number>(f[i]!).fill(v)));
+      return { eq: table, answer: n1(md), wrongs: decOpts(md, [unweighted, median(f), md + 1, ...(modal !== null ? [modal] : [])].filter(v => v !== md), 0.5), ar: `${head} ما وسيط عدد الكتب؟`, en: `${headEn} What is the median number of books?` };
+    }
+  }
   for (;;) {
     const xs = Array.from({ length: n }, () => int(rng, 1, hi));
     const v = pick(rng, [...new Set(xs)]);
@@ -269,8 +407,47 @@ const freqTable = T('freq_table', /^(?:الجداول التكراريه|جمع 
 });
 
 const classOf = (w: number, lo: number, v: number) => { const a = lo + Math.floor((v - lo) / w) * w; return [a, a + w - 1] as const; };
-const grouped = (id: string, match: RegExp, grades: [number, number]) => T(id, match, grades, ({ rng, diff }) => {
+/**
+ * Grouping raw data (a class's frequency, the modal class) and, since
+ * 2026-10-16, reading a grouped table (how many at or above a mark), a
+ * histogram (the total, the tallest bar) and — Grade 9 — a class midpoint and
+ * the mean estimated from midpoints.
+ */
+const grouped = (id: string, match: RegExp, grades: [number, number]) => T(id, match, grades, ({ rng, diff, grade }) => {
   const w = pick(rng, [5, 10]), lo = 0;
+  const kind = pick(rng, grade >= 9 ? [0, 0, 1, 2, 3, 4] : [0, 0, 1, 2]);
+  if (kind > 0) {
+    const s0 = w * int(rng, 0, 3), size = span(diff, 4, 5, 5);
+    const starts = Array.from({ length: size }, (_, i) => s0 + i * w);
+    const label = (a: number) => `${a}–${a + w - 1}`;
+    if (kind === 4) {
+      const a = pick(rng, starts), mid = (2 * a + w - 1) / 2;
+      return { eq: label(a), answer: n1(mid), wrongs: decOpts(mid, [2 * a + w - 1, w - 1, a + w - 1, a + w / 2], 0.5), ar: `في جدول تكراري ذي فئات لعلامات طلاب، ما مركز الفئة ${label(a)}؟`, en: `In a grouped frequency table of marks, what is the midpoint of the class ${label(a)}?` };
+    }
+    for (;;) {
+      const f = starts.map(() => int(rng, 1, 12)), N = sum(f);
+      const table = starts.map((a, i) => `${label(a)}: ${f[i]}`).join('، '), tableEn = starts.map((a, i) => `${label(a)}: ${f[i]}`).join(', ');
+      if (kind === 1) {
+        const j = int(rng, 1, size - 1), cut = starts[j]!, above = sum(f.slice(j)), up = rng() < 0.5, ans = up ? above : N - above;
+        return { eq: table, answer: String(ans), wrongs: countOpts(ans, [f[j]!, N, up ? N - above : above, ans + f[j]!]), ar: `يبين الجدول التكراري الآتي (الفئة: التكرار) علامات طلاب صف في اختبار: ${table}. كم طالبًا علامته ${up ? `${cut} فأكثر` : `أقل من ${cut}`}؟`, en: `The frequency table (class: frequency) shows a class's test marks: ${tableEn}. How many students scored ${up ? `${cut} or more` : `less than ${cut}`}?` };
+      }
+      const head = `في مدرج تكراري يمثل أطوال نباتات بالسنتيمتر، الفئات وارتفاعات أعمدتها (الفئة: الارتفاع): ${table}.`;
+      const headEn = `A histogram of plant heights in cm has these classes and bar heights (class: height): ${tableEn}.`;
+      if (kind === 2) {
+        if (rng() < 0.5) return { eq: table, answer: String(N), wrongs: countOpts(N, [size, Math.max(...f), N - f[0]!, N + size]), ar: `${head} ما عدد النباتات الكلي؟`, en: `${headEn} How many plants are there in all?` };
+        const top = Math.max(...f);
+        if (f.filter(v => v === top).length > 1) continue;
+        const ti = f.indexOf(top);
+        return { eq: table, answer: label(starts[ti]!), wrongs: starts.filter((_, i) => i !== ti).map(label).slice(0, 3), ar: `${head} ما الفئة التي يمثلها أطول عمود؟`, en: `${headEn} Which class does the tallest bar stand for?` };
+      }
+      // kind 3: the mean estimated from class midpoints; twice each midpoint is whole
+      const mids2 = starts.map(a => 2 * a + w - 1), S2 = sum(mids2.map((m, i) => m * f[i]!));
+      if ((10 * S2) % (2 * N) !== 0) continue; // a whole number or one decimal place
+      const mean = S2 / (2 * N), unweighted = sum(mids2) / (2 * size);
+      if (mean === unweighted) continue;
+      return { eq: table, answer: n1(mean), wrongs: decOpts(mean, [unweighted, S2 / (2 * size), mean + w, mean - w].map(v => Math.round(v * 10) / 10).filter(v => v !== mean), 0.5), ar: `يبين الجدول التكراري الآتي (الفئة: التكرار) علامات طلاب صف في اختبار: ${table}. ما الوسط الحسابي التقريبي للعلامات باستعمال مراكز الفئات؟`, en: `The frequency table (class: frequency) shows a class's test marks: ${tableEn}. Estimate the mean mark using the class midpoints.` };
+    }
+  }
   for (;;) {
     const n = span(diff, 16, 20, 24);
     const xs = Array.from({ length: n }, () => int(rng, 1, w * 4 - 1));
@@ -431,7 +608,7 @@ export const STATS_TOPICS: readonly Topic[] = [
   probability('prob_g6', /^الاحتمالات$/, 6), probability('prob_g7', /^الاحتمالات$/, 7), experimental, counting, compound,
   venn('venn_g3', /^اشكال ڤن$/, [3, 3]), venn('venn_g4', /^تمثيل البيانات باشكال ڤن$/, [4, 4]), venn('venn_g9', /^الاحتمالات واشكال ڤن$/, [9, 9]), geometricProb,
   meanT('mean_g5', /^الوسط الحسابي$/, [5, 5]), meanT('mean_g7', /^الوسط الحسابي$/, [7, 7]),
-  medianModeT('median_mode_g5', /^الوسيط والمنوال$/, [5, 5], ['median', 'mode']), medianModeT('range_g5', /^المدي$/, [5, 5], ['range']),
+  medianModeT('median_mode_g5', /^الوسيط والمنوال$/, [5, 5], ['median', 'mode', 'medianMissing', 'modeContext']), medianModeT('range_g5', /^المدي$/, [5, 5], ['range', 'rangeTable', 'rangeEnd']),
   medianModeT('median_mode_range_g7', /^الوسيط والمنوال والمدي$/, [7, 7], ['median', 'mode', 'range']),
   stemLeaf,
   readData('read_data_g12', /^(?:جداول البيانات|تمثيل البيانات بالصور|تفسير بيانات ممثله بالصور|تفسير البيانات الممثله بالصور|تفسير البيانات الممثله بجدول الاشارات|جمع البيانات وتنظيمها)$/, [1, 2]),
