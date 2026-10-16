@@ -5288,10 +5288,31 @@ the model writes its own, so a teacher could take unchecked working for checked.
   removes the mark from every worksheet, homework and quiz question; the worked
   example was already whitelisted. Artifacts already in the pool were stored
   before this and are not rewritten.
-- Not covered: the shared text export, the slide export and the live class deck
-  carry the working but not the note. Seen in the browser with a stubbed
-  live-shaped response (no live key here), not on a device.
+- Seen in the browser with a stubbed live-shaped response (no live key here), not
+  on a device. (The text export, slide export and live class deck were left out
+  of this first change; they carry the note since 2026-10-16, below.)
 - Mobile 3861 pass / 0 fail / 10 skipped; api-server 1484 pass.
+
+### The other three surfaces carry the note too, 2026-10-16
+
+Live AI on Android was confirmed on 2026-10-16: the owner generated a worksheet
+in the Android app and the header badge said live. So Android teachers get
+model-written working, which the 165-solution review does not cover (it covers
+only the offline bank, i.e. the web build). The note is now on every surface
+that carries worksheet working, always on the teacher's side:
+
+- **Text export:** one «⚠» line under the answer-key heading, only when the key
+  has unreviewed working. Not on the student copy, not when the key is left out.
+- **Slide export (`buildWorksheetSlidesHTML`):** on the first key slide only.
+- **Live class deck (`buildDeckFromWorksheet`):** in the teacher panel, never on
+  the wall. A question whose working is unreviewed gets the line above «خطوات
+  الحل»; an AI-written worked example gets a teacher panel carrying it (a bank
+  example still gets no panel).
+- The sentence is `keyWorkingNote` in `services/worksheetWorking.ts`, shared with
+  the printed key, so the wording cannot drift. The on-screen row keeps its own
+  string (`workingUnreviewed`).
+- Not checked on a device. 16 new cases in `worksheetWorkingSurfaces.test.ts`,
+  written first and failing first. Mobile 5806 pass / 0 fail / 10 skipped.
 
 ## The English projector split an equation across two lines, 2026-10-05
 
