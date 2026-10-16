@@ -23,6 +23,8 @@
     "./premade": "./src/premade.ts",
     "./vocabulary": "./src/vocabulary.ts",
     "./englishHub": "./src/englishHub.ts",
+    "./englishPictures": "./src/englishPictures.ts",
+    "./englishGrammar": "./src/englishGrammar.ts",
     "./passages": "./src/passages.ts",
     "./bookItems": "./src/bookItems.ts",
     "./catalogs/*": "./src/catalogs/*.ts",
