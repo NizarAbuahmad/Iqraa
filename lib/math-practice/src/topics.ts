@@ -19,7 +19,7 @@ import { GEOMETRY_TOPICS } from './geometry.ts';
 import { STATS_TOPICS } from './stats.ts';
 import { PROPORTION_TOPICS } from './proportion.ts';
 import { EARLY_TOPICS } from './early.ts';
-import { stemFrame } from './stemFrame.ts';
+import { FRESH_DRAWS, servedFrames, spreadScore, stemFrame } from './stemFrame.ts';
 import {
   gcd, int, lcm, mixed, nz, numWrongs, numerator, paren, pick, sfrac, signed, sup, tier, valueOf, wrongsFrom,
   type Ctx, type Draft, type Rng, type Topic,
@@ -1799,8 +1799,6 @@ export function topicFor(title: string, grade: number): Topic | null {
   return TOPICS.find(x => grade >= x.grades[0] && grade <= x.grades[1] && x.match.test(t)) ?? null;
 }
 
-/** Fresh draws compared before keeping the one whose sentence was served least. */
-const FRESH_DRAWS = 6;
 
 /**
  * A fresh item for a lesson `topicFor` matched; a draw that repeats a stem this
@@ -1809,9 +1807,10 @@ const FRESH_DRAWS = 6;
  * Most generators ask one of several kinds of question («ما بُعد الوتر عن
  * المركز؟», «ما طول الوتر؟», «ما طول المماس؟») and pick the kind at random, so
  * a paper could hold five of one kind and none of another. Of a few fresh
- * draws, the one whose sentence (`stemFrame`) this pass has served least is
- * kept. A draw of an unserved sentence ends the search at once, so the first
- * item of a pass costs one draw as before.
+ * draws, the one whose kind this pass has served least is kept (`spreadScore`:
+ * sentences a word or two apart are one kind, `sameKind`). A draw of an unserved
+ * kind ends the search at once, so the first item of a pass costs one draw as
+ * before.
  *
  * The bank (`takeFromBank`) deliberately does not do this. Its items are finite:
  * on a lesson holding a few one-item kinds, spreading puts those items on
@@ -1820,12 +1819,7 @@ const FRESH_DRAWS = 6;
  * numbers on every draw, so nothing is lost here.
  */
 export function makeTopicItem(topic: Topic, grade: number, diff: DiffTier, used: Set<string>, rng: Rng = Math.random): ConcreteItem {
-  const served = new Map<string, number>();
-  for (const key of used) {
-    if (!key.startsWith('stem:')) continue;
-    const f = stemFrame(key.slice('stem:'.length));
-    served.set(f, (served.get(f) ?? 0) + 1);
-  }
+  const served = servedFrames(used);
   let d: Draft | null = null;
   let best: Draft | null = null;
   let bestServed = Infinity;
@@ -1834,7 +1828,7 @@ export function makeTopicItem(topic: Topic, grade: number, diff: DiffTier, used:
     d = topic.make({ rng, diff, grade });
     if (used.has(`stem:${d.ar}`)) continue;
     fresh += 1;
-    const n = served.get(stemFrame(d.ar)) ?? 0;
+    const n = spreadScore(stemFrame(d.ar), served);
     if (n < bestServed) {
       best = d;
       bestServed = n;
@@ -1843,6 +1837,7 @@ export function makeTopicItem(topic: Topic, grade: number, diff: DiffTier, used:
   }
   d = best ?? d;
   used.add(`stem:${d!.ar}`);
+  used.add(`ask:${d!.ar}`);
   const wrongs = d!.wrongs.filter(w => w !== d!.answer).slice(0, 3);
   return {
     id: `topic-${topic.id}-${grade}-${used.size}-${int(rng, 0, 9)}`,
