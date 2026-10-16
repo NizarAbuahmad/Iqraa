@@ -25,6 +25,8 @@ import { memorizePath, resolveSurahParam } from '@/services/quranLinks';
 import { toArabicDigits } from '@/services/labFormat';
 import { LabFrame } from '@/components/lab/LabFrame';
 import { QuranGate } from '@/components/quran/QuranGate';
+import { QuranAudioNote, QuranListenButton } from '@/components/quran/QuranAudioControls';
+import { useQuranAudio } from '@/hooks/useQuranAudio';
 
 function QuranReader() {
   const { surahId } = useLocalSearchParams<{ surahId: string }>();
@@ -32,6 +34,7 @@ function QuranReader() {
   const { t, lang, isRTL } = useLanguage();
   const { progress } = useQuranProgress();
   const fontReady = useQuranFont();
+  const audio = useQuranAudio();
   const align = isRTL ? 'right' : 'left';
   const digits = (s: string | number) => (lang === 'ar' ? toArabicDigits(String(s)) : String(s));
 
@@ -79,20 +82,39 @@ function QuranReader() {
             {t('quranMemorize')}
           </Text>
         </Pressable>
+        {audio.visible ? (
+          <QuranListenButton
+            label={audio.playing ? t('quranStopAudio') : t('quranListenAll')}
+            active={audio.playing !== null}
+            onPress={() =>
+              audio.playing
+                ? audio.stop()
+                : audio.playSequence(surah.ayahs.map(a => ({ surah: surah.number, ayah: a.n })))
+            }
+          />
+        ) : null}
       </View>
+      {audio.visible ? <QuranAudioNote error={audio.error} /> : null}
 
       <View style={styles.text}>
         {surah.ayahs.map((a, i) => {
           const prev = surah.ayahs[i - 1];
           const gap = prev !== undefined && a.n !== prev.n + 1;
           const memorised = stateOf(progress, surah.number, a.n) === 'memorised';
+          const isPlaying = audio.playing?.surah === surah.number && audio.playing.ayah === a.n;
           return (
             <React.Fragment key={a.n}>
               {gap ? (
                 <Text style={[styles.gap, { color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold' }]}>…</Text>
               ) : null}
               {/* Fixed row-reverse: the Quran reads right to left in every interface language. */}
-              <View style={[styles.ayah, { borderColor: colors.border, flexDirection: 'row-reverse' }]}>
+              <View
+                style={[
+                  styles.ayah,
+                  { borderColor: colors.border, flexDirection: 'row-reverse' },
+                  isPlaying ? { backgroundColor: colors.muted } : null,
+                ]}
+              >
                 <View style={[styles.badge, { backgroundColor: memorised ? colors.primary : colors.muted }]}>
                   <Text
                     style={{
@@ -105,6 +127,13 @@ function QuranReader() {
                   </Text>
                 </View>
                 <Text style={[styles.quran, { color: colors.foreground }]}>{a.text}</Text>
+                {audio.visible ? (
+                  <QuranListenButton
+                    active={isPlaying}
+                    a11yLabel={`${t(isPlaying ? 'quranStopAudio' : 'quranListen')} ${digits(a.n)}`}
+                    onPress={() => (isPlaying ? audio.stop() : audio.playAyah(surah.number, a.n))}
+                  />
+                ) : null}
               </View>
             </React.Fragment>
           );
@@ -173,7 +202,7 @@ function QuranReader() {
 
 const styles = StyleSheet.create({
   missing: { textAlign: 'center', padding: 32 },
-  actions: { paddingHorizontal: 16, paddingTop: 16 },
+  actions: { paddingHorizontal: 16, paddingTop: 16, flexWrap: 'wrap', alignItems: 'center', gap: SPACE.sm },
   primary: { alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: SPACE.md, borderRadius: 999 },
   text: { marginTop: 8 },
   ayah: {

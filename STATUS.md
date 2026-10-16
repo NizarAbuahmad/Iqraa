@@ -2616,6 +2616,37 @@ surahs of equal length being swapped.
   spaced repetition, attaching a surah to a class, a link from an Islamic lesson
   into the corner, whole-surah text for surahs the books print in part.
 
+### Recitation audio (2026-10-16): built, gated off, never played
+
+Sheikh Mahmoud Khalil Al-Husary's murattal, one MP3 per ayah for the 585 ayahs the
+corner holds, copied into `iqraa-public/quran-audio/husary/` by an owner-run script
+(`pnpm --filter @workspace/curriculum run quran-audio`) and played by
+`artifacts/mobile/services/quranAudio.ts` (`expo-audio` native, `<audio>` on web — no
+native module, no `app.json` version bump). The key shape is
+`lib/curriculum/src/quranAudio.ts`; the play queue is the tested reducer
+`services/quranPlaylist.ts`; a flashcard word and a recitation are designed not to play together
+(`services/audioExclusive.ts`).
+
+- **The listen controls are hidden in production.** `QURAN_AUDIO_UPLOADED`
+  (`artifacts/mobile/services/quranAudioRelease.ts`) is `false`; `__DEV__` shows them.
+  Flip it only after the checklist in
+  `lib/curriculum/sources/quran-audio/VERIFY.md` is done, device checks (in a
+  development build, which shows the controls without changing the constant) first.
+- **No recording has been fetched, played or measured.** The build sandbox's proxy
+  refuses the source host, so the script was unit-tested against a fake fetch and a
+  fake bucket and has never touched the real source or the real bucket. Whether each
+  file is exactly its ayah (a basmalah spliced into or out of ayah 1, a clipped end)
+  is unknown.
+- **The screens were typechecked, not seen or heard**, and the native
+  "just finished" status event that advances a multi-ayah queue has not run on a
+  device. Verification was unit tests for the key builder, the upload decisions, the
+  registry, the playlist and the gate, plus typecheck, i18n and design-scale tests.
+- **Known gaps, reviewed and deliberately not fixed:** there is no stall watchdog once a recording has started (a connection that drops mid-ayah leaves it 'playing' until Stop is tapped); the web player has no load timeout; on iOS Safari the next ayah of a multi-ayah sequence may be blocked because it starts outside a user gesture; the playing-row highlight shares its colour with an unmemorised ayah's badge. Each is listed as a device check in `lib/curriculum/sources/quran-audio/VERIFY.md`.
+- **The licence for re-hosting the recordings in a paid product is not answered
+  here**, nor is approval in Jordan. Both are the owner's.
+- Needs the network; no download or cache. A student offline sees one quiet line and
+  can still read and hide.
+
 ## Exams have a date, and teachers at one school can see each other's, 2026-10-11
 
 Before this an exam had no date at all — `evaluations` had no such column and
