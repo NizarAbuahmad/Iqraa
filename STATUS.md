@@ -607,6 +607,14 @@ an announcement by default» below.
   family (next entry). Compared before and after: only those four changed, the other 21
   are identical. **Not checked:** Typed topics that are not catalogue
   lessons were not re-measured beyond the title cases in `chemistry.test.ts`.
+- **The electron-configuration lesson was answered with periodic-trends questions; fixed (2026-10-16).**
+  Found while building the teacher review sheet's lesson-to-questions table, and missed in the
+  25-lesson comparison before it: «التوزيع الإلكتروني للذرات» (Grade 10; Aufbau, Hund's rule) listed
+  «طاقة التأين» among its key terms, `periodic_trends` is tested before `electron_config`, and that
+  one term decided it. A narrow rule on the lesson's own name now sits ahead of periodic trends; the
+  periodic-properties lesson itself («الخصائص الدورية للعناصر») still routes there. Compared before
+  and after with the app's own lesson text: only this lesson changed, the other 24 are identical.
+  **Not checked:** typed topics that are not catalogue lessons beyond the title cases in the tests.
 - **The heat-capacity lesson has its own question family (2026-10-15).** «الطاقة الممتصة
   والطاقة المنبعثة من المادة» (Grade 10) is a heat-capacity and calorimeter lesson, but
   the nearest bank, `thermochem`, is enthalpy and exo/endothermic questions with only two
