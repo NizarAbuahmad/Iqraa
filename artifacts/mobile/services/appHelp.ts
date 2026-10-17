@@ -55,6 +55,14 @@ const SCREENS: AppPlace[] = [
     howKey: 'howAddClass',
   },
   {
+    // Students are added inside a class that already exists, not by making one,
+    // so this has its own steps. No keywords: «add a student» is reached only
+    // through `ADD_STUDENT`, which is anchored (see there).
+    id: 'add-student', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false,
+    keywords: [],
+    howKey: 'howAddStudent',
+  },
+  {
     id: 'subjects', route: '/setup-subjects', routeParams: { mode: 'edit' }, labelKey: 'mySubjects', pathKeys: ['tabProfile'], isTool: false,
     // No bare «grade» / «صف»: they sit inside every «grade 10 quiz» and «للصف العاشر».
     keywords: ['الصفوف', 'صفوفي', 'مواد ادرسها', 'المواد التي ادرسها', 'اضافه صف', 'اضيف صف', 'صف جديد', 'add grade', 'add a grade', 'new grade', 'another grade', 'add subject', 'add a subject', 'another subject', 'subjects i teach', 'اضافه ماده', 'اضيف ماده'],
@@ -267,8 +275,31 @@ const STATEMENT_PLACES: { re: RegExp; id: string }[] = [
     ),
   },
 ];
+/**
+ * «كيف أضيف طالباً جديداً؟», «how do i add a student», «بدي اضيف طلاب للشعبة».
+ * Found on app.iqrra.com (2026-10-17): with live AI on, the first went to the
+ * model, which said it was a question about the app and gave no steps — no
+ * keyword names a student being added, and the bare «students» keyword alone
+ * claims nothing. The how-word or intent is optional, but the student must end
+ * the message, bar a new / another, and «to my class / الى الشعبة»: «كيف أضيف
+ * طالباً إلى مجموعة النقاش» and «add a student to the group work» stay teaching.
+ * Written against `plain()` output (hamza and ة folded, accusative dropped).
+ */
+const ADD_STUDENT: RegExp[] = [
+  new RegExp(
+    String.raw`^(?:(?:please|pls|plz)\s+)?(?:(?:how\s+(?:do|can|should)\s+(?:i|we)|where\s+(?:do|can|should)\s+(?:i|we)|how\s+to|can\s+(?:i|we)|(?:i|we)\s+(?:want|need|wanna)\s+to|(?:i|we)(?:'d|\s+would)\s+like\s+to|let\s+me|help\s+me(?:\s+to)?)\s+)?` +
+      String.raw`add\s+(?:(?:a|an|another|one\s+more|more|new|some|my|the)\s+)*students?(?:\s+names?)?` +
+      String.raw`(?:\s+(?:to|in|into)\s+(?:my|the|a|this)\s+(?:class(?:es)?|section|roster|class\s+list))?(?:\s+(?:please|pls|plz|now|here))*$`,
+  ),
+  new RegExp(
+    String.raw`^(?:(?:كيف|طريقه|خطوات|وين|اين|من\s+وين|من\s+اين)\s+(?:يمكنني\s+|ممكن\s+|بقدر\s+)?|(?:هل\s+)?(?:يمكنني|يمكن|اقدر|استطيع|ممكن)\s+(?:ان\s+)?|${AR_INTENT})?` +
+      String.raw`(?:اضيف|اضافه|اضف|نضيف|اسجل|تسجيل|ادخل|ادخال)\s+(?:اسم\s+|اسماء\s+)?(?:ال)?(?:طالب|طالبا|طالبه|طلاب|طلابا|طلبه|طالبات)` +
+      String.raw`(?:\s+(?:جديد|جدد|جديده|اخر|اخري|اخرين))?` +
+      String.raw`(?:\s+(?:الي|في|ل|لل)\s*(?:ال)?(?:شعبه|شعبتي|صف|صفي|قائمه))?(?:\s+(?:لي|من\s+فضلك|لو\s+سمحت|هنا|الان))*$`,
+  ),
+];
 const statementPlaceId = (plainQuery: string) =>
-  STATEMENT_PLACES.find(s => s.re.test(plainQuery))?.id;
+  ADD_STUDENT.some(re => re.test(plainQuery)) ? 'add-student' : STATEMENT_PLACES.find(s => s.re.test(plainQuery))?.id;
 const isAddToAccount = (plainQuery: string) =>
   EN_ADD_TO_ACCOUNT.test(plainQuery) || EN_ADD_BARE_GRADE.test(plainQuery) || EN_ADD_GRADE_TO_MY.test(plainQuery) ||
   AR_ADD_TO_ACCOUNT.test(plainQuery) || AR_ADD_BARE_GRADE.test(plainQuery);
