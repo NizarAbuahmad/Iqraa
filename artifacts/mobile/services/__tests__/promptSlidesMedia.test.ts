@@ -143,6 +143,17 @@ describe('attachSearchedMedia — photos and video', () => {
     assert.ok(out.slides.find(s => s.mediaPrompt === 'another photo')?.sideImageUrl);
   });
 
+  it('a photo layout DOES get its picture — it is drawn from it', async () => {
+    const out = await attachSearchedMedia(deck([
+      slide(),
+      slide({ layout: 'photo', content: 'جملة', mediaPrompt: 'desert dunes' }),
+      slide({ type: 'summary' }),
+    ]), opts);
+    const shot = out.slides.find(s => s.layout === 'photo');
+    assert.ok(shot?.sideImageUrl?.includes('desert'));
+    assert.match(shot?.sideImageCaption ?? '', /Ada/);
+  });
+
   it('illustrates content slides from the deck’s spare queries when no slide asked', async () => {
     // Measured, not hypothetical: a production deck made exactly two Unsplash
     // calls because not one slide carried a `mediaPrompt` — while filling

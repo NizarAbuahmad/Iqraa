@@ -634,6 +634,7 @@ describe("prompt-slides — the structure layouts keep their words in a payload"
       { layout: "stats", stats: [{ value: "1", label: "a" }] },
       { layout: "table", table: { headers: ["a", "b"], rows: [["1", "2"]] } },
       { layout: "flow", flow: { steps: ["a", "b", "c"] } },
+      { layout: "quote", quote: { text: "a quotation" } },
     ]) {
       assert.doesNotThrow(() => assertUsableGeneration("prompt-slides", withBody(over)), JSON.stringify(over));
     }
@@ -645,6 +646,7 @@ describe("prompt-slides — the structure layouts keep their words in a payload"
       { layout: "stats" },
       { layout: "table", table: { headers: [], rows: [] } },
       { layout: "flow", flow: { steps: [] } },
+      { layout: "quote", quote: { text: "  " } },
     ]) {
       assert.throws(() => assertUsableGeneration("prompt-slides", withBody(over)), UnusableGenerationError, JSON.stringify(over));
     }

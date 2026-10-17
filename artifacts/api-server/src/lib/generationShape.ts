@@ -436,7 +436,9 @@ export function assertUsableDeck(parsed: unknown): void {
     const filled = (v: unknown) => Array.isArray(v) && v.length > 0;
     const hasStructure = filled(slide.timeline) || filled(slide.stats)
       || filled((slide.table as { rows?: unknown } | undefined)?.rows)
-      || filled((slide.flow as { steps?: unknown } | undefined)?.steps);
+      || filled((slide.flow as { steps?: unknown } | undefined)?.steps)
+      || (typeof (slide.quote as { text?: unknown } | undefined)?.text === "string"
+        && ((slide.quote as { text: string }).text.trim() !== ""));
     return !title || !(content || hasStat || hasCompare || hasStructure);
   });
   if (blank.length > 0) {
