@@ -8,7 +8,9 @@ import {
   dueDatePresets,
   formatDueDate,
   homeworkDraftError,
+  isHomeworkChatLine,
   isValidYmd,
+  maskYmd,
   normalizeChildHomework,
   normalizeFamilyHomework,
   normalizeResources,
@@ -518,4 +520,29 @@ test('isAttachableMaterial: only server-saved, non-board materials', () => {
   assert.equal(isAttachableMaterial({ id, type: 'worksheet' }), true);
   assert.equal(isAttachableMaterial({ id, type: 'board' }), false);
   assert.equal(isAttachableMaterial({ id: 'ws_1729000000000_abc123', type: 'quiz' }), false, 'an offline save');
+});
+
+test('maskYmd lays digits out as YYYY-MM-DD and adds a dash only once a digit follows it', () => {
+  assert.equal(maskYmd(''), '');
+  assert.equal(maskYmd('2026'), '2026');
+  assert.equal(maskYmd('20261'), '2026-1');
+  assert.equal(maskYmd('202610'), '2026-10');
+  assert.equal(maskYmd('2026101'), '2026-10-1');
+  assert.equal(maskYmd('20261019'), '2026-10-19');
+  // Backspace over the dash: «2026-» becomes «2026», not «2026-» again.
+  assert.equal(maskYmd('2026-'), '2026');
+});
+
+test('maskYmd accepts pasted separators, Arabic-Indic digits and extra digits', () => {
+  assert.equal(maskYmd('2026/10/19'), '2026-10-19');
+  assert.equal(maskYmd('٢٠٢٦-١٠-١٩'), '2026-10-19');
+  assert.equal(maskYmd('۲۰۲۶۱۰۱۹'), '2026-10-19');
+  assert.equal(maskYmd('202610199999'), '2026-10-19');
+  assert.ok(isValidYmd(maskYmd('20261019')));
+});
+
+test('isHomeworkChatLine matches the shared-homework chat line only', () => {
+  assert.equal(isHomeworkChatLine('📚 واجب جديد: تاريخ الوطن\nموعد التسليم: 19-10-2026'), true);
+  assert.equal(isHomeworkChatLine('واجب جديد'), false);
+  assert.equal(isHomeworkChatLine('مرحبا'), false);
 });
