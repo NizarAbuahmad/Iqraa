@@ -89,6 +89,7 @@ import {
   quizRepeats,
   quizShortfall,
   quizStems,
+  quizStemsAt,
   quizWanted,
   sanitizeWorksheetExtras,
   trimWorksheet,
@@ -484,7 +485,7 @@ async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
       const repeats = quizRepeats(chosen.parsed, quizWanted(body));
       if (missing > 0 || repeats.length > 0) {
         const have = quizStems(chosen.parsed);
-        const repeated = repeats.map(i => have[i]).filter((t): t is string => !!t);
+        const repeated = quizStemsAt(chosen.parsed, repeats);
         logger.warn(
           { kind, strictKey: keys.strictKey, asked: quizWanted(body), got: have.length, repeated: repeats.length },
           "quiz came back short or repeating itself — asking for the rest",

@@ -21,6 +21,7 @@ import {
   quizRepeats,
   quizShortfall,
   quizStems,
+  quizStemsAt,
   quizWanted,
   REQUIRED_FIELDS,
   trimWorksheet,
@@ -275,6 +276,13 @@ describe("a quiz holds the number of questions that was asked for", () => {
     absorbQuizTopUp(base, { questions: [molar("q1", "غاز الهيدروجين H₂")] }, repeats, 4);
     assert.equal(base.questions.length, 4);
     assert.match(base.questions[3]!.text, /النيتروجين/);
+  });
+
+  it("reads a repeat's text by its own position, past a question with no text", () => {
+    const q = { questions: [mcq("q1", ""), molar("q2", "غاز الأكسجين O₂"), molar("q3", "لماء H₂O"), molar("q4", "كربونات الصوديوم Na₂CO₃"), molar("q5", "غاز النيتروجين N₂")] };
+    const repeats = quizRepeats(q, 5);
+    assert.deepEqual(repeats, [4]);
+    assert.deepEqual(quizStemsAt(q, repeats), ["أوجد الكتلة المولية لغاز النيتروجين N₂"]);
   });
 
   it("does not lengthen a paper whose request named no count", () => {

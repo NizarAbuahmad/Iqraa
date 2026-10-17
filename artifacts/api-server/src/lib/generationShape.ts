@@ -327,6 +327,12 @@ export function quizRepeats(parsed: unknown, want?: number | null): number[] {
   return over;
 }
 
+/** The text of the questions at `at` — positions from `quizRepeats`, which `quizStems` (it skips blanks) does not share. */
+export function quizStemsAt(parsed: unknown, at: readonly number[]): string[] {
+  const questions = quizQuestions(parsed);
+  return at.map(i => String(questions[i]?.text ?? "").replace(/\s+/g, " ").trim()).filter(Boolean);
+}
+
 /**
  * Take a top-up reply that was asked for both the missing questions and
  * replacements for `repeats`. Each new question that is not itself one more of
