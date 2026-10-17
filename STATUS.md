@@ -4022,6 +4022,25 @@ class / الى الشعبة», so «كيف أضيف طالباً إلى مجمو
 the group work» stay teaching. Older and unchanged: «كيف أضيف طلاباً في نشاط
 جماعي» opens the activity tool through the «نشاط» keyword.
 
+**Archive, link code, print, sign out, password, results (2026-10-17).** A wider
+live pass with live AI on found two wrong answers and four misses. «كيف أحذف
+شعبة؟» got the add-a-class steps (a how-word plus «شعبة» was all the matcher
+saw), and «كيف أشارك رمز الربط مع أولياء الأمور؟» opened Messages («أولياء
+الأمور» is the longer keyword, and the longest wins). Print, sign-out, password
+and results questions went to the model, which invented menus or asked which app.
+`RULE_PLACES` (`services/appHelp.ts`, anchored like `ADD_STUDENT`) now sends them
+to `archive-class` (the bin icon on the «شُعَبي» list, then «أرشِف»), `sign-out`
+(the last row of «حسابي»), `password` and the evaluations path. The link code is
+the app's own word, so any how / where question naming it gets `link-code`
+(«رمز الربط» on the class page, then «شارك الرمز»; student accounts are on in
+production, checked at `/api/healthz/features`). Printing is answered with the
+export steps (`PRINT_VERB`), and add steps never answer a remove question
+(`ADD_HOWS` / `REMOVE_VERB`). **There is no change-password screen**: the answer
+says so and points to «نسيت كلمة المرور؟» on the sign-in screen. Ten look-alikes
+pinned as teaching («how do i change a password in excel», «كيف أعرف نتائج
+التجربة؟», «ما هو رمز الربط في الكيمياء؟»…). Left alone: «كيف أرسل رسالة لولي
+أمر؟», which the model answers with a sample message — plausibly what was meant.
+
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
 Step 4 of the worksheet review, agreed in chat. A worksheet was paper only: to
