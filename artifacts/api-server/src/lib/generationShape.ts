@@ -283,9 +283,18 @@ export function quizStems(parsed: unknown): string[] {
 /** Words a reworded ask may change — the evaluation validator's cap (see `dominantKind`). */
 const MAX_WORDS_CHANGED = 3;
 
-/** How many questions of one kind a paper of `n` may hold: a quarter, and never fewer than two. */
+/**
+ * How many questions of one kind a paper of `n` may hold: a third, and never
+ * fewer than three. Looser than the evaluation validator's quarter, which only
+ * warns: this replaces questions, at the cost of a model call, and a maths
+ * lesson that teaches one skill asks it several times on purpose. Measured
+ * 2026-10-17 on the offline generator's 10- and 20-question quizzes for a
+ * sample of lessons: a quarter would have replaced questions on every maths
+ * paper (14 of 14, 61 questions), most of them «أوجد حل المعادلة: …» on a
+ * lesson about solving that equation.
+ */
 export function kindQuota(n: number): number {
-  return Math.max(2, Math.floor(n / 4));
+  return Math.max(3, Math.ceil(n / 3));
 }
 
 /** Questions grouped by kind, each joining the first group whose first question it matches. */

@@ -297,9 +297,10 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   output ceiling with the count (`quizTokens`); evaluations do the same in
   `/evaluations/:id/generate`. If it is still short, `shortfall` says so.
   The same call replaces **repeats** (since 2026-10-17): questions past a
-  quarter of the paper (never fewer than two) that are one ask reworded or
-  re-numbered (`quizRepeats` — `sameKind`, as the evaluation validator's
-  `dominantKind`). A replacement takes the repeat's marks; a repeat nothing
+  third of the paper (never fewer than three — `kindQuota`, looser than the
+  validator's quarter because a one-skill maths lesson asks it several times
+  on purpose) that are one ask reworded or re-numbered (`quizRepeats` —
+  `sameKind`, as the evaluation validator's `dominantKind`). A replacement takes the repeat's marks; a repeat nothing
   replaced stays, so a paper is never shortened for variety. Quizzes only — a
   worksheet's same-exercise-new-numbers is the practice. The
   offline generator can only give what the lesson's bank holds (5 for a
