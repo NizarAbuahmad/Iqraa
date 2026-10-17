@@ -18,6 +18,7 @@ import {
   quizPromptEn,
   quizTopUpBlock,
   worksheetTopUpBlock,
+  worksheetTypeRetryBlock,
   worksheetPromptAr,
   worksheetPromptEn,
 } from "../lib/prompts.ts";
@@ -91,7 +92,9 @@ import {
   quizWanted,
   sanitizeWorksheetExtras,
   trimWorksheet,
+  worksheetMissingTypes,
   worksheetShortfall,
+  stampWorksheetTypes,
   worksheetStems,
   UnusableGenerationError,
   type GenerationKind,
@@ -515,6 +518,30 @@ async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
     // counts as "short": the worked example sits inside the picked number, and
     // a prior-knowledge review sits on top of it.
     if (kind === "worksheet" || kind === "homework") {
+      // A reply can have the right count and still be one type throughout: five
+      // types ticked, twenty multiple-choice questions back. Say so and ask
+      // once more; whichever reply is closer to what was ticked is the one served.
+      // The top-up and the trim below then work on that reply.
+      const absent = worksheetMissingTypes(chosen.parsed, body);
+      if (absent.length > 0) {
+        logger.warn({ kind, strictKey: keys.strictKey, absent }, "worksheet left out ticked question types — retrying once");
+        try {
+          const again = await completeOnce({
+            ...completionArgs,
+            userPrompt: args.userPrompt + worksheetTypeRetryBlock(args.isAr, absent),
+          });
+          const better = worksheetMissingTypes(again.parsed, body).length < absent.length;
+          chosen = {
+            parsed: better ? again.parsed : chosen.parsed,
+            usage: sumUsage(chosen.usage, again.usage),
+            durationMs: chosen.durationMs + again.durationMs,
+          };
+        } catch (err) {
+          logger.warn({ err, kind, strictKey: keys.strictKey }, "worksheet type retry failed — serving the first reply");
+        }
+      }
+      stampWorksheetTypes(chosen.parsed);
+
       const missing = worksheetShortfall(chosen.parsed, body);
       if (missing > 0) {
         const have = worksheetStems(chosen.parsed);
