@@ -110,3 +110,23 @@ test("the committed teacher's sheet is exactly what the generator produces", () 
   const committed = readFileSync(path.join(here, '..', '..', '..', '..', 'docs', 'english-grammar-g1-sheet.md'), 'utf8');
   assert.equal(committed, renderGrammarSheet(), 'run: pnpm --filter @workspace/curriculum run grammar-sheet');
 });
+
+test("the teacher's printable review form lists every sentence once, and the committed copy is current", async () => {
+  const { renderGrammarReviewHtml, sentenceCountAr } = await import('../englishGrammarReview.ts');
+  const html = renderGrammarReviewHtml();
+  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // A sentence can belong to two units (S2 Unit 0 reuses Unit 2's): once per unit, then.
+  const all = GRAMMAR_UNITS.flatMap(u => unitSentences(u).map(s => s.text));
+  for (const text of new Set(all)) {
+    const cell = `<td class="sentence" dir="ltr">${esc(text)}</td>`;
+    assert.equal(html.split(cell).length - 1, all.filter(t => t === text).length, text);
+  }
+  assert.equal((html.match(/<td class="sentence"/g) ?? []).length, GRAMMAR_UNITS.reduce((n, u) => n + unitSentences(u).length, 0));
+  // Arabic counting: 3–10 take the plural, everything else the singular.
+  assert.equal(sentenceCountAr(5), '٥ جمل');
+  assert.equal(sentenceCountAr(10), '١٠ جمل');
+  assert.equal(sentenceCountAr(16), '١٦ جملة');
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  const committed = readFileSync(path.join(here, '..', '..', '..', '..', 'docs', 'english-grammar-g1-review.html'), 'utf8');
+  assert.equal(committed, html, 'run: pnpm --filter @workspace/curriculum run grammar-sheet');
+});
