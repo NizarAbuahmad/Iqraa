@@ -3089,16 +3089,20 @@ place — see its section 2).
   "YYYY-MM-DD"`; the server stores `dueAt` as 23:59:59.999 **Asia/Amman** of that day
   (a fixed UTC+3 — Jordan dropped DST in 2022) and also returns it as ISO. Clients
   never do timezone arithmetic. A homework is `overdue` only once that instant has
-  passed and it is not done. A due date must lie within 30 days back and 366 days ahead
-  (Amman days), else 400 with `code: "due_date_out_of_range"` next to `error` (POST and
+  passed and it is not done. A due date must lie between today and 366 days ahead
+  (Amman days; **never in the past — it allowed 30 days back until 2026-10-17**), else 400 with `code: "due_date_out_of_range"` next to `error` (POST and
   PATCH) — a typo like 2062 is refused, and the mobile modal shows `hwErrDueRange`. **A PATCH
   that leaves the due date unchanged is not re-bounded** (`parsePatch(body, now, existing)`
   skips the range check when the parsed date falls on the same Amman calendar day as the
   stored `dueAt` — compared by day, not instant, so a row inserted by SQL or an import at some
   other time of day stays editable): the edit form always
-  resends `dueDate`, so without this any edit of a homework due more than 30 days ago was a
+  resends `dueDate`, so without this any edit of a homework whose day has passed is a
   400 and a teacher could not fix a typo in an old homework. A CHANGED date outside the
-  window is still refused.
+  window is still refused. **The exam date follows the same rule** (`resolveExamPatch`,
+  since 2026-10-17): a day before today (Amman) is a 400 `examDate must be today or later`
+  when it changes the stored date; re-sending the stored one, re-timing or clearing still
+  works, and `ExamDateCard` shows `examDatePast` first. Teaching-plan dates are NOT bounded
+  (a term plan starts in the past).
 - **A family sees the last 14 days and later**: `dueAt` within 14 days of now, and of
   those the **200 earliest-due** (`ORDER BY due_at ASC LIMIT 200` in
   `lib/familyHomeworkLoad.ts`). The limit is **per call, so per child for a parent**:
@@ -3674,8 +3678,8 @@ real family accounts — **none of it has been seen arriving on a phone.**
   setup step of the check, not of the card.
 - **Known gaps** (one line each, with the reason):
   - **Pushes for PAST-dated homework and exam dates are skipped by design** (a back-dated
-    entry is a record, not news; the API allows homework 30 days back). A cleared exam
-    date is always told.
+    entry is a record, not news). Since 2026-10-17 the API refuses a new past date, so
+    this only covers rows dated before that. A cleared exam date is always told.
   - Two simultaneous publishes of one dated draft can both announce (a conditional write
     inside the share-code retry loop would fix it; left out on purpose).
   - Two simultaneous PATCHes of one exam with DIFFERENT dates: the loser's value is
