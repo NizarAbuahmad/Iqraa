@@ -53,6 +53,12 @@ jobs:
   # The API list includes lib/** because the API bundles those packages. A
   # change to lib/db or lib/curriculum reaches the server even though nothing
   # under artifacts/api-server/ was touched.
+  #
+  # The API and verifier lists include this file too: their flags and env vars
+  # (`--update-env-vars`) live in it, so an edit here IS a change to them. On
+  # 2026-10-16 #1104 set AI_MODEL_CHAT=gpt-5.4-mini here alone; its run skipped
+  # the API, and production kept gpt-5.4-nano until an unrelated lib/ change
+  # deployed it an hour later. The web list already lets this file through.
   changes:
     name: what changed
     runs-on: ubuntu-latest
@@ -103,13 +109,13 @@ jobs:
           echo "Changed files:"
           printf '%s\n' "$FILES" | sed 's/^/  /'
 
-          if printf '%s\n' "$FILES" | grep -qE '^(artifacts/api-server/|lib/|Dockerfile$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$)'; then
+          if printf '%s\n' "$FILES" | grep -qE '^(artifacts/api-server/|lib/|Dockerfile$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.github/workflows/deploy\.yml$)'; then
             echo "api=true" >> "$GITHUB_OUTPUT"
           else
             echo "api=false" >> "$GITHUB_OUTPUT"
           fi
 
-          if printf '%s\n' "$FILES" | grep -qE '^artifacts/math-verifier/'; then
+          if printf '%s\n' "$FILES" | grep -qE '^(artifacts/math-verifier/|\.github/workflows/deploy\.yml$)'; then
             echo "verifier=true" >> "$GITHUB_OUTPUT"
           else
             echo "verifier=false" >> "$GITHUB_OUTPUT"

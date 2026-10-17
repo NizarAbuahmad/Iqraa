@@ -82,5 +82,15 @@ describe('sameKind', () => {
       ['اكتب العدد الكسري 3 1/3 على صورة كسر غير فعلي.', 'اكتب الكسر غير الفعلي 51/10 على صورة عدد كسري.'],
     ]) assert.ok(!sameKind(stemFrame(a!), stemFrame(b!)), `${a} / ${b}`);
   });
+
+  it('caps the words changed when asked, for stems that quote a long objective', () => {
+    const objective = 'إيجاد التباين والانحراف المعياري للبيانات المنظمة في جداول تكرارية ذات فئات';
+    const a = stemFrame(`اذكر المفاهيم والمصطلحات الأساسية المتعلقة بـ: ${objective}`);
+    const b = stemFrame(`طبّق ما تعلّمته: اعرض خطوات ${objective}`);
+    assert.ok(sameKind(a, b), 'uncapped, the shared quote outweighs the instruction');
+    assert.ok(!sameKind(a, b, 3));
+    // A short rewording is still one kind under the cap.
+    assert.ok(sameKind(stemFrame('ما العدد السابق للعدد 7؟'), stemFrame('ما العدد التالي للعدد 7؟'), 3));
+  });
 });
 

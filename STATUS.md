@@ -151,6 +151,19 @@ an announcement by default» below.
   متر», «حوّل 20 متر إلى سنتيمتر») — the conversions now use the symbols the
   rest of those generators use («حوّل 20 م إلى سم»), and `tamyiz.test.ts`
   reads units too.
+  **…and an AI-written evaluation is held to the same kinds (2026-10-17).**
+  The validator's warning that one sentence carries a paper compared exact
+  frames, so a model asking «أوجد الكتلة المولية» of four compounds, or «ما
+  العدد الأكبر / الأصغر…» three times, passed as varied. `dominantKind`
+  (`validator.ts`, replacing `dominantFrame`) counts the stems that are each
+  `sameKind` as one stem — measured from each stem, not chained — and the
+  teacher sees «N of M questions ask the same thing…». It caps a rewording at
+  three changed words (`sameKind`'s new `maxChanged`), because exam stems
+  quote whole objectives and 37% of thirty words is a different instruction:
+  uncapped, 10% of the offline generator's 15-question papers warned, nearly
+  all for that reason; capped 3.2%, against 2.9% for exact frames. The
+  generators pass no cap and are unchanged. Prompt rule 5 already says a
+  reworded question is the same question, so `exam-gen-7` stands.
 
 - **Lesson plan, slides, activity, lesson-flow and the classroom builder take a
   unit, semester or whole book — as one revision session (2026-10-14; spec
@@ -1531,7 +1544,12 @@ Teachers said the chat «isn't smart». Three causes, all measured:
   `AI_USER_BUDGET_USD=1` / `AI_STUDENT_BUDGET_USD=0.20`, set in the same file.
 - **Chat ran `gpt-5.4-nano`**, set by hand on Cloud Run and never measured for
   chat. `deploy.yml` now sets `AI_MODEL_CHAT=gpt-5.4-mini` (~3.7× nano per
-  turn) so a console edit cannot drift it again.
+  turn) so a console edit cannot drift it again. It went live an hour after
+  the merge, not with it: the deploy only redeployed the API for
+  `artifacts/api-server/` or `lib/` changes, so #1104's run (642) skipped it
+  and production served nano until #1093's `lib/` change deployed the API (run
+  645, revision `iqraa-api-00369-cjn`). Since 2026-10-17 an edit to
+  `deploy.yml` redeploys the API and the verifier as well.
 - **Keyword noise was handed to the model as the textbook, or stopped the
   question.** The search returns lessons for almost any sentence: «كيف أتعامل مع
   طالب مشاغب في الصف؟» ranked English for hospitality (11), the quadratic
