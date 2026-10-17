@@ -3925,6 +3925,30 @@ student's mark, and the grade steps say «add» where the teacher said «change�
 typo «langute» in the first screenshot, because matching misspellings would also
 match real requests.
 
+**A grade with its accusative ending (2026-10-16).** On app.iqrra.com «كيف أضيف
+صفاً جديداً؟» was asked «أيّ مادة تقصد؟» while «كيف اضيف صف جديد» got the steps:
+`normalize` drops the tanween mark but not the alif under it, so «صفا جديدا»
+matched nothing. `foldAccusative` (`services/appHelp.ts`, app-help matching only)
+drops a marked ending (اً / ًا) from any word, and an unmarked one only from
+«صف», «جديد», «إضافي» and the ordinals, since an alif ending is otherwise part of
+the word («جبل الصفا» stays). Each accusative form is pinned to get exactly its
+plain twin's answer. Not changed, and older than this: «كيف اضيف صف الى
+المصفوفة» (a matrix row) goes to the grade steps through the «اضيف صف» keyword,
+and now so does its accusative form.
+
+**A student to add (2026-10-17).** With live AI on the web (#1104), «كيف أضيف
+طالباً جديداً؟» went to the model, which said it was a question about the app and
+gave no steps: no keyword named a student being added. A student is added inside
+a class that exists (open the class → «الطلبة» → + → names → «أضف إلى الشعبة»),
+so it gets its own place, `add-student`, with the steps `howAddStudent` and the
+My classes button — not the add-a-class answer («اضغط شعبة جديدة»), which would
+send a teacher who has a class to make another. `ADD_STUDENT`
+(`services/appHelp.ts`) is anchored like the statements: a how-word, a where-word
+or intent is optional, the student ends the message bar «جديد / آخر» and «to my
+class / الى الشعبة», so «كيف أضيف طالباً إلى مجموعة النقاش» and «add a student to
+the group work» stay teaching. Older and unchanged: «كيف أضيف طلاباً في نشاط
+جماعي» opens the activity tool through the «نشاط» keyword.
+
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
 Step 4 of the worksheet review, agreed in chat. A worksheet was paper only: to
