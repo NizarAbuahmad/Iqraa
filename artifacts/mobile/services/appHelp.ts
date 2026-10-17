@@ -87,6 +87,27 @@ const SCREENS: AppPlace[] = [
     keywords: [],
     howKey: 'howChangePassword',
   },
+  // Reached through `RULE_PLACES` (2026-10-17's second live pass); steps taken
+  // from the screens they name. Three say plainly that something is not in the
+  // app: a dark-mode switch (the scheme follows the device, read at start-up),
+  // a name editor (only sign-up sets it), and a report button on a result that
+  // was not shared (`GeneratorResultActions` shows it only with a variant id).
+  { id: 'homework', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howAddHomework' },
+  { id: 'exam-date', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howExamDate' },
+  { id: 'class-scan', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howClassScan' },
+  { id: 'class-chat', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howClassChat' },
+  { id: 'block', route: '/notifications', labelKey: 'tabAlerts', pathKeys: [], isTool: false, keywords: [], howKey: 'howBlock' },
+  { id: 'change-name', route: '/profile', labelKey: 'tabProfile', pathKeys: [], isTool: false, keywords: [], howKey: 'howChangeName' },
+  { id: 'delete-account', route: '/settings', labelKey: 'settings', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howDeleteAccount' },
+  { id: 'suggest-feature', route: '/suggest-feature', labelKey: 'suggestFeature', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howSuggestFeature' },
+  { id: 'report-problem', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howReportProblem' },
+  { id: 'regenerate', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howRegenerate' },
+  { id: 'save-material', route: '/workspace', labelKey: 'myWorkspace', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howSaveMaterial' },
+  {
+    id: 'dark-mode', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false,
+    keywords: ['الوضع الليلي', 'الوضع الداكن', 'الوضع المظلم', 'dark mode', 'dark theme', 'night mode'],
+    howKey: 'howDarkMode',
+  },
   {
     id: 'subjects', route: '/setup-subjects', routeParams: { mode: 'edit' }, labelKey: 'mySubjects', pathKeys: ['tabProfile'], isTool: false,
     // No bare «grade» / «صف»: they sit inside every «grade 10 quiz» and «للصف العاشر».
@@ -128,7 +149,7 @@ const SCREENS: AppPlace[] = [
   },
   {
     id: 'settings', route: '/settings', labelKey: 'settings', pathKeys: ['tabProfile'], isTool: false,
-    keywords: ['اعدادات', 'الاعدادات', 'اللغه', 'الوضع الليلي', 'الوضع الداكن', 'settings', 'language', 'dark mode'],
+    keywords: ['اعدادات', 'الاعدادات', 'اللغه', 'settings', 'language'],
   },
   {
     id: 'faq', route: '/faq', labelKey: 'faqTitle', pathKeys: ['tabProfile'], isTool: false,
@@ -136,7 +157,8 @@ const SCREENS: AppPlace[] = [
   },
   {
     id: 'profile', route: '/profile', labelKey: 'tabProfile', pathKeys: [], isTool: false,
-    keywords: ['حسابي', 'الحساب', 'الملف الشخصي', 'account', 'profile'],
+    // No bare «الحساب»: it is also arithmetic («كيف أحذف الحساب من المعادلة»).
+    keywords: ['حسابي', 'الملف الشخصي', 'account', 'profile'],
   },
   {
     id: 'curriculum', route: '/curriculum/browse', labelKey: 'tabCurriculum', pathKeys: [], isTool: false,
@@ -214,7 +236,7 @@ const WHERE_PATTERN =
  * «ممكن انشئ اختبار» ask the assistant to make one).
  */
 const HOW_PATTERN =
-  /(كيف|طريقه|خطوات)\s*(يمكنني\s*|ممكن\s*)?((ا|ن)?(ضيف|ضف|ضافه|نشي|نشئ|نشاء|عمل|غير|عدل|حذف|صدر|طبع|حفظ|بدا|شارك|ربط|دعو|ستخدم)|تغيير|تعديل|تصدير|طباعه|بدء)|\bhow\s+(?:(?:do|can|should)\s+(?:i|we)\s+)?(?:to\s+)?(?:add|create|make|change|edit|delete|remove|export|print|save|share|start|use|link|invite)\b|\bcan\s+i\s+(?:add|change|edit|delete|remove|export|print|save|share|link|invite)\b|\b(?:is\s+there\s+(?:a|any|some)\s+way|is\s+it\s+possible|any\s+way)\s+to\s+(?:add|change|edit|delete|remove|export|save|share|link|invite)\b|(?:^|\s)(?:هل\s+)?(?:يمكنني|يمكن|اقدر|استطيع|ممكن)\s+(?:ان\s+)?(?:اضيف|اضافه|اغير|اعدل|احذف|اصدر|احفظ|اشارك|اربط|ادعو)(?:\s|$)/i;
+  /(كيف|طريقه|خطوات)\s*(يمكنني\s*|ممكن\s*)?((ا|ن)?(ضيف|ضف|ضافه|نشي|نشئ|نشاء|عمل|غير|عدل|حذف|صدر|طبع|حفظ|بدا|شارك|ربط|دعو|ستخدم|فعل|شغل)|تغيير|تعديل|تصدير|طباعه|تفعيل|تشغيل|بدء)|\bhow\s+(?:(?:do|can|should)\s+(?:i|we)\s+)?(?:to\s+)?(?:add|create|make|change|edit|delete|remove|export|print|save|share|start|use|link|invite|enable|turn\s+on|switch\s+to)\b|\bcan\s+i\s+(?:add|change|edit|delete|remove|export|print|save|share|link|invite)\b|\b(?:is\s+there\s+(?:a|any|some)\s+way|is\s+it\s+possible|any\s+way)\s+to\s+(?:add|change|edit|delete|remove|export|save|share|link|invite)\b|(?:^|\s)(?:هل\s+)?(?:يمكنني|يمكن|اقدر|استطيع|ممكن)\s+(?:ان\s+)?(?:اضيف|اضافه|اغير|اعدل|احذف|اصدر|احفظ|اشارك|اربط|ادعو)(?:\s|$)/i;
 
 /**
  * A plain statement that adds to the account's own lists: «add more classes to
@@ -388,7 +410,140 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
       ),
     ],
   },
+  // The second live pass (2026-10-17): each of these went to the model, which
+  // invented a menu. Same anchoring: what is asked about ends the message, so
+  // «أريد واجباً عن الكسور», «كيف أكتب رسالة للطلاب عن القراءة» and «كيف أحفظ جدول
+  // الضرب» stay teaching. Verbs that also mean "make me one" («أنشئ», «اكتب»,
+  // «أعطني») are left out on purpose: those are asks for the generator.
+  {
+    id: 'homework',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:add|give|set|assign|post|send)\s+(?:(?:a|the|some|new)\s+)*homework(?:\s+(?:to|for)\s+(?:my|the)\s+(?:students|class))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:ارسل|اضيف|اضافه|اضف|اكلف|انشر|ابعث|ابعت)\s+(?:ال)?(?:واجب|واجبات)(?:\s+(?:منزلي|بيتي|جديد))?` +
+          String.raw`(?:\s+(?:ل|الي|لل)\s*(?:ال)?(?:طلاب|طلابي|طلبه|طلبتي|شعبه|شعبتي|صف|صفي))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'exam-date',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:(?:set|add|choose|pick)\s+(?:(?:an|a|the)\s+)?(?:exam|test)\s+date|schedule\s+(?:(?:an|a|the|my)\s+)?(?:exam|test))` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اضع|احدد|اضيف|تحديد|وضع|اختار)\s+(?:ال)?(?:موعد|تاريخ)\s+(?:لل|ل|ال)?(?:امتحان|اختبار|تقييم)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'class-scan',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:scan|photograph)\s+(?:(?:the|my)\s+)?(?:answer\s+sheets?|exam\s+papers?|class\s+papers?|students'?\s+papers?|papers)(?:\s+with\s+(?:the|my)\s+(?:camera|phone))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:امسح|مسح|اصور|تصوير)\s+(?:ال)?(?:اوراق|ورقه)\s+(?:ال)?(?:اجابه|اجابات|امتحان|اختبار|طلاب|طلبه|صف|شعبه)` +
+          String.raw`(?:\s+(?:ب|عبر)\s*(?:ال)?(?:كاميرا|جوال|هاتف))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'class-chat',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:send|post)\s+(?:an?\s+)?(?:message|announcement)\s+to\s+(?:all\s+(?:of\s+)?)?(?:my\s+|the\s+)?(?:whole\s+)?(?:class|students)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:ارسل|ابعث|ابعت)\s+(?:رساله|رسائل|اعلان|تعميم)\s+(?:ل|الي|لل)\s*(?:كل\s+)?(?:ال)?(?:شعبه|شعبتي|صف|طلاب|طلابي|طلبه|طلبتي)` +
+          String.raw`(?:\s+(?:كلها|كلهم|جميعا))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'block',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:block|unblock)\s+(?:(?:a|this|that|the)\s+)?(?:parent|person|user|student|someone|contact)` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:احظر|حظر|الغي\s+حظر|افك\s+حظر)\s+(?:ولي\s+(?:ال)?امر|شخص|مستخدم|طالب|احد|حدا)(?:\s+من\s+مراسلتي)?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'change-name',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:change|edit|update|fix)\s+my\s+(?:display\s+|account\s+)?name` + EN_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:اغير|تغيير|اعدل|تعديل|ابدل|اصحح)\s+(?:اسمي|(?:ال)?اسم\s+(?:ال)?(?:ظاهر|حساب))(?:\s+في\s+(?:ال)?تطبيق)?` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'delete-account',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:delete|remove|close|deactivate)\s+(?:my\s+|the\s+)?account(?:\s+permanently)?` + EN_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:احذف|حذف|الغي|الغاء|اغلق|اغلاق|امسح|مسح)\s+(?:ال)?(?:حساب|حسابي)(?:\s+نهائيا)?` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'suggest-feature',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:suggest|request)\s+(?:an?\s+)?(?:new\s+)?(?:feature|idea)(?:\s+for\s+the\s+app)?` + EN_RULE_TAIL),
+      new RegExp(EN_RULE_LEAD + String.raw`(?:send|give|leave)\s+(?:some\s+)?feedback(?:\s+(?:on|about)\s+(?:the\s+)?app)?` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:(?:اقترح|اقتراح|اطلب|طلب)\s+(?:ميزه|خاصيه|ميزات|خصائص|فكره)(?:\s+(?:جديده|جديد))?|(?:ارسل|اقدم)\s+(?:اقتراح|ملاحظه|ملاحظات))` +
+          String.raw`(?:\s+(?:ل|في|علي|عن)\s*(?:ال)?تطبيق)?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'report-problem',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`report\s+(?:an?\s+)?(?:problem|error|mistake|issue)(?:\s+(?:in|with|on)\s+(?:the|a|this)\s+(?:worksheet|quiz|lesson\s+plan|activity|slides|answer|result))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:ابلغ|ابلاغ|بلغ|تبليغ)\s+(?:عن\s+)?(?:خطا|مشكله|غلط)` +
+          String.raw`(?:\s+في\s+(?:ال)?(?:ورقه\s+(?:ال)?عمل|اختبار|امتحان|خطه\s+(?:ال)?درس|نشاط|عرض|اجابه|نتيجه))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'regenerate',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:regenerate|redo|remake)\s+(?:(?:the|a|my|this)\s+)?(?:worksheet|quiz|lesson\s+plan|activity|slides|exam)?` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اعيد|اعاده)\s+(?:توليد|تجهيز|انشاء|صنع)(?:\s+(?:ال)?(?:ورقه\s+(?:ال)?عمل|اختبار|امتحان|خطه\s+(?:ال)?درس|نشاط|عرض|شرائح|واجب|اسئله))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'save-material',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:save|keep)\s+(?:(?:the|a|my|this)\s+)?(?:lesson\s+plan|worksheet|quiz|activity|slides|exam)` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:احفظ|حفظ|نحفظ)\s+(?:ال)?(?:خطه\s+(?:ال)?درس|ورقه\s+(?:ال)?عمل|اختبار|امتحان|نشاط|عرض|شرائح|واجب)(?:\s+(?:هذه|هذا|في\s+(?:ال)?ملفاتي|عندي))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'change-lesson',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:choose|pick|select|change|switch)\s+(?:to\s+)?(?:(?:a|another|the|a\s+different)\s+)?lesson` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اختار|اختيار|اغير|تغيير|ابدل|تبديل|انتقل\s+(?:الي|ل))\s+(?:ال)?درس(?:\s+(?:اخر|ثاني|جديد|غيره))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
 ];
+
+/**
+ * «وين ألاقي خطة الدرس اللي حفظتها؟» opened the lesson-plan generator: the tool's
+ * name was the only keyword. Something the teacher saved is in «ملفاتي», whatever
+ * kind it is, so a where / how question that says it was saved goes there.
+ */
+const DARK_MODE = /(?:^|\s)(?:ال)?وضع\s+(?:ال)?(?:ليلي|داكن|مظلم)(?:\s|$)|\b(?:dark|night)\s+(?:mode|theme)\b/;
+const SAVED_WORD = /(?:^|\s)(?:حفظتها|حفظته|حفظتهم|حفظت|المحفوظه|المحفوظات|محفوظه|محفوظ)(?:\s|$)|\bsaved\b/;
 
 /**
  * «كيف أشارك رمز الربط مع أولياء الأمور؟» opened Messages: «أولياء الأمور» is a
@@ -408,6 +563,15 @@ const statementPlaceId = (plainQuery: string): string | undefined => {
     (HOW_PATTERN.test(plainQuery) || WHERE_PATTERN.test(plainQuery) || AR_INTENT_START.test(plainQuery) || EN_INTENT_START.test(plainQuery))
   ) {
     return 'link-code';
+  }
+  if (SAVED_WORD.test(plainQuery) && (WHERE_PATTERN.test(plainQuery) || HOW_PATTERN.test(plainQuery))) return 'workspace';
+  // There is no switch to point at, so «وين الوضع الليلي» gets the explanation,
+  // not a path to a screen that does not have one.
+  if (
+    DARK_MODE.test(plainQuery) &&
+    (HOW_PATTERN.test(plainQuery) || WHERE_PATTERN.test(plainQuery) || AR_INTENT_START.test(plainQuery) || EN_INTENT_START.test(plainQuery))
+  ) {
+    return 'dark-mode';
   }
   return STATEMENT_PLACES.find(s => s.re.test(plainQuery))?.id;
 };
@@ -495,6 +659,9 @@ const isProblemWithScreen = (query: string) => {
  */
 const NOT_A_SCHOOL_CLASS = /\bclass(?:es)?(?=\s+(?:of|activity|activities|quiz|quizzes|test|exam|worksheet)\b)/g;
 
+/** «جدول الضرب» and «الجدول الدوري» are the times table and the periodic table, not the timetable. */
+const NOT_A_TIMETABLE = /(?:^|\s)جدول(?=\s+(?:ضرب|دوري)(?:\s|$))/g;
+
 /** A word that says the question is about the app, even when no place matched. */
 const APP_NOUN = /تطبيق|البرنامج|صفحه|قسم|تبويب|زر|قائمه|\bapp\b|\bpage\b|\bscreen\b|\btab\b|\bbutton\b|\bmenu\b/i;
 
@@ -506,7 +673,7 @@ const APP_NOUN = /تطبيق|البرنامج|صفحه|قسم|تبويب|زر|ق
 export function findAppPlaces(query: string, limit = 3): AppPlace[] {
   const statementId = statementPlaceId(plain(query));
   if (statementId) return APP_PLACES.filter(p => p.id === statementId);
-  const q = ` ${matchForm(query).replace(NOT_A_SCHOOL_CLASS, ' ')} `;
+  const q = ` ${matchForm(query).replace(NOT_A_SCHOOL_CLASS, ' ').replace(NOT_A_TIMETABLE, ' ')} `;
   const scored: { place: AppPlace; score: number }[] = [];
   for (const place of APP_PLACES) {
     let best = 0;
