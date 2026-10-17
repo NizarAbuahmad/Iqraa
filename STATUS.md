@@ -3965,9 +3965,17 @@ matched nothing. `foldAccusative` (`services/appHelp.ts`, app-help matching only
 drops a marked ending (اً / ًا) from any word, and an unmarked one only from
 «صف», «جديد», «إضافي» and the ordinals, since an alif ending is otherwise part of
 the word («جبل الصفا» stays). Each accusative form is pinned to get exactly its
-plain twin's answer. Not changed, and older than this: «كيف اضيف صف الى
-المصفوفة» (a matrix row) goes to the grade steps through the «اضيف صف» keyword,
-and now so does its accusative form.
+plain twin's answer. «كيف اضيف صف الى المصفوفة» (a matrix row) went to the grade
+steps through the «اضيف صف» keyword until 2026-10-17, when `NOT_A_GRADE` started
+dropping «صف / صفوف» followed by «المصفوفة» before the keywords are matched.
+
+**No starter chips under a question back to the teacher (2026-10-17).** «أريد
+ورقة عمل» → «أيّ مادة تقصد؟» showed the subject buttons and, under them, the
+standing «حضّر خطة الدرس / أنشئ ورقة عمل» chips, repeating the ask instead of
+answering it. The strip is now also hidden when the last reply asks the teacher
+to pick (`asksTheTeacher` in `app/(tabs)/iqra.tsx`: subject, lesson or
+teaching-option choices). UI only, so no test (the mobile runner cannot load
+`iqra.tsx`); checked in a browser.
 
 **A student to add (2026-10-17).** With live AI on the web (#1104), «كيف أضيف
 طالباً جديداً؟» went to the model, which said it was a question about the app and
