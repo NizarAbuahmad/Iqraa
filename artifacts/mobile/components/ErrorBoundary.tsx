@@ -1,5 +1,6 @@
 import React, { Component, ComponentType, PropsWithChildren } from 'react';
 import { ErrorFallback, ErrorFallbackProps } from '@/components/ErrorFallback';
+import { recordError } from '@/services/crashReporting';
 
 export type ErrorBoundaryProps = PropsWithChildren<{
   FallbackComponent?: ComponentType<ErrorFallbackProps>;
@@ -29,6 +30,9 @@ export class ErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, info: { componentStack: string }): void {
+    // A render error caught here never reaches the global handler Crashlytics installs,
+    // so without this line the screens that show «something went wrong» report nothing.
+    recordError(error, 'ErrorBoundary');
     if (typeof this.props.onError === 'function') {
       this.props.onError(error, info.componentStack);
     }
