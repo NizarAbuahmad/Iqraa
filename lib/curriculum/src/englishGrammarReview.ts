@@ -224,7 +224,7 @@ export function renderGrammarReviewHtml(): string {
 
 <main class="sheet" dir="rtl" lang="ar">
   <section class="intro">
-    <div class="eyebrow">اقرأ · ركن اللغة الإنجليزية · الصف الأول</div>
+    <div class="eyebrow">إقرأ · ركن اللغة الإنجليزية · الصف الأول</div>
     <h1>مراجعة جمل القواعد قبل عرضها على الطلاب</h1>
     <p class="lead">بناءً على ملاحظتكم، أضفنا إلى ركن اللغة الإنجليزية ثلاثة أنشطة لتثبيت القواعد. الجمل مبنية من نمط القواعد في كل وحدة من الكتاب ومن كلمات الوحدة نفسها. <b>لن يرى الطلاب أي وحدة قبل أن توافقوا عليها.</b> هذه الورقة تعرض كل جملة يمكن أن تظهر للطالب، ${AR_DIGITS(total)} جملة في ${AR_DIGITS(GRAMMAR_UNITS.length)} وحدات.</p>
 
