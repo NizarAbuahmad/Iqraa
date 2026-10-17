@@ -12,7 +12,7 @@
  */
 import type { QuestionType } from "@workspace/db";
 import { normalizeArabic } from "@workspace/curriculum";
-import { stemFrame } from "@workspace/math-practice";
+import { sameKind, stemFrame } from "@workspace/math-practice";
 import { QUESTION_TYPES } from "./questionTypes.ts";
 import type { GeneratedQuestion } from "./mockGenerator.ts";
 
@@ -39,7 +39,7 @@ export interface ValidationResult {
  * x² + 3x − 18 = 0 بالتحليل» and «… x² − 11x + 28 = 0 …» score 1.0, so a
  * second, different equation was rejected as a duplicate — up to a third of a
  * maths paper's bank questions (measured 2026-10-15). The same sentence with
- * different numbers is a different question; `dominantFrame` is what notices
+ * different numbers is a different question; `dominantKind` is what notices
  * when a paper has too many of them.
  */
 export function stemSimilarity(a: string, b: string): number {
@@ -171,37 +171,50 @@ export function validateGenerated(
     }
   }
 
-  // 9. One sentence carrying the paper. Not a rejection: each question is a
-  // real one, and two «حلّ المعادلة … بالتحليل» with different numbers is
-  // ordinary practice. But when that one sentence is a quarter of the paper,
-  // the teacher should know before they publish what reads like a long exam
-  // and measures one skill.
-  const sameSentence = dominantFrame(accepted.map(promptOf));
-  if (sameSentence) {
+  // 9. One kind of question carrying the paper. Not a rejection: each question
+  // is a real one, and two «حلّ المعادلة … بالتحليل» with different numbers is
+  // ordinary practice. But when that one ask — in one sentence or reworded —
+  // is a quarter of the paper, the teacher should know before they publish
+  // what reads like a long exam and measures one skill.
+  const sameAsk = dominantKind(accepted.map(promptOf));
+  if (sameAsk) {
     warnings.push(
-      `${sameSentence.count} of ${accepted.length} questions are the same sentence with different ` +
-        `numbers: «${sameSentence.example}»`,
+      `${sameAsk.count} of ${accepted.length} questions ask the same thing, with different numbers or ` +
+        `in other words: «${sameAsk.example}»`,
     );
   }
 
   return { accepted, rejected, warnings };
 }
 
+/** Words a reworded ask may change, whatever its length — see `dominantKind`. */
+const MAX_WORDS_CHANGED = 3;
+
 /**
- * The sentence most of a paper is written in, when it is at least three
- * questions and more than a quarter of them (see `stemFrame`). Stems that are
- * only symbols — «٣ + ٤ = ؟» — have no sentence to share and are not counted.
+ * The kind of question most of a paper asks, when it is at least three
+ * questions and more than a quarter of them: the largest set of stems that are
+ * each the same kind as one of them (`sameKind` on `stemFrame`), capped at
+ * three words changed. «أوجد الكتلة المولية لغاز الأكسجين O₂» and «… لكربونات
+ * الصوديوم Na₂CO₃» are one ask with a different compound, and «ما العدد الأكبر
+ * بين…» / «ما العدد الأصغر بين…» one ask turned round; exact frames counted
+ * them apart. The cap is what keeps a paper whose every stem quotes the
+ * objective from counting as one ask (see `sameKind`). Measured 2026-10-17 on
+ * the offline generator's 15-question papers for every lesson: exact frames
+ * warned on 2.9%, uncapped kinds on 10% (nearly all for that reason), capped
+ * kinds on 3.2%.
+ *
+ * Measured from each stem rather than by chaining, so two asks that each sit
+ * near a third are not joined through it. Stems that are only symbols —
+ * «٣ + ٤ = ؟» — have no sentence to share and are not counted.
  */
-export function dominantFrame(prompts: readonly string[]): { count: number; example: string } | null {
-  const groups = new Map<string, string[]>();
-  for (const prompt of prompts) {
-    const frame = stemFrame(prompt);
-    if (!/\p{L}/u.test(frame)) continue;
-    groups.set(frame, [...(groups.get(frame) ?? []), prompt]);
+export function dominantKind(prompts: readonly string[]): { count: number; example: string } | null {
+  const framed = prompts
+    .map(prompt => ({ prompt, frame: stemFrame(prompt) }))
+    .filter(({ frame }) => /\p{L}/u.test(frame));
+  let top: { count: number; example: string } = { count: 0, example: "" };
+  for (const centre of framed) {
+    const count = framed.filter(({ frame }) => sameKind(centre.frame, frame, MAX_WORDS_CHANGED)).length;
+    if (count > top.count) top = { count, example: centre.prompt };
   }
-  let top: string[] = [];
-  for (const group of groups.values()) if (group.length > top.length) top = group;
-  return top.length >= 3 && top.length * 4 > prompts.length
-    ? { count: top.length, example: top[0]! }
-    : null;
+  return top.count >= 3 && top.count * 4 > prompts.length ? top : null;
 }

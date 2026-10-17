@@ -285,7 +285,7 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
       + "any true/false statements are false, each wrong in a specific detail.",
     "3. Distractors are plausible wrong answers a real student would pick — never filler, never obviously absurd, never 'none of the above'.",
     "4. Never write a question whose answer is a matter of opinion unless the type is open_ended.",
-    // The quarter is the line `dominantFrame` (validator.ts) warns the teacher at,
+    // The quarter is the line `dominantKind` (validator.ts) warns the teacher at,
     // so the model is told the same rule the paper is checked against.
     "5. Do not repeat yourself. Two questions that test the same fact or skill in the same way are one question, "
       + "however differently they are worded. Spread the paper over different parts of the objectives, and vary the "
