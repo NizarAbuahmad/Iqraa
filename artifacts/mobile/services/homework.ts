@@ -146,6 +146,33 @@ export function isValidYmd(s: string): boolean {
   return typeof s === 'string' && !Number.isNaN(ymdToUtc(s));
 }
 
+/**
+ * True for the line a shared homework leaves in the class chat. A chat message
+ * carries no link, so the app recognises the line by its opening — keep it in
+ * step with `homeworkChatLine` (api-server `familyPushText.ts`).
+ */
+export function isHomeworkChatLine(body: string): boolean {
+  return body.startsWith('📚 واجب جديد:');
+}
+
+/**
+ * What a teacher typed into the due-date box, laid out as YYYY-MM-DD. Only the
+ * digits are kept (Arabic-Indic ones folded), so the dashes are not typed or
+ * deleted by hand: «20261019», «2026/10/19» and «٢٠٢٦-١٠-١٩» all come out as
+ * «2026-10-19». A dash appears only once a digit follows it, so Backspace can
+ * still delete past it.
+ */
+export function maskYmd(input: string): string {
+  // Folded here, not via latinDigits.ts: this file takes no imports.
+  const d = input
+    .replace(/[٠-٩۰-۹]/g, c => String(c.charCodeAt(0) - (c.charCodeAt(0) >= 0x06f0 ? 0x06f0 : 0x0660)))
+    .replace(/\D/g, '')
+    .slice(0, 8);
+  if (d.length <= 4) return d;
+  if (d.length <= 6) return `${d.slice(0, 4)}-${d.slice(4)}`;
+  return `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}`;
+}
+
 export function addDays(ymd: string, days: number): string {
   return new Date(ymdToUtc(ymd) + days * DAY_MS).toISOString().slice(0, 10);
 }

@@ -4001,6 +4001,25 @@ pinned as teaching («how do i change a password in excel», «كيف أعرف �
 التجربة؟», «ما هو رمز الربط في الكيمياء؟»…). Left alone: «كيف أرسل رسالة لولي
 أمر؟», which the model answers with a sample message — plausibly what was meant.
 
+**Twelve more everyday asks (2026-10-17, second live pass).** Homework, exam date,
+the class scan, a message to the whole class, blocking, name, deleting the
+account, suggesting a feature, reporting a problem, regenerating, saving and
+choosing another lesson all went to the model, which invented menus («تبويب
+أدوات الذكاء الاصطناعي») or refused («كيف أحظر ولي أمر» read as harmful); «وين
+ألاقي خطة الدرس اللي حفظتها؟» opened the generator instead of «ملفاتي». Each
+now has a `RULE_PLACES` entry and steps taken from its screen (`HomeworkTab`,
+`ExamDateCard`, the scan button on the evaluation page, «محادثة الشعبة», the ⋮
+menu of a thread, Settings → «إجراءات نهائية», `suggest-feature`,
+`GeneratorResultActions`). **Three answers say something is not in the app**:
+there is no dark-mode switch (the scheme follows the device, read at start-up —
+the old answer pointed at Settings, which has none), no name editor (only
+sign-up sets it), and the report button shows only on a shared result, so the
+answer offers «أعد التجهيز» when it is missing. Also fixed, older: «كيف أحفظ
+جدول الضرب؟» opened the timetable and «كيف أحذف الحساب من المعادلة؟» opened
+Profile (`NOT_A_TIMETABLE`, and no bare «الحساب» keyword). Still teaching on
+purpose: «كيف أصحح أوراق الطلاب؟» / «how do i grade the exams», which the model
+answers as marking advice. 18 look-alikes pinned.
+
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
 Step 4 of the worksheet review, agreed in chat. A worksheet was paper only: to
