@@ -23,14 +23,11 @@ import {
   systemDb as db, // Acts without (or beyond) the caller's identity — see lib/db/src/scopedPool.ts.
   attemptResults,
   attempts,
-  chatMessages,
-  chatParticipants,
-  chatThreads,
   classGroups,
   students,
 } from "@workspace/db";
 import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
-import { syncClassGroupThread } from "./classThread.ts";
+import { postToClassThread } from "./classThread.ts";
 import { accountsLinkedTo } from "./familyAccess.ts";
 import { sendFamilyPush } from "./familyPush.ts";
 import { releaseAnnouncement } from "./resultsRelease.ts";
@@ -91,16 +88,5 @@ export async function announceResultsRelease(evaluation: {
   // their name.
   if (!group || group.teacherId !== evaluation.teacherId) return;
 
-  const thread = await syncClassGroupThread(group.id, group.teacherId, group.name, group.nameAr);
-  const [line] = await db
-    .insert(chatMessages)
-    .values({ threadId: thread.id, senderId: group.teacherId, body: text.groupLine })
-    .returning({ createdAt: chatMessages.createdAt });
-  const at = line?.createdAt ?? new Date();
-  await db.update(chatThreads).set({ updatedAt: at }).where(eq(chatThreads.id, thread.id));
-  // The teacher pressed the button; their own line is not unread to them.
-  await db
-    .update(chatParticipants)
-    .set({ lastReadAt: at })
-    .where(and(eq(chatParticipants.threadId, thread.id), eq(chatParticipants.userId, group.teacherId)));
+  await postToClassThread(group, text.groupLine);
 }

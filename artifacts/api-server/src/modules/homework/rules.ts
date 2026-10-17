@@ -9,6 +9,8 @@
  */
 export const TITLE_MAX = 120;
 export const INSTRUCTIONS_MAX = 2000;
+/** Attached Library items per homework. */
+export const RESOURCES_MAX = 10;
 /** Families see homework due this many days ago or later; older work drops off. */
 export const FAMILY_WINDOW_DAYS = 14;
 export const FAMILY_LIMIT = 200;
@@ -78,12 +80,15 @@ export interface CreateInput {
   instructions: string;
   dueAt: Date;
   evaluationId: string | null;
+  /** Raw items, each checked by the route (parseClassResourceInput needs @workspace/curriculum). */
+  resources: unknown[];
 }
 export interface PatchInput {
   title?: string;
   instructions?: string;
   dueAt?: Date;
   evaluationId?: string | null;
+  resources?: unknown[];
 }
 /** `code` is a machine-readable reason a client can branch on; absent for the ordinary field errors. */
 type Parsed<T> = { ok: true; value: T } | { ok: false; error: string; code?: string };
@@ -113,6 +118,12 @@ function parseEvaluationId(v: unknown): Parsed<string | null> {
   return isUuid(v) ? { ok: true, value: v } : { ok: false, error: "evaluationId must be an exam id or null" };
 }
 
+function parseResources(v: unknown): Parsed<unknown[]> {
+  if (!Array.isArray(v)) return { ok: false, error: "resources must be a list" };
+  if (v.length > RESOURCES_MAX) return { ok: false, error: `at most ${RESOURCES_MAX} resources` };
+  return { ok: true, value: v };
+}
+
 export function parseCreate(body: unknown, now: Date = new Date()): Parsed<CreateInput> {
   const b = record(body);
   if (!b) return { ok: false, error: "A JSON object is required" };
@@ -126,9 +137,18 @@ export function parseCreate(body: unknown, now: Date = new Date()): Parsed<Creat
   if (!dueDateInRange(b["dueDate"] as string, now)) return DUE_RANGE_FAIL;
   const evaluationId = b["evaluationId"] === undefined ? ({ ok: true, value: null } as const) : parseEvaluationId(b["evaluationId"]);
   if (!evaluationId.ok) return evaluationId;
+  const resources = parseResources(b["resources"] ?? []);
+  if (!resources.ok) return resources;
   return {
     ok: true,
-    value: { classGroupId: b["classGroupId"], title: title.value, instructions: instructions.value, dueAt, evaluationId: evaluationId.value },
+    value: {
+      classGroupId: b["classGroupId"],
+      title: title.value,
+      instructions: instructions.value,
+      dueAt,
+      evaluationId: evaluationId.value,
+      resources: resources.value,
+    },
   };
 }
 
@@ -165,6 +185,11 @@ export function parsePatch(body: unknown, now: Date = new Date(), existing?: { d
     const r = parseEvaluationId(b["evaluationId"]);
     if (!r.ok) return r;
     out.evaluationId = r.value;
+  }
+  if (b["resources"] !== undefined) {
+    const r = parseResources(b["resources"]);
+    if (!r.ok) return r;
+    out.resources = r.value;
   }
   if (Object.keys(out).length === 0) return { ok: false, error: "Nothing to change" };
   return { ok: true, value: out };

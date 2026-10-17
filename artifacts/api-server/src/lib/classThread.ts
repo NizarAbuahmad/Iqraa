@@ -11,6 +11,7 @@
 // Acts without (or beyond) the caller's identity — see lib/db/src/scopedPool.ts.
 import { systemDb as db } from "@workspace/db";
 import {
+  chatMessages,
   chatThreads,
   chatParticipants,
   classGroups,
@@ -154,4 +155,28 @@ export async function archiveClassThread(classGroupId: string): Promise<void> {
     .update(chatThreads)
     .set({ archivedAt: new Date(), updatedAt: new Date() })
     .where(and(eq(chatThreads.classGroupId, classGroupId), isNull(chatThreads.archivedAt)));
+}
+
+/**
+ * One line in a class's group chat, in the teacher's name, sent by the server
+ * for something the teacher did (results released, homework shared). Not
+ * pushed: each caller has already pushed the families it concerns. Bumps the
+ * thread so it rises in the inbox, and marks it read for the teacher — they
+ * pressed the button, their own line is not news to them.
+ */
+export async function postToClassThread(
+  group: { id: string; teacherId: string; name: string; nameAr: string },
+  body: string,
+): Promise<void> {
+  const thread = await syncClassGroupThread(group.id, group.teacherId, group.name, group.nameAr);
+  const [line] = await db
+    .insert(chatMessages)
+    .values({ threadId: thread.id, senderId: group.teacherId, body })
+    .returning({ createdAt: chatMessages.createdAt });
+  const at = line?.createdAt ?? new Date();
+  await db.update(chatThreads).set({ updatedAt: at }).where(eq(chatThreads.id, thread.id));
+  await db
+    .update(chatParticipants)
+    .set({ lastReadAt: at })
+    .where(and(eq(chatParticipants.threadId, thread.id), eq(chatParticipants.userId, group.teacherId)));
 }

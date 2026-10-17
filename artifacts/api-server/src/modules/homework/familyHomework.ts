@@ -4,9 +4,13 @@
  * it is tested without a database, and does not depend on the caller's query
  * having filtered correctly.
  */
+import type { HomeworkResource } from "@workspace/db";
 import { dueAtToDueDate, homeworkState, type HomeworkState } from "./rules.ts";
 
-export interface HomeworkRow { id: string; classGroupId: string; title: string; instructions: string; dueAt: Date; evaluationId: string | null }
+export interface HomeworkRow {
+  id: string; classGroupId: string; title: string; instructions: string; dueAt: Date; evaluationId: string | null;
+  resources?: HomeworkResource[];
+}
 /** One roster row of the family sitting in one live class. */
 export interface MembershipRow { classGroupId: string; studentId: string; className: string; teacherId: string }
 export interface CompletionRow { homeworkId: string; studentId: string; doneAt: Date }
@@ -25,6 +29,8 @@ export interface FamilyHomeworkItem {
   done: boolean; doneAt: string | null; state: HomeworkState;
   /** Only when the attached exam is published, not archived and in the homework's own class; null otherwise. */
   exam: { title: string } | null;
+  /** Library items the teacher attached; the links are public, as in the Library itself. */
+  resources: HomeworkResource[];
   /**
    * Whether anyone can tick THIS item off: some roster row of the child that is a
    * member of this item's class has a student account (a `self` link). Per item
@@ -84,6 +90,7 @@ export function buildFamilyHomework(input: {
         exam && exam.status === "published" && exam.archivedAt == null && exam.classGroupId === h.classGroupId
           ? { title: exam.titleAr || exam.title }
           : null,
+      resources: h.resources ?? [],
     });
   }
 

@@ -144,7 +144,21 @@ function toolPlaces(): AppPlace[] {
  * finds «اختبار قصير» without listing each article-bearing spelling.
  */
 function matchForm(s: string): string {
-  return normalize(s.replace(/[؟?!.,،]/g, ' ')).replace(/(^|\s)ال(?=\S{2,})/g, '$1');
+  return normalize(foldAccusative(s.replace(/[؟?!.,،]/g, ' '))).replace(/(^|\s)ال(?=\S{2,})/g, '$1');
+}
+
+/**
+ * «كيف أضيف صفاً جديداً؟» is «كيف أضيف صف جديد» in its correct written form, and
+ * came back as «أيّ مادة تقصد؟» (found on app.iqrra.com, 2026-10-16): `normalize`
+ * drops the tanween but not the alif it sits on, so «صفا جديدا» matched nothing.
+ * The marked ending (اً or ًا) is dropped from any word. Typed without the mark it
+ * is only dropped from the words a grade is added with — «صفا», «جديدا» and the
+ * ordinals — since an alif ending is otherwise part of the word.
+ */
+function foldAccusative(s: string): string {
+  return s
+    .replace(/(\S)(?:اً|ًا)(?=\s|$)/g, '$1')
+    .replace(/(^|\s)((?:ال)?(?:صف|جديد|اضافي|إضافي|ثاني|ثالث|رابع|خامس|سادس|سابع|ثامن|تاسع|عاشر))ا(?=\s|$)/g, '$1$2');
 }
 
 export const APP_PLACES: AppPlace[] = [
@@ -365,7 +379,7 @@ export function findAppPlaces(query: string, limit = 3): AppPlace[] {
     .map(s => s.place);
 }
 
-const plain = (query: string) => normalize(query.replace(/[؟?!.,،]/g, ' '));
+const plain = (query: string) => normalize(foldAccusative(query.replace(/[؟?!.,،]/g, ' ')));
 
 /** "How do I…" rather than "where is…" — the answer is steps, not a path. */
 export function isHowQuery(query: string): boolean {

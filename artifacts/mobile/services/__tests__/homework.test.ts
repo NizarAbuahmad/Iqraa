@@ -11,6 +11,8 @@ import {
   isValidYmd,
   normalizeChildHomework,
   normalizeFamilyHomework,
+  normalizeResources,
+  resourceBody,
   clampedDone,
   homeworkSections,
   normalizeTeacherHomework,
@@ -30,6 +32,7 @@ const hw = (over: Partial<FamilyHomework> = {}): FamilyHomework => ({
   done: false,
   state: 'open',
   examTitle: null,
+  resources: [],
   canTrack: true,
   ...over,
 });
@@ -135,6 +138,7 @@ test('normalizeFamilyHomework keeps a well-formed row', () => {
       done: true,
       state: 'done',
       examTitle: null,
+      resources: [],
       canTrack: true,
     },
   ]);
@@ -236,6 +240,7 @@ test('normalizeTeacherHomework keeps a well-formed row and ignores extra fields'
       dueDate: '2026-10-15',
       evaluationId: 'e1',
       examTitle: 'اختبار',
+      resources: [],
       doneCount: 3,
       studentCount: 20,
       trackableCount: 20,
@@ -483,4 +488,18 @@ test('untrackedMode: some when only part of the list is untracked (the mixed-cla
 
 test('untrackedMode: all when every visible item is untracked', () => {
   assert.equal(untrackedMode([fam('a', { canTrack: false }), fam('b', { canTrack: false })]), 'all');
+});
+
+test('normalizeResources keeps well-formed items and drops the rest', () => {
+  const sheet = { kind: 'library', source: 'premade-sheet', nativeId: 's1', title: 'ورقة', mediaKind: 'worksheet', url: null, thumbnailUrl: null };
+  assert.deepEqual(normalizeResources([sheet, { source: 'x' }, null, 'y']), [sheet]);
+  assert.deepEqual(normalizeResources(undefined), []);
+  assert.deepEqual(normalizeFamilyHomework([{ ...rawItem, resources: [sheet] }])[0]!.resources, [sheet]);
+});
+
+test('resourceBody resends what the server needs and leaves empty links out', () => {
+  assert.deepEqual(
+    resourceBody({ kind: 'library', source: 'book-qr', nativeId: 'n', title: 't', mediaKind: 'page', url: 'http://a.b/c', thumbnailUrl: null }),
+    { kind: 'library', source: 'book-qr', nativeId: 'n', title: 't', mediaKind: 'page', url: 'http://a.b/c' },
+  );
 });
