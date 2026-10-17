@@ -15,6 +15,21 @@
 
 export type HomeworkState = 'done' | 'overdue' | 'open';
 
+/**
+ * A Library item attached to a homework, as the server stored it when it was
+ * attached (the same snapshot a class shelf keeps). Opens like a shelf row —
+ * `openTargetFor` in classResources.ts.
+ */
+export interface HomeworkResource {
+  kind: 'library';
+  source: string;
+  nativeId: string;
+  title: string;
+  mediaKind: string;
+  url: string | null;
+  thumbnailUrl: string | null;
+}
+
 export interface FamilyHomework {
   id: string;
   title: string;
@@ -26,6 +41,7 @@ export interface FamilyHomework {
   done: boolean;
   state: HomeworkState;
   examTitle: string | null;
+  resources: HomeworkResource[];
   /**
    * Whether anyone can tick THIS item off — the server's per-item rule (some
    * roster row of the child in this item's class has a student account). False
@@ -55,6 +71,7 @@ export interface TeacherHomework {
   dueDate: string;
   evaluationId: string | null;
   examTitle: string | null;
+  resources: HomeworkResource[];
   doneCount: number;
   studentCount: number;
   /**
@@ -152,10 +169,51 @@ export function normalizeFamilyHomework(raw: unknown): FamilyHomework[] {
         // fields can never disagree on screen.
         state: normalizeState(r['state'], done),
         examTitle,
+        resources: normalizeResources(r['resources']),
         canTrack: r['canTrack'] !== false,
       },
     ];
   });
+}
+
+/** An item without a source, id and title is dropped; an absent list (an older server) is none. */
+export function normalizeResources(raw: unknown): HomeworkResource[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((r): HomeworkResource[] => {
+    if (!isRecord(r)) return [];
+    const source = str(r['source']);
+    const nativeId = str(r['nativeId']);
+    const title = str(r['title']);
+    if (!source || !nativeId || !title) return [];
+    return [
+      {
+        kind: 'library',
+        source,
+        nativeId,
+        title,
+        mediaKind: str(r['mediaKind']),
+        url: str(r['url']) || null,
+        thumbnailUrl: str(r['thumbnailUrl']) || null,
+      },
+    ];
+  });
+}
+
+/**
+ * What to send back for an attachment already on a homework (PATCH resends the
+ * whole list). The same body the class shelf's POST takes; the server re-checks
+ * it and, for a staff upload, re-reads the Library row.
+ */
+export function resourceBody(r: HomeworkResource): Record<string, string> {
+  return {
+    kind: 'library',
+    source: r.source,
+    nativeId: r.nativeId,
+    title: r.title,
+    mediaKind: r.mediaKind,
+    ...(r.url ? { url: r.url } : {}),
+    ...(r.thumbnailUrl ? { thumbnailUrl: r.thumbnailUrl } : {}),
+  };
 }
 
 /** Takes the `homework` array of `GET /classes/:id/homework`. Extra fields are ignored. */
@@ -176,6 +234,7 @@ export function normalizeTeacherHomework(raw: unknown): TeacherHomework[] {
         dueDate,
         evaluationId: str(r['evaluationId']) || null,
         examTitle: str(r['examTitle']) || null,
+        resources: normalizeResources(r['resources']),
         doneCount: count(r['doneCount']),
         studentCount,
         trackableCount: trackable(r['trackableCount'], studentCount),

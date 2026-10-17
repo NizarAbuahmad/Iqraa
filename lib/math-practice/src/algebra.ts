@@ -126,6 +126,12 @@ const termsStr = (ts: Array<[number, number]>) =>
  * (`makeTopicItem`), so a kind printed in several sentences — one per operation,
  * one per comparison word — would crowd the others out at equal weight. Such
  * kinds are drawn less often instead.
+ *
+ * Since 2026-10-16 a paper spreads by kind (`sameKind`), so a kind's sentences
+ * share one turn and these weights only tilt the draw. Measured then (20–200
+ * ten-item papers per lesson): expr_g4's 0.25 left its phrase kind off 2 of 20
+ * papers once the lesson had four kinds, so it was flattened; the rest still put
+ * every kind on 98% of papers or more and were kept.
  */
 function wpick<T>(rng: Rng, xs: ReadonlyArray<readonly [T, number]>): T {
   let r = rng() * xs.reduce((s, [, w]) => s + w, 0);
@@ -161,8 +167,35 @@ function phraseDraft(rng: Rng, v: string, a: number, ops: ReadonlyArray<'+' | '�
 const exprG4 = topic('expr_g4', /^المقادير والمتغيرات$/, [4, 4], ({ rng, diff }) => {
   const v = pick(rng, ['n', 'x', 'a', 'b']);
   const k = int(rng, 2, span(diff)), a = int(rng, 2, 9);
-  const kind = wpick(rng, [[0, 1], [1, 0.25], [2, 1]] as const);
+  // the phrase kind is written one sentence per operation; it was down-weighted to 0.25 while papers
+  // spread by sentence, and with spreading by kind (`sameKind`) that weight left it off some papers
+  const kind = pick(rng, [0, 1, 2, 3, 4]);
   if (kind === 1) return phraseDraft(rng, v, a, ['+', '−', '×']);
+  if (kind === 3) {
+    // which expression has a given value: evaluate each, keep the one that matches
+    const forms: Array<[string, number]> = [];
+    for (let t = 0; t < 40 && forms.length < 4; t++) {
+      const c = int(rng, 2, 9), f = pick(rng, [0, 1, 2]);
+      const e: [string, number] = f === 0 ? [`${v} + ${c}`, k + c] : f === 1 ? [`${c} × ${v}`, c * k] : [`${v} − ${c}`, k - c];
+      if (e[1] > 0 && !forms.some(([s, val]) => s === e[0] || val === e[1])) forms.push(e);
+    }
+    if (forms.length < 4) return exprG4.make({ rng, diff, grade: 4 });
+    const [[ans, val], ...rest] = forms as [[string, number], ...Array<[string, number]>];
+    const shown = shuffled(rng, forms.map(([s]) => s)).join(' ، ');
+    return {
+      eq: ans, answer: ans, wrongs: rest.map(([s]) => s),
+      ar: `أيّ المقادير الآتية قيمته ${val} عندما ${v} = ${k}: ${shown}؟`,
+      en: `Which of these expressions has the value ${val} when ${v} = ${k}: ${shown.replace(/ ، /g, ', ')}?`,
+    };
+  }
+  if (kind === 4) {
+    // a situation written as an expression: marbles put into a box, or taken out of it
+    const m = int(rng, 3, 9), put = rng() < 0.5;
+    const E = { add: `${v} + ${m}`, sub: `${v} − ${m}`, rsub: `${m} − ${v}`, mul: `${m} × ${v}` };
+    return put
+      ? { eq: E.add, answer: E.add, wrongs: [E.sub, E.mul, E.rsub], ar: `في صندوق ${v} من الكرات، ثم وضع فيه أحمد ${m} كرات أخرى. اكتب مقدارًا جبريًا يعبّر عن عدد الكرات في الصندوق الآن.`, en: `A box holds ${v} marbles and Ahmad puts in ${m} more. Write an algebraic expression for the number of marbles in the box now.` }
+      : { eq: E.sub, answer: E.sub, wrongs: [E.rsub, E.add, E.mul], ar: `في صندوق ${v} من الكرات، ثم أخرج منه أحمد ${m} كرات. اكتب مقدارًا جبريًا يعبّر عن عدد الكرات في الصندوق الآن.`, en: `A box holds ${v} marbles and Ahmad takes ${m} out. Write an algebraic expression for the number of marbles in the box now.` };
+  }
   if (kind === 2) {
     const p = int(rng, 2, 9), q = int(rng, 2, 9), r = int(rng, 1, 20);
     const minus = rng() < 0.4 && p * q > r;
@@ -727,6 +760,18 @@ const writeIneq = topic('ineq_write', /^كتابه المتباينات وتمث
     ['>', 'أكبر من', 'greater than'], ['<', 'أقل من', 'less than'], ['≥', 'لا يقل عن', 'at least'], ['≤', 'لا يزيد على', 'at most'],
   ] as const);
   const ans = `x ${s} ${signed(n)}`;
+  const form = pick(rng, [0, 1, 2, 3]);
+  // is a value a solution; how the inequality is drawn; and the inequality a drawing shows
+  if (form === 1) return ineqExtras(rng, 'check', ans, s, n);
+  if (form === 2) return ineqExtras(rng, 'line', ans, s, n);
+  if (form === 3) {
+    const closed = s === '≤' || s === '≥', up = s === '>' || s === '≥';
+    return {
+      eq: ans, answer: ans, wrongs: ineqWrongs(s, signed(n)),
+      ar: `اكتب المتباينة بالمتغير x التي تمثيلها على خط الأعداد دائرة ${closed ? 'مغلقة' : 'مفتوحة'} عند ${signed(n)} والتظليل نحو الأعداد ${up ? 'الأكبر' : 'الأصغر'}.`,
+      en: `Write the inequality in x whose graph on a number line is ${closed ? 'a closed' : 'an open'} circle at ${signed(n)} with shading towards the ${up ? 'greater' : 'smaller'} numbers.`,
+    };
+  }
   return { eq: ans, answer: ans, wrongs: ineqWrongs(s, signed(n)), ar: `اكتب متباينة تعبّر عن: العدد x ${ar} ${signed(n)}.`, en: `Write an inequality for: the number x is ${en} ${signed(n)}.` };
 });
 
@@ -874,7 +919,31 @@ const compound = topic('ineq_compound', /^حل المتباينات المركب
 /** Grade 9: an inequality as an interval — and since 2026-10-16 an interval as an inequality, and a set of integers in roster form. */
 const intervals = topic('intervals', /^المجموعات والفترات$/, [9, 9], ({ rng }) => {
   const a = int(rng, -6, 5), b = a + int(rng, 2, 8);
-  const form = pick(rng, [0, 1, 2]);
+  const form = pick(rng, [0, 1, 2, 3, 4]);
+  if (form === 3) {
+    // the type of a bounded interval, from its brackets
+    const [l, r] = pick(rng, [['(', ')'], ['[', ']'], ['[', ')'], ['(', ']']] as const);
+    const TYPES = ['فترة مغلقة', 'فترة مفتوحة', 'فترة نصف مفتوحة', 'فترة غير محدودة'];
+    const t = l === '[' && r === ']' ? 0 : l === '(' && r === ')' ? 1 : 2;
+    const iv = `${l}${signed(a)} ، ${signed(b)}${r}`;
+    return { eq: iv, answer: TYPES[t]!, wrongs: TYPES.filter((_, i) => i !== t), ar: `ما نوع الفترة ${iv}؟`, en: `What type of interval is ${iv}?` };
+  }
+  if (form === 4) {
+    // solve, then write the solution set with set-builder notation
+    const x0 = int(rng, -5, 6), c = nz(rng, 5), d = nz(rng, 9);
+    if (Math.abs(c) === 1) return intervals.make({ rng, diff: 'medium', grade: 9 });
+    const s = pick(rng, SYM), rs = c < 0 ? flip(s) : s;
+    const eq = `${polyStr([d, c])} ${s} ${signed(c * x0 + d)}`;
+    const set = (o: string, v: number) => `{x | x ${o} ${signed(v)}}`;
+    const ans = set(rs, x0);
+    return {
+      eq, answer: ans,
+      // the sign left unturned (or turned for no reason), the boundary's strictness, dividing forgotten, d moved with its own sign
+      wrongs: wrongsFrom(ans, [set(flip(rs), x0), set(swapStrict(rs), x0), set(rs, c * x0), ...(Number.isInteger((c * x0 + 2 * d) / c) ? [set(rs, (c * x0 + 2 * d) / c)] : [])], k => set(rs, x0 + Math.abs(k) + 1)),
+      ar: `اكتب مجموعة حلّ المتباينة ${eq} بطريقة الصفة المميزة.`,
+      en: `Write the solution set of ${eq} in set-builder notation.`,
+    };
+  }
   if (form === 1) {
     if (rng() < 0.4) {
       const s = pick(rng, SYM);
@@ -971,6 +1040,28 @@ const systemTopic = (id: string, match: RegExp, mode: 'graph' | 'sub' | 'elim') 
 });
 
 const standardForm = topic('line_standard', /^المعادله الخطيه بالصوره القياسيه$/, [8, 8], ({ rng }) => {
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) {
+    // a row of the table of values: y from x
+    const A = int(rng, 1, 5), B = pick(rng, [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5]), x0 = int(rng, -3, 5), y0 = int(rng, -5, 5);
+    const C = A * x0 + B * y0, eq = lineEq(A, B, C);
+    return {
+      eq, answer: signed(y0), wrongs: num(y0, [-y0, C - A * x0, (C + A * x0) / B, x0].filter(v => Number.isInteger(v) && v !== y0)),
+      ar: `في جدول قيم المعادلة ${eq}، ما قيمة y عندما x = ${signed(x0)}؟`,
+      en: `In a table of values for ${eq}, what is y when x = ${signed(x0)}?`,
+    };
+  }
+  if (form === 2) {
+    // what an intercept means: everything spent on one item
+    const [A, B] = shuffled(rng, [3, 4, 5, 6, 8, 10]).slice(0, 2) as [number, number];
+    const C = lcm(A, B) * int(rng, 1, 3) * (lcm(A, B) < 20 ? 2 : 1), balls = rng() < 0.5;
+    const eq = lineEq(A, B, C), ans = balls ? C / A : C / B;
+    return {
+      eq, answer: String(ans), wrongs: num(ans, [balls ? C / B : C / A, C - (balls ? A : B), C, ans + 1].filter(v => v !== ans), String),
+      ar: `تمثّل المعادلة ${eq} شراء x من الكرات و y من المضارب بمبلغ ${dinars(C)}، سعر الكرة ${dinars(A)} وسعر المضرب ${dinars(B)}. ${balls ? 'كم كرةً يمكن شراؤها بالمبلغ كله إذا لم يُشترَ أيّ مضرب؟' : 'كم مضربًا يمكن شراؤه بالمبلغ كله إذا لم تُشترَ أيّ كرة؟'}`,
+      en: `The equation ${eq} describes buying x balls and y rackets for ${C} dinars: a ball costs ${A} dinars and a racket ${B}. ${balls ? 'How many balls can be bought with all the money if no racket is bought?' : 'How many rackets can be bought with all the money if no ball is bought?'}`,
+    };
+  }
   if (rng() < 0.4) {
     // y = mx + b  →  mx − y = −b, with the x coefficient positive
     const m = nz(rng, 5), b = nz(rng, 9);

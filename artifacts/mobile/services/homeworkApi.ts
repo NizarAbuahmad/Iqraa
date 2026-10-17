@@ -85,6 +85,10 @@ export interface NewHomework {
   /** YYYY-MM-DD, Asia/Amman. */
   dueDate: string;
   evaluationId?: string;
+  /** Bodies as the class shelf's POST takes them (`addBodyFor` / `resourceBody`). */
+  resources?: object[];
+  /** Also leave a line in the class's group chat. */
+  shareToChat?: boolean;
 }
 
 /**
@@ -96,6 +100,8 @@ export interface HomeworkPatch {
   instructions?: string;
   dueDate?: string;
   evaluationId?: string | null;
+  /** The whole list: replaces what is attached. */
+  resources?: object[];
 }
 
 export async function listClassHomework(classId: string): Promise<TeacherHomeworkList> {
@@ -116,6 +122,12 @@ export async function updateHomework(id: string, patch: HomeworkPatch): Promise<
   });
   const data = await readJson<{ homework?: unknown }>(res, 'Saving homework');
   return normalizeTeacherHomework([data.homework])[0] ?? null;
+}
+
+/** Leaves the homework's line in its class's group chat. */
+export async function shareHomework(id: string): Promise<void> {
+  const res = await apiFetch(`/homework/${encodeURIComponent(id)}/share`, { method: 'POST' });
+  await readJson(res, 'Sharing homework');
 }
 
 export async function archiveHomework(id: string): Promise<void> {

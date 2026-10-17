@@ -37,6 +37,7 @@ import { questionText as questionTextFor } from '@/services/evaluationQuestionTe
 import { copyToClipboard } from '@/services/share';
 import { AddReadAloudModal } from '@/components/AddReadAloudModal';
 import { AddDictationModal } from '@/components/AddDictationModal';
+import { showsDictation, showsReadAloud } from '@/services/contentLanguage';
 import { EditQuestionModal } from '@/components/EditQuestionModal';
 import { isEditableQuestion } from '@/services/questionDraft';
 import { isPaperQuestion } from '@/services/paperQuestion';
@@ -303,7 +304,15 @@ export default function EvaluationDetailScreen() {
       cancelLabel: t('cancel'),
     });
     if (!ok) return;
+    await doPublish();
+  };
 
+  /**
+   * Publish, or re-publish: the server keeps the code and pushes its expiry a
+   * week out, which is also how an expired link is renewed.
+   */
+  const doPublish = async () => {
+    if (!id) return;
     setBusy('publish');
     setError('');
     try {
@@ -371,6 +380,9 @@ export default function EvaluationDetailScreen() {
       {evaluation?.status === 'published' && (
         <ShareLinkCard
           shareCode={evaluation.shareCode ?? null}
+          expired={Boolean(evaluation.shareCodeExpiresAt && Date.parse(evaluation.shareCodeExpiresAt) <= Date.now())}
+          renewing={busy === 'publish'}
+          onRenew={() => { if (!busy) void doPublish(); }}
           attachedToClass={Boolean(evaluation.classGroupId)}
           paper={paperExam}
           onAttach={() => setPickingClass(true)}
@@ -729,7 +741,9 @@ export default function EvaluationDetailScreen() {
             </Text>
           </Pressable>
           {/* Hand-written questions, this one included, are appended and
-              survive "regenerate": it replaces only generated questions. */}
+              survive "regenerate": it replaces only generated questions.
+              Read-aloud and إملاء only make sense in a language subject. */}
+          {showsReadAloud(evaluation?.subjectId) && (
           <Pressable
             onPress={() => setAddingReadAloud(true)}
             disabled={!!busy}
@@ -740,8 +754,10 @@ export default function EvaluationDetailScreen() {
               {t('addReadAloudBtn')}
             </Text>
           </Pressable>
+          )}
           {/* Dictation is appended for the same reason, and adds a whole list
               at once: a teacher dictates ten words, not one. */}
+          {showsDictation(evaluation?.subjectId) && (
           <Pressable
             onPress={() => setAddingDictation(true)}
             disabled={!!busy}
@@ -752,6 +768,7 @@ export default function EvaluationDetailScreen() {
               {t('addDictationBtn')}
             </Text>
           </Pressable>
+          )}
         </View>
       )}
 
@@ -875,9 +892,16 @@ function KeyCheckNotice({
 }
 
 function ShareLinkCard({
-  shareCode, attachedToClass, paper, onAttach, colors, isRTL, align, t,
+  shareCode, expired, renewing, onRenew, attachedToClass, paper, onAttach, colors, isRTL, align, t,
 }: {
   shareCode: string | null;
+  /**
+   * The link lapsed (a week after the last publish). Students neither see the
+   * exam in «اختباراتي» nor open the code, and nothing used to say so.
+   */
+  expired: boolean;
+  renewing: boolean;
+  onRenew: () => void;
   attachedToClass: boolean;
   /** A paper exam is sat in class: it has no code to hand out. */
   paper: boolean;
@@ -935,6 +959,22 @@ function ShareLinkCard({
               <Ionicons name="people-outline" size={16} color={ACCENT} />
               <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
                 {t('shareExamAttachNow')}
+              </Text>
+            </Pressable>
+          </>
+        ) : expired ? (
+          <>
+            <Text style={{ color: palette.warning, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginTop: 8, textAlign: align }}>
+              {t('shareExamExpired')}
+            </Text>
+            <Pressable
+              onPress={onRenew}
+              disabled={renewing}
+              style={[styles.shareBtn, { borderColor: ACCENT, opacity: renewing ? 0.6 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            >
+              {renewing ? <ActivityIndicator size="small" color={ACCENT} /> : <Ionicons name="refresh" size={16} color={ACCENT} />}
+              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
+                {t('shareExamRenew')}
               </Text>
             </Pressable>
           </>

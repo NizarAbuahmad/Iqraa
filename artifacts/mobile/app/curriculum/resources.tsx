@@ -41,7 +41,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
-import { readPrintStyle } from '@/hooks/usePrintStyle';
 import { useLanguage } from '@/context/LanguageContext';
 import { isStudentRole, isTeacherRole, useAuth } from '@/context/AuthContext';
 import { getMyExams, getMyGradeIds } from '@/services/studentExam';
@@ -50,7 +49,7 @@ import { narrowSubjectsForGrade, narrowToSelection, preferredGrade, scopedSubjec
 import { listLibrary, type LibraryItem } from '@/services/libraryApi';
 import { getLessonById } from '@/services/knowledgeBase';
 import { openExternal } from '@/services/externalLinks';
-import { buildWorksheetHTML, exportAsPDF } from '@/services/share';
+import { printPremadeSheet } from '@/services/openResource';
 import { qrResourcesForGrade } from '@/services/bookQrLinks';
 import { getVideoFrameThumbnail } from '@/services/videoThumbnail';
 import { imageCoverFromUrl, videoCoverFromUrl } from '@/services/resourceThumbnail';
@@ -222,27 +221,7 @@ function ResourceRow({
   const bookName = isBook && item.bookTitle && item.bookTitle !== title ? item.bookTitle : null;
   const bookPage = isBook && page ? t('qrOnPage', page) : null;
 
-  // A frozen sheet has no URL: it is rendered on the spot and handed to the
-  // print/share sheet, the same path the worksheet generator's PDF export takes.
-  // No export menu on this path, so it prints in the style last picked in one.
-  const printSheet = async () => {
-    if (!sheet) return;
-    const grade = getVisibleGrades().find(g => g.id === sheet.gradeId);
-    const subject = getSubjectsForGrade(sheet.gradeId).find(s => s.id === sheet.subjectId);
-    const html = buildWorksheetHTML(
-      sheet.content,
-      title,
-      {
-        subject: subject ? (isAr ? subject.nameAr : subject.name) : '',
-        grade: grade ? (isAr ? grade.nameAr : grade.name) : '',
-      },
-      isAr,
-      [],
-      true,
-      await readPrintStyle(),
-    );
-    void exportAsPDF(html, `${title}.pdf`);
-  };
+  const printSheet = () => printPremadeSheet(item.nativeId, title, isAr);
 
   const { user } = useAuth();
   // A teacher opens the sheet first — the viewer shows it and prints, shares

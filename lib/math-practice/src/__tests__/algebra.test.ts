@@ -112,7 +112,7 @@ describe('algebra generators: shape', () => {
 
 describe('algebra generators: answers', () => {
   it('evaluating an expression', () => {
-    for (const item of draws('expr_g4').filter(i => has(stem(i), 'عندما'))) {
+    for (const item of draws('expr_g4').filter(i => has(stem(i), 'عندما') && !has(stem(i), 'أيّ المقادير'))) {
       const [, v, val] = item.promptAr!.match(/عندما (\w) = (\d+)/)!;
       assert.equal(num(item.answer), new Function(v!, `return ${js(item.eq)}`)(Number(val)), item.promptAr);
     }
@@ -208,7 +208,7 @@ describe('algebra generators: answers', () => {
       }
     }
     const WORDS: Record<string, string> = { 'أكبر من': '>', 'أقل من': '<', 'لا يقل عن': '≥', 'لا يزيد على': '≤' };
-    for (const item of draws('ineq_write')) {
+    for (const item of draws('ineq_write').filter(i => has(stem(i), 'متباينة تعبّر عن'))) {
       const word = Object.keys(WORDS).find(w => item.promptAr!.includes(w))!;
       assert.equal(item.answer.split(' ')[1], WORDS[word], item.promptAr);
     }
@@ -266,7 +266,7 @@ describe('algebra generators: answers', () => {
         assert.ok(onLine(item.answer, x1, y1) && onLine(item.answer, x1 + 1, y1 + m), item.answer);
       }
     }
-    for (const item of draws('line_standard', 300)) {
+    for (const item of draws('line_standard', 300).filter(i => /المقطع|بالصورة القياسية/.test(stem(i)))) {
       if (item.eq.startsWith('y =')) {
         const f = fn(item.eq.slice(4));
         for (const x of [0, 1, 2, 3]) assert.ok(onLine(item.answer, x, f(x)), `${item.answer} misses (${x}, ${f(x)})`);
@@ -421,7 +421,7 @@ describe('algebra generators: kinds added 2026-10-16', () => {
       const kinds = new Set<string>();
       for (const item of draws(id)) {
         const p = stem(item);
-        const k = kindOf(p, { value: /عندما/, phrase: /^اكتب مقدارًا جبريًا/, numeric: /المقدار العددي/, shopper: /ما يدفعه/ });
+        const k = kindOf(p, { which: /^أيّ المقادير/, box: /^في صندوق/, value: /عندما/, phrase: /^اكتب مقدارًا جبريًا/, numeric: /المقدار العددي/, shopper: /ما يدفعه/ });
         kinds.add(k);
         if (k === 'phrase') {
           const op = Object.keys(OPS).find(o => has(p, `ناتج ${o}`))!;
@@ -432,7 +432,7 @@ describe('algebra generators: kinds added 2026-10-16', () => {
         } else if (k === 'numeric') assert.equal(Number(item.answer), fn(p.split('العددي ')[1]!.replace(/\.$/, ''))(0), p);
         else if (k === 'shopper') { const [a, b, n] = nums(p); assert.equal(Number(item.answer), a! * n! + b!, p); }
       }
-      assert.equal(kinds.size, 3, `${id}: ${[...kinds]}`);
+      assert.equal(kinds.size, id === 'expr_g4' ? 5 : 3, `${id}: ${[...kinds]}`);
     }
 
     // one- and two-step equations: pick the solution, the «I thought of a number» story, write the equation
@@ -680,7 +680,7 @@ describe('algebra generators: kinds added 2026-10-16', () => {
     kinds = new Set();
     for (const item of draws('intervals', 300)) {
       const p = stem(item);
-      const k = kindOf(p, { toInterval: /على صورة فترة/, toInequality: /^اكتب الفترة/, roster: /بطريقة سرد/ });
+      const k = kindOf(p, { toInterval: /على صورة فترة/, toInequality: /^اكتب الفترة/, roster: /بطريقة سرد/, type: /^ما نوع الفترة/, builder: /الصفة المميزة/ });
       kinds.add(k);
       if (k === 'toInequality') {
         const iv = p.match(/الفترة (.+) على صورة/)![1]!;
@@ -694,7 +694,7 @@ describe('algebra generators: kinds added 2026-10-16', () => {
         assert.ok(!item.wrongs.includes(setOf(xs)));
       }
     }
-    assert.equal(kinds.size, 3, [...kinds].join());
+    assert.equal(kinds.size, 5, [...kinds].join());
   });
 
   it('Grade 8: systems', () => {
@@ -1020,6 +1020,106 @@ describe('algebra generators: kinds added 2026-10-16', () => {
       }
     }
     assert.equal(kinds.size, 3, [...kinds].join());
+  });
+});
+
+describe('algebra generators: kinds added for thin lessons', () => {
+  it('Grade 4 expressions: which expression has a value, a situation as an expression', () => {
+    const inX = (e: string) => fn(e.replace(/\b[a-z]\b/g, 'x'));
+    const kinds = new Set<string>();
+    for (const item of drawsAt('expr_g4', 4, 300)) {
+      const p = stem(item);
+      if (has(p, 'أيّ المقادير')) {
+        // evaluate every listed expression at the given value; exactly the answer hits the target
+        kinds.add('which');
+        const [, target, v, val, list] = p.match(/قيمته (\d+) عندما ([a-z]) = (\d+): (.+)؟$/)!;
+        const listed = list!.split(' ، ');
+        assert.equal(listed.length, 4, p);
+        const hits = listed.filter(e => new Function(v!, `return ${js(e)}`)(Number(val)) === Number(target));
+        assert.deepEqual(hits, [item.answer], p);
+        for (const w of item.wrongs) assert.ok(listed.includes(w), `${w} not listed in ${p}`);
+      } else if (has(p, 'في صندوق')) {
+        // n marbles, m put in or taken out
+        kinds.add('box');
+        const m = nums(p)[0]!;
+        const want = (n: number) => (has(p, 'أخرج') ? n - m : n + m);
+        assert.ok([3, 7.5, 13].every(n => same(inX(item.answer)(n), want(n))), `${p} → ${item.answer}`);
+        for (const w of item.wrongs) assert.ok(![3, 7.5, 13].every(n => same(inX(w)(n), want(n))), `${w} also says ${p}`);
+      }
+    }
+    assert.equal(kinds.size, 2, [...kinds].join());
+  });
+
+  it('Grade 8 writing inequalities: a solution from a list, the drawing, the inequality a drawing shows', () => {
+    const kinds = new Set<string>();
+    for (const item of draws('ineq_write', 300)) {
+      const p = stem(item);
+      const k = kindOf(p, { words: /^اكتب متباينة تعبّر/, check: /^أيّ الأعداد/, line: /^صِف تمثيل/, fromLine: /تمثيلها على خط الأعداد/ });
+      kinds.add(k);
+      if (k === 'check') {
+        const [, eq, list] = p.match(/المتباينة (.+): (.+)؟$/)!;
+        onlyAnswer(item, list!.split('، '), s => holds(eq!, num(s)));
+      } else if (k === 'line') {
+        const eq = p.match(/المتباينة (.+) على خط/)![1]!;
+        const [, o, b] = eq.match(/^x (\S+) (−?\d+)$/)!;
+        const closed = o === '≤' || o === '≥', up = o === '>' || o === '≥';
+        assert.equal(item.answer, `دائرة ${closed ? 'مغلقة' : 'مفتوحة'} عند ${b}، والتظليل نحو الأعداد ${up ? 'الأكبر' : 'الأصغر'}`, p);
+        assert.ok(!item.wrongs.includes(item.answer), p);
+      } else if (k === 'fromLine') {
+        const b = p.match(/عند (−?\d+) /)![1]!;
+        const want = has(p, 'الأكبر') ? (has(p, 'مغلقة') ? `x ≥ ${b}` : `x > ${b}`) : (has(p, 'مغلقة') ? `x ≤ ${b}` : `x < ${b}`);
+        assert.ok(sameSet(item.answer, want), `${p} → ${item.answer}, not ${want}`);
+        for (const w of item.wrongs) assert.ok(!sameSet(w, want), `${w} also draws ${p}`);
+      }
+    }
+    assert.equal(kinds.size, 4, [...kinds].join());
+  });
+
+  it('Grade 8 standard form: a table of values, an intercept in a situation', () => {
+    const kinds = new Set<string>();
+    for (const item of draws('line_standard', 300)) {
+      const p = stem(item);
+      if (has(p, 'جدول قيم')) {
+        // solve the printed equation for y at the printed x
+        kinds.add('table');
+        const [, eq, x] = p.match(/المعادلة (.+)، ما قيمة y عندما x = (−?\d+)؟$/)!;
+        const [l, r] = eq!.split(' = ');
+        const g = (y: number) => fn(l!)(num(x!), y) - fn(r!)(0);
+        const y = -g(0) / (g(1) - g(0));
+        assert.ok(same(num(item.answer), y), `${p} → ${item.answer}, not ${y}`);
+        assert.ok(item.wrongs.every(w => !same(num(w), y)), p);
+      } else if (has(p, 'كرة')) {
+        // all the money on one item: the total divided by that item's price
+        kinds.add('situation');
+        const [A, B, C] = nums(p.match(/المعادلة (.+?) شراء/)![1]!);
+        const priceA = Number(p.match(/سعر الكرة (\d+)/)![1]), priceB = Number(p.match(/سعر المضرب (\d+)/)![1]);
+        assert.ok(priceA === A && priceB === B && has(p, `بمبلغ ${C} `), p);
+        const want = has(p, 'كم كرةً') ? C! / A! : C! / B!;
+        assert.equal(Number(item.answer), want, p);
+        assert.ok(item.wrongs.every(w => Number(w) !== want), p);
+      }
+    }
+    assert.equal(kinds.size, 2, [...kinds].join());
+  });
+
+  it('Grade 9 sets and intervals: the type of an interval, a solution set in set-builder form', () => {
+    const kinds = new Set<string>();
+    for (const item of draws('intervals', 300)) {
+      const p = stem(item);
+      if (has(p, 'ما نوع الفترة')) {
+        kinds.add('type');
+        const [, l, r] = p.match(/([[(])−?\d+ ، −?\d+([\])])؟$/)!;
+        assert.equal(item.answer, l === '[' && r === ']' ? 'فترة مغلقة' : l === '(' && r === ')' ? 'فترة مفتوحة' : 'فترة نصف مفتوحة', p);
+      } else if (has(p, 'الصفة المميزة')) {
+        // the set {x | x o b} must hold exactly where the printed inequality holds
+        kinds.add('builder');
+        const eq = p.match(/المتباينة (.+) بطريقة/)![1]!;
+        const inner = (s: string) => s.match(/^\{x \| (.+)\}$/)![1]!;
+        assert.ok(sameSet(inner(item.answer), eq), `${eq} → ${item.answer}`);
+        for (const w of item.wrongs) assert.ok(!sameSet(inner(w), eq), `${w} is also ${eq}`);
+      }
+    }
+    assert.equal(kinds.size, 2, [...kinds].join());
   });
 });
 

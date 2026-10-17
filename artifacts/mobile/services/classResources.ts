@@ -169,8 +169,10 @@ export type OpenTarget =
   | { kind: 'lab'; path: string }
   | { kind: 'none' };
 
-/** Where a tap on a resource row goes. */
-export function openTargetFor(resource: ClassResource): OpenTarget {
+/** Where a tap on a resource row goes — a shelf row, or an attachment on a homework (no `unavailable` there). */
+export function openTargetFor(
+  resource: Pick<ClassResource, 'nativeId' | 'url'> & { kind: string; source: string | null; unavailable?: boolean },
+): OpenTarget {
   if (resource.unavailable) return { kind: 'none' };
   if (resource.kind === 'lab') return { kind: 'lab', path: labItemPath(resource.nativeId) };
   if (resource.source === 'premade-sheet') return { kind: 'premade', id: resource.nativeId };
