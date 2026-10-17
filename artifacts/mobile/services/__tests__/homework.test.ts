@@ -13,6 +13,8 @@ import {
   normalizeFamilyHomework,
   normalizeResources,
   resourceBody,
+  resourceKey,
+  isAttachableMaterial,
   clampedDone,
   homeworkSections,
   normalizeTeacherHomework,
@@ -502,4 +504,18 @@ test('resourceBody resends what the server needs and leaves empty links out', ()
     resourceBody({ kind: 'library', source: 'book-qr', nativeId: 'n', title: 't', mediaKind: 'page', url: 'http://a.b/c', thumbnailUrl: null }),
     { kind: 'library', source: 'book-qr', nativeId: 'n', title: 't', mediaKind: 'page', url: 'http://a.b/c' },
   );
+});
+
+test('a saved-material attachment round-trips: normalized, keyed, and resent as its id only', () => {
+  const mat = { kind: 'material', materialId: '0b6c1f2e-3a4d-4e5f-8a9b-0c1d2e3f4a5b', title: 'اختبار', type: 'quiz' } as const;
+  assert.deepEqual(normalizeResources([mat, { kind: 'material', title: 'no id' }]), [mat]);
+  assert.equal(resourceKey(mat), `material:${mat.materialId}`);
+  assert.deepEqual(resourceBody(mat), { kind: 'material', materialId: mat.materialId });
+});
+
+test('isAttachableMaterial: only server-saved, non-board materials', () => {
+  const id = '0b6c1f2e-3a4d-4e5f-8a9b-0c1d2e3f4a5b';
+  assert.equal(isAttachableMaterial({ id, type: 'worksheet' }), true);
+  assert.equal(isAttachableMaterial({ id, type: 'board' }), false);
+  assert.equal(isAttachableMaterial({ id: 'ws_1729000000000_abc123', type: 'quiz' }), false, 'an offline save');
 });

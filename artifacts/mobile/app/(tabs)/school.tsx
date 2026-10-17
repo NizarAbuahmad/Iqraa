@@ -40,6 +40,7 @@ import {
   dueBadge,
   formatDueDate,
   homeworkSections,
+  resourceKey,
   untrackedMode,
   type ChildHomework,
   type FamilyHomework,
@@ -672,10 +673,10 @@ function HomeworkRow({
         ) : null}
         {item.resources.map(r => (
           <Pressable
-            key={`${r.source}:${r.nativeId}`}
+            key={resourceKey(r)}
             accessibilityRole="link"
             hitSlop={8}
-            onPress={() => openResource(r, { teacher: false, isAr: isRTL })}
+            onPress={() => openResource(r, { teacher: false, isAr: isRTL, homeworkId: item.id })}
             style={{ flexDirection: rowDir, alignItems: 'center', gap: SPACE.xs, paddingVertical: SPACE.xs }}
           >
             <Ionicons name="attach-outline" size={16} color={ACCENT} />

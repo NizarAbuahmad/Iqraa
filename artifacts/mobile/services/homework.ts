@@ -20,7 +20,7 @@ export type HomeworkState = 'done' | 'overdue' | 'open';
  * attached (the same snapshot a class shelf keeps). Opens like a shelf row —
  * `openTargetFor` in classResources.ts.
  */
-export interface HomeworkResource {
+export interface HomeworkLibraryResource {
   kind: 'library';
   source: string;
   nativeId: string;
@@ -28,6 +28,38 @@ export interface HomeworkResource {
   mediaKind: string;
   url: string | null;
   thumbnailUrl: string | null;
+}
+
+/**
+ * One of the teacher's own saved materials (ملفاتي). A family opens it
+ * read-only and without its answers, through
+ * GET /{student|parent}/homework/:id/materials/:materialId — the screen is
+ * `/workspace/view?hw=…&material=…`.
+ */
+export interface HomeworkMaterialResource {
+  kind: 'material';
+  materialId: string;
+  title: string;
+  /** The saved material's type, e.g. `quiz` or `worksheet`. */
+  type: string;
+}
+
+export type HomeworkResource = HomeworkLibraryResource | HomeworkMaterialResource;
+
+/** An attachment's identity in a list — for a Library item, the picker's own "already added" key. */
+export function resourceKey(r: HomeworkResource): string {
+  return r.kind === 'material' ? `material:${r.materialId}` : `${r.source}:${r.nativeId}`;
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Whether a saved material can be attached: it must be on the server (a save
+ * made offline has a device-only `ws_…` id the server has never seen), and not
+ * a board, which only reopens in the teacher's whiteboard.
+ */
+export function isAttachableMaterial(m: { id: string; type: string }): boolean {
+  return UUID.test(m.id) && m.type !== 'board';
 }
 
 export interface FamilyHomework {
@@ -181,6 +213,11 @@ export function normalizeResources(raw: unknown): HomeworkResource[] {
   if (!Array.isArray(raw)) return [];
   return raw.flatMap((r): HomeworkResource[] => {
     if (!isRecord(r)) return [];
+    if (r['kind'] === 'material') {
+      const materialId = str(r['materialId']);
+      const title = str(r['title']);
+      return materialId && title ? [{ kind: 'material', materialId, title, type: str(r['type']) }] : [];
+    }
     const source = str(r['source']);
     const nativeId = str(r['nativeId']);
     const title = str(r['title']);
@@ -205,6 +242,8 @@ export function normalizeResources(raw: unknown): HomeworkResource[] {
  * it and, for a staff upload, re-reads the Library row.
  */
 export function resourceBody(r: HomeworkResource): Record<string, string> {
+  // Only the id: the server takes a material's title and type from the teacher's own row.
+  if (r.kind === 'material') return { kind: 'material', materialId: r.materialId };
   return {
     kind: 'library',
     source: r.source,

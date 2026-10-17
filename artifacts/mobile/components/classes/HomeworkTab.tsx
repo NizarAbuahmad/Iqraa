@@ -14,8 +14,9 @@
  *   that is no longer offered (detached from the class, say) keeps its link
  *   visible as a row, so saving does not silently drop it.
  * - Attachments are Library items, picked with the class shelf's own
- *   `LibraryPickerSheet` and sent as the shelf's POST body; a save resends the
- *   whole list. «انشره في محادثة الشعبة» leaves a line in the class chat — on
+ *   `LibraryPickerSheet` and sent as the shelf's POST body, or the teacher's
+ *   own saved materials («من ملفاتي», `MaterialPickerSheet`), sent as an id the
+ *   server checks is theirs; a save resends the whole list. «انشره في محادثة الشعبة» leaves a line in the class chat — on
  *   create through `shareToChat`, later from the edit modal.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -38,6 +39,8 @@ import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LibraryPickerSheet } from '@/components/classes/LibraryPickerSheet';
+import { MaterialPickerSheet } from '@/components/classes/MaterialPickerSheet';
+import type { SavedMaterial } from '@/services/workspace';
 import { addBodyFor } from '@/services/classResources';
 import type { ResourceItem } from '@/services/resourceCatalog';
 import { apiErrorMessage } from '@/services/apiErrorKey';
@@ -52,6 +55,7 @@ import {
   formatDueDate,
   homeworkDraftError,
   resourceBody,
+  resourceKey,
   type TeacherHomework,
 } from '@/services/homework';
 import { archiveHomework, createHomework, listClassHomework, shareHomework, updateHomework } from '@/services/homeworkApi';
@@ -61,7 +65,7 @@ const ACCENT = palette.primary;
 const ACCENT_FILL = palette.hero;
 const TOUCH = 44;
 
-/** `key` is `<source>:<nativeId>`, the picker's own "already added" key. */
+/** `key` is `resourceKey`: `<source>:<nativeId>` (the Library picker's own "already added" key) or `material:<id>`. */
 type DraftResource = { key: string; title: string; body: object };
 type Draft = { title: string; instructions: string; dueDate: string; evaluationId: string | null; resources: DraftResource[] };
 const EMPTY_DRAFT: Draft = { title: '', instructions: '', dueDate: '', evaluationId: null, resources: [] };
@@ -101,6 +105,7 @@ export function HomeworkTab({
   const [saving, setSaving] = useState(false);
   const [shareToChat, setShareToChat] = useState(true);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [materialPickerOpen, setMaterialPickerOpen] = useState(false);
   const [notice, setNotice] = useState('');
 
   const load = useCallback(async () => {
@@ -152,7 +157,7 @@ export function HomeworkTab({
       instructions: item.instructions,
       dueDate: item.dueDate,
       evaluationId: item.evaluationId,
-      resources: item.resources.map(r => ({ key: `${r.source}:${r.nativeId}`, title: r.title, body: resourceBody(r) })),
+      resources: item.resources.map(r => ({ key: resourceKey(r), title: r.title, body: resourceBody(r) })),
     });
     setFieldError(null);
     setModalError('');
@@ -178,6 +183,15 @@ export function HomeworkTab({
       d.resources.some(r => r.key === item.key) || d.resources.length >= MAX_RESOURCES
         ? d
         : { ...d, resources: [...d.resources, { key: item.key, title, body: addBodyFor(item, lang) }] },
+    );
+  };
+
+  const onAddMaterial = (m: SavedMaterial) => {
+    const key = `material:${m.id}`;
+    setDraft(d =>
+      d.resources.some(r => r.key === key) || d.resources.length >= MAX_RESOURCES
+        ? d
+        : { ...d, resources: [...d.resources, { key, title: m.title, body: { kind: 'material', materialId: m.id } }] },
     );
   };
 
@@ -551,6 +565,23 @@ export function HomeworkTab({
                       </Text>
                     </Pressable>
                   ) : null}
+                  {draft.resources.length < MAX_RESOURCES ? (
+                    <Pressable
+                      onPress={() => setMaterialPickerOpen(true)}
+                      accessibilityRole="button"
+                      style={[styles.pick, { flexDirection: rowDir, borderColor: ACCENT, borderStyle: 'dashed' }]}
+                    >
+                      <Ionicons name="folder-open-outline" size={18} color={ACCENT} />
+                      <Text style={{ flex: 1, color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.label, textAlign: align }}>
+                        {t('hwAddMaterial')}
+                      </Text>
+                    </Pressable>
+                  ) : null}
+                  {draft.resources.some(r => r.key.startsWith('material:')) ? (
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
+                      {t('hwMaterialNote')}
+                    </Text>
+                  ) : null}
                 </View>
 
                 {editing ? null : (
@@ -635,6 +666,12 @@ export function HomeworkTab({
         busyKey={null}
         onAdd={onAddResource}
         onClose={() => setPickerOpen(false)}
+      />
+      <MaterialPickerSheet
+        visible={open && materialPickerOpen}
+        added={new Set(draft.resources.flatMap(r => (r.key.startsWith('material:') ? [r.key.slice('material:'.length)] : [])))}
+        onAdd={onAddMaterial}
+        onClose={() => setMaterialPickerOpen(false)}
       />
     </>
   );

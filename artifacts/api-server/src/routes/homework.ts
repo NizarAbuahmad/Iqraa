@@ -28,6 +28,7 @@ import {
   homework,
   homeworkCompletions,
   rosterLinks,
+  savedMaterials,
   students,
   type ClassGroup,
   type Homework,
@@ -122,13 +123,37 @@ async function examOk(evaluationId: string, teacherId: string, classId: string):
  * item already in the list is dropped, not an error. On PATCH an item already
  * attached keeps its stored snapshot unchecked: the edit form resends the whole
  * list, and a staff upload the Library has since deleted must not make every
- * later edit of the homework a 400.
+ * later edit of the homework a 400. A saved material (`kind: 'material'`) is
+ * the other kind; see its branch below.
  */
-async function resolveResources(raw: unknown[], attached: HomeworkResource[] = []): Promise<HomeworkResource[] | Fail> {
-  const kept = new Map(attached.map(r => [`${r.source}:${r.nativeId}`, r]));
+async function resolveResources(raw: unknown[], teacherId: string, attached: HomeworkResource[] = []): Promise<HomeworkResource[] | Fail> {
+  const kept = new Map(attached.map(r => [resourceKey(r), r]));
   const out: HomeworkResource[] = [];
   const seen = new Set<string>();
   for (const item of raw) {
+    // One of the teacher's own materials (ملفاتي): only the id is read from the
+    // app; it must be this teacher's row, and title/type come from that row.
+    if ((item as { kind?: unknown } | null)?.kind === "material") {
+      const materialId = (item as { materialId?: unknown }).materialId;
+      if (!isUuid(materialId)) return { error: "materialId must be a saved material id" };
+      const key = `material:${materialId.toLowerCase()}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const old = kept.get(key);
+      if (old) {
+        out.push(old);
+        continue;
+      }
+      const [m] = await db
+        .select({ id: savedMaterials.id, title: savedMaterials.title, type: savedMaterials.type })
+        .from(savedMaterials)
+        .where(and(eq(savedMaterials.id, materialId), eq(savedMaterials.userId, teacherId)))
+        .limit(1);
+      // A board reopens only in the teacher's whiteboard tool; nothing renders it read-only.
+      if (!m || m.type === "board") return { error: "Saved material not found" };
+      out.push({ kind: "material", materialId: m.id, title: m.title, type: m.type });
+      continue;
+    }
     const input = parseClassResourceInput(item);
     if ("error" in input) return { error: input.error };
     const key = `${input.source}:${input.nativeId}`;
@@ -144,6 +169,10 @@ async function resolveResources(raw: unknown[], attached: HomeworkResource[] = [
     out.push({ kind: "library", source: input.source, nativeId: input.nativeId, ...snap });
   }
   return out;
+}
+
+function resourceKey(r: HomeworkResource): string {
+  return r.kind === "material" ? `material:${r.materialId}` : `${r.source}:${r.nativeId}`;
 }
 
 /** The homework's line in its class chat. Never fails the caller: the homework itself is saved. */
@@ -276,7 +305,7 @@ router.post("/homework", async (req: AuthenticatedRequest, res) => {
       res.status(400).json(BAD_EXAM);
       return;
     }
-    const resources = await resolveResources(input.resources);
+    const resources = await resolveResources(input.resources, teacherId);
     if ("error" in resources) {
       res.status(400).json(resources);
       return;
@@ -361,7 +390,7 @@ router.patch("/homework/:id", async (req: AuthenticatedRequest, res) => {
     }
     let resources: HomeworkResource[] | undefined;
     if (patch.resources !== undefined) {
-      const r = await resolveResources(patch.resources, existing.resources);
+      const r = await resolveResources(patch.resources, teacherId, existing.resources);
       if ("error" in r) {
         res.status(400).json(r);
         return;
