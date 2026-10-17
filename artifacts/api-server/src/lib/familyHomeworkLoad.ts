@@ -57,6 +57,7 @@ export async function loadFamilyHomework(
       instructions: homework.instructions,
       dueAt: homework.dueAt,
       evaluationId: homework.evaluationId,
+      resources: homework.resources,
     })
     .from(homework)
     .where(

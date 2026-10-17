@@ -92,11 +92,10 @@ import {
   addedKeys,
   labItemsForClass,
   mergeClassShelf,
-  openTargetFor,
   withAddedResource,
   type ClassResource,
 } from '@/services/classResources';
-import { openExternal } from '@/services/externalLinks';
+import { openResource } from '@/services/openResource';
 import { trackEvent } from '@/services/analytics';
 import type { ResourceItem } from '@/services/resourceCatalog';
 import { classToolParams } from '@/services/classToolParams';
@@ -672,17 +671,7 @@ export default function ClassDetailScreen() {
     }
   };
 
-  const onOpenResource = (resource: ClassResource) => {
-    const target = openTargetFor(resource);
-    if (target.kind === 'url') void openExternal(target.url);
-    // `as never`: the typed route has no `premade` param, as in the Library screen.
-    else if (target.kind === 'premade') {
-      router.push({ pathname: '/workspace/view' as never, params: { premade: target.id } });
-    } else if (target.kind === 'lab') {
-      // `as never`: the lab routes are typed per-id, as the premade branch above is.
-      router.push(target.path as never);
-    }
-  };
+  const onOpenResource = (resource: ClassResource) => openResource(resource, { teacher: true, isAr: lang === 'ar' });
 
   const align = isRTL ? 'right' : 'left';
   const title = group ? (lang === 'ar' && group.nameAr ? group.nameAr : group.name) : '';
@@ -1122,7 +1111,15 @@ export default function ClassDetailScreen() {
           }}
         />
       ) : tab === 'homework' ? (
-        <HomeworkTab classId={id} exams={exams} colors={colors} isRTL={isRTL} lang={lang === 'ar' ? 'ar' : 'en'} t={t} />
+        <HomeworkTab
+          classId={id}
+          libraryGroup={{ gradeId: group?.gradeId ?? '', subjectIds: focus ? [focus] : subjectIds }}
+          exams={exams}
+          colors={colors}
+          isRTL={isRTL}
+          lang={lang === 'ar' ? 'ar' : 'en'}
+          t={t}
+        />
       ) : (
         <FlatList
           data={shownExams}
