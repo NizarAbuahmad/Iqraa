@@ -83,9 +83,10 @@ import {
   assertUsableGeneration,
   deckShortfalls,
   extractJSON,
-  mergeQuizTopUp,
+  absorbQuizTopUp,
   mergeWorksheetTopUp,
   normalizeQuiz,
+  quizRepeats,
   quizShortfall,
   quizStems,
   quizWanted,
@@ -474,13 +475,19 @@ async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
     // the paper, so the second batch is new questions. Best effort: if the
     // second call fails the short paper is still served (with its shortfall
     // stated), because throwing away a usable paper over it would be worse.
+    //
+    // The same call replaces questions past their kind's share (`quizRepeats`):
+    // one ask written five ways is a valid reply too, and the prompt's "never
+    // the same idea twice" is otherwise only a request.
     if (kind === "quiz") {
       const missing = quizShortfall(chosen.parsed, body);
-      if (missing > 0) {
+      const repeats = quizRepeats(chosen.parsed, quizWanted(body));
+      if (missing > 0 || repeats.length > 0) {
         const have = quizStems(chosen.parsed);
+        const repeated = repeats.map(i => have[i]).filter((t): t is string => !!t);
         logger.warn(
-          { kind, strictKey: keys.strictKey, asked: quizWanted(body), got: have.length },
-          "quiz came back short — asking for the rest",
+          { kind, strictKey: keys.strictKey, asked: quizWanted(body), got: have.length, repeated: repeats.length },
+          "quiz came back short or repeating itself — asking for the rest",
         );
         try {
           const more = await completeOnce({
@@ -488,9 +495,12 @@ async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
             userPrompt:
               args.userPrompt
               + variationBlock({ variantIndex: decision.variantIndex, isArabic: args.isAr, avoid })
-              + quizTopUpBlock(args.isAr, have, missing),
+              + quizTopUpBlock(args.isAr, have, missing + repeats.length, repeated),
           });
-          mergeQuizTopUp(chosen.parsed, more.parsed);
+          const replaced = absorbQuizTopUp(chosen.parsed, more.parsed, repeats, quizWanted(body));
+          if (repeats.length) {
+            logger.info({ kind, strictKey: keys.strictKey, repeated: repeats.length, replaced }, "quiz repeats replaced");
+          }
           normalizeQuiz(chosen.parsed, body.questionTypes, quizWanted(body));
           chosen = {
             ...chosen,
