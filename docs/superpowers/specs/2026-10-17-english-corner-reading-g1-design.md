@@ -1,6 +1,6 @@
 # English corner: reading activities for Grade 1 — design
 
-**Status:** awaiting review of this written spec. **Scope:** Grade 1 English
+**Status:** implemented (PR #1120). **Scope:** Grade 1 English
 only, both semesters (the 10 hub lessons, `kbl-g1-eng-s{1,2}-nccd-u*_l1`).
 
 ## Why
