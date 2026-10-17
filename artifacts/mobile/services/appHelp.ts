@@ -41,9 +41,18 @@ const TOOL_KEYWORDS: Record<string, string[]> = {
   game: ['لعبه', 'مسابقه', 'مسابقات', 'game', 'quiz game'],
   activity: ['نشاط', 'انشطه', 'activity'],
   games: ['العاب', 'ألعاب', 'games', 'play'],
-  quiz: ['اختبار قصير', 'كويز', 'quiz'],
+  // Bare «اختبار» too: «كيف أسوي اختبار» found no place. The plural stays the exams'.
+  quiz: ['اختبار قصير', 'اختبار', 'كويز', 'quiz'],
   evaluations: ['اختبارات', 'امتحان', 'امتحانات', 'تقييم', 'تقييمات', 'علامات', 'نتائج', 'exam', 'test', 'tests', 'grades', 'results'],
   'parent-msg': ['رساله ولي امر', 'رساله للاهل', 'parent message'],
+};
+
+/** Steps for "how do I make one" — the generators the chat can also make itself. */
+const TOOL_HOW: Record<string, string> = {
+  'lesson-plan': 'howMakeLessonPlan',
+  worksheet: 'howMakeWorksheet',
+  quiz: 'howMakeQuiz',
+  activity: 'howMakeActivity',
 };
 
 /** Screens reached from Profile or a tab, which no catalog lists. */
@@ -165,6 +174,7 @@ function toolPlaces(): AppPlace[] {
         pathKeys: ['tabTools', section.titleKey],
         isTool: true,
         keywords: [tool.id, ...(TOOL_KEYWORDS[tool.id] ?? [])],
+        howKey: TOOL_HOW[tool.id],
       });
     }
   }
@@ -213,8 +223,21 @@ const WHERE_PATTERN =
  * reads the same as the imperative: «can we create a quiz on fractions» and
  * «ممكن انشئ اختبار» ask the assistant to make one).
  */
-const HOW_PATTERN =
+const HOW_ACCOUNT =
   /(كيف|طريقه|خطوات)\s*(يمكنني\s*|ممكن\s*)?((ا|ن)?(ضيف|ضف|ضافه|نشي|نشئ|نشاء|عمل|غير|عدل|حذف|صدر|طبع|حفظ|بدا|شارك|ربط|دعو|ستخدم)|تغيير|تعديل|تصدير|طباعه|بدء)|\bhow\s+(?:(?:do|can|should)\s+(?:i|we)\s+)?(?:to\s+)?(?:add|create|make|change|edit|delete|remove|export|print|save|share|start|use|link|invite)\b|\bcan\s+i\s+(?:add|change|edit|delete|remove|export|print|save|share|link|invite)\b|\b(?:is\s+there\s+(?:a|any|some)\s+way|is\s+it\s+possible|any\s+way)\s+to\s+(?:add|change|edit|delete|remove|export|save|share|link|invite)\b|(?:^|\s)(?:هل\s+)?(?:يمكنني|يمكن|اقدر|استطيع|ممكن)\s+(?:ان\s+)?(?:اضيف|اضافه|اغير|اعدل|احذف|اصدر|احفظ|اشارك|اربط|ادعو)(?:\s|$)/i;
+
+/**
+ * «how to generate worksheet», «كيف أجهّز ورقة عمل» — how a material is made.
+ * These verbs said nothing to the pattern above, so the question fell through
+ * to the generator: it made a worksheet titled «how» (found on app.iqrra.com,
+ * 2026-10-17). They count only right before a material's name, because «how
+ * do I prepare students for the exam» and «كيف أحضّر طلابي» are teaching
+ * questions that happen to name a place.
+ */
+const HOW_MAKE =
+  /\bhow\s+(?:(?:do|can|could|should)\s+(?:i|we)\s+)?(?:to\s+)?(?:generate|prepare|build|write|design|produce|get)\s+(?:(?:a|an|the|my|some|new)\s+)?(?:worksheets?|quiz(?:zes)?|(?:lesson\s+)?plans?|activit(?:y|ies)|homework|exams?|tests?|slides|presentations?)\b|(كيف|طريقه|خطوات)\s*(يمكنني\s*|ممكن\s*)?(ا|ن)?(جهز|حضر|سوي|ولد|كتب)\s+(ال)?(ورقه|اوراق|خطه|اختبار|امتحان|نشاط|واجب|عرض)/i;
+
+const HOW_PATTERN = new RegExp(`${HOW_ACCOUNT.source}|${HOW_MAKE.source}`, 'i');
 
 /**
  * A plain statement that adds to the account's own lists: «add more classes to
@@ -583,7 +606,11 @@ export function answerAppHelp(
   const firstHow = places[0]!.howKey && !(ADD_HOWS.has(places[0]!.howKey) && REMOVE_VERB.test(q))
     ? places[0]!.howKey
     : undefined;
-  const how = isHowQuery(query) ? firstHow ?? exportHow : undefined;
+  // A generator's own steps say how to make one, so «how do I export my
+  // worksheet» still gets the export's.
+  const how = isHowQuery(query)
+    ? places[0]!.isTool ? exportHow ?? firstHow : firstHow ?? exportHow
+    : undefined;
   if (how) return { text: t(how), places: [places[0]!] };
   const sep = isAr ? ' ← ' : ' → ';
   const lines = places.map(p => {

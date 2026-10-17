@@ -109,6 +109,35 @@ function trimEdgeFiller(s: string): string {
 }
 
 /**
+ * What is left of a how-to once the material is stripped: «how», «how do I»,
+ * «كيف أجهّز». "how to generate worksheet" was titled «how» and printed as a
+ * worksheet's heading. A topic made of these words alone is no topic; one
+ * that only contains them («How Plants Grow») is kept.
+ */
+const ASKING_ONLY = new Set([
+  ...EDGE_FILLER,
+  'how', 'what', 'why', 'when', 'where', 'which', 'who', 'do', 'does', 'did',
+  'should', 'shall', 'is', 'are', 'way', 'steps',
+  'كيف', 'ماذا', 'لماذا', 'متى', 'متي', 'أين', 'اين', 'وين', 'هل', 'ما', 'شو',
+  'طريقة', 'طريقه', 'خطوات', 'يمكنني', 'أستطيع', 'استطيع', 'أقدر', 'اقدر', 'عمل',
+  'أجهز', 'اجهز', 'نجهز', 'أحضر', 'احضر', 'نحضر', 'أسوي', 'اسوي', 'نسوي',
+  'أعمل', 'اعمل', 'نعمل', 'أنشئ', 'انشئ', 'ننشئ', 'أكتب', 'اكتب', 'أولد', 'اولد',
+]);
+
+/**
+ * The "how do I" a how-to opens with, when a topic follows it: «how can I
+ * build a quiz on fractions» left «how can I a fractions». Only with a second
+ * asking word («how do», «كيف أجهّز»), so «how plants grow» keeps its «how».
+ */
+const HOW_LEAD = /^(?:how|كيف|طريقة|طريقه|خطوات)\s+(?:do|does|can|could|should|would|to|يمكنني|ممكن|أستطيع|استطيع|أقدر|اقدر|[أان](?:جه|حض|سو|عمل|نشئ|كتب|ول)\S*)(?=\s|$)/i;
+
+function isOnlyAsking(s: string): boolean {
+  const words = s.split(' ').filter(Boolean);
+  return words.length > 0
+    && words.every(w => ASKING_ONLY.has(w.replace(/[ً-ْ]/g, '').toLowerCase()));
+}
+
+/**
  * The topic an ask is about, with the asking stripped off.
  *
  * Not cosmetic: this string titles the saved material and heads the first
@@ -146,7 +175,8 @@ export function topicFromQuery(query: string): string {
     // the front of that would cut into the word.
     .replace(/^(?:a|an|the)\s+/i, '')
     .trim();
-  return trimEdgeFiller(out);
+  const topic = trimEdgeFiller(out.replace(HOW_LEAD, ''));
+  return isOnlyAsking(topic) ? '' : topic;
 }
 
 /** Resolve topic string for generation from lesson / docs / query. */
