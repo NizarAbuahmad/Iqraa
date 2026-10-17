@@ -13,13 +13,22 @@ import { allPremade } from '@workspace/curriculum/premade';
 import { getSubjectsForGrade, getVisibleGrades } from '@workspace/curriculum';
 import { readPrintStyle } from '@/hooks/usePrintStyle';
 import { openTargetFor } from './classResources';
+import type { HomeworkMaterialResource } from './homework';
 import { openExternal } from './externalLinks';
 import { buildWorksheetHTML, exportAsPDF } from './share';
 
 export function openResource(
-  resource: Parameters<typeof openTargetFor>[0] & { title: string },
-  opts: { teacher: boolean; isAr: boolean },
+  resource: (Parameters<typeof openTargetFor>[0] & { title: string }) | HomeworkMaterialResource,
+  opts: { teacher: boolean; isAr: boolean; homeworkId?: string },
 ): void {
+  // A teacher's saved material on a homework: the viewer's read-only family
+  // source, which /workspace/view lets a parent or student into (routeGating.ts).
+  if ('materialId' in resource) {
+    if (opts.homeworkId) {
+      router.push({ pathname: '/workspace/view' as never, params: { hw: opts.homeworkId, material: resource.materialId } });
+    }
+    return;
+  }
   const target = openTargetFor(resource);
   if (target.kind === 'url') void openExternal(target.url);
   else if (target.kind === 'premade') {

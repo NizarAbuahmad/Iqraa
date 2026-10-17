@@ -3022,6 +3022,21 @@ place — see its section 2).
   are pure, in `modules/homework/`; loaders are `lib/familyHomeworkLoad.ts` and
   `lib/homeworkDone.ts`. The student and parent routes answer `403
   student_accounts_disabled` when the flag is off, like the timetable.
+- **Saved materials on homework (since 2026-10-17).** Besides Library items, a teacher can
+  attach their own ملفاتي rows («من ملفاتي» in the homework form): `homework.resources` holds
+  `{ kind: 'material', materialId, title, type }`, and the server takes title and type from the
+  teacher's own `saved_materials` row (another teacher's, an unknown id or a board is a 400; an
+  item already attached is kept on PATCH even if since deleted). Families open it through
+  `GET /student|parent/homework/:id/materials/:materialId` (`lib/homeworkMaterial.ts`): 404
+  unless the homework and class are live, a caller's roster row is in the class, the material is
+  listed on the homework and still belongs to its teacher. The material read is the one
+  `systemDb` query (pinned in `systemDbFiles.test.ts`) so it survives an owner-only policy on
+  `saved_materials`. **The content goes out without its answers** (`modules/homework/materialCopy.ts`
+  blanks answer keys, correct answers, explanations, structured-question solutions and teacher
+  companions, and drops a deck's reveal slides) — a new answer-bearing field is served until its
+  name is added there. The app shows it at `/workspace/view?hw=…&material=…`, read-only (export
+  only); `/workspace/view` is on the non-teacher route allowlist, its other sources fail closed
+  for those roles. Pinned by `homeworkMaterial.db.test.ts` (also passes with `RLS_ENFORCE=on`).
 - **Mobile:** a «الواجبات» tab on the class screen (`components/classes/HomeworkTab.tsx`,
   a fourth tab next to Students / Materials / Exams) with a create / edit / delete
   modal inside a `KeyboardSafeView`. **The shared tab padding went from 14 to

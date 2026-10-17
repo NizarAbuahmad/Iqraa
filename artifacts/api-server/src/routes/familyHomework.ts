@@ -2,7 +2,8 @@
  * «الواجبات» for students and parents. A student sees the homework of the live
  * classes their `self`-linked roster rows sit in and can tick it off; a parent
  * sees one list per child (guardian-linked rows grouped by name, exactly as
- * the schedule does, so the `key` matches) and can read but never tick.
+ * the schedule does, so the `key` matches) and can read but never tick. Both
+ * can open a saved material the teacher attached (…/:id/materials/:materialId).
  *
  * Path-scoped guards, like every other router here — see `mountOrder.test.ts`.
  * `studentExams.ts` already guards all of `/student` and `/parent`; these
@@ -14,6 +15,7 @@ import { studentAccountsEnabled } from "../lib/features.js";
 import { logger } from "../lib/logger";
 import { guardianLinkedStudents, selfLinkedStudentIds, studentIdsWithSelfAccount } from "../lib/familyAccess.ts";
 import { loadFamilyHomework } from "../lib/familyHomeworkLoad.ts";
+import { loadHomeworkMaterial } from "../lib/homeworkMaterial.ts";
 import { setHomeworkDone } from "../lib/homeworkDone.ts";
 import { groupChildren } from "../modules/family/children.ts";
 
@@ -27,6 +29,7 @@ const DISABLED = {
   error: "Parent and student accounts are not available yet.",
 } as const;
 const NO_HOMEWORK = { error: "Homework not found" } as const;
+const NO_MATERIAL = { error: "Attachment not found" } as const;
 
 router.get("/student/homework", async (req: AuthenticatedRequest, res) => {
   try {
@@ -91,6 +94,48 @@ async function mark(req: AuthenticatedRequest, res: Response, done: boolean): Pr
     res.status(500).json({ error: "Failed to update your homework" });
   }
 }
+
+/**
+ * One of the teacher's saved materials attached to a homework, read-only and
+ * without its answers. Every refusal is the same 404 — see lib/homeworkMaterial.ts
+ * for the conditions. A parent reads through any child's rows: a child in two
+ * classes may be linked under two rows, and only the one in this homework's
+ * class matters, which the loader decides.
+ */
+async function material(req: AuthenticatedRequest, res: Response, studentIds: string[]): Promise<void> {
+  const item = await loadHomeworkMaterial(studentIds, String(req.params["id"]), String(req.params["materialId"]));
+  if (!item) {
+    res.status(404).json(NO_MATERIAL);
+    return;
+  }
+  res.json({ material: item });
+}
+
+router.get("/student/homework/:id/materials/:materialId", async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!studentAccountsEnabled()) {
+      res.status(403).json(DISABLED);
+      return;
+    }
+    await material(req, res, await selfLinkedStudentIds(req.user!.id));
+  } catch (err) {
+    logger.error({ err }, "student homework material failed");
+    res.status(500).json({ error: "Failed to load the attachment" });
+  }
+});
+
+router.get("/parent/homework/:id/materials/:materialId", async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!studentAccountsEnabled()) {
+      res.status(403).json(DISABLED);
+      return;
+    }
+    await material(req, res, (await guardianLinkedStudents(req.user!.id)).map(c => c.studentId));
+  } catch (err) {
+    logger.error({ err }, "parent homework material failed");
+    res.status(500).json({ error: "Failed to load the attachment" });
+  }
+});
 
 router.put("/student/homework/:id/done", (req: AuthenticatedRequest, res) => mark(req, res, true));
 router.delete("/student/homework/:id/done", (req: AuthenticatedRequest, res) => mark(req, res, false));
