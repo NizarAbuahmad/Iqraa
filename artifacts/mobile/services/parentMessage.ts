@@ -425,6 +425,67 @@ export function guardiansForStudent(
   return (entry?.contacts ?? []).filter(c => c.role === 'parent');
 }
 
+/**
+ * Which of the picked student's guardians the letter will reach: all of them
+ * unless the teacher unticked some (only the mother, say). Order is kept, and an
+ * id that is not one of this student's guardians is ignored rather than trusted.
+ */
+export function pickRecipients(
+  guardians: ContactStudent['contacts'],
+  excludedUserIds: ReadonlySet<string>,
+): ContactStudent['contacts'] {
+  return guardians.filter(g => !excludedUserIds.has(g.userId));
+}
+
+/** Words of a name, compared the way a person reads it rather than letter for letter. */
+function nameWords(s: string): string[] {
+  return s
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/[ً-ٰٟـ]/g, '') // tashkeel, dagger alef, tatweel
+    .replace(/[أإآٱ]/g, 'ا')
+    .replace(/ى/g, 'ي')
+    .replace(/ة/g, 'ه')
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+/** More candidates than this is a guess, not a suggestion. */
+const MAX_SUGGESTIONS = 3;
+
+/**
+ * Roster students a hand-typed name probably means.
+ *
+ * Typing over the name drops the picked student on purpose — the letter must
+ * never reach the previous child's parent — which also turns in-app send off.
+ * This hands the link back as a suggestion the teacher taps; nothing is ever
+ * linked by itself, because a wrong silent link sends a letter about one child
+ * to another child's parent.
+ *
+ * Words are compared whole, except the last one the teacher typed, which may be
+ * unfinished. A full-name match beats names that merely start with it, so
+ * «أحمد» finds «أحمد» before «أحمد خالد». Hamza, ya, ta marbuta and diacritics
+ * are not told apart: the teacher's spelling and the roster's rarely agree on
+ * them, and the chip shows the roster's spelling for them to confirm.
+ */
+export function matchRosterStudents<T extends { id: string; displayName: string }>(
+  typed: string,
+  roster: T[],
+): T[] {
+  const want = nameWords(typed);
+  const letters = want.join('').length;
+  if (letters < 2) return [];
+  const startsWith = roster.filter(r => {
+    const have = nameWords(r.displayName);
+    return want.every((w, i) =>
+      i === want.length - 1 ? have[i]?.startsWith(w) === true : have[i] === w);
+  });
+  const exact = startsWith.filter(r => nameWords(r.displayName).length === want.length
+    && nameWords(r.displayName).every((w, i) => w === want[i]));
+  const found = exact.length > 0 ? exact : startsWith;
+  return found.length <= MAX_SUGGESTIONS ? found : [];
+}
+
 // ─── Contact history ─────────────────────────────────────────────────────────
 
 const HISTORY_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
