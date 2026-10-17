@@ -20,6 +20,10 @@ const AR_DIGITS = (n: number) => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧
 export function sentenceCountAr(n: number): string {
   return `${AR_DIGITS(n)} ${n >= 3 && n <= 10 ? 'جمل' : 'جملة'}`;
 }
+/** «الوحدة ٣»; unit 0 by name, since «الوحدة ٠» reads as a dot beside the «·» separators. */
+export function unitLabelAr(n: number): string {
+  return n === 0 ? 'وحدة الترحيب' : `الوحدة ${AR_DIGITS(n)}`;
+}
 const MARKER: Record<string, string> = { yes: '✅', no: '❌', boy: '👦', girl: '👧' };
 
 const NOTES: Record<string, string> = {
@@ -66,7 +70,7 @@ function renderUnit(u: GrammarUnit, idx: number): string {
   return `
   <section class="unit" id="unit-${idx + 1}">
     <header class="unit-head">
-      <div class="unit-meta"><span>${sem}</span><span>الوحدة ${AR_DIGITS(lesson.unitNumber)}</span><span>${sentenceCountAr(sentences.length)}</span></div>
+      <div class="unit-meta"><span>${sem}</span><span>${unitLabelAr(lesson.unitNumber)}</span><span>${sentenceCountAr(sentences.length)}</span></div>
       <h2><span dir="ltr">${esc(lesson.unitTitle)}</span> <span class="unit-ar">${esc(lesson.unitTitleAr)}</span></h2>
       <ul class="patterns" dir="ltr">${u.patterns.map(p => `<li>${esc(patternText(p.text))}</li>`).join('')}</ul>
       ${note}
@@ -158,6 +162,7 @@ export function renderGrammarReviewHtml(): string {
   .card { border: 1px solid var(--rule); border-radius: 10px; padding: 16px 20px; background: var(--tint); }
   .card h3 { font-family: var(--display); font-size: 1.05rem; margin: 0 0 8px; }
   .card ol, .card ul { margin: 0; padding-inline-start: 1.3em; display: grid; gap: 6px; }
+  .card ol { list-style-type: arabic-indic; }
   .acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
   .act { border: 1px solid var(--rule); border-radius: 10px; padding: 12px 14px; }
   .act b { font-family: var(--display); display: block; color: var(--teal); }

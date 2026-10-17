@@ -55,3 +55,23 @@ test('a signed-off unit offers its lesson words', () => {
     u.reviewedBy = saved;
   }
 });
+
+test("the teacher's reading form lists every word once per unit, and the committed copy is current", async () => {
+  const { readFileSync } = await import('node:fs');
+  const { renderReadingReviewHtml } = await import('../englishReadingReview.ts');
+  const html = renderReadingReviewHtml();
+  const words = hubLessonsForGrade(1).flatMap(l => l.words);
+  assert.equal((html.match(/<td class="word" dir="ltr">/g) ?? []).length, words.length);
+  // Every word the app may ask about shows its letter; every left-out word shows why.
+  assert.equal((html.match(/<td class="letter" dir="ltr">[a-z]<\/td>/g) ?? []).length, words.filter(w => firstSound(w.en)).length);
+  assert.equal((html.match(/<td class="skip">/g) ?? []).length, words.filter(w => !firstSound(w.en)).length);
+  assert.equal((html.match(/<section class="unit"/g) ?? []).length, READING_UNITS.length);
+  const committed = readFileSync(new URL('../../../../docs/english-reading-g1-review.html', import.meta.url), 'utf8');
+  assert.equal(committed, html, 'stale: run pnpm --filter @workspace/curriculum run grammar-sheet');
+});
+
+test('the Welcome unit is named, not numbered: «الوحدة ٠» reads as a dot beside «·»', async () => {
+  const { unitLabelAr } = await import('../englishGrammarReview.ts');
+  assert.equal(unitLabelAr(0), 'وحدة الترحيب');
+  assert.equal(unitLabelAr(7), 'الوحدة ٧');
+});
