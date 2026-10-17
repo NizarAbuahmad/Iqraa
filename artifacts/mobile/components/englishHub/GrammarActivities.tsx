@@ -70,7 +70,7 @@ function gapped(s: GrammarSentence): string {
   return [...s.tokens.slice(0, start), `____${punct}`, ...s.tokens.slice(start + length)].join(' ');
 }
 
-function Feedback({ ok, answer, onNext, sentence }: { ok: boolean; answer: string; onNext: () => void; sentence: string }) {
+export function Feedback({ ok, answer, onNext, sentence }: { ok: boolean; answer: string; onNext: () => void; sentence: string }) {
   const colors = useColors();
   const { t } = useLanguage();
   return (
