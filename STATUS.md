@@ -1594,8 +1594,13 @@ yet.** Spec: `docs/superpowers/specs/2026-10-16-english-corner-grammar-g1-design
 - **The teacher's sheet is the review.** `docs/english-grammar-g1-sheet.md`
   (`pnpm --filter @workspace/curriculum run grammar-sheet`) lists every sentence
   a unit can show, with its picture, the wrong option it is offered beside, and
-  the wrong picture True or false uses. A test fails if the committed sheet
-  differs from the generator, so a sign-off always refers to what ships.
+  the wrong picture True or false uses. The same script writes the printable
+  form to hand a teacher, `docs/english-grammar-g1-review.html`
+  (`englishGrammarReview.ts`, since 2026-10-17). It has Arabic instructions, a
+  tick box and a notes column per sentence, and a sign-off strip per unit. Open
+  it in a browser and print it: A4 landscape, one unit per page, 24 pages.
+  A test fails if either committed file differs from the generator, so a
+  sign-off always refers to what ships.
 - **Pictures** are the corner's emoji (`englishPictures.ts`, moved from the app
   so the sheet and the app agree). A marker shows the contrast: ✅/❌ for got
   and like, 👦/👧 for he and she, two of a thing for are and they're. A word
@@ -1617,8 +1622,8 @@ yet.** Spec: `docs/superpowers/specs/2026-10-16-english-corner-grammar-g1-design
    This needs the OpenAI and R2 keys; the script now includes every grammar
    sentence, in the young register. Until then, web speaks a sentence with the
    browser's voice and native is silent.
-2. A Grade 1 English teacher reads that unit's table in
-   `docs/english-grammar-g1-sheet.md`.
+2. A Grade 1 English teacher reviews and signs that unit's page of
+   `docs/english-grammar-g1-review.html`, printed.
 3. Set the unit's `reviewedBy: { name, date }` in `englishGrammar.ts` and merge.
    That is the only switch: there is no flag and no role check.
 
@@ -3945,6 +3950,19 @@ the word («جبل الصفا» stays). Each accusative form is pinned to get ex
 plain twin's answer. Not changed, and older than this: «كيف اضيف صف الى
 المصفوفة» (a matrix row) goes to the grade steps through the «اضيف صف» keyword,
 and now so does its accusative form.
+
+**A student to add (2026-10-17).** With live AI on the web (#1104), «كيف أضيف
+طالباً جديداً؟» went to the model, which said it was a question about the app and
+gave no steps: no keyword named a student being added. A student is added inside
+a class that exists (open the class → «الطلبة» → + → names → «أضف إلى الشعبة»),
+so it gets its own place, `add-student`, with the steps `howAddStudent` and the
+My classes button — not the add-a-class answer («اضغط شعبة جديدة»), which would
+send a teacher who has a class to make another. `ADD_STUDENT`
+(`services/appHelp.ts`) is anchored like the statements: a how-word, a where-word
+or intent is optional, the student ends the message bar «جديد / آخر» and «to my
+class / الى الشعبة», so «كيف أضيف طالباً إلى مجموعة النقاش» and «add a student to
+the group work» stay teaching. Older and unchanged: «كيف أضيف طلاباً في نشاط
+جماعي» opens the activity tool through the «نشاط» keyword.
 
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
