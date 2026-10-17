@@ -164,6 +164,35 @@ an announcement by default» below.
   all for that reason; capped 3.2%, against 2.9% for exact frames. The
   generators pass no cap and are unchanged. Prompt rule 5 already says a
   reworded question is the same question, so `exam-gen-7` stands.
+  **…and a live quiz replaces what it repeats (also 2026-10-17).** The
+  `/generate/quiz` prompt asked for no idea twice and nothing checked the
+  reply. `quizRepeats` (`generationShape.ts`) finds questions past their
+  kind's share — the same `sameKind` grouping — and the existing top-up call
+  asks for replacements alongside any missing questions (`quizTopUpBlock`
+  names them); `absorbQuizTopUp` swaps fresh ones in, each taking the
+  repeat's marks, and never shortens or lengthens the paper (a repeat nothing
+  replaced stays). The share is a third of the paper, at least three
+  (`kindQuota`): measured on the offline generator's 10- and 20-question
+  quizzes for 40 sampled lessons, a quarter fired on 14 of 16 papers — every
+  maths one, mostly «أوجد حل المعادلة» on a lesson about solving that
+  equation — and a third on 2, both a single ask filling a paper. Worksheets
+  and homework are practice and are not touched.
+  **…and the offline Grade 10 bank stops drawing one ask throughout (also
+  2026-10-17).** `takeFromBank` (`lib/math-practice/src/index.ts`) drew
+  uniformly within the teacher's tier, so a family that is mostly one ask
+  served it nearly throughout — 14 of `exp_eq`'s 17 items were «أوجد حل
+  المعادلة», 8 of `quad_system`'s 12 «أوجد حل النظام». A draw is now weighted
+  by 1/(1+k)³, k the times its kind was already served in the pass (`ask:`
+  keys, as the topic generators record them); always taking the least-served
+  kind was tried first and made regenerate serve the same paper. `exp_eq` also
+  gained a number as a power of its base, one exponential from another, a
+  value checked by substitution and a halving model, and `quad_system` a point
+  checked by substitution, a hard «كم حلًّا» and a second elimination step —
+  each with working, each answer recomputed in `lessonKinds.test.ts`. Offline
+  10- and 20-question quizzes on those two lessons: the commonest kind 83% →
+  38% and 67% → 44% of a paper. Across every maths and chemistry lesson,
+  papers past a third went 137 → 122 of 2,820; the rest are elsewhere, not
+  in these two families.
 
 - **Lesson plan, slides, activity, lesson-flow and the classroom builder take a
   unit, semester or whole book — as one revision session (2026-10-14; spec
