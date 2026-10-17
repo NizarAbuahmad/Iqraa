@@ -42,12 +42,52 @@ export type MessageKind =
 export type Gender = 'male' | 'female';
 export type Tone = 'formal' | 'warm';
 
+/**
+ * What a praise letter may say about the child. The praise body used to assert
+ * «اجتهادًا واضحًا والتزامًا… وحضوره الفاعل» for every child, which is exactly
+ * the invention this file exists to avoid: the teacher ticks what is true, or
+ * the letter says nothing about the child's qualities at all.
+ */
+export type Strength = 'effort' | 'participation' | 'improvement' | 'conduct' | 'homework';
+
+/** Declaration order is the order they appear in a letter, whatever order they were ticked. */
+export const STRENGTHS: Strength[] = ['effort', 'participation', 'improvement', 'conduct', 'homework'];
+
+// Whole forms per gender rather than a suffix glued on: «مشاركة» → «مشاركته» drops its ة.
+const STRENGTH_AR: Record<Strength, { label: string; male: string; female: string }> = {
+  effort: { label: 'الاجتهاد', male: 'اجتهاده', female: 'اجتهادها' },
+  participation: { label: 'المشاركة', male: 'مشاركته', female: 'مشاركتها' },
+  improvement: { label: 'التحسّن', male: 'تحسّنه', female: 'تحسّنها' },
+  conduct: { label: 'حسن السلوك', male: 'حسن سلوكه', female: 'حسن سلوكها' },
+  homework: { label: 'الالتزام بالواجبات', male: 'التزامه بالواجبات', female: 'التزامها بالواجبات' },
+};
+
+const STRENGTH_EN: Record<Strength, { label: string; phrase: string }> = {
+  effort: { label: 'Effort', phrase: 'effort' },
+  participation: { label: 'Participation', phrase: 'participation' },
+  improvement: { label: 'Improvement', phrase: 'improvement' },
+  conduct: { label: 'Good conduct', phrase: 'good conduct' },
+  homework: { label: 'Homework habits', phrase: 'homework habits' },
+};
+
+export function strengthLabel(s: Strength, isAr: boolean): string {
+  return isAr ? STRENGTH_AR[s].label : STRENGTH_EN[s].label;
+}
+
+/** Only for praise, deduplicated, unknown ids dropped, in declaration order. */
+function pickedStrengths(input: ParentMessageInput): Strength[] {
+  if (input.kind !== 'praise' || !input.strengths) return [];
+  return STRENGTHS.filter(s => input.strengths!.includes(s));
+}
+
 export interface ParentMessageInput {
   studentName: string;
   studentGender: Gender;
   kind: MessageKind;
   /** The teacher's own account of what happened. Never invented here. */
   details?: string;
+  /** Praise only: the qualities the teacher ticked. */
+  strengths?: Strength[];
   teacherName?: string;
   teacherGender?: Gender;
   subject?: string;
@@ -123,24 +163,29 @@ function arChild(g: Gender): string {
   return g === 'male' ? 'ابنكم' : 'ابنتكم';
 }
 
+/** «اجتهاده ومشاركته وتحسّنه» — each item carries its own «و», no commas in a short list. */
+function arStrengthList(input: ParentMessageInput): string {
+  const key = input.studentGender;
+  return pickedStrengths(input).map((s, i) => (i ? 'و' : '') + STRENGTH_AR[s][key]).join(' ');
+}
+
 function arBody(input: ParentMessageInput): string {
   const { studentName: n, studentGender: g, subject } = input;
   const child = arChild(g);
   // "في مادة الرياضيات" reads wrong when no subject was given; drop the clause
   // rather than emit a dangling "في مادة".
   const inSubject = subject?.trim() ? ` في مادة ${subject.trim()}` : '';
-  const did = g === 'male' ? 'أظهر' : 'أظهرت';
   const hasNot = g === 'male' ? 'لم يُنجز' : 'لم تُنجز';
   const wasAbsent = g === 'male' ? 'تغيّب' : 'تغيّبت';
-  const attendance = g === 'male' ? 'حضوره' : 'حضورها';
+  const strengths = arStrengthList(input);
 
   switch (input.kind) {
     case 'praise':
-      return `يسعدني أن أشارككم تميّز ${child} ${n}${inSubject}. فقد ${did} اجتهادًا واضحًا والتزامًا يستحق الثناء، وكان ل${attendance} الفاعل أثر طيب في الصف.`;
+      return `يسرّني إبلاغكم بملاحظة إيجابية عن ${child} ${n}${inSubject}.${strengths ? ` ومن أبرز ما لاحظته: ${strengths}.` : ''}`;
     case 'progress':
       return `أودّ إطلاعكم على تقرير موجز حول مستوى ${child} ${n}${inSubject} خلال الفترة الماضية.`;
     case 'missing-homework':
-      return `ألاحظ في الفترة الأخيرة أنّ ${child} ${n} ${hasNot} الواجبات المطلوبة${inSubject}. والواجب البيتي جزء أساسي من ترسيخ ما نتعلّمه في الحصة.`;
+      return `ألاحظ في الفترة الأخيرة أنّ ${child} ${n} ${hasNot} الواجبات المطلوبة${inSubject}. والواجب المنزلي جزء أساسي من ترسيخ ما نتعلّمه في الحصة.`;
     case 'academic-concern':
       return `أودّ إطلاعكم على ملاحظة تتعلّق بمستوى ${child} ${n}${inSubject}، رغبةً في معالجتها مبكرًا قبل أن تتراكم.`;
     case 'absence':
@@ -156,42 +201,110 @@ function arNextStep(kind: MessageKind, g: Gender): string {
   switch (kind) {
     case 'praise':
       return g === 'male'
-        ? 'أرجو أن تشاركوه هذا التقدير في المنزل، فله أثر كبير في الدافعية.'
-        : 'أرجو أن تشاركوها هذا التقدير في المنزل، فله أثر كبير في الدافعية.';
+        ? 'أرجو أن تشاركوه هذا التقدير في المنزل، فهو يزيده حماسًا.'
+        : 'أرجو أن تشاركوها هذا التقدير في المنزل، فهو يزيدها حماسًا.';
     case 'progress':
       return 'وأنا على استعداد لتزويدكم بأي تفصيل إضافي عند الحاجة.';
     case 'missing-homework':
-      return 'أرجو متابعة إنجاز الواجبات في المنزل، ولا تتردّدوا في التواصل معي إن كان هناك ما يحول دون ذلك.';
+      return 'أرجو متابعة إنجاز الواجبات في المنزل، وأرحّب بتواصلكم معي إن كان هناك ما يعيق ذلك.';
     case 'academic-concern':
-      return 'أقترح أن نتعاون على خطة متابعة بسيطة، وأنا مستعد لتقديم الدعم اللازم داخل الصف.';
+      // No first-person adjective here: «مستعد» is masculine, and the signer
+      // may be a woman. A verb in the future carries no gender.
+      return 'أقترح أن نتعاون على خطة متابعة بسيطة، وسأقدّم الدعم اللازم داخل الصف.';
     case 'absence':
       return 'أرجو إعلامي بأي ظرف يستدعي الغياب، لنعمل معًا على تعويض ما فات.';
     case 'behaviour':
       return 'أرجو التواصل معي في الوقت الذي يناسبكم لنتحدّث بشأنها.';
     case 'meeting':
-      return 'وسأكون شاكرًا لكم تحديد الوقت الأنسب لكم.';
+      // The body already asks for a time; this line used to ask again, in the
+      // masculine («شاكرًا»). Thanks only, and gender-free.
+      return 'وأشكر لكم تعاونكم.';
   }
 }
 
+/** Titles a teacher may already have typed into the name box — don't stack «الأستاذ» on them. */
+const ALREADY_TITLED = /^(الأستاذ|الأستاذة|أ\.|د\.|م\.|الدكتور|الدكتورة|المهندس|المهندسة|المعلم|المعلمة|المعلّم|المعلّمة|السيد|السيدة|الآنسة)/;
+
 function arSignOff(input: ParentMessageInput): string {
-  const role = input.teacherGender === 'female' ? 'معلّمة' : 'معلّم';
+  const female = input.teacherGender === 'female';
+  const role = female ? 'معلّمة' : 'معلّم';
   const subject = input.subject?.trim();
   const name = input.teacherName?.trim();
-  const line = [name, subject ? `${role} ${subject}` : role].filter(Boolean).join(' — ');
-  return `وتفضّلوا بقبول فائق الاحترام،\n${line}`;
+  const titled = name ? (ALREADY_TITLED.test(name) ? name : `${female ? 'الأستاذة' : 'الأستاذ'} ${name}`) : '';
+  // «الأستاذ نزار — معلّم» says the same thing twice; the role only earns a
+  // place beside a subject, or standing alone when there is no name.
+  const line = [titled, subject ? `${role} ${subject}` : titled ? '' : role].filter(Boolean).join(' — ');
+  const closing = input.tone === 'warm' ? 'مع خالص مودّتي وتقديري،' : 'وتفضّلوا بقبول فائق الاحترام،';
+  return `${closing}\n${line}`;
+}
+
+/**
+ * The teacher's own words, as typed, with a full stop if they left it off. It
+ * sits between two composed sentences, so a bare fragment reads as a typo.
+ * Adds punctuation only — never a word.
+ */
+function closeSentence(text: string | undefined): string {
+  const t = text?.trim() ?? '';
+  if (!t) return '';
+  return /[.!?؟…:؛،"”»)\]]$/.test(t) ? t : `${t}.`;
+}
+
+/**
+ * Would these details sit oddly in this letter — Latin script only in an Arabic
+ * letter, or Arabic only in an English one? A warning for the screen, never a
+ * block: a mixed phrase («اختبار PISA») is fine, and the teacher may mean it.
+ */
+export function detailsLanguageMismatch(details: string, isAr: boolean): boolean {
+  const hasLatin = /[A-Za-z]/.test(details);
+  const hasArabic = /[؀-ۿ]/.test(details);
+  return isAr ? hasLatin && !hasArabic : hasArabic && !hasLatin;
+}
+
+/**
+ * A grey example for the details box, one per kind, in the voice and shape of
+ * what a teacher should write: a specific, dated, full sentence. A placeholder
+ * rather than a default value, so it can never reach a parent unread.
+ */
+export function detailsExample(kind: MessageKind, isAr: boolean, g: Gender = 'male'): string {
+  const m = g === 'male';
+  if (isAr) {
+    const ar: Record<MessageKind, string> = {
+      praise: `مثال: ${m ? 'شارك' : 'شاركت'} بفاعلية في حلّ مسائل الوحدة الثالثة على السبّورة.`,
+      progress: `مثال: ارتفعت ${m ? 'علامته' : 'علامتها'} في اختبار الوحدة الثانية عن الاختبار السابق.`,
+      'missing-homework': `مثال: ${m ? 'لم يُسلّم' : 'لم تُسلّم'} واجب الوحدة الثالثة يومي الأحد والثلاثاء.`,
+      'academic-concern': `مثال: ${m ? 'يجد' : 'تجد'} صعوبة في حلّ المعادلات التربيعية رغم المراجعة في الحصة.`,
+      absence: `مثال: ${m ? 'تغيّب' : 'تغيّبت'} عن ثلاث حصص من أصل خمس هذا الأسبوع.`,
+      behaviour: `مثال: ${m ? 'تحدّث' : 'تحدّثت'} أثناء الشرح في ثلاث حصص متتالية ولم ${m ? 'يستجب' : 'تستجب'} للتنبيه.`,
+      meeting: 'مثال: أودّ مناقشة خطة المتابعة، والأنسب لي يوم الأحد أو الثلاثاء بعد الحصة الخامسة.',
+    };
+    return ar[kind];
+  }
+  const who = m ? 'He' : 'She';
+  const en: Record<MessageKind, string> = {
+    praise: `e.g. ${who} solved the Unit 3 problems on the board and explained each step.`,
+    progress: `e.g. ${m ? 'His' : 'Her'} Unit 2 test mark rose compared with the previous test.`,
+    'missing-homework': `e.g. ${who} did not hand in the Unit 3 homework on Sunday or Tuesday.`,
+    'academic-concern': `e.g. ${who} finds quadratic equations hard despite the in-class revision.`,
+    absence: `e.g. ${who} missed three of five classes this week.`,
+    behaviour: `e.g. ${who} talked during the explanation in three classes in a row and ignored the warning.`,
+    meeting: 'e.g. I would like to discuss a follow-up plan; Sunday or Tuesday after fifth period suits me.',
+  };
+  return en[kind];
 }
 
 function composeArabic(input: ParentMessageInput): string {
   const warm = input.tone === 'warm';
   const gender = input.studentGender === 'male' ? 'الطالب' : 'الطالبة';
+  // «وبعد،» is the turn from the salam into the matter of the letter. The warm
+  // opening puts the salam first too — a welcome before the salam is backwards.
   const greeting = warm
-    ? `أهلًا بكم،\nالسلام عليكم ورحمة الله وبركاته،`
-    : `حضرة ولي أمر ${gender} ${input.studentName} المحترم،\nالسلام عليكم ورحمة الله وبركاته،`;
+    ? `السلام عليكم ورحمة الله وبركاته،\nأهلًا بكم،`
+    : `حضرة ولي أمر ${gender} ${input.studentName} المحترم،\nالسلام عليكم ورحمة الله وبركاته، وبعد،`;
 
   return [
     greeting,
     arBody(input),
-    input.details?.trim(),
+    closeSentence(input.details),
     arNextStep(input.kind, input.studentGender),
     arSignOff(input),
   ]
@@ -204,12 +317,14 @@ function composeArabic(input: ParentMessageInput): string {
 function enBody(input: ParentMessageInput): string {
   const { studentName: n, studentGender: g, subject } = input;
   const child = g === 'male' ? 'your son' : 'your daughter';
-  const they = g === 'male' ? 'he' : 'she';
+  const poss = g === 'male' ? 'his' : 'her';
   const inSubject = subject?.trim() ? ` in ${subject.trim()}` : '';
+  const picked = pickedStrengths(input).map(s => STRENGTH_EN[s].phrase);
+  const list = picked.length > 1 ? `${picked.slice(0, -1).join(', ')} and ${picked[picked.length - 1]}` : picked[0];
 
   switch (input.kind) {
     case 'praise':
-      return `I am glad to share how well ${child}, ${n}, is doing${inSubject}. ${they[0].toUpperCase()}${they.slice(1)} has shown clear effort and commitment, and it has had a real effect in class.`;
+      return `I am pleased to share a positive note about ${child}, ${n}${inSubject}.${list ? ` What I have noticed: ${poss} ${list}.` : ''}`;
     case 'progress':
       return `I would like to share a brief update on ${child} ${n}'s progress${inSubject} over the past period.`;
     case 'missing-homework':
@@ -250,9 +365,9 @@ function composeEnglish(input: ParentMessageInput): string {
   return [
     greeting,
     enBody(input),
-    input.details?.trim(),
+    closeSentence(input.details),
     enNextStep(input.kind),
-    `Kind regards,\n${signLine}`,
+    `${warm ? 'Warm regards' : 'Kind regards'},\n${signLine}`,
   ]
     .filter(Boolean)
     .join('\n\n');
