@@ -303,9 +303,8 @@ interface Message {
   appHelp?: boolean;
   /**
    * Set on the reply to «أريد ورقة عمل» that points at the generator instead of
-   * making one. Like `appHelp`, it carries its own button, so the starter chips
-   * and the copy / export footer stay away from it. Unlike `appHelp`, the long
-   * press is left alone.
+   * making one. Like `appHelp`, it carries its own button, so the starter chips,
+   * the copy / export footer and the long-press export all stay away from it.
    */
   toolAsk?: boolean;
   pedagogicalClarification?: ClarificationOption[];
@@ -3868,7 +3867,7 @@ export default function IqraScreen() {
             message={item}
             colors={colors}
             isRTL={isRTL}
-            onLongPress={item.role === 'assistant' && !item.appHelp ? () => handleExportMessage(item) : undefined}
+            onLongPress={item.role === 'assistant' && !item.appHelp && !item.toolAsk ? () => handleExportMessage(item) : undefined}
             onCopy={item.role === 'assistant' && item.id !== streamingId ? handleCopyMessage : undefined}
             onExport={item.role === 'assistant' && item.id !== streamingId ? handleExportMessage : undefined}
             onSaveMaterial={item.role === 'assistant' ? handleSaveMaterial : undefined}

@@ -12,6 +12,7 @@
  * happens at display time (CLAUDE.md).
  */
 import type { ConcreteItem, DiffTier } from './index.ts';
+import { FRESH_DRAWS, servedFrames, spreadScore, stemFrame } from './stemFrame.ts';
 
 export type ElementaryOp =
   | 'add' | 'sub' | 'mul' | 'div' | 'compare' | 'place'
@@ -1246,7 +1247,10 @@ ${n1}/${d1} ___ ${n2}/${d2}`,
 /**
  * A fresh item for a Grade 1–6 lesson. `used` holds stems already served this
  * pass; a draw that repeats one is retried, so a quiz never asks «7 + 5»
- * twice.
+ * twice. Of a few fresh draws, the one whose kind of question the pass has
+ * served least is kept (`spreadScore`), as `makeTopicItem` does: an operation
+ * draws its kinds at random, so a paper could otherwise hold six «أوجد ناتج»
+ * and one word problem.
  */
 export function makeElementaryItem(
   blob: string,
@@ -1259,14 +1263,27 @@ export function makeElementaryItem(
   const named = elementaryOpsForTitle(blob);
   const table = lessonTable(blob);
   const pool = named.length > 0 ? named : DEFAULT_OPS[g]!;
+  const served = servedFrames(used);
   let item: ConcreteItem | null = null;
-  for (let attempt = 0; attempt < 25; attempt++) {
+  let best: ConcreteItem | null = null;
+  let bestScore = Infinity;
+  let fresh = 0;
+  for (let attempt = 0; attempt < 25 && fresh < FRESH_DRAWS; attempt++) {
     const op = pool[int(rng, 0, pool.length - 1)]!;
     // The id's last digit decides a true/false item's claim (see
     // `formatItem`); a fixed suffix made every one of them «صح».
     item = build(op, g, diff, rng, `arith-${g}-${op}-${used.size}-${attempt}-${int(rng, 0, 9)}`, table);
-    if (!used.has(`stem:${item.eq}`)) break;
+    if (used.has(`stem:${item.eq}`)) continue;
+    fresh += 1;
+    const score = spreadScore(stemFrame(item.promptAr ?? item.eq), served);
+    if (score < bestScore) {
+      best = item;
+      bestScore = score;
+    }
+    if (score === 0) break;
   }
+  item = best ?? item;
   used.add(`stem:${item!.eq}`);
+  used.add(`ask:${item!.promptAr ?? item!.eq}`);
   return item!;
 }

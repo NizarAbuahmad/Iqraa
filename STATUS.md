@@ -131,12 +131,26 @@ an announcement by default» below.
   every generator's stems for it («18 تذكرةً», «300 دينار»). Found on the way:
   `lessonTitleBlob` joined a title to itself when the KB title matched, and the
   seam «…والقسمة الكسور والقسمة» routed Grade 3 «الكسور والقسمة» to a
-  generator; it is refused again (`routing.test.ts`). Still open: a kind that
-  differs from another only in where the unknown sits («2/3 = ؟/12» vs
-  «2/3 = 8/؟») has the same `stemFrame`, so it needs different words to count;
-  and some kinds come in several sentences (one per operation), which
-  `makeTopicItem` serves first as "least used" — algebra weights those down
-  (`wpick`), the other generators do not yet.
+  generator; it is refused again (`routing.test.ts`).
+  **…and a reworded sentence is not a new kind (also 2026-10-16).** Counted by
+  `stemFrame`, those 3+ kinds included rewordings — «بعد ساعتين / بعد 3 ساعات»,
+  sin / cos / tan of one triangle, «إلى اليمين / اليسار» — and spreading by
+  frame gave a kind written four ways four turns on a paper. `sameKind`
+  (`stemFrame.ts`) groups frames at most 37% of their words apart (measured:
+  rewordings of one ask change 20–36%, different asks 50%+; an interval written
+  as an inequality and back, or the additive vs multiplicative inverse, count
+  as one), `spreadScore` spreads a paper by kind and then by sentence, and both
+  `makeTopicItem` and `makeElementaryItem` (which had no spreading at all) use
+  it. Grouped that way (following every link, as `mathLessonKinds.test.ts`
+  now counts), 72 served lessons had fewer than three kinds; all got real ones
+  from their objectives. On 10-item papers, grouping each sentence against a
+  kind's first one: lessons under three kinds 65 → 0, kinds per paper 3.46 →
+  3.84, the commonest kind 45% → 34%. `stemFrame` also keeps a
+  blank («؟», «▢», «■», «___») as `?`, so «2/3 = ؟/12» and «2/3 = 8/؟» are two
+  frames. Found on the way: unit counts without agreement («كم متر في 9
+  متر», «حوّل 20 متر إلى سنتيمتر») — the conversions now use the symbols the
+  rest of those generators use («حوّل 20 م إلى سم»), and `tamyiz.test.ts`
+  reads units too.
 
 - **Lesson plan, slides, activity, lesson-flow and the classroom builder take a
   unit, semester or whole book — as one revision session (2026-10-14; spec
@@ -3884,8 +3898,8 @@ carries `appHelp: true` and the strip is hidden while it is the last message
 (`app/(tabs)/iqra.tsx`). The نسخ / تصدير footer under the same reply went the
 same way (2026-10-11, same flag), and so did the long press that opened the
 export sheet. The tool-ask reply («أريد ورقة عمل» pointing at the generator)
-lost the strip and the footer on 2026-10-16 through its own flag, `toolAsk`; it
-keeps the long press, because that was not asked for. Checked in a local web build
+lost the strip and the footer on 2026-10-16 through its own flag, `toolAsk`, and
+the long press the same day. Checked in a local web build
 against the live API (chips gone after an app answer, present after a teaching
 one); no test, because `iqra.tsx` cannot be loaded by the bare `node --test`
 runner.
@@ -3905,6 +3919,30 @@ student's mark, and the grade steps say «add» where the teacher said «change�
 (the answer still ends with how to switch lessons). Deliberately not done: the
 typo «langute» in the first screenshot, because matching misspellings would also
 match real requests.
+
+**A grade with its accusative ending (2026-10-16).** On app.iqrra.com «كيف أضيف
+صفاً جديداً؟» was asked «أيّ مادة تقصد؟» while «كيف اضيف صف جديد» got the steps:
+`normalize` drops the tanween mark but not the alif under it, so «صفا جديدا»
+matched nothing. `foldAccusative` (`services/appHelp.ts`, app-help matching only)
+drops a marked ending (اً / ًا) from any word, and an unmarked one only from
+«صف», «جديد», «إضافي» and the ordinals, since an alif ending is otherwise part of
+the word («جبل الصفا» stays). Each accusative form is pinned to get exactly its
+plain twin's answer. Not changed, and older than this: «كيف اضيف صف الى
+المصفوفة» (a matrix row) goes to the grade steps through the «اضيف صف» keyword,
+and now so does its accusative form.
+
+**A student to add (2026-10-17).** With live AI on the web (#1104), «كيف أضيف
+طالباً جديداً؟» went to the model, which said it was a question about the app and
+gave no steps: no keyword named a student being added. A student is added inside
+a class that exists (open the class → «الطلبة» → + → names → «أضف إلى الشعبة»),
+so it gets its own place, `add-student`, with the steps `howAddStudent` and the
+My classes button — not the add-a-class answer («اضغط شعبة جديدة»), which would
+send a teacher who has a class to make another. `ADD_STUDENT`
+(`services/appHelp.ts`) is anchored like the statements: a how-word, a where-word
+or intent is optional, the student ends the message bar «جديد / آخر» and «to my
+class / الى الشعبة», so «كيف أضيف طالباً إلى مجموعة النقاش» and «add a student to
+the group work» stay teaching. Older and unchanged: «كيف أضيف طلاباً في نشاط
+جماعي» opens the activity tool through the «نشاط» keyword.
 
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
