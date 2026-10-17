@@ -45,7 +45,6 @@ import { addBodyFor } from '@/services/classResources';
 import type { ResourceItem } from '@/services/resourceCatalog';
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { confirm } from '@/services/confirm';
-import { toLatinDigits } from '@/services/latinDigits';
 import type { Evaluation } from '@/services/evaluations';
 import {
   ammanToday,
@@ -54,6 +53,7 @@ import {
   dueDatePresets,
   formatDueDate,
   homeworkDraftError,
+  maskYmd,
   resourceBody,
   resourceKey,
   type TeacherHomework,
@@ -449,8 +449,8 @@ export function HomeworkTab({
                   <Text style={labelStyle}>{t('hwFieldDue')}</Text>
                   <TextInput
                     value={draft.dueDate}
-                    // Arabic number pads emit ٠-٩; isValidYmd and the preset match want 0-9.
-                    onChangeText={v => patch({ dueDate: toLatinDigits(v) })}
+                    // Digits only in, YYYY-MM-DD out: the dashes are fixed, never typed.
+                    onChangeText={v => patch({ dueDate: maskYmd(v) })}
                     placeholder={t('hwDueFormat')}
                     placeholderTextColor={colors.mutedForeground}
                     maxLength={10}
