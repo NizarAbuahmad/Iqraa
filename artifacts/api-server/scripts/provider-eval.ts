@@ -21,7 +21,7 @@
  *     not evidence.
  *
  * Run:
- *   OPENAI_API_KEY=... ANTHROPIC_API_KEY=... DEEPSEEK_API_KEY=... GEMINI_API_KEY=... \
+ *   OPENAI_API_KEY=... ANTHROPIC_API_KEY=... DEEPSEEK_API_KEY=... GEMINI_API_KEY=... KIMI_API_KEY=... \
  *     node --experimental-strip-types artifacts/api-server/scripts/provider-eval.ts
  *
  * Any provider whose key is absent is skipped, so this is usable with one key.
@@ -37,6 +37,9 @@ import {
   worksheetPromptAr,
 } from "../src/lib/prompts.ts";
 import { buildSystemPromptAr, CHAT_MAX_TOKENS } from "../src/lib/chatPrompts.ts";
+import { promptSlidesPromptAr, sanitizeDeckStructure } from "../src/lib/promptSlidesPrompt.ts";
+import { deckShortfalls } from "../src/lib/generationShape.ts";
+import { checkDeck } from "../src/lib/deckChecks.ts";
 import { answeredInArabic, arabicShare } from "../src/lib/languageCompliance.ts";
 
 // ─── The eval set ────────────────────────────────────────────────────────────
@@ -135,12 +138,22 @@ const REQUIRED_FIELDS: Record<string, string[]> = {
   ],
   worksheet: ["title", "instructions", "sections", "answerKey"],
   quiz: ["title", "duration", "totalPoints", "questions"],
+  slides: ["slides"],
 };
+
+/**
+ * The slides route takes a teacher's own description, not a lesson record, so
+ * the eval writes the plainest one a teacher would. Same ceiling as the route
+ * (PROMPT_SLIDES_TOKENS); finalizePromptSlides is skipped — it fetches images.
+ */
+const slidesPrompt = (b: { topic: string; subject: string; grade: string; language?: string }) =>
+  promptSlidesPromptAr({ ...b, additionalContext: `عرض لدرس «${b.topic}» في ${b.subject} لطلاب ${b.grade}.` });
 
 const TASKS = [
   { id: "lesson-plan", build: lessonPlanPromptAr, maxTokens: TASK_TOKENS },
   { id: "worksheet", build: worksheetPromptAr, maxTokens: TASK_TOKENS },
   { id: "quiz", build: quizPromptAr, maxTokens: TASK_TOKENS },
+  { id: "slides", build: slidesPrompt, maxTokens: TASK_TOKENS },
 ] as const;
 
 /** Which required fields are missing or empty — [] means fully conformant. */
@@ -177,6 +190,7 @@ const openaiModel = process.env.OPENAI_EVAL_MODEL || "gpt-4o-mini";
 const anthropicModel = process.env.ANTHROPIC_EVAL_MODEL || "claude-opus-5";
 const deepseekModel = process.env.DEEPSEEK_EVAL_MODEL || "deepseek-chat";
 const geminiModel = process.env.GEMINI_EVAL_MODEL || "gemini-3.8-flash";
+const kimiModel = process.env.KIMI_EVAL_MODEL || "kimi-k3";
 const effort = process.env.ANTHROPIC_EVAL_EFFORT || "medium";
 
 // Standard short-context rates, developers.openai.com/api/docs/pricing,
@@ -200,14 +214,20 @@ const ANTHROPIC_PRICING: Record<string, Pricing> = {
   "claude-haiku-4-5": { input: 1, output: 5 },
 };
 
-function openaiCompatible(id: string, model: string, apiKey: string, baseURL?: string, pricing: Pricing = null): Provider {
-  const client = new OpenAI({ apiKey, ...(baseURL ? { baseURL } : {}) });
+function openaiCompatible(
+  id: string, model: string, apiKey: string, baseURL?: string, pricing: Pricing = null,
+  // OpenAI's reasoning models reject `max_tokens`; some compatible APIs only know it.
+  tokenParam: "max_completion_tokens" | "max_tokens" = "max_completion_tokens",
+): Provider {
+  // maxRetries above the SDK's 2: Gemini answers 429/503 under per-minute
+  // quotas, and the SDK backs off between tries. A rate limit is not a score.
+  const client = new OpenAI({ apiKey, maxRetries: 6, ...(baseURL ? { baseURL } : {}) });
   return {
     id, model, pricing, enabled: true,
     async run(system, messages, maxTokens) {
       const c = await client.chat.completions.create({
         model,
-        max_completion_tokens: maxTokens,
+        [tokenParam]: maxTokens,
         messages: [{ role: "system", content: system }, ...messages],
       });
       return {
@@ -271,6 +291,12 @@ function buildProviders(): Provider[] {
     out.push(openaiCompatible("gemini", geminiModel, process.env.GEMINI_API_KEY,
       "https://generativelanguage.googleapis.com/v1beta/openai/", null));
   }
+  if (process.env.KIMI_API_KEY) {
+    // Kimi (Moonshot) serves an OpenAI-compatible API (platform.kimi.ai/docs/api/overview,
+    // checked 2026-10-17). Pricing null for the same reason as DeepSeek.
+    out.push(openaiCompatible("kimi", kimiModel, process.env.KIMI_API_KEY,
+      "https://api.moonshot.ai/v1", null, "max_tokens"));
+  }
   return out;
 }
 
@@ -307,6 +333,9 @@ type Row = {
   parsed: boolean;
   /** Required fields absent or empty. [] is a fully usable artifact. */
   missing: string[];
+  /** Slides only: `checkDeck` errors (the prompt's contract broken) and the route's logged shortfalls. */
+  deckErrors?: number;
+  shortfalls?: string[];
   error?: string;
 };
 
@@ -342,7 +371,7 @@ type ChatRow = {
 const providers = buildProviders();
 if (providers.length === 0) {
   console.error(
-    "No provider keys found. Set at least one of OPENAI_API_KEY, ANTHROPIC_API_KEY, DEEPSEEK_API_KEY, GEMINI_API_KEY.",
+    "No provider keys found. Set at least one of OPENAI_API_KEY, ANTHROPIC_API_KEY, DEEPSEEK_API_KEY, GEMINI_API_KEY, KIMI_API_KEY.",
   );
   process.exit(1);
 }
@@ -373,13 +402,21 @@ for (const lesson of LESSONS) {
       try {
         const c = await provider.run(SYSTEM_AR, [{ role: "user", content: user }], task.maxTokens);
         const ms = Date.now() - started;
-        const parsed = extractJSON(c.text);
+        const raw = extractJSON(c.text);
+        // The route sanitizes a deck before anything reads it; so does the eval.
+        const parsed = task.id === "slides" && raw ? sanitizeDeckStructure(raw) : raw;
         row = {
           anonId, provider: provider.id, model: provider.model, task: task.id,
           topic: lesson.topic, ms, inputTokens: c.inputTokens, outputTokens: c.outputTokens,
           usd: costUsd(provider.pricing, c.inputTokens, c.outputTokens),
           parsed: parsed !== null,
           missing: missingFields(task.id, parsed),
+          ...(task.id === "slides" && parsed
+            ? {
+              deckErrors: checkDeck(parsed).filter((i) => i.severity === "error").length,
+              shortfalls: deckShortfalls(parsed),
+            }
+            : {}),
         };
         writeFileSync(join(outDir, "raw", `${anonId}.json`),
           JSON.stringify({ anonId, task: task.id, topic: lesson.topic, output: parsed ?? c.text }, null, 2));
@@ -416,7 +453,9 @@ for (const lesson of LESSONS) {
             ? "unparseable"
             : row.missing.length > 0
               ? `missing: ${row.missing.join(", ")}`
-              : "ok"));
+              : row.deckErrors
+                ? `ok · ${row.deckErrors} deck errors`
+                : "ok"));
     }
   }
 }
@@ -515,6 +554,26 @@ for (const [id, rs] of byProvider) {
   lines.push(`| ${id} | ${rs[0]!.model} | ${ok}/${rs.length} | ${complete}/${rs.length} | ${median} | ${tokens} | ${usd} |`);
 }
 
+// The decision is made per task (a model can win worksheets and lose slides),
+// so the totals above are not enough. Latency is shown against the OpenAI
+// baseline because the decision rule is written that way.
+const median = (xs: number[]) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)] ?? 0;
+lines.push("\n## By task\n");
+lines.push("| task | provider | complete | deck errors | median ms | vs openai | est. cost |");
+lines.push("|---|---|---|---|---|---|---|");
+for (const task of TASKS) {
+  const baseline = median(rows.filter((r) => r.task === task.id && r.provider === "openai" && !r.error).map((r) => r.ms));
+  for (const [id, all] of byProvider) {
+    const rs = all.filter((r) => r.task === task.id);
+    const complete = rs.filter((r) => r.parsed && r.missing.length === 0).length;
+    const ms = median(rs.filter((r) => !r.error).map((r) => r.ms));
+    const deck = task.id === "slides" ? String(rs.reduce((s, r) => s + (r.deckErrors ?? 0), 0)) : "";
+    const usd = rs.every((r) => r.usd === null) ? "—" : `$${rs.reduce((s, r) => s + (r.usd ?? 0), 0).toFixed(4)}`;
+    const ratio = baseline && ms ? `${(ms / baseline).toFixed(1)}×` : "—";
+    lines.push(`| ${task.id} | ${id} | ${complete}/${rs.length} | ${deck} | ${ms} | ${ratio} | ${usd} |`);
+  }
+}
+
 // Chat gets its own table. See the ChatRow comment: a prose reply has no
 // `parsed` or `complete` to report, and faking those columns would read as
 // either total failure or a lie.
@@ -548,8 +607,9 @@ lines.push(`
 1. **Symbolic scoring** — \`python3 artifacts/api-server/scripts/score-math.py ${outDir}\`
    runs every generated answer key through SymPy and reports a per-provider
    pass rate. That is the objective half.
-2. **Blind Arabic rating** — read \`raw/*.json\` without opening \`key.json\`,
-   rank them, and only then un-blind. Ideally have a teacher do this too.
+2. **Blind Arabic rating** — \`node artifacts/api-server/scripts/blind-rate.mjs ${outDir}\`
+   writes \`blind.html\`: every request side by side, providers shuffled per
+   group, the key held back in \`blind-key.json\`. Rate, and only then un-blind. Ideally have a teacher do this too.
    \`s*.json\` are generated artifacts; \`c*.json\` are chat transcripts.
    With a single provider configured there is nothing to un-blind — the rating
    is then a quality floor check, not a comparison.
