@@ -11,7 +11,9 @@
  *    sets only fields parsePatch produced.
  *
  * Posting tells the class's students and their guardians
- * (lib/familyPushEvents.ts); editing does not.
+ * (lib/familyPushEvents.ts); editing does not. Posting with `shareToChat`, or
+ * POST /homework/:id/share later, also leaves a line in the class's group chat
+ * (lib/classThread.ts) — not pushed again, the families already were.
  *
  * No `requireRosterConsent`: that gate is about entering a child's information,
  * and homework carries none. Guards are path-scoped (see mountOrder.test.ts):
@@ -19,10 +21,25 @@
  */
 import { Router, type Response } from "express";
 import { db } from "@workspace/db";
-import { classGroups, classMemberships, evaluations, homework, homeworkCompletions, rosterLinks, students, type Homework } from "@workspace/db";
+import {
+  classGroups,
+  classMemberships,
+  evaluations,
+  homework,
+  homeworkCompletions,
+  rosterLinks,
+  students,
+  type ClassGroup,
+  type Homework,
+  type HomeworkResource,
+} from "@workspace/db";
 import { and, count, countDistinct, desc, eq, inArray, isNull } from "drizzle-orm";
 import { authMiddleware, requireRole, TEACHER_ROLES, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { findLiveClass } from "../lib/classOwnership.js";
+import { parseClassResourceInput } from "../lib/classResource.js";
+import { postToClassThread } from "../lib/classThread.ts";
+import { libraryItemSnapshot } from "../lib/librarySnapshot.ts";
+import { homeworkChatLine } from "../modules/notifications/familyPushText.ts";
 import { announceHomeworkPosted } from "../lib/familyPushEvents.ts";
 import { logger } from "../lib/logger";
 import { pushWithin } from "../lib/pushWithin.ts";
@@ -37,6 +54,7 @@ const NO_CLASS = { error: "Class not found" } as const;
 const NO_HOMEWORK = { error: "Homework not found" } as const;
 const BAD_EXAM = { error: "That exam is not attached to this class" } as const;
 const LIST_LIMIT = 100;
+type Fail = { error: string };
 
 interface TeacherHomework {
   id: string;
@@ -47,6 +65,7 @@ interface TeacherHomework {
   dueAt: string;
   evaluationId: string | null;
   examTitle: string | null;
+  resources: HomeworkResource[];
   doneCount: number;
   studentCount: number;
   /** Of studentCount, the rows with a student account — the only ones who can tick it off. */
@@ -95,6 +114,53 @@ async function examOk(evaluationId: string, teacherId: string, classId: string):
     )
     .limit(1);
   return !!row;
+}
+
+/**
+ * The app sends each attachment as the same body POST /classes/:id/resources
+ * takes; each is checked the same way and stored as a snapshot. A repeat of an
+ * item already in the list is dropped, not an error. On PATCH an item already
+ * attached keeps its stored snapshot unchecked: the edit form resends the whole
+ * list, and a staff upload the Library has since deleted must not make every
+ * later edit of the homework a 400.
+ */
+async function resolveResources(raw: unknown[], attached: HomeworkResource[] = []): Promise<HomeworkResource[] | Fail> {
+  const kept = new Map(attached.map(r => [`${r.source}:${r.nativeId}`, r]));
+  const out: HomeworkResource[] = [];
+  const seen = new Set<string>();
+  for (const item of raw) {
+    const input = parseClassResourceInput(item);
+    if ("error" in input) return { error: input.error };
+    const key = `${input.source}:${input.nativeId}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const old = kept.get(key);
+    if (old) {
+      out.push(old);
+      continue;
+    }
+    const snap = await libraryItemSnapshot(input);
+    if (!snap) return { error: "Library item not found" };
+    out.push({ kind: "library", source: input.source, nativeId: input.nativeId, ...snap });
+  }
+  return out;
+}
+
+/** The homework's line in its class chat. Never fails the caller: the homework itself is saved. */
+async function shareToChat(hw: Homework, klass: ClassGroup): Promise<boolean> {
+  try {
+    const body = homeworkChatLine({
+      title: hw.title,
+      dueDate: dueAtToDueDate(hw.dueAt),
+      instructions: hw.instructions,
+      resourceTitles: hw.resources.map(r => r.title),
+    });
+    await postToClassThread(klass, body);
+    return true;
+  } catch (err) {
+    logger.error({ err, homeworkId: hw.id }, "homework: posting to the class chat failed");
+    return false;
+  }
 }
 
 /** A homework row the teacher owns, not archived, whose class is also live. */
@@ -185,6 +251,7 @@ async function withCounts(rows: Homework[]): Promise<TeacherHomework[]> {
     dueAt: r.dueAt.toISOString(),
     evaluationId: r.evaluationId,
     examTitle: r.evaluationId ? (examTitle.get(r.evaluationId) ?? null) : null,
+    resources: r.resources,
     doneCount: done.get(r.id) ?? 0,
     studentCount: sizes.get(r.classGroupId)?.students ?? 0,
     trackableCount: sizes.get(r.classGroupId)?.trackable ?? 0,
@@ -209,6 +276,11 @@ router.post("/homework", async (req: AuthenticatedRequest, res) => {
       res.status(400).json(BAD_EXAM);
       return;
     }
+    const resources = await resolveResources(input.resources);
+    if ("error" in resources) {
+      res.status(400).json(resources);
+      return;
+    }
     const [row] = await db
       .insert(homework)
       .values({
@@ -218,13 +290,15 @@ router.post("/homework", async (req: AuthenticatedRequest, res) => {
         instructions: input.instructions,
         dueAt: input.dueAt,
         evaluationId: input.evaluationId,
+        resources,
       })
       .returning();
     const [out] = await withCounts([row!]);
     // Tell the class's families before answering — awaited, capped, never
     // failing the post (lib/pushWithin.ts says why not fire-and-forget).
     await pushWithin("homework posted", () => announceHomeworkPosted(row!, klass));
-    res.status(201).json({ homework: out });
+    const sharedToChat = req.body?.shareToChat === true ? await shareToChat(row!, klass) : false;
+    res.status(201).json({ homework: out, sharedToChat });
   } catch (err) {
     failHomework(res, err, "create homework");
   }
@@ -285,6 +359,15 @@ router.patch("/homework/:id", async (req: AuthenticatedRequest, res) => {
       res.status(400).json(BAD_EXAM);
       return;
     }
+    let resources: HomeworkResource[] | undefined;
+    if (patch.resources !== undefined) {
+      const r = await resolveResources(patch.resources, existing.resources);
+      if ("error" in r) {
+        res.status(400).json(r);
+        return;
+      }
+      resources = r;
+    }
     // Only fields parsePatch produced, never `...req.body`: the class and the
     // teacher are not editable, whatever the client sends.
     const [row] = await db
@@ -294,6 +377,7 @@ router.patch("/homework/:id", async (req: AuthenticatedRequest, res) => {
         ...(patch.instructions !== undefined && { instructions: patch.instructions }),
         ...(patch.dueAt !== undefined && { dueAt: patch.dueAt }),
         ...(patch.evaluationId !== undefined && { evaluationId: patch.evaluationId }),
+        ...(resources !== undefined && { resources }),
         updatedAt: new Date(),
       })
       .where(and(eq(homework.id, existing.id), eq(homework.teacherId, teacherId), isNull(homework.archivedAt)))
@@ -306,6 +390,26 @@ router.patch("/homework/:id", async (req: AuthenticatedRequest, res) => {
     res.json({ homework: out });
   } catch (err) {
     failHomework(res, err, "update homework");
+  }
+});
+
+/** Leaves the homework's line in its class chat, for one posted without it (or to remind). */
+router.post("/homework/:id/share", async (req: AuthenticatedRequest, res) => {
+  try {
+    const teacherId = req.user!.id;
+    const existing = await ownedHomework(String(req.params["id"]), teacherId);
+    const klass = existing && (await findLiveClass(existing.classGroupId, teacherId));
+    if (!existing || !klass) {
+      res.status(404).json(NO_HOMEWORK);
+      return;
+    }
+    if (!(await shareToChat(existing, klass))) {
+      res.status(500).json({ error: "Failed to post to the class chat" });
+      return;
+    }
+    res.json({ shared: existing.id });
+  } catch (err) {
+    failHomework(res, err, "share homework");
   }
 });
 
