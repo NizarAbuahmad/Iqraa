@@ -523,6 +523,27 @@ describe('a grade to change and a lesson to add', () => {
   });
 });
 
+describe('a matrix row is not a grade', () => {
+  // «كيف أضيف صفاً إلى المصفوفة» got the add-a-grade steps through «اضيف صف».
+  for (const q of [
+    'كيف أضيف صفاً إلى المصفوفة؟',
+    'كيف اضيف صف الى المصفوفة',
+    'كيف أضيف صفاً جديداً للمصفوفة؟',
+    'كيف أحذف صفاً من المصفوفة؟',
+    'كيف أضيف صفوفاً في المصفوفة',
+  ]) {
+    it(`leaves «${q}» alone`, () => {
+      assert.equal(isAppHelpQuery(q), false);
+      assert.notEqual(classifyChatIntent(q, 'ar').intent, 'app_help');
+    });
+  }
+  for (const q of ['كيف أضيف صفاً جديداً؟', 'كيف اضيف صف', 'بدي اضيف صف ثامن']) {
+    it(`«${q}» still gets the grade steps`, () => {
+      assert.equal(top(q), 'subjects');
+    });
+  }
+});
+
 describe('homework, exam date, scan, class chat, block, name, account, feedback, results actions', () => {
   // The second live pass (2026-10-17): each of these went to the model, which
   // invented menus («تبويب أدوات الذكاء الاصطناعي») or refused («كيف أحظر ولي

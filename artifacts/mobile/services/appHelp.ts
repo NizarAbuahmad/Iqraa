@@ -662,6 +662,13 @@ const NOT_A_SCHOOL_CLASS = /\bclass(?:es)?(?=\s+(?:of|activity|activities|quiz|q
 /** «جدول الضرب» and «الجدول الدوري» are the times table and the periodic table, not the timetable. */
 const NOT_A_TIMETABLE = /(?:^|\s)جدول(?=\s+(?:ضرب|دوري)(?:\s|$))/g;
 
+/**
+ * «كيف أضيف صفاً إلى المصفوفة» is a matrix row, not a grade: dropped before the
+ * keywords are matched, so «اضيف صف» no longer finds the grade steps. Only when
+ * the matrix follows («صف جديد للمصفوفة», «صفوف في المصفوفة»).
+ */
+const NOT_A_GRADE = /(?:^|\s)(?:صف|صفوف)(?=(?:\s+(?:جديد|اخر|ثاني|اضافي))?\s+(?:(?:الي|في|من)\s+)?(?:لل|ل)?مصفوف)/g;
+
 /** A word that says the question is about the app, even when no place matched. */
 const APP_NOUN = /تطبيق|البرنامج|صفحه|قسم|تبويب|زر|قائمه|\bapp\b|\bpage\b|\bscreen\b|\btab\b|\bbutton\b|\bmenu\b/i;
 
@@ -673,7 +680,7 @@ const APP_NOUN = /تطبيق|البرنامج|صفحه|قسم|تبويب|زر|ق
 export function findAppPlaces(query: string, limit = 3): AppPlace[] {
   const statementId = statementPlaceId(plain(query));
   if (statementId) return APP_PLACES.filter(p => p.id === statementId);
-  const q = ` ${matchForm(query).replace(NOT_A_SCHOOL_CLASS, ' ').replace(NOT_A_TIMETABLE, ' ')} `;
+  const q = ` ${matchForm(query).replace(NOT_A_SCHOOL_CLASS, ' ').replace(NOT_A_TIMETABLE, ' ').replace(NOT_A_GRADE, ' ')} `;
   const scored: { place: AppPlace; score: number }[] = [];
   for (const place of APP_PLACES) {
     let best = 0;
