@@ -190,7 +190,8 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   token, so two different equations scored 1.0 and one was rejected. "Same
   sentence, different numbers" is a third thing — `stemFrame` — which is
   practice, not a duplicate, and is only warned about when it carries a paper
-  (`dominantFrame`).
+  (`dominantKind`, which also counts the same ask reworded — `sameKind`,
+  capped at three changed words because exam stems quote whole objectives).
 - **A question can come from the book, the bank or a model, and only a verifier
   makes one `verified`.** Real book items (`lib/curriculum/src/bookItems.ts`,
   data written by `scripts/extract_book_items.py`) join by `lessonId`, never by
