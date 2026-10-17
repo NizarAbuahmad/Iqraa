@@ -3994,9 +3994,17 @@ matched nothing. `foldAccusative` (`services/appHelp.ts`, app-help matching only
 drops a marked ending (اً / ًا) from any word, and an unmarked one only from
 «صف», «جديد», «إضافي» and the ordinals, since an alif ending is otherwise part of
 the word («جبل الصفا» stays). Each accusative form is pinned to get exactly its
-plain twin's answer. Not changed, and older than this: «كيف اضيف صف الى
-المصفوفة» (a matrix row) goes to the grade steps through the «اضيف صف» keyword,
-and now so does its accusative form.
+plain twin's answer. «كيف اضيف صف الى المصفوفة» (a matrix row) went to the grade
+steps through the «اضيف صف» keyword until 2026-10-17, when `NOT_A_GRADE` started
+dropping «صف / صفوف» followed by «المصفوفة» before the keywords are matched.
+
+**No starter chips under a question back to the teacher (2026-10-17).** «أريد
+ورقة عمل» → «أيّ مادة تقصد؟» showed the subject buttons and, under them, the
+standing «حضّر خطة الدرس / أنشئ ورقة عمل» chips, repeating the ask instead of
+answering it. The strip is now also hidden when the last reply asks the teacher
+to pick (`asksTheTeacher` in `app/(tabs)/iqra.tsx`: subject, lesson or
+teaching-option choices). UI only, so no test (the mobile runner cannot load
+`iqra.tsx`); checked in a browser.
 
 **A student to add (2026-10-17).** With live AI on the web (#1104), «كيف أضيف
 طالباً جديداً؟» went to the model, which said it was a question about the app and
@@ -4010,6 +4018,44 @@ or intent is optional, the student ends the message bar «جديد / آخر» an
 class / الى الشعبة», so «كيف أضيف طالباً إلى مجموعة النقاش» and «add a student to
 the group work» stay teaching. Older and unchanged: «كيف أضيف طلاباً في نشاط
 جماعي» opens the activity tool through the «نشاط» keyword.
+
+**Archive, link code, print, sign out, password, results (2026-10-17).** A wider
+live pass with live AI on found two wrong answers and four misses. «كيف أحذف
+شعبة؟» got the add-a-class steps (a how-word plus «شعبة» was all the matcher
+saw), and «كيف أشارك رمز الربط مع أولياء الأمور؟» opened Messages («أولياء
+الأمور» is the longer keyword, and the longest wins). Print, sign-out, password
+and results questions went to the model, which invented menus or asked which app.
+`RULE_PLACES` (`services/appHelp.ts`, anchored like `ADD_STUDENT`) now sends them
+to `archive-class` (the bin icon on the «شُعَبي» list, then «أرشِف»), `sign-out`
+(the last row of «حسابي»), `password` and the evaluations path. The link code is
+the app's own word, so any how / where question naming it gets `link-code`
+(«رمز الربط» on the class page, then «شارك الرمز»; student accounts are on in
+production, checked at `/api/healthz/features`). Printing is answered with the
+export steps (`PRINT_VERB`), and add steps never answer a remove question
+(`ADD_HOWS` / `REMOVE_VERB`). **There is no change-password screen**: the answer
+says so and points to «نسيت كلمة المرور؟» on the sign-in screen. Ten look-alikes
+pinned as teaching («how do i change a password in excel», «كيف أعرف نتائج
+التجربة؟», «ما هو رمز الربط في الكيمياء؟»…). Left alone: «كيف أرسل رسالة لولي
+أمر؟», which the model answers with a sample message — plausibly what was meant.
+
+**Twelve more everyday asks (2026-10-17, second live pass).** Homework, exam date,
+the class scan, a message to the whole class, blocking, name, deleting the
+account, suggesting a feature, reporting a problem, regenerating, saving and
+choosing another lesson all went to the model, which invented menus («تبويب
+أدوات الذكاء الاصطناعي») or refused («كيف أحظر ولي أمر» read as harmful); «وين
+ألاقي خطة الدرس اللي حفظتها؟» opened the generator instead of «ملفاتي». Each
+now has a `RULE_PLACES` entry and steps taken from its screen (`HomeworkTab`,
+`ExamDateCard`, the scan button on the evaluation page, «محادثة الشعبة», the ⋮
+menu of a thread, Settings → «إجراءات نهائية», `suggest-feature`,
+`GeneratorResultActions`). **Three answers say something is not in the app**:
+there is no dark-mode switch (the scheme follows the device, read at start-up —
+the old answer pointed at Settings, which has none), no name editor (only
+sign-up sets it), and the report button shows only on a shared result, so the
+answer offers «أعد التجهيز» when it is missing. Also fixed, older: «كيف أحفظ
+جدول الضرب؟» opened the timetable and «كيف أحذف الحساب من المعادلة؟» opened
+Profile (`NOT_A_TIMETABLE`, and no bare «الحساب» keyword). Still teaching on
+purpose: «كيف أصحح أوراق الطلاب؟» / «how do i grade the exams», which the model
+answers as marking advice. 18 look-alikes pinned.
 
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
