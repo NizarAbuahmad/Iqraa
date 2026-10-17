@@ -51,7 +51,7 @@ const SCREENS: AppPlace[] = [
   {
     id: 'classes', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false,
     // «clases» is the typo that actually got typed.
-    keywords: ['شعب', 'شعبه', 'شعبي', 'شعبتي', 'طلابي', 'طلبتي', 'رمز الانضمام', 'classes', 'clases', 'my class', 'add class', 'add a class', 'new class', 'another class', 'extra class', 'students'],
+    keywords: ['شعب', 'شعبه', 'شعبي', 'شعبتي', 'طلابي', 'طلبتي', 'classes', 'clases', 'my class', 'add class', 'add a class', 'new class', 'another class', 'extra class', 'students'],
     howKey: 'howAddClass',
   },
   {
@@ -61,6 +61,31 @@ const SCREENS: AppPlace[] = [
     id: 'add-student', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false,
     keywords: [],
     howKey: 'howAddStudent',
+  },
+  // The four below are reached through `RULE_PLACES` (anchored, see there), or
+  // through their keywords. Each has its own steps because the screen alone
+  // does not say how: archiving is a bin icon on the list, the link code a
+  // button on the class page, sign-out the last row of Profile, and there is
+  // no change-password screen at all.
+  {
+    id: 'archive-class', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false,
+    keywords: [],
+    howKey: 'howArchiveClass',
+  },
+  {
+    id: 'link-code', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false,
+    keywords: ['رمز الربط', 'رمز الانضمام', 'link code', 'join code'],
+    howKey: 'howShareLinkCode',
+  },
+  {
+    id: 'sign-out', route: '/profile', labelKey: 'tabProfile', pathKeys: [], isTool: false,
+    keywords: ['تسجيل الخروج', 'sign out', 'log out'],
+    howKey: 'howSignOut',
+  },
+  {
+    id: 'password', route: '/profile', labelKey: 'tabProfile', pathKeys: [], isTool: false,
+    keywords: [],
+    howKey: 'howChangePassword',
   },
   {
     id: 'subjects', route: '/setup-subjects', routeParams: { mode: 'edit' }, labelKey: 'mySubjects', pathKeys: ['tabProfile'], isTool: false,
@@ -111,7 +136,7 @@ const SCREENS: AppPlace[] = [
   },
   {
     id: 'profile', route: '/profile', labelKey: 'tabProfile', pathKeys: [], isTool: false,
-    keywords: ['حسابي', 'الحساب', 'الملف الشخصي', 'تسجيل الخروج', 'account', 'profile', 'sign out', 'log out'],
+    keywords: ['حسابي', 'الحساب', 'الملف الشخصي', 'account', 'profile'],
   },
   {
     id: 'curriculum', route: '/curriculum/browse', labelKey: 'tabCurriculum', pathKeys: [], isTool: false,
@@ -189,7 +214,7 @@ const WHERE_PATTERN =
  * «ممكن انشئ اختبار» ask the assistant to make one).
  */
 const HOW_PATTERN =
-  /(كيف|طريقه|خطوات)\s*(يمكنني\s*|ممكن\s*)?((ا|ن)?(ضيف|ضف|ضافه|نشي|نشئ|نشاء|عمل|غير|عدل|حذف|صدر|حفظ|بدا|شارك|ربط|دعو|ستخدم)|تغيير|تعديل|تصدير|بدء)|\bhow\s+(?:(?:do|can|should)\s+(?:i|we)\s+)?(?:to\s+)?(?:add|create|make|change|edit|delete|remove|export|save|share|start|use|link|invite)\b|\bcan\s+i\s+(?:add|change|edit|delete|remove|export|save|share|link|invite)\b|\b(?:is\s+there\s+(?:a|any|some)\s+way|is\s+it\s+possible|any\s+way)\s+to\s+(?:add|change|edit|delete|remove|export|save|share|link|invite)\b|(?:^|\s)(?:هل\s+)?(?:يمكنني|يمكن|اقدر|استطيع|ممكن)\s+(?:ان\s+)?(?:اضيف|اضافه|اغير|اعدل|احذف|اصدر|احفظ|اشارك|اربط|ادعو)(?:\s|$)/i;
+  /(كيف|طريقه|خطوات)\s*(يمكنني\s*|ممكن\s*)?((ا|ن)?(ضيف|ضف|ضافه|نشي|نشئ|نشاء|عمل|غير|عدل|حذف|صدر|طبع|حفظ|بدا|شارك|ربط|دعو|ستخدم)|تغيير|تعديل|تصدير|طباعه|بدء)|\bhow\s+(?:(?:do|can|should)\s+(?:i|we)\s+)?(?:to\s+)?(?:add|create|make|change|edit|delete|remove|export|print|save|share|start|use|link|invite)\b|\bcan\s+i\s+(?:add|change|edit|delete|remove|export|print|save|share|link|invite)\b|\b(?:is\s+there\s+(?:a|any|some)\s+way|is\s+it\s+possible|any\s+way)\s+to\s+(?:add|change|edit|delete|remove|export|save|share|link|invite)\b|(?:^|\s)(?:هل\s+)?(?:يمكنني|يمكن|اقدر|استطيع|ممكن)\s+(?:ان\s+)?(?:اضيف|اضافه|اغير|اعدل|احذف|اصدر|احفظ|اشارك|اربط|ادعو)(?:\s|$)/i;
 
 /**
  * A plain statement that adds to the account's own lists: «add more classes to
@@ -285,21 +310,107 @@ const STATEMENT_PLACES: { re: RegExp; id: string }[] = [
  * طالباً إلى مجموعة النقاش» and «add a student to the group work» stay teaching.
  * Written against `plain()` output (hamza and ة folded, accusative dropped).
  */
+/** The optional opening of an anchored rule: a how / where / can-I word, or first-person intent. */
+const EN_RULE_LEAD = String.raw`^(?:(?:please|pls|plz)\s+)?(?:(?:how\s+(?:do|can|should)\s+(?:i|we)|where\s+(?:do|can|should)\s+(?:i|we)|how\s+to|can\s+(?:i|we)|(?:i|we)\s+(?:want|need|wanna)\s+to|(?:i|we)(?:'d|\s+would)\s+like\s+to|let\s+me|help\s+me(?:\s+to)?)\s+)?`;
+const AR_RULE_LEAD = String.raw`^(?:(?:كيف|طريقه|خطوات|وين|اين|من\s+وين|من\s+اين)\s+(?:يمكنني\s+|ممكن\s+|بقدر\s+)?|(?:هل\s+)?(?:يمكنني|يمكن|اقدر|استطيع|ممكن)\s+(?:ان\s+)?|${AR_INTENT})?`;
+const EN_RULE_TAIL = String.raw`(?:\s+(?:please|pls|plz|now|here))*$`;
+const AR_RULE_TAIL = String.raw`(?:\s+(?:لي|من\s+فضلك|لو\s+سمحت|هنا|الان))*$`;
+
 const ADD_STUDENT: RegExp[] = [
   new RegExp(
-    String.raw`^(?:(?:please|pls|plz)\s+)?(?:(?:how\s+(?:do|can|should)\s+(?:i|we)|where\s+(?:do|can|should)\s+(?:i|we)|how\s+to|can\s+(?:i|we)|(?:i|we)\s+(?:want|need|wanna)\s+to|(?:i|we)(?:'d|\s+would)\s+like\s+to|let\s+me|help\s+me(?:\s+to)?)\s+)?` +
+    EN_RULE_LEAD +
       String.raw`add\s+(?:(?:a|an|another|one\s+more|more|new|some|my|the)\s+)*students?(?:\s+names?)?` +
-      String.raw`(?:\s+(?:to|in|into)\s+(?:my|the|a|this)\s+(?:class(?:es)?|section|roster|class\s+list))?(?:\s+(?:please|pls|plz|now|here))*$`,
+      String.raw`(?:\s+(?:to|in|into)\s+(?:my|the|a|this)\s+(?:class(?:es)?|section|roster|class\s+list))?` + EN_RULE_TAIL,
   ),
   new RegExp(
-    String.raw`^(?:(?:كيف|طريقه|خطوات|وين|اين|من\s+وين|من\s+اين)\s+(?:يمكنني\s+|ممكن\s+|بقدر\s+)?|(?:هل\s+)?(?:يمكنني|يمكن|اقدر|استطيع|ممكن)\s+(?:ان\s+)?|${AR_INTENT})?` +
+    AR_RULE_LEAD +
       String.raw`(?:اضيف|اضافه|اضف|نضيف|اسجل|تسجيل|ادخل|ادخال)\s+(?:اسم\s+|اسماء\s+)?(?:ال)?(?:طالب|طالبا|طالبه|طلاب|طلابا|طلبه|طالبات)` +
       String.raw`(?:\s+(?:جديد|جدد|جديده|اخر|اخري|اخرين))?` +
-      String.raw`(?:\s+(?:الي|في|ل|لل)\s*(?:ال)?(?:شعبه|شعبتي|صف|صفي|قائمه))?(?:\s+(?:لي|من\s+فضلك|لو\s+سمحت|هنا|الان))*$`,
+      String.raw`(?:\s+(?:الي|في|ل|لل)\s*(?:ال)?(?:شعبه|شعبتي|صف|صفي|قائمه))?` + AR_RULE_TAIL,
   ),
 ];
-const statementPlaceId = (plainQuery: string) =>
-  ADD_STUDENT.some(re => re.test(plainQuery)) ? 'add-student' : STATEMENT_PLACES.find(s => s.re.test(plainQuery))?.id;
+
+/**
+ * Found on app.iqrra.com (2026-10-17), each with live AI on: «كيف أحذف شعبة؟» got
+ * the add-a-class steps (a how-word plus «شعبة» was all the matcher saw), and
+ * «كيف أسجل الخروج؟», «كيف أغير كلمة المرور؟» and «كيف أشوف نتائج الطلاب؟» went to
+ * the model, which guessed or asked which app was meant. Anchored as `ADD_STUDENT`
+ * is: the thing asked about ends the message, so «how do i change a password in
+ * excel», «كيف أعرف نتائج التجربة» and «how do i delete a class of compounds from
+ * the table» stay teaching. Results get the path to the evaluations, where marks
+ * are read; the rest have steps.
+ */
+const AR_PASSWORD = String.raw`(?:ال)?(?:كلمه\s+(?:ال)?(?:مرور|سر)|رقم\s+(?:ال)?سري|باسورد|باسوورد)`;
+const RULE_PLACES: { id: string; res: RegExp[] }[] = [
+  { id: 'add-student', res: ADD_STUDENT },
+  {
+    id: 'archive-class',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:delete|remove|archive)\s+(?:(?:a|an|the|my|this|that|old)\s+)*class(?:es)?(?:\s+from\s+(?:my|the)\s+(?:list|account|app))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:احذف|حذف|امسح|مسح|ازيل|ازاله|ارشف|ارشفه|الغي|الغاء)\s+(?:ال)?(?:شعبه|شعب|شعبتي)(?:\s+(?:القديمه|قديمه|هذه|من\s+(?:ال)?(?:قائمه|قائمتي|حسابي|تطبيق)))*` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'sign-out',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:sign|log)\s*out(?:\s+of\s+(?:my\s+account|the\s+app))?` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:(?:اسجل|تسجيل|اعمل)\s+(?:ال)?خروج(?:\s+من\s+(?:ال)?(?:حساب|حسابي|تطبيق))?|اخرج\s+من\s+(?:ال)?(?:حساب|حسابي|تطبيق))` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'password',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:change|reset|update|recover)\s+(?:(?:my|the|a)\s+)?password` + EN_RULE_TAIL),
+      new RegExp(String.raw`^(?:i\s+)?forgot\s+(?:my\s+)?password` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اغير|تغيير|ابدل|تبديل|اعدل|تعديل|استرجع|استرجاع|استعيد|استعاده|اعيد\s+تعيين|اعاده\s+تعيين)\s+` + AR_PASSWORD +
+          String.raw`(?:\s+(?:تبعي|حقي|حسابي|لحسابي|الخاصه\s+بي))?` + AR_RULE_TAIL,
+      ),
+      new RegExp(String.raw`^(?:لقد\s+)?نسيت\s+` + AR_PASSWORD + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'tool:evaluations',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:see|view|check|find)\s+(?:(?:my|the)\s+)?(?:(?:students?'?|class|exam|test)\s+)?(?:results|marks|grades|scores)` +
+          String.raw`(?:\s+(?:of|for|from)\s+(?:my|the|this)\s+(?:students|class|exam|test|quiz))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اشوف|اري|اعرف|اتابع|اطلع\s+علي|اعرض|عرض|متابعه)\s+(?:ال)?(?:نتائج|علامات|درجات)\s+` +
+          String.raw`(?:ال)?(?:طلاب|طلبه|طلابي|طلبتي|شعبه|شعبتي|امتحان|امتحانات|اختبار|اختبارات|تقييم|تقييمات)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+];
+
+/**
+ * «كيف أشارك رمز الربط مع أولياء الأمور؟» opened Messages: «أولياء الأمور» is a
+ * longer keyword than «رمز الربط», and the longest keyword wins. The link code is
+ * the app's own word, so wherever it is named in a how / where question, it is
+ * what the question is about.
+ */
+const LINK_CODE = /(?:^|\s)(?:رمز\s+(?:ال)?(?:ربط|انضمام)|link\s+code|join\s+code|class\s+code)(?:\s|$)/;
+const AR_INTENT_START = new RegExp(`^${AR_INTENT}`);
+const EN_INTENT_START = new RegExp(`^${EN_INTENT}`);
+
+const statementPlaceId = (plainQuery: string): string | undefined => {
+  const rule = RULE_PLACES.find(r => r.res.some(re => re.test(plainQuery)));
+  if (rule) return rule.id;
+  if (
+    LINK_CODE.test(plainQuery) &&
+    (HOW_PATTERN.test(plainQuery) || WHERE_PATTERN.test(plainQuery) || AR_INTENT_START.test(plainQuery) || EN_INTENT_START.test(plainQuery))
+  ) {
+    return 'link-code';
+  }
+  return STATEMENT_PLACES.find(s => s.re.test(plainQuery))?.id;
+};
 const isAddToAccount = (plainQuery: string) =>
   EN_ADD_TO_ACCOUNT.test(plainQuery) || EN_ADD_BARE_GRADE.test(plainQuery) || EN_ADD_GRADE_TO_MY.test(plainQuery) ||
   AR_ADD_TO_ACCOUNT.test(plainQuery) || AR_ADD_BARE_GRADE.test(plainQuery);
@@ -435,6 +546,11 @@ export function isAppHelpQuery(query: string): boolean {
 
 export type AppHelpAnswer = { text: string; places: AppPlace[] };
 
+const PRINT_VERB = /(?:^|\s)(?:اطبع|نطبع|طباعه)(?:\s|$)|\bprint/;
+const REMOVE_VERB = /(?:^|\s)(?:احذف|حذف|امسح|مسح|ازيل|ازاله|ارشف|ارشفه|الغي|الغاء)(?:\s|$)|\b(?:delete|remove|archive|erase)\b/;
+/** Steps that add something, which must not answer a question about removing it. */
+const ADD_HOWS = new Set(['howAddClass', 'howAddGrade', 'howAddStudent']);
+
 /** The reply text and the places to offer as buttons. */
 export function answerAppHelp(
   query: string,
@@ -457,9 +573,17 @@ export function answerAppHelp(
   // «how do I export my lesson plan» names a generator first and the export
   // screen second: the steps asked for are the export's, so it is the one place
   // allowed to answer from behind another.
-  const how = isHowQuery(query)
-    ? places[0]!.howKey ?? places.find(p => p.id === 'export')?.howKey
+  // Printing is exporting: «كيف أطبع ورقة العمل» gets the export steps, which
+  // end in a PDF or Word file ready to print. And steps for adding never answer
+  // a question about removing: «كيف أحذف صفاً» gets the path to the grades, not
+  // «اضغط إضافة صف» (the class version has its own steps, `archive-class`).
+  const q = plain(query);
+  const exportHow = places.find(p => p.id === 'export')?.howKey
+    ?? (PRINT_VERB.test(q) ? APP_PLACES.find(p => p.id === 'export')?.howKey : undefined);
+  const firstHow = places[0]!.howKey && !(ADD_HOWS.has(places[0]!.howKey) && REMOVE_VERB.test(q))
+    ? places[0]!.howKey
     : undefined;
+  const how = isHowQuery(query) ? firstHow ?? exportHow : undefined;
   if (how) return { text: t(how), places: [places[0]!] };
   const sep = isAr ? ' ← ' : ' → ';
   const lines = places.map(p => {

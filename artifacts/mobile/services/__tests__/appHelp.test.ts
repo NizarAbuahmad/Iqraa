@@ -523,6 +523,76 @@ describe('a grade to change and a lesson to add', () => {
   });
 });
 
+describe('archive, link code, print, sign out, password and results', () => {
+  // Found on app.iqrra.com (2026-10-17), with live AI on: «كيف أحذف شعبة؟» got the
+  // add-a-class steps, «كيف أشارك رمز الربط مع أولياء الأمور؟» opened Messages, and
+  // the other four went to the model, which guessed at menus or asked which app.
+  const t = (k: string) => `<${k}>`;
+  const lang = (q: string) => (/[؀-ۿ]/.test(q) ? 'ar' : 'en');
+  const steps: Array<[string, string, string]> = [
+    ['كيف أحذف شعبة؟', 'howArchiveClass', '/classes'],
+    ['كيف أحذف الشعبة القديمة', 'howArchiveClass', '/classes'],
+    ['بدي امسح شعبة', 'howArchiveClass', '/classes'],
+    ['how do i delete a class', 'howArchiveClass', '/classes'],
+    ['كيف أشارك رمز الربط مع أولياء الأمور؟', 'howShareLinkCode', '/classes'],
+    ['وين رمز الربط؟', 'howShareLinkCode', '/classes'],
+    ['how do i share the link code with parents', 'howShareLinkCode', '/classes'],
+    ['where is the join code', 'howShareLinkCode', '/classes'],
+    ['كيف أطبع ورقة العمل؟', 'faqA4', '/ai-tools/worksheet'],
+    ['how do i print a worksheet', 'faqA4', '/ai-tools/worksheet'],
+    ['كيف أسجل الخروج؟', 'howSignOut', '/profile'],
+    ['كيف اخرج من حسابي', 'howSignOut', '/profile'],
+    ['how do i sign out', 'howSignOut', '/profile'],
+    ['how do i log out', 'howSignOut', '/profile'],
+    ['كيف أغير كلمة المرور؟', 'howChangePassword', '/profile'],
+    ['نسيت كلمة المرور', 'howChangePassword', '/profile'],
+    ['how do i change my password', 'howChangePassword', '/profile'],
+    ['i forgot my password', 'howChangePassword', '/profile'],
+  ];
+  for (const [q, key, route] of steps) {
+    it(`«${q}» gets ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(classifyChatIntent(q, lang(q)).intent, 'app_help');
+      const a = answerAppHelp(q, lang(q), t);
+      assert.equal(a.text, `<${key}>`);
+      assert.equal(a.places[0]!.route, route);
+    });
+  }
+
+  for (const q of ['كيف أشوف نتائج الطلاب؟', 'وين اشوف علامات الطلاب', 'how do i see my students results', 'where can i see the exam results']) {
+    it(`«${q}» gets the path to the evaluations`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(classifyChatIntent(q, lang(q)).intent, 'app_help');
+      assert.deepEqual(findAppPlaces(q).map(p => p.id), ['tool:evaluations']);
+    });
+  }
+
+  it('steps for adding never answer a question about removing', () => {
+    // «كيف أحذف شعبة» had «اضغط شعبة جديدة» for an answer.
+    assert.notEqual(answerAppHelp('كيف أحذف شعبتي من حسابي', 'ar', t).text, '<howAddClass>');
+    assert.notEqual(answerAppHelp('كيف احذف الصفوف', 'ar', t).text, '<howAddGrade>');
+  });
+
+  const teaching = [
+    'how do i delete a class of compounds from the table',
+    'كيف أحذف الكسور من المعادلة؟',
+    'كيف أطبع الحروف بشكل صحيح؟',
+    'how do i create a strong password',
+    'how do i change a password in excel',
+    'كيف أختار كلمة مرور قوية؟',
+    'كيف أعرف نتائج التجربة؟',
+    'how do i check the results of the experiment',
+    'كيف أخرج من المتاهة؟',
+    'ما هو رمز الربط في الكيمياء؟',
+  ];
+  for (const q of teaching) {
+    it(`leaves «${q}» alone`, () => {
+      assert.equal(isAppHelpQuery(q), false);
+      assert.notEqual(classifyChatIntent(q, lang(q)).intent, 'app_help');
+    });
+  }
+});
+
 describe('a student to add', () => {
   // Found on app.iqrra.com (2026-10-17): with live AI on, «كيف أضيف طالباً
   // جديداً؟» went to the model, which said it was about the app and gave no
