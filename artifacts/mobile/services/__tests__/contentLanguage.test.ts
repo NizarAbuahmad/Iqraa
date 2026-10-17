@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { contentLang, isPreEnglishMaterial, materialSubjectId, topicInLang, unitNames } from '../contentLanguage.ts';
+import { contentLang, isPreEnglishMaterial, materialSubjectId, showsDictation, showsReadAloud, topicInLang, unitNames } from '../contentLanguage.ts';
 import { getPickerSubjects } from '../curriculumData.ts';
 import { getBookForLesson, getLessonById } from '../knowledgeBase.ts';
 
@@ -14,6 +14,22 @@ describe('contentLang', () => {
     assert.equal(contentLang('mathematics', 'ar'), 'ar');
     assert.equal(contentLang('arabic', 'en'), 'en');
     assert.equal(contentLang(undefined, 'ar'), 'ar');
+  });
+});
+
+describe('evaluation add buttons by subject', () => {
+  it('offers read-aloud in Arabic and English, إملاء in Arabic only', () => {
+    assert.equal(showsReadAloud('arabic'), true);
+    assert.equal(showsDictation('arabic'), true);
+    assert.equal(showsReadAloud('english'), true);
+    assert.equal(showsDictation('english'), false);
+  });
+
+  it('offers neither in Maths, Science, or an unknown subject', () => {
+    for (const id of ['mathematics', 'science', undefined, null]) {
+      assert.equal(showsReadAloud(id), false);
+      assert.equal(showsDictation(id), false);
+    }
   });
 });
 
