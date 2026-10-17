@@ -24,6 +24,7 @@ import { getExamCalendar } from '@/services/examCalendar';
 import { conflictingExams, maskTypedDate, maskTypedTime, normalizeTypedDate, normalizeTypedTime } from '@/services/examCalendarModel';
 import { gradeLabel } from '@/services/classSubjects';
 import { isValidPlanDate } from '@/services/planEntries';
+import { ammanToday } from '@/services/homework';
 import { palette } from '@/constants/colors';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 
@@ -59,6 +60,9 @@ export function ExamDateCard({
   const dateOk = isValidPlanDate(date);
   const timeOk = time === '' || TIME_RE.test(time);
   const dateTyped = dateText.trim() !== '';
+  // Before today, in the school's own (Amman) day — the server's rule. The stored
+  // date is exempt so an exam that already holds an old one can still be re-timed.
+  const datePast = dateOk && date < ammanToday() && date !== evaluation.examDate;
 
   // Ask the calendar what else sits on the typed day, once it parses as a date.
   const { data: dayExams } = useQuery({
@@ -78,6 +82,7 @@ export function ExamDateCard({
     setError('');
     setSaved(false);
     if (!dateOk) return setError(t('examDateInvalid'));
+    if (datePast) return setError(t('examDatePast'));
     if (!timeOk) return setError(t('examTimeInvalid'));
     setBusy('save');
     try {
@@ -157,7 +162,7 @@ export function ExamDateCard({
           keyboardType="number-pad"
           inputMode="numeric"
           accessibilityLabel={t('examDateLabel')}
-          style={[input, { flex: 2, borderColor: dateTyped && !dateOk ? colors.destructive : colors.border }]}
+          style={[input, { flex: 2, borderColor: dateTyped && (!dateOk || datePast) ? colors.destructive : colors.border }]}
         />
         <TextInput
           value={timeText}
