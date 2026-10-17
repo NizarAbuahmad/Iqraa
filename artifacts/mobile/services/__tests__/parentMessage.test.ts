@@ -28,9 +28,11 @@ import {
   MAX_LETTER_LENGTH,
   outgoingLetter,
   kindLabel,
+  matchRosterStudents,
   MESSAGE_KINDS,
   needsDetails,
   parseSavedSignature,
+  pickRecipients,
   rosterGender,
   seedDetailsFromNote,
   suggestMeeting,
@@ -624,5 +626,76 @@ describe('the details the teacher typed', () => {
       assert.ok(detailsExample(kind, true).length > 10, kind);
       assert.ok(detailsExample(kind, false).length > 10, kind);
     }
+  });
+});
+
+// ─── Linking a typed name to the roster, and choosing guardians ─────────────
+// Typing a name by hand drops the picked student on purpose (so the letter can
+// never go to the previous child's parent), which also turned in-app send off
+// with nothing close to the field saying why. The remedy is a *suggestion* the
+// teacher taps — never an automatic link.
+
+describe('matchRosterStudents', () => {
+  const roster = [
+    { id: 'a', displayName: 'أحمد خالد' },
+    { id: 's', displayName: 'سارة علي' },
+    { id: 'o', displayName: 'Omar Saleh' },
+  ];
+
+  it('suggests the one student a typed name points at', () => {
+    assert.deepEqual(matchRosterStudents('أحمد خالد', roster).map(r => r.id), ['a']);
+  });
+
+  it('matches across hamza, ya, ta marbuta, diacritics and spacing', () => {
+    assert.deepEqual(matchRosterStudents('احمد   خالد', roster).map(r => r.id), ['a']);
+    assert.deepEqual(matchRosterStudents('ساره', roster).map(r => r.id), ['s']);
+    assert.deepEqual(matchRosterStudents('سَارَة', roster).map(r => r.id), ['s']);
+    assert.deepEqual(matchRosterStudents('على', [{ id: 'x', displayName: 'علي' }]).map(r => r.id), ['x']);
+  });
+
+  it('matches a first name, a name still being typed, and Latin case-insensitively', () => {
+    assert.deepEqual(matchRosterStudents('سارة', roster).map(r => r.id), ['s']);
+    assert.deepEqual(matchRosterStudents('أحمد خا', roster).map(r => r.id), ['a']);
+    assert.deepEqual(matchRosterStudents('omar', roster).map(r => r.id), ['o']);
+  });
+
+  it('offers every candidate when a first name is shared, so the teacher picks', () => {
+    const twins = [...roster, { id: 'a2', displayName: 'أحمد سمير' }];
+    assert.deepEqual(matchRosterStudents('أحمد', twins).map(r => r.id).sort(), ['a', 'a2']);
+  });
+
+  it('prefers a full-name match over longer names that merely start with it', () => {
+    const r = [{ id: 'short', displayName: 'أحمد' }, { id: 'long', displayName: 'أحمد خالد' }];
+    assert.deepEqual(matchRosterStudents('أحمد', r).map(x => x.id), ['short']);
+  });
+
+  it('says nothing when it is too vague or matches nothing', () => {
+    const many = ['أ', 'ب', 'ج', 'د'].map((x, i) => ({ id: String(i), displayName: `أحمد ${x}` }));
+    assert.deepEqual(matchRosterStudents('أحمد', many), [], 'four candidates is noise, not help');
+    assert.deepEqual(matchRosterStudents('Aad', roster), []);
+    assert.deepEqual(matchRosterStudents('', roster), []);
+    assert.deepEqual(matchRosterStudents('أ', roster), [], 'one letter matches everyone');
+    assert.deepEqual(matchRosterStudents('أحمد', []), []);
+  });
+});
+
+describe('pickRecipients', () => {
+  const g = (userId: string) => ({ userId, firstName: userId, lastName: '', role: 'parent' as const });
+  const all = [g('mother'), g('father')];
+
+  it('reaches every guardian until one is unticked', () => {
+    assert.deepEqual(pickRecipients(all, new Set()).map(x => x.userId), ['mother', 'father']);
+  });
+
+  it('drops the unticked guardian and keeps the order', () => {
+    assert.deepEqual(pickRecipients(all, new Set(['mother'])).map(x => x.userId), ['father']);
+  });
+
+  it('can end up empty, which is what disables the send', () => {
+    assert.deepEqual(pickRecipients(all, new Set(['mother', 'father'])), []);
+  });
+
+  it('ignores ids that are not guardians of this student', () => {
+    assert.deepEqual(pickRecipients(all, new Set(['someone-else'])).map(x => x.userId), ['mother', 'father']);
   });
 });
