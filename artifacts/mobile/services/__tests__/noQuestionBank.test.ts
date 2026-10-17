@@ -6,7 +6,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { MockAIService, NoQuestionBankError } from '../ai/generators.ts';
+import { MockAIService, NoQuestionBankError, offlineBankRefuses } from '../ai/generators.ts';
 import { aiErrorMessageKey } from '../ai/aiProvenance.ts';
 import translations from '../i18n.ts';
 import type { AIRequest } from '../ai/AIService.ts';
@@ -80,6 +80,8 @@ describe('maths lessons: covered or refused, never off-topic filler', () => {
 
   it('a covered lesson generates a real quiz; a refused one refuses', async () => {
     for (const l of mathLessons) {
+      // The worksheet screen greys its button on this before anyone presses.
+      assert.equal(offlineBankRefuses(l.titleAr, l, mathReq(l).subject), !hasMathBank(l.titleAr, l), l.titleAr);
       if (hasMathBank(l.titleAr, l)) {
         const quiz = await service.generateQuiz(mathReq(l));
         assert.ok(quiz.questions.length > 0, l.titleAr);
@@ -92,6 +94,18 @@ describe('maths lessons: covered or refused, never off-topic filler', () => {
         await assert.rejects(service.generateQuiz(mathReq(l)), refuses, l.titleAr);
       }
     }
+  });
+
+  it('Grade 1 «الموقع والاتجاه» has a worksheet now, told in words', async () => {
+    const l = mathLessons.find(x => gradeOf(x) === 1 && x.titleAr === 'الْمَوْقِعُ وَالِاتِّجاهُ')!;
+    assert.ok(l, 'the catalog changed');
+    assert.equal(offlineBankRefuses(l.titleAr, l, mathReq(l).subject), false);
+    const ws = await service.generateWorksheet({ ...mathReq(l), numQuestions: 10 });
+    const qs = ws.sections.flatMap(s => s.questions);
+    assert.ok(qs.length >= 8, String(qs.length));
+    // Each asks where something is; a name can be the answer, so the stem need not hold a direction word.
+    const off = qs.filter(q => !/فوق|تحت|أمام|خلف|يمين|يسار|بالنسبة إل|في أي جهة/.test(q.text));
+    assert.deepEqual(off.map(q => q.text), []);
   });
 
   it('serves the fraction addition lesson fraction addition (it served same-denominator or nothing before)', async () => {
