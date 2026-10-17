@@ -27,6 +27,8 @@
  * genuinely wrong.
  */
 
+import { worksheetModelTypes, worksheetSectionTotal, worksheetTypeQuota } from "./worksheetTypes.ts";
+
 export type GenerationKind =
   | "lesson-plan"
   | "worksheet"
@@ -332,6 +334,64 @@ export function worksheetShortfall(parsed: unknown, body: Record<string, unknown
   const example = (parsed as { workedExample?: unknown } | null)?.workedExample ? 1 : 0;
   const least = want - example + (reviewRequested(body) ? MIN_REVIEW_QUESTIONS : 0);
   return Math.max(0, least - worksheetQuestionCount(parsed));
+}
+
+type WorksheetType = "multiple_choice" | "true_false" | "fill_blank" | "short_answer" | "word_problem";
+
+/**
+ * A worksheet question's type: the model's own label where it gave one we
+ * know, else read from the shape (options, a blank). Always answers, so a reply
+ * that leaves the labels off is judged by what it contains.
+ *
+ * `word_problem` can only come from a label: a scenario and a short question
+ * have the same shape, so unlabelled they read as short answer.
+ */
+function worksheetTypeOf(q: Record<string, unknown>): WorksheetType {
+  const t = typeof q.type === "string" ? q.type.toLowerCase() : "";
+  if (/word|real|life|حياتي|مسألة/.test(t)) return "word_problem";
+  if (/multi|mcq|choice|اختيار/.test(t)) return "multiple_choice";
+  if (/true|false|tf|صح|خطأ/.test(t)) return "true_false";
+  if (/blank|fill|complet|فراغ|أكمل/.test(t)) return "fill_blank";
+  if (/short|open|essay|answer|قصير|مقال/.test(t)) return "short_answer";
+  const options = Array.isArray(q.options) ? q.options : [];
+  if (options.length >= 3) return "multiple_choice";
+  if (options.length === 2 && options.every(o => TRUE_RE.test(String(o)) || FALSE_RE.test(String(o)))) return "true_false";
+  if (/_{3,}/.test(String(q.text ?? ""))) return "fill_blank";
+  return "short_answer";
+}
+
+/**
+ * Label every question with its type and every section with the one type it
+ * holds, or `mixed`. Sections are difficulty bands, so a section holding
+ * several types is the normal case, and a single `type` copied from the
+ * model's guess at its first question described none of them.
+ */
+export function stampWorksheetTypes(parsed: unknown): void {
+  const sections = worksheetSections(parsed) as Array<Record<string, unknown> & { questions: Record<string, unknown>[] }>;
+  for (const section of sections) {
+    const kinds = new Set<WorksheetType>();
+    for (const q of section.questions) {
+      const type = worksheetTypeOf(q);
+      q.type = type;
+      kinds.add(type);
+    }
+    if (kinds.size > 0) section.type = kinds.size === 1 ? [...kinds][0] : "mixed";
+  }
+  // `worksheetSections` hands back copies of each section; write them back.
+  (parsed as Record<string, unknown>).sections = sections;
+}
+
+/**
+ * The ticked types a worksheet reply holds none of — what the teacher asked
+ * for and did not get. Only types the total has room for count (`worksheetTypeQuota`),
+ * and nothing is asked of a single ticked type or a request that named none.
+ */
+export function worksheetMissingTypes(parsed: unknown, body: Record<string, unknown> | undefined): string[] {
+  if (!Array.isArray(body?.questionTypes)) return [];
+  const types = worksheetModelTypes(body.questionTypes);
+  if (types.length < 2) return [];
+  const have = new Set(worksheetSections(parsed).flatMap(s => s.questions).map(worksheetTypeOf));
+  return worksheetTypeQuota(types, worksheetSectionTotal(body)).map(([t]) => t).filter(t => !have.has(t as WorksheetType));
 }
 
 /** The text of every question already on the paper — what a top-up must not repeat. */

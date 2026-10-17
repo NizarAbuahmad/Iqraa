@@ -20851,3 +20851,36 @@ but nothing new is stored in the shared pool: `storeVariant`
 insert, so the insert fails, and the error is caught and logged as "artifact
 cache unavailable — generation continues uncached". Teacher pool reads and
 retire use explicit columns and are unaffected.
+
+## A worksheet gets every question type the teacher ticked, 2026-10-17
+
+A teacher ticked all five types (multiple choice, short answer, fill in the
+blank, true/false, life problem) for a 20-question maths worksheet on the whole
+book and got multiple choice throughout. **Cause (live path):** the prompt named
+the ticked types and said "spread the questions across them", but its example
+section carried ONE `type`, and a worksheet's sections are difficulty bands, so
+the model gave each band a single type and filled it. Nothing on the server
+checked the reply against the ticks — the quiz route has `normalizeQuiz`, the
+worksheet route had no equivalent. The offline generator was never affected: it
+rotates the ticked types through every band.
+
+**What changed** (`artifacts/api-server`):
+
+- `worksheetPromptAr/En` now give a count per ticked type (an even split of the
+  sections' total, `worksheetTypeQuota` in `lib/worksheetTypes.ts`), say sections
+  are levels and not types, ask for a `type` on every question and `mixed` on a
+  section that holds several. Nothing is added for a single ticked type.
+- `/generate/worksheet|homework` checks the reply (`worksheetMissingTypes`): if a
+  ticked type has no question at all it retries once with a note naming what was
+  missing and serves whichever reply is closer. It then stamps each question and
+  section with the type it actually holds (`stampWorksheetTypes`).
+- `PROMPT_VERSION` is `2026-10-17.1`, so single-type papers already in the shared
+  pool are not served again.
+
+**Not checked:** nobody ran this against a live model — no key in the session
+that made the change. The prompt, the check and the stamping are covered by
+`worksheetTypeMix.test.ts` on the shape of a reply, not on what the model will
+write. The check only asks that every ticked type appear **once**; it does not
+hold the model to the per-type counts, so a paper can still be lopsided
+(17 multiple choice, one of each other). Generate a 20-question paper with all
+five ticked and look at it before telling a teacher it is fixed.

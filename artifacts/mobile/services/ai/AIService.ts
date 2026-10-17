@@ -270,10 +270,10 @@ export interface WorksheetSection {
    * happened to come last in the bucket, so a section of 2 MCQs and 2 short
    * answers reported `short_answer`.
    *
-   * Server-generated worksheets are shaped by the model against the prompt in
-   * `artifacts/api-server/src/lib/prompts.ts`, which does not yet offer
-   * `'mixed'` — so a live-generated mixed section can still carry a single
-   * type. Fix that there if this field ever gains a consumer.
+   * Server-generated worksheets are asked for `'mixed'` by the prompt in
+   * `artifacts/api-server/src/lib/prompts.ts`, and the route re-stamps every
+   * section from the questions it holds (`stampWorksheetTypes`), so a live
+   * section reports the same thing an offline one does.
    */
   type: 'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem' | 'mixed'
     | 'match' | 'order' | 'spot_error' | 'graph';

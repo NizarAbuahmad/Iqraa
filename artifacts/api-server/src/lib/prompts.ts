@@ -17,6 +17,7 @@ import {
 } from "./lessonKinds.ts";
 import { QUIZ_TYPE_ORDER, type QuizType } from "./generationShape.ts";
 import { coverageClauseAr, coverageClauseEn } from "./coverage.ts";
+import { worksheetModelTypes, worksheetSectionTotal, worksheetTypeQuota } from "./worksheetTypes.ts";
 import { revisionClauseAr, revisionClauseEn } from "./revision.ts";
 
 /** «السؤال الأول» … — how a ministry paper numbers its question blocks. */
@@ -409,27 +410,34 @@ const WORKSHEET_TYPE_SHAPE_EN: Record<string, string> = {
 
 function worksheetTypeShapesAr(types: string[]): string {
   const lines = types.map(t => WORKSHEET_TYPE_SHAPE_AR[t]).filter(Boolean);
-  return lines.length ? `شكل كل نوع (و"type" كل قسم أحد هذه الأنواع فقط):\n${lines.join("\n")}` : "";
+  return lines.length ? `شكل كل نوع (و"type" كل سؤال أحد هذه الأنواع فقط):\n${lines.join("\n")}` : "";
 }
 
 function worksheetTypeShapesEn(types: string[]): string {
   const lines = types.map(t => WORKSHEET_TYPE_SHAPE_EN[t]).filter(Boolean);
-  return lines.length ? `The shape of each type (and every section's "type" is one of these only):\n${lines.join("\n")}` : "";
+  return lines.length ? `The shape of each type (and every question's "type" is one of these only):\n${lines.join("\n")}` : "";
 }
 
 /**
- * Question types the MODEL is asked to write. صِل / رتّب / أين الخطأ؟ / ارسم
- * are built from the question bank by the app (`worksheetFormats.ts` in
- * artifacts/mobile) and appended to the paper afterwards — each counts inside
- * the teacher's total, which the client has already reduced by that many. A
- * model told to write them would invent unverified items, so they never reach
- * the prompt; a list left empty falls back to short answer.
+ * How many of each ticked type, and that a section may hold several.
+ *
+ * Sections are difficulty bands, not types. With one `type` per section in the
+ * example and "spread the questions across the types" as the only instruction,
+ * a model gave each band one type and filled it — five ticked types came back
+ * as twenty multiple-choice questions. A count per type is something the reply
+ * can be checked against (`worksheetMissingTypes`); "spread" was not. Nothing
+ * is said for a single ticked type, where there is nothing to mix.
  */
-const BANK_ONLY_TYPES = new Set(["match", "order", "spot_error", "graph"]);
-function worksheetModelTypes(raw: unknown): string[] {
-  const types = (Array.isArray(raw) && raw.length ? (raw as string[]) : ["short_answer"]).filter(t => !BANK_ONLY_TYPES.has(t));
-  if (types.length === 0) types.push("short_answer");
-  return types;
+function worksheetTypeMixAr(b: any, types: string[]): string {
+  if (types.length < 2) return "";
+  const quota = worksheetTypeQuota(types, worksheetSectionTotal(b));
+  return `\nعدد الأسئلة من كل نوع (التزم به، وهو المجموع المطلوب في الأقسام):\n${quota.map(([t, k]) => `${t}: ${k}`).join("\n")}\nالأقسام مستويات صعوبة وليست أنواعًا: وزّع كل نوع على الأقسام الثلاثة، ولا تجعل قسمًا كاملًا من نوع واحد. اكتب في كل سؤال حقل "type" بنوعه، و"type" القسم "mixed" إن ضمّ أكثر من نوع.`;
+}
+
+function worksheetTypeMixEn(b: any, types: string[]): string {
+  if (types.length < 2) return "";
+  const quota = worksheetTypeQuota(types, worksheetSectionTotal(b));
+  return `\nHow many of each type (keep to it — it is the total the sections must hold):\n${quota.map(([t, k]) => `${t}: ${k}`).join("\n")}\nSections are difficulty levels, not types: spread every type across all three sections, and never make a whole section one type. Put a "type" on every question, and make a section's "type" "mixed" when it holds more than one.`;
 }
 
 export function worksheetPromptAr(b: any): string {
@@ -445,7 +453,7 @@ export function worksheetPromptAr(b: any): string {
   return `أنشئ ${isHW ? "واجبًا منزليًا" : "ورقة عمل"} لمادة ${b.subject} للصف ${b.grade} حول "${b.topic}".
 عدد الأسئلة: ${n}
 أنواع الأسئلة المطلوبة (لا تستعمل غيرها، ووزّع الأسئلة عليها): ${types.join(", ")}
-${worksheetTypeShapesAr(types)}
+${worksheetTypeShapesAr(types)}${worksheetTypeMixAr(b, types)}
 ${difficultyClauseAr(b)}
 ${wantsWP ? "\nيجب تضمين مسألة حياتية واحدة على الأقل (سيناريو واقعي يتطلب تطبيق مفاهيم الدرس، بأسلوب «حل مسائل حياتية»)." : ""}
 ${prior ? `\nابدأ بقسم «مراجعة سابقة» فيه سؤالان أو ثلاثة فقط مبنية حرفيًا على هذه المفاهيم السابقة (لا تختلق غيرها):\n- ${prior.join("\n- ")}` : ""}${coverageClauseAr(b, !!example)}
@@ -463,10 +471,10 @@ ${example ? workedExampleRuleAr(n) : isHW ? "" : worksheetKindRuleAr(b, n)}
   },` : ""}
   "sections": [
     {
-      "type": "short_answer",
+      "type": "${types.length > 1 ? "mixed" : types[0]}",
       "title": "عنوان القسم",
       "questions": [
-        { "text": "نص السؤال", "points": 5 }
+        { "type": "${types[0]}", "text": "نص السؤال", "points": 5 }
       ]
     }
   ],
@@ -490,7 +498,7 @@ export function worksheetPromptEn(b: any): string {
 Number of questions: ${n}
 ${difficultyClauseEn(b)}
 Question types requested (use no others, and spread the questions across them): ${types.join(", ")}
-${worksheetTypeShapesEn(types)}
+${worksheetTypeShapesEn(types)}${worksheetTypeMixEn(b, types)}
 ${wantsWP ? "\nInclude at least one real-life word problem (a realistic scenario that requires applying the lesson concepts)." : ""}
 ${prior ? `\nStart with a "Prior knowledge review" section of 2–3 questions drawn only from these concepts (do not invent others):\n- ${prior.join("\n- ")}` : ""}${coverageClauseEn(b, !!example)}
 ${b.additionalContext ? `\nTextbook context (use this to craft accurate, curriculum-aligned questions):\n${b.additionalContext}` : ""}
@@ -507,10 +515,10 @@ Return JSON in this exact shape:
   },` : ""}
   "sections": [
     {
-      "type": "short_answer",
+      "type": "${types.length > 1 ? "mixed" : types[0]}",
       "title": "Section title",
       "questions": [
-        { "text": "Question text", "points": 5 }
+        { "type": "${types[0]}", "text": "Question text", "points": 5 }
       ]
     }
   ],
@@ -701,6 +709,18 @@ The paper so far has ${have.length} questions, with these texts:
 ${list}
 
 Write exactly ${missing} MORE questions, of the same requested types and in the same shape, about different ideas from the above — do not repeat or reword any of them. Return the same JSON shape (with "title" and "instructions" repeated briefly), but "sections" holds ONE new section titled "Additional practice" with only the new questions, and "answerKey" holds only the new questions' answers, with "num" numbered from ${have.length + 1}. No "workedExample".`;
+}
+
+/**
+ * Added to a worksheet request whose first reply left out a ticked question
+ * type. The request already carries the count for each type; this says the
+ * reply ignored it, naming what was missing, so the second call is not the
+ * same call.
+ */
+export function worksheetTypeRetryBlock(isAr: boolean, absent: string[]): string {
+  return isAr
+    ? `\n\nتنبيه: ردّك السابق على هذا الطلب خلا تمامًا من هذه الأنواع المطلوبة: ${absent.join("، ")}. أعد كتابة الورقة كاملة بالعدد المحدّد لكل نوع، ووزّع الأنواع على الأقسام الثلاثة، ولا تجعل قسمًا كاملًا من نوع واحد.`
+    : `\n\nNote: your previous reply to this request had none of these requested types: ${absent.join(", ")}. Write the whole paper again with the stated count for each type, spread across all three sections, and never make a whole section one type.`;
 }
 
 // ─── Difficulty ──────────────────────────────────────────────────────────────

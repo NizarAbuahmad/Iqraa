@@ -268,6 +268,13 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   `questionTypes` entirely (always 3 written questions + challenge +
   reflection); the challenge and the reflection are now two of the picked
   number and the rest follow the ticked types (`worksheetCount.test.ts`).
+  **The ticked types are enforced too (since 2026-10-17).** Sections are
+  difficulty bands, so a prompt that carried one `type` per section and only said
+  "spread across the types" got twenty multiple-choice questions back for five
+  ticked types. The live prompt now gives a count per type and allows a `mixed`
+  section, and the route retries once when a ticked type is absent
+  (`worksheetMissingTypes`, `lib/worksheetTypes.ts`). It only checks that each
+  type appears, not the counts.
 - **A question's difficulty tier lives on the template, and in two prompts.**
   Every non-math question template carries its own `tier`
   (`TieredTemplate` in `artifacts/mobile/services/ai/generators.ts`), and
