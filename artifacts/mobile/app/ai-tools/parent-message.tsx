@@ -34,10 +34,12 @@ import {
 } from '@/services/messaging';
 import { pickOnePdf } from '@/services/lessonMediaPick';
 import {
-  attachmentKind, attachmentProblem, composeParentMessage, guardiansForStudent, kindEmoji, kindLabel,
+  attachmentKind, attachmentProblem, composeParentMessage, detailsExample, detailsLanguageMismatch,
+  guardiansForStudent, kindEmoji, kindLabel,
   MAX_LETTER_LENGTH, MESSAGE_KINDS, needsDetails, outgoingLetter, parentMessageReady, parseSavedSignature,
-  rosterGender, seedDetailsFromNote, SIGNATURE_STORAGE_KEY, suggestMeeting, summarizeContacts,
-  type Gender, type ManualEdit, type MessageKind, type Tone,
+  rosterGender, seedDetailsFromNote, SIGNATURE_STORAGE_KEY, strengthLabel, STRENGTHS, suggestMeeting,
+  summarizeContacts,
+  type Gender, type ManualEdit, type MessageKind, type Strength, type Tone,
 } from '@/services/parentMessage';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
@@ -127,6 +129,8 @@ export default function ParentMessageScreen() {
   const [studentGender, setStudentGender] = useState<Gender>('male');
   const [kind, setKind] = useState<MessageKind>(paramKind ?? 'praise');
   const [details, setDetails] = useState('');
+  /** Praise only: what the teacher ticked. Nothing ticked = the letter praises nothing in particular. */
+  const [strengths, setStrengths] = useState<Strength[]>([]);
   const [tone, setTone] = useState<Tone>('formal');
   const [teacherName, setTeacherName] = useState(user?.name ?? '');
   const [teacherGender, setTeacherGender] = useState<Gender>('male');
@@ -324,11 +328,15 @@ export default function ParentMessageScreen() {
 
   const message = useMemo(
     () => composeParentMessage(
-      { studentName, studentGender, kind, details, teacherName, teacherGender, subject, tone },
+      { studentName, studentGender, kind, details, strengths, teacherName, teacherGender, subject, tone },
       isAr,
     ),
-    [studentName, studentGender, kind, details, teacherName, teacherGender, subject, tone, isAr],
+    [studentName, studentGender, kind, details, strengths, teacherName, teacherGender, subject, tone, isAr],
   );
+  const toggleStrength = (s: Strength) => {
+    setStrengths(prev => (prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]));
+    Haptics.selectionAsync();
+  };
 
   const letter = outgoingLetter(message, edit, studentName);
   // A concern letter is not ready without its details — the same rule the
@@ -546,18 +554,59 @@ export default function ParentMessageScreen() {
             ) : null}
           </Field>
 
+          {/* Praise says nothing about the child's qualities unless the teacher
+              ticks them here — the composer never assumes diligence. */}
+          {kind === 'praise' ? (
+            <Field label={t('parentMsgStrengths')} colors={colors} isRTL={isRTL}>
+              <View style={[styles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                {STRENGTHS.map(s => {
+                  const active = strengths.includes(s);
+                  return (
+                    <Pressable
+                      key={s}
+                      onPress={() => toggleStrength(s)}
+                      accessibilityRole="checkbox"
+                      aria-checked={active}
+                      style={[styles.pill, {
+                        backgroundColor: active ? ACCENT : colors.card,
+                        borderColor: active ? ACCENT : colors.border,
+                        borderRadius: colors.radius,
+                      }]}
+                    >
+                      <Text style={[styles.pillText, {
+                        color: active ? palette.primaryForeground : colors.mutedForeground,
+                        fontFamily: active ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
+                      }]}>
+                        {strengthLabel(s, isAr)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 17, marginTop: 8, textAlign: isRTL ? 'right' : 'left' }}>
+                {t('parentMsgStrengthsNote')}
+              </Text>
+            </Field>
+          ) : null}
+
           {/* The tool states plainly that it will not invent the specifics —
               the teacher is the only source for what actually happened. */}
           <Field label={needsDetails(kind) ? t('parentMsgDetailsRequired') : t('parentMsgDetails')} colors={colors} isRTL={isRTL}>
             <TextInput
               value={details}
               onChangeText={setDetails}
-              placeholder={t('parentMsgDetailsPlaceholder')}
+              placeholder={detailsExample(kind, isAr, studentGender)}
               placeholderTextColor={colors.mutedForeground}
               multiline
               numberOfLines={3}
               style={inputStyle(colors, isRTL, { minHeight: 84, textAlignVertical: 'top' })}
             />
+            {/* Pasted into the letter as typed, so say so when it won't match it. */}
+            {detailsLanguageMismatch(details, isAr) ? (
+              <Text style={{ color: palette.warning, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 17, marginTop: 8, textAlign: isRTL ? 'right' : 'left' }}>
+                {t('parentMsgDetailsLang')}
+              </Text>
+            ) : null}
             <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 17, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
               {t('parentMsgFactsNote')}
             </Text>
