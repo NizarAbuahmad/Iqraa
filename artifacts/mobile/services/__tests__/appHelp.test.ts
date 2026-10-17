@@ -523,6 +523,48 @@ describe('a grade to change and a lesson to add', () => {
   });
 });
 
+describe('a grade written with its accusative ending («صفاً جديداً»)', () => {
+  // Found on app.iqrra.com (2026-10-16): «كيف أضيف صفاً جديداً؟» was asked which
+  // subject it meant, while «كيف اضيف صف جديد» got the steps. The ending is the
+  // correct spelling, so each form must get exactly what its plain twin gets.
+  const t = (k: string) => `<${k}>`;
+  const twins: Array<[string, string]> = [
+    ['كيف أضيف صفاً جديداً؟', 'كيف اضيف صف جديد'],
+    ['كيف أضيف صفًا جديدًا؟', 'كيف اضيف صف جديد'],
+    ['كيف اضيف صفا جديدا', 'كيف اضيف صف جديد'],
+    ['كيف أضيف صفاً؟', 'كيف اضيف صف'],
+    ['كيف أضيف صفاً إضافياً؟', 'كيف اضيف صف اضافي'],
+    ['اريد ان اضيف صفاً جديداً', 'اريد ان اضيف صف جديد'],
+    ['بدي أضيف صفاً ثامناً', 'بدي اضيف صف ثامن'],
+    ['بدي اضيف صفا ثامنا', 'بدي اضيف صف ثامن'],
+  ];
+  for (const [q, twin] of twins) {
+    it(`«${q}» gets the grade steps, as «${twin}» does`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(classifyChatIntent(q, 'ar').intent, 'app_help');
+      assert.equal(top(q), 'subjects');
+      assert.deepEqual(answerAppHelp(q, 'ar', t), answerAppHelp(twin, 'ar', t));
+    });
+  }
+
+  const teaching = [
+    // An alif ending typed without its mark is part of the word, except on the
+    // few words a grade is added with.
+    'أين يقع جبل الصفا؟',
+    'ما معنى كلمة صفا؟',
+    'كيف أضيف عدداً جديداً إلى المتسلسلة؟',
+    'أضف صفاً جديداً إلى الجدول',
+    'ثانياً، كيف أحل المعادلة؟',
+    'أريد مثالاً جديداً',
+  ];
+  for (const q of teaching) {
+    it(`leaves «${q}» alone`, () => {
+      assert.equal(isAppHelpQuery(q), false);
+      assert.notEqual(classifyChatIntent(q, 'ar').intent, 'app_help');
+    });
+  }
+});
+
 describe('classifyChatIntent routes app questions before artifacts', () => {
   it('«وين ألاقي ورقة العمل» asks for the tool, not a worksheet', () => {
     assert.equal(classifyChatIntent('وين ألاقي ورقة العمل؟').intent, 'app_help');
