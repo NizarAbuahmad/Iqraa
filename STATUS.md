@@ -1531,7 +1531,12 @@ Teachers said the chat «isn't smart». Three causes, all measured:
   `AI_USER_BUDGET_USD=1` / `AI_STUDENT_BUDGET_USD=0.20`, set in the same file.
 - **Chat ran `gpt-5.4-nano`**, set by hand on Cloud Run and never measured for
   chat. `deploy.yml` now sets `AI_MODEL_CHAT=gpt-5.4-mini` (~3.7× nano per
-  turn) so a console edit cannot drift it again.
+  turn) so a console edit cannot drift it again. It went live an hour after
+  the merge, not with it: the deploy only redeployed the API for
+  `artifacts/api-server/` or `lib/` changes, so #1104's run (642) skipped it
+  and production served nano until #1093's `lib/` change deployed the API (run
+  645, revision `iqraa-api-00369-cjn`). Since 2026-10-17 an edit to
+  `deploy.yml` redeploys the API and the verifier as well.
 - **Keyword noise was handed to the model as the textbook, or stopped the
   question.** The search returns lessons for almost any sentence: «كيف أتعامل مع
   طالب مشاغب في الصف؟» ranked English for hospitality (11), the quadratic
