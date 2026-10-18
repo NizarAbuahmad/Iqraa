@@ -134,6 +134,21 @@ const SCREENS: AppPlace[] = [
   { id: 'invite-teacher', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howInviteTeacher' },
   { id: 'install-app', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howInstallApp' },
   { id: 'pricing', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howPricing' },
+  // The fifth pass (2026-10-18). An exam's questions change only while it is a
+  // draft, and an exam in «التقييمات» has no export at all: printing one points
+  // at the short quiz, whose export does print.
+  { id: 'edit-exam-questions', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howEditExamQuestions' },
+  { id: 'close-exam', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howCloseExam' },
+  { id: 'edit-mark', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howEditMark' },
+  { id: 'release-results', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howReleaseResults' },
+  // Not the quiz tool as the button: a tool place answers a print question with
+  // the generic export steps (see `answerAppHelp`).
+  { id: 'print-exam', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howPrintExam' },
+  { id: 'print-student-copy', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howPrintStudentCopy' },
+  { id: 'homework-due-date', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howHomeworkDueDate' },
+  { id: 'homework-done', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howHomeworkDone' },
+  { id: 'message-one', route: '/notifications', labelKey: 'tabAlerts', pathKeys: [], isTool: false, keywords: [], howKey: 'howMessageOne' },
+  { id: 'language', route: '/settings', labelKey: 'settings', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'faqA16' },
   {
     id: 'subjects', route: '/setup-subjects', routeParams: { mode: 'edit' }, labelKey: 'mySubjects', pathKeys: ['tabProfile'], isTool: false,
     // No bare «grade» / «صف»: they sit inside every «grade 10 quiz» and «للصف العاشر».
@@ -375,6 +390,13 @@ const STATEMENT_PLACES: { re: RegExp; id: string }[] = [
 /** The optional opening of an anchored rule: a how / where / can-I word, or first-person intent. */
 const EN_RULE_LEAD = String.raw`^(?:(?:please|pls|plz)\s+)?(?:(?:how\s+(?:do|can|should)\s+(?:i|we)|where\s+(?:do|can|should)\s+(?:i|we)|how\s+to|can\s+(?:i|we)|(?:i|we)\s+(?:want|need|wanna)\s+to|(?:i|we)(?:'d|\s+would)\s+like\s+to|let\s+me|help\s+me(?:\s+to)?)\s+)?`;
 const AR_RULE_LEAD = String.raw`^(?:(?:كيف|طريقه|خطوات|وين|اين|من\s+وين|من\s+اين)\s+(?:يمكنني\s+|ممكن\s+|بقدر\s+)?|(?:هل\s+)?(?:يمكنني|يمكن|اقدر|استطيع|ممكن)\s+(?:ان\s+)?|${AR_INTENT})?`;
+/**
+ * The same opening with the how / where / can-I word required. For asks that,
+ * said as intent, are a request to the assistant: «اريد اضافة سؤال الى الاختبار»
+ * wants a question written, «كيف أضيف سؤالاً إلى الامتحان» wants the button.
+ */
+const EN_HOW_LEAD = String.raw`^(?:(?:please|pls|plz)\s+)?(?:how\s+(?:do|can|should)\s+(?:i|we)|where\s+(?:do|can|should)\s+(?:i|we)|how\s+to|can\s+(?:i|we))\s+`;
+const AR_HOW_LEAD = String.raw`^(?:(?:كيف|طريقه|خطوات|وين|اين|من\s+وين|من\s+اين)\s+(?:يمكنني\s+|ممكن\s+|بقدر\s+)?|(?:هل\s+)?(?:يمكنني|يمكن|اقدر|استطيع|ممكن)\s+(?:ان\s+)?)`;
 const EN_RULE_TAIL = String.raw`(?:\s+(?:please|pls|plz|now|here))*$`;
 const AR_RULE_TAIL = String.raw`(?:\s+(?:لي|من\s+فضلك|لو\s+سمحت|هنا|الان))*$`;
 
@@ -743,6 +765,132 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
       ),
       new RegExp(
         AR_RULE_LEAD + String.raw`(?:اضيف|اضافه|اضف|ارفق|ادرج|احط|اضع)\s+(?:ال)?(?:صوره|صور|شكل|رسمه|رسم)\s+(?:ل|لل|الي|في|مع|علي)\s*(?:ال)?(?:سؤال|اسئله)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  // The fifth live pass (2026-10-18). The exam is named as the object's place,
+  // so «كيف أكتب سؤالاً جيداً؟», «كيف أغلق الحصة بنشاط ممتع؟» and «كيف أعلن النتائج
+  // للطلاب بطريقة لطيفة؟» stay teaching.
+  {
+    id: 'edit-exam-questions',
+    res: [
+      new RegExp(
+        EN_HOW_LEAD + String.raw`(?:(?:delete|remove|edit|change|add|write)\s+(?:(?:a|an|the|my|one|this|some)\s+)*(?:own\s+)?questions?\s+(?:from|in|to|into|on|of)\s+(?:(?:the|my|an?|this)\s+)?(?:exam|test|evaluation)` +
+          String.raw`|write\s+(?:(?:the|my)\s+)?(?:exam|test)\s+questions\s+(?:myself|by\s+myself|on\s+my\s+own))` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_HOW_LEAD + String.raw`(?:(?:احذف|حذف|امسح|مسح|اعدل|تعديل|اغير|تغيير|اضيف|اضافه|اضف|اكتب|كتابه)\s+(?:ال)?(?:سؤال|اسئله)(?:\s+(?:من\s+(?:عندي|اعدادي)|بنفسي))?\s+(?:من|في|الي|لل|ل)\s*(?:ال)?(?:امتحان|اختبار|تقييم)(?:\s+بنفسي)?` +
+          String.raw`|(?:اكتب|كتابه|اضع|اضيف)\s+(?:ال)?اسئله\s+(?:ال)?(?:امتحان|اختبار|تقييم)\s+بنفسي)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'close-exam',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:close|end|stop|lock)\s+(?:(?:the|an?|my|this)\s+)?(?:exam|test|evaluation)(?:\s+link)?` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اغلق|اغلاق|اقفل|اقفال|اوقف|ايقاف|انهي|انهاء)\s+(?:(?:ال)?(?:امتحان|اختبار|تقييم)|رابط\s+(?:ال)?(?:امتحان|اختبار))` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'edit-mark',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:change|edit|fix|correct|update|override)\s+(?:(?:a|the|my|one)\s+)?(?:students?['’]?s?\s+(?:marks?|grades?|scores?)|(?:marks?|scores?)(?:\s+(?:for|of)\s+(?:a|one|the|this)\s+student)?)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اعدل|تعديل|اغير|تغيير|اصحح|تصحيح)\s+(?:ال)?(?:علامه|علامات|درجه|درجات)\s+(?:ال)?(?:طالب|طالبه|طلاب|طلبه)(?:\s+(?:واحد|معين))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'release-results',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:release|publish|announce|send)\s+(?:the\s+)?(?:results|marks|grades|scores)(?:\s+(?:to|with)\s+(?:my\s+|the\s+)?(?:students|class|parents))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اعلن|اعلان|انشر|نشر|ارسل|اظهر|اظهار)\s+(?:ال)?(?:نتائج|علامات|درجات)(?:\s+(?:ال)?(?:امتحان|اختبار))?` +
+          String.raw`(?:\s+(?:ل|الي|لل)\s*(?:ال)?(?:طلاب|طلابي|طلبه|طلبتي|اهالي|اولياء\s+(?:ال)?امور))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'print-student-copy',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`print\s+(?:(?:(?:the|a|my|this)\s+)?(?:worksheet|quiz|exam|test|paper)\s+(?:without|with\s+no)\s+(?:the\s+)?(?:answers|answer\s+key|key)|(?:a\s+|the\s+)?student\s+copy)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اطبع|طباعه|نطبع)\s+(?:(?:ال)?(?:ورقه\s+(?:ال)?عمل|اختبار|امتحان|ورقه)\s+(?:بدون|بلا|من\s+غير|دون)\s+(?:ال)?(?:اجابات|اجابه|حلول|حل|مفتاح(?:\s+(?:ال)?اجابات)?)|نسخه\s+(?:ال)?طالب)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'print-exam',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`print\s+(?:(?:the|an?|my|this)\s+)?(?:exam|test|evaluation)(?:\s+papers?)?` + EN_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:اطبع|طباعه|نطبع)\s+(?:ال)?(?:امتحان|اختبار|تقييم)(?:\s+(?:ورقيا|ورقي))?` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'start-class',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:show|present|display|project|put)\s+(?:(?:the|my|a|this)\s+)?lesson\s+(?:on|onto)\s+(?:(?:the|a)\s+)?(?:smart\s*board|board|projector|screen|big\s+screen|tv|whiteboard|interactive\s+board)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اعرض|عرض|اشغل|تشغيل)\s+(?:ال)?درس\s+(?:علي|في|ع)\s+(?:ال)?(?:سبوره(?:\s+(?:ال)?(?:ذكيه|تفاعليه))?|شاشه(?:\s+(?:ال)?(?:عرض|صف|كبيره))?|بروجكتر|بروجيكتور|داتا\s+شو|تلفاز|تلفزيون)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'homework-due-date',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:change|edit|move|extend|update|postpone)\s+(?:(?:the|a|my)\s+)?(?:homework\s+)?(?:due\s+date|deadline)(?:\s+(?:of|for)\s+(?:the|a|my)\s+homework)?` + EN_RULE_TAIL,
+      ),
+      new RegExp(EN_RULE_LEAD + String.raw`edit\s+(?:(?:the|a|my)\s+)?homework` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:(?:اغير|تغيير|اعدل|تعديل|امدد|تمديد|اؤجل|اوجل|تاجيل)\s+(?:ال)?(?:موعد|تاريخ)\s+(?:ال)?تسليم(?:\s+(?:ال)?(?:واجب|واجبات))?|(?:اعدل|تعديل)\s+(?:ال)?واجب)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'homework-done',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:see|check|know|find\s+out|track|view)\s+(?:(?:who|which\s+students)\s+(?:has\s+|have\s+)?(?:done|did|finished|completed|submitted)\s+(?:(?:the|their)\s+)?homework` +
+          String.raw`|(?:(?:my|the)\s+)?(?:students['’]?\s+)?homework(?:\s+(?:completion|progress|status))?)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اعرف|اشوف|اري|اتابع|متابعه)\s+(?:(?:مين|من|منو)\s+(?:انجز|حل|سلم|عمل|ما\s+حل|لم\s+يحل)\s+(?:ال)?واجب|(?:ال)?واجبات\s+(?:ال)?(?:طلاب|طلابي|طلبه|طلبتي)|انجاز\s+(?:ال)?(?:طلاب|طلبه)\s+(?:لل)?واجب)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    // One person, never the class (that is `class-chat`). «كيف أرسل رسالة لولي أمر؟»
+    // stays with the model on purpose: the parent-message tool writes that one.
+    id: 'message-one',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:message|send\s+(?:an?\s+)?(?:private\s+|direct\s+)?message\s+to)\s+(?:(?:a|one|the|this|that)\s+)?(?:single\s+|specific\s+|particular\s+|individual\s+)?(?:student|parent)(?:['’]s\s+parent)?(?:\s+(?:directly|privately|alone|only))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:(?:اراسل|مراسله)\s+(?:ال)?(?:طالب|ولي\s+(?:ال)?امر)(?:\s+(?:طالب|واحد|معين|بعينه))*` +
+          String.raw`|(?:ارسل|ابعث|ابعت)\s+رساله(?:\s+خاصه)?\s+(?:ل|الي|لل)\s*(?:ال)?طالب\s+(?:واحد|معين|بعينه))` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'language',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:change|switch|set)\s+(?:(?:the|my)\s+)?(?:app\s+)?language(?:\s+(?:of\s+the\s+app))?(?:\s+to\s+(?:english|arabic))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اغير|تغيير|ابدل|تبديل|احول|تحويل)\s+(?:ال)?لغه(?:\s+(?:ال)?(?:تطبيق|برنامج|واجهه))?(?:\s+(?:الي|لل|ل)\s*(?:ال)?(?:انجليزيه|انجليزي|انكليزي|انكليزيه|عربيه|عربي))?` + AR_RULE_TAIL,
       ),
     ],
   },
