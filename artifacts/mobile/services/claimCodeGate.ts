@@ -22,6 +22,11 @@ import type { TranslationKey } from './i18n.ts';
  * failure is `error`: "we do not know what this code is" must never be
  * mistaken for "per-student code", because that is what let a crashed lookup
  * send a nameless claim and come back demanding a name.
+ *
+ * `exam-code` is a 404 here that the exam endpoint then answered: an exam's
+ * share code is also six characters, and typed into this box it used to read as
+ * a per-student code, enable Continue, and fail with «invalid or expired».
+ * It is not a claim at all — nothing may be submitted; the screen offers the exam.
  */
 export type JoinCodeState =
   | 'short'
@@ -29,6 +34,7 @@ export type JoinCodeState =
   | 'student-code'
   | 'class'
   | 'empty-class'
+  | 'exam-code'
   | 'error';
 
 /**

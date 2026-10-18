@@ -56,6 +56,14 @@ describe('canSubmitClaim', () => {
     // code" — that is exactly what turned a 500 into an impossible error.
     assert.equal(canSubmitClaim('error', ''), false);
   });
+
+  it('never submits an exam code as a claim', () => {
+    // An exam share code is six characters like a claim code and 404s the class
+    // lookup too; it used to be read as a per-student code, so Continue was
+    // offered and the server answered «invalid or expired».
+    assert.equal(canSubmitClaim('exam-code', ''), false);
+    assert.equal(canSubmitClaim('exam-code', 'stu-1'), false);
+  });
 });
 
 describe('claimErrorKey', () => {
@@ -128,7 +136,7 @@ describe('code-only signup', () => {
   });
 
   it('offers nothing while the code is still being looked at', () => {
-    for (const state of ['short', 'checking', 'empty-class', 'error'] as const) {
+    for (const state of ['short', 'checking', 'empty-class', 'exam-code', 'error'] as const) {
       assert.equal(canSubmitSignup('student', state, 'abc'), false, state);
       assert.equal(canSubmitSignup('parent', state, 'abc'), false, state);
     }
