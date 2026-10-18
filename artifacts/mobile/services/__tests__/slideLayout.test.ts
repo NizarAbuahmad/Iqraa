@@ -164,6 +164,7 @@ describe('SLIDE_LAYOUTS', () => {
       flow: slide({ layout: 'flow', flow: { steps: ['أ', 'ب', 'ج'] } }),
       quote: slide({ layout: 'quote', quote: { text: 'العلم نور' } }),
       photo: slide({ layout: 'photo', content: 'جملة', sideImageUrl: 'https://img.example/a.jpg' }),
+      concepts: slide({ layout: 'concepts', concepts: ['سكون', 'حركة'] }),
     };
     for (const name of SLIDE_LAYOUTS) {
       assert.equal(resolveSlideLayout(samples[name])?.kind, name, `${name} should resolve`);
@@ -348,6 +349,29 @@ describe('quote', () => {
     assert.equal(resolveSlideLayout(slide({ layout: 'quote', quote: { text: 'x'.repeat(201) } })), null);
     assert.equal(resolveSlideLayout(slide({ layout: 'quote', quote: { text: 'ن', by: 'x'.repeat(61) } })), null);
     assert.equal(resolveSlideLayout(slide({ layout: 'quote', quote: { text: 'ن', by: '   ' } })), null);
+  });
+});
+
+describe('concepts', () => {
+  it('keeps two to six short terms, trimmed and bullet-stripped', () => {
+    assert.deepEqual(
+      resolveSlideLayout(slide({ layout: 'concepts', concepts: ['• سكون ', 'قوة سحب', 'حركة'] })),
+      { kind: 'concepts', items: ['سكون', 'قوة سحب', 'حركة'] },
+    );
+    assert.equal(resolveSlideLayout(slide({ layout: 'concepts', concepts: Array.from({ length: 6 }, (_, i) => `م${i}`) }))?.kind, 'concepts');
+  });
+
+  it('refuses one term, seven, a blank, a sentence, or no list at all', () => {
+    assert.equal(resolveSlideLayout(slide({ layout: 'concepts', concepts: ['سكون'] })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'concepts', concepts: Array.from({ length: 7 }, (_, i) => `م${i}`) })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'concepts', concepts: ['سكون', ' '] })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'concepts', concepts: ['سكون', 'x'.repeat(33)] })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'concepts' })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'concepts', concepts: 'سكون' as never })), null);
+  });
+
+  it('payloadLines turns refused terms back into lines', () => {
+    assert.deepEqual(payloadLines(slide({ concepts: ['سكون', 'حركة'] })), ['سكون', 'حركة']);
   });
 });
 

@@ -2493,7 +2493,7 @@ both; `pnpm run typecheck` clean.
 
 ## Row-level security is built and switched off, 2026-10-13
 
-**State: off, and the migration has shipped.** PR #1048 merged on 2026-10-14 and `deploy.yml` ran migration `0008` in production (run 38492809309, green): the `iqraa_app` role, grants, and row-level security on 28 tables now exist. Behaviour is unchanged only if the API's connection is the table owner (there is no `FORCE`, so an owner bypasses RLS) — **that is still unverified: the role in Cloud Run's `DATABASE_URL` must own those tables**, and nobody has run the ownership check. Nothing is enforced until `RLS_ENFORCE=on`, and nobody has rehearsed that on Neon or measured its latency. The steps, as a tick-list: [`docs/rls-rollout-checklist.md`](./docs/rls-rollout-checklist.md).
+**State: off, and the migration has shipped.** PR #1048 merged on 2026-10-14 and `deploy.yml` ran migration `0008` in production (run 38492809309, green): the `iqraa_app` role, grants, and row-level security on 28 tables now exist. **Checked 2026-10-16:** the API's connection (the Secret Manager `DATABASE_URL`) is `neondb_owner` and it owns all tables in `public`, so it bypasses RLS (there is no `FORCE`) and the migration changed nothing for it. Nothing is enforced until `RLS_ENFORCE=on`, and nobody has yet rehearsed that on Neon (a separate empty project, pooled and direct endpoints) or measured its latency and connection count. The steps, as a tick-list: [`docs/rls-rollout-checklist.md`](./docs/rls-rollout-checklist.md).
 **Both connection strings must name that same owner role:** the migration runs under GitHub's `secrets.DATABASE_URL` (`deploy.yml`, the `production migrations` job), while the API runs under Cloud Run's `DATABASE_URL`. The fifteen `SECURITY DEFINER` helpers are owned by the *migrating* role, and bypass RLS only if that role also owns the tables — if the two secrets name different roles, the helpers read as a role that is subject to the policies.
 
 The `iqraa_app` role, sixteen helper functions and 65 policies exist (migration `0008_row_level_security.sql`); the API
@@ -3262,16 +3262,20 @@ place — see its section 2).
   "YYYY-MM-DD"`; the server stores `dueAt` as 23:59:59.999 **Asia/Amman** of that day
   (a fixed UTC+3 — Jordan dropped DST in 2022) and also returns it as ISO. Clients
   never do timezone arithmetic. A homework is `overdue` only once that instant has
-  passed and it is not done. A due date must lie within 30 days back and 366 days ahead
-  (Amman days), else 400 with `code: "due_date_out_of_range"` next to `error` (POST and
+  passed and it is not done. A due date must lie between today and 366 days ahead
+  (Amman days; **never in the past — it allowed 30 days back until 2026-10-17**), else 400 with `code: "due_date_out_of_range"` next to `error` (POST and
   PATCH) — a typo like 2062 is refused, and the mobile modal shows `hwErrDueRange`. **A PATCH
   that leaves the due date unchanged is not re-bounded** (`parsePatch(body, now, existing)`
   skips the range check when the parsed date falls on the same Amman calendar day as the
   stored `dueAt` — compared by day, not instant, so a row inserted by SQL or an import at some
   other time of day stays editable): the edit form always
-  resends `dueDate`, so without this any edit of a homework due more than 30 days ago was a
+  resends `dueDate`, so without this any edit of a homework whose day has passed is a
   400 and a teacher could not fix a typo in an old homework. A CHANGED date outside the
-  window is still refused.
+  window is still refused. **The exam date follows the same rule** (`resolveExamPatch`,
+  since 2026-10-17): a day before today (Amman) is a 400 `examDate must be today or later`
+  when it changes the stored date; re-sending the stored one, re-timing or clearing still
+  works, and `ExamDateCard` shows `examDatePast` first. Teaching-plan dates are NOT bounded
+  (a term plan starts in the past).
 - **A family sees the last 14 days and later**: `dueAt` within 14 days of now, and of
   those the **200 earliest-due** (`ORDER BY due_at ASC LIMIT 200` in
   `lib/familyHomeworkLoad.ts`). The limit is **per call, so per child for a parent**:
@@ -3847,8 +3851,8 @@ real family accounts — **none of it has been seen arriving on a phone.**
   setup step of the check, not of the card.
 - **Known gaps** (one line each, with the reason):
   - **Pushes for PAST-dated homework and exam dates are skipped by design** (a back-dated
-    entry is a record, not news; the API allows homework 30 days back). A cleared exam
-    date is always told.
+    entry is a record, not news). Since 2026-10-17 the API refuses a new past date, so
+    this only covers rows dated before that. A cleared exam date is always told.
   - Two simultaneous publishes of one dated draft can both announce (a conditional write
     inside the share-code retry loop would fix it; left out on purpose).
   - Two simultaneous PATCHes of one exam with DIFFERENT dates: the loser's value is
@@ -4221,6 +4225,25 @@ teacher account is free with a monthly limit on new material. «كيف أدعو 
 «students / طلابي / طلبتي» was enough for My classes, so «how do i make students
 listen» got the add-a-class steps; those words now count only in a where-question
 (`STUDENT_WORDS`). 21 look-alikes pinned.
+
+**An exam's own buttons, marks, printing, homework and one-to-one messages
+(2026-10-18, fifth live pass).** Deleting or adding a question and «كيف أغلق
+الامتحان؟» got only the path to Evaluations (or the make-an-exam line), «كيف أعدّل
+علامة طالب؟» was asked which subject, printing got the generic export steps, and
+announcing results, the smart board, a homework due date, homework completion
+and messaging one student went to the model. Each now has a `RULE_PLACES` entry
+with steps from its screen: question edits only while the exam is a draft (pencil
+/ bin per question, «أضِف سؤالًا من إعدادك»; fixed after «انشر التقييم»), «أغلق
+الاختبار», a mark changed from «لوحة النتائج» → the student → «العلامة», «أعلن
+النتائج للطلبة», the student copy from the export sheet, the smart board as «ابدأ
+الحصة الآن», editing a homework by tapping it, «أنجزه … من …» (a count of students
+with an account, never names), «رسالة جديدة» → «راسل» (linked accounts only), and
+the language steps (`faqA16`, where it used to get only the path to Settings).
+**One answer says it is not in the app**: an exam in Evaluations has no export,
+so printing one points at the short quiz. The exam-question rule needs a how / can-I
+word (`EN_HOW_LEAD` / `AR_HOW_LEAD`): said as intent, «اريد اضافة سؤال الى الاختبار»
+asks the assistant to write one and stays teaching. «كيف أرسل رسالة لولي أمر؟» still
+goes to the model by agreement. 14 look-alikes pinned.
 
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
@@ -4706,6 +4729,54 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
 - When the worksheet screen is opened with a lesson, its unit dropdown still
   shows the placeholder (the documented gap in `TopicSelector.tsx`). The topic
   itself is held.
+## Slides Maker decks stop looking like bare lists, 2026-10-18
+
+A teacher's revision deck showed three one-word cards on a mostly empty slide and
+a flat green unit break: the new layouts only reach Prompt Slides, and Slides
+Maker (`lessonSlides.ts` — lesson and revision decks, built from curriculum data)
+had never been given them.
+
+- **`concepts`** — a new layout: two to six short terms (each up to 32 characters)
+  as large cards, three to a row, a 2×2 for four. Used for a revision unit's key
+  ideas and a lesson's «أفكار الدرس» when every item is a term; a sentence among
+  them keeps the bullet list. The bullets stay on the slide as the fallback, so a
+  refusal is never a blank. Not described to the Prompt Slides model.
+- **The vocabulary slide is a table** (term | meaning) when every term has a
+  definition and the sizes pass the existing `table` gate.
+- **Topic icons** — `iconForTopic(title)` (`deckIcons.ts`: Arabic and English
+  stems, first match wins, `null` rather than a wrong guess) puts an atom on
+  «الحركة والقوة», a globe on earth and space; a unit break and its key-ideas slide
+  carry it, with a generic one when the title names nothing. The key-ideas heading
+  lost its leading 💡, which would have overridden the icon. Exit-ticket breaks
+  carry a ticket.
+- **Fix to my own earlier work:** the presenter's layout slides (timeline, stats,
+  table, flow, compare, steps) drew a bare title and never the heading icon the PDF
+  has; one `LayoutHeading` now draws the same icon chip everywhere.
+
+- **A photo on each unit break** — the deck used to give one divider photo to the
+  FIRST break only. `unitPhotoTargets` (`classMedia.ts`) picks the breaks whose
+  title is a recognisable topic and `photoQueryForTopic` (`deckIcons.ts`, built on
+  the same stems as the icons) gives each an English query («الحركة والقوة» →
+  physics, الأرض → earth and space). At most four per deck, no repeated query, and a
+  title it cannot read keeps the flat break rather than a stranger's photo.
+- **Motion** — `Reveal` in the presenter: bullets, cards, steps, timeline events,
+  stats, concept cards and flow boxes fade in and rise one after another (320 ms,
+  90 ms apart, capped at eight beats), native-driven, skipped when the device
+  asks for reduced motion. The slide is keyed by its index so it replays on every
+  slide. PDF and PowerPoint cannot animate and are unchanged
+  (`presenterMotion.test.ts` reads the source for the three properties that fail
+  silently).
+
+**Not done:** book figures and graphs on a REVISION deck. Lesson decks already carry
+a lesson's book figures (four of sixteen subjects have any) and maths graphs; a
+revision spans units, so no one lesson's figure belongs on it, and its units hold
+no figures of their own to draw. **Checked:** layout gate, icon rules, revision
+and lesson deck builders, PDF rendered and looked at, PPTX through the real
+exporter (cards in the right places for 3, 4 and 5 terms, Arabic mirrored).
+**Not checked:** the presenter on a device, the PPTX in PowerPoint. About two
+dozen local suites cannot load in this worktree (`qrcode-generator` missing,
+Windows line endings); CI is the full run.
+
 ## Two more slide layouts: quote and photo, 2026-10-17
 
 - **`quote`** — a phrase, definition or rule set in large type with an opening mark

@@ -548,6 +548,15 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
       ${footer(num)}</div>`;
     }
 
+    if (layout.kind === 'concepts') {
+      return `<div class="deck-slide">
+      ${deckHeader(slide.title, accent, slide.icon)}
+      <div class="deck-body deck-concepts${layout.items.length === 4 ? ' deck-concepts-four' : ''}">
+        ${layout.items.map(it => `<div class="deck-concept" style="border-top-color:${accent}"><p class="deck-concept-text">${esc(it)}</p></div>`).join('')}
+      </div>
+      ${footer(num)}</div>`;
+    }
+
     if (layout.kind === 'quote') {
       return `<div class="deck-slide">
       <div class="deck-body deck-quote">
@@ -684,7 +693,7 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${T.border
 .deck-title-badge, .deck-title-main, .deck-divider-title, .deck-eyebrow,
 .deck-eq, .deck-answer-label, .deck-chip, .deck-video-link,
 .deck-option-letter, .deck-title-meta,
-.deck-statement-text, .deck-quote-mark, .deck-quote-text, .deck-quote-by, .deck-stat-value, .deck-stat-label, .deck-compare-head,
+.deck-statement-text, .deck-concept-text, .deck-quote-mark, .deck-quote-text, .deck-quote-by, .deck-stat-value, .deck-stat-label, .deck-compare-head,
 .deck-step-num, .deck-tl-label, .deck-stats-value, .deck-table th, .deck-flow-node, .deck-flow-loop { font-family: 'Readex Pro','Arial','Tahoma',sans-serif; }
 /* ─── Layout shapes (services/slideLayout.ts) ───────────────────────────────
    Sizes run above the presenter's: this page is a fixed 297mm projected
@@ -697,6 +706,11 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${T.border
 .deck-statement-text { font-size:40px; line-height:1.5; font-weight:700; text-align:start; }
 .deck-statement-sub { font-size:24px; line-height:1.6; color:${T.muted}; margin-top:12px; text-align:start; }
 .deck-stat-value { font-size:96px; line-height:1.1; font-weight:700; text-align:start; }
+/* Key terms as cards: three to a row, a four a 2x2 (a lone fourth would hang off the edge). The grid takes the document's own direction. */
+.deck-body.deck-concepts { display:grid; grid-template-columns:repeat(3, 1fr); gap:24px; align-content:center; align-items:stretch; }
+.deck-body.deck-concepts-four { grid-template-columns:repeat(2, 1fr); }
+.deck-concept { display:flex; align-items:center; padding:44px 32px; min-height:230px; background:${T.card}; border:1px solid ${T.border}; border-top-width:6px; border-radius:24px; }
+.deck-concept-text { font-size:36px; line-height:1.45; font-weight:600; text-align:start; }
 .deck-body.deck-quote { justify-content:center; gap:4px; }
 .deck-quote-mark { font-size:96px; line-height:0.9; font-weight:700; text-align:start; }
 .deck-quote-text { font-size:36px; line-height:1.65; font-weight:600; text-align:start; }

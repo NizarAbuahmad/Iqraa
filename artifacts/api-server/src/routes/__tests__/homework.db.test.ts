@@ -163,13 +163,24 @@ describeDb("teacher homework over HTTP, against a real database", () => {
       const r = await create(w.users.t1, { classGroupId: w.classes.c1, title: "far", dueDate: "2062-01-01" });
       assert.equal(r.status, 400, r.text);
       assert.deepEqual(r.json, {
-        error: "dueDate must be within the last 30 days and the next year",
+        error: "dueDate must be today or later, and within the next year",
         code: "due_date_out_of_range",
       });
       assert.equal(await count(), before, "no row inserted");
       const past = await create(w.users.t1, { classGroupId: w.classes.c1, title: "past", dueDate: ammanDay(-45) });
       assert.equal(past.status, 400);
       assert.equal(past.json.code, "due_date_out_of_range");
+    });
+
+    it("rejects yesterday but accepts today, and writes nothing for yesterday", async () => {
+      const count = async () => (await db.pool.query(`SELECT count(*)::int AS n FROM homework`)).rows[0].n as number;
+      const before = await count();
+      const yesterday = await create(w.users.t1, { classGroupId: w.classes.c1, title: "yesterday", dueDate: ammanDay(-1) });
+      assert.equal(yesterday.status, 400, yesterday.text);
+      assert.equal(yesterday.json.code, "due_date_out_of_range");
+      assert.equal(await count(), before, "no row inserted");
+      const today = await create(w.users.t1, { classGroupId: w.classes.c1, title: "today", dueDate: ammanDay(0) });
+      assert.equal(today.status, 201, today.text);
     });
 
     it("gives only the range error a machine code", async () => {
@@ -303,7 +314,7 @@ describeDb("teacher homework over HTTP, against a real database", () => {
       assert.ok(after.getTime() > before.getTime());
     });
 
-    it("lets a homework that is already past the 30-day window be edited when its due date is resent unchanged", async () => {
+    it("lets a homework whose due day has passed be edited when its due date is resent unchanged", async () => {
       // The mobile edit form always resends dueDate, so bounding an unchanged date
       // would make every edit of an old homework a 400.
       const old = ammanDay(-45);
@@ -321,7 +332,7 @@ describeDb("teacher homework over HTTP, against a real database", () => {
       const moved = await call(server, "PATCH", `/homework/${id}`, w.users.t1, { title: "moved", dueDate: ammanDay(-46) });
       assert.equal(moved.status, 400, moved.text);
       assert.deepEqual(moved.json, {
-        error: "dueDate must be within the last 30 days and the next year",
+        error: "dueDate must be today or later, and within the next year",
         code: "due_date_out_of_range",
       });
       assert.equal((await rowOf(id))?.title, "old fixed");

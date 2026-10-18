@@ -529,7 +529,7 @@ export interface ActivitySlide {
    * `services/slideLayout.ts` decides whether a layout's data is complete
    * enough to draw; all three renderers ask it rather than checking fields.
    */
-  layout?: 'statement' | 'stat' | 'compare' | 'steps' | 'timeline' | 'stats' | 'table' | 'flow' | 'quote' | 'photo';
+  layout?: 'statement' | 'stat' | 'compare' | 'steps' | 'timeline' | 'stats' | 'table' | 'flow' | 'quote' | 'photo' | 'concepts';
   /** The figure and its caption, for `layout: 'stat'`. */
   stat?: { value: string; label: string; source?: string };
   /** The two sides, for `layout: 'compare'`. */
@@ -548,6 +548,12 @@ export interface ActivitySlide {
    * own: the picture is `sideImageUrl`, the sentence over it is `content`.)
    */
   quote?: { text: string; by?: string };
+  /**
+   * Two to six short key terms drawn as a grid of cards, for `layout: 'concepts'`.
+   * Written by the deck builders (Slides Maker's key-ideas slides), not asked of
+   * the model: the Prompt Slides prompt does not describe it.
+   */
+  concepts?: string[];
   /**
    * A short English photo-search phrase the generator asked for on this slide.
    *

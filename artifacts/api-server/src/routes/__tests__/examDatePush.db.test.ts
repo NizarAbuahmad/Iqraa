@@ -133,11 +133,16 @@ describeDb("exam date pushes, against a real database", () => {
     assert.deepEqual(await stub.settle(200), []);
   });
 
-  // A back-dated entry is a record, not news. exC3 (class c3, family B) is
-  // untouched by every case above.
-  it("saves a date in the past but pushes nothing", async () => {
-    const r = await ok(patch(x.exams.exC3, { examDate: ammanDay(-1) }));
-    assert.equal(r.json.evaluation.examDate, ammanDay(-1), "the date is still saved");
+  // A day before today is refused (it used to be saved as a record, quietly).
+  // exC3 (class c3, family B) is untouched by every case above.
+  it("refuses a date in the past: a 400, nothing saved, nothing pushed", async () => {
+    const stored = async () =>
+      (await db.pool.query(`SELECT exam_date FROM evaluations WHERE id = $1`, [x.exams.exC3])).rows[0].exam_date;
+    const before = await stored();
+    const r = await patch(x.exams.exC3, { examDate: ammanDay(-1) });
+    assert.equal(r.status, 400, r.text);
+    assert.match(String(r.json.error), /today or later/);
+    assert.equal(await stored(), before, "the stored date is untouched");
     assert.deepEqual(await stub.settle(300), []);
   });
 
@@ -148,8 +153,9 @@ describeDb("exam date pushes, against a real database", () => {
   });
 
   it("still tells a cleared date that had been back-dated", async () => {
-    await ok(patch(x.exams.exC3, { examDate: ammanDay(-2) }));
-    assert.deepEqual(await stub.settle(200), [], "back-dated: quiet");
+    // The API no longer accepts a past date, so an old one is planted directly
+    // (as any exam dated before this rule would hold).
+    await db.pool.query(`UPDATE evaluations SET exam_date = $1 WHERE id = $2`, [ammanDay(-2), x.exams.exC3]);
     await ok(patch(x.exams.exC3, { examDate: null }));
     assert.equal(sentTo(stub.messages(), "studentB")[0]?.title, `أُزيل موعد امتحان: ${EX_TITLES.exC3}`);
   });
