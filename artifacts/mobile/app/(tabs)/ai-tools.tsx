@@ -15,7 +15,7 @@ import { pickPrefillParams } from '@/services/lessonPrep';
 import { loadLessonPick } from '@/services/lessonContext';
 import { classToolParamsFromRoute, type ClassToolParams } from '@/services/classToolParams';
 import {
-  ALL_TOOLS,
+  TAB_TOOLS,
   type ToolDef,
 } from '@/services/toolCatalog';
 
@@ -95,7 +95,7 @@ function ToolCard({
         </View>
         <View style={[styles.gridTitleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: 'center' }]}>
-            {t(tool.titleKey as any)}
+            {t((tool.tabTitleKey ?? tool.titleKey) as any)}
           </Text>
           {tool.badgeKey && (
             <View style={[styles.badge, { backgroundColor: tool.color + '22' }]}>
@@ -109,7 +109,7 @@ function ToolCard({
           style={[styles.cardDesc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}
           numberOfLines={2}
         >
-          {t(tool.descKey as any)}
+          {t((tool.tabDescKey ?? tool.descKey) as any)}
         </Text>
         {isExternal && <Ionicons name="open-outline" size={14} color={colors.mutedForeground} />}
       </Pressable>
@@ -141,7 +141,7 @@ function ToolCard({
       <View style={{ flex: 1 }}>
         <View style={[styles.titleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: compact ? 14 : 15 }]}>
-            {t(tool.titleKey as any)}
+            {t((tool.tabTitleKey ?? tool.titleKey) as any)}
           </Text>
           {tool.badgeKey && (
             <View style={[styles.badge, { backgroundColor: tool.color + '22' }]}>
@@ -155,7 +155,7 @@ function ToolCard({
           style={[styles.cardDesc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}
           numberOfLines={compact ? 2 : 3}
         >
-          {t(tool.descKey as any)}
+          {t((tool.tabDescKey ?? tool.descKey) as any)}
         </Text>
       </View>
       <Ionicons
@@ -212,7 +212,7 @@ export default function AIToolsScreen() {
           groups the home screen and command palette. */}
       <View style={[styles.section, { paddingTop: 16 }]}>
         <View style={[styles.list, isDesktop && styles.listGrid]}>
-          {ALL_TOOLS.map(tool => (
+          {TAB_TOOLS.map(tool => (
             <ToolCard key={tool.id} tool={tool} isRTL={isRTL} colors={colors} t={t} grid={isDesktop} forClass={forClass} />
           ))}
         </View>
