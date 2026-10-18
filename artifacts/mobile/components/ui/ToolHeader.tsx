@@ -15,6 +15,12 @@ interface Props {
   leading?: string | { icon: keyof typeof Ionicons.glyphMap };
   /** The demo/live pill. Off only for screens that never generate. */
   sourceBadge?: boolean;
+  /**
+   * An Arabic/English pill. The only other switch after sign-in is in
+   * Settings, three taps away from a full-screen tool — and a letter is
+   * written in the app's language, so this is where it is wanted.
+   */
+  languageToggle?: boolean;
   topPad: number;
   isRTL: boolean;
   /** Rendered under the subtitle — a search field, a filter row. */
@@ -26,9 +32,9 @@ interface Props {
  * this band with their own colour, title size and badge order, so the tools
  * read as separate products; the band is now always the primary teal.
  */
-export function ToolHeader({ title, subtitle, eyebrow, leading, sourceBadge = true, topPad, isRTL, children }: Props) {
+export function ToolHeader({ title, subtitle, eyebrow, leading, sourceBadge = true, languageToggle = false, topPad, isRTL, children }: Props) {
   const colors = useColors();
-  const { t } = useLanguage();
+  const { t, lang, toggleLang } = useLanguage();
   const row = { flexDirection: isRTL ? 'row-reverse' : 'row' } as const;
   const align = { textAlign: isRTL ? 'right' : 'left' } as const;
   return (
@@ -42,7 +48,21 @@ export function ToolHeader({ title, subtitle, eyebrow, leading, sourceBadge = tr
         >
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
-        {sourceBadge ? <AiSourceBadge onDark isRTL={isRTL} /> : null}
+        <View style={[styles.navEnd, row]}>
+          {languageToggle ? (
+            <Pressable
+              onPress={() => { void toggleLang(); }}
+              hitSlop={8}
+              style={styles.langPill}
+              accessibilityRole="button"
+              accessibilityLabel={t('changeLanguage')}
+            >
+              <Ionicons name="language-outline" size={14} color="#fff" />
+              <Text style={styles.langPillText}>{lang === 'ar' ? 'English' : 'عربي'}</Text>
+            </Pressable>
+          ) : null}
+          {sourceBadge ? <AiSourceBadge onDark isRTL={isRTL} /> : null}
+        </View>
       </View>
       {eyebrow ? (
         <View style={[styles.eyebrow, row, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
@@ -64,6 +84,17 @@ export function ToolHeader({ title, subtitle, eyebrow, leading, sourceBadge = tr
 const styles = StyleSheet.create({
   band: { paddingHorizontal: 20, paddingBottom: 14, gap: 8 },
   nav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  navEnd: { alignItems: 'center', gap: 8 },
+  langPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  langPillText: { color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 },
   eyebrow: {
     alignItems: 'center',
     gap: 5,
