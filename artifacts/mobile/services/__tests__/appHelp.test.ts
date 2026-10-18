@@ -523,6 +523,27 @@ describe('a grade to change and a lesson to add', () => {
   });
 });
 
+describe('a matrix row is not a grade', () => {
+  // «كيف أضيف صفاً إلى المصفوفة» got the add-a-grade steps through «اضيف صف».
+  for (const q of [
+    'كيف أضيف صفاً إلى المصفوفة؟',
+    'كيف اضيف صف الى المصفوفة',
+    'كيف أضيف صفاً جديداً للمصفوفة؟',
+    'كيف أحذف صفاً من المصفوفة؟',
+    'كيف أضيف صفوفاً في المصفوفة',
+  ]) {
+    it(`leaves «${q}» alone`, () => {
+      assert.equal(isAppHelpQuery(q), false);
+      assert.notEqual(classifyChatIntent(q, 'ar').intent, 'app_help');
+    });
+  }
+  for (const q of ['كيف أضيف صفاً جديداً؟', 'كيف اضيف صف', 'بدي اضيف صف ثامن']) {
+    it(`«${q}» still gets the grade steps`, () => {
+      assert.equal(top(q), 'subjects');
+    });
+  }
+});
+
 describe('homework, exam date, scan, class chat, block, name, account, feedback, results actions', () => {
   // The second live pass (2026-10-17): each of these went to the model, which
   // invented menus («تبويب أدوات الذكاء الاصطناعي») or refused («كيف أحظر ولي
@@ -779,4 +800,47 @@ describe('classifyChatIntent routes app questions before artifacts', () => {
   it('«أنشئ ورقة عمل» still generates', () => {
     assert.equal(classifyChatIntent('أنشئ ورقة عمل').intent, 'artifact');
   });
+});
+
+// "how to generate worksheet" fell through to the generator, which made a
+// worksheet titled «how» (app.iqrra.com, 2026-10-17). How a material is made
+// is answered with the steps, and the button opens the tool.
+describe('how is a material made', () => {
+  const t = (k: string) => `<${k}>`;
+  const asks: [string, 'ar' | 'en', string][] = [
+    ['how to generate worksheet', 'en', 'howMakeWorksheet'],
+    ['How do I make a worksheet?', 'en', 'howMakeWorksheet'],
+    ['how can I prepare a lesson plan', 'en', 'howMakeLessonPlan'],
+    ['how do I build a quiz', 'en', 'howMakeQuiz'],
+    ['how to create an activity', 'en', 'howMakeActivity'],
+    ['كيف أعمل ورقة عمل؟', 'ar', 'howMakeWorksheet'],
+    ['كيف أجهّز ورقة عمل', 'ar', 'howMakeWorksheet'],
+    ['طريقة عمل ورقة عمل', 'ar', 'howMakeWorksheet'],
+    ['كيف أحضّر خطة درس', 'ar', 'howMakeLessonPlan'],
+    ['كيف اسوي اختبار', 'ar', 'howMakeQuiz'],
+    ['كيف أنشئ نشاطاً صفياً', 'ar', 'howMakeActivity'],
+  ];
+  for (const [q, lang, key] of asks) {
+    it(`«${q}» gets the steps, not a material`, () => {
+      assert.equal(classifyChatIntent(q, lang).intent, 'app_help');
+      const answer = answerAppHelp(q, lang, t);
+      assert.equal(answer.text, `<${key}>`);
+      assert.equal(answer.places[0]?.isTool, true);
+    });
+  }
+
+  it('exporting one still gets the export steps', () => {
+    assert.equal(answerAppHelp('how do I export my worksheet', 'en', t).text, '<faqA4>');
+    assert.equal(answerAppHelp('كيف أطبع ورقة العمل', 'ar', t).text, '<faqA4>');
+  });
+
+  const stillMade = ['make a worksheet on fractions', 'جهّز ورقة عمل عن الكسور', 'أنشئ اختباراً قصيراً'];
+  for (const q of stillMade) {
+    it(`«${q}» still generates`, () => assert.equal(classifyChatIntent(q).intent, 'artifact'));
+  }
+
+  const teaching = ['how do I prepare students for the exam', 'كيف أحضّر طلابي للامتحان', 'كيف أشرح الكسور لطلابي'];
+  for (const q of teaching) {
+    it(`«${q}» is not a how-to about the app`, () => assert.equal(isAppHelpQuery(q), false));
+  }
 });

@@ -28,6 +28,7 @@ import { subjectIdFromName } from './subjects.ts';
 import { stepsFor } from './steps.ts';
 import { elementaryOpsForTitle, makeElementaryItem } from './elementary.ts';
 import { makeTopicItem, topicFor } from './topics.ts';
+import { servedFrames, spreadScore, stemFrame } from './stemFrame.ts';
 
 export { isChemContext, detectChemFamily, CHEM_BANK } from './chemistry.ts';
 export type { ChemFamily } from './chemistry.ts';
@@ -355,6 +356,23 @@ export const MATH_BANK: ConcreteItem[] = [
     wordAr: 'تتضاعف مستعمرة بكتيريا كل ساعة: N = N₀ · 2^t. متى تصبح المستعمرة 32 ضعف الحجم الابتدائي؟ اكتب المعادلة وحلّها.',
     wordEn: 'Bacteria double each hour: N = N₀ · 2^t. After how many hours is the colony 32× initial size? Write and solve.',
   },
+  // Beside solving: writing a number as a power of a base (the step every
+  // solution starts from), using one exponential to find another, checking a
+  // value by substitution, and a halving model. 14 of the 17 items above are
+  // «أوجد حل المعادلة», so an offline quiz on this lesson was that one ask
+  // nearly throughout (measured 2026-10-17). Answers are recomputed in
+  // lessonKinds.test.ts.
+  { id: 'exp-p1', family: 'exp_eq', diff: 'easy', eq: '32 = 2^5', answer: '2⁵', wrongs: ['2⁴', '2⁶', '5²'], promptAr: 'اكتب العدد 32 على صورة قوة أساسها 2.', promptEn: 'Write 32 as a power of 2.' },
+  { id: 'exp-p2', family: 'exp_eq', diff: 'easy', eq: '81 = 3^4', answer: '3⁴', wrongs: ['3³', '3⁵', '4³'], promptAr: 'اكتب العدد 81 على صورة قوة أساسها 3.', promptEn: 'Write 81 as a power of 3.' },
+  { id: 'exp-g1', family: 'exp_eq', diff: 'medium', eq: '2^x = 8', answer: '16', wrongs: ['9', '32', '4'], promptAr: 'إذا كان 2^x = 8، فما قيمة 2^{x+1}؟', promptEn: 'If 2^x = 8, what is 2^{x+1}?' },
+  { id: 'exp-g2', family: 'exp_eq', diff: 'medium', eq: '3^x = 5', answer: '25', wrongs: ['10', '15', '125'], promptAr: 'إذا كان 3^x = 5، فما قيمة 3^{2x}؟', promptEn: 'If 3^x = 5, what is 3^{2x}?' },
+  { id: 'exp-v1', family: 'exp_eq', diff: 'easy', eq: '2^{x+1} = 16', answer: 'نعم، لأن 2⁴ = 16', wrongs: ['لا، لأن 2³ = 8', 'لا، لأن 2⁴ = 32', 'نعم، لأن 2³ = 16'], promptAr: 'هل x = 3 حل للمعادلة 2^{x+1} = 16؟ علّل.', promptEn: 'Is x = 3 a solution of 2^{x+1} = 16? Explain.' },
+  { id: 'exp-v2', family: 'exp_eq', diff: 'medium', eq: '9^x = 27', answer: 'لا، لأن 9² = 81', wrongs: ['نعم، لأن 9² = 27', 'نعم، لأن 9 × 3 = 27', 'لا، لأن 9² = 18'], promptAr: 'هل x = 2 حل للمعادلة 9^x = 27؟ علّل.', promptEn: 'Is x = 2 a solution of 9^x = 27? Explain.' },
+  {
+    id: 'exp-h6', family: 'exp_eq', diff: 'hard', eq: '80 · (1/2)^t = 5', answer: 't = 4', wrongs: ['t = 3', 't = 5', 't = 16'], kind: 'word',
+    wordAr: 'تتناقص كمية مادة مشعة إلى النصف كل يوم، وكانت كميتها في البداية 80 غرامًا. بعد كم يومًا تصبح كميتها 5 غرامات؟ اكتب المعادلة وحلّها.',
+    wordEn: 'A radioactive substance halves every day and starts at 80 g. After how many days are 5 g left? Write and solve.',
+  },
 
   // ── Graphical systems (GeoGebra lab) ──
   { id: 'g-e1', family: 'system_graph', diff: 'easy', eq: 'y = x + 1', eq2: 'y = −x + 3', answer: '(1 ، 2)', wrongs: ['(2 ، 1)', '(0 ، 1)', '(3 ، 0)'], kind: 'graph', promptAr: 'أوجد نقطة تقاطع المستقيمين بيانياً أو جبرياً:\ny = x + 1\ny = −x + 3', promptEn: 'Find the intersection of:\ny = x + 1\ny = −x + 3' },
@@ -402,6 +420,13 @@ export const MATH_BANK: ConcreteItem[] = [
   { id: 'qq-n1', family: 'quad_system', diff: 'easy', eq: 'y = x² − 1', eq2: 'y = −x² + 1', answer: 'حلّان', wrongs: ['حل واحد', 'لا يوجد حل', 'أربعة حلول'], promptAr: 'كم حلًّا للنظام الآتي؟\ny = x² − 1\ny = −x² + 1', promptEn: 'How many solutions does this system have?\ny = x² − 1\ny = −x² + 1' },
   { id: 'qq-n2', family: 'quad_system', diff: 'medium', eq: 'y = x²', eq2: 'y = −x²', answer: 'حل واحد', wrongs: ['حلّان', 'لا يوجد حل', 'أربعة حلول'], promptAr: 'كم حلًّا للنظام الآتي؟\ny = x²\ny = −x²', promptEn: 'How many solutions does this system have?\ny = x²\ny = −x²' },
   { id: 'qq-n3', family: 'quad_system', diff: 'medium', eq: 'y = x² + 1', eq2: 'y = −x² − 1', answer: 'لا يوجد حل', wrongs: ['حل واحد', 'حلّان', 'أربعة حلول'], promptAr: 'كم حلًّا للنظام الآتي؟\ny = x² + 1\ny = −x² − 1', promptEn: 'How many solutions does this system have?\ny = x² + 1\ny = −x² − 1' },
+  // Checking a point by substitution — 8 of this family's 12 items asked
+  // «أوجد حل النظام» (measured 2026-10-17).
+  { id: 'qq-v1', family: 'quad_system', diff: 'easy', eq: 'y = x²', eq2: 'y = x + 2', answer: 'نعم، لأنها تحقق المعادلتين', wrongs: ['لا، لأنها لا تحقق المعادلة الأولى', 'لا، لأنها لا تحقق المعادلة الثانية', 'لا، لأن للنظام حلًّا واحدًا فقط'], promptAr: 'هل النقطة (2 ، 4) حل للنظام الآتي؟ علّل.\ny = x²\ny = x + 2', promptEn: 'Is the point (2, 4) a solution of this system? Explain.\ny = x²\ny = x + 2' },
+  { id: 'qq-v2', family: 'quad_system', diff: 'medium', eq: 'y = x² − 1', eq2: 'y = −x² + 7', answer: 'لا، لأنها لا تحقق المعادلة الثانية', wrongs: ['نعم، لأنها تحقق المعادلتين', 'لا، لأنها لا تحقق المعادلة الأولى', 'لا، لأنها لا تحقق أيًّا من المعادلتين'], promptAr: 'هل النقطة (1 ، 0) حل للنظام الآتي؟ علّل.\ny = x² − 1\ny = −x² + 7', promptEn: 'Is the point (1, 0) a solution of this system? Explain.\ny = x² − 1\ny = −x² + 7' },
+  { id: 'qq-n4', family: 'quad_system', diff: 'hard', eq: 'y = x² + 2x + 3', eq2: 'y = −x² − 2x + 1', answer: 'حل واحد', wrongs: ['حلّان', 'لا يوجد حل', 'أربعة حلول'], promptAr: 'كم حلًّا للنظام الآتي؟\ny = x² + 2x + 3\ny = −x² − 2x + 1', promptEn: 'How many solutions does this system have?\ny = x² + 2x + 3\ny = −x² − 2x + 1' },
+  { id: 'qq-v3', family: 'quad_system', diff: 'hard', eq: 'y = x² − x', eq2: 'y = 2x² − 4x', answer: 'نعم، لأنها تحقق المعادلتين', wrongs: ['لا، لأنها لا تحقق المعادلة الأولى', 'لا، لأنها لا تحقق المعادلة الثانية', 'لا، لأن للنظام حلًّا واحدًا فقط'], promptAr: 'هل النقطة (3 ، 6) حل للنظام الآتي؟ علّل.\ny = x² − x\ny = 2x² − 4x', promptEn: 'Is the point (3, 6) a solution of this system? Explain.\ny = x² − x\ny = 2x² − 4x' },
+  { id: 'qq-s2', family: 'quad_system', diff: 'medium', eq: 'y = x² + 3x', eq2: 'y = x² − x + 8', answer: '2', wrongs: ['−2', '8', '4'], promptAr: 'في النظام الآتي اطرح المعادلتين للتخلص من x². ما قيمة x الناتجة؟\ny = x² + 3x\ny = x² − x + 8', promptEn: 'Subtract the two equations to eliminate x². What value of x do you get?\ny = x² + 3x\ny = x² − x + 8' },
   { id: 'qq-s1', family: 'quad_system', diff: 'easy', eq: 'y = x² + 4x', eq2: 'y = x² − 2x + 12', answer: '2', wrongs: ['−2', '12', '6'], promptAr: 'في النظام الآتي اطرح المعادلتين للتخلص من x². ما قيمة x الناتجة؟\ny = x² + 4x\ny = x² − 2x + 12', promptEn: 'Subtract the two equations to eliminate x². What value of x do you get?\ny = x² + 4x\ny = x² − 2x + 12' },
 
   // ── Simplify exponents ──
@@ -614,6 +639,11 @@ function formatItem(item: ConcreteItem, lang: Lang, type: QType): { text: string
   return { text: stem, answer: item.answer };
 }
 
+/** The ask an item puts, whatever type it is formatted as — what kinds are counted on. */
+function askOf(item: ConcreteItem, lang: Lang): string {
+  return formatItem(item, lang, 'short_answer').text;
+}
+
 /**
  * Pick one unused item from a bank.
  *
@@ -664,8 +694,22 @@ function takeFromBank(
     // the identical quiz for a topic — "regenerate" only looked alive until
     // the page reloaded. The used set still guarantees no repeats in a pass.
     const sameDiff = pool.filter(i => i.diff === diff);
-    const candidates = sameDiff.length > 0 ? sameDiff : pool;
-    return candidates[Math.floor(Math.random() * candidates.length)] ?? null;
+    const tier = sameDiff.length > 0 ? sameDiff : pool;
+    // Then away from kinds this pass has already served: each candidate's
+    // chance falls with the cube of how often its kind came up (the kind
+    // part of `spreadScore`). A family is often one ask with a few others
+    // beside it — 14 of `exp_eq`'s 17 items were «أوجد حل المعادلة» — and a
+    // uniform draw gave a quiz that ask nearly throughout. Always taking the
+    // least-served kind was tried first and made papers predictable: a kind
+    // with one item was drawn every time, so "regenerate" served the same
+    // questions (quizRegenerateStems.test.ts). Measured on 500 ten-question
+    // draws of `exp_eq`: one ask 5+ times in 86% of them uniformly, 1% cubed
+    // (17% squared). The teacher's tier still comes first.
+    const served = servedFrames(used);
+    const weights = tier.map(i => 1 / (1 + Math.floor(spreadScore(stemFrame(askOf(i, lang)), served) / 1000)) ** 3);
+    let roll = Math.random() * weights.reduce((a, b) => a + b, 0);
+    for (let k = 0; k < tier.length; k++) if ((roll -= weights[k]!) < 0) return tier[k]!;
+    return tier[tier.length - 1] ?? null;
   };
 
   /**
@@ -700,6 +744,7 @@ function takeFromBank(
   if (!item) return null;
 
   used.add(item.id);
+  used.add(`ask:${askOf(item, lang)}`);
   const formatted = formatItem(item, lang, type);
   const working = stepsFor(item.id);
   return { ...formatted, ...(working ? { steps: [...working[lang]] } : {}), points };

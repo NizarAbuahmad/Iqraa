@@ -850,6 +850,41 @@ describe('buildDeckSlidesHTML — the structure layouts', () => {
     assert.match(render(lay({ layout: 'flow', flow: { steps, cycle: true } }), false), /then the cycle repeats/);
   });
 
+  it('quote: the text in display type, attribution only when given, the title kept as a caption', () => {
+    const html = render(lay({ layout: 'quote', quote: { text: 'العلم نور', by: 'مثل عربي' } }));
+    assert.match(html, /deck-body deck-quote/);
+    assert.match(html, /class="deck-quote-text">العلم نور</);
+    assert.match(html, /class="deck-quote-by"[^>]*>— مثل عربي</);
+    assert.match(html, /class="deck-statement-sub">عنوان</);
+    assert.doesNotMatch(render(lay({ layout: 'quote', quote: { text: 'العلم نور' } })), /deck-quote-by/);
+  });
+
+  it('quote: the model’s text is escaped, never inserted as markup', () => {
+    const html = render(lay({ layout: 'quote', quote: { text: '<img src=x onerror=1>' } }));
+    assert.doesNotMatch(html, /<img src=x/);
+    assert.match(html, /&lt;img/);
+  });
+
+  it('photo: drawn as a section break over the picture, with its credit line', () => {
+    const html = render(lay({
+      layout: 'photo', content: 'جملة واحدة', title: 'الصحراء',
+      sideImageUrl: 'https://img.example/a.jpg', sideImageCaption: 'Photo by Jane on Unsplash',
+    }));
+    assert.match(html, /deck-divider-slide/);
+    assert.match(html, /class="deck-hero-img" src="https:\/\/img\.example\/a\.jpg"/);
+    assert.match(html, /deck-divider-title">الصحراء</);
+    assert.match(html, /deck-divider-subtitle">جملة واحدة</);
+    assert.match(html, /class="deck-hero-credit">[^<]*Photo by Jane/);
+    // the picture is the slide, not also a column beside text
+    assert.equal(count(html, /https:\/\/img\.example\/a\.jpg/g), 1);
+  });
+
+  it('photo with no picture falls back to the ordinary slide', () => {
+    const html = render(lay({ layout: 'photo', content: 'جملة واحدة' }));
+    assert.doesNotMatch(html, /deck-divider-slide|deck-hero-img/);
+    assert.match(html, /جملة واحدة/);
+  });
+
   it('a long flow is marked dense so it stays on one row', () => {
     const six = ['أ', 'ب', 'ج', 'د', 'هـ', 'و'];
     assert.match(render(lay({ layout: 'flow', flow: { steps: six } })), /deck-flow deck-flow-dense/);

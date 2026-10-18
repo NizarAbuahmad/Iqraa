@@ -1,5 +1,5 @@
 /**
- * The English hub's four activities, as pure functions over a lesson's words.
+ * The English hub's activities, as pure functions over a lesson's words.
  *
  * Pure so `node --test` can load it — the components that render these import
  * `react-native`. Every choice worth checking (what counts as a wrong option,
@@ -10,6 +10,7 @@
  */
 import type { GrammarSentence } from '@workspace/curriculum/englishGrammar';
 import type { HubWord } from '@workspace/curriculum/englishHub';
+import { firstSound } from '@workspace/curriculum/englishReading';
 import { isPicturable, wordPicture } from '@workspace/curriculum/englishPictures';
 import { sample, shuffle } from '../publicGames/rng.ts';
 
@@ -17,11 +18,14 @@ export { isPicturable, wordPicture };
 
 export type HubActivity =
   | 'flashcards' | 'listen' | 'match' | 'spell' | 'scramble' | 'picture' | 'speaking'
-  | 'grammar-choose' | 'grammar-build' | 'grammar-true';
+  | 'grammar-choose' | 'grammar-build' | 'grammar-true'
+  | 'read-find' | 'first-letter' | 'starts-with';
 /** The vocabulary activities, offered on every lesson. */
 export const HUB_ACTIVITIES: HubActivity[] = ['flashcards', 'listen', 'match', 'spell', 'scramble', 'picture', 'speaking'];
 /** The grammar activities, offered only on a lesson whose unit a teacher has reviewed (`offeredGrammar`). */
 export const GRAMMAR_ACTIVITIES: HubActivity[] = ['grammar-choose', 'grammar-build', 'grammar-true'];
+/** The reading activities, offered only on a Grade 1 lesson whose unit a teacher has reviewed (`offeredReading`). */
+export const READING_ACTIVITIES: HubActivity[] = ['read-find', 'first-letter', 'starts-with'];
 
 /** Enough to guess at 25%, few enough for a six-year-old to read. */
 export const LISTEN_OPTIONS = 4;
@@ -328,6 +332,108 @@ export function grammarActivityAvailable(activity: HubActivity, sentences: reado
   return usable.length >= MIN_GRAMMAR_SENTENCES;
 }
 
+// ─── Reading (Grade 1) ──────────────────────────────────────────────────────
+//
+// The words are the lesson's own. These builders do not gate on a teacher's
+// review — the lesson screen asks `offeredReading`. A word's first sound comes
+// from `firstSound` in `@workspace/curriculum/englishReading`, never from here.
+
+/** Three, not four: a six-year-old reading, not guessing. */
+export const READING_OPTIONS = 3;
+/** Letters a First letter question is padded with when its lesson has too few of its own. */
+const PAD_LETTERS = ['b', 'd', 'f', 'h', 'l', 'm', 'n', 'p', 'r', 's', 't'];
+/** Shapes a six-year-old confuses: side by side they test eyesight, not hearing. */
+const MIRROR: Record<string, string> = { b: 'd', d: 'b', p: 'q', q: 'p' };
+const MIN_FIRST_SOUND_WORDS = 4;
+const MIN_STARTS_WITH_LETTERS = 3;
+
+export interface ReadFindQuestion {
+  word: HubWord;
+  /** English words, each with its own picture; one is `word.en`. */
+  options: string[];
+  answerIndex: number;
+}
+
+/** Read the printed word, tap its picture. Pictures are distinct, so no option shows the answer's. */
+export function buildReadFindRound(words: readonly HubWord[], rng: () => number = Math.random): ReadFindQuestion[] {
+  const pool = words.filter(w => isPicturable(w.en));
+  return sample(pool, ROUND_LENGTH, rng).map(word => {
+    const others = pool.filter(w => wordPicture(w.en) !== wordPicture(word.en)).map(w => w.en);
+    const options = shuffle([word.en, ...sample(others, READING_OPTIONS - 1, rng)], rng);
+    return { word, options, answerIndex: options.indexOf(word.en) };
+  });
+}
+
+export interface FirstLetterQuestion {
+  word: HubWord;
+  /** Single lower-case letters; one is the word's first sound. */
+  options: string[];
+  answerIndex: number;
+}
+
+/** The two wrong letters: the lesson's own first letters first, then the pad — never a mirror of one already chosen. */
+function letterDistractors(answer: string, lessonLetters: readonly string[], rng: () => number): string[] {
+  const picked = [answer];
+  for (const c of [...shuffle([...lessonLetters], rng), ...shuffle(PAD_LETTERS, rng)]) {
+    if (picked.length === READING_OPTIONS) break;
+    if (!picked.includes(c) && !picked.includes(MIRROR[c])) picked.push(c);
+  }
+  return picked.slice(1);
+}
+
+/** Hear the word (and see its picture, when it has one), tap the letter it starts with. */
+export function buildFirstLetterRound(words: readonly HubWord[], rng: () => number = Math.random): FirstLetterQuestion[] {
+  const pool = words.filter(w => firstSound(w.en));
+  const lessonLetters = [...new Set(pool.map(w => firstSound(w.en)!))];
+  return sample(pool, ROUND_LENGTH, rng).map(word => {
+    const answer = firstSound(word.en)!;
+    const options = shuffle([answer, ...letterDistractors(answer, lessonLetters, rng)], rng);
+    return { word, options, answerIndex: options.indexOf(answer) };
+  });
+}
+
+export interface StartsWithQuestion {
+  /** The letter shown, lower-case — `firstSound(word.en)`. */
+  letter: string;
+  word: HubWord;
+  /** English words, each pictured; no two start with the same sound. */
+  options: string[];
+  answerIndex: number;
+}
+
+function startsWithPool(words: readonly HubWord[]): HubWord[] {
+  return words.filter(w => isPicturable(w.en) && firstSound(w.en));
+}
+
+/** See a letter, tap the picture whose word starts with it. Exactly one option does. */
+export function buildStartsWithRound(words: readonly HubWord[], rng: () => number = Math.random): StartsWithQuestion[] {
+  const pool = startsWithPool(words);
+  return sample(pool, ROUND_LENGTH, rng).flatMap(word => {
+    const letter = firstSound(word.en)!;
+    const seen = [letter];
+    const chosen: HubWord[] = [];
+    for (const w of shuffle(pool, rng)) {
+      if (chosen.length === READING_OPTIONS - 1) break;
+      const l = firstSound(w.en)!;
+      if (!seen.includes(l)) {
+        seen.push(l);
+        chosen.push(w);
+      }
+    }
+    // Unreachable while `readingActivityAvailable` holds: three letters leave two others for any answer.
+    if (chosen.length < READING_OPTIONS - 1) return [];
+    const options = shuffle([word.en, ...chosen.map(c => c.en)], rng);
+    return [{ letter, word, options, answerIndex: options.indexOf(word.en) }];
+  });
+}
+
+export function readingActivityAvailable(activity: HubActivity, words: readonly HubWord[]): boolean {
+  if (activity === 'read-find') return lessonHasPictureMatch(words);
+  if (activity === 'first-letter') return words.filter(w => firstSound(w.en)).length >= MIN_FIRST_SOUND_WORDS;
+  if (activity === 'starts-with') return new Set(startsWithPool(words).map(w => firstSound(w.en))).size >= MIN_STARTS_WITH_LETTERS;
+  return false;
+}
+
 /** 3 stars at 90%+, 2 at 60%+, 1 for finishing at all. */
 export function starsFor(correct: number, total: number): 0 | 1 | 2 | 3 {
   if (total <= 0) return 0;
@@ -395,6 +501,7 @@ export function currentStreak(p: HubProgress, today: string): number {
 /** Every activity a finished round can earn stars on — flashcards and speaking give none (nothing is scored). */
 const SCORED_ACTIVITIES = [
   'listen', 'match', 'spell', 'scramble', 'picture', 'grammar-choose', 'grammar-build', 'grammar-true',
+  'read-find', 'first-letter', 'starts-with',
 ] as const;
 
 /** Stars earned on a lesson across its activities. */

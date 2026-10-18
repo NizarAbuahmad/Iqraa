@@ -11,15 +11,17 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  absorbQuizTopUp,
   assertUsableGeneration,
   extractJSON,
   deckShortfalls,
-  mergeQuizTopUp,
   mergeWorksheetTopUp,
   missingFields,
   normalizeQuiz,
+  quizRepeats,
   quizShortfall,
   quizStems,
+  quizStemsAt,
   quizWanted,
   REQUIRED_FIELDS,
   trimWorksheet,
@@ -191,7 +193,7 @@ describe("a quiz holds the number of questions that was asked for", () => {
   it("merges a top-up in, renumbering straight on and keeping the first reply's title", () => {
     const base = { title: "الأصل", questions: [mcq("q1", "a"), tf("q2", "b")] };
     const extra = { title: "ثانٍ", questions: [mcq("q1", "c"), sa("q2", "d")] };
-    mergeQuizTopUp(base, extra);
+    absorbQuizTopUp(base, extra, [], 4);
     assert.equal(base.title, "الأصل");
     assert.deepEqual(base.questions.map(x => x.id), ["q1", "q2", "q3", "q4"]);
     assert.deepEqual(base.questions.map(x => x.text), ["a", "b", "c", "d"]);
@@ -200,11 +202,97 @@ describe("a quiz holds the number of questions that was asked for", () => {
   it("a merged and re-normalised top-up is a grouped, right-length paper", () => {
     const base = { title: "t", questions: [mcq("q1", "a"), tf("q2", "b"), sa("q3", "c")] };
     const extra = { title: "t", questions: [mcq("q1", "d"), tf("q2", "e"), sa("q3", "f")] };
-    mergeQuizTopUp(base, extra);
+    absorbQuizTopUp(base, extra, [], 6);
     normalizeQuiz(base, ["multiple_choice", "true_false", "short_answer"], 6);
     assert.deepEqual(base.questions.map(x => x.type), [
       "multiple_choice", "multiple_choice", "true_false", "true_false", "short_answer", "short_answer",
     ]);
+  });
+
+  const molar = (id: string, compound: string) => mcq(id, `أوجد الكتلة المولية ل${compound}`);
+
+  it("finds the questions past their kind's share, rewordings included", () => {
+    // Five «أوجد الكتلة المولية» of different compounds: one ask, and a third
+    // of a ten-question paper is four.
+    const q = {
+      title: "t",
+      questions: [
+        molar("q1", "غاز الأكسجين O₂"),
+        mcq("q2", "ما المقصود بالرابطة الأيونية؟"),
+        molar("q3", "كربونات الصوديوم Na₂CO₃"),
+        molar("q4", "لماء H₂O"),
+        tf("q5", "تتكوّن الرابطة التساهمية بين فلز ولا فلز."),
+        molar("q6", "غاز النيتروجين N₂"),
+        tf("q7", "أوجد الكتلة المولية لغاز الأمونيا NH₃"),
+      ],
+    };
+    assert.deepEqual(quizRepeats(q, 10), [6]);
+    // A twenty-question paper may hold seven of one kind.
+    assert.deepEqual(quizRepeats(q, 20), []);
+    // Stems that are only symbols share no sentence.
+    assert.deepEqual(quizRepeats({ questions: ["3 + 4 = ؟", "5 × 2 = ؟", "9 − 6 = ؟", "8 ÷ 2 = ؟"].map((t, i) => mcq(`q${i}`, t)) }, 4), []);
+  });
+
+  it("replaces repeats with fresh questions, keeping their marks and place", () => {
+    const base = {
+      title: "t",
+      questions: [
+        molar("q1", "غاز الأكسجين O₂"),
+        molar("q2", "لماء H₂O"),
+        molar("q3", "كربونات الصوديوم Na₂CO₃"),
+        { ...molar("q4", "غاز النيتروجين N₂"), points: 3 },
+        mcq("q5", "ما المقصود بالرابطة الأيونية؟"),
+      ],
+    };
+    const repeats = quizRepeats(base, 8);
+    assert.deepEqual(repeats, [3]);
+    const extra = {
+      title: "t",
+      questions: [
+        { ...molar("q1", "غاز الهيدروجين H₂"), points: 1 }, // the same ask again: not a replacement
+        { ...mcq("q2", "علّل: درجة غليان الماء مرتفعة مقارنة بكبريتيد الهيدروجين."), points: 1 },
+        { ...mcq("q3", "قارن بين الرابطة الأيونية والرابطة التساهمية من حيث طريقة تكوّنها."), points: 1 },
+      ],
+    };
+    assert.equal(absorbQuizTopUp(base, extra, repeats, 8), 1);
+    const texts = base.questions.map(x => x.text);
+    assert.match(texts[3]!, /علّل/);
+    assert.equal(base.questions[3]!.points, 3, "the replacement takes the replaced question's marks");
+    assert.match(texts[5]!, /قارن/);
+    // The skipped repeat still fills a place the paper is short of.
+    assert.match(texts[6]!, /الهيدروجين/);
+    assert.equal(texts.length, 7);
+    assert.deepEqual(base.questions.map(x => x.id), ["q1", "q2", "q3", "q4", "q5", "q6", "q7"]);
+  });
+
+  it("never makes a paper shorter to make it more varied", () => {
+    const base = {
+      title: "t",
+      questions: [molar("q1", "غاز الأكسجين O₂"), molar("q2", "لماء H₂O"), molar("q3", "كربونات الصوديوم Na₂CO₃"), molar("q4", "غاز النيتروجين N₂")],
+    };
+    const repeats = quizRepeats(base, 4);
+    assert.deepEqual(repeats, [3]);
+    // Only the same ask came back.
+    absorbQuizTopUp(base, { questions: [molar("q1", "غاز الهيدروجين H₂")] }, repeats, 4);
+    assert.equal(base.questions.length, 4);
+    assert.match(base.questions[3]!.text, /النيتروجين/);
+  });
+
+  it("reads a repeat's text by its own position, past a question with no text", () => {
+    const q = { questions: [mcq("q1", ""), molar("q2", "غاز الأكسجين O₂"), molar("q3", "لماء H₂O"), molar("q4", "كربونات الصوديوم Na₂CO₃"), molar("q5", "غاز النيتروجين N₂")] };
+    const repeats = quizRepeats(q, 5);
+    assert.deepEqual(repeats, [4]);
+    assert.deepEqual(quizStemsAt(q, repeats), ["أوجد الكتلة المولية لغاز النيتروجين N₂"]);
+  });
+
+  it("does not lengthen a paper whose request named no count", () => {
+    const base = {
+      title: "t",
+      questions: [molar("q1", "غاز الأكسجين O₂"), molar("q2", "لماء H₂O"), molar("q3", "كربونات الصوديوم Na₂CO₃"), molar("q4", "غاز النيتروجين N₂")],
+    };
+    const extra = { questions: [mcq("q1", "علّل: درجة غليان الماء مرتفعة."), mcq("q2", "قارن بين الفلز واللافلز.")] };
+    assert.equal(absorbQuizTopUp(base, extra, quizRepeats(base)), 1);
+    assert.equal(base.questions.length, 4);
   });
 
   it("assertUsableGeneration trims to the request's own count", () => {
@@ -634,6 +722,7 @@ describe("prompt-slides — the structure layouts keep their words in a payload"
       { layout: "stats", stats: [{ value: "1", label: "a" }] },
       { layout: "table", table: { headers: ["a", "b"], rows: [["1", "2"]] } },
       { layout: "flow", flow: { steps: ["a", "b", "c"] } },
+      { layout: "quote", quote: { text: "a quotation" } },
     ]) {
       assert.doesNotThrow(() => assertUsableGeneration("prompt-slides", withBody(over)), JSON.stringify(over));
     }
@@ -645,6 +734,7 @@ describe("prompt-slides — the structure layouts keep their words in a payload"
       { layout: "stats" },
       { layout: "table", table: { headers: [], rows: [] } },
       { layout: "flow", flow: { steps: [] } },
+      { layout: "quote", quote: { text: "  " } },
     ]) {
       assert.throws(() => assertUsableGeneration("prompt-slides", withBody(over)), UnusableGenerationError, JSON.stringify(over));
     }

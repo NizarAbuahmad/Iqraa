@@ -164,6 +164,35 @@ an announcement by default» below.
   all for that reason; capped 3.2%, against 2.9% for exact frames. The
   generators pass no cap and are unchanged. Prompt rule 5 already says a
   reworded question is the same question, so `exam-gen-7` stands.
+  **…and a live quiz replaces what it repeats (also 2026-10-17).** The
+  `/generate/quiz` prompt asked for no idea twice and nothing checked the
+  reply. `quizRepeats` (`generationShape.ts`) finds questions past their
+  kind's share — the same `sameKind` grouping — and the existing top-up call
+  asks for replacements alongside any missing questions (`quizTopUpBlock`
+  names them); `absorbQuizTopUp` swaps fresh ones in, each taking the
+  repeat's marks, and never shortens or lengthens the paper (a repeat nothing
+  replaced stays). The share is a third of the paper, at least three
+  (`kindQuota`): measured on the offline generator's 10- and 20-question
+  quizzes for 40 sampled lessons, a quarter fired on 14 of 16 papers — every
+  maths one, mostly «أوجد حل المعادلة» on a lesson about solving that
+  equation — and a third on 2, both a single ask filling a paper. Worksheets
+  and homework are practice and are not touched.
+  **…and the offline Grade 10 bank stops drawing one ask throughout (also
+  2026-10-17).** `takeFromBank` (`lib/math-practice/src/index.ts`) drew
+  uniformly within the teacher's tier, so a family that is mostly one ask
+  served it nearly throughout — 14 of `exp_eq`'s 17 items were «أوجد حل
+  المعادلة», 8 of `quad_system`'s 12 «أوجد حل النظام». A draw is now weighted
+  by 1/(1+k)³, k the times its kind was already served in the pass (`ask:`
+  keys, as the topic generators record them); always taking the least-served
+  kind was tried first and made regenerate serve the same paper. `exp_eq` also
+  gained a number as a power of its base, one exponential from another, a
+  value checked by substitution and a halving model, and `quad_system` a point
+  checked by substitution, a hard «كم حلًّا» and a second elimination step —
+  each with working, each answer recomputed in `lessonKinds.test.ts`. Offline
+  10- and 20-question quizzes on those two lessons: the commonest kind 83% →
+  38% and 67% → 44% of a paper. Across every maths and chemistry lesson,
+  papers past a third went 137 → 122 of 2,820; the rest are elsewhere, not
+  in these two families.
 
 - **Lesson plan, slides, activity, lesson-flow and the classroom builder take a
   unit, semester or whole book — as one revision session (2026-10-14; spec
@@ -1531,6 +1560,81 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The parent letter stops saying things the teacher never typed, 2026-10-17
+
+A teacher's screenshot of `ai-tools/parent-message` prompted an audit: render the
+composer for real inputs and read what a parent would receive. Six defects, all
+in `services/parentMessage.ts`, all fixed with tests.
+
+- **Praise asserted facts.** Every praise letter said «أظهر اجتهادًا واضحًا
+  والتزامًا… وكان لحضوره الفاعل أثر طيب» — diligence, commitment and *attendance*
+  for any child — against this file's own rule that nothing is said about a student
+  the teacher did not type. Praise now opens neutrally («يسرّني إبلاغكم بملاحظة
+  إيجابية عن ابنكم…») and names a quality only if the teacher ticked it
+  (`Strength`, five chips shown for praise only, shown in a fixed order whatever
+  order they were ticked). The English letter had the same sentence and got the
+  same fix.
+- **A woman's letter carried masculine self-reference.** «وأنا مستعد» (academic
+  concern) and «وسأكون شاكرًا» (meeting) ignored `teacherGender`; `arNextStep`
+  only knew the student's. Both are rewritten gender-free rather than inflected
+  (`وسأقدّم الدعم…`, `وأشكر لكم تعاونكم`), and a test renders every kind with a
+  female teacher. The meeting letter also asked for a time twice.
+- **«Warm» changed only the greeting**, and put «أهلًا بكم» before the salam. It
+  now opens with the salam and closes «مع خالص مودّتي وتقديري» (English: «Warm
+  regards»). Formal gained «وبعد،» after the salam, the turn into the letter's
+  matter.
+- **The teacher's details were pasted raw** between two composed sentences, so a
+  fragment with no full stop read as a typo, and English typed into an Arabic
+  letter went through unremarked. A full stop is added when missing (punctuation
+  only, never a word), and `detailsLanguageMismatch` puts an amber line under
+  the box — a warning, not a block, since «اختبار PISA» is legitimate.
+- **Placeholder is now an example per kind** (`detailsExample`, gendered to the
+  student), replacing one maths-homework example shown for every kind.
+- **Wording**: «الدافعية», «لا تتردّدوا في التواصل» and «يسعدني أن أشارككم» (calques)
+  and «الواجب البيتي» replaced; a bare teacher name gets «الأستاذ/الأستاذة», a
+  titled one («أ. نزار») is left alone, and the role is not repeated beside a
+  name unless there is a subject.
+
+Not done here: a Latin student name inside the Arabic text can still flip the
+punctuation beside it on WhatsApp (real names are Arabic, and this was not
+reproduced in WhatsApp itself — it is a known bidi behaviour, unchecked here).
+The sharing side —
+matching a typed name to a roster student, choosing which guardian — is a
+separate PR.
+
+## The parent letter: a typed name can be linked, and guardians can be chosen, 2026-10-17
+
+Second half of the audit that produced «The parent letter stops saying things the
+teacher never typed». The complaint was «I can't send this to the parent in the
+chat». The cause was on screen: the teacher had **typed** the student's name, and
+typing over the name deliberately drops the picked student (so a letter can never
+reach the previous child's parent), which disables «أرسل عبر إقرأ» — with the only
+explanation in a grey line far below the buttons.
+
+- **A typed name now suggests who it means.** `matchRosterStudents` reads the
+  teacher's roster (once, the first time a name is typed by hand) and shows up to
+  three tappable chips under the field. It is a *suggestion*, never an automatic
+  link: a wrong silent link sends a letter about one child to another child's
+  parent. Hamza, ya, ta marbuta and diacritics are not told apart; a full-name
+  match beats longer names that merely start with it; four or more candidates
+  show nothing (noise, not help).
+- **A child with more than one linked guardian lets the teacher untick some**
+  (`pickRecipients`). It used to go to all of them. The confirmation, the send
+  and the contact log all use the ticked set; after a half-failed send the
+  guardians who already have it are unticked, so a retry cannot hand it twice.
+- **After an in-app send, «افتح المحادثة مع …» opens each thread** it landed in.
+- **«Other» recipients are not an in-app option, and that is the platform, not a
+  gap.** `POST /messaging/threads` refuses anything but teacher ↔ a parent or
+  student linked through a claimed roster link (`same_side`, `not_connected`), so
+  a teacher cannot message a colleague or an admin in-app, and the only other
+  people they *can* reach are other families' parents — who must never receive a
+  letter about someone else's child. Anyone else goes through «مشاركة» (OS share
+  sheet: WhatsApp, email…), which the empty-recipient hint now says.
+
+Checked: typecheck and the mobile suite. **Not** checked in a browser or against
+the real messaging API; the chips and the checkbox rows have not been seen
+rendered.
+
 ## The chat answers teachers, on the web too, 2026-10-16
 
 Teachers said the chat «isn't smart». Three causes, all measured:
@@ -1644,6 +1748,46 @@ yet.** Spec: `docs/superpowers/specs/2026-10-16-english-corner-grammar-g1-design
    `docs/english-grammar-g1-review.html`, printed.
 3. Set the unit's `reviewedBy: { name, date }` in `englishGrammar.ts` and merge.
    That is the only switch: there is no flag and no role check.
+
+## Grade 1 reading in the English corner — built, shown to nobody yet, 2026-10-17
+
+The same teacher asked for reading too. Each of the 10 Grade 1 hub lessons now
+has three activities under a «القراءة» heading, above «القواعد»: **Read and
+find** (the word printed with no sound, tap its picture of three), **First
+letter** (hear the word and see its picture, tap the letter it starts with) and
+**Starts with** (a letter, tap the picture whose word starts with its sound).
+**Every unit is `reviewedBy: null` in `READING_UNITS`, so nobody sees them
+yet.** Spec: `docs/superpowers/specs/2026-10-17-english-corner-reading-g1-design.md`.
+
+- **Only the lesson's own words, pictures and recordings.** No new audio: a
+  letter is shown, never played, because a TTS voice saying «buh» is worse than
+  nothing. The book's Reading column was never extracted, so this follows its
+  Listening objective, "hearing the initial sound in simple words".
+- **A first sound is a rule plus a hand list** (`lib/curriculum/src/englishReading.ts`).
+  The first letter, except: a vowel letter start, `ch`/`sh`/`th`/`ph`/`kn`/`wr`,
+  `c` before e/i/y, and the words in `SOFT_G` (`giraffe` — the spelling cannot
+  tell it from «girl»). Over the 10 lessons that leaves out one, three, eight,
+  orange, eraser, chair, arms, giraffe and apples; those still appear in Read
+  and find when they have a picture. Medial and final sounds (asked for in two
+  units) are not done.
+- **The teacher's form** is `docs/english-reading-g1-review.html`, written by
+  the same `grammar-sheet` script (`englishReadingReview.ts`): per unit, every
+  word with its picture and the letter the app will call its first sound, the
+  left-out words with the reason, a tick box, notes and a sign-off strip. A4
+  landscape, 15 pages. A test pins it to the generator. Both forms name the
+  Welcome unit «وحدة الترحيب»: «الوحدة ٠» read as a dot beside the «·»
+  separators.
+- **Pictures can be ambiguous**, which the form asks about: in Unit 1, 👩 (mum)
+  beside 👧 (girl) is a real choice for a six-year-old.
+- **Builders** in `services/englishHub/games.ts` (three options, `ROUND_LENGTH`;
+  First letter never puts b beside d or p beside q), **screens** in
+  `components/englishHub/ReadingActivities.tsx`, scored like the rest.
+  Checked in a browser at 390 px in Arabic and English, with two units signed
+  off in the working tree only.
+
+**To switch a unit on:** a Grade 1 English teacher signs that unit's page of
+`docs/english-reading-g1-review.html`, printed; then set its `reviewedBy` in
+`englishReading.ts` and merge. No recording step: every word is already voiced.
 
 ## A Grade 1 English teacher's review, 2026-10-15
 
@@ -3969,9 +4113,17 @@ matched nothing. `foldAccusative` (`services/appHelp.ts`, app-help matching only
 drops a marked ending (اً / ًا) from any word, and an unmarked one only from
 «صف», «جديد», «إضافي» and the ordinals, since an alif ending is otherwise part of
 the word («جبل الصفا» stays). Each accusative form is pinned to get exactly its
-plain twin's answer. Not changed, and older than this: «كيف اضيف صف الى
-المصفوفة» (a matrix row) goes to the grade steps through the «اضيف صف» keyword,
-and now so does its accusative form.
+plain twin's answer. «كيف اضيف صف الى المصفوفة» (a matrix row) went to the grade
+steps through the «اضيف صف» keyword until 2026-10-17, when `NOT_A_GRADE` started
+dropping «صف / صفوف» followed by «المصفوفة» before the keywords are matched.
+
+**No starter chips under a question back to the teacher (2026-10-17).** «أريد
+ورقة عمل» → «أيّ مادة تقصد؟» showed the subject buttons and, under them, the
+standing «حضّر خطة الدرس / أنشئ ورقة عمل» chips, repeating the ask instead of
+answering it. The strip is now also hidden when the last reply asks the teacher
+to pick (`asksTheTeacher` in `app/(tabs)/iqra.tsx`: subject, lesson or
+teaching-option choices). UI only, so no test (the mobile runner cannot load
+`iqra.tsx`); checked in a browser.
 
 **A student to add (2026-10-17).** With live AI on the web (#1104), «كيف أضيف
 طالباً جديداً؟» went to the model, which said it was a question about the app and
@@ -4508,6 +4660,37 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
 - When the worksheet screen is opened with a lesson, its unit dropdown still
   shows the placeholder (the documented gap in `TopicSelector.tsx`). The topic
   itself is held.
+## Two more slide layouts: quote and photo, 2026-10-17
+
+- **`quote`** — a phrase, definition or rule set in large type with an opening mark
+  and an optional attribution (`quote: { text, by? }`, text up to 200 characters).
+  A present-but-unusable `by` refuses the whole quote: words cut loose from who
+  said them are a different claim.
+- **`photo`** — the picture fills the slide with the title and ONE sentence over
+  it. No payload of its own: the picture is `sideImageUrl`, the sentence is
+  `content`. All three renderers draw it with the code that already draws the
+  cover and the section break (`asPhotoHero` re-shapes the slide), so the photo's
+  credit line is drawn by the one place that has been checked for it.
+
+A photo needs a picture, and the picture arrives after the model's reply, so the
+gate returns `null` (ordinary slide, the sentence as a line of text) until
+`sideImageUrl` exists. `polishDeck` keeps the layout only when a picture is coming
+(`mediaPrompt` or a `sideImageUrl`) and the slide is a prose slide with one
+sentence; `promptSlidesMedia` now fetches for a `photo` slide even though it
+carries a `layout` (every other layout is skipped there, because a picture beside
+it would never be shown). The prompt allows `mediaPrompt` on `photo` only, one or
+two per deck.
+
+**Not built, on purpose:** a separate two-column layout. A picture beside text
+already exists (`sideImageUrl` on an ordinary slide) and `compare` is the
+two-column text one; a third would be the same shape under a new name.
+
+**Checked:** layout gate, polish, PDF, photo fetch and API prompt/shape suites;
+PPTX run through the real exporter (a photo slide has its image and credit; one
+without a picture is an ordinary slide); PDF rendered and looked at in Arabic and
+English. **Not checked:** the PPTX in PowerPoint, the presenter on a device, a
+live model choosing these layouts.
+
 ## Four new slide layouts: timeline, stats, table, flow, 2026-10-18
 
 A deck had four shapes (a statement, one figure, a two-column comparison, numbered
