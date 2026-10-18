@@ -5,7 +5,7 @@
 > limits — is in [`docs/status-log.md`](./docs/status-log.md). Older audits live in
 > `docs/archive/` — historical snapshots, do not act on them.
 
-_Last verified: 2026-10-16, **by command** against production and the repo — not carried
+_Last verified: 2026-10-18, **by command** against production and the repo — not carried
 over from older text. Lines marked **(notes)** come from session notes and were not
 re-checked that day._
 
@@ -19,25 +19,26 @@ math answer keys (`artifacts/math-verifier`), RTL/Arabic-first UX.
 
 ## Production right now
 
-Checked 2026-10-16:
+Checked 2026-10-18:
 
 - **API** `iqraa-api` (Cloud Run, europe-west1, project `iqraa-auth-507315`): commit
-  `6708544`, revision `iqraa-api-00360-n5x`, 100% of traffic (`/api/healthz/version`).
+  `98ac0a1`, revision `iqraa-api-00382-j28`, 100% of traffic (`/api/healthz/version`).
 - **Math verifier** `iqraa-verifier`: `/api/healthz/verifier` answers `ok`, self-test `pass`.
 - **Web app** `app.iqrra.com` (Cloudflare Pages): 200. **Landing** `iqrra.com` (separate repo
   `Site_Iqra`, Vercel) answers 308 to `www.iqrra.com`, which is 200.
-- **Database:** Neon Postgres. The schema deploys as migrations (10 files in
+- **Database:** Neon Postgres. The schema deploys as migrations (11 files in
   `lib/db/migrations`); `verify-schema` runs before every API deploy.
 - **Live config** (plain env on the service): `AI_LIVE_MODE=true`; models `gpt-5.4-mini`
-  (generation) and `gpt-5.4-nano` (chat); budgets `AI_BUDGET_USD=50`, per user `1`, per
+  for generation and for chat; budgets `AI_BUDGET_USD=50`, per user `1`, per
   student `0.20`; `STUDENT_ACCOUNTS=true`; `MASTERY_GATE=true`.
 - **Credentials:** 11 are Secret Manager references, 18 are plain config. Rotation:
   [`docs/deploying.md`](./docs/deploying.md), «Rotating a secret».
 - **Mobile:** `app.json` version `1.4.0`. An OTA update only reaches a binary with the same
   version (CLAUDE.md, «`app.json`'s `version` is the OTA compatibility key»).
-- **The web build ships demo mode** on purpose: `EXPO_PUBLIC_DEMO_MODE` is not set in
-  `deploy.yml`, so `app.iqrra.com` writes prose from the offline generators while Android
-  uses live AI. Two generators call live AI even then; see «Strategy» in the log.
+- **Every shipped build uses live AI.** `EXPO_PUBLIC_DEMO_MODE=false` is set for Android
+  (`eas.json`, `mobile-update.yml`) and, since 2026-10-16, for the web build (`deploy.yml`).
+  The code default in `demoMode.ts` is still demo mode; do not flip it without a decision
+  (see «Strategy» in the log, which describes the older demo-only setup).
 
 ## How a change reaches production
 
@@ -52,11 +53,12 @@ Checked 2026-10-16:
 
 ## Open
 
-Checked 2026-10-16:
+Checked 2026-10-18:
 
 - **No crash or error reporting service** for the app or the API (no Sentry/Crashlytics/Bugsnag
   anywhere in `package.json`, `app.json` or the API source). The API keeps its own error
-  log (`/healthz/errors`, admin key) and Cloud Run logs; the app reports nothing.
+  log (`/healthz/errors`, admin key) and Cloud Run logs; the app reports nothing. PR #1115
+  adds Firebase Crashlytics to the app (needs a version bump to 1.5.0 and a new build); not merged.
 - **Draft PR #730** (teacher visibility into English Corner practice) changes the schema,
   conflicts with `main`, and needs `pnpm --filter @workspace/db run generate` after it is updated.
 - **The E2E smoke test is not a required check** yet; make it one after about a week
@@ -77,9 +79,18 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-10-18 — One card for quizzes and evaluations
+- 2026-10-18 — Slides Maker decks stop looking like bare lists
+- 2026-10-18 — Four new slide layouts: timeline, stats, table, flow
+- 2026-10-17 — The parent letter stops saying things the teacher never typed
+- 2026-10-17 — The parent letter: a typed name can be linked, and guardians can be chosen
+- 2026-10-17 — Grade 1 reading in the English corner — built, shown to nobody yet
+- 2026-10-17 — Two more slide layouts: quote and photo
 - 2026-10-17 — The model chooses a deck's icons and charts
+- 2026-10-16 — Typed chemistry topics measured and 18 of 44 misroutes fixed
 - 2026-10-16 — The electron-configuration lesson was answered with periodic-trends questions; fixed
 - 2026-10-16 — A decimal over a power drew as a broken fraction
+- 2026-10-16 — The chat answers teachers, on the web too
 - 2026-10-16 — Chat pushes are sent before the send is answered
 - 2026-10-16 — Grade 1 grammar in the English corner — built, shown to nobody yet
 - 2026-10-16 — The Library's lesson chips open at «كل الدروس» in Arabic
@@ -98,19 +109,10 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-14 — Scanning external exams: paper setup from photos, and a whole class at once
 - 2026-10-13 — Wide-scope selection, foundation only
 - 2026-10-13 — Quiz «أعد التجهيز» now changes the questions, and says when it cannot
-- 2026-10-13 — Row-level security is built and switched off
-- 2026-10-13 — Students can read a stored lesson explanation
-- 2026-10-12 — A browser smoke test covers the teacher-to-student journey
-- 2026-10-12 — Real book items on the live model path, behind `BOOK_ITEMS_LIVE`
-- 2026-10-12 — Real book items in the mock evaluation generator: 33 served, 5 verified
-- 2026-10-12 — Math Corner: calculator, grapher, geometry sketchpad, unit converter and formula sheet in the library
-- 2026-10-12 — A waitlist signup on iqrra.com pushes the admins
-- 2026-10-12 — API tests can run against a real database
-- 2026-10-12 — Homework: teachers set it, students tick it, parents watch
 
 ## Finding older detail, and recording new work
 
-- The log has 314 sections. Anything cited elsewhere as
+- The log has 322 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line

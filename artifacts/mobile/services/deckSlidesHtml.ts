@@ -18,7 +18,7 @@
  */
 import { visualForSlide, visualToSvg } from './deckVisuals.ts';
 import { isBulletLine, looksLikeEquation, splitEmoji, stripBullet, workingSteps } from './deckText.ts';
-import { resolveSlideLayout } from './slideLayout.ts';
+import { asPhotoHero, resolveSlideLayout } from './slideLayout.ts';
 import { deckIconSvg, iconForGlyph, isSectionIconName, type DeckIconName } from './deckIcons.ts';
 import { slideTeacherNotes } from './deckNotes.ts';
 import type { ActivitySlide, ClassroomActivity } from './ai/AIService.ts';
@@ -450,7 +450,8 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
    */
   const layoutSlide = (slide: ActivitySlide, num: number): string | null => {
     const layout = resolveSlideLayout(slide);
-    if (!layout) return null;
+    // `photo` is drawn by `dividerSlide` (see the dispatch below), not here.
+    if (!layout || layout.kind === 'photo') return null;
     const accent = deckSlideAccent(slide.type, T);
     const head = esc(splitEmoji(slide.title)[1]);
 
@@ -486,6 +487,83 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
       <div class="deck-body deck-compare">
         ${column(layout.leftTitle, layout.left, true)}
         ${column(layout.rightTitle, layout.right, false)}
+      </div>
+      ${footer(num)}</div>`;
+    }
+
+    if (layout.kind === 'timeline') {
+      const last = layout.events.length - 1;
+      // A flex row: the document's own direction puts the first event on the
+      // reading edge — never `row-reverse`, which would cancel it.
+      return `<div class="deck-slide">
+      ${deckHeader(slide.title, accent, slide.icon)}
+      <div class="deck-body deck-timeline">
+        <div class="deck-tl-row">
+          ${layout.events.map((e, i) => `
+          <div class="deck-tl-item">
+            <div class="deck-tl-rail"><span class="deck-tl-dot" style="border-color:${accent}"></span>${i < last ? `<span class="deck-tl-line" style="background:${accent}55"></span>` : ''}</div>
+            <p class="deck-tl-label" style="color:${accent}">${esc(e.label)}</p>
+            <p class="deck-tl-text">${esc(e.text)}</p>
+          </div>`).join('')}
+        </div>
+      </div>
+      ${footer(num)}</div>`;
+    }
+
+    if (layout.kind === 'stats') {
+      return `<div class="deck-slide">
+      ${deckHeader(slide.title, accent, slide.icon)}
+      <div class="deck-body deck-stats">
+        ${layout.items.map(it => `
+        <div class="deck-stats-card">
+          <p class="deck-stats-value" style="color:${accent}">${esc(it.value)}</p>
+          <p class="deck-stats-label">${esc(it.label)}</p>
+        </div>`).join('')}
+      </div>
+      ${footer(num)}</div>`;
+    }
+
+    if (layout.kind === 'table') {
+      return `<div class="deck-slide">
+      ${deckHeader(slide.title, accent, slide.icon)}
+      <div class="deck-body deck-tablewrap">
+        <table class="deck-table">
+          <thead><tr>${layout.headers.map(h => `<th style="background:${accent}">${esc(h)}</th>`).join('')}</tr></thead>
+          <tbody>${layout.rows.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody>
+        </table>
+      </div>
+      ${footer(num)}</div>`;
+    }
+
+    if (layout.kind === 'flow') {
+      const arrow = `<span class="deck-flow-arrow">${deckIconSvg('arrow', accent, 34)}</span>`;
+      return `<div class="deck-slide">
+      ${deckHeader(slide.title, accent, slide.icon)}
+      <div class="deck-body deck-flow${layout.nodes.length >= 5 ? ' deck-flow-dense' : ''}">
+        <div class="deck-flow-row">
+          ${layout.nodes.map((n, i) => `${i > 0 ? arrow : ''}<div class="deck-flow-node" style="border-color:${accent}">${esc(n)}</div>`).join('')}
+        </div>
+        ${layout.cycle ? `<div class="deck-flow-loop" style="border-color:${accent};color:${accent}">${deckIconSvg('refresh', accent, 22)}${L('ثم تتكرر الدورة', 'then the cycle repeats')}</div>` : ''}
+      </div>
+      ${footer(num)}</div>`;
+    }
+
+    if (layout.kind === 'concepts') {
+      return `<div class="deck-slide">
+      ${deckHeader(slide.title, accent, slide.icon)}
+      <div class="deck-body deck-concepts${layout.items.length === 4 ? ' deck-concepts-four' : ''}">
+        ${layout.items.map(it => `<div class="deck-concept" style="border-top-color:${accent}"><p class="deck-concept-text">${esc(it)}</p></div>`).join('')}
+      </div>
+      ${footer(num)}</div>`;
+    }
+
+    if (layout.kind === 'quote') {
+      return `<div class="deck-slide">
+      <div class="deck-body deck-quote">
+        <p class="deck-quote-mark" style="color:${accent}">“</p>
+        <p class="deck-quote-text">${esc(layout.text)}</p>
+        ${layout.by ? `<p class="deck-quote-by" style="color:${accent}">— ${esc(layout.by)}</p>` : ''}
+        ${head ? `<p class="deck-statement-sub">${head}</p>` : ''}
       </div>
       ${footer(num)}</div>`;
     }
@@ -545,6 +623,8 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
     // Above the type branches, because a layout is a request about drawing and
     // the types below are about content. It returns null for every slide that
     // did not ask, so the chain behaves exactly as it did.
+    const photo = asPhotoHero(slide);
+    if (photo) return dividerSlide(photo, num);
     const shaped = layoutSlide(slide, num);
     if (shaped) return shaped;
     if (slide.type === 'graph') return graphSlide(slide, num);
@@ -613,8 +693,8 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${T.border
 .deck-title-badge, .deck-title-main, .deck-divider-title, .deck-eyebrow,
 .deck-eq, .deck-answer-label, .deck-chip, .deck-video-link,
 .deck-option-letter, .deck-title-meta,
-.deck-statement-text, .deck-stat-value, .deck-stat-label, .deck-compare-head,
-.deck-step-num { font-family: 'Readex Pro','Arial','Tahoma',sans-serif; }
+.deck-statement-text, .deck-concept-text, .deck-quote-mark, .deck-quote-text, .deck-quote-by, .deck-stat-value, .deck-stat-label, .deck-compare-head,
+.deck-step-num, .deck-tl-label, .deck-stats-value, .deck-table th, .deck-flow-node, .deck-flow-loop { font-family: 'Readex Pro','Arial','Tahoma',sans-serif; }
 /* ─── Layout shapes (services/slideLayout.ts) ───────────────────────────────
    Sizes run above the presenter's: this page is a fixed 297mm projected
    full-screen, where the presenter's 21pt body is sized for a phone that also
@@ -626,6 +706,15 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${T.border
 .deck-statement-text { font-size:40px; line-height:1.5; font-weight:700; text-align:start; }
 .deck-statement-sub { font-size:24px; line-height:1.6; color:${T.muted}; margin-top:12px; text-align:start; }
 .deck-stat-value { font-size:96px; line-height:1.1; font-weight:700; text-align:start; }
+/* Key terms as cards: three to a row, a four a 2x2 (a lone fourth would hang off the edge). The grid takes the document's own direction. */
+.deck-body.deck-concepts { display:grid; grid-template-columns:repeat(3, 1fr); gap:24px; align-content:center; align-items:stretch; }
+.deck-body.deck-concepts-four { grid-template-columns:repeat(2, 1fr); }
+.deck-concept { display:flex; align-items:center; padding:44px 32px; min-height:230px; background:${T.card}; border:1px solid ${T.border}; border-top-width:6px; border-radius:24px; }
+.deck-concept-text { font-size:36px; line-height:1.45; font-weight:600; text-align:start; }
+.deck-body.deck-quote { justify-content:center; gap:4px; }
+.deck-quote-mark { font-size:96px; line-height:0.9; font-weight:700; text-align:start; }
+.deck-quote-text { font-size:36px; line-height:1.65; font-weight:600; text-align:start; }
+.deck-quote-by { font-size:22px; line-height:1.6; font-weight:600; margin-top:22px; text-align:start; }
 .deck-stat-label { font-size:26px; line-height:1.5; font-weight:600; text-align:start; }
 .deck-stat-source { font-size:14px; line-height:1.6; color:${T.muted}; margin-top:10px; text-align:start; }
 .deck-body.deck-compare { display:flex; flex-direction:row; gap:18px; align-items:stretch; }
@@ -633,6 +722,32 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${T.border
 .deck-compare-head { font-size:30px; line-height:1.4; font-weight:700; color:${T.muted}; margin-bottom:12px; text-align:start; }
 .deck-compare-item { font-size:24px; line-height:1.7; margin-bottom:8px; text-align:start; }
 .deck-steps { gap:18px; }
+/* Structure layouts. Flex rows and table cells use the document's own direction —
+   never row-reverse or a hand-flipped order, which would cancel it. */
+.deck-body.deck-timeline { justify-content:center; }
+.deck-tl-row { display:flex; align-items:flex-start; width:100%; }
+.deck-tl-item { flex:1; min-width:0; padding-inline-end:10px; }
+.deck-tl-rail { display:flex; align-items:center; height:38px; margin-bottom:18px; }
+.deck-tl-dot { width:26px; height:26px; border-radius:50%; border:6px solid; background:${T.card}; flex-shrink:0; box-sizing:content-box; }
+.deck-tl-line { flex:1; height:5px; border-radius:3px; }
+.deck-tl-label { font-size:36px; font-weight:700; line-height:1.3; margin-bottom:10px; text-align:start; }
+.deck-tl-text { font-size:26px; line-height:1.55; text-align:start; }
+.deck-body.deck-stats { flex-direction:row; align-items:center; justify-content:center; gap:26px; }
+.deck-stats-card { flex:1; max-width:330px; padding:48px 24px; text-align:center; background:${T.card}; border:1px solid ${T.border}; border-radius:28px; }
+.deck-stats-value { font-size:84px; line-height:1.1; font-weight:700; }
+.deck-stats-label { font-size:26px; line-height:1.45; margin-top:14px; }
+.deck-body.deck-tablewrap { justify-content:center; }
+.deck-table { width:100%; border-collapse:separate; border-spacing:0; background:${T.card}; border:1px solid ${T.border}; border-radius:18px; overflow:hidden; }
+.deck-table th { color:#fff; font-size:28px; font-weight:700; padding:18px 24px; text-align:start; }
+.deck-table td { font-size:26px; line-height:1.5; padding:18px 24px; text-align:start; border-top:1px solid ${T.border}; }
+.deck-table tbody tr:nth-child(even) td { background:${T.bg}; }
+.deck-body.deck-flow { align-items:stretch; justify-content:center; }
+.deck-flow-row { display:flex; flex-wrap:nowrap; align-items:center; justify-content:center; gap:12px; }
+.deck-flow-node { flex:1 1 0; min-width:0; max-width:270px; padding:24px 14px; background:${T.card}; border:3px solid; border-radius:20px; font-size:24px; font-weight:700; line-height:1.4; text-align:center; overflow-wrap:break-word; }
+.deck-flow-dense .deck-flow-node { font-size:21px; padding:20px 10px; }
+.deck-flow-arrow { display:flex; flex-shrink:0; }
+html[dir="rtl"] .deck-flow-arrow svg { transform:scaleX(-1); }
+.deck-flow-loop { align-self:center; display:inline-flex; align-items:center; gap:10px; margin-top:34px; padding:12px 28px; border:2px solid; border-radius:999px; font-size:22px; font-weight:700; }
 .deck-step { display:flex; flex-direction:row; align-items:center; gap:16px; }
 .deck-step-num { flex-shrink:0; width:56px; height:56px; border-radius:50%; color:#fff; font-size:28px; font-weight:700; display:flex; align-items:center; justify-content:center; }
 .deck-step-text { font-size:28px; line-height:1.6; text-align:start; }

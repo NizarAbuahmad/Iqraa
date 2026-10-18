@@ -12,6 +12,7 @@ import {
   getLessonById as getKbLessonById,
   getUnitForLesson,
   isConfidentKbHit,
+  KB_CONFIDENT_SCORE,
   KB_SUGGEST_SCORE,
   resolveGroundedKbLesson,
   searchKBRanked,
@@ -434,6 +435,54 @@ export function isConfidentSingleSubjectHit(ranked: KBScoredLesson[]): boolean {
     r.score >= KB_SUGGEST_SCORE
     && getBookForLesson(r.lesson)?.subjectId !== topSubject,
   );
+}
+
+/** Another subject within this share of the top score makes the hit a shared word. */
+const RIVAL_SUBJECT_SHARE = 0.5;
+
+/**
+ * The lessons the live chat may hand the model as «مرجع الكتاب المدرسي».
+ *
+ * The server tells the model to answer primarily from that block, and the
+ * keyword search fills `results` for almost any sentence: «كيف أتعامل مع طالب
+ * مشاغب في الصف؟» ranked English for hospitality, the quadratic formula and
+ * gravity, and the answer followed them. So a search hit is sent only when it
+ * is believable:
+ *
+ *  - `anchorIds` — lessons the teacher chose (tapped, on the card, reused by
+ *    the session's pin rules). Sent alone: a chosen lesson plus noise is noise.
+ *  - `scopedConfident` — `results` came from a subject/grade-scoped search that
+ *    already cleared `KB_CONFIDENT_SCORE`.
+ *  - otherwise the top hit clears `KB_CONFIDENT_SCORE` and no other subject
+ *    scores within half of it. Same-subject rivals never count — close maths
+ *    hits for «اشرح الاقترانات» are all the topic — and a distant one in another
+ *    subject is a shared word: «قانون جيب التمام» 69 vs Newton's laws 28. Two
+ *    subjects near each other are not a topic: «الأحماض والقواعد» was English
+ *    grammar 24 vs chemistry 14.5.
+ *
+ * Anything else sends no lesson, and the model answers the question as asked.
+ * For the live path only; the offline teaching assistant still reads every
+ * result, because it has no model to fall back on.
+ */
+export function liveChatGrounding(args: {
+  ranked: KBScoredLesson[];
+  results: KBLesson[];
+  anchorIds: string[];
+  scopedConfident: boolean;
+}): KBLesson[] {
+  const { ranked, results, anchorIds, scopedConfident } = args;
+  const anchored = results.filter(l => anchorIds.includes(l.id));
+  if (anchored.length) return anchored;
+  if (scopedConfident) return results;
+  const top = ranked[0];
+  if (!top || top.score < KB_CONFIDENT_SCORE) return [];
+  const topSubject = getBookForLesson(top.lesson)?.subjectId;
+  const mixed = ranked.slice(1).some(r =>
+    r.score >= Math.max(KB_SUGGEST_SCORE, top.score * RIVAL_SUBJECT_SHARE)
+    && getBookForLesson(r.lesson)?.subjectId !== topSubject,
+  );
+  if (mixed) return [];
+  return results.filter(l => getBookForLesson(l)?.subjectId === topSubject);
 }
 
 /**

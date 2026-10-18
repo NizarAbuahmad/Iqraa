@@ -100,6 +100,21 @@ export function checkDeck(deck: unknown, sourceText = ""): DeckIssue[] {
       }
     }
     if (layout === "steps" && lines(content).length < 2) add("warn", "steps_too_few", n);
+    // The app refuses a thin structure layout and shows the slide's own sentence
+    // instead; these say how often the model asked for one it could not fill.
+    const nItems = (v: unknown) => (Array.isArray(v) ? v.length : 0);
+    if (layout === "timeline" && nItems(s.timeline) < 3) add("warn", "timeline_incomplete", n);
+    if (layout === "stats" && nItems(s.stats) < 2) add("warn", "stats_incomplete", n);
+    if (layout === "table") {
+      const t = isRec(s.table) ? s.table : null;
+      const width = nItems(t?.headers);
+      const rows = Array.isArray(t?.rows) ? (t!.rows as unknown[]) : [];
+      if (width < 2 || rows.length < 2 || rows.some(r => nItems(r) !== width)) add("warn", "table_incomplete", n);
+    }
+    if (layout === "flow" && nItems(isRec(s.flow) ? s.flow.steps : null) < 3) add("warn", "flow_incomplete", n);
+    if (layout === "quote" && !(isRec(s.quote) && str(s.quote.text))) add("warn", "quote_incomplete", n);
+    // A photo with nothing to search by has no picture coming; the app drops the layout.
+    if (layout === "photo" && !str(s.mediaPrompt)) add("warn", "photo_without_prompt", n);
 
     if (type === "challenge" && !str(s.answer) && !(isRec(s.teacher) && str(s.teacher.expectedAnswer))) {
       add("error", "challenge_without_answer", n);

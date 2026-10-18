@@ -36,7 +36,7 @@ export type DeckIconName =
   | 'atom' | 'flask' | 'leaf' | 'globe' | 'calculator' | 'clock' | 'pin' | 'heart' | 'star' | 'sun' | 'drop' | 'laptop'
   // Inline marks rather than section markers — they sit in a line of text (a
   // link, a badge, a correct-answer tick), not in a heading chip.
-  | 'shield' | 'play' | 'file' | 'tick';
+  | 'shield' | 'play' | 'file' | 'tick' | 'arrow' | 'refresh';
 
 const path = (d: string): IconShape => ({ t: 'path', d });
 const circle = (cx: number, cy: number, r: number): IconShape => ({ t: 'circle', cx, cy, r });
@@ -85,6 +85,9 @@ export const DECK_ICON_SHAPES: Record<DeckIconName, readonly IconShape[]> = {
   play: [path('M7 4.5v15l12-7.5z')],
   file: [path('M6 3h8l4 4v14H6z'), path('M14 3v4h4M9 12h6M9 16h6')],
   tick: [path('M5 12.5l4.5 4.5L19 7.5')],
+  // Drawn pointing right. A right-to-left page mirrors it in CSS — the shape table has no direction.
+  arrow: [path('M5 12h14'), path('M13 6l6 6-6 6')],
+  refresh: [path('M20 11a8 8 0 1 0-2.3 5.7'), path('M20 4v7h-7')],
   // Three orbits and a nucleus. The arcs use SVG's own x-axis-rotation, so the
   // two tilted ellipses need no transform — this table has none to offer.
   atom: [
@@ -171,6 +174,72 @@ export function iconForGlyph(glyph: string): DeckIconName | null {
   // elsewhere with one still on («✍️»); the table is keyed without it.
   const key = (glyph ?? '').replace(/️/g, '').trim();
   return GLYPH_ICON[key] ?? null;
+}
+
+/**
+ * The icon that best stands for a topic's NAME — for the decks the app builds
+ * from curriculum data (Slides Maker), where no model chose one. Arabic and
+ * English stems, first match wins, so the order is the priority: a unit about
+ * "energy and water" gets the first of those listed below.
+ *
+ * `null` means "no opinion" and the caller keeps whatever it drew before. A
+ * wrong icon is worse than none (a leaf on a physics unit says the deck did not
+ * read its own title), so a rule needs a stem that means the subject, not one
+ * that merely occurs in it.
+ */
+const TOPIC_ICONS: readonly (readonly [RegExp, DeckIconName])[] = [
+  [/كيمياء|كيميائ|تفاعل|مخبر|تجرب|chemi|reaction|experiment|laborator/i, 'flask'],
+  [/ذرة|ذرات|ذري|نووي|حركة|قوة|قوى|سرعة|تسارع|كهرباء|كهربائ|مغناطيس|ميكانيك|فيزياء|atom|nuclear|motion|force|speed|electric|magnet|physic/i, 'atom'],
+  [/نبات|خلية|خلايا|حيوان|بيئ|كائن|تنفس|بناء ضوئي|وراثة|plant|\bcell|animal|ecosystem|organism|habitat|biolog/i, 'leaf'],
+  [/طاقة|ضوء|حرارة|شمس|energy|\blight|\bheat|solar/i, 'sun'],
+  [/ماء|مياه|سائل|بحار|محيط|water|liquid|ocean|\bsea\b/i, 'drop'],
+  [/الأرض|أرض|فضاء|كوكب|مجرة|جغراف|قارة|مناخ|طقس|صخور|earth|space|planet|geograph|climate|weather|\brocks?\b/i, 'globe'],
+  [/صحة|جسم|غذاء|تغذية|health|\bbody|nutrition|blood|heart/i, 'heart'],
+  [/إحصاء|بيانات|احتمال|data|statistic|probabilit/i, 'bars'],
+  [/أعداد|عدد|كسر|كسور|جبر|معادل|حساب|ضرب|قسمة|هندس|زاوية|مثلث|دائرة|مساحة|number|fraction|algebra|equation|arithmetic|geometr|\bangle|\barea\b|triangle/i, 'calculator'],
+  [/قياس|measure/i, 'ruler'],
+  [/تاريخ|زمن|وقت|عصر|حضارة|histor|\btime\b|\bera\b|civiliz/i, 'clock'],
+  [/حاسوب|تقنية|برمج|إنترنت|رقمي|computer|technolog|program|internet|digital/i, 'laptop'],
+  [/مجتمع|مواطن|حقوق|أسرة|تعاون|society|citizen|rights|family|communit/i, 'users'],
+  [/موقع|خريطة|مدينة|بلد|وطن|الأردن|\bmaps?\b|location|\bcity|country|jordan/i, 'pin'],
+  [/قراءة|لغة|قواعد|إملاء|كتابة|أدب|شعر|قصة|reading|\btext|language|grammar|spelling|writing|literature|poem|story/i, 'book'],
+];
+
+export function iconForTopic(text: string): DeckIconName | null {
+  const t = typeof text === 'string' ? text : '';
+  for (const [re, name] of TOPIC_ICONS) if (re.test(t)) return name;
+  return null;
+}
+
+/**
+ * An English photo search for each topic icon. Unsplash is an English index —
+ * an Arabic query returns nothing — and a unit's title is Arabic, so the topic
+ * the title was recognised as stands in for it. A topic with no entry gets no
+ * photo, which is the flat break it had before, rather than a picture of
+ * something else.
+ */
+const TOPIC_PHOTO_QUERIES: Partial<Record<DeckIconName, string>> = {
+  flask: 'chemistry laboratory experiment',
+  atom: 'physics science experiment',
+  leaf: 'plants nature biology',
+  sun: 'sunlight energy sky',
+  drop: 'water drops nature',
+  globe: 'earth planet space',
+  heart: 'healthy lifestyle fitness',
+  bars: 'charts data graphs',
+  calculator: 'mathematics equations chalkboard',
+  ruler: 'measuring ruler tools',
+  clock: 'history museum ancient',
+  laptop: 'computer technology students',
+  users: 'community people together',
+  pin: 'map travel geography',
+  book: 'books reading library',
+};
+
+/** The English photo search for a topic named in `text`, or `null` when none is recognised. */
+export function photoQueryForTopic(text: string): string | null {
+  const icon = iconForTopic(text);
+  return icon ? (TOPIC_PHOTO_QUERIES[icon] ?? null) : null;
 }
 
 /**

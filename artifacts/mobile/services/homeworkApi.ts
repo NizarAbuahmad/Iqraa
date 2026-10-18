@@ -21,6 +21,7 @@ import {
   type TeacherHomework,
   type TeacherHomeworkList,
 } from './homework.ts';
+import type { SavedMaterial } from './workspace.ts';
 
 export class HomeworkError extends Error {
   readonly status: number;
@@ -68,6 +69,25 @@ export async function getChildHomework(): Promise<ChildHomework[]> {
   return normalizeChildHomework(data.children);
 }
 
+/**
+ * A teacher's saved material attached to a homework, read-only and without its
+ * answers (the server strips them). Shaped as a `SavedMaterial` so the workspace
+ * viewer draws it; null when the server answers 404 — not this family's, or no
+ * longer attached.
+ */
+export async function getHomeworkMaterial(
+  homeworkId: string,
+  materialId: string,
+  role: 'student' | 'parent',
+): Promise<SavedMaterial | null> {
+  const res = await apiFetch(
+    `/${role}/homework/${encodeURIComponent(homeworkId)}/materials/${encodeURIComponent(materialId)}`,
+  );
+  if (res.status === 404) return null;
+  const { material: m } = await readJson<{ material: Omit<SavedMaterial, 'isFavorite' | 'formState'> }>(res, 'Opening attachment');
+  return { ...m, language: m.language === 'en' ? 'en' : 'ar', isFavorite: false, formState: {} };
+}
+
 /** Idempotent on the server, so a retry after a dropped response is safe. */
 export async function setHomeworkDone(id: string, done: boolean): Promise<void> {
   const res = await apiFetch(`/student/homework/${encodeURIComponent(id)}/done`, {
@@ -85,6 +105,10 @@ export interface NewHomework {
   /** YYYY-MM-DD, Asia/Amman. */
   dueDate: string;
   evaluationId?: string;
+  /** Bodies as the class shelf's POST takes them (`addBodyFor` / `resourceBody`). */
+  resources?: object[];
+  /** Also leave a line in the class's group chat. */
+  shareToChat?: boolean;
 }
 
 /**
@@ -96,6 +120,8 @@ export interface HomeworkPatch {
   instructions?: string;
   dueDate?: string;
   evaluationId?: string | null;
+  /** The whole list: replaces what is attached. */
+  resources?: object[];
 }
 
 export async function listClassHomework(classId: string): Promise<TeacherHomeworkList> {
@@ -116,6 +142,12 @@ export async function updateHomework(id: string, patch: HomeworkPatch): Promise<
   });
   const data = await readJson<{ homework?: unknown }>(res, 'Saving homework');
   return normalizeTeacherHomework([data.homework])[0] ?? null;
+}
+
+/** Leaves the homework's line in its class's group chat. */
+export async function shareHomework(id: string): Promise<void> {
+  const res = await apiFetch(`/homework/${encodeURIComponent(id)}/share`, { method: 'POST' });
+  await readJson(res, 'Sharing homework');
 }
 
 export async function archiveHomework(id: string): Promise<void> {

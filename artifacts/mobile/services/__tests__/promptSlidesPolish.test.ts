@@ -14,6 +14,7 @@ import type { ActivitySlide, ClassroomActivity } from '../ai/AIService.ts';
 import type { VisualBlock } from '../deckVisuals.ts';
 
 
+
 const slide = (over: Partial<ActivitySlide> = {}): ActivitySlide => ({
   slideNumber: 1, type: 'intro', title: 'عنوان', content: '• سطر أول\n• سطر ثانٍ', durationSeconds: 0, ...over,
 });
@@ -278,5 +279,135 @@ describe('polishDeck — the structure a model chose', () => {
     const out = polishDeck(before);
     assert.deepEqual(out.slides.map(s => s.title), before.slides.map(s => s.title));
     assert.ok(out.slides.every(s => !('icon' in s) && !('visual' in s)));
+  });
+});
+
+describe('polishDeck — the structure layouts', () => {
+  const events = [
+    { label: '١٩٢١', text: 'تأسيس الإمارة' },
+    { label: '١٩٤٦', text: 'الاستقلال' },
+    { label: '١٩٥٢', text: 'الدستور' },
+  ];
+
+  it('keeps a layout whose data the app can draw, payload untouched', () => {
+    const out = polishDeck(deck([
+      slide(),
+      slide({ layout: 'timeline', content: 'ثلاث محطات', timeline: events }),
+      ...padding(4),
+    ]));
+    assert.equal(out.slides[1]!.layout, 'timeline');
+    assert.deepEqual(out.slides[1]!.timeline, events);
+    assert.equal(resolveSlideLayout(out.slides[1]!)?.kind, 'timeline');
+  });
+
+  it('a refused layout keeps its sentence and gains the payload as a list — never a blank slide', () => {
+    const out = polishDeck(deck([
+      slide(),
+      slide({ layout: 'timeline', content: 'محطات مهمة', timeline: events.slice(0, 2) }),
+      ...padding(4),
+    ]));
+    const refused = out.slides[1]!;
+    assert.equal('layout' in refused, false);
+    assert.equal('timeline' in refused, false);
+    assert.equal(refused.content, 'محطات مهمة\n• ١٩٢١ — تأسيس الإمارة\n• ١٩٤٦ — الاستقلال');
+  });
+
+  it('a quote is kept when it can be drawn, and refused into a line when it cannot', () => {
+    const good = polishDeck(deck([slide(), slide({ layout: 'quote', content: 'عبارة', quote: { text: 'العلم نور', by: 'مثل' } }), ...padding(4)]));
+    assert.equal(resolveSlideLayout(good.slides[1]!)?.kind, 'quote');
+    const bad = polishDeck(deck([slide(), slide({ layout: 'quote', content: 'عبارة', quote: { text: 'x'.repeat(201) } }), ...padding(4)])).slides[1]!;
+    assert.equal('layout' in bad, false);
+    assert.equal('quote' in bad, false);
+    assert.match(bad.content, /^عبارة\n• x{201}$/);
+  });
+
+  it('a photo is kept only when a picture is coming and the slide is prose with one sentence', () => {
+    // Long enough not to be dropped as a hollow slide once it loses its layout.
+    const sentence = 'كثبان رملية تمتد حتى الأفق في وادي رم';
+    const photo = (over: Partial<ActivitySlide>) => polishDeck(deck([slide(), slide({ layout: 'photo', content: sentence, ...over }), ...padding(4)])).slides[1]!;
+    assert.equal(photo({ mediaPrompt: 'desert dunes' }).layout, 'photo');
+    assert.equal(photo({ sideImageUrl: 'https://img/a.jpg' }).layout, 'photo');
+    // no picture can arrive, wrong kind of slide, a list instead of a sentence
+    // (a lone sentence may then be read as a plain statement, which is fine)
+    assert.notEqual(photo({}).layout, 'photo');
+    assert.notEqual(photo({ mediaPrompt: 'x', type: 'challenge' }).layout, 'photo');
+    assert.notEqual(photo({ mediaPrompt: 'x', content: '• أ\n• ب' }).layout, 'photo');
+    // and the slide's own words survive losing the layout
+    assert.equal(photo({}).content, sentence);
+  });
+
+  it('a refused layout with no sentence still shows its words', () => {
+    const out = polishDeck(deck([
+      slide(),
+      slide({ layout: 'flow', content: '', flow: { steps: ['يتبخّر الماء من البحر', 'يتكاثف البخار في السماء'] } }),
+      ...padding(4),
+    ]));
+    assert.equal(out.slides[1]!.content, '• يتبخّر الماء من البحر\n• يتكاثف البخار في السماء');
+  });
+
+  it('a refused layout whose words are only a few short ones is dropped as hollow, like any thin slide', () => {
+    // «تبخّر» and «تكاثف» as two bullets say nothing the class cannot read in a
+    // second; the existing floor on thin slides applies to the fallback too.
+    const out = polishDeck(deck([
+      slide(),
+      slide({ layout: 'flow', content: '', flow: { steps: ['تبخّر', 'تكاثف'] } }),
+      ...padding(5),
+    ]));
+    assert.equal(out.slides.length, 6);
+  });
+
+  it('turns a refused table into one line per row, headed by its column names', () => {
+    const out = polishDeck(deck([
+      slide(),
+      slide({
+        layout: 'table', content: '',
+        table: { headers: ['الدولة', 'العاصمة'], rows: [['الأردن', 'عمّان'], ['مصر']] },
+      }),
+      ...padding(4),
+    ]));
+    assert.match(out.slides[1]!.content, /• الدولة: الأردن — العاصمة: عمّان/);
+  });
+
+  it('cuts a long refused list rather than printing a wall', () => {
+    const many = Array.from({ length: 10 }, (_, i) => `خطوة ${i + 1}`);
+    const out = polishDeck(deck([slide(), slide({ layout: 'flow', content: 'عملية', flow: { steps: many } }), ...padding(4)]));
+    assert.equal(out.slides[1]!.content.split('\n').filter(l => l.startsWith('• ')).length, 6);
+  });
+
+  it('a layout on a question slide is removed — it would hide the options', () => {
+    const out = polishDeck(deck([
+      slide(),
+      slide({
+        type: 'question', layout: 'stats', content: 'ما الجواب؟', options: ['أ', 'ب', 'ج', 'د'], correctIndex: 1,
+        stats: [{ value: '1', label: 'أ' }, { value: '2', label: 'ب' }],
+      }),
+      ...padding(4),
+    ]));
+    const q = out.slides[1]!;
+    assert.equal('layout' in q, false);
+    assert.equal(q.type, 'question');
+    assert.deepEqual(q.options, ['أ', 'ب', 'ج', 'د']);
+  });
+
+  it('a chart on a timeline slide is dropped, like on any laid-out slide', () => {
+    const out = polishDeck(deck([
+      slide(),
+      slide({
+        layout: 'timeline', timeline: events, content: 'محطات',
+        visual: { kind: 'chart', chartType: 'bar', categories: ['أ', 'ب'], values: [1, 2] },
+      }),
+      ...padding(4),
+    ]));
+    assert.equal('visual' in out.slides[1]!, false);
+    assert.equal(out.slides[1]!.layout, 'timeline');
+  });
+
+  it('a laid-out slide with a one-line body is not dropped as hollow', () => {
+    const out = polishDeck(deck([
+      slide(),
+      slide({ layout: 'stats', content: 'أرقام', stats: [{ value: '٣', label: 'أ' }, { value: '٤', label: 'ب' }] }),
+      ...padding(5),
+    ]));
+    assert.equal(out.slides.length, 7);
   });
 });

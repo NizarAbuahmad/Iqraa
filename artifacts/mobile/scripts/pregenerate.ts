@@ -15,6 +15,11 @@
  *     pnpm run pregenerate -- --go [--cap=1] [--only=lesson-teaching]
  *                                            sends them, stops at the cap
  *
+ * An account that signs in with Google has no password: set PREGEN_TOKEN (the
+ * web app's `iqra_access_token` from local storage; it lasts 15 minutes, so a
+ * long run can end with a refused token — copy a fresh one and re-run)
+ * instead of PREGEN_EMAIL and PREGEN_PASSWORD.
+ *
  * Use a dedicated account: every call counts against that account's AI quota,
  * not a real teacher's. Re-running is safe and cheap — a call the pool already
  * holds returns fast and is not counted against the cap.
@@ -304,21 +309,40 @@ export function reviewEntry(call: Call, json: unknown): ReviewEntry | null {
   return { variantId, lessonId, lesson: call.lesson, contentHash: hashContent(variantId, lessonId, shown), content: shown };
 }
 
-function apiEnv() {
-  const base = process.env.PREGEN_API_BASE?.replace(/\/$/, '');
-  const email = process.env.PREGEN_EMAIL;
-  const password = process.env.PREGEN_PASSWORD;
-  if (!base || !email || !password) throw new Error('set PREGEN_API_BASE, PREGEN_EMAIL and PREGEN_PASSWORD');
+type Credentials = { base: string; token: string } | { base: string; email: string; password: string };
+
+/**
+ * An email and password, or `PREGEN_TOKEN` for an account that signs in with
+ * Google and so has no password (copy `iqra_access_token` from the web app's
+ * local storage; it lasts 15 minutes). A token wins when both are set.
+ */
+export function readCredentials(env: Record<string, string | undefined>): Credentials {
+  const base = env.PREGEN_API_BASE?.replace(/\/$/, '');
+  if (!base) throw new Error('set PREGEN_API_BASE');
+  const token = env.PREGEN_TOKEN?.trim();
+  if (token) return { base, token };
+  const { PREGEN_EMAIL: email, PREGEN_PASSWORD: password } = env;
+  if (!email) throw new Error('set PREGEN_EMAIL and PREGEN_PASSWORD, or PREGEN_TOKEN');
+  if (!password) throw new Error('set PREGEN_PASSWORD (or PREGEN_TOKEN instead of the email and password)');
   return { base, email, password };
 }
 
-async function login({ base, email, password }: ReturnType<typeof apiEnv>): Promise<string> {
-  const r = await fetch(`${base}/api/auth/login`, {
+const apiEnv = () => readCredentials(process.env);
+
+async function login(env: Credentials): Promise<string> {
+  if ('token' in env) return env.token;
+  const r = await fetch(`${env.base}/api/auth/login`, {
     method: 'POST', headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email: env.email, password: env.password }),
   });
   if (!r.ok) throw new Error(`login failed: ${r.status}`);
   return ((await r.json()) as { accessToken: string }).accessToken;
+}
+
+/** A 401 mid-run: a password login can be repeated, a pasted token cannot. */
+async function refreshed(env: Credentials): Promise<string> {
+  if ('token' in env) throw new Error('PREGEN_TOKEN was refused (it expires after 15 minutes): copy a fresh one and run again (a lesson already stored answers fast and does not count against the cap).');
+  return login(env);
 }
 
 function titles(entries: ReviewEntry[]): string {
@@ -385,7 +409,7 @@ async function main() {
     });
     const t0 = Date.now();
     let r = await send();
-    if (r.status === 401) { token = await login(env); r = await send(); }
+    if (r.status === 401) { token = await refreshed(env); r = await send(); }
     // Two different 429s. The API allows 15 requests a minute per account, and a
     // pool hit answers in ~0.5 s, so a re-run trips it: wait as told and go on.
     // A quota/budget refusal carries a `code` and is final.

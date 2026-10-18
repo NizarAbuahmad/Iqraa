@@ -32,8 +32,35 @@ import {
   videoCaption,
   youtubeEmbedUrl,
   youtubeIdFrom,
+  unitPhotoTargets,
 } from '../classMedia.ts';
 import type { ActivitySlide } from '../ai/AIService.ts';
+
+describe('unitPhotoTargets', () => {
+  const brk = (title: string, over: Partial<ActivitySlide> = {}): ActivitySlide => ({
+    slideNumber: 1, type: 'divider', title, content: '', durationSeconds: 0, ...over,
+  });
+
+  it('gives each recognisable unit break an English query, in deck order', () => {
+    const got = unitPhotoTargets([brk('الحركة والقوة'), brk('علوم الأرض والفضاء'), brk('الطاقة والحرارة')]);
+    assert.deepEqual(got.map(t => t.title), ['الحركة والقوة', 'علوم الأرض والفضاء', 'الطاقة والحرارة']);
+    for (const t of got) assert.doesNotMatch(t.query, /[؀-ۿ]/, 'Unsplash is an English index');
+  });
+
+  it('skips breaks that name nothing, that are not breaks, or that already have a photo', () => {
+    const intro: ActivitySlide = { slideNumber: 1, type: 'intro', title: 'الحركة والقوة', content: 'x', durationSeconds: 0 };
+    const got = unitPhotoTargets([brk('غلق الحصة'), brk('وحدة عامة'), intro, brk('الحركة والقوة', { mediaUrl: 'https://img/a.jpg' })]);
+    assert.deepEqual(got, []);
+  });
+
+  it('never repeats a query, and stops at the cap', () => {
+    // two units that both read as physics would show the same picture twice
+    assert.equal(unitPhotoTargets([brk('الحركة والقوة'), brk('الكهرباء والمغناطيس')]).length, 1);
+    const many = ['الحركة', 'الأرض', 'الطاقة', 'النبات', 'الماء', 'الحاسوب'].map(t => brk(t));
+    assert.equal(unitPhotoTargets(many).length, 4);
+    assert.equal(unitPhotoTargets(many, 2).length, 2);
+  });
+});
 
 describe('youtubeIdFrom', () => {
   it('reads watch, short, embed and shorts links', () => {

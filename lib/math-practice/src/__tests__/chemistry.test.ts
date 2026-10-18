@@ -264,6 +264,50 @@ describe('detectChemFamily', () => {
     ].join(' ');
     assert.equal(detectChemFamily(stoichiometryLessonBlob), 'stoichiometry');
   });
+
+  // A topic a teacher TYPES has no lesson text behind it, so the whole decision is made by the
+  // few words typed. Each case below was measured on 2026-10-16 (a probe of ~150 typed topics);
+  // the first group went to the WRONG family, the rest to general chemistry although the
+  // curriculum has a family for them.
+  it('does not read «قاعدة» (a rule) as «قاعدة» (a base)', () => {
+    assert.equal(detectChemFamily('قاعدة هوند'), 'electron_config');
+    assert.equal(detectChemFamily('قاعدة الثمانية'), 'bonding');
+    assert.equal(detectChemFamily('مبدأ أوفباو'), 'electron_config');
+    assert.equal(detectChemFamily('مبدأ باولي للاستبعاد'), 'electron_config');
+    assert.equal(detectChemFamily('Aufbau principle'), 'electron_config');
+    // …and the real base still is one.
+    assert.equal(detectChemFamily('القواعد وخصائصها'), 'acids_bases');
+    assert.equal(detectChemFamily('قاعدة قوية وقاعدة ضعيفة'), 'acids_bases');
+  });
+
+  it('does not take «الكمية» (quantity) for quantum theory', () => {
+    assert.equal(detectChemFamily('الكمية'), 'general_chem');
+    assert.equal(detectChemFamily('كمية المادة'), 'mole');
+    // The quantum vocabulary is still atomic structure.
+    assert.equal(detectChemFamily('الأعداد الكمية'), 'atomic_structure');
+    assert.equal(detectChemFamily('نظرية الكم'), 'atomic_structure');
+    assert.equal(detectChemFamily('نموذج بور'), 'atomic_structure');
+    assert.equal(detectChemFamily('الأطياف الذرية'), 'atomic_structure');
+  });
+
+  it('recognises the plural and inflected forms of curriculum vocabulary', () => {
+    assert.equal(detectChemFamily('المعادلات الكيميائية'), 'equations');
+    assert.equal(detectChemFamily('قانون حفظ الكتلة'), 'equations');
+    assert.equal(detectChemFamily('الخلايا الكهروكيميائية'), 'redox');
+    assert.equal(detectChemFamily('الرقم الهيدروجيني'), 'acids_bases');
+    assert.equal(detectChemFamily('تراكيب لويس'), 'bonding');
+    assert.equal(detectChemFamily('المتفاعل المحدد'), 'stoichiometry');
+    assert.equal(detectChemFamily('النسب المولية'), 'stoichiometry');
+    assert.equal(detectChemFamily('حجم الغاز المولي'), 'mole');
+    assert.equal(detectChemFamily('التفاعلات الطاردة والماصة للحرارة'), 'thermochem');
+    assert.equal(detectChemFamily('كمية الحرارة'), 'calorimetry');
+  });
+
+  it('leaves an unrelated typed topic in general chemistry', () => {
+    for (const t of ['الاتزان الكيميائي', 'سرعة التفاعل', 'المحاليل', 'الغازات', 'الكيمياء العضوية', 'الكثافة']) {
+      assert.equal(detectChemFamily(t), 'general_chem', t);
+    }
+  });
 });
 
 describe('isChemContext', () => {
@@ -332,7 +376,9 @@ describe('takeConcreteChem', () => {
     const first = takeConcreteChem('short_answer', 'المول', null, 'easy', 'ar', 4, a);
     const second = takeConcreteChem('short_answer', 'المول', null, 'easy', 'ar', 4, b);
     assert.ok(first && second);
-    assert.equal(b.size, 1, 'the second session inherited the first one\'s spend');
+    // Items only: each draw also records the ask it put (`ask:…`), which kinds are spread on.
+    const items = [...b].filter(k => !k.startsWith('ask:'));
+    assert.equal(items.length, 1, 'the second session inherited the first one\'s spend');
   });
 
   it('stays in the detected family rather than drifting to general chemistry', () => {

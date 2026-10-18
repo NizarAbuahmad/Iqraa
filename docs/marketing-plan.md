@@ -17,7 +17,7 @@ What marketing can truthfully say today, and what it must not say yet:
 
 | Can say today | Cannot say yet (do not claim) |
 | --- | --- |
-| Arabic-first, RTL, built for the Jordanian national curriculum. Lesson picker is the real NCCD book structure. | "Full AI generation" on the web app — `DEMO_MODE` is on for the web build; most prose is mocked and labelled «وضع العرض · محتوى تجريبي». Only slides-from-prompt and lesson-teaching sections call live AI. |
+| Arabic-first, RTL, built for the Jordanian national curriculum. Lesson picker is the real NCCD book structure. | "Full AI generation" on the web app — `DEMO_MODE` was on for the web build until 2026-10-16; since then the web runs live AI, capped per teacher (STATUS.md, «The chat answers teachers, on the web too»). |
 | Maths answer keys are symbolically verified (SymPy), labelled per key, and unverifiable keys say so. | "Every subject is equally grounded." Grade 10 maths + chemistry are the deep, verified wedge; Grades 1–10 books are registered at varying depth (some shipped, some figures blocked, Arabic/Islamic carry no extractable figures). |
 | Full lesson journey: plan → slides → activity → worksheet → quiz → exit ticket, plus evaluations with exam scanning. | "Available on Google Play / App Store." The `.aab` is built; the closed test (12 testers × 14 days) has not started; there is no iOS build. |
 | Free, no-login games hub (`/play`) and free English corner for Grades 1–4. | "Trusted by N schools." Zero pilots recorded. |
@@ -223,7 +223,8 @@ Product/ops prerequisites marketing depends on (owner: founder, with engineering
 5. A claims audit of every public string: onboarding carousel, Play listing,
    landing page, reel captions. Scope every "grounded in the book" sentence
    to what ships. Decide the one Latin spelling.
-6. Decide the live-AI posture for launch: either `DEMO_MODE` off on web with
+6. *(Decided 2026-10-16: `DEMO_MODE` off on web, live AI with per-user caps.)*
+   Decide the live-AI posture for launch: either `DEMO_MODE` off on web with
    `AI_LIVE_MODE` and a budget, or keep demo mode and say «محتوى تجريبي»
    loudly in the UI. Marketing cannot run a "try it free" campaign against
    mocked prose without the label; it will read as a fake product.

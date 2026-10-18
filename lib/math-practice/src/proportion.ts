@@ -78,10 +78,30 @@ const proportionalRelation = T('proportional_relation', /^العلاقات ال�
   return { eq: table, answer: String(k), wrongs: ints(k, [k + 1, k - 1, ys[0]! + xs[0]!, k * 2]), ar: `الجدول (x → y): ${table} علاقة تناسبية. ما ثابت التناسب y/x؟`, en: `Table (x → y): ${tableEn} is a proportional relation. What is the constant of proportionality y/x?` };
 });
 
+/**
+ * The constant, the equation, a value, «is this direct variation?» — and since
+ * 2026-10-16 a table with a missing value, and distance at a steady speed.
+ */
 const directVar = T('direct_variation', /^التغير الطردي$/, [7, 7], ({ rng, diff }) => {
   const k = int(rng, 2, span(diff, 6, 9, 12)), x1 = int(rng, 2, 8), x2 = int(rng, 3, 12);
   if (x1 === x2) return directVar.make({ rng, diff, grade: 7 });
-  const kind = pick(rng, [0, 1, 2, 3, 4]);
+  const kind = pick(rng, [0, 1, 2, 3, 4, 5, 6]);
+  if (kind === 5) { // a table of a direct variation with one value missing — an x or a y
+    const xs = [int(rng, 1, 3)]; while (xs.length < 4) xs.push(xs[xs.length - 1]! + int(rng, 1, 3));
+    const j = int(rng, 1, 3), missY = rng() < 0.6;
+    const cell = (i: number) => (i !== j ? `${xs[i]} → ${k * xs[i]!}` : missY ? `${xs[i]} → ؟` : `؟ → ${k * xs[i]!}`);
+    const t = xs.map((_, i) => cell(i)).join('، '), tEn = xs.map((_, i) => cell(i)).join(', ');
+    const ans = missY ? k * xs[j]! : xs[j]!;
+    const prevX = xs[j - 1]!, prevY = k * prevX;
+    const wrongs = missY ? ints(ans, [prevY + (xs[j]! - prevX), ans + k, ans - k, xs[j]! + k]) : ints(ans, [prevX + (k * xs[j]! - prevY), k * xs[j]! - k, ans + 1, k * k * xs[j]!]);
+    return { eq: t, answer: String(ans), wrongs, ar: `يبين الجدول (x → y) قيمًا لتغير طردي: ${t}. ما القيمة المفقودة في الجدول؟`, en: `The table (x → y) shows values of a direct variation: ${tEn}. What is the missing value?` };
+  }
+  if (kind === 6) { // distance at a steady speed varies directly with time
+    const v = 10 * int(rng, 4, span(diff, 6, 8, 9)), t1 = int(rng, 3, 6), t2 = int(rng, 3, 10);
+    if (t1 === t2) return directVar.make({ rng, diff, grade: 7 });
+    const d = v * t2;
+    return { eq: `${v * t1}, ${t1}, ${t2}`, answer: String(d), wrongs: ints(d, [v * t1 + (t2 - t1), d + v, v * Math.abs(t2 - t1), v + t2]), ar: `المسافة التي تقطعها سيارة تسير بسرعة ثابتة تتغير طرديًا مع زمن سيرها. إذا قطعت السيارة ${v * t1} كم في ${t1} ساعات، فكم كيلومترًا تقطع في ${t2} ساعات؟`, en: `The distance a car covers at a steady speed varies directly with the time it drives. If it covers ${v * t1} km in ${t1} hours, how many kilometres does it cover in ${t2} hours?` };
+  }
   const given = `y يتغير طرديًا مع x، وعندما x = ${x1} فإن y = ${k * x1}.`, givenEn = `y varies directly with x, and y = ${k * x1} when x = ${x1}.`;
   if (kind === 2) { const ans = `y = ${k}x`; return { eq: `${x1}, ${k * x1}`, answer: ans, wrongs: eqOpts(ans, [`y = ${k * x1}x`, `y = x + ${k * x1 - x1}`, `x = ${k}y`], j => `y = ${k + Math.abs(j)}x`), ar: `${given} ما معادلة التغير الطردي؟`, en: `${givenEn} What is the direct variation equation?` }; }
   if (kind === 3) return { eq: `${x1}, ${k * x1}, y=${k * x2}`, answer: String(x2), wrongs: ints(x2, [k * k * x2, k * x2 - k * x1 + x1, x2 + k, k * x2]), ar: `${given} ما قيمة x التي تكون عندها y = ${k * x2}؟`, en: `${givenEn} For which x is y = ${k * x2}?` };

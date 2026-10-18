@@ -27,7 +27,7 @@
  */
 import type { ActivitySlide, ClassroomActivity } from './ai/AIService.ts';
 import { isBulletLine, looksLikeEquation, stripBullet } from './deckText.ts';
-import { MAX_STATEMENT_CHARS, inlineSteps, resolveSlideLayout } from './slideLayout.ts';
+import { MAX_STATEMENT_CHARS, inlineSteps, payloadLines, resolveSlideLayout } from './slideLayout.ts';
 import { rebuildAnswerKey } from './lessonSlides.ts';
 import { isSectionIconName } from './deckIcons.ts';
 import { usableChartVisual } from './deckVisuals.ts';
@@ -117,9 +117,15 @@ function inferLayout(slide: ActivitySlide, index: number): InferredLayout | unde
   return undefined;
 }
 
+const STRUCTURE_LAYOUTS = new Set<NonNullable<ActivitySlide['layout']>>(['timeline', 'stats', 'table', 'flow', 'quote']);
+
+/** A refused layout's words come back as a list; past this it is a wall of text, so the rest is cut. */
+const MAX_FALLBACK_LINES = 6;
+
 /**
- * The two structural fields a model may add to a slide — `icon` and a chart
- * `visual` — reduced to what a renderer can draw.
+ * The structure a model may add to a slide — an `icon`, a chart `visual`, and
+ * the four structure layouts (timeline, stats, table, flow) — reduced to what a
+ * renderer can draw.
  *
  * The server strips the same things, and this runs again because a deck reaches
  * the screen from places the server never saw (a saved copy, an older build's
@@ -134,6 +140,32 @@ function inferLayout(slide: ActivitySlide, index: number): InferredLayout | unde
  */
 function cleanStructure(slide: ActivitySlide): ActivitySlide {
   let next = slide;
+  // The four structure layouts (timeline, stats, table, flow) carry their words in
+  // a payload of their own, so a refusal must not leave the slide empty. The slide
+  // keeps its one-sentence `content` and gains the payload as bullet lines: the
+  // teacher sees what the model wrote as an ordinary list, not nothing. Refused
+  // means: the data failed `resolveSlideLayout`, or the slide is not a prose slide
+  // — a layout on a question or a challenge would hide its options or its answer.
+  if (next.layout && STRUCTURE_LAYOUTS.has(next.layout)) {
+    if (!PROSE_TYPES.has(next.type) || !resolveSlideLayout(next)) {
+      const { layout: _l, timeline: _t, stats: _s, table: _b, flow: _f, quote: _q, ...rest } = next;
+      const lines = payloadLines(next).slice(0, MAX_FALLBACK_LINES).map(l => `• ${l}`);
+      next = { ...rest, content: [(rest.content ?? '').trim(), ...lines].filter(Boolean).join('\n') };
+    }
+  }
+  // `photo` has no payload to fall back on: its picture arrives AFTER this step
+  // (promptSlidesMedia fetches it from `mediaPrompt`), so it cannot be judged
+  // with `resolveSlideLayout` yet. What can be judged now is whether a picture
+  // is coming at all and whether the slide is the kind a photo may take over —
+  // otherwise the layout is dropped and the slide stays as written.
+  if (next.layout === 'photo') {
+    const body = (next.content ?? '').split('\n').map(l => l.trim()).filter(Boolean);
+    const pictureComing = !!next.sideImageUrl || !!next.mediaPrompt?.trim();
+    if (!PROSE_TYPES.has(next.type) || !pictureComing || body.length > 1 || (body[0] ?? '').length > MAX_STATEMENT_CHARS) {
+      const { layout: _l, ...rest } = next;
+      next = rest;
+    }
+  }
   if (next.icon !== undefined && !isSectionIconName(next.icon)) {
     const { icon: _drop, ...rest } = next;
     next = rest;

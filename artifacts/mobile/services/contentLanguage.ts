@@ -18,6 +18,16 @@ export function contentLang(subjectId: string | null | undefined, uiLang: Lang):
   return subjectId === 'english' ? 'en' : uiLang;
 }
 
+/** A read-aloud question belongs in a language subject only, not in Maths or Science. */
+export function showsReadAloud(subjectId: string | null | undefined): boolean {
+  return subjectId === 'arabic' || subjectId === 'english';
+}
+
+/** إملاء draws on the Arabic spelling bank, so only Arabic offers it. */
+export function showsDictation(subjectId: string | null | undefined): boolean {
+  return subjectId === 'arabic';
+}
+
 /**
  * What a unit is called on screen. An English unit goes by the book's English
  * title in either UI — the pupil's book prints «My School Bag», not

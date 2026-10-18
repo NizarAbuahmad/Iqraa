@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import {
+  AccessibilityInfo,
   Animated,
   Linking,
   Platform,
@@ -10,6 +11,8 @@ import {
   Text,
   useWindowDimensions,
   View,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,7 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import {
-  DEFAULT_DECK_THEME, resolveDeckTheme, slideTypeAccent, TIMER_AMBER, TIMER_GREEN, type DeckTheme,
+  DECK_DISPLAY_TYPE as D, DEFAULT_DECK_THEME, resolveDeckTheme, slideTypeAccent, TIMER_AMBER, TIMER_GREEN, type DeckTheme,
 } from '@/services/deckTheme';
 import { NATIVE_DRIVER } from '@/constants/animation';
 import { useLanguage } from '@/context/LanguageContext';
@@ -35,7 +38,7 @@ import { chartGeometry, plotGeometry, seriesColor, visualForSlide } from '@/serv
 // Shared with both exports so the projected slide and the exported one cannot
 // disagree about what a bullet, an equation or a section glyph is.
 import { answerLines, isBulletLine, looksLikeEquation, splitEmoji, stripBullet, workingSteps } from '@/services/deckText';
-import { resolveSlideLayout } from '@/services/slideLayout';
+import { asPhotoHero, resolveSlideLayout } from '@/services/slideLayout';
 import { openGeogebraWithCommands } from '@/services/geogebra';
 import { youtubeEmbedUrl } from '@/services/classMedia';
 import {
@@ -641,6 +644,249 @@ function WorkingAnswer({ answer, isRTL }: { answer: string; isRTL: boolean }) {
   );
 }
 
+
+// ─── Structure layouts (services/slideLayout.ts) ─────────────────────────────
+// Each takes the already-resolved, already-validated data from `resolveSlideLayout`
+// and only draws it. Direction is `row-reverse` here and nowhere in the printed
+// exports: React Native has no document direction to inherit.
+
+/** Events along a line — across on a wide screen, down the reading edge on a phone. */
+function TimelineView({ events, accent, isRTL }: {
+  events: { label: string; text: string }[];
+  accent: string;
+  isRTL: boolean;
+}) {
+  const T = useContext(ThemeContext);
+  const { slideStyles } = sheetsFor(T);
+  const { width } = useWindowDimensions();
+  const align = isRTL ? ('right' as const) : ('left' as const);
+  const dir = isRTL ? ('rtl' as const) : ('ltr' as const);
+  const row = isRTL ? ('row-reverse' as const) : ('row' as const);
+
+  if (width >= 720) {
+    return (
+      <View style={{ flexDirection: row, alignSelf: 'stretch' }}>
+        {events.map((e, i) => (
+          <Reveal key={i} index={i} style={slideStyles.tlCol}>
+            <View style={{ flexDirection: row, alignItems: 'center' }}>
+              <View style={[slideStyles.tlDot, { borderColor: accent, backgroundColor: T.card }]} />
+              <View style={[slideStyles.tlLine, { backgroundColor: accent + '55', opacity: i === events.length - 1 ? 0 : 1 }]} />
+            </View>
+            <Text style={[slideStyles.tlLabel, { color: accent, textAlign: align, writingDirection: dir }]}>
+              {isolateForeignRuns(e.label)}
+            </Text>
+            <Text style={[slideStyles.tlText, { textAlign: align, writingDirection: dir }]}>
+              {isolateForeignRuns(e.text)}
+            </Text>
+          </Reveal>
+        ))}
+      </View>
+    );
+  }
+  return (
+    <View style={{ alignSelf: 'stretch' }}>
+      {events.map((e, i) => (
+        <Reveal key={i} index={i} style={{ flexDirection: row, gap: 16 }}>
+          <View style={{ alignItems: 'center', width: 24 }}>
+            <View style={[slideStyles.tlDot, { borderColor: accent, backgroundColor: T.card }]} />
+            <View style={[slideStyles.tlVLine, { backgroundColor: accent + '55', opacity: i === events.length - 1 ? 0 : 1 }]} />
+          </View>
+          <View style={{ flex: 1, paddingBottom: 16 }}>
+            <Text style={[slideStyles.tlLabel, { color: accent, textAlign: align, writingDirection: dir }]}>
+              {isolateForeignRuns(e.label)}
+            </Text>
+            <Text style={[slideStyles.tlText, { textAlign: align, writingDirection: dir }]}>
+              {isolateForeignRuns(e.text)}
+            </Text>
+          </View>
+        </Reveal>
+      ))}
+    </View>
+  );
+}
+
+/** Two to four figures side by side, each a card. */
+function StatsRowView({ items, accent, isRTL }: {
+  items: { value: string; label: string }[];
+  accent: string;
+  isRTL: boolean;
+}) {
+  const T = useContext(ThemeContext);
+  const { slideStyles } = sheetsFor(T);
+  return (
+    <View style={[slideStyles.statsRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+      {items.map((it, i) => (
+        <Reveal key={i} index={i} style={slideStyles.statsCard}>
+          <Text style={[slideStyles.statsValue, { color: accent }]}>{isolateForeignRuns(it.value)}</Text>
+          <Text style={slideStyles.statsLabel}>{isolateForeignRuns(it.label)}</Text>
+        </Reveal>
+      ))}
+    </View>
+  );
+}
+
+/**
+ * An item that fades in and rises a few pixels, each `index` a beat after the one
+ * before — the bullets, cards and boxes of a slide arriving one at a time, which
+ * is how a teacher speaks to them, instead of the whole slide appearing at once.
+ *
+ * It plays on mount, so the slide must be re-mounted per slide (the dispatch keys
+ * it by slide index). Skipped entirely when the device asks for reduced motion,
+ * and capped at eight beats so a long list is not still arriving a second later.
+ * Native-driven (opacity and transform only), so it costs the JS thread nothing.
+ */
+function Reveal({ index, style, children }: { index: number; style?: StyleProp<ViewStyle>; children?: React.ReactNode }) {
+  const progress = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    let cancelled = false;
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then(reduce => {
+        if (cancelled) return;
+        if (reduce) { progress.setValue(1); return; }
+        Animated.timing(progress, {
+          toValue: 1, duration: 320, delay: 120 + Math.min(index, 8) * 90, useNativeDriver: NATIVE_DRIVER,
+        }).start();
+      })
+      // If the setting cannot be read, show the item rather than leave it invisible.
+      .catch(() => progress.setValue(1));
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return (
+    <Animated.View
+      style={[style, { opacity: progress, transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }] }]}
+    >
+      {children}
+    </Animated.View>
+  );
+}
+
+/**
+ * The heading of a slide drawn in one of the structure layouts: the same icon
+ * chip and title the ordinary slide has. These branches used to draw a bare
+ * title, so the icon the model (or the deck builder) chose showed in the PDF and
+ * never in the presenter.
+ */
+function LayoutHeading({ heading, icon, accent, isRTL }: {
+  heading: string;
+  icon: DeckIconName | null;
+  accent: string;
+  isRTL: boolean;
+}) {
+  const T = useContext(ThemeContext);
+  const { slideStyles } = sheetsFor(T);
+  return (
+    <View style={[slideStyles.headRow, { flexDirection: isRTL ? 'row-reverse' : 'row', marginBottom: 16 }]}>
+      {icon ? (
+        <View style={[slideStyles.glyphChip, { backgroundColor: accent + '18', borderColor: accent + '33' }]}>
+          <DeckIcon name={icon} color={accent} size={24} />
+        </View>
+      ) : null}
+      <Text
+        style={[
+          slideStyles.title,
+          { color: accent, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr', fontFamily: 'ReadexPro_700Bold' },
+        ]}
+      >
+        {isolateForeignRuns(heading)}
+      </Text>
+    </View>
+  );
+}
+
+/** Short key terms as large cards that fill the slide, two or three to a row. */
+function ConceptsView({ items, accent, isRTL }: {
+  items: string[];
+  accent: string;
+  isRTL: boolean;
+}) {
+  const T = useContext(ThemeContext);
+  const { slideStyles } = sheetsFor(T);
+  return (
+    <View style={[slideStyles.conceptsGrid, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+      {items.map((it, i) => (
+        <Reveal key={i} index={i} style={slideStyles.conceptCard}>
+          <View style={[slideStyles.conceptBar, { backgroundColor: accent }]} />
+          <Text style={[slideStyles.conceptText, { writingDirection: isRTL ? 'rtl' : 'ltr' }]}>{isolateForeignRuns(it)}</Text>
+        </Reveal>
+      ))}
+    </View>
+  );
+}
+
+/** A grid: accent header row, banded body, first column on the reading edge. */
+function TableView({ headers, rows, accent, isRTL }: {
+  headers: string[];
+  rows: string[][];
+  accent: string;
+  isRTL: boolean;
+}) {
+  const T = useContext(ThemeContext);
+  const { slideStyles } = sheetsFor(T);
+  const align = isRTL ? ('right' as const) : ('left' as const);
+  const dir = isRTL ? ('rtl' as const) : ('ltr' as const);
+  const row = isRTL ? ('row-reverse' as const) : ('row' as const);
+  return (
+    <View style={slideStyles.tableWrap}>
+      <View style={[slideStyles.tableRow, { flexDirection: row, backgroundColor: accent }]}>
+        {headers.map((h, c) => (
+          <Text key={c} style={[slideStyles.tableHead, { textAlign: align, writingDirection: dir }]}>
+            {isolateForeignRuns(h)}
+          </Text>
+        ))}
+      </View>
+      {rows.map((cells, r) => (
+        <View
+          key={r}
+          style={[slideStyles.tableRow, { flexDirection: row, backgroundColor: r % 2 === 0 ? T.card : 'transparent' }]}
+        >
+          {cells.map((cell, c) => (
+            <Text key={c} style={[slideStyles.tableCell, { textAlign: align, writingDirection: dir }]}>
+              {isolateForeignRuns(cell)}
+            </Text>
+          ))}
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/** Boxes and arrows; a cycle says so under the last box instead of drawing a curve that would collide. */
+function FlowView({ nodes, cycle, accent, isRTL, loopLabel }: {
+  nodes: string[];
+  cycle: boolean;
+  accent: string;
+  isRTL: boolean;
+  loopLabel: string;
+}) {
+  const T = useContext(ThemeContext);
+  const { slideStyles } = sheetsFor(T);
+  const dir = isRTL ? ('rtl' as const) : ('ltr' as const);
+  return (
+    <View style={{ alignSelf: 'stretch' }}>
+      <View style={[slideStyles.flowRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+        {nodes.map((n, i) => (
+          <React.Fragment key={i}>
+            <Reveal index={i} style={[slideStyles.flowNode, { borderColor: accent }]}>
+              <Text style={[slideStyles.flowText, { writingDirection: dir }]}>{isolateForeignRuns(n)}</Text>
+            </Reveal>
+            {i < nodes.length - 1 && (
+              <Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={28} color={accent} />
+            )}
+          </React.Fragment>
+        ))}
+      </View>
+      {cycle && (
+        <View style={[slideStyles.flowLoop, { borderColor: accent, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <Ionicons name="refresh" size={20} color={accent} />
+          <Text style={[slideStyles.flowLoopText, { color: accent, writingDirection: dir }]}>{loopLabel}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+
 /**
  * `isRTL` is the slide's own direction (`slideIsRTL`, computed once by the
  * screen), not the app's — an English-subject check reads left-to-right even
@@ -680,7 +926,8 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
   // either no layout was asked for or its data was too thin to draw, and both
   // fall through to the ordinary heading-plus-body grid below.
   const layout = resolveSlideLayout(slide);
-  if (layout) {
+  // `photo` never gets here: the dispatch hands it to HeroSlideView.
+  if (layout && layout.kind !== 'photo') {
     return (
       <View style={slideStyles.cover}>
         {layout.kind === 'statement' && (
@@ -716,13 +963,11 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
 
         {layout.kind === 'compare' && (
           <>
-            <Text style={[slideStyles.title, { color: accent, textAlign: align, writingDirection: dir, marginBottom: 18 }]}>
-              {isolateForeignRuns(heading)}
-            </Text>
+            <LayoutHeading heading={heading} icon={headIcon} accent={accent} isRTL={isRTL} />
             <View style={[slideStyles.compareRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               {([[layout.leftTitle, layout.left], [layout.rightTitle, layout.right]] as const).map(
                 ([colTitle, items], col) => (
-                  <View key={col} style={[slideStyles.compareCol, { borderColor: col === 0 ? accent : T.border }]}>
+                  <Reveal key={col} index={col} style={[slideStyles.compareCol, { borderColor: col === 0 ? accent : T.border }]}>
                     <Text style={[slideStyles.compareHead, {
                       color: col === 0 ? accent : T.muted, textAlign: align, writingDirection: dir,
                     }]}>
@@ -736,7 +981,7 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
                         {isolateForeignRuns(item)}
                       </Text>
                     ))}
-                  </View>
+                  </Reveal>
                 ),
               )}
             </View>
@@ -745,13 +990,12 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
 
         {layout.kind === 'steps' && (
           <>
-            <Text style={[slideStyles.title, { color: accent, textAlign: align, writingDirection: dir, marginBottom: 18 }]}>
-              {isolateForeignRuns(heading)}
-            </Text>
+            <LayoutHeading heading={heading} icon={headIcon} accent={accent} isRTL={isRTL} />
             <View style={{ gap: 14, alignSelf: 'stretch' }}>
               {layout.steps.map((step, i) => (
-                <View
+                <Reveal
                   key={i}
+                  index={i}
                   style={[slideStyles.stepRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
                 >
                   <View style={[slideStyles.stepNum, { backgroundColor: accent }]}>
@@ -760,9 +1004,69 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
                   <Text style={[slideStyles.stepText, { textAlign: align, writingDirection: dir }]}>
                     {isolateForeignRuns(step)}
                   </Text>
-                </View>
+                </Reveal>
               ))}
             </View>
+          </>
+        )}
+
+        {layout.kind === 'timeline' && (
+          <>
+            <LayoutHeading heading={heading} icon={headIcon} accent={accent} isRTL={isRTL} />
+            <TimelineView events={layout.events} accent={accent} isRTL={isRTL} />
+          </>
+        )}
+
+        {layout.kind === 'stats' && (
+          <>
+            <LayoutHeading heading={heading} icon={headIcon} accent={accent} isRTL={isRTL} />
+            <StatsRowView items={layout.items} accent={accent} isRTL={isRTL} />
+          </>
+        )}
+
+        {layout.kind === 'table' && (
+          <>
+            <LayoutHeading heading={heading} icon={headIcon} accent={accent} isRTL={isRTL} />
+            <TableView headers={layout.headers} rows={layout.rows} accent={accent} isRTL={isRTL} />
+          </>
+        )}
+
+        {layout.kind === 'flow' && (
+          <>
+            <LayoutHeading heading={heading} icon={headIcon} accent={accent} isRTL={isRTL} />
+            <FlowView
+              nodes={layout.nodes}
+              cycle={layout.cycle}
+              accent={accent}
+              isRTL={isRTL}
+              loopLabel={t('deckFlowLoop')}
+            />
+          </>
+        )}
+
+        {layout.kind === 'concepts' && (
+          <>
+            <LayoutHeading heading={heading} icon={headIcon} accent={accent} isRTL={isRTL} />
+            <ConceptsView items={layout.items} accent={accent} isRTL={isRTL} />
+          </>
+        )}
+
+        {layout.kind === 'quote' && (
+          <>
+            <Text style={[slideStyles.quoteMark, { color: accent, textAlign: align }]}>{'“'}</Text>
+            <Text style={[slideStyles.quoteText, { textAlign: align, writingDirection: dir }]}>
+              {isolateForeignRuns(layout.text)}
+            </Text>
+            {layout.by ? (
+              <Text style={[slideStyles.quoteBy, { color: accent, textAlign: align, writingDirection: dir }]}>
+                {isolateForeignRuns(`— ${layout.by}`)}
+              </Text>
+            ) : null}
+            {heading ? (
+              <Text style={[slideStyles.coverSub, { textAlign: align, writingDirection: dir }]}>
+                {isolateForeignRuns(heading)}
+              </Text>
+            ) : null}
           </>
         )}
       </View>
@@ -840,7 +1144,7 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
 
           if (isBullet) {
             return (
-              <View key={i} style={[slideStyles.card, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <Reveal key={i} index={i} style={[slideStyles.card, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <View style={[slideStyles.cardBar, { backgroundColor: accent }]} />
                 <Text
                   style={[
@@ -850,7 +1154,7 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
                 >
                   {bindOperators(isolateForeignRuns(text))}
                 </Text>
-              </View>
+              </Reveal>
             );
           }
 
@@ -1275,6 +1579,9 @@ export default function PresentationScreen() {
   const slide = activity.slides[slideIndex];
   const totalSlides = activity.slides.length;
   const isFirst = slideIndex === 0;
+  // A `photo` slide is drawn by the cover/section-break component, which already
+  // carries the photo's credit line.
+  const photoHero = asPhotoHero(slide);
   const isLast = slideIndex === totalSlides - 1;
   const hasTimer = timerTotal > 0;
   const timerPct = calcTimerPct(timerSec, timerTotal);
@@ -1383,7 +1690,9 @@ export default function PresentationScreen() {
         >
           {slide.type === 'divider' || (isFirst && slide.mediaUrl)
             ? <HeroSlideView slide={slide} accent={slideTypeAccent(slide.type, T)} />
-            : <SlideView slide={slide} isRTL={slideRTL} onZoomSide={setSideZoom} />}
+            : photoHero
+              ? <HeroSlideView slide={photoHero} accent={slideTypeAccent(slide.type, T)} />
+              : <SlideView key={slideIndex} slide={slide} isRTL={slideRTL} onZoomSide={setSideZoom} />}
           <ImageViewerModal
             url={sideZoom}
             onClose={() => setSideZoom(null)}
@@ -1827,6 +2136,42 @@ const makeSlideStyles = (T: DeckTheme) => StyleSheet.create({
   stepNum: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   stepNumText: { fontSize: 22, color: '#fff', fontFamily: 'ReadexPro_700Bold' },
   stepText: { flex: 1, fontSize: 22, lineHeight: 36, color: T.text, fontFamily: 'Almarai_400Regular' },
+  // Structure layouts. Sizes come from DECK_DISPLAY_TYPE — projector type, not UI type.
+  tlCol: { flex: 1, gap: 8 },
+  tlDot: { width: 24, height: 24, borderRadius: 12, borderWidth: 5, marginHorizontal: 8 },
+  tlLine: { flex: 1, height: 4, borderRadius: 4 },
+  tlVLine: { flex: 1, width: 4, minHeight: 24, borderRadius: 4 },
+  tlLabel: { fontSize: D.timelineLabel, lineHeight: 34, marginHorizontal: 8, fontFamily: 'ReadexPro_700Bold' },
+  tlText: { fontSize: D.timelineText, lineHeight: 30, marginHorizontal: 8, color: T.text, fontFamily: 'Almarai_400Regular' },
+  statsRow: { gap: 16, alignSelf: 'stretch', flexWrap: 'wrap' },
+  statsCard: {
+    flexGrow: 1, flexBasis: 150, alignItems: 'center', gap: 8, padding: 20,
+    backgroundColor: T.card, borderRadius: 24, borderWidth: 1, borderColor: T.border,
+  },
+  statsValue: { fontSize: D.statsValue, lineHeight: 72, fontFamily: 'ReadexPro_700Bold', textAlign: 'center' },
+  statsLabel: { fontSize: D.statsLabel, lineHeight: 28, color: T.text, textAlign: 'center', fontFamily: 'Almarai_400Regular' },
+  conceptsGrid: { gap: 16, alignSelf: 'stretch', flexWrap: 'wrap' },
+  conceptCard: {
+    flexGrow: 1, flexBasis: 240, minHeight: 160, justifyContent: 'center', gap: 12, padding: 24,
+    backgroundColor: T.card, borderRadius: 24, borderWidth: 1, borderColor: T.border,
+  },
+  conceptBar: { width: 40, height: 4, borderRadius: 4 },
+  conceptText: { fontSize: D.conceptText, lineHeight: 44, color: T.text, fontFamily: 'ReadexPro_600SemiBold' },
+  tableWrap: { alignSelf: 'stretch', borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: T.border },
+  tableRow: { alignItems: 'stretch' },
+  tableHead: { flex: 1, padding: 12, fontSize: D.tableHead, lineHeight: 28, color: '#FFFFFF', fontFamily: 'ReadexPro_700Bold' },
+  tableCell: { flex: 1, padding: 12, fontSize: D.tableCell, lineHeight: 28, color: T.text, fontFamily: 'Almarai_400Regular' },
+  flowRow: { alignSelf: 'stretch', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 12 },
+  flowNode: {
+    minWidth: 110, maxWidth: 220, padding: 16, alignItems: 'center',
+    backgroundColor: T.card, borderRadius: 16, borderWidth: 2,
+  },
+  flowText: { fontSize: D.flowNode, lineHeight: 30, color: T.text, textAlign: 'center', fontFamily: 'ReadexPro_600SemiBold' },
+  flowLoop: { alignSelf: 'center', alignItems: 'center', gap: 8, marginTop: 20, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 999, borderWidth: 2 },
+  flowLoopText: { fontSize: D.flowLoop, fontFamily: 'ReadexPro_600SemiBold' },
+  quoteMark: { fontSize: D.quoteMark, lineHeight: D.quoteMark, fontFamily: 'ReadexPro_700Bold' },
+  quoteText: { fontSize: D.quoteText, lineHeight: 60, color: T.text, fontFamily: 'ReadexPro_600SemiBold' },
+  quoteBy: { fontSize: D.quoteBy, lineHeight: 36, marginTop: 24, fontFamily: 'ReadexPro_600SemiBold' },
   headRow: { alignItems: 'center', gap: 12 },
   glyphChip: { width: 44, height: 44, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   glyph: { fontSize: 21 },

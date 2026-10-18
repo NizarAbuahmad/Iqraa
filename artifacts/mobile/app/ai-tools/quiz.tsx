@@ -62,6 +62,7 @@ import { GeneratorResultActions, GeneratorSaveBar } from '@/components/ui/Genera
 import { buildQuizHTML, buildQuizSlidesHTML, formatQuizText } from '@/services/share';
 import { buildQuizDocx } from '@/services/quizDocx';
 import { ToolHeader } from '@/components/ui/ToolHeader';
+import { ExamKindSwitch } from '@/components/ui/ExamKindSwitch';
 import { palette } from '@/constants/colors';
 import { useWarmGrounding } from '@/hooks/useWarmGrounding';
 import { usePickedLesson } from '@/hooks/usePickedLesson';
@@ -594,6 +595,9 @@ export default function QuizScreen() {
 
       {/* Form */}
       <View style={{ padding: 20 }}>
+        <View style={{ marginBottom: 20 }}>
+          <ExamKindSwitch active="paper" />
+        </View>
         <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={setGradeIdx} hidden={teacherScope.gradeHidden} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t(teacherScope.strandedNoteKey(grades[gradeIdx].id, subjectIdx))} isRTL={isRTL} colors={colors} />
         <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} hidden={subjectHidden} />

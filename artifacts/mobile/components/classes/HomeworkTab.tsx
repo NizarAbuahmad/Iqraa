@@ -13,6 +13,11 @@
  * - Only PUBLISHED exams are offered. A homework already linked to an exam
  *   that is no longer offered (detached from the class, say) keeps its link
  *   visible as a row, so saving does not silently drop it.
+ * - Attachments are Library items, picked with the class shelf's own
+ *   `LibraryPickerSheet` and sent as the shelf's POST body, or the teacher's
+ *   own saved materials («من ملفاتي», `MaterialPickerSheet`), sent as an id the
+ *   server checks is theirs; a save resends the whole list. «انشره في محادثة الشعبة» leaves a line in the class chat — on
+ *   create through `shareToChat`, later from the edit modal.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -33,9 +38,13 @@ import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 import { KeyboardSafeView } from '@/components/ui/KeyboardSafeView';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { LibraryPickerSheet } from '@/components/classes/LibraryPickerSheet';
+import { MaterialPickerSheet } from '@/components/classes/MaterialPickerSheet';
+import type { SavedMaterial } from '@/services/workspace';
+import { addBodyFor } from '@/services/classResources';
+import type { ResourceItem } from '@/services/resourceCatalog';
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { confirm } from '@/services/confirm';
-import { toLatinDigits } from '@/services/latinDigits';
 import type { Evaluation } from '@/services/evaluations';
 import {
   ammanToday,
@@ -44,20 +53,28 @@ import {
   dueDatePresets,
   formatDueDate,
   homeworkDraftError,
+  maskYmd,
+  resourceBody,
+  resourceKey,
   type TeacherHomework,
 } from '@/services/homework';
-import { archiveHomework, createHomework, listClassHomework, updateHomework } from '@/services/homeworkApi';
+import { archiveHomework, createHomework, listClassHomework, shareHomework, updateHomework } from '@/services/homeworkApi';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
 const ACCENT_FILL = palette.hero;
 const TOUCH = 44;
 
-type Draft = { title: string; instructions: string; dueDate: string; evaluationId: string | null };
-const EMPTY_DRAFT: Draft = { title: '', instructions: '', dueDate: '', evaluationId: null };
+/** `key` is `resourceKey`: `<source>:<nativeId>` (the Library picker's own "already added" key) or `material:<id>`. */
+type DraftResource = { key: string; title: string; body: object };
+type Draft = { title: string; instructions: string; dueDate: string; evaluationId: string | null; resources: DraftResource[] };
+const EMPTY_DRAFT: Draft = { title: '', instructions: '', dueDate: '', evaluationId: null, resources: [] };
+/** The server's cap (RESOURCES_MAX in the API's homework rules). */
+const MAX_RESOURCES = 10;
 
 export function HomeworkTab({
   classId,
+  libraryGroup,
   exams,
   colors,
   isRTL,
@@ -65,6 +82,8 @@ export function HomeworkTab({
   t,
 }: {
   classId: string;
+  /** What the Library picker offers: the class's grade and subjects, as on the class shelf. */
+  libraryGroup: { gradeId: string; subjectIds: readonly string[] };
   exams: Evaluation[];
   colors: ReturnType<typeof useColors>;
   isRTL: boolean;
@@ -84,6 +103,10 @@ export function HomeworkTab({
   const [fieldError, setFieldError] = useState<'title' | 'dueDate' | null>(null);
   const [modalError, setModalError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [shareToChat, setShareToChat] = useState(true);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [materialPickerOpen, setMaterialPickerOpen] = useState(false);
+  const [notice, setNotice] = useState('');
 
   const load = useCallback(async () => {
     const seq = ++loadSeq.current;
@@ -120,8 +143,10 @@ export function HomeworkTab({
   const openCreate = () => {
     setEditing(null);
     setDraft(EMPTY_DRAFT);
+    setShareToChat(true);
     setFieldError(null);
     setModalError('');
+    setNotice('');
     setOpen(true);
   };
 
@@ -132,9 +157,11 @@ export function HomeworkTab({
       instructions: item.instructions,
       dueDate: item.dueDate,
       evaluationId: item.evaluationId,
+      resources: item.resources.map(r => ({ key: resourceKey(r), title: r.title, body: resourceBody(r) })),
     });
     setFieldError(null);
     setModalError('');
+    setNotice('');
     setOpen(true);
   };
 
@@ -148,6 +175,38 @@ export function HomeworkTab({
     if (next.title !== undefined && fieldError === 'title') setFieldError(null);
     if (next.dueDate !== undefined && fieldError === 'dueDate') setFieldError(null);
     setModalError('');
+  };
+
+  const onAddResource = (item: ResourceItem) => {
+    const title = lang === 'en' && item.titleEn ? item.titleEn : item.titleAr;
+    setDraft(d =>
+      d.resources.some(r => r.key === item.key) || d.resources.length >= MAX_RESOURCES
+        ? d
+        : { ...d, resources: [...d.resources, { key: item.key, title, body: addBodyFor(item, lang) }] },
+    );
+  };
+
+  const onAddMaterial = (m: SavedMaterial) => {
+    const key = `material:${m.id}`;
+    setDraft(d =>
+      d.resources.some(r => r.key === key) || d.resources.length >= MAX_RESOURCES
+        ? d
+        : { ...d, resources: [...d.resources, { key, title: m.title, body: { kind: 'material', materialId: m.id } }] },
+    );
+  };
+
+  const onShare = async () => {
+    if (!editing || saving) return;
+    setSaving(true);
+    setModalError('');
+    setNotice('');
+    try {
+      await shareHomework(editing.id);
+      setNotice(t('hwShared'));
+    } catch {
+      setModalError(t('hwShareFailed'));
+    }
+    setSaving(false);
   };
 
   const onSave = async () => {
@@ -169,6 +228,7 @@ export function HomeworkTab({
           instructions: draft.instructions.trim(),
           dueDate,
           evaluationId: draft.evaluationId,
+          resources: draft.resources.map(r => r.body),
         });
       } else {
         await createHomework({
@@ -177,6 +237,8 @@ export function HomeworkTab({
           instructions: draft.instructions.trim(),
           dueDate,
           ...(draft.evaluationId ? { evaluationId: draft.evaluationId } : {}),
+          ...(draft.resources.length > 0 ? { resources: draft.resources.map(r => r.body) } : {}),
+          shareToChat,
         });
       }
     } catch (e) {
@@ -313,6 +375,17 @@ export function HomeworkTab({
                       </Text>
                     </View>
                   ) : null}
+                  {item.resources.length > 0 ? (
+                    <View style={[styles.examLine, { flexDirection: rowDir }]}>
+                      <Ionicons name="attach-outline" size={14} color={colors.mutedForeground} />
+                      <Text
+                        numberOfLines={1}
+                        style={{ flex: 1, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}
+                      >
+                        {item.resources.map(r => r.title).join('، ')}
+                      </Text>
+                    </View>
+                  ) : null}
                   {item.trackableCount > 0 ? (
                     <>
                       <View style={[styles.track, { backgroundColor: colors.border, flexDirection: rowDir }]}>
@@ -376,8 +449,8 @@ export function HomeworkTab({
                   <Text style={labelStyle}>{t('hwFieldDue')}</Text>
                   <TextInput
                     value={draft.dueDate}
-                    // Arabic number pads emit ٠-٩; isValidYmd and the preset match want 0-9.
-                    onChangeText={v => patch({ dueDate: toLatinDigits(v) })}
+                    // Digits only in, YYYY-MM-DD out: the dashes are fixed, never typed.
+                    onChangeText={v => patch({ dueDate: maskYmd(v) })}
                     placeholder={t('hwDueFormat')}
                     placeholderTextColor={colors.mutedForeground}
                     maxLength={10}
@@ -459,6 +532,80 @@ export function HomeworkTab({
                   })}
                 </View>
 
+                <View style={{ gap: SPACE.xs }}>
+                  <Text style={labelStyle}>{t('hwFieldResources')}</Text>
+                  {draft.resources.map(r => (
+                    <View key={r.key} style={[styles.pick, { flexDirection: rowDir, borderColor: colors.border }]}>
+                      <Ionicons name="attach-outline" size={18} color={colors.mutedForeground} />
+                      <Text
+                        numberOfLines={1}
+                        style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.label, textAlign: align }}
+                      >
+                        {r.title}
+                      </Text>
+                      <Pressable
+                        onPress={() => patch({ resources: draft.resources.filter(x => x.key !== r.key) })}
+                        hitSlop={10}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${t('hwRemoveResource')}: ${r.title}`}
+                      >
+                        <Ionicons name="close" size={18} color={colors.mutedForeground} />
+                      </Pressable>
+                    </View>
+                  ))}
+                  {draft.resources.length < MAX_RESOURCES ? (
+                    <Pressable
+                      onPress={() => setPickerOpen(true)}
+                      accessibilityRole="button"
+                      style={[styles.pick, { flexDirection: rowDir, borderColor: ACCENT, borderStyle: 'dashed' }]}
+                    >
+                      <Ionicons name="library-outline" size={18} color={ACCENT} />
+                      <Text style={{ flex: 1, color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.label, textAlign: align }}>
+                        {t('hwAddResource')}
+                      </Text>
+                    </Pressable>
+                  ) : null}
+                  {draft.resources.length < MAX_RESOURCES ? (
+                    <Pressable
+                      onPress={() => setMaterialPickerOpen(true)}
+                      accessibilityRole="button"
+                      style={[styles.pick, { flexDirection: rowDir, borderColor: ACCENT, borderStyle: 'dashed' }]}
+                    >
+                      <Ionicons name="folder-open-outline" size={18} color={ACCENT} />
+                      <Text style={{ flex: 1, color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.label, textAlign: align }}>
+                        {t('hwAddMaterial')}
+                      </Text>
+                    </Pressable>
+                  ) : null}
+                  {draft.resources.some(r => r.key.startsWith('material:')) ? (
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
+                      {t('hwMaterialNote')}
+                    </Text>
+                  ) : null}
+                </View>
+
+                {editing ? null : (
+                  <Pressable
+                    onPress={() => setShareToChat(v => !v)}
+                    accessibilityRole="checkbox"
+                    aria-checked={shareToChat}
+                    style={[styles.pick, { flexDirection: rowDir, borderColor: colors.border }]}
+                  >
+                    <Ionicons
+                      name={shareToChat ? 'checkbox' : 'square-outline'}
+                      size={20}
+                      color={shareToChat ? ACCENT : colors.mutedForeground}
+                    />
+                    <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.label, textAlign: align }}>
+                      {t('hwShareToChat')}
+                    </Text>
+                  </Pressable>
+                )}
+
+                {notice ? (
+                  <Text style={{ color: ACCENT, fontFamily: 'Almarai_400Regular', fontSize: TYPE.body, textAlign: align }}>{notice}</Text>
+                ) : null}
+
                 {modalError ? (
                   <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: TYPE.body, lineHeight: 23, textAlign: align }}>
                     {modalError}
@@ -485,6 +632,18 @@ export function HomeworkTab({
 
                 {editing ? (
                   <Pressable
+                    onPress={() => void onShare()}
+                    disabled={saving}
+                    accessibilityRole="button"
+                    style={[styles.deleteBtn, { flexDirection: rowDir, gap: SPACE.xs, opacity: saving ? 0.5 : 1 }]}
+                  >
+                    <Ionicons name="chatbubbles-outline" size={18} color={ACCENT} />
+                    <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.label }}>{t('hwShareToChat')}</Text>
+                  </Pressable>
+                ) : null}
+
+                {editing ? (
+                  <Pressable
                     onPress={() => void onDelete()}
                     disabled={saving}
                     accessibilityRole="button"
@@ -498,6 +657,22 @@ export function HomeworkTab({
           </View>
         </KeyboardSafeView>
       </Modal>
+
+      {/* After the form's Modal, so it opens on top of it. */}
+      <LibraryPickerSheet
+        visible={open && pickerOpen}
+        group={libraryGroup}
+        added={new Set(draft.resources.map(r => r.key))}
+        busyKey={null}
+        onAdd={onAddResource}
+        onClose={() => setPickerOpen(false)}
+      />
+      <MaterialPickerSheet
+        visible={open && materialPickerOpen}
+        added={new Set(draft.resources.flatMap(r => (r.key.startsWith('material:') ? [r.key.slice('material:'.length)] : [])))}
+        onAdd={onAddMaterial}
+        onClose={() => setMaterialPickerOpen(false)}
+      />
     </>
   );
 }

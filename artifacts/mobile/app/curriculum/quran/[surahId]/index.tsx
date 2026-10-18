@@ -37,6 +37,7 @@ function QuranReader() {
   const audio = useQuranAudio();
   const align = isRTL ? 'right' : 'left';
   const digits = (s: string | number) => (lang === 'ar' ? toArabicDigits(String(s)) : String(s));
+  const [showSourceDetails, setShowSourceDetails] = React.useState(false);
 
   const surah = resolveSurahParam(surahId);
   if (!surah) {
@@ -180,21 +181,45 @@ function QuranReader() {
         <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align, marginTop: 4 }}>
           {t('quranSourceBody')}
         </Text>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align, marginTop: SPACE.sm }}>
+          {t('quranSourceRights')}
+        </Text>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align, marginTop: SPACE.sm }}>
+          {t('quranSourceChanges')}
+        </Text>
+        <View style={{ marginTop: 8, gap: SPACE.xs, alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
+          <Pressable onPress={() => void openExternal(QURAN_CORNER.source.url)} accessibilityRole="link">
+            <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
+              {t('quranSourceLink')} · github.com/quran-ws/quran-text
+            </Text>
+          </Pressable>
+          <Pressable onPress={() => void openExternal(QURAN_CORNER.source.licenseUrl)} accessibilityRole="link">
+            <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
+              {t('quranSourceLicenceLink')}
+            </Text>
+          </Pressable>
+        </View>
         <Pressable
-          onPress={() => void openExternal(QURAN_CORNER.source.url)}
-          accessibilityRole="link"
-          style={{ marginTop: 8, alignSelf: isRTL ? 'flex-end' : 'flex-start' }}
+          onPress={() => setShowSourceDetails(v => !v)}
+          accessibilityRole="button"
+          aria-expanded={showSourceDetails}
+          style={{ marginTop: SPACE.md, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 4, alignSelf: isRTL ? 'flex-end' : 'flex-start' }}
         >
-          <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
-            {t('quranSourceLink')} · github.com/quran-ws/quran-text
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption }}>
+            {t('quranSourceDetails')}
           </Text>
+          <Ionicons name={showSourceDetails ? 'chevron-up' : 'chevron-down'} size={14} color={colors.mutedForeground} />
         </Pressable>
-        <Text selectable style={{ color: colors.mutedForeground, fontSize: 11, marginTop: 8, textAlign: 'left', writingDirection: 'ltr' }}>
-          {QURAN_CORNER.notice}
-        </Text>
-        <Text selectable style={{ color: colors.mutedForeground, fontSize: 11, marginTop: SPACE.sm, textAlign: 'left', writingDirection: 'ltr' }}>
-          {`${QURAN_CORNER.source.version} · sha256 ${QURAN_CORNER.source.sha256.slice(0, 12)}`}
-        </Text>
+        {showSourceDetails ? (
+          <>
+            <Text selectable style={{ color: colors.mutedForeground, fontSize: 11, marginTop: 8, textAlign: 'left', writingDirection: 'ltr' }}>
+              {QURAN_CORNER.notice}
+            </Text>
+            <Text selectable style={{ color: colors.mutedForeground, fontSize: 11, marginTop: SPACE.sm, textAlign: 'left', writingDirection: 'ltr' }}>
+              {`${QURAN_CORNER.source.version} · sha256 ${QURAN_CORNER.source.sha256.slice(0, 12)}`}
+            </Text>
+          </>
+        ) : null}
       </View>
     </LabFrame>
   );

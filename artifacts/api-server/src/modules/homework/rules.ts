@@ -9,6 +9,8 @@
  */
 export const TITLE_MAX = 120;
 export const INSTRUCTIONS_MAX = 2000;
+/** Attached Library items per homework. */
+export const RESOURCES_MAX = 10;
 /** Families see homework due this many days ago or later; older work drops off. */
 export const FAMILY_WINDOW_DAYS = 14;
 export const FAMILY_LIMIT = 200;
@@ -45,10 +47,9 @@ export function homeworkState(input: { dueAt: Date; done: boolean; now: Date }):
   return input.now.getTime() > input.dueAt.getTime() ? "overdue" : "open";
 }
 
-/** How far back and ahead a teacher may set a due date, in Amman calendar days from today (inclusive). */
-export const DUE_PAST_DAYS = 30;
+/** How far ahead a teacher may set a due date, in Amman calendar days from today (inclusive). Never before today. */
 export const DUE_FUTURE_DAYS = 366;
-const DUE_RANGE_ERROR = `dueDate must be within the last ${DUE_PAST_DAYS} days and the next year`;
+const DUE_RANGE_ERROR = "dueDate must be today or later, and within the next year";
 
 /** `YYYY-MM-DD` plus `days` calendar days (negative goes back). Pure date arithmetic, no clock. */
 export function addDays(date: string, days: number): string {
@@ -58,14 +59,15 @@ export function addDays(date: string, days: number): string {
 
 /**
  * A due date is in range when, as an Amman calendar day, it falls between
- * today - 30 days and today + 366 days inclusive ("today" being the Amman date
- * of `now`). Judged on the day, not the instant, so it reads the way a teacher
- * counts. Only a cap against typos like 2062: it does not stop a deliberate
+ * today and today + 366 days inclusive ("today" being the Amman date of `now`).
+ * Judged on the day, not the instant, so it reads the way a teacher counts. A
+ * past day is refused (it was allowed up to 30 days back until 2026-10-17); the
+ * far end is only a cap against typos like 2062, not against a deliberate
  * far-off date inside the year.
  */
 function dueDateInRange(date: string, now: Date): boolean {
   const today = dueAtToDueDate(now);
-  return date >= addDays(today, -DUE_PAST_DAYS) && date <= addDays(today, DUE_FUTURE_DAYS);
+  return date >= today && date <= addDays(today, DUE_FUTURE_DAYS);
 }
 
 export function familyCutoff(now: Date): Date {
@@ -78,12 +80,15 @@ export interface CreateInput {
   instructions: string;
   dueAt: Date;
   evaluationId: string | null;
+  /** Raw items, each checked by the route (parseClassResourceInput needs @workspace/curriculum). */
+  resources: unknown[];
 }
 export interface PatchInput {
   title?: string;
   instructions?: string;
   dueAt?: Date;
   evaluationId?: string | null;
+  resources?: unknown[];
 }
 /** `code` is a machine-readable reason a client can branch on; absent for the ordinary field errors. */
 type Parsed<T> = { ok: true; value: T } | { ok: false; error: string; code?: string };
@@ -113,6 +118,12 @@ function parseEvaluationId(v: unknown): Parsed<string | null> {
   return isUuid(v) ? { ok: true, value: v } : { ok: false, error: "evaluationId must be an exam id or null" };
 }
 
+function parseResources(v: unknown): Parsed<unknown[]> {
+  if (!Array.isArray(v)) return { ok: false, error: "resources must be a list" };
+  if (v.length > RESOURCES_MAX) return { ok: false, error: `at most ${RESOURCES_MAX} resources` };
+  return { ok: true, value: v };
+}
+
 export function parseCreate(body: unknown, now: Date = new Date()): Parsed<CreateInput> {
   const b = record(body);
   if (!b) return { ok: false, error: "A JSON object is required" };
@@ -126,9 +137,18 @@ export function parseCreate(body: unknown, now: Date = new Date()): Parsed<Creat
   if (!dueDateInRange(b["dueDate"] as string, now)) return DUE_RANGE_FAIL;
   const evaluationId = b["evaluationId"] === undefined ? ({ ok: true, value: null } as const) : parseEvaluationId(b["evaluationId"]);
   if (!evaluationId.ok) return evaluationId;
+  const resources = parseResources(b["resources"] ?? []);
+  if (!resources.ok) return resources;
   return {
     ok: true,
-    value: { classGroupId: b["classGroupId"], title: title.value, instructions: instructions.value, dueAt, evaluationId: evaluationId.value },
+    value: {
+      classGroupId: b["classGroupId"],
+      title: title.value,
+      instructions: instructions.value,
+      dueAt,
+      evaluationId: evaluationId.value,
+      resources: resources.value,
+    },
   };
 }
 
@@ -137,8 +157,8 @@ export function parseCreate(body: unknown, now: Date = new Date()): Parsed<Creat
  * stored one (not the same instant: a row from SQL or an import may hold any
  * time of day) is not
  * re-bounded: the mobile edit form always resends the date, so bounding it
- * would make every edit of a homework due more than 30 days ago a 400 — a
- * teacher could not fix a typo in an old one. A CHANGED date is still bounded.
+ * would make every edit of a homework whose day has passed a 400 — a teacher
+ * could not fix a typo in an old one. A CHANGED date is still bounded.
  */
 export function parsePatch(body: unknown, now: Date = new Date(), existing?: { dueAt: Date }): Parsed<PatchInput> {
   const b = record(body);
@@ -165,6 +185,11 @@ export function parsePatch(body: unknown, now: Date = new Date(), existing?: { d
     const r = parseEvaluationId(b["evaluationId"]);
     if (!r.ok) return r;
     out.evaluationId = r.value;
+  }
+  if (b["resources"] !== undefined) {
+    const r = parseResources(b["resources"]);
+    if (!r.ok) return r;
+    out.resources = r.value;
   }
   if (Object.keys(out).length === 0) return { ok: false, error: "Nothing to change" };
   return { ok: true, value: out };

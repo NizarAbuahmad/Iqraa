@@ -17,6 +17,7 @@ import { DECK_THEMES, DECK_THEME_ORDER } from '../deckTheme.ts';
 import type { ActivitySlide, ClassroomActivity } from '../ai/AIService.ts';
 
 
+
 /**
  * Drop the U+2066/U+2069 directional isolates the exporter adds around Latin
  * and maths runs, so an assertion can talk about the text a reader sees
@@ -797,5 +798,133 @@ describe('buildDeckSlidesHTML — the icon a model chose', () => {
     ]), true));
     assert.match(html, /<div class="deck-plot"><svg/);
     assert.match(html, /50% سكن/);
+  });
+});
+
+describe('buildDeckSlidesHTML — the structure layouts', () => {
+  const lay = (over: Partial<ActivitySlide>): ActivitySlide => ({
+    slideNumber: 2, type: 'intro', title: 'عنوان', content: 'جملة', durationSeconds: 0, ...over,
+  });
+  const render = (s: ActivitySlide, isAr = true) => markup(buildDeckSlidesHTML(deck([titleSlide, s]), isAr));
+  const count = (html: string, re: RegExp) => (html.match(re) ?? []).length;
+
+  const timeline = lay({
+    layout: 'timeline',
+    timeline: [
+      { label: '١٩٢١', text: 'الأول' }, { label: '١٩٤٦', text: 'الثاني' }, { label: '١٩٥٢', text: 'الثالث' },
+    ],
+  });
+
+  it('timeline: one item per event in order, a rail between them but not after the last', () => {
+    const html = render(timeline);
+    assert.equal(count(html, /class="deck-tl-item"/g), 3);
+    assert.equal(count(html, /class="deck-tl-line"/g), 2);
+    assert.ok(html.indexOf('١٩٢١') < html.indexOf('١٩٤٦') && html.indexOf('١٩٤٦') < html.indexOf('١٩٥٢'));
+    assert.match(html, /deck-body deck-timeline/);
+  });
+
+  it('stats: a card per figure, value and caption', () => {
+    const html = render(lay({ layout: 'stats', stats: [{ value: '٤٠٪', label: 'سكن' }, { value: '٣٠٪', label: 'طعام' }] }));
+    assert.equal(count(html, /class="deck-stats-card"/g), 2);
+    assert.match(html, /deck-stats-value"[^>]*>٤٠٪</);
+    assert.match(html, /deck-stats-label">طعام</);
+  });
+
+  it('table: a real table with a header cell per column and a cell per value', () => {
+    const html = render(lay({
+      layout: 'table', table: { headers: ['الدولة', 'العاصمة'], rows: [['الأردن', 'عمّان'], ['مصر', 'القاهرة']] },
+    }));
+    assert.equal(count(html, /<th /g), 2);
+    assert.equal(count(html, /<td>/g), 4);
+    assert.match(html, /<tbody><tr><td>الأردن<\/td><td>عمّان<\/td><\/tr>/);
+  });
+
+  it('flow: a node per stage and an arrow between each pair; the loop only when it cycles', () => {
+    const steps = ['تبخّر', 'تكاثف', 'هطول'];
+    const open = render(lay({ layout: 'flow', flow: { steps } }));
+    assert.equal(count(open, /class="deck-flow-node"/g), 3);
+    assert.equal(count(open, /class="deck-flow-arrow"/g), 2);
+    assert.doesNotMatch(open, /class="deck-flow-loop"/);
+    const loop = render(lay({ layout: 'flow', flow: { steps, cycle: true } }));
+    assert.match(loop, /class="deck-flow-loop"[^>]*>[\s\S]*ثم تتكرر الدورة/);
+    assert.match(render(lay({ layout: 'flow', flow: { steps, cycle: true } }), false), /then the cycle repeats/);
+  });
+
+  it('quote: the text in display type, attribution only when given, the title kept as a caption', () => {
+    const html = render(lay({ layout: 'quote', quote: { text: 'العلم نور', by: 'مثل عربي' } }));
+    assert.match(html, /deck-body deck-quote/);
+    assert.match(html, /class="deck-quote-text">العلم نور</);
+    assert.match(html, /class="deck-quote-by"[^>]*>— مثل عربي</);
+    assert.match(html, /class="deck-statement-sub">عنوان</);
+    assert.doesNotMatch(render(lay({ layout: 'quote', quote: { text: 'العلم نور' } })), /deck-quote-by/);
+  });
+
+  it('quote: the model’s text is escaped, never inserted as markup', () => {
+    const html = render(lay({ layout: 'quote', quote: { text: '<img src=x onerror=1>' } }));
+    assert.doesNotMatch(html, /<img src=x/);
+    assert.match(html, /&lt;img/);
+  });
+
+  it('photo: drawn as a section break over the picture, with its credit line', () => {
+    const html = render(lay({
+      layout: 'photo', content: 'جملة واحدة', title: 'الصحراء',
+      sideImageUrl: 'https://img.example/a.jpg', sideImageCaption: 'Photo by Jane on Unsplash',
+    }));
+    assert.match(html, /deck-divider-slide/);
+    assert.match(html, /class="deck-hero-img" src="https:\/\/img\.example\/a\.jpg"/);
+    assert.match(html, /deck-divider-title">الصحراء</);
+    assert.match(html, /deck-divider-subtitle">جملة واحدة</);
+    assert.match(html, /class="deck-hero-credit">[^<]*Photo by Jane/);
+    // the picture is the slide, not also a column beside text
+    assert.equal(count(html, /https:\/\/img\.example\/a\.jpg/g), 1);
+  });
+
+  it('photo with no picture falls back to the ordinary slide', () => {
+    const html = render(lay({ layout: 'photo', content: 'جملة واحدة' }));
+    assert.doesNotMatch(html, /deck-divider-slide|deck-hero-img/);
+    assert.match(html, /جملة واحدة/);
+  });
+
+  it('a long flow is marked dense so it stays on one row', () => {
+    const six = ['أ', 'ب', 'ج', 'د', 'هـ', 'و'];
+    assert.match(render(lay({ layout: 'flow', flow: { steps: six } })), /deck-flow deck-flow-dense/);
+    assert.doesNotMatch(render(lay({ layout: 'flow', flow: { steps: six.slice(0, 3) } })), /deck-flow-dense/);
+  });
+
+  it('mirrors the arrow in a right-to-left page, in CSS — the icon table has no direction', () => {
+    const html = buildDeckSlidesHTML(deck([titleSlide, lay({ layout: 'flow', flow: { steps: ['أ', 'ب', 'ج'] } })]), true);
+    assert.match(html, /html\[dir="rtl"\] \.deck-flow-arrow svg \{ transform:scaleX\(-1\)/);
+  });
+
+  it('never uses row-reverse for these — the document direction already orders them', () => {
+    const html = buildDeckSlidesHTML(deck([titleSlide, timeline]), true);
+    const css = html.slice(0, html.lastIndexOf('</style>'));
+    const from = css.indexOf('.deck-body.deck-timeline');
+    const block = css.slice(from, css.indexOf('.deck-flow-loop {', from));
+    assert.ok(block.includes('.deck-tl-row'), 'sliced the structure-layout rules');
+    assert.doesNotMatch(block, /row-reverse/);
+  });
+
+  it('escapes everything the model wrote', () => {
+    const html = render(lay({
+      layout: 'table', table: { headers: ['<b>x</b>', 'y'], rows: [['<script>1</script>', 'a&b'], ['c', 'd']] },
+    }));
+    assert.doesNotMatch(html, /<script>|<b>x/);
+    assert.match(html, /&lt;script&gt;1&lt;\/script&gt;/);
+    // The exporter puts bidi isolates around a Latin run, so «a&b» is not
+    // contiguous; what matters is that no bare ampersand survives.
+    assert.match(html, /&amp;/);
+    assert.doesNotMatch(html.slice(html.indexOf('<table')), /&(?!amp;|lt;|gt;|quot;)/);
+  });
+
+  it('a layout the gate refuses is drawn the ordinary way, with its own words — not blank', () => {
+    const html = render(lay({ layout: 'timeline', content: '• أول\n• ثانٍ', timeline: [{ label: 'س', text: 'ص' }] }));
+    assert.doesNotMatch(html, /deck-timeline/);
+    assert.match(html, /أول/);
+  });
+
+  it('the heading carries the slide icon, as on every other content slide', () => {
+    const html = render({ ...timeline, icon: 'clock' });
+    assert.match(html, /<span class="deck-emoji"><svg class="deck-icon"/);
   });
 });
