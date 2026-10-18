@@ -34,7 +34,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  AFTER_CLASS, ALL_TOOLS, BEFORE_CLASS, CHAT_MENU_TOOLS, CHAT_NATIVE_TOOLS, DURING_CLASS, WORKFLOW,
+  AFTER_CLASS, ALL_TOOLS, BEFORE_CLASS, CHAT_MENU_TOOLS, CHAT_NATIVE_TOOLS, DURING_CLASS, TAB_TOOLS, WORKFLOW,
 } from '../toolCatalog.ts';
 
 const OFFERED_TOOLS = [
@@ -98,6 +98,32 @@ describe('toolCatalog — the offered surface', () => {
       assert.equal(owner, undefined, `${tool.id} shares ${tool.route} with ${owner}`);
       byRoute.set(tool.route, tool.id);
     }
+  });
+});
+
+describe('toolCatalog — the Tools tab', () => {
+  // The quiz paper and the marked evaluation are two systems but one decision
+  // for a teacher («أريد اختبارًا»), so the tab draws one card and each screen
+  // carries a switch to the other (`examKind.ts`). Folding is tab-only: the
+  // evaluations tool stays in the catalog for home, search and help.
+  it('draws one card for quizzes and evaluations, opening on the paper', () => {
+    const ids = TAB_TOOLS.map(t => t.id);
+    assert.ok(ids.includes('quiz'));
+    assert.ok(!ids.includes('evaluations'));
+    assert.equal(TAB_TOOLS.find(t => t.id === 'quiz')!.route, '/ai-tools/quiz');
+  });
+
+  it('only folds the evaluations tool', () => {
+    // A second `tabHidden` would be a tool a teacher can no longer find on the
+    // tab; that wants a decision, not a drive-by flag.
+    assert.deepEqual(ALL_TOOLS.filter(t => t.tabHidden).map(t => t.id), ['evaluations']);
+  });
+
+  it('keeps the plain quiz name for chat', () => {
+    // Chat only ever makes the paper, so its "+" menu must not say «اختبارات وتقييمات».
+    const quiz = CHAT_MENU_TOOLS.find(t => t.id === 'quiz')!;
+    assert.equal(quiz.titleKey, 'toolQuizTitle');
+    assert.equal(quiz.tabTitleKey, 'toolExamsTitle');
   });
 });
 

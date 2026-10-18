@@ -1589,6 +1589,36 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## One card for quizzes and evaluations, 2026-10-18
+
+The Tools tab had «اختبار قصير» and «التقييمات» as neighbouring cards, which a
+teacher reads as two answers to one question («أريد اختبارًا»). They are still
+two systems — the quiz makes a paper and stores nothing, an evaluation has a
+roster, a share link, attempts and marks — so **the screens, routes, generators
+and API are untouched.** What changed is the door:
+
+- The tab draws **one card**, «اختبارات وتقييمات», opening `/ai-tools/quiz`.
+  `ToolDef.tabHidden` folds `evaluations` out of the tab only; chat's "+" menu,
+  the home screen, the command palette and help still list it, and chat keeps
+  the plain «اختبار قصير» (`tabTitleKey`/`tabDescKey` are tab-only overrides),
+  because chat only ever makes the paper. `TAB_TOOLS` is what the tab renders.
+- Both screens carry `ExamKindSwitch` — «ورقة للطباعة» | «تقييم يُرصد ويُصحَّح»
+  with a one-line hint under the active side, which is what stops the old
+  «أداة تقييم» mix-up coming back. The other side `replace`s, so back lands on
+  the Tools tab. `services/examKind.ts` names the two routes; `examKind.test.ts`
+  and `toolCatalog.test.ts` pin them.
+- `/my-exams` («اختباراتي») is the **student's** list, not the teacher's
+  evaluations list; the teacher's is `/evaluations`.
+
+Not done, deliberately: the two generators still assemble questions separately
+(counts, top-up, type order), so a new question type is still two edits.
+Merging that is a separate change.
+
+Verified in a browser, not asserted: a signed-up teacher on the built web app
+(local API + Postgres), phone and desktop widths, English and Arabic — one card
+on the tab, the switch both ways, RTL order correct, no page errors. The
+desktop grid is now a full 3×3 where ten cards left one alone on the last row.
+
 ## The parent letter stops saying things the teacher never typed, 2026-10-17
 
 A teacher's screenshot of `ai-tools/parent-message` prompted an audit: render the
@@ -2493,7 +2523,7 @@ both; `pnpm run typecheck` clean.
 
 ## Row-level security is built and switched off, 2026-10-13
 
-**State: off, and the migration has shipped.** PR #1048 merged on 2026-10-14 and `deploy.yml` ran migration `0008` in production (run 38492809309, green): the `iqraa_app` role, grants, and row-level security on 28 tables now exist. Behaviour is unchanged only if the API's connection is the table owner (there is no `FORCE`, so an owner bypasses RLS) — **that is still unverified: the role in Cloud Run's `DATABASE_URL` must own those tables**, and nobody has run the ownership check. Nothing is enforced until `RLS_ENFORCE=on`, and nobody has rehearsed that on Neon or measured its latency. The steps, as a tick-list: [`docs/rls-rollout-checklist.md`](./docs/rls-rollout-checklist.md).
+**State: off, and the migration has shipped.** PR #1048 merged on 2026-10-14 and `deploy.yml` ran migration `0008` in production (run 38492809309, green): the `iqraa_app` role, grants, and row-level security on 28 tables now exist. **Checked 2026-10-16:** the API's connection (the Secret Manager `DATABASE_URL`) is `neondb_owner` and it owns all tables in `public`, so it bypasses RLS (there is no `FORCE`) and the migration changed nothing for it. Nothing is enforced until `RLS_ENFORCE=on`, and nobody has yet rehearsed that on Neon (a separate empty project, pooled and direct endpoints) or measured its latency and connection count. The steps, as a tick-list: [`docs/rls-rollout-checklist.md`](./docs/rls-rollout-checklist.md).
 **Both connection strings must name that same owner role:** the migration runs under GitHub's `secrets.DATABASE_URL` (`deploy.yml`, the `production migrations` job), while the API runs under Cloud Run's `DATABASE_URL`. The fifteen `SECURITY DEFINER` helpers are owned by the *migrating* role, and bypass RLS only if that role also owns the tables — if the two secrets name different roles, the helpers read as a role that is subject to the policies.
 
 The `iqraa_app` role, sixteen helper functions and 65 policies exist (migration `0008_row_level_security.sql`); the API
@@ -3262,16 +3292,20 @@ place — see its section 2).
   "YYYY-MM-DD"`; the server stores `dueAt` as 23:59:59.999 **Asia/Amman** of that day
   (a fixed UTC+3 — Jordan dropped DST in 2022) and also returns it as ISO. Clients
   never do timezone arithmetic. A homework is `overdue` only once that instant has
-  passed and it is not done. A due date must lie within 30 days back and 366 days ahead
-  (Amman days), else 400 with `code: "due_date_out_of_range"` next to `error` (POST and
+  passed and it is not done. A due date must lie between today and 366 days ahead
+  (Amman days; **never in the past — it allowed 30 days back until 2026-10-17**), else 400 with `code: "due_date_out_of_range"` next to `error` (POST and
   PATCH) — a typo like 2062 is refused, and the mobile modal shows `hwErrDueRange`. **A PATCH
   that leaves the due date unchanged is not re-bounded** (`parsePatch(body, now, existing)`
   skips the range check when the parsed date falls on the same Amman calendar day as the
   stored `dueAt` — compared by day, not instant, so a row inserted by SQL or an import at some
   other time of day stays editable): the edit form always
-  resends `dueDate`, so without this any edit of a homework due more than 30 days ago was a
+  resends `dueDate`, so without this any edit of a homework whose day has passed is a
   400 and a teacher could not fix a typo in an old homework. A CHANGED date outside the
-  window is still refused.
+  window is still refused. **The exam date follows the same rule** (`resolveExamPatch`,
+  since 2026-10-17): a day before today (Amman) is a 400 `examDate must be today or later`
+  when it changes the stored date; re-sending the stored one, re-timing or clearing still
+  works, and `ExamDateCard` shows `examDatePast` first. Teaching-plan dates are NOT bounded
+  (a term plan starts in the past).
 - **A family sees the last 14 days and later**: `dueAt` within 14 days of now, and of
   those the **200 earliest-due** (`ORDER BY due_at ASC LIMIT 200` in
   `lib/familyHomeworkLoad.ts`). The limit is **per call, so per child for a parent**:
@@ -3847,8 +3881,8 @@ real family accounts — **none of it has been seen arriving on a phone.**
   setup step of the check, not of the card.
 - **Known gaps** (one line each, with the reason):
   - **Pushes for PAST-dated homework and exam dates are skipped by design** (a back-dated
-    entry is a record, not news; the API allows homework 30 days back). A cleared exam
-    date is always told.
+    entry is a record, not news). Since 2026-10-17 the API refuses a new past date, so
+    this only covers rows dated before that. A cleared exam date is always told.
   - Two simultaneous publishes of one dated draft can both announce (a conditional write
     inside the share-code retry loop would fix it; left out on purpose).
   - Two simultaneous PATCHes of one exam with DIFFERENT dates: the loser's value is
@@ -4221,6 +4255,45 @@ teacher account is free with a monthly limit on new material. «كيف أدعو 
 «students / طلابي / طلبتي» was enough for My classes, so «how do i make students
 listen» got the add-a-class steps; those words now count only in a where-question
 (`STUDENT_WORDS`). 21 look-alikes pinned.
+
+**An exam's own buttons, marks, printing, homework and one-to-one messages
+(2026-10-18, fifth live pass).** Deleting or adding a question and «كيف أغلق
+الامتحان؟» got only the path to Evaluations (or the make-an-exam line), «كيف أعدّل
+علامة طالب؟» was asked which subject, printing got the generic export steps, and
+announcing results, the smart board, a homework due date, homework completion
+and messaging one student went to the model. Each now has a `RULE_PLACES` entry
+with steps from its screen: question edits only while the exam is a draft (pencil
+/ bin per question, «أضِف سؤالًا من إعدادك»; fixed after «انشر التقييم»), «أغلق
+الاختبار», a mark changed from «لوحة النتائج» → the student → «العلامة», «أعلن
+النتائج للطلبة», the student copy from the export sheet, the smart board as «ابدأ
+الحصة الآن», editing a homework by tapping it, «أنجزه … من …» (a count of students
+with an account, never names), «رسالة جديدة» → «راسل» (linked accounts only), and
+the language steps (`faqA16`, where it used to get only the path to Settings).
+**One answer says it is not in the app**: an exam in Evaluations has no export,
+so printing one points at the short quiz. The exam-question rule needs a how / can-I
+word (`EN_HOW_LEAD` / `AR_HOW_LEAD`): said as intent, «اريد اضافة سؤال الى الاختبار»
+asks the assistant to write one and stays teaching. «كيف أرسل رسالة لولي أمر؟» still
+goes to the model by agreement. 14 look-alikes pinned.
+
+**Classes, students, parents and files (2026-10-18, sixth live pass).** Two answers
+were worse than none: «كيف أغير اسم الشعبة؟» got the make-a-new-class steps (now
+`NEW_ITEM_HOWS`: add-a-class / add-a-student steps never answer a change verb), and
+"how do i create a positive classroom" opened the interactive-class tool because the
+tool's id was a keyword (`ID_IS_A_WORD`; the tool is still found by «الحصة
+التفاعلية» / "interactive class"). New `RULE_PLACES`, steps from the screens: rename
+a class (pencil → «تعديل الشعبة»), remove a student (× on the «الطلبة» tab), link a
+parent (the per-student key → «أنشئ الرمز» / «شارك الرمز»), a new login code, how a
+student signs up and signs in («سجّلت برمز الربط؟ ادخل برمز حسابك»), a group message
+to parents («رسالة جماعية»), parents' messages, creating an exam, deleting a saved
+file (⋯ → «احذف»), editing a worksheet, the Ministry-form export (lesson-plan screen
+only), and an exam date «for the calendar» (the existing exam-date steps). **Three say
+the app cannot**: no moving a student between classes (a re-added name is a new
+record, marks and parent link stay behind), no hand-made support group (they are
+built from results under 60%), no event added on the calendar. Creating an exam needs
+a how-word and says «امتحان»/"exam": «اختبار» and "test" stay with the short-quiz
+steps (`howMakeQuiz`). Still answered as app questions, older and not fixed here: a
+how-question that names a tool and then a purpose («كيف أعدّل ورقة العمل لتناسب الطلاب
+الضعاف؟»). 7 look-alikes pinned.
 
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 

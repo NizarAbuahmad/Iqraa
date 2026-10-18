@@ -34,6 +34,15 @@ export interface ToolDef {
    * leave those still pointing teachers at parked tools.
    */
   hidden?: boolean;
+  /**
+   * Not its own card on the Tools tab (2026-10-18): it is reached through
+   * another tool's card. Every other surface (chat "+" menu, home, command
+   * palette, help) still lists it, so this is narrower than `hidden`.
+   */
+  tabHidden?: boolean;
+  /** What the Tools-tab card says when it differs from the tool's own name. */
+  tabTitleKey?: string;
+  tabDescKey?: string;
 }
 
 export type WorkflowSection = {
@@ -159,6 +168,11 @@ const AFTER_CLASS_ALL: ToolDef[] = [
     icon: 'checkmark-circle-outline',
     color: '#B54708',
     route: '/ai-tools/quiz',
+    // One card for «ورقة للطباعة» and «تقييم يُرصد»: the quiz screen opens on
+    // the paper and carries a switch to the evaluations list (see
+    // `ExamKindSwitch`). Chat keeps the plain name — it only ever makes the paper.
+    tabTitleKey: 'toolExamsTitle',
+    tabDescKey: 'toolExamsDesc',
   },
   {
     id: 'homework',
@@ -180,6 +194,7 @@ const AFTER_CLASS_ALL: ToolDef[] = [
     icon: 'clipboard-outline',
     color: '#64748B',
     route: '/evaluations',
+    tabHidden: true,
   },
   {
     id: 'parent-msg',
@@ -221,6 +236,9 @@ export const ALL_TOOLS: ToolDef[] = [
   ...DURING_CLASS,
   ...AFTER_CLASS,
 ];
+
+/** The cards the Tools tab draws: `ALL_TOOLS` less the ones folded into another card. */
+export const TAB_TOOLS: ToolDef[] = ALL_TOOLS.filter(t => !t.tabHidden);
 
 /**
  * The tools the chat can carry out itself: tapping one sends a prompt and the
