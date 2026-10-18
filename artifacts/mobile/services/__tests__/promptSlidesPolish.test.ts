@@ -312,6 +312,30 @@ describe('polishDeck — the structure layouts', () => {
     assert.equal(refused.content, 'محطات مهمة\n• ١٩٢١ — تأسيس الإمارة\n• ١٩٤٦ — الاستقلال');
   });
 
+  it('a quote is kept when it can be drawn, and refused into a line when it cannot', () => {
+    const good = polishDeck(deck([slide(), slide({ layout: 'quote', content: 'عبارة', quote: { text: 'العلم نور', by: 'مثل' } }), ...padding(4)]));
+    assert.equal(resolveSlideLayout(good.slides[1]!)?.kind, 'quote');
+    const bad = polishDeck(deck([slide(), slide({ layout: 'quote', content: 'عبارة', quote: { text: 'x'.repeat(201) } }), ...padding(4)])).slides[1]!;
+    assert.equal('layout' in bad, false);
+    assert.equal('quote' in bad, false);
+    assert.match(bad.content, /^عبارة\n• x{201}$/);
+  });
+
+  it('a photo is kept only when a picture is coming and the slide is prose with one sentence', () => {
+    // Long enough not to be dropped as a hollow slide once it loses its layout.
+    const sentence = 'كثبان رملية تمتد حتى الأفق في وادي رم';
+    const photo = (over: Partial<ActivitySlide>) => polishDeck(deck([slide(), slide({ layout: 'photo', content: sentence, ...over }), ...padding(4)])).slides[1]!;
+    assert.equal(photo({ mediaPrompt: 'desert dunes' }).layout, 'photo');
+    assert.equal(photo({ sideImageUrl: 'https://img/a.jpg' }).layout, 'photo');
+    // no picture can arrive, wrong kind of slide, a list instead of a sentence
+    // (a lone sentence may then be read as a plain statement, which is fine)
+    assert.notEqual(photo({}).layout, 'photo');
+    assert.notEqual(photo({ mediaPrompt: 'x', type: 'challenge' }).layout, 'photo');
+    assert.notEqual(photo({ mediaPrompt: 'x', content: '• أ\n• ب' }).layout, 'photo');
+    // and the slide's own words survive losing the layout
+    assert.equal(photo({}).content, sentence);
+  });
+
   it('a refused layout with no sentence still shows its words', () => {
     const out = polishDeck(deck([
       slide(),
