@@ -1607,8 +1607,10 @@ one dependency is `@workspace/math-practice`):
   `inPaperOrder`. The API (`paperOrder.ts`, `generationShape.ts`) and the app
   (`examBlocks.ts`, `quizPaper.ts`) now import them; their old exports remain as
   re-exports, so no other call site changed.
-- `MAX_WORDS_CHANGED`, `hasSentence` and `sameAsk`, read by `generationShape.ts`
-  (the quiz's repeats) and `validator.ts` (`dominantKind`).
+- `MAX_WORDS_CHANGED`, `hasSentence` and `sameAsk`. `generationShape.ts` (the
+  quiz's repeats) and `validator.ts` (`dominantKind`) both call `hasSentence`
+  and `sameAsk`; `sameAsk` applies `MAX_WORDS_CHANGED`, and neither file reads
+  the constant directly.
 
 Deliberately **not** moved: the two grouping algorithms and their quotas
 (`kindOf` in `generationShape.ts` replaces repeats past a third of the paper;
@@ -1619,10 +1621,16 @@ generators; a new question type is still more than one edit (see the bullet in
 `CLAUDE.md`), but the *order* is now one list.
 
 `paperOrder.test.ts` used to prove the two lists equal by regex-reading the
-mobile file. That test is replaced by a guard that fails if either side writes a
-second literal list again (`examBlocks.ts` and `quizPaper.ts` must import from
-`@workspace/exam-paper` and declare no list of their own; the same for
-`paperOrder.ts` and `generationShape.ts`).
+mobile file. That test is replaced by reference-equality asserts: all four
+exports (the API's `paperOrder.ts` `EXAM_TYPE_ORDER` and `generationShape.ts`
+`QUIZ_TYPE_ORDER`, the app's `examBlocks.ts` `EXAM_TYPE_ORDER` and
+`quizPaper.ts` `QUIZ_TYPE_ORDER`) must be the package's own arrays (`===`),
+asserted in `paperOrder.test.ts`, `examBlocks.test.ts` and
+`quizMinistryOrder.test.ts`. A source-text check stays on top: the two mobile
+files must import from `@workspace/exam-paper` and carry no list literal of
+their own, and the API's two modules declare none. A second list under another
+name is **not** caught; `ALL_Q_TYPES` in the quiz picker
+(`app/ai-tools/quiz.tsx`) is one, and it predates this change.
 
 How "no behaviour change" was checked, rather than asserted: a before/after
 digest of `quizRepeats` (per paper) and `dominantKind` over every lesson's

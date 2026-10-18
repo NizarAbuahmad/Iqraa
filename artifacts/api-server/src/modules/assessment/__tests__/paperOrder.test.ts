@@ -11,6 +11,9 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
+import * as pkg from "@workspace/exam-paper";
+
+import { QUIZ_TYPE_ORDER } from "../../../lib/generationShape.ts";
 import { EXAM_TYPE_ORDER, inPaperOrder } from "../paperOrder.ts";
 import { QUESTION_TYPES } from "../questionTypes.ts";
 
@@ -58,10 +61,20 @@ describe("EXAM_TYPE_ORDER", () => {
 });
 
 describe("the server and the app share one list, not two copies", () => {
-  // The list used to be copied into `examBlocks.ts` and kept equal by a regex
-  // over its source text. It now lives in `lib/exam-paper`, so the guard that
-  // matters is the opposite one: nobody puts a second literal back. Read as
-  // text because importing the mobile module would not load under node:test.
+  // The lists live in `lib/exam-paper`. The real guard for the API's two
+  // exports is identity: they are the package's own arrays, not equal copies.
+  // (The app's two exports get the same assertion in
+  // `mobile/services/__tests__/examBlocks.test.ts` and `quizMinistryOrder.test.ts`,
+  // which can import the mobile modules under node:test.)
+  it("the API's EXAM_TYPE_ORDER and QUIZ_TYPE_ORDER are the package's own arrays", () => {
+    assert.equal(EXAM_TYPE_ORDER, pkg.EXAM_TYPE_ORDER);
+    assert.equal(QUIZ_TYPE_ORDER, pkg.QUIZ_TYPE_ORDER);
+  });
+
+  // The source-text checks below add two things the identity asserts cannot:
+  // the two mobile files import from the package and carry no
+  // `EXAM_TYPE_ORDER` / `QUIZ_TYPE_ORDER` literal, and the API's own modules
+  // declare none either. A list under another name is not caught.
   const strip = (source: string) => source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
 
   it("examBlocks.ts and quizPaper.ts import their lists from lib/exam-paper", async () => {

@@ -281,15 +281,27 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   asserts the two match. `req.difficulty` used to be read by neither
   generator, and the quiz factories passed a literal `'medium'`, so an easy
   and a hard quiz drew the same bank slice.
-- **A quiz's question types and their order live in three places.** The live
-  prompt (`quizPromptAr/En` + `QUIZ_TYPE_ORDER` in `artifacts/api-server/src/lib/`),
-  the server backstop `normalizeQuiz` (`generationShape.ts` — drops unrequested
+- **A quiz's question types live in several places; their order in one.** The
+  order, `QUIZ_TYPE_ORDER`, comes from `lib/exam-paper` (shared with the app,
+  derived from `EXAM_TYPE_ORDER` and restricted to `QUIZ_TYPES`). The live
+  prompt (`quizPromptAr/En` in `artifacts/api-server/src/lib/prompts.ts`), the
+  server backstop `normalizeQuiz` (`generationShape.ts` — drops unrequested
   types, forces the صح/خطأ option pair, groups into ministry order before
   anything is pooled) and the offline `quizOnce` in `generators.ts`, which
-  builds the same blocks from `QUIZ_TYPE_ORDER` in `services/quizPaper.ts`.
+  builds the same blocks from `QUIZ_TYPE_ORDER` in `services/quizPaper.ts`,
+  all work from it.
   The exports print a «السؤال الأول: …» heading per block from `quizBlocks`.
-  A new quiz type needs an entry in all of them, and the type contract in the
-  prompt, or the model is never told what the type looks like.
+  A new quiz type needs, in one pass: an entry in `QUIZ_TYPES`
+  (`lib/exam-paper/src/index.ts`) and in `EXAM_TYPE_ORDER` if it is not there;
+  its type contract in `QUIZ_TYPE_CONTRACT_AR`/`_EN` (`prompts.ts`, which
+  `quizPromptAr/En` print), or the model is never told what the type looks
+  like; a mapping in `quizTypeOf` (`generationShape.ts`), or `normalizeQuiz`
+  drops it; `quizOnce` (`services/ai/generators.ts`); `QuizQuestion['type']`
+  (`services/ai/AIService.ts`); the picker's `QType` and `ALL_Q_TYPES`
+  (`app/ai-tools/quiz.tsx`); `quizTypeLabel` (`services/quizPaper.ts` — an
+  unmapped type silently prints as "Short Answer"); and `examBlockDirection`
+  (`services/examBlocks.ts` — an unmapped type gets the generic «أجب عن الأسئلة
+  الآتية» line).
   **The count is enforced too.** A model asked for 20 questions often returns
   10 in a perfectly valid reply, so the quiz route counts (`quizShortfall`),
   asks once more for only the missing ones (`quizTopUpBlock`, merged by
@@ -312,12 +324,12 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   of one type from `examBlocks` (`services/examBlocks.ts`). The type order is
   one list, `lib/exam-paper` (`EXAM_TYPE_ORDER`; the quiz's four types are
   `QUIZ_TYPES`, its order derived), imported by the API and the app.
-  `paperOrder.test.ts` fails if either side writes a second literal. The
-  prompts, `normalizeQuiz` and `quizOnce` are still three separate places that
-  must agree on *types*, and a new quiz type still needs an entry in
-  `QUIZ_TYPES`, the prompt's type contract and `quizOnce`; a new exam question
-  type needs a place in `EXAM_TYPE_ORDER` and a direction in
-  `examBlockDirection`.
+  `paperOrder.test.ts`, `examBlocks.test.ts` and `quizMinistryOrder.test.ts`
+  assert, by reference, that the API's and the app's `EXAM_TYPE_ORDER` /
+  `QUIZ_TYPE_ORDER` exports are the package's own arrays. A list under another
+  name is not caught: the quiz picker's `ALL_Q_TYPES` in `app/ai-tools/quiz.tsx`
+  is one, and it predates this change. A new exam question type needs a place
+  in `EXAM_TYPE_ORDER` and a direction in `examBlockDirection`.
 - **`additionalContext` is not teacher-pasted material — it is usually the
   curriculum.** Every `/ai-tools` screen fills it with `buildGeneratorContext()`
   output derived from the lesson, and the server appends its own book passages
