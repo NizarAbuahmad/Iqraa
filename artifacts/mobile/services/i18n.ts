@@ -2783,6 +2783,8 @@ const translations = {
     claimEmptyClassFor: (className: string) =>
       `لا توجد أسماء في شعبة «${className}» بعد. اطلب من المعلم إضافة أسماء الطلبة، ثم أعد المحاولة.`,
     claimLookupFailed: 'تعذّر التحقق من الرمز الآن. تأكد من اتصالك بالإنترنت وأعد المحاولة.',
+    claimExamCodeNotice: 'هذا رمز امتحان وليس رمز ربط. يمكنك فتح الامتحان مباشرة.',
+    claimExamCodeOpen: 'افتح الامتحان',
     teacherSetupTitle: 'ماذا تُدرّس؟',
     teacherSetupDesc: 'اختر الصفوف والمواد التي تُدرّسها لنُظهر لك المنهاج الخاص بها فقط. يمكنك تغيير هذا أو إضافة المزيد لاحقًا من حسابك.',
     teacherSetupGradesLabel: 'الصفوف',
@@ -5649,6 +5651,8 @@ const translations = {
     claimEmptyClassFor: (className: string) =>
       `"${className}" has no names on it yet. Ask the teacher to add the students, then try again.`,
     claimLookupFailed: 'Could not check this code right now. Check your connection and try again.',
+    claimExamCodeNotice: 'That is an exam code, not a link code. You can open the exam straight away.',
+    claimExamCodeOpen: 'Open the exam',
     teacherSetupTitle: 'What do you teach?',
     teacherSetupDesc: "Pick the grades and subjects you teach so we can show you their curriculum. You can change this or add more later from your account.",
     teacherSetupGradesLabel: 'Grades',
