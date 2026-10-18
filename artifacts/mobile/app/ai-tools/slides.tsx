@@ -563,6 +563,7 @@ export default function SlidesScreen() {
             ...(grounding.lesson.rulesEn ?? []),
           ].join(' \n ')),
           figureUri: bookFigureUri,
+          bookPages: true,
         });
         prelim = {
           ...base,
@@ -696,6 +697,7 @@ export default function SlidesScreen() {
           includePractice,
           // A unit's own pictures from the student book ride with its round.
           figureUri: bookFigureUri,
+          bookPages: true,
         })
         : buildLessonDeck(trimmed, isAr, {
         lesson: grounding.lesson,
@@ -708,6 +710,7 @@ export default function SlidesScreen() {
         checks,
         teaching,
         figureUri: bookFigureUri,
+          bookPages: true,
       });
       // The teacher's own resources go in before anything is shown, unlike
       // the searched media which arrives later — they are local, so there is
