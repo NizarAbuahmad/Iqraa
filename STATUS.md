@@ -4541,6 +4541,37 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
 - When the worksheet screen is opened with a lesson, its unit dropdown still
   shows the placeholder (the documented gap in `TopicSelector.tsx`). The topic
   itself is held.
+## Two more slide layouts: quote and photo, 2026-10-17
+
+- **`quote`** — a phrase, definition or rule set in large type with an opening mark
+  and an optional attribution (`quote: { text, by? }`, text up to 200 characters).
+  A present-but-unusable `by` refuses the whole quote: words cut loose from who
+  said them are a different claim.
+- **`photo`** — the picture fills the slide with the title and ONE sentence over
+  it. No payload of its own: the picture is `sideImageUrl`, the sentence is
+  `content`. All three renderers draw it with the code that already draws the
+  cover and the section break (`asPhotoHero` re-shapes the slide), so the photo's
+  credit line is drawn by the one place that has been checked for it.
+
+A photo needs a picture, and the picture arrives after the model's reply, so the
+gate returns `null` (ordinary slide, the sentence as a line of text) until
+`sideImageUrl` exists. `polishDeck` keeps the layout only when a picture is coming
+(`mediaPrompt` or a `sideImageUrl`) and the slide is a prose slide with one
+sentence; `promptSlidesMedia` now fetches for a `photo` slide even though it
+carries a `layout` (every other layout is skipped there, because a picture beside
+it would never be shown). The prompt allows `mediaPrompt` on `photo` only, one or
+two per deck.
+
+**Not built, on purpose:** a separate two-column layout. A picture beside text
+already exists (`sideImageUrl` on an ordinary slide) and `compare` is the
+two-column text one; a third would be the same shape under a new name.
+
+**Checked:** layout gate, polish, PDF, photo fetch and API prompt/shape suites;
+PPTX run through the real exporter (a photo slide has its image and credit; one
+without a picture is an ordinary slide); PDF rendered and looked at in Arabic and
+English. **Not checked:** the PPTX in PowerPoint, the presenter on a device, a
+live model choosing these layouts.
+
 ## Four new slide layouts: timeline, stats, table, flow, 2026-10-18
 
 A deck had four shapes (a statement, one figure, a two-column comparison, numbered
