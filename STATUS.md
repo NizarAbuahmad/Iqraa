@@ -4201,6 +4201,27 @@ Profile (`NOT_A_TIMETABLE`, and no bare «الحساب» keyword). Still teachin
 purpose: «كيف أصحح أوراق الطلاب؟» / «how do i grade the exams», which the model
 answers as marking advice. 18 look-alikes pinned.
 
+**Sharing an exam, and six things the app does not do (2026-10-18, fourth live
+pass).** Of 20 new questions on app.iqrra.com, 16 went to the model, which
+invented menus or refused («how do i upload a pdf», «هل التطبيق مجاني؟»); "how
+do i share an exam with my students" got the add-a-class steps and «كيف أصدّر
+العلامات إلى إكسل؟» the PDF/Word export steps. Each now has a `RULE_PLACES`
+entry (`services/appHelp.ts`) with steps from its screen: publishing an exam and
+its «رابط الطلبة» card, how a student opens `/take/CODE`, who handed in («لوحة
+النتائج» lists one paper per student who opened it), sending a worksheet («أرسل
+للصف كواجب رقمي» → a draft exam), notifications (Settings → «التنبيهات» on the
+phone app; none on web), and contacting support. **Six answers say it is not in
+the app**, each checked in the code: file upload (`DOCUMENT_UPLOAD_ENABLED` is
+off), a marks export (none), copying an exam to another class (an evaluation
+holds one class), inviting a teacher (no invite; a colleague signs up), a store
+listing (none yet; app.iqrra.com in the phone's browser), and a picture of your
+own on a question (only the lesson's book figures, «أرفق شكلًا»). Pricing says a
+teacher account is free with a monthly limit on new material. «كيف أدعو أولياء
+الأمور؟» gets the link-code steps. Also fixed, older: a how-verb plus a bare
+«students / طلابي / طلبتي» was enough for My classes, so «how do i make students
+listen» got the add-a-class steps; those words now count only in a where-question
+(`STUDENT_WORDS`). 21 look-alikes pinned.
+
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
 Step 4 of the worksheet review, agreed in chat. A worksheet was paper only: to
