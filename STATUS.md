@@ -1560,6 +1560,48 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The parent letter stops saying things the teacher never typed, 2026-10-17
+
+A teacher's screenshot of `ai-tools/parent-message` prompted an audit: render the
+composer for real inputs and read what a parent would receive. Six defects, all
+in `services/parentMessage.ts`, all fixed with tests.
+
+- **Praise asserted facts.** Every praise letter said «أظهر اجتهادًا واضحًا
+  والتزامًا… وكان لحضوره الفاعل أثر طيب» — diligence, commitment and *attendance*
+  for any child — against this file's own rule that nothing is said about a student
+  the teacher did not type. Praise now opens neutrally («يسرّني إبلاغكم بملاحظة
+  إيجابية عن ابنكم…») and names a quality only if the teacher ticked it
+  (`Strength`, five chips shown for praise only, shown in a fixed order whatever
+  order they were ticked). The English letter had the same sentence and got the
+  same fix.
+- **A woman's letter carried masculine self-reference.** «وأنا مستعد» (academic
+  concern) and «وسأكون شاكرًا» (meeting) ignored `teacherGender`; `arNextStep`
+  only knew the student's. Both are rewritten gender-free rather than inflected
+  (`وسأقدّم الدعم…`, `وأشكر لكم تعاونكم`), and a test renders every kind with a
+  female teacher. The meeting letter also asked for a time twice.
+- **«Warm» changed only the greeting**, and put «أهلًا بكم» before the salam. It
+  now opens with the salam and closes «مع خالص مودّتي وتقديري» (English: «Warm
+  regards»). Formal gained «وبعد،» after the salam, the turn into the letter's
+  matter.
+- **The teacher's details were pasted raw** between two composed sentences, so a
+  fragment with no full stop read as a typo, and English typed into an Arabic
+  letter went through unremarked. A full stop is added when missing (punctuation
+  only, never a word), and `detailsLanguageMismatch` puts an amber line under
+  the box — a warning, not a block, since «اختبار PISA» is legitimate.
+- **Placeholder is now an example per kind** (`detailsExample`, gendered to the
+  student), replacing one maths-homework example shown for every kind.
+- **Wording**: «الدافعية», «لا تتردّدوا في التواصل» and «يسعدني أن أشارككم» (calques)
+  and «الواجب البيتي» replaced; a bare teacher name gets «الأستاذ/الأستاذة», a
+  titled one («أ. نزار») is left alone, and the role is not repeated beside a
+  name unless there is a subject.
+
+Not done here: a Latin student name inside the Arabic text can still flip the
+punctuation beside it on WhatsApp (real names are Arabic, and this was not
+reproduced in WhatsApp itself — it is a known bidi behaviour, unchecked here).
+The sharing side —
+matching a typed name to a roster student, choosing which guardian — is a
+separate PR.
+
 ## The chat answers teachers, on the web too, 2026-10-16
 
 Teachers said the chat «isn't smart». Three causes, all measured:
