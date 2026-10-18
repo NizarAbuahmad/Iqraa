@@ -155,6 +155,36 @@ export function nextEntry(entries: readonly PlanEntry[], fromDate: string): Plan
   return upcoming[0] ?? null;
 }
 
+/** What a plan card says about the schedule. */
+export type PlanStatus =
+  | { kind: 'today'; lessonIds: string[] }
+  | { kind: 'next'; lessonId: string; date: string }
+  | { kind: 'finished' }
+  | { kind: 'unscheduled' };
+
+/**
+ * Where a plan stands today. A plan with no entries is `unscheduled` — the
+ * card says so rather than echoing the legacy `date`/`time` text, which was
+ * free-form and read as nonsense when a teacher typed a weekday in one box
+ * and a date in the other.
+ */
+export function planStatus(entries: readonly PlanEntry[], today: string): PlanStatus {
+  if (entries.length === 0) return { kind: 'unscheduled' };
+  const todays = entriesOnDate(entries, today);
+  if (todays.length > 0) return { kind: 'today', lessonIds: todays.map(e => e.lessonId) };
+  const upcoming = nextEntry(entries, today);
+  if (upcoming) return { kind: 'next', lessonId: upcoming.lessonId, date: upcoming.date };
+  return { kind: 'finished' };
+}
+
+/**
+ * Lessons whose day has passed, out of all scheduled. Dates only: nothing
+ * records that a lesson was actually taught, so this is pacing, not proof.
+ */
+export function planProgress(entries: readonly PlanEntry[], today: string): { done: number; total: number } {
+  return { done: entries.filter(e => e.date < today).length, total: entries.length };
+}
+
 export interface ScheduleLesson {
   id: string;
   /** Teacher-guide period count; treated as 1 when unknown. */

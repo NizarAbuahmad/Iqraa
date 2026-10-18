@@ -315,6 +315,10 @@ interface Message {
   timestamp: Date;
 }
 
+/** A reply that asks the teacher to pick (a subject, a lesson, a kind of help) and shows the choices itself. */
+const asksTheTeacher = (m: Message | undefined): boolean =>
+  !!(m?.clarificationSubjects?.length || m?.clarificationLessons?.length || m?.pedagogicalClarification?.length);
+
 /** One-shot shortcuts under the composer — never stored inside message bubbles. */
 type EphemeralSuggestion = {
   id: string;
@@ -3923,10 +3927,14 @@ export default function IqraScreen() {
         one-shot follow-ups below are not — two chip strips stacked on a phone
         is the clutter this change set out to remove.
         Not under an answer about the app: «حضّر خطة الدرس» next to «where is
-        Settings» offers a lesson to someone who asked for a screen.
+        Settings» offers a lesson to someone who asked for a screen. Nor under a
+        question back to the teacher («أيّ مادة تقصد؟»): it carries its own
+        choices, and «أنشئ ورقة عمل» under «أريد ورقة عمل → أيّ مادة؟» repeats
+        the ask instead of answering it.
       */}
       {ephemeralSuggestions.length === 0 && !isThinking && messages.length > 1
-        && !messages[messages.length - 1]?.appHelp && !messages[messages.length - 1]?.toolAsk ? (
+        && !messages[messages.length - 1]?.appHelp && !messages[messages.length - 1]?.toolAsk
+        && !asksTheTeacher(messages[messages.length - 1]) ? (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}

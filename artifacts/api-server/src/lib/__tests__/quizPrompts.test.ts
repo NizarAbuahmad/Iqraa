@@ -47,6 +47,15 @@ describe("the top-up block for a short reply", () => {
     const b = quizTopUpBlock(false, ["x".repeat(500)], 1);
     assert.ok(!b.includes("x".repeat(200)));
   });
+  for (const [name, isAr] of [["ar", true], ["en", false]] as const) {
+    it(`${name}: names the repeats it is replacing, and says nothing of them when there are none`, () => {
+      const plain = quizTopUpBlock(isAr, have, 2);
+      const asked = quizTopUpBlock(isAr, have, 2, ["عرّف المول."]);
+      assert.match(asked, isAr ? /ستُستبدل/ : /will replace them/);
+      assert.ok(asked.includes("- عرّف المول."));
+      assert.doesNotMatch(plain, isAr ? /ستُستبدل/ : /will replace them/);
+    });
+  }
 });
 
 const base = { subject: "الكيمياء", grade: "العاشر", topic: "الروابط الأيونية", numQuestions: 8, totalMarks: 20 };
