@@ -58,8 +58,12 @@ export const DECK_ICON_NAMES = [
   "atom", "flask", "leaf", "globe", "calculator", "clock", "pin", "heart", "star", "sun", "drop", "laptop",
 ] as const;
 
-/** Every shape a slide may ask for — a copy of `SLIDE_LAYOUTS` in the app's `slideLayout.ts`. */
-export const DECK_LAYOUT_NAMES = ["statement", "stat", "compare", "steps", "timeline", "stats", "table", "flow", "quote", "photo"] as const;
+/**
+ * Every shape a slide may ask for — a copy of `SLIDE_LAYOUTS` in the app's `slideLayout.ts`.
+ * `concepts` is on the list so a saved deck round-trips, but the prompt does not
+ * teach it: only Slides Maker's own builders write that one.
+ */
+export const DECK_LAYOUT_NAMES = ["statement", "stat", "compare", "steps", "timeline", "stats", "table", "flow", "quote", "photo", "concepts"] as const;
 const LAYOUT_SLIDE_TYPES = ["intro", "summary", "reveal"];
 
 /** Charts the prompt asks for at most; the server keeps three before it cuts. */
