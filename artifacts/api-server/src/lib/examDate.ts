@@ -35,15 +35,29 @@ export function isValidExamTime(raw: unknown): raw is string {
 }
 
 /**
+ * Today's school day, `YYYY-MM-DD`, in Asia/Amman — a fixed UTC+3 since 2022,
+ * the same frame homework due dates use. Judged on the day, not the instant:
+ * an exam planned for today is not in the past.
+ */
+export function ammanToday(now: Date = new Date()): string {
+  return new Date(now.getTime() + 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+/**
  * Merge a PATCH body onto the stored schedule. A field that is absent keeps its
  * stored value; `null` clears it — checked with `!== undefined`, never
  * truthiness, so a clear is not mistaken for "not provided". Clearing the date
  * clears the time, and a time cannot exist without a date. Throws a message
  * string on bad input, like schedule.ts, for the route to turn into a 400.
+ *
+ * A date before today is refused when it CHANGES the stored one. Re-sending the
+ * stored date untouched is fine, so an exam that already holds a past date can
+ * still have its time corrected or its date cleared.
  */
 export function resolveExamPatch(
   existing: ExamSchedule,
   body: { examDate?: unknown; examTime?: unknown },
+  now: Date = new Date(),
 ): ExamSchedule {
   let examDate = existing.examDate;
   let examTime = existing.examTime;
@@ -51,6 +65,9 @@ export function resolveExamPatch(
   if (body.examDate !== undefined) {
     if (body.examDate !== null && !isValidExamDate(body.examDate)) {
       throw "examDate must be a real date in YYYY-MM-DD form, or null";
+    }
+    if (body.examDate !== null && body.examDate !== existing.examDate && body.examDate < ammanToday(now)) {
+      throw "examDate must be today or later";
     }
     examDate = body.examDate;
   }
