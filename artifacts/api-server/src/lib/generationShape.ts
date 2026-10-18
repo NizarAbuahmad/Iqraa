@@ -27,6 +27,8 @@
  * genuinely wrong.
  */
 
+import { sameKind, stemFrame } from "@workspace/math-practice";
+
 export type GenerationKind =
   | "lesson-plan"
   | "worksheet"
@@ -265,16 +267,121 @@ export function quizStems(parsed: unknown): string[] {
   return quizQuestions(parsed).map(q => String(q.text ?? "").replace(/\s+/g, " ").trim()).filter(Boolean);
 }
 
+// ─── Repeated asks ──────────────────────────────────────────────────────────
+//
+// The prompt asks for no idea twice and no more than two questions opening the
+// same way; nothing checked the reply. A paper that asks «أوجد الكتلة المولية»
+// of five compounds, or one definition in four wordings, was served and pooled
+// for every teacher who asks for that lesson. These count the questions that
+// are each the same kind of ask (`sameKind` on `stemFrame`, three words changed
+// at most, as `dominantKind` in the evaluation validator), and let the route
+// replace what is over a kind's share with new questions.
+//
+// Quizzes only. A worksheet or homework is practice, where the same exercise
+// with new numbers is the point.
+
+/** Words a reworded ask may change — the evaluation validator's cap (see `dominantKind`). */
+const MAX_WORDS_CHANGED = 3;
+
 /**
- * Add a top-up reply's questions to the paper, numbered straight on.
- * The base keeps its title, duration and total; the extra contributes only
- * questions. Ids are rewritten because a second call numbers from q1 again.
+ * How many questions of one kind a paper of `n` may hold: a third, and never
+ * fewer than three. Looser than the evaluation validator's quarter, which only
+ * warns: this replaces questions, at the cost of a model call, and a maths
+ * lesson that teaches one skill asks it several times on purpose. Measured
+ * 2026-10-17 on the offline generator's 10- and 20-question quizzes for a
+ * sample of lessons: a quarter would have replaced questions on every maths
+ * paper (14 of 14, 61 questions), most of them «أوجد حل المعادلة: …» on a
+ * lesson about solving that equation.
  */
-export function mergeQuizTopUp(base: unknown, extra: unknown): void {
+export function kindQuota(n: number): number {
+  return Math.max(3, Math.ceil(n / 3));
+}
+
+/** Questions grouped by kind, each joining the first group whose first question it matches. */
+function kindOf(groups: string[], text: string): number {
+  const frame = stemFrame(text);
+  if (!/\p{L}/u.test(frame)) return -1; // only symbols — no sentence to share
+  const at = groups.findIndex(g => sameKind(g, frame, MAX_WORDS_CHANGED));
+  if (at >= 0) return at;
+  groups.push(frame);
+  return groups.length - 1;
+}
+
+/**
+ * Positions of the questions past their kind's share, in paper order — the
+ * first `kindQuota` of each kind stay. `want` is the length the paper is meant
+ * to have (the teacher's count), so a short reply is judged by its full size.
+ */
+export function quizRepeats(parsed: unknown, want?: number | null): number[] {
+  const questions = quizQuestions(parsed);
+  const quota = kindQuota(want ?? questions.length);
+  const groups: string[] = [];
+  const counts: number[] = [];
+  const over: number[] = [];
+  questions.forEach((q, i) => {
+    const kind = kindOf(groups, String(q.text ?? ""));
+    if (kind < 0) return;
+    counts[kind] = (counts[kind] ?? 0) + 1;
+    if (counts[kind]! > quota) over.push(i);
+  });
+  return over;
+}
+
+/** The text of the questions at `at` — positions from `quizRepeats`, which `quizStems` (it skips blanks) does not share. */
+export function quizStemsAt(parsed: unknown, at: readonly number[]): string[] {
+  const questions = quizQuestions(parsed);
+  return at.map(i => String(questions[i]?.text ?? "").replace(/\s+/g, " ").trim()).filter(Boolean);
+}
+
+/**
+ * Take a top-up reply that was asked for both the missing questions and
+ * replacements for `repeats`. Each new question that is not itself one more of
+ * a kind already at its share replaces a repeat — taking its marks, so the
+ * paper's total does not move — and once the repeats are gone the rest are
+ * appended for the missing count. A repeat nothing replaced stays: a paper is
+ * never made shorter to make it more varied. Nor left short for it: a new
+ * question that is one too many of its kind still fills a missing place when
+ * nothing fresher came back. Returns how many were replaced.
+ */
+export function absorbQuizTopUp(base: unknown, extra: unknown, repeats: readonly number[], want?: number | null): number {
   const obj = base as Record<string, unknown>;
-  const merged = [...quizQuestions(base), ...quizQuestions(extra)];
+  const questions = quizQuestions(base);
+  const quota = kindQuota(want ?? questions.length);
+  const pending = new Set(repeats);
+  const groups: string[] = [];
+  const counts: number[] = [];
+  questions.forEach((q, i) => {
+    if (pending.has(i)) return;
+    const kind = kindOf(groups, String(q.text ?? ""));
+    if (kind >= 0) counts[kind] = (counts[kind] ?? 0) + 1;
+  });
+  const slots = [...repeats];
+  const appended: Record<string, unknown>[] = [];
+  const spare: Record<string, unknown>[] = [];
+  let replaced = 0;
+  for (const q of quizQuestions(extra)) {
+    const kind = kindOf(groups, String(q.text ?? ""));
+    if (kind >= 0 && (counts[kind] ?? 0) >= quota) {
+      spare.push(q);
+      continue;
+    }
+    if (kind >= 0) counts[kind] = (counts[kind] ?? 0) + 1;
+    const slot = slots.shift();
+    if (slot === undefined) {
+      appended.push(q);
+      continue;
+    }
+    const old = questions[slot]!;
+    if (old.points !== undefined) q.points = old.points;
+    questions[slot] = q;
+    replaced += 1;
+  }
+  // Never longer than asked, or than it was when the request named no count.
+  const target = want ?? questions.length;
+  const merged = [...questions, ...appended, ...spare].slice(0, Math.max(questions.length, target));
   merged.forEach((q, i) => { q.id = `q${i + 1}`; });
   obj.questions = merged;
+  return replaced;
 }
 
 // ─── Worksheet and homework counts ──────────────────────────────────────────
