@@ -5,7 +5,9 @@
  */
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
 import { Input } from '@/components/ui/Input';
+import { RADIUS, SPACE } from '@/constants/theme';
 import type { JoinRosterEntry } from '@/services/roster';
 import { normalizeClaimCode, type JoinCodeState } from '@/services/claimCodeGate';
 import type { TranslationKey } from '@/services/i18n';
@@ -145,6 +147,27 @@ export function RosterCodeClaimForm({
         </View>
       ) : null}
 
+      {/*
+        An exam's share code typed where a class code goes. Nothing can be
+        claimed with it (Continue stays off); the exam itself is one tap away.
+        /take is a public route, so this works for a signed-in student who has
+        not claimed a class yet, and for someone with no account at all.
+      */}
+      {state === 'exam-code' ? (
+        <View style={[styles.notice, { borderColor: colors.primary, backgroundColor: colors.primary + '10', gap: 8 }]}>
+          <Text style={[styles.noticeText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+            {t('claimExamCodeNotice')}
+          </Text>
+          <Pressable
+            onPress={() => router.push(`/take/${normalizeClaimCode(code)}` as never)}
+            accessibilityRole="button"
+            style={[styles.openExam, { backgroundColor: colors.primary }]}
+          >
+            <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>{t('claimExamCodeOpen')}</Text>
+          </Pressable>
+        </View>
+      ) : null}
+
       {state === 'error' ? (
         <View style={[styles.notice, { borderColor: colors.border, backgroundColor: colors.muted }]}>
           <Text style={[styles.noticeText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -159,6 +182,7 @@ export function RosterCodeClaimForm({
 const styles = StyleSheet.create({
   notice: { borderWidth: 1, borderRadius: 12, padding: 12, marginTop: 12 },
   noticeText: { fontSize: 15, lineHeight: 24 },
+  openExam: { alignSelf: 'flex-start', paddingHorizontal: SPACE.xl, paddingVertical: SPACE.md, borderRadius: RADIUS.sm, minHeight: SPACE.hero, justifyContent: 'center' },
   pickLabel: { fontSize: 13 },
   nameChips: { flexWrap: 'wrap', gap: 8 },
   nameChip: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, borderWidth: 1, alignItems: 'center' },

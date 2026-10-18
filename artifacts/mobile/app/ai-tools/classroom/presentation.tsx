@@ -35,7 +35,7 @@ import { chartGeometry, plotGeometry, seriesColor, visualForSlide } from '@/serv
 // Shared with both exports so the projected slide and the exported one cannot
 // disagree about what a bullet, an equation or a section glyph is.
 import { answerLines, isBulletLine, looksLikeEquation, splitEmoji, stripBullet, workingSteps } from '@/services/deckText';
-import { resolveSlideLayout } from '@/services/slideLayout';
+import { asPhotoHero, resolveSlideLayout } from '@/services/slideLayout';
 import { openGeogebraWithCommands } from '@/services/geogebra';
 import { youtubeEmbedUrl } from '@/services/classMedia';
 import {
@@ -834,7 +834,8 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
   // either no layout was asked for or its data was too thin to draw, and both
   // fall through to the ordinary heading-plus-body grid below.
   const layout = resolveSlideLayout(slide);
-  if (layout) {
+  // `photo` never gets here: the dispatch hands it to HeroSlideView.
+  if (layout && layout.kind !== 'photo') {
     return (
       <View style={slideStyles.cover}>
         {layout.kind === 'statement' && (
@@ -959,6 +960,25 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
               isRTL={isRTL}
               loopLabel={t('deckFlowLoop')}
             />
+          </>
+        )}
+
+        {layout.kind === 'quote' && (
+          <>
+            <Text style={[slideStyles.quoteMark, { color: accent, textAlign: align }]}>{'“'}</Text>
+            <Text style={[slideStyles.quoteText, { textAlign: align, writingDirection: dir }]}>
+              {isolateForeignRuns(layout.text)}
+            </Text>
+            {layout.by ? (
+              <Text style={[slideStyles.quoteBy, { color: accent, textAlign: align, writingDirection: dir }]}>
+                {isolateForeignRuns(`— ${layout.by}`)}
+              </Text>
+            ) : null}
+            {heading ? (
+              <Text style={[slideStyles.coverSub, { textAlign: align, writingDirection: dir }]}>
+                {isolateForeignRuns(heading)}
+              </Text>
+            ) : null}
           </>
         )}
       </View>
@@ -1471,6 +1491,9 @@ export default function PresentationScreen() {
   const slide = activity.slides[slideIndex];
   const totalSlides = activity.slides.length;
   const isFirst = slideIndex === 0;
+  // A `photo` slide is drawn by the cover/section-break component, which already
+  // carries the photo's credit line.
+  const photoHero = asPhotoHero(slide);
   const isLast = slideIndex === totalSlides - 1;
   const hasTimer = timerTotal > 0;
   const timerPct = calcTimerPct(timerSec, timerTotal);
@@ -1579,7 +1602,9 @@ export default function PresentationScreen() {
         >
           {slide.type === 'divider' || (isFirst && slide.mediaUrl)
             ? <HeroSlideView slide={slide} accent={slideTypeAccent(slide.type, T)} />
-            : <SlideView slide={slide} isRTL={slideRTL} onZoomSide={setSideZoom} />}
+            : photoHero
+              ? <HeroSlideView slide={photoHero} accent={slideTypeAccent(slide.type, T)} />
+              : <SlideView slide={slide} isRTL={slideRTL} onZoomSide={setSideZoom} />}
           <ImageViewerModal
             url={sideZoom}
             onClose={() => setSideZoom(null)}
@@ -2049,6 +2074,9 @@ const makeSlideStyles = (T: DeckTheme) => StyleSheet.create({
   flowText: { fontSize: D.flowNode, lineHeight: 30, color: T.text, textAlign: 'center', fontFamily: 'ReadexPro_600SemiBold' },
   flowLoop: { alignSelf: 'center', alignItems: 'center', gap: 8, marginTop: 20, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 999, borderWidth: 2 },
   flowLoopText: { fontSize: D.flowLoop, fontFamily: 'ReadexPro_600SemiBold' },
+  quoteMark: { fontSize: D.quoteMark, lineHeight: D.quoteMark, fontFamily: 'ReadexPro_700Bold' },
+  quoteText: { fontSize: D.quoteText, lineHeight: 60, color: T.text, fontFamily: 'ReadexPro_600SemiBold' },
+  quoteBy: { fontSize: D.quoteBy, lineHeight: 36, marginTop: 24, fontFamily: 'ReadexPro_600SemiBold' },
   headRow: { alignItems: 'center', gap: 12 },
   glyphChip: { width: 44, height: 44, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   glyph: { fontSize: 21 },

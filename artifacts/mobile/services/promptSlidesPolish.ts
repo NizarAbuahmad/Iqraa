@@ -117,7 +117,7 @@ function inferLayout(slide: ActivitySlide, index: number): InferredLayout | unde
   return undefined;
 }
 
-const STRUCTURE_LAYOUTS = new Set<NonNullable<ActivitySlide['layout']>>(['timeline', 'stats', 'table', 'flow']);
+const STRUCTURE_LAYOUTS = new Set<NonNullable<ActivitySlide['layout']>>(['timeline', 'stats', 'table', 'flow', 'quote']);
 
 /** A refused layout's words come back as a list; past this it is a wall of text, so the rest is cut. */
 const MAX_FALLBACK_LINES = 6;
@@ -148,9 +148,22 @@ function cleanStructure(slide: ActivitySlide): ActivitySlide {
   // — a layout on a question or a challenge would hide its options or its answer.
   if (next.layout && STRUCTURE_LAYOUTS.has(next.layout)) {
     if (!PROSE_TYPES.has(next.type) || !resolveSlideLayout(next)) {
-      const { layout: _l, timeline: _t, stats: _s, table: _b, flow: _f, ...rest } = next;
+      const { layout: _l, timeline: _t, stats: _s, table: _b, flow: _f, quote: _q, ...rest } = next;
       const lines = payloadLines(next).slice(0, MAX_FALLBACK_LINES).map(l => `• ${l}`);
       next = { ...rest, content: [(rest.content ?? '').trim(), ...lines].filter(Boolean).join('\n') };
+    }
+  }
+  // `photo` has no payload to fall back on: its picture arrives AFTER this step
+  // (promptSlidesMedia fetches it from `mediaPrompt`), so it cannot be judged
+  // with `resolveSlideLayout` yet. What can be judged now is whether a picture
+  // is coming at all and whether the slide is the kind a photo may take over —
+  // otherwise the layout is dropped and the slide stays as written.
+  if (next.layout === 'photo') {
+    const body = (next.content ?? '').split('\n').map(l => l.trim()).filter(Boolean);
+    const pictureComing = !!next.sideImageUrl || !!next.mediaPrompt?.trim();
+    if (!PROSE_TYPES.has(next.type) || !pictureComing || body.length > 1 || (body[0] ?? '').length > MAX_STATEMENT_CHARS) {
+      const { layout: _l, ...rest } = next;
+      next = rest;
     }
   }
   if (next.icon !== undefined && !isSectionIconName(next.icon)) {
