@@ -20,7 +20,10 @@ an API that lacked the matching route and broke production signups. From the
 deployed by hand, which is what made that possible; automating them closed it.
 
 Each surface deploys only when its own paths changed (`lib/**` counts as an API
-change, because the API bundles those packages), and each job verifies against
+change, because the API bundles those packages, and `deploy.yml` itself counts
+for every surface, because their flags and env vars live in it — since
+2026-10-17; before that, an env var added there waited for the next API code
+change to reach Cloud Run), and each job verifies against
 the running system rather than trusting the tool: the API asserts
 `/api/healthz/version` reports the deployed short SHA, because `gcloud` has
 printed a success line while traffic stayed pinned to an older revision

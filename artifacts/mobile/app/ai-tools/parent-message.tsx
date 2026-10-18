@@ -10,7 +10,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -34,10 +34,12 @@ import {
 } from '@/services/messaging';
 import { pickOnePdf } from '@/services/lessonMediaPick';
 import {
-  attachmentKind, attachmentProblem, composeParentMessage, guardiansForStudent, kindEmoji, kindLabel,
-  MAX_LETTER_LENGTH, MESSAGE_KINDS, needsDetails, outgoingLetter, parentMessageReady, parseSavedSignature,
-  rosterGender, seedDetailsFromNote, SIGNATURE_STORAGE_KEY, suggestMeeting, summarizeContacts,
-  type Gender, type ManualEdit, type MessageKind, type Tone,
+  attachmentKind, attachmentProblem, composeParentMessage, detailsExample, detailsLanguageMismatch,
+  guardiansForStudent, kindEmoji, kindLabel,
+  matchRosterStudents, MAX_LETTER_LENGTH, MESSAGE_KINDS, needsDetails, outgoingLetter, parentMessageReady,
+  parseSavedSignature, pickRecipients, rosterGender, seedDetailsFromNote, SIGNATURE_STORAGE_KEY, strengthLabel, STRENGTHS, suggestMeeting,
+  summarizeContacts,
+  type Gender, type ManualEdit, type MessageKind, type Strength, type Tone,
 } from '@/services/parentMessage';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
@@ -127,6 +129,8 @@ export default function ParentMessageScreen() {
   const [studentGender, setStudentGender] = useState<Gender>('male');
   const [kind, setKind] = useState<MessageKind>(paramKind ?? 'praise');
   const [details, setDetails] = useState('');
+  /** Praise only: what the teacher ticked. Nothing ticked = the letter praises nothing in particular. */
+  const [strengths, setStrengths] = useState<Strength[]>([]);
   const [tone, setTone] = useState<Tone>('formal');
   const [teacherName, setTeacherName] = useState(user?.name ?? '');
   const [teacherGender, setTeacherGender] = useState<Gender>('male');
@@ -144,6 +148,17 @@ export default function ParentMessageScreen() {
   const [pickedGender, setPickedGender] = useState<Gender | null>(null);
   const [guardians, setGuardians] = useState<ContactStudent['contacts']>([]);
   const [sending, setSending] = useState(false);
+  /** Guardians the teacher unticked. A set of excluded ids, so a fresh student starts with everyone ticked. */
+  const [excluded, setExcluded] = useState<ReadonlySet<string>>(new Set());
+  /** Who the last in-app send reached, with the thread each landed in — for «افتح المحادثة». */
+  const [sentTo, setSentTo] = useState<{ name: string; threadId: string }[]>([]);
+  /**
+   * The teacher's roster, read once the first time a name is typed by hand —
+   * only to suggest which student they mean. Null until read, or if it failed.
+   */
+  const [roster, setRoster] = useState<RosterStudent[] | null>(null);
+  const rosterRequested = useRef(false);
+  const router = useRouter();
   /** Past letters about the picked student, newest first. Null = none picked, or the fetch failed. */
   const [history, setHistory] = useState<ParentContact[] | null>(null);
   /** The teacher's own wording, once they edit the preview. Null = send the composed letter. */
@@ -174,7 +189,7 @@ export default function ParentMessageScreen() {
    * child in Arabic, which inflects for it in almost every clause. The subject
    * comes from the class the student was picked from, unless already typed.
    */
-  const adoptStudent = (student: RosterStudent, fromClass: ClassGroup) => {
+  const adoptStudent = (student: RosterStudent, fromClass?: ClassGroup) => {
     setStudentName(student.displayName);
     setPickedStudentId(student.id);
     setPickedGender(rosterGender(student.gender));
@@ -183,7 +198,8 @@ export default function ParentMessageScreen() {
     setDetails(prev => seedDetailsFromNote(prev, student.teacherNote));
     // A class taking several subjects does not say which one this letter is
     // about; seeding its primary subject would mislabel it.
-    const ids = classSubjectIds(fromClass);
+    // A suggestion tapped under the name field has no class to take it from.
+    const ids = fromClass ? classSubjectIds(fromClass) : [];
     const classSubject = ids.length === 1 ? SUBJECTS.find(s => s.id === ids[0]) : undefined;
     if (classSubject && !subject.trim()) setSubject(isAr ? classSubject.nameAr : classSubject.name);
   };
@@ -284,6 +300,8 @@ export default function ParentMessageScreen() {
    * would take away the button that works today to protect one that may not.
    */
   useEffect(() => {
+    setExcluded(new Set());
+    setSentTo([]);
     if (!pickedStudentId) {
       setGuardians([]);
       setHistory(null);
@@ -320,15 +338,41 @@ export default function ParentMessageScreen() {
       .catch(explainRosterWrite);
   };
 
+  // Read the roster the first time a name is typed by hand, never before: most
+  // letters arrive with a student already picked and do not need it.
+  useEffect(() => {
+    if (pickedStudentId || studentName.trim().length < 2 || rosterRequested.current) return;
+    rosterRequested.current = true;
+    listStudents().then(setRoster).catch(() => {});
+  }, [studentName, pickedStudentId]);
+
+  /** Roster students a typed name probably means. Only ever offered — see `matchRosterStudents`. */
+  const suggestions = useMemo(
+    () => (pickedStudentId || !roster ? [] : matchRosterStudents(studentName, roster)),
+    [pickedStudentId, roster, studentName],
+  );
+
   const summary = useMemo(() => (history ? summarizeContacts(history, new Date()) : null), [history]);
 
   const message = useMemo(
     () => composeParentMessage(
-      { studentName, studentGender, kind, details, teacherName, teacherGender, subject, tone },
+      { studentName, studentGender, kind, details, strengths, teacherName, teacherGender, subject, tone },
       isAr,
     ),
-    [studentName, studentGender, kind, details, teacherName, teacherGender, subject, tone, isAr],
+    [studentName, studentGender, kind, details, strengths, teacherName, teacherGender, subject, tone, isAr],
   );
+  const toggleRecipient = (userId: string) => {
+    setExcluded(prev => {
+      const next = new Set(prev);
+      if (next.has(userId)) next.delete(userId); else next.add(userId);
+      return next;
+    });
+    Haptics.selectionAsync();
+  };
+  const toggleStrength = (s: Strength) => {
+    setStrengths(prev => (prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]));
+    Haptics.selectionAsync();
+  };
 
   const letter = outgoingLetter(message, edit, studentName);
   // A concern letter is not ready without its details — the same rule the
@@ -385,7 +429,9 @@ export default function ParentMessageScreen() {
     showToast(how === 'shared' ? t('parentMsgSent') : t('copiedToClipboard'));
   };
 
-  const canSendInApp = ready && guardians.length > 0 && !sending;
+  /** The guardians still ticked — who the in-app send, its confirmation and the log will name. */
+  const recipients = pickRecipients(guardians, excluded);
+  const canSendInApp = ready && recipients.length > 0 && !sending;
 
   /**
    * Deliver inside the app, to each linked guardian. `startThread` is
@@ -397,7 +443,7 @@ export default function ParentMessageScreen() {
    */
   const onSendInApp = async () => {
     if (!canSendInApp) return;
-    const names = guardians.map(g => `${g.firstName} ${g.lastName}`.trim());
+    const names = recipients.map(g => `${g.firstName} ${g.lastName}`.trim());
     // A letter to a parent can't be unsent, so say who it reaches before it goes.
     const ok = await confirm({
       title: t('parentMsgConfirmTitle'),
@@ -410,16 +456,21 @@ export default function ParentMessageScreen() {
     // Each guardian is a separate send, so a failure can land halfway. Track
     // who actually got it: those letters did go, and must be logged and said.
     const reached: string[] = [];
+    const reachedIds: string[] = [];
+    const threads: { name: string; threadId: string }[] = [];
     // The messages the letter became — logged with it, so «مقروءة» can mean
     // the parent saw this letter rather than opened the thread for anything.
     const sentIds: string[] = [];
     try {
-      for (const [i, g] of guardians.entries()) {
+      for (const [i, g] of recipients.entries()) {
         const thread = await startThread(g.userId);
         const sent = await sendMessage(thread.id, letter.text, attachment ?? undefined);
         sentIds.push(sent.id);
         reached.push(names[i]);
+        reachedIds.push(g.userId);
+        threads.push({ name: names[i], threadId: thread.id });
       }
+      setSentTo(threads);
       recordContact('in_app', sentIds);
       rememberSignature();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -429,9 +480,10 @@ export default function ParentMessageScreen() {
         recordContact('in_app', sentIds);
         rememberSignature();
         showToast(t('parentMsgPartialSend', reached.join(nameSeparator), names.slice(reached.length).join(nameSeparator)));
-        // Only the ones still waiting stay as recipients, so a retry can't
-        // hand the same letter twice to a parent who already has it.
-        setGuardians(guardians.slice(reached.length));
+        setSentTo(threads);
+        // Only the ones still waiting stay ticked, so a retry can't hand the
+        // same letter twice to a parent who already has it.
+        setExcluded(prev => new Set([...prev, ...reachedIds]));
       } else {
         // The server's own wording here is already teacher-facing ("You are not
         // connected to this person"), so it beats a generic failure line.
@@ -472,6 +524,23 @@ export default function ParentMessageScreen() {
                 {t('pickFromMyClasses')}
               </Text>
             </Pressable>
+            {/* A typed name no longer links to the roster by itself — that is
+                what keeps the letter from reaching the wrong parent — so offer
+                the likely student. One tap, never automatic. */}
+            {suggestions.length > 0 ? (
+              <View style={[styles.suggestRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <Text style={[styles.historyText, { color: colors.mutedForeground }]}>{t('parentMsgSuggestStudent')}</Text>
+                {suggestions.map(r => (
+                  <Pressable
+                    key={r.id}
+                    onPress={() => { adoptStudent(r); Haptics.selectionAsync(); }}
+                    style={[styles.pill, { backgroundColor: ACCENT + '10', borderColor: ACCENT, borderRadius: colors.radius }]}
+                  >
+                    <Text style={[styles.pillText, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }]}>{r.displayName}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
             {summary ? (
               <View style={[styles.history, { backgroundColor: ACCENT + '10', borderRadius: colors.radius }]}>
                 <Text style={[styles.historyText, { color: colors.foreground, textAlign: isRTL ? 'right' : 'left' }]}>
@@ -546,18 +615,59 @@ export default function ParentMessageScreen() {
             ) : null}
           </Field>
 
+          {/* Praise says nothing about the child's qualities unless the teacher
+              ticks them here — the composer never assumes diligence. */}
+          {kind === 'praise' ? (
+            <Field label={t('parentMsgStrengths')} colors={colors} isRTL={isRTL}>
+              <View style={[styles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                {STRENGTHS.map(s => {
+                  const active = strengths.includes(s);
+                  return (
+                    <Pressable
+                      key={s}
+                      onPress={() => toggleStrength(s)}
+                      accessibilityRole="checkbox"
+                      aria-checked={active}
+                      style={[styles.pill, {
+                        backgroundColor: active ? ACCENT : colors.card,
+                        borderColor: active ? ACCENT : colors.border,
+                        borderRadius: colors.radius,
+                      }]}
+                    >
+                      <Text style={[styles.pillText, {
+                        color: active ? palette.primaryForeground : colors.mutedForeground,
+                        fontFamily: active ? 'ReadexPro_600SemiBold' : 'Almarai_400Regular',
+                      }]}>
+                        {strengthLabel(s, isAr)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 17, marginTop: 8, textAlign: isRTL ? 'right' : 'left' }}>
+                {t('parentMsgStrengthsNote')}
+              </Text>
+            </Field>
+          ) : null}
+
           {/* The tool states plainly that it will not invent the specifics —
               the teacher is the only source for what actually happened. */}
           <Field label={needsDetails(kind) ? t('parentMsgDetailsRequired') : t('parentMsgDetails')} colors={colors} isRTL={isRTL}>
             <TextInput
               value={details}
               onChangeText={setDetails}
-              placeholder={t('parentMsgDetailsPlaceholder')}
+              placeholder={detailsExample(kind, isAr, studentGender)}
               placeholderTextColor={colors.mutedForeground}
               multiline
               numberOfLines={3}
               style={inputStyle(colors, isRTL, { minHeight: 84, textAlignVertical: 'top' })}
             />
+            {/* Pasted into the letter as typed, so say so when it won't match it. */}
+            {detailsLanguageMismatch(details, isAr) ? (
+              <Text style={{ color: palette.warning, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 17, marginTop: 8, textAlign: isRTL ? 'right' : 'left' }}>
+                {t('parentMsgDetailsLang')}
+              </Text>
+            ) : null}
             <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 17, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
               {t('parentMsgFactsNote')}
             </Text>
@@ -708,7 +818,37 @@ export default function ParentMessageScreen() {
               clipboard, with nothing on screen to say which. */}
           {/* Above the button, not under it: the teacher reads this before the
               tap — either who the letter will reach, or why it can't. */}
-          {ready ? (
+          {ready && guardians.length > 1 ? (
+            // More than one linked parent: the teacher chooses who is told —
+            // only the mother, say — instead of the letter going to all of them.
+            <View style={{ marginTop: 12, gap: 8 }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>
+                {t('parentMsgChooseRecipients')}
+              </Text>
+              {guardians.map(g => {
+                const on = !excluded.has(g.userId);
+                const name = `${g.firstName} ${g.lastName}`.trim();
+                return (
+                  <Pressable
+                    key={g.userId}
+                    onPress={() => toggleRecipient(g.userId)}
+                    accessibilityRole="checkbox"
+                    aria-checked={on}
+                    hitSlop={6}
+                    style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}
+                  >
+                    <Ionicons name={on ? 'checkbox' : 'square-outline'} size={22} color={on ? ACCENT : colors.mutedForeground} />
+                    <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14 }}>{name}</Text>
+                  </Pressable>
+                );
+              })}
+              {recipients.length === 0 ? (
+                <Text style={{ color: palette.warning, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>
+                  {t('parentMsgNoRecipient')}
+                </Text>
+              ) : null}
+            </View>
+          ) : ready ? (
             <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, marginTop: 12, textAlign: isRTL ? 'right' : 'left' }}>
               {guardians.length > 0
                 ? t('parentMsgRecipients', guardians.map(g => `${g.firstName} ${g.lastName}`).join(nameSeparator))
@@ -758,6 +898,21 @@ export default function ParentMessageScreen() {
               <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{t('copy')}</Text>
             </Pressable>
           </View>
+
+          {/* The letter landed in a real thread — one tap to follow the reply. */}
+          {sentTo.map(s => (
+            <Pressable
+              key={s.threadId}
+              onPress={() => router.push(`/messaging/${s.threadId}`)}
+              style={[styles.pickLink, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+              hitSlop={6}
+            >
+              <Ionicons name="chatbubble-ellipses-outline" size={15} color={ACCENT} />
+              <Text style={[styles.pickLinkText, { color: ACCENT, fontFamily: 'ReadexPro_500Medium' }]}>
+                {t('parentMsgOpenChat', s.name)}
+              </Text>
+            </Pressable>
+          ))}
         </View>
       </ScrollView>
 
@@ -776,6 +931,7 @@ const styles = StyleSheet.create({
   pillRow: { flexWrap: 'wrap', gap: 8 },
   pickLink: { alignItems: 'center', gap: 6, marginTop: 8 },
   pickLinkText: { fontSize: 13 },
+  suggestRow: { alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 8 },
   history: { marginTop: 10, paddingHorizontal: 12, paddingVertical: 8, gap: 2 },
   historyText: { fontSize: 13, lineHeight: 21, fontFamily: 'Almarai_400Regular' },
   pill: { alignItems: 'center', paddingHorizontal: 13, paddingVertical: 8, borderWidth: 1.5 },

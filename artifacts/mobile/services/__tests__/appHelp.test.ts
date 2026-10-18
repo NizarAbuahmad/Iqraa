@@ -523,6 +523,180 @@ describe('a grade to change and a lesson to add', () => {
   });
 });
 
+describe('a matrix row is not a grade', () => {
+  // «كيف أضيف صفاً إلى المصفوفة» got the add-a-grade steps through «اضيف صف».
+  for (const q of [
+    'كيف أضيف صفاً إلى المصفوفة؟',
+    'كيف اضيف صف الى المصفوفة',
+    'كيف أضيف صفاً جديداً للمصفوفة؟',
+    'كيف أحذف صفاً من المصفوفة؟',
+    'كيف أضيف صفوفاً في المصفوفة',
+  ]) {
+    it(`leaves «${q}» alone`, () => {
+      assert.equal(isAppHelpQuery(q), false);
+      assert.notEqual(classifyChatIntent(q, 'ar').intent, 'app_help');
+    });
+  }
+  for (const q of ['كيف أضيف صفاً جديداً؟', 'كيف اضيف صف', 'بدي اضيف صف ثامن']) {
+    it(`«${q}» still gets the grade steps`, () => {
+      assert.equal(top(q), 'subjects');
+    });
+  }
+});
+
+describe('homework, exam date, scan, class chat, block, name, account, feedback, results actions', () => {
+  // The second live pass (2026-10-17): each of these went to the model, which
+  // invented menus («تبويب أدوات الذكاء الاصطناعي») or refused («كيف أحظر ولي
+  // أمر» read as harmful). The steps come from the screens they name.
+  const t = (k: string) => `<${k}>`;
+  const lang = (q: string) => (/[؀-ۿ]/.test(q) ? 'ar' : 'en');
+  const steps: Array<[string, string]> = [
+    ['كيف أرسل واجباً لطلابي؟', 'howAddHomework'],
+    ['بدي اضيف واجب للشعبة', 'howAddHomework'],
+    ['how do i add homework', 'howAddHomework'],
+    ['كيف أضع موعداً لامتحان؟', 'howExamDate'],
+    ['how do i set an exam date', 'howExamDate'],
+    ['كيف أفعّل الوضع الليلي؟', 'howDarkMode'],
+    ['وين الوضع الليلي؟', 'howDarkMode'],
+    ['how do i enable dark mode', 'howDarkMode'],
+    ['كيف أمسح ورقة الإجابة بالكاميرا؟', 'howClassScan'],
+    ['how do i scan the answer sheets', 'howClassScan'],
+    ['كيف أرسل رسالة لكل الشعبة؟', 'howClassChat'],
+    ['how do i send a message to the whole class', 'howClassChat'],
+    ['كيف أحظر ولي أمر؟', 'howBlock'],
+    ['how do i block a parent', 'howBlock'],
+    ['كيف أغير اسمي؟', 'howChangeName'],
+    ['how do i change my name', 'howChangeName'],
+    ['كيف أحذف حسابي؟', 'howDeleteAccount'],
+    ['how do i delete my account', 'howDeleteAccount'],
+    ['كيف أقترح ميزة جديدة؟', 'howSuggestFeature'],
+    ['how do i suggest a feature', 'howSuggestFeature'],
+    ['كيف أبلغ عن خطأ في ورقة العمل؟', 'howReportProblem'],
+    ['how do i report a problem with the worksheet', 'howReportProblem'],
+    ['كيف أعيد توليد ورقة العمل؟', 'howRegenerate'],
+    ['how do i regenerate the quiz', 'howRegenerate'],
+    ['كيف أحفظ خطة الدرس؟', 'howSaveMaterial'],
+    ['how do i save the worksheet', 'howSaveMaterial'],
+    ['كيف أختار درساً آخر؟', 'faqA2'],
+    ['how do i choose another lesson', 'faqA2'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» gets ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(classifyChatIntent(q, lang(q)).intent, 'app_help');
+      assert.equal(answerAppHelp(q, lang(q), t).text, `<${key}>`);
+    });
+  }
+
+  for (const q of ['وين ألاقي خطة الدرس اللي حفظتها؟', 'where are my saved worksheets']) {
+    it(`«${q}» points at My files, not the generator`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.deepEqual(findAppPlaces(q).map(p => p.id), ['workspace']);
+    });
+  }
+
+  it('dark mode no longer points at a Settings switch that does not exist', () => {
+    assert.ok(!findAppPlaces('وين الوضع الليلي؟').some(p => p.id === 'settings'));
+  });
+
+  const teaching = [
+    'أريد واجباً عن الكسور',
+    'اعطني واجب منزلي عن الجبر',
+    'how do i make homework more engaging',
+    'كيف أكتب رسالة للطلاب عن القراءة؟',
+    'كيف أحفظ جدول الضرب؟',
+    'كيف أحفظ القصيدة؟',
+    'كيف أختار درساً مناسباً لطلابي؟',
+    'كيف أغير اسم المتغير؟',
+    'كيف أحذف الحساب من المعادلة؟',
+    'كيف أمسح السبورة؟',
+    'كيف أعيد صياغة السؤال؟',
+    'كيف أفعّل التعلم النشط في صفي؟',
+    'كيف أبلغ الطلاب بموعد الامتحان؟',
+    'how do i block distractions in class',
+    'ما هو الوضع الليلي في الفيزياء؟',
+    'how do i save time when marking',
+    'كيف أصحح أوراق الطلاب؟',
+    'how do i grade the exams',
+  ];
+  for (const q of teaching) {
+    it(`leaves «${q}» alone`, () => {
+      assert.equal(isAppHelpQuery(q), false);
+      assert.notEqual(classifyChatIntent(q, lang(q)).intent, 'app_help');
+    });
+  }
+});
+
+describe('archive, link code, print, sign out, password and results', () => {
+  // Found on app.iqrra.com (2026-10-17), with live AI on: «كيف أحذف شعبة؟» got the
+  // add-a-class steps, «كيف أشارك رمز الربط مع أولياء الأمور؟» opened Messages, and
+  // the other four went to the model, which guessed at menus or asked which app.
+  const t = (k: string) => `<${k}>`;
+  const lang = (q: string) => (/[؀-ۿ]/.test(q) ? 'ar' : 'en');
+  const steps: Array<[string, string, string]> = [
+    ['كيف أحذف شعبة؟', 'howArchiveClass', '/classes'],
+    ['كيف أحذف الشعبة القديمة', 'howArchiveClass', '/classes'],
+    ['بدي امسح شعبة', 'howArchiveClass', '/classes'],
+    ['how do i delete a class', 'howArchiveClass', '/classes'],
+    ['كيف أشارك رمز الربط مع أولياء الأمور؟', 'howShareLinkCode', '/classes'],
+    ['وين رمز الربط؟', 'howShareLinkCode', '/classes'],
+    ['how do i share the link code with parents', 'howShareLinkCode', '/classes'],
+    ['where is the join code', 'howShareLinkCode', '/classes'],
+    ['كيف أطبع ورقة العمل؟', 'faqA4', '/ai-tools/worksheet'],
+    ['how do i print a worksheet', 'faqA4', '/ai-tools/worksheet'],
+    ['كيف أسجل الخروج؟', 'howSignOut', '/profile'],
+    ['كيف اخرج من حسابي', 'howSignOut', '/profile'],
+    ['how do i sign out', 'howSignOut', '/profile'],
+    ['how do i log out', 'howSignOut', '/profile'],
+    ['كيف أغير كلمة المرور؟', 'howChangePassword', '/profile'],
+    ['نسيت كلمة المرور', 'howChangePassword', '/profile'],
+    ['how do i change my password', 'howChangePassword', '/profile'],
+    ['i forgot my password', 'howChangePassword', '/profile'],
+  ];
+  for (const [q, key, route] of steps) {
+    it(`«${q}» gets ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(classifyChatIntent(q, lang(q)).intent, 'app_help');
+      const a = answerAppHelp(q, lang(q), t);
+      assert.equal(a.text, `<${key}>`);
+      assert.equal(a.places[0]!.route, route);
+    });
+  }
+
+  for (const q of ['كيف أشوف نتائج الطلاب؟', 'وين اشوف علامات الطلاب', 'how do i see my students results', 'where can i see the exam results']) {
+    it(`«${q}» gets the path to the evaluations`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(classifyChatIntent(q, lang(q)).intent, 'app_help');
+      assert.deepEqual(findAppPlaces(q).map(p => p.id), ['tool:evaluations']);
+    });
+  }
+
+  it('steps for adding never answer a question about removing', () => {
+    // «كيف أحذف شعبة» had «اضغط شعبة جديدة» for an answer.
+    assert.notEqual(answerAppHelp('كيف أحذف شعبتي من حسابي', 'ar', t).text, '<howAddClass>');
+    assert.notEqual(answerAppHelp('كيف احذف الصفوف', 'ar', t).text, '<howAddGrade>');
+  });
+
+  const teaching = [
+    'how do i delete a class of compounds from the table',
+    'كيف أحذف الكسور من المعادلة؟',
+    'كيف أطبع الحروف بشكل صحيح؟',
+    'how do i create a strong password',
+    'how do i change a password in excel',
+    'كيف أختار كلمة مرور قوية؟',
+    'كيف أعرف نتائج التجربة؟',
+    'how do i check the results of the experiment',
+    'كيف أخرج من المتاهة؟',
+    'ما هو رمز الربط في الكيمياء؟',
+  ];
+  for (const q of teaching) {
+    it(`leaves «${q}» alone`, () => {
+      assert.equal(isAppHelpQuery(q), false);
+      assert.notEqual(classifyChatIntent(q, lang(q)).intent, 'app_help');
+    });
+  }
+});
+
 describe('a student to add', () => {
   // Found on app.iqrra.com (2026-10-17): with live AI on, «كيف أضيف طالباً
   // جديداً؟» went to the model, which said it was about the app and gave no

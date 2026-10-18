@@ -22,6 +22,8 @@ import {
   isValidPlanDate,
   nextEntry,
   normalizePlanEntries,
+  planProgress,
+  planStatus,
   setEntryDate,
   toISODate,
   todayISO,
@@ -261,5 +263,49 @@ describe('autoScheduleEntries', () => {
     const second = autoScheduleEntries([{ id: 'b', periods: 1 }], '2026-09-20', [SUN]);
     assert.deepEqual(second, [{ lessonId: 'b', date: '2026-09-20' }]);
     assert.notDeepEqual(second, first);
+  });
+});
+
+describe('planStatus', () => {
+  const entries = [
+    { lessonId: 'a', date: '2026-10-01' },
+    { lessonId: 'b', date: '2026-10-05' },
+    { lessonId: 'c', date: '2026-10-05' },
+    { lessonId: 'd', date: '2026-10-12' },
+  ];
+
+  it('reports today\'s lessons, in entry order, when any sit on today', () => {
+    assert.deepEqual(planStatus(entries, '2026-10-05'), { kind: 'today', lessonIds: ['b', 'c'] });
+  });
+
+  it('reports the next upcoming lesson when today has none', () => {
+    assert.deepEqual(planStatus(entries, '2026-10-06'), { kind: 'next', lessonId: 'd', date: '2026-10-12' });
+  });
+
+  it('says finished once every scheduled lesson is in the past', () => {
+    assert.deepEqual(planStatus(entries, '2026-11-01'), { kind: 'finished' });
+  });
+
+  it('says unscheduled for a plan with no entries — never falls back to free text', () => {
+    assert.deepEqual(planStatus([], '2026-10-05'), { kind: 'unscheduled' });
+  });
+});
+
+describe('planProgress', () => {
+  const entries = [
+    { lessonId: 'a', date: '2026-10-01' },
+    { lessonId: 'b', date: '2026-10-05' },
+    { lessonId: 'c', date: '2026-10-12' },
+  ];
+
+  it('counts a lesson as done only once its day has passed', () => {
+    assert.deepEqual(planProgress(entries, '2026-10-05'), { done: 1, total: 3 });
+    assert.deepEqual(planProgress(entries, '2026-10-06'), { done: 2, total: 3 });
+    assert.deepEqual(planProgress(entries, '2026-09-01'), { done: 0, total: 3 });
+    assert.deepEqual(planProgress(entries, '2026-12-01'), { done: 3, total: 3 });
+  });
+
+  it('is empty for a plan with no schedule', () => {
+    assert.deepEqual(planProgress([], '2026-10-05'), { done: 0, total: 0 });
   });
 });

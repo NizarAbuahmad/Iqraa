@@ -190,7 +190,8 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   token, so two different equations scored 1.0 and one was rejected. "Same
   sentence, different numbers" is a third thing — `stemFrame` — which is
   practice, not a duplicate, and is only warned about when it carries a paper
-  (`dominantFrame`).
+  (`dominantKind`, which also counts the same ask reworded — `sameKind`,
+  capped at three changed words because exam stems quote whole objectives).
 - **A question can come from the book, the bank or a model, and only a verifier
   makes one `verified`.** Real book items (`lib/curriculum/src/bookItems.ts`,
   data written by `scripts/extract_book_items.py`) join by `lessonId`, never by
@@ -292,9 +293,16 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   **The count is enforced too.** A model asked for 20 questions often returns
   10 in a perfectly valid reply, so the quiz route counts (`quizShortfall`),
   asks once more for only the missing ones (`quizTopUpBlock`, merged by
-  `mergeQuizTopUp`), trims a surplus from the biggest block, and scales the
+  `absorbQuizTopUp`), trims a surplus from the biggest block, and scales the
   output ceiling with the count (`quizTokens`); evaluations do the same in
-  `/evaluations/:id/generate`. If it is still short, `shortfall` says so. The
+  `/evaluations/:id/generate`. If it is still short, `shortfall` says so.
+  The same call replaces **repeats** (since 2026-10-17): questions past a
+  third of the paper (never fewer than three — `kindQuota`, looser than the
+  validator's quarter because a one-skill maths lesson asks it several times
+  on purpose) that are one ask reworded or re-numbered (`quizRepeats` —
+  `sameKind`, as the evaluation validator's `dominantKind`). A replacement takes the repeat's marks; a repeat nothing
+  replaced stays, so a paper is never shortened for variety. Quizzes only — a
+  worksheet's same-exercise-new-numbers is the practice. The
   offline generator can only give what the lesson's bank holds (5 for a
   chemistry lesson, 17 for a maths family) — a spent type hands its share to
   the others rather than ending the paper (`quizCount.test.ts`).

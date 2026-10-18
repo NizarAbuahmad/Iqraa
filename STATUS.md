@@ -151,6 +151,48 @@ an announcement by default» below.
   متر», «حوّل 20 متر إلى سنتيمتر») — the conversions now use the symbols the
   rest of those generators use («حوّل 20 م إلى سم»), and `tamyiz.test.ts`
   reads units too.
+  **…and an AI-written evaluation is held to the same kinds (2026-10-17).**
+  The validator's warning that one sentence carries a paper compared exact
+  frames, so a model asking «أوجد الكتلة المولية» of four compounds, or «ما
+  العدد الأكبر / الأصغر…» three times, passed as varied. `dominantKind`
+  (`validator.ts`, replacing `dominantFrame`) counts the stems that are each
+  `sameKind` as one stem — measured from each stem, not chained — and the
+  teacher sees «N of M questions ask the same thing…». It caps a rewording at
+  three changed words (`sameKind`'s new `maxChanged`), because exam stems
+  quote whole objectives and 37% of thirty words is a different instruction:
+  uncapped, 10% of the offline generator's 15-question papers warned, nearly
+  all for that reason; capped 3.2%, against 2.9% for exact frames. The
+  generators pass no cap and are unchanged. Prompt rule 5 already says a
+  reworded question is the same question, so `exam-gen-7` stands.
+  **…and a live quiz replaces what it repeats (also 2026-10-17).** The
+  `/generate/quiz` prompt asked for no idea twice and nothing checked the
+  reply. `quizRepeats` (`generationShape.ts`) finds questions past their
+  kind's share — the same `sameKind` grouping — and the existing top-up call
+  asks for replacements alongside any missing questions (`quizTopUpBlock`
+  names them); `absorbQuizTopUp` swaps fresh ones in, each taking the
+  repeat's marks, and never shortens or lengthens the paper (a repeat nothing
+  replaced stays). The share is a third of the paper, at least three
+  (`kindQuota`): measured on the offline generator's 10- and 20-question
+  quizzes for 40 sampled lessons, a quarter fired on 14 of 16 papers — every
+  maths one, mostly «أوجد حل المعادلة» on a lesson about solving that
+  equation — and a third on 2, both a single ask filling a paper. Worksheets
+  and homework are practice and are not touched.
+  **…and the offline Grade 10 bank stops drawing one ask throughout (also
+  2026-10-17).** `takeFromBank` (`lib/math-practice/src/index.ts`) drew
+  uniformly within the teacher's tier, so a family that is mostly one ask
+  served it nearly throughout — 14 of `exp_eq`'s 17 items were «أوجد حل
+  المعادلة», 8 of `quad_system`'s 12 «أوجد حل النظام». A draw is now weighted
+  by 1/(1+k)³, k the times its kind was already served in the pass (`ask:`
+  keys, as the topic generators record them); always taking the least-served
+  kind was tried first and made regenerate serve the same paper. `exp_eq` also
+  gained a number as a power of its base, one exponential from another, a
+  value checked by substitution and a halving model, and `quad_system` a point
+  checked by substitution, a hard «كم حلًّا» and a second elimination step —
+  each with working, each answer recomputed in `lessonKinds.test.ts`. Offline
+  10- and 20-question quizzes on those two lessons: the commonest kind 83% →
+  38% and 67% → 44% of a paper. Across every maths and chemistry lesson,
+  papers past a third went 137 → 122 of 2,820; the rest are elsewhere, not
+  in these two families.
 
 - **Lesson plan, slides, activity, lesson-flow and the classroom builder take a
   unit, semester or whole book — as one revision session (2026-10-14; spec
@@ -1518,6 +1560,81 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The parent letter stops saying things the teacher never typed, 2026-10-17
+
+A teacher's screenshot of `ai-tools/parent-message` prompted an audit: render the
+composer for real inputs and read what a parent would receive. Six defects, all
+in `services/parentMessage.ts`, all fixed with tests.
+
+- **Praise asserted facts.** Every praise letter said «أظهر اجتهادًا واضحًا
+  والتزامًا… وكان لحضوره الفاعل أثر طيب» — diligence, commitment and *attendance*
+  for any child — against this file's own rule that nothing is said about a student
+  the teacher did not type. Praise now opens neutrally («يسرّني إبلاغكم بملاحظة
+  إيجابية عن ابنكم…») and names a quality only if the teacher ticked it
+  (`Strength`, five chips shown for praise only, shown in a fixed order whatever
+  order they were ticked). The English letter had the same sentence and got the
+  same fix.
+- **A woman's letter carried masculine self-reference.** «وأنا مستعد» (academic
+  concern) and «وسأكون شاكرًا» (meeting) ignored `teacherGender`; `arNextStep`
+  only knew the student's. Both are rewritten gender-free rather than inflected
+  (`وسأقدّم الدعم…`, `وأشكر لكم تعاونكم`), and a test renders every kind with a
+  female teacher. The meeting letter also asked for a time twice.
+- **«Warm» changed only the greeting**, and put «أهلًا بكم» before the salam. It
+  now opens with the salam and closes «مع خالص مودّتي وتقديري» (English: «Warm
+  regards»). Formal gained «وبعد،» after the salam, the turn into the letter's
+  matter.
+- **The teacher's details were pasted raw** between two composed sentences, so a
+  fragment with no full stop read as a typo, and English typed into an Arabic
+  letter went through unremarked. A full stop is added when missing (punctuation
+  only, never a word), and `detailsLanguageMismatch` puts an amber line under
+  the box — a warning, not a block, since «اختبار PISA» is legitimate.
+- **Placeholder is now an example per kind** (`detailsExample`, gendered to the
+  student), replacing one maths-homework example shown for every kind.
+- **Wording**: «الدافعية», «لا تتردّدوا في التواصل» and «يسعدني أن أشارككم» (calques)
+  and «الواجب البيتي» replaced; a bare teacher name gets «الأستاذ/الأستاذة», a
+  titled one («أ. نزار») is left alone, and the role is not repeated beside a
+  name unless there is a subject.
+
+Not done here: a Latin student name inside the Arabic text can still flip the
+punctuation beside it on WhatsApp (real names are Arabic, and this was not
+reproduced in WhatsApp itself — it is a known bidi behaviour, unchecked here).
+The sharing side —
+matching a typed name to a roster student, choosing which guardian — is a
+separate PR.
+
+## The parent letter: a typed name can be linked, and guardians can be chosen, 2026-10-17
+
+Second half of the audit that produced «The parent letter stops saying things the
+teacher never typed». The complaint was «I can't send this to the parent in the
+chat». The cause was on screen: the teacher had **typed** the student's name, and
+typing over the name deliberately drops the picked student (so a letter can never
+reach the previous child's parent), which disables «أرسل عبر إقرأ» — with the only
+explanation in a grey line far below the buttons.
+
+- **A typed name now suggests who it means.** `matchRosterStudents` reads the
+  teacher's roster (once, the first time a name is typed by hand) and shows up to
+  three tappable chips under the field. It is a *suggestion*, never an automatic
+  link: a wrong silent link sends a letter about one child to another child's
+  parent. Hamza, ya, ta marbuta and diacritics are not told apart; a full-name
+  match beats longer names that merely start with it; four or more candidates
+  show nothing (noise, not help).
+- **A child with more than one linked guardian lets the teacher untick some**
+  (`pickRecipients`). It used to go to all of them. The confirmation, the send
+  and the contact log all use the ticked set; after a half-failed send the
+  guardians who already have it are unticked, so a retry cannot hand it twice.
+- **After an in-app send, «افتح المحادثة مع …» opens each thread** it landed in.
+- **«Other» recipients are not an in-app option, and that is the platform, not a
+  gap.** `POST /messaging/threads` refuses anything but teacher ↔ a parent or
+  student linked through a claimed roster link (`same_side`, `not_connected`), so
+  a teacher cannot message a colleague or an admin in-app, and the only other
+  people they *can* reach are other families' parents — who must never receive a
+  letter about someone else's child. Anyone else goes through «مشاركة» (OS share
+  sheet: WhatsApp, email…), which the empty-recipient hint now says.
+
+Checked: typecheck and the mobile suite. **Not** checked in a browser or against
+the real messaging API; the chips and the checkbox rows have not been seen
+rendered.
+
 ## The chat answers teachers, on the web too, 2026-10-16
 
 Teachers said the chat «isn't smart». Three causes, all measured:
@@ -1531,7 +1648,12 @@ Teachers said the chat «isn't smart». Three causes, all measured:
   `AI_USER_BUDGET_USD=1` / `AI_STUDENT_BUDGET_USD=0.20`, set in the same file.
 - **Chat ran `gpt-5.4-nano`**, set by hand on Cloud Run and never measured for
   chat. `deploy.yml` now sets `AI_MODEL_CHAT=gpt-5.4-mini` (~3.7× nano per
-  turn) so a console edit cannot drift it again.
+  turn) so a console edit cannot drift it again. It went live an hour after
+  the merge, not with it: the deploy only redeployed the API for
+  `artifacts/api-server/` or `lib/` changes, so #1104's run (642) skipped it
+  and production served nano until #1093's `lib/` change deployed the API (run
+  645, revision `iqraa-api-00369-cjn`). Since 2026-10-17 an edit to
+  `deploy.yml` redeploys the API and the verifier as well.
 - **Keyword noise was handed to the model as the textbook, or stopped the
   question.** The search returns lessons for almost any sentence: «كيف أتعامل مع
   طالب مشاغب في الصف؟» ranked English for hospitality (11), the quadratic
@@ -1594,8 +1716,13 @@ yet.** Spec: `docs/superpowers/specs/2026-10-16-english-corner-grammar-g1-design
 - **The teacher's sheet is the review.** `docs/english-grammar-g1-sheet.md`
   (`pnpm --filter @workspace/curriculum run grammar-sheet`) lists every sentence
   a unit can show, with its picture, the wrong option it is offered beside, and
-  the wrong picture True or false uses. A test fails if the committed sheet
-  differs from the generator, so a sign-off always refers to what ships.
+  the wrong picture True or false uses. The same script writes the printable
+  form to hand a teacher, `docs/english-grammar-g1-review.html`
+  (`englishGrammarReview.ts`, since 2026-10-17). It has Arabic instructions, a
+  tick box and a notes column per sentence, and a sign-off strip per unit. Open
+  it in a browser and print it: A4 landscape, one unit per page, 24 pages.
+  A test fails if either committed file differs from the generator, so a
+  sign-off always refers to what ships.
 - **Pictures** are the corner's emoji (`englishPictures.ts`, moved from the app
   so the sheet and the app agree). A marker shows the contrast: ✅/❌ for got
   and like, 👦/👧 for he and she, two of a thing for are and they're. A word
@@ -1617,8 +1744,8 @@ yet.** Spec: `docs/superpowers/specs/2026-10-16-english-corner-grammar-g1-design
    This needs the OpenAI and R2 keys; the script now includes every grammar
    sentence, in the young register. Until then, web speaks a sentence with the
    browser's voice and native is silent.
-2. A Grade 1 English teacher reads that unit's table in
-   `docs/english-grammar-g1-sheet.md`.
+2. A Grade 1 English teacher reviews and signs that unit's page of
+   `docs/english-grammar-g1-review.html`, printed.
 3. Set the unit's `reviewedBy: { name, date }` in `englishGrammar.ts` and merge.
    That is the only switch: there is no flag and no role check.
 
@@ -2999,6 +3126,21 @@ place — see its section 2).
   are pure, in `modules/homework/`; loaders are `lib/familyHomeworkLoad.ts` and
   `lib/homeworkDone.ts`. The student and parent routes answer `403
   student_accounts_disabled` when the flag is off, like the timetable.
+- **Saved materials on homework (since 2026-10-17).** Besides Library items, a teacher can
+  attach their own ملفاتي rows («من ملفاتي» in the homework form): `homework.resources` holds
+  `{ kind: 'material', materialId, title, type }`, and the server takes title and type from the
+  teacher's own `saved_materials` row (another teacher's, an unknown id or a board is a 400; an
+  item already attached is kept on PATCH even if since deleted). Families open it through
+  `GET /student|parent/homework/:id/materials/:materialId` (`lib/homeworkMaterial.ts`): 404
+  unless the homework and class are live, a caller's roster row is in the class, the material is
+  listed on the homework and still belongs to its teacher. The material read is the one
+  `systemDb` query (pinned in `systemDbFiles.test.ts`) so it survives an owner-only policy on
+  `saved_materials`. **The content goes out without its answers** (`modules/homework/materialCopy.ts`
+  blanks answer keys, correct answers, explanations, structured-question solutions and teacher
+  companions, and drops a deck's reveal slides) — a new answer-bearing field is served until its
+  name is added there. The app shows it at `/workspace/view?hw=…&material=…`, read-only (export
+  only); `/workspace/view` is on the non-teacher route allowlist, its other sources fail closed
+  for those roles. Pinned by `homeworkMaterial.db.test.ts` (also passes with `RLS_ENFORCE=on`).
 - **Mobile:** a «الواجبات» tab on the class screen (`components/classes/HomeworkTab.tsx`,
   a fourth tab next to Students / Materials / Exams) with a create / edit / delete
   modal inside a `KeyboardSafeView`. **The shared tab padding went from 14 to
@@ -3927,9 +4069,17 @@ matched nothing. `foldAccusative` (`services/appHelp.ts`, app-help matching only
 drops a marked ending (اً / ًا) from any word, and an unmarked one only from
 «صف», «جديد», «إضافي» and the ordinals, since an alif ending is otherwise part of
 the word («جبل الصفا» stays). Each accusative form is pinned to get exactly its
-plain twin's answer. Not changed, and older than this: «كيف اضيف صف الى
-المصفوفة» (a matrix row) goes to the grade steps through the «اضيف صف» keyword,
-and now so does its accusative form.
+plain twin's answer. «كيف اضيف صف الى المصفوفة» (a matrix row) went to the grade
+steps through the «اضيف صف» keyword until 2026-10-17, when `NOT_A_GRADE` started
+dropping «صف / صفوف» followed by «المصفوفة» before the keywords are matched.
+
+**No starter chips under a question back to the teacher (2026-10-17).** «أريد
+ورقة عمل» → «أيّ مادة تقصد؟» showed the subject buttons and, under them, the
+standing «حضّر خطة الدرس / أنشئ ورقة عمل» chips, repeating the ask instead of
+answering it. The strip is now also hidden when the last reply asks the teacher
+to pick (`asksTheTeacher` in `app/(tabs)/iqra.tsx`: subject, lesson or
+teaching-option choices). UI only, so no test (the mobile runner cannot load
+`iqra.tsx`); checked in a browser.
 
 **A student to add (2026-10-17).** With live AI on the web (#1104), «كيف أضيف
 طالباً جديداً؟» went to the model, which said it was a question about the app and
@@ -3943,6 +4093,44 @@ or intent is optional, the student ends the message bar «جديد / آخر» an
 class / الى الشعبة», so «كيف أضيف طالباً إلى مجموعة النقاش» and «add a student to
 the group work» stay teaching. Older and unchanged: «كيف أضيف طلاباً في نشاط
 جماعي» opens the activity tool through the «نشاط» keyword.
+
+**Archive, link code, print, sign out, password, results (2026-10-17).** A wider
+live pass with live AI on found two wrong answers and four misses. «كيف أحذف
+شعبة؟» got the add-a-class steps (a how-word plus «شعبة» was all the matcher
+saw), and «كيف أشارك رمز الربط مع أولياء الأمور؟» opened Messages («أولياء
+الأمور» is the longer keyword, and the longest wins). Print, sign-out, password
+and results questions went to the model, which invented menus or asked which app.
+`RULE_PLACES` (`services/appHelp.ts`, anchored like `ADD_STUDENT`) now sends them
+to `archive-class` (the bin icon on the «شُعَبي» list, then «أرشِف»), `sign-out`
+(the last row of «حسابي»), `password` and the evaluations path. The link code is
+the app's own word, so any how / where question naming it gets `link-code`
+(«رمز الربط» on the class page, then «شارك الرمز»; student accounts are on in
+production, checked at `/api/healthz/features`). Printing is answered with the
+export steps (`PRINT_VERB`), and add steps never answer a remove question
+(`ADD_HOWS` / `REMOVE_VERB`). **There is no change-password screen**: the answer
+says so and points to «نسيت كلمة المرور؟» on the sign-in screen. Ten look-alikes
+pinned as teaching («how do i change a password in excel», «كيف أعرف نتائج
+التجربة؟», «ما هو رمز الربط في الكيمياء؟»…). Left alone: «كيف أرسل رسالة لولي
+أمر؟», which the model answers with a sample message — plausibly what was meant.
+
+**Twelve more everyday asks (2026-10-17, second live pass).** Homework, exam date,
+the class scan, a message to the whole class, blocking, name, deleting the
+account, suggesting a feature, reporting a problem, regenerating, saving and
+choosing another lesson all went to the model, which invented menus («تبويب
+أدوات الذكاء الاصطناعي») or refused («كيف أحظر ولي أمر» read as harmful); «وين
+ألاقي خطة الدرس اللي حفظتها؟» opened the generator instead of «ملفاتي». Each
+now has a `RULE_PLACES` entry and steps taken from its screen (`HomeworkTab`,
+`ExamDateCard`, the scan button on the evaluation page, «محادثة الشعبة», the ⋮
+menu of a thread, Settings → «إجراءات نهائية», `suggest-feature`,
+`GeneratorResultActions`). **Three answers say something is not in the app**:
+there is no dark-mode switch (the scheme follows the device, read at start-up —
+the old answer pointed at Settings, which has none), no name editor (only
+sign-up sets it), and the report button shows only on a shared result, so the
+answer offers «أعد التجهيز» when it is missing. Also fixed, older: «كيف أحفظ
+جدول الضرب؟» opened the timetable and «كيف أحذف الحساب من المعادلة؟» opened
+Profile (`NOT_A_TIMETABLE`, and no bare «الحساب» keyword). Still teaching on
+purpose: «كيف أصحح أوراق الطلاب؟» / «how do i grade the exams», which the model
+answers as marking advice. 18 look-alikes pinned.
 
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 

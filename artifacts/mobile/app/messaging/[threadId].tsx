@@ -66,6 +66,7 @@ import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { ImageViewerModal } from '@/components/ui/ImageViewer';
 import { goBack } from '@/services/navigation';
+import { isHomeworkChatLine } from '@/services/homework';
 import { confirm } from '@/services/confirm';
 import { BackButton } from '@/components/ui/BackButton';
 
@@ -534,6 +535,9 @@ export default function ThreadScreen() {
                 onPress={() => {
                   if (item.attachmentKind === 'image' && item.attachmentUrl) {
                     setViewerUrl(item.attachmentUrl);
+                  } else if (!isOwn && isHomeworkChatLine(item.body)) {
+                    // A shared homework's line: the homework itself is in «المدرسة».
+                    router.push('/school');
                   }
                 }}
                 onLongPress={openSheet}
