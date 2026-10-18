@@ -134,7 +134,7 @@ export default function AdminSchoolsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 60, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 48, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}>
         <View style={[styles.header, { paddingTop: insets.top + 20, backgroundColor: ACCENT }]}>
           <BackButton color="#fff" style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start', marginBottom: 8 }} />
           <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 20, textAlign: align }}>
@@ -142,7 +142,7 @@ export default function AdminSchoolsScreen() {
           </Text>
         </View>
 
-        <View style={{ margin: 20, gap: 10 }}>
+        <View style={{ margin: 20, gap: 12 }}>
           <Text style={caption}>
             {ar ? 'يرى معلمو المدرسة الواحدة مواعيد امتحانات بعضهم.' : "Teachers in one school can see each other's exam dates."}
           </Text>
@@ -221,7 +221,7 @@ export default function AdminSchoolsScreen() {
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   header: { paddingHorizontal: 20, paddingBottom: 20 },
-  card: { padding: 12, borderWidth: 1, gap: 10 },
-  chip: { paddingHorizontal: 14, paddingVertical: 7, borderWidth: 1.5 },
-  input: { borderWidth: 1, paddingHorizontal: 12, paddingVertical: 9, fontFamily: 'Almarai_400Regular', fontSize: 13 },
+  card: { padding: 12, borderWidth: 1, gap: 12 },
+  chip: { paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1.5 },
+  input: { borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, fontFamily: 'Almarai_400Regular', fontSize: 13 },
 });
