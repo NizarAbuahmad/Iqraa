@@ -156,6 +156,22 @@ describe('an ask with no topic of its own carries the picked lesson', () => {
     });
   }
 
+  // A question word is never a topic: "how to generate worksheet" was titled «how».
+  const howTo = [
+    'how to generate worksheet', 'how do I make a quiz', 'How can I create a lesson plan?',
+    'كيف أعمل ورقة عمل', 'كيف أجهّز ورقة عمل؟', 'طريقة عمل ورقة عمل', 'كيف اسوي اختبار',
+  ];
+  for (const q of howTo) {
+    it(`how-to ${JSON.stringify(q)} names no topic`, () => assert.equal(topicFromQuery(q), ''));
+  }
+
+  it('a how-to that names a topic keeps only the topic', () => {
+    assert.equal(topicFromQuery('how can I build a quiz on fractions'), 'fractions');
+    assert.equal(topicFromQuery('كيف أجهز ورقة عمل عن الكسور'), 'الكسور');
+    // A topic that only contains a question word keeps it.
+    assert.equal(topicFromQuery('worksheet on how plants grow'), 'how plants grow');
+  });
+
   it('a named topic still wins, and keeps its own words', () => {
     assert.equal(topicFromQuery('make a quiz on fractions'), 'fractions');
     assert.equal(topicFromQuery('make a quiz on Vitamin A'), 'Vitamin A');
