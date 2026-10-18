@@ -1749,6 +1749,46 @@ yet.** Spec: `docs/superpowers/specs/2026-10-16-english-corner-grammar-g1-design
 3. Set the unit's `reviewedBy: { name, date }` in `englishGrammar.ts` and merge.
    That is the only switch: there is no flag and no role check.
 
+## Grade 1 reading in the English corner — built, shown to nobody yet, 2026-10-17
+
+The same teacher asked for reading too. Each of the 10 Grade 1 hub lessons now
+has three activities under a «القراءة» heading, above «القواعد»: **Read and
+find** (the word printed with no sound, tap its picture of three), **First
+letter** (hear the word and see its picture, tap the letter it starts with) and
+**Starts with** (a letter, tap the picture whose word starts with its sound).
+**Every unit is `reviewedBy: null` in `READING_UNITS`, so nobody sees them
+yet.** Spec: `docs/superpowers/specs/2026-10-17-english-corner-reading-g1-design.md`.
+
+- **Only the lesson's own words, pictures and recordings.** No new audio: a
+  letter is shown, never played, because a TTS voice saying «buh» is worse than
+  nothing. The book's Reading column was never extracted, so this follows its
+  Listening objective, "hearing the initial sound in simple words".
+- **A first sound is a rule plus a hand list** (`lib/curriculum/src/englishReading.ts`).
+  The first letter, except: a vowel letter start, `ch`/`sh`/`th`/`ph`/`kn`/`wr`,
+  `c` before e/i/y, and the words in `SOFT_G` (`giraffe` — the spelling cannot
+  tell it from «girl»). Over the 10 lessons that leaves out one, three, eight,
+  orange, eraser, chair, arms, giraffe and apples; those still appear in Read
+  and find when they have a picture. Medial and final sounds (asked for in two
+  units) are not done.
+- **The teacher's form** is `docs/english-reading-g1-review.html`, written by
+  the same `grammar-sheet` script (`englishReadingReview.ts`): per unit, every
+  word with its picture and the letter the app will call its first sound, the
+  left-out words with the reason, a tick box, notes and a sign-off strip. A4
+  landscape, 15 pages. A test pins it to the generator. Both forms name the
+  Welcome unit «وحدة الترحيب»: «الوحدة ٠» read as a dot beside the «·»
+  separators.
+- **Pictures can be ambiguous**, which the form asks about: in Unit 1, 👩 (mum)
+  beside 👧 (girl) is a real choice for a six-year-old.
+- **Builders** in `services/englishHub/games.ts` (three options, `ROUND_LENGTH`;
+  First letter never puts b beside d or p beside q), **screens** in
+  `components/englishHub/ReadingActivities.tsx`, scored like the rest.
+  Checked in a browser at 390 px in Arabic and English, with two units signed
+  off in the working tree only.
+
+**To switch a unit on:** a Grade 1 English teacher signs that unit's page of
+`docs/english-reading-g1-review.html`, printed; then set its `reviewedBy` in
+`englishReading.ts` and merge. No recording step: every word is already voiced.
+
 ## A Grade 1 English teacher's review, 2026-10-15
 
 A teacher went through English Grade 1 and sent nine notes. What each one turned
@@ -4132,6 +4172,27 @@ Profile (`NOT_A_TIMETABLE`, and no bare «الحساب» keyword). Still teachin
 purpose: «كيف أصحح أوراق الطلاب؟» / «how do i grade the exams», which the model
 answers as marking advice. 18 look-alikes pinned.
 
+**Sharing an exam, and six things the app does not do (2026-10-18, fourth live
+pass).** Of 20 new questions on app.iqrra.com, 16 went to the model, which
+invented menus or refused («how do i upload a pdf», «هل التطبيق مجاني؟»); "how
+do i share an exam with my students" got the add-a-class steps and «كيف أصدّر
+العلامات إلى إكسل؟» the PDF/Word export steps. Each now has a `RULE_PLACES`
+entry (`services/appHelp.ts`) with steps from its screen: publishing an exam and
+its «رابط الطلبة» card, how a student opens `/take/CODE`, who handed in («لوحة
+النتائج» lists one paper per student who opened it), sending a worksheet («أرسل
+للصف كواجب رقمي» → a draft exam), notifications (Settings → «التنبيهات» on the
+phone app; none on web), and contacting support. **Six answers say it is not in
+the app**, each checked in the code: file upload (`DOCUMENT_UPLOAD_ENABLED` is
+off), a marks export (none), copying an exam to another class (an evaluation
+holds one class), inviting a teacher (no invite; a colleague signs up), a store
+listing (none yet; app.iqrra.com in the phone's browser), and a picture of your
+own on a question (only the lesson's book figures, «أرفق شكلًا»). Pricing says a
+teacher account is free with a monthly limit on new material. «كيف أدعو أولياء
+الأمور؟» gets the link-code steps. Also fixed, older: a how-verb plus a bare
+«students / طلابي / طلبتي» was enough for My classes, so «how do i make students
+listen» got the add-a-class steps; those words now count only in a where-question
+(`STUDENT_WORDS`). 21 look-alikes pinned.
+
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
 Step 4 of the worksheet review, agreed in chat. A worksheet was paper only: to
@@ -4616,6 +4677,37 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
 - When the worksheet screen is opened with a lesson, its unit dropdown still
   shows the placeholder (the documented gap in `TopicSelector.tsx`). The topic
   itself is held.
+## Two more slide layouts: quote and photo, 2026-10-17
+
+- **`quote`** — a phrase, definition or rule set in large type with an opening mark
+  and an optional attribution (`quote: { text, by? }`, text up to 200 characters).
+  A present-but-unusable `by` refuses the whole quote: words cut loose from who
+  said them are a different claim.
+- **`photo`** — the picture fills the slide with the title and ONE sentence over
+  it. No payload of its own: the picture is `sideImageUrl`, the sentence is
+  `content`. All three renderers draw it with the code that already draws the
+  cover and the section break (`asPhotoHero` re-shapes the slide), so the photo's
+  credit line is drawn by the one place that has been checked for it.
+
+A photo needs a picture, and the picture arrives after the model's reply, so the
+gate returns `null` (ordinary slide, the sentence as a line of text) until
+`sideImageUrl` exists. `polishDeck` keeps the layout only when a picture is coming
+(`mediaPrompt` or a `sideImageUrl`) and the slide is a prose slide with one
+sentence; `promptSlidesMedia` now fetches for a `photo` slide even though it
+carries a `layout` (every other layout is skipped there, because a picture beside
+it would never be shown). The prompt allows `mediaPrompt` on `photo` only, one or
+two per deck.
+
+**Not built, on purpose:** a separate two-column layout. A picture beside text
+already exists (`sideImageUrl` on an ordinary slide) and `compare` is the
+two-column text one; a third would be the same shape under a new name.
+
+**Checked:** layout gate, polish, PDF, photo fetch and API prompt/shape suites;
+PPTX run through the real exporter (a photo slide has its image and credit; one
+without a picture is an ordinary slide); PDF rendered and looked at in Arabic and
+English. **Not checked:** the PPTX in PowerPoint, the presenter on a device, a
+live model choosing these layouts.
+
 ## Four new slide layouts: timeline, stats, table, flow, 2026-10-18
 
 A deck had four shapes (a statement, one figure, a two-column comparison, numbered
