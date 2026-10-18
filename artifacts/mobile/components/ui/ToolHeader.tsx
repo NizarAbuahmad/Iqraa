@@ -16,12 +16,6 @@ interface Props {
   leading?: string | { icon: keyof typeof Ionicons.glyphMap };
   /** The demo/live pill. Off only for screens that never generate. */
   sourceBadge?: boolean;
-  /**
-   * An Arabic/English pill. The only other switch after sign-in is in
-   * Settings, three taps away from a full-screen tool — and a letter is
-   * written in the app's language, so this is where it is wanted.
-   */
-  languageToggle?: boolean;
   topPad: number;
   isRTL: boolean;
   /** Rendered under the subtitle — a search field, a filter row. */
@@ -33,7 +27,7 @@ interface Props {
  * this band with their own colour, title size and badge order, so the tools
  * read as separate products; the band is now always the primary teal.
  */
-export function ToolHeader({ title, subtitle, eyebrow, leading, sourceBadge = true, languageToggle = false, topPad, isRTL, children }: Props) {
+export function ToolHeader({ title, subtitle, eyebrow, leading, sourceBadge = true, topPad, isRTL, children }: Props) {
   const colors = useColors();
   const { t, lang, toggleLang } = useLanguage();
   const row = { flexDirection: isRTL ? 'row-reverse' : 'row' } as const;
@@ -50,18 +44,19 @@ export function ToolHeader({ title, subtitle, eyebrow, leading, sourceBadge = tr
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <View style={[styles.navEnd, row]}>
-          {languageToggle ? (
-            <Pressable
-              onPress={() => { void toggleLang(); }}
-              hitSlop={8}
-              style={styles.langPill}
-              accessibilityRole="button"
-              accessibilityLabel={t('changeLanguage')}
-            >
-              <Ionicons name="language-outline" size={14} color="#fff" />
-              <Text style={styles.langPillText}>{lang === 'ar' ? 'English' : 'عربي'}</Text>
-            </Pressable>
-          ) : null}
+          {/* After sign-in the only other switch is in Settings, which a
+              full-screen tool gives no way to reach — and what a tool writes
+              is in the app's language. */}
+          <Pressable
+            onPress={() => { void toggleLang(); }}
+            hitSlop={8}
+            style={styles.langPill}
+            accessibilityRole="button"
+            accessibilityLabel={t('changeLanguage')}
+          >
+            <Ionicons name="language-outline" size={14} color="#fff" />
+            <Text style={styles.langPillText}>{lang === 'ar' ? 'English' : 'عربي'}</Text>
+          </Pressable>
           {sourceBadge ? <AiSourceBadge onDark isRTL={isRTL} /> : null}
         </View>
       </View>

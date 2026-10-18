@@ -497,7 +497,7 @@ export default function ParentMessageScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 60, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }} keyboardShouldPersistTaps="handled">
-        <ToolHeader topPad={topPad} isRTL={isRTL} title={t('parentMsgTitle')} subtitle={t('parentMsgSubtitle')} leading="✉️" sourceBadge={false} languageToggle />
+        <ToolHeader topPad={topPad} isRTL={isRTL} title={t('parentMsgTitle')} subtitle={t('parentMsgSubtitle')} leading="✉️" sourceBadge={false} />
 
         <View style={{ padding: 20 }}>
           <Field label={t('parentMsgStudentName')} colors={colors} isRTL={isRTL}>
