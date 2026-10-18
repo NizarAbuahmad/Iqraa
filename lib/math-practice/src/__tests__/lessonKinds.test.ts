@@ -12,7 +12,7 @@
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { MATH_BANK, itemStem, stemFrame, topicFor } from '../index.ts';
+import { MATH_BANK, itemStem, sameKind, stemFrame, takeConcreteMath, topicFor } from '../index.ts';
 import { makeTopicItem } from '../topics.ts';
 
 /** «y = −x² + 2x + 1» → (x, y) => value of left − right. */
@@ -86,6 +86,70 @@ describe('banked systems, checked by substitution', () => {
   });
 });
 
+describe('exponential equations and quadratic systems ask more than one thing (2026-10-17)', () => {
+  const digits = (s: string) => Number(s.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]/g, d => String('⁰¹²³⁴⁵⁶⁷⁸⁹'.indexOf(d))));
+  const item = (id: string) => MATH_BANK.find(i => i.id === id)!;
+
+  it('a number written as a power of its base is that number, and no wrong option is', () => {
+    for (const id of ['exp-p1', 'exp-p2']) {
+      const it = item(id);
+      const [n, base] = it.promptAr!.match(/(\d+) على صورة قوة أساسها (\d+)/)!.slice(1).map(Number);
+      const power = (s: string) => { const [b, e] = [s[0]!, s.slice(1)]; return Number(b) ** digits(e); };
+      assert.equal(Number(it.answer[0]), base, id);
+      assert.equal(power(it.answer), n, id);
+      for (const w of it.wrongs) assert.notEqual(power(w), n, `${id}: ${w}`);
+    }
+  });
+
+  it('one exponential found from another', () => {
+    // 2^x = 8 → 2^{x+1} = 2 · 8; 3^x = 5 → 3^{2x} = 5².
+    assert.equal(Number(item('exp-g1').answer), 2 * 8);
+    assert.equal(Number(item('exp-g2').answer), 5 ** 2);
+  });
+
+  it('a value checked by substitution says yes exactly when it solves the equation', () => {
+    assert.equal(2 ** (3 + 1) === 16, item('exp-v1').answer.startsWith('نعم'));
+    assert.equal(9 ** 2 === 27, item('exp-v2').answer.startsWith('نعم'));
+    // a point checked in a system: (2, 4) in y = x², y = x + 2; (1, 0) in y = x² − 1, y = −x² + 7
+    // and (3, 6) in y = x² − x, y = 2x² − 4x
+    const v1 = 4 === 2 ** 2 && 4 === 2 + 2, v2 = 0 === 1 ** 2 - 1 && 0 === -(1 ** 2) + 7;
+    const v3 = 6 === 3 ** 2 - 3 && 6 === 2 * 3 ** 2 - 4 * 3;
+    assert.equal(v1, item('qq-v1').answer.startsWith('نعم'));
+    assert.equal(v2, item('qq-v2').answer.startsWith('نعم'));
+    assert.equal(v3, item('qq-v3').answer.startsWith('نعم'));
+    assert.match(item('qq-v2').answer, /الثانية/, 'the first equation holds, the second does not');
+  });
+
+  it('the halving model and the subtraction step', () => {
+    let grams = 80, days = 0;
+    while (grams > 5) { grams /= 2; days += 1; }
+    assert.equal(item('exp-h6').answer, `t = ${days}`);
+    // (x² + 3x) − (x² − x + 8) = 0 → 4x = 8
+    assert.equal(Number(item('qq-s2').answer), 8 / 4);
+  });
+
+  it('a ten-question paper is no longer one ask throughout', () => {
+    // A quiz draws an item at a time from one session, now weighted away from
+    // kinds it has served. The draw is random, so this counts papers: drawn
+    // uniformly, «أوجد حل المعادلة» filled five or more of ten in 86% of them.
+    for (const title of ['حل المعادلة الأسية', 'حل نظام مكوَّن من معادلتين تربيعيتين']) {
+      let fine = 0;
+      const runs = 300;
+      for (let run = 0; run < runs; run++) {
+        const session = new Set<string>();
+        const frames: string[] = [];
+        for (let i = 0; i < 10; i++) {
+          const q = takeConcreteMath('short_answer', title, null, (['easy', 'medium', 'hard'] as const)[i % 3], 'ar', 1, session, false);
+          if (q) frames.push(stemFrame(q.text));
+        }
+        const top = Math.max(...frames.map(f => frames.filter(g => sameKind(f, g, 3)).length));
+        if (top <= 4) fine += 1;
+      }
+      assert.ok(fine / runs >= 0.8, `${title}: one ask stayed within four of ten in only ${fine} of ${runs} papers`);
+    }
+  });
+});
+
 /** Distinct sentences a lesson can be asked in (`stemFrame`). */
 function bankKinds(family: string): number {
   return new Set(MATH_BANK.filter(i => i.family === family).map(i => stemFrame(itemStem(i, true)))).size;
@@ -105,6 +169,7 @@ describe('every Grade 10 lesson that had one or two kinds of question now has th
     ['حل نظام مكوَّن من معادلة خطية ومعادلة تربيعية', 'linear_quad'],
     ['حل نظام مكوَّن من معادلتين تربيعيتين', 'quad_system'],
     ['تبسيط المقادير الأسية', 'simplify_exp'],
+    ['حل المعادلة الأسية', 'exp_eq'],
   ] as const) {
     it(title, () => assert.ok(bankKinds(family) >= 3, `${family}: ${bankKinds(family)} kinds`));
   }
