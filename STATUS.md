@@ -1602,6 +1602,39 @@ The sharing side —
 matching a typed name to a roster student, choosing which guardian — is a
 separate PR.
 
+## The parent letter: a typed name can be linked, and guardians can be chosen, 2026-10-17
+
+Second half of the audit that produced «The parent letter stops saying things the
+teacher never typed». The complaint was «I can't send this to the parent in the
+chat». The cause was on screen: the teacher had **typed** the student's name, and
+typing over the name deliberately drops the picked student (so a letter can never
+reach the previous child's parent), which disables «أرسل عبر إقرأ» — with the only
+explanation in a grey line far below the buttons.
+
+- **A typed name now suggests who it means.** `matchRosterStudents` reads the
+  teacher's roster (once, the first time a name is typed by hand) and shows up to
+  three tappable chips under the field. It is a *suggestion*, never an automatic
+  link: a wrong silent link sends a letter about one child to another child's
+  parent. Hamza, ya, ta marbuta and diacritics are not told apart; a full-name
+  match beats longer names that merely start with it; four or more candidates
+  show nothing (noise, not help).
+- **A child with more than one linked guardian lets the teacher untick some**
+  (`pickRecipients`). It used to go to all of them. The confirmation, the send
+  and the contact log all use the ticked set; after a half-failed send the
+  guardians who already have it are unticked, so a retry cannot hand it twice.
+- **After an in-app send, «افتح المحادثة مع …» opens each thread** it landed in.
+- **«Other» recipients are not an in-app option, and that is the platform, not a
+  gap.** `POST /messaging/threads` refuses anything but teacher ↔ a parent or
+  student linked through a claimed roster link (`same_side`, `not_connected`), so
+  a teacher cannot message a colleague or an admin in-app, and the only other
+  people they *can* reach are other families' parents — who must never receive a
+  letter about someone else's child. Anyone else goes through «مشاركة» (OS share
+  sheet: WhatsApp, email…), which the empty-recipient hint now says.
+
+Checked: typecheck and the mobile suite. **Not** checked in a browser or against
+the real messaging API; the chips and the checkbox rows have not been seen
+rendered.
+
 ## The chat answers teachers, on the web too, 2026-10-16
 
 Teachers said the chat «isn't smart». Three causes, all measured:
