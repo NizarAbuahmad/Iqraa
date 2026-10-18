@@ -1749,6 +1749,46 @@ yet.** Spec: `docs/superpowers/specs/2026-10-16-english-corner-grammar-g1-design
 3. Set the unit's `reviewedBy: { name, date }` in `englishGrammar.ts` and merge.
    That is the only switch: there is no flag and no role check.
 
+## Grade 1 reading in the English corner — built, shown to nobody yet, 2026-10-17
+
+The same teacher asked for reading too. Each of the 10 Grade 1 hub lessons now
+has three activities under a «القراءة» heading, above «القواعد»: **Read and
+find** (the word printed with no sound, tap its picture of three), **First
+letter** (hear the word and see its picture, tap the letter it starts with) and
+**Starts with** (a letter, tap the picture whose word starts with its sound).
+**Every unit is `reviewedBy: null` in `READING_UNITS`, so nobody sees them
+yet.** Spec: `docs/superpowers/specs/2026-10-17-english-corner-reading-g1-design.md`.
+
+- **Only the lesson's own words, pictures and recordings.** No new audio: a
+  letter is shown, never played, because a TTS voice saying «buh» is worse than
+  nothing. The book's Reading column was never extracted, so this follows its
+  Listening objective, "hearing the initial sound in simple words".
+- **A first sound is a rule plus a hand list** (`lib/curriculum/src/englishReading.ts`).
+  The first letter, except: a vowel letter start, `ch`/`sh`/`th`/`ph`/`kn`/`wr`,
+  `c` before e/i/y, and the words in `SOFT_G` (`giraffe` — the spelling cannot
+  tell it from «girl»). Over the 10 lessons that leaves out one, three, eight,
+  orange, eraser, chair, arms, giraffe and apples; those still appear in Read
+  and find when they have a picture. Medial and final sounds (asked for in two
+  units) are not done.
+- **The teacher's form** is `docs/english-reading-g1-review.html`, written by
+  the same `grammar-sheet` script (`englishReadingReview.ts`): per unit, every
+  word with its picture and the letter the app will call its first sound, the
+  left-out words with the reason, a tick box, notes and a sign-off strip. A4
+  landscape, 15 pages. A test pins it to the generator. Both forms name the
+  Welcome unit «وحدة الترحيب»: «الوحدة ٠» read as a dot beside the «·»
+  separators.
+- **Pictures can be ambiguous**, which the form asks about: in Unit 1, 👩 (mum)
+  beside 👧 (girl) is a real choice for a six-year-old.
+- **Builders** in `services/englishHub/games.ts` (three options, `ROUND_LENGTH`;
+  First letter never puts b beside d or p beside q), **screens** in
+  `components/englishHub/ReadingActivities.tsx`, scored like the rest.
+  Checked in a browser at 390 px in Arabic and English, with two units signed
+  off in the working tree only.
+
+**To switch a unit on:** a Grade 1 English teacher signs that unit's page of
+`docs/english-reading-g1-review.html`, printed; then set its `reviewedBy` in
+`englishReading.ts` and merge. No recording step: every word is already voiced.
+
 ## A Grade 1 English teacher's review, 2026-10-15
 
 A teacher went through English Grade 1 and sent nine notes. What each one turned
