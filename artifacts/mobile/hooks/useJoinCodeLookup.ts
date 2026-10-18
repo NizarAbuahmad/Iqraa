@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { RosterError, lookupJoinCode, type JoinRosterEntry } from '@/services/roster';
+import { StudentExamError, openExam } from '@/services/studentExam';
 import { className as classDisplayName } from '@/services/materialClass';
 import { canSubmitClaim, needsNameConfirm, normalizeClaimCode, type JoinCodeState } from '@/services/claimCodeGate';
 
@@ -63,7 +64,7 @@ export function useJoinCodeLookup() {
         // rather than offering a button the server will refuse.
         setState(res.students.length > 0 ? 'class' : 'empty-class');
       })
-      .catch(err => {
+      .catch(async err => {
         if (!live) return;
         setRoster(null);
         setClassNames(null);
@@ -72,7 +73,21 @@ export function useJoinCodeLookup() {
         // which names its own student and needs no picker, answers this
         // class-only endpoint. Every other status means we do not know what
         // this code is, which is not the same thing.
-        setState(err instanceof RosterError && err.status === 404 ? 'student-code' : 'error');
+        if (!(err instanceof RosterError && err.status === 404)) {
+          setState('error');
+          return;
+        }
+        // But a 404 is also what an EXAM's share code gets: it is six characters
+        // too, and a teacher or student types it into this box. Ask the exam
+        // endpoint (public, no account) before calling it a per-student code.
+        // Only its own 404 means "not an exam either"; any other failure leaves
+        // us not knowing, which blocks Continue like every other lookup error.
+        try {
+          await openExam(trimmed);
+          if (live) setState('exam-code');
+        } catch (examErr) {
+          if (live) setState(examErr instanceof StudentExamError && examErr.status === 404 ? 'student-code' : 'error');
+        }
       });
     return () => {
       live = false;
