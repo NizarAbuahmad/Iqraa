@@ -683,8 +683,9 @@ export default function SlidesScreen() {
       ].join(' \n '));
       const builtBase = wide
         // A unit / semester / book deck: the plan's introduction, a round per
-        // unit, the checks and the closure — no lesson, so no figures,
-        // vocabulary, rules or worked examples (`buildRevisionDeck`).
+        // unit (with up to three of its book figures), the checks and the
+        // closure — no lesson, so no vocabulary, rules or worked examples
+        // (`buildRevisionDeck`).
         ? buildRevisionDeck(isAr, {
           units: wide.units,
           phrase: revisionPhrase(wideSel!, lang),
@@ -693,6 +694,8 @@ export default function SlidesScreen() {
           subject: isAr ? subjects[subjectIdx].nameAr : subjects[subjectIdx].name,
           grade: isAr ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
           includePractice,
+          // A unit's own pictures from the student book ride with its round.
+          figureUri: bookFigureUri,
         })
         : buildLessonDeck(trimmed, isAr, {
         lesson: grounding.lesson,
@@ -800,7 +803,11 @@ export default function SlidesScreen() {
           const unitTargets = unitPhotoTargets(built.slides);
           const [titlePhoto, dividerPhoto, videos, unitPhotos] = await Promise.all([
             searchDeckPhoto(titleQuery),
-            searchDeckPhoto(dividerQuery),
+            // The generic «subject classroom» picture belongs to a one-lesson deck's
+            // single break. A revision deck's breaks are units, and that picture on
+            // the first of them was a stranger's: a computer lab on an evolution
+            // round. Each unit gets its own picture below or stays flat.
+            wide ? Promise.resolve(null) : searchDeckPhoto(dividerQuery),
             wantVideo ? searchDeckVideos(videoQuery, isAr ? 'ar' : 'en') : Promise.resolve([]),
             Promise.all(unitTargets.map(t => searchDeckPhoto(t.query))),
           ]);

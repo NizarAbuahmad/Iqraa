@@ -4729,6 +4729,39 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
 - When the worksheet screen is opened with a lesson, its unit dropdown still
   shows the placeholder (the documented gap in `TopicSelector.tsx`). The topic
   itself is held.
+## Revision decks carry the book's own pictures and all its key terms, 2026-10-18
+
+Read against the Grade 10 biology student book (unit 1, evolution), the first real
+revision deck on a phone showed: a computer-lab photo on the evolution break, the
+unit title cut to «نظرية», only 3 of the book's 5 key terms, and none of the book's
+pictures.
+
+- **Book figures in a revision deck.** `buildRevisionDeck` takes a `figureUri` (the
+  screen passes `bookFigureUri`) and each unit shows up to three of its own figures:
+  the first beside its key ideas, the rest as «من كتاب الطالب» slides, taken one per
+  lesson before a second of any. Without `figureUri` the deck is exactly as before.
+  It had said «never figures — each belongs to one lesson»; a teacher asked for them.
+- **Unit 1's four figures were never linked.** The extractor found no unit heading
+  before page 22, so `p011` (gradualism vs punctuated equilibrium), `p012` (the limbs
+  of cat, dolphin and bat), `p015` (geographic isolation) and `p018c` (selection by a
+  predator) had `unit: null` and no lesson used them. They are now unit 1 lesson 1
+  (`index.json` + a hand-checked `figure-lesson-map.json` entry), and
+  `bookFigureAssets.ts` is regenerated. **Their four files must be in the public R2
+  bucket before this ships:** `figures/bio-s1-student-book/{p011,p012,p015,p018c}.png`
+  (`pnpm --filter @workspace/curriculum run upload-figures-r2`; the key list does not
+  check the bucket).
+- **Not extracted at all:** the book's page 9 (the finch-beak photographs of
+  «تجربة استهلالية») and page 10 (Figure 1, the snails and eagles). The extractor did
+  not detect them; they need a manual crop from the book PDF.
+- **All the key terms.** `RevisionUnit.allConcepts` (≤ 6) alongside the capped
+  `concepts` (≤ 3, which the written plan quotes): the unit's outcomes are one slide,
+  its terms — the book's «المفاهيم والمصطلحات» box — another, as cards.
+- **Unit pictures that fit.** The generic «subject classroom» photo no longer goes on a
+  revision deck's first break; each unit gets a photo of its topic or stays flat, and
+  evolution and microbes now have their own queries and icons.
+- **Not understood:** on the phone the first break read «نظرية», but the data, the
+  slide builder, the PDF and the title helper all carry «نظرية التطور».
+
 ## Slides Maker decks stop looking like bare lists, 2026-10-18
 
 A teacher's revision deck showed three one-word cards on a mostly empty slide and

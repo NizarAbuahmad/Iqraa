@@ -129,6 +129,67 @@ describe('buildRevisionDeck — a round per unit', () => {
     assert.ok(isSectionIconName(plain.slides.find(s => s.type === 'divider' && s.title === 'وحدة عامة')!.icon));
   });
 
+  it('the unit\'s outcomes and its key terms are two slides, and the terms are all of them, not three', () => {
+    const lessons = [{ id: 'l1', title: 'الدرس الأول', thin: false }];
+    const unit = {
+      unitId: 'u1', title: 'نظرية التطور', lessons,
+      outcomes: ['أناقش الآراء والنظريات التي تعرض لتطور الكائنات الحية.', 'أستكشف آلية تطور الكائنات الحية.'],
+      concepts: ['التطور', 'نظرية الانتخاب الطبيعي', 'نظرية التوازن المتقطع'],
+      allConcepts: ['التطور', 'نظرية الانتخاب الطبيعي', 'نظرية التوازن المتقطع', 'علم التشريح المقارن', 'السجل الأحفوري'],
+      terms: [],
+    };
+    const deck = buildRevisionDeck(true, { units: [unit], phrase: 'x', plan: null });
+    const at = deck.slides.findIndex(s => s.type === 'divider' && s.title === 'نظرية التطور');
+    const goals = deck.slides[at + 1]!;
+    const terms = deck.slides[at + 2]!;
+    assert.equal(goals.title, 'نظرية التطور');
+    assert.equal(goals.layout, undefined, 'sentences stay a list');
+    assert.ok(goals.content.includes('أناقش الآراء'));
+    assert.ok(!goals.content.includes('نظرية الانتخاب الطبيعي'), 'the terms moved to their own slide');
+    assert.equal(terms.title, 'المفاهيم والمصطلحات');
+    assert.equal(terms.layout, 'concepts');
+    // the book's box lists five; the deck used to show three
+    assert.deepEqual(terms.concepts, unit.allConcepts);
+    assert.equal(resolveSlideLayout(terms)?.kind, 'concepts');
+  });
+
+  it('a unit\'s book figures ride with its round: the first beside the key ideas, the rest as slides', () => {
+    const lessons = [{ id: 'kbl-biology-s1-nccd-u1_l1', title: 'تطور الكائنات الحية', thin: false }];
+    const unit = {
+      unitId: 'kbu-biology-s1-nccd-u1', title: 'نظرية التطور', lessons,
+      outcomes: ['أناقش الآراء والنظريات التي تعرض لتطور الكائنات الحية.'], concepts: ['التطور', 'نظرية الانتخاب الطبيعي'], terms: [],
+    };
+    const figureUri = (f: { file: string }) => `https://figs.example/${f.file}`;
+    const deck = buildRevisionDeck(true, { units: [unit], phrase: 'x', plan: null, figureUri });
+    const at = deck.slides.findIndex(s => s.type === 'divider' && s.title === 'نظرية التطور');
+    const goals = deck.slides[at + 1]!;
+    assert.equal(goals.sideImageUrl, 'https://figs.example/p011.png', 'the first figure sits beside the key ideas');
+    assert.match(goals.sideImageCaption ?? '', /صفحة/);
+    const media = deck.slides.filter(s => s.type === 'media');
+    assert.deepEqual(media.map(s => s.mediaUrl), ['https://figs.example/p012.png', 'https://figs.example/p015.png'], 'three figures at most, book order');
+    assert.ok(media.every(s => s.mediaKind === 'image' && s.title === 'من كتاب الطالب'));
+    // a figure the screen cannot load is skipped, never an empty image
+    const none = buildRevisionDeck(true, { units: [unit], phrase: 'x', plan: null, figureUri: () => null });
+    assert.equal(none.slides.some(s => s.type === 'media' || !!s.sideImageUrl), false);
+    // and without a loader the deck is exactly as it was
+    const bare = buildRevisionDeck(true, { units: [unit], phrase: 'x', plan: null });
+    assert.equal(bare.slides.some(s => s.type === 'media' || !!s.sideImageUrl), false);
+  });
+
+  it('a unit with several lessons shows one figure per lesson before a second of any', () => {
+    const mk = (id: string) => ({ id, title: id, thin: false });
+    const unit = {
+      unitId: 'kbu-biology-s1-nccd-u3', title: 'تصنيف الكائنات الحية',
+      lessons: ['kbl-biology-s1-nccd-u3_l1', 'kbl-biology-s1-nccd-u3_l2', 'kbl-biology-s1-nccd-u3_l3', 'kbl-biology-s1-nccd-u3_l4'].map(mk),
+      outcomes: ['أستكشف خصائص المجموعات التصنيفية.'], concepts: [], terms: [],
+    };
+    const deck = buildRevisionDeck(true, { units: [unit], phrase: 'x', plan: null, figureUri: f => `u/${f.file}` });
+    const at = deck.slides.findIndex(s => s.type === 'divider');
+    const urls = [deck.slides[at + 1]!.sideImageUrl, ...deck.slides.filter(s => s.type === 'media').map(s => s.mediaUrl)];
+    // lessons 1, 2 and 3 each contribute their first figure (p040, p046, p058)
+    assert.deepEqual(urls, ['u/p040.png', 'u/p046.png', 'u/p058.png']);
+  });
+
   it('a unit scope is one round, not «الجولة 1 من 1»', () => {
     const unitSel: ScopeSelection = {
       kind: 'unit', gradeId: 'grade-10', subjectId: 'mathematics',
