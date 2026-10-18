@@ -793,6 +793,91 @@ describe('a grade written with its accusative ending («صفاً جديداً»)
   }
 });
 
+describe('sharing an exam, sending a worksheet, notifications, support, and what the app cannot do', () => {
+  // The fourth live pass (2026-10-18): every one of these went to the model,
+  // which invented menus or refused («how do i upload a pdf», «هل التطبيق
+  // مجاني؟»), except the exam share, which got the add-a-class steps, and the
+  // marks export, which got the PDF/Word export steps. Six ask for something
+  // the app does not have, and their answer says so instead of inventing it.
+  const t = (k: string) => `<${k}>`;
+  const lang = (q: string) => (/[؀-ۿ]/.test(q) ? 'ar' : 'en');
+  const steps: Array<[string, string]> = [
+    ['كيف أنشر الامتحان للطلاب؟', 'howShareExam'],
+    ['كيف أشارك الاختبار مع طلابي؟', 'howShareExam'],
+    ['how do i share an exam with my students', 'howShareExam'],
+    ['how do i publish the exam', 'howShareExam'],
+    ['كيف يدخل الطالب على الامتحان؟', 'howShareExam'],
+    ['how do students open the exam', 'howShareExam'],
+    ['كيف أعرف مين سلّم الامتحان؟', 'howExamSubmissions'],
+    ['how do i see who submitted the exam', 'howExamSubmissions'],
+    ['كيف أرسل ورقة العمل للطلاب ليحلوها على التطبيق؟', 'howSendWorksheet'],
+    ['how do i send a worksheet to my students', 'howSendWorksheet'],
+    ['كيف أوقف الإشعارات؟', 'howNotifications'],
+    ['how do i turn off notifications', 'howNotifications'],
+    ['كيف أتواصل مع الدعم الفني؟', 'howContactSupport'],
+    ['how do i contact support', 'howContactSupport'],
+    ['كيف أرفع ملف PDF من الكتاب؟', 'howUploadFile'],
+    ['how do i upload a pdf', 'howUploadFile'],
+    ['كيف أصدّر العلامات إلى إكسل؟', 'howExportMarks'],
+    ['how do i export marks to excel', 'howExportMarks'],
+    ['كيف أنسخ الامتحان لشعبة ثانية؟', 'howCopyExam'],
+    ['how do i copy an exam to another class', 'howCopyExam'],
+    ['كيف أدعو معلماً آخر؟', 'howInviteTeacher'],
+    ['how do i invite another teacher', 'howInviteTeacher'],
+    ['كيف أحمّل التطبيق على الجوال؟', 'howInstallApp'],
+    ['how do i download the app on my phone', 'howInstallApp'],
+    ['هل التطبيق مجاني؟', 'howPricing'],
+    ['is the app free', 'howPricing'],
+    ['كيف أضيف صورة للسؤال؟', 'howQuestionImage'],
+    ['how do i add a picture to a question', 'howQuestionImage'],
+    // Inviting the class is the link code, not a teacher invite.
+    ['كيف أدعو أولياء الأمور؟', 'howShareLinkCode'],
+    ['how do i invite parents', 'howShareLinkCode'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» gets ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(classifyChatIntent(q, lang(q)).intent, 'app_help');
+      assert.equal(answerAppHelp(q, lang(q), t).text, `<${key}>`);
+    });
+  }
+
+  it('sharing an exam no longer opens My classes', () => {
+    assert.notEqual(top('how do i share an exam with my students'), 'classes');
+  });
+
+  const teaching = [
+    'كيف أرفع مستوى الطلاب؟',
+    'كيف أرفع الروح المعنوية في الصف؟',
+    'كيف أنشر الوعي البيئي بين الطلاب؟',
+    'كيف أشارك الطلاب في الحصة؟',
+    'كيف أعرف مين فهم الدرس؟',
+    'how do i see who understood the lesson',
+    'كيف أوقف الشغب في الصف؟',
+    'how do i stop students talking',
+    'كيف أتواصل مع الطلاب الخجولين؟',
+    'how do i support struggling students',
+    'كيف أحمّل الطلاب المسؤولية؟',
+    'كيف أدعو الطلاب للمشاركة؟',
+    'how do i invite students to participate',
+    // A how-verb plus «students» used to be enough for My classes.
+    'how do i make students listen',
+    'كيف أشارك طلابي في النقاش؟',
+    'كيف أنسخ المعادلة على السبورة؟',
+    'هل الإلكترون حر في الفلز؟',
+    'is the reaction spontaneous',
+    'كيف أصف الصورة في السؤال؟',
+    'كيف أحسب العلامات النهائية؟',
+    'كيف أكتب سؤالاً عن الصورة؟',
+  ];
+  for (const q of teaching) {
+    it(`leaves «${q}» alone`, () => {
+      assert.equal(isAppHelpQuery(q), false);
+      assert.notEqual(classifyChatIntent(q, lang(q)).intent, 'app_help');
+    });
+  }
+});
+
 describe('classifyChatIntent routes app questions before artifacts', () => {
   it('«وين ألاقي ورقة العمل» asks for the tool, not a worksheet', () => {
     assert.equal(classifyChatIntent('وين ألاقي ورقة العمل؟').intent, 'app_help');
