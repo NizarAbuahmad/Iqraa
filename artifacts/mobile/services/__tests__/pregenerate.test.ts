@@ -7,6 +7,7 @@ import {
   parseOnly,
   plannedCalls,
   plannedTeachingCalls,
+  readCredentials,
   reviewEntry,
   verifyReviewEntries,
   type Call,
@@ -214,4 +215,24 @@ test('--only accepts the three kinds and nothing else', () => {
   for (const bad of ['--only=lesson-teachin', '--only=', '--only=Worksheet', '--only', '--only=teaching']) {
     assert.throws(() => parseOnly([bad]), /--only.*worksheet.*lesson-plan.*lesson-teaching/s, bad);
   }
+});
+
+test('credentials: an email and password, or a session token for an account with no password', () => {
+  const base = { PREGEN_API_BASE: 'https://api.example/' };
+  assert.deepEqual(
+    readCredentials({ ...base, PREGEN_EMAIL: 'a@b.c', PREGEN_PASSWORD: 'pw' }),
+    { base: 'https://api.example', email: 'a@b.c', password: 'pw' },
+  );
+  assert.deepEqual(
+    readCredentials({ ...base, PREGEN_TOKEN: ' tok ' }),
+    { base: 'https://api.example', token: 'tok' },
+  );
+  // A token wins when both are set: someone who pasted one meant it.
+  assert.deepEqual(
+    readCredentials({ ...base, PREGEN_EMAIL: 'a@b.c', PREGEN_PASSWORD: 'pw', PREGEN_TOKEN: 'tok' }),
+    { base: 'https://api.example', token: 'tok' },
+  );
+  assert.throws(() => readCredentials({ PREGEN_TOKEN: 'tok' }), /PREGEN_API_BASE/);
+  assert.throws(() => readCredentials({ ...base, PREGEN_EMAIL: 'a@b.c' }), /PREGEN_PASSWORD.*PREGEN_TOKEN/s);
+  assert.throws(() => readCredentials(base), /PREGEN_EMAIL.*PREGEN_TOKEN/s);
 });
