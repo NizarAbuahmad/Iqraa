@@ -9,7 +9,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { DECK_ICON_SHAPES, deckIconSvg, iconForGlyph, type DeckIconName } from '../deckIcons.ts';
+import { DECK_ICON_SHAPES, deckIconSvg, iconForGlyph, iconForTopic, type DeckIconName } from '../deckIcons.ts';
 import { splitEmoji } from '../deckText.ts';
 import { buildDeckSlidesHTML } from '../deckSlidesHtml.ts';
 import type { ActivitySlide, ClassroomActivity } from '../ai/AIService.ts';
@@ -46,6 +46,37 @@ describe('iconForGlyph', () => {
       const name = iconForGlyph(g);
       assert.ok(name, `${g} has no icon`);
       assert.ok(DECK_ICON_SHAPES[name!].length > 0, `${name} has no shapes`);
+    }
+  });
+});
+
+describe('iconForTopic', () => {
+  it('names the subject of a unit, in Arabic and English', () => {
+    const cases: [string, string][] = [
+      ['الحركة والقوة', 'atom'],
+      ['علوم الأرض والفضاء', 'globe'],
+      ['النباتات والخلايا', 'leaf'],
+      ['الطاقة والحرارة', 'sun'],
+      ['الكسور والأعداد', 'calculator'],
+      ['التفاعلات الكيميائية', 'flask'],
+      ['Forces and Motion', 'atom'],
+      ['Earth and Space', 'globe'],
+      ['Fractions', 'calculator'],
+      ['Reading and Writing', 'book'],
+    ];
+    for (const [text, icon] of cases) assert.equal(iconForTopic(text), icon, text);
+  });
+
+  it('has no opinion rather than a wrong one', () => {
+    // «Unit» and «وحدة» are the word for a unit of the book, not a topic
+    for (const text of ['وحدة عامة', 'Unit 3', '']) assert.equal(iconForTopic(text), null, text);
+    assert.equal(iconForTopic(undefined as never), null);
+  });
+
+  it('only ever returns an icon the renderers can draw', () => {
+    for (const text of ['الحركة', 'الأرض', 'water', 'history', 'computer', 'السكان والمجتمع']) {
+      const icon = iconForTopic(text);
+      if (icon !== null) assert.ok(isSectionIconName(icon), `${text} → ${icon}`);
     }
   });
 });

@@ -722,6 +722,59 @@ function StatsRowView({ items, accent, isRTL }: {
   );
 }
 
+/**
+ * The heading of a slide drawn in one of the structure layouts: the same icon
+ * chip and title the ordinary slide has. These branches used to draw a bare
+ * title, so the icon the model (or the deck builder) chose showed in the PDF and
+ * never in the presenter.
+ */
+function LayoutHeading({ heading, icon, accent, isRTL }: {
+  heading: string;
+  icon: DeckIconName | null;
+  accent: string;
+  isRTL: boolean;
+}) {
+  const T = useContext(ThemeContext);
+  const { slideStyles } = sheetsFor(T);
+  return (
+    <View style={[slideStyles.headRow, { flexDirection: isRTL ? 'row-reverse' : 'row', marginBottom: 16 }]}>
+      {icon ? (
+        <View style={[slideStyles.glyphChip, { backgroundColor: accent + '18', borderColor: accent + '33' }]}>
+          <DeckIcon name={icon} color={accent} size={24} />
+        </View>
+      ) : null}
+      <Text
+        style={[
+          slideStyles.title,
+          { color: accent, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr', fontFamily: 'ReadexPro_700Bold' },
+        ]}
+      >
+        {isolateForeignRuns(heading)}
+      </Text>
+    </View>
+  );
+}
+
+/** Short key terms as large cards that fill the slide, two or three to a row. */
+function ConceptsView({ items, accent, isRTL }: {
+  items: string[];
+  accent: string;
+  isRTL: boolean;
+}) {
+  const T = useContext(ThemeContext);
+  const { slideStyles } = sheetsFor(T);
+  return (
+    <View style={[slideStyles.conceptsGrid, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+      {items.map((it, i) => (
+        <View key={i} style={slideStyles.conceptCard}>
+          <View style={[slideStyles.conceptBar, { backgroundColor: accent }]} />
+          <Text style={[slideStyles.conceptText, { writingDirection: isRTL ? 'rtl' : 'ltr' }]}>{isolateForeignRuns(it)}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 /** A grid: accent header row, banded body, first column on the reading edge. */
 function TableView({ headers, rows, accent, isRTL }: {
   headers: string[];
@@ -871,9 +924,7 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
 
         {layout.kind === 'compare' && (
           <>
-            <Text style={[slideStyles.title, { color: accent, textAlign: align, writingDirection: dir, marginBottom: 16 }]}>
-              {isolateForeignRuns(heading)}
-            </Text>
+            <LayoutHeading heading={heading} icon={headIcon} accent={accent} isRTL={isRTL} />
             <View style={[slideStyles.compareRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               {([[layout.leftTitle, layout.left], [layout.rightTitle, layout.right]] as const).map(
                 ([colTitle, items], col) => (
@@ -900,9 +951,7 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
 
         {layout.kind === 'steps' && (
           <>
-            <Text style={[slideStyles.title, { color: accent, textAlign: align, writingDirection: dir, marginBottom: 16 }]}>
-              {isolateForeignRuns(heading)}
-            </Text>
+            <LayoutHeading heading={heading} icon={headIcon} accent={accent} isRTL={isRTL} />
             <View style={{ gap: 14, alignSelf: 'stretch' }}>
               {layout.steps.map((step, i) => (
                 <View
@@ -923,36 +972,28 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
 
         {layout.kind === 'timeline' && (
           <>
-            <Text style={[slideStyles.title, { color: accent, textAlign: align, writingDirection: dir, marginBottom: 16 }]}>
-              {isolateForeignRuns(heading)}
-            </Text>
+            <LayoutHeading heading={heading} icon={headIcon} accent={accent} isRTL={isRTL} />
             <TimelineView events={layout.events} accent={accent} isRTL={isRTL} />
           </>
         )}
 
         {layout.kind === 'stats' && (
           <>
-            <Text style={[slideStyles.title, { color: accent, textAlign: align, writingDirection: dir, marginBottom: 16 }]}>
-              {isolateForeignRuns(heading)}
-            </Text>
+            <LayoutHeading heading={heading} icon={headIcon} accent={accent} isRTL={isRTL} />
             <StatsRowView items={layout.items} accent={accent} isRTL={isRTL} />
           </>
         )}
 
         {layout.kind === 'table' && (
           <>
-            <Text style={[slideStyles.title, { color: accent, textAlign: align, writingDirection: dir, marginBottom: 16 }]}>
-              {isolateForeignRuns(heading)}
-            </Text>
+            <LayoutHeading heading={heading} icon={headIcon} accent={accent} isRTL={isRTL} />
             <TableView headers={layout.headers} rows={layout.rows} accent={accent} isRTL={isRTL} />
           </>
         )}
 
         {layout.kind === 'flow' && (
           <>
-            <Text style={[slideStyles.title, { color: accent, textAlign: align, writingDirection: dir, marginBottom: 16 }]}>
-              {isolateForeignRuns(heading)}
-            </Text>
+            <LayoutHeading heading={heading} icon={headIcon} accent={accent} isRTL={isRTL} />
             <FlowView
               nodes={layout.nodes}
               cycle={layout.cycle}
@@ -960,6 +1001,13 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
               isRTL={isRTL}
               loopLabel={t('deckFlowLoop')}
             />
+          </>
+        )}
+
+        {layout.kind === 'concepts' && (
+          <>
+            <LayoutHeading heading={heading} icon={headIcon} accent={accent} isRTL={isRTL} />
+            <ConceptsView items={layout.items} accent={accent} isRTL={isRTL} />
           </>
         )}
 
@@ -2062,6 +2110,13 @@ const makeSlideStyles = (T: DeckTheme) => StyleSheet.create({
   },
   statsValue: { fontSize: D.statsValue, lineHeight: 72, fontFamily: 'ReadexPro_700Bold', textAlign: 'center' },
   statsLabel: { fontSize: D.statsLabel, lineHeight: 28, color: T.text, textAlign: 'center', fontFamily: 'Almarai_400Regular' },
+  conceptsGrid: { gap: 16, alignSelf: 'stretch', flexWrap: 'wrap' },
+  conceptCard: {
+    flexGrow: 1, flexBasis: 240, minHeight: 160, justifyContent: 'center', gap: 12, padding: 24,
+    backgroundColor: T.card, borderRadius: 24, borderWidth: 1, borderColor: T.border,
+  },
+  conceptBar: { width: 40, height: 4, borderRadius: 4 },
+  conceptText: { fontSize: D.conceptText, lineHeight: 44, color: T.text, fontFamily: 'ReadexPro_600SemiBold' },
   tableWrap: { alignSelf: 'stretch', borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: T.border },
   tableRow: { alignItems: 'stretch' },
   tableHead: { flex: 1, padding: 12, fontSize: D.tableHead, lineHeight: 28, color: '#FFFFFF', fontFamily: 'ReadexPro_700Bold' },
