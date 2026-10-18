@@ -25,6 +25,9 @@
       "path": "./lib/math-practice"
     },
     {
+      "path": "./lib/exam-paper"
+    },
+    {
       "path": "./lib/arabic-spelling"
     },
   ]
