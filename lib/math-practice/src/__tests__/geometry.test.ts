@@ -225,13 +225,21 @@ describe('geometry generators: answers recomputed from the stem', () => {
     for (const item of draws('sphere')) {
       const p = item.promptAr!;
       const [r] = nums(p);
-      if (has(p, 'نصف كرة')) { saw('sphere', 'bowl'); assert.equal(coef(item.answer), (2 * r! ** 3) / 3, p); }
+      if (has(p, 'نصف قطر كرة أخرى')) {
+        saw('sphere', 'scale');
+        const a = has(p, 'مثلَي') ? 2 : r!;
+        assert.equal(Number(item.answer), has(p, 'حجم') ? a ** 3 : a ** 2, p);
+        continue;
+      }
+      if (has(p, 'نصف كرة مصمتة')) { saw('sphere', 'hemisphere'); assert.equal(coef(item.answer), 2 * r! ** 2 + r! ** 2, p); }
+      else if (has(p, 'نصف كرة')) { saw('sphere', 'bowl'); assert.equal(coef(item.answer), (2 * r! ** 3) / 3, p); }
+      else if (has(p, 'حجم كرة') && has(p, 'ما طول نصف قطرها')) { saw('sphere', 'radius from volume'); assert.equal((4 * Number(item.answer) ** 3) / 3, coef(p.match(/(\d*π)/)![1]!), p); }
       else if (has(p, 'ما طول نصف قطرها')) { saw('sphere', 'radius'); assert.equal(4 * Number(item.answer) ** 2, coef(p.match(/(\d*π)/)![1]!), p); }
       else if (has(p, 'كرة قطرها')) { saw('sphere', 'diameter'); assert.equal(coef(item.answer), 4 * (r! / 2) ** 2, p); }
       else { saw('sphere', has(p, 'حجم') ? 'volume' : 'surface'); assert.equal(coef(item.answer), has(p, 'حجم') ? (4 * r! ** 3) / 3 : 4 * r! ** 2, p); }
       assert.ok(Number.isInteger(coef(item.answer)));
     }
-    const want = { volume_pyr_cone: 4, surface_prism_cyl: 5, surface_pyr_cone: 5, sphere: 5 };
+    const want = { volume_pyr_cone: 4, surface_prism_cyl: 5, surface_pyr_cone: 5, sphere: 8 };
     for (const [id, k] of Object.entries(want)) assert.equal(kinds[id]?.size, k, `${id} kinds drawn: ${[...(kinds[id] ?? [])]}`);
     const partKinds = new Set<string>();
     const ADJ: Record<number, string> = { 3: 'ثلاثي', 4: 'رباعي', 5: 'خماسي', 6: 'سداسي' };
@@ -407,14 +415,19 @@ describe('geometry generators: answers recomputed from the stem', () => {
       if (props[item.answer]) assert.ok(item.promptAr!.includes(props[item.answer]!), item.promptAr);
       assert.equal(new Set(['مربع', 'مستطيل', 'معين', 'متوازي أضلاع', 'شبه منحرف']).has(item.answer), true);
     }
+    const kinds: Record<string, Set<string>> = {};
+    const saw = (id: string, k: string) => (kinds[id] ??= new Set()).add(k);
     for (const item of draws('parallelogram_props')) {
       const n = nums(item.promptAr!);
       const p = item.promptAr!;
+      // consecutive angles add to 180°: A + (A + d) = 180
+      if (has(p, 'بمقدار')) { saw('parallelogram_props', 'exceeds'); assert.equal(dg(item.answer) * 2 + n[0]!, 180, p); continue; }
+      if (has(p, 'ما طول الضلع BC')) { saw('parallelogram_props', 'side'); assert.equal(2 * (n[1]! + Number(item.answer)), n[0], p); continue; }
       const want = has(p, 'الزاوية B') ? 180 - n[0]! : has(p, 'الزاوية C') ? n[0]! : has(p, 'AO') ? n[0]! / 2 : 2 * (n[0]! + n[1]!);
+      saw('parallelogram_props', has(p, 'الزاوية') ? 'angle' : has(p, 'AO') ? 'diagonal' : 'perimeter');
       assert.equal(has(p, 'محيطه') || has(p, 'AO') ? Number(item.answer) : dg(item.answer), want, p);
     }
-    const kinds: Record<string, Set<string>> = {};
-    const saw = (id: string, k: string) => (kinds[id] ??= new Set()).add(k);
+    assert.equal(kinds.parallelogram_props?.size, 5, [...(kinds.parallelogram_props ?? [])].join(', '));
     for (const item of draws('parallelogram_test')) {
       const p = item.promptAr!;
       if (has(p, 'الرأس D')) {
@@ -497,11 +510,25 @@ describe('geometry generators: answers recomputed from the stem', () => {
         const corr = (v: string) => 'DEF'['ABC'.indexOf(v)];
         const need = has(p, 'بحالة ASA') ? other : off;
         assert.equal(item.answer, `∠${need} ≅ ∠${corr(need)}`, p);
-      } else if (has(p, '∠B ≅ ∠E و')) {
+      } else if (has(p, 'بأي حالة يتطابق المثلثان')) {
         saw('congruence_b', 'marked parts');
-        // the side is included between the two angles A and B only when it is AB
-        const side = p.match(/و ([A-C]{2}) ≅/)![1]!;
-        assert.equal(item.answer, side === 'AB' ? 'ASA' : 'AAS', p);
+        // the side is included between the two marked angles only when it joins them
+        const angles = [...p.matchAll(/∠([A-C]) ≅ ∠([D-F])/g)].map(m => m[1]!);
+        const side = p.match(/و ([A-C]{2}) ≅ ([D-F]{2})/)!;
+        assert.equal(angles.length, 2, p);
+        for (const [a, d] of [...p.matchAll(/∠([A-C]) ≅ ∠([D-F])/g)].map(m => [m[1]!, m[2]!])) assert.equal('ABC'.indexOf(a!), 'DEF'.indexOf(d!), p);
+        assert.equal(side[2], side[1]!.replace(/[A-C]/g, c => 'DEF'['ABC'.indexOf(c)]!), p);
+        assert.equal(item.answer, [...side[1]!].sort().join('') === [...angles].sort().join('') ? 'ASA' : 'AAS', p);
+      } else if (has(p, 'فما طول الضلع')) {
+        saw('congruence_b', 'side');
+        const [ab, bc, ac] = nums(p), ask = p.match(/الضلع ([D-F]{2})؟/)![1]!;
+        assert.equal(Number(item.answer), { DE: ab, EF: bc, DF: ac }[ask], p);
+      } else if (has(p, 'فما قيمة x')) {
+        saw('congruence_b', 'x');
+        const [s1, s2] = [...p.matchAll(/([A-F]{2}) = \(/g)].map(m => m[1]!);
+        assert.equal(s2, s1!.replace(/[A-C]/g, c => 'DEF'['ABC'.indexOf(c)]!), 'corresponding sides');
+        const [a, b] = linPair(p, Number(item.answer));
+        assert.equal(a, b, p);
       } else if (has(p, 'الزاوية F')) {
         saw('congruence_b', 'angle');
         const n = nums(p);
@@ -516,7 +543,7 @@ describe('geometry generators: answers recomputed from the stem', () => {
       else if (has(p, 'محيط')) { saw('similar_triangles', 'perimeter'); assert.equal(Number(item.answer), n[0]! * n[1]!, p); }
       else { saw('similar_triangles', 'side'); assert.equal(Number(item.answer) / n[2]!, n[1]! / n[0]!, p); }
     }
-    const want = { parallelogram_test: 4, congruence_b: 4, similar_triangles: 5, parallelogram_special: 6, parallel_proof: 6 };
+    const want = { parallelogram_test: 4, congruence_b: 6, similar_triangles: 5, parallelogram_special: 6, parallel_proof: 6 };
     for (const [id, k] of Object.entries(want)) assert.equal(kinds[id]?.size, k, `${id} kinds drawn: ${[...(kinds[id] ?? [])]}`);
     for (const item of draws('pythagoras')) {
       const p = item.promptAr!;
