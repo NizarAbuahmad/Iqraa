@@ -4245,6 +4245,26 @@ word (`EN_HOW_LEAD` / `AR_HOW_LEAD`): said as intent, «اريد اضافة سؤ
 asks the assistant to write one and stays teaching. «كيف أرسل رسالة لولي أمر؟» still
 goes to the model by agreement. 14 look-alikes pinned.
 
+**Classes, students, parents and files (2026-10-18, sixth live pass).** Two answers
+were worse than none: «كيف أغير اسم الشعبة؟» got the make-a-new-class steps (now
+`NEW_ITEM_HOWS`: add-a-class / add-a-student steps never answer a change verb), and
+"how do i create a positive classroom" opened the interactive-class tool because the
+tool's id was a keyword (`ID_IS_A_WORD`; the tool is still found by «الحصة
+التفاعلية» / "interactive class"). New `RULE_PLACES`, steps from the screens: rename
+a class (pencil → «تعديل الشعبة»), remove a student (× on the «الطلبة» tab), link a
+parent (the per-student key → «أنشئ الرمز» / «شارك الرمز»), a new login code, how a
+student signs up and signs in («سجّلت برمز الربط؟ ادخل برمز حسابك»), a group message
+to parents («رسالة جماعية»), parents' messages, creating an exam, deleting a saved
+file (⋯ → «احذف»), editing a worksheet, the Ministry-form export (lesson-plan screen
+only), and an exam date «for the calendar» (the existing exam-date steps). **Three say
+the app cannot**: no moving a student between classes (a re-added name is a new
+record, marks and parent link stay behind), no hand-made support group (they are
+built from results under 60%), no event added on the calendar. Creating an exam needs
+a how-word and says «امتحان»/"exam": «اختبار» and "test" stay with the short-quiz
+steps (`howMakeQuiz`). Still answered as app questions, older and not fixed here: a
+how-question that names a tool and then a purpose («كيف أعدّل ورقة العمل لتناسب الطلاب
+الضعاف؟»). 7 look-alikes pinned.
+
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
 Step 4 of the worksheet review, agreed in chat. A worksheet was paper only: to
