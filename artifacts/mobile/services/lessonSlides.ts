@@ -28,8 +28,23 @@ import { buildChartSlide, buildGraphSlide, referencesShownVisual, scanGraphComma
 import { chartForLesson, visualForSlide } from './deckVisuals.ts';
 import { type BookFigure, figuresForLesson } from './bookFigures.ts';
 import { exerciseReference, exercisesForLesson } from './bookExercises.ts';
-import { inlineSteps, MAX_STAT_VALUE_CHARS } from './slideLayout.ts';
+import { inlineSteps, MAX_STAT_VALUE_CHARS, resolveSlideLayout } from './slideLayout.ts';
+import { iconForTopic } from './deckIcons.ts';
 import { englishOnly } from './englishText.ts';
+
+/**
+ * `slide` drawn in `shape` when the gate accepts its data, else exactly as it
+ * was. The slide keeps its bullet `content` either way, so a refusal (a list
+ * that ran long, a term too wide for a card) is the ordinary list, never a
+ * blank slide — the same fallback every renderer relies on.
+ */
+function withShape(
+  slide: Omit<ActivitySlide, 'slideNumber'>,
+  shape: Partial<ActivitySlide>,
+): Omit<ActivitySlide, 'slideNumber'> {
+  const shaped = { ...slide, ...shape };
+  return resolveSlideLayout({ ...shaped, slideNumber: 0 }) ? shaped : slide;
+}
 
 /**
  * Split a generated warm-up into what the class sees and what only the
@@ -559,6 +574,7 @@ export function buildLessonDeck(
       type: 'divider',
       title: L('لنبدأ الشرح', "Let's dig in"),
       content: title,
+      icon: 'bulb',
       durationSeconds: 0,
     });
   }
@@ -572,7 +588,15 @@ export function buildLessonDeck(
   // preamble instead of at the end of it.
   const terms = (lesson?.keyTerms ?? []).slice(0, 6);
   if (terms.length >= 2) {
-    push({
+    const pairs = terms.map(term => ({
+      word: nonEmpty(isAr ? term.ar : term.en),
+      def: nonEmpty(isAr ? term.definitionAr : term.definitionEn),
+    }));
+    // A term and its meaning is a two-column table, not a bullet with a dash.
+    // Only when EVERY term has both halves — a table with a hole in it reads as
+    // a missing definition — and when the gate accepts the sizes; otherwise the
+    // bullets below are the slide, as before.
+    push(withShape({
       type: 'intro',
       title: L('📖 مفردات الدرس', '📖 Key Vocabulary'),
       content: terms
@@ -583,7 +607,12 @@ export function buildLessonDeck(
         })
         .join('\n'),
       durationSeconds: 0,
-    });
+    }, pairs.every(p => p.word && p.def)
+      ? {
+        layout: 'table',
+        table: { headers: [L('المصطلح', 'Term'), L('المعنى', 'Meaning')], rows: pairs.map(p => [p.word, p.def]) },
+      }
+      : {}));
   } else if (terms.length === 1) {
     // One term is not a vocabulary list — a heading over a single bullet. With
     // a definition it is a concept like any other and gets a slide titled by
@@ -663,12 +692,15 @@ export function buildLessonDeck(
       continue;
     }
     for (let i = 0; i < bareConcepts.length; i += 4) {
-      push({
+      const chunk = bareConcepts.slice(i, i + 4);
+      // Short terms fill the slide as cards; a chunk with a sentence in it stays
+      // a list (the gate decides — see `withShape`).
+      push(withShape({
         type: 'intro',
         title: L('💡 أفكار الدرس', '💡 Key Ideas'),
-        content: bareConcepts.slice(i, i + 4).map(c => `• ${c}`).join('\n'),
+        content: chunk.map(c => `• ${c}`).join('\n'),
         durationSeconds: 0,
-      });
+      }, { layout: 'concepts', concepts: chunk }));
     }
   }
 
@@ -948,6 +980,7 @@ export function buildLessonDeck(
       type: 'divider',
       title: L('غلق الدرس', 'Exit Ticket'),
       content: title,
+      icon: 'ticket',
       durationSeconds: 0,
     });
     exitChecks.forEach((check, i) => {
@@ -1236,12 +1269,18 @@ export function buildRevisionDeck(isAr: boolean, opts: RevisionDeckOptions): Cla
   units.forEach((unit, i) => {
     const unitTitle = nonEmpty(unit.title);
     if (!unitTitle) return;
+    // The unit's own icon (an atom for force and motion, a globe for earth and
+    // space) on its section break and its key-ideas slide; a generic one when
+    // the title names nothing recognisable, because a flat panel with a title on
+    // it is the look every unit break had.
+    const unitIcon = iconForTopic(unitTitle);
     push({
       type: 'divider',
       title: unitTitle,
       content: units.length > 1
         ? L(`الجولة ${i + 1} من ${units.length}`, `Round ${i + 1} of ${units.length}`)
         : L('جولة المراجعة', 'Revision round'),
+      icon: unitIcon ?? 'books',
       durationSeconds: 0,
     });
     // A unit with no English ideas left shows its lesson titles instead (see `fit`).
@@ -1250,9 +1289,12 @@ export function buildRevisionDeck(isAr: boolean, opts: RevisionDeckOptions): Cla
     const shown = ideas.length > 0 ? ideas : lessonTitles.slice(0, 6);
     if (shown.length === 0) return;
     const terms = bullets(fitAll(unit.terms), 3);
-    push({
+    push(withShape({
       type: 'intro',
-      title: `💡 ${unitTitle}`,
+      // No leading emoji: with one, the heading draws the bulb and the unit's
+      // own icon never shows.
+      title: unitTitle,
+      icon: unitIcon ?? 'bulb',
       content: shown.map(s => `• ${s}`).join('\n'),
       durationSeconds: 0,
       teacher: {
@@ -1264,7 +1306,7 @@ export function buildRevisionDeck(isAr: boolean, opts: RevisionDeckOptions): Cla
           ? { teachingTips: L(`مصطلحات تستحق السؤال عنها: ${terms.join('، ')}`, `Terms worth asking about: ${terms.join(', ')}`) }
           : {}),
       },
-    });
+    }, { layout: 'concepts', concepts: shown }));
   });
 
   // ── 6. Checks — after the rounds: a generated check is about the scope, not one round ──
@@ -1324,7 +1366,7 @@ export function buildRevisionDeck(isAr: boolean, opts: RevisionDeckOptions): Cla
 
   // ── 9. Exit ticket ──────────────────────────────────────────────────────
   if (exitChecks.length > 0) {
-    push({ type: 'divider', title: L('غلق الحصة', 'Exit Ticket'), content: title, durationSeconds: 0 });
+    push({ type: 'divider', title: L('غلق الحصة', 'Exit Ticket'), content: title, icon: 'ticket', durationSeconds: 0 });
     exitChecks.forEach((check, i) => {
       push(asCheckSlide(check, L(`🎫 غلق الحصة ${i + 1}`, `Exit Ticket ${i + 1}`)));
     });

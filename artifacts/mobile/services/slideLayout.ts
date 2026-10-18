@@ -36,6 +36,7 @@ export type ResolvedLayout =
   | { kind: 'table'; headers: string[]; rows: string[][] }
   | { kind: 'flow'; nodes: string[]; cycle: boolean }
   | { kind: 'quote'; text: string; by?: string }
+  | { kind: 'concepts'; items: string[] }
   | { kind: 'photo'; url: string; caption: string; credit?: PhotoCredit; sentence: string };
 
 /**
@@ -82,6 +83,15 @@ export const MAX_FLOW_NODE_CHARS = 60;
 /** A quote is a sentence or two set large; past this it is a paragraph in display type. */
 export const MAX_QUOTE_CHARS = 200;
 export const MAX_QUOTE_BY_CHARS = 60;
+
+/**
+ * A grid of short key terms. Past this length an item is a sentence, and a
+ * sentence in a card is worse than the bullet list it replaced; two items is a
+ * pair, and seven no longer fit as large cards.
+ */
+export const MIN_CONCEPTS = 2;
+export const MAX_CONCEPTS = 6;
+export const MAX_CONCEPT_CHARS = 32;
 
 /** A required string: trimmed, bullet-stripped, non-empty, within `max`. Anything else is `null`. */
 function needText(v: unknown, max: number): string | null {
@@ -225,6 +235,12 @@ export function resolveSlideLayout(slide: ActivitySlide): ResolvedLayout | null 
       return { kind: 'quote', text, ...(by ? { by } : {}) };
     }
 
+    case 'concepts': {
+      const items = needTexts(slide.concepts, MAX_CONCEPT_CHARS);
+      if (!items || items.length < MIN_CONCEPTS || items.length > MAX_CONCEPTS) return null;
+      return { kind: 'concepts', items };
+    }
+
     case 'photo': {
       // Needs a real picture and one sentence to put over it. Without the
       // picture this is `null` — the ordinary layout, with the sentence as a
@@ -250,7 +266,7 @@ export function resolveSlideLayout(slide: ActivitySlide): ResolvedLayout | null 
 }
 
 /** The layouts whose data lives in a field of its own rather than in `content`. */
-export const PAYLOAD_LAYOUTS = ['stat', 'compare', 'timeline', 'stats', 'table', 'flow', 'quote'] as const;
+export const PAYLOAD_LAYOUTS = ['stat', 'compare', 'timeline', 'stats', 'table', 'flow', 'quote', 'concepts'] as const;
 
 /**
  * A slide's own words as bullet lines, from whichever payload it carries — for
@@ -276,6 +292,7 @@ export function payloadLines(slide: ActivitySlide): string[] {
   }
   for (const step of Array.isArray(slide.flow?.steps) ? slide.flow!.steps : []) add(step);
   if (slide.quote) add(slide.quote.text, slide.quote.by);
+  for (const c of Array.isArray(slide.concepts) ? slide.concepts : []) add(c);
   return out;
 }
 
@@ -344,4 +361,4 @@ export function inlineSteps(text: string): string[] | null {
 }
 
 /** Every layout a generator may ask for — the prompt and the tests share this. */
-export const SLIDE_LAYOUTS = ['statement', 'stat', 'compare', 'steps', 'timeline', 'stats', 'table', 'flow', 'quote', 'photo'] as const;
+export const SLIDE_LAYOUTS = ['statement', 'stat', 'compare', 'steps', 'timeline', 'stats', 'table', 'flow', 'quote', 'photo', 'concepts'] as const;
