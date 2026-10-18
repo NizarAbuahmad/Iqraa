@@ -182,6 +182,9 @@ export const DECK_DISPLAY_TYPE = {
   tableCell: 20,
   flowNode: 22,
   flowLoop: 17,
+  quoteMark: 96,
+  quoteText: 36,
+  quoteBy: 22,
 } as const;
 
 /** `#1E8E8E` → `1E8E8E`. pptxgenjs rejects the hash. */

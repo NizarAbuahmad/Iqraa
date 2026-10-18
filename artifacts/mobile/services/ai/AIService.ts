@@ -529,7 +529,7 @@ export interface ActivitySlide {
    * `services/slideLayout.ts` decides whether a layout's data is complete
    * enough to draw; all three renderers ask it rather than checking fields.
    */
-  layout?: 'statement' | 'stat' | 'compare' | 'steps' | 'timeline' | 'stats' | 'table' | 'flow';
+  layout?: 'statement' | 'stat' | 'compare' | 'steps' | 'timeline' | 'stats' | 'table' | 'flow' | 'quote' | 'photo';
   /** The figure and its caption, for `layout: 'stat'`. */
   stat?: { value: string; label: string; source?: string };
   /** The two sides, for `layout: 'compare'`. */
@@ -542,6 +542,12 @@ export interface ActivitySlide {
   table?: { headers: string[]; rows: string[][] };
   /** A process drawn as boxes and arrows, for `layout: 'flow'`; `cycle` loops it back to the start. */
   flow?: { steps: string[]; cycle?: boolean };
+  /**
+   * A quotation, definition or key principle set large, for `layout: 'quote'`;
+   * `by` says whose words they are. (`layout: 'photo'` has no payload of its
+   * own: the picture is `sideImageUrl`, the sentence over it is `content`.)
+   */
+  quote?: { text: string; by?: string };
   /**
    * A short English photo-search phrase the generator asked for on this slide.
    *
