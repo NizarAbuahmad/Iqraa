@@ -8,6 +8,7 @@
  * is printed for a question type the paper does not have.
  */
 import type { QuizQuestion } from './ai/AIService.ts';
+import { QUIZ_TYPE_ORDER } from '@workspace/exam-paper';
 import { examBlockMarks, examBlocks, type ExamBlock } from './examBlocks.ts';
 
 export function quizTypeLabel(type: QuizQuestion['type'], isAr: boolean): string {
@@ -19,12 +20,11 @@ export function quizTypeLabel(type: QuizQuestion['type'], isAr: boolean): string
 
 /**
  * The order a ministry exam puts its question types in: choice, then
- * صح/خطأ, then complete, then written answers. The live prompt asks for it
- * and `normalizeQuiz` (api-server `generationShape.ts`) enforces it; the
- * offline generator builds it, so a paper reads the same whichever path made it.
+ * صح/خطأ, then complete, then written answers. The list lives in
+ * `lib/exam-paper`, shared with the API's `normalizeQuiz` and prompt, so a
+ * paper reads the same whichever path made it.
  */
-export const QUIZ_TYPE_ORDER: readonly QuizQuestion['type'][] =
-  ['multiple_choice', 'true_false', 'fill_blank', 'short_answer'];
+export { QUIZ_TYPE_ORDER };
 
 export type QuizBlock = ExamBlock<QuizQuestion>;
 
