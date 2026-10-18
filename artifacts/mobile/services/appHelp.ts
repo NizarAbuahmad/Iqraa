@@ -32,12 +32,18 @@ export type AppPlace = {
   howKey?: string;
 };
 
-/** Extra words per catalog tool id; the tool's id is always a keyword too. */
+/**
+ * A tool id that is also an everyday word is not a keyword: «how do i create a
+ * positive classroom» opened the interactive-class tool (found 2026-10-18).
+ */
+const ID_IS_A_WORD = new Set(['classroom']);
+
+/** Extra words per catalog tool id; the tool's id is a keyword too, unless it is in `ID_IS_A_WORD`. */
 const TOOL_KEYWORDS: Record<string, string[]> = {
   slides: ['عرض', 'شرائح', 'بوربوينت', 'باوربوينت', 'بريزنتيشن', 'slides', 'presentation', 'deck'],
   'lesson-plan': ['خطه درس', 'تحضير', 'تحضير درس', 'lesson plan'],
   worksheet: ['ورقه عمل', 'اوراق عمل', 'worksheet'],
-  classroom: ['تحدي', 'تحديات', 'غرفه الهروب', 'بنغو', 'escape', 'bingo'],
+  classroom: ['تحدي', 'تحديات', 'غرفه الهروب', 'بنغو', 'الحصه التفاعليه', 'escape', 'bingo', 'interactive class'],
   game: ['لعبه', 'مسابقه', 'مسابقات', 'game', 'quiz game'],
   activity: ['نشاط', 'انشطه', 'activity'],
   games: ['العاب', 'ألعاب', 'games', 'play'],
@@ -227,7 +233,7 @@ function toolPlaces(): AppPlace[] {
         labelKey: tool.titleKey,
         pathKeys: ['tabTools', section.titleKey],
         isTool: true,
-        keywords: [tool.id, ...(TOOL_KEYWORDS[tool.id] ?? [])],
+        keywords: [...(ID_IS_A_WORD.has(tool.id) ? [] : [tool.id]), ...(TOOL_KEYWORDS[tool.id] ?? [])],
         howKey: TOOL_HOW[tool.id],
       });
     }
@@ -1093,6 +1099,14 @@ export type AppHelpAnswer = { text: string; places: AppPlace[] };
 
 const PRINT_VERB = /(?:^|\s)(?:اطبع|نطبع|طباعه)(?:\s|$)|\bprint/;
 const REMOVE_VERB = /(?:^|\s)(?:احذف|حذف|امسح|مسح|ازيل|ازاله|ارشف|ارشفه|الغي|الغاء)(?:\s|$)|\b(?:delete|remove|archive|erase)\b/;
+/**
+ * «كيف أغير اسم الشعبة؟» got «اضغط شعبة جديدة» (found 2026-10-18): a teacher who
+ * follows it ends up with two classes. Steps that make a new class or student
+ * never answer a question about changing one. Not the grade steps: «اريد تغيير
+ * الصف» is answered with them on purpose (see `STATEMENT_PLACES`).
+ */
+const CHANGE_VERB = /(?:^|\s)(?:اغير|تغيير|اعدل|تعديل|ابدل|تبديل|تسميه)(?:\s|$)|\b(?:change|edit|rename|update)\b/;
+const NEW_ITEM_HOWS = new Set(['howAddClass', 'howAddStudent']);
 /** Steps that add something, which must not answer a question about removing it. */
 const ADD_HOWS = new Set(['howAddClass', 'howAddGrade', 'howAddStudent']);
 
@@ -1125,7 +1139,7 @@ export function answerAppHelp(
   const q = plain(query);
   const exportHow = places.find(p => p.id === 'export')?.howKey
     ?? (PRINT_VERB.test(q) ? APP_PLACES.find(p => p.id === 'export')?.howKey : undefined);
-  const firstHow = places[0]!.howKey && !(ADD_HOWS.has(places[0]!.howKey) && REMOVE_VERB.test(q))
+  const firstHow = places[0]!.howKey && !(ADD_HOWS.has(places[0]!.howKey) && REMOVE_VERB.test(q)) && !(NEW_ITEM_HOWS.has(places[0]!.howKey) && CHANGE_VERB.test(q))
     ? places[0]!.howKey
     : undefined;
   // A generator's own steps say how to make one, so «how do I export my

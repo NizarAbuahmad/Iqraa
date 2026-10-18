@@ -950,6 +950,23 @@ describe('editing an exam, marks, results, printing, homework, one-to-one messag
   }
 });
 
+describe('a tool id that is a word, and new-item steps for a change', () => {
+  // The sixth live pass (2026-10-18).
+  const t = (k: string) => `<${k}>`;
+  it('«how do i create a positive classroom» is a teaching question', () => {
+    assert.equal(isAppHelpQuery('how do i create a positive classroom'), false);
+    assert.notEqual(classifyChatIntent('how do i create a positive classroom', 'en').intent, 'app_help');
+  });
+  it('the interactive class is still found by its name', () => {
+    assert.equal(top('where is the interactive class'), 'tool:classroom');
+    assert.equal(top('وين الحصة التفاعلية؟'), 'tool:classroom');
+  });
+  it('renaming a class never gets the make-a-new-class steps', () => {
+    assert.notEqual(answerAppHelp('كيف أغير اسم الشعبة؟', 'ar', t).text, '<howAddClass>');
+    assert.notEqual(answerAppHelp('how do i edit my class', 'en', t).text, '<howAddClass>');
+  });
+});
+
 describe('classifyChatIntent routes app questions before artifacts', () => {
   it('«وين ألاقي ورقة العمل» asks for the tool, not a worksheet', () => {
     assert.equal(classifyChatIntent('وين ألاقي ورقة العمل؟').intent, 'app_help');
