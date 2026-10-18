@@ -804,8 +804,28 @@ describe('answers recomputed from the stem', () => {
   it('exponent laws', () => {
     const sup = '⁰¹²³⁴⁵⁶⁷⁸⁹';
     const ex = (s: string) => Number([...s].map(c => sup.indexOf(c)).filter(i => i >= 0).join('') || '1');
+    const seen = new Set<string>();
     for (const { item } of draws('exp_laws', 300)) {
-      let m = item.eq.match(/^x([⁰¹²³⁴⁵⁶⁷⁸⁹]+) × x([⁰¹²³⁴⁵⁶⁷⁸⁹]+)$/);
+      // the missing exponent: the answer is the n that makes both sides one power of x
+      const S = '([⁰¹²³⁴⁵⁶⁷⁸⁹]+)';
+      const n = Number(item.answer);
+      let m = item.eq.match(new RegExp(`^x${S} × xⁿ = x${S}$`)) ?? item.eq.match(new RegExp(`^x${S} ÷ xⁿ = x${S}$`)) ?? item.eq.match(new RegExp(`^\\(x${S}\\)ⁿ = x${S}$`));
+      if (m) {
+        seen.add('missing');
+        const [a, rhs] = [ex(m[1]!), ex(m[2]!)];
+        assert.equal(item.eq.includes('×') ? a + n : item.eq.includes('÷') ? a - n : a * n, rhs, item.eq);
+        assert.match(item.promptAr!, /ما قيمة n/);
+        continue;
+      }
+      m = item.eq.match(/^(\d+)([⁰¹²³⁴⁵⁶⁷⁸⁹]+) × (\d+)([⁰¹²³⁴⁵⁶⁷⁸⁹]+) ÷ (\d+)([⁰¹²³⁴⁵⁶⁷⁸⁹]+)$/);
+      if (m) {
+        seen.add('numeric');
+        assert.ok(m[1] === m[3] && m[3] === m[5], 'one base');
+        assert.equal(Number(item.answer), Number(m[1]) ** (ex(m[2]!) + ex(m[4]!) - ex(m[6]!)), item.eq);
+        continue;
+      }
+      seen.add('law');
+      m = item.eq.match(/^x([⁰¹²³⁴⁵⁶⁷⁸⁹]+) × x([⁰¹²³⁴⁵⁶⁷⁸⁹]+)$/);
       if (m) { const e = ex(m[1]!) + ex(m[2]!); assert.equal(item.answer, `x${[...String(e)].map(c => sup[Number(c)]).join('')}`); continue; }
       m = item.eq.match(/^x([⁰¹²³⁴⁵⁶⁷⁸⁹]+) ÷ x([⁰¹²³⁴⁵⁶⁷⁸⁹]+)$/);
       if (m) { const e = ex(m[1]!) - ex(m[2]!); assert.equal(item.answer, e === 1 ? 'x' : `x${[...String(e)].map(c => sup[Number(c)]).join('')}`); continue; }
@@ -818,6 +838,7 @@ describe('answers recomputed from the stem', () => {
       if (m) { assert.equal(item.answer, `${Number(m[1]) ** ex(m[2]!)}x${m[2]}`); continue; }
       assert.fail(`unrecognised exponent-law stem ${item.eq}`);
     }
+    assert.deepEqual([...seen].sort(), ['law', 'missing', 'numeric']);
   });
 });
 

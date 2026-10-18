@@ -185,6 +185,7 @@ export const DECK_DISPLAY_TYPE = {
   quoteMark: 96,
   quoteText: 36,
   quoteBy: 22,
+  conceptText: 32,
 } as const;
 
 /** `#1E8E8E` → `1E8E8E`. pptxgenjs rejects the hash. */

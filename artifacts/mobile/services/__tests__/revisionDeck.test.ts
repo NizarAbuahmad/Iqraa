@@ -10,6 +10,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildLessonDeck, buildRevisionDeck } from '../lessonSlides.ts';
 import { LETTER_GLOSS, withoutLetterGlosses } from '../englishText.ts';
+import { isSectionIconName } from '../deckIcons.ts';
+import { resolveSlideLayout } from '../slideLayout.ts';
 import { revisionPhrase, revisionUnits } from '../revisionScope.ts';
 import { lessonsInScope, semestersAvailable, type ScopeSelection } from '../scopeSelection.ts';
 import { getUnitsForSubjectGrade, KB_BOOKS, KB_LESSONS, KB_UNITS } from '../knowledgeBase.ts';
@@ -86,11 +88,45 @@ describe('buildRevisionDeck — a round per unit', () => {
     for (const unit of UNITS) {
       const at = deck.slides.findIndex(s => s.type === 'divider' && s.title === unit.title);
       const ideas = deck.slides[at + 1]!;
-      assert.equal(ideas.title, `💡 ${unit.title}`);
+      // No leading emoji any more: with one the heading draws the bulb and the
+      // unit's own icon never shows. Both slides carry an icon the renderers can draw.
+      assert.equal(ideas.title, unit.title);
+      assert.equal(ideas.type, 'intro');
+      assert.ok(isSectionIconName(ideas.icon), `${unit.title}: ideas icon`);
+      assert.ok(isSectionIconName(deck.slides[at]!.icon), `${unit.title}: divider icon`);
       const expected = (unit.outcomes[0] ?? unit.concepts[0] ?? unit.lessons[0]!.title).trim();
       assert.ok(ideas.content.includes(expected), `${unit.title}: ${ideas.content}`);
       assert.ok(ideas.teacher?.expectedAnswer.includes(unit.lessons[0]!.title), 'the teacher panel lists the unit\'s lessons');
     }
+  });
+
+  it('short key terms are drawn as cards, a sentence keeps the list, and the unit\'s own icon shows', () => {
+    const lessons = [{ id: 'l1', title: 'الدرس الأول', thin: false }];
+    const make = (title: string, concepts: string[], outcomes: string[] = []) => buildRevisionDeck(true, {
+      units: [{ unitId: 'u1', title, lessons, outcomes, concepts, terms: [] }], phrase: 'x', plan: null,
+    });
+    // the real case from a class: three one- or two-word terms on a nearly empty slide
+    const cards = make('الحركة والقوة', ['سكون', 'قوة سحب', 'حركة']);
+    const ideas = cards.slides.find(s => s.type === 'intro' && s.title === 'الحركة والقوة')!;
+    assert.equal(ideas.layout, 'concepts');
+    assert.deepEqual(ideas.concepts, ['سكون', 'قوة سحب', 'حركة']);
+    assert.equal(resolveSlideLayout(ideas)?.kind, 'concepts');
+    assert.equal(ideas.icon, 'atom', 'force and motion → an atom');
+    assert.equal(ideas.content, '• سكون\n• قوة سحب\n• حركة', 'the bullets stay as the fallback');
+    assert.equal(cards.slides.find(s => s.type === 'divider' && s.title === 'الحركة والقوة')!.icon, 'atom');
+
+    // an outcome is a sentence: a card of it is worse than the list
+    const sentence = make('الحركة والقوة', ['سكون'], ['يفسّر الطالب العلاقة بين القوة المحصلة وتغيّر حركة الجسم في خط مستقيم']);
+    const list = sentence.slides.find(s => s.type === 'intro' && s.title === 'الحركة والقوة')!;
+    assert.equal(list.layout, undefined);
+    assert.equal(list.concepts, undefined);
+
+    // one term is not a grid
+    assert.equal(make('الحركة والقوة', ['سكون']).slides.find(s => s.type === 'intro' && s.title === 'الحركة والقوة')!.layout, undefined);
+
+    // a title naming nothing recognisable still gets an icon, never a bare panel
+    const plain = make('وحدة عامة', ['أ', 'ب']);
+    assert.ok(isSectionIconName(plain.slides.find(s => s.type === 'divider' && s.title === 'وحدة عامة')!.icon));
   });
 
   it('a unit scope is one round, not «الجولة 1 من 1»', () => {
@@ -148,7 +184,8 @@ describe('buildRevisionDeck — the checks and the plan', () => {
     assert.deepEqual(mid.map(s => s.content), ['سؤال رقم 1؟', 'سؤال رقم 2؟']);
     assert.deepEqual(exit.map(s => s.content), ['سؤال رقم 3؟', 'سؤال رقم 4؟', 'سؤال رقم 5؟']);
     assert.deepEqual(mid[0]!.options, ['أ1', 'ب1', 'ج1', 'د1']);
-    const lastRound = deck.slides.map(s => s.title).lastIndexOf(`💡 ${UNITS[UNITS.length - 1]!.title}`);
+    const lastTitle = UNITS[UNITS.length - 1]!.title;
+    const lastRound = deck.slides.map(s => (s.type === 'intro' ? s.title : '')).lastIndexOf(lastTitle);
     assert.ok(lastRound >= 0 && deck.slides.indexOf(mid[0]!) > lastRound, 'checks follow the last round');
     const summary = deck.slides.findIndex(s => s.type === 'summary');
     assert.ok(deck.slides.indexOf(exit[0]!) > summary, 'the exit ticket follows the summary');
@@ -221,7 +258,7 @@ describe('buildRevisionDeck — English decks carry no Arabic from the data, one
       // Arabic letter an English deck may carry, in brackets, as the plan allows.
       if (ARABIC_LETTER.test(withoutLetterGlosses(JSON.stringify(deck)))) offenders.push(`${sel.kind}:${sel.subjectId}:${sel.gradeId}`);
       // And every round still has its ideas slide: filtering must not empty a unit.
-      assert.equal(deck.slides.filter(s => s.title.startsWith('💡 ')).length, units.length, `${sel.kind} ${sel.subjectId}`);
+      assert.equal(deck.slides.filter(s => s.type === 'intro' && units.some(u => u.title === s.title)).length, units.length, `${sel.kind} ${sel.subjectId}`);
     }
     assert.ok(built > 500, `expected the whole curriculum, got ${built}`);
     assert.deepEqual(offenders.slice(0, 5), []);
@@ -247,7 +284,7 @@ describe('buildRevisionDeck — English decks carry no Arabic from the data, one
       outcomes: ['يتعرف الطالب الحرف'], concepts: ['دراسة الجدوى'], terms: ['Stops ۖ', 'مصطلح (term)'],
     };
     const deck = buildRevisionDeck(false, { units: [unit], phrase: 'Letters', plan: null });
-    const ideas = deck.slides.find(s => s.title === '💡 Letters and stops')!;
+    const ideas = deck.slides.find(s => s.type === 'intro' && s.title === 'Letters and stops')!;
     // Outcomes and concepts are Arabic only, so the round shows its lesson titles.
     // Mutation caught: the old whole-script test (drops «Stops ۖ and pauses» and «The Letter Baa (ب)»).
     assert.equal(ideas.content, '• The Letter Baa (ب)\n• Stops ۖ and pauses\n• Looking good');
@@ -255,7 +292,7 @@ describe('buildRevisionDeck — English decks carry no Arabic from the data, one
     assert.ok(ideas.teacher?.teachingTips?.includes('Terms worth asking about: Stops ۖ'), String(ideas.teacher?.teachingTips));
     // The Arabic deck is not filtered at all.
     const ar = buildRevisionDeck(true, { units: [unit], phrase: 'x', plan: null });
-    assert.ok(ar.slides.find(s => s.title === '💡 Letters and stops')!.content.includes('يتعرف الطالب الحرف'));
+    assert.ok(ar.slides.find(s => s.type === 'intro' && s.title === 'Letters and stops')!.content.includes('يتعرف الطالب الحرف'));
   });
 
   it('the grade-4 Islamic scope that holds «Muhammad ۖ» keeps that lesson in its English deck', () => {

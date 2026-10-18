@@ -516,6 +516,35 @@ export async function exportDeckAsPptx(
         continue;
       }
 
+      if (layout.kind === 'concepts') {
+        // Cards in rows of three (two when there are four), the first on the
+        // reading edge; the last row is centred so a short one does not hang to a side.
+        const n = layout.items.length;
+        const perRow = n === 4 ? 2 : 3;
+        const rows = Math.ceil(n / perRow);
+        const gap = 0.3;
+        const cardW = (8.9 - gap * (perRow - 1)) / perRow;
+        const cardH = rows === 1 ? 2.2 : 1.55;
+        const top = rows === 1 ? 1.9 : 1.3;
+        layout.items.forEach((item, i) => {
+          const row = Math.floor(i / perRow);
+          const inRow = row === rows - 1 ? n - row * perRow : perRow;
+          const col = i - row * perRow;
+          const x0 = 0.55 + (8.9 - (cardW * inRow + gap * (inRow - 1))) / 2;
+          const x = x0 + (isAr ? inRow - 1 - col : col) * (cardW + gap);
+          const y = top + row * (cardH + gap);
+          s.addShape('roundRect', {
+            x, y, w: cardW, h: cardH, fill: { color: P.card }, line: { color: P.border, width: 1 }, rectRadius: 0.2,
+          });
+          s.addShape('rect', { x: x + 0.25, y: y + 0.18, w: 0.5, h: 0.05, fill: { color: accent } });
+          s.addText(item, {
+            x: x + 0.15, y: y + 0.3, w: cardW - 0.3, h: cardH - 0.45, align: 'center', valign: 'middle',
+            fontSize: rows === 1 ? 22 : 18, bold: true, color: P.text, fontFace: HEAD_FONT,
+          });
+        });
+        continue;
+      }
+
       if (layout.kind === 'quote') {
         s.addText('“', {
           x: 0.55, y: 1.0, w: 8.9, h: 1.0, align: rtlAlign, valign: 'bottom',
