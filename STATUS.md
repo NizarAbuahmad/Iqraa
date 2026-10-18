@@ -193,6 +193,35 @@ an announcement by default» below.
   38% and 67% → 44% of a paper. Across every maths and chemistry lesson,
   papers past a third went 137 → 122 of 2,820; the rest are elsewhere, not
   in these two families.
+  **…and nine Grades 1–8 generators stop running out of kinds (2026-10-18).**
+  The worst of what was left was topic generators whose branches share one
+  sentence, or whose other kinds have only a handful of numberings: the
+  spreading in `makeTopicItem` cannot pick a kind whose stems the paper already
+  used. «الصفر» was three «ما ناتج …؟» branches out of five, «قوانين الأسس» on
+  easy was only «بسّط», «متوازي الأضلاع» on easy only an angle, «تطابق
+  المثلثات (ASA, AAS)» had 7 numberings outside its angle question, and a
+  hemispherical bowl had two. Each generator now picks the shared-sentence
+  branches as one slot, and has new kinds that each have many numberings:
+  - «الصفر»: a missing number, the smallest or largest of four, counting down.
+  - «الأجزاء المتطابقة»: which of two parts is bigger, how many parts from a
+    part's name, a varied number eaten.
+  - «الوقت لأقرب 5 دقائق / ربع ساعة»: the time some minutes later, how long
+    between two times.
+  - «أشهر السنة»: some months on, the month between two.
+  - «حجم الكرة»: the radius from the volume, a solid hemisphere's whole
+    surface, an area or volume ratio.
+  - «متوازي الأضلاع»: a side from the perimeter, A when B exceeds it.
+  - «تطابق المثلثات (ASA, AAS)»: a side from the congruence, x from
+    corresponding sides, and all nine marked-part combinations.
+  - «قوانين الأسس الصحيحة»: the missing exponent, a number worked out by the
+    laws.
+
+  Every answer is recomputed from the stem in `early.test.ts`,
+  `geometry.test.ts` and `topics.test.ts`. Offline 10- and 20-question
+  quizzes past a third, over every maths and chemistry lesson: 121 → 87 of
+  2,820, in 46 → 35 lessons, none of them these nine. Most of what remains is
+  one question over, in 3 of 6 papers. Twelve Grade 2–3 multiplication lessons
+  account for much of it: «أوجد العدد المجهول» from `elementary.ts`.
 
 - **Lesson plan, slides, activity, lesson-flow and the classroom builder take a
   unit, semester or whole book — as one revision session (2026-10-14; spec
