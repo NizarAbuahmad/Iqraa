@@ -32,12 +32,18 @@ export type AppPlace = {
   howKey?: string;
 };
 
-/** Extra words per catalog tool id; the tool's id is always a keyword too. */
+/**
+ * A tool id that is also an everyday word is not a keyword: «how do i create a
+ * positive classroom» opened the interactive-class tool (found 2026-10-18).
+ */
+const ID_IS_A_WORD = new Set(['classroom']);
+
+/** Extra words per catalog tool id; the tool's id is a keyword too, unless it is in `ID_IS_A_WORD`. */
 const TOOL_KEYWORDS: Record<string, string[]> = {
   slides: ['عرض', 'شرائح', 'بوربوينت', 'باوربوينت', 'بريزنتيشن', 'slides', 'presentation', 'deck'],
   'lesson-plan': ['خطه درس', 'تحضير', 'تحضير درس', 'lesson plan'],
   worksheet: ['ورقه عمل', 'اوراق عمل', 'worksheet'],
-  classroom: ['تحدي', 'تحديات', 'غرفه الهروب', 'بنغو', 'escape', 'bingo'],
+  classroom: ['تحدي', 'تحديات', 'غرفه الهروب', 'بنغو', 'الحصه التفاعليه', 'escape', 'bingo', 'interactive class'],
   game: ['لعبه', 'مسابقه', 'مسابقات', 'game', 'quiz game'],
   activity: ['نشاط', 'انشطه', 'activity'],
   games: ['العاب', 'ألعاب', 'games', 'play'],
@@ -148,6 +154,24 @@ const SCREENS: AppPlace[] = [
   { id: 'homework-due-date', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howHomeworkDueDate' },
   { id: 'homework-done', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howHomeworkDone' },
   { id: 'message-one', route: '/notifications', labelKey: 'tabAlerts', pathKeys: [], isTool: false, keywords: [], howKey: 'howMessageOne' },
+  // The sixth pass (2026-10-18). Support groups are found by name too.
+  { id: 'rename-class', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howRenameClass' },
+  { id: 'remove-student', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howRemoveStudent' },
+  { id: 'move-student', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howMoveStudent' },
+  { id: 'link-parent', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howLinkParent' },
+  { id: 'reissue-login', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howReissueLoginCode' },
+  { id: 'student-sign-in', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howStudentSignIn' },
+  {
+    id: 'support-groups', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false,
+    keywords: ['مجموعات الدعم', 'مجموعه دعم', 'مجموعه الدعم', 'support groups', 'support group'],
+    howKey: 'howSupportGroups',
+  },
+  { id: 'broadcast', route: '/notifications', labelKey: 'tabAlerts', pathKeys: [], isTool: false, keywords: [], howKey: 'howBroadcast' },
+  { id: 'read-messages', route: '/notifications', labelKey: 'tabAlerts', pathKeys: [], isTool: false, keywords: [], howKey: 'howReadMessages' },
+  { id: 'create-exam', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howCreateExam' },
+  { id: 'delete-saved', route: '/workspace', labelKey: 'myWorkspace', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howDeleteSaved' },
+  { id: 'edit-worksheet', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howEditWorksheet' },
+  { id: 'ministry-plan', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howMinistryPlan' },
   { id: 'language', route: '/settings', labelKey: 'settings', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'faqA16' },
   {
     id: 'subjects', route: '/setup-subjects', routeParams: { mode: 'edit' }, labelKey: 'mySubjects', pathKeys: ['tabProfile'], isTool: false,
@@ -227,7 +251,7 @@ function toolPlaces(): AppPlace[] {
         labelKey: tool.titleKey,
         pathKeys: ['tabTools', section.titleKey],
         isTool: true,
-        keywords: [tool.id, ...(TOOL_KEYWORDS[tool.id] ?? [])],
+        keywords: [...(ID_IS_A_WORD.has(tool.id) ? [] : [tool.id]), ...(TOOL_KEYWORDS[tool.id] ?? [])],
         howKey: TOOL_HOW[tool.id],
       });
     }
@@ -493,10 +517,10 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
     id: 'exam-date',
     res: [
       new RegExp(
-        EN_RULE_LEAD + String.raw`(?:(?:set|add|choose|pick)\s+(?:(?:an|a|the)\s+)?(?:exam|test)\s+date|schedule\s+(?:(?:an|a|the|my)\s+)?(?:exam|test))` + EN_RULE_TAIL,
+        EN_RULE_LEAD + String.raw`(?:(?:set|add|choose|pick)\s+(?:(?:an|a|the)\s+)?(?:exam|test)\s+date|schedule\s+(?:(?:an|a|the|my)\s+)?(?:exam|test))(?:\s+(?:to|in|on)\s+(?:the|my)\s+calendar)?` + EN_RULE_TAIL,
       ),
       new RegExp(
-        AR_RULE_LEAD + String.raw`(?:اضع|احدد|اضيف|تحديد|وضع|اختار)\s+(?:ال)?(?:موعد|تاريخ)\s+(?:لل|ل|ال)?(?:امتحان|اختبار|تقييم)` + AR_RULE_TAIL,
+        AR_RULE_LEAD + String.raw`(?:اضع|احدد|اضيف|تحديد|وضع|اختار)\s+(?:ال)?(?:موعد|تاريخ)\s+(?:لل|ل|ال)?(?:امتحان|اختبار|تقييم)(?:\s+(?:لل|الي|في|علي)\s*(?:ال)?تقويم)?` + AR_RULE_TAIL,
       ),
     ],
   },
@@ -894,6 +918,131 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
       ),
     ],
   },
+  // The sixth live pass (2026-10-18). Labels from the screens; three of these
+  // say the app cannot: no move between classes (a re-added name is a new
+  // record), no hand-made support group, no event added on the calendar.
+  {
+    id: 'rename-class',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:rename\s+(?:(?:a|the|my|this)\s+)?class|(?:change|edit)\s+(?:(?:the|my|a)\s+)?(?:class(?:'s)?\s+name|name\s+of\s+(?:(?:a|the|my|this)\s+)?class)|edit\s+(?:(?:a|the|my|this)\s+)?class)` + EN_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:(?:اغير|تغيير|اعدل|تعديل|ابدل|تبديل)\s+(?:ال)?اسم\s+(?:ال)?(?:شعبه|شعبتي|صف)|(?:اعدل|تعديل)\s+(?:ال)?(?:شعبه|شعبتي))` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'remove-student',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:delete|remove|take\s+out)\s+(?:(?:a|an|the|one|this|that)\s+)?students?(?:\s+from\s+(?:(?:my|the|a|this)\s+)?(?:class|section|roster|class\s+list))?` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:احذف|حذف|امسح|مسح|ازيل|ازاله|اشيل|اخرج|اخراج)\s+(?:ال)?(?:طالب|طالبه|طلاب|اسم\s+(?:ال)?طالب)(?:\s+(?:من\s+(?:ال)?(?:شعبه|شعبتي|صف|قائمه)))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'move-student',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:move|transfer|switch)\s+(?:(?:a|the|one|this|that)\s+)?student\s+(?:to|into)\s+(?:another|a\s+different|a\s+new|the\s+other|my\s+other)\s+(?:class|section)` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:انقل|نقل|احول|تحويل)\s+(?:ال)?(?:طالب|طالبه)\s+(?:الي|ل|لل)\s*(?:ال)?(?:شعبه|صف)(?:\s+(?:ثانيه|ثاني|اخري|اخر|جديده))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'link-parent',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:link|connect)\s+(?:(?:a|the)\s+)?parent\s+(?:to|with)\s+(?:(?:a|the|their|his|her)\s+)?(?:student|child)` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اربط|ربط)\s+(?:ال)?ولي\s+(?:ال)?امر\s+(?:ب|مع)\s*(?:ال)?(?:طالب|ابنه|ابنته)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'reissue-login',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:reset|resend|reissue|get|make)\s+(?:(?:a|the)\s+)?(?:new\s+)?login\s+code(?:\s+for\s+(?:(?:a|the|my)\s+)?(?:student|parent))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(String.raw`^(?:(?:a|the|my)\s+)?student\s+(?:forgot|lost)\s+(?:(?:his|her|their|the)\s+)?login\s+code` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اعيد|اعاده|انشئ|انشاء|اصدر|اصدار|اعطي|اعمل)\s+(?:ال)?رمز\s+(?:ال)?دخول(?:\s+(?:جديد))?(?:\s+(?:ل|الي|لل)\s*(?:ال)?(?:طالب|طالبه|ولي\s+(?:ال)?امر))?` + AR_RULE_TAIL,
+      ),
+      new RegExp(String.raw`^(?:ال)?(?:طالب|طالبه)\s+(?:نسي|نسيت|ضيع|ضيعت|اضاع)\s+(?:ال)?رمز\s+(?:ال)?دخول` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'student-sign-in',
+    res: [
+      new RegExp(String.raw`^how\s+(?:do|can|will|should)\s+(?:my\s+|the\s+)?(?:students?|parents?)\s+(?:sign\s+in|log\s*in|sign\s+up|join(?:\s+(?:my|the)\s+class)?|get\s+(?:in|an\s+account))` + EN_RULE_TAIL),
+      new RegExp(
+        String.raw`^(?:كيف|وين|من\s+وين)\s+(?:يسجل|يعمل|ينشئ|ينضم|يدخل)\s+(?:ال)?(?:طالب|طلاب|طلبه|ولي\s+(?:ال)?امر)\s*(?:(?:ال)?دخول|حساب|حسابه|(?:الي|لل|ل)\s*(?:ال)?(?:شعبه|تطبيق)|علي\s+(?:ال)?تطبيق|علي\s+حسابه)?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    // Not a screen of its own, so a where-question gets the explanation too.
+    id: 'support-groups',
+    res: [
+      new RegExp(String.raw`^(?:(?:how\s+do\s+i\s+(?:create|make|use|find|see)\s+(?:a\s+|the\s+)?)|(?:where\s+(?:are|is|do\s+i\s+find)\s+(?:the\s+|my\s+)?))?support\s+groups?` + EN_RULE_TAIL),
+      new RegExp(String.raw`^(?:(?:كيف|وين|اين|من\s+وين)\s+)?(?:(?:انشئ|اعمل|اسوي|الاقي|اجد|القي|اشوف|استخدم)\s+)?(?:ال)?(?:مجموعات|مجموعه)\s+(?:ال)?دعم` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'broadcast',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:send|post)\s+(?:an?\s+)?(?:message|announcement|notice)\s+to\s+(?:all\s+(?:of\s+)?(?:my\s+|the\s+)?|every\s+)parents?` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:ارسل|ابعث|ابعت)\s+(?:اعلان|تعميم|رساله)(?:\s+جماعيه)?\s+(?:ل|الي|لل)\s*(?:كل|جميع)\s+(?:ال)?(?:اولياء\s+(?:ال)?امور|اهالي|اهل)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'read-messages',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:see|read|check|find|view)\s+(?:(?:the|my)\s+)?(?:messages\s+from\s+(?:(?:the|my)\s+)?parents|parents['’]?\s+messages)` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اشوف|اقرا|اري|اتابع|القي|الاقي)\s+(?:ال)?رسائل\s+(?:ال)?(?:اولياء\s+(?:ال)?امور|اهالي|اهل|طلاب)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    // A how-word is required: «انشئ امتحان» on its own asks the assistant to make
+    // one. «اختبار» and "test" are left to the short-quiz steps (`howMakeQuiz`).
+    id: 'create-exam',
+    res: [
+      new RegExp(String.raw`^(?:(?:please|pls|plz)\s+)?(?:how\s+(?:do|can|should)\s+(?:i|we)|how\s+to)\s+(?:create|make|set\s+up|build|add)\s+(?:(?:an?|the|my|new)\s+)*(?:exam|evaluation)` + EN_RULE_TAIL),
+      new RegExp(String.raw`^(?:كيف|طريقه|خطوات)\s+(?:يمكنني\s+|ممكن\s+|بقدر\s+)?(?:انشئ|انشاء|اعمل|اسوي|اجهز|اضيف|اضافه)\s+(?:ال)?(?:امتحان|تقييم)(?:\s+(?:جديد|ورقي|الكتروني))?` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'delete-saved',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:delete|remove)\s+(?:(?:a|the|my|this)\s+)?(?:saved\s+(?:worksheet|lesson\s+plan|quiz|file|material|activity)s?|(?:worksheet|lesson\s+plan|quiz|file|material)s?\s+from\s+my\s+files)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:احذف|حذف|امسح|مسح)\s+(?:ال)?(?:ملف|ملفات|ورقه\s+(?:ال)?عمل|خطه\s+(?:ال)?درس|اختبار|ماده|مواد)\s+(?:(?:ال)?(?:محفوظه|محفوظ|محفوظات)|من\s+(?:ال)?ملفاتي)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'edit-worksheet',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:edit|change|modify)\s+(?:(?:the|a|my|this)\s+)?worksheet(?:\s+(?:before|for)\s+printing)?` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اعدل|تعديل|اغير|تغيير)\s+(?:ال)?(?:ورقه\s+(?:ال)?عمل|اسئله\s+(?:ال)?ورقه)(?:\s+قبل\s+(?:ال)?(?:طباعه|تصدير|طبع))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'ministry-plan',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:export|print|get|make|download)\s+(?:(?:the|a|my)\s+)?lesson\s+plan\s+(?:in|on|as|using)\s+(?:the\s+)?ministry\s+(?:template|form|format)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اطبع|طباعه|اصدر|تصدير|احفظ|حفظ|اعمل|احضر|اجهز|انزل|احمل)\s+(?:ال)?خطه\s+(?:ال)?درس\s+(?:ب|علي|حسب|في)\s*(?:ال)?نموذج\s+(?:ال)?وزاره` + AR_RULE_TAIL,
+      ),
+    ],
+  },
 ];
 
 /**
@@ -1093,6 +1242,14 @@ export type AppHelpAnswer = { text: string; places: AppPlace[] };
 
 const PRINT_VERB = /(?:^|\s)(?:اطبع|نطبع|طباعه)(?:\s|$)|\bprint/;
 const REMOVE_VERB = /(?:^|\s)(?:احذف|حذف|امسح|مسح|ازيل|ازاله|ارشف|ارشفه|الغي|الغاء)(?:\s|$)|\b(?:delete|remove|archive|erase)\b/;
+/**
+ * «كيف أغير اسم الشعبة؟» got «اضغط شعبة جديدة» (found 2026-10-18): a teacher who
+ * follows it ends up with two classes. Steps that make a new class or student
+ * never answer a question about changing one. Not the grade steps: «اريد تغيير
+ * الصف» is answered with them on purpose (see `STATEMENT_PLACES`).
+ */
+const CHANGE_VERB = /(?:^|\s)(?:اغير|تغيير|اعدل|تعديل|ابدل|تبديل|تسميه)(?:\s|$)|\b(?:change|edit|rename|update)\b/;
+const NEW_ITEM_HOWS = new Set(['howAddClass', 'howAddStudent']);
 /** Steps that add something, which must not answer a question about removing it. */
 const ADD_HOWS = new Set(['howAddClass', 'howAddGrade', 'howAddStudent']);
 
@@ -1125,7 +1282,7 @@ export function answerAppHelp(
   const q = plain(query);
   const exportHow = places.find(p => p.id === 'export')?.howKey
     ?? (PRINT_VERB.test(q) ? APP_PLACES.find(p => p.id === 'export')?.howKey : undefined);
-  const firstHow = places[0]!.howKey && !(ADD_HOWS.has(places[0]!.howKey) && REMOVE_VERB.test(q))
+  const firstHow = places[0]!.howKey && !(ADD_HOWS.has(places[0]!.howKey) && REMOVE_VERB.test(q)) && !(NEW_ITEM_HOWS.has(places[0]!.howKey) && CHANGE_VERB.test(q))
     ? places[0]!.howKey
     : undefined;
   // A generator's own steps say how to make one, so «how do I export my
