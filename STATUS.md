@@ -4193,6 +4193,25 @@ teacher account is free with a monthly limit on new material. «كيف أدعو 
 listen» got the add-a-class steps; those words now count only in a where-question
 (`STUDENT_WORDS`). 21 look-alikes pinned.
 
+**An exam's own buttons, marks, printing, homework and one-to-one messages
+(2026-10-18, fifth live pass).** Deleting or adding a question and «كيف أغلق
+الامتحان؟» got only the path to Evaluations (or the make-an-exam line), «كيف أعدّل
+علامة طالب؟» was asked which subject, printing got the generic export steps, and
+announcing results, the smart board, a homework due date, homework completion
+and messaging one student went to the model. Each now has a `RULE_PLACES` entry
+with steps from its screen: question edits only while the exam is a draft (pencil
+/ bin per question, «أضِف سؤالًا من إعدادك»; fixed after «انشر التقييم»), «أغلق
+الاختبار», a mark changed from «لوحة النتائج» → the student → «العلامة», «أعلن
+النتائج للطلبة», the student copy from the export sheet, the smart board as «ابدأ
+الحصة الآن», editing a homework by tapping it, «أنجزه … من …» (a count of students
+with an account, never names), «رسالة جديدة» → «راسل» (linked accounts only), and
+the language steps (`faqA16`, where it used to get only the path to Settings).
+**One answer says it is not in the app**: an exam in Evaluations has no export,
+so printing one points at the short quiz. The exam-question rule needs a how / can-I
+word (`EN_HOW_LEAD` / `AR_HOW_LEAD`): said as intent, «اريد اضافة سؤال الى الاختبار»
+asks the assistant to write one and stays teaching. «كيف أرسل رسالة لولي أمر؟» still
+goes to the model by agreement. 14 look-alikes pinned.
+
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
 Step 4 of the worksheet review, agreed in chat. A worksheet was paper only: to
