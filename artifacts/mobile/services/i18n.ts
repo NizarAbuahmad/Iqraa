@@ -1949,6 +1949,7 @@ const translations = {
     examDateLabel: 'موعد الامتحان',
     examDateHint: 'اختياري. يراه معلمو مدرستك حتى لا تتعارض الامتحانات.',
     examDateInvalid: 'اكتب التاريخ بصيغة 2026-10-12',
+    examDatePast: 'لا يمكن تحديد موعد في يوم مضى. اختر اليوم أو تاريخًا لاحقًا.',
     examTimeLabel: 'الوقت (اختياري)',
     examTimeInvalid: 'اكتب الوقت بصيغة 09:30',
     examDateSave: 'حفظ الموعد',
@@ -2413,7 +2414,7 @@ const translations = {
     hwTeacherEmptyDesc: 'أضف واجبًا ليراه طلبة الشعبة وأولياء أمورهم.',
     hwErrTitle: 'اكتب عنوانًا للواجب',
     hwErrDue: 'اكتب تاريخًا صحيحًا مثل \u20662026-10-14\u2069',
-    hwErrDueRange: 'التاريخ يجب أن يقع بين 30 يومًا مضت وسنة قادمة.',
+    hwErrDueRange: 'التاريخ يجب أن يكون اليوم أو بعده، وخلال سنة قادمة.',
     hwPresetDays: (n: number) =>
       n === 1 ? 'غدًا' : n === 2 ? 'بعد يومين' : n === 7 ? 'بعد أسبوع' : `بعد ${n} أيام`,
     myExamsEmptyTitle: 'لا توجد اختبارات بعد',
@@ -4863,6 +4864,7 @@ const translations = {
     examDateLabel: 'Exam date',
     examDateHint: 'Optional. Teachers at your school can see it, so exams do not clash.',
     examDateInvalid: 'Enter the date like 2026-10-12',
+    examDatePast: 'The exam date cannot be a day that has already passed. Pick today or later.',
     examTimeLabel: 'Time (optional)',
     examTimeInvalid: 'Enter the time like 09:30',
     examDateSave: 'Save date',
@@ -5315,7 +5317,7 @@ const translations = {
     hwTeacherEmptyDesc: "Add homework and this section's students and parents will see it.",
     hwErrTitle: 'Enter a title',
     hwErrDue: 'Enter a valid date such as \u20662026-10-14\u2069',
-    hwErrDueRange: 'The date must be between 30 days ago and one year ahead.',
+    hwErrDueRange: 'The date must be today or later, and within the next year.',
     hwPresetDays: (n: number) =>
       n === 1 ? 'Tomorrow' : n === 7 ? 'In a week' : `In ${n} days`,
     myExamsEmptyTitle: 'No exams yet',
