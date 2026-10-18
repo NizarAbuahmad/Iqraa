@@ -59,7 +59,7 @@ export const DECK_ICON_NAMES = [
 ] as const;
 
 /** Every shape a slide may ask for — a copy of `SLIDE_LAYOUTS` in the app's `slideLayout.ts`. */
-export const DECK_LAYOUT_NAMES = ["statement", "stat", "compare", "steps", "timeline", "stats", "table", "flow"] as const;
+export const DECK_LAYOUT_NAMES = ["statement", "stat", "compare", "steps", "timeline", "stats", "table", "flow", "quote", "photo"] as const;
 const LAYOUT_SLIDE_TYPES = ["intro", "summary", "reveal"];
 
 /** Charts the prompt asks for at most; the server keeps three before it cuts. */
@@ -290,6 +290,8 @@ ${slideCountLine(b, true)}
 - "table": مقارنة منظّمة بين عدة عناصر على عدة صفات. أضف "table": {"headers":["..",".."],"rows":[["..",".."],["..",".."]]}: من ٢ إلى ٤ أعمدة ومن ٢ إلى ٦ صفوف، وفي كل صف خلية واحدة بالضبط تحت كل عنوان، وكل خلية قصيرة.
 - "flow": عملية أو دورة تُرسم صناديقَ وأسهمًا، من ٣ إلى ٦ مراحل. أضف "flow": {"steps":["..","..",".."],"cycle":false}، واجعل "cycle": true حين تعود العملية إلى بدايتها (دورة الماء، دورة الخلية).
 الأشكال الأربعة الأخيرة: "content" فيها جملة واحدة تلخّص الشريحة (تُستعمل إن تعذّر الرسم)، و"type" يبقى "intro" أو "summary"، ولا يُضاف "mediaPrompt" ولا "visual".
+- "quote": عبارة أو تعريف أو قاعدة تستحقّ أن تُعرض بخط كبير. أضف "quote": {"text":"العبارة، حتى ٢٠٠ حرف","by":"قائلها أو مصدرها، اختياري"}. لا تنسب كلامًا إلى أحد ما لم يرد في الموضوع. "content" و"type" كما في الأشكال الأربعة السابقة.
+- "photo": صورة تملأ الشاشة ويعلوها العنوان وجملة واحدة، لشريحة يكون المشهد نفسه فيها هو الفكرة (مكان، ظاهرة، تجربة). "content" جملة واحدة قصيرة، و"type" يبقى "intro" أو "summary"، وأضف "mediaPrompt": عبارة إنجليزية قصيرة للبحث عن الصورة. شريحة أو شريحتان على الأكثر في العرض كله، ولا "visual".
 لا تُلبس أكثر من نصف شرائح الشرح شكلًا خاصًا — التنويع هو المقصود، لا الفوضى.
 
 الأيقونة والرسم البياني — بنية يختارها العرض نفسه لا قالب واحد لكل الشرائح:
@@ -298,9 +300,9 @@ ${slideCountLine(b, true)}
 
 قواعد إلزامية:
 - كل شريحة بلا استثناء تحمل كائن "teacher" غير فارغ. الشريحة بلا teacher تظهر للمعلّم بزرّ ملاحظات لا يفتح شيئًا.
-- "content" متعدّد الأسطر: افصل بـ \\n وابدأ أسطر القوائم بـ "• ". لا تكتب فقرة واحدة متّصلة، ولا تقلّ أي شريحة عن سطرين — إلا شريحة "statement" وشريحة الغلاف وكل شريحة بشكل "timeline" أو "stats" أو "table" أو "flow"، فهذه سطر واحد عمدًا.
+- "content" متعدّد الأسطر: افصل بـ \\n وابدأ أسطر القوائم بـ "• ". لا تكتب فقرة واحدة متّصلة، ولا تقلّ أي شريحة عن سطرين — إلا شريحة "statement" وشريحة الغلاف وكل شريحة بشكل "timeline" أو "stats" أو "table" أو "flow" أو "quote" أو "photo"، فهذه سطر واحد عمدًا.
   الشريحة ذات السطر الواحد مرفوضة. إن لم تجد ما تقوله في سطرين فادمج الشريحة مع التي تليها واجعل العرض أقصر — ست شرائح ممتلئة أفضل من عشر أنصاف فارغة.
-- لا تضع "mediaPrompt" على شريحة تحمل "layout": تلك الشريحة تملأ الشاشة بشكلها الخاص ولا مكان فيها للصورة.
+- لا تضع "mediaPrompt" على شريحة تحمل "layout" إلا إن كان "photo": تلك الشرائح تملأ الشاشة بشكلها الخاص ولا مكان فيها للصورة.
 - شريحة الشرح فكرة واحدة فقط. إن كان لديك فكرتان فاجعلهما شريحتين.
 - الخيارات الثلاثة الخاطئة في شريحة question أخطاء شائعة حقيقية، لا حشوًا ولا أرقامًا عشوائية. "correctIndex" فهرس مُصفَّر (0 يعني الخيار الأول)، لا ترتيب الخيار كما يعدّه الإنسان.
 - "deckPhotoQueries" مصفوفة من أربع عبارات بحث بالإنجليزية (٢-٥ كلمات لكل واحدة) تصف موضوع العرض نفسه، كلها مختلفة عن بعضها: الأولى لخلفية الغلاف، والثانية للشريحة الفاصلة، والثالثة والرابعة احتياط لشرائح المحتوى. الأربع مطلوبة. بالإنجليزية دائمًا مهما كانت لغة العرض — فهرس الصور إنجليزي، والبحث بالعربية يعود فارغًا. صِفْ الموضوع لا المادة الدراسية: عرض عن يوم الأم عبارته "mother and child hands" لا "mathematics classroom".
@@ -434,6 +436,8 @@ Add a "layout" field to a concept slide when its shape fits; otherwise leave it 
 - "table": a structured comparison of several things across several attributes. Add "table": {"headers":["..",".."],"rows":[["..",".."],["..",".."]]}: 2 to 4 columns and 2 to 6 rows, exactly one cell under every header in every row, every cell short.
 - "flow": a process or cycle drawn as boxes and arrows, 3 to 6 stages. Add "flow": {"steps":["..","..",".."],"cycle":false}, and set "cycle": true when the process returns to its start (the water cycle, the cell cycle).
 For the last four shapes: "content" is ONE sentence that sums the slide up (it is what shows if the shape cannot be drawn), "type" stays "intro" or "summary", and there is no "mediaPrompt" and no "visual".
+- "quote": a phrase, definition or rule worth setting in large type. Add "quote": {"text":"the phrase, up to 200 characters","by":"who said it or where it is from, optional"}. Never attribute words to someone the topic does not name. "content" and "type" as for the four shapes above.
+- "photo": a full-screen picture with the title and ONE sentence over it, for a slide whose scene is the idea (a place, a phenomenon, an experiment). "content" is one short sentence, "type" stays "intro" or "summary", and add "mediaPrompt": a short English phrase to search the picture by. One or two in the whole deck, and no "visual".
 Give a special shape to no more than half the concept slides — the point is variety, not chaos.
 
 Icons and charts — structure the deck chooses for itself, not one template for every slide:
@@ -442,9 +446,9 @@ Icons and charts — structure the deck chooses for itself, not one template for
 
 Mandatory rules:
 - Every slide without exception carries a non-empty "teacher" object. A slide without one shows the teacher a notes button that opens nothing.
-- "content" is multi-line: separate with \\n and start list lines with "• ". Never one unbroken paragraph, and never fewer than two lines on any slide — except a "statement" slide, the cover, and a slide shaped "timeline", "stats", "table" or "flow", which are one line on purpose.
+- "content" is multi-line: separate with \\n and start list lines with "• ". Never one unbroken paragraph, and never fewer than two lines on any slide — except a "statement" slide, the cover, and a slide shaped "timeline", "stats", "table", "flow", "quote" or "photo", which are one line on purpose.
   A one-line slide is rejected. If you cannot find two lines worth saying, merge that slide into the next one and make the deck shorter — six full slides beat ten half-empty ones.
-- Never put "mediaPrompt" on a slide that carries a "layout": that slide fills the screen with its own shape and has nowhere to put a picture.
+- Never put "mediaPrompt" on a slide that carries a "layout" unless it is "photo": any other shape fills the screen with its own drawing and has nowhere to put a picture.
 - A concept slide carries exactly one idea. If you have two ideas, make two slides.
 - The three wrong options on a question slide are real, plausible misconceptions — not filler, not random numbers. "correctIndex" is 0-based (0 means the first option), never the option's position as a person would count it.
 - "deckPhotoQueries" is FOUR English search phrases (2-5 words each) describing the deck's own subject, all different from each other: the first backs the cover, the second the section break, and the third and fourth are spares for content slides. All four are required. Always English whatever language the deck is in — the photo index is English and an Arabic query comes back empty. Describe the TOPIC, not the school subject: a Mother's Day deck wants "mother and child hands", never "mathematics classroom".

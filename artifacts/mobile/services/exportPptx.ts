@@ -22,7 +22,7 @@ import { File, Paths } from 'expo-file-system';
 
 import { visualForExport, visualForSlide } from './deckVisuals.ts';
 import { isBulletLine, looksLikeEquation, stripBullet, workingSteps } from './deckText.ts';
-import { resolveSlideLayout } from './slideLayout.ts';
+import { asPhotoHero, resolveSlideLayout } from './slideLayout.ts';
 import { slideTeacherNotesText } from './deckNotes.ts';
 import { creditSegments, type PhotoCredit } from './photoCredit.ts';
 import type { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
@@ -304,17 +304,21 @@ export async function exportDeckAsPptx(
       continue;
     }
 
-    if (slide.type === 'divider') {
+    // A `photo` layout is drawn as the section break is: same full-bleed photo,
+    // same scrim, same credit line.
+    const photoHero = asPhotoHero(slide);
+    if (slide.type === 'divider' || photoHero) {
+      const hs = photoHero ?? slide;
       // Full-bleed, like the title slide — a pacing break, not another
       // header-bar-and-bullets content slide.
-      const gotPhoto = slide.mediaUrl ? await addHeroBackground(s, slide.mediaUrl, slide.mediaCaption, slide.mediaCredit) : false;
+      const gotPhoto = hs.mediaUrl ? await addHeroBackground(s, hs.mediaUrl, hs.mediaCaption, hs.mediaCredit) : false;
       if (!gotPhoto) s.background = { color: deckSlideAccent('divider') };
-      s.addText(slide.title, {
+      s.addText(hs.title, {
         x: 0.6, y: 2.1, w: 8.8, h: 1.2, align: 'center', valign: 'middle',
         fontSize: 36, color: 'FFFFFF', bold: true, fontFace: HEAD_FONT,
       });
-      if (slide.content) {
-        s.addText(slide.content, {
+      if (hs.content) {
+        s.addText(hs.content, {
           x: 1.2, y: 3.3, w: 7.6, h: 0.6, align: 'center',
           fontSize: 14, color: 'FFFFFF',
         });
@@ -343,7 +347,7 @@ export async function exportDeckAsPptx(
     // the types below are about content. `null` — no layout, or one whose data
     // was too thin — falls through untouched.
     const layout = resolveSlideLayout(slide);
-    if (layout) {
+    if (layout && layout.kind !== 'photo') {
       if (layout.kind === 'statement') {
         s.addText(layout.text, {
           x: 0.55, y: 1.6, w: 8.9, h: 2.2, align: rtlAlign, valign: 'middle',
@@ -507,6 +511,24 @@ export async function exportDeckAsPptx(
           s.addText(`\u21BB  ${L('ثم تتكرر الدورة', 'then the cycle repeats')}`, {
             x: 2.5, y: 3.9, w: 5.0, h: 0.5, align: 'center', valign: 'middle',
             fontSize: 16, bold: true, color: accent, fontFace: HEAD_FONT,
+          });
+        }
+        continue;
+      }
+
+      if (layout.kind === 'quote') {
+        s.addText('“', {
+          x: 0.55, y: 1.0, w: 8.9, h: 1.0, align: rtlAlign, valign: 'bottom',
+          fontSize: 66, color: accent, bold: true, fontFace: HEAD_FONT,
+        });
+        s.addText(layout.text, {
+          x: 0.55, y: 2.0, w: 8.9, h: 2.1, align: rtlAlign, valign: 'top',
+          fontSize: 26, color: P.text, bold: true, fontFace: HEAD_FONT,
+        });
+        if (layout.by) {
+          s.addText(`— ${layout.by}`, {
+            x: 0.55, y: 4.2, w: 8.9, h: 0.5, align: rtlAlign, valign: 'middle',
+            fontSize: 16, color: accent, bold: true, fontFace: HEAD_FONT,
           });
         }
         continue;
