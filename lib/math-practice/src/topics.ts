@@ -1819,8 +1819,24 @@ const expLaws: Topic = {
   id: 'exp_laws', match: /قوانين الاسس/, grades: [7, 8],
   make({ rng, diff }) {
     const m = int(rng, 2, 7), n = int(rng, 2, 5);
-    const kinds = diff === 'easy' ? [0, 1] : diff === 'medium' ? [0, 1, 2, 3] : [0, 1, 2, 3, 4, 5];
-    const k = pick(rng, kinds);
+    // «بسّط: …» is one kind however it is built (0 product, 1 quotient, 2 power of a power, 5 power of a product);
+    // 3 a zero exponent, 4 a negative one, 6 the missing exponent, 7 a power of a number worked out by the laws.
+    const simplify = pick(rng, diff === 'easy' ? [0, 1] : diff === 'medium' ? [0, 1, 2] : [0, 1, 2, 5]);
+    const k = pick(rng, diff === 'easy' ? [simplify, 3, 6, 7] : [simplify, 3, 4, 6, 7]);
+    if (k === 6) {
+      // xᵐ × xⁿ = xᵐ⁺ⁿ, xᵐ ÷ xⁿ = xᵐ⁻ⁿ, (xᵐ)ⁿ = xᵐⁿ — solve for n
+      const law = pick(rng, diff === 'easy' ? [0, 1] : [0, 1, 2]);
+      const [lhs, rhs, wr]: [string, number, number[]] = law === 0 ? [`x${sup(m)} × xⁿ`, m + n, [m + n, m, n + 1]]
+        : law === 1 ? [`x${sup(m + n)} ÷ xⁿ`, m, [m + n, m, 2 * m + n]]
+        : [`(x${sup(m)})ⁿ`, m * n, [m * n, m * n - m, m + n]];
+      return { eq: `${lhs} = x${sup(rhs)}`, answer: String(n), wrongs: wrongsFrom(String(n), wr.filter(v => v !== n && v > 0).map(String)), ar: `ما قيمة n التي تجعل العبارة صحيحة: ${lhs} = x${sup(rhs)}؟`, en: `What value of n makes this true: ${lhs} = x${sup(rhs)}?` };
+    }
+    if (k === 7) {
+      // bᵖ × bᵠ ÷ bʳ = bᵖ⁺ᵠ⁻ʳ, a small whole number
+      const b = pick(rng, [2, 3, 5, 10]), e = b === 2 ? int(rng, 2, 5) : b === 10 ? int(rng, 2, 4) : int(rng, 1, 3), p = int(rng, e + 1, e + 5), q = int(rng, 1, 4), r = p + q - e;
+      const ans = b ** e;
+      return { eq: `${b}${sup(p)} × ${b}${sup(q)} ÷ ${b}${sup(r)}`, answer: String(ans), wrongs: wrongsFrom(String(ans), [b ** (e + 1), b * e, b ** (p + q), ans + b].filter(v => v !== ans).map(String)), ar: `احسب ناتج ${b}${sup(p)} × ${b}${sup(q)} ÷ ${b}${sup(r)} باستعمال قوانين الأسس.`, en: `Use the laws of exponents to work out ${b}${sup(p)} × ${b}${sup(q)} ÷ ${b}${sup(r)}.` };
+    }
     const x = (e: number) => (e === 1 ? 'x' : `x${sup(e)}`);
     const mk = (eq: string, e: number, ar: string, en: string, w: number[]): Draft => ({
       eq, answer: x(e), wrongs: wrongsFrom(x(e), w.filter(v => Number.isInteger(v) && v > 1 && v !== e).map(x), j => x(e + Math.abs(j) + 1)), ar, en,

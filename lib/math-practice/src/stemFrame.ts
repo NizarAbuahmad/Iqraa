@@ -6,8 +6,8 @@
  * questions to a checker that compares text, and one question to a teacher
  * reading the paper. Measured 2026-10-15, one frame was on average 58% of an
  * offline maths quiz — so the topic generators spread their draws over frames
- * (`makeTopicItem`), and the evaluation validator warns when one frame
- * dominates a paper (`dominantFrame`).
+ * (`makeTopicItem`), and the evaluation validator warns when one kind of
+ * frame dominates a paper (`dominantKind`).
  *
  * Word by word: a word with a digit or a maths symbol in it, or a single
  * letter (a variable), becomes `#`; any other word keeps its letters. That
@@ -86,11 +86,17 @@ function wordDistance(a: readonly string[], b: readonly string[]): number {
  * ~60% of a paper). It can also lump two asks that share a long preamble
  * («… ما الوسيط؟» / «… ما المدى؟»); that only makes them share a kind's turn,
  * and `spreadScore` still spreads them by frame inside it.
+ *
+ * `maxChanged` caps the words changed whatever the length. The generators'
+ * sentences are short and need no cap; a paper's stems can quote a whole
+ * objective, and 37% of thirty words is a different instruction in front of
+ * the same quote («اذكر المفاهيم المتعلقة بـ: X» / «طبّق ما تعلّمته: اعرض
+ * خطوات X»), so `dominantKind` (api-server validator) passes 3.
  */
-export function sameKind(a: string, b: string): boolean {
+export function sameKind(a: string, b: string, maxChanged = Infinity): boolean {
   if (a === b) return true;
   const x = a.split(' '), y = b.split(' ');
-  return wordDistance(x, y) <= Math.max(1, Math.floor(0.37 * Math.max(x.length, y.length)));
+  return wordDistance(x, y) <= Math.min(maxChanged, Math.max(1, Math.floor(0.37 * Math.max(x.length, y.length))));
 }
 
 /** The frames a pass has served, from the `ask:` keys a generator records in its `used` set. */

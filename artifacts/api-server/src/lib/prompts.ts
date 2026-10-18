@@ -658,21 +658,31 @@ Return JSON in this exact shape:
  * already has, so the second batch is new questions and not a rewording of the
  * first. The reply is shaped like the original (a title is still required to
  * pass the shape check) but its `questions` holds only the new ones.
+ *
+ * `repeated` are questions the paper asks once too often (`quizRepeats`): the
+ * new questions replace them, so the model is told which ask not to write again.
  */
-export function quizTopUpBlock(isAr: boolean, have: string[], missing: number): string {
+export function quizTopUpBlock(isAr: boolean, have: string[], missing: number, repeated: string[] = []): string {
   const list = have.map((t, i) => `${i + 1}. ${t.slice(0, 160)}`).join("\n");
+  const again = repeated.map(t => `- ${t.slice(0, 160)}`).join("\n");
   return isAr
     ? `
 
 الورقة تحتوي حاليًا على ${have.length} سؤالًا، وهذه نصوصها:
 ${list}
-
+${repeated.length ? `
+هذه الأسئلة تكرر سؤالًا آخر في الورقة بأرقام أو بصياغة أخرى، وستُستبدل بالأسئلة الجديدة، فلا تكتب سؤالًا من نوعها:
+${again}
+` : ""}
 اكتب ${missing} سؤالًا إضافيًا بالضبط، من الأنواع المطلوبة نفسها وبالشكل نفسه، عن أفكار وحقائق مختلفة عمّا سبق ولا تكرر أيًّا منها ولا تعد صياغته. أعد JSON بالشكل نفسه لكن "questions" فيه الأسئلة الجديدة وحدها (ترقيمها من q${have.length + 1}).`
     : `
 
 The paper so far has ${have.length} questions, with these texts:
 ${list}
-
+${repeated.length ? `
+These questions repeat another one on the paper with other numbers or in other words, and the new questions will replace them, so write none of their kind:
+${again}
+` : ""}
 Write exactly ${missing} MORE questions, of the same requested types and in the same shape, about different ideas and facts from the above — do not repeat or reword any of them. Return the same JSON shape, but "questions" holds only the new questions (numbered from q${have.length + 1}).`;
 }
 

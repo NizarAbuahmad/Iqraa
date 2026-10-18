@@ -18,7 +18,7 @@
  */
 import { visualForSlide, visualToSvg } from './deckVisuals.ts';
 import { isBulletLine, looksLikeEquation, splitEmoji, stripBullet, workingSteps } from './deckText.ts';
-import { resolveSlideLayout } from './slideLayout.ts';
+import { asPhotoHero, resolveSlideLayout } from './slideLayout.ts';
 import { deckIconSvg, iconForGlyph, isSectionIconName, type DeckIconName } from './deckIcons.ts';
 import { slideTeacherNotes } from './deckNotes.ts';
 import type { ActivitySlide, ClassroomActivity } from './ai/AIService.ts';
@@ -450,7 +450,8 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
    */
   const layoutSlide = (slide: ActivitySlide, num: number): string | null => {
     const layout = resolveSlideLayout(slide);
-    if (!layout) return null;
+    // `photo` is drawn by `dividerSlide` (see the dispatch below), not here.
+    if (!layout || layout.kind === 'photo') return null;
     const accent = deckSlideAccent(slide.type, T);
     const head = esc(splitEmoji(slide.title)[1]);
 
@@ -547,6 +548,26 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
       ${footer(num)}</div>`;
     }
 
+    if (layout.kind === 'concepts') {
+      return `<div class="deck-slide">
+      ${deckHeader(slide.title, accent, slide.icon)}
+      <div class="deck-body deck-concepts${layout.items.length === 4 ? ' deck-concepts-four' : ''}">
+        ${layout.items.map(it => `<div class="deck-concept" style="border-top-color:${accent}"><p class="deck-concept-text">${esc(it)}</p></div>`).join('')}
+      </div>
+      ${footer(num)}</div>`;
+    }
+
+    if (layout.kind === 'quote') {
+      return `<div class="deck-slide">
+      <div class="deck-body deck-quote">
+        <p class="deck-quote-mark" style="color:${accent}">“</p>
+        <p class="deck-quote-text">${esc(layout.text)}</p>
+        ${layout.by ? `<p class="deck-quote-by" style="color:${accent}">— ${esc(layout.by)}</p>` : ''}
+        ${head ? `<p class="deck-statement-sub">${head}</p>` : ''}
+      </div>
+      ${footer(num)}</div>`;
+    }
+
     return `<div class="deck-slide">
       ${deckHeader(slide.title, accent, slide.icon)}
       <div class="deck-body deck-steps">
@@ -602,6 +623,8 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
     // Above the type branches, because a layout is a request about drawing and
     // the types below are about content. It returns null for every slide that
     // did not ask, so the chain behaves exactly as it did.
+    const photo = asPhotoHero(slide);
+    if (photo) return dividerSlide(photo, num);
     const shaped = layoutSlide(slide, num);
     if (shaped) return shaped;
     if (slide.type === 'graph') return graphSlide(slide, num);
@@ -670,7 +693,7 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${T.border
 .deck-title-badge, .deck-title-main, .deck-divider-title, .deck-eyebrow,
 .deck-eq, .deck-answer-label, .deck-chip, .deck-video-link,
 .deck-option-letter, .deck-title-meta,
-.deck-statement-text, .deck-stat-value, .deck-stat-label, .deck-compare-head,
+.deck-statement-text, .deck-concept-text, .deck-quote-mark, .deck-quote-text, .deck-quote-by, .deck-stat-value, .deck-stat-label, .deck-compare-head,
 .deck-step-num, .deck-tl-label, .deck-stats-value, .deck-table th, .deck-flow-node, .deck-flow-loop { font-family: 'Readex Pro','Arial','Tahoma',sans-serif; }
 /* ─── Layout shapes (services/slideLayout.ts) ───────────────────────────────
    Sizes run above the presenter's: this page is a fixed 297mm projected
@@ -683,6 +706,15 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${T.border
 .deck-statement-text { font-size:40px; line-height:1.5; font-weight:700; text-align:start; }
 .deck-statement-sub { font-size:24px; line-height:1.6; color:${T.muted}; margin-top:12px; text-align:start; }
 .deck-stat-value { font-size:96px; line-height:1.1; font-weight:700; text-align:start; }
+/* Key terms as cards: three to a row, a four a 2x2 (a lone fourth would hang off the edge). The grid takes the document's own direction. */
+.deck-body.deck-concepts { display:grid; grid-template-columns:repeat(3, 1fr); gap:24px; align-content:center; align-items:stretch; }
+.deck-body.deck-concepts-four { grid-template-columns:repeat(2, 1fr); }
+.deck-concept { display:flex; align-items:center; padding:44px 32px; min-height:230px; background:${T.card}; border:1px solid ${T.border}; border-top-width:6px; border-radius:24px; }
+.deck-concept-text { font-size:36px; line-height:1.45; font-weight:600; text-align:start; }
+.deck-body.deck-quote { justify-content:center; gap:4px; }
+.deck-quote-mark { font-size:96px; line-height:0.9; font-weight:700; text-align:start; }
+.deck-quote-text { font-size:36px; line-height:1.65; font-weight:600; text-align:start; }
+.deck-quote-by { font-size:22px; line-height:1.6; font-weight:600; margin-top:22px; text-align:start; }
 .deck-stat-label { font-size:26px; line-height:1.5; font-weight:600; text-align:start; }
 .deck-stat-source { font-size:14px; line-height:1.6; color:${T.muted}; margin-top:10px; text-align:start; }
 .deck-body.deck-compare { display:flex; flex-direction:row; gap:18px; align-items:stretch; }

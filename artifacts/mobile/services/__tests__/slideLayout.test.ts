@@ -16,7 +16,7 @@ import assert from 'node:assert/strict';
 
 import { resolveSlideLayout, SLIDE_LAYOUTS } from '../slideLayout.ts';
 import type { ActivitySlide } from '../ai/AIService.ts';
-import { payloadLines, MAX_FLOW_NODES, MAX_STATS, MAX_TABLE_ROWS, MAX_TIMELINE_EVENTS } from '../slideLayout.ts';
+import { asPhotoHero, payloadLines, MAX_FLOW_NODES, MAX_STATS, MAX_TABLE_ROWS, MAX_TIMELINE_EVENTS } from '../slideLayout.ts';
 
 const slide = (over: Partial<ActivitySlide> = {}): ActivitySlide => ({
   slideNumber: 1, type: 'intro', title: 'عنوان', content: '', durationSeconds: 0, ...over,
@@ -162,6 +162,9 @@ describe('SLIDE_LAYOUTS', () => {
       stats: slide({ layout: 'stats', stats: [{ value: '٣', label: 'أ' }, { value: '٤', label: 'ب' }] }),
       table: slide({ layout: 'table', table: { headers: ['أ', 'ب'], rows: [['١', '٢'], ['٣', '٤']] } }),
       flow: slide({ layout: 'flow', flow: { steps: ['أ', 'ب', 'ج'] } }),
+      quote: slide({ layout: 'quote', quote: { text: 'العلم نور' } }),
+      photo: slide({ layout: 'photo', content: 'جملة', sideImageUrl: 'https://img.example/a.jpg' }),
+      concepts: slide({ layout: 'concepts', concepts: ['سكون', 'حركة'] }),
     };
     for (const name of SLIDE_LAYOUTS) {
       assert.equal(resolveSlideLayout(samples[name])?.kind, name, `${name} should resolve`);
@@ -329,11 +332,91 @@ describe('flow', () => {
   });
 });
 
+describe('quote', () => {
+  it('keeps the text and an optional attribution', () => {
+    assert.deepEqual(resolveSlideLayout(slide({ layout: 'quote', quote: { text: ' العلم نور ' } })), { kind: 'quote', text: 'العلم نور' });
+    assert.deepEqual(
+      resolveSlideLayout(slide({ layout: 'quote', quote: { text: 'العلم نور', by: 'مثل عربي' } })),
+      { kind: 'quote', text: 'العلم نور', by: 'مثل عربي' },
+    );
+    // an empty attribution is no attribution, not a refusal
+    assert.deepEqual(resolveSlideLayout(slide({ layout: 'quote', quote: { text: 'ن', by: '' } })), { kind: 'quote', text: 'ن' });
+  });
+
+  it('refuses no text, an over-long text, or an attribution that is present but unusable', () => {
+    assert.equal(resolveSlideLayout(slide({ layout: 'quote' })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'quote', quote: { text: '  ' } })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'quote', quote: { text: 'x'.repeat(201) } })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'quote', quote: { text: 'ن', by: 'x'.repeat(61) } })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'quote', quote: { text: 'ن', by: '   ' } })), null);
+  });
+});
+
+describe('concepts', () => {
+  it('keeps two to six short terms, trimmed and bullet-stripped', () => {
+    assert.deepEqual(
+      resolveSlideLayout(slide({ layout: 'concepts', concepts: ['• سكون ', 'قوة سحب', 'حركة'] })),
+      { kind: 'concepts', items: ['سكون', 'قوة سحب', 'حركة'] },
+    );
+    assert.equal(resolveSlideLayout(slide({ layout: 'concepts', concepts: Array.from({ length: 6 }, (_, i) => `م${i}`) }))?.kind, 'concepts');
+  });
+
+  it('refuses one term, seven, a blank, a sentence, or no list at all', () => {
+    assert.equal(resolveSlideLayout(slide({ layout: 'concepts', concepts: ['سكون'] })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'concepts', concepts: Array.from({ length: 7 }, (_, i) => `م${i}`) })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'concepts', concepts: ['سكون', ' '] })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'concepts', concepts: ['سكون', 'x'.repeat(33)] })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'concepts' })), null);
+    assert.equal(resolveSlideLayout(slide({ layout: 'concepts', concepts: 'سكون' as never })), null);
+  });
+
+  it('payloadLines turns refused terms back into lines', () => {
+    assert.deepEqual(payloadLines(slide({ concepts: ['سكون', 'حركة'] })), ['سكون', 'حركة']);
+  });
+});
+
+describe('photo', () => {
+  const photo = (over: Partial<ActivitySlide> = {}) =>
+    slide({ layout: 'photo', content: 'جملة واحدة', sideImageUrl: 'https://img.example/a.jpg', ...over });
+
+  it('needs a picture — without one the slide is drawn the ordinary way', () => {
+    assert.equal(resolveSlideLayout(photo({ sideImageUrl: undefined })), null);
+    assert.equal(resolveSlideLayout(photo({ sideImageUrl: '  ' })), null);
+  });
+
+  it('carries the picture, its credit line and the one sentence', () => {
+    const credit = { name: 'Jane', url: 'https://unsplash.com/@jane' } as never;
+    const out = resolveSlideLayout(photo({ sideImageCaption: 'Photo by Jane', sideImageCredit: credit }));
+    assert.deepEqual(out, {
+      kind: 'photo', url: 'https://img.example/a.jpg', sentence: 'جملة واحدة', caption: 'Photo by Jane', credit,
+    });
+  });
+
+  it('allows no sentence at all, refuses a list or a paragraph', () => {
+    assert.equal(resolveSlideLayout(photo({ content: '' }))?.kind, 'photo');
+    assert.equal(resolveSlideLayout(photo({ content: '• أ\n• ب' })), null);
+    assert.equal(resolveSlideLayout(photo({ content: 'x'.repeat(141) })), null);
+  });
+
+  it('asPhotoHero re-shapes it as the cover/section-break drawing expects, and only then', () => {
+    const credit = { name: 'Jane', url: 'https://unsplash.com/@jane' } as never;
+    const hero = asPhotoHero(photo({ sideImageCaption: 'Photo by Jane', sideImageCredit: credit }));
+    assert.equal(hero?.mediaUrl, 'https://img.example/a.jpg');
+    assert.equal(hero?.mediaCaption, 'Photo by Jane');
+    assert.equal(hero?.mediaCredit, credit);
+    assert.equal(hero?.sideImageUrl, undefined);
+    assert.equal(hero?.content, 'جملة واحدة');
+    assert.equal(asPhotoHero(slide({ layout: 'quote', quote: { text: 'ن' } })), null);
+    assert.equal(asPhotoHero(photo({ sideImageUrl: undefined })), null);
+  });
+});
+
 describe('payloadLines — a refused layout still leaves the teacher the words', () => {
   it('turns each payload into bullet-ready lines', () => {
     assert.deepEqual(payloadLines(slide({ timeline: [{ label: '١٩٤٨', text: 'حدث' }] })), ['١٩٤٨ — حدث']);
     assert.deepEqual(payloadLines(slide({ stats: [{ value: '40%', label: 'سكن' }] })), ['40% — سكن']);
     assert.deepEqual(payloadLines(slide({ flow: { steps: ['أ', 'ب'] } })), ['أ', 'ب']);
+    assert.deepEqual(payloadLines(slide({ quote: { text: 'العلم نور', by: 'مثل' } })), ['العلم نور — مثل']);
     assert.deepEqual(
       payloadLines(slide({ table: { headers: ['س', 'ص'], rows: [['١', '٢']] } })),
       ['س: ١ — ص: ٢'],

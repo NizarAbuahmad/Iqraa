@@ -24,6 +24,7 @@
  */
 import type { ActivitySlide } from './ai/AIService.ts';
 import { isBulletLine, stripBullet } from './deckText.ts';
+import type { PhotoCredit } from './photoCredit.ts';
 
 export type ResolvedLayout =
   | { kind: 'statement'; text: string }
@@ -33,7 +34,10 @@ export type ResolvedLayout =
   | { kind: 'timeline'; events: { label: string; text: string }[] }
   | { kind: 'stats'; items: { value: string; label: string }[] }
   | { kind: 'table'; headers: string[]; rows: string[][] }
-  | { kind: 'flow'; nodes: string[]; cycle: boolean };
+  | { kind: 'flow'; nodes: string[]; cycle: boolean }
+  | { kind: 'quote'; text: string; by?: string }
+  | { kind: 'concepts'; items: string[] }
+  | { kind: 'photo'; url: string; caption: string; credit?: PhotoCredit; sentence: string };
 
 /**
  * A statement is one sentence, not a paragraph with the bullets removed.
@@ -75,6 +79,19 @@ export const MAX_TABLE_CELL_CHARS = 80;
 export const MIN_FLOW_NODES = 3;
 export const MAX_FLOW_NODES = 6;
 export const MAX_FLOW_NODE_CHARS = 60;
+
+/** A quote is a sentence or two set large; past this it is a paragraph in display type. */
+export const MAX_QUOTE_CHARS = 200;
+export const MAX_QUOTE_BY_CHARS = 60;
+
+/**
+ * A grid of short key terms. Past this length an item is a sentence, and a
+ * sentence in a card is worse than the bullet list it replaced; two items is a
+ * pair, and seven no longer fit as large cards.
+ */
+export const MIN_CONCEPTS = 2;
+export const MAX_CONCEPTS = 6;
+export const MAX_CONCEPT_CHARS = 32;
 
 /** A required string: trimmed, bullet-stripped, non-empty, within `max`. Anything else is `null`. */
 function needText(v: unknown, max: number): string | null {
@@ -207,13 +224,49 @@ export function resolveSlideLayout(slide: ActivitySlide): ResolvedLayout | null 
       return { kind: 'flow', nodes, cycle: slide.flow?.cycle === true };
     }
 
+    case 'quote': {
+      const text = needText(slide.quote?.text, MAX_QUOTE_CHARS);
+      if (text === null) return null;
+      // An attribution that is present but unusable refuses the whole quote: a
+      // quote cut loose from who said it is a different claim.
+      const rawBy = slide.quote?.by;
+      const by = rawBy === undefined || rawBy === null || rawBy === '' ? undefined : needText(rawBy, MAX_QUOTE_BY_CHARS);
+      if (by === null) return null;
+      return { kind: 'quote', text, ...(by ? { by } : {}) };
+    }
+
+    case 'concepts': {
+      const items = needTexts(slide.concepts, MAX_CONCEPT_CHARS);
+      if (!items || items.length < MIN_CONCEPTS || items.length > MAX_CONCEPTS) return null;
+      return { kind: 'concepts', items };
+    }
+
+    case 'photo': {
+      // Needs a real picture and one sentence to put over it. Without the
+      // picture this is `null` — the ordinary layout, with the sentence as a
+      // line of text — never a dark slide with a title floating on it.
+      const url = typeof slide.sideImageUrl === 'string' ? slide.sideImageUrl.trim() : '';
+      if (!url) return null;
+      const body = lines(slide.content);
+      if (body.length > 1) return null;
+      const sentence = body.length ? stripBullet(body[0]!) : '';
+      if (sentence.length > MAX_STATEMENT_CHARS) return null;
+      return {
+        kind: 'photo',
+        url,
+        sentence,
+        caption: slide.sideImageCaption ?? '',
+        ...(slide.sideImageCredit ? { credit: slide.sideImageCredit } : {}),
+      };
+    }
+
     default:
       return null;
   }
 }
 
 /** The layouts whose data lives in a field of its own rather than in `content`. */
-export const PAYLOAD_LAYOUTS = ['stat', 'compare', 'timeline', 'stats', 'table', 'flow'] as const;
+export const PAYLOAD_LAYOUTS = ['stat', 'compare', 'timeline', 'stats', 'table', 'flow', 'quote', 'concepts'] as const;
 
 /**
  * A slide's own words as bullet lines, from whichever payload it carries — for
@@ -238,7 +291,29 @@ export function payloadLines(slide: ActivitySlide): string[] {
     }
   }
   for (const step of Array.isArray(slide.flow?.steps) ? slide.flow!.steps : []) add(step);
+  if (slide.quote) add(slide.quote.text, slide.quote.by);
+  for (const c of Array.isArray(slide.concepts) ? slide.concepts : []) add(c);
   return out;
+}
+
+/**
+ * A `photo` slide in the shape the cover and section-break drawing already
+ * understands: the picture as `mediaUrl`, its credit as `mediaCaption` and
+ * `mediaCredit`. The three renderers draw it with the code that draws those two
+ * slides, so the licence line that rides with the photo is drawn by the one
+ * place that has been checked for it, not by a fourth copy.
+ */
+export function asPhotoHero(slide: ActivitySlide): ActivitySlide | null {
+  const layout = resolveSlideLayout(slide);
+  if (layout?.kind !== 'photo') return null;
+  const { sideImageUrl: _u, sideImageCaption: _c, sideImageCredit: _k, ...rest } = slide;
+  return {
+    ...rest,
+    content: layout.sentence,
+    mediaUrl: layout.url,
+    mediaCaption: layout.caption || undefined,
+    mediaCredit: layout.credit,
+  };
 }
 
 /** Arabic-Indic digits to a number, so «١) … ٢)» numbers like «1) … 2)». */
@@ -286,4 +361,4 @@ export function inlineSteps(text: string): string[] | null {
 }
 
 /** Every layout a generator may ask for — the prompt and the tests share this. */
-export const SLIDE_LAYOUTS = ['statement', 'stat', 'compare', 'steps', 'timeline', 'stats', 'table', 'flow'] as const;
+export const SLIDE_LAYOUTS = ['statement', 'stat', 'compare', 'steps', 'timeline', 'stats', 'table', 'flow', 'quote', 'photo', 'concepts'] as const;

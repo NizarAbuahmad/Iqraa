@@ -122,16 +122,17 @@ describeDb("homework pushes, against a real database", () => {
     assert.deepEqual(await stub.settle(300), []);
   });
 
-  it("pushes nothing for homework whose due day has already passed, but does for one due today", async () => {
-    // A back-dated entry (the API allows up to 30 days back) is a record, not news.
+  it("refuses homework due before today (nothing saved, nothing pushed), and pushes for one due today", async () => {
+    // A due date before today is refused outright — it used to be allowed up to
+    // 30 days back and saved as a record that pushed nothing.
     const yesterday = await post(server, w.users.t1, w.classes.c1, "hw-push-yesterday", ammanDay(-1));
-    assert.equal(yesterday.status, 201, server.logs().slice(-1500));
-    assert.equal(yesterday.json.homework.dueDate, ammanDay(-1));
+    assert.equal(yesterday.status, 400, yesterday.text);
+    assert.equal(yesterday.json.code, "due_date_out_of_range");
     const earlier = await post(server, w.users.t1, w.classes.c1, "hw-push-30-back", ammanDay(-30));
-    assert.equal(earlier.status, 201);
+    assert.equal(earlier.status, 400);
     assert.deepEqual(await stub.settle(300), []);
     const rows = await db.pool.query(`SELECT 1 FROM homework WHERE title IN ('hw-push-yesterday', 'hw-push-30-back')`);
-    assert.equal(rows.rowCount, 2, "both are saved");
+    assert.equal(rows.rowCount, 0, "neither is saved");
 
     // Due today is still ahead of the child: that day is still the day to do it.
     const today = await post(server, w.users.t1, w.classes.c1, "hw-push-today", ammanDay(0));

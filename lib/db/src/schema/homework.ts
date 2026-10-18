@@ -21,7 +21,7 @@ import { classGroups, students } from "./students";
 import { evaluations } from "./evaluations";
 
 /** One attached Library item. `source`/`nativeId` say which; the rest is how it looked when attached. */
-export interface HomeworkResource {
+export interface HomeworkLibraryResource {
   kind: "library";
   source: string;
   nativeId: string;
@@ -30,6 +30,21 @@ export interface HomeworkResource {
   url: string | null;
   thumbnailUrl: string | null;
 }
+
+/**
+ * One of the teacher's own saved materials (ملفاتي). Only the id is trusted:
+ * title and type are copied from the `saved_materials` row when attached, and
+ * the content is read live — through the family route, which re-checks that
+ * the row is still the homework teacher's (routes/familyHomework.ts).
+ */
+export interface HomeworkMaterialResource {
+  kind: "material";
+  materialId: string;
+  title: string;
+  type: string;
+}
+
+export type HomeworkResource = HomeworkLibraryResource | HomeworkMaterialResource;
 
 export const homework = pgTable(
   "homework",

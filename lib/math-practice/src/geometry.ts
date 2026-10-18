@@ -346,11 +346,26 @@ const pyramidConeSurface = T('surface_pyr_cone', /^مساحه سطح الهرم 
 });
 
 const sphere = T('sphere', /^حجم الكره ومساحه سطحها$/, [8, 8], ({ rng, diff }) => {
-  // 0 volume, 1 surface area; 2 the radius from the surface area, 3 a hemispherical bowl, 4 surface area from the diameter.
-  const k = pick(rng, [0, 1, 2, 3, 4]);
+  // One kind each: a volume or surface area from the radius or diameter (0, 1, 4); the radius back from either (2);
+  // a hemispherical bowl (3); a solid hemisphere's whole surface (5); how many times the area or volume when the radius is scaled (6).
+  const k = pick(rng, [pick(rng, [0, 1, 4]), 2, 3, 5, 6]);
   if (k === 2) {
+    if (rng() < 0.5) {
+      const r = 3 * int(rng, 1, span(diff, 2, 3, 4)), N = (4 * r ** 3) / 3;
+      return { eq: `r ${N}`, answer: String(r), wrongs: pos(r, [r / 3, 2 * r, r * r, r + 3]), ar: `حجم كرة ${PI(N)} سم³. ما طول نصف قطرها؟`, en: `A sphere has volume ${PI(N)} cm³. What is its radius?` };
+    }
     const r = int(rng, 2, span(diff, 8, 12, 15));
     return { eq: `r ${4 * r * r}`, answer: String(r), wrongs: pos(r, [2 * r, r * r, 4 * r, r + 2]), ar: `مساحة سطح كرة ${PI(4 * r * r)} سم². ما طول نصف قطرها؟`, en: `A sphere has surface area ${PI(4 * r * r)} cm². What is its radius?` };
+  }
+  if (k === 5) {
+    // the curved half 2πr² and the flat circle πr²
+    const r = int(rng, 2, span(diff, 8, 12, 15));
+    return { eq: `hemi ${r}`, answer: PI(3 * r * r), wrongs: piOpts(3 * r * r, [2 * r * r, 4 * r * r, r * r, 6 * r * r]), ar: `نصف كرة مصمتة نصف قطرها ${r} سم. أوجد مساحة سطحها الكلي (الجزء المنحني مع القاعدة الدائرية) بدلالة π.`, en: `A solid hemisphere has radius ${r} cm. Find its total surface area (the curved part and the circular base) in terms of π.` };
+  }
+  if (k === 6) {
+    // area goes with r², volume with r³
+    const a = int(rng, 2, span(diff, 3, 4, 5)), vol = rng() < 0.5, ans = vol ? a ** 3 : a * a;
+    return { eq: `scale ${a} ${vol ? 'V' : 'A'}`, answer: String(ans), wrongs: pos(ans, [a, vol ? a * a : a ** 3, 2 * a, 4 * a]), ar: `نصف قطر كرة يساوي ${a === 2 ? 'مثلَي' : `${a} أمثال`} نصف قطر كرة أخرى. كم مثلًا ${vol ? 'حجم' : 'مساحة سطح'} الكرة الأولى من ${vol ? 'حجم' : 'مساحة سطح'} الثانية؟`, en: `One sphere's radius is ${a} times another's. How many times the second sphere's ${vol ? 'volume' : 'surface area'} is the first's?` };
   }
   if (k === 3) {
     const r = 3 * int(rng, 1, span(diff, 2, 3, 4)), N = (2 * r ** 3) / 3;
@@ -407,7 +422,7 @@ const lineAndPoint = T('angles_line_point', /^مجموع الزوايا علي �
   if (k === 3) {
     const point = rng() < 0.5, total = point ? 360 : 180;
     const n = pick(rng, point ? [3, 4, 5, 6, 8, 9, 10] : [3, 4, 5, 6]), a = total / n;
-    return { eq: `equal ${n}, ${total}`, answer: `${a}°`, wrongs: deg(a, [(point ? 180 : 360) / n, total - a, 90 / n, a + 10, 2 * a]), ar: `${n} زوايا متجاورة متساوية في القياس ${point ? 'تحيط بنقطة' : 'على مستقيم'}. ما قياس كل منها؟`, en: `${n} equal adjacent angles ${point ? 'surround a point' : 'lie on a straight line'}. What does each measure?` };
+    return { eq: `equal ${n}, ${total}`, answer: `${a}°`, wrongs: deg(a, [(point ? 180 : 360) / n, total - a, 90 / n, a + 10, 2 * a]), ar: `${point ? 'تحيط بنقطة' : 'على مستقيم'} ${n} زوايا متجاورة متساوية في القياس. ما قياس كل منها؟`, en: `${n} equal adjacent angles ${point ? 'surround a point' : 'lie on a straight line'}. What does each measure?` };
   }
   if (k === 4) {
     const point = rng() < 0.5, total = point ? 360 : 180;
@@ -606,8 +621,19 @@ const polygonAngles = T('polygon_angles', /^زوايا المضلع$/, [7, 7], (
 // ─── Grade 8: parallelograms, congruence, similarity, Pythagoras ────────────
 
 const parallelogram = T('parallelogram_props', /^متوازي الاضلاع$/, [8, 8], ({ rng, diff }) => {
-  const k = pick(rng, diff === 'easy' ? [0, 1] : [0, 1, 2, 3]);
+  // One kind each: an angle from A (0 B, 1 C), half a diagonal (2), the perimeter (3), a side from the perimeter (4),
+  // A from how much B exceeds it (5).
+  const k = pick(rng, diff === 'easy' ? [pick(rng, [0, 1]), 2, 3, 4] : [pick(rng, [0, 1]), 2, 3, 4, 5]);
   const a = int(rng, 50, 130);
+  if (k === 4) {
+    const l = int(rng, 4, 14), w = int(rng, 3, 12), P = 2 * (l + w);
+    return { eq: `P ${P}, ${l}`, answer: String(w), wrongs: pos(w, [P - l, P / 2, P - 2 * l, w + 2]), ar: `محيط متوازي الأضلاع ABCD يساوي ${P} سم، وطول الضلع AB يساوي ${l} سم. ما طول الضلع BC؟`, en: `Parallelogram ABCD has perimeter ${P} cm and AB = ${l} cm. How long is BC?` };
+  }
+  if (k === 5) {
+    // consecutive angles add to 180°: A + (A + d) = 180
+    const d = 2 * int(rng, 5, 40), A = (180 - d) / 2;
+    return { eq: `B − A ${d}`, answer: `${A}°`, wrongs: deg(A, [A + d, 180 - d, d, 90]), ar: `في متوازي الأضلاع ABCD يزيد قياس الزاوية B على قياس الزاوية A بمقدار ${d}°. ما قياس الزاوية A؟`, en: `In parallelogram ABCD, angle B is ${d}° more than angle A. What does angle A measure?` };
+  }
   if (k === 0) return { eq: `${a}`, answer: `${180 - a}°`, wrongs: deg(180 - a, [a, 90, 360 - a, 90 - a > 0 ? 90 - a : 0]), ar: `في متوازي الأضلاع ABCD قياس الزاوية A هو ${a}°. ما قياس الزاوية B؟`, en: `In parallelogram ABCD, angle A measures ${a}°. What does angle B measure?` };
   if (k === 1) return { eq: `${a}`, answer: `${a}°`, wrongs: deg(a, [180 - a, 90, 360 - a, 2 * a]), ar: `في متوازي الأضلاع ABCD قياس الزاوية A هو ${a}°. ما قياس الزاوية C؟`, en: `In parallelogram ABCD, angle A measures ${a}°. What does angle C measure?` };
   if (k === 2) { const d = 2 * int(rng, 4, 12); return { eq: `${d}`, answer: String(d / 2), wrongs: pos(d / 2, [d, 2 * d, d / 2 + 2, d - 2]), ar: `في متوازي الأضلاع ABCD يتقاطع القطران في النقطة O، وطول القطر AC يساوي ${d} سم. ما طول AO؟`, en: `In parallelogram ABCD the diagonals meet at O, and diagonal AC is ${d} cm long. What is AO?` }; }
@@ -724,15 +750,33 @@ const congruenceAsa = (id: string, match: RegExp) => {
   const base = congruence(id, match, ['ASA', 'AAS']);
   const all = ['SSS', 'SAS', 'HL', 'ASA', 'AAS'];
   return T(id, match, [8, 8], ({ rng, diff, grade }) => {
-    const k = pick(rng, [0, 1, 2, 3]);
+    // 4 a side from the congruence, 5 x from two corresponding sides.
+    const k = pick(rng, [0, 1, 2, 3, 4, 5]);
+    const corr = (v: string) => v.split('').map(c => 'DEF'['ABC'.indexOf(c)]).join('');
     if (k === 1) {
-      const [s1, s2, ans] = pick(rng, [['AB', 'DE', 'ASA'], ['BC', 'EF', 'AAS'], ['AC', 'DF', 'AAS']] as Array<[string, string, string]>);
-      return { eq: `parts ${s1}`, answer: ans, wrongs: names(rng, ans, all), ar: `في المثلثين ABC و DEF: ∠A ≅ ∠D و ∠B ≅ ∠E و ${s1} ≅ ${s2}. بأي حالة يتطابق المثلثان؟`, en: `In triangles ABC and DEF, ∠A ≅ ∠D, ∠B ≅ ∠E and ${s1} ≅ ${s2}. By which criterion are the triangles congruent?` };
+      // two marked angles and a side: ASA when the side joins the two angles
+      const [p, q] = pick(rng, ['AB', 'BC', 'AC']).split('') as [string, string], side = pick(rng, ['AB', 'BC', 'AC']);
+      const ans = side === p + q ? 'ASA' : 'AAS';
+      return { eq: `parts ${p}${q} ${side}`, answer: ans, wrongs: names(rng, ans, all), ar: `في المثلثين ABC و DEF: ∠${p} ≅ ∠${corr(p)} و ∠${q} ≅ ∠${corr(q)} و ${side} ≅ ${corr(side)}. بأي حالة يتطابق المثلثان؟`, en: `In triangles ABC and DEF, ∠${p} ≅ ∠${corr(p)}, ∠${q} ≅ ∠${corr(q)} and ${side} ≅ ${corr(side)}. By which criterion are the triangles congruent?` };
     }
     if (k === 2) {
-      const asa = rng() < 0.5;
-      const ans = asa ? '∠B ≅ ∠E' : '∠C ≅ ∠F';
-      return { eq: `need ${asa ? 'ASA' : 'AAS'}`, answer: ans, wrongs: [asa ? '∠C ≅ ∠F' : '∠B ≅ ∠E', 'BC ≅ EF', 'AC ≅ DF'], ar: `في المثلثين ABC و DEF: ∠A ≅ ∠D و AB ≅ DE. ما التطابق الإضافي الذي يلزم لإثبات تطابق المثلثين بحالة ${asa ? 'ASA' : 'AAS'}؟`, en: `In triangles ABC and DEF, ∠A ≅ ∠D and AB ≅ DE. Which extra congruence proves the triangles congruent by ${asa ? 'ASA' : 'AAS'}?` };
+      // one angle and a side through it: ASA needs the angle at the side's other end, AAS the angle off the side
+      const angle = pick(rng, ['A', 'B', 'C']), side = pick(rng, ['AB', 'BC', 'AC'].filter(s => s.includes(angle))), asa = rng() < 0.5;
+      const other = side.replace(angle, ''), off = 'ABC'.replace(side[0]!, '').replace(side[1]!, '');
+      const ans = `∠${asa ? other : off} ≅ ∠${corr(asa ? other : off)}`;
+      const sides = ['AB', 'BC', 'AC'].filter(s => s !== side).map(s => `${s} ≅ ${corr(s)}`);
+      return { eq: `need ${angle} ${side} ${asa ? 'ASA' : 'AAS'}`, answer: ans, wrongs: [`∠${asa ? off : other} ≅ ∠${corr(asa ? off : other)}`, ...sides], ar: `في المثلثين ABC و DEF: ∠${angle} ≅ ∠${corr(angle)} و ${side} ≅ ${corr(side)}. ما التطابق الإضافي الذي يلزم لإثبات تطابق المثلثين بحالة ${asa ? 'ASA' : 'AAS'}؟`, en: `In triangles ABC and DEF, ∠${angle} ≅ ∠${corr(angle)} and ${side} ≅ ${corr(side)}. Which extra congruence proves the triangles congruent by ${asa ? 'ASA' : 'AAS'}?` };
+    }
+    if (k === 4) {
+      let s = [0, 0, 0];
+      do s = [int(rng, 3, 15), int(rng, 3, 15), int(rng, 3, 15)]; while (s[0]! + s[1]! <= s[2]! || s[0]! + s[2]! <= s[1]! || s[1]! + s[2]! <= s[0]! || new Set(s).size < 3);
+      const [ab, bc, ac] = s as [number, number, number], i = int(rng, 0, 2), ask = ['DE', 'EF', 'DF'][i]!, ans = s[i]!;
+      return { eq: `sides ${ab}, ${bc}, ${ac} ${ask}`, answer: String(ans), wrongs: pos(ans, s.filter(v => v !== ans).concat(ab + bc + ac, ans + 1)), ar: `إذا كان △ABC ≅ △DEF، وكانت أطوال أضلاع المثلث ABC هي AB = ${ab} سم و BC = ${bc} سم و AC = ${ac} سم، فما طول الضلع ${ask}؟`, en: `If △ABC ≅ △DEF with AB = ${ab} cm, BC = ${bc} cm and AC = ${ac} cm, how long is ${ask}?` };
+    }
+    if (k === 5) {
+      const x = int(rng, 2, span(diff, 8, 12, 15)), p = int(rng, 2, 5), q = int(rng, 1, p - 1), c1 = int(rng, 1, 12), c2 = c1 + (p - q) * x;
+      const side = pick(rng, ['AB', 'BC', 'AC']);
+      return { eq: `x ${p}, ${c1}, ${q}, ${c2}`, answer: String(x), wrongs: pos(x, [x + 2, x - 2, c2 - c1, p * x + c1, (c1 + c2) / (p + q) | 0]), ar: `المثلثان ABC و DEF متطابقان (△ABC ≅ △DEF). إذا كان ${side} = (${lin(p, c1)}) سم و ${corr(side)} = (${lin(q, c2)}) سم، فما قيمة x؟`, en: `Triangles ABC and DEF are congruent (△ABC ≅ △DEF). If ${side} = (${lin(p, c1)}) cm and ${corr(side)} = (${lin(q, c2)}) cm, what is x?` };
     }
     if (k === 3) {
       const a = int(rng, 30, 90), b = int(rng, 25, 150 - a), c = 180 - a - b;

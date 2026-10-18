@@ -95,6 +95,11 @@ const NON_TEACHER_ROUTES = [
   // «المدرسة» — the parent/student tab: the weekly timetable (and, later,
   // homework). One screen, reading /student/schedule or /parent/schedule by role.
   '/school',
+  // Exactly the viewer, nothing else under /workspace: «المدرسة» opens a saved
+  // material the teacher attached to a homework there, read-only
+  // (`?hw=…&material=…`). Its other sources fail closed for these roles — the
+  // server serves /workspace/items only to their owner.
+  '/workspace/view',
 ];
 
 /**
