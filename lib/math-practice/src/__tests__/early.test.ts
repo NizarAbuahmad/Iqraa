@@ -645,7 +645,7 @@ describe('shapes, fractions, patterns: answers recomputed', () => {
         continue;
       }
       if (/^ما \d+\/\d+ من/.test(p)) { set3.add('of'); assert.equal(Number(item.answer), (n[0]! * n[2]!) / n[1]!); assert.ok(Number.isInteger(Number(item.answer))); continue; }
-      const c = n[0]!, k = n[1] ?? (has(p, 'يلبس واحد') ? 1 : NaN), top = has(p, 'لا يلبسون') ? c - k : k;
+      const c = n[0]!, k = n[1] ?? (has(p, 'طالب واحد منهم') ? 1 : has(p, 'طالبان منهم') ? 2 : NaN), top = has(p, 'لا يلبسون') ? c - k : k;
       set3.add(has(p, 'لا يلبسون') ? 'without' : 'with');
       assert.ok(c >= 3 && c <= 10, `«طلاب» needs 3–10: ${p}`);
       assert.equal(item.answer, `${top}/${c}`, p); assert.equal(gcd(top, c), 1);
