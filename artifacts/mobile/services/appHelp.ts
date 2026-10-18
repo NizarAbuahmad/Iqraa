@@ -49,7 +49,7 @@ const TOOL_KEYWORDS: Record<string, string[]> = {
   games: ['العاب', 'ألعاب', 'games', 'play'],
   // Bare «اختبار» too: «كيف أسوي اختبار» found no place. The plural stays the exams'.
   quiz: ['اختبار قصير', 'اختبار', 'كويز', 'quiz'],
-  evaluations: ['اختبارات', 'امتحان', 'امتحانات', 'تقييم', 'تقييمات', 'علامات', 'نتائج', 'exam', 'test', 'tests', 'grades', 'results'],
+  evaluations: ['اختبارات', 'امتحان', 'امتحانات', 'تقييم', 'تقييمات', 'علامات', 'نتائج', 'exam', 'exams', 'test', 'tests', 'grades', 'results'],
   'parent-msg': ['رساله ولي امر', 'رساله للاهل', 'parent message'],
 };
 
@@ -302,7 +302,7 @@ const WHERE_PATTERN =
  * «ممكن انشئ اختبار» ask the assistant to make one).
  */
 const HOW_ACCOUNT =
-  /(كيف|طريقه|خطوات)\s*(يمكنني\s*|ممكن\s*)?((ا|ن)?(ضيف|ضف|ضافه|نشي|نشئ|نشاء|عمل|غير|عدل|حذف|صدر|طبع|حفظ|بدا|شارك|ربط|دعو|ستخدم|فعل|شغل)|تغيير|تعديل|تصدير|طباعه|تفعيل|تشغيل|بدء)|\bhow\s+(?:(?:do|can|should)\s+(?:i|we)\s+)?(?:to\s+)?(?:add|create|make|change|edit|delete|remove|export|print|save|share|start|use|link|invite|enable|turn\s+on|switch\s+to)\b|\bcan\s+i\s+(?:add|change|edit|delete|remove|export|print|save|share|link|invite)\b|\b(?:is\s+there\s+(?:a|any|some)\s+way|is\s+it\s+possible|any\s+way)\s+to\s+(?:add|change|edit|delete|remove|export|save|share|link|invite)\b|(?:^|\s)(?:هل\s+)?(?:يمكنني|يمكن|اقدر|استطيع|ممكن)\s+(?:ان\s+)?(?:اضيف|اضافه|اغير|اعدل|احذف|اصدر|احفظ|اشارك|اربط|ادعو)(?:\s|$)/i;
+  /(كيفيه|كيف|اشلون|شلون|ازاي|طريقه|خطوات)\s*(يمكنني\s*|ممكن\s*)?((ا|ن)?(ضيف|ضف|ضافه|نشي|نشئ|نشاء|عمل|غير|عدل|حذف|صدر|طبع|حفظ|بدا|شارك|ربط|دعو|ستخدم|فعل|شغل)|تغيير|تعديل|تصدير|طباعه|تفعيل|تشغيل|بدء)|\bhow\s+(?:(?:do|can|should)\s+(?:i|we)\s+)?(?:to\s+)?(?:add|create|make|change|edit|delete|remove|export|print|save|share|start|use|link|invite|enable|turn\s+on|switch\s+to)\b|\bcan\s+i\s+(?:add|change|edit|delete|remove|export|print|save|share|link|invite)\b|\b(?:is\s+there\s+(?:a|any|some)\s+way|is\s+it\s+possible|any\s+way)\s+to\s+(?:add|change|edit|delete|remove|export|save|share|link|invite)\b|(?:^|\s)(?:هل\s+)?(?:يمكنني|يمكن|اقدر|استطيع|ممكن)\s+(?:ان\s+)?(?:اضيف|اضافه|اغير|اعدل|احذف|اصدر|احفظ|اشارك|اربط|ادعو)(?:\s|$)/i;
 
 /**
  * «how to generate worksheet», «كيف أجهّز ورقة عمل» — how a material is made.
@@ -313,7 +313,7 @@ const HOW_ACCOUNT =
  * questions that happen to name a place.
  */
 const HOW_MAKE =
-  /\bhow\s+(?:(?:do|can|could|should)\s+(?:i|we)\s+)?(?:to\s+)?(?:generate|prepare|build|write|design|produce|get)\s+(?:(?:a|an|the|my|some|new)\s+)?(?:worksheets?|quiz(?:zes)?|(?:lesson\s+)?plans?|activit(?:y|ies)|homework|exams?|tests?|slides|presentations?)\b|(كيف|طريقه|خطوات)\s*(يمكنني\s*|ممكن\s*)?(ا|ن)?(جهز|حضر|سوي|ولد|كتب)\s+(ال)?(ورقه|اوراق|خطه|اختبار|امتحان|نشاط|واجب|عرض)/i;
+  /\bhow\s+(?:(?:do|can|could|should)\s+(?:i|we)\s+)?(?:to\s+)?(?:generate|prepare|build|write|design|produce|get)\s+(?:(?:a|an|the|my|some|new)\s+)?(?:worksheets?|quiz(?:zes)?|(?:lesson\s+)?plans?|activit(?:y|ies)|homework|exams?|tests?|slides|presentations?)\b|(كيفيه|كيف|اشلون|شلون|ازاي|طريقه|خطوات)\s*(يمكنني\s*|ممكن\s*)?(ا|ن)?(جهز|حضر|سوي|ولد|كتب)\s+(ال)?(ورقه|اوراق|خطه|اختبار|امتحان|نشاط|واجب|عرض)/i;
 
 const HOW_PATTERN = new RegExp(`${HOW_ACCOUNT.source}|${HOW_MAKE.source}`, 'i');
 
@@ -413,14 +413,14 @@ const STATEMENT_PLACES: { re: RegExp; id: string }[] = [
  */
 /** The optional opening of an anchored rule: a how / where / can-I word, or first-person intent. */
 const EN_RULE_LEAD = String.raw`^(?:(?:please|pls|plz)\s+)?(?:(?:how\s+(?:do|can|should)\s+(?:i|we)|where\s+(?:do|can|should)\s+(?:i|we)|how\s+to|can\s+(?:i|we)|(?:i|we)\s+(?:want|need|wanna)\s+to|(?:i|we)(?:'d|\s+would)\s+like\s+to|let\s+me|help\s+me(?:\s+to)?)\s+)?`;
-const AR_RULE_LEAD = String.raw`^(?:(?:كيف|طريقه|خطوات|وين|اين|من\s+وين|من\s+اين)\s+(?:يمكنني\s+|ممكن\s+|بقدر\s+)?|(?:هل\s+)?(?:يمكنني|يمكن|اقدر|استطيع|ممكن)\s+(?:ان\s+)?|${AR_INTENT})?`;
+const AR_RULE_LEAD = String.raw`^(?:(?:كيفيه|كيف|اشلون|شلون|ازاي|طريقه|خطوات|وين|اين|من\s+وين|من\s+اين)\s+(?:يمكنني\s+|ممكن\s+|بقدر\s+)?|(?:هل\s+)?(?:يمكنني|يمكن|اقدر|استطيع|ممكن)\s+(?:ان\s+)?|${AR_INTENT})?`;
 /**
  * The same opening with the how / where / can-I word required. For asks that,
  * said as intent, are a request to the assistant: «اريد اضافة سؤال الى الاختبار»
  * wants a question written, «كيف أضيف سؤالاً إلى الامتحان» wants the button.
  */
 const EN_HOW_LEAD = String.raw`^(?:(?:please|pls|plz)\s+)?(?:how\s+(?:do|can|should)\s+(?:i|we)|where\s+(?:do|can|should)\s+(?:i|we)|how\s+to|can\s+(?:i|we))\s+`;
-const AR_HOW_LEAD = String.raw`^(?:(?:كيف|طريقه|خطوات|وين|اين|من\s+وين|من\s+اين)\s+(?:يمكنني\s+|ممكن\s+|بقدر\s+)?|(?:هل\s+)?(?:يمكنني|يمكن|اقدر|استطيع|ممكن)\s+(?:ان\s+)?)`;
+const AR_HOW_LEAD = String.raw`^(?:(?:كيفيه|كيف|اشلون|شلون|ازاي|طريقه|خطوات|وين|اين|من\s+وين|من\s+اين)\s+(?:يمكنني\s+|ممكن\s+|بقدر\s+)?|(?:هل\s+)?(?:يمكنني|يمكن|اقدر|استطيع|ممكن)\s+(?:ان\s+)?)`;
 const EN_RULE_TAIL = String.raw`(?:\s+(?:please|pls|plz|now|here))*$`;
 const AR_RULE_TAIL = String.raw`(?:\s+(?:لي|من\s+فضلك|لو\s+سمحت|هنا|الان))*$`;
 
@@ -1009,7 +1009,7 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
     id: 'create-exam',
     res: [
       new RegExp(String.raw`^(?:(?:please|pls|plz)\s+)?(?:how\s+(?:do|can|should)\s+(?:i|we)|how\s+to)\s+(?:create|make|set\s+up|build|add)\s+(?:(?:an?|the|my|new)\s+)*(?:exam|evaluation)` + EN_RULE_TAIL),
-      new RegExp(String.raw`^(?:كيف|طريقه|خطوات)\s+(?:يمكنني\s+|ممكن\s+|بقدر\s+)?(?:انشئ|انشاء|اعمل|اسوي|اجهز|اضيف|اضافه)\s+(?:ال)?(?:امتحان|تقييم)(?:\s+(?:جديد|ورقي|الكتروني))?` + AR_RULE_TAIL),
+      new RegExp(String.raw`^(?:كيفيه|كيف|اشلون|شلون|ازاي|طريقه|خطوات)\s+(?:يمكنني\s+|ممكن\s+|بقدر\s+)?(?:انشئ|انشاء|اعمل|اسوي|اجهز|اضيف|اضافه)\s+(?:ال)?(?:امتحان|تقييم)(?:\s+(?:جديد|ورقي|الكتروني))?` + AR_RULE_TAIL),
     ],
   },
   {
@@ -1227,6 +1227,16 @@ export function isHowQuery(query: string): boolean {
 }
 
 /**
+ * «كيف أعدّل ورقة العمل لتناسب الطلاب الضعاف؟», «كيف أستخدم النشاط لتعزيز
+ * التعاون؟», "how do i make my slides more engaging": a how-question that names a
+ * material and then what it is for asks about teaching, and got the make-a-worksheet
+ * steps (found 2026-10-18). Anchored rules and statements are decided before this,
+ * so «كيف أطبع ورقة العمل بدون إجابات» keeps its steps.
+ */
+const PURPOSE =
+  /(?:^|\s)(?:لتناسب|ليناسب|يناسب|تناسب|لتعزيز|ليعزز|لتنميه|لتحسين|ليحسن|لزياده|لجعل|ليكون|لتكون|لتشجيع|ليشجع|لمراعاه|يراعي|بحيث|بطريقه|بشكل|حتي|لكي|كي)(?:\s|$)|\b(?:(?:more|less)\s+(?:engaging|interesting|fun|interactive|challenging|difficult|effective|attractive|exciting|creative|accessible)|so\s+that|for\s+(?:weak|struggling|gifted|advanced|slow|fast|mixed)|to\s+(?:help|engage|support|improve|motivate|encourage|suit|fit|differentiate))\b/;
+
+/**
  * True when the teacher is asking where something is in the app, or how to do
  * something in it. Needs both a "where / how do I" phrase and something
  * app-shaped — «أين تقع البتراء؟» is a geography question and must stay one.
@@ -1235,6 +1245,7 @@ export function isAppHelpQuery(query: string): boolean {
   const q = plain(query);
   if (isAddToAccount(q) || statementPlaceId(q) || isProblemWithScreen(q) || isScreenStatement(query)) return true;
   if (!WHERE_PATTERN.test(q) && !HOW_PATTERN.test(q)) return false;
+  if (!WHERE_PATTERN.test(q) && PURPOSE.test(q)) return false;
   return findAppPlaces(q, 1).length > 0 || APP_NOUN.test(q);
 }
 
@@ -1249,6 +1260,12 @@ const REMOVE_VERB = /(?:^|\s)(?:احذف|حذف|امسح|مسح|ازيل|ازا�
  * الصف» is answered with them on purpose (see `STATEMENT_PLACES`).
  */
 const CHANGE_VERB = /(?:^|\s)(?:اغير|تغيير|اعدل|تعديل|ابدل|تبديل|تسميه)(?:\s|$)|\b(?:change|edit|rename|update)\b/;
+/**
+ * A generator's make-steps answer only a question about making one: «كيف أشارك
+ * ورقة العمل على واتساب؟» got «اختر ورقة عمل… جهّز ورقة العمل» (found 2026-10-18).
+ */
+const MAKE_HOWS = new Set(Object.values(TOOL_HOW));
+const MAKE_VERB = /(?:^|\s)(?:ا|ن)?(?:عمل|نشئ|نشي|نشاء|سوي|جهز|حضر|ولد|كتب|صنع)(?:\s|$)|(?:^|\s)(?:انشاء|اعداد|تحضير|تجهيز|توليد|عمل)(?:\s|$)|\b(?:make|create|generate|prepare|build|write|design|produce|get)\b/;
 const NEW_ITEM_HOWS = new Set(['howAddClass', 'howAddStudent']);
 /** Steps that add something, which must not answer a question about removing it. */
 const ADD_HOWS = new Set(['howAddClass', 'howAddGrade', 'howAddStudent']);
@@ -1283,6 +1300,7 @@ export function answerAppHelp(
   const exportHow = places.find(p => p.id === 'export')?.howKey
     ?? (PRINT_VERB.test(q) ? APP_PLACES.find(p => p.id === 'export')?.howKey : undefined);
   const firstHow = places[0]!.howKey && !(ADD_HOWS.has(places[0]!.howKey) && REMOVE_VERB.test(q)) && !(NEW_ITEM_HOWS.has(places[0]!.howKey) && CHANGE_VERB.test(q))
+    && !(MAKE_HOWS.has(places[0]!.howKey) && !MAKE_VERB.test(q))
     ? places[0]!.howKey
     : undefined;
   // A generator's own steps say how to make one, so «how do I export my

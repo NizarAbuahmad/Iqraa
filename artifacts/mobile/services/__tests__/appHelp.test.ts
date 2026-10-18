@@ -1021,6 +1021,45 @@ describe('a tool id that is a word, and new-item steps for a change', () => {
   });
 });
 
+describe('a purpose, a dialect, a plural (seventh live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const lang = (q: string) => (/[؀-ۿ]/.test(q) ? 'ar' : 'en');
+  // A how-question that names a material and then what it is for is teaching.
+  const teaching = [
+    'كيف أعدّل ورقة العمل لتناسب الطلاب الضعاف؟',
+    'كيف أستخدم النشاط لتعزيز التعاون؟',
+    'how do i make my slides more engaging',
+    'how do i adapt the worksheet for weak students',
+    'كيف أجعل الاختبار يناسب كل المستويات؟',
+  ];
+  for (const q of teaching) {
+    it(`leaves «${q}» alone`, () => {
+      assert.equal(isAppHelpQuery(q), false);
+      assert.notEqual(classifyChatIntent(q, lang(q)).intent, 'app_help');
+    });
+  }
+  // «شلون», «ازاي», «كيفية» ask what «كيف» asks.
+  const steps: Array<[string, string]> = [
+    ['شلون اضيف واجب؟', 'howAddHomework'],
+    ['ازاي اضيف طالب؟', 'howAddStudent'],
+    ['كيفية إضافة شعبة جديدة', 'howAddClass'],
+    ['اشلون اغير اسم الشعبة', 'howRenameClass'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» gets ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, lang(q), t).text, `<${key}>`);
+    });
+  }
+  it('"where do i find my exams" finds the evaluations', () => {
+    assert.equal(isAppHelpQuery('where do i find my exams'), true);
+    assert.equal(top('where do i find my exams'), 'tool:evaluations');
+  });
+  it('a tool\'s make-steps never answer sharing it', () => {
+    assert.notEqual(answerAppHelp('كيف أشارك ورقة العمل على واتساب؟', 'ar', t).text, '<howMakeWorksheet>');
+  });
+});
+
 describe('classifyChatIntent routes app questions before artifacts', () => {
   it('«وين ألاقي ورقة العمل» asks for the tool, not a worksheet', () => {
     assert.equal(classifyChatIntent('وين ألاقي ورقة العمل؟').intent, 'app_help');
