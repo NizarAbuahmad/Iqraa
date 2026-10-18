@@ -212,6 +212,37 @@ export function iconForTopic(text: string): DeckIconName | null {
 }
 
 /**
+ * An English photo search for each topic icon. Unsplash is an English index —
+ * an Arabic query returns nothing — and a unit's title is Arabic, so the topic
+ * the title was recognised as stands in for it. A topic with no entry gets no
+ * photo, which is the flat break it had before, rather than a picture of
+ * something else.
+ */
+const TOPIC_PHOTO_QUERIES: Partial<Record<DeckIconName, string>> = {
+  flask: 'chemistry laboratory experiment',
+  atom: 'physics science experiment',
+  leaf: 'plants nature biology',
+  sun: 'sunlight energy sky',
+  drop: 'water drops nature',
+  globe: 'earth planet space',
+  heart: 'healthy lifestyle fitness',
+  bars: 'charts data graphs',
+  calculator: 'mathematics equations chalkboard',
+  ruler: 'measuring ruler tools',
+  clock: 'history museum ancient',
+  laptop: 'computer technology students',
+  users: 'community people together',
+  pin: 'map travel geography',
+  book: 'books reading library',
+};
+
+/** The English photo search for a topic named in `text`, or `null` when none is recognised. */
+export function photoQueryForTopic(text: string): string | null {
+  const icon = iconForTopic(text);
+  return icon ? (TOPIC_PHOTO_QUERIES[icon] ?? null) : null;
+}
+
+/**
  * The icon as an inline SVG string, drawn in `color` at `size` px.
  *
  * Marked decorative (`aria-hidden`): it always sits beside the visible heading

@@ -9,7 +9,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { DECK_ICON_SHAPES, deckIconSvg, iconForGlyph, iconForTopic, type DeckIconName } from '../deckIcons.ts';
+import { DECK_ICON_SHAPES, deckIconSvg, iconForGlyph, iconForTopic, photoQueryForTopic, type DeckIconName } from '../deckIcons.ts';
 import { splitEmoji } from '../deckText.ts';
 import { buildDeckSlidesHTML } from '../deckSlidesHtml.ts';
 import type { ActivitySlide, ClassroomActivity } from '../ai/AIService.ts';
@@ -77,6 +77,28 @@ describe('iconForTopic', () => {
     for (const text of ['الحركة', 'الأرض', 'water', 'history', 'computer', 'السكان والمجتمع']) {
       const icon = iconForTopic(text);
       if (icon !== null) assert.ok(isSectionIconName(icon), `${text} → ${icon}`);
+    }
+  });
+});
+
+describe('photoQueryForTopic', () => {
+  it('is an English query for a recognised topic and null otherwise', () => {
+    assert.match(photoQueryForTopic('الحركة والقوة')!, /physics/);
+    assert.match(photoQueryForTopic('علوم الأرض والفضاء')!, /earth/);
+    assert.equal(photoQueryForTopic('وحدة عامة'), null);
+    assert.equal(photoQueryForTopic(''), null);
+  });
+
+  it('every icon a topic can resolve to has a query — no recognised topic ends up photo-less by accident', () => {
+    // The only icons without one are the section markers a topic never maps to.
+    const topicIcons = new Set(['flask', 'atom', 'leaf', 'sun', 'drop', 'globe', 'heart', 'bars', 'calculator', 'ruler', 'clock', 'laptop', 'users', 'pin', 'book']);
+    for (const icon of topicIcons) {
+      const sample: Record<string, string> = {
+        flask: 'كيمياء', atom: 'فيزياء', leaf: 'نبات', sun: 'طاقة', drop: 'ماء', globe: 'الأرض', heart: 'صحة',
+        bars: 'إحصاء', calculator: 'جبر', ruler: 'قياس', clock: 'تاريخ', laptop: 'حاسوب', users: 'مجتمع', pin: 'خريطة', book: 'قراءة',
+      };
+      assert.equal(iconForTopic(sample[icon]!), icon, `${icon} sample`);
+      assert.ok(photoQueryForTopic(sample[icon]!), `${icon} has a photo query`);
     }
   });
 });

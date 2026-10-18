@@ -4730,8 +4730,24 @@ had never been given them.
   table, flow, compare, steps) drew a bare title and never the heading icon the PDF
   has; one `LayoutHeading` now draws the same icon chip everywhere.
 
-**Not done:** a photo on every unit break (the deck gets one divider photo and the
-Unsplash Demo tier is 50 an hour). **Checked:** layout gate, icon rules, revision
+- **A photo on each unit break** — the deck used to give one divider photo to the
+  FIRST break only. `unitPhotoTargets` (`classMedia.ts`) picks the breaks whose
+  title is a recognisable topic and `photoQueryForTopic` (`deckIcons.ts`, built on
+  the same stems as the icons) gives each an English query («الحركة والقوة» →
+  physics, الأرض → earth and space). At most four per deck, no repeated query, and a
+  title it cannot read keeps the flat break rather than a stranger's photo.
+- **Motion** — `Reveal` in the presenter: bullets, cards, steps, timeline events,
+  stats, concept cards and flow boxes fade in and rise one after another (320 ms,
+  90 ms apart, capped at eight beats), native-driven, skipped when the device
+  asks for reduced motion. The slide is keyed by its index so it replays on every
+  slide. PDF and PowerPoint cannot animate and are unchanged
+  (`presenterMotion.test.ts` reads the source for the three properties that fail
+  silently).
+
+**Not done:** book figures and graphs on a REVISION deck. Lesson decks already carry
+a lesson's book figures (four of sixteen subjects have any) and maths graphs; a
+revision spans units, so no one lesson's figure belongs on it, and its units hold
+no figures of their own to draw. **Checked:** layout gate, icon rules, revision
 and lesson deck builders, PDF rendered and looked at, PPTX through the real
 exporter (cards in the right places for 3, 4 and 5 terms, Arabic mirrored).
 **Not checked:** the presenter on a device, the PPTX in PowerPoint. About two
