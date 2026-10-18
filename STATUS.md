@@ -1589,6 +1589,36 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## One card for quizzes and evaluations, 2026-10-18
+
+The Tools tab had «اختبار قصير» and «التقييمات» as neighbouring cards, which a
+teacher reads as two answers to one question («أريد اختبارًا»). They are still
+two systems — the quiz makes a paper and stores nothing, an evaluation has a
+roster, a share link, attempts and marks — so **the screens, routes, generators
+and API are untouched.** What changed is the door:
+
+- The tab draws **one card**, «اختبارات وتقييمات», opening `/ai-tools/quiz`.
+  `ToolDef.tabHidden` folds `evaluations` out of the tab only; chat's "+" menu,
+  the home screen, the command palette and help still list it, and chat keeps
+  the plain «اختبار قصير» (`tabTitleKey`/`tabDescKey` are tab-only overrides),
+  because chat only ever makes the paper. `TAB_TOOLS` is what the tab renders.
+- Both screens carry `ExamKindSwitch` — «ورقة للطباعة» | «تقييم يُرصد ويُصحَّح»
+  with a one-line hint under the active side, which is what stops the old
+  «أداة تقييم» mix-up coming back. The other side `replace`s, so back lands on
+  the Tools tab. `services/examKind.ts` names the two routes; `examKind.test.ts`
+  and `toolCatalog.test.ts` pin them.
+- `/my-exams` («اختباراتي») is the **student's** list, not the teacher's
+  evaluations list; the teacher's is `/evaluations`.
+
+Not done, deliberately: the two generators still assemble questions separately
+(counts, top-up, type order), so a new question type is still two edits.
+Merging that is a separate change.
+
+Verified in a browser, not asserted: a signed-up teacher on the built web app
+(local API + Postgres), phone and desktop widths, English and Arabic — one card
+on the tab, the switch both ways, RTL order correct, no page errors. The
+desktop grid is now a full 3×3 where ten cards left one alone on the last row.
+
 ## The parent letter stops saying things the teacher never typed, 2026-10-17
 
 A teacher's screenshot of `ai-tools/parent-message` prompted an audit: render the
