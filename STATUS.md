@@ -4293,7 +4293,26 @@ built from results under 60%), no event added on the calendar. Creating an exam 
 a how-word and says «امتحان»/"exam": «اختبار» and "test" stay with the short-quiz
 steps (`howMakeQuiz`). Still answered as app questions, older and not fixed here: a
 how-question that names a tool and then a purpose («كيف أعدّل ورقة العمل لتناسب الطلاب
-الضعاف؟»). 7 look-alikes pinned.
+الضعاف؟»). 7 look-alikes pinned. (Fixed in the seventh pass, below.)
+
+**A purpose, a dialect, and ten more features (2026-10-18, seventh live pass).** A
+how-question that names a material and then what it is for («لتناسب الطلاب الضعاف»,
+«لتعزيز التعاون», "more engaging") is teaching now (`PURPOSE` in `isAppHelpQuery`;
+anchored rules are decided first). A tool's make-steps (`TOOL_HOW`) answer only a
+make verb (`MAKE_VERB`), so sharing a worksheet on WhatsApp no longer gets «جهّز ورقة
+العمل». «شلون», «اشلون», «ازاي» and «كيفية» open a how like «كيف»; "exams" is a keyword.
+New steps, from the screens: a teaching plan («خطة تدريس جديدة»), its lesson dates
+(«توزيع تلقائي»; lessons come from the curriculum, never typed), the timetable
+(«إعداد الحصص», then a cell), a student's record and note, sharing on WhatsApp
+(«مشاركة» sends text, so the answer names the PDF / Word export), saving and
+printing slides («احفظ», «PDF», «PPTX»), presenting full screen, the class challenge
+(`howMakeGame`), sharing a game (only the maths drills have a share link), and a
+library item to a class («أرفق ملفًا» ← «من المكتبة»). **The chat history answer
+says it is not in the app**: the Iqrra chat is not saved and has no clear or new-chat
+button. The bottom tab is «المكتبة» (route file still `curriculum`): a `library` place
+finds it, the curriculum place now sits under it, and the upload answer no longer
+calls the tab «المنهاج». Saving slides left `save-material`, whose «احفظ في ملفاتي»
+does not exist on the slides screen. 14 look-alikes pinned.
 
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 

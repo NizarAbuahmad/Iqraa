@@ -59,6 +59,7 @@ const TOOL_HOW: Record<string, string> = {
   worksheet: 'howMakeWorksheet',
   quiz: 'howMakeQuiz',
   activity: 'howMakeActivity',
+  game: 'howMakeGame',
 };
 
 /** Screens reached from Profile or a tab, which no catalog lists. */
@@ -172,6 +173,22 @@ const SCREENS: AppPlace[] = [
   { id: 'delete-saved', route: '/workspace', labelKey: 'myWorkspace', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howDeleteSaved' },
   { id: 'edit-worksheet', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howEditWorksheet' },
   { id: 'ministry-plan', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howMinistryPlan' },
+  // The seventh pass (2026-10-18).
+  { id: 'plan-lessons', route: '/teaching-plans', labelKey: 'myTeachingPlans', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howPlanLessons' },
+  { id: 'timetable', route: '/schedule', labelKey: 'myWeeklySchedule', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howTimetable' },
+  { id: 'student-record', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howStudentRecord' },
+  { id: 'student-note', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howStudentNote' },
+  { id: 'share-material', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howShareMaterial' },
+  { id: 'save-slides', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howSaveSlides' },
+  { id: 'present', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howPresent' },
+  { id: 'share-game', route: '/play', labelKey: 'toolGamesTitle', pathKeys: ['tabTools', 'toolsDuringClass'], isTool: false, keywords: [], howKey: 'howShareGame' },
+  { id: 'chat-history', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howChatHistory' },
+  { id: 'library-to-class', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howLibraryToClass' },
+  {
+    // The bottom tab: its route file is still «curriculum» (see `app/(tabs)/_layout.tsx`).
+    id: 'library', route: '/curriculum', labelKey: 'resourcesTitle', pathKeys: [], isTool: false,
+    keywords: ['المكتبه', 'مكتبه', 'مكتبتي', 'library', 'resource library'],
+  },
   { id: 'language', route: '/settings', labelKey: 'settings', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'faqA16' },
   {
     id: 'subjects', route: '/setup-subjects', routeParams: { mode: 'edit' }, labelKey: 'mySubjects', pathKeys: ['tabProfile'], isTool: false,
@@ -198,11 +215,13 @@ const SCREENS: AppPlace[] = [
   },
   {
     id: 'teaching-plans', route: '/teaching-plans', labelKey: 'myTeachingPlans', pathKeys: ['tabProfile'], isTool: false,
-    keywords: ['خطط التدريس', 'خطه فصليه', 'الخطه الفصليه', 'teaching plan', 'pacing'],
+    keywords: ['خطط التدريس', 'خطه فصليه', 'الخطه الفصليه', 'خطه تدريس', 'teaching plan', 'term plan', 'pacing'],
+    howKey: 'howTeachingPlan',
   },
   {
     id: 'schedule', route: '/schedule', labelKey: 'myWeeklySchedule', pathKeys: ['tabProfile'], isTool: false,
     keywords: ['جدول', 'الجدول', 'جدول الحصص', 'schedule', 'timetable'],
+    howKey: 'howTimetable',
   },
   {
     id: 'calendar', route: '/calendar', labelKey: 'myCalendar', pathKeys: ['tabProfile'], isTool: false,
@@ -226,7 +245,7 @@ const SCREENS: AppPlace[] = [
     keywords: ['حسابي', 'الملف الشخصي', 'account', 'profile'],
   },
   {
-    id: 'curriculum', route: '/curriculum/browse', labelKey: 'tabCurriculum', pathKeys: [], isTool: false,
+    id: 'curriculum', route: '/curriculum/browse', labelKey: 'tabCurriculum', pathKeys: ['resourcesTitle'], isTool: false,
     keywords: ['المنهاج', 'المنهج', 'الكتب', 'الكتاب المدرسي', 'الدروس', 'curriculum', 'textbook', 'books'],
   },
   {
@@ -606,9 +625,9 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
   {
     id: 'save-material',
     res: [
-      new RegExp(EN_RULE_LEAD + String.raw`(?:save|keep)\s+(?:(?:the|a|my|this)\s+)?(?:lesson\s+plan|worksheet|quiz|activity|slides|exam)` + EN_RULE_TAIL),
+      new RegExp(EN_RULE_LEAD + String.raw`(?:save|keep)\s+(?:(?:the|a|my|this)\s+)?(?:lesson\s+plan|worksheet|quiz|activity|exam)` + EN_RULE_TAIL),
       new RegExp(
-        AR_RULE_LEAD + String.raw`(?:احفظ|حفظ|نحفظ)\s+(?:ال)?(?:خطه\s+(?:ال)?درس|ورقه\s+(?:ال)?عمل|اختبار|امتحان|نشاط|عرض|شرائح|واجب)(?:\s+(?:هذه|هذا|في\s+(?:ال)?ملفاتي|عندي))?` + AR_RULE_TAIL,
+        AR_RULE_LEAD + String.raw`(?:احفظ|حفظ|نحفظ)\s+(?:ال)?(?:خطه\s+(?:ال)?درس|ورقه\s+(?:ال)?عمل|اختبار|امتحان|نشاط|واجب)(?:\s+(?:هذه|هذا|في\s+(?:ال)?ملفاتي|عندي))?` + AR_RULE_TAIL,
       ),
     ],
   },
@@ -1040,6 +1059,107 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
       ),
       new RegExp(
         AR_RULE_LEAD + String.raw`(?:اطبع|طباعه|اصدر|تصدير|احفظ|حفظ|اعمل|احضر|اجهز|انزل|احمل)\s+(?:ال)?خطه\s+(?:ال)?درس\s+(?:ب|علي|حسب|في)\s*(?:ال)?نموذج\s+(?:ال)?وزاره` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  // The seventh live pass (2026-10-18). The chat keeps no history: that answer
+  // says so. «مشاركة» shares text, so the share answer names the PDF / Word export.
+  {
+    id: 'plan-lessons',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:add|schedule|date|plan)\s+(?:(?:a|the|my)\s+)?lessons?\s+(?:to|in|into|on)\s+(?:(?:the|my|a)\s+)?(?:term|teaching|semester)\s+plan` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اضيف|اضافه|ارتب|ترتيب|اوزع|توزيع|احدد|تحديد)\s+(?:ال)?(?:دروس|درس|مواعيد\s+(?:ال)?دروس)\s+(?:لل|الي|في|علي|ل)\s*(?:ال)?خطه\s+(?:ال)?(?:فصليه|تدريس|سنويه)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'timetable',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:create|make|set\s+up|fill\s+in|build)\s+(?:(?:my|the|a)\s+)?(?:weekly\s+)?(?:timetable|schedule)` + EN_RULE_TAIL),
+      new RegExp(EN_RULE_LEAD + String.raw`add\s+(?:a\s+)?(?:period|lesson|class)\s+to\s+(?:(?:my|the)\s+)?(?:timetable|schedule)` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:(?:انشئ|اعمل|اسوي|اعبي|اجهز|ارتب|اعدل)\s+(?:ال)?جدول\s+(?:ال)?(?:حصص|اسبوعي)|(?:اضيف|اضافه|اضع)\s+(?:ال)?حصه\s+(?:لل|الي|في|علي)\s*(?:ال)?جدول)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'student-record',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:see|view|open|check|track|find)\s+(?:(?:a|my|the|each|one)\s+)?(?:student(?:['’]s|s['’]?)?|pupil['’]?s?)\s+(?:record|file|profile|progress)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اشوف|اري|افتح|اطلع\s+علي|اتابع|متابعه)\s+(?:ال)?(?:سجل|ملف|تقدم)\s+(?:ال)?(?:طالب|طالبه|طلاب)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'student-note',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:write|add|leave|save|keep)\s+(?:a\s+)?notes?\s+(?:about|on|for)\s+(?:(?:a|the|one|each)\s+)?student` + EN_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:اكتب|اضيف|اضع|احفظ|اسجل)\s+(?:ال)?ملاحظه\s+(?:عن|علي|ل|لل)\s*(?:ال)?(?:طالب|طالبه)` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'share-material',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:share|send)\s+(?:(?:the|a|my|this)\s+)?(?:worksheet|lesson\s+plan|quiz|activity|file)\s+(?:on|via|by|through|over|in)\s+(?:whatsapp|email|telegram)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اشارك|شارك|مشاركه|ارسل|ابعث|ابعت)\s+(?:ال)?(?:ورقه\s+(?:ال)?عمل|خطه\s+(?:ال)?درس|اختبار|نشاط|ملف)\s+(?:علي|عبر|ب|في|ع)\s*(?:ال)?(?:واتساب|واتس\s+اب|واتس|ايميل|بريد|تلغرام|تيليجرام)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'save-slides',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:save|keep|print|export|download)\s+(?:(?:the|my|a|this)\s+)?(?:slides|slideshow|presentation|deck)` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:احفظ|حفظ|اطبع|طباعه|اصدر|تصدير|احمل|تحميل|انزل)\s+(?:ال)?(?:شرائح|عرض\s+(?:ال)?تقديمي|عرض|بوربوينت|باوربوينت)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'present',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:present|show|play|project)\s+(?:(?:the|my)\s+)?(?:slides|slideshow|presentation|deck)\s+(?:in\s+|on\s+)?(?:full\s*screen|the\s+(?:projector|board|big\s+screen))` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اعرض|عرض|اشغل|تشغيل)\s+(?:ال)?(?:شرائح|عرض\s+(?:ال)?تقديمي)\s+(?:ب|علي|في)?\s*(?:ال)?(?:شاشه\s+(?:ال)?كامله|ملء\s+(?:ال)?شاشه|شاشه\s+(?:ال)?عرض|بروجكتر|شاشه)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'share-game',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:share|send)\s+(?:(?:a|the|my|this)\s+)?(?:game|challenge)s?\s+(?:with|to)\s+(?:(?:my|the)\s+)?students` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اشارك|شارك|ارسل|ابعث|ابعت)\s+(?:ال)?(?:لعبه|العاب|تحدي)\s+(?:مع|ل|لل|الي)\s*(?:ال)?(?:طلاب|طلابي|طلبه|طلبتي)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'chat-history',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:(?:go\s+back|return)\s+to\s+(?:(?:a|the|my)\s+)?(?:previous|old|earlier|last)\s+(?:chat|conversation)|(?:see|find|open)\s+(?:(?:my|the)\s+)?(?:chat\s+history|previous\s+chats?|old\s+chats?)|(?:clear|delete|reset)\s+(?:(?:the|this|my)\s+)?(?:chat|conversation)|start\s+(?:a\s+)?new\s+(?:chat|conversation))` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:(?:ارجع|اعود|رجوع|عوده)\s+(?:لل|الي|ل)\s*(?:ال)?محادثه\s+(?:ال)?(?:سابقه|قديمه)|(?:اشوف|افتح|الاقي)\s+(?:ال)?(?:محادثات\s+(?:ال)?(?:سابقه|قديمه)|سجل\s+(?:ال)?محادثه)|(?:امسح|مسح|احذف|حذف|انظف)\s+(?:ال)?محادثه|(?:ابدا|ابدء|بدء)\s+محادثه\s+جديده)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'library-to-class',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:add|attach|share)\s+(?:(?:a|an|the)\s+)?(?:library\s+)?(?:resource|item|file)s?(?:\s+from\s+the\s+library)?\s+to\s+(?:(?:my|a|the)\s+)?(?:class|homework)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اضيف|اضافه|ارفق|اضع|انقل)\s+(?:ال)?(?:مورد|موارد|ملف|ماده)(?:\s+من\s+(?:ال)?مكتبه)?\s+(?:لل|الي|في|ل)\s*(?:ال)?(?:شعبه|شعبتي|صف|واجب)` + AR_RULE_TAIL,
       ),
     ],
   },

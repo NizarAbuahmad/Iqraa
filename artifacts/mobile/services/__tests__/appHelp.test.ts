@@ -1055,6 +1055,55 @@ describe('a purpose, a dialect, a plural (seventh live pass)', () => {
     assert.equal(isAppHelpQuery('where do i find my exams'), true);
     assert.equal(top('where do i find my exams'), 'tool:evaluations');
   });
+  const features: Array<[string, string]> = [
+    ['كيف أعمل خطة فصلية؟', 'howTeachingPlan'],
+    ['how do i make a teaching plan', 'howTeachingPlan'],
+    ['كيف أضيف درساً للخطة الفصلية؟', 'howPlanLessons'],
+    ['كيف أنشئ جدول الحصص؟', 'howTimetable'],
+    ['كيف أضيف حصة إلى الجدول؟', 'howTimetable'],
+    ['كيف أشوف سجل الطالب؟', 'howStudentRecord'],
+    ['how do i see student progress', 'howStudentRecord'],
+    ['كيف أكتب ملاحظة عن طالب؟', 'howStudentNote'],
+    ['how do i add a note about a student', 'howStudentNote'],
+    ['كيف أشارك ورقة العمل على واتساب؟', 'howShareMaterial'],
+    ['how do i send the worksheet on whatsapp', 'howShareMaterial'],
+    ['كيف أحفظ العرض التقديمي؟', 'howSaveSlides'],
+    ['how do i print slides', 'howSaveSlides'],
+    ['كيف أعرض الشرائح بشاشة كاملة؟', 'howPresent'],
+    ['how do i present the slides full screen', 'howPresent'],
+    ['كيف أعمل لعبة للطلاب؟', 'howMakeGame'],
+    ['how do i share a game with students', 'howShareGame'],
+    ['كيف أرجع للمحادثة السابقة؟', 'howChatHistory'],
+    ['كيف أمسح المحادثة؟', 'howChatHistory'],
+    ['how do i start a new chat', 'howChatHistory'],
+    ['كيف أضيف مورداً من المكتبة للشعبة؟', 'howLibraryToClass'],
+    ['how do i add a library resource to my class', 'howLibraryToClass'],
+  ];
+  for (const [q, key] of features) {
+    it(`«${q}» gets ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(classifyChatIntent(q, lang(q)).intent, 'app_help');
+      assert.equal(answerAppHelp(q, lang(q), t).text, `<${key}>`);
+    });
+  }
+  it('«وين المكتبة؟» points at the Library tab', () => {
+    assert.equal(isAppHelpQuery('وين المكتبة؟'), true);
+    assert.equal(top('وين المكتبة؟'), 'library');
+  });
+  it('saving a lesson plan still gets the save steps', () => {
+    assert.equal(answerAppHelp('كيف أحفظ خطة الدرس؟', 'ar', t).text, '<howSaveMaterial>');
+  });
+  const stillTeaching = [
+    'كيف أعرض الفكرة بطريقة ممتعة؟',
+    'كيف أكتب ملاحظة جيدة في دفتر الطالب عن سلوكه؟',
+    'كيف أجعل اللعبة ممتعة للطلاب؟',
+    'كيف أراجع الدرس السابق مع الطلاب؟',
+  ];
+  for (const q of stillTeaching) {
+    it(`leaves «${q}» alone`, () => {
+      assert.equal(isAppHelpQuery(q), false);
+    });
+  }
   it('a tool\'s make-steps never answer sharing it', () => {
     assert.notEqual(answerAppHelp('كيف أشارك ورقة العمل على واتساب؟', 'ar', t).text, '<howMakeWorksheet>');
   });
