@@ -120,7 +120,19 @@ test('hwParentNoAccountSome says some of the homework, not all', () => {
   assert.match(translations.en.hwParentNoAccountSome('Sara'), /for some of/);
 });
 
+test('the exam-code notice on the claim screens is defined in both languages', () => {
+  for (const lang of ['ar', 'en'] as const) {
+    assert.ok(translations[lang].claimExamCodeNotice.length > 0, lang);
+    assert.ok(translations[lang].claimExamCodeOpen.length > 0, lang);
+  }
+});
+
 test('hwErrDueRange is defined in both languages and names the window', () => {
-  assert.equal(translations.ar.hwErrDueRange, 'التاريخ يجب أن يقع بين 30 يومًا مضت وسنة قادمة.');
-  assert.equal(translations.en.hwErrDueRange, 'The date must be between 30 days ago and one year ahead.');
+  assert.equal(translations.ar.hwErrDueRange, 'التاريخ يجب أن يكون اليوم أو بعده، وخلال سنة قادمة.');
+  assert.equal(translations.en.hwErrDueRange, 'The date must be today or later, and within the next year.');
+});
+
+test('examDatePast is defined in both languages', () => {
+  assert.ok(translations.ar.examDatePast.length > 0);
+  assert.ok(translations.en.examDatePast.length > 0);
 });

@@ -24,6 +24,7 @@ import { LoadError } from '@/components/ui/LoadError';
 import { Button } from '@/components/ui/Button';
 import { BackButton } from '@/components/ui/BackButton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ExamKindSwitch } from '@/components/ui/ExamKindSwitch';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -125,6 +126,10 @@ export default function EvaluationsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {header}
+
+      <View style={[{ paddingHorizontal: 20, paddingTop: 16 }, centered]}>
+        <ExamKindSwitch active="evaluation" />
+      </View>
 
       {loading ? (
         <View style={styles.center}>

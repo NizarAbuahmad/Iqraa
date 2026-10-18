@@ -21,6 +21,7 @@ import {
   type TeacherHomework,
   type TeacherHomeworkList,
 } from './homework.ts';
+import type { SavedMaterial } from './workspace.ts';
 
 export class HomeworkError extends Error {
   readonly status: number;
@@ -66,6 +67,25 @@ export async function getMyHomework(): Promise<ChildHomework[]> {
 export async function getChildHomework(): Promise<ChildHomework[]> {
   const data = await apiJson<{ children?: unknown }>('/parent/homework');
   return normalizeChildHomework(data.children);
+}
+
+/**
+ * A teacher's saved material attached to a homework, read-only and without its
+ * answers (the server strips them). Shaped as a `SavedMaterial` so the workspace
+ * viewer draws it; null when the server answers 404 — not this family's, or no
+ * longer attached.
+ */
+export async function getHomeworkMaterial(
+  homeworkId: string,
+  materialId: string,
+  role: 'student' | 'parent',
+): Promise<SavedMaterial | null> {
+  const res = await apiFetch(
+    `/${role}/homework/${encodeURIComponent(homeworkId)}/materials/${encodeURIComponent(materialId)}`,
+  );
+  if (res.status === 404) return null;
+  const { material: m } = await readJson<{ material: Omit<SavedMaterial, 'isFavorite' | 'formState'> }>(res, 'Opening attachment');
+  return { ...m, language: m.language === 'en' ? 'en' : 'ar', isFavorite: false, formState: {} };
 }
 
 /** Idempotent on the server, so a retry after a dropped response is safe. */

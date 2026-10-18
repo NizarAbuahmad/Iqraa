@@ -376,7 +376,9 @@ describe('takeConcreteChem', () => {
     const first = takeConcreteChem('short_answer', 'المول', null, 'easy', 'ar', 4, a);
     const second = takeConcreteChem('short_answer', 'المول', null, 'easy', 'ar', 4, b);
     assert.ok(first && second);
-    assert.equal(b.size, 1, 'the second session inherited the first one\'s spend');
+    // Items only: each draw also records the ask it put (`ask:…`), which kinds are spread on.
+    const items = [...b].filter(k => !k.startsWith('ask:'));
+    assert.equal(items.length, 1, 'the second session inherited the first one\'s spend');
   });
 
   it('stays in the detected family rather than drifting to general chemistry', () => {

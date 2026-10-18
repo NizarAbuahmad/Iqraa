@@ -21,14 +21,18 @@ import {
   attachmentProblem,
   attachmentKind,
   composeParentMessage,
+  detailsExample,
+  detailsLanguageMismatch,
   parentMessageReady,
   guardiansForStudent,
   MAX_LETTER_LENGTH,
   outgoingLetter,
   kindLabel,
+  matchRosterStudents,
   MESSAGE_KINDS,
   needsDetails,
   parseSavedSignature,
+  pickRecipients,
   rosterGender,
   seedDetailsFromNote,
   suggestMeeting,
@@ -83,18 +87,19 @@ describe('invents nothing', () => {
 });
 
 describe('Arabic gender agreement', () => {
-  it('uses ابنتكم and feminine verbs for a female student', () => {
-    const msg = composeParentMessage({ ...BASE, studentGender: 'female', kind: 'praise' }, true);
+  it('uses ابنتكم and feminine forms for a female student', () => {
+    const msg = composeParentMessage({ ...BASE, studentGender: 'female', kind: 'praise', strengths: ['effort'] }, true);
     assert.ok(msg.includes('ابنتكم'));
-    assert.ok(msg.includes('أظهرت'));
+    assert.ok(msg.includes('اجتهادها'));
     assert.equal(msg.includes('ابنكم '), false);
   });
 
-  it('uses ابنكم and masculine verbs for a male student', () => {
-    const msg = composeParentMessage({ ...BASE, studentGender: 'male', kind: 'praise' }, true);
+  it('uses ابنكم and masculine forms for a male student', () => {
+    const msg = composeParentMessage({ ...BASE, studentGender: 'male', kind: 'praise', strengths: ['effort'] }, true);
     assert.ok(msg.includes('ابنكم'));
-    assert.ok(msg.includes('أظهر'));
+    assert.ok(msg.includes('اجتهاده'));
     assert.equal(msg.includes('ابنتكم'), false);
+    assert.equal(msg.includes('اجتهادها'), false);
   });
 
   it('agrees on the absence verb too', () => {
@@ -487,5 +492,210 @@ describe('parentMessageReady — a concern letter needs its details', () => {
   it('is never true without a composed message', () => {
     assert.equal(parentMessageReady('praise', '', ''), false);
     assert.equal(parentMessageReady('absence', 'details', ''), false);
+  });
+});
+
+// ─── Wording pass (2026-10-17) ───────────────────────────────────────────────
+// Each block below pins one defect found by rendering the composer: praise that
+// asserted diligence and attendance nobody typed, a woman signing «مستعد» and
+// «شاكرًا», a «warm» tone that changed only the greeting.
+
+describe('praise states only what the teacher ticked or typed', () => {
+  it('asserts no quality in Arabic when nothing was ticked', () => {
+    const msg = composeParentMessage({ ...BASE, kind: 'praise' }, true);
+    for (const claim of ['اجتهاد', 'التزام', 'حضور', 'أظهر']) {
+      assert.equal(msg.includes(claim), false, `praise claimed «${claim}»: ${msg}`);
+    }
+  });
+
+  it('asserts no quality in English when nothing was ticked', () => {
+    const msg = composeParentMessage({ ...BASE, studentName: 'Sara', kind: 'praise' }, false);
+    for (const claim of ['effort', 'commitment', 'attendance']) {
+      assert.equal(msg.toLowerCase().includes(claim), false, `praise claimed «${claim}»: ${msg}`);
+    }
+  });
+
+  it('names exactly the ticked strengths, in a fixed order, agreeing with the student', () => {
+    const f = composeParentMessage(
+      { ...BASE, studentGender: 'female', kind: 'praise', strengths: ['homework', 'effort'] }, true,
+    );
+    assert.ok(f.includes('اجتهادها والتزامها بالواجبات'), f);
+    assert.equal(f.includes('مشاركتها'), false);
+    const m = composeParentMessage(
+      { ...BASE, studentGender: 'male', kind: 'praise', strengths: ['participation', 'improvement'] }, true,
+    );
+    assert.ok(m.includes('مشاركته وتحسّنه'), m);
+  });
+
+  it('lists the ticked strengths in English too', () => {
+    const msg = composeParentMessage(
+      { ...BASE, studentName: 'Omar', studentGender: 'male', kind: 'praise', strengths: ['effort', 'conduct'] }, false,
+    );
+    assert.ok(msg.includes('his effort and good conduct'), msg);
+  });
+
+  it('ignores strengths on any other kind, duplicates and unknown ids', () => {
+    const concern = composeParentMessage(
+      { ...BASE, kind: 'academic-concern', strengths: ['effort'] }, true,
+    );
+    assert.equal(concern.includes('اجتهاد'), false);
+    const praise = composeParentMessage(
+      { ...BASE, kind: 'praise', strengths: ['effort', 'effort', 'nonsense' as never] }, true,
+    );
+    assert.equal(praise.split('اجتهادها').length - 1, 1);
+  });
+});
+
+describe('the teacher\'s own gender', () => {
+  it('never leaves a woman a masculine self-reference', () => {
+    for (const kind of MESSAGE_KINDS) {
+      const msg = composeParentMessage({ ...BASE, kind, teacherGender: 'female', details: 'تفصيل.' }, true);
+      assert.equal(/مستعد(?!ة)/.test(msg), false, `${kind}: ${msg}`);
+      assert.equal(msg.includes('شاكرًا'), false, `${kind}: ${msg}`);
+    }
+  });
+
+  it('asks for the meeting once, not twice', () => {
+    const msg = composeParentMessage({ ...BASE, kind: 'meeting' }, true);
+    assert.equal(msg.split('تحديد').length - 1, 1, msg);
+  });
+});
+
+describe('formal-letter conventions', () => {
+  it('follows the salam with وبعد in the formal greeting', () => {
+    const msg = composeParentMessage({ ...BASE, tone: 'formal' }, true);
+    assert.ok(msg.includes('ورحمة الله وبركاته، وبعد،'), msg);
+  });
+
+  it('opens a warm letter with the salam, before the welcome', () => {
+    const msg = composeParentMessage({ ...BASE, tone: 'warm' }, true);
+    assert.ok(msg.indexOf('السلام عليكم') >= 0);
+    assert.ok(msg.indexOf('السلام عليكم') < msg.indexOf('أهلًا'), msg);
+  });
+
+  it('closes a warm letter differently from a formal one', () => {
+    const warm = composeParentMessage({ ...BASE, tone: 'warm' }, true);
+    assert.equal(warm.includes('فائق الاحترام'), false);
+    assert.ok(warm.includes('مودّتي'), warm);
+  });
+
+  it('gives a bare teacher name its title, and leaves a titled one alone', () => {
+    const bare = (g: 'male' | 'female') =>
+      composeParentMessage({ ...BASE, teacherName: 'نزار', teacherGender: g }, true);
+    assert.ok(bare('male').includes('الأستاذ نزار'));
+    assert.ok(bare('female').includes('الأستاذة نزار'));
+    const titled = composeParentMessage({ ...BASE, teacherName: 'أ. نزار' }, true);
+    assert.equal(titled.includes('الأستاذ أ.'), false);
+    assert.ok(titled.includes('أ. نزار'));
+  });
+
+  it('keeps translated phrasing out of every kind', () => {
+    for (const kind of MESSAGE_KINDS) {
+      const msg = composeParentMessage({ ...BASE, kind, details: 'تفصيل.' }, true);
+      for (const calque of ['لا تتردّدوا', 'أن أشارككم', 'الدافعية', 'البيتي']) {
+        assert.equal(msg.includes(calque), false, `${kind} still says «${calque}»`);
+      }
+    }
+  });
+});
+
+describe('the details the teacher typed', () => {
+  it('ends them with a full stop when the teacher left it off', () => {
+    const msg = composeParentMessage({ ...BASE, kind: 'absence', details: 'ثلاث حصص هذا الأسبوع' }, true);
+    assert.ok(msg.includes('ثلاث حصص هذا الأسبوع.\n'), msg);
+  });
+
+  it('does not stack punctuation on details that already end in it', () => {
+    for (const d of ['انتهى بنجاح.', 'هل وصلكم؟', 'ثلاثة أيام!', 'منها: ']) {
+      const msg = composeParentMessage({ ...BASE, kind: 'absence', details: d }, true);
+      assert.equal(/[.؟!:]\./.test(msg), false, `${d} → ${msg}`);
+    }
+  });
+
+  it('flags Latin-only details inside an Arabic letter, and the reverse', () => {
+    assert.equal(detailsLanguageMismatch('Attention', true), true);
+    assert.equal(detailsLanguageMismatch('انتباه', true), false);
+    assert.equal(detailsLanguageMismatch('اختبار PISA', true), false);
+    assert.equal(detailsLanguageMismatch('', true), false);
+    assert.equal(detailsLanguageMismatch('تفصيل', false), true);
+    assert.equal(detailsLanguageMismatch('Late again', false), false);
+  });
+
+  it('has a worked example for every kind in both languages', () => {
+    for (const kind of MESSAGE_KINDS) {
+      assert.ok(detailsExample(kind, true).length > 10, kind);
+      assert.ok(detailsExample(kind, false).length > 10, kind);
+    }
+  });
+});
+
+// ─── Linking a typed name to the roster, and choosing guardians ─────────────
+// Typing a name by hand drops the picked student on purpose (so the letter can
+// never go to the previous child's parent), which also turned in-app send off
+// with nothing close to the field saying why. The remedy is a *suggestion* the
+// teacher taps — never an automatic link.
+
+describe('matchRosterStudents', () => {
+  const roster = [
+    { id: 'a', displayName: 'أحمد خالد' },
+    { id: 's', displayName: 'سارة علي' },
+    { id: 'o', displayName: 'Omar Saleh' },
+  ];
+
+  it('suggests the one student a typed name points at', () => {
+    assert.deepEqual(matchRosterStudents('أحمد خالد', roster).map(r => r.id), ['a']);
+  });
+
+  it('matches across hamza, ya, ta marbuta, diacritics and spacing', () => {
+    assert.deepEqual(matchRosterStudents('احمد   خالد', roster).map(r => r.id), ['a']);
+    assert.deepEqual(matchRosterStudents('ساره', roster).map(r => r.id), ['s']);
+    assert.deepEqual(matchRosterStudents('سَارَة', roster).map(r => r.id), ['s']);
+    assert.deepEqual(matchRosterStudents('على', [{ id: 'x', displayName: 'علي' }]).map(r => r.id), ['x']);
+  });
+
+  it('matches a first name, a name still being typed, and Latin case-insensitively', () => {
+    assert.deepEqual(matchRosterStudents('سارة', roster).map(r => r.id), ['s']);
+    assert.deepEqual(matchRosterStudents('أحمد خا', roster).map(r => r.id), ['a']);
+    assert.deepEqual(matchRosterStudents('omar', roster).map(r => r.id), ['o']);
+  });
+
+  it('offers every candidate when a first name is shared, so the teacher picks', () => {
+    const twins = [...roster, { id: 'a2', displayName: 'أحمد سمير' }];
+    assert.deepEqual(matchRosterStudents('أحمد', twins).map(r => r.id).sort(), ['a', 'a2']);
+  });
+
+  it('prefers a full-name match over longer names that merely start with it', () => {
+    const r = [{ id: 'short', displayName: 'أحمد' }, { id: 'long', displayName: 'أحمد خالد' }];
+    assert.deepEqual(matchRosterStudents('أحمد', r).map(x => x.id), ['short']);
+  });
+
+  it('says nothing when it is too vague or matches nothing', () => {
+    const many = ['أ', 'ب', 'ج', 'د'].map((x, i) => ({ id: String(i), displayName: `أحمد ${x}` }));
+    assert.deepEqual(matchRosterStudents('أحمد', many), [], 'four candidates is noise, not help');
+    assert.deepEqual(matchRosterStudents('Aad', roster), []);
+    assert.deepEqual(matchRosterStudents('', roster), []);
+    assert.deepEqual(matchRosterStudents('أ', roster), [], 'one letter matches everyone');
+    assert.deepEqual(matchRosterStudents('أحمد', []), []);
+  });
+});
+
+describe('pickRecipients', () => {
+  const g = (userId: string) => ({ userId, firstName: userId, lastName: '', role: 'parent' as const });
+  const all = [g('mother'), g('father')];
+
+  it('reaches every guardian until one is unticked', () => {
+    assert.deepEqual(pickRecipients(all, new Set()).map(x => x.userId), ['mother', 'father']);
+  });
+
+  it('drops the unticked guardian and keeps the order', () => {
+    assert.deepEqual(pickRecipients(all, new Set(['mother'])).map(x => x.userId), ['father']);
+  });
+
+  it('can end up empty, which is what disables the send', () => {
+    assert.deepEqual(pickRecipients(all, new Set(['mother', 'father'])), []);
+  });
+
+  it('ignores ids that are not guardians of this student', () => {
+    assert.deepEqual(pickRecipients(all, new Set(['someone-else'])).map(x => x.userId), ['mother', 'father']);
   });
 });

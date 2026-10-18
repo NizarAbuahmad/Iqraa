@@ -87,10 +87,25 @@ describe('counting and place value: answers recomputed', () => {
       const p = item.promptAr!, n = nums(p);
       if (has(p, 'ما العدد الذي يدل')) { zeroKinds.add('meaning'); assert.equal(item.answer, '0'); }
       else if (has(p, 'أُخرجت الكرات كلها')) { zeroKinds.add('story'); assert.equal(Number(item.answer), n[0]! - n[0]!); }
+      else if (has(p, 'أوجد العدد المجهول')) {
+        zeroKinds.add('missing');
+        const [, a, op, c] = p.match(/(\d+) ([+−]) ؟ = (\d+)/)!;
+        assert.equal(Number(item.answer), op === '+' ? Number(c) - Number(a) : Number(a) - Number(c), p);
+      } else if (has(p, 'تنازليًا')) {
+        zeroKinds.add('count down');
+        assert.deepEqual(n.slice(0, -1), Array.from({ length: n[0]! }, (_, i) => n[0]! - i), p);
+        assert.equal(item.answer, '0');
+      } else if (has(p, 'من الأعداد الآتية')) {
+        zeroKinds.add('compare');
+        const list = n;
+        assert.ok(list.includes(0) && list.length === 4, p);
+        assert.equal(Number(item.answer), has(p, 'أكبر') ? Math.max(...list) : Math.min(...list), p);
+        assert.deepEqual([item.answer, ...item.wrongs].map(Number).sort(), [...list].sort(), 'the options are the four numbers');
+      }
       else if (has(p, ' − ') && n[0] === n[1]) { zeroKinds.add('n−n'); assert.equal(item.answer, '0'); }
       else { zeroKinds.add('±0'); assert.equal(Number(item.answer), n[0]); }
     }
-    assert.equal(zeroKinds.size, 4);
+    assert.equal(zeroKinds.size, 7, [...zeroKinds].join(', '));
     for (const item of draws('ordinal')) {
       const p = item.promptAr!;
       const idx = ORD.findIndex(o => p.includes(`«${o}»`) || p.includes(`المكان ${o}`));
@@ -606,14 +621,37 @@ describe('shapes, fractions, patterns: answers recomputed', () => {
     }
     const NAMES: Record<number, string> = { 2: 'نصف', 3: 'ثلث', 4: 'ربع' };
     const parts = new Set<string>();
-    for (const item of draws('equal_parts')) {
-      const p = item.promptAr!, n = nums(p), d = has(p, 'جزأين متطابقين') ? 2 : n[n.length - 1]!;
+    /** «جزأين متطابقين» is 2, «3 أجزاء متطابقة» is 3. */
+    const cut = (s: string) => (s.startsWith('جزأين متطابقين') ? 2 : Number(s.match(/^(\d+) أجزاء متطابقة/)![1]));
+    for (const item of draws('equal_parts', 400)) {
+      const p = item.promptAr!, n = nums(p);
       assert.ok(!/ 2 أجزاء/.test(p), p);
-      if (has(p, 'كم جزءًا بقي')) { parts.add('left'); assert.equal(Number(item.answer), d - 1); }
-      else if (has(p, 'مكعبًا')) { parts.add('share'); assert.equal(Number(item.answer) * d, n[0]); }
+      if (has(p, 'أيّ الجزأين')) {
+        parts.add('compare');
+        const d1 = cut(p.split('الأولى إلى ')[1]!), d2 = cut(p.split('الثانية إلى ')[1]!);
+        const [n1, n2] = p.match(/: ال(\S+) أم ال(\S+)؟/)!.slice(1);
+        assert.deepEqual([n1, n2], [NAMES[d1], NAMES[d2]], p);
+        // fewer parts, bigger parts
+        const bigger = d1 < d2 ? n1 : n2, smaller = d1 < d2 ? n2 : n1;
+        assert.equal(item.answer, `ال${has(p, 'أكبر') ? bigger : smaller}`, p);
+        continue;
+      }
+      if (has(p, 'كم جزءًا فيها')) {
+        parts.add('whole from part');
+        const name = p.match(/كل جزء منها (\S+) /)![1]!;
+        assert.equal(Number(item.answer), Number(Object.keys(NAMES).find(k => NAMES[Number(k)] === name)), p);
+        continue;
+      }
+      const d = cut(p.split(' إلى ')[1]!);
+      if (has(p, 'كم جزءًا بقي')) {
+        parts.add('left');
+        const e = has(p, 'جزء واحد') ? 1 : has(p, 'جزآن') ? 2 : Number(p.match(/منها (\d+) أجزاء/)![1]);
+        assert.equal(Number(item.answer), d - e, p);
+        assert.ok(e >= 1 && e < d, p);
+      } else if (has(p, 'مكعبًا')) { parts.add('share'); assert.equal(Number(item.answer) * d, n[0]); }
       else { parts.add('name'); assert.equal(item.answer, NAMES[d]); }
     }
-    assert.equal(parts.size, 3);
+    assert.equal(parts.size, 5, [...parts].join(', '));
     const set1 = new Set<string>();
     const BALLS: Record<string, number> = { 'كرة واحدة': 1, 'كرتان': 2, 'كرة حمراء واحدة': 1, 'كرتان حمراوان': 2 };
     const ballCount = (s: string) => BALLS[s] ?? Number(s.match(/^(\d+) /)![1]);
@@ -645,7 +683,7 @@ describe('shapes, fractions, patterns: answers recomputed', () => {
         continue;
       }
       if (/^ما \d+\/\d+ من/.test(p)) { set3.add('of'); assert.equal(Number(item.answer), (n[0]! * n[2]!) / n[1]!); assert.ok(Number.isInteger(Number(item.answer))); continue; }
-      const c = n[0]!, k = n[1] ?? (has(p, 'يلبس واحد') ? 1 : NaN), top = has(p, 'لا يلبسون') ? c - k : k;
+      const c = n[0]!, k = n[1] ?? (has(p, 'طالب واحد منهم') ? 1 : has(p, 'طالبان منهم') ? 2 : NaN), top = has(p, 'لا يلبسون') ? c - k : k;
       set3.add(has(p, 'لا يلبسون') ? 'without' : 'with');
       assert.ok(c >= 3 && c <= 10, `«طلاب» needs 3–10: ${p}`);
       assert.equal(item.answer, `${top}/${c}`, p); assert.equal(gcd(top, c), 1);
@@ -901,6 +939,22 @@ describe('money, time and measurement: answers recomputed', () => {
       const kinds = new Set<string>();
       for (const item of draws(id, 400)) {
       const p = item.promptAr!;
+      if (has(p, 'كم تكون الساعة بعد')) {
+        kinds.add('later');
+        const said = p.match(/بعد (.+)؟/)![1]!;
+        const QUARTERS: Record<string, number> = { 'ربع ساعة': 15, 'نصف ساعة': 30, 'ثلاثة أرباع الساعة': 45, 'ساعة واحدة': 60 };
+        const dur = QUARTERS[said] ?? Number(said.match(/^(\d+) (?:دقائق|دقيقةً)$/)![1]);
+        assert.equal(dur % step, 0, p);
+        assert.equal(mins(item.answer), (mins(p.match(/الآن (\d+:\d+)/)![1]!) + dur) % 720, p);
+        continue;
+      }
+      if (has(p, 'كم دقيقة استغرق')) {
+        kinds.add('duration');
+        const [from, to] = [...p.matchAll(/(\d+:\d+)/g)].map(m => mins(m[1]!));
+        assert.equal(Number(item.answer), (to! - from! + 720) % 720, p);
+        assert.ok(Number(item.answer) > 0 && Number(item.answer) % step === 0, p);
+        continue;
+      }
       if (has(p, 'عقرب الساعات')) { kinds.add('hands'); const [h, nx, mark] = nums(p); assert.equal(nx, h! % 12 + 1); assert.equal(item.answer, `${h}:${String(mark! * 5).padStart(2, '0')}`); assert.equal((mark! * 5) % step, 0); assert.ok(mark! > 0 && mark! < 12); continue; }
       if (has(p, 'عقرب الدقائق')) { kinds.add('minutes'); const mark = nums(p)[0]!; assert.equal(Number(item.answer), mark * 5); assert.equal((mark * 5) % step, 0); continue; }
       kinds.add('nearest');
@@ -910,14 +964,26 @@ describe('money, time and measurement: answers recomputed', () => {
       assert.equal(a, bestT, `${item.eq} → ${item.answer}`);
       assert.ok(t % step !== 0 && Math.abs(t % step - step / 2) > 0, 'no tie');
       }
-      assert.equal(kinds.size, 3, `${id}: ${[...kinds]}`);
+      assert.equal(kinds.size, 5, `${id}: ${[...kinds]}`);
     }
+    const monthKinds = new Set<string>();
     for (const item of draws('months')) {
       const p = item.promptAr!, i = MONTHS.findIndex(m => p.includes(`شهر ${m}`));
-      if (has(p, 'كم شهرًا')) assert.equal(item.answer, '12');
-      else if (has(p, 'ترتيبه')) assert.equal(item.answer, MONTHS[Number(p.match(/ترتيبه (\d+)/)![1]) - 1]);
-      else assert.equal(item.answer, MONTHS[(i + (has(p, 'بعد') ? 1 : 11)) % 12]);
+      if (has(p, 'الشهر الحالي')) {
+        monthKinds.add('later');
+        const now = MONTHS.indexOf(p.match(/الحالي (.+)، فما/)![1]!), n = has(p, 'شهرين') ? 2 : nums(p)[0]!;
+        assert.ok(now >= 0 && n >= 2, p);
+        assert.equal(item.answer, MONTHS[(now + n) % 12], p);
+      } else if (has(p, 'بين شهري')) {
+        monthKinds.add('between');
+        const [a, b] = p.match(/شهري (.+) و (.+)؟/)!.slice(1).map(m => MONTHS.indexOf(m!));
+        assert.equal(b, (a! + 2) % 12, p);
+        assert.equal(item.answer, MONTHS[(a! + 1) % 12], p);
+      } else if (has(p, 'كم شهرًا')) { monthKinds.add('count'); assert.equal(item.answer, '12'); }
+      else if (has(p, 'ترتيبه')) { monthKinds.add('by number'); assert.equal(item.answer, MONTHS[Number(p.match(/ترتيبه (\d+)/)![1]) - 1]); }
+      else { monthKinds.add('next'); assert.equal(item.answer, MONTHS[(i + (has(p, 'بعد') ? 1 : 11)) % 12]); }
     }
+    assert.equal(monthKinds.size, 5, [...monthKinds].join(', '));
     const ampm = new Set<string>();
     for (const item of draws('am_pm')) {
       const p = item.promptAr!, n = nums(p), a = Number(item.answer);

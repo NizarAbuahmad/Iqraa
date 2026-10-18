@@ -450,8 +450,28 @@ describe("structure layouts — timeline, stats, table, flow", () => {
       it("asks for one sentence of content on these slides, and lists them as an exception to the two-line rule", () => {
         assert.match(prompt, label === "ar" ? /جملة واحدة تلخّص الشريحة/ : /ONE sentence that sums the slide up/);
         assert.match(prompt, label === "ar"
-          ? /"timeline" أو "stats" أو "table" أو "flow"، فهذه سطر واحد عمدًا/
-          : /"timeline", "stats", "table" or "flow", which are one line on purpose/);
+          ? /"timeline" أو "stats" أو "table" أو "flow" أو "quote" أو "photo"، فهذه سطر واحد عمدًا/
+          : /"timeline", "stats", "table", "flow", "quote" or "photo", which are one line on purpose/);
+      });
+    });
+  }
+
+  for (const [label, build] of BOTH) {
+    describe(`quote and photo — ${label}`, () => {
+      const prompt = build(baseBody);
+
+      it("names both, with the JSON shape the quote needs and the search phrase the photo needs", () => {
+        assert.match(prompt, /"quote": \{"text"/);
+        assert.match(prompt, /- "photo":/);
+        assert.match(prompt, label === "ar" ? /حتى ٢٠٠ حرف/ : /up to 200 characters/);
+        assert.match(prompt, label === "ar" ? /لا تنسب كلامًا إلى أحد/ : /Never attribute words to someone/);
+      });
+
+      it("lets a photo slide — and only that layout — carry a mediaPrompt, and keeps them one line", () => {
+        assert.match(prompt, label === "ar" ? /إلا إن كان "photo"/ : /unless it is "photo"/);
+        assert.match(prompt, label === "ar"
+          ? /"flow" أو "quote" أو "photo"، فهذه سطر واحد عمدًا/
+          : /"flow", "quote" or "photo", which are one line on purpose/);
       });
     });
   }
@@ -476,6 +496,13 @@ describe("sanitizeDeckStructure — layouts", () => {
       const out = slidesOf(sanitizeDeckStructure(deckOf([{ type, layout: "timeline", timeline }])));
       assert.equal(out[0]!.layout, "timeline");
       assert.deepEqual(out[0]!.timeline, timeline);
+    }
+  });
+
+  it("keeps quote and photo on a prose slide, and strips them from a question", () => {
+    for (const layout of ["quote", "photo"]) {
+      assert.equal(slidesOf(sanitizeDeckStructure(deckOf([{ type: "intro", layout }])))[0]!.layout, layout);
+      assert.equal("layout" in slidesOf(sanitizeDeckStructure(deckOf([{ type: "question", layout }])))[0]!, false, layout);
     }
   });
 

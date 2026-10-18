@@ -17,7 +17,7 @@
  * `buildGenerationPrompt` on these four requests: byte-identical.
  *
  * Edited by hand once more, 2026-10-15, for rule 5 only (exam-gen-7): the model is
- * now told the same no-repeat rule `dominantFrame` checks the paper against. The
+ * now told the same no-repeat rule `dominantFrame` (now `dominantKind`) checks the paper against. The
  * rest of every literal is untouched.
  *
  * One legitimate way for these literals to go stale: the user message lists
