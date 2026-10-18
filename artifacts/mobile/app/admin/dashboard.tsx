@@ -217,9 +217,10 @@ export default function AdminDashboardScreen() {
                 ['/admin/moderation', 'flag-outline', 'بلاغات الرسائل', 'Message reports'],
                 ['/admin/artifact-reports', 'document-text-outline', 'بلاغات المحتوى', 'Content reports'],
                 ['/admin/users', 'people-outline', 'المستخدمون والحظر', 'Users & blocking'],
+                ['/admin/schools', 'business-outline', 'المدارس', 'Schools'],
                 ['/admin/signups', 'mail-outline', 'البريد المجمّع', 'Collected emails'],
                 ['/admin/ai-costs', 'cash-outline', 'تكاليف الذكاء الاصطناعي', 'AI costs'],
-              ] as const).map(([href, icon, ar, en]) => (
+              ] as const).filter(([href]) => href !== '/admin/schools' || user?.role === 'system_admin').map(([href, icon, ar, en]) => (
                 <Pressable
                   key={href}
                   onPress={() => router.push(href as any)}
