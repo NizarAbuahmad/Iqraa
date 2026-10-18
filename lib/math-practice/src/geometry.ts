@@ -407,7 +407,7 @@ const lineAndPoint = T('angles_line_point', /^مجموع الزوايا علي �
   if (k === 3) {
     const point = rng() < 0.5, total = point ? 360 : 180;
     const n = pick(rng, point ? [3, 4, 5, 6, 8, 9, 10] : [3, 4, 5, 6]), a = total / n;
-    return { eq: `equal ${n}, ${total}`, answer: `${a}°`, wrongs: deg(a, [(point ? 180 : 360) / n, total - a, 90 / n, a + 10, 2 * a]), ar: `${n} زوايا متجاورة متساوية في القياس ${point ? 'تحيط بنقطة' : 'على مستقيم'}. ما قياس كل منها؟`, en: `${n} equal adjacent angles ${point ? 'surround a point' : 'lie on a straight line'}. What does each measure?` };
+    return { eq: `equal ${n}, ${total}`, answer: `${a}°`, wrongs: deg(a, [(point ? 180 : 360) / n, total - a, 90 / n, a + 10, 2 * a]), ar: `${point ? 'تحيط بنقطة' : 'على مستقيم'} ${n} زوايا متجاورة متساوية في القياس. ما قياس كل منها؟`, en: `${n} equal adjacent angles ${point ? 'surround a point' : 'lie on a straight line'}. What does each measure?` };
   }
   if (k === 4) {
     const point = rng() < 0.5, total = point ? 360 : 180;

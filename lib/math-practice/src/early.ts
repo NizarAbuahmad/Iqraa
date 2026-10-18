@@ -474,7 +474,10 @@ const fractionOfSetG3 = T('fraction_of_set_g3', /^الكسر كجزء من مج�
   // a class of 3–10 students («طلاب»), some of them in hats; ask for those with or without one
   const c = pick(rng, [3, 4, 5, 6, 8, 10]); let k = int(rng, 1, c - 1); while (gcd(k, c) !== 1) k = int(rng, 1, c - 1);
   const without = rng() < 0.5, top = without ? c - k : k;
-  const head = `في صف ${c} طلاب، يلبس ${k === 1 ? 'واحد' : k} منهم قبعة.`;
+  // The count leads its clause, agreeing as Arabic counts do: «يلبس 2 منهم قبعة» read
+  // as a numeral wedged between a verb and «منهم».
+  const wearing = k === 1 ? 'طالب واحد منهم يلبس قبعة' : k === 2 ? 'طالبان منهم يلبسان قبعة' : `${k} منهم يلبسون قبعات`;
+  const head = `في صف ${c} طلاب، ${wearing}.`;
   const ans = `${top}/${c}`;
   return { eq: `${k}, ${c}`, answer: ans, wrongs: wrongsFrom(ans, [`${c - top}/${c}`, `${top}/${c - top}`, `${c}/${top}`, `${top + 1}/${c}`], j => `${top + Math.abs(j) + 1}/${c + 1}`), ar: `${head} ما الكسر الذي يمثل الطلاب الذين ${without ? 'لا يلبسون' : 'يلبسون'} قبعة؟`, en: `A class has ${c} students and ${k} of them wear a hat. What fraction of the students ${without ? 'do not wear' : 'wear'} a hat?` };
 });
