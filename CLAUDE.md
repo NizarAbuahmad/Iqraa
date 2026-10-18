@@ -309,9 +309,15 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   Saved evaluations follow the same convention by a different route: the
   generate route stores questions via `inPaperOrder`
   (`modules/assessment/paperOrder.ts`) and the teacher's list heads each run
-  of one type from `examBlocks` (`services/examBlocks.ts`). The two
-  `EXAM_TYPE_ORDER` lists are pinned equal by `paperOrder.test.ts`; a new
-  question type needs a place in both and a direction in `examBlockDirection`.
+  of one type from `examBlocks` (`services/examBlocks.ts`). The type order is
+  one list, `lib/exam-paper` (`EXAM_TYPE_ORDER`; the quiz's four types are
+  `QUIZ_TYPES`, its order derived), imported by the API and the app.
+  `paperOrder.test.ts` fails if either side writes a second literal. The
+  prompts, `normalizeQuiz` and `quizOnce` are still three separate places that
+  must agree on *types*, and a new quiz type still needs an entry in
+  `QUIZ_TYPES`, the prompt's type contract and `quizOnce`; a new exam question
+  type needs a place in `EXAM_TYPE_ORDER` and a direction in
+  `examBlockDirection`.
 - **`additionalContext` is not teacher-pasted material — it is usually the
   curriculum.** Every `/ai-tools` screen fills it with `buildGeneratorContext()`
   output derived from the lesson, and the server appends its own book passages
