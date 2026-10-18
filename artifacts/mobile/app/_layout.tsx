@@ -202,6 +202,7 @@ function RootLayoutNav() {
       <Stack.Screen name="ai-tools/lesson-flow" options={{ headerShown: false }} />
       <Stack.Screen name="admin/dashboard" options={{ headerShown: false }} />
       <Stack.Screen name="admin/users" options={{ headerShown: false }} />
+      <Stack.Screen name="admin/schools" options={{ headerShown: false }} />
       <Stack.Screen name="admin/signups" options={{ headerShown: false }} />
       <Stack.Screen name="admin/ai-costs" options={{ headerShown: false }} />
       <Stack.Screen name="classes/index" options={{ headerShown: false }} />

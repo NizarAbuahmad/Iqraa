@@ -324,7 +324,7 @@ const offsetOf = (v: unknown) => {
 };
 
 /**
- * GET /admin/users?q=&status=all|suspended&offset=
+ * GET /admin/users?q=&status=all|suspended&role=&schoolId=&offset=
  * Newest first, with this month's AI spend so a heavy user stands out.
  */
 router.get("/admin/users", authMiddleware, requireRole(...ADMIN_ROLES), async (req, res) => {
@@ -339,6 +339,9 @@ router.get("/admin/users", authMiddleware, requireRole(...ADMIN_ROLES), async (r
     const where = and(
       q ? or(ilike(users.email, like), ilike(users.firstName, like), ilike(users.lastName, like)) : undefined,
       req.query["status"] === "suspended" ? isNotNull(users.suspendedAt) : undefined,
+      // The schools screen lists teachers, and a school's own teachers.
+      typeof req.query["role"] === "string" && req.query["role"] ? eq(users.role, req.query["role"]) : undefined,
+      typeof req.query["schoolId"] === "string" && UUID.test(req.query["schoolId"]) ? eq(users.schoolId, req.query["schoolId"]) : undefined,
       range.from ? gte(users.createdAt, range.from) : undefined,
       range.to ? lt(users.createdAt, range.to) : undefined,
     );
