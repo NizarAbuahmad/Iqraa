@@ -193,6 +193,35 @@ an announcement by default» below.
   38% and 67% → 44% of a paper. Across every maths and chemistry lesson,
   papers past a third went 137 → 122 of 2,820; the rest are elsewhere, not
   in these two families.
+  **…and nine Grades 1–8 generators stop running out of kinds (2026-10-18).**
+  The worst of what was left was topic generators whose branches share one
+  sentence, or whose other kinds have only a handful of numberings: the
+  spreading in `makeTopicItem` cannot pick a kind whose stems the paper already
+  used. «الصفر» was three «ما ناتج …؟» branches out of five, «قوانين الأسس» on
+  easy was only «بسّط», «متوازي الأضلاع» on easy only an angle, «تطابق
+  المثلثات (ASA, AAS)» had 7 numberings outside its angle question, and a
+  hemispherical bowl had two. Each generator now picks the shared-sentence
+  branches as one slot, and has new kinds that each have many numberings:
+  - «الصفر»: a missing number, the smallest or largest of four, counting down.
+  - «الأجزاء المتطابقة»: which of two parts is bigger, how many parts from a
+    part's name, a varied number eaten.
+  - «الوقت لأقرب 5 دقائق / ربع ساعة»: the time some minutes later, how long
+    between two times.
+  - «أشهر السنة»: some months on, the month between two.
+  - «حجم الكرة»: the radius from the volume, a solid hemisphere's whole
+    surface, an area or volume ratio.
+  - «متوازي الأضلاع»: a side from the perimeter, A when B exceeds it.
+  - «تطابق المثلثات (ASA, AAS)»: a side from the congruence, x from
+    corresponding sides, and all nine marked-part combinations.
+  - «قوانين الأسس الصحيحة»: the missing exponent, a number worked out by the
+    laws.
+
+  Every answer is recomputed from the stem in `early.test.ts`,
+  `geometry.test.ts` and `topics.test.ts`. Offline 10- and 20-question
+  quizzes past a third, over every maths and chemistry lesson: 121 → 87 of
+  2,820, in 46 → 35 lessons, none of them these nine. Most of what remains is
+  one question over, in 3 of 6 papers. Twelve Grade 2–3 multiplication lessons
+  account for much of it: «أوجد العدد المجهول» from `elementary.ts`.
 
 - **Lesson plan, slides, activity, lesson-flow and the classroom builder take a
   unit, semester or whole book — as one revision session (2026-10-14; spec
@@ -4176,6 +4205,27 @@ Profile (`NOT_A_TIMETABLE`, and no bare «الحساب» keyword). Still teachin
 purpose: «كيف أصحح أوراق الطلاب؟» / «how do i grade the exams», which the model
 answers as marking advice. 18 look-alikes pinned.
 
+**Sharing an exam, and six things the app does not do (2026-10-18, fourth live
+pass).** Of 20 new questions on app.iqrra.com, 16 went to the model, which
+invented menus or refused («how do i upload a pdf», «هل التطبيق مجاني؟»); "how
+do i share an exam with my students" got the add-a-class steps and «كيف أصدّر
+العلامات إلى إكسل؟» the PDF/Word export steps. Each now has a `RULE_PLACES`
+entry (`services/appHelp.ts`) with steps from its screen: publishing an exam and
+its «رابط الطلبة» card, how a student opens `/take/CODE`, who handed in («لوحة
+النتائج» lists one paper per student who opened it), sending a worksheet («أرسل
+للصف كواجب رقمي» → a draft exam), notifications (Settings → «التنبيهات» on the
+phone app; none on web), and contacting support. **Six answers say it is not in
+the app**, each checked in the code: file upload (`DOCUMENT_UPLOAD_ENABLED` is
+off), a marks export (none), copying an exam to another class (an evaluation
+holds one class), inviting a teacher (no invite; a colleague signs up), a store
+listing (none yet; app.iqrra.com in the phone's browser), and a picture of your
+own on a question (only the lesson's book figures, «أرفق شكلًا»). Pricing says a
+teacher account is free with a monthly limit on new material. «كيف أدعو أولياء
+الأمور؟» gets the link-code steps. Also fixed, older: a how-verb plus a bare
+«students / طلابي / طلبتي» was enough for My classes, so «how do i make students
+listen» got the add-a-class steps; those words now count only in a where-question
+(`STUDENT_WORDS`). 21 look-alikes pinned.
+
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
 Step 4 of the worksheet review, agreed in chat. A worksheet was paper only: to
@@ -4660,6 +4710,54 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
 - When the worksheet screen is opened with a lesson, its unit dropdown still
   shows the placeholder (the documented gap in `TopicSelector.tsx`). The topic
   itself is held.
+## Slides Maker decks stop looking like bare lists, 2026-10-18
+
+A teacher's revision deck showed three one-word cards on a mostly empty slide and
+a flat green unit break: the new layouts only reach Prompt Slides, and Slides
+Maker (`lessonSlides.ts` — lesson and revision decks, built from curriculum data)
+had never been given them.
+
+- **`concepts`** — a new layout: two to six short terms (each up to 32 characters)
+  as large cards, three to a row, a 2×2 for four. Used for a revision unit's key
+  ideas and a lesson's «أفكار الدرس» when every item is a term; a sentence among
+  them keeps the bullet list. The bullets stay on the slide as the fallback, so a
+  refusal is never a blank. Not described to the Prompt Slides model.
+- **The vocabulary slide is a table** (term | meaning) when every term has a
+  definition and the sizes pass the existing `table` gate.
+- **Topic icons** — `iconForTopic(title)` (`deckIcons.ts`: Arabic and English
+  stems, first match wins, `null` rather than a wrong guess) puts an atom on
+  «الحركة والقوة», a globe on earth and space; a unit break and its key-ideas slide
+  carry it, with a generic one when the title names nothing. The key-ideas heading
+  lost its leading 💡, which would have overridden the icon. Exit-ticket breaks
+  carry a ticket.
+- **Fix to my own earlier work:** the presenter's layout slides (timeline, stats,
+  table, flow, compare, steps) drew a bare title and never the heading icon the PDF
+  has; one `LayoutHeading` now draws the same icon chip everywhere.
+
+- **A photo on each unit break** — the deck used to give one divider photo to the
+  FIRST break only. `unitPhotoTargets` (`classMedia.ts`) picks the breaks whose
+  title is a recognisable topic and `photoQueryForTopic` (`deckIcons.ts`, built on
+  the same stems as the icons) gives each an English query («الحركة والقوة» →
+  physics, الأرض → earth and space). At most four per deck, no repeated query, and a
+  title it cannot read keeps the flat break rather than a stranger's photo.
+- **Motion** — `Reveal` in the presenter: bullets, cards, steps, timeline events,
+  stats, concept cards and flow boxes fade in and rise one after another (320 ms,
+  90 ms apart, capped at eight beats), native-driven, skipped when the device
+  asks for reduced motion. The slide is keyed by its index so it replays on every
+  slide. PDF and PowerPoint cannot animate and are unchanged
+  (`presenterMotion.test.ts` reads the source for the three properties that fail
+  silently).
+
+**Not done:** book figures and graphs on a REVISION deck. Lesson decks already carry
+a lesson's book figures (four of sixteen subjects have any) and maths graphs; a
+revision spans units, so no one lesson's figure belongs on it, and its units hold
+no figures of their own to draw. **Checked:** layout gate, icon rules, revision
+and lesson deck builders, PDF rendered and looked at, PPTX through the real
+exporter (cards in the right places for 3, 4 and 5 terms, Arabic mirrored).
+**Not checked:** the presenter on a device, the PPTX in PowerPoint. About two
+dozen local suites cannot load in this worktree (`qrcode-generator` missing,
+Windows line endings); CI is the full run.
+
 ## Two more slide layouts: quote and photo, 2026-10-17
 
 - **`quote`** — a phrase, definition or rule set in large type with an opening mark

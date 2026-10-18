@@ -117,6 +117,23 @@ const SCREENS: AppPlace[] = [
     keywords: ['الوضع الليلي', 'الوضع الداكن', 'الوضع المظلم', 'dark mode', 'dark theme', 'night mode'],
     howKey: 'howDarkMode',
   },
+  // Reached through `RULE_PLACES` (2026-10-18's live pass). Six answer that the
+  // app does not do it, from the code: document upload is switched off
+  // (`DOCUMENT_UPLOAD_ENABLED`), nothing exports marks or copies an exam (an
+  // evaluation holds one class), there is no teacher invite, no support channel
+  // but «اقترح ميزة», and no store listing yet.
+  { id: 'share-exam', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howShareExam' },
+  { id: 'exam-submissions', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howExamSubmissions' },
+  { id: 'copy-exam', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howCopyExam' },
+  { id: 'export-marks', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howExportMarks' },
+  { id: 'send-worksheet', route: '/ai-tools/worksheet', labelKey: 'toolWorksheetTitle', pathKeys: ['tabTools', 'toolsDuringClass'], isTool: true, keywords: [], howKey: 'howSendWorksheet' },
+  { id: 'question-image', route: '/ai-tools/worksheet', labelKey: 'toolWorksheetTitle', pathKeys: ['tabTools', 'toolsDuringClass'], isTool: true, keywords: [], howKey: 'howQuestionImage' },
+  { id: 'notification-settings', route: '/settings', labelKey: 'settings', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howNotifications' },
+  { id: 'contact-support', route: '/suggest-feature', labelKey: 'suggestFeature', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howContactSupport' },
+  { id: 'upload-file', route: '/curriculum/browse', labelKey: 'tabCurriculum', pathKeys: [], isTool: false, keywords: [], howKey: 'howUploadFile' },
+  { id: 'invite-teacher', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howInviteTeacher' },
+  { id: 'install-app', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howInstallApp' },
+  { id: 'pricing', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howPricing' },
   {
     id: 'subjects', route: '/setup-subjects', routeParams: { mode: 'edit' }, labelKey: 'mySubjects', pathKeys: ['tabProfile'], isTool: false,
     // No bare «grade» / «صف»: they sit inside every «grade 10 quiz» and «للصف العاشر».
@@ -558,6 +575,177 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
       ),
     ],
   },
+  // The fourth live pass (2026-10-18). Same anchoring as above: «كيف أنشر الوعي
+  // بين الطلاب», «كيف أرفع مستوى الطلاب» and «كيف أدعو الطلاب للمشاركة» stay
+  // teaching. The exam is the shareable one (an evaluation); the generator's
+  // quiz can only be exported, so «quiz» is left out.
+  {
+    id: 'share-exam',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:share|send|give|publish|post|assign)\s+(?:(?:an?|the|my|this)\s+)?(?:exam|test|evaluation)(?:\s+(?:link|code))?` +
+          String.raw`(?:\s+(?:to|with)\s+(?:my\s+|the\s+)?(?:students|class|section))?(?:\s+(?:online|on\s+the\s+app|on\s+their\s+phones))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        String.raw`^how\s+(?:do|can|will|should)\s+(?:my\s+|the\s+)?students?\s+(?:open|take|access|find|get\s+to|join|start|enter|sit)\s+(?:(?:the|an?|my|this)\s+)?(?:exam|test|evaluation)` +
+          String.raw`(?:\s+(?:online|on\s+(?:the\s+app|their\s+phones)))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:انشر|نشر|اشارك|شارك|مشاركه|ارسل|ابعث|ابعت)\s+(?:ال)?(?:امتحان|اختبار|تقييم)(?:\s+(?:ال)?الكتروني)?` +
+          String.raw`(?:\s+(?:ل|الي|لل|مع|علي)\s*(?:ال)?(?:طلاب|طلابي|طلبه|طلبتي|شعبه|شعبتي|صف|صفي))?(?:\s+(?:علي|في|عبر)\s+(?:ال)?(?:تطبيق|جوال|هاتف|موقع|انترنت))?` + AR_RULE_TAIL,
+      ),
+      new RegExp(
+        String.raw`^(?:كيف|وين|من\s+وين|من\s+اين)\s+(?:يدخل|يفتح|يقدم|يلاقي|يصل|يوصل)\s+(?:ال)?(?:طالب|طلاب|طلبه)\s+(?:(?:علي|الي|ل)\s*)?(?:ال)?(?:امتحان|اختبار|تقييم)` +
+          String.raw`(?:\s+(?:من|علي|في)\s+(?:ال)?(?:تطبيق|جوال|هاتف|موقع))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'exam-submissions',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:(?:see|check|know|find\s+out|view|tell)\s+who\s+(?:has\s+|have\s+)?(?:submitted|handed\s+in|turned\s+in|took|sat|finished|completed|did\s+not\s+submit|didn['’]?t\s+submit|hasn['’]?t\s+submitted)` +
+          String.raw`|(?:see|check|view)\s+(?:the\s+)?(?:students'?\s+)?submissions)(?:\s+(?:of\s+|for\s+)?(?:the|my|this|an?)\s+(?:exam|test|evaluation))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اعرف|اشوف|اري|اتابع|اتاكد)\s+(?:مين|من|منو|اسماء\s+(?:ال)?(?:طلاب|طلبه)\s+(?:الذين|اللي|يلي))\s+(?:سلم|سلموا|قدم|قدموا|حل|حلوا|انهي|انهوا|لم\s+يسلم|ما\s+سلم|ما\s+سلموا)\s+(?:ال)?(?:امتحان|اختبار|تقييم)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'send-worksheet',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:send|share|assign|give|post)\s+(?:(?:a|the|my|this)\s+)?worksheets?(?:\s+(?:to|with)\s+(?:my\s+|the\s+)?(?:students|class|section))?` +
+          String.raw`(?:\s+to\s+(?:solve|do|answer)(?:\s+it)?)?(?:\s+(?:on\s+the\s+app|online|digitally|on\s+their\s+phones))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:ارسل|ابعث|ابعت|اشارك|شارك|انشر)\s+(?:ال)?(?:ورقه|اوراق)\s+(?:ال)?عمل(?:\s+(?:ل|الي|لل|مع)\s*(?:ال)?(?:طلاب|طلابي|طلبه|طلبتي|شعبه|شعبتي|صف|صفي))?` +
+          String.raw`(?:\s+(?:(?:ل|كي|حتي)\s*)?(?:يحلوها|يحلونها|يحلوا|يحلها|يجيبوا|يجيبون))?(?:\s+(?:علي|في|عبر|من\s+خلال)\s+(?:ال)?(?:تطبيق|جوال|هاتف|موقع|انترنت))?` +
+          String.raw`(?:\s+كواجب(?:\s+رقمي)?)?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'notification-settings',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:turn\s+off|turn\s+on|disable|enable|stop|mute|silence|unmute|manage|change)\s+(?:(?:the|all|my|push|app)\s+)*notifications?` +
+          String.raw`(?:\s+(?:from|for|on)\s+(?:the\s+app|iqrra|iqraa|my\s+phone))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اوقف|ايقاف|وقف|اطفي|اطفئ|الغي|الغاء|اكتم|كتم|افعل|تفعيل|اشغل|تشغيل|اغير|تغيير)\s+(?:ال)?(?:اشعارات|تنبيهات|اشعار|تنبيه)` +
+          String.raw`(?:\s+(?:ال)?(?:تطبيق|هاتف|جوال))?(?:\s+(?:من|في|علي)\s+(?:ال)?(?:تطبيق|هاتف|جوال))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'contact-support',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:contact|reach|email|message|talk\s+to|get\s+in\s+touch\s+with|call)\s+(?:the\s+)?(?:support(?:\s+team)?|help\s+desk|iqrra(?:\s+team)?|iqraa(?:\s+team)?|team|customer\s+service|technical\s+support|tech\s+support)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اتواصل|تواصل|التواصل|اتصل|اكلم|اراسل)\s+(?:(?:مع|ب|علي|الي)\s*)?(?:ال)?(?:دعم(?:\s+(?:ال)?فني)?|فريق\s+(?:ال)?(?:دعم|تطبيق)|فريق\s+اقرا|اداره\s+(?:ال)?تطبيق|اداره\s+اقرا|خدمه\s+(?:ال)?عملاء)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'upload-file',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:upload|import)\s+(?:(?:a|an|the|my|this|some)\s+)*(?:pdfs?|files?|documents?|books?|textbooks?|word\s+files?|pdf\s+files?)(?:\s+(?:of|from)\s+(?:the|my)\s+(?:book|textbook))?` + EN_RULE_TAIL,
+      ),
+      // «أرفق ملفًا» is left out: a class page attaches a file from My files under that very label.
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:ارفع|رفع)\s+(?:(?:ال)?(?:ملف|ملفات|مستند|مستندات)(?:\s+(?:pdf|بي\s+دي\s+اف|وورد|word))?(?:\s+(?:من|عن)\s+(?:ال)?(?:كتاب|منهاج))?|(?:ال)?كتاب)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'export-marks',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:export|download|transfer)\s+(?:(?:the|my|all|all\s+the)\s+)?(?:(?:students?'?|class|exam|test)\s+)?(?:marks|grades|results|scores|mark\s+sheet|gradebook)` +
+          String.raw`(?:\s+(?:to|as|in|into)\s+(?:an?\s+)?(?:excel(?:\s+(?:file|sheet))?|spreadsheet|csv|google\s+sheets))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اصدر|تصدير|انقل|نقل|احمل|تحميل|انزل|تنزيل)\s+(?:ال)?(?:علامات|درجات|نتائج|كشف\s+(?:ال)?علامات)(?:\s+(?:ال)?(?:طلاب|طلبه|شعبه|امتحان|اختبار))?` +
+          String.raw`(?:\s+(?:(?:الي|ل|علي|ب|في|ك)\s*)?(?:ال)?(?:اكسل|excel|ملف\s+(?:ال)?(?:اكسل|excel)))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'copy-exam',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:(?:copy|duplicate|reuse|clone)\s+(?:(?:an?|the|my|this)\s+)?(?:exam|test|evaluation)|(?:give|use|send|share)\s+the\s+same\s+(?:exam|test|evaluation))` +
+          String.raw`(?:\s+(?:to|for|with)\s+(?:another|a\s+different|a\s+second|my\s+other|the\s+other|other)\s+(?:class|section))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:انسخ|نسخ|اكرر|تكرار|كرر|اعيد\s+استخدام)\s+(?:ال)?(?:امتحان|اختبار|تقييم)(?:\s+(?:نفسه|ذاته))?` +
+          String.raw`(?:\s+(?:ل|الي|لل|في|مع)\s*(?:ال)?(?:شعبه|صف)(?:\s+(?:ثانيه|ثاني|اخري|اخر|ثالثه|جديده))?)?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'invite-teacher',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:invite|add)\s+(?:(?:a|an|another|other|more|my|some)\s+)*(?:teachers?|colleagues?|co-?teachers?)(?:\s+(?:to|into)\s+(?:the\s+app|iqrra|iqraa|my\s+(?:class|school|account)))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:ادعو|دعوه|اضيف|اضافه|اضف)\s+(?:ال)?(?:معلم|معلمه|معلمين|معلمات|زميل|زميله|زملاء|زملائي|زملاي|استاذ)(?:\s+(?:اخر|اخري|اخرين|جديد))?` +
+          String.raw`(?:\s+(?:الي|ل)\s*(?:ال)?(?:تطبيق|اقرا|شعبه|شعبتي|مدرسه))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    // Bringing the class in is the link code. «to participate» and «للمشاركة» fail the anchor.
+    id: 'link-code',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`invite\s+(?:(?:the|my)\s+)?(?:parents|students|families)(?:\s+(?:to|into)\s+(?:the\s+app|iqrra|iqraa|my\s+class))?` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:ادعو|دعوه)\s+(?:ال)?(?:اولياء\s+(?:ال)?امور|ولي\s+(?:ال)?امر|اهالي|اهل|طلاب|طلابي|طلبه|طلبتي)(?:\s+(?:الي|ل)\s*(?:ال)?(?:تطبيق|اقرا|شعبه|شعبتي))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'install-app',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:download|install|get)\s+(?:(?:the|this)\s+)?(?:app|iqrra|iqraa|iqrra\s+app|mobile\s+app|android\s+app|iphone\s+app)(?:\s+(?:on|to|for)\s+(?:my\s+|a\s+)?(?:phone|mobile|android|iphone|ipad|tablet))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:احمل|تحميل|انزل|تنزيل|نزل|اثبت|تثبيت|انصب|تنصيب)\s+(?:ال)?(?:تطبيق|برنامج|اقرا)(?:\s+(?:ال)?تطبيق)?` +
+          String.raw`(?:\s+(?:علي|في)\s+(?:ال)?(?:جوال|جوالي|موبايل|هاتف|هاتفي|تلفون|تلفوني|ايفون|اندرويد|ايباد|تابلت))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'pricing',
+    res: [
+      new RegExp(String.raw`^(?:is|are)\s+(?:(?:the|this)\s+)?(?:app|iqrra|iqraa|platform|website|site|service)\s+(?:(?:really|totally|completely)\s+)?free(?:\s+(?:to\s+use|for\s+teachers))?` + EN_RULE_TAIL),
+      new RegExp(String.raw`^how\s+much\s+(?:does|is)\s+(?:(?:the|this)\s+)?(?:app|iqrra|iqraa|subscription)(?:\s+cost)?` + EN_RULE_TAIL),
+      new RegExp(String.raw`^do\s+(?:i|we)\s+(?:have|need)\s+to\s+pay(?:\s+for\s+(?:the\s+app|iqrra|iqraa|it))?` + EN_RULE_TAIL),
+      new RegExp(
+        String.raw`^(?:هل\s+)?(?:ال)?(?:تطبيق|برنامج|موقع|منصه|اقرا)(?:\s+اقرا)?\s+(?:مجاني|مجانيه|مجانا|مجان|ببلاش|بلاش|مدفوع)` + AR_RULE_TAIL,
+      ),
+      new RegExp(String.raw`^(?:كم|بكم)\s+(?:(?:سعر|ثمن|تكلفه|اشتراك)\s+)?(?:ال)?(?:تطبيق|اقرا|اشتراك)` + AR_RULE_TAIL),
+      new RegExp(String.raw`^(?:هل\s+)?(?:يجب|لازم|علي)\s+(?:ان\s+)?(?:ادفع|دفع)(?:\s+(?:مقابل|علي|ل)\s*(?:ال)?(?:تطبيق|اقرا))?` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'question-image',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:add|insert|attach|put|upload)\s+(?:(?:an?|the|my)\s+)?(?:image|picture|photo|figure|diagram|drawing)\s+(?:to|in|into|on|for)\s+(?:(?:a|the|my|this|each)\s+)?(?:exam\s+|worksheet\s+)?questions?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اضيف|اضافه|اضف|ارفق|ادرج|احط|اضع)\s+(?:ال)?(?:صوره|صور|شكل|رسمه|رسم)\s+(?:ل|لل|الي|في|مع|علي)\s*(?:ال)?(?:سؤال|اسئله)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
 ];
 
 /**
@@ -692,6 +880,15 @@ const NOT_A_TIMETABLE = /(?:^|\s)جدول(?=\s+(?:ضرب|دوري)(?:\s|$))/g;
  */
 const NOT_A_GRADE = /(?:^|\s)(?:صف|صفوف)(?=(?:\s+(?:جديد|اخر|ثاني|اضافي))?\s+(?:(?:الي|في|من)\s+)?(?:لل|ل)?مصفوف)/g;
 
+/**
+ * «how do i make students listen» and «كيف أشارك طلابي في النقاش» got the
+ * add-a-class steps (found 2026-10-18): a how-verb plus «students» was all the
+ * matcher saw. The students are in nearly every teaching question, so alone they
+ * point at My classes only when asked where («وين طلابي»); adding one is
+ * `ADD_STUDENT`'s, which is anchored.
+ */
+const STUDENT_WORDS = new Set(['students', 'طلابي', 'طلبتي']);
+
 /** A word that says the question is about the app, even when no place matched. */
 const APP_NOUN = /تطبيق|البرنامج|صفحه|قسم|تبويب|زر|قائمه|\bapp\b|\bpage\b|\bscreen\b|\btab\b|\bbutton\b|\bmenu\b/i;
 
@@ -701,13 +898,16 @@ const APP_NOUN = /تطبيق|البرنامج|صفحه|قسم|تبويب|زر|ق
  * question, so multi-word keywords win over their single-word prefixes.
  */
 export function findAppPlaces(query: string, limit = 3): AppPlace[] {
-  const statementId = statementPlaceId(plain(query));
+  const pq = plain(query);
+  const statementId = statementPlaceId(pq);
   if (statementId) return APP_PLACES.filter(p => p.id === statementId);
   const q = ` ${matchForm(query).replace(NOT_A_SCHOOL_CLASS, ' ').replace(NOT_A_TIMETABLE, ' ').replace(NOT_A_GRADE, ' ')} `;
+  const howOnly = HOW_PATTERN.test(pq) && !WHERE_PATTERN.test(pq);
   const scored: { place: AppPlace; score: number }[] = [];
   for (const place of APP_PLACES) {
     let best = 0;
     for (const kw of place.keywords) {
+      if (howOnly && STUDENT_WORDS.has(kw)) continue;
       if (q.includes(` ${kw} `)) best = Math.max(best, kw.length);
     }
     if (best > 0) scored.push({ place, score: best });

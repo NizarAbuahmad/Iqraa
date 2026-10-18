@@ -9,7 +9,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { DECK_ICON_SHAPES, deckIconSvg, iconForGlyph, type DeckIconName } from '../deckIcons.ts';
+import { DECK_ICON_SHAPES, deckIconSvg, iconForGlyph, iconForTopic, photoQueryForTopic, type DeckIconName } from '../deckIcons.ts';
 import { splitEmoji } from '../deckText.ts';
 import { buildDeckSlidesHTML } from '../deckSlidesHtml.ts';
 import type { ActivitySlide, ClassroomActivity } from '../ai/AIService.ts';
@@ -46,6 +46,59 @@ describe('iconForGlyph', () => {
       const name = iconForGlyph(g);
       assert.ok(name, `${g} has no icon`);
       assert.ok(DECK_ICON_SHAPES[name!].length > 0, `${name} has no shapes`);
+    }
+  });
+});
+
+describe('iconForTopic', () => {
+  it('names the subject of a unit, in Arabic and English', () => {
+    const cases: [string, string][] = [
+      ['الحركة والقوة', 'atom'],
+      ['علوم الأرض والفضاء', 'globe'],
+      ['النباتات والخلايا', 'leaf'],
+      ['الطاقة والحرارة', 'sun'],
+      ['الكسور والأعداد', 'calculator'],
+      ['التفاعلات الكيميائية', 'flask'],
+      ['Forces and Motion', 'atom'],
+      ['Earth and Space', 'globe'],
+      ['Fractions', 'calculator'],
+      ['Reading and Writing', 'book'],
+    ];
+    for (const [text, icon] of cases) assert.equal(iconForTopic(text), icon, text);
+  });
+
+  it('has no opinion rather than a wrong one', () => {
+    // «Unit» and «وحدة» are the word for a unit of the book, not a topic
+    for (const text of ['وحدة عامة', 'Unit 3', '']) assert.equal(iconForTopic(text), null, text);
+    assert.equal(iconForTopic(undefined as never), null);
+  });
+
+  it('only ever returns an icon the renderers can draw', () => {
+    for (const text of ['الحركة', 'الأرض', 'water', 'history', 'computer', 'السكان والمجتمع']) {
+      const icon = iconForTopic(text);
+      if (icon !== null) assert.ok(isSectionIconName(icon), `${text} → ${icon}`);
+    }
+  });
+});
+
+describe('photoQueryForTopic', () => {
+  it('is an English query for a recognised topic and null otherwise', () => {
+    assert.match(photoQueryForTopic('الحركة والقوة')!, /physics/);
+    assert.match(photoQueryForTopic('علوم الأرض والفضاء')!, /earth/);
+    assert.equal(photoQueryForTopic('وحدة عامة'), null);
+    assert.equal(photoQueryForTopic(''), null);
+  });
+
+  it('every icon a topic can resolve to has a query — no recognised topic ends up photo-less by accident', () => {
+    // The only icons without one are the section markers a topic never maps to.
+    const topicIcons = new Set(['flask', 'atom', 'leaf', 'sun', 'drop', 'globe', 'heart', 'bars', 'calculator', 'ruler', 'clock', 'laptop', 'users', 'pin', 'book']);
+    for (const icon of topicIcons) {
+      const sample: Record<string, string> = {
+        flask: 'كيمياء', atom: 'فيزياء', leaf: 'نبات', sun: 'طاقة', drop: 'ماء', globe: 'الأرض', heart: 'صحة',
+        bars: 'إحصاء', calculator: 'جبر', ruler: 'قياس', clock: 'تاريخ', laptop: 'حاسوب', users: 'مجتمع', pin: 'خريطة', book: 'قراءة',
+      };
+      assert.equal(iconForTopic(sample[icon]!), icon, `${icon} sample`);
+      assert.ok(photoQueryForTopic(sample[icon]!), `${icon} has a photo query`);
     }
   });
 });
