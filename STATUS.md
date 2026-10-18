@@ -4706,6 +4706,54 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
 - When the worksheet screen is opened with a lesson, its unit dropdown still
   shows the placeholder (the documented gap in `TopicSelector.tsx`). The topic
   itself is held.
+## Slides Maker decks stop looking like bare lists, 2026-10-18
+
+A teacher's revision deck showed three one-word cards on a mostly empty slide and
+a flat green unit break: the new layouts only reach Prompt Slides, and Slides
+Maker (`lessonSlides.ts` — lesson and revision decks, built from curriculum data)
+had never been given them.
+
+- **`concepts`** — a new layout: two to six short terms (each up to 32 characters)
+  as large cards, three to a row, a 2×2 for four. Used for a revision unit's key
+  ideas and a lesson's «أفكار الدرس» when every item is a term; a sentence among
+  them keeps the bullet list. The bullets stay on the slide as the fallback, so a
+  refusal is never a blank. Not described to the Prompt Slides model.
+- **The vocabulary slide is a table** (term | meaning) when every term has a
+  definition and the sizes pass the existing `table` gate.
+- **Topic icons** — `iconForTopic(title)` (`deckIcons.ts`: Arabic and English
+  stems, first match wins, `null` rather than a wrong guess) puts an atom on
+  «الحركة والقوة», a globe on earth and space; a unit break and its key-ideas slide
+  carry it, with a generic one when the title names nothing. The key-ideas heading
+  lost its leading 💡, which would have overridden the icon. Exit-ticket breaks
+  carry a ticket.
+- **Fix to my own earlier work:** the presenter's layout slides (timeline, stats,
+  table, flow, compare, steps) drew a bare title and never the heading icon the PDF
+  has; one `LayoutHeading` now draws the same icon chip everywhere.
+
+- **A photo on each unit break** — the deck used to give one divider photo to the
+  FIRST break only. `unitPhotoTargets` (`classMedia.ts`) picks the breaks whose
+  title is a recognisable topic and `photoQueryForTopic` (`deckIcons.ts`, built on
+  the same stems as the icons) gives each an English query («الحركة والقوة» →
+  physics, الأرض → earth and space). At most four per deck, no repeated query, and a
+  title it cannot read keeps the flat break rather than a stranger's photo.
+- **Motion** — `Reveal` in the presenter: bullets, cards, steps, timeline events,
+  stats, concept cards and flow boxes fade in and rise one after another (320 ms,
+  90 ms apart, capped at eight beats), native-driven, skipped when the device
+  asks for reduced motion. The slide is keyed by its index so it replays on every
+  slide. PDF and PowerPoint cannot animate and are unchanged
+  (`presenterMotion.test.ts` reads the source for the three properties that fail
+  silently).
+
+**Not done:** book figures and graphs on a REVISION deck. Lesson decks already carry
+a lesson's book figures (four of sixteen subjects have any) and maths graphs; a
+revision spans units, so no one lesson's figure belongs on it, and its units hold
+no figures of their own to draw. **Checked:** layout gate, icon rules, revision
+and lesson deck builders, PDF rendered and looked at, PPTX through the real
+exporter (cards in the right places for 3, 4 and 5 terms, Arabic mirrored).
+**Not checked:** the presenter on a device, the PPTX in PowerPoint. About two
+dozen local suites cannot load in this worktree (`qrcode-generator` missing,
+Windows line endings); CI is the full run.
+
 ## Two more slide layouts: quote and photo, 2026-10-17
 
 - **`quote`** — a phrase, definition or rule set in large type with an opening mark

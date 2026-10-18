@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import {
+  AccessibilityInfo,
   Animated,
   Linking,
   Platform,
@@ -10,6 +11,8 @@ import {
   Text,
   useWindowDimensions,
   View,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -664,7 +667,7 @@ function TimelineView({ events, accent, isRTL }: {
     return (
       <View style={{ flexDirection: row, alignSelf: 'stretch' }}>
         {events.map((e, i) => (
-          <View key={i} style={slideStyles.tlCol}>
+          <Reveal key={i} index={i} style={slideStyles.tlCol}>
             <View style={{ flexDirection: row, alignItems: 'center' }}>
               <View style={[slideStyles.tlDot, { borderColor: accent, backgroundColor: T.card }]} />
               <View style={[slideStyles.tlLine, { backgroundColor: accent + '55', opacity: i === events.length - 1 ? 0 : 1 }]} />
@@ -675,7 +678,7 @@ function TimelineView({ events, accent, isRTL }: {
             <Text style={[slideStyles.tlText, { textAlign: align, writingDirection: dir }]}>
               {isolateForeignRuns(e.text)}
             </Text>
-          </View>
+          </Reveal>
         ))}
       </View>
     );
@@ -683,7 +686,7 @@ function TimelineView({ events, accent, isRTL }: {
   return (
     <View style={{ alignSelf: 'stretch' }}>
       {events.map((e, i) => (
-        <View key={i} style={{ flexDirection: row, gap: 16 }}>
+        <Reveal key={i} index={i} style={{ flexDirection: row, gap: 16 }}>
           <View style={{ alignItems: 'center', width: 24 }}>
             <View style={[slideStyles.tlDot, { borderColor: accent, backgroundColor: T.card }]} />
             <View style={[slideStyles.tlVLine, { backgroundColor: accent + '55', opacity: i === events.length - 1 ? 0 : 1 }]} />
@@ -696,7 +699,7 @@ function TimelineView({ events, accent, isRTL }: {
               {isolateForeignRuns(e.text)}
             </Text>
           </View>
-        </View>
+        </Reveal>
       ))}
     </View>
   );
@@ -713,10 +716,99 @@ function StatsRowView({ items, accent, isRTL }: {
   return (
     <View style={[slideStyles.statsRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
       {items.map((it, i) => (
-        <View key={i} style={slideStyles.statsCard}>
+        <Reveal key={i} index={i} style={slideStyles.statsCard}>
           <Text style={[slideStyles.statsValue, { color: accent }]}>{isolateForeignRuns(it.value)}</Text>
           <Text style={slideStyles.statsLabel}>{isolateForeignRuns(it.label)}</Text>
+        </Reveal>
+      ))}
+    </View>
+  );
+}
+
+/**
+ * An item that fades in and rises a few pixels, each `index` a beat after the one
+ * before — the bullets, cards and boxes of a slide arriving one at a time, which
+ * is how a teacher speaks to them, instead of the whole slide appearing at once.
+ *
+ * It plays on mount, so the slide must be re-mounted per slide (the dispatch keys
+ * it by slide index). Skipped entirely when the device asks for reduced motion,
+ * and capped at eight beats so a long list is not still arriving a second later.
+ * Native-driven (opacity and transform only), so it costs the JS thread nothing.
+ */
+function Reveal({ index, style, children }: { index: number; style?: StyleProp<ViewStyle>; children?: React.ReactNode }) {
+  const progress = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    let cancelled = false;
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then(reduce => {
+        if (cancelled) return;
+        if (reduce) { progress.setValue(1); return; }
+        Animated.timing(progress, {
+          toValue: 1, duration: 320, delay: 120 + Math.min(index, 8) * 90, useNativeDriver: NATIVE_DRIVER,
+        }).start();
+      })
+      // If the setting cannot be read, show the item rather than leave it invisible.
+      .catch(() => progress.setValue(1));
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return (
+    <Animated.View
+      style={[style, { opacity: progress, transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }] }]}
+    >
+      {children}
+    </Animated.View>
+  );
+}
+
+/**
+ * The heading of a slide drawn in one of the structure layouts: the same icon
+ * chip and title the ordinary slide has. These branches used to draw a bare
+ * title, so the icon the model (or the deck builder) chose showed in the PDF and
+ * never in the presenter.
+ */
+function LayoutHeading({ heading, icon, accent, isRTL }: {
+  heading: string;
+  icon: DeckIconName | null;
+  accent: string;
+  isRTL: boolean;
+}) {
+  const T = useContext(ThemeContext);
+  const { slideStyles } = sheetsFor(T);
+  return (
+    <View style={[slideStyles.headRow, { flexDirection: isRTL ? 'row-reverse' : 'row', marginBottom: 16 }]}>
+      {icon ? (
+        <View style={[slideStyles.glyphChip, { backgroundColor: accent + '18', borderColor: accent + '33' }]}>
+          <DeckIcon name={icon} color={accent} size={24} />
         </View>
+      ) : null}
+      <Text
+        style={[
+          slideStyles.title,
+          { color: accent, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr', fontFamily: 'ReadexPro_700Bold' },
+        ]}
+      >
+        {isolateForeignRuns(heading)}
+      </Text>
+    </View>
+  );
+}
+
+/** Short key terms as large cards that fill the slide, two or three to a row. */
+function ConceptsView({ items, accent, isRTL }: {
+  items: string[];
+  accent: string;
+  isRTL: boolean;
+}) {
+  const T = useContext(ThemeContext);
+  const { slideStyles } = sheetsFor(T);
+  return (
+    <View style={[slideStyles.conceptsGrid, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+      {items.map((it, i) => (
+        <Reveal key={i} index={i} style={slideStyles.conceptCard}>
+          <View style={[slideStyles.conceptBar, { backgroundColor: accent }]} />
+          <Text style={[slideStyles.conceptText, { writingDirection: isRTL ? 'rtl' : 'ltr' }]}>{isolateForeignRuns(it)}</Text>
+        </Reveal>
       ))}
     </View>
   );
@@ -775,9 +867,9 @@ function FlowView({ nodes, cycle, accent, isRTL, loopLabel }: {
       <View style={[slideStyles.flowRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         {nodes.map((n, i) => (
           <React.Fragment key={i}>
-            <View style={[slideStyles.flowNode, { borderColor: accent }]}>
+            <Reveal index={i} style={[slideStyles.flowNode, { borderColor: accent }]}>
               <Text style={[slideStyles.flowText, { writingDirection: dir }]}>{isolateForeignRuns(n)}</Text>
-            </View>
+            </Reveal>
             {i < nodes.length - 1 && (
               <Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={28} color={accent} />
             )}
@@ -871,13 +963,11 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
 
         {layout.kind === 'compare' && (
           <>
-            <Text style={[slideStyles.title, { color: accent, textAlign: align, writingDirection: dir, marginBottom: 16 }]}>
-              {isolateForeignRuns(heading)}
-            </Text>
+            <LayoutHeading heading={heading} icon={headIcon} accent={accent} isRTL={isRTL} />
             <View style={[slideStyles.compareRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               {([[layout.leftTitle, layout.left], [layout.rightTitle, layout.right]] as const).map(
                 ([colTitle, items], col) => (
-                  <View key={col} style={[slideStyles.compareCol, { borderColor: col === 0 ? accent : T.border }]}>
+                  <Reveal key={col} index={col} style={[slideStyles.compareCol, { borderColor: col === 0 ? accent : T.border }]}>
                     <Text style={[slideStyles.compareHead, {
                       color: col === 0 ? accent : T.muted, textAlign: align, writingDirection: dir,
                     }]}>
@@ -891,7 +981,7 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
                         {isolateForeignRuns(item)}
                       </Text>
                     ))}
-                  </View>
+                  </Reveal>
                 ),
               )}
             </View>
@@ -900,13 +990,12 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
 
         {layout.kind === 'steps' && (
           <>
-            <Text style={[slideStyles.title, { color: accent, textAlign: align, writingDirection: dir, marginBottom: 16 }]}>
-              {isolateForeignRuns(heading)}
-            </Text>
+            <LayoutHeading heading={heading} icon={headIcon} accent={accent} isRTL={isRTL} />
             <View style={{ gap: 14, alignSelf: 'stretch' }}>
               {layout.steps.map((step, i) => (
-                <View
+                <Reveal
                   key={i}
+                  index={i}
                   style={[slideStyles.stepRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
                 >
                   <View style={[slideStyles.stepNum, { backgroundColor: accent }]}>
@@ -915,7 +1004,7 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
                   <Text style={[slideStyles.stepText, { textAlign: align, writingDirection: dir }]}>
                     {isolateForeignRuns(step)}
                   </Text>
-                </View>
+                </Reveal>
               ))}
             </View>
           </>
@@ -923,36 +1012,28 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
 
         {layout.kind === 'timeline' && (
           <>
-            <Text style={[slideStyles.title, { color: accent, textAlign: align, writingDirection: dir, marginBottom: 16 }]}>
-              {isolateForeignRuns(heading)}
-            </Text>
+            <LayoutHeading heading={heading} icon={headIcon} accent={accent} isRTL={isRTL} />
             <TimelineView events={layout.events} accent={accent} isRTL={isRTL} />
           </>
         )}
 
         {layout.kind === 'stats' && (
           <>
-            <Text style={[slideStyles.title, { color: accent, textAlign: align, writingDirection: dir, marginBottom: 16 }]}>
-              {isolateForeignRuns(heading)}
-            </Text>
+            <LayoutHeading heading={heading} icon={headIcon} accent={accent} isRTL={isRTL} />
             <StatsRowView items={layout.items} accent={accent} isRTL={isRTL} />
           </>
         )}
 
         {layout.kind === 'table' && (
           <>
-            <Text style={[slideStyles.title, { color: accent, textAlign: align, writingDirection: dir, marginBottom: 16 }]}>
-              {isolateForeignRuns(heading)}
-            </Text>
+            <LayoutHeading heading={heading} icon={headIcon} accent={accent} isRTL={isRTL} />
             <TableView headers={layout.headers} rows={layout.rows} accent={accent} isRTL={isRTL} />
           </>
         )}
 
         {layout.kind === 'flow' && (
           <>
-            <Text style={[slideStyles.title, { color: accent, textAlign: align, writingDirection: dir, marginBottom: 16 }]}>
-              {isolateForeignRuns(heading)}
-            </Text>
+            <LayoutHeading heading={heading} icon={headIcon} accent={accent} isRTL={isRTL} />
             <FlowView
               nodes={layout.nodes}
               cycle={layout.cycle}
@@ -960,6 +1041,13 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
               isRTL={isRTL}
               loopLabel={t('deckFlowLoop')}
             />
+          </>
+        )}
+
+        {layout.kind === 'concepts' && (
+          <>
+            <LayoutHeading heading={heading} icon={headIcon} accent={accent} isRTL={isRTL} />
+            <ConceptsView items={layout.items} accent={accent} isRTL={isRTL} />
           </>
         )}
 
@@ -1056,7 +1144,7 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
 
           if (isBullet) {
             return (
-              <View key={i} style={[slideStyles.card, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <Reveal key={i} index={i} style={[slideStyles.card, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <View style={[slideStyles.cardBar, { backgroundColor: accent }]} />
                 <Text
                   style={[
@@ -1066,7 +1154,7 @@ function SlideView({ slide, isRTL, onZoomSide }: { slide: ActivitySlide; isRTL: 
                 >
                   {bindOperators(isolateForeignRuns(text))}
                 </Text>
-              </View>
+              </Reveal>
             );
           }
 
@@ -1604,7 +1692,7 @@ export default function PresentationScreen() {
             ? <HeroSlideView slide={slide} accent={slideTypeAccent(slide.type, T)} />
             : photoHero
               ? <HeroSlideView slide={photoHero} accent={slideTypeAccent(slide.type, T)} />
-              : <SlideView slide={slide} isRTL={slideRTL} onZoomSide={setSideZoom} />}
+              : <SlideView key={slideIndex} slide={slide} isRTL={slideRTL} onZoomSide={setSideZoom} />}
           <ImageViewerModal
             url={sideZoom}
             onClose={() => setSideZoom(null)}
@@ -2062,6 +2150,13 @@ const makeSlideStyles = (T: DeckTheme) => StyleSheet.create({
   },
   statsValue: { fontSize: D.statsValue, lineHeight: 72, fontFamily: 'ReadexPro_700Bold', textAlign: 'center' },
   statsLabel: { fontSize: D.statsLabel, lineHeight: 28, color: T.text, textAlign: 'center', fontFamily: 'Almarai_400Regular' },
+  conceptsGrid: { gap: 16, alignSelf: 'stretch', flexWrap: 'wrap' },
+  conceptCard: {
+    flexGrow: 1, flexBasis: 240, minHeight: 160, justifyContent: 'center', gap: 12, padding: 24,
+    backgroundColor: T.card, borderRadius: 24, borderWidth: 1, borderColor: T.border,
+  },
+  conceptBar: { width: 40, height: 4, borderRadius: 4 },
+  conceptText: { fontSize: D.conceptText, lineHeight: 44, color: T.text, fontFamily: 'ReadexPro_600SemiBold' },
   tableWrap: { alignSelf: 'stretch', borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: T.border },
   tableRow: { alignItems: 'stretch' },
   tableHead: { flex: 1, padding: 12, fontSize: D.tableHead, lineHeight: 28, color: '#FFFFFF', fontFamily: 'ReadexPro_700Bold' },
