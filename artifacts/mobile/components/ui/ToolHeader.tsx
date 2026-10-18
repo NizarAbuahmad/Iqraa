@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { SPACE, TYPE } from '@/constants/theme';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { goBack } from '@/services/navigation';
@@ -88,13 +89,13 @@ const styles = StyleSheet.create({
   langPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: SPACE.xs,
     backgroundColor: 'rgba(0,0,0,0.18)',
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: SPACE.md,
+    paddingVertical: SPACE.xs,
   },
-  langPillText: { color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 },
+  langPillText: { color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption },
   eyebrow: {
     alignItems: 'center',
     gap: 5,
