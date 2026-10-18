@@ -65,6 +65,7 @@ import { findLiveClass } from "../lib/classOwnership.js";
 import { examVisibleTo } from "../modules/assessment/audience.ts";
 import { assignedStudentsByEvaluation } from "../lib/evaluationAudience.ts";
 import { publicUrl } from "../lib/r2.js";
+import { libraryItemSnapshot } from "../lib/librarySnapshot.ts";
 import {
   isUuid,
   parseClassResourceInput,
@@ -952,31 +953,10 @@ router.post("/classes/:id/resources", async (req: AuthenticatedRequest, res) => 
       return;
     }
 
-    let snapshot: { title: string; mediaKind: string; url: string | null; thumbnailUrl: string | null };
-    if (input.source === "uploaded") {
-      // Never trust the app for a staff upload: copy it from the Library's own row.
-      const [item] = await db
-        .select()
-        .from(libraryResources)
-        .where(eq(libraryResources.id, input.nativeId))
-        .limit(1);
-      if (!item) {
-        res.status(404).json({ error: "Library item not found" });
-        return;
-      }
-      snapshot = {
-        title: item.titleAr,
-        mediaKind: item.category,
-        url: item.r2Key ? publicUrl(item.r2Key) : item.sourceUrl,
-        thumbnailUrl: item.thumbnailUrl,
-      };
-    } else {
-      snapshot = {
-        title: input.title,
-        mediaKind: input.mediaKind,
-        url: input.url,
-        thumbnailUrl: input.thumbnailUrl,
-      };
+    const snapshot = await libraryItemSnapshot(input);
+    if (!snapshot) {
+      res.status(404).json({ error: "Library item not found" });
+      return;
     }
 
     const [row] = await db

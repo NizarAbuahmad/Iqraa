@@ -303,9 +303,8 @@ interface Message {
   appHelp?: boolean;
   /**
    * Set on the reply to «أريد ورقة عمل» that points at the generator instead of
-   * making one. Like `appHelp`, it carries its own button, so the starter chips
-   * and the copy / export footer stay away from it. Unlike `appHelp`, the long
-   * press is left alone.
+   * making one. Like `appHelp`, it carries its own button, so the starter chips,
+   * the copy / export footer and the long-press export all stay away from it.
    */
   toolAsk?: boolean;
   pedagogicalClarification?: ClarificationOption[];
@@ -315,6 +314,10 @@ interface Message {
   attachments?: ChatAttachment[];
   timestamp: Date;
 }
+
+/** A reply that asks the teacher to pick (a subject, a lesson, a kind of help) and shows the choices itself. */
+const asksTheTeacher = (m: Message | undefined): boolean =>
+  !!(m?.clarificationSubjects?.length || m?.clarificationLessons?.length || m?.pedagogicalClarification?.length);
 
 /** One-shot shortcuts under the composer — never stored inside message bubbles. */
 type EphemeralSuggestion = {
@@ -3868,7 +3871,7 @@ export default function IqraScreen() {
             message={item}
             colors={colors}
             isRTL={isRTL}
-            onLongPress={item.role === 'assistant' && !item.appHelp ? () => handleExportMessage(item) : undefined}
+            onLongPress={item.role === 'assistant' && !item.appHelp && !item.toolAsk ? () => handleExportMessage(item) : undefined}
             onCopy={item.role === 'assistant' && item.id !== streamingId ? handleCopyMessage : undefined}
             onExport={item.role === 'assistant' && item.id !== streamingId ? handleExportMessage : undefined}
             onSaveMaterial={item.role === 'assistant' ? handleSaveMaterial : undefined}
@@ -3924,10 +3927,14 @@ export default function IqraScreen() {
         one-shot follow-ups below are not — two chip strips stacked on a phone
         is the clutter this change set out to remove.
         Not under an answer about the app: «حضّر خطة الدرس» next to «where is
-        Settings» offers a lesson to someone who asked for a screen.
+        Settings» offers a lesson to someone who asked for a screen. Nor under a
+        question back to the teacher («أيّ مادة تقصد؟»): it carries its own
+        choices, and «أنشئ ورقة عمل» under «أريد ورقة عمل → أيّ مادة؟» repeats
+        the ask instead of answering it.
       */}
       {ephemeralSuggestions.length === 0 && !isThinking && messages.length > 1
-        && !messages[messages.length - 1]?.appHelp && !messages[messages.length - 1]?.toolAsk ? (
+        && !messages[messages.length - 1]?.appHelp && !messages[messages.length - 1]?.toolAsk
+        && !asksTheTeacher(messages[messages.length - 1]) ? (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}

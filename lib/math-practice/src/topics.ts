@@ -19,7 +19,7 @@ import { GEOMETRY_TOPICS } from './geometry.ts';
 import { STATS_TOPICS } from './stats.ts';
 import { PROPORTION_TOPICS } from './proportion.ts';
 import { EARLY_TOPICS } from './early.ts';
-import { stemFrame } from './stemFrame.ts';
+import { FRESH_DRAWS, servedFrames, spreadScore, stemFrame } from './stemFrame.ts';
 import {
   gcd, int, lcm, mixed, nz, numWrongs, numerator, paren, pick, sfrac, signed, sup, tier, valueOf, wrongsFrom,
   type Ctx, type Draft, type Rng, type Topic,
@@ -179,7 +179,43 @@ const estSum = (id: string, match: RegExp, mode: 'add' | 'sub' | 'both'): Topic 
     const exact = add ? a + b : a - b;
     const op = add ? '+' : '−';
     const byLead = add ? lead(a) + lead(b) : lead(a) - lead(b);
-    const k = pick(rng, [0, 1, 2]);
+    const k = pick(rng, [0, 1, 2, 3, 4]);
+    if (k === 3) {
+      // judging an answer's size: which round number is nearest the real result
+      const place = digits === 2 ? 10 : pick(rng, [10, 100]);
+      const ans = roundTo(exact, place);
+      if (exact % place === place / 2 || ans <= 0) return make(c);
+      const near = shuffle(rng, [ans - place, ans + place]).filter(x => x > 0);
+      const far = shuffle(rng, [ans + 2 * place, ans - 2 * place]).filter(x => x > 0);
+      const wrongs = [...near, ...far, ans + 3 * place].slice(0, 3).map(String);
+      const L = listed(rng, String(ans), wrongs);
+      return {
+        eq: `${a} ${op} ${b}`, answer: String(ans), wrongs,
+        ar: `أيّ الأعداد الآتية أقرب إلى ناتج ${a} ${op} ${b}: ${L.ar}؟`,
+        en: `Which of these numbers is closest to ${a} ${op} ${b}: ${L.en}?`,
+      };
+    }
+    if (k === 4) {
+      // working back from an estimate: the other number, rounded
+      const place = digits === 2 ? 10 : pick(rng, [10, 100]);
+      const ra = roundTo(a, place), rb = roundTo(b, place);
+      const est = add ? ra + rb : ra - rb;
+      if (est <= 0 || rb <= 0) return make(c);
+      const P = PLACE_AR[place]!, PE = PLACE_EN[place]!;
+      const slip = add ? est - a : a - est; // the shown number used without rounding it
+      const wrongs = numWrongs(rb, [slip, rb + place, rb - place, b].filter(x => x > 0 && x !== rb));
+      return add
+        ? {
+          eq: `${a}, ${est}`, answer: String(rb), wrongs,
+          ar: `قرّبت سلمى عددين إلى أقرب ${P} ثم جمعتهما، فكان التقدير ${est}. إذا كان أحد العددين ${a}، فما العدد الآخر بعد تقريبه؟`,
+          en: `Salma rounded two numbers to the nearest ${PE} and added them; her estimate was ${est}. If one number is ${a}, what is the other number after rounding?`,
+        }
+        : {
+          eq: `${a}, ${est}`, answer: String(rb), wrongs,
+          ar: `قرّبت سلمى عددين إلى أقرب ${P} ثم طرحت الأصغر من الأكبر، فكان التقدير ${est}. إذا كان العدد الأكبر ${a}، فما العدد الأصغر بعد تقريبه؟`,
+          en: `Salma rounded two numbers to the nearest ${PE} and subtracted the smaller from the larger; her estimate was ${est}. If the larger number is ${a}, what is the smaller number after rounding?`,
+        };
+    }
     if (k === 0) {
       return {
         eq: `${a} ${op} ${b}`, answer: String(byLead),
@@ -532,9 +568,35 @@ const divisibility: Topic = {
     const pool = grade <= 4 ? [2, 3, 5, 10] : [4, 6, 9];
     const d = pick(rng, pool);
     const len = diff === 'easy' ? 3 : 4;
-    const k = pick(rng, [0, 1, 2]);
+    const lo = 10 ** (len - 1), hi = 10 ** len - 1;
+    const k = pick(rng, [0, 1, 2, 3, 4]);
+    if (k === 3) {
+      // the next multiple: test the numbers after n with the rule until one passes
+      const n = int(rng, lo, hi - 2 * d);
+      const ans = (Math.floor(n / d) + 1) * d;
+      return {
+        eq: `${n}`, answer: String(ans),
+        wrongs: numWrongs(ans, [ans - d, ans + d, n + 1, ans + 1].filter(x => x !== ans)),
+        ar: `ما أصغر عدد أكبر من ${n} يقبل القسمة على ${d}؟`,
+        en: `What is the smallest number greater than ${n} that is divisible by ${d}?`,
+      };
+    }
+    if (k === 4) {
+      // one number against every rule of the lesson
+      const p0 = pick(rng, pool), n = p0 * int(rng, Math.ceil(lo / p0), Math.floor(hi / p0));
+      const yes = pool.filter(p => n % p === 0);
+      const show = (xs: number[]) => xs.join(' ، ');
+      // the other answers some number could have (never 10 without 2 and 5, or 4 and 9 without 6), one rule away first
+      const subsets = [...new Set(range(1, 180).map(x => show(pool.filter(p => x % p === 0))))].filter(Boolean).map(t => t.split(' ، ').map(Number));
+      const away = (xs: number[]) => pool.filter(p => xs.includes(p) !== yes.includes(p)).length;
+      const cands = shuffle(rng, subsets.filter(xs => away(xs) > 0)).sort((x, y) => away(x) - away(y));
+      return {
+        eq: `${n}`, answer: show(yes), wrongs: cands.slice(0, 3).map(show),
+        ar: `اكتب الأعداد التي يقبل العدد ${n} القسمة عليها من بين الأعداد ${show(pool)}.`,
+        en: `List the numbers among ${pool.join(', ')} that ${n} is divisible by.`,
+      };
+    }
     if (k > 0) {
-      const lo = 10 ** (len - 1), hi = 10 ** len - 1;
       const multiple = () => d * int(rng, Math.ceil(lo / d), Math.floor(hi / d));
       // a near miss: divisible by the number d is confused with, but not by d
       const miss = () => { for (;;) { const x = int(rng, lo, hi); const p = pick(rng, NEAR_DIVISOR[d]!); if (x % d !== 0 && x % p === 0) return x; } };
@@ -1757,8 +1819,24 @@ const expLaws: Topic = {
   id: 'exp_laws', match: /قوانين الاسس/, grades: [7, 8],
   make({ rng, diff }) {
     const m = int(rng, 2, 7), n = int(rng, 2, 5);
-    const kinds = diff === 'easy' ? [0, 1] : diff === 'medium' ? [0, 1, 2, 3] : [0, 1, 2, 3, 4, 5];
-    const k = pick(rng, kinds);
+    // «بسّط: …» is one kind however it is built (0 product, 1 quotient, 2 power of a power, 5 power of a product);
+    // 3 a zero exponent, 4 a negative one, 6 the missing exponent, 7 a power of a number worked out by the laws.
+    const simplify = pick(rng, diff === 'easy' ? [0, 1] : diff === 'medium' ? [0, 1, 2] : [0, 1, 2, 5]);
+    const k = pick(rng, diff === 'easy' ? [simplify, 3, 6, 7] : [simplify, 3, 4, 6, 7]);
+    if (k === 6) {
+      // xᵐ × xⁿ = xᵐ⁺ⁿ, xᵐ ÷ xⁿ = xᵐ⁻ⁿ, (xᵐ)ⁿ = xᵐⁿ — solve for n
+      const law = pick(rng, diff === 'easy' ? [0, 1] : [0, 1, 2]);
+      const [lhs, rhs, wr]: [string, number, number[]] = law === 0 ? [`x${sup(m)} × xⁿ`, m + n, [m + n, m, n + 1]]
+        : law === 1 ? [`x${sup(m + n)} ÷ xⁿ`, m, [m + n, m, 2 * m + n]]
+        : [`(x${sup(m)})ⁿ`, m * n, [m * n, m * n - m, m + n]];
+      return { eq: `${lhs} = x${sup(rhs)}`, answer: String(n), wrongs: wrongsFrom(String(n), wr.filter(v => v !== n && v > 0).map(String)), ar: `ما قيمة n التي تجعل العبارة صحيحة: ${lhs} = x${sup(rhs)}؟`, en: `What value of n makes this true: ${lhs} = x${sup(rhs)}?` };
+    }
+    if (k === 7) {
+      // bᵖ × bᵠ ÷ bʳ = bᵖ⁺ᵠ⁻ʳ, a small whole number
+      const b = pick(rng, [2, 3, 5, 10]), e = b === 2 ? int(rng, 2, 5) : b === 10 ? int(rng, 2, 4) : int(rng, 1, 3), p = int(rng, e + 1, e + 5), q = int(rng, 1, 4), r = p + q - e;
+      const ans = b ** e;
+      return { eq: `${b}${sup(p)} × ${b}${sup(q)} ÷ ${b}${sup(r)}`, answer: String(ans), wrongs: wrongsFrom(String(ans), [b ** (e + 1), b * e, b ** (p + q), ans + b].filter(v => v !== ans).map(String)), ar: `احسب ناتج ${b}${sup(p)} × ${b}${sup(q)} ÷ ${b}${sup(r)} باستعمال قوانين الأسس.`, en: `Use the laws of exponents to work out ${b}${sup(p)} × ${b}${sup(q)} ÷ ${b}${sup(r)}.` };
+    }
     const x = (e: number) => (e === 1 ? 'x' : `x${sup(e)}`);
     const mk = (eq: string, e: number, ar: string, en: string, w: number[]): Draft => ({
       eq, answer: x(e), wrongs: wrongsFrom(x(e), w.filter(v => Number.isInteger(v) && v > 1 && v !== e).map(x), j => x(e + Math.abs(j) + 1)), ar, en,
@@ -1799,8 +1877,6 @@ export function topicFor(title: string, grade: number): Topic | null {
   return TOPICS.find(x => grade >= x.grades[0] && grade <= x.grades[1] && x.match.test(t)) ?? null;
 }
 
-/** Fresh draws compared before keeping the one whose sentence was served least. */
-const FRESH_DRAWS = 6;
 
 /**
  * A fresh item for a lesson `topicFor` matched; a draw that repeats a stem this
@@ -1809,9 +1885,10 @@ const FRESH_DRAWS = 6;
  * Most generators ask one of several kinds of question («ما بُعد الوتر عن
  * المركز؟», «ما طول الوتر؟», «ما طول المماس؟») and pick the kind at random, so
  * a paper could hold five of one kind and none of another. Of a few fresh
- * draws, the one whose sentence (`stemFrame`) this pass has served least is
- * kept. A draw of an unserved sentence ends the search at once, so the first
- * item of a pass costs one draw as before.
+ * draws, the one whose kind this pass has served least is kept (`spreadScore`:
+ * sentences a word or two apart are one kind, `sameKind`). A draw of an unserved
+ * kind ends the search at once, so the first item of a pass costs one draw as
+ * before.
  *
  * The bank (`takeFromBank`) deliberately does not do this. Its items are finite:
  * on a lesson holding a few one-item kinds, spreading puts those items on
@@ -1820,12 +1897,7 @@ const FRESH_DRAWS = 6;
  * numbers on every draw, so nothing is lost here.
  */
 export function makeTopicItem(topic: Topic, grade: number, diff: DiffTier, used: Set<string>, rng: Rng = Math.random): ConcreteItem {
-  const served = new Map<string, number>();
-  for (const key of used) {
-    if (!key.startsWith('stem:')) continue;
-    const f = stemFrame(key.slice('stem:'.length));
-    served.set(f, (served.get(f) ?? 0) + 1);
-  }
+  const served = servedFrames(used);
   let d: Draft | null = null;
   let best: Draft | null = null;
   let bestServed = Infinity;
@@ -1834,7 +1906,7 @@ export function makeTopicItem(topic: Topic, grade: number, diff: DiffTier, used:
     d = topic.make({ rng, diff, grade });
     if (used.has(`stem:${d.ar}`)) continue;
     fresh += 1;
-    const n = served.get(stemFrame(d.ar)) ?? 0;
+    const n = spreadScore(stemFrame(d.ar), served);
     if (n < bestServed) {
       best = d;
       bestServed = n;
@@ -1843,6 +1915,7 @@ export function makeTopicItem(topic: Topic, grade: number, diff: DiffTier, used:
   }
   d = best ?? d;
   used.add(`stem:${d!.ar}`);
+  used.add(`ask:${d!.ar}`);
   const wrongs = d!.wrongs.filter(w => w !== d!.answer).slice(0, 3);
   return {
     id: `topic-${topic.id}-${grade}-${used.size}-${int(rng, 0, 9)}`,

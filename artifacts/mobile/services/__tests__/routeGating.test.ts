@@ -189,6 +189,14 @@ describe('isNonTeacherRoute', () => {
     }
   });
 
+  it('lets a parent or student into the material viewer, and nowhere else under /workspace', () => {
+    // «المدرسة» opens a saved material attached to a homework there (?hw=&material=).
+    assert.equal(isNonTeacherRoute('/workspace/view'), true);
+    for (const p of ['/workspace', '/workspace/edit', '/workspace/viewer', '/workspace/views']) {
+      assert.equal(isNonTeacherRoute(p), false, p);
+    }
+  });
+
   it('excludes the claim screen even though it sits under /messaging', () => {
     // It mints a student's claim code and reads the roster — teacher-only,
     // despite the prefix that would otherwise let it through.

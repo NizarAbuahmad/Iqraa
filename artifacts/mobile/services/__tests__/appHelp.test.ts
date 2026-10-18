@@ -523,6 +523,361 @@ describe('a grade to change and a lesson to add', () => {
   });
 });
 
+describe('a matrix row is not a grade', () => {
+  // «كيف أضيف صفاً إلى المصفوفة» got the add-a-grade steps through «اضيف صف».
+  for (const q of [
+    'كيف أضيف صفاً إلى المصفوفة؟',
+    'كيف اضيف صف الى المصفوفة',
+    'كيف أضيف صفاً جديداً للمصفوفة؟',
+    'كيف أحذف صفاً من المصفوفة؟',
+    'كيف أضيف صفوفاً في المصفوفة',
+  ]) {
+    it(`leaves «${q}» alone`, () => {
+      assert.equal(isAppHelpQuery(q), false);
+      assert.notEqual(classifyChatIntent(q, 'ar').intent, 'app_help');
+    });
+  }
+  for (const q of ['كيف أضيف صفاً جديداً؟', 'كيف اضيف صف', 'بدي اضيف صف ثامن']) {
+    it(`«${q}» still gets the grade steps`, () => {
+      assert.equal(top(q), 'subjects');
+    });
+  }
+});
+
+describe('homework, exam date, scan, class chat, block, name, account, feedback, results actions', () => {
+  // The second live pass (2026-10-17): each of these went to the model, which
+  // invented menus («تبويب أدوات الذكاء الاصطناعي») or refused («كيف أحظر ولي
+  // أمر» read as harmful). The steps come from the screens they name.
+  const t = (k: string) => `<${k}>`;
+  const lang = (q: string) => (/[؀-ۿ]/.test(q) ? 'ar' : 'en');
+  const steps: Array<[string, string]> = [
+    ['كيف أرسل واجباً لطلابي؟', 'howAddHomework'],
+    ['بدي اضيف واجب للشعبة', 'howAddHomework'],
+    ['how do i add homework', 'howAddHomework'],
+    ['كيف أضع موعداً لامتحان؟', 'howExamDate'],
+    ['how do i set an exam date', 'howExamDate'],
+    ['كيف أفعّل الوضع الليلي؟', 'howDarkMode'],
+    ['وين الوضع الليلي؟', 'howDarkMode'],
+    ['how do i enable dark mode', 'howDarkMode'],
+    ['كيف أمسح ورقة الإجابة بالكاميرا؟', 'howClassScan'],
+    ['how do i scan the answer sheets', 'howClassScan'],
+    ['كيف أرسل رسالة لكل الشعبة؟', 'howClassChat'],
+    ['how do i send a message to the whole class', 'howClassChat'],
+    ['كيف أحظر ولي أمر؟', 'howBlock'],
+    ['how do i block a parent', 'howBlock'],
+    ['كيف أغير اسمي؟', 'howChangeName'],
+    ['how do i change my name', 'howChangeName'],
+    ['كيف أحذف حسابي؟', 'howDeleteAccount'],
+    ['how do i delete my account', 'howDeleteAccount'],
+    ['كيف أقترح ميزة جديدة؟', 'howSuggestFeature'],
+    ['how do i suggest a feature', 'howSuggestFeature'],
+    ['كيف أبلغ عن خطأ في ورقة العمل؟', 'howReportProblem'],
+    ['how do i report a problem with the worksheet', 'howReportProblem'],
+    ['كيف أعيد توليد ورقة العمل؟', 'howRegenerate'],
+    ['how do i regenerate the quiz', 'howRegenerate'],
+    ['كيف أحفظ خطة الدرس؟', 'howSaveMaterial'],
+    ['how do i save the worksheet', 'howSaveMaterial'],
+    ['كيف أختار درساً آخر؟', 'faqA2'],
+    ['how do i choose another lesson', 'faqA2'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» gets ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(classifyChatIntent(q, lang(q)).intent, 'app_help');
+      assert.equal(answerAppHelp(q, lang(q), t).text, `<${key}>`);
+    });
+  }
+
+  for (const q of ['وين ألاقي خطة الدرس اللي حفظتها؟', 'where are my saved worksheets']) {
+    it(`«${q}» points at My files, not the generator`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.deepEqual(findAppPlaces(q).map(p => p.id), ['workspace']);
+    });
+  }
+
+  it('dark mode no longer points at a Settings switch that does not exist', () => {
+    assert.ok(!findAppPlaces('وين الوضع الليلي؟').some(p => p.id === 'settings'));
+  });
+
+  const teaching = [
+    'أريد واجباً عن الكسور',
+    'اعطني واجب منزلي عن الجبر',
+    'how do i make homework more engaging',
+    'كيف أكتب رسالة للطلاب عن القراءة؟',
+    'كيف أحفظ جدول الضرب؟',
+    'كيف أحفظ القصيدة؟',
+    'كيف أختار درساً مناسباً لطلابي؟',
+    'كيف أغير اسم المتغير؟',
+    'كيف أحذف الحساب من المعادلة؟',
+    'كيف أمسح السبورة؟',
+    'كيف أعيد صياغة السؤال؟',
+    'كيف أفعّل التعلم النشط في صفي؟',
+    'كيف أبلغ الطلاب بموعد الامتحان؟',
+    'how do i block distractions in class',
+    'ما هو الوضع الليلي في الفيزياء؟',
+    'how do i save time when marking',
+    'كيف أصحح أوراق الطلاب؟',
+    'how do i grade the exams',
+  ];
+  for (const q of teaching) {
+    it(`leaves «${q}» alone`, () => {
+      assert.equal(isAppHelpQuery(q), false);
+      assert.notEqual(classifyChatIntent(q, lang(q)).intent, 'app_help');
+    });
+  }
+});
+
+describe('archive, link code, print, sign out, password and results', () => {
+  // Found on app.iqrra.com (2026-10-17), with live AI on: «كيف أحذف شعبة؟» got the
+  // add-a-class steps, «كيف أشارك رمز الربط مع أولياء الأمور؟» opened Messages, and
+  // the other four went to the model, which guessed at menus or asked which app.
+  const t = (k: string) => `<${k}>`;
+  const lang = (q: string) => (/[؀-ۿ]/.test(q) ? 'ar' : 'en');
+  const steps: Array<[string, string, string]> = [
+    ['كيف أحذف شعبة؟', 'howArchiveClass', '/classes'],
+    ['كيف أحذف الشعبة القديمة', 'howArchiveClass', '/classes'],
+    ['بدي امسح شعبة', 'howArchiveClass', '/classes'],
+    ['how do i delete a class', 'howArchiveClass', '/classes'],
+    ['كيف أشارك رمز الربط مع أولياء الأمور؟', 'howShareLinkCode', '/classes'],
+    ['وين رمز الربط؟', 'howShareLinkCode', '/classes'],
+    ['how do i share the link code with parents', 'howShareLinkCode', '/classes'],
+    ['where is the join code', 'howShareLinkCode', '/classes'],
+    ['كيف أطبع ورقة العمل؟', 'faqA4', '/ai-tools/worksheet'],
+    ['how do i print a worksheet', 'faqA4', '/ai-tools/worksheet'],
+    ['كيف أسجل الخروج؟', 'howSignOut', '/profile'],
+    ['كيف اخرج من حسابي', 'howSignOut', '/profile'],
+    ['how do i sign out', 'howSignOut', '/profile'],
+    ['how do i log out', 'howSignOut', '/profile'],
+    ['كيف أغير كلمة المرور؟', 'howChangePassword', '/profile'],
+    ['نسيت كلمة المرور', 'howChangePassword', '/profile'],
+    ['how do i change my password', 'howChangePassword', '/profile'],
+    ['i forgot my password', 'howChangePassword', '/profile'],
+  ];
+  for (const [q, key, route] of steps) {
+    it(`«${q}» gets ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(classifyChatIntent(q, lang(q)).intent, 'app_help');
+      const a = answerAppHelp(q, lang(q), t);
+      assert.equal(a.text, `<${key}>`);
+      assert.equal(a.places[0]!.route, route);
+    });
+  }
+
+  for (const q of ['كيف أشوف نتائج الطلاب؟', 'وين اشوف علامات الطلاب', 'how do i see my students results', 'where can i see the exam results']) {
+    it(`«${q}» gets the path to the evaluations`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(classifyChatIntent(q, lang(q)).intent, 'app_help');
+      assert.deepEqual(findAppPlaces(q).map(p => p.id), ['tool:evaluations']);
+    });
+  }
+
+  it('steps for adding never answer a question about removing', () => {
+    // «كيف أحذف شعبة» had «اضغط شعبة جديدة» for an answer.
+    assert.notEqual(answerAppHelp('كيف أحذف شعبتي من حسابي', 'ar', t).text, '<howAddClass>');
+    assert.notEqual(answerAppHelp('كيف احذف الصفوف', 'ar', t).text, '<howAddGrade>');
+  });
+
+  const teaching = [
+    'how do i delete a class of compounds from the table',
+    'كيف أحذف الكسور من المعادلة؟',
+    'كيف أطبع الحروف بشكل صحيح؟',
+    'how do i create a strong password',
+    'how do i change a password in excel',
+    'كيف أختار كلمة مرور قوية؟',
+    'كيف أعرف نتائج التجربة؟',
+    'how do i check the results of the experiment',
+    'كيف أخرج من المتاهة؟',
+    'ما هو رمز الربط في الكيمياء؟',
+  ];
+  for (const q of teaching) {
+    it(`leaves «${q}» alone`, () => {
+      assert.equal(isAppHelpQuery(q), false);
+      assert.notEqual(classifyChatIntent(q, lang(q)).intent, 'app_help');
+    });
+  }
+});
+
+describe('a student to add', () => {
+  // Found on app.iqrra.com (2026-10-17): with live AI on, «كيف أضيف طالباً
+  // جديداً؟» went to the model, which said it was about the app and gave no
+  // steps. A student is added inside a class that exists, so it is not the
+  // add-a-class answer either.
+  const t = (k: string) => `<${k}>`;
+  const lang = (q: string) => (/[؀-ۿ]/.test(q) ? 'ar' : 'en');
+  const asks = [
+    'كيف أضيف طالباً جديداً؟',
+    'كيف اضيف طالب جديد',
+    'كيف أضيف طالب',
+    'كيف أضيف طلاباً إلى الشعبة؟',
+    'كيف اضيف طلاب للشعبة',
+    'بدي اضيف طالب',
+    'اريد اضافة اسماء الطلاب',
+    'هل يمكنني اضافة طالب اخر؟',
+    'كيف أسجل طالبة جديدة؟',
+    'وين اضيف الطلاب؟',
+    'how do i add a student',
+    'how do i add students to my class',
+    'i want to add a new student',
+    'can i add another student',
+    'where can i add students',
+  ];
+  for (const q of asks) {
+    it(`«${q}» gets the add-a-student steps and opens My classes`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(classifyChatIntent(q, lang(q)).intent, 'app_help');
+      const a = answerAppHelp(q, lang(q), t);
+      assert.equal(a.text, '<howAddStudent>');
+      assert.equal(a.places[0]!.route, '/classes');
+    });
+  }
+
+  it('a new class still gets the add-a-class steps', () => {
+    assert.equal(answerAppHelp('how do i add a new class', 'en', t).text, '<howAddClass>');
+    assert.equal(answerAppHelp('كيف أضيف شعبة جديدة؟', 'ar', t).text, '<howAddClass>');
+  });
+
+  const teaching = [
+    'كيف أضيف طالباً إلى مجموعة النقاش؟',
+    'اريد اضافة طالب متفوق الى المسابقة',
+    'كيف ادخل الطلاب في النقاش',
+    'add a student to the group work',
+    'how do i add a student character to the story',
+  ];
+  for (const q of teaching) {
+    it(`leaves «${q}» alone`, () => {
+      assert.equal(isAppHelpQuery(q), false);
+      assert.notEqual(classifyChatIntent(q, lang(q)).intent, 'app_help');
+    });
+  }
+});
+
+describe('a grade written with its accusative ending («صفاً جديداً»)', () => {
+  // Found on app.iqrra.com (2026-10-16): «كيف أضيف صفاً جديداً؟» was asked which
+  // subject it meant, while «كيف اضيف صف جديد» got the steps. The ending is the
+  // correct spelling, so each form must get exactly what its plain twin gets.
+  const t = (k: string) => `<${k}>`;
+  const twins: Array<[string, string]> = [
+    ['كيف أضيف صفاً جديداً؟', 'كيف اضيف صف جديد'],
+    ['كيف أضيف صفًا جديدًا؟', 'كيف اضيف صف جديد'],
+    ['كيف اضيف صفا جديدا', 'كيف اضيف صف جديد'],
+    ['كيف أضيف صفاً؟', 'كيف اضيف صف'],
+    ['كيف أضيف صفاً إضافياً؟', 'كيف اضيف صف اضافي'],
+    ['اريد ان اضيف صفاً جديداً', 'اريد ان اضيف صف جديد'],
+    ['بدي أضيف صفاً ثامناً', 'بدي اضيف صف ثامن'],
+    ['بدي اضيف صفا ثامنا', 'بدي اضيف صف ثامن'],
+  ];
+  for (const [q, twin] of twins) {
+    it(`«${q}» gets the grade steps, as «${twin}» does`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(classifyChatIntent(q, 'ar').intent, 'app_help');
+      assert.equal(top(q), 'subjects');
+      assert.deepEqual(answerAppHelp(q, 'ar', t), answerAppHelp(twin, 'ar', t));
+    });
+  }
+
+  const teaching = [
+    // An alif ending typed without its mark is part of the word, except on the
+    // few words a grade is added with.
+    'أين يقع جبل الصفا؟',
+    'ما معنى كلمة صفا؟',
+    'كيف أضيف عدداً جديداً إلى المتسلسلة؟',
+    'أضف صفاً جديداً إلى الجدول',
+    'ثانياً، كيف أحل المعادلة؟',
+    'أريد مثالاً جديداً',
+  ];
+  for (const q of teaching) {
+    it(`leaves «${q}» alone`, () => {
+      assert.equal(isAppHelpQuery(q), false);
+      assert.notEqual(classifyChatIntent(q, 'ar').intent, 'app_help');
+    });
+  }
+});
+
+describe('sharing an exam, sending a worksheet, notifications, support, and what the app cannot do', () => {
+  // The fourth live pass (2026-10-18): every one of these went to the model,
+  // which invented menus or refused («how do i upload a pdf», «هل التطبيق
+  // مجاني؟»), except the exam share, which got the add-a-class steps, and the
+  // marks export, which got the PDF/Word export steps. Six ask for something
+  // the app does not have, and their answer says so instead of inventing it.
+  const t = (k: string) => `<${k}>`;
+  const lang = (q: string) => (/[؀-ۿ]/.test(q) ? 'ar' : 'en');
+  const steps: Array<[string, string]> = [
+    ['كيف أنشر الامتحان للطلاب؟', 'howShareExam'],
+    ['كيف أشارك الاختبار مع طلابي؟', 'howShareExam'],
+    ['how do i share an exam with my students', 'howShareExam'],
+    ['how do i publish the exam', 'howShareExam'],
+    ['كيف يدخل الطالب على الامتحان؟', 'howShareExam'],
+    ['how do students open the exam', 'howShareExam'],
+    ['كيف أعرف مين سلّم الامتحان؟', 'howExamSubmissions'],
+    ['how do i see who submitted the exam', 'howExamSubmissions'],
+    ['كيف أرسل ورقة العمل للطلاب ليحلوها على التطبيق؟', 'howSendWorksheet'],
+    ['how do i send a worksheet to my students', 'howSendWorksheet'],
+    ['كيف أوقف الإشعارات؟', 'howNotifications'],
+    ['how do i turn off notifications', 'howNotifications'],
+    ['كيف أتواصل مع الدعم الفني؟', 'howContactSupport'],
+    ['how do i contact support', 'howContactSupport'],
+    ['كيف أرفع ملف PDF من الكتاب؟', 'howUploadFile'],
+    ['how do i upload a pdf', 'howUploadFile'],
+    ['كيف أصدّر العلامات إلى إكسل؟', 'howExportMarks'],
+    ['how do i export marks to excel', 'howExportMarks'],
+    ['كيف أنسخ الامتحان لشعبة ثانية؟', 'howCopyExam'],
+    ['how do i copy an exam to another class', 'howCopyExam'],
+    ['كيف أدعو معلماً آخر؟', 'howInviteTeacher'],
+    ['how do i invite another teacher', 'howInviteTeacher'],
+    ['كيف أحمّل التطبيق على الجوال؟', 'howInstallApp'],
+    ['how do i download the app on my phone', 'howInstallApp'],
+    ['هل التطبيق مجاني؟', 'howPricing'],
+    ['is the app free', 'howPricing'],
+    ['كيف أضيف صورة للسؤال؟', 'howQuestionImage'],
+    ['how do i add a picture to a question', 'howQuestionImage'],
+    // Inviting the class is the link code, not a teacher invite.
+    ['كيف أدعو أولياء الأمور؟', 'howShareLinkCode'],
+    ['how do i invite parents', 'howShareLinkCode'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» gets ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(classifyChatIntent(q, lang(q)).intent, 'app_help');
+      assert.equal(answerAppHelp(q, lang(q), t).text, `<${key}>`);
+    });
+  }
+
+  it('sharing an exam no longer opens My classes', () => {
+    assert.notEqual(top('how do i share an exam with my students'), 'classes');
+  });
+
+  const teaching = [
+    'كيف أرفع مستوى الطلاب؟',
+    'كيف أرفع الروح المعنوية في الصف؟',
+    'كيف أنشر الوعي البيئي بين الطلاب؟',
+    'كيف أشارك الطلاب في الحصة؟',
+    'كيف أعرف مين فهم الدرس؟',
+    'how do i see who understood the lesson',
+    'كيف أوقف الشغب في الصف؟',
+    'how do i stop students talking',
+    'كيف أتواصل مع الطلاب الخجولين؟',
+    'how do i support struggling students',
+    'كيف أحمّل الطلاب المسؤولية؟',
+    'كيف أدعو الطلاب للمشاركة؟',
+    'how do i invite students to participate',
+    // A how-verb plus «students» used to be enough for My classes.
+    'how do i make students listen',
+    'كيف أشارك طلابي في النقاش؟',
+    'كيف أنسخ المعادلة على السبورة؟',
+    'هل الإلكترون حر في الفلز؟',
+    'is the reaction spontaneous',
+    'كيف أصف الصورة في السؤال؟',
+    'كيف أحسب العلامات النهائية؟',
+    'كيف أكتب سؤالاً عن الصورة؟',
+  ];
+  for (const q of teaching) {
+    it(`leaves «${q}» alone`, () => {
+      assert.equal(isAppHelpQuery(q), false);
+      assert.notEqual(classifyChatIntent(q, lang(q)).intent, 'app_help');
+    });
+  }
+});
+
 describe('classifyChatIntent routes app questions before artifacts', () => {
   it('«وين ألاقي ورقة العمل» asks for the tool, not a worksheet', () => {
     assert.equal(classifyChatIntent('وين ألاقي ورقة العمل؟').intent, 'app_help');
@@ -530,4 +885,47 @@ describe('classifyChatIntent routes app questions before artifacts', () => {
   it('«أنشئ ورقة عمل» still generates', () => {
     assert.equal(classifyChatIntent('أنشئ ورقة عمل').intent, 'artifact');
   });
+});
+
+// "how to generate worksheet" fell through to the generator, which made a
+// worksheet titled «how» (app.iqrra.com, 2026-10-17). How a material is made
+// is answered with the steps, and the button opens the tool.
+describe('how is a material made', () => {
+  const t = (k: string) => `<${k}>`;
+  const asks: [string, 'ar' | 'en', string][] = [
+    ['how to generate worksheet', 'en', 'howMakeWorksheet'],
+    ['How do I make a worksheet?', 'en', 'howMakeWorksheet'],
+    ['how can I prepare a lesson plan', 'en', 'howMakeLessonPlan'],
+    ['how do I build a quiz', 'en', 'howMakeQuiz'],
+    ['how to create an activity', 'en', 'howMakeActivity'],
+    ['كيف أعمل ورقة عمل؟', 'ar', 'howMakeWorksheet'],
+    ['كيف أجهّز ورقة عمل', 'ar', 'howMakeWorksheet'],
+    ['طريقة عمل ورقة عمل', 'ar', 'howMakeWorksheet'],
+    ['كيف أحضّر خطة درس', 'ar', 'howMakeLessonPlan'],
+    ['كيف اسوي اختبار', 'ar', 'howMakeQuiz'],
+    ['كيف أنشئ نشاطاً صفياً', 'ar', 'howMakeActivity'],
+  ];
+  for (const [q, lang, key] of asks) {
+    it(`«${q}» gets the steps, not a material`, () => {
+      assert.equal(classifyChatIntent(q, lang).intent, 'app_help');
+      const answer = answerAppHelp(q, lang, t);
+      assert.equal(answer.text, `<${key}>`);
+      assert.equal(answer.places[0]?.isTool, true);
+    });
+  }
+
+  it('exporting one still gets the export steps', () => {
+    assert.equal(answerAppHelp('how do I export my worksheet', 'en', t).text, '<faqA4>');
+    assert.equal(answerAppHelp('كيف أطبع ورقة العمل', 'ar', t).text, '<faqA4>');
+  });
+
+  const stillMade = ['make a worksheet on fractions', 'جهّز ورقة عمل عن الكسور', 'أنشئ اختباراً قصيراً'];
+  for (const q of stillMade) {
+    it(`«${q}» still generates`, () => assert.equal(classifyChatIntent(q).intent, 'artifact'));
+  }
+
+  const teaching = ['how do I prepare students for the exam', 'كيف أحضّر طلابي للامتحان', 'كيف أشرح الكسور لطلابي'];
+  for (const q of teaching) {
+    it(`«${q}» is not a how-to about the app`, () => assert.equal(isAppHelpQuery(q), false));
+  }
 });

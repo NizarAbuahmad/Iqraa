@@ -11,6 +11,8 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { SavedMaterial, getItem } from '@/services/workspace';
+import { getHomeworkMaterial } from '@/services/homeworkApi';
+import { useAuth } from '@/context/AuthContext';
 import { useFavorite } from '@/hooks/useFavorite';
 import {
   ActivityOutput, ActivityStep, ClassroomActivity, LessonFlowOutput, LessonPlanOutput,
@@ -59,7 +61,14 @@ export default function WorkspaceViewScreen() {
   const { t, isRTL, lang } = useLanguage();
   // `premade` opens a ready-made sheet from the library (read-only: no Edit,
   // no Favourite — both act on a teacher's own saved copy, which this isn't).
-  const { id, premade } = useLocalSearchParams<{ id?: string; premade?: string }>();
+  // `hw` + `material` is a student or parent opening a saved material the
+  // teacher attached to a homework: read-only too, and the server has already
+  // taken the answers out, so nothing here offers a teacher's copy or a teacher
+  // tool (send, present) — the only route a family may reach under /workspace.
+  const { id, premade, hw, material } = useLocalSearchParams<{ id?: string; premade?: string; hw?: string; material?: string }>();
+  const family = !!(hw && material);
+  const readOnly = !!premade || family;
+  const { user } = useAuth();
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   const [item, setItem] = useState<SavedMaterial | null>(null);
@@ -97,6 +106,13 @@ export default function WorkspaceViewScreen() {
         formState: {},
       } : null);
       setLoading(false);
+    } else if (hw && material) {
+      getHomeworkMaterial(hw, material, user?.role === 'parent' ? 'parent' : 'student')
+        .catch(() => null)
+        .then(m => {
+          setItem(m);
+          setLoading(false);
+        });
     } else if (id) {
       getItem(id).then(m => {
         // A board is not a quiz. Without this it falls through every `kind`
@@ -118,7 +134,7 @@ export default function WorkspaceViewScreen() {
         setLoading(false);
       });
     }
-  }, [id, premade, lang]);
+  }, [id, premade, hw, material, lang]);
 
   if (loading) {
     return (
@@ -274,7 +290,7 @@ export default function WorkspaceViewScreen() {
 
       {/* Action bar */}
       <View style={[styles.actionBar, { backgroundColor: colors.card, borderBottomColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        {!premade && isEditableMaterial(item) && (
+        {!readOnly && isEditableMaterial(item) && (
         <Pressable
           onPress={() => router.push({ pathname: editRoute as any, params: { savedId: item.id, ...item.formState } })}
           style={[styles.actionBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
@@ -283,7 +299,7 @@ export default function WorkspaceViewScreen() {
           <Text style={[{ color: accent, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>{t('editItem')}</Text>
         </Pressable>
         )}
-        {!premade && (
+        {!readOnly && (
         <Pressable
           onPress={handleToggleFavorite}
           style={[styles.actionBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
@@ -305,7 +321,7 @@ export default function WorkspaceViewScreen() {
           <Ionicons name="share-outline" size={16} color={colors.mutedForeground} />
           <Text style={[{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>{t('exportBtn')}</Text>
         </Pressable>
-        {kind === 'worksheet' && content && (
+        {kind === 'worksheet' && content && !family && (
           <Pressable
             onPress={() => setShowSend(true)}
             style={[styles.actionBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
@@ -318,7 +334,7 @@ export default function WorkspaceViewScreen() {
         )}
         {/* A saved deck's whole point is being projected again — the workspace
             is where a teacher returns to it the morning of the lesson. */}
-        {(kind === 'slides' || kind === 'prompt-slides') && content && (
+        {(kind === 'slides' || kind === 'prompt-slides') && content && !family && (
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -335,7 +351,7 @@ export default function WorkspaceViewScreen() {
         )}
         {/* Not for a revision flow: this hands the label to the classroom builder as a
             bare topic, which would ground it to one lesson (possibly another grade's). */}
-        {kind === 'flow' && content && !wideMaterial && (
+        {kind === 'flow' && content && !wideMaterial && !family && (
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -426,7 +442,7 @@ export default function WorkspaceViewScreen() {
       onCopy={handleCopy}
       onPDF={handlePDF}
       onWord={handleWord}
-      copyChoice={(kind === 'quiz' || kind === 'worksheet') && content ? { value: docCopy, onChange: setDocCopy } : undefined}
+      copyChoice={(kind === 'quiz' || kind === 'worksheet') && content && !family ? { value: docCopy, onChange: setDocCopy } : undefined}
       printStyle={(kind === 'quiz' || kind === 'worksheet') && content ? { value: printStyle, onChange: setPrintStyle } : undefined}
       isRTL={isRTL}
       loadingPDF={loadingPDF}
@@ -746,10 +762,13 @@ function QuizView({ quiz, colors, isRTL, t, accent, lang }: {
               <Text style={[{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' }]}>{opt}</Text>
             </View>
           ))}
+          {/* Empty on a family's copy: the server takes the answers out. */}
+          {q.correctAnswer ? (
           <View style={[{ padding: 10, marginTop: 4, backgroundColor: palette.success + '15', borderRadius: 8, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }]}>
             <Ionicons name="checkmark-circle" size={14} color="#067647" />
             <Text style={[{ color: palette.success, fontFamily: 'ReadexPro_500Medium', fontSize: 12, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{t('answer')}: {q.correctAnswer}</Text>
           </View>
+          ) : null}
         </View>
       ))}
     </>

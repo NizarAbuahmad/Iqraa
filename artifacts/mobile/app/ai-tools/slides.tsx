@@ -774,7 +774,7 @@ export default function SlidesScreen() {
         try {
           const { searchDeckPhoto } = await import('@/services/unsplashImage');
           const { searchDeckVideos } = await import('@/services/youtubeVideo');
-          const { attachBackgroundImage, buildMediaSlide, deckPhotoQueries, insertVideoSlide } =
+          const { attachBackgroundImage, buildMediaSlide, deckPhotoQueries, insertVideoSlide, unitPhotoTargets } =
             await import('@/services/classMedia');
           const [titleQuery, dividerQuery] = deckPhotoQueries(subjects[subjectIdx].id, subjects[subjectIdx].name);
           const { creditFromPhoto, photoCreditText } = await import('@/services/photoCredit');
@@ -792,10 +792,17 @@ export default function SlidesScreen() {
           // No video for a wide deck: one explainer cannot stand for a semester,
           // and the query would be the scope label. The photos still come.
           const wantVideo = !wide && shouldSearchForVideo(attachedResources);
-          const [titlePhoto, dividerPhoto, videos] = await Promise.all([
+          // A revision deck has a section break per unit, and the one generic
+          // divider photo can only go on the first. Each unit break whose topic is
+          // recognisable (see `photoQueryForTopic`) gets a picture of ITS topic —
+          // at most four, one call each on the shared photo quota; a unit the
+          // titles do not name keeps the flat break rather than a stranger's photo.
+          const unitTargets = unitPhotoTargets(built.slides);
+          const [titlePhoto, dividerPhoto, videos, unitPhotos] = await Promise.all([
             searchDeckPhoto(titleQuery),
             searchDeckPhoto(dividerQuery),
             wantVideo ? searchDeckVideos(videoQuery, isAr ? 'ar' : 'en') : Promise.resolve([]),
+            Promise.all(unitTargets.map(t => searchDeckPhoto(t.query))),
           ]);
           const video = videos[0] ?? null;
           // A regenerate (or the grade/subject reset) since this search began
@@ -804,7 +811,7 @@ export default function SlidesScreen() {
           // Keep the rest for the editor's "another suggestion" control. They
           // cost nothing extra — one search returned all of them.
           setVideoOptions(videos);
-          if (!titlePhoto && !dividerPhoto && !video) return;
+          if (!titlePhoto && !dividerPhoto && !video && !unitPhotos.some(Boolean)) return;
 
           setDeck(cur => {
             // Guard against a stale fetch landing on a deck the teacher has
@@ -816,6 +823,14 @@ export default function SlidesScreen() {
             if (dividerPhoto && dividerIdx >= 0) {
               slides = attachBackgroundImage(slides, dividerIdx, dividerPhoto.url, photoCreditText(dividerPhoto, isAr), creditFromPhoto(dividerPhoto));
             }
+            // Found by title: the teacher may have moved or deleted a slide in
+            // the seconds the search took. A unit's own picture replaces the
+            // generic one the first break just took.
+            unitTargets.forEach((target, i) => {
+              const photo = unitPhotos[i];
+              const at = slides.findIndex(s => s.type === 'divider' && s.title === target.title);
+              if (photo && at >= 0) slides = attachBackgroundImage(slides, at, photo.url, photoCreditText(photo, isAr), creditFromPhoto(photo));
+            });
             if (video) {
               // Two different jobs, so two different fields. `mediaCaption`
               // says what the video IS — the exports have no player to read a

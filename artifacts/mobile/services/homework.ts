@@ -15,6 +15,53 @@
 
 export type HomeworkState = 'done' | 'overdue' | 'open';
 
+/**
+ * A Library item attached to a homework, as the server stored it when it was
+ * attached (the same snapshot a class shelf keeps). Opens like a shelf row —
+ * `openTargetFor` in classResources.ts.
+ */
+export interface HomeworkLibraryResource {
+  kind: 'library';
+  source: string;
+  nativeId: string;
+  title: string;
+  mediaKind: string;
+  url: string | null;
+  thumbnailUrl: string | null;
+}
+
+/**
+ * One of the teacher's own saved materials (ملفاتي). A family opens it
+ * read-only and without its answers, through
+ * GET /{student|parent}/homework/:id/materials/:materialId — the screen is
+ * `/workspace/view?hw=…&material=…`.
+ */
+export interface HomeworkMaterialResource {
+  kind: 'material';
+  materialId: string;
+  title: string;
+  /** The saved material's type, e.g. `quiz` or `worksheet`. */
+  type: string;
+}
+
+export type HomeworkResource = HomeworkLibraryResource | HomeworkMaterialResource;
+
+/** An attachment's identity in a list — for a Library item, the picker's own "already added" key. */
+export function resourceKey(r: HomeworkResource): string {
+  return r.kind === 'material' ? `material:${r.materialId}` : `${r.source}:${r.nativeId}`;
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Whether a saved material can be attached: it must be on the server (a save
+ * made offline has a device-only `ws_…` id the server has never seen), and not
+ * a board, which only reopens in the teacher's whiteboard.
+ */
+export function isAttachableMaterial(m: { id: string; type: string }): boolean {
+  return UUID.test(m.id) && m.type !== 'board';
+}
+
 export interface FamilyHomework {
   id: string;
   title: string;
@@ -26,6 +73,7 @@ export interface FamilyHomework {
   done: boolean;
   state: HomeworkState;
   examTitle: string | null;
+  resources: HomeworkResource[];
   /**
    * Whether anyone can tick THIS item off — the server's per-item rule (some
    * roster row of the child in this item's class has a student account). False
@@ -55,6 +103,7 @@ export interface TeacherHomework {
   dueDate: string;
   evaluationId: string | null;
   examTitle: string | null;
+  resources: HomeworkResource[];
   doneCount: number;
   studentCount: number;
   /**
@@ -95,6 +144,33 @@ function ymdToUtc(ymd: string): number {
 
 export function isValidYmd(s: string): boolean {
   return typeof s === 'string' && !Number.isNaN(ymdToUtc(s));
+}
+
+/**
+ * True for the line a shared homework leaves in the class chat. A chat message
+ * carries no link, so the app recognises the line by its opening — keep it in
+ * step with `homeworkChatLine` (api-server `familyPushText.ts`).
+ */
+export function isHomeworkChatLine(body: string): boolean {
+  return body.startsWith('📚 واجب جديد:');
+}
+
+/**
+ * What a teacher typed into the due-date box, laid out as YYYY-MM-DD. Only the
+ * digits are kept (Arabic-Indic ones folded), so the dashes are not typed or
+ * deleted by hand: «20261019», «2026/10/19» and «٢٠٢٦-١٠-١٩» all come out as
+ * «2026-10-19». A dash appears only once a digit follows it, so Backspace can
+ * still delete past it.
+ */
+export function maskYmd(input: string): string {
+  // Folded here, not via latinDigits.ts: this file takes no imports.
+  const d = input
+    .replace(/[٠-٩۰-۹]/g, c => String(c.charCodeAt(0) - (c.charCodeAt(0) >= 0x06f0 ? 0x06f0 : 0x0660)))
+    .replace(/\D/g, '')
+    .slice(0, 8);
+  if (d.length <= 4) return d;
+  if (d.length <= 6) return `${d.slice(0, 4)}-${d.slice(4)}`;
+  return `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}`;
 }
 
 export function addDays(ymd: string, days: number): string {
@@ -152,10 +228,58 @@ export function normalizeFamilyHomework(raw: unknown): FamilyHomework[] {
         // fields can never disagree on screen.
         state: normalizeState(r['state'], done),
         examTitle,
+        resources: normalizeResources(r['resources']),
         canTrack: r['canTrack'] !== false,
       },
     ];
   });
+}
+
+/** An item without a source, id and title is dropped; an absent list (an older server) is none. */
+export function normalizeResources(raw: unknown): HomeworkResource[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((r): HomeworkResource[] => {
+    if (!isRecord(r)) return [];
+    if (r['kind'] === 'material') {
+      const materialId = str(r['materialId']);
+      const title = str(r['title']);
+      return materialId && title ? [{ kind: 'material', materialId, title, type: str(r['type']) }] : [];
+    }
+    const source = str(r['source']);
+    const nativeId = str(r['nativeId']);
+    const title = str(r['title']);
+    if (!source || !nativeId || !title) return [];
+    return [
+      {
+        kind: 'library',
+        source,
+        nativeId,
+        title,
+        mediaKind: str(r['mediaKind']),
+        url: str(r['url']) || null,
+        thumbnailUrl: str(r['thumbnailUrl']) || null,
+      },
+    ];
+  });
+}
+
+/**
+ * What to send back for an attachment already on a homework (PATCH resends the
+ * whole list). The same body the class shelf's POST takes; the server re-checks
+ * it and, for a staff upload, re-reads the Library row.
+ */
+export function resourceBody(r: HomeworkResource): Record<string, string> {
+  // Only the id: the server takes a material's title and type from the teacher's own row.
+  if (r.kind === 'material') return { kind: 'material', materialId: r.materialId };
+  return {
+    kind: 'library',
+    source: r.source,
+    nativeId: r.nativeId,
+    title: r.title,
+    mediaKind: r.mediaKind,
+    ...(r.url ? { url: r.url } : {}),
+    ...(r.thumbnailUrl ? { thumbnailUrl: r.thumbnailUrl } : {}),
+  };
 }
 
 /** Takes the `homework` array of `GET /classes/:id/homework`. Extra fields are ignored. */
@@ -176,6 +300,7 @@ export function normalizeTeacherHomework(raw: unknown): TeacherHomework[] {
         dueDate,
         evaluationId: str(r['evaluationId']) || null,
         examTitle: str(r['examTitle']) || null,
+        resources: normalizeResources(r['resources']),
         doneCount: count(r['doneCount']),
         studentCount,
         trackableCount: trackable(r['trackableCount'], studentCount),

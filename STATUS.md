@@ -131,12 +131,97 @@ an announcement by default» below.
   every generator's stems for it («18 تذكرةً», «300 دينار»). Found on the way:
   `lessonTitleBlob` joined a title to itself when the KB title matched, and the
   seam «…والقسمة الكسور والقسمة» routed Grade 3 «الكسور والقسمة» to a
-  generator; it is refused again (`routing.test.ts`). Still open: a kind that
-  differs from another only in where the unknown sits («2/3 = ؟/12» vs
-  «2/3 = 8/؟») has the same `stemFrame`, so it needs different words to count;
-  and some kinds come in several sentences (one per operation), which
-  `makeTopicItem` serves first as "least used" — algebra weights those down
-  (`wpick`), the other generators do not yet.
+  generator; it is refused again (`routing.test.ts`).
+  **…and a reworded sentence is not a new kind (also 2026-10-16).** Counted by
+  `stemFrame`, those 3+ kinds included rewordings — «بعد ساعتين / بعد 3 ساعات»,
+  sin / cos / tan of one triangle, «إلى اليمين / اليسار» — and spreading by
+  frame gave a kind written four ways four turns on a paper. `sameKind`
+  (`stemFrame.ts`) groups frames at most 37% of their words apart (measured:
+  rewordings of one ask change 20–36%, different asks 50%+; an interval written
+  as an inequality and back, or the additive vs multiplicative inverse, count
+  as one), `spreadScore` spreads a paper by kind and then by sentence, and both
+  `makeTopicItem` and `makeElementaryItem` (which had no spreading at all) use
+  it. Grouped that way (following every link, as `mathLessonKinds.test.ts`
+  now counts), 72 served lessons had fewer than three kinds; all got real ones
+  from their objectives. On 10-item papers, grouping each sentence against a
+  kind's first one: lessons under three kinds 65 → 0, kinds per paper 3.46 →
+  3.84, the commonest kind 45% → 34%. `stemFrame` also keeps a
+  blank («؟», «▢», «■», «___») as `?`, so «2/3 = ؟/12» and «2/3 = 8/؟» are two
+  frames. Found on the way: unit counts without agreement («كم متر في 9
+  متر», «حوّل 20 متر إلى سنتيمتر») — the conversions now use the symbols the
+  rest of those generators use («حوّل 20 م إلى سم»), and `tamyiz.test.ts`
+  reads units too.
+  **…and an AI-written evaluation is held to the same kinds (2026-10-17).**
+  The validator's warning that one sentence carries a paper compared exact
+  frames, so a model asking «أوجد الكتلة المولية» of four compounds, or «ما
+  العدد الأكبر / الأصغر…» three times, passed as varied. `dominantKind`
+  (`validator.ts`, replacing `dominantFrame`) counts the stems that are each
+  `sameKind` as one stem — measured from each stem, not chained — and the
+  teacher sees «N of M questions ask the same thing…». It caps a rewording at
+  three changed words (`sameKind`'s new `maxChanged`), because exam stems
+  quote whole objectives and 37% of thirty words is a different instruction:
+  uncapped, 10% of the offline generator's 15-question papers warned, nearly
+  all for that reason; capped 3.2%, against 2.9% for exact frames. The
+  generators pass no cap and are unchanged. Prompt rule 5 already says a
+  reworded question is the same question, so `exam-gen-7` stands.
+  **…and a live quiz replaces what it repeats (also 2026-10-17).** The
+  `/generate/quiz` prompt asked for no idea twice and nothing checked the
+  reply. `quizRepeats` (`generationShape.ts`) finds questions past their
+  kind's share — the same `sameKind` grouping — and the existing top-up call
+  asks for replacements alongside any missing questions (`quizTopUpBlock`
+  names them); `absorbQuizTopUp` swaps fresh ones in, each taking the
+  repeat's marks, and never shortens or lengthens the paper (a repeat nothing
+  replaced stays). The share is a third of the paper, at least three
+  (`kindQuota`): measured on the offline generator's 10- and 20-question
+  quizzes for 40 sampled lessons, a quarter fired on 14 of 16 papers — every
+  maths one, mostly «أوجد حل المعادلة» on a lesson about solving that
+  equation — and a third on 2, both a single ask filling a paper. Worksheets
+  and homework are practice and are not touched.
+  **…and the offline Grade 10 bank stops drawing one ask throughout (also
+  2026-10-17).** `takeFromBank` (`lib/math-practice/src/index.ts`) drew
+  uniformly within the teacher's tier, so a family that is mostly one ask
+  served it nearly throughout — 14 of `exp_eq`'s 17 items were «أوجد حل
+  المعادلة», 8 of `quad_system`'s 12 «أوجد حل النظام». A draw is now weighted
+  by 1/(1+k)³, k the times its kind was already served in the pass (`ask:`
+  keys, as the topic generators record them); always taking the least-served
+  kind was tried first and made regenerate serve the same paper. `exp_eq` also
+  gained a number as a power of its base, one exponential from another, a
+  value checked by substitution and a halving model, and `quad_system` a point
+  checked by substitution, a hard «كم حلًّا» and a second elimination step —
+  each with working, each answer recomputed in `lessonKinds.test.ts`. Offline
+  10- and 20-question quizzes on those two lessons: the commonest kind 83% →
+  38% and 67% → 44% of a paper. Across every maths and chemistry lesson,
+  papers past a third went 137 → 122 of 2,820; the rest are elsewhere, not
+  in these two families.
+  **…and nine Grades 1–8 generators stop running out of kinds (2026-10-18).**
+  The worst of what was left was topic generators whose branches share one
+  sentence, or whose other kinds have only a handful of numberings: the
+  spreading in `makeTopicItem` cannot pick a kind whose stems the paper already
+  used. «الصفر» was three «ما ناتج …؟» branches out of five, «قوانين الأسس» on
+  easy was only «بسّط», «متوازي الأضلاع» on easy only an angle, «تطابق
+  المثلثات (ASA, AAS)» had 7 numberings outside its angle question, and a
+  hemispherical bowl had two. Each generator now picks the shared-sentence
+  branches as one slot, and has new kinds that each have many numberings:
+  - «الصفر»: a missing number, the smallest or largest of four, counting down.
+  - «الأجزاء المتطابقة»: which of two parts is bigger, how many parts from a
+    part's name, a varied number eaten.
+  - «الوقت لأقرب 5 دقائق / ربع ساعة»: the time some minutes later, how long
+    between two times.
+  - «أشهر السنة»: some months on, the month between two.
+  - «حجم الكرة»: the radius from the volume, a solid hemisphere's whole
+    surface, an area or volume ratio.
+  - «متوازي الأضلاع»: a side from the perimeter, A when B exceeds it.
+  - «تطابق المثلثات (ASA, AAS)»: a side from the congruence, x from
+    corresponding sides, and all nine marked-part combinations.
+  - «قوانين الأسس الصحيحة»: the missing exponent, a number worked out by the
+    laws.
+
+  Every answer is recomputed from the stem in `early.test.ts`,
+  `geometry.test.ts` and `topics.test.ts`. Offline 10- and 20-question
+  quizzes past a third, over every maths and chemistry lesson: 121 → 87 of
+  2,820, in 46 → 35 lessons, none of them these nine. Most of what remains is
+  one question over, in 3 of 6 papers. Twelve Grade 2–3 multiplication lessons
+  account for much of it: «أوجد العدد المجهول» from `elementary.ts`.
 
 - **Lesson plan, slides, activity, lesson-flow and the classroom builder take a
   unit, semester or whole book — as one revision session (2026-10-14; spec
@@ -1504,6 +1589,81 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The parent letter stops saying things the teacher never typed, 2026-10-17
+
+A teacher's screenshot of `ai-tools/parent-message` prompted an audit: render the
+composer for real inputs and read what a parent would receive. Six defects, all
+in `services/parentMessage.ts`, all fixed with tests.
+
+- **Praise asserted facts.** Every praise letter said «أظهر اجتهادًا واضحًا
+  والتزامًا… وكان لحضوره الفاعل أثر طيب» — diligence, commitment and *attendance*
+  for any child — against this file's own rule that nothing is said about a student
+  the teacher did not type. Praise now opens neutrally («يسرّني إبلاغكم بملاحظة
+  إيجابية عن ابنكم…») and names a quality only if the teacher ticked it
+  (`Strength`, five chips shown for praise only, shown in a fixed order whatever
+  order they were ticked). The English letter had the same sentence and got the
+  same fix.
+- **A woman's letter carried masculine self-reference.** «وأنا مستعد» (academic
+  concern) and «وسأكون شاكرًا» (meeting) ignored `teacherGender`; `arNextStep`
+  only knew the student's. Both are rewritten gender-free rather than inflected
+  (`وسأقدّم الدعم…`, `وأشكر لكم تعاونكم`), and a test renders every kind with a
+  female teacher. The meeting letter also asked for a time twice.
+- **«Warm» changed only the greeting**, and put «أهلًا بكم» before the salam. It
+  now opens with the salam and closes «مع خالص مودّتي وتقديري» (English: «Warm
+  regards»). Formal gained «وبعد،» after the salam, the turn into the letter's
+  matter.
+- **The teacher's details were pasted raw** between two composed sentences, so a
+  fragment with no full stop read as a typo, and English typed into an Arabic
+  letter went through unremarked. A full stop is added when missing (punctuation
+  only, never a word), and `detailsLanguageMismatch` puts an amber line under
+  the box — a warning, not a block, since «اختبار PISA» is legitimate.
+- **Placeholder is now an example per kind** (`detailsExample`, gendered to the
+  student), replacing one maths-homework example shown for every kind.
+- **Wording**: «الدافعية», «لا تتردّدوا في التواصل» and «يسعدني أن أشارككم» (calques)
+  and «الواجب البيتي» replaced; a bare teacher name gets «الأستاذ/الأستاذة», a
+  titled one («أ. نزار») is left alone, and the role is not repeated beside a
+  name unless there is a subject.
+
+Not done here: a Latin student name inside the Arabic text can still flip the
+punctuation beside it on WhatsApp (real names are Arabic, and this was not
+reproduced in WhatsApp itself — it is a known bidi behaviour, unchecked here).
+The sharing side —
+matching a typed name to a roster student, choosing which guardian — is a
+separate PR.
+
+## The parent letter: a typed name can be linked, and guardians can be chosen, 2026-10-17
+
+Second half of the audit that produced «The parent letter stops saying things the
+teacher never typed». The complaint was «I can't send this to the parent in the
+chat». The cause was on screen: the teacher had **typed** the student's name, and
+typing over the name deliberately drops the picked student (so a letter can never
+reach the previous child's parent), which disables «أرسل عبر إقرأ» — with the only
+explanation in a grey line far below the buttons.
+
+- **A typed name now suggests who it means.** `matchRosterStudents` reads the
+  teacher's roster (once, the first time a name is typed by hand) and shows up to
+  three tappable chips under the field. It is a *suggestion*, never an automatic
+  link: a wrong silent link sends a letter about one child to another child's
+  parent. Hamza, ya, ta marbuta and diacritics are not told apart; a full-name
+  match beats longer names that merely start with it; four or more candidates
+  show nothing (noise, not help).
+- **A child with more than one linked guardian lets the teacher untick some**
+  (`pickRecipients`). It used to go to all of them. The confirmation, the send
+  and the contact log all use the ticked set; after a half-failed send the
+  guardians who already have it are unticked, so a retry cannot hand it twice.
+- **After an in-app send, «افتح المحادثة مع …» opens each thread** it landed in.
+- **«Other» recipients are not an in-app option, and that is the platform, not a
+  gap.** `POST /messaging/threads` refuses anything but teacher ↔ a parent or
+  student linked through a claimed roster link (`same_side`, `not_connected`), so
+  a teacher cannot message a colleague or an admin in-app, and the only other
+  people they *can* reach are other families' parents — who must never receive a
+  letter about someone else's child. Anyone else goes through «مشاركة» (OS share
+  sheet: WhatsApp, email…), which the empty-recipient hint now says.
+
+Checked: typecheck and the mobile suite. **Not** checked in a browser or against
+the real messaging API; the chips and the checkbox rows have not been seen
+rendered.
+
 ## The chat answers teachers, on the web too, 2026-10-16
 
 Teachers said the chat «isn't smart». Three causes, all measured:
@@ -1517,7 +1677,12 @@ Teachers said the chat «isn't smart». Three causes, all measured:
   `AI_USER_BUDGET_USD=1` / `AI_STUDENT_BUDGET_USD=0.20`, set in the same file.
 - **Chat ran `gpt-5.4-nano`**, set by hand on Cloud Run and never measured for
   chat. `deploy.yml` now sets `AI_MODEL_CHAT=gpt-5.4-mini` (~3.7× nano per
-  turn) so a console edit cannot drift it again.
+  turn) so a console edit cannot drift it again. It went live an hour after
+  the merge, not with it: the deploy only redeployed the API for
+  `artifacts/api-server/` or `lib/` changes, so #1104's run (642) skipped it
+  and production served nano until #1093's `lib/` change deployed the API (run
+  645, revision `iqraa-api-00369-cjn`). Since 2026-10-17 an edit to
+  `deploy.yml` redeploys the API and the verifier as well.
 - **Keyword noise was handed to the model as the textbook, or stopped the
   question.** The search returns lessons for almost any sentence: «كيف أتعامل مع
   طالب مشاغب في الصف؟» ranked English for hospitality (11), the quadratic
@@ -1580,8 +1745,13 @@ yet.** Spec: `docs/superpowers/specs/2026-10-16-english-corner-grammar-g1-design
 - **The teacher's sheet is the review.** `docs/english-grammar-g1-sheet.md`
   (`pnpm --filter @workspace/curriculum run grammar-sheet`) lists every sentence
   a unit can show, with its picture, the wrong option it is offered beside, and
-  the wrong picture True or false uses. A test fails if the committed sheet
-  differs from the generator, so a sign-off always refers to what ships.
+  the wrong picture True or false uses. The same script writes the printable
+  form to hand a teacher, `docs/english-grammar-g1-review.html`
+  (`englishGrammarReview.ts`, since 2026-10-17). It has Arabic instructions, a
+  tick box and a notes column per sentence, and a sign-off strip per unit. Open
+  it in a browser and print it: A4 landscape, one unit per page, 24 pages.
+  A test fails if either committed file differs from the generator, so a
+  sign-off always refers to what ships.
 - **Pictures** are the corner's emoji (`englishPictures.ts`, moved from the app
   so the sheet and the app agree). A marker shows the contrast: ✅/❌ for got
   and like, 👦/👧 for he and she, two of a thing for are and they're. A word
@@ -1603,10 +1773,50 @@ yet.** Spec: `docs/superpowers/specs/2026-10-16-english-corner-grammar-g1-design
    This needs the OpenAI and R2 keys; the script now includes every grammar
    sentence, in the young register. Until then, web speaks a sentence with the
    browser's voice and native is silent.
-2. A Grade 1 English teacher reads that unit's table in
-   `docs/english-grammar-g1-sheet.md`.
+2. A Grade 1 English teacher reviews and signs that unit's page of
+   `docs/english-grammar-g1-review.html`, printed.
 3. Set the unit's `reviewedBy: { name, date }` in `englishGrammar.ts` and merge.
    That is the only switch: there is no flag and no role check.
+
+## Grade 1 reading in the English corner — built, shown to nobody yet, 2026-10-17
+
+The same teacher asked for reading too. Each of the 10 Grade 1 hub lessons now
+has three activities under a «القراءة» heading, above «القواعد»: **Read and
+find** (the word printed with no sound, tap its picture of three), **First
+letter** (hear the word and see its picture, tap the letter it starts with) and
+**Starts with** (a letter, tap the picture whose word starts with its sound).
+**Every unit is `reviewedBy: null` in `READING_UNITS`, so nobody sees them
+yet.** Spec: `docs/superpowers/specs/2026-10-17-english-corner-reading-g1-design.md`.
+
+- **Only the lesson's own words, pictures and recordings.** No new audio: a
+  letter is shown, never played, because a TTS voice saying «buh» is worse than
+  nothing. The book's Reading column was never extracted, so this follows its
+  Listening objective, "hearing the initial sound in simple words".
+- **A first sound is a rule plus a hand list** (`lib/curriculum/src/englishReading.ts`).
+  The first letter, except: a vowel letter start, `ch`/`sh`/`th`/`ph`/`kn`/`wr`,
+  `c` before e/i/y, and the words in `SOFT_G` (`giraffe` — the spelling cannot
+  tell it from «girl»). Over the 10 lessons that leaves out one, three, eight,
+  orange, eraser, chair, arms, giraffe and apples; those still appear in Read
+  and find when they have a picture. Medial and final sounds (asked for in two
+  units) are not done.
+- **The teacher's form** is `docs/english-reading-g1-review.html`, written by
+  the same `grammar-sheet` script (`englishReadingReview.ts`): per unit, every
+  word with its picture and the letter the app will call its first sound, the
+  left-out words with the reason, a tick box, notes and a sign-off strip. A4
+  landscape, 15 pages. A test pins it to the generator. Both forms name the
+  Welcome unit «وحدة الترحيب»: «الوحدة ٠» read as a dot beside the «·»
+  separators.
+- **Pictures can be ambiguous**, which the form asks about: in Unit 1, 👩 (mum)
+  beside 👧 (girl) is a real choice for a six-year-old.
+- **Builders** in `services/englishHub/games.ts` (three options, `ROUND_LENGTH`;
+  First letter never puts b beside d or p beside q), **screens** in
+  `components/englishHub/ReadingActivities.tsx`, scored like the rest.
+  Checked in a browser at 390 px in Arabic and English, with two units signed
+  off in the working tree only.
+
+**To switch a unit on:** a Grade 1 English teacher signs that unit's page of
+`docs/english-reading-g1-review.html`, printed; then set its `reviewedBy` in
+`englishReading.ts` and merge. No recording step: every word is already voiced.
 
 ## A Grade 1 English teacher's review, 2026-10-15
 
@@ -2985,6 +3195,21 @@ place — see its section 2).
   are pure, in `modules/homework/`; loaders are `lib/familyHomeworkLoad.ts` and
   `lib/homeworkDone.ts`. The student and parent routes answer `403
   student_accounts_disabled` when the flag is off, like the timetable.
+- **Saved materials on homework (since 2026-10-17).** Besides Library items, a teacher can
+  attach their own ملفاتي rows («من ملفاتي» in the homework form): `homework.resources` holds
+  `{ kind: 'material', materialId, title, type }`, and the server takes title and type from the
+  teacher's own `saved_materials` row (another teacher's, an unknown id or a board is a 400; an
+  item already attached is kept on PATCH even if since deleted). Families open it through
+  `GET /student|parent/homework/:id/materials/:materialId` (`lib/homeworkMaterial.ts`): 404
+  unless the homework and class are live, a caller's roster row is in the class, the material is
+  listed on the homework and still belongs to its teacher. The material read is the one
+  `systemDb` query (pinned in `systemDbFiles.test.ts`) so it survives an owner-only policy on
+  `saved_materials`. **The content goes out without its answers** (`modules/homework/materialCopy.ts`
+  blanks answer keys, correct answers, explanations, structured-question solutions and teacher
+  companions, and drops a deck's reveal slides) — a new answer-bearing field is served until its
+  name is added there. The app shows it at `/workspace/view?hw=…&material=…`, read-only (export
+  only); `/workspace/view` is on the non-teacher route allowlist, its other sources fail closed
+  for those roles. Pinned by `homeworkMaterial.db.test.ts` (also passes with `RLS_ENFORCE=on`).
 - **Mobile:** a «الواجبات» tab on the class screen (`components/classes/HomeworkTab.tsx`,
   a fourth tab next to Students / Materials / Exams) with a create / edit / delete
   modal inside a `KeyboardSafeView`. **The shared tab padding went from 14 to
@@ -3884,8 +4109,8 @@ carries `appHelp: true` and the strip is hidden while it is the last message
 (`app/(tabs)/iqra.tsx`). The نسخ / تصدير footer under the same reply went the
 same way (2026-10-11, same flag), and so did the long press that opened the
 export sheet. The tool-ask reply («أريد ورقة عمل» pointing at the generator)
-lost the strip and the footer on 2026-10-16 through its own flag, `toolAsk`; it
-keeps the long press, because that was not asked for. Checked in a local web build
+lost the strip and the footer on 2026-10-16 through its own flag, `toolAsk`, and
+the long press the same day. Checked in a local web build
 against the live API (chips gone after an app answer, present after a teaching
 one); no test, because `iqra.tsx` cannot be loaded by the bare `node --test`
 runner.
@@ -3905,6 +4130,97 @@ student's mark, and the grade steps say «add» where the teacher said «change�
 (the answer still ends with how to switch lessons). Deliberately not done: the
 typo «langute» in the first screenshot, because matching misspellings would also
 match real requests.
+
+**A grade with its accusative ending (2026-10-16).** On app.iqrra.com «كيف أضيف
+صفاً جديداً؟» was asked «أيّ مادة تقصد؟» while «كيف اضيف صف جديد» got the steps:
+`normalize` drops the tanween mark but not the alif under it, so «صفا جديدا»
+matched nothing. `foldAccusative` (`services/appHelp.ts`, app-help matching only)
+drops a marked ending (اً / ًا) from any word, and an unmarked one only from
+«صف», «جديد», «إضافي» and the ordinals, since an alif ending is otherwise part of
+the word («جبل الصفا» stays). Each accusative form is pinned to get exactly its
+plain twin's answer. «كيف اضيف صف الى المصفوفة» (a matrix row) went to the grade
+steps through the «اضيف صف» keyword until 2026-10-17, when `NOT_A_GRADE` started
+dropping «صف / صفوف» followed by «المصفوفة» before the keywords are matched.
+
+**No starter chips under a question back to the teacher (2026-10-17).** «أريد
+ورقة عمل» → «أيّ مادة تقصد؟» showed the subject buttons and, under them, the
+standing «حضّر خطة الدرس / أنشئ ورقة عمل» chips, repeating the ask instead of
+answering it. The strip is now also hidden when the last reply asks the teacher
+to pick (`asksTheTeacher` in `app/(tabs)/iqra.tsx`: subject, lesson or
+teaching-option choices). UI only, so no test (the mobile runner cannot load
+`iqra.tsx`); checked in a browser.
+
+**A student to add (2026-10-17).** With live AI on the web (#1104), «كيف أضيف
+طالباً جديداً؟» went to the model, which said it was a question about the app and
+gave no steps: no keyword named a student being added. A student is added inside
+a class that exists (open the class → «الطلبة» → + → names → «أضف إلى الشعبة»),
+so it gets its own place, `add-student`, with the steps `howAddStudent` and the
+My classes button — not the add-a-class answer («اضغط شعبة جديدة»), which would
+send a teacher who has a class to make another. `ADD_STUDENT`
+(`services/appHelp.ts`) is anchored like the statements: a how-word, a where-word
+or intent is optional, the student ends the message bar «جديد / آخر» and «to my
+class / الى الشعبة», so «كيف أضيف طالباً إلى مجموعة النقاش» and «add a student to
+the group work» stay teaching. Older and unchanged: «كيف أضيف طلاباً في نشاط
+جماعي» opens the activity tool through the «نشاط» keyword.
+
+**Archive, link code, print, sign out, password, results (2026-10-17).** A wider
+live pass with live AI on found two wrong answers and four misses. «كيف أحذف
+شعبة؟» got the add-a-class steps (a how-word plus «شعبة» was all the matcher
+saw), and «كيف أشارك رمز الربط مع أولياء الأمور؟» opened Messages («أولياء
+الأمور» is the longer keyword, and the longest wins). Print, sign-out, password
+and results questions went to the model, which invented menus or asked which app.
+`RULE_PLACES` (`services/appHelp.ts`, anchored like `ADD_STUDENT`) now sends them
+to `archive-class` (the bin icon on the «شُعَبي» list, then «أرشِف»), `sign-out`
+(the last row of «حسابي»), `password` and the evaluations path. The link code is
+the app's own word, so any how / where question naming it gets `link-code`
+(«رمز الربط» on the class page, then «شارك الرمز»; student accounts are on in
+production, checked at `/api/healthz/features`). Printing is answered with the
+export steps (`PRINT_VERB`), and add steps never answer a remove question
+(`ADD_HOWS` / `REMOVE_VERB`). **There is no change-password screen**: the answer
+says so and points to «نسيت كلمة المرور؟» on the sign-in screen. Ten look-alikes
+pinned as teaching («how do i change a password in excel», «كيف أعرف نتائج
+التجربة؟», «ما هو رمز الربط في الكيمياء؟»…). Left alone: «كيف أرسل رسالة لولي
+أمر؟», which the model answers with a sample message — plausibly what was meant.
+
+**Twelve more everyday asks (2026-10-17, second live pass).** Homework, exam date,
+the class scan, a message to the whole class, blocking, name, deleting the
+account, suggesting a feature, reporting a problem, regenerating, saving and
+choosing another lesson all went to the model, which invented menus («تبويب
+أدوات الذكاء الاصطناعي») or refused («كيف أحظر ولي أمر» read as harmful); «وين
+ألاقي خطة الدرس اللي حفظتها؟» opened the generator instead of «ملفاتي». Each
+now has a `RULE_PLACES` entry and steps taken from its screen (`HomeworkTab`,
+`ExamDateCard`, the scan button on the evaluation page, «محادثة الشعبة», the ⋮
+menu of a thread, Settings → «إجراءات نهائية», `suggest-feature`,
+`GeneratorResultActions`). **Three answers say something is not in the app**:
+there is no dark-mode switch (the scheme follows the device, read at start-up —
+the old answer pointed at Settings, which has none), no name editor (only
+sign-up sets it), and the report button shows only on a shared result, so the
+answer offers «أعد التجهيز» when it is missing. Also fixed, older: «كيف أحفظ
+جدول الضرب؟» opened the timetable and «كيف أحذف الحساب من المعادلة؟» opened
+Profile (`NOT_A_TIMETABLE`, and no bare «الحساب» keyword). Still teaching on
+purpose: «كيف أصحح أوراق الطلاب؟» / «how do i grade the exams», which the model
+answers as marking advice. 18 look-alikes pinned.
+
+**Sharing an exam, and six things the app does not do (2026-10-18, fourth live
+pass).** Of 20 new questions on app.iqrra.com, 16 went to the model, which
+invented menus or refused («how do i upload a pdf», «هل التطبيق مجاني؟»); "how
+do i share an exam with my students" got the add-a-class steps and «كيف أصدّر
+العلامات إلى إكسل؟» the PDF/Word export steps. Each now has a `RULE_PLACES`
+entry (`services/appHelp.ts`) with steps from its screen: publishing an exam and
+its «رابط الطلبة» card, how a student opens `/take/CODE`, who handed in («لوحة
+النتائج» lists one paper per student who opened it), sending a worksheet («أرسل
+للصف كواجب رقمي» → a draft exam), notifications (Settings → «التنبيهات» on the
+phone app; none on web), and contacting support. **Six answers say it is not in
+the app**, each checked in the code: file upload (`DOCUMENT_UPLOAD_ENABLED` is
+off), a marks export (none), copying an exam to another class (an evaluation
+holds one class), inviting a teacher (no invite; a colleague signs up), a store
+listing (none yet; app.iqrra.com in the phone's browser), and a picture of your
+own on a question (only the lesson's book figures, «أرفق شكلًا»). Pricing says a
+teacher account is free with a monthly limit on new material. «كيف أدعو أولياء
+الأمور؟» gets the link-code steps. Also fixed, older: a how-verb plus a bare
+«students / طلابي / طلبتي» was enough for My classes, so «how do i make students
+listen» got the add-a-class steps; those words now count only in a where-question
+(`STUDENT_WORDS`). 21 look-alikes pinned.
 
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
@@ -4390,6 +4706,85 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
 - When the worksheet screen is opened with a lesson, its unit dropdown still
   shows the placeholder (the documented gap in `TopicSelector.tsx`). The topic
   itself is held.
+## Slides Maker decks stop looking like bare lists, 2026-10-18
+
+A teacher's revision deck showed three one-word cards on a mostly empty slide and
+a flat green unit break: the new layouts only reach Prompt Slides, and Slides
+Maker (`lessonSlides.ts` — lesson and revision decks, built from curriculum data)
+had never been given them.
+
+- **`concepts`** — a new layout: two to six short terms (each up to 32 characters)
+  as large cards, three to a row, a 2×2 for four. Used for a revision unit's key
+  ideas and a lesson's «أفكار الدرس» when every item is a term; a sentence among
+  them keeps the bullet list. The bullets stay on the slide as the fallback, so a
+  refusal is never a blank. Not described to the Prompt Slides model.
+- **The vocabulary slide is a table** (term | meaning) when every term has a
+  definition and the sizes pass the existing `table` gate.
+- **Topic icons** — `iconForTopic(title)` (`deckIcons.ts`: Arabic and English
+  stems, first match wins, `null` rather than a wrong guess) puts an atom on
+  «الحركة والقوة», a globe on earth and space; a unit break and its key-ideas slide
+  carry it, with a generic one when the title names nothing. The key-ideas heading
+  lost its leading 💡, which would have overridden the icon. Exit-ticket breaks
+  carry a ticket.
+- **Fix to my own earlier work:** the presenter's layout slides (timeline, stats,
+  table, flow, compare, steps) drew a bare title and never the heading icon the PDF
+  has; one `LayoutHeading` now draws the same icon chip everywhere.
+
+- **A photo on each unit break** — the deck used to give one divider photo to the
+  FIRST break only. `unitPhotoTargets` (`classMedia.ts`) picks the breaks whose
+  title is a recognisable topic and `photoQueryForTopic` (`deckIcons.ts`, built on
+  the same stems as the icons) gives each an English query («الحركة والقوة» →
+  physics, الأرض → earth and space). At most four per deck, no repeated query, and a
+  title it cannot read keeps the flat break rather than a stranger's photo.
+- **Motion** — `Reveal` in the presenter: bullets, cards, steps, timeline events,
+  stats, concept cards and flow boxes fade in and rise one after another (320 ms,
+  90 ms apart, capped at eight beats), native-driven, skipped when the device
+  asks for reduced motion. The slide is keyed by its index so it replays on every
+  slide. PDF and PowerPoint cannot animate and are unchanged
+  (`presenterMotion.test.ts` reads the source for the three properties that fail
+  silently).
+
+**Not done:** book figures and graphs on a REVISION deck. Lesson decks already carry
+a lesson's book figures (four of sixteen subjects have any) and maths graphs; a
+revision spans units, so no one lesson's figure belongs on it, and its units hold
+no figures of their own to draw. **Checked:** layout gate, icon rules, revision
+and lesson deck builders, PDF rendered and looked at, PPTX through the real
+exporter (cards in the right places for 3, 4 and 5 terms, Arabic mirrored).
+**Not checked:** the presenter on a device, the PPTX in PowerPoint. About two
+dozen local suites cannot load in this worktree (`qrcode-generator` missing,
+Windows line endings); CI is the full run.
+
+## Two more slide layouts: quote and photo, 2026-10-17
+
+- **`quote`** — a phrase, definition or rule set in large type with an opening mark
+  and an optional attribution (`quote: { text, by? }`, text up to 200 characters).
+  A present-but-unusable `by` refuses the whole quote: words cut loose from who
+  said them are a different claim.
+- **`photo`** — the picture fills the slide with the title and ONE sentence over
+  it. No payload of its own: the picture is `sideImageUrl`, the sentence is
+  `content`. All three renderers draw it with the code that already draws the
+  cover and the section break (`asPhotoHero` re-shapes the slide), so the photo's
+  credit line is drawn by the one place that has been checked for it.
+
+A photo needs a picture, and the picture arrives after the model's reply, so the
+gate returns `null` (ordinary slide, the sentence as a line of text) until
+`sideImageUrl` exists. `polishDeck` keeps the layout only when a picture is coming
+(`mediaPrompt` or a `sideImageUrl`) and the slide is a prose slide with one
+sentence; `promptSlidesMedia` now fetches for a `photo` slide even though it
+carries a `layout` (every other layout is skipped there, because a picture beside
+it would never be shown). The prompt allows `mediaPrompt` on `photo` only, one or
+two per deck.
+
+**Not built, on purpose:** a separate two-column layout. A picture beside text
+already exists (`sideImageUrl` on an ordinary slide) and `compare` is the
+two-column text one; a third would be the same shape under a new name.
+
+**Checked:** layout gate, polish, PDF, photo fetch and API prompt/shape suites;
+PPTX run through the real exporter (a photo slide has its image and credit; one
+without a picture is an ordinary slide); PDF rendered and looked at in Arabic and
+English. **Not checked:** the PPTX in PowerPoint, the presenter on a device, a
+live model choosing these layouts.
+
 ## Four new slide layouts: timeline, stats, table, flow, 2026-10-18
 
 A deck had four shapes (a statement, one figure, a two-column comparison, numbered

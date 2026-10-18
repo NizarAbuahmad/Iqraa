@@ -95,11 +95,16 @@ eval-out/
 .claude/*
 !.claude/settings.json
 !.claude/skills/
+!.claude/agents/
 !.claude/hooks/
 !.claude/scripts/
 !.claude/SUPERPOWERS.md
 !.claude/LICENSE-superpowers
 .claude/settings.local.json
+
+# A local agent tool's session state (throttle timestamps); one file reached main
+# with #1105.
+.omc/
 
 # Firebase service-account private keys. The FCM V1 key is uploaded to EAS and
 # lives nowhere in this repo — it can send push as us and read Firebase

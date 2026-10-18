@@ -92,11 +92,10 @@ import {
   addedKeys,
   labItemsForClass,
   mergeClassShelf,
-  openTargetFor,
   withAddedResource,
   type ClassResource,
 } from '@/services/classResources';
-import { openExternal } from '@/services/externalLinks';
+import { openResource } from '@/services/openResource';
 import { trackEvent } from '@/services/analytics';
 import type { ResourceItem } from '@/services/resourceCatalog';
 import { classToolParams } from '@/services/classToolParams';
@@ -672,17 +671,7 @@ export default function ClassDetailScreen() {
     }
   };
 
-  const onOpenResource = (resource: ClassResource) => {
-    const target = openTargetFor(resource);
-    if (target.kind === 'url') void openExternal(target.url);
-    // `as never`: the typed route has no `premade` param, as in the Library screen.
-    else if (target.kind === 'premade') {
-      router.push({ pathname: '/workspace/view' as never, params: { premade: target.id } });
-    } else if (target.kind === 'lab') {
-      // `as never`: the lab routes are typed per-id, as the premade branch above is.
-      router.push(target.path as never);
-    }
-  };
+  const onOpenResource = (resource: ClassResource) => openResource(resource, { teacher: true, isAr: lang === 'ar' });
 
   const align = isRTL ? 'right' : 'left';
   const title = group ? (lang === 'ar' && group.nameAr ? group.nameAr : group.name) : '';
@@ -1122,7 +1111,15 @@ export default function ClassDetailScreen() {
           }}
         />
       ) : tab === 'homework' ? (
-        <HomeworkTab classId={id} exams={exams} colors={colors} isRTL={isRTL} lang={lang === 'ar' ? 'ar' : 'en'} t={t} />
+        <HomeworkTab
+          classId={id}
+          libraryGroup={{ gradeId: group?.gradeId ?? '', subjectIds: focus ? [focus] : subjectIds }}
+          exams={exams}
+          colors={colors}
+          isRTL={isRTL}
+          lang={lang === 'ar' ? 'ar' : 'en'}
+          t={t}
+        />
       ) : (
         <FlatList
           data={shownExams}
@@ -1143,13 +1140,10 @@ export default function ClassDetailScreen() {
             const draft = item.status !== 'published';
             return (
               <Pressable
-                onPress={() =>
-                  router.push(
-                    draft
-                      ? { pathname: '/evaluations/[id]', params: { id: item.id } }
-                      : { pathname: '/evaluations/[id]/answers', params: { id: item.id } },
-                  )
-                }
+                // Always the exam page: it holds the student link, its expiry,
+                // answers and results. Opening a published exam straight on the
+                // per-student entry list hid the link and read as "not sent".
+                onPress={() => router.push({ pathname: '/evaluations/[id]', params: { id: item.id } })}
                 style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
               >
                 <View style={{ flex: 1 }}>
@@ -1819,7 +1813,7 @@ export default function ClassDetailScreen() {
             <Pressable
               onPress={() => {
                 setShowAttachExam(false);
-                router.push('/evaluations/new');
+                router.push({ pathname: '/evaluations/new', params: { classId: id } });
               }}
               style={[
                 styles.createRow,

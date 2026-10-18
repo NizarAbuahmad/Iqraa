@@ -64,6 +64,19 @@ export function homeworkPostedText(i: { title: string; className: string; dueDat
   };
 }
 
+/**
+ * The line a shared homework leaves in the class's group chat. Plain text — a
+ * chat message cannot link to a homework — so it points at «المدرسة», where
+ * the attachments open.
+ */
+export function homeworkChatLine(i: { title: string; dueDate: string; instructions: string; resourceTitles: string[] }): string {
+  const lines = [`📚 واجب جديد: ${clip(i.title, 120)}`, `موعد التسليم: ${pushDay(i.dueDate)}`];
+  if (i.instructions.trim()) lines.push(clip(i.instructions, 300));
+  if (i.resourceTitles.length > 0) lines.push(`المرفقات: ${i.resourceTitles.map(t => clip(t, 60)).join("، ")}`);
+  lines.push(i.resourceTitles.length > 0 ? "تجدونه مع مرفقاته في «المدرسة»." : "تجدونه في «المدرسة».");
+  return lines.join("\n");
+}
+
 export function examDateText(i: { examTitle: string; className: string; notice: ExamDateNotice }): FamilyText {
   const name = i.examTitle.trim() || "الامتحان";
   const quoted = `«${clip(name, 60)}»`;

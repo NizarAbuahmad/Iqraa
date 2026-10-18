@@ -8,9 +8,15 @@ import {
   dueDatePresets,
   formatDueDate,
   homeworkDraftError,
+  isHomeworkChatLine,
   isValidYmd,
+  maskYmd,
   normalizeChildHomework,
   normalizeFamilyHomework,
+  normalizeResources,
+  resourceBody,
+  resourceKey,
+  isAttachableMaterial,
   clampedDone,
   homeworkSections,
   normalizeTeacherHomework,
@@ -30,6 +36,7 @@ const hw = (over: Partial<FamilyHomework> = {}): FamilyHomework => ({
   done: false,
   state: 'open',
   examTitle: null,
+  resources: [],
   canTrack: true,
   ...over,
 });
@@ -135,6 +142,7 @@ test('normalizeFamilyHomework keeps a well-formed row', () => {
       done: true,
       state: 'done',
       examTitle: null,
+      resources: [],
       canTrack: true,
     },
   ]);
@@ -236,6 +244,7 @@ test('normalizeTeacherHomework keeps a well-formed row and ignores extra fields'
       dueDate: '2026-10-15',
       evaluationId: 'e1',
       examTitle: 'اختبار',
+      resources: [],
       doneCount: 3,
       studentCount: 20,
       trackableCount: 20,
@@ -483,4 +492,57 @@ test('untrackedMode: some when only part of the list is untracked (the mixed-cla
 
 test('untrackedMode: all when every visible item is untracked', () => {
   assert.equal(untrackedMode([fam('a', { canTrack: false }), fam('b', { canTrack: false })]), 'all');
+});
+
+test('normalizeResources keeps well-formed items and drops the rest', () => {
+  const sheet = { kind: 'library', source: 'premade-sheet', nativeId: 's1', title: 'ورقة', mediaKind: 'worksheet', url: null, thumbnailUrl: null };
+  assert.deepEqual(normalizeResources([sheet, { source: 'x' }, null, 'y']), [sheet]);
+  assert.deepEqual(normalizeResources(undefined), []);
+  assert.deepEqual(normalizeFamilyHomework([{ ...rawItem, resources: [sheet] }])[0]!.resources, [sheet]);
+});
+
+test('resourceBody resends what the server needs and leaves empty links out', () => {
+  assert.deepEqual(
+    resourceBody({ kind: 'library', source: 'book-qr', nativeId: 'n', title: 't', mediaKind: 'page', url: 'http://a.b/c', thumbnailUrl: null }),
+    { kind: 'library', source: 'book-qr', nativeId: 'n', title: 't', mediaKind: 'page', url: 'http://a.b/c' },
+  );
+});
+
+test('a saved-material attachment round-trips: normalized, keyed, and resent as its id only', () => {
+  const mat = { kind: 'material', materialId: '0b6c1f2e-3a4d-4e5f-8a9b-0c1d2e3f4a5b', title: 'اختبار', type: 'quiz' } as const;
+  assert.deepEqual(normalizeResources([mat, { kind: 'material', title: 'no id' }]), [mat]);
+  assert.equal(resourceKey(mat), `material:${mat.materialId}`);
+  assert.deepEqual(resourceBody(mat), { kind: 'material', materialId: mat.materialId });
+});
+
+test('isAttachableMaterial: only server-saved, non-board materials', () => {
+  const id = '0b6c1f2e-3a4d-4e5f-8a9b-0c1d2e3f4a5b';
+  assert.equal(isAttachableMaterial({ id, type: 'worksheet' }), true);
+  assert.equal(isAttachableMaterial({ id, type: 'board' }), false);
+  assert.equal(isAttachableMaterial({ id: 'ws_1729000000000_abc123', type: 'quiz' }), false, 'an offline save');
+});
+
+test('maskYmd lays digits out as YYYY-MM-DD and adds a dash only once a digit follows it', () => {
+  assert.equal(maskYmd(''), '');
+  assert.equal(maskYmd('2026'), '2026');
+  assert.equal(maskYmd('20261'), '2026-1');
+  assert.equal(maskYmd('202610'), '2026-10');
+  assert.equal(maskYmd('2026101'), '2026-10-1');
+  assert.equal(maskYmd('20261019'), '2026-10-19');
+  // Backspace over the dash: «2026-» becomes «2026», not «2026-» again.
+  assert.equal(maskYmd('2026-'), '2026');
+});
+
+test('maskYmd accepts pasted separators, Arabic-Indic digits and extra digits', () => {
+  assert.equal(maskYmd('2026/10/19'), '2026-10-19');
+  assert.equal(maskYmd('٢٠٢٦-١٠-١٩'), '2026-10-19');
+  assert.equal(maskYmd('۲۰۲۶۱۰۱۹'), '2026-10-19');
+  assert.equal(maskYmd('202610199999'), '2026-10-19');
+  assert.ok(isValidYmd(maskYmd('20261019')));
+});
+
+test('isHomeworkChatLine matches the shared-homework chat line only', () => {
+  assert.equal(isHomeworkChatLine('📚 واجب جديد: تاريخ الوطن\nموعد التسليم: 19-10-2026'), true);
+  assert.equal(isHomeworkChatLine('واجب جديد'), false);
+  assert.equal(isHomeworkChatLine('مرحبا'), false);
 });

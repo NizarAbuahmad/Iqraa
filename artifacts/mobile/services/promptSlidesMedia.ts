@@ -247,12 +247,13 @@ export async function searchDeckMedia(
   // Slides carrying a `layout` are excluded: those are drawn by their own
   // branch in each renderer, which fills the slide and never reaches the
   // side-image column — a photo assigned there would be fetched, stored and
-  // silently never shown.
+  // silently never shown. The exception is `photo`, whose whole point is that
+  // picture: it is drawn full-bleed from `sideImageUrl`.
   const asked = slides
     .map((slide, index) => ({ slide, index }))
     .filter(({ slide }) => (
       typeof slide.mediaPrompt === 'string' && slide.mediaPrompt.trim()
-      && !slide.sideImageUrl && !slide.layout
+      && !slide.sideImageUrl && (!slide.layout || slide.layout === 'photo')
     ))
     .slice(0, MAX_SIDE_PHOTOS)
     .map(e => ({ ...e, query: e.slide.mediaPrompt!.trim() }));
