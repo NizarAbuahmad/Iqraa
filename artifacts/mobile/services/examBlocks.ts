@@ -7,21 +7,12 @@
  * types vs ten) but one paper convention. Pure, so `node --test` can load it.
  */
 
+import { EXAM_TYPE_ORDER } from '@workspace/exam-paper';
+
+export { EXAM_TYPE_ORDER };
+
 const ORDINAL_AR = ['الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس', 'السابع', 'الثامن', 'التاسع', 'العاشر'];
 const ORDINAL_EN = ['One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
-
-/**
- * The order a ministry exam puts its question types in: choice, then
- * صح/خطأ, matching, complete, then the written answers, then the practical.
- * Keep in step with `EXAM_TYPE_ORDER` in
- * `artifacts/api-server/src/modules/assessment/paperOrder.ts`, which is what
- * stores a generated evaluation in this order.
- */
-export const EXAM_TYPE_ORDER: readonly string[] = [
-  'multiple_choice', 'true_false', 'matching', 'fill_blank',
-  'short_answer', 'open_ended', 'problem_solving', 'practical_task',
-  'read_aloud', 'dictation',
-];
 
 /** What the student does in a block — the ministry paper's «ضع دائرة…» line. */
 export function examBlockDirection(type: string, isAr: boolean): string {

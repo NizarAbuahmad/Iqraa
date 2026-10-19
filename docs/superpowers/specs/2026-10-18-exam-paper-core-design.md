@@ -1,6 +1,6 @@
 # Exam-paper core: one question-type order, one repeat rule — design
 
-**Status:** proposed. **Scope:** `lib/exam-paper` (new), and the call sites in
+**Status:** implemented 2026-10-18. **Scope:** `lib/exam-paper` (new), and the call sites in
 `artifacts/api-server` and `artifacts/mobile` named below. **No behaviour
 change** for a teacher or a student: same papers, same prompts, same stored rows.
 

@@ -1589,6 +1589,77 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## One question-type order, one set of repeat-rule inputs, 2026-10-18
+
+The order a ministry paper puts its question types in was written out by hand in
+the app and in the API and kept equal by a test that read one file's source with
+a regex; the inputs of the "one ask reworded" rule (the three-word cap, the
+"has a sentence" test) were likewise copied between the quiz's repeat-replacer
+and the evaluation validator. A change to one copy and not the other would have
+made a quiz and an evaluation order or judge a paper differently. **No behaviour
+changed** — this is a refactor, and it is checked as one (below).
+
+What moved into the new package `lib/exam-paper` (`@workspace/exam-paper`, whose
+one dependency is `@workspace/math-practice`):
+
+- `EXAM_TYPE_ORDER`, `QUIZ_TYPES` and `QUIZ_TYPE_ORDER` (the quiz's order is
+  derived from the exam order, restricted to the quiz's four types) and
+  `inPaperOrder`. The API (`paperOrder.ts`, `generationShape.ts`) and the app
+  (`examBlocks.ts`, `quizPaper.ts`) now import them; their old exports remain as
+  re-exports, so no other call site changed.
+- `MAX_WORDS_CHANGED`, `hasSentence` and `sameAsk`. `generationShape.ts` (the
+  quiz's repeats) and `validator.ts` (`dominantKind`) both call `hasSentence`
+  and `sameAsk`; `sameAsk` applies `MAX_WORDS_CHANGED`, and neither file reads
+  the constant directly.
+
+Deliberately **not** moved: the two grouping algorithms and their quotas
+(`kindOf` in `generationShape.ts` replaces repeats past a third of the paper;
+`dominantKind` in `validator.ts` warns past a quarter — they differ on purpose),
+prompt text, the count / top-up / replace logic, the offline banks, and
+`ai_artifacts`. The quiz and the evaluation are still two systems with two
+generators; a new question type is still more than one edit (see the bullet in
+`CLAUDE.md`), but the *order* is now one list.
+
+`paperOrder.test.ts` used to prove the two lists equal by regex-reading the
+mobile file. That test is replaced by reference-equality asserts: all four
+exports (the API's `paperOrder.ts` `EXAM_TYPE_ORDER` and `generationShape.ts`
+`QUIZ_TYPE_ORDER`, the app's `examBlocks.ts` `EXAM_TYPE_ORDER` and
+`quizPaper.ts` `QUIZ_TYPE_ORDER`) must be the package's own arrays (`===`),
+asserted in `paperOrder.test.ts`, `examBlocks.test.ts` and
+`quizMinistryOrder.test.ts`. A source-text check stays on top: the two mobile
+files must import from `@workspace/exam-paper` and carry no list literal of
+their own, and the API's two modules declare none. A second list under another
+name is **not** caught; `ALL_Q_TYPES` in the quiz picker
+(`app/ai-tools/quiz.tsx`) is one, and it predates this change.
+
+How "no behaviour change" was checked, rather than asserted: a before/after
+digest of `quizRepeats` (per paper) and `dominantKind` over every lesson's
+offline quiz papers. The corpus is 940 papers from 470 lessons (13,414 stems; the
+other lessons have no offline question bank and are skipped) plus 4 hand-made
+papers: 944 rows, 31 with quiz repeats and 802 with a dominant kind. The output
+is byte-identical before and after (same sha256 prefix `ff97148368abce9c`).
+"Every lesson" here means every lesson the offline generator can write.
+
+Suites: exam-paper 14/14; math-practice 949/949; api-server 2110/2110 (built
+first); mobile 6247 tests, 6237 pass, 0 fail, 10 skipped; root typecheck clean;
+the api-server bundle and the mobile web export both build.
+
+Browser check on the built web app (local API + Postgres), not asserted: a quiz
+with multiple choice, true/false and short answer ticked exports «السؤال الأول»
+(multiple choice, Q1–4), «السؤال الثاني» (صح/خطأ, Q5–7) and «السؤال الثالث»
+(short answer, Q8–10); a generated evaluation shows «السؤال الأول» (3 multiple
+choice) then «السؤال الثاني» (7 short answer). The quiz screen itself does not
+print the headings; the export does.
+
+**Not verified here:** the Playwright e2e suite was not run locally (this
+container's browser revision does not match), so CI's e2e job is what covers it.
+The offline evaluation generator cannot produce true/false, matching or
+fill-blank questions (it never could), so an evaluation with every type was not
+exercised offline.
+
+**Deploy:** the merge changes `lib/**`, so `deploy.yml` redeploys the API as well
+as the web app. Behaviour is identical, but it is a real deploy.
+
 ## One card for quizzes and evaluations, 2026-10-18
 
 The Tools tab had «اختبار قصير» and «التقييمات» as neighbouring cards, which a
@@ -1611,8 +1682,9 @@ and API are untouched.** What changed is the door:
   evaluations list; the teacher's is `/evaluations`.
 
 Not done, deliberately: the two generators still assemble questions separately
-(counts, top-up, type order), so a new question type is still two edits.
-Merging that is a separate change.
+(counts, top-up), so a new question type is still two edits. Merging that is a
+separate change. (Their type order has since become one list — see «One
+question-type order, one set of repeat-rule inputs» above.)
 
 Verified in a browser, not asserted: a signed-up teacher on the built web app
 (local API + Postgres), phone and desktop widths, English and Arabic — one card

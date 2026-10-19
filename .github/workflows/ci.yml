@@ -118,6 +118,9 @@ jobs:
       - name: Test practice banks
         run: pnpm --filter @workspace/math-practice run test
 
+      - name: Test exam-paper core
+        run: pnpm --filter @workspace/exam-paper run test
+
       # The client-side half of the answer-key gate, and the one package with
       # real tests that CI was not running. lib/math-verify refuses to
       # transliterate «ق(س)» into `f(x)` before anything reaches SymPy —
