@@ -79,6 +79,7 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-10-18 — One question-type order, one set of repeat-rule inputs
 - 2026-10-18 — One card for quizzes and evaluations
 - 2026-10-18 — Slides Maker decks stop looking like bare lists
 - 2026-10-18 — Four new slide layouts: timeline, stats, table, flow
@@ -108,11 +109,10 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-14 — Lesson plans have a second wording for the five fixed sections — Arabic and English, NOT YET READ BY A TEACHER
 - 2026-10-14 — Scanning external exams: paper setup from photos, and a whole class at once
 - 2026-10-13 — Wide-scope selection, foundation only
-- 2026-10-13 — Quiz «أعد التجهيز» now changes the questions, and says when it cannot
 
 ## Finding older detail, and recording new work
 
-- The log has 322 sections. Anything cited elsewhere as
+- The log has 323 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line
