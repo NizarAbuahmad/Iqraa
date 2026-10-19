@@ -8,7 +8,7 @@
  * Practice records nothing on the server (see `@workspace/curriculum/englishHub`);
  * the only memory is the student's own device, through `progress.ts`.
  */
-import type { GrammarSentence } from '@workspace/curriculum/englishGrammar';
+import type { GrammarMarker, GrammarSentence } from '@workspace/curriculum/englishGrammar';
 import type { HubWord } from '@workspace/curriculum/englishHub';
 import { firstSound } from '@workspace/curriculum/englishReading';
 import { isPicturable, wordPicture } from '@workspace/curriculum/englishPictures';
@@ -18,12 +18,12 @@ export { isPicturable, wordPicture };
 
 export type HubActivity =
   | 'flashcards' | 'listen' | 'match' | 'spell' | 'scramble' | 'picture' | 'speaking'
-  | 'grammar-choose' | 'grammar-build' | 'grammar-true'
+  | 'grammar-choose' | 'grammar-build' | 'grammar-true' | 'grammar-yesno'
   | 'read-find' | 'first-letter' | 'starts-with';
 /** The vocabulary activities, offered on every lesson. */
 export const HUB_ACTIVITIES: HubActivity[] = ['flashcards', 'listen', 'match', 'spell', 'scramble', 'picture', 'speaking'];
 /** The grammar activities, offered only on a lesson whose unit a teacher has reviewed (`offeredGrammar`). */
-export const GRAMMAR_ACTIVITIES: HubActivity[] = ['grammar-choose', 'grammar-build', 'grammar-true'];
+export const GRAMMAR_ACTIVITIES: HubActivity[] = ['grammar-choose', 'grammar-build', 'grammar-true', 'grammar-yesno'];
 /** The reading activities, offered only on a Grade 1 lesson whose unit a teacher has reviewed (`offeredReading`). */
 export const READING_ACTIVITIES: HubActivity[] = ['read-find', 'first-letter', 'starts-with'];
 
@@ -323,12 +323,73 @@ export function buildTrueFalseRound(sentences: readonly GrammarSentence[], rng: 
   );
 }
 
+// ─── Yes or No (Grade 2) ────────────────────────────────────────────────────
+
+export interface YesNoQuestion {
+  sentence: GrammarSentence;
+  picture: { word: string; count: 1 | 2 };
+  marker: GrammarMarker | null;
+  kind: 'match' | 'marker';
+  /** What the child is asked, in English. */
+  question: string;
+  /** True when the right answer is «yes». */
+  answer: boolean;
+  yes: string;
+  no: string;
+}
+
+function yesNoUsable(s: GrammarSentence): boolean {
+  return s.yesNo !== null && s.picture !== null;
+}
+
+function yesNoItem(s: GrammarSentence, question: string, answer: boolean): YesNoQuestion {
+  const y = s.yesNo!;
+  return { sentence: s, picture: s.picture!, marker: s.marker, kind: y.kind, question, answer, yes: y.yes, no: y.no };
+}
+
+/** The whole exchange, spoken once the child has answered: a string `allGrammarSpoken` lists. */
+export function yesNoExchange(q: YesNoQuestion): string {
+  return `${q.question} ${q.answer ? q.yes : q.no}`;
+}
+
+/**
+ * Half the round (rounded up) answers «yes», the rest «no», then shuffled. A `match` sentence gives
+ * a Yes item (the question names its picture) and a No item (it names the next pictured word); a
+ * `marker` sentence gives the one item its ✅ / ❌ decides. The same picture is not asked twice
+ * (cheese ✅ and cheese ❌ would be two questions about one picture).
+ */
+export function buildYesNoRound(sentences: readonly GrammarSentence[], rng: () => number = Math.random): YesNoQuestion[] {
+  const yesItems: YesNoQuestion[] = [];
+  const noItems: YesNoQuestion[] = [];
+  for (const s of sentences.filter(yesNoUsable)) {
+    const y = s.yesNo!;
+    if (y.kind === 'match') {
+      yesItems.push(yesNoItem(s, y.question, true));
+      if (y.otherQuestion) noItems.push(yesNoItem(s, y.otherQuestion, false));
+    } else {
+      (y.answer ? yesItems : noItems).push(yesNoItem(s, y.question, y.answer));
+    }
+  }
+  const wantYes = Math.ceil(ROUND_LENGTH / 2);
+  const wantNo = ROUND_LENGTH - wantYes;
+  const yes = sample(yesItems, wantYes, rng);
+  const taken = new Set(yes.map(q => q.picture.word));
+  const fresh = noItems.filter(q => !taken.has(q.picture.word));
+  const no = sample(fresh.length >= wantNo ? fresh : noItems, wantNo, rng);
+  return shuffle([...yes, ...no], rng);
+}
+
+export function isYesNoRight(q: YesNoQuestion, saidYes: boolean): boolean {
+  return saidYes === q.answer;
+}
+
 export function grammarActivityAvailable(activity: HubActivity, sentences: readonly GrammarSentence[]): boolean {
   const usable =
     activity === 'grammar-choose' ? sentences.filter(s => s.choose)
       : activity === 'grammar-build' ? sentences.filter(buildable)
         : activity === 'grammar-true' ? sentences.filter(judgeable)
-          : [];
+          : activity === 'grammar-yesno' ? sentences.filter(yesNoUsable)
+            : [];
   return usable.length >= MIN_GRAMMAR_SENTENCES;
 }
 
@@ -500,7 +561,7 @@ export function currentStreak(p: HubProgress, today: string): number {
 
 /** Every activity a finished round can earn stars on — flashcards and speaking give none (nothing is scored). */
 const SCORED_ACTIVITIES = [
-  'listen', 'match', 'spell', 'scramble', 'picture', 'grammar-choose', 'grammar-build', 'grammar-true',
+  'listen', 'match', 'spell', 'scramble', 'picture', 'grammar-choose', 'grammar-build', 'grammar-true', 'grammar-yesno',
   'read-find', 'first-letter', 'starts-with',
 ] as const;
 
