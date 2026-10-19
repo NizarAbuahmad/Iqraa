@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 
 import { answerAppHelp, findAppPlaces, isAppHelpQuery } from '../appHelp.ts';
 import { classifyChatIntent } from '../ai/intentRouter.ts';
+import { toolAskFromQuery } from '../chatToolAsk.ts';
 
 const top = (q: string) => findAppPlaces(q)[0]?.id;
 
@@ -1160,3 +1161,23 @@ describe('how is a material made', () => {
     it(`«${q}» is not a how-to about the app`, () => assert.equal(isAppHelpQuery(q), false));
   }
 });
+
+describe('a purpose reaches the model, not a builder or an edit (eighth live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  it('a how-question with a purpose is not an edit of the open paper', () => {
+    assert.equal(classifyChatIntent('كيف أعدّل ورقة العمل لتناسب الطلاب الضعاف؟').intent, 'teaching');
+    assert.equal(classifyChatIntent('كيف أعمل ورقة عمل لتناسب الطلاب الضعاف؟').intent, 'artifact');
+    assert.equal(classifyChatIntent('اجعله أبسط').intent, 'refinement');
+  });
+
+  it('advice about slides does not open the slides builder', () => {
+    assert.equal(toolAskFromQuery('how do i make my slides more engaging'), null);
+    assert.equal(toolAskFromQuery('make slides for this lesson'), 'slides');
+  });
+
+  it('a top-level place is listed once, not as «المكتبة: المكتبة»', () => {
+    const answer = answerAppHelp('وين المكتبة؟', 'ar', t);
+    assert.ok(!answer.text.includes(`**<${answer.places[0]!.labelKey}>**: <${answer.places[0]!.labelKey}>`));
+  });
+});
+
