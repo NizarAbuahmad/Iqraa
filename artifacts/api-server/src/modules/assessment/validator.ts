@@ -12,7 +12,8 @@
  */
 import type { QuestionType } from "@workspace/db";
 import { normalizeArabic } from "@workspace/curriculum";
-import { sameKind, stemFrame } from "@workspace/math-practice";
+import { stemFrame } from "@workspace/math-practice";
+import { hasSentence, sameAsk } from "@workspace/exam-paper";
 import { QUESTION_TYPES } from "./questionTypes.ts";
 import type { GeneratedQuestion } from "./mockGenerator.ts";
 
@@ -187,9 +188,6 @@ export function validateGenerated(
   return { accepted, rejected, warnings };
 }
 
-/** Words a reworded ask may change, whatever its length — see `dominantKind`. */
-const MAX_WORDS_CHANGED = 3;
-
 /**
  * The kind of question most of a paper asks, when it is at least three
  * questions and more than a quarter of them: the largest set of stems that are
@@ -210,10 +208,10 @@ const MAX_WORDS_CHANGED = 3;
 export function dominantKind(prompts: readonly string[]): { count: number; example: string } | null {
   const framed = prompts
     .map(prompt => ({ prompt, frame: stemFrame(prompt) }))
-    .filter(({ frame }) => /\p{L}/u.test(frame));
+    .filter(({ frame }) => hasSentence(frame));
   let top: { count: number; example: string } = { count: 0, example: "" };
   for (const centre of framed) {
-    const count = framed.filter(({ frame }) => sameKind(centre.frame, frame, MAX_WORDS_CHANGED)).length;
+    const count = framed.filter(({ frame }) => sameAsk(centre.frame, frame)).length;
     if (count > top.count) top = { count, example: centre.prompt };
   }
   return top.count >= 3 && top.count * 4 > prompts.length ? top : null;
