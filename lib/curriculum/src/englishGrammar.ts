@@ -17,6 +17,7 @@
  */
 import { hubLesson } from './englishHub.ts';
 import { wordPicture } from './englishPictures.ts';
+import { GRAMMAR_UNITS_G2 } from './englishGrammarG2.ts';
 
 export type GrammarMarker = 'yes' | 'no' | 'boy' | 'girl' | 'many';
 
@@ -131,7 +132,7 @@ const PLACES = ['chair', 'desk', 'floor'];
 
 const L = (sem: 1 | 2, unit: number) => `kbl-g1-eng-s${sem}-nccd-u${unit}_l1`;
 
-export const GRAMMAR_UNITS: GrammarUnit[] = [
+const GRAMMAR_UNITS_G1: GrammarUnit[] = [
   {
     // Who's this? This is (my) … — "cat" left out: a pet can be «What's this?» too.
     lessonId: L(1, 1),
@@ -229,6 +230,9 @@ export const GRAMMAR_UNITS: GrammarUnit[] = [
     slots: { food: ['apples', 'cakes', 'carrots', 'grapes', 'juice', 'lemonade', 'lemons', 'sweets'] },
   },
 ];
+
+/** Grade 1 first, then Grade 2: the order the lessons come in. */
+export const GRAMMAR_UNITS: GrammarUnit[] = [...GRAMMAR_UNITS_G1, ...GRAMMAR_UNITS_G2];
 
 export function grammarUnit(lessonId: string): GrammarUnit | undefined {
   return GRAMMAR_UNITS.find(u => u.lessonId === lessonId);
