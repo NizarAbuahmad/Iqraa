@@ -7,6 +7,7 @@
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import * as docx from 'docx';
+import * as pkg from '@workspace/exam-paper';
 
 import { aiService, questionBankPolicy } from '../ai/generators.ts';
 import { buildQuizHTML } from '../exportHtml.ts';
@@ -71,6 +72,12 @@ describe('offline quiz generator', () => {
   it('honours a true/false-only request: nothing else comes back', async () => {
     const quiz = await aiService.generateQuiz({ ...REQ, numQuestions: 6, questionTypes: ['true_false'] });
     assert.ok(quiz.questions.every(q => q.type === 'true_false' && q.options?.length === 2));
+  });
+});
+
+describe('the quiz type order', () => {
+  it("is the shared package's own list, not an equal copy", () => {
+    assert.equal(QUIZ_TYPE_ORDER, pkg.QUIZ_TYPE_ORDER);
   });
 });
 

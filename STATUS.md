@@ -1589,6 +1589,77 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## One question-type order, one set of repeat-rule inputs, 2026-10-18
+
+The order a ministry paper puts its question types in was written out by hand in
+the app and in the API and kept equal by a test that read one file's source with
+a regex; the inputs of the "one ask reworded" rule (the three-word cap, the
+"has a sentence" test) were likewise copied between the quiz's repeat-replacer
+and the evaluation validator. A change to one copy and not the other would have
+made a quiz and an evaluation order or judge a paper differently. **No behaviour
+changed** — this is a refactor, and it is checked as one (below).
+
+What moved into the new package `lib/exam-paper` (`@workspace/exam-paper`, whose
+one dependency is `@workspace/math-practice`):
+
+- `EXAM_TYPE_ORDER`, `QUIZ_TYPES` and `QUIZ_TYPE_ORDER` (the quiz's order is
+  derived from the exam order, restricted to the quiz's four types) and
+  `inPaperOrder`. The API (`paperOrder.ts`, `generationShape.ts`) and the app
+  (`examBlocks.ts`, `quizPaper.ts`) now import them; their old exports remain as
+  re-exports, so no other call site changed.
+- `MAX_WORDS_CHANGED`, `hasSentence` and `sameAsk`. `generationShape.ts` (the
+  quiz's repeats) and `validator.ts` (`dominantKind`) both call `hasSentence`
+  and `sameAsk`; `sameAsk` applies `MAX_WORDS_CHANGED`, and neither file reads
+  the constant directly.
+
+Deliberately **not** moved: the two grouping algorithms and their quotas
+(`kindOf` in `generationShape.ts` replaces repeats past a third of the paper;
+`dominantKind` in `validator.ts` warns past a quarter — they differ on purpose),
+prompt text, the count / top-up / replace logic, the offline banks, and
+`ai_artifacts`. The quiz and the evaluation are still two systems with two
+generators; a new question type is still more than one edit (see the bullet in
+`CLAUDE.md`), but the *order* is now one list.
+
+`paperOrder.test.ts` used to prove the two lists equal by regex-reading the
+mobile file. That test is replaced by reference-equality asserts: all four
+exports (the API's `paperOrder.ts` `EXAM_TYPE_ORDER` and `generationShape.ts`
+`QUIZ_TYPE_ORDER`, the app's `examBlocks.ts` `EXAM_TYPE_ORDER` and
+`quizPaper.ts` `QUIZ_TYPE_ORDER`) must be the package's own arrays (`===`),
+asserted in `paperOrder.test.ts`, `examBlocks.test.ts` and
+`quizMinistryOrder.test.ts`. A source-text check stays on top: the two mobile
+files must import from `@workspace/exam-paper` and carry no list literal of
+their own, and the API's two modules declare none. A second list under another
+name is **not** caught; `ALL_Q_TYPES` in the quiz picker
+(`app/ai-tools/quiz.tsx`) is one, and it predates this change.
+
+How "no behaviour change" was checked, rather than asserted: a before/after
+digest of `quizRepeats` (per paper) and `dominantKind` over every lesson's
+offline quiz papers. The corpus is 940 papers from 470 lessons (13,414 stems; the
+other lessons have no offline question bank and are skipped) plus 4 hand-made
+papers: 944 rows, 31 with quiz repeats and 802 with a dominant kind. The output
+is byte-identical before and after (same sha256 prefix `ff97148368abce9c`).
+"Every lesson" here means every lesson the offline generator can write.
+
+Suites: exam-paper 14/14; math-practice 949/949; api-server 2110/2110 (built
+first); mobile 6247 tests, 6237 pass, 0 fail, 10 skipped; root typecheck clean;
+the api-server bundle and the mobile web export both build.
+
+Browser check on the built web app (local API + Postgres), not asserted: a quiz
+with multiple choice, true/false and short answer ticked exports «السؤال الأول»
+(multiple choice, Q1–4), «السؤال الثاني» (صح/خطأ, Q5–7) and «السؤال الثالث»
+(short answer, Q8–10); a generated evaluation shows «السؤال الأول» (3 multiple
+choice) then «السؤال الثاني» (7 short answer). The quiz screen itself does not
+print the headings; the export does.
+
+**Not verified here:** the Playwright e2e suite was not run locally (this
+container's browser revision does not match), so CI's e2e job is what covers it.
+The offline evaluation generator cannot produce true/false, matching or
+fill-blank questions (it never could), so an evaluation with every type was not
+exercised offline.
+
+**Deploy:** the merge changes `lib/**`, so `deploy.yml` redeploys the API as well
+as the web app. Behaviour is identical, but it is a real deploy.
+
 ## One card for quizzes and evaluations, 2026-10-18
 
 The Tools tab had «اختبار قصير» and «التقييمات» as neighbouring cards, which a
@@ -1611,8 +1682,9 @@ and API are untouched.** What changed is the door:
   evaluations list; the teacher's is `/evaluations`.
 
 Not done, deliberately: the two generators still assemble questions separately
-(counts, top-up, type order), so a new question type is still two edits.
-Merging that is a separate change.
+(counts, top-up), so a new question type is still two edits. Merging that is a
+separate change. (Their type order has since become one list — see «One
+question-type order, one set of repeat-rule inputs» above.)
 
 Verified in a browser, not asserted: a signed-up teacher on the built web app
 (local API + Postgres), phone and desktop widths, English and Arabic — one card
@@ -4293,7 +4365,40 @@ built from results under 60%), no event added on the calendar. Creating an exam 
 a how-word and says «امتحان»/"exam": «اختبار» and "test" stay with the short-quiz
 steps (`howMakeQuiz`). Still answered as app questions, older and not fixed here: a
 how-question that names a tool and then a purpose («كيف أعدّل ورقة العمل لتناسب الطلاب
-الضعاف؟»). 7 look-alikes pinned.
+الضعاف؟»). 7 look-alikes pinned. (Fixed in the seventh pass, below.)
+
+**A purpose, a dialect, and ten more features (2026-10-18, seventh live pass).** A
+how-question that names a material and then what it is for («لتناسب الطلاب الضعاف»,
+«لتعزيز التعاون», "more engaging") is teaching now (`PURPOSE` in `isAppHelpQuery`;
+anchored rules are decided first). A tool's make-steps (`TOOL_HOW`) answer only a
+make verb (`MAKE_VERB`), so sharing a worksheet on WhatsApp no longer gets «جهّز ورقة
+العمل». «شلون», «اشلون», «ازاي» and «كيفية» open a how like «كيف»; "exams" is a keyword.
+New steps, from the screens: a teaching plan («خطة تدريس جديدة»), its lesson dates
+(«توزيع تلقائي»; lessons come from the curriculum, never typed), the timetable
+(«إعداد الحصص», then a cell), a student's record and note, sharing on WhatsApp
+(«مشاركة» sends text, so the answer names the PDF / Word export), saving and
+printing slides («احفظ», «PDF», «PPTX»), presenting full screen, the class challenge
+(`howMakeGame`), sharing a game (only the maths drills have a share link), and a
+library item to a class («أرفق ملفًا» ← «من المكتبة»). **The chat history answer
+says it is not in the app**: the Iqrra chat is not saved and has no clear or new-chat
+button. The bottom tab is «المكتبة» (route file still `curriculum`): a `library` place
+finds it, the curriculum place now sits under it, and the upload answer no longer
+calls the tab «المنهاج». Saving slides left `save-material`, whose «احفظ في ملفاتي»
+does not exist on the slides screen. 14 look-alikes pinned.
+
+**A purpose reaches the model (2026-10-19, eighth live pass).** The seventh pass
+(#1150) verified live: 27 of 30 right. Two misses were in the chat's routing, not
+the matcher. «كيف أعدّل ورقة العمل لتناسب الطلاب الضعاف؟» was classified as a
+`refinement` (an edit of the open paper), and with no paper open it fell to the
+offline «أيّ مادة تقصد؟» menu; "how do i make my slides more engaging" matched
+`toolAskFromQuery` on "make" and opened the slides builder. `isPurposeQuestion`
+(`services/appHelp.ts`, the `PURPOSE` test behind `isAppHelpQuery`) now also stops
+`classifyChatIntent` calling such a question a refinement — or an artifact, unless
+it carries a make verb («كيف أعمل ورقة عمل لتناسب…» still builds one) — and stops
+`toolAskFromQuery` building a tool for it. Both go to the model as teaching. Also: a
+top-level place («المكتبة») is listed once instead of «المكتبة: المكتبة». Still
+open: «كيف أرسل رسالة لولي أمر؟», «كيف أصحح أوراق الطلاب؟», long-press export on the
+«أيّ مادة تقصد؟» clarification.
 
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
@@ -4779,6 +4884,68 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
 - When the worksheet screen is opened with a lesson, its unit dropdown still
   shows the placeholder (the documented gap in `TopicSelector.tsx`). The topic
   itself is held.
+## Arabic, Islamic, civic, digital and PE lessons get their book pages in decks, 2026-10-19
+
+39% of lessons — all of Arabic, Islamic, physical education, digital literacy and
+civic education — have no extracted figures, so their decks were text on colour.
+Their books are mostly pictures and layout, so the lesson's own pages are the
+picture.
+
+- **Page → lesson map.** `scripts/map_lesson_pages.py` finds the page each lesson
+  opens on by matching the catalog title to the largest-type heading on the page
+  (letter-bag overlap, monotonic walk), and cross-checks against the book's
+  printed contents table (read through the footers' printed page numbers).
+  `scripts/render_lesson_pages.py` renders from our own copy of the student book
+  (so the page named is by construction the page shown) into the existing
+  `book-pages/<kbLessonId>/<n>.jpg` store and lists it in `book-page-links.json`
+  (`pdfUrl: null`, ≤ 20 pages a lesson). 778 lessons / 4,776 pages added (1.05 GB, all in the bucket).
+- **Only confident matches.** Score ≥ 0.9; 17 weaker matches were dropped (several
+  landed on the contents page), and so was the whole Grade 7 PE S1 book (its «sure»
+  hits were page 2) and one Grade 3 Arabic S2 entry opening on page 3.
+- **Decks.** `bookPages: true` (all three `slides.tsx` call sites): a lesson deck
+  with no figures of its own shows up to 3 book pages («من كتاب الطالب»); a
+  revision unit with no figures shows the opener page of its first lesson that has
+  one. A lesson that has figures is unchanged.
+- **Still without pages:** 20 books (386 lessons) with no student PDF on disk —
+  Grades 1–2 Arabic/Islamic/PE, Grades 4–6 PE and digital, Grade 8 Arabic S2 —
+  need an NCCD download; PE books (all grades except 3), Grade 7 digital S2, Grade
+  5 Arabic S2 (3/25) and parts of Grade 8/9 digital and civic did not map.
+- Bucket: pages are in `iqraa-public/book-pages/`; the app shows nothing new until
+  the OTA ships.
+
+## Revision decks carry the book's own pictures and all its key terms, 2026-10-18
+
+Read against the Grade 10 biology student book (unit 1, evolution), the first real
+revision deck on a phone showed: a computer-lab photo on the evolution break, the
+unit title cut to «نظرية», only 3 of the book's 5 key terms, and none of the book's
+pictures.
+
+- **Book figures in a revision deck.** `buildRevisionDeck` takes a `figureUri` (the
+  screen passes `bookFigureUri`) and each unit shows up to three of its own figures:
+  the first beside its key ideas, the rest as «من كتاب الطالب» slides, taken one per
+  lesson before a second of any. Without `figureUri` the deck is exactly as before.
+  It had said «never figures — each belongs to one lesson»; a teacher asked for them.
+- **Unit 1's four figures were never linked.** The extractor found no unit heading
+  before page 22, so `p011` (gradualism vs punctuated equilibrium), `p012` (the limbs
+  of cat, dolphin and bat), `p015` (geographic isolation) and `p018c` (selection by a
+  predator) had `unit: null` and no lesson used them. They are now unit 1 lesson 1
+  (`index.json` + a hand-checked `figure-lesson-map.json` entry), and
+  `bookFigureAssets.ts` is regenerated. **Their four files must be in the public R2
+  bucket before this ships:** `figures/bio-s1-student-book/{p011,p012,p015,p018c}.png`
+  (`pnpm --filter @workspace/curriculum run upload-figures-r2`; the key list does not
+  check the bucket).
+- **Not extracted at all:** the book's page 9 (the finch-beak photographs of
+  «تجربة استهلالية») and page 10 (Figure 1, the snails and eagles). The extractor did
+  not detect them; they need a manual crop from the book PDF.
+- **All the key terms.** `RevisionUnit.allConcepts` (≤ 6) alongside the capped
+  `concepts` (≤ 3, which the written plan quotes): the unit's outcomes are one slide,
+  its terms — the book's «المفاهيم والمصطلحات» box — another, as cards.
+- **Unit pictures that fit.** The generic «subject classroom» photo no longer goes on a
+  revision deck's first break; each unit gets a photo of its topic or stays flat, and
+  evolution and microbes now have their own queries and icons.
+- **Not understood:** on the phone the first break read «نظرية», but the data, the
+  slide builder, the PDF and the title helper all carry «نظرية التطور».
+
 ## Slides Maker decks stop looking like bare lists, 2026-10-18
 
 A teacher's revision deck showed three one-word cards on a mostly empty slide and

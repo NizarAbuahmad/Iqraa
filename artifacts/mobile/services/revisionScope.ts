@@ -42,11 +42,22 @@ export type RevisionUnit = {
   concepts: string[];
   /** Key terms, ≤3, same interleaving. */
   terms: string[];
+  /**
+   * The unit's key concepts up to `CONCEPTS_CAP`, same interleaving — what the
+   * book prints in its «المفاهيم والمصطلحات» box. `concepts` stays at three
+   * because the written plan quotes it and a prompt has a budget; the slide of
+   * concept cards is the one place that has room for the rest (the Grade 10
+   * evolution unit lists five and the deck showed three). Absent on a unit built
+   * by hand, which falls back to `concepts`.
+   */
+  allConcepts?: string[];
 };
 
 /** Per unit, the most a one-session revision names. Also the cap on outcomes / concepts / terms. */
 export const REVISION_SHOWN_PER_UNIT = 3;
 const CAP = 3;
+/** The most concept cards a unit's slide shows (the cards layout's own ceiling). */
+export const CONCEPTS_CAP = 6;
 
 /** `thin` lessons last, book order kept inside each group. */
 function prioritized(lessons: RevisionLesson[]): RevisionLesson[] {
@@ -109,6 +120,7 @@ export function revisionUnitsFromLessons(lessonIds: readonly string[], lang: 'ar
       lessons,
       outcomes: interleave(ranked.map(l => curriculumObjectivesFor(l)), CAP),
       concepts: interleave(ranked.map(l => isAr ? l.keyConceptsAr : l.keyConceptsEn), CAP),
+      allConcepts: interleave(ranked.map(l => isAr ? l.keyConceptsAr : l.keyConceptsEn), CONCEPTS_CAP),
       terms: interleave(ranked.map(l => l.keyTerms.map(t => isAr ? t.ar : t.en)), CAP),
     });
   }

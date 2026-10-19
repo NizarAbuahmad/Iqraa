@@ -27,7 +27,8 @@
  * genuinely wrong.
  */
 
-import { sameKind, stemFrame } from "@workspace/math-practice";
+import { stemFrame } from "@workspace/math-practice";
+import { QUIZ_TYPE_ORDER, hasSentence, sameAsk, type QuizType } from "@workspace/exam-paper";
 
 export type GenerationKind =
   | "lesson-plan"
@@ -134,11 +135,10 @@ export function assertUsableGeneration(
  * الأول: ضع دائرة…», «السؤال الثاني: ضع إشارة ✓/✗…» structure every Jordanian
  * school exam follows. The prompt asks for it and `normalizeQuiz` enforces it,
  * so the app's screen, PDF, Word file and shared text all print the same
- * grouped paper from the same array. Keep in step with `QUIZ_TYPE_ORDER` in
- * `artifacts/mobile/services/quizPaper.ts`, which the offline generator uses.
+ * grouped paper from the same array. The list lives in `lib/exam-paper`; the
+ * offline generator reads the same one.
  */
-export const QUIZ_TYPE_ORDER = ["multiple_choice", "true_false", "fill_blank", "short_answer"] as const;
-export type QuizType = (typeof QUIZ_TYPE_ORDER)[number];
+export { QUIZ_TYPE_ORDER, type QuizType };
 
 const TRUE_RE = /^\s*(?:[أ-يa-z]\s*[).\-:]\s*)?(?:صح|صحيح|صحيحة|صواب|نعم|true|t|yes|✓|✔)\s*[.!]?\s*$/i;
 const FALSE_RE = /^\s*(?:[أ-يa-z]\s*[).\-:]\s*)?(?:خطأ|خاطئ|خاطئة|لا|false|f|no|✗|✘|×)\s*[.!]?\s*$/i;
@@ -280,9 +280,6 @@ export function quizStems(parsed: unknown): string[] {
 // Quizzes only. A worksheet or homework is practice, where the same exercise
 // with new numbers is the point.
 
-/** Words a reworded ask may change — the evaluation validator's cap (see `dominantKind`). */
-const MAX_WORDS_CHANGED = 3;
-
 /**
  * How many questions of one kind a paper of `n` may hold: a third, and never
  * fewer than three. Looser than the evaluation validator's quarter, which only
@@ -300,8 +297,8 @@ export function kindQuota(n: number): number {
 /** Questions grouped by kind, each joining the first group whose first question it matches. */
 function kindOf(groups: string[], text: string): number {
   const frame = stemFrame(text);
-  if (!/\p{L}/u.test(frame)) return -1; // only symbols — no sentence to share
-  const at = groups.findIndex(g => sameKind(g, frame, MAX_WORDS_CHANGED));
+  if (!hasSentence(frame)) return -1; // only symbols — no sentence to share
+  const at = groups.findIndex(g => sameAsk(g, frame));
   if (at >= 0) return at;
   groups.push(frame);
   return groups.length - 1;

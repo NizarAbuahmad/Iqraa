@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 
 import { answerAppHelp, findAppPlaces, isAppHelpQuery } from '../appHelp.ts';
 import { classifyChatIntent } from '../ai/intentRouter.ts';
+import { toolAskFromQuery } from '../chatToolAsk.ts';
 
 const top = (q: string) => findAppPlaces(q)[0]?.id;
 
@@ -1021,6 +1022,94 @@ describe('a tool id that is a word, and new-item steps for a change', () => {
   });
 });
 
+describe('a purpose, a dialect, a plural (seventh live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const lang = (q: string) => (/[؀-ۿ]/.test(q) ? 'ar' : 'en');
+  // A how-question that names a material and then what it is for is teaching.
+  const teaching = [
+    'كيف أعدّل ورقة العمل لتناسب الطلاب الضعاف؟',
+    'كيف أستخدم النشاط لتعزيز التعاون؟',
+    'how do i make my slides more engaging',
+    'how do i adapt the worksheet for weak students',
+    'كيف أجعل الاختبار يناسب كل المستويات؟',
+  ];
+  for (const q of teaching) {
+    it(`leaves «${q}» alone`, () => {
+      assert.equal(isAppHelpQuery(q), false);
+      assert.notEqual(classifyChatIntent(q, lang(q)).intent, 'app_help');
+    });
+  }
+  // «شلون», «ازاي», «كيفية» ask what «كيف» asks.
+  const steps: Array<[string, string]> = [
+    ['شلون اضيف واجب؟', 'howAddHomework'],
+    ['ازاي اضيف طالب؟', 'howAddStudent'],
+    ['كيفية إضافة شعبة جديدة', 'howAddClass'],
+    ['اشلون اغير اسم الشعبة', 'howRenameClass'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» gets ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, lang(q), t).text, `<${key}>`);
+    });
+  }
+  it('"where do i find my exams" finds the evaluations', () => {
+    assert.equal(isAppHelpQuery('where do i find my exams'), true);
+    assert.equal(top('where do i find my exams'), 'tool:evaluations');
+  });
+  const features: Array<[string, string]> = [
+    ['كيف أعمل خطة فصلية؟', 'howTeachingPlan'],
+    ['how do i make a teaching plan', 'howTeachingPlan'],
+    ['كيف أضيف درساً للخطة الفصلية؟', 'howPlanLessons'],
+    ['كيف أنشئ جدول الحصص؟', 'howTimetable'],
+    ['كيف أضيف حصة إلى الجدول؟', 'howTimetable'],
+    ['كيف أشوف سجل الطالب؟', 'howStudentRecord'],
+    ['how do i see student progress', 'howStudentRecord'],
+    ['كيف أكتب ملاحظة عن طالب؟', 'howStudentNote'],
+    ['how do i add a note about a student', 'howStudentNote'],
+    ['كيف أشارك ورقة العمل على واتساب؟', 'howShareMaterial'],
+    ['how do i send the worksheet on whatsapp', 'howShareMaterial'],
+    ['كيف أحفظ العرض التقديمي؟', 'howSaveSlides'],
+    ['how do i print slides', 'howSaveSlides'],
+    ['كيف أعرض الشرائح بشاشة كاملة؟', 'howPresent'],
+    ['how do i present the slides full screen', 'howPresent'],
+    ['كيف أعمل لعبة للطلاب؟', 'howMakeGame'],
+    ['how do i share a game with students', 'howShareGame'],
+    ['كيف أرجع للمحادثة السابقة؟', 'howChatHistory'],
+    ['كيف أمسح المحادثة؟', 'howChatHistory'],
+    ['how do i start a new chat', 'howChatHistory'],
+    ['كيف أضيف مورداً من المكتبة للشعبة؟', 'howLibraryToClass'],
+    ['how do i add a library resource to my class', 'howLibraryToClass'],
+  ];
+  for (const [q, key] of features) {
+    it(`«${q}» gets ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(classifyChatIntent(q, lang(q)).intent, 'app_help');
+      assert.equal(answerAppHelp(q, lang(q), t).text, `<${key}>`);
+    });
+  }
+  it('«وين المكتبة؟» points at the Library tab', () => {
+    assert.equal(isAppHelpQuery('وين المكتبة؟'), true);
+    assert.equal(top('وين المكتبة؟'), 'library');
+  });
+  it('saving a lesson plan still gets the save steps', () => {
+    assert.equal(answerAppHelp('كيف أحفظ خطة الدرس؟', 'ar', t).text, '<howSaveMaterial>');
+  });
+  const stillTeaching = [
+    'كيف أعرض الفكرة بطريقة ممتعة؟',
+    'كيف أكتب ملاحظة جيدة في دفتر الطالب عن سلوكه؟',
+    'كيف أجعل اللعبة ممتعة للطلاب؟',
+    'كيف أراجع الدرس السابق مع الطلاب؟',
+  ];
+  for (const q of stillTeaching) {
+    it(`leaves «${q}» alone`, () => {
+      assert.equal(isAppHelpQuery(q), false);
+    });
+  }
+  it('a tool\'s make-steps never answer sharing it', () => {
+    assert.notEqual(answerAppHelp('كيف أشارك ورقة العمل على واتساب؟', 'ar', t).text, '<howMakeWorksheet>');
+  });
+});
+
 describe('classifyChatIntent routes app questions before artifacts', () => {
   it('«وين ألاقي ورقة العمل» asks for the tool, not a worksheet', () => {
     assert.equal(classifyChatIntent('وين ألاقي ورقة العمل؟').intent, 'app_help');
@@ -1072,3 +1161,23 @@ describe('how is a material made', () => {
     it(`«${q}» is not a how-to about the app`, () => assert.equal(isAppHelpQuery(q), false));
   }
 });
+
+describe('a purpose reaches the model, not a builder or an edit (eighth live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  it('a how-question with a purpose is not an edit of the open paper', () => {
+    assert.equal(classifyChatIntent('كيف أعدّل ورقة العمل لتناسب الطلاب الضعاف؟').intent, 'teaching');
+    assert.equal(classifyChatIntent('كيف أعمل ورقة عمل لتناسب الطلاب الضعاف؟').intent, 'artifact');
+    assert.equal(classifyChatIntent('اجعله أبسط').intent, 'refinement');
+  });
+
+  it('advice about slides does not open the slides builder', () => {
+    assert.equal(toolAskFromQuery('how do i make my slides more engaging'), null);
+    assert.equal(toolAskFromQuery('make slides for this lesson'), 'slides');
+  });
+
+  it('a top-level place is listed once, not as «المكتبة: المكتبة»', () => {
+    const answer = answerAppHelp('وين المكتبة؟', 'ar', t);
+    assert.ok(!answer.text.includes(`**<${answer.places[0]!.labelKey}>**: <${answer.places[0]!.labelKey}>`));
+  });
+});
+
