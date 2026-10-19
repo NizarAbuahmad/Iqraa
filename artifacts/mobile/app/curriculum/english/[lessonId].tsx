@@ -20,7 +20,7 @@ import { useHubProgress } from '@/services/englishHub/progressStore';
 import { goBack } from '@/services/navigation';
 import { unitNames } from '@/services/contentLanguage';
 import { Flashcards, ListenChoose, MatchMeaning, PictureMatch, Scramble, Speaking, SpellIt } from '@/components/englishHub/Activities';
-import { BuildSentence, GrammarChoose, TrueFalse } from '@/components/englishHub/GrammarActivities';
+import { BuildSentence, GrammarChoose, TrueFalse, YesNo } from '@/components/englishHub/GrammarActivities';
 import { FirstLetter, ReadFind, StartsWith } from '@/components/englishHub/ReadingActivities';
 import { BADGE_META } from '@/components/englishHub/badgeMeta';
 
@@ -35,6 +35,7 @@ const META: Record<HubActivity, { icon: keyof typeof Ionicons.glyphMap; title: T
   'grammar-choose': { icon: 'checkbox-outline', title: 'hubGChoose', desc: 'hubGChooseDesc' },
   'grammar-build': { icon: 'reorder-four-outline', title: 'hubGBuild', desc: 'hubGBuildDesc' },
   'grammar-true': { icon: 'thumbs-up-outline', title: 'hubGTrue', desc: 'hubGTrueDesc' },
+  'grammar-yesno': { icon: 'chatbubbles-outline', title: 'hubGYesNo', desc: 'hubGYesNoDesc' },
   'read-find': { icon: 'book-outline', title: 'hubRFind', desc: 'hubRFindDesc' },
   'first-letter': { icon: 'text-outline', title: 'hubRLetter', desc: 'hubRLetterDesc' },
   'starts-with': { icon: 'search-outline', title: 'hubRStarts', desc: 'hubRStartsDesc' },
@@ -139,6 +140,7 @@ export default function EnglishHubLessonScreen() {
     if (grammar && activity === 'grammar-choose') return <GrammarChoose key={round} sentences={grammar} onFinish={finish} />;
     if (grammar && activity === 'grammar-build') return <BuildSentence key={round} sentences={grammar} onFinish={finish} />;
     if (grammar && activity === 'grammar-true') return <TrueFalse key={round} sentences={grammar} onFinish={finish} />;
+    if (grammar && activity === 'grammar-yesno') return <YesNo key={round} sentences={grammar} onFinish={finish} />;
     if (reading && activity === 'read-find') return <ReadFind key={round} words={reading} onFinish={finish} />;
     if (reading && activity === 'first-letter') return <FirstLetter key={round} words={reading} onFinish={finish} />;
     if (reading && activity === 'starts-with') return <StartsWith key={round} words={reading} onFinish={finish} />;
