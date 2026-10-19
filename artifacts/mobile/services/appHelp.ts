@@ -184,6 +184,15 @@ const SCREENS: AppPlace[] = [
   { id: 'share-game', route: '/play', labelKey: 'toolGamesTitle', pathKeys: ['tabTools', 'toolsDuringClass'], isTool: false, keywords: [], howKey: 'howShareGame' },
   { id: 'chat-history', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howChatHistory' },
   { id: 'library-to-class', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howLibraryToClass' },
+  // The eighth live pass (2026-10-19). Each was a feature (or a feature the app
+  // lacks) that went to the model, which invented a menu or refused.
+  { id: 'parent-message', route: '/ai-tools/parent-message', labelKey: 'toolParentMsgTitle', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howParentMessage' },
+  { id: 'join-class', route: '/profile', labelKey: 'tabProfile', pathKeys: [], isTool: false, keywords: [], howKey: 'howJoinClass' },
+  { id: 'import-students', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howImportStudents' },
+  { id: 'attendance', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howAttendance' },
+  { id: 'offline', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howOffline' },
+  { id: 'question-bank', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howQuestionBank' },
+  { id: 'exam-reminder', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howExamReminder' },
   {
     // The bottom tab: its route file is still «curriculum» (see `app/(tabs)/_layout.tsx`).
     id: 'library', route: '/curriculum', labelKey: 'resourcesTitle', pathKeys: [], isTool: false,
@@ -226,6 +235,7 @@ const SCREENS: AppPlace[] = [
   {
     id: 'calendar', route: '/calendar', labelKey: 'myCalendar', pathKeys: ['tabProfile'], isTool: false,
     keywords: ['تقويم', 'التقويم', 'calendar'],
+    howKey: 'howCalendar',
   },
   {
     id: 'workspace', route: '/workspace', labelKey: 'myWorkspace', pathKeys: ['tabProfile'], isTool: false,
@@ -494,12 +504,12 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
     id: 'password',
     res: [
       new RegExp(EN_RULE_LEAD + String.raw`(?:change|reset|update|recover)\s+(?:(?:my|the|a)\s+)?password` + EN_RULE_TAIL),
-      new RegExp(String.raw`^(?:i\s+)?forgot\s+(?:my\s+)?password` + EN_RULE_TAIL),
+      new RegExp(String.raw`^(?:i\s+)?forgot\s+(?:my\s+)?password(?:\s+what\s+(?:do|should)\s+i\s+do)?` + EN_RULE_TAIL),
       new RegExp(
         AR_RULE_LEAD + String.raw`(?:اغير|تغيير|ابدل|تبديل|اعدل|تعديل|استرجع|استرجاع|استعيد|استعاده|اعيد\s+تعيين|اعاده\s+تعيين)\s+` + AR_PASSWORD +
           String.raw`(?:\s+(?:تبعي|حقي|حسابي|لحسابي|الخاصه\s+بي))?` + AR_RULE_TAIL,
       ),
-      new RegExp(String.raw`^(?:لقد\s+)?نسيت\s+` + AR_PASSWORD + AR_RULE_TAIL),
+      new RegExp(String.raw`^(?:لقد\s+)?نسيت\s+` + AR_PASSWORD + String.raw`(?:\s+(?:شو|ايش|وش|ماذا|شنو)\s+(?:اعمل|افعل|اسوي))?` + AR_RULE_TAIL),
     ],
   },
   {
@@ -552,6 +562,14 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
       new RegExp(
         AR_RULE_LEAD + String.raw`(?:امسح|مسح|اصور|تصوير)\s+(?:ال)?(?:اوراق|ورقه)\s+(?:ال)?(?:اجابه|اجابات|امتحان|اختبار|طلاب|طلبه|صف|شعبه)` +
           String.raw`(?:\s+(?:ب|عبر)\s*(?:ال)?(?:كاميرا|جوال|هاتف))?` + AR_RULE_TAIL,
+      ),
+      // «كيف أصحح أوراق الامتحان بالكاميرا؟» got an invented menu path (found 2026-10-19).
+      // The camera has to be named: marking papers in general stays a teaching question.
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:grade|mark|correct|check|scan)\s+(?:(?:the|my)\s+)?(?:(?:exam|test|class|student)\s+)?(?:exams?|papers?|tests?|answer\s+sheets?)\s+(?:with|using|by|via)\s+(?:the\s+|my\s+|a\s+)?(?:camera|phone|scanning|scanner|photos?|pictures?)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اصحح|تصحيح)\s+(?:ال)?(?:اوراق|ورقه|امتحانات|امتحان|اختبارات|اختبار)(?:\s+(?:ال)?(?:امتحان|اختبار|طلاب|طلبه|صف|شعبه))?\s+(?:ب|عن\s+طريق|عبر|باستخدام|بواسطه)\s*(?:ال)?(?:كاميرا|تصوير|مسح|جوال|هاتف|موبايل|سكانر)` + AR_RULE_TAIL,
       ),
     ],
   },
@@ -904,17 +922,31 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
     id: 'homework-done',
     res: [
       new RegExp(
-        EN_RULE_LEAD + String.raw`(?:see|check|know|find\s+out|track|view)\s+(?:(?:who|which\s+students)\s+(?:has\s+|have\s+)?(?:done|did|finished|completed|submitted)\s+(?:(?:the|their)\s+)?homework` +
+        EN_RULE_LEAD + String.raw`(?:see|check|know|find\s+out|track|view)\s+(?:(?:who|which\s+students)\s+(?:(?:has|have)\s+not\s+|hasn['’]?t\s+|haven['’]?t\s+|didn['’]?t\s+|did\s+not\s+|(?:has|have)\s+)?(?:done|did|finished|completed|submitted|handed\s+in)\s+(?:(?:the|their)\s+)?homework` +
           String.raw`|(?:(?:my|the)\s+)?(?:students['’]?\s+)?homework(?:\s+(?:completion|progress|status))?)` + EN_RULE_TAIL,
       ),
       new RegExp(
-        AR_RULE_LEAD + String.raw`(?:اعرف|اشوف|اري|اتابع|متابعه)\s+(?:(?:مين|من|منو)\s+(?:انجز|حل|سلم|عمل|ما\s+حل|لم\s+يحل)\s+(?:ال)?واجب|(?:ال)?واجبات\s+(?:ال)?(?:طلاب|طلابي|طلبه|طلبتي)|انجاز\s+(?:ال)?(?:طلاب|طلبه)\s+(?:لل)?واجب)` + AR_RULE_TAIL,
+        AR_RULE_LEAD + String.raw`(?:اعرف|اشوف|اري|اتابع|متابعه)\s+(?:(?:مين|من|منو)\s+(?:انجز|حل|سلم|عمل|ما\s+حل|لم\s+يحل|ما\s+سلم|ما\s+انجز|لم\s+يسلم|لم\s+ينجز)\s+(?:ال)?واجب|(?:ال)?واجبات\s+(?:ال)?(?:طلاب|طلابي|طلبه|طلبتي)|انجاز\s+(?:ال)?(?:طلاب|طلبه)\s+(?:لل)?واجب)` + AR_RULE_TAIL,
       ),
     ],
   },
   {
-    // One person, never the class (that is `class-chat`). «كيف أرسل رسالة لولي أمر؟»
-    // stays with the model on purpose: the parent-message tool writes that one.
+    // «كيف أرسل رسالة لولي أمر؟» went to the model, which drafted a letter in the
+    // chat (found 2026-10-19). The tool that writes it has steps; one parent, never
+    // «all parents» (that is `broadcast`), and ahead of `message-one` so a letter
+    // is not answered with the Messages tab alone.
+    id: 'parent-message',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:write|send|draft|compose|prepare|make|create|text|email)\s+(?:an?\s+|the\s+)?(?:(?:short\s+|formal\s+|warm\s+)?(?:message|letter|note|email)\s+(?:to|for)\s+)?(?:a|the|my|one|each|this|that)\s+(?:student['’]?s?\s+)?(?:parent|guardian)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:ارسل|ابعث|ابعت|اكتب|اجهز|احضر|اعمل|اصيغ|اراسل)\s+رساله\s+(?:رسميه\s+|مكتوبه\s+)?(?:ل|الي|لل)\s*(?:ال)?ولي\s+(?:ال)?امر(?:\s+(?:ال)?طالب\S*)?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    // One person, never the class (that is `class-chat`).
     id: 'message-one',
     res: [
       new RegExp(
@@ -1163,6 +1195,91 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
       ),
     ],
   },
+  // The eighth live pass (2026-10-19).
+  {
+    id: 'join-class',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:join|enter|use|redeem)\s+(?:(?:a|an|another|the|my)\s+)?(?:(?:new\s+)?class(?:room)?|section)(?:\s+(?:with|using|by|via|through)\s+(?:a\s+|the\s+|my\s+)?(?:link\s+|class\s+|join\s+)?code)?` + EN_RULE_TAIL,
+      ),
+      new RegExp(EN_RULE_LEAD + String.raw`(?:enter|use|redeem|type)\s+(?:a\s+|the\s+|my\s+)?(?:link|class|join)\s+code` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:انضم|انضمام|التحق|التحاق)\s+(?:الي|ل|لل)?\s*(?:ال)?(?:شعبه|صف|فصل)(?:\s+(?:اخري|جديده|ثانيه))?(?:\s+(?:ب|عن\s+طريق|باستخدام|بواسطه)\s*(?:ال)?(?:رمز|كود)(?:\s+(?:ال)?ربط)?)?` + AR_RULE_TAIL,
+      ),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:ادخل|اكتب|استخدم)\s+(?:ال)?(?:رمز|كود)\s+(?:ال)?(?:ربط|انضمام|شعبه)` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'calendar',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:open|view|see|show|check|use)\s+(?:(?:my|the)\s+)?calendar` + EN_RULE_TAIL),
+      new RegExp(
+        EN_RULE_LEAD + String.raw`add\s+(?:an?\s+)?(?:event|reminder|appointment|task|note)\s+(?:to|in|on)\s+(?:the\s+|my\s+)?calendar` + EN_RULE_TAIL,
+      ),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:اعرض|عرض|افتح|فتح|اشوف|اري|استخدم|استخدام)\s+(?:ال)?تقويم(?:\s+(?:تبعي|حقي|الخاص\s+بي))?` + AR_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اضيف|اضافه|اضع|وضع|اسجل|تسجيل|انشئ)\s+(?:حدثا?|موعدا?|تذكيرا?|مناسبه|فعاليه|ملاحظه)\s+(?:في|الي|ل|لل|علي)\s*(?:ال)?تقويم` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'import-students',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:import|upload|load|bring|copy|paste|add)\s+(?:(?:my|the|all|a)\s+)?(?:students?|names|student\s+(?:list|names)|class\s+list|roster)(?:\s+(?:in|into|to)\s+(?:a|the|my)\s+class)?\s+(?:from|with|using|via|through|by)\s+(?:an?\s+|the\s+|my\s+)?(?:excel|xlsx?|csv|spreadsheet|google\s+sheets?)(?:\s+(?:file|sheet|document))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:استورد|استيراد|ارفع|رفع|ادخل|ادخال|اضيف|اضافه|انقل|نقل)\s+(?:ال)?(?:طلاب|طلبه|اسماء(?:\s+(?:ال)?طلاب)?|قائمه(?:\s+(?:ال)?طلاب)?)(?:\s+(?:الي|في|ل)\s*(?:ال)?شعبه)?\s+(?:من|ب|عن\s+طريق|بواسطه|عبر)\s*(?:ملف\s+|جدول\s+)?(?:ال)?(?:اكسل|اكسيل|excel|csv)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'attendance',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:take|record|track|see|check|know|calculate|mark|get|find|view)\s+(?:(?:the|my|student|students['’]?|class)\s+)*(?:attendance|absences?)(?:\s+(?:percentage|rate|record|sheet))?(?:\s+(?:of|for)\s+(?:my\s+|the\s+)?(?:students|class))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اسجل|تسجيل|احسب|حساب|اعرف|اتابع|متابعه|اشوف|اري|اخذ)\s+(?:(?:ال)?(?:نسبه|سجل|كشف)\s+)?(?:ال)?(?:حضور|غياب)(?:\s+و(?:ال)?(?:غياب|حضور))?(?:\s+(?:ال)?(?:طلاب|طلبه|طلابي|طلبتي|شعبه))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'offline',
+    res: [
+      new RegExp(
+        String.raw`^(?:هل\s+)?(?:يعمل|يشتغل|يفتح|اقدر\s+(?:استخدم|افتح|اشتغل)|يمكن(?:ني)?\s+(?:استخدام|فتح))\s+(?:ال)?(?:تطبيق|برنامج|موقع|منصه|اقر\S*)(?:\s+\S+)?\s+(?:من\s+)?(?:بدون|دون|بلا|من\s+غير)\s+(?:ال)?(?:انترنت|نت|اتصال|شبكه)` + AR_RULE_TAIL,
+      ),
+      new RegExp(
+        String.raw`^(?:(?:does|will)\s+)?(?:the\s+)?(?:app|iqra\w*|website|site)\s+(?:work|run|open)s?\s+(?:offline|without\s+(?:the\s+)?(?:internet|wifi|wi-fi|connection|network))` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:use|open|run)\s+(?:the\s+)?(?:app|iqra\w*)\s+(?:offline|without\s+(?:the\s+)?(?:internet|wifi|wi-fi|connection|network))` + EN_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'question-bank',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:make|create|build|start|set\s+up|have|keep|use)\s+(?:an?\s+|my\s+|the\s+)?(?:question|questions|exam)\s+bank` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اعمل|اسوي|انشئ|ابني|اكون|اضيف|اخزن|احفظ|استخدم)\s+(?:ال)?بنك\s+(?:ال)?اسئله(?:\s+(?:خاص|الخاص)\s+\S+)?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'exam-reminder',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:set|add|create|get|make|schedule)\s+(?:an?\s+|the\s+|my\s+)?(?:reminder|alert|notification)\s+(?:for|about|of)\s+(?:the\s+|an?\s+|my\s+)?(?:exam|test|quiz)(?:\s+date)?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اضبط|اضع|اضيف|اعمل|انشئ|اجعل|فعل|افعل)\s+(?:ال)?تذكيرا?\s+(?:ب|ل|عن)\s*(?:ال)?(?:موعد\s+(?:ال)?)?(?:امتحان|اختبار|تقييم)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
 ];
 
 /**
@@ -1354,7 +1471,7 @@ export function isHowQuery(query: string): boolean {
  * so «كيف أطبع ورقة العمل بدون إجابات» keeps its steps.
  */
 const PURPOSE =
-  /(?:^|\s)(?:لتناسب|ليناسب|يناسب|تناسب|لتعزيز|ليعزز|لتنميه|لتحسين|ليحسن|لزياده|لجعل|ليكون|لتكون|لتشجيع|ليشجع|لمراعاه|يراعي|بحيث|بطريقه|بشكل|حتي|لكي|كي)(?:\s|$)|\b(?:(?:more|less)\s+(?:engaging|interesting|fun|interactive|challenging|difficult|effective|attractive|exciting|creative|accessible)|so\s+that|for\s+(?:weak|struggling|gifted|advanced|slow|fast|mixed)|to\s+(?:help|engage|support|improve|motivate|encourage|suit|fit|differentiate))\b/;
+  /(?:^|\s)(?:لتناسب|ليناسب|يناسب|تناسب|لتعزيز|ليعزز|لتنميه|لتحسين|ليحسن|لزياده|لجعل|ليكون|لتكون|لتشجيع|ليشجع|لمراعاه|يراعي|بحيث|بطريقه|بشكل|حتي|لكي|كي)(?:\s|$)|(?:^|\s)(?:اقل|اكثر)\s+(?:مللا?|تشويقا?|متعه|جاذبيه|تفاعلا?|تعقيدا?|صعوبه)(?:\s|$)|\b(?:(?:more|less)\s+(?:engaging|interesting|fun|interactive|challenging|difficult|effective|attractive|exciting|creative|accessible|boring|dull|tedious|stressful|repetitive|monotonous|confusing|overwhelming)|so\s+that|for\s+(?:weak|struggling|gifted|advanced|slow|fast|mixed)|to\s+(?:help|engage|support|improve|motivate|encourage|suit|fit|differentiate))\b/;
 
 /**
  * A how-question that says what the material is for. It is advice, not a request
