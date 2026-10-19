@@ -4913,6 +4913,24 @@ picture.
 - Bucket: pages are in `iqraa-public/book-pages/`; the app shows nothing new until
   the OTA ships.
 
+## Revision-deck slides name their unit, 2026-10-19
+
+A whole-book Grade 10 maths deck (53 slides) read as the same slide repeated: each
+unit round was five slides under three titles («الدائرة» on the divider and the ideas
+slide, «المفاهيم والمصطلحات», and «من كتاب الطالب» twice), so the slide list showed
+the same few titles eight times over.
+
+- **Fixed:** in `buildRevisionDeck` the divider keeps the bare unit title; the ideas slide
+  is «<unit> — الأفكار الرئيسة», the terms slide «<unit> — المفاهيم والمصطلحات», and
+  each book page «من كتاب الطالب — <unit> (٢)» (numbered from 2; the first figure sits
+  beside the ideas). English: «Key ideas» / «Key terms» (not «Goals» — a test uses
+  that word to detect an Arabic-only goals slide). `revisionDeck.test.ts` fails if any
+  two slides of the whole-book deck share a title.
+- **Not reproduced:** the same report had a player screenshot showing the agenda slide
+  at 27/53, where the built deck has a book page. The player reads `slides[slideIndex]`
+  for both counter and content, so the code cannot do this; it may have been a stale
+  saved deck. Unconfirmed until someone has the saved deck's link.
+
 ## Revision decks carry the book's own pictures and all its key terms, 2026-10-18
 
 Read against the Grade 10 biology student book (unit 1, evolution), the first real

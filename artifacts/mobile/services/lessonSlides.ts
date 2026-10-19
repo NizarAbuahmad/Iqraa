@@ -1362,6 +1362,10 @@ export function buildRevisionDeck(isAr: boolean, opts: RevisionDeckOptions): Cla
     // the title names nothing recognisable, because a flat panel with a title on
     // it is the look every unit break had.
     const unitIcon = iconForTopic(unitTitle);
+    // Every slide of a round names its unit. Five slides per unit used to carry
+    // one of three titles («الدائرة» twice, «المفاهيم والمصطلحات», «من كتاب
+    // الطالب» twice), so a whole-book deck read as the same slide forty times.
+    const named = (what: string) => `${unitTitle} — ${what}`;
     push({
       type: 'divider',
       title: unitTitle,
@@ -1395,7 +1399,7 @@ export function buildRevisionDeck(isAr: boolean, opts: RevisionDeckOptions): Cla
       type: 'intro',
       // No leading emoji: with one, the heading draws the bulb and the unit's
       // own icon never shows.
-      title: unitTitle,
+      title: named(L('الأفكار الرئيسة', 'Key ideas')),
       icon: unitIcon ?? 'bulb',
       content: shown.map(s => `• ${s}`).join('\n'),
       durationSeconds: 0,
@@ -1413,7 +1417,7 @@ export function buildRevisionDeck(isAr: boolean, opts: RevisionDeckOptions): Cla
     if (termsOwnSlide) {
       push(withShape({
         type: 'intro',
-        title: L('المفاهيم والمصطلحات', 'Key concepts and terms'),
+        title: named(L('المفاهيم والمصطلحات', 'Key terms')),
         icon: unitIcon ?? 'bulb',
         content: concepts.map(c => `• ${c}`).join('\n'),
         durationSeconds: 0,
@@ -1423,21 +1427,23 @@ export function buildRevisionDeck(isAr: boolean, opts: RevisionDeckOptions): Cla
     // lesson that has pages — the book's own picture of what the round covers.
     if (opts.bookPages && figures.length === 0) {
       const opener = unit.lessons.map(l => bookPageSlides(l.id, isAr, 1)[0]).find(Boolean);
-      if (opener) push(opener);
+      if (opener) push({ ...opener, title: `${opener.title} — ${unitTitle}` });
     }
     // The rest of the unit's figures, each its own slide, straight after.
-    for (const { figure, uri } of figures.slice(1)) {
+    // Numbered from 2: the first figure is the one beside the key ideas.
+    figures.slice(1).forEach(({ figure, uri }, k) => {
       const caption = bookFigureCaption(figure, isAr);
+      const n = String(k + 2).replace(/[0-9]/g, d => (isAr ? '٠١٢٣٤٥٦٧٨٩'[Number(d)]! : d));
       push({
         type: 'media',
-        title: L('من كتاب الطالب', 'From the Student Book'),
+        title: `${L('من كتاب الطالب', 'From the Student Book')} — ${unitTitle} (${n})`,
         content: caption,
         mediaKind: 'image',
         mediaUrl: uri,
         mediaCaption: caption,
         durationSeconds: 0,
       });
-    }
+    });
   });
 
   // ── 6. Checks — after the rounds: a generated check is about the scope, not one round ──
