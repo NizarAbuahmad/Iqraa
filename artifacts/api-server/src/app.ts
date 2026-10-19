@@ -11,6 +11,7 @@ import helmet from "helmet";
 import { pinoHttp } from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { isPoolExhausted, sendDbBusy } from "./lib/dbBusy";
 
 const app: Express = express();
 
@@ -196,6 +197,13 @@ app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
   if (typeof parserType === "string" && parserStatus && parserStatus >= 400 && parserStatus < 500) {
     logger.warn({ url: req.url, type: parserType }, "malformed request body");
     res.status(parserStatus).json({ error: "Malformed request body", code: parserType });
+    return;
+  }
+  // No database connection came free in time (lib/db poolConfig). The caller
+  // did nothing wrong and a retry will probably work, so say that.
+  if (isPoolExhausted(err)) {
+    logger.error({ err, url: req.url }, "database pool exhausted");
+    sendDbBusy(res);
     return;
   }
   logger.error({ err, url: req.url }, "unhandled error");

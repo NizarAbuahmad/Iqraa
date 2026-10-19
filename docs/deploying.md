@@ -264,6 +264,29 @@ Non-secret config (model names, budgets, flags, bucket names) is still plain
 env: change it with `--update-env-vars KEY=VALUE`, never `--set-env-vars` —
 the latter replaces the whole environment.
 
+**The database pool** is sized by three more plain env vars on `iqraa-api`, read
+once at boot (`lib/db/src/poolConfig.ts`; a value that is not a whole number in
+range falls back to the default rather than reaching `pg`, where `0` would mean
+"unlimited" and "wait forever"):
+
+| Var | Default | Meaning |
+| --- | --- | --- |
+| `DB_POOL_MAX` | 10 | connections per instance, 1–100 |
+| `DB_SYSTEM_POOL_MAX` | `DB_POOL_MAX` | the second (owner) pool that exists only with `RLS_ENFORCE=on` |
+| `DB_CONNECT_TIMEOUT_MS` | 10000 | how long a query waits for a free connection, 1000–60000 |
+
+Neon sees `DB_POOL_MAX × max instances` connections (× 2 with RLS on). Read the
+service's `maxScale` and Neon's limit before raising it — `--max-instances` is
+not pinned in `deploy.yml`, so the console value is the one in force. A query
+that waits past `DB_CONNECT_TIMEOUT_MS` fails: the auth middleware and the
+error handler answer **503 `db_busy` with `Retry-After`** (a 401 would make every
+client refresh and retry into the same starved pool), and most routes, which
+catch their own errors, answer their usual 500. Either way it logs `timeout
+exceeded when trying to connect`. `GET /api/healthz/pool` (header
+`x-admin-key: $ADMIN_DEBUG_KEY`) reports `total`, `idle` and `waiting` for the
+instance that answers; `waiting` above zero under load means the pool is the
+bottleneck.
+
 `BOOK_ITEMS_LIVE` is one such flag on `iqraa-api`: it lets the live model path
 add real NCCD maths book questions to an evaluation (at most half the requested
 count).

@@ -177,6 +177,25 @@ router.get("/healthz/features", (_req, res) => {
 });
 
 /**
+ * How busy this instance's database pools are, for load testing and incidents.
+ *
+ * Same gate as /healthz/errors (404 for a missing or wrong key). Per instance,
+ * like everything else in memory here: on Cloud Run it answers for whichever
+ * container the request landed on, which is enough to see "waiting > 0".
+ * `@workspace/db` is imported inside the handler for the reason health.ts's
+ * neighbours do it — importing it at module scope throws without DATABASE_URL.
+ */
+router.get("/healthz/pool", async (req, res) => {
+  const adminKey = process.env.ADMIN_DEBUG_KEY;
+  if (!adminKey || !matchesAdminKey(req.headers["x-admin-key"], adminKey)) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  const { poolStats } = await import("@workspace/db");
+  res.json({ ...poolStats(), revision: process.env.K_REVISION ?? null });
+});
+
+/**
  * The last 50 server errors, newest first — a GET request instead of
  * scrolling raw Render logs to see what broke recently.
  *
