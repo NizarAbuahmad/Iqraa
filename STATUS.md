@@ -21260,9 +21260,8 @@ a floor; the CPU-bound numbers are close to real):**
   registrations took p50 21 s / p95 36 s, and **a request that needs no database
   at all (`/healthz`) took p95 35 s during the burst** — the whole instance stops
   serving, including a class mid-exam. 100 simultaneous sign-ins: p95 17 s.
-  The mobile client gives up at 15 s (`API_TIMEOUT_MS`). Not fixed: it needs
-  hashing moved off the main thread (worker threads or native `bcrypt`), which
-  touches seven call sites in `routes/auth.ts`.
+  The mobile client gives up at 15 s (`API_TIMEOUT_MS`). Fixed the same day,
+  see below.
 - **Because of that, the new 10 s pool timeout shows as errors in that burst.**
   53 of 100 sign-ins answered 500 (queries could not get a connection through a
   starved loop). With `DB_CONNECT_TIMEOUT_MS=60000` the same burst had no errors
@@ -21280,3 +21279,39 @@ AI-generation burst, Cloud Run autoscaling, and the per-IP limiters from a real
 school network (a single-IP generator trips them; the script spoofs
 `X-Forwarded-For` only against a local API).
 
+### Hashing moved off the main thread, 2026-10-19
+
+`lib/passwordHash.ts` runs `bcryptjs` in a worker thread (`passwordHashWorker.ts`,
+its own esbuild entry — `build.mjs` fails if `dist/passwordHashWorker.mjs` is not
+emitted). Same algorithm and `$2b$12$…` format, so every stored password still
+verifies and there is no migration; `routes/auth.ts` and `routes/admin.ts` call
+`hashPassword`/`comparePassword` instead of `bcrypt.*`.
+
+Same 100-account burst, local API, before → after:
+
+| | before | after |
+| --- | --- | --- |
+| `/healthz` (no database) during sign-up | p95 35 s | p95 4 ms |
+| pool requests waiting for a connection | up to 73 | 0 |
+| sign-in 500s | 53 of 100 | 0 |
+| time for the last one (1 hasher, ~3 hashes/s) | ~36 s | ~36 s |
+
+The last row is the honest limit: hashing is CPU, one vCPU does ~3 a second, and
+moving it to a thread protects everyone else rather than speeding it up. So the
+routes that hash admit at most `PASSWORD_HASH_MAX_PENDING` (default 40, about
+what 15 s of one vCPU can finish) requests at once and answer the rest
+`503 hashing_busy` + `Retry-After` — before their rate limiters, because a
+refused request must not burn the per-address allowance (with the limiters first,
+a few retries of "busy" became a `429` lockout; found by the load test). The app
+shows «الخدمة مشغولة حاليًا…» for `hashing_busy`/`db_busy` (`errServerBusy`,
+JS only). More headroom is `PASSWORD_HASH_WORKERS` (1–4) together with more
+vCPU: `--cpu 2` and `PASSWORD_HASH_WORKERS=2` would roughly double it. Neither is
+set in `deploy.yml`.
+
+A worker that cannot start falls back to hashing on the main thread, logged at
+error level, and `GET /api/healthz/pool` shows `hashing.degraded: true` — check it
+after the first deploy. Re-run with the API pinned to one core (`taskset -c 0`, the
+worker thread included, to approximate Cloud Run's one vCPU): 100/100 accounts
+through, `/healthz` p95 6 ms, 0 errors, 0 × 429, exam path unchanged. Not measured:
+Cloud Run's own CPU quota (throttling is not the same as pinning), or more than one
+instance.

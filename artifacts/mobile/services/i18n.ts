@@ -169,6 +169,7 @@ const translations = {
     errMessagingUnavailable: 'المراسلة غير متاحة حاليًا. حاول لاحقًا.',
     errNotFound: 'لم يعد هذا متاحًا.',
     errTooManyRequests: 'محاولات كثيرة. انتظر قليلًا ثم حاول مجددًا.',
+    errServerBusy: 'الخدمة مشغولة حاليًا. انتظر لحظات ثم حاول مجددًا.',
     errOffline: 'تعذّر الاتصال. تحقق من الإنترنت ثم أعد المحاولة.',
     alreadyHaveAccount: 'لديك حساب؟',
 
@@ -3172,6 +3173,7 @@ const translations = {
     errMessagingUnavailable: 'Messaging is unavailable right now. Try again later.',
     errNotFound: 'This is no longer available.',
     errTooManyRequests: 'Too many attempts. Wait a moment and try again.',
+    errServerBusy: 'The service is busy right now. Wait a few seconds and try again.',
     errOffline: 'Could not connect. Check your internet and try again.',
     alreadyHaveAccount: 'Already have an account?',
 

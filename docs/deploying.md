@@ -287,6 +287,14 @@ exceeded when trying to connect`. `GET /api/healthz/pool` (header
 instance that answers; `waiting` above zero under load means the pool is the
 bottleneck.
 
+**Password hashing** runs in a worker thread (`lib/passwordHash.ts`) so a sign-up
+rush cannot stall the instance. Plain env vars again: `PASSWORD_HASH_WORKERS`
+(1–4, default 1 — match the service's vCPU) and `PASSWORD_HASH_MAX_PENDING`
+(default 40: sign-in/sign-up requests in flight before the rest get `503
+hashing_busy`). After a deploy, `GET /api/healthz/pool` must show
+`hashing.degraded: false`; `true` means the worker file did not load and
+hashing is back on the main thread.
+
 `BOOK_ITEMS_LIVE` is one such flag on `iqraa-api`: it lets the live model path
 add real NCCD maths book questions to an evaluation (at most half the requested
 count).

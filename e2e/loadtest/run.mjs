@@ -46,6 +46,8 @@ if (flag("help", false)) {
                          (only works with no proxy in front; default: localhost only)
   --max-error-rate <f>   exit 1 above this 5xx+network rate            [0.01]
   --max-p95-ms <n>       exit 1 if any measured route's p95 exceeds this [off]
+  --max-rush-ms <n>      exit 1 if the p95 time for a sign-up/verify/sign-in to succeed,
+                         including retries after a "busy" 503, exceeds this     [off]
   --json <path>          also write the full results here
   --skip <list>          comma list of: signup, login, exam
   --allow-remote         permit a non-local API host (a staging service you own)`);
@@ -63,6 +65,7 @@ const QUESTIONS = num("questions", 10);
 const ADMIN_KEY = flag("admin-key", process.env.ADMIN_DEBUG_KEY ?? "");
 const MAX_ERROR_RATE = num("max-error-rate", 0.01);
 const MAX_P95 = flag("max-p95-ms", false) === false ? null : num("max-p95-ms", 0);
+const RUSH_MAX_MS = flag("max-rush-ms", false) === false ? null : num("max-rush-ms", 0);
 const SKIP = new Set(String(flag("skip", "")).split(",").filter(Boolean));
 
 const host = new URL(API).hostname;
@@ -111,6 +114,7 @@ async function call(label, method, path, { token, body, ip, expect } = {}) {
   const t0 = performance.now();
   let status = "net";
   let json = null;
+  let retryAfter = 0;
   try {
     const res = await fetch(`${API}${path}`, {
       method,
@@ -119,6 +123,7 @@ async function call(label, method, path, { token, body, ip, expect } = {}) {
       signal: AbortSignal.timeout(60_000),
     });
     status = res.status;
+    retryAfter = Number(res.headers.get("retry-after")) || 0;
     const text = await res.text();
     try {
       json = text ? JSON.parse(text) : null;
@@ -129,12 +134,32 @@ async function call(label, method, path, { token, body, ip, expect } = {}) {
     status = err?.name === "TimeoutError" ? "timeout" : "net";
   }
   const ms = performance.now() - t0;
-  record(label, ms, status);
+  // A 503 the API sends on purpose (its hashing queue or DB pool is full) is load shedding working, not a
+  // failure: the app tells the user to try again. Counted apart from real errors.
+  const shed = status === 503 && (json?.code === "hashing_busy" || json?.code === "db_busy");
+  record(label, ms, shed ? "shed" : status);
   if (expect !== undefined && status !== expect) {
     const detail = json?.error ?? json?.code ?? "";
-    return { ok: false, status, json, ms, detail };
+    return { ok: false, status, json, ms, detail, shed, retryAfter };
   }
-  return { ok: typeof status === "number" && status < 400, status, json, ms, detail: json?.error ?? "" };
+  return { ok: typeof status === "number" && status < 400, status, json, ms, detail: json?.error ?? "", shed, retryAfter };
+}
+
+/**
+ * What the app does when told "busy, try again": the user taps again a few seconds later.
+ * Up to `tries` attempts, honouring Retry-After with jitter. Resolves with the last answer
+ * and how long the whole thing took from the user's side.
+ */
+async function callPatient(label, method, path, opts, tries = 15) {
+  const t0 = performance.now();
+  let r;
+  for (let i = 0; i < tries; i++) {
+    r = await call(label, method, path, opts);
+    if (!r.shed) break;
+    await sleep((r.retryAfter || 2) * 1000 * (0.75 + Math.random() * 0.5));
+  }
+  r.totalMs = performance.now() - t0;
+  return r;
 }
 
 function must(r, what) {
@@ -196,6 +221,7 @@ function startPoolSampling() {
 // ------------------------------------------------------------------ scenarios
 
 const PASSWORD = "Load-Test-Pass-2026!";
+const rushOutcomes = []; // { name, ok, total, p95TotalMs } per sign-up/verify/login phase
 const runId = randomBytes(3).toString("hex");
 const emailOf = (kind, i) => `lt-${runId}-${kind}-${i}@example.com`;
 
@@ -236,23 +262,33 @@ async function signupAndLoginPhase() {
   const emails = Array.from({ length: SIGNUPS }, (_, i) => emailOf("su", i));
   const ips = emails.map(nextIp);
 
+  /** All accounts at once, each retrying when told the service is busy. */
+  async function rush(name, label, job) {
+    beginPhase(name);
+    const t0 = performance.now();
+    const results = await pool(SIGNUPS, 0, job);
+    endPhase();
+    const ok = results.filter((r) => r.ok).length;
+    const totals = results.map((r) => r.totalMs).sort((a, b) => a - b);
+    console.log(`  ${ok}/${SIGNUPS} got through in ${((performance.now() - t0) / 1000).toFixed(1)}s; time to success incl. retries p50 ${pct(totals, 50).toFixed(0)}ms p95 ${pct(totals, 95).toFixed(0)}ms`);
+    rushOutcomes.push({ name, ok, total: SIGNUPS, p95TotalMs: pct(totals, 95) });
+    return results;
+  }
+
   console.log(`\n▶ sign-up: ${SIGNUPS} accounts registering at once`);
-  beginPhase("signup");
-  await pool(SIGNUPS, 0, (i) => register("POST /auth/register", emails[i], ips[i]));
-  endPhase();
+  await rush("signup", "register", (i) => callPatient("POST /auth/register", "POST", "/auth/register", {
+    ip: ips[i],
+    body: { firstName: "Load", lastName: `Test${i}`, email: emails[i], password: PASSWORD, confirmPassword: PASSWORD, acceptedTerms: true, termsVersion: "2026-01-01" },
+  }));
 
   await plantCodes(emails);
 
   console.log(`▶ verify: ${SIGNUPS} accounts entering their code`);
-  beginPhase("verify");
-  await pool(SIGNUPS, 0, (i) => call("POST /auth/verify-email", "POST", "/auth/verify-email", { ip: ips[i], body: { email: emails[i], code: CODE } }));
-  endPhase();
+  await rush("verify", "verify", (i) => callPatient("POST /auth/verify-email", "POST", "/auth/verify-email", { ip: ips[i], body: { email: emails[i], code: CODE } }));
 
   if (SKIP.has("login")) return;
   console.log(`▶ sign-in: ${SIGNUPS} accounts logging in at once (bcrypt cost 12)`);
-  beginPhase("login");
-  await pool(SIGNUPS, 0, (i) => call("POST /auth/login", "POST", "/auth/login", { ip: ips[i], body: { email: emails[i], password: PASSWORD } }));
-  endPhase();
+  await rush("login", "login", (i) => callPatient("POST /auth/login", "POST", "/auth/login", { ip: ips[i], body: { email: emails[i], password: PASSWORD } }));
 }
 
 // --- 2. Classes of students sitting an exam, teachers watching.
@@ -378,7 +414,7 @@ if (bystanderTimer) clearInterval(bystanderTimer);
 const rows = [...stats.entries()].map(([key, s]) => {
   const sorted = [...s.ms].sort((a, b) => a - b);
   const statuses = Object.fromEntries([...s.status].sort(([a], [b]) => String(a).localeCompare(String(b))));
-  const bad = [...s.status].filter(([k]) => typeof k !== "number" || k >= 500).reduce((n, [, v]) => n + v, 0);
+  const bad = [...s.status].filter(([k]) => (typeof k === "number" ? k >= 500 : k !== "shed")).reduce((n, [, v]) => n + v, 0);
   return { key, phase: s.phase, n: s.ms.length, p50: pct(sorted, 50), p95: pct(sorted, 95), p99: pct(sorted, 99), max: sorted.at(-1) ?? 0, statuses, bad };
 });
 
@@ -406,12 +442,17 @@ if (poolSamples.length) {
 const all = rows.reduce((n, r) => n + r.n, 0);
 const bad = rows.reduce((n, r) => n + r.bad, 0);
 const limited = rows.reduce((n, r) => n + (r.statuses[429] ?? 0), 0);
+const shed = rows.reduce((n, r) => n + (r.statuses.shed ?? 0), 0);
 const rate = all ? bad / all : 0;
-console.log(`\n${all} requests, ${bad} server errors/timeouts (${(rate * 100).toFixed(2)}%), ${limited} rate-limited (429)`);
+console.log(`\n${all} requests, ${bad} server errors/timeouts (${(rate * 100).toFixed(2)}%), ${limited} rate-limited (429), ${shed} shed by the API on purpose (503 busy)`);
 if (limited && !SPOOF) console.log("  429s from one load-generating IP are expected; use a local API (X-Forwarded-For is then spoofed per user) or raise the limits on a staging copy.");
 
 const failures = [];
 if (rate > MAX_ERROR_RATE) failures.push(`server error rate ${(rate * 100).toFixed(2)}% > ${(MAX_ERROR_RATE * 100).toFixed(2)}%`);
+for (const r of rushOutcomes) {
+  if (r.ok < r.total) failures.push(`${r.name}: only ${r.ok}/${r.total} accounts got through even after retrying`);
+  if (RUSH_MAX_MS !== null && r.p95TotalMs > RUSH_MAX_MS) failures.push(`${r.name}: p95 time to success ${r.p95TotalMs.toFixed(0)}ms > ${RUSH_MAX_MS}ms`);
+}
 if (examResult && examResult.done < examResult.total) failures.push(`${examResult.total - examResult.done} students did not finish`);
 if (examResult && examResult.stored !== examResult.done) failures.push(`${examResult.done} students saw a successful submit but ${examResult.stored} attempts are stored`);
 if (MAX_P95 !== null) for (const r of rows) if (r.p95 > MAX_P95) failures.push(`${r.key} p95 ${r.p95.toFixed(0)}ms > ${MAX_P95}ms`);

@@ -6,6 +6,7 @@ import { isVerifierUnreachable } from "../lib/derivativeVerified.ts";
 import { getBudgetStatus } from "../lib/aiBudget.ts";
 import { getRecentErrors } from "../lib/errorLog.ts";
 import { createRateLimiter } from "../lib/rateLimit.ts";
+import { hashingStatus } from "../lib/passwordHash.ts";
 import { studentAccountsEnabled } from "../lib/features.js";
 
 const router: IRouter = Router();
@@ -192,7 +193,9 @@ router.get("/healthz/pool", async (req, res) => {
     return;
   }
   const { poolStats } = await import("@workspace/db");
-  res.json({ ...poolStats(), revision: process.env.K_REVISION ?? null });
+  // `hashing.degraded: true` means password hashing fell back to the main
+  // thread (see lib/passwordHash.ts): sign-ups work but stall the instance again.
+  res.json({ ...poolStats(), hashing: hashingStatus(), revision: process.env.K_REVISION ?? null });
 });
 
 /**

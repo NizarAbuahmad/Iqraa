@@ -10,6 +10,12 @@ No browser, so it measures the server and Postgres, not React.
 | `exam` | C teachers each publish an exam to a class of S students; every student opens the link, claims a name, answers every question, submits and fetches the result, ramped over `--ramp-s` | the path a real class uses; teachers poll attempts meanwhile |
 | `bystander` | `GET /healthz` (no database) every 250 ms for the whole run | shows when the Node event loop is starved, which no per-route number does |
 
+The sign-up, verify and sign-in phases behave like the app: a `503` the API sends
+on purpose (`hashing_busy` / `db_busy`, "busy, try again") is retried after
+`Retry-After`, and the report counts it as **shed**, not as an error. What it
+checks is that every account gets through, and how long that takes from the
+user's side (`--max-rush-ms` to gate on it).
+
 After the exam it asks Postgres how many attempts are really stored, because a
 `200` from submit is not the same thing as a row.
 
@@ -42,6 +48,9 @@ p95 exceeds `--max-p95-ms`.
 
 ## Reading the result
 
+- **shed (503 busy) is not a failure either**, but a lot of it means the instance
+  is at capacity. Compare `time to success incl. retries` with the client's 15 s
+  patience (`API_TIMEOUT_MS`).
 - **429s are not failures.** One load generator is one IP. Against a local API the
   script gives each virtual user its own `X-Forwarded-For` (Express trusts one
   proxy hop, so this works only with nothing in front of the API). Behind Cloud
