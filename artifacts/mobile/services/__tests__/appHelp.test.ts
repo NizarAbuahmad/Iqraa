@@ -950,6 +950,165 @@ describe('editing an exam, marks, results, printing, homework, one-to-one messag
   }
 });
 
+describe('a tool id that is a word, and new-item steps for a change', () => {
+  // The sixth live pass (2026-10-18).
+  const t = (k: string) => `<${k}>`;
+  it('«how do i create a positive classroom» is a teaching question', () => {
+    assert.equal(isAppHelpQuery('how do i create a positive classroom'), false);
+    assert.notEqual(classifyChatIntent('how do i create a positive classroom', 'en').intent, 'app_help');
+  });
+  it('the interactive class is still found by its name', () => {
+    assert.equal(top('where is the interactive class'), 'tool:classroom');
+    assert.equal(top('وين الحصة التفاعلية؟'), 'tool:classroom');
+  });
+  const steps: Array<[string, string]> = [
+    ['كيف أغير اسم الشعبة؟', 'howRenameClass'],
+    ['how do i rename a class', 'howRenameClass'],
+    ['كيف أحذف طالباً من الشعبة؟', 'howRemoveStudent'],
+    ['how do i delete a student from my class', 'howRemoveStudent'],
+    ['كيف أنقل طالباً لشعبة ثانية؟', 'howMoveStudent'],
+    ['how do i move a student to another class', 'howMoveStudent'],
+    ['كيف أربط ولي أمر بطالب؟', 'howLinkParent'],
+    ['how do i link a parent to a student', 'howLinkParent'],
+    ['كيف أعيد رمز الدخول لطالب؟', 'howReissueLoginCode'],
+    ['الطالب نسي رمز الدخول', 'howReissueLoginCode'],
+    ['كيف يسجل الطالب الدخول؟', 'howStudentSignIn'],
+    ['how do students sign in', 'howStudentSignIn'],
+    ['كيف أنشئ مجموعة دعم؟', 'howSupportGroups'],
+    ['وين مجموعات الدعم؟', 'howSupportGroups'],
+    ['كيف أرسل إعلاناً لكل أولياء الأمور؟', 'howBroadcast'],
+    ['how do i send a message to all parents', 'howBroadcast'],
+    ['كيف أشوف رسائل أولياء الأمور؟', 'howReadMessages'],
+    ['how do i see messages from parents', 'howReadMessages'],
+    ['كيف أنشئ امتحاناً جديداً؟', 'howCreateExam'],
+    ['how do i create an exam', 'howCreateExam'],
+    ['كيف أحذف ورقة عمل محفوظة؟', 'howDeleteSaved'],
+    ['how do i delete a saved worksheet', 'howDeleteSaved'],
+    ['كيف أعدّل ورقة العمل قبل الطباعة؟', 'howEditWorksheet'],
+    ['how do i edit the worksheet', 'howEditWorksheet'],
+    ['كيف أطبع خطة الدرس بنموذج الوزارة؟', 'howMinistryPlan'],
+    ['how do i export the lesson plan in the ministry template', 'howMinistryPlan'],
+    ['كيف أضيف موعد امتحان للتقويم؟', 'howExamDate'],
+  ];
+  const lang = (q: string) => (/[؀-ۿ]/.test(q) ? 'ar' : 'en');
+  for (const [q, key] of steps) {
+    it(`«${q}» gets ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(classifyChatIntent(q, lang(q)).intent, 'app_help');
+      assert.equal(answerAppHelp(q, lang(q), t).text, `<${key}>`);
+    });
+  }
+
+  const teaching = [
+    'أنشئ اختباراً عن الكسور',
+    'ممكن انشئ اختبار',
+    'كيف أنقل الطالب من الحفظ إلى الفهم؟',
+    'كيف أربط الدرس بحياة الطالب؟',
+    'كيف أتعامل مع رسائل أولياء الأمور الغاضبة؟',
+    'how do i support struggling students',
+    'كيف أحذف الأخطاء من إجابات الطالب؟',
+  ];
+  for (const q of teaching) {
+    it(`leaves «${q}» alone`, () => {
+      assert.equal(isAppHelpQuery(q), false);
+      assert.notEqual(classifyChatIntent(q, lang(q)).intent, 'app_help');
+    });
+  }
+
+  it('renaming a class never gets the make-a-new-class steps', () => {
+    assert.notEqual(answerAppHelp('كيف أغير اسم الشعبة؟', 'ar', t).text, '<howAddClass>');
+    assert.notEqual(answerAppHelp('how do i edit my class', 'en', t).text, '<howAddClass>');
+  });
+});
+
+describe('a purpose, a dialect, a plural (seventh live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const lang = (q: string) => (/[؀-ۿ]/.test(q) ? 'ar' : 'en');
+  // A how-question that names a material and then what it is for is teaching.
+  const teaching = [
+    'كيف أعدّل ورقة العمل لتناسب الطلاب الضعاف؟',
+    'كيف أستخدم النشاط لتعزيز التعاون؟',
+    'how do i make my slides more engaging',
+    'how do i adapt the worksheet for weak students',
+    'كيف أجعل الاختبار يناسب كل المستويات؟',
+  ];
+  for (const q of teaching) {
+    it(`leaves «${q}» alone`, () => {
+      assert.equal(isAppHelpQuery(q), false);
+      assert.notEqual(classifyChatIntent(q, lang(q)).intent, 'app_help');
+    });
+  }
+  // «شلون», «ازاي», «كيفية» ask what «كيف» asks.
+  const steps: Array<[string, string]> = [
+    ['شلون اضيف واجب؟', 'howAddHomework'],
+    ['ازاي اضيف طالب؟', 'howAddStudent'],
+    ['كيفية إضافة شعبة جديدة', 'howAddClass'],
+    ['اشلون اغير اسم الشعبة', 'howRenameClass'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» gets ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, lang(q), t).text, `<${key}>`);
+    });
+  }
+  it('"where do i find my exams" finds the evaluations', () => {
+    assert.equal(isAppHelpQuery('where do i find my exams'), true);
+    assert.equal(top('where do i find my exams'), 'tool:evaluations');
+  });
+  const features: Array<[string, string]> = [
+    ['كيف أعمل خطة فصلية؟', 'howTeachingPlan'],
+    ['how do i make a teaching plan', 'howTeachingPlan'],
+    ['كيف أضيف درساً للخطة الفصلية؟', 'howPlanLessons'],
+    ['كيف أنشئ جدول الحصص؟', 'howTimetable'],
+    ['كيف أضيف حصة إلى الجدول؟', 'howTimetable'],
+    ['كيف أشوف سجل الطالب؟', 'howStudentRecord'],
+    ['how do i see student progress', 'howStudentRecord'],
+    ['كيف أكتب ملاحظة عن طالب؟', 'howStudentNote'],
+    ['how do i add a note about a student', 'howStudentNote'],
+    ['كيف أشارك ورقة العمل على واتساب؟', 'howShareMaterial'],
+    ['how do i send the worksheet on whatsapp', 'howShareMaterial'],
+    ['كيف أحفظ العرض التقديمي؟', 'howSaveSlides'],
+    ['how do i print slides', 'howSaveSlides'],
+    ['كيف أعرض الشرائح بشاشة كاملة؟', 'howPresent'],
+    ['how do i present the slides full screen', 'howPresent'],
+    ['كيف أعمل لعبة للطلاب؟', 'howMakeGame'],
+    ['how do i share a game with students', 'howShareGame'],
+    ['كيف أرجع للمحادثة السابقة؟', 'howChatHistory'],
+    ['كيف أمسح المحادثة؟', 'howChatHistory'],
+    ['how do i start a new chat', 'howChatHistory'],
+    ['كيف أضيف مورداً من المكتبة للشعبة؟', 'howLibraryToClass'],
+    ['how do i add a library resource to my class', 'howLibraryToClass'],
+  ];
+  for (const [q, key] of features) {
+    it(`«${q}» gets ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(classifyChatIntent(q, lang(q)).intent, 'app_help');
+      assert.equal(answerAppHelp(q, lang(q), t).text, `<${key}>`);
+    });
+  }
+  it('«وين المكتبة؟» points at the Library tab', () => {
+    assert.equal(isAppHelpQuery('وين المكتبة؟'), true);
+    assert.equal(top('وين المكتبة؟'), 'library');
+  });
+  it('saving a lesson plan still gets the save steps', () => {
+    assert.equal(answerAppHelp('كيف أحفظ خطة الدرس؟', 'ar', t).text, '<howSaveMaterial>');
+  });
+  const stillTeaching = [
+    'كيف أعرض الفكرة بطريقة ممتعة؟',
+    'كيف أكتب ملاحظة جيدة في دفتر الطالب عن سلوكه؟',
+    'كيف أجعل اللعبة ممتعة للطلاب؟',
+    'كيف أراجع الدرس السابق مع الطلاب؟',
+  ];
+  for (const q of stillTeaching) {
+    it(`leaves «${q}» alone`, () => {
+      assert.equal(isAppHelpQuery(q), false);
+    });
+  }
+  it('a tool\'s make-steps never answer sharing it', () => {
+    assert.notEqual(answerAppHelp('كيف أشارك ورقة العمل على واتساب؟', 'ar', t).text, '<howMakeWorksheet>');
+  });
+});
+
 describe('classifyChatIntent routes app questions before artifacts', () => {
   it('«وين ألاقي ورقة العمل» asks for the tool, not a worksheet', () => {
     assert.equal(classifyChatIntent('وين ألاقي ورقة العمل؟').intent, 'app_help');

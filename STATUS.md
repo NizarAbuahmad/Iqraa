@@ -1589,6 +1589,36 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## One card for quizzes and evaluations, 2026-10-18
+
+The Tools tab had «اختبار قصير» and «التقييمات» as neighbouring cards, which a
+teacher reads as two answers to one question («أريد اختبارًا»). They are still
+two systems — the quiz makes a paper and stores nothing, an evaluation has a
+roster, a share link, attempts and marks — so **the screens, routes, generators
+and API are untouched.** What changed is the door:
+
+- The tab draws **one card**, «اختبارات وتقييمات», opening `/ai-tools/quiz`.
+  `ToolDef.tabHidden` folds `evaluations` out of the tab only; chat's "+" menu,
+  the home screen, the command palette and help still list it, and chat keeps
+  the plain «اختبار قصير» (`tabTitleKey`/`tabDescKey` are tab-only overrides),
+  because chat only ever makes the paper. `TAB_TOOLS` is what the tab renders.
+- Both screens carry `ExamKindSwitch` — «ورقة للطباعة» | «تقييم يُرصد ويُصحَّح»
+  with a one-line hint under the active side, which is what stops the old
+  «أداة تقييم» mix-up coming back. The other side `replace`s, so back lands on
+  the Tools tab. `services/examKind.ts` names the two routes; `examKind.test.ts`
+  and `toolCatalog.test.ts` pin them.
+- `/my-exams` («اختباراتي») is the **student's** list, not the teacher's
+  evaluations list; the teacher's is `/evaluations`.
+
+Not done, deliberately: the two generators still assemble questions separately
+(counts, top-up, type order), so a new question type is still two edits.
+Merging that is a separate change.
+
+Verified in a browser, not asserted: a signed-up teacher on the built web app
+(local API + Postgres), phone and desktop widths, English and Arabic — one card
+on the tab, the switch both ways, RTL order correct, no page errors. The
+desktop grid is now a full 3×3 where ten cards left one alone on the last row.
+
 ## The parent letter stops saying things the teacher never typed, 2026-10-17
 
 A teacher's screenshot of `ai-tools/parent-message` prompted an audit: render the
@@ -4244,6 +4274,45 @@ so printing one points at the short quiz. The exam-question rule needs a how / c
 word (`EN_HOW_LEAD` / `AR_HOW_LEAD`): said as intent, «اريد اضافة سؤال الى الاختبار»
 asks the assistant to write one and stays teaching. «كيف أرسل رسالة لولي أمر؟» still
 goes to the model by agreement. 14 look-alikes pinned.
+
+**Classes, students, parents and files (2026-10-18, sixth live pass).** Two answers
+were worse than none: «كيف أغير اسم الشعبة؟» got the make-a-new-class steps (now
+`NEW_ITEM_HOWS`: add-a-class / add-a-student steps never answer a change verb), and
+"how do i create a positive classroom" opened the interactive-class tool because the
+tool's id was a keyword (`ID_IS_A_WORD`; the tool is still found by «الحصة
+التفاعلية» / "interactive class"). New `RULE_PLACES`, steps from the screens: rename
+a class (pencil → «تعديل الشعبة»), remove a student (× on the «الطلبة» tab), link a
+parent (the per-student key → «أنشئ الرمز» / «شارك الرمز»), a new login code, how a
+student signs up and signs in («سجّلت برمز الربط؟ ادخل برمز حسابك»), a group message
+to parents («رسالة جماعية»), parents' messages, creating an exam, deleting a saved
+file (⋯ → «احذف»), editing a worksheet, the Ministry-form export (lesson-plan screen
+only), and an exam date «for the calendar» (the existing exam-date steps). **Three say
+the app cannot**: no moving a student between classes (a re-added name is a new
+record, marks and parent link stay behind), no hand-made support group (they are
+built from results under 60%), no event added on the calendar. Creating an exam needs
+a how-word and says «امتحان»/"exam": «اختبار» and "test" stay with the short-quiz
+steps (`howMakeQuiz`). Still answered as app questions, older and not fixed here: a
+how-question that names a tool and then a purpose («كيف أعدّل ورقة العمل لتناسب الطلاب
+الضعاف؟»). 7 look-alikes pinned. (Fixed in the seventh pass, below.)
+
+**A purpose, a dialect, and ten more features (2026-10-18, seventh live pass).** A
+how-question that names a material and then what it is for («لتناسب الطلاب الضعاف»,
+«لتعزيز التعاون», "more engaging") is teaching now (`PURPOSE` in `isAppHelpQuery`;
+anchored rules are decided first). A tool's make-steps (`TOOL_HOW`) answer only a
+make verb (`MAKE_VERB`), so sharing a worksheet on WhatsApp no longer gets «جهّز ورقة
+العمل». «شلون», «اشلون», «ازاي» and «كيفية» open a how like «كيف»; "exams" is a keyword.
+New steps, from the screens: a teaching plan («خطة تدريس جديدة»), its lesson dates
+(«توزيع تلقائي»; lessons come from the curriculum, never typed), the timetable
+(«إعداد الحصص», then a cell), a student's record and note, sharing on WhatsApp
+(«مشاركة» sends text, so the answer names the PDF / Word export), saving and
+printing slides («احفظ», «PDF», «PPTX»), presenting full screen, the class challenge
+(`howMakeGame`), sharing a game (only the maths drills have a share link), and a
+library item to a class («أرفق ملفًا» ← «من المكتبة»). **The chat history answer
+says it is not in the app**: the Iqrra chat is not saved and has no clear or new-chat
+button. The bottom tab is «المكتبة» (route file still `curriculum`): a `library` place
+finds it, the curriculum place now sits under it, and the upload answer no longer
+calls the tab «المنهاج». Saving slides left `save-material`, whose «احفظ في ملفاتي»
+does not exist on the slides screen. 14 look-alikes pinned.
 
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
@@ -21117,11 +21186,26 @@ What is true, checked against the code and the suites:
   `--review`, and `--only` must be `worksheet`, `lesson-plan` or
   `lesson-teaching`. An approved review file stays on disk, so a later bare
   `--go` is refused until it is deleted or renamed (or `--force` is given). A
-  bare `--go` plans the 64 worksheet and lesson-plan calls before the 49
-  explanations; the default $1 cap allows about 100 model calls, so at worst
-  roughly 36 of the 49 explanations fit and the rest are cut off partway (a
-  call the pool already holds does not count against the cap). Use
+  bare `--go` plans the worksheet and lesson-plan calls before the
+  explanations (on 2026-10-18 the dry run printed 66 of those and 50
+  explanations); the default $1 cap allows about 100 model calls, so at worst
+  only about 34 explanations fit and the rest are cut off partway (a call the
+  pool already holds does not count against the cap). Use
   `--only=lesson-teaching`.
+  **`--approve` approves every entry left in the file, so delete the rejected
+  ones first.** Once approved, the only way back is the report-and-retire route
+  below. Delete by `lessonId` with a script that parses and rewrites the JSON
+  (`JSON.parse` then `JSON.stringify` keeps every hash valid); do not edit text.
+- **An account that signs in with Google has no password** (`/auth/forgot-password`
+  only emails such an account a notice), so the script also takes `PREGEN_TOKEN` — the web app's
+  `iqra_access_token` from the browser's local storage — instead of
+  `PREGEN_EMAIL`/`PREGEN_PASSWORD`. It lasts 15 minutes and the app only
+  refreshes its stored copy when it makes a request, so a copy can already be
+  old: click around the app, then copy it, and run at once. A refused token
+  stops the run with a message; the run is safe to repeat (stored lessons answer
+  fast and do not count against the cap). The API allows 15 requests a minute
+  per account, so a rerun over stored lessons pauses about a minute per 15.
+  `PREGEN_API_BASE` is the API origin without `/api` (the script adds it).
 - **Replacing a rejected explanation.** Deleting an entry from the review file
   does not remove the stored variant, so the next `--go` serves it again and the
   lesson stays «قريبًا». A `system_admin` files a report on that `variantId` with
@@ -21145,19 +21229,46 @@ What is true, checked against the code and the suites:
   by a test.
 
 **Not built, and worth knowing:**
-- Nothing has been generated or approved in production yet, so every lesson
-  shows «شرح الدرس قريبًا» until the prefill, the review and the approval are run.
+- **First production run, 2026-10-18.** A `system_admin` who signs in with
+  Google ran `--go --only=lesson-teaching` with `PREGEN_TOKEN`. It stored 46 of
+  the 50 explanations (maths 33 of 33, chemistry 13 of 17) and stopped on an API
+  `429 (quota/budget)` — most likely the per-account AI cap, which was not
+  checked; the company-wide budget had about $49 of $50 left — before the four
+  chemistry unit 5 lessons (`kbl-chem-s2-nccd-u5_lab`, `_l1`, `_l2`, `_l3`,
+  energy changes in reactions). The 46 were read once, by an AI assistant,
+  arithmetic checked by hand; **no teacher read them and none went through the
+  math verifier.** That reading found 8 with wrong or missing content: a wrong
+  answer key (قانون الجيوب: 6√3 instead of 4√3; مقاييس التشتت: mean 164.5 instead
+  of about 165.2), a wrong definition of a sector (الأقواس والقطاعات: «بين قوسَين»),
+  an empty practice answer (قسمة كثيرات الحدود), a non-answer as the key
+  (`u1_l1`), vague text and blank bullets (مساحة المثلث), a quadrant rule its own
+  practice contradicts (حل المعادلات المثلثية), and «مواتِ» for «مولات» throughout
+  (الحسابات الكيميائية). **All 46 were approved, those 8 included**, because the
+  deletion step was skipped; they were visible to students for about three
+  minutes (whether any student opened one was not checked), then reported and
+  retired through the route above (8 × `200` on both calls). **38 explanations
+  are live; those 8 lessons and the 4 unit 5 chemistry lessons show «قريبًا».**
+  A rerun of `--go --only=lesson-teaching` generates the 4 and fresh variants
+  for the 8 (retired rows are not served), which need the same review before
+  `--approve`; a fresh variant may repeat the fault, so read them, do not assume.
+  Smaller wording faults were left live in some of the 38 (a garbled sentence in
+  the conservation-of-mass card, «تتشكل الذرات» for «ترتبط الذرات», a title that
+  promises chemical formulas the content does not cover, questions that say «كما
+  ورد في النص», «the graph» with no figure); if they matter, retire those lessons
+  the same way.
 - The wording was written for a classroom projector. Whether it reads well to a
   student alone is checked only by a person reading the review file; if more
   than a few lessons need rewording the answer is a separate student prompt, not
   hand-edited text.
 - **Three paths always show «شرح الدرس قريبًا».** Of the 53 grade 10
   Mathematics (36) and Chemistry (17) lessons the student browser lists, the
-  prefill covers 49 (32 maths + 17 chemistry). The rest never get an explanation
-  from it:
-  1. The 4 maths lessons whose titles ground to a different lesson and are
+  prefill covers 50 (33 maths + 17 chemistry, checked 2026-10-18 — the count
+  follows `resolveGeneratorGrounding`, so it moves with the curriculum data).
+  The rest never get an explanation from it:
+  1. The 3 maths lessons whose titles ground to a different lesson and are
      skipped on purpose (`u1_l3` تبسيط المقادير الأسية, `u3_l1` النسب المثلثية,
-     `u5_l5` المتتاليات, `u7_l2` جمع المتجهات وطرحها), so no row exists for them.
+     `u7_l2` جمع المتجهات وطرحها), so no row exists for them. (`u5_l5`
+     المتتاليات used to be on this list and now grounds to itself.)
   2. A student whose UI language is English asks for `english`; the prefill is
      Arabic-only, so every lesson is «coming soon» for that student.
   3. A lesson whose only explanation was rejected, until the replacement

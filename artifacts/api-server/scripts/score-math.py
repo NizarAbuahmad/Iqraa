@@ -44,8 +44,8 @@ def classify(items: list[dict]) -> list[dict]:
     # derivative key — the scorer would report a provider as wrong on exactly
     # the family the verifier is best at.
     script = f"""
-import {{ classifyVerifiableTopic }} from {json.dumps(str(GUARDS))};
-import {{ toVerifiablePair, stripOptionLabel, isTrueFalseAnswer }} from {json.dumps(str(PAIR))};
+import {{ classifyVerifiableTopic }} from {json.dumps(GUARDS.as_uri())};
+import {{ toVerifiablePair, stripOptionLabel, isTrueFalseAnswer }} from {json.dumps(PAIR.as_uri())};
 const items = JSON.parse(process.argv[2]);
 console.log(JSON.stringify(items.map(i => {{
   // `quizPromptAr` asks for «أ) الخيار الصحيح», so the key and every option
@@ -68,7 +68,7 @@ console.log(JSON.stringify(items.map(i => {{
     try:
         out = subprocess.run(
             ["node", "--experimental-strip-types", str(tmp), json.dumps(items)],
-            capture_output=True, text=True, check=True, cwd=REPO,
+            capture_output=True, text=True, encoding="utf-8", check=True, cwd=REPO,
         )
         return json.loads(out.stdout)
     finally:
