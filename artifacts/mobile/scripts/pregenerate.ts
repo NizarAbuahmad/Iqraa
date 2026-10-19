@@ -56,12 +56,13 @@
  * not remove the file: it stays on disk, so a later bare `--go` (which writes
  * a review file) is refused until you delete or rename it, or pass `--force`.
  *
- * A bare `--go` plans the 64 worksheet and lesson-plan calls first and the
+ * A bare `--go` plans the worksheet and lesson-plan calls first and the
  * lesson-teaching calls last. The default $1 cap allows about 100 model calls
- * (at the $0.01 estimate), so after the 64 earlier calls, at worst, roughly 36
- * of the 49 teaching calls fit and the rest are cut off partway (a call the
- * pool already holds answers in under 3 s and does not count against the
- * cap). Use `--only=lesson-teaching`.
+ * (at the $0.01 estimate); on 2026-10-18 the dry run printed 66 of the earlier
+ * calls and 50 teaching calls, so at worst only about 34 teaching calls fit and
+ * the rest are cut off partway (a call the pool already holds answers in under
+ * 3 s and does not count against the cap). The counts move with the curriculum
+ * data: run the dry run for today's. Use `--only=lesson-teaching`.
  *
  * REPLACING A REJECTED EXPLANATION. Deleting an entry from the review file only
  * keeps it from being approved; the stored variant stays in the pool, so the
