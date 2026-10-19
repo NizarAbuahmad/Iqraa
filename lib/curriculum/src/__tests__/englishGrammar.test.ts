@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import {
-  allGrammarSentences, grammarUnit, grammarUnitsForGrade, offeredGrammar, pluralOf, renderGrammarSheet, unitSentences, withArticle,
+  allGrammarSentences, allGrammarSpoken, grammarUnit, grammarUnitsForGrade, offeredGrammar, pluralOf, renderGrammarSheet, unitSentences, withArticle,
 } from '../englishGrammar.ts';
 import { allHubWords, audioSlug, hubLessonsForGrade } from '../englishHub.ts';
 import { wordPicture } from '../englishPictures.ts';
@@ -94,16 +94,23 @@ test('an unreviewed unit is offered to nobody', () => {
   assert.equal(grammarUnit('nope'), undefined);
 });
 
-test('every sentence has its own recording key, shared with no other sentence or word', () => {
-  // `playWord(sentence)` plays `<audioSlug>.mp3`; a collision would play another sentence.
+test('every spoken string has its own recording key, shared with no other string or word', () => {
+  // `playWord(text)` plays `<audioSlug>.mp3`; a collision would play another string. Spoken strings are
+  // the sentences, plus the questions and the No exchange a Yes or No item says.
   const words = new Set(allHubWords().map(audioSlug));
   const seen = new Map<string, string>();
-  for (const text of allGrammarSentences()) {
+  const spoken = allGrammarSpoken();
+  for (const text of spoken) {
     const slug = audioSlug(text);
     assert.ok(!words.has(slug), `${text} → ${slug} is a word's recording`);
     assert.equal(seen.get(slug) ?? text, text, `${text} and ${seen.get(slug)} share ${slug}`);
     seen.set(slug, text);
   }
+  for (const text of [
+    'Is it a car? Yes, it is.', 'Is it a plane?', "Is it a plane? No, it isn't.",
+    'Do you like cheese?', "Do you like cheese? No, I don't.",
+  ]) assert.ok(spoken.includes(text), text);
+  for (const text of allGrammarSentences()) assert.ok(spoken.includes(text), text);
 });
 
 test("the committed teacher's sheet is exactly what the generator produces", () => {
