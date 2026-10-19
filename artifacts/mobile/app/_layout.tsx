@@ -35,8 +35,12 @@ import { hasSeenAppIntro } from '@/services/appIntro';
 import { CLAIM_REQUIRED_ROUTE, isEntryRoute, isNonTeacherRoute, isPublicRoute, GRADE_SETUP_ROUTE, needsGradeSetup, needsRosterClaim, needsTeacherSetup, TEACHER_SETUP_ROUTE } from '@/services/routeGating';
 import { identifyUser, initAnalytics, resetAnalyticsIdentity, trackEvent, trackScreen } from '@/services/analytics';
 import { subscribeToGenerations } from '@/services/ai/aiProvenance';
+import { clearCrashContext, initCrashReporting, setCrashContext } from '@/services/crashReporting';
 
 SplashScreen.preventAutoHideAsync();
+// Module scope, not an effect: the library's error handlers should exist before the first render.
+// Android and iOS only; the web build gets a no-op (services/crashReporting.ts).
+initCrashReporting();
 
 function RootLayoutNav() {
   const { user, isLoading, gradeSetupSkipped } = useAuth();
@@ -122,7 +126,11 @@ function RootLayoutNav() {
       if (signedIn) {
         // Ties every subsequent event to this teacher — no-op if analytics
         // is unconfigured, same as everything else in services/analytics.ts.
-        if (user) identifyUser(user.id, { role: user.role });
+        if (user) {
+          identifyUser(user.id, { role: user.role });
+          // Role only — never the id, email or name (services/crashReportingCore.ts).
+          setCrashContext({ role: user.role });
+        }
         // Only bounce to the tabs from an entry route, or on a fresh sign-in.
         // This used to fire on every cold boot, which meant no link into the
         // app survived arriving at it: on web every reload IS a cold boot, so
@@ -132,7 +140,10 @@ function RootLayoutNav() {
       } else if (finishedBoot) {
         // Cold boot, signed out: a brand-new install sees the product intro
         // once; a device that just signed out goes straight back to login.
-        if (authChanged) resetAnalyticsIdentity();
+        if (authChanged) {
+          resetAnalyticsIdentity();
+          clearCrashContext();
+        }
         hasSeenAppIntro().then(seen => {
           // '/onboarding' isn't in the generated typed-routes union until the
           // dev server regenerates it — same reason other routes in this app
@@ -140,7 +151,10 @@ function RootLayoutNav() {
           router.replace((seen ? '/(auth)/login' : '/onboarding') as any);
         });
       } else {
-        if (authChanged) resetAnalyticsIdentity();
+        if (authChanged) {
+          resetAnalyticsIdentity();
+          clearCrashContext();
+        }
         router.replace('/(auth)/login');
       }
     }

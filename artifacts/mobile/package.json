@@ -66,6 +66,8 @@
   },
   "dependencies": {
     "@expo-google-fonts/readex-pro": "^0.4.1",
+    "@react-native-firebase/app": "^26.4.0",
+    "@react-native-firebase/crashlytics": "^26.4.0",
     "@react-native-google-signin/google-signin": "^16.1.5",
     "@react-navigation/bottom-tabs": "^7.18.14",
     "@workspace/arabic-spelling": "workspace:*",
