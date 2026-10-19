@@ -4926,6 +4926,13 @@ the same few titles eight times over.
   beside the ideas). English: «Key ideas» / «Key terms» (not «Goals» — a test uses
   that word to detect an Arabic-only goals slide). `revisionDeck.test.ts` fails if any
   two slides of the whole-book deck share a title.
+- **Same cause in the other decks (found 2026-10-19).** Measured over every KB lesson:
+  1,213 of 3,318 lesson decks had a run of identical «من كتاب الطالب» slides. Fixed in
+  `bookFigureSlides` callers via `numberedBookTitles` (`buildLessonDeck`, and `classDeck.ts`
+  for quiz/worksheet/game decks: «(١)», «(٢)»…, a lone figure stays bare) and in
+  `bookPageSlides` (title carries the page: «من كتاب الطالب — صفحة ٢٥»). Left: 27 lesson
+  decks where a concept slide is titled like the lesson itself (cover «قانون الجيوب» and
+  its rule slide) and 5 chemistry decks with two «💡 أفكار الدرس» slides.
 - **Not reproduced:** the same report had a player screenshot showing the agenda slide
   at 27/53, where the built deck has a book page. The player reads `slides[slideIndex]`
   for both counter and content, so the code cannot do this; it may have been a stale
