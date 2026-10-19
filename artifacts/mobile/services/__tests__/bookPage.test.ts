@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 
 import pageLinks from '../../../../knowledge-base/book-page-links.json' with { type: 'json' };
 import { BOOK_PAGES_BASE_URL, bookPagesForLesson, lessonsWithFigures } from '../bookFigures.ts';
+import { KB_BOOKS, KB_LESSONS, KB_UNITS } from '../knowledgeBase.ts';
 
 const { books, lessons } = pageLinks as {
   books: Record<string, { pages: number }>;
@@ -30,9 +31,41 @@ describe('book-page-links.json', () => {
     }
   });
 
-  it('only names lessons the figure map knows', () => {
-    const known = new Set(lessonsWithFigures());
+  it('only names lessons the curriculum knows', () => {
+    const known = new Set(KB_LESSONS.map(l => l.id));
     for (const id of Object.keys(lessons)) assert.ok(known.has(id), id);
+  });
+
+  it('a lesson rendered from our own copy sits in the book of its own grade, subject and semester', () => {
+    // These lessons were placed by title, so the cheapest way for one to go wrong is
+    // to be filed under another book (grade 9 Arabic semester 1 for a semester 2 lesson).
+    const SUBJECT: Record<string, string> = {
+      arabic: 'arabic', islamic: 'islamic', pe: 'physical-education',
+      digital: 'digital-literacy', 'digital-literacy': 'digital-literacy', civic: 'civic-education',
+    };
+    const unitBook = new Map(KB_UNITS.map(u => [u.id, u.bookId]));
+    const bookOf = new Map(KB_BOOKS.map(b => [b.id, b]));
+    let checked = 0;
+    for (const [id, l] of Object.entries(lessons)) {
+      const m = l.sourceId.match(/^(?:g(\d+)-)?(.+)-s([12])-student-book$/);
+      const subject = m && SUBJECT[m[2]!];
+      if (!m || !subject) continue; // a figure-backed book: covered by the figure map
+      const kb = KB_LESSONS.find(x => x.id === id)!;
+      const book = bookOf.get(unitBook.get(kb.unitId)!)!;
+      assert.deepEqual(
+        [book.gradeId, book.subjectId, book.semester],
+        [`grade-${m[1] ?? 10}`, subject, Number(m[3])],
+        `${id} is filed under ${l.sourceId}`,
+      );
+      checked++;
+    }
+    assert.ok(checked > 0, 'no lessons from the page-only subjects to check');
+  });
+
+  it('a book without a live copy (pdfUrl null) was rendered from ours, and says so', () => {
+    for (const [id, book] of Object.entries(books as Record<string, { pdfUrl?: string | null; source?: string }>)) {
+      if (book.pdfUrl === null) assert.ok(book.source, `${id} has no pdfUrl and no source`);
+    }
   });
 });
 

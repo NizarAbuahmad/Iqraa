@@ -26,7 +26,7 @@ import type { KBLesson } from './knowledgeBase.ts';
 import { CONCEPTS_CAP, type RevisionUnit } from './revisionScope.ts';
 import { buildChartSlide, buildGraphSlide, referencesShownVisual, scanGraphCommands } from './classMedia.ts';
 import { chartForLesson, visualForSlide } from './deckVisuals.ts';
-import { type BookFigure, figuresForLesson } from './bookFigures.ts';
+import { type BookFigure, bookPagesForLesson, figuresForLesson } from './bookFigures.ts';
 import { exerciseReference, exercisesForLesson } from './bookExercises.ts';
 import { inlineSteps, MAX_STAT_VALUE_CHARS, resolveSlideLayout } from './slideLayout.ts';
 import { iconForTopic } from './deckIcons.ts';
@@ -135,6 +135,13 @@ export interface LessonDeckOptions {
    * Omitted → no figure slides, exactly as before figures existed.
    */
   figureUri?: (figure: BookFigure) => string | null;
+  /**
+   * Show the lesson's own book pages (its first few, as slides) when the lesson
+   * has no figure to show. Opt-in for the same reason `figureUri` is: a deck
+   * built under `node --test` must not grow slides from the shipped link file.
+   * Omitted → no page slides, exactly as before.
+   */
+  bookPages?: boolean;
   /**
    * The AI-written explanation section (`/generate/lesson-teaching`). Fills
    * what the book data does not carry: a hook question when the plan gave
@@ -429,6 +436,44 @@ export function bookFigureSlides(
     });
   }
   return out;
+}
+
+/** A lesson with no figure shows at most this many of its own book pages. */
+export const BOOK_PAGE_SLIDE_MAX = 3;
+
+/**
+ * A lesson's own book pages as media slides — for the subjects whose books print
+ * no figure to cut out (Arabic, Islamic, physical education, digital skills,
+ * civic education: 1,294 lessons had nothing from their book to show). The page
+ * IS the book's picture of the lesson there: the text, the photographs and the
+ * activity the students have open on their desks.
+ *
+ * The first pages, because a lesson opens with its picture and its question;
+ * past the third a lesson's pages are exercises the teacher reads off the desk.
+ * No injected loader: the page URLs are plain strings from `bookPagesForLesson`,
+ * which is free of `react-native`. Captioned with book and page, like a figure.
+ */
+export function bookPageSlides(
+  kbLessonId: string | null | undefined,
+  isAr: boolean,
+  max: number = BOOK_PAGE_SLIDE_MAX,
+): Omit<ActivitySlide, 'slideNumber'>[] {
+  const pages = bookPagesForLesson(kbLessonId);
+  if (!pages) return [];
+  return pages.urls.slice(0, max).map((url, i) => {
+    const n = pages.page + i;
+    const page = isAr ? String(n).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[Number(d)]) : String(n);
+    const caption = isAr ? `كتاب الطالب · صفحة ${page}` : `Student Book · page ${page}`;
+    return {
+      type: 'media' as const,
+      title: isAr ? 'من كتاب الطالب' : 'From the Student Book',
+      content: caption,
+      mediaKind: 'image' as const,
+      mediaUrl: url,
+      mediaCaption: caption,
+      durationSeconds: 0,
+    };
+  });
 }
 
 export function buildLessonDeck(
@@ -758,6 +803,10 @@ export function buildLessonDeck(
   // whose book states none — nothing was taken and this is every figure, so
   // the deck is exactly what it was.
   for (const slide of figures) push(slide);
+  // A lesson with no figure of its own shows its book pages instead (opt-in).
+  if (opts.bookPages && !ruleFigure && figures.length === 0) {
+    for (const slide of bookPageSlides(lesson?.id, isAr)) push(slide);
+  }
 
   // ── 6b. Live graph — the concept made draggable ─────────────────────────
   // Between the rule and the examples: the class sees the curve respond to a
@@ -1155,6 +1204,12 @@ export interface RevisionDeckOptions {
    * it a revision deck carries no pictures from the book, exactly as before.
    */
   figureUri?: (figure: BookFigure) => string | null;
+  /**
+   * A unit with no figure of its own shows the first page of its first lesson
+   * that has book pages (opt-in, as `LessonDeckOptions.bookPages`). Omitted →
+   * no page slides.
+   */
+  bookPages?: boolean;
 }
 
 /** A unit's round shows at most this many of its book figures: one beside its key ideas, the rest as slides of their own. */
@@ -1363,6 +1418,12 @@ export function buildRevisionDeck(isAr: boolean, opts: RevisionDeckOptions): Cla
         content: concepts.map(c => `• ${c}`).join('\n'),
         durationSeconds: 0,
       }, { layout: 'concepts', concepts }));
+    }
+    // A unit whose book prints no figure shows the opening page of its first
+    // lesson that has pages — the book's own picture of what the round covers.
+    if (opts.bookPages && figures.length === 0) {
+      const opener = unit.lessons.map(l => bookPageSlides(l.id, isAr, 1)[0]).find(Boolean);
+      if (opener) push(opener);
     }
     // The rest of the unit's figures, each its own slide, straight after.
     for (const { figure, uri } of figures.slice(1)) {

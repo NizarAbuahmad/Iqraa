@@ -4798,6 +4798,35 @@ Spec `docs/superpowers/specs/2026-10-08-student-record-design.md`, plan
 - When the worksheet screen is opened with a lesson, its unit dropdown still
   shows the placeholder (the documented gap in `TopicSelector.tsx`). The topic
   itself is held.
+## Arabic, Islamic, civic, digital and PE lessons get their book pages in decks, 2026-10-19
+
+39% of lessons — all of Arabic, Islamic, physical education, digital literacy and
+civic education — have no extracted figures, so their decks were text on colour.
+Their books are mostly pictures and layout, so the lesson's own pages are the
+picture.
+
+- **Page → lesson map.** `scripts/map_lesson_pages.py` finds the page each lesson
+  opens on by matching the catalog title to the largest-type heading on the page
+  (letter-bag overlap, monotonic walk), and cross-checks against the book's
+  printed contents table (read through the footers' printed page numbers).
+  `scripts/render_lesson_pages.py` renders from our own copy of the student book
+  (so the page named is by construction the page shown) into the existing
+  `book-pages/<kbLessonId>/<n>.jpg` store and lists it in `book-page-links.json`
+  (`pdfUrl: null`, ≤ 20 pages a lesson). 778 lessons / 4,776 pages added (1.05 GB, all in the bucket).
+- **Only confident matches.** Score ≥ 0.9; 17 weaker matches were dropped (several
+  landed on the contents page), and so was the whole Grade 7 PE S1 book (its «sure»
+  hits were page 2) and one Grade 3 Arabic S2 entry opening on page 3.
+- **Decks.** `bookPages: true` (all three `slides.tsx` call sites): a lesson deck
+  with no figures of its own shows up to 3 book pages («من كتاب الطالب»); a
+  revision unit with no figures shows the opener page of its first lesson that has
+  one. A lesson that has figures is unchanged.
+- **Still without pages:** 20 books (386 lessons) with no student PDF on disk —
+  Grades 1–2 Arabic/Islamic/PE, Grades 4–6 PE and digital, Grade 8 Arabic S2 —
+  need an NCCD download; PE books (all grades except 3), Grade 7 digital S2, Grade
+  5 Arabic S2 (3/25) and parts of Grade 8/9 digital and civic did not map.
+- Bucket: pages are in `iqraa-public/book-pages/`; the app shows nothing new until
+  the OTA ships.
+
 ## Revision decks carry the book's own pictures and all its key terms, 2026-10-18
 
 Read against the Grade 10 biology student book (unit 1, evolution), the first real
