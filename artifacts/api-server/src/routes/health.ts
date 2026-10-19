@@ -6,6 +6,7 @@ import { isVerifierUnreachable } from "../lib/derivativeVerified.ts";
 import { getBudgetStatus } from "../lib/aiBudget.ts";
 import { getRecentErrors } from "../lib/errorLog.ts";
 import { createRateLimiter } from "../lib/rateLimit.ts";
+import { hashingStatus } from "../lib/passwordHash.ts";
 import { studentAccountsEnabled } from "../lib/features.js";
 
 const router: IRouter = Router();
@@ -174,6 +175,27 @@ router.get("/healthz/ai-budget", (_req, res) => {
  */
 router.get("/healthz/features", (_req, res) => {
   res.json({ studentAccounts: studentAccountsEnabled() });
+});
+
+/**
+ * How busy this instance's database pools are, for load testing and incidents.
+ *
+ * Same gate as /healthz/errors (404 for a missing or wrong key). Per instance,
+ * like everything else in memory here: on Cloud Run it answers for whichever
+ * container the request landed on, which is enough to see "waiting > 0".
+ * `@workspace/db` is imported inside the handler for the reason health.ts's
+ * neighbours do it — importing it at module scope throws without DATABASE_URL.
+ */
+router.get("/healthz/pool", async (req, res) => {
+  const adminKey = process.env.ADMIN_DEBUG_KEY;
+  if (!adminKey || !matchesAdminKey(req.headers["x-admin-key"], adminKey)) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  const { poolStats } = await import("@workspace/db");
+  // `hashing.degraded: true` means password hashing fell back to the main
+  // thread (see lib/passwordHash.ts): sign-ups work but stall the instance again.
+  res.json({ ...poolStats(), hashing: hashingStatus(), revision: process.env.K_REVISION ?? null });
 });
 
 /**

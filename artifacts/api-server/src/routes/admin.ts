@@ -6,7 +6,7 @@
  * see STATUS.md.
  */
 import { Router } from "express";
-import bcrypt from "bcryptjs";
+import { hashPassword } from "../lib/passwordHash.js";
 import {
   aiGenerations,
   classGroups,
@@ -281,7 +281,7 @@ router.post(
         return;
       }
 
-      const passwordHash = await bcrypt.hash(password, 12);
+      const passwordHash = await hashPassword(password);
       // One transaction: the user row stays locked until the sessions are gone,
       // which is what an in-flight `/auth/refresh` waits on.
       const revoked = await db.transaction(async tx => {

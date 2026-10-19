@@ -137,3 +137,11 @@ one line of output, and it runs locally with no deployment required.
       max 0.79 s. Not a submit test — that needs 30 student sessions. The pool
       is `pg`'s default of 10 per instance against Cloud Run concurrency 80, so
       requests queue inside an instance before Neon's pooler ever sees them.
+      **Update 2026-10-19:** `e2e/loadtest/` now drives the real student flow
+      (claim, answer, submit, result) and a sign-up/sign-in rush. Against a
+      *local* API and Postgres, 300 students across 5 classes all handed in
+      with p95 under 70 ms per call and every submit stored — that is a floor,
+      since it has no Cloud Run → Neon hop. Still to do: run it against a staging
+      service on a Neon branch (`--allow-remote`), and re-check Neon's
+      connection limit against `DB_POOL_MAX × max instances`. The sign-up and
+      sign-in rush fails — see STATUS.md «Load test, 2026-10-19».
