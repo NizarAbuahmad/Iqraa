@@ -3,7 +3,10 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { grammarUnit, grammarUnitsForGrade, offeredGrammar, unitSentences } from '../englishGrammar.ts';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { grammarUnit, grammarUnitsForGrade, offeredGrammar, renderGrammarSheet, unitSentences } from '../englishGrammar.ts';
 import { NOT_COVERED_G2 } from '../englishGrammarG2.ts';
 import { hubLessonsForGrade } from '../englishHub.ts';
 import { wordPicture } from '../englishPictures.ts';
@@ -132,4 +135,30 @@ test('the not-covered table has an entry for every Grade 2 lesson and only for t
     // The form wraps English runs in spans without escaping entities: no markup characters.
     for (const text of items) assert.ok(!/["&<>]/.test(text), `${id}: ${text}`);
   }
+});
+
+const docs = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..', 'docs');
+
+test("the Grade 2 teacher's form lists every sentence once, with a Yes or No column and a not-covered block per lesson", async () => {
+  const { renderGrammarReviewHtml } = await import('../englishGrammarReview.ts');
+  const html = renderGrammarReviewHtml(2);
+  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const all = UNITS.flatMap(u => unitSentences(u).map(s => s.text));
+  for (const text of new Set(all)) {
+    assert.equal(html.split(`<td class="sentence" dir="ltr">${esc(text)}</td>`).length - 1, all.filter(t => t === text).length, text);
+  }
+  assert.equal((html.match(/<td class="sentence"/g) ?? []).length, 212);
+  // Two units ask Yes or No (toys, food), so two tables carry the column.
+  assert.equal((html.match(/<th>«نعم أم لا»/g) ?? []).length, 2);
+  assert.equal((html.match(/class="not-covered"/g) ?? []).length, 9);
+  for (const word of ['orange', 'balcony', 'swing', 'slide']) assert.ok(html.includes(word), word);
+  assert.ok(html.includes('مراجعة قواعد الصف الثاني'));
+  // doll's next pictured toy is the plane, so its No variant asks about the plane.
+  assert.ok(html.includes("Is it a plane? → No, it isn't."), 'a No variant is shown');
+});
+
+test('the committed Grade 2 sheet and form are exactly what the generators produce', async () => {
+  const { renderGrammarReviewHtml } = await import('../englishGrammarReview.ts');
+  assert.equal(readFileSync(path.join(docs, 'english-grammar-g2-sheet.md'), 'utf8'), renderGrammarSheet(2), 'run: pnpm --filter @workspace/curriculum run grammar-sheet');
+  assert.equal(readFileSync(path.join(docs, 'english-grammar-g2-review.html'), 'utf8'), renderGrammarReviewHtml(2), 'run: pnpm --filter @workspace/curriculum run grammar-sheet');
 });

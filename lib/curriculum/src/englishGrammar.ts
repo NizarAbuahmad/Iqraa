@@ -53,7 +53,7 @@ export interface GrammarUnit {
   /** A teacher's sign-off. `null` → the unit is offered to nobody. */
   reviewedBy: { name: string; date: string } | null;
   patterns: GrammarPattern[];
-  /** Words of this lesson or an earlier Grade 1 lesson, never a later one. */
+  /** Words of this lesson or an earlier lesson of the same grade, never a later one. */
   slots: Record<string, string[]>;
 }
 
@@ -435,22 +435,37 @@ export function renderGrammarSheet(grade = 1): string {
     'picture, or beside the «wrong picture».',
     '',
   ];
-  for (const unit of grammarUnitsForGrade(grade)) {
+  const units = grammarUnitsForGrade(grade);
+  const hasYesNo = (u: GrammarUnit) => unitSentences(u).some(s => s.yesNo);
+  if (units.some(hasYesNo)) {
+    lines.push(
+      '«Yes or No» shows the question, the answer it expects and, for «Is it …?», the question the «No»',
+      'item asks about the same picture.',
+      '',
+    );
+  }
+  for (const unit of units) {
     const lesson = hubLesson(unit.lessonId);
     lines.push(
       `## Semester ${lesson?.semester} · Unit ${lesson?.unitNumber} — ${lesson?.unitTitle}`,
       '',
       unit.reviewedBy ? `Reviewed by ${unit.reviewedBy.name}, ${unit.reviewedBy.date}.` : 'Not reviewed yet — shown to nobody.',
       '',
-      '| Sentence | Picture | Choose | True or false: wrong picture |',
-      '|---|---|---|---|',
+      hasYesNo(unit)
+        ? '| Sentence | Picture | Choose | True or false: wrong picture | Yes or No |'
+        : '| Sentence | Picture | Choose | True or false: wrong picture |',
+      hasYesNo(unit) ? '|---|---|---|---|---|' : '|---|---|---|---|',
     );
     for (const s of unitSentences(unit)) {
       const pic = s.picture
         ? `${s.picture.word}${s.picture.count === 2 ? ' ×2' : ''}${s.marker && MARKER_GLYPH[s.marker] ? ` ${MARKER_GLYPH[s.marker]}` : ''}`
         : s.marker && MARKER_GLYPH[s.marker] ? MARKER_GLYPH[s.marker] : '—';
       const choose = s.choose ? `**${s.choose.right}** / ${s.choose.wrong}` : '—';
-      lines.push(`| ${s.text} | ${pic} | ${choose} | ${s.falsePicture ?? '—'} |`);
+      const y = s.yesNo;
+      const yesNoText = !y ? '—'
+        : y.kind === 'marker' ? `${y.question} → ${y.answer ? y.yes : y.no}`
+          : `${y.question} → ${y.yes}${y.otherQuestion ? `<br>${y.otherQuestion} → ${y.no}` : ''}`;
+      lines.push(`| ${s.text} | ${pic} | ${choose} | ${s.falsePicture ?? '—'} |${hasYesNo(unit) ? ` ${yesNoText} |` : ''}`);
     }
     lines.push('');
   }
