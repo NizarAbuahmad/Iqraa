@@ -10,7 +10,7 @@
  * docs/english-grammar-g1-review.html beside the markdown sheet, and a test
  * fails when the committed copy is stale.
  */
-import { GRAMMAR_UNITS, unitSentences, type GrammarSentence, type GrammarUnit } from './englishGrammar.ts';
+import { grammarUnitsForGrade, unitSentences, type GrammarSentence, type GrammarUnit } from './englishGrammar.ts';
 import { hubLesson } from './englishHub.ts';
 import { wordPicture } from './englishPictures.ts';
 
@@ -107,9 +107,10 @@ function renderUnit(u: GrammarUnit, idx: number): string {
   </section>`;
 }
 
-export function renderGrammarReviewHtml(): string {
-  const total = GRAMMAR_UNITS.reduce((n, u) => n + unitSentences(u).length, 0);
-  const units = GRAMMAR_UNITS.map(renderUnit).join('');
+export function renderGrammarReviewHtml(grade = 1): string {
+  const units = grammarUnitsForGrade(grade);
+  const total = units.reduce((n, u) => n + unitSentences(u).length, 0);
+  const sections = units.map(renderUnit).join('');
 
   const page = `<title>مراجعة قواعد الصف الأول</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -226,7 +227,7 @@ export function renderGrammarReviewHtml(): string {
   <section class="intro">
     <div class="eyebrow">إقرأ · ركن اللغة الإنجليزية · الصف الأول</div>
     <h1>مراجعة جمل القواعد قبل عرضها على الطلاب</h1>
-    <p class="lead">بناءً على ملاحظتكم، أضفنا إلى ركن اللغة الإنجليزية ثلاثة أنشطة لتثبيت القواعد. الجمل مبنية من نمط القواعد في كل وحدة من الكتاب ومن كلمات الوحدة نفسها. <b>لن يرى الطلاب أي وحدة قبل أن توافقوا عليها.</b> هذه الورقة تعرض كل جملة يمكن أن تظهر للطالب، ${AR_DIGITS(total)} جملة في ${AR_DIGITS(GRAMMAR_UNITS.length)} وحدات.</p>
+    <p class="lead">بناءً على ملاحظتكم، أضفنا إلى ركن اللغة الإنجليزية ثلاثة أنشطة لتثبيت القواعد. الجمل مبنية من نمط القواعد في كل وحدة من الكتاب ومن كلمات الوحدة نفسها. <b>لن يرى الطلاب أي وحدة قبل أن توافقوا عليها.</b> هذه الورقة تعرض كل جملة يمكن أن تظهر للطالب، ${AR_DIGITS(total)} جملة في ${AR_DIGITS(units.length)} وحدات.</p>
 
     <div class="acts">
       <div class="act"><b>اختر الكلمة</b>جملة فيها فراغ وصورة، وخياران: الصحيح ونقيضه في القاعدة، مثل <span dir="ltr">I've got / I haven't got</span> أو <span dir="ltr">is / are</span> أو <span dir="ltr">He's / She's</span>.</div>
@@ -265,7 +266,7 @@ export function renderGrammarReviewHtml(): string {
     </div>
     <p class="meta-line">«لا يظهر» تعني أن الجملة لا تُستخدم في هذا النشاط (لا توجد صورة واضحة لها). الصور هي الرموز التي تظهر في التطبيق نفسه.</p>
   </section>
-${units}
+${sections}
 </main>
 `;
   // A standalone file: opened from disk in any browser and printed from there.

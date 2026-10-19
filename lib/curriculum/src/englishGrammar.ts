@@ -32,11 +32,19 @@ export interface GrammarPattern {
    * What Choose the word blanks: a fixed phrase and its contrast, the slot's
    * word (the picture says which), or the whole answer after the question
    * (the question is then not shown — it would give the answer away).
+   * Absent on a pattern with `yesNo`: Yes or No is its judging.
    */
-  choose:
+  choose?:
     | { kind: 'phrase'; right: string; wrong: string }
     | { kind: 'slot'; slot: string }
     | { kind: 'whole'; other: string };
+  /**
+   * Yes or No (Grade 2). `match` («Is it a car?»): the picture stays and the
+   * question names the pictured word (Yes) or the next pictured word of the
+   * slot (No). `marker` («Do you like cheese?»): the pattern's ✅ / ❌ is the
+   * truth. `question` takes the pattern's slots.
+   */
+  yesNo?: { kind: 'match' | 'marker'; question: string; yes: string; no: string };
 }
 
 export interface GrammarUnit {
@@ -62,19 +70,36 @@ export interface GrammarSentence {
   choose: { kind: 'phrase' | 'slot' | 'whole'; start: number; length: number; right: string; wrong: string } | null;
   /** Another word of the picture slot, with a picture, for True or false. */
   falsePicture: string | null;
+  /** Null unless the pattern has `yesNo` and the picture exists. `otherQuestion` is a `match` item's No question. */
+  yesNo: {
+    kind: 'match' | 'marker';
+    question: string;
+    otherQuestion: string | null;
+    yes: string;
+    no: string;
+    /** True when the sentence's own answer is «yes». */
+    answer: boolean;
+  } | null;
 }
 
 // ─── Articles and plurals ─────────────────────────────────────────────────
 
-/** Words that are plural in form: they take no article and no extra "s". */
+/**
+ * Words that take no article and no extra "s": plural in form («boots», «eggs») or
+ * uncountable («rice», «milk»). "I like rice", "I'm wearing shorts".
+ */
 const PLURAL_FORMS = new Set([
   'boots', 'jeans', 'socks', 'arms', 'feet', 'hands', 'legs',
   'apples', 'cakes', 'carrots', 'grapes', 'lemons', 'sweets',
+  'eggs', 'scissors', 'shoes', 'shorts', 'trousers',
+  'rice', 'bread', 'cheese', 'chicken', 'juice', 'milk', 'water',
 ]);
-/** Words whose article the first letter gets wrong. None in Grade 1; "a uniform", "an hour" later. */
+/** Words whose article the first letter gets wrong. None yet; "a uniform", "an hour" later. */
 const ARTICLE_OVERRIDES: Record<string, 'a' | 'an'> = {};
-/** Irregular plurals. None in Grade 1. */
-const PLURAL_OVERRIDES: Record<string, string> = {};
+/** Irregular plurals (Grade 2). «fish» is an animal in Unit 5 and a food in Unit 6; both take the same plural. */
+const PLURAL_OVERRIDES: Record<string, string> = {
+  mouse: 'mice', fish: 'fish', potato: 'potatoes', tomato: 'tomatoes', shelf: 'shelves',
+};
 
 function articleFor(word: string): 'a' | 'an' | null {
   if (PLURAL_FORMS.has(word)) return null;
@@ -209,6 +234,14 @@ export function grammarUnit(lessonId: string): GrammarUnit | undefined {
   return GRAMMAR_UNITS.find(u => u.lessonId === lessonId);
 }
 
+export function unitGrade(unit: GrammarUnit): number {
+  return hubLesson(unit.lessonId)!.grade;
+}
+
+export function grammarUnitsForGrade(grade: number): GrammarUnit[] {
+  return GRAMMAR_UNITS.filter(u => unitGrade(u) === grade);
+}
+
 /** A lesson's sentences, or null unless a teacher has signed the unit off. */
 export function offeredGrammar(lessonId: string): GrammarSentence[] | null {
   const unit = grammarUnit(lessonId);
@@ -303,25 +336,37 @@ export function unitSentences(unit: GrammarUnit): GrammarSentence[] {
       const { tokens, spans } = realise(p.text, fill);
       const picWord = p.picture ? fill[p.picture] : null;
       const picture = picWord && wordPicture(picWord) ? { word: picWord, count: (p.marker === 'many' ? 2 : 1) as 1 | 2 } : null;
-      const falsePicture = picture && p.picture ? nextPictured(unit.slots[p.picture], picture.word) : null;
+      const otherWord = picture && p.picture ? nextPictured(unit.slots[p.picture], picture.word) : null;
+      // A pattern with `yesNo` is judged by Yes or No, so it has no True or false item.
+      const falsePicture = p.yesNo ? null : otherWord;
 
       let choose: GrammarSentence['choose'] = null;
       const c = p.choose;
-      if (c.kind === 'phrase') {
+      if (c?.kind === 'phrase') {
         const [start, length] = phraseSpan(tokens, c.right);
         choose = { kind: 'phrase', start, length, right: c.right, wrong: c.wrong };
-      } else if (c.kind === 'slot' && picture) {
+      } else if (c?.kind === 'slot' && picture) {
         const other = nextPictured(unit.slots[c.slot], fill[c.slot]);
         if (other) {
           const span = spans[c.slot];
           const wrong = spanText(realise(p.text, { ...fill, [c.slot]: other }).tokens, span);
           choose = { kind: 'slot', start: span[0], length: span[1], right: spanText(tokens, span), wrong };
         }
-      } else if (c.kind === 'whole' && picture) {
+      } else if (c?.kind === 'whole' && picture) {
         const other = unit.patterns.find(q => q.id === c.other)!;
         const otherTokens = realise(other.text, fill).tokens;
         const span = answerSpan(tokens);
         choose = { kind: 'whole', start: span[0], length: span[1], right: spanText(tokens, span), wrong: spanText(otherTokens, answerSpan(otherTokens)) };
+      }
+
+      let yesNo: GrammarSentence['yesNo'] = null;
+      const y = p.yesNo;
+      if (y && picture) {
+        const question = realise(y.question, fill).tokens.join(' ');
+        const otherQuestion = y.kind === 'match' && otherWord && p.picture
+          ? realise(y.question, { ...fill, [p.picture]: otherWord }).tokens.join(' ')
+          : null;
+        yesNo = { kind: y.kind, question, otherQuestion, yes: y.yes, no: y.no, answer: y.kind === 'match' ? true : p.marker === 'yes' };
       }
 
       out.push({
@@ -334,6 +379,7 @@ export function unitSentences(unit: GrammarUnit): GrammarSentence[] {
         marker: p.marker ?? null,
         choose,
         falsePicture,
+        yesNo,
       });
     }
   }
@@ -345,13 +391,35 @@ export function allGrammarSentences(): string[] {
   return [...new Set(GRAMMAR_UNITS.flatMap(u => unitSentences(u).map(s => s.text)))];
 }
 
+/**
+ * Every string the grammar activities speak: each sentence, and for Yes or No the
+ * question alone and the No exchange («Is it a plane? No, it isn't.»). Voiced before
+ * a unit is signed off, like the sentences.
+ */
+export function allGrammarSpoken(): string[] {
+  const out = new Set<string>();
+  for (const u of GRAMMAR_UNITS) {
+    for (const s of unitSentences(u)) {
+      out.add(s.text);
+      const y = s.yesNo;
+      if (!y) continue;
+      out.add(y.question);
+      if (y.otherQuestion) {
+        out.add(y.otherQuestion);
+        out.add(`${y.otherQuestion} ${y.no}`);
+      }
+    }
+  }
+  return [...out];
+}
+
 // ─── The teacher's sheet ──────────────────────────────────────────────────
 
 const MARKER_GLYPH: Record<GrammarMarker, string> = { yes: '✅', no: '❌', boy: '👦', girl: '👧', many: '' };
 
-export function renderGrammarSheet(): string {
+export function renderGrammarSheet(grade = 1): string {
   const lines = [
-    '# English corner — Grade 1 grammar sentences',
+    `# English corner — Grade ${grade} grammar sentences`,
     '',
     'Generated from `lib/curriculum/src/englishGrammar.ts` by',
     '`pnpm --filter @workspace/curriculum run grammar-sheet`. Do not edit by hand.',
@@ -363,7 +431,7 @@ export function renderGrammarSheet(): string {
     'picture, or beside the «wrong picture».',
     '',
   ];
-  for (const unit of GRAMMAR_UNITS) {
+  for (const unit of grammarUnitsForGrade(grade)) {
     const lesson = hubLesson(unit.lessonId);
     lines.push(
       `## Semester ${lesson?.semester} · Unit ${lesson?.unitNumber} — ${lesson?.unitTitle}`,
