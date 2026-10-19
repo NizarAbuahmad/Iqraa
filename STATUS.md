@@ -4386,6 +4386,20 @@ finds it, the curriculum place now sits under it, and the upload answer no longe
 calls the tab «المنهاج». Saving slides left `save-material`, whose «احفظ في ملفاتي»
 does not exist on the slides screen. 14 look-alikes pinned.
 
+**A purpose reaches the model (2026-10-19, eighth live pass).** The seventh pass
+(#1150) verified live: 27 of 30 right. Two misses were in the chat's routing, not
+the matcher. «كيف أعدّل ورقة العمل لتناسب الطلاب الضعاف؟» was classified as a
+`refinement` (an edit of the open paper), and with no paper open it fell to the
+offline «أيّ مادة تقصد؟» menu; "how do i make my slides more engaging" matched
+`toolAskFromQuery` on "make" and opened the slides builder. `isPurposeQuestion`
+(`services/appHelp.ts`, the `PURPOSE` test behind `isAppHelpQuery`) now also stops
+`classifyChatIntent` calling such a question a refinement — or an artifact, unless
+it carries a make verb («كيف أعمل ورقة عمل لتناسب…» still builds one) — and stops
+`toolAskFromQuery` building a tool for it. Both go to the model as teaching. Also: a
+top-level place («المكتبة») is listed once instead of «المكتبة: المكتبة». Still
+open: «كيف أرسل رسالة لولي أمر؟», «كيف أصحح أوراق الطلاب؟», long-press export on the
+«أيّ مادة تقصد؟» clarification.
+
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
 Step 4 of the worksheet review, agreed in chat. A worksheet was paper only: to

@@ -1357,6 +1357,18 @@ const PURPOSE =
   /(?:^|\s)(?:لتناسب|ليناسب|يناسب|تناسب|لتعزيز|ليعزز|لتنميه|لتحسين|ليحسن|لزياده|لجعل|ليكون|لتكون|لتشجيع|ليشجع|لمراعاه|يراعي|بحيث|بطريقه|بشكل|حتي|لكي|كي)(?:\s|$)|\b(?:(?:more|less)\s+(?:engaging|interesting|fun|interactive|challenging|difficult|effective|attractive|exciting|creative|accessible)|so\s+that|for\s+(?:weak|struggling|gifted|advanced|slow|fast|mixed)|to\s+(?:help|engage|support|improve|motivate|encourage|suit|fit|differentiate))\b/;
 
 /**
+ * A how-question that says what the material is for. It is advice, not a request
+ * to make or change anything — so the chat must neither build the tool
+ * («how do i make my slides more engaging» opened the slides builder) nor treat
+ * it as an edit of the open paper («كيف أعدّل ورقة العمل لتناسب الطلاب الضعاف؟»
+ * asked «أيّ مادة تقصد؟»), both found 2026-10-19.
+ */
+export function isPurposeQuestion(query: string): boolean {
+  const q = plain(query);
+  return !WHERE_PATTERN.test(q) && HOW_PATTERN.test(q) && PURPOSE.test(q);
+}
+
+/**
  * True when the teacher is asking where something is in the app, or how to do
  * something in it. Needs both a "where / how do I" phrase and something
  * app-shaped — «أين تقع البتراء؟» is a geography question and must stay one.
@@ -1431,6 +1443,8 @@ export function answerAppHelp(
   if (how) return { text: t(how), places: [places[0]!] };
   const sep = isAr ? ' ← ' : ' → ';
   const lines = places.map(p => {
+    // A top-level place has no path to add: «المكتبة: المكتبة» said nothing twice.
+    if (p.pathKeys.length === 0) return `• **${t(p.labelKey)}**`;
     const where = [...p.pathKeys, p.labelKey].map(t).join(sep);
     return `• **${t(p.labelKey)}**: ${where}`;
   });

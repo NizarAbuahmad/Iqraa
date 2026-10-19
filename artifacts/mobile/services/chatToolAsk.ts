@@ -11,6 +11,7 @@
  * Pure TypeScript, so `node --test` can run it.
  */
 import { normalize } from './commandPalette.ts';
+import { isPurposeQuestion } from './appHelp.ts';
 
 export type ToolAsk = 'game' | 'slides' | 'test' | 'dictation';
 
@@ -49,6 +50,8 @@ const REQUEST_CUE =
 
 /** The tool screen a chat message is asking for, or null. */
 export function toolAskFromQuery(query: string): ToolAsk | null {
+  // «how do i make my slides more engaging» asks for advice, not for the builder.
+  if (isPurposeQuestion(query)) return null;
   const q = normalize(query.replace(/[؟?!.,،]/g, ' '));
   const kind = PATTERNS.find(([, re]) => re.test(q))?.[0] ?? null;
   if (!kind) return null;
