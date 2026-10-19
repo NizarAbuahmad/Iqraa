@@ -21472,8 +21472,11 @@ refused request must not burn the per-address allowance (with the limiters first
 a few retries of "busy" became a `429` lockout; found by the load test). The app
 shows «الخدمة مشغولة حاليًا…» for `hashing_busy`/`db_busy` (`errServerBusy`,
 JS only). More headroom is `PASSWORD_HASH_WORKERS` (1–4) together with more
-vCPU: `--cpu 2` and `PASSWORD_HASH_WORKERS=2` would roughly double it. Neither is
-set in `deploy.yml`.
+vCPU: **since 2026-10-19 `deploy.yml` sets `--cpu 2` and `PASSWORD_HASH_WORKERS=2`
+on `iqraa-api`** (the verifier stays at 1 vCPU). Measured first, on a local API
+pinned to two cores: 100 accounts register, verify and sign in in ~19 s instead of
+~38 s, a database-free `/healthz` still p95 7 ms, 0 errors, peak RSS 258 MiB of the
+512Mi limit. The always-on instance (`--min-instances 1`) now bills two vCPUs.
 
 A worker that cannot start falls back to hashing on the main thread, logged at
 error level, and `GET /api/healthz/pool` shows `hashing.degraded: true` — check it
