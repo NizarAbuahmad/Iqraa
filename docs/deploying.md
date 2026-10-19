@@ -289,7 +289,8 @@ bottleneck.
 
 **Password hashing** runs in a worker thread (`lib/passwordHash.ts`) so a sign-up
 rush cannot stall the instance. Plain env vars again: `PASSWORD_HASH_WORKERS`
-(1–4, default 1 — match the service's vCPU) and `PASSWORD_HASH_MAX_PENDING`
+(1–4, default 1 — match the service's vCPU; `deploy.yml` sets `--cpu 2` with
+`PASSWORD_HASH_WORKERS=2` for `iqraa-api`, so change them together) and `PASSWORD_HASH_MAX_PENDING`
 (default 40: sign-in/sign-up requests in flight before the rest get `503
 hashing_busy`). After a deploy, `GET /api/healthz/pool` must show
 `hashing.degraded: false`; `true` means the worker file did not load and
