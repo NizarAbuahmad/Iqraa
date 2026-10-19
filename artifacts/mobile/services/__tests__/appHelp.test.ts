@@ -1181,3 +1181,65 @@ describe('a purpose reaches the model, not a builder or an edit (eighth live pas
   });
 });
 
+describe('features asked about by name, and the ones the app lacks (ninth live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    ['كيف أصحح أوراق الامتحان بالكاميرا؟', 'howClassScan'],
+    ['how do i grade the exam papers with my camera', 'howClassScan'],
+    ['كيف أرسل رسالة لولي أمر؟', 'howParentMessage'],
+    ['كيف أكتب رسالة لولي أمر الطالب', 'howParentMessage'],
+    ['how do i send a message to a parent', 'howParentMessage'],
+    ['how do i write a letter to a student\'s parent', 'howParentMessage'],
+    ['how do i see who has not submitted the homework', 'howHomeworkDone'],
+    ['كيف أعرف مين ما سلم الواجب', 'howHomeworkDone'],
+    ['كيف أنضم لشعبة برمز؟', 'howJoinClass'],
+    ['how do i join a class with a code', 'howJoinClass'],
+    ['كيف أعرض التقويم؟', 'howCalendar'],
+    ['كيف أضيف حدثاً للتقويم؟', 'howCalendar'],
+    ['how do i add an event to the calendar', 'howCalendar'],
+    ['كيف أستورد الطلاب من ملف إكسل؟', 'howImportStudents'],
+    ['how do i import students from an excel file', 'howImportStudents'],
+    ['كيف أعرف نسبة حضور الطلاب؟', 'howAttendance'],
+    ['how do i take attendance', 'howAttendance'],
+    ['هل يعمل التطبيق بدون إنترنت؟', 'howOffline'],
+    ['does the app work without internet', 'howOffline'],
+    ['كيف أعمل بنك أسئلة؟', 'howQuestionBank'],
+    ['how do i make a question bank', 'howQuestionBank'],
+    ['كيف أضبط تذكير بموعد الامتحان؟', 'howExamReminder'],
+    ['how do i set a reminder for the exam', 'howExamReminder'],
+    ['نسيت كلمة المرور شو أعمل؟', 'howChangePassword'],
+    ['i forgot my password what do i do', 'howChangePassword'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      const answer = answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t);
+      assert.equal(answer.text, `<${key}>`);
+    });
+  }
+
+  it('sending to the whole class is still a broadcast, one student still a thread', () => {
+    assert.equal(answerAppHelp('how do i send a message to all parents', 'en', t).text, '<howBroadcast>');
+    assert.equal(answerAppHelp('كيف أراسل ولي أمر طالب؟', 'ar', t).text, '<howMessageOne>');
+    assert.equal(answerAppHelp('how do i message one student', 'en', t).text, '<howMessageOne>');
+  });
+
+  const stayWithModel = [
+    'كيف أصحح أوراق الطلاب؟',
+    'how do i grade the exams',
+    'كيف أجمع علامات الطلاب في جدول',
+    'كيف أتعامل مع طالب يتغيب كثيرًا',
+    'how do i deal with a student who is often absent',
+    'how do i make homework less boring for students',
+    'كيف أجعل الواجب أقل مللًا',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not app help`, () => assert.equal(isAppHelpQuery(q), false));
+  }
+
+  it('advice about making homework less boring is teaching, not a worksheet to build', () => {
+    assert.equal(classifyChatIntent('how do i make homework less boring for students', 'en').intent, 'teaching');
+    assert.equal(classifyChatIntent('make a worksheet for weak students', 'en').intent, 'artifact');
+  });
+});
+

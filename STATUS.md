@@ -4400,6 +4400,25 @@ top-level place («المكتبة») is listed once instead of «المكتبة:
 open: «كيف أرسل رسالة لولي أمر؟», «كيف أصحح أوراق الطلاب؟», long-press export on the
 «أيّ مادة تقصد؟» clarification.
 
+**Features asked about by name, and ones the app lacks (2026-10-19, ninth live pass).**
+Of 30 new questions on app.iqrra.com, 10 were answered by the app and 13 went to
+the model, which refused or invented a menu path. Each screen was opened in code
+first. Now with steps: marking papers by camera (`class-scan` also matches
+«أصحح أوراق الامتحان بالكاميرا»), writing to a parent (`parent-message`, the
+«رسالة لوليّ الأمر» tool, ahead of `message-one`, and the Messages tab is named
+too), who has not handed in homework (`homework-done` now takes "has not" /
+«ما سلم»; the card shows only a count), joining a class by code (`join-class`:
+only student and parent accounts have «الانضمام إلى شعبة أخرى»; a teacher
+creates a class), the calendar (`calendar`: view-only, so «أضيف حدثًا» is
+answered with where each entry comes from), «نسيت كلمة المرور شو أعمل؟». Says the
+app cannot: Excel import (paste the names), attendance (no register), offline
+(no offline mode), a question bank (none), an exam reminder (none; the exam date
+shows in the calendar). "make homework less boring" and «أقل مللًا» are purpose
+words, and `classifyChatIntent` no longer builds a worksheet for "make … less/more
+…". «كيف أصحح أوراق الطلاب؟» stays with the model on purpose: without the
+camera it is marking advice. Still open: long-press export on the
+«أيّ مادة تقصد؟» clarification.
+
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
 Step 4 of the worksheet review, agreed in chat. A worksheet was paper only: to
