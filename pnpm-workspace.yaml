@@ -103,5 +103,10 @@ overrides:
   qs: "^6.16.0"
 
 allowBuilds:
+  # Pulled in by @react-native-firebase/app. Neither script matters in a React
+  # Native app (the first prepares defaults for Firebase's Node SDK, the second
+  # installs protobufjs's own CLI), so neither runs.
+  '@firebase/util': false
   core-js: false
   esbuild: true
+  protobufjs: false
