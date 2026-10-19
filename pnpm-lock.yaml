@@ -74,6 +74,9 @@ importers:
       '@workspace/db':
         specifier: workspace:*
         version: link:../../lib/db
+      '@workspace/exam-paper':
+        specifier: workspace:*
+        version: link:../../lib/exam-paper
       '@workspace/integrations-openai-ai-server':
         specifier: workspace:*
         version: link:../../lib/integrations-openai-ai-server
@@ -171,6 +174,9 @@ importers:
       '@workspace/arabic-spelling':
         specifier: workspace:*
         version: link:../../lib/arabic-spelling
+      '@workspace/exam-paper':
+        specifier: workspace:*
+        version: link:../../lib/exam-paper
       '@workspace/math-practice':
         specifier: workspace:*
         version: link:../../lib/math-practice
@@ -449,6 +455,16 @@ importers:
       drizzle-kit:
         specifier: ^0.31.10
         version: 0.31.10
+
+  lib/exam-paper:
+    dependencies:
+      '@workspace/math-practice':
+        specifier: workspace:*
+        version: link:../math-practice
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.9.5
 
   lib/integrations-openai-ai-react: {}
 
