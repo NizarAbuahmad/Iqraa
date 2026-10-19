@@ -1920,6 +1920,60 @@ yet.** Spec: `docs/superpowers/specs/2026-10-17-english-corner-reading-g1-design
 `docs/english-reading-g1-review.html`, printed; then set its `reviewedBy` in
 `englishReading.ts` and merge. No recording step: every word is already voiced.
 
+## Grade 2 grammar in the English corner — built, shown to nobody yet, 2026-10-19
+
+Grammar for Grade 2, after Grade 1: the three Grade 1 activities (**Choose the
+word**, **Build the sentence**, **True or false**) plus a new fourth, **Yes or
+No** (a picture and a question; tap «Yes, it is.» or «No, it isn't.»). 8 of the
+hub's 9 Grade 2 lessons have a unit, 212 sentences in all. The hub has no S2
+Unit 0, and S1 Unit 3 (body parts) has no unit: its words have no pictures.
+**Every unit is `reviewedBy: null` in `GRAMMAR_UNITS_G2`
+(`lib/curriculum/src/englishGrammarG2.ts`), so nobody sees them yet.** Spec:
+`docs/superpowers/specs/2026-10-19-english-corner-grammar-g2-design.md`; plan:
+`docs/superpowers/plans/2026-10-19-english-corner-grammar-g2.md`.
+
+- **Only what can be pictured.** A pattern that needs a picture the corner does
+  not have is left out, and the teacher's form lists it with the reason
+  (`NOT_COVERED_G2`, one block per lesson, S1 U3 included): `swing`, `slide`
+  (no picture), `orange` as food (its only picture is the colour 🟠), `balcony`
+  («on», not «in»), the family words beyond mum/dad/grandad/granny, the
+  prepositions, the two-picture sentences. `action figure` and `building set`
+  appear in Build the sentence only.
+- **The Grade 1 engine, extended in place.** `choose` is optional and a pattern
+  may declare `yesNo`. `kind: 'match'`: the picture stays and the question names
+  it (Yes) or the next pictured word in the slot (No). `kind: 'marker'`: the
+  pattern's ✅ / ❌ is the truth («Do you like cheese?» ✅ → Yes). A `yesNo`
+  pattern is never a Choose or True or false item but is still a Build item.
+  Word forms added: irregular plurals (`mice`, `potatoes`, `shelves`), plural
+  forms with no article (`scissors`, `rice`, `eggs`).
+- **Yes or No is on two units**: toys (S1 U1, `Is it a car?`, 12 sentences) and
+  food (S2 U6, `Do you like cheese?`, 28). Its builder is `buildYesNoRound`
+  in `services/englishHub/games.ts` (half Yes, half No, never one picture twice);
+  the screen is `YesNo` in `components/englishHub/GrammarActivities.tsx`.
+  Checked in a browser at 390 px in Arabic and English with the two units signed
+  off in the working tree only; an unsigned unit shows no Yes or No card.
+- **The teacher's form and sheet are per grade.**
+  `docs/english-grammar-g2-review.html` (A4 landscape, a unit per page, a Yes or
+  No column on two of them, the not-covered block, a sign-off strip) and
+  `docs/english-grammar-g2-sheet.md`, written by the same `grammar-sheet`
+  script, pinned by tests. The Grade 1 sheet, Grade 1 form and reading form are
+  byte-identical.
+- **Four open points on the form for the teacher**: whether the eye-colour
+  circle beside 👦 / 👧 is clear; whether ✅ / ❌ read as «the child likes it»;
+  whether 🥵 / 🥶 are fair pictures for hot and cold weather; whether ages five
+  to ten are the right range for «How old are you?».
+- **Audio is a separate step and has not been run.** `english-audio` now
+  voices `allGrammarSpoken()`: each sentence plus the Yes or No question, the
+  other question and the No exchange. Grades 1 and 2 together are 322 sentences
+  and 360 spoken strings. It needs OpenAI and R2 keys (`pnpm --filter
+  @workspace/curriculum run english-audio`, which skips what already exists). A
+  test pins that no two of the 360 share a recording key.
+
+**To switch a unit on:** record the audio (above); a Grade 2 English teacher
+signs that unit's page of `docs/english-grammar-g2-review.html`, printed; then
+set its `reviewedBy` in `englishGrammarG2.ts` and merge. Grade 2 reading is a
+separate spec, not started.
+
 ## A Grade 1 English teacher's review, 2026-10-15
 
 A teacher went through English Grade 1 and sent nine notes. What each one turned

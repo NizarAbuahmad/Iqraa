@@ -1,7 +1,6 @@
 # English corner: grammar activities for Grade 2 — design
 
-**Status:** design approved in conversation (2026-10-18/19), awaiting review of
-this written spec. **Scope:** Grade 2 English **grammar** only. Grade 2 reading
+**Status:** implemented (PR #1158). **Scope:** Grade 2 English **grammar** only. Grade 2 reading
 is a separate, smaller spec that follows this one.
 
 ## Why
