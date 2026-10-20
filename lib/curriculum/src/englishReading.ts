@@ -12,6 +12,7 @@
  *
  * Free of react-native.
  */
+import { grammarUnit, unitSentences, type GrammarSentence } from './englishGrammar.ts';
 import { hubLesson, type HubWord } from './englishHub.ts';
 
 export type SoundSkip = 'vowel' | 'digraph' | 'soft-c' | 'soft-g';
@@ -54,6 +55,16 @@ export const READING_UNITS: ReadingUnit[] = [
   { lessonId: 'kbl-g1-eng-s2-nccd-u6_l1', reviewedBy: null },
   { lessonId: 'kbl-g1-eng-s2-nccd-u7_l1', reviewedBy: null },
   { lessonId: 'kbl-g1-eng-s2-nccd-u8_l1', reviewedBy: null },
+  // Grade 2 (spec: 2026-10-20-english-corner-reading-g2-design.md). The hub has no S2 Unit 0.
+  { lessonId: 'kbl-g2-eng-s1-nccd-u0_l1', reviewedBy: null },
+  { lessonId: 'kbl-g2-eng-s1-nccd-u1_l1', reviewedBy: null },
+  { lessonId: 'kbl-g2-eng-s1-nccd-u2_l1', reviewedBy: null },
+  { lessonId: 'kbl-g2-eng-s1-nccd-u3_l1', reviewedBy: null },
+  { lessonId: 'kbl-g2-eng-s1-nccd-u4_l1', reviewedBy: null },
+  { lessonId: 'kbl-g2-eng-s2-nccd-u5_l1', reviewedBy: null },
+  { lessonId: 'kbl-g2-eng-s2-nccd-u6_l1', reviewedBy: null },
+  { lessonId: 'kbl-g2-eng-s2-nccd-u7_l1', reviewedBy: null },
+  { lessonId: 'kbl-g2-eng-s2-nccd-u8_l1', reviewedBy: null },
 ];
 
 export function readingUnit(lessonId: string): ReadingUnit | undefined {
@@ -65,3 +76,78 @@ export function offeredReading(lessonId: string): HubWord[] | null {
   const unit = readingUnit(lessonId);
   return unit?.reviewedBy ? hubLesson(lessonId)?.words ?? null : null;
 }
+
+/** The rows of one grade, in hub order. */
+export function readingUnitsForGrade(grade: number): ReadingUnit[] {
+  return READING_UNITS.filter(u => hubLesson(u.lessonId)?.grade === grade);
+}
+
+// ─── Read the sentence (Grade 2) ────────────────────────────────────────────
+
+/** A lesson offers «Read the sentence» only with this many distinct picture words: a round never asks one twice. */
+export const MIN_SENTENCE_WORDS = 6;
+
+export function distinctPictureWords(sentences: readonly GrammarSentence[]): number {
+  return new Set(sentences.flatMap(s => (s.picture ? [s.picture.word] : []))).size;
+}
+
+/**
+ * The Grade 2 grammar sentences a child may be asked to read: pictured, and not Yes or No (which has
+ * its own activity). Empty for another grade, a lesson with no grammar unit, or a pool too thin to
+ * make a round (S1 U3, S2 U8). Not gated on review: `offeredReadingSentences` is.
+ */
+export function readSentencePool(lessonId: string): GrammarSentence[] {
+  if (hubLesson(lessonId)?.grade !== 2) return [];
+  const unit = grammarUnit(lessonId);
+  if (!unit) return [];
+  const pool = unitSentences(unit).filter(s => s.picture !== null && s.yesNo === null);
+  return distinctPictureWords(pool) >= MIN_SENTENCE_WORDS ? pool : [];
+}
+
+/**
+ * The sentence one word away: the same picture word with another count (this / these) or marker
+ * (like / don't like, he / she). Its picture is shown as a wrong answer, so the child has to read
+ * the small word. Null when the pattern has no such pair. The form and the app both ask this.
+ */
+export function sentencePartner(s: GrammarSentence, pool: readonly GrammarSentence[]): GrammarSentence | null {
+  const own = s.picture;
+  if (!own) return null;
+  return pool.find(t => t.picture !== null && t.picture.word === own.word && (t.picture.count !== own.count || t.marker !== s.marker)) ?? null;
+}
+
+/**
+ * The pool once the unit's reading AND its grammar are signed off; null before, for a lesson with no
+ * pool, and for any Grade 1 lesson. `signed` is injectable so the gate can be tested without ever
+ * committing a sign-off.
+ */
+export function offeredReadingSentences(
+  lessonId: string,
+  signed: { reading: boolean; grammar: boolean } = {
+    reading: Boolean(readingUnit(lessonId)?.reviewedBy),
+    grammar: Boolean(grammarUnit(lessonId)?.reviewedBy),
+  },
+): GrammarSentence[] | null {
+  if (!signed.reading || !signed.grammar) return null;
+  const pool = readSentencePool(lessonId);
+  return pool.length > 0 ? pool : null;
+}
+
+/**
+ * Why a Grade 2 lesson has no «Read the sentence» for some or all of its sentences — printed on the
+ * form. Arabic with English phrases inline; no `"`, `&`, `<` or `>` (the form does not escape runs).
+ */
+export const READING_NOT_COVERED_G2: Record<string, string[]> = {
+  'kbl-g2-eng-s1-nccd-u1_l1': [
+    'جمل «Is it a car? Yes, it is.» وأخواتها لها نشاط «نعم أم لا» الخاص في القواعد، فلا تظهر في «اقرَأ الجملة».',
+    'action figure وbuilding set بلا صورة، فلا تظهر جملتاهما في «اقرَأ الجملة».',
+  ],
+  'kbl-g2-eng-s1-nccd-u3_l1': [
+    'لا جمل لهذه الوحدة لأنها بلا أنشطة قواعد (لا صور لكلماتها)، فتبقى أنشطة الكلمات الثلاثة فقط.',
+  ],
+  'kbl-g2-eng-s2-nccd-u6_l1': [
+    'جمل «Do you like cheese? Yes, I do.» وأخواتها لها نشاط «نعم أم لا» الخاص في القواعد، فلا تظهر في «اقرَأ الجملة».',
+  ],
+  'kbl-g2-eng-s2-nccd-u8_l1': [
+    'جمل الوحدة تختلف باسم الشخص (dad وmum وgrandad وgranny) والصورة هي الغرفة فقط، أي أربع صور لا غير، فلا يظهر «اقرَأ الجملة». تبقى أنشطة الكلمات الثلاثة.',
+  ],
+};

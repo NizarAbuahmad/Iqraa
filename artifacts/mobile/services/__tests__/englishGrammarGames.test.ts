@@ -6,7 +6,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { GRAMMAR_UNITS, unitSentences } from '@workspace/curriculum/englishGrammar';
+import { grammarUnitsForGrade, unitSentences } from '@workspace/curriculum/englishGrammar';
 import { makeRng } from '../publicGames/rng.ts';
 import {
   EMPTY_PROGRESS,
@@ -21,7 +21,7 @@ import {
   recordResult,
 } from '../englishHub/games.ts';
 
-const UNITS = GRAMMAR_UNITS.map(u => ({ id: u.lessonId, sentences: unitSentences(u) }));
+const UNITS = grammarUnitsForGrade(1).map(u => ({ id: u.lessonId, sentences: unitSentences(u) }));
 
 describe('Choose the word', () => {
   it('offers two distinct options, the right one at answerIndex, only from sentences with a blank', () => {
@@ -63,7 +63,7 @@ describe('Build the sentence', () => {
   });
 
   it('isSentenceBuilt reads the tiles in order', () => {
-    const s = unitSentences(GRAMMAR_UNITS[1]!).find(x => x.tokens.length >= 3)!;
+    const s = unitSentences(grammarUnitsForGrade(1)[1]!).find(x => x.tokens.length >= 3)!;
     const tiles = s.tokens.map(text => ({ text }));
     assert.equal(isSentenceBuilt(tiles, s), true);
     const swapped = [tiles[1]!, tiles[0]!, ...tiles.slice(2)];

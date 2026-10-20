@@ -14,14 +14,18 @@ import * as Haptics from 'expo-haptics';
 import type { GrammarMarker, GrammarSentence } from '@workspace/curriculum/englishGrammar';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { TYPE } from '@/constants/theme';
 import { playWord } from '@/services/englishAudio';
 import {
   buildChooseRound,
   buildSentenceRound,
   buildTrueFalseRound,
+  buildYesNoRound,
   isSentenceBuilt,
+  isYesNoRight,
   type BuildTile,
   wordPicture,
+  yesNoExchange,
 } from '@/services/englishHub/games';
 import { HearButton, Progress, RIGHT, WRONG } from './Activities';
 
@@ -36,18 +40,21 @@ function buzz(ok: boolean) {
 /** Artwork, not text — sized as a picture, as `WordPicture` in `Activities.tsx` is. */
 const PICTURE_SIZE = 72;
 const MARKER_SIZE = 40;
+/** The three option cards of «Read the sentence» hold a marker and up to two pictures: smaller artwork, stacked. */
+const SMALL_PICTURE_SIZE = 36;
+const SMALL_MARKER_SIZE = 28;
 
 /** What decides the contrast: ✅/❌ for got/like, 👦/👧 for he/she. "many" is shown as two pictures. */
 const MARKER_GLYPH: Partial<Record<GrammarMarker, string>> = { yes: '✅', no: '❌', boy: '👦', girl: '👧' };
 
-export function GrammarPicture({ word, count, marker }: { word: string; count: 1 | 2; marker: GrammarMarker | null }) {
+export function GrammarPicture({ word, count, marker, small = false }: { word: string; count: 1 | 2; marker: GrammarMarker | null; small?: boolean }) {
   const pic = wordPicture(word);
   const glyph = marker ? MARKER_GLYPH[marker] : undefined;
   if (!pic && !glyph) return null;
   return (
-    <View style={styles.pictureRow} accessible={false}>
-      {glyph ? <Text style={styles.marker}>{glyph}</Text> : null}
-      {pic ? <Text style={styles.picture}>{count === 2 ? `${pic}${pic}` : pic}</Text> : null}
+    <View style={small ? styles.pictureStack : styles.pictureRow} accessible={false}>
+      {glyph ? <Text style={small ? styles.markerSmall : styles.marker}>{glyph}</Text> : null}
+      {pic ? <Text style={small ? styles.pictureSmall : styles.picture}>{count === 2 ? `${pic}${pic}` : pic}</Text> : null}
     </View>
   );
 }
@@ -288,13 +295,84 @@ export function TrueFalse({ sentences, onFinish }: { sentences: readonly Grammar
   );
 }
 
+// ─── Yes or No ──────────────────────────────────────────────────────────────
+
+export function YesNo({ sentences, onFinish }: { sentences: readonly GrammarSentence[]; onFinish: Finish }) {
+  const colors = useColors();
+  const { t } = useLanguage();
+  const round = useMemo(() => buildYesNoRound(sentences), [sentences]);
+  const [i, setI] = useState(0);
+  const [picked, setPicked] = useState<boolean | null>(null);
+  const [correct, setCorrect] = useState(0);
+  const q = round[i];
+
+  const pick = (saidYes: boolean) => {
+    if (picked !== null) return;
+    setPicked(saidYes);
+    const ok = isYesNoRight(q, saidYes);
+    if (ok) setCorrect(c => c + 1);
+    buzz(ok);
+  };
+
+  const next = () => {
+    if (i + 1 >= round.length) return onFinish(correct, round.length);
+    setI(i + 1);
+    setPicked(null);
+    // Hearing the question gives nothing away, as in True or false: it is read with the sound.
+    void playWord(round[i + 1].question);
+  };
+
+  const answerButton = (saidYes: boolean) => {
+    const text = saidYes ? q.yes : q.no;
+    const shown = picked !== null && (saidYes === q.answer || saidYes === picked);
+    const tint = !shown ? colors.border : saidYes === q.answer ? RIGHT : WRONG;
+    return (
+      <Pressable
+        key={String(saidYes)}
+        onPress={() => pick(saidYes)}
+        accessibilityRole="button"
+        accessibilityLabel={text}
+        style={[styles.answerBtn, { borderColor: tint, backgroundColor: shown ? tint + '18' : colors.card }]}
+      >
+        <Ionicons name={saidYes ? 'checkmark' : 'close'} size={32} color={saidYes ? RIGHT : WRONG} />
+        <Text style={[styles.answerText, { color: colors.foreground }]}>{text}</Text>
+      </Pressable>
+    );
+  };
+
+  return (
+    <View style={{ gap: 16, alignItems: 'center' }}>
+      <Progress i={i} n={round.length} />
+      <GrammarPicture word={q.picture.word} count={q.picture.count} marker={q.marker} />
+      {q.kind === 'marker' ? (
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: 'center' }}>{t('hubGYesNoLikes')}</Text>
+      ) : null}
+      <EnglishLine text={q.question} />
+      {picked === null ? <HearButton word={q.question} /> : null}
+      {/* ✓ on the left in both languages: the pair is read with the English question. */}
+      <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
+        {answerButton(true)}
+        {answerButton(false)}
+      </View>
+      {picked !== null ? (
+        <Feedback ok={isYesNoRight(q, picked)} answer={q.answer ? q.yes : q.no} onNext={next} sentence={yesNoExchange(q)} />
+      ) : null}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   pictureRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   picture: { fontSize: PICTURE_SIZE, lineHeight: PICTURE_SIZE + 16, textAlign: 'center' },
   marker: { fontSize: MARKER_SIZE, lineHeight: MARKER_SIZE + 8 },
+  pictureStack: { alignItems: 'center', gap: 2 },
+  pictureSmall: { fontSize: SMALL_PICTURE_SIZE, lineHeight: SMALL_PICTURE_SIZE + 8, textAlign: 'center' },
+  markerSmall: { fontSize: SMALL_MARKER_SIZE, lineHeight: SMALL_MARKER_SIZE + 6 },
   sentence: { fontFamily: 'ReadexPro_700Bold', fontSize: 24, textAlign: 'center', writingDirection: 'ltr' },
   option: { borderWidth: 1.5, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 16 },
   optionText: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 20, textAlign: 'center', writingDirection: 'ltr' },
+  answerBtn: { flex: 1, borderWidth: 1.5, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 8, alignItems: 'center', gap: 4 },
+  answerText: { fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.bodyLg, textAlign: 'center', writingDirection: 'ltr' },
   primary: { borderRadius: 16, paddingVertical: 12, paddingHorizontal: 32 },
   primaryText: { color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 15 },
   // A physical row, never flipped for Arabic: the order of the tiles is the English sentence's.
