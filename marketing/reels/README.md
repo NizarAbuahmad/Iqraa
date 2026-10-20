@@ -131,7 +131,8 @@ Arabic), `make_youtube_thumb.py` (1280×720 thumbnail). Big tilted phone on the 
 progress rail along the bottom, lockup top-right. A 9 s intro and a 9 s end card «جرّبها مجانًا». ~15–20 min to render.
 
 - **Chapters (timestamps):** written to `out/youtube_chapters.txt` on every build — paste into the YouTube description.
-- **No voice-over:** burned-in captions only, so it works muted. Original synthesised music (`music_upbeat.py`) at −8 dB, so it stays under any narration added later.
+- **Two music versions of the same picture:** `Iqrra_15_YouTube_Full_Tour.mp4` (upbeat) and `Iqrra_15_YouTube_Full_Tour_oriental.mp4` (Hijaz groove, `music_oriental.py`) — the second is the first's video stream remuxed with the other bed, no re-render.
+- **No voice-over:** burned-in captions only, so it works muted. Original synthesised music at −8 dB, so it stays under any narration added later.
 - **Footage:** the tour (`capture/takes/tour.mp4`) plus the committed takes `r4_messages`, `r10_games`, `r11_interactive`. Nothing re-recorded.
 - **Kept off screen:** generated worksheet / quiz / activity text can contain the app's mirrored maths and an Arabic «و» that reads as a 9, so those
   chapters show the form, then the «ready» card with the generated text blurred (`LOWER = "blur"`, `BLUR_Y`). Settings and Profile are skipped (they show an e-mail address).
