@@ -123,6 +123,11 @@ describe('extractGraphCommands', () => {
     );
   });
 
+  it('reads a function name only where a word starts', () => {
+    assert.deepEqual(extractGraphCommands('The total energy = 2x + 5 joules'), []);
+    assert.deepEqual(extractGraphCommands('length = 3x + 2'), []);
+  });
+
   it('drops a trailing full stop, which is punctuation not maths', () => {
     assert.deepEqual(extractGraphCommands('أوجد مشتقة f(x) = x².'), ['f(x)=x^2']);
   });

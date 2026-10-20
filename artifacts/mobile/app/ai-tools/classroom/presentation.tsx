@@ -115,6 +115,7 @@ function VisualView({ slide }: { slide: ActivitySlide }) {
               <G key={i}>
                 <Rect x={b.x} y={b.y} width={b.w} height={b.h} rx={3} fill={b.fill} />
                 <SvgText x={b.labelX} y={b.labelY} fontSize={15} textAnchor="middle" fill="#4B5563">{b.label}</SvgText>
+                <SvgText x={b.labelX} y={b.valueY} fontSize={15} fontWeight="bold" textAnchor="middle" fill="#374151">{b.value}</SvgText>
               </G>
             ))
           )}

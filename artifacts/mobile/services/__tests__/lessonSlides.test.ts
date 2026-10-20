@@ -979,6 +979,39 @@ describe('generated explanation in the deck', () => {
     assert.ok(rule.content.includes(LESSON.rulesAr![0]!));
   });
 
+  it('drops a generated point that restates the book rule, and a concept left with none', () => {
+    const rule = LESSON.rulesAr![0]!;
+    const deck = buildLessonDeck('x', true, {
+      lesson: LESSON,
+      teaching: { ...TEACHING, concepts: [
+        { title: 'فكرة تكرّر القاعدة', points: [`${rule}.`] },
+        { title: 'فكرة مختلطة', points: [`  ${rule} `, 'سطر جديد'] },
+      ] },
+    });
+    assert.equal(deck.slides.some(s => s.title === 'فكرة تكرّر القاعدة'), false);
+    assert.equal(deck.slides.find(s => s.title === 'فكرة مختلطة')!.content, '• سطر جديد');
+    assert.ok(deck.slides.find(s => s.title.includes('القاعدة'))!.content.includes(rule));
+  });
+
+  it('keeps a short point that is only a fragment of the rule', () => {
+    const rule = LESSON.rulesAr![0]!;
+    const fragment = rule.slice(0, Math.ceil(rule.length / 3));
+    const deck = buildLessonDeck('x', true, {
+      lesson: LESSON, teaching: { ...TEACHING, concepts: [{ title: 'جزء', points: [fragment] }] },
+    });
+    assert.equal(deck.slides.find(s => s.title === 'جزء')?.content, `• ${fragment}`);
+  });
+
+  it('falls back to the book when every generated point restated the rule', () => {
+    const rule = LESSON.rulesAr![0]!;
+    const withBook = buildLessonDeck('x', true, { lesson: LESSON });
+    const allDropped = buildLessonDeck('x', true, {
+      lesson: LESSON, teaching: { ...TEACHING, concepts: [{ title: 'تكرار', points: [rule] }] },
+    });
+    const bookTitles = (d: typeof withBook) => d.slides.filter(s => !s.aiWritten && s.type !== 'challenge').map(s => s.title);
+    for (const t of bookTitles(withBook)) assert.ok(allDropped.slides.some(s => s.title === t), `book slide «${t}» lost`);
+  });
+
   it("never replaces the book's own worked examples", () => {
     const deck = buildLessonDeck('x', true, { lesson: LESSON, teaching: TEACHING });
     const examples = deck.slides.filter(s => s.type === 'challenge');

@@ -20,7 +20,7 @@ import { Platform } from 'react-native';
 import * as Sharing from 'expo-sharing';
 import { File, Paths } from 'expo-file-system';
 
-import { visualForExport, visualForSlide } from './deckVisuals.ts';
+import { visualForExport, visualForSlide, type VisualBlock } from './deckVisuals.ts';
 import { isBulletLine, looksLikeEquation, stripBullet, workingSteps } from './deckText.ts';
 import { asPhotoHero, resolveSlideLayout } from './slideLayout.ts';
 import { slideTeacherNotesText } from './deckNotes.ts';
@@ -166,9 +166,17 @@ function addBlobs(s: PptxSlide, blobHex: string): void {
  */
 function addPlotChart(
   s: PptxSlide,
-  plot: { series: { label: string; points: { x: number; y: number }[] }[] },
+  plot: VisualBlock,
   box: { x: number; y: number; w: number; h: number },
 ): void {
+  // A check may carry a data chart rather than a curve («according to the
+  // chart…»); it sits in the same box above the options.
+  if (plot.kind === 'chart') {
+    s.addChart(plot.chartType === 'pie' ? 'pie' : 'bar', [{ name: '', labels: plot.categories, values: plot.values }], {
+      ...box, showLegend: plot.chartType === 'pie', legendPos: 'r', showValue: plot.chartType !== 'pie',
+    });
+    return;
+  }
   s.addChart(
     'line',
     plot.series.map(series => ({
@@ -637,10 +645,14 @@ export async function exportDeckAsPptx(
     // says «في الرسم البياني الظاهر…» carries the commands for that figure
     // (see lessonSlides.ts), and those branches lay themselves out around it
     // below rather than falling through to the chart block here.
-    const slidePlot = slideVisual?.kind === 'plot' && slideVisual.series.length
+    // A chart on a check is drawn by that branch too: the chart block below
+    // ends the slide, and took the options and the answer with it.
+    const isCheck = slide.type === 'question' || slide.type === 'challenge';
+    const slidePlot = (slideVisual?.kind === 'plot' && slideVisual.series.length)
+      || (isCheck && slideVisual?.kind === 'chart' && slideVisual.categories.length)
       ? slideVisual
       : null;
-    if (slideVisual?.kind === 'chart' && slideVisual.categories.length) {
+    if (!isCheck && slideVisual?.kind === 'chart' && slideVisual.categories.length) {
       const [context] = slide.content.split('\n\n');
       if (context) {
         s.addText(context, { x: 0.8, y: 1.25, w: 8.4, h: 0.5, align: 'center', fontSize: 13, color: P.text });
