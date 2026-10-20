@@ -131,6 +131,10 @@ function isRefinement(q: string): boolean {
 const MAKE_ASK =
   /أنشئ|انشئ|ولّد|ولد|اعمل|أعمل|جهز|جهّز|حضّر|حضر|اعد|إعداد|اعداد|create|generate|make|build|prepare/i;
 
+// «make homework less boring» changes how something reads; «make a worksheet for weak
+// students» builds one.
+const ADJUST_ASK = /\b(?:more|less)\s+\w+/i;
+
 function isArtifact(q: string): boolean {
   // The shared vocabulary first; the patterns below are the older list.
   if (artifactFromAsk(q)) return true;
@@ -499,7 +503,7 @@ export function classifyChatIntent(
   }
   // «كيف أعدّل ورقة العمل لتناسب…» names a paper but asks how to adapt one, not to
   // make one; «كيف أعمل ورقة عمل لتناسب…» still does.
-  if (isArtifact(q) && !(isPurposeQuestion(query) && !MAKE_ASK.test(q))) {
+  if (isArtifact(q) && !(isPurposeQuestion(query) && (!MAKE_ASK.test(q) || ADJUST_ASK.test(q)))) {
     return { intent: 'artifact', useTeachingPipeline: true };
   }
   if (isTeaching(q)) {
