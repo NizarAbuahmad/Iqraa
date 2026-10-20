@@ -1974,6 +1974,68 @@ signs that unit's page of `docs/english-grammar-g2-review.html`, printed; then
 set its `reviewedBy` in `englishGrammarG2.ts` and merge. Grade 2 reading is a
 separate spec, not started.
 
+## Grade 2 reading in the English corner — built, shown to nobody yet, 2026-10-20
+
+Reading for Grade 2, after Grade 1: the three Grade 1 word activities (**Read
+and find**, **First letter**, **Starts with**) on the Grade 2 words, plus a
+fourth, **Read the sentence** (a sentence printed with no sound; tap its
+picture of three; the sentence plays after the answer). All 9 Grade 2 lessons
+get the word activities. **Every unit is `reviewedBy: null` in `READING_UNITS`
+(`lib/curriculum/src/englishReading.ts`), so nobody sees any of it yet.** Spec:
+`docs/superpowers/specs/2026-10-20-english-corner-reading-g2-design.md`; plan:
+`docs/superpowers/plans/2026-10-20-english-corner-reading-g2.md`.
+
+- **The sentences are the Grade 2 grammar sentences**, not new ones: pictured,
+  and not Yes or No (which has its own activity). Nothing new to author or
+  record. Seven lessons have the sentence activity (S1 U0, U1, U2, U4, S2 U5, U6,
+  U7). **S1 U3** has no grammar unit, so no sentences. **S2 U8** has 16
+  sentences but only 4 distinct pictures (the room; the sentences differ by the
+  person), so it is left out; the rule is "at least 6 distinct picture words"
+  (`MIN_SENTENCE_WORDS`), not a list.
+- **Three gates.** «Read the sentence» needs the unit's reading signed **and**
+  its grammar signed (a child never reads a sentence a teacher has not checked),
+  and the lesson to be Grade 2 (Grade 1 has grammar units too, and would
+  otherwise get the activity the day both of its switches are set). The word
+  activities need only the reading sign-off. `offeredReadingSentences` is the
+  gate; `signed` is injectable so tests never commit a sign-off.
+- **The wrong pictures teach the small word.** `sentencePartner` finds the
+  sentence one word away (same picture word, another count or marker): 1 pencil
+  against 2 pencils (14 of 15 sentences in S1 U2), 1 mouse against 2 mice (20
+  of 20, S2 U5), cheese ✅ against cheese ❌ (28 of 28, S2 U6), blue 👦 against
+  blue 👧 (6 of 10, S1 U4). It is shared by the form and the app, so the form
+  shows what the app will do; the other wrong picture is another word of the
+  same pattern. A round asks each picture word once: at most 8 questions, 8 in
+  S1 U2, 7 in S1 U4.
+- **First sounds use the Grade 1 rule unchanged**; no Grade 2 word needed an
+  exception. It leaves out 22 distinct words (23 entries; `orange` is in two
+  lessons), e.g. `apple`, `chicken`, `shoes`, `short`.
+- **The teacher's form** is `docs/english-reading-g2-review.html`, written by
+  the same `grammar-sheet` script (`renderReadingReviewHtml(2)`): per unit the
+  words with picture and first letter, the left-out words, a sentence table
+  with the wrong picture each is shown against, and a not-covered block for S1
+  U1, U3, S2 U6, U8. A test pins it to the generator. The Grade 1 reading form
+  and every other doc are unchanged. Open points for the teacher: is a
+  two-sentence exchange too long to read at this point of Grade 2 (a
+  one-function change to show only the answer); do ✅/❌ and one-versus-two
+  pictures read clearly as «don't» and «these are»; the pink heart, the 🟠 and
+  the eye-colour circle.
+- **Audio.** The sentence plays after the answer, from the grammar recordings:
+  Read the sentence adds none of its own, but it needs the pending
+  `english-audio` run (the Grade 2 grammar step) before it is worth switching
+  on. The word recordings already exist.
+- **Checked in a browser** at 390 px in Arabic and English with units signed off
+  in the working tree only (restored straight after; never committed): the
+  sentence stays left to right, three picture cards fit a row (two layout bugs
+  found and fixed: collapsed cards, and two-picture cards spilling over their
+  border), a unit with reading but not grammar signed shows the word cards and
+  no sentence card, and an unsigned unit shows no reading section.
+
+**To switch a unit on:** the grammar unit is signed and its audio recorded; a
+Grade 2 English teacher signs that unit's page of
+`docs/english-reading-g2-review.html`, printed; then set its `reviewedBy` in
+`englishReading.ts` and merge. The word activities need only the reading
+sign-off.
+
 ## A Grade 1 English teacher's review, 2026-10-15
 
 A teacher went through English Grade 1 and sent nine notes. What each one turned

@@ -1,7 +1,6 @@
 # English corner: reading activities for Grade 2 — design
 
-**Status:** design approved in conversation (2026-10-20), awaiting review of
-this written spec. **Scope:** Grade 2 English reading only (the 9 hub lessons,
+**Status:** implemented (PR #1158). **Scope:** Grade 2 English reading only (the 9 hub lessons,
 `kbl-g2-eng-s{1,2}-nccd-u*_l1`). Builds on the Grade 1 reading activities
 (`2026-10-17-english-corner-reading-g1-design.md`, PR #1120) and the Grade 2
 grammar sentences (`2026-10-19-english-corner-grammar-g2-design.md`,
