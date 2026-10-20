@@ -9,6 +9,7 @@ video does not sit on one loop —
   * sections that raise and drop the energy:  intro (piano arp + pad)  ->  verse (soft kick, shaker, bass, pizzicato)
     ->  build (claps, 16th hats, snare roll, riser)  ->  CHORUS (four-on-the-floor, octave bass, piano chords, bell
     melody, crash)  ->  breakdown (pad + piano only)  ->  build  ->  chorus ... ;
+  * pieces whose end card comes before ~30 s (ads, reels) use a short form: two bars of verse, chorus, a two-bar build;
   * the last four bars before the end card are always a build and the end card always lands on a chorus, with a crash;
   * accents on the picture: a short whoosh into every scene cut and a soft pop on it (`hits=[...]`, seconds).
 
@@ -106,6 +107,9 @@ def crash(dur=1.8):
 
 def section_map(bars, end_bar):
     """One section name per bar. The last four bars before the end card are a build; the end card lands on a chorus."""
+    if end_bar is not None and end_bar < 30:             # short form (ads, reels): on the beat at once, chorus early
+        seq = ["verse"] * 2 + ["chorus"] * max(0, end_bar - 4) + ["build"] * 2
+        return (seq + ["chorus"] * (bars + 1))[: bars + 1]
     seq = []
     for name, ln in FORM_FIRST:
         seq += [name] * ln

@@ -120,7 +120,8 @@ evaluations · parent message · classes), a progress ticker, and an end card «
 - **Before paid spend:** the plan's own gate #7 (legal opinion on commercial use of the NCCD textbook content) and gate #5 (claims audit).
 - **Phone:** shows the whole 390×844 app screen at ~1.28× (500×1082 px). Its bottom ~310 px (tab bar / lowest content) sits in Meta's
   overlay zone on purpose; all text stays inside the zone. To keep the phone fully inside, set `bp.SW, bp.SH = 360, 779` and `PCY = 850`.
-- The music is original (no licence): upbeat in the shipped file. `build_meta_ad.py` renders both beds; the oriental version was dropped
+- Music: `Iqrra_14_Meta_Ad_upbeat.mp4` and `Iqrra_14_Meta_Ad_inspire.mp4` (`music_inspire.py` short form: two bars of verse, chorus, a two-bar build, chorus on the end card; −17.7 LUFS) — the second is the first's video remuxed with the other bed. Both original, no licence.
+- (Earlier note) The music is original (no licence): upbeat in the shipped file. `build_meta_ad.py` renders both beds; the oriental version was dropped
   on request (re-add by restoring the `oriental` loop entry).
 
 ## Reel 15 — YouTube full tour (16:9)
