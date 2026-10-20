@@ -14,6 +14,7 @@
 | 10 | `out/Iqrra_10_Games.mp4` | **recorded from the app** (public games hub, no login) — new brand, teal “progress race” | 21.1 s |
 | 11 | `out/Iqrra_11_Interactive_Class.mp4` | **recorded from the app**, demo account, demo-mode content — new brand, paper “numbered list” | 22.3 s |
 | 12 | `out/Iqrra_12_Curriculum.mp4` | **recorded from the app**, demo account — new brand, ink “explainer” | 24.0 s |
+| 13 | `out/Iqrra_13_Poster_Sample.mp4` | **style sample**: Reel 11's footage in a totally different design (poster / kinetic type / tilted phone) | 21.0 s |
 
 Reels 1–4 share one layout (headline in the top safe zone, the app in a rounded card, branded end card),
 the same Chromium-rendered Arabic (Cairo / Almarai, never ffmpeg `drawtext`) and the same music bed.
@@ -90,6 +91,17 @@ reels film features that run today, with nothing seeded or staged. `build_new_fe
   every scene. The «نتاجات التعلّم» block (English «Understand» chips in an Arabic page) is also left out.
 - Left out entirely: «ركن الإنجليزية» (Arabic glosses are AI-drafted and unreviewed; audio is silent offline) and «المختبر»
   (not yet verified in a browser; PhET is gated until a teacher reviews it).
+
+## Reel 13 — a different direction (style sample)
+
+`build_poster_reel.py`, reusing `capture/takes/r11_interactive.mp4`. Reels 1–12 share one layout (card on a soft gradient,
+label headlines); this one changes the whole language: sand ground with one big teal disc, giant ink type with a yellow
+highlighter swipe revealed right-to-left, a tilted phone mock-up that floats, step badges (١–٤) and sticker chips that pop in
+with a ding, teal swipe wipes between scenes, a hard-shadow poster end card. The text is a story instead of labels:
+«حصتك بعد ساعة… والتحضير لسّا؟» → افتح الأدوات → اختار نشاط جاهز → حدّد الدرس والهدف → وابدأ العرض → «جهّز حصتك… قبل ما يرن الجرس».
+Decision it needs: the yellow (`#FFC93C`) comes from the app's book-cover art and is **not** in `constants/colors.ts`.
+`verify_reel.py` flags this style's decorative teal disc in the margins; the poster is checked for ink-coloured content in
+the margin zones instead (0 of 42 frames).
 
 ## Reels 6–9 — cut from the full-app tour
 
