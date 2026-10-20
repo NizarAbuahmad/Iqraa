@@ -14,8 +14,10 @@
  * in-app messaging has someone to address, and nothing else here depends on
  * it — a roster whose rows are all unclaimed behaves exactly as it did before.
  *
- * Everything here is owned by a teacher. There is no school or tenant layer
- * yet; add one below `users` when a school actually asks for it.
+ * Everything here is owned by a teacher. There is still no tenant layer: a class,
+ * a student and a roster are one teacher's. `schools` (schema/schools.ts) exists
+ * only to widen one read — a colleague's exam dates, `GET /exam-calendar` — and
+ * grants no access to anything in this file.
  */
 import { pgTable, text, timestamp, uuid, index, unique, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";

@@ -1,5 +1,5 @@
 /**
- * The English hub's four activities, as pure functions over a lesson's words.
+ * The English hub's activities, as pure functions over a lesson's words.
  *
  * Pure so `node --test` can load it — the components that render these import
  * `react-native`. Every choice worth checking (what counts as a wrong option,
@@ -8,11 +8,24 @@
  * Practice records nothing on the server (see `@workspace/curriculum/englishHub`);
  * the only memory is the student's own device, through `progress.ts`.
  */
+import type { GrammarSentence } from '@workspace/curriculum/englishGrammar';
 import type { HubWord } from '@workspace/curriculum/englishHub';
+import { firstSound } from '@workspace/curriculum/englishReading';
+import { isPicturable, wordPicture } from '@workspace/curriculum/englishPictures';
 import { sample, shuffle } from '../publicGames/rng.ts';
 
-export type HubActivity = 'flashcards' | 'listen' | 'match' | 'spell' | 'scramble' | 'picture' | 'speaking';
+export { isPicturable, wordPicture };
+
+export type HubActivity =
+  | 'flashcards' | 'listen' | 'match' | 'spell' | 'scramble' | 'picture' | 'speaking'
+  | 'grammar-choose' | 'grammar-build' | 'grammar-true'
+  | 'read-find' | 'first-letter' | 'starts-with';
+/** The vocabulary activities, offered on every lesson. */
 export const HUB_ACTIVITIES: HubActivity[] = ['flashcards', 'listen', 'match', 'spell', 'scramble', 'picture', 'speaking'];
+/** The grammar activities, offered only on a lesson whose unit a teacher has reviewed (`offeredGrammar`). */
+export const GRAMMAR_ACTIVITIES: HubActivity[] = ['grammar-choose', 'grammar-build', 'grammar-true'];
+/** The reading activities, offered only on a Grade 1 lesson whose unit a teacher has reviewed (`offeredReading`). */
+export const READING_ACTIVITIES: HubActivity[] = ['read-find', 'first-letter', 'starts-with'];
 
 /** Enough to guess at 25%, few enough for a six-year-old to read. */
 export const LISTEN_OPTIONS = 4;
@@ -47,14 +60,52 @@ export interface MatchCard {
   pairId: number;
 }
 
-/** English face-up against its Arabic meaning — the memory game, with words. */
-export function buildMatchDeck(words: readonly HubWord[], rng: () => number = Math.random): MatchCard[] {
+export interface MatchColumns {
+  en: MatchCard[];
+  ar: MatchCard[];
+}
+
+/**
+ * Two columns of cards, each in its own random order, where no row faces its
+ * own match. Both matching games use it: one mixed grid confused Grade 1
+ * pupils (a teacher's review, 2026-10-15), and a column per side says which
+ * side a card belongs to before the child has read it.
+ *
+ * Two independent shuffles will sometimes put a pair on the same row, and side
+ * by side that is the answer handed over. So: reshuffle the right column a few
+ * times, and if that keeps failing fall back to the left order rotated by one,
+ * which cannot line up for two or more pairs. Lessons always have at least
+ * `MIN_HUB_WORDS`.
+ */
+function columnsWithNoGiveaway<T extends { pairId: number }>(
+  leftCards: T[],
+  rightCards: T[],
+  rng: () => number,
+): { left: T[]; right: T[] } {
+  const left = shuffle(leftCards, rng);
+  const faced = (right: T[]) => right.some((c, row) => c.pairId === left[row].pairId);
+  let right = shuffle(rightCards, rng);
+  for (let tries = 0; tries < 20 && faced(right); tries += 1) right = shuffle(rightCards, rng);
+  if (faced(right) && left.length > 1) {
+    const byPair = new Map(rightCards.map(c => [c.pairId, c]));
+    right = left.map((_, row) => byPair.get(left[(row + 1) % left.length].pairId)!);
+  }
+  return { left, right };
+}
+
+/**
+ * English in one column, its Arabic meanings in the other — "match the
+ * meaning" as a student expects to read it. (This was a single shuffled grid,
+ * memory-game style, so a word's two halves could land in either column.)
+ */
+export function buildMatchColumns(words: readonly HubWord[], rng: () => number = Math.random): MatchColumns {
   const picked = sample([...words], MATCH_PAIRS, rng);
-  const cards = picked.flatMap((w, pairId): MatchCard[] => [
-    { id: `${pairId}-en`, text: w.en, lang: 'en', pairId },
-    { id: `${pairId}-ar`, text: w.ar, lang: 'ar', pairId },
-  ]);
-  return shuffle(cards, rng);
+  const { left, right } = columnsWithNoGiveaway(
+    picked.map((w, pairId): MatchCard => ({ id: `${pairId}-en`, text: w.en, lang: 'en', pairId })),
+    picked.map((w, pairId): MatchCard => ({ id: `${pairId}-ar`, text: w.ar, lang: 'ar', pairId })),
+    rng,
+  );
+  return { en: left, ar: right };
 }
 
 export function isMatchPair(a: MatchCard, b: MatchCard): boolean {
@@ -136,72 +187,11 @@ export function isScrambleSolved(tiles: readonly ScrambleTile[], word: string): 
 
 // ─── Picture matching ───────────────────────────────────────────────────────
 
-/**
- * Concrete, common nouns only, each with one clean, unambiguous emoji — no
- * near-duplicates ("hill" next to "mountain"), no adjectives/adverbs/phrases
- * (nothing to draw for "carefully" or "arrive on time"), no institutions
- * ("school nurse", "headteacher" — compound and abstract). This is a curated
- * subset by design: about a third of the 458 hub words have no honest single
- * picture, and forcing one in would make the game itself untrustworthy.
- *
- * Values are unique — two different words never share an emoji — so two cards
- * in the same round are never visually identical for different reasons.
- */
-const WORD_EMOJI: Record<string, string> = {
-  one: '1️⃣', two: '2️⃣', three: '3️⃣', four: '4️⃣', five: '5️⃣',
-  six: '6️⃣', seven: '7️⃣', eight: '8️⃣', nine: '9️⃣', ten: '🔟',
-  blue: '🔵', green: '🟢', orange: '🟠', red: '🔴', yellow: '🟡',
-  brown: '🟤', black: '⚫', pink: '🩷', purple: '🟣', white: '⚪',
-  boy: '👦', girl: '👧', mum: '👩', dad: '👨', grandad: '👴', granny: '👵',
-  // ('bag' is dropped, not given its own emoji: 🎒 is precisely "backpack",
-  // and a generic school bag has no other clean, distinct glyph.)
-  cat: '🐱', frog: '🐸', giraffe: '🦒', lizard: '🦎', monkey: '🐒',
-  snake: '🐍', spider: '🕷️', tiger: '🐯', zebra: '🦓', duck: '🦆',
-  fish: '🐟', hamster: '🐹', mouse: '🐭', parrot: '🦜', rabbit: '🐰',
-  tortoise: '🐢', hippo: '🦛', elephant: '🐘', crocodile: '🐊', penguin: '🐧',
-  eagle: '🦅', kangaroo: '🦘', cow: '🐄', donkey: '🫏', horse: '🐴',
-  goat: '🐐', sheep: '🐑', bird: '🐦', bee: '🐝', turkey: '🦃',
-  dinosaur: '🦕', robot: '🤖', teddy: '🧸', doll: '🪆',
-  book: '📖', crayon: '🖍️', pen: '🖊️', pencil: '✏️',
-  ruler: '📏', scissors: '✂️', computer: '💻', chair: '🪑', door: '🚪',
-  window: '🪟', ball: '⚽', car: '🚗', train: '🚂', plane: '✈️',
-  kite: '🪁', bike: '🚲', scooter: '🛴', puzzle: '🧩', yoyo: '🪀',
-  boots: '👢', dress: '👗', jacket: '🧥', jeans: '👖', shirt: '👕',
-  shoes: '👟', hat: '🎩', scarf: '🧣', socks: '🧦', glasses: '👓',
-  backpack: '🎒', phone: '📱',
-  apple: '🍎', apples: '🍎', banana: '🍌', carrot: '🥕', carrots: '🥕',
-  grapes: '🍇', potato: '🥔', rice: '🍚', tomato: '🍅', bread: '🍞',
-  cheese: '🧀', chicken: '🍗', eggs: '🥚', milk: '🥛', water: '💧',
-  juice: '🧃', lemons: '🍋', cakes: '🎂', sweets: '🍬', coconut: '🥥',
-  burger: '🍔', kiwi: '🥝', mango: '🥭', cereal: '🥣', noodles: '🍜',
-  olives: '🫒', salad: '🥗', sandwiches: '🥪', vegetables: '🥦',
-  coffee: '☕', tea: '🍵',
-  sunny: '☀️', rainy: '🌧️', cloudy: '☁️', snowy: '❄️', windy: '💨',
-  hot: '🥵', cold: '🥶',
-  bathroom: '🛁', bedroom: '🛏️', kitchen: '🍳', house: '🏠',
-  city: '🏙️', forest: '🌲', island: '🏝️', mountain: '⛰️', town: '🏘️',
-  bridge: '🌉', zoo: '🦁', museum: '🏛️', hotel: '🏨', restaurant: '🍽️',
-  market: '🏪', 'train station': '🚉', 'bus stop': '🚏', 'car park': '🅿️',
-  doctor: '🩺', nurse: '🧑‍⚕️', firefighter: '🧑‍🚒', astronaut: '🧑‍🚀',
-  pilot: '🧑‍✈️', 'police officer': '👮', builder: '👷', chef: '🧑‍🍳',
-  artist: '🧑‍🎨', farmer: '🧑‍🌾', scientist: '🧑‍🔬', carpenter: '🔨',
-  bus: '🚌', boat: '⛵', motorbike: '🏍️', underground: '🚇',
-  eyes: '👀', mouth: '👄', nose: '👃', teeth: '🦷',
-  Egypt: '🇪🇬', Jordan: '🇯🇴', Qatar: '🇶🇦', Spain: '🇪🇸',
-  'the United Kingdom': '🇬🇧', 'the United Arab Emirates': '🇦🇪',
-  happy: '😊', sad: '😢',
-  candle: '🕯️', present: '🎁', invitation: '💌', wedding: '💍',
-  'big wheel': '🎡', rollercoaster: '🎢', costume: '🎭',
-  sofa: '🛋️', television: '📺', mirror: '🪞', clock: '🕐',
-  keys: '🔑', handbag: '👜',
-};
+// The curated pictures (`wordPicture`) live in `@workspace/curriculum/englishPictures`,
+// so the grammar generator and its teacher's sheet use the same ones.
 
 const MIN_PICTURE_WORDS = 4;
 
-/** Whether a word has a curated emoji at all — exported so the "renders nothing" floor is testable directly. */
-export function isPicturable(word: string): boolean {
-  return !!WORD_EMOJI[word];
-}
 
 export interface PictureCard {
   id: string;
@@ -211,15 +201,16 @@ export interface PictureCard {
   pairId: number;
 }
 
-/** Same layout as `buildMatchDeck`, emoji↔English instead of English↔Arabic. */
-export function buildPictureDeck(words: readonly HubWord[], rng: () => number = Math.random): PictureCard[] {
-  const picturable = words.filter(w => WORD_EMOJI[w.en]);
+/** Same layout as `buildMatchColumns`: pictures in one column, English words in the other. */
+export function buildPictureBoard(words: readonly HubWord[], rng: () => number = Math.random): { pictures: PictureCard[]; words: PictureCard[] } {
+  const picturable = words.filter(w => isPicturable(w.en));
   const picked = sample(picturable, MATCH_PAIRS, rng);
-  const cards = picked.flatMap((w, pairId): PictureCard[] => [
-    { id: `${pairId}-emoji`, kind: 'emoji', text: WORD_EMOJI[w.en], pairId },
-    { id: `${pairId}-word`, kind: 'word', text: w.en, pairId },
-  ]);
-  return shuffle(cards, rng);
+  const { left, right } = columnsWithNoGiveaway(
+    picked.map((w, pairId): PictureCard => ({ id: `${pairId}-emoji`, kind: 'emoji', text: wordPicture(w.en)!, pairId })),
+    picked.map((w, pairId): PictureCard => ({ id: `${pairId}-word`, kind: 'word', text: w.en, pairId })),
+    rng,
+  );
+  return { pictures: left, words: right };
 }
 
 export function isPictureMatch(a: PictureCard, b: PictureCard): boolean {
@@ -243,6 +234,204 @@ export function lessonHasPictureMatch(words: readonly HubWord[]): boolean {
  */
 export function buildSpeakingRound(words: readonly HubWord[], rng: () => number = Math.random): HubWord[] {
   return sample(singleWordPool(words), ROUND_LENGTH, rng);
+}
+
+// ─── Grammar (Grade 1) ──────────────────────────────────────────────────────
+//
+// The sentences come from `@workspace/curriculum/englishGrammar`, generated from
+// the book's patterns. These builders do not gate on a teacher's review — the
+// lesson screen asks `offeredGrammar`, which returns nothing for an unreviewed unit.
+
+/** A sentence of more tiles than this is too long for a Grade 1 child to order. */
+export const MAX_BUILD_TILES = 7;
+/** Below this many usable sentences a round would repeat itself; the card is not shown. */
+const MIN_GRAMMAR_SENTENCES = 4;
+
+export interface ChooseQuestion {
+  sentence: GrammarSentence;
+  /** The right option and its contrast, in a random order. */
+  options: string[];
+  answerIndex: number;
+}
+
+export function buildChooseRound(sentences: readonly GrammarSentence[], rng: () => number = Math.random): ChooseQuestion[] {
+  return sample(sentences.filter(s => s.choose), ROUND_LENGTH, rng).map(sentence => {
+    const { right, wrong } = sentence.choose!;
+    const answerIndex = rng() < 0.5 ? 0 : 1;
+    return { sentence, options: answerIndex === 0 ? [right, wrong] : [wrong, right], answerIndex };
+  });
+}
+
+export interface BuildTile {
+  /** Position in the shuffled tray — a sentence can repeat a word, so the text is not a key. */
+  id: number;
+  text: string;
+}
+
+export interface BuildQuestion {
+  sentence: GrammarSentence;
+  tiles: BuildTile[];
+}
+
+/** `shuffledLetters` for words: a shuffle that is not already the sentence, when it can be. */
+function shuffledTokens(tokens: readonly string[], rng: () => number): string[] {
+  const original = tokens.join(' ');
+  let attempt = [...tokens];
+  for (let i = 0; i < 8 && (attempt.join(' ') === original && tokens.length >= 2); i += 1) {
+    attempt = shuffle([...tokens], rng);
+  }
+  return attempt;
+}
+
+function buildable(s: GrammarSentence): boolean {
+  return s.tokens.length >= 2 && s.tokens.length <= MAX_BUILD_TILES;
+}
+
+export function buildSentenceRound(sentences: readonly GrammarSentence[], rng: () => number = Math.random): BuildQuestion[] {
+  return sample(sentences.filter(buildable), ROUND_LENGTH, rng).map(sentence => ({
+    sentence,
+    tiles: shuffledTokens(sentence.tokens, rng).map((text, id) => ({ id, text })),
+  }));
+}
+
+/** The tiles placed so far, read in order, are the whole sentence. */
+export function isSentenceBuilt(tiles: readonly { text: string }[], sentence: GrammarSentence): boolean {
+  return tiles.map(t => t.text).join(' ') === sentence.text;
+}
+
+export interface TrueFalseQuestion {
+  sentence: GrammarSentence;
+  /** The word whose picture is shown — the sentence's own, or another of the same slot. */
+  pictureWord: string;
+  isTrue: boolean;
+}
+
+function judgeable(s: GrammarSentence): boolean {
+  return Boolean(s.picture && s.falsePicture);
+}
+
+/** Half the round (rounded up) is true, the rest false, then the order is shuffled. */
+export function buildTrueFalseRound(sentences: readonly GrammarSentence[], rng: () => number = Math.random): TrueFalseQuestion[] {
+  const picked = sample(sentences.filter(judgeable), ROUND_LENGTH, rng);
+  const trueCount = Math.ceil(picked.length / 2);
+  return shuffle(
+    picked.map((sentence, i): TrueFalseQuestion => {
+      const isTrue = i < trueCount;
+      return { sentence, isTrue, pictureWord: isTrue ? sentence.picture!.word : sentence.falsePicture! };
+    }),
+    rng,
+  );
+}
+
+export function grammarActivityAvailable(activity: HubActivity, sentences: readonly GrammarSentence[]): boolean {
+  const usable =
+    activity === 'grammar-choose' ? sentences.filter(s => s.choose)
+      : activity === 'grammar-build' ? sentences.filter(buildable)
+        : activity === 'grammar-true' ? sentences.filter(judgeable)
+          : [];
+  return usable.length >= MIN_GRAMMAR_SENTENCES;
+}
+
+// ─── Reading (Grade 1) ──────────────────────────────────────────────────────
+//
+// The words are the lesson's own. These builders do not gate on a teacher's
+// review — the lesson screen asks `offeredReading`. A word's first sound comes
+// from `firstSound` in `@workspace/curriculum/englishReading`, never from here.
+
+/** Three, not four: a six-year-old reading, not guessing. */
+export const READING_OPTIONS = 3;
+/** Letters a First letter question is padded with when its lesson has too few of its own. */
+const PAD_LETTERS = ['b', 'd', 'f', 'h', 'l', 'm', 'n', 'p', 'r', 's', 't'];
+/** Shapes a six-year-old confuses: side by side they test eyesight, not hearing. */
+const MIRROR: Record<string, string> = { b: 'd', d: 'b', p: 'q', q: 'p' };
+const MIN_FIRST_SOUND_WORDS = 4;
+const MIN_STARTS_WITH_LETTERS = 3;
+
+export interface ReadFindQuestion {
+  word: HubWord;
+  /** English words, each with its own picture; one is `word.en`. */
+  options: string[];
+  answerIndex: number;
+}
+
+/** Read the printed word, tap its picture. Pictures are distinct, so no option shows the answer's. */
+export function buildReadFindRound(words: readonly HubWord[], rng: () => number = Math.random): ReadFindQuestion[] {
+  const pool = words.filter(w => isPicturable(w.en));
+  return sample(pool, ROUND_LENGTH, rng).map(word => {
+    const others = pool.filter(w => wordPicture(w.en) !== wordPicture(word.en)).map(w => w.en);
+    const options = shuffle([word.en, ...sample(others, READING_OPTIONS - 1, rng)], rng);
+    return { word, options, answerIndex: options.indexOf(word.en) };
+  });
+}
+
+export interface FirstLetterQuestion {
+  word: HubWord;
+  /** Single lower-case letters; one is the word's first sound. */
+  options: string[];
+  answerIndex: number;
+}
+
+/** The two wrong letters: the lesson's own first letters first, then the pad — never a mirror of one already chosen. */
+function letterDistractors(answer: string, lessonLetters: readonly string[], rng: () => number): string[] {
+  const picked = [answer];
+  for (const c of [...shuffle([...lessonLetters], rng), ...shuffle(PAD_LETTERS, rng)]) {
+    if (picked.length === READING_OPTIONS) break;
+    if (!picked.includes(c) && !picked.includes(MIRROR[c])) picked.push(c);
+  }
+  return picked.slice(1);
+}
+
+/** Hear the word (and see its picture, when it has one), tap the letter it starts with. */
+export function buildFirstLetterRound(words: readonly HubWord[], rng: () => number = Math.random): FirstLetterQuestion[] {
+  const pool = words.filter(w => firstSound(w.en));
+  const lessonLetters = [...new Set(pool.map(w => firstSound(w.en)!))];
+  return sample(pool, ROUND_LENGTH, rng).map(word => {
+    const answer = firstSound(word.en)!;
+    const options = shuffle([answer, ...letterDistractors(answer, lessonLetters, rng)], rng);
+    return { word, options, answerIndex: options.indexOf(answer) };
+  });
+}
+
+export interface StartsWithQuestion {
+  /** The letter shown, lower-case — `firstSound(word.en)`. */
+  letter: string;
+  word: HubWord;
+  /** English words, each pictured; no two start with the same sound. */
+  options: string[];
+  answerIndex: number;
+}
+
+function startsWithPool(words: readonly HubWord[]): HubWord[] {
+  return words.filter(w => isPicturable(w.en) && firstSound(w.en));
+}
+
+/** See a letter, tap the picture whose word starts with it. Exactly one option does. */
+export function buildStartsWithRound(words: readonly HubWord[], rng: () => number = Math.random): StartsWithQuestion[] {
+  const pool = startsWithPool(words);
+  return sample(pool, ROUND_LENGTH, rng).flatMap(word => {
+    const letter = firstSound(word.en)!;
+    const seen = [letter];
+    const chosen: HubWord[] = [];
+    for (const w of shuffle(pool, rng)) {
+      if (chosen.length === READING_OPTIONS - 1) break;
+      const l = firstSound(w.en)!;
+      if (!seen.includes(l)) {
+        seen.push(l);
+        chosen.push(w);
+      }
+    }
+    // Unreachable while `readingActivityAvailable` holds: three letters leave two others for any answer.
+    if (chosen.length < READING_OPTIONS - 1) return [];
+    const options = shuffle([word.en, ...chosen.map(c => c.en)], rng);
+    return [{ letter, word, options, answerIndex: options.indexOf(word.en) }];
+  });
+}
+
+export function readingActivityAvailable(activity: HubActivity, words: readonly HubWord[]): boolean {
+  if (activity === 'read-find') return lessonHasPictureMatch(words);
+  if (activity === 'first-letter') return words.filter(w => firstSound(w.en)).length >= MIN_FIRST_SOUND_WORDS;
+  if (activity === 'starts-with') return new Set(startsWithPool(words).map(w => firstSound(w.en))).size >= MIN_STARTS_WITH_LETTERS;
+  return false;
 }
 
 /** 3 stars at 90%+, 2 at 60%+, 1 for finishing at all. */
@@ -310,7 +499,10 @@ export function currentStreak(p: HubProgress, today: string): number {
 }
 
 /** Every activity a finished round can earn stars on — flashcards and speaking give none (nothing is scored). */
-const SCORED_ACTIVITIES = ['listen', 'match', 'spell', 'scramble', 'picture'] as const;
+const SCORED_ACTIVITIES = [
+  'listen', 'match', 'spell', 'scramble', 'picture', 'grammar-choose', 'grammar-build', 'grammar-true',
+  'read-find', 'first-letter', 'starts-with',
+] as const;
 
 /** Stars earned on a lesson across its activities. */
 export function lessonStars(p: HubProgress, lessonId: string): number {

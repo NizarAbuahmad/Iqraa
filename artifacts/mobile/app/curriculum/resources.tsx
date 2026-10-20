@@ -33,7 +33,7 @@
  * titled by its book and located by its printed page, since a bare «صفحة ٣٥»
  * means nothing once it sits among the other videos.
  */
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -41,16 +41,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
-import { readPrintStyle } from '@/hooks/usePrintStyle';
 import { useLanguage } from '@/context/LanguageContext';
 import { isStudentRole, isTeacherRole, useAuth } from '@/context/AuthContext';
 import { getMyExams, getMyGradeIds } from '@/services/studentExam';
 import { actionableCount } from '@/services/myExams';
-import { narrowSubjectsForGrade, narrowToSelection, preferredGrade } from '@/services/teacherCatalogFilter';
+import { narrowSubjectsForGrade, narrowToSelection, preferredGrade, scopedSubjectIds, keepIfPresent } from '@/services/teacherCatalogFilter';
 import { listLibrary, type LibraryItem } from '@/services/libraryApi';
 import { getLessonById } from '@/services/knowledgeBase';
 import { openExternal } from '@/services/externalLinks';
-import { buildWorksheetHTML, exportAsPDF } from '@/services/share';
+import { printPremadeSheet } from '@/services/openResource';
 import { qrResourcesForGrade } from '@/services/bookQrLinks';
 import { getVideoFrameThumbnail } from '@/services/videoThumbnail';
 import { imageCoverFromUrl, videoCoverFromUrl } from '@/services/resourceThumbnail';
@@ -66,6 +65,7 @@ import { getSubjectsForGrade, getVisibleGrades } from '@workspace/curriculum';
 import { ENGLISH_HUB_GRADES } from '@workspace/curriculum/englishHub';
 import type { TranslationKey } from '@/services/i18n';
 import { cellWidthPercent, isVisualKind, libraryColumns, previewCount } from '@/services/libraryLayout';
+import { QURAN_CORNER_RELEASED, quranCornerVisible } from '@/services/quranRelease';
 import { palette } from '@/constants/colors';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { RESOURCE_KIND_ICON as KIND_ICON, RESOURCE_KIND_LABEL as KIND_LABEL } from '@/constants/resourceKind';
@@ -221,27 +221,7 @@ function ResourceRow({
   const bookName = isBook && item.bookTitle && item.bookTitle !== title ? item.bookTitle : null;
   const bookPage = isBook && page ? t('qrOnPage', page) : null;
 
-  // A frozen sheet has no URL: it is rendered on the spot and handed to the
-  // print/share sheet, the same path the worksheet generator's PDF export takes.
-  // No export menu on this path, so it prints in the style last picked in one.
-  const printSheet = async () => {
-    if (!sheet) return;
-    const grade = getVisibleGrades().find(g => g.id === sheet.gradeId);
-    const subject = getSubjectsForGrade(sheet.gradeId).find(s => s.id === sheet.subjectId);
-    const html = buildWorksheetHTML(
-      sheet.content,
-      title,
-      {
-        subject: subject ? (isAr ? subject.nameAr : subject.name) : '',
-        grade: grade ? (isAr ? grade.nameAr : grade.name) : '',
-      },
-      isAr,
-      [],
-      true,
-      await readPrintStyle(),
-    );
-    void exportAsPDF(html, `${title}.pdf`);
-  };
+  const printSheet = () => printPremadeSheet(item.nativeId, title, isAr);
 
   const { user } = useAuth();
   // A teacher opens the sheet first — the viewer shows it and prints, shares
@@ -495,9 +475,9 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isStudent, gradeId]);
-  const [subjectId, setSubjectId] = useState<string | null>(null);
+  const [pickedSubject, setSubjectId] = useState<string | null>(null);
   const [shelf, setShelf] = useState<Shelf | null>(null);
-  const [lessonId, setLessonId] = useState<string | null>(null);
+  const [pickedLesson, setLessonId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
 
   const gradeInfo = getVisibleGrades().find(g => g.id === grade);
@@ -550,9 +530,21 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
     return gradeSubjects.filter(s => withRows.has(s.id));
   }, [inGrade, gradeSubjects]);
 
+  // «All subjects» means all of the teacher's subjects, not every subject in
+  // the grade: the chips above were narrowed but the results were not.
+  const scopeSubjectIds = useMemo(
+    () => (isTeacher ? scopedSubjectIds(gradeSubjects, getSubjectsForGrade(grade)) : undefined),
+    [isTeacher, gradeSubjects, grade],
+  );
+
+  // What was picked may no longer be offered (grades edited on the profile page
+  // while this tab stayed mounted): fall back to «all» instead of filtering to
+  // nothing with no chip lit.
+  const subjectId = keepIfPresent(subjects, pickedSubject);
+
   const items = useMemo(
-    () => filterResources(inGrade, { subjectId: subjectId ?? undefined }),
-    [inGrade, subjectId],
+    () => filterResources(inGrade, { subjectId: subjectId ?? undefined, subjectIds: scopeSubjectIds }),
+    [inGrade, subjectId, scopeSubjectIds],
   );
 
   /**
@@ -570,6 +562,31 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
     }
     return [...seen.entries()];
   }, [items, lang]);
+
+  // The Arabic row is `row-reverse`, whose start is its RIGHT end, but a
+  // horizontal scroller opens at scroll offset 0 — the left — so «كل الدروس»
+  // sat out of sight on the right with a long scroll back to it. Jump to the
+  // far end when the set of chips changes (not on a tap, so choosing a chip
+  // never undoes a scroll). The timer is for web, where the content-size event
+  // can fire before the scroller has a width to scroll within. Same fix as the
+  // FAQ's chip row.
+  const lessonScroller = useRef<ScrollView>(null);
+  const scrolledFor = useRef('');
+  const lessonKey = lessons.map(([id]) => id).join('|');
+  const scrollLessonsToStart = useCallback(() => {
+    lessonScroller.current?.scrollToEnd({ animated: false });
+  }, []);
+  useEffect(() => {
+    if (!isRTL || lessons.length < 2) return;
+    scrolledFor.current = lessonKey;
+    const id = setTimeout(scrollLessonsToStart, 60);
+    return () => clearTimeout(id);
+  }, [isRTL, lessonKey, lessons.length, scrollLessonsToStart]);
+
+  const lessonId = keepIfPresent(
+    lessons.map(([id]) => ({ id })),
+    pickedLesson,
+  );
 
   // Search narrows on top of the chips, like every other filter here.
   const shown = useMemo(
@@ -701,8 +718,15 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
 
         {lessons.length > 1 ? (
           <ScrollView
+            ref={lessonScroller}
             horizontal
             showsHorizontalScrollIndicator={false}
+            onContentSizeChange={() => {
+              if (isRTL && scrolledFor.current !== lessonKey) {
+                scrolledFor.current = lessonKey;
+                scrollLessonsToStart();
+              }
+            }}
             // minWidth fills the track so row-reverse packs the chips against
             // the right edge; without it a short list hugs the left in RTL.
             contentContainerStyle={[styles.chipRow, isRTL && { flexDirection: 'row-reverse', minWidth: '100%' }]}
@@ -813,6 +837,52 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
                 {t('labEntryHint')}
               </Text>
             </Pressable>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/curriculum/math' as never);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`${t('mathEntryTitle')}, ${t('mathEntryHint')}`}
+              style={({ pressed }) => [
+                styles.tile,
+                { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
+              ]}
+            >
+              <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
+                <Ionicons name="calculator-outline" size={26} color={ACCENT} />
+              </View>
+              <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
+                {t('mathEntryTitle')}
+              </Text>
+              <Text numberOfLines={2} style={[styles.tileCount, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
+                {t('mathEntryHint')}
+              </Text>
+            </Pressable>
+            {quranCornerVisible(QURAN_CORNER_RELEASED, __DEV__) ? (
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push('/curriculum/quran' as never);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`${t('quranTitle')}, ${t('quranEntryHint')}`}
+                style={({ pressed }) => [
+                  styles.tile,
+                  { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
+                ]}
+              >
+                <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
+                  <Ionicons name="book-outline" size={26} color={ACCENT} />
+                </View>
+                <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
+                  {t('quranTitle')}
+                </Text>
+                <Text numberOfLines={2} style={[styles.tileCount, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
+                  {t('quranEntryHint')}
+                </Text>
+              </Pressable>
+            ) : null}
             {isStudent || isParent ? (
               <Pressable
                 onPress={() => {

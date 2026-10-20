@@ -34,6 +34,33 @@ export interface AIRequest {
    */
   lessonId?: string;
   /**
+   * A scope wider than one lesson — a unit, a semester or the whole book.
+   *
+   * `scopeKey` is id-only and part of the artifact pool's cache key, so a
+   * «الفصل الأول كاملًا» paper is never served as one lesson's. `unitIds` are
+   * the NCCD units in range (the server pools book pages across them); the
+   * digest itself travels in `additionalContext`. Absent for a single lesson,
+   * which keeps using `lessonId` / `unitId` exactly as before.
+   */
+  scope?: { kind: 'unit' | 'semester' | 'book'; scopeKey: string; unitIds: string[] };
+  /**
+   * How a wide scope's questions are spread over its lessons. Part of the
+   * strict cache key; absent for a single lesson.
+   */
+  distribution?: 'balanced' | 'random';
+  /**
+   * The lessons of a wide scope, each with a short code the model tags a
+   * question with, and — for `balanced` only — the per-question plan as
+   * lesson codes. The offline path ignores `slots` and re-plans from `lessons`
+   * (some lessons have no offline bank); the live prompt renders the plan as
+   * per-lesson counts. Neither is hashed into the cache key: both are a pure
+   * function of the scope and the count.
+   */
+  coverage?: {
+    lessons: Array<{ code: string; id: string; unitId: string; title: string }>;
+    slots?: string[];
+  };
+  /**
    * How many student-book figures this lesson has (`figuresForLesson().length`).
    *
    * The server cannot work this out: the crops and `figure-lesson-map.json`
@@ -97,7 +124,8 @@ export interface AIRequest {
   // Worksheet extras
   difficulty?: 'easy' | 'medium' | 'hard' | 'mixed';
   numQuestions?: number;
-  questionTypes?: Array<'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem'>;
+  /** The four format kinds ('match' …) are worksheet-only: the bank builds them (see worksheetFormats.ts). */
+  questionTypes?: Array<'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem' | 'match' | 'order' | 'spot_error' | 'graph'>;
   /** When true and priorKnowledge is non-empty, prepend a "مراجعة سابقة" warm-up.
    *  Shared by worksheet and lesson-plan generation. */
   includePriorReview?: boolean;
@@ -165,6 +193,10 @@ export interface LessonPlanOutput {
    *  `servedReason` in api-server's routes/generate.ts. The screen must say so
    *  rather than present a repeat as newly generated. */
   servedReason?: 'quota' | 'budget';
+  /** Present on an offline regenerate where some narrative sections could not
+   *  change (the offline generator has one phrasing for most of them) — `count`
+   *  of `of` are word-for-word the plan before. See `QuizOutput.repeated`. */
+  repeated?: { count: number; of: number };
 }
 
 /**
@@ -181,6 +213,12 @@ export interface WorksheetWorkedExample {
   answer: string;
   /** Asks the student to say in a sentence why the first step was valid. */
   selfExplain?: string;
+  /**
+   * Taken from the offline question bank, whose working a person wrote and
+   * checked. Absent on anything a model wrote; see `WorksheetQuestion.fromBank`
+   * and `workingProvenance`.
+   */
+  fromBank?: true;
 }
 
 /**
@@ -212,7 +250,13 @@ export interface WorksheetOutput {
    *  count, so the paper is shorter than asked for. The screen says so — a
    *  short paper with no explanation reads as a bug. */
   shortfall?: { requested: number; produced: number };
+  /** Present on an offline regenerate whose bank could not avoid repeating some
+   *  of the questions already on screen — see `QuizOutput.repeated`. */
+  repeated?: { count: number; of: number };
   lab?: WorksheetLab;
+  /** Formats the teacher asked for that this lesson's bank cannot supply, so the
+   *  screen can say so instead of silently handing back a plainer paper. */
+  missingFormats?: FormatKind[];
 }
 
 export interface WorksheetSection {
@@ -231,10 +275,18 @@ export interface WorksheetSection {
    * `'mixed'` — so a live-generated mixed section can still carry a single
    * type. Fix that there if this field ever gains a consumer.
    */
-  type: 'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem' | 'mixed';
+  type: 'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem' | 'mixed'
+    | 'match' | 'order' | 'spot_error' | 'graph';
   title: string;
   questions: WorksheetQuestion[];
 }
+
+/** A structured question format (spec 2026-10-11), beside the plain-text kinds. */
+export type WorksheetQuestionFormat =
+  | { kind: 'match'; stem: string; left: string[]; right: string[]; pairs: number[] }
+  | { kind: 'order'; stem: string; steps: string[]; order: number[] }
+  | { kind: 'spot_error'; stem: string; steps: string[]; wrongStep: number; fix: string; why: string }
+  | { kind: 'graph'; stem: string; exprs: string[]; window: { xMin: number; xMax: number; yMin: number; yMax: number } };
 
 export interface WorksheetQuestion {
   text: string;
@@ -248,6 +300,10 @@ export interface WorksheetQuestion {
    * answer" — never as «من بنك الأسئلة المُراجَع».
    */
   fromBank?: true;
+  /** The KB lesson this question was written for — set on a wide-scope paper. */
+  lessonId?: string;
+  /** The model's raw lesson code (`L3`). Mapped to `lessonId` on arrival and then removed. */
+  lesson?: string;
   /**
    * A figure from the lesson's own student book, attached to this question by
    * the teacher. Never set by a generator: the model that wrote the questions
@@ -255,6 +311,8 @@ export interface WorksheetQuestion {
    * item — a person matches them, as `BookFiguresPanel` explains.
    */
   figure?: QuestionFigure;
+  /** A structured format (spec 2026-10-11). `text` is still the whole question in plain text. */
+  format?: WorksheetQuestionFormat;
 }
 
 /** A book figure as a question carries it — the same shape as `BookFigureRef`. */
@@ -287,11 +345,16 @@ export interface QuizOutput {
   /** Present when the lesson's question bank ran out before the requested
    *  count — see `WorksheetOutput.shortfall`. */
   shortfall?: { requested: number; produced: number };
+  /** Present on an offline regenerate whose bank could not avoid repeating
+   *  some of the questions already on screen: `count` of `of` are the same as
+   *  the paper before. The screen says so rather than pass it off as new. */
+  repeated?: { count: number; of: number };
 }
 
 export interface QuizQuestion {
   id: string;
-  type: 'multiple_choice' | 'true_false' | 'short_answer';
+  /** In ministry-paper order — see `QUIZ_TYPE_ORDER` in `services/quizPaper.ts`. */
+  type: 'multiple_choice' | 'true_false' | 'fill_blank' | 'short_answer';
   text: string;
   options?: string[];
   correctAnswer: string;
@@ -299,6 +362,10 @@ export interface QuizQuestion {
   explanation: string;
   /** See `WorksheetQuestion.fromBank`. */
   fromBank?: true;
+  /** The KB lesson this question was written for — set on a wide-scope paper. */
+  lessonId?: string;
+  /** The model's raw lesson code (`L3`). Mapped to `lessonId` on arrival and then removed. */
+  lesson?: string;
 }
 
 export interface ActivityStep {
@@ -412,6 +479,17 @@ export interface ActivitySlide {
    * the picture too.
    */
   visual?: import('../deckVisuals.ts').VisualBlock;
+  /**
+   * A picture for the slide's heading, by name — chosen by the model for what
+   * the slide is ABOUT (an atom for atomic structure, a leaf for photosynthesis).
+   * Drawn in the heading chip when the title carries no emoji of its own, and
+   * on a section break. Anything not in `DECK_SECTION_ICONS` is dropped on the
+   * server and again by `polishDeck`, so a renderer only ever sees a name it can
+   * draw.
+   */
+  icon?: import('../deckIcons.ts').DeckIconName;
+  /** The visual is the answer: the presenter draws it only after the reveal. */
+  visualOnReveal?: boolean;
   /** Media payload for type 'media' — projected image, video, audio, or a linked document. */
   /**
    * A picture that sits BESIDE this slide's text rather than replacing it.
@@ -435,6 +513,8 @@ export interface ActivitySlide {
   sideImageUrl?: string;
   /** Book and page for `sideImageUrl`, same provenance rule as `mediaCaption`. */
   sideImageCaption?: string;
+  /** Links behind `sideImageCaption` when it is an Unsplash credit. See `services/photoCredit.ts`. */
+  sideImageCredit?: PhotoCredit;
   /**
    * How to DRAW this slide — deliberately separate from `type`, which says
    * what the slide IS.
@@ -449,11 +529,31 @@ export interface ActivitySlide {
    * `services/slideLayout.ts` decides whether a layout's data is complete
    * enough to draw; all three renderers ask it rather than checking fields.
    */
-  layout?: 'statement' | 'stat' | 'compare' | 'steps';
+  layout?: 'statement' | 'stat' | 'compare' | 'steps' | 'timeline' | 'stats' | 'table' | 'flow' | 'quote' | 'photo' | 'concepts';
   /** The figure and its caption, for `layout: 'stat'`. */
   stat?: { value: string; label: string; source?: string };
   /** The two sides, for `layout: 'compare'`. */
   compare?: { leftTitle: string; left: string[]; rightTitle: string; right: string[] };
+  /** The dated or ordered events, for `layout: 'timeline'`. */
+  timeline?: { label: string; text: string }[];
+  /** Two to four figures side by side, for `layout: 'stats'`. */
+  stats?: { value: string; label: string }[];
+  /** A small grid, for `layout: 'table'`: every row has one cell per header. */
+  table?: { headers: string[]; rows: string[][] };
+  /** A process drawn as boxes and arrows, for `layout: 'flow'`; `cycle` loops it back to the start. */
+  flow?: { steps: string[]; cycle?: boolean };
+  /**
+   * A quotation, definition or key principle set large, for `layout: 'quote'`;
+   * `by` says whose words they are. (`layout: 'photo'` has no payload of its
+   * own: the picture is `sideImageUrl`, the sentence over it is `content`.)
+   */
+  quote?: { text: string; by?: string };
+  /**
+   * Two to six short key terms drawn as a grid of cards, for `layout: 'concepts'`.
+   * Written by the deck builders (Slides Maker's key-ideas slides), not asked of
+   * the model: the Prompt Slides prompt does not describe it.
+   */
+  concepts?: string[];
   /**
    * A short English photo-search phrase the generator asked for on this slide.
    *
@@ -473,6 +573,8 @@ export interface ActivitySlide {
    */
   mediaUrl?: string;
   mediaCaption?: string;
+  /** Links behind `mediaCaption` when it is an Unsplash credit. See `services/photoCredit.ts`. */
+  mediaCredit?: PhotoCredit;
   /**
    * Position of this question in the game's scoring ledger (Class Challenge).
    *
@@ -526,6 +628,13 @@ export interface ClassroomActivity {
    * podium), so a normal deck can never accidentally start scoring.
    */
   game?: ClassGameConfig;
+  /**
+   * The look this deck is drawn in, by `DeckThemeId`. Absent means "the
+   * subject's" — `resolveDeckTheme` picks from `subject` — so every deck built
+   * or saved before themes existed still opens, and a teacher's own choice is
+   * the only thing that ever sets it.
+   */
+  themeId?: import('../deckTheme.ts').DeckThemeId;
 }
 
 export interface ClassGameConfig {
@@ -572,6 +681,23 @@ export interface ClassroomActivityRequest {
    * mid-lesson question as an exit-ticket question would measure nothing.
    */
   numQuestions?: number;
+  /** A unit / semester / book revision session — see `AIRequest.scope`. Absent for one lesson. */
+  scope?: AIRequest['scope'];
+  /** The lessons of that scope (no `slots` — see `buildScopeRequest`). Absent for one lesson. */
+  coverage?: AIRequest['coverage'];
+}
+
+/**
+ * Whether a request is for a revision session over a unit, a semester or the
+ * whole book rather than one lesson.
+ *
+ * Read from `scope` alone — there is no separate flag: the scope key is
+ * already in the cache key, and a lesson request (no `scope`) must stay
+ * byte-identical. The teaching tools' offline generators branch on this and
+ * the server's `revisionClauseAr/En` on the same field.
+ */
+export function isRevisionRequest(req: { scope?: { kind: string } | null }): boolean {
+  return !!req.scope;
 }
 
 /**
@@ -668,6 +794,8 @@ export interface GenerateOptions {
 
 export type { InfographicOutput } from './infographic.ts';
 import type { InfographicOutput } from './infographic.ts';
+import type { FormatKind } from '@workspace/math-practice';
+import type { PhotoCredit } from '../photoCredit.ts';
 
 export abstract class AIService {
   abstract generateLessonPlan(req: AIRequest, opts?: GenerateOptions): Promise<LessonPlanOutput>;

@@ -25,6 +25,11 @@
  *    deliberately turned it on for one specific group — which is what makes
  *    the consent question a per-group decision a teacher owns, rather than a
  *    property of the whole product.
+ * 4. Reactions are not posts. A reaction is one of six fixed emoji, one per
+ *    person per message, and is allowed in an announcement-only group where the
+ *    person cannot send (see lib/messageReactions.ts). It is deliberately NOT
+ *    gated by studentPostingEnabled — that gate is on POST …/messages only.
+ *    Non-teachers see counts; only teacher-role viewers are told who reacted.
  *
  * Block and report sit on top of both: a block never removes anyone from a
  * shared thread or hides anything from the owning teacher, it only filters
@@ -34,12 +39,13 @@
  * sees the content, being a permanent participant.
  */
 import { Router } from "express";
-import { db } from "@workspace/db";
+import { db, systemDb } from "@workspace/db";
 import {
   chatThreads,
   chatParticipants,
   chatMessages,
   chatMessageReads,
+  chatMessageReactions,
   chatBlocks,
   chatReports,
   rosterLinks,
@@ -58,6 +64,7 @@ import {
 } from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
 import { createRateLimiter } from "../lib/rateLimit.js";
+import { isAllowedReaction, reactionAccess, summarizeReactions, type ReactionSummary } from "../lib/messageReactions.ts";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { sendExpoPush, deadTokensFrom, PUSH_CHANNEL } from "../lib/pushNotifications.js";
 import { UUID } from "../lib/adminMetrics.js";
@@ -68,6 +75,7 @@ import { isR2Configured, newChatMediaKey, presignedGetUrl, putObject } from "../
 import { syncClassGroupThread } from "../lib/classThread.js";
 import { pairKey, studentNamesByPair } from "../lib/chatThreadContext.js";
 import { resolveReport } from "../lib/reportDecision.js";
+import { pushWithin } from "../lib/pushWithin.ts";
 import { EXTENSION_BY_MIME, MAX_DATA_URL_LENGTH, kindForMime, parseDataUrl } from "../lib/lessonMediaUpload.js";
 
 const router = Router();
@@ -214,6 +222,8 @@ async function toClientMessage(row: typeof chatMessages.$inferSelect) {
   return {
     ...rest,
     attachmentUrl: attachmentKey ? await presignedGetUrl(attachmentKey) : null,
+    // Filled in by the list route; a fresh or summarised message has none to show.
+    reactions: [] as ReactionSummary[],
   };
 }
 
@@ -236,21 +246,26 @@ const PUSH_BODY_PREVIEW_LENGTH = 120;
 async function pruneDeadTokens(results: Awaited<ReturnType<typeof sendExpoPush>>): Promise<void> {
   const dead = deadTokensFrom(results);
   if (dead.length === 0) return;
-  await db.delete(devicePushTokens).where(inArray(devicePushTokens.expoPushToken, dead));
+  // systemDb: a dead token belongs to whoever registered it, not to the caller.
+  await systemDb.delete(devicePushTokens).where(inArray(devicePushTokens.expoPushToken, dead));
 }
 
 /**
- * Fire-and-forget: routes/messaging.ts's send-message handler calls this
- * after responding, never before — a push failure must never turn into a
- * failed message send. Skips anyone who has blocked the sender, same as the
- * in-app view does (see blockedSenderIds).
+ * The send-message and broadcast handlers await this through `pushWithin`
+ * BEFORE answering: capped, and a push failure never fails the send. After the
+ * response it raced the caller's next request — the block list below was read
+ * whenever it ran, so an unblock sent straight after a post decided who got the
+ * push — and Cloud Run throttles CPU once a response is out.
+ * Skips anyone who has blocked the sender, same as the in-app view does (see
+ * blockedSenderIds).
  */
 async function notifyThreadParticipants(threadId: string, senderId: string, body: string): Promise<void> {
   const participants = await participantsOf(threadId);
   const recipientIds = participants.map(p => p.userId).filter(id => id !== senderId);
   if (recipientIds.length === 0) return;
 
-  const blockedByRows = await db
+  // systemDb: whether a recipient has blocked the sender is the recipient's row, not the sender's.
+  const blockedByRows = await systemDb
     .select({ blockerUserId: chatBlocks.blockerUserId })
     .from(chatBlocks)
     .where(and(inArray(chatBlocks.blockerUserId, recipientIds), eq(chatBlocks.blockedUserId, senderId)));
@@ -258,7 +273,8 @@ async function notifyThreadParticipants(threadId: string, senderId: string, body
   const notifiable = recipientIds.filter(id => !blockedBy.has(id));
   if (notifiable.length === 0) return;
 
-  const tokenRows = await db
+  // systemDb: pushing to other people needs their tokens.
+  const tokenRows = await systemDb
     .select({ userId: devicePushTokens.userId, expoPushToken: devicePushTokens.expoPushToken })
     .from(devicePushTokens)
     .where(inArray(devicePushTokens.userId, notifiable));
@@ -498,6 +514,46 @@ router.get("/messaging/threads", async (req: AuthenticatedRequest, res) => {
 });
 
 /**
+ * Get-or-create the direct thread between two accounts and make sure `userId`
+ * has it in their inbox. Shared by POST /messaging/threads and the broadcast
+ * route below — both callers have already checked the pair is allowed.
+ */
+async function openDirectThread(userId: string, counterpartUserId: string): Promise<typeof chatThreads.$inferSelect> {
+  const directKey = [userId, counterpartUserId].sort().join(":");
+
+  let [thread] = await db.select().from(chatThreads).where(eq(chatThreads.directKey, directKey)).limit(1);
+  if (!thread) {
+    const inserted = await db
+      .insert(chatThreads)
+      .values({ type: "direct", directKey, createdBy: userId })
+      .onConflictDoNothing()
+      .returning();
+    thread = inserted[0];
+    if (!thread) {
+      // Lost a create race to a concurrent request — the row exists now.
+      [thread] = await db.select().from(chatThreads).where(eq(chatThreads.directKey, directKey)).limit(1);
+    }
+  }
+  if (!thread) throw new Error("Failed to create thread");
+
+  await db
+    .insert(chatParticipants)
+    .values([
+      { threadId: thread.id, userId },
+      { threadId: thread.id, userId: counterpartUserId },
+    ])
+    .onConflictDoNothing();
+
+  // Opening the conversation again is asking for it back.
+  await db
+    .update(chatParticipants)
+    .set({ hiddenAt: null })
+    .where(and(eq(chatParticipants.threadId, thread.id), eq(chatParticipants.userId, userId)));
+
+  return thread;
+}
+
+/**
  * Get-or-create a direct thread. The only rule that matters here: exactly one
  * side must be a teacher, and the two must already be connected through a
  * claimed roster link — see the file header.
@@ -538,7 +594,8 @@ router.post("/messaging/threads", async (req: AuthenticatedRequest, res) => {
       return;
     }
 
-    const [existingBlock] = await db
+    // systemDb: a block in either direction stops a new thread, and one direction is the other person's row.
+    const [existingBlock] = await systemDb
       .select({ id: chatBlocks.id })
       .from(chatBlocks)
       .where(
@@ -553,36 +610,7 @@ router.post("/messaging/threads", async (req: AuthenticatedRequest, res) => {
       return;
     }
 
-    const directKey = [req.user!.id, counterpartUserId].sort().join(":");
-
-    let [thread] = await db.select().from(chatThreads).where(eq(chatThreads.directKey, directKey)).limit(1);
-    if (!thread) {
-      const inserted = await db
-        .insert(chatThreads)
-        .values({ type: "direct", directKey, createdBy: req.user!.id })
-        .onConflictDoNothing()
-        .returning();
-      thread = inserted[0];
-      if (!thread) {
-        // Lost a create race to a concurrent request — the row exists now.
-        [thread] = await db.select().from(chatThreads).where(eq(chatThreads.directKey, directKey)).limit(1);
-      }
-    }
-    if (!thread) throw new Error("Failed to create thread");
-
-    await db
-      .insert(chatParticipants)
-      .values([
-        { threadId: thread.id, userId: req.user!.id },
-        { threadId: thread.id, userId: counterpartUserId },
-      ])
-      .onConflictDoNothing();
-
-    // Opening the conversation again is asking for it back.
-    await db
-      .update(chatParticipants)
-      .set({ hiddenAt: null })
-      .where(and(eq(chatParticipants.threadId, thread.id), eq(chatParticipants.userId, req.user!.id)));
+    const thread = await openDirectThread(req.user!.id, counterpartUserId);
 
     res.status(201).json({ thread });
   } catch (err) {
@@ -1011,9 +1039,31 @@ router.get("/messaging/threads/:id/messages", async (req: AuthenticatedRequest, 
       for (const r of reads) seenIds.add(r.messageId);
     }
 
+    // Reactions for this page, summarised for this viewer. `blocked` is the same
+    // set the message filter above used (empty for a teacher), so a non-teacher
+    // never sees a reaction from someone they blocked.
+    const reactionRows =
+      messages.length === 0
+        ? []
+        : await db
+            .select({
+              messageId: chatMessageReactions.messageId,
+              userId: chatMessageReactions.userId,
+              emoji: chatMessageReactions.emoji,
+            })
+            .from(chatMessageReactions)
+            .where(inArray(chatMessageReactions.messageId, messages.map(m => m.id)));
+    const reactionsByMessage = summarizeReactions(reactionRows, req.user!.id, {
+      viewerIsTeacher: isTeacherRole(req.user!.role),
+      hiddenUserIds: blocked,
+    });
+
     const client = await toClientMessages(messages);
     res.json({
-      messages: client.map(m => (m.senderId === req.user!.id ? { ...m, seen: seenIds.has(m.id) } : m)),
+      messages: client.map(m => {
+        const withSeen = m.senderId === req.user!.id ? { ...m, seen: seenIds.has(m.id) } : m;
+        return { ...withSeen, reactions: reactionsByMessage.get(m.id) ?? [] };
+      }),
     });
   } catch (err) {
     failMessaging(res, err, "list messages", "Failed to load messages");
@@ -1169,19 +1219,232 @@ router.post("/messaging/threads/:id/messages", sendMessageLimiter, async (req: A
       })
       .returning();
 
-    await db.update(chatThreads).set({ updatedAt: new Date() }).where(eq(chatThreads.id, threadId));
+    // systemDb: the post is already authorised, and the inbox sorts by this column — a participant
+    // who did not create the thread may not update it, so under RLS the bump matched no row.
+    await systemDb.update(chatThreads).set({ updatedAt: new Date() }).where(eq(chatThreads.id, threadId));
     await db
       .update(chatParticipants)
       .set({ lastReadAt: new Date() })
       .where(and(eq(chatParticipants.threadId, threadId), eq(chatParticipants.userId, req.user!.id)));
 
+    await pushWithin("chat message", () => notifyThreadParticipants(threadId, req.user!.id, body || "📎"));
     res.status(201).json({ message: await toClientMessage(message!) });
-
-    notifyThreadParticipants(threadId, req.user!.id, body || "📎").catch(err =>
-      logger.error({ err }, "push notify failed"),
-    );
   } catch (err) {
     failMessaging(res, err, "send message", "Failed to send message");
+  }
+});
+
+/**
+ * Teacher-only broadcast: one message to a hand-picked set of people, each
+ * landing in their own private direct thread. The difference from a custom
+ * group is the reply — in a group everyone reads everyone, here a parent's
+ * answer goes to the teacher alone. Same trust boundary as a direct thread
+ * (connected through a claimed roster link); a blocked pair is skipped, not
+ * failed, so one block cannot sink the other 39 sends. Text only.
+ * One call counts once against sendMessageLimiter, bounded by the member cap.
+ */
+router.post("/messaging/threads/broadcast", sendMessageLimiter, async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!isTeacherRole(req.user!.role)) {
+      res.status(403).json({ error: "Only a teacher can send a broadcast", code: "teacher_only" });
+      return;
+    }
+    const teacherId = req.user!.id;
+
+    const body = trimmed(req.body?.body);
+    const recipientIds = [...new Set(Array.isArray(req.body?.participantUserIds) ? req.body.participantUserIds : [])]
+      .filter((id): id is string => typeof id === "string" && id !== teacherId);
+    if (!body || recipientIds.length === 0) {
+      res.status(400).json({ error: "body and at least one recipient are required", code: "missing_fields" });
+      return;
+    }
+    if (body.length > MAX_BODY_LENGTH) {
+      res.status(400).json({ error: `body must be at most ${MAX_BODY_LENGTH} characters`, code: "too_long" });
+      return;
+    }
+    if (recipientIds.length > MAX_CUSTOM_GROUP_MEMBERS) {
+      res.status(400).json({ error: `A broadcast can reach at most ${MAX_CUSTOM_GROUP_MEMBERS} people`, code: "group_too_large" });
+      return;
+    }
+    // A malformed id reaches Postgres as a uuid cast error and 500s.
+    if (recipientIds.some(id => !UUID.test(id))) {
+      res.status(400).json({ error: "participantUserIds must be user ids", code: "invalid_input" });
+      return;
+    }
+
+    const connected = await Promise.all(recipientIds.map(id => isConnected(teacherId, id)));
+    if (connected.some(ok => !ok)) {
+      res.status(403).json({ error: "You are not connected to every person in this list", code: "not_connected" });
+      return;
+    }
+
+    // Direct threads are teacher↔parent/student only (file header, rule 1).
+    const roles = await db.select({ id: users.id, role: users.role }).from(users).where(inArray(users.id, recipientIds));
+    const eligible = new Set(roles.filter(u => !isTeacherRole(u.role)).map(u => u.id));
+
+    const blockRows = await db
+      .select({ blocker: chatBlocks.blockerUserId, blocked: chatBlocks.blockedUserId })
+      .from(chatBlocks)
+      .where(
+        or(
+          and(eq(chatBlocks.blockerUserId, teacherId), inArray(chatBlocks.blockedUserId, recipientIds)),
+          and(eq(chatBlocks.blockedUserId, teacherId), inArray(chatBlocks.blockerUserId, recipientIds)),
+        ),
+      );
+    const blockedIds = new Set(blockRows.map(r => (r.blocker === teacherId ? r.blocked : r.blocker)));
+
+    const sentThreadIds: string[] = [];
+    for (const id of recipientIds) {
+      if (!eligible.has(id) || blockedIds.has(id)) continue;
+      const thread = await openDirectThread(teacherId, id);
+      const now = new Date();
+      await db.insert(chatMessages).values({ threadId: thread.id, senderId: teacherId, body });
+      // systemDb: as above — the thread may have been opened by the recipient.
+      await systemDb.update(chatThreads).set({ updatedAt: now }).where(eq(chatThreads.id, thread.id));
+      await db
+        .update(chatParticipants)
+        .set({ lastReadAt: now })
+        .where(and(eq(chatParticipants.threadId, thread.id), eq(chatParticipants.userId, teacherId)));
+      sentThreadIds.push(thread.id);
+    }
+
+    // Before the response, like a single message (see notifyThreadParticipants),
+    // and one at a time: 100 parallel Expo calls are not worth the seconds saved.
+    // One failed recipient must not stop the rest; past the cap the remainder
+    // carries on as best it can.
+    await pushWithin("chat broadcast", async () => {
+      for (const threadId of sentThreadIds) {
+        await notifyThreadParticipants(threadId, teacherId, body).catch(err =>
+          logger.error({ err }, "broadcast push notify failed"),
+        );
+      }
+    });
+    res.status(201).json({ sent: sentThreadIds.length, skipped: recipientIds.length - sentThreadIds.length });
+  } catch (err) {
+    failMessaging(res, err, "send broadcast", "Failed to send message");
+  }
+});
+
+// ─── Reactions ───────────────────────────────────────────────────────────────
+
+/**
+ * Keyed by user, like sends. Higher than the 30/min send ceiling because a tap is
+ * cheap and a person catching up on an announcement thread may react to several
+ * messages in a row; low enough to stop a script.
+ */
+const reactionLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 60,
+  name: "message-react",
+  key: req => (req as AuthenticatedRequest).user?.id ?? req.ip ?? "unknown",
+});
+
+type ReactionTarget =
+  | { status: "ok"; messageId: string; isTeacher: boolean; blocked: Set<string> }
+  | { status: "not_found" | "invalid_input" };
+
+/**
+ * Looks everything up, then hands the facts to the pure `reactionAccess`. Note
+ * what it does NOT consult: `studentPostingEnabled`. Reactions are allowed in
+ * announcement-only groups — see the file header, rule 4.
+ */
+async function resolveReactionTarget(req: AuthenticatedRequest): Promise<ReactionTarget> {
+  const threadId = req.params["id"] as string;
+  const messageId = req.params["messageId"] as string;
+  // A malformed message id would reach Postgres as a uuid cast error and 500.
+  if (!UUID.test(messageId)) return { status: "invalid_input" };
+
+  const viewer = req.user!;
+  const isTeacher = isTeacherRole(viewer.role);
+  const participant = await participantOf(threadId, viewer.id);
+  const [thread] = participant
+    ? await db.select().from(chatThreads).where(eq(chatThreads.id, threadId)).limit(1)
+    : [];
+  const [message] = participant
+    ? await db
+        .select({ id: chatMessages.id, threadId: chatMessages.threadId, senderId: chatMessages.senderId, archivedAt: chatMessages.archivedAt })
+        .from(chatMessages)
+        .where(eq(chatMessages.id, messageId))
+        .limit(1)
+    : [];
+  const blocked = isTeacher ? new Set<string>() : await blockedSenderIds(viewer.id);
+
+  const verdict = reactionAccess({
+    isParticipant: !!participant && !!thread,
+    messageInThread: !!message && message.threadId === threadId,
+    messageArchived: !!message?.archivedAt,
+    viewerIsTeacher: isTeacher,
+    viewerBlocksSender: !!message && blocked.has(message.senderId),
+    threadType: thread?.type ?? "direct",
+    studentPostingEnabled: thread?.studentPostingEnabled ?? false,
+  });
+  return verdict === "ok" ? { status: "ok", messageId, isTeacher, blocked } : { status: "not_found" };
+}
+
+/** The message's reactions as this viewer sees them — the body both routes answer with. */
+async function reactionsAfterWrite(target: Extract<ReactionTarget, { status: "ok" }>, viewerId: string): Promise<ReactionSummary[]> {
+  const rows = await db
+    .select({ messageId: chatMessageReactions.messageId, userId: chatMessageReactions.userId, emoji: chatMessageReactions.emoji })
+    .from(chatMessageReactions)
+    .where(eq(chatMessageReactions.messageId, target.messageId));
+  return (
+    summarizeReactions(rows, viewerId, { viewerIsTeacher: target.isTeacher, hiddenUserIds: target.blocked }).get(target.messageId) ?? []
+  );
+}
+
+function refuseReaction(res: Parameters<Parameters<typeof router.get>[1]>[1], status: "not_found" | "invalid_input"): void {
+  if (status === "invalid_input") {
+    res.status(400).json({ error: "messageId is not a valid id", code: "invalid_input" });
+    return;
+  }
+  res.status(404).json({ error: "Message not found", code: "not_found" });
+}
+
+/**
+ * Set or replace the caller's reaction. An upsert on (message, user): replacing
+ * is one statement, the same emoji twice changes nothing, and two simultaneous
+ * taps cannot both insert. Touches no thread or read state — a reaction does not
+ * reorder the inbox, change an unread count, or send a push.
+ */
+router.put("/messaging/threads/:id/messages/:messageId/reaction", reactionLimiter, async (req: AuthenticatedRequest, res) => {
+  try {
+    const target = await resolveReactionTarget(req);
+    if (target.status !== "ok") {
+      refuseReaction(res, target.status);
+      return;
+    }
+    const emoji: unknown = req.body?.emoji;
+    if (!isAllowedReaction(emoji)) {
+      res.status(400).json({ error: "emoji is not an allowed reaction", code: "invalid_reaction" });
+      return;
+    }
+    await db
+      .insert(chatMessageReactions)
+      .values({ messageId: target.messageId, userId: req.user!.id, emoji })
+      .onConflictDoUpdate({
+        target: [chatMessageReactions.messageId, chatMessageReactions.userId],
+        set: { emoji, updatedAt: new Date() },
+      });
+    res.json({ reactions: await reactionsAfterWrite(target, req.user!.id) });
+  } catch (err) {
+    failMessaging(res, err, "set reaction", "Failed to save reaction");
+  }
+});
+
+/** Remove the caller's reaction. Idempotent: removing one that is not there is still 200, so a retry after a lost response is harmless. */
+router.delete("/messaging/threads/:id/messages/:messageId/reaction", reactionLimiter, async (req: AuthenticatedRequest, res) => {
+  try {
+    const target = await resolveReactionTarget(req);
+    if (target.status !== "ok") {
+      refuseReaction(res, target.status);
+      return;
+    }
+    await db
+      .delete(chatMessageReactions)
+      .where(and(eq(chatMessageReactions.messageId, target.messageId), eq(chatMessageReactions.userId, req.user!.id)));
+    res.json({ reactions: await reactionsAfterWrite(target, req.user!.id) });
+  } catch (err) {
+    failMessaging(res, err, "remove reaction", "Failed to remove reaction");
   }
 });
 
@@ -1322,7 +1585,8 @@ router.post("/messaging/device-tokens", async (req: AuthenticatedRequest, res) =
       return;
     }
 
-    await db
+    // systemDb: a phone handed to another account re-registers a token that still belongs to the last one.
+    await systemDb
       .insert(devicePushTokens)
       .values({ userId: req.user!.id, expoPushToken, platform })
       .onConflictDoUpdate({

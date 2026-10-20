@@ -142,6 +142,20 @@ describe("studentExamRow", () => {
     assert.equal(row.shareCode, null);
   });
 
+  it("carries the teacher's planned date and time, and nothing when there is none", () => {
+    const planned = rowOf(exam({ examDate: "2026-10-20", examTime: "09:30" }), null, null, NOW);
+    assert.equal(planned.examDate, "2026-10-20");
+    assert.equal(planned.examTime, "09:30");
+    const unplanned = rowOf(exam(), null, null, NOW);
+    assert.equal(unplanned.examDate, null);
+    assert.equal(unplanned.examTime, null);
+  });
+
+  it("does not let a date decide whether the exam is open", () => {
+    const row = rowOf(exam({ examDate: "2026-12-31" }), null, null, NOW);
+    assert.equal(row.state, "available");
+  });
+
   it("never lists a draft", () => {
     assert.equal(studentExamRow(exam({ status: "draft" }), null, null, NOW), null);
   });
@@ -203,5 +217,78 @@ describe("guardianExamRow", () => {
     const shown = guardianExamRow(rowOf(exam({ releaseResultsToStudent: true }), sitting, result, NOW));
     assert.equal(shown.state, "result");
     assert.ok(shown.result);
+  });
+});
+
+describe("the planned day", () => {
+  it("carries the exam's date and time onto the row", () => {
+    const row = rowOf(exam({ examDate: "2026-10-20", examTime: "09:30" }), null, null, NOW);
+    assert.equal(row.examDate, "2026-10-20");
+    assert.equal(row.examTime, "09:30");
+  });
+
+  it("reads an exam that was never dated as null, not undefined", () => {
+    const row = rowOf(exam(), null, null, NOW);
+    assert.equal(row.examDate, null);
+    assert.equal(row.examTime, null);
+  });
+
+  it("does not let a date list a draft", () => {
+    assert.equal(studentExamRow(exam({ status: "draft", examDate: "2026-10-20" }), null, null, NOW), null);
+  });
+});
+
+describe("a paper exam", () => {
+  it("never offers a link once a student has handed one in", () => {
+    // Pins the `!paper &&` in offerLink: without it a handed-in student_link sitting on a paper exam could re-open a link.
+    const row = rowOf(exam({ paper: true }), { status: "graded", startedAt: NOW, submittedAt: NOW, source: "student_link" }, null, NOW);
+    assert.equal(row.state, "submitted");
+    assert.equal(row.shareCode, null);
+  });
+
+  it("is 'paper' with no link while nothing is marked", () => {
+    const row = rowOf(exam({ paper: true }), null, null, NOW);
+    assert.equal(row.state, "paper");
+    assert.equal(row.shareCode, null);
+    assert.equal(row.paper, true);
+  });
+
+  it("stays 'paper' while the teacher is typing it in, with no deadline", () => {
+    const row = rowOf(
+      exam({ paper: true, timeLimitMin: 20 }),
+      { status: "in_progress", startedAt: NOW, submittedAt: null, source: "teacher_entry" },
+      null,
+      NOW,
+    );
+    assert.equal(row.state, "paper");
+    assert.equal(row.deadlineAt, null);
+    assert.equal(row.shareCode, null);
+  });
+
+  it("is 'paper', not 'closed', once its link has expired", () => {
+    const row = rowOf(exam({ paper: true, shareCodeExpiresAt: new Date("2026-10-02T00:00:00Z") }), null, null, NOW);
+    assert.equal(row.state, "paper");
+  });
+
+  it("waits for the release once marked, then shows the mark", () => {
+    const sitting = { status: "graded", startedAt: NOW, submittedAt: NOW, source: "teacher_entry" };
+    const waiting = rowOf(exam({ paper: true, releaseResultsToStudent: false }), sitting, RESULT, NOW);
+    assert.equal(waiting.state, "submitted");
+    assert.equal(waiting.result, null);
+    const shown = rowOf(exam({ paper: true, releaseResultsToStudent: true }), sitting, RESULT, NOW);
+    assert.equal(shown.state, "result");
+    assert.equal(shown.result?.earnedMarks, 8);
+  });
+
+  it("is never paper unless the exam says so", () => {
+    assert.equal(rowOf(exam(), null, null, NOW).paper, false);
+  });
+
+  it("sorts after what the student can open now", () => {
+    const sorted = sortStudentExams([
+      rowOf(exam({ id: "p", paper: true }), null, null, NOW),
+      rowOf(exam({ id: "a" }), null, null, NOW),
+    ]);
+    assert.deepEqual(sorted.map(r => r.evaluationId), ["a", "p"]);
   });
 });

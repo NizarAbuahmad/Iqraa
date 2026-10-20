@@ -8,7 +8,8 @@
  */
 import * as ImagePicker from 'expo-image-picker';
 import { apiFetch } from './apiClient.ts';
-import { downscaleImage } from './imageDownscale.ts';
+import { PICK_BASE64, photoPickQuality, pickedPhotoToDataUrl } from './imageDownscale.ts';
+import type { ChatReaction } from './messageReactions.ts';
 
 export type ChatAttachmentKind = 'image' | 'audio' | 'document';
 
@@ -24,13 +25,13 @@ export async function pickChatImage(): Promise<string | null> {
 
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
-    quality: 0.85,
-    base64: true,
+    quality: photoPickQuality(0.85),
+    base64: PICK_BASE64,
   });
   const asset = result.canceled ? null : result.assets?.[0];
-  if (!asset?.base64) return null;
+  if (!asset) return null;
 
-  return downscaleImage(`data:${asset.mimeType || 'image/jpeg'};base64,${asset.base64}`);
+  return pickedPhotoToDataUrl(asset);
 }
 
 export type ChatRole = 'teacher' | 'school_admin' | 'system_admin' | 'student' | 'parent';
@@ -65,6 +66,8 @@ export interface ChatMessage {
   createdAt: string;
   /** Own messages only: someone else's screen has shown it. Absent on others' messages and on older API builds. */
   seen?: boolean;
+  /** Absent on older API builds — read it as []. */
+  reactions?: ChatReaction[];
 }
 
 export interface ChatThreadSummary {
@@ -267,6 +270,22 @@ export async function createGroup(
   };
 }
 
+/**
+ * Teacher-only. One message, delivered as a separate private chat to each
+ * person — their reply reaches the teacher alone, unlike a group. `skipped`
+ * counts people who could not be sent to (a block either way).
+ */
+export async function broadcastMessage(
+  participantUserIds: string[],
+  body: string,
+): Promise<{ sent: number; skipped: number }> {
+  const res = await apiFetch('/messaging/threads/broadcast', {
+    method: 'POST',
+    body: JSON.stringify({ participantUserIds, body }),
+  });
+  return readJson<{ sent: number; skipped: number }>(res, 'Sending message');
+}
+
 /** Owning teacher only. */
 export async function addGroupMembers(threadId: string, participantUserIds: string[]): Promise<ChatParticipantInfo[]> {
   const res = await apiFetch(`/messaging/threads/${threadId}/participants`, {
@@ -318,6 +337,23 @@ export async function sendMessage(
   });
   const data = await readJson<{ message: ChatMessage }>(res, 'Sending message');
   return data.message;
+}
+
+/** Put (or replace) your reaction on a message. Answers with that message's fresh chips. */
+export async function setReaction(threadId: string, messageId: string, emoji: string): Promise<ChatReaction[]> {
+  const res = await apiFetch(`/messaging/threads/${threadId}/messages/${messageId}/reaction`, {
+    method: 'PUT',
+    body: JSON.stringify({ emoji }),
+  });
+  const data = await readJson<{ reactions: ChatReaction[] }>(res, 'Reacting to message');
+  return data.reactions;
+}
+
+/** Take your reaction off a message. Safe to repeat. */
+export async function clearReaction(threadId: string, messageId: string): Promise<ChatReaction[]> {
+  const res = await apiFetch(`/messaging/threads/${threadId}/messages/${messageId}/reaction`, { method: 'DELETE' });
+  const data = await readJson<{ reactions: ChatReaction[] }>(res, 'Removing reaction');
+  return data.reactions;
 }
 
 /**

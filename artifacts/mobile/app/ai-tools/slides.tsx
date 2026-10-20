@@ -22,15 +22,17 @@ import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PickerField } from '@/components/ui/PickerField';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
-import { aiErrorMessageKey, isAbortError, throwIfAborted } from '@/services/ai/aiProvenance';
+import { aiErrorMessageKey, aiErrorText, isAbortError, throwIfAborted } from '@/services/ai/aiProvenance';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { Button } from '@/components/ui/Button';
 import { Toast } from '@/components/ui/Toast';
 import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import type { ActivitySlide, ClassroomActivity, LessonPlanOutput, LessonTeachingOutput } from '@/services/ai/AIService';
-import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
-import { buildLessonDeck, EXIT_TICKET_MAX, MID_LESSON_CHECK_MAX } from '@/services/lessonSlides';
+import { resolveGeneratorGrounding, type GeneratorGrounding } from '@/services/kbContext';
+import { usePickedLesson } from '@/hooks/usePickedLesson';
+import { carriedLessonTopic } from '@/services/pickedLesson';
+import { buildLessonDeck, buildRevisionDeck } from '@/services/lessonSlides';
 import { bookFigureUri } from '@/services/bookFigureUri';
 import {
   extractGraphCommands, insertLabSlides, insertLessonResources, nextVideoSuggestion,
@@ -46,6 +48,7 @@ import type { DeckVideo } from '@/services/youtubeVideo';
 import { summarizeVerification } from '@/services/quizVerification';
 import { confirm } from '@/services/confirm';
 import { pooledVariantId, regenerationFields } from '@/services/ai/regeneration';
+import { slidesChecksRequest, slidesLessonFields, slidesPlanRequest, slidesTeachingRequest, type SlidesLessonFields } from '@/services/slidesRequests';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
 import {
   captureGenerationScope, materialScope, reopenedGenerationScope, type GenerationScope,
@@ -59,17 +62,24 @@ import { useDeckWorkspace, type DeckWorkspaceSnapshot } from '@/hooks/useDeckWor
 import { useSlideEditor } from '@/hooks/useSlideEditor';
 import { DeckOutline } from '@/components/slides/DeckOutline';
 import { DeckActions } from '@/components/slides/DeckActions';
+import { DeckThemePicker } from '@/components/slides/DeckThemePicker';
 import { SlideEditModal } from '@/components/slides/SlideEditModal';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
-import { groundedSubjectConflict, scopeWithoutCurriculum, subjectPickerLabels, topicPickerParams, scopeFromParams } from '@/services/lessonPrep';
+import { groundedSubjectConflict, scopeWithoutCurriculum, subjectPickerLabels, topicPickerParams, scopeFromParams, topicForScope } from '@/services/lessonPrep';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
 import { useWarmGrounding } from '@/hooks/useWarmGrounding';
 import { nextFrame } from '@/services/nextFrame';
+import { useWideScope } from '@/hooks/useWideScope';
+import { revisionPhrase } from '@/services/revisionScope';
+import { scopeLabel, type ScopeSelection } from '@/services/scopeSelection';
+import { buildScopeRequest, scopeFormState } from '@/services/wideScopeRequest';
 
 const ACCENT = palette.primary;
+/** What a unit / semester / book deck is anchored to: the scope itself, never one lesson its label happens to match. */
+const WIDE_GROUNDING: GeneratorGrounding = { lesson: null, grounded: true, score: 0, context: '', ungroundedNote: '' };
 
 /** The toggles a deck was built with — saved as its form state. */
 type DeckOptions = { includeExamples: boolean; includePractice: boolean; includeAttachments: boolean };
@@ -92,12 +102,16 @@ export default function SlidesScreen() {
     // Sent by موادي's «تعديل» with the saved form state spread beside it.
     savedId?: string;
     includeExamples?: string; includePractice?: string; includeAttachments?: string;
+    // A saved wide deck's scope (`scopeFormState`), so a reopen restores it.
+    scope?: string;
+    // The lesson itself (a lesson page, the lesson bar, a saved deck) — `usePickedLesson`.
+    lessonId?: string;
   }>();
   // An index the picker list cannot honour is NOT index 0 — see
   // `scopeFromParams`. Grounding the topic is what recovers the right scope.
   // Only the grades/subjects this teacher picked on /setup-subjects are offered.
   const teacherScope = useTeacherScope();
-  const [initialScope] = useState(() => scopeFromParams(params, uiLang, teacherScope.defaultScope));
+  const [initialScope] = useState(() => scopeFromParams(params, uiLang, teacherScope.defaultScope, teacherScope));
   const [gradeIdx, setGradeIdx] = useState(initialScope.gradeIdx);
   // Index-aligned flags rather than a pre-filtered `subjects`: these positions
   // are persisted as subjectIdx, so entries are dropped at render time only.
@@ -110,16 +124,38 @@ export default function SlidesScreen() {
   // The picked subject's material language — English decks are built in English.
   const lang = contentLang(subjects[subjectIdx].id, uiLang);
   const isAr = lang === 'ar';
-  const [topic, setTopic] = useState(() => topicInLang(
-    params.topic ?? '', uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
-    { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
-  ));
+  const [topic, setTopic] = useState(() => {
+    const initial = topicForScope(params, uiLang, teacherScope.defaultScope, teacherScope);
+    const initialLang = contentLang(subjects[initialScope.subjectIdx].id, uiLang);
+    return (initial.trim() && carriedLessonTopic(params.lessonId, initialLang)) || topicInLang(
+      initial, uiLang, initialLang,
+      { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
+    );
+  });
   useWarmGrounding(topic, lang);
+  // Re-finding the lesson from its title made this screen useless for Grade 1
+  // English: all 19 decks came from a Grade 3, 4 or 9 lesson and were saved under
+  // that lesson's id (a teacher's review, 2026-10-15). See `usePickedLesson`.
+  const kbScope = { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id };
+  const pickedLesson = usePickedLesson(params.lessonId, topic, kbScope);
+  const pickedLessonId = pickedLesson.lessonId;
+  const groundingOptions = { lessonId: pickedLessonId, scope: kbScope };
+  const wideScope = useWideScope(params, { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id });
+  /**
+   * The unit / semester / book the deck on screen was built for — what Save
+   * records and a reopen restores. Frozen at generation, like `generated`.
+   */
+  const [wideFrozen, setWideFrozen] = useState<ScopeSelection | null>(
+    () => (wideScope.isWide ? wideScope.scopeSel : null),
+  );
   // Live as the teacher types, not gated behind pressing Generate — same
-  // timing as `LessonResources`' own `topic` prop just below it.
+  // timing as `LessonResources`' own `topic` prop just below it. Empty for a
+  // wide scope: the lookup is unscoped, and a unit title lands on another
+  // grade's lesson, whose attachments and lab items would then be offered.
   const groundedLessonId = useMemo(
-    () => resolveGeneratorGrounding(topic.trim(), lang).lesson?.id ?? '',
-    [topic, lang],
+    () => (wideScope.isWide ? '' : resolveGeneratorGrounding(topic.trim(), lang, groundingOptions).lesson?.id ?? ''),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [topic, lang, wideScope.isWide, pickedLessonId, gradeIdx, subjectIdx],
   );
   // A reopened deck comes back with the toggles it was built with.
   const [includeExamples, setIncludeExamples] = useState(() => readFlagParam(params.includeExamples, true));
@@ -267,6 +303,12 @@ export default function SlidesScreen() {
     return {
       gradeIdx: s.gradeIdx, subjectIdx: s.subjectIdx, topic: s.topic,
       ...(generated?.options ?? { includeExamples, includePractice, includeAttachments }),
+      // The lesson it was built from, so the save is filed under it rather than
+      // under whatever its title grounds to (`withLessonId` keeps an id it is given).
+      ...(!wideFrozen && s.lesson ? { lessonId: s.lesson.id } : {}),
+      // From the frozen scope, not the live picker. A wide deck is then never
+      // filed under a lesson (`withLessonId`).
+      ...scopeFormState(wideFrozen, 'balanced'),
     };
   };
   const workspace = useDeckWorkspace({
@@ -307,14 +349,20 @@ export default function SlidesScreen() {
       if (!loaded) { showToast(t('savedDeckUnreadable')); return; }
       // `topic`/`lang` here are the first render's: the saved topic restated
       // in the saved subject's material language.
-      const regrounded = reopenedGenerationScope(initialScope, topic, lang);
+      // A wide deck is anchored to its scope: its label («الفصل الأول كاملًا», a
+      // unit title) is never looked up again — it grounds to some lesson.
+      const regrounded = wideFrozen && topic.trim()
+        ? captureGenerationScope({ gradeIdx: initialScope.gradeIdx, subjectIdx: initialScope.subjectIdx, topic }, WIDE_GROUNDING)
+        : reopenedGenerationScope(initialScope, topic, lang, params.lessonId);
       // Without a saved topic there is nothing to re-ground: the live form.
       const scope = materialScope(regrounded, {
         gradeIdx: initialScope.gradeIdx, subjectIdx: initialScope.subjectIdx, topic,
       });
       setGenerated({ scope, options: { includeExamples, includePractice, includeAttachments } });
       setGrounded(scope.grounded);
-      setGroundedLesson(scope.lesson ? (deckIsAr(scope) ? scope.lesson.titleAr : scope.lesson.titleEn) : '');
+      setGroundedLesson(wideFrozen
+        ? scopeLabel(wideFrozen, deckIsAr(scope) ? 'ar' : 'en')
+        : scope.lesson ? (deckIsAr(scope) ? scope.lesson.titleAr : scope.lesson.titleEn) : '');
       setPreliminary(false);
       workspace.adopt(id, loaded, deckIdentity(loaded, scope));
       setDeck(loaded);
@@ -378,6 +426,7 @@ export default function SlidesScreen() {
       setTopic('');
       setDeck(null);
       setGenerated(null);
+      setWideFrozen(null);
       setTeachingVariantId(undefined);
       setVideoOptions([]);
       builtRef.current = null;
@@ -397,6 +446,7 @@ export default function SlidesScreen() {
     deck: ClassroomActivity;
     workspace: DeckWorkspaceSnapshot;
     generated: typeof generated;
+    wideFrozen: ScopeSelection | null;
     teachingVariantId: string | undefined;
     verifyDone: boolean;
     grounded: boolean;
@@ -408,6 +458,7 @@ export default function SlidesScreen() {
     setDeck(prev.deck);
     workspace.restore(prev.workspace);
     setGenerated(prev.generated);
+    setWideFrozen(prev.wideFrozen);
     setTeachingVariantId(prev.teachingVariantId);
     setVerifyDone(prev.verifyDone);
     setGrounded(prev.grounded);
@@ -433,8 +484,16 @@ export default function SlidesScreen() {
     // the picked subject. Refuse and name the real subject instead.
     const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, uiLang);
     if (scope) { refuse(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
-    const conflict = groundedSubjectConflict(trimmed, lang, subjects[subjectIdx].id);
-    if (conflict) { refuse(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
+    // A wide scope's topic is a label («الفصل الأول كاملًا»), not a lesson: the
+    // subject-conflict check reads a lesson, so it applies to a single lesson
+    // only. A wide scope that cannot be grounded is refused, never built mislabeled.
+    const wideSel = wideScope.isWide ? wideScope.scopeSel! : null;
+    const wide = wideSel ? buildScopeRequest(wideSel, lang) : null;
+    if (wideSel && !wide) { refuse(t('wideScopeUngrounded')); return; }
+    if (!wide) {
+      const conflict = groundedSubjectConflict(trimmed, lang, subjects[subjectIdx].id, grades[gradeIdx].id);
+      if (conflict) { refuse(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
+    }
     setValidationError(''); setError(''); setCancelled(false);
     const controller = new AbortController();
     abortRef.current = controller;
@@ -444,6 +503,7 @@ export default function SlidesScreen() {
       deck: deckRef.current,
       workspace: workspace.snapshot(),
       generated,
+      wideFrozen,
       teachingVariantId,
       verifyDone,
       grounded,
@@ -464,12 +524,22 @@ export default function SlidesScreen() {
     // The grade/subject reset may have superseded this run during the frame.
     if (!isCurrent()) return;
 
-    const grounding = resolveGeneratorGrounding(trimmed, lang);
-    const generatorContext = buildGeneratorContext(trimmed, lang);
-    const unitId = generatorUnitId(trimmed, lang);
-    const lessonId = generatorLessonId(trimmed, lang);
+    // A wide deck never grounds its label: a unit title lands on another
+    // grade's lesson (piece 2 measured 18 of 35). A lesson deck is grounded
+    // once, on the picked lesson when there is one, and every field is read
+    // off that one result.
+    const grounding = wide ? WIDE_GROUNDING : resolveGeneratorGrounding(trimmed, lang, groundingOptions);
+    const lessonFields: SlidesLessonFields = wide ? {} : slidesLessonFields(grounding);
+    const form = {
+      gradeName: isAr ? grades[gradeIdx]!.nameAr : grades[gradeIdx]!.name,
+      subjectName: subjects[subjectIdx].name,
+      topic: trimmed,
+      isAr,
+    };
     setGrounded(grounding.grounded);
-    setGroundedLesson(grounding.lesson ? (isAr ? grounding.lesson.titleAr : grounding.lesson.titleEn) : '');
+    setGroundedLesson(wideSel
+      ? scopeLabel(wideSel, lang)
+      : grounding.lesson ? (isAr ? grounding.lesson.titleAr : grounding.lesson.titleEn) : '');
 
     // The book alone makes a projectable deck (the plan-failure path below
     // relies on exactly that), so it goes on screen now and the model calls
@@ -493,6 +563,7 @@ export default function SlidesScreen() {
             ...(grounding.lesson.rulesEn ?? []),
           ].join(' \n ')),
           figureUri: bookFigureUri,
+          bookPages: true,
         });
         prelim = {
           ...base,
@@ -515,29 +586,12 @@ export default function SlidesScreen() {
       // to be in hand before `buildLessonDeck` runs. Requested in parallel so
       // adding them costs no extra wall-clock, and failing independently so a
       // check-generation error costs the deck nothing.
+      // The body (and why it asks for exactly five) is `slidesChecksRequest`.
+      // The same anchoring the plan call sends: without the ids the server
+      // re-inferred the unit from the title and wrote checks for a neighbouring
+      // one; a wide deck sends its scope on this call too.
       const checksPromise = aiService
-        .generateClassroomActivity({
-          grade: isAr ? grades[gradeIdx]!.nameAr : grades[gradeIdx]!.name,
-          subject: subjects[subjectIdx].name,
-          topic: trimmed,
-          activityType: 'quick-check',
-          duration: 10,
-          difficulty: 'standard',
-          groupType: 'whole-class',
-          teachingGoal: 'assessment',
-          language: isAr ? 'arabic' : 'english',
-          // Two mid-lesson checks plus a three-question exit ticket. Asking
-          // for exactly what the deck places means no question is generated
-          // and then thrown away.
-          numQuestions: MID_LESSON_CHECK_MAX + EXIT_TICKET_MAX,
-          // The same anchoring the teaching and plan calls send. Without the
-          // ids the server re-inferred the unit from the title — the lesson-
-          // title trap in CLAUDE.md — and wrote checks for a neighbouring one.
-          additionalContext: generatorContext,
-          unitId,
-          lessonId,
-          contextSource: 'curriculum',
-        }, { signal: controller.signal })
+        .generateClassroomActivity(slidesChecksRequest(form, lessonFields, wide?.fields ?? null), { signal: controller.signal })
         .then(a => a.slides)
         .catch((): ActivitySlide[] => []);
 
@@ -545,19 +599,14 @@ export default function SlidesScreen() {
       // slides, a worked example, a practice problem (`lessonSlides.ts`).
       // Parallel and independent like the checks: on any failure the deck is
       // built from the book and plan alone, exactly as before this existed.
-      const teachingPromise = aiService
-        .generateLessonTeaching({
-          grade: isAr ? grades[gradeIdx]!.nameAr : grades[gradeIdx]!.name,
-          subject: subjects[subjectIdx].name,
-          topic: trimmed,
-          language: isAr ? 'arabic' : 'english',
-          additionalContext: generatorContext,
-          unitId,
-          lessonId,
-          contextSource: 'curriculum',
-          ...regen,
-        }, { signal: controller.signal })
-        .catch((): LessonTeachingOutput | null => null);
+      // Not for a wide deck: the prompt is single-lesson by design and the call
+      // has no offline twin (`slidesTeachingRequest` answers null).
+      const teachingReq = slidesTeachingRequest(form, grounding, regen, wide?.fields ?? null);
+      const teachingPromise = teachingReq
+        ? aiService
+          .generateLessonTeaching(teachingReq, { signal: controller.signal })
+          .catch((): LessonTeachingOutput | null => null)
+        : Promise.resolve<LessonTeachingOutput | null>(null);
 
       let lessonPlan: LessonPlanOutput | null = null;
       // Kept so the failure can still be named if the deck turns out to be
@@ -566,22 +615,12 @@ export default function SlidesScreen() {
       // only useful thing left to say, and a quota reads nothing like a fault.
       let planError: unknown = null;
       try {
-        lessonPlan = await aiService.generateLessonPlan({
-          // Localised: this string is carried into generated content verbatim —
-          // the Arabic worksheet header printed «الصف: Grade 10». `grade` is never
-          // compared anywhere, only displayed and passed through, so translating it
-          // is safe. `subject` is deliberately left in English: it feeds
-          // isMathContext and ~30 other call sites.
-          grade: isAr ? grades[gradeIdx]!.nameAr : grades[gradeIdx]!.name,
-          subject: subjects[subjectIdx].name,
-          topic: trimmed,
-          language: isAr ? 'arabic' : 'english',
-          additionalContext: generatorContext,
-          unitId,
-          lessonId,
-          bookFigureCount: generatorFigureCount(trimmed, lang),
-          contextSource: 'curriculum',
-        }, { signal: controller.signal });
+        // `form.gradeName` is localised (it is carried into the content
+        // verbatim); `form.subjectName` stays English — it feeds isMathContext.
+        lessonPlan = await aiService.generateLessonPlan(
+          slidesPlanRequest(form, lessonFields, wide?.fields ?? null),
+          { signal: controller.signal },
+        );
       } catch (e) {
         // This screen deliberately survives a failed plan — the curriculum book
         // alone still makes a projectable deck. A cancel is the one rejection
@@ -592,12 +631,14 @@ export default function SlidesScreen() {
         lessonPlan = null;
       }
 
-      if (!lessonPlan && !grounding.lesson) {
+      // A wide deck is still built from its units (curriculum data, as the book
+      // is for a lesson deck) when the plan fails.
+      if (!lessonPlan && !grounding.lesson && !wide) {
         // Nothing to build, so the checks and the teaching call still running
         // are spend on a deck that will never exist — and teaching is live AI
         // even in demo mode. They were left to run to completion.
         controller.abort();
-        setError(t(aiErrorMessageKey(planError)));
+        setError(aiErrorText(planError, t));
         if (previous) restoreDeck(previous);
         return;
       }
@@ -641,7 +682,24 @@ export default function SlidesScreen() {
         lessonPlan?.guidedPractice ?? '',
         ...checks.map(c => c.content ?? ''),
       ].join(' \n '));
-      const builtBase = buildLessonDeck(trimmed, isAr, {
+      const builtBase = wide
+        // A unit / semester / book deck: the plan's introduction, a round per
+        // unit (with up to three of its book figures), the checks and the
+        // closure — no lesson, so no vocabulary, rules or worked examples
+        // (`buildRevisionDeck`).
+        ? buildRevisionDeck(isAr, {
+          units: wide.units,
+          phrase: revisionPhrase(wideSel!, lang),
+          plan: lessonPlan,
+          checks,
+          subject: isAr ? subjects[subjectIdx].nameAr : subjects[subjectIdx].name,
+          grade: isAr ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
+          includePractice,
+          // A unit's own pictures from the student book ride with its round.
+          figureUri: bookFigureUri,
+          bookPages: true,
+        })
+        : buildLessonDeck(trimmed, isAr, {
         lesson: grounding.lesson,
         plan: lessonPlan,
         subject: isAr ? subjects[subjectIdx].nameAr : subjects[subjectIdx].name,
@@ -652,11 +710,14 @@ export default function SlidesScreen() {
         checks,
         teaching,
         figureUri: bookFigureUri,
+          bookPages: true,
       });
       // The teacher's own resources go in before anything is shown, unlike
       // the searched media which arrives later — they are local, so there is
       // nothing to wait for and no reason to make the deck flicker.
-      const built = {
+      // The teacher's pinned resources and lab picks belong to one lesson; a
+      // wide deck has none, so it takes neither.
+      const built = wide ? builtBase : {
         ...builtBase,
         slides: insertLabSlides(
           insertLessonResources(builtBase.slides, attachedResources, isAr),
@@ -669,8 +730,14 @@ export default function SlidesScreen() {
         scope: captureGenerationScope({ gradeIdx, subjectIdx, topic: trimmed }, grounding),
         options: { includeExamples, includePractice, includeAttachments },
       });
+      setWideFrozen(wideSel);
       setDeck(built);
       setPreliminary(false);
+      // A spent allowance refuses the plan, the checks and the explanation
+      // together, and the deck above is the book alone — for a thin lesson,
+      // its one outcome three times. Say why rather than let it pass as
+      // generated.
+      if (!lessonPlan && aiErrorMessageKey(planError) === 'aiQuotaSpent') setError(t('slidesBookOnlyQuota'));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
 
@@ -718,12 +785,10 @@ export default function SlidesScreen() {
         try {
           const { searchDeckPhoto } = await import('@/services/unsplashImage');
           const { searchDeckVideos } = await import('@/services/youtubeVideo');
-          const { attachBackgroundImage, buildMediaSlide, deckPhotoQueries, insertVideoSlide } =
+          const { attachBackgroundImage, buildMediaSlide, deckPhotoQueries, insertVideoSlide, unitPhotoTargets } =
             await import('@/services/classMedia');
           const [titleQuery, dividerQuery] = deckPhotoQueries(subjects[subjectIdx].id, subjects[subjectIdx].name);
-          const captionFor = (photographer: string) => (isAr
-            ? `📷 ${photographer} · Unsplash`
-            : `📷 Photo by ${photographer} on Unsplash`);
+          const { creditFromPhoto, photoCreditText } = await import('@/services/photoCredit');
 
           // The video query uses the lesson topic, not the subject: a generic
           // "mathematics" video is no use mid-lesson, where the point is to
@@ -735,11 +800,24 @@ export default function SlidesScreen() {
           // The search fills a gap, it does not compete with the teacher. A
           // pinned video means no call at all — one fewer thing on the
           // projector, and 100 units of a 10,000/day quota unspent.
-          const wantVideo = shouldSearchForVideo(attachedResources);
-          const [titlePhoto, dividerPhoto, videos] = await Promise.all([
+          // No video for a wide deck: one explainer cannot stand for a semester,
+          // and the query would be the scope label. The photos still come.
+          const wantVideo = !wide && shouldSearchForVideo(attachedResources);
+          // A revision deck has a section break per unit, and the one generic
+          // divider photo can only go on the first. Each unit break whose topic is
+          // recognisable (see `photoQueryForTopic`) gets a picture of ITS topic —
+          // at most four, one call each on the shared photo quota; a unit the
+          // titles do not name keeps the flat break rather than a stranger's photo.
+          const unitTargets = unitPhotoTargets(built.slides);
+          const [titlePhoto, dividerPhoto, videos, unitPhotos] = await Promise.all([
             searchDeckPhoto(titleQuery),
-            searchDeckPhoto(dividerQuery),
+            // The generic «subject classroom» picture belongs to a one-lesson deck's
+            // single break. A revision deck's breaks are units, and that picture on
+            // the first of them was a stranger's: a computer lab on an evolution
+            // round. Each unit gets its own picture below or stays flat.
+            wide ? Promise.resolve(null) : searchDeckPhoto(dividerQuery),
             wantVideo ? searchDeckVideos(videoQuery, isAr ? 'ar' : 'en') : Promise.resolve([]),
+            Promise.all(unitTargets.map(t => searchDeckPhoto(t.query))),
           ]);
           const video = videos[0] ?? null;
           // A regenerate (or the grade/subject reset) since this search began
@@ -748,18 +826,26 @@ export default function SlidesScreen() {
           // Keep the rest for the editor's "another suggestion" control. They
           // cost nothing extra — one search returned all of them.
           setVideoOptions(videos);
-          if (!titlePhoto && !dividerPhoto && !video) return;
+          if (!titlePhoto && !dividerPhoto && !video && !unitPhotos.some(Boolean)) return;
 
           setDeck(cur => {
             // Guard against a stale fetch landing on a deck the teacher has
             // since regenerated — same identity check the verify pass uses.
             if (!cur || cur.slides[0] !== built.slides[0]) return cur;
             let slides = cur.slides;
-            if (titlePhoto) slides = attachBackgroundImage(slides, 0, titlePhoto.url, captionFor(titlePhoto.photographer));
+            if (titlePhoto) slides = attachBackgroundImage(slides, 0, titlePhoto.url, photoCreditText(titlePhoto, isAr), creditFromPhoto(titlePhoto));
             const dividerIdx = slides.findIndex(s => s.type === 'divider');
             if (dividerPhoto && dividerIdx >= 0) {
-              slides = attachBackgroundImage(slides, dividerIdx, dividerPhoto.url, captionFor(dividerPhoto.photographer));
+              slides = attachBackgroundImage(slides, dividerIdx, dividerPhoto.url, photoCreditText(dividerPhoto, isAr), creditFromPhoto(dividerPhoto));
             }
+            // Found by title: the teacher may have moved or deleted a slide in
+            // the seconds the search took. A unit's own picture replaces the
+            // generic one the first break just took.
+            unitTargets.forEach((target, i) => {
+              const photo = unitPhotos[i];
+              const at = slides.findIndex(s => s.type === 'divider' && s.title === target.title);
+              if (photo && at >= 0) slides = attachBackgroundImage(slides, at, photo.url, photoCreditText(photo, isAr), creditFromPhoto(photo));
+            });
             if (video) {
               // Two different jobs, so two different fields. `mediaCaption`
               // says what the video IS — the exports have no player to read a
@@ -794,7 +880,7 @@ export default function SlidesScreen() {
       // Reached only by a cancel today: every other failure inside is handled
       // where it happens, because a partial deck still has value.
       if (isAbortError(e)) setCancelled(true);
-      else setError(t(aiErrorMessageKey(e)));
+      else setError(aiErrorText(e, t));
       // The draft was a promise of the full deck, and the status box now
       // says that promise was not kept («لم يُنشأ أي محتوى»). Leaving the
       // draft under that message would contradict it — but the deck the
@@ -907,7 +993,7 @@ export default function SlidesScreen() {
 
         <View style={styles.form}>
           <PickerField label={t('grade')} value={uiLang === 'ar' ? grades[gradeIdx].nameAr : grades[gradeIdx].name} options={grades.map(g => (uiLang === 'ar' ? g.nameAr : g.name))} onChange={setGradeIdx} hidden={teacherScope.gradeHidden} colors={colors} isRTL={isRTL} accent={ACCENT} maxHeight={220} selectedTint={ACCENT + '15'} />
-          <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
+          <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t(teacherScope.strandedNoteKey(grades[gradeIdx].id, subjectIdx))} isRTL={isRTL} colors={colors} />
           <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} hidden={subjectHidden} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} maxHeight={220} selectedTint={ACCENT + '15'} />
 
           <TopicSelector
@@ -915,6 +1001,10 @@ export default function SlidesScreen() {
             gradeId={grades[gradeIdx].id}
             value={topic}
             onChange={v => { setTopic(v); setError(''); setValidationError(''); }}
+            onSelectionDetail={pickedLesson.onSelectionDetail}
+            allowedKinds={['lesson', 'unit', 'semester', 'book']}
+            onScopeChange={wideScope.setScopeSel}
+            offlineWideScope
             lang={lang}
             isRTL={isRTL}
             colors={colors}
@@ -927,14 +1017,19 @@ export default function SlidesScreen() {
               attach to: pin a video to «الاشتقاق» once and every future deck
               for that lesson carries it — and so does Class Mode, which has
               read this store all along. */}
-          <LessonResources topic={topic.trim()} onChange={setAttached} />
+          {/* Keyed by the topic string: for a wide scope that is the label, shared
+              by every grade's «الكتاب كاملًا». Nothing to pin to. */}
+          {!wideScope.isWide && <LessonResources topic={topic.trim()} onChange={setAttached} />}
           <LessonAttachments lessonId={groundedLessonId} onChange={setUploadedAttachments} />
           <LessonLabItems lessonId={groundedLessonId} isAr={isAr} picks={labPicks} onChange={setLabPicks} />
 
           <View style={{ gap: 10, marginBottom: 18 }}>
-            <Toggle label={t('slidesIncludeExamples')} value={includeExamples} onChange={setIncludeExamples} />
+            {/* A wide deck has no book examples and takes no attachments (see generate). */}
+            {!wideScope.isWide && (
+              <Toggle label={t('slidesIncludeExamples')} value={includeExamples} onChange={setIncludeExamples} />
+            )}
             <Toggle label={t('slidesIncludePractice')} value={includePractice} onChange={setIncludePractice} />
-            {hasAttachments ? (
+            {hasAttachments && !wideScope.isWide ? (
               <Toggle label={t('slidesIncludeAttachments')} value={includeAttachments} onChange={setIncludeAttachments} />
             ) : null}
           </View>
@@ -1089,6 +1184,7 @@ export default function SlidesScreen() {
               />
             </View>
 
+            <DeckThemePicker deck={deck} setDeck={setDeck} isRTL={isRTL} isAr={isAr} colors={colors} t={t} />
             <DeckActions workspace={workspace} onPresent={present} showToast={showToast} isRTL={isRTL} colors={colors} t={t} />
           </View>
         )}

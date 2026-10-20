@@ -52,12 +52,13 @@ import {
   filterResultsByGrade,
   filterResultsBySubject,
   isConfidentSingleSubjectHit,
+  liveChatGrounding,
 } from '@/services/kbContext';
 import { KB_SUGGEST_SCORE, shouldAskWhichLesson } from '@/services/kbSuggestion';
 import { Toast } from '@/components/ui/Toast';
 import { remoteAIService } from '@/services/ai/RemoteAIService';
 import { DEMO_MODE } from '@/services/ai/demoMode';
-import { aiErrorMessageKey, isCapError } from '@/services/ai/aiProvenance';
+import { aiErrorText, isCapError } from '@/services/ai/aiProvenance';
 import { shouldSendOnEnter } from '@/services/composerKeys';
 import type { ArtifactScope } from '@/services/ai/artifactScope';
 import {
@@ -294,6 +295,18 @@ interface Message {
   clarificationLessons?: { id: string; title: string }[];
   /** Places in the app this reply points at — solid buttons inside the bubble. */
   placeLinks?: EphemeralSuggestion[];
+  /**
+   * Set on a reply that answered a question about the app itself. The starter
+   * chips above the composer are for teaching, so they stay away from it — the
+   * answer already carries the one button that matters.
+   */
+  appHelp?: boolean;
+  /**
+   * Set on the reply to «أريد ورقة عمل» that points at the generator instead of
+   * making one. Like `appHelp`, it carries its own button, so the starter chips,
+   * the copy / export footer and the long-press export all stay away from it.
+   */
+  toolAsk?: boolean;
   pedagogicalClarification?: ClarificationOption[];
   clarificationQuery?: string;
   showLessonPrep?: boolean;
@@ -301,6 +314,10 @@ interface Message {
   attachments?: ChatAttachment[];
   timestamp: Date;
 }
+
+/** A reply that asks the teacher to pick (a subject, a lesson, a kind of help) and shows the choices itself. */
+const asksTheTeacher = (m: Message | undefined): boolean =>
+  !!(m?.clarificationSubjects?.length || m?.clarificationLessons?.length || m?.pedagogicalClarification?.length);
 
 /** One-shot shortcuts under the composer — never stored inside message bubbles. */
 type EphemeralSuggestion = {
@@ -1113,7 +1130,10 @@ function MessageBubble({
       onPress: () => onPresentMaterial(message),
     });
   }
-  if (onCopy && onExport && (canAct || infographic || message.text.trim().length > 60)) {
+  // Not under an answer about the app: a how-to is not a document to file, and
+  // «تصدير» under «where is Settings» offers to export a sentence.
+  if (onCopy && onExport && !message.appHelp && !message.toolAsk
+    && (canAct || infographic || message.text.trim().length > 60)) {
     messageActions.push(
       {
         key: 'copy',
@@ -2047,6 +2067,7 @@ export default function IqraScreen() {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
           text: help.text,
+          appHelp: true,
           placeLinks: help.places.map(p => ({
             id: `place-${p.id}`,
             label: t(p.labelKey as TranslationKey),
@@ -2119,6 +2140,7 @@ export default function IqraScreen() {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
           text: toolAskReply(toolAsk, lang as 'ar' | 'en', topic),
+          toolAsk: true,
           placeLinks: [{
             id: `tool-ask-${toolAsk}`,
             label: t(target.labelKey as TranslationKey),
@@ -2374,6 +2396,14 @@ export default function IqraScreen() {
         }
       }
 
+      // A question for the live model, which can answer a general one itself
+      // and ask its own follow-up. The «which subject?» / «which lesson?» /
+      // out-of-scope stops below exist for the offline assistant, which can
+      // only answer from a lesson; in front of a model they turned «كيف أتعامل
+      // مع طالب مشاغب؟» into a subject menu, because the keyword search had
+      // matched an English, a maths and a physics lesson.
+      const liveTeaching = !DEMO_MODE && route.intent === 'teaching';
+
       // 1b. Ambiguity check — only when nothing is pinned (soft default does not count).
       // Also skipped when the teacher named any recognisable subject in their query;
       // asking "which subject?" when they just said "الأحياء" is confusing.
@@ -2384,7 +2414,7 @@ export default function IqraScreen() {
         || teachingCtx
         || sessionMemory.lessonPin === 'hard',
       );
-      if (!hasHardContext && results.length > 0) {
+      if (!hasHardContext && !liveTeaching && results.length > 0) {
         const ambiguousSubjects = detectSubjectAmbiguity(results);
         if (ambiguousSubjects) {
           const clarifyMsg: Message = {
@@ -2405,6 +2435,18 @@ export default function IqraScreen() {
       }
 
       const hasKBMatch = results.length > 0;
+      // What the live model is given as the textbook: only lessons there is a
+      // reason to believe in (`liveChatGrounding`). Everything else keeps
+      // reading `results`, and so does the offline assistant.
+      const groundedResults = liveTeaching
+        ? liveChatGrounding({
+          ranked,
+          results,
+          anchorIds: [pinnedLesson?.id, reuseActive ? activeLesson?.id : undefined, ctxLesson?.id]
+            .filter((id): id is string => !!id),
+          scopedConfident: !!subjectScopeGradeId,
+        })
+        : results;
       const docBundle = docBundleEarly;
       const hasDocs = hasDocsEarly;
       const docNames = docBundle.documents
@@ -2435,8 +2477,8 @@ export default function IqraScreen() {
           : `[Teaching context: the lesson selected in the app is "${teachingTopic}". Tie your answer to it only if the question is about it or refers to it; otherwise answer the question as asked.]\n\n`)
         : '';
 
-      const kbPart = hasKBMatch
-        ? teachingPrefix + buildResponse(q, results, lang as 'ar' | 'en', mode, pinnedResourceId)
+      const kbPart = groundedResults.length
+        ? teachingPrefix + buildResponse(q, groundedResults, lang as 'ar' | 'en', mode, pinnedResourceId)
         : (teachingTopic ? teachingPrefix.trim() : '');
       const kbContext = [docBundle.promptBlock, kbPart].filter(Boolean).join('\n\n') || undefined;
 
@@ -2545,7 +2587,7 @@ export default function IqraScreen() {
         return;
       }
 
-      if (!hasKBMatch && !hasDocs && !(softBareArtifact && artifactType)) {
+      if (!hasKBMatch && !hasDocs && !(softBareArtifact && artifactType) && !liveTeaching) {
         if (subjectScopeLessons.length) {
           // Subject and grade are known, the lesson is not: ask, with that
           // scope's lessons as chips (a chip pins its lesson).
@@ -2664,6 +2706,7 @@ export default function IqraScreen() {
             documentContext: hasDocs ? docBundle.promptBlock : null,
             fromSoftPin: softBareArtifact && !topicStrong,
             scope: artScope,
+            ask: q,
           });
           // Name the file the teacher opened, and say plainly that the
           // material above is not drawn from it. This branch emits no support
@@ -2702,7 +2745,7 @@ export default function IqraScreen() {
             // allowance is spent" with a local lesson outline would be the
             // substitution that module exists to prevent, with nothing on
             // screen to say the AI never ran.
-            responseText = t(aiErrorMessageKey(genErr));
+            responseText = aiErrorText(genErr, t);
           } else {
             const ta = runTeachingAssistant();
             responseText = ta.text || t('iqraChatError');
@@ -2761,8 +2804,8 @@ export default function IqraScreen() {
         // Shared by a finished reply, a Stopped one with text, and one cut off
         // by a lost connection, so none of them skips the pin.
         const applyReplyBookkeeping = () => {
-          if (results[0]) {
-            lessonTopic = lang === 'ar' ? results[0].titleAr : results[0].titleEn;
+          if (groundedResults[0]) {
+            lessonTopic = lang === 'ar' ? groundedResults[0].titleAr : groundedResults[0].titleEn;
             quickTopic = lessonTopic;
             const pin = pendingHardPin;
             if (pin) setSessionMemory(prev => pinLesson(prev, pin, 'hard'));
@@ -2833,7 +2876,7 @@ export default function IqraScreen() {
             // to the local knowledge-base reply below under «تحقق من
             // الإنترنت», so a teacher whose allowance was gone got an answer
             // that read like the AI's, with a message blaming their network.
-            responseText = t(aiErrorMessageKey(remoteErr));
+            responseText = aiErrorText(remoteErr, t);
           } else {
             const ta = runTeachingAssistant();
             responseText = ta.text || t('iqraOfflineFallback');
@@ -2858,8 +2901,8 @@ export default function IqraScreen() {
       }
 
       // Ensure teacher actions always have a topic when KB or docs matched
-      if (!quickTopic && hasKBMatch && results[0]) {
-        quickTopic = lang === 'ar' ? results[0].titleAr : results[0].titleEn;
+      if (!quickTopic && groundedResults[0]) {
+        quickTopic = lang === 'ar' ? groundedResults[0].titleAr : groundedResults[0].titleEn;
         lessonTopic = quickTopic;
       }
       if (!quickTopic && hasDocs) {
@@ -3480,7 +3523,9 @@ export default function IqraScreen() {
     const idx =
       lessonPickerParams(currentLessonView?.lessonId, lang as 'ar' | 'en') ??
       topicPickerParams(topic, lang as 'ar' | 'en');
-    const toolParams = { ...(topic ? { topic } : {}), ...(idx ?? {}) };
+    // The lesson id too: a title does not identify a lesson (Slides reads it).
+    const lessonId = currentLessonView?.lessonId;
+    const toolParams = { ...(topic ? { topic } : {}), ...(idx ?? {}), ...(lessonId && topic ? { lessonId } : {}) };
     return (
       <View style={{ width: '100%', marginTop: 14, gap: 8 }}>
         {/* A phone was never asked to set up a class or a timetable: the
@@ -3826,7 +3871,7 @@ export default function IqraScreen() {
             message={item}
             colors={colors}
             isRTL={isRTL}
-            onLongPress={item.role === 'assistant' ? () => handleExportMessage(item) : undefined}
+            onLongPress={item.role === 'assistant' && !item.appHelp && !item.toolAsk ? () => handleExportMessage(item) : undefined}
             onCopy={item.role === 'assistant' && item.id !== streamingId ? handleCopyMessage : undefined}
             onExport={item.role === 'assistant' && item.id !== streamingId ? handleExportMessage : undefined}
             onSaveMaterial={item.role === 'assistant' ? handleSaveMaterial : undefined}
@@ -3881,8 +3926,15 @@ export default function IqraScreen() {
         Shown once the intro has scrolled out of the way, and only when the
         one-shot follow-ups below are not — two chip strips stacked on a phone
         is the clutter this change set out to remove.
+        Not under an answer about the app: «حضّر خطة الدرس» next to «where is
+        Settings» offers a lesson to someone who asked for a screen. Nor under a
+        question back to the teacher («أيّ مادة تقصد؟»): it carries its own
+        choices, and «أنشئ ورقة عمل» under «أريد ورقة عمل → أيّ مادة؟» repeats
+        the ask instead of answering it.
       */}
-      {ephemeralSuggestions.length === 0 && !isThinking && messages.length > 1 ? (
+      {ephemeralSuggestions.length === 0 && !isThinking && messages.length > 1
+        && !messages[messages.length - 1]?.appHelp && !messages[messages.length - 1]?.toolAsk
+        && !asksTheTeacher(messages[messages.length - 1]) ? (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}

@@ -16,6 +16,7 @@ import { LEGAL_VERSION } from '@/constants/legal';
 import { trackEvent } from '@/services/analytics';
 import { fetchWithTimeout } from '@/services/fetchWithTimeout';
 import { setActiveLessonContextUser } from '@/services/lessonContext';
+import { hasSkippedGradeSetup, markGradeSetupSkipped } from '@/services/gradeSetupSkip';
 import { setActiveMediaUser } from '@/services/lessonMedia';
 import { setActiveWorkspaceUser } from '@/services/workspace';
 import { readUserSnapshot, saveUserSnapshot } from '@/services/userSnapshot';
@@ -30,6 +31,8 @@ import {
   setLastGoogleEmail,
 } from '@/services/savedAccounts';
 import { warmUpVerifier } from '@/services/ai/verifyMath';
+import { clearPendingLoginCode, savePendingLoginCode } from '@/services/pendingLoginCode';
+import { normalizeLoginCodeInput } from '@/services/loginCode';
 import { registerNotificationTapHandler, registerPushToken, unregisterPushToken } from '@/services/pushTokens';
 // Same package GoogleSignInButton uses — safe to import on web too, it ships
 // a `.web.js` stub so Metro never fails to resolve a native-only module.
@@ -74,7 +77,12 @@ export interface User {
   lastName: string;
   /** Convenience computed field: firstName + lastName */
   name: string;
-  email: string;
+  /**
+   * Null for a parent or student who signed up from a teacher's code and has not
+   * added one (`redeemCode`). Every teacher has one; anything shown for a
+   * non-teacher must cope with null.
+   */
+  email: string | null;
   role: UserRole;
   preferredLanguage: 'en' | 'ar';
   /** A public, stable R2 URL, or null to show initials. */
@@ -86,6 +94,8 @@ export interface User {
    * services/routeGating.ts, the gate this field exists for.
    */
   hasRosterLink?: boolean;
+  /** This account signs back in with a personal login code (`loginWithCode`) — the delete screen asks for it. */
+  hasLoginCode?: boolean;
   /**
    * Grade/subject catalog ids (`@workspace/curriculum`'s GRADES/SUBJECTS)
    * this teacher picked at signup, editable later from the profile screen.
@@ -127,6 +137,17 @@ export interface RegisterData {
   acceptedTerms?: boolean;
 }
 
+/** What a parent or student sends to create an account from a teacher's code alone. */
+export interface RedeemData {
+  role: 'parent' | 'student';
+  /** The teacher's code: a child's own claim code, or a class join code. */
+  claimCode: string;
+  /** Which name on the class list is theirs — only for a class code. */
+  studentId?: string;
+  preferredLanguage: 'ar' | 'en';
+  acceptedTerms: boolean;
+}
+
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
@@ -145,6 +166,21 @@ interface AuthContextType {
    * verify screen (the trimmed/lowercased form the server actually used).
    */
   register: (data: RegisterData) => Promise<{ email: string; emailSent?: boolean }>;
+  /**
+   * Creates a parent or student account from a teacher's code — no email, no
+   * password. The account exists when this resolves, but the session is NOT
+   * opened yet: the caller shows `loginCode` (the only way back in, returned once
+   * by the server) and calls `finish()` once the person has saved it. Opening it
+   * sooner would route them straight past the one screen that tells them.
+   */
+  redeemCode: (data: RedeemData) => Promise<{ loginCode: string; finish: () => Promise<void> }>;
+  /** Signs back in with the personal login code. Signs the user in on success, same as login. */
+  loginWithCode: (code: string) => Promise<void>;
+  /**
+   * Gives a signed-in account with no email one, plus a password. Sends a
+   * 6-digit code to it; `verifyEmail` finishes the job.
+   */
+  addEmail: (email: string, password: string) => Promise<{ email: string; emailSent?: boolean }>;
   /** Submits the 6-digit code from the verification email. Signs the user in on success, same as login. */
   verifyEmail: (email: string, code: string) => Promise<void>;
   /** Requests a fresh code for an unverified account. Always resolves — the server never confirms whether the email exists. */
@@ -181,7 +217,7 @@ interface AuthContextType {
    * which it will accept based on whether the account has a password hash at
    * all, and refuses 401 otherwise.
    */
-  deleteAccount: (proof: { password?: string; googleCredential?: string }) => Promise<void>;
+  deleteAccount: (proof: { password?: string; googleCredential?: string; loginCode?: string }) => Promise<void>;
   /**
    * Flips `hasRosterLink` to true locally right after a successful
    * `POST /auth/claim`, so the routing gate clears without a round trip to
@@ -189,6 +225,14 @@ interface AuthContextType {
    * `DELETE /auth/claim`, which sends the gate back to the code screen.
    */
   markRosterClaimed: (linked?: boolean) => void;
+  /**
+   * Whether this account skipped the class picker on this device. `null`
+   * until the stored answer has been read — the routing gate waits for it
+   * (see `needsGradeSetup`).
+   */
+  gradeSetupSkipped: boolean | null;
+  /** Records «تخطي» on the class picker for the signed-in account. */
+  skipGradeSetup: () => void;
   /**
    * Changes the role picked at signup. The server (POST /auth/role) allows it
    * only while this account has claimed no roster row — i.e. exactly while the
@@ -223,13 +267,14 @@ type ApiUser = {
   id: string;
   firstName: string;
   lastName: string;
-  email: string;
+  email: string | null;
   role: string;
   preferredLanguage: string;
   avatarUrl?: string | null;
   createdAt: string;
   lastLogin?: string;
   hasRosterLink?: boolean;
+  hasLoginCode?: boolean;
   gradeIds?: string[];
   subjectIds?: string[];
   teachingAssignments?: TeachingAssignment[];
@@ -241,13 +286,14 @@ function toUser(apiUser: ApiUser): User {
     firstName: apiUser.firstName,
     lastName: apiUser.lastName,
     name: `${apiUser.firstName} ${apiUser.lastName}`,
-    email: apiUser.email,
+    email: apiUser.email ?? null,
     role: apiUser.role as UserRole,
     preferredLanguage: (apiUser.preferredLanguage as 'en' | 'ar') ?? 'en',
     language: (apiUser.preferredLanguage as 'en' | 'ar') ?? 'en',
     avatarUrl: apiUser.avatarUrl ?? null,
     createdAt: apiUser.createdAt,
     hasRosterLink: apiUser.hasRosterLink,
+    hasLoginCode: apiUser.hasLoginCode,
     gradeIds: apiUser.gradeIds ?? [],
     subjectIds: apiUser.subjectIds ?? [],
     teachingAssignments: apiUser.teachingAssignments ?? [],
@@ -491,7 +537,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     await adoptSession(data.accessToken, data.refreshToken, data.user);
     // The hint the login screen shows beside the Google button next time.
-    void setLastGoogleEmail(data.user.email);
+    if (data.user.email) void setLastGoogleEmail(data.user.email);
     if (data.isNewAccount) {
       trackEvent('signup_completed', { method: 'google', role: data.user.role });
     }
@@ -548,6 +594,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       method: 'POST',
       body: JSON.stringify({ email: email.trim() }),
     });
+  }, []);
+
+  const redeemCode = useCallback(async (data: RedeemData) => {
+    const res = await apiJson<{ accessToken: string; refreshToken: string; loginCode: string; user: ApiUser }>(
+      '/auth/redeem',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          claimCode: data.claimCode.trim(),
+          studentId: data.studentId,
+          role: data.role,
+          preferredLanguage: data.preferredLanguage,
+          acceptedTerms: data.acceptedTerms === true,
+          termsVersion: LEGAL_VERSION,
+        }),
+      },
+    );
+    // Before anything else: from here the account exists and this code is the
+    // only way into it. See services/pendingLoginCode.ts.
+    await savePendingLoginCode(res.loginCode);
+    trackEvent('signup_started', { method: 'code', role: data.role });
+    return {
+      loginCode: res.loginCode,
+      finish: async () => {
+        await adoptSession(res.accessToken, res.refreshToken, res.user);
+        await clearPendingLoginCode();
+        trackEvent('signup_completed', { method: 'code', role: data.role });
+      },
+    };
+  }, [adoptSession]);
+
+  const loginWithCode = useCallback(async (code: string) => {
+    const loginCode = normalizeLoginCodeInput(code);
+    if (!loginCode) throw new ApiError('A login code is required', 'invalid_login_code');
+    const data = await apiJson<{ accessToken: string; refreshToken: string; user: ApiUser }>(
+      '/auth/code-login',
+      { method: 'POST', body: JSON.stringify({ loginCode }) },
+    );
+    await adoptSession(data.accessToken, data.refreshToken, data.user);
+    await clearPendingLoginCode();
+  }, [adoptSession]);
+
+  const addEmail = useCallback(async (email: string, password: string) => {
+    if (!email?.includes('@')) throw new ApiError('Valid email is required', 'invalid_email');
+    const data = await apiJson<{ email: string; message: string; emailSent?: boolean }>(
+      '/auth/add-email',
+      { method: 'POST', body: JSON.stringify({ email: email.trim(), password }) },
+    );
+    return { email: data.email, emailSent: data.emailSent };
   }, []);
 
   const changeUnverifiedEmail = useCallback(
@@ -644,7 +739,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const deleteAccount = useCallback(
-    async (proof: { password?: string; googleCredential?: string }) => {
+    async (proof: { password?: string; googleCredential?: string; loginCode?: string }) => {
       // Push token first, for the same reason logout does it first: after the
       // account is gone the server would refuse the unregister call, and the
       // device would keep a token pointed at a user that no longer exists.
@@ -674,6 +769,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(u => (u ? { ...u, hasRosterLink: linked } : u));
   }, []);
 
+  // Keyed by user id, so a stale answer from the previous account is never
+  // read as the new one's during the render before the effect below runs.
+  const [gradeSkip, setGradeSkip] = useState<{ userId: string; skipped: boolean } | null>(null);
+  const skipUserId = user?.id;
+  useEffect(() => {
+    if (!skipUserId) return;
+    let cancelled = false;
+    void hasSkippedGradeSetup(skipUserId).then(skipped => {
+      // Never undo a skip tapped while the read was in flight.
+      if (!cancelled) setGradeSkip(prev => (prev?.userId === skipUserId && prev.skipped ? prev : { userId: skipUserId, skipped }));
+    });
+    return () => { cancelled = true; };
+  }, [skipUserId]);
+  const gradeSetupSkipped = gradeSkip && gradeSkip.userId === skipUserId ? gradeSkip.skipped : null;
+  const skipGradeSetup = useCallback(() => {
+    if (!skipUserId) return;
+    setGradeSkip({ userId: skipUserId, skipped: true });
+    void markGradeSetupSkipped(skipUserId);
+  }, [skipUserId]);
+
   const switchRole = useCallback(async (role: 'teacher' | 'parent' | 'student') => {
     const updated = await apiJson<{ role: UserRole; hasRosterLink?: boolean }>('/auth/role', {
       method: 'POST',
@@ -700,7 +815,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const metaForOpenAccount = (u: User): SavedAccountMeta => ({
     userId: u.id,
     name: u.name,
-    email: u.email,
+    // A saved-accounts row is keyed by userId and shows the name; the address is
+    // only a subtitle, and an account with none has an empty one.
+    email: u.email ?? '',
     role: u.role,
     avatarUrl: u.avatarUrl ?? null,
     lastUsedAt: Date.now(),
@@ -831,6 +948,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         loginWithGoogle,
         register,
+        redeemCode,
+        loginWithCode,
+        addEmail,
         verifyEmail,
         resendVerification,
         changeUnverifiedEmail,
@@ -842,6 +962,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         removeAvatar,
         deleteAccount,
         markRosterClaimed,
+        gradeSetupSkipped,
+        skipGradeSetup,
         switchRole,
         savedAccounts,
         switchAccount,

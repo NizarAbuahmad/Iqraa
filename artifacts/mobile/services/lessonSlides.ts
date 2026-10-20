@@ -23,11 +23,28 @@ import type {
   LessonTeachingOutput,
 } from './ai/AIService.ts';
 import type { KBLesson } from './knowledgeBase.ts';
+import { CONCEPTS_CAP, type RevisionUnit } from './revisionScope.ts';
 import { buildChartSlide, buildGraphSlide, referencesShownVisual, scanGraphCommands } from './classMedia.ts';
 import { chartForLesson, visualForSlide } from './deckVisuals.ts';
-import { type BookFigure, figuresForLesson } from './bookFigures.ts';
+import { type BookFigure, bookPagesForLesson, figuresForLesson } from './bookFigures.ts';
 import { exerciseReference, exercisesForLesson } from './bookExercises.ts';
-import { inlineSteps, MAX_STAT_VALUE_CHARS } from './slideLayout.ts';
+import { inlineSteps, MAX_STAT_VALUE_CHARS, resolveSlideLayout } from './slideLayout.ts';
+import { iconForTopic } from './deckIcons.ts';
+import { englishOnly } from './englishText.ts';
+
+/**
+ * `slide` drawn in `shape` when the gate accepts its data, else exactly as it
+ * was. The slide keeps its bullet `content` either way, so a refusal (a list
+ * that ran long, a term too wide for a card) is the ordinary list, never a
+ * blank slide — the same fallback every renderer relies on.
+ */
+function withShape(
+  slide: Omit<ActivitySlide, 'slideNumber'>,
+  shape: Partial<ActivitySlide>,
+): Omit<ActivitySlide, 'slideNumber'> {
+  const shaped = { ...slide, ...shape };
+  return resolveSlideLayout({ ...shaped, slideNumber: 0 }) ? shaped : slide;
+}
 
 /**
  * Split a generated warm-up into what the class sees and what only the
@@ -118,6 +135,13 @@ export interface LessonDeckOptions {
    * Omitted → no figure slides, exactly as before figures existed.
    */
   figureUri?: (figure: BookFigure) => string | null;
+  /**
+   * Show the lesson's own book pages (its first few, as slides) when the lesson
+   * has no figure to show. Opt-in for the same reason `figureUri` is: a deck
+   * built under `node --test` must not grow slides from the shipped link file.
+   * Omitted → no page slides, exactly as before.
+   */
+  bookPages?: boolean;
   /**
    * The AI-written explanation section (`/generate/lesson-teaching`). Fills
    * what the book data does not carry: a hook question when the plan gave
@@ -329,6 +353,11 @@ function bullets(items: readonly string[] | undefined, max = 6): string[] {
     .slice(0, max);
 }
 
+/** «a», «a and b», «a, b and c». */
+function joinEn(items: readonly string[]): string {
+  return items.length <= 1 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+}
+
 function nonEmpty(s: string | undefined | null): string {
   return (s ?? '').trim();
 }
@@ -407,6 +436,44 @@ export function bookFigureSlides(
     });
   }
   return out;
+}
+
+/** A lesson with no figure shows at most this many of its own book pages. */
+export const BOOK_PAGE_SLIDE_MAX = 3;
+
+/**
+ * A lesson's own book pages as media slides — for the subjects whose books print
+ * no figure to cut out (Arabic, Islamic, physical education, digital skills,
+ * civic education: 1,294 lessons had nothing from their book to show). The page
+ * IS the book's picture of the lesson there: the text, the photographs and the
+ * activity the students have open on their desks.
+ *
+ * The first pages, because a lesson opens with its picture and its question;
+ * past the third a lesson's pages are exercises the teacher reads off the desk.
+ * No injected loader: the page URLs are plain strings from `bookPagesForLesson`,
+ * which is free of `react-native`. Captioned with book and page, like a figure.
+ */
+export function bookPageSlides(
+  kbLessonId: string | null | undefined,
+  isAr: boolean,
+  max: number = BOOK_PAGE_SLIDE_MAX,
+): Omit<ActivitySlide, 'slideNumber'>[] {
+  const pages = bookPagesForLesson(kbLessonId);
+  if (!pages) return [];
+  return pages.urls.slice(0, max).map((url, i) => {
+    const n = pages.page + i;
+    const page = isAr ? String(n).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[Number(d)]) : String(n);
+    const caption = isAr ? `كتاب الطالب · صفحة ${page}` : `Student Book · page ${page}`;
+    return {
+      type: 'media' as const,
+      title: isAr ? 'من كتاب الطالب' : 'From the Student Book',
+      content: caption,
+      mediaKind: 'image' as const,
+      mediaUrl: url,
+      mediaCaption: caption,
+      durationSeconds: 0,
+    };
+  });
 }
 
 export function buildLessonDeck(
@@ -542,7 +609,22 @@ export function buildLessonDeck(
       return !term || nonEmpty(isAr ? term.definitionAr : term.definitionEn);
     })
     .filter(concept => !ruleTexts.some(rule => rule.includes(squash(concept))));
-  if (concepts.length > 0 || teaching.concepts.length > 0) {
+  // A generated point that restates the book's rule (§6) is dropped, as the
+  // book's own concepts are just above: the class read it twice, two slides
+  // apart. Punctuation aside — the model ends sentences, the book often does
+  // not — and only when it is most of the rule, not a fragment like «x = 2».
+  // Filtered here, once: a concept left with no point is no concept, so the
+  // book's own lines and the section break follow what is actually drawn.
+  const bare = (s: string) => squash(s).replace(/[.،,؛;:]/g, '');
+  const ruleBare = ruleTexts.map(bare);
+  const restatesRule = (p: string) => {
+    const b = bare(p);
+    return ruleBare.some(rule => rule.includes(b) && b.length >= rule.length * 0.8);
+  };
+  const generatedConcepts = teaching.concepts
+    .map(c => ({ ...c, points: c.points.filter(p => !restatesRule(p)) }))
+    .filter(c => c.points.length > 0);
+  if (concepts.length > 0 || generatedConcepts.length > 0) {
     // The section name is the big line and the lesson the small one. It was the
     // other way round, so the lesson title filled the screen a second time three
     // slides after the cover and «لنبدأ الشرح» was a caption under it — a chapter
@@ -552,6 +634,7 @@ export function buildLessonDeck(
       type: 'divider',
       title: L('لنبدأ الشرح', "Let's dig in"),
       content: title,
+      icon: 'bulb',
       durationSeconds: 0,
     });
   }
@@ -565,7 +648,15 @@ export function buildLessonDeck(
   // preamble instead of at the end of it.
   const terms = (lesson?.keyTerms ?? []).slice(0, 6);
   if (terms.length >= 2) {
-    push({
+    const pairs = terms.map(term => ({
+      word: nonEmpty(isAr ? term.ar : term.en),
+      def: nonEmpty(isAr ? term.definitionAr : term.definitionEn),
+    }));
+    // A term and its meaning is a two-column table, not a bullet with a dash.
+    // Only when EVERY term has both halves — a table with a hole in it reads as
+    // a missing definition — and when the gate accepts the sizes; otherwise the
+    // bullets below are the slide, as before.
+    push(withShape({
       type: 'intro',
       title: L('📖 مفردات الدرس', '📖 Key Vocabulary'),
       content: terms
@@ -576,7 +667,12 @@ export function buildLessonDeck(
         })
         .join('\n'),
       durationSeconds: 0,
-    });
+    }, pairs.every(p => p.word && p.def)
+      ? {
+        layout: 'table',
+        table: { headers: [L('المصطلح', 'Term'), L('المعنى', 'Meaning')], rows: pairs.map(p => [p.word, p.def]) },
+      }
+      : {}));
   } else if (terms.length === 1) {
     // One term is not a vocabulary list — a heading over a single bullet. With
     // a definition it is a concept like any other and gets a slide titled by
@@ -584,7 +680,7 @@ export function buildLessonDeck(
     // loop below already draws it under that name.
     const word = isAr ? terms[0]!.ar : terms[0]!.en;
     const def = nonEmpty(isAr ? terms[0]!.definitionAr : terms[0]!.definitionEn);
-    const drawnAsConcept = teaching.concepts.length === 0 && concepts.includes(word);
+    const drawnAsConcept = generatedConcepts.length === 0 && concepts.includes(word);
     if (def && !drawnAsConcept) {
       push({ type: 'intro', title: word, content: def, durationSeconds: 0 });
     }
@@ -633,13 +729,13 @@ export function buildLessonDeck(
   // index lines, and they were in the context the explanation was written
   // from; the rule, figures, examples, outcomes and vocabulary — the parts
   // that ARE the book's wording — are all still projected verbatim around it.
-  for (const c of teaching.concepts) {
+  for (const { points, ...c } of generatedConcepts) {
     aiWritten = true;
     push({
       aiWritten: true,
       type: 'intro',
       title: c.title,
-      content: c.points.map(p => `• ${p}`).join('\n'),
+      content: points.map(p => `• ${p}`).join('\n'),
       durationSeconds: 0,
       // The panel always prints the expected answer; for a concept slide that
       // is the idea stated precisely, which is what its title is.
@@ -650,18 +746,21 @@ export function buildLessonDeck(
       },
     });
   }
-  for (const slide of teaching.concepts.length > 0 ? [] : conceptSlides) {
+  for (const slide of generatedConcepts.length > 0 ? [] : conceptSlides) {
     if (slide !== 'bare') {
       push(slide);
       continue;
     }
     for (let i = 0; i < bareConcepts.length; i += 4) {
-      push({
+      const chunk = bareConcepts.slice(i, i + 4);
+      // Short terms fill the slide as cards; a chunk with a sentence in it stays
+      // a list (the gate decides — see `withShape`).
+      push(withShape({
         type: 'intro',
         title: L('💡 أفكار الدرس', '💡 Key Ideas'),
-        content: bareConcepts.slice(i, i + 4).map(c => `• ${c}`).join('\n'),
+        content: chunk.map(c => `• ${c}`).join('\n'),
         durationSeconds: 0,
-      });
+      }, { layout: 'concepts', concepts: chunk }));
     }
   }
 
@@ -719,6 +818,10 @@ export function buildLessonDeck(
   // whose book states none — nothing was taken and this is every figure, so
   // the deck is exactly what it was.
   for (const slide of figures) push(slide);
+  // A lesson with no figure of its own shows its book pages instead (opt-in).
+  if (opts.bookPages && !ruleFigure && figures.length === 0) {
+    for (const slide of bookPageSlides(lesson?.id, isAr)) push(slide);
+  }
 
   // ── 6b. Live graph — the concept made draggable ─────────────────────────
   // Between the rule and the examples: the class sees the curve respond to a
@@ -939,14 +1042,15 @@ export function buildLessonDeck(
   if (exitChecks.length > 0) {
     push({
       type: 'divider',
-      title: L('تذكرة الخروج', 'Exit Ticket'),
+      title: L('غلق الدرس', 'Exit Ticket'),
       content: title,
+      icon: 'ticket',
       durationSeconds: 0,
     });
     exitChecks.forEach((check, i) => {
       push(asCheckSlide(
         check,
-        L(`🎫 تذكرة الخروج ${i + 1}`, `Exit Ticket ${i + 1}`),
+        L(`🎫 غلق الدرس ${i + 1}`, `Exit Ticket ${i + 1}`),
       ));
     });
   }
@@ -1020,7 +1124,7 @@ export function buildLessonDeck(
  * Two kinds of slide carry an answer. Worked examples are numbered as
  * examples, the way they always were. Check questions are keyed by their own
  * title instead, because their number is meaningful only within their section
- * — "تذكرة الخروج 1" is the first exit-ticket question, not the first
+ * — "غلق الدرس 1" is the first exit-ticket question, not the first
  * question in the deck, and renumbering them into one sequence would make the
  * printed key impossible to line up with the projected slides.
  *
@@ -1092,4 +1196,363 @@ export function splitExample(example: string): [problem: string, answer: string]
     return [text.slice(0, arrow).trim(), text.slice(arrow + sepLen).trim()];
   }
   return [text, ''];
+}
+
+// ─── Revision deck — a unit, a semester or the whole book ─────────────────
+
+/** What a unit / semester / whole-book deck is built from — see `buildRevisionDeck`. */
+export interface RevisionDeckOptions {
+  /** The units in scope, in book order — `ScopeRequest.units` (`revisionUnits`). */
+  units: readonly RevisionUnit[];
+  /** `revisionPhrase(sel, lang)` — «موضوعات الفصل الأول»: a noun phrase, used inside the title. */
+  phrase: string;
+  /** The wide (revision) plan; null when its call failed — the units alone still make a deck. */
+  plan?: LessonPlanOutput | null;
+  /** The wide quick-check's slides, already generated. The deck places them; it never invents one. */
+  checks?: ActivitySlide[];
+  subject?: string;
+  grade?: string;
+  /** Practice and homework slides, as on a lesson deck. */
+  includePractice?: boolean;
+  /**
+   * Turns a book figure into a URL the slide can load (`bookFigureUri`). Without
+   * it a revision deck carries no pictures from the book, exactly as before.
+   */
+  figureUri?: (figure: BookFigure) => string | null;
+  /**
+   * A unit with no figure of its own shows the first page of its first lesson
+   * that has book pages (opt-in, as `LessonDeckOptions.bookPages`). Omitted →
+   * no page slides.
+   */
+  bookPages?: boolean;
+}
+
+/**
+ * A unit's round shows at most this many of its book figures: one beside its
+ * outcomes, one beside its terms. They were three, the extra one on a slide of
+ * its own — five slides a unit, two of them «من كتاب الطالب» back to back, and
+ * a whole-book deck of 53 that teachers read as the same slides repeated.
+ */
+const UNIT_FIGURE_MAX = 2;
+
+/**
+ * A unit's book figures worth reviewing: the first figure of each of its lessons
+ * in book order, then the second of each, and so on, so a unit of four lessons
+ * is not shown four pictures of the first. Only figures the app can load.
+ */
+function unitFigures(
+  unit: RevisionUnit,
+  figureUri: (figure: BookFigure) => string | null,
+): { figure: BookFigure; uri: string }[] {
+  const perLesson = unit.lessons.map(l => figuresForLesson(l.id));
+  const out: { figure: BookFigure; uri: string }[] = [];
+  const rounds = Math.max(0, ...perLesson.map(f => f.length));
+  for (let round = 0; round < rounds && out.length < UNIT_FIGURE_MAX; round++) {
+    for (const figures of perLesson) {
+      const figure = figures[round];
+      const uri = figure ? figureUri(figure) : null;
+      if (figure && uri) out.push({ figure, uri });
+      if (out.length >= UNIT_FIGURE_MAX) break;
+    }
+  }
+  return out;
+}
+
+/**
+ * A projectable deck for ONE revision session over several units.
+ *
+ * Not a branch of `buildLessonDeck`. That builder is book-first around one
+ * `KBLesson`, and a wide scope has none: handed `lesson: null` it keeps only
+ * the plan's connective tissue and never projects the plan's main activity, so
+ * a semester deck had no unit in it at all — and its fallbacks splice the title
+ * into lesson-shaped sentences («شرح درس «…» على الشاشة», «أنهينا درس «…»»).
+ * Kept separate, the lesson deck is untouched byte for byte.
+ *
+ * Slide by slide: the title; what the session covers (the unit names — the
+ * plan's introduction, which states what is left out, goes to the teacher); the
+ * plan's goals; its warm-up question when it asks one; per unit a divider and
+ * one slide of that unit's official outcomes and key ideas, straight from the
+ * curriculum data; the checks; the plan's practice (teacher-led, as on a lesson
+ * deck); a summary naming the units; the exit ticket; the plan's homework.
+ *
+ * A unit's own book figures ride with its round when `figureUri` is given (up to
+ * two: beside the outcomes and beside the terms — never a slide of their own).
+ * Never: vocabulary, rules, worked examples, a graph or chart, or an
+ * exercise-book reference — each belongs to one lesson.
+ */
+export function buildRevisionDeck(isAr: boolean, opts: RevisionDeckOptions): ClassroomActivity {
+  const { units, plan = null } = opts;
+  const includePractice = opts.includePractice !== false;
+  const L = (ar: string, en: string) => (isAr ? ar : en);
+  // An English deck takes no Arabic LETTER from the curriculum data or from an
+  // offline plan built on it: the official outcomes are Arabic only, and some
+  // English concept lists, lesson titles and terms are Arabic glosses
+  // (measured: 629 of 1413 English scopes carried one; the offline plan's goals
+  // are the same outcomes). What is left is what the data can say in English —
+  // the same rule the English revision plan applies (`englishOnly`): a Quranic
+  // mark in a Latin title is content, a short letter gloss («The Letter Baa
+  // (ب)») is the lesson's name, a longer bracketed gloss is cut and the English
+  // kept. It filters only what this builder takes from the data — a question a
+  // generator wrote is placed as it came, never dropped or rewritten here.
+  const fit = (s: string): string | null => (isAr ? s : englishOnly(s));
+  const fitAll = (list: readonly string[]): string[] => list.map(fit).filter((x): x is string => x !== null);
+
+  const phrase = nonEmpty(opts.phrase);
+  const title = phrase ? L(`مراجعة ${phrase}`, `Revision: ${phrase}`) : L('حصة مراجعة', 'Revision session');
+  const subject = nonEmpty(opts.subject) || nonEmpty(plan?.subject);
+  // No «الصف العاشر» default here: a wrong grade on a revision cover is worse than none.
+  const grade = nonEmpty(opts.grade) || nonEmpty(plan?.grade);
+  const unitList = units.map(u => nonEmpty(u.title)).filter(Boolean).map(u => `• ${u}`).join('\n');
+
+  const slides: ActivitySlide[] = [];
+  const push = (slide: Omit<ActivitySlide, 'slideNumber'>) => {
+    slides.push({ ...slide, slideNumber: slides.length + 1 } as ActivitySlide);
+  };
+  const { mid: midChecks, exit: exitChecks } = splitChecks(opts.checks);
+  // The generated parts that actually became slides, in slide order — the
+  // teacher's preparation note names these and no others.
+  const generated: Array<{ ar: string; en: string }> = [];
+
+  // The warm-up projects only a question the plan actually asks — the same rule
+  // as the lesson deck's §3. When it does, its slide carries the introduction.
+  const intro = nonEmpty(plan?.introduction);
+  const warm = intro ? splitWarmup(intro) : null;
+  const hasWarmup = !!warm && warm.notes.length > 0;
+
+  // ── 1. Title ────────────────────────────────────────────────────────────
+  push({
+    type: 'intro',
+    title,
+    content: subject && grade ? `${subject} · ${grade}` : subject || grade,
+    durationSeconds: 0,
+  });
+
+  // ── 2. What the session covers ──────────────────────────────────────────
+  if (unitList) {
+    push({
+      type: 'intro',
+      title: L('🗂️ ما نراجعه اليوم', '🗂️ What we revise today'),
+      content: unitList,
+      durationSeconds: 0,
+      teacher: {
+        expectedAnswer: L('لا إجابة محددة — الغرض أن يعرف الطلبة ما تشمله المراجعة.',
+          'No set answer — the point is that the class knows what the revision covers.'),
+        ...(intro && !hasWarmup ? { teachingTips: intro } : {}),
+      },
+    });
+  }
+
+  // ── 3. Goals ────────────────────────────────────────────────────────────
+  const objectives = fitAll(bullets(plan?.objectives));
+  if (objectives.length > 0) {
+    generated.push({ ar: 'الأهداف', en: 'goals' });
+    push({
+      type: 'intro',
+      title: L('🎯 أهداف المراجعة', '🎯 Revision Goals'),
+      content: objectives.map(o => `• ${o}`).join('\n'),
+      durationSeconds: 0,
+    });
+  }
+
+  // ── 4. Warm-up ──────────────────────────────────────────────────────────
+  if (warm && hasWarmup) {
+    generated.push({ ar: 'التمهيد', en: 'warm-up' });
+    push({
+      type: 'intro',
+      title: L('✨ تمهيد', '✨ Warm-up'),
+      content: warm.projected,
+      durationSeconds: 0,
+      teacher: {
+        expectedAnswer: L('لا توجد إجابة واحدة — الهدف تفعيل المعرفة السابقة.',
+          'No single answer — the point is to activate prior knowledge.'),
+        teachingTips: [warm.notes, L('اسأل ثم انتظر بصمت خمس ثوانٍ قبل استقبال أي إجابة.',
+          'Ask, then wait five silent seconds before taking any answer.')].join('\n\n'),
+      },
+    });
+  }
+
+  // ── 5. One round per unit, in book order ────────────────────────────────
+  // The unit's own outcomes and key ideas, as the curriculum states them —
+  // `RevisionUnit` already caps each at three, one per lesson first.
+  const shownBefore = new Set<string>();
+  units.forEach((unit, i) => {
+    const unitTitle = nonEmpty(unit.title);
+    if (!unitTitle) return;
+    // The unit's own icon (an atom for force and motion, a globe for earth and
+    // space) on its section break and its key-ideas slide; a generic one when
+    // the title names nothing recognisable, because a flat panel with a title on
+    // it is the look every unit break had.
+    const unitIcon = iconForTopic(unitTitle);
+    push({
+      type: 'divider',
+      title: unitTitle,
+      content: units.length > 1
+        ? L(`الجولة ${i + 1} من ${units.length}`, `Round ${i + 1} of ${units.length}`)
+        : L('جولة المراجعة', 'Revision round'),
+      icon: unitIcon ?? 'books',
+      durationSeconds: 0,
+    });
+    // A unit with no English ideas left shows its lesson titles instead (see `fit`).
+    const lessonTitles = fitAll(unit.lessons.map(l => nonEmpty(l.title)).filter(Boolean));
+    // What the unit expects of a student (its outcomes — sentences) and the terms
+    // it teaches (its concepts — the book's «المفاهيم والمصطلحات» box) are two
+    // different slides: sentences and one-word cards cannot share a layout, and
+    // the old mixed list ran them together and cut the terms to three.
+    const outcomes = [...new Set(fitAll(unit.outcomes.map(s => nonEmpty(s)).filter(Boolean)))].slice(0, 6);
+    const concepts = [...new Set(fitAll((unit.allConcepts ?? unit.concepts).map(s => nonEmpty(s)).filter(Boolean)))]
+      .slice(0, CONCEPTS_CAP);
+    const shown = outcomes.length > 0 ? outcomes : concepts.length > 0 ? concepts : lessonTitles.slice(0, 6);
+    if (shown.length === 0) return;
+    // With outcomes on the first slide the terms get their own; without them the
+    // first slide IS the terms (or, last resort, the lesson titles).
+    const termsOwnSlide = outcomes.length > 0 && concepts.length >= 2;
+    const terms = bullets(fitAll(unit.terms), 3);
+    // The unit's own book pictures, when the screen can load them. The first
+    // sits beside the key ideas (an ordinary slide, whose renderers all draw a
+    // side picture); the cards layout fills the slide and has no column for one.
+    const figures = opts.figureUri ? unitFigures(unit, opts.figureUri) : [];
+    const [first, second] = figures;
+    // A unit whose list says exactly what an earlier unit's said — Grade 1
+    // Arabic units are all «أستمع… أتحدث… أقرأ… أكتب» — adds nothing but a
+    // copy; its divider and its own book page still mark the round.
+    const repeat = shownBefore.has(shown.join('\n'));
+    shownBefore.add(shown.join('\n'));
+    if (!repeat) push(withShape({
+      type: 'intro',
+      // No leading emoji: with one, the heading draws the bulb and the unit's
+      // own icon never shows. Not the unit's name either: the divider just
+      // above says it, and the outline listed every unit twice running.
+      title: outcomes.length > 0
+        ? L('نتاجات الوحدة', 'Unit outcomes')
+        : concepts.length > 0 ? L('المفاهيم والمصطلحات', 'Key concepts and terms') : L('دروس الوحدة', 'Unit lessons'),
+      icon: unitIcon ?? 'bulb',
+      content: shown.map(s => `• ${s}`).join('\n'),
+      durationSeconds: 0,
+      ...(first ? { sideImageUrl: first.uri, sideImageCaption: bookFigureCaption(first.figure, isAr) } : {}),
+      teacher: {
+        expectedAnswer: lessonTitles.length > 0
+          ? L(`دروس الوحدة في هذه المراجعة: ${lessonTitles.join('، ')}`,
+            `This unit's lessons in the revision: ${lessonTitles.join(', ')}`)
+          : unitTitle,
+        ...(terms.length > 0
+          ? { teachingTips: L(`مصطلحات تستحق السؤال عنها: ${terms.join('، ')}`, `Terms worth asking about: ${terms.join(', ')}`) }
+          : {}),
+      },
+    }, first || outcomes.length > 0 ? {} : { layout: 'concepts', concepts: shown }));
+    if (termsOwnSlide && !repeat) {
+      // The unit's second figure sits beside its terms, as the first does beside
+      // its outcomes — the cards layout fills the slide, so a figure costs it the
+      // cards and the terms stay a list.
+      push(withShape({
+        type: 'intro',
+        title: L('المفاهيم والمصطلحات', 'Key concepts and terms'),
+        icon: unitIcon ?? 'bulb',
+        content: concepts.map(c => `• ${c}`).join('\n'),
+        durationSeconds: 0,
+        ...(second ? { sideImageUrl: second.uri, sideImageCaption: bookFigureCaption(second.figure, isAr) } : {}),
+      }, second ? {} : { layout: 'concepts', concepts }));
+    }
+    // A unit whose book prints no figure shows the opening page of its first
+    // lesson that has pages — the book's own picture of what the round covers.
+    if (opts.bookPages && figures.length === 0) {
+      const opener = unit.lessons.map(l => bookPageSlides(l.id, isAr, 1)[0]).find(Boolean);
+      if (opener) push(opener);
+    }
+  });
+
+  // ── 6. Checks — after the rounds: a generated check is about the scope, not one round ──
+  if (midChecks.length + exitChecks.length > 0) generated.push({ ar: 'الأسئلة', en: 'questions' });
+  midChecks.forEach((check, i) => {
+    push(asCheckSlide(check, L(`✋ تحقّق سريع ${i + 1}`, `Quick Check ${i + 1}`)));
+  });
+
+  // ── 7. Practice — teacher-led, as on the lesson deck (§8 there) ─────────
+  if (includePractice) {
+    const guided = nonEmpty(plan?.guidedPractice);
+    const independent = nonEmpty(plan?.independentPractice);
+    if (guided || independent) generated.push({ ar: 'التدريب', en: 'practice' });
+    if (guided) {
+      push({
+        type: 'intro',
+        title: L('🤝 تدريب موجّه', '🤝 Guided Practice'),
+        content: L('لنحلّ هذا معًا خطوة بخطوة.', "Let's work through this together, step by step."),
+        durationSeconds: 0,
+        teacherLed: true,
+        teacher: {
+          expectedAnswer: L('لا توجد إجابة واحدة ثابتة — راقب تنفيذ الطلبة ووجّههم أثناء العمل.',
+            'There is no single fixed answer — monitor the class and guide them as they work.'),
+          teachingTips: guided,
+        },
+      });
+    }
+    if (independent) {
+      push({
+        type: 'intro',
+        title: L('✍️ تدريب مستقل', '✍️ Independent Practice'),
+        content: L('حان دوركم — حاولوا بمفردكم.', "Now it's your turn — try it on your own."),
+        durationSeconds: 0,
+        teacherLed: true,
+        teacher: {
+          expectedAnswer: L('تختلف الإجابات باختلاف المسألة المطروحة — راجعها بعد وقت العمل الفردي.',
+            'Answers vary with the problem given — review them after independent work time.'),
+          teachingTips: independent,
+        },
+      });
+    }
+  }
+
+  // ── 8. Summary — the units, which is what the session covered ───────────
+  const closure = nonEmpty(plan?.closure);
+  push({
+    type: 'summary',
+    title: L('🎉 ملخص المراجعة', '🎉 Revision Summary'),
+    content: unitList ? L(`راجعنا اليوم:\n${unitList}`, `Today we revised:\n${unitList}`) : title,
+    durationSeconds: 0,
+    teacher: closure ? {
+      expectedAnswer: L('لا حاجة لإجابة محددة هنا — المهم أن يذكر الصف ما راجعه.',
+        'No specific answer needed — what matters is that the class can say what it revised.'),
+      teachingTips: closure,
+    } : undefined,
+  });
+
+  // ── 9. Exit ticket ──────────────────────────────────────────────────────
+  if (exitChecks.length > 0) {
+    push({ type: 'divider', title: L('غلق الحصة', 'Exit Ticket'), content: title, icon: 'ticket', durationSeconds: 0 });
+    exitChecks.forEach((check, i) => {
+      push(asCheckSlide(check, L(`🎫 غلق الحصة ${i + 1}`, `Exit Ticket ${i + 1}`)));
+    });
+  }
+
+  // ── 10. Homework — the plan's only: no single lesson, so no exercise-book line ──
+  const homework = includePractice ? nonEmpty(plan?.homework) : '';
+  if (homework) {
+    generated.push({ ar: 'الواجب', en: 'homework' });
+    push({ type: 'intro', title: L('🏠 الواجب', '🏠 Homework'), content: homework, durationSeconds: 0 });
+  }
+
+  return {
+    activityName: title,
+    activityType: 'lesson-slides',
+    grade,
+    subject,
+    lesson: title,
+    duration: plan?.duration ?? 45,
+    difficulty: 'standard',
+    groupType: 'whole-class',
+    learningObjective: objectives[0] ?? title,
+    materials: bullets(plan?.materials).length > 0 ? bullets(plan?.materials) : [L('شاشة عرض', 'Projector')],
+    // «الوحدات» on a one-unit deck would be a sentence about units that are not there.
+    // The generated parts named are the ones that are on the slides: a deck whose
+    // plan failed has no warm-up or practice to promise.
+    teacherPreparation: L(
+      `أفكار ${units.length === 1 ? 'الوحدة' : 'الوحدات'} في هذه الشرائح مأخوذة من بيانات المنهاج${generated.length > 0 ? `، وما سواها (${generated.map(g => g.ar).join(' و')}) مولّد` : ''} — راجعها قبل الحصة وعدّل ما يلزم.`,
+      `The unit ideas on these slides come from the curriculum data${generated.length > 0 ? `; everything else (${joinEn(generated.map(g => g.en))}) is generated` : ''} — review and adjust before class.`,
+    ),
+    teacherNotes: bullets(plan?.differentiation ? [plan.differentiation] : []),
+    answerKey: rebuildAnswerKey(slides, isAr),
+    printables: [],
+    assessment: nonEmpty(plan?.assessment),
+    extensionChallenge: '',
+    slides,
+  };
 }

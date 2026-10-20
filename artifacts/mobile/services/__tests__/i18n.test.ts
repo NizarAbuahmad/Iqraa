@@ -90,3 +90,49 @@ test('countSeconds picks the language', () => {
   assert.equal(countSeconds(2, 'ar'), 'ثانيتان');
   assert.equal(countSeconds(2, 'en'), '2s');
 });
+
+const NAME_KEYS = ['hwParentNoAccount', 'hwParentNoAccountSome'] as const;
+
+test('hw* strings that interpolate a child name isolate it so an Arabic name inside an English sentence keeps its place', () => {
+  // First-strong isolate … pop: without it the bidi algorithm scatters «آدم»
+  // through the English sentence.
+  for (const lang of ['ar', 'en'] as const) {
+    for (const key of NAME_KEYS) {
+      const out = (translations[lang][key] as (n: string) => string)('آدم');
+      assert.ok(out.includes('\u2068آدم\u2069'), `${lang} ${key}: ${out}`);
+    }
+  }
+});
+
+test('English hw* strings that interpolate a name start with LRM so a <Text dir="auto"> resolves the paragraph LTR', () => {
+  // The first strong character decides the paragraph direction under dir="auto".
+  // Isolates hide the name from the sentence's own runs but not from that rule:
+  // an Arabic name first made Chromium lay the whole English sentence out RTL
+  // (name at the end of line 1, the full stop at the start of line 2).
+  for (const key of NAME_KEYS) {
+    const out = (translations.en[key] as (n: string) => string)('آدم');
+    assert.ok(out.startsWith('\u200E'), `en ${key} must start with LRM: ${JSON.stringify(out)}`);
+  }
+});
+
+test('hwParentNoAccountSome says some of the homework, not all', () => {
+  assert.match(translations.ar.hwParentNoAccountSome('سارة'), /لبعض واجبات/);
+  assert.match(translations.en.hwParentNoAccountSome('Sara'), /for some of/);
+});
+
+test('the exam-code notice on the claim screens is defined in both languages', () => {
+  for (const lang of ['ar', 'en'] as const) {
+    assert.ok(translations[lang].claimExamCodeNotice.length > 0, lang);
+    assert.ok(translations[lang].claimExamCodeOpen.length > 0, lang);
+  }
+});
+
+test('hwErrDueRange is defined in both languages and names the window', () => {
+  assert.equal(translations.ar.hwErrDueRange, 'التاريخ يجب أن يكون اليوم أو بعده، وخلال سنة قادمة.');
+  assert.equal(translations.en.hwErrDueRange, 'The date must be today or later, and within the next year.');
+});
+
+test('examDatePast is defined in both languages', () => {
+  assert.ok(translations.ar.examDatePast.length > 0);
+  assert.ok(translations.en.examDatePast.length > 0);
+});

@@ -15,7 +15,7 @@
  * and for a while only the list honoured it — see that helper for the bug.
  */
 import { Router } from "express";
-import { db } from "@workspace/db";
+import { db, systemDb } from "@workspace/db";
 import {
   attemptResults,
   attempts,
@@ -31,6 +31,8 @@ import {
   rosterLinks,
   students,
   chatMessageReads,
+  refreshTokens,
+  users,
   type ParentContactChannel,
 } from "@workspace/db";
 import { and, asc, count, desc, eq, inArray, isNotNull, isNull, ne } from "drizzle-orm";
@@ -48,6 +50,7 @@ import {
 import { logger } from "../lib/logger";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { generateShareCode } from "../modules/assessment/studentView.ts";
+import { generateLoginCode, hashLoginCode } from "../lib/loginCode.ts";
 import { isCodeLive } from "../lib/claimDecision.ts";
 import { letterReadState } from "../lib/parentContactRead.ts";
 import { requireRosterConsent } from "../lib/rosterConsent.js";
@@ -62,6 +65,7 @@ import { findLiveClass } from "../lib/classOwnership.js";
 import { examVisibleTo } from "../modules/assessment/audience.ts";
 import { assignedStudentsByEvaluation } from "../lib/evaluationAudience.ts";
 import { publicUrl } from "../lib/r2.js";
+import { libraryItemSnapshot } from "../lib/librarySnapshot.ts";
 import {
   isUuid,
   parseClassResourceInput,
@@ -949,31 +953,10 @@ router.post("/classes/:id/resources", async (req: AuthenticatedRequest, res) => 
       return;
     }
 
-    let snapshot: { title: string; mediaKind: string; url: string | null; thumbnailUrl: string | null };
-    if (input.source === "uploaded") {
-      // Never trust the app for a staff upload: copy it from the Library's own row.
-      const [item] = await db
-        .select()
-        .from(libraryResources)
-        .where(eq(libraryResources.id, input.nativeId))
-        .limit(1);
-      if (!item) {
-        res.status(404).json({ error: "Library item not found" });
-        return;
-      }
-      snapshot = {
-        title: item.titleAr,
-        mediaKind: item.category,
-        url: item.r2Key ? publicUrl(item.r2Key) : item.sourceUrl,
-        thumbnailUrl: item.thumbnailUrl,
-      };
-    } else {
-      snapshot = {
-        title: input.title,
-        mediaKind: input.mediaKind,
-        url: input.url,
-        thumbnailUrl: input.thumbnailUrl,
-      };
+    const snapshot = await libraryItemSnapshot(input);
+    if (!snapshot) {
+      res.status(404).json({ error: "Library item not found" });
+      return;
     }
 
     const [row] = await db
@@ -1461,6 +1444,83 @@ router.delete("/students/:id/links/:userId", async (req: AuthenticatedRequest, r
     res.json({ removedUserId: linkedUserId });
   } catch (err) {
     failRoster(res, err, "unlink account", "Failed to unlink account");
+  }
+});
+
+/**
+ * POST /students/:id/links/:userId/login-code — the way back in for a parent or
+ * student who signed up from a code and lost the personal login code that came
+ * with it (a new phone, a reinstall). There is no email to send a reset to, so
+ * the teacher who vouched for the link is the recovery path.
+ *
+ * Mints a new code, invalidates the old one, and ends every open session of that
+ * account — the old code may be in someone else's hands, which is often why it is
+ * being replaced. The new code is returned once, to be handed over in person;
+ * only its hash is kept.
+ *
+ * Refused for an account that has a password or Google sign-in: that person has
+ * an email and a reset of their own, and a teacher minting credentials for an
+ * account that already has working ones would be a way into it, not a rescue.
+ */
+router.post("/students/:id/links/:userId/login-code", async (req: AuthenticatedRequest, res) => {
+  try {
+    const studentId = req.params["id"] as string;
+    const linkedUserId = req.params["userId"] as string;
+
+    // Ownership first, and "not found" either way — same as the unlink above.
+    const [student] = await db
+      .select({ id: students.id })
+      .from(students)
+      .where(and(eq(students.id, studentId), eq(students.teacherId, req.user!.id)))
+      .limit(1);
+    if (!student) {
+      res.status(404).json({ error: "Student not found" });
+      return;
+    }
+
+    const [link] = await db
+      .select({ id: rosterLinks.id })
+      .from(rosterLinks)
+      .where(and(eq(rosterLinks.studentId, studentId), eq(rosterLinks.userId, linkedUserId)))
+      .limit(1);
+    if (!link) {
+      res.status(404).json({ error: "That account is not linked to this student" });
+      return;
+    }
+
+    const loginCode = generateLoginCode();
+    // systemDb: it deletes the account's refresh tokens, which the app role cannot touch.
+    const reissued = await systemDb.transaction(async tx => {
+      // Locked, so a sign-in racing this either finishes before the old code
+      // dies or waits and finds the old code gone — never mints a session after.
+      const [target] = await tx
+        .select({
+          loginCodeHash: users.loginCodeHash,
+          passwordHash: users.passwordHash,
+          googleId: users.googleId,
+        })
+        .from(users)
+        .where(eq(users.id, linkedUserId))
+        .for("update");
+      if (!target || !target.loginCodeHash || target.passwordHash || target.googleId) return false;
+
+      await tx.update(users).set({ loginCodeHash: hashLoginCode(loginCode)! }).where(eq(users.id, linkedUserId));
+      await tx.delete(refreshTokens).where(eq(refreshTokens.userId, linkedUserId));
+      return true;
+    });
+    if (!reissued) {
+      res.status(409).json({
+        error: "This account signs in with an email and password, so it can reset its own",
+        code: "not_a_code_account",
+      });
+      return;
+    }
+
+    // Names both people and never the code.
+    logger.info({ teacherId: req.user!.id, studentId, userId: linkedUserId }, "teacher reissued a login code");
+    res.json({ loginCode });
+  } catch (err) {
+    failRoster(res, err, "reissue login code", "Failed to issue a new code");
   }
 });
 

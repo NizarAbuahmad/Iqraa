@@ -47,12 +47,28 @@ function isTokenChar(c: string): boolean {
   return new RegExp(`[${DIGIT}${VAR}]`, 'u').test(c);
 }
 
-/** Read a maximal digit/letter run ending at position `end` (exclusive). */
+function isDigitChar(c: string | undefined): boolean {
+  return c !== undefined && new RegExp(`[${DIGIT}]`, 'u').test(c);
+}
+
+/**
+ * A decimal separator inside a number: a point or comma with a digit on BOTH sides. «13.6» is one
+ * number; the point in «x = 5. 6/n» ends a sentence and the one in «a.6» follows a letter, so
+ * neither joins. Without this a numerator «13.6» was read as «6».
+ */
+function isDecimalSeparatorAt(s: string, i: number): boolean {
+  return (s[i] === '.' || s[i] === ',') && isDigitChar(s[i - 1]) && isDigitChar(s[i + 1]);
+}
+
+/** Read a maximal digit/letter run (a decimal counts as one run) ending at position `end` (exclusive). */
 function tokenEndingAt(s: string, end: number): string {
   let start = end;
-  while (start > 0 && isTokenChar(s[start - 1])) start--;
+  while (start > 0 && (isTokenChar(s[start - 1]) || isDecimalSeparatorAt(s, start - 1))) start--;
   return s.slice(start, end);
 }
+
+/** Unicode superscript digits and signs — the form the question banks write a power in («n²»). */
+const SUPERSCRIPT = /[⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻]/u;
 
 /**
  * The exponent's base in `12x^3` is `x`, not `12x` — a trailing variable
@@ -157,9 +173,12 @@ export function parseMathLine(line: string): MathNode[] {
       const num = tokenEndingAt(buf, buf.length);
       if (num && SIMPLE_TOKEN.test(num)) {
         let k = i + 1;
-        while (k < s.length && isTokenChar(s[k])) k++;
+        while (k < s.length && (isTokenChar(s[k]) || isDecimalSeparatorAt(s, k))) k++;
+        const core = s.slice(i + 1, k);
+        // A power written as Unicode («n²») belongs to the denominator, but only on a real base.
+        while (core && k < s.length && SUPERSCRIPT.test(s[k]!)) k++;
         const den = s.slice(i + 1, k);
-        if (den && SIMPLE_TOKEN.test(den)) {
+        if (core && SIMPLE_TOKEN.test(core)) {
           const before = buf.slice(0, buf.length - num.length);
           pushText(nodes, before); buf = '';
           nodes.push({
@@ -420,7 +439,16 @@ export function hasRenderableMath(line: string): boolean {
 // as U+2212, not the ASCII hyphen. With only `-` here «y = 2x−5» was cut at the
 // sign, and bidi then reordered the pieces — the worked example
 // «x²−7x+12=0» reached the projector as «7x+12=0−x²».
-const FOREIGN_CHAR = "A-Za-z0-9(){}=+\\-\\u2212./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞";
+//
+// Greek letters and `°` are in the class too: a trigonometry question
+// «cos²θ + sin²θ» was cut at every θ, and the take and review screens showed it
+// as «θ + sin²θcos²» (found 2026-10-09). A run may not END on `.`, though — the
+// sentence's own full stop belongs to the Arabic flow; inside the isolate it sat
+// between the equation and the Arabic before it. An interior `.` («3.5»,
+// «CO₂. (C») is unaffected.
+const FOREIGN_GREEK = 'α-ωΑ-Ωϑϕϵ';
+const FOREIGN_CHAR = `A-Za-z0-9(){}=+\\-\\u2212./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞°${FOREIGN_GREEK}`;
+const FOREIGN_END = FOREIGN_CHAR.replace('.', '');
 
 // Reaction and implication arrows. They may sit INSIDE a run but never at its
 // edge. Left out of the run, «N₂ + H₂ → NH₃» became two isolates with the arrow
@@ -433,7 +461,7 @@ const FOREIGN_CHAR = "A-Za-z0-9(){}=+\\-\\u2212./^√×÷∘′'¹²³⁰⁴-⁹
 const FOREIGN_ARROW = '→←↔⇒⇐⇔⇌⇄⟶⟵⟷';
 
 const FOREIGN_RUN_RE = new RegExp(
-  `[${FOREIGN_CHAR}](?:[${FOREIGN_CHAR}${FOREIGN_ARROW} ]*[${FOREIGN_CHAR}])?`,
+  `[${FOREIGN_CHAR}](?:[${FOREIGN_CHAR}${FOREIGN_ARROW} ]*[${FOREIGN_END}])?`,
   'g',
 );
 
@@ -448,7 +476,7 @@ const FOREIGN_RUN_RE = new RegExp(
  * standalone punctuation mark is laid out correctly by the bidi algorithm on
  * its own; only a mixed run of them needs help.
  */
-const HAS_LATIN = /[A-Za-z]/;
+const HAS_LATIN = /[A-Za-zα-ωΑ-Ωϑϕϵ]/;
 const HAS_DIGIT = /[0-9₀-₉¹²³⁰⁴-⁹]/;
 const HAS_OPERATOR = /[=+\-−/^√×÷∘<>≤≥≠≈±∞]/;
 
@@ -458,7 +486,20 @@ function worthIsolating(run: string): boolean {
 }
 
 export function isolateForeignRuns(line: string): string {
-  return (line ?? '').replace(FOREIGN_RUN_RE, m => (worthIsolating(m) ? isolateRun(m) : m));
+  return (line ?? '').replace(FOREIGN_RUN_RE, m => {
+    // A sentence's closing full stop is not part of an equation before it:
+    // inside the isolate it printed on the wrong side, «3x − 3.» read
+    // «.3x − 3». So when the run ENDS in dots and holds an operator, those
+    // dots go back to the flow («x = 3.» → isolate «x = 3», then «.»).
+    // Only that case. A run with no operator keeps its dot inside — a label
+    // such as «A.» (wanted), but also a sentence ending in a latin-only run,
+    // «x.» or «CO₂.», whose dot can still print on the wrong side. And a dot
+    // followed by more latin on the same run («x = 3. y = 4») is mid-run, so
+    // it stays inside too.
+    const [, body, dots] = /^(.*?)(\s*\.*)$/su.exec(m)!;
+    if (dots && HAS_OPERATOR.test(body!)) return worthIsolating(body!) ? isolateRun(body!) + dots : m;
+    return worthIsolating(m) ? isolateRun(m) : m;
+  });
 }
 
 /**

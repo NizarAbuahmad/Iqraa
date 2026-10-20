@@ -12,6 +12,7 @@ import {
   getLessonById as getKbLessonById,
   getUnitForLesson,
   isConfidentKbHit,
+  KB_CONFIDENT_SCORE,
   KB_SUGGEST_SCORE,
   resolveGroundedKbLesson,
   searchKBRanked,
@@ -65,6 +66,19 @@ export type GeneratorGrounding = {
   ungroundedNote: string;
 };
 
+/**
+ * The official outcomes for a lesson: NCCD semester-2 data, else semester-1,
+ * else the KB's own list. One place, so the single-lesson serializer and the
+ * wide-scope digest can never disagree about which outcomes a lesson has.
+ */
+export function curriculumObjectivesFor(lesson: KBLesson): string[] {
+  const s2 = findNccdLessonByKbId(lesson.id);
+  if (s2?.objectives?.length) return s2.objectives;
+  const s1 = findNccdSem1LessonByKbId(lesson.id);
+  if (s1?.objectives?.length) return s1.objectives;
+  return lesson.objectives?.length ? lesson.objectives : [];
+}
+
 function serializeLessonContext(
   lesson: KBLesson,
   lang: 'ar' | 'en',
@@ -89,11 +103,7 @@ function serializeLessonContext(
   const titleOnlyUnit =
     !!nccdS1Unit && isNccdSem1TitleOnlyTier(nccdS1Unit.data_tier);
 
-  const curriculumObjectives = nccdS2?.objectives?.length
-    ? nccdS2.objectives
-    : nccdS1?.objectives?.length
-      ? nccdS1.objectives
-      : (lesson.objectives?.length ? lesson.objectives : []);
+  const curriculumObjectives = curriculumObjectivesFor(lesson);
   const vocabulary = nccdS2?.vocabulary?.length
     ? nccdS2.vocabulary
     : nccdS1?.vocabulary?.length
@@ -170,7 +180,7 @@ function serializeLessonContext(
  *
  * An adaptation is an instruction about HOW to write every section, not a
  * thing the students should be able to do by the end. It needs its own field
- * and its own framing, pointed at the التمايز/differentiation slot the output
+ * and its own framing, pointed at the فروق فردية/differentiation slot the output
  * schema already has.
  *
  * Returns '' for empty input so callers can `.filter(Boolean)` it away.
@@ -180,7 +190,7 @@ export function buildAdaptationsDirective(text: string, lang: 'ar' | 'en'): stri
   if (!body) return '';
   return lang === 'ar'
     ? `تعليمات المعلّم — طبّقها في كل أقسام الخطة (التمهيد، النشاط، التدريب، الختام، التقييم)، `
-      + `وفصّلها صراحةً في حقل "التمايز". هذه تعليمات تنفيذ وليست نتاجات تعلّم، `
+      + `وفصّلها صراحةً في حقل "فروق فردية". هذه تعليمات تنفيذ وليست نتاجات تعلّم، `
       + `فلا تُدرجها ضمن الأهداف:\n${body}`
     : `Teacher instructions — apply these across every section of the plan `
       + `(introduction, activity, practice, closure, assessment) and spell them out `
@@ -333,6 +343,30 @@ export function figureCountForLesson(lessonId: string | undefined): number {
 }
 
 /**
+ * A single-lesson request's curriculum fields, read off the grounding the
+ * screen already resolved. Never ground the title a second time for these: a
+ * screen that grounded on the picked lesson's id would otherwise send that
+ * lesson's context beside another lesson's id (every Grade 1 English lesson is
+ * "Vocabulary & Grammar" or "Listening & Speaking"). For a lesson the title
+ * alone finds, the fields equal what `buildGeneratorContext`, `generatorUnitId`,
+ * `generatorLessonId` and `generatorFigureCount` gave — the shared pool keys
+ * on them, so that must hold.
+ */
+export function groundingRequestFields(grounding: GeneratorGrounding): {
+  additionalContext: string;
+  unitId: string | undefined;
+  lessonId: string | undefined;
+  bookFigureCount: number;
+} {
+  return {
+    additionalContext: grounding.grounded ? grounding.context : grounding.ungroundedNote,
+    unitId: nccdUnitId(grounding.lesson?.unitId),
+    lessonId: grounding.lesson?.id,
+    bookFigureCount: figureCountForLesson(grounding.lesson?.id),
+  };
+}
+
+/**
  * A unit id the knowledge bank can index by, or `undefined`.
  *
  * The KB carries two unit-id namespaces: NCCD-derived lessons use
@@ -401,6 +435,54 @@ export function isConfidentSingleSubjectHit(ranked: KBScoredLesson[]): boolean {
     r.score >= KB_SUGGEST_SCORE
     && getBookForLesson(r.lesson)?.subjectId !== topSubject,
   );
+}
+
+/** Another subject within this share of the top score makes the hit a shared word. */
+const RIVAL_SUBJECT_SHARE = 0.5;
+
+/**
+ * The lessons the live chat may hand the model as «مرجع الكتاب المدرسي».
+ *
+ * The server tells the model to answer primarily from that block, and the
+ * keyword search fills `results` for almost any sentence: «كيف أتعامل مع طالب
+ * مشاغب في الصف؟» ranked English for hospitality, the quadratic formula and
+ * gravity, and the answer followed them. So a search hit is sent only when it
+ * is believable:
+ *
+ *  - `anchorIds` — lessons the teacher chose (tapped, on the card, reused by
+ *    the session's pin rules). Sent alone: a chosen lesson plus noise is noise.
+ *  - `scopedConfident` — `results` came from a subject/grade-scoped search that
+ *    already cleared `KB_CONFIDENT_SCORE`.
+ *  - otherwise the top hit clears `KB_CONFIDENT_SCORE` and no other subject
+ *    scores within half of it. Same-subject rivals never count — close maths
+ *    hits for «اشرح الاقترانات» are all the topic — and a distant one in another
+ *    subject is a shared word: «قانون جيب التمام» 69 vs Newton's laws 28. Two
+ *    subjects near each other are not a topic: «الأحماض والقواعد» was English
+ *    grammar 24 vs chemistry 14.5.
+ *
+ * Anything else sends no lesson, and the model answers the question as asked.
+ * For the live path only; the offline teaching assistant still reads every
+ * result, because it has no model to fall back on.
+ */
+export function liveChatGrounding(args: {
+  ranked: KBScoredLesson[];
+  results: KBLesson[];
+  anchorIds: string[];
+  scopedConfident: boolean;
+}): KBLesson[] {
+  const { ranked, results, anchorIds, scopedConfident } = args;
+  const anchored = results.filter(l => anchorIds.includes(l.id));
+  if (anchored.length) return anchored;
+  if (scopedConfident) return results;
+  const top = ranked[0];
+  if (!top || top.score < KB_CONFIDENT_SCORE) return [];
+  const topSubject = getBookForLesson(top.lesson)?.subjectId;
+  const mixed = ranked.slice(1).some(r =>
+    r.score >= Math.max(KB_SUGGEST_SCORE, top.score * RIVAL_SUBJECT_SHARE)
+    && getBookForLesson(r.lesson)?.subjectId !== topSubject,
+  );
+  if (mixed) return [];
+  return results.filter(l => getBookForLesson(l)?.subjectId === topSubject);
 }
 
 /**

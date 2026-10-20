@@ -9,8 +9,9 @@
  */
 import { labelAnswer, labelOptionLine } from './optionLabels.ts';
 import { arCountPhrase } from './arCount.ts';
-import { quizStudentFields } from './quizPaper.ts';
+import { quizBlockPoints, quizBlocks, quizStudentFields } from './quizPaper.ts';
 import { worksheetInstructions } from './worksheetPaper.ts';
+import { keyWorkingNote, workingProvenance } from './worksheetWorking.ts';
 import type {
   ActivityOutput,
   LessonPlanOutput,
@@ -63,7 +64,7 @@ export function formatLessonPlanText(
   lines.push(H(isAr ? 'التقييم' : 'Assessment'));
   lines.push(plan.assessment);
 
-  lines.push(H(isAr ? 'التمايز' : 'Differentiation'));
+  lines.push(H(isAr ? 'فروق فردية' : 'Differentiation'));
   lines.push(plan.differentiation);
 
   lines.push(H(isAr ? 'الواجب البيتي' : 'Homework'));
@@ -128,6 +129,9 @@ export function formatWorksheetText(
   if (includeAnswers && ws.answerKey && ws.answerKey.length > 0) {
     lines.push(`\n${SEP}`);
     lines.push(isAr ? 'مفتاح الإجابات' : 'ANSWER KEY');
+    // Working a model wrote is not working a person checked; the key is the
+    // teacher's section, so the warning stands here and nowhere else.
+    if (workingProvenance(ws).unreviewedKeyLines > 0) lines.push(`⚠ ${keyWorkingNote(isAr)}`);
     ws.answerKey.forEach(item => {
       lines.push(`${item.num}. ${item.answer}`);
       item.solution?.forEach((step, i) => lines.push(`   ${i + 1}) ${step}`));
@@ -154,14 +158,14 @@ export function formatQuizText(
   lines.push(`${isAr ? 'المدة' : 'Duration'}: ${isAr ? arCountPhrase(quiz.duration, 'دقيقة', 'دقيقتان', 'دقائق') : `${quiz.duration} min`} | ${isAr ? 'المجموع' : 'Total'}: ${isAr ? arCountPhrase(quiz.totalPoints, 'نقطة', 'نقطتان', 'نقاط') : `${quiz.totalPoints} pts`}`);
   lines.push(SEP);
 
-  quiz.questions.forEach((q, i) => {
-    const typeLabel = q.type === 'multiple_choice'
-      ? (isAr ? 'اختيار متعدد' : 'MCQ')
-      : q.type === 'true_false'
-        ? (isAr ? 'صح/خطأ' : 'T/F')
-        : (isAr ? 'قصير' : 'Short');
-    lines.push(`\n${i + 1}. [${typeLabel}] ${q.text} (${isAr ? arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط') : `${q.points} pts`})`);
-    q.options?.forEach((opt, oi) => lines.push(`   ${labelOptionLine(opt, oi, isAr)}`));
+  quizBlocks(quiz.questions, isAr).forEach(block => {
+    const pts = quizBlockPoints(block);
+    lines.push(`
+${block.heading} (${isAr ? arCountPhrase(pts, 'علامة', 'علامتان', 'علامات') : `${pts} marks`})`);
+    block.questions.forEach((q, bi) => {
+      lines.push(`${block.start + bi + 1}. ${q.text} (${isAr ? arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط') : `${q.points} pts`})`);
+      q.options?.forEach((opt, oi) => lines.push(`   ${labelOptionLine(opt, oi, isAr)}`));
+    });
   });
 
   if (includeAnswers) {
@@ -272,7 +276,7 @@ export function formatActivityText(
   lines.push(H(isAr ? 'نصائح للمعلم' : 'Teacher Tips'));
   activity.teacherTips.forEach(tip => lines.push(`• ${tip}`));
 
-  lines.push(H(isAr ? 'التمايز' : 'Differentiation'));
+  lines.push(H(isAr ? 'فروق فردية' : 'Differentiation'));
   lines.push(activity.differentiation);
 
   lines.push(H(isAr ? 'التقييم' : 'Assessment'));

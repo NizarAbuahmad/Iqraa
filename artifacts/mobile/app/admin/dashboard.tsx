@@ -51,7 +51,7 @@ type UsageSummary = {
   };
   classes: { classes: number; students: number; students30d: number };
   parentLetters: { channel: string; total: number; last30d: number }[];
-  siteSignups: { waitlist: number; contact: number };
+  siteSignups: { waitlist: number; contact: number; idea?: number };
   limits: {
     userBudgetUsd: number;
     studentBudgetUsd: number;
@@ -217,9 +217,10 @@ export default function AdminDashboardScreen() {
                 ['/admin/moderation', 'flag-outline', 'بلاغات الرسائل', 'Message reports'],
                 ['/admin/artifact-reports', 'document-text-outline', 'بلاغات المحتوى', 'Content reports'],
                 ['/admin/users', 'people-outline', 'المستخدمون والحظر', 'Users & blocking'],
+                ['/admin/schools', 'business-outline', 'المدارس', 'Schools'],
                 ['/admin/signups', 'mail-outline', 'البريد المجمّع', 'Collected emails'],
                 ['/admin/ai-costs', 'cash-outline', 'تكاليف الذكاء الاصطناعي', 'AI costs'],
-              ] as const).map(([href, icon, ar, en]) => (
+              ] as const).filter(([href]) => href !== '/admin/schools' || user?.role === 'system_admin').map(([href, icon, ar, en]) => (
                 <Pressable
                   key={href}
                   onPress={() => router.push(href as any)}
@@ -256,6 +257,7 @@ export default function AdminDashboardScreen() {
                   <StatCard label={lang === 'ar' ? 'نشطون ٣٠ يومًا' : 'Active 30d'} value={summary.activeUsers30d} colors={colors} />
                   <StatCard label={lang === 'ar' ? 'قائمة الانتظار' : 'Waitlist emails'} value={summary.siteSignups.waitlist} colors={colors} />
                   <StatCard label={lang === 'ar' ? 'رسائل التواصل' : 'Contact messages'} value={summary.siteSignups.contact} colors={colors} />
+                  <StatCard label={lang === 'ar' ? 'اقتراحات الزوار' : 'Visitor ideas'} value={summary.siteSignups.idea ?? 0} colors={colors} />
                   <StatCard label={lang === 'ar' ? 'محظورون' : 'Blocked'} value={summary.suspendedCount} colors={colors} />
                 </View>
                 <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, marginTop: 10 }]}>

@@ -177,7 +177,7 @@ const SCREEN_SETUP: Record<string, { ar: string[]; en: string[]; prepAr: string;
   'exit-ticket': {
     ar: ['شاشة عرض أو جهاز عرض (بروجكتر)', 'ورقة صغيرة لكل طالب (لا تحتاج طباعة)', 'قلم'],
     en: ['Projector or screen', 'A small slip of paper per student (nothing to print)', 'Pen'],
-    prepAr: 'اعرض أسئلة بطاقة الخروج من الشريحة. يكتب كل طالب إجابته على ورقة صغيرة ويسلّمها عند الباب.',
+    prepAr: 'اعرض أسئلة غلق الدرس من الشريحة. يكتب كل طالب إجابته على ورقة صغيرة ويسلّمها عند الباب.',
     prepEn: 'Show the exit-ticket questions on the slide. Each student writes their answers on a slip and hands it in at the door.',
   },
 };

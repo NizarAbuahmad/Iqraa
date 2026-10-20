@@ -29,11 +29,14 @@ import {
   videoCaption,
 } from './classMedia.ts';
 import { chartForLesson } from './deckVisuals.ts';
+import { creditFromPhoto, photoCreditText } from './photoCredit.ts';
 
 /** Matches `searchDeckPhoto` in `services/unsplashImage.ts`. */
 export type PhotoSearch = (query: string) => Promise<{
   url: string;
   photographer: string;
+  photographerUrl?: string;
+  unsplashLink?: string;
 } | null>;
 
 /** Matches `searchDeckVideos` in `services/youtubeVideo.ts`. */
@@ -147,9 +150,6 @@ function fallbackPhotoSlides(
     .map((e, i) => ({ ...e, query: queries[i]! }));
 }
 
-function photoCredit(photographer: string, isAr: boolean): string {
-  return isAr ? `📷 ${photographer} · Unsplash` : `📷 Photo by ${photographer} on Unsplash`;
-}
 
 /**
  * Drawn visuals, which cost nothing: no network, no AI, no key.
@@ -247,12 +247,16 @@ export async function searchDeckMedia(
   // Slides carrying a `layout` are excluded: those are drawn by their own
   // branch in each renderer, which fills the slide and never reaches the
   // side-image column — a photo assigned there would be fetched, stored and
-  // silently never shown.
+  // silently never shown. The exception is `photo`, whose whole point is that
+  // picture: it is drawn full-bleed from `sideImageUrl`. Only prose types: a
+  // question, challenge, divider or cover never reaches the side-image column
+  // in the exports, so a photo there used up a slot and printed nowhere.
   const asked = slides
     .map((slide, index) => ({ slide, index }))
-    .filter(({ slide }) => (
-      typeof slide.mediaPrompt === 'string' && slide.mediaPrompt.trim()
-      && !slide.sideImageUrl && !slide.layout
+    .filter(({ slide, index }) => (
+      index > 0 && PHOTOGRAPHABLE.has(slide.type)
+      && typeof slide.mediaPrompt === 'string' && slide.mediaPrompt.trim()
+      && !slide.sideImageUrl && (!slide.layout || slide.layout === 'photo')
     ))
     .slice(0, MAX_SIDE_PHOTOS)
     .map(e => ({ ...e, query: e.slide.mediaPrompt!.trim() }));
@@ -272,23 +276,27 @@ export async function searchDeckMedia(
     opts.wantVideo === false ? Promise.resolve([]) : safeVideos(searchVideos, videoQuery(deck, topic, isAr), lang),
   ]);
 
+  // The photo search returns the top hit, so two slides asking the same thing
+  // — or one asking what the cover asked — got the same picture twice.
+  const used = new Set([hero?.url, slides.some(s => s.type === 'divider') ? section?.url : undefined].filter(Boolean));
   wantPhotos.forEach(({ slide }, i) => {
     const photo = sidePhotos[i];
-    if (!photo) return;
+    if (!photo || used.has(photo.url)) return;
+    used.add(photo.url);
     // Beside the text, not instead of it — and the credit rides along, which
     // is both the Unsplash licence requirement and the thing three renderers
     // have dropped before (see the attribution note in CLAUDE.md's neighbours).
-    add(slide, { sideImageUrl: photo.url, sideImageCaption: photoCredit(photo.photographer, isAr) });
+    add(slide, { sideImageUrl: photo.url, sideImageCaption: photoCreditText(photo, isAr), sideImageCredit: creditFromPhoto(photo) });
   });
 
   // The title slide and the divider render `mediaUrl` as a full-bleed
   // background — the same fields `attachBackgroundImage` sets.
   if (hero && slides[0]) {
-    add(slides[0], { mediaUrl: hero.url, mediaCaption: photoCredit(hero.photographer, isAr) });
+    add(slides[0], { mediaUrl: hero.url, mediaCaption: photoCreditText(hero, isAr), mediaCredit: creditFromPhoto(hero) });
   }
   const divider = slides.find(s => s.type === 'divider');
   if (section && divider) {
-    add(divider, { mediaUrl: section.url, mediaCaption: photoCredit(section.photographer, isAr) });
+    add(divider, { mediaUrl: section.url, mediaCaption: photoCreditText(section, isAr), mediaCredit: creditFromPhoto(section) });
   }
 
   const video = videos[0];

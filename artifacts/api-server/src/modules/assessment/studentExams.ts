@@ -14,6 +14,8 @@
  *   teacher and no question left unmarked — and `sanitizeResultForStudent`
  *   the single projection. Anything else comes back as `null`, so an
  *   unreleased mark never leaves the server.
+ * - **No link to a paper exam** (`paper`), and its own state, `paper`, until it
+ *   is marked.
  * - **A draft never appears** unless the student already holds a sitting on
  *   it — a paper the teacher typed in for them (`teacher_entry`) belongs to
  *   an exam that may never have been published.
@@ -35,6 +37,14 @@ export interface ExamForStudent {
   releaseResultsToStudent: boolean;
   publishedAt: Date | null;
   closedAt: Date | null;
+  /**
+   * The teacher's planned sitting, "YYYY-MM-DD" / "HH:MM", as typed (PR #1017).
+   * Planning data: it never opens or closes the link. Absent reads as `null`.
+   */
+  examDate?: string | null;
+  examTime?: string | null;
+  /** `isPaperExam` over the live questions, computed by the loader. Absent reads as `false`. */
+  paper?: boolean;
 }
 
 export interface SittingForStudent {
@@ -62,9 +72,10 @@ export interface ResultForStudent {
  * `available`: open, not started. `in_progress`: started, not handed in, and
  * the exam is still open. `submitted`: handed in, no result to show yet.
  * `result`: handed in and released. `closed`: the exam is over and there is
- * nothing to show — never started, or started and not handed in.
+ * nothing to show — never started, or started and not handed in. `paper`: sat
+ * on paper in class; nothing to open, no mark yet.
  */
-export type StudentExamState = "available" | "in_progress" | "submitted" | "result" | "closed";
+export type StudentExamState = "available" | "in_progress" | "submitted" | "result" | "closed" | "paper";
 
 export interface StudentExamRow {
   evaluationId: string;
@@ -75,6 +86,9 @@ export interface StudentExamRow {
   totalMarks: number;
   timeLimitMin: number | null;
   publishedAt: string | null;
+  examDate: string | null;
+  examTime: string | null;
+  paper: boolean;
   state: StudentExamState;
   /** Present only while `/take/:code` would admit the student. */
   shareCode: string | null;
@@ -100,6 +114,7 @@ export function studentExamRow(
   // unfinished one would list as «مُغلق» for an exam the student never saw.
   if (exam.status === "draft" && !sitting?.submittedAt) return null;
 
+  const paper = exam.paper === true;
   const open = linkIsOpen(exam, now);
   const handedIn = Boolean(sitting?.submittedAt);
   const released = handedIn && studentResultReady({ released: exam.releaseResultsToStudent, result: result ?? undefined });
@@ -107,11 +122,15 @@ export function studentExamRow(
   let state: StudentExamState;
   if (released) state = "result";
   else if (handedIn) state = "submitted";
+  // Sat in the classroom: nothing to open and nothing to "close" — it waits
+  // for the teacher's marks, whatever the link would say.
+  else if (paper) state = "paper";
   else if (!open) state = "closed";
   else state = sitting ? "in_progress" : "available";
 
   const studentsOwn = !sitting || (sitting.source ?? "student_link") === "student_link";
-  const offerLink = open && studentsOwn && (state === "available" || state === "in_progress" || state === "submitted");
+  // Never a link to a paper exam: publishing issued a code, but the paper has no questions to show.
+  const offerLink = !paper && open && studentsOwn && (state === "available" || state === "in_progress" || state === "submitted");
 
   return {
     evaluationId: exam.id,
@@ -122,6 +141,9 @@ export function studentExamRow(
     totalMarks: Number(exam.totalMarks) || 0,
     timeLimitMin: exam.timeLimitMin,
     publishedAt: exam.publishedAt?.toISOString() ?? null,
+    examDate: exam.examDate ?? null,
+    examTime: exam.examDate ? (exam.examTime ?? null) : null,
+    paper,
     state,
     shareCode: offerLink ? exam.shareCode : null,
     submittedAt: sitting?.submittedAt?.toISOString() ?? null,
@@ -139,6 +161,7 @@ const STATE_ORDER: Record<StudentExamState, number> = {
   submitted: 2,
   result: 2,
   closed: 2,
+  paper: 2,
 };
 
 /** What the student can act on first; within that, newest first. */

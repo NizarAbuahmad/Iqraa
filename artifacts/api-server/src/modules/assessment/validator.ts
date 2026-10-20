@@ -12,6 +12,8 @@
  */
 import type { QuestionType } from "@workspace/db";
 import { normalizeArabic } from "@workspace/curriculum";
+import { stemFrame } from "@workspace/math-practice";
+import { hasSentence, sameAsk } from "@workspace/exam-paper";
 import { QUESTION_TYPES } from "./questionTypes.ts";
 import type { GeneratedQuestion } from "./mockGenerator.ts";
 
@@ -32,6 +34,14 @@ export interface ValidationResult {
  * Cheap and good enough for the job: two questions generated from the same
  * objective differ by a word or two, and that is exactly the duplicate a
  * teacher would otherwise have to spot by reading all fifteen.
+ *
+ * Short words («في», «ما») are noise and are dropped, but a number or a piece
+ * of maths is kept whatever its length. Dropping those too made «حلّ المعادلة
+ * x² + 3x − 18 = 0 بالتحليل» and «… x² − 11x + 28 = 0 …» score 1.0, so a
+ * second, different equation was rejected as a duplicate — up to a third of a
+ * maths paper's bank questions (measured 2026-10-15). The same sentence with
+ * different numbers is a different question; `dominantKind` is what notices
+ * when a paper has too many of them.
  */
 export function stemSimilarity(a: string, b: string): number {
   const tokens = (s: string) =>
@@ -39,7 +49,7 @@ export function stemSimilarity(a: string, b: string): number {
       normalizeArabic(s)
         .toLowerCase()
         .split(/[\s،,.:؛?؟!]+/)
-        .filter(w => w.length > 2),
+        .filter(w => w.length > 2 || /[^\p{L}]/u.test(w)),
     );
   const ta = tokens(a);
   const tb = tokens(b);
@@ -49,9 +59,9 @@ export function stemSimilarity(a: string, b: string): number {
   return shared / (ta.size + tb.size - shared);
 }
 
-const DUPLICATE_THRESHOLD = 0.85;
+export const DUPLICATE_THRESHOLD = 0.85;
 
-function promptOf(q: GeneratedQuestion): string {
+export function promptOf(q: GeneratedQuestion): string {
   const body = q.body;
   return (
     (body["prompt"] as string) ??
@@ -162,5 +172,47 @@ export function validateGenerated(
     }
   }
 
+  // 9. One kind of question carrying the paper. Not a rejection: each question
+  // is a real one, and two «حلّ المعادلة … بالتحليل» with different numbers is
+  // ordinary practice. But when that one ask — in one sentence or reworded —
+  // is a quarter of the paper, the teacher should know before they publish
+  // what reads like a long exam and measures one skill.
+  const dominant = dominantKind(accepted.map(promptOf));
+  if (dominant) {
+    warnings.push(
+      `${dominant.count} of ${accepted.length} questions ask the same thing, with different numbers or ` +
+        `in other words: «${dominant.example}»`,
+    );
+  }
+
   return { accepted, rejected, warnings };
+}
+
+/**
+ * The kind of question most of a paper asks, when it is at least three
+ * questions and more than a quarter of them: the largest set of stems that are
+ * each the same kind as one of them (`sameKind` on `stemFrame`), capped at
+ * three words changed. «أوجد الكتلة المولية لغاز الأكسجين O₂» and «… لكربونات
+ * الصوديوم Na₂CO₃» are one ask with a different compound, and «ما العدد الأكبر
+ * بين…» / «ما العدد الأصغر بين…» one ask turned round; exact frames counted
+ * them apart. The cap is what keeps a paper whose every stem quotes the
+ * objective from counting as one ask (see `sameKind`). Measured 2026-10-17 on
+ * the offline generator's 15-question papers for every lesson: exact frames
+ * warned on 2.9%, uncapped kinds on 10% (nearly all for that reason), capped
+ * kinds on 3.2%.
+ *
+ * Measured from each stem rather than by chaining, so two asks that each sit
+ * near a third are not joined through it. Stems that are only symbols —
+ * «٣ + ٤ = ؟» — have no sentence to share and are not counted.
+ */
+export function dominantKind(prompts: readonly string[]): { count: number; example: string } | null {
+  const framed = prompts
+    .map(prompt => ({ prompt, frame: stemFrame(prompt) }))
+    .filter(({ frame }) => hasSentence(frame));
+  let top: { count: number; example: string } = { count: 0, example: "" };
+  for (const centre of framed) {
+    const count = framed.filter(({ frame }) => sameAsk(centre.frame, frame)).length;
+    if (count > top.count) top = { count, example: centre.prompt };
+  }
+  return top.count >= 3 && top.count * 4 > prompts.length ? top : null;
 }

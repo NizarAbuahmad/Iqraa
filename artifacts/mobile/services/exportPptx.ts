@@ -20,9 +20,11 @@ import { Platform } from 'react-native';
 import * as Sharing from 'expo-sharing';
 import { File, Paths } from 'expo-file-system';
 
-import { visualForSlide } from './deckVisuals.ts';
+import { visualForExport, visualForSlide, type VisualBlock } from './deckVisuals.ts';
 import { isBulletLine, looksLikeEquation, stripBullet, workingSteps } from './deckText.ts';
-import { resolveSlideLayout } from './slideLayout.ts';
+import { asPhotoHero, resolveSlideLayout } from './slideLayout.ts';
+import { slideTeacherNotesText } from './deckNotes.ts';
+import { creditSegments, type PhotoCredit } from './photoCredit.ts';
 import type { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
 import { mathLineToUnicode, prettifySymPy } from '@/services/mathRender';
 import { trackEvent } from '@/services/analytics';
@@ -39,17 +41,20 @@ const BODY_FONT = 'Almarai';
 import * as theme from './deckTheme.ts';
 
 // pptxgenjs takes hex without the leading '#'; deckTheme stores it with one.
-const DECK_BG = theme.pptxHex(theme.DECK_BG);
-const DECK_CARD = theme.pptxHex(theme.DECK_CARD_BG);
-const DECK_BORDER = theme.pptxHex(theme.DECK_BORDER);
-const DECK_TEXT = theme.pptxHex(theme.DECK_TEXT);
-const DECK_MUTED = theme.pptxHex(theme.DECK_MUTED);
-const DECK_ACCENT = theme.pptxHex(theme.DECK_ACCENT);
-const DECK_PINK = theme.pptxHex(theme.DECK_PINK);
-const DECK_BLOB = theme.pptxHex(theme.DECK_BLOB);
-
-const deckSlideAccent = (type: ActivitySlide['type']): string =>
-  theme.pptxHex(theme.slideTypeAccent(type));
+// Built per export from the deck's own theme — see `resolveDeckTheme`.
+function pptxPalette(T: theme.DeckTheme) {
+  return {
+    bg: theme.pptxHex(T.bg),
+    card: theme.pptxHex(T.card),
+    border: theme.pptxHex(T.border),
+    text: theme.pptxHex(T.text),
+    muted: theme.pptxHex(T.muted),
+    accent: theme.pptxHex(T.accent),
+    primary: theme.pptxHex(T.primary),
+    secondary: theme.pptxHex(T.secondary),
+    blob: theme.pptxHex(T.blob),
+  };
+}
 
 /**
  * Fetches an image URL ourselves and hands pptxgenjs the raw bytes (`data:`)
@@ -75,6 +80,7 @@ async function addSideImage(
   slide: ActivitySlide,
   x: number,
   w: number,
+  mutedHex: string,
 ): Promise<void> {
   const dataUrl = await fetchAsDataUrl(slide.sideImageUrl!);
   if (!dataUrl) return;
@@ -82,14 +88,16 @@ async function addSideImage(
   const y = 1.35;
   s.addImage({ data: dataUrl, x, y, w, h, sizing: { type: 'contain', w, h } });
   if (slide.sideImageCaption) {
-    s.addText(slide.sideImageCaption, {
+    s.addText(captionRuns(slide.sideImageCaption, slide.sideImageCredit), {
       x, y: y + h + 0.1, w, h: 0.35,
-      align: 'center', fontSize: 10, color: DECK_MUTED,
+      align: 'center', fontSize: 10, color: mutedHex,
     });
   }
 }
 
 async function fetchAsDataUrl(url: string): Promise<string | null> {
+  // A teacher's uploaded photo is kept in the deck as a data URL already.
+  if (/^data:image\//i.test(url)) return url;
   try {
     // A stalled image host left `exportingPptx` true for good — the export
     // button spun until the app was restarted.
@@ -117,6 +125,17 @@ async function fetchAsDataUrl(url: string): Promise<string | null> {
 type PptxSlide = ReturnType<InstanceType<typeof import('pptxgenjs').default>['addSlide']>;
 
 /**
+ * A caption as PowerPoint text: the Unsplash credit's photographer and
+ * "Unsplash" runs become real hyperlinks when `credit` still matches the
+ * caption (see `creditSegments`); anything else stays the plain string.
+ */
+function captionRuns(caption: string, credit?: PhotoCredit): Parameters<PptxSlide['addText']>[0] {
+  const segs = creditSegments(caption, credit);
+  if (!segs) return caption;
+  return segs.map(s => (s.url ? { text: s.text, options: { hyperlink: { url: s.url } } } : { text: s.text }));
+}
+
+/**
  * The scrim under a hero photo — its own constant, NOT `DECK_BG`. It was
  * `DECK_BG` while the deck was near-black, and when the palette went cream the
  * scrim went with it: a 75%-opaque cream wash with white text on top, which is
@@ -132,8 +151,8 @@ const HERO_SCRIM_TRANSPARENCY = 40;
  * later shape and text box stacks above them — pptxgenjs has no z-index, add
  * order is the whole story.
  */
-function addBlobs(s: PptxSlide): void {
-  const blob = { color: DECK_BLOB };
+function addBlobs(s: PptxSlide, blobHex: string): void {
+  const blob = { color: blobHex };
   s.addShape('ellipse', { x: -1.0, y: -1.1, w: 3.2, h: 3.2, fill: blob, line: blob });
   s.addShape('ellipse', { x: 7.9, y: 3.7, w: 3.4, h: 3.4, fill: blob, line: blob });
 }
@@ -149,9 +168,17 @@ function addBlobs(s: PptxSlide): void {
  */
 function addPlotChart(
   s: PptxSlide,
-  plot: { series: { label: string; points: { x: number; y: number }[] }[] },
+  plot: VisualBlock,
   box: { x: number; y: number; w: number; h: number },
 ): void {
+  // A check may carry a data chart rather than a curve («according to the
+  // chart…»); it sits in the same box above the options.
+  if (plot.kind === 'chart') {
+    s.addChart(plot.chartType === 'pie' ? 'pie' : 'bar', [{ name: '', labels: plot.categories, values: plot.values }], {
+      ...box, showLegend: plot.chartType === 'pie', legendPos: 'r', showValue: plot.chartType !== 'pie',
+    });
+    return;
+  }
   s.addChart(
     'line',
     plot.series.map(series => ({
@@ -179,13 +206,13 @@ function addPlotChart(
  * and re-presented — so a hero photo leaving without its credit is the worst
  * of the three paths that used to drop it.
  */
-async function addHeroBackground(s: PptxSlide, url: string, credit?: string): Promise<boolean> {
+async function addHeroBackground(s: PptxSlide, url: string, credit?: string, creditLinks?: PhotoCredit): Promise<boolean> {
   const dataUrl = await fetchAsDataUrl(url);
   if (!dataUrl) return false;
   s.addImage({ data: dataUrl, x: 0, y: 0, w: 10, h: 5.63, sizing: { type: 'cover', w: 10, h: 5.63 } });
   s.addShape('rect', { x: 0, y: 0, w: 10, h: 5.63, fill: { color: HERO_SCRIM, transparency: HERO_SCRIM_TRANSPARENCY } });
   if (credit) {
-    s.addText(credit, {
+    s.addText(captionRuns(credit, creditLinks), {
       x: 0.4, y: 5.18, w: 9.2, h: 0.28, align: 'center',
       fontSize: 9, color: 'FFFFFF', transparency: 28,
     });
@@ -208,6 +235,11 @@ export async function exportDeckAsPptx(
   // when a teacher actually exports — same reasoning as docx in share.ts.
   const PptxGenJS = (await import('pptxgenjs')).default;
   const L = (ar: string, en: string) => (isAr ? ar : en);
+  // One theme for the whole file: the one the deck carries, else its subject's.
+  const T = theme.resolveDeckTheme(deck);
+  const P = pptxPalette(T);
+  const deckSlideAccent = (type: ActivitySlide['type']): string =>
+    theme.pptxHex(theme.slideTypeAccent(type, T));
 
   const pptx = new PptxGenJS();
   pptx.defineLayout({ name: 'IQRA_16x9', width: 10, height: 5.63 });
@@ -230,7 +262,12 @@ export async function exportDeckAsPptx(
   // would silently never make it into the file.
   for (const [i, slide] of deck.slides.entries()) {
     const s = pptx.addSlide();
-    s.background = { color: DECK_BG };
+    s.background = { color: P.bg };
+    // The teacher's notes go in the speaker-notes pane, where PowerPoint's
+    // presenter view shows them to the teacher and never to the class. Set
+    // here, before the per-type branches, because most of those `continue`.
+    const notes = slideTeacherNotesText(slide, isAr);
+    if (notes) s.addNotes(notes);
     // pptxgenjs writes a paragraph's `rtl="1"` only from that text's own
     // `rtlMode`; the presentation-level flag above reaches the root element and
     // nothing else. Without it Arabic is right-aligned but laid out LTR —
@@ -248,46 +285,50 @@ export async function exportDeckAsPptx(
 
     if (i === 0) {
       // Title slide.
-      const onPhoto = slide.mediaUrl ? await addHeroBackground(s, slide.mediaUrl, slide.mediaCaption) : false;
-      if (!onPhoto) addBlobs(s);
+      const onPhoto = slide.mediaUrl ? await addHeroBackground(s, slide.mediaUrl, slide.mediaCaption, slide.mediaCredit) : false;
+      if (!onPhoto) addBlobs(s, P.blob);
       const [meta, ...rest] = slide.content.split('\n\n');
       s.addText('Iqrra', {
         x: 0, y: 0.5, w: '100%', h: 0.4, align: 'center',
-        fontSize: 12, color: onPhoto ? 'FFFFFF' : DECK_ACCENT, bold: true, charSpacing: 4,
+        fontSize: 12, color: onPhoto ? 'FFFFFF' : P.accent, bold: true, charSpacing: 4,
       });
       s.addText(slide.title, {
         x: 0.6, y: 1.6, w: 8.8, h: 1.4, align: 'center',
-        fontSize: 32, color: onPhoto ? 'FFFFFF' : DECK_TEXT, bold: true, fontFace: HEAD_FONT, valign: 'middle',
+        fontSize: 32, color: onPhoto ? 'FFFFFF' : P.text, bold: true, fontFace: HEAD_FONT, valign: 'middle',
       });
       // The pink rule under the title — the projector's one flash of the
       // second accent, and the quickest tell that this is the same deck.
-      s.addShape('rect', { x: 4.4, y: 3.0, w: 1.2, h: 0.06, fill: { color: DECK_PINK } });
+      s.addShape('rect', { x: 4.4, y: 3.0, w: 1.2, h: 0.06, fill: { color: P.secondary } });
       if (meta) {
         s.addText(meta, {
           x: 0.6, y: 3.2, w: 8.8, h: 0.5, align: 'center',
-          fontSize: 14, color: onPhoto ? 'FFFFFF' : DECK_MUTED,
+          fontSize: 14, color: onPhoto ? 'FFFFFF' : P.muted,
         });
       }
       if (rest.length) {
         s.addText(rest.join(' '), {
           x: 1.2, y: 3.8, w: 7.6, h: 1.2, align: 'center',
-          fontSize: 11, color: onPhoto ? 'FFFFFF' : DECK_MUTED,
+          fontSize: 11, color: onPhoto ? 'FFFFFF' : P.muted,
         });
       }
       continue;
     }
 
-    if (slide.type === 'divider') {
+    // A `photo` layout is drawn as the section break is: same full-bleed photo,
+    // same scrim, same credit line.
+    const photoHero = asPhotoHero(slide);
+    if (slide.type === 'divider' || photoHero) {
+      const hs = photoHero ?? slide;
       // Full-bleed, like the title slide — a pacing break, not another
       // header-bar-and-bullets content slide.
-      const gotPhoto = slide.mediaUrl ? await addHeroBackground(s, slide.mediaUrl, slide.mediaCaption) : false;
+      const gotPhoto = hs.mediaUrl ? await addHeroBackground(s, hs.mediaUrl, hs.mediaCaption, hs.mediaCredit) : false;
       if (!gotPhoto) s.background = { color: deckSlideAccent('divider') };
-      s.addText(slide.title, {
+      s.addText(hs.title, {
         x: 0.6, y: 2.1, w: 8.8, h: 1.2, align: 'center', valign: 'middle',
         fontSize: 36, color: 'FFFFFF', bold: true, fontFace: HEAD_FONT,
       });
-      if (slide.content) {
-        s.addText(slide.content, {
+      if (hs.content) {
+        s.addText(hs.content, {
           x: 1.2, y: 3.3, w: 7.6, h: 0.6, align: 'center',
           fontSize: 14, color: 'FFFFFF',
         });
@@ -296,7 +337,7 @@ export async function exportDeckAsPptx(
     }
 
     const accent = deckSlideAccent(slide.type);
-    addBlobs(s);
+    addBlobs(s, P.blob);
 
     // Header: title on the reading edge with a short accent rule under it —
     // the same shape SlideView draws on screen. It used to be a sliver of
@@ -316,7 +357,7 @@ export async function exportDeckAsPptx(
     // the types below are about content. `null` — no layout, or one whose data
     // was too thin — falls through untouched.
     const layout = resolveSlideLayout(slide);
-    if (layout) {
+    if (layout && layout.kind !== 'photo') {
       if (layout.kind === 'statement') {
         s.addText(layout.text, {
           x: 0.55, y: 1.6, w: 8.9, h: 2.2, align: rtlAlign, valign: 'middle',
@@ -338,12 +379,12 @@ export async function exportDeckAsPptx(
         });
         s.addText(layout.label, {
           x: 0.55, y: 3.25, w: 8.9, h: 0.9, align: rtlAlign, valign: 'top',
-          fontSize: 22, color: DECK_TEXT, bold: true, fontFace: HEAD_FONT,
+          fontSize: 22, color: P.text, bold: true, fontFace: HEAD_FONT,
         });
         if (layout.source) {
           s.addText(layout.source, {
             x: 0.55, y: 4.2, w: 8.9, h: 0.5, align: rtlAlign, valign: 'top',
-            fontSize: 12, color: DECK_MUTED, fontFace: BODY_FONT,
+            fontSize: 12, color: P.muted, fontFace: BODY_FONT,
           });
         }
         continue;
@@ -362,37 +403,200 @@ export async function exportDeckAsPptx(
           const x = 0.55 + order * 4.55;
           s.addShape('roundRect', {
             x, y: 1.05, w: 4.35, h: 4.05,
-            fill: { color: DECK_CARD }, line: { color: primary ? accent : DECK_BORDER, width: 1.5 },
+            fill: { color: P.card }, line: { color: primary ? accent : P.border, width: 1.5 },
             rectRadius: 0.12,
           });
           s.addText(colTitle, {
             x: x + 0.25, y: 1.25, w: 3.85, h: 0.5, align: rtlAlign, valign: 'middle',
-            fontSize: 18, color: primary ? accent : DECK_MUTED, bold: true, fontFace: HEAD_FONT,
+            fontSize: 18, color: primary ? accent : P.muted, bold: true, fontFace: HEAD_FONT,
           });
           s.addText(items.map(i => `• ${i}`).join('\n'), {
             x: x + 0.25, y: 1.85, w: 3.85, h: 3.05, align: rtlAlign, valign: 'top',
-            fontSize: 14, color: DECK_TEXT, fontFace: BODY_FONT, lineSpacingMultiple: 1.4,
+            fontSize: 14, color: P.text, fontFace: BODY_FONT, lineSpacingMultiple: 1.4,
           });
         });
         continue;
       }
 
+      if (layout.kind === 'timeline') {
+        // Positions are absolute, so the reading order is applied here: in an
+        // Arabic deck the first event belongs on the right.
+        const n = layout.events.length;
+        const colW = 8.9 / n;
+        const railY = 2.0;
+        s.addShape('rect', {
+          x: 0.55, y: railY - 0.025, w: 8.9, h: 0.05, fill: { color: accent, transparency: 55 },
+        });
+        layout.events.forEach((ev, i) => {
+          const x = 0.55 + (isAr ? n - 1 - i : i) * colW;
+          s.addShape('ellipse', {
+            x: x + (colW - 0.3) / 2, y: railY - 0.15, w: 0.3, h: 0.3,
+            fill: { color: P.card }, line: { color: accent, width: 3 },
+          });
+          s.addText(ev.label, {
+            x: x + 0.05, y: railY + 0.3, w: colW - 0.1, h: 0.5, align: 'center', valign: 'middle',
+            fontSize: 20, bold: true, color: accent, fontFace: HEAD_FONT,
+          });
+          s.addText(ev.text, {
+            x: x + 0.05, y: railY + 0.85, w: colW - 0.1, h: 2.2, align: 'center', valign: 'top',
+            fontSize: n > 4 ? 12 : 14, color: P.text, fontFace: BODY_FONT,
+          });
+        });
+        continue;
+      }
+
+      if (layout.kind === 'stats') {
+        const n = layout.items.length;
+        const gap = 0.3;
+        const cardW = Math.min(2.9, (8.9 - gap * (n - 1)) / n);
+        const x0 = 0.55 + (8.9 - (cardW * n + gap * (n - 1))) / 2;
+        layout.items.forEach((it, i) => {
+          const x = x0 + (isAr ? n - 1 - i : i) * (cardW + gap);
+          s.addShape('roundRect', {
+            x, y: 1.5, w: cardW, h: 3.0,
+            fill: { color: P.card }, line: { color: P.border, width: 1 }, rectRadius: 0.2,
+          });
+          s.addText(it.value, {
+            x, y: 1.75, w: cardW, h: 1.3, align: 'center', valign: 'middle',
+            fontSize: n > 3 ? 36 : 44, bold: true, color: accent, fontFace: HEAD_FONT,
+          });
+          s.addText(it.label, {
+            x: x + 0.15, y: 3.1, w: cardW - 0.3, h: 1.2, align: 'center', valign: 'top',
+            fontSize: 14, color: P.text, fontFace: BODY_FONT,
+          });
+        });
+        continue;
+      }
+
+      if (layout.kind === 'table') {
+        // A real PowerPoint table — the teacher can edit a cell. It does not
+        // mirror for a right-to-left deck, so the first column is put on the
+        // reading edge by reversing each row here.
+        const inReadingOrder = (cells: string[]) => (isAr ? [...cells].reverse() : cells);
+        const cols = layout.headers.length;
+        const head = inReadingOrder(layout.headers).map(h => ({
+          text: h,
+          options: {
+            bold: true, color: 'FFFFFF', fill: { color: accent }, fontFace: HEAD_FONT, fontSize: 16,
+            align: rtlAlign, valign: 'middle' as const, rtlMode: isAr,
+          },
+        }));
+        const body = layout.rows.map((row, ri) => inReadingOrder(row).map(c => ({
+          text: c,
+          options: {
+            color: P.text, fill: { color: ri % 2 === 0 ? P.card : P.bg }, fontFace: BODY_FONT, fontSize: 14,
+            align: rtlAlign, valign: 'middle' as const, rtlMode: isAr,
+          },
+        })));
+        s.addTable([head, ...body], {
+          x: 0.55, y: 1.3, w: 8.9, colW: Array(cols).fill(8.9 / cols), rowH: 0.5,
+          border: { type: 'solid', pt: 1, color: P.border },
+        });
+        continue;
+      }
+
+      if (layout.kind === 'flow') {
+        const n = layout.nodes.length;
+        const arrowW = 0.4;
+        const pad = 0.08;
+        const nodeW = (8.9 - (n - 1) * (arrowW + 2 * pad)) / n;
+        const y = 2.1;
+        layout.nodes.forEach((node, i) => {
+          const x = 0.55 + (isAr ? n - 1 - i : i) * (nodeW + arrowW + 2 * pad);
+          s.addShape('roundRect', {
+            x, y, w: nodeW, h: 1.4, fill: { color: P.card }, line: { color: accent, width: 2.25 }, rectRadius: 0.15,
+          });
+          s.addText(node, {
+            x: x + 0.05, y, w: nodeW - 0.1, h: 1.4, align: 'center', valign: 'middle',
+            fontSize: n > 4 ? 12 : 15, bold: true, color: P.text, fontFace: HEAD_FONT,
+          });
+          if (i < n - 1) {
+            s.addShape(isAr ? 'leftArrow' : 'rightArrow', {
+              x: isAr ? x - pad - arrowW : x + nodeW + pad, y: y + 0.45, w: arrowW, h: 0.5,
+              fill: { color: accent }, line: { color: accent },
+            });
+          }
+        });
+        if (layout.cycle) {
+          s.addText(`\u21BB  ${L('ثم تتكرر الدورة', 'then the cycle repeats')}`, {
+            x: 2.5, y: 3.9, w: 5.0, h: 0.5, align: 'center', valign: 'middle',
+            fontSize: 16, bold: true, color: accent, fontFace: HEAD_FONT,
+          });
+        }
+        continue;
+      }
+
+      if (layout.kind === 'concepts') {
+        // Cards in rows of three (two when there are four), the first on the
+        // reading edge; the last row is centred so a short one does not hang to a side.
+        const n = layout.items.length;
+        const perRow = n === 4 ? 2 : 3;
+        const rows = Math.ceil(n / perRow);
+        const gap = 0.3;
+        const cardW = (8.9 - gap * (perRow - 1)) / perRow;
+        const cardH = rows === 1 ? 2.2 : 1.55;
+        const top = rows === 1 ? 1.9 : 1.3;
+        layout.items.forEach((item, i) => {
+          const row = Math.floor(i / perRow);
+          const inRow = row === rows - 1 ? n - row * perRow : perRow;
+          const col = i - row * perRow;
+          const x0 = 0.55 + (8.9 - (cardW * inRow + gap * (inRow - 1))) / 2;
+          const x = x0 + (isAr ? inRow - 1 - col : col) * (cardW + gap);
+          const y = top + row * (cardH + gap);
+          s.addShape('roundRect', {
+            x, y, w: cardW, h: cardH, fill: { color: P.card }, line: { color: P.border, width: 1 }, rectRadius: 0.2,
+          });
+          s.addShape('rect', { x: x + 0.25, y: y + 0.18, w: 0.5, h: 0.05, fill: { color: accent } });
+          s.addText(item, {
+            x: x + 0.15, y: y + 0.3, w: cardW - 0.3, h: cardH - 0.45, align: 'center', valign: 'middle',
+            fontSize: rows === 1 ? 22 : 18, bold: true, color: P.text, fontFace: HEAD_FONT,
+          });
+        });
+        continue;
+      }
+
+      if (layout.kind === 'quote') {
+        s.addText('“', {
+          x: 0.55, y: 1.0, w: 8.9, h: 1.0, align: rtlAlign, valign: 'bottom',
+          fontSize: 66, color: accent, bold: true, fontFace: HEAD_FONT,
+        });
+        s.addText(layout.text, {
+          x: 0.55, y: 2.0, w: 8.9, h: 2.1, align: rtlAlign, valign: 'top',
+          fontSize: 26, color: P.text, bold: true, fontFace: HEAD_FONT,
+        });
+        if (layout.by) {
+          s.addText(`— ${layout.by}`, {
+            x: 0.55, y: 4.2, w: 8.9, h: 0.5, align: rtlAlign, valign: 'middle',
+            fontSize: 16, color: accent, bold: true, fontFace: HEAD_FONT,
+          });
+        }
+        continue;
+      }
+
       // steps
       const STEP_TOP = 1.15;
-      const STEP_H = Math.min(0.72, 3.9 / Math.max(layout.steps.length, 1));
+      const STEP_GAP = 0.12;
+      const n = Math.max(layout.steps.length, 1);
+      // The gaps come out of the budget too: without them seven steps ended at
+      // 5.77in on a 5.63in slide. The number badge shrinks with the row, and
+      // the type steps down once rows get short.
+      const STEP_H = Math.min(0.72, (3.9 - STEP_GAP * (n - 1)) / n);
+      const BADGE = Math.min(0.5, STEP_H);
+      const stepFont = STEP_H < 0.45 ? 12 : 16;
       layout.steps.forEach((step, i) => {
-        const y = STEP_TOP + i * (STEP_H + 0.12);
-        const numX = isAr ? 8.85 : 0.55;
+        const y = STEP_TOP + i * (STEP_H + STEP_GAP);
+        const numX = isAr ? 9.35 - BADGE : 0.55;
+        const badgeY = y + (STEP_H - BADGE) / 2;
         s.addShape('ellipse', {
-          x: numX, y, w: 0.5, h: 0.5, fill: { color: accent },
+          x: numX, y: badgeY, w: BADGE, h: BADGE, fill: { color: accent },
         });
         s.addText(String(i + 1), {
-          x: numX, y, w: 0.5, h: 0.5, align: 'center', valign: 'middle',
-          fontSize: 16, color: 'FFFFFF', bold: true, fontFace: HEAD_FONT,
+          x: numX, y: badgeY, w: BADGE, h: BADGE, align: 'center', valign: 'middle',
+          fontSize: STEP_H < 0.45 ? 11 : 16, color: 'FFFFFF', bold: true, fontFace: HEAD_FONT,
         });
         s.addText(step, {
           x: isAr ? 0.55 : 1.2, y, w: 8.2, h: STEP_H, align: rtlAlign, valign: 'middle',
-          fontSize: 16, color: DECK_TEXT, fontFace: BODY_FONT,
+          fontSize: stepFont, color: P.text, fontFace: BODY_FONT,
         });
       });
       continue;
@@ -407,14 +611,14 @@ export async function exportDeckAsPptx(
       const visual = visualForSlide(slide);
       if (visual?.kind === 'plot' && visual.series.length) {
         if (context) {
-          s.addText(context, { x: 0.8, y: 1.25, w: 8.4, h: 0.5, align: 'center', fontSize: 13, color: DECK_TEXT });
+          s.addText(context, { x: 0.8, y: 1.25, w: 8.4, h: 0.5, align: 'center', fontSize: 13, color: P.text });
         }
         addPlotChart(s, visual, { x: 1.0, y: 1.85, w: 8.0, h: 3.2 });
         continue;
       }
       let y = 1.3;
       if (context) {
-        s.addText(context, { x: 0.8, y, w: 8.4, h: 0.6, align: 'center', fontSize: 13, color: DECK_TEXT });
+        s.addText(context, { x: 0.8, y, w: 8.4, h: 0.6, align: 'center', fontSize: 13, color: P.text });
         y += 0.8;
       }
       if (commands.length) {
@@ -428,7 +632,7 @@ export async function exportDeckAsPptx(
           'الرسم البياني تفاعلي داخل التطبيق — افتح الشرائح على الشاشة لتحريكه أمام الصف.',
           'The graph is interactive inside the app — open the deck on screen to move it live in front of the class.',
         ),
-        { x: 1.2, y, w: 7.6, h: 0.8, align: 'center', fontSize: 10, color: DECK_MUTED },
+        { x: 1.2, y, w: 7.6, h: 0.8, align: 'center', fontSize: 10, color: P.muted },
       );
       continue;
     }
@@ -436,18 +640,24 @@ export async function exportDeckAsPptx(
     // Any slide may carry a visual, not just graph slides. A chart attached to
     // a content slide reached neither export until this existed — the drawing
     // was only ever wired into the graph branch above.
-    const slideVisual = visualForSlide(slide);
+    // `visualForExport`: ارسم's curve (`visualOnReveal`) is its answer, so it
+    // is drawn only on a challenge slide that prints the answer beside it.
+    const slideVisual = visualForExport(slide);
     // A plotted curve on a question or challenge slide: a check whose stem
     // says «في الرسم البياني الظاهر…» carries the commands for that figure
     // (see lessonSlides.ts), and those branches lay themselves out around it
     // below rather than falling through to the chart block here.
-    const slidePlot = slideVisual?.kind === 'plot' && slideVisual.series.length
+    // A chart on a check is drawn by that branch too: the chart block below
+    // ends the slide, and took the options and the answer with it.
+    const isCheck = slide.type === 'question' || slide.type === 'challenge';
+    const slidePlot = (slideVisual?.kind === 'plot' && slideVisual.series.length)
+      || (isCheck && slideVisual?.kind === 'chart' && slideVisual.categories.length)
       ? slideVisual
       : null;
-    if (slideVisual?.kind === 'chart' && slideVisual.categories.length) {
+    if (!isCheck && slideVisual?.kind === 'chart' && slideVisual.categories.length) {
       const [context] = slide.content.split('\n\n');
       if (context) {
-        s.addText(context, { x: 0.8, y: 1.25, w: 8.4, h: 0.5, align: 'center', fontSize: 13, color: DECK_TEXT });
+        s.addText(context, { x: 0.8, y: 1.25, w: 8.4, h: 0.5, align: 'center', fontSize: 13, color: P.text });
       }
       s.addChart(
         slideVisual.chartType === 'pie' ? 'pie' : 'bar',
@@ -475,7 +685,7 @@ export async function exportDeckAsPptx(
       }
       if (slide.mediaCaption) {
         s.addText(slide.mediaCaption, {
-          x: 0.8, y: 4.75, w: 8.4, h: 0.4, align: 'center', fontSize: 10, color: DECK_MUTED,
+          x: 0.8, y: 4.75, w: 8.4, h: 0.4, align: 'center', fontSize: 10, color: P.muted,
         });
       }
       continue;
@@ -489,7 +699,7 @@ export async function exportDeckAsPptx(
       if (slide.mediaCaption) {
         s.addText(slide.mediaCaption, {
           x: 0.8, y: 1.5, w: 8.4, h: 1.2, align: 'center', valign: 'middle',
-          fontSize: 15, color: DECK_TEXT,
+          fontSize: 15, color: P.text,
         });
       }
       s.addText(`▶ ${L('شاهد الفيديو', 'Watch the video')}`, {
@@ -498,11 +708,11 @@ export async function exportDeckAsPptx(
         hyperlink: { url: slide.mediaUrl },
       });
       s.addText(slide.mediaUrl, {
-        x: 1.2, y: 3.6, w: 7.6, h: 0.4, align: 'center', fontSize: 9, color: DECK_MUTED,
+        x: 1.2, y: 3.6, w: 7.6, h: 0.4, align: 'center', fontSize: 9, color: P.muted,
       });
       if (slide.content) {
         s.addText(slide.content, {
-          x: 1.2, y: 4.05, w: 7.6, h: 0.4, align: 'center', fontSize: 10, color: DECK_MUTED,
+          x: 1.2, y: 4.05, w: 7.6, h: 0.4, align: 'center', fontSize: 10, color: P.muted,
         });
       }
       continue;
@@ -514,7 +724,7 @@ export async function exportDeckAsPptx(
       if (slide.mediaCaption) {
         s.addText(slide.mediaCaption, {
           x: 0.8, y: 1.5, w: 8.4, h: 1.2, align: 'center', valign: 'middle',
-          fontSize: 15, color: DECK_TEXT,
+          fontSize: 15, color: P.text,
         });
       }
       s.addText(`▶ ${L('استمع للتسجيل', 'Listen to the recording')}`, {
@@ -523,11 +733,11 @@ export async function exportDeckAsPptx(
         hyperlink: { url: slide.mediaUrl },
       });
       s.addText(slide.mediaUrl, {
-        x: 1.2, y: 3.6, w: 7.6, h: 0.4, align: 'center', fontSize: 9, color: DECK_MUTED,
+        x: 1.2, y: 3.6, w: 7.6, h: 0.4, align: 'center', fontSize: 9, color: P.muted,
       });
       if (slide.content) {
         s.addText(slide.content, {
-          x: 1.2, y: 4.05, w: 7.6, h: 0.4, align: 'center', fontSize: 10, color: DECK_MUTED,
+          x: 1.2, y: 4.05, w: 7.6, h: 0.4, align: 'center', fontSize: 10, color: P.muted,
         });
       }
       continue;
@@ -539,7 +749,7 @@ export async function exportDeckAsPptx(
       if (slide.mediaCaption) {
         s.addText(slide.mediaCaption, {
           x: 0.8, y: 1.5, w: 8.4, h: 1.2, align: 'center', valign: 'middle',
-          fontSize: 15, color: DECK_TEXT,
+          fontSize: 15, color: P.text,
         });
       }
       s.addText(`📄 ${L('افتح المستند', 'Open the document')}`, {
@@ -548,11 +758,11 @@ export async function exportDeckAsPptx(
         hyperlink: { url: slide.mediaUrl },
       });
       s.addText(slide.mediaUrl, {
-        x: 1.2, y: 3.6, w: 7.6, h: 0.4, align: 'center', fontSize: 9, color: DECK_MUTED,
+        x: 1.2, y: 3.6, w: 7.6, h: 0.4, align: 'center', fontSize: 9, color: P.muted,
       });
       if (slide.content) {
         s.addText(slide.content, {
-          x: 1.2, y: 4.05, w: 7.6, h: 0.4, align: 'center', fontSize: 10, color: DECK_MUTED,
+          x: 1.2, y: 4.05, w: 7.6, h: 0.4, align: 'center', fontSize: 10, color: P.muted,
         });
       }
       continue;
@@ -565,7 +775,7 @@ export async function exportDeckAsPptx(
       s.addText(pptxLine(slide.content, true), {
         x: 0.6, y: slidePlot ? 1.05 : 1.2, w: 8.8, h: slidePlot ? 0.75 : 1.0,
         align: 'center', valign: 'middle',
-        fontSize: slidePlot ? 18 : 22, color: DECK_TEXT, bold: true,
+        fontSize: slidePlot ? 18 : 22, color: P.text, bold: true,
       });
       if (slidePlot) addPlotChart(s, slidePlot, { x: 2.4, y: 1.85, w: 5.2, h: 1.7 });
       const answerTop = slidePlot ? 3.65 : 2.4;
@@ -579,21 +789,21 @@ export async function exportDeckAsPptx(
         const lineBottom = answerTop + 0.9 + stepsH;
         s.addShape('roundRect', {
           x: 2.0, y: answerTop, w: 6.0, h: lineBottom - answerTop + (slide.verified ? 0.7 : 0.2),
-          fill: { color: DECK_CARD }, line: { color: accent, width: 1.5 }, rectRadius: 0.08,
+          fill: { color: P.card }, line: { color: accent, width: 1.5 }, rectRadius: 0.08,
         });
         s.addText(L('الإجابة', 'Answer'), {
           x: 2.0, y: answerTop + 0.1, w: 6.0, h: 0.3, align: 'center', fontSize: 9, color: accent, bold: true,
         });
         working?.steps.forEach((step, i) => {
           s.addText(`${i + 1}.  ${pptxLine(step, true)}`, {
-            x: 2.0, y: answerTop + 0.4 + i * 0.3, w: 6.0, h: 0.3, align: 'center', fontSize: 13, color: DECK_TEXT,
+            x: 2.0, y: answerTop + 0.4 + i * 0.3, w: 6.0, h: 0.3, align: 'center', fontSize: 13, color: P.text,
           });
         });
         s.addText(pptxLine(working ? working.final : slide.answer, true), {
-          x: 2.0, y: answerTop + 0.4 + stepsH, w: 6.0, h: 0.5, align: 'center', fontSize: 16, color: DECK_TEXT, bold: true,
+          x: 2.0, y: answerTop + 0.4 + stepsH, w: 6.0, h: 0.5, align: 'center', fontSize: 16, color: P.text, bold: true,
         });
         if (slide.verified) {
-          const verifiedColor = slide.verifiedBy === 'symbolic' ? '22C55E' : DECK_MUTED;
+          const verifiedColor = slide.verifiedBy === 'symbolic' ? '22C55E' : P.muted;
           const label = slide.verifiedBy === 'symbolic'
             ? L('تم التحقق من الإجابة رياضيًا (SymPy)', 'Answer symbolically verified (SymPy)')
             : L('من بنك الأسئلة المُراجَع', 'From the reviewed question bank');
@@ -603,7 +813,7 @@ export async function exportDeckAsPptx(
           if (slide.verifiedBy === 'symbolic' && slide.computedAnswer) {
             s.addText(
               `${L('حسبها المُحقِّق مستقلًّا', 'Verifier computed independently')}: ${mathLineToUnicode(prettifySymPy(slide.computedAnswer))}`,
-              { x: 2.0, y: lineBottom + 0.32, w: 6.0, h: 0.3, align: 'center', fontSize: 8, color: DECK_MUTED },
+              { x: 2.0, y: lineBottom + 0.32, w: 6.0, h: 0.3, align: 'center', fontSize: 8, color: P.muted },
             );
           }
         }
@@ -626,7 +836,7 @@ export async function exportDeckAsPptx(
       s.addText(pptxLine(slide.content, true), {
         x: 0.6, y: slidePlot ? 1.0 : 1.1, w: 8.8, h: slidePlot ? 0.7 : 0.9,
         align: 'center', valign: 'middle',
-        fontSize: slidePlot ? 17 : 20, color: DECK_TEXT, bold: true,
+        fontSize: slidePlot ? 17 : 20, color: P.text, bold: true,
       });
       if (slidePlot) addPlotChart(s, slidePlot, { x: 2.6, y: 1.65, w: 4.8, h: 1.5 });
       // Option rows shrink to make room for the curve. Five short rows still
@@ -639,8 +849,8 @@ export async function exportDeckAsPptx(
         const y = top + i * (rowH + rowGap);
         s.addShape('roundRect', {
           x: 2.0, y, w: 6.0, h: rowH,
-          fill: { color: correct ? `${DECK_ACCENT}` : DECK_CARD },
-          line: { color: correct ? accent : DECK_BORDER, width: correct ? 1.5 : 1 },
+          fill: { color: correct ? P.primary : P.card },
+          line: { color: correct ? accent : P.border, width: correct ? 1.5 : 1 },
           rectRadius: 0.08,
         });
         s.addText(`${letters[i] ?? String(i + 1)}`, {
@@ -649,11 +859,11 @@ export async function exportDeckAsPptx(
         });
         s.addText(`${pptxLine(opt, true)}${correct ? '   ✓' : ''}`, {
           x: 2.65, y, w: 5.2, h: rowH, align: rtlAlign, valign: 'middle',
-          fontSize: 13, color: correct ? 'FFFFFF' : DECK_TEXT, bold: correct,
+          fontSize: 13, color: correct ? 'FFFFFF' : P.text, bold: correct,
         });
       });
       if (slide.verified) {
-        const verifiedColor = slide.verifiedBy === 'symbolic' ? '22C55E' : DECK_MUTED;
+        const verifiedColor = slide.verifiedBy === 'symbolic' ? '22C55E' : P.muted;
         s.addText(
           slide.verifiedBy === 'symbolic'
             ? L('تم التحقق من الإجابة رياضيًا (SymPy)', 'Answer symbolically verified (SymPy)')
@@ -719,11 +929,11 @@ export async function exportDeckAsPptx(
       s.addText(
         lines.map(l => ({
           text: pptxLine(l, false),
-          options: { fontSize: 14, color: DECK_TEXT, breakLine: true, paraSpaceAfter: 10 },
+          options: { fontSize: 14, color: P.text, breakLine: true, paraSpaceAfter: 10 },
         })),
         { x: textX0, y: 1.15, w: 8.4 * COL, h: 4.0, align: rtlAlign, valign: 'top' },
       );
-      if (hasSide) await addSideImage(s, slide, sideX, sideW);
+      if (hasSide) await addSideImage(s, slide, sideX, sideW, P.muted);
       continue;
     }
 
@@ -737,17 +947,17 @@ export async function exportDeckAsPptx(
         const eqW = 8.4 * COL - 1.2 * COL;
         s.addShape('roundRect', {
           x: eqX, y, w: eqW, h,
-          fill: { color: DECK_CARD }, line: { color: DECK_BORDER, width: 1 }, rectRadius: 0.1,
+          fill: { color: P.card }, line: { color: P.border, width: 1 }, rectRadius: 0.1,
         });
         s.addText(pptxLine(line, true), {
           x: eqX, y, w: eqW, h, align: 'center', valign: 'middle',
-          fontSize: hasSide ? 16 : 20, color: DECK_TEXT, bold: true, fontFace: HEAD_FONT,
+          fontSize: hasSide ? 16 : 20, color: P.text, bold: true, fontFace: HEAD_FONT,
         });
       } else if (isBulletLine(line)) {
         const cardW = 8.4 * COL;
         s.addShape('roundRect', {
           x: textX0, y, w: cardW, h,
-          fill: { color: DECK_CARD }, line: { color: DECK_BORDER, width: 1 }, rectRadius: 0.08,
+          fill: { color: P.card }, line: { color: P.border, width: 1 }, rectRadius: 0.08,
         });
         // Accent bar on the reading edge: right in Arabic, left in English.
         s.addShape('rect', {
@@ -756,17 +966,17 @@ export async function exportDeckAsPptx(
         });
         s.addText(stripBullet(line), {
           x: textX0 + 0.25, y, w: cardW - 0.5, h, align: rtlAlign, valign: 'middle',
-          fontSize: hasSide ? 13 : 15, color: DECK_TEXT,
+          fontSize: hasSide ? 13 : 15, color: P.text,
         });
       } else {
         s.addText(pptxLine(line, false), {
           x: textX0 + 0.1, y, w: 8.4 * COL - 0.2, h, align: rtlAlign, valign: 'middle',
-          fontSize: hasSide ? 13 : 15, color: DECK_TEXT,
+          fontSize: hasSide ? 13 : 15, color: P.text,
         });
       }
       y += h + GAP;
     }
-    if (hasSide) await addSideImage(s, slide, sideX, sideW);
+    if (hasSide) await addSideImage(s, slide, sideX, sideW, P.muted);
   }
 
   const outFilename = `${filename}.pptx`;

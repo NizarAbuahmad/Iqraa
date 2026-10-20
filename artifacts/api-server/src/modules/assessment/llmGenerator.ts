@@ -32,12 +32,43 @@ import {
   isMathematicsSubject,
   parseAnswerKeyCheck,
 } from "@workspace/math-verify";
-import { competencyForBlooms, type CompetencyKey } from "./competency.ts";
+import { MARKS_BY_COMPETENCY, competencyForBlooms, type CompetencyKey } from "./competency.ts";
+import type { BookSupplied } from "./bookQuestions.ts";
 import type { GeneratedQuestion } from "./mockGenerator.ts";
 import { variationBlock } from "../../lib/variation.ts";
 
 /** Bumped when the prompt changes shape, so usage rows stay comparable. */
-export const GENERATION_PROMPT_VERSION = "exam-gen-6";
+export const GENERATION_PROMPT_VERSION = "exam-gen-7";
+
+/**
+ * What the model is told the official textbook already supplies for this paper
+ * (see `planBook` in `bookQuestions.ts`). Absent, or `count === 0`, the prompt is
+ * exactly what it was before this existed.
+ */
+export interface LlmSupplied extends BookSupplied {
+  /** About how many of the paper's questions the book writes. */
+  count: number;
+  /** How many of each competency the model should write so the whole paper lands on target. Sums to the request's `count`. */
+  newByCompetency: Record<CompetencyKey, number>;
+  /** The whole paper: the model's questions plus the book's. */
+  paperTotal: number;
+  /**
+   * A top-up only: how many questions the model already wrote in an earlier reply
+   * (their stems are in the avoid list). Then `newByCompetency` is what remains
+   * of its share, and the block says so. Absent or 0 on a first call.
+   */
+  alreadyWritten?: number;
+}
+
+const hasSupplied = (req: LlmGenerationRequest): req is LlmGenerationRequest & { supplied: LlmSupplied } =>
+  req.supplied !== undefined && req.supplied.count > 0;
+
+/** The prompt version to record for a paper made from `req`: the block changes the text, so it changes the version. */
+export function generationPromptVersion(req: Pick<LlmGenerationRequest, "supplied">): string {
+  return req.supplied !== undefined && req.supplied.count > 0
+    ? `${GENERATION_PROMPT_VERSION}+book`
+    : GENERATION_PROMPT_VERSION;
+}
 
 export interface LlmGenerationRequest {
   objectives: CurriculumObjective[];
@@ -70,6 +101,12 @@ export interface LlmGenerationRequest {
   avoid?: readonly string[];
   /** Set on the one retry after the first attempt repeated most of `avoid`. */
   insistent?: boolean;
+  /**
+   * Real textbook questions that will be added after the model's, so the model
+   * can write the rest of the paper around them. Only text for the user message;
+   * the model is told counts, never the book's stems.
+   */
+  supplied?: LlmSupplied;
 }
 
 /**
@@ -169,10 +206,57 @@ export function gradeClause(gradeId: string | undefined): string {
   return Number.isInteger(n) && n >= 1 && n <= 12 ? `, Grade ${n}` : "";
 }
 
+const COMPETENCY_ORDER: readonly CompetencyKey[] = [
+  "knowledge",
+  "understanding",
+  "application",
+  "critical_thinking",
+];
+
+/**
+ * The paragraph that tells the model what the textbook already supplies.
+ * English, like the rest of the prompt's instructions. Every number is "about":
+ * the real draw is made after the model answers and can differ by a question.
+ * `count` is what the model is asked to write (the request's own count).
+ */
+function suppliedBlock(s: LlmSupplied, count: number): string[] {
+  const types = Object.entries(s.byType)
+    .filter(([, n]) => (n ?? 0) > 0)
+    .map(([t, n]) => `${n} ${t}`)
+    .join(", ");
+  const competencies = COMPETENCY_ORDER.filter(c => (s.byCompetency[c] ?? 0) > 0)
+    .map(c => `${c} ${s.byCompetency[c]} (${s.byCompetency[c]! * MARKS_BY_COMPETENCY[c]} marks)`)
+    .join(", ");
+  const toWrite = COMPETENCY_ORDER.map(c => `${c} ${s.newByCompetency[c] ?? 0}`).join(", ");
+  return [
+    `This paper has ${s.paperTotal} questions in all. About ${s.count} of them are already written from the official textbook `
+      + "and will be added after yours.",
+    `Those are: ${types}; by competency ${competencies}.`,
+    `You will not see them and must not try to reproduce them; write only the ${count} other questions. `
+      + "Count them when you spread the questions across the listed types "
+      + "(rule 2 applies to the whole paper, not only to your share).",
+    ...((s.alreadyWritten ?? 0) > 0
+      ? [
+        `You already wrote ${s.alreadyWritten} question${s.alreadyWritten === 1 ? "" : "s"} in an earlier reply `
+          + "(their stems are in the avoid list); the quota below is what remains of your share.",
+      ]
+      : []),
+    `To bring the whole paper to its target mix, write about: ${toWrite}.`,
+    "",
+  ];
+}
+
 export function buildGenerationPrompt(req: LlmGenerationRequest): {
   system: string;
   user: string;
 } {
+  // A programming error, caught before anything is sent: the per-competency
+  // targets are what the model is asked to write, so they must add up to it.
+  // (`paperTotal` is only text in the block; nothing is asserted about it.)
+  if (hasSupplied(req)) {
+    const toWrite = COMPETENCY_ORDER.reduce((n, c) => n + (req.supplied.newByCompetency[c] ?? 0), 0);
+    if (toWrite !== req.count) throw new Error("supplied.newByCompetency must sum to count");
+  }
   const arabic = req.language !== "en";
   const contracts = req.assessmentTypes
     .map(t => `- ${t}: ${TYPE_CONTRACTS[t] ?? "{}"}`)
@@ -195,10 +279,18 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
     "",
     "Rules you do not break:",
     "1. Every question measures one of the listed objectives, and carries that objective's exact id. Nothing outside them.",
-    "2. You only produce the question types listed. Never substitute a different type.",
+    "2. You only produce the question types listed. Never substitute a different type. Spread the count "
+      + "across every listed type as evenly as it allows, and order the paper as a Jordanian ministry exam "
+      + "does — each type in one consecutive block, in the order the types are listed. Roughly half of "
+      + "any true/false statements are false, each wrong in a specific detail.",
     "3. Distractors are plausible wrong answers a real student would pick — never filler, never obviously absurd, never 'none of the above'.",
     "4. Never write a question whose answer is a matter of opinion unless the type is open_ended.",
-    "5. Do not repeat yourself. Two questions that test the same fact in the same way are one question.",
+    // The quarter is the line `dominantKind` (validator.ts) warns the teacher at,
+    // so the model is told the same rule the paper is checked against.
+    "5. Do not repeat yourself. Two questions that test the same fact or skill in the same way are one question, "
+      + "however differently they are worded. Spread the paper over different parts of the objectives, and vary the "
+      + "form of the questions: no more than a quarter of them may open with the same words or be the same sentence "
+      + "with different numbers.",
     "6. Whenever a question's answer is symbolic — an expression, a value, a solution set, a point — you "
       + "include \"check\", in Latin notation. It is verified by a computer algebra system before any "
       + "teacher sees the question, so a key you are not sure of is worth more to us checked than omitted. "
@@ -222,9 +314,11 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
       + "A question that depends on identifying one of them cannot be answered from this paper.",
     ...(isMaths
       ? [
-        "8. This is a mathematics paper. Every question here whose answer is an expression, a value, a "
-          + "solution set or a point has a \"check\" — that is most of them. A maths question without one "
-          + "is a question nobody can verify.",
+        "8. This is a mathematics paper. Where a question's answer is what one of the check topics below "
+          + "computes, it has a \"check\". Where the objective allows, prefer phrasing a question as the "
+          + "thing a topic computes — solve this equation, differentiate this function, find this circle's "
+          + "centre — over asking about it, so more of the paper can be verified. Where no topic fits, "
+          + "leave \"check\" out: a question nobody can verify is better than a check for the wrong question.",
       ]
       : []),
     "",
@@ -234,6 +328,7 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
   const user = [
     `Write ${req.count} questions.`,
     "",
+    ...(hasSupplied(req) ? suppliedBlock(req.supplied, req.count) : []),
     "Objectives (use these ids verbatim):",
     objectives,
     "",
@@ -273,16 +368,42 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
     '      the expression and point separated by @ for derivative_at_point ("x^4@2"),',
     '      the equation for an equation topic ("2x + 5 = 13") or a circle ("(x-4)^2 + (y+1)^2 = 9").',
     '    answer is your key in latin form ("3x^2 - 4", "x = 4", "(4, -1)").',
+    // Measured on 2026-10-12 (gpt-5.4-mini, ~125 maths questions): 18 of 64 checks
+    // were thrown away because the model stretched a topic over a computation that
+    // is not one (an area, an exponent law), and the verifier "disagreed" with a
+    // correct discriminant and a correct maximum because the check solved the
+    // equation / differentiated instead of answering what the stem asked.
+    '    What each topic computes — the check answer is exactly this, nothing else:',
+    '      derivative_polynomial: the derivative expression. derivative_at_point: the number f\'(point).',
+    '      circle_center: the centre "(h, k)". circle_radius: the radius.',
+    '      equation_linear | equation_quadratic | equation_exponential: the solution(s) of that equation',
+    '        ("x = 4", "x = 1 or x = 3"). Join several solutions with "or", never with a comma: a comma reads',
+    '        as a system of equations («x = 2, y = 3») and the verifier will not judge it.',
+    '    The check must answer the SAME question the stem asks, not a nearby one. The solver does only what its',
+    '      topic says, so a check for another quantity makes a correct question look wrong. When the stem asks',
+    '      for the discriminant, a maximum or minimum value, a vertex, the sum or product of the roots, the',
+    '      number of solutions, a factored form, the equation of a tangent or a line, an area, an arc length, or',
+    '      a velocity or slope taken from a derivative, or an answer that drops one of the equation\'s roots (a',
+    '      length or an age, where the negative root is discarded: "x = 12" when the equation also gives -12),',
+    '      leave "check" out. Do not stretch a topic to fit — an',
+    '      area or an exponent law is not an equation, and a check that says so is thrown away.',
     // The two statements of the key are now compared. A check whose answer is not
     // the question's own key is never marked verified, so it earns nothing.
     '    The check answer must be THE SAME answer as the key you give the class — the correct option, the',
     '      accepted blank, or the model answer — written in Latin. It is compared with that key; a check that',
     '      disagrees with it is discarded as unlinked, however correct the maths. State the final answer in',
     '      the model answer itself (for example "المشتقة هي ٣س² − ٤" for the check answer "3x^2 - 4").',
-    // The permission to omit stays, and is deliberately narrow. A model
-    // badgered into inventing a check for an essay question would produce a
-    // key the verifier then judges — which is a worse outcome than no key.
-    '    Omit "check" only when the answer is prose, a definition, or otherwise not symbolic.',
+    '      Per type — multiple choice: the check answer is what the correct option states, as a bare value (the',
+    '      option «٧» is "7"), and every option is written in that same form so only one of them matches.',
+    '      Fill in the blank: only when ONE blank holds the checked answer by itself; a question with several',
+    '      blanks has no single check, so leave it out. Short answer: the model answer states the final answer',
+    '      as its own expression ("س = ٢ أو س = ٣"), with any unit after it.',
+    // The permission to omit is deliberate, and now covers a topic that does not
+    // fit as well as an answer that is prose: a model badgered into inventing a
+    // check for the wrong question produces a key the verifier then judges, which
+    // is a worse outcome than no key.
+    '    Leave "check" out when the answer is prose, a definition, a quantity no topic computes, or',
+    '      otherwise not symbolic.',
     // One complete object beats three paragraphs describing one. It exists
     // mainly to show the two notations sitting side by side in a single
     // question — Arabic in the stem a student reads, Latin in the field the
@@ -407,7 +528,7 @@ export function parseGeneratedQuestions(
       // `evaluations.generator` records the same at the evaluation level.
       aiMetadata: {
         model: meta.model,
-        promptVersion: GENERATION_PROMPT_VERSION,
+        promptVersion: generationPromptVersion(req),
         source: "llm",
       },
     });

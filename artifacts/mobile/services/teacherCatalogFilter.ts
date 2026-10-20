@@ -53,6 +53,33 @@ export function hiddenOutsideSelection<T extends { id: string }>(all: T[], selec
   return all.map(item => !kept.has(item.id));
 }
 
+/**
+ * The subject ids a list of *results* should be restricted to, given the
+ * grade's subjects before and after `narrowSubjectsForGrade`. `undefined` when
+ * narrowing removed nothing (no selection, a stale one, or everything picked):
+ * restricting then would only hide rows of subjects outside the grade's own
+ * list for no reason. The library used to narrow its subject chips but not its
+ * results, so «كل المواد» still listed every subject the teacher had not picked.
+ */
+export function scopedSubjectIds<T extends { id: string }>(narrowed: readonly T[], all: readonly T[]): string[] | undefined {
+  if (narrowed.length === 0 || narrowed.length >= all.length) return undefined;
+  return narrowed.map(s => s.id);
+}
+
+/**
+ * A filter id that is still offered, else `null` ("no filter"). Unlike
+ * `resolveSelectedId` this never falls back to the first option: a screen whose
+ * "all" chip is `null` must land on "all", not on an arbitrary item.
+ *
+ * The library tab stays mounted while grades and subjects are edited on the
+ * profile page, so a subject or lesson picked earlier can name a chip that no
+ * longer exists. Left in state it filtered the list to nothing with no chip
+ * highlighted. Derived on render, like the grade fallback beside it.
+ */
+export function keepIfPresent<T extends { id: string }>(options: readonly T[], id: string | null | undefined): string | null {
+  return id && options.some(o => o.id === id) ? id : null;
+}
+
 /** `narrowSubjectsForGrade` as an index-aligned hide mask — see above. */
 export function hiddenSubjectsForGrade<T extends { id: string }>(
   all: T[],
@@ -118,4 +145,25 @@ export function narrowBooksToTeacher<T extends { gradeId: string; subjectId: str
           (!subjectIds?.length || subjectIds.includes(b.subjectId)),
       );
   return narrowed.length > 0 ? narrowed : books;
+}
+
+/**
+ * Why a subject row is hidden under the picked grade — the two causes the
+ * pickers' mask merges (`useTeacherScope.subjectHiddenFor`) but must not
+ * *explain* with one sentence. A missing book is a fact about the catalog and
+ * true for everyone; "not taught" is the teacher's own `/setup-subjects`
+ * selection, and saying «no curriculum» for it told a teacher that a grade
+ * with a book had none. `noBook` wins when both apply because it stays true
+ * however they change their selection.
+ */
+export type SubjectHideReason = 'noBook' | 'notTaught';
+
+export function subjectHideReason(
+  noBook: readonly boolean[],
+  notTaught: readonly boolean[],
+  index: number,
+): SubjectHideReason | null {
+  if (noBook[index]) return 'noBook';
+  if (notTaught[index]) return 'notTaught';
+  return null;
 }

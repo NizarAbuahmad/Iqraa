@@ -20,6 +20,7 @@ import { LEGAL_CONTACT_EMAIL } from '@/constants/legal';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { DateRange, EMPTY_RANGE, rangeQuery, type Range } from '@/components/admin/DateRange';
 import { BackButton } from '@/components/ui/BackButton';
+import { TYPE } from '@/constants/theme';
 
 const ACCENT = '#4F46E5';
 const ADMIN_ROLES = ['school_admin', 'system_admin'];
@@ -28,7 +29,8 @@ type UserRow = {
   id: string;
   firstName: string;
   lastName: string;
-  email: string;
+  /** Null for a parent or student who signed up from a teacher's code. */
+  email: string | null;
   role: string;
   google: boolean;
   signupPlatform: string | null;
@@ -37,6 +39,7 @@ type UserRow = {
   lastLogin: string | null;
   suspendedAt: string | null;
   suspendedReason: string;
+  schoolName: string | null;
   monthSpendUsd: number;
 };
 
@@ -61,7 +64,6 @@ export default function AdminUsersScreen() {
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [blocking, setBlocking] = useState<{ id: string; reason: string } | null>(null);
-
   const load = useCallback(async (offset: number) => {
     const params = `q=${encodeURIComponent(q)}&status=${onlySuspended ? 'suspended' : 'all'}&offset=${offset}${rangeQuery(range)}`;
     const res = await apiJson<{ items: UserRow[]; total: number }>(`/admin/users?${params}`);
@@ -96,7 +98,7 @@ export default function AdminUsersScreen() {
   };
 
   const block = async (u: UserRow, reason: string) => {
-    const name = `${u.firstName} ${u.lastName}`.trim() || u.email;
+    const name = `${u.firstName} ${u.lastName}`.trim() || u.email || u.id;
     const ok = await confirm({
       title: ar ? `حظر ${name}؟` : `Block ${name}?`,
       message: ar ? 'يفقد الدخول فورًا، ويمكن التراجع عن ذلك.' : 'They lose access immediately. This can be undone.',
@@ -111,7 +113,7 @@ export default function AdminUsersScreen() {
 
   const unblock = async (u: UserRow) => {
     const ok = await confirm({
-      title: ar ? `رفع الحظر عن ${u.email}؟` : `Unblock ${u.email}?`,
+      title: ar ? `رفع الحظر عن ${u.email ?? `${u.firstName} ${u.lastName}`.trim()}؟` : `Unblock ${u.email ?? `${u.firstName} ${u.lastName}`.trim()}?`,
       confirmLabel: ar ? 'رفع الحظر' : 'Unblock',
       cancelLabel: ar ? 'إلغاء' : 'Cancel',
     });
@@ -176,7 +178,7 @@ export default function AdminUsersScreen() {
                       {`${u.firstName} ${u.lastName}`.trim() || '—'} · <Text style={{ color: colors.mutedForeground }}>{u.role}</Text>
                     </Text>
                     <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 19, textAlign: align }}>
-                      {u.email} · {u.google ? 'Google' : (ar ? 'كلمة مرور' : 'password')}
+                      {u.email ?? (ar ? 'بلا بريد' : 'no email')} · {u.google ? 'Google' : u.email ? (ar ? 'كلمة مرور' : 'password') : (ar ? 'رمز دخول' : 'login code')}
                     </Text>
                     <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18, textAlign: align }}>
                       {ar ? 'انضم' : 'Joined'} {date(u.createdAt)} · {ar ? 'آخر دخول' : 'Last login'} {date(u.lastLogin)} · AI ${u.monthSpendUsd.toFixed(3)}
@@ -185,6 +187,11 @@ export default function AdminUsersScreen() {
                       {ar ? 'انضم عبر' : 'Joined via'} {u.signupPlatform ?? (ar ? 'غير معروف (قبل ٢ تشرين الأول)' : 'unknown (before 2 Oct)')}
                       {u.signupReferrer ? ` ← ${u.signupReferrer}` : ''}
                     </Text>
+                    {u.role === 'teacher' && (
+                      <Text numberOfLines={1} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 18, textAlign: align }}>
+                        {ar ? 'المدرسة' : 'School'}: {u.schoolName ?? (ar ? 'غير مرتبط' : 'not linked')}
+                      </Text>
+                    )}
                     {!!u.suspendedAt && (
                       <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18, textAlign: align }}>
                         {ar ? 'محظور منذ' : 'Blocked since'} {date(u.suspendedAt)}{u.suspendedReason ? ` — ${u.suspendedReason}` : ''}

@@ -11,7 +11,7 @@ import { getT } from '@/services/i18n';
 import { contentLang, topicInLang } from '@/services/contentLanguage';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
+import { groundingRequestFields, resolveGeneratorGrounding } from '@/services/kbContext';
 import { pooledVariantId, regenerationFields } from '@/services/ai/regeneration';
 import { QuizOutput, QuizQuestion } from '@/services/ai/AIService';
 import { buildDeckFromQuiz } from '@/services/classDeck';
@@ -23,13 +23,20 @@ import { normalizeQuestionOptions, optionLetter } from '@/services/optionLabels'
 import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
-import { groundedSubjectConflict, scopeWithoutCurriculum, scopeFromParams, subjectPickerLabels } from '@/services/lessonPrep';
+import { groundedSubjectConflict, scopeWithoutCurriculum, scopeFromParams, topicForScope, subjectPickerLabels } from '@/services/lessonPrep';
 import { useTeacherScope } from '@/hooks/useTeacherScope';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PickerField as SharedPickerField } from '@/components/ui/PickerField';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
-import { aiErrorMessageKey, isAbortError } from '@/services/ai/aiProvenance';
+import { aiErrorText, getLastGeneration, isAbortError } from '@/services/ai/aiProvenance';
+import { CoverageNotice } from '@/components/ui/CoverageNotice';
+import { useWideScope } from '@/hooks/useWideScope';
+import { DISTRIBUTIONS, type CoverageLesson, type Distribution } from '@/services/coveragePlan';
+import { scopeLabel, type ScopeSelection } from '@/services/scopeSelection';
+import {
+  ALL_QUESTION_COUNTS, buildWideRequest, clampCountIndex, scopeFormState, visibleCountOptions,
+} from '@/services/wideScopeRequest';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
 import { captureGenerationScope, materialScope, reopenedGenerationScope, type GenerationScope } from '@/services/generationScope';
 import { createVerificationTracker } from '@/services/verificationTracker';
@@ -55,27 +62,33 @@ import { GeneratorResultActions, GeneratorSaveBar } from '@/components/ui/Genera
 import { buildQuizHTML, buildQuizSlidesHTML, formatQuizText } from '@/services/share';
 import { buildQuizDocx } from '@/services/quizDocx';
 import { ToolHeader } from '@/components/ui/ToolHeader';
+import { ExamKindSwitch } from '@/components/ui/ExamKindSwitch';
 import { palette } from '@/constants/colors';
 import { useWarmGrounding } from '@/hooks/useWarmGrounding';
+import { usePickedLesson } from '@/hooks/usePickedLesson';
+import { carriedLessonTopic } from '@/services/pickedLesson';
 import { nextFrame } from '@/services/nextFrame';
+import { QUIZ_TYPE_ORDER, type QuizType } from '@workspace/exam-paper';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
 const ACCENT_FILL = palette.hero;
 
-type QType = 'multiple_choice' | 'true_false' | 'short_answer';
-type Difficulty = 'easy' | 'medium' | 'hard';
-type DifficultyLevel = 'normal' | 'high' | 'difficult';
+type Difficulty = 'easy' | 'medium' | 'hard' | 'mixed';
+type DifficultyLevel = 'normal' | 'high' | 'difficult' | 'mixed';
 
 const DURATION_OPTIONS = [10, 15, 20, 25, 30, 45];
 const MARKS_OPTIONS = [10, 20, 25, 30, 40, 50, 100];
-const NUM_Q_OPTIONS = [5, 8, 10, 12, 15, 20];
-const ALL_Q_TYPES: QType[] = ['multiple_choice', 'true_false', 'short_answer'];
-const DIFFICULTY_IDS: DifficultyLevel[] = ['normal', 'high', 'difficult'];
+// 25 and 30 are appended (saved positions keep their meaning) and shown only on a wide scope.
+const NUM_Q_OPTIONS = ALL_QUESTION_COUNTS;
+/** What a unit / semester / book paper is anchored to: the scope itself, never one lesson its label happens to match. */
+const WIDE_GROUNDING = { lesson: null, grounded: true };
+const DIFFICULTY_IDS: DifficultyLevel[] = ['normal', 'high', 'difficult', 'mixed'];
 const DIFFICULTY_MAP: Record<DifficultyLevel, Difficulty> = {
   normal: 'easy',
   high: 'medium',
   difficult: 'hard',
+  mixed: 'mixed',
 };
 
 export default function QuizScreen() {
@@ -85,6 +98,9 @@ export default function QuizScreen() {
   const params = useLocalSearchParams<{
     savedId?: string; gradeIdx?: string; subjectIdx?: string;
     topic?: string; durationIdx?: string; marksIdx?: string; numQIdx?: string; diffIdx?: string; selectedTypes?: string;
+    scope?: string; distribution?: string;
+    // The lesson itself (a lesson page, the lesson bar, a saved quiz) — `usePickedLesson`.
+    lessonId?: string;
   }>();
   const scrollRef = useRef<ScrollView>(null);
 
@@ -94,18 +110,18 @@ export default function QuizScreen() {
   const durationLabels = DURATION_OPTIONS.map(d => `${d} ${t('min')}`);
   const marksLabels = MARKS_OPTIONS.map(m => String(m));
   const numQLabels = NUM_Q_OPTIONS.map(n => String(n));
-  const diffLabels = [t('difficultyNormal'), t('difficultyHigh'), t('difficultyDifficult')];
+  const diffLabels = [t('difficultyNormal'), t('difficultyHigh'), t('difficultyDifficult'), t('difficultyMixed')];
 
-  const parseTypes = (raw?: string): Set<QType> => {
+  const parseTypes = (raw?: string): Set<QuizType> => {
     if (!raw) return new Set(['multiple_choice', 'true_false', 'short_answer']);
-    try { return new Set(JSON.parse(raw) as QType[]); } catch { return new Set(['multiple_choice', 'true_false', 'short_answer']); }
+    try { return new Set(JSON.parse(raw) as QuizType[]); } catch { return new Set(['multiple_choice', 'true_false', 'short_answer']); }
   };
 
   // An index the picker list cannot honour is NOT index 0 — see
   // `scopeFromParams`. Grounding the topic is what recovers the right scope.
   // Only the grades/subjects this teacher picked on /setup-subjects are offered.
   const teacherScope = useTeacherScope();
-  const [initialScope] = useState(() => scopeFromParams(params, uiLang, teacherScope.defaultScope));
+  const [initialScope] = useState(() => scopeFromParams(params, uiLang, teacherScope.defaultScope, teacherScope));
   const [gradeIdx, setGradeIdx] = useState(initialScope.gradeIdx);
   // Index-aligned flags rather than a pre-filtered `subjects`: these positions
   // are persisted as subjectIdx, so entries are dropped at render time only.
@@ -117,11 +133,24 @@ export default function QuizScreen() {
   const [subjectIdx, setSubjectIdx] = useState(initialScope.subjectIdx);
   // The picked subject's material language — English quizzes are in English.
   const lang = contentLang(subjects[subjectIdx].id, uiLang);
-  const [topic, setTopic] = useState(() => topicInLang(
-    params.topic ?? '', uiLang, contentLang(subjects[initialScope.subjectIdx].id, uiLang),
-    { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
-  ));
+  const [topic, setTopic] = useState(() => {
+    const initial = topicForScope(params, uiLang, teacherScope.defaultScope, teacherScope);
+    const initialLang = contentLang(subjects[initialScope.subjectIdx].id, uiLang);
+    return (initial.trim() && carriedLessonTopic(params.lessonId, initialLang)) || topicInLang(
+      initial, uiLang, initialLang,
+      { gradeId: grades[initialScope.gradeIdx].id, subjectId: subjects[initialScope.subjectIdx].id },
+    );
+  });
   useWarmGrounding(topic, lang);
+  const kbScope = { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id };
+  const pickedLesson = usePickedLesson(params.lessonId, topic, kbScope);
+  const wideScope = useWideScope(params, { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id });
+  /** The wide scope and distribution the paper on screen was generated under — what Save records. */
+  const [wideFrozen, setWideFrozen] = useState<{ sel: ScopeSelection; distribution: Distribution } | null>(
+    () => (wideScope.isWide ? { sel: wideScope.scopeSel!, distribution: wideScope.distribution } : null),
+  );
+  /** Which lessons the paper covers, and whether that is exact (offline) or the model's own word (live). */
+  const [coverageInfo, setCoverageInfo] = useState<{ lessons: CoverageLesson[]; modelReported: boolean } | null>(null);
   // Persisted with the material (it was not: a reopened «صعب» quiz regenerated
   // as easy), and range-checked like the other positions.
   const [diffIdx, setDiffIdx] = useState(readIndexParam(params.diffIdx, DIFFICULTY_IDS.length, 0));
@@ -143,7 +172,11 @@ export default function QuizScreen() {
   const [durationIdx, setDurationIdx] = useState(readIndexParam(params.durationIdx, DURATION_OPTIONS.length, 2));
   const [marksIdx, setMarksIdx] = useState(readIndexParam(params.marksIdx, MARKS_OPTIONS.length, 1));
   const [numQIdx, setNumQIdx] = useState(readIndexParam(params.numQIdx, NUM_Q_OPTIONS.length, 2));
-  const [selectedTypes, setSelectedTypes] = useState<Set<QType>>(parseTypes(params.selectedTypes));
+  const [selectedTypes, setSelectedTypes] = useState<Set<QuizType>>(parseTypes(params.selectedTypes));
+  // 25 and 30 exist on a wide scope only. Derived, not written back: the selector
+  // reports no scope for a moment mid-pick (unit A to unit B), and a reset would
+  // lose the teacher's 30 each time.
+  const effNumQIdx = clampCountIndex(numQIdx, wideScope.isWide);
   const [loading, setLoading] = useState(false);
   /**
    * Held across renders so Cancel can reach the in-flight request. A cancel
@@ -166,7 +199,15 @@ export default function QuizScreen() {
    * as «اختبار: » and re-grounded the deck from an empty topic.
    */
   const [generated, setGenerated] = useState<GenerationScope | null>(
-    () => (params.savedId ? reopenedGenerationScope(initialScope, topic, lang) : null),
+    () => {
+      if (!params.savedId) return null;
+      // A restored wide scope is anchored to the scope, not to whichever lesson its
+      // label («الفصل الأول كاملًا», a unit title) would ground to if looked up again.
+      if (wideFrozen && topic.trim()) {
+        return captureGenerationScope({ gradeIdx: initialScope.gradeIdx, subjectIdx: initialScope.subjectIdx, topic }, WIDE_GROUNDING);
+      }
+      return reopenedGenerationScope(initialScope, topic, lang, params.lessonId);
+    },
   );
   const scope = materialScope(generated, { gradeIdx, subjectIdx, topic });
   // The quiz on screen keeps the language it was generated in, even after the
@@ -175,9 +216,12 @@ export default function QuizScreen() {
   const outT = getT(outLang);
   const outRTL = outLang === 'ar';
   const curriculumGrounded: boolean | null = generated ? generated.grounded : null;
-  const groundedLesson: string | null = generated?.lesson
-    ? (outLang === 'ar' ? generated.lesson.titleAr : generated.lesson.titleEn)
-    : null;
+  // A wide paper has no single lesson: name its scope instead of leaving the notice's tail empty.
+  const groundedLesson: string | null = wideFrozen
+    ? scopeLabel(wideFrozen.sel, outLang)
+    : generated?.lesson
+      ? (outLang === 'ar' ? generated.lesson.titleAr : generated.lesson.titleEn)
+      : null;
   /** Ids of questions the teacher has changed, so provenance stays honest. */
   const [editedQuestions, setEditedQuestions] = useState<ReadonlySet<string>>(new Set());
   const [error, setError] = useState('');
@@ -207,7 +251,7 @@ export default function QuizScreen() {
     if (result) setSaveLabel('save');
   }, [result]);
 
-  const toggleType = (type: QType) => {
+  const toggleType = (type: QuizType) => {
     setSelectedTypes(prev => {
       const next = new Set(prev);
       if (next.has(type)) {
@@ -221,16 +265,18 @@ export default function QuizScreen() {
   };
 
   // The form's checkboxes are chrome; the badges on the quiz are the quiz's.
-  const typeLabels = (tr: typeof t): Record<QType, string> => ({
+  const typeLabels = (tr: typeof t): Record<QuizType, string> => ({
     multiple_choice: tr('typeMultipleChoice'),
     true_false: tr('typeTrueFalse'),
+    fill_blank: tr('typeFillBlank'),
     short_answer: tr('typeShortAnswer'),
   });
   const TYPE_LABEL = typeLabels(t);
   const OUT_TYPE_LABEL = typeLabels(outT);
-  const TYPE_COLOR: Record<QType, string> = {
+  const TYPE_COLOR: Record<QuizType, string> = {
     multiple_choice: palette.warning,
     true_false: palette.info,
+    fill_blank: palette.warning,
     short_answer: palette.success,
   };
 
@@ -339,15 +385,24 @@ export default function QuizScreen() {
     // badges and edits, and the scope it was generated under. It used to be
     // cleared up front and never restored, so Cancel on a regenerate threw
     // away the unsaved quiz the teacher was looking at.
-    const held = { result, outcomes, editedQuestions, showAnswers, generated };
+    const held = { result, outcomes, editedQuestions, showAnswers, generated, wideFrozen, coverageInfo };
     if (!topic.trim()) { setError(t('topicRequired')); return; }
     // A topic that grounds to another subject's lesson cannot make an honest
     // paper — the KB serves that lesson's own content while the header claims
     // the picked subject. Refuse and name the real subject instead.
     const missing = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, uiLang);
     if (missing) { setError(t('scopeNoCurriculum', missing.grade, missing.subject)); return; }
-    const conflict = groundedSubjectConflict(topic.trim(), lang, subjects[subjectIdx].id, grades[gradeIdx].id);
-    if (conflict) { setError(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
+    // A wide scope's topic is a label («الفصل الأول كاملًا»), not a lesson: the
+    // subject-conflict check reads a lesson, so it applies to a single lesson only.
+    // A wide scope that cannot be grounded is refused here, never generated mislabeled.
+    const wide = wideScope.isWide
+      ? buildWideRequest(wideScope.scopeSel!, lang, NUM_Q_OPTIONS[effNumQIdx]!, wideScope.distribution, { offset: opts?.regenerate ? Math.floor(Math.random() * 1000) : 0 })
+      : null;
+    if (wideScope.isWide && !wide) { setError(t('wideScopeUngrounded')); return; }
+    if (!wide) {
+      const conflict = groundedSubjectConflict(topic.trim(), lang, subjects[subjectIdx].id, grades[gradeIdx].id);
+      if (conflict) { setError(t('subjectTopicMismatch', uiLang === 'ar' ? conflict.nameAr : conflict.name)); return; }
+    }
     setError(''); setCancelled(false);
     const controller = new AbortController();
     abortRef.current = controller;
@@ -356,10 +411,12 @@ export default function QuizScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await nextFrame();
     try {
-      const kbScope = { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id };
-      const grounding = resolveGeneratorGrounding(topic.trim(), lang, { scope: kbScope });
-      const additionalContext = buildGeneratorContext(topic.trim(), lang, { scope: kbScope });
-      const unitId = generatorUnitId(topic.trim(), lang, kbScope);
+      const lessonGrounding = wide
+        ? null
+        : resolveGeneratorGrounding(topic.trim(), lang, { scope: kbScope, lessonId: pickedLesson.lessonId });
+      const grounding = lessonGrounding ?? WIDE_GROUNDING;
+      // Every field from that one grounding — never the title again (`groundingRequestFields`).
+      const lessonFields = lessonGrounding ? groundingRequestFields(lessonGrounding) : undefined;
       const out = await aiService.generateQuiz({
         // Localised: this string is carried into generated content verbatim —
         // the Arabic worksheet header printed «الصف: Grade 10». `grade` is never
@@ -373,16 +430,19 @@ export default function QuizScreen() {
         duration: DURATION_OPTIONS[durationIdx],
         totalMarks: MARKS_OPTIONS[marksIdx],
         questionTypes: Array.from(selectedTypes),
-        numQuestions: NUM_Q_OPTIONS[numQIdx],
+        numQuestions: NUM_Q_OPTIONS[effNumQIdx],
         difficulty: DIFFICULTY_MAP[DIFFICULTY_IDS[diffIdx]],
-        additionalContext,
-        unitId,
-        lessonId: generatorLessonId(topic.trim(), lang, kbScope),
-        bookFigureCount: generatorFigureCount(topic.trim(), lang, kbScope),
+        additionalContext: lessonFields?.additionalContext,
+        unitId: lessonFields?.unitId,
+        lessonId: lessonFields?.lessonId,
+        bookFigureCount: lessonFields?.bookFigureCount,
         // Curriculum-derived, so the artifact may be shared with any teacher
         // who asks the same question — see AIRequest.contextSource.
         contextSource: 'curriculum',
         ...regenerationFields(opts?.regenerate === true, previous),
+        // Last: the wide scope's digest replaces the lesson-derived context, and
+        // its explicit-undefined lessonId / unitId clear the single-lesson fields.
+        ...(wide ? wide.fields : {}),
       }, { signal: controller.signal });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       // Options are lettered by the renderer, once, in the display language.
@@ -392,6 +452,8 @@ export default function QuizScreen() {
       const normalized = { ...out, questions: out.questions.map(normalizeQuestionOptions) };
       setResult(normalized);
       setGenerated(captureGenerationScope({ gradeIdx, subjectIdx, topic }, grounding));
+      setWideFrozen(wide ? { sel: wideScope.scopeSel!, distribution: wideScope.distribution } : null);
+      setCoverageInfo(wide ? { lessons: wide.lessons, modelReported: getLastGeneration()?.source === 'live' } : null);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
 
       verifyKeys(normalized);
@@ -401,7 +463,7 @@ export default function QuizScreen() {
       // is deliberately not shown: "HTTP 500" is not a sentence in a language
       // a teacher reads, and aiProvenance already records it for the badge.
       if (isAbortError(e)) setCancelled(true);
-      else setError(t(aiErrorMessageKey(e)));
+      else setError(aiErrorText(e, t));
       // Hand back what was on screen; a stop or a failure is not a reason to
       // lose it. The scope goes back with it so the badges and the grounding
       // notice describe the restored paper, not the one that never came.
@@ -411,6 +473,8 @@ export default function QuizScreen() {
         setEditedQuestions(held.editedQuestions);
         setShowAnswers(held.showAnswers);
         setGenerated(held.generated);
+        setWideFrozen(held.wideFrozen);
+        setCoverageInfo(held.coverageInfo);
         if (held.outcomes) verifyRef.current.begin(held.result);
       }
     } finally {
@@ -429,12 +493,15 @@ export default function QuizScreen() {
     const title = getExportTitle();
     const formState = {
       gradeIdx: scope.gradeIdx, subjectIdx: scope.subjectIdx, topic: scope.topic,
-      durationIdx, marksIdx, numQIdx, diffIdx, selectedTypes: JSON.stringify(Array.from(selectedTypes)),
+      durationIdx, marksIdx, numQIdx: effNumQIdx, diffIdx, selectedTypes: JSON.stringify(Array.from(selectedTypes)),
+      // From the frozen scope, not the live pickers (a teacher can move them after generating).
+      ...scopeFormState(wideFrozen?.sel ?? null, wideFrozen?.distribution ?? 'balanced'),
     };
     // Built once: the two branches below used to each spell out the payload.
     const payload = {
       title, subject: subjects[scope.subjectIdx].name, grade: grades[scope.gradeIdx].name,
-      topic: scope.topic, language: outLang, content: JSON.stringify(result), formState,
+      // `repeated` describes a regenerate, not the paper: reopened later it would be stale.
+      topic: scope.topic, language: outLang, content: JSON.stringify({ ...result, repeated: undefined }), formState,
     };
     // `updateItem` answers false when the material is no longer there — the
     // teacher deleted it from موادي while this screen still held its id. The
@@ -488,6 +555,8 @@ export default function QuizScreen() {
     result,
     topic: scope.topic,
     lessonId: scope.lesson?.id,
+    // A wide paper has no figures of its own; see `noFigures`.
+    noFigures: wideFrozen !== null,
     lang: outLang,
     getTitle: getExportTitle,
     getMeta: getExportMeta,
@@ -525,8 +594,11 @@ export default function QuizScreen() {
 
       {/* Form */}
       <View style={{ padding: 20 }}>
+        <View style={{ marginBottom: 20 }}>
+          <ExamKindSwitch active="paper" />
+        </View>
         <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={setGradeIdx} hidden={teacherScope.gradeHidden} colors={colors} isRTL={isRTL} accent={ACCENT} />
-        <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
+        <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t(teacherScope.strandedNoteKey(grades[gradeIdx].id, subjectIdx))} isRTL={isRTL} colors={colors} />
         <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} hidden={subjectHidden} />
 
         <TopicSelector
@@ -534,6 +606,10 @@ export default function QuizScreen() {
           gradeId={grades[gradeIdx].id}
           value={topic}
           onChange={text => { setTopic(text); setError(''); }}
+          onSelectionDetail={pickedLesson.onSelectionDetail}
+          allowedKinds={['lesson', 'unit', 'semester', 'book']}
+          onScopeChange={wideScope.setScopeSel}
+          offlineWideScope
           lang={lang}
           isRTL={isRTL}
           colors={colors}
@@ -542,14 +618,24 @@ export default function QuizScreen() {
           t={t}
         />
 
+        {wideScope.isWide && (
+          <PickerField
+            label={t('distributionLabel')}
+            value={t(wideScope.distribution === 'balanced' ? 'distributionBalanced' : 'distributionRandom')}
+            options={[t('distributionBalanced'), t('distributionRandom')]}
+            onChange={i => wideScope.setDistribution(DISTRIBUTIONS[i]!)}
+            colors={colors} isRTL={isRTL} accent={ACCENT}
+          />
+        )}
+
         <PickerField label={t('levelLabel')} value={diffLabels[diffIdx]} options={diffLabels} onChange={setDiffIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('quizDurationLabel')} value={durationLabels[durationIdx]} options={durationLabels} onChange={setDurationIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('totalMarksLabel')} value={marksLabels[marksIdx]} options={marksLabels} onChange={setMarksIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
-        <PickerField label={t('numQuestionsLabel')} value={numQLabels[numQIdx]} options={numQLabels} onChange={setNumQIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
+        <PickerField label={t('numQuestionsLabel')} value={numQLabels[effNumQIdx]} options={numQLabels.slice(0, visibleCountOptions(wideScope.isWide))} onChange={setNumQIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
         <Text style={[styles.label, { color: colors.foreground, fontFamily: 'ReadexPro_500Medium', textAlign: isRTL ? 'right' : 'left', marginBottom: 10 }]}>{t('questionTypesLabel')}</Text>
         <View style={[styles.checkboxGroup, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-          {ALL_Q_TYPES.map(type => (
+          {QUIZ_TYPE_ORDER.map(type => (
             <CheckboxRow key={type} label={TYPE_LABEL[type]} checked={selectedTypes.has(type)} onToggle={() => toggleType(type)} accent={ACCENT} colors={colors} isRTL={isRTL} />
           ))}
         </View>
@@ -632,7 +718,10 @@ export default function QuizScreen() {
             </View>
           </View>
 
-          <ShortPaperNotice shortfall={result.shortfall} />
+          <ShortPaperNotice shortfall={result.shortfall} repeated={result.repeated} />
+          {coverageInfo && (
+            <CoverageNotice lessons={coverageInfo.lessons} questions={result.questions} modelReported={coverageInfo.modelReported} />
+          )}
 
           {/* Class Mode: project this quiz as whole-class response slides.
               Phones are banned in class, so students answer from their seats
@@ -683,7 +772,7 @@ export default function QuizScreen() {
           </Pressable>
 
           {result.questions.map((q, i) => {
-            const tc = TYPE_COLOR[q.type as QType] ?? ACCENT;
+            const tc = TYPE_COLOR[q.type as QuizType] ?? ACCENT;
             const o = effectiveOutcomes[i];
             return (
               <View key={q.id} style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
@@ -692,7 +781,7 @@ export default function QuizScreen() {
                     <Text style={[{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 12 }]}>{i + 1}</Text>
                   </View>
                   <View style={[styles.typeBadge, { backgroundColor: tc + '18' }]}>
-                    <Text style={[{ color: tc, fontFamily: 'ReadexPro_500Medium', fontSize: 11 }]}>{OUT_TYPE_LABEL[q.type as QType] ?? q.type}</Text>
+                    <Text style={[{ color: tc, fontFamily: 'ReadexPro_500Medium', fontSize: 11 }]}>{OUT_TYPE_LABEL[q.type as QuizType] ?? q.type}</Text>
                   </View>
                   <View style={{ flexDirection: outRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 10, marginLeft: outRTL ? 0 : 'auto', marginRight: outRTL ? 'auto' : 0 }}>
                     <View style={{ minWidth: 54 }}>
@@ -805,7 +894,7 @@ export default function QuizScreen() {
                   </View>
                 )}
 
-                {showAnswers && q.type === 'short_answer' && (
+                {showAnswers && (q.type === 'short_answer' || q.type === 'fill_blank') && (
                   <View style={[styles.ansBox, { backgroundColor: palette.info + '12', borderRadius: 8 }]}>
                     <EditableText
                       value={q.correctAnswer}
@@ -848,6 +937,8 @@ export default function QuizScreen() {
           materialType="quiz"
           toolId="quiz"
           topic={scope.topic}
+          // Its chips open other tools with this label as a bare topic they re-ground.
+          hideRelated={wideFrozen !== null}
         />
       )}
     </ScrollView>

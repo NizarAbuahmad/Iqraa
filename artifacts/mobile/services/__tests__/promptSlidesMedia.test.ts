@@ -114,6 +114,29 @@ describe('attachSearchedMedia — photos and video', () => {
     assert.equal(out.slides.filter(s => s.sideImageUrl).length, 3);
   });
 
+  it('puts no photo on a check, which no export can show beside its options', async () => {
+    const out = await attachSearchedMedia(deck([
+      slide(),
+      slide({ type: 'challenge', mediaPrompt: 'worked example' }),
+      slide({ type: 'question', mediaPrompt: 'quiz', options: ['1', '2'], correctIndex: 0 }),
+      slide({ type: 'summary' }),
+    ]), opts);
+    assert.equal(out.slides.filter(s => s.sideImageUrl).length, 0);
+  });
+
+  it('never shows the same photo twice', async () => {
+    const out = await attachSearchedMedia(deck([
+      slide(),
+      slide({ mediaPrompt: 'lab' }),
+      slide({ title: 'ثانية', mediaPrompt: 'lab' }),
+      slide({ title: 'ثالثة', mediaPrompt: 'cover' }),
+      slide({ type: 'summary' }),
+    ]), { ...opts, photoQueries: ['cover', 'class'] });
+    const urls = out.slides.flatMap(s => [s.sideImageUrl, s.mediaUrl]).filter(Boolean);
+    assert.equal(new Set(urls).size, urls.length, urls.join(' '));
+    assert.equal(out.slides.filter(s => s.sideImageUrl).length, 1);
+  });
+
   it('searches the english queries it was given, not the arabic deck fields', async () => {
     // Unsplash is an english index: querying it with «الكسور» returns nothing,
     // which is what production logged as a 204 for every cover lookup.
@@ -141,6 +164,17 @@ describe('attachSearchedMedia — photos and video', () => {
     const onLayout = out.slides.find(s => s.layout === 'statement');
     assert.equal(onLayout?.sideImageUrl, undefined);
     assert.ok(out.slides.find(s => s.mediaPrompt === 'another photo')?.sideImageUrl);
+  });
+
+  it('a photo layout DOES get its picture — it is drawn from it', async () => {
+    const out = await attachSearchedMedia(deck([
+      slide(),
+      slide({ layout: 'photo', content: 'جملة', mediaPrompt: 'desert dunes' }),
+      slide({ type: 'summary' }),
+    ]), opts);
+    const shot = out.slides.find(s => s.layout === 'photo');
+    assert.ok(shot?.sideImageUrl?.includes('desert'));
+    assert.match(shot?.sideImageCaption ?? '', /Ada/);
   });
 
   it('illustrates content slides from the deck’s spare queries when no slide asked', async () => {

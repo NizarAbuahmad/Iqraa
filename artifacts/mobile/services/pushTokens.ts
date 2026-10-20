@@ -61,7 +61,13 @@ export function ensureNotificationChannels(lang: 'ar' | 'en', isAdmin: boolean):
         importance:
           c.importance === 'high'
             ? Notifications.AndroidImportance.HIGH
-            : Notifications.AndroidImportance.DEFAULT,
+            : c.importance === 'low'
+              ? Notifications.AndroidImportance.LOW
+              : Notifications.AndroidImportance.DEFAULT,
+        // Android fixes a channel's sound and vibration when it is first
+        // created — later calls only rename it — so the silent channel must be
+        // silent from its first creation.
+        ...(c.importance === 'low' ? { sound: null, enableVibrate: false } : {}),
       }),
     ),
   ).catch(err => console.warn('[push] creating notification channels failed', err));

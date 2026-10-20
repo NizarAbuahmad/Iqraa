@@ -53,6 +53,12 @@ jobs:
   # The API list includes lib/** because the API bundles those packages. A
   # change to lib/db or lib/curriculum reaches the server even though nothing
   # under artifacts/api-server/ was touched.
+  #
+  # The API and verifier lists include this file too: their flags and env vars
+  # (`--update-env-vars`) live in it, so an edit here IS a change to them. On
+  # 2026-10-16 #1104 set AI_MODEL_CHAT=gpt-5.4-mini here alone; its run skipped
+  # the API, and production kept gpt-5.4-nano until an unrelated lib/ change
+  # deployed it an hour later. The web list already lets this file through.
   changes:
     name: what changed
     runs-on: ubuntu-latest
@@ -103,13 +109,13 @@ jobs:
           echo "Changed files:"
           printf '%s\n' "$FILES" | sed 's/^/  /'
 
-          if printf '%s\n' "$FILES" | grep -qE '^(artifacts/api-server/|lib/|Dockerfile$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$)'; then
+          if printf '%s\n' "$FILES" | grep -qE '^(artifacts/api-server/|lib/|Dockerfile$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.github/workflows/deploy\.yml$)'; then
             echo "api=true" >> "$GITHUB_OUTPUT"
           else
             echo "api=false" >> "$GITHUB_OUTPUT"
           fi
 
-          if printf '%s\n' "$FILES" | grep -qE '^artifacts/math-verifier/'; then
+          if printf '%s\n' "$FILES" | grep -qE '^(artifacts/math-verifier/|\.github/workflows/deploy\.yml$)'; then
             echo "verifier=true" >> "$GITHUB_OUTPUT"
           else
             echo "verifier=false" >> "$GITHUB_OUTPUT"
@@ -235,6 +241,22 @@ jobs:
       # the free-tier "likely $0" cost for a small always-on charge (a fraction
       # of a vCPU/memory-second, billed continuously) to remove that stall.
       # Revert this line if the cost isn't worth it — nothing else depends on it.
+      #
+      # `--cpu 2` and PASSWORD_HASH_WORKERS=2 (added 2026-10-19): password hashing
+      # runs in worker threads (lib/passwordHash.ts) and one vCPU does ~3 hashes
+      # a second, so a sign-up rush took ~38 s per 100 accounts. Measured with
+      # e2e/loadtest on a local API pinned to two cores: 100 accounts in ~19 s,
+      # a database-free /healthz still p95 7 ms, 0 errors, peak RSS 258 MiB (of
+      # the 512Mi above). Keep the two numbers together: workers = vCPU leaves the
+      # request thread to share a core with a worker once both are busy, which the
+      # run above shows is fine; more workers than vCPU only adds contention.
+      # Cost: the always-on instance (--min-instances 1) now bills two vCPUs.
+      #
+      # AI_MODEL_CHAT (added 2026-10-16): had been set by hand to gpt-5.4-nano,
+      # which no eval had measured for chat (STATUS.md, "Decided 2026-08-22"),
+      # and teachers found the answers weak. gpt-5.4-mini is what generation
+      # runs; it costs ~3.7x nano per turn. Set here so a console edit can't
+      # silently drift it again.
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy iqraa-api \
@@ -243,11 +265,11 @@ jobs:
             --allow-unauthenticated \
             --port 8080 \
             --memory 512Mi \
-            --cpu 1 \
+            --cpu 2 \
             --concurrency 80 \
             --timeout 300 \
             --min-instances 1 \
-            --update-env-vars "GIT_SHA=${GITHUB_SHA::7},AI_USER_BUDGET_USD=1,AI_STUDENT_BUDGET_USD=0.20"
+            --update-env-vars "GIT_SHA=${GITHUB_SHA::7},AI_USER_BUDGET_USD=1,AI_STUDENT_BUDGET_USD=0.20,AI_MODEL_CHAT=gpt-5.4-mini,PASSWORD_HASH_WORKERS=2"
 
       # gcloud reporting success is not evidence the new code is serving. It
       # has printed a success line while traffic stayed pinned to an older
@@ -317,19 +339,21 @@ jobs:
 
   web:
     name: iqraa-web
-    needs: [changes, schema, api, verifier]
+    needs: [changes, migrate, schema, api, verifier]
     # `always()` is load-bearing, not decorative: without it a skipped `api`
     # job would skip `web` too, and most merges do not touch the API. The
     # explicit result checks are what actually enforce server-before-client — a
     # skipped dependency is fine, a failed one is not.
     #
-    # `schema` is checked separately because a failed schema gate leaves `api`
-    # SKIPPED, not failed — and a skipped api passes the check below, which
-    # would ship the new bundle against the old API.
+    # `migrate` and `schema` are checked separately because either failing
+    # leaves everything after it SKIPPED, not failed — and a skipped api passes
+    # the check below, which would ship the new bundle against the old API. A
+    # failed `migrate` did exactly that on 2026-10-08 before this line existed.
     if: |
       always()
       && needs.changes.result == 'success'
       && needs.changes.outputs.web == 'true'
+      && needs.migrate.result != 'failure' && needs.migrate.result != 'cancelled'
       && needs.schema.result != 'failure' && needs.schema.result != 'cancelled'
       && needs.api.result != 'failure' && needs.api.result != 'cancelled'
       && needs.verifier.result != 'failure' && needs.verifier.result != 'cancelled'
@@ -373,13 +397,13 @@ jobs:
           # Read by scripts/inject-pwa.mjs for <meta name="build-commit">, and
           # the only way to tell which commit a served bundle came from.
           BUILD_COMMIT: ${{ github.sha }}
-          #
-          # EXPO_PUBLIC_DEMO_MODE is deliberately NOT set — demoMode.ts
-          # defaults it to true, so the web app ships with mocked AI prose, as
-          # it always has. Setting it here would flip live generation on for
-          # every web teacher as a side effect of a deploy change.
-          # mobile-update.yml DOES set "false", so web and Android differ; that
-          # gap predates this workflow.
+          # Live AI on the web, decided 2026-10-16: teachers use the web app,
+          # and with this unset (demoMode.ts defaults to true) its chat was the
+          # offline keyword assistant and every generator was mocked. Same
+          # value as eas.json and mobile-update.yml, so web and Android now
+          # behave alike. Spend is capped server-side (AI_BUDGET_USD and the
+          # per-user AI_USER_BUDGET_USD in the API deploy above), not by this flag.
+          EXPO_PUBLIC_DEMO_MODE: "false"
         run: pnpm run build:web
 
       # Direct Upload: Cloudflare receives artifacts/mobile/dist as-is and runs

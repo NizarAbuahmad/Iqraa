@@ -2,6 +2,7 @@ import { Router, type IRouter, type Request } from "express";
 import { authMiddleware, requireRole, TEACHER_ROLES } from "../middlewares/auth.js";
 import { createRateLimiter } from "../lib/rateLimit.js";
 import healthRouter from "./health";
+import internalRouter from "./internal";
 import chatRouter from "./chat";
 import generateRouter from "./generate";
 import authRouter from "./auth";
@@ -10,12 +11,17 @@ import verifiedMathRouter from "./verifiedMath";
 import curriculumRouter from "./curriculum";
 import bankRouter from "./bank";
 import rosterRouter from "./roster";
+import homeworkRouter from "./homework";
 import teachingPlansRouter from "./teachingPlans";
 import scheduleRouter from "./schedule";
+import examCalendarRouter from "./examCalendar";
 import evaluationsRouter from "./evaluations";
 import attemptsRouter from "./attempts";
 import studentAttemptRouter from "./studentAttempt";
 import studentExamsRouter from "./studentExams";
+import familyScheduleRouter from "./familySchedule";
+import familyHomeworkRouter from "./familyHomework";
+import studentLessonExplanationRouter from "./studentLessonExplanation";
 import mediaRouter from "./media";
 import practiceRouter from "./practice";
 import lessonMediaRouter from "./lessonMedia";
@@ -74,6 +80,9 @@ const generateLimiter = createRateLimiter({
  * unauthenticated is an open-wallet endpoint the day DEMO_MODE is turned off.
  */
 router.use(healthRouter);
+// Cloud Scheduler's endpoints, guarded by a shared key inside each handler
+// (404 without it) — never a session, so mounted before any guarded router.
+router.use("/internal", internalRouter);
 router.use("/auth", authRouter);
 router.use("/workspace", workspaceRouter);
 // Published national curriculum data — deliberately public, see curriculum.ts.
@@ -82,8 +91,12 @@ router.use(curriculumRouter);
 // not serve the documents; there is nothing here to serve.
 router.use(bankRouter);
 router.use(rosterRouter);
+// Teacher homework: /homework is guarded inside the router (path-scoped); the class read
+// carries its own guards on the route.
+router.use(homeworkRouter);
 router.use(teachingPlansRouter);
 router.use(scheduleRouter);
+router.use(examCalendarRouter);
 router.use(evaluationsRouter);
 router.use(attemptsRouter);
 // The student exam link — deliberately public, and the only unauthenticated
@@ -94,6 +107,15 @@ router.use(attemptsRouter);
 router.use(studentAttemptRouter);
 // «اختباراتي» — authenticated, student-only, and path-scoped to /student.
 router.use(studentExamsRouter);
+// «جدول الحصص» for students and parents — read-only, path-scoped to
+// /student/schedule and /parent/schedule.
+router.use(familyScheduleRouter);
+// «الواجبات» for students and parents — path-scoped to /student/homework and
+// /parent/homework; students may tick off, parents only read.
+router.use(familyHomeworkRouter);
+// «اشرح لي الدرس» — authenticated, student-only, path-scoped to
+// /student/lesson-explanation. Read-only over the pool; makes no model call.
+router.use(studentLessonExplanationRouter);
 // Path-scoped, not `router.use(authMiddleware, chatRouter)` — that form mounts
 // the middleware at "/" and reproduces the original bug, answering 401 for
 // paths no router owns. The prefixes below cover every route these four

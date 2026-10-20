@@ -7,6 +7,7 @@
  * pattern-matching English strings.
  */
 import { apiFetch } from './apiClient.ts';
+import { PAPER_TOTALS_CHUNK, type PaperTotalResult } from './paperMarks.ts';
 
 /**
  * Mirrors `QuestionType` in `lib/db/src/schema/evaluations.ts`.
@@ -38,6 +39,14 @@ export interface Evaluation {
   /** The class the teacher attached this exam to, or null. */
   classGroupId?: string | null;
   /**
+   * When the sitting is planned, "YYYY-MM-DD", or null/absent if never dated.
+   * Returned by `GET /evaluations/:id` and the PATCH, not by the LIST endpoint.
+   * Planning data only — it does not open or close the student link.
+   */
+  examDate?: string | null;
+  /** "HH:MM", only ever set together with `examDate`. */
+  examTime?: string | null;
+  /**
    * Papers the teacher has finished marking, counted server-side from
    * `attempt_results` excluding provisional ones. Returned by the LIST
    * endpoint only — `GET /evaluations/:id` does not carry it.
@@ -57,6 +66,8 @@ export interface Evaluation {
   questionCount?: number;
   /** The student link's code. Issued at publish; null before that. */
   shareCode?: string | null;
+  /** When the link stops opening (ISO). Every publish pushes it a week out; null = never. */
+  shareCodeExpiresAt?: string | null;
   title: string;
   titleAr: string;
   gradeId: string;
@@ -85,6 +96,8 @@ export interface EvaluationQuestion {
   marks: string;
   gradingMode: 'deterministic' | 'math_equivalence' | 'ai_rubric' | 'manual';
   source: 'ai' | 'teacher' | 'ai_edited';
+  /** How the question was made. Read only through `bookItemNote`; absent on older questions. */
+  aiMetadata?: Record<string, unknown> | null;
   /**
    * SymPy's verdict on this question's answer key, when there was one to
    * check. Absent on every question written before key checking existed, and
@@ -100,7 +113,7 @@ export interface EvaluationQuestion {
      * before key checking existed — treat that as "say nothing", never as a
      * verdict.
      */
-    code?: 'verified' | 'no_key' | 'verifier_unreachable' | 'undecided' | 'key_unlinked' | 'edited';
+    code?: 'verified' | 'no_key' | 'verifier_unreachable' | 'undecided' | 'contradicted' | 'key_unlinked' | 'edited';
     computedAnswer?: string | null;
     reason?: string;
     checkedAt?: string;
@@ -194,13 +207,21 @@ export async function setEvaluationClass(
   return data.evaluation;
 }
 
-/** Who a group check is for (support groups). Only while it is a draft. */
-export async function setEvaluationAudience(evaluationId: string, studentIds: string[]): Promise<string[]> {
-  const res = await apiFetch(`/evaluations/${evaluationId}/audience`, {
-    method: 'PUT',
-    body: JSON.stringify({ studentIds }),
+/**
+ * Set when an exam is planned to be sat, or pass `examDate: null` to clear it
+ * (which clears the time too). `examTime` needs a date. This is what the school
+ * exam calendar reads.
+ */
+export async function setEvaluationExamSchedule(
+  evaluationId: string,
+  schedule: { examDate: string | null; examTime?: string | null },
+): Promise<Evaluation> {
+  const res = await apiFetch(`/evaluations/${evaluationId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(schedule),
   });
-  return (await readJson<{ audience: string[] }>(res, 'Choosing the group')).audience;
+  const data = await readJson<{ evaluation: Evaluation }>(res, 'Saving the exam date');
+  return data.evaluation;
 }
 
 export async function createEvaluation(input: {
@@ -525,6 +546,33 @@ export async function listAttempts(evaluationId: string): Promise<AttemptListRow
 }
 
 /**
+ * The class mark book: one total per student for a quick paper exam. Answers
+ * per student — saved, unchanged, cleared, or refused with a code — so one bad
+ * row never loses the others. Longer than the 15s default: each row is a mark
+ * and a hand-in.
+ *
+ * One request is at most `PAPER_TOTALS_CHUNK` rows (the server would take 100,
+ * but each row is several queries); a longer list is the caller's to split with `chunkTotals`, so
+ * the results of the chunks already saved are not lost to a later one failing.
+ * A refusal of the whole save throws `EvaluationError` — `paperTotalsFailureKey`
+ * (services/paperMarks.ts) names the copy for it.
+ */
+export async function savePaperTotals(
+  evaluationId: string,
+  totals: { studentId: string; marks: number | null }[],
+): Promise<{ maxMarks: number; results: PaperTotalResult[] }> {
+  if (totals.length > PAPER_TOTALS_CHUNK) {
+    throw new Error(`savePaperTotals takes at most ${PAPER_TOTALS_CHUNK} rows; split the list with chunkTotals`);
+  }
+  const res = await apiFetch(`/evaluations/${evaluationId}/paper-totals`, {
+    method: 'PUT',
+    body: JSON.stringify({ totals }),
+    timeoutMs: 45_000,
+  });
+  return readJson(res, 'Saving marks');
+}
+
+/**
  * Let a student through the lesson this quiz covers (or take it back). The
  * server refuses anything but a one-lesson quiz.
  */
@@ -535,14 +583,27 @@ export async function setMasteryUnlock(evaluationId: string, studentId: string, 
   await readJson<{ ok: boolean }>(res, 'Updating the unlock');
 }
 
-/** Find-or-create: safe to call every time a teacher opens a student's entry screen. */
-export async function startAttempt(evaluationId: string, studentId: string): Promise<Attempt> {
+/**
+ * Find-or-create, and says which: `created` is false when the student already
+ * had a paper for this exam (any source). The marking endpoint upserts, so a
+ * caller that is about to WRITE marks must read this — writing into a paper it
+ * did not create silently replaces a mark a teacher entered or a student earned.
+ */
+export async function startAttemptChecked(
+  evaluationId: string,
+  studentId: string,
+): Promise<{ attempt: Attempt; created: boolean }> {
   const res = await apiFetch(`/evaluations/${evaluationId}/attempts`, {
     method: 'POST',
     body: JSON.stringify({ studentId }),
   });
-  const data = await readJson<{ attempt: Attempt }>(res, 'Starting attempt');
-  return data.attempt;
+  const data = await readJson<{ attempt: Attempt; created?: boolean }>(res, 'Starting attempt');
+  return { attempt: data.attempt, created: data.created === true };
+}
+
+/** Find-or-create: safe to call every time a teacher opens a student's entry screen. */
+export async function startAttempt(evaluationId: string, studentId: string): Promise<Attempt> {
+  return (await startAttemptChecked(evaluationId, studentId)).attempt;
 }
 
 export async function getAttempt(attemptId: string): Promise<{
@@ -627,6 +688,78 @@ export async function scanMarks(
     timeoutMs: 45_000,
   });
   return readJson(res, 'Reading the marks');
+}
+
+/** One question the model read off an exam paper. Mirrors api-server `PaperScanRow`. */
+export interface PaperScanRow {
+  /** 1-based, as printed. */
+  number: number;
+  /** Null when the pages did not state it or it could not be read — never a default. */
+  marks: number | null;
+  objectiveId: string | null;
+  competencyKey: CompetencyKey | null;
+  readAs: string;
+}
+
+/**
+ * Read the pages of an exam the teacher set, to fill the paper-exam grid.
+ *
+ * Stateless: the grid is saved together with the evaluation, so there is no
+ * evaluation yet — the objectives ticked in the form travel in the body. Saves
+ * nothing; `saved: false` comes back to say so.
+ */
+export async function scanPaper(
+  images: string[],
+  objectiveIds: string[],
+): Promise<{
+  rows: PaperScanRow[];
+  printedTotal: number | null;
+  skipped: { number: number; reason: string }[];
+  model: string;
+  saved: boolean;
+}> {
+  const res = await apiFetch('/evaluations/scan-paper', {
+    method: 'POST',
+    body: JSON.stringify({ images, objectiveIds }),
+    // Up to four pages through a vision model; a little longer than one page.
+    timeoutMs: 60_000,
+  });
+  return readJson(res, 'Reading the paper');
+}
+
+export type ScanMatchStatus = 'confident' | 'confirm' | 'none';
+
+export interface ScanCandidate {
+  studentId: string;
+  displayName: string;
+  /** 0–1; 1 is an exact name match. */
+  score: number;
+  hasAttempt: boolean;
+}
+
+export interface ClassScanResponse {
+  /** The name as the model transcribed it, or null. */
+  nameRead: string | null;
+  match: { status: ScanMatchStatus; studentId: string | null; candidates: ScanCandidate[] };
+  proposals: MarkProposal[];
+  skipped: { number: number; reason: string }[];
+  /** The total the teacher wrote on the paper, when they wrote one. */
+  writtenTotal: number | null;
+  model: string;
+  saved: boolean;
+}
+
+/**
+ * Read one student's marked paper: the marks, and whose it is. Creates nothing.
+ * Called once per photograph so one failure costs one row.
+ */
+export async function scanClassPaper(evaluationId: string, image: string): Promise<ClassScanResponse> {
+  const res = await apiFetch(`/evaluations/${evaluationId}/scan-class-paper`, {
+    method: 'POST',
+    body: JSON.stringify({ image }),
+    timeoutMs: 45_000,
+  });
+  return readJson(res, 'Reading the paper');
 }
 
 export async function setTeacherComment(attemptId: string, teacherComment: string): Promise<Attempt> {

@@ -23,11 +23,12 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  BOOK_FIGURE_MAX, bookFigureCaption, buildLessonDeck, splitChecks, splitExample,
+  BOOK_FIGURE_MAX, BOOK_PAGE_SLIDE_MAX, bookFigureCaption, bookPageSlides, buildLessonDeck, splitChecks, splitExample,
   splitWarmup, usableTeaching, withoutSlide,
 } from '../lessonSlides.ts';
 import { figuresForLesson } from '../bookFigures.ts';
 import { KB_LESSONS } from '../knowledgeBase.ts';
+import pageLinks from '../../../../knowledge-base/book-page-links.json' with { type: 'json' };
 import type { ActivitySlide, LessonPlanOutput } from '../ai/AIService.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
 
@@ -64,7 +65,7 @@ const PLAN: LessonPlanOutput = {
   guidedPractice: 'حل تمرينين معًا.',
   independentPractice: 'حل ٤ تمارين فرديًا.',
   closure: 'لخّص الخطوات الثلاث.',
-  assessment: 'بطاقة خروج.',
+  assessment: 'غلق الدرس.',
   differentiation: 'أعطِ المتقدمين معادلة بمعاملات كسرية.',
   homework: 'تمارين ١-٦ صفحة ٧٢.',
 };
@@ -450,7 +451,7 @@ describe('formative checks in the lesson deck', () => {
       checks: [mcq(1), mcq(2), mcq(3), mcq(4), mcq(5)],
     });
     assert.equal(checkTitles(deck.slides, 'تحقّق سريع').length, 2);
-    assert.equal(checkTitles(deck.slides, 'تذكرة الخروج ').length, 3);
+    assert.equal(checkTitles(deck.slides, 'غلق الدرس ').length, 3);
   });
 
   it('puts one mid-lesson check before the worked examples and one after', () => {
@@ -475,8 +476,8 @@ describe('formative checks in the lesson deck', () => {
       checks: [mcq(1), mcq(2), mcq(3), mcq(4), mcq(5)],
     });
     const summary = deck.slides.findIndex(s => s.type === 'summary');
-    const divider = deck.slides.findIndex(s => s.type === 'divider' && s.title.includes('تذكرة الخروج'));
-    const firstTicket = deck.slides.findIndex(s => s.title.includes('تذكرة الخروج '));
+    const divider = deck.slides.findIndex(s => s.type === 'divider' && s.title.includes('غلق الدرس'));
+    const firstTicket = deck.slides.findIndex(s => s.title.includes('غلق الدرس '));
     assert.ok(summary >= 0 && divider > summary, 'divider follows the summary');
     assert.equal(firstTicket, divider + 1);
   });
@@ -511,7 +512,7 @@ describe('formative checks in the lesson deck', () => {
     // Three is one short of an exit ticket worth the name, so all three stay
     // mid-lesson — nothing is dropped and no one-question section appears.
     assert.equal(checkTitles(deck.slides, 'تحقّق سريع').length, 3);
-    assert.equal(checkTitles(deck.slides, 'تذكرة الخروج').length, 0);
+    assert.equal(checkTitles(deck.slides, 'غلق الدرس').length, 0);
   });
 
   it('refuses a question slide with no usable options', () => {
@@ -564,11 +565,11 @@ describe('formative checks in the lesson deck', () => {
       checks: [mcq(1), mcq(2), mcq(3), mcq(4), mcq(5)],
     });
     // The book example still numbers as an example; a check is keyed by its
-    // section title, because "تذكرة الخروج 1" is the first exit-ticket
+    // section title, because "غلق الدرس 1" is the first exit-ticket
     // question and not the first question in the deck.
     assert.ok(deck.answerKey.some(k => k.startsWith('مثال 1:')));
     assert.ok(deck.answerKey.some(k => k.includes('✋ تحقّق سريع 1') && k.endsWith(': ب1')));
-    assert.ok(deck.answerKey.some(k => k.includes('🎫 تذكرة الخروج 1') && k.endsWith(': ب3')));
+    assert.ok(deck.answerKey.some(k => k.includes('🎫 غلق الدرس 1') && k.endsWith(': ب3')));
   });
 
   it('leaves open checks out of the answer key rather than printing a blank row', () => {
@@ -891,8 +892,8 @@ describe('one language per deck', () => {
     });
     const check = deck.slides.find(s => s.title.includes('تحقّق سريع 1'))!;
     assert.equal(check.title, '✋ تحقّق سريع 1');
-    const exit = deck.slides.find(s => s.title.includes('تذكرة الخروج 1'))!;
-    assert.equal(exit.title, '🎫 تذكرة الخروج 1');
+    const exit = deck.slides.find(s => s.title.includes('غلق الدرس 1'))!;
+    assert.equal(exit.title, '🎫 غلق الدرس 1');
   });
 });
 
@@ -976,6 +977,39 @@ describe('generated explanation in the deck', () => {
     assert.equal(deck.slides.some(s => s.title.includes('أفكار الدرس')), false);
     const rule = deck.slides.find(s => s.title.includes('القاعدة'))!;
     assert.ok(rule.content.includes(LESSON.rulesAr![0]!));
+  });
+
+  it('drops a generated point that restates the book rule, and a concept left with none', () => {
+    const rule = LESSON.rulesAr![0]!;
+    const deck = buildLessonDeck('x', true, {
+      lesson: LESSON,
+      teaching: { ...TEACHING, concepts: [
+        { title: 'فكرة تكرّر القاعدة', points: [`${rule}.`] },
+        { title: 'فكرة مختلطة', points: [`  ${rule} `, 'سطر جديد'] },
+      ] },
+    });
+    assert.equal(deck.slides.some(s => s.title === 'فكرة تكرّر القاعدة'), false);
+    assert.equal(deck.slides.find(s => s.title === 'فكرة مختلطة')!.content, '• سطر جديد');
+    assert.ok(deck.slides.find(s => s.title.includes('القاعدة'))!.content.includes(rule));
+  });
+
+  it('keeps a short point that is only a fragment of the rule', () => {
+    const rule = LESSON.rulesAr![0]!;
+    const fragment = rule.slice(0, Math.ceil(rule.length / 3));
+    const deck = buildLessonDeck('x', true, {
+      lesson: LESSON, teaching: { ...TEACHING, concepts: [{ title: 'جزء', points: [fragment] }] },
+    });
+    assert.equal(deck.slides.find(s => s.title === 'جزء')?.content, `• ${fragment}`);
+  });
+
+  it('falls back to the book when every generated point restated the rule', () => {
+    const rule = LESSON.rulesAr![0]!;
+    const withBook = buildLessonDeck('x', true, { lesson: LESSON });
+    const allDropped = buildLessonDeck('x', true, {
+      lesson: LESSON, teaching: { ...TEACHING, concepts: [{ title: 'تكرار', points: [rule] }] },
+    });
+    const bookTitles = (d: typeof withBook) => d.slides.filter(s => !s.aiWritten && s.type !== 'challenge').map(s => s.title);
+    for (const t of bookTitles(withBook)) assert.ok(allDropped.slides.some(s => s.title === t), `book slide «${t}» lost`);
   });
 
   it("never replaces the book's own worked examples", () => {
@@ -1074,7 +1108,7 @@ describe('opening order', () => {
   it('gives the exit-ticket divider the same shape', () => {
     const deck = build(two, { checks: [mcq(1), mcq(2), mcq(3), mcq(4), mcq(5)] });
     const exit = deck.slides.filter(s => s.type === 'divider').pop()!;
-    assert.equal(exit.title, 'تذكرة الخروج');
+    assert.equal(exit.title, 'غلق الدرس');
     assert.equal(exit.content, 'حل المعادلات التربيعية');
   });
 
@@ -1172,5 +1206,45 @@ describe('a short figure with a name', () => {
   it('leaves a long value alone even when it holds digits', () => {
     const s = slideTitled(['الشرط: يجب أن يكون المميز أكبر من 0 حتى يوجد حلان', 'فكرة ثانية: شرح طويل لا يصلح أن يكون رقمًا'], 'الشرط')!;
     assert.equal(s.layout, undefined);
+  });
+});
+
+describe('a lesson with no figure shows its own book pages', () => {
+  // A lesson whose pages are on file but that the figure index knows nothing of —
+  // the Arabic / Islamic / PE / digital / civic books, whose pages were found by title.
+  const pageOnly = Object.entries((pageLinks as { lessons: Record<string, { sourceId: string; startPage: number }> }).lessons)
+    .find(([id]) => figuresForLesson(id).length === 0);
+
+  it('the data has such a lesson', () => {
+    assert.ok(pageOnly, 'no lesson with book pages and no figures — the page-only subjects are missing from book-page-links.json');
+  });
+
+  it('bookPageSlides: the first pages, in order, captioned with the page', () => {
+    const [id, entry] = pageOnly!;
+    const slides = bookPageSlides(id, true);
+    assert.ok(slides.length >= 1 && slides.length <= BOOK_PAGE_SLIDE_MAX);
+    assert.ok(slides.every(s => s.type === 'media' && s.mediaKind === 'image' && s.title === 'من كتاب الطالب'));
+    assert.match(slides[0]!.mediaUrl!, new RegExp(`/${id}/1\.jpg$`));
+    assert.match(slides[0]!.mediaCaption!, /صفحة/);
+    assert.equal(bookPageSlides(id, false)[0]!.mediaCaption, `Student Book · page ${entry.startPage}`);
+    assert.deepEqual(bookPageSlides('kbl-does-not-exist', true), []);
+    assert.deepEqual(bookPageSlides(undefined, true), []);
+    assert.equal(bookPageSlides(id, true, 1).length, 1);
+  });
+
+  it('a lesson deck shows them only when asked, and only for a lesson with no figure to show', () => {
+    const [id] = pageOnly!;
+    const lesson: KBLesson = { ...LESSON, id };
+    const plain = buildLessonDeck('درس', true, { lesson });
+    assert.equal(plain.slides.some(s => s.type === 'media'), false, 'opt-in: a deck built without the flag is as it was');
+    const withPages = buildLessonDeck('درس', true, { lesson, bookPages: true });
+    const media = withPages.slides.filter(s => s.type === 'media');
+    assert.ok(media.length >= 1 && media.length <= BOOK_PAGE_SLIDE_MAX);
+    assert.ok(media.every(s => /\/book-pages\//.test(s.mediaUrl ?? '')));
+    // a lesson that has figures keeps its figures and gains no pages
+    const withFigures = buildLessonDeck('نظام معادلات', true, {
+      lesson: { ...LESSON, id: 'kbl-math-s1-nccd-u1_l1' }, figureUri: f => `https://fig/${f.file}`, bookPages: true,
+    });
+    assert.equal(withFigures.slides.some(s => /\/book-pages\//.test(s.mediaUrl ?? '')), false);
   });
 });

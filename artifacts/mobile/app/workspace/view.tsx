@@ -11,6 +11,8 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { SavedMaterial, getItem } from '@/services/workspace';
+import { getHomeworkMaterial } from '@/services/homeworkApi';
+import { useAuth } from '@/context/AuthContext';
 import { useFavorite } from '@/hooks/useFavorite';
 import {
   ActivityOutput, ActivityStep, ClassroomActivity, LessonFlowOutput, LessonPlanOutput,
@@ -35,6 +37,7 @@ import { normalizeQuestionOptions, optionLetter } from '@/services/optionLabels'
 import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { resolveGeneratorGrounding } from '@/services/kbContext';
+import { isWideScopeFormState } from '@/services/materialLessonId';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import {
@@ -58,7 +61,14 @@ export default function WorkspaceViewScreen() {
   const { t, isRTL, lang } = useLanguage();
   // `premade` opens a ready-made sheet from the library (read-only: no Edit,
   // no Favourite — both act on a teacher's own saved copy, which this isn't).
-  const { id, premade } = useLocalSearchParams<{ id?: string; premade?: string }>();
+  // `hw` + `material` is a student or parent opening a saved material the
+  // teacher attached to a homework: read-only too, and the server has already
+  // taken the answers out, so nothing here offers a teacher's copy or a teacher
+  // tool (send, present) — the only route a family may reach under /workspace.
+  const { id, premade, hw, material } = useLocalSearchParams<{ id?: string; premade?: string; hw?: string; material?: string }>();
+  const family = !!(hw && material);
+  const readOnly = !!premade || family;
+  const { user } = useAuth();
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   const [item, setItem] = useState<SavedMaterial | null>(null);
@@ -96,8 +106,22 @@ export default function WorkspaceViewScreen() {
         formState: {},
       } : null);
       setLoading(false);
+    } else if (hw && material) {
+      getHomeworkMaterial(hw, material, user?.role === 'parent' ? 'parent' : 'student')
+        .catch(() => null)
+        .then(m => {
+          setItem(m);
+          setLoading(false);
+        });
     } else if (id) {
       getItem(id).then(m => {
+        // A board is not a quiz. Without this it falls through every `kind`
+        // switch below to the quiz builders. It reopens in the whiteboard
+        // itself; `replace` so Back goes to the list, not to this spinner.
+        if (m?.type === 'board') {
+          router.replace({ pathname: '/ai-tools/whiteboard' as any, params: { savedId: m.id } });
+          return;
+        }
         // An English material saved in Arabic opens in its tool instead, which
         // redoes it in English over this copy (see useEnglishRefresh).
         const redo = m && redoesInEnglish(m) ? MATERIAL_EDIT_ROUTE[viewKind(m, parseContent(m.content))] : undefined;
@@ -110,7 +134,7 @@ export default function WorkspaceViewScreen() {
         setLoading(false);
       });
     }
-  }, [id, premade, lang]);
+  }, [id, premade, hw, material, lang]);
 
   if (loading) {
     return (
@@ -144,6 +168,13 @@ export default function WorkspaceViewScreen() {
   const docLang = materialSubjectId(item) === 'english' ? item.language : lang;
   const docRTL = docLang === 'ar';
   const docT = getT(docLang);
+
+  // A unit / semester / book paper is not one lesson. `lessonId` is not stamped
+  // on it any more (workspace.ts), but a copy saved before that fix may carry
+  // another lesson's id, and "send to students" would offer that lesson's
+  // objectives — so ignore it here as well.
+  const wideMaterial = isWideScopeFormState(item.formState);
+  const sendLessonId: string | undefined = wideMaterial ? undefined : item.formState?.lessonId;
 
   const accent = MATERIAL_COLOR[kind as keyof typeof MATERIAL_COLOR] ?? colors.primary;
 
@@ -182,9 +213,13 @@ export default function WorkspaceViewScreen() {
    * material — and a quiz saved for next week's exam printed without the
    * diagrams its own questions refer to. Re-resolved rather than stored,
    * because a saved material predates the field and would have none.
+   *
+   * A unit / semester / book paper has no single lesson: its topic is the
+   * scope's label, which would ground to some lesson (possibly another
+   * grade's) and print that lesson's figures. It gets none.
    */
   const getExportFigures = () =>
-    bookFigureRefsForLesson(resolveGeneratorGrounding(item.topic ?? '', docLang).lesson?.id, isAr);
+    wideMaterial ? [] : bookFigureRefsForLesson(resolveGeneratorGrounding(item.topic ?? '', docLang).lesson?.id, isAr);
 
   const getHTML = () => {
     if (!content) return '<p></p>';
@@ -193,7 +228,7 @@ export default function WorkspaceViewScreen() {
     if (kind === 'lesson') return buildLessonPlanHTML(content as LessonPlanOutput, item.title, meta, isAr, figures);
     if (kind === 'activity') return buildActivityHTML(content as ActivityOutput, item.title, meta, isAr, figures);
     if (kind === 'worksheet') return worksheetExports(content as WorksheetOutput, item.title, meta, isAr, docCopy, figures, printStyle).html;
-    if (kind === 'flow') return buildLessonFlowHTML(content as unknown as LessonFlowOutput, isAr, figures);
+    if (kind === 'flow') return buildLessonFlowHTML(content as unknown as LessonFlowOutput, isAr, figures, { revision: wideMaterial });
     if (kind === 'slides' || kind === 'prompt-slides') return buildDeckHTML(content as ClassroomActivity, isAr);
     return quizExports(content as QuizOutput, item.title, meta, isAr, docCopy, figures, printStyle).html;
   };
@@ -255,7 +290,7 @@ export default function WorkspaceViewScreen() {
 
       {/* Action bar */}
       <View style={[styles.actionBar, { backgroundColor: colors.card, borderBottomColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        {!premade && isEditableMaterial(item) && (
+        {!readOnly && isEditableMaterial(item) && (
         <Pressable
           onPress={() => router.push({ pathname: editRoute as any, params: { savedId: item.id, ...item.formState } })}
           style={[styles.actionBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
@@ -264,7 +299,7 @@ export default function WorkspaceViewScreen() {
           <Text style={[{ color: accent, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>{t('editItem')}</Text>
         </Pressable>
         )}
-        {!premade && (
+        {!readOnly && (
         <Pressable
           onPress={handleToggleFavorite}
           style={[styles.actionBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
@@ -286,7 +321,7 @@ export default function WorkspaceViewScreen() {
           <Ionicons name="share-outline" size={16} color={colors.mutedForeground} />
           <Text style={[{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>{t('exportBtn')}</Text>
         </Pressable>
-        {kind === 'worksheet' && content && (
+        {kind === 'worksheet' && content && !family && (
           <Pressable
             onPress={() => setShowSend(true)}
             style={[styles.actionBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
@@ -299,7 +334,7 @@ export default function WorkspaceViewScreen() {
         )}
         {/* A saved deck's whole point is being projected again — the workspace
             is where a teacher returns to it the morning of the lesson. */}
-        {(kind === 'slides' || kind === 'prompt-slides') && content && (
+        {(kind === 'slides' || kind === 'prompt-slides') && content && !family && (
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -314,7 +349,9 @@ export default function WorkspaceViewScreen() {
             </Text>
           </Pressable>
         )}
-        {kind === 'flow' && content && (
+        {/* Not for a revision flow: this hands the label to the classroom builder as a
+            bare topic, which would ground it to one lesson (possibly another grade's). */}
+        {kind === 'flow' && content && !wideMaterial && !family && (
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -351,9 +388,9 @@ export default function WorkspaceViewScreen() {
         ) : kind === 'activity' ? (
           <ActivityView activity={content as ActivityOutput} colors={colors} isRTL={docRTL} t={docT} accent={accent} isAr={isAr} />
         ) : kind === 'worksheet' ? (
-          <WorksheetView ws={content as WorksheetOutput} lessonId={item.formState?.lessonId} colors={colors} isRTL={docRTL} t={docT} accent={accent} />
+          <WorksheetView ws={content as WorksheetOutput} lessonId={sendLessonId} colors={colors} isRTL={docRTL} t={docT} accent={accent} />
         ) : kind === 'flow' ? (
-          <FlowView flow={content as unknown as LessonFlowOutput} colors={colors} isRTL={docRTL} lang={docLang} accent={accent} />
+          <FlowView flow={content as unknown as LessonFlowOutput} colors={colors} isRTL={docRTL} lang={docLang} accent={accent} revision={wideMaterial} />
         ) : kind === 'slides' || kind === 'prompt-slides' ? (
           <SlidesDeckView deck={content as ClassroomActivity} colors={colors} isRTL={docRTL} isAr={isAr} accent={accent} />
         ) : (
@@ -386,7 +423,7 @@ export default function WorkspaceViewScreen() {
       <SendWorksheetSheet
         visible={showSend}
         worksheet={content as WorksheetOutput}
-        lessonId={item.formState?.lessonId}
+        lessonId={sendLessonId}
         language={docLang === 'en' ? 'en' : 'ar'}
         accent={accent}
         colors={colors}
@@ -405,7 +442,7 @@ export default function WorkspaceViewScreen() {
       onCopy={handleCopy}
       onPDF={handlePDF}
       onWord={handleWord}
-      copyChoice={(kind === 'quiz' || kind === 'worksheet') && content ? { value: docCopy, onChange: setDocCopy } : undefined}
+      copyChoice={(kind === 'quiz' || kind === 'worksheet') && content && !family ? { value: docCopy, onChange: setDocCopy } : undefined}
       printStyle={(kind === 'quiz' || kind === 'worksheet') && content ? { value: printStyle, onChange: setPrintStyle } : undefined}
       isRTL={isRTL}
       loadingPDF={loadingPDF}
@@ -725,10 +762,13 @@ function QuizView({ quiz, colors, isRTL, t, accent, lang }: {
               <Text style={[{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' }]}>{opt}</Text>
             </View>
           ))}
+          {/* Empty on a family's copy: the server takes the answers out. */}
+          {q.correctAnswer ? (
           <View style={[{ padding: 10, marginTop: 4, backgroundColor: palette.success + '15', borderRadius: 8, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }]}>
             <Ionicons name="checkmark-circle" size={14} color="#067647" />
             <Text style={[{ color: palette.success, fontFamily: 'ReadexPro_500Medium', fontSize: 12, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{t('answer')}: {q.correctAnswer}</Text>
           </View>
+          ) : null}
         </View>
       ))}
     </>
@@ -813,8 +853,10 @@ function SlidesDeckView({ deck, colors, isRTL, isAr, accent }: {
   );
 }
 
-function FlowView({ flow, colors, isRTL, lang, accent }: {
+function FlowView({ flow, colors, isRTL, lang, accent, revision }: {
   flow: LessonFlowOutput; colors: any; isRTL: boolean; lang: string; accent: string;
+  /** A unit / semester / book flow: its last section is the session's, not a lesson's. */
+  revision: boolean;
 }) {
   const sections: Array<{
     label: string; icon: keyof typeof Ionicons.glyphMap; color: string;
@@ -900,7 +942,7 @@ function FlowView({ flow, colors, isRTL, lang, accent }: {
       ),
     },
     {
-      label: lang === 'ar' ? 'بطاقة الخروج' : 'Exit Ticket',
+      label: lang === 'ar' ? (revision ? 'غلق الحصة' : 'غلق الدرس') : 'Exit Ticket',
       icon: 'ticket-outline', color: palette.warning,
       render: () => (
         <View style={{ gap: 6 }}>

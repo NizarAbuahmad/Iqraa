@@ -11,13 +11,364 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  absorbQuizTopUp,
   assertUsableGeneration,
   extractJSON,
   deckShortfalls,
+  mergeWorksheetTopUp,
   missingFields,
+  normalizeQuiz,
+  quizRepeats,
+  quizShortfall,
+  quizStems,
+  quizStemsAt,
+  quizWanted,
   REQUIRED_FIELDS,
+  trimWorksheet,
   UnusableGenerationError,
+  worksheetQuestionCount,
+  worksheetShortfall,
+  worksheetStems,
 } from "../generationShape.ts";
+
+
+const wq = (text: string) => ({ text, points: 1 });
+/** A worksheet of `n` questions split over two sections, with its answer key. */
+const sheet = (n: number, extra: Record<string, unknown> = {}) => ({
+  title: "t",
+  instructions: "i",
+  sections: [
+    { type: "short_answer", title: "A", questions: Array.from({ length: Math.ceil(n / 2) }, (_, i) => wq(`a${i}`)) },
+    { type: "short_answer", title: "B", questions: Array.from({ length: Math.floor(n / 2) }, (_, i) => wq(`b${i}`)) },
+  ],
+  answerKey: Array.from({ length: n }, (_, i) => ({ num: i + 1, answer: `k${i}` })),
+  ...extra,
+});
+const example = { problem: "p", steps: ["1", "2", "3"], answer: "a" };
+
+describe("a worksheet or homework holds the number of questions that was asked for", () => {
+  it("counts questions across every section", () => {
+    assert.equal(worksheetQuestionCount(sheet(7)), 7);
+    assert.equal(worksheetQuestionCount({}), 0);
+    assert.equal(worksheetQuestionCount({ sections: [null, { questions: "x" }, { questions: [wq("a")] }] }), 1);
+  });
+
+  it("owes nothing for a complete homework, and the difference for a short one", () => {
+    assert.equal(worksheetShortfall(sheet(20), { numQuestions: 20 }), 0);
+    assert.equal(worksheetShortfall(sheet(10), { numQuestions: 20 }), 10);
+    assert.equal(worksheetShortfall(sheet(10), {}), 0);
+  });
+
+  it("counts the worked example INSIDE the number picked", () => {
+    // 10 asked, an example, and 9 in the sections: complete.
+    assert.equal(worksheetShortfall(sheet(9, { workedExample: example }), { numQuestions: 10 }), 0);
+    assert.equal(worksheetShortfall(sheet(7, { workedExample: example }), { numQuestions: 10 }), 2);
+    // No example (a lesson with no procedure to model): all ten are questions.
+    assert.equal(worksheetShortfall(sheet(9), { numQuestions: 10 }), 1);
+  });
+
+  it("expects at least the review's lower bound on top when a review was asked for", () => {
+    const body = { numQuestions: 10, includePriorReview: true, priorKnowledge: ["x"] };
+    assert.equal(worksheetShortfall(sheet(12), body), 0);
+    assert.equal(worksheetShortfall(sheet(13), body), 0);
+    assert.equal(worksheetShortfall(sheet(10), body), 2);
+    // A review requested with nothing to review adds nothing to expect.
+    assert.equal(worksheetShortfall(sheet(10), { numQuestions: 10, includePriorReview: true, priorKnowledge: [] }), 0);
+  });
+
+  it("lists the stems already written, whitespace collapsed", () => {
+    const s = { sections: [{ questions: [wq("ما   هو\n الناتج؟"), wq("")] }, { questions: [wq("ثانيًا")] }] };
+    assert.deepEqual(worksheetStems(s), ["ما هو الناتج؟", "ثانيًا"]);
+  });
+
+  it("merges a top-up in as new sections, numbering its answers straight on", () => {
+    const base = sheet(4, { workedExample: example });
+    const extra = {
+      title: "x",
+      sections: [{ type: "short_answer", title: "Additional practice", questions: [wq("c0"), wq("c1")] }],
+      answerKey: [{ num: 1, answer: "n1", solution: ["s"] }, { num: 2, answer: "n2" }],
+    };
+    mergeWorksheetTopUp(base, extra);
+    assert.equal(worksheetQuestionCount(base), 6);
+    assert.equal((base.sections as unknown[]).length, 3);
+    assert.deepEqual((base.answerKey as { num: number }[]).map(k => k.num), [1, 2, 3, 4, 5, 6]);
+    assert.deepEqual((base.answerKey as { answer: string }[]).slice(4).map(k => k.answer), ["n1", "n2"]);
+    assert.ok((base as Record<string, unknown>).workedExample, "the first reply's worked example is kept");
+    assert.equal(base.title, "t");
+  });
+
+  it("a top-up with no answer key still adds its questions", () => {
+    const base = sheet(2);
+    mergeWorksheetTopUp(base, { sections: [{ questions: [wq("z")] }] });
+    assert.equal(worksheetQuestionCount(base), 3);
+    assert.equal((base.answerKey as unknown[]).length, 2);
+  });
+
+  it("trims a long paper from the end, with its key, never below the count", () => {
+    const s = sheet(14);
+    const removed = trimWorksheet(s, { numQuestions: 10 });
+    assert.equal(removed, 4);
+    assert.equal(worksheetQuestionCount(s), 10);
+    assert.equal((s.answerKey as unknown[]).length, 10);
+    // The first questions survive.
+    assert.equal(((s.sections as { questions: { text: string }[] }[])[0]!.questions[0]!.text), "a0");
+  });
+
+  it("drops a section that trimming empties", () => {
+    const s = { sections: [{ questions: [wq("a"), wq("b")] }, { questions: [wq("c")] }], answerKey: [{ num: 1 }, { num: 2 }, { num: 3 }] };
+    trimWorksheet(s, { numQuestions: 2 });
+    assert.equal((s.sections as unknown[]).length, 1);
+    assert.equal((s.answerKey as unknown[]).length, 2);
+  });
+
+  it("leaves a review the teacher asked for alone: up to three over the count is not surplus", () => {
+    const body = { numQuestions: 10, includePriorReview: true, priorKnowledge: ["x"] };
+    const s = sheet(13);
+    assert.equal(trimWorksheet(s, body), 0);
+    assert.equal(worksheetQuestionCount(s), 13);
+    assert.equal(trimWorksheet(sheet(16), body), 3);
+  });
+
+  it("does not trim anything when the request named no count, or a paper is the right length or short", () => {
+    assert.equal(trimWorksheet(sheet(14), {}), 0);
+    assert.equal(trimWorksheet(sheet(10), { numQuestions: 10 }), 0);
+    assert.equal(trimWorksheet(sheet(4), { numQuestions: 10 }), 0);
+  });
+});
+
+const mcq = (id: string, text: string) => ({ id, type: "multiple_choice", text, options: ["a", "b", "c"], correctAnswer: "a", points: 1 });
+const tf = (id: string, text: string) => ({ id, type: "true_false", text, options: ["صح", "خطأ"], correctAnswer: "صح", points: 1 });
+const sa = (id: string, text: string) => ({ id, type: "short_answer", text, correctAnswer: "x", points: 1 });
+
+describe("a quiz holds the number of questions that was asked for", () => {
+  it("trims a long paper from the biggest block, so no type disappears", () => {
+    const q = {
+      title: "t",
+      questions: [
+        ...Array.from({ length: 6 }, (_, i) => mcq(`m${i}`, `m${i}`)),
+        ...Array.from({ length: 3 }, (_, i) => tf(`t${i}`, `t${i}`)),
+        sa("s0", "s0"),
+      ],
+    };
+    const notes = normalizeQuiz(q, ["multiple_choice", "true_false", "short_answer"], 6);
+    assert.equal(q.questions.length, 6);
+    const types = new Set(q.questions.map(x => x.type));
+    assert.ok(types.has("multiple_choice") && types.has("true_false") && types.has("short_answer"));
+    assert.ok(notes.some(n => /trimmed 4/.test(n)));
+    // Cut from the end of the biggest block: the first questions survive.
+    assert.equal(q.questions[0]!.id, "m0");
+  });
+
+  it("leaves a paper of exactly the right length, or shorter, alone", () => {
+    const q = { title: "t", questions: [mcq("a", "a"), mcq("b", "b")] };
+    assert.deepEqual(normalizeQuiz(q, ["multiple_choice"], 2), []);
+    assert.deepEqual(normalizeQuiz(q, ["multiple_choice"], 10), []);
+    assert.equal(q.questions.length, 2);
+  });
+
+  it("reads the asked-for count from the request, and nothing it should not", () => {
+    assert.equal(quizWanted({ numQuestions: 20 }), 20);
+    assert.equal(quizWanted({ numQuestions: "15" }), 15);
+    assert.equal(quizWanted({ numQuestions: 0 }), null);
+    assert.equal(quizWanted({ numQuestions: 400 }), null);
+    assert.equal(quizWanted({ numQuestions: 2.5 }), null);
+    assert.equal(quizWanted({}), null);
+    assert.equal(quizWanted(undefined), null);
+  });
+
+  it("knows how many a short reply still owes", () => {
+    const q = { title: "t", questions: Array.from({ length: 10 }, (_, i) => mcq(`q${i}`, `q${i}`)) };
+    assert.equal(quizShortfall(q, { numQuestions: 20 }), 10);
+    assert.equal(quizShortfall(q, { numQuestions: 10 }), 0);
+    assert.equal(quizShortfall(q, { numQuestions: 5 }), 0);
+    assert.equal(quizShortfall(q, {}), 0);
+    assert.equal(quizShortfall({}, { numQuestions: 5 }), 5);
+  });
+
+  it("lists the stems already written, whitespace collapsed", () => {
+    const q = { title: "t", questions: [mcq("a", "ما   هو\n الناتج؟"), mcq("b", "")] };
+    assert.deepEqual(quizStems(q), ["ما هو الناتج؟"]);
+  });
+
+  it("merges a top-up in, renumbering straight on and keeping the first reply's title", () => {
+    const base = { title: "الأصل", questions: [mcq("q1", "a"), tf("q2", "b")] };
+    const extra = { title: "ثانٍ", questions: [mcq("q1", "c"), sa("q2", "d")] };
+    absorbQuizTopUp(base, extra, [], 4);
+    assert.equal(base.title, "الأصل");
+    assert.deepEqual(base.questions.map(x => x.id), ["q1", "q2", "q3", "q4"]);
+    assert.deepEqual(base.questions.map(x => x.text), ["a", "b", "c", "d"]);
+  });
+
+  it("a merged and re-normalised top-up is a grouped, right-length paper", () => {
+    const base = { title: "t", questions: [mcq("q1", "a"), tf("q2", "b"), sa("q3", "c")] };
+    const extra = { title: "t", questions: [mcq("q1", "d"), tf("q2", "e"), sa("q3", "f")] };
+    absorbQuizTopUp(base, extra, [], 6);
+    normalizeQuiz(base, ["multiple_choice", "true_false", "short_answer"], 6);
+    assert.deepEqual(base.questions.map(x => x.type), [
+      "multiple_choice", "multiple_choice", "true_false", "true_false", "short_answer", "short_answer",
+    ]);
+  });
+
+  const molar = (id: string, compound: string) => mcq(id, `أوجد الكتلة المولية ل${compound}`);
+
+  it("finds the questions past their kind's share, rewordings included", () => {
+    // Five «أوجد الكتلة المولية» of different compounds: one ask, and a third
+    // of a ten-question paper is four.
+    const q = {
+      title: "t",
+      questions: [
+        molar("q1", "غاز الأكسجين O₂"),
+        mcq("q2", "ما المقصود بالرابطة الأيونية؟"),
+        molar("q3", "كربونات الصوديوم Na₂CO₃"),
+        molar("q4", "لماء H₂O"),
+        tf("q5", "تتكوّن الرابطة التساهمية بين فلز ولا فلز."),
+        molar("q6", "غاز النيتروجين N₂"),
+        tf("q7", "أوجد الكتلة المولية لغاز الأمونيا NH₃"),
+      ],
+    };
+    assert.deepEqual(quizRepeats(q, 10), [6]);
+    // A twenty-question paper may hold seven of one kind.
+    assert.deepEqual(quizRepeats(q, 20), []);
+    // Stems that are only symbols share no sentence.
+    assert.deepEqual(quizRepeats({ questions: ["3 + 4 = ؟", "5 × 2 = ؟", "9 − 6 = ؟", "8 ÷ 2 = ؟"].map((t, i) => mcq(`q${i}`, t)) }, 4), []);
+  });
+
+  it("replaces repeats with fresh questions, keeping their marks and place", () => {
+    const base = {
+      title: "t",
+      questions: [
+        molar("q1", "غاز الأكسجين O₂"),
+        molar("q2", "لماء H₂O"),
+        molar("q3", "كربونات الصوديوم Na₂CO₃"),
+        { ...molar("q4", "غاز النيتروجين N₂"), points: 3 },
+        mcq("q5", "ما المقصود بالرابطة الأيونية؟"),
+      ],
+    };
+    const repeats = quizRepeats(base, 8);
+    assert.deepEqual(repeats, [3]);
+    const extra = {
+      title: "t",
+      questions: [
+        { ...molar("q1", "غاز الهيدروجين H₂"), points: 1 }, // the same ask again: not a replacement
+        { ...mcq("q2", "علّل: درجة غليان الماء مرتفعة مقارنة بكبريتيد الهيدروجين."), points: 1 },
+        { ...mcq("q3", "قارن بين الرابطة الأيونية والرابطة التساهمية من حيث طريقة تكوّنها."), points: 1 },
+      ],
+    };
+    assert.equal(absorbQuizTopUp(base, extra, repeats, 8), 1);
+    const texts = base.questions.map(x => x.text);
+    assert.match(texts[3]!, /علّل/);
+    assert.equal(base.questions[3]!.points, 3, "the replacement takes the replaced question's marks");
+    assert.match(texts[5]!, /قارن/);
+    // The skipped repeat still fills a place the paper is short of.
+    assert.match(texts[6]!, /الهيدروجين/);
+    assert.equal(texts.length, 7);
+    assert.deepEqual(base.questions.map(x => x.id), ["q1", "q2", "q3", "q4", "q5", "q6", "q7"]);
+  });
+
+  it("never makes a paper shorter to make it more varied", () => {
+    const base = {
+      title: "t",
+      questions: [molar("q1", "غاز الأكسجين O₂"), molar("q2", "لماء H₂O"), molar("q3", "كربونات الصوديوم Na₂CO₃"), molar("q4", "غاز النيتروجين N₂")],
+    };
+    const repeats = quizRepeats(base, 4);
+    assert.deepEqual(repeats, [3]);
+    // Only the same ask came back.
+    absorbQuizTopUp(base, { questions: [molar("q1", "غاز الهيدروجين H₂")] }, repeats, 4);
+    assert.equal(base.questions.length, 4);
+    assert.match(base.questions[3]!.text, /النيتروجين/);
+  });
+
+  it("reads a repeat's text by its own position, past a question with no text", () => {
+    const q = { questions: [mcq("q1", ""), molar("q2", "غاز الأكسجين O₂"), molar("q3", "لماء H₂O"), molar("q4", "كربونات الصوديوم Na₂CO₃"), molar("q5", "غاز النيتروجين N₂")] };
+    const repeats = quizRepeats(q, 5);
+    assert.deepEqual(repeats, [4]);
+    assert.deepEqual(quizStemsAt(q, repeats), ["أوجد الكتلة المولية لغاز النيتروجين N₂"]);
+  });
+
+  it("does not lengthen a paper whose request named no count", () => {
+    const base = {
+      title: "t",
+      questions: [molar("q1", "غاز الأكسجين O₂"), molar("q2", "لماء H₂O"), molar("q3", "كربونات الصوديوم Na₂CO₃"), molar("q4", "غاز النيتروجين N₂")],
+    };
+    const extra = { questions: [mcq("q1", "علّل: درجة غليان الماء مرتفعة."), mcq("q2", "قارن بين الفلز واللافلز.")] };
+    assert.equal(absorbQuizTopUp(base, extra, quizRepeats(base)), 1);
+    assert.equal(base.questions.length, 4);
+  });
+
+  it("assertUsableGeneration trims to the request's own count", () => {
+    const q = { title: "t", questions: Array.from({ length: 12 }, (_, i) => mcq(`q${i}`, `q${i}`)) };
+    assertUsableGeneration("quiz", q, { numQuestions: 8, questionTypes: ["multiple_choice"] });
+    assert.equal(q.questions.length, 8);
+  });
+});
+
+/** A quiz in the model's own order, with the shapes it actually returns. */
+const quiz = () => ({
+  title: "اختبار",
+  questions: [
+    { id: "q1", type: "short_answer", text: "علّل", correctAnswer: "لأن", points: 4 },
+    { id: "q2", type: "True/False", text: "الماء مركّب.", correctAnswer: "صحيح", points: 2 },
+    { id: "q3", type: "multiple_choice", text: "أيّ؟", options: ["أ", "ب", "ج", "د"], correctAnswer: "ب", points: 2 },
+    { id: "q4", type: "true_false", text: "Water is an element.", options: ["True", "False"], correctAnswer: "F", points: 2 },
+  ],
+});
+
+describe("normalizeQuiz", () => {
+  it("groups the questions in ministry order without reordering within a type", () => {
+    const q = quiz();
+    const notes = normalizeQuiz(q, ["multiple_choice", "true_false", "short_answer"]);
+    assert.deepEqual(q.questions.map(x => x.id), ["q3", "q2", "q4", "q1"]);
+    assert.ok(notes.some(n => /reordered/.test(n)));
+  });
+
+  it("drops the types the teacher did not tick, and says so", () => {
+    const q = quiz();
+    const notes = normalizeQuiz(q, ["true_false"]);
+    assert.deepEqual(q.questions.map(x => x.id), ["q2", "q4"]);
+    assert.ok(notes.some(n => /dropped 2/.test(n)));
+  });
+
+  it("gives every true/false item the pair the app renders, in the paper's language", () => {
+    const q = quiz();
+    normalizeQuiz(q, ["true_false"]);
+    const [ar, en] = q.questions as Record<string, unknown>[];
+    assert.equal(ar!.type, "true_false");
+    assert.deepEqual(ar!.options, ["صح", "خطأ"]);
+    assert.equal(ar!.correctAnswer, "صح");
+    assert.deepEqual(en!.options, ["True", "False"]);
+    assert.equal(en!.correctAnswer, "False");
+  });
+
+  it("reads a missing or unknown type label from the question's shape", () => {
+    const q = {
+      questions: [
+        { text: "أيّ؟", options: ["أ", "ب", "ج"], correctAnswer: "أ", points: 1 },
+        { text: "اذكر", correctAnswer: "…", points: 1 },
+        { type: "matching", text: "صل", correctAnswer: "…", points: 1 },
+      ],
+    };
+    const notes = normalizeQuiz(q, ["multiple_choice", "short_answer"]);
+    assert.deepEqual(q.questions.map(x => x.type), ["multiple_choice", "short_answer"]);
+    assert.ok(notes.some(n => /dropped 1/.test(n)));
+  });
+
+  it("allows every type when the request named none", () => {
+    const q = quiz();
+    normalizeQuiz(q, undefined);
+    assert.equal(q.questions.length, 4);
+  });
+
+  it("refuses a paper with nothing of the requested type rather than serving it", () => {
+    assert.throws(() => normalizeQuiz(quiz(), ["fill_blank"]), UnusableGenerationError);
+  });
+
+  it("runs from assertUsableGeneration for a quiz, with the request body", () => {
+    const q = quiz();
+    assertUsableGeneration("quiz", q, { questionTypes: ["multiple_choice"] });
+    assert.deepEqual(q.questions.map(x => x.id), ["q3"]);
+    assert.deepEqual(assertUsableGeneration("lesson-plan", lessonPlan()), []);
+  });
+});
 
 /** A deck that clears the structural floor, for mutating in the cases below. */
 const deck = (slides: unknown[]) => ({ activityName: "عرض", slides });
@@ -283,5 +634,109 @@ describe("LaTeX in a JSON reply", () => {
     const body = `${BS}sqrt{x} and ${BS}(x^2${BS})`;
     const out = extractJSON(json(body)) as { a: string };
     assert.equal(out.a, body);
+  });
+});
+
+describe("prompt-slides — laid-out slides keep their substance outside content", () => {
+  // A stat or compare slide legitimately has an empty body, and refusing it
+  // threw away a whole paid deck over its best slide. Found 2026-10-08.
+  it("accepts a stat slide and a compare slide with no content", () => {
+    const slides = [
+      ...fiveSlides(),
+      slide({ content: "", layout: "stat", stat: { value: "3", label: "قوانين" } }),
+      slide({ content: "", layout: "compare", compare: { leftTitle: "أ", left: ["x"], rightTitle: "ب", right: ["y"] } }),
+    ];
+    assert.doesNotThrow(() => assertUsableGeneration("prompt-slides", deck(slides)));
+  });
+
+  it("still refuses a laid-out slide whose payload is empty too", () => {
+    assert.throws(
+      () => assertUsableGeneration("prompt-slides", deck([...fiveSlides(), slide({ content: "", layout: "stat", stat: { value: " ", label: "x" } })])),
+      UnusableGenerationError,
+    );
+    assert.throws(
+      () => assertUsableGeneration("prompt-slides", deck([...fiveSlides(), slide({ content: "", layout: "compare", compare: { leftTitle: "أ", left: [], rightTitle: "ب", right: ["y"] } })])),
+      UnusableGenerationError,
+    );
+  });
+});
+
+describe("deckShortfalls — the cover is one line on purpose", () => {
+  it("does not count the first slide as thin", () => {
+    const slides = fiveSlides();
+    slides[0] = slide({ content: "one line cover" });
+    assert.ok(!deckShortfalls(deck(slides)).some(s => /single unbroken line/.test(s)));
+  });
+});
+
+describe("a lesson tag survives normalisation, and the counts the wide scope offers are enforced", () => {
+  const mc = (i: number, lesson: string) => ({ id: `q${i}`, type: "multiple_choice", text: `s${i}`, options: ["a", "b", "c", "d"], correctAnswer: "a", points: 1, explanation: "", lesson });
+
+  it("normalizeQuiz keeps `lesson` on every question, including after it reorders", () => {
+    const parsed = { questions: [
+      { id: "q1", type: "short_answer", text: "w", correctAnswer: "x", points: 1, explanation: "", lesson: "L2" },
+      mc(2, "L1"),
+    ] };
+    normalizeQuiz(parsed, ["multiple_choice", "short_answer"], 2);
+    assert.deepEqual(parsed.questions.map(q => (q as { lesson?: string }).lesson), ["L1", "L2"]);
+  });
+
+  it("a worksheet's tags survive the top-up merge and the trim", () => {
+    const base = { sections: [{ type: "short_answer", title: "a", questions: [{ text: "1", points: 1, lesson: "L1" }, { text: "2", points: 1, lesson: "L2" }] }], answerKey: [] };
+    const extra = { sections: [{ type: "short_answer", title: "b", questions: [{ text: "3", points: 1, lesson: "L3" }] }], answerKey: [] };
+    mergeWorksheetTopUp(base, extra);
+    const tags = (base.sections as { questions: { lesson?: string }[] }[]).flatMap(s => s.questions.map(q => q.lesson));
+    assert.deepEqual(tags, ["L1", "L2", "L3"]);
+    const removed = trimWorksheet(base, { numQuestions: 2 });
+    const left = (base.sections as { questions: { text: string; lesson?: string }[] }[]).flatMap(s => s.questions);
+    assert.equal(removed, 1);
+    assert.deepEqual(left.map(q => [q.text, q.lesson]), [["1", "L1"], ["2", "L2"]]);
+  });
+
+  it("25 and 30 are real counts; 31 is treated as 'did not say'", () => {
+    assert.equal(quizWanted({ numQuestions: 25 }), 25);
+    assert.equal(quizWanted({ numQuestions: 30 }), 30);
+    assert.equal(quizWanted({ numQuestions: 31 }), null);
+  });
+
+  it("a 25-question quiz that came back with 20 owes 5; with 30 asked and 22 back, 8", () => {
+    const q = (n: number) => ({ questions: Array.from({ length: n }, (_, i) => mc(i + 1, "L1")) });
+    assert.equal(quizShortfall(q(20), { numQuestions: 25 }), 5);
+    assert.equal(quizShortfall(q(22), { numQuestions: 30 }), 8);
+    assert.equal(quizShortfall(q(30), { numQuestions: 30 }), 0);
+  });
+
+  it("a 30-question worksheet is held to its count", () => {
+    const sheet = (n: number) => ({ sections: [{ type: "short_answer", title: "s", questions: Array.from({ length: n }, (_, i) => ({ text: `q${i}`, points: 1 })) }], answerKey: [] });
+    assert.equal(worksheetShortfall(sheet(24), { numQuestions: 30 }), 6);
+    assert.equal(worksheetShortfall(sheet(30), { numQuestions: 30 }), 0);
+  });
+});
+
+describe("prompt-slides — the structure layouts keep their words in a payload", () => {
+  const withBody = (over: Record<string, unknown>) => deck([...fiveSlides(), slide({ content: "", ...over })]);
+
+  it("accepts a timeline, stats, table or flow slide whose body is only its payload", () => {
+    for (const over of [
+      { layout: "timeline", timeline: [{ label: "1", text: "a" }] },
+      { layout: "stats", stats: [{ value: "1", label: "a" }] },
+      { layout: "table", table: { headers: ["a", "b"], rows: [["1", "2"]] } },
+      { layout: "flow", flow: { steps: ["a", "b", "c"] } },
+      { layout: "quote", quote: { text: "a quotation" } },
+    ]) {
+      assert.doesNotThrow(() => assertUsableGeneration("prompt-slides", withBody(over)), JSON.stringify(over));
+    }
+  });
+
+  it("still refuses a slide that names a layout and has neither a payload nor a sentence", () => {
+    for (const over of [
+      { layout: "timeline", timeline: [] },
+      { layout: "stats" },
+      { layout: "table", table: { headers: [], rows: [] } },
+      { layout: "flow", flow: { steps: [] } },
+      { layout: "quote", quote: { text: "  " } },
+    ]) {
+      assert.throws(() => assertUsableGeneration("prompt-slides", withBody(over)), UnusableGenerationError, JSON.stringify(over));
+    }
   });
 });

@@ -40,18 +40,25 @@ import { useMasteryProgress } from '@/hooks/useMasteryProgress';
 import {
   MY_EXAM_STATE_KEY,
   canRetakeExam,
+  metaSegments,
   myExamAction,
   myExamTitle,
+  progressSummary,
+  splitMyExams,
   subjectLabel,
   type MyExam,
   type MyExamState,
+  type ProgressSummary,
 } from '@/services/myExams';
 import { formatListDate } from '@/services/evaluationRow';
+import { isValidYmd } from '@/services/homework';
+import { formatExamWhen, groupChildExams } from '@/services/upcomingExams';
 import { formatMarks } from '@/services/studentAnswers';
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { StudentResultCard, LEVEL_LABEL_KEY } from '@/components/StudentResultCard';
 import { palette } from '@/constants/colors';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
+import { SPACE, TYPE } from '@/constants/theme';
 import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = palette.primary;
@@ -63,6 +70,7 @@ const STATE_COLOR: Record<MyExamState, string> = {
   submitted: '#475467',
   result: palette.success,
   closed: '#667085',
+  paper: '#475467',
 };
 
 const STATE_ICON: Record<MyExamState, keyof typeof Ionicons.glyphMap> = {
@@ -71,6 +79,7 @@ const STATE_ICON: Record<MyExamState, keyof typeof Ionicons.glyphMap> = {
   submitted: 'hourglass-outline',
   result: 'ribbon-outline',
   closed: 'lock-closed-outline',
+  paper: 'document-text-outline',
 };
 
 /** A child's section for a parent; the student's own list is one unnamed group. */
@@ -106,7 +115,7 @@ export default function MyExamsScreen() {
     setError('');
     try {
       const next = isParent
-        ? (await getChildExams()).map(c => ({ key: c.studentId, name: c.displayName, exams: c.exams }))
+        ? groupChildExams(await getChildExams()).map(g => ({ key: g.key, name: g.displayName, exams: g.exams }))
         : [{ key: 'self', name: null, exams: await getMyExams() }];
       if (seq === loadSeq.current) setGroups(next);
     } catch (e) {
@@ -232,28 +241,128 @@ export default function MyExamsScreen() {
                     {t('childResultsNone')}
                   </Text>
                 ) : null}
-                {group.exams.map(exam => {
-                  const openKey = `${group.key}:${exam.evaluationId}`;
-                  return (
-                    <ExamRow
-                      key={openKey}
-                      exam={exam}
-                      open={openResult === openKey}
-                      onPress={() => onRow(exam, openKey)}
-                      canRetake={canRetakeExam(exam, progress.retakeEvaluationIds, isParent)}
-                      retaking={retaking === exam.evaluationId}
-                      onRetake={() => void onRetake(exam)}
-                      colors={colors}
-                      isRTL={isRTL}
-                      lang={lang}
-                      t={t}
-                    />
-                  );
-                })}
+                {!isParent && group.exams.length > 0 ? (
+                  <ProgressCard
+                    summary={progressSummary(group.exams)}
+                    lessonsPassed={progress.enabled ? progress.passedLessonIds.length : null}
+                    colors={colors}
+                    isRTL={isRTL}
+                    lang={lang}
+                    t={t}
+                  />
+                ) : null}
+                {group.exams.length > 0
+                  ? (() => {
+                      const { upcoming, past } = splitMyExams(group.exams);
+                      const row = (exam: MyExam) => {
+                        const openKey = `${group.key}:${exam.evaluationId}`;
+                        return (
+                          <ExamRow
+                            key={openKey}
+                            exam={exam}
+                            open={openResult === openKey}
+                            onPress={() => onRow(exam, openKey)}
+                            canRetake={canRetakeExam(exam, progress.retakeEvaluationIds, isParent)}
+                            retaking={retaking === exam.evaluationId}
+                            onRetake={() => void onRetake(exam)}
+                            colors={colors}
+                            isRTL={isRTL}
+                            lang={lang}
+                            t={t}
+                          />
+                        );
+                      };
+                      return (
+                        <>
+                          <SectionTitle text={t('myExamsUpcoming')} colors={colors} align={align} />
+                          {upcoming.length > 0 ? (
+                            upcoming.map(row)
+                          ) : (
+                            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, textAlign: align }}>
+                              {t('myExamsNoUpcoming')}
+                            </Text>
+                          )}
+                          {past.length > 0 ? <SectionTitle text={t('myExamsPast')} colors={colors} align={align} /> : null}
+                          {past.map(row)}
+                        </>
+                      );
+                    })()
+                  : null}
               </View>
             ))
           : null}
       </ScrollView>
+    </View>
+  );
+}
+
+type Colors = ReturnType<typeof useColors>;
+type TFn = ReturnType<typeof useLanguage>['t'];
+
+function SectionTitle({ text, colors, align }: { text: string; colors: Colors; align: 'left' | 'right' }) {
+  return (
+    <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.bodyLg, textAlign: align, marginTop: 4 }}>
+      {text}
+    </Text>
+  );
+}
+
+/**
+ * «تقدّمي»: tests taken, average and, with the mastery gate on, lessons passed,
+ * then the average per subject. Built from released results only (see
+ * `progressSummary`), so it can never show a mark the teacher is holding back.
+ */
+function ProgressCard({
+  summary, lessonsPassed, colors, isRTL, lang, t,
+}: {
+  summary: ProgressSummary;
+  lessonsPassed: number | null;
+  colors: Colors;
+  isRTL: boolean;
+  lang: 'ar' | 'en';
+  t: TFn;
+}) {
+  const align = isRTL ? 'right' : 'left';
+  const stat = (value: string, label: string) => (
+    <View style={{ flex: 1, alignItems: 'center', gap: 2 }}>
+      <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.title }}>{value}</Text>
+      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: 'center' }}>{label}</Text>
+    </View>
+  );
+  return (
+    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, gap: 12 }]}>
+      <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.bodyLg, textAlign: align }}>
+        {t('myExamsProgressTitle')}
+      </Text>
+      {summary.averagePercent === null ? (
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: align }}>
+          {t('myExamsProgressEmpty')}
+        </Text>
+      ) : (
+        <>
+          <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row' }}>
+            {stat(String(summary.taken), t('myExamsTestsTaken'))}
+            {stat(`${summary.averagePercent}%`, t('myExamsAvgScore'))}
+            {lessonsPassed !== null ? stat(String(lessonsPassed), t('myExamsLessonsPassed')) : null}
+          </View>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: align }}>
+            {t('myExamsBySubject')}
+          </Text>
+          {summary.bySubject.map(s => (
+            <View key={s.subjectId} style={{ gap: 4 }}>
+              <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between' }}>
+                <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14 }}>
+                  {subjectLabel(s.subjectId, lang) ?? s.subjectId}
+                </Text>
+                <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{s.percent}%</Text>
+              </View>
+              <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.border, overflow: 'hidden', flexDirection: isRTL ? 'row-reverse' : 'row' }}>
+                <View style={{ width: `${Math.max(0, Math.min(100, s.percent))}%`, backgroundColor: s.percent >= 80 ? palette.success : ACCENT }} />
+              </View>
+            </View>
+          ))}
+        </>
+      )}
     </View>
   );
 }
@@ -275,19 +384,29 @@ function ExamRow({
 }) {
   const align = isRTL ? 'right' : 'left';
   const action = myExamAction(exam);
-  const stateColor = STATE_COLOR[exam.state];
+  // A state a future server adds degrades to «مُغلق» instead of a blank chip.
+  const stateColor = STATE_COLOR[exam.state] ?? STATE_COLOR.closed;
+  const stateIcon = STATE_ICON[exam.state] ?? STATE_ICON.closed;
   const subject = subjectLabel(exam.subjectId, lang);
   const when =
     exam.submittedAt
       ? formatListDate(exam.submittedAt, lang)
       : formatListDate(exam.publishedAt, lang);
   const whenLine = when ? t(exam.submittedAt ? 'myExamsHandedInOn' : 'myExamsSentOn', when) : null;
-  const meta = [
+  // The planned day, when the teacher set one. A paper exam's "sent" and
+  // "handed in" times are when the teacher published it and typed the mark —
+  // not what a family means by either — so a paper row shows only its day.
+  const examWhen = exam.examDate && isValidYmd(exam.examDate) ? t('myExamsOnDate', formatExamWhen(exam.examDate, exam.examTime)) : null;
+  // Separate pieces in a wrapping row, spaced by a gap and with no separator
+  // character: one string under `numberOfLines` cut «· 10 …» mid-text, and a
+  // « ·» at the end of a piece dangled at the end of a wrapped line.
+  const meta = metaSegments([
     subject,
-    whenLine,
-    exam.timeLimitMin ? t('myExamsTimeLimit', exam.timeLimitMin) : null,
+    examWhen,
+    exam.paper ? null : whenLine,
+    exam.timeLimitMin && !exam.paper ? t('myExamsTimeLimit', exam.timeLimitMin) : null,
     exam.totalMarks ? t('myExamsMarks', formatMarks(exam.totalMarks)) : null,
-  ].filter(Boolean).join(' · ');
+  ]);
 
   const levelKey = exam.result?.levelKey ? LEVEL_LABEL_KEY[exam.result.levelKey] : undefined;
 
@@ -306,21 +425,25 @@ function ExamRow({
     >
       <View style={[styles.rowTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <View style={[styles.stateIcon, { backgroundColor: stateColor + '1F' }]}>
-          <Ionicons name={STATE_ICON[exam.state]} size={20} color={stateColor} />
+          <Ionicons name={stateIcon} size={20} color={stateColor} />
         </View>
         <View style={{ flex: 1, gap: 4 }}>
           <Text numberOfLines={2} style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, lineHeight: 23, textAlign: align }}>
             {myExamTitle(exam, lang) || t('myExamsUntitled', subject ?? '')}
           </Text>
-          {meta ? (
-            <Text numberOfLines={2} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>
-              {meta}
-            </Text>
+          {meta.length > 0 ? (
+            <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', columnGap: SPACE.md, rowGap: SPACE.xxs }}>
+              {meta.map((segment, i) => (
+                <Text key={i} style={{ flexShrink: 1, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 21, textAlign: align }}>
+                  {segment}
+                </Text>
+              ))}
+            </View>
           ) : null}
           <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginTop: 2, flexWrap: 'wrap' }}>
             <View style={[styles.chip, { backgroundColor: stateColor + '1A' }]}>
               <Text style={{ color: stateColor, fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>
-                {t(MY_EXAM_STATE_KEY[exam.state])}
+                {t(MY_EXAM_STATE_KEY[exam.state] ?? 'myExamsStateClosed')}
               </Text>
             </View>
             {exam.result ? (

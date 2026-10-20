@@ -9,10 +9,12 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { DECK_ICON_SHAPES, deckIconSvg, iconForGlyph, type DeckIconName } from '../deckIcons.ts';
+import { DECK_ICON_SHAPES, deckIconSvg, iconForGlyph, iconForTopic, photoQueryForTopic, type DeckIconName } from '../deckIcons.ts';
 import { splitEmoji } from '../deckText.ts';
 import { buildDeckSlidesHTML } from '../deckSlidesHtml.ts';
 import type { ActivitySlide, ClassroomActivity } from '../ai/AIService.ts';
+import { DECK_SECTION_ICONS, isSectionIconName } from '../deckIcons.ts';
+
 
 describe('iconForGlyph', () => {
   it('maps the lesson deck’s section markers to icons', () => {
@@ -44,6 +46,73 @@ describe('iconForGlyph', () => {
       const name = iconForGlyph(g);
       assert.ok(name, `${g} has no icon`);
       assert.ok(DECK_ICON_SHAPES[name!].length > 0, `${name} has no shapes`);
+    }
+  });
+});
+
+describe('iconForTopic', () => {
+  it('names the subject of a unit, in Arabic and English', () => {
+    const cases: [string, string][] = [
+      ['الحركة والقوة', 'atom'],
+      ['علوم الأرض والفضاء', 'globe'],
+      ['النباتات والخلايا', 'leaf'],
+      ['الطاقة والحرارة', 'sun'],
+      ['الكسور والأعداد', 'calculator'],
+      ['التفاعلات الكيميائية', 'flask'],
+      ['Forces and Motion', 'atom'],
+      ['Earth and Space', 'globe'],
+      ['Fractions', 'calculator'],
+      ['Reading and Writing', 'book'],
+    ];
+    for (const [text, icon] of cases) assert.equal(iconForTopic(text), icon, text);
+  });
+
+  it('has no opinion rather than a wrong one', () => {
+    // «Unit» and «وحدة» are the word for a unit of the book, not a topic
+    for (const text of ['وحدة عامة', 'Unit 3', '']) assert.equal(iconForTopic(text), null, text);
+    assert.equal(iconForTopic(undefined as never), null);
+  });
+
+  it('only ever returns an icon the renderers can draw', () => {
+    for (const text of ['الحركة', 'الأرض', 'water', 'history', 'computer', 'السكان والمجتمع']) {
+      const icon = iconForTopic(text);
+      if (icon !== null) assert.ok(isSectionIconName(icon), `${text} → ${icon}`);
+    }
+  });
+});
+
+describe('the biology units of the Grade 10 book', () => {
+  it('evolution and microbes get their own picture, not the generic one a leaf or flask stands for', () => {
+    assert.equal(iconForTopic('نظرية التطور'), 'leaf');
+    assert.match(photoQueryForTopic('نظرية التطور')!, /evolution/);
+    assert.equal(iconForTopic('الفيروسات والفيرويدات والبريونات'), 'flask');
+    assert.match(photoQueryForTopic('الفيروسات والفيرويدات والبريونات')!, /microscope/);
+    // the classification unit keeps the plants picture it already had
+    assert.equal(iconForTopic('تصنيف الكائنات الحية'), 'leaf');
+    assert.match(photoQueryForTopic('تصنيف الكائنات الحية')!, /plants/);
+    assert.match(photoQueryForTopic('Evolution Theory')!, /evolution/);
+    assert.match(photoQueryForTopic('Viruses, Viroids and Prions')!, /microscope/);
+  });
+});
+
+describe('photoQueryForTopic', () => {
+  it('is an English query for a recognised topic and null otherwise', () => {
+    assert.match(photoQueryForTopic('الحركة والقوة')!, /physics/);
+    assert.match(photoQueryForTopic('علوم الأرض والفضاء')!, /earth/);
+    assert.equal(photoQueryForTopic('وحدة عامة'), null);
+    assert.equal(photoQueryForTopic(''), null);
+  });
+
+  it('every icon a topic can resolve to has a query — no recognised topic ends up photo-less by accident', () => {
+    // The only icons without one are the section markers a topic never maps to.
+    const topicIcons = new Set(['flask', 'atom', 'leaf', 'sun', 'drop', 'globe', 'heart', 'bars', 'calculator', 'ruler', 'clock', 'laptop', 'users', 'pin', 'book']);
+    for (const icon of topicIcons) {
+      const sample: Record<string, string> = {
+        flask: 'كيمياء', atom: 'فيزياء', leaf: 'نبات', sun: 'طاقة', drop: 'ماء', globe: 'الأرض', heart: 'صحة',
+        bars: 'إحصاء', calculator: 'جبر', ruler: 'قياس', clock: 'تاريخ', laptop: 'حاسوب', users: 'مجتمع', pin: 'خريطة', book: 'قراءة',
+      };
+      assert.equal(iconForTopic(sample[icon]!), icon, `${icon} sample`);
+      assert.ok(photoQueryForTopic(sample[icon]!), `${icon} has a photo query`);
     }
   });
 });
@@ -123,7 +192,7 @@ describe('section glyphs the builders write', () => {
   // it fails when a builder starts using a marker nobody mapped.
   const written = [
     '🎯 نتاجات التعلم', '📖 مفردات الدرس', '✨ تمهيد', '💡 أفكار الدرس', '📐 القاعدة',
-    '✋ تحقّق سريع 1', '🤝 تدريب موجّه', '✍ تدريب مستقل', '🎉 ملخص الدرس', '🎫 تذكرة الخروج',
+    '✋ تحقّق سريع 1', '🤝 تدريب موجّه', '✍ تدريب مستقل', '🎉 ملخص الدرس', '🎫 غلق الدرس',
     '🏠 الواجب', '📚 درس', '✍ مثال محلول', '📊 الترتيب الحالي', '🏆 النتيجة النهائية',
     '📈 الرسم البياني', '📊 البيانات',
   ];
@@ -186,6 +255,54 @@ describe('inline icons in the HTML export', () => {
   it('only names icons the table can draw', () => {
     for (const name of ['shield', 'play', 'file', 'tick', 'books'] as const) {
       assert.ok(DECK_ICON_SHAPES[name].length > 0, name);
+    }
+  });
+});
+
+describe('DECK_SECTION_ICONS — the names a model may ask for', () => {
+  it('every name has a drawing, and every drawing makes real SVG', () => {
+    for (const name of DECK_SECTION_ICONS) {
+      assert.ok(DECK_ICON_SHAPES[name]?.length > 0, `${name} has no shapes`);
+      const svg = deckIconSvg(name, '#0B5894', 40);
+      assert.match(svg, /^<svg /);
+      assert.ok(/<(path|circle|rect)/.test(svg), `${name} drew nothing`);
+    }
+  });
+
+  it('has no duplicates and none of the inline marks', () => {
+    assert.equal(new Set(DECK_SECTION_ICONS).size, DECK_SECTION_ICONS.length);
+    for (const inline of ['shield', 'play', 'file', 'tick']) {
+      assert.ok(!(DECK_SECTION_ICONS as readonly string[]).includes(inline), inline);
+    }
+  });
+
+  it('reaches past the generic markers into what a lesson is about', () => {
+    for (const subject of ['atom', 'flask', 'leaf', 'globe', 'calculator', 'clock', 'pin', 'heart', 'star', 'sun', 'drop', 'laptop']) {
+      assert.ok(isSectionIconName(subject), subject);
+    }
+  });
+
+  it('refuses anything else, including values a model could invent', () => {
+    for (const bad of ['rocket', '', 'Atom', 'shield', 'toString', '__proto__', 7, null, undefined, {}]) {
+      assert.equal(isSectionIconName(bad), false, String(bad));
+    }
+  });
+
+  it('keeps the tilted atom orbits inside the 24-unit grid', () => {
+    // The two slanted ellipses use SVG arc rotation; a typo in an endpoint
+    // would push an orbit off the edge of the chip without any error.
+    const nums = DECK_ICON_SHAPES.atom.flatMap(s => (s.t === 'path' ? s.d.match(/-?\d+(?:\.\d+)?/g) ?? [] : [])).map(Number);
+    assert.ok(nums.every(n => Math.abs(n) <= 24 || [60, -60].includes(n)));
+  });
+});
+
+describe('arrow and refresh — inline marks for the flow diagram', () => {
+  it('are drawable, and are NOT names a model may pick for a heading', () => {
+    for (const name of ['arrow', 'refresh'] as const) {
+      assert.ok(DECK_ICON_SHAPES[name].length > 0, name);
+      assert.match(deckIconSvg(name, '#000', 24), /<path/);
+      assert.equal(isSectionIconName(name), false, `${name} sits inside a line, not in a title`);
+      assert.ok(!(DECK_SECTION_ICONS as readonly string[]).includes(name));
     }
   });
 });

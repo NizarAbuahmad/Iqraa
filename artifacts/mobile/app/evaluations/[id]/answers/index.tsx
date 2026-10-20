@@ -15,10 +15,12 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { RosterError, getClass, listClasses, type ClassGroup, type RosterStudent } from '@/services/roster';
 import { getEvaluation, listAttempts, type AttemptListRow, type AttemptStatus } from '@/services/evaluations';
+import { markBookReachable } from '@/services/paperMarks';
 import type { TranslationKey } from '@/services/i18n';
 import { goBack } from '@/services/navigation';
 import { filterToAudience } from '@/services/supportGroups';
 import { palette } from '@/constants/colors';
+import { SPACE, TYPE } from '@/constants/theme';
 import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = palette.primary;
@@ -56,6 +58,7 @@ export default function PickStudentScreen() {
   const [students, setStudents] = useState<RosterStudent[]>([]);
   const [attempts, setAttempts] = useState<AttemptListRow[]>([]);
   const [audience, setAudience] = useState<string[] | null>(null);
+  const [quickPaper, setQuickPaper] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -63,7 +66,13 @@ export default function PickStudentScreen() {
     useCallback(() => {
       if (!id) return;
       listAttempts(id).then(setAttempts).catch(() => {});
-      getEvaluation(id).then(d => setAudience(d.audience ?? null)).catch(() => {});
+      getEvaluation(id)
+        .then(d => {
+          setAudience(d.audience ?? null);
+          // Only the quick paper exam has a one-box-per-student mark book.
+          setQuickPaper(markBookReachable(d.evaluation.status, d.questions));
+        })
+        .catch(() => {});
     }, [id]),
   );
 
@@ -126,6 +135,17 @@ export default function PickStudentScreen() {
             {error}
           </Text>
         </View>
+      ) : null}
+
+      {quickPaper ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push({ pathname: '/evaluations/[id]/marks', params: { id: id as string } } as never)}
+          style={[styles.card, { backgroundColor: colors.card, borderColor: ACCENT, marginHorizontal: SPACE.xl, marginTop: SPACE.lg, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+        >
+          <Ionicons name="grid-outline" size={18} color={ACCENT} />
+          <Text style={{ flex: 1, color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.body, textAlign: align }}>{t('marksGridTableBtn')}</Text>
+        </Pressable>
       ) : null}
 
       {!classId ? (

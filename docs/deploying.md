@@ -10,7 +10,7 @@ after, and it skips the web deploy entirely if either server deploy failed.
 | `iqraa-api` | Cloud Run | **Automatic** on merge to `main` |
 | `iqraa-verifier` | Cloud Run | **Automatic** on merge to `main` |
 | `iqraa-web` | Cloudflare Pages (static) | **Automatic**, gated on the two above |
-| Database | Neon | Never automatic — see *Schema* below |
+| Database | Neon | **Migrations apply automatically** on merge, before the new API revision takes traffic — see *Schema* below |
 
 **Server before client, on purpose.** A new API behind an old bundle is
 harmless: the bundle simply does not call the new route. The reverse is an
@@ -20,7 +20,10 @@ an API that lacked the matching route and broke production signups. From the
 deployed by hand, which is what made that possible; automating them closed it.
 
 Each surface deploys only when its own paths changed (`lib/**` counts as an API
-change, because the API bundles those packages), and each job verifies against
+change, because the API bundles those packages, and `deploy.yml` itself counts
+for every surface, because their flags and env vars live in it — since
+2026-10-17; before that, an env var added there waited for the next API code
+change to reach Cloud Run), and each job verifies against
 the running system rather than trusting the tool: the API asserts
 `/api/healthz/version` reports the deployed short SHA, because `gcloud` has
 printed a success line while traffic stayed pinned to an older revision
@@ -240,15 +243,76 @@ with a real request, and only then revoke the old one.** Revoking first leaves
 no working key and a broken write path, and the failure will not be where you
 are looking.
 
-Install with `--update-env-vars`, never `--set-env-vars` — the latter replaces
-the whole environment, taking `DATABASE_URL`, `SESSION_SECRET` and everything
-else with it:
+**Credentials live in Secret Manager** (since 2026-10-08 — see *Credentials
+are Secret Manager references* below). Install a new value as a new version,
+piped in so it never sits in shell history or a transcript, then roll a
+revision so instances re-read `latest` (env-var secrets resolve at instance
+start; until a new revision, old instances keep the old value):
 
 ```bash
-gcloud run services update iqraa-api \
-  --region europe-west1 --project iqraa-auth-507315 \
-  --update-env-vars KEY_NAME=NEW_VALUE
+# paste the value, then Ctrl-D (Ctrl-Z Enter on Windows) — no trailing newline
+gcloud secrets versions add KEY_NAME --data-file=- --project iqraa-auth-507315
+gcloud run services update iqraa-api --region europe-west1 \
+  --project iqraa-auth-507315 --update-labels rotated=$(date +%Y%m%d)
 ```
+
+Revoking the old credential at the provider is still the last step. Afterwards
+`gcloud secrets versions disable KEY_NAME --version <old>` so it can't be read
+back either.
+
+Non-secret config (model names, budgets, flags, bucket names) is still plain
+env: change it with `--update-env-vars KEY=VALUE`, never `--set-env-vars` —
+the latter replaces the whole environment.
+
+**The database pool** is sized by three more plain env vars on `iqraa-api`, read
+once at boot (`lib/db/src/poolConfig.ts`; a value that is not a whole number in
+range falls back to the default rather than reaching `pg`, where `0` would mean
+"unlimited" and "wait forever"):
+
+| Var | Default | Meaning |
+| --- | --- | --- |
+| `DB_POOL_MAX` | 10 | connections per instance, 1–100 |
+| `DB_SYSTEM_POOL_MAX` | `DB_POOL_MAX` | the second (owner) pool that exists only with `RLS_ENFORCE=on` |
+| `DB_CONNECT_TIMEOUT_MS` | 10000 | how long a query waits for a free connection, 1000–60000 |
+
+Neon sees `DB_POOL_MAX × max instances` connections (× 2 with RLS on). Read the
+service's `maxScale` and Neon's limit before raising it — `--max-instances` is
+not pinned in `deploy.yml`, so the console value is the one in force. A query
+that waits past `DB_CONNECT_TIMEOUT_MS` fails: the auth middleware and the
+error handler answer **503 `db_busy` with `Retry-After`** (a 401 would make every
+client refresh and retry into the same starved pool), and most routes, which
+catch their own errors, answer their usual 500. Either way it logs `timeout
+exceeded when trying to connect`. `GET /api/healthz/pool` (header
+`x-admin-key: $ADMIN_DEBUG_KEY`) reports `total`, `idle` and `waiting` for the
+instance that answers; `waiting` above zero under load means the pool is the
+bottleneck.
+
+**Password hashing** runs in a worker thread (`lib/passwordHash.ts`) so a sign-up
+rush cannot stall the instance. Plain env vars again: `PASSWORD_HASH_WORKERS`
+(1–4, default 1 — match the service's vCPU; `deploy.yml` sets `--cpu 2` with
+`PASSWORD_HASH_WORKERS=2` for `iqraa-api`, so change them together) and `PASSWORD_HASH_MAX_PENDING`
+(default 40: sign-in/sign-up requests in flight before the rest get `503
+hashing_busy`). After a deploy, `GET /api/healthz/pool` must show
+`hashing.degraded: false`; `true` means the worker file did not load and
+hashing is back on the main thread.
+
+`BOOK_ITEMS_LIVE` is one such flag on `iqraa-api`: it lets the live model path
+add real NCCD maths book questions to an evaluation (at most half the requested
+count).
+**Off by default** — only the exact string `true` turns it on, it is read per
+request (no rebuild; a new revision from `--update-env-vars` is enough), and
+`deploy.yml` does not set it. Turn it on only after a person has compared the 25
+`computed` served items (`lib/curriculum/src/data/book-items/`) with the printed
+books (the 5 `verified` ones were cross-checked against the book's own printed
+answers). Its
+effect is visible on the paper itself: `generationParams.bookItems` is
+`{ enabled, planned, supplied, drawn, ids }` on every live maths evaluation, so an
+unset flag reads `enabled: false` rather than looking like a bug. A paper made
+with book items tells the model what the book supplies and records
+`promptVersion` `exam-gen-7+book` (`exam-gen-6+book` before 2026-10-15), so usage rows with and without the flag stay
+comparable. Then generate one
+maths evaluation and check it; see "Real book items on the live model path" in
+`STATUS.md`.
 
 **Check that the new revision actually took traffic.** This file used to say
 traffic is `latestRevision: true` so it happens by itself. That is the normal
@@ -406,13 +470,34 @@ Public Development URL, not something the token grants — see
 nothing else server-written today) belongs in the public one, not
 `iqraa-media`.
 
-### These are plain env vars, and that has cost something
+### Credentials are Secret Manager references
 
-Every secret above sits in the Cloud Run revision spec as a plain environment
-variable, not a Secret Manager reference. That means anything that prints the
-service description prints the secrets: on 2026-09-06 a `gcloud run services
-describe` dump did exactly that and every `iqraa-api` secret had to be treated as
-exposed. When reading service config, ask for names and never values:
+Until 2026-10-08 every secret sat in the Cloud Run revision spec as a plain
+env var, so anything that printed the service description printed the secrets
+— it happened on 2026-09-06, 2026-09-19 and 2026-09-21, each a full rotation
+trigger. Since revision `iqraa-api-00283-twr` these ten are
+`valueFrom.secretKeyRef` → a secret of the same name, version `latest`:
+
+```
+SESSION_SECRET  DATABASE_URL  OPENAI_API_KEY  R2_ACCESS_KEY_ID
+R2_SECRET_ACCESS_KEY  UNSPLASH_ACCESS_KEY  YOUTUBE_API_KEY
+ADMIN_DEBUG_KEY  RESEND_API_KEY  SITE_INGEST_KEY
+```
+
+A describe of the service or a new revision now shows the reference, not the
+value. The runtime account (`613126375862-compute@…`) holds
+`secretmanager.secretAccessor` on each secret individually; `deploy.yml`'s
+`--update-env-vars` deploys keep the references untouched (proved by run
+37806853432). A **new** credential needs the same three steps: `gcloud secrets
+create NAME --data-file=-`, `gcloud secrets add-iam-policy-binding NAME
+--member=serviceAccount:613126375862-compute@developer.gserviceaccount.com
+--role=roles/secretmanager.secretAccessor`, then `gcloud run services update
+iqraa-api --update-secrets=NAME=NAME:latest`. A new `EXPO_PUBLIC_*` is not a
+secret — it ships in the bundle.
+
+**Old revisions still hold the plain values.** `iqraa-api-00282-9vd` and
+earlier carry them in their spec, so `gcloud run revisions describe` on one of
+them still prints secrets. Ask for names only, as before:
 
 ```bash
 gcloud run services describe iqraa-api --region europe-west1 \
@@ -420,9 +505,100 @@ gcloud run services describe iqraa-api --region europe-west1 \
   --format="value(spec.template.spec.containers[0].env[].name)"
 ```
 
-Moving these to Secret Manager would make that class of leak impossible rather
-than merely discouraged. Until then the rule is the awkward one: never print a
-value, and treat any transcript that shows one as a rotation trigger.
+Rotating a credential retires its old value from those revisions too, which is
+the real fix. `gcloud secrets versions access` prints the value by design — it
+is the one command that should, so never run it into a transcript.
+
+### The homework reminder (Cloud Scheduler) — manual, once
+
+`POST /api/internal/homework-reminders` sends the day-before homework reminder
+(spec Part 4). It answers **404 to everyone until `INTERNAL_CRON_KEY` is on the
+service** — so after a merge it is deployed but inert. Nothing in `deploy.yml`
+refers to the secret, on purpose: a `--update-secrets` ref to a secret that does
+not exist yet fails every Cloud Run deploy. Attach it by hand; `deploy.yml`'s
+`--update-env-vars` keeps it from then on, like the other ten.
+
+**The key value must never be echoed, printed or pasted into a transcript** —
+which is why this recipe generates it into a shell variable and never reads it
+back from Secret Manager (`gcloud secrets versions access` prints it; see the
+warning above). Run steps 1–5 in **one shell session**, so `$KEY` is still set
+when steps 4 and 5 need it. If the session is lost before step 5, do not read
+the secret back: rotate (see the end of this section).
+
+```bash
+P=--project=iqraa-auth-507315   # one word, so it also works unquoted in zsh
+URL=https://iqraa-api-613126375862.europe-west1.run.app/api/internal/homework-reminders
+# 1. The secret: a long random value, kept in $KEY (never echo it), no trailing newline.
+KEY=$(openssl rand -hex 32)
+printf %s "$KEY" | gcloud secrets create INTERNAL_CRON_KEY --data-file=- $P
+# 2. Let the API's runtime account read it.
+gcloud secrets add-iam-policy-binding INTERNAL_CRON_KEY $P \
+  --member=serviceAccount:613126375862-compute@developer.gserviceaccount.com \
+  --role=roles/secretmanager.secretAccessor
+# 3. Put it on the service (rolls a new revision).
+gcloud run services update iqraa-api --region europe-west1 $P \
+  --update-secrets=INTERNAL_CRON_KEY=INTERNAL_CRON_KEY:latest
+# 4. Check by hand — this SENDS real pushes and CLAIMS tomorrow's homework for the reminder, so the
+#    scheduled run later today sends nothing for the same homework. {"homework":N,"pushed":M}; 404 = step 3 missing.
+curl -sS -X POST -H "x-internal-key: $KEY" "$URL"
+# 5. The daily job: 16:00 Amman. (`gcloud services enable cloudscheduler.googleapis.com $P` first if asked.)
+gcloud scheduler jobs create http homework-reminders $P \
+  --location europe-west1 \
+  --schedule "0 16 * * *" --time-zone "Asia/Amman" \
+  --uri "$URL" \
+  --http-method POST \
+  --headers "x-internal-key=$KEY,Content-Type=application/json" \
+  --message-body '{}' \
+  --attempt-deadline 300s \
+  --max-retry-attempts 3 --min-backoff 60s \
+  --format=none   # without this gcloud prints the job, x-internal-key included
+# 6. Fire it once now, and see that it ran (a second run the same day claims nothing).
+gcloud scheduler jobs run homework-reminders --location europe-west1 $P
+gcloud scheduler jobs describe homework-reminders --location europe-west1 $P \
+  --format='value(lastAttemptTime,status)'
+gcloud logging read 'resource.labels.service_name="iqraa-api" AND jsonPayload.msg="homework reminders run"' \
+  $P --limit 5 --freshness 1d
+unset KEY   # when done
+```
+
+The job stores the key in its own config, readable by anyone with
+`cloudscheduler.jobs.get`. **Rotate both together**, never by reading the old
+value back:
+
+```bash
+P=--project=iqraa-auth-507315   # set these again in a fresh shell
+URL=https://iqraa-api-613126375862.europe-west1.run.app/api/internal/homework-reminders
+KEY=$(openssl rand -hex 32)
+printf %s "$KEY" | gcloud secrets versions add INTERNAL_CRON_KEY --data-file=- $P
+gcloud run services update iqraa-api --region europe-west1 $P \
+  --update-secrets=INTERNAL_CRON_KEY=INTERNAL_CRON_KEY:latest --update-labels rotated=$(date +%Y%m%d)
+gcloud scheduler jobs update http homework-reminders --location europe-west1 $P \
+  --update-headers "x-internal-key=$KEY,Content-Type=application/json" \
+  --format=none   # without this gcloud prints the job, x-internal-key included
+unset KEY
+# The service now reads the new version; disable the old one(s) so a leaked key is dead.
+gcloud secrets versions list INTERNAL_CRON_KEY $P --filter=state=enabled \
+  --sort-by=~createTime --format='value(name.basename())' | tail -n +2 \
+  | xargs -r -n1 gcloud secrets versions disable --secret=INTERNAL_CRON_KEY $P
+```
+
+**Any `gcloud scheduler jobs create|update|describe` without `--format`
+prints the stored key** (the 2026-10-16 setup leaked it that way and had to
+rotate). Keep `--format=none` on writes and a `value(...)` format that omits
+`httpTarget` on reads.
+
+This rotation is also the way out if the shell session was lost before step 5 —
+but if the scheduler job does not exist yet, run step 5 (with the new `$KEY`)
+instead of the last `update` command.
+
+A rerun the same day is safe: each homework is reminded at most once per due day
+(`homework_reminders`, claimed before sending), and a send that fails after its
+claim is not retried. One failing homework does not stop the run. The job retries
+up to three times (`--max-retry-attempts 3`), which is safe because of those
+claims: a retry after a failed or timed-out run reminds only the homework not yet
+claimed and repeats none. The run is sequential, so a very large school could
+outlast the job's 300 s attempt deadline; do not rely on the handler carrying on
+after its request ends (Cloud Run throttles CPU then) — rely on the retry.
 
 ## The Android app (Google Play)
 
@@ -479,7 +655,8 @@ every table, column and unique exists, and only then does the API deploy. A
 failed migration rolls back whole, the API and web jobs are skipped, and the
 old revision keeps serving.
 
-CI (`migrations match schema` in `ci.yml`) checks every PR three ways:
+CI checks every PR three ways — the first two in `migrations match schema`
+(`ci.yml`), the third in `destructive-migration-ack.yml`:
 
 - **A schema edit without its migration fails.** `generate` runs and must
   produce nothing new.
@@ -490,27 +667,30 @@ CI (`migrations match schema` in `ci.yml`) checks every PR three ways:
   `RENAME`, `SET NOT NULL` and type changes break the running revision. Ship
   the code that stops using the old shape first, then the destructive
   migration in a later PR whose body has a line `destructive-migration: ok`.
-  That line is matched literally at the start of a line, and editing the body
-  does not re-run the check — only a new commit does.
+  That line is matched literally at the start of a line. Editing the body
+  re-runs this check on its own (it listens for `edited`), so adding the line
+  clears it without a new commit — the reason it is a separate workflow.
 
 `push` (`pnpm --filter @workspace/db run push`) is still there for a scratch
 local database. Never point it at production: drizzle-kit resolves drift by
 dropping columns, which is why production never auto-deployed before
-migrations existed.
+migrations existed. Since migration 0008 it is also unsafe for any database that
+has it applied: drizzle-kit 0.31 tracks RLS and policies, and the schema files
+declare none, so `push` will try to `DISABLE ROW LEVEL SECURITY` and `DROP POLICY`
+on whatever it is pointed at. Never run it against one with 0008 applied (already
+forbidden for production).
 
 ### Baseline (once per database that predates migrations)
 
 `0000_baseline.sql` is the whole schema as of 2026-10-08. Production already
 had those tables from `push`, so it must record 0000 as applied without
 running it. `migrate` refuses a database that has tables but no migration
-history, so the first deploy after this change fails safely until this runs.
-For production, run it in Actions so the URL stays in the repository secret:
+history rather than guessing.
 
-```bash
-gh workflow run db-baseline.yml    # verify-schema, then baseline, then migrate
-```
-
-then re-run the failed deploy. For any other database:
+**Production was baselined on 2026-10-08** (Actions run 37803469909: 48/48
+tables verified, 0000 recorded, 0 new), by a one-time `db-baseline.yml`
+workflow that was then deleted — it kept the URL inside the repository secret.
+Any other database:
 
 ```bash
 pnpm --filter @workspace/db run verify-schema   # must report every table/column present
@@ -526,6 +706,80 @@ nullability, defaults, and non-unique indexes and foreign keys. If production
 drifted on one of those, a later migration touching it can fail — in CI it
 will pass (the empty database matches), at deploy it rolls back and names the
 statement. Fix production to match by hand, then re-run the deploy.
+
+## Row-level security
+
+Postgres enforces who may read a row on the tables that hold students, rosters,
+parent contact history, chat, exams and attempts (spec:
+`docs/superpowers/specs/2026-10-13-row-level-security-design.md`). It is a second line
+of defence behind the API's own checks, and it is **off until you turn it on**.
+
+**Merging this ships the migration.** `deploy.yml` migrates production before the API takes
+traffic, so the merge creates the `iqraa_app` role and enables row-level security on 28 tables.
+It is dormant for the owner role (there is no `FORCE`), so nothing changes *provided the role in
+Cloud Run's `DATABASE_URL` owns those tables*; a non-owner role would have no policy and be denied.
+**Before merging**, connect to a Neon branch of production with the *exact* `DATABASE_URL` Cloud Run
+uses (same role and credentials, only the host pointed at the branch; a branch made in the Neon console may
+default to a different owner role, which would make the check pass without testing the API's role).
+Then `select current_user` must equal `tableowner` for **every** row of
+`select tablename, tableowner from pg_tables where schemaname='public'`; any other result means do not merge.
+
+**Both connection strings must name the same owner role.** The migration runs under GitHub's
+`secrets.DATABASE_URL` (`deploy.yml`, the `production migrations` job); the API runs under Cloud
+Run's `DATABASE_URL`. The migration's `SECURITY DEFINER` helpers are owned by the *migrating*
+role, and they bypass RLS only if that role also owns the tables they read. If the two secrets
+name different roles, either the API's connection is not the table owner (so it is denied, with
+no policy of its own) or the helpers run subject to the policies and return fewer rows than they
+should — the second looks like rows quietly missing, not an error. The
+migration also sets `lock_timeout = '5s'`: it takes `ACCESS EXCLUSIVE` locks on 28 tables while the
+old revision still serves, so a long-running query makes the deploy stop (retry it) rather than
+queueing every request behind it.
+
+**Do not re-run 0008 by hand outside the migrator.** It is not idempotent: `CREATE POLICY` has no
+`IF NOT EXISTS`, and `GRANT iqraa_app TO CURRENT_USER` needs `ADMIN OPTION` on the role if it
+already exists under another creator. A second run stops at the first `CREATE POLICY`
+(already exists); recover a damaged database from a Neon branch, not by editing the history table.
+
+**The switch** is one Cloud Run env var, read once at boot:
+
+```bash
+# on
+gcloud run services update iqraa-api --region europe-west1 \
+  --project iqraa-auth-507315 --update-env-vars RLS_ENFORCE=on
+# off — the whole rollback
+gcloud run services update iqraa-api --region europe-west1 \
+  --project iqraa-auth-507315 --update-env-vars RLS_ENFORCE=off
+```
+
+`--update-env-vars`, never `--set-env-vars` (see *Rotating a secret*). Changing it rolls
+a revision; it is not a code deploy. With it off nothing about the API changes — one
+pool, no extra statements. With it on every `db` statement runs as the `iqraa_app` role
+with the signed-in user's id, and `systemDb` (the owner connection) is used by the
+fourteen files pinned in `artifacts/api-server/src/lib/__tests__/systemDbFiles.test.ts`.
+
+**Before the first flip**, on a Neon *branch* of production (never production):
+run the migration, run `RLS_TEST_DATABASE_URL=<branch> pnpm --filter @workspace/db run test`,
+walk the teacher / parent / student flows by hand, and **measure the added latency per
+statement** — the wrapper costs about two extra round trips each, which is ~0.25 ms on
+loopback and unmeasured across the Cloud Run → Neon hop. Also check the database's
+connection limit: with enforcement on an instance holds two pools. See the plan's Task 7
+(`docs/superpowers/plans/2026-10-13-row-level-security.md`) for the gates.
+The same steps as a tick-list: [`docs/rls-rollout-checklist.md`](./rls-rollout-checklist.md).
+
+**What goes wrong, and how it looks.** A query that reads *another user's* rows does not
+fail under RLS — it returns fewer rows. So the symptom is rarely a 500; it is a
+notification not sent, a block not honoured, a restricted exam that opens to the class.
+`lib/db/src/__tests__/rlsDiff.test.ts` is the guard: it boots the built API with
+enforcement off and on and diffs statuses, bodies, pushes and rows left behind. After any
+route change that touches a protected table, run it (`pnpm --filter @workspace/api-server
+run build` first) and add a scenario for what you added.
+
+**Adding a table.** `rlsCoverage.test.ts` fails until the table is classified: *protected*
+(add policies in a migration, put the name in `PROTECTED`), *locked* (RLS, no policy, no
+grant — only `systemDb` reads it), or *deferred* (named in `DEFERRED` — still open to
+`iqraa_app`, with the grant a new migration must add by hand, since there are no default
+privileges on purpose). **Adding a `systemDb` use** means editing `systemDbFiles.test.ts`
+and writing the reason.
 
 ## Point-of-no-return changes go up as drafts
 

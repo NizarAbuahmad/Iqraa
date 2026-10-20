@@ -35,11 +35,15 @@ import { hasSeenAppIntro } from '@/services/appIntro';
 import { CLAIM_REQUIRED_ROUTE, isEntryRoute, isNonTeacherRoute, isPublicRoute, GRADE_SETUP_ROUTE, needsGradeSetup, needsRosterClaim, needsTeacherSetup, TEACHER_SETUP_ROUTE } from '@/services/routeGating';
 import { identifyUser, initAnalytics, resetAnalyticsIdentity, trackEvent, trackScreen } from '@/services/analytics';
 import { subscribeToGenerations } from '@/services/ai/aiProvenance';
+import { clearCrashContext, initCrashReporting, setCrashContext } from '@/services/crashReporting';
 
 SplashScreen.preventAutoHideAsync();
+// Module scope, not an effect: the library's error handlers should exist before the first render.
+// Android and iOS only; the web build gets a no-op (services/crashReporting.ts).
+initCrashReporting();
 
 function RootLayoutNav() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, gradeSetupSkipped } = useAuth();
   const pathname = usePathname();
   // Only navigate on auth transitions (boot / login / logout) — never bounce
   // away from Workspace, Profile, or AI tools on every user truthy render.
@@ -99,7 +103,7 @@ function RootLayoutNav() {
 
     // A parent or student who has not said which class they are in — the same
     // mandatory shape, after the claim gate (see needsGradeSetup).
-    if (signedIn && user && needsGradeSetup(user) && pathname !== GRADE_SETUP_ROUTE) {
+    if (signedIn && user && needsGradeSetup(user, gradeSetupSkipped) && pathname !== GRADE_SETUP_ROUTE) {
       router.replace(GRADE_SETUP_ROUTE as any);
       wasLoading.current = false;
       wasSignedIn.current = signedIn;
@@ -122,7 +126,11 @@ function RootLayoutNav() {
       if (signedIn) {
         // Ties every subsequent event to this teacher — no-op if analytics
         // is unconfigured, same as everything else in services/analytics.ts.
-        if (user) identifyUser(user.id, { role: user.role });
+        if (user) {
+          identifyUser(user.id, { role: user.role });
+          // Role only — never the id, email or name (services/crashReportingCore.ts).
+          setCrashContext({ role: user.role });
+        }
         // Only bounce to the tabs from an entry route, or on a fresh sign-in.
         // This used to fire on every cold boot, which meant no link into the
         // app survived arriving at it: on web every reload IS a cold boot, so
@@ -132,7 +140,10 @@ function RootLayoutNav() {
       } else if (finishedBoot) {
         // Cold boot, signed out: a brand-new install sees the product intro
         // once; a device that just signed out goes straight back to login.
-        if (authChanged) resetAnalyticsIdentity();
+        if (authChanged) {
+          resetAnalyticsIdentity();
+          clearCrashContext();
+        }
         hasSeenAppIntro().then(seen => {
           // '/onboarding' isn't in the generated typed-routes union until the
           // dev server regenerates it — same reason other routes in this app
@@ -140,14 +151,17 @@ function RootLayoutNav() {
           router.replace((seen ? '/(auth)/login' : '/onboarding') as any);
         });
       } else {
-        if (authChanged) resetAnalyticsIdentity();
+        if (authChanged) {
+          resetAnalyticsIdentity();
+          clearCrashContext();
+        }
         router.replace('/(auth)/login');
       }
     }
 
     wasLoading.current = false;
     wasSignedIn.current = signedIn;
-  }, [user, isLoading, pathname]);
+  }, [user, isLoading, pathname, gradeSetupSkipped]);
 
   // One screen-view event per route change — covers every screen in the app
   // (not just AI tools) without instrumenting each one individually.
@@ -192,6 +206,7 @@ function RootLayoutNav() {
       <Stack.Screen name="curriculum/lessons" options={{ headerShown: false }} />
       <Stack.Screen name="curriculum/unit" options={{ headerShown: false }} />
       <Stack.Screen name="curriculum/lesson-detail" options={{ headerShown: false }} />
+      <Stack.Screen name="curriculum/lesson-explanation" options={{ headerShown: false }} />
       <Stack.Screen name="curriculum/english/index" options={{ headerShown: false }} />
       <Stack.Screen name="curriculum/english/[lessonId]" options={{ headerShown: false }} />
       <Stack.Screen name="ai-tools/lesson-plan" options={{ headerShown: false }} />
@@ -201,6 +216,7 @@ function RootLayoutNav() {
       <Stack.Screen name="ai-tools/lesson-flow" options={{ headerShown: false }} />
       <Stack.Screen name="admin/dashboard" options={{ headerShown: false }} />
       <Stack.Screen name="admin/users" options={{ headerShown: false }} />
+      <Stack.Screen name="admin/schools" options={{ headerShown: false }} />
       <Stack.Screen name="admin/signups" options={{ headerShown: false }} />
       <Stack.Screen name="admin/ai-costs" options={{ headerShown: false }} />
       <Stack.Screen name="classes/index" options={{ headerShown: false }} />
@@ -216,6 +232,7 @@ function RootLayoutNav() {
       <Stack.Screen name="faq" options={{ headerShown: false }} />
       <Stack.Screen name="suggest-feature" options={{ headerShown: false }} />
       <Stack.Screen name="join-class" options={{ headerShown: false }} />
+      <Stack.Screen name="add-email" options={{ headerShown: false }} />
       <Stack.Screen name="claim-required" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="setup-subjects" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="setup-grade" options={{ headerShown: false }} />

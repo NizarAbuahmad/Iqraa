@@ -237,6 +237,84 @@ export const MATH_A_STEPS: Record<string, SolutionSteps> = {
       'The bases are equal, so the exponents are equal: t = 5, that is, after 5 hours',
     ],
   },
+  'exp-p1': {
+    ar: [
+      'نقسم على 2 مرة بعد مرة: 32 = 2 × 2 × 2 × 2 × 2',
+      'العامل 2 مكرر 5 مرات، إذن 32 = 2⁵',
+    ],
+    en: [
+      'Divide by 2 repeatedly: 32 = 2 × 2 × 2 × 2 × 2',
+      'The factor 2 appears 5 times, so 32 = 2⁵',
+    ],
+  },
+  'exp-p2': {
+    ar: [
+      'نقسم على 3 مرة بعد مرة: 81 = 3 × 3 × 3 × 3',
+      'العامل 3 مكرر 4 مرات، إذن 81 = 3⁴',
+    ],
+    en: [
+      'Divide by 3 repeatedly: 81 = 3 × 3 × 3 × 3',
+      'The factor 3 appears 4 times, so 81 = 3⁴',
+    ],
+  },
+  'exp-g1': {
+    ar: [
+      'نكتب 2^{x+1} بقانون ضرب القوى: 2^{x+1} = 2^x × 2',
+      'نعوّض 2^x = 8: 2^{x+1} = 8 × 2، إذن القيمة 16',
+    ],
+    en: [
+      'By the product of powers: 2^{x+1} = 2^x × 2',
+      'Substitute 2^x = 8: 2^{x+1} = 8 × 2, so the value is 16',
+    ],
+  },
+  'exp-g2': {
+    ar: [
+      'نكتب 3^{2x} بقانون قوة القوة: 3^{2x} = (3^x)²',
+      'نعوّض 3^x = 5: 3^{2x} = 5²، إذن القيمة 25',
+    ],
+    en: [
+      'By the power of a power: 3^{2x} = (3^x)²',
+      'Substitute 3^x = 5: 3^{2x} = 5², so the value is 25',
+    ],
+  },
+  'exp-v1': {
+    ar: [
+      'نعوّض x = 3 في 2^{x+1}: 2^{3+1} = 2⁴',
+      'نحسب: 2⁴ = 16، وهو الطرف الآخر من المعادلة',
+      'تحققت المعادلة، إذن: نعم، لأن 2⁴ = 16',
+    ],
+    en: [
+      'Substitute x = 3 into 2^{x+1}: 2^{3+1} = 2⁴',
+      'Evaluate: 2⁴ = 16, the other side of the equation',
+      'The equation holds, so: yes, because 2⁴ = 16',
+    ],
+  },
+  'exp-v2': {
+    ar: [
+      'نعوّض x = 2 في 9^x: 9^2',
+      'نحسب: 9² = 81، والطرف الآخر من المعادلة 27',
+      '81 ≠ 27 فلا تتحقق المعادلة، إذن: لا، لأن 9² = 81',
+    ],
+    en: [
+      'Substitute x = 2 into 9^x: 9^2',
+      'Evaluate: 9² = 81, but the other side of the equation is 27',
+      '81 ≠ 27, so the equation does not hold: no, because 9² = 81',
+    ],
+  },
+  'exp-h6': {
+    ar: [
+      'تتناقص الكمية إلى النصف كل يوم، فالكمية بعد t يومًا: 80 · (1/2)^t',
+      'نساويها بـ 5: 80 · (1/2)^t = 5، فنقسم على 80: (1/2)^t = 1/16',
+      'نكتب 1/16 بالأساس 1/2: 1/16 = (1/2)^4، فتصبح (1/2)^t = (1/2)^4',
+      'الأساسان متساويان فنساوي الأسّين، إذن t = 4 أي بعد 4 أيام',
+    ],
+    en: [
+      'The amount halves every day, so after t days it is 80 · (1/2)^t',
+      'Set it equal to 5: 80 · (1/2)^t = 5, and divide by 80: (1/2)^t = 1/16',
+      'Write 1/16 with base 1/2: 1/16 = (1/2)^4, so (1/2)^t = (1/2)^4',
+      'The bases are equal, so the exponents are equal: t = 4, that is, after 4 days',
+    ],
+  },
   'g-e1': {
     ar: [
       'عند نقطة التقاطع تكون y واحدة في المعادلتين، فنساويهما: x + 1 = −x + 3',
@@ -521,6 +599,68 @@ export const MATH_A_STEPS: Record<string, SolutionSteps> = {
       'Take the square root with both signs: x = 2 or x = −2',
       'Find y from y = x² + 1: in both cases y = 4 + 1 = 5',
       'So (−2 , 5) and (2 , 5)',
+    ],
+  },
+  'qq-v1': {
+    ar: [
+      'نعوّض النقطة (2 ، 4) في المعادلة الأولى y = x²: 4 = 2² = 4، تتحقق',
+      'نعوّضها في المعادلة الثانية y = x + 2: 4 = 2 + 2 = 4، تتحقق',
+      'إذن: نعم، لأنها تحقق المعادلتين',
+    ],
+    en: [
+      'Substitute (2, 4) into the first equation y = x²: 4 = 2² = 4, it holds',
+      'Substitute it into the second equation y = x + 2: 4 = 2 + 2 = 4, it holds',
+      'So: yes, because it satisfies both equations',
+    ],
+  },
+  'qq-v2': {
+    ar: [
+      'نعوّض النقطة (1 ، 0) في المعادلة الأولى y = x² − 1: 0 = 1² − 1 = 0، تتحقق',
+      'نعوّضها في المعادلة الثانية y = −x² + 7: −1² + 7 = 6 ≠ 0، لا تتحقق',
+      'إذن: لا، لأنها لا تحقق المعادلة الثانية',
+    ],
+    en: [
+      'Substitute (1, 0) into the first equation y = x² − 1: 0 = 1² − 1 = 0, it holds',
+      'Substitute it into the second equation y = −x² + 7: −1² + 7 = 6 ≠ 0, it does not hold',
+      'So: no, because it does not satisfy the second equation',
+    ],
+  },
+  'qq-v3': {
+    ar: [
+      'نعوّض النقطة (3 ، 6) في المعادلة الأولى y = x² − x: 3² − 3 = 6، تتحقق',
+      'نعوّضها في المعادلة الثانية y = 2x² − 4x: 2 × 3² − 4 × 3 = 18 − 12 = 6، تتحقق',
+      'إذن: نعم، لأنها تحقق المعادلتين',
+    ],
+    en: [
+      'Substitute (3, 6) into the first equation y = x² − x: 3² − 3 = 6, it holds',
+      'Substitute it into the second equation y = 2x² − 4x: 2 × 3² − 4 × 3 = 18 − 12 = 6, it holds',
+      'So: yes, because it satisfies both equations',
+    ],
+  },
+  'qq-n4': {
+    ar: [
+      'نساوي قيمتي y: x² + 2x + 3 = −x² − 2x + 1',
+      'ننقل كل الحدود إلى الطرف الأيسر: 2x² + 4x + 2 = 0، ونقسم على 2: x² + 2x + 1 = 0',
+      'المميز: 2² − 4 × 1 × 1 = 0، فللمعادلة جذر واحد x = −1',
+      'إذن للنظام حل واحد',
+    ],
+    en: [
+      'Set the two values of y equal: x² + 2x + 3 = −x² − 2x + 1',
+      'Move every term to the left: 2x² + 4x + 2 = 0, and divide by 2: x² + 2x + 1 = 0',
+      'The discriminant: 2² − 4 × 1 × 1 = 0, so the equation has one root, x = −1',
+      'So the system has one solution',
+    ],
+  },
+  'qq-s2': {
+    ar: [
+      'نطرح المعادلة الثانية من الأولى: (x² + 3x) − (x² − x + 8) = y − y',
+      'يُحذف x² فيبقى: 4x − 8 = 0',
+      'نضيف 8 ونقسم على 4: x = 8 ÷ 4 = 2',
+    ],
+    en: [
+      'Subtract the second equation from the first: (x² + 3x) − (x² − x + 8) = y − y',
+      'The x² terms cancel, leaving: 4x − 8 = 0',
+      'Add 8 and divide by 4: x = 8 ÷ 4 = 2',
     ],
   },
   'qq-h1': {

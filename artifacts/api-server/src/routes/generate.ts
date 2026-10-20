@@ -16,12 +16,13 @@ import {
   lessonPlanPromptEn,
   quizPromptAr,
   quizPromptEn,
+  quizTopUpBlock,
+  worksheetTopUpBlock,
   worksheetPromptAr,
   worksheetPromptEn,
 } from "../lib/prompts.ts";
 import {
-  classroomPromptAr,
-  classroomPromptEn,
+  classroomActivityPrompt,
   classroomSetupClause,
   stripUnearnedVerification,
 } from "../lib/classroomPrompts.ts";
@@ -30,6 +31,7 @@ import {
   MAX_PROMPT_SLIDE_IMAGES,
   promptSlidesPromptAr,
   promptSlidesPromptEn,
+  sanitizeDeckStructure,
 } from "../lib/promptSlidesPrompt.ts";
 import { lessonTeachingPromptAr, lessonTeachingPromptEn } from "../lib/lessonTeachingPrompt.ts";
 import {
@@ -58,7 +60,7 @@ import {
 } from "../lib/aiBudget.ts";
 import { normalizeEscapeCodes } from "../lib/escapeCodes.ts";
 import { withGrounding, type Grounding } from "../lib/grounding.ts";
-import { PROMPT_VERSION, generationKeys, hasBookFigures, normalizeText } from "../lib/generationKey.ts";
+import { PROMPT_VERSION, generationKeys, hasBookFigures, normalizeText, scopeKeyOf } from "../lib/generationKey.ts";
 import {
   noteServed,
   readPool,
@@ -81,11 +83,26 @@ import {
   assertUsableGeneration,
   deckShortfalls,
   extractJSON,
+  absorbQuizTopUp,
+  mergeWorksheetTopUp,
+  normalizeQuiz,
+  quizRepeats,
+  quizShortfall,
+  quizStems,
+  quizStemsAt,
+  quizWanted,
   sanitizeWorksheetExtras,
+  trimWorksheet,
+  worksheetShortfall,
+  worksheetStems,
   UnusableGenerationError,
   type GenerationKind,
 } from "../lib/generationShape.ts";
 import { checkDeck } from "../lib/deckChecks.ts";
+import { SOLUTION_LIMITS, cleanSolutionText } from "@workspace/math-verify";
+import { relateAnswerKey } from "../lib/mathVerifierClient.ts";
+import { SOLVE_TOKENS, solveSystemPrompt } from "../lib/solvePrompt.ts";
+import { solveProblem } from "../lib/solveProblem.ts";
 
 const generateRouter = Router();
 
@@ -98,6 +115,43 @@ const generateRouter = Router();
  * limits spend.
  */
 const GENERATION_TOKENS = 8000;
+
+/**
+ * A quiz's output ceiling, scaled to the count the teacher asked for.
+ *
+ * A flat 8000 is generous for 10 questions and tight for 20 — an Arabic
+ * question with four options and an explanation runs a few hundred tokens, and
+ * reasoning tokens bill against the same ceiling (see the note on
+ * `QUESTIONS_TOKENS`). A reply that hits it is cut short or fails to parse, so
+ * a big paper is the one most likely to arrive short. It is a ceiling, not a
+ * spend: a reply that finishes early costs what it used.
+ */
+function quizTokens(body: Record<string, unknown>): number {
+  const n = quizWanted(body) ?? 10;
+  return Math.min(24000, Math.max(GENERATION_TOKENS, 2500 + 800 * n));
+}
+
+/**
+ * A worksheet's or homework's output ceiling, scaled to the count — as
+ * `quizTokens`, but a little higher per question: every answer-key entry can
+ * carry a `solution` of several lines on top of the question itself.
+ */
+function worksheetTokens(body: Record<string, unknown>): number {
+  const n = quizWanted(body) ?? 10;
+  return Math.min(24000, Math.max(GENERATION_TOKENS, 3000 + 900 * n));
+}
+
+/** Two completions' usage as one, for the single row the artifact is billed on. */
+function sumUsage(
+  a: Completion["usage"],
+  b: Completion["usage"],
+): Completion["usage"] {
+  if (!a || !b) return a ?? b;
+  return {
+    prompt_tokens: (a.prompt_tokens ?? 0) + (b.prompt_tokens ?? 0),
+    completion_tokens: (a.completion_tokens ?? 0) + (b.completion_tokens ?? 0),
+  };
+}
 
 /**
  * The prompt-slides ceiling, which is deliberately higher than the shared one.
@@ -182,6 +236,8 @@ async function completeOnce(args: {
   userPrompt: string;
   maxCompletionTokens: number;
   detail: Omit<GenerationDetail, "artifactId">;
+  /** The request the prompt was built from — what a quiz is normalised against. Absent for calls that are not a quiz (e.g. solve). */
+  body?: Record<string, unknown>;
 }): Promise<Completion> {
   const startedAt = Date.now();
   const completion = await withUserAiSlot(args.detail.userId, () =>
@@ -202,7 +258,10 @@ async function completeOnce(args: {
     // answered 200 with `{}` and the screen rendered a blank lesson plan. It
     // also guards the pool: an unusable artifact stored here would be served
     // to every teacher who asks for that lesson.
-    assertUsableGeneration(args.kind, parsed);
+    const adjusted = assertUsableGeneration(args.kind, parsed, args.body);
+    // A quiz the model shaped against the request is corrected before it is
+    // pooled; said out loud, or a prompt that keeps being ignored stays invisible.
+    if (adjusted.length) logger.warn({ kind: args.kind, adjusted }, "generation normalised before serving");
     // Optional teaching extras (a worksheet's worked example and key working)
     // are dropped when malformed rather than failing the generation or being
     // stored — see `sanitizeWorksheetExtras`.
@@ -371,6 +430,7 @@ async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
       systemPrompt: args.systemPrompt,
       maxCompletionTokens: args.maxCompletionTokens,
       detail,
+      body: args.body,
     };
 
     let chosen = await completeOnce({
@@ -408,6 +468,99 @@ async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
             insistent: true,
           }),
       });
+    }
+
+    // A reply can be well-formed and still short: asked for 20 questions, a
+    // model will often return 10 and stop, and nothing above can tell. Count,
+    // and ask once more for only what is missing — with the stems already on
+    // the paper, so the second batch is new questions. Best effort: if the
+    // second call fails the short paper is still served (with its shortfall
+    // stated), because throwing away a usable paper over it would be worse.
+    //
+    // The same call replaces questions past their kind's share (`quizRepeats`):
+    // one ask written five ways is a valid reply too, and the prompt's "never
+    // the same idea twice" is otherwise only a request.
+    if (kind === "quiz") {
+      const missing = quizShortfall(chosen.parsed, body);
+      const repeats = quizRepeats(chosen.parsed, quizWanted(body));
+      if (missing > 0 || repeats.length > 0) {
+        const have = quizStems(chosen.parsed);
+        const repeated = quizStemsAt(chosen.parsed, repeats);
+        logger.warn(
+          { kind, strictKey: keys.strictKey, asked: quizWanted(body), got: have.length, repeated: repeats.length },
+          "quiz came back short or repeating itself — asking for the rest",
+        );
+        try {
+          const more = await completeOnce({
+            ...completionArgs,
+            userPrompt:
+              args.userPrompt
+              + variationBlock({ variantIndex: decision.variantIndex, isArabic: args.isAr, avoid })
+              + quizTopUpBlock(args.isAr, have, missing + repeats.length, repeated),
+          });
+          const replaced = absorbQuizTopUp(chosen.parsed, more.parsed, repeats, quizWanted(body));
+          if (repeats.length) {
+            logger.info({ kind, strictKey: keys.strictKey, repeated: repeats.length, replaced }, "quiz repeats replaced");
+          }
+          normalizeQuiz(chosen.parsed, body.questionTypes, quizWanted(body));
+          chosen = {
+            ...chosen,
+            usage: sumUsage(chosen.usage, more.usage),
+            durationMs: chosen.durationMs + more.durationMs,
+          };
+        } catch (err) {
+          logger.warn({ err, kind, strictKey: keys.strictKey }, "quiz top-up failed — serving the short paper");
+        }
+        // Whatever the paper holds now, say if it is still not what was asked.
+        const still = quizShortfall(chosen.parsed, body);
+        if (still > 0) {
+          (chosen.parsed as Record<string, unknown>).shortfall = {
+            requested: quizWanted(body),
+            produced: quizWanted(body)! - still,
+          };
+        }
+      }
+    }
+
+    // The same for a worksheet or homework — see `worksheetShortfall` for what
+    // counts as "short": the worked example sits inside the picked number, and
+    // a prior-knowledge review sits on top of it.
+    if (kind === "worksheet" || kind === "homework") {
+      const missing = worksheetShortfall(chosen.parsed, body);
+      if (missing > 0) {
+        const have = worksheetStems(chosen.parsed);
+        logger.warn(
+          { kind, strictKey: keys.strictKey, asked: quizWanted(body), got: have.length },
+          "worksheet came back short — asking for the rest",
+        );
+        try {
+          const more = await completeOnce({
+            ...completionArgs,
+            userPrompt:
+              args.userPrompt
+              + variationBlock({ variantIndex: decision.variantIndex, isArabic: args.isAr, avoid })
+              + worksheetTopUpBlock(args.isAr, have, missing),
+          });
+          mergeWorksheetTopUp(chosen.parsed, more.parsed);
+          chosen = {
+            ...chosen,
+            usage: sumUsage(chosen.usage, more.usage),
+            durationMs: chosen.durationMs + more.durationMs,
+          };
+        } catch (err) {
+          logger.warn({ err, kind, strictKey: keys.strictKey }, "worksheet top-up failed — serving the short paper");
+        }
+      }
+      // A reply (or a top-up) that overshoots is cut back, never past a review the teacher asked for.
+      const trimmed = trimWorksheet(chosen.parsed, body);
+      if (trimmed > 0) logger.info({ kind, strictKey: keys.strictKey, trimmed }, "worksheet trimmed to the count asked for");
+      const still = worksheetShortfall(chosen.parsed, body);
+      if (still > 0) {
+        (chosen.parsed as Record<string, unknown>).shortfall = {
+          requested: quizWanted(body),
+          produced: quizWanted(body)! - still,
+        };
+      }
     }
 
     // Stored only once, and only the artifact actually being served. Storing
@@ -450,6 +603,8 @@ function dedupe(lines: string[]): string[] {
 /** How the pool is browsed by a human — the lesson this artifact belongs to.
  *  Not part of the key, so an imperfect value costs nothing but readability. */
 function lessonRefOf(body: Record<string, unknown>): string {
+  const scope = scopeKeyOf(body);
+  if (scope) return scope;
   const id = typeof body.lessonId === "string" ? body.lessonId.trim() : "";
   if (id) return id;
   return typeof body.topic === "string" ? normalizeText(body.topic).slice(0, 200) : "";
@@ -550,7 +705,7 @@ generateRouter.post("/generate/worksheet", async (req: AuthenticatedRequest, res
     const prompt = isAr ? worksheetPromptAr(body) : worksheetPromptEn(body);
     const result = await generateContent({
       kind: "worksheet", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
-      maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
+      maxCompletionTokens: worksheetTokens(body), body, isAr, userId: req.user?.id,
     });
     res.json(withMeta(result, grounding));
   } catch (err) {
@@ -566,7 +721,7 @@ generateRouter.post("/generate/quiz", async (req: AuthenticatedRequest, res) => 
     const prompt = isAr ? quizPromptAr(body) : quizPromptEn(body);
     const result = await generateContent({
       kind: "quiz", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
-      maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
+      maxCompletionTokens: quizTokens(body), body, isAr, userId: req.user?.id,
     });
     res.json(withMeta(result, grounding));
   } catch (err) {
@@ -585,7 +740,7 @@ generateRouter.post("/generate/homework", async (req: AuthenticatedRequest, res)
     // not hand one out for the other.
     const result = await generateContent({
       kind: "homework", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
-      maxCompletionTokens: GENERATION_TOKENS, body: { ...body, homework: true }, isAr,
+      maxCompletionTokens: worksheetTokens(body), body: { ...body, homework: true }, isAr,
       userId: req.user?.id,
     });
     res.json(withMeta(result, grounding));
@@ -640,8 +795,7 @@ generateRouter.post('/generate/classroom-activity', async (req: AuthenticatedReq
   const isAr = (req.body as Record<string, unknown>).language !== 'english';
   const { body, grounding } = withGrounding(req.body as Record<string, unknown>, isAr);
   try {
-    const prompt = (isAr ? classroomPromptAr(body) : classroomPromptEn(body))
-      + classroomSetupClause(body, isAr);
+    const prompt = classroomActivityPrompt(body, isAr);
     const result = await generateContent({
       kind: "classroom-activity", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
       maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
@@ -800,7 +954,9 @@ generateRouter.post('/generate/prompt-slides', async (req: AuthenticatedRequest,
       model: getPromptSlidesModel(),
       body, isAr, userId: req.user?.id,
     });
-    const finalized = await finalizePromptSlides(result.content, req.user?.id);
+    // `icon` and a chart `visual` are optional extras the model chose: keep the
+    // ones this app can draw and delete the rest, before anything reads the deck.
+    const finalized = sanitizeDeckStructure(await finalizePromptSlides(result.content, req.user?.id));
     // Quality bars we will not refuse a paid deck over, but do want to see —
     // a run of these in the logs means the prompt needs another pass.
     const shortfalls = deckShortfalls(finalized);
@@ -876,6 +1032,59 @@ generateRouter.post('/generate/prompt-slides/questions', async (req: Authenticat
   }
 });
 
+
+/**
+ * «حلّ مسألة» on the whiteboard: one problem in, a worked solution out, with the
+ * FINAL ANSWER checked by SymPy when the problem is one of the verifiable kinds.
+ *
+ * Deliberately NOT routed through `generateContent`. A teacher's own problem
+ * has no business in the shared `ai_artifacts` pool, so there is nothing to
+ * pool, version or retire and no `contextSource` to force — the same reasoning
+ * as the clarifying-questions route. It still sits inside every guard: live
+ * mode, both spend caps (re-checked before the retry, which is a second paid
+ * call) and the per-user slot, and every completion records its spend.
+ *
+ * The pipeline (`lib/solveProblem.ts`) decides what may be called verified; this
+ * route only wires the real model and the real verifier into it.
+ */
+generateRouter.post('/generate/solve', async (req: AuthenticatedRequest, res) => {
+  const reqBody = (req.body ?? {}) as Record<string, unknown>;
+  const isAr = reqBody.language !== 'english';
+  const problem = cleanSolutionText(reqBody.problem, SOLUTION_LIMITS.problem);
+  if (!problem) {
+    res.status(400).json({
+      error: `problem is required (1-${SOLUTION_LIMITS.problem} characters)`,
+      code: 'bad_problem',
+    });
+    return;
+  }
+  const userId = req.user?.id;
+  try {
+    assertLiveModeEnabled();
+    const model = getGenerationModel();
+    const detail = { kind: 'solve', promptVersion: PROMPT_VERSION, userId };
+    const outcome = await solveProblem(problem, isAr, {
+      complete: async (userPrompt) => {
+        const refusal = await refusalFromCaps(userId);
+        if (refusal) throw refusal.error;
+        const done = await completeOnce({
+          kind: 'solve', model, systemPrompt: solveSystemPrompt(isAr), userPrompt,
+          maxCompletionTokens: SOLVE_TOKENS, detail,
+        });
+        recordUsage(done.usage, model, { ...detail, artifactId: null, durationMs: done.durationMs });
+        return done.parsed;
+      },
+      relate: relateAnswerKey,
+    });
+    if (!outcome.ok) {
+      res.status(422).json({ error: 'The problem could not be solved with confidence.', code: 'no_solution' });
+      return;
+    }
+    res.json(outcome.result);
+  } catch (err) {
+    respondAiError(err, res, 'generate solve');
+  }
+});
 
 /**
  * Report a pooled artifact as wrong.

@@ -1,0 +1,148 @@
+# Row-level security — rollout checklist
+
+Row-level security is **deployed and switched off** (`RLS_ENFORCE` unset; PR #1048,
+migration `0008`). Until the steps below are done it protects nothing. This is the
+person-with-Neon-and-Cloud-Run-access checklist; the reasoning is in
+[`docs/deploying.md`](./deploying.md) (*Row-level security*) and the plan's Task 7
+(`docs/superpowers/plans/2026-10-13-row-level-security.md`).
+
+Tick a box only when you have seen the result. Do not skip ahead: A is about production as
+it is today, B–C gate the switch, D–E are the switch. A2 and A3 were done on 2026-10-16; the
+rest is open. When a step has a **Gate**, a failed
+gate means stop and do not flip.
+
+Values used below: Cloud Run service `iqraa-api`, region `europe-west1`, project
+`iqraa-auth-507315`.
+
+## A. Is production healthy right now?
+
+- [x] **A2. Table ownership — passed 2026-10-16.** Connected with the Secret Manager
+  `DATABASE_URL` (the one Cloud Run reads): `current_user = neondb_owner`, and **0** tables in
+  `public` owned by anyone else. So the API's role owns every table and bypasses RLS: the
+  migration changed nothing for it. (The URL was read with `gcloud secrets versions access
+  latest`; if Cloud Run pins an older secret version, re-check against that version.)
+- [x] **A3. Same role in both connection strings — passed by inference.** Enabling RLS on a
+  table needs ownership; the production migration succeeded and every table is owned by
+  `neondb_owner`, so the migrating role is `neondb_owner` or a member of it.
+- [ ] **A1. Look at the app and the logs.**
+  1. Cloud Shell: search the logs since the deploy for the two error phrases —
+
+     ```bash
+     gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="iqraa-api" AND ("permission denied" OR "row-level security")' \
+       --project iqraa-auth-507315 --freshness=3d --limit=20 \
+       --format='value(timestamp,severity,textPayload,jsonPayload.msg)'
+     ```
+  2. Sign in as a teacher: open the inbox, a class and an evaluation, and send one test message.
+
+  **Gate:** the search prints nothing and every screen loads with data.
+
+## B. Rehearse on a separate Neon project (never production)
+
+Use a **new, empty Neon project**, not a branch of production: a branch of today's production
+already has `0008`, so "apply the migration" would prove nothing. The test suites create their
+own fixtures, so an empty database is enough.
+
+- [ ] **B1. Create the project.** In the Neon console create `iqraa-rls-rehearsal` in the
+  **same region as the production Neon database** (latency in C1 is only meaningful there).
+  Copy the **direct** and the **pooled** connection strings into a private note — never into
+  chat or the repo.
+- [ ] **B2. Get the code** (Cloud Shell or any machine with Node 22+ — the tests use
+  `--experimental-strip-types`):
+
+  ```bash
+  git clone https://github.com/NizarAbuahmad/Iqraa.git && cd Iqraa
+  node -v                                  # v22 or newer
+  corepack enable && pnpm install
+  pnpm --filter @workspace/api-server run build
+  ```
+- [ ] **B3. Apply the migrations to the empty project:**
+
+  ```bash
+  export DIRECT_URL='<direct string>'  POOLED_URL='<pooled string>'
+  DATABASE_URL="$DIRECT_URL" pnpm --filter @workspace/db run migrate -- --from-env
+  ```
+
+  **Gate:** all migrations apply, including `0008`, with no error. This proves the Neon owner
+  role can `CREATE ROLE` and `GRANT iqraa_app TO CURRENT_USER`.
+- [ ] **B4. Run the database tests on both endpoints:**
+
+  ```bash
+  RLS_TEST_DATABASE_URL="$DIRECT_URL"  pnpm --filter @workspace/db run test
+  RLS_TEST_DATABASE_URL="$POOLED_URL"  pnpm --filter @workspace/db run test
+  ```
+
+  **Gate:** every test passes on **both** (42 at the time of writing). The pooled run proves
+  `SET LOCAL ROLE` and `set_config(…, true)` survive the pooler. The suite includes
+  `rlsDiff.test.ts`, which boots the built API with enforcement off and on and replays the main
+  teacher, parent and student flows — pushes, blocks, retakes, inbox order — so it replaces a
+  hand click-through of those flows. Record which endpoint production uses.
+
+## C. Measure and check limits
+
+- [ ] **C1. Measure the added latency** against the rehearsal project's **pooled** string, from
+  the API's region if you can (a Cloud Run job, or a VM there; numbers from a laptop overstate
+  the cost). Use the benchmark in the plan, Task 7 Step 3: it prints ms per statement with
+  enforcement off and on. Multiply the difference by the statements in a typical request (the
+  teacher inbox is the heaviest read, roughly fifteen).
+
+  **Gate:** p95 within budget — suggested ≤ +100 ms on the inbox, ≤ +25 % elsewhere. If it
+  fails, do not flip. Mitigations, in order: co-locate Cloud Run with Neon; a request-scoped
+  transaction for routes that never call a model; fewer statements per request.
+- [ ] **C2. Check the connection ceiling.** With enforcement on an instance holds **two** pools
+  (default 10 connections each). **Gate:** the production Neon database's `max_connections` (or
+  the pooler's limit) is at least `20 × <Cloud Run --max-instances>`. Read `maxScale` with:
+
+  ```bash
+  gcloud run services describe iqraa-api --region europe-west1 --project iqraa-auth-507315 \
+    --format='value(spec.template.metadata.annotations)'
+  ```
+
+  If the limit is too low, set `max` explicitly on both pools in `lib/db/src/index.ts` (a code
+  change) or lower `--max-instances`.
+
+## D. Switch it on
+
+Outside school hours, and only with A, B and C ticked.
+
+- [ ] **D1. Note the current state**, so rollback is unambiguous:
+
+  ```bash
+  gcloud run services describe iqraa-api --region europe-west1 \
+    --project iqraa-auth-507315 --format='value(status.latestReadyRevisionName)'
+  ```
+- [ ] **D2. Turn it on:**
+
+  ```bash
+  gcloud run services update iqraa-api --region europe-west1 \
+    --project iqraa-auth-507315 --update-env-vars RLS_ENFORCE=on
+  ```
+
+  Use `--update-env-vars`, never `--set-env-vars` (that replaces every secret).
+- [ ] **D3. Watch for 30 minutes:** 5xx rate, p95 latency, push volume, and logs for
+  `permission denied` / `row-level security`. Repeat the teacher inbox and a parent reply by
+  hand. The failure to look for is quiet: a notification not sent, a block not honoured, a
+  thread that does not move up the inbox — not a 500.
+- [ ] **D4. Rollback, if anything is off — the whole rollback:**
+
+  ```bash
+  gcloud run services update iqraa-api --region europe-west1 \
+    --project iqraa-auth-507315 --update-env-vars RLS_ENFORCE=off
+  ```
+- [ ] **D5. Update `STATUS.md`** (the *Row-level security is built and switched off* section
+  says "off" and "never run against Neon") in the same sitting, and tick this file's date below.
+
+## E. Make the CI job required
+
+- [ ] **E1.** GitHub repo → Settings → Rules (or Branches) → the rule for `main` → *Require
+  status checks to pass* → add **`row-level security`** (next to `typecheck + tests`) → save.
+  A PR that breaks a policy then cannot merge.
+
+## Record
+
+| Step | Done by | Date | Notes (numbers, endpoint used, anything odd) |
+| --- | --- | --- | --- |
+| A | | | |
+| B | | | |
+| C | | | |
+| D | | | |
+| E | | | |

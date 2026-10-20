@@ -46,6 +46,102 @@ const DEFAULT_PROMPT_SLIDES = 10;
  */
 export const MAX_PROMPT_SLIDE_IMAGES = 3;
 
+/**
+ * The icon names a slide may carry. This is a copy of `DECK_SECTION_ICONS` in
+ * `artifacts/mobile/services/deckIcons.ts` — the API server cannot import the
+ * app — and `promptSlidesPrompt.test.ts` reads that array out of the app's
+ * source and fails if the two differ.
+ */
+export const DECK_ICON_NAMES = [
+  "target", "book", "books", "bulb", "ruler", "flag", "home", "users",
+  "help", "pencil", "ticket", "sparkles", "trophy", "bars", "trend", "check",
+  "atom", "flask", "leaf", "globe", "calculator", "clock", "pin", "heart", "star", "sun", "drop", "laptop",
+] as const;
+
+/**
+ * Every shape a slide may ask for — a copy of `SLIDE_LAYOUTS` in the app's `slideLayout.ts`.
+ * `concepts` is on the list so a saved deck round-trips, but the prompt does not
+ * teach it: only Slides Maker's own builders write that one.
+ */
+export const DECK_LAYOUT_NAMES = ["statement", "stat", "compare", "steps", "timeline", "stats", "table", "flow", "quote", "photo", "concepts"] as const;
+const LAYOUT_SLIDE_TYPES = ["intro", "summary", "reveal"];
+
+/** Charts the prompt asks for at most; the server keeps three before it cuts. */
+export const MAX_PROMPT_SLIDE_CHARTS = 2;
+const MAX_CHARTS_KEPT = 3;
+const MAX_CHART_ITEMS = 8;
+
+const ARABIC_DIGITS = "٠١٢٣٤٥٦٧٨٩";
+
+function chartNumber(v: unknown): number {
+  if (typeof v === "number") return v;
+  if (typeof v === "string" && /^\s*[0-9٠-٩]+(?:[.,٫][0-9٠-٩]+)?\s*$/.test(v)) {
+    return Number(v.replace(/[٠-٩]/g, d => String(ARABIC_DIGITS.indexOf(d))).replace(/[,٫]/, "."));
+  }
+  return NaN;
+}
+
+/** A chart this app can draw, cleaned — or null. The app re-checks with `usableChartVisual`. */
+function cleanChart(raw: unknown): Record<string, unknown> | null {
+  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const v = raw as Record<string, unknown>;
+  if (v.kind !== "chart" || (v.chartType !== "bar" && v.chartType !== "pie")) return null;
+  if (!Array.isArray(v.categories) || !Array.isArray(v.values)) return null;
+  if (v.categories.length !== v.values.length || v.categories.length < 2 || v.categories.length > MAX_CHART_ITEMS) return null;
+  const categories = v.categories.map(c => (typeof c === "string" ? c.trim() : ""));
+  if (categories.some(c => !c || c.length > 40) || new Set(categories).size !== categories.length) return null;
+  const values = v.values.map(chartNumber);
+  if (values.some(n => !Number.isFinite(n) || n < 0) || !values.some(n => n > 0)) return null;
+  const caption = typeof v.caption === "string" ? v.caption.trim() : "";
+  return { kind: "chart", chartType: v.chartType, categories, values, ...(caption ? { caption } : {}) };
+}
+
+/**
+ * Keeps the structural fields a model added to its slides — `icon` and a chart
+ * `visual` — only where this app can draw them.
+ *
+ * Both are optional extras, so a bad one is deleted, never a reason to refuse a
+ * paid deck: an icon outside the table, a chart with ragged arrays or a
+ * negative bar, a chart on a slide whose `layout` already fills the screen.
+ * More than three charts is cut to the first three — the prompt asks for two,
+ * and a deck of charts is not the deck that was asked for.
+ */
+export function sanitizeDeckStructure(activity: unknown): unknown {
+  if (activity === null || typeof activity !== "object" || Array.isArray(activity)) return activity;
+  const deck = activity as Record<string, unknown>;
+  if (!Array.isArray(deck.slides)) return activity;
+  let charts = 0;
+  const slides = deck.slides.map(raw => {
+    if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return raw;
+    const slide = { ...(raw as Record<string, unknown>) };
+    // A layout fills the screen in every renderer and is drawn before the slide's
+    // type is looked at, so one on a question or a challenge would hide its
+    // options or its answer. Only prose slides may carry one, and only a name the
+    // renderers know. The payload is left for the app to judge: it re-checks every
+    // field with the real limits and falls back to the slide's own words.
+    // A slide with no `type` at all draws as an ordinary content slide, so only a
+    // type that is present and not prose counts against the layout.
+    const proseOrUntyped = typeof slide.type !== "string" || LAYOUT_SLIDE_TYPES.includes(slide.type);
+    if (slide.layout !== undefined && (!(DECK_LAYOUT_NAMES as readonly string[]).includes(slide.layout as string)
+      || !proseOrUntyped)) {
+      delete slide.layout;
+    }
+    if (slide.icon !== undefined && !(DECK_ICON_NAMES as readonly string[]).includes(slide.icon as string)) delete slide.icon;
+    if (slide.visual !== undefined) {
+      const chart = slide.layout ? null : cleanChart(slide.visual);
+      if (chart && charts < MAX_CHARTS_KEPT) {
+        slide.visual = chart;
+        charts += 1;
+      } else {
+        delete slide.visual;
+        delete slide.visualOnReveal;
+      }
+    }
+    return slide;
+  });
+  return { ...deck, slides };
+}
+
 function slideCountLine(b: any, isAr: boolean): string {
   const n = Number(b.slideCount);
   if (!Number.isFinite(n) || n <= 0) {
@@ -147,6 +243,7 @@ ${slideCountLine(b, true)}
       "slideNumber": 5, "type": "intro",
       "title": "الفكرة معبَّرًا عنها كجملة خبرية لا كعنوان",
       "content": "• السطر الأول من الشرح\\n• السطر الثاني\\n• مثال قصير أو حالة خاصة",
+      "icon": "bulb",
       "mediaPrompt": "short english photo search query",
       "durationSeconds": 0,
       "teacher": { "teachingTips": "ما الذي تؤكّد عليه هنا", "commonMisconceptions": "الخطأ الشائع في هذه الفكرة تحديدًا", "expectedAnswer": "الصياغة الدقيقة للفكرة" }
@@ -172,6 +269,7 @@ ${slideCountLine(b, true)}
     {
       "slideNumber": 10, "type": "summary",
       "title": "الخلاصة",
+      "icon": "flag",
       "content": "• الفكرة الأولى\\n• الفكرة الثانية\\n• الفكرة الثالثة",
       "durationSeconds": 0,
       "teacher": { "teachingTips": "ما الذي يُبنى على هذا لاحقًا" }
@@ -191,13 +289,24 @@ ${slideCountLine(b, true)}
   لا تخترع إحصاءات. استخدم فقط أرقامًا من صميم الموضوع (عدد القوانين، قيمة ثابت، سنة، نسبة واردة في الوصف). إن لم يكن لديك رقم حقيقي فلا تستخدم هذا الشكل.
 - "compare": مقارنة حقيقية بين طرفين (قبل/بعد، صواب/خطأ، طريقتان). أضف "compare": {"leftTitle":"","left":["",""],"rightTitle":"","right":["",""]}. الطرفان ممتلئان دائمًا.
 - "steps": خطوات مرتّبة لعملية. "content" أسطر تبدأ بـ "• " بالترتيب، سطران على الأقل.
+- "timeline": ٣ إلى ٦ أحداث أو مراحل مرتّبة زمنيًا. أضف "timeline": [{"label":"التاريخ أو المرحلة، قصيرة","text":"ما حدث في جملة واحدة"}, ...]. فقط حين تكون التواريخ والمراحل حقيقية وواردة في الموضوع، لا مخترَعة.
+- "stats": ٢ إلى ٤ أرقام حقيقية تُعرض معًا. أضف "stats": [{"value":"الرقم، قصير","label":"ماذا يعني"}, ...]. لا تخترع أرقامًا أبدًا. (رقم واحد فقط؟ استخدم "stat".)
+- "table": مقارنة منظّمة بين عدة عناصر على عدة صفات. أضف "table": {"headers":["..",".."],"rows":[["..",".."],["..",".."]]}: من ٢ إلى ٤ أعمدة ومن ٢ إلى ٦ صفوف، وفي كل صف خلية واحدة بالضبط تحت كل عنوان، وكل خلية قصيرة.
+- "flow": عملية أو دورة تُرسم صناديقَ وأسهمًا، من ٣ إلى ٦ مراحل. أضف "flow": {"steps":["..","..",".."],"cycle":false}، واجعل "cycle": true حين تعود العملية إلى بدايتها (دورة الماء، دورة الخلية).
+الأشكال الأربعة الأخيرة: "content" فيها جملة واحدة تلخّص الشريحة (تُستعمل إن تعذّر الرسم)، و"type" يبقى "intro" أو "summary"، ولا يُضاف "mediaPrompt" ولا "visual".
+- "quote": عبارة أو تعريف أو قاعدة تستحقّ أن تُعرض بخط كبير. أضف "quote": {"text":"العبارة، حتى ٢٠٠ حرف","by":"قائلها أو مصدرها، اختياري"}. لا تنسب كلامًا إلى أحد ما لم يرد في الموضوع. "content" و"type" كما في الأشكال الأربعة السابقة.
+- "photo": صورة تملأ الشاشة ويعلوها العنوان وجملة واحدة، لشريحة يكون المشهد نفسه فيها هو الفكرة (مكان، ظاهرة، تجربة). "content" جملة واحدة قصيرة، و"type" يبقى "intro" أو "summary"، وأضف "mediaPrompt": عبارة إنجليزية قصيرة للبحث عن الصورة. شريحة أو شريحتان على الأكثر في العرض كله، ولا "visual".
 لا تُلبس أكثر من نصف شرائح الشرح شكلًا خاصًا — التنويع هو المقصود، لا الفوضى.
+
+الأيقونة والرسم البياني — بنية يختارها العرض نفسه لا قالب واحد لكل الشرائح:
+- "icon": اسم أيقونة واحد على كل شريحة شرح وكل شريحة فاصلة وشريحة الخلاصة، وليس على الغلاف. اختر من هذه القائمة فقط: ${DECK_ICON_NAMES.join(", ")}. اختر الأقرب لما تتحدّث عنه الشريحة نفسها لا لمادة العرض كلها (atom لبنية الذرة، leaf للنبات، globe للجغرافيا، calculator للحساب، clock للزمن، drop للماء، pin لمكان، heart للصحة، sun للطاقة، laptop للتقنية، flask للتجربة). لا تكرّر الأيقونة نفسها على شريحتين متتاليتين، ولا تضع إيموجي في العنوان — الأيقونة هي رمز العنوان.
+- "visual": رسم بياني، وفقط حين يحوي وصف المعلّم أو نصّه المصدري أرقامًا حقيقية قابلة للمقارنة. شكله: {"kind":"chart","chartType":"bar","categories":["بند","بند"],"values":[10,20]}. من ٢ إلى ٨ بنود، و"values" أرقام غير سالبة (لا نصوص)، وعدد البنود يساوي عدد القيم. "pie" فقط حين تكون القيم أجزاءً من كل (مجموعها نحو ١٠٠ أو نسب مئوية)، وإلا "bar". لا تخترع أرقامًا أبدًا: إن لم تجد في الوصف أو النص أرقامًا حقيقية فلا تضع "visual" في العرض كلّه، وهذا هو الأصل لا الاستثناء. لا يزيد عدد الشرائح ذات الرسم عن ${MAX_PROMPT_SLIDE_CHARTS}، ولا يوضع على شريحة تحمل "layout" أو "mediaPrompt". اكتب في "content" سطرين يقولان ما الذي يُقرأ من الرسم.
 
 قواعد إلزامية:
 - كل شريحة بلا استثناء تحمل كائن "teacher" غير فارغ. الشريحة بلا teacher تظهر للمعلّم بزرّ ملاحظات لا يفتح شيئًا.
-- "content" متعدّد الأسطر: افصل بـ \\n وابدأ أسطر القوائم بـ "• ". لا تكتب فقرة واحدة متّصلة، ولا تقلّ أي شريحة عن سطرين — إلا شريحة "statement" وشريحة الغلاف، فهما سطر واحد عمدًا.
+- "content" متعدّد الأسطر: افصل بـ \\n وابدأ أسطر القوائم بـ "• ". لا تكتب فقرة واحدة متّصلة، ولا تقلّ أي شريحة عن سطرين — إلا شريحة "statement" وشريحة الغلاف وكل شريحة بشكل "timeline" أو "stats" أو "table" أو "flow" أو "quote" أو "photo"، فهذه سطر واحد عمدًا.
   الشريحة ذات السطر الواحد مرفوضة. إن لم تجد ما تقوله في سطرين فادمج الشريحة مع التي تليها واجعل العرض أقصر — ست شرائح ممتلئة أفضل من عشر أنصاف فارغة.
-- لا تضع "mediaPrompt" على شريحة تحمل "layout": تلك الشريحة تملأ الشاشة بشكلها الخاص ولا مكان فيها للصورة.
+- لا تضع "mediaPrompt" على شريحة تحمل "layout" إلا إن كان "photo": تلك الشرائح تملأ الشاشة بشكلها الخاص ولا مكان فيها للصورة.
 - شريحة الشرح فكرة واحدة فقط. إن كان لديك فكرتان فاجعلهما شريحتين.
 - الخيارات الثلاثة الخاطئة في شريحة question أخطاء شائعة حقيقية، لا حشوًا ولا أرقامًا عشوائية. "correctIndex" فهرس مُصفَّر (0 يعني الخيار الأول)، لا ترتيب الخيار كما يعدّه الإنسان.
 - "deckPhotoQueries" مصفوفة من أربع عبارات بحث بالإنجليزية (٢-٥ كلمات لكل واحدة) تصف موضوع العرض نفسه، كلها مختلفة عن بعضها: الأولى لخلفية الغلاف، والثانية للشريحة الفاصلة، والثالثة والرابعة احتياط لشرائح المحتوى. الأربع مطلوبة. بالإنجليزية دائمًا مهما كانت لغة العرض — فهرس الصور إنجليزي، والبحث بالعربية يعود فارغًا. صِفْ الموضوع لا المادة الدراسية: عرض عن يوم الأم عبارته "mother and child hands" لا "mathematics classroom".
@@ -280,6 +389,7 @@ Return JSON in this exact shape (all text in English; mediaPrompt is English too
       "slideNumber": 5, "type": "intro",
       "title": "The idea stated as a claim, not a label",
       "content": "• First line of the explanation\\n• Second line\\n• A short example or special case",
+      "icon": "bulb",
       "mediaPrompt": "short english photo search query",
       "durationSeconds": 0,
       "teacher": { "teachingTips": "What to stress here", "commonMisconceptions": "The specific error on this idea", "expectedAnswer": "The precise statement of the idea" }
@@ -305,6 +415,7 @@ Return JSON in this exact shape (all text in English; mediaPrompt is English too
     {
       "slideNumber": 10, "type": "summary",
       "title": "Summary",
+      "icon": "flag",
       "content": "• First takeaway\\n• Second takeaway\\n• Third takeaway",
       "durationSeconds": 0,
       "teacher": { "teachingTips": "What gets built on this afterwards" }
@@ -324,13 +435,24 @@ Add a "layout" field to a concept slide when its shape fits; otherwise leave it 
   Never invent statistics. Use only numbers intrinsic to the subject (how many laws, the value of a constant, a year, a percentage the teacher's description supplied). With no real number, do not use this shape.
 - "compare": a genuine two-sided contrast (before/after, right/wrong, two methods). Add "compare": {"leftTitle":"","left":["",""],"rightTitle":"","right":["",""]}. Both sides always filled.
 - "steps": the ordered stages of a process. "content" is "• " lines in order, at least two.
+- "timeline": 3 to 6 events or stages in time order. Add "timeline": [{"label":"the date or stage, short","text":"what happened, one sentence"}, ...]. Only when the dates and stages are real and part of the topic — never invented.
+- "stats": 2 to 4 real figures shown together. Add "stats": [{"value":"the figure, short","label":"what it means"}, ...]. Never invent a figure. (Only one figure? Use "stat".)
+- "table": a structured comparison of several things across several attributes. Add "table": {"headers":["..",".."],"rows":[["..",".."],["..",".."]]}: 2 to 4 columns and 2 to 6 rows, exactly one cell under every header in every row, every cell short.
+- "flow": a process or cycle drawn as boxes and arrows, 3 to 6 stages. Add "flow": {"steps":["..","..",".."],"cycle":false}, and set "cycle": true when the process returns to its start (the water cycle, the cell cycle).
+For the last four shapes: "content" is ONE sentence that sums the slide up (it is what shows if the shape cannot be drawn), "type" stays "intro" or "summary", and there is no "mediaPrompt" and no "visual".
+- "quote": a phrase, definition or rule worth setting in large type. Add "quote": {"text":"the phrase, up to 200 characters","by":"who said it or where it is from, optional"}. Never attribute words to someone the topic does not name. "content" and "type" as for the four shapes above.
+- "photo": a full-screen picture with the title and ONE sentence over it, for a slide whose scene is the idea (a place, a phenomenon, an experiment). "content" is one short sentence, "type" stays "intro" or "summary", and add "mediaPrompt": a short English phrase to search the picture by. One or two in the whole deck, and no "visual".
 Give a special shape to no more than half the concept slides — the point is variety, not chaos.
+
+Icons and charts — structure the deck chooses for itself, not one template for every slide:
+- "icon": one icon name on every concept slide, every section break and the summary — not the cover. Choose from this list only: ${DECK_ICON_NAMES.join(", ")}. Pick the one closest to what THAT slide is about, not to the deck's subject as a whole (atom for atomic structure, leaf for plants, globe for geography, calculator for arithmetic, clock for time, drop for water, pin for a place, heart for health, sun for energy, laptop for technology, flask for an experiment). Never the same icon on two consecutive slides, and no emoji in a title — the icon is the title's symbol.
+- "visual": a chart, and only when the teacher's description or pasted source contains real, comparable figures. Shape: {"kind":"chart","chartType":"bar","categories":["item","item"],"values":[10,20]}. 2 to 8 items; "values" are non-negative numbers (never strings); as many items as values. Use "pie" only when the values are parts of one whole (they sum to about 100, or are percentages), otherwise "bar". Never invent figures: if the description and source hold no real numbers, put no "visual" anywhere in the deck — that is the default, not the exception. At most ${MAX_PROMPT_SLIDE_CHARTS} slides, and never on a slide that carries a "layout" or a "mediaPrompt". Write two lines of "content" saying what the chart shows.
 
 Mandatory rules:
 - Every slide without exception carries a non-empty "teacher" object. A slide without one shows the teacher a notes button that opens nothing.
-- "content" is multi-line: separate with \\n and start list lines with "• ". Never one unbroken paragraph, and never fewer than two lines on any slide — except a "statement" slide and the cover, which are one line on purpose.
+- "content" is multi-line: separate with \\n and start list lines with "• ". Never one unbroken paragraph, and never fewer than two lines on any slide — except a "statement" slide, the cover, and a slide shaped "timeline", "stats", "table", "flow", "quote" or "photo", which are one line on purpose.
   A one-line slide is rejected. If you cannot find two lines worth saying, merge that slide into the next one and make the deck shorter — six full slides beat ten half-empty ones.
-- Never put "mediaPrompt" on a slide that carries a "layout": that slide fills the screen with its own shape and has nowhere to put a picture.
+- Never put "mediaPrompt" on a slide that carries a "layout" unless it is "photo": any other shape fills the screen with its own drawing and has nowhere to put a picture.
 - A concept slide carries exactly one idea. If you have two ideas, make two slides.
 - The three wrong options on a question slide are real, plausible misconceptions — not filler, not random numbers. "correctIndex" is 0-based (0 means the first option), never the option's position as a person would count it.
 - "deckPhotoQueries" is FOUR English search phrases (2-5 words each) describing the deck's own subject, all different from each other: the first backs the cover, the second the section break, and the third and fourth are spares for content slides. All four are required. Always English whatever language the deck is in — the photo index is English and an Arabic query comes back empty. Describe the TOPIC, not the school subject: a Mother's Day deck wants "mother and child hands", never "mathematics classroom".

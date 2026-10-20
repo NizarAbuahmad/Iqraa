@@ -52,4 +52,14 @@ describe("grounding check", () => {
     const [v] = checkGrounding([mc("تتشارك الذرات زوجا من الإلكترونات")], "");
     assert.equal(v!.status, "uncheckable");
   });
+  it("does not judge an open-ended answer — a model answer paraphrases the book on purpose", () => {
+    const open = {
+      ...mc("x"),
+      type: "short_answer" as const,
+      body: { prompt: "اشرح سبب انتقال الإلكترونات" },
+      expectedAnswer: { modelAnswer: "تتحول الطاقة الحرارية إلى طاقة حركية في الجسيمات" },
+    };
+    const [v] = checkGrounding([open], BOOK);
+    assert.equal(v!.status, "uncheckable");
+  });
 });

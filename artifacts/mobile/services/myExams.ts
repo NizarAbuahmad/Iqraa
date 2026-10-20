@@ -10,7 +10,7 @@
 import { SUBJECTS } from '@workspace/curriculum';
 import type { StudentResult } from './studentExam.ts';
 
-export type MyExamState = 'available' | 'in_progress' | 'submitted' | 'result' | 'closed';
+export type MyExamState = 'available' | 'in_progress' | 'submitted' | 'result' | 'closed' | 'paper';
 
 export interface MyExam {
   evaluationId: string;
@@ -27,10 +27,18 @@ export interface MyExam {
   submittedAt: string | null;
   deadlineAt: string | null;
   result: StudentResult | null;
+  /** 'YYYY-MM-DD', a calendar day with no zone — compare as a string, never through `Date`. Absent from an older server. */
+  examDate?: string | null;
+  /** 'HH:MM', the teacher's wall-clock time. Absent from an older server. */
+  examTime?: string | null;
+  /** Sat on paper; never has a link. Absent from an older server. */
+  paper?: boolean;
 }
 
 /** One child's list, as `GET /parent/exams` returns it — no row carries a link. */
 export interface ChildExams {
+  /** The server's child key — one child's rows under two teachers share it; absent from an older server. */
+  key?: string;
   studentId: string;
   displayName: string;
   exams: MyExam[];
@@ -42,6 +50,7 @@ export const MY_EXAM_STATE_KEY = {
   submitted: 'myExamsStateSubmitted',
   result: 'myExamsStateResult',
   closed: 'myExamsStateClosed',
+  paper: 'myExamsStatePaper',
 } as const satisfies Record<MyExamState, string>;
 
 export type MyExamAction = 'start' | 'continue' | 'toggle_result' | null;
@@ -53,6 +62,7 @@ export type MyExamAction = 'start' | 'continue' | 'toggle_result' | null;
  */
 export function myExamAction(exam: MyExam): MyExamAction {
   if (exam.state === 'result' && exam.result) return 'toggle_result';
+  if (exam.state === 'paper') return null;
   if (!exam.shareCode) return null;
   if (exam.state === 'available') return 'start';
   if (exam.state === 'in_progress') return 'continue';
@@ -81,7 +91,79 @@ export function subjectLabel(subjectId: string, lang: 'ar' | 'en'): string | nul
   return (lang === 'ar' ? s.nameAr : s.name) || null;
 }
 
+/**
+ * The list as two sections. «القادمة» is what can still be sat — soonest planned
+ * day first, undated after the dated ones. «السابقة» is everything handed in or
+ * over, newest first. The server already orders by state, so each section only
+ * needs its own tiebreak; a stable sort keeps that order among equals.
+ */
+export function splitMyExams(exams: readonly MyExam[]): { upcoming: MyExam[]; past: MyExam[] } {
+  const upcoming = exams.filter(e => e.state === 'available' || e.state === 'in_progress');
+  const past = exams.filter(e => e.state !== 'available' && e.state !== 'in_progress');
+  upcoming.sort((a, b) => {
+    if (a.examDate && b.examDate) return a.examDate.localeCompare(b.examDate) || (a.examTime ?? '').localeCompare(b.examTime ?? '');
+    if (a.examDate) return -1;
+    if (b.examDate) return 1;
+    return 0;
+  });
+  past.sort((a, b) => (b.submittedAt ?? b.publishedAt ?? '').localeCompare(a.submittedAt ?? a.publishedAt ?? ''));
+  return { upcoming, past };
+}
+
+export interface SubjectAverage {
+  subjectId: string;
+  /** Rounded 0–100. */
+  percent: number;
+  count: number;
+}
+
+export interface ProgressSummary {
+  /** Papers whose result the teacher has released. */
+  taken: number;
+  /** Rounded 0–100, or null when there is nothing released to average. */
+  averagePercent: number | null;
+  bySubject: SubjectAverage[];
+}
+
+/**
+ * Where the student stands, from released results only. A row is `result`
+ * only when the server's release rule passed, so a paper still waiting on the
+ * teacher contributes nothing — not even to the count.
+ */
+export function progressSummary(exams: readonly MyExam[]): ProgressSummary {
+  const done = exams.filter((e): e is MyExam & { result: NonNullable<MyExam['result']> } => e.state === 'result' && e.result !== null);
+  if (done.length === 0) return { taken: 0, averagePercent: null, bySubject: [] };
+  const sums = new Map<string, { total: number; count: number }>();
+  for (const e of done) {
+    const s = sums.get(e.subjectId) ?? { total: 0, count: 0 };
+    s.total += e.result.percent;
+    s.count += 1;
+    sums.set(e.subjectId, s);
+  }
+  const bySubject = [...sums].map(([subjectId, s]) => ({ subjectId, percent: Math.round(s.total / s.count), count: s.count }));
+  bySubject.sort((a, b) => b.count - a.count || a.subjectId.localeCompare(b.subjectId));
+  return {
+    taken: done.length,
+    averagePercent: Math.round(done.reduce((n, e) => n + e.result.percent, 0) / done.length),
+    bySubject,
+  };
+}
+
 /** How many rows want something from the student now — for the entry tile. */
 export function actionableCount(exams: readonly MyExam[]): number {
   return exams.filter(e => myExamAction(e) === 'start' || myExamAction(e) === 'continue').length;
+}
+
+/**
+ * The facts under a row's title — subject, the exam day, when it was sent, the
+ * limit, the marks — as separate pieces for a wrapping row, in order, with the
+ * empty ones dropped. The row spaces them with a gap and draws no separator
+ * character: a joined string under `numberOfLines` was cut mid-text («· 10 …»)
+ * once the exam day joined it, and a « ·» glued to the end of each piece left a
+ * line ending in a dangling dot wherever the row wrapped. With spacing only, no
+ * line can begin or end on punctuation, and a piece wider than the row still
+ * wraps inside itself.
+ */
+export function metaSegments(parts: readonly (string | null | undefined | false)[]): string[] {
+  return parts.filter((p): p is string => typeof p === 'string' && p.trim() !== '');
 }

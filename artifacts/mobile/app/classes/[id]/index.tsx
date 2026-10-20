@@ -1,10 +1,11 @@
 /**
  * Class detail — who is in this class, and what was made for it.
  *
- * Three tabs over one class. The roster (الطلبة) is the register; materials
+ * Four tabs over one class. The roster (الطلبة) is the register; materials
  * (الموارد) is what the teacher attached from their workspace; exams
- * (الامتحانات) is what they set and are marking. Together they turn a class
- * from an address book into "what did I give صف أ, and how did they do".
+ * (الامتحانات) is what they set and are marking; homework (الواجبات) is what
+ * they asked the class to do at home, and who has ticked it. Together they turn
+ * a class from an address book into "what did I give صف أ, and how did they do".
  *
  * The exams tab exists because marking was only reachable through the tools
  * catalog — a teacher standing on their own class, looking at their own
@@ -26,6 +27,7 @@ import {
   FlatList,
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -81,6 +83,8 @@ import { ClassResourceRow } from '@/components/classes/ClassResourceRow';
 import { LibraryPickerSheet } from '@/components/classes/LibraryPickerSheet';
 import { LabPickerSheet } from '@/components/classes/LabPickerSheet';
 import { SupportGroupsSection } from '@/components/classes/SupportGroupsSection';
+import { HomeworkTab } from '@/components/classes/HomeworkTab';
+import { SPACE } from '@/constants/theme';
 import type { SupportGroup } from '@/services/supportGroups';
 import {
   addBodyFor,
@@ -88,11 +92,10 @@ import {
   addedKeys,
   labItemsForClass,
   mergeClassShelf,
-  openTargetFor,
   withAddedResource,
   type ClassResource,
 } from '@/services/classResources';
-import { openExternal } from '@/services/externalLinks';
+import { openResource } from '@/services/openResource';
 import { trackEvent } from '@/services/analytics';
 import type { ResourceItem } from '@/services/resourceCatalog';
 import { classToolParams } from '@/services/classToolParams';
@@ -110,7 +113,7 @@ const ACCENT_FILL = palette.hero;
 /** Centred column on desktop web; full-bleed on phones. */
 const CENTERED = { width: '100%' as const, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' as const };
 
-type Tab = 'students' | 'materials' | 'exams';
+type Tab = 'students' | 'materials' | 'exams' | 'homework';
 
 type ClassQueryData = { group: ClassGroup; students: RosterStudent[] };
 
@@ -668,17 +671,7 @@ export default function ClassDetailScreen() {
     }
   };
 
-  const onOpenResource = (resource: ClassResource) => {
-    const target = openTargetFor(resource);
-    if (target.kind === 'url') void openExternal(target.url);
-    // `as never`: the typed route has no `premade` param, as in the Library screen.
-    else if (target.kind === 'premade') {
-      router.push({ pathname: '/workspace/view' as never, params: { premade: target.id } });
-    } else if (target.kind === 'lab') {
-      // `as never`: the lab routes are typed per-id, as the premade branch above is.
-      router.push(target.path as never);
-    }
-  };
+  const onOpenResource = (resource: ClassResource) => openResource(resource, { teacher: true, isAr: lang === 'ar' });
 
   const align = isRTL ? 'right' : 'left';
   const title = group ? (lang === 'ar' && group.nameAr ? group.nameAr : group.name) : '';
@@ -816,8 +809,8 @@ export default function ClassDetailScreen() {
           with the class name on the line below, so nothing said which class it
           would open — and a bare speech bubble does not say who you would be
           talking to. Labelled, beside the name, it reads as one phrase.
-          Deliberately not a fourth tab: the three tabs swap what this screen
-          shows, this leaves the screen.
+          Deliberately not a tab: the four tabs swap what this screen shows,
+          this leaves the screen.
         */}
         <Text style={[styles.heroTitle, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]} numberOfLines={1}>
           {title}
@@ -860,11 +853,20 @@ export default function ClassDetailScreen() {
             </Pressable>
           ) : null}
         </View>
-        <View style={[styles.tabs, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+        {/* Four tabs no longer fit a phone at large font scales, so the row
+            scrolls (same recipe as the chip rows: the RTL minWidth keeps the
+            row hugging the right edge when it is shorter than the screen). */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.tabs}
+          contentContainerStyle={[{ flexDirection: isRTL ? 'row-reverse' : 'row' }, isRTL && { minWidth: '100%' }]}
+        >
           {renderTab('students', t('classTabStudents'), countStudents(students.length, lang))}
           {renderTab('materials', t('classTabMaterials'), countMaterials(materials.length + resources.length, lang))}
           {renderTab('exams', t('classTabExams'), t('countExams', exams.length))}
-        </View>
+          {renderTab('homework', t('hwTeacherTab'), '')}
+        </ScrollView>
       </View>
 
       {loading ? (
@@ -1108,6 +1110,16 @@ export default function ClassDetailScreen() {
             );
           }}
         />
+      ) : tab === 'homework' ? (
+        <HomeworkTab
+          classId={id}
+          libraryGroup={{ gradeId: group?.gradeId ?? '', subjectIds: focus ? [focus] : subjectIds }}
+          exams={exams}
+          colors={colors}
+          isRTL={isRTL}
+          lang={lang === 'ar' ? 'ar' : 'en'}
+          t={t}
+        />
       ) : (
         <FlatList
           data={shownExams}
@@ -1118,29 +1130,6 @@ export default function ClassDetailScreen() {
             <View style={{ gap: 10, marginBottom: 10 }}>
               {errorBanner}
               {subjectFilter}
-              <Pressable
-                onPress={() => router.push({ pathname: '/evaluations/mini', params: { classId: id } })}
-                style={[
-                  styles.row,
-                  {
-                    backgroundColor: ACCENT + '12',
-                    borderColor: ACCENT,
-                    flexDirection: isRTL ? 'row-reverse' : 'row',
-                    alignItems: 'center',
-                    gap: 10,
-                  },
-                ]}
-              >
-                <Ionicons name="flash-outline" size={20} color={ACCENT} />
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
-                    {t('miniEvalBtn')}
-                  </Text>
-                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, textAlign: align }}>
-                    {t('miniEvalSubtitle')}
-                  </Text>
-                </View>
-              </Pressable>
               <MasterySection mastery={mastery} colors={colors} isRTL={isRTL} align={align} lang={lang} t={t} />
               <SupportGroupsSection classId={id} groups={supportGroups} isRTL={isRTL} align={align} lang={lang === 'ar' ? 'ar' : 'en'} t={t} />
             </View>
@@ -1151,13 +1140,10 @@ export default function ClassDetailScreen() {
             const draft = item.status !== 'published';
             return (
               <Pressable
-                onPress={() =>
-                  router.push(
-                    draft
-                      ? { pathname: '/evaluations/[id]', params: { id: item.id } }
-                      : { pathname: '/evaluations/[id]/answers', params: { id: item.id } },
-                  )
-                }
+                // Always the exam page: it holds the student link, its expiry,
+                // answers and results. Opening a published exam straight on the
+                // per-student entry list hid the link and read as "not sent".
+                onPress={() => router.push({ pathname: '/evaluations/[id]', params: { id: item.id } })}
                 style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
               >
                 <View style={{ flex: 1 }}>
@@ -1179,6 +1165,8 @@ export default function ClassDetailScreen() {
         />
       )}
 
+      {/* No floating + on the homework tab: HomeworkTab has its own add row. */}
+      {tab === 'homework' ? null : (
       <Pressable
         onPress={() => {
           if (tab === 'students') setShowAdd(true);
@@ -1191,6 +1179,7 @@ export default function ClassDetailScreen() {
       >
         <Ionicons name={tab === 'students' ? 'person-add' : 'add'} size={22} color="#fff" />
       </Pressable>
+      )}
 
       <Modal
         visible={showJoinCode}
@@ -1824,7 +1813,7 @@ export default function ClassDetailScreen() {
             <Pressable
               onPress={() => {
                 setShowAttachExam(false);
-                router.push('/evaluations/new');
+                router.push({ pathname: '/evaluations/new', params: { classId: id } });
               }}
               style={[
                 styles.createRow,
@@ -1886,7 +1875,7 @@ function MasterySection({
     .slice(0, 5);
 
   return (
-    <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, gap: 10 }]}>
+    <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, gap: 10, flexDirection: 'column', alignItems: 'stretch' }]}>
       <View style={{ gap: 2 }}>
         <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
           {t('masteryTitle')}
@@ -2148,8 +2137,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.18)',
   },
   classChatPillText: { fontSize: 12, color: '#fff' },
-  tabs: { marginTop: 6 },
-  tab: { paddingVertical: 10, paddingHorizontal: 14, borderBottomWidth: 2, alignItems: 'center', gap: 2 },
+  tabs: { marginTop: 6, flexGrow: 0 },
+  tab: { paddingVertical: 10, paddingHorizontal: SPACE.sm, borderBottomWidth: 2, alignItems: 'center', gap: 2 },
   tabLabel: { fontSize: 15 },
   tabCount: { fontSize: 11, lineHeight: 18, color: 'rgba(255,255,255,0.95)' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },

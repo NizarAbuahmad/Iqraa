@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
+import type { BoardSolution } from '@workspace/math-verify';
 import {
   BOARD_BACKGROUNDS,
   BOARD_DEFAULT_WIDTH,
@@ -12,6 +13,7 @@ import {
   MAX_PAGES,
   STROKE_WIDTHS,
   addPage,
+  blankPage,
   axesGeometry,
   canUndo,
   clearBoard,
@@ -19,6 +21,7 @@ import {
   currentPage,
   paperMetrics,
   docHasInk,
+  docHasSolution,
   eraseAlong,
   eraseAt,
   fitCanvas,
@@ -31,6 +34,7 @@ import {
   strokeHit,
   undoBoard,
   updateCurrent,
+  withSolution,
   type BoardDoc,
   type BoardState,
   type Stroke,
@@ -533,5 +537,42 @@ describe('paperMetrics', () => {
     for (const bad of [0, -1, NaN, Infinity]) {
       assert.deepEqual(paperMetrics(bad), paperMetrics(1), String(bad));
     }
+  });
+});
+
+describe('a solution on a page', () => {
+  const sol: BoardSolution = {
+    problem: '2x+5=13', steps: ['2x = 8', 'x = 4'], answer: 'x = 4', verified: false, source: 'unchecked',
+  };
+
+  it('is set and cleared without touching the ink', () => {
+    const page = blankPage();
+    const withIt = withSolution(page, sol);
+    assert.equal(withIt.solution, sol);
+    assert.equal(withIt.board, page.board);
+    const cleared = withSolution(withIt, null);
+    assert.equal('solution' in cleared, false);
+    assert.equal(cleared.board, page.board);
+  });
+
+  it('answers the same page when nothing changes', () => {
+    const page = blankPage();
+    assert.equal(withSolution(page, null), page);
+    const withIt = withSolution(page, sol);
+    assert.equal(withSolution(withIt, sol), withIt);
+  });
+
+  it('is not ink: docHasInk ignores it, docHasSolution sees it on any page', () => {
+    const doc: BoardDoc = { current: 0, pages: [blankPage(), withSolution(blankPage(), sol)] };
+    assert.equal(docHasInk(doc), false);
+    assert.equal(docHasSolution(doc), true);
+    assert.equal(docHasSolution({ current: 0, pages: [blankPage()] }), false);
+  });
+
+  it('a new page has none, and removing a page removes its solution with it', () => {
+    const doc: BoardDoc = { current: 0, pages: [withSolution(blankPage(), sol)] };
+    const added = addPage(doc);
+    assert.equal(added.pages[1]!.solution, undefined);
+    assert.equal(docHasSolution(removePage(added, 0)), false);
   });
 });

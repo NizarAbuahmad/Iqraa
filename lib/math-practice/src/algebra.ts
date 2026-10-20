@@ -8,7 +8,7 @@
  * product), so the answer is known by construction — and `algebra.test.ts`
  * recomputes it from the printed stem by a different route.
  */
-import { gcd, int, lcm, nz, pick, sfrac, signed, sup, tier, wrongsFrom, type Draft, type Rng, type Topic } from './topicKit.ts';
+import { dinars, gcd, int, lcm, nz, pick, sfrac, signed, sup, tamyiz, tier, wrongsFrom, type Draft, type Rng, type Topic } from './topicKit.ts';
 
 // ─── polynomial and expression formatting ───────────────────────────────────
 
@@ -78,11 +78,130 @@ const topic = (id: string, match: RegExp, grades: [number, number], make: Gen): 
 const num = (answer: number, cands: number[], fmt: (n: number) => string = signed) =>
   wrongsFrom(fmt(answer), cands.filter(c => Number.isFinite(c) && (fmt === signed || c >= 0)).map(fmt), k => fmt(answer + Math.abs(k)));
 
+// ─── shared kinds of question (added 2026-10-16) ────────────────────────────
+// Most of these lessons could ask one sentence with different numbers. The
+// helpers below are the kinds several lessons share: «which of these numbers
+// is a solution», a number-line description, «how many real solutions».
+
+/** «−2، 0، 3، 5» — numbers printed in a stem, ascending. */
+const listAr = (xs: number[]) => [...xs].sort((p, q) => p - q).map(signed).join('، ');
+const listEn = (xs: number[]) => [...xs].sort((p, q) => p - q).map(signed).join(', ');
+/** «{−2 ، 0 ، 3}» — a set in roster form, sorted, without repeats. */
+const setStr = (xs: number[]) => `{${[...new Set(xs)].sort((p, q) => p - q).map(signed).join(' ، ')}}`;
+/** Two roots, ascending: «−3 ، 4». */
+const rootPair = (r1: number, r2: number) => [r1, r2].sort((p, q) => p - q).map(signed).join(' ، ');
+
+/** Three integers that are not `ans`: the candidates first, then its neighbours. */
+function others(ans: number, cands: number[], nonNeg = false): number[] {
+  const out: number[] = [];
+  const take = (v: number) => { if (out.length < 3 && Number.isInteger(v) && v !== ans && !out.includes(v) && (!nonNeg || v >= 0)) out.push(v); };
+  cands.forEach(take);
+  for (let k = 1; out.length < 3; k++) { take(ans + k); take(ans - k); }
+  return out;
+}
+
+/** «Which of these numbers is a solution?» — the solution and three that are not, all listed in the stem. */
+const whichSolves = (eq: string, ans: number, wrong: number[]): Draft => ({
+  eq, answer: signed(ans), wrongs: wrong.map(signed),
+  ar: `أيّ الأعداد الآتية حلٌّ للمعادلة ${eq}: ${listAr([ans, ...wrong])}؟`,
+  en: `Which of these numbers is a solution of ${eq}: ${listEn([ans, ...wrong])}?`,
+});
+
+/** «3 وحدات», «وحدتين», «وحدة واحدة», «12 وحدة» — the noun agrees with the number. */
+const units = (n: number) => (n === 1 ? 'وحدة واحدة' : n === 2 ? 'وحدتين' : n <= 10 ? `${n} وحدات` : `${n} وحدة`);
+const hours = (n: number) => (n === 1 ? 'ساعة واحدة' : n === 2 ? 'ساعتين' : n <= 10 ? `${n} ساعات` : `${n} ساعة`);
+
+/** The four answers to «how many real solutions»; the last is never right for a quadratic. */
+const NSOL = ['حلّان حقيقيان مختلفان', 'حلّ حقيقي واحد', 'لا توجد حلول حقيقية', 'عدد لا نهائي من الحلول'] as const;
+const nsolDraft = (eq: string, kind: 0 | 1 | 2, ar: string, en: string): Draft =>
+  ({ eq, answer: NSOL[kind], wrongs: NSOL.filter((_, i) => i !== kind), ar, en });
+
+/** A sum of monomials printed in the order given, like terms not yet collected: «3x² − 2x + 5 − x²». */
+const mono = (a: number, p: number) => (p === 0 ? String(a) : `${a === 1 ? '' : a}x${p === 1 ? '' : sup(p)}`);
+const termsStr = (ts: Array<[number, number]>) =>
+  ts.map(([c, p], i) => (i === 0 ? `${c < 0 ? '−' : ''}${mono(Math.abs(c), p)}` : ` ${c < 0 ? '−' : '+'} ${mono(Math.abs(c), p)}`)).join('');
+
+/**
+ * A weighted choice of kind. A paper prefers a sentence it has not served yet
+ * (`makeTopicItem`), so a kind printed in several sentences — one per operation,
+ * one per comparison word — would crowd the others out at equal weight. Such
+ * kinds are drawn less often instead.
+ *
+ * Since 2026-10-16 a paper spreads by kind (`sameKind`), so a kind's sentences
+ * share one turn and these weights only tilt the draw. Measured then (20–200
+ * ten-item papers per lesson): expr_g4's 0.25 left its phrase kind off 2 of 20
+ * papers once the lesson had four kinds, so it was flattened; the rest still put
+ * every kind on 98% of papers or more and were kept.
+ */
+function wpick<T>(rng: Rng, xs: ReadonlyArray<readonly [T, number]>): T {
+  let r = rng() * xs.reduce((s, [, w]) => s + w, 0);
+  for (const [x, w] of xs) { r -= w; if (r < 0) return x; }
+  return xs[xs.length - 1]![0];
+}
+
+/** A deterministic shuffle under the item's rng. */
+function shuffled<T>(rng: Rng, xs: readonly T[]): T[] {
+  const out = xs.slice();
+  for (let i = out.length - 1; i > 0; i--) { const j = int(rng, 0, i); [out[i], out[j]] = [out[j]!, out[i]!]; }
+  return out;
+}
+
 // ─── Grades 4–7: expressions, equations, sequences ──────────────────────────
 
+/** «اكتب مقدارًا جبريًا يعبّر عن: …» — a phrase in words, its expression, and the slips a pupil makes. */
+function phraseDraft(rng: Rng, v: string, a: number, ops: ReadonlyArray<'+' | '−' | '×' | '÷'>): Draft {
+  const op = pick(rng, ops);
+  const E = { add: `${v} + ${a}`, sub: `${v} − ${a}`, rsub: `${a} − ${v}`, mul: `${a} × ${v}`, div: `${v} ÷ ${a}`, rdiv: `${a} ÷ ${v}` };
+  const [ans, ar, en, wr] = op === '+' ? [E.add, `ناتج جمع العدد ${v} و ${a}`, `the sum of ${v} and ${a}`, [E.sub, E.mul, E.rsub]]
+    : op === '−' ? [E.sub, `ناتج طرح ${a} من العدد ${v}`, `${a} subtracted from ${v}`, [E.rsub, E.add, E.mul]]
+    : op === '×' ? [E.mul, `ناتج ضرب العدد ${v} في ${a}`, `${v} multiplied by ${a}`, [E.add, E.sub, E.rsub]]
+    : [E.div, `ناتج قسمة العدد ${v} على ${a}`, `${v} divided by ${a}`, [E.rdiv, E.mul, E.sub]];
+  return { eq: ans, answer: ans, wrongs: wr, ar: `اكتب مقدارًا جبريًا يعبّر عن: ${ar}.`, en: `Write an algebraic expression for: ${en}.` };
+}
+
+/**
+ * Grade 4: the value of an expression — and since 2026-10-16 the lesson's other
+ * outcomes: a sentence written as an algebraic expression, and the value of a
+ * numerical expression.
+ */
 const exprG4 = topic('expr_g4', /^المقادير والمتغيرات$/, [4, 4], ({ rng, diff }) => {
   const v = pick(rng, ['n', 'x', 'a', 'b']);
   const k = int(rng, 2, span(diff)), a = int(rng, 2, 9);
+  // the phrase kind is written one sentence per operation; it was down-weighted to 0.25 while papers
+  // spread by sentence, and with spreading by kind (`sameKind`) that weight left it off some papers
+  const kind = pick(rng, [0, 1, 2, 3, 4]);
+  if (kind === 1) return phraseDraft(rng, v, a, ['+', '−', '×']);
+  if (kind === 3) {
+    // which expression has a given value: evaluate each, keep the one that matches
+    const forms: Array<[string, number]> = [];
+    for (let t = 0; t < 40 && forms.length < 4; t++) {
+      const c = int(rng, 2, 9), f = pick(rng, [0, 1, 2]);
+      const e: [string, number] = f === 0 ? [`${v} + ${c}`, k + c] : f === 1 ? [`${c} × ${v}`, c * k] : [`${v} − ${c}`, k - c];
+      if (e[1] > 0 && !forms.some(([s, val]) => s === e[0] || val === e[1])) forms.push(e);
+    }
+    if (forms.length < 4) return exprG4.make({ rng, diff, grade: 4 });
+    const [[ans, val], ...rest] = forms as [[string, number], ...Array<[string, number]>];
+    const shown = shuffled(rng, forms.map(([s]) => s)).join(' ، ');
+    return {
+      eq: ans, answer: ans, wrongs: rest.map(([s]) => s),
+      ar: `أيّ المقادير الآتية قيمته ${val} عندما ${v} = ${k}: ${shown}؟`,
+      en: `Which of these expressions has the value ${val} when ${v} = ${k}: ${shown.replace(/ ، /g, ', ')}?`,
+    };
+  }
+  if (kind === 4) {
+    // a situation written as an expression: marbles put into a box, or taken out of it
+    const m = int(rng, 3, 9), put = rng() < 0.5;
+    const E = { add: `${v} + ${m}`, sub: `${v} − ${m}`, rsub: `${m} − ${v}`, mul: `${m} × ${v}` };
+    return put
+      ? { eq: E.add, answer: E.add, wrongs: [E.sub, E.mul, E.rsub], ar: `في صندوق ${v} من الكرات، ثم وضع فيه أحمد ${m} كرات أخرى. اكتب مقدارًا جبريًا يعبّر عن عدد الكرات في الصندوق الآن.`, en: `A box holds ${v} marbles and Ahmad puts in ${m} more. Write an algebraic expression for the number of marbles in the box now.` }
+      : { eq: E.sub, answer: E.sub, wrongs: [E.rsub, E.add, E.mul], ar: `في صندوق ${v} من الكرات، ثم أخرج منه أحمد ${m} كرات. اكتب مقدارًا جبريًا يعبّر عن عدد الكرات في الصندوق الآن.`, en: `A box holds ${v} marbles and Ahmad takes ${m} out. Write an algebraic expression for the number of marbles in the box now.` };
+  }
+  if (kind === 2) {
+    const p = int(rng, 2, 9), q = int(rng, 2, 9), r = int(rng, 1, 20);
+    const minus = rng() < 0.4 && p * q > r;
+    const text = `${p} × ${q} ${minus ? '−' : '+'} ${r}`, val = p * q + (minus ? -r : r);
+    return { eq: text, answer: String(val), wrongs: num(val, [p * (q + (minus ? -r : r)), p + q + (minus ? -r : r), p * q, val + 1], String), ar: `أوجد قيمة المقدار العددي ${text}.`, en: `Find the value of the numerical expression ${text}.` };
+  }
   const form = pick(rng, [0, 1, 2]);
   const [text, ans] = form === 0 ? [`${v} + ${a}`, k + a] : form === 1 ? [`${a} × ${v}`, a * k] : [`${v} − ${a}`, k - a];
   if (form === 2 && k <= a) return exprG4.make({ rng, diff, grade: 4 });
@@ -92,8 +211,19 @@ const exprG4 = topic('expr_g4', /^المقادير والمتغيرات$/, [4, 4
   };
 });
 
+/** Grade 5: write an expression with symbols, and find its value — bare, or as what a shopper pays. */
 const exprEval = topic('expr_eval', /قيمه المقدار الجبري/, [5, 6], ({ rng, diff }) => {
   const x = int(rng, 2, span(diff)), y = int(rng, 2, 9), a = int(rng, 2, 9), b = int(rng, 1, 9);
+  const kind = wpick(rng, [[0, 1], [1, 0.2], [2, 1]] as const);
+  if (kind === 1) return phraseDraft(rng, 'x', a, ['+', '−', '×', '÷']);
+  if (kind === 2) {
+    const n = int(rng, 2, span(diff) + 3), v = a * n + b;
+    return {
+      eq: `${a}n + ${b}`, answer: String(v), wrongs: num(v, [a + n + b, a * (n + b), a * n, v + a], String),
+      ar: `يمثّل المقدار ${a}n + ${b} ما يدفعه أحمد بالدينار ثمنًا لِـ n من الكتب مع أجرة التوصيل. كم دينارًا يدفع إذا اشترى ${n} من الكتب؟`,
+      en: `The expression ${a}n + ${b} is what Ahmad pays, in dinars, for n books including delivery. How many dinars does he pay for ${n} books?`,
+    };
+  }
   const two = tier(diff) >= 1 && rng() < 0.6;
   if (two) {
     const text = `${a}x + ${b}y`;
@@ -105,7 +235,11 @@ const exprEval = topic('expr_eval', /قيمه المقدار الجبري/, [5, 
   return { eq: text, answer: String(v), wrongs: num(v, [a + x + b, a * (x + b), a + b * x, v + a], String), ar: `أوجد قيمة المقدار ${text} عندما x = ${x}.`, en: `Find the value of ${text} when x = ${x}.` };
 });
 
-/** One-step equations from a chosen solution. */
+/**
+ * One-step equations from a chosen solution. Four kinds since 2026-10-16:
+ * solve it, pick the solution from a list, the «I thought of a number» story,
+ * and write the equation a sentence describes (the Grade 4 outcome «أكتبها»).
+ */
 const oneStep = (id: string, match: RegExp, kinds: Array<'add' | 'sub' | 'mul' | 'div'>, grades: [number, number]) =>
   topic(id, match, grades, ({ rng, diff }) => {
     const x = int(rng, 2, span(diff) + 6), a = int(rng, 2, span(diff));
@@ -115,18 +249,64 @@ const oneStep = (id: string, match: RegExp, kinds: Array<'add' | 'sub' | 'mul' |
       : kind === 'sub' ? [`x − ${a} = ${x}`, x + a, [x - a, x, a]]
       : kind === 'mul' ? [`${a}x = ${a * x}`, x, [a * x - a, a * x, a]]
       : [`x ÷ ${a} = ${x}`, x * a, [x + a, x, x - a]]) as [string, number, number[]];
+    // the story and the written equation are one sentence per operation
+    const per = kinds.length > 2 ? 0.4 : 0.6;
+    const form = wpick(rng, [[0, 1], [1, 1], [2, per], [3, per]] as const);
+    if (form === 1) return whichSolves(eq, ans, others(ans, w, true));
+    if (form === 2) {
+      const [ar, en] = kind === 'add' ? [`فكّرت سلمى في عدد، ثم أضافت إليه ${a} فكان الناتج ${x + a}. ما العدد الذي فكّرت فيه؟`, `Salma thinks of a number and adds ${a} to it; the result is ${x + a}. What is her number?`]
+        : kind === 'sub' ? [`فكّر عمر في عدد، ثم طرح منه ${a} فكان الناتج ${x}. ما العدد الذي فكّر فيه؟`, `Omar thinks of a number and subtracts ${a} from it; the result is ${x}. What is his number?`]
+        : kind === 'mul' ? [`فكّرت ليلى في عدد، ثم ضربته في ${a} فكان الناتج ${a * x}. ما العدد الذي فكّرت فيه؟`, `Layla thinks of a number and multiplies it by ${a}; the result is ${a * x}. What is her number?`]
+        : [`فكّر يزن في عدد، ثم قسمه على ${a} فكان الناتج ${x}. ما العدد الذي فكّر فيه؟`, `Yazan thinks of a number and divides it by ${a}; the result is ${x}. What is his number?`];
+      return { eq, answer: String(ans), wrongs: num(ans, w, String), ar, en };
+    }
+    if (form === 3) {
+      const R = Number(eq.split(' = ')[1]);
+      // each candidate equation with its solution: a wrong one must not be true of the number the sentence describes
+      const E: Record<string, [string, number]> = {
+        add: [`x + ${a} = ${R}`, R - a], sub: [`x − ${a} = ${R}`, R + a], rsub: [`${a} − x = ${R}`, a - R],
+        mul: [`${a}x = ${R}`, R / a], div: [`x ÷ ${a} = ${R}`, R * a], rdiv: [`${a} ÷ x = ${R}`, a / R],
+      };
+      const [key, ar, en, prefer] = kind === 'add' ? ['add', `ناتج جمع العدد x و ${a} يساوي ${R}`, `the sum of x and ${a} is ${R}`, ['sub', 'mul', 'div']]
+        : kind === 'sub' ? ['sub', `ناتج طرح ${a} من العدد x يساوي ${R}`, `${a} subtracted from x is ${R}`, ['rsub', 'add', 'div']]
+        : kind === 'mul' ? ['mul', `ناتج ضرب العدد x في ${a} يساوي ${R}`, `x multiplied by ${a} is ${R}`, ['add', 'div', 'sub']]
+        : ['div', `ناتج قسمة العدد x على ${a} يساوي ${R}`, `x divided by ${a} is ${R}`, ['rdiv', 'mul', 'sub']];
+      const [ans2, sol] = E[key]!;
+      const wr = [...prefer, ...Object.keys(E)].filter((k, i, all) => k !== key && all.indexOf(k) === i && E[k]![1] !== sol).slice(0, 3).map(k => E[k]![0]);
+      return { eq: ans2, answer: ans2, wrongs: wr, ar: `اكتب معادلة تعبّر عن الجملة: ${ar}.`, en: `Write an equation for: ${en}.` };
+    }
     return { eq, answer: String(ans), wrongs: num(ans, w, String), ar: `حلّ المعادلة: ${eq}`, en: `Solve the equation: ${eq}` };
   });
 
 const equations = topic('eq_mixed', /^المعادلات$/, [4, 6], ({ rng, diff, grade }) => {
   if (grade < 6) return oneStep('x', /./, ['add', 'sub', 'mul', 'div'], [4, 5]).make({ rng, diff, grade });
   const x = int(rng, 1, 9), a = int(rng, 2, 6), b = int(rng, 1, 12);
-  const eq = `${a}x + ${b} = ${a * x + b}`;
+  const c = a * x + b;
+  const eq = `${a}x + ${b} = ${c}`;
+  const w = [c - a, (c + b) / a, x + b, x + a, c - b];
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) return whichSolves(eq, x, others(x, w, true));
+  if (form === 2) return { eq, answer: String(x), wrongs: num(x, w.filter(Number.isInteger), String), ar: `فكّر خالد في عدد، ثم ضربه في ${a} وأضاف إلى الناتج ${b} فكان الناتج ${c}. ما العدد الذي فكّر فيه؟`, en: `Khaled thinks of a number, multiplies it by ${a} and adds ${b}; the result is ${c}. What is his number?` };
   return { eq, answer: String(x), wrongs: num(x, [a * x + b - a, (a * x) / a + b, x + b, x + a], String), ar: `حلّ المعادلة: ${eq}`, en: `Solve the equation: ${eq}` };
 });
 
+/** Grade 6: name the property an equality uses, simplify with commutative + associative, and distribute. */
 const properties = topic('distribute', /^الخصائص الجبريه$/, [6, 6], ({ rng, diff }) => {
   const a = int(rng, 2, 9), b = int(rng, 2, span(diff) > 6 ? 5 : 3), c = int(rng, 1, 9);
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) {
+    const PROPS = ['الخاصية التبديلية', 'الخاصية التجميعية', 'الخاصية التوزيعية', 'خاصية العنصر المحايد'];
+    const p = int(rng, 0, 2), o = rng() < 0.5 ? '×' : '+';
+    const eq = p === 0 ? `${a} ${o} x = x ${o} ${a}` : p === 1 ? `(x ${o} ${a}) ${o} ${c} = x ${o} (${a} ${o} ${c})` : `${a}(x + ${c}) = ${a}x + ${a * c}`;
+    return { eq, answer: PROPS[p]!, wrongs: PROPS.filter((_, i) => i !== p), ar: `ما الخاصية المستعملة في المساواة: ${eq}؟`, en: `Which property is used in: ${eq}?` };
+  }
+  if (form === 2) {
+    const times = rng() < 0.5;
+    const text = times ? `${a} × x × ${c + 1}` : `${a} + x + ${c}`;
+    const ans = times ? [0, a * (c + 1)] : [a + c, 1];
+    const cands = times ? [[0, a + c + 1], [a * (c + 1), 1], [0, 0, a * (c + 1)]] : [[0, a + c], [a * c, 1], [a + c, 2]];
+    return { eq: text, answer: polyStr(ans), wrongs: polyOpts(ans, cands), ar: `بسّط مستعملًا الخاصيتين التبديلية والتجميعية: ${text}`, en: `Simplify using the commutative and associative properties: ${text}` };
+  }
   const minus = rng() < 0.4;
   const text = `${a}(${b === 1 ? '' : b}x ${minus ? '−' : '+'} ${c})`;
   const ans = [(minus ? -c : c) * a, a * b];
@@ -137,7 +317,39 @@ const properties = topic('distribute', /^الخصائص الجبريه$/, [6, 6]
   };
 });
 
+/**
+ * Sequences: the next term or the nth — and since 2026-10-16 a missing term, the
+ * rule from one term to the next (Grade 6 «أكمل»), and for Grade 7 the general
+ * term written algebraically.
+ */
 const sequences = topic('seq_basic', /^المتتاليات$/, [6, 7], ({ rng, diff, grade }) => {
+  const form = pick(rng, grade >= 7 ? [0, 1, 2, 3] : [0, 1, 2]);
+  if (form > 0) {
+    const a = int(rng, -3, 12), d = nz(rng, span(diff) > 6 ? 9 : 5);
+    const t = [0, 1, 2, 3, 4].map(i => a + i * d);
+    const four = t.slice(0, 4).map(signed);
+    if (form === 1) {
+      const i = int(rng, 1, 3), ans = t[i]!;
+      const shown = t.map((v, j) => (j === i ? '___' : signed(v)));
+      return { eq: shown.join(', '), answer: signed(ans), wrongs: num(ans, [ans + 1, ans - 1, t[4]! + d]), ar: `ما العدد المفقود في المتتالية: ${shown.join('، ')}؟`, en: `What is the missing number in the sequence ${shown.join(', ')}?` };
+    }
+    if (form === 2) {
+      const rule = (k: number) => (k > 0 ? `أضف ${k}` : `اطرح ${-k}`);
+      const step = d > 0 ? 1 : -1, m = Math.abs(d);
+      const ans = rule(d);
+      return {
+        eq: four.join(', '), answer: ans,
+        wrongs: wrongsFrom(ans, [rule(-d), rule(d + step), `اضرب في ${m === 1 ? 2 : m}`], k => rule(d + step * (Math.abs(k) + 1))),
+        ar: `ما القاعدة التي تنقل كل حدّ إلى الحدّ الذي يليه في المتتالية: ${four.join('، ')}، …؟`, en: `What rule takes each term to the next in the sequence ${four.join(', ')}, …?`,
+      };
+    }
+    const ans = polyStr([a - d, d], 'n');
+    return {
+      eq: four.join(', '), answer: ans,
+      wrongs: wrongsFrom(ans, [polyStr([a, d], 'n'), polyStr([d, a], 'n'), polyStr([a + d, d], 'n')], k => polyStr([a - d + k, d], 'n')),
+      ar: `ما قاعدة الحدّ العام (الحدّ النوني) للمتتالية الحسابية: ${four.join('، ')}، …؟`, en: `What is the general (nth) term of the arithmetic sequence ${four.join(', ')}, …?`,
+    };
+  }
   const geometric = grade >= 7 && tier(diff) >= 1 && rng() < 0.4;
   if (geometric) {
     const a = int(rng, 1, 5), r = int(rng, 2, 3);
@@ -171,13 +383,56 @@ const terms = topic('alg_terms', /^الحدود والمقادير الجبري�
   return { eq: expr, answer: signed(v), wrongs: num(v, [a * x + b * x + c, a * 2 * x + b * x + c, -v, v + a]), ar: `أوجد قيمة المقدار ${expr} عندما x = ${signed(x)}.`, en: `Find the value of ${expr} when x = ${signed(x)}.` };
 });
 
+/** «بسّط المقدار بتجميع الحدود المتشابهة» — two terms of every power, shuffled. */
+function likeTermsDraft(rng: Rng, deg: number): Draft {
+  for (;;) {
+    const ts: Array<[number, number]> = [];
+    for (let p = 0; p <= deg; p++) ts.push([nz(rng, 9), p], [nz(rng, 9), p]);
+    const terms = shuffled(rng, ts);
+    if (terms[0]![0] < 0) terms[0] = [-terms[0]![0], terms[0]![1]];
+    const ans = new Array(deg + 1).fill(0) as number[];
+    const abs = new Array(deg + 1).fill(0) as number[];
+    for (const [c, p] of terms) { ans[p]! += c; abs[p]! += Math.abs(c); }
+    if (trim(ans).length === 0) continue;
+    const text = termsStr(terms);
+    return {
+      eq: text, answer: polyStr(ans),
+      wrongs: polyOpts(ans, [abs, [0, ans.reduce((s, c) => s + c, 0)], ans.map((c, p) => (p === 0 ? -c : c))]),
+      ar: `بسّط المقدار بتجميع الحدود المتشابهة: ${text}`, en: `Simplify by collecting like terms: ${text}`,
+    };
+  }
+}
+
+/** Grade 7: collect like terms, add and subtract expressions, «subtract A from B», and a perimeter. */
 const polyAddSub = topic('poly_addsub', /^جمع المقادير الجبريه وطرحها$/, [7, 7], ({ rng, diff }) => {
-  const sub = rng() < 0.5;
   const deg = tier(diff) === 0 ? 1 : 2;
+  const form = pick(rng, [0, 1, 2, 3]);
+  if (form === 1) return likeTermsDraft(rng, deg);
+  if (form === 3) {
+    const S = [0, 1, 2].map(() => [nz(rng, 9), int(rng, 1, 5)]);
+    const ans = S.reduce((s, t) => add(s, t), [0, 0]);
+    const sides = S.map(s => polyStr(s));
+    return {
+      eq: sides.map(s => `(${s})`).join(' + '), answer: polyStr(ans),
+      wrongs: polyOpts(ans, [add(S[0]!, S[1]!), [S.reduce((s, t) => s + Math.abs(t[0]!), 0), ans[1]!], [0, ans[0]! + ans[1]!]]),
+      ar: `مثلث أطوال أضلاعه بالسنتيمتر: ${sides.map(s => `(${s})`).join(' و ')}. اكتب مقدارًا جبريًا يمثّل محيطه.`,
+      en: `A triangle has sides ${sides.join(', ')} (in cm). Write an algebraic expression for its perimeter.`,
+    };
+  }
+  const sub = rng() < 0.5;
   const mk = () => Array.from({ length: deg + 1 }, () => int(rng, -9, 9));
   let A = mk(), B = mk();
   if (!A[deg] || !B[deg]) { A[deg] = int(rng, 1, 9); B[deg] = int(rng, 1, 9); }
   const as = polyStr(A), bs = polyStr(B);
+  if (form === 2) {
+    const ans = add(B, A, -1);
+    if (trim(ans).length === 0) return polyAddSub.make({ rng, diff, grade: 7 });
+    return {
+      eq: `(${bs}) − (${as})`, answer: polyStr(ans),
+      wrongs: polyOpts(ans, [add(A, B, -1), add(A, B, 1), B.map((x, i) => (i === deg ? x - A[i]! : x + A[i]!))]),
+      ar: `اطرح (${as}) من (${bs}).`, en: `Subtract (${as}) from (${bs}).`,
+    };
+  }
   const ans = add(A, B, sub ? -1 : 1);
   if (trim(ans).length === 0) return polyAddSub.make({ rng, diff, grade: 7 });
   const slip = sub ? A.map((x, i) => (i === 0 ? x - B[i]! : x + B[i]!)) : add(A, B, -1);
@@ -188,7 +443,33 @@ const polyAddSub = topic('poly_addsub', /^جمع المقادير الجبريه
   };
 });
 
+/** Grade 7: multiply expressions — and a rectangle's area, multiply-then-simplify, and one coefficient of a product. */
 const polyMul = topic('poly_mul', /^ضرب المقادير الجبريه$/, [7, 7], ({ rng, diff }) => {
+  const form = pick(rng, [0, 1, 2, 3]);
+  if (form === 1) {
+    const p = nz(rng, 7);
+    if (tier(diff) === 2) {
+      const q = nz(rng, 7);
+      const ans = mul([p, 1], [q, 1]);
+      return { eq: `${fac(1, p)}${fac(1, q)}`, answer: polyStr(ans), wrongs: polyOpts(ans, [[p * q, 0, 1], [2 * (p + q), 4], [p + q, p * q, 1]]), ar: `مستطيل طوله ${fac(1, p)} سم وعرضه ${fac(1, q)} سم. اكتب مقدارًا جبريًا يمثّل مساحته.`, en: `A rectangle is ${fac(1, p)} cm long and ${fac(1, q)} cm wide. Write an algebraic expression for its area.` };
+    }
+    const a = int(rng, 2, 6);
+    const ans = mul([0, a], [p, 1]);
+    return { eq: `${a}x${fac(1, p)}`, answer: polyStr(ans), wrongs: polyOpts(ans, [[a * p, a], [0, p, a], [2 * p, 2 + 2 * a]]), ar: `مستطيل طوله ${fac(1, p)} سم وعرضه ${a}x سم. اكتب مقدارًا جبريًا يمثّل مساحته.`, en: `A rectangle is ${fac(1, p)} cm long and ${a}x cm wide. Write an algebraic expression for its area.` };
+  }
+  if (form === 2) {
+    const a = int(rng, 2, 6), c = nz(rng, 5), b = nz(rng, 7), d = nz(rng, 7);
+    if (a + c === 0) return polyMul.make({ rng, diff, grade: 7 });
+    const text = `${a}(${lin(1, b)}) ${c < 0 ? '−' : '+'} ${Math.abs(c) === 1 ? '' : Math.abs(c)}(${lin(1, d)})`;
+    const ans = [a * b + c * d, a + c];
+    return { eq: text, answer: polyStr(ans), wrongs: polyOpts(ans, [[b + c * d, a + c], [a * b - c * d, a + c], [a * b + c * d, a - c]]), ar: `اضرب ثم بسّط: ${text}`, en: `Multiply out and simplify: ${text}` };
+  }
+  if (form === 3) {
+    const m = pick(rng, [1, 2]), n = pick(rng, [1, 1, 3]), p = nz(rng, 7), q = nz(rng, 7);
+    const co = m * q + n * p;
+    if (co === 0) return polyMul.make({ rng, diff, grade: 7 });
+    return { eq: `${fac(m, p)}${fac(n, q)}`, answer: signed(co), wrongs: num(co, [p + q, p * q, m * n, -co]), ar: `ما معامل x في ناتج ${fac(m, p)}${fac(n, q)}؟`, en: `What is the coefficient of x in ${fac(m, p)}${fac(n, q)}?` };
+  }
   const k = tier(diff) === 0 ? 0 : tier(diff) === 1 ? pick(rng, [0, 1]) : pick(rng, [1, 2]);
   if (k === 0) {
     const a = int(rng, 2, 9), b = int(rng, 2, 9), m = int(rng, 1, 4), n = int(rng, 1, 4);
@@ -212,7 +493,19 @@ const polyMul = topic('poly_mul', /^ضرب المقادير الجبريه$/, [7
   };
 });
 
+/** Grade 7: (a ± b)² and (a + b)(a − b) — expanded, and since 2026-10-16 used for mental arithmetic (21², 23 × 17). */
 const special = topic('poly_special', /^حالات خاصه من ضرب المقادير الجبريه$/, [7, 7], ({ rng, diff }) => {
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) {
+    const t = int(rng, 2, 9), u = int(rng, 1, 3), s = rng() < 0.5 ? 1 : -1;
+    const n = 10 * t + s * u, ans = n * n;
+    return { eq: `${n}²`, answer: String(ans), wrongs: num(ans, [100 * t * t + u * u, 100 * t * t + s * 10 * t * u + u * u, 100 * t * t - u * u], String), ar: `استعمل ${s > 0 ? 'مربع مجموع حدّين' : 'مربع الفرق بين حدّين'} لإيجاد ناتج ${n}².`, en: `Use the square of a ${s > 0 ? 'sum' : 'difference'} to find ${n}².` };
+  }
+  if (form === 2) {
+    const t = int(rng, 2, 9), u = int(rng, 1, 4);
+    const A = 10 * t + u, B = 10 * t - u, ans = A * B;
+    return { eq: `${A} × ${B}`, answer: String(ans), wrongs: num(ans, [100 * t * t + u * u, 100 * t * t, 100 * t * t - 2 * u], String), ar: `استعمل ناتج ضرب مجموع حدّين في الفرق بينهما لإيجاد ناتج ${A} × ${B}.`, en: `Use (a + b)(a − b) = a² − b² to find ${A} × ${B}.` };
+  }
   const a = int(rng, 1, span(diff) > 6 ? 9 : 6), m = tier(diff) === 2 ? int(rng, 1, 3) : 1;
   const k = pick(rng, [0, 1, 2]);
   if (k === 2) {
@@ -228,7 +521,37 @@ const special = topic('poly_special', /^حالات خاصه من ضرب المق
   };
 });
 
+/** Grade 7: solve — and since 2026-10-16 the lesson's situations written as equations: a number puzzle, consecutive integers, a perimeter. */
 const solveEq = topic('solve_eq', /^حل المعادلات$/, [7, 7], ({ rng, diff }) => {
+  const form = pick(rng, [0, 1, 2, 3]);
+  if (form === 1) {
+    const x = int(rng, 1, 12), a = int(rng, 2, 6), b = int(rng, 1, 15);
+    const plus = rng() < 0.5 || a * x <= b;
+    const c = plus ? a * x + b : a * x - b;
+    const eq = `${a}x ${plus ? '+' : '−'} ${b} = ${c}`;
+    return {
+      eq, answer: signed(x), wrongs: num(x, [(plus ? c + b : c - b) / a, plus ? c - b : c + b, c / a, x + 1].filter(Number.isInteger)),
+      ar: `عدد إذا ضُرب في ${a} ثم ${plus ? 'أُضيف إلى الناتج' : 'طُرح من الناتج'} ${b} أصبح الناتج ${c}. ما العدد؟`,
+      en: `A number is multiplied by ${a}, then ${b} is ${plus ? 'added' : 'subtracted'}; the result is ${c}. What is the number?`,
+    };
+  }
+  if (form === 2) {
+    const n = int(rng, 1, 30), largest = rng() < 0.5, s = 3 * n + 3, ans = largest ? n + 2 : n;
+    const eq = largest ? `(x − 2) + (x − 1) + x = ${s}` : `x + (x + 1) + (x + 2) = ${s}`;
+    return {
+      eq, answer: String(ans), wrongs: num(ans, [n + 1, largest ? n : n + 2, s - 3, ans + 3], String),
+      ar: `مجموع ثلاثة أعداد صحيحة متتالية يساوي ${s}. ما ${largest ? 'أكبر' : 'أصغر'} هذه الأعداد؟`,
+      en: `The sum of three consecutive integers is ${s}. What is the ${largest ? 'largest' : 'smallest'} of them?`,
+    };
+  }
+  if (form === 3) {
+    const w = int(rng, 2, 15), d = int(rng, 1, 10), P = 4 * w + 2 * d;
+    return {
+      eq: `2(x + ${d}) + 2x = ${P}`, answer: String(w), wrongs: num(w, [w + d, P / 4, P / 2 - d, (P - d) / 2].filter(Number.isInteger), String),
+      ar: `مستطيل محيطه ${P} سم، وطوله يزيد على عرضه بمقدار ${d} سم. ما عرضه بالسنتيمتر؟`,
+      en: `A rectangle has a perimeter of ${P} cm, and its length is ${d} cm more than its width. What is its width in cm?`,
+    };
+  }
   const x = int(rng, -8, 9);
   const t = tier(diff);
   let eq: string;
@@ -257,6 +580,28 @@ const factorGcf = topic('factor_gcf', /^التحليل باخراج العامل
   const g = int(rng, 2, 7), u = int(rng, 1, 5), v = int(rng, 1, 5);
   // g must be the GREATEST common factor: u and v share nothing, and differ so the swap is a different answer
   if (u === v || gcd(u, v) !== 1) return factorGcf.make({ rng, diff, grade: 8 });
+  // since 2026-10-16: the GCF of two monomials on its own, and the bracket of a factorisation to complete
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) {
+    const p = int(rng, 1, 3), q = int(rng, 1, 3), lo = Math.min(p, q), hi = Math.max(p, q);
+    const A = monoStr(g * u, p), B = monoStr(g * v, q), ans = monoStr(g, lo);
+    return {
+      eq: `${A} ، ${B}`, answer: ans,
+      wrongs: wrongsFrom(ans, [String(g), monoStr(g, hi), monoStr(1, lo), monoStr(g * u * v, lo)], k => monoStr(g * (Math.abs(k) + 1), lo)),
+      ar: `ما العامل المشترك الأكبر للحدّين ${A} و ${B}؟`, en: `What is the greatest common factor of ${A} and ${B}?`,
+    };
+  }
+  if (form === 2) {
+    const x = rng() < 0.5;
+    const co = x ? [0, g * v, g * u] : [g * v, g * u];
+    const out = x ? `${g}x` : String(g);
+    const ans = polyStr([v, u]);
+    return {
+      eq: polyStr(co), answer: ans,
+      wrongs: wrongsFrom(ans, [polyStr([g * v, u]), polyStr([v, g * u]), x ? polyStr([0, v, u]) : polyStr([u, v])], k => polyStr([v + Math.abs(k), u])),
+      ar: `ما المقدار الذي يُكتب داخل القوسين: ${polyStr(co)} = ${out}( … )؟`, en: `What goes inside the brackets: ${polyStr(co)} = ${out}( … )?`,
+    };
+  }
   const withX = tier(diff) >= 1 && rng() < 0.7;
   const [a, b] = [g * u, g * v];
   if (withX) {
@@ -298,6 +643,23 @@ const factorMonic = topic('factor_monic', /ثلاثيات الحدود x.\+bx\+c
     wr.push(factorPair([1, a], [1, b]));
   }
   for (let k = 1; wr.length < 3; k++) { const a = p + k, b = q; if (a !== b && a !== 0 && !seen.has(key(a + b, a * b))) { seen.add(key(a + b, a * b)); wr.push(factorPair([1, a], [1, b])); } }
+  // since 2026-10-16: the step before the answer (the two numbers), and the other factor given one
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) {
+    return {
+      eq: `${signed(p * q)} ، ${signed(p + q)}`, answer: rootPair(p, q), wrongs: [rootPair(-p, -q), rootPair(p, -q), rootPair(-p, q)],
+      ar: `لتحليل المقدار ${polyStr(co)}، ما العددان اللذان حاصل ضربهما ${signed(p * q)} ومجموعهما ${signed(p + q)}؟`,
+      en: `To factor ${polyStr(co)}, which two numbers have product ${signed(p * q)} and sum ${signed(p + q)}?`,
+    };
+  }
+  if (form === 2) {
+    const other = fac(1, q);
+    const cands = [fac(1, -q), fac(1, p + q), fac(1, p * q)].filter(s => s !== fac(1, p));
+    return {
+      eq: polyStr(co), answer: other, wrongs: wrongsFrom(other, cands, k => (q + k === 0 || q + k === p ? '' : fac(1, q + k))),
+      ar: `إذا كان ${fac(1, p)} أحد عاملي المقدار ${polyStr(co)}، فما العامل الآخر؟`, en: `If ${fac(1, p)} is one factor of ${polyStr(co)}, what is the other?`,
+    };
+  }
   return { eq: polyStr(co), answer: ans, wrongs: wr, ar: `حلّل: ${polyStr(co)}`, en: `Factor: ${polyStr(co)}` };
 });
 
@@ -320,13 +682,57 @@ const factorGeneral = topic('factor_general', /ثلاثيات الحدود ax.\+
     take([m, q], [n, p]); take([m, -p], [n, -q]); take([m, p], [n, -q]); take([m, -p], [n, q]); take([n, p], [m, q]);
     for (let k = 1; wr.length < 3 && k < 9; k++) take([m, p + k], [n, q]);
     if (wr.length < 3) continue;
+    // since 2026-10-16: the split of the middle term (two numbers, product ac and sum b), and the other factor given one
+    const form = pick(rng, [0, 1, 2]);
+    if (form === 1) {
+      const ac = co[2]! * co[0]!, b = co[1]!;
+      const pairAns = rootPair(m * q, n * p);
+      const out: string[] = [];
+      for (const [s, t] of [[-m * q, -n * p], [co[2]!, co[0]!], [m * p, n * q], [-co[2]!, -co[0]!], [m * q + 1, n * p], [m * q, n * p + 1]] as Array<[number, number]>) {
+        const str = rootPair(s, t);
+        if ((s + t !== b || s * t !== ac) && str !== pairAns && !out.includes(str)) out.push(str);
+      }
+      for (let j = 2; out.length < 3; j++) { const str = rootPair(m * q + j, n * p); if (!out.includes(str)) out.push(str); }
+      return {
+        eq: `${signed(ac)} ، ${signed(b)}`, answer: pairAns, wrongs: out.slice(0, 3),
+        ar: `لتحليل المقدار ${polyStr(co)} بتجزئة الحدّ الأوسط، ما العددان اللذان حاصل ضربهما ${signed(ac)} ومجموعهما ${signed(b)}؟`,
+        en: `To factor ${polyStr(co)} by splitting the middle term, which two numbers have product ${signed(ac)} and sum ${signed(b)}?`,
+      };
+    }
+    if (form === 2) {
+      const other = fac(n, q), given = fac(m, p);
+      const cands = [fac(n, -q), fac(m, q), fac(n + 1, q), q + 1 === 0 ? '' : fac(n, q + 1), q - 1 === 0 ? '' : fac(n, q - 1)].filter(s => s && s !== given);
+      return {
+        eq: polyStr(co), answer: other, wrongs: wrongsFrom(other, cands, k => (q + 2 * k === 0 ? '' : fac(n, q + 2 * k))),
+        ar: `إذا كان ${given} أحد عاملي المقدار ${polyStr(co)}، فما العامل الآخر؟`, en: `If ${given} is one factor of ${polyStr(co)}, what is the other?`,
+      };
+    }
     return { eq: polyStr(co), answer: ans, wrongs: wr.slice(0, 3), ar: `حلّل: ${polyStr(co)}`, en: `Factor: ${polyStr(co)}` };
   }
   return factorMonic.make({ rng, diff, grade: 8 });
 });
 
+/**
+ * Grade 8: a difference of squares and a perfect-square trinomial — factored, and
+ * since 2026-10-16 the missing c or b that makes a perfect square, and a
+ * difference of squares used to work out A² − B².
+ */
 const factorSpecial = topic('factor_special', /^حالات خاصه من التحليل$/, [8, 8], ({ rng, diff }) => {
   const a = int(rng, 1, 9), m = tier(diff) === 2 ? int(rng, 1, 4) : 1;
+  const form = pick(rng, [0, 1, 2, 3]);
+  if (form === 1) {
+    const s = rng() < 0.5 ? 1 : -1;
+    const head = polyStr([0, 2 * s * a * m, m * m]);
+    return { eq: `${head} + c`, answer: String(a * a), wrongs: num(a * a, [2 * a * m, a, 4 * a * a, (2 * a * m) ** 2], String), ar: `ما قيمة c التي تجعل المقدار ${head} + c مربعًا كاملًا؟`, en: `What value of c makes ${head} + c a perfect square?` };
+  }
+  if (form === 2) {
+    const lead = m * m === 1 ? 'x²' : `${m * m}x²`;
+    return { eq: `${lead} + bx + ${a * a}`, answer: String(2 * a * m), wrongs: num(2 * a * m, [a * m, a * a, 4 * a * m, a + m], String), ar: `ما قيمة b الموجبة التي تجعل المقدار ${lead} + bx + ${a * a} مربعًا كاملًا؟`, en: `What positive value of b makes ${lead} + bx + ${a * a} a perfect square?` };
+  }
+  if (form === 3) {
+    const A = int(rng, 15, 60), B = A - int(rng, 1, 9), ans = A * A - B * B;
+    return { eq: `${A}² − ${B}²`, answer: String(ans), wrongs: num(ans, [(A - B) ** 2, 2 * (A - B), A * A - B], String), ar: `استعمل تحليل الفرق بين مربعين لإيجاد قيمة ${A}² − ${B}².`, en: `Use the difference of two squares to find ${A}² − ${B}².` };
+  }
   const k = pick(rng, [0, 1, 2]);
   if (k === 0) {
     const co = [-(a * a), 0, m * m];
@@ -354,14 +760,57 @@ const writeIneq = topic('ineq_write', /^كتابه المتباينات وتمث
     ['>', 'أكبر من', 'greater than'], ['<', 'أقل من', 'less than'], ['≥', 'لا يقل عن', 'at least'], ['≤', 'لا يزيد على', 'at most'],
   ] as const);
   const ans = `x ${s} ${signed(n)}`;
+  const form = pick(rng, [0, 1, 2, 3]);
+  // is a value a solution; how the inequality is drawn; and the inequality a drawing shows
+  if (form === 1) return ineqExtras(rng, 'check', ans, s, n);
+  if (form === 2) return ineqExtras(rng, 'line', ans, s, n);
+  if (form === 3) {
+    const closed = s === '≤' || s === '≥', up = s === '>' || s === '≥';
+    return {
+      eq: ans, answer: ans, wrongs: ineqWrongs(s, signed(n)),
+      ar: `اكتب المتباينة بالمتغير x التي تمثيلها على خط الأعداد دائرة ${closed ? 'مغلقة' : 'مفتوحة'} عند ${signed(n)} والتظليل نحو الأعداد ${up ? 'الأكبر' : 'الأصغر'}.`,
+      en: `Write the inequality in x whose graph on a number line is ${closed ? 'a closed' : 'an open'} circle at ${signed(n)} with shading towards the ${up ? 'greater' : 'smaller'} numbers.`,
+    };
+  }
   return { eq: ans, answer: ans, wrongs: ineqWrongs(s, signed(n)), ar: `اكتب متباينة تعبّر عن: العدد x ${ar} ${signed(n)}.`, en: `Write an inequality for: the number x is ${en} ${signed(n)}.` };
 });
 
+/**
+ * Two kinds every one-variable inequality lesson shares (since 2026-10-16), for an
+ * inequality `eq` whose solution set is «x rs bound»: which listed number
+ * satisfies it, and how its solution set is drawn on the number line.
+ */
+function ineqExtras(rng: Rng, kind: 'check' | 'line', eq: string, rs: string, bound: number): Draft {
+  const up = rs === '>' || rs === '≥', strict = rs === '<' || rs === '>';
+  const dir = up ? 1 : -1;
+  if (kind === 'check') {
+    const good = bound + dir * int(rng, strict ? 1 : 0, 3);
+    // a strict inequality's boundary is the classic wrong pick
+    const bad = strict ? [bound, bound - dir * int(rng, 1, 2), bound - dir * int(rng, 3, 5)] : [bound - dir, bound - dir * int(rng, 2, 3), bound - dir * int(rng, 4, 6)];
+    return { eq, answer: signed(good), wrongs: bad.map(signed), ar: `أيّ الأعداد الآتية يحقّق المتباينة ${eq}: ${listAr([good, ...bad])}؟`, en: `Which of these numbers satisfies ${eq}: ${listEn([good, ...bad])}?` };
+  }
+  const say = (closed: boolean, u: boolean) => `دائرة ${closed ? 'مغلقة' : 'مفتوحة'} عند ${signed(bound)}، والتظليل نحو الأعداد ${u ? 'الأكبر' : 'الأصغر'}`;
+  return { eq, answer: say(!strict, up), wrongs: [say(strict, up), say(!strict, !up), say(strict, !up)], ar: `صِف تمثيل مجموعة حلّ المتباينة ${eq} على خط الأعداد.`, en: `Describe how the solution set of ${eq} is drawn on a number line.` };
+}
+
+/** Grade 8: solve by adding or subtracting — and check a number, draw the solution, and a points/luggage story. */
 const ineqAdd = topic('ineq_add', /^حل المتباينات بالجمع والطرح$/, [8, 8], ({ rng, diff }) => {
+  const form = pick(rng, [0, 1, 2, 3]);
+  if (form === 3) {
+    if (rng() < 0.5) {
+      const T = int(rng, 4, 12) * 10, a = int(rng, 11, T - 11);
+      const ans = `x ≥ ${T - a}`;
+      return { eq: `x + ${a} ≥ ${T}`, answer: ans, wrongs: [`x ≤ ${T - a}`, `x ≥ ${T + a}`, `x > ${T - a}`], ar: `يحتاج فريق إلى ${T} ${tamyiz(T, 'نقاط', 'نقطةً', 'نقطة')} على الأقل للتأهل، وقد جمع حتى الآن ${a} ${tamyiz(a, 'نقاط', 'نقطةً', 'نقطة')}. ما المتباينة التي تمثّل عدد النقاط x التي ما زال يحتاج إليها؟`, en: `A team needs at least ${T} points to qualify and has ${a} so far. Which inequality gives the number of points x it still needs?` };
+    }
+    const T = int(rng, 2, 4) * 10, a = int(rng, 5, T - 5);
+    const ans = `x ≤ ${T - a}`;
+    return { eq: `x + ${a} ≤ ${T}`, answer: ans, wrongs: [`x ≥ ${T - a}`, `x ≤ ${T + a}`, `x < ${T - a}`], ar: `يُسمح لمسافر بحقيبة لا تزيد كتلتها على ${T} كغم، وقد وضع فيها حتى الآن ${a} كغم. ما المتباينة التي تمثّل الكتلة x (بالكيلوغرام) التي يمكن أن يضيفها؟`, en: `A traveller's bag may weigh at most ${T} kg and already holds ${a} kg. Which inequality gives the mass x (in kg) that can still be added?` };
+  }
   const x0 = int(rng, -6, 12), a = int(rng, 1, span(diff) + 3);
   const s = pick(rng, SYM);
   const plus = rng() < 0.5;
   const eq = `x ${plus ? '+' : '−'} ${a} ${s} ${signed(plus ? x0 + a : x0 - a)}`;
+  if (form > 0) return ineqExtras(rng, form === 1 ? 'check' : 'line', eq, s, x0);
   const ans = `x ${s} ${signed(x0)}`;
   const wrongBound = plus ? x0 + 2 * a : x0 - 2 * a;
   return {
@@ -371,7 +820,14 @@ const ineqAdd = topic('ineq_add', /^حل المتباينات بالجمع وا�
   };
 });
 
+/** Grade 8: solve by multiplying or dividing — and check a number, draw the solution, and a tickets story. */
 const ineqMul = topic('ineq_mul', /^حل المتباينات بالضرب والقسمه$/, [8, 8], ({ rng, diff }) => {
+  const form = pick(rng, [0, 1, 2, 3]);
+  if (form === 3) {
+    const p = int(rng, 3, 10), k = int(rng, 4, 12), M = p * k;
+    if (rng() < 0.5) return { eq: `${p}x ≤ ${M}`, answer: `x ≤ ${k}`, wrongs: [`x ≥ ${k}`, `x ≤ ${M - p}`, `x < ${k}`], ar: `سعر تذكرة الدخول إلى مدينة الألعاب ${dinars(p)}، ومع سامي ${dinars(M)}. ما المتباينة التي تمثّل عدد التذاكر x التي يستطيع شراءها؟`, en: `A ticket to the funfair costs ${p} dinars and Sami has ${M} dinars. Which inequality gives the number of tickets x he can buy?` };
+    return { eq: `${p}x ≥ ${M}`, answer: `x ≥ ${k}`, wrongs: [`x ≤ ${k}`, `x ≥ ${M - p}`, `x > ${k}`], ar: `يريد نادٍ أن يجمع ${dinars(M)} على الأقل من بيع تذاكر سعر الواحدة منها ${dinars(p)}. ما المتباينة التي تمثّل عدد التذاكر x التي يجب أن يبيعها؟`, en: `A club wants to raise at least ${M} dinars selling tickets at ${p} dinars each. Which inequality gives the number of tickets x it must sell?` };
+  }
   const x0 = int(rng, -6, 9), a = nz(rng, span(diff) > 6 ? 7 : 5);
   if (Math.abs(a) === 1) return ineqMul.make({ rng, diff, grade: 8 });
   const s = pick(rng, SYM);
@@ -379,6 +835,7 @@ const ineqMul = topic('ineq_mul', /^حل المتباينات بالضرب وا�
   const eq = div ? `x ÷ ${signed(a)} ${s} ${signed(x0)}` : `${signed(a)}x ${s} ${signed(a * x0)}`;
   const bound = div ? a * x0 : x0;
   const rs = a < 0 ? flip(s) : s;
+  if (form > 0) return ineqExtras(rng, form === 1 ? 'check' : 'line', eq, rs, bound);
   const ans = `x ${rs} ${signed(bound)}`;
   return {
     eq, answer: ans,
@@ -387,12 +844,28 @@ const ineqMul = topic('ineq_mul', /^حل المتباينات بالضرب وا�
   };
 });
 
+/** Grade 8: multi-step — and check a number, draw the solution, and a number described in words. */
 const ineqMulti = topic('ineq_multi', /^حل المتباينات متعدده الخطوات$/, [8, 8], ({ rng, diff }) => {
+  // the story is one sentence per comparison word and per operation
+  const form = wpick(rng, [[0, 1], [1, 1], [2, 1], [3, 0.2]] as const);
+  if (form === 3) {
+    const a = int(rng, 2, 6), b = int(rng, 1, 12), x0 = int(rng, -5, 9), plus = rng() < 0.5;
+    const c = plus ? a * x0 + b : a * x0 - b;
+    const [s, w, we] = pick(rng, [['>', 'أكبر من', 'greater than'], ['<', 'أقل من', 'less than'], ['≥', 'لا يقل عن', 'at least'], ['≤', 'لا يزيد على', 'at most']] as const);
+    const ans = `x ${s} ${signed(x0)}`;
+    return {
+      eq: `${a}x ${plus ? '+' : '−'} ${b} ${s} ${signed(c)}`, answer: ans,
+      wrongs: wrongsFrom(ans, [`x ${flip(s)} ${signed(x0)}`, `x ${s} ${signed(plus ? c - b : c + b)}`, `x ${SYM.find(t => t !== s && t !== flip(s))!} ${signed(x0)}`], k => `x ${s} ${signed(x0 + Math.abs(k))}`),
+      ar: `عدد إذا ضُرب في ${a} ثم ${plus ? 'أُضيف إلى الناتج' : 'طُرح من الناتج'} ${b} كان الناتج ${w} ${signed(c)}. ما المتباينة التي تمثّل قيم هذا العدد x؟`,
+      en: `A number is multiplied by ${a}, then ${b} is ${plus ? 'added' : 'subtracted'}; the result is ${we} ${signed(c)}. Which inequality gives the values of the number x?`,
+    };
+  }
   const x0 = int(rng, -5, 9), a = nz(rng, 6), b = nz(rng, 9);
   if (Math.abs(a) === 1) return ineqMulti.make({ rng, diff, grade: 8 });
   const s = pick(rng, SYM);
   const eq = `${polyStr([b, a])} ${s} ${signed(a * x0 + b)}`;
   const rs = a < 0 ? flip(s) : s;
+  if (form > 0) return ineqExtras(rng, form === 1 ? 'check' : 'line', eq, rs, x0);
   const ans = `x ${rs} ${signed(x0)}`;
   return {
     eq, answer: ans,
@@ -401,9 +874,36 @@ const ineqMulti = topic('ineq_multi', /^حل المتباينات متعدده �
   };
 });
 
+/** «(» or «[» for the end of an interval a strict or non-strict inequality closes. */
+const brk = (s: string, side: 'l' | 'r') => (side === 'l' ? (s === '<' ? '(' : '[') : (s === '<' ? ')' : ']'));
+const swapStrict = (s: string) => (s === '<' ? '≤' : s === '≤' ? '<' : s === '>' ? '≥' : '>');
+
+/** Grade 9: solve a compound inequality — and since 2026-10-16 write one from words, and give the solution as an interval. */
 const compound = topic('ineq_compound', /^حل المتباينات المركبه$/, [9, 9], ({ rng, diff }) => {
   const lo = int(rng, -6, 4), hi = lo + int(rng, 2, 9), a = int(rng, 2, 4), b = nz(rng, 7);
-  if (rng() < 0.6) {
+  // the words kind is one sentence per pair of comparison words
+  const form = wpick(rng, [[0, 1], [1, 0.7], [2, 0.3], [3, 1.2]] as const);
+  if (form === 2) {
+    if (rng() < 0.6) {
+      const [s1, s2] = pick(rng, [['<', '<'], ['<', '≤'], ['≤', '<'], ['≤', '≤']] as const);
+      const L = s1 === '<' ? 'أكبر من' : 'أكبر من أو يساوي', U = s2 === '<' ? 'أقل من' : 'أقل من أو يساوي';
+      const Le = s1 === '<' ? 'greater than' : 'greater than or equal to', Ue = s2 === '<' ? 'less than' : 'less than or equal to';
+      const chain = (p: string, q: string) => `${signed(lo)} ${p} x ${q} ${signed(hi)}`;
+      const ans = chain(s1, s2);
+      return { eq: ans, answer: ans, wrongs: [chain(swapStrict(s1), s2), chain(s1, swapStrict(s2)), chain(swapStrict(s1), swapStrict(s2))], ar: `اكتب متباينة مركبة تعبّر عن: العدد x ${L} ${signed(lo)} و${U} ${signed(hi)}.`, en: `Write a compound inequality for: the number x is ${Le} ${signed(lo)} and ${Ue} ${signed(hi)}.` };
+    }
+    const ls = pick(rng, ['<', '≤'] as const), us = pick(rng, ['>', '≥'] as const);
+    const either = (p: string, q: string, join = 'أو') => `x ${p} ${signed(lo)} ${join} x ${q} ${signed(hi)}`;
+    const ans = either(ls, us);
+    return { eq: ans, answer: ans, wrongs: [either(swapStrict(ls), us), either(ls, swapStrict(us)), either(ls, us, 'و')], ar: `اكتب متباينة مركبة تعبّر عن: العدد x ${ls === '<' ? 'أقل من' : 'أقل من أو يساوي'} ${signed(lo)} أو ${us === '>' ? 'أكبر من' : 'أكبر من أو يساوي'} ${signed(hi)}.`, en: `Write a compound inequality for: the number x is ${ls === '<' ? 'less than' : 'at most'} ${signed(lo)} or ${us === '>' ? 'greater than' : 'at least'} ${signed(hi)}.` };
+  }
+  if (form === 3) {
+    const [s1, s2] = pick(rng, [['<', '<'], ['<', '≤'], ['≤', '<'], ['≤', '≤']] as const);
+    const eq = `${signed(a * lo + b)} ${s1} ${polyStr([b, a])} ${s2} ${signed(a * hi + b)}`;
+    const iv = (p: string, q: string, u = lo, v = hi) => `${brk(p, 'l')}${signed(u)} ، ${signed(v)}${brk(q, 'r')}`;
+    return { eq, answer: iv(s1, s2), wrongs: [iv(swapStrict(s1), s2), iv(s1, swapStrict(s2)), iv(s1, s2, a * lo + b, a * hi + b)], ar: `اكتب مجموعة حلّ المتباينة المركبة ${eq} باستعمال الفترات.`, en: `Write the solution set of ${eq} in interval notation.` };
+  }
+  if (form === 0) {
     const [s1, s2] = pick(rng, [['<', '<'], ['<', '≤'], ['≤', '<'], ['≤', '≤']] as const);
     const eq = `${signed(a * lo + b)} ${s1} ${polyStr([b, a])} ${s2} ${signed(a * hi + b)}`;
     const ans = `${signed(lo)} ${s1} x ${s2} ${signed(hi)}`;
@@ -416,8 +916,57 @@ const compound = topic('ineq_compound', /^حل المتباينات المركب
   return { eq, answer: ans, wrongs: [`x > ${signed(c1)} أو x ≤ ${c2}`, `x < ${signed(c1)} و x ≥ ${c2}`, `x < ${signed(c1 + a)} أو x ≥ ${a * c2}`], ar: `حلّ المتباينة المركبة: ${eq}`, en: `Solve the compound inequality: ${eq.replace('أو', 'or')}` };
 });
 
+/** Grade 9: an inequality as an interval — and since 2026-10-16 an interval as an inequality, and a set of integers in roster form. */
 const intervals = topic('intervals', /^المجموعات والفترات$/, [9, 9], ({ rng }) => {
   const a = int(rng, -6, 5), b = a + int(rng, 2, 8);
+  const form = pick(rng, [0, 1, 2, 3, 4]);
+  if (form === 3) {
+    // the type of a bounded interval, from its brackets
+    const [l, r] = pick(rng, [['(', ')'], ['[', ']'], ['[', ')'], ['(', ']']] as const);
+    const TYPES = ['فترة مغلقة', 'فترة مفتوحة', 'فترة نصف مفتوحة', 'فترة غير محدودة'];
+    const t = l === '[' && r === ']' ? 0 : l === '(' && r === ')' ? 1 : 2;
+    const iv = `${l}${signed(a)} ، ${signed(b)}${r}`;
+    return { eq: iv, answer: TYPES[t]!, wrongs: TYPES.filter((_, i) => i !== t), ar: `ما نوع الفترة ${iv}؟`, en: `What type of interval is ${iv}?` };
+  }
+  if (form === 4) {
+    // solve, then write the solution set with set-builder notation
+    const x0 = int(rng, -5, 6), c = nz(rng, 5), d = nz(rng, 9);
+    if (Math.abs(c) === 1) return intervals.make({ rng, diff: 'medium', grade: 9 });
+    const s = pick(rng, SYM), rs = c < 0 ? flip(s) : s;
+    const eq = `${polyStr([d, c])} ${s} ${signed(c * x0 + d)}`;
+    const set = (o: string, v: number) => `{x | x ${o} ${signed(v)}}`;
+    const ans = set(rs, x0);
+    return {
+      eq, answer: ans,
+      // the sign left unturned (or turned for no reason), the boundary's strictness, dividing forgotten, d moved with its own sign
+      wrongs: wrongsFrom(ans, [set(flip(rs), x0), set(swapStrict(rs), x0), set(rs, c * x0), ...(Number.isInteger((c * x0 + 2 * d) / c) ? [set(rs, (c * x0 + 2 * d) / c)] : [])], k => set(rs, x0 + Math.abs(k) + 1)),
+      ar: `اكتب مجموعة حلّ المتباينة ${eq} بطريقة الصفة المميزة.`,
+      en: `Write the solution set of ${eq} in set-builder notation.`,
+    };
+  }
+  if (form === 1) {
+    if (rng() < 0.4) {
+      const s = pick(rng, SYM);
+      const iv = s === '>' ? `(${signed(a)} ، ∞)` : s === '≥' ? `[${signed(a)} ، ∞)` : s === '<' ? `(−∞ ، ${signed(a)})` : `(−∞ ، ${signed(a)}]`;
+      const ans = `x ${s} ${signed(a)}`;
+      return { eq: ans, answer: ans, wrongs: ineqWrongs(s, signed(a)), ar: `اكتب الفترة ${iv} على صورة متباينة.`, en: `Write the interval ${iv} as an inequality.` };
+    }
+    const [s1, s2] = pick(rng, [['<', '<'], ['<', '≤'], ['≤', '<'], ['≤', '≤']] as const);
+    const chain = (p: string, q: string) => `${signed(a)} ${p} x ${q} ${signed(b)}`;
+    const ans = chain(s1, s2);
+    return { eq: ans, answer: ans, wrongs: [chain(swapStrict(s1), s2), chain(s1, swapStrict(s2)), chain(swapStrict(s1), swapStrict(s2))], ar: `اكتب الفترة ${brk(s1, 'l')}${signed(a)} ، ${signed(b)}${brk(s2, 'r')} على صورة متباينة.`, en: `Write the interval ${brk(s1, 'l')}${signed(a)} ، ${signed(b)}${brk(s2, 'r')} as an inequality.` };
+  }
+  if (form === 2) {
+    const hi = a + int(rng, 2, 6);
+    const [s1, s2] = pick(rng, [['<', '<'], ['<', '≤'], ['≤', '<'], ['≤', '≤']] as const);
+    const roster = (p: string, q: string) => {
+      const xs: number[] = [];
+      for (let x = a; x <= hi; x++) if ((p === '<' ? x > a : x >= a) && (q === '<' ? x < hi : x <= hi)) xs.push(x);
+      return setStr(xs);
+    };
+    const cond = `${signed(a)} ${s1} x ${s2} ${signed(hi)}`;
+    return { eq: cond, answer: roster(s1, s2), wrongs: [roster(swapStrict(s1), s2), roster(s1, swapStrict(s2)), roster(swapStrict(s1), swapStrict(s2))], ar: `اكتب بطريقة سرد العناصر مجموعة الأعداد الصحيحة x التي تحقّق ${cond}.`, en: `List the elements of the set of integers x with ${cond}.` };
+  }
   const k = pick(rng, [0, 1, 2, 3]);
   if (k === 0) { const s = pick(rng, ['>', '≥']); const ans = `${s === '>' ? '(' : '['}${signed(a)} ، ∞)`; return { eq: `x ${s} ${signed(a)}`, answer: ans, wrongs: [`${s === '>' ? '[' : '('}${signed(a)} ، ∞)`, `(−∞ ، ${signed(a)}${s === '>' ? ')' : ']'}`, `(−∞ ، ${signed(a)}${s === '>' ? ']' : ')'}`], ar: `اكتب المتباينة x ${s} ${signed(a)} على صورة فترة.`, en: `Write x ${s} ${signed(a)} in interval notation.` }; }
   if (k === 1) { const s = pick(rng, ['<', '≤']); const ans = `(−∞ ، ${signed(a)}${s === '<' ? ')' : ']'}`; return { eq: `x ${s} ${signed(a)}`, answer: ans, wrongs: [`(−∞ ، ${signed(a)}${s === '<' ? ']' : ')'}`, `${s === '<' ? '(' : '['}${signed(a)} ، ∞)`, `${s === '<' ? '[' : '('}${signed(a)} ، ∞)`], ar: `اكتب المتباينة x ${s} ${signed(a)} على صورة فترة.`, en: `Write x ${s} ${signed(a)} in interval notation.` }; }
@@ -438,7 +987,25 @@ const sysWrongs = (x: number, y: number) => {
   return out.slice(0, 3);
 };
 
+/**
+ * Grade 8 systems, one generator per method. Since 2026-10-16 each lesson also
+ * asks which listed pair solves a system (the graph lesson's «التحقق»), and the
+ * lessons' situations: two numbers from their sum and difference, and tickets.
+ */
 const systemTopic = (id: string, match: RegExp, mode: 'graph' | 'sub' | 'elim') => topic(id, match, [8, 8], ({ rng, diff }) => {
+  const form = pick(rng, [0, 1, 2, 3]);
+  if (form === 2) {
+    const L = int(rng, 10, 40), s = int(rng, 2, L - 1), S = L + s, D = L - s;
+    return { eq: `x + y = ${S} ، x − y = ${D}`, answer: String(L), wrongs: num(L, [s, D, S - D, Math.floor(S / 2)], String), ar: `مجموع عددين ${S}، والفرق بينهما ${D}. ما العدد الأكبر؟`, en: `Two numbers have sum ${S} and difference ${D}. What is the larger number?` };
+  }
+  if (form === 3) {
+    const A = int(rng, 4, 10), C = int(rng, 3, A - 1), n = int(rng, 12, 40), ad = int(rng, 1, n - 1), T = A * ad + C * (n - ad);
+    return {
+      eq: `x + y = ${n} ، ${A}x + ${C}y = ${T}`, answer: String(ad), wrongs: num(ad, [n - ad, Math.floor(T / A), Math.floor(T / (A + C)), ad + 1], String),
+      ar: `باعت مدرسة ${n} ${tamyiz(n, 'تذاكر', 'تذكرةً', 'تذكرة')} لحفل خيري، سعر تذكرة الكبار ${dinars(A)} وسعر تذكرة الصغار ${dinars(C)}، فكان ثمنها كلها ${dinars(T)}. كم تذكرةً بيعت للكبار؟`,
+      en: `A school sold ${n} tickets for a charity concert: adult tickets cost ${A} dinars and child tickets ${C} dinars, ${T} dinars in all. How many adult tickets were sold?`,
+    };
+  }
   for (let attempt = 0; attempt < 100; attempt++) {
     const x = int(rng, -4, 6), y = int(rng, -4, 6);
     const yEq = (m: number) => `y = ${polyStr([y - m * x, m])}`;
@@ -462,12 +1029,39 @@ const systemTopic = (id: string, match: RegExp, mode: 'graph' | 'sub' | 'elim') 
     }
     const how = mode === 'graph' ? 'بيانيًا' : mode === 'sub' ? 'بالتعويض' : 'بالحذف';
     const howEn = mode === 'graph' ? 'by graphing' : mode === 'sub' ? 'by substitution' : 'by elimination';
+    if (form === 1) {
+      const wr = sysWrongs(x, y);
+      const listed = [pair(x, y), ...wr].sort().join('، ');
+      return { eq: `${e1} ، ${e2}`, answer: pair(x, y), wrongs: wr, ar: `أيّ الأزواج المرتبة الآتية حلٌّ للنظام: ${listed}؟\n${e1}\n${e2}`, en: `Which of these ordered pairs solves the system: ${listed}?\n${e1}\n${e2}` };
+    }
     return { eq: `${e1} ، ${e2}`, answer: pair(x, y), wrongs: sysWrongs(x, y), ar: `حلّ النظام الآتي ${how}:\n${e1}\n${e2}`, en: `Solve the system ${howEn}:\n${e1}\n${e2}` };
   }
   throw new Error('system generator found no draw');
 });
 
 const standardForm = topic('line_standard', /^المعادله الخطيه بالصوره القياسيه$/, [8, 8], ({ rng }) => {
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) {
+    // a row of the table of values: y from x
+    const A = int(rng, 1, 5), B = pick(rng, [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5]), x0 = int(rng, -3, 5), y0 = int(rng, -5, 5);
+    const C = A * x0 + B * y0, eq = lineEq(A, B, C);
+    return {
+      eq, answer: signed(y0), wrongs: num(y0, [-y0, C - A * x0, (C + A * x0) / B, x0].filter(v => Number.isInteger(v) && v !== y0)),
+      ar: `في جدول قيم المعادلة ${eq}، ما قيمة y عندما x = ${signed(x0)}؟`,
+      en: `In a table of values for ${eq}, what is y when x = ${signed(x0)}?`,
+    };
+  }
+  if (form === 2) {
+    // what an intercept means: everything spent on one item
+    const [A, B] = shuffled(rng, [3, 4, 5, 6, 8, 10]).slice(0, 2) as [number, number];
+    const C = lcm(A, B) * int(rng, 1, 3) * (lcm(A, B) < 20 ? 2 : 1), balls = rng() < 0.5;
+    const eq = lineEq(A, B, C), ans = balls ? C / A : C / B;
+    return {
+      eq, answer: String(ans), wrongs: num(ans, [balls ? C / B : C / A, C - (balls ? A : B), C, ans + 1].filter(v => v !== ans), String),
+      ar: `تمثّل المعادلة ${eq} شراء x من الكرات و y من المضارب بمبلغ ${dinars(C)}، سعر الكرة ${dinars(A)} وسعر المضرب ${dinars(B)}. ${balls ? 'كم كرةً يمكن شراؤها بالمبلغ كله إذا لم يُشترَ أيّ مضرب؟' : 'كم مضربًا يمكن شراؤه بالمبلغ كله إذا لم تُشترَ أيّ كرة؟'}`,
+      en: `The equation ${eq} describes buying x balls and y rackets for ${C} dinars: a ball costs ${A} dinars and a racket ${B}. ${balls ? 'How many balls can be bought with all the money if no racket is bought?' : 'How many rackets can be bought with all the money if no ball is bought?'}`,
+    };
+  }
   if (rng() < 0.4) {
     // y = mx + b  →  mx − y = −b, with the x coefficient positive
     const m = nz(rng, 5), b = nz(rng, 9);
@@ -485,7 +1079,26 @@ const standardForm = topic('line_standard', /^المعادله الخطيه با
   return { eq, answer: signed(yi), wrongs: num(yi, [-yi, xi, C, yi + 1].filter(v => v !== yi)), ar: `ما المقطع الصادي للمستقيم ${eq}؟`, en: `What is the y-intercept of ${eq}?` };
 });
 
+/** Grade 8: the slope through two points — and since 2026-10-16 a rate of change read as a slope, and a missing coordinate from a given slope. */
 const slope = topic('line_slope', /^ميل المستقيم$/, [8, 8], ({ rng, diff }) => {
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) {
+    const r = int(rng, 2, 12), dt = int(rng, 1, 4), t1 = int(rng, 6, 11 - dt), h1 = r * dt + int(rng, 5, 60), up = rng() < 0.5;
+    const h2 = up ? h1 + r * dt : h1 - r * dt, ans = up ? r : -r;
+    return {
+      eq: `(${t1} ، ${h1}) ، (${t1 + dt} ، ${h2})`, answer: signed(ans), wrongs: num(ans, [-ans, h2 - h1, Math.round(h2 / (t1 + dt)), ans + 1]),
+      ar: `كان ارتفاع الماء في خزان ${h1} سم عند الساعة ${t1} صباحًا، وأصبح ${h2} سم عند الساعة ${t1 + dt} صباحًا. ما معدّل التغيّر في ارتفاع الماء بالسنتيمتر لكل ساعة؟`,
+      en: `The water in a tank was ${h1} cm deep at ${t1} a.m. and ${h2} cm deep at ${t1 + dt} a.m. What is the rate of change of the depth, in cm per hour?`,
+    };
+  }
+  if (form === 2) {
+    const x1 = int(rng, -5, 5), y1 = int(rng, -5, 5), dx = nz(rng, 4), m = nz(rng, 4), x2 = x1 + dx, k = y1 + m * dx;
+    return {
+      eq: `${pair(x1, y1)} ، (${signed(x2)} ، k)`, answer: signed(k), wrongs: num(k, [m * dx, y1 - m * dx, y1 + m, -k]),
+      ar: `ما قيمة k التي تجعل ميل المستقيم المار بالنقطتين ${pair(x1, y1)} و (${signed(x2)} ، k) يساوي ${signed(m)}؟`,
+      en: `What value of k makes the slope of the line through ${pair(x1, y1)} and (${signed(x2)} ، k) equal to ${signed(m)}?`,
+    };
+  }
   for (;;) {
     const x1 = int(rng, -5, 5), y1 = int(rng, -5, 5), dx = nz(rng, span(diff) > 6 ? 6 : 4), dy = int(rng, -6, 6);
     if (dy === 0 && tier(diff) < 2) continue;
@@ -496,21 +1109,55 @@ const slope = topic('line_slope', /^ميل المستقيم$/, [8, 8], ({ rng, d
   }
 });
 
+/** Grade 8: write y = mx + b from the slope and intercept, from two points, and (since 2026-10-16) from Ax + By = C. */
 const slopeIntercept = topic('line_slope_int', /^معادله المستقيم بصيغه الميل والمقطع$/, [8, 8], ({ rng, diff }) => {
   const m = nz(rng, 5), b = nz(rng, 9);
   const ans = `y = ${polyStr([b, m])}`;
-  if (tier(diff) < 2) {
+  const form = pick(rng, tier(diff) === 0 ? [0, 2] : [0, 1, 2]);
+  if (form === 2) {
+    const B = pick(rng, [1, 1, 2, 3]), A = -m * B, C = b * B;
+    const eq = lineEq(A, B, C);
+    return { eq, answer: ans, wrongs: wrongsFrom(ans, [`y = ${polyStr([b, -m])}`, `y = ${polyStr([C, -A])}`, `y = ${polyStr([-b, m])}`], k => `y = ${polyStr([b + Math.abs(k), m])}`), ar: `اكتب المعادلة ${eq} بصيغة الميل والمقطع.`, en: `Write ${eq} in slope-intercept form.` };
+  }
+  if (form === 0) {
     return { eq: ans, answer: ans, wrongs: wrongsFrom(ans, [`y = ${polyStr([m, b])}`, `y = ${polyStr([-b, m])}`, `y = ${polyStr([b, -m])}`], k => `y = ${polyStr([b + Math.abs(k), m])}`), ar: `اكتب معادلة المستقيم الذي ميله ${signed(m)} ويقطع المحور y عند ${signed(b)}.`, en: `Write the equation of the line with slope ${signed(m)} and y-intercept ${signed(b)}.` };
   }
   const x1 = int(rng, -3, 3), y1 = m * x1 + b, x2 = x1 + int(rng, 1, 3), y2 = m * x2 + b;
   return { eq: ans, answer: ans, wrongs: wrongsFrom(ans, [`y = ${polyStr([m, b])}`, `y = ${polyStr([y1, m])}`, `y = ${polyStr([b, -m])}`], k => `y = ${polyStr([b + Math.abs(k), m])}`), ar: `اكتب معادلة المستقيم المار بالنقطتين ${pair(x1, y1)} و ${pair(x2, y2)} بصيغة الميل والمقطع.`, en: `Write the equation of the line through ${pair(x1, y1)} and ${pair(x2, y2)} in slope-intercept form.` };
 });
 
+/** «y − 3 = 2(x + 1)» — point-slope form through (x1, y1). */
+const sideStr = (v: string, k: number) => `${v} ${k < 0 ? '+' : '−'} ${Math.abs(k)}`;
+const psForm = (m: number, x1: number, y1: number) => `${sideStr('y', y1)} = ${m < 0 ? `(${signed(m)})` : String(m)}(${sideStr('x', x1)})`;
+
+/** Grade 8: point-slope form from a slope and a point, from two points, and (since 2026-10-16) rewritten as y = mx + b. */
 const pointSlope = topic('line_point_slope', /^معادله المستقيم بصيغه الميل ونقطه$/, [8, 8], ({ rng }) => {
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) {
+    const m = nz(rng, 4), x1 = nz(rng, 7), y1 = nz(rng, 7), dx = nz(rng, 3), x2 = x1 + dx, y2 = y1 + m * dx;
+    const ans = psForm(m, x1, y1);
+    // a candidate through a point of the line with the line's slope would be a second right answer
+    const sameLine = (mm: number, px: number, py: number) => mm === m && py - y1 === m * (px - x1);
+    const cands = ([[-m, x1, y1], [m, -x1, -y1], [m, x2, y1], [m, x1, y2]] as Array<[number, number, number]>)
+      .filter(([mm, px, py]) => px !== 0 && py !== 0 && !sameLine(mm, px, py)).map(([mm, px, py]) => psForm(mm, px, py));
+    return {
+      eq: ans, answer: ans, wrongs: wrongsFrom(ans, cands, k => psForm(m + Math.sign(m) * Math.abs(k), x1, y1)),
+      ar: `اكتب بصيغة الميل ونقطة معادلة المستقيم المار بالنقطتين ${pair(x1, y1)} و ${pair(x2, y2)}، مستعملًا النقطة ${pair(x1, y1)}.`,
+      en: `Write, in point-slope form using ${pair(x1, y1)}, the equation of the line through ${pair(x1, y1)} and ${pair(x2, y2)}.`,
+    };
+  }
   const m = nz(rng, 6), x1 = nz(rng, 7), y1 = nz(rng, 7);
+  if (form === 2) {
+    const ps = psForm(m, x1, y1), b = y1 - m * x1;
+    const ans = `y = ${polyStr([b, m])}`;
+    return {
+      eq: ps, answer: ans, wrongs: wrongsFrom(ans, [`y = ${polyStr([y1 + m * x1, m])}`, `y = ${polyStr([m * x1 - y1, m])}`, `y = ${polyStr([y1 - x1, m])}`, `y = ${polyStr([b, -m])}`], k => `y = ${polyStr([b + Math.abs(k), m])}`),
+      ar: `اكتب المعادلة ${ps} بصيغة الميل والمقطع.`, en: `Write ${ps} in slope-intercept form.`,
+    };
+  }
   // with m = −1 the swapped-coordinates distractor is the same line
   if (m === -1) return pointSlope.make({ rng, diff: 'easy', grade: 8 });
-  const side = (v: string, k: number) => `${v} ${k < 0 ? '+' : '−'} ${Math.abs(k)}`;
+  const side = sideStr;
   const mm = m < 0 ? `(${signed(m)})` : String(m);
   const ans = `${side('y', y1)} = ${mm}(${side('x', x1)})`;
   return {
@@ -555,12 +1202,73 @@ const rootWrongs = (m: number, n: number, p: number, q: number) => {
   return [f(p, m, q, n), f(-p, m, q, n), f(p, m, -q, n), f(-p, n, -q, m), f(-p, m, -q + n, n)];
 };
 
-const quadSolve = (id: string, match: RegExp, how: [string, string]) => topic(id, match, [9, 9], ({ rng, diff }) => {
+type Extra = (rng: Rng, diff: DiffTierLike) => Draft;
+
+/** A quadratic solved by a named method; `extras` are the lesson's other kinds of question, drawn as often as it. */
+const quadSolve = (id: string, match: RegExp, how: [string, string], extras: Extra[] = []) => topic(id, match, [9, 9], ({ rng, diff }) => {
+  const form = int(rng, 0, extras.length);
+  if (form > 0) return extras[form - 1]!(rng, diff);
   const { m, n, p, q, co, rootStr } = quadFromRoots(rng, diff, true);
   const eq = `${polyStr(co)} = 0`;
   const wr = rootWrongs(m, n, p, q).filter((w, i, s) => w !== rootStr && s.indexOf(w) === i);
-  return { eq, answer: rootStr, wrongs: wrongsFrom(rootStr, wr, k => `${p + Math.abs(k)} ، ${q}`), ar: `حلّ المعادلة ${eq} ${how[0]}.`, en: `Solve ${eq} ${how[1]}.` };
+  return { eq, answer: rootStr, wrongs: wrongsFrom(rootStr, wr, k => `${signed(p + Math.abs(k))} ، ${signed(q)}`), ar: `حلّ المعادلة ${eq} ${how[0]}.`, en: `Solve ${eq} ${how[1]}.` };
 });
+
+// ── the factoring lesson's other outcomes (since 2026-10-16) ──
+
+/** ax² − atx = 0: take out the GCF, roots 0 and t. */
+const gcfQuad: Extra = rng => {
+  const a = int(rng, 1, 3), t = nz(rng, 8);
+  const eq = `${polyStr([0, -a * t, a])} = 0`, ans = rootPair(0, t);
+  return { eq, answer: ans, wrongs: wrongsFrom(ans, [rootPair(0, -t), signed(t), rootPair(0, a * t)], k => (t + k === 0 ? '' : rootPair(0, t + k))), ar: `حلّ المعادلة ${eq} بإخراج العامل المشترك الأكبر.`, en: `Solve ${eq} by taking out the greatest common factor.` };
+};
+
+/** (x − h)² = r²: square roots, roots h ± r. */
+const sqrtQuad: Extra = rng => {
+  const h = int(rng, -5, 5), r = int(rng, 1, 8);
+  const sq = h === 0 ? 'x²' : `(x ${h < 0 ? '+' : '−'} ${Math.abs(h)})²`;
+  const ans = rootPair(h - r, h + r);
+  return {
+    eq: `${polyStr([h * h - r * r, -2 * h, 1])} = 0`, answer: ans,
+    wrongs: wrongsFrom(ans, [rootPair(-h - r, -h + r), signed(h + r), rootPair(h - r * r, h + r * r)], k => rootPair(h - r - Math.abs(k), h + r)),
+    ar: `حلّ المعادلة ${sq} = ${r * r} باستعمال الجذر التربيعي.`, en: `Solve ${sq} = ${r * r} using square roots.`,
+  };
+};
+
+/** (mx + p)(nx + q) = 0: the zero-product property. */
+const zeroProduct: Extra = (rng, diff) => {
+  const { m, n, p, q, co, rootStr } = quadFromRoots(rng, diff, true);
+  const wr = rootWrongs(m, n, p, q).filter((w, i, s) => w !== rootStr && s.indexOf(w) === i);
+  return { eq: `${polyStr(co)} = 0`, answer: rootStr, wrongs: wrongsFrom(rootStr, wr, k => rootPair(-p + Math.abs(k), -q)), ar: `ما حلول المعادلة ${fac(m, p)}${fac(n, q)} = 0؟`, en: `What are the solutions of ${fac(m, p)}${fac(n, q)} = 0?` };
+};
+
+/** A rectangle w by w + d of area A: x(x + d) = A, the positive root. */
+const rectQuad: Extra = rng => {
+  const w = int(rng, 2, 12), d = int(rng, 1, 8), A = w * (w + d);
+  return {
+    eq: `${polyStr([-A, d, 1])} = 0`, answer: String(w), wrongs: num(w, [w + d, Math.floor(Math.sqrt(A)), A / d, w + 1].filter(Number.isInteger), String),
+    ar: `مستطيل طوله يزيد على عرضه بمقدار ${d} سم، ومساحته ${A} سم². ما عرضه بالسنتيمتر؟`,
+    en: `A rectangle is ${d} cm longer than it is wide and has an area of ${A} cm². What is its width in cm?`,
+  };
+};
+
+// ── the graphing lesson's other outcomes (since 2026-10-16) ──
+
+/** a(x − h)² + k = 0 given its vertex: two, one or no real solutions. */
+const vertexCount: Extra = rng => {
+  const a = pick(rng, [1, -1]), h = int(rng, -4, 4), kind = pick(rng, [0, 1, 2] as const);
+  const k = kind === 1 ? 0 : (kind === 0 ? -a : a) * int(rng, 1, 9);
+  const eq = `${polyStr([a * h * h + k, -2 * a * h, a])} = 0`;
+  return nsolDraft(eq, kind, `رأس منحنى الاقتران المرتبط بالمعادلة ${eq} هو النقطة ${pair(h, k)}. كم حلًّا حقيقيًّا للمعادلة؟`, `The vertex of the parabola of ${eq} is ${pair(h, k)}. How many real solutions does the equation have?`);
+};
+
+/** x² = −bx − c (or x² + bx = −c) rearranged to x² + bx + c = 0. */
+const standardQuad: Extra = rng => {
+  const b = nz(rng, 9), c = nz(rng, 12);
+  const given = rng() < 0.5 ? `x² = ${polyStr([-c, -b])}` : `${polyStr([0, b, 1])} = ${signed(-c)}`;
+  const S = (cc: number, bb: number) => `${polyStr([cc, bb, 1])} = 0`;
+  return { eq: given, answer: S(c, b), wrongs: [S(-c, b), S(c, -b), S(-c, -b)], ar: `اكتب المعادلة ${given} بالصورة القياسية ax² + bx + c = 0.`, en: `Write ${given} in the standard form ax² + bx + c = 0.` };
+};
 
 const quadComplete = topic('quad_complete', /^حل المعادلات التربيعيه باكمال المربع$/, [9, 9], ({ rng, diff }) => {
   const h = int(rng, 1, span(diff) > 6 ? 7 : 5), b = 2 * h;
@@ -577,8 +1285,18 @@ const quadComplete = topic('quad_complete', /^حل المعادلات الترب
   return { eq, answer: ans, wrongs: wrongsFrom(ans, [`${signed(h - r)} ، ${signed(h + r)}`, `${signed(-h - r)} ، ${signed(r)}`, `${signed(-h)} ، ${signed(r)}`], j => `${signed(roots[0]! + Math.abs(j))} ، ${signed(roots[1]!)}`), ar: `حلّ المعادلة ${eq} بإكمال المربع.`, en: `Solve ${eq} by completing the square.` };
 });
 
+/** Grade 9: the quadratic formula, the discriminant — and since 2026-10-16 the number of real solutions the discriminant's sign gives. */
 const quadFormula = topic('quad_formula', /^حل المعادلات التربيعيه باستعمال القانون العام$/, [9, 9], ({ rng, diff }) => {
-  if (rng() < 0.45) {
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 2) {
+    const kind = pick(rng, [0, 1, 2] as const);
+    let co: number[];
+    if (kind === 1) { const p = int(rng, 1, 3), q = nz(rng, 5); co = [q * q, 2 * p * q, p * p]; }
+    else for (;;) { const a = int(rng, 1, 3), b = int(rng, -8, 8), c = nz(rng, 6); const d = b * b - 4 * a * c; if (kind === 0 ? d > 0 : d < 0) { co = [c, b, a]; break; } }
+    const eq = `${polyStr(co)} = 0`;
+    return nsolDraft(eq, kind, `استعمل المميز لتحديد عدد الحلول الحقيقية للمعادلة ${eq}.`, `Use the discriminant to find how many real solutions ${eq} has.`);
+  }
+  if (form === 1) {
     const a = int(rng, 1, 3), b = int(rng, -8, 8), c = nz(rng, 6);
     const d = b * b - 4 * a * c;
     return { eq: `${polyStr([c, b, a])} = 0`, answer: signed(d), wrongs: num(d, [b * b + 4 * a * c, b * b - 4 * c, -b * b - 4 * a * c, d + 2 * a]), ar: `أوجد قيمة المميز b² − 4ac للمعادلة ${polyStr([c, b, a])} = 0.`, en: `Find the discriminant b² − 4ac of ${polyStr([c, b, a])} = 0.` };
@@ -586,7 +1304,7 @@ const quadFormula = topic('quad_formula', /^حل المعادلات التربي
   const { m, n, p, q, co, rootStr } = quadFromRoots(rng, diff, true);
   const eq = `${polyStr(co)} = 0`;
   const wr = rootWrongs(m, n, p, q).filter((w, i, s) => w !== rootStr && s.indexOf(w) === i);
-  return { eq, answer: rootStr, wrongs: wrongsFrom(rootStr, wr, k => `${p + Math.abs(k)} ، ${q}`), ar: `حلّ المعادلة ${eq} باستعمال القانون العام.`, en: `Solve ${eq} using the quadratic formula.` };
+  return { eq, answer: rootStr, wrongs: wrongsFrom(rootStr, wr, k => `${signed(p + Math.abs(k))} ، ${signed(q)}`), ar: `حلّ المعادلة ${eq} باستعمال القانون العام.`, en: `Solve ${eq} using the quadratic formula.` };
 });
 
 const quadFunction = topic('quad_function', /^الاقتران التربيعي$/, [9, 9], ({ rng, diff }) => {
@@ -599,14 +1317,93 @@ const quadFunction = topic('quad_function', /^الاقتران التربيعي$
   return { eq: f, answer: signed(c), wrongs: num(c, [-c, b, a, c + 1].filter(x => x !== c)), ar: `أوجد المقطع y للمنحنى ${f}.`, en: `Find the y-intercept of ${f}.` };
 });
 
+/** «y = 2(x − 3)² + 1»; h = 0 prints «x²», k = 0 drops the constant. */
+const vform = (a: number, h: number, k: number) =>
+  `y = ${a === 1 ? '' : a === -1 ? '−' : signed(a)}${h === 0 ? 'x' : `(x ${h < 0 ? '+' : '−'} ${Math.abs(h)})`}²${k === 0 ? '' : ` ${k < 0 ? '−' : '+'} ${Math.abs(k)}`}`;
+
+/**
+ * Grade 9 transformations of y = x²: the vertex — and since 2026-10-16 the
+ * translation that gives a curve, the curve a translation gives, and the axis of
+ * symmetry.
+ */
 const quadVertex = topic('quad_vertex', /التحويلات الهندسيه.*التربيعي/, [9, 9], ({ rng }) => {
+  const form = pick(rng, [0, 1, 2, 3]);
+  if (form === 1) {
+    const n = int(rng, 1, 6), pos = rng() < 0.5, horiz = rng() < 0.5;
+    const f = horiz ? vform(1, pos ? n : -n, 0) : vform(1, 0, pos ? n : -n);
+    const [d1, d2] = horiz ? (pos ? ['اليمين', 'اليسار'] : ['اليسار', 'اليمين']) : (pos ? ['الأعلى', 'الأسفل'] : ['الأسفل', 'الأعلى']);
+    const [o1, o2] = horiz ? ['الأعلى', 'الأسفل'] : ['اليمين', 'اليسار'];
+    const T = (d: string) => `انسحاب ${units(n)} إلى ${d}`;
+    return { eq: f, answer: T(d1!), wrongs: [T(d2!), T(o1!), T(o2!)], ar: `ما التحويل الهندسي الذي ينقل منحنى الاقتران y = x² إلى منحنى الاقتران ${f}؟`, en: `Which transformation takes the graph of y = x² to the graph of ${f}?` };
+  }
+  if (form === 2) {
+    const h = nz(rng, 6), k = nz(rng, 7);
+    const ans = vform(1, h, k);
+    return {
+      eq: ans, answer: ans, wrongs: [vform(1, -h, k), vform(1, h, -k), vform(1, -h, -k)],
+      ar: `انسحب منحنى الاقتران y = x² فأصبح رأسه النقطة ${pair(h, k)}. ما قاعدة الاقتران الناتج؟`,
+      en: `The graph of y = x² is translated so that its vertex is ${pair(h, k)}. What is the new function?`,
+    };
+  }
+  if (form === 3) {
+    const a = pick(rng, [1, 2, -1, 3, -2]), h = nz(rng, 6), k = nz(rng, 7);
+    const f = vform(a, h, k), ans = `x = ${signed(h)}`;
+    return { eq: f, answer: ans, wrongs: wrongsFrom(ans, [`x = ${signed(-h)}`, `y = ${signed(k)}`, `x = ${signed(k)}`], j => `x = ${signed(h + Math.abs(j))}`), ar: `ما معادلة محور التماثل لمنحنى الاقتران ${f}؟`, en: `What is the equation of the axis of symmetry of ${f}?` };
+  }
   const a = pick(rng, [1, 2, -1, 3]), h = nz(rng, 6), k = nz(rng, 7);
   const f = `y = ${a === 1 ? '' : a === -1 ? '−' : a}(x ${h < 0 ? '+' : '−'} ${Math.abs(h)})² ${k < 0 ? '−' : '+'} ${Math.abs(k)}`;
   const ans = pair(h, k);
   return { eq: f, answer: ans, wrongs: wrongsFrom(ans, [pair(-h, k), pair(k, h), pair(-h, -k)], j => pair(h, k + Math.abs(j))), ar: `ما رأس القطع المكافئ ${f}؟`, en: `What is the vertex of the parabola ${f}?` };
 });
 
+/** «{(1 ، 2)، (3 ، −4)}» */
+const relStr = (ps: Array<[number, number]>) => `{${ps.map(([x, y]) => pair(x, y)).join('، ')}}`;
+
+/**
+ * Grade 9 functions: evaluate f — and since 2026-10-16 the lesson's own
+ * outcomes: the domain or range of a relation, the range of f on a finite
+ * domain, and which pair keeps a relation a function.
+ */
 const functions = topic('fn_eval', /^الاقترانات$/, [9, 9], ({ rng, diff }) => {
+  const form = pick(rng, [0, 1, 2, 3]);
+  const distinct = (n: number, lo: number, hi: number) => { const xs: number[] = []; while (xs.length < n) { const v = int(rng, lo, hi); if (!xs.includes(v)) xs.push(v); } return xs; };
+  /** Up to three wrong sets: candidates first, never equal to the answer or each other. */
+  const sets = (ans: string, cands: number[][]) => {
+    const out: string[] = [];
+    for (const c of cands) { const s = setStr(c); if (s !== ans && !out.includes(s) && out.length < 3) out.push(s); }
+    return out;
+  };
+  if (form === 1) {
+    for (;;) {
+      const xs = distinct(int(rng, 3, 4), -5, 8), ys = xs.map(() => int(rng, -5, 8));
+      const R = relStr(xs.map((x, i) => [x, ys[i]!]));
+      const dom = rng() < 0.5;
+      const [want, other] = dom ? [xs, ys] : [ys, xs];
+      const ans = setStr(want);
+      const wr = sets(ans, [other, [...xs, ...ys], want.slice(1), want.map(v => v + 1)]);
+      if (wr.length < 3) continue;
+      return { eq: R, answer: ans, wrongs: wr, ar: `ما ${dom ? 'مجال' : 'مدى'} العلاقة ${R}؟`, en: `What is the ${dom ? 'domain' : 'range'} of the relation ${R}?` };
+    }
+  }
+  if (form === 2) {
+    for (;;) {
+      const a = nz(rng, 4), b = nz(rng, 6), D = distinct(3, -3, 4);
+      const f = (x: number) => a * x + b;
+      const ans = setStr(D.map(f));
+      const wr = sets(ans, [D, D.map(x => a * x), D.map(x => a * x - b), D.map(x => x + b), D.map(x => f(x) + 1)]);
+      if (wr.length < 3) continue;
+      return { eq: `f(x) = ${polyStr([b, a])}`, answer: ans, wrongs: wr, ar: `إذا كان f(x) = ${polyStr([b, a])} ومجاله ${setStr(D)}، فما مداه؟`, en: `If f(x) = ${polyStr([b, a])} has domain ${setStr(D)}, what is its range?` };
+    }
+  }
+  if (form === 3) {
+    const xs = distinct(4, -5, 8), ys = xs.map(() => int(rng, -5, 8));
+    const R = relStr(xs.slice(0, 3).map((x, i) => [x, ys[i]!]));
+    const ans = pair(xs[3]!, ys[3]!);
+    // the same first coordinate with a different second one: no longer a function
+    const wr = xs.slice(0, 3).map((x, i) => pair(x, ys[i]! + int(rng, 1, 4) * (rng() < 0.5 ? 1 : -1)));
+    const listed = [ans, ...wr].sort().join('، ');
+    return { eq: R, answer: ans, wrongs: wr, ar: `أيّ الأزواج المرتبة الآتية يمكن إضافته إلى العلاقة ${R} فتبقى اقترانًا: ${listed}؟`, en: `Which of these ordered pairs can be added to the relation ${R} so that it is still a function: ${listed}?` };
+  }
   const x = int(rng, -4, 6), a = nz(rng, 5), b = nz(rng, 9);
   if (tier(diff) === 2 || rng() < 0.4) {
     const v = a * x * x + b;
@@ -626,9 +1423,18 @@ function monoStr(c: number, p: number): string {
   return `${c}/${base}`;
 }
 
+/** Grade 9: simplify with the exponent laws — and since 2026-10-16 the value of a negative power, and a missing exponent. */
 const simplifyExp = topic('exp_simplify', /^تبسيط المقادير الاسيه$/, [9, 9], ({ rng, diff }) => {
   const a = int(rng, 2, 5), b = int(rng, 2, 5), m = int(rng, 2, 5), n = int(rng, 2, 5);
-  const k = tier(diff) === 0 ? pick(rng, [0, 2]) : pick(rng, [0, 1, 2, 3]);
+  const k = wpick(rng, (tier(diff) === 0 ? [[0, 1], [2, 1], [4, 1], [5, 0.5]] : [[0, 1], [1, 1], [2, 1], [3, 1], [4, 1], [5, 0.5]]) as Array<[number, number]>);
+  if (k === 4) {
+    const e = int(rng, 1, 3), v = a ** e, ans = `1/${v}`;
+    return { eq: `${a}${sup(-e)}`, answer: ans, wrongs: wrongsFrom(ans, [`−${v}`, signed(-a * e), `1/${a * e}`], j => `1/${v + Math.abs(j) + 1}`), ar: `أوجد قيمة ${a}${sup(-e)}.`, en: `Find the value of ${a}${sup(-e)}.` };
+  }
+  if (k === 5) {
+    if (rng() < 0.5) return { eq: `x${sup(m)} · xⁿ = x${sup(m + n)}`, answer: String(n), wrongs: num(n, [m + n, Math.abs(m - n), (m + n) / m, n + 1].filter(Number.isInteger), String), ar: `ما قيمة n التي تجعل x${sup(m)} · xⁿ = x${sup(m + n)}؟`, en: `What value of n makes x${sup(m)} · xⁿ = x${sup(m + n)}?` };
+    return { eq: `(x${sup(m)})ⁿ = x${sup(m * n)}`, answer: String(n), wrongs: num(n, [m * n - m, m * n, m + n, n + 1], String), ar: `ما قيمة n التي تجعل (x${sup(m)})ⁿ = x${sup(m * n)}؟`, en: `What value of n makes (x${sup(m)})ⁿ = x${sup(m * n)}?` };
+  }
   if (k === 0) { const ans = monoStr(a * b, m + n); return { eq: `${a}x${sup(m)} · ${b}x${sup(n)}`, answer: ans, wrongs: wrongsFrom(ans, [monoStr(a + b, m + n), monoStr(a * b, m * n), monoStr(a * b, m + n + 1)], j => monoStr(a * b + Math.abs(j), m + n)), ar: `بسّط: ${a}x${sup(m)} · ${b}x${sup(n)}`, en: `Simplify: ${a}x${sup(m)} · ${b}x${sup(n)}` }; }
   if (k === 1) { const e = int(rng, 2, 3); const ans = monoStr(a ** e, m * e); return { eq: `(${a}x${sup(m)})${sup(e)}`, answer: ans, wrongs: wrongsFrom(ans, [monoStr(a, m * e), monoStr(a * e, m * e), monoStr(a ** e, m + e)], j => monoStr(a ** e + Math.abs(j), m * e)), ar: `بسّط: (${a}x${sup(m)})${sup(e)}`, en: `Simplify: (${a}x${sup(m)})${sup(e)}` }; }
   if (k === 2) {
@@ -641,9 +1447,18 @@ const simplifyExp = topic('exp_simplify', /^تبسيط المقادير الاس
 });
 
 const SQFREE = [2, 3, 5, 6, 7, 10];
+/** Grade 9: simplify, add, multiply radicals — and since 2026-10-16 rationalise a denominator, and a perimeter in surds. */
 const radicalOps = topic('radical_ops', /^العمليات علي المقادير الجذريه$/, [9, 9], ({ rng, diff }) => {
   const m = pick(rng, SQFREE), k = int(rng, 2, 6), a = int(rng, 1, 7), b = nz(rng, 7);
-  const t = pick(rng, tier(diff) === 0 ? [0, 1] : [0, 1, 2]);
+  const t = pick(rng, tier(diff) === 0 ? [0, 1, 3, 4] : [0, 1, 2, 3, 4]);
+  if (t === 3) {
+    const top = k * m;
+    return { eq: `${top}/√${m}`, answer: rad(k, m), wrongs: [rad(top, m), String(k), String(top)], ar: `أنطِق مقام الكسر ${top}/√${m}، ثم بسّط.`, en: `Rationalise the denominator of ${top}/√${m} and simplify.` };
+  }
+  if (t === 4) {
+    const w = int(rng, 1, 7);
+    return { eq: `2(${rad(a, m)} + ${rad(w, m)})`, answer: rad(2 * (a + w), m), wrongs: wrongsFrom(rad(2 * (a + w), m), [rad(a + w, m), String(a * w * m), rad(4 * (a + w), m)], j => rad(2 * (a + w) + Math.abs(j), m)), ar: `مستطيل طوله ${rad(a, m)} سم وعرضه ${rad(w, m)} سم. ما محيطه بالسنتيمتر؟`, en: `A rectangle is ${rad(a, m)} cm long and ${rad(w, m)} cm wide. What is its perimeter in cm?` };
+  }
   if (t === 0) return { eq: `√${k * k * m}`, answer: rad(k, m), wrongs: [rad(k * k, m), rad(k, k * m), `${k + m}`], ar: `بسّط: √${k * k * m}`, en: `Simplify: √${k * k * m}` };
   if (t === 1) {
     if (a + b === 0) return radicalOps.make({ rng, diff, grade: 9 });
@@ -655,8 +1470,21 @@ const radicalOps = topic('radical_ops', /^العمليات علي المقادي
   return { eq: `${c}√${m} × ${d}√${m}`, answer: String(c * d * m), wrongs: num(c * d * m, [c * d, c * d * m * m, c * d * 2 * m], String), ar: `أوجد ناتج ${c}√${m} × ${d}√${m}`, en: `Find ${c}√${m} × ${d}√${m}` };
 });
 
+/** Grade 9: radical equations — and since 2026-10-16 one with an extraneous root to reject, and a number described in words. */
 const radicalEq = topic('radical_eq', /^حل المعادلات الجذريه$/, [9, 9], ({ rng, diff }) => {
   const b = int(rng, 2, 7), a = nz(rng, 9);
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) {
+    // √(x + c) = x − d with x0 = d + s (s ≥ 2): squaring adds the root 2d + 1 − x0, where x − d < 0
+    const d = int(rng, 1, 5), s = int(rng, 2, 5), x0 = d + s, c = s * s - x0, x1 = 2 * d + 1 - x0;
+    const root = c === 0 ? '√x' : `√(x ${c < 0 ? '−' : '+'} ${Math.abs(c)})`;
+    const eq = `${root} = x − ${d}`;
+    return { eq, answer: signed(x0), wrongs: wrongsFrom(signed(x0), [signed(x1), rootPair(x0, x1), signed(s)], j => signed(x0 + Math.abs(j))), ar: `حلّ المعادلة ${eq}، وتحقّق من الحلول الدخيلة.`, en: `Solve ${eq} and check for extraneous solutions.` };
+  }
+  if (form === 2) {
+    const plus = a > 0, x = b * b - a;
+    return { eq: `√(x ${plus ? '+' : '−'} ${Math.abs(a)}) = ${b}`, answer: signed(x), wrongs: num(x, [b - a, b + a, b * b + a, x + 1]), ar: `عدد إذا ${plus ? `أُضيف إليه ${a}` : `طُرح منه ${-a}`} ثم أُخذ الجذر التربيعي للناتج كان ${b}. ما العدد؟`, en: `A number has ${Math.abs(a)} ${plus ? 'added to it' : 'subtracted from it'}, and the square root of the result is ${b}. What is the number?` };
+  }
   const t = tier(diff);
   if (t === 2) {
     const c = int(rng, 1, 5);
@@ -668,9 +1496,21 @@ const radicalEq = topic('radical_eq', /^حل المعادلات الجذريه$/
   return { eq, answer: signed(x), wrongs: num(x, [b - a, b + a, b * b + a, x + 1]), ar: `حلّ المعادلة: ${eq}`, en: `Solve: ${eq}` };
 });
 
+/** Grade 9: multiply and divide rational expressions — and since 2026-10-16 the values that leave one undefined, and one simplified by factoring. */
 const ratMulDiv = topic('rat_expr_muldiv', /^ضرب المقادير الجبريه النسبيه وقسمتها$/, [9, 9], ({ rng }) => {
   const [a, b, c] = [nz(rng, 7), nz(rng, 7), nz(rng, 7)];
   if (new Set([a, b, c]).size < 3) return ratMulDiv.make({ rng, diff: 'easy', grade: 9 });
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) {
+    if (b === -c) return ratMulDiv.make({ rng, diff: 'easy', grade: 9 });
+    const expr = `(${lin(1, a)})/(${fac(1, b)}${fac(1, c)})`;
+    return { eq: expr, answer: rootPair(-b, -c), wrongs: [rootPair(b, c), [-a, -b, -c].sort((p, q) => p - q).map(signed).join(' ، '), signed(-a)], ar: `ما القيم التي تجعل المقدار ${expr} غير معرّف؟`, en: `For which values of x is ${expr} not defined?` };
+  }
+  if (form === 2) {
+    const top = polyStr(mul([a, 1], [b, 1])), bottom = polyStr(mul([a, 1], [c, 1]));
+    const G = (u: number, v: number) => `(${lin(1, u)})/(${lin(1, v)})`;
+    return { eq: `(${top})/(${bottom})`, answer: G(b, c), wrongs: [G(c, b), `(${polyStr([a * b, a + b])})/(${polyStr([a * c, a + c])})`, G(a, c)], ar: `اكتب المقدار (${top})/(${bottom}) في أبسط صورة.`, en: `Write (${top})/(${bottom}) in simplest form.` };
+  }
   const div = rng() < 0.5;
   const F = (u: number, v: number) => `(${lin(1, u)})/(${lin(1, v)})`;
   const eq = div ? `${F(a, b)} ÷ ${F(c, b)}` : `${F(a, b)} × ${F(b, c)}`;
@@ -678,7 +1518,30 @@ const ratMulDiv = topic('rat_expr_muldiv', /^ضرب المقادير الجبر�
   return { eq, answer: ans, wrongs: [F(c, a), F(a, b), F(b, c)].filter(w => w !== ans), ar: `بسّط: ${eq}`, en: `Simplify: ${eq}` };
 });
 
+/** Grade 9: add and subtract over a common denominator — and since 2026-10-16 the LCM of two monomials, and unlike denominators. */
 const ratAddSub = topic('rat_expr_addsub', /^جمع المقادير الجبريه النسبيه وطرحها$/, [9, 9], ({ rng }) => {
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) {
+    const p = int(rng, 2, 12), q = int(rng, 2, 12), i = int(rng, 1, 4), j = int(rng, 1, 4);
+    if (p === q) return ratAddSub.make({ rng, diff: 'easy', grade: 9 });
+    const L = lcm(p, q), hi = Math.max(i, j), ans = monoStr(L, hi);
+    return { eq: `${monoStr(p, i)} ، ${monoStr(q, j)}`, answer: ans, wrongs: wrongsFrom(ans, [monoStr(p * q, hi), monoStr(L, i + j), monoStr(gcd(p, q), Math.min(i, j)), monoStr(L, Math.min(i, j))], k => monoStr(L * (Math.abs(k) + 1), hi)), ar: `ما المضاعف المشترك الأصغر للحدّين ${monoStr(p, i)} و ${monoStr(q, j)}؟`, en: `What is the least common multiple of ${monoStr(p, i)} and ${monoStr(q, j)}?` };
+  }
+  if (form === 2) {
+    for (;;) {
+      const a = int(rng, 1, 5), b = int(rng, 1, 5), p = nz(rng, 6), q = nz(rng, 6), sub = rng() < 0.5;
+      if (p === q || (sub && a === b)) continue;
+      const s = sub ? -1 : 1, nx = a + s * b, n0 = a * q + s * b * p;
+      const expr = `${a}/(${lin(1, p)}) ${sub ? '−' : '+'} ${b}/(${lin(1, q)})`;
+      const den = `${fac(1, p)}${fac(1, q)}`;
+      const F = (u: number, v: number) => `(${polyStr([v, u])})/(${den})`;
+      const ans = F(nx, n0);
+      const wr = [nx === 0 ? '' : `${signed(nx)}/(${polyStr([p + q, 2])})`, F(nx, a * p + s * b * q), F(nx, n0 + 1), `(${polyStr([n0, nx])})/(${lin(1, p + q)})`]
+        .filter((w, i, all) => w && w !== ans && all.indexOf(w) === i);
+      if (wr.length < 3) continue;
+      return { eq: expr, answer: ans, wrongs: wr.slice(0, 3), ar: `أوجد ناتج ${expr} في أبسط صورة.`, en: `Find ${expr} in simplest form.` };
+    }
+  }
   for (;;) {
     const a = nz(rng, 4), b = nz(rng, 7), c = nz(rng, 4), d = nz(rng, 7), e = nz(rng, 6);
     const sub = rng() < 0.5;
@@ -696,8 +1559,23 @@ const ratAddSub = topic('rat_expr_addsub', /^جمع المقادير الجبر�
   }
 });
 
+/** Grade 9: rational equations — and since 2026-10-16 cross-multiplication with x on both sides, and a shared-work problem. */
+// 3–10 hours each, so the noun is «ساعات» throughout and the sentence never changes shape
+const WORK: Array<[number, number]> = [[3, 6], [6, 3], [4, 4], [6, 6], [8, 8], [10, 10]];
 const ratEq = topic('rat_eq', /^حل المعادلات النسبيه$/, [9, 9], ({ rng }) => {
   const x = int(rng, -5, 9), b = nz(rng, 6);
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) {
+    const p = nz(rng, 6), q = nz(rng, 6), t = int(rng, 1, 3);
+    const u = x + p, v = x + q;
+    if (p === q || u <= 0 || v <= 0) return ratEq.make({ rng, diff: 'easy', grade: 9 });
+    const eq = `${t * u}/(${lin(1, p)}) = ${t * v}/(${lin(1, q)})`;
+    return { eq, answer: signed(x), wrongs: num(x, [-x, x + 1, t * (u - v), u + v]), ar: `حلّ المعادلة باستعمال الضرب التبادلي: ${eq}`, en: `Solve by cross-multiplying: ${eq}` };
+  }
+  if (form === 2) {
+    const [h1, h2] = pick(rng, WORK), T = (h1 * h2) / (h1 + h2);
+    return { eq: `1/${h1} + 1/${h2} = 1/x`, answer: String(T), wrongs: num(T, [h1 + h2, (h1 + h2) / 2, Math.abs(h1 - h2), Math.min(h1, h2)].filter(v => Number.isInteger(v) && v > 0), String), ar: `يُنجز أحمد عملًا وحده في ${hours(h1)}، ويُنجزه سامر وحده في ${hours(h2)}. في كم ساعة يُنجزان العمل معًا؟`, en: `Ahmad does a job alone in ${h1} hours and Samer in ${h2} hours. How many hours do they take together?` };
+  }
   if (rng() < 0.5) {
     const m = int(rng, 2, 6);
     if (x + b === 0) return ratEq.make({ rng, diff: 'easy', grade: 9 });
@@ -714,9 +1592,12 @@ const ratEq = topic('rat_eq', /^حل المعادلات النسبيه$/, [9, 9]
 
 // ─── Grade 8: roots and real numbers ────────────────────────────────────────
 
+/** Grade 8: square roots — and since 2026-10-16 the lesson's situations: a square plot's side and perimeter from its area. */
 const squareRoots = topic('sqrt_basic', /^الجذور التربيعيه$/, [8, 8], ({ rng, diff }) => {
   const r = int(rng, 2, span(diff) + 6);
-  const k = pick(rng, [0, 1, 2]);
+  const k = pick(rng, [0, 1, 2, 3, 4]);
+  if (k === 3) return { eq: `√${r * r}`, answer: String(r), wrongs: num(r, [(r * r) / 2, 2 * r, (r * r) / 4, r + 1].filter(Number.isInteger), String), ar: `حديقة مربعة الشكل مساحتها ${r * r} م². ما طول ضلعها بالمتر؟`, en: `A square garden has an area of ${r * r} m². How long is its side, in metres?` };
+  if (k === 4) return { eq: `4√${r * r}`, answer: String(4 * r), wrongs: num(4 * r, [r, 2 * r, r * r, (r * r) / 4].filter(Number.isInteger), String), ar: `قطعة أرض مربعة الشكل مساحتها ${r * r} م². ما محيطها بالمتر؟`, en: `A square plot of land has an area of ${r * r} m². What is its perimeter in metres?` };
   if (k === 0) return { eq: `x² = ${r * r}`, answer: `±${r}`, wrongs: [`${r}`, `${r * r}`, `±${r * 2}`], ar: `حلّ المعادلة x² = ${r * r}.`, en: `Solve x² = ${r * r}.` };
   if (k === 1) return { eq: `−√${r * r}`, answer: signed(-r), wrongs: num(-r, [r, -r * r, r * r, -r - 1]), ar: `أوجد قيمة −√${r * r}.`, en: `Find −√${r * r}.` };
   const d = pick(rng, [2, 3, 4, 5, 7]), n = int(rng, 1, d - 1);
@@ -725,14 +1606,52 @@ const squareRoots = topic('sqrt_basic', /^الجذور التربيعيه$/, [8,
   return { eq: `√(${n * n}/${d * d})`, answer: ans, wrongs: wrongsFrom(ans, [`${n * n}/${d}`, `${n}/${d * d}`, `${d}/${n}`], j => `${n + Math.abs(j)}/${d}`), ar: `أوجد قيمة √(${n * n}/${d * d}).`, en: `Find √(${n * n}/${d * d}).` };
 });
 
+/** Grade 8: estimate a square root — between two integers, and since 2026-10-16 to the nearest integer and the nearest tenth. */
 const irrational = topic('sqrt_between', /^الجذور الصماء$/, [8, 8], ({ rng, diff }) => {
   const k = int(rng, 2, span(diff) + 4);
   const n = int(rng, k * k + 1, (k + 1) * (k + 1) - 1);
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) {
+    const near = Math.round(Math.sqrt(n));
+    return { eq: `√${n}`, answer: String(near), wrongs: num(near, [near === k ? k + 1 : k, Math.round(n / 2), k - 1, k + 2], String), ar: `ما أقرب عدد صحيح إلى √${n}؟`, en: `What is the nearest whole number to √${n}?` };
+  }
+  if (form === 2) {
+    // 10√n is never a half (n is not a square), so rounding to tenths has no tie
+    const t = Math.round(Math.sqrt(n) * 10), f = (v: number) => (v / 10).toFixed(1);
+    return { eq: `√${n}`, answer: f(t), wrongs: wrongsFrom(f(t), [f(t + 1), f(t - 1), f(10 * k + 5), f(5 * n)], j => f(t + 2 * Math.abs(j))), ar: `قدّر قيمة √${n} لأقرب جزء من عشرة.`, en: `Estimate √${n} to the nearest tenth.` };
+  }
   const ans = `${k} و ${k + 1}`;
   return { eq: `√${n}`, answer: ans, wrongs: [`${k - 1} و ${k}`, `${k + 1} و ${k + 2}`, `${k - 1} و ${k + 1}`], ar: `بين أي عددين صحيحين متتاليين يقع √${n}؟`, en: `Between which two consecutive integers does √${n} lie?` };
 });
 
+/** Grade 8: the smallest set a number belongs to — and since 2026-10-16 telling rational from irrational, and ordering real numbers. */
 const realNumbers = topic('real_numbers', /^الاعداد الحقيقيه$/, [8, 8], ({ rng }) => {
+  const form = pick(rng, [0, 1, 2]);
+  if (form === 1) {
+    const d = pick(rng, [3, 4, 5, 7]), n = int(rng, 1, d - 1);
+    const RAT = shuffled(rng, [`√${pick(rng, [4, 9, 16, 25, 36, 49, 64])}`, `${n}/${d}`, `${int(rng, 1, 9)}.${int(rng, 1, 9)}`, signed(-int(rng, 1, 30)), `−${n}/${d}`]);
+    const IRR = shuffled(rng, ['√2', '√3', '√5', '√7', '√10', '√11', 'π', '−√6']);
+    const irr = rng() < 0.6;
+    const [ans, wr] = irr ? [IRR[0]!, RAT.slice(0, 3)] : [RAT[0]!, IRR.slice(0, 3)];
+    const listed = shuffled(rng, [ans, ...wr]).join('، ');
+    return { eq: listed, answer: ans, wrongs: wr, ar: `أيّ الأعداد الآتية عدد ${irr ? 'غير نسبي' : 'نسبي'}: ${listed}؟`, en: `Which of these numbers is ${irr ? 'irrational' : 'rational'}: ${listed}?` };
+  }
+  if (form === 2) {
+    for (;;) {
+      const r = int(rng, 2, 80);
+      if (Number.isInteger(Math.sqrt(r))) continue;
+      const w = int(rng, 1, 8), t = int(rng, 1, 9), d = pick(rng, [2, 3, 4, 5, 7]), nn = int(rng, d + 1, 8 * d);
+      if (gcd(nn, d) !== 1) continue;
+      const neg = int(rng, 1, 9);
+      const items: Array<[string, number]> = [[`√${r}`, Math.sqrt(r)], [`${w}.${t}`, w + t / 10], [`${nn}/${d}`, nn / d], rng() < 0.5 ? ['π', Math.PI] : [signed(-neg), -neg]];
+      const byValue = [...items].sort((p, q) => p[1] - q[1]);
+      if (byValue.some((it, i) => i > 0 && it[1] - byValue[i - 1]![1] < 0.05)) continue;
+      const big = rng() < 0.5;
+      const ans = (big ? byValue[3]! : byValue[0]!)[0];
+      const listed = shuffled(rng, items.map(it => it[0])).join('، ');
+      return { eq: listed, answer: ans, wrongs: items.map(it => it[0]).filter(x => x !== ans), ar: `ما ${big ? 'أكبر' : 'أصغر'} الأعداد الآتية: ${listed}؟`, en: `Which is the ${big ? 'largest' : 'smallest'} of these numbers: ${listed}?` };
+    }
+  }
   const SETS = ['الأعداد الطبيعية', 'الأعداد الصحيحة', 'الأعداد النسبية', 'الأعداد الحقيقية'];
   const d = pick(rng, [2, 3, 4, 5, 7]), n = int(rng, 1, d - 1); // a proper fraction is never a whole number
   const tenth = int(rng, 1, 9), whole = int(rng, 1, 9);
@@ -758,8 +1677,8 @@ export const ALGEBRA_TOPICS: readonly Topic[] = [
   writeIneq, ineqAdd, ineqMul, ineqMulti, compound, intervals,
   systemTopic('sys_graph', /^حل نظام من معادلتين خطيتين بيانيا$/, 'graph'), systemTopic('sys_sub', /^حل نظام من معادلتين خطيتين بالتعويض$/, 'sub'), systemTopic('sys_elim', /^حل نظام من معادلتين خطيتين بالحذف$/, 'elim'),
   standardForm, slope, slopeIntercept, pointSlope, parallel,
-  quadSolve('quad_factor', /^حل المعادلات التربيعيه بالتحليل$/, ['بالتحليل', 'by factoring']),
-  quadSolve('quad_graph', /^حل المعادلات التربيعيه بيانيا$/, ['بيانيًا (جذراها هما الإحداثيان السينيان لنقطتي تقاطع المنحنى مع المحور x)', 'by graphing (the roots are the x-intercepts of the parabola)']),
+  quadSolve('quad_factor', /^حل المعادلات التربيعيه بالتحليل$/, ['بالتحليل', 'by factoring'], [gcfQuad, sqrtQuad, zeroProduct, rectQuad]),
+  quadSolve('quad_graph', /^حل المعادلات التربيعيه بيانيا$/, ['بيانيًا (جذراها هما الإحداثيان السينيان لنقطتي تقاطع المنحنى مع المحور x)', 'by graphing (the roots are the x-intercepts of the parabola)'], [vertexCount, standardQuad]),
   quadComplete, quadFormula, quadFunction, quadVertex, functions,
   simplifyExp, radicalOps, radicalEq, ratMulDiv, ratAddSub, ratEq,
   squareRoots, irrational, realNumbers,

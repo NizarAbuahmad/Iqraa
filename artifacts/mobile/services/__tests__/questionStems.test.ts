@@ -29,12 +29,12 @@ describe('multiple choice uses the item\'s own wording', () => {
 
   it('asks a derivative question as a teacher would write it', () => {
     // The draw is random within the family now, so accept any of the bank's
-    // own teacher phrasings («أوجد f′(x)…», «ما ميل مماس…») — the assertion
+    // own teacher phrasings («أوجد f′(x)…», «ما ميل مماس…», «عند أي قيمة لـ x يكون المماس أفقيًا؟») — the assertion
     // is "reads like a teacher wrote it", not "is item d-m1".
     const q = takeConcreteMath('multiple_choice', 'الاشتقاق', null, 'medium', 'ar', 0)!;
     assert.ok(q, 'the bank has a derivative item');
     assert.doesNotMatch(q.text, RETIRED_STEM);
-    assert.match(q.text, /أوجد|ما ميل/);
+    assert.match(q.text, /أوجد|ما ميل|عند أي قيمة/);
     assert.ok(Array.isArray(q.options) && q.options.length >= 2);
   });
 

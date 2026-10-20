@@ -8,6 +8,34 @@
 import type { VisualBlock } from './deckVisuals.ts';
 import { curveFromCommand } from './deckVisuals.ts';
 import type { ActivitySlide } from './ai/AIService.ts';
+import type { PhotoCredit } from './photoCredit.ts';
+import { photoQueryForTopic } from './deckIcons.ts';
+
+/**
+ * The section breaks of a deck that name a topic the app can search a picture
+ * for, with the English query to search — one per DISTINCT query, so two units
+ * that both read as «physics» do not show the same photo twice, and at most
+ * `cap` of them because every one is a call on a shared photo quota.
+ *
+ * Matched back by title (not index) by the caller: the photos arrive seconds
+ * after the deck, and a teacher may have moved or deleted a slide since.
+ */
+export function unitPhotoTargets(
+  slides: readonly ActivitySlide[],
+  cap = 4,
+): { title: string; query: string }[] {
+  const seen = new Set<string>();
+  const out: { title: string; query: string }[] = [];
+  for (const s of slides) {
+    if (out.length >= cap) break;
+    if (s.type !== 'divider' || s.mediaUrl) continue;
+    const query = photoQueryForTopic(s.title);
+    if (!query || seen.has(query)) continue;
+    seen.add(query);
+    out.push({ title: s.title, query });
+  }
+  return out;
+}
 
 /** Blank GeoGebra Graphing app — used when there is nothing to plot. */
 export const GEOGEBRA_GRAPHING_URL = 'https://www.geogebra.org/graphing';
@@ -271,9 +299,14 @@ export function attachBackgroundImage(
   index: number,
   url: string,
   caption: string,
+  credit?: PhotoCredit,
 ): ActivitySlide[] {
   if (index < 0 || index >= slides.length) return [...slides];
-  return slides.map((s, i) => (i === index ? { ...s, mediaUrl: url, mediaCaption: caption } : s));
+  return slides.map((s, i) => {
+    if (i !== index) return s;
+    const { mediaCredit: _old, ...rest } = s;
+    return { ...rest, mediaUrl: url, mediaCaption: caption, ...(credit ? { mediaCredit: credit } : {}) };
+  });
 }
 
 /**
@@ -425,8 +458,9 @@ export function scanGraphCommands(
   // two of them. Without this `y = -x + 3` matched nothing at all — an
   // ordinary line with a negative slope, so a two-line system was projected
   // with one line missing and no error anywhere.
+  // The name must start a word: «energy = 2x + 5» is not «y = 2x + 5».
   const re = new RegExp(
-    `([fghy])\\s*(\\([a-z]\\))?\\s*=\\s*(-?\\s*${term}(?:\\s*[+\\-*/]\\s*${term})*)`,
+    `(?<![a-z0-9_])([fghy])\\s*(\\([a-z]\\))?\\s*=\\s*(-?\\s*${term}(?:\\s*[+\\-*/]\\s*${term})*)`,
     'gi',
   );
   let m: RegExpExecArray | null;

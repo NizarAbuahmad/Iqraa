@@ -37,14 +37,15 @@ import {
   type TeachingPlan,
 } from '@/services/teachingPlans';
 import { listClasses, type ClassGroup } from '@/services/roster';
+import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 import { planClassSubjects, planScopeParts, planSubjectId } from '@/services/planScope';
 import {
   autoScheduleEntries,
   dateOf,
-  entriesOnDate,
   isValidPlanDate,
-  nextEntry,
   normalizePlanEntries,
+  planProgress,
+  planStatus,
   setEntryDate,
   todayISO,
   type PlanEntry,
@@ -54,6 +55,7 @@ import { stagesFromLessonPlan, type MinistryLessonPage } from '@/services/minist
 import { exportMinistryPlanWord } from '@/services/share';
 import { useAuth } from '@/context/AuthContext';
 import { remoteAIService } from '@/services/ai/RemoteAIService';
+import { aiService } from '@/services/ai/generators';
 import { resolveGeneratorGrounding } from '@/services/kbContext';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
 import { confirm } from '@/services/confirm';
@@ -257,6 +259,9 @@ export default function TeachingPlansScreen() {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [exportingId, setExportingId] = useState<string | null>(null);
+  // The free-text date/time boxes predate the schedule. A new plan does not
+  // get them; a plan that already holds text in them keeps them editable.
+  const [showLegacyTiming, setShowLegacyTiming] = useState(false);
 
   // Auto-schedule inputs — a one-time recipe for generating dates, not saved
   // to the plan itself (only the dates it produces are). Reset per plan so a
@@ -292,6 +297,7 @@ export default function TeachingPlansScreen() {
   const openCreate = () => {
     setEditingId(null);
     setForm(EMPTY_FORM);
+    setShowLegacyTiming(false);
     setScheduleStartDate(todayISO());
     setScheduleDays([0, 1, 2, 3, 4]);
     setShowForm(true);
@@ -312,6 +318,7 @@ export default function TeachingPlansScreen() {
       time: plan.time,
       notes: plan.notes,
     });
+    setShowLegacyTiming(Boolean(plan.date || plan.time));
     setScheduleStartDate(todayISO());
     setScheduleDays([0, 1, 2, 3, 4]);
     setShowForm(true);
@@ -441,29 +448,36 @@ export default function TeachingPlansScreen() {
   };
 
   /**
-   * What the LIST card shows for a plan's schedule — this is the whole point
-   * of today's change: a teacher should see what to teach without opening
-   * anything. Priority: today's lesson(s), else the next upcoming one, else
-   * (for a plan with no schedule yet) whatever legacy free text it holds —
-   * `date`/`time` from before this screen tracked real dates at all, then
-   * `topics`. Never more than one of these at once.
+   * What the LIST card shows for a plan's schedule — what to teach without
+   * opening anything: today's lesson(s), else the next one, else that the
+   * plan is finished or has no lessons scheduled yet. `tone` marks the two
+   * states that need the teacher to act or have nothing left, so the card
+   * mutes them instead of painting them like a live lesson.
    */
-  const scheduleLine = (plan: TeachingPlan): string => {
+  const scheduleLine = (plan: TeachingPlan): { text: string; muted: boolean } => {
     const entries = normalizePlanEntries(plan.entries);
-    if (entries.length > 0) {
-      const today = todayISO();
-      const lessonTitle = (id: string) => {
-        const lesson = getLessonById(id);
-        return lesson ? (lang === 'ar' ? lesson.titleAr : lesson.titleEn) : id;
-      };
-      const todays = entriesOnDate(entries, today);
-      if (todays.length > 0) return t('planTodayLesson', todays.map(e => lessonTitle(e.lessonId)).join('، '));
-      const upcoming = nextEntry(entries, today);
-      if (upcoming) return t('planNextLesson', formatPlanDate(upcoming.date, lang), lessonTitle(upcoming.lessonId));
+    const lessonTitle = (id: string) => {
+      const lesson = getLessonById(id);
+      return lesson ? (lang === 'ar' ? lesson.titleAr : lesson.titleEn) : id;
+    };
+    const status = planStatus(entries, todayISO());
+    switch (status.kind) {
+      case 'today':
+        return { text: t('planTodayLesson', status.lessonIds.map(lessonTitle).join('، ')), muted: false };
+      case 'next':
+        return { text: t('planNextLesson', formatPlanDate(status.date, lang), lessonTitle(status.lessonId)), muted: false };
+      case 'finished':
+        return { text: t('planAllDone'), muted: true };
+      case 'unscheduled':
+        return { text: t('planNotScheduled'), muted: true };
     }
-    if (plan.date) return plan.time ? `${plan.date} · ${plan.time}` : plan.date;
-    return plan.topics;
   };
+
+  /** Free text from before plans had dates — kept visible, but quietly, and never as the schedule. */
+  const legacyLine = (plan: TeachingPlan): string =>
+    [plan.date && plan.time ? `${plan.date} · ${plan.time}` : plan.date || plan.time, plan.topics]
+      .filter(Boolean)
+      .join(' · ');
 
   const onSave = async () => {
     const title = form.title.trim();
@@ -541,36 +555,42 @@ export default function TeachingPlansScreen() {
       confirmLabel: t('planExportAiYes'),
       cancelLabel: t('planExportAiNo'),
     });
-    if (fillWithAI) {
-      setExportingId(plan.id);
-      // Three at a time: gentle on the API, and one lesson failing only
-      // leaves its own stages blank. The lesson id is passed directly — a
-      // title does not identify a lesson (CLAUDE.md).
-      for (let i = 0; i < pages.length; i += 3) {
-        await Promise.all(pages.slice(i, i + 3).map(async (page, k) => {
-          const lesson = lessons[i + k];
-          if (!cls) return;
-          try {
-            const g = resolveGeneratorGrounding(lesson.titleAr, 'ar');
-            const out = await remoteAIService.generateLessonPlan({
-              grade: page.grade,
-              subject: SUBJECTS.find(x => x.id === subjectId)?.name ?? '',
-              topic: lesson.titleAr,
-              duration: 45,
-              language: 'arabic',
-              lessonId: lesson.id,
-              additionalContext: g.lesson?.id === lesson.id ? g.context : undefined,
-              contextSource: 'curriculum',
-              ministryRoles: true,
-            });
-            page.stages = stagesFromLessonPlan(out);
-          } catch {
-            /* this lesson's stages stay blank */
-          }
-        }));
-      }
-      setExportingId(null);
+    // Both answers fill the stages. Live AI writes lesson-specific teacher and
+    // learner roles; declining (or a live failure — `RemoteAIService` falls back
+    // to it itself) uses the offline lesson plan, whose phases fold into the
+    // teacher column and whose learner column comes from the stock per-style
+    // lines. Nothing leaves the form's role columns blank.
+    const service = fillWithAI ? remoteAIService : aiService;
+    setExportingId(plan.id);
+    // Live: three at a time, gentle on the API, and one lesson failing only
+    // leaves its own stages blank. Offline: no server to be gentle on. The
+    // lesson id is passed directly — a title does not identify a lesson
+    // (CLAUDE.md).
+    const batch = fillWithAI ? 3 : Math.max(1, pages.length);
+    for (let i = 0; i < pages.length; i += batch) {
+      await Promise.all(pages.slice(i, i + batch).map(async (page, k) => {
+        const lesson = lessons[i + k];
+        if (!cls) return;
+        try {
+          const g = resolveGeneratorGrounding(lesson.titleAr, 'ar');
+          const out = await service.generateLessonPlan({
+            grade: page.grade,
+            subject: SUBJECTS.find(x => x.id === subjectId)?.name ?? '',
+            topic: lesson.titleAr,
+            duration: 45,
+            language: 'arabic',
+            lessonId: lesson.id,
+            additionalContext: g.lesson?.id === lesson.id ? g.context : undefined,
+            contextSource: 'curriculum',
+            ministryRoles: true,
+          });
+          page.stages = stagesFromLessonPlan(out, { lang: 'ar', topic: lesson.titleAr });
+        } catch {
+          /* this lesson's stages stay blank */
+        }
+      }));
     }
+    setExportingId(null);
     try {
       await exportMinistryPlanWord(pages, plan.title);
     } catch {
@@ -708,14 +728,44 @@ export default function TeachingPlansScreen() {
                 })()}
                 {(() => {
                   const line = scheduleLine(item);
-                  return line ? (
+                  return (
                     <Text
                       numberOfLines={1}
-                      style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 13, textAlign: align, marginTop: 2 }}
+                      style={{
+                        color: line.muted ? colors.mutedForeground : ACCENT,
+                        fontFamily: 'ReadexPro_500Medium',
+                        fontSize: 13,
+                        textAlign: align,
+                        marginTop: 2,
+                      }}
                     >
-                      {line}
+                      {line.text}
                     </Text>
-                  ) : null;
+                  );
+                })()}
+                {(() => {
+                  const { done, total } = planProgress(normalizePlanEntries(item.entries), todayISO());
+                  if (total === 0) {
+                    const legacy = legacyLine(item);
+                    return legacy ? (
+                      <Text
+                        numberOfLines={1}
+                        style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align, marginTop: 2 }}
+                      >
+                        {legacy}
+                      </Text>
+                    ) : null;
+                  }
+                  return (
+                    <View style={{ marginTop: SPACE.sm, gap: SPACE.xs }}>
+                      <View style={[styles.progressTrack, { backgroundColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                        <View style={{ width: `${Math.round((done / total) * 100)}%`, backgroundColor: ACCENT, borderRadius: RADIUS.xs }} />
+                      </View>
+                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
+                        {t('planProgressCount', done, total)}
+                      </Text>
+                    </View>
+                  );
                 })()}
               </View>
               <Pressable
@@ -987,20 +1037,24 @@ export default function TeachingPlansScreen() {
                   {`${t('planTopics')}: ${form.topics}`}
                 </Text>
               ) : null}
-              <TextInput
-                value={form.date}
-                onChangeText={v => setForm(f => ({ ...f, date: v }))}
-                placeholder={t('planDatePlaceholder')}
-                placeholderTextColor={colors.mutedForeground}
-                style={inputStyle}
-              />
-              <TextInput
-                value={form.time}
-                onChangeText={v => setForm(f => ({ ...f, time: v }))}
-                placeholder={t('planTimePlaceholder')}
-                placeholderTextColor={colors.mutedForeground}
-                style={inputStyle}
-              />
+              {showLegacyTiming ? (
+                <>
+                  <TextInput
+                    value={form.date}
+                    onChangeText={v => setForm(f => ({ ...f, date: v }))}
+                    placeholder={t('planDatePlaceholder')}
+                    placeholderTextColor={colors.mutedForeground}
+                    style={inputStyle}
+                  />
+                  <TextInput
+                    value={form.time}
+                    onChangeText={v => setForm(f => ({ ...f, time: v }))}
+                    placeholder={t('planTimePlaceholder')}
+                    placeholderTextColor={colors.mutedForeground}
+                    style={inputStyle}
+                  />
+                </>
+              ) : null}
               <TextInput
                 value={form.notes}
                 onChangeText={v => setForm(f => ({ ...f, notes: v }))}
@@ -1057,6 +1111,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   cardTitle: { fontSize: 16 },
+  progressTrack: { height: 6, borderRadius: RADIUS.xs, overflow: 'hidden' },
   cardMeta: { fontSize: 15, lineHeight: 24, marginTop: 4 },
   fab: {
     position: 'absolute',

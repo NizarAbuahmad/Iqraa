@@ -19,7 +19,7 @@ import type { QuizOutput } from './ai/AIService.ts';
 import { arCountPhrase } from './arCount.ts';
 import { isolateForeignRuns, normalizeExponents } from './mathRender.ts';
 import { labelAnswerParts, labelOption } from './optionLabels.ts';
-import { quizInstructions, quizMarkRows, quizMarksTotal, quizStudentFields } from './quizPaper.ts';
+import { quizBlockPoints, quizBlocks, quizInstructions, quizMarkRows, quizMarksTotal, quizStudentFields } from './quizPaper.ts';
 
 /** The marks table's header grey. */
 const GREY = 'F3F4F6';
@@ -144,19 +144,30 @@ export function buildQuizDocx(
   });
 
   // ── Questions ─────────────────────────────────────────────────────────────
-  const questions = quiz.questions.flatMap((q, i) => {
-    const pts = L(arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط'), `${q.points} pts`);
-    const stem = new Paragraph({
-      bidirectional: isAr,
-      keepNext: true,
-      spacing: { before: 160, after: 60 },
-      children: [run(`${i + 1}. ${text(q.text)}`, { bold: true }), run(`  (${pts})`, { size: 18, color: '6B7280' })],
-    });
-    // Options under the stem; a question without them gets writing lines.
-    const body = q.options?.length
-      ? q.options.map((o, oi) => para(optionLine(o, oi), { indent: 360, after: 40 }))
-      : [0, 1, 2].map(() => para('_'.repeat(70), { color: '9CA3AF', after: 120 }));
-    return [stem, ...body];
+  const questions = quizBlocks(quiz.questions, isAr).flatMap(block => {
+    const pts = quizBlockPoints(block);
+    const head = para(
+      `${block.heading} (${L(arCountPhrase(pts, 'علامة', 'علامتان', 'علامات'), `${pts} marks`)})`,
+      { bold: true, size: 24, before: 280, after: 80 },
+    );
+    return [head, ...block.questions.flatMap((q, bi) => {
+      const i = block.start + bi;
+      const qPts = L(arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط'), `${q.points} pts`);
+      const stem = new Paragraph({
+        bidirectional: isAr,
+        keepNext: true,
+        spacing: { before: 160, after: 60 },
+        children: [run(`${i + 1}. ${text(q.text)}`, { bold: true }), run(`  (${qPts})`, { size: 18, color: '6B7280' })],
+      });
+      // Options under the stem; a written question gets writing lines, a
+      // fill-blank has its blanks in the sentence.
+      const body = q.options?.length
+        ? q.options.map((o, oi) => para(optionLine(o, oi), { indent: 360, after: 40 }))
+        : q.type === 'fill_blank'
+          ? []
+          : [0, 1, 2].map(() => para('_'.repeat(70), { color: '9CA3AF', after: 120 }));
+      return [stem, ...body];
+    })];
   });
 
   // ── Answer key (teacher's copy) ───────────────────────────────────────────
@@ -178,7 +189,6 @@ export function buildQuizDocx(
         ...instructions,
         heading(L('جدول العلامات (للمصحّح)', 'Marks (for the marker)')),
         marks,
-        heading(L('الأسئلة', 'Questions')),
         ...questions,
         ...key,
       ],

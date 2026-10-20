@@ -24,6 +24,7 @@ import {
 } from '@/services/share';
 import { formatInfographicText } from './infographic.ts';
 import { resolveArtifactScope, type ArtifactScope } from './artifactScope.ts';
+import { questionCountFromAsk, quizTypesFromAsk } from './examAsk.ts';
 
 /**
  * The structured output, kept alongside the text.
@@ -113,6 +114,7 @@ function buildRequest(
   lang: 'ar' | 'en',
   documentContext?: string | null,
   scope?: ArtifactScope | null,
+  ask?: string,
 ): AIRequest {
   // The lesson's own book, else the picked scope — never a bare maths default
   // for a chemistry teacher's upload. See `resolveArtifactScope`.
@@ -126,8 +128,10 @@ function buildRequest(
     language: lang === 'ar' ? 'arabic' : 'english',
     teachingStyle: 'direct',
     difficulty: 'medium',
-    numQuestions: 8,
-    questionTypes: ['multiple_choice', 'short_answer', 'true_false'],
+    // What the teacher typed wins over the defaults: «اختبار صح وخطأ» is a
+    // true/false paper, not the usual three-type mix. See `examAsk.ts`.
+    numQuestions: (ask && questionCountFromAsk(ask)) || 8,
+    questionTypes: (ask && quizTypesFromAsk(ask)) || ['multiple_choice', 'short_answer', 'true_false'],
     totalMarks: 20,
     activityType: 'group',
     // Chat was the one generation path sending no curriculum context at all:
@@ -181,6 +185,8 @@ export async function generateChatArtifact(opts: {
   fromSoftPin?: boolean;
   /** The picked subject and grade, for when no lesson grounds the request. */
   scope?: ArtifactScope | null;
+  /** The teacher's own message, for the question types and count it names. */
+  ask?: string;
 }): Promise<ChatArtifactResult> {
   const {
     artifact,
@@ -190,6 +196,7 @@ export async function generateChatArtifact(opts: {
     documentContext,
     fromSoftPin = false,
     scope = null,
+    ask,
   } = opts;
   const isAr = lang === 'ar';
   const fromDocuments = !!documentContext?.trim();
@@ -197,7 +204,7 @@ export async function generateChatArtifact(opts: {
   const lessonForGen = fromDocuments && fromSoftPin ? null : lesson;
   const material = materialLang(topic, lessonForGen, scope, lang);
   const matAr = material.lang === 'ar';
-  const req = buildRequest(material.topic, lessonForGen, material.lang, documentContext, scope);
+  const req = buildRequest(material.topic, lessonForGen, material.lang, documentContext, scope, ask);
   const meta = { subject: req.subject, grade: req.grade, duration: req.duration, lang: material.lang };
   const titleBase = material.topic;
 

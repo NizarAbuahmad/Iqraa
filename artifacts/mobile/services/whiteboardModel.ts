@@ -5,6 +5,7 @@
  * No React Native and no `expo-*` imports, so `node --test` can load it — the
  * screen and `PenCanvas` render and gather touches, this decides.
  */
+import type { BoardSolution } from '@workspace/math-verify';
 
 /**
  * One stroke. `points` is `"x,y x,y …"` (an SVG polyline) in whatever units the
@@ -253,7 +254,16 @@ export function fitCanvas(areaW: number, areaH: number): Stage {
 /** A board is a list of pages; each page owns its paper, its strokes and its undo history. */
 export const MAX_PAGES = 20;
 
-export type Page = { background: BoardBackground; board: BoardState };
+export type Page = {
+  background: BoardBackground;
+  board: BoardState;
+  /**
+   * A solved problem laid on the page (see `SolutionBlock`). Not ink: it has no
+   * undo history, `docHasInk` ignores it, and removing it is not undoable.
+   * Absent means none.
+   */
+  solution?: BoardSolution;
+};
 export type BoardDoc = { pages: Page[]; current: number };
 
 export const blankPage = (background: BoardBackground = 'blank'): Page => ({ background, board: EMPTY_BOARD });
@@ -299,3 +309,16 @@ export function goToPage(doc: BoardDoc, index: number): BoardDoc {
 
 /** Is there ink on ANY page? (What leaving the board asks about.) */
 export const docHasInk = (doc: BoardDoc): boolean => doc.pages.some(p => hasInk(p.board));
+
+/** Set (or with `null`, remove) the page's solution. Nothing to change gives the same page back. */
+export function withSolution(page: Page, solution: BoardSolution | null): Page {
+  if (solution === null) {
+    if (page.solution === undefined) return page;
+    const { solution: _removed, ...rest } = page;
+    return rest;
+  }
+  return page.solution === solution ? page : { ...page, solution };
+}
+
+/** Does ANY page carry a solution? (A solution is content even with no ink.) */
+export const docHasSolution = (doc: BoardDoc): boolean => doc.pages.some(p => p.solution !== undefined);

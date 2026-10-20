@@ -8,11 +8,34 @@
  * is printed for a question type the paper does not have.
  */
 import type { QuizQuestion } from './ai/AIService.ts';
+import { QUIZ_TYPE_ORDER } from '@workspace/exam-paper';
+import { examBlockMarks, examBlocks, type ExamBlock } from './examBlocks.ts';
 
 export function quizTypeLabel(type: QuizQuestion['type'], isAr: boolean): string {
   if (type === 'multiple_choice') return isAr ? 'اختيار متعدد' : 'MCQ';
   if (type === 'true_false') return isAr ? 'صح/خطأ' : 'True/False';
+  if (type === 'fill_blank') return isAr ? 'أكمل الفراغ' : 'Fill in the blank';
   return isAr ? 'إجابة قصيرة' : 'Short Answer';
+}
+
+/**
+ * The order a ministry exam puts its question types in: choice, then
+ * صح/خطأ, then complete, then written answers. The list lives in
+ * `lib/exam-paper`, shared with the API's `normalizeQuiz` and prompt, so a
+ * paper reads the same whichever path made it.
+ */
+export { QUIZ_TYPE_ORDER };
+
+export type QuizBlock = ExamBlock<QuizQuestion>;
+
+/** The quiz's blocks — see `examBlocks.ts`, which the evaluation screen shares. */
+export function quizBlocks(questions: readonly QuizQuestion[], isAr: boolean): QuizBlock[] {
+  return examBlocks(questions, isAr);
+}
+
+/** A block's marks, for the heading's «(6 علامات)». */
+export function quizBlockPoints(block: QuizBlock): number {
+  return examBlockMarks(block, q => q.points);
 }
 
 export function quizStudentFields(isAr: boolean): string[] {

@@ -538,4 +538,1056 @@ export const CHEM_B_STEPS: Record<string, SolutionSteps> = {
       'The total mass stays constant',
     ],
   },
+  // ── depth added 2026-10-15 ──
+  'ch-ml-e3': {
+    ar: [
+      'الكتلة المولية = مجموع الكتل الذرية في الصيغة',
+      'O₂ = 2 × 16 = 32',
+      'إذن الكتلة المولية للأكسجين 32 g/mol',
+    ],
+    en: [
+      'Molar mass = the sum of the atomic masses in the formula',
+      'O₂ = 2 × 16 = 32',
+      'So the molar mass of oxygen is 32 g/mol',
+    ],
+  },
+  'ch-ml-e4': {
+    ar: [
+      'المول الواحد من أي مادة يحوي عددًا ثابتًا من الجسيمات',
+      'هذا العدد هو عدد أفوجادرو = 6.02 × 10²³',
+      'إذن في 1 mol 6.02 × 10²³ جسيمًا',
+    ],
+    en: [
+      'One mole of any substance contains a fixed number of particles',
+      'This number is Avogadro\'s number = 6.02 × 10²³',
+      'So 1 mol contains 6.02 × 10²³ particles',
+    ],
+  },
+  'ch-ml-e5': {
+    ar: [
+      'NH₃ = N + 3H',
+      '= 14 + 3 × 1 = 17',
+      'إذن الكتلة المولية 17 g/mol',
+    ],
+    en: [
+      'NH₃ = N + 3H',
+      '= 14 + 3 × 1 = 17',
+      'So the molar mass is 17 g/mol',
+    ],
+  },
+  'ch-ml-m4': {
+    ar: [
+      'n = m ÷ M',
+      'n = 88 ÷ 44 = 2',
+      'إذن عدد المولات 2 mol',
+    ],
+    en: [
+      'n = m ÷ M',
+      'n = 88 ÷ 44 = 2',
+      'So the number of moles is 2 mol',
+    ],
+  },
+  'ch-ml-m5': {
+    ar: [
+      'عدد الجزيئات = عدد المولات × عدد أفوجادرو',
+      '= 0.5 × 6.02 × 10²³ = 3.01 × 10²³',
+      'إذن في 0.5 mol 3.01 × 10²³ جزيئًا',
+    ],
+    en: [
+      'Number of molecules = moles × Avogadro\'s number',
+      '= 0.5 × 6.02 × 10²³ = 3.01 × 10²³',
+      'So 0.5 mol contains 3.01 × 10²³ molecules',
+    ],
+  },
+  'ch-ml-m6': {
+    ar: [
+      'Na₂CO₃ = 2Na + C + 3O',
+      '= 2 × 23 + 12 + 3 × 16 = 46 + 12 + 48 = 106',
+      'إذن الكتلة المولية 106 g/mol',
+    ],
+    en: [
+      'Na₂CO₃ = 2Na + C + 3O',
+      '= 2 × 23 + 12 + 3 × 16 = 46 + 12 + 48 = 106',
+      'So the molar mass is 106 g/mol',
+    ],
+  },
+  'ch-ml-h3': {
+    ar: [
+      'M(H₂SO₄) = 2 × 1 + 32 + 4 × 16 = 98 g/mol',
+      'n = m ÷ M = 9.8 ÷ 98 = 0.1',
+      'إذن عدد المولات 0.1 mol',
+    ],
+    en: [
+      'M(H₂SO₄) = 2 × 1 + 32 + 4 × 16 = 98 g/mol',
+      'n = m ÷ M = 9.8 ÷ 98 = 0.1',
+      'So the number of moles is 0.1 mol',
+    ],
+  },
+  'ch-ml-h4': {
+    ar: [
+      'n = عدد الجزيئات ÷ عدد أفوجادرو = 3.01 × 10²³ ÷ 6.02 × 10²³ = 0.5 mol',
+      'm = n × M = 0.5 × 18 = 9',
+      'إذن الكتلة 9 g',
+    ],
+    en: [
+      'n = number of molecules ÷ Avogadro\'s number = 3.01 × 10²³ ÷ 6.02 × 10²³ = 0.5 mol',
+      'm = n × M = 0.5 × 18 = 9',
+      'So the mass is 9 g',
+    ],
+  },
+  'ch-st-e2': {
+    ar: [
+      'النسبة المولية Mg : MgO = 2 : 2 = 1 : 1',
+      'عدد مولات MgO = 2',
+      'إذن ينتج 2 mol',
+    ],
+    en: [
+      'Mole ratio Mg : MgO = 2 : 2 = 1 : 1',
+      'Moles of MgO = 2',
+      'So 2 mol of MgO form',
+    ],
+  },
+  'ch-st-e3': {
+    ar: [
+      'النسبة المولية H₂O : O₂ = 2 : 1',
+      'عدد مولات O₂ = 4 × (1 ÷ 2) = 2',
+      'إذن ينتج 2 mol',
+    ],
+    en: [
+      'Mole ratio H₂O : O₂ = 2 : 1',
+      'Moles of O₂ = 4 × (1 ÷ 2) = 2',
+      'So 2 mol of O₂ form',
+    ],
+  },
+  'ch-st-e4': {
+    ar: [
+      'من المعادلة: كل 3 mol من H₂ تعطي 2 mol من NH₃',
+      'النسبة المولية H₂ : NH₃ = 3 : 2',
+      'إذن النسبة المولية 3 : 2',
+    ],
+    en: [
+      'From the equation: every 3 mol of H₂ gives 2 mol of NH₃',
+      'Mole ratio H₂ : NH₃ = 3 : 2',
+      'So the mole ratio is 3 : 2',
+    ],
+  },
+  'ch-st-e5': {
+    ar: [
+      'M(H₂O) = 2 × 1 + 16 = 18 g/mol',
+      'النسبة المئوية للأكسجين = (16 ÷ 18) × 100',
+      '≈ 88.9',
+      'إذن النسبة المئوية 88.9%',
+    ],
+    en: [
+      'M(H₂O) = 2 × 1 + 16 = 18 g/mol',
+      'Percentage of oxygen = (16 ÷ 18) × 100',
+      '≈ 88.9',
+      'So the percentage is 88.9%',
+    ],
+  },
+  'ch-st-m3': {
+    ar: [
+      'M(CO₂) = 12 + 2 × 16 = 44 g/mol',
+      'النسبة المئوية للكربون = (12 ÷ 44) × 100 ≈ 27.3',
+      'إذن النسبة المئوية 27.3%',
+    ],
+    en: [
+      'M(CO₂) = 12 + 2 × 16 = 44 g/mol',
+      'Percentage of carbon = (12 ÷ 44) × 100 ≈ 27.3',
+      'So the percentage is 27.3%',
+    ],
+  },
+  'ch-st-m4': {
+    ar: [
+      'النسبة المولية CaCO₃ : HCl = 1 : 2',
+      'عدد مولات HCl = 0.5 × 2 = 1',
+      'إذن يلزم 1 mol',
+    ],
+    en: [
+      'Mole ratio CaCO₃ : HCl = 1 : 2',
+      'Moles of HCl = 0.5 × 2 = 1',
+      'So 1 mol is needed',
+    ],
+  },
+  'ch-st-m5': {
+    ar: [
+      'الصيغة الأولية هي أبسط نسبة عددية صحيحة بين الذرات',
+      'نقسم أعداد الذرات في C₆H₁₂O₆ على 6: C : H : O = 1 : 2 : 1',
+      'إذن الصيغة الأولية CH₂O',
+    ],
+    en: [
+      'The empirical formula is the simplest whole-number ratio of atoms',
+      'Divide the atom counts in C₆H₁₂O₆ by 6: C : H : O = 1 : 2 : 1',
+      'So the empirical formula is CH₂O',
+    ],
+  },
+  'ch-st-m6': {
+    ar: [
+      'M(CH₂) = 12 + 2 × 1 = 14 g/mol',
+      'عدد وحدات الصيغة الأولية = 42 ÷ 14 = 3',
+      'الصيغة الجزيئية = (CH₂)₃',
+      'إذن الصيغة الجزيئية C₃H₆',
+    ],
+    en: [
+      'M(CH₂) = 12 + 2 × 1 = 14 g/mol',
+      'Number of empirical units = 42 ÷ 14 = 3',
+      'Molecular formula = (CH₂)₃',
+      'So the molecular formula is C₃H₆',
+    ],
+  },
+  'ch-st-h3': {
+    ar: [
+      'n(Mg) = 12 ÷ 24 = 0.5 mol',
+      'النسبة المولية Mg : MgO = 1 : 1، فينتج 0.5 mol من MgO',
+      'm(MgO) = 0.5 × 40 = 20',
+      'إذن كتلة MgO 20 g',
+    ],
+    en: [
+      'n(Mg) = 12 ÷ 24 = 0.5 mol',
+      'Mole ratio Mg : MgO = 1 : 1, so 0.5 mol of MgO forms',
+      'm(MgO) = 0.5 × 40 = 20',
+      'So the mass of MgO is 20 g',
+    ],
+  },
+  'ch-st-h4': {
+    ar: [
+      'المردود المئوي = (الكتلة الفعلية ÷ الكتلة النظرية) × 100',
+      '= (15 ÷ 20) × 100 = 75',
+      'إذن المردود المئوي 75%',
+    ],
+    en: [
+      'Percent yield = (actual yield ÷ theoretical yield) × 100',
+      '= (15 ÷ 20) × 100 = 75',
+      'So the percent yield is 75%',
+    ],
+  },
+  'ch-th-e3': {
+    ar: [
+      'انخفاض درجة حرارة المحيط يعني أن التفاعل امتص حرارة منه',
+      'التفاعل الذي يمتص طاقة من المحيط ماص للطاقة',
+      'إذن تفاعل ماص للطاقة',
+    ],
+    en: [
+      'The surroundings getting colder means the reaction took heat from them',
+      'A reaction that absorbs energy from its surroundings is endothermic',
+      'So it is an endothermic reaction',
+    ],
+  },
+  'ch-th-e4': {
+    ar: [
+      'التفاعل الطارد يُطلق طاقة إلى المحيط',
+      'الاحتراق يُطلق حرارة وضوءًا، أما التحلل الحراري والتمثيل الضوئي والتحليل الكهربائي فتحتاج إلى طاقة',
+      'إذن التفاعل الطارد للطاقة هو احتراق الغاز الطبيعي',
+    ],
+    en: [
+      'An exothermic reaction releases energy to the surroundings',
+      'Burning gives out heat and light, while thermal decomposition, photosynthesis and electrolysis need energy',
+      'So the exothermic reaction is burning natural gas',
+    ],
+  },
+  'ch-th-e5': {
+    ar: [
+      'الطاقة والشغل والحرارة تُقاس بالوحدة نفسها',
+      'وحدتها في النظام الدولي هي الجول',
+      'إذن وحدة الطاقة الجول (J)',
+    ],
+    en: [
+      'Energy, work and heat are measured in the same unit',
+      'Its SI unit is the joule',
+      'So the unit of energy is the joule (J)',
+    ],
+  },
+  'ch-th-m3': {
+    ar: [
+      'q = m·c·ΔT',
+      'q = 50 × 4.18 × 10',
+      'إذن الطاقة الممتصة 2090 J',
+    ],
+    en: [
+      'q = m·c·ΔT',
+      'q = 50 × 4.18 × 10',
+      'So the energy absorbed is 2090 J',
+    ],
+  },
+  'ch-th-m4': {
+    ar: [
+      'احتراق 1 mol من CH₄ يُطلق 890 kJ',
+      'الطاقة الناتجة = عدد المولات × الطاقة لكل مول = 2 × 890',
+      'إذن الطاقة الناتجة 1780 kJ',
+    ],
+    en: [
+      'Burning 1 mol of CH₄ releases 890 kJ',
+      'Energy released = moles × energy per mole = 2 × 890',
+      'So the energy released is 1780 kJ',
+    ],
+  },
+  'ch-th-m5': {
+    ar: [
+      'ΔH = H(النواتج) − H(المتفاعلات)',
+      'ΔH = 60 − 100',
+      'إذن ΔH = −40 kJ',
+    ],
+    en: [
+      'ΔH = H(products) − H(reactants)',
+      'ΔH = 60 − 100',
+      'So ΔH = −40 kJ',
+    ],
+  },
+  'ch-th-m6': {
+    ar: [
+      'ΔH = طاقة كسر الروابط − طاقة تكوين الروابط',
+      'ΔH = 500 − 650 = −150 kJ',
+      'الإشارة السالبة تعني أن التفاعل طارد للطاقة',
+      'إذن ΔH = −150 kJ (طارد)',
+    ],
+    en: [
+      'ΔH = energy to break bonds − energy released forming bonds',
+      'ΔH = 500 − 650 = −150 kJ',
+      'The negative sign means the reaction is exothermic',
+      'So ΔH = −150 kJ (exothermic)',
+    ],
+  },
+  'ch-th-h2': {
+    ar: [
+      'قانون هيس: ΔH الكلي = مجموع ΔH للخطوات',
+      'ΔH = (−100) + (−50)',
+      'إذن ΔH = −150 kJ',
+    ],
+    en: [
+      'Hess\'s law: overall ΔH = the sum of the ΔH of the steps',
+      'ΔH = (−100) + (−50)',
+      'So ΔH = −150 kJ',
+    ],
+  },
+  'ch-th-h3': {
+    ar: [
+      'عكس التفاعل يعكس إشارة ΔH مع بقاء قيمتها',
+      'ΔH(العكسي) = −(−200)',
+      'إذن ΔH = +200 kJ',
+    ],
+    en: [
+      'Reversing a reaction flips the sign of ΔH and keeps its size',
+      'ΔH(reverse) = −(−200)',
+      'So ΔH = +200 kJ',
+    ],
+  },
+  'ch-th-h4': {
+    ar: [
+      'المعادلة تُظهر تكوين 2 mol من H₂O: ΔH = −572 kJ',
+      'لمول واحد نقسم على 2: −572 ÷ 2',
+      'إذن ΔH = −286 kJ',
+    ],
+    en: [
+      'The equation shows 2 mol of H₂O forming: ΔH = −572 kJ',
+      'For one mole we divide by 2: −572 ÷ 2',
+      'So ΔH = −286 kJ',
+    ],
+  },
+  'ch-ac-e3': {
+    ar: [
+      'مقياس pH يمتد من 0 إلى 14',
+      'القيمة 7 هي نقطة التعادل: لا حمضي ولا قاعدي',
+      'إذن المحلول محلول متعادل',
+    ],
+    en: [
+      'The pH scale runs from 0 to 14',
+      '7 is the neutral point: neither acidic nor basic',
+      'So the solution is neutral',
+    ],
+  },
+  'ch-ac-e4': {
+    ar: [
+      'الحمض مادة تُنتج أيونات H⁺ في الماء',
+      'HCl حمض، وNaOH وKOH قاعدتان، وNaCl ملح',
+      'إذن الحمض هو HCl',
+    ],
+    en: [
+      'An acid is a substance that produces H⁺ ions in water',
+      'HCl is an acid, NaOH and KOH are bases, and NaCl is a salt',
+      'So the acid is HCl',
+    ],
+  },
+  'ch-ac-e5': {
+    ar: [
+      'ورق عباد الشمس الأحمر لا يتغير لونه في الحمض',
+      'في المحلول القاعدي يتحول إلى الأزرق',
+      'إذن لونه يتحول إلى الأزرق',
+    ],
+    en: [
+      'Red litmus paper does not change colour in an acid',
+      'In a basic solution it turns blue',
+      'So it turns blue',
+    ],
+  },
+  'ch-ac-m3': {
+    ar: [
+      'الحمض يتأين في الماء فيعطي أيون الهيدروجين الموجب H⁺',
+      'الجزء المتبقي هو أيون الكلوريد السالب Cl⁻',
+      'إذن معادلة التأين: HCl → H⁺ + Cl⁻',
+    ],
+    en: [
+      'An acid ionizes in water, giving the positive hydrogen ion H⁺',
+      'The rest is the negative chloride ion Cl⁻',
+      'So the ionization equation is HCl → H⁺ + Cl⁻',
+    ],
+  },
+  'ch-ac-m4': {
+    ar: [
+      'القاعدة تتأين فتعطي أيون الهيدروكسيد السالب OH⁻',
+      'الجزء المتبقي هو أيون الصوديوم الموجب Na⁺',
+      'إذن معادلة التأين: NaOH → Na⁺ + OH⁻',
+    ],
+    en: [
+      'A base ionizes, giving the negative hydroxide ion OH⁻',
+      'The rest is the positive sodium ion Na⁺',
+      'So the ionization equation is NaOH → Na⁺ + OH⁻',
+    ],
+  },
+  'ch-ac-m5': {
+    ar: [
+      'الحمض القوي يتأين كليًا فيعطي أكبر عدد من الأيونات',
+      'الحمض الضعيف يتأين جزئيًا فتكون أيوناته أقل',
+      'التوصيل الكهربائي يزداد بزيادة عدد الأيونات',
+      'إذن القوي، لأنه يتأين كليًا',
+    ],
+    en: [
+      'A strong acid ionizes completely, giving the most ions',
+      'A weak acid ionizes partly, so it has fewer ions',
+      'Conductivity rises with the number of ions',
+      'So the strong acid, because it ionizes completely',
+    ],
+  },
+  'ch-ac-m6': {
+    ar: [
+      'حمض + قاعدة → ملح + ماء',
+      'الملح من Na⁺ وSO₄²⁻ هو Na₂SO₄، ومن 2NaOH ينتج 2H₂O',
+      'إذن الناتج Na₂SO₄ + 2H₂O',
+    ],
+    en: [
+      'Acid + base → salt + water',
+      'The salt of Na⁺ and SO₄²⁻ is Na₂SO₄, and 2NaOH gives 2H₂O',
+      'So the products are Na₂SO₄ + 2H₂O',
+    ],
+  },
+  'ch-ac-h2': {
+    ar: [
+      'احتراق الوقود ينتج أكاسيد الكبريت والنيتروجين',
+      'تذوب هذه الأكاسيد في ماء المطر فتكوّن حمضي الكبريتيك والنيتريك',
+      'فيصبح المطر حمضيًا',
+      'إذن سبب المطر الحمضي أكاسيد الكبريت والنيتروجين المذابة في ماء المطر',
+    ],
+    en: [
+      'Burning fuel produces oxides of sulfur and nitrogen',
+      'These oxides dissolve in rainwater, forming sulfuric and nitric acids',
+      'So the rain becomes acidic',
+      'So acid rain is caused by oxides of sulfur and nitrogen dissolved in rainwater',
+    ],
+  },
+  'ch-ac-h3': {
+    ar: [
+      'كلما ارتفع pH وحدة واحدة في المحلول القاعدي زاد تركيز OH⁻ عشرة أضعاف (المقياس لوغاريتمي)',
+      'الفرق بين 12 و9 هو 3 وحدات',
+      'التغير = 10 × 10 × 10 = 1000 مرة',
+      'إذن pH = 12 أقوى قاعدية؛ تركيز OH⁻ فيه أكبر 1000 مرة',
+    ],
+    en: [
+      'Each pH unit up in a basic solution raises the OH⁻ concentration tenfold (the scale is logarithmic)',
+      'The difference between 12 and 9 is 3 units',
+      'Change = 10 × 10 × 10 = 1000 times',
+      'So pH 12 is more basic, with 1000 times more OH⁻',
+    ],
+  },
+  'ch-ac-h4': {
+    ar: [
+      'H₂SO₄ + 2NaOH → Na₂SO₄ + 2H₂O',
+      'النسبة المولية H₂SO₄ : NaOH = 1 : 2',
+      'عدد مولات NaOH = 0.1 × 2 = 0.2',
+      'إذن يلزم 0.2 mol',
+    ],
+    en: [
+      'H₂SO₄ + 2NaOH → Na₂SO₄ + 2H₂O',
+      'Mole ratio H₂SO₄ : NaOH = 1 : 2',
+      'Moles of NaOH = 0.1 × 2 = 0.2',
+      'So 0.2 mol is needed',
+    ],
+  },
+  'ch-ma-e2': {
+    ar: [
+      'في سلسلة النشاط الكيميائي يقع Na في أعلاها، أما Cu فتحت الهيدروجين',
+      'الفلز الأعلى في السلسلة أنشط',
+      'إذن الأنشط Na',
+    ],
+    en: [
+      'In the activity series Na is near the top, while Cu is below hydrogen',
+      'The higher metal is more reactive',
+      'So the more reactive metal is Na',
+    ],
+  },
+  'ch-ma-e3': {
+    ar: [
+      'الفلز يتحد مع الأكسجين فتتكوّن مادة من الفلز والأكسجين',
+      'هذه المادة هي الأكسيد',
+      'إذن الناتج أكسيد الفلز',
+    ],
+    en: [
+      'The metal combines with oxygen to give a compound of the metal and oxygen',
+      'That compound is an oxide',
+      'So the product is the metal oxide',
+    ],
+  },
+  'ch-ma-e4': {
+    ar: [
+      'فلز + حمض مخفف → ملح + هيدروجين',
+      'Mg + 2HCl → MgCl₂ + H₂',
+      'إذن الغاز الناتج غاز الهيدروجين',
+    ],
+    en: [
+      'Metal + dilute acid → salt + hydrogen',
+      'Mg + 2HCl → MgCl₂ + H₂',
+      'So the gas produced is hydrogen',
+    ],
+  },
+  'ch-ma-e5': {
+    ar: [
+      'الفلزات القلوية مثل Na في أعلى سلسلة النشاط',
+      'Cu وAg وAu أقل نشاطًا ولا تتفاعل مع الماء البارد',
+      'إذن الفلز هو Na',
+    ],
+    en: [
+      'Alkali metals such as Na are at the top of the activity series',
+      'Cu, Ag and Au are less reactive and do not react with cold water',
+      'So the metal is Na',
+    ],
+  },
+  'ch-ma-m3': {
+    ar: [
+      'في سلسلة النشاط Mg أعلى من Zn',
+      'الفلز الأنشط يحلّ محلّ الأقل نشاطًا من محلول ملحه',
+      'Mg + ZnSO₄ → MgSO₄ + Zn',
+      'إذن نعم، لأن Mg أنشط من Zn',
+    ],
+    en: [
+      'In the activity series Mg is above Zn',
+      'The more reactive metal displaces the less reactive one from its salt solution',
+      'Mg + ZnSO₄ → MgSO₄ + Zn',
+      'So yes, because Mg is more reactive than Zn',
+    ],
+  },
+  'ch-ma-m4': {
+    ar: [
+      'فلز + حمض → ملح + هيدروجين',
+      'Mg يعطي أيون Mg²⁺ فالملح MgCl₂',
+      'إذن الناتج MgCl₂ + H₂',
+    ],
+    en: [
+      'Metal + acid → salt + hydrogen',
+      'Mg forms Mg²⁺, so the salt is MgCl₂',
+      'So the products are MgCl₂ + H₂',
+    ],
+  },
+  'ch-ma-m5': {
+    ar: [
+      'فلز شديد النشاط + ماء → هيدروكسيد الفلز + هيدروجين',
+      '2Na + 2H₂O → 2NaOH + H₂',
+      'إذن النواتج NaOH وغاز H₂',
+    ],
+    en: [
+      'Very reactive metal + water → metal hydroxide + hydrogen',
+      '2Na + 2H₂O → 2NaOH + H₂',
+      'So the products are NaOH and H₂ gas',
+    ],
+  },
+  'ch-ma-m6': {
+    ar: [
+      'الفلزات فوق الهيدروجين في السلسلة تحلّ محله في الحمض',
+      'Zn وFe وMg فوق الهيدروجين، أما Cu فتحته',
+      'إذن الفلز الذي لا يتفاعل Cu',
+    ],
+    en: [
+      'Metals above hydrogen in the series displace it from an acid',
+      'Zn, Fe and Mg are above hydrogen, while Cu is below it',
+      'So the metal that does not react is Cu',
+    ],
+  },
+  'ch-ma-h2': {
+    ar: [
+      'الألمنيوم نشط ويتفاعل مع الأكسجين بسرعة',
+      'الأكسيد المتكوّن يلتصق بالسطح ولا يتقشر',
+      'فيمنع وصول الأكسجين إلى الفلز تحته',
+      'إذن تتكوّن طبقة رقيقة من أكسيد الألمنيوم تحميه',
+    ],
+    en: [
+      'Aluminium is reactive and reacts with oxygen quickly',
+      'The oxide that forms sticks to the surface and does not flake off',
+      'So it stops oxygen reaching the metal beneath',
+      'So a thin layer of aluminium oxide forms and protects it',
+    ],
+  },
+  'ch-ma-h3': {
+    ar: [
+      'ترتيب النشاط من الأعلى: Zn ثم Fe ثم Cu',
+      'التصاعدي يبدأ بالأقل نشاطًا',
+      'إذن Cu < Fe < Zn',
+    ],
+    en: [
+      'In order of activity from the top: Zn, then Fe, then Cu',
+      'Increasing order starts with the least reactive',
+      'So Cu < Fe < Zn',
+    ],
+  },
+  'ch-ma-h4': {
+    ar: [
+      'لحماية الحديد نصله بفلز أنشط منه فيتأكسد هو بدلًا من الحديد',
+      'Zn أعلى من Fe في السلسلة، أما Cu وAg وSn فأقل نشاطًا منه',
+      'إذن الفلز الأنسب Zn، لأنه أنشط من الحديد فيتأكسد بدلًا منه',
+    ],
+    en: [
+      'To protect iron we connect it to a more reactive metal, which oxidizes instead of the iron',
+      'Zn is above Fe in the series, while Cu, Ag and Sn are less reactive',
+      'So the best metal is Zn, because it is more reactive than iron and oxidizes in its place',
+    ],
+  },
+  'ch-rx-e3': {
+    ar: [
+      'التأكسد والاختزال عمليتان متلازمتان تتضمنان انتقال الإلكترونات',
+      'الفلز مثلًا يتأكسد حين يفقد إلكتروناته',
+      'إذن التأكسد فقد إلكترونات',
+    ],
+    en: [
+      'Oxidation and reduction go together and involve moving electrons',
+      'A metal, for example, is oxidized when it loses electrons',
+      'So oxidation is the loss of electrons',
+    ],
+  },
+  'ch-rx-e4': {
+    ar: [
+      'Cu²⁺ يتحول إلى Cu: يكتسب إلكترونين (ظاهران في الطرف الأيسر)',
+      'اكتساب الإلكترونات اختزال',
+      'إذن اختزال، لأن Cu²⁺ يكتسب إلكترونين',
+    ],
+    en: [
+      'Cu²⁺ becomes Cu: it gains two electrons (shown on the left)',
+      'Gaining electrons is reduction',
+      'So it is reduction, because Cu²⁺ gains two electrons',
+    ],
+  },
+  'ch-rx-e5': {
+    ar: [
+      'القطب الذي تتأكسد عنده المادة يسمى المصعد',
+      'يفقد فيه الفلز الأنشط إلكترونات',
+      'إذن يحدث التأكسد عند المصعد',
+    ],
+    en: [
+      'The electrode where a substance is oxidized is called the anode',
+      'The more reactive metal loses electrons there',
+      'So oxidation occurs at the anode',
+    ],
+  },
+  'ch-rx-m3': {
+    ar: [
+      'في الخلية الجلفانية يوجد محلولان في نصفي خلية منفصلين',
+      'تنتقل الإلكترونات في السلك، وتنتقل الأيونات عبر القنطرة',
+      'فتتعادل الشحنة في كل محلول وتبقى الدائرة مغلقة',
+      'إذن وظيفتها إكمال الدائرة الكهربائية وموازنة الشحنة بين المحلولين',
+    ],
+    en: [
+      'A galvanic cell has two solutions in separate half-cells',
+      'Electrons move through the wire while ions move through the bridge',
+      'So the charge stays balanced in each solution and the circuit stays closed',
+      'So its function is to complete the electrical circuit and balance the charge between the two solutions',
+    ],
+  },
+  'ch-rx-m4': {
+    ar: [
+      'في المصهور توجد أيونات Na⁺ وCl⁻ حرة الحركة',
+      'الأيون الموجب Na⁺ ينجذب إلى المهبط (القطب السالب)',
+      'Na⁺ + e⁻ → Na (اختزال)',
+      'إذن الناتج عند المهبط فلز الصوديوم Na',
+    ],
+    en: [
+      'In the melt there are free Na⁺ and Cl⁻ ions',
+      'The positive ion Na⁺ is attracted to the cathode (negative electrode)',
+      'Na⁺ + e⁻ → Na (reduction)',
+      'So the product at the cathode is sodium metal, Na',
+    ],
+  },
+  'ch-rx-m5': {
+    ar: [
+      'الأيون السالب Cl⁻ ينجذب إلى المصعد (القطب الموجب)',
+      '2Cl⁻ → Cl₂ + 2e⁻ (تأكسد)',
+      'إذن الناتج عند المصعد غاز الكلور Cl₂',
+    ],
+    en: [
+      'The negative ion Cl⁻ is attracted to the anode (positive electrode)',
+      '2Cl⁻ → Cl₂ + 2e⁻ (oxidation)',
+      'So the product at the anode is chlorine gas, Cl₂',
+    ],
+  },
+  'ch-rx-m6': {
+    ar: [
+      'الفلز يترسب من المحلول على القطب الذي يحدث عنده الاختزال',
+      'الاختزال يحدث عند المهبط (القطب السالب)',
+      'إذن يُوصل الجسم بالقطب المهبط (القطب السالب)',
+    ],
+    en: [
+      'The metal is deposited on the electrode where reduction occurs',
+      'Reduction occurs at the cathode (negative electrode)',
+      'So the object is connected to the cathode (negative electrode)',
+    ],
+  },
+  'ch-rx-h2': {
+    ar: [
+      'Na يتحول إلى Na⁺: يفقد إلكترونًا فيتأكسد',
+      'المادة التي تتأكسد تتسبب في اختزال غيرها، فهي العامل المختزل',
+      'Cl₂ يكتسب الإلكترونات فيُختزل، وهو العامل المؤكسد',
+      'إذن Na عامل مختزل لأنه يفقد إلكترونًا',
+    ],
+    en: [
+      'Na becomes Na⁺: it loses an electron and is oxidized',
+      'The substance that is oxidized causes another to be reduced, so it is the reducing agent',
+      'Cl₂ gains electrons and is reduced, so it is the oxidizing agent',
+      'So Na is the reducing agent because it loses an electron',
+    ],
+  },
+  'ch-rx-h3': {
+    ar: [
+      'الصوديوم فلز شديد النشاط، وأيوناته لا تُختزل بسهولة بمواد كيميائية عادية',
+      'مصهور مركباته يحوي أيونات حرة الحركة فيوصل الكهرباء',
+      'التيار الكهربائي يختزل Na⁺ عند المهبط',
+      'إذن يُستخلص بالتحليل الكهربائي لأنه فلز شديد النشاط ولا يمكن اختزال أيوناته بسهولة بمواد كيميائية عادية',
+    ],
+    en: [
+      'Sodium is a very reactive metal, and its ions are not easily reduced by ordinary chemicals',
+      'The melt of its compounds has free-moving ions, so it conducts',
+      'The electric current reduces Na⁺ at the cathode',
+      'So it is extracted by electrolysis because it is very reactive and its ions cannot easily be reduced by ordinary chemicals',
+    ],
+  },
+  'ch-rx-h4': {
+    ar: [
+      'Zn أنشط من Cu فيتأكسد: Zn → Zn²⁺ + 2e⁻ عند المصعد',
+      'تنتقل الإلكترونات عبر السلك الخارجي إلى قطب النحاس (المهبط) حيث يحدث الاختزال',
+      'إذن تسري الإلكترونات من قطب الزنك (المصعد) إلى قطب النحاس (المهبط)',
+    ],
+    en: [
+      'Zn is more reactive than Cu, so it is oxidized: Zn → Zn²⁺ + 2e⁻ at the anode',
+      'The electrons travel through the external wire to the copper electrode (cathode), where reduction occurs',
+      'So the electrons flow from the zinc electrode (anode) to the copper electrode (cathode)',
+    ],
+  },
+  'ch-gn-e3': {
+    ar: [
+      'المادة توجد في الطبيعة بثلاث حالات رئيسية',
+      'تختلف في ترتيب الجسيمات وحرية حركتها',
+      'إذن الحالات الثلاث صلبة وسائلة وغازية',
+    ],
+    en: [
+      'Matter exists in three main states',
+      'They differ in how particles are arranged and how freely they move',
+      'So the three states are solid, liquid and gas',
+    ],
+  },
+  'ch-gn-e4': {
+    ar: [
+      'التغير الفيزيائي لا يكوّن مادة جديدة؛ يتغير الشكل أو الحالة فقط',
+      'ذوبان الجليد تغير حالة من الصلب إلى السائل',
+      'أما الاحتراق والصدأ والتعفن فتكوّن مواد جديدة',
+      'إذن التغير الفيزيائي ذوبان الجليد',
+    ],
+    en: [
+      'A physical change makes no new substance; only shape or state changes',
+      'Melting ice is a change of state from solid to liquid',
+      'Burning, rusting and rotting make new substances',
+      'So the physical change is melting of ice',
+    ],
+  },
+  'ch-gn-e5': {
+    ar: [
+      'رمز العنصر حرف كبير، وقد يتبعه حرف صغير',
+      'رمز الصوديوم مأخوذ من اسمه اللاتيني Natrium',
+      'إذن الرمز Na',
+    ],
+    en: [
+      'An element symbol is a capital letter, sometimes followed by a small one',
+      'The symbol of sodium comes from its Latin name, Natrium',
+      'So the symbol is Na',
+    ],
+  },
+  'ch-gn-m3': {
+    ar: [
+      'المخلوط المتجانس له تركيب واحد في أجزائه كلها ولا نرى مكوناته',
+      'الملح الذائب في الماء يعطي محلولًا متجانسًا',
+      'الزيت والماء والرمل والسلطة تظهر فيها مكونات منفصلة',
+      'إذن المخلوط المتجانس محلول ملح الطعام في الماء',
+    ],
+    en: [
+      'A homogeneous mixture has the same composition throughout and its parts cannot be seen',
+      'Salt dissolved in water gives a uniform solution',
+      'Oil and water, sand and water and a salad show separate parts',
+      'So the homogeneous mixture is salt solution in water',
+    ],
+  },
+  'ch-gn-m4': {
+    ar: [
+      'الملح الذائب لا يتبخر مع الماء',
+      'عند تسخين المحلول يتبخر الماء ويبقى الملح الصلب',
+      'إذن الطريقة التبخير',
+    ],
+    en: [
+      'Dissolved salt does not evaporate with the water',
+      'When the solution is heated the water evaporates and solid salt is left',
+      'So the method is evaporation',
+    ],
+  },
+  'ch-gn-m5': {
+    ar: [
+      'كتلة المحلول = 5 + 95 = 100 g',
+      'التركيز الكتلي = (كتلة المذاب ÷ كتلة المحلول) × 100',
+      '= (5 ÷ 100) × 100 = 5',
+      'إذن التركيز الكتلي 5%',
+    ],
+    en: [
+      'Mass of solution = 5 + 95 = 100 g',
+      'Mass concentration = (mass of solute ÷ mass of solution) × 100',
+      '= (5 ÷ 100) × 100 = 5',
+      'So the mass concentration is 5%',
+    ],
+  },
+  'ch-gn-m6': {
+    ar: [
+      'العنصر يتكون من ذرات من نوع واحد',
+      'عندما ترتبط ذرتان أو أكثر معًا يتكوّن جزيء',
+      'إذن الجزيء ذرتان أو أكثر مرتبطة معًا، والذرة أصغر وحدة بناء للعنصر',
+    ],
+    en: [
+      'An element is made of one kind of atom',
+      'When two or more atoms join, a molecule forms',
+      'So a molecule is two or more atoms bonded together, and an atom is the smallest building unit of an element',
+    ],
+  },
+  'ch-gn-h2': {
+    ar: [
+      'قانون حفظ الكتلة: كتلة المتفاعلات = كتلة النواتج',
+      'كتلة المتفاعلات = 12 + 8 = 20',
+      'إذن كتلة أكسيد المغنيسيوم 20 g',
+    ],
+    en: [
+      'Conservation of mass: mass of reactants = mass of products',
+      'Mass of reactants = 12 + 8 = 20',
+      'So the mass of magnesium oxide is 20 g',
+    ],
+  },
+  'ch-gn-h3': {
+    ar: [
+      'الكثافة = الكتلة ÷ الحجم',
+      '= 50 ÷ 25',
+      'إذن الكثافة 2 g/cm³',
+    ],
+    en: [
+      'Density = mass ÷ volume',
+      '= 50 ÷ 25',
+      'So the density is 2 g/cm³',
+    ],
+  },
+  'ch-gn-h4': {
+    ar: [
+      'كتلة المذاب = التركيز × كتلة المحلول',
+      '= (10 ÷ 100) × 200',
+      'إذن كتلة الملح 20 g',
+    ],
+    en: [
+      'Mass of solute = concentration × mass of solution',
+      '= (10 ÷ 100) × 200',
+      'So the mass of salt is 20 g',
+    ],
+  },
+  // ── calorimetry ──
+  'ch-ca-e1': {
+    ar: [
+      'الحرارة النوعية خاصية للمادة تُقاس لوحدة الكتلة (1 g)',
+      'أما السعة الحرارية فتُقاس للجسم كله',
+      'إذن الحرارة النوعية: كمية الطاقة اللازمة لرفع درجة حرارة 1 g من المادة درجة سلسيوس واحدة',
+    ],
+    en: [
+      'Specific heat is a property of the substance, measured per unit mass (1 g)',
+      'Heat capacity, by contrast, is measured for the whole object',
+      'So the specific heat is the energy needed to raise the temperature of 1 g of the substance by 1 °C',
+    ],
+  },
+  'ch-ca-e2': {
+    ar: [
+      'c = q ÷ (m × ΔT)',
+      'الوحدة = J ÷ (g × °C)',
+      'إذن الوحدة: J/g·°C',
+    ],
+    en: [
+      'c = q ÷ (m × ΔT)',
+      'Unit = J ÷ (g × °C)',
+      'So the unit of specific heat is J/g·°C',
+    ],
+  },
+  'ch-ca-e3': {
+    ar: [
+      'نضع المادة في وعاء معزول يحتوي ماءً وميزان حرارة',
+      'تحسب الطاقة من التغير في درجة حرارة الماء',
+      'إذن الجهاز: المسعر (الكالوريميتر)',
+    ],
+    en: [
+      'The material is placed in an insulated container holding water and a thermometer',
+      'The energy is worked out from the change in the water temperature',
+      'So the device is the calorimeter',
+    ],
+  },
+  'ch-ca-e4': {
+    ar: [
+      'ΔT = q ÷ (m × c)، وq وm متساويان في الحالتين',
+      'كلما قلّت الحرارة النوعية ارتفعت درجة الحرارة أكثر',
+      'الحديد حرارته النوعية (0.45) أصغر من الماء (4.18)',
+      'إذن ترتفع أكثر حرارة: الحديد',
+    ],
+    en: [
+      'ΔT = q ÷ (m × c), and q and m are the same for both',
+      'The smaller the specific heat, the larger the rise in temperature',
+      'Iron has the smaller specific heat (0.45 against 4.18)',
+      'So the temperature of iron rises more',
+    ],
+  },
+  'ch-ca-e5': {
+    ar: [
+      'q تمثل الطاقة التي اكتسبتها المادة',
+      'اكتساب الطاقة يعني q > 0',
+      'إذن إشارة q: موجبة',
+    ],
+    en: [
+      'q is the energy gained by the substance',
+      'Gaining energy means q > 0',
+      'So q is positive',
+    ],
+  },
+  'ch-ca-m1': {
+    ar: [
+      'q = m·c·ΔT',
+      'q = 150 × 4.18 × 20',
+      'إذن الطاقة الممتصة 12540 J',
+    ],
+    en: [
+      'q = m·c·ΔT',
+      'q = 150 × 4.18 × 20',
+      'So the energy absorbed is 12540 J',
+    ],
+  },
+  'ch-ca-m2': {
+    ar: [
+      'c = q ÷ (m × ΔT)',
+      'c = 1150 ÷ (50 × 50) = 1150 ÷ 2500',
+      'إذن الحرارة النوعية للفلز 0.46 J/g·°C',
+    ],
+    en: [
+      'c = q ÷ (m × ΔT)',
+      'c = 1150 ÷ (50 × 50) = 1150 ÷ 2500',
+      'So the specific heat of the metal is 0.46 J/g·°C',
+    ],
+  },
+  'ch-ca-m3': {
+    ar: [
+      'السعة الحرارية C = q ÷ ΔT',
+      'C = 2400 ÷ 6',
+      'إذن السعة الحرارية 400 J/°C',
+    ],
+    en: [
+      'Heat capacity C = q ÷ ΔT',
+      'C = 2400 ÷ 6',
+      'So the heat capacity is 400 J/°C',
+    ],
+  },
+  'ch-ca-m4': {
+    ar: [
+      'ΔT = q ÷ (m × c) = 8360 ÷ (100 × 4.18) = 20 °C',
+      'درجة الحرارة النهائية = الابتدائية + ΔT = 25 + 20',
+      'إذن درجة الحرارة النهائية 45 °C',
+    ],
+    en: [
+      'ΔT = q ÷ (m × c) = 8360 ÷ (100 × 4.18) = 20 °C',
+      'Final temperature = initial + ΔT = 25 + 20',
+      'So the final temperature is 45 °C',
+    ],
+  },
+  'ch-ca-m5': {
+    ar: [
+      'm = q ÷ (c × ΔT)',
+      'm = 6270 ÷ (4.18 × 15) = 6270 ÷ 62.7',
+      'إذن كتلة الماء 100 g',
+    ],
+    en: [
+      'm = q ÷ (c × ΔT)',
+      'm = 6270 ÷ (4.18 × 15) = 6270 ÷ 62.7',
+      'So the mass of the water is 100 g',
+    ],
+  },
+  'ch-ca-m6': {
+    ar: [
+      'مقدار التغير في درجة الحرارة = 60 − 40 = 20 °C',
+      'الطاقة المفقودة = 200 × 4.18 × 20',
+      'إذن الطاقة التي فقدها الماء 16720 J',
+    ],
+    en: [
+      'The change in temperature = 60 − 40 = 20 °C',
+      'Energy lost = 200 × 4.18 × 20',
+      'So the water loses 16720 J',
+    ],
+  },
+  'ch-ca-h1': {
+    ar: [
+      'الطاقة التي اكتسبها الماء = 100 × 4.18 × (24 − 20) = 1672 J',
+      'الطاقة التي فقدها الفلز تساويها: 1672 J، وتغير درجة حرارة الفلز = 100 − 24 = 76 °C',
+      'c = 1672 ÷ (50 × 76) = 1672 ÷ 3800',
+      'إذن الحرارة النوعية للفلز 0.44 J/g·°C',
+    ],
+    en: [
+      'Energy gained by the water = 100 × 4.18 × (24 − 20) = 1672 J',
+      'The metal lost the same 1672 J, and its temperature fell by 100 − 24 = 76 °C',
+      'c = 1672 ÷ (50 × 76) = 1672 ÷ 3800',
+      'So the specific heat of the metal is 0.44 J/g·°C',
+    ],
+  },
+  'ch-ca-h2': {
+    ar: [
+      'الطاقة المفقودة من الماء الساخن = الطاقة المكتسبة للماء البارد',
+      '200 × (60 − T) = 100 × (T − 30)',
+      '12000 − 200T = 100T − 3000، ومنه 300T = 15000',
+      'إذن درجة حرارة المزيج 50 °C',
+    ],
+    en: [
+      'Energy lost by the hot water = energy gained by the cold water',
+      '200 × (60 − T) = 100 × (T − 30)',
+      '12000 − 200T = 100T − 3000, so 300T = 15000',
+      'So the temperature of the mixture is 50 °C',
+    ],
+  },
+  'ch-ca-h3': {
+    ar: [
+      'الطاقة التي اكتسبها الماء = 500 × 4.18 × 10 = 20900 J = 20.9 kJ',
+      'الطاقة المنبعثة من الوقود = الطاقة التي اكتسبها الماء',
+      'الطاقة لكل غرام = 20.9 kJ ÷ 2 g',
+      'إذن الطاقة المنبعثة 10.45 kJ/g',
+    ],
+    en: [
+      'Energy gained by the water = 500 × 4.18 × 10 = 20900 J = 20.9 kJ',
+      'Energy released by the fuel = energy gained by the water',
+      'Energy per gram = 20.9 kJ ÷ 2 g',
+      'So the energy released is 10.45 kJ/g',
+    ],
+  },
+  'ch-ca-h4': {
+    ar: [
+      'السعة الحرارية = الكتلة × الحرارة النوعية: C = m × c',
+      'C = 250 × 0.8',
+      'إذن السعة الحرارية 200 J/°C',
+    ],
+    en: [
+      'Heat capacity = mass × specific heat: C = m × c',
+      'C = 250 × 0.8',
+      'So the heat capacity is 200 J/°C',
+    ],
+  },
 };

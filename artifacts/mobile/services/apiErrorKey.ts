@@ -32,6 +32,11 @@ const BY_CODE = {
   password_incorrect: 'errPasswordIncorrect',
   email_mismatch: 'errEmailMismatch',
   account_suspended: 'errAccountSuspended',
+  // Code-only accounts (no email): signing in with the personal login code,
+  // adding an email afterwards, and proving identity to delete.
+  invalid_login_code: 'errInvalidLoginCode',
+  login_code_incorrect: 'errLoginCodeIncorrect',
+  email_already_set: 'errEmailAlreadySet',
   // Messaging.
   not_connected: 'errNotConnected',
   blocked: 'errBlocked',
@@ -47,8 +52,14 @@ const BY_CODE = {
   unsupported_type: 'errUnsupportedType',
   messaging_storage_unavailable: 'errMessagingUnavailable',
   not_found: 'errNotFound',
+  // Homework: a due date outside the last 30 days / next year (POST and PATCH /homework).
+  due_date_out_of_range: 'hwErrDueRange',
   // Anywhere.
   rate_limited: 'errTooManyRequests',
+  // The API shed the request: its hashing queue or database pool was full
+  // (api-server lib/passwordHash.ts, lib/dbBusy.ts). Retry-After says 2-3 s.
+  hashing_busy: 'errServerBusy',
+  db_busy: 'errServerBusy',
 } as const;
 
 export type ApiErrorKey = (typeof BY_CODE)[keyof typeof BY_CODE] | 'errOffline';

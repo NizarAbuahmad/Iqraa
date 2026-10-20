@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { SPACE, TYPE } from '@/constants/theme';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { goBack } from '@/services/navigation';
@@ -28,7 +29,7 @@ interface Props {
  */
 export function ToolHeader({ title, subtitle, eyebrow, leading, sourceBadge = true, topPad, isRTL, children }: Props) {
   const colors = useColors();
-  const { t } = useLanguage();
+  const { t, lang, toggleLang } = useLanguage();
   const row = { flexDirection: isRTL ? 'row-reverse' : 'row' } as const;
   const align = { textAlign: isRTL ? 'right' : 'left' } as const;
   return (
@@ -42,7 +43,22 @@ export function ToolHeader({ title, subtitle, eyebrow, leading, sourceBadge = tr
         >
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
-        {sourceBadge ? <AiSourceBadge onDark isRTL={isRTL} /> : null}
+        <View style={[styles.navEnd, row]}>
+          {/* After sign-in the only other switch is in Settings, which a
+              full-screen tool gives no way to reach — and what a tool writes
+              is in the app's language. */}
+          <Pressable
+            onPress={() => { void toggleLang(); }}
+            hitSlop={8}
+            style={styles.langPill}
+            accessibilityRole="button"
+            accessibilityLabel={t('changeLanguage')}
+          >
+            <Ionicons name="language-outline" size={14} color="#fff" />
+            <Text style={styles.langPillText}>{lang === 'ar' ? 'English' : 'عربي'}</Text>
+          </Pressable>
+          {sourceBadge ? <AiSourceBadge onDark isRTL={isRTL} /> : null}
+        </View>
       </View>
       {eyebrow ? (
         <View style={[styles.eyebrow, row, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
@@ -64,6 +80,17 @@ export function ToolHeader({ title, subtitle, eyebrow, leading, sourceBadge = tr
 const styles = StyleSheet.create({
   band: { paddingHorizontal: 20, paddingBottom: 14, gap: 8 },
   nav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  navEnd: { alignItems: 'center', gap: 8 },
+  langPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACE.xs,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+    borderRadius: 999,
+    paddingHorizontal: SPACE.md,
+    paddingVertical: SPACE.xs,
+  },
+  langPillText: { color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption },
   eyebrow: {
     alignItems: 'center',
     gap: 5,

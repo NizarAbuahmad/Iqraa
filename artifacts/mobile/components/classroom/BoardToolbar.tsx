@@ -20,11 +20,19 @@ export type BoardToolbarLabels = {
   nextPage: string;
   addPage: string;
   deletePage: string;
+  save: string;
+  exportPdf: string;
+  solve: string;
+  solveNext: string;
+  solveHideAll: string;
+  solveDelete: string;
 };
 
 /**
  * Floating controls for the board: a top bar (close + paper) and a bottom pill
- * (colour, width, pen/eraser, undo, clear). The top container is `box-none` so
+ * (colour, width, pen/eraser, undo, clear, pages, solve, save/export). The solve
+ * button (calculator) opens the problem dialog; when the page has a solution a
+ * further group appears with next-step, hide-all and delete controls. The top container is `box-none` so
  * the empty gap between its two groups still lets the pen draw underneath.
  */
 export function BoardToolbar({
@@ -34,6 +42,9 @@ export function BoardToolbar({
   background, onBackground, onClose, labels,
   pageLabel, canPrevPage, canNextPage, canAddPage, canDeletePage,
   onPrevPage, onNextPage, onAddPage, onDeletePage,
+  onSave, canSave, saveDirty, saveBusy,
+  onExport, canExport, exportBusy,
+  onSolve, canSolve, solution,
 }: {
   isRTL: boolean;
   topInset: number;
@@ -62,6 +73,21 @@ export function BoardToolbar({
   onNextPage: () => void;
   onAddPage: () => void;
   onDeletePage: () => void;
+  onSave: () => void;
+  /** Enabled only when there is something to save. */
+  canSave: boolean;
+  /** Draws the icon filled and accented. */
+  saveDirty: boolean;
+  saveBusy: boolean;
+  onExport: () => void;
+  /** Enabled only when some page has ink. */
+  canExport: boolean;
+  exportBusy: boolean;
+  onSolve: () => void;
+  canSolve: boolean;
+  /** Present only when the current page has a solution. */
+  /** `counter` is "2/5", digits already localised. */
+  solution: null | { shown: number; total: number; counter: string; onNext: () => void; onHideAll: () => void; onDelete: () => void };
 }) {
   const rowDir = isRTL ? 'row-reverse' : 'row';
   return (
@@ -148,6 +174,68 @@ export function BoardToolbar({
           </Pressable>
           <Pressable onPress={onDeletePage} disabled={!canDeletePage} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.deletePage} style={{ opacity: canDeletePage ? 1 : 0.35 }}>
             <Ionicons name="remove-circle-outline" size={22} color={DECK_MUTED} />
+          </Pressable>
+        </View>
+        {solution ? (
+          <View style={[styles.group, { flexDirection: rowDir }]}>
+            <Pressable
+              onPress={solution.onNext}
+              disabled={solution.shown >= solution.total}
+              hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel={labels.solveNext}
+              style={{ opacity: solution.shown >= solution.total ? 0.35 : 1 }}
+            >
+              <Ionicons name="chevron-down-circle-outline" size={22} color={DECK_ACCENT} />
+            </Pressable>
+            <Text style={[styles.pageLabel, { fontFamily: 'Almarai_400Regular', minWidth: 28 }]}>
+              {solution.counter}
+            </Text>
+            <Pressable
+              onPress={solution.onHideAll}
+              disabled={solution.shown === 0}
+              hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel={labels.solveHideAll}
+              style={{ opacity: solution.shown === 0 ? 0.35 : 1 }}
+            >
+              <Ionicons name="eye-off-outline" size={20} color={DECK_MUTED} />
+            </Pressable>
+            <Pressable onPress={solution.onDelete} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.solveDelete}>
+              <Ionicons name="trash-bin-outline" size={20} color={DECK_MUTED} />
+            </Pressable>
+          </View>
+        ) : null}
+        <View style={styles.group}>
+          <Pressable
+            onPress={onSolve}
+            disabled={!canSolve}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel={labels.solve}
+            style={{ opacity: canSolve ? 1 : 0.35 }}
+          >
+            <Ionicons name="calculator-outline" size={20} color={DECK_MUTED} />
+          </Pressable>
+          <Pressable
+            onPress={onSave}
+            disabled={!canSave || saveBusy}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel={labels.save}
+            style={{ opacity: canSave && !saveBusy ? 1 : 0.35 }}
+          >
+            <Ionicons name={saveDirty ? 'save' : 'save-outline'} size={20} color={saveDirty ? DECK_ACCENT : DECK_MUTED} />
+          </Pressable>
+          <Pressable
+            onPress={onExport}
+            disabled={!canExport || exportBusy}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel={labels.exportPdf}
+            style={{ opacity: canExport && !exportBusy ? 1 : 0.35 }}
+          >
+            <Ionicons name="document-outline" size={20} color={DECK_MUTED} />
           </Pressable>
         </View>
       </View>

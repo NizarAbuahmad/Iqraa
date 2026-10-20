@@ -9,6 +9,8 @@
  * stopped being true once the Arabic side needed 4 more of them.
  */
 
+import { revisionClauseAr, revisionClauseEn } from './revision.ts';
+
 /**
  * The 7 activity-type ids the classroom hub can send. Kept in sync with the
  * mobile side's `ACTIVITY_CARDS` (services/classroomRouting.ts) by a test on
@@ -48,6 +50,22 @@ export function classroomSetupClause(b: any, isAr: boolean): string {
   return board
     ? '\n\nImportant: there is no projector in this room. Design the activity to run on the board with printed handouts, and list in materials only the board tools and printouts the teacher genuinely needs.'
     : '\n\nImportant: the slides are shown on a projector. Do not ask the teacher to print what the slides themselves display; list in materials the projector plus only what students need (notebook, pen, worksheet if truly required).';
+}
+
+/**
+ * The whole user prompt for `/generate/classroom-activity`: the activity
+ * type's own template, then — for a unit / semester / book revision deck only —
+ * the revision clause, then the room's setup line.
+ *
+ * The one place the clause is appended, so the 14 per-type templates (7 types
+ * × 2 languages) stay untouched; their `"lesson"` / `"activityName"` read
+ * `b.topic`, which for a wide deck is the scope label — acceptable there as a
+ * display name. Without `scope` this is exactly what the route built before.
+ */
+export function classroomActivityPrompt(b: any, isAr: boolean): string {
+  return (isAr ? classroomPromptAr(b) : classroomPromptEn(b))
+    + (isAr ? revisionClauseAr(b, 'classroom') : revisionClauseEn(b, 'classroom'))
+    + classroomSetupClause(b, isAr);
 }
 
 /**
@@ -339,21 +357,21 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.addition
   }
 
   if (actType === 'exit-ticket') {
-    return `أنت مصمم أنشطة صفية تفاعلية. أنشئ نشاط "بطاقة الخروج" لمادة ${b.subject}، الصف ${b.grade}، موضوع "${b.topic}".
+    return `أنت مصمم أنشطة صفية تفاعلية. أنشئ نشاط "غلق الدرس" لمادة ${b.subject}، الصف ${b.grade}، موضوع "${b.topic}".
 المدة: ${b.duration} دقيقة | الصعوبة: ${diffs[b.difficulty] ?? b.difficulty} | التجميع: ${groups[b.groupType] ?? b.groupType} | الهدف: ${goals[b.teachingGoal] ?? b.teachingGoal}
 ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.additionalContext}` : ''}
 
 أعد JSON بالشكل الآتي (بالعربية الكاملة):
 {
-  "activityName": "بطاقة الخروج – ${b.topic}",
+  "activityName": "غلق الدرس – ${b.topic}",
   "activityType": "exit-ticket",
   "grade": "${b.grade}", "subject": "${b.subject}", "lesson": "${b.topic}",
   "duration": ${b.duration}, "difficulty": "${b.difficulty}", "groupType": "${b.groupType}",
   "learningObjective": "التحقق من فهم ${b.topic} في نهاية الحصة",
-  "materials": ["بطاقة خروج مطبوعة (لكل طالب)","قلم"],
+  "materials": ["ورقة غلق الدرس مطبوعة (لكل طالب)","قلم"],
   "teacherPreparation": "اطبع البطاقات؛ خصّص آخر ${b.duration} دقائق من الحصة",
   "slides": [
-    { "slideNumber": 1, "type": "intro", "title": "🎫 بطاقة الخروج", "content": "التعليمات: عمل فردي، تُسلَّم عند الباب", "durationSeconds": 0 },
+    { "slideNumber": 1, "type": "intro", "title": "🎫 غلق الدرس", "content": "التعليمات: عمل فردي، تُسلَّم عند الباب", "durationSeconds": 0 },
     {
       "slideNumber": 2, "type": "challenge", "title": "❓ السؤال 1 – استرجاع",
       "content": "عرّف المفهوم الأساسي لموضوع ${b.topic} بأسلوبك",
@@ -365,7 +383,7 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.addition
   ],
   "teacherNotes": ["اجمع البطاقات عند الباب","صنّفها إلى: فهم كامل / جزئي / يحتاج دعمًا"],
   "answerKey": ["س1: التعريف","س2: التطبيق","س3: تفكير ناقد"],
-  "printables": ["بطاقة الخروج (لكل طالب)"],
+  "printables": ["ورقة غلق الدرس (لكل طالب)"],
   "assessment": "صنّف البطاقات إلى ثلاث فئات حسب مستوى الفهم",
   "extensionChallenge": "استخدم النتائج لتصميم تمهيد مركّز للحصة القادمة"
 }

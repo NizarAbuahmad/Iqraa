@@ -6,6 +6,8 @@
  * server refuses question writes then, since students may be sitting it.
  */
 import React, { useState } from 'react';
+import { arMarksPhrase, enMarksPhrase } from '@/services/arCount';
+import { examBlockMarks, examBlocks } from '@/services/examBlocks';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -24,18 +26,21 @@ import {
   publishEvaluation,
   setResultsReleased,
   setEvaluationClass,
-  showBlanks,
   type Evaluation,
   type EvaluationQuestion,
   type QuestionType,
 } from '@/services/evaluations';
 import { summariseKeyChecks, type KeyCheckSummary } from '@/services/keyCheckSummary';
+import { bookItemNote } from '@/services/bookItemNote';
 import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
+import { questionText as questionTextFor } from '@/services/evaluationQuestionText';
 import { copyToClipboard } from '@/services/share';
 import { AddReadAloudModal } from '@/components/AddReadAloudModal';
 import { AddDictationModal } from '@/components/AddDictationModal';
+import { showsDictation, showsReadAloud } from '@/services/contentLanguage';
 import { EditQuestionModal } from '@/components/EditQuestionModal';
 import { isEditableQuestion } from '@/services/questionDraft';
+import { isPaperQuestion } from '@/services/paperQuestion';
 import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { QuestionFigure } from '@/components/ui/QuestionFigure';
@@ -46,6 +51,8 @@ import { groupSizeLabel } from '@/services/supportGroups';
 import { palette } from '@/constants/colors';
 import { PROD_ORIGIN } from '@/services/siteOrigin';
 import { BackButton } from '@/components/ui/BackButton';
+import { ExamDateCard } from '@/components/ExamDateCard';
+import { isPaperExam, isQuickPaperExam, markBookReachable } from '@/services/paperMarks';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -79,56 +86,6 @@ const TYPE_LABEL_KEY: Record<QuestionType, TranslationKey> = {
   read_aloud: 'typeReadAloud',
   dictation: 'typeDictation',
 };
-
-/**
- * The one field worth showing per type, regardless of shape.
- *
- * Isolated here rather than at the render site because every branch below
- * returns model-written Arabic that can carry an equation, and an unisolated
- * «f(x) = 2x⁴ - x² + 3» comes out of the bidi algorithm reordered against the
- * Arabic around it — a wrong question, not just an ugly one.
- */
-function questionText(q: EvaluationQuestion): string {
-  const body = q.body;
-  const template = body['template'] as string | undefined;
-  return isolateForeignRuns(
-    (body['stem'] as string | undefined)
-    ?? (body['statement'] as string | undefined)
-    ?? (template === undefined ? undefined : showBlanks(template))
-    ?? (body['prompt'] as string | undefined)
-    // A matching body has none of the four above, so it used to fall through
-    // to '' and print as a dash — a teacher reviewing a paper could see that a
-    // matching question existed but not what it asked. The left column is what
-    // it asks about.
-    ?? matchingLeftText(body['left'])
-    // A read-aloud body keeps its text in `passage` and printed as «—».
-    ?? (body['passage'] as string | undefined)
-    // A dictation body has none of the above — the prompt is spoken, not
-    // written. On the teacher's own screen the dictated text IS what the
-    // question asks, and showing it here is what lets a teacher read the list
-    // aloud to the class when there is no audio (which is the normal case, and
-    // the only one that works on a native device).
-    ?? dictationText(q)
-    ?? '',
-  );
-}
-
-function dictationText(q: EvaluationQuestion): string | undefined {
-  if (q.type !== 'dictation') return undefined;
-  if (q.body['mode'] === 'choice') {
-    const options = Array.isArray(q.body['options']) ? q.body['options'] : [];
-    const labels = options.map(o => (o as { text?: string })?.text).filter(Boolean);
-    return labels.length > 0 ? labels.join(' · ') : undefined;
-  }
-  const text = q.expectedAnswer['text'];
-  return typeof text === 'string' && text.trim() ? text.trim() : undefined;
-}
-
-function matchingLeftText(left: unknown): string | undefined {
-  if (!Array.isArray(left)) return undefined;
-  const labels = left.map(l => (l as { text?: string })?.text).filter(Boolean);
-  return labels.length > 0 ? labels.join(' · ') : undefined;
-}
 
 export default function EvaluationDetailScreen() {
   const colors = useColors();
@@ -168,6 +125,14 @@ export default function EvaluationDetailScreen() {
   });
   const evaluation = data?.evaluation ?? null;
   const questions = data?.questions ?? [];
+  const paperExam = isPaperExam(questions);
+  const quickPaper = isQuickPaperExam(questions);
+  /** The mark book opens for a published OR a closed quick paper exam (the route takes both). */
+  const markBookOpen = evaluation ? markBookReachable(evaluation.status, questions) : false;
+  /** First question of each block -> its heading and marks. */
+  const blockAt = new Map(
+    examBlocks(questions, lang === 'ar').map(b => [b.start, { heading: b.heading, marks: examBlockMarks(b, q => q.marks) }] as const),
+  );
   const audience = data?.audience ?? null;
   const loadError = loadFailed
     ? t('evaluationLoadFailed')
@@ -206,7 +171,7 @@ export default function EvaluationDetailScreen() {
     if (!id || busy) return;
     const ok = await confirm({
       title: t('questionDeleteConfirm'),
-      message: questionText(q) || undefined,
+      message: questionTextFor(q, lang === 'ar') || undefined,
       confirmLabel: t('questionDeleteBtn'),
       cancelLabel: t('cancel'),
       destructive: true,
@@ -339,7 +304,15 @@ export default function EvaluationDetailScreen() {
       cancelLabel: t('cancel'),
     });
     if (!ok) return;
+    await doPublish();
+  };
 
+  /**
+   * Publish, or re-publish: the server keeps the code and pushes its expiry a
+   * week out, which is also how an expired link is renewed.
+   */
+  const doPublish = async () => {
+    if (!id) return;
     setBusy('publish');
     setError('');
     try {
@@ -407,13 +380,23 @@ export default function EvaluationDetailScreen() {
       {evaluation?.status === 'published' && (
         <ShareLinkCard
           shareCode={evaluation.shareCode ?? null}
+          expired={Boolean(evaluation.shareCodeExpiresAt && Date.parse(evaluation.shareCodeExpiresAt) <= Date.now())}
+          renewing={busy === 'publish'}
+          onRenew={() => { if (!busy) void doPublish(); }}
           attachedToClass={Boolean(evaluation.classGroupId)}
+          paper={paperExam}
           onAttach={() => setPickingClass(true)}
           colors={colors}
           isRTL={isRTL}
           align={align}
           t={t}
         />
+      )}
+
+      {/* Planned sitting — what colleagues at the same school see on their
+          calendars. Not shown once closed: that exam has been sat. */}
+      {evaluation && evaluation.status !== 'closed' && (
+        <ExamDateCard evaluation={evaluation} onSaved={refetch} />
       )}
 
       {/*
@@ -443,15 +426,46 @@ export default function EvaluationDetailScreen() {
 
       {evaluation?.status === 'published' && (
         <View style={{ marginHorizontal: 20, marginTop: 16, gap: 10 }}>
+          {markBookOpen ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push({ pathname: '/evaluations/[id]/marks', params: { id: evaluation.id } } as never)}
+              style={[styles.enterAnswersBtn, { backgroundColor: ACCENT_FILL, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            >
+              <Ionicons name="create-outline" size={18} color="#fff" />
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
+                {t('marksGridBtn')}
+              </Text>
+            </Pressable>
+          ) : null}
+          {/* A quick paper exam is marked from the mark book above; the per-student
+              entry stays for a paper with details to fill, as the quieter button. */}
           <Pressable
             onPress={() => router.push({ pathname: '/evaluations/[id]/answers', params: { id: evaluation.id } })}
-            style={[styles.enterAnswersBtn, { backgroundColor: ACCENT_FILL, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            style={
+              quickPaper
+                ? [styles.resultsBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]
+                : [styles.enterAnswersBtn, { backgroundColor: ACCENT_FILL, flexDirection: isRTL ? 'row-reverse' : 'row' }]
+            }
           >
-            <Ionicons name="create-outline" size={18} color="#fff" />
-            <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
+            <Ionicons name="create-outline" size={18} color={quickPaper ? ACCENT : '#fff'} />
+            <Text style={{ color: quickPaper ? ACCENT : '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
               {t('enterAnswersBtn')}
             </Text>
           </Pressable>
+          {/* A paper exam only: every question is a mark with no text. A generated
+              exam marks itself, and a scan would write teacher marks over that. */}
+          {questions.length > 0 && questions.every(isPaperQuestion) && (
+            <Pressable
+              onPress={() => router.push({ pathname: '/evaluations/[id]/scan-class', params: { id: evaluation.id } })}
+              style={[styles.resultsBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            >
+              <Ionicons name="scan-outline" size={18} color={ACCENT} />
+              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
+                {t('classScanBtn')}
+              </Text>
+            </Pressable>
+          )}
           <Pressable
             onPress={() => router.push({ pathname: '/evaluations/[id]/results', params: { id: evaluation.id } })}
             style={[styles.resultsBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
@@ -509,6 +523,18 @@ export default function EvaluationDetailScreen() {
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
             {t('evaluationClosedNote')}
           </Text>
+          {markBookOpen ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push({ pathname: '/evaluations/[id]/marks', params: { id: evaluation.id } } as never)}
+              style={[styles.enterAnswersBtn, { backgroundColor: ACCENT_FILL, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            >
+              <Ionicons name="create-outline" size={18} color="#fff" />
+              <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 15 }}>
+                {t('marksGridBtn')}
+              </Text>
+            </Pressable>
+          ) : null}
           <Pressable
             onPress={() => router.push({ pathname: '/evaluations/[id]/results', params: { id: evaluation.id } })}
             style={[styles.resultsBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
@@ -570,7 +596,17 @@ export default function EvaluationDetailScreen() {
 
       <View style={{ padding: 20, gap: 10 }}>
         {questions.map((q, i) => (
-          <View key={q.id} style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <React.Fragment key={q.id}>
+          {blockAt.get(i) ? (
+            // The ministry paper's «السؤال الأول: …» line above each run of one
+            // type, with the run's marks. Only a heading — numbering stays flat.
+            <View style={[styles.blockHead, { backgroundColor: ACCENT + '12', borderColor: ACCENT + '40' }]}>
+              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, lineHeight: 22, textAlign: align, writingDirection: isRTL ? 'rtl' : 'ltr' }}>
+                {`${blockAt.get(i)!.heading} (${lang === 'ar' ? arMarksPhrase(blockAt.get(i)!.marks) : enMarksPhrase(blockAt.get(i)!.marks)})`}
+              </Text>
+            </View>
+          ) : null}
+          <View style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={[styles.qTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               <View style={[styles.qNum, { backgroundColor: ACCENT_FILL }]}>
                 <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 12 }}>{i + 1}</Text>
@@ -614,6 +650,14 @@ export default function EvaluationDetailScreen() {
                 {isolateForeignRuns(t('verifiedComputed', prettifySymPy(q.verification.computedAnswer)))}
               </Text>
             ) : null}
+            {/* Where in the NCCD book this came from, and how its key was
+                established when that is not "verified". Nothing for a question
+                that did not come from a book. */}
+            {bookItemNote(q.aiMetadata, lang === 'ar' ? 'ar' : 'en', q.source === 'ai_edited') ? (
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18, marginBottom: 4, textAlign: align }}>
+                {isolateForeignRuns(bookItemNote(q.aiMetadata, lang === 'ar' ? 'ar' : 'en', q.source === 'ai_edited') ?? '')}
+              </Text>
+            ) : null}
             <Text
               style={[
                 styles.qText,
@@ -625,10 +669,11 @@ export default function EvaluationDetailScreen() {
                 },
               ]}
             >
-              {questionText(q) || '—'}
+              {questionTextFor(q, lang === 'ar') || '—'}
             </Text>
             <QuestionFigure body={q.body} captionColor={colors.mutedForeground} />
           </View>
+          </React.Fragment>
         ))}
       </View>
 
@@ -696,7 +741,9 @@ export default function EvaluationDetailScreen() {
             </Text>
           </Pressable>
           {/* Hand-written questions, this one included, are appended and
-              survive "regenerate": it replaces only generated questions. */}
+              survive "regenerate": it replaces only generated questions.
+              Read-aloud and إملاء only make sense in a language subject. */}
+          {showsReadAloud(evaluation?.subjectId) && (
           <Pressable
             onPress={() => setAddingReadAloud(true)}
             disabled={!!busy}
@@ -707,8 +754,10 @@ export default function EvaluationDetailScreen() {
               {t('addReadAloudBtn')}
             </Text>
           </Pressable>
+          )}
           {/* Dictation is appended for the same reason, and adds a whole list
               at once: a teacher dictates ten words, not one. */}
+          {showsDictation(evaluation?.subjectId) && (
           <Pressable
             onPress={() => setAddingDictation(true)}
             disabled={!!busy}
@@ -719,6 +768,7 @@ export default function EvaluationDetailScreen() {
               {t('addDictationBtn')}
             </Text>
           </Pressable>
+          )}
         </View>
       )}
 
@@ -842,10 +892,19 @@ function KeyCheckNotice({
 }
 
 function ShareLinkCard({
-  shareCode, attachedToClass, onAttach, colors, isRTL, align, t,
+  shareCode, expired, renewing, onRenew, attachedToClass, paper, onAttach, colors, isRTL, align, t,
 }: {
   shareCode: string | null;
+  /**
+   * The link lapsed (a week after the last publish). Students neither see the
+   * exam in «اختباراتي» nor open the code, and nothing used to say so.
+   */
+  expired: boolean;
+  renewing: boolean;
+  onRenew: () => void;
   attachedToClass: boolean;
+  /** A paper exam is sat in class: it has no code to hand out. */
+  paper: boolean;
   onAttach: () => void;
   colors: ReturnType<typeof useColors>;
   isRTL: boolean;
@@ -853,6 +912,25 @@ function ShareLinkCard({
   t: (key: TranslationKey, ...args: any[]) => string;
 }) {
   const [copied, setCopied] = useState(false);
+  // A paper exam is sat in class: its code would open a paper with nothing on
+  // it, so the card offers no code — only the class it still needs. After the
+  // hook above, never before it: `questions` loads, so `paper` flips false → true.
+  if (paper) {
+    if (attachedToClass) return null;
+    return (
+      <View style={{ marginHorizontal: 20, marginTop: 16 }}>
+        <View style={[styles.shareCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={{ color: palette.warning, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
+            {t('marksGridNeedsClass')}
+          </Text>
+          <Pressable onPress={onAttach} style={[styles.shareBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <Ionicons name="people-outline" size={16} color={ACCENT} />
+            <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{t('shareExamAttachNow')}</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
   if (!shareCode) return null;
 
   // Always the live site. This used to follow the host of the current page, so
@@ -881,6 +959,22 @@ function ShareLinkCard({
               <Ionicons name="people-outline" size={16} color={ACCENT} />
               <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
                 {t('shareExamAttachNow')}
+              </Text>
+            </Pressable>
+          </>
+        ) : expired ? (
+          <>
+            <Text style={{ color: palette.warning, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginTop: 8, textAlign: align }}>
+              {t('shareExamExpired')}
+            </Text>
+            <Pressable
+              onPress={onRenew}
+              disabled={renewing}
+              style={[styles.shareBtn, { borderColor: ACCENT, opacity: renewing ? 0.6 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            >
+              {renewing ? <ActivityIndicator size="small" color={ACCENT} /> : <Ionicons name="refresh" size={16} color={ACCENT} />}
+              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>
+                {t('shareExamRenew')}
               </Text>
             </Pressable>
           </>
@@ -924,6 +1018,7 @@ const styles = StyleSheet.create({
   metaRow: { alignItems: 'center', gap: 12 },
   statusPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   errorBox: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 12, borderWidth: 1 },
+  blockHead: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, marginTop: 6 },
   qCard: { borderWidth: 1, borderRadius: 12, padding: 14 },
   qTop: { alignItems: 'center', gap: 8, marginBottom: 8 },
   qNum: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },

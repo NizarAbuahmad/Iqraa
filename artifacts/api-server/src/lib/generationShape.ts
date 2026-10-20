@@ -27,6 +27,9 @@
  * genuinely wrong.
  */
 
+import { stemFrame } from "@workspace/math-practice";
+import { QUIZ_TYPE_ORDER, hasSentence, sameAsk, type QuizType } from "@workspace/exam-paper";
+
 export type GenerationKind =
   | "lesson-plan"
   | "worksheet"
@@ -36,7 +39,8 @@ export type GenerationKind =
   | "classroom-activity"
   | "prompt-slides"
   | "lesson-teaching"
-  | "infographic";
+  | "infographic"
+  | "solve";
 
 /**
  * Fields whose absence leaves the screen with nothing to draw.
@@ -64,6 +68,9 @@ export const REQUIRED_FIELDS: Record<GenerationKind, readonly string[]> = {
   "lesson-teaching": ["concepts"],
   // `subtitle` is decoration and may legitimately be short or absent.
   infographic: ["title", "keyFacts", "sections", "takeaway"],
+  // The board's AI-solved problem. `problem` is deliberately absent: the route
+  // shows the teacher's own text, so the model is not asked to restate it.
+  solve: ["steps", "answer"],
 };
 
 /** Which required fields are missing or empty — [] means usable. */
@@ -104,11 +111,391 @@ export class UnusableGenerationError extends Error {
   }
 }
 
-/** Throws `UnusableGenerationError` unless every required field is present. */
-export function assertUsableGeneration(kind: GenerationKind, parsed: unknown): void {
+/**
+ * Throws `UnusableGenerationError` unless every required field is present.
+ *
+ * A quiz is also normalised in place against the request body (see
+ * `normalizeQuiz`); the returned lines say what that changed, for the log.
+ * Empty for every other kind and for a quiz that needed nothing.
+ */
+export function assertUsableGeneration(
+  kind: GenerationKind,
+  parsed: unknown,
+  body?: Record<string, unknown>,
+): string[] {
   const missing = missingFields(kind, parsed);
   if (missing.length > 0) throw new UnusableGenerationError(kind, missing);
   if (kind === "prompt-slides") assertUsableDeck(parsed);
+  if (kind === "quiz") return normalizeQuiz(parsed, body?.questionTypes, quizWanted(body));
+  return [];
+}
+
+/**
+ * The order a ministry exam paper puts its question types in — the «السؤال
+ * الأول: ضع دائرة…», «السؤال الثاني: ضع إشارة ✓/✗…» structure every Jordanian
+ * school exam follows. The prompt asks for it and `normalizeQuiz` enforces it,
+ * so the app's screen, PDF, Word file and shared text all print the same
+ * grouped paper from the same array. The list lives in `lib/exam-paper`; the
+ * offline generator reads the same one.
+ */
+export { QUIZ_TYPE_ORDER, type QuizType };
+
+const TRUE_RE = /^\s*(?:[أ-يa-z]\s*[).\-:]\s*)?(?:صح|صحيح|صحيحة|صواب|نعم|true|t|yes|✓|✔)\s*[.!]?\s*$/i;
+const FALSE_RE = /^\s*(?:[أ-يa-z]\s*[).\-:]\s*)?(?:خطأ|خاطئ|خاطئة|لا|false|f|no|✗|✘|×)\s*[.!]?\s*$/i;
+
+/** The model's name for a type, mapped onto ours; `null` for anything else. */
+function quizTypeOf(raw: unknown, options: unknown[]): QuizType | null {
+  const t = typeof raw === "string" ? raw.toLowerCase() : "";
+  if (/multi|mcq|choice|اختيار/.test(t)) return "multiple_choice";
+  if (/true|false|tf|صح|خطأ/.test(t)) return "true_false";
+  if (/blank|fill|complet|فراغ|أكمل/.test(t)) return "fill_blank";
+  if (/short|open|essay|answer|قصير|مقال/.test(t)) return "short_answer";
+  // No usable label: read the shape instead of discarding a sound question.
+  if (options.length >= 3) return "multiple_choice";
+  if (options.length === 2 && options.every(o => TRUE_RE.test(String(o)) || FALSE_RE.test(String(o)))) return "true_false";
+  if (options.length === 0 && t === "") return "short_answer";
+  return null;
+}
+
+/**
+ * Make a generated quiz honour what the teacher asked for, before it is
+ * stored and served to every teacher who asks for that lesson.
+ *
+ * The prompt states the allowed types, the order and the true/false shape;
+ * this is what happens when the model treats that as a suggestion. Three
+ * things, all in place on `parsed.questions`:
+ *
+ *  - a question of a type the teacher did not tick is dropped (the model's
+ *    own labels are mapped first, so "True/False" is not thrown away for
+ *    not being spelled `true_false`);
+ *  - a true/false question always carries exactly the two options the app
+ *    renders and marks against, with `correctAnswer` one of them, whether the
+ *    model wrote `options`, wrote «صحيح»/"T", or wrote nothing;
+ *  - questions are grouped by type in `QUIZ_TYPE_ORDER`, stably, so the paper
+ *    reads as a ministry exam rather than an interleaved list.
+ *
+ * `requested` absent or unrecognised means every type is allowed — a caller
+ * that does not send `questionTypes` has not asked for a restriction.
+ *
+ * Throws when nothing survives: an all-MCQ reply to a صح/خطأ request is not a
+ * quiz the teacher can use, and serving it would also pool it.
+ */
+export function normalizeQuiz(parsed: unknown, requested: unknown, count?: number | null): string[] {
+  const obj = parsed as Record<string, unknown>;
+  const list = Array.isArray(obj.questions) ? (obj.questions as unknown[]) : [];
+  const asked = Array.isArray(requested)
+    ? requested.filter((t): t is QuizType => (QUIZ_TYPE_ORDER as readonly string[]).includes(String(t)))
+    : [];
+  const allowed = new Set<QuizType>(asked.length ? asked : QUIZ_TYPE_ORDER);
+  const notes: string[] = [];
+  const dropped: string[] = [];
+
+  const kept: { q: Record<string, unknown>; rank: number }[] = [];
+  list.forEach((item, i) => {
+    if (item === null || typeof item !== "object" || Array.isArray(item)) return;
+    const q = item as Record<string, unknown>;
+    const options = Array.isArray(q.options) ? q.options : [];
+    const type = quizTypeOf(q.type, options);
+    if (!type || !allowed.has(type)) {
+      dropped.push(`#${i + 1} ${String(q.type ?? "?")}`);
+      return;
+    }
+    q.type = type;
+    if (type === "true_false") {
+      const answer = String(q.correctAnswer ?? "");
+      const arabic = /[؀-ۿ]/.test(`${String(q.text ?? "")}${answer}${options.join("")}`);
+      const pair = arabic ? ["صح", "خطأ"] : ["True", "False"];
+      q.options = pair;
+      if (TRUE_RE.test(answer)) q.correctAnswer = pair[0];
+      else if (FALSE_RE.test(answer)) q.correctAnswer = pair[1];
+      else if (answer === "" && typeof q.answer === "boolean") q.correctAnswer = q.answer ? pair[0] : pair[1];
+    } else if (type !== "multiple_choice" && options.length === 0) {
+      delete q.options;
+    }
+    kept.push({ q, rank: QUIZ_TYPE_ORDER.indexOf(type) });
+  });
+
+  if (kept.length === 0) {
+    throw new UnusableGenerationError("quiz", [
+      `questions (none of the ${list.length} returned were of the requested types: ${[...allowed].join(", ")})`,
+    ]);
+  }
+  if (dropped.length) notes.push(`dropped ${dropped.length} question(s) of unrequested types: ${dropped.join(", ")}`);
+  const ordered = kept.map((k, i) => ({ ...k, i })).sort((a, b) => a.rank - b.rank || a.i - b.i).map(k => k.q);
+  if (ordered.some((q, i) => q !== kept[i]!.q)) notes.push("reordered questions into ministry type order");
+  // More than the teacher asked for changes the paper's length and marks. Cut
+  // from the largest block, last question first, so no type disappears the way
+  // it would if the tail were simply sliced off (the written block is last).
+  if (count && ordered.length > count) {
+    const before = ordered.length;
+    while (ordered.length > count) {
+      const sizes = new Map<unknown, number>();
+      for (const q of ordered) sizes.set(q.type, (sizes.get(q.type) ?? 0) + 1);
+      const biggest = [...sizes.entries()].reduce((a, b) => (b[1] > a[1] ? b : a))[0];
+      const at = ordered.map(q => q.type).lastIndexOf(biggest as string);
+      ordered.splice(at, 1);
+    }
+    notes.push(`trimmed ${before - ordered.length} surplus question(s) to the ${count} requested`);
+  }
+  obj.questions = ordered;
+  return notes;
+}
+
+/** How many questions the teacher asked for; `null` when the request did not say (or said nonsense). */
+export function quizWanted(body: Record<string, unknown> | undefined): number | null {
+  const n = Number(body?.numQuestions);
+  return Number.isInteger(n) && n >= 1 && n <= 30 ? n : null;
+}
+
+/** The questions a parsed quiz holds, or [] for anything that is not one. */
+function quizQuestions(parsed: unknown): Record<string, unknown>[] {
+  const list = (parsed as { questions?: unknown } | null)?.questions;
+  return Array.isArray(list) ? list.filter((q): q is Record<string, unknown> => !!q && typeof q === "object") : [];
+}
+
+/** How many more questions a reply owes the teacher; 0 when it is complete or the request named no count. */
+export function quizShortfall(parsed: unknown, body: Record<string, unknown> | undefined): number {
+  const want = quizWanted(body);
+  return want === null ? 0 : Math.max(0, want - quizQuestions(parsed).length);
+}
+
+/**
+ * The stems already on the paper — what a top-up must not repeat. Only the
+ * text: a whole paper in the prompt would cost more input than the call.
+ */
+export function quizStems(parsed: unknown): string[] {
+  return quizQuestions(parsed).map(q => String(q.text ?? "").replace(/\s+/g, " ").trim()).filter(Boolean);
+}
+
+// ─── Repeated asks ──────────────────────────────────────────────────────────
+//
+// The prompt asks for no idea twice and no more than two questions opening the
+// same way; nothing checked the reply. A paper that asks «أوجد الكتلة المولية»
+// of five compounds, or one definition in four wordings, was served and pooled
+// for every teacher who asks for that lesson. These count the questions that
+// are each the same kind of ask (`sameKind` on `stemFrame`, three words changed
+// at most, as `dominantKind` in the evaluation validator), and let the route
+// replace what is over a kind's share with new questions.
+//
+// Quizzes only. A worksheet or homework is practice, where the same exercise
+// with new numbers is the point.
+
+/**
+ * How many questions of one kind a paper of `n` may hold: a third, and never
+ * fewer than three. Looser than the evaluation validator's quarter, which only
+ * warns: this replaces questions, at the cost of a model call, and a maths
+ * lesson that teaches one skill asks it several times on purpose. Measured
+ * 2026-10-17 on the offline generator's 10- and 20-question quizzes for a
+ * sample of lessons: a quarter would have replaced questions on every maths
+ * paper (14 of 14, 61 questions), most of them «أوجد حل المعادلة: …» on a
+ * lesson about solving that equation.
+ */
+export function kindQuota(n: number): number {
+  return Math.max(3, Math.ceil(n / 3));
+}
+
+/** Questions grouped by kind, each joining the first group whose first question it matches. */
+function kindOf(groups: string[], text: string): number {
+  const frame = stemFrame(text);
+  if (!hasSentence(frame)) return -1; // only symbols — no sentence to share
+  const at = groups.findIndex(g => sameAsk(g, frame));
+  if (at >= 0) return at;
+  groups.push(frame);
+  return groups.length - 1;
+}
+
+/**
+ * Positions of the questions past their kind's share, in paper order — the
+ * first `kindQuota` of each kind stay. `want` is the length the paper is meant
+ * to have (the teacher's count), so a short reply is judged by its full size.
+ */
+export function quizRepeats(parsed: unknown, want?: number | null): number[] {
+  const questions = quizQuestions(parsed);
+  const quota = kindQuota(want ?? questions.length);
+  const groups: string[] = [];
+  const counts: number[] = [];
+  const over: number[] = [];
+  questions.forEach((q, i) => {
+    const kind = kindOf(groups, String(q.text ?? ""));
+    if (kind < 0) return;
+    counts[kind] = (counts[kind] ?? 0) + 1;
+    if (counts[kind]! > quota) over.push(i);
+  });
+  return over;
+}
+
+/** The text of the questions at `at` — positions from `quizRepeats`, which `quizStems` (it skips blanks) does not share. */
+export function quizStemsAt(parsed: unknown, at: readonly number[]): string[] {
+  const questions = quizQuestions(parsed);
+  return at.map(i => String(questions[i]?.text ?? "").replace(/\s+/g, " ").trim()).filter(Boolean);
+}
+
+/**
+ * Take a top-up reply that was asked for both the missing questions and
+ * replacements for `repeats`. Each new question that is not itself one more of
+ * a kind already at its share replaces a repeat — taking its marks, so the
+ * paper's total does not move — and once the repeats are gone the rest are
+ * appended for the missing count. A repeat nothing replaced stays: a paper is
+ * never made shorter to make it more varied. Nor left short for it: a new
+ * question that is one too many of its kind still fills a missing place when
+ * nothing fresher came back. Returns how many were replaced.
+ */
+export function absorbQuizTopUp(base: unknown, extra: unknown, repeats: readonly number[], want?: number | null): number {
+  const obj = base as Record<string, unknown>;
+  const questions = quizQuestions(base);
+  const quota = kindQuota(want ?? questions.length);
+  const pending = new Set(repeats);
+  const groups: string[] = [];
+  const counts: number[] = [];
+  questions.forEach((q, i) => {
+    if (pending.has(i)) return;
+    const kind = kindOf(groups, String(q.text ?? ""));
+    if (kind >= 0) counts[kind] = (counts[kind] ?? 0) + 1;
+  });
+  const slots = [...repeats];
+  const appended: Record<string, unknown>[] = [];
+  const spare: Record<string, unknown>[] = [];
+  let replaced = 0;
+  for (const q of quizQuestions(extra)) {
+    const kind = kindOf(groups, String(q.text ?? ""));
+    if (kind >= 0 && (counts[kind] ?? 0) >= quota) {
+      spare.push(q);
+      continue;
+    }
+    if (kind >= 0) counts[kind] = (counts[kind] ?? 0) + 1;
+    const slot = slots.shift();
+    if (slot === undefined) {
+      appended.push(q);
+      continue;
+    }
+    const old = questions[slot]!;
+    if (old.points !== undefined) q.points = old.points;
+    questions[slot] = q;
+    replaced += 1;
+  }
+  // Never longer than asked, or than it was when the request named no count.
+  const target = want ?? questions.length;
+  const merged = [...questions, ...appended, ...spare].slice(0, Math.max(questions.length, target));
+  merged.forEach((q, i) => { q.id = `q${i + 1}`; });
+  obj.questions = merged;
+  return replaced;
+}
+
+// ─── Worksheet and homework counts ──────────────────────────────────────────
+//
+// The same silent shortfall as a quiz — asked for 20, a model returns 10 in a
+// valid reply — but the count means something different here, so the quiz
+// helpers above do not serve:
+//
+//  - the questions live in `sections[].questions`, with a parallel `answerKey`;
+//  - a worksheet's worked example counts INSIDE the number the teacher picked
+//    (the prompt says so: sections hold n-1 when an example is present), and a
+//    homework never has one;
+//  - a prior-knowledge review (2-3 questions) is ON TOP of the number.
+//
+// Getting any of those wrong would ask a model for questions the teacher did
+// not want, or trim ones they did.
+
+/** The review a worksheet carries on top of the count, as the prompt asks for it (2-3 questions). */
+const MIN_REVIEW_QUESTIONS = 2;
+const MAX_REVIEW_QUESTIONS = 3;
+
+function worksheetSections(parsed: unknown): { questions: Record<string, unknown>[] }[] {
+  const list = (parsed as { sections?: unknown } | null)?.sections;
+  if (!Array.isArray(list)) return [];
+  return list
+    .filter((s): s is Record<string, unknown> => !!s && typeof s === "object" && !Array.isArray(s))
+    .map(s => ({
+      ...s,
+      questions: Array.isArray(s.questions)
+        ? s.questions.filter((q): q is Record<string, unknown> => !!q && typeof q === "object")
+        : [],
+    }));
+}
+
+/** Every question across a worksheet's sections. */
+export function worksheetQuestionCount(parsed: unknown): number {
+  return worksheetSections(parsed).reduce((n, s) => n + s.questions.length, 0);
+}
+
+function reviewRequested(body: Record<string, unknown> | undefined): boolean {
+  return body?.includePriorReview === true && Array.isArray(body?.priorKnowledge) && body.priorKnowledge.length > 0;
+}
+
+/**
+ * How many more questions a worksheet or homework reply owes the teacher.
+ *
+ * The least it may hold: the picked number, less the worked example it
+ * carries, plus the review's lower bound where one was asked for. A reply at
+ * or above that owes nothing — better to miss a shortfall hidden under a
+ * longer-than-minimum review than to ask for questions nobody wanted.
+ */
+export function worksheetShortfall(parsed: unknown, body: Record<string, unknown> | undefined): number {
+  const want = quizWanted(body);
+  if (want === null) return 0;
+  const example = (parsed as { workedExample?: unknown } | null)?.workedExample ? 1 : 0;
+  const least = want - example + (reviewRequested(body) ? MIN_REVIEW_QUESTIONS : 0);
+  return Math.max(0, least - worksheetQuestionCount(parsed));
+}
+
+/** The text of every question already on the paper — what a top-up must not repeat. */
+export function worksheetStems(parsed: unknown): string[] {
+  return worksheetSections(parsed)
+    .flatMap(s => s.questions)
+    .map(q => String(q.text ?? "").replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+}
+
+/**
+ * Add a top-up reply's sections to the paper, its answer-key entries numbered
+ * straight on from the questions already there. The base keeps its title,
+ * instructions and worked example; the extra contributes only questions.
+ */
+export function mergeWorksheetTopUp(base: unknown, extra: unknown): void {
+  const obj = base as Record<string, unknown>;
+  const have = worksheetQuestionCount(base);
+  const baseKey = Array.isArray(obj.answerKey) ? (obj.answerKey as unknown[]) : [];
+  const extraKey = Array.isArray((extra as { answerKey?: unknown } | null)?.answerKey)
+    ? ((extra as { answerKey: unknown[] }).answerKey)
+    : [];
+  const added = worksheetSections(extra).filter(s => s.questions.length > 0);
+  obj.sections = [...worksheetSections(base), ...added];
+  obj.answerKey = [
+    ...baseKey,
+    ...extraKey
+      .filter((k): k is Record<string, unknown> => !!k && typeof k === "object")
+      .map((k, i) => ({ ...k, num: have + i + 1 })),
+  ];
+}
+
+/**
+ * Cut a worksheet that came back longer than asked, from the end — the last
+ * question of the last section first, dropping a section it empties — with the
+ * answer key cut to match.
+ *
+ * What the teacher's own review request adds is NOT surplus, so up to three
+ * more than the picked number is left alone when one was asked for. Returns how
+ * many questions were removed.
+ */
+export function trimWorksheet(parsed: unknown, body: Record<string, unknown> | undefined): number {
+  const want = quizWanted(body);
+  if (want === null) return 0;
+  const obj = parsed as Record<string, unknown>;
+  const example = obj.workedExample ? 1 : 0;
+  const most = want - example + (reviewRequested(body) ? MAX_REVIEW_QUESTIONS : 0);
+  const sections = worksheetSections(parsed);
+  let surplus = worksheetQuestionCount(parsed) - most;
+  if (surplus <= 0) return 0;
+  const removed = surplus;
+  while (surplus > 0 && sections.length > 0) {
+    const last = sections[sections.length - 1]!;
+    last.questions.pop();
+    surplus -= 1;
+    if (last.questions.length === 0) sections.pop();
+  }
+  obj.sections = sections;
+  if (Array.isArray(obj.answerKey)) obj.answerKey = (obj.answerKey as unknown[]).slice(0, worksheetQuestionCount(parsed));
+  return removed;
 }
 
 /** A deck shorter than this is not a lesson, whatever the teacher asked for. */
@@ -140,7 +527,23 @@ export function assertUsableDeck(parsed: unknown): void {
     const slide = s as Record<string, unknown>;
     const title = typeof slide.title === "string" ? slide.title.trim() : "";
     const content = typeof slide.content === "string" ? slide.content.trim() : "";
-    return !title || !content;
+    // A `stat` or `compare` slide keeps its substance outside `content` — the
+    // figure and its caption, the two columns — and the prompt never asks for
+    // a body on those. Refusing them here threw away a whole paid deck over
+    // the one slide the model had laid out best.
+    const stat = slide.stat as { value?: unknown } | undefined;
+    const compare = slide.compare as { left?: unknown; right?: unknown } | undefined;
+    const hasStat = typeof stat?.value === "string" && stat.value.trim() !== "";
+    const hasCompare = Array.isArray(compare?.left) && compare.left.length > 0
+      && Array.isArray(compare?.right) && compare.right.length > 0;
+    // The four structure layouts keep their words in a payload of their own too.
+    const filled = (v: unknown) => Array.isArray(v) && v.length > 0;
+    const hasStructure = filled(slide.timeline) || filled(slide.stats)
+      || filled((slide.table as { rows?: unknown } | undefined)?.rows)
+      || filled((slide.flow as { steps?: unknown } | undefined)?.steps)
+      || (typeof (slide.quote as { text?: unknown } | undefined)?.text === "string"
+        && ((slide.quote as { text: string }).text.trim() !== ""));
+    return !title || !(content || hasStat || hasCompare || hasStructure);
   });
   if (blank.length > 0) {
     throw new UnusableGenerationError("prompt-slides", [
@@ -167,7 +570,9 @@ export function deckShortfalls(parsed: unknown): string[] {
   if (!objects.some(s => s.type === "divider")) out.push("no divider slide");
   // A laid-out slide is meant to be one line (statement) or keeps its body
   // outside `content` (stat, compare), so it is not a thin slide.
-  const thin = objects.filter(s => !s.layout && typeof s.content === "string" && !s.content.includes("\n")).length;
+  // Not the cover: the prompt asks for one line there on purpose, so counting
+  // it flagged every deck ever generated as having at least one thin slide.
+  const thin = objects.filter((s, i) => i > 0 && !s.layout && typeof s.content === "string" && !s.content.includes("\n")).length;
   if (thin > 0) out.push(`${thin}/${objects.length} slides are a single unbroken line`);
   return out;
 }
@@ -200,12 +605,36 @@ const isLines = (v: unknown, min: number): v is string[] =>
  * rest of the paper kept, rather than failing either way.
  *
  * Whitelists the fields it keeps, so a model that invents a sibling field does
- * not get it stored.
+ * not get it stored. Also removes `fromBank` from every worksheet, homework and
+ * quiz question — see the comment inside.
  */
 export function sanitizeWorksheetExtras<T>(kind: GenerationKind, parsed: T): T {
-  if (kind !== "worksheet" && kind !== "homework") return parsed;
+  if (kind !== "worksheet" && kind !== "homework" && kind !== "quiz") return parsed;
   if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) return parsed;
   const out: Record<string, unknown> = { ...(parsed as Record<string, unknown>) };
+
+  // `fromBank` means "taken from the reviewed offline question bank" and only the
+  // app's own bank path may set it. A model writing it would stamp its own work
+  // as reviewed, and the stamp would be pooled for every teacher.
+  const unmarked = (qs: unknown): unknown =>
+    Array.isArray(qs)
+      ? qs.map(q => {
+          if (q === null || typeof q !== "object" || Array.isArray(q) || !("fromBank" in q)) return q;
+          const { fromBank: _selfCertified, ...rest } = q as Record<string, unknown>;
+          return rest;
+        })
+      : qs;
+  if (kind === "quiz") {
+    if ("questions" in out) out.questions = unmarked(out.questions);
+    return out as T;
+  }
+  if (Array.isArray(out.sections)) {
+    out.sections = out.sections.map(sec =>
+      sec !== null && typeof sec === "object" && !Array.isArray(sec) && "questions" in sec
+        ? { ...(sec as Record<string, unknown>), questions: unmarked((sec as Record<string, unknown>).questions) }
+        : sec,
+    );
+  }
 
   if ("workedExample" in out) {
     const ex = out.workedExample as Record<string, unknown> | null;

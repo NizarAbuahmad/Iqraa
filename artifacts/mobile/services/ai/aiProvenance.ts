@@ -43,7 +43,7 @@ export type AiSourceReason =
 /** Which generator ran — matches the API path segment, e.g. 'lesson-plan'. */
 export type AiGenerationKind =
   | 'lesson-plan' | 'worksheet' | 'quiz' | 'activity' | 'homework'
-  | 'classroom-activity' | 'prompt-slides' | 'lesson-teaching' | 'infographic' | 'chat';
+  | 'classroom-activity' | 'prompt-slides' | 'lesson-teaching' | 'infographic' | 'chat' | 'solve';
 
 export interface AiGenerationRecord {
   kind: AiGenerationKind;
@@ -184,15 +184,48 @@ export function servedReasonOf(out: unknown): 'quota' | 'budget' | null {
 
 export function aiErrorMessageKey(
   e: unknown,
-): 'aiQuotaSpent' | 'aiUnavailable' | 'noQuestionBank' | 'generationFailed' {
+): 'aiQuotaSpent' | 'aiUnavailable' | 'noQuestionBank' | 'noQuestionBankLiveFailed' | 'generationFailed' {
   if (!e || typeof e !== 'object') return 'generationFailed';
   const code = (e as { code?: unknown }).code;
   if (code === 'user_quota_exceeded' || code === 'budget_exceeded') return 'aiQuotaSpent';
   if (code === 'live_mode_off') return 'aiUnavailable';
   // Thrown by the offline generator for a subject with no question bank — see
   // `NoQuestionBankError`. Not «try again»: it will say the same thing.
-  if (code === 'no_question_bank') return 'noQuestionBank';
+  if (code === 'no_question_bank') {
+    // Reached the offline generator only because a live call failed: the demo
+    // sentence («في النسخة التجريبية») would be false, and the live failure is
+    // the thing the teacher can actually fix.
+    return liveFailureOf(e) ? 'noQuestionBankLiveFailed' : 'noQuestionBank';
+  }
   return 'generationFailed';
+}
+
+/**
+ * Why the live call failed, when the offline fallback that followed it then
+ * refused for want of a question bank. `generateWithProvenance` attaches it as
+ * `liveError`; null for every other error.
+ */
+export function liveFailureOf(e: unknown): string | null {
+  if (!e || typeof e !== 'object') return null;
+  const live = (e as { liveError?: unknown }).liveError;
+  return typeof live === 'string' && live.trim() ? live : null;
+}
+
+/**
+ * The sentence a screen shows for a failed generation.
+ *
+ * Normally just the message for `aiErrorMessageKey`: raw error text such as
+ * "HTTP 500" is not something a teacher reads, and the badge records it. The
+ * one exception is a live failure that the offline path could not cover. There
+ * the teacher has nothing else to act on, so the real reason is appended.
+ */
+export function aiErrorText(
+  e: unknown,
+  t: (key: ReturnType<typeof aiErrorMessageKey> | 'aiErrorReason') => string,
+): string {
+  const message = t(aiErrorMessageKey(e));
+  const reason = liveFailureOf(e);
+  return reason ? `${message}\n${t('aiErrorReason')} ${reason}` : message;
 }
 
 /**
@@ -262,7 +295,16 @@ export async function generateWithProvenance<T>(
     }
     console.warn(`[RemoteAIService] ${kind} fallback:`, e);
     recordGeneration({ kind, source: 'mock', reason: 'fallback', error, at: now() });
-    return mock();
+    try {
+      return await mock();
+    } catch (mockError) {
+      // The offline generator has no bank for this lesson. Saying so alone
+      // blames the demo; keep the real reason the live call failed.
+      if (mockError && typeof mockError === 'object' && (mockError as { code?: unknown }).code === 'no_question_bank') {
+        (mockError as { liveError?: string }).liveError = error;
+      }
+      throw mockError;
+    }
   }
 }
 

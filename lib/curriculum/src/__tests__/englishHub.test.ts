@@ -106,3 +106,9 @@ test('allHubWords is distinct', () => {
   assert.equal(new Set(words).size, words.length);
   assert.ok(words.length > 400);
 });
+
+test('"robot" is رجل آلي, as a Grade 1 English teacher asked (2026-10-15)', () => {
+  const glosses = ENGLISH_HUB_LESSONS.flatMap(l => l.words).filter(w => w.en === 'robot').map(w => w.ar);
+  assert.ok(glosses.length > 0);
+  for (const ar of glosses) assert.equal(ar, 'رجل آلي');
+});

@@ -90,6 +90,42 @@ describe('parseMathLine — fractions', () => {
     }
   });
 
+  // Live bug (2026-10-16, the hydrogen-energy quiz question): «E = −13.6/n²» drew «−13.» then a
+  // stacked 6 over n then a stray ². The numerator was read as a run of digits and letters, which
+  // stops at the decimal point, so only «6» was taken; the denominator stopped at the Unicode ².
+  it('takes a whole decimal as the numerator, and a Unicode power as part of the denominator', () => {
+    assert.deepEqual(parseMathLine('E = −13.6/n²'), [
+      { kind: 'text', text: 'E = −' },
+      { kind: 'frac', num: [{ kind: 'text', text: '13.6' }], den: [{ kind: 'text', text: 'n²' }] },
+    ]);
+  });
+
+  it('takes decimals on either side of the bar, with a point or a comma', () => {
+    assert.deepEqual(parseMathLine('13.6/2'), [{ kind: 'frac', num: [{ kind: 'text', text: '13.6' }], den: [{ kind: 'text', text: '2' }] }]);
+    assert.deepEqual(parseMathLine('1/2.5'), [{ kind: 'frac', num: [{ kind: 'text', text: '1' }], den: [{ kind: 'text', text: '2.5' }] }]);
+    assert.deepEqual(parseMathLine('4,18/2'), [{ kind: 'frac', num: [{ kind: 'text', text: '4,18' }], den: [{ kind: 'text', text: '2' }] }]);
+    assert.deepEqual(parseMathLine('٣.٦/٢'), [{ kind: 'frac', num: [{ kind: 'text', text: '٣.٦' }], den: [{ kind: 'text', text: '٢' }] }]);
+  });
+
+  it('does not glue a sentence-ending point to the number after it', () => {
+    // «5.» is the end of a sentence, not the start of a decimal: only «6» is the numerator.
+    assert.deepEqual(parseMathLine('x = 5. 6/n'), [
+      { kind: 'text', text: 'x = 5. ' },
+      { kind: 'frac', num: [{ kind: 'text', text: '6' }], den: [{ kind: 'text', text: 'n' }] },
+    ]);
+    // a point with a letter on one side is not a decimal either
+    assert.deepEqual(parseMathLine('a.6/n'), [
+      { kind: 'text', text: 'a.' },
+      { kind: 'frac', num: [{ kind: 'text', text: '6' }], den: [{ kind: 'text', text: 'n' }] },
+    ]);
+  });
+
+  it('keeps a power on the denominator only when what it sits on is a simple token', () => {
+    assert.deepEqual(parseMathLine('3/4²'), [{ kind: 'frac', num: [{ kind: 'text', text: '3' }], den: [{ kind: 'text', text: '4²' }] }]);
+    // a lone power with no base is not a denominator
+    assert.deepEqual(parseMathLine('3/²'), [{ kind: 'text', text: '3/²' }]);
+  });
+
   it('leaves date-like or wordy slashes alone', () => {
     // "ص/م" style abbreviations: single letters DO match, but a slash next to
     // a space or multi-word text must not become a fraction.
@@ -207,6 +243,14 @@ describe('mathLineToUnicode', () => {
 });
 
 describe('isolateForeignRuns', () => {
+  it('a sentence\'s closing full stop stays outside the isolate', () => {
+    assert.equal(
+      isolateForeignRuns('العدد 3 يُضرب في كل حد داخل القوس: 3(x − 1) = 3x − 3.'),
+      'العدد 3 يُضرب في كل حد داخل القوس: ⁦3(x − 1) = 3x − 3⁩.',
+    );
+    assert.equal(isolateForeignRuns('x = 2.5'), '⁦x = 2.5⁩', 'a decimal point inside the run is kept');
+    assert.equal(isolateForeignRuns('أ.'), 'أ.', 'a lone dot is still left alone');
+  });
   it('wraps each Latin/math run embedded in Arabic prose in bidi isolates', () => {
     const out = isolateForeignRuns('إذا كان f(x) = 2x + 3 و g(x) = x²');
     assert.equal(out, 'إذا كان ⁦f(x) = 2x + 3⁩ و ⁦g(x) = x²⁩');
@@ -244,6 +288,32 @@ describe('isolateForeignRuns', () => {
   it('keeps a displacement formula whole, trailing squared term included', () => {
     const out = isolateForeignRuns('السرعة اللحظية باستخدام s(t) = 80t - 5t²');
     assert.equal(out, 'السرعة اللحظية باستخدام ⁦s(t) = 80t - 5t²⁩');
+  });
+
+  // Found 2026-10-09 on a worksheet sent to a class: the take and review
+  // screens showed «بسّط: cos²θ + sin²θ» as «بسّط: θ + sin²θcos²». θ and °
+  // were not in the run's character class, so every θ cut the equation and
+  // the stray pieces were reordered against the Arabic around them.
+  it('keeps an equation with Greek letters and degrees in ONE isolate', () => {
+    assert.equal(isolateForeignRuns('بسّط: cos²θ + sin²θ'), 'بسّط: ⁦cos²θ + sin²θ⁩');
+    assert.equal(
+      isolateForeignRuns('حل: 2 cos θ = 1 حيث 0° ≤ θ < 360°.'),
+      'حل: ⁦2 cos θ = 1⁩ حيث ⁦0° ≤ θ < 360°⁩.',
+    );
+    assert.equal(isolateForeignRuns('مساحة الدائرة πr²'), 'مساحة الدائرة ⁦πr²⁩');
+    assert.equal(isolateForeignRuns('إذا كان α + β = 90°'), 'إذا كان ⁦α + β = 90°⁩');
+  });
+
+  // The sentence's own full stop belongs to the Arabic flow, where it lands at
+  // the sentence's end. Inside a left-to-right isolate it sat between the
+  // equation and the Arabic before it.
+  it('leaves a sentence-final full stop outside the isolate', () => {
+    assert.equal(isolateForeignRuns('أوجد قيمة sin 30°.'), 'أوجد قيمة ⁦sin 30°⁩.');
+    assert.equal(isolateForeignRuns('أوجد قيمة x = 3.5.'), 'أوجد قيمة ⁦x = 3.5⁩.');
+  });
+
+  it('does not wrap a lone degree measure, which bidi already lays out', () => {
+    assert.equal(isolateForeignRuns('زاوية قياسها 30°'), 'زاوية قياسها 30°');
   });
 
   it('isolates subscripts and comparisons as one run, not three', () => {

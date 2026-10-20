@@ -15,6 +15,12 @@
 import {
   lessonKindClauseAr, lessonKindClauseEn, usesWorkedExample, worksheetKindRuleAr, worksheetKindRuleEn,
 } from "./lessonKinds.ts";
+import { QUIZ_TYPE_ORDER, type QuizType } from "./generationShape.ts";
+import { coverageClauseAr, coverageClauseEn } from "./coverage.ts";
+import { revisionClauseAr, revisionClauseEn } from "./revision.ts";
+
+/** «السؤال الأول» … — how a ministry paper numbers its question blocks. */
+const ORDINAL_AR = ["الأول", "الثاني", "الثالث", "الرابع", "الخامس", "السادس"];
 
 // ─── System prompts ──────────────────────────────────────────────────────────
 /**
@@ -241,6 +247,20 @@ The structure this style requires — follow it across EVERY field of the plan, 
 ${LESSON_STYLE_RULES_EN[key]}`;
 }
 
+/**
+ * The teacher's voice in the Arabic plan: «سأعرض… ثم سأسأل…», not «اعرض… اسأل…».
+ *
+ * The plan is the teacher's own record of what they WILL do, and its stages are
+ * copied into the «دور المُعلم» column of the Ministry form; written as
+ * commands it read as instructions handed to somebody else. The offline plan
+ * says the same thing (`artifacts/mobile/services/ai/lessonPlanBlueprints.ts`,
+ * pinned by `lessonPlanTeacherVoice.test.ts`) — change one, change the other.
+ * Words spoken to students stay quoted and imperative, so only the teacher's
+ * own actions move. English is unchanged.
+ */
+const teacherVoiceAr = (b: any, hasPriorReview: boolean) => `صيغة النص — بصيغة المتكلم: المعلم هو الذي يكتب ما سيفعله في الحصة، فاكتب كل ما يفعله هو في ${hasPriorReview ? '"priorReview" و' : ""}"introduction" و"mainActivity" و"guidedPractice" و"independentPractice" و"closure" و"assessment" و"differentiation"${b.ministryRoles ? " وفي حقل \"ministryRoles\" (\"teacher\")" : ""} بضمير المتكلم وبصيغة المضارع المستقبل: «سأعرض الظاهرة دون أن أفسّرها، ثم سأسأل: «ماذا لاحظتم؟»، وسأسجّل التوقعات على السبورة»، ولا تستخدم صيغة الأمر («اعرض، اسأل، فسّر، صحّح»).
+أما ما يفعله الطلبة فاكتبه بصيغة الغائب («يكتب كل طالب…»)، وما يقوله المعلم لهم حرفيًا فضعه بين «» كما هو.`;
+
 // ─── Prompt builders ─────────────────────────────────────────────────────────
 /** The subject-kind clause on its own lines, or nothing for maths and unknown subjects. */
 const kindBlockAr = (b: any) => { const c = lessonKindClauseAr(b); return c ? `\n${c}` : ""; };
@@ -255,7 +275,8 @@ export function lessonPlanPromptAr(b: any): string {
   return `أنشئ خطة درس كاملة لمادة ${b.subject} للصف ${b.grade} حول موضوع "${b.topic}"، مدتها ${b.duration ?? 45} دقيقة.
 ${b.objectives ? `الأهداف المحددة:\n${b.objectives}` : ""}
 ${b.additionalContext ? `سياق إضافي: ${b.additionalContext}` : ""}
-${lessonStyleClauseAr(b)}${kindBlockAr(b)}
+${lessonStyleClauseAr(b)}${kindBlockAr(b)}${revisionClauseAr(b, "plan")}
+${teacherVoiceAr(b, hasPriorReview)}
 ${hasPriorReview ? `
 خصّص 5-10 دقائق في بداية الحصة لمراجعة معارف سابقة قد لا يتقنها بعض الطلبة، واكتب خطة هذه المراجعة في حقل "priorReview". هذه مراجعة تمهيدية وليست من أهداف هذا الدرس، فلا تُدرجها ضمن "objectives".
 ${priorConcepts ? `مفاهيم من المنهج يجب مراجعتها حرفيًا (لا تختلق غيرها):\n- ${priorConcepts.join("\n- ")}` : ""}
@@ -279,10 +300,10 @@ ${priorNotes ? `ملاحظات المعلم عن موضوعات سابقة (قد
   "differentiation": "استراتيجيات التمييز",
   "homework": "الواجب البيتي المقترح"${b.ministryRoles ? `,
   "ministryRoles": [
-    { "teacher": "دور المعلم في مرحلة التهيئة والاندماج", "learner": "دور المتعلم في المرحلة نفسها" },
-    { "teacher": "دور المعلم في مرحلة الشرح والتفسير", "learner": "دور المتعلم في المرحلة نفسها" },
-    { "teacher": "دور المعلم في مرحلة التوسع ودعم التميز", "learner": "دور المتعلم في المرحلة نفسها" },
-    { "teacher": "دور المعلم في مرحلة تأكيد التعلم", "learner": "دور المتعلم في المرحلة نفسها" }
+    { "teacher": "ما سأفعله أنا المعلم في مرحلة التهيئة والاندماج (بصيغة سأ…)", "learner": "دور المتعلم في المرحلة نفسها" },
+    { "teacher": "ما سأفعله أنا المعلم في مرحلة الشرح والتفسير (بصيغة سأ…)", "learner": "دور المتعلم في المرحلة نفسها" },
+    { "teacher": "ما سأفعله أنا المعلم في مرحلة التوسع ودعم التميز (بصيغة سأ…)", "learner": "دور المتعلم في المرحلة نفسها" },
+    { "teacher": "ما سأفعله أنا المعلم في مرحلة تأكيد التعلم (بصيغة سأ…)", "learner": "دور المتعلم في المرحلة نفسها" }
   ]` : ""}
 }`;
 }
@@ -296,7 +317,7 @@ export function lessonPlanPromptEn(b: any): string {
   return `Create a complete lesson plan for ${b.subject}, ${b.grade}, on the topic "${b.topic}", duration ${b.duration ?? 45} minutes.
 ${b.objectives ? `Specified objectives:\n${b.objectives}` : ""}
 ${b.additionalContext ? `Additional context: ${b.additionalContext}` : ""}
-${lessonStyleClauseEn(b)}${kindBlockEn(b)}
+${lessonStyleClauseEn(b)}${kindBlockEn(b)}${revisionClauseEn(b, "plan")}
 ${hasPriorReview ? `
 Set aside 5-10 minutes at the start of the lesson to review prior material some students may not have fully grasped, and put that review plan in a "priorReview" field. This is a warm-up review, not one of this lesson's own objectives — do not list it under "objectives".
 ${priorConcepts ? `Curriculum concepts to review verbatim (do not invent others):\n- ${priorConcepts.join("\n- ")}` : ""}
@@ -361,10 +382,60 @@ Required structure (worked example, then faded, then independent):
 5. If the lesson has no multi-step procedure worth modelling (a definitions-only lesson, say), omit "workedExample", make no question half-solved, and give ${n} questions as usual.`;
 }
 
+/**
+ * What each worksheet question type carries in JSON.
+ *
+ * The prompt's example shows one `{ "text", "points" }` item, so a model asked
+ * for multiple choice had nowhere shown to put the options — they arrived
+ * inside `text` or not at all, and `buildWorksheetHTML` (which prints
+ * `options` as lettered rows) drew ruled lines under them. Only the requested
+ * types are described, like the quiz's contracts.
+ */
+const WORKSHEET_TYPE_SHAPE_AR: Record<string, string> = {
+  multiple_choice: `- multiple_choice: السؤال يحمل "options" أربعة خيارات نصّية بلا أحرف ترقيم، واحد منها صحيح، والمشتّتات أخطاء شائعة؛ وإجابته في answerKey نصّ الخيار الصحيح.`,
+  true_false: `- true_false: "text" عبارة خبرية صحيحة أو خاطئة بلا لبس، و"options": ["صح", "خطأ"]؛ وإجابته في answerKey «صح» أو «خطأ» مع تصويب العبارة الخاطئة.`,
+  fill_blank: `- fill_blank: "text" جملة فيها فراغ أو فراغان بعشر شرطات سفلية «__________» بلا "options"؛ وإجابته الكلمات الناقصة بالترتيب.`,
+  short_answer: `- short_answer: سؤال يُجاب عنه بجملة أو جملتين أو بحل قصير، بلا "options".`,
+  word_problem: `- word_problem: مسألة حياتية بسيناريو واقعي، بلا "options"؛ وإجابته خطوات الحل باختصار ثم الناتج.`,
+};
+
+const WORKSHEET_TYPE_SHAPE_EN: Record<string, string> = {
+  multiple_choice: `- multiple_choice: the question carries "options" — four plain option texts with no leading letters, one correct, distractors being common mistakes; its answerKey entry is the correct option's text.`,
+  true_false: `- true_false: "text" is one declarative statement, unambiguously true or false, with "options": ["True", "False"]; its answerKey entry is "True" or "False" plus the corrected statement when false.`,
+  fill_blank: `- fill_blank: "text" is a sentence with one or two blanks written as ten underscores "__________", no "options"; its answer lists the missing words in order.`,
+  short_answer: `- short_answer: answered in a sentence or two or a short working, no "options".`,
+  word_problem: `- word_problem: a realistic scenario, no "options"; its answer is the working in brief, then the result.`,
+};
+
+function worksheetTypeShapesAr(types: string[]): string {
+  const lines = types.map(t => WORKSHEET_TYPE_SHAPE_AR[t]).filter(Boolean);
+  return lines.length ? `شكل كل نوع (و"type" كل قسم أحد هذه الأنواع فقط):\n${lines.join("\n")}` : "";
+}
+
+function worksheetTypeShapesEn(types: string[]): string {
+  const lines = types.map(t => WORKSHEET_TYPE_SHAPE_EN[t]).filter(Boolean);
+  return lines.length ? `The shape of each type (and every section's "type" is one of these only):\n${lines.join("\n")}` : "";
+}
+
+/**
+ * Question types the MODEL is asked to write. صِل / رتّب / أين الخطأ؟ / ارسم
+ * are built from the question bank by the app (`worksheetFormats.ts` in
+ * artifacts/mobile) and appended to the paper afterwards — each counts inside
+ * the teacher's total, which the client has already reduced by that many. A
+ * model told to write them would invent unverified items, so they never reach
+ * the prompt; a list left empty falls back to short answer.
+ */
+const BANK_ONLY_TYPES = new Set(["match", "order", "spot_error", "graph"]);
+function worksheetModelTypes(raw: unknown): string[] {
+  const types = (Array.isArray(raw) && raw.length ? (raw as string[]) : ["short_answer"]).filter(t => !BANK_ONLY_TYPES.has(t));
+  if (types.length === 0) types.push("short_answer");
+  return types;
+}
+
 export function worksheetPromptAr(b: any): string {
   const n = b.numQuestions ?? 8;
   const isHW = b.homework;
-  const types = b.questionTypes ?? ["short_answer"];
+  const types = worksheetModelTypes(b.questionTypes);
   const wantsWP = types.includes("word_problem");
   // Worked example, half-solved question and `solution` rows only where there is a calculation to model.
   const example = !isHW && usesWorkedExample(b);
@@ -373,10 +444,11 @@ export function worksheetPromptAr(b: any): string {
     : null;
   return `أنشئ ${isHW ? "واجبًا منزليًا" : "ورقة عمل"} لمادة ${b.subject} للصف ${b.grade} حول "${b.topic}".
 عدد الأسئلة: ${n}
-أنواع الأسئلة المطلوبة: ${types.join(", ")}
+أنواع الأسئلة المطلوبة (لا تستعمل غيرها، ووزّع الأسئلة عليها): ${types.join(", ")}
+${worksheetTypeShapesAr(types)}
 ${difficultyClauseAr(b)}
 ${wantsWP ? "\nيجب تضمين مسألة حياتية واحدة على الأقل (سيناريو واقعي يتطلب تطبيق مفاهيم الدرس، بأسلوب «حل مسائل حياتية»)." : ""}
-${prior ? `\nابدأ بقسم «مراجعة سابقة» فيه سؤالان أو ثلاثة فقط مبنية حرفيًا على هذه المفاهيم السابقة (لا تختلق غيرها):\n- ${prior.join("\n- ")}` : ""}
+${prior ? `\nابدأ بقسم «مراجعة سابقة» فيه سؤالان أو ثلاثة فقط مبنية حرفيًا على هذه المفاهيم السابقة (لا تختلق غيرها):\n- ${prior.join("\n- ")}` : ""}${coverageClauseAr(b, !!example)}
 ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه لصياغة أسئلة دقيقة ومرتبطة بالمنهج):\n${b.additionalContext}` : ""}
 ${example ? workedExampleRuleAr(n) : isHW ? "" : worksheetKindRuleAr(b, n)}
 أعد JSON بالشكل الآتي (بالعربية):
@@ -408,7 +480,7 @@ ${example ? workedExampleRuleAr(n) : isHW ? "" : worksheetKindRuleAr(b, n)}
 export function worksheetPromptEn(b: any): string {
   const n = b.numQuestions ?? 8;
   const isHW = b.homework;
-  const types = b.questionTypes ?? ["short_answer"];
+  const types = worksheetModelTypes(b.questionTypes);
   const wantsWP = types.includes("word_problem");
   const example = !isHW && usesWorkedExample(b);
   const prior = b.includePriorReview && Array.isArray(b.priorKnowledge) && b.priorKnowledge.length
@@ -417,9 +489,10 @@ export function worksheetPromptEn(b: any): string {
   return `Create a ${isHW ? "homework assignment" : "worksheet"} for ${b.subject}, ${b.grade}, on "${b.topic}".
 Number of questions: ${n}
 ${difficultyClauseEn(b)}
-Question types: ${types.join(", ")}
+Question types requested (use no others, and spread the questions across them): ${types.join(", ")}
+${worksheetTypeShapesEn(types)}
 ${wantsWP ? "\nInclude at least one real-life word problem (a realistic scenario that requires applying the lesson concepts)." : ""}
-${prior ? `\nStart with a "Prior knowledge review" section of 2–3 questions drawn only from these concepts (do not invent others):\n- ${prior.join("\n- ")}` : ""}
+${prior ? `\nStart with a "Prior knowledge review" section of 2–3 questions drawn only from these concepts (do not invent others):\n- ${prior.join("\n- ")}` : ""}${coverageClauseEn(b, !!example)}
 ${b.additionalContext ? `\nTextbook context (use this to craft accurate, curriculum-aligned questions):\n${b.additionalContext}` : ""}
 ${example ? workedExampleRuleEn(n) : isHW ? "" : worksheetKindRuleEn(b, n)}
 Return JSON in this exact shape:
@@ -448,13 +521,78 @@ Return JSON in this exact shape:
 Important: every question must have a matching answerKey entry.`;
 }
 
+// ─── Quiz ────────────────────────────────────────────────────────────────────
+/**
+ * What each quiz question type must look like, and how the paper is laid out.
+ *
+ * The prompt used to send the teacher's picks as raw tokens («أنواع الأسئلة:
+ * multiple_choice, true_false») beside a single MCQ example, so the model had
+ * nothing to say what a true/false or fill-blank item *is* here, nor that
+ * other types were off limits, nor how many of each. Papers came back all
+ * MCQ, or with true/false items carrying four options, in whatever order the
+ * model felt like — and the server checked only that `questions` existed.
+ *
+ * `normalizeQuiz` (`generationShape.ts`) is the backstop for a model that
+ * still ignores this; the two must agree on type names, the true/false option
+ * pair and `QUIZ_TYPE_ORDER`. The offline generator in
+ * `artifacts/mobile/services/ai/generators.ts` builds the same grouped order.
+ */
+const QUIZ_TYPE_CONTRACT_AR: Record<QuizType, string> = {
+  multiple_choice: `"multiple_choice": "options" أربعة خيارات نصّية بلا أحرف ترقيم في أولها (لا «أ)» ولا «1.»)، واحد منها فقط صحيح، و"correctAnswer" نصّ الخيار الصحيح حرفيًا كما ورد في "options". المشتّتات أخطاء شائعة يقع فيها الطالب فعلًا (خطأ حسابي معروف، خلط بين مصطلحين، شرط منسي) — وممنوع «جميع ما سبق» و«لا شيء مما سبق».`,
+  true_false: `"true_false": "text" عبارة خبرية واحدة صحيحة أو خاطئة بلا أي لبس، "options": ["صح", "خطأ"] دائمًا، و"correctAnswer" إحداهما حرفيًا. اجعل نصف العبارات تقريبًا خاطئة، والخطأ في تفصيل محدد (رقم، مصطلح، شرط، اتجاه) لا في عبارة سخيفة يرفضها أي طالب.`,
+  fill_blank: `"fill_blank": "text" جملة من الدرس فيها فراغ واحد أو اثنان مكتوبان بعشر شرطات سفلية «__________»، بلا "options"، و"correctAnswer" الكلمات أو القيم الناقصة بالترتيب مفصولة بـ«؛».`,
+  short_answer: `"short_answer": سؤال يُجاب عنه بجملة أو جملتين أو بحل قصير (احسب، علّل، قارن، اذكر)، بلا "options"، و"correctAnswer" الإجابة النموذجية — وفي الرياضيات والعلوم خطوات الحل باختصار ثم الناتج.`,
+};
+
+const QUIZ_TYPE_CONTRACT_EN: Record<QuizType, string> = {
+  multiple_choice: `"multiple_choice": "options" is four plain option texts with no leading letters or numbers (no "A)", no "1."), exactly one correct, and "correctAnswer" is that option's text verbatim as it appears in "options". Distractors are mistakes a student actually makes (a known slip, two confused terms, a forgotten condition) — never "all of the above" or "none of the above".`,
+  true_false: `"true_false": "text" is one declarative statement that is unambiguously true or false, "options" is always ["True", "False"], and "correctAnswer" is one of those two verbatim. Make roughly half the statements false, with the error in a specific detail (a number, a term, a condition, a direction), never an absurdity.`,
+  fill_blank: `"fill_blank": "text" is a sentence from the lesson with one or two blanks written as ten underscores "__________", no "options", and "correctAnswer" lists the missing words or values in order, separated by ";".`,
+  short_answer: `"short_answer": a question answered in a sentence or two or a short working (calculate, justify, compare, state), no "options", and "correctAnswer" is the model answer — in maths and science the working in brief, then the result.`,
+};
+
+const QUIZ_SECTION_NAME_AR: Record<QuizType, string> = {
+  multiple_choice: "الاختيار من متعدد",
+  true_false: "صح / خطأ",
+  fill_blank: "أكمل الفراغ",
+  short_answer: "الإجابة القصيرة",
+};
+
+/** The teacher's picks, in ministry order, with anything unknown dropped. */
+export function quizTypes(b: any): QuizType[] {
+  const asked = Array.isArray(b.questionTypes) ? b.questionTypes.map(String) : [];
+  const known = QUIZ_TYPE_ORDER.filter(t => asked.includes(t));
+  return known.length ? known : ["multiple_choice", "true_false"];
+}
+
+const QUIZ_VARIETY_RULE_AR = `تنويع الأسئلة (اختبار مدرسي حقيقي لا قائمة متشابهة):
+- نوّع المستويات المعرفية: استرجاع، فهم، تطبيق، وسؤال واحد على الأقل يتطلب تحليلًا أو ربطًا بموقف من الحياة.
+- نوّع صيغ الأسئلة: لا تبدأ أكثر من سؤالين بالصيغة نفسها («أيّ مما يأتي…»)، واستعمل صيغ الكتاب: «احسب»، «علّل»، «قارن»، «ما ناتج…»، «ما المقصود بـ…»، «أكمل».
+- غطِّ أجزاء الدرس المختلفة، ولا تسأل عن الفكرة نفسها مرتين بصياغتين.
+- المحتوى من الكتاب المدرسي وبمصطلحاته، ولا تشر في نص السؤال إلى «الدرس» أو «الفقرة» أو «الفيديو».`;
+
+const QUIZ_VARIETY_RULE_EN = `Vary the questions (a real school exam, not a list of look-alikes):
+- Vary the cognitive demand: recall, comprehension, application, and at least one item that requires analysis or a link to a real-life situation.
+- Vary the stems: no more than two questions open the same way ("Which of the following…"); use the book's own forms: "Calculate", "Justify", "Compare", "What is the result of…", "What is meant by…", "Complete".
+- Cover different parts of the lesson; never ask the same idea twice in two wordings.
+- Content and terminology come from the textbook; the question text never refers to "the lesson", "the paragraph" or "the video".`;
+
 export function quizPromptAr(b: any): string {
   const n = b.numQuestions ?? 10;
   const marks = b.totalMarks ?? 20;
+  const types = quizTypes(b);
+  const sections = types.map((t, i) => `السؤال ${ORDINAL_AR[i]}: ${QUIZ_SECTION_NAME_AR[t]}`).join("، ثم ");
   return `أنشئ اختبارًا لمادة ${b.subject} للصف ${b.grade} حول "${b.topic}".
 عدد الأسئلة: ${n}، العلامة الكاملة: ${marks}
-أنواع الأسئلة: ${(b.questionTypes ?? ["multiple_choice", "true_false"]).join(", ")}
 ${quizDifficultyClauseAr(b)}
+
+أنواع الأسئلة المطلوبة — لا تستعمل غيرها، ووزّع الأسئلة الـ${n} عليها بالتساوي قدر الإمكان: ${types.join(", ")}
+رتّب الورقة كما في اختبارات وزارة التربية والتعليم الأردنية: كل نوع في مجموعة متتالية، بهذا الترتيب: ${sections}. لا تخلط الأنواع داخل المجموعة الواحدة.
+شكل كل نوع في JSON:
+${types.map(t => `- ${QUIZ_TYPE_CONTRACT_AR[t]}`).join("\n")}
+العلامات: مجموع "points" لكل الأسئلة يساوي ${marks} بالضبط؛ أسئلة الاختيار وصح/خطأ وأكمل علامة أو علامتان للسؤال، والأسئلة المفتوحة أكثر.
+
+${QUIZ_VARIETY_RULE_AR}${coverageClauseAr(b)}
 ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه لصياغة أسئلة دقيقة ومرتبطة بالمنهج):\n${b.additionalContext}` : ""}
 أعد JSON بالشكل الآتي (بالعربية):
 {
@@ -464,10 +602,10 @@ ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه 
   "questions": [
     {
       "id": "q1",
-      "type": "multiple_choice",
+      "type": "${types[0]}",
       "text": "نص السؤال",
-      "options": ["أ) خيار", "ب) خيار", "ج) خيار", "د) خيار"],
-      "correctAnswer": "أ) الخيار الصحيح",
+      "options": ["خيار", "خيار", "خيار", "خيار"],
+      "correctAnswer": "نص الخيار الصحيح",
       "points": 2,
       "explanation": "تفسير الإجابة"
     }
@@ -478,10 +616,19 @@ ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه 
 export function quizPromptEn(b: any): string {
   const n = b.numQuestions ?? 10;
   const marks = b.totalMarks ?? 20;
+  const types = quizTypes(b);
+  const sections = types.map((t, i) => `Question ${i + 1}: ${t}`).join(", then ");
   return `Create a quiz for ${b.subject}, ${b.grade}, on "${b.topic}".
 Number of questions: ${n}, total marks: ${marks}
-Question types: ${(b.questionTypes ?? ["multiple_choice", "true_false"]).join(", ")}
 ${quizDifficultyClauseEn(b)}
+
+Question types requested — use no others, and spread the ${n} questions across them as evenly as the count allows: ${types.join(", ")}
+Lay the paper out as a Jordanian Ministry of Education exam does: each type in one consecutive block, in this order: ${sections}. Never mix types inside a block.
+The JSON shape of each type:
+${types.map(t => `- ${QUIZ_TYPE_CONTRACT_EN[t]}`).join("\n")}
+Marks: the "points" of all questions sum to exactly ${marks}; choice, true/false and fill-blank items carry one or two marks each, open questions more.
+
+${QUIZ_VARIETY_RULE_EN}${coverageClauseEn(b)}
 ${b.additionalContext ? `\nTextbook context (use this to craft accurate, curriculum-aligned questions):\n${b.additionalContext}` : ""}
 Return JSON in this exact shape:
 {
@@ -491,15 +638,79 @@ Return JSON in this exact shape:
   "questions": [
     {
       "id": "q1",
-      "type": "multiple_choice",
+      "type": "${types[0]}",
       "text": "Question text",
-      "options": ["A) option", "B) option", "C) option", "D) option"],
-      "correctAnswer": "A) correct option",
+      "options": ["option", "option", "option", "option"],
+      "correctAnswer": "the correct option's text",
       "points": 2,
       "explanation": "Explanation of answer"
     }
   ]
 }`;
+}
+
+/**
+ * The block appended to a quiz request when the first reply came back short.
+ *
+ * A model asked for 20 questions will often return 10 and call it done, in a
+ * perfectly valid reply that nothing downstream can tell is incomplete. The
+ * route counts, and asks again for only what is missing — with the stems it
+ * already has, so the second batch is new questions and not a rewording of the
+ * first. The reply is shaped like the original (a title is still required to
+ * pass the shape check) but its `questions` holds only the new ones.
+ *
+ * `repeated` are questions the paper asks once too often (`quizRepeats`): the
+ * new questions replace them, so the model is told which ask not to write again.
+ */
+export function quizTopUpBlock(isAr: boolean, have: string[], missing: number, repeated: string[] = []): string {
+  const list = have.map((t, i) => `${i + 1}. ${t.slice(0, 160)}`).join("\n");
+  const again = repeated.map(t => `- ${t.slice(0, 160)}`).join("\n");
+  return isAr
+    ? `
+
+الورقة تحتوي حاليًا على ${have.length} سؤالًا، وهذه نصوصها:
+${list}
+${repeated.length ? `
+هذه الأسئلة تكرر سؤالًا آخر في الورقة بأرقام أو بصياغة أخرى، وستُستبدل بالأسئلة الجديدة، فلا تكتب سؤالًا من نوعها:
+${again}
+` : ""}
+اكتب ${missing} سؤالًا إضافيًا بالضبط، من الأنواع المطلوبة نفسها وبالشكل نفسه، عن أفكار وحقائق مختلفة عمّا سبق ولا تكرر أيًّا منها ولا تعد صياغته. أعد JSON بالشكل نفسه لكن "questions" فيه الأسئلة الجديدة وحدها (ترقيمها من q${have.length + 1}).`
+    : `
+
+The paper so far has ${have.length} questions, with these texts:
+${list}
+${repeated.length ? `
+These questions repeat another one on the paper with other numbers or in other words, and the new questions will replace them, so write none of their kind:
+${again}
+` : ""}
+Write exactly ${missing} MORE questions, of the same requested types and in the same shape, about different ideas and facts from the above — do not repeat or reword any of them. Return the same JSON shape, but "questions" holds only the new questions (numbered from q${have.length + 1}).`;
+}
+
+/**
+ * The block appended to a worksheet or homework request when the first reply
+ * came back short — the quiz's counterpart (`quizTopUpBlock`), for a paper whose
+ * questions sit in sections beside an answer key.
+ *
+ * The new questions arrive as ONE extra section, so the merge never has to
+ * guess where they belong; the answer key carries only their entries, numbered
+ * on from the questions already there. No worked example: the first reply
+ * already has whatever it was going to have.
+ */
+export function worksheetTopUpBlock(isAr: boolean, have: string[], missing: number): string {
+  const list = have.map((t, i) => `${i + 1}. ${t.slice(0, 160)}`).join("\n");
+  return isAr
+    ? `
+
+الورقة تحتوي حاليًا على ${have.length} سؤالًا، وهذه نصوصها:
+${list}
+
+اكتب ${missing} سؤالًا إضافيًا بالضبط، من أنواع الأسئلة المطلوبة نفسها وبالشكل نفسه، عن أفكار مختلفة عمّا سبق ولا تكرر أيًّا منها ولا تعد صياغته. أعد JSON بالشكل نفسه (مع "title" و"instructions" كما هما بإيجاز) لكن "sections" فيه قسم واحد جديد عنوانه «تمارين إضافية» يضم الأسئلة الجديدة وحدها، و"answerKey" فيه إجابات الأسئلة الجديدة وحدها بترقيم "num" يبدأ من ${have.length + 1}. بلا "workedExample".`
+    : `
+
+The paper so far has ${have.length} questions, with these texts:
+${list}
+
+Write exactly ${missing} MORE questions, of the same requested types and in the same shape, about different ideas from the above — do not repeat or reword any of them. Return the same JSON shape (with "title" and "instructions" repeated briefly), but "sections" holds ONE new section titled "Additional practice" with only the new questions, and "answerKey" holds only the new questions' answers, with "num" numbered from ${have.length + 1}. No "workedExample".`;
 }
 
 // ─── Difficulty ──────────────────────────────────────────────────────────────
@@ -637,7 +848,7 @@ ${b.objectives ? `هدف النشاط: ${b.objectives}` : ""}
 ${b.additionalContext ? `\nسياق الكتاب المدرسي:\n${b.additionalContext}` : ""}
 
 بنية هذا النوع من الأنشطة — التزم بها ولا تستبدلها ببنية عامة:
-${rule}
+${rule}${revisionClauseAr(b, "activity")}
 
 قواعد عامة:
 - مجموع durationMin لكل الخطوات يجب أن يساوي ${dur} بالضبط.
@@ -671,7 +882,7 @@ ${b.objectives ? `Lesson objective: ${b.objectives}` : ""}
 ${b.additionalContext ? `\nTextbook context:\n${b.additionalContext}` : ""}
 
 Structure required for this format — follow it, do not substitute a generic one:
-${rule}
+${rule}${revisionClauseEn(b, "activity")}
 
 General rules:
 - The durationMin values must sum to exactly ${dur}.

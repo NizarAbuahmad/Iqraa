@@ -79,6 +79,40 @@ describe('chemistry bank', () => {
   });
 });
 
+describe('periodic table bank depth', () => {
+  // A quiz draws its tier first and a family only holds what it holds: with 5 items (2 easy,
+  // 2 medium, 1 hard) a ten-question or an "easy" paper ran out after two questions and
+  // repeated itself. These floors are what the periodic-table lessons were raised to.
+  const items = CHEM_BANK.filter(i => i.family === 'periodic_trends');
+  const tier = (t: string) => items.filter(i => i.diff === t).length;
+
+  it('holds enough for a ten-question paper with no repeat', () => {
+    assert.ok(items.length >= 15, `only ${items.length} items`);
+  });
+
+  it('holds enough in every tier for an easy-only, medium-only or hard-only paper', () => {
+    assert.ok(tier('easy') >= 5, `easy: ${tier('easy')}`);
+    assert.ok(tier('medium') >= 6, `medium: ${tier('medium')}`);
+    assert.ok(tier('hard') >= 4, `hard: ${tier('hard')}`);
+  });
+
+  it('never repeats a question stem inside the family', () => {
+    const stems = items.map(i => i.promptAr);
+    assert.equal(new Set(stems).size, stems.length);
+  });
+
+  it('serves a ten-question paper on the unit name without repeating an item', () => {
+    const seen = new Set<string>();
+    const session = new Set<string>();
+    for (let i = 0; i < 10; i++) {
+      const q = takeConcreteChem('multiple_choice', 'الجدول الدوري وخواص العناصر', null, 'medium', 'ar', 1, session);
+      assert.ok(q, `question ${i + 1} came back empty`);
+      assert.ok(!seen.has(q.text), `question ${i + 1} repeated: ${q.text}`);
+      seen.add(q.text);
+    }
+  });
+});
+
 describe('detectChemFamily', () => {
   // Titles copied from the catalogs in lib/curriculum/src/data — if a book is
   // re-ingested with reworded titles, this is what notices.
@@ -87,6 +121,11 @@ describe('detectChemFamily', () => {
     ['النموذج الميكانيكي الموجي للذرة', 'atomic_structure'],
     ['التوزيع الإلكتروني للذرات', 'electron_config'],
     ['الخصائص الدورية للعناصر', 'periodic_trends'],
+    // The unit's own name (curriculum browser, a typed topic). It used to fall to general_chem,
+    // so a periodic-table quiz was asked about elements and compounds in general.
+    ['الجدول الدوري وخواص العناصر', 'periodic_trends'],
+    // The Grade 9 lesson names the periodic table too, but it is the electron-configuration lesson.
+    ['التوزيعُ الإلكترونيُّ والجدولُ الدوريُّ', 'electron_config'],
     ['الروابط الكيميائية وأنواعها', 'bonding'],
     ['الصيغ الكيميائية وخصائص المركبات', 'formulas'],
     ['التفاعلات الكيميائية', 'equations'],
@@ -126,6 +165,95 @@ describe('detectChemFamily', () => {
     assert.equal(detectChemFamily(moleLessonBlob), 'mole');
   });
 
+  // Found 2026-10-15: the Grade 9 lesson «مكوِّناتُ الذرَّةِ» says its students "run simple
+  // experiments on electrolysis and gas discharge", and the redox check ran before atom_basics,
+  // so every quick-check for the lesson was a redox question. The title-only case above passed
+  // the whole time — same blind spot as the mole lesson. Text is the lesson's own, from
+  // `lessonTextBlob` (title, ids, objectives, key concepts).
+  it('the atom-components lesson is not taken by redox for mentioning electrolysis', () => {
+    const atomComponentsLessonBlob = [
+      'مكوِّناتُ الذرَّةِ Components of Atom',
+      'أتتبَّعُ تطوُّرَ النماذجِ الذرِّيّةِ المختلفةِ. أستقصي مكوِّناتِ الذرَّةِ. أُحدِّدُ أماكنَ وجودِ مكوِّناتِ الذرَّةِ.',
+      'أتمكّنُ منْ إجراءِ تجارِبَ بسيطةٍ حولَ التحليلِ الكهربائيِّ والتفريغِ الكهربائيِّ.',
+      'أُقدِّرُ دورَ العلماءِ في التوصُّلِ إلى المعرفةِ العلميّةِ، واكتِشافِ مكوِّناتِ الذرَّةِ.',
+      'النموذجُ الذرِّيُّ نموذجُ دالتون أُنبوبُ التفريغِ الكهربائيِّ نموذجُ ثومسون جُسيماتُ ألفا نموذجُ رذرفورد النواةُ',
+    ].join(' ');
+    assert.equal(detectChemFamily(atomComponentsLessonBlob), 'atom_basics');
+  });
+
+  // Three more lessons that routed by a neighbouring topic's words (2026-10-15), all from
+  // `lessonTextBlob` text. Each used to be asked about the wrong chemistry.
+  it('the galvanic-cell lesson is not taken by thermochem for a «طاقة … تفاعل» spanning two sentences', () => {
+    const galvanicLessonBlob = [
+      'التأكسد والاختزال والخلايا الجلفانية Oxidation-Reduction and Galvanic Cells',
+      'أوضح مفهوم كل من: التأكسد، الاختزال، العامل المختزل، العامل المؤكسد، المصعد، المهبط.',
+      'أميز من المعادلة الكيميائية المادة التي تأكسدت والتي اختزلت.',
+      'أتعرف أنواع الخلايا الكهركيميائية وتحولات الطاقة فيها. أصمم خلية جلفانية، ثم أحدد أجزاءها ومبدأ عملها.',
+      'أكتب معادلات كيميائية تمثل التفاعلات نصف الخلوية والتفاعل الكلي الذي يحدث في الخلية.',
+      'التأكسد الاختزال تفاعلات التأكسد والاختزال نصف تفاعل التأكسد نصف تفاعل الاختزال العامل المؤكسد',
+    ].join(' ');
+    assert.equal(detectChemFamily(galvanicLessonBlob), 'redox');
+  });
+
+  it('the energy-changes lesson is not taken by mole for «الطاقة المولية» (molar energy)', () => {
+    const energyChangesLessonBlob = [
+      'تغيرات الطاقة في التفاعلات الكيميائية Energy Changes in Chemical Reactions',
+      'أبين أهمية الطاقة في التفاعلات الكيميائية، وأشكالها، وتطبيقاتها.',
+      'أصنف التفاعلات الكيميائية وفق الطاقة المصاحبة لها إلى ماصة وطاردة.',
+      'المحتوى الحراري التغير في المحتوى الحراري تفاعلات طاردة للحرارة تفاعلات ماصة للحرارة',
+      'طاقة الانصهار المولية طاقة التبخر المولية طاقة التجمد المولية طاقة التكاثف المولية',
+    ].join(' ');
+    assert.equal(detectChemFamily(energyChangesLessonBlob), 'thermochem');
+  });
+
+  it('the heat-capacity lesson has its own calorimetry family, not the general fallback', () => {
+    const heatCapacityLessonBlob = [
+      'الطاقة الممتصة والطاقة المنبعثة من المادة Absorbed and Emitted Energy of Matter',
+      'أحسب كمية الطاقة التي تمتصها أو تصدرها المادة.',
+      'أجري تجارب عملية حول الطاقة الممتصة والمنبعثة من المادة.',
+      'السعة الحرارية الحرارة النوعية المسعر Heat Capacity Specific Heat Calorimeter',
+    ].join(' ');
+    assert.equal(detectChemFamily(heatCapacityLessonBlob), 'calorimetry');
+  });
+
+  it('the mole still wins where the mole is the subject, plural and singular', () => {
+    assert.equal(detectChemFamily('المول والكتلة المولية'), 'mole');
+    assert.equal(detectChemFamily('أحسب عدد المولات في عينة'), 'mole');
+    assert.equal(detectChemFamily('أحسب الكتلة المولية للمركب'), 'mole');
+    assert.equal(detectChemFamily('عدد أفوجادرو'), 'mole');
+  });
+
+  // Found 2026-10-16, from the teacher review sheet's routing table: «التوزيع الإلكتروني للذرات»
+  // (Aufbau, Hund's rule) was answered with periodic-trends questions because its key terms list
+  // «طاقة التأين», one of periodic_trends' words, and that family is tested first. Text is the
+  // two neighbouring lessons' own, from `lessonTextBlob`.
+  it('the electron-configuration lesson is not taken by periodic trends for listing «طاقة التأين»', () => {
+    const electronConfigLessonBlob = [
+      'التوزيع الإلكتروني للذرات Electronic Configuration',
+      'أكتب التوزيع الإلكتروني لمجموعة من العناصر وأيوناتها. أحدد الصفات المميزة للعناصر بحسب توزيعها.',
+      'أوضح العلاقة بين موقع العنصر وخصائصه وصفاته.',
+      'مبدأ أوفباو قاعدة هوند العناصر الممثلة العناصر الانتقالية طاقة التأين',
+      "Aufbau Principle Hund's Rule The Representative Elements Transition Elements Ionization Energy",
+    ].join(' ');
+    assert.equal(detectChemFamily(electronConfigLessonBlob), 'electron_config');
+  });
+
+  it('the periodic-properties lesson itself is still periodic trends', () => {
+    const periodicLessonBlob = [
+      'الخصائص الدورية للعناصر Periodic Properties of the Elements',
+      'أتنبأ بدورية الصفات لعناصر الدورة والمجموعة في الجدول الدوري.',
+      'نصف القطر الذري شحنة النواة الفعالة طاقة التأين السالبية الكهربائية',
+      'Atomic Radius Effective Nuclear Charge Ionization Energy Electronegativity',
+    ].join(' ');
+    assert.equal(detectChemFamily(periodicLessonBlob), 'periodic_trends');
+    assert.equal(detectChemFamily('الخصائص الدورية للعناصر'), 'periodic_trends');
+  });
+
+  it('the electrolysis lesson itself is still redox', () => {
+    assert.equal(detectChemFamily('خلايا التحليل الكهربائي'), 'redox');
+    assert.equal(detectChemFamily('التأكسد والاختزال والخلايا الجلفانية أُنبوب التفريغ'), 'redox');
+  });
+
   it('still resolves the stoichiometry lesson itself by its own objectives', () => {
     const stoichiometryLessonBlob = [
       'الحسابات الكيميائية',
@@ -135,6 +263,50 @@ describe('detectChemFamily', () => {
       'أحسب المردود المئوي للتفاعل.',
     ].join(' ');
     assert.equal(detectChemFamily(stoichiometryLessonBlob), 'stoichiometry');
+  });
+
+  // A topic a teacher TYPES has no lesson text behind it, so the whole decision is made by the
+  // few words typed. Each case below was measured on 2026-10-16 (a probe of ~150 typed topics);
+  // the first group went to the WRONG family, the rest to general chemistry although the
+  // curriculum has a family for them.
+  it('does not read «قاعدة» (a rule) as «قاعدة» (a base)', () => {
+    assert.equal(detectChemFamily('قاعدة هوند'), 'electron_config');
+    assert.equal(detectChemFamily('قاعدة الثمانية'), 'bonding');
+    assert.equal(detectChemFamily('مبدأ أوفباو'), 'electron_config');
+    assert.equal(detectChemFamily('مبدأ باولي للاستبعاد'), 'electron_config');
+    assert.equal(detectChemFamily('Aufbau principle'), 'electron_config');
+    // …and the real base still is one.
+    assert.equal(detectChemFamily('القواعد وخصائصها'), 'acids_bases');
+    assert.equal(detectChemFamily('قاعدة قوية وقاعدة ضعيفة'), 'acids_bases');
+  });
+
+  it('does not take «الكمية» (quantity) for quantum theory', () => {
+    assert.equal(detectChemFamily('الكمية'), 'general_chem');
+    assert.equal(detectChemFamily('كمية المادة'), 'mole');
+    // The quantum vocabulary is still atomic structure.
+    assert.equal(detectChemFamily('الأعداد الكمية'), 'atomic_structure');
+    assert.equal(detectChemFamily('نظرية الكم'), 'atomic_structure');
+    assert.equal(detectChemFamily('نموذج بور'), 'atomic_structure');
+    assert.equal(detectChemFamily('الأطياف الذرية'), 'atomic_structure');
+  });
+
+  it('recognises the plural and inflected forms of curriculum vocabulary', () => {
+    assert.equal(detectChemFamily('المعادلات الكيميائية'), 'equations');
+    assert.equal(detectChemFamily('قانون حفظ الكتلة'), 'equations');
+    assert.equal(detectChemFamily('الخلايا الكهروكيميائية'), 'redox');
+    assert.equal(detectChemFamily('الرقم الهيدروجيني'), 'acids_bases');
+    assert.equal(detectChemFamily('تراكيب لويس'), 'bonding');
+    assert.equal(detectChemFamily('المتفاعل المحدد'), 'stoichiometry');
+    assert.equal(detectChemFamily('النسب المولية'), 'stoichiometry');
+    assert.equal(detectChemFamily('حجم الغاز المولي'), 'mole');
+    assert.equal(detectChemFamily('التفاعلات الطاردة والماصة للحرارة'), 'thermochem');
+    assert.equal(detectChemFamily('كمية الحرارة'), 'calorimetry');
+  });
+
+  it('leaves an unrelated typed topic in general chemistry', () => {
+    for (const t of ['الاتزان الكيميائي', 'سرعة التفاعل', 'المحاليل', 'الغازات', 'الكيمياء العضوية', 'الكثافة']) {
+      assert.equal(detectChemFamily(t), 'general_chem', t);
+    }
   });
 });
 
@@ -204,7 +376,9 @@ describe('takeConcreteChem', () => {
     const first = takeConcreteChem('short_answer', 'المول', null, 'easy', 'ar', 4, a);
     const second = takeConcreteChem('short_answer', 'المول', null, 'easy', 'ar', 4, b);
     assert.ok(first && second);
-    assert.equal(b.size, 1, 'the second session inherited the first one\'s spend');
+    // Items only: each draw also records the ask it put (`ask:…`), which kinds are spread on.
+    const items = [...b].filter(k => !k.startsWith('ask:'));
+    assert.equal(items.length, 1, 'the second session inherited the first one\'s spend');
   });
 
   it('stays in the detected family rather than drifting to general chemistry', () => {
@@ -215,10 +389,13 @@ describe('takeConcreteChem', () => {
       assert.ok(q);
       ids.add(q.text);
     }
-    // Every bonding stem names a bond or a compound; a general_chem item would
-    // be about elements and mixtures instead.
+    // Every stem must be one of the bonding family's own prompts; a general_chem
+    // item would be about elements and mixtures instead. (This used to be a keyword
+    // regex over the stem, which broke the first time a bonding question was worded
+    // without «رابطة» — the family is the thing to check, so check it.)
+    const bonding = new Set(CHEM_BANK.filter(i => i.family === 'bonding').map(i => i.promptAr));
     for (const text of ids) {
-      assert.match(text, /رابطة|الروابط|NaCl|Cl₂|H₂O|HCl|فلز/u, `left the family: ${text}`);
+      assert.ok(bonding.has(text), `left the family: ${text}`);
     }
   });
 });

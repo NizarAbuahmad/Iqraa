@@ -32,6 +32,14 @@ import {
   type CurriculumSource,
   type SourceKind,
 } from "@workspace/curriculum";
+import {
+  type BookItem,
+  type BookItemKind,
+  bookCitation,
+  bookStatusLabel,
+  displayMath,
+  takeBookItem,
+} from "@workspace/curriculum/bookItems";
 import type { Difficulty, QuestionType } from "@workspace/db";
 import {
   allocateQuestions,
@@ -42,6 +50,9 @@ import {
 import type { AnswerKeyCheck } from "@workspace/math-verify";
 import { takeConcreteChem, takeConcreteMath, takeElementaryMath, type DiffTier } from "@workspace/math-practice";
 import { mockableTypes, QUESTION_TYPES } from "./questionTypes.ts";
+// A runtime import, not a cycle: validator.ts takes `GeneratedQuestion` from
+// this file with `import type`, which is erased.
+import { DUPLICATE_THRESHOLD, promptOf, stemSimilarity } from "./validator.ts";
 
 export interface GeneratedQuestion {
   type: QuestionType;
@@ -442,6 +453,145 @@ function bankMultipleChoice(
 }
 
 /**
+ * A real question from the NCCD books, for the objective's own lesson.
+ *
+ * Joined by `objective.lessonId`, never by title. Unit-test multiple choice
+ * self-marks; an exercise or a unit-test open question becomes a short answer
+ * the teacher marks against the key. None carries a `check`: only `verified`
+ * items may reach the verification pass, and a `computed` key proves nothing about whether the
+ * stem was read correctly — so it must not earn the «تم التحقق» badge.
+ *
+ * Returns null whenever the lesson has no item of a requested shape, so the
+ * caller falls through to the generated bank exactly as it did before.
+ */
+export function bookQuestion(args: {
+  objective: CurriculumObjective;
+  difficulty: Difficulty;
+  /**
+   * Competency and marks for the item that was actually drawn. A function of
+   * the kind because the kind is only known once an item is taken: the mock
+   * path fixes both by slot, the live path by kind (see `bookQuestions.ts`).
+   */
+  slot: (kind: BookItemKind) => { competency: CompetencyKey; marks: number };
+  wantChoice: boolean;
+  wantShort: boolean;
+  session: Set<string>;
+  rng: () => number;
+  /**
+   * Questions already accepted for this paper. A book item the validator would
+   * reject as a near-duplicate of one of these is skipped here instead, so the
+   * paper is not shortened by a rejection. (Until 2026-10-15 the similarity
+   * dropped every number, so two different systems scored ~1.00 and this was
+   * the only thing keeping the second one off the paper with a false reason.)
+   */
+  accepted: readonly GeneratedQuestion[];
+  /**
+   * Draw from this list instead of the lesson's served items — for callers (and
+   * tests) that hold their own. Absent means the lesson's items, as always.
+   */
+  pool?: readonly BookItem[];
+}): GeneratedQuestion | null {
+  const { objective, difficulty, session, rng, accepted, pool } = args;
+  const lessonId = objective.lessonId;
+  if (!lessonId) return null;
+  const tier = BANK_TIER[difficulty];
+  // Each pass spends one item, so this is bounded by the lesson's pool.
+  for (;;) {
+    // A short answer is wanted: an exercise and a unit-test open question both
+    // answer that, so they are drawn from their union (one `rng()` call either
+    // way, so a pool holding only exercises draws what it always drew).
+    const item =
+      (args.wantChoice && takeBookItem({ lessonId, kind: "unit-test-mcq", tier, session, rng, ...(pool ? { pool } : {}) })) ||
+      (args.wantShort && takeBookItem({ lessonId, kind: ["exercise", "unit-test"], tier, session, rng, ...(pool ? { pool } : {}) })) ||
+      null;
+    if (!item) return null;
+    const { competency, marks } = args.slot(item.kind);
+    const built = buildBookQuestion(item, objective, competency, difficulty, marks);
+    // A malformed item is spent and the slot falls through, as before.
+    if (!built) return null;
+    // The validator's own measure and threshold, imported rather than copied.
+    const prompt = promptOf(built);
+    const clash = accepted.some(a => stemSimilarity(promptOf(a), prompt) > DUPLICATE_THRESHOLD);
+    if (!clash) return built;
+  }
+}
+
+/**
+ * Unit-test multiple choice becomes a self-marking choice question; `exercise`
+ * and `unit-test` (an open question from the same test) become a short answer.
+ */
+function buildBookQuestion(
+  item: BookItem,
+  objective: CurriculumObjective,
+  competency: CompetencyKey,
+  difficulty: Difficulty,
+  marks: number,
+): GeneratedQuestion | null {
+  // Stored Latin, shown converted (x² / −): see displayMath. The instruction
+  // too — one of them carries maths («أجد قيمة f′(-1)»).
+  const prompt = displayMath(`${item.instruction}\n${item.stem}`);
+  const common = {
+    objectiveId: objective.id,
+    competencyKey: competency,
+    difficulty,
+    marks,
+    skill: objective.skills?.[0] ?? null,
+    check: null,
+    aiMetadata: {
+      generator: "book",
+      note: `from the NCCD ${bookCitation(item, "en")}; not model-authored`,
+      bookItemId: item.id,
+      bookStatus: item.status,
+      bookCitationAr: bookCitation(item, "ar"),
+      bookCitationEn: bookCitation(item, "en"),
+      bookLabelAr: bookStatusLabel(item, "ar"),
+      bookLabelEn: bookStatusLabel(item, "en"),
+      objectiveBloomsSource: objective.bloomsSource,
+    },
+  };
+
+  if (item.kind === "unit-test-mcq") {
+    // Find the key among the RAW strings, then convert for display: matching
+    // the converted text against the raw answer would never find it.
+    const raw = item.options ?? [];
+    const correct = raw.findIndex(o => o === item.computedAnswer);
+    const options = raw.map((text, i) => ({ id: `o${i}`, text: displayMath(text) }));
+    // An answer not among the options would mark a correct student wrong, for
+    // the whole class, with nothing to show why. Spend the item and fall through.
+    if (options.length < 3 || correct < 0) return null;
+    return {
+      ...common,
+      type: "multiple_choice",
+      body: { stem: prompt, multiSelect: false, options },
+      expectedAnswer: { optionIds: [options[correct]!.id] },
+      rubric: null,
+      gradingMode: QUESTION_TYPES["multiple_choice"].defaultGradingMode,
+    };
+  }
+  return {
+    ...common,
+    type: "short_answer",
+    body: { prompt },
+    expectedAnswer: {
+      modelAnswer: displayMath(item.computedAnswer),
+      keyConcepts: [displayMath(item.computedAnswer)],
+    },
+    rubric: buildRubric(competency, marks),
+    gradingMode: QUESTION_TYPES["short_answer"].defaultGradingMode,
+  };
+}
+
+/**
+ * The objective's wording as a template sentence takes it. Objectives end with a
+ * full stop (a few with a question mark), and the templates add their own
+ * punctuation after the topic, so stems printed «…وكيفية تشكلها.؟ اذكرها.» and
+ * «…بالصيغ الكيميائية.، مع مثال».
+ */
+function stemTopic(objective: CurriculumObjective): string {
+  return (objective.descriptionAr || objective.description).trim().replace(/[\s.،,؛;:?؟!]+$/u, "");
+}
+
+/**
  * Open-response type best suited to a competency. Recall and comprehension fit
  * a short answer; application and analysis need room to show working.
  */
@@ -543,7 +693,23 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
   }
 
   let objectiveCursor = 0;
+  // Which objectives already have a template question at each competency. The
+  // phrasings of one competency are one ask in different verbs — «اذكر
+  // المفاهيم…» and «ما المفاهيم… اذكرها» — so a second template question on the
+  // same objective at the same level is the same question again, however it is
+  // worded. A paper asking for more than the objectives can supply used to fill
+  // the gap with exactly that: a 20-question paper on a one-objective lesson
+  // restated it in every phrasing there is (found 2026-10-15).
+  const templated = new Map<CompetencyKey, Set<string>>(COMPETENCY_KEYS.map(c => [c, new Set<string>()]));
+  let restatementsSkipped = 0;
   const mcqAvailable = available.includes("multiple_choice");
+  // Real book items fill at most half a paper, so a quiz does not become a
+  // photocopy of the exercise book; the generated bank fills the rest. Only
+  // maths has book items. They share `bookSession` with nothing else: the
+  // generated bank's own session set spends bank ids, not these.
+  const bookQuota = req.subjectId === "mathematics" ? Math.floor(req.count / 2) : 0;
+  const bookSession = new Set<string>();
+  let bookUsed = 0;
 
   for (const competency of COMPETENCY_KEYS) {
     const wanted = allocation[competency];
@@ -562,12 +728,31 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
     const variantOffset = Math.floor(rng() * variants.length);
 
     for (let i = 0; i < wanted; i += 1) {
-      const objective = objectives[objectiveCursor % objectives.length]!;
+      // Book and bank items are distinct questions whatever their objective, so
+      // they take the slot's own; only the template may move on to an objective
+      // it has not yet asked about at this competency (see `templated` above).
+      let objective = objectives[objectiveCursor % objectives.length]!;
       objectiveCursor += 1;
       const variant = variants[(variantOffset + i) % variants.length]!;
-
-      const topic = objective.descriptionAr || objective.description;
       const marks = MARKS_BY_COMPETENCY[competency];
+
+      if (bookUsed < bookQuota) {
+        const book = bookQuestion({
+          objective,
+          difficulty: req.difficulty,
+          slot: () => ({ competency, marks }),
+          wantChoice: mcqAvailable,
+          wantShort: available.includes("short_answer"),
+          session: bookSession,
+          rng,
+          accepted: questions,
+        });
+        if (book) {
+          questions.push(book);
+          bookUsed += 1;
+          continue;
+        }
+      }
 
       // The bank first, when the subject has one. A question that marks itself
       // is worth more to a teacher than a prose prompt they mark by hand, so
@@ -609,6 +794,17 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
       }
 
       if (!type) continue;
+      const askedHere = templated.get(competency)!;
+      if (askedHere.has(objective.id)) {
+        const fresh = objectives.find(o => !askedHere.has(o.id));
+        if (!fresh) {
+          restatementsSkipped += 1;
+          continue;
+        }
+        objective = fresh;
+      }
+      askedHere.add(objective.id);
+      const topic = stemTopic(objective);
       const typeModule = QUESTION_TYPES[type];
       const needsRubric = typeModule.defaultGradingMode === "ai_rubric";
 
@@ -657,6 +853,13 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
   const shortfall = req.count - questions.length;
   if (shortfall > 0) {
     notes.push(`Produced ${questions.length} of ${req.count} requested questions.`);
+  }
+  if (restatementsSkipped > 0) {
+    notes.push(
+      `${restatementsSkipped} question${restatementsSkipped === 1 ? " was" : "s were"} left out rather than ` +
+        `asking about the same objective at the same level a second time in other words. ` +
+        `Choose more objectives, or switch the generator to a real model, for a longer paper.`,
+    );
   }
 
   return { questions, seed, unavailableTypes, shortfall: Math.max(0, shortfall), notes, bankContext };

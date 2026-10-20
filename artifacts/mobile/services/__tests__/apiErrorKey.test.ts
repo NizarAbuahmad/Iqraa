@@ -31,6 +31,11 @@ describe('apiErrorKey', () => {
     assert.equal(apiErrorKey(err('email_unavailable', 503), 'fb'), 'errEmailNotSent');
   });
 
+  it('maps a homework due date outside the allowed window to its own message', () => {
+    // Both ApiError and HomeworkError carry the server's `code`.
+    assert.equal(apiErrorKey(err('due_date_out_of_range', 400), 'hwSaveFailed'), 'hwErrDueRange');
+  });
+
   it('maps the messaging refusals', () => {
     assert.equal(apiErrorKey(err('not_connected', 403), 'fb'), 'errNotConnected');
     assert.equal(apiErrorKey(err('group_read_only', 403), 'fb'), 'messagingReadOnlyGroup');
@@ -43,6 +48,13 @@ describe('apiErrorKey', () => {
   it('reads a rate limit off the code or the status', () => {
     assert.equal(apiErrorKey(err('rate_limited', 429), 'fb'), 'errTooManyRequests');
     assert.equal(apiErrorKey(err(undefined, 429), 'fb'), 'errTooManyRequests');
+  });
+
+  it('says the service is busy when the server shed the request, instead of "login failed"', () => {
+    assert.equal(apiErrorKey(err('hashing_busy', 503), 'fb'), 'errServerBusy');
+    assert.equal(apiErrorKey(err('db_busy', 503), 'fb'), 'errServerBusy');
+    // A bare 503 (an edge page, a cold API) says nothing about why, so it keeps the screen's own message.
+    assert.equal(apiErrorKey(err(undefined, 503), 'fb'), 'fb');
   });
 
   it('says "offline" when the request never reached the server', () => {

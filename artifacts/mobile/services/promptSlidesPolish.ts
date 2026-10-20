@@ -27,8 +27,10 @@
  */
 import type { ActivitySlide, ClassroomActivity } from './ai/AIService.ts';
 import { isBulletLine, looksLikeEquation, stripBullet } from './deckText.ts';
-import { MAX_STATEMENT_CHARS, inlineSteps, resolveSlideLayout } from './slideLayout.ts';
+import { MAX_STATEMENT_CHARS, inlineSteps, payloadLines, resolveSlideLayout } from './slideLayout.ts';
 import { rebuildAnswerKey } from './lessonSlides.ts';
+import { isSectionIconName } from './deckIcons.ts';
+import { usableChartVisual } from './deckVisuals.ts';
 
 /**
  * Below this a slide body is not short, it is absent — a heading with a
@@ -115,6 +117,72 @@ function inferLayout(slide: ActivitySlide, index: number): InferredLayout | unde
   return undefined;
 }
 
+const STRUCTURE_LAYOUTS = new Set<NonNullable<ActivitySlide['layout']>>(['timeline', 'stats', 'table', 'flow', 'quote']);
+
+/** A refused layout's words come back as a list; past this it is a wall of text, so the rest is cut. */
+const MAX_FALLBACK_LINES = 6;
+
+/**
+ * The structure a model may add to a slide — an `icon`, a chart `visual`, and
+ * the four structure layouts (timeline, stats, table, flow) — reduced to what a
+ * renderer can draw.
+ *
+ * The server strips the same things, and this runs again because a deck reaches
+ * the screen from places the server never saw (a saved copy, an older build's
+ * output). A name that is not in the icon table or a chart that fails
+ * `usableChartVisual` is deleted, never repaired. Two combinations are settled
+ * here rather than left to the renderers to disagree about:
+ *
+ * - a chart on a slide with a `layout` is dropped — the layout branch fills the
+ *   slide in all three renderers and only the presenter would still draw it;
+ * - a chart displaces `mediaPrompt` — a photo beside a chart beside bullets is a
+ *   page, and the chart is the part the teacher's figures made.
+ */
+function cleanStructure(slide: ActivitySlide): ActivitySlide {
+  let next = slide;
+  // The four structure layouts (timeline, stats, table, flow) carry their words in
+  // a payload of their own, so a refusal must not leave the slide empty. The slide
+  // keeps its one-sentence `content` and gains the payload as bullet lines: the
+  // teacher sees what the model wrote as an ordinary list, not nothing. Refused
+  // means: the data failed `resolveSlideLayout`, or the slide is not a prose slide
+  // — a layout on a question or a challenge would hide its options or its answer.
+  if (next.layout && STRUCTURE_LAYOUTS.has(next.layout)) {
+    if (!PROSE_TYPES.has(next.type) || !resolveSlideLayout(next)) {
+      const { layout: _l, timeline: _t, stats: _s, table: _b, flow: _f, quote: _q, ...rest } = next;
+      const lines = payloadLines(next).slice(0, MAX_FALLBACK_LINES).map(l => `• ${l}`);
+      next = { ...rest, content: [(rest.content ?? '').trim(), ...lines].filter(Boolean).join('\n') };
+    }
+  }
+  // `photo` has no payload to fall back on: its picture arrives AFTER this step
+  // (promptSlidesMedia fetches it from `mediaPrompt`), so it cannot be judged
+  // with `resolveSlideLayout` yet. What can be judged now is whether a picture
+  // is coming at all and whether the slide is the kind a photo may take over —
+  // otherwise the layout is dropped and the slide stays as written.
+  if (next.layout === 'photo') {
+    const body = (next.content ?? '').split('\n').map(l => l.trim()).filter(Boolean);
+    const pictureComing = !!next.sideImageUrl || !!next.mediaPrompt?.trim();
+    if (!PROSE_TYPES.has(next.type) || !pictureComing || body.length > 1 || (body[0] ?? '').length > MAX_STATEMENT_CHARS) {
+      const { layout: _l, ...rest } = next;
+      next = rest;
+    }
+  }
+  if (next.icon !== undefined && !isSectionIconName(next.icon)) {
+    const { icon: _drop, ...rest } = next;
+    next = rest;
+  }
+  if (next.visual !== undefined) {
+    const chart = next.layout ? null : usableChartVisual(next.visual);
+    if (!chart) {
+      const { visual: _drop, visualOnReveal: _reveal, ...rest } = next;
+      next = rest;
+    } else {
+      const { mediaPrompt: _photo, ...rest } = next;
+      next = { ...rest, visual: chart };
+    }
+  }
+  return next;
+}
+
 /** A slide whose body says nothing — see `MIN_CONTENT_CHARS`. */
 function isHollow(slide: ActivitySlide): boolean {
   return lines(slide.content).map(stripBullet).join(' ').length < MIN_CONTENT_CHARS;
@@ -144,7 +212,7 @@ function repairQuestion(slide: ActivitySlide): ActivitySlide {
   if (sound) return { ...slide, options, correctIndex: index as number };
 
   const { options: _o, correctIndex: _c, verified: _v, verifiedBy: _b, computedAnswer: _a, ...rest } = slide;
-  const listed = options.filter(Boolean).map(o => `• ${o}`);
+  const listed = [...new Set(options.filter(Boolean))].map(o => `• ${o}`);
   return { ...rest, type: 'challenge', content: [slide.content, ...listed].filter(Boolean).join('\n') };
 }
 
@@ -159,11 +227,27 @@ function repairQuestion(slide: ActivitySlide): ActivitySlide {
  * teacher can see them and delete them, which beats handing back a deck
  * shorter than the one the server certified.
  */
-export function polishDeck(deck: ClassroomActivity, isAr = true): ClassroomActivity {
+export function polishDeck(source: ClassroomActivity, isAr = true): ClassroomActivity {
+  const deck: ClassroomActivity = { ...source, slides: source.slides.map(cleanStructure) };
   const hollow = new Set<number>();
+  // A slide the model wrote twice is projected twice — `checkDeck` only logs it.
+  const seen = new Set<string>();
+  const squash = (s: unknown) => (typeof s === 'string' ? s.replace(/\s+/g, ' ').trim() : '');
   deck.slides.forEach((slide, index) => {
     if (index === 0 || slide.type === 'summary') return;
+    const key = JSON.stringify([slide.type, squash(slide.title), squash(slide.content), (slide.options ?? []).map(squash), squash(slide.answer), slide.visual]);
+    // Only a slide whose substance is its text: a layout or graph slide keeps
+    // it elsewhere (`stat`, `compare`, `graphCommands`…), and two of those can
+    // share a title and a lead line.
+    const textOnly = squash(slide.content) && !slide.layout && !slide.graphCommands?.length;
+    if (textOnly && seen.has(key) && deck.slides.length - hollow.size > MIN_SLIDES) {
+      hollow.add(index);
+      return;
+    }
+    seen.add(key);
     if (!PROSE_TYPES.has(slide.type)) return;
+    // A chart is the slide's substance — its body may be one short caption line.
+    if (slide.visual) return;
     // A slide the model gave a layout keeps its substance somewhere other than
     // `content` — the figure and its caption live in `stat`, the two columns in
     // `compare` — so measuring its body would drop the best slide in the deck.

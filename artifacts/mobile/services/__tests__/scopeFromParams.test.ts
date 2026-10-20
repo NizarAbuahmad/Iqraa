@@ -11,7 +11,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { scopeFromParams } from '../lessonPrep.ts';
+import { scopeFromParams, topicForScope } from '../lessonPrep.ts';
 import { getPickerGrades, getPickerSubjects } from '../curriculumData.ts';
 
 const subjects = getPickerSubjects();
@@ -61,6 +61,139 @@ describe('scopeFromParams', () => {
       const scope = scopeFromParams({ topic: SCIENCE_TOPIC, subjectIdx: bad }, 'ar');
       assert.equal(idOf(scope.subjectIdx), 'science', `not grounded for: "${bad}"`);
     }
+  });
+
+  describe('with a teacher selection', () => {
+    // A teacher who picked only Grade 10 (index 0). The mask is index-aligned
+    // with the picker list, exactly as `useTeacherScope` builds it.
+    const gradeHidden = grades.map((_, i) => i !== 0);
+    const subjectHiddenFor = () => subjects.map((_, i) => i !== 0);
+    const selection = { gradeHidden, subjectHiddenFor };
+    const grade1Idx = grades.findIndex(g => g.id === 'grade-1');
+
+    it('falls back to the selected grade when the route names a hidden one', () => {
+      // The reported URL: a Grade 1 lesson, for a teacher who never picked it.
+      // The picker used to open on الصف الأول although it is not in the dropdown.
+      const scope = scopeFromParams(
+        { topic: 'المَوْقِعُ وَالإِتّجاهَ', gradeIdx: String(grade1Idx), subjectIdx: '0' },
+        'ar',
+        { gradeIdx: 0, subjectIdx: 0 },
+        selection,
+      );
+      assert.equal(scope.gradeIdx, 0);
+    });
+
+    it('does not take a hidden grade from the grounded topic either', () => {
+      const scope = scopeFromParams(
+        { topic: SCIENCE_TOPIC },
+        'ar',
+        { gradeIdx: 0, subjectIdx: 0 },
+        selection,
+      );
+      assert.equal(scope.gradeIdx, 0, 'topic is grade-3; the teacher does not teach it');
+    });
+
+    it('falls back to a shown subject when the route names a hidden one', () => {
+      const scope = scopeFromParams(
+        { gradeIdx: '0', subjectIdx: '1' },
+        'ar',
+        { gradeIdx: 0, subjectIdx: 0 },
+        selection,
+      );
+      assert.deepEqual(scope, { gradeIdx: 0, subjectIdx: 0 });
+    });
+
+    it('does not carry the link\'s subject over to a fallback grade', () => {
+      // A Grade 1 link (subject index 0) for a teacher whose own first grade is
+      // grade-10, where subject 0 is hidden and subject 2 is the one they teach.
+      // The index described a Grade 1 lesson; it says nothing about the grade the
+      // screen fell back to, so the screen opens on the teacher's own subject.
+      const taughtOnlyTwo = { gradeHidden, subjectHiddenFor: () => subjects.map((_, i) => i !== 2) };
+      const scope = scopeFromParams(
+        { gradeIdx: String(grade1Idx), subjectIdx: '2' },
+        'ar',
+        { gradeIdx: 0, subjectIdx: 2 },
+        taughtOnlyTwo,
+      );
+      assert.deepEqual(scope, { gradeIdx: 0, subjectIdx: 2 });
+      const bothShown = { gradeHidden, subjectHiddenFor: () => subjects.map((_, i) => i > 2) };
+      const kept = scopeFromParams(
+        { gradeIdx: String(grade1Idx), subjectIdx: '1' },
+        'ar',
+        { gradeIdx: 0, subjectIdx: 2 },
+        bothShown,
+      );
+      assert.equal(kept.subjectIdx, 2, 'the link\'s subject 1 is shown but belonged to the dropped grade');
+    });
+
+    it('still honours the link\'s subject when its grade is shown', () => {
+      const bothShown = { gradeHidden, subjectHiddenFor: () => subjects.map((_, i) => i > 2) };
+      const scope = scopeFromParams(
+        { gradeIdx: '0', subjectIdx: '1' },
+        'ar',
+        { gradeIdx: 0, subjectIdx: 2 },
+        bothShown,
+      );
+      assert.deepEqual(scope, { gradeIdx: 0, subjectIdx: 1 });
+    });
+
+    it('keeps a route scope that is inside the selection', () => {
+      const scope = scopeFromParams(
+        { gradeIdx: '0', subjectIdx: '0' },
+        'ar',
+        { gradeIdx: 0, subjectIdx: 0 },
+        selection,
+      );
+      assert.deepEqual(scope, { gradeIdx: 0, subjectIdx: 0 });
+    });
+
+    it('is unchanged when nothing is hidden', () => {
+      const none = { gradeHidden: grades.map(() => false), subjectHiddenFor: () => subjects.map(() => false) };
+      const scope = scopeFromParams(
+        { gradeIdx: String(grade1Idx), subjectIdx: '0' },
+        'ar',
+        { gradeIdx: 0, subjectIdx: 0 },
+        none,
+      );
+      assert.equal(scope.gradeIdx, grade1Idx);
+    });
+  });
+
+  describe('topicForScope', () => {
+    const gradeHidden = grades.map((_, i) => i !== 0);
+    const subjectHiddenFor = () => subjects.map((_, i) => i !== 0);
+    const selection = { gradeHidden, subjectHiddenFor };
+    const fallback = { gradeIdx: 0, subjectIdx: 0 };
+    const grade1Idx = grades.findIndex(g => g.id === 'grade-1');
+    const GRADE1_TOPIC = 'المَوْقِعُ وَالإِتّجاهَ';
+
+    it('clears a topic whose grade the selection hides', () => {
+      const params = { topic: GRADE1_TOPIC, gradeIdx: String(grade1Idx), subjectIdx: '0' };
+      assert.equal(topicForScope(params, 'ar', fallback, selection), '');
+    });
+
+    it('clears a topic whose grade was only inferred from the topic', () => {
+      assert.equal(topicForScope({ topic: SCIENCE_TOPIC }, 'ar', fallback, selection), '');
+    });
+
+    it('clears a topic when only the subject fell back', () => {
+      const params = { topic: SCIENCE_TOPIC, gradeIdx: '0', subjectIdx: '1' };
+      assert.equal(topicForScope(params, 'ar', fallback, selection), '');
+    });
+
+    it('keeps a topic that sits inside the selection', () => {
+      const params = { topic: SCIENCE_TOPIC, gradeIdx: '0', subjectIdx: '0' };
+      assert.equal(topicForScope(params, 'ar', fallback, selection), SCIENCE_TOPIC);
+    });
+
+    it('keeps the topic when no selection is given', () => {
+      const params = { topic: GRADE1_TOPIC, gradeIdx: String(grade1Idx), subjectIdx: '0' };
+      assert.equal(topicForScope(params, 'ar', fallback), GRADE1_TOPIC);
+    });
+
+    it('returns an empty string when there is no topic', () => {
+      assert.equal(topicForScope({}, 'ar', fallback, selection), '');
+    });
   });
 
   it('falls back to index 0 when the topic grounds to nothing', () => {
