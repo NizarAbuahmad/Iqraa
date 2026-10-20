@@ -1628,9 +1628,12 @@ exports (the API's `paperOrder.ts` `EXAM_TYPE_ORDER` and `generationShape.ts`
 asserted in `paperOrder.test.ts`, `examBlocks.test.ts` and
 `quizMinistryOrder.test.ts`. A source-text check stays on top: the two mobile
 files must import from `@workspace/exam-paper` and carry no list literal of
-their own, and the API's two modules declare none. A second list under another
-name is **not** caught; `ALL_Q_TYPES` in the quiz picker
-(`app/ai-tools/quiz.tsx`) is one, and it predates this change.
+their own, and the API's two modules declare none. The quiz picker
+(`app/ai-tools/quiz.tsx`) kept a second list, `ALL_Q_TYPES`, until 2026-10-20; it
+now takes `QUIZ_TYPE_ORDER` and `QuizType` from the package, and the same test
+fails if the file declares a list or union of its own again. A list under another
+name elsewhere is **not** caught — `QuizQuestion['type']` in
+`services/ai/AIService.ts` still spells the four types out.
 
 How "no behaviour change" was checked, rather than asserted: a before/after
 digest of `quizRepeats` (per paper) and `dominantKind` over every lesson's
