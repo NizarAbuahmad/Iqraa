@@ -4440,6 +4440,22 @@ because the code does not settle them: a class limit, joining a school as a teac
 uploading an image to a lesson. Still open: long-press export on the
 «أيّ مادة تقصد؟» clarification.
 
+**Exams and classes: what exists and what does not (2026-10-20, eleventh live pass).**
+Of 30 questions on app.iqrra.com, 15 were fine (teaching, meta, support, the Excel
+export) and 15 went to the model, which refused or invented a path. Each was checked
+in code. Reopening a closed exam was already in `howCloseExam` («انشر التقييم»);
+the rule just did not match it. Now with steps: marks per question (the edit pencil's
+«العلامة»), the class grade (the same «تعديل الشعبة» pencil, grade buttons only when
+the teacher has more than one grade), seeing the class link code and a student's login
+code (the latter is shown once; the answer says so). Now said plainly: no ranking of
+students by mark (the results dashboard lists each student with a percentage), no
+per-question analysis (it shows «ما لم تتقنه الشعبة» per objective), no exam duration
+or extension (`evaluations.time_limit_min` is enforced when set, but nothing in the
+app or API sets it — the link takes answers until «أغلق الاختبار» or it expires), no
+shuffle of question order (blocks in the ministry order), no list of archived classes
+and no restore. Not done because the code does not settle it: adding a co-teacher.
+Still open: long-press export on the «أيّ مادة تقصد؟» clarification.
+
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
 Step 4 of the worksheet review, agreed in chat. A worksheet was paper only: to

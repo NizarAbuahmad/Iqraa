@@ -209,6 +209,15 @@ const SCREENS: AppPlace[] = [
   { id: 'lesson-progress', route: '/teaching-plans', labelKey: 'myTeachingPlans', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howLessonProgress' },
   { id: 'library-videos', route: '/curriculum', labelKey: 'resourcesTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howLibraryVideos' },
   { id: 'search-lesson', route: '/curriculum', labelKey: 'resourcesTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howSearchLesson' },
+  // The eleventh live pass (2026-10-20): exams and classes. Where the app has no such
+  // thing the answer says so, with what it does have.
+  { id: 'exam-ranking', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howExamRanking' },
+  { id: 'exam-analysis', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howExamAnalysis' },
+  { id: 'exam-time', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howExamTime' },
+  { id: 'exam-shuffle', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howExamShuffle' },
+  { id: 'question-marks', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howQuestionMarks' },
+  { id: 'archived-classes', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howArchivedClasses' },
+  { id: 'class-grade', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howClassGrade' },
   {
     // The bottom tab: its route file is still «curriculum» (see `app/(tabs)/_layout.tsx`).
     id: 'library', route: '/curriculum', labelKey: 'resourcesTitle', pathKeys: [], isTool: false,
@@ -1454,6 +1463,128 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
     res: [
       new RegExp(EN_RULE_LEAD + String.raw`(?:(?:search|look)\s+for|find)\s+(?:a|the)\s+(?:specific\s+)?lesson` + EN_RULE_TAIL),
       new RegExp(AR_RULE_LEAD + String.raw`(?:ابحث|ادور|دور|الاقي|اجد)\s+(?:عن|علي)?\s*(?:ال)?درس(?:\s+(?:معين|محدد|بعينه))?` + AR_RULE_TAIL),
+    ],
+  },  // The eleventh live pass (2026-10-20).
+  {
+    id: 'close-exam',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:re-?open|open\s+again|unclose)\s+(?:(?:a|an|the|my)\s+)?(?:closed\s+)?(?:exam|test|quiz|evaluation)(?:\s+again)?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اعيد|اعاده)\s+فتح\s+(?:ال)?(?:امتحان|اختبار|تقييم)(?:\s+(?:ال)?مغلق)?` + AR_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:افتح|فتح)\s+(?:ال)?(?:امتحان|اختبار|تقييم)\s+(?:ال)?مغلق(?:\s+مره\s+(?:ثانيه|اخري))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'reissue-login',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:see|find|know|check|view|get)\s+(?:a\s+|the\s+|my\s+)?(?:student|child|parent)(?:['’]s)?\s+(?:login|sign[\s-]?in)\s+code` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اعرف|اشوف|اري|اجد|الاقي|اطلع\s+علي)\s+(?:ال)?رمز\s+(?:ال)?دخول\s+(?:ل|ال)?\S*(?:\s+\S+)?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'link-code',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:see|find|know|check|view|get)\s+(?:the\s+|my\s+|a\s+)?(?:class\s+|classroom\s+)?(?:link|join)\s+code(?:\s+(?:of|for)\s+(?:the\s+|my\s+|a\s+)?(?:class|section))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اعرف|اشوف|اري|اجد|الاقي|اطلع\s+علي|احصل\s+علي)\s+(?:ال)?رمز\s+(?:ال)?ربط(?:\s+(?:لل|ل|ب)\s*(?:ال)?(?:شعبه|صف))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'exam-ranking',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:see|view|get|find|show)\s+(?:the\s+|a\s+)?(?:ranking|rank|leaderboard|class\s+ranking)(?:\s+of\s+(?:the\s+|my\s+)?(?:students|class))?(?:\s+(?:in|for|of)\s+(?:the\s+|an?\s+)?(?:exam|test|quiz))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اشوف|اري|اعرف|اعرض|اطلع)\s+(?:ال)?ترتيب\s+(?:ال)?(?:طلاب|طلبه|طلابي|طلبتي|شعبه)(?:\s+(?:في|ب|حسب)\s*(?:ال)?(?:امتحان|اختبار|تقييم|علامات|نتائج))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'exam-analysis',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:see|know|find|check|tell)\s+(?:out\s+)?(?:which|what)\s+(?:(?:exam|test|quiz)\s+)?(?:questions|objectives|topics)\s+(?:were|are|was)\s+(?:the\s+)?(?:hardest|most\s+difficult|weakest|missed|wrong)(?:\s+(?:for|by)\s+(?:the\s+)?(?:students|class))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:see|view|get)\s+(?:the\s+)?(?:question|item|exam|test)\s+analysis` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اعرف|اشوف|اري|اعرض)\s+(?:اي|ايش|ما|ماهي)\s+(?:ال)?(?:اسئله|اهداف|مواضيع)\s+(?:كانت\s+|هي\s+)?(?:ال)?(?:اصعب|اضعف|الاكثر\s+(?:خطا|صعوبه))(?:\s+(?:علي|عند|لدي)\s+(?:ال)?(?:طلاب|طلبه|شعبه))?` + AR_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اشوف|اري|اعرض|احلل|تحليل)\s+(?:ال)?تحليل?\s*(?:ال)?(?:اسئله|امتحان|اختبار|نتائج)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'exam-time',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:set|add|change|extend|increase|put|give)\s+(?:a\s+|the\s+)?(?:time\s+limit|timer|duration)(?:\s+(?:for|of|on|to)\s+(?:the\s+|an?\s+|my\s+)?(?:exam|test|quiz|evaluation))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:extend|increase|add|give)\s+(?:more\s+)?time\s+(?:for|to|on)\s+(?:the\s+|an?\s+|my\s+)?(?:exam|test|quiz)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اضبط|امدد|مدد|ازيد|زيد|اضع|اضيف|اغير)\s+(?:ال)?(?:وقت|مده|زمن|مؤقت|حد\s+زمني)\s*(?:ال)?(?:امتحان|اختبار|تقييم)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'exam-shuffle',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:shuffle|randomi[sz]e|mix\s+up|scramble)\s+(?:the\s+)?(?:order\s+of\s+)?(?:the\s+)?(?:exam\s+|test\s+|quiz\s+)?questions` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اخلط|خلط|ابدل|تبديل|اعشوائي|رتب\s+عشوائي)\s+(?:ترتيب\s+)?(?:ال)?اسئله` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'question-marks',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:set|change|edit|assign|give|choose)\s+(?:the\s+)?(?:marks|points|grades?|scores?)\s+(?:for|of|per|to)\s+(?:each|every|a|the)\s+question` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:احدد|حدد|اغير|غير|اعدل|عدل|اضبط|اضع|اعطي)\s+(?:ال)?(?:علامه|علامات|درجه|درجات)\s+(?:كل\s+|ال)?سؤال` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'archived-classes',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:restore|unarchive|recover|bring\s+back|see|view|find|open)\s+(?:an?\s+|the\s+|my\s+)?(?:archived|deleted)\s+(?:classes|class|sections?)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:استعيد|استعاده|ارجع|اسجع|الغي\s+ارشفه|اشوف|اري|اعرض|افتح|اجد|الاقي)\s+(?:ال)?(?:شعبه|شعب|صفوف)\s+(?:ال)?(?:مو?ءرشف|مورشف|مؤرشف|محذوف)\S*` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'class-grade',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:change|edit|switch|update|set)\s+(?:the\s+)?(?:grade|year)\s+(?:of|for)\s+(?:a\s+|the\s+|my\s+)?(?:class|section)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اغير|تغيير|اعدل|تعديل|ابدل|تبديل)\s+(?:ال)?صف\s+(?:ال)?(?:دراسي\s+)?(?:لل|ل)\s*(?:ال)?شعبه` + AR_RULE_TAIL,
+      ),
     ],
   },
 ];
