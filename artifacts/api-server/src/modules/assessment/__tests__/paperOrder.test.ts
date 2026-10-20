@@ -90,6 +90,17 @@ describe("the server and the app share one list, not two copies", () => {
     }
   });
 
+  it("the quiz picker takes its types from lib/exam-paper, not a list of its own", async () => {
+    const { readFileSync } = await import("node:fs");
+    const path = await import("node:path");
+    const { fileURLToPath } = await import("node:url");
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const source = strip(readFileSync(path.resolve(here, "../../../../../mobile/app/ai-tools/quiz.tsx"), "utf8"));
+    assert.match(source, /from '@workspace\/exam-paper'/, "quiz.tsx no longer imports from lib/exam-paper");
+    assert.doesNotMatch(source, /ALL_Q_TYPES/, "quiz.tsx has its own list of quiz types again");
+    assert.doesNotMatch(source, /type \w+ = 'multiple_choice'/, "quiz.tsx has its own union of quiz types again");
+  });
+
   it("the API's own modules do not declare a list of their own either", async () => {
     const { readFileSync } = await import("node:fs");
     const path = await import("node:path");
