@@ -1,8 +1,11 @@
 import { useState, type Dispatch, type SetStateAction } from 'react';
 import type { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
 import { rebuildAnswerKey, withoutSlide } from '@/services/lessonSlides';
-import { applyMediaEdit, contentAfterMediaEdit } from '@/services/classMedia';
-import { applySlideTextEdit } from '@/services/slideEdit';
+import { applyMediaEdit, contentAfterMediaEdit, isLikelyImageUrl } from '@/services/classMedia';
+import { applySlideTextEdit, pictureSlot, slidePicture, withSlidePicture, type SlidePicture } from '@/services/slideEdit';
+import { pickSlidePhoto } from '@/services/slidePhotoPick';
+import { searchDeckPhoto } from '@/services/unsplashImage';
+import { creditFromPhoto, photoCreditText } from '@/services/photoCredit';
 import { confirm } from '@/services/confirm';
 import type { TranslationKey } from '@/services/i18n';
 
@@ -33,6 +36,14 @@ export function useSlideEditor(config: {
   const [mediaUrl, setMediaUrl] = useState('');
   const [mediaCaption, setMediaCaption] = useState('');
   const [mediaError, setMediaError] = useState('');
+  // The slide's picture as the teacher is changing it; written on Save only.
+  const [picture, setPictureState] = useState<SlidePicture | null>(null);
+  const [pictureChanged, setPictureChanged] = useState(false);
+  const [pictureQuery, setPictureQuery] = useState('');
+  const [pictureLink, setPictureLink] = useState('');
+  const [suggestPage, setSuggestPage] = useState(0);
+  const [pictureBusy, setPictureBusy] = useState(false);
+  const [pictureError, setPictureError] = useState('');
 
   const openEdit = (i: number) => {
     if (!deck) return;
@@ -43,8 +54,64 @@ export function useSlideEditor(config: {
     setMediaUrl(s.mediaUrl ?? '');
     setMediaCaption(s.mediaCaption ?? '');
     setMediaError('');
+    setPictureState(slidePicture(s, i));
+    setPictureChanged(false);
+    // Unsplash is an English index: the slide's own photo query, else the
+    // deck's. An Arabic lesson deck has neither and the teacher types one.
+    setPictureQuery(s.mediaPrompt ?? deck.deckPhotoQueries?.[0] ?? '');
+    setPictureLink('');
+    setSuggestPage(0);
+    setPictureError('');
     setEditIdx(i);
   };
+
+  const editingSlide = editIdx !== null ? deck?.slides[editIdx] : undefined;
+  const slot = editingSlide && editIdx !== null ? pictureSlot(editingSlide, editIdx) : null;
+
+  const setPicture = (next: SlidePicture | null) => {
+    setPictureState(next);
+    setPictureChanged(true);
+    setPictureError('');
+    // A picture slide's URL field (Slides) shows what Save will write.
+    if (slot === 'media' && next) { setMediaUrl(next.url); setMediaCaption(next.caption ?? ''); setMediaError(''); }
+  };
+
+  const uploadPicture = async () => {
+    setPictureBusy(true);
+    try {
+      const url = await pickSlidePhoto();
+      if (url) setPicture({ url });
+    } catch {
+      setPictureError(t('slidePictureUploadFailed'));
+    } finally {
+      setPictureBusy(false);
+    }
+  };
+
+  /** The next Unsplash result for the query — never the photo already there. */
+  const suggestPicture = async () => {
+    const query = pictureQuery.trim();
+    if (!query) { setPictureError(t('slidePictureNeedQuery')); return; }
+    setPictureBusy(true);
+    try {
+      let page = suggestPage + 1;
+      let photo = await searchDeckPhoto(query, page);
+      if (photo && photo.url === picture?.url) photo = await searchDeckPhoto(query, ++page);
+      setSuggestPage(page);
+      if (!photo) { setPictureError(t('slidePictureNoSuggestion')); return; }
+      setPicture({ url: photo.url, caption: photoCreditText(photo, isAr), credit: creditFromPhoto(photo) });
+    } finally {
+      setPictureBusy(false);
+    }
+  };
+
+  const changePictureLink = (text: string) => {
+    setPictureLink(text);
+    setPictureError('');
+    if (isLikelyImageUrl(text)) setPicture({ url: text.trim() });
+  };
+
+  const changePictureQuery = (text: string) => { setPictureQuery(text); setSuggestPage(0); };
 
   const close = () => setEditIdx(null);
 
@@ -55,16 +122,28 @@ export function useSlideEditor(config: {
     // embed would project as a blank frame in front of a class and print as a
     // dead link. Refuse it here rather than storing it and finding out live.
     const editing = deck.slides[editIdx];
+    // A pasted picture link that is not an image would project as a blank frame.
+    if (slot && pictureLink.trim() && !isLikelyImageUrl(pictureLink)) {
+      setPictureError(t('mediaUrlUnsupported'));
+      return;
+    }
     let swapped: ActivitySlide | null = null;
     if (mediaEditing && editing?.type === 'media') {
       const result = applyMediaEdit(editing, { url: mediaUrl, caption: mediaCaption });
       if (!result.ok) { setMediaError(t('mediaUrlUnsupported')); return; }
       swapped = result.slide;
+      // The suggested photo's linked credit, which the URL field cannot carry.
+      if (pictureChanged && picture?.credit && swapped.mediaUrl === picture.url) {
+        swapped = { ...swapped, mediaCredit: picture.credit };
+      }
     }
+    const index = editIdx;
+    const withPicture = (s: ActivitySlide): ActivitySlide => (
+      pictureChanged && !swapped ? withSlidePicture(s, index, picture) : s);
 
     const applyToSlide = (s: ActivitySlide): ActivitySlide => (swapped
       ? { ...swapped, title: title.trim() || s.title, content: contentAfterMediaEdit(editing, swapped, content) }
-      : applySlideTextEdit(s, { title, content, answer }));
+      : withPicture(applySlideTextEdit(s, { title, content, answer })));
     // By identity, not index — see removeSlide.
     setDeck(cur => {
       if (!cur) return cur;
@@ -100,8 +179,15 @@ export function useSlideEditor(config: {
   return {
     editIdx,
     /** The slide being edited, or undefined. */
-    editing: editIdx !== null ? deck?.slides[editIdx] : undefined,
+    editing: editingSlide,
     mediaEditing,
+    /** Where this slide can show a picture, or null where none would be drawn. */
+    pictureSlot: slot,
+    picture, removePicture: () => setPicture(null),
+    pictureQuery, setPictureQuery: changePictureQuery,
+    pictureLink, setPictureLink: changePictureLink,
+    pictureBusy, pictureError,
+    uploadPicture, suggestPicture,
     title, setTitle,
     content, setContent,
     answer, setAnswer,

@@ -177,11 +177,11 @@ export function validateGenerated(
   // ordinary practice. But when that one ask — in one sentence or reworded —
   // is a quarter of the paper, the teacher should know before they publish
   // what reads like a long exam and measures one skill.
-  const sameAsk = dominantKind(accepted.map(promptOf));
-  if (sameAsk) {
+  const dominant = dominantKind(accepted.map(promptOf));
+  if (dominant) {
     warnings.push(
-      `${sameAsk.count} of ${accepted.length} questions ask the same thing, with different numbers or ` +
-        `in other words: «${sameAsk.example}»`,
+      `${dominant.count} of ${accepted.length} questions ask the same thing, with different numbers or ` +
+        `in other words: «${dominant.example}»`,
     );
   }
 

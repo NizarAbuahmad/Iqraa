@@ -212,7 +212,7 @@ function repairQuestion(slide: ActivitySlide): ActivitySlide {
   if (sound) return { ...slide, options, correctIndex: index as number };
 
   const { options: _o, correctIndex: _c, verified: _v, verifiedBy: _b, computedAnswer: _a, ...rest } = slide;
-  const listed = options.filter(Boolean).map(o => `• ${o}`);
+  const listed = [...new Set(options.filter(Boolean))].map(o => `• ${o}`);
   return { ...rest, type: 'challenge', content: [slide.content, ...listed].filter(Boolean).join('\n') };
 }
 
@@ -230,8 +230,21 @@ function repairQuestion(slide: ActivitySlide): ActivitySlide {
 export function polishDeck(source: ClassroomActivity, isAr = true): ClassroomActivity {
   const deck: ClassroomActivity = { ...source, slides: source.slides.map(cleanStructure) };
   const hollow = new Set<number>();
+  // A slide the model wrote twice is projected twice — `checkDeck` only logs it.
+  const seen = new Set<string>();
+  const squash = (s: unknown) => (typeof s === 'string' ? s.replace(/\s+/g, ' ').trim() : '');
   deck.slides.forEach((slide, index) => {
     if (index === 0 || slide.type === 'summary') return;
+    const key = JSON.stringify([slide.type, squash(slide.title), squash(slide.content), (slide.options ?? []).map(squash), squash(slide.answer), slide.visual]);
+    // Only a slide whose substance is its text: a layout or graph slide keeps
+    // it elsewhere (`stat`, `compare`, `graphCommands`…), and two of those can
+    // share a title and a lead line.
+    const textOnly = squash(slide.content) && !slide.layout && !slide.graphCommands?.length;
+    if (textOnly && seen.has(key) && deck.slides.length - hollow.size > MIN_SLIDES) {
+      hollow.add(index);
+      return;
+    }
+    seen.add(key);
     if (!PROSE_TYPES.has(slide.type)) return;
     // A chart is the slide's substance — its body may be one short caption line.
     if (slide.visual) return;

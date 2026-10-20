@@ -22,7 +22,7 @@ import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PickerField } from '@/components/ui/PickerField';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
-import { aiErrorText, isAbortError, throwIfAborted } from '@/services/ai/aiProvenance';
+import { aiErrorMessageKey, aiErrorText, isAbortError, throwIfAborted } from '@/services/ai/aiProvenance';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { Button } from '@/components/ui/Button';
 import { Toast } from '@/components/ui/Toast';
@@ -733,6 +733,11 @@ export default function SlidesScreen() {
       setWideFrozen(wideSel);
       setDeck(built);
       setPreliminary(false);
+      // A spent allowance refuses the plan, the checks and the explanation
+      // together, and the deck above is the book alone — for a thin lesson,
+      // its one outcome three times. Say why rather than let it pass as
+      // generated.
+      if (!lessonPlan && aiErrorMessageKey(planError) === 'aiQuotaSpent') setError(t('slidesBookOnlyQuota'));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
 
