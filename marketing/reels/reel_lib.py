@@ -352,12 +352,13 @@ def build(cfg):
         r.close()
     final = OUT / cfg["out"]
     bed = OUT / "bed.wav"
-    if cfg.get("music") == "upbeat":
+    if cfg.get("music") in ("upbeat", "oriental"):
         # Groove + accents that follow the picture: a whoosh into every scene cut and a pop on it, a riser into the
         # end card. See music_upbeat.py. Default for new reels; the first twelve used the soft bed (make_music.py).
-        import music_upbeat
+        import importlib
+        music_mod = importlib.import_module("music_" + cfg["music"])        # music_upbeat.py / music_oriental.py
         bed = OUT / f"_{cfg['name']}_music.wav"
-        music_upbeat.render(bed, total, hits=[sc["t0"] for sc in cfg["scenes"][1:]], end=t_end, dings=cfg.get("dings", ()))
+        music_mod.render(bed, total, hits=[sc["t0"] for sc in cfg["scenes"][1:]], end=t_end, dings=cfg.get("dings", ()))
     subprocess.run(
         ["ffmpeg", "-v", "error", "-y", "-i", str(silent), "-i", str(bed),
          "-filter_complex", f"[1:a]volume=-1.5dB,afade=t=out:st={total - 1.4:.2f}:d=1.4[a]",

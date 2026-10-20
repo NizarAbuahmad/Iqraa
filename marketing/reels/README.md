@@ -170,3 +170,7 @@ bed (`out/bed.wav`) and rebuild.
   **Reels 2, 5, 10, 11, 12 use it** (dings: Reel 5 on each countdown number, the reveal and each key line; Reel 10 on each
   correct answer; Reel 11 on each activity as it lights up). Re-music an older reel by adding `music="upbeat"` to its
   config and rebuilding.
+- **Oriental** — `music_oriental.py` (98 BPM, tonic D, **Hijaz** scale: darbuka maqsum, riq 16ths, an oud-style question-and-answer
+  melody with grace notes, a qanun octave from bar 5, a D + A string drone). Same interface, so `music="oriental"` in a reel's
+  config; accents are a riq roll into each cut, a "tak" on it, qanun notes climbing Hijaz for `dings`, and a final D strum.
+  Sample: `out/Iqrra_13_Poster_Sample_oriental.mp4` (`python3 build_poster_reel.py oriental`).

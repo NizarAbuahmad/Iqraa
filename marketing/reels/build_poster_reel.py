@@ -9,7 +9,8 @@ changes the whole language so you can judge a different direction:
            swipe-wipe between scenes, a bold poster end card (hard offset shadows, no soft glows).
   text     a short story instead of labels: «حصتك بعد ساعة… والتحضير لسّا؟» -> four verbs -> a punchline.
   footage  the existing «الحصة التفاعلية» take (capture/takes/r11_interactive.mp4) — nothing re-recorded.
-  music    music_upbeat.py, with a ding on every sticker and a whoosh/pop on every swipe.
+  music    music_upbeat.py (default) or music_oriental.py (`python3 build_poster_reel.py oriental`), with a ding on every
+           sticker and an accent on every swipe.
 
 The yellow (#FFC93C) is an accent borrowed from the app's own book-cover art; it is not in constants/colors.ts, so
 adopting this style means deciding whether to add it to the brand palette. Everything else is brand: the lockup,
@@ -18,11 +19,12 @@ ink #0B1B33, teal #00A99D / #006D65, paper #F6F5F1.
     node render_overlays.js ; python3 build_poster_reel.py
 """
 import subprocess
+import sys
 
 import numpy as np
 from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
-import music_upbeat
+import importlib
 from reel_lib import (FPS, H, OUT, OV, VIEW_H, VIEW_W, W, FrameReader, Take, cursor_sprite, ease, ripple)
 
 SAND, INK, TEAL, YELLOW = (246, 245, 241), (11, 27, 51), (0, 169, 157), (255, 201, 60)
@@ -113,7 +115,8 @@ def fade(img, a):
     return img
 
 
-def main():
+def main(music="upbeat"):
+    music_mod = importlib.import_module("music_" + music)
     take = Take(TAKE)
     sc = [
         dict(src=0.4, rate=0.0, dur=3.0, cam=(0, 150, 390, 650), head="p1", num=None),
@@ -236,8 +239,8 @@ def main():
     reader.close()
 
     bed = OUT / "_poster_music.wav"
-    music_upbeat.render(bed, total, hits=cuts, end=t_end, dings=dings)
-    final = OUT / "Iqrra_13_Poster_Sample.mp4"
+    music_mod.render(bed, total, hits=cuts, end=t_end, dings=dings)
+    final = OUT / ("Iqrra_13_Poster_Sample.mp4" if music == "upbeat" else f"Iqrra_13_Poster_Sample_{music}.mp4")
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(silent), "-i", str(bed),
                     "-filter_complex", f"[1:a]volume=-1.5dB,afade=t=out:st={total - 1.4:.2f}:d=1.4[a]",
                     "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-t", f"{total:.3f}",
@@ -247,4 +250,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1] if len(sys.argv) > 1 else "upbeat")
