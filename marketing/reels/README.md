@@ -14,6 +14,7 @@
 | 10 | `out/Iqrra_10_Games.mp4` | **recorded from the app** (public games hub, no login) — new brand, teal “progress race” | 21.1 s |
 | 11 | `out/Iqrra_11_Interactive_Class.mp4` | **recorded from the app**, demo account, demo-mode content — new brand, paper “numbered list” | 22.3 s |
 | 12 | `out/Iqrra_12_Curriculum.mp4` | **recorded from the app**, demo account — new brand, ink “explainer” | 24.0 s |
+| 14 | `out/Iqrra_14_Meta_Ad_upbeat.mp4`, `…_oriental.mp4` | **Meta ad**: 12 features in one reel, «جرّبها مجانًا» (same picture, two music beds) | 27.8 s |
 | 13 | `out/Iqrra_13_Poster_Sample.mp4` | **style sample**: Reel 11's footage in a totally different design (poster / kinetic type / tilted phone) | 21.0 s |
 
 Reels 1–4 share one layout (headline in the top safe zone, the app in a rounded card, branded end card),
@@ -102,6 +103,21 @@ with a ding, teal swipe wipes between scenes, a hard-shadow poster end card. The
 Decision it needs: the yellow (`#FFC93C`) comes from the app's book-cover art and is **not** in `constants/colors.ts`.
 `verify_reel.py` flags this style's decorative teal disc in the margins; the poster is checked for ink-coloured content in
 the margin zones instead (0 of 42 frames).
+
+## Reel 14 — Meta ad (all features, try it free)
+
+`build_meta_ad.py`; footage from the tour and the committed takes, nothing re-recorded. Poster look (Reel 13), 27.8 s, 12 features in the
+order of a lesson (ask · curriculum · worksheet · lesson plan · slides · interactive class · class challenge · games · whiteboard ·
+evaluations · parent message · classes), a progress ticker, and an end card «جرّبها مجانًا على درسك الجاي / أنشئ حساب معلم مجاني».
+
+- **Safe zone for Reels ads:** all content sits inside y 270–1250 and x 65–1015 (Meta overlays its own caption and button on the
+  bottom ~35 %). Checked: no ink-coloured content outside it in 56 sampled frames.
+- **"Free" is a claim to keep true.** The product has no price or billing today and the app's own button reads «إنشاء حساب معلم
+  مجاني», but `docs/marketing-plan.md` §3 lists Free/Pro/School tiers as hypotheses. If a paywall ships before the ad runs, change
+  the sticker and the end card (`overlays.html`, `sk_free`, `end_ad`).
+- **Demo label.** Screens with demo-mode AI content carry «وضع العرض · محتوى تجريبي», per the plan's rule for any "try it free" campaign.
+- **Before paid spend:** the plan's own gate #7 (legal opinion on commercial use of the NCCD textbook content) and gate #5 (claims audit).
+- The music is original (no licence), in two versions: `_upbeat` and `_oriental`.
 
 ## Reels 6–9 — cut from the full-app tour
 
