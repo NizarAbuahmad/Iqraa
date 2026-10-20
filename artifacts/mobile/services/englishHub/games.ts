@@ -10,7 +10,7 @@
  */
 import type { GrammarMarker, GrammarSentence } from '@workspace/curriculum/englishGrammar';
 import type { HubWord } from '@workspace/curriculum/englishHub';
-import { firstSound } from '@workspace/curriculum/englishReading';
+import { MIN_SENTENCE_WORDS, distinctPictureWords, firstSound, sentencePartner } from '@workspace/curriculum/englishReading';
 import { isPicturable, wordPicture } from '@workspace/curriculum/englishPictures';
 import { sample, shuffle } from '../publicGames/rng.ts';
 
@@ -19,7 +19,7 @@ export { isPicturable, wordPicture };
 export type HubActivity =
   | 'flashcards' | 'listen' | 'match' | 'spell' | 'scramble' | 'picture' | 'speaking'
   | 'grammar-choose' | 'grammar-build' | 'grammar-true' | 'grammar-yesno'
-  | 'read-find' | 'first-letter' | 'starts-with';
+  | 'read-find' | 'first-letter' | 'starts-with' | 'read-sentence';
 /** The vocabulary activities, offered on every lesson. */
 export const HUB_ACTIVITIES: HubActivity[] = ['flashcards', 'listen', 'match', 'spell', 'scramble', 'picture', 'speaking'];
 /** The grammar activities, offered only on a lesson whose unit a teacher has reviewed (`offeredGrammar`). */
@@ -495,6 +495,62 @@ export function readingActivityAvailable(activity: HubActivity, words: readonly 
   return false;
 }
 
+// ─── Read the sentence (Grade 2) ────────────────────────────────────────────
+
+/** A picture as a child sees it: the word's emoji, doubled for a plural, with a ✅ / ❌ / 👦 / 👧 beside it. */
+export interface SentencePictureOption {
+  word: string;
+  count: 1 | 2;
+  marker: GrammarMarker | null;
+}
+
+export interface ReadSentenceQuestion {
+  sentence: GrammarSentence;
+  /** Three pictures; the sentence's own is at `answerIndex`. */
+  options: SentencePictureOption[];
+  answerIndex: number;
+}
+
+const optionOf = (s: GrammarSentence): SentencePictureOption => ({ word: s.picture!.word, count: s.picture!.count, marker: s.marker });
+const optionKey = (o: SentencePictureOption) => `${o.word}|${o.count}|${o.marker ?? ''}`;
+
+/**
+ * Read the printed sentence, tap its picture. One question per picture word, so a round cannot be
+ * passed by remembering a picture. The first wrong picture is the sentence's partner when it has one
+ * (the same word, another count or marker: the child must read the small word); the rest are other
+ * words of the same pattern, then of the unit. `pool` is `readSentencePool(lessonId)`.
+ */
+export function buildReadSentenceRound(pool: readonly GrammarSentence[], rng: () => number = Math.random): ReadSentenceQuestion[] {
+  const usable = pool.filter(s => s.picture !== null && s.yesNo === null);
+  const byWord = new Map<string, GrammarSentence[]>();
+  for (const s of usable) byWord.set(s.picture!.word, [...(byWord.get(s.picture!.word) ?? []), s]);
+  const asked = sample([...byWord.keys()], ROUND_LENGTH, rng).map(w => sample(byWord.get(w)!, 1, rng)[0]);
+  return asked.map(sentence => {
+    const answer = optionOf(sentence);
+    const partner = sentencePartner(sentence, usable);
+    const wrong: SentencePictureOption[] = partner ? [optionOf(partner)] : [];
+    const taken = new Set([answer.word, ...wrong.map(o => o.word)]);
+    // Same pattern first, so the wrong picture looks like the right one (a ✅ beside a ✅); then the rest of the unit.
+    for (const same of [true, false]) {
+      for (const w of shuffle([...byWord.keys()], rng)) {
+        if (wrong.length === READING_OPTIONS - 1) break;
+        if (taken.has(w)) continue;
+        const other = byWord.get(w)!.find(t => !same || t.patternId === sentence.patternId);
+        if (!other) continue;
+        wrong.push(optionOf(other));
+        taken.add(w);
+      }
+    }
+    const options = shuffle([answer, ...wrong], rng);
+    return { sentence, options, answerIndex: options.findIndex(o => optionKey(o) === optionKey(answer)) };
+  });
+}
+
+/** Offered when the pool has the floor of distinct picture words, so a round never repeats one. */
+export function readSentenceAvailable(pool: readonly GrammarSentence[]): boolean {
+  return distinctPictureWords(pool) >= MIN_SENTENCE_WORDS;
+}
+
 /** 3 stars at 90%+, 2 at 60%+, 1 for finishing at all. */
 export function starsFor(correct: number, total: number): 0 | 1 | 2 | 3 {
   if (total <= 0) return 0;
@@ -562,7 +618,7 @@ export function currentStreak(p: HubProgress, today: string): number {
 /** Every activity a finished round can earn stars on — flashcards and speaking give none (nothing is scored). */
 const SCORED_ACTIVITIES = [
   'listen', 'match', 'spell', 'scramble', 'picture', 'grammar-choose', 'grammar-build', 'grammar-true', 'grammar-yesno',
-  'read-find', 'first-letter', 'starts-with',
+  'read-find', 'first-letter', 'starts-with', 'read-sentence',
 ] as const;
 
 /** Stars earned on a lesson across its activities. */
