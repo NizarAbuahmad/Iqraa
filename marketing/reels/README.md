@@ -1,4 +1,4 @@
-# Reels (1080×1920, Instagram / Facebook)
+# Reels (1080×1920, Instagram / Facebook) + one 16:9 YouTube video
 
 | # | File | Footage | Length |
 | --- | --- | --- | --- |
@@ -16,6 +16,7 @@
 | 12 | `out/Iqrra_12_Curriculum.mp4` | **recorded from the app**, demo account — new brand, ink “explainer” | 24.0 s |
 | 14 | `out/Iqrra_14_Meta_Ad_upbeat.mp4` | **Meta ad**: 12 features in one reel, whole-screen phone, «جرّبها مجانًا» | 27.8 s |
 | 13 | `out/Iqrra_13_Poster_Sample.mp4` | **style sample**: Reel 11's footage in a totally different design (poster / kinetic type / tilted phone) | 21.0 s |
+| 15 | `out/Iqrra_15_YouTube_Full_Tour.mp4` | **YouTube, 16:9 1920×1080**: 21 chapters, every feature, burned-in captions, no voice-over | ~4:13 |
 
 Reels 1–4 share one layout (headline in the top safe zone, the app in a rounded card, branded end card),
 the same Chromium-rendered Arabic (Cairo / Almarai, never ffmpeg `drawtext`) and the same music bed.
@@ -121,6 +122,22 @@ evaluations · parent message · classes), a progress ticker, and an end card «
   overlay zone on purpose; all text stays inside the zone. To keep the phone fully inside, set `bp.SW, bp.SH = 360, 779` and `PCY = 850`.
 - The music is original (no licence): upbeat in the shipped file. `build_meta_ad.py` renders both beds; the oriental version was dropped
   on request (re-add by restoring the `oriental` loop entry).
+
+## Reel 15 — YouTube full tour (16:9)
+
+`build_youtube.py` (frames, 4 parallel chunks → ffmpeg concat → music mux), copy and footage windows in `youtube_chapters.py`
+(one source for the overlays, the builder and the description timestamps), `make_youtube_overlays.py` + `render_html.js` (Chromium-rendered
+Arabic), `make_youtube_thumb.py` (1280×720 thumbnail). Big tilted phone on the left, chapter title and two tick bullets on the right,
+progress rail along the bottom, lockup top-right. A 9 s intro and a 9 s end card «جرّبها مجانًا». ~15–20 min to render.
+
+- **Chapters (timestamps):** written to `out/youtube_chapters.txt` on every build — paste into the YouTube description.
+- **No voice-over:** burned-in captions only, so it works muted. Original synthesised music (`music_upbeat.py`) at −8 dB, so it stays under any narration added later.
+- **Footage:** the tour (`capture/takes/tour.mp4`) plus the committed takes `r4_messages`, `r10_games`, `r11_interactive`. Nothing re-recorded.
+- **Kept off screen:** generated worksheet / quiz / activity text can contain the app's mirrored maths and an Arabic «و» that reads as a 9, so those
+  chapters show the form, then the «ready» card with the generated text blurred (`LOWER = "blur"`, `BLUR_Y`). Settings and Profile are skipped (they show an e-mail address).
+- **Labels:** demo-mode generated content carries «وضع العرض · محتوى تجريبي»; fictional classes and names carry «حساب تجريبي · أسماء افتراضية».
+- **"Free" is a claim to keep true** — same caveat as Reel 14 (no price or billing today; marketing-plan gates #5 and #7 apply before paid promotion).
+- The tour's own chapter title cards are skipped by picking source times *after* them (calendar starts at 427.8 s; 426.8 s is still the card).
 
 ## Reels 6–9 — cut from the full-app tour
 

@@ -10,7 +10,8 @@ Footage choices (reviewed frame by frame): frames where the app draws maths mirr
 next to Latin letters, are not used — generated worksheets / quizzes / activities are shown as the form and the «ready»
 card, never the question text. Settings and Profile are skipped: they show an e-mail address.
 """
-LOWER = (0, 330, 390, 514)           # the «ready» card + buttons without the generated text above it
+LOWER = "blur"                       # whole screen, with the generated text above the «ready» card blurred (BLUR_Y, CSS px)
+BLUR_Y = (0, 330)
 
 CHAPTERS = [
     dict(key="ask", group="تحضير الدرس", title="اسأل إقرأ", demo="ai",
@@ -72,7 +73,7 @@ CHAPTERS = [
          subs=[("tour", 409.0, 1.2, 12.5)]),
     dict(key="calendar", group="شعبك وجدولك", title="التقويم", demo=None,
          bullets=["شاهد حصصك ومواعيدك", "يومًا بيوم"],
-         subs=[("tour", 426.8, 0.0, 3.8)]),
+         subs=[("tour", 427.8, 0.0, 3.0)]),
     dict(key="files", group="شعبك وجدولك", title="ملفاتي", demo=None,
          bullets=["احفظ موادك في ملفاتك", "وأضِفها إلى الشعبة المناسبة"],
          subs=[("tour", 446.5, 1.0, 7.0)]),

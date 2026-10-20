@@ -23,7 +23,7 @@ from PIL import Image, ImageDraw, ImageFilter
 import build_poster_reel as bp    # the poster helpers: phone sprite (bezel + mask), back_out
 import music_upbeat
 from reel_lib import FPS, HERE, OUT, FrameReader, Take, cursor_sprite, ease, ripple
-from youtube_chapters import CHAPTERS, END_DUR, INTRO_DUR
+from youtube_chapters import BLUR_Y, CHAPTERS, END_DUR, INTRO_DUR
 
 W, H = 1920, 1080
 OV = HERE / "overlays_yt"
@@ -94,13 +94,19 @@ def footage(take, reader, sc, t_rel):
     t_src = sc["src"] + sc["rate"] * t_rel
     src = reader.get(t_src)
     k = take.k
-    x, y, w, h = sc["crop"] or (0, 0, 390, 844)
+    blur = sc["crop"] == "blur"
+    x, y, w, h = (0, 0, 390, 844) if blur or not sc["crop"] else sc["crop"]
     scale = SW / w
     ch = h * scale
     if ch >= SH - 1:
         foot = src.resize((SW, SH), Image.LANCZOS, box=(x * k, y * k, (x + w) * k, (y + h) * k)).convert("RGBA")
         oy = 0
         to_card = lambda px, py: ((px - x) * scale, (py - y) * scale)
+        if blur:      # generated text can show mirrored maths: blur that band, keep header and the «ready» card sharp
+            b0, b1 = int(BLUR_Y[0] * scale), int(BLUR_Y[1] * scale)
+            band = foot.crop((0, b0, SW, b1)).filter(ImageFilter.GaussianBlur(9))
+            band = Image.blend(band, Image.new("RGBA", band.size, (255, 255, 255, 255)), 0.35)
+            foot.paste(band, (0, b0))
     else:
         part = src.resize((SW, int(round(ch))), Image.LANCZOS, box=(x * k, y * k, (x + w) * k, (y + h) * k)).convert("RGBA")
         bgc = part.getpixel((4, 4))
