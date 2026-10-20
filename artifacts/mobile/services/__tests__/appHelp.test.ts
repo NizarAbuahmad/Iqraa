@@ -1243,3 +1243,69 @@ describe('features asked about by name, and the ones the app lacks (ninth live p
   });
 });
 
+describe('the lab, the corners, groups, export and the rest (tenth live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    ['كيف أستخدم السبورة التفاعلية؟', 'howWhiteboard'],
+    ['how do i use the whiteboard', 'howWhiteboard'],
+    ['كيف أنشئ مجموعة للأهالي؟', 'howParentGroup'],
+    ['how do i create a group for parents', 'howParentGroup'],
+    ['كيف أحمّل خطة الدرس بصيغة وورد؟', 'faqA4'],
+    ['how do i download the lesson plan as word', 'faqA4'],
+    ['كيف أنسخ نص خطة الدرس؟', 'faqA4'],
+    ['كيف أفتح صفحة المدرسة؟', 'howSchoolTab'],
+    ['how do i switch between my classes', 'howOpenClass'],
+    ['كيف أعمل نسخة احتياطية من ملفاتي؟', 'howBackup'],
+    ['how do i back up my files', 'howBackup'],
+    ['كيف أشارك خطة الدرس مع معلم آخر؟', 'howShareMaterial'],
+    ['how do i share a lesson plan with another teacher', 'howShareMaterial'],
+    ['هل بياناتي آمنة؟', 'howPrivacy'],
+    ['is my data safe', 'howPrivacy'],
+    ['how do i update the app', 'howUpdateApp'],
+    ['كيف أحدّث التطبيق؟', 'howUpdateApp'],
+    ['كيف أعرف الدروس التي أنهيتها؟', 'howLessonProgress'],
+    ['how do i see which objectives i have covered', 'howLessonProgress'],
+    ['كيف أشاهد الفيديوهات التعليمية؟', 'howLibraryVideos'],
+    ['how do i watch the educational videos', 'howLibraryVideos'],
+    ['كيف أبحث عن درس معين؟', 'howSearchLesson'],
+    ['how do i search for a lesson', 'howSearchLesson'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text, `<${key}>`);
+    });
+  }
+
+  const places: Array<[string, string, string]> = [
+    ['كيف أفتح مختبر الكيمياء؟', 'lab', 'labEntryTitle'],
+    ['where is the chemistry lab', 'lab', 'labEntryTitle'],
+    ['وين ركن الرياضيات؟', 'math-corner', 'mathEntryTitle'],
+    ['how do i open the math corner', 'math-corner', 'mathEntryTitle'],
+    ['كيف أفتح القرآن الكريم في التطبيق؟', 'quran-corner', 'quranTitle'],
+    ['كيف ألعب لعبة الذاكرة؟', 'tool:games', 'toolGamesTitle'],
+  ];
+  for (const [q, id, label] of places) {
+    it(`«${q}» → the ${id} place`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      const answer = answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t);
+      assert.equal(answer.places[0]?.id, id);
+      assert.ok(answer.text.includes(`<${label}>`));
+    });
+  }
+
+  const stayWithModel = [
+    'how do i write a chemistry lab report',
+    'كيف أشرح درس القرآن الكريم',
+    'كيف أنظم المختبر مع الطلاب',
+    'how do i organise group work in class',
+    'how do i copy a worksheet for each student',
+    'how do i update my lesson plan',
+    'كيف أبحث عن معلومات لدرس الأسس',
+    'how do i find the main idea of a lesson',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not app help`, () => assert.equal(isAppHelpQuery(q), false));
+  }
+});
+

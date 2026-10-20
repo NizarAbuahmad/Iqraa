@@ -99,11 +99,20 @@ describe('the repeat rule\'s inputs', () => {
     assert.equal(sameKind(a4, b4), true);
   });
 
-  it('agrees with sameKind at the cap on every pair of a small corpus', () => {
+  it('says which frames of a small corpus are one ask, by value', () => {
+    // Pinned answers, not `sameKind(x, y, 3)` again: `sameAsk` is that call, so
+    // comparing the two could never fail. Rows and columns follow `frames`.
     const frames = ['ما العدد الأكبر بين', 'ما العدد الأصغر بين', 'أوجد الكتلة المولية لـ', 'عرّف المتوسط', '# + # = ؟'];
-    for (const x of frames) for (const y of frames) {
-      assert.equal(sameAsk(x, y), sameKind(x, y, 3), `${x} / ${y}`);
-    }
+    const oneAsk = [
+      [1, 1, 0, 0, 0],
+      [1, 1, 0, 0, 0],
+      [0, 0, 1, 0, 0],
+      [0, 0, 0, 1, 0],
+      [0, 0, 0, 0, 1],
+    ];
+    frames.forEach((x, i) => frames.forEach((y, j) => {
+      assert.equal(sameAsk(x, y), oneAsk[i][j] === 1, `${x} / ${y}`);
+    }));
   });
 
   it('says a stem has a sentence only when it has a letter', () => {

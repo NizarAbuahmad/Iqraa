@@ -1628,9 +1628,12 @@ exports (the API's `paperOrder.ts` `EXAM_TYPE_ORDER` and `generationShape.ts`
 asserted in `paperOrder.test.ts`, `examBlocks.test.ts` and
 `quizMinistryOrder.test.ts`. A source-text check stays on top: the two mobile
 files must import from `@workspace/exam-paper` and carry no list literal of
-their own, and the API's two modules declare none. A second list under another
-name is **not** caught; `ALL_Q_TYPES` in the quiz picker
-(`app/ai-tools/quiz.tsx`) is one, and it predates this change.
+their own, and the API's two modules declare none. The quiz picker
+(`app/ai-tools/quiz.tsx`) kept a second list, `ALL_Q_TYPES`, until 2026-10-20; it
+now takes `QUIZ_TYPE_ORDER` and `QuizType` from the package, and the same test
+fails if the file declares a list or union of its own again. A list under another
+name elsewhere is **not** caught — `QuizQuestion['type']` in
+`services/ai/AIService.ts` still spells the four types out.
 
 How "no behaviour change" was checked, rather than asserted: a before/after
 digest of `quizRepeats` (per paper) and `dominantKind` over every lesson's
@@ -4417,6 +4420,24 @@ shows in the calendar). "make homework less boring" and «أقل مللًا» ar
 words, and `classifyChatIntent` no longer builds a worksheet for "make … less/more
 …". «كيف أصحح أوراق الطلاب؟» stays with the model on purpose: without the
 camera it is marking advice. Still open: long-press export on the
+«أيّ مادة تقصد؟» clarification.
+
+**The lab, the corners, groups, export and more (2026-10-20, tenth live pass).**
+Of 30 more questions on app.iqrra.com about features not probed before, 5 were
+right; the model refused or invented a path for most of the rest. Each screen was
+opened in code first. Now found or explained: the lab, the math corner and the Quran
+corner (tiles on the Library tab, matched by anchored «open / where» rules only —
+«chemistry lab» alone is a lab report, «القرآن» a lesson), a memory or other
+play game (→ «ألعاب إقرأ»), the whiteboard (a button in the presentation toolbar),
+a group for parents (`messaging/new-group` has a «مجموعة» mode beside the one-to-one
+broadcast), downloading a plan as Word / PDF or copying a result (the existing
+export answer), switching between classes, the School tab (student and parent
+accounts only), a backup (none: saves live in the account), «هل بياناتي آمنة؟»
+(points to the privacy policy, does not promise), updating the app, which lessons
+are done (a plan counts lessons whose dates have passed; there is no taught tick),
+videos and searching in the Library, and sharing a plan with a colleague. Not done
+because the code does not settle them: a class limit, joining a school as a teacher,
+uploading an image to a lesson. Still open: long-press export on the
 «أيّ مادة تقصد؟» clarification.
 
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
