@@ -50,9 +50,14 @@ mediaRouter.get("/media/unsplash-photo", async (req, res) => {
     return;
   }
 
+  // One photo per page, so `page` walks down the results: the slide editor's
+  // «another photo» asks for page 2, 3… of the same query. Capped — each press
+  // spends one call of the hourly Unsplash allowance.
+  const page = Math.min(Math.max(Number.parseInt(String(req.query.page ?? "1"), 10) || 1, 1), 30);
+
   try {
     const url = `${UNSPLASH_SEARCH_URL}?query=${encodeURIComponent(query)}`
-      + `&per_page=1&orientation=landscape&content_filter=high`;
+      + `&per_page=1&page=${page}&orientation=landscape&content_filter=high`;
     const response = await fetch(url, {
       headers: { Authorization: `Client-ID ${accessKey}` },
     });

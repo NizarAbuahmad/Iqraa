@@ -96,6 +96,8 @@ async function addSideImage(
 }
 
 async function fetchAsDataUrl(url: string): Promise<string | null> {
+  // A teacher's uploaded photo is kept in the deck as a data URL already.
+  if (/^data:image\//i.test(url)) return url;
   try {
     // A stalled image host left `exportingPptx` true for good — the export
     // button spun until the app was restarted.
