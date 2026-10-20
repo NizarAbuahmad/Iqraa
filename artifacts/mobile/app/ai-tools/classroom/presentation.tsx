@@ -1693,7 +1693,11 @@ export default function PresentationScreen() {
             ? <HeroSlideView slide={slide} accent={slideTypeAccent(slide.type, T)} />
             : photoHero
               ? <HeroSlideView slide={photoHero} accent={slideTypeAccent(slide.type, T)} />
-              : <SlideView key={slideIndex} slide={slide} isRTL={slideRTL} onZoomSide={setSideZoom} />}
+              // Keyed per slide so its entrance motion replays — by a string the
+              // pen layer below cannot share. Both sat in this ScrollView as
+              // `key={slideIndex}`, and two siblings with one key made React keep
+              // every slide it had shown: slide 3 drew slides 2 and 3 stacked.
+              : <SlideView key={`slide-${slideIndex}`} slide={slide} isRTL={slideRTL} onZoomSide={setSideZoom} />}
           <ImageViewerModal
             url={sideZoom}
             onClose={() => setSideZoom(null)}
@@ -1895,7 +1899,7 @@ export default function PresentationScreen() {
           {/* Last child, absolute over the whole content: ink scrolls with the
               slide it marks. While the pen is on it takes every touch, so the
               slide cannot scroll — turning the pen off gives scrolling back. */}
-          <PenCanvas key={slideIndex} strokes={slideInk} color={penColor} active={penOn} onChange={setSlideInk} />
+          <PenCanvas key={`ink-${slideIndex}`} strokes={slideInk} color={penColor} active={penOn} onChange={setSlideInk} />
         </ScrollView>
         {penOn && (
           <PenPalette
