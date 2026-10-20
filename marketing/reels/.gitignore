@@ -3,3 +3,5 @@ capture/state/
 capture/takes/_frames_*/
 # the user-supplied full-app tour (21 MB); see README, Reels 6-9
 capture/takes/tour.mp4
+# temporary render chunks / silent passes
+out/_*

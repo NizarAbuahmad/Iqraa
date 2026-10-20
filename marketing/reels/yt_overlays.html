@@ -1,0 +1,112 @@
+<!doctype html><meta charset="utf-8"><title>yt overlays</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&family=Almarai:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0B1B33;--brand:#00A99D;--primary:#006D65;--paper:#F6F5F1;--yellow:#FFC93C}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:transparent}
+body{font-family:"Almarai",sans-serif;direction:rtl;width:1920px}
+.o{position:absolute;left:0;top:0}
+.head{width:860px;text-align:right}
+.head .row{display:flex;align-items:center;gap:16px;justify-content:flex-start;margin-bottom:22px}
+.head .num{font-family:"Cairo";font-weight:900;font-size:40px;color:#fff;background:var(--ink);border-radius:14px;padding:4px 20px}
+.head .grp{font-family:"Almarai";font-weight:800;font-size:32px;color:var(--primary)}
+.head .ttl{font-family:"Cairo";font-weight:900;font-size:112px;line-height:1.12;color:var(--ink);white-space:nowrap}
+.mk{background:linear-gradient(transparent 56%,var(--yellow) 56%,var(--yellow) 90%,transparent 90%);padding:0 12px;margin:0 -12px}
+.bul{width:860px;text-align:right;display:flex;align-items:flex-start;gap:20px;font-family:"Almarai";font-weight:800;font-size:46px;line-height:1.35;color:var(--ink)}
+.bul i{flex:0 0 auto;width:54px;height:54px;border-radius:50%;background:var(--primary);color:#fff;font-style:normal;font-size:32px;display:flex;align-items:center;justify-content:center;margin-top:6px}
+.pill{display:inline-flex;padding:10px 26px;border-radius:999px;background:#fff;border:3px solid var(--ink);font-family:"Almarai";font-weight:800;font-size:30px;color:var(--ink);white-space:nowrap}
+.lock{width:250px}
+.intro .big{font-family:"Cairo";font-weight:900;font-size:150px;line-height:1.1;color:var(--ink)}
+.intro .sub{font-family:"Almarai";font-weight:800;font-size:50px;line-height:1.4;color:var(--primary);margin-top:26px}
+.intro .tags{display:flex;gap:16px;flex-wrap:wrap;margin-top:44px;justify-content:flex-start}
+.intro .tags span{font-family:"Cairo";font-weight:800;font-size:38px;background:#fff;border:3px solid var(--ink);border-radius:18px;padding:8px 24px;box-shadow:0 8px 0 var(--brand)}
+.end{width:1920px;height:1080px;position:relative;overflow:hidden;background:var(--paper)}
+.end .bg{position:absolute;inset:0;background:radial-gradient(circle at 12% 112%,#00A99D 0 520px,transparent 521px),radial-gradient(circle at 93% 12%,#FFC93C 0 80px,transparent 81px),#F6F5F1}
+.end .l{position:absolute;left:130px;top:250px;width:760px}
+.end .r{position:absolute;right:130px;top:200px;width:880px;text-align:right}
+.end .b1{font-family:"Cairo";font-weight:900;font-size:150px;line-height:1.08;color:var(--ink)}
+.end .b2{font-family:"Cairo";font-weight:900;font-size:84px;line-height:1.2;color:var(--ink);margin-top:6px}
+.end .cta{margin-top:56px;display:inline-block;background:var(--primary);color:#fff;font-family:"Cairo";font-weight:900;font-size:62px;padding:24px 60px;border-radius:24px;box-shadow:0 12px 0 var(--ink)}
+.end .url{margin-top:40px;direction:ltr;font-family:"Cairo";font-weight:900;font-size:64px;color:var(--ink)}
+.end .sub{margin-top:30px;font-family:"Almarai";font-weight:800;font-size:40px;color:var(--primary)}
+</style>
+<div id="lk" class="o"><img class="lock" src="assets/lockup-ink.svg" alt=""></div>
+<div id="pill_ai" class="o"><span class="pill">وضع العرض · محتوى تجريبي</span></div>
+<div id="pill_acct" class="o"><span class="pill">حساب تجريبي · أسماء افتراضية</span></div>
+<div id="intro" class="o head intro"><div class="big">جولة كاملة<br>في <span class="mk">اقرأ</span></div>
+<div class="sub">كل أدوات تحضير الحصة بتطبيق واحد<br>للمنهاج الأردني</div>
+<div class="tags"><span>خطط وأوراق عمل</span><span>شرائح وأنشطة</span><span>ألعاب وتقييمات</span><span>شُعَب ورسائل</span></div></div>
+<div id="c01_h" class="o head"><div class="row"><span class="num">٠١</span><span class="grp">تحضير الدرس</span></div><div class="ttl"><span class="mk">اسأل إقرأ</span></div></div>
+<div id="c01_b1" class="o bul"><i>✓</i><span>اكتب طلبك بجملة وحدة، حتى لو كان غير مكتمل</span></div>
+<div id="c01_b2" class="o bul"><i>✓</i><span>إذا الطلب مش واضح بيسألك، وبيقترح عليك الخطوة الجاية</span></div>
+<div id="c02_h" class="o head"><div class="row"><span class="num">٠٢</span><span class="grp">تحضير الدرس</span></div><div class="ttl"><span class="mk">خطة درس</span></div></div>
+<div id="c02_b1" class="o bul"><i>✓</i><span>اختار الصف والمادة والدرس والمدة وأسلوب التدريس</span></div>
+<div id="c02_b2" class="o bul"><i>✓</i><span>خطة جاهزة: أهداف ومسار الحصة والتوقيت والواجب</span></div>
+<div id="c03_h" class="o head"><div class="row"><span class="num">٠٣</span><span class="grp">تحضير الدرس</span></div><div class="ttl"><span class="mk">ورقة عمل</span></div></div>
+<div id="c03_b1" class="o bul"><i>✓</i><span>مثال محلول، ومثال نكمله، وتمارين متدرجة</span></div>
+<div id="c03_b2" class="o bul"><i>✓</i><span>ومعها مفتاح إجابات بالخطوات</span></div>
+<div id="c04_h" class="o head"><div class="row"><span class="num">٠٤</span><span class="grp">تحضير الدرس</span></div><div class="ttl"><span class="mk">اختبار قصير</span></div></div>
+<div id="c04_b1" class="o bul"><i>✓</i><span>اختيار من متعدد، صح وخطأ، وإجابة قصيرة</span></div>
+<div id="c04_b2" class="o bul"><i>✓</i><span>حدّد المدة والدرجة وعدد الأسئلة</span></div>
+<div id="c05_h" class="o head"><div class="row"><span class="num">٠٥</span><span class="grp">تحضير الدرس</span></div><div class="ttl"><span class="mk">نشاط صفّي</span></div></div>
+<div id="c05_b1" class="o bul"><i>✓</i><span>نشاط جماعي بالخطوات والأدوار والزمن</span></div>
+<div id="c05_b2" class="o bul"><i>✓</i><span>للطباعة، أو للرجوع إليه أثناء الحصة</span></div>
+<div id="c06_h" class="o head"><div class="row"><span class="num">٠٦</span><span class="grp">داخل الصف</span></div><div class="ttl"><span class="mk">تحدّي الصف</span></div></div>
+<div id="c06_b1" class="o bul"><i>✓</i><span>لعبة أسئلة بين فرق الصف</span></div>
+<div id="c06_b2" class="o bul"><i>✓</i><span>بلا هواتف وبلا تحضير: الطلاب يرفعون أيديهم وأنت تسجّل النقاط</span></div>
+<div id="c07_h" class="o head"><div class="row"><span class="num">٠٧</span><span class="grp">داخل الصف</span></div><div class="ttl"><span class="mk">المكتبة</span></div></div>
+<div id="c07_b1" class="o bul"><i>✓</i><span>أوراق عمل وفيديوهات ومصادر من الكتاب المدرسي</span></div>
+<div id="c07_b2" class="o bul"><i>✓</i><span>ابحث باسم الدرس واختر الصف والمادة</span></div>
+<div id="c08_h" class="o head"><div class="row"><span class="num">٠٨</span><span class="grp">داخل الصف</span></div><div class="ttl"><span class="mk">شرائح الدرس</span></div></div>
+<div id="c08_b1" class="o bul"><i>✓</i><span>حوّل الدرس إلى عرض للشاشة</span></div>
+<div id="c08_b2" class="o bul"><i>✓</i><span>نتاجات التعلّم وأفكار الدرس وأشكال من كتابك المدرسي</span></div>
+<div id="c09_h" class="o head"><div class="row"><span class="num">٠٩</span><span class="grp">داخل الصف</span></div><div class="ttl"><span class="mk">الحصة التفاعلية</span></div></div>
+<div id="c09_b1" class="o bul"><i>✓</i><span>٧ أنشطة جاهزة مع مؤقّت</span></div>
+<div id="c09_b2" class="o bul"><i>✓</i><span>اختار الدرس والهدف، وابدأ العرض</span></div>
+<div id="c10_h" class="o head"><div class="row"><span class="num">١٠</span><span class="grp">داخل الصف</span></div><div class="ttl"><span class="mk">ألعاب إقرأ</span></div></div>
+<div id="c10_b1" class="o bul"><i>✓</i><span>ألعاب مجانية بلا تسجيل</span></div>
+<div id="c10_b2" class="o bul"><i>✓</i><span>شارك الرابط مع طلابك للمراجعة والمتعة</span></div>
+<div id="c11_h" class="o head"><div class="row"><span class="num">١١</span><span class="grp">داخل الصف</span></div><div class="ttl"><span class="mk">السبورة</span></div></div>
+<div id="c11_b1" class="o bul"><i>✓</i><span>ارسم واشرح على الشاشة</span></div>
+<div id="c11_b2" class="o bul"><i>✓</i><span>ألوان وممحاة، وتنقّل بين الصفحات</span></div>
+<div id="c12_h" class="o head"><div class="row"><span class="num">١٢</span><span class="grp">داخل الصف</span></div><div class="ttl"><span class="mk">مسار الدرس الكامل</span></div></div>
+<div id="c12_b1" class="o bul"><i>✓</i><span>ست خطوات تُجهَّز بالتتابع</span></div>
+<div id="c12_b2" class="o bul"><i>✓</i><span>النشاط التفاعلي والتدريب الموجّه جاهزان للعرض</span></div>
+<div id="c13_h" class="o head"><div class="row"><span class="num">١٣</span><span class="grp">التقويم والتواصل</span></div><div class="ttl"><span class="mk">التقييمات</span></div></div>
+<div id="c13_b1" class="o bul"><i>✓</i><span>ولّد أسئلة التقييم من المنهاج</span></div>
+<div id="c13_b2" class="o bul"><i>✓</i><span>امتحان يُرصَد ويُصحَّح، وتشاركه برابط</span></div>
+<div id="c14_h" class="o head"><div class="row"><span class="num">١٤</span><span class="grp">التقويم والتواصل</span></div><div class="ttl"><span class="mk">رسالة لوليّ الأمر</span></div></div>
+<div id="c14_b1" class="o bul"><i>✓</i><span>اختر موضوع الرسالة ونبرتها</span></div>
+<div id="c14_b2" class="o bul"><i>✓</i><span>صياغة رسمية جاهزة للنسخ أو المشاركة</span></div>
+<div id="c15_h" class="o head"><div class="row"><span class="num">١٥</span><span class="grp">التقويم والتواصل</span></div><div class="ttl"><span class="mk">الرسائل</span></div></div>
+<div id="c15_b1" class="o bul"><i>✓</i><span>رسالة لصفّك كله بنقرة</span></div>
+<div id="c15_b2" class="o bul"><i>✓</i><span>ومحادثة مباشرة مع أولياء الأمور</span></div>
+<div id="c16_h" class="o head"><div class="row"><span class="num">١٦</span><span class="grp">شعبك وجدولك</span></div><div class="ttl"><span class="mk">شُعَبي</span></div></div>
+<div id="c16_b1" class="o bul"><i>✓</i><span>أضف شعبتك والمواد التي تدرّسها</span></div>
+<div id="c16_b2" class="o bul"><i>✓</i><span>أضف الطلاب بأسمائهم دفعة واحدة</span></div>
+<div id="c17_h" class="o head"><div class="row"><span class="num">١٧</span><span class="grp">شعبك وجدولك</span></div><div class="ttl"><span class="mk">خطط التدريس</span></div></div>
+<div id="c17_b1" class="o bul"><i>✓</i><span>أنشئ خطة تدريس للفصل بتواريخها</span></div>
+<div id="c17_b2" class="o bul"><i>✓</i><span>وارجع لها بأي وقت</span></div>
+<div id="c18_h" class="o head"><div class="row"><span class="num">١٨</span><span class="grp">شعبك وجدولك</span></div><div class="ttl"><span class="mk">جدول الحصص</span></div></div>
+<div id="c18_b1" class="o bul"><i>✓</i><span>أعدّ جدولك الأسبوعي: الأيام والأوقات</span></div>
+<div id="c18_b2" class="o bul"><i>✓</i><span>ومدة كل حصة</span></div>
+<div id="c19_h" class="o head"><div class="row"><span class="num">١٩</span><span class="grp">شعبك وجدولك</span></div><div class="ttl"><span class="mk">التقويم</span></div></div>
+<div id="c19_b1" class="o bul"><i>✓</i><span>شاهد حصصك ومواعيدك</span></div>
+<div id="c19_b2" class="o bul"><i>✓</i><span>يومًا بيوم</span></div>
+<div id="c20_h" class="o head"><div class="row"><span class="num">٢٠</span><span class="grp">شعبك وجدولك</span></div><div class="ttl"><span class="mk">ملفاتي</span></div></div>
+<div id="c20_b1" class="o bul"><i>✓</i><span>احفظ موادك في ملفاتك</span></div>
+<div id="c20_b2" class="o bul"><i>✓</i><span>وأضِفها إلى الشعبة المناسبة</span></div>
+<div id="c21_h" class="o head"><div class="row"><span class="num">٢١</span><span class="grp">دعم</span></div><div class="ttl"><span class="mk">مساعدة واقتراحات</span></div></div>
+<div id="c21_b1" class="o bul"><i>✓</i><span>أسئلة شائعة جاهزة داخل التطبيق</span></div>
+<div id="c21_b2" class="o bul"><i>✓</i><span>واقترح الميزة التي تحتاجها</span></div>
+<div id="end" class="o end"><div class="bg"></div>
+<div class="l"><img src="assets/lockup-ink.svg" style="width:760px" alt=""></div>
+<div class="r"><div class="b1">جرّبها <span class="mk">مجانًا</span></div><div class="b2">على درسك الجاي</div>
+<div class="cta">أنشئ حساب معلم مجاني</div><div class="url">www.iqrra.com</div>
+<div class="sub">اشترك في القناة لتصلك فيديوهات جديدة</div></div></div>
+<script>
+// shrink a title until it fits its 860px column (long ones: «مسار الدرس الكامل»، «مساعدة واقتراحات»)
+document.fonts.ready.then(() => document.querySelectorAll('.ttl').forEach(t => {
+  let f = 112; while (t.scrollWidth > 850 && f > 60) { f -= 4; t.style.fontSize = f + 'px'; }
+}));
+</script>
