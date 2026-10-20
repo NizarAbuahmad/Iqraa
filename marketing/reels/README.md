@@ -14,7 +14,7 @@
 | 10 | `out/Iqrra_10_Games.mp4` | **recorded from the app** (public games hub, no login) — new brand, teal “progress race” | 21.1 s |
 | 11 | `out/Iqrra_11_Interactive_Class.mp4` | **recorded from the app**, demo account, demo-mode content — new brand, paper “numbered list” | 22.3 s |
 | 12 | `out/Iqrra_12_Curriculum.mp4` | **recorded from the app**, demo account — new brand, ink “explainer” | 24.0 s |
-| 14 | `out/Iqrra_14_Meta_Ad_upbeat.mp4`, `…_oriental.mp4` | **Meta ad**: 12 features in one reel, «جرّبها مجانًا» (same picture, two music beds) | 27.8 s |
+| 14 | `out/Iqrra_14_Meta_Ad_upbeat.mp4` | **Meta ad**: 12 features in one reel, whole-screen phone, «جرّبها مجانًا» | 27.8 s |
 | 13 | `out/Iqrra_13_Poster_Sample.mp4` | **style sample**: Reel 11's footage in a totally different design (poster / kinetic type / tilted phone) | 21.0 s |
 
 Reels 1–4 share one layout (headline in the top safe zone, the app in a rounded card, branded end card),
@@ -117,7 +117,10 @@ evaluations · parent message · classes), a progress ticker, and an end card «
   the sticker and the end card (`overlays.html`, `sk_free`, `end_ad`).
 - **Demo label.** Screens with demo-mode AI content carry «وضع العرض · محتوى تجريبي», per the plan's rule for any "try it free" campaign.
 - **Before paid spend:** the plan's own gate #7 (legal opinion on commercial use of the NCCD textbook content) and gate #5 (claims audit).
-- The music is original (no licence), in two versions: `_upbeat` and `_oriental`.
+- **Phone:** shows the whole 390×844 app screen at ~1.28× (500×1082 px). Its bottom ~310 px (tab bar / lowest content) sits in Meta's
+  overlay zone on purpose; all text stays inside the zone. To keep the phone fully inside, set `bp.SW, bp.SH = 360, 779` and `PCY = 850`.
+- The music is original (no licence): upbeat in the shipped file. `build_meta_ad.py` renders both beds; the oriental version was dropped
+  on request (re-add by restoring the `oriental` loop entry).
 
 ## Reels 6–9 — cut from the full-app tour
 
