@@ -46,7 +46,14 @@ describe('the presenter’s entrance motion', () => {
   });
 
   it('the ordinary slide is re-mounted per slide so the motion replays', () => {
-    assert.match(src, /<SlideView key=\{slideIndex\}/);
+    assert.match(src, /<SlideView key=\{`slide-\$\{slideIndex\}`\}/);
+  });
+
+  it('the slide and the ink layer never share a key — the slides piled up when they did', () => {
+    // Siblings in one ScrollView. Both were `key={slideIndex}` (2026-10-18 to
+    // 10-20): React kept every slide it had shown, so slide 3 drew 2 and 3 stacked.
+    assert.doesNotMatch(src, /<\w+ key=\{slideIndex\}/);
+    assert.match(src, /<PenCanvas key=\{`ink-\$\{slideIndex\}`\}/);
   });
 
   it('the bullets, cards, steps, boxes and columns use it', () => {
