@@ -609,7 +609,22 @@ export function buildLessonDeck(
       return !term || nonEmpty(isAr ? term.definitionAr : term.definitionEn);
     })
     .filter(concept => !ruleTexts.some(rule => rule.includes(squash(concept))));
-  if (concepts.length > 0 || teaching.concepts.length > 0) {
+  // A generated point that restates the book's rule (§6) is dropped, as the
+  // book's own concepts are just above: the class read it twice, two slides
+  // apart. Punctuation aside — the model ends sentences, the book often does
+  // not — and only when it is most of the rule, not a fragment like «x = 2».
+  // Filtered here, once: a concept left with no point is no concept, so the
+  // book's own lines and the section break follow what is actually drawn.
+  const bare = (s: string) => squash(s).replace(/[.،,؛;:]/g, '');
+  const ruleBare = ruleTexts.map(bare);
+  const restatesRule = (p: string) => {
+    const b = bare(p);
+    return ruleBare.some(rule => rule.includes(b) && b.length >= rule.length * 0.8);
+  };
+  const generatedConcepts = teaching.concepts
+    .map(c => ({ ...c, points: c.points.filter(p => !restatesRule(p)) }))
+    .filter(c => c.points.length > 0);
+  if (concepts.length > 0 || generatedConcepts.length > 0) {
     // The section name is the big line and the lesson the small one. It was the
     // other way round, so the lesson title filled the screen a second time three
     // slides after the cover and «لنبدأ الشرح» was a caption under it — a chapter
@@ -665,7 +680,7 @@ export function buildLessonDeck(
     // loop below already draws it under that name.
     const word = isAr ? terms[0]!.ar : terms[0]!.en;
     const def = nonEmpty(isAr ? terms[0]!.definitionAr : terms[0]!.definitionEn);
-    const drawnAsConcept = teaching.concepts.length === 0 && concepts.includes(word);
+    const drawnAsConcept = generatedConcepts.length === 0 && concepts.includes(word);
     if (def && !drawnAsConcept) {
       push({ type: 'intro', title: word, content: def, durationSeconds: 0 });
     }
@@ -714,13 +729,13 @@ export function buildLessonDeck(
   // index lines, and they were in the context the explanation was written
   // from; the rule, figures, examples, outcomes and vocabulary — the parts
   // that ARE the book's wording — are all still projected verbatim around it.
-  for (const c of teaching.concepts) {
+  for (const { points, ...c } of generatedConcepts) {
     aiWritten = true;
     push({
       aiWritten: true,
       type: 'intro',
       title: c.title,
-      content: c.points.map(p => `• ${p}`).join('\n'),
+      content: points.map(p => `• ${p}`).join('\n'),
       durationSeconds: 0,
       // The panel always prints the expected answer; for a concept slide that
       // is the idea stated precisely, which is what its title is.
@@ -731,7 +746,7 @@ export function buildLessonDeck(
       },
     });
   }
-  for (const slide of teaching.concepts.length > 0 ? [] : conceptSlides) {
+  for (const slide of generatedConcepts.length > 0 ? [] : conceptSlides) {
     if (slide !== 'bare') {
       push(slide);
       continue;
