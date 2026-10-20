@@ -1309,3 +1309,54 @@ describe('the lab, the corners, groups, export and the rest (tenth live pass)', 
   }
 });
 
+describe('exams and classes: what exists, and what does not (eleventh live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    ['كيف أرى ترتيب الطلاب في الامتحان؟', 'howExamRanking'],
+    ['how do i see the ranking of my students', 'howExamRanking'],
+    ['كيف أعيد فتح امتحان مغلق؟', 'howCloseExam'],
+    ['how do i reopen a closed exam', 'howCloseExam'],
+    ['كيف أمدد وقت الامتحان؟', 'howExamTime'],
+    ['how do i set a time limit for the exam', 'howExamTime'],
+    ['how do i give more time to the exam', 'howExamTime'],
+    ['كيف أخلط ترتيب الأسئلة؟', 'howExamShuffle'],
+    ['how do i shuffle the exam questions', 'howExamShuffle'],
+    ['كيف أحدد علامة كل سؤال؟', 'howQuestionMarks'],
+    ['how do i set the marks for each question', 'howQuestionMarks'],
+    ['كيف أعرف أي الأسئلة كانت أصعب على الطلاب؟', 'howExamAnalysis'],
+    ['how do i see which exam questions were hardest', 'howExamAnalysis'],
+    ['كيف أستعيد شعبة مؤرشفة؟', 'howArchivedClasses'],
+    ['كيف أرى الشعب المؤرشفة؟', 'howArchivedClasses'],
+    ['how do i restore an archived class', 'howArchivedClasses'],
+    ['كيف أغير الصف الدراسي للشعبة؟', 'howClassGrade'],
+    ['how do i change the grade of a class', 'howClassGrade'],
+    ['how do i see a student\'s login code', 'howReissueLoginCode'],
+    ['كيف أعرف رمز الربط للشعبة؟', 'howShareLinkCode'],
+    ['how do i find the class link code', 'howShareLinkCode'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text, `<${key}>`);
+    });
+  }
+
+  it('changing a student\'s mark and renaming a class keep their own answers', () => {
+    assert.equal(answerAppHelp('كيف أغير اسم الشعبة؟', 'ar', t).text, '<howRenameClass>');
+    assert.equal(answerAppHelp('how do i close an exam', 'en', t).text, '<howCloseExam>');
+  });
+
+  const stayWithModel = [
+    'كيف أحدد مدة الامتحان؟',
+    'كيف أصحح الأسئلة المقالية؟',
+    'كيف أمنع الطلاب من الغش في الامتحان؟',
+    'كيف أرتب أسئلة الامتحان من السهل إلى الصعب',
+    'how do i give students more time to think',
+    'how do i rank students fairly',
+    'كيف أحلل أسباب ضعف الطلاب في الامتحان',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not app help`, () => assert.equal(isAppHelpQuery(q), false));
+  }
+});
+
