@@ -26,8 +26,8 @@ const deck = (slides: ActivitySlide[]): ClassroomActivity => ({
   teacherNotes: [], answerKey: [], printables: [], assessment: '', extensionChallenge: '',
 });
 
-/** Enough filler to keep a deck clear of the MIN_SLIDES floor. */
-const padding = (n: number) => Array.from({ length: n }, () => slide());
+/** Enough filler to keep a deck clear of the MIN_SLIDES floor — each its own slide, or it is a repeat. */
+const padding = (n: number) => Array.from({ length: n }, (_, i) => slide({ title: `حشو ${i + 1}` }));
 
 describe('polishDeck — inferring a layout', () => {
   it('draws a one-sentence slide as a statement instead of a lonely bullet', () => {
@@ -178,6 +178,18 @@ describe('polishDeck — a question slide only claims an answer it can point at'
   it('refuses options it cannot tell apart', () => {
     assert.equal(polishedQuestion(q({ options: ['4', '4', '5', '6'] })).type, 'challenge');
     assert.equal(polishedQuestion(q({ options: ['4', '', '5', '6'] })).type, 'challenge');
+  });
+
+  it('lists a repeated option once in the open check it becomes', () => {
+    const out = polishedQuestion(q({ options: ['4', '4', '5', '6'] }));
+    assert.equal(out.content.split('\n').filter(l => l === '• 4').length, 1);
+  });
+
+  it('drops a slide the model wrote twice, keeping the first', () => {
+    const twice = slide({ title: 'مكرّرة' });
+    const out = polishDeck(deck([slide(), twice, ...padding(4), { ...twice, content: ` ${twice.content.replace(' ', '  ')} ` }]));
+    assert.equal(out.slides.filter(s => s.title === 'مكرّرة').length, 1);
+    assert.deepEqual(out.slides.map(s => s.slideNumber), out.slides.map((_, i) => i + 1));
   });
 
   it('prints the answer key from the slides, not from what the model said', () => {

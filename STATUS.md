@@ -1628,9 +1628,12 @@ exports (the API's `paperOrder.ts` `EXAM_TYPE_ORDER` and `generationShape.ts`
 asserted in `paperOrder.test.ts`, `examBlocks.test.ts` and
 `quizMinistryOrder.test.ts`. A source-text check stays on top: the two mobile
 files must import from `@workspace/exam-paper` and carry no list literal of
-their own, and the API's two modules declare none. A second list under another
-name is **not** caught; `ALL_Q_TYPES` in the quiz picker
-(`app/ai-tools/quiz.tsx`) is one, and it predates this change.
+their own, and the API's two modules declare none. The quiz picker
+(`app/ai-tools/quiz.tsx`) kept a second list, `ALL_Q_TYPES`, until 2026-10-20; it
+now takes `QUIZ_TYPE_ORDER` and `QuizType` from the package, and the same test
+fails if the file declares a list or union of its own again. A list under another
+name elsewhere is **not** caught — `QuizQuestion['type']` in
+`services/ai/AIService.ts` still spells the four types out.
 
 How "no behaviour change" was checked, rather than asserted: a before/after
 digest of `quizRepeats` (per paper) and `dominantKind` over every lesson's
@@ -4515,6 +4518,59 @@ it carries a make verb («كيف أعمل ورقة عمل لتناسب…» stil
 top-level place («المكتبة») is listed once instead of «المكتبة: المكتبة». Still
 open: «كيف أرسل رسالة لولي أمر؟», «كيف أصحح أوراق الطلاب؟», long-press export on the
 «أيّ مادة تقصد؟» clarification.
+
+**Features asked about by name, and ones the app lacks (2026-10-19, ninth live pass).**
+Of 30 new questions on app.iqrra.com, 10 were answered by the app and 13 went to
+the model, which refused or invented a menu path. Each screen was opened in code
+first. Now with steps: marking papers by camera (`class-scan` also matches
+«أصحح أوراق الامتحان بالكاميرا»), writing to a parent (`parent-message`, the
+«رسالة لوليّ الأمر» tool, ahead of `message-one`, and the Messages tab is named
+too), who has not handed in homework (`homework-done` now takes "has not" /
+«ما سلم»; the card shows only a count), joining a class by code (`join-class`:
+only student and parent accounts have «الانضمام إلى شعبة أخرى»; a teacher
+creates a class), the calendar (`calendar`: view-only, so «أضيف حدثًا» is
+answered with where each entry comes from), «نسيت كلمة المرور شو أعمل؟». Says the
+app cannot: Excel import (paste the names), attendance (no register), offline
+(no offline mode), a question bank (none), an exam reminder (none; the exam date
+shows in the calendar). "make homework less boring" and «أقل مللًا» are purpose
+words, and `classifyChatIntent` no longer builds a worksheet for "make … less/more
+…". «كيف أصحح أوراق الطلاب؟» stays with the model on purpose: without the
+camera it is marking advice. Still open: long-press export on the
+«أيّ مادة تقصد؟» clarification.
+
+**The lab, the corners, groups, export and more (2026-10-20, tenth live pass).**
+Of 30 more questions on app.iqrra.com about features not probed before, 5 were
+right; the model refused or invented a path for most of the rest. Each screen was
+opened in code first. Now found or explained: the lab, the math corner and the Quran
+corner (tiles on the Library tab, matched by anchored «open / where» rules only —
+«chemistry lab» alone is a lab report, «القرآن» a lesson), a memory or other
+play game (→ «ألعاب إقرأ»), the whiteboard (a button in the presentation toolbar),
+a group for parents (`messaging/new-group` has a «مجموعة» mode beside the one-to-one
+broadcast), downloading a plan as Word / PDF or copying a result (the existing
+export answer), switching between classes, the School tab (student and parent
+accounts only), a backup (none: saves live in the account), «هل بياناتي آمنة؟»
+(points to the privacy policy, does not promise), updating the app, which lessons
+are done (a plan counts lessons whose dates have passed; there is no taught tick),
+videos and searching in the Library, and sharing a plan with a colleague. Not done
+because the code does not settle them: a class limit, joining a school as a teacher,
+uploading an image to a lesson. Still open: long-press export on the
+«أيّ مادة تقصد؟» clarification.
+
+**Exams and classes: what exists and what does not (2026-10-20, eleventh live pass).**
+Of 30 questions on app.iqrra.com, 15 were fine (teaching, meta, support, the Excel
+export) and 15 went to the model, which refused or invented a path. Each was checked
+in code. Reopening a closed exam was already in `howCloseExam` («انشر التقييم»);
+the rule just did not match it. Now with steps: marks per question (the edit pencil's
+«العلامة»), the class grade (the same «تعديل الشعبة» pencil, grade buttons only when
+the teacher has more than one grade), seeing the class link code and a student's login
+code (the latter is shown once; the answer says so). Now said plainly: no ranking of
+students by mark (the results dashboard lists each student with a percentage), no
+per-question analysis (it shows «ما لم تتقنه الشعبة» per objective), no exam duration
+or extension (`evaluations.time_limit_min` is enforced when set, but nothing in the
+app or API sets it — the link takes answers until «أغلق الاختبار» or it expires), no
+shuffle of question order (blocks in the ministry order), no list of archived classes
+and no restore. Not done because the code does not settle it: adding a co-teacher.
+Still open: long-press export on the «أيّ مادة تقصد؟» clarification.
 
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 

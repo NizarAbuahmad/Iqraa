@@ -184,6 +184,40 @@ const SCREENS: AppPlace[] = [
   { id: 'share-game', route: '/play', labelKey: 'toolGamesTitle', pathKeys: ['tabTools', 'toolsDuringClass'], isTool: false, keywords: [], howKey: 'howShareGame' },
   { id: 'chat-history', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howChatHistory' },
   { id: 'library-to-class', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howLibraryToClass' },
+  // The eighth live pass (2026-10-19). Each was a feature (or a feature the app
+  // lacks) that went to the model, which invented a menu or refused.
+  { id: 'parent-message', route: '/ai-tools/parent-message', labelKey: 'toolParentMsgTitle', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howParentMessage' },
+  { id: 'join-class', route: '/profile', labelKey: 'tabProfile', pathKeys: [], isTool: false, keywords: [], howKey: 'howJoinClass' },
+  { id: 'import-students', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howImportStudents' },
+  { id: 'attendance', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howAttendance' },
+  { id: 'offline', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howOffline' },
+  { id: 'question-bank', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howQuestionBank' },
+  { id: 'exam-reminder', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howExamReminder' },
+  // The tenth live pass (2026-10-20). The lab, the math corner and the Quran corner
+  // are tiles on the Library tab, found by anchored rules only: «chemistry lab» alone
+  // is also a lab report, and «القرآن» a lesson.
+  { id: 'lab', route: '/curriculum/lab', labelKey: 'labEntryTitle', pathKeys: ['resourcesTitle'], isTool: false, keywords: [] },
+  { id: 'math-corner', route: '/curriculum/math', labelKey: 'mathEntryTitle', pathKeys: ['resourcesTitle'], isTool: false, keywords: [] },
+  { id: 'quran-corner', route: '/curriculum/quran', labelKey: 'quranTitle', pathKeys: ['resourcesTitle'], isTool: false, keywords: [] },
+  { id: 'whiteboard', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howWhiteboard' },
+  { id: 'parent-group', route: '/notifications', labelKey: 'tabAlerts', pathKeys: [], isTool: false, keywords: [], howKey: 'howParentGroup' },
+  { id: 'open-class', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howOpenClass' },
+  { id: 'school-tab', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howSchoolTab' },
+  { id: 'backup', route: '/workspace', labelKey: 'myWorkspace', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howBackup' },
+  { id: 'privacy', route: '/legal/privacy', labelKey: 'privacyPolicy', pathKeys: ['tabProfile', 'settings'], isTool: false, keywords: ['سياسه الخصوصيه', 'privacy policy'], howKey: 'howPrivacy' },
+  { id: 'update-app', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howUpdateApp' },
+  { id: 'lesson-progress', route: '/teaching-plans', labelKey: 'myTeachingPlans', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howLessonProgress' },
+  { id: 'library-videos', route: '/curriculum', labelKey: 'resourcesTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howLibraryVideos' },
+  { id: 'search-lesson', route: '/curriculum', labelKey: 'resourcesTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howSearchLesson' },
+  // The eleventh live pass (2026-10-20): exams and classes. Where the app has no such
+  // thing the answer says so, with what it does have.
+  { id: 'exam-ranking', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howExamRanking' },
+  { id: 'exam-analysis', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howExamAnalysis' },
+  { id: 'exam-time', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howExamTime' },
+  { id: 'exam-shuffle', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howExamShuffle' },
+  { id: 'question-marks', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howQuestionMarks' },
+  { id: 'archived-classes', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howArchivedClasses' },
+  { id: 'class-grade', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howClassGrade' },
   {
     // The bottom tab: its route file is still «curriculum» (see `app/(tabs)/_layout.tsx`).
     id: 'library', route: '/curriculum', labelKey: 'resourcesTitle', pathKeys: [], isTool: false,
@@ -226,6 +260,7 @@ const SCREENS: AppPlace[] = [
   {
     id: 'calendar', route: '/calendar', labelKey: 'myCalendar', pathKeys: ['tabProfile'], isTool: false,
     keywords: ['تقويم', 'التقويم', 'calendar'],
+    howKey: 'howCalendar',
   },
   {
     id: 'workspace', route: '/workspace', labelKey: 'myWorkspace', pathKeys: ['tabProfile'], isTool: false,
@@ -468,6 +503,17 @@ const ADD_STUDENT: RegExp[] = [
  * are read; the rest have steps.
  */
 const AR_PASSWORD = String.raw`(?:ال)?(?:كلمه\s+(?:ال)?(?:مرور|سر)|رقم\s+(?:ال)?سري|باسورد|باسوورد)`;
+/** «where is X» / «how do I open X» / «open X» — the lead is required, so a bare noun is not a request. */
+const locateEn = (noun: string) =>
+  new RegExp(
+    String.raw`^(?:please\s+)?(?:where\s+(?:is|are|can\s+i\s+find|do\s+i\s+find)|how\s+(?:do|can)\s+(?:i|we)\s+(?:open|find|get\s+to|access|use|go\s+to|reach)|open|show\s+me)\s+(?:the\s+|my\s+)?` +
+      noun + String.raw`(?:\s+in\s+the\s+app)?` + EN_RULE_TAIL,
+  );
+const locateAr = (noun: string) =>
+  new RegExp(
+    String.raw`^(?:(?:كيفيه|كيف|اشلون|شلون|ازاي)\s+(?:ا|ن)?(?:فتح|دخل|وصل\s+(?:الي|ل)|جد|لاقي|لقي|شوف|استخدم)\s+|(?:وين|اين|فين)\s+(?:يوجد\s+|هو\s+|هي\s+)?|(?:افتح|فتح)\s+)` +
+      noun + String.raw`(?:\s+في\s+(?:ال)?تطبيق)?` + AR_RULE_TAIL,
+  );
 const RULE_PLACES: { id: string; res: RegExp[] }[] = [
   { id: 'add-student', res: ADD_STUDENT },
   {
@@ -494,12 +540,12 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
     id: 'password',
     res: [
       new RegExp(EN_RULE_LEAD + String.raw`(?:change|reset|update|recover)\s+(?:(?:my|the|a)\s+)?password` + EN_RULE_TAIL),
-      new RegExp(String.raw`^(?:i\s+)?forgot\s+(?:my\s+)?password` + EN_RULE_TAIL),
+      new RegExp(String.raw`^(?:i\s+)?forgot\s+(?:my\s+)?password(?:\s+what\s+(?:do|should)\s+i\s+do)?` + EN_RULE_TAIL),
       new RegExp(
         AR_RULE_LEAD + String.raw`(?:اغير|تغيير|ابدل|تبديل|اعدل|تعديل|استرجع|استرجاع|استعيد|استعاده|اعيد\s+تعيين|اعاده\s+تعيين)\s+` + AR_PASSWORD +
           String.raw`(?:\s+(?:تبعي|حقي|حسابي|لحسابي|الخاصه\s+بي))?` + AR_RULE_TAIL,
       ),
-      new RegExp(String.raw`^(?:لقد\s+)?نسيت\s+` + AR_PASSWORD + AR_RULE_TAIL),
+      new RegExp(String.raw`^(?:لقد\s+)?نسيت\s+` + AR_PASSWORD + String.raw`(?:\s+(?:شو|ايش|وش|ماذا|شنو)\s+(?:اعمل|افعل|اسوي))?` + AR_RULE_TAIL),
     ],
   },
   {
@@ -552,6 +598,14 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
       new RegExp(
         AR_RULE_LEAD + String.raw`(?:امسح|مسح|اصور|تصوير)\s+(?:ال)?(?:اوراق|ورقه)\s+(?:ال)?(?:اجابه|اجابات|امتحان|اختبار|طلاب|طلبه|صف|شعبه)` +
           String.raw`(?:\s+(?:ب|عبر)\s*(?:ال)?(?:كاميرا|جوال|هاتف))?` + AR_RULE_TAIL,
+      ),
+      // «كيف أصحح أوراق الامتحان بالكاميرا؟» got an invented menu path (found 2026-10-19).
+      // The camera has to be named: marking papers in general stays a teaching question.
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:grade|mark|correct|check|scan)\s+(?:(?:the|my)\s+)?(?:(?:exam|test|class|student)\s+)?(?:exams?|papers?|tests?|answer\s+sheets?)\s+(?:with|using|by|via)\s+(?:the\s+|my\s+|a\s+)?(?:camera|phone|scanning|scanner|photos?|pictures?)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اصحح|تصحيح)\s+(?:ال)?(?:اوراق|ورقه|امتحانات|امتحان|اختبارات|اختبار)(?:\s+(?:ال)?(?:امتحان|اختبار|طلاب|طلبه|صف|شعبه))?\s+(?:ب|عن\s+طريق|عبر|باستخدام|بواسطه)\s*(?:ال)?(?:كاميرا|تصوير|مسح|جوال|هاتف|موبايل|سكانر)` + AR_RULE_TAIL,
       ),
     ],
   },
@@ -904,17 +958,31 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
     id: 'homework-done',
     res: [
       new RegExp(
-        EN_RULE_LEAD + String.raw`(?:see|check|know|find\s+out|track|view)\s+(?:(?:who|which\s+students)\s+(?:has\s+|have\s+)?(?:done|did|finished|completed|submitted)\s+(?:(?:the|their)\s+)?homework` +
+        EN_RULE_LEAD + String.raw`(?:see|check|know|find\s+out|track|view)\s+(?:(?:who|which\s+students)\s+(?:(?:has|have)\s+not\s+|hasn['’]?t\s+|haven['’]?t\s+|didn['’]?t\s+|did\s+not\s+|(?:has|have)\s+)?(?:done|did|finished|completed|submitted|handed\s+in)\s+(?:(?:the|their)\s+)?homework` +
           String.raw`|(?:(?:my|the)\s+)?(?:students['’]?\s+)?homework(?:\s+(?:completion|progress|status))?)` + EN_RULE_TAIL,
       ),
       new RegExp(
-        AR_RULE_LEAD + String.raw`(?:اعرف|اشوف|اري|اتابع|متابعه)\s+(?:(?:مين|من|منو)\s+(?:انجز|حل|سلم|عمل|ما\s+حل|لم\s+يحل)\s+(?:ال)?واجب|(?:ال)?واجبات\s+(?:ال)?(?:طلاب|طلابي|طلبه|طلبتي)|انجاز\s+(?:ال)?(?:طلاب|طلبه)\s+(?:لل)?واجب)` + AR_RULE_TAIL,
+        AR_RULE_LEAD + String.raw`(?:اعرف|اشوف|اري|اتابع|متابعه)\s+(?:(?:مين|من|منو)\s+(?:انجز|حل|سلم|عمل|ما\s+حل|لم\s+يحل|ما\s+سلم|ما\s+انجز|لم\s+يسلم|لم\s+ينجز)\s+(?:ال)?واجب|(?:ال)?واجبات\s+(?:ال)?(?:طلاب|طلابي|طلبه|طلبتي)|انجاز\s+(?:ال)?(?:طلاب|طلبه)\s+(?:لل)?واجب)` + AR_RULE_TAIL,
       ),
     ],
   },
   {
-    // One person, never the class (that is `class-chat`). «كيف أرسل رسالة لولي أمر؟»
-    // stays with the model on purpose: the parent-message tool writes that one.
+    // «كيف أرسل رسالة لولي أمر؟» went to the model, which drafted a letter in the
+    // chat (found 2026-10-19). The tool that writes it has steps; one parent, never
+    // «all parents» (that is `broadcast`), and ahead of `message-one` so a letter
+    // is not answered with the Messages tab alone.
+    id: 'parent-message',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:write|send|draft|compose|prepare|make|create|text|email)\s+(?:an?\s+|the\s+)?(?:(?:short\s+|formal\s+|warm\s+)?(?:message|letter|note|email)\s+(?:to|for)\s+)?(?:a|the|my|one|each|this|that)\s+(?:student['’]?s?\s+)?(?:parent|guardian)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:ارسل|ابعث|ابعت|اكتب|اجهز|احضر|اعمل|اصيغ|اراسل)\s+رساله\s+(?:رسميه\s+|مكتوبه\s+)?(?:ل|الي|لل)\s*(?:ال)?ولي\s+(?:ال)?امر(?:\s+(?:ال)?طالب\S*)?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    // One person, never the class (that is `class-chat`).
     id: 'message-one',
     res: [
       new RegExp(
@@ -1110,6 +1178,14 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
       new RegExp(
         AR_RULE_LEAD + String.raw`(?:اشارك|شارك|مشاركه|ارسل|ابعث|ابعت)\s+(?:ال)?(?:ورقه\s+(?:ال)?عمل|خطه\s+(?:ال)?درس|اختبار|نشاط|ملف)\s+(?:علي|عبر|ب|في|ع)\s*(?:ال)?(?:واتساب|واتس\s+اب|واتس|ايميل|بريد|تلغرام|تيليجرام)` + AR_RULE_TAIL,
       ),
+      // «كيف أشارك خطة الدرس مع معلم آخر؟» was answered with where the plan tool is
+      // (found 2026-10-20): a colleague gets it the way anyone does.
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:share|send)\s+(?:(?:the|a|my|this)\s+)?(?:worksheet|lesson\s+plan|quiz|activity|file|material)\s+(?:with|to)\s+(?:another\s+|a\s+|my\s+|other\s+)?(?:teachers?|colleagues?|coworkers?)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اشارك|شارك|مشاركه|ارسل|ابعث|ابعت)\s+(?:ال)?(?:ورقه\s+(?:ال)?عمل|خطه\s+(?:ال)?درس|اختبار|نشاط|ملف)\s+مع\s+(?:ال)?(?:معلم|معلمه|زميل|زميله|زملاء|مدرس|معلمين)(?:\s+(?:اخر|اخري|ثاني|ثانيه|اخرين))?` + AR_RULE_TAIL,
+      ),
     ],
   },
   {
@@ -1160,6 +1236,354 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
       ),
       new RegExp(
         AR_RULE_LEAD + String.raw`(?:اضيف|اضافه|ارفق|اضع|انقل)\s+(?:ال)?(?:مورد|موارد|ملف|ماده)(?:\s+من\s+(?:ال)?مكتبه)?\s+(?:لل|الي|في|ل)\s*(?:ال)?(?:شعبه|شعبتي|صف|واجب)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  // The eighth live pass (2026-10-19).
+  {
+    id: 'join-class',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:join|enter|use|redeem)\s+(?:(?:a|an|another|the|my)\s+)?(?:(?:new\s+)?class(?:room)?|section)(?:\s+(?:with|using|by|via|through)\s+(?:a\s+|the\s+|my\s+)?(?:link\s+|class\s+|join\s+)?code)?` + EN_RULE_TAIL,
+      ),
+      new RegExp(EN_RULE_LEAD + String.raw`(?:enter|use|redeem|type)\s+(?:a\s+|the\s+|my\s+)?(?:link|class|join)\s+code` + EN_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:انضم|انضمام|التحق|التحاق)\s+(?:الي|ل|لل)?\s*(?:ال)?(?:شعبه|صف|فصل)(?:\s+(?:اخري|جديده|ثانيه))?(?:\s+(?:ب|عن\s+طريق|باستخدام|بواسطه)\s*(?:ال)?(?:رمز|كود)(?:\s+(?:ال)?ربط)?)?` + AR_RULE_TAIL,
+      ),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:ادخل|اكتب|استخدم)\s+(?:ال)?(?:رمز|كود)\s+(?:ال)?(?:ربط|انضمام|شعبه)` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'calendar',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:open|view|see|show|check|use)\s+(?:(?:my|the)\s+)?calendar` + EN_RULE_TAIL),
+      new RegExp(
+        EN_RULE_LEAD + String.raw`add\s+(?:an?\s+)?(?:event|reminder|appointment|task|note)\s+(?:to|in|on)\s+(?:the\s+|my\s+)?calendar` + EN_RULE_TAIL,
+      ),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:اعرض|عرض|افتح|فتح|اشوف|اري|استخدم|استخدام)\s+(?:ال)?تقويم(?:\s+(?:تبعي|حقي|الخاص\s+بي))?` + AR_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اضيف|اضافه|اضع|وضع|اسجل|تسجيل|انشئ)\s+(?:حدثا?|موعدا?|تذكيرا?|مناسبه|فعاليه|ملاحظه)\s+(?:في|الي|ل|لل|علي)\s*(?:ال)?تقويم` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'import-students',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:import|upload|load|bring|copy|paste|add)\s+(?:(?:my|the|all|a)\s+)?(?:students?|names|student\s+(?:list|names)|class\s+list|roster)(?:\s+(?:in|into|to)\s+(?:a|the|my)\s+class)?\s+(?:from|with|using|via|through|by)\s+(?:an?\s+|the\s+|my\s+)?(?:excel|xlsx?|csv|spreadsheet|google\s+sheets?)(?:\s+(?:file|sheet|document))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:استورد|استيراد|ارفع|رفع|ادخل|ادخال|اضيف|اضافه|انقل|نقل)\s+(?:ال)?(?:طلاب|طلبه|اسماء(?:\s+(?:ال)?طلاب)?|قائمه(?:\s+(?:ال)?طلاب)?)(?:\s+(?:الي|في|ل)\s*(?:ال)?شعبه)?\s+(?:من|ب|عن\s+طريق|بواسطه|عبر)\s*(?:ملف\s+|جدول\s+)?(?:ال)?(?:اكسل|اكسيل|excel|csv)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'attendance',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:take|record|track|see|check|know|calculate|mark|get|find|view)\s+(?:(?:the|my|student|students['’]?|class)\s+)*(?:attendance|absences?)(?:\s+(?:percentage|rate|record|sheet))?(?:\s+(?:of|for)\s+(?:my\s+|the\s+)?(?:students|class))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اسجل|تسجيل|احسب|حساب|اعرف|اتابع|متابعه|اشوف|اري|اخذ)\s+(?:(?:ال)?(?:نسبه|سجل|كشف)\s+)?(?:ال)?(?:حضور|غياب)(?:\s+و(?:ال)?(?:غياب|حضور))?(?:\s+(?:ال)?(?:طلاب|طلبه|طلابي|طلبتي|شعبه))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'offline',
+    res: [
+      new RegExp(
+        String.raw`^(?:هل\s+)?(?:يعمل|يشتغل|يفتح|اقدر\s+(?:استخدم|افتح|اشتغل)|يمكن(?:ني)?\s+(?:استخدام|فتح))\s+(?:ال)?(?:تطبيق|برنامج|موقع|منصه|اقر\S*)(?:\s+\S+)?\s+(?:من\s+)?(?:بدون|دون|بلا|من\s+غير)\s+(?:ال)?(?:انترنت|نت|اتصال|شبكه)` + AR_RULE_TAIL,
+      ),
+      new RegExp(
+        String.raw`^(?:(?:does|will)\s+)?(?:the\s+)?(?:app|iqra\w*|website|site)\s+(?:work|run|open)s?\s+(?:offline|without\s+(?:the\s+)?(?:internet|wifi|wi-fi|connection|network))` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:use|open|run)\s+(?:the\s+)?(?:app|iqra\w*)\s+(?:offline|without\s+(?:the\s+)?(?:internet|wifi|wi-fi|connection|network))` + EN_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'question-bank',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:make|create|build|start|set\s+up|have|keep|use)\s+(?:an?\s+|my\s+|the\s+)?(?:question|questions|exam)\s+bank` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اعمل|اسوي|انشئ|ابني|اكون|اضيف|اخزن|احفظ|استخدم)\s+(?:ال)?بنك\s+(?:ال)?اسئله(?:\s+(?:خاص|الخاص)\s+\S+)?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'exam-reminder',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:set|add|create|get|make|schedule)\s+(?:an?\s+|the\s+|my\s+)?(?:reminder|alert|notification)\s+(?:for|about|of)\s+(?:the\s+|an?\s+|my\s+)?(?:exam|test|quiz)(?:\s+date)?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اضبط|اضع|اضيف|اعمل|انشئ|اجعل|فعل|افعل)\s+(?:ال)?تذكيرا?\s+(?:ب|ل|عن)\s*(?:ال)?(?:موعد\s+(?:ال)?)?(?:امتحان|اختبار|تقييم)` + AR_RULE_TAIL,
+      ),
+    ],
+  },  // The tenth live pass (2026-10-20).
+  {
+    id: 'lab',
+    res: [locateEn(String.raw`(?:(?:science|chemistry|virtual)\s+)?lab(?:oratory)?`), locateAr(String.raw`(?:ال)?مختبر(?:\s+(?:ال)?(?:كيمياء|علوم|افتراضي))?`)],
+  },
+  {
+    id: 'math-corner',
+    res: [locateEn(String.raw`math(?:s|ematics)?\s+corner`), locateAr(String.raw`(?:ال)?(?:ركن|زاويه)\s+(?:ال)?رياضيات`)],
+  },
+  {
+    id: 'quran-corner',
+    res: [locateEn(String.raw`quran(?:\s+corner)?`), locateAr(String.raw`(?:(?:ال)?ركن\s+)?(?:ال)?قران(?:\s+(?:ال)?كريم)?`)],
+  },
+  {
+    id: 'tool:games',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:play|open|start)\s+(?:the\s+)?(?:memory|colou?rs?|flags?|capitals?|elements?|times\s+tables?|multiplication|division|addition|subtraction)\s+(?:game|challenge)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:العب|لعب|اشغل|شغل|افتح|فتح)\s+(?:ال)?(?:لعبه|العاب)\s+(?:ال)?(?:ذاكره|الوان|اعلام|عواصم|رموز\s+(?:ال)?عناصر|جدول\s+(?:ال)?ضرب|جمع|طرح|ضرب|قسمه)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'whiteboard',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:use|open|start|find|get)\s+(?:the\s+|a\s+|my\s+)?(?:interactive\s+)?(?:white\s*board|smart\s*board)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:استخدم|افتح|فتح|ابدا|بدء|اشغل|شغل|استخدام)\s+(?:ال)?سبوره(?:\s+(?:ال)?(?:تفاعليه|ذكيه|الكترونيه))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'parent-group',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:create|make|start|set\s+up|open|add)\s+(?:an?\s+)?(?:new\s+)?(?:(?:whatsapp|chat|message)\s+)?group(?:\s+chat)?\s+(?:for|with|of)\s+(?:the\s+|my\s+)?(?:parents|guardians|students|class)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:انشئ|انشاء|اعمل|عمل|اسوي|فتح|افتح|اكون|تكوين)\s+(?:ال)?(?:مجموعه|جروب|قروب)(?:\s+(?:محادثه|واتساب))?\s+(?:ل|لل|مع)\s*(?:ال)?(?:اهالي|اولياء\s+(?:ال)?امور|امور|طلاب|طلبه|شعبه)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'export',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:download|save|export|convert|get)\s+(?:(?:the|my|a|this)\s+)?(?:lesson\s+plan|plan|worksheet|quiz|activity|result|material|slides|file|it)?\s*(?:as|to|in|into)\s+(?:an?\s+)?(?:word|docx|pdf)(?:\s+(?:file|document|format))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        EN_RULE_LEAD + String.raw`copy\s+(?:the\s+|my\s+|a\s+|this\s+)?(?:lesson\s+plan|plan|worksheet|quiz|activity|result)(?:\s+text)?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:احمل|حمل|تحميل|انزل|نزل|تنزيل|احفظ|حفظ|اصدر|تصدير|احول|تحويل)\s+(?:ال)?(?:خطه\s+(?:ال)?درس|ورقه\s+(?:ال)?عمل|خطه|ورقه|اختبار|نشاط|نتيجه|ماده|شرائح|ملف)?\s*(?:ب|ك|الي|ل)\s*(?:صيغه|شكل|ملف)?\s*(?:ال)?(?:وورد|word|pdf|بي\s*دي\s*اف)` + AR_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:انسخ|نسخ)\s+(?:ال)?(?:نص|محتوي)\s+(?:ال)?(?:خطه(?:\s+(?:ال)?درس)?|ورقه(?:\s+(?:ال)?عمل)?|اختبار|نشاط|نتيجه|ماده)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'open-class',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:switch|move|go|navigate)\s+(?:between|to)\s+(?:(?:my|the|another|other|a\s+different)\s+)?(?:other\s+)?(?:classes|class|sections?)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:انتقل|اتنقل|بدل|ابدل|تنقل)\s+(?:بين|الي)\s+(?:ال)?(?:شعب|شعبه|صفوف)(?:\s+(?:اخري|ثانيه))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'school-tab',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:open|find|see|use|get\s+to)\s+(?:the\s+|my\s+)?school\s+(?:page|tab|section)` + EN_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:افتح|فتح|اشوف|اري|اجد|الاقي|استخدم)\s+(?:ال)?(?:صفحه|تبويب|قسم)\s+(?:ال)?مدرسه` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'backup',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:back\s*up|backup)\s+(?:(?:my|the)\s+)?(?:files|work|materials|data|account|everything)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:make|create|take)\s+(?:a\s+)?backup(?:\s+of\s+(?:my\s+)?(?:files|work|materials|data))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اعمل|عمل|اسوي|اخذ|انشئ|احفظ)\s+نسخه\s+(?:احتياطيه|اضافيه)(?:\s+(?:ل|من))?\s*(?:ال)?(?:ملفاتي|ملفات|مواد|بياناتي|حسابي|شغلي)?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'privacy',
+    res: [
+      new RegExp(
+        String.raw`^(?:هل\s+)?(?:بياناتي|معلوماتي|بيانات\s+(?:ال)?طلاب|بيانات\s+طلابي)\s+(?:امنه|محميه|بامان|في\s+امان|سريه)` + AR_RULE_TAIL,
+      ),
+      new RegExp(
+        String.raw`^(?:is|are)\s+(?:my|the|students['’]?)\s*(?:data|information|account|files)\s+(?:safe|secure|private|protected)` + EN_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'update-app',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:update|upgrade)\s+(?:the\s+|my\s+)?(?:app|iqra\w*)` + EN_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:احدث|حدث|تحديث)\s+(?:ال)?(?:تطبيق|برنامج|اقر\S*)` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'lesson-progress',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:see|know|track|check|find\s+out)\s+(?:which|what)\s+(?:lessons|objectives|units|topics)\s+(?:i(?:['’]ve|\s+have)?|we(?:['’]ve|\s+have)?)\s+(?:covered|finished|taught|done|completed|passed)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اعرف|اشوف|اري|اتابع|احسب)\s+(?:ال)?(?:دروس|اهداف|وحدات)\s+(?:التي|الي|اللي)\s+(?:انهيت|انتهيت|درست|غطيت|اخذت|خلصت|اكملت)\S*` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'library-videos',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:watch|find|see|open|get)\s+(?:the\s+|some\s+)?(?:educational\s+|teaching\s+|lesson\s+)?videos?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اشاهد|اشوف|اجد|الاقي|افتح|اعرض|ابحث\s+عن)\s+(?:ال)?(?:فيديوهات|فيديو|مقاطع(?:\s+(?:ال)?فيديو)?)(?:\s+(?:ال)?تعليميه)?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'search-lesson',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:(?:search|look)\s+for|find)\s+(?:a|the)\s+(?:specific\s+)?lesson` + EN_RULE_TAIL),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:ابحث|ادور|دور|الاقي|اجد)\s+(?:عن|علي)?\s*(?:ال)?درس(?:\s+(?:معين|محدد|بعينه))?` + AR_RULE_TAIL),
+    ],
+  },  // The eleventh live pass (2026-10-20).
+  {
+    id: 'close-exam',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:re-?open|open\s+again|unclose)\s+(?:(?:a|an|the|my)\s+)?(?:closed\s+)?(?:exam|test|quiz|evaluation)(?:\s+again)?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اعيد|اعاده)\s+فتح\s+(?:ال)?(?:امتحان|اختبار|تقييم)(?:\s+(?:ال)?مغلق)?` + AR_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:افتح|فتح)\s+(?:ال)?(?:امتحان|اختبار|تقييم)\s+(?:ال)?مغلق(?:\s+مره\s+(?:ثانيه|اخري))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'reissue-login',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:see|find|know|check|view|get)\s+(?:a\s+|the\s+|my\s+)?(?:student|child|parent)(?:['’]s)?\s+(?:login|sign[\s-]?in)\s+code` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اعرف|اشوف|اري|اجد|الاقي|اطلع\s+علي)\s+(?:ال)?رمز\s+(?:ال)?دخول\s+(?:ل|ال)?\S*(?:\s+\S+)?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'link-code',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:see|find|know|check|view|get)\s+(?:the\s+|my\s+|a\s+)?(?:class\s+|classroom\s+)?(?:link|join)\s+code(?:\s+(?:of|for)\s+(?:the\s+|my\s+|a\s+)?(?:class|section))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اعرف|اشوف|اري|اجد|الاقي|اطلع\s+علي|احصل\s+علي)\s+(?:ال)?رمز\s+(?:ال)?ربط(?:\s+(?:لل|ل|ب)\s*(?:ال)?(?:شعبه|صف))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'exam-ranking',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:see|view|get|find|show)\s+(?:the\s+|a\s+)?(?:ranking|rank|leaderboard|class\s+ranking)(?:\s+of\s+(?:the\s+|my\s+)?(?:students|class))?(?:\s+(?:in|for|of)\s+(?:the\s+|an?\s+)?(?:exam|test|quiz))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اشوف|اري|اعرف|اعرض|اطلع)\s+(?:ال)?ترتيب\s+(?:ال)?(?:طلاب|طلبه|طلابي|طلبتي|شعبه)(?:\s+(?:في|ب|حسب)\s*(?:ال)?(?:امتحان|اختبار|تقييم|علامات|نتائج))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'exam-analysis',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:see|know|find|check|tell)\s+(?:out\s+)?(?:which|what)\s+(?:(?:exam|test|quiz)\s+)?(?:questions|objectives|topics)\s+(?:were|are|was)\s+(?:the\s+)?(?:hardest|most\s+difficult|weakest|missed|wrong)(?:\s+(?:for|by)\s+(?:the\s+)?(?:students|class))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:see|view|get)\s+(?:the\s+)?(?:question|item|exam|test)\s+analysis` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اعرف|اشوف|اري|اعرض)\s+(?:اي|ايش|ما|ماهي)\s+(?:ال)?(?:اسئله|اهداف|مواضيع)\s+(?:كانت\s+|هي\s+)?(?:ال)?(?:اصعب|اضعف|الاكثر\s+(?:خطا|صعوبه))(?:\s+(?:علي|عند|لدي)\s+(?:ال)?(?:طلاب|طلبه|شعبه))?` + AR_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اشوف|اري|اعرض|احلل|تحليل)\s+(?:ال)?تحليل?\s*(?:ال)?(?:اسئله|امتحان|اختبار|نتائج)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'exam-time',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:set|add|change|extend|increase|put|give)\s+(?:a\s+|the\s+)?(?:time\s+limit|timer|duration)(?:\s+(?:for|of|on|to)\s+(?:the\s+|an?\s+|my\s+)?(?:exam|test|quiz|evaluation))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:extend|increase|add|give)\s+(?:more\s+)?time\s+(?:for|to|on)\s+(?:the\s+|an?\s+|my\s+)?(?:exam|test|quiz)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اضبط|امدد|مدد|ازيد|زيد|اضع|اضيف|اغير)\s+(?:ال)?(?:وقت|مده|زمن|مؤقت|حد\s+زمني)\s*(?:ال)?(?:امتحان|اختبار|تقييم)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'exam-shuffle',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:shuffle|randomi[sz]e|mix\s+up|scramble)\s+(?:the\s+)?(?:order\s+of\s+)?(?:the\s+)?(?:exam\s+|test\s+|quiz\s+)?questions` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اخلط|خلط|ابدل|تبديل|اعشوائي|رتب\s+عشوائي)\s+(?:ترتيب\s+)?(?:ال)?اسئله` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'question-marks',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:set|change|edit|assign|give|choose)\s+(?:the\s+)?(?:marks|points|grades?|scores?)\s+(?:for|of|per|to)\s+(?:each|every|a|the)\s+question` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:احدد|حدد|اغير|غير|اعدل|عدل|اضبط|اضع|اعطي)\s+(?:ال)?(?:علامه|علامات|درجه|درجات)\s+(?:كل\s+|ال)?سؤال` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'archived-classes',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:restore|unarchive|recover|bring\s+back|see|view|find|open)\s+(?:an?\s+|the\s+|my\s+)?(?:archived|deleted)\s+(?:classes|class|sections?)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:استعيد|استعاده|ارجع|اسجع|الغي\s+ارشفه|اشوف|اري|اعرض|افتح|اجد|الاقي)\s+(?:ال)?(?:شعبه|شعب|صفوف)\s+(?:ال)?(?:مو?ءرشف|مورشف|مؤرشف|محذوف)\S*` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'class-grade',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:change|edit|switch|update|set)\s+(?:the\s+)?(?:grade|year)\s+(?:of|for)\s+(?:a\s+|the\s+|my\s+)?(?:class|section)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اغير|تغيير|اعدل|تعديل|ابدل|تبديل)\s+(?:ال)?صف\s+(?:ال)?(?:دراسي\s+)?(?:لل|ل)\s*(?:ال)?شعبه` + AR_RULE_TAIL,
       ),
     ],
   },
@@ -1354,7 +1778,7 @@ export function isHowQuery(query: string): boolean {
  * so «كيف أطبع ورقة العمل بدون إجابات» keeps its steps.
  */
 const PURPOSE =
-  /(?:^|\s)(?:لتناسب|ليناسب|يناسب|تناسب|لتعزيز|ليعزز|لتنميه|لتحسين|ليحسن|لزياده|لجعل|ليكون|لتكون|لتشجيع|ليشجع|لمراعاه|يراعي|بحيث|بطريقه|بشكل|حتي|لكي|كي)(?:\s|$)|\b(?:(?:more|less)\s+(?:engaging|interesting|fun|interactive|challenging|difficult|effective|attractive|exciting|creative|accessible)|so\s+that|for\s+(?:weak|struggling|gifted|advanced|slow|fast|mixed)|to\s+(?:help|engage|support|improve|motivate|encourage|suit|fit|differentiate))\b/;
+  /(?:^|\s)(?:لتناسب|ليناسب|يناسب|تناسب|لتعزيز|ليعزز|لتنميه|لتحسين|ليحسن|لزياده|لجعل|ليكون|لتكون|لتشجيع|ليشجع|لمراعاه|يراعي|بحيث|بطريقه|بشكل|حتي|لكي|كي)(?:\s|$)|(?:^|\s)(?:اقل|اكثر)\s+(?:مللا?|تشويقا?|متعه|جاذبيه|تفاعلا?|تعقيدا?|صعوبه)(?:\s|$)|\b(?:(?:more|less)\s+(?:engaging|interesting|fun|interactive|challenging|difficult|effective|attractive|exciting|creative|accessible|boring|dull|tedious|stressful|repetitive|monotonous|confusing|overwhelming)|so\s+that|for\s+(?:weak|struggling|gifted|advanced|slow|fast|mixed)|to\s+(?:help|engage|support|improve|motivate|encourage|suit|fit|differentiate))\b/;
 
 /**
  * A how-question that says what the material is for. It is advice, not a request
