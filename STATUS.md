@@ -4422,6 +4422,24 @@ words, and `classifyChatIntent` no longer builds a worksheet for "make … less/
 camera it is marking advice. Still open: long-press export on the
 «أيّ مادة تقصد؟» clarification.
 
+**The lab, the corners, groups, export and more (2026-10-20, tenth live pass).**
+Of 30 more questions on app.iqrra.com about features not probed before, 5 were
+right; the model refused or invented a path for most of the rest. Each screen was
+opened in code first. Now found or explained: the lab, the math corner and the Quran
+corner (tiles on the Library tab, matched by anchored «open / where» rules only —
+«chemistry lab» alone is a lab report, «القرآن» a lesson), a memory or other
+play game (→ «ألعاب إقرأ»), the whiteboard (a button in the presentation toolbar),
+a group for parents (`messaging/new-group` has a «مجموعة» mode beside the one-to-one
+broadcast), downloading a plan as Word / PDF or copying a result (the existing
+export answer), switching between classes, the School tab (student and parent
+accounts only), a backup (none: saves live in the account), «هل بياناتي آمنة؟»
+(points to the privacy policy, does not promise), updating the app, which lessons
+are done (a plan counts lessons whose dates have passed; there is no taught tick),
+videos and searching in the Library, and sharing a plan with a colleague. Not done
+because the code does not settle them: a class limit, joining a school as a teacher,
+uploading an image to a lesson. Still open: long-press export on the
+«أيّ مادة تقصد؟» clarification.
+
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
 Step 4 of the worksheet review, agreed in chat. A worksheet was paper only: to
