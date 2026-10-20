@@ -40,18 +40,21 @@ function buzz(ok: boolean) {
 /** Artwork, not text — sized as a picture, as `WordPicture` in `Activities.tsx` is. */
 const PICTURE_SIZE = 72;
 const MARKER_SIZE = 40;
+/** The three option cards of «Read the sentence» hold a marker and up to two pictures: smaller artwork, stacked. */
+const SMALL_PICTURE_SIZE = 36;
+const SMALL_MARKER_SIZE = 28;
 
 /** What decides the contrast: ✅/❌ for got/like, 👦/👧 for he/she. "many" is shown as two pictures. */
 const MARKER_GLYPH: Partial<Record<GrammarMarker, string>> = { yes: '✅', no: '❌', boy: '👦', girl: '👧' };
 
-export function GrammarPicture({ word, count, marker }: { word: string; count: 1 | 2; marker: GrammarMarker | null }) {
+export function GrammarPicture({ word, count, marker, small = false }: { word: string; count: 1 | 2; marker: GrammarMarker | null; small?: boolean }) {
   const pic = wordPicture(word);
   const glyph = marker ? MARKER_GLYPH[marker] : undefined;
   if (!pic && !glyph) return null;
   return (
-    <View style={styles.pictureRow} accessible={false}>
-      {glyph ? <Text style={styles.marker}>{glyph}</Text> : null}
-      {pic ? <Text style={styles.picture}>{count === 2 ? `${pic}${pic}` : pic}</Text> : null}
+    <View style={small ? styles.pictureStack : styles.pictureRow} accessible={false}>
+      {glyph ? <Text style={small ? styles.markerSmall : styles.marker}>{glyph}</Text> : null}
+      {pic ? <Text style={small ? styles.pictureSmall : styles.picture}>{count === 2 ? `${pic}${pic}` : pic}</Text> : null}
     </View>
   );
 }
@@ -362,6 +365,9 @@ const styles = StyleSheet.create({
   pictureRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   picture: { fontSize: PICTURE_SIZE, lineHeight: PICTURE_SIZE + 16, textAlign: 'center' },
   marker: { fontSize: MARKER_SIZE, lineHeight: MARKER_SIZE + 8 },
+  pictureStack: { alignItems: 'center', gap: 2 },
+  pictureSmall: { fontSize: SMALL_PICTURE_SIZE, lineHeight: SMALL_PICTURE_SIZE + 8, textAlign: 'center' },
+  markerSmall: { fontSize: SMALL_MARKER_SIZE, lineHeight: SMALL_MARKER_SIZE + 6 },
   sentence: { fontFamily: 'ReadexPro_700Bold', fontSize: 24, textAlign: 'center', writingDirection: 'ltr' },
   option: { borderWidth: 1.5, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 16 },
   optionText: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 20, textAlign: 'center', writingDirection: 'ltr' },

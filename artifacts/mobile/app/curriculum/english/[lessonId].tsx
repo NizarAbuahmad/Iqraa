@@ -11,17 +11,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { hubLesson } from '@workspace/curriculum/englishHub';
 import { offeredGrammar } from '@workspace/curriculum/englishGrammar';
-import { offeredReading } from '@workspace/curriculum/englishReading';
+import { offeredReading, offeredReadingSentences } from '@workspace/curriculum/englishReading';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import type { TranslationKey } from '@/services/i18n';
-import { GRAMMAR_ACTIVITIES, HUB_ACTIVITIES, READING_ACTIVITIES, dayOf, grammarActivityAvailable, lessonHasPictureMatch, newlyEarnedBadges, progressKey, readingActivityAvailable, recordResult, starsFor, type BadgeId, type HubActivity } from '@/services/englishHub/games';
+import { GRAMMAR_ACTIVITIES, HUB_ACTIVITIES, READING_ACTIVITIES, dayOf, grammarActivityAvailable, lessonHasPictureMatch, newlyEarnedBadges, progressKey, readSentenceAvailable, readingActivityAvailable, recordResult, starsFor, type BadgeId, type HubActivity } from '@/services/englishHub/games';
 import { useHubProgress } from '@/services/englishHub/progressStore';
 import { goBack } from '@/services/navigation';
 import { unitNames } from '@/services/contentLanguage';
 import { Flashcards, ListenChoose, MatchMeaning, PictureMatch, Scramble, Speaking, SpellIt } from '@/components/englishHub/Activities';
 import { BuildSentence, GrammarChoose, TrueFalse, YesNo } from '@/components/englishHub/GrammarActivities';
-import { FirstLetter, ReadFind, StartsWith } from '@/components/englishHub/ReadingActivities';
+import { FirstLetter, ReadFind, ReadSentence, StartsWith } from '@/components/englishHub/ReadingActivities';
 import { BADGE_META } from '@/components/englishHub/badgeMeta';
 
 const META: Record<HubActivity, { icon: keyof typeof Ionicons.glyphMap; title: TranslationKey; desc: TranslationKey }> = {
@@ -39,6 +39,7 @@ const META: Record<HubActivity, { icon: keyof typeof Ionicons.glyphMap; title: T
   'read-find': { icon: 'book-outline', title: 'hubRFind', desc: 'hubRFindDesc' },
   'first-letter': { icon: 'text-outline', title: 'hubRLetter', desc: 'hubRLetterDesc' },
   'starts-with': { icon: 'search-outline', title: 'hubRStarts', desc: 'hubRStartsDesc' },
+  'read-sentence': { icon: 'document-text-outline', title: 'hubRSentence', desc: 'hubRSentenceDesc' },
 };
 
 /** Never scored — no star count, no place in `lessonStars`. Kept separate from
@@ -63,6 +64,7 @@ export default function EnglishHubLessonScreen() {
   // re-render (a progress write) does not hand the activity a new list and reshuffle it.
   const grammar = useMemo(() => offeredGrammar(lessonId ?? ''), [lessonId]);
   const reading = useMemo(() => offeredReading(lessonId ?? ''), [lessonId]);
+  const readingSentences = useMemo(() => offeredReadingSentences(lessonId ?? ''), [lessonId]);
   const row = isRTL ? 'row-reverse' : 'row';
   const align = isRTL ? 'right' : 'left';
 
@@ -144,6 +146,7 @@ export default function EnglishHubLessonScreen() {
     if (reading && activity === 'read-find') return <ReadFind key={round} words={reading} onFinish={finish} />;
     if (reading && activity === 'first-letter') return <FirstLetter key={round} words={reading} onFinish={finish} />;
     if (reading && activity === 'starts-with') return <StartsWith key={round} words={reading} onFinish={finish} />;
+    if (readingSentences && activity === 'read-sentence') return <ReadSentence key={round} pool={readingSentences} onFinish={finish} />;
 
     const card = (a: HubActivity) => {
       const best = UNSCORED.includes(a) ? 0 : progress.stars[progressKey(lesson.id, a)] ?? 0;
@@ -168,7 +171,10 @@ export default function EnglishHubLessonScreen() {
       );
     };
     const grammarCards = grammar ? GRAMMAR_ACTIVITIES.filter(a => grammarActivityAvailable(a, grammar)) : [];
-    const readingCards = reading ? READING_ACTIVITIES.filter(a => readingActivityAvailable(a, reading)) : [];
+    const readingCards: HubActivity[] = [
+      ...(reading ? READING_ACTIVITIES.filter(a => readingActivityAvailable(a, reading)) : []),
+      ...(readingSentences && readSentenceAvailable(readingSentences) ? (['read-sentence'] as HubActivity[]) : []),
+    ];
 
     return (
       <View style={{ gap: 10 }}>
