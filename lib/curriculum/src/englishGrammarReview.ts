@@ -36,7 +36,7 @@ const NOTES: Record<string, string> = {
 const NOT_COVERED: Record<number, Record<string, string[]>> = { 2: NOT_COVERED_G2 };
 
 /** Wraps each run of English in `dir="ltr"`, so a phrase with punctuation does not scramble inside an Arabic line. */
-const ltr = (s: string) =>
+export const ltr = (s: string) =>
   esc(s).replace(/[A-Za-z][A-Za-z0-9'’-]*(?:[ ,.?!/…]+[A-Za-z0-9'’][A-Za-z0-9'’-]*)*[.?!]?/g, m => `<span dir="ltr">${m}</span>`);
 
 function yesNoCell(s: GrammarSentence): string {
@@ -47,12 +47,12 @@ function yesNoCell(s: GrammarSentence): string {
   return line(y.question, y.yes, 'yn-yes') + (y.otherQuestion ? line(y.otherQuestion, y.no, 'yn-no') : '');
 }
 
-function notCoveredList(items: string[] | undefined): string {
+export function notCoveredList(items: string[] | undefined): string {
   if (!items) return '';
   return `<p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered">${items.map(i => `<li>${ltr(i)}</li>`).join('')}</ul>`;
 }
 
-function picture(word: string | null, count: 1 | 2, marker: string | null): string {
+export function picture(word: string | null, count: 1 | 2, marker: string | null): string {
   const pic = word ? wordPicture(word) : null;
   const glyph = marker ? MARKER[marker] ?? '' : '';
   if (!pic && !glyph) return '<span class="none">—</span>';

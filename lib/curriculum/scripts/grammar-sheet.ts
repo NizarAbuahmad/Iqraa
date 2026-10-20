@@ -4,7 +4,8 @@
  * printable Arabic review form (tick boxes, notes, a sign-off per unit) to
  * docs/english-grammar-g{N}-review.html, for Grades 1 and 2, and the Grade 1
  * reading activities' words and first letters as the same kind of form to
- * docs/english-reading-g1-review.html. Open an .html in a browser and print
+ * docs/english-reading-g1-review.html, and Grade 2's (words, first letters and the
+ * Read the sentence pool) to docs/english-reading-g2-review.html. Open an .html in a browser and print
  * it: A4 landscape, one unit per page.
  *
  *   pnpm --filter @workspace/curriculum run grammar-sheet
@@ -27,7 +28,8 @@ for (const grade of [1, 2]) {
   files.push([`english-grammar-g${grade}-sheet.md`, renderGrammarSheet(grade)]);
   files.push([`english-grammar-g${grade}-review.html`, renderGrammarReviewHtml(grade)]);
 }
-files.push(['english-reading-g1-review.html', renderReadingReviewHtml()]);
+files.push(['english-reading-g1-review.html', renderReadingReviewHtml(1)]);
+files.push(['english-reading-g2-review.html', renderReadingReviewHtml(2)]);
 for (const [name, text] of files) {
   const out = path.join(DOCS, name);
   writeFileSync(out, text);
