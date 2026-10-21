@@ -15,7 +15,7 @@
  * (#5C6675) on the chip, which fails before the primary does.
  */
 export type CornerId = 'math' | 'english' | 'lab' | 'quran' | 'play';
-export type MotifId = 'grid' | 'bubbles' | 'hex' | 'stars' | 'confetti';
+export type MotifId = 'grid' | 'bubbles' | 'hex' | 'stars' | 'confetti' | 'leaf';
 
 export type CornerTokens = {
   /** The band; white text on it. */

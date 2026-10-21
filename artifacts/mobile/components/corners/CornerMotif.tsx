@@ -1,8 +1,9 @@
 /**
  * A corner's band pattern, drawn in white at the corner's `motifOpacity` over
  * the hero colour. Vector only: nothing to ship per density, nothing to bump
- * in app.json. Five motifs, one per corner — add a case when a corner is
- * added, or the band is plain.
+ * in app.json. One motif per corner, plus `leaf` for the brand-teal bands (the
+ * library, Profile, a `CornerFrame` outside every corner). Add a case when a
+ * corner is added, or the band is plain.
  */
 import React, { useId } from 'react';
 import { StyleSheet } from 'react-native';
@@ -104,6 +105,19 @@ const MOTIFS: Record<MotifId, (id: string) => React.ReactNode> = {
             <Path d="M350 100 l6 12 l13 2 l-9 9 l2 13 l-12 -6 l-12 6 l2 -13 l-9 -9 l13 -2z" />
             <Path d="M190 130 l5 10 l11 2 l-8 8 l2 11 l-10 -5 l-10 5 l2 -11 l-8 -8 l11 -2z" />
             <Path d="M110 60 l4 8 l9 1 l-6 6 l1 9 l-8 -4 l-8 4 l1 -9 l-6 -6 l9 -1z" />
+          </G>
+        </Pattern>
+      </Defs>
+      <Rect width="100%" height="100%" fill={`url(#${id})`} />
+    </>
+  ),
+  leaf: id => (
+    <>
+      <Defs>
+        <Pattern id={id} width={56} height={56} patternUnits="userSpaceOnUse">
+          <G transform="rotate(-35 28 28)">
+            <Path d="M28 10 C 40 18 40 38 28 46 C 16 38 16 18 28 10 Z" fill="none" stroke="#fff" strokeWidth={1.5} />
+            <Path d="M28 13 V 44" fill="none" stroke="#fff" strokeWidth={1} />
           </G>
         </Pattern>
       </Defs>
