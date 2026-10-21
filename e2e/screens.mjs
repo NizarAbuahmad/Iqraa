@@ -56,11 +56,14 @@ for (const colorScheme of ['light', 'dark']) {
       const page = await ctx.newPage();
       try {
         await page.goto(BASE + path, { waitUntil: 'networkidle', timeout: 30000 });
-        // the app's splash card holds until auth answers, then fades: wait it out
-        await page.waitForFunction(() => !document.body.innerText.includes('LESSON-PREP COMPANION'), null, { timeout: 15000 }).catch(() => {});
-        await page.waitForTimeout(600);
+        // AppSplash stays >= MIN_VISIBLE_MS (800), fades FADE_OUT_MS (280), then unmounts
+        const splash = page.locator('[role="progressbar"][aria-label="Iqrra"]');
+        await splash.waitFor({ state: 'attached', timeout: 3000 }).catch(() => {});
+        await splash.waitFor({ state: 'detached', timeout: 15000 }).catch(() => {});
+        await page.waitForTimeout(500);
+        const stuck = (await splash.count()) > 0;
         await page.screenshot({ path: `${OUT}/${colorScheme}-${vp.name}-${name}.png` });
-        console.log(`${colorScheme} ${vp.name} ${name}`);
+        console.log(`${colorScheme} ${vp.name} ${name}${stuck ? ' SPLASH' : ''}`);
       } catch (e) {
         console.log(`${colorScheme} ${vp.name} ${name} FAILED ${String(e.message).slice(0, 80)}`);
       }
