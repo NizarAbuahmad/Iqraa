@@ -168,8 +168,6 @@ type Props = {
   subtitle?: string;
   /** Rendered inside the band under the subtitle — grade chips, a switch. */
   bandChildren?: React.ReactNode;
-  /** 'list' (default) keeps children as given; 'hub' lays direct children in the desktop grid (Section 5). */
-  layout?: 'list' | 'hub';
   children: React.ReactNode;
 };
 ```
@@ -180,6 +178,9 @@ type Props = {
   its **inner content is capped at `CONTENT_MAX_WIDTH` and centred**, so the
   title lines up with the list below it on desktop instead of hugging the
   window edge.
+- The desktop grid is a sibling component, `CornerGrid` (`components/corners/CornerGrid.tsx`),
+  that a hub wraps around its cards — not a frame prop, because the lab and
+  Quran hubs interleave headings and chip rows with their cards.
 - `useScrollLock()` moves here unchanged; `MathFrame` and `LabFrame` become
   one-line re-exports for one PR and are deleted in the second (Section 8).
 - The frame takes **no colour props**. It reads `useColors()`; the provider
@@ -214,7 +215,7 @@ The library's `/curriculum/resources` and the browser are **not** wrapped.
   colour is a cue, not a theme change on the library.
 - **Browser banner** (`app/curriculum/browse.tsx` «ركن الإنجليزية» banner, and
   the link in `lesson-detail.tsx`): background `CORNERS.english[scheme].hero`.
-- **Desktop hub grid.** `layout="hub"` lays its children in
+- **Desktop hub grid.** `CornerGrid` lays its children in
   `cornerColumns(width)` columns (3 ≥ 960px track, 2 ≥ 600px, else 1 — the same
   breaks as `libraryColumns`, kept as its own function so the two can drift on
   purpose), inside the existing 1120px cap. On a phone nothing changes. The
@@ -260,11 +261,10 @@ Two PRs, so each review fits on a screen:
 
 1. **Mechanism + three corners:** `constants/corners.ts`, provider, hook
    change, `CornerFrame` + `CornerMotif`, layouts and adoption for Math, Lab
-   and Quran, the library tiles, `cornerTheme.test.ts`. `MathFrame`/`LabFrame`
-   re-export `CornerFrame`.
+   and Quran, the library tiles, `cornerTheme.test.ts`, `e2e/screens.mjs`.
+   `MathFrame`/`LabFrame` re-export `CornerFrame`.
 2. **English + Games + cleanup:** the two inline bands → `CornerFrame`, the
-   games constants, the browser banner, delete the two re-export shims,
-   `e2e/screens.mjs`.
+   games constants, the browser banner, delete the two re-export shims.
 
 Pure JS and SVG: no native module changes, so **no `app.json` `version` bump**
 (see CLAUDE.md on the OTA runtime key). Each PR updates STATUS.md and adds one
