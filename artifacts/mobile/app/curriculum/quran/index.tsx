@@ -28,7 +28,8 @@ import { countMemorised, type QuranProgress } from '@/services/quranProgress';
 import { openExternal } from '@/services/externalLinks';
 import { surahPath } from '@/services/quranLinks';
 import { toArabicDigits } from '@/services/labFormat';
-import { LabFrame } from '@/components/lab/LabFrame';
+import { CornerFrame } from '@/components/corners/CornerFrame';
+import { CornerGrid } from '@/components/corners/CornerGrid';
 import { QuranGate } from '@/components/quran/QuranGate';
 import type { TranslationKey } from '@/services/i18n';
 
@@ -153,15 +154,17 @@ function QuranCorner() {
   };
 
   return (
-    <LabFrame title={t('quranTitle')} subtitle={t('quranIntro')}>
+    <CornerFrame title={t('quranTitle')} subtitle={t('quranIntro')}>
       {GROUPS.map(group => (
         <View key={group.gradeId}>
           <Text style={[styles.heading, { color: colors.foreground, textAlign: align, fontFamily: 'ReadexPro_600SemiBold' }]}>
             {gradeName(group.gradeId)}
           </Text>
-          {group.surahs.map(s => (
-            <SurahRow key={s.number} surah={s} progress={progress} colors={colors} isRTL={isRTL} lang={lang} t={t} />
-          ))}
+          <CornerGrid>
+            {group.surahs.map(s => (
+              <SurahRow key={s.number} surah={s} progress={progress} colors={colors} isRTL={isRTL} lang={lang} t={t} />
+            ))}
+          </CornerGrid>
         </View>
       ))}
 
@@ -171,21 +174,22 @@ function QuranCorner() {
       <Text style={[styles.note, { color: colors.mutedForeground, textAlign: align, fontFamily: 'Almarai_400Regular' }]}>
         {t('quranResourcesNote')}
       </Text>
-      {QURAN_RESOURCES.map(r => (
-        <ResourceRow key={r.id} item={r} colors={colors} isRTL={isRTL} t={t} />
-      ))}
-    </LabFrame>
+      <CornerGrid>
+        {QURAN_RESOURCES.map(r => (
+          <ResourceRow key={r.id} item={r} colors={colors} isRTL={isRTL} t={t} />
+        ))}
+      </CornerGrid>
+    </CornerFrame>
   );
 }
 
 const styles = StyleSheet.create({
-  heading: { fontSize: TYPE.bodyLg, marginTop: 20, marginHorizontal: 16 },
+  heading: { fontSize: TYPE.bodyLg, marginTop: SPACE.md, marginHorizontal: 16 },
   note: { fontSize: TYPE.caption, marginTop: 4, marginHorizontal: 16 },
   row: {
+    flexGrow: 1,
     alignItems: 'center',
     gap: 12,
-    marginHorizontal: 16,
-    marginTop: 12,
     padding: SPACE.md,
     borderRadius: RADIUS.md,
     borderWidth: 1,

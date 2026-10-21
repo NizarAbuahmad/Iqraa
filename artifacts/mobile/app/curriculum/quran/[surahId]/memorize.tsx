@@ -18,7 +18,7 @@ import { useQuranFont } from '@/hooks/useQuranFont';
 import { countMemorised, stateOf, type AyahState } from '@/services/quranProgress';
 import { resolveSurahParam } from '@/services/quranLinks';
 import { toArabicDigits } from '@/services/labFormat';
-import { LabFrame } from '@/components/lab/LabFrame';
+import { CornerFrame } from '@/components/corners/CornerFrame';
 import { QuranGate } from '@/components/quran/QuranGate';
 import { QuranAudioNote, QuranListenButton } from '@/components/quran/QuranAudioControls';
 import { useQuranAudio } from '@/hooks/useQuranAudio';
@@ -117,7 +117,7 @@ function Memorize({ surah }: { surah: QuranSurah }) {
   );
 
   return (
-    <LabFrame title={surah.nameAr} subtitle={subtitle}>
+    <CornerFrame title={surah.nameAr} subtitle={subtitle}>
       <Text style={[styles.heading, { color: colors.foreground, textAlign: align, fontFamily: 'ReadexPro_600SemiBold' }]}>
         {t('quranLevelTitle')}
       </Text>
@@ -205,7 +205,7 @@ function Memorize({ surah }: { surah: QuranSurah }) {
           onPress={() => index < surah.ayahs.length - 1 && goTo(index + 1)}
         />
       </View>
-    </LabFrame>
+    </CornerFrame>
   );
 }
 
@@ -217,18 +217,18 @@ function QuranMemorizeRoute() {
   const surah = resolveSurahParam(surahId);
   if (!surah) {
     return (
-      <LabFrame title={t('quranTitle')}>
+      <CornerFrame title={t('quranTitle')}>
         <Text style={[styles.missing, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
           {t('quranNotFound')}
         </Text>
-      </LabFrame>
+      </CornerFrame>
     );
   }
   if (!fontReady) {
     return (
-      <LabFrame title={t('quranTitle')}>
+      <CornerFrame title={t('quranTitle')}>
         <ActivityIndicator color={colors.primary} style={{ marginTop: SPACE.xl }} />
-      </LabFrame>
+      </CornerFrame>
     );
   }
   // keyed by surah so a param change on a mounted screen restarts at the first ayah

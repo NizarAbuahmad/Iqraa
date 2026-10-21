@@ -10,18 +10,18 @@ import { StyleSheet, Text } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { QURAN_CORNER_RELEASED, quranCornerVisible } from '@/services/quranRelease';
-import { LabFrame } from '@/components/lab/LabFrame';
+import { CornerFrame } from '@/components/corners/CornerFrame';
 
 export function QuranGate({ children }: { children: React.ReactNode }) {
   const colors = useColors();
   const { t } = useLanguage();
   if (quranCornerVisible(QURAN_CORNER_RELEASED, __DEV__)) return <>{children}</>;
   return (
-    <LabFrame title={t('quranTitle')}>
+    <CornerFrame title={t('quranTitle')}>
       <Text style={[styles.text, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
         {t('quranNotReleased')}
       </Text>
-    </LabFrame>
+    </CornerFrame>
   );
 }
 
