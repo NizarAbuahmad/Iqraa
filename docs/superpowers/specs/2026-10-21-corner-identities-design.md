@@ -47,7 +47,10 @@ constants (`const ACCENT = palette.primary`) that would ignore any theme.
 - No layout, card-shape or typography differences per corner.
 - No live dark-mode switching (the scheme stays fixed at startup, as today).
 - The per-game colours on the games grid and inside `GameShell` are kept as
-  they are; only the hub's band and chrome take the games hue.
+  they are: each game keeps its own band and accent, and the hub's band and
+  chrome take the games hue. Shared components inside a game take the hub's
+  tint, namely the secondary buttons (the game-over sign-up and the drill's
+  Share).
 
 ## Section 1 — identities and tokens (approved)
 
@@ -60,10 +63,12 @@ white, `secondaryForeground` = `primary`. Everything else (`text`, `card`,
 | Corner | hero | primary | secondary | selected | motif | motif opacity |
 | --- | --- | --- | --- | --- | --- | --- |
 | math | `#3730A3` | `#4338CA` | `#F2F1FB` | `#E5E3F8` | graph paper + one curve | 0.14 |
-| english | `#C2410C` | `#C2410C` | `#FBF4F0` | `#FAF0EC` | speech bubbles «Hi!» «Hello» «ABC» | 0.10 |
+| english | `#9A3412` | `#C2410C` | `#FBF4F0` | `#FAF0EC` | speech bubbles «Hi!» «Hello» «ABC» | 0.10 |
 | lab | `#5B21B6` | `#6D28D9` | `#F5F0FC` | `#EBE1FA` | hexagon lattice | 0.14 |
 | quran | `#14532D` | `#166534` | `#ECF3EF` | `#DCE8E1` | eight-point stars; 3px gold hairline (`#E3C25C`, 0.75) under the band | 0.14 |
 | play | `#BE185D` | `#BE185D` | `#FAEFF4` | `#F6DFE8` | confetti dots and stars | 0.14 |
+
+English's light hero was deepened from `#C2410C` to `#9A3412` so the band's 0.85-white subtitle passes (PR 1's final review).
 
 Measured (WCAG relative luminance, same formula as `services/readableColor.ts`):
 white on every hero ≥ 5.18:1; primary on white ≥ 5.18; primary on paper
@@ -166,7 +171,7 @@ adds the scroll-lock context the grapher needs. They merge into
 type Props = {
   title: string;
   subtitle?: string;
-  /** Rendered inside the band under the subtitle — grade chips, a switch. */
+  /** Rendered inside the band under the subtitle — a streak line, a switch. */
   bandChildren?: React.ReactNode;
   /** A short line above the title — the English lesson's «grade · unit». */
   eyebrow?: string;
@@ -212,14 +217,14 @@ is already in the binary).
 | Math `app/curriculum/math/*` | `MathFrame` | `_layout.tsx`; `MathFrame` → `CornerFrame`; hub cards in `CornerGrid`. Tool screens otherwise untouched (their canvases draw with `colors.primary`, which now reads indigo). |
 | Lab `app/curriculum/lab/*` | `LabFrame` | `_layout.tsx`; `LabFrame` → `CornerFrame`; hub cards in `CornerGrid`. Check `LabPeriodicTable`'s category colours still read on violet chrome — they are their own palette and stay. |
 | Quran `app/curriculum/quran/**` | `LabFrame` (index, surah, memorize) | `_layout.tsx`; `LabFrame` → `CornerFrame`; hub cards in `CornerGrid`. The mushaf text, its font and the audio controls are unchanged. |
-| English `app/curriculum/english/*` | inline band in `index.tsx` and `[lessonId].tsx` (`colors.hero`, grade chips and the reminder `Switch` inside it) | `_layout.tsx`; both bands → `CornerFrame` with the chips/switch as `bandChildren`. The `Switch`'s `thumbColor={colors.hero}` and streak/badge colours follow the hook. |
+| English `app/curriculum/english/*` | inline band in `index.tsx` and `[lessonId].tsx` (`colors.hero`); the band holds the streak and goal lines and the reminder `Switch`, and the grade chips sit under it, on the page | `_layout.tsx`; both bands → `CornerFrame`; the band's streak and goal lines and the `Switch` become `bandChildren`, and the grade chips, badges and lesson cards (now in `CornerGrid`) become `CornerFrame`'s children. The `Switch`'s `thumbColor={colors.hero}` and streak/badge colours follow the hook. |
 | Games `app/play/*` | inline band in `index.tsx`, `ACCENT`/`ACCENT_FILL` at module scope | `_layout.tsx`; hub band → `CornerFrame`; the two module constants become `colors.*` reads. The per-game card colours (`GAMES[].color`) and `GameShell`'s per-game band stay as they are: the game decides its own colour once inside. |
 
 The library's `/curriculum/resources` and the browser are **not** wrapped.
 
 ## Section 5 — entry points: library tiles, browser banner, desktop grid
 
-- **Library tiles** (`app/curriculum/resources.tsx`, the five corner tiles):
+- **Library tiles** (`app/curriculum/resources.tsx`, the four corner tiles (English, Lab, Math, Quran — the library has no games tile)):
   icon circle takes `CORNERS[id].light.secondary` / `.primary` (per scheme)
   instead of `ACCENT + '1F'` / `ACCENT`; the glyph is `CORNERS[id].icon`. The
   curriculum tile, the games tile's position and the role-gated tiles are
@@ -256,7 +261,9 @@ import-free of React Native):
    `_layout.tsx` under `app/` mounts a provider (the library must never be
    wrapped by accident).
 3. No file under a corner route directory or under `components/{math,lab,
-   quran,englishHub,publicGames,corners}` matches `/^const \w+ = palette\./m`.
+   quran,englishHub,publicGames,corners}` may import `palette` from `@/constants/colors`, in any import form, as matched by
+   `/import[^;]*\bpalette\b[^;]*from\s*['"]@\/constants\/colors['"]/`:
+   `palette` ignores the provider at module scope and inside render alike.
 4. `resources.tsx` imports `CORNERS` and no longer contains `ACCENT + '1F'`
    inside the corner tiles (read the source, as `paperOrder.test.ts` does).
 5. `designScale.test.ts` keeps passing: the frame and motif use `TYPE`/`SPACE`/

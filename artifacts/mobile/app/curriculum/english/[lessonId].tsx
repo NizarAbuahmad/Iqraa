@@ -97,7 +97,7 @@ export default function EnglishHubLessonScreen() {
       setUnlocked([]);
     // Public page: with no history, `goBack()` lands a visitor on login.
     } else if (router.canGoBack()) goBack();
-    else router.replace('/curriculum/english' as never);
+    else router.replace({ pathname: '/curriculum/english', params: { grade: String(lesson.grade) } } as never);
   };
 
   const body = () => {

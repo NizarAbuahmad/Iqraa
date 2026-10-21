@@ -1595,12 +1595,13 @@ an announcement by default» below.
 with a hexagon lattice, the Quran corner deep green with eight-point stars and
 a gold hairline — band, icon tints, chips and buttons — on top of the shared
 cards, type and spacing. Since PR 2 the English corner is coral with speech
-bubbles and the games hub magenta with confetti; each game keeps its own colour
-once opened. The library's corner tiles show each corner's colour.
+bubbles and the games hub magenta with confetti; each game keeps its own band and accent
+once opened (its shared secondary buttons take the hub's magenta tint). The library's corner tiles show each corner's colour.
 At desktop width a hub's cards sit in up to three columns under a band whose
 title aligns with them. Design:
-`docs/superpowers/specs/2026-10-21-corner-identities-design.md`; plan:
-`docs/superpowers/plans/2026-10-21-corner-identities-pr1.md`.
+`docs/superpowers/specs/2026-10-21-corner-identities-design.md`; plans:
+`docs/superpowers/plans/2026-10-21-corner-identities-pr1.md` and
+`docs/superpowers/plans/2026-10-21-corner-identities-pr2.md`.
 
 **How.** `constants/corners.ts` is the one table (light + dark tokens, motif,
 glyph); `context/CornerTheme.tsx` is mounted by each corner directory's
