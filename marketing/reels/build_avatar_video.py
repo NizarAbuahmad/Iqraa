@@ -37,7 +37,7 @@ LEAD, TAIL = 0.6, 1.5                                  # silence before the firs
 SCALE = 0.9                                            # host sprite scale
 HOST_XY = (10, 640)                                    # host canvas top-left, beats 1-8
 HOST_XY_END = (216, 585)                               # centred over the offer in the last beat
-PH_C = (815, 940)
+PH_C = (815, 968)
 G = {}
 
 
@@ -321,7 +321,7 @@ def render_frame(f):
         ci = next((j for j in range(n_ch) if t < edge[j + 1]), n_ch - 1)
         t_c = max(bs, edge[ci] - 0.12) if ci else bs
         img = ov[f"cap_{bi}_{ci}"]
-        wipe_in(frame, img, 1015, 392, t - t_c)
+        wipe_in(frame, img, 1015, 382, t - t_c)
         frame.alpha_composite(ov["tag"], (65, 600))
         if demo:
             frame.alpha_composite(ov["pill_" + demo], (65, 668))
