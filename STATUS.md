@@ -4621,6 +4621,23 @@ are chips on the curriculum's subject page. A daily generation limit is answered
 language of a worksheet, and past-year questions. Still open: long-press export on the
 «أيّ مادة تقصد؟» clarification.
 
+**Account, classes, exams and games (2026-10-21, thirteenth live pass).**
+Of 30 questions, 10 were right, 5 were teaching controls, 14 got a refusal or generic
+advice and 1 («كيف أشارك كود الشعبة مع الطلبة؟») got the *create-a-class* steps. All
+15 were checked in code first. Answered now: the profile photo (tap the round picture or
+the camera badge; red × removes it); a phone number (the app neither asks for nor keeps
+one); a mark on homework (none — only the «أنجزه … من …» count; make it an evaluation
+for a mark); a QR code for an evaluation (none — «رابط الطلبة» has a short code and a
+link; the only QR is the lab link in an export); reminding parents of an exam (saving the
+date on a published, class-attached exam pushes linked parents and students, a draft or
+classless exam sends nothing — `announceExamDate`); copying a class (not possible);
+the games list and the English Corner (two entrances); quick quiz vs evaluation (the quiz
+is export-only). The existing steps now also answer the wordings that missed them:
+«أضبط الإشعارات», moving a student «من شعبة إلى أخرى», who opened an exam, «كود الشعبة»,
+the exam link «عبر واتساب», «ملاحظات أو اقتراحات للتطبيق». Left with the model, not
+verified in code: sorting the class list by grade. «كيف أبلغ الطلاب بموعد الامتحان؟» stays
+a teaching question (announcing in class); only the parents' wording is app help.
+
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
 Step 4 of the worksheet review, agreed in chat. A worksheet was paper only: to
