@@ -199,3 +199,10 @@ test('every corner hub card is a lifted surface that gives when pressed', () => 
     assert.match(src, /\buseSurface\(/, `${id} hub cards do not take useSurface()`);
   }
 });
+
+test('Profile has the brand band and lifted cards', () => {
+  const src = readFileSync(join(root, 'app', '(tabs)', 'profile.tsx'), 'utf8');
+  assert.match(src, /<Band\b[^>]*motif="leaf"/, 'the Profile header is not a leaf Band');
+  assert.match(src, /\buseSurface\(/, 'the Profile cards do not take useSurface()');
+  assert.match(src, /<PressableScale\b/, 'the Profile setting rows are not PressableScale');
+});
