@@ -7,24 +7,19 @@
  * teacher-signup CTA (see GameShell) — this hub is the top of that funnel.
  */
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
-import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { Button } from '@/components/ui/Button';
 import type { TranslationKey } from '@/services/i18n';
-import { palette } from '@/constants/colors';
+import { CORNERS } from '@/constants/corners';
+import { CornerFrame } from '@/components/corners/CornerFrame';
 import { PLAY_GAME_GRADES, gradeBandLabel, type PlayGameId } from '@/services/publicGames/gradeBands';
 import { readableOn } from '@/services/readableColor';
 import { ELEMENTS_ACCENT } from '@/components/publicGames/ElementsGame';
-
-const ACCENT = palette.primary;
-/** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
-const ACCENT_FILL = palette.hero;
 
 const GAMES: Array<{
   id: PlayGameId;
@@ -35,7 +30,8 @@ const GAMES: Array<{
   descKey: TranslationKey;
 }> = [
   // First: it's the one game built from the students' own books.
-  { id: 'english', route: '/curriculum/english', icon: 'headset-outline', color: '#006D65', titleKey: 'hubTitle', descKey: 'playEnglishDesc' },
+  // The English corner's own colour, as on the library tile.
+  { id: 'english', route: '/curriculum/english', icon: 'headset-outline', color: CORNERS.english.light.primary, titleKey: 'hubTitle', descKey: 'playEnglishDesc' },
   // Second: the hub's science game, from the G7–10 science/chemistry books.
   { id: 'elements', route: '/play/elements', icon: 'flask-outline', color: ELEMENTS_ACCENT, titleKey: 'playElementsTitle', descKey: 'playElementsDesc' },
   { id: 'flags', route: '/play/flags', icon: 'flag-outline', color: '#1D4ED8', titleKey: 'playFlagsTitle', descKey: 'playFlagsDesc' },
@@ -50,75 +46,58 @@ const GAMES: Array<{
 
 export default function PlayHubScreen() {
   const colors = useColors();
-  const insets = useSafeAreaInsets();
   const { t, lang } = useLanguage();
   const { user } = useAuth();
-  const topPad = insets.top + (insets.top === 0 ? 20 : 0);
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView
-        contentContainerStyle={{ paddingBottom: 60, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={[styles.header, { paddingTop: topPad, backgroundColor: ACCENT_FILL }]}>
-          <Text style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 24, textAlign: 'center' }}>
-            {t('playHubTitle')}
-          </Text>
-          <Text style={{ color: 'rgba(255,255,255,0.95)', fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center', marginTop: 6 }}>
-            {t('playHubSubtitle')}
-          </Text>
-        </View>
-
-        <View style={styles.grid}>
-          {GAMES.map(g => (
-            <Pressable
-              key={g.id}
-              onPress={() => router.push(g.route as any)}
-              style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
-            >
-              <View style={[styles.iconWrap, { backgroundColor: `${g.color}1a` }]}>
-                <Ionicons name={g.icon} size={26} color={g.color} />
-              </View>
-              <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 16, textAlign: 'center' }}>
-                {t(g.titleKey)}
-              </Text>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: 'center' }}>
-                {t(g.descKey)}
-              </Text>
-              <View style={[styles.gradeChip, { backgroundColor: `${g.color}14` }]}>
-                <Ionicons name="school-outline" size={13} color={readableOn(g.color, colors.card)} />
-                <Text style={{ color: readableOn(g.color, colors.card), fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>
-                  {gradeBandLabel(PLAY_GAME_GRADES[g.id], lang)}
-                </Text>
-              </View>
-            </Pressable>
-          ))}
-        </View>
-
-        {!user && (
-          <View style={[styles.ctaCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <CornerFrame title={t('playHubTitle')} subtitle={t('playHubSubtitle')} hideBack>
+      <View style={styles.grid}>
+        {GAMES.map(g => (
+          <Pressable
+            key={g.id}
+            onPress={() => router.push(g.route as any)}
+            style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+          >
+            <View style={[styles.iconWrap, { backgroundColor: `${g.color}1a` }]}>
+              <Ionicons name={g.icon} size={26} color={g.color} />
+            </View>
             <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 16, textAlign: 'center' }}>
-              {t('playCtaHeading')}
+              {t(g.titleKey)}
             </Text>
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, textAlign: 'center', lineHeight: 23 }}>
-              {t('playCtaBody')}
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: 'center' }}>
+              {t(g.descKey)}
             </Text>
-            <Button
-              label={t('playCtaButton')}
-              onPress={() => router.push('/(auth)/register')}
-              fullWidth
-              size="lg"
-            />
-          </View>
-        )}
-      </ScrollView>
-    </View>
+            <View style={[styles.gradeChip, { backgroundColor: `${g.color}14` }]}>
+              <Ionicons name="school-outline" size={13} color={readableOn(g.color, colors.card)} />
+              <Text style={{ color: readableOn(g.color, colors.card), fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>
+                {gradeBandLabel(PLAY_GAME_GRADES[g.id], lang)}
+              </Text>
+            </View>
+          </Pressable>
+        ))}
+      </View>
+
+      {!user && (
+        <View style={[styles.ctaCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 16, textAlign: 'center' }}>
+            {t('playCtaHeading')}
+          </Text>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, textAlign: 'center', lineHeight: 23 }}>
+            {t('playCtaBody')}
+          </Text>
+          <Button
+            label={t('playCtaButton')}
+            onPress={() => router.push('/(auth)/register')}
+            fullWidth
+            size="lg"
+          />
+        </View>
+      )}
+    </CornerFrame>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 24, paddingBottom: 24, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, padding: 20 },
   card: {
     flexBasis: '46%', flexGrow: 1, borderWidth: 1, borderRadius: 16, padding: 18, gap: 8, alignItems: 'center',

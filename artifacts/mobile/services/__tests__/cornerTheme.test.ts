@@ -74,8 +74,8 @@ test('motif opacity stays subtle enough for the band text', () => {
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-/** Corners wired so far. Task 3 adds 'play'. */
-const WIRED: readonly CornerId[] = ['math', 'lab', 'quran', 'english'];
+/** Every corner is wired. */
+const WIRED: readonly CornerId[] = CORNER_IDS;
 
 function* files(dir: string): Generator<string> {
   for (const name of readdirSync(dir)) {
@@ -115,6 +115,7 @@ test('corner code never imports the global palette', () => {
     join(root, 'components', 'lab'),
     join(root, 'components', 'quran'),
     join(root, 'components', 'englishHub'),
+    join(root, 'components', 'publicGames'),
     join(root, 'components', 'corners'),
   ];
   for (const d of dirs) {
@@ -123,7 +124,7 @@ test('corner code never imports the global palette', () => {
       const src = readFileSync(f, 'utf8');
       assert.doesNotMatch(
         src,
-        /import\s*\{[^}]*\bpalette\b[^}]*\}\s*from\s*'@\/constants\/colors'/,
+        /import[^;]*\bpalette\b[^;]*from\s*['"]@\/constants\/colors['"]/,
         `${f} imports the global palette, which ignores the corner provider (at module scope or inside render); take colours from useColors()`,
       );
     }
@@ -150,6 +151,10 @@ test('text on a primary fill in the English corner is primaryForeground, not whi
       const src = readFileSync(f, 'utf8');
       assert.doesNotMatch(src, /primaryText:\s*\{[^}]*color:\s*'#fff'/, `${f}: primaryText is white; use colors.primaryForeground`);
       assert.doesNotMatch(src, /color:\s*on\s*\?\s*'#fff'/, `${f}: a selected chip's text is white; use colors.primaryForeground`);
+      // The hub screen's band legitimately draws white icons on the hero, so only the components are held to this.
+      if (f.startsWith(join(root, 'components', 'englishHub'))) {
+        assert.doesNotMatch(src, /color=(?:"#fff"|\{\s*'#fff'\s*\})/, `${f}: an icon is white; on a primary fill use colors.primaryForeground`);
+      }
     }
   }
 });
