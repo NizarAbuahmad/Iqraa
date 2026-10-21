@@ -1589,6 +1589,37 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Each corner has its own colour and band, 2026-10-21 (PR 1 of 2)
+
+**What changed.** The Math Corner is indigo with graph paper, the Lab violet
+with a hexagon lattice, the Quran corner deep green with eight-point stars and
+a gold hairline — band, icon tints, chips and buttons — on top of the shared
+cards, type and spacing. The library's corner tiles show each corner's colour.
+At desktop width a hub's cards sit in up to three columns under a band whose
+title aligns with them. Design:
+`docs/superpowers/specs/2026-10-21-corner-identities-design.md`; plan:
+`docs/superpowers/plans/2026-10-21-corner-identities-pr1.md`.
+
+**How.** `constants/corners.ts` is the one table (light + dark tokens, motif,
+glyph); `context/CornerTheme.tsx` is mounted by each corner directory's
+`_layout.tsx`; `hooks/useColors.ts` spreads the corner's tokens over the
+palette, so every component under it follows. `components/corners/CornerFrame`
+replaced `MathFrame` and `LabFrame`, which re-export it until PR 2 deletes
+them. `cornerTheme.test.ts` measures every pair at ≥ 4.5:1 in both schemes and
+pins the structure: a wired corner has a provider layout, nothing else does,
+and no corner code reads the palette at module scope. `e2e/screens.mjs`
+screenshots the corners and the library on the built web bundle (phone and
+desktop, light and dark) for a human to look at — see `e2e/README-screens.md`.
+
+**Not yet.** English corner and games (PR 2), which still open teal; the
+browser's English banner; `app/play/index.tsx` still holds module-scope
+palette constants, which is why `WIRED` in the test lists three corners.
+Dark-mode secondaries were measured by the test, not by eye on a device. The
+grapher's plotted curves stay teal on purpose: they take the shared
+data-series palette (`seriesColor`) that the slide export prints, so a graph
+looks the same in the grapher and on its slide; the controls around them are
+indigo.
+
 ## One question-type order, one set of repeat-rule inputs, 2026-10-18
 
 The order a ministry paper puts its question types in was written out by hand in

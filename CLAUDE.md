@@ -538,3 +538,13 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   `startAttemptChecked` and read `created`; and remember the `attemptId` you got
   so a retry does not start again and mistake its own half-saved paper for
   someone else's. `services/classScanSave.ts` is the worked example.
+- **A corner's colour lives in one table (since 2026-10-21).** `constants/corners.ts`
+  holds each corner's tokens; `CornerThemeProvider` (mounted only by the
+  `_layout.tsx` of a corner directory) puts them in context and `useColors()`
+  spreads them over the palette, so a shared button or chip inside a corner is
+  that corner's colour with no edit. Two traps: a module-scope
+  `const ACCENT = palette.primary` runs before any provider and stays teal, and
+  the library (`/curriculum/resources`) is deliberately **not** a corner — its
+  tiles borrow each corner's colour, its own chrome is brand teal.
+  `cornerTheme.test.ts` fails both. A new corner is one table row, one layout
+  file, and a `CornerFrame`.
