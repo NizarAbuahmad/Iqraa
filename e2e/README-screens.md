@@ -8,5 +8,7 @@ Looks, not asserts. From the repo root:
 
 `ONLY=library,profile` shoots a subset (names from `ROUTES`). `REDUCED=1` emulates
 `prefers-reduced-motion: reduce` and shoots the moment the splash is gone, with no
-settle wait — every card must already be fully in place (`Entrance` does not move
-under reduced motion), so a half-faded card in a `reduced-*.png` is a bug.
+settle wait — this checks that the reduced-motion screens render correctly. It cannot show
+that nothing moves: on a cold load the entrance finishes behind the splash. For
+that, navigate in-app into a corner (e.g. library to a hub) with reduced motion
+on and look at the first frame.

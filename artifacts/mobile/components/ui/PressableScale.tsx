@@ -7,6 +7,7 @@
  * - On the web it has a pointer cursor and a focus ring in the current primary
  *   colour (the corner's, inside a corner), so a keyboard user can tell which
  *   card they are on.
+ * - `accessibilityRole` is 'button' unless the caller passes another (e.g. 'link').
  * - `style` is a plain style, not a callback: the press state lives here.
  */
 import React, { useRef, useState } from 'react';
@@ -23,7 +24,7 @@ type Props = Omit<PressableProps, 'style' | 'children'> & {
   children?: React.ReactNode;
 };
 
-export function PressableScale({ style, onPressIn, onPressOut, onFocus, onBlur, children, ...rest }: Props) {
+export function PressableScale({ style, accessibilityRole = 'button', onPressIn, onPressOut, onFocus, onBlur, children, ...rest }: Props) {
   const colors = useColors();
   const reduced = useReduceMotion();
   const scale = useRef(new Animated.Value(1)).current;
@@ -36,6 +37,7 @@ export function PressableScale({ style, onPressIn, onPressOut, onFocus, onBlur, 
   return (
     <AnimatedPressable
       {...rest}
+      accessibilityRole={accessibilityRole}
       onPressIn={e => {
         setHeld(true);
         if (!reduced) springTo(MOTION.pressScale);

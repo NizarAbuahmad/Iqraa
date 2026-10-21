@@ -1,7 +1,8 @@
 /**
  * A card's look: the card colour at radius 16, lifted by a soft shadow in
- * light mode and outlined by a 1px border in dark mode, where a shadow does
- * not show on the navy page. Use `useSurface()` in a Pressable's style array,
+ * light mode on Android 9+ and iOS/web, and outlined by a 1px border in dark
+ * mode (a shadow does not show on the navy page) and on older Android (React
+ * Native draws no outset `boxShadow` below API 28). Use `useSurface()` in a Pressable's style array,
  * and `<Surface>` for a plain container.
  *
  * Two traps:
@@ -11,14 +12,17 @@
  *   to its bounds. Round the child that needs clipping instead.
  */
 import React from 'react';
-import { View, type ViewProps, type ViewStyle } from 'react-native';
+import { Platform, View, type ViewProps, type ViewStyle } from 'react-native';
 import { scheme } from '@/constants/colors';
 import { ELEVATION, RADIUS, type Elevation } from '@/constants/theme';
 import { useColors } from '@/hooks/useColors';
 
+// React Native draws no outset boxShadow on Android below API 28 (9), so a card there keeps its border.
+const SHADOWS_DRAW = !(Platform.OS === 'android' && Number(Platform.Version) < 28);
+
 export function useSurface(level: Elevation = 'card'): ViewStyle {
   const colors = useColors();
-  return scheme === 'dark'
+  return scheme === 'dark' || !SHADOWS_DRAW
     ? { backgroundColor: colors.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: colors.border }
     : { backgroundColor: colors.card, borderRadius: RADIUS.lg, boxShadow: ELEVATION[level] };
 }

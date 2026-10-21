@@ -51,8 +51,9 @@ export const RADIUS = {
  * Depth: CSS box-shadow strings in the brand navy. React Native 0.81 (new
  * architecture) and react-native-web both take them as `boxShadow`.
  *
- * Light mode only. A shadow does not show on the navy dark page, so a dark
- * card keeps a 1px border instead. `useSurface` (components/ui/Surface.tsx)
+ * Light mode and Android 9+ only. A shadow does not show on the navy dark page,
+ * and React Native draws none below Android API 28, so those cards keep a 1px
+ * border instead. `useSurface` (components/ui/Surface.tsx)
  * makes that choice; take depth from it, not from hand-written
  * `shadowColor`/`shadowOpacity`, which designScale.test.ts counts.
  */
