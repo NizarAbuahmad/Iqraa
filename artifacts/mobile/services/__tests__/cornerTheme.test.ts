@@ -9,6 +9,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CORNERS, CORNER_IDS, type CornerId } from '../../constants/corners.ts';
 import { contrast } from '../readableColor.ts';
+import { bandGradient } from '../band.ts';
 
 // The global palette's fixed surfaces and text, copied from constants/colors.ts
 // (which cannot be imported here: it reads Appearance from react-native).
@@ -69,6 +70,28 @@ test('motif opacity stays subtle enough for the band text', () => {
   for (const id of CORNER_IDS) {
     const { motifOpacity } = CORNERS[id];
     assert.ok(motifOpacity > 0 && motifOpacity <= 0.14, `${id} motifOpacity ${motifOpacity}`);
+  }
+});
+
+// palette.hero, copied from constants/colors.ts (which cannot be imported here).
+// Measured at 0.95, the library header's meta line; a brand band drawing 0.85 white would be 4.42:1 in dark mode — measure it here before adding one.
+const BRAND_HERO = { light: '#006D65', dark: '#0F766E' };
+
+test('band text reads on both stops of every band gradient', () => {
+  // [name, hero, alpha of the white subtitle drawn on the band]
+  const heroes: [string, string, number][] = [
+    ...CORNER_IDS.flatMap((id): [string, string, number][] => [
+      [`${id} light`, CORNERS[id].light.hero, 0.85],
+      [`${id} dark`, CORNERS[id].dark.hero, 0.85],
+    ]),
+    ['brand light', BRAND_HERO.light, 0.95],
+    ['brand dark', BRAND_HERO.dark, 0.95],
+  ];
+  for (const [what, hero, alpha] of heroes) {
+    for (const stop of bandGradient(hero)) {
+      atLeast(WHITE, stop, `${what} band title`);
+      atLeast(blendWhite(alpha, stop), stop, `${what} band subtitle at ${alpha}`);
+    }
   }
 });
 

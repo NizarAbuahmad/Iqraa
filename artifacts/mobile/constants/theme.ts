@@ -46,3 +46,19 @@ export const RADIUS = {
   xl: 24,
   pill: 999,
 } as const;
+
+/**
+ * Depth: CSS box-shadow strings in the brand navy. React Native 0.81 (new
+ * architecture) and react-native-web both take them as `boxShadow`.
+ *
+ * Light mode only. A shadow does not show on the navy dark page, so a dark
+ * card keeps a 1px border instead. `useSurface` (components/ui/Surface.tsx)
+ * makes that choice; take depth from it, not from hand-written
+ * `shadowColor`/`shadowOpacity`, which designScale.test.ts counts.
+ */
+export const ELEVATION = {
+  card: '0px 1px 2px rgba(11, 27, 51, 0.06), 0px 4px 14px rgba(11, 27, 51, 0.06)',
+  raised: '0px 2px 4px rgba(11, 27, 51, 0.08), 0px 8px 24px rgba(11, 27, 51, 0.10)',
+} as const;
+
+export type Elevation = keyof typeof ELEVATION;
