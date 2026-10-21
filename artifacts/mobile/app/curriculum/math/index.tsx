@@ -14,7 +14,8 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { MATH_TOOLS, MATH_TOOL_IDS, mathToolPath } from '@/services/mathTools';
-import { MathFrame } from '@/components/math/MathFrame';
+import { CornerFrame } from '@/components/corners/CornerFrame';
+import { CornerGrid } from '@/components/corners/CornerGrid';
 import { GeogebraLink } from '@/components/math/GeogebraLink';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 
@@ -24,8 +25,8 @@ export default function MathCornerScreen() {
   const align = isRTL ? 'right' : 'left';
 
   return (
-    <MathFrame title={t('mathTitle')} subtitle={t('mathIntro')}>
-      <View style={styles.list}>
+    <CornerFrame title={t('mathTitle')} subtitle={t('mathIntro')}>
+      <CornerGrid>
         {MATH_TOOL_IDS.map(id => {
           const meta = MATH_TOOLS[id];
           return (
@@ -63,14 +64,13 @@ export default function MathCornerScreen() {
           );
         })}
         <GeogebraLink />
-      </View>
-    </MathFrame>
+      </CornerGrid>
+    </CornerFrame>
   );
 }
 
 const styles = StyleSheet.create({
-  list: { padding: SPACE.lg, gap: SPACE.md },
-  row: { alignItems: 'center', gap: SPACE.md, padding: SPACE.md, borderWidth: 1, borderRadius: RADIUS.lg },
+  row: { flexGrow: 1, alignItems: 'center', gap: SPACE.md, padding: SPACE.md, borderWidth: 1, borderRadius: RADIUS.lg },
   icon: { width: 44, height: 44, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: TYPE.body },
   hint: { fontSize: TYPE.caption, marginTop: SPACE.xxs },

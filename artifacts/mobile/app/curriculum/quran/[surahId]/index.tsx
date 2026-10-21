@@ -23,7 +23,7 @@ import { getLessonById } from '@/services/knowledgeBase';
 import { openExternal } from '@/services/externalLinks';
 import { memorizePath, resolveSurahParam } from '@/services/quranLinks';
 import { toArabicDigits } from '@/services/labFormat';
-import { LabFrame } from '@/components/lab/LabFrame';
+import { CornerFrame } from '@/components/corners/CornerFrame';
 import { QuranGate } from '@/components/quran/QuranGate';
 import { QuranAudioNote, QuranListenButton } from '@/components/quran/QuranAudioControls';
 import { useQuranAudio } from '@/hooks/useQuranAudio';
@@ -42,19 +42,19 @@ function QuranReader() {
   const surah = resolveSurahParam(surahId);
   if (!surah) {
     return (
-      <LabFrame title={t('quranTitle')}>
+      <CornerFrame title={t('quranTitle')}>
         <Text style={[styles.missing, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
           {t('quranNotFound')}
         </Text>
-      </LabFrame>
+      </CornerFrame>
     );
   }
 
   if (!fontReady) {
     return (
-      <LabFrame title={surah.nameAr}>
+      <CornerFrame title={surah.nameAr}>
         <ActivityIndicator color={colors.primary} style={{ marginTop: SPACE.xl }} />
-      </LabFrame>
+      </CornerFrame>
     );
   }
 
@@ -68,7 +68,7 @@ function QuranReader() {
     : `${t('quranAyahsLabel')} ${digits(segmentsText(surah.segments, sep))}`;
 
   return (
-    <LabFrame title={surah.nameAr} subtitle={subtitle}>
+    <CornerFrame title={surah.nameAr} subtitle={subtitle}>
       <View style={[styles.actions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Pressable
           onPress={() => {
@@ -221,7 +221,7 @@ function QuranReader() {
           </>
         ) : null}
       </View>
-    </LabFrame>
+    </CornerFrame>
   );
 }
 
