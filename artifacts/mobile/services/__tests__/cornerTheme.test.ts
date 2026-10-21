@@ -74,8 +74,8 @@ test('motif opacity stays subtle enough for the band text', () => {
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-/** Corners wired so far. PR 2 adds 'english' and 'play' and removes this list. */
-const WIRED: readonly CornerId[] = ['math', 'lab', 'quran'];
+/** Corners wired so far. Task 3 adds 'play'. */
+const WIRED: readonly CornerId[] = ['math', 'lab', 'quran', 'english'];
 
 function* files(dir: string): Generator<string> {
   for (const name of readdirSync(dir)) {
@@ -114,6 +114,7 @@ test('corner code never imports the global palette', () => {
     join(root, 'components', 'math'),
     join(root, 'components', 'lab'),
     join(root, 'components', 'quran'),
+    join(root, 'components', 'englishHub'),
     join(root, 'components', 'corners'),
   ];
   for (const d of dirs) {
@@ -132,11 +133,23 @@ test('corner code never imports the global palette', () => {
 test('the library tiles take each corner its own colour', () => {
   const src = readFileSync(join(root, 'app', 'curriculum', 'resources.tsx'), 'utf8');
   assert.match(src, /from '@\/constants\/corners'/, 'resources.tsx does not import the corner table');
-  // English is not themed until PR 2, so its tile stays teal rather than promise a colour the corner lacks.
-  for (const id of ['lab', 'math', 'quran'] as const) {
+  for (const id of ['english', 'lab', 'math', 'quran'] as const) {
     assert.match(src, new RegExp(`cornerLook\\('${id}'\\)`), `${id} tile does not read its corner look`);
   }
-  // The old identical-teal tile icon must be gone from the three themed corner tiles; the curriculum tile,
-  // the English tile (until PR 2) and the student/parent «my exams» tile keep ACCENT on purpose.
-  assert.equal((src.match(/ACCENT \+ '1F'/g) ?? []).length, 3, 'only the curriculum, English and my-exams tiles may keep the teal icon tint');
+  // The old identical-teal tile icon must be gone from the four themed corner tiles; the curriculum tile
+  // and the student/parent «my exams» tile keep ACCENT on purpose.
+  assert.equal((src.match(/ACCENT \+ '1F'/g) ?? []).length, 2, 'only the curriculum tile and the student/parent «my exams» tile keep the teal icon tint');
+});
+
+test('text on a primary fill in the English corner is primaryForeground, not white', () => {
+  // In dark mode a corner's primary is a light 300-level shade with navy text on it;
+  // white there is ~1.9:1 on English's #FDBA74.
+  const dirs = [routeDir('english'), join(root, 'components', 'englishHub')];
+  for (const d of dirs) {
+    for (const f of files(d)) {
+      const src = readFileSync(f, 'utf8');
+      assert.doesNotMatch(src, /primaryText:\s*\{[^}]*color:\s*'#fff'/, `${f}: primaryText is white; use colors.primaryForeground`);
+      assert.doesNotMatch(src, /color:\s*on\s*\?\s*'#fff'/, `${f}: a selected chip's text is white; use colors.primaryForeground`);
+    }
+  }
 });
