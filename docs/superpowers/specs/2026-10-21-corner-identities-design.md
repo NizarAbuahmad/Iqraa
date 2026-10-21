@@ -168,9 +168,21 @@ type Props = {
   subtitle?: string;
   /** Rendered inside the band under the subtitle — grade chips, a switch. */
   bandChildren?: React.ReactNode;
+  /** A short line above the title — the English lesson's «grade · unit». */
+  eyebrow?: string;
+  /** Replaces the back button's default (`goBack()`, which falls back to `/`). Public pages need their own fallback. */
+  onBack?: () => void;
+  /** The games hub is an entry point with nowhere to go back to. */
+  hideBack?: boolean;
+  /** Pass `'handled'` on screens with text inputs, so a tap on a button does not first just close the keyboard. */
+  keyboardShouldPersistTaps?: 'always' | 'never' | 'handled';
   children: React.ReactNode;
 };
 ```
+
+`eyebrow`, `onBack`, `hideBack` and `keyboardShouldPersistTaps` were added in
+PR 2 for the English lesson (eyebrow, back action, persisting taps) and the
+games hub (no back).
 
 - Band: `colors.hero`, then `<CornerMotif>` absolutely filled at the corner's
   `motifOpacity`, then the glyph (phone widths only), then the back button,
@@ -213,8 +225,9 @@ The library's `/curriculum/resources` and the browser are **not** wrapped.
   curriculum tile, the games tile's position and the role-gated tiles are
   unchanged. The tiles keep their white card and teal everything-else: the
   colour is a cue, not a theme change on the library.
-- **Browser banner** (`app/curriculum/browse.tsx` «ركن الإنجليزية» banner, and
-  the link in `lesson-detail.tsx`): background `CORNERS.english[scheme].hero`.
+- **Browser banner** (`app/curriculum/browse.tsx` «ركن الإنجليزية» banner):
+  background `CORNERS.english[scheme].hero`. The lesson page's own link keeps the
+  lesson's subject colour, because it sits on a page already painted in it.
 - **Desktop hub grid.** `CornerGrid` lays its children in
   `cornerColumns(width)` columns (3 ≥ 960px track, 2 ≥ 600px, else 1 — the same
   breaks as `libraryColumns`, kept as its own function so the two can drift on
