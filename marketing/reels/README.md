@@ -17,6 +17,7 @@
 | 14 | `out/Iqrra_14_Meta_Ad_upbeat.mp4` | **Meta ad**: 12 features in one reel, whole-screen phone, «جرّبها مجانًا» | 27.8 s |
 | 13 | `out/Iqrra_13_Poster_Sample.mp4` | **style sample**: Reel 11's footage in a totally different design (poster / kinetic type / tilted phone) | 21.0 s |
 | 15 | `out/Iqrra_15_YouTube_Full_Tour.mp4` | **YouTube, 16:9 1920×1080**: 21 chapters, every feature, burned-in captions, no voice-over | ~4:13 |
+| 16 | `out/Iqrra_16_Avatar_Host.mp4` (`…_PREVIEW.mp4` until a recording exists) | **virtual teacher host** (illustrated «معلّمة اقرأ»), 9:16, voice-over from a recording you supply | ~55 s |
 
 Reels 1–4 share one layout (headline in the top safe zone, the app in a rounded card, branded end card),
 the same Chromium-rendered Arabic (Cairo / Almarai, never ffmpeg `drawtext`) and the same music bed.
@@ -140,6 +141,22 @@ progress rail along the bottom, lockup top-right. A 9 s intro and a 9 s end card
 - **Labels:** demo-mode generated content carries «وضع العرض · محتوى تجريبي»; fictional classes and names carry «حساب تجريبي · أسماء افتراضية».
 - **"Free" is a claim to keep true** — same caveat as Reel 14 (no price or billing today; marketing-plan gates #5 and #7 apply before paid promotion).
 - The tour's own chapter title cards are skipped by picking source times *after* them (calendar starts at 427.8 s; 426.8 s is still the card).
+
+## Reel 16 — «معلّمة اقرأ», the virtual teacher host (9:16)
+
+An illustrated presenter (`make_avatar.py`: 16 stackable SVG layers — body, head, hair, glasses, eyes, brows, six mouths, a waving arm and a
+pointing arm) introduces the app in nine beats (`avatar_script.py` = the script, the footage behind each beat, `AVATAR_SCRIPT.md` = the recording guide).
+`build_avatar_video.py --audio voice.m4a` animates her from the recording: mouth from loudness and brightness, blinks, head bob, a wave, and a point at the
+phone on every new screen; the recording is split into the nine beats at its pauses (≥0.45 s) and falls back to word-count placement with a warning.
+Without `--audio` it renders a `_PREVIEW` with placeholder mouth timing and music only.
+
+- **The voice is yours.** There is no Arabic text-to-speech here that sounds Jordanian, and the Higgsfield workspace has 0 credits and English-only preset voices. Record the
+  nine paragraphs in `AVATAR_SCRIPT.md` (one take, ~1 s pause between paragraphs), or generate them in a TTS tool you already use.
+- **Always says it is a Jordanian app made by Jordanians:** beats 2 and 9 say it, and a «تطبيق أردني · بأيدٍ أردنية» chip (with the Jordanian flag) is on every frame.
+- **Honest framing.** She is labelled «معلّمة اقرأ · شخصية افتراضية» and never says "I teach / I use it" — a made-up teacher giving a personal testimonial would be a fabricated endorsement.
+- **Same rules as the other videos:** demo-mode screens carry «وضع العرض · محتوى تجريبي»; no "verified"; frames with mirrored maths are not used; «مجانًا» is true only while the product has no price.
+- Meta Reels safe zone: chip, lockup, captions, her face and the phone's content sit inside y 270–1250; only the blazer and the phone's tab bar run below.
+- Music: `music_inspire` ~21 dB under the voice.
 
 ## Reels 6–9 — cut from the full-app tour
 
