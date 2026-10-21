@@ -19,23 +19,33 @@ type Props = { index?: number; style?: StyleProp<ViewStyle>; children: React.Rea
 export function Entrance({ index = 0, style, children }: Props) {
   const reduced = useReduceMotion();
   const progress = useRef(new Animated.Value(reduced ? 1 : 0)).current;
+  const run = useRef<Animated.CompositeAnimation | null>(null);
 
   useEffect(() => {
     if (reduced) {
       progress.setValue(1);
       return;
     }
-    const run = Animated.timing(progress, {
+    const timing = Animated.timing(progress, {
       toValue: 1,
       duration: MOTION.enterMs,
       delay: entranceDelay(index),
       easing: Easing.out(Easing.cubic),
       useNativeDriver: NATIVE_DRIVER,
     });
-    run.start();
-    return () => run.stop();
+    run.current = timing;
+    timing.start();
+    return () => timing.stop();
     // Mount only: a re-render must not replay the entrance.
   }, []);
+
+  // The device's answer can arrive after this mounted: snap into place rather
+  // than finish the motion.
+  useEffect(() => {
+    if (!reduced) return;
+    run.current?.stop();
+    progress.setValue(1);
+  }, [reduced, progress]);
 
   return (
     <Animated.View
