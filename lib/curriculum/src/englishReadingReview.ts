@@ -8,8 +8,12 @@
  * cannot drift from what children see. `scripts/grammar-sheet.ts` writes it to
  * docs/english-reading-g1-review.html, and a test fails when that copy is stale.
  */
-import { READING_UNITS, firstSound, firstSoundSkip, type ReadingUnit, type SoundSkip } from './englishReading.ts';
-import { unitLabelAr } from './englishGrammarReview.ts';
+import {
+  READING_NOT_COVERED_G2, firstSound, firstSoundSkip, readSentencePool, readingUnitsForGrade, sentencePartner,
+  type ReadingUnit, type SoundSkip,
+} from './englishReading.ts';
+import type { GrammarSentence } from './englishGrammar.ts';
+import { notCoveredList, picture, unitLabelAr } from './englishGrammarReview.ts';
 import { hubLesson } from './englishHub.ts';
 import { wordPicture } from './englishPictures.ts';
 
@@ -25,7 +29,53 @@ const SKIP_AR: Record<SoundSkip, string> = {
   'soft-g': 'لا تُستعمل: <span dir="ltr">g</span> تُلفظ <span dir="ltr">j</span> هنا',
 };
 
-function renderUnit(u: ReadingUnit): string {
+/** A sentence's picture, in the same markup as the grammar form. */
+function pictureOf(s: GrammarSentence): string {
+  return picture(s.picture!.word, s.picture!.count, s.marker);
+}
+
+/** Grade 2: the «Read the sentence» pool of a unit, with the wrong picture each is shown against; then why anything is left out. */
+function sentenceSection(lessonId: string): string {
+  const pool = readSentencePool(lessonId);
+  const rows = pool.map((s, i) => {
+    const partner = sentencePartner(s, pool);
+    const against = partner
+      ? `${pictureOf(partner)} <span class="none">+ كلمة أخرى من القائمة</span>`
+      : '<span class="none">كلمتان أخريان من القائمة</span>';
+    return `
+        <tr>
+          <td class="num">${AR_DIGITS(i + 1)}</td>
+          <td class="sentence" dir="ltr">${esc(s.text)}</td>
+          <td>${pictureOf(s)}</td>
+          <td>${against}</td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>`;
+  }).join('');
+  const table = pool.length
+    ? `
+    <h3 class="sub-h">جمل «اقرَأ الجملة» <span class="meta-line">(${AR_DIGITS(pool.length)})</span></h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الجملة</th>
+            <th>الصورة</th>
+            <th>صورة خاطئة تظهر معها<small>تُختار الأخرى عشوائيًا</small></th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>${rows}
+        </tbody>
+      </table>
+    </div>`
+    : '';
+  return `${table}${notCoveredList(READING_NOT_COVERED_G2[lessonId])}`;
+}
+
+function renderUnit(u: ReadingUnit, grade: number): string {
   const lesson = hubLesson(u.lessonId)!;
   const rows = lesson.words.map((w, i) => {
     const pic = wordPicture(w.en);
@@ -66,7 +116,7 @@ function renderUnit(u: ReadingUnit): string {
         <tbody>${rows}
         </tbody>
       </table>
-    </div>
+    </div>${grade === 2 ? sentenceSection(u.lessonId) : ''}
     <div class="signoff">
       <div class="verdict">
         <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>
@@ -82,11 +132,68 @@ function renderUnit(u: ReadingUnit): string {
   </section>`;
 }
 
-export function renderReadingReviewHtml(): string {
-  const words = READING_UNITS.reduce((n, u) => n + (hubLesson(u.lessonId)?.words.length ?? 0), 0);
-  const units = READING_UNITS.map(renderUnit).join('');
+interface GradeCopy {
+  title: string;
+  eyebrow: string;
+  lead: (words: number, units: number, sentences: number, sentenceUnits: number) => string;
+  acts: string;
+  checks: string[];
+  meta: string;
+  extraCss: string;
+}
 
-  const page = `<title>مراجعة قراءة الصف الأول</title>
+const ACT_FIND = '<div class="act"><b>اقرَأ واختر الصورة</b>تظهر الكلمة مكتوبة دون صوت، ويختار الطالب صورتها من ثلاث صور. تُسمع الكلمة بعد الإجابة.</div>';
+const ACT_LETTER = '<div class="act"><b>الحرف الأول</b>يسمع الطالب الكلمة ويرى صورتها، ويختار حرفها الأول من ثلاثة أحرف. لا تُكتب الكلمة قبل الإجابة.</div>';
+const ACT_STARTS = '<div class="act"><b>يبدأ بهذا الحرف</b>يظهر حرف، ويختار الطالب الصورة التي يبدأ اسمها بصوته من ثلاث صور.</div>';
+const CHECKS_WORD = [
+  'هل الحرف المكتوب هو فعلًا أول صوت يسمعه الطالب في الكلمة؟',
+  'هل الصورة تدل على الكلمة دون لبس؟',
+  'هل توافقون على استبعاد الكلمات المستبعدة، أم تريدون إضافة إحداها؟',
+];
+
+const GRADE_COPY: Record<number, GradeCopy> = {
+  1: {
+    title: 'مراجعة قراءة الصف الأول',
+    eyebrow: 'إقرأ · ركن اللغة الإنجليزية · الصف الأول',
+    lead: (words, units) => `أضفنا إلى ركن اللغة الإنجليزية ثلاثة أنشطة قراءة مبنية على كلمات كل وحدة وصورها وتسجيلاتها، وعلى هدف الكتاب: تمييز الصوت الأول في الكلمة. لا يُسمع في التطبيق صوت الحرف وحده؛ يظهر الحرف مكتوبًا فقط. <b>لن يرى الطلاب أي وحدة قبل أن توافقوا عليها.</b> هذه الورقة تعرض كل كلمة في ${AR_DIGITS(units)} وحدات، ${wordCountAr(words)}.`,
+    acts: ACT_FIND + '\n      ' + ACT_LETTER + '\n      ' + ACT_STARTS,
+    checks: CHECKS_WORD,
+    meta: '«بلا صورة» تعني أن الكلمة لا تظهر في نشاطَي الصور، وتظهر في «الحرف الأول» بالصوت وحده. الصور هي الرموز التي تظهر في التطبيق نفسه.',
+    extraCss: '',
+  },
+  2: {
+    title: 'مراجعة قراءة الصف الثاني',
+    eyebrow: 'إقرأ · ركن اللغة الإنجليزية · الصف الثاني',
+    lead: (words, units, sentences, sentenceUnits) => `أضفنا إلى ركن اللغة الإنجليزية في الصف الثاني أربعة أنشطة قراءة: ثلاثة على كلمات كل وحدة كما في الصف الأول، ونشاط رابع لقراءة جملة كاملة. الجمل هي جمل القواعد نفسها، وتُسمع بعد الإجابة فقط، ولا يظهر هذا النشاط لوحدة قبل موافقتكم على قواعدها أيضًا. لا يُسمع في التطبيق صوت الحرف وحده؛ يظهر الحرف مكتوبًا فقط. <b>لن يرى الطلاب أي وحدة قبل أن توافقوا عليها.</b> هذه الورقة تعرض كل كلمة في ${AR_DIGITS(units)} وحدات، ${wordCountAr(words)}، وجمل النشاط الرابع في ${AR_DIGITS(sentenceUnits)} وحدات، ${AR_DIGITS(sentences)} جملة.`,
+    acts: ACT_FIND + '\n      ' + ACT_LETTER + '\n      ' + ACT_STARTS +
+      '\n      <div class="act"><b>اقرَأ الجملة</b>تظهر جملة مكتوبة دون صوت، ويختار الطالب صورتها من ثلاث صور. إحدى الصورتين الخاطئتين هي صورة الجملة المقابلة إن وُجدت (🐭 مقابل 🐭🐭، أو ✅ مقابل ❌، أو 👦 مقابل 👧) ليقرأ الطالب الكلمة الصغيرة.</div>',
+    checks: [
+      ...CHECKS_WORD,
+      'في «اقرَأ الجملة»: هل يستطيع طالب الصف الثاني قراءة الجملة كاملة؟ وهل جملتا السؤال والجواب معًا أطول مما يُحتمل في هذه المرحلة، أم يكفي عرض الجواب وحده؟',
+      'هل تُقرأ ✅ و❌ والصورة الواحدة مقابل الصورتين بوضوح على أنها «don\'t» و«these are»؟',
+      'هل تسبب صورة pink (القلب الوردي) أو orange (الدائرة 🟠) أو لون العينين لبسًا؟',
+    ],
+    meta: '«بلا صورة» تعني أن الكلمة لا تظهر في نشاطَي الصور، وتظهر في «الحرف الأول» بالصوت وحده. لا يشمل التطبيق الصوت الأوسط أو الأخير في الكلمة. الصور هي الرموز التي تظهر في التطبيق نفسه.',
+    extraCss: `
+  td.sentence { font-family: var(--latin); font-size: 1.02rem; font-weight: 500; text-align: left; white-space: nowrap; }
+  .pic { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.2; }
+  .pic-word { font-family: var(--latin); font-size: .72rem; color: var(--muted); }
+  .sub-h { font-family: var(--display); font-size: 1.05rem; margin: 6px 0 0; }
+  .unit-note { margin: 0; }
+  .not-covered { margin: 0; padding-inline-start: 1.3em; display: grid; gap: 4px; font-size: .92rem; color: var(--muted); }
+  .not-covered [dir="ltr"] { font-family: var(--latin); }`,
+  },
+};
+
+export function renderReadingReviewHtml(grade = 1): string {
+  const copy = GRADE_COPY[grade]!;
+  const unitRows = readingUnitsForGrade(grade);
+  const words = unitRows.reduce((n, u) => n + (hubLesson(u.lessonId)?.words.length ?? 0), 0);
+  const pools = unitRows.map(u => readSentencePool(u.lessonId)).filter(p => p.length > 0);
+  const sentences = pools.reduce((n, p) => n + p.length, 0);
+  const units = unitRows.map(u => renderUnit(u, grade)).join('');
+
+  const page = `<title>${copy.title}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700&family=Readex+Pro:wght@400;500;600;700&display=swap">
@@ -181,27 +288,23 @@ export function renderReadingReviewHtml(): string {
     tr, .signoff { break-inside: avoid; }
     thead { display: table-header-group; }
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  }
+  }${copy.extraCss}
 </style>
 
 <main class="sheet" dir="rtl" lang="ar">
   <section class="intro">
-    <div class="eyebrow">إقرأ · ركن اللغة الإنجليزية · الصف الأول</div>
+    <div class="eyebrow">${copy.eyebrow}</div>
     <h1>مراجعة أنشطة القراءة قبل عرضها على الطلاب</h1>
-    <p class="lead">أضفنا إلى ركن اللغة الإنجليزية ثلاثة أنشطة قراءة مبنية على كلمات كل وحدة وصورها وتسجيلاتها، وعلى هدف الكتاب: تمييز الصوت الأول في الكلمة. لا يُسمع في التطبيق صوت الحرف وحده؛ يظهر الحرف مكتوبًا فقط. <b>لن يرى الطلاب أي وحدة قبل أن توافقوا عليها.</b> هذه الورقة تعرض كل كلمة في ${AR_DIGITS(READING_UNITS.length)} وحدات، ${wordCountAr(words)}.</p>
+    <p class="lead">${copy.lead(words, unitRows.length, sentences, pools.length)}</p>
 
     <div class="acts">
-      <div class="act"><b>اقرَأ واختر الصورة</b>تظهر الكلمة مكتوبة دون صوت، ويختار الطالب صورتها من ثلاث صور. تُسمع الكلمة بعد الإجابة.</div>
-      <div class="act"><b>الحرف الأول</b>يسمع الطالب الكلمة ويرى صورتها، ويختار حرفها الأول من ثلاثة أحرف. لا تُكتب الكلمة قبل الإجابة.</div>
-      <div class="act"><b>يبدأ بهذا الحرف</b>يظهر حرف، ويختار الطالب الصورة التي يبدأ اسمها بصوته من ثلاث صور.</div>
+      ${copy.acts}
     </div>
 
     <div class="card">
       <h3>ما المطلوب في كل كلمة</h3>
       <ol>
-        <li>هل الحرف المكتوب هو فعلًا أول صوت يسمعه الطالب في الكلمة؟</li>
-        <li>هل الصورة تدل على الكلمة دون لبس؟</li>
-        <li>هل توافقون على استبعاد الكلمات المستبعدة، أم تريدون إضافة إحداها؟</li>
+        ${copy.checks.map(c => `<li>${esc(c)}</li>`).join('\n        ')}
       </ol>
     </div>
 
@@ -214,7 +317,7 @@ export function renderReadingReviewHtml(): string {
       </ul>
     </div>
 
-    <p class="meta-line">«بلا صورة» تعني أن الكلمة لا تظهر في نشاطَي الصور، وتظهر في «الحرف الأول» بالصوت وحده. الصور هي الرموز التي تظهر في التطبيق نفسه.</p>
+    <p class="meta-line">${copy.meta}</p>
   </section>
 ${units}
 </main>
