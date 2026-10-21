@@ -14,8 +14,9 @@ type Props = { motif: MotifId; opacity: number };
 export function CornerMotif({ motif, opacity }: Props) {
   // Pattern ids are global to the document, and on web earlier stack screens
   // stay mounted (hidden), so a fixed id would bind to the hidden screen's
-  // pattern. useId's colons are not valid in a url(#…) reference.
-  const id = 'motif-' + useId().replace(/:/g, '');
+  // pattern. The id is reduced to characters valid in an SVG id and in a CSS
+  // url(#…) reference, whatever format React's useId emits («r0», :r0:, …).
+  const id = 'motif-' + useId().replace(/[^A-Za-z0-9_-]/g, '');
   return (
     <Svg pointerEvents="none" style={[StyleSheet.absoluteFill, { opacity }]} width="100%" height="100%">
       {MOTIFS[motif](id)}
