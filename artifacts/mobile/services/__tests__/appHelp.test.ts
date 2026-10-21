@@ -1412,3 +1412,63 @@ describe('slides, worksheets, verification and the books (twelfth live pass)', (
   }
 });
 
+
+describe('account, classes, exams and games (thirteenth live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    ['كيف أغير صورتي الشخصية؟', 'howChangePhoto'],
+    ['how do i change my profile picture', 'howChangePhoto'],
+    ['كيف أغير رقم هاتفي؟', 'howChangePhone'],
+    ['how do i change my phone number', 'howChangePhone'],
+    ['كيف أضبط الإشعارات؟', 'howNotifications'],
+    ['where do i find the english corner', 'howEnglishCorner'],
+    ['وين ركن الإنجليزية', 'howEnglishCorner'],
+    ['how do i duplicate a class', 'howDuplicateClass'],
+    ['كيف أنسخ الشعبة؟', 'howDuplicateClass'],
+    ['كيف أعرف من فتح التقييم من الطلبة؟', 'howExamSubmissions'],
+    ['how do i see which students opened the exam', 'howExamSubmissions'],
+    ['كيف أنقل طالباً من شعبة إلى أخرى؟', 'howMoveStudent'],
+    ['how do i move a student from one class to another', 'howMoveStudent'],
+    ['كيف أعطي علامة لواجب؟', 'howHomeworkGrade'],
+    ['how do i give a grade to a homework', 'howHomeworkGrade'],
+    ['كيف أرسل ملاحظات أو اقتراحات للتطبيق؟', 'howSuggestFeature'],
+    ['how do i send feedback or suggestions to the app', 'howSuggestFeature'],
+    ['ما هي الألعاب التعليمية في التطبيق؟', 'howGamesList'],
+    ['what games are there in the app', 'howGamesList'],
+    ['كيف أرسل تذكير للأهل بموعد الاختبار؟', 'howExamParents'],
+    ['how do i remind parents about the exam', 'howExamParents'],
+    ['كيف أطبع رمز QR للتقييم؟', 'howExamQr'],
+    ['how do i print a qr code for the exam', 'howExamQr'],
+    ['ما الفرق بين الاختبار القصير والتقييم؟', 'howQuizVsEvaluation'],
+    ['what is the difference between a quiz and an evaluation', 'howQuizVsEvaluation'],
+    ['كيف أشارك كود الشعبة مع الطلبة؟', 'howShareLinkCode'],
+    ['how do i share the class code with my students', 'howShareLinkCode'],
+    ['كيف أشارك رابط التقييم عبر واتساب؟', 'howShareExam'],
+    ['how do i share the exam link on whatsapp', 'howShareExam'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text, `<${key}>`);
+    });
+  }
+
+  const stayWithModel = [
+    'how do i change the photo in my slide',
+    'how do i copy a class of compounds',
+    'what games are good for teaching fractions',
+    'ما الفرق بين الاختبار القصير والتقييم التكويني',
+    'كيف أرسل تذكيرا للأهل بالواجب',
+    'how do i grade essays fairly',
+    'what is the english corner',
+    'كيف أنقل الطالب الضعيف إلى مجموعة أخرى في الصف',
+    'how do i share the exam answers with the class',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howChangePhoto', 'howChangePhone', 'howEnglishCorner', 'howDuplicateClass', 'howHomeworkGrade', 'howGamesList', 'howExamParents', 'howExamQr', 'howQuizVsEvaluation', 'howMoveStudent']);
+      const a = answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text;
+      assert.equal(ids.has(a.replace(/[<>]/g, '')), false);
+    });
+  }
+});
