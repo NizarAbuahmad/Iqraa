@@ -1,0 +1,339 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Iqraa reel overlays</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;900&family=Almarai:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+:root{ --navy:#081B3A; --teal:#00A99D; --aqua:#34D6C6; --muted:#8BA0B8; }
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:transparent}
+body{font-family:"Almarai",sans-serif;direction:rtl;width:1080px}
+.o{position:absolute;left:0;top:0}
+
+/* Headlines: right edge x=960 (clear of the Reels action rail), top >= 290 */
+.head{width:900px;text-align:right;font-family:"Cairo";font-weight:900;font-size:78px;line-height:1.28;color:#fff;text-wrap:balance;padding:6px 0 18px;
+  text-shadow:0 4px 24px rgba(3,12,28,.55)}
+.head .hl{color:var(--aqua)}
+.head .n{color:var(--aqua);unicode-bidi:isolate}
+
+.chip{display:inline-flex;align-items:center;gap:14px;padding:12px 28px;border-radius:999px;
+  background:rgba(52,214,198,.14);border:2px solid rgba(52,214,198,.55);
+  font-family:"Cairo";font-weight:700;font-size:34px;color:#fff;white-space:nowrap}
+.chip i{font-style:normal;color:var(--aqua)}
+.demo{display:inline-flex;align-items:center;padding:8px 22px;border-radius:999px;background:rgba(8,27,58,.78);
+  border:2px solid rgba(139,160,184,.55);font-family:"Almarai";font-weight:700;font-size:28px;color:#C9D6E6;white-space:nowrap}
+
+/* End card: full 1080x1920, opaque */
+.end{width:1080px;height:1920px;position:relative;overflow:hidden;background:var(--navy)}
+.end .bg{position:absolute;inset:0;background:
+  radial-gradient(900px 760px at 50% 30%, rgba(52,214,198,.20), transparent 62%),
+  radial-gradient(800px 700px at 8% 92%, rgba(0,169,157,.16), transparent 65%),
+  var(--navy)}
+.end .col{position:absolute;left:60px;right:120px;top:360px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.end img{width:470px;display:block}
+.end .name{font-family:"Cairo";font-weight:900;font-size:150px;line-height:1.1;color:#fff;margin-top:34px}
+.end .cta{font-family:"Cairo";font-weight:900;font-size:80px;line-height:1.3;color:#fff;margin-top:70px}
+.end .cta .hl{color:var(--aqua)}
+.end .url{margin-top:64px;direction:ltr;display:inline-block;background:var(--aqua);color:#06243F;
+  font-family:"Cairo";font-weight:900;font-size:58px;padding:24px 62px;border-radius:999px;
+  box-shadow:0 22px 56px rgba(52,214,198,.34);letter-spacing:.01em}
+.end .rule{width:150px;height:6px;border-radius:99px;background:var(--teal);margin-top:56px}
+
+/* --- Reels 2-4 additions (Reel 1 above is unchanged) --- */
+.end .cta.long{font-size:72px;max-width:860px;text-wrap:balance}
+.end .cta.long .hl{color:var(--aqua)}
+
+/* --- Reel 5 additions --- */
+.cd{width:170px;height:170px;display:flex;align-items:center;justify-content:center;font-family:"Cairo";font-weight:900;font-size:118px;color:var(--aqua);line-height:1;text-shadow:0 4px 24px rgba(3,12,28,.55)}
+.formula{direction:ltr;display:inline-flex;align-items:center;padding:12px 30px;border-radius:18px;background:rgba(16,185,129,.16);border:2px solid rgba(52,214,198,.6);font-family:"Cairo";font-weight:700;font-size:44px;color:#fff;white-space:nowrap}
+
+/* --- Re-branded reels (2 and 5): the app's own palette and the official vector lockup (make_brand.mjs) --- */
+:root{ --ink:#0B1B33; --brand:#00A99D; --primary:#006D65; --paper:#F6F5F1; }
+.head.ink{color:var(--ink);text-shadow:none}
+.head.ink .hl{color:var(--primary)}
+.head.ink .n{color:var(--primary);unicode-bidi:isolate}
+.head .n{unicode-bidi:isolate}
+.chip.pp{background:rgba(0,109,101,.10);border:2px solid rgba(0,109,101,.5);color:var(--ink)}
+.chip.pp i{color:var(--primary)}
+.demo.pp{background:rgba(11,27,51,.06);border:2px solid rgba(11,27,51,.28);color:#3C4757}
+/* paper end card: teal tile, ink wordmark */
+.endp{width:1080px;height:1920px;position:relative;overflow:hidden;background:var(--paper)}
+.endp .bg{position:absolute;inset:0;background:
+  radial-gradient(900px 760px at 78% 24%, rgba(0,169,157,.22), transparent 62%),
+  radial-gradient(800px 700px at 8% 92%, rgba(52,214,198,.26), transparent 65%), var(--paper)}
+.endp .col,.endt .col{position:absolute;left:60px;right:120px;top:380px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.endp img.lk,.endt img.lk{width:760px;display:block}
+.endp .rule{width:150px;height:6px;border-radius:99px;background:var(--brand);margin-top:60px}
+.endp .cta{font-family:"Cairo";font-weight:900;font-size:76px;line-height:1.3;color:var(--ink);margin-top:64px;max-width:860px;text-wrap:balance}
+.endp .cta .hl{color:var(--primary)}
+.endp .url{margin-top:64px;direction:ltr;display:inline-block;background:var(--primary);color:#fff;
+  font-family:"Cairo";font-weight:900;font-size:58px;padding:24px 62px;border-radius:999px;box-shadow:0 22px 56px rgba(0,109,101,.30)}
+/* teal end card: white tile, white wordmark */
+.endt{width:1080px;height:1920px;position:relative;overflow:hidden;background:#006D65}
+.endt .bg{position:absolute;inset:0;background:
+  radial-gradient(900px 760px at 50% 26%, rgba(52,214,198,.34), transparent 62%),
+  linear-gradient(165deg,#00857B 0%,#006D65 46%,#0B2A33 100%)}
+.endt .rule{width:150px;height:6px;border-radius:99px;background:rgba(255,255,255,.7);margin-top:60px}
+.endt .cta{font-family:"Cairo";font-weight:900;font-size:76px;line-height:1.3;color:#fff;margin-top:64px;max-width:860px;text-wrap:balance}
+.endt .cta .hl{color:#7CF0E2}
+.endt .url{margin-top:64px;direction:ltr;display:inline-block;background:#fff;color:var(--ink);
+  font-family:"Cairo";font-weight:900;font-size:58px;padding:24px 62px;border-radius:999px;box-shadow:0 22px 56px rgba(2,22,26,.35)}
+
+/* ink end card (Reel 12): white tile, white wordmark on midnight ink with a teal haze */
+.endk{width:1080px;height:1920px;position:relative;overflow:hidden;background:#0B1B33}
+.endk .bg{position:absolute;inset:0;background:
+  radial-gradient(900px 780px at 50% 28%, rgba(0,109,101,.75), transparent 64%),
+  radial-gradient(760px 640px at 8% 94%, rgba(0,169,157,.32), transparent 66%), #0B1B33}
+.endk .col{position:absolute;left:60px;right:120px;top:380px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.endk img.lk{width:760px;display:block}
+.endk .rule{width:150px;height:6px;border-radius:99px;background:#00A99D;margin-top:60px}
+.endk .cta{font-family:"Cairo";font-weight:900;font-size:76px;line-height:1.3;color:#fff;margin-top:64px;max-width:860px;text-wrap:balance}
+.endk .cta .hl{color:#34D6C6}
+.endk .url{margin-top:64px;direction:ltr;display:inline-block;background:#34D6C6;color:#06243F;
+  font-family:"Cairo";font-weight:900;font-size:58px;padding:24px 62px;border-radius:999px;box-shadow:0 22px 56px rgba(52,214,198,.30)}
+
+/* --- Sample reel 13 "poster": giant type, yellow highlighter, sand ground. A deliberate break from the card-on-gradient set. --- */
+.kt{width:920px;text-align:right;font-family:"Cairo";font-weight:900;font-size:150px;line-height:1.1;color:#0B1B33;padding:6px 0 22px}
+.kt .mk{background:linear-gradient(transparent 56%, #FFC93C 56%, #FFC93C 90%, transparent 90%);padding:0 10px;margin:0 -10px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.kt.sm{font-size:108px;white-space:nowrap}
+.badge{display:flex;align-items:center;justify-content:center;width:132px;height:132px;border-radius:50%;background:#FFC93C;border:6px solid #0B1B33;box-shadow:0 10px 0 #0B1B33;font-family:"Cairo";font-weight:900;font-size:84px;line-height:1;color:#0B1B33}
+.bignum{font-family:"Cairo";font-weight:900;font-size:430px;line-height:1;color:transparent;-webkit-text-stroke:5px rgba(0,109,101,.55);width:330px;text-align:center}
+.stk{display:inline-flex;align-items:center;padding:16px 34px;border-radius:22px;background:#0B1B33;color:#fff;font-family:"Cairo";font-weight:800;font-size:46px;white-space:nowrap;box-shadow:0 10px 0 rgba(0,109,101,.9)}
+.stk.y{background:#FFC93C;color:#0B1B33;box-shadow:0 10px 0 #0B1B33}
+.stk.w{background:#fff;color:#0B1B33;box-shadow:0 10px 0 #00A99D;border:3px solid #0B1B33}
+.dmo{display:inline-flex;padding:10px 24px;border-radius:999px;background:#fff;border:3px solid #0B1B33;font-family:"Almarai";font-weight:800;font-size:28px;color:#0B1B33;white-space:nowrap}
+.endq{width:1080px;height:1920px;position:relative;overflow:hidden;background:#F6F5F1}
+.endq .bg{position:absolute;inset:0;background:radial-gradient(circle at 80% 78%, #00A99D 0 360px, transparent 361px),radial-gradient(circle at 12% 18%, #FFC93C 0 70px, transparent 71px),#F6F5F1}
+.endq .col{position:absolute;left:60px;right:120px;top:380px;display:flex;flex-direction:column;align-items:flex-start;text-align:right}
+.endq .big{font-family:"Cairo";font-weight:900;font-size:136px;line-height:1.1;color:#0B1B33}
+.endq .big .mk{background:linear-gradient(transparent 56%, #FFC93C 56%, #FFC93C 90%, transparent 90%);padding:0 10px;margin:0 -10px}
+.endq img.lk{width:640px;display:block;margin-top:110px}
+.endq .url{margin-top:70px;direction:ltr;display:inline-block;background:#0B1B33;color:#fff;font-family:"Cairo";font-weight:900;font-size:58px;padding:24px 62px;border-radius:22px;box-shadow:0 12px 0 #00A99D}
+
+/* --- Reel 14: Meta ad (poster language). Content is kept inside y 270-1250, x 65-1015 (Reels-ad safe zone). --- */
+.adl{width:950px;text-align:right}
+.adl .t{font-family:"Cairo";font-weight:900;font-size:96px;line-height:1.1;color:#0B1B33;white-space:nowrap}
+.adl .t .mk{background:linear-gradient(transparent 56%, #FFC93C 56%, #FFC93C 90%, transparent 90%);padding:0 10px;margin:0 -10px}
+.adl .s{font-family:"Almarai";font-weight:800;font-size:38px;line-height:1.25;color:#006D65;margin-top:6px;min-height:48px}
+.adh{width:950px;text-align:right;font-family:"Cairo";font-weight:900;font-size:158px;line-height:1.1;color:#0B1B33}
+.adh .mk{background:linear-gradient(transparent 56%, #FFC93C 56%, #FFC93C 90%, transparent 90%);padding:0 10px;margin:0 -10px}
+.endad{width:1080px;height:1920px;position:relative;overflow:hidden;background:#F6F5F1}
+.endad .bg{position:absolute;inset:0;background:radial-gradient(circle at 84% 86%, #00A99D 0 420px, transparent 421px),radial-gradient(circle at 10% 24%, #FFC93C 0 58px, transparent 59px),#F6F5F1}
+.endad .col{position:absolute;left:65px;right:65px;top:300px;display:flex;flex-direction:column;align-items:flex-start;text-align:right}
+.endad .b1{font-family:"Cairo";font-weight:900;font-size:176px;line-height:1.05;color:#0B1B33}
+.endad .b1 .mk{background:linear-gradient(transparent 56%, #FFC93C 56%, #FFC93C 90%, transparent 90%);padding:0 10px;margin:0 -10px}
+.endad .b2{font-family:"Cairo";font-weight:900;font-size:98px;line-height:1.15;color:#0B1B33}
+.endad img.lk{width:520px;display:block;margin-top:56px}
+.endad .cta{margin-top:50px;display:inline-block;background:#006D65;color:#fff;font-family:"Cairo";font-weight:900;font-size:56px;padding:22px 52px;border-radius:22px;box-shadow:0 12px 0 #0B1B33}
+.endad .url{margin-top:34px;direction:ltr;font-family:"Cairo";font-weight:900;font-size:52px;color:#0B1B33}
+</style>
+
+<div id="hook"   class="o head">أول مرة على <span class="hl">اقرأ</span>؟<br>ابدأ من هون 👇</div>
+<div id="step1"  class="o head"><span class="n">١.</span> اختار الأداة اللي بتحتاجها</div>
+<div id="step2"  class="o head"><span class="n">٢.</span> أضف تفاصيل الدرس</div>
+<div id="step3"  class="o head"><span class="n">٣.</span> راجع النتيجة</div>
+<div id="chip"   class="o chip"><i>الصف العاشر</i> · الجغرافيا · الغلاف الجوي</div>
+<div id="demo"   class="o demo">وضع العرض · محتوى تجريبي</div>
+
+<div id="end" class="o end"><div class="bg"></div>
+  <div class="col">
+    <img src="assets/logo-wordmark.png" alt="">
+    <div class="rule"></div>
+    <div class="cta">جرّبها على درسك <span class="hl">الجاي</span></div>
+    <div class="url">www.iqrra.com</div>
+  </div>
+</div>
+
+<!-- Reel 2 — library -->
+<div id="r2_hook"  class="o head">بدك فكرة لحصتك <span class="hl">الجاي</span>؟</div>
+<div id="r2_intro" class="o head">افتح مكتبة <span class="hl">اقرأ</span> 📚</div>
+<div id="r2_find"  class="o head">دَوّر على مورد يناسب درسك</div>
+<div id="r2_open"  class="o head">افتحه وشوف إذا بناسب حصتك</div>
+<div id="chip_r2"  class="o chip"><i>الصف العاشر</i> · الرياضيات · تركيب الاقترانات</div>
+
+<!-- Reel 3 — classes -->
+<div id="r3_hook"   class="o head">كل صف إله دروسه وتفاصيله…</div>
+<div id="r3_value"  class="o head">رتّب صفوفك بمكان واحد</div>
+<div id="r3_add"    class="o head">أضف صفّك على <span class="hl">اقرأ</span></div>
+<div id="r3_result" class="o head">وافتح صفّك لتتابع تفاصيله</div>
+<div id="pill_r3"   class="o demo">شعبة وطلبة تجريبيون</div>
+
+<!-- Reel 4 — communication -->
+<div id="r4_hook"   class="o head">صفّك وأولياء الأمور…</div>
+<div id="r4_value"  class="o head">تواصل معهم من نفس المكان</div>
+<div id="r4_class"  class="o head">شارك تذكير مع صفّك</div>
+<div id="r4_parent" class="o head">وتابع مع أولياء الأمور</div>
+<div id="pill_r4"   class="o demo">محادثة تجريبية · حساب تجريبي</div>
+
+<!-- End cards (same layout as Reel 1's) -->
+<div id="end2" class="o end"><div class="bg"></div><div class="col">
+  <img src="assets/logo-wordmark.png" alt=""><div class="rule"></div>
+  <div class="cta long">فكرة حصتك الجاي ممكن تلاقيها <span class="hl">هون</span></div>
+  <div class="url">www.iqrra.com</div></div></div>
+<div id="end3" class="o end"><div class="bg"></div><div class="col">
+  <img src="assets/logo-wordmark.png" alt=""><div class="rule"></div>
+  <div class="cta long">ابدأ بإضافة <span class="hl">أول صف</span></div>
+  <div class="url">www.iqrra.com</div></div></div>
+<div id="end4" class="o end"><div class="bg"></div><div class="col">
+  <img src="assets/logo-wordmark.png" alt=""><div class="rule"></div>
+  <div class="cta long">خلّي التواصل جزء من يومك على <span class="hl">اقرأ</span></div>
+  <div class="url">www.iqrra.com</div></div></div>
+
+<!-- Reel 5 — «سؤال الحصة» quiz and reveal -->
+<div id="r5_hook"   class="o head">سؤال الحصة: جاوب قبل ما يخلص الوقت</div>
+<div id="r5_think"  class="o head">فكّر… واختار جوابك</div>
+<div id="r5_reveal" class="o head">الجواب الصحيح</div>
+<div id="r5_key"    class="o head">ومعها مفتاح الإجابات جاهز</div>
+<div id="r5_lib"    class="o head">الورقة كاملة في مكتبة <span class="hl">اقرأ</span></div>
+<div id="formula"   class="o formula">f(3) = 3² − 1 = 8</div>
+<div id="cd3" class="o cd">٣</div>
+<div id="cd2" class="o cd">٢</div>
+<div id="cd1" class="o cd">١</div>
+<div id="end5" class="o end"><div class="bg"></div><div class="col">
+  <img src="assets/logo-wordmark.png" alt=""><div class="rule"></div>
+  <div class="cta long">أسئلة بجوابها… لدرسك <span class="hl">الجاي</span></div>
+  <div class="url">www.iqrra.com</div></div></div>
+
+<!-- Reels 6-9 — cut from the full-app tour recording (capture/takes/tour.mp4) -->
+<div id="r6_hook"  class="o head">بدك خطة لدرسك؟<br>اسأل <span class="hl">إقرأ</span></div>
+<div id="r6_type"  class="o head">اكتب طلبك بجملة وحدة</div>
+<div id="r6_ask"   class="o head">وإذا الطلب مش واضح… بسألك</div>
+<div id="r6_plan"  class="o head">الخطة جاهزة</div>
+<div id="r6_left"  class="o head">وبتشوف شو خلص وشو باقي</div>
+<div id="r6_next"  class="o head">وكمّل بورقة عمل لنفس الدرس</div>
+<div id="end6" class="o end"><div class="bg"></div><div class="col">
+  <img src="assets/logo-wordmark.png" alt=""><div class="rule"></div>
+  <div class="cta long">اسأل <span class="hl">إقرأ</span>… وابدأ تحضيرك</div>
+  <div class="url">www.iqrra.com</div></div></div>
+
+<div id="r7_hook"  class="o head">ألعاب جاهزة لحصتك</div>
+<div id="r7_play"  class="o head">سؤال، وتصحيح فوري</div>
+<div id="r7_score" class="o head">وبالنهاية… النتيجة</div>
+<div id="r7_team"  class="o head">بدك تحدي لكل الصف؟</div>
+<div id="r7_ready" class="o head">فرق وأسئلة ووقت… جاهزة</div>
+<div id="end7" class="o end"><div class="bg"></div><div class="col">
+  <img src="assets/logo-wordmark.png" alt=""><div class="rule"></div>
+  <div class="cta long">حوّل المراجعة إلى <span class="hl">لعبة</span></div>
+  <div class="url">www.iqrra.com</div></div></div>
+
+<div id="r8_hook"  class="o head">شرائح جاهزة لدرسك</div>
+<div id="r8_pick"  class="o head">اختار الدرس…</div>
+<div id="r8_list"  class="o head">شرائح الدرس كلها بقائمة وحدة</div>
+<div id="r8_title" class="o head">اعرضها على الشاشة</div>
+<div id="r8_out"   class="o head">وتبدأ بنتاجات التعلم</div>
+<div id="r8_ideas" class="o head">وأفكار الدرس مرتبة</div>
+<div id="r8_book"  class="o head">ومن كتاب الطالب كمان</div>
+<div id="end8" class="o end"><div class="bg"></div><div class="col">
+  <img src="assets/logo-wordmark.png" alt=""><div class="rule"></div>
+  <div class="cta long">شرائح درسك… <span class="hl">جاهزة</span> لتعرضها</div>
+  <div class="url">www.iqrra.com</div></div></div>
+
+<div id="r9_hook"  class="o head">درس كامل بخطوات واضحة</div>
+<div id="r9_form"  class="o head">اختار الدرس والمدة</div>
+<div id="r9_steps" class="o head">ست خطوات بتجهز واحدة بعد واحدة</div>
+<div id="r9_act"   class="o head">نشاط تفاعلي بخطوات واضحة</div>
+<div id="r9_guide" class="o head">وتدريب موجّه للصف</div>
+<div id="end9" class="o end"><div class="bg"></div><div class="col">
+  <img src="assets/logo-wordmark.png" alt=""><div class="rule"></div>
+  <div class="cta long">ابنِ حصتك <span class="hl">دفعة وحدة</span></div>
+  <div class="url">www.iqrra.com</div></div></div>
+
+<!-- Reel 2 (re-branded, paper) -->
+<div id="n2_hook"   class="o head ink">بدك ورقة عمل لدرسك؟<br>افتح <span class="hl">مكتبة اقرأ</span></div>
+<div id="n2_find"   class="o head ink">اكتب اسم الدرس</div>
+<div id="n2_open"   class="o head ink">افتحها… وكل شي جاهز</div>
+<div id="n2_worked" class="o head ink">مثال محلول بخطواته</div>
+<div id="n2_half"   class="o head ink">ومثال نكمله مع الطلاب</div>
+<div id="n2_levels" class="o head ink">وتمارين تبدأ بالأسهل</div>
+<div id="n2_key"    class="o head ink">ومفتاح الإجابات بالخطوات</div>
+<div id="chip_n2"   class="o chip pp"><i>الصف العاشر</i> · الرياضيات · تركيب الاقترانات</div>
+<div id="end_n2" class="o endp"><div class="bg"></div><div class="col">
+  <img class="lk" src="assets/lockup-ink.svg" alt=""><div class="rule"></div>
+  <div class="cta">ورقة درسك الجاي… <span class="hl">جاهزة</span></div>
+  <div class="url">www.iqrra.com</div></div></div>
+
+<!-- Reel 5 (re-branded, teal) -->
+<div id="n5_hook"   class="o head">سؤال الحصة: جاوب قبل ما يخلص الوقت</div>
+<div id="n5_think"  class="o head">فكّر… وجاوب</div>
+<div id="n5_reveal" class="o head">الجواب الصحيح: <span class="n hl">8</span></div>
+<div id="n5_steps"  class="o head">والحل بخطواته</div>
+<div id="n5_lib"    class="o head">الورقة كاملة في مكتبة <span class="hl">اقرأ</span></div>
+<div id="chip_n5"   class="o chip"><i>الصف العاشر</i> · الرياضيات · تركيب الاقترانات</div>
+<div id="end_n5" class="o endt"><div class="bg"></div><div class="col">
+  <img class="lk" src="assets/lockup-white.svg" alt=""><div class="rule"></div>
+  <div class="cta">أسئلة بحلولها… لدرسك <span class="hl">الجاي</span></div>
+  <div class="url">www.iqrra.com</div></div></div>
+
+<!-- Reel 10 (teal): «ألعاب إقرأ» -->
+<div id="r10_hook"   class="o head">لعبة سريعة قبل الحصة؟</div>
+<div id="r10_play"   class="o head">سؤال، أربعة خيارات، وتصحيح فوري</div>
+<div id="r10_race"   class="o head">٨ أسئلة وتخلص بسرعة</div>
+<div id="r10_free"   class="o head">بدون تسجيل… شاركها مع طلابك</div>
+<div id="chip_r10"   class="o chip"><i>رموز العناصر</i> · الكيمياء · الصفوف ٧–١٠</div>
+<div id="end_t10" class="o endt"><div class="bg"></div><div class="col">
+  <img class="lk" src="assets/lockup-white.svg" alt=""><div class="rule"></div>
+  <div class="cta">ألعاب لطلابك… على <span class="hl">اقرأ</span></div>
+  <div class="url">www.iqrra.com</div></div></div>
+
+<!-- Reel 11 (paper): «الحصة التفاعلية» -->
+<div id="r11_hook"   class="o head ink">بدك حصة فيها تفاعل؟</div>
+<div id="r11_list"   class="o head ink">٧ أنشطة جاهزة لحصتك</div>
+<div id="r11_form"   class="o head ink">حدّد صفك ودرسك</div>
+<div id="r11_ready"  class="o head ink">والنشاط جاهز للعرض</div>
+<div id="s11_1" class="o chip pp"><i>١</i> · تحدّي الهروب</div>
+<div id="s11_2" class="o chip pp"><i>٢</i> · تحقق سريع</div>
+<div id="s11_3" class="o chip pp"><i>٣</i> · المحقق الرياضي</div>
+<div id="s11_4" class="o chip pp"><i>٤</i> · بطاقة الخروج</div>
+<div id="pill_p11" class="o demo pp">وضع العرض · محتوى تجريبي</div>
+<div id="end_p11" class="o endp"><div class="bg"></div><div class="col">
+  <img class="lk" src="assets/lockup-ink.svg" alt=""><div class="rule"></div>
+  <div class="cta">حصتك الجاية… بنشاط <span class="hl">تفاعلي</span></div>
+  <div class="url">www.iqrra.com</div></div></div>
+
+<!-- Reel 12 (ink): «المنهاج» -->
+<div id="r12_hook"   class="o head">المنهاج الأردني… بترتيب كتابك</div>
+<div id="r12_drill"  class="o head">من الصف للدرس بخطوات قليلة</div>
+<div id="r12_all"    class="o head">كل شي عن الدرس بمكان واحد</div>
+<div id="r12_book"   class="o head">أشكال من كتابك، مع رقم الصفحة</div>
+<div id="r12_goals"  class="o head">وأهداف الدرس جاهزة</div>
+<div id="end_k12" class="o endk"><div class="bg"></div><div class="col">
+  <img class="lk" src="assets/lockup-white.svg" alt=""><div class="rule"></div>
+  <div class="cta">افتح درسك على <span class="hl">اقرأ</span></div>
+  <div class="url">www.iqrra.com</div></div></div>
+
+<!-- Reel 13 sample: poster style -->
+<div id="p1" class="o kt sm">حصتك بعد ساعة…<br>والتحضير <span class="mk">لسّا؟</span></div>
+<div id="p2" class="o kt">افتح <span class="mk">الأدوات</span></div>
+<div id="p3" class="o kt">اختار نشاط <span class="mk">جاهز</span></div>
+<div id="p4" class="o kt">حدّد <span class="mk">الدرس</span><br>والهدف</div>
+<div id="p5" class="o kt">وابدأ <span class="mk">العرض</span></div>
+<div id="bn1" class="o badge">١</div><div id="bn2" class="o badge">٢</div><div id="bn3" class="o badge">٣</div><div id="bn4" class="o badge">٤</div>
+<div id="sk_a" class="o stk">تحقق سريع</div>
+<div id="sk_b" class="o stk y">بطاقة الخروج</div>
+<div id="sk_c" class="o stk w">المحقق الرياضي</div>
+<div id="sk_d" class="o stk">٢٠ دقيقة · كل الصف</div>
+<div id="dmo" class="o dmo">وضع العرض · محتوى تجريبي</div>
+<div id="end_q1" class="o endq"><div class="bg"></div><div class="col">
+  <div class="big">جهّز حصتك…<br>قبل ما <span class="mk">يرن الجرس</span></div>
+  <img class="lk" src="assets/lockup-ink.svg" alt="">
+  <div class="url">www.iqrra.com</div></div></div>
+<!-- Reel 14: Meta ad -->
+<div id="ad1" class="o adl"><div class="t"><span class="mk">اسأل إقرأ</span></div><div class="s">مساعدك في التحضير</div></div>
+<div id="ad2" class="o adl"><div class="t"><span class="mk">المنهاج</span></div><div class="s">بترتيب كتابك المدرسي</div></div>
+<div id="ad3" class="o adl"><div class="t"><span class="mk">ورقة عمل</span></div><div class="s">بمثال محلول ومفتاح إجابات</div></div>
+<div id="ad4" class="o adl"><div class="t"><span class="mk">خطة درس</span></div><div class="s">جاهزة لحصتك</div></div>
+<div id="ad5" class="o adl"><div class="t"><span class="mk">شرائح الدرس</span></div><div class="s">للعرض على الشاشة</div></div>
+<div id="ad6" class="o adl"><div class="t"><span class="mk">حصة تفاعلية</span></div><div class="s">أنشطة مباشرة مع مؤقّت</div></div>
+<div id="ad7" class="o adl"><div class="t"><span class="mk">تحدّي الصف</span></div><div class="s">فرق وأسئلة… بلا هواتف</div></div>
+<div id="ad8" class="o adl"><div class="t"><span class="mk">ألعاب</span></div><div class="s">مجانية، بلا تسجيل</div></div>
+<div id="ad9" class="o adl"><div class="t"><span class="mk">السبورة</span></div><div class="s">ارسم واشرح</div></div>
+<div id="ad10" class="o adl"><div class="t"><span class="mk">التقييمات</span></div><div class="s">امتحان وتصحيح</div></div>
+<div id="ad11" class="o adl"><div class="t"><span class="mk">رسالة لولي الأمر</span></div><div class="s">بصياغة جاهزة</div></div>
+<div id="ad12" class="o adl"><div class="t"><span class="mk">شُعَبك وطلابك</span></div><div class="s">كلهم بمكان واحد</div></div>
+<div id="adh" class="o adh">أدوات حصتك<br>بتطبيق <span class="mk">واحد</span></div>
+<div id="sk_free" class="o stk y">جرّبها مجانًا</div>
+<div id="end_ad" class="o endad"><div class="bg"></div><div class="col">
+  <div class="b1">جرّبها <span class="mk">مجانًا</span></div>
+  <div class="b2">على درسك الجاي</div>
+  <img class="lk" src="assets/lockup-ink.svg" alt="">
+  <div class="cta">أنشئ حساب معلم مجاني</div>
+  <div class="url">www.iqrra.com</div></div></div>

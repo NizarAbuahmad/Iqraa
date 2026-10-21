@@ -16,6 +16,7 @@ import assert from 'node:assert/strict';
 
 import { allPremade, type PremadeWorksheetContent } from '@workspace/curriculum/premade';
 import type { WorksheetOutput } from '../ai/AIService.ts';
+import { repeatedStems, stemOf } from '../premadeStems.ts';
 
 /**
  * Compile-time assignability. If `PremadeWorksheetContent` stops satisfying
@@ -38,7 +39,7 @@ describe('coverage of Grade 10 mathematics', () => {
   );
 
   /**
-   * 28, arrived at by subtraction and measured rather than read off a doc:
+   * 24, arrived at by subtraction and measured rather than read off a doc:
    *
    *   36 lessons in Grade 10 maths
    *   −3 GeoGebra lab lessons (`order === 0`) — an activity to run, not a
@@ -46,9 +47,15 @@ describe('coverage of Grade 10 mathematics', () => {
    *   −5 held back in `scripts/build-premade-sheets.ts` because
    *      `detectMathFamily` picks the wrong branch of maths for them and the
    *      sheet comes out about the wrong subject
-   *   = 28
+   *   −4 the offline generator has no question bank for
+   *      (`NoQuestionBankError`: trig graphs, 3D problems, polynomial functions,
+   *      polynomial division). They used to ship a sheet built before the
+   *      generator stopped repeating itself; the build now refuses the lesson
+   *      and drops that sheet rather than keep a repeating one.
+   *   = 24
    *
-   * Raise this as entries leave `HELD_BACK`; the ceiling is 33.
+   * Raise this as banks are authored in `lib/math-practice` or entries leave
+   * `HELD_BACK`; the ceiling is 33.
    */
   it(
     'ships a sheet for every lesson not held back',
@@ -59,7 +66,7 @@ describe('coverage of Grade 10 mathematics', () => {
           : false,
     },
     () => {
-      assert.ok(sheets.length >= 28, `expected at least 28 sheets, got ${sheets.length}`);
+      assert.ok(sheets.length >= 24, `expected at least 24 sheets, got ${sheets.length}`);
       assert.ok(sheets.length <= 33, `more sheets than there are teachable lessons: ${sheets.length}`);
     },
   );
@@ -79,5 +86,57 @@ describe('coverage of Grade 10 mathematics', () => {
       assert.ok(!seen.has(slot), `${slot} appears twice`);
       seen.add(slot);
     }
+  });
+});
+
+/**
+ * A printed sheet must not ask the same question twice.
+ *
+ * Found 2026-10-10 from the library: 27 of the 28 frozen sheets re-asked one
+ * bank item under a different question type («أوجد الاقتران العكسي لـ f(x) = 2x − 6»
+ * three times on one ten-question page; the worst sheets repeated 7 of 10).
+ * They were built on 2026-09-16, before `generateWorksheet` learned to stop at a
+ * spent bank (`BankSpentError`) instead of drawing the same item again — today's
+ * generator returns a shorter sheet for the same lesson. The manifest is frozen
+ * output, so nothing re-ran it, and nothing checked it either.
+ *
+ * Compared by the stem: the text up to the first blank line, with the
+ * answer-space padding gone. That is stricter than the generator's own
+ * `questionStemKey`, which keeps a word problem's instruction line — two word
+ * problems that open with the same problem are one problem.
+ */
+describe('a frozen sheet never repeats a question', () => {
+  const sheets = allPremade();
+
+  for (const sheet of sheets) {
+    it(`${sheet.id} asks each question once`, () => {
+      const repeats = repeatedStems(sheet.content);
+      assert.deepEqual(repeats, [], `${sheet.id}: ${repeats.length} repeated question(s)`);
+    });
+  }
+
+  it('has sheets to check', () => {
+    // An empty manifest would make the loop above vacuously pass.
+    assert.ok(sheets.length > 0, 'no premade sheets loaded');
+  });
+
+  it('counts the same question as short-answer and as multiple-choice as one', () => {
+    // The shape of the real defect: one bank item, re-asked in another format.
+    const sheet = {
+      sections: [
+        { questions: [{ text: 'أوجد f(3).\n\nالإجابة:\n____' }] },
+        { questions: [{ text: 'أوجد   f(3).' }] },
+      ],
+    };
+    assert.equal(stemOf('أوجد   f(3).\n\nالإجابة:\n____'), 'أوجد f(3).');
+    assert.equal(repeatedStems(sheet).length, 1);
+  });
+
+  it('counts the worked example as already asked', () => {
+    const sheet = {
+      sections: [{ questions: [{ text: 'حلّ س + 1 = 3.' }] }],
+      workedExample: { problem: 'حلّ س + 1 = 3.' },
+    };
+    assert.equal(repeatedStems(sheet).length, 1);
   });
 });
