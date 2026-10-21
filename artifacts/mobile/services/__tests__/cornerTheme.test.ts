@@ -64,8 +64,8 @@ test('motif opacity stays subtle enough for the band text', () => {
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-/** Corners wired so far. Task 8 adds 'quran'; PR 2 adds 'english' and 'play' and removes this list. */
-const WIRED: readonly CornerId[] = ['math', 'lab'];
+/** Corners wired so far. PR 2 adds 'english' and 'play' and removes this list. */
+const WIRED: readonly CornerId[] = ['math', 'lab', 'quran'];
 
 function* files(dir: string): Generator<string> {
   for (const name of readdirSync(dir)) {
