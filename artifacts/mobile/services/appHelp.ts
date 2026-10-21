@@ -218,6 +218,17 @@ const SCREENS: AppPlace[] = [
   { id: 'question-marks', route: '/evaluations', labelKey: 'evaluations', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howQuestionMarks' },
   { id: 'archived-classes', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howArchivedClasses' },
   { id: 'class-grade', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howClassGrade' },
+  // The twelfth live pass (2026-10-21): slides, worksheets, verification, the books.
+  { id: 'slide-edit', route: '/ai-tools/slides', labelKey: 'toolSlidesTitle', pathKeys: ['tabTools', 'toolsBeforeClass'], isTool: false, keywords: [], howKey: 'howSlideEdit' },
+  { id: 'slide-add-reorder', route: '/ai-tools/slides', labelKey: 'toolSlidesTitle', pathKeys: ['tabTools', 'toolsBeforeClass'], isTool: false, keywords: [], howKey: 'howSlideAddReorder' },
+  { id: 'slide-notes', route: '/ai-tools/slides', labelKey: 'toolSlidesTitle', pathKeys: ['tabTools', 'toolsBeforeClass'], isTool: false, keywords: [], howKey: 'howSlideNotes' },
+  { id: 'edit-plan', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'faqA5' },
+  { id: 'worksheet-answers', route: '/ai-tools/worksheet', labelKey: 'toolWorksheetTitle', pathKeys: ['tabTools', 'toolsDuringClass'], isTool: false, keywords: [], howKey: 'howWorksheetAnswers' },
+  { id: 'worksheet-header', route: '/ai-tools/worksheet', labelKey: 'toolWorksheetTitle', pathKeys: ['tabTools', 'toolsDuringClass'], isTool: false, keywords: [], howKey: 'howWorksheetHeader' },
+  { id: 'difficulty', route: '/ai-tools/quiz', labelKey: 'toolQuizTitle', pathKeys: ['tabTools', 'toolsAfterClass'], isTool: false, keywords: [], howKey: 'howDifficulty' },
+  { id: 'verified-meaning', route: '/faq', labelKey: 'faqTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howVerified' },
+  { id: 'remedial-worksheet', route: '/classes', labelKey: 'myClasses', pathKeys: ['tabProfile'], isTool: false, keywords: [], howKey: 'howRemedial' },
+  { id: 'book-download', route: '/curriculum', labelKey: 'resourcesTitle', pathKeys: [], isTool: false, keywords: [], howKey: 'howBookDownload' },
   {
     // The bottom tab: its route file is still «curriculum» (see `app/(tabs)/_layout.tsx`).
     id: 'library', route: '/curriculum', labelKey: 'resourcesTitle', pathKeys: [], isTool: false,
@@ -1584,6 +1595,177 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
       ),
       new RegExp(
         AR_RULE_LEAD + String.raw`(?:اغير|تغيير|اعدل|تعديل|ابدل|تبديل)\s+(?:ال)?صف\s+(?:ال)?(?:دراسي\s+)?(?:لل|ل)\s*(?:ال)?شعبه` + AR_RULE_TAIL,
+      ),
+    ],
+  },  // The twelfth live pass (2026-10-21).
+  {
+    id: 'slide-edit',
+    res: [
+      new RegExp(EN_RULE_LEAD + String.raw`(?:edit|change|modify|update|delete|remove)\s+(?:a\s+|the\s+|my\s+)?(?:slide|slides|slide\s+text|slide\s+title)` + EN_RULE_TAIL),
+      new RegExp(
+        EN_RULE_LEAD + String.raw`add\s+(?:a\s+|an\s+|the\s+)?(?:picture|image|photo|video)\s+(?:to|on|in)\s+(?:a\s+|the\s+|my\s+)?(?:slide|slides|deck)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:change|choose|pick|set|switch)\s+(?:the\s+)?(?:theme|look|style|design)\s+(?:of|for)\s+(?:my\s+|the\s+)?(?:slides|deck|presentation)` + EN_RULE_TAIL,
+      ),
+      new RegExp(AR_RULE_LEAD + String.raw`(?:اعدل|تعديل|اغير|تغيير|احذف|حذف|امسح)\s+(?:ال)?(?:شريحه|شرائح)(?:\s+(?:ال)?(?:اولي|ثانيه|واحده))?` + AR_RULE_TAIL),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اضيف|اضافه|اضع|ارفع)\s+(?:ال)?(?:صوره|صور|فيديو)\s+(?:ل|لل|الي|في|علي)\s*(?:ال)?(?:شريحه|شرائح|عرض)` + AR_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اغير|تغيير|اختار|اختيار)\s+(?:ال)?(?:مظهر|شكل|تصميم|ثيم)\s+(?:ال)?(?:عرض|شرائح)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'slide-add-reorder',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:add|insert|create)\s+(?:a\s+)?(?:new\s+)?slide(?:\s+(?:to|in)\s+(?:my\s+|the\s+)?(?:deck|presentation|slides))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:reorder|rearrange|move|change\s+the\s+order\s+of)\s+(?:the\s+|my\s+)?slides?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اضيف|اضافه|انشئ)\s+شريحه(?:\s+جديده)?(?:\s+(?:لل|ل|الي|في)\s*(?:ال)?(?:عرض|شرائح))?` + AR_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اغير|تغيير|ارتب|ترتيب|اعيد\s+ترتيب|ابدل\s+ترتيب|انقل)\s+(?:ترتيب\s+)?(?:ال)?شرائح` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'slide-notes',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:add|write|see|view|edit)\s+(?:speaker\s+|teacher\s+|presenter\s+)?notes\s+(?:to|on|for|in)\s+(?:a\s+|the\s+|my\s+)?(?:slide|slides|deck|presentation)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اضيف|اكتب|اضع|اشوف)\s+ملاحظات\s+(?:(?:لل|ل)\s*(?:ال)?معلم\s+)?(?:علي|في|ل|لل)\s*(?:ال)?(?:شريحه|شرائح|عرض)` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'edit-plan',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:edit|change|modify|update|delete|remove)\s+(?:a\s+|the\s+|my\s+)?(?:section|item|part|step)\s+(?:of|in|from)\s+(?:a\s+|the\s+|my\s+)?(?:lesson\s+plan|plan)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:edit|change|modify|update)\s+(?:a\s+|the\s+|my\s+)?lesson\s+plan(?:\s+after\s+(?:it\s+is\s+|it['’]s\s+)?(?:generated|created))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اعدل|تعديل|اغير|تغيير)\s+(?:ال)?خطه\s+(?:ال)?درس(?:\s+بعد\s+(?:ال)?(?:توليد|توليدها|انشائها|انشاء))?` + AR_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:احذف|حذف|امسح|ازيل)\s+(?:قسما|قسم|بندا|بند|جزءا|جزء|فقره)\s+(?:من|في)\s+(?:ال)?خطه(?:\s+(?:ال)?درس)?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'worksheet-answers',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:hide|show|remove)\s+(?:the\s+)?answers?(?:\s+(?:on|in|from|of)\s+(?:a\s+|the\s+|my\s+)?(?:worksheet|quiz|paper|sheet))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:make|create|get|add|generate)\s+(?:an?\s+|the\s+)?answer\s+key(?:\s+(?:for|of|to)\s+(?:a\s+|the\s+|my\s+)?(?:worksheet|quiz|paper|sheet))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اخفي|اخفاء|اظهر|اظهار|احذف|ازيل)\s+(?:ال)?اجابات(?:\s+(?:من|في|عن)\s+(?:ال)?(?:ورقه|اختبار)(?:\s+(?:ال)?عمل)?)?` + AR_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اعمل|اجهز|احصل\s+علي|اطبع|اضيف)\s+(?:ال)?مفتاح\s+(?:ال)?(?:اجابه|اجابات)(?:\s+(?:ل|لل)\s*(?:ال)?(?:ورقه|اختبار)(?:\s+(?:ال)?عمل)?)?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'worksheet-header',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:add|put|insert)\s+(?:a\s+|the\s+|my\s+)?(?:school\s+)?(?:logo|letterhead|header)(?:\s+with\s+(?:my\s+)?name(?:\s+and\s+date)?)?(?:\s+(?:on|to|in)\s+(?:a\s+|the\s+|my\s+)?(?:worksheets?|papers?|quizz?es|exams?|sheets?))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اضيف|اضع|اكتب|ازود)\s+(?:ال)?(?:شعار(?:\s+(?:ال)?مدرسه)?|ترويسه|اسمي|اسم\s+(?:ال)?معلم)\s+(?:علي|في|ل|لل|الي)\s*(?:ال)?(?:اوراق|ورقه|ورق|اختبار|اختبارات)(?:\s+(?:ال)?عمل)?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'difficulty',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:choose|set|change|pick|select)\s+(?:the\s+)?(?:difficulty|level)(?:\s+(?:of|for)\s+(?:a\s+|the\s+|my\s+)?(?:quiz|worksheet|test))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:احدد|حدد|اختار|اغير|اضبط)\s+(?:مستوي|مستوى)\s+(?:ال)?(?:صعوبه|اختبار|ورقه)(?:\s+(?:ال)?عمل)?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'verified-meaning',
+    res: [
+      new RegExp(String.raw`^(?:ما|ماذا)\s+(?:معني|يعني|تعني)\s+[«"“]?تم\s+(?:ال)?تحقق[»"”]?(?:\s+(?:من\s+(?:ال)?اجابه)?)?` + AR_RULE_TAIL),
+      new RegExp(
+        String.raw`^what\s+(?:does|do)\s+(?:the\s+)?["“]?(?:answer\s+)?(?:symbolically\s+)?verified["”]?\s+(?:badge\s+|tick\s+|label\s+)?mean` + EN_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'remedial-worksheet',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:make|create|build|prepare|generate)\s+(?:an?\s+)?remedial\s+(?:worksheet|sheet|exercises?|work)(?:\s+for\s+(?:the\s+)?(?:weak|struggling|low|slow)\s+(?:students|learners|pupils))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:اعمل|اجهز|انشئ|احضر|اسوي)\s+ورقه\s+علاجيه(?:\s+(?:لل|ل)\s*(?:ال)?(?:طلاب|طلبه)(?:\s+(?:ال)?(?:ضعاف|ضعيفه|متعثرين))?)?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'send-worksheet',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:move|copy|assign|give|reuse)\s+(?:the\s+|a\s+|my\s+)?worksheet\s+(?:to|for)\s+(?:another|a\s+different|a\s+second|other|my\s+other)\s+class` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:انقل|نقل|انسخ|نسخ|اعطي|اعيد\s+استخدام)\s+(?:ال)?(?:ورقه\s+(?:ال)?عمل|ورقه)\s+(?:الي|ل|لل)\s*(?:ال)?شعبه(?:\s+(?:اخري|ثانيه|ثاني|اخر))?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'ministry-plan',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:use|get|download|print)\s+(?:the\s+)?ministry\s+(?:forms?|templates?)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:استخدم|استعمل|احصل\s+علي|اجيب|احمل|اطبع)\s+(?:ال)?(?:نموذج|نماذج)\s+(?:ال)?وزاره(?:\s+(?:ال)?تربيه(?:\s+و(?:ال)?تعليم)?)?` + AR_RULE_TAIL,
+      ),
+    ],
+  },
+  {
+    id: 'book-download',
+    res: [
+      new RegExp(
+        EN_RULE_LEAD + String.raw`(?:download|get|find|open)\s+(?:the\s+)?(?:school\s+)?(?:textbook|text\s+book|book|teacher['’]?s?\s+guide|teacher\s+guide|activity\s+book)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        String.raw`^where\s+(?:is|are|can\s+i\s+find)\s+(?:the\s+)?(?:teacher['’]?s?\s+guide|textbook|text\s+book|activity\s+book)` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        AR_RULE_LEAD + String.raw`(?:احمل|حمل|تحميل|انزل|نزل|اجيب|احصل\s+علي|اشوف|افتح)\s+(?:ال)?(?:كتاب\s+(?:ال)?مدرسي|دليل\s+(?:ال)?معلم|كتاب\s+(?:ال)?انشطه)` + AR_RULE_TAIL,
+      ),
+      new RegExp(String.raw`^(?:وين|اين|فين)\s+(?:يوجد\s+)?(?:ال)?(?:دليل\s+(?:ال)?معلم|كتاب\s+(?:ال)?مدرسي|كتاب\s+(?:ال)?انشطه)` + AR_RULE_TAIL),
+    ],
+  },
+  {
+    id: 'pricing',
+    res: [
+      new RegExp(
+        String.raw`^how\s+many\s+(?:worksheets?|quizz?es|lesson\s+plans?|materials?|generations?|slides?)\s+(?:can\s+i|do\s+i\s+get)\s+(?:make|generate|create|use|have)(?:\s+(?:a|per|each|in\s+a)\s+(?:day|month|week))?` + EN_RULE_TAIL,
+      ),
+      new RegExp(
+        String.raw`^كم\s+(?:ورقه\s+عمل|ورقه|اختبار|خطه|مواد|مره)\s+(?:اقدر|استطيع|يمكنني)\s+(?:ان\s+)?\S+(?:\s+(?:في|بال|كل)\s*(?:ال)?(?:يوم|شهر|اسبوع))?` + AR_RULE_TAIL,
       ),
     ],
   },

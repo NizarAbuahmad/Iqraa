@@ -1300,7 +1300,6 @@ describe('the lab, the corners, groups, export and the rest (tenth live pass)', 
     'كيف أنظم المختبر مع الطلاب',
     'how do i organise group work in class',
     'how do i copy a worksheet for each student',
-    'how do i update my lesson plan',
     'كيف أبحث عن معلومات لدرس الأسس',
     'how do i find the main idea of a lesson',
   ];
@@ -1354,6 +1353,59 @@ describe('exams and classes: what exists, and what does not (eleventh live pass)
     'how do i give students more time to think',
     'how do i rank students fairly',
     'كيف أحلل أسباب ضعف الطلاب في الامتحان',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not app help`, () => assert.equal(isAppHelpQuery(q), false));
+  }
+});
+
+describe('slides, worksheets, verification and the books (twelfth live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    ['كيف أضيف شريحة جديدة للعرض؟', 'howSlideAddReorder'],
+    ['كيف أغير ترتيب الشرائح؟', 'howSlideAddReorder'],
+    ['how do i reorder the slides', 'howSlideAddReorder'],
+    ['كيف أضيف صورة لشريحة؟', 'howSlideEdit'],
+    ['كيف أعدل الشريحة', 'howSlideEdit'],
+    ['how do i change the theme of my slides', 'howSlideEdit'],
+    ['كيف أضيف ملاحظات للمعلم على الشريحة؟', 'howSlideNotes'],
+    ['how do i add speaker notes to the slides', 'howSlideNotes'],
+    ['كيف أعدل خطة الدرس بعد توليدها؟', 'faqA5'],
+    ['how do i update my lesson plan', 'faqA5'],
+    ['كيف أحذف قسماً من خطة الدرس؟', 'faqA5'],
+    ['how do i edit the lesson plan after it is generated', 'faqA5'],
+    ['كيف أعمل مفتاح الإجابة لورقة العمل؟', 'howWorksheetAnswers'],
+    ['how do i hide the answers on a worksheet', 'howWorksheetAnswers'],
+    ['كيف أضيف شعار المدرسة على الأوراق؟', 'howWorksheetHeader'],
+    ['كيف أكتب اسمي على ورقة العمل؟', 'howWorksheetHeader'],
+    ['how do i add a header with name and date to a worksheet', 'howWorksheetHeader'],
+    ['how do i choose the difficulty of a quiz', 'howDifficulty'],
+    ['ما معنى تم التحقق؟', 'howVerified'],
+    ['كيف أعمل ورقة علاجية للطلاب الضعاف؟', 'howRemedial'],
+    ['كيف أنقل ورقة العمل إلى شعبة ثانية؟', 'howSendWorksheet'],
+    ['كيف أستخدم نماذج وزارة التربية؟', 'howMinistryPlan'],
+    ['كيف أحمل الكتاب المدرسي؟', 'howBookDownload'],
+    ['كيف أحمل دليل المعلم؟', 'howBookDownload'],
+    ['where is the teacher\'s guide', 'howBookDownload'],
+    ['كم ورقة عمل أستطيع توليدها في اليوم؟', 'howPricing'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text, `<${key}>`);
+    });
+  }
+
+  const stayWithModel = [
+    'how do i make my slides more interactive',
+    'كيف أرتب الأفكار في الشرائح',
+    'كيف أعدل خطتي الأسبوعية',
+    'how do i edit my teaching approach',
+    'كيف أحمل الطلاب مسؤولية تعلمهم',
+    'how do i download a movie for class',
+    'what does verified mean on instagram',
+    'how do i choose a difficulty level for weak students',
+    'كيف أكتب اسمي بالإنجليزية',
   ];
   for (const q of stayWithModel) {
     it(`«${q}» is not app help`, () => assert.equal(isAppHelpQuery(q), false));
