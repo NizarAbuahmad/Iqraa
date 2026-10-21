@@ -66,7 +66,8 @@ import { ENGLISH_HUB_GRADES } from '@workspace/curriculum/englishHub';
 import type { TranslationKey } from '@/services/i18n';
 import { cellWidthPercent, isVisualKind, libraryColumns, previewCount } from '@/services/libraryLayout';
 import { QURAN_CORNER_RELEASED, quranCornerVisible } from '@/services/quranRelease';
-import { palette } from '@/constants/colors';
+import { palette, scheme } from '@/constants/colors';
+import { CORNERS, type CornerId } from '@/constants/corners';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { RESOURCE_KIND_ICON as KIND_ICON, RESOURCE_KIND_LABEL as KIND_LABEL } from '@/constants/resourceKind';
 import { BackButton } from '@/components/ui/BackButton';
@@ -112,6 +113,8 @@ const SHELF_COLOR: Record<Shelf, string> = {
 };
 
 const ACCENT = palette.primary;
+/** A corner tile's icon colours — the corner's own, so its hue is learned before it is entered. */
+const cornerLook = (id: CornerId) => CORNERS[id][scheme];
 
 function itemThumbnail(item: ResourceItem): string | null {
   if (item.thumbnailUrl) return item.thumbnailUrl;
@@ -804,8 +807,8 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
                   { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
                 ]}
               >
-                <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
-                  <Ionicons name="headset" size={26} color={ACCENT} />
+                <View style={[styles.tileIcon, { backgroundColor: cornerLook('english').secondary }]}>
+                  <Ionicons name="headset" size={26} color={cornerLook('english').primary} />
                 </View>
                 <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
                   {t('hubTitle')}
@@ -827,8 +830,8 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
                 { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
               ]}
             >
-              <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
-                <Ionicons name="flask-outline" size={26} color={ACCENT} />
+              <View style={[styles.tileIcon, { backgroundColor: cornerLook('lab').secondary }]}>
+                <Ionicons name="flask-outline" size={26} color={cornerLook('lab').primary} />
               </View>
               <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
                 {t('labEntryTitle')}
@@ -849,8 +852,8 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
                 { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
               ]}
             >
-              <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
-                <Ionicons name="calculator-outline" size={26} color={ACCENT} />
+              <View style={[styles.tileIcon, { backgroundColor: cornerLook('math').secondary }]}>
+                <Ionicons name="calculator-outline" size={26} color={cornerLook('math').primary} />
               </View>
               <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
                 {t('mathEntryTitle')}
@@ -872,8 +875,8 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
                   { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
                 ]}
               >
-                <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
-                  <Ionicons name="book-outline" size={26} color={ACCENT} />
+                <View style={[styles.tileIcon, { backgroundColor: cornerLook('quran').secondary }]}>
+                  <Ionicons name="book-outline" size={26} color={cornerLook('quran').primary} />
                 </View>
                 <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
                   {t('quranTitle')}

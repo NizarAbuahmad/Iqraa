@@ -114,3 +114,14 @@ test('corner code reads colours inside components, never at module scope', () =>
     }
   }
 });
+
+test('the library tiles take each corner its own colour', () => {
+  const src = readFileSync(join(root, 'app', 'curriculum', 'resources.tsx'), 'utf8');
+  assert.match(src, /from '@\/constants\/corners'/, 'resources.tsx does not import the corner table');
+  for (const id of ['english', 'lab', 'math', 'quran'] as const) {
+    assert.match(src, new RegExp(`cornerLook\\('${id}'\\)`), `${id} tile does not read its corner look`);
+  }
+  // The old identical-teal tile icon must be gone from the four corner tiles;
+  // the curriculum tile and the student/parent «my exams» tile keep ACCENT on purpose.
+  assert.equal((src.match(/ACCENT \+ '1F'/g) ?? []).length, 2, 'only the curriculum and my-exams tiles may keep the teal icon tint');
+});
