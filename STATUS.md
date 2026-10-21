@@ -4456,6 +4456,24 @@ shuffle of question order (blocks in the ministry order), no list of archived cl
 and no restore. Not done because the code does not settle it: adding a co-teacher.
 Still open: long-press export on the «أيّ مادة تقصد؟» clarification.
 
+**Slides, worksheets, verification and the books (2026-10-21, twelfth live pass).**
+Of 30 questions, 7 were fine (teaching) and 23 went to the model, which gave generic
+"depends on your program" steps or asked for a subject. Each was checked in code. The
+deck after «جهّز الشرائح» is a list with a pencil (title, content, answer, picture from
+the device, a suggested picture or a link, the video link) and a bin per slide, plus
+«مظهر العرض»; there is no way to add a slide, reorder them, or type teacher notes
+(generated notes go to the PPTX notes pane). A generated plan is edited by tapping an
+item (the existing `faqA5`). A worksheet's answers toggle with «إظهار/إخفاء الإجابات»
+and export as «نسخة الطالب» or «نسخة المعلم»; export adds no logo, name or name-and-date
+line (use Word). «مستوى الاختبار» / «مستوى الصعوبة» set difficulty. «تم التحقق من
+الإجابة رياضيًا (SymPy)» means a symbolic verifier solved it independently; its
+absence means nobody checked. A remedial worksheet comes from «مجموعات الدعم» after an
+exam, or from the worksheet tool at «عادي». The book, teacher guide and activity book
+are chips on the curriculum's subject page. A daily generation limit is answered with
+`howPricing` (the cap is monthly). Not done because the code does not settle them: the
+language of a worksheet, and past-year questions. Still open: long-press export on the
+«أيّ مادة تقصد؟» clarification.
+
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
 Step 4 of the worksheet review, agreed in chat. A worksheet was paper only: to
