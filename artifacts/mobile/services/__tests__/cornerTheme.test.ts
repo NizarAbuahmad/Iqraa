@@ -64,8 +64,8 @@ test('motif opacity stays subtle enough for the band text', () => {
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-/** Corners wired so far. Task 7 adds 'lab', Task 8 adds 'quran'; PR 2 adds 'english' and 'play' and removes this list. */
-const WIRED: readonly CornerId[] = ['math'];
+/** Corners wired so far. Task 8 adds 'quran'; PR 2 adds 'english' and 'play' and removes this list. */
+const WIRED: readonly CornerId[] = ['math', 'lab'];
 
 function* files(dir: string): Generator<string> {
   for (const name of readdirSync(dir)) {
@@ -97,7 +97,7 @@ test('no layout outside a corner directory mounts a provider — the library sta
 });
 
 test('corner code reads colours inside components, never at module scope', () => {
-  // A `const X = palette.y` at module scope runs before any provider exists and
+  // A `const|let|var X = palette.y` (exported or not) at module scope runs before any provider exists and
   // stays teal whatever corner the screen is in.
   const dirs = [
     ...WIRED.map(routeDir),
@@ -110,7 +110,7 @@ test('corner code reads colours inside components, never at module scope', () =>
     if (!existsSync(d)) continue;
     for (const f of files(d)) {
       const src = readFileSync(f, 'utf8');
-      assert.doesNotMatch(src, /^const \w+ = palette\./m, `${f} reads the palette at module scope`);
+      assert.doesNotMatch(src, /^(?:export\s+)?(?:const|let|var) \w+ = palette\./m, `${f} reads the palette at module scope (a const, let or var, exported or not)`);
     }
   }
 });
