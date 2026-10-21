@@ -25,7 +25,7 @@ import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCorner } from '@/context/CornerTheme';
 import { CONTENT_MAX_WIDTH, DESKTOP_BREAKPOINT } from '@/constants/layout';
-import { RADIUS, SPACE, TYPE } from '@/constants/theme';
+import { SPACE, TYPE } from '@/constants/theme';
 import { BackButton } from '@/components/ui/BackButton';
 import { CornerMotif } from './CornerMotif';
 
@@ -93,5 +93,5 @@ const styles = StyleSheet.create({
   // 3.5 × the hero step: a decoration, not a type size, so it is not a new
   // off-scale value for designScale.test.ts.
   glyph: { color: 'rgba(255,255,255,0.18)', fontSize: TYPE.hero * 3.5, lineHeight: TYPE.hero * 3.5 },
-  hairline: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 3, opacity: 0.75, borderRadius: RADIUS.xs },
+  hairline: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 3, opacity: 0.75 },
 });

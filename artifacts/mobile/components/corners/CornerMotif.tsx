@@ -4,7 +4,7 @@
  * in app.json. Five motifs, one per corner — add a case when a corner is
  * added, or the band is plain.
  */
-import React from 'react';
+import React, { useId } from 'react';
 import { StyleSheet } from 'react-native';
 import Svg, { Circle, Defs, G, Path, Pattern, Rect, Text as SvgText } from 'react-native-svg';
 import type { MotifId } from '@/constants/corners';
@@ -12,26 +12,30 @@ import type { MotifId } from '@/constants/corners';
 type Props = { motif: MotifId; opacity: number };
 
 export function CornerMotif({ motif, opacity }: Props) {
+  // Pattern ids are global to the document, and on web earlier stack screens
+  // stay mounted (hidden), so a fixed id would bind to the hidden screen's
+  // pattern. useId's colons are not valid in a url(#…) reference.
+  const id = 'motif-' + useId().replace(/:/g, '');
   return (
     <Svg pointerEvents="none" style={[StyleSheet.absoluteFill, { opacity }]} width="100%" height="100%">
-      {MOTIFS[motif]}
+      {MOTIFS[motif](id)}
     </Svg>
   );
 }
 
-const MOTIFS: Record<MotifId, React.ReactNode> = {
-  grid: (
+const MOTIFS: Record<MotifId, (id: string) => React.ReactNode> = {
+  grid: id => (
     <>
       <Defs>
-        <Pattern id="corner-grid" width={24} height={24} patternUnits="userSpaceOnUse">
+        <Pattern id={id} width={24} height={24} patternUnits="userSpaceOnUse">
           <Path d="M24 0H0V24" fill="none" stroke="#fff" strokeWidth={1} />
         </Pattern>
       </Defs>
-      <Rect width="100%" height="100%" fill="url(#corner-grid)" />
+      <Rect width="100%" height="100%" fill={`url(#${id})`} />
       <Path d="M0 150 Q 100 20 200 120 T 420 40" fill="none" stroke="#fff" strokeWidth={2.5} />
     </>
   ),
-  bubbles: (
+  bubbles: () => (
     <>
       <G fill="none" stroke="#fff" strokeWidth={2}>
         <Rect x={20} y={30} width={90} height={46} rx={14} />
@@ -45,20 +49,20 @@ const MOTIFS: Record<MotifId, React.ReactNode> = {
       <SvgText x={165} y={36} fill="#fff" fontFamily="ReadexPro_700Bold" fontSize={18}>ABC</SvgText>
     </>
   ),
-  hex: (
+  hex: id => (
     <>
       <Defs>
-        <Pattern id="corner-hex" width={40} height={69} patternUnits="userSpaceOnUse">
+        <Pattern id={id} width={40} height={69} patternUnits="userSpaceOnUse">
           <Path d="M20 0L40 11.5V34.5L20 46L0 34.5V11.5Z M20 46L40 57.5V80 M0 57.5L20 46" fill="none" stroke="#fff" strokeWidth={1.4} />
         </Pattern>
       </Defs>
-      <Rect width="100%" height="100%" fill="url(#corner-hex)" />
+      <Rect width="100%" height="100%" fill={`url(#${id})`} />
     </>
   ),
-  stars: (
+  stars: id => (
     <>
       <Defs>
-        <Pattern id="corner-stars" width={64} height={64} patternUnits="userSpaceOnUse">
+        <Pattern id={id} width={64} height={64} patternUnits="userSpaceOnUse">
           <G fill="none" stroke="#fff" strokeWidth={1.2}>
             <Rect x={18} y={18} width={28} height={28} transform="rotate(45 32 32)" />
             <Rect x={18} y={18} width={28} height={28} />
@@ -69,10 +73,10 @@ const MOTIFS: Record<MotifId, React.ReactNode> = {
           </G>
         </Pattern>
       </Defs>
-      <Rect width="100%" height="100%" fill="url(#corner-stars)" />
+      <Rect width="100%" height="100%" fill={`url(#${id})`} />
     </>
   ),
-  confetti: (
+  confetti: () => (
     <G fill="#fff">
       <Circle cx={30} cy={40} r={5} />
       <Circle cx={90} cy={120} r={4} />
