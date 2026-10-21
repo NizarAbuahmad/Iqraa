@@ -4,6 +4,9 @@
 // palette constant that ignores it) fail the build.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { CORNERS, CORNER_IDS, type CornerId } from '../../constants/corners.ts';
 import { contrast } from '../readableColor.ts';
 
@@ -56,5 +59,58 @@ test('motif opacity stays subtle enough for the band text', () => {
   for (const id of CORNER_IDS) {
     const { motifOpacity } = CORNERS[id];
     assert.ok(motifOpacity > 0 && motifOpacity <= 0.14, `${id} motifOpacity ${motifOpacity}`);
+  }
+});
+
+const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+
+/** Corners wired so far. Task 7 adds 'lab', Task 8 adds 'quran'; PR 2 adds 'english' and 'play' and removes this list. */
+const WIRED: readonly CornerId[] = ['math'];
+
+function* files(dir: string): Generator<string> {
+  for (const name of readdirSync(dir)) {
+    const p = join(dir, name);
+    if (statSync(p).isDirectory()) yield* files(p);
+    else if (p.endsWith('.ts') || p.endsWith('.tsx')) yield p;
+  }
+}
+
+const routeDir = (id: CornerId) => join(root, 'app', ...CORNERS[id].route.split('/').filter(Boolean));
+
+test('each wired corner has a layout that mounts its own provider', () => {
+  for (const id of WIRED) {
+    const layout = join(routeDir(id), '_layout.tsx');
+    assert.ok(existsSync(layout), `${id}: ${layout} missing`);
+    const src = readFileSync(layout, 'utf8');
+    assert.match(src, new RegExp(`<CornerThemeProvider corner="${id}"`), `${id}: layout does not mount CornerThemeProvider for ${id}`);
+  }
+});
+
+test('no layout outside a corner directory mounts a provider — the library stays teal', () => {
+  const cornerDirs = new Set(CORNER_IDS.map(routeDir));
+  for (const f of files(join(root, 'app'))) {
+    if (!f.endsWith('_layout.tsx')) continue;
+    const src = readFileSync(f, 'utf8');
+    if (!src.includes('CornerThemeProvider')) continue;
+    assert.ok(cornerDirs.has(dirname(f)), `${f} mounts CornerThemeProvider but is not a corner directory`);
+  }
+});
+
+test('corner code reads colours inside components, never at module scope', () => {
+  // A `const X = palette.y` at module scope runs before any provider exists and
+  // stays teal whatever corner the screen is in.
+  const dirs = [
+    ...WIRED.map(routeDir),
+    join(root, 'components', 'math'),
+    join(root, 'components', 'lab'),
+    join(root, 'components', 'quran'),
+    join(root, 'components', 'corners'),
+  ];
+  for (const d of dirs) {
+    if (!existsSync(d)) continue;
+    for (const f of files(d)) {
+      const src = readFileSync(f, 'utf8');
+      assert.doesNotMatch(src, /^const \w+ = palette\./m, `${f} reads the palette at module scope`);
+    }
   }
 });

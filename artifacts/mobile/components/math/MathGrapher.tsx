@@ -52,7 +52,7 @@ import {
   type Viewport,
 } from '@/services/mathViewport';
 import { MATH_ERROR_KEY } from './mathErrors';
-import { useScrollLock } from './MathFrame';
+import { useScrollLock } from '@/components/corners/CornerFrame';
 import { PlaneGrid } from './PlaneGrid';
 import { useCanvasGestures } from './useCanvasGestures';
 
