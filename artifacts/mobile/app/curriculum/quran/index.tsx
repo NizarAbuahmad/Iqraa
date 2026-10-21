@@ -7,7 +7,7 @@
  * (pinned in routeGating.test.ts).
  */
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -20,7 +20,7 @@ import {
   type QuranSurah,
 } from '@workspace/curriculum/quran';
 import { QURAN_RESOURCES, type QuranResource, type QuranResourceKind } from '@workspace/curriculum/quran-resources';
-import { RADIUS, SPACE, TYPE } from '@/constants/theme';
+import { SPACE, TYPE } from '@/constants/theme';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { useQuranProgress } from '@/hooks/useQuranProgress';
@@ -31,6 +31,8 @@ import { toArabicDigits } from '@/services/labFormat';
 import { CornerFrame } from '@/components/corners/CornerFrame';
 import { CornerGrid } from '@/components/corners/CornerGrid';
 import { QuranGate } from '@/components/quran/QuranGate';
+import { PressableScale } from '@/components/ui/PressableScale';
+import { useSurface } from '@/components/ui/Surface';
 import type { TranslationKey } from '@/services/i18n';
 
 type Colors = ReturnType<typeof useColors>;
@@ -62,6 +64,7 @@ function SurahRow({
   lang: string;
   t: TFn;
 }) {
+  const surface = useSurface();
   const digits = (s: string) => (lang === 'ar' ? toArabicDigits(s) : s);
   const done = countMemorised(progress, surah.number, surah.ayahs.map(a => a.n));
   const where = isWholeSurah(surah)
@@ -69,16 +72,13 @@ function SurahRow({
     : `${t('quranAyahsLabel')} ${digits(segmentsText(surah.segments, lang === 'ar' ? '، ' : ', '))}`;
   const align = isRTL ? 'right' : 'left';
   return (
-    <Pressable
+    <PressableScale
       onPress={() => {
         Haptics.selectionAsync();
         router.push(surahPath(surah.number) as never);
       }}
       accessibilityRole="button"
-      style={[
-        styles.row,
-        { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' },
-      ]}
+      style={[styles.row, surface, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
     >
       <View style={[styles.icon, { backgroundColor: colors.secondary }]}>
         <Ionicons name="book-outline" size={22} color={colors.primary} />
@@ -94,7 +94,7 @@ function SurahRow({
         </Text>
       </View>
       <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -109,18 +109,16 @@ function ResourceRow({
   isRTL: boolean;
   t: TFn;
 }) {
+  const surface = useSurface();
   const align = isRTL ? 'right' : 'left';
   return (
-    <Pressable
+    <PressableScale
       onPress={() => {
         Haptics.selectionAsync();
         void openExternal(item.url);
       }}
       accessibilityRole="link"
-      style={[
-        styles.row,
-        { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' },
-      ]}
+      style={[styles.row, surface, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
     >
       <View style={[styles.icon, { backgroundColor: colors.secondary }]}>
         <Ionicons name="open-outline" size={22} color={colors.primary} />
@@ -138,7 +136,7 @@ function ResourceRow({
           </Text>
         ) : null}
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -191,8 +189,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     padding: SPACE.md,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
   },
   icon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   rowTitle: { fontSize: 15 },

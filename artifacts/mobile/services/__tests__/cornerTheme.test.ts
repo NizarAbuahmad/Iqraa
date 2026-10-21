@@ -181,3 +181,18 @@ test('text on a primary fill in the English corner is primaryForeground, not whi
     }
   }
 });
+
+test('the corner frame draws its band with Band, and the grid brings cards in with Entrance', () => {
+  const frame = readFileSync(join(root, 'components', 'corners', 'CornerFrame.tsx'), 'utf8');
+  assert.match(frame, /<Band\b/, 'CornerFrame does not draw its band with Band');
+  const grid = readFileSync(join(root, 'components', 'corners', 'CornerGrid.tsx'), 'utf8');
+  assert.match(grid, /<Entrance\b/, 'CornerGrid does not wrap its cells in Entrance');
+});
+
+test('every corner hub card is a lifted surface that gives when pressed', () => {
+  for (const id of CORNER_IDS) {
+    const src = readFileSync(join(routeDir(id), 'index.tsx'), 'utf8');
+    assert.match(src, /<PressableScale\b/, `${id} hub cards are not PressableScale`);
+    assert.match(src, /\buseSurface\(/, `${id} hub cards do not take useSurface()`);
+  }
+});

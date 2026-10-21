@@ -7,7 +7,7 @@
  * and runs offline; GeoGebra is a link to their website, never an embed.
  */
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -17,10 +17,13 @@ import { MATH_TOOLS, MATH_TOOL_IDS, mathToolPath } from '@/services/mathTools';
 import { CornerFrame } from '@/components/corners/CornerFrame';
 import { CornerGrid } from '@/components/corners/CornerGrid';
 import { GeogebraLink } from '@/components/math/GeogebraLink';
+import { PressableScale } from '@/components/ui/PressableScale';
+import { useSurface } from '@/components/ui/Surface';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 
 export default function MathCornerScreen() {
   const colors = useColors();
+  const surface = useSurface();
   const { t, isRTL } = useLanguage();
   const align = isRTL ? 'right' : 'left';
 
@@ -30,7 +33,7 @@ export default function MathCornerScreen() {
         {MATH_TOOL_IDS.map(id => {
           const meta = MATH_TOOLS[id];
           return (
-            <Pressable
+            <PressableScale
               key={id}
               onPress={() => {
                 Haptics.selectionAsync();
@@ -38,15 +41,7 @@ export default function MathCornerScreen() {
               }}
               accessibilityRole="button"
               accessibilityLabel={`${t(meta.titleKey)}, ${t(meta.hintKey)}`}
-              style={({ pressed }) => [
-                styles.row,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: colors.border,
-                  flexDirection: isRTL ? 'row-reverse' : 'row',
-                  opacity: pressed ? 0.8 : 1,
-                },
-              ]}
+              style={[styles.row, surface, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
               <View style={[styles.icon, { backgroundColor: colors.secondary }]}>
                 <Ionicons name={meta.icon as React.ComponentProps<typeof Ionicons>['name']} size={22} color={colors.primary} />
@@ -60,7 +55,7 @@ export default function MathCornerScreen() {
                 </Text>
               </View>
               <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
-            </Pressable>
+            </PressableScale>
           );
         })}
         <GeogebraLink />
@@ -70,7 +65,7 @@ export default function MathCornerScreen() {
 }
 
 const styles = StyleSheet.create({
-  row: { flexGrow: 1, alignItems: 'center', gap: SPACE.md, padding: SPACE.md, borderWidth: 1, borderRadius: RADIUS.lg },
+  row: { flexGrow: 1, alignItems: 'center', gap: SPACE.md, padding: SPACE.md },
   icon: { width: 44, height: 44, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: TYPE.body },
   hint: { fontSize: TYPE.caption, marginTop: SPACE.xxs },

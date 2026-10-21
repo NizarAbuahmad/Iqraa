@@ -21,10 +21,13 @@ import { BADGE_META } from '@/components/englishHub/badgeMeta';
 import { disableDailyReminder, enableDailyReminder, isReminderEnabled, syncDailyReminder } from '@/services/englishHub/dailyReminder';
 import { CornerFrame } from '@/components/corners/CornerFrame';
 import { CornerGrid } from '@/components/corners/CornerGrid';
+import { PressableScale } from '@/components/ui/PressableScale';
+import { useSurface } from '@/components/ui/Surface';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 
 export default function EnglishHubScreen() {
   const colors = useColors();
+  const surface = useSurface();
   const { t, isRTL, lang } = useLanguage();
   const params = useLocalSearchParams<{ grade?: string }>();
   const [grade, setGrade] = useState(() => {
@@ -138,13 +141,10 @@ export default function EnglishHubScreen() {
             // unit's "Vocabulary & Grammar" one, so the lesson title tells a
             // child nothing and the unit title ("Look at my toys!") does —
             // in English, as the book prints it (`unitNames`).
-            <Pressable
+            <PressableScale
               key={l.id}
               onPress={() => router.push({ pathname: '/curriculum/english/[lessonId]', params: { lessonId: l.id } } as never)}
-              style={({ pressed }) => [
-                styles.card,
-                { flexDirection: row, backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.85 : 1 },
-              ]}
+              style={[styles.card, surface, { flexDirection: row }]}
             >
               <View style={{ flex: 1, gap: 4 }}>
                 <Text style={[styles.unit, { color: colors.mutedForeground, textAlign: align }]}>{t('hubUnit', l.unitNumber)}
@@ -166,7 +166,7 @@ export default function EnglishHubScreen() {
                 <Text style={{ fontSize: TYPE.caption, color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }}>⭐ {stars}</Text>
               ) : null}
               <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.mutedForeground} />
-            </Pressable>
+            </PressableScale>
           );
         })}
       </CornerGrid>
@@ -183,5 +183,5 @@ const styles = StyleSheet.create({
   chips: { flexWrap: 'wrap', gap: SPACE.sm, paddingHorizontal: SPACE.lg, paddingTop: SPACE.md },
   chip: { borderWidth: 1, borderRadius: RADIUS.pill, paddingHorizontal: 14, paddingVertical: 7 },
   unit: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 },
-  card: { alignItems: 'center', gap: 10, borderWidth: 1, padding: 14, flexGrow: 1 },
+  card: { alignItems: 'center', gap: 10, padding: 14, flexGrow: 1 },
 });
