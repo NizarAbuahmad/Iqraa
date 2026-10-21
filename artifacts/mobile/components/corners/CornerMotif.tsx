@@ -31,9 +31,14 @@ const MOTIFS: Record<MotifId, (id: string) => React.ReactNode> = {
         <Pattern id={id} width={24} height={24} patternUnits="userSpaceOnUse">
           <Path d="M24 0H0V24" fill="none" stroke="#fff" strokeWidth={1} />
         </Pattern>
+        {/* A wave tiled across the band: it starts and ends at one height with
+            mirrored slope, so tiles join, and a wide band is not bunched at one end. */}
+        <Pattern id={`${id}-wave`} width={420} height={170} patternUnits="userSpaceOnUse">
+          <Path d="M0 110 Q 105 30 210 110 T 420 110" fill="none" stroke="#fff" strokeWidth={2.5} />
+        </Pattern>
       </Defs>
       <Rect width="100%" height="100%" fill={`url(#${id})`} />
-      <Path d="M0 150 Q 100 20 200 120 T 420 40" fill="none" stroke="#fff" strokeWidth={2.5} />
+      <Rect width="100%" height="100%" fill={`url(#${id}-wave)`} />
     </>
   ),
   bubbles: () => (

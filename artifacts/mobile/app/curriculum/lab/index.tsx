@@ -168,6 +168,7 @@ const styles = StyleSheet.create({
   chips: { flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, paddingTop: 12 },
   chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999 },
   row: {
+    flexGrow: 1,
     alignItems: 'center',
     gap: 12,
     padding: 14,

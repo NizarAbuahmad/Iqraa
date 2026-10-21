@@ -70,7 +70,7 @@ export default function MathCornerScreen() {
 }
 
 const styles = StyleSheet.create({
-  row: { alignItems: 'center', gap: SPACE.md, padding: SPACE.md, borderWidth: 1, borderRadius: RADIUS.lg },
+  row: { flexGrow: 1, alignItems: 'center', gap: SPACE.md, padding: SPACE.md, borderWidth: 1, borderRadius: RADIUS.lg },
   icon: { width: 44, height: 44, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: TYPE.body },
   hint: { fontSize: TYPE.caption, marginTop: SPACE.xxs },

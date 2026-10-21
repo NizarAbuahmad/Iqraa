@@ -86,7 +86,10 @@ export function CornerFrame({ title, subtitle, bandChildren, children }: Props) 
 
 const styles = StyleSheet.create({
   hero: { paddingHorizontal: SPACE.lg, paddingBottom: SPACE.lg, overflow: 'hidden' },
-  heroInner: { width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
+  // The hero already pads SPACE.lg a side, and the grid sits its cards SPACE.lg
+  // inside the CONTENT_MAX_WIDTH column, so cap the title block by the same
+  // amount and it lines up with the first card at every width.
+  heroInner: { width: '100%', maxWidth: CONTENT_MAX_WIDTH - 2 * SPACE.lg, alignSelf: 'center' },
   title: { color: '#fff', fontSize: TYPE.title },
   subtitle: { color: 'rgba(255,255,255,0.85)', fontSize: TYPE.caption, marginTop: SPACE.xs },
   glyphWrap: { position: 'absolute', bottom: -SPACE.xl },

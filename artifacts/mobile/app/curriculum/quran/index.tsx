@@ -187,6 +187,7 @@ const styles = StyleSheet.create({
   heading: { fontSize: TYPE.bodyLg, marginTop: SPACE.md, marginHorizontal: 16 },
   note: { fontSize: TYPE.caption, marginTop: 4, marginHorizontal: 16 },
   row: {
+    flexGrow: 1,
     alignItems: 'center',
     gap: 12,
     padding: SPACE.md,
