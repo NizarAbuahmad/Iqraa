@@ -50,7 +50,7 @@ export function HearButton({ word, big }: { word: string; big?: boolean }) {
       accessibilityLabel={t('hubHear')}
       style={[styles.hear, { backgroundColor: colors.primary, width: big ? 88 : 48, height: big ? 88 : 48 }]}
     >
-      <Ionicons name="volume-high" size={big ? 40 : 22} color="#fff" />
+      <Ionicons name="volume-high" size={big ? 40 : 22} color={colors.primaryForeground} />
     </Pressable>
   );
 }
@@ -172,7 +172,7 @@ export function ListenChoose({ words, onFinish }: { words: HubWord[]; onFinish: 
             {picked === q.answerIndex ? t('hubCorrect') : t('hubWrong', q.word.en)} · {q.word.ar}
           </Text>
           <Pressable onPress={next} style={[styles.primary, { backgroundColor: colors.primary }]}>
-            <Text style={styles.primaryText}>{t('hubNext')}</Text>
+            <Text style={[styles.primaryText, { color: colors.primaryForeground }]}>{t('hubNext')}</Text>
           </Pressable>
         </>
       ) : null}
@@ -356,7 +356,7 @@ export function SpellIt({ words, onFinish }: { words: HubWord[]; onFinish: Finis
       />
       {result === null ? (
         <Pressable onPress={check} style={[styles.primary, { backgroundColor: colors.primary, opacity: typed.trim() ? 1 : 0.5 }]}>
-          <Text style={styles.primaryText}>{t('hubCheck')}</Text>
+          <Text style={[styles.primaryText, { color: colors.primaryForeground }]}>{t('hubCheck')}</Text>
         </Pressable>
       ) : (
         <>
@@ -364,7 +364,7 @@ export function SpellIt({ words, onFinish }: { words: HubWord[]; onFinish: Finis
             {result ? t('hubCorrect') : t('hubWrong', w.en)}
           </Text>
           <Pressable onPress={next} style={[styles.primary, { backgroundColor: colors.primary }]}>
-            <Text style={styles.primaryText}>{t('hubNext')}</Text>
+            <Text style={[styles.primaryText, { color: colors.primaryForeground }]}>{t('hubNext')}</Text>
           </Pressable>
         </>
       )}
@@ -466,7 +466,7 @@ export function Scramble({ words, onFinish }: { words: HubWord[]; onFinish: Fini
             {result ? t('hubCorrect') : t('hubWrong', q.word.en)}
           </Text>
           <Pressable onPress={next} style={[styles.primary, { backgroundColor: colors.primary }]}>
-            <Text style={styles.primaryText}>{t('hubNext')}</Text>
+            <Text style={[styles.primaryText, { color: colors.primaryForeground }]}>{t('hubNext')}</Text>
           </Pressable>
         </>
       ) : null}
@@ -601,7 +601,7 @@ const styles = StyleSheet.create({
   option: { borderWidth: 1.5, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 16 },
   optionText: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 20, textAlign: 'center' },
   primary: { borderRadius: 14, paddingVertical: 12, paddingHorizontal: 32 },
-  primaryText: { color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 16 },
+  primaryText: { fontFamily: 'ReadexPro_700Bold', fontSize: 16 },
   matchCard: { minHeight: 64, borderWidth: 1.5, borderRadius: 14, alignItems: 'center', justifyContent: 'center', padding: 10 },
   // Both matching games: two columns of cards. The columns, not the cards, share the width.
   matchColumns: { flexDirection: 'row', gap: 12 },

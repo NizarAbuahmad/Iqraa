@@ -88,7 +88,7 @@ export function Feedback({ ok, answer, onNext, sentence }: { ok: boolean; answer
       </Text>
       <HearButton word={sentence} />
       <Pressable onPress={onNext} style={[styles.primary, { backgroundColor: colors.primary }]}>
-        <Text style={styles.primaryText}>{t('hubNext')}</Text>
+        <Text style={[styles.primaryText, { color: colors.primaryForeground }]}>{t('hubNext')}</Text>
       </Pressable>
     </>
   );
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
   answerBtn: { flex: 1, borderWidth: 1.5, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 8, alignItems: 'center', gap: 4 },
   answerText: { fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.bodyLg, textAlign: 'center', writingDirection: 'ltr' },
   primary: { borderRadius: 16, paddingVertical: 12, paddingHorizontal: 32 },
-  primaryText: { color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 15 },
+  primaryText: { fontFamily: 'ReadexPro_700Bold', fontSize: 15 },
   // A physical row, never flipped for Arabic: the order of the tiles is the English sentence's.
   tileRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
   wordTile: { minWidth: 48, minHeight: 48, borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },

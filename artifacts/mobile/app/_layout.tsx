@@ -207,8 +207,7 @@ function RootLayoutNav() {
       <Stack.Screen name="curriculum/unit" options={{ headerShown: false }} />
       <Stack.Screen name="curriculum/lesson-detail" options={{ headerShown: false }} />
       <Stack.Screen name="curriculum/lesson-explanation" options={{ headerShown: false }} />
-      <Stack.Screen name="curriculum/english/index" options={{ headerShown: false }} />
-      <Stack.Screen name="curriculum/english/[lessonId]" options={{ headerShown: false }} />
+      <Stack.Screen name="curriculum/english" options={{ headerShown: false }} />
       <Stack.Screen name="ai-tools/lesson-plan" options={{ headerShown: false }} />
       <Stack.Screen name="ai-tools/worksheet" options={{ headerShown: false }} />
       <Stack.Screen name="ai-tools/quiz" options={{ headerShown: false }} />

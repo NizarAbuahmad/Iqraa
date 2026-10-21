@@ -26,7 +26,9 @@ const ROUTES = [
   ['quran-hub', '/curriculum/quran'],
   ['quran-surah', '/curriculum/quran/1'],
   ['english-hub', '/curriculum/english?grade=1'],
+  ['english-lesson', '/curriculum/english/kbl-g1-eng-s1-nccd-u0_l1'],
   ['play-hub', '/play'],
+  ['play-flags', '/play/flags'],
 ];
 const VIEWPORTS = [
   { name: 'phone', width: 390, height: 844, isMobile: true, hasTouch: true, deviceScaleFactor: 2 },
