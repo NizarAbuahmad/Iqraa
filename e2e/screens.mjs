@@ -49,13 +49,16 @@ for (const colorScheme of ['light', 'dark']) {
       }, teacher);
       await ctx.route('**/api/**', (route) => {
         const p = new URL(route.request().url()).pathname.replace(/^\/api/, '');
-        const body = p === '/auth/me' ? teacher : /s$/.test(p) ? [] : {};
+        // /library is a list too (resources.tsx maps it) though its path does not end in s
+        const body = p === '/auth/me' ? teacher : (/s$/.test(p) || p === '/library') ? [] : {};
         return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
       });
       const page = await ctx.newPage();
       try {
         await page.goto(BASE + path, { waitUntil: 'networkidle', timeout: 30000 });
-        await page.waitForTimeout(1200);
+        // the app's splash card holds until auth answers, then fades: wait it out
+        await page.waitForFunction(() => !document.body.innerText.includes('LESSON-PREP COMPANION'), null, { timeout: 15000 }).catch(() => {});
+        await page.waitForTimeout(600);
         await page.screenshot({ path: `${OUT}/${colorScheme}-${vp.name}-${name}.png` });
         console.log(`${colorScheme} ${vp.name} ${name}`);
       } catch (e) {
