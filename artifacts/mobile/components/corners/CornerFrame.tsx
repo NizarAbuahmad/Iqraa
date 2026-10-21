@@ -39,12 +39,20 @@ export function useScrollLock(): (locked: boolean) => void {
 type Props = {
   title: string;
   subtitle?: string;
-  /** Rendered inside the band under the subtitle — grade chips, a switch. */
+  /** A short line above the title — the English lesson's «grade · unit». */
+  eyebrow?: string;
+  /** Replaces the back button's default (`goBack()`, which falls back to `/`). Public pages need their own fallback. */
+  onBack?: () => void;
+  /** The games hub is an entry point with nowhere to go back to. */
+  hideBack?: boolean;
+  /** Pass `'handled'` on screens with text inputs, so a tap on a button does not first just close the keyboard. */
+  keyboardShouldPersistTaps?: 'always' | 'never' | 'handled';
+  /** Rendered inside the band under the subtitle — a streak line, a switch. */
   bandChildren?: React.ReactNode;
   children: React.ReactNode;
 };
 
-export function CornerFrame({ title, subtitle, bandChildren, children }: Props) {
+export function CornerFrame({ title, subtitle, eyebrow, onBack, hideBack, keyboardShouldPersistTaps, bandChildren, children }: Props) {
   const colors = useColors();
   const corner = useCorner();
   const { isRTL } = useLanguage();
@@ -64,7 +72,12 @@ export function CornerFrame({ title, subtitle, bandChildren, children }: Props) 
           </View>
         ) : null}
         <View style={styles.heroInner}>
-          <BackButton color="#fff" style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start', marginBottom: SPACE.sm }} />
+          {hideBack ? null : (
+            <BackButton color="#fff" onPress={onBack} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start', marginBottom: SPACE.sm }} />
+          )}
+          {eyebrow ? (
+            <Text style={[styles.eyebrow, { fontFamily: 'Almarai_400Regular', textAlign: align }]}>{eyebrow}</Text>
+          ) : null}
           <Text style={[styles.title, { fontFamily: 'ReadexPro_700Bold', textAlign: align }]}>{title}</Text>
           {subtitle ? (
             <Text style={[styles.subtitle, { fontFamily: 'Almarai_400Regular', textAlign: align }]}>{subtitle}</Text>
@@ -75,6 +88,7 @@ export function CornerFrame({ title, subtitle, bandChildren, children }: Props) 
       </View>
       <ScrollView
         scrollEnabled={!locked}
+        keyboardShouldPersistTaps={keyboardShouldPersistTaps}
         contentContainerStyle={{ paddingBottom: SPACE.hero, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}
         showsVerticalScrollIndicator={false}
       >
@@ -91,6 +105,7 @@ const styles = StyleSheet.create({
   // amount and it lines up with the first card at every width.
   heroInner: { width: '100%', maxWidth: CONTENT_MAX_WIDTH - 2 * SPACE.lg, alignSelf: 'center' },
   title: { color: '#fff', fontSize: TYPE.title },
+  eyebrow: { color: 'rgba(255,255,255,0.85)', fontSize: TYPE.caption, marginBottom: SPACE.xs },
   subtitle: { color: 'rgba(255,255,255,0.85)', fontSize: TYPE.caption, marginTop: SPACE.xs },
   glyphWrap: { position: 'absolute', bottom: -SPACE.xl },
   // 3.5 × the hero step: a decoration, not a type size, so it is not a new

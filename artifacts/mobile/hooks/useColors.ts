@@ -1,5 +1,14 @@
 import colors, { palette, scheme } from '@/constants/colors';
 import { useCorner } from '@/context/CornerTheme';
+import type { CornerTokens } from '@/constants/corners';
+import type { Palette } from '@/constants/colors';
+
+// `CornerTokens` is spelled out in constants/corners.ts (it cannot import
+// constants/colors.ts, which `node --test` cannot load). This fails the
+// typecheck if a palette key it overrides is ever renamed, instead of the
+// corner silently spreading a stray key.
+const _cornerKeysArePaletteKeys: Pick<Palette, keyof CornerTokens> = {} as CornerTokens;
+void _cornerKeysArePaletteKeys;
 
 /**
  * The design tokens for this session's colour scheme, plus scheme-independent
