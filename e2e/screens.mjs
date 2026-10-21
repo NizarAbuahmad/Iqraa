@@ -22,7 +22,9 @@ const ROUTES = [
   ['math-hub', '/curriculum/math'],
   ['math-grapher', '/curriculum/math/grapher'],
   ['lab-hub', '/curriculum/lab'],
+  ['lab-item', '/curriculum/lab/lab-periodic-table'],
   ['quran-hub', '/curriculum/quran'],
+  ['quran-surah', '/curriculum/quran/1'],
   ['english-hub', '/curriculum/english?grade=1'],
   ['play-hub', '/play'],
 ];

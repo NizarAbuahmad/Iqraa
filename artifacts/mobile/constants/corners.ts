@@ -61,7 +61,7 @@ export const CORNERS: Record<CornerId, Corner> = {
   },
   english: {
     id: 'english', route: '/curriculum/english', icon: 'headset', motif: 'bubbles', motifOpacity: 0.10, glyph: 'Aa',
-    light: light('#C2410C', '#C2410C', '#FBF4F0', '#FAF0EC'),
+    light: light('#9A3412', '#C2410C', '#FBF4F0', '#FAF0EC'),
     dark: dark('#9A3412', '#FDBA74', '#3A1F10', '#5A2A10'),
   },
   lab: {

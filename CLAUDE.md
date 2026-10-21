@@ -542,9 +542,13 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   holds each corner's tokens; `CornerThemeProvider` (mounted only by the
   `_layout.tsx` of a corner directory) puts them in context and `useColors()`
   spreads them over the palette, so a shared button or chip inside a corner is
-  that corner's colour with no edit. Two traps: a module-scope
-  `const ACCENT = palette.primary` runs before any provider and stays teal, and
-  the library (`/curriculum/resources`) is deliberately **not** a corner — its
+  that corner's colour with no edit. Corner code must take
+  colours from `useColors()`, never from the global `palette`, whether read at
+  module scope or inside render: both ignore the provider and stay teal.
+  `cornerTheme.test.ts` fails any file in a wired corner (or
+  `components/{math,lab,quran,corners}`) that imports `palette`, and any
+  `_layout.tsx` outside a corner directory that mounts `CornerThemeProvider`.
+  The library (`/curriculum/resources`) is deliberately **not** a corner — its
   tiles borrow each corner's colour, its own chrome is brand teal.
-  `cornerTheme.test.ts` fails both. A new corner is one table row, one layout
+  A new corner is one table row, one layout
   file, and a `CornerFrame`.

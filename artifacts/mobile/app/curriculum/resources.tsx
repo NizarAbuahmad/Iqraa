@@ -807,8 +807,9 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
                   { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
                 ]}
               >
-                <View style={[styles.tileIcon, { backgroundColor: cornerLook('english').secondary }]}>
-                  <Ionicons name="headset" size={26} color={cornerLook('english').primary} />
+                {/* The English corner is not themed until PR 2, so its tile stays teal rather than promise a colour the corner does not have. */}
+                <View style={[styles.tileIcon, { backgroundColor: ACCENT + '1F' }]}>
+                  <Ionicons name="headset" size={26} color={ACCENT} />
                 </View>
                 <Text numberOfLines={2} style={[styles.tileLabel, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold' }]}>
                   {t('hubTitle')}

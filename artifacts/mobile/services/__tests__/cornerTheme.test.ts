@@ -20,6 +20,13 @@ const AA = 4.5;
 const atLeast = (a: string, b: string, what: string) =>
   assert.ok(contrast(a, b) >= AA, `${what}: ${a} on ${b} is ${contrast(a, b).toFixed(2)}:1, needs ${AA}`);
 
+/** `fg` at `alpha` over the opaque hex `bg`, as a hex: what the eye sees of a translucent label. */
+const blendWhite = (alpha: number, bg: string) => {
+  const n = parseInt(bg.slice(1), 16);
+  const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((c) => Math.round(255 * alpha + c * (1 - alpha)));
+  return '#' + ch.map((c) => c.toString(16).padStart(2, '0')).join('').toUpperCase();
+};
+
 test('five corners, in library order', () => {
   assert.deepEqual([...CORNER_IDS], ['math', 'english', 'lab', 'quran', 'play']);
   for (const id of CORNER_IDS) assert.equal(CORNERS[id].id, id);
@@ -29,6 +36,8 @@ for (const id of CORNER_IDS) {
   test(`${id}: light tokens read on every surface they sit on`, () => {
     const c = CORNERS[id].light;
     atLeast(WHITE, c.hero, `${id} white on hero`);
+    // CornerFrame draws its subtitle as rgba(255,255,255,0.85) on the hero.
+    atLeast(blendWhite(0.85, c.hero), c.hero, `${id} band subtitle on hero`);
     atLeast(c.primaryForeground, c.primary, `${id} button label`);
     atLeast(c.primary, LIGHT.card, `${id} primary on card`);
     atLeast(c.primary, LIGHT.page, `${id} primary on page`);
@@ -43,6 +52,7 @@ for (const id of CORNER_IDS) {
   test(`${id}: dark tokens read on every surface they sit on`, () => {
     const c = CORNERS[id].dark;
     atLeast(WHITE, c.hero, `${id} white on dark hero`);
+    atLeast(blendWhite(0.85, c.hero), c.hero, `${id} band subtitle on dark hero`);
     atLeast(c.primaryForeground, c.primary, `${id} dark button label`);
     atLeast(c.primary, DARK.card, `${id} dark primary on card`);
     atLeast(c.primary, DARK.page, `${id} dark primary on page`);
@@ -96,9 +106,9 @@ test('no layout outside a corner directory mounts a provider — the library sta
   }
 });
 
-test('corner code reads colours inside components, never at module scope', () => {
-  // A `const|let|var X = palette.y` (exported or not) at module scope runs before any provider exists and
-  // stays teal whatever corner the screen is in.
+test('corner code never imports the global palette', () => {
+  // `palette` is the fixed global colours: it ignores the corner provider whether it is read at module scope
+  // or inside render, so it stays teal in every corner. Colours come from useColors() (or `scheme` for the mode).
   const dirs = [
     ...WIRED.map(routeDir),
     join(root, 'components', 'math'),
@@ -110,7 +120,11 @@ test('corner code reads colours inside components, never at module scope', () =>
     if (!existsSync(d)) continue;
     for (const f of files(d)) {
       const src = readFileSync(f, 'utf8');
-      assert.doesNotMatch(src, /^(?:export\s+)?(?:const|let|var) \w+ = palette\./m, `${f} reads the palette at module scope (a const, let or var, exported or not)`);
+      assert.doesNotMatch(
+        src,
+        /import\s*\{[^}]*\bpalette\b[^}]*\}\s*from\s*'@\/constants\/colors'/,
+        `${f} imports the global palette, which ignores the corner provider (at module scope or inside render); take colours from useColors()`,
+      );
     }
   }
 });
@@ -118,10 +132,11 @@ test('corner code reads colours inside components, never at module scope', () =>
 test('the library tiles take each corner its own colour', () => {
   const src = readFileSync(join(root, 'app', 'curriculum', 'resources.tsx'), 'utf8');
   assert.match(src, /from '@\/constants\/corners'/, 'resources.tsx does not import the corner table');
-  for (const id of ['english', 'lab', 'math', 'quran'] as const) {
+  // English is not themed until PR 2, so its tile stays teal rather than promise a colour the corner lacks.
+  for (const id of ['lab', 'math', 'quran'] as const) {
     assert.match(src, new RegExp(`cornerLook\\('${id}'\\)`), `${id} tile does not read its corner look`);
   }
-  // The old identical-teal tile icon must be gone from the four corner tiles;
-  // the curriculum tile and the student/parent «my exams» tile keep ACCENT on purpose.
-  assert.equal((src.match(/ACCENT \+ '1F'/g) ?? []).length, 2, 'only the curriculum and my-exams tiles may keep the teal icon tint');
+  // The old identical-teal tile icon must be gone from the three themed corner tiles; the curriculum tile,
+  // the English tile (until PR 2) and the student/parent «my exams» tile keep ACCENT on purpose.
+  assert.equal((src.match(/ACCENT \+ '1F'/g) ?? []).length, 3, 'only the curriculum, English and my-exams tiles may keep the teal icon tint');
 });

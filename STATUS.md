@@ -1605,9 +1605,9 @@ glyph); `context/CornerTheme.tsx` is mounted by each corner directory's
 `_layout.tsx`; `hooks/useColors.ts` spreads the corner's tokens over the
 palette, so every component under it follows. `components/corners/CornerFrame`
 replaced `MathFrame` and `LabFrame`, which re-export it until PR 2 deletes
-them. `cornerTheme.test.ts` measures every pair at ≥ 4.5:1 in both schemes and
+them. `cornerTheme.test.ts` measures every token pair, and the band's subtitle on its hero, at ≥ 4.5:1 in both schemes and
 pins the structure: a wired corner has a provider layout, nothing else does,
-and no corner code reads the palette at module scope. `e2e/screens.mjs`
+and no corner code imports the global `palette`. `e2e/screens.mjs`
 screenshots the corners and the library on the built web bundle (phone and
 desktop, light and dark) for a human to look at — see `e2e/README-screens.md`.
 
@@ -2479,8 +2479,8 @@ as something else; circles belong to the sketchpad.
   −1…1, which no equal-aspect view can, so the «sin» button switches to a
   degree- or radian-axis view and the «1:1» button goes back. Degree ticks fall
   on 15°/30°/45°/90°.
-- **A canvas inside a ScrollView needs a scroll lock.** `MathFrame` is
-  `LabFrame` plus a context: the grapher locks the page while a finger is on
+- **A canvas inside a ScrollView needs a scroll lock.** The Math and Lab frames are now
+  one `CornerFrame` (`components/corners/CornerFrame.tsx`), which also holds the scroll lock: the grapher locks the page while a finger is on
   the canvas. Verified: dragging the canvas leaves `scrollTop` unchanged.
 - **The mouse wheel was silently dead in the first build.** The canvas mounts
   only after its first layout and the wheel listener was attached once at mount,
