@@ -154,15 +154,18 @@ test('corner code never imports the global palette', () => {
   }
 });
 
-test('the library tiles take each corner its own colour', () => {
+test('the library tiles take each corner its own colour and pattern', () => {
   const src = readFileSync(join(root, 'app', 'curriculum', 'resources.tsx'), 'utf8');
   assert.match(src, /from '@\/constants\/corners'/, 'resources.tsx does not import the corner table');
+  assert.match(src, /<LibraryTile\b/, 'the front-row tiles are not LibraryTile');
+  assert.match(src, /cornerLook\(id\)/, 'cornerTile does not read the corner look');
+  assert.match(src, /CORNERS\[id\]\.motif\b/, 'cornerTile does not take the corner motif');
   for (const id of ['english', 'lab', 'math', 'quran'] as const) {
-    assert.match(src, new RegExp(`cornerLook\\('${id}'\\)`), `${id} tile does not read its corner look`);
+    assert.match(src, new RegExp(`cornerTile\\('${id}'\\)`), `${id} tile does not wear its corner`);
   }
-  // The old identical-teal tile icon must be gone from the four themed corner tiles; the curriculum tile
-  // and the student/parent «my exams» tile keep ACCENT on purpose.
-  assert.equal((src.match(/ACCENT \+ '1F'/g) ?? []).length, 2, 'only the curriculum tile and the student/parent «my exams» tile keep the teal icon tint');
+  // The flat teal icon tint is gone: the curriculum and «my exams» tiles wear the brand look (BRAND_TILE).
+  assert.equal((src.match(/ACCENT \+ '1F'/g) ?? []).length, 0, 'a tile still uses the old flat teal icon tint');
+  assert.match(src, /<Band\b/, 'the library header is not a Band');
 });
 
 test('text on a primary fill in the English corner is primaryForeground, not white', () => {
