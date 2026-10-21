@@ -197,9 +197,9 @@ is already in the binary).
 
 | Corner | today | change |
 | --- | --- | --- |
-| Math `app/curriculum/math/*` | `MathFrame` | `_layout.tsx`; `MathFrame` → `CornerFrame`; hub uses `layout="hub"`. Tool screens otherwise untouched (their canvases draw with `colors.primary`, which now reads indigo). |
-| Lab `app/curriculum/lab/*` | `LabFrame` | `_layout.tsx`; `LabFrame` → `CornerFrame`; hub `layout="hub"`. Check `LabPeriodicTable`'s category colours still read on violet chrome — they are their own palette and stay. |
-| Quran `app/curriculum/quran/**` | `LabFrame` (index, surah, memorize) | `_layout.tsx`; `LabFrame` → `CornerFrame`; hub `layout="hub"`. The mushaf text, its font and the audio controls are unchanged. |
+| Math `app/curriculum/math/*` | `MathFrame` | `_layout.tsx`; `MathFrame` → `CornerFrame`; hub cards in `CornerGrid`. Tool screens otherwise untouched (their canvases draw with `colors.primary`, which now reads indigo). |
+| Lab `app/curriculum/lab/*` | `LabFrame` | `_layout.tsx`; `LabFrame` → `CornerFrame`; hub cards in `CornerGrid`. Check `LabPeriodicTable`'s category colours still read on violet chrome — they are their own palette and stay. |
+| Quran `app/curriculum/quran/**` | `LabFrame` (index, surah, memorize) | `_layout.tsx`; `LabFrame` → `CornerFrame`; hub cards in `CornerGrid`. The mushaf text, its font and the audio controls are unchanged. |
 | English `app/curriculum/english/*` | inline band in `index.tsx` and `[lessonId].tsx` (`colors.hero`, grade chips and the reminder `Switch` inside it) | `_layout.tsx`; both bands → `CornerFrame` with the chips/switch as `bandChildren`. The `Switch`'s `thumbColor={colors.hero}` and streak/badge colours follow the hook. |
 | Games `app/play/*` | inline band in `index.tsx`, `ACCENT`/`ACCENT_FILL` at module scope | `_layout.tsx`; hub band → `CornerFrame`; the two module constants become `colors.*` reads. The per-game card colours (`GAMES[].color`) and `GameShell`'s per-game band stay as they are: the game decides its own colour once inside. |
 
