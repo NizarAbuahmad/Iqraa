@@ -1589,36 +1589,46 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
-## Each corner has its own colour and band, 2026-10-21 (PR 1 of 2)
+## Each corner has its own colour and band, 2026-10-21
 
 **What changed.** The Math Corner is indigo with graph paper, the Lab violet
 with a hexagon lattice, the Quran corner deep green with eight-point stars and
 a gold hairline — band, icon tints, chips and buttons — on top of the shared
-cards, type and spacing. The library's corner tiles show each corner's colour.
+cards, type and spacing. Since PR 2 the English corner is coral with speech
+bubbles and the games hub magenta with confetti; each game keeps its own band and accent
+once opened (its shared secondary buttons take the hub's magenta tint). The library's corner tiles show each corner's colour.
 At desktop width a hub's cards sit in up to three columns under a band whose
 title aligns with them. Design:
-`docs/superpowers/specs/2026-10-21-corner-identities-design.md`; plan:
-`docs/superpowers/plans/2026-10-21-corner-identities-pr1.md`.
+`docs/superpowers/specs/2026-10-21-corner-identities-design.md`; plans:
+`docs/superpowers/plans/2026-10-21-corner-identities-pr1.md` and
+`docs/superpowers/plans/2026-10-21-corner-identities-pr2.md`.
 
 **How.** `constants/corners.ts` is the one table (light + dark tokens, motif,
 glyph); `context/CornerTheme.tsx` is mounted by each corner directory's
 `_layout.tsx`; `hooks/useColors.ts` spreads the corner's tokens over the
 palette, so every component under it follows. `components/corners/CornerFrame`
-replaced `MathFrame` and `LabFrame`, which re-export it until PR 2 deletes
-them. `cornerTheme.test.ts` measures every token pair, and the band's subtitle on its hero, at ≥ 4.5:1 in both schemes and
-pins the structure: a wired corner has a provider layout, nothing else does,
-and no corner code imports the global `palette`. `e2e/screens.mjs`
-screenshots the corners and the library on the built web bundle (phone and
+replaced `MathFrame` and `LabFrame`; PR 2 removed those two shims, so
+`CornerFrame` is the only frame. `cornerTheme.test.ts` measures every token
+pair, and the band's subtitle on its hero, at ≥ 4.5:1 in both schemes and pins
+the structure: every corner has a provider layout (`WIRED` is `CORNER_IDS`),
+nothing else does, and no file in a corner's route directory or in
+`components/{math,lab,quran,corners,englishHub,publicGames}` imports the global
+`palette`. `e2e/screens.mjs` screenshots the corners and the library on the built web bundle (phone and
 desktop, light and dark) for a human to look at — see `e2e/README-screens.md`.
 
-**Not yet.** English corner and games (PR 2), which still open teal; the
-browser's English banner; `app/play/index.tsx` still holds module-scope
-palette constants, which is why `WIRED` in the test lists three corners.
-Dark-mode secondaries were measured by the test, not by eye on a device. The
-grapher's plotted curves stay teal on purpose: they take the shared
+**Not yet.** Dark-mode secondaries were measured by the test, not by eye on a
+device. The grapher's plotted curves stay teal on purpose: they take the shared
 data-series palette (`seriesColor`) that the slide export prints, so a graph
 looks the same in the grapher and on its slide; the controls around them are
-indigo.
+indigo. The bubbles and confetti tiles are 170px tall on a band about 104px
+tall, so their lower part is clipped; that is decorative and deliberate, the
+same as the math wave.
+
+Text on a primary fill must be `primaryForeground`: the English corner and its
+activities used white, which a corner's light dark-mode primary cannot carry;
+`cornerTheme.test.ts` now fails white `primaryText` and white selected-chip text
+there. Other screens outside the corners still carry the same white-on-teal pair
+in dark mode — not fixed here.
 
 ## One question-type order, one set of repeat-rule inputs, 2026-10-18
 
