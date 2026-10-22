@@ -582,5 +582,9 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   shares `useTodayLesson()` with the desktop workspace — change the lesson
   logic there, never in one layout; tab visibility and the lesson-bar rule live
   in `services/tabVisibility.ts`.
+  Progress is celebrated by `Celebrate` (`components/ui/Celebrate.tsx`) at four
+  moments only — exam handed in, game over, last homework ticked, prep checklist
+  all ready — and only on the crossing (`justCompleted` in
+  `services/celebration.ts`), never on opening a screen that is already done.
   **Amber (`palette.live`) means *now*** (start class, due today, live) and
   nothing else.

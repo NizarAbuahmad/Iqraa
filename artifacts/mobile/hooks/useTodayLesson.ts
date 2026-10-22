@@ -10,7 +10,7 @@
  * a worksheet leaves Today and comes back, and a board that still says
  * "missing" is worse than none.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useLanguage } from '@/context/LanguageContext';
@@ -35,6 +35,7 @@ import { buildClassDeck } from '@/services/startClass';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { WORKFLOW, type ToolDef } from '@/services/toolCatalog';
 import { trackEvent } from '@/services/analytics';
+import { justCompleted, type Progress } from '@/services/celebration';
 
 export type TodayLesson = {
   /** '' when there is no lesson. */
@@ -50,6 +51,10 @@ export type TodayLesson = {
   classes: ClassGroup[];
   board: PrepRow[];
   summary: { done: number; total: number };
+  /** True after the checklist for the shown lesson crossed into all-ready on screen; never on opening it already complete. */
+  prepJustReady: boolean;
+  /** Called by the overlay's `onDone`. */
+  clearPrepJustReady: () => void;
   toggleSkip: (row: PrepRow) => void;
   gradeLabel: string;
   subjectLabel: string;
@@ -80,6 +85,9 @@ export function useTodayLesson(source: 'workspace' | 'today_phone'): TodayLesson
   const [classes, setClasses] = useState<ClassGroup[]>([]);
   const [startingClass, setStartingClass] = useState(false);
   const [startClassError, setStartClassError] = useState('');
+  // True once saved materials have been read successfully at least once: before
+  // that the board is empty, and the first real read must not look like progress.
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     loadLessonPick().then(setPick);
@@ -94,7 +102,14 @@ export function useTodayLesson(source: 'workspace' | 'today_phone'): TodayLesson
    * worse than no board.
    */
   const reload = useCallback(() => {
-    getAllItems().then(setMaterials).catch(() => {});
+    getAllItems()
+      .then(items => {
+        setMaterials(items);
+        setLoaded(true);
+      })
+      // A failed read is not "loaded": the board is still the empty one, and a
+      // later good read at 5/5 would otherwise look like a crossing.
+      .catch(() => {});
     listClasses().then(setClasses).catch(() => {});
     loadTimetable().then(tt => {
       setNext(tt?.next ?? null);
@@ -159,9 +174,16 @@ export function useTodayLesson(source: 'workspace' | 'today_phone'): TodayLesson
   // «غير مطلوب» choices for this lesson; reloaded whenever the lesson changes.
   const skipKey = prepLessonKey(topic, active?.lessonId);
   const [skips, setSkips] = useState<string[]>([]);
+  // Which lesson `skips` was read for: after a lesson change the old list is
+  // still on screen for a moment, and a board judged against it can flip.
+  const [skipsFor, setSkipsFor] = useState<string | null>(null);
   useEffect(() => {
     let live = true;
-    loadPrepSkips(skipKey).then(list => { if (live) setSkips(list); });
+    loadPrepSkips(skipKey).then(list => {
+      if (!live) return;
+      setSkips(list);
+      setSkipsFor(skipKey);
+    });
     return () => { live = false; };
   }, [skipKey]);
   const toggleSkip = useCallback((row: PrepRow) => {
@@ -173,6 +195,24 @@ export function useTodayLesson(source: 'workspace' | 'today_phone'): TodayLesson
     [materials, topic, active?.lessonId, skips],
   );
   const summary = prepSummary(board);
+
+  /*
+    «الدرس جاهز»: the checklist crossing into all-ready while the teacher is
+    here (generating the last item and coming back, or ticking «غير مطلوب» on
+    the last row). Judged only once materials and this lesson's skips have been
+    read, so opening Today at 5/5 is not a moment; `skipKey` is the subject, so
+    switching lesson cannot read as a crossing.
+  */
+  const prepComplete = summary.total > 0 && summary.done >= summary.total;
+  const prevPrep = useRef<Progress | null>(null);
+  const [prepJustReady, setPrepJustReady] = useState(false);
+  useEffect(() => {
+    if (!loaded || !topic || !skipKey || skipsFor !== skipKey) return;
+    const nextPrep = { key: skipKey, complete: prepComplete };
+    if (justCompleted(prevPrep.current, nextPrep)) setPrepJustReady(true);
+    prevPrep.current = nextPrep;
+  }, [loaded, topic, skipKey, skipsFor, prepComplete]);
+  const clearPrepJustReady = useCallback(() => setPrepJustReady(false), []);
 
   const grade = active?.gradeId ? getPickerGrades().find(g => g.id === active.gradeId) : undefined;
   const subject = active?.subjectId ? getPickerSubjects().find(s => s.id === active.subjectId) : undefined;
@@ -287,6 +327,8 @@ export function useTodayLesson(source: 'workspace' | 'today_phone'): TodayLesson
     classes,
     board,
     summary,
+    prepJustReady,
+    clearPrepJustReady,
     toggleSkip,
     gradeLabel,
     subjectLabel,

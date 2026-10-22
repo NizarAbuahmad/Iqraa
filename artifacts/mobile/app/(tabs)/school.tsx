@@ -36,6 +36,7 @@ import { getChildHomework, getMyHomework, setHomeworkDone } from '@/services/hom
 import { openResource } from '@/services/openResource';
 import {
   ammanToday,
+  allTrackedDone,
   applyDone,
   dueBadge,
   formatDueDate,
@@ -67,6 +68,8 @@ import { palette } from '@/constants/colors';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Celebrate } from '@/components/ui/Celebrate';
+import { justCompleted } from '@/services/celebration';
 
 const ACCENT = palette.primary;
 /** Minimum touch target for the tick box. */
@@ -92,6 +95,7 @@ export default function SchoolScreen() {
   // Ids whose save is in flight: the ref is the synchronous guard against a
   // double tap, the state only drives the dimmed look.
   const hwInFlight = useRef<Set<string>>(new Set());
+  const [celebrateHw, setCelebrateHw] = useState(false);
   const [hwSaving, setHwSaving] = useState<ReadonlySet<string>>(new Set());
 
   // Exams have their own list, error and sequence, like homework: one failing
@@ -172,11 +176,24 @@ export default function SchoolScreen() {
       setHwError('');
       // A load that started before this tap must not land on top of it.
       hwSeq.current++;
+      // The child's list as it stood before this tick, captured inside the
+      // updater: `homework` in this closure is stale (deps are `[t]`).
+      const seen: { before: FamilyHomework[] } = { before: [] };
       const patch = (fn: (items: FamilyHomework[]) => FamilyHomework[]) =>
-        setHomework(prev => prev && prev.map(k => (k.key === childKey ? { ...k, homework: fn(k.homework) } : k)));
+        setHomework(prev => prev && prev.map(k => {
+          if (k.key !== childKey) return k;
+          seen.before = k.homework;
+          return { ...k, homework: fn(k.homework) };
+        }));
       patch(items => applyDone(items, item.id, next));
       try {
         await setHomeworkDone(item.id, next);
+        // Only a tick that the server accepted, and only the one that finishes the list.
+        const was = seen.before;
+        if (next && justCompleted(
+          { key: childKey, complete: allTrackedDone(was) },
+          { key: childKey, complete: allTrackedDone(applyDone(was, item.id, true)) },
+        )) setCelebrateHw(true);
       } catch (e) {
         patch(items => items.map(h => (h.id === item.id ? item : h)));
         setHwError(apiErrorMessage(e, 'hwSaveFailed', t));
@@ -451,6 +468,7 @@ export default function SchoolScreen() {
           <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
         </Pressable>
       </ScrollView>
+      <Celebrate visible={celebrateHw} size="small" message={t('celebrateHomeworkAll')} onDone={() => setCelebrateHw(false)} />
     </View>
   );
 }

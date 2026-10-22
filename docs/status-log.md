@@ -14,6 +14,25 @@ Sections below are in the order they were written, not strictly by date.
 
 ---
 
+## Progress is celebrated — 2026-10-22
+
+- **Four moments, only on the crossing.** `Celebrate` (`components/ui/Celebrate.tsx`)
+  marks an exam handed in, a game over, the last homework ticked and a lesson's prep
+  checklist reaching all ready. Each fires only when the state crosses into done
+  (`justCompleted`, `services/celebration.ts`), never on opening a screen that is already
+  complete: Today opened at 5 of 5, a switch to a lesson that is already ready, or a
+  reloaded finished homework list is not a moment. Homework celebrates after the save
+  succeeds and only for a tick, not an untick; the prep checklist is judged only once
+  saved materials and the lesson's «غير مطلوب» choices have loaded, and per lesson.
+- **How it looks.** A confetti burst, a badge, a success haptic and a screen-reader
+  announcement; with reduced motion only the badge fades. The badge sits in the upper
+  third so it never covers the next action, and a non-perfect game end is confetti only
+  (the game's own panel already says «أحسنت!»).
+- **The classroom presentation keeps its own celebration**; it is not touched.
+- **Verified:** `pnpm test` (mobile) and `pnpm run typecheck`; `celebrateMoments.test.ts`
+  pins that each of the four screens mounts `Celebrate` and decides with `justCompleted`.
+- **Not verified:** the haptic and the screen-reader announcement on a device.
+
 ## Teachers' phones open on Today — 2026-10-22
 
 - **Today on phones.** A teacher on a phone now lands on Today instead of the

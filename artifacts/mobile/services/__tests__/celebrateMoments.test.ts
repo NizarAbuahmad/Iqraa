@@ -34,3 +34,21 @@ test('a finished game is celebrated, louder for a perfect score', () => {
   assert.match(read('components', 'publicGames', 'TriviaGame.tsx'), /perfect:/);
   assert.match(read('components', 'publicGames', 'MathDrillGame.tsx'), /perfect:/);
 });
+
+test('ticking off the last homework is celebrated, after the save succeeds', () => {
+  const src = read('app', '(tabs)', 'school.tsx');
+  assert.match(src, /<Celebrate\b/);
+  assert.match(src, /allTrackedDone\(/);
+  assert.match(src, /celebrateHomeworkAll/);
+});
+
+test('a prep checklist reaching all ready is celebrated, on the phone and on desktop', () => {
+  const hook = read('hooks', 'useTodayLesson.ts');
+  assert.match(hook, /justCompleted\(/, 'the hook does not decide the crossing with justCompleted');
+  assert.match(hook, /prepJustReady/);
+  for (const f of [['components', 'today', 'PhoneToday.tsx'], ['app', '(tabs)', 'index.tsx']]) {
+    const src = read(...f);
+    assert.match(src, /<Celebrate\b/, `${f.join('/')} does not mount Celebrate`);
+    assert.match(src, /celebratePrepReady/, `${f.join('/')} does not say «الدرس جاهز»`);
+  }
+});
