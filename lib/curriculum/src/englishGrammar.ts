@@ -24,7 +24,7 @@ export type GrammarMarker = 'yes' | 'no' | 'boy' | 'girl' | 'many';
 
 export interface GrammarPattern {
   id: string;
-  /** `{slot}` bare, `{a:slot}` with a/an, `{s:slot}` plural, `{v:slot}` a verb phrase split into tiles, `{3:slot}` its third-person form, `{ing:slot}` its -ing form. */
+  /** `{slot}` bare, `{a:slot}` with a/an, `{s:slot}` plural, `{v:slot}` a verb phrase split into tiles, `{3:slot}` its third-person form, `{ing:slot}` its -ing form, `{cmp:slot}` / `{sup:slot}` an adjective's comparative / superlative, `{ed:slot}` a verb's past. */
   text: string;
   /** Explicit slot values for this pattern instead of every combination of its slots (a routine with its time, an animal with its ability). */
   rows?: Record<string, string>[];
@@ -180,6 +180,46 @@ export function presentParticiple(phrase: string): string {
   return inflectFirst(phrase, ingWord);
 }
 
+// ─── Adjective and past forms (Grade 4) ───────────────────────────────────
+
+/** The comparative and superlative of every adjective a Grade 4 pattern compares, written out: a rule would guess `quieter` against `more quiet`. */
+export const ADJECTIVE_FORMS: Record<string, [string, string]> = {
+  high: ['higher', 'highest'], deep: ['deeper', 'deepest'], wide: ['wider', 'widest'],
+  beautiful: ['more beautiful', 'most beautiful'], boring: ['more boring', 'most boring'],
+  colourful: ['more colourful', 'most colourful'], dangerous: ['more dangerous', 'most dangerous'],
+  delicious: ['more delicious', 'most delicious'], difficult: ['more difficult', 'most difficult'],
+  exciting: ['more exciting', 'most exciting'], interesting: ['more interesting', 'most interesting'],
+};
+
+export function comparativeOf(adj: string): string {
+  const forms = ADJECTIVE_FORMS[adj];
+  if (!forms) throw new Error(`no comparative for «${adj}»: add it to ADJECTIVE_FORMS`);
+  return forms[0];
+}
+
+export function superlativeOf(adj: string): string {
+  const forms = ADJECTIVE_FORMS[adj];
+  if (!forms) throw new Error(`no superlative for «${adj}»: add it to ADJECTIVE_FORMS`);
+  return forms[1];
+}
+
+/** Irregular and doubled past forms. A regular verb the rule below gets right is not listed. */
+export const PAST_OVERRIDES: Record<string, string> = {
+  stop: 'stopped', wear: 'wore', see: 'saw', get: 'got', go: 'went', eat: 'ate', have: 'had', give: 'gave', make: 'made', buy: 'bought',
+};
+
+function pastWord(word: string): string {
+  if (PAST_OVERRIDES[word]) return PAST_OVERRIDES[word];
+  if (/e$/.test(word)) return `${word}d`;
+  if (/[^aeiou]y$/.test(word)) return `${word.slice(0, -1)}ied`;
+  return `${word}ed`;
+}
+
+/** «visit the museum» → «visited the museum». The first word is the verb. */
+export function pastTense(phrase: string): string {
+  return inflectFirst(phrase, pastWord);
+}
+
 // ─── The data ─────────────────────────────────────────────────────────────
 
 const HAVE: GrammarPattern[] = [
@@ -331,7 +371,7 @@ export function offeredGrammar(lessonId: string): GrammarSentence[] | null {
 
 // ─── Realising a pattern ──────────────────────────────────────────────────
 
-const SLOT = /\{(?:(a|s|v|3|ing):)?([A-Za-z0-9]+)\}/g;
+const SLOT = /\{(?:(a|s|v|3|ing|cmp|sup|ed):)?([A-Za-z0-9]+)\}/g;
 
 interface Realised {
   tokens: string[];
@@ -361,6 +401,9 @@ function realise(text: string, fill: Record<string, string>): Realised {
     else if (form === 'v') tokens.push(...word.split(' '));
     else if (form === '3') tokens.push(...thirdPerson(word).split(' '));
     else if (form === 'ing') tokens.push(...presentParticiple(word).split(' '));
+    else if (form === 'cmp') tokens.push(...comparativeOf(word).split(' '));
+    else if (form === 'sup') tokens.push(...superlativeOf(word).split(' '));
+    else if (form === 'ed') tokens.push(...pastTense(word).split(' '));
     else {
       const article = form === 'a' ? articleFor(word) : null;
       if (article) tokens.push(article);

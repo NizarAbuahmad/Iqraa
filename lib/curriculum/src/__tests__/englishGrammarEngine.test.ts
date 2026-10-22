@@ -6,7 +6,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  allGrammarSpoken, buildCap, grammarUnitsForGrade, pluralOf, presentParticiple, thirdPerson, unitGrade, unitSentences, withArticle, type GrammarUnit,
+  allGrammarSpoken, buildCap, comparativeOf, grammarUnitsForGrade, pastTense, pluralOf, presentParticiple, superlativeOf, thirdPerson, unitGrade, unitSentences,
+  withArticle, type GrammarUnit,
 } from '../englishGrammar.ts';
 
 test('Grade 2 word forms: irregular plurals, words with no article, a/an', () => {
@@ -226,4 +227,31 @@ test('every spoken string of a Build prompt is listed', () => {
   for (const s of grammarUnitsForGrade(2).flatMap(u => unitSentences(u))) {
     if (s.build?.prompt) assert.ok(all.has(s.build.prompt), s.build.prompt);
   }
+});
+
+test('comparatives and superlatives come from the explicit adjective table', () => {
+  assert.equal(comparativeOf('high'), 'higher');
+  assert.equal(superlativeOf('high'), 'highest');
+  assert.equal(comparativeOf('wide'), 'wider');
+  assert.equal(superlativeOf('deep'), 'deepest');
+  assert.equal(comparativeOf('exciting'), 'more exciting');
+  assert.equal(superlativeOf('dangerous'), 'most dangerous');
+  assert.throws(() => comparativeOf('purple'), /no comparative/);
+});
+
+test('past tense: +ed, +d after e, doubling and irregulars by table, the verb is the first word', () => {
+  assert.equal(pastTense('visit'), 'visited');
+  assert.equal(pastTense('use'), 'used');
+  assert.equal(pastTense('arrive'), 'arrived');
+  assert.equal(pastTense('live'), 'lived');
+  assert.equal(pastTense('stop'), 'stopped');
+  assert.equal(pastTense('need'), 'needed');
+  assert.equal(pastTense('work'), 'worked');
+  assert.equal(pastTense('start'), 'started');
+  assert.equal(pastTense('wear'), 'wore');
+  assert.equal(pastTense('see'), 'saw');
+  assert.equal(pastTense('get'), 'got');
+  assert.equal(pastTense('go'), 'went');
+  assert.equal(pastTense('carry'), 'carried');
+  assert.equal(pastTense('visit the museum'), 'visited the museum');
 });
