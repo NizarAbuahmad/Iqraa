@@ -8,9 +8,9 @@
  * cancelling the whole series. Rescheduling one shot at a time — call
  * `syncDailyReminder` whenever the hub screen is focused — means the next
  * reminder is always set (or skipped) against today's real progress, at the
- * cost of only correcting itself when the app is actually opened. That
- * trade-off is stated, not hidden: a student who never reopens the app before
- * the reminder hour keeps getting reminded on the schedule set last time they did.
+ * cost of only correcting itself when the app is actually opened. A day already
+ * practised books tomorrow's reminder, so one is always pending; a student who
+ * never reopens the app gets one reminder, then none until they come back.
  *
  * Web is a no-op, same as `pushTokens.ts` — expo-notifications' web path needs
  * its own service-worker setup this app doesn't have.
@@ -35,11 +35,15 @@ async function cancelPending(): Promise<void> {
   await AsyncStorage.removeItem(SCHEDULED_ID_KEY);
 }
 
-/** Today at `REMINDER_HOUR`, or tomorrow if that time has already passed. */
-function nextReminderTime(now: Date): Date {
+/**
+ * Today at `REMINDER_HOUR`, or tomorrow if that time has already passed or
+ * today's goal is already met — so a student who practised and then doesn't
+ * reopen the app is still reminded tomorrow.
+ */
+export function nextReminderTime(now: Date, practicedToday: boolean): Date {
   const at = new Date(now);
   at.setHours(REMINDER_HOUR, 0, 0, 0);
-  if (at.getTime() <= now.getTime()) at.setDate(at.getDate() + 1);
+  if (practicedToday || at.getTime() <= now.getTime()) at.setDate(at.getDate() + 1);
   return at;
 }
 
@@ -72,7 +76,6 @@ export async function syncDailyReminder(title: string, body: string, practicedTo
   if (Platform.OS === 'web') return;
   if (!(await isReminderEnabled())) return;
   await cancelPending();
-  if (practicedToday) return; // today's goal is met — nothing to remind about until tomorrow's focus.
   try {
     const id = await Notifications.scheduleNotificationAsync({
       content: { title, body },
@@ -80,7 +83,7 @@ export async function syncDailyReminder(title: string, body: string, practicedTo
       // without muting messages; ignored on iOS.
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
-        date: nextReminderTime(new Date()),
+        date: nextReminderTime(new Date(), practicedToday),
         channelId: 'reminders',
       },
     });
