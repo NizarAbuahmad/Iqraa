@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { isTabActive } from '@/services/tabRoute';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
@@ -1426,6 +1427,13 @@ export default function IqraScreen() {
     askId?: string;
     /** Nonce from the tab bar's GlobalLessonBar — see askId above for why. */
     openLessonPicker?: string;
+    /**
+     * Where the opener wants the teacher back once the picker closes (picked
+     * or dismissed). Today and the lesson bar set it: the chat is not in the
+     * phone tab bar, so without it a teacher who only wanted to change the
+     * lesson is left in a chat with no tab highlighted.
+     */
+    returnTo?: string;
   }>();
 
   const mode: Mode = 'teacher';
@@ -1475,6 +1483,15 @@ export default function IqraScreen() {
   const [startingClass, setStartingClass] = useState(false);
   const [startClassError, setStartClassError] = useState('');
   const [changeLessonOpen, setChangeLessonOpen] = useState(false);
+  /** Set only while a picker opened by the `openLessonPicker` param is up; an in-chat open leaves it null. */
+  const pickerReturnTo = useRef<string | null>(null);
+  const onPickerOpenChange = useCallback((open: boolean) => {
+    setChangeLessonOpen(open);
+    const to = pickerReturnTo.current;
+    if (open || !to) return;
+    pickerReturnTo.current = null; // consumed: a later in-chat open must not bounce
+    router.navigate(to as never);
+  }, []);
   const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
   /**
    * The message whose material is on the canvas, or null for a plain thread.
@@ -1951,7 +1968,13 @@ export default function IqraScreen() {
   // The tab bar's GlobalLessonBar lives outside this screen and has no direct
   // handle on changeLessonOpen — it navigates here with a nonce instead.
   useEffect(() => {
-    if (params.openLessonPicker) setChangeLessonOpen(true);
+    if (!params.openLessonPicker) return;
+    // Only a same-app path, and never the chat itself (that would be a loop).
+    const to = params.returnTo;
+    pickerReturnTo.current =
+      to && to.startsWith('/') && !to.startsWith('//') && !isTabActive(to, 'iqra') ? to : null;
+    setChangeLessonOpen(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the nonce; returnTo rides with it
   }, [params.openLessonPicker]);
 
   const sendMessage = useCallback(
@@ -3779,7 +3802,7 @@ export default function IqraScreen() {
           currentTopic={teachingCtx}
           hidePill
           externalOpen={changeLessonOpen}
-          onExternalOpenChange={setChangeLessonOpen}
+          onExternalOpenChange={onPickerOpenChange}
           onGlobalPick={(pick) => {
             // Changing the lesson in chat updates the app-wide context too —
             // home and the tools hub follow (one source of truth).

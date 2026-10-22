@@ -10,9 +10,9 @@
  * (see `showLessonBar`). Amber (`palette.live`) is only on Start class: it
  * means "now".
  */
-import React, { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { router } from 'expo-router';
+import React, { useCallback, useState } from 'react';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
@@ -53,6 +53,14 @@ export function PhoneToday() {
     openLessonPicker,
   } = today;
 
+  // The navy band sits under the status bar: light icons while Today is
+  // showing, the default again on any other screen. (No-op on web.)
+  useFocusEffect(useCallback(() => {
+    if (Platform.OS === 'web') return;
+    StatusBar.setBarStyle('light-content');
+    return () => StatusBar.setBarStyle('default');
+  }, []));
+
   const [draft, setDraft] = useState('');
   const sendDraft = () => {
     today.ask(draft);
@@ -69,6 +77,8 @@ export function PhoneToday() {
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{ paddingBottom: 120 }}
       showsVerticalScrollIndicator={false}
+      // Without this a tap on send or a suggestion only closes the keyboard.
+      keyboardShouldPersistTaps="handled"
     >
       <Band
         color={colors.ink}
@@ -287,10 +297,13 @@ export function PhoneToday() {
                 placeholderTextColor={colors.mutedForeground}
                 style={[s.composerInput, { color: colors.foreground, textAlign: align }]}
                 accessibilityLabel={t('homeAskPlaceholder')}
+                returnKeyType="send"
               />
               <PressableScale
                 onPress={sendDraft}
                 disabled={!draft.trim()}
+                accessibilityLabel={t('iqraSend')}
+                hitSlop={8}
                 style={[s.send, { backgroundColor: draft.trim() ? colors.primary : colors.muted }]}
               >
                 <Ionicons

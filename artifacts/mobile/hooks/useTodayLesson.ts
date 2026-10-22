@@ -5,9 +5,10 @@
  * Today (components/today/PhoneToday.tsx) reads the same logic: two layouts
  * over one hook can never name two different lessons.
  *
- * Reloads saved materials, classes and the timetable on mount, on screen focus
- * (native) and on window focus (web): generating a worksheet leaves Today and
- * comes back, and a board that still says "missing" is worse than none.
+ * Reloads saved materials, classes and the timetable on mount and on every
+ * screen focus (one `useFocusEffect`), and on window focus (web): generating
+ * a worksheet leaves Today and comes back, and a board that still says
+ * "missing" is worse than none.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Platform } from 'react-native';
@@ -101,13 +102,16 @@ export function useTodayLesson(source: 'workspace' | 'today_phone'): TodayLesson
     });
     wasSetupNudgeDismissed().then(setNudgeDismissed);
   }, []);
+  // Web: the browser window regaining focus (a tab switch back) is not a
+  // navigation event, so it needs its own listener.
   useEffect(() => {
-    reload();
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
     window.addEventListener('focus', reload);
     return () => window.removeEventListener('focus', reload);
   }, [reload]);
-  // Native has no `window.focus`: coming back to the screen is the signal.
+  // The one load on mount AND on every return to the screen, native and web:
+  // expo-router's useFocusEffect runs its effect at once when the screen is
+  // already focused, so a separate mount `reload()` would load everything twice.
   useFocusEffect(useCallback(() => { reload(); }, [reload]));
 
   /*
@@ -195,7 +199,9 @@ export function useTodayLesson(source: 'workspace' | 'today_phone'): TodayLesson
   }, [active?.lessonId, active?.gradeId, active?.subjectId, topic, lang]);
 
   const openLessonPicker = useCallback(() => {
-    router.push({ pathname: '/iqra', params: { openLessonPicker: String(Date.now()) } });
+    // `returnTo`: the picker lives in the chat tab, which is not in the phone
+    // tab bar — the chat sends the teacher back here once it closes.
+    router.push({ pathname: '/iqra', params: { openLessonPicker: String(Date.now()), returnTo: '/' } });
   }, []);
 
   const handleStartClass = useCallback(async () => {

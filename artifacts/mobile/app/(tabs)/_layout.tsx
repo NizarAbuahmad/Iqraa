@@ -325,7 +325,7 @@ function ClassicTabLayout() {
     isRTL,
     colors,
     t,
-    onPress: () => router.push({ pathname: '/iqra', params: { openLessonPicker: String(Date.now()) } }),
+    onPress: () => router.push({ pathname: '/iqra', params: { openLessonPicker: String(Date.now()), returnTo: pathname } }),
   };
   // Not shown to a parent/student: they have no lesson context to switch, and
   // the two tabs it would drive them toward (iQra, AI Tools) are hidden for
@@ -342,7 +342,7 @@ function ClassicTabLayout() {
       colors={colors}
       topInset={isDesktop ? 0 : insets.top}
       t={t}
-      onPress={() => router.push({ pathname: '/iqra', params: { openLessonPicker: String(Date.now()) } })}
+      onPress={() => router.push({ pathname: '/iqra', params: { openLessonPicker: String(Date.now()), returnTo: pathname } })}
     />
   ) : null;
 
