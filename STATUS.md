@@ -1589,6 +1589,71 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Each corner has its own colour and band, 2026-10-21
+
+**What changed.** The Math Corner is indigo with graph paper, the Lab violet
+with a hexagon lattice, the Quran corner deep green with eight-point stars and
+a gold hairline — band, icon tints, chips and buttons — on top of the shared
+cards, type and spacing. Since PR 2 the English corner is coral with speech
+bubbles and the games hub magenta with confetti; each game keeps its own band and accent
+once opened (its shared secondary buttons take the hub's magenta tint). The library's corner tiles show each corner's colour.
+At desktop width a hub's cards sit in up to three columns under a band whose
+title aligns with them. Design:
+`docs/superpowers/specs/2026-10-21-corner-identities-design.md`; plans:
+`docs/superpowers/plans/2026-10-21-corner-identities-pr1.md` and
+`docs/superpowers/plans/2026-10-21-corner-identities-pr2.md`.
+
+**How.** `constants/corners.ts` is the one table (light + dark tokens, motif,
+glyph); `context/CornerTheme.tsx` is mounted by each corner directory's
+`_layout.tsx`; `hooks/useColors.ts` spreads the corner's tokens over the
+palette, so every component under it follows. `components/corners/CornerFrame`
+replaced `MathFrame` and `LabFrame`; PR 2 removed those two shims, so
+`CornerFrame` is the only frame. `cornerTheme.test.ts` measures every token
+pair, and the band's subtitle on its hero, at ≥ 4.5:1 in both schemes and pins
+the structure: every corner has a provider layout (`WIRED` is `CORNER_IDS`),
+nothing else does, and no file in a corner's route directory or in
+`components/{math,lab,quran,corners,englishHub,publicGames}` imports the global
+`palette`. `e2e/screens.mjs` screenshots the corners and the library on the built web bundle (phone and
+desktop, light and dark) for a human to look at — see `e2e/README-screens.md`.
+
+**Not yet.** Dark-mode secondaries were measured by the test, not by eye on a
+device. The grapher's plotted curves stay teal on purpose: they take the shared
+data-series palette (`seriesColor`) that the slide export prints, so a graph
+looks the same in the grapher and on its slide; the controls around them are
+indigo. The bubbles and confetti tiles are 170px tall on a band about 104px
+tall, so their lower part is clipped; that is decorative and deliberate, the
+same as the math wave.
+
+Text on a primary fill must be `primaryForeground`: the English corner and its
+activities used white, which a corner's light dark-mode primary cannot carry;
+`cornerTheme.test.ts` now fails white `primaryText` and white selected-chip text
+there. Other screens outside the corners still carry the same white-on-teal pair
+in dark mode — not fixed here.
+
+## Cards lift, presses give, screens arrive — 2026-10-21
+
+The second half of the "dull, everything looks the same" feedback.
+
+- **Shared pieces** in `components/ui`:
+  - `useSurface()`/`Surface`: a soft shadow in light mode, a 1px border in
+    dark mode, radius 16.
+  - `PressableScale`: springs to 0.97 while held, with a focus ring on web.
+  - `Entrance`: fades in and rises 8px over 220ms, staggered 40ms, capped at
+    the 6th item.
+  - `Band`: the hero colour deepening 18% on a diagonal, with a soft shadow.
+  - All of it honours reduce motion (`useReduceMotion`).
+- **Where they are used:**
+  - The corner bands are now `Band`, and every corner hub's cards are lifted
+    and enter in turn.
+  - The library's front-row tiles (`components/library/LibraryTile.tsx`)
+    wear their corner's strip and pattern; the curriculum and «my exams»
+    tiles wear the brand teal and a new `leaf` motif.
+  - The library and Profile headers are leaf `Band`s.
+- **Not moved yet:** the other ~150 bordered cards move when their screens
+  are touched. `designScale.test.ts` stops hand-written shadows from growing
+  meanwhile.
+- **Next:** the phone Today screen (PR 4).
+
 ## One question-type order, one set of repeat-rule inputs, 2026-10-18
 
 The order a ministry paper puts its question types in was written out by hand in
@@ -2504,8 +2569,8 @@ as something else; circles belong to the sketchpad.
   −1…1, which no equal-aspect view can, so the «sin» button switches to a
   degree- or radian-axis view and the «1:1» button goes back. Degree ticks fall
   on 15°/30°/45°/90°.
-- **A canvas inside a ScrollView needs a scroll lock.** `MathFrame` is
-  `LabFrame` plus a context: the grapher locks the page while a finger is on
+- **A canvas inside a ScrollView needs a scroll lock.** The Math and Lab frames are now
+  one `CornerFrame` (`components/corners/CornerFrame.tsx`), which also holds the scroll lock: the grapher locks the page while a finger is on
   the canvas. Verified: dragging the canvas leaves `scrollTop` unchanged.
 - **The mouse wheel was silently dead in the first build.** The canvas mounts
   only after its first layout and the wheel listener was attached once at mount,
@@ -4628,6 +4693,55 @@ shuffle of question order (blocks in the ministry order), no list of archived cl
 and no restore. Not done because the code does not settle it: adding a co-teacher.
 Still open: long-press export on the «أيّ مادة تقصد؟» clarification.
 
+**Slides, worksheets, verification and the books (2026-10-21, twelfth live pass).**
+Of 30 questions, 7 were fine (teaching) and 23 went to the model, which gave generic
+"depends on your program" steps or asked for a subject. Each was checked in code. The
+deck after «جهّز الشرائح» is a list with a pencil (title, content, answer, picture from
+the device, a suggested picture or a link, the video link) and a bin per slide, plus
+«مظهر العرض»; there is no way to add a slide, reorder them, or type teacher notes
+(generated notes go to the PPTX notes pane). A generated plan is edited by tapping an
+item (the existing `faqA5`). A worksheet's answers toggle with «إظهار/إخفاء الإجابات»
+and export as «نسخة الطالب» or «نسخة المعلم»; export adds no logo, name or name-and-date
+line (use Word). «مستوى الاختبار» / «مستوى الصعوبة» set difficulty. «تم التحقق من
+الإجابة رياضيًا (SymPy)» means a symbolic verifier solved it independently; its
+absence means nobody checked. A remedial worksheet comes from «مجموعات الدعم» after an
+exam, or from the worksheet tool at «عادي». The book, teacher guide and activity book
+are chips on the curriculum's subject page. A daily generation limit is answered with
+`howPricing` (the cap is monthly). Not done because the code does not settle them: the
+language of a worksheet, and past-year questions. Still open: long-press export on the
+«أيّ مادة تقصد؟» clarification.
+
+**Account, classes, exams and games (2026-10-21, thirteenth live pass).**
+Of 30 questions, 10 were right, 5 were teaching controls, 14 got a refusal or generic
+advice and 1 («كيف أشارك كود الشعبة مع الطلبة؟») got the *create-a-class* steps. All
+15 were checked in code first. Answered now: the profile photo (tap the round picture or
+the camera badge; red × removes it); a phone number (the app neither asks for nor keeps
+one); a mark on homework (none — only the «أنجزه … من …» count; make it an evaluation
+for a mark); a QR code for an evaluation (none — «رابط الطلبة» has a short code and a
+link; the only QR is the lab link in an export); reminding parents of an exam (saving the
+date on a published, class-attached exam pushes linked parents and students, a draft or
+classless exam sends nothing — `announceExamDate`); copying a class (not possible);
+the games list and the English Corner (two entrances); quick quiz vs evaluation (the quiz
+is export-only). The existing steps now also answer the wordings that missed them:
+«أضبط الإشعارات», moving a student «من شعبة إلى أخرى», who opened an exam, «كود الشعبة»,
+the exam link «عبر واتساب», «ملاحظات أو اقتراحات للتطبيق». Left with the model, not
+verified in code: sorting the class list by grade. «كيف أبلغ الطلاب بموعد الامتحان؟» stays
+a teaching question (announcing in class); only the parents' wording is app help.
+
+**Families, lesson-plan options, schedule and email (2026-10-22, fourteenth live pass).**
+Of 30 questions, 11 were right (4 of them teaching controls) and 19 went to the model or
+got a bare place list. Eight already had answers that the wording missed: student login,
+searching a lesson, the lesson videos, adding a timetable slot, blocking a user,
+a parent group chat. The rest were checked in code and are new: a parent sees homework
+under «المدرسة» and results under «نتائج أبنائي»; a lost login code is re-issued by the
+teacher (nothing recovers it in the app); linking a parent to a child is the link code
+(sign-up, or «الانضمام إلى شعبة أخرى»); the lesson plan's duration (30/45/60/90), teaching
+style and objectives (under «خيارات إضافية»); material language follows the app language
+(the English subject is always English — `contentLang`); no email sending (export →
+«مشاركة»); emptying a timetable slot vs deleting the period; a verified account's email
+cannot be changed (only before verifying, `/change-unverified-email`); verifying it.
+Left with the model: nothing from this pass that the code settles.
+
 ## A worksheet can be sent to a class as a digital assignment, 2026-10-09
 
 Step 4 of the worksheet review, agreed in chat. A worksheet was paper only: to
@@ -5140,6 +5254,25 @@ picture.
   5 Arabic S2 (3/25) and parts of Grade 8/9 digital and civic did not map.
 - Bucket: pages are in `iqraa-public/book-pages/`; the app shows nothing new until
   the OTA ships.
+
+## Book-picture slides no longer share one title, 2026-10-22
+
+A deck read as the same slide repeated once book images came in: every figure was a
+slide titled «من كتاب الطالب». Measured over every KB lesson, 1,213 of 3,318 lesson
+decks had a run of them. (The whole-book revision deck had the same symptom through a
+different shape — five slides per unit; #1160 cut that to three, with the pictures
+beside the outcomes and terms, so it needs nothing here.)
+
+- **Fixed:** `numberedBookTitles` numbers several figures «من كتاب الطالب (١)», «(٢)»…
+  (a lone figure stays bare) in `buildLessonDeck` and in `classDeck.ts`
+  (quiz/worksheet/game decks); `bookPageSlides` titles each page «من كتاب الطالب — صفحة ٢٥».
+  `lessonSlides.test.ts` fails if any lesson deck repeats a book-picture title.
+- **Left:** 27 lesson decks where a concept slide is titled like the lesson itself (cover
+  «قانون الجيوب» and its rule slide) and 5 chemistry decks with two «💡 أفكار الدرس» slides.
+- **Not reproduced:** a player screenshot showing the agenda slide at 27/53 of a
+  whole-book deck. The player reads `slides[slideIndex]` for both counter and content, so
+  the code cannot do this; it may have been a stale saved deck. Unconfirmed until
+  someone has the saved deck's link.
 
 ## Revision decks carry the book's own pictures and all its key terms, 2026-10-18
 

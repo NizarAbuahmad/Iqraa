@@ -8,6 +8,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
+import { scheme } from '@/constants/colors';
+import { CORNERS } from '@/constants/corners';
 import { useLanguage } from '@/context/LanguageContext';
 import { isStudentRole, isTeacherRole, useAuth } from '@/context/AuthContext';
 import {
@@ -242,7 +244,7 @@ export default function CurriculumBrowseScreen() {
                 onPress={() => router.push({ pathname: '/curriculum/english', params: { grade: String(selectedGrade.level) } } as never)}
                 style={({ pressed }) => [
                   styles.hubBanner,
-                  { backgroundColor: colors.hero, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.9 : 1 },
+                  { backgroundColor: CORNERS.english[scheme].hero, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.9 : 1 },
                 ]}
               >
                 <Text style={{ fontSize: 28 }}>🎧</Text>
