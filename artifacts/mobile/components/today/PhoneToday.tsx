@@ -7,8 +7,8 @@
  * It shares `useTodayLesson` with the desktop workspace (app/(tabs)/index.tsx),
  * so the two layouts can never name two different lessons; only the layout is
  * its own. It pays `insets.top` itself because Today has no lesson bar above it
- * (see `showLessonBar`). Amber (`palette.live`) is only on Start class and the
- * period-now pill: it means "now".
+ * (see `showLessonBar`). Amber (`palette.live`) is only on Start class: it
+ * means "now".
  */
 import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -195,9 +195,9 @@ export function PhoneToday() {
 
         {startClassError ? (
           <Entrance index={section++}>
-            <View style={[s.errorRow, { backgroundColor: START_CLASS_COLOR + '14', flexDirection: rowDir }]}>
-              <Ionicons name="alert-circle-outline" size={14} color={START_CLASS_COLOR} />
-              <Text style={[s.errorText, { color: START_CLASS_COLOR, textAlign: align }]}>{startClassError}</Text>
+            <View style={[s.errorRow, { backgroundColor: colors.destructive + '14', flexDirection: rowDir }]}>
+              <Ionicons name="alert-circle-outline" size={14} color={colors.destructive} />
+              <Text style={[s.errorText, { color: colors.destructive, textAlign: align }]}>{startClassError}</Text>
             </View>
           </Entrance>
         ) : null}

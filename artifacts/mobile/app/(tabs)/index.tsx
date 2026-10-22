@@ -215,9 +215,9 @@ function LessonWorkspace() {
             ) : null}
 
             {startClassError ? (
-              <View style={[s.errorRow, { backgroundColor: START_CLASS_COLOR + '14', flexDirection: rowDir }]}>
-                <Ionicons name="alert-circle-outline" size={14} color={START_CLASS_COLOR} />
-                <Text style={[s.errorText, { color: START_CLASS_COLOR, textAlign: align }]}>{startClassError}</Text>
+              <View style={[s.errorRow, { backgroundColor: colors.destructive + '14', flexDirection: rowDir }]}>
+                <Ionicons name="alert-circle-outline" size={14} color={colors.destructive} />
+                <Text style={[s.errorText, { color: colors.destructive, textAlign: align }]}>{startClassError}</Text>
               </View>
             ) : null}
 
