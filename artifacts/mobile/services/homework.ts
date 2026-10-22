@@ -423,6 +423,17 @@ export function applyDone(items: FamilyHomework[], id: string, done: boolean): F
   });
 }
 
+/**
+ * Whether every item that can be ticked is done: the moment School celebrates
+ * («أنجزت كل واجباتك»). An item nobody can tick (`canTrack: false`) neither
+ * holds it back nor counts toward it, and a list with nothing trackable is
+ * never "all done".
+ */
+export function allTrackedDone(items: FamilyHomework[]): boolean {
+  const tracked = items.filter(h => h.canTrack);
+  return tracked.length > 0 && tracked.every(h => h.done);
+}
+
 export function homeworkDraftError(d: { title: string; dueDate: string }): 'title' | 'dueDate' | null {
   if (d.title.trim() === '') return 'title';
   if (!isValidYmd(d.dueDate)) return 'dueDate';
