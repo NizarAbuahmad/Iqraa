@@ -1031,6 +1031,9 @@ const translations = {
 
     // ── Workspace home (desktop web) ──────────────────────────────
     tabToday: 'اليوم',
+    homeGreetMorning: (name: string) => (name ? `صباح الخير، ${name}` : 'صباح الخير'),
+    homeGreetAfternoon: (name: string) => (name ? `مساء الخير، ${name}` : 'مساء الخير'),
+    homeGreetEvening: (name: string) => (name ? `مساء الخير، ${name}` : 'مساء الخير'),
     homeReady: (done: number, total: number) => `${done} من ${total} جاهزة`,
     homePrepTitle: 'جاهزية الدرس',
     homePeriodNow: 'الحصة الآن',
@@ -4094,6 +4097,9 @@ const translations = {
 
     // ── Workspace home (desktop web) ──────────────────────────────
     tabToday: 'Today',
+    homeGreetMorning: (name: string) => (name ? `Good morning, ${name}` : 'Good morning'),
+    homeGreetAfternoon: (name: string) => (name ? `Good afternoon, ${name}` : 'Good afternoon'),
+    homeGreetEvening: (name: string) => (name ? `Good evening, ${name}` : 'Good evening'),
     homeReady: (done: number, total: number) => `${done} of ${total} ready`,
     homePrepTitle: 'Lesson readiness',
     homePeriodNow: 'In class now',

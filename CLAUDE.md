@@ -5,9 +5,17 @@ Arabic-native AI teaching assistant for the Jordanian national curriculum
 
 ## Read this first
 
-**[`STATUS.md`](./STATUS.md) is the single source of truth for project state.**
-Read it before acting. When something in it stops being true, edit it in the
-same PR that changed it.
+**[`STATUS.md`](./STATUS.md) is the single source of truth for what is true
+right now** — a short page (about 120 lines): production, how a change ships,
+what is open. Read it before acting. When a line in it stops being true, edit it
+in the same PR that changed it.
+
+The long form — what each change built, what was and was not verified, its known
+limits — is [`docs/status-log.md`](./docs/status-log.md) (20,000+ lines, the old
+`STATUS.md` kept word for word). **A PR adds its write-up to the TOP of the
+log**, not to `STATUS.md`. Anywhere you see «see STATUS.md «X»» — in code
+comments, workflows and design docs — it means the entry titled X in the log:
+search for the title there.
 
 Older audits live in `docs/archive/` — historical snapshots, do not act on them.
 `.agents/memory/` holds deeper notes: `iqra-architecture.md`,
@@ -101,9 +109,9 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   `x` and convert to `س` / Arabic digits **only at display time**.
 - `DEMO_MODE = true` in `artifacts/mobile/services/ai/demoMode.ts` mocks all
   prose generation. Do not flip the code default without a decision — see
-  STATUS.md. Every shipped build overrides it with `EXPO_PUBLIC_DEMO_MODE=false`:
-  Android (`eas.json`, `mobile-update.yml`) and, since 2026-10-16, the web
-  (`deploy.yml`).
+  STATUS.md («Production right now») and the log's «Strategy» section. Every
+  shipped build overrides it with `EXPO_PUBLIC_DEMO_MODE=false`: Android
+  (`eas.json`, `mobile-update.yml`) and, since 2026-10-16, the web (`deploy.yml`).
 
 ## Things that have bitten before
 
@@ -570,5 +578,9 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
     `cornerTheme.test.ts` measures white text on both stops.
   - `designScale.test.ts` counts hand-written `shadowColor`, so new depth
     comes from the tokens.
+  A teacher's phone lands on Today (`components/today/PhoneToday.tsx`), which
+  shares `useTodayLesson()` with the desktop workspace — change the lesson
+  logic there, never in one layout; tab visibility and the lesson-bar rule live
+  in `services/tabVisibility.ts`.
   **Amber (`palette.live`) means *now*** (start class, due today, live) and
   nothing else.
