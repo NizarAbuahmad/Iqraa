@@ -419,7 +419,8 @@ function slotList(unit: GrammarUnit, p: GrammarPattern, slot: string): string[] 
 
 export function unitSentences(unit: GrammarUnit): GrammarSentence[] {
   const out: GrammarSentence[] = [];
-  const cap = buildCap(hubLesson(unit.lessonId)!.grade);
+  const grade = hubLesson(unit.lessonId)!.grade;
+  const cap = buildCap(grade);
   for (const p of unit.patterns) {
     const slots = slotsIn(p.text);
     for (const fill of p.rows ?? fills(slots, unit.slots)) {
@@ -439,7 +440,11 @@ export function unitSentences(unit: GrammarUnit): GrammarSentence[] {
         const other = nextPictured(slotList(unit, p, c.slot), fill[c.slot]);
         if (other) {
           const span = spans[c.slot];
-          const wrong = spanText(realise(p.text, { ...fill, [c.slot]: other }).tokens, span);
+          const otherRealised = realise(p.text, { ...fill, [c.slot]: other });
+          // Grades 1–2 measured the other word with this word's span, so «boots» was offered against «a» (the
+          // article of «a coat»). Their forms are signed off as printed, so that stays until they are re-reviewed;
+          // Grade 3 measures the other word's own span («glasses» against «a dress»).
+          const wrong = spanText(otherRealised.tokens, grade >= 3 ? otherRealised.spans[c.slot] : span);
           choose = { kind: 'slot', start: span[0], length: span[1], right: spanText(tokens, span), wrong };
         }
       } else if (c?.kind === 'whole' && picture) {
@@ -558,9 +563,10 @@ export function renderGrammarSheet(grade = 1): string {
       const choose = s.choose ? `**${s.choose.right}** / ${s.choose.wrong}` : '—';
       const y = s.yesNo;
       const yesNoText = !y ? '—'
-        : y.kind === 'marker' ? `${y.question} → ${y.answer ? y.yes : y.no}`
+        : y.kind !== 'match' ? `${y.question} → ${y.answer ? y.yes : y.no}`
           : `${y.question} → ${y.yes}${y.otherQuestion ? `<br>${y.otherQuestion} → ${y.no}` : ''}`;
-      lines.push(`| ${s.text} | ${pic} | ${choose} | ${s.falsePicture ?? '—'} |${hasYesNo(unit) ? ` ${yesNoText} |` : ''}`);
+      const text = s.build?.prompt ? `${s.text} _(Build: ${s.build.text})_` : s.text;
+      lines.push(`| ${text} | ${pic} | ${choose} | ${s.falsePicture ?? '—'} |${hasYesNo(unit) ? ` ${yesNoText} |` : ''}`);
     }
     lines.push('');
   }

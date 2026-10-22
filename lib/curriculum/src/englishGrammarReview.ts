@@ -12,6 +12,7 @@
  */
 import { grammarUnitsForGrade, unitSentences, type GrammarSentence, type GrammarUnit } from './englishGrammar.ts';
 import { NOT_COVERED_G2 } from './englishGrammarG2.ts';
+import { NOT_COVERED_G3 } from './englishGrammarG3.ts';
 import { hubLesson, hubLessonsForGrade } from './englishHub.ts';
 import { wordPicture } from './englishPictures.ts';
 
@@ -33,7 +34,7 @@ const NOTES: Record<string, string> = {
 };
 
 /** Per grade: lesson id → why part of it is not covered (Grade 1 uses `NOTES` instead). */
-const NOT_COVERED: Record<number, Record<string, string[]>> = { 2: NOT_COVERED_G2 };
+const NOT_COVERED: Record<number, Record<string, string[]>> = { 2: NOT_COVERED_G2, 3: NOT_COVERED_G3 };
 
 /** Wraps each run of English in `dir="ltr"`, so a phrase with punctuation does not scramble inside an Arabic line. */
 export const ltr = (s: string) =>
@@ -43,7 +44,7 @@ function yesNoCell(s: GrammarSentence): string {
   const y = s.yesNo;
   if (!y) return '<span class="none">لا يظهر</span>';
   const line = (q: string, a: string, cls: string) => `<span class="yn ${cls}" dir="ltr">${esc(q)} → ${esc(a)}</span>`;
-  if (y.kind === 'marker') return line(y.question, y.answer ? y.yes : y.no, y.answer ? 'yn-yes' : 'yn-no');
+  if (y.kind !== 'match') return line(y.question, y.answer ? y.yes : y.no, y.answer ? 'yn-yes' : 'yn-no');
   return line(y.question, y.yes, 'yn-yes') + (y.otherQuestion ? line(y.otherQuestion, y.no, 'yn-no') : '');
 }
 
@@ -59,6 +60,11 @@ export function picture(word: string | null, count: 1 | 2, marker: string | null
   const art = pic ? (count === 2 ? pic + pic : pic) : '';
   const label = word && pic ? `<span class="pic-word" dir="ltr">${esc(word)}${count === 2 ? ' ×٢' : ''}</span>` : '';
   return `<span class="pic"><span class="pic-art">${glyph}${art}</span>${label}</span>`;
+}
+
+/** When Build the sentence builds only the answer, the form says so: a teacher signs what the child orders. */
+function buildHalf(s: GrammarSentence): string {
+  return s.build?.prompt ? `<small class="build-half" dir="ltr">Build: ${esc(s.build.text)}</small>` : '';
 }
 
 function chooseCell(s: GrammarSentence): string {
@@ -80,7 +86,7 @@ function renderUnit(u: GrammarUnit, idx: number): string {
   const rows = sentences.map((s, i) => `
         <tr>
           <td class="num">${AR_DIGITS(i + 1)}</td>
-          <td class="sentence" dir="ltr">${esc(s.text)}</td>
+          <td class="sentence" dir="ltr">${esc(s.text)}${buildHalf(s)}</td>
           <td>${s.picture ? picture(s.picture.word, s.picture.count, s.marker) : picture(null, 1, s.marker)}</td>
           <td class="choose">${chooseCell(s)}</td>
           <td>${falseCell(s)}</td>${withYesNo ? `\n          <td class="yesno">${yesNoCell(s)}</td>` : ''}
@@ -151,6 +157,14 @@ interface GradeCopy {
   extraCss: string;
 }
 
+const YESNO_CSS = `
+  .yn { display: block; font-family: var(--latin); font-size: .88rem; white-space: nowrap; }
+  .yn-yes { color: var(--right); }
+  .yn-no { color: var(--wrong); }
+  td.yesno { white-space: nowrap; }
+  .not-covered { margin: 0; padding-inline-start: 1.3em; display: grid; gap: 4px; font-size: .92rem; color: var(--muted); }
+  .not-covered [dir="ltr"] { font-family: var(--latin); }`;
+
 const GRADE_COPY: Record<number, GradeCopy> = {
   1: {
     title: 'مراجعة قواعد الصف الأول',
@@ -188,13 +202,28 @@ const GRADE_COPY: Record<number, GradeCopy> = {
       'في «نعم أم لا»: هل الجواب القصير هو الصحيح للسؤال وللصورة؟',
       'هل الكلمات مناسبة لطالب الصف الثاني؟',
     ],
-    extraCss: `
-  .yn { display: block; font-family: var(--latin); font-size: .88rem; white-space: nowrap; }
-  .yn-yes { color: var(--right); }
-  .yn-no { color: var(--wrong); }
-  td.yesno { white-space: nowrap; }
-  .not-covered { margin: 0; padding-inline-start: 1.3em; display: grid; gap: 4px; font-size: .92rem; color: var(--muted); }
-  .not-covered [dir="ltr"] { font-family: var(--latin); }`,
+    extraCss: YESNO_CSS,
+  },
+  3: {
+    title: 'مراجعة قواعد الصف الثالث',
+    eyebrow: 'إقرأ · ركن اللغة الإنجليزية · الصف الثالث',
+    lead: (total, units) => `أضفنا إلى ركن اللغة الإنجليزية في الصف الثالث أنشطة لتثبيت القواعد على ${AR_DIGITS(units)} وحدات. القواعد هنا في معظمها صيغ أفعال (<span dir="ltr">play / plays</span> و<span dir="ltr">have / has</span> و<span dir="ltr">Is / Are</span>)، ولذلك تجدون وحدات بلا صور لأن كلماتها أفعال وعبارات، وما استُبعد مذكور مع سببه في كل وحدة. الجمل مبنية من نمط القواعد في كل وحدة من الكتاب ومن كلمات الوحدة نفسها. <b>لن يرى الطلاب أي وحدة قبل أن توافقوا عليها.</b> هذه الورقة تعرض كل جملة يمكن أن تظهر للطالب، ${AR_DIGITS(total)} جملة.`,
+    acts: `
+      <div class="act"><b>اختر الكلمة</b>جملة فيها فراغ، وخياران: الصحيح ونقيضه في القاعدة، مثل <span dir="ltr">plays / play</span> أو <span dir="ltr">Does / Do</span> أو <span dir="ltr">There's / There isn't</span>. تظهر معها صورة حيث توجد صورة صادقة فقط.</div>
+      <div class="act"><b>رتّب الجملة</b>كلمات الجملة مبعثرة، ويرتّبها الطالب بالنقر. حتى ٩ كلمات. إن زادت الجملة (سؤال وجواب) يُرتّب الجواب وحده ويظهر السؤال فوق الكلمات؛ ويُكتب ذلك تحت الجملة في القائمة.</div>
+      <div class="act"><b>صح أم خطأ</b>جملة بجانب صورة: نصف الأسئلة بصورتها الصحيحة ونصفها بصورة كلمة أخرى من الوحدة. في الوحدات المصوّرة فقط.</div>
+      <div class="act"><b>نعم أم لا</b>صورة وسؤال، ويختار الطالب الجواب القصير. في أسئلة <span dir="ltr">Can penguins swim?</span> يجيب الطالب مما يعرفه عن الحيوان، وفي <span dir="ltr">Is there a sofa?</span> تدل ✅ أو ❌ على الجواب.</div>
+    `,
+    checks: [
+      'هل الجملة صحيحة لغويًا، وبالصيغة التي يدرّسها الكتاب؟',
+      'هل الصورة (إن وُجدت) تناسب الجملة؟',
+      'في «اختر الكلمة»: هل الخيار الخاطئ خاطئ بوضوح؟ وهل في الجملة أو الصورة ما يدل على الصحيح؟',
+      'في «رتّب الجملة»: هل يكفي ترتيب الجواب وحده حين تطول الجملة؟',
+      'في «نعم أم لا»: هل الجواب القصير هو الصحيح للسؤال وللصورة؟ وهل معلومات الحيوانات صحيحة؟',
+      'هل الكلمات مناسبة لطالب الصف الثالث؟',
+    ],
+    extraCss: YESNO_CSS + `
+  .build-half { display: block; color: var(--muted); font-size: .78rem; font-weight: 400; white-space: nowrap; }`,
   },
 };
 

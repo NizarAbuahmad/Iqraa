@@ -3,7 +3,10 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { grammarUnit, grammarUnitsForGrade, offeredGrammar, unitSentences } from '../englishGrammar.ts';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { grammarUnit, grammarUnitsForGrade, offeredGrammar, renderGrammarSheet, unitSentences } from '../englishGrammar.ts';
 import { NOT_COVERED_G3 } from '../englishGrammarG3.ts';
 import { hubLessonsForGrade } from '../englishHub.ts';
 import { wordPicture } from '../englishPictures.ts';
@@ -100,5 +103,36 @@ test('the not-covered table has an entry for every Grade 3 lesson and only for t
   for (const [id, items] of Object.entries(NOT_COVERED_G3)) {
     assert.ok(items.length > 0, id);
     for (const text of items) assert.ok(!/["&<>]/.test(text), `${id}: ${text}`);
+  }
+});
+
+const docs = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..', 'docs');
+
+test("the Grade 3 teacher's form lists every sentence once, shows the Build half, and has a not-covered block per lesson", async () => {
+  const { renderGrammarReviewHtml } = await import('../englishGrammarReview.ts');
+  const html = renderGrammarReviewHtml(3);
+  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const all = UNITS.flatMap(u => unitSentences(u));
+  assert.equal(all.length, 324);
+  assert.equal((html.match(/<td class="sentence"/g) ?? []).length, 324);
+  for (const s of all) assert.ok(html.includes(esc(s.text)), s.text);
+  assert.equal((html.match(/class="not-covered"/g) ?? []).length, 8);
+  assert.equal((html.match(/<th>«نعم أم لا»/g) ?? []).length, 2, 'toys-like Yes or No columns: S2 U9 and U10');
+  assert.equal((html.match(/class="build-half"/g) ?? []).length, all.filter(s => s.build?.prompt).length);
+  assert.ok(html.includes('مراجعة قواعد الصف الثالث'));
+  assert.ok(html.includes('Can penguins swim?'));
+});
+
+test('the committed Grade 3 sheet and form are exactly what the generators produce', async () => {
+  const { renderGrammarReviewHtml } = await import('../englishGrammarReview.ts');
+  assert.equal(readFileSync(path.join(docs, 'english-grammar-g3-sheet.md'), 'utf8'), renderGrammarSheet(3), 'run: pnpm --filter @workspace/curriculum run grammar-sheet');
+  assert.equal(readFileSync(path.join(docs, 'english-grammar-g3-review.html'), 'utf8'), renderGrammarReviewHtml(3), 'run: pnpm --filter @workspace/curriculum run grammar-sheet');
+});
+
+test('a slot Choose offers whole phrases: «glasses» against «a dress», never against a bare article', () => {
+  const wear = unitSentences(grammarUnit(L(1, 3))!).find(s => s.text === "You're wearing glasses." && s.patternId === 'you')!;
+  assert.deepEqual([wear.choose!.right, wear.choose!.wrong], ['glasses', 'a dress']);
+  for (const u of UNITS) for (const s of unitSentences(u)) {
+    if (s.choose?.kind === 'slot') assert.ok(!/^(a|an)$/.test(s.choose.wrong), `${s.text}: ${s.choose.right} / ${s.choose.wrong}`);
   }
 });
