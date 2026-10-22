@@ -34,14 +34,17 @@ import { useAuth } from '@/context/AuthContext';
 import { getChildSchedules, getMySchedule } from '@/services/familyScheduleApi';
 import { getChildHomework, getMyHomework, setHomeworkDone } from '@/services/homeworkApi';
 import { openResource } from '@/services/openResource';
+import { LESSON_GAME_TITLE_KEY } from '@/services/lessonGames';
 import {
   ammanToday,
   allTrackedDone,
   applyDone,
   dueBadge,
   formatDueDate,
+  gameScoreText,
   homeworkSections,
   resourceKey,
+  resultForGame,
   untrackedMode,
   type ChildHomework,
   type FamilyHomework,
@@ -688,20 +691,34 @@ function HomeworkRow({
             </Text>
           </Pressable>
         ) : null}
-        {item.resources.map(r => (
-          <Pressable
-            key={resourceKey(r)}
-            accessibilityRole="link"
-            hitSlop={8}
-            onPress={() => openResource(r, { teacher: false, isAr: isRTL, homeworkId: item.id })}
-            style={{ flexDirection: rowDir, alignItems: 'center', gap: SPACE.xs, paddingVertical: SPACE.xs }}
-          >
-            <Ionicons name="attach-outline" size={16} color={ACCENT} />
-            <Text style={{ flex: 1, color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption, textAlign: align }}>
-              {r.title}
-            </Text>
-          </Pressable>
-        ))}
+        {item.resources.map(r => {
+          const isGame = r.kind === 'game';
+          const result = isGame ? resultForGame(item.gameResults, r.lessonId, r.game) : null;
+          return (
+            <View key={resourceKey(r)}>
+              <Pressable
+                accessibilityRole="link"
+                hitSlop={8}
+                onPress={() => openResource(r, { teacher: false, isAr: isRTL, homeworkId: item.id })}
+                style={{ flexDirection: rowDir, alignItems: 'center', gap: SPACE.xs, paddingVertical: SPACE.xs }}
+              >
+                {isGame ? (
+                  <Text style={{ fontSize: TYPE.caption }}>🎮</Text>
+                ) : (
+                  <Ionicons name="attach-outline" size={16} color={ACCENT} />
+                )}
+                <Text style={{ flex: 1, color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption, textAlign: align }}>
+                  {isGame ? `${t(LESSON_GAME_TITLE_KEY[r.game])}: ${r.title}` : r.title}
+                </Text>
+              </Pressable>
+              {result ? (
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
+                  {t(isParent ? 'hwGameChildResult' : 'hwGameYourResult', gameScoreText(result.score, result.total, isRTL))}
+                </Text>
+              ) : null}
+            </View>
+          );
+        })}
       </View>
     </View>
   );

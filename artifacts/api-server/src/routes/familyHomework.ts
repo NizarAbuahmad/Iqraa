@@ -17,7 +17,9 @@ import { guardianLinkedStudents, selfLinkedStudentIds, studentIdsWithSelfAccount
 import { loadFamilyHomework } from "../lib/familyHomeworkLoad.ts";
 import { loadHomeworkMaterial } from "../lib/homeworkMaterial.ts";
 import { setHomeworkDone } from "../lib/homeworkDone.ts";
+import { recordGameResult } from "../lib/homeworkGame.ts";
 import { groupChildren } from "../modules/family/children.ts";
+import { parseGameResult } from "../modules/homework/game.ts";
 
 const router = Router();
 
@@ -134,6 +136,36 @@ router.get("/parent/homework/:id/materials/:materialId", async (req: Authenticat
   } catch (err) {
     logger.error({ err }, "parent homework material failed");
     res.status(500).json({ error: "Failed to load the attachment" });
+  }
+});
+
+/**
+ * A finished round of a game the teacher attached. Body `{ lessonId, game, score,
+ * total }` (400 `invalid` otherwise); the homework must carry that lesson's game.
+ * The best result per (lesson, game) is kept and the homework
+ * is ticked off, for the account's own rows in the homework's class only.
+ * Everything is written before the answer. Every other failure is one 404.
+ */
+router.put("/student/homework/:id/game-result", async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!studentAccountsEnabled()) {
+      res.status(403).json(DISABLED);
+      return;
+    }
+    const parsed = parseGameResult(req.body);
+    if (!parsed.ok) {
+      res.status(400).json({ error: parsed.error, code: parsed.code });
+      return;
+    }
+    const saved = await recordGameResult(req.user!.id, String(req.params["id"]), parsed.value);
+    if (!saved) {
+      res.status(404).json({ ...NO_HOMEWORK, code: "not_found" });
+      return;
+    }
+    res.json(saved);
+  } catch (err) {
+    logger.error({ err }, "student game result failed");
+    res.status(500).json({ error: "Failed to save your result" });
   }
 });
 

@@ -15,7 +15,7 @@
  * by two teachers is two roster rows in two classes, and homework belongs to
  * exactly one class, so one row per (homework, child) is unambiguous.
  */
-import { jsonb, pgTable, text, timestamp, uuid, index, unique } from "drizzle-orm/pg-core";
+import { integer, jsonb, pgTable, text, timestamp, uuid, index, unique } from "drizzle-orm/pg-core";
 import { users } from "./users";
 import { classGroups, students } from "./students";
 import { evaluations } from "./evaluations";
@@ -44,7 +44,20 @@ export interface HomeworkMaterialResource {
   type: string;
 }
 
-export type HomeworkResource = HomeworkLibraryResource | HomeworkMaterialResource;
+/**
+ * A lesson game the students play (memory / scramble / spot). `lessonId` is a
+ * real curriculum lesson (checked when attached); `title` is the snapshot the
+ * client sent, so the family list renders without reading the catalog. Results
+ * live in `game_results`, one row per (homework, roster row, game).
+ */
+export interface HomeworkGameResource {
+  kind: "game";
+  lessonId: string;
+  game: "memory" | "scramble" | "spot";
+  title: string;
+}
+
+export type HomeworkResource = HomeworkLibraryResource | HomeworkMaterialResource | HomeworkGameResource;
 
 export const homework = pgTable(
   "homework",
@@ -96,8 +109,39 @@ export const homeworkCompletions = pgTable(
   ],
 );
 
+/**
+ * A student's best result at a (lesson, game) attached to a homework. Per roster row
+ * (`students.id`), exactly like `homework_completions`: two accounts linked to
+ * the same row share it. The upsert keeps the better score/total ratio and
+ * counts every attempt (lib/homeworkGame.ts). Games never feed mastery.
+ */
+export const gameResults = pgTable(
+  "game_results",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    homeworkId: uuid("homework_id")
+      .notNull()
+      .references(() => homework.id, { onDelete: "cascade" }),
+    studentId: uuid("student_id")
+      .notNull()
+      .references(() => students.id, { onDelete: "cascade" }),
+    /** The curriculum lesson the game was played for — one homework can carry the same game for several lessons. */
+    lessonId: text("lesson_id").notNull(),
+    game: text("game").notNull(),
+    score: integer("score").notNull(),
+    total: integer("total").notNull(),
+    attempts: integer("attempts").notNull().default(1),
+    playedAt: timestamp("played_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  t => [
+    unique("game_results_unique").on(t.homeworkId, t.studentId, t.lessonId, t.game),
+    index("game_results_student_idx").on(t.studentId),
+  ],
+);
+
 export type Homework = typeof homework.$inferSelect;
 export type HomeworkCompletion = typeof homeworkCompletions.$inferSelect;
+export type GameResult = typeof gameResults.$inferSelect;
 
 /**
  * One row per homework per due day that a reminder went out for — the

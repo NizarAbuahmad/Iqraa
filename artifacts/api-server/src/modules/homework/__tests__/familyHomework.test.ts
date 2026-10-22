@@ -169,7 +169,7 @@ describe("buildFamilyHomework", () => {
       assert.equal(keys.includes(banned), false, banned);
     }
     assert.deepEqual(keys.sort(), [
-      "canTrack", "className", "done", "doneAt", "dueAt", "dueDate", "exam", "id", "instructions", "resources", "state", "teacherName", "title",
+      "canTrack", "className", "done", "doneAt", "dueAt", "dueDate", "exam", "gameResults", "id", "instructions", "resources", "state", "teacherName", "title",
     ]);
   });
 });
