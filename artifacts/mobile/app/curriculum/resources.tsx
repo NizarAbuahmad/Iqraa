@@ -41,6 +41,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
+import { useLightStatusBar } from '@/hooks/useLightStatusBar';
 import { useLanguage } from '@/context/LanguageContext';
 import { isStudentRole, isTeacherRole, useAuth } from '@/context/AuthContext';
 import { getMyExams, getMyGradeIds } from '@/services/studentExam';
@@ -614,6 +615,8 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
   // As a tab, the lesson bar (or the slim bell header) above already pays for
   // the status bar; pushed as its own route, nothing does.
   const heroTop = asTab ? 12 : insets.top + 12;
+  // Pushed as its own route, the teal band is what sits under the status bar.
+  useLightStatusBar(!asTab);
 
   type FrontTile = {
     key: string;

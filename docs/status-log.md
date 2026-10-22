@@ -10,6 +10,20 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+**Accounts, messages, evaluation setup and the corners (2026-10-22, seventeenth live pass).**
+Of 30 questions, 9 were right and 21 went to the model; the recheck of the sixteenth pass was
+24/24. Checked in code: «الإعدادات» ← «الحسابات على هذا الجهاز» switches, adds and removes saved
+accounts (the login screen lists them too) and there is no sign-out from all devices; the intro
+shows once before sign-in and has no replay; the bell panel has «علّم الكل مقروءًا»; Messages has
+no mute, no message search and attaches an image only, but shows «شوهدت» on a read message;
+«تقييم جديد» offers eight question types (read-aloud and dictation are added as separate buttons),
+three levels and 5–30 questions, and has no pass-mark setting (the mastery gate's 80% is fixed);
+the evaluation page has a «من الكتاب المدرسي» figure panel and no figure upload; the Lab, Quran
+corner and Math corner screens say what they hold (five maths tools plus lesson exercises).
+Existing answers the wording missed: PowerPoint export of slides (`howSaveSlides`), regenerating
+and re-marking questions (`howEditExamQuestions`), adding students in bulk (`howAddStudent`).
+Left with the model: nothing from this pass that the code settles.
+
 **Today, lesson games, files and the mastery gate (2026-10-22, sixteenth live pass).**
 Of 30 questions, 6 were right (4 teaching controls) and 24 went to the model; the recheck of
 the fifteenth pass was 21/21. Checked in code: the «اليوم» tab shows the current or next period
@@ -45,6 +59,80 @@ screens. Left with the model, not verified in code: sorting homework by due date
 Sections below are in the order they were written, not strictly by date.
 
 ---
+
+## The desktop Tools grid reads right to left in Arabic — 2026-10-22
+
+- **What was wrong.** The Tools tab's grid on desktop was `flexDirection: 'row'`
+  whatever the language, so in Arabic the first tool («شرائح الدرس») sat top-left and
+  the order ran left to right, while the phone grid (flipped by `isRTL` since #1174)
+  started top-right.
+- **Fix.** Both sizes take their direction from `isRTL` (`app/(tabs)/ai-tools.tsx`);
+  `listGrid` no longer fixes its own.
+- **Pinned.** `toolsGrid.test.ts` fails a `flexDirection` inside `listGrid` and checks
+  the direction is applied to both sizes.
+- **Verified:** mobile tests and typecheck; the web build at 1366px in Arabic (first
+  tool top-right) and English (top-left), and at phone size (unchanged).
+
+## Live games: students answer from any device — 2026-10-22
+
+**What changed.** In the presenter, the 🏆 picker gets «العب مباشرة على الأجهزة»: the
+deck's own choice questions (`scoreableSlides`, the one rule for what a game may score)
+become a live game hosted at `/ai-tools/classroom/live-host?id=…` (teacher-only). The
+projector shows a big code and a QR for `app.iqrra.com/live`; students join on **any
+browser device** — a school computer lab, tablets, or at home for an evening review (phones
+are banned in Jordanian classrooms, so the copy says «جهاز», never «هاتف») — with the code
+and a typed name, **no account**; a signed-in student is recorded as such («دخل بحساب
+طالب»), the host never sees the account's name. Each question: coloured options with a
+shape and a letter (colour is never the only cue), a server-anchored countdown, «أجاب ٢ من
+٣»; reveal (automatic when everyone answered or time ran out) shows the distribution, the
+correct option and the top five; players see ✓/✗, «+٩٣٥ نقطة», «المركز ١ من ٣»; the end is
+a podium. A reload resumes from the stored player token.
+
+**Server.** Tables `live_games`, `live_players`, `live_answers` (migration
+`0012_numerous_stature.sql`, additive, DEFERRED RLS with hand-written GRANTs, plain `db`).
+Host: `POST /live-host/games`, `GET /live-host/games/:id`, `POST …/advance`
+(`start|reveal|next|end`, any other move 409), `POST …/kick`. Public: `POST /live/:code/join`
+(optional student session → `user_id`), `GET /live/:code/state` and `POST /live/:code/answer`
+with `X-Live-Token` (32 random bytes, only the sha256 stored). Scoring uses only the server
+clock: correct = round(500 + 500 × time left / seconds), 2 s grace, one answer per question.
+The answer key never reaches a player before the reveal (pinned by a test).
+**Limits** (from the security review): no per-IP ceiling on valid polls — a school's
+classes share one address — only a per-token limit plus a per-IP limit charged for rejected
+tokens; join 240/min per IP; 100 players per game (row-locked count); an unknown code and an
+unknown token get the same 401; names reject invisible/RTL-override/filler characters and
+need a letter or digit; 30 games per teacher per hour; games older than 7 days are deleted
+on each create (the retention rule for children's typed names). Clients back off on 429.
+
+**Verified.** Root typecheck; api-server suite 2,390 pass with a real Postgres (live DB test
+19, also with `RLS_ENFORCE` on), rules unit 33, `mountOrder`, `rlsCoverage` on a fresh
+database; mobile suite pass except the known local CRLF `scopeSelection` (live tests 36).
+**End to end in headless Chromium** on a throwaway database, run twice (before and after
+the review fixes): teacher quiz → present → 🏆 → «العب مباشرة» → lobby with code and QR;
+three devices join (two anonymous, one signed-in student), a duplicate name refused; fast
+correct 935, slower correct 847, wrong 0; auto-reveal on all-answered and on time-out;
+ranks «من ٣»; podium; a reload keeps the final rank. **Not verified:** a real classroom
+(30 devices, one NAT), the QR scanned by a camera, Android, load (each poll is a few reads
+plus a rate-limit upsert). Scores are not saved to a student's record.
+
+## Status-bar icons read on the corner bands — 2026-10-22
+
+- **What was wrong.** Every corner screen (`CornerFrame`), every game (`GameShell`'s
+  accent header) and the library opened as a page draw a dark band under the status
+  bar. Nothing set the icon colour there, so the system default applied: dark icons
+  in light mode, on a dark band. Today had the same bug and fixed it for itself in #1174.
+- **Fix.** One hook, `useLightStatusBar()` (`hooks/useLightStatusBar.ts`), called by
+  `CornerFrame`, `GameShell`, the library page and Today. A screen holds a *request*
+  for light icons while focused (`services/statusBarRequests.ts`); the icons are light
+  while any request is held. Today's set-on-focus, reset-on-blur would have failed on a
+  push from one dark screen to another: the new screen's focus effect runs at mount,
+  before the navigator blurs the one it covers, so the reset landed last.
+- **Pinned.** `statusBar.test.ts`: the push order stays light, a release counts once,
+  every `<Band>` that pays `insets.top` calls the hook (code lines only: profile's band
+  sits under the tab header, and says so in a comment), and nothing sets
+  `light-content` by hand.
+- **Verified:** mobile tests and typecheck.
+- **Not verified:** on a device. The status bar exists only on Android and iOS, and
+  the web build is a no-op, so this has not been seen running.
 
 ## Grade 4 reading in the English corner — built, shown to nobody yet, 2026-10-22
 

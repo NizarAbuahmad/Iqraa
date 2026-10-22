@@ -579,6 +579,9 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
     scales.
   - Header bands are `Band`: a gradient that only deepens, and
     `cornerTheme.test.ts` measures white text on both stops.
+  - A band under the status bar (one that pays `insets.top`) calls
+    `useLightStatusBar()`, or its icons are dark on it in light mode;
+    `statusBar.test.ts` fails one that does not.
   - `designScale.test.ts` counts hand-written `shadowColor`, so new depth
     comes from the tokens.
   A teacher's phone lands on Today (`components/today/PhoneToday.tsx`), which

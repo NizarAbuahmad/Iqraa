@@ -106,6 +106,16 @@ describe('isPublicRoute', () => {
     }
   });
 
+  it('lets a student join a live game with no account, and keeps the host screen private', () => {
+    for (const p of ['/live', '/live/XK3M9P']) {
+      assert.equal(isPublicRoute(p), true, p);
+    }
+    assert.equal(isPublicRoute('/ai-tools/classroom/live-host'), false);
+    // '/livex' is not '/live'.
+    assert.equal(isPublicRoute('/livex'), false);
+    assert.equal(isPublicRoute('/lively/ABC'), false);
+  });
+
   it('does not open a route that merely starts with the same letters', () => {
     // '/takeover' is not '/take'. A prefix check without the boundary would
     // make any future route beginning "take" public.
