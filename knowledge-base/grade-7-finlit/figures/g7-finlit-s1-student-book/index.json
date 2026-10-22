@@ -2,14 +2,14 @@
   "sourceId": "g7-finlit-s1-student-book",
   "figures": [
     {
-      "file": "p008.png",
+      "file": "p008-v2.png",
       "sourceId": "g7-finlit-s1-student-book",
       "pdfPage": 8,
       "rect": [
-        69.9,
-        154.8,
-        447.2,
-        344.1
+        74.0,
+        165.0,
+        535.7,
+        338.3
       ],
       "unit": 1,
       "lesson": 1,
@@ -178,14 +178,14 @@
       "lessonStartPage": 41
     },
     {
-      "file": "p048.png",
+      "file": "p048-v2.png",
       "sourceId": "g7-finlit-s1-student-book",
       "pdfPage": 48,
       "rect": [
-        53.6,
-        55.6,
-        376.4,
-        259.1
+        72.2,
+        60.0,
+        344.8,
+        255.0
       ],
       "unit": 2,
       "lesson": 3,
