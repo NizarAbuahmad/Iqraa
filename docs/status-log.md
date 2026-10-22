@@ -14,6 +14,56 @@ Sections below are in the order they were written, not strictly by date.
 
 ---
 
+## Grade 4 grammar in the English corner — built, shown to nobody yet, 2026-10-22
+
+Grammar for Grade 4, after Grades 1–3. 9 hub lessons (S1 U1–U5, S2 U7–U10), **454
+sentences**. S2 U6 is a revision unit with no word list, so it is not a hub lesson.
+**Every unit is `reviewedBy: null` in `GRAMMAR_UNITS_G4`
+(`lib/curriculum/src/englishGrammarG4.ts`), so nobody sees any of it yet.** Spec:
+`docs/superpowers/specs/2026-10-22-english-corner-grammar-g4-design.md`; plan:
+`docs/superpowers/plans/2026-10-22-english-corner-grammar-g4.md`.
+
+- **Pictures only where a picture shows what the sentence says.** The book's grammar is
+  comparison, modals and the past simple, and a picture shows none of them. Countries,
+  foods and jobs (S1 U1, U3, U5) are pictured; S2 U8 is pictured only for there was /
+  wasn't / were. S1 U2, S2 U7, U9 and U10 carry none (Choose and Build).
+- **Engine, all additive** (`englishGrammar.ts`): `{cmp:}` and `{sup:}` read an explicit
+  `ADJECTIVE_FORMS` table (11 adjectives); `{ed:}` is the past (+ed, +d, `stop` →
+  `stopped`, irregulars in `PAST_OVERRIDES`); a form Choose can name its wrong option
+  (`base`, `past`, `comparative`) so the child only ever sees real forms («higher» /
+  «high», «the deepest» / «the deeper», «used» / «use»); a `claim` gives a picture-free
+  True or false (a true sentence or its swapped twin); a `fact` Yes or No no longer
+  needs a picture; the hint «✅ = it was there».
+- **True or false and Yes or No without pictures, S1 U4 only,** from six written ranking
+  pairs (mountain > hill, lake > pool, sea > lake, river > stream, lion > rabbit, shark
+  > goldfish). Every pair is on the form's data page. The app's two screens hide the
+  picture area when an item has none.
+- **Build the sentence keeps its cap of 9.** A longer pair builds its answer half.
+- **The teacher's form and sheet** are `docs/english-grammar-g4-review.html` and
+  `-sheet.md`, written by the `grammar-sheet` script and pinned by tests. A **data
+  page** at the front prints eight tables a teacher must check: the comparisons and
+  their false twins, the adjective forms, countable / uncountable foods, the eight
+  must / mustn't rules, nationalities, the past forms, the invented timetable, and the
+  adverb rows. Grade 1–3 sheets and forms and all three reading forms are
+  byte-identical. Open points for the teacher are listed in the spec.
+- **Left out on purpose:** ordinal numbers (the book gives no sentence frame), dates and
+  times beyond S1 U2's examples, S2 U6, new pictures, and reading (the next spec).
+- **Audio** is a separate step and has not been run: `english-audio` now also voices the
+  Grade 4 sentences, the Build prompts and the false twins. It needs OpenAI and R2 keys.
+- **Verified:** curriculum 572 tests, mobile 6662 pass / 10 skipped / 0 fail, root
+  typecheck. **In a browser** at 390 px in Arabic and English with five units signed off
+  in the working tree only (restored straight after; never committed;
+  `grep -c "LOCAL CHECK"` is 0): the activity matrix of all nine lessons (an unsigned unit
+  showed nothing), S1 U4 True or false (six items, swapped twins judged false, no picture)
+  and Yes or No (eight picture-free facts), S2 U8's hint, S2 U9's «visited / visit»
+  Choose, S1 U1's flag Yes or No, and no horizontal scroll anywhere.
+- **Not verified:** on a device; with a teacher; every ranking pair as a fact (the
+  teacher checks them); the audio.
+
+**To switch a unit on:** record the audio; a Grade 4 English teacher signs that unit's
+page of `docs/english-grammar-g4-review.html`, printed (and the data page); then set its
+`reviewedBy` in `englishGrammarG4.ts` and merge. Grade 4 reading is the next spec.
+
 ## Lesson games from a lesson's key terms — 2026-10-22
 
 **What changed.** A lesson with at least four key terms (`keywordsAr`) gets

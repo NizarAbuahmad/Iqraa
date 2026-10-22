@@ -1,6 +1,6 @@
 # English corner: grammar activities for Grade 4 — design
 
-**Status:** proposed (awaiting review). **Scope:** Grade 4 English **grammar** only, on the 9 Grade 4
+**Status:** implemented (PR #1171; where the build differs from what was first written, the text below says how). **Scope:** Grade 4 English **grammar** only, on the 9 Grade 4
 hub lessons (`kbl-g4-eng-s{1,2}-nccd-u*_l1`). Grade 4 reading is a separate spec that follows this one.
 Builds on Grade 1 grammar (PR #1088), Grade 2 (`2026-10-19-english-corner-grammar-g2-design.md`,
 PR #1158), Grade 3 (`2026-10-21-english-corner-grammar-g3-design.md`, PR #1171) and the engine they share,
@@ -47,7 +47,7 @@ Source of the book grammar: the unit-level objectives in `lib/curriculum/src/dat
    across tenses («Did people in the past use plastic?»), since each is a claim a teacher must check and
    tense facts are easy to get subtly wrong.
 3. **Adjective and past-tense forms by explicit table, not rules alone.** The adjective table writes both
-   forms for every adjective (about 20); the past rule (+ed, +d after e, doubling only by override) is
+   forms for every adjective it compares (the 11 of S1 U4); the past rule (+ed, +d after e, doubling only by override) is
    tested against every Grade 4 verb, and irregular verbs are explicit rows. Rules guess `quieter` against
    `more quiet` wrongly; a table is checked once by a teacher.
 4. **A Choose option is always a real form, never a made-up word:** the comparative against the base
@@ -70,28 +70,29 @@ Source of the book grammar: the unit-level objectives in `lib/curriculum/src/dat
 ## Engine changes (all additive: the Grade 1–3 sheets and forms must stay byte-identical)
 
 1. **Comparative and superlative: `{cmp:slot}` and `{sup:slot}`**, read from an explicit
-   `ADJECTIVE_FORMS` table that writes both forms of every adjective used: high / higher / highest,
-   deep / deeper / deepest, wide / wider / widest, busy / busier / busiest, quiet / quieter / quietest,
-   safe / safer / safest, cheap / cheaper / cheapest, noisy / noisier / noisiest; and for the long
-   adjectives (beautiful, boring, colourful, dangerous, delicious, difficult, exciting, interesting,
-   expensive, modern, ancient) «more» / «most» plus the word, as two tiles. A test asserts every adjective
-   a Grade 4 pattern uses is in the table.
+   `ADJECTIVE_FORMS` table that writes both forms of the 11 adjectives S1 U4 compares: high / higher /
+   highest, deep / deeper / deepest, wide / wider / widest; and for the long adjectives (beautiful, boring,
+   colourful, dangerous, delicious, difficult, exciting, interesting) «more» / «most» plus the word, as two
+   tiles. S2 U8's adjectives (busy, cheap, noisy, quiet, safe…) are only used in the positive («There was an
+   expensive shop.»), so they are not in the table. A test asserts every adjective a Grade 4 pattern
+   compares is in the table.
 2. **Past: `{ed:slot}`.** +ed; +d after e (`arrive` → `arrived`, `live` → `lived`, `use` → `used`);
    consonant + y → -ied; doubling only by override (`stop` → `stopped`). Irregular verbs (`wore`, `saw`,
    `got`, and the other irregulars the book's S2 U10 examples use) are an explicit `PAST_OVERRIDES` table;
    a test checks every Grade 4 verb's past. The verb is the first word of the slot value, as for `{3:}`.
 3. **A generalised form Choose: `{ kind: 'form', slot, wrong }`** with `wrong` one of `base`, `past`,
-   `comparative`, `positive`. The right option is what the text realises; the wrong option is the same slot
+   `comparative` (`positive` is the same as `base` for an adjective). The right option is what the text realises; the wrong option is the same slot
    in the named form. It may blank a span of more than one token («more exciting»). The existing
    third-person form Choose is the same kind with `wrong: 'base'`, and Grade 3's output must not change.
    A test asserts that for every Grade 4 sentence the right and wrong options differ and that the rest of
    the sentence is identical.
 4. **Picture-free fact items (S1 U4 only).** True or false and Yes or No need a picture today. A
    **ranking row** (a small thing, a big thing, an adjective) gives:
-   - a true sentence, «A mountain is higher than a hill.»;
-   - its swapped false twin, «A hill is higher than a mountain.»;
-   - a question, «Is a mountain higher than a hill?», with its answer, and the swapped question with the
-     opposite answer.
+   - a true sentence, «The mountain is higher than the hill.» (the definite article, so `a` / `an` never
+     needs capitalising at the start of a sentence);
+   - its swapped false twin, «The hill is higher than the mountain.»;
+   - a question, «Is the mountain higher than the hill?», with its answer, and the swapped question with
+     the opposite answer.
 
    The sentence gets a `claim` (the swapped text) and a picture-free `fact` yes-no. `unitSentences` stops
    requiring a picture for these two; `buildTrueFalseRound` and `buildYesNoRound` draw them, and the two
@@ -112,7 +113,7 @@ Grades 2 and 3. A pattern's sentences come from its `rows` where the combination
 | S1 U1 | «I'm from {country}.», «He's / She's from {country}.» (pictured: the six countries; the picture is the country's flag); «Where are you from? I'm from {country}.» (builds the answer half); «I'm {nationality}.» from six country ↔ nationality rows, pictured by the country; «I like {act}.», «He likes {act}.» (likes / like). Acts: the eight activity phrases of the lesson | Choose, Build; True or false and Yes or No on the flag sentences |
 | S1 U2 | «We have {subject} on {day}s at {time} o'clock.» as rows (subject, day, time; arbitrary, the form says so); «I {freq} {v:act}.» and «He {freq} {3:act}.» (always, never, often, sometimes); «He {3:act} {when}.» (every day, at the weekend, once / twice / three times a week). Acts: the sports and hobby phrases of earlier grades. Choose on / at and plays / play | Choose, Build |
 | S1 U3 | «There's a lot of {unc}.», «There are a lot of {pl}.», «There's a little {unc}.», «There isn't any {unc}.», «There aren't any {pl}.», «Are there any {pl}? Yes, there are. / No, there aren't.» The twelve foods are classed in a written list: plural countable (cupcakes, noodles, olives, sandwiches, vegetables), uncountable (cereal, fruit, salad, coffee, lemonade, tea) and `milkshake`, a singular countable left out of the quantity patterns (listed on the form). Containers: «a bowl of salad», «a cup of tea» as explicit rows. Pictured: the eight pictured foods | Choose (a lot of / a little, is / are, any), Build; True or false and Yes or No with the hint «✅ = it's there», on there is / isn't only |
-| S1 U4 | «A {big} is {cmp:adj} than a {small}.» as ranking rows; «{Activity} is {cmp:adj} than {activity}.» for the long adjectives; «This is the {sup:adj} {place} in {…}.» and «{City} is the {sup:adj} city in the world.» as written rows. Choose comparative / base, superlative / comparative | Choose, Build; True or false and Yes or No from the ranking rows only (decision 2) |
+| S1 U4 | «The {big} is {cmp:adj} than the {small}.» as ranking rows; «{Activity} is {cmp:adj} than {activity}.» for the long adjectives; «This is the {sup:adj} {place} in {…}.» and «{City} is the {sup:adj} city in the world.» as written rows. Choose comparative / base, superlative / comparative | Choose, Build; True or false and Yes or No from the ranking rows only (decision 2) |
 | S1 U5 | «He's / She's a {job}.» (eight pictured jobs, the picture shows the job); «You {modal} {v:rule}.» from eight written rule rows, e.g. «You mustn't drop litter.», so a wrong rule cannot be generated; present continuous with clothes and colours of earlier grades: «I'm wearing a {colour} {clothes}.», «They aren't wearing…», «Are you wearing a green coat? Yes, I am. / No, I'm not.» (pictured where the clothes word is) | Choose (must / mustn't, am / are), Build; True or false on the job and clothes pictures |
 | S2 U7 | «I can {v:act}.», «I can't {v:act}.», «Can you {v:act}? Yes, I can. / No, I can't.»; «She can {v:act} {adv}.» as eight rows, one per adverb, chosen so the sentence is plausible (the teacher checks each); Choose can / can't and well / good | Choose, Build |
 | S2 U8 | «She was at the {place} {when}.» (last week, yesterday morning); «Where were you yesterday morning? I was at the {place}.» (answer half); «There was a {place}.», «There were two {places}.», «Was there a {place}? Yes, there was. / No, there wasn't.»; adjectives of the lesson: «The shop was {adj}.» Choose was / were. Pictured: the nine place words | Choose, Build; True or false on the pictured places, there was / wasn't, hint «✅ = it was there» |
@@ -157,7 +158,9 @@ In `lib/curriculum/src/__tests__/englishGrammarG4.test.ts` and the engine test:
   has an answer; no other lesson has a picture-free fact item.
 - The Grade 1, 2 and 3 sheets, forms and the three reading forms equal their generators and are unchanged.
 - The committed Grade 4 form and sheet equal the generators; the form lists the data page items and a
-  not-covered block for S2 U6 and the picture-free lessons.
+  not-covered block for each lesson with a gap. S2 U6 is not a hub lesson, so the form's intro, not a unit
+  page, says it is not covered. The data page is built in `englishGrammarReview.ts` from the units' own
+  rows (a value import of the engine's tables into the data file would be circular).
 - In the mobile suite: round builders on the new item types, a picture-free True or false round and Yes
   or No round, the `'was'` hint, and every sentence (false twins included) in `allGrammarSpoken()`.
 
