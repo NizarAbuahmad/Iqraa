@@ -13,6 +13,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
+import { useLightStatusBar } from '@/hooks/useLightStatusBar';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
@@ -45,6 +46,8 @@ export function GameShell({
 }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  // The accent header sits under the status bar.
+  useLightStatusBar();
   const { t, isRTL } = useLanguage();
   const { user } = useAuth();
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);

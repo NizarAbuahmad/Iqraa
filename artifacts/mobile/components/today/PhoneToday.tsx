@@ -10,15 +10,16 @@
  * (see `showLessonBar`). Amber (`palette.live`) is only on Start class: it
  * means "now".
  */
-import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import React, { useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTodayLesson } from '@/hooks/useTodayLesson';
+import { useLightStatusBar } from '@/hooks/useLightStatusBar';
 import { palette } from '@/constants/colors';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 import { Band, BRAND_MOTIF_OPACITY } from '@/components/ui/Band';
@@ -54,13 +55,8 @@ export function PhoneToday() {
     openLessonPicker, prepJustReady, clearPrepJustReady,
   } = today;
 
-  // The navy band sits under the status bar: light icons while Today is
-  // showing, the default again on any other screen. (No-op on web.)
-  useFocusEffect(useCallback(() => {
-    if (Platform.OS === 'web') return;
-    StatusBar.setBarStyle('light-content');
-    return () => StatusBar.setBarStyle('default');
-  }, []));
+  // The navy band sits under the status bar.
+  useLightStatusBar();
 
   const [draft, setDraft] = useState('');
   const sendDraft = () => {
