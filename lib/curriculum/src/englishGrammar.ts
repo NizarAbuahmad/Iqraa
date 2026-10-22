@@ -23,8 +23,10 @@ export type GrammarMarker = 'yes' | 'no' | 'boy' | 'girl' | 'many';
 
 export interface GrammarPattern {
   id: string;
-  /** `{slot}` bare, `{a:slot}` with a/an, `{s:slot}` plural. */
+  /** `{slot}` bare, `{a:slot}` with a/an, `{s:slot}` plural, `{v:slot}` a verb phrase split into tiles, `{3:slot}` its third-person form, `{ing:slot}` its -ing form. */
   text: string;
+  /** Explicit slot values for this pattern instead of every combination of its slots (a routine with its time, an animal with its ability). */
+  rows?: Record<string, string>[];
   /** The slot whose word is pictured. */
   picture?: string;
   /** What the picture adds: ✓/✗, a boy or a girl, or two of the thing. */
@@ -38,7 +40,9 @@ export interface GrammarPattern {
   choose?:
     | { kind: 'phrase'; right: string; wrong: string }
     | { kind: 'slot'; slot: string }
-    | { kind: 'whole'; other: string };
+    | { kind: 'whole'; other: string }
+    /** The slot's verb in its third-person form against the base form («plays» / «play»). The pattern's text must use {3:slot}. */
+    | { kind: 'form'; slot: string };
   /**
    * Yes or No (Grade 2). `match` («Is it a car?»): the picture stays and the
    * question names the pictured word (Yes) or the next pictured word of the
@@ -68,7 +72,7 @@ export interface GrammarSentence {
   picture: { word: string; count: 1 | 2 } | null;
   marker: GrammarMarker | null;
   /** Null when the choice needs a picture the word does not have. */
-  choose: { kind: 'phrase' | 'slot' | 'whole'; start: number; length: number; right: string; wrong: string } | null;
+  choose: { kind: 'phrase' | 'slot' | 'whole' | 'form'; start: number; length: number; right: string; wrong: string } | null;
   /** Another word of the picture slot, with a picture, for True or false. */
   falsePicture: string | null;
   /** Null unless the pattern has `yesNo` and the picture exists. `otherQuestion` is a `match` item's No question. */
@@ -120,6 +124,42 @@ export function pluralOf(word: string): string {
   if (/(s|x|z|ch|sh)$/.test(word)) return `${word}es`;
   if (/[^aeiou]y$/.test(word)) return `${word.slice(0, -1)}ies`;
   return `${word}s`;
+}
+
+// ─── Verb forms (Grade 3) ─────────────────────────────────────────────────
+
+const THIRD_WORDS: Record<string, string> = { have: 'has', go: 'goes', do: 'does' };
+/** A phrase whose verb is not its first word. */
+const THIRD_PHRASES: Record<string, string> = { 'roller skate': 'roller skates' };
+const ING_WORDS: Record<string, string> = { get: 'getting', run: 'running', swim: 'swimming', sit: 'sitting', stop: 'stopping' };
+
+function inflectFirst(phrase: string, fn: (word: string) => string): string {
+  const [first, ...rest] = phrase.split(' ');
+  return [fn(first), ...rest].join(' ');
+}
+
+function thirdWord(word: string): string {
+  if (THIRD_WORDS[word]) return THIRD_WORDS[word];
+  if (/(s|sh|ch|x|z|o)$/.test(word)) return `${word}es`;
+  if (/[^aeiou]y$/.test(word)) return `${word.slice(0, -1)}ies`;
+  return `${word}s`;
+}
+
+function ingWord(word: string): string {
+  if (ING_WORDS[word]) return ING_WORDS[word];
+  if (/ie$/.test(word)) return `${word.slice(0, -2)}ying`;
+  if (/[^e]e$/.test(word)) return `${word.slice(0, -1)}ing`;
+  return `${word}ing`;
+}
+
+/** «watch TV» → «watches TV». The first word is the verb unless the whole phrase is listed. */
+export function thirdPerson(phrase: string): string {
+  return THIRD_PHRASES[phrase] ?? inflectFirst(phrase, thirdWord);
+}
+
+/** «brush the horses» → «brushing the horses». */
+export function presentParticiple(phrase: string): string {
+  return inflectFirst(phrase, ingWord);
 }
 
 // ─── The data ─────────────────────────────────────────────────────────────
@@ -259,7 +299,7 @@ export function offeredGrammar(lessonId: string): GrammarSentence[] | null {
 
 // ─── Realising a pattern ──────────────────────────────────────────────────
 
-const SLOT = /\{(?:(a|s):)?([A-Za-z0-9]+)\}/g;
+const SLOT = /\{(?:(a|s|v|3|ing):)?([A-Za-z0-9]+)\}/g;
 
 interface Realised {
   tokens: string[];
@@ -286,6 +326,9 @@ function realise(text: string, fill: Record<string, string>): Realised {
     const word = fill[slot];
     const start = tokens.length;
     if (form === 's') tokens.push(pluralOf(word));
+    else if (form === 'v') tokens.push(...word.split(' '));
+    else if (form === '3') tokens.push(...thirdPerson(word).split(' '));
+    else if (form === 'ing') tokens.push(...presentParticiple(word).split(' '));
     else {
       const article = form === 'a' ? articleFor(word) : null;
       if (article) tokens.push(article);
@@ -337,15 +380,20 @@ function fills(slots: string[], words: Record<string, string[]>): Record<string,
   );
 }
 
+/** A slot's words: the unit's own list, or, for a slot that only the rows name, the values the rows give it. */
+function slotList(unit: GrammarUnit, p: GrammarPattern, slot: string): string[] {
+  return unit.slots[slot] ?? [...new Set((p.rows ?? []).map(r => r[slot]).filter(Boolean))];
+}
+
 export function unitSentences(unit: GrammarUnit): GrammarSentence[] {
   const out: GrammarSentence[] = [];
   for (const p of unit.patterns) {
     const slots = slotsIn(p.text);
-    for (const fill of fills(slots, unit.slots)) {
+    for (const fill of p.rows ?? fills(slots, unit.slots)) {
       const { tokens, spans } = realise(p.text, fill);
       const picWord = p.picture ? fill[p.picture] : null;
       const picture = picWord && wordPicture(picWord) ? { word: picWord, count: (p.marker === 'many' ? 2 : 1) as 1 | 2 } : null;
-      const otherWord = picture && p.picture ? nextPictured(unit.slots[p.picture], picture.word) : null;
+      const otherWord = picture && p.picture ? nextPictured(slotList(unit, p, p.picture), picture.word) : null;
       // A pattern with `yesNo` is judged by Yes or No, so it has no True or false item.
       const falsePicture = p.yesNo ? null : otherWord;
 
@@ -355,7 +403,7 @@ export function unitSentences(unit: GrammarUnit): GrammarSentence[] {
         const [start, length] = phraseSpan(tokens, c.right);
         choose = { kind: 'phrase', start, length, right: c.right, wrong: c.wrong };
       } else if (c?.kind === 'slot' && picture) {
-        const other = nextPictured(unit.slots[c.slot], fill[c.slot]);
+        const other = nextPictured(slotList(unit, p, c.slot), fill[c.slot]);
         if (other) {
           const span = spans[c.slot];
           const wrong = spanText(realise(p.text, { ...fill, [c.slot]: other }).tokens, span);
@@ -366,6 +414,12 @@ export function unitSentences(unit: GrammarUnit): GrammarSentence[] {
         const otherTokens = realise(other.text, fill).tokens;
         const span = answerSpan(tokens);
         choose = { kind: 'whole', start: span[0], length: span[1], right: spanText(tokens, span), wrong: spanText(otherTokens, answerSpan(otherTokens)) };
+      } else if (c?.kind === 'form') {
+        // The same sentence with the base verb: the one token that differs is what Choose blanks.
+        const base = realise(p.text.replace(`{3:${c.slot}}`, `{v:${c.slot}}`), fill).tokens;
+        const at = tokens.findIndex((t, i) => t !== base[i]);
+        if (at < 0 || tokens.length !== base.length) throw new Error(`"${p.text}" has no verb form to choose in «${tokens.join(' ')}»`);
+        choose = { kind: 'form', start: at, length: 1, right: strip(tokens[at]), wrong: strip(base[at]) };
       }
 
       let yesNo: GrammarSentence['yesNo'] = null;

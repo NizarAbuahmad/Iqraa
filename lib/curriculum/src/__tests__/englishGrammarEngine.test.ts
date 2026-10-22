@@ -6,7 +6,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  allGrammarSpoken, grammarUnitsForGrade, pluralOf, unitGrade, unitSentences, withArticle, type GrammarUnit,
+  allGrammarSpoken, grammarUnitsForGrade, pluralOf, presentParticiple, thirdPerson, unitGrade, unitSentences, withArticle, type GrammarUnit,
 } from '../englishGrammar.ts';
 
 test('Grade 2 word forms: irregular plurals, words with no article, a/an', () => {
@@ -109,4 +109,66 @@ test('Grade 3 word forms: -es and -ies plurals, plural-form words, uncountables'
     ['shampoo', 'shampoo'], ['toothpaste', 'toothpaste'], ['sunscreen', 'sunscreen'],
     ['ice lolly', 'an ice lolly'], ['television', 'a television'], ['armchair', 'an armchair'],
   ] as const) assert.equal(withArticle(word), phrase, word);
+});
+
+test('third person and -ing: the first word is inflected unless the whole phrase is listed', () => {
+  for (const [phrase, third] of [
+    ['play', 'plays'], ['watch TV', 'watches TV'], ['read books', 'reads books'], ['have breakfast', 'has breakfast'],
+    ['go to school', 'goes to school'], ['do homework', 'does homework'], ['roller skate', 'roller skates'],
+    ['skateboard', 'skateboards'], ['get up', 'gets up'], ['brush', 'brushes'], ['fix', 'fixes'], ['study', 'studies'],
+    ['play with my friends', 'plays with my friends'],
+  ] as const) assert.equal(thirdPerson(phrase), third, phrase);
+  for (const [phrase, ing] of [
+    ['brush the horses', 'brushing the horses'], ['clean the cage', 'cleaning the cage'], ['collect the eggs', 'collecting the eggs'],
+    ['fix the gate', 'fixing the gate'], ['milk the cows', 'milking the cows'], ['sweep the barn', 'sweeping the barn'],
+    ['make', 'making'], ['run', 'running'], ['die', 'dying'],
+  ] as const) assert.equal(presentParticiple(phrase), ing, phrase);
+});
+
+const VERB_UNIT: GrammarUnit = {
+  lessonId: 'kbl-g3-eng-s1-nccd-u4_l1',
+  reviewedBy: null,
+  patterns: [
+    { id: 'he', text: 'He {3:act}.', choose: { kind: 'form', slot: 'act' } },
+    { id: 'dont', text: "He doesn't {v:act}.", choose: { kind: 'phrase', right: "doesn't", wrong: "don't" } },
+  ],
+  slots: { act: ['watch TV', 'play tennis', 'roller skate', 'have lunch', 'skateboard'] },
+};
+
+test('a verb phrase is one tile per word, and the form Choose blanks the one word that changes', () => {
+  const he = unitSentences(VERB_UNIT).filter(s => s.patternId === 'he');
+  const by = (text: string) => he.find(s => s.text === text)!;
+  assert.deepEqual(by('He watches TV.').tokens, ['He', 'watches', 'TV.']);
+  assert.deepEqual(by('He watches TV.').choose, { kind: 'form', start: 1, length: 1, right: 'watches', wrong: 'watch' });
+  assert.deepEqual(by('He has lunch.').choose, { kind: 'form', start: 1, length: 1, right: 'has', wrong: 'have' });
+  assert.deepEqual(by('He roller skates.').tokens, ['He', 'roller', 'skates.']);
+  assert.deepEqual(by('He roller skates.').choose, { kind: 'form', start: 2, length: 1, right: 'skates', wrong: 'skate' });
+  // The verb last in the sentence: the full stop stays off the options.
+  assert.deepEqual(by('He skateboards.').choose, { kind: 'form', start: 1, length: 1, right: 'skateboards', wrong: 'skateboard' });
+  const dont = unitSentences(VERB_UNIT).find(s => s.patternId === 'dont' && s.text.includes('have'))!;
+  assert.deepEqual(dont.tokens, ['He', "doesn't", 'have', 'lunch.']);
+  for (const s of he) {
+    const blanked = s.tokens.slice(s.choose!.start, s.choose!.start + s.choose!.length).join(' ').replace(/[.?!,]+$/, '');
+    assert.equal(blanked, s.choose!.right, s.text);
+    assert.notEqual(s.choose!.right, s.choose!.wrong, s.text);
+  }
+});
+
+test('rows replace the cross-product, and a slot used twice takes the same value', () => {
+  const unit: GrammarUnit = {
+    lessonId: 'kbl-g3-eng-s1-nccd-u2_l1',
+    reviewedBy: null,
+    patterns: [{
+      id: 'when',
+      text: 'When do you {v:act}? We {v:act} {pre} {time}.',
+      rows: [{ act: 'go home', pre: 'in the', time: 'afternoon' }, { act: 'go to bed', pre: 'at', time: 'night' }],
+      choose: { kind: 'phrase', right: 'do', wrong: 'does' },
+    }],
+    slots: { act: ['go home', 'go to bed', 'get up'] },
+  };
+  assert.deepEqual(unitSentences(unit).map(s => s.text), [
+    'When do you go home? We go home in the afternoon.',
+    'When do you go to bed? We go to bed at night.',
+  ]);
+  assert.equal(new Set(unitSentences(unit).map(s => s.key)).size, 2);
 });
