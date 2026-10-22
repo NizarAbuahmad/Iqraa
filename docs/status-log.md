@@ -60,6 +60,31 @@ Sections below are in the order they were written, not strictly by date.
 
 ---
 
+## Today wears the lesson's subject — 2026-10-22
+
+- **Why.** After the design refresh a teacher looked at desktop Today and said
+  "nothing changed" — rightly: the refresh had reached the corners, the library,
+  the profile and the phone, but the desktop workspace still drew its own navy band
+  with glows, bordered grey cards, grey quick-tool boxes, and five prep rows in one
+  teal, the same for every lesson.
+- **What changed.** The band is a `Band` in the lesson's subject (`subjectTheme`,
+  `services/subjectTheme.ts`): maths, English, the sciences and Islamic studies wear
+  their corner's hero and motif; any other subject its catalog colour deepened until
+  white reads at 4.5:1 (social studies is deep pink, Arabic teal); no subject keeps
+  the navy. The band also shows how ready the lesson is («٠ من ٥ جاهزة» with a bar).
+  Each prep row has its own hue (`PREP_ROWS[].color`: plan indigo, worksheet teal,
+  quiz violet, slides blue, activity orange), tinted until made and solid once made.
+  The cards, quick tools and assistant panel are `useSurface()` / `PressableScale`,
+  and each class chip carries its subject's colour. Phone Today takes the same band
+  colour. «ابدأ الحصة الآن» keeps its amber with a light edge, which a warm band needs.
+- **Pinned.** `subjectTheme.test.ts` (white on every subject's band, corners match,
+  common subjects differ, chip text on both cards) and `todayLook.test.ts` (distinct
+  row hues, the band follows the subject on both sizes, no hand-built glows, no
+  `borderWidth` on the surfaces).
+- **Verified:** mobile tests and typecheck; the web build at 1600px with an English,
+  a maths and a social-studies lesson, light and dark, and at phone size.
+- **Not verified:** Android.
+
 ## The desktop Tools grid reads right to left in Arabic — 2026-10-22
 
 - **What was wrong.** The Tools tab's grid on desktop was `flexDirection: 'row'`
