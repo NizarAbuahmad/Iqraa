@@ -7,7 +7,7 @@
  * (a top-of-funnel acquisition hook), so it lives here once rather than
  * risking one game shipping without it.
  */
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,6 +17,8 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { Button } from '@/components/ui/Button';
+import { Celebrate } from '@/components/ui/Celebrate';
+import { justCompleted, type Progress } from '@/services/celebration';
 import type { TranslationKey } from '@/services/i18n';
 
 export function GameShell({
@@ -27,7 +29,7 @@ export function GameShell({
   /** Already-formatted, e.g. t('playScoreLabel', score, total) — the shell
    *  has no opinion on what a game's score means. */
   scoreLabel?: string;
-  gameOver?: { message: string } | null;
+  gameOver?: { message: string; perfect?: boolean } | null;
   onReplay?: () => void;
   children: React.ReactNode;
 }) {
@@ -36,6 +38,18 @@ export function GameShell({
   const { t, isRTL } = useLanguage();
   const { user } = useAuth();
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
+
+  // A finished round celebrates on the crossing from playing to over, once.
+  // `prev` starts null, so a shell that mounts with the game already over does
+  // not fire; a replay sets `gameOver` back to null, so the next finish does.
+  const prev = useRef<Progress | null>(null);
+  const [celebrate, setCelebrate] = useState<'small' | 'big' | null>(null);
+  const next: Progress = { key: titleKey, complete: !!gameOver };
+  useEffect(() => {
+    if (justCompleted(prev.current, next)) setCelebrate(gameOver?.perfect ? 'big' : 'small');
+    prev.current = next;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!gameOver]);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -85,6 +99,12 @@ export function GameShell({
           children
         )}
       </View>
+      <Celebrate
+        visible={celebrate !== null}
+        size={celebrate ?? 'small'}
+        message={t(celebrate === 'big' ? 'celebrateGamePerfect' : 'celebrateGameOver')}
+        onDone={() => setCelebrate(null)}
+      />
     </View>
   );
 }

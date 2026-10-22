@@ -1013,6 +1013,11 @@ const translations = {
 
     // ── Workspace home (desktop web) ──────────────────────────────
     tabToday: 'اليوم',
+    celebrateHandedIn: 'أحسنت! سُلّمت ورقتك',
+    celebrateGameOver: 'أحسنت!',
+    celebrateGamePerfect: 'علامة كاملة!',
+    celebrateHomeworkAll: 'أنجزت كل واجباتك',
+    celebratePrepReady: 'الدرس جاهز',
     homeGreetMorning: (name: string) => (name ? `صباح الخير، ${name}` : 'صباح الخير'),
     homeGreetAfternoon: (name: string) => (name ? `مساء الخير، ${name}` : 'مساء الخير'),
     homeGreetEvening: (name: string) => (name ? `مساء الخير، ${name}` : 'مساء الخير'),
@@ -4061,6 +4066,11 @@ const translations = {
 
     // ── Workspace home (desktop web) ──────────────────────────────
     tabToday: 'Today',
+    celebrateHandedIn: 'Well done — handed in!',
+    celebrateGameOver: 'Well played!',
+    celebrateGamePerfect: 'Perfect score!',
+    celebrateHomeworkAll: 'All your homework is done',
+    celebratePrepReady: 'Lesson ready',
     homeGreetMorning: (name: string) => (name ? `Good morning, ${name}` : 'Good morning'),
     homeGreetAfternoon: (name: string) => (name ? `Good afternoon, ${name}` : 'Good afternoon'),
     homeGreetEvening: (name: string) => (name ? `Good evening, ${name}` : 'Good evening'),

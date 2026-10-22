@@ -100,7 +100,7 @@ export function TriviaBoard<Q extends { options: TriviaOption[]; correctId: stri
       titleKey={titleKey}
       accent={accent}
       scoreLabel={t('playScoreLabel', score, questions.length)}
-      gameOver={gameOver ? { message: t('playScoreLabel', score, questions.length) } : null}
+      gameOver={gameOver ? { message: t('playScoreLabel', score, questions.length), perfect: score === questions.length } : null}
       onReplay={replay}
     >
       <View style={{ flex: 1, padding: 20, gap: 20 }}>
