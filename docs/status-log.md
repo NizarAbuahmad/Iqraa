@@ -14,6 +14,39 @@ Sections below are in the order they were written, not strictly by date.
 
 ---
 
+## Any deck plays as Class Challenge, with sound — 2026-10-22
+
+**What changed.** The presenter shows a 🏆 button on any deck that is not
+already a game and holds at least three scoreable choice questions (options and
+an in-range key): a quiz deck, a «ابدأ الحصة» warm-up, a lesson deck's checks, a
+saved deck reopened from ملفاتي. The teacher picks 2–6 teams and the same deck
+restarts as Class Challenge — its own questions, keys, pictures and badges, no
+generation (`buildGameDeckFromSlides` in `services/classDeck.ts`; the quiz-built
+game and this one share `gameIntroSlide` / `pushGameRounds`). A question slide
+brings only its badge, hint and picture or graph (an allowlist — a kept `layout`
+would draw over the stem). «العودة إلى الشرائح» puts the original deck, slide
+and ink back (confirming first once scores exist). In a game, a chime
+plays when a team is awarded (not when an award is taken back), a low tone when
+a question's timer runs out, a short fanfare on the podium; a speaker button
+mutes them for the session (`services/gameSounds.ts`, three synthesized WAVs in
+`assets/sounds/`, ~88 KB).
+
+**Verified:** typecheck; `classDeck.test.ts` (new builder + the existing quiz
+game tests unchanged); headless Chromium on the web build with a real local
+teacher — quiz (demo generation, G10 circles) → «اعرض على الشاشة» → 🏆 → 4
+teams → question 1 → reveal (bank badge carried over) → award: ١٠٠ on the strip
+and `correct.wav` fetched → back to the slides (confirm, then the 17-slide deck
+at slide 1). **Not verified:** that the cues are audible on a
+projector or on Android, the timer and podium cues (same path, not driven).
+
+**Not done from the games plan's Phase 2, on purpose:** a separate «save
+game»: saving a game deck as `slides` would make «ابدأ الحصة» present it as the
+lesson's deck (`savedDeckFor` takes the newest), and replay is already covered —
+save the quiz or deck, reopen it, press 🏆. Bank-first questions in
+`/ai-tools/game`: the shared pool already serves a repeat lesson instantly and
+the offline path already draws from the banks. Printed bingo cards: the prompt's
+`printables` are instructions, not card data — it needs its own design.
+
 ## Lesson games from a lesson's key terms — 2026-10-22
 
 **What changed.** A lesson with at least four key terms (`keywordsAr`) gets
