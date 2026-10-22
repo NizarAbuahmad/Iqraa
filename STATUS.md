@@ -80,6 +80,7 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-10-22 — Grade 4 reading in the English corner — built, shown to nobody yet
 - 2026-10-22 — Game buttons read in dark mode
 - 2026-10-22 — A lesson game can be homework, and the teacher sees the scores
 - 2026-10-22 — Any deck plays as Class Challenge, with sound
