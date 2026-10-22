@@ -5162,6 +5162,14 @@ picture.
   in the title's size no longer counts against an Arabic title. 141 lessons added and 9
   existing lessons moved to their real opener (the first pass had pointed several civic
   and digital lessons at a body page). 1,288 lessons / 9,487 pages are now listed.
+- **Third pass, 2026-10-22: the other subjects.** The mapper also reads maths, science,
+  social, vocational, arts, financial literacy, geography, history and the grade 10
+  science books (`SUBJECT_KEYS`; `dump_lesson_titles.mjs --all`). Only lessons that
+  showed no picture at all were added (a lesson with figures keeps its figures), and a
+  match found through the contents table had to agree with the opener page's own heading
+  (>= 0.6) or it was dropped: 344 of 396 candidates kept (Grade 6 maths p2-5, Grade 8
+  social and similar were wrong pages). 1,632 lessons / 11,648 pages are now listed.
+  English has no source PDFs registered, so it is untouched.
 - **Biology book pages 9 and 10** (the finch beaks, the snail Figure 1) are cropped from
   our copy as `p009`/`p010` (unit 1 lesson 1; in R2) — unit 1 now opens with the book's
   own experiment.

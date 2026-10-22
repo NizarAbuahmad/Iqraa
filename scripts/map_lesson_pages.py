@@ -383,6 +383,20 @@ SUBJECT_KEYS = {
     "physical-education": ["pe"],
     "digital-literacy": ["digital", "digital-literacy"],
     "civic-education": ["civic"],
+    # second pass: the books that already have extracted figures but whose other
+    # lessons show nothing (grade 10 sources carry no grade prefix and short names)
+    "mathematics": ["math"],
+    "science": ["science"],
+    "social": ["social"],
+    "vocational-education": ["voc"],
+    "financial-literacy": ["finlit"],
+    "creative-arts": ["arts"],
+    "biology": ["biology", "bio"],
+    "chemistry": ["chemistry", "chem"],
+    "physics": ["physics", "phys"],
+    "earth-science": ["earth-science", "earth"],
+    "geography": ["geography", "geo"],
+    "history": ["history"],
 }
 
 
@@ -399,10 +413,12 @@ def source_for(book: dict, registry: dict) -> str | None:
     or 'islamic-s1-student-book' for grade 10. None when the extractor has no
     student book registered for it."""
     grade = book["gradeId"].split("-")[1]
+    prefix = f"g{grade}-" if grade != "10" else ""
     for key in SUBJECT_KEYS.get(book["subjectId"], []):
-        sid = (f"g{grade}-" if grade != "10" else "") + f"{key}-s{book['semester']}-student-book"
-        if sid in registry:
-            return sid
+        # an arts book is one per year, with no semester in its source id
+        for sid in (f"{prefix}{key}-s{book['semester']}-student-book", f"{prefix}{key}-student-book"):
+            if sid in registry:
+                return sid
     return None
 
 
