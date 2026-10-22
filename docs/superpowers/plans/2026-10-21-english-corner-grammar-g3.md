@@ -478,7 +478,7 @@ test('the animal facts are exactly the ones the teacher is asked to check', () =
     'Can kangaroos jump? Yes, they can.', "Can monkeys climb? Yes, they can.", "Can monkeys fly? No, they can't.",
     "Can penguins fly? No, they can't.", 'Can penguins swim? Yes, they can.', 'Can tigers run? Yes, they can.',
     'Can zebras run? Yes, they can.',
-  ].sort().map(t => t.replace(/"/g, '')));
+  ].sort());
 });
 
 test('the not-covered table has an entry for every Grade 3 lesson and only for them, in form-safe text', () => {
@@ -725,7 +725,7 @@ export const NOT_COVERED_G3: Record<string, string[]> = {
     'الجمل عن الأثاث المصوّر فقط فيها صورة. armchair وbed وwardrobe وbookcase بلا صور: تظهر في «رتّب الجملة» فقط.',
     'in front of وbetween وopposite وbehind وnext to: لا يمكن لرمز تعبيري أن يُظهرها، فلا جمل لها.',
     'في «نعم أم لا» تُظهر الصورة ✅ أو ❌ ويختار الطالب الجواب المطابق (✅ = موجود). إن لم يكن ذلك واضحًا يُحذف النشاط من الوحدة.',
-    'جملة There aren not any beds بلا صورة، لأن صورة سرير لا تدل على أنه غير موجود.',
+    'جملة There aren\'t any beds بلا صورة، لأن صورة سرير لا تدل على أنه غير موجود.',
   ],
   [L(2, 10)]: [
     'أسئلة can تستند إلى معلومة عن الحيوان (هل يسبح البطريق؟). كل معلومة مكتوبة في القائمة لتتأكدوا منها، والأفعال swim وfly وjump وrun وclimb من أمثلة الكتاب.',
@@ -735,7 +735,6 @@ export const NOT_COVERED_G3: Record<string, string[]> = {
 };
 ```
 
-> **Fix before saving** (a slip in the draft above): in `NOT_COVERED_G3` the S2 U9 item «جملة There aren not any beds…» must read «جملة There aren't any beds…» — but an apostrophe is fine in form text; only `"`, `&`, `<`, `>` are banned. Write `There aren't any beds`.
 
 Then in `englishGrammar.ts` add `import { GRAMMAR_UNITS_G3 } from './englishGrammarG3.ts';` beside the Grade 2 import and change `GRAMMAR_UNITS` to `[...GRAMMAR_UNITS_G1, ...GRAMMAR_UNITS_G2, ...GRAMMAR_UNITS_G3]` with the comment «Grade 1, then 2, then 3: the order the lessons come in.»
 
@@ -765,7 +764,7 @@ test("the Grade 3 teacher's form lists every sentence once, shows the Build half
   const all = UNITS.flatMap(u => unitSentences(u));
   assert.equal(all.length, 324);
   assert.equal((html.match(/<td class="sentence"/g) ?? []).length, 324);
-  for (const s of all.slice(0, 40)) assert.ok(html.includes(`>${esc(s.text)}</span>`) || html.includes(`>${esc(s.text)}</td>`), s.text);
+  for (const s of all) assert.ok(html.includes(esc(s.text)), s.text);
   assert.equal((html.match(/class="not-covered"/g) ?? []).length, 8);
   assert.equal((html.match(/<th>«نعم أم لا»/g) ?? []).length, 2, 'toys-like Yes or No columns: S2 U9 and U10');
   assert.equal((html.match(/class="build-half"/g) ?? []).length, all.filter(s => s.build?.prompt).length);
@@ -792,7 +791,7 @@ function buildHalf(s: GrammarSentence): string {
   return s.build?.prompt ? `<small class="build-half" dir="ltr">Build: ${esc(s.build.text)}</small>` : '';
 }
 ```
-(Grade 1 and 2 have no prompt, so their markup is unchanged.) Note the test above matches `>…</td>` for plain cells and `>…</span>`? — the sentence text is followed by `<small …>` for halved ones, so for those the pattern `>${text}<small` applies: change the test's `includes` to a regex-free check `html.includes(esc(s.text))` instead. (Do that in the test: `assert.ok(html.includes(esc(s.text)), s.text)`.)
+(Grade 1 and 2 have no prompt, so their markup is unchanged.) (Do that in the test: `assert.ok(html.includes(esc(s.text)), s.text)`.)
 
 (b) The G3 copy: add `3:` to `GRADE_COPY`:
 
@@ -924,7 +923,6 @@ describe('Choose and Build on Grade 3', () => {
       assert.ok(q.prompt!.endsWith('?'), q.prompt!);
       assert.ok(spoken.has(q.prompt!), `${q.prompt} is not voiced`);
       assert.ok(spoken.has(q.sentence.text));
-      assert.equal(isSentenceBuilt(q.tiles.map(t => ({ text: t.text })).sort(() => 0), q.sentence) || true, true);
     }
   });
 
@@ -966,7 +964,6 @@ describe('Yes or No on Grade 3', () => {
 });
 ```
 
-(In the 'long pair' test the last assertion line is a placeholder-free no-op; **delete it** when pasting: `assert.equal(isSentenceBuilt(...) || true, true)` proves nothing.)
 
 - [ ] **Step 2: Run to fail** — `cd artifacts/mobile && node --import ./scripts/registerTestAlias.mjs --experimental-strip-types --test services/__tests__/englishGrammarG3Games.test.ts` → FAIL (`q.prompt` / `q.hint` undefined).
 
