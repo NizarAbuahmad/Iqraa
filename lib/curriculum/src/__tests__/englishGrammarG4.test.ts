@@ -252,3 +252,11 @@ test('the committed Grade 4 sheet and form are exactly what the generators produ
     assert.equal(read(`english-reading-g${g}-review.html`), renderReadingReviewHtml(g), `Grade ${g} reading form changed`);
   }
 });
+
+test('the Grade 4 pattern chips show «…» for every slot form, and Grade 3 keeps its older chips', async () => {
+  const { renderGrammarReviewHtml } = await import('../englishGrammarReview.ts');
+  const g4 = renderGrammarReviewHtml(4);
+  assert.ok(g4.includes('<li>The … is … than the ….</li>'));
+  assert.ok(!/\{(?:v|3|cmp|sup|ed|a|s):\w+\}/.test(g4.replace(/<style>[\s\S]*<\/style>/, '')), 'a raw slot is printed');
+  assert.ok(renderGrammarReviewHtml(3).includes('{v:act}'), 'Grade 3 chips are unchanged');
+});

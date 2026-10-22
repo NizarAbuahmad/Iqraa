@@ -82,7 +82,8 @@ function falseCell(s: GrammarSentence): string {
   return picture(s.falsePicture, s.picture.count, s.marker);
 }
 
-const patternText = (t: string) => t.replace(/\{(?:a:|s:)?\w+\}/g, '…');
+/** The pattern with its slots as «…». Grades 1–3 keep the older cleaner, which leaves `{v:act}` as written, so their printed forms do not change. */
+const patternText = (t: string, grade: number) => t.replace(grade >= 4 ? /\{(?:a:|s:|v:|3:|ing:|cmp:|sup:|ed:)?\w+\}/g : /\{(?:a:|s:)?\w+\}/g, '…');
 
 function renderUnit(u: GrammarUnit, idx: number): string {
   const lesson = hubLesson(u.lessonId)!;
@@ -105,7 +106,7 @@ function renderUnit(u: GrammarUnit, idx: number): string {
     <header class="unit-head">
       <div class="unit-meta"><span>${sem}</span><span>${unitLabelAr(lesson.unitNumber)}</span><span>${sentenceCountAr(sentences.length)}</span></div>
       <h2><span dir="ltr">${esc(lesson.unitTitle)}</span> <span class="unit-ar">${esc(lesson.unitTitleAr)}</span></h2>
-      <ul class="patterns" dir="ltr">${u.patterns.map(p => `<li>${esc(patternText(p.text))}</li>`).join('')}</ul>
+      <ul class="patterns" dir="ltr">${u.patterns.map(p => `<li>${esc(patternText(p.text, lesson.grade))}</li>`).join('')}</ul>
       ${note}${notCoveredList(NOT_COVERED[hubLesson(u.lessonId)!.grade]?.[u.lessonId])}
     </header>
     <div class="table-wrap">
