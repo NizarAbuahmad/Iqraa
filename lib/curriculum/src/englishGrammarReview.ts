@@ -10,9 +10,12 @@
  * docs/english-grammar-g1-review.html beside the markdown sheet, and a test
  * fails when the committed copy is stale.
  */
-import { grammarUnitsForGrade, unitSentences, type GrammarSentence, type GrammarUnit } from './englishGrammar.ts';
+import {
+  ADJECTIVE_FORMS, PAST_OVERRIDES, grammarUnit, grammarUnitsForGrade, pastTense, unitSentences, type GrammarSentence, type GrammarUnit,
+} from './englishGrammar.ts';
 import { NOT_COVERED_G2 } from './englishGrammarG2.ts';
 import { NOT_COVERED_G3 } from './englishGrammarG3.ts';
+import { G4_TABLES, NOT_COVERED_G4 } from './englishGrammarG4.ts';
 import { hubLesson, hubLessonsForGrade } from './englishHub.ts';
 import { wordPicture } from './englishPictures.ts';
 
@@ -34,7 +37,7 @@ const NOTES: Record<string, string> = {
 };
 
 /** Per grade: lesson id → why part of it is not covered (Grade 1 uses `NOTES` instead). */
-const NOT_COVERED: Record<number, Record<string, string[]>> = { 2: NOT_COVERED_G2, 3: NOT_COVERED_G3 };
+const NOT_COVERED: Record<number, Record<string, string[]>> = { 2: NOT_COVERED_G2, 3: NOT_COVERED_G3, 4: NOT_COVERED_G4 };
 
 /** Wraps each run of English in `dir="ltr"`, so a phrase with punctuation does not scramble inside an Arabic line. */
 export const ltr = (s: string) =>
@@ -73,6 +76,8 @@ function chooseCell(s: GrammarSentence): string {
 }
 
 function falseCell(s: GrammarSentence): string {
+  // A picture-free comparison (Grade 4, S1 U4): the false twin is the sentence a child is told is false.
+  if (s.claim) return `<span class="yn yn-no" dir="ltr">${esc(s.claim.falseText)}</span>`;
   if (!s.picture || !s.falsePicture) return '<span class="none">لا يظهر</span>';
   return picture(s.falsePicture, s.picture.count, s.marker);
 }
@@ -155,6 +160,8 @@ interface GradeCopy {
   acts: string;
   checks: string[];
   extraCss: string;
+  /** Extra intro HTML after the legend line (Grade 4: the revision unit that is not a hub lesson). */
+  extra?: string;
 }
 
 const YESNO_CSS = `
@@ -225,7 +232,74 @@ const GRADE_COPY: Record<number, GradeCopy> = {
     extraCss: YESNO_CSS + `
   .build-half { display: block; color: var(--muted); font-size: .78rem; font-weight: 400; white-space: nowrap; }`,
   },
+  4: {
+    title: 'مراجعة قواعد الصف الرابع',
+    eyebrow: 'إقرأ · ركن اللغة الإنجليزية · الصف الرابع',
+    lead: (total, units) => `أضفنا إلى ركن اللغة الإنجليزية في الصف الرابع أنشطة لتثبيت القواعد على ${AR_DIGITS(units)} وحدات. قواعد هذا الصف مقارنات (<span dir="ltr">higher / the deepest / more exciting</span>) وأفعال مساعدة (<span dir="ltr">must / can</span>) وماضٍ بسيط، ولا تدل صورة على زمن أو مقارنة، لذلك تجدون وحدات بلا صور، وما استُبعد مذكور مع سببه في كل وحدة. المقارنات والقواعد والأفعال الشاذة وتصنيف الأطعمة وغيرها مكتوب في <b>صفحة البيانات</b> بعد هذه المقدمة لتتأكدوا منه قبل أي جملة. <b>لن يرى الطلاب أي وحدة قبل أن توافقوا عليها.</b> هذه الورقة تعرض كل جملة يمكن أن تظهر للطالب، ${AR_DIGITS(total)} جملة.`,
+    acts: `
+      <div class="act"><b>اختر الكلمة</b>جملة فيها فراغ، وخياران صيغتان حقيقيتان: <span dir="ltr">higher / high</span> أو <span dir="ltr">the deepest / the deeper</span> أو <span dir="ltr">used / use</span> أو <span dir="ltr">must / mustn't</span>. تظهر معها صورة حيث توجد صورة صادقة فقط.</div>
+      <div class="act"><b>رتّب الجملة</b>كلمات الجملة مبعثرة، ويرتّبها الطالب بالنقر. حتى ٩ كلمات. إن زادت الجملة (سؤال وجواب) يُرتّب الجواب وحده ويظهر السؤال فوق الكلمات؛ ويُكتب ذلك تحت الجملة في القائمة.</div>
+      <div class="act"><b>صح أم خطأ</b>جملة بجانب صورة، أو بلا صورة في المقارنات: تُعرض الجملة نفسها، أو توأمها الخاطئ بعد تبديل الطرفين (<span dir="ltr">The hill is higher than the mountain.</span>).</div>
+      <div class="act"><b>نعم أم لا</b>سؤال بصورة أو بلا صورة. في المقارنات (<span dir="ltr">Is the mountain higher than the hill?</span>) يجيب الطالب مما يعرفه، وفي <span dir="ltr">Was there a market?</span> تدل ✅ أو ❌ على أنه كان موجودًا.</div>
+    `,
+    checks: [
+      'هل الجملة صحيحة لغويًا، وبالصيغة التي يدرّسها الكتاب؟',
+      'هل الصورة (إن وُجدت) تناسب الجملة؟',
+      'في «اختر الكلمة»: هل الخيار الخاطئ صيغة حقيقية خاطئة بوضوح؟ وهل في الجملة ما يدل على الصحيح؟',
+      'في «رتّب الجملة»: هل يكفي ترتيب الجواب وحده حين تطول الجملة؟',
+      'في صفحة البيانات: هل كل زوج في المقارنات صحيح دون جدال؟ وهل تصنيف الأطعمة وقواعد must وmustn\'t والأفعال الشاذة وظروف الحال سليمة؟',
+      'هل تُقرأ ✅ و❌ بوضوح على أنها «كان موجودًا» و«لم يكن موجودًا» في الوحدة الثامنة؟',
+      'هل الكلمات مناسبة لطالب الصف الرابع؟',
+    ],
+    extra: '<p class="meta-line">الوحدة السادسة <span dir="ltr">Hello from Hamed!</span> مراجعة لقواعد الفصل الأول ولا قائمة كلمات لها، فليست درسًا في الركن ولا قواعد لها هنا. الأعداد الترتيبية (من <span dir="ltr">first</span> إلى <span dir="ltr">thirty-first</span>) غير مشمولة: لا يعطي الكتاب لها جملة نموذجية.</p>',
+    extraCss: YESNO_CSS + `
+  .build-half { display: block; color: var(--muted); font-size: .78rem; font-weight: 400; white-space: nowrap; }
+  .data { display: grid; gap: 14px; }
+  .data .table-wrap table { min-width: 0; }
+  .data-table td { font-size: .95rem; }
+  @media print { .data { break-before: page; } }`,
+  },
 };
+
+/** One checkable table of the data page. Cells are English or Arabic; English runs are set left-to-right. */
+function dataTable(title: string, headers: string[], rows: string[][]): string {
+  const head = headers.map(h => `<th>${esc(h)}</th>`).join('');
+  const body = rows.map(r => `<tr>${r.map(c => `<td>${ltr(c)}</td>`).join('')}</tr>`).join('');
+  return `
+    <h3 class="sub-h">${esc(title)} <span class="meta-line">(${AR_DIGITS(rows.length)})</span></h3>
+    <div class="table-wrap"><table class="data-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+}
+
+/** Everything in Grade 4 that is a claim rather than a sentence, built from the same rows and tables the units use. */
+function gradeFourDataPage(): string {
+  const sentences = (lesson: string, pattern: string) => unitSentences(grammarUnit(lesson)!).filter(s => s.patternId === pattern);
+  const U4 = 'kbl-g4-eng-s1-nccd-u4_l1';
+  const U5 = 'kbl-g4-eng-s1-nccd-u5_l1';
+  const T = G4_TABLES;
+  const usedVerbs = new Set<string>();
+  const verbs = [...T.pastRows.map(r => r.verb), ...T.irregularRows.map(r => r.verb), ...T.didRows.map(r => r.verb)];
+  for (const v of verbs) usedVerbs.add(v);
+  const pastKind = (v: string) => (v === 'stop' ? 'تضعيف الحرف الأخير' : PAST_OVERRIDES[v] ? 'شاذ (من الجدول)' : 'منتظم (قاعدة -ed)');
+  const tables = [
+    dataTable('المقارنات: الجملة الصحيحة وتوأمها الخاطئ', ['الجملة الصحيحة', 'توأمها الخاطئ في «صح أم خطأ»'], sentences(U4, 'cmp').map(s => [s.text, s.claim!.falseText])),
+    dataTable('صيغ الصفات', ['الصفة', 'المقارنة', 'التفضيل'], Object.entries(ADJECTIVE_FORMS).map(([a, [c, sup]]) => [a, c, sup])),
+    dataTable('الأطعمة: معدودة أم غير معدودة', ['الطعام', 'التصنيف'], [
+      ...T.foodPlural.map(f => [f, 'معدود بالجمع: There are a lot of …']),
+      ...T.foodUncountable.map(f => [f, 'غير معدود: There\'s a lot of …']),
+      ['milkshake', 'مفرد معدود: خارج جمل المقدار'],
+    ]),
+    dataTable('قواعد must وmustn\'t', ['القاعدة'], [...sentences(U5, 'must'), ...sentences(U5, 'mustnt')].map(s => [s.text])),
+    dataTable('البلدان والجنسيات', ['البلد', 'الجنسية'], T.countryRows.map(r => [r.country, r.nat])),
+    dataTable('أفعال الماضي', ['الفعل', 'الماضي', 'النوع'], [...usedVerbs].sort().map(v => [v, pastTense(v), pastKind(v)])),
+    dataTable('الجدول الدراسي (مخترَع: ليس معلومة)', ['المادة', 'اليوم', 'الساعة'], T.timetable.map(r => [r.subject, r.day, r.time])),
+    dataTable('ظروف الحال مع الأفعال', ['الفعل', 'الظرف'], [...T.manner.map(r => [r.act, r.adv]), ...T.well.map(r => [r.act, 'well'])]),
+  ];
+  return `
+  <section class="data">
+    <h2>صفحة البيانات: ما يجب أن تتأكدوا منه</h2>
+    <p class="meta-line">هذه القوائم هي المعلومات التي تُبنى منها الجمل. إن كان فيها خطأ فكل الجمل المبنية عليه خاطئة.</p>${tables.join('')}
+  </section>`;
+}
 
 export function renderGrammarReviewHtml(grade = 1): string {
   const copy = GRADE_COPY[grade]!;
@@ -385,8 +459,8 @@ export function renderGrammarReviewHtml(grade = 1): string {
       <span><span class="opt opt-right" dir="ltr">right</span> الخيار الصحيح</span>
       <span><span class="opt opt-wrong" dir="ltr">wrong</span> الخيار الخاطئ</span>
     </div>
-    <p class="meta-line">«لا يظهر» تعني أن الجملة لا تُستخدم في هذا النشاط (لا توجد صورة واضحة لها). الصور هي الرموز التي تظهر في التطبيق نفسه.</p>
-  </section>
+    <p class="meta-line">«لا يظهر» تعني أن الجملة لا تُستخدم في هذا النشاط (لا توجد صورة واضحة لها). الصور هي الرموز التي تظهر في التطبيق نفسه.</p>${copy.extra ?? ''}
+  </section>${grade === 4 ? gradeFourDataPage() : ''}
 ${sections}
 </main>
 `;

@@ -244,6 +244,21 @@ export const GRAMMAR_UNITS_G4: GrammarUnit[] = [
   },
 ];
 
+/** The written rows a teacher checks, printed on the form's data page (built there, so the page cannot drift from the units). */
+export const G4_TABLES = {
+  countryRows: COUNTRY_ROWS,
+  timetable: TIMETABLE,
+  foodPlural: FOOD_PL,
+  foodUncountable: FOOD_UNC,
+  must: MUST,
+  mustnt: MUSTNT,
+  manner: MANNER,
+  well: WELL,
+  pastRows: PAST_ROWS,
+  irregularRows: IRREGULAR_ROWS,
+  didRows: DID_ROWS,
+};
+
 /**
  * What a Grade 4 lesson does not cover, and why — printed on the teacher's form. One bullet per item,
  * Arabic with English phrases inline; no `"`, `&`, `<` or `>` (the form does not escape runs).

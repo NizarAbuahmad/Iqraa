@@ -3,6 +3,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { grammarUnit, grammarUnitsForGrade, offeredGrammar, unitSentences } from '../englishGrammar.ts';
 import { hubLessonsForGrade } from '../englishHub.ts';
 import { wordPicture } from '../englishPictures.ts';
@@ -215,4 +216,39 @@ test('the false twin of every comparison is voiced', async () => {
   const { allGrammarSpoken } = await import('../englishGrammar.ts');
   const spoken = new Set(allGrammarSpoken());
   for (const x of unitSentences(grammarUnit(L(1, 4))!).filter(y => y.claim)) assert.ok(spoken.has(x.claim!.falseText), x.claim!.falseText);
+});
+
+const docs = new URL('../../../../docs/', import.meta.url);
+
+test('the Grade 4 form lists every sentence once, a data page of everything to check, and a note on S2 U6', async () => {
+  const { renderGrammarReviewHtml } = await import('../englishGrammarReview.ts');
+  const html = renderGrammarReviewHtml(4);
+  assert.equal((html.match(/<td class="sentence" dir="ltr">/g) ?? []).length, 454);
+  assert.equal((html.match(/<section class="unit"/g) ?? []).length, 9);
+  assert.equal((html.match(/<section class="data"/g) ?? []).length, 1);
+  assert.equal((html.match(/<table class="data-table"/g) ?? []).length, 8);
+  assert.ok(html.includes('مراجعة قواعد الصف الرابع'));
+  // The data page prints what a teacher must check.
+  for (const text of ['higher', 'more exciting', 'stopped', 'wore', 'milkshake', 'Jordanian', 'Social Studies', 'carefully', 'The mountain is higher than the hill.', 'The hill is higher than the mountain.']) {
+    assert.ok(html.includes(text), `the data page lacks «${text}»`);
+  }
+  // A picture-free comparison: its false twin sits in the True or false cell, its fact in the Yes or No cell.
+  assert.ok(html.includes('<span class="yn yn-no" dir="ltr">The hill is higher than the mountain.</span>'));
+  assert.ok(html.includes('<span class="yn yn-yes" dir="ltr">Is the mountain higher than the hill? → Yes, it is.</span>'));
+  assert.ok(html.includes('Hello from Hamed'), 'S2 U6 has no hub lesson, so the intro says it is not covered');
+  assert.ok(html.includes('<small class="build-half" dir="ltr">Build: I\'m from the United Arab Emirates.</small>'));
+});
+
+test('the committed Grade 4 sheet and form are exactly what the generators produce; Grades 1-3 and the reading forms are untouched', async () => {
+  const { renderGrammarSheet } = await import('../englishGrammar.ts');
+  const { renderGrammarReviewHtml } = await import('../englishGrammarReview.ts');
+  const { renderReadingReviewHtml } = await import('../englishReadingReview.ts');
+  const read = (f: string) => readFileSync(new URL(f, docs), 'utf8');
+  assert.equal(read('english-grammar-g4-sheet.md'), renderGrammarSheet(4), 'run: pnpm --filter @workspace/curriculum run grammar-sheet');
+  assert.equal(read('english-grammar-g4-review.html'), renderGrammarReviewHtml(4), 'run: pnpm --filter @workspace/curriculum run grammar-sheet');
+  for (const g of [1, 2, 3]) {
+    assert.equal(read(`english-grammar-g${g}-sheet.md`), renderGrammarSheet(g), `Grade ${g} sheet changed`);
+    assert.equal(read(`english-grammar-g${g}-review.html`), renderGrammarReviewHtml(g), `Grade ${g} form changed`);
+    assert.equal(read(`english-reading-g${g}-review.html`), renderReadingReviewHtml(g), `Grade ${g} reading form changed`);
+  }
 });
