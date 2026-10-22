@@ -47,9 +47,19 @@ export interface GrammarPattern {
    * Yes or No (Grade 2). `match` («Is it a car?»): the picture stays and the
    * question names the pictured word (Yes) or the next pictured word of the
    * slot (No). `marker` («Do you like cheese?»): the pattern's ✅ / ❌ is the
-   * truth. `question` takes the pattern's slots.
+   * truth. `fact` (Grade 3, «Can penguins swim?»): the picture is only the subject and the child
+   * answers from what they know; the pattern's `answer` is the truth. `question` takes the pattern's slots.
    */
-  yesNo?: { kind: 'match' | 'marker'; question: string; yes: string; no: string };
+  yesNo?: {
+    kind: 'match' | 'marker' | 'fact';
+    question: string;
+    yes: string;
+    no: string;
+    /** `fact` only: the truth, e.g. «Can penguins swim?» → true. The picture is the subject, with no ✅ / ❌. */
+    answer?: boolean;
+    /** The line shown above a `marker` question: ✅ = the child likes it (the default), or ✅ = it's there. */
+    hint?: 'likes' | 'there';
+  };
 }
 
 export interface GrammarUnit {
@@ -77,14 +87,21 @@ export interface GrammarSentence {
   falsePicture: string | null;
   /** Null unless the pattern has `yesNo` and the picture exists. `otherQuestion` is a `match` item's No question. */
   yesNo: {
-    kind: 'match' | 'marker';
+    kind: 'match' | 'marker' | 'fact';
     question: string;
     otherQuestion: string | null;
     yes: string;
     no: string;
     /** True when the sentence's own answer is «yes». */
     answer: boolean;
+    /** Which line the app shows above a `marker` question; null for the others. */
+    hint: 'likes' | 'there' | null;
   } | null;
+  /**
+   * What Build the sentence puts in order: the whole sentence, or, over the grade's cap, its answer
+   * half with the question as `prompt`. Null when it can be built neither way.
+   */
+  build: { tokens: string[]; text: string; prompt: string | null } | null;
 }
 
 // ─── Articles and plurals ─────────────────────────────────────────────────
@@ -291,6 +308,20 @@ export function grammarUnitsForGrade(grade: number): GrammarUnit[] {
   return GRAMMAR_UNITS.filter(u => unitGrade(u) === grade);
 }
 
+/** Tiles a child can order: Grade 3 reads longer sentences than Grades 1 and 2. */
+export function buildCap(grade: number): 7 | 9 {
+  return grade >= 3 ? 9 : 7;
+}
+
+function buildOf(tokens: string[], cap: number): GrammarSentence['build'] {
+  const part = (t: string[], prompt: string | null) => ({ tokens: t, text: t.join(' '), prompt });
+  if (tokens.length >= 2 && tokens.length <= cap) return part(tokens, null);
+  const q = tokens.findIndex(t => t.endsWith('?'));
+  if (q < 0) return null;
+  const answer = tokens.slice(q + 1);
+  return answer.length >= 2 && answer.length <= cap ? part(answer, tokens.slice(0, q + 1).join(' ')) : null;
+}
+
 /** A lesson's sentences, or null unless a teacher has signed the unit off. */
 export function offeredGrammar(lessonId: string): GrammarSentence[] | null {
   const unit = grammarUnit(lessonId);
@@ -387,6 +418,7 @@ function slotList(unit: GrammarUnit, p: GrammarPattern, slot: string): string[] 
 
 export function unitSentences(unit: GrammarUnit): GrammarSentence[] {
   const out: GrammarSentence[] = [];
+  const cap = buildCap(hubLesson(unit.lessonId)!.grade);
   for (const p of unit.patterns) {
     const slots = slotsIn(p.text);
     for (const fill of p.rows ?? fills(slots, unit.slots)) {
@@ -429,7 +461,8 @@ export function unitSentences(unit: GrammarUnit): GrammarSentence[] {
         const otherQuestion = y.kind === 'match' && otherWord && p.picture
           ? realise(y.question, { ...fill, [p.picture]: otherWord }).tokens.join(' ')
           : null;
-        yesNo = { kind: y.kind, question, otherQuestion, yes: y.yes, no: y.no, answer: y.kind === 'match' ? true : p.marker === 'yes' };
+        const answer = y.kind === 'match' ? true : y.kind === 'fact' ? Boolean(y.answer) : p.marker === 'yes';
+        yesNo = { kind: y.kind, question, otherQuestion, yes: y.yes, no: y.no, answer, hint: y.hint ?? (y.kind === 'marker' ? 'likes' : null) };
       }
 
       out.push({
@@ -443,6 +476,7 @@ export function unitSentences(unit: GrammarUnit): GrammarSentence[] {
         choose,
         falsePicture,
         yesNo,
+        build: buildOf(tokens, cap),
       });
     }
   }
@@ -464,6 +498,7 @@ export function allGrammarSpoken(): string[] {
   for (const u of GRAMMAR_UNITS) {
     for (const s of unitSentences(u)) {
       out.add(s.text);
+      if (s.build?.prompt) out.add(s.build.prompt);
       const y = s.yesNo;
       if (!y) continue;
       out.add(y.question);
