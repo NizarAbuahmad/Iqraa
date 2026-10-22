@@ -30,6 +30,10 @@ const ROUTES = [
   ['play-hub', '/play'],
   ['play-flags', '/play/flags'],
   ['profile', '/profile'],
+  ['today', '/'],
+  ['tools', '/ai-tools'],
+  ['plans', '/teaching-plans'],
+  ['evaluations', '/evaluations'],
 ];
 // ONLY=library,profile shoots a subset. REDUCED=1 emulates prefers-reduced-motion
 // and shoots as soon as the splash is gone: with reduced motion nothing may still
@@ -64,7 +68,9 @@ for (const colorScheme of ['light', 'dark']) {
       await ctx.route('**/api/**', (route) => {
         const p = new URL(route.request().url()).pathname.replace(/^\/api/, '');
         // /library is a list too (resources.tsx maps it) though its path does not end in s
-        const body = p === '/auth/me' ? teacher : (/s$/.test(p) || p === '/library') ? [] : {};
+        // A few endpoints wrap their list; the rest are bare lists (/…s, /library) or objects.
+        const SHAPED = { '/auth/me': teacher, '/schedule': { periods: [], slots: [] }, '/classes': { classes: [] }, '/evaluations': { evaluations: [] }, '/teaching-plans': { plans: [] } };
+        const body = p in SHAPED ? SHAPED[p] : (/s$/.test(p) || p === '/library') ? [] : {};
         return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
       });
       const page = await ctx.newPage();
