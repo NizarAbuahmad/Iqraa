@@ -81,6 +81,7 @@ From session notes **(notes)**:
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
 - 2026-10-22 — A lesson game can be homework, and the teacher sees the scores
+- 2026-10-22 — Any deck plays as Class Challenge, with sound
 - 2026-10-22 — Progress is celebrated
 - 2026-10-22 — Math Corner exercises: learn or test yourself on a lesson from the book
 - 2026-10-22 — Lesson games from a lesson's key terms
@@ -109,7 +110,6 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-16 — Chat pushes are sent before the send is answered
 - 2026-10-16 — Grade 1 grammar in the English corner — built, shown to nobody yet
 - 2026-10-16 — The Library's lesson chips open at «كل الدروس» in Arabic
-- 2026-10-15 — Exam and evaluation papers stop repeating themselves
 
 ## Finding older detail, and recording new work
 
