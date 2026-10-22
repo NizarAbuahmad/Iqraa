@@ -1485,11 +1485,15 @@ export default function IqraScreen() {
   const [changeLessonOpen, setChangeLessonOpen] = useState(false);
   /** Set only while a picker opened by the `openLessonPicker` param is up; an in-chat open leaves it null. */
   const pickerReturnTo = useRef<string | null>(null);
+  /** True for the same tick as a returnTo close: the picker's confirm then calls onAsk, whose overview would land in a chat the teacher has just left. */
+  const skipNextAsk = useRef(false);
   const onPickerOpenChange = useCallback((open: boolean) => {
     setChangeLessonOpen(open);
     const to = pickerReturnTo.current;
     if (open || !to) return;
     pickerReturnTo.current = null; // consumed: a later in-chat open must not bounce
+    skipNextAsk.current = true;
+    setTimeout(() => { skipNextAsk.current = false; }, 0); // a dismiss calls no onAsk; never let the flag outlive this tick
     router.navigate(to as never);
   }, []);
   const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
@@ -1972,7 +1976,7 @@ export default function IqraScreen() {
     // Only a same-app path, and never the chat itself (that would be a loop).
     const to = params.returnTo;
     pickerReturnTo.current =
-      to && to.startsWith('/') && !to.startsWith('//') && !isTabActive(to, 'iqra') ? to : null;
+      to && to.startsWith('/') && !to.startsWith('//') && !to.includes('\\') && !isTabActive(to, 'iqra') ? to : null;
     setChangeLessonOpen(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the nonce; returnTo rides with it
   }, [params.openLessonPicker]);
@@ -3842,6 +3846,7 @@ export default function IqraScreen() {
             }
           }}
           onAsk={(topic, pick) => {
+            if (skipNextAsk.current) { skipNextAsk.current = false; return; } // picked from Today/the lesson bar: no overview in a chat nobody is looking at
             // `onContextChange` just fired and queued the pin update for this
             // same topic, but React hasn't applied it yet — `sessionMemory`
             // in this closure is still the *previous* lesson. Passing that
