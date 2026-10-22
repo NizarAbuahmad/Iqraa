@@ -98,19 +98,33 @@ def heading_bags(page: fitz.Page) -> list[Counter]:
         sp
         for block in page.get_text("dict", flags=TEXT_FLAGS)["blocks"]
         for line in block.get("lines", [])
+        if abs(line["dir"][1]) < 0.1  # a diagonal «draft copy» watermark is set at 72 pt
         for sp in line.get("spans", [])
         if sp["text"].strip()
     ]
     if not spans:
         return []
     top = max(sp["size"] for sp in spans)
-    return [bag(" ".join(sp["text"] for sp in spans if sp["size"] >= top - band)) for band in BANDS]
+    # A lesson number set in huge type («2» at 24 pt over a 19 pt title) would
+    # otherwise be the whole heading, so the title is also looked for under the
+    # largest span that holds a word.
+    words = [sp["size"] for sp in spans if len(norm(sp["text"])) >= 4]
+    tops = {top, max(words)} if words else {top}
+    return [
+        bag(" ".join(sp["text"] for sp in spans if sp["size"] >= ref - band))
+        for ref in sorted(tops, reverse=True)
+        for band in BANDS
+    ]
 
 
 def score_page(title: Counter, headings: list[Counter]) -> float:
     """The best a page's heading, at any of the bands, resembles the title."""
     best = 0.0
+    arabic_title = any("ء" <= c <= "ي" for c in title)
     for heading in headings:
+        if arabic_title:
+            # «التشفير» over «(Encryption)» in the same size is still the title
+            heading = Counter({c: n for c, n in heading.items() if not c.isascii() or c.isdigit()})
         if not heading or sum(heading.values()) > MAX_EXTRA * max(1, sum(title.values())):
             continue
         best = max(best, overlap(title, heading))

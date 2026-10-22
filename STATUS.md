@@ -5146,7 +5146,7 @@ picture.
   `scripts/render_lesson_pages.py` renders from our own copy of the student book
   (so the page named is by construction the page shown) into the existing
   `book-pages/<kbLessonId>/<n>.jpg` store and lists it in `book-page-links.json`
-  (`pdfUrl: null`, ≤ 20 pages a lesson). 778 lessons / 4,776 pages added (1.05 GB, all in the bucket).
+  (`pdfUrl: null`, ≤ 20 pages a lesson). 778 lessons / 4,776 pages added (1.05 GB, all in the bucket); the second pass below adds more.
 - **Only confident matches.** Score ≥ 0.9; 17 weaker matches were dropped (several
   landed on the contents page), and so was the whole Grade 7 PE S1 book (its «sure»
   hits were page 2) and one Grade 3 Arabic S2 entry opening on page 3.
@@ -5154,10 +5154,21 @@ picture.
   with no figures of its own shows up to 3 book pages («من كتاب الطالب»); a
   revision unit with no figures shows the opener page of its first lesson that has
   one. A lesson that has figures is unchanged.
-- **Still without pages:** 20 books (386 lessons) with no student PDF on disk —
-  Grades 1–2 Arabic/Islamic/PE, Grades 4–6 PE and digital, Grade 8 Arabic S2 —
-  need an NCCD download; PE books (all grades except 3), Grade 7 digital S2, Grade
-  5 Arabic S2 (3/25) and parts of Grade 8/9 digital and civic did not map.
+- **Second pass, 2026-10-22.** Two scoring fixes in `map_lesson_pages.py` took the
+  PE books from 2/13 to all lessons, Grade 5 Arabic S2 from 3/25 to 25/25, civic and
+  the digital books to nearly all: a lesson number set in huge type («2» at 24 pt) is no
+  longer the whole heading (the title is also looked for under the largest span that
+  holds a word); a diagonal «draft copy» watermark (72 pt) is ignored; a Latin subtitle
+  in the title's size no longer counts against an Arabic title. 141 lessons added and 9
+  existing lessons moved to their real opener (the first pass had pointed several civic
+  and digital lessons at a body page). 1,288 lessons / 9,487 pages are now listed.
+- **Biology book pages 9 and 10** (the finch beaks, the snail Figure 1) are cropped from
+  our copy as `p009`/`p010` (unit 1 lesson 1; in R2) — unit 1 now opens with the book's
+  own experiment.
+- **Still without pages:** 20 books (386 lessons) with no student PDF on disk — Grades
+  1–2 Arabic/Islamic/PE, Grades 4–5 PE and digital, Grade 8 Arabic S2 — need an NCCD
+  download; a handful of lessons whose opener scores under 0.9 (Grade 8 digital S2
+  «تمدد الشبكة», one Grade 9 PE S2 lesson) are left to the text-only deck.
 - Bucket: pages are in `iqraa-public/book-pages/`; the app shows nothing new until
   the OTA ships.
 
