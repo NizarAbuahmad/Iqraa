@@ -42,8 +42,13 @@ export interface GrammarPattern {
     | { kind: 'phrase'; right: string; wrong: string }
     | { kind: 'slot'; slot: string }
     | { kind: 'whole'; other: string }
-    /** The slot's verb in its third-person form against the base form («plays» / «play»). The pattern's text must use {3:slot}. */
-    | { kind: 'form'; slot: string };
+    /**
+     * The slot's word in the form the text uses against another form of the same word. Without `wrong`: the verb's
+     * third-person form against its base («plays» / «play»; the text uses {3:slot}). With `wrong`: the slot as realised
+     * against its `base` form («higher» / «high», «used» / «use»), its `past` («use» / «used») or its `comparative`
+     * («the deepest» / «the deeper»). The wrong option is always a real form.
+     */
+    | { kind: 'form'; slot: string; wrong?: 'base' | 'past' | 'comparative' };
   /**
    * Yes or No (Grade 2). `match` («Is it a car?»): the picture stays and the
    * question names the pictured word (Yes) or the next pictured word of the
@@ -495,6 +500,14 @@ export function unitSentences(unit: GrammarUnit): GrammarSentence[] {
         const otherTokens = realise(other.text, fill).tokens;
         const span = answerSpan(tokens);
         choose = { kind: 'whole', start: span[0], length: span[1], right: spanText(tokens, span), wrong: spanText(otherTokens, answerSpan(otherTokens)) };
+      } else if (c?.kind === 'form' && c.wrong) {
+        // The right option is the slot as realised; the wrong one is the same slot in the named form.
+        const formRe = new RegExp(`\\{(?:3|cmp|sup|ed|v):${c.slot}\\}`);
+        if (!formRe.test(p.text)) throw new Error(`"${p.text}" has no form of «${c.slot}» to choose`);
+        const code = { base: 'v', past: 'ed', comparative: 'cmp' }[c.wrong];
+        const wrongRealised = realise(p.text.replace(formRe, `{${code}:${c.slot}}`), fill);
+        const span = spans[c.slot];
+        choose = { kind: 'form', start: span[0], length: span[1], right: spanText(tokens, span), wrong: spanText(wrongRealised.tokens, wrongRealised.spans[c.slot]) };
       } else if (c?.kind === 'form') {
         // The same sentence with the base verb: the one token that differs is what Choose blanks.
         const base = realise(p.text.replace(`{3:${c.slot}}`, `{v:${c.slot}}`), fill).tokens;

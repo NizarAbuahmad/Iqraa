@@ -255,3 +255,28 @@ test('past tense: +ed, +d after e, doubling and irregulars by table, the verb is
   assert.equal(pastTense('carry'), 'carried');
   assert.equal(pastTense('visit the museum'), 'visited the museum');
 });
+
+const FORM_UNIT = (patterns: GrammarUnit['patterns'], slots: GrammarUnit['slots'] = {}): GrammarUnit =>
+  ({ lessonId: 'kbl-g4-eng-s1-nccd-u4_l1', reviewedBy: null, patterns, slots });
+
+test('a form Choose offers a real form: comparative against base, superlative against comparative, past against base, base against past', () => {
+  const cmp = unitSentences(FORM_UNIT([{ id: 'c', text: 'The {big} is {cmp:adj} than the {small}.', rows: [{ big: 'mountain', small: 'hill', adj: 'high' }, { big: 'lion', small: 'rabbit', adj: 'dangerous' }], choose: { kind: 'form', slot: 'adj', wrong: 'base' } }]));
+  assert.deepEqual(cmp.map(s => [s.text, s.choose!.right, s.choose!.wrong, s.choose!.start, s.choose!.length]), [
+    ['The mountain is higher than the hill.', 'higher', 'high', 3, 1],
+    ['The lion is more dangerous than the rabbit.', 'more dangerous', 'dangerous', 3, 2],
+  ]);
+  const sup = unitSentences(FORM_UNIT([{ id: 's', text: 'This is the {sup:adj} {n}.', rows: [{ adj: 'deep', n: 'lake' }], choose: { kind: 'form', slot: 'adj', wrong: 'comparative' } }]));
+  assert.deepEqual([sup[0].choose!.right, sup[0].choose!.wrong], ['deepest', 'deeper']);
+  const past = unitSentences(FORM_UNIT([
+    { id: 'p', text: 'We {ed:verb} {o}.', rows: [{ verb: 'stop', o: 'there' }], choose: { kind: 'form', slot: 'verb', wrong: 'base' } },
+    { id: 'n', text: "We didn't {v:verb} {o}.", rows: [{ verb: 'stop', o: 'there' }], choose: { kind: 'form', slot: 'verb', wrong: 'past' } },
+  ]));
+  assert.deepEqual([past[0].choose!.right, past[0].choose!.wrong], ['stopped', 'stop']);
+  assert.deepEqual([past[1].choose!.right, past[1].choose!.wrong], ['stop', 'stopped']);
+});
+
+test('a form Choose without `wrong` is still the third-person diff, and a pattern with no form to choose throws', () => {
+  const third = unitSentences(FORM_UNIT([{ id: 't', text: 'He {3:act}.', choose: { kind: 'form', slot: 'act' } }], { act: ['play tennis'] }));
+  assert.deepEqual([third[0].text, third[0].choose!.right, third[0].choose!.wrong], ['He plays tennis.', 'plays', 'play']);
+  assert.throws(() => unitSentences(FORM_UNIT([{ id: 'x', text: 'It is {adj}.', rows: [{ adj: 'high' }], choose: { kind: 'form', slot: 'adj', wrong: 'base' } }])), /no form of/);
+});
