@@ -21,3 +21,25 @@ test('phones get the grid card too, not the old row', () => {
 test('no section headings came back', () => {
   assert.doesNotMatch(src, /toolsBeforeClass|toolsDuringClass|toolsAfterClass/, 'the before/during/after headings were dropped on purpose');
 });
+
+// The app sets direction per component (LanguageContext turns OS-level RTL off), so a row
+// container must flip itself. The phone grid did from 2026-10-22; the desktop grid ran
+// left-to-right in Arabic, putting TAB_TOOLS[0] at the top LEFT until the same day.
+test('the desktop grid reads right to left in Arabic, like the phone grid', () => {
+  const style = src.match(/style=\{\[\s*styles\.list,([\s\S]*?)\]\}\s*>/);
+  assert.ok(style, 'the tools grid container style was not found');
+  assert.match(style[1], /styles\.listGrid\b/, 'the container no longer takes styles.listGrid');
+  assert.match(
+    style[1],
+    /flexDirection:\s*isRTL \? 'row-reverse' : 'row'/,
+    'the grid container does not flip with isRTL',
+  );
+  const desktop = src.match(/\blistGrid:\s*\{([^}]*)\}/);
+  assert.ok(desktop, 'styles.listGrid was not found');
+  assert.doesNotMatch(desktop[1], /flexDirection/, 'styles.listGrid fixes a direction of its own');
+  assert.doesNotMatch(
+    style[1],
+    /isDesktop \? styles\.listGrid : \[/,
+    'only the phone branch flips; the desktop branch is a bare styles.listGrid',
+  );
+});

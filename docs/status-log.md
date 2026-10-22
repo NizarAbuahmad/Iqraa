@@ -29,6 +29,25 @@ Sections below are in the order they were written, not strictly by date.
 
 ---
 
+## The desktop Tools grid reads right to left in Arabic — 2026-10-22
+
+- **What was wrong.** The Tools tab's desktop grid (`styles.listGrid` in
+  `app/(tabs)/ai-tools.tsx`) fixed `flexDirection: 'row'`, so in Arabic the first
+  tool, «شرائح الدرس», sat at the top LEFT and «ورقة عمل» at the right. The phone
+  grid already flipped. The app sets direction per component (`LanguageContext`
+  turns OS-level RTL off), so a row has to flip itself.
+- **Fix.** Both grids now take `flexDirection: isRTL ? 'row-reverse' : 'row'` on the
+  container. `listGrid` no longer names a direction.
+- **Test.** `toolsGrid.test.ts` checks the container's style has the `isRTL` flip
+  outside the phone-only branch, and that `listGrid` sets no direction. Against
+  the old source it fails.
+- **Verified** in the static web build at 1366 px (desktop breakpoint 900) with
+  `e2e/screens.mjs`, light and dark. Arabic: «شرائح الدرس» top right, «ورقة عمل»
+  third, on the left. English: "Lesson slides" top left. The phone grid is
+  unchanged. `screens.mjs` gained `UI_LANG=en` for the English shots; it was
+  Arabic-only. **Not checked:** native Android/iOS. The desktop grid is web-only
+  (`isDesktop` needs `Platform.OS === 'web'`), so they never render it.
+
 ## Lesson games from a lesson's key terms — 2026-10-22
 
 **What changed.** A lesson with at least four key terms (`keywordsAr`) gets
