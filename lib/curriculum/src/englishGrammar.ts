@@ -353,7 +353,10 @@ export function unitSentences(unit: GrammarUnit): GrammarSentence[] {
         const other = nextPictured(unit.slots[c.slot], fill[c.slot]);
         if (other) {
           const span = spans[c.slot];
-          const wrong = spanText(realise(p.text, { ...fill, [c.slot]: other }).tokens, span);
+          // Measure the other word with its own span: «boots» takes no article and «coat» does, so cutting
+          // «I'm wearing a coat.» with «boots»' one-token span offered «a» against «boots».
+          const otherRealised = realise(p.text, { ...fill, [c.slot]: other });
+          const wrong = spanText(otherRealised.tokens, otherRealised.spans[c.slot]);
           choose = { kind: 'slot', start: span[0], length: span[1], right: spanText(tokens, span), wrong };
         }
       } else if (c?.kind === 'whole' && picture) {
