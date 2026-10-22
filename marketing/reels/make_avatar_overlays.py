@@ -37,19 +37,30 @@ FLAG = f"""<svg width="54" height="36" viewBox="0 0 54 36" style="border-radius:
 <rect y="12" width="54" height="12" fill="#fff"/><rect y="24" width="54" height="12" fill="#007A3D"/>
 <polygon points="0,0 0,36 27,18" fill="#CE1126"/><polygon points="{star(9, 18, 5.2)}" fill="#fff"/></svg>"""
 
-rows = ['<div id="lk" class="o"><img class="lock" src="assets/lockup-ink.svg" alt=""></div>',
-        f'<div id="chip" class="o"><span class="pill chip">{FLAG}{JORDAN_CHIP}</span></div>',
-        f'<div id="tag" class="o"><span class="pill tag">{TAG}</span></div>']
-for k, txt in PILL.items():
-    rows.append(f'<div id="pill_{k}" class="o"><span class="pill">{txt}</span></div>')
-for b, beat in enumerate(BEATS):
-    for i, c in enumerate(beat["chunks"]):
-        if beat["key"] == "cta":
-            hl = c.replace("أردني", "<b>أردني</b>").replace("أردنيين", "<b>أردنيين</b>").replace("مجانًا", "<b>مجانًا</b>")
-            rows.append(f'<div id="h{b}_{i}" class="o hl">{hl}</div>')
-        else:
-            rows.append(f'<div id="cap_{b}_{i}" class="o cap">{c}</div>')
-cta = CTA_LINE.replace("www.iqrra.com", "<span>www.iqrra.com</span>")
-rows.append(f'<div id="cta" class="o"><div class="cta">{cta}</div></div>')
-open("avatar_ov.html", "w").write(f"<!doctype html><meta charset='utf-8'><style>{CSS}</style><body>\n" + "\n".join(rows))
-print("wrote avatar_ov.html,", len(rows), "elements")
+def common_rows():
+    """The layers both formats share: lockup, the Jordanian chip, the virtual-presenter tag, the demo pills."""
+    rows = ['<div id="lk" class="o"><img class="lock" src="assets/lockup-ink.svg" alt=""></div>',
+            f'<div id="chip" class="o"><span class="pill chip">{FLAG}{JORDAN_CHIP}</span></div>',
+            f'<div id="tag" class="o"><span class="pill tag">{TAG}</span></div>']
+    for k, txt in PILL.items():
+        rows.append(f'<div id="pill_{k}" class="o"><span class="pill">{txt}</span></div>')
+    return rows
+
+
+def main():
+    rows = common_rows()
+    for b, beat in enumerate(BEATS):
+        for i, c in enumerate(beat["chunks"]):
+            if beat["key"] == "cta":
+                hl = c.replace("أردني", "<b>أردني</b>").replace("أردنيين", "<b>أردنيين</b>").replace("مجانًا", "<b>مجانًا</b>")
+                rows.append(f'<div id="h{b}_{i}" class="o hl">{hl}</div>')
+            else:
+                rows.append(f'<div id="cap_{b}_{i}" class="o cap">{c}</div>')
+    cta = CTA_LINE.replace("www.iqrra.com", "<span>www.iqrra.com</span>")
+    rows.append(f'<div id="cta" class="o"><div class="cta">{cta}</div></div>')
+    open("avatar_ov.html", "w").write(f"<!doctype html><meta charset='utf-8'><style>{CSS}</style><body>\n" + "\n".join(rows))
+    print("wrote avatar_ov.html,", len(rows), "elements")
+
+
+if __name__ == "__main__":
+    main()

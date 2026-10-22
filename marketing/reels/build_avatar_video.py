@@ -60,11 +60,11 @@ def analyse(path):
     return rms, cen
 
 
-def placeholder():
+def placeholder(beats=BEATS):
     """A made-up envelope: syllable pulses per beat, a short pause between phrases, 0.9 s between beats."""
     rng = np.random.default_rng(5)
     env = []
-    for b in BEATS:
+    for b in beats:
         for j, c in enumerate(b["chunks"]):
             n = int(len(c.split()) / 2.6 * FPS)
             t = np.arange(n) / FPS
@@ -77,7 +77,7 @@ def placeholder():
     return env * 0.1, None
 
 
-def speech_segments(rms, nbeats):
+def speech_segments(rms, nbeats, beats=BEATS):
     """Split the recording into nbeats runs of speech at its pauses. Returns [(start, end)] in seconds, and whether it was exact."""
     thr = max(np.percentile(rms[rms > 1e-5], 35) if (rms > 1e-5).any() else 0, np.percentile(rms, 97) * 0.06)
     k = np.convolve(rms, np.ones(3) / 3, mode="same")
@@ -104,16 +104,16 @@ def speech_segments(rms, nbeats):
         i = int(np.argmin(gaps)); merged[i][1] = merged[i + 1][1]; del merged[i + 1]
     if len(merged) < nbeats:                         # too few: place beats by word count
         a, b = merged[0][0], merged[-1][1]
-        wc = np.array([words(x) for x in BEATS], float)
+        wc = np.array([words(x) for x in beats], float)
         edges = a + (b - a) * np.concatenate([[0], np.cumsum(wc)]) / wc.sum()
         merged = [[edges[i] + (0.25 * FPS if i else 0), edges[i + 1] - 0.25 * FPS] for i in range(nbeats)]
         exact = False
     return [(a / FPS, b / FPS) for a, b in merged], exact
 
 
-def placeholder_segments():
+def placeholder_segments(beats=BEATS):
     t, out = LEAD, []
-    for b in BEATS:
+    for b in beats:
         d = sum(len(c.split()) / 2.6 + 0.18 for c in b["chunks"])
         out.append((t, t + d)); t += d + 0.7
     return out
@@ -160,17 +160,17 @@ def build_timeline(segs):
     return spans                                       # [beat start, beat end, speech start, speech end]
 
 
-def gesture_arms(beat_idx, t, span):
+def gesture_arms(beat_idx, t, span, beats=BEATS):
     """-> (wave alpha, point alpha) at time t."""
     bs, be, s, e = span
-    g = BEATS[beat_idx]["gesture"]
+    g = beats[beat_idx]["gesture"]
     win = lambda a, b: ease((t - a) / 0.22) * (1 - ease((t - b) / 0.22))
     if g == "wave":
         return win(bs + 0.1, bs + 2.2), 0.0
     if g == "wave_end":
         return win(be - 2.2, be + 1), 0.0
     if g == "point":
-        n = len(BEATS[beat_idx]["subs"])
+        n = len(beats[beat_idx]["subs"]) if beats[beat_idx].get("subs") else max(1, int(round((be - bs) / 3.5)))
         d = (be - bs) / n
         a = 0.0
         for k in range(n):
@@ -192,14 +192,21 @@ def fade(img, a):
     return img
 
 
+LAYER_NAMES = ("hairback", "body", "head", "hairfront", "glasses", "eyes_open", "eyes_closed", "brows", "arm_wave", "arm_point",
+               "m_closed", "m_small", "m_open", "m_wide", "m_oo", "m_smile")
+
+
+def load_layers():
+    return {n: L(n) for n in LAYER_NAMES}
+
+
 def setup():
     if G:
         return
     G["takes"] = {n: Take(n) for n in {s[0] for b in BEATS for s in b["subs"]}}
     G["readers"] = {}
     G["body"], G["mask"] = bp.phone_sprite()
-    G["layers"] = {n: L(n) for n in ("hairback", "body", "head", "hairfront", "glasses", "eyes_open", "eyes_closed", "brows", "arm_wave", "arm_point",
-                                      "m_closed", "m_small", "m_open", "m_wide", "m_oo", "m_smile")}
+    G["layers"] = load_layers()
     G["ov"] = {p.stem: Image.open(p).convert("RGBA") for p in OVD.glob("*.png")}
     G["bg"] = {}
 
@@ -217,8 +224,8 @@ def blink_closed(t, rng_times):
     return any(0 <= t - b < 0.13 for b in rng_times)
 
 
-def host_sprite(t, shape, energy, closed, wave_a, point_a, brows_up):
-    Lr = G["layers"]
+def host_sprite(t, shape, energy, closed, wave_a, point_a, brows_up, scale=SCALE, layers=None):
+    Lr = layers or G["layers"]
     head = Image.new("RGBA", (720, 800), (0, 0, 0, 0))
     for n in ("head", "eyes_closed" if closed else "eyes_open"):
         head.alpha_composite(Lr[n])
@@ -240,7 +247,7 @@ def host_sprite(t, shape, energy, closed, wave_a, point_a, brows_up):
     if point_a > 0.01:
         a = Lr["arm_point"].rotate(-3 * np.sin(t * 6.0), center=(470, 566), resample=Image.BICUBIC, translate=(int((1 - point_a) * 70), 0))
         can.alpha_composite(fade(a, point_a))
-    return can.resize((int(720 * SCALE), int(800 * SCALE)), Image.LANCZOS)
+    return can.resize((int(720 * scale), int(800 * scale)), Image.LANCZOS)
 
 
 def wipe_in(frame, img, x_right, y, tr, dur=0.35, rise=18):

@@ -18,6 +18,7 @@
 | 13 | `out/Iqrra_13_Poster_Sample.mp4` | **style sample**: Reel 11's footage in a totally different design (poster / kinetic type / tilted phone) | 21.0 s |
 | 15 | `out/Iqrra_15_YouTube_Full_Tour.mp4` | **YouTube, 16:9 1920×1080**: 21 chapters, every feature, burned-in captions, no voice-over | ~4:13 |
 | 16 | `out/Iqrra_16_Avatar_Host.mp4` (`…_PREVIEW.mp4` until a recording exists) | **virtual teacher host** (illustrated «معلّمة اقرأ»), 9:16, voice-over from a recording you supply | ~55 s |
+| 17 | `out/Iqrra_17_Avatar_Host_YouTube.mp4` (`…_PREVIEW.mp4` until a recording exists) | **virtual teacher host, 16:9 YouTube**: the full tour presented by «معلّمة اقرأ», voice-over from a recording you supply | ~1:30–2:00 |
 
 Reels 1–4 share one layout (headline in the top safe zone, the app in a rounded card, branded end card),
 the same Chromium-rendered Arabic (Cairo / Almarai, never ffmpeg `drawtext`) and the same music bed.
@@ -157,6 +158,18 @@ Without `--audio` it renders a `_PREVIEW` with placeholder mouth timing and musi
 - **Same rules as the other videos:** demo-mode screens carry «وضع العرض · محتوى تجريبي»; no "verified"; frames with mirrored maths are not used; «مجانًا» is true only while the product has no price.
 - Meta Reels safe zone: chip, lockup, captions, her face and the phone's content sit inside y 270–1250; only the blazer and the phone's tab bar run below.
 - Music: `music_inspire` ~21 dB under the voice.
+
+## Reel 17 — «معلّمة اقرأ» presents the full tour (16:9, YouTube)
+
+Same host, voice analysis and honesty rules as Reel 16, a different layout and script. `avatar_yt_script.py` = twelve beats (script, caption phrases, which chapters of the
+YouTube tour supply the footage), `AVATAR_YT_SCRIPT.md` = the recording guide; `make_avatar_yt_overlays.py` + `render_html.js` render the text layers (1920×1080);
+`build_avatar_yt.py [--audio voice.m4a]` renders it. Host on the left (blazer off the bottom edge), the phone large on its teal disc, the beat's title and captions in the right
+column, the Jordanian-app chip + «شخصية افتراضية» tag + a progress rail on every frame; the last beat clears the phone for the offer.
+
+- **Footage = the YouTube tour's reviewed windows** (`youtube_chapters.py`), including the blurred «ready» card for generated worksheets / quizzes / activities; a beat shows as many screens as fit at ≥2.2 s each.
+- **Chapters:** `out/avatar_yt_chapters.txt` is written on every build, grouped by section and merged so each chapter is ≥10 s (YouTube's minimum).
+- **The voice is yours** (no Jordanian Arabic TTS here; Higgsfield has 0 credits). One take, ~1 s pause between the 12 paragraphs; without `--audio` a `_PREVIEW` with placeholder mouth timing and music only is made.
+- Says it is a Jordanian app made by Jordanians in beats 2 and 12 and on a chip on every frame; never gives a personal testimonial; demo-mode screens carry their label; «مجانًا» holds only while the product has no price.
 
 ## Reels 6–9 — cut from the full-app tour
 
