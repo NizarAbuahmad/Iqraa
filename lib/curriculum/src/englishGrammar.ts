@@ -94,12 +94,14 @@ const PLURAL_FORMS = new Set([
   'apples', 'cakes', 'carrots', 'grapes', 'lemons', 'sweets',
   'eggs', 'scissors', 'shoes', 'shorts', 'trousers',
   'rice', 'bread', 'cheese', 'chicken', 'juice', 'milk', 'water',
+  // Grade 3: plural in form, or uncountable.
+  'glasses', 'sandals', 'trainers', 'pyjamas', 'keys', 'shampoo', 'toothpaste', 'sunscreen',
 ]);
 /** Words whose article the first letter gets wrong. None yet; "a uniform", "an hour" later. */
 const ARTICLE_OVERRIDES: Record<string, 'a' | 'an'> = {};
-/** Irregular plurals (Grade 2). «fish» is an animal in Unit 5 and a food in Unit 6; both take the same plural. */
+/** Irregular plurals (Grade 2) and words the rules below get wrong. «fish» is an animal in Unit 5 and a food in Unit 6; both take the same plural. */
 const PLURAL_OVERRIDES: Record<string, string> = {
-  mouse: 'mice', fish: 'fish', potato: 'potatoes', tomato: 'tomatoes', shelf: 'shelves',
+  mouse: 'mice', fish: 'fish', potato: 'potatoes', tomato: 'tomatoes', shelf: 'shelves', mango: 'mangoes', sheep: 'sheep',
 };
 
 function articleFor(word: string): 'a' | 'an' | null {
@@ -114,7 +116,10 @@ export function withArticle(word: string): string {
 
 export function pluralOf(word: string): string {
   if (PLURAL_FORMS.has(word)) return word;
-  return PLURAL_OVERRIDES[word] ?? `${word}s`;
+  if (PLURAL_OVERRIDES[word]) return PLURAL_OVERRIDES[word];
+  if (/(s|x|z|ch|sh)$/.test(word)) return `${word}es`;
+  if (/[^aeiou]y$/.test(word)) return `${word.slice(0, -1)}ies`;
+  return `${word}s`;
 }
 
 // ─── The data ─────────────────────────────────────────────────────────────

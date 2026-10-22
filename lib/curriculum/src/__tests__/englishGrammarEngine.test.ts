@@ -97,3 +97,16 @@ test('the grade helpers read the grade off the lesson', () => {
   assert.ok(grammarUnitsForGrade(1).every(u => unitGrade(u) === 1));
   assert.deepEqual(grammarUnitsForGrade(3), []);
 });
+
+test('Grade 3 word forms: -es and -ies plurals, plural-form words, uncountables', () => {
+  for (const [word, plural] of [
+    ['torch', 'torches'], ['mango', 'mangoes'], ['ice lolly', 'ice lollies'], ['dress', 'dresses'], ['monkey', 'monkeys'],
+    ['kiwi', 'kiwis'], ['baseball cap', 'baseball caps'], ['sheep', 'sheep'], ['glasses', 'glasses'], ['sandals', 'sandals'],
+    ['trainers', 'trainers'], ['pyjamas', 'pyjamas'], ['keys', 'keys'],
+  ] as const) assert.equal(pluralOf(word), plural, word);
+  for (const [word, phrase] of [
+    ['glasses', 'glasses'], ['sandals', 'sandals'], ['trainers', 'trainers'], ['pyjamas', 'pyjamas'], ['keys', 'keys'],
+    ['shampoo', 'shampoo'], ['toothpaste', 'toothpaste'], ['sunscreen', 'sunscreen'],
+    ['ice lolly', 'an ice lolly'], ['television', 'a television'], ['armchair', 'an armchair'],
+  ] as const) assert.equal(withArticle(word), phrase, word);
+});
