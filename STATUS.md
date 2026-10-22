@@ -81,6 +81,8 @@ From session notes **(notes)**:
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
 - 2026-10-22 — Any deck plays as Class Challenge, with sound
+- 2026-10-22 — Progress is celebrated
+- 2026-10-22 — Math Corner exercises: learn or test yourself on a lesson from the book
 - 2026-10-22 — Lesson games from a lesson's key terms
 - 2026-10-22 — Teachers' phones open on Today
 - 2026-10-22 — Book-picture slides no longer share one title
@@ -108,12 +110,10 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 - 2026-10-16 — Grade 1 grammar in the English corner — built, shown to nobody yet
 - 2026-10-16 — The Library's lesson chips open at «كل الدروس» in Arabic
 - 2026-10-15 — Exam and evaluation papers stop repeating themselves
-- 2026-10-15 — Native photo shrinking needs a new binary: `version` 1.3.0 → 1.4.0
-- 2026-10-15 — The periodic-table question family went from 5 to 15 items
 
 ## Finding older detail, and recording new work
 
-- The log has 332 sections. Anything cited elsewhere as
+- The log has 335 sections. Anything cited elsewhere as
   «see STATUS.md «X»» means the entry titled X in [`docs/status-log.md`](./docs/status-log.md).
 - **A PR adds its write-up to the top of the log** and edits **this page only when a line above
   stops being true** (a flag flips, a service moves, an open item closes). Re-verify a line
