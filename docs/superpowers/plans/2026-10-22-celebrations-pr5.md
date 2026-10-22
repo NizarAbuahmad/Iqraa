@@ -477,8 +477,9 @@ EOF
   overlay)
 - Modify: `artifacts/mobile/app/(tabs)/index.tsx` (`LessonWorkspace`: mount
   the overlay)
-- Modify: `STATUS.md`: a section after "Teachers' phones open on Today —
-  2026-10-22", at the same heading level.
+- Modify: `docs/status-log.md`: a section at the **top**, directly under its
+  header. Also `STATUS.md`: one line in «Recent changes», plus the log's
+  section count.
 - Modify: `CLAUDE.md`: one sentence in the shared-pieces bullet.
 - Test: modify `artifacts/mobile/services/__tests__/celebrateMoments.test.ts`
 
@@ -552,7 +553,9 @@ In `hooks/useTodayLesson.ts`:
 - Track the crossing per lesson, only after materials have loaded once:
   - `const [loaded, setLoaded] = useState(false)`, set to `true` inside
     `reload` once `getAllItems()` resolves (also on failure, so a failed load
-    does not block forever);
+    does not block forever). `reload` runs from `useFocusEffect` (on mount and
+    on refocus) and from the web `window` focus listener; there is no separate
+    mount call;
   - `const prevPrep = useRef<Progress | null>(null)`;
   - `const [prepJustReady, setPrepJustReady] = useState(false)`.
 
@@ -595,13 +598,21 @@ bullet, before its «Amber» sentence, add:
   `services/celebration.ts`), never on opening a screen that is already done.
 ```
 
-`STATUS.md`: after the "Teachers' phones open on Today — 2026-10-22" section,
-at the same heading level, add a section titled
-"Progress is celebrated — 2026-10-22". It has three bullets:
-- the four moments, as in the CLAUDE.md sentence;
+`docs/status-log.md`: put a new section at the **top**, directly under the
+header and above "## Teachers' phones open on Today — 2026-10-22". Title it
+"## Progress is celebrated — 2026-10-22". It has five bullets:
+- the four moments, as in the CLAUDE.md sentence, and that each fires only on
+  the crossing;
 - how it looks: a confetti burst, a badge, a haptic and a screen-reader
   announcement; with reduced motion only the badge fades;
-- that the classroom presentation keeps its own celebration.
+- that the classroom presentation keeps its own celebration;
+- **Verified:** tests and typecheck;
+- **Not verified:** the haptic and the screen-reader announcement on a device.
+
+`STATUS.md`:
+- In «Recent changes», add `- 2026-10-22 — Progress is celebrated` as the
+  first entry. Delete the last entry so the list keeps exactly 30.
+- In «Finding older detail», raise «The log has N sections» by one.
 
 - [ ] **Step 6: Verify**
 
@@ -615,7 +626,7 @@ Expected: all pass, clean.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add "artifacts/mobile/app/(tabs)/school.tsx" artifacts/mobile/hooks/useTodayLesson.ts artifacts/mobile/components/today/PhoneToday.tsx "artifacts/mobile/app/(tabs)/index.tsx" artifacts/mobile/services/__tests__/celebrateMoments.test.ts CLAUDE.md STATUS.md
+git add "artifacts/mobile/app/(tabs)/school.tsx" artifacts/mobile/hooks/useTodayLesson.ts artifacts/mobile/components/today/PhoneToday.tsx "artifacts/mobile/app/(tabs)/index.tsx" artifacts/mobile/services/__tests__/celebrateMoments.test.ts CLAUDE.md STATUS.md docs/status-log.md
 git commit -m "$(cat <<'EOF'
 Celebrate the last homework ticked and a prep checklist reaching all ready
 
