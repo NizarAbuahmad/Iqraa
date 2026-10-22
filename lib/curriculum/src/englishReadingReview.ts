@@ -30,6 +30,7 @@ const SKIP_AR: Record<SoundSkip, string> = {
   digraph: 'لا تُستعمل: أول حرفين صوت واحد (<span dir="ltr">ch / sh / th</span>)',
   'soft-c': 'لا تُستعمل: <span dir="ltr">c</span> تُلفظ <span dir="ltr">s</span> هنا',
   'soft-g': 'لا تُستعمل: <span dir="ltr">g</span> تُلفظ <span dir="ltr">j</span> هنا',
+  'hard-q': 'لا تُستعمل: <span dir="ltr">Q</span> تُلفظ <span dir="ltr">k</span> هنا',
 };
 
 /** A sentence's picture, in the same markup as the grammar form. */
