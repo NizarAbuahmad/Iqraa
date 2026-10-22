@@ -106,7 +106,7 @@ export function GameShell({
             </Text>
             {footer}
 
-            <Button label={t('playPlayAgain')} onPress={() => onReplay?.()} style={{ backgroundColor: accent, marginTop: 12 }} fullWidth size="lg" />
+            <Button label={t('playPlayAgain')} onPress={() => onReplay?.()} fill={accent} style={{ marginTop: 12 }} fullWidth size="lg" />
 
             {!user && (
               <View style={[styles.ctaCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
