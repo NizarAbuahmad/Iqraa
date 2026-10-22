@@ -42,6 +42,8 @@ const ONLY = process.env.ONLY ? new Set(process.env.ONLY.split(',')) : null;
 const REDUCED = process.env.REDUCED === '1';
 // SCROLL=900 wheels the page down that many px before the shot, for what sits below the fold.
 const SCROLL = Number(process.env.SCROLL ?? 0);
+// UI_LANG=en shoots the English (left-to-right) UI; the file names then carry `-en`.
+const UI_LANG = process.env.UI_LANG === 'en' ? 'en' : 'ar';
 const VIEWPORTS = [
   { name: 'phone', width: 390, height: 844, isMobile: true, hasTouch: true, deviceScaleFactor: 2 },
   { name: 'desktop', width: 1366, height: 860, isMobile: false, hasTouch: false, deviceScaleFactor: 1 },
@@ -57,16 +59,16 @@ for (const colorScheme of ['light', 'dark']) {
       if (ONLY && !ONLY.has(name)) continue;
       const { name: _vpName, width, height, ...device } = vp;
       const ctx = await browser.newContext({
-        ...device, viewport: { width, height }, locale: 'ar-JO', colorScheme,
+        ...device, viewport: { width, height }, locale: UI_LANG === 'en' ? 'en-US' : 'ar-JO', colorScheme,
         reducedMotion: REDUCED ? 'reduce' : 'no-preference',
       });
-      await ctx.addInitScript((who) => {
-        localStorage.setItem('@iqra_language', 'ar');
+      await ctx.addInitScript(([who, lang]) => {
+        localStorage.setItem('@iqra_language', lang);
         localStorage.setItem('@iqra_intro_seen_v1', '1');
         localStorage.setItem('iqra_access_token', 'fake');
         localStorage.setItem('iqra_refresh_token', 'fake');
         localStorage.setItem('@iqra_user_snapshot_v1', JSON.stringify(who));
-      }, teacher);
+      }, [teacher, UI_LANG]);
       await ctx.route('**/api/**', (route) => {
         const p = new URL(route.request().url()).pathname.replace(/^\/api/, '');
         // /library is a list too (resources.tsx maps it) though its path does not end in s
@@ -90,8 +92,8 @@ for (const colorScheme of ['light', 'dark']) {
           await page.mouse.wheel(0, SCROLL);
           await page.waitForTimeout(400);
         }
-        await page.screenshot({ path: `${OUT}/${REDUCED ? 'reduced-' : ''}${colorScheme}-${vp.name}-${name}${SCROLL ? '-scrolled' : ''}.png` });
-        console.log(`${colorScheme} ${vp.name} ${name}${stuck ? ' SPLASH' : ''}`);
+        await page.screenshot({ path: `${OUT}/${REDUCED ? 'reduced-' : ''}${colorScheme}-${vp.name}-${name}${SCROLL ? '-scrolled' : ''}${UI_LANG === 'en' ? '-en' : ''}.png` });
+        console.log(`${colorScheme} ${vp.name} ${name}${UI_LANG === 'en' ? ' en' : ''}${stuck ? ' SPLASH' : ''}`);
       } catch (e) {
         console.log(`${colorScheme} ${vp.name} ${name} FAILED ${String(e.message).slice(0, 80)}`);
       }
