@@ -38,6 +38,7 @@ import { IqraaMark } from '@/components/ui/IqraaMark';
 import { JordanFlag } from '@/components/ui/JordanFlag';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { LessonPrepBoard } from '@/components/ui/LessonPrepBoard';
+import { Celebrate } from '@/components/ui/Celebrate';
 import { periodClassLabel } from '@/services/classSubjects';
 import { className, classNameFor } from '@/services/materialClass';
 import { todayLabel } from '@/services/dateLabels';
@@ -358,6 +359,7 @@ function LessonWorkspace() {
           </Pressable>
         </View>
       </View>
+      <Celebrate visible={today.prepJustReady} size="small" message={t('celebratePrepReady')} onDone={today.clearPrepJustReady} />
     </View>
   );
 }

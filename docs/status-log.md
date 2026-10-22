@@ -29,6 +29,91 @@ Sections below are in the order they were written, not strictly by date.
 
 ---
 
+## Progress is celebrated — 2026-10-22
+
+- **Four moments.** `Celebrate` (`components/ui/Celebrate.tsx`) marks an exam handed in,
+  a game over, the last homework ticked and a lesson's prep checklist reaching all ready.
+  The exam fires on a successful hand-in the student made; a forced hand-in (time up, or
+  the exam closed) does not celebrate, and neither does a paper reopened already handed in
+  or `already_submitted`. The other three fire only when the state crosses into done
+  (`justCompleted`, `services/celebration.ts`; the prep checklist through `prepCrossing`,
+  which wraps it), never on opening a screen that is already complete: Today opened at 5 of
+  5, a switch to a lesson that is already ready, or a reloaded finished homework list is
+  not a moment.
+- **What each one waits for.** Homework celebrates after the save succeeds, only for a tick
+  (not an untick), and only when no other homework save is still in flight (that save's
+  optimistic change may yet roll back). The last save to finish judges the list as it is
+  rendered now, so ticking the last two quickly still celebrates, once. The prep checklist is judged only when the saved materials came from the
+  server (or nobody is signed in) and the lesson's «غير مطلوب» choices have been read for
+  that lesson; `getItems` never rejects and turns a failed or timed-out read into the
+  device-only list, so the board reads `getAllItemsChecked()` and a degraded read drops the
+  baseline instead of becoming it (otherwise the next good read at 5 of 5 would celebrate on
+  opening Today). On web the window-focus reload only runs while Today is the focused screen.
+- **How it looks.** A confetti burst, a badge, a success haptic and a screen-reader
+  announcement; with reduced motion only the badge fades. The badge sits in the upper
+  third so it never covers the next action, and a non-perfect game end is confetti only
+  (the game's own panel already says «أحسنت!»).
+- **The classroom presentation keeps its own celebration**; it is not touched.
+- **Verified:** `pnpm test` (mobile) and `pnpm run typecheck`. `celebration.test.ts` pins
+  the crossing and `prepCrossing` (opening at 5 of 5, a degraded read, a stale skips list,
+  a change of lesson); `celebrateMoments.test.ts` reads each screen's source for the rule it
+  depends on (exam: after the submit and not on the forced path; homework: after the awaited
+  save, behind the tick and no-other-save-in-flight guard; Today: `prepCrossing` over a
+  checked read). Screenshots of the game-over burst were taken in a browser in light, dark
+  and reduced motion. The badge position on the exam hand-in and the perfect-score badge was
+  checked by reading the code only.
+- **Not verified:** screenshots of the homework and prep-checklist moments; the haptic and
+  the screen-reader announcement, on a device.
+
+## Math Corner exercises: learn or test yourself on a lesson from the book, 2026-10-22
+
+**What a user can do.** The Math Corner hub's first card, «تمارين الدروس», opens
+`/curriculum/math/exercises`: grade chips 1–10 (a teacher starts on the first
+grade they teach), then the grade's maths units and lessons in book order. A
+lesson (`/curriculum/math/exercises/<kb lesson id>`) shows ten multiple-choice
+questions, easy → hard, in two modes:
+- **تعلّم (learn):** «أظهر الحل» per question highlights the key and shows the
+  checked working where a person wrote it (`steps.ts`; today only Grade 10 bank
+  items have any). A teacher also gets «أظهر كل الإجابات» to go through the set
+  with the class, and «نسخ الرابط», which copies the lesson's production link.
+- **اختبر نفسك (test yourself):** a tap marks the answer at once and locks it
+  (green key, red wrong pick, working if any); a score line counts up, and the
+  end offers «أعد المحاولة» (same set) or «تمارين جديدة».
+Students reach it with no gating change (`/curriculum` prefix).
+
+**Best score per lesson, on this device.** Finishing a test-yourself set saves
+the lesson's best score (`services/mathExerciseProgress.ts`, AsyncStorage key
+`mathExercises.best.v1.<user id>`, so two children on one family phone keep
+separate lists). The lesson list shows «أفضل نتيجة: 8 من 10» under a lesson, and
+test mode shows it under the running score. Scores compare as fractions because
+a thin lesson's set can be shorter than ten (`recordBest`; a tie keeps the longer
+set), and stored JSON is read defensively (`parseBests`); both are tested.
+Checked in a browser: finish a set, the list shows the best, and it survives a
+full page reload. **Not built:** nothing reaches the server, so a new phone or a
+cleared app starts from zero and a teacher cannot see who practised, the same v1
+limit as the English corner's stars.
+
+**Where the questions come from.** `services/mathExercises.ts` lists only the
+lessons `hasMathBank` covers (445 of 485 Grade 1–10 maths lessons on 2026-10-22)
+and draws each item from the same lesson-keyed bank as worksheets and quizzes
+(`takeConcreteMath`, with its own session set). Multiple choice only, because the
+bank's key is the option as displayed, so marking is string equality. A thin
+lesson gives a shorter set rather than a repeat (some Grade 10 lessons give 3–8).
+**The extracted book items are not used**: they are held behind `BOOK_ITEMS_LIVE`
+until a person compares them with the printed pages, and a student screen must
+not get round that gate. `mathExercises.test.ts` builds every covered lesson's
+set in both languages and checks every key is one of its distinct options.
+
+**«؟» as a blank stays inside its equation (`isolateForeignRuns`).** The bank's
+Grade 1–6 stems write the missing number as «؟» («88 × ؟ = 1056»). It was not in
+the run class, so the equation was cut into pieces that the bidi algorithm
+reordered («× 88 ؟ 1056 =»), on every screen that shows these stems. A «؟» next
+to an operator is now part of the run, and such a run gets a left-to-right
+override inside its isolate, because «؟» is an Arabic letter to bidi and would
+turn the digits after it Arabic (rule W2). A «؟» straight after a digit ends the
+sentence and stays in the flow. Checked by glyph position in a browser, not by
+eye: every stem on a Grade 5 lesson read in typed order.
+
 ## Lesson games from a lesson's key terms — 2026-10-22
 
 **What changed.** A lesson with at least four key terms (`keywordsAr`) gets

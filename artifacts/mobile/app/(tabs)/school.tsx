@@ -36,6 +36,7 @@ import { getChildHomework, getMyHomework, setHomeworkDone } from '@/services/hom
 import { openResource } from '@/services/openResource';
 import {
   ammanToday,
+  allTrackedDone,
   applyDone,
   dueBadge,
   formatDueDate,
@@ -67,6 +68,8 @@ import { palette } from '@/constants/colors';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Celebrate } from '@/components/ui/Celebrate';
+import { justCompleted } from '@/services/celebration';
 
 const ACCENT = palette.primary;
 /** Minimum touch target for the tick box. */
@@ -88,10 +91,14 @@ export default function SchoolScreen() {
   // Homework has its own list, error and sequence so it fails and reloads on
   // its own; `selected` is shared because both lists use the same child keys.
   const [homework, setHomework] = useState<ChildHomework[] | null>(null);
+  // The list as last rendered, for a save that finishes after another tick.
+  const homeworkNow = useRef(homework);
+  homeworkNow.current = homework;
   const [hwError, setHwError] = useState('');
   // Ids whose save is in flight: the ref is the synchronous guard against a
   // double tap, the state only drives the dimmed look.
   const hwInFlight = useRef<Set<string>>(new Set());
+  const [celebrateHw, setCelebrateHw] = useState(false);
   const [hwSaving, setHwSaving] = useState<ReadonlySet<string>>(new Set());
 
   // Exams have their own list, error and sequence, like homework: one failing
@@ -172,11 +179,29 @@ export default function SchoolScreen() {
       setHwError('');
       // A load that started before this tap must not land on top of it.
       hwSeq.current++;
+      // The child's list as it stood before this tick, captured inside the
+      // updater: `homework` in this closure is stale (deps are `[t]`).
+      const seen: { before: FamilyHomework[] } = { before: [] };
       const patch = (fn: (items: FamilyHomework[]) => FamilyHomework[]) =>
-        setHomework(prev => prev && prev.map(k => (k.key === childKey ? { ...k, homework: fn(k.homework) } : k)));
+        setHomework(prev => prev && prev.map(k => {
+          if (k.key !== childKey) return k;
+          seen.before = k.homework;
+          return { ...k, homework: fn(k.homework) };
+        }));
       patch(items => applyDone(items, item.id, next));
       try {
         await setHomeworkDone(item.id, next);
+        // Only a tick that the server accepted, and only once no other save is
+        // still out (an optimistic tick may yet roll back). The last save to
+        // finish judges the list as it stands now, so ticking the last two
+        // quickly still finishes it. (`hwInFlight` still holds this id here;
+        // its `finally` removes it.)
+        const othersInFlight = [...hwInFlight.current].some(id => id !== item.id);
+        const now = homeworkNow.current?.find(k => k.key === childKey)?.homework ?? [];
+        if (next && !othersInFlight && justCompleted(
+          { key: childKey, complete: allTrackedDone(seen.before) },
+          { key: childKey, complete: allTrackedDone(now) },
+        )) setCelebrateHw(true);
       } catch (e) {
         patch(items => items.map(h => (h.id === item.id ? item : h)));
         setHwError(apiErrorMessage(e, 'hwSaveFailed', t));
@@ -451,6 +476,7 @@ export default function SchoolScreen() {
           <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
         </Pressable>
       </ScrollView>
+      <Celebrate visible={celebrateHw} size="small" message={t('celebrateHomeworkAll')} onDone={() => setCelebrateHw(false)} />
     </View>
   );
 }
