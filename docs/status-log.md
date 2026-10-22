@@ -14,6 +14,38 @@ Sections below are in the order they were written, not strictly by date.
 
 ---
 
+## Library: the books' pictures in folders by grade, subject and lesson — 2026-10-22
+
+- **What a user sees.** A «صور الكتاب» tile on the library's front row
+  (`/curriculum/resources`) opens `/curriculum/book-images`. It shows grade
+  folders, then subject folders, then lesson folders grouped under their unit in
+  book order, then the lesson's pictures. Each picture is captioned with its
+  semester and book page, and tapping it enlarges it.
+- **One route, depth in the params.** `gradeId`, `subjectId` and `lessonId` set
+  the level, so the back button goes up one folder and every folder has its own
+  URL. Students reach it too (`/curriculum` is already on the non-teacher
+  allowlist).
+- **Same figures as slides and exports.** `services/bookImageFolders.ts` files
+  the 2,576 linked figures from `lessonsWithFigures()` and counts only those in
+  `BOOK_FIGURE_KEYS`. A lesson folder shows `bookFigureRefsForLesson()`. Nothing
+  new was uploaded. Coverage: grade 10 has 672, 9 has 570, 8 has 461, 4 has 336,
+  7 has 275, 6 has 104, 3 has 92 and 5 has 66. Grades 1–2 have no folders.
+  Arabic, Islamic, PE, digital and civics have no figures yet.
+- **Narrowing.** Grades are narrowed to the user's own, and a teacher's subjects
+  to the ones they teach, as in the library. Folders with no pictures are not
+  shown.
+- **Verified:** `bookImageFolders.test.ts` (each lesson sits under its own grade
+  and subject, in book order, and the counts add up) and the mobile typecheck.
+  The full mobile suite has 2 failures. `designScale` was mine (fixed). The other
+  is `scopeSelection`'s TopicSelector source check, which fails on Windows on
+  untouched main code. I took headless screenshots, signed in as a local
+  teacher, of the library tile, the grade, subject and grade-10 chemistry lesson
+  folders, and a lesson's pictures.
+- **Not verified:** that tapping a picture opens the shared enlarge viewer (the
+  scripted tap did not open it), and anything on a device.
+
+---
+
 ## Teachers' phones open on Today — 2026-10-22
 
 - **Today on phones.** A teacher on a phone now lands on Today instead of the

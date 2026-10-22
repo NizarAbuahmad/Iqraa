@@ -635,6 +635,12 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
       key: 'curriculum', icon: 'book', title: t('curriculumTitle'), desc: t('libraryCurriculumDesc'), ...BRAND_TILE,
       go: () => router.push({ pathname: '/curriculum/browse' as never, params: { gradeId: grade } }),
     },
+    // The books' figures, filed grade → subject → lesson. Opens at the grade
+    // folders, not at this grade, so the whole tree is one tap away.
+    {
+      key: 'book-images', icon: 'images', title: t('bookImagesTitle'), desc: t('bookImagesDesc'), ...BRAND_TILE,
+      go: () => router.push('/curriculum/book-images' as never),
+    },
     ...(englishLevel !== null
       ? [{
           key: 'english', icon: 'headset' as const, title: t('hubTitle'), desc: t('hubListenDesc'), ...cornerTile('english'),
