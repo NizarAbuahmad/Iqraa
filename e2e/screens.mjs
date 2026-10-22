@@ -40,6 +40,8 @@ const ROUTES = [
 // be on its way in, so a card caught half-faded there is a bug.
 const ONLY = process.env.ONLY ? new Set(process.env.ONLY.split(',')) : null;
 const REDUCED = process.env.REDUCED === '1';
+// SCROLL=900 wheels the page down that many px before the shot, for what sits below the fold.
+const SCROLL = Number(process.env.SCROLL ?? 0);
 const VIEWPORTS = [
   { name: 'phone', width: 390, height: 844, isMobile: true, hasTouch: true, deviceScaleFactor: 2 },
   { name: 'desktop', width: 1366, height: 860, isMobile: false, hasTouch: false, deviceScaleFactor: 1 },
@@ -83,7 +85,12 @@ for (const colorScheme of ['light', 'dark']) {
         // Entrance staggers up to 6 × 40ms + 220ms; 500ms covers it. Reduced motion gets no wait.
         if (!REDUCED) await page.waitForTimeout(500);
         const stuck = (await splash.count()) > 0;
-        await page.screenshot({ path: `${OUT}/${REDUCED ? 'reduced-' : ''}${colorScheme}-${vp.name}-${name}.png` });
+        if (SCROLL) {
+          await page.mouse.move(width / 2, height / 2);
+          await page.mouse.wheel(0, SCROLL);
+          await page.waitForTimeout(400);
+        }
+        await page.screenshot({ path: `${OUT}/${REDUCED ? 'reduced-' : ''}${colorScheme}-${vp.name}-${name}${SCROLL ? '-scrolled' : ''}.png` });
         console.log(`${colorScheme} ${vp.name} ${name}${stuck ? ' SPLASH' : ''}`);
       } catch (e) {
         console.log(`${colorScheme} ${vp.name} ${name} FAILED ${String(e.message).slice(0, 80)}`);
