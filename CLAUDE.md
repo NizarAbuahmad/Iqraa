@@ -555,6 +555,9 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   module scope or inside render: both ignore the provider and stay teal.
   Text on a `colors.primary` fill is `colors.primaryForeground`, never `'#fff'`:
   in dark mode a corner's primary is light.
+  A `Button` in a colour of its own (a game's accent) takes `fill`, never a
+  `backgroundColor` style, which leaves the variant's label on it (navy on every
+  game accent in dark mode); `gameAccents.test.ts` fails the style form.
   `cornerTheme.test.ts` fails any file in a wired corner (or
   `components/{math,lab,quran,corners,englishHub,publicGames}`) that imports `palette`, and any
   `_layout.tsx` outside a corner directory that mounts `CornerThemeProvider`.

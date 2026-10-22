@@ -153,7 +153,7 @@ export function MathDrillGame({ initial }: { initial: DrillConfig }) {
           </View>
 
           <View style={{ marginTop: 'auto', gap: 10 }}>
-            <Button label={t('playDrillStart')} onPress={start} style={{ backgroundColor: ACCENT }} fullWidth size="lg" />
+            <Button label={t('playDrillStart')} onPress={start} fill={ACCENT} fullWidth size="lg" />
             <Button label={t('playDrillShare')} onPress={share} variant="secondary" fullWidth />
             {copied ? (
               <Text style={{ color: RIGHT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: 'center' }}>

@@ -29,6 +29,23 @@ Sections below are in the order they were written, not strictly by date.
 
 ---
 
+## Game buttons read in dark mode — 2026-10-22
+
+- **What was wrong.** A game's «العب مرة أخرى» (and the maths drill's «ابدأ», the
+  lesson game's «التالي») set the game's accent as its fill through `style`, so the
+  label kept `Button`'s own colour: white in light mode, but navy in dark mode, which
+  measured 2.2–4.3:1 on every game accent.
+- **Fix.** `Button` takes `fill`: the background, with its label picked by `textOn`.
+  The three game buttons use it, and every game accent now carries white text, like
+  the header on the same colour. Capitals' teal `#0E8F86` was 3.97:1 under white
+  (its header title too, in both modes); it is now `#0B7F77` (4.87:1).
+- **Pinned.** `gameAccents.test.ts` measures every game and tile accent against
+  white and `textOn`, and fails any `<Button>` that sets `backgroundColor` by style.
+  It found the third button (the lesson game's) that a plain grep had missed.
+- **Verified:** mobile tests and typecheck; the web build at phone size in light and
+  dark: the colour game's game-over panel, the multiplication drill and Capitals.
+- **Not verified:** Android.
+
 ## Progress is celebrated — 2026-10-22
 
 - **Four moments.** `Celebrate` (`components/ui/Celebrate.tsx`) marks an exam handed in,

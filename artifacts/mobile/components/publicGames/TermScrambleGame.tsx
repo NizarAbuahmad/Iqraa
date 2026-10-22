@@ -125,7 +125,7 @@ export function TermScrambleGame({ terms, onBack, analytics }: {
           )}
           {result === false && <Button label={t('lessonGameRetry')} variant="secondary" onPress={retry} />}
           {result !== null && (
-            <Button label={i + 1 >= questions.length ? t('lessonGameFinish') : t('playNext')} onPress={next} style={{ backgroundColor: ACCENT }} />
+            <Button label={i + 1 >= questions.length ? t('lessonGameFinish') : t('playNext')} onPress={next} fill={ACCENT} />
           )}
         </View>
       </View>
