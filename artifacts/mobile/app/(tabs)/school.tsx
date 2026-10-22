@@ -188,9 +188,13 @@ export default function SchoolScreen() {
       patch(items => applyDone(items, item.id, next));
       try {
         await setHomeworkDone(item.id, next);
-        // Only a tick that the server accepted, and only the one that finishes the list.
+        // Only a tick that the server accepted, only the one that finishes the
+        // list, and only when no other save is still out: this tick's snapshot
+        // includes the other's optimistic change, which may yet roll back.
+        // (`hwInFlight` still holds this id here; its `finally` removes it.)
         const was = seen.before;
-        if (next && justCompleted(
+        const othersInFlight = [...hwInFlight.current].some(id => id !== item.id);
+        if (next && !othersInFlight && justCompleted(
           { key: childKey, complete: allTrackedDone(was) },
           { key: childKey, complete: allTrackedDone(applyDone(was, item.id, true)) },
         )) setCelebrateHw(true);

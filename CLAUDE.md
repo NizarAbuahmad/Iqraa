@@ -584,7 +584,13 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   in `services/tabVisibility.ts`.
   Progress is celebrated by `Celebrate` (`components/ui/Celebrate.tsx`) at four
   moments only — exam handed in, game over, last homework ticked, prep checklist
-  all ready — and only on the crossing (`justCompleted` in
+  all ready. The exam fires on a successful hand-in the student made (never the
+  forced one when time runs out or the exam closes); the other three fire only
+  on the crossing into done (`justCompleted` / `prepCrossing` in
   `services/celebration.ts`), never on opening a screen that is already done.
+  A load that failed or fell back to the device list is never the baseline:
+  `getItems` does not reject, so the prep board reads `getAllItemsChecked()` and
+  drops its baseline on a degraded read, or the next good read at 5 of 5 would
+  celebrate on opening Today.
   **Amber (`palette.live`) means *now*** (start class, due today, live) and
   nothing else.

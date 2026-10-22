@@ -16,6 +16,28 @@ export function justCompleted(prev: Progress | null, next: Progress): boolean {
   return prev !== null && prev.key === next.key && !prev.complete && next.complete;
 }
 
+/**
+ * «الدرس جاهز»: what to do with the latest read of the prep board. The hook
+ * keeps `nextPrev` as its baseline and fires when `fire` is true.
+ *
+ * - `authoritative` is false when the saved materials did not come from the
+ *   server (a failed or timed-out read falls back to the device list). Such a
+ *   board is never a baseline: it would read 0 of 5, and the next good read at
+ *   5 of 5 would then look like a crossing. The baseline is dropped instead.
+ * - `skipsReady` is false until the «غير مطلوب» choices have been read for
+ *   this very lesson; judging earlier uses another lesson's list. Nothing is
+ *   judged and the baseline stays as it was.
+ */
+export function prepCrossing(
+  prev: Progress | null,
+  read: { authoritative: boolean; skipsReady: boolean; key: string; complete: boolean },
+): { fire: boolean; nextPrev: Progress | null } {
+  if (!read.authoritative) return { fire: false, nextPrev: null };
+  if (!read.skipsReady) return { fire: false, nextPrev: prev };
+  const next: Progress = { key: read.key, complete: read.complete };
+  return { fire: justCompleted(prev, next), nextPrev: next };
+}
+
 /** Brand teal and each corner's light primary. Never amber: amber means "now". */
 export const CONFETTI_COLORS: readonly string[] = ['#006D65', ...CORNER_IDS.map(id => CORNERS[id].light.primary)];
 

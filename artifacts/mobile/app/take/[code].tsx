@@ -377,7 +377,9 @@ export default function TakeExamScreen() {
         return;
       }
       await submitStudentExam(token);
-      setCelebrating(true);
+      // Only a hand-in the student chose celebrates: time running out or the
+      // exam closing hands the paper in for them, which is not an achievement.
+      if (!opts?.force) setCelebrating(true);
       setPhase('done');
     } catch (err) {
       if (err instanceof StudentExamError && err.code === 'already_submitted') {

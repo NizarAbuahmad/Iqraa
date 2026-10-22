@@ -6,7 +6,8 @@
  * over one hook can never name two different lessons.
  *
  * Reloads saved materials, classes and the timetable on mount and on every
- * screen focus (one `useFocusEffect`), and on window focus (web): generating
+ * screen focus (one `useFocusEffect`), and on window focus (web, only while
+ * Today is the focused screen): generating
  * a worksheet leaves Today and comes back, and a board that still says
  * "missing" is worse than none.
  */
@@ -16,7 +17,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { buildPrepBoard, prepLessonKey, prepSummary, savedDeckFor, withoutBoardTools, type PrepRow } from '@/services/lessonBoard';
-import { getAllItems, type SavedMaterial } from '@/services/workspace';
+import { getAllItemsChecked, type SavedMaterial } from '@/services/workspace';
 import { listClasses } from '@/services/roster';
 import type { ClassGroup } from '@/services/roster';
 import { periodClassLabel } from '@/services/classSubjects';
@@ -35,7 +36,7 @@ import { buildClassDeck } from '@/services/startClass';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { WORKFLOW, type ToolDef } from '@/services/toolCatalog';
 import { trackEvent } from '@/services/analytics';
-import { justCompleted, type Progress } from '@/services/celebration';
+import { prepCrossing, type Progress } from '@/services/celebration';
 
 export type TodayLesson = {
   /** '' when there is no lesson. */
@@ -85,8 +86,13 @@ export function useTodayLesson(source: 'workspace' | 'today_phone'): TodayLesson
   const [classes, setClasses] = useState<ClassGroup[]>([]);
   const [startingClass, setStartingClass] = useState(false);
   const [startClassError, setStartClassError] = useState('');
-  // True once saved materials have been read successfully at least once: before
-  // that the board is empty, and the first real read must not look like progress.
+  // The last judged state of the prep checklist; null until an authoritative
+  // read has been judged, and dropped again by a degraded one.
+  const prevPrep = useRef<Progress | null>(null);
+  // True while the board shows an AUTHORITATIVE read of the saved materials
+  // (the server answered, or nobody is signed in). `getAllItems` never rejects:
+  // a failed read comes back as the device list, so a board built from it is
+  // not a measurement. False before the first read and after a degraded one.
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -102,14 +108,21 @@ export function useTodayLesson(source: 'workspace' | 'today_phone'): TodayLesson
    * worse than no board.
    */
   const reload = useCallback(() => {
-    getAllItems()
-      .then(items => {
+    getAllItemsChecked()
+      .then(({ items, fromServer }) => {
         setMaterials(items);
-        setLoaded(true);
+        // A degraded read (the server did not answer) still draws the board, as
+        // it always did, but it is never the baseline: it would read 0 of 5 and
+        // the next good read at 5 of 5 would look like a crossing.
+        if (!fromServer) prevPrep.current = null;
+        setLoaded(fromServer);
       })
-      // A failed read is not "loaded": the board is still the empty one, and a
-      // later good read at 5/5 would otherwise look like a crossing.
-      .catch(() => {});
+      // getAllItemsChecked does not reject; this only guards the unexpected,
+      // and treats it the same way: not loaded, no baseline.
+      .catch(() => {
+        prevPrep.current = null;
+        setLoaded(false);
+      });
     listClasses().then(setClasses).catch(() => {});
     loadTimetable().then(tt => {
       setNext(tt?.next ?? null);
@@ -117,17 +130,26 @@ export function useTodayLesson(source: 'workspace' | 'today_phone'): TodayLesson
     });
     wasSetupNudgeDismissed().then(setNudgeDismissed);
   }, []);
+  // Whether this screen is the focused one. The tab stays mounted under other
+  // screens, and a browser tab switch fires `window` focus whichever screen is
+  // showing: only Today reloads for it.
+  const screenFocused = useRef(false);
   // Web: the browser window regaining focus (a tab switch back) is not a
   // navigation event, so it needs its own listener.
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
-    window.addEventListener('focus', reload);
-    return () => window.removeEventListener('focus', reload);
+    const onWindowFocus = () => { if (screenFocused.current) reload(); };
+    window.addEventListener('focus', onWindowFocus);
+    return () => window.removeEventListener('focus', onWindowFocus);
   }, [reload]);
   // The one load on mount AND on every return to the screen, native and web:
   // expo-router's useFocusEffect runs its effect at once when the screen is
   // already focused, so a separate mount `reload()` would load everything twice.
-  useFocusEffect(useCallback(() => { reload(); }, [reload]));
+  useFocusEffect(useCallback(() => {
+    screenFocused.current = true;
+    reload();
+    return () => { screenFocused.current = false; };
+  }, [reload]));
 
   /*
     A teacher who has never opened the lesson picker still has a lesson: the
@@ -186,9 +208,16 @@ export function useTodayLesson(source: 'workspace' | 'today_phone'): TodayLesson
     });
     return () => { live = false; };
   }, [skipKey]);
+  // The lesson on screen now, for a save that resolves after the teacher moved on.
+  const skipKeyNow = useRef(skipKey);
+  skipKeyNow.current = skipKey;
   const toggleSkip = useCallback((row: PrepRow) => {
     if (!skipKey) return;
-    void setPrepSkip(skipKey, row.type, !row.skipped).then(setSkips);
+    void setPrepSkip(skipKey, row.type, !row.skipped).then(list => {
+      // `list` belongs to the lesson it was saved for; `skipsFor` says which
+      // lesson `skips` is for, so another lesson's list must not land under it.
+      if (skipKeyNow.current === skipKey) setSkips(list);
+    });
   }, [skipKey]);
   const board = useMemo(
     () => buildPrepBoard(materials, topic, active?.lessonId, skips),
@@ -199,18 +228,23 @@ export function useTodayLesson(source: 'workspace' | 'today_phone'): TodayLesson
   /*
     «الدرس جاهز»: the checklist crossing into all-ready while the teacher is
     here (generating the last item and coming back, or ticking «غير مطلوب» on
-    the last row). Judged only once materials and this lesson's skips have been
-    read, so opening Today at 5/5 is not a moment; `skipKey` is the subject, so
-    switching lesson cannot read as a crossing.
+    the last row). `prepCrossing` decides: nothing is judged until the saved
+    materials came from the server (`loaded`) and this lesson's skips have been
+    read, so opening Today at 5/5 is not a moment, and a failed read is never
+    the baseline; `skipKey` is the subject, so switching lesson cannot read as
+    a crossing.
   */
   const prepComplete = summary.total > 0 && summary.done >= summary.total;
-  const prevPrep = useRef<Progress | null>(null);
   const [prepJustReady, setPrepJustReady] = useState(false);
   useEffect(() => {
-    if (!loaded || !topic || !skipKey || skipsFor !== skipKey) return;
-    const nextPrep = { key: skipKey, complete: prepComplete };
-    if (justCompleted(prevPrep.current, nextPrep)) setPrepJustReady(true);
-    prevPrep.current = nextPrep;
+    const { fire, nextPrev } = prepCrossing(prevPrep.current, {
+      authoritative: loaded,
+      skipsReady: !!topic && !!skipKey && skipsFor === skipKey,
+      key: skipKey ?? '',
+      complete: prepComplete,
+    });
+    prevPrep.current = nextPrev;
+    if (fire) setPrepJustReady(true);
   }, [loaded, topic, skipKey, skipsFor, prepComplete]);
   const clearPrepJustReady = useCallback(() => setPrepJustReady(false), []);
 
