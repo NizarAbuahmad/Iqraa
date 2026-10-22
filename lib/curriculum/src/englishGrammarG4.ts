@@ -74,6 +74,40 @@ const WEAR = [
 ];
 const COMPARE_FACT = { question: 'Is the {big} {cmp:adj} than the {small}?', yes: 'Yes, it is.', no: "No, it isn't." } as const;
 
+// ─── S2 U7–U10 ────────────────────────────────────────────────────────────
+
+const HOBBIES = ['build a robot', 'dress up', 'go fishing', 'go sailing', 'go windsurfing', 'kick', 'knit', 'play board games', 'play chess', 'play computer games', 'sew', 'skip'];
+/** One adverb each, with an act it plausibly goes with; `well` has its own pattern (with a Choose). The teacher checks each. */
+const MANNER = [
+  { act: 'knit', adv: 'carefully' }, { act: 'kick', adv: 'badly' }, { act: 'skip', adv: 'quickly' },
+  { act: 'build a robot', adv: 'easily' }, { act: 'play chess', adv: 'quietly' }, { act: 'go sailing', adv: 'slowly' }, { act: 'play board games', adv: 'loudly' },
+];
+const WELL = ['sew', 'play chess', 'skip', 'go sailing'].map(act => ({ act }));
+const PLACES = ['bridge', 'bus stop', 'car park', 'clothes shop', 'hotel', 'market', 'museum', 'restaurant', 'shopping centre', 'square', 'train station', 'zoo'];
+const PLACE_ADJ = [
+  { adj: 'expensive', place: 'clothes shop' }, { adj: 'cheap', place: 'market' }, { adj: 'busy', place: 'train station' }, { adj: 'noisy', place: 'shopping centre' },
+  { adj: 'quiet', place: 'museum' }, { adj: 'safe', place: 'square' }, { adj: 'modern', place: 'hotel' }, { adj: 'ancient', place: 'bridge' },
+];
+const VISIT_PLACES = ['museum', 'zoo', 'market', 'hotel', 'restaurant', 'bridge'];
+/** Regular past: a subject, a verb of the lesson and what it did. Every row is on the form. */
+const PAST_ROWS = [
+  { subj: 'People in the past', verb: 'use', obj: 'clay' }, { subj: 'People in the past', verb: 'use', obj: 'iron' }, { subj: 'People in the past', verb: 'use', obj: 'stone' },
+  { subj: 'People in the past', verb: 'need', obj: 'water' }, { subj: 'The builders', verb: 'work', obj: 'with stone' }, { subj: 'The visitors', verb: 'arrive', obj: 'at the museum' },
+  { subj: 'We', verb: 'visit', obj: 'the museum' }, { subj: 'The bus', verb: 'stop', obj: 'at the bus stop' }, { subj: 'The family', verb: 'live', obj: 'in a house' },
+  { subj: 'The lesson', verb: 'start', obj: 'at eight' },
+];
+/** Irregular past: the book's own examples (wore, saw, got) and a few more for a celebration. Every row is on the form. */
+const IRREGULAR_ROWS = [
+  { subj: 'I', verb: 'wear', obj: 'this dress at our wedding' }, { subj: 'We', verb: 'see', obj: 'the ring again' }, { subj: 'I', verb: 'get', obj: 'an invitation' },
+  { subj: 'We', verb: 'go', obj: 'to the funfair' }, { subj: 'They', verb: 'eat', obj: 'a big cake' }, { subj: 'He', verb: 'give', obj: 'me a present' },
+  { subj: 'We', verb: 'make', obj: 'a costume' }, { subj: 'I', verb: 'buy', obj: 'a candle' }, { subj: 'The bride', verb: 'wear', obj: 'a white dress' },
+  { subj: 'We', verb: 'see', obj: 'the groom' },
+];
+const DID_ROWS = [
+  { verb: 'get', obj: 'any presents' }, { verb: 'go', obj: 'to the funfair' }, { verb: 'see', obj: 'the bride' }, { verb: 'make', obj: 'a costume' }, { verb: 'eat', obj: 'the cake' },
+];
+const WAS_Q = (question: string) => ({ kind: 'marker' as const, question, yes: 'Yes, there was.', no: "No, there wasn't.", hint: 'was' as const });
+
 const THERE_Q = (question: string, yes: string, no: string) => ({ kind: 'marker' as const, question, yes, no, hint: 'there' as const });
 
 export const GRAMMAR_UNITS_G4: GrammarUnit[] = [
@@ -153,6 +187,61 @@ export const GRAMMAR_UNITS_G4: GrammarUnit[] = [
     ],
     slots: { job: JOBS4 },
   },
+  {
+    // can / can't; adverbs of manner. No pictures: the hobbies are verbs. «I can sew.» gives no evidence to choose by.
+    lessonId: L(2, 7),
+    reviewedBy: null,
+    patterns: [
+      { id: 'ican', text: 'I can {v:act}.' },
+      { id: 'icant', text: "I can't {v:act}." },
+      { id: 'youyes', text: 'Can you {v:act}? Yes, I can.', choose: { kind: 'phrase', right: 'Can', wrong: 'Do' } },
+      { id: 'youno', text: "Can you {v:act}? No, I can't.", choose: { kind: 'phrase', right: 'Can', wrong: 'Do' } },
+      { id: 'adv', text: 'She can {v:act} {adv}.', rows: MANNER },
+      { id: 'well', text: 'She can {v:act} well.', rows: WELL, choose: { kind: 'phrase', right: 'well', wrong: 'good' } },
+    ],
+    slots: { act: HOBBIES },
+  },
+  {
+    // past simple of to be; there was / were. A picture shows the place, never the tense, so only «there was» is pictured.
+    lessonId: L(2, 8),
+    reviewedBy: null,
+    patterns: [
+      { id: 'she', text: 'She was at the {v:place} last week.', choose: { kind: 'phrase', right: 'was', wrong: 'were' } },
+      { id: 'they', text: 'They were at the {v:place} yesterday.', choose: { kind: 'phrase', right: 'were', wrong: 'was' } },
+      { id: 'where', text: 'Where were you yesterday morning? I was at the {v:place}.', choose: { kind: 'phrase', right: 'were', wrong: 'was' } },
+      { id: 'was', text: 'There was {a:place}.', picture: 'place', marker: 'yes', choose: { kind: 'phrase', right: 'There was', wrong: 'There were' } },
+      { id: 'wasnt', text: "There wasn't {a:place}.", picture: 'place', marker: 'no', choose: { kind: 'phrase', right: "There wasn't", wrong: "There weren't" } },
+      { id: 'were', text: 'There were two {s:place}.', picture: 'place', marker: 'many', choose: { kind: 'phrase', right: 'There were', wrong: 'There was' } },
+      { id: 'adj', text: 'There was {a:adj} {place}.', picture: 'place', marker: 'yes', rows: PLACE_ADJ },
+      { id: 'qy', text: 'Was there {a:place}? Yes, there was.', picture: 'place', marker: 'yes', yesNo: WAS_Q('Was there {a:place}?') },
+      { id: 'qn', text: "Was there {a:place}? No, there wasn't.", picture: 'place', marker: 'no', yesNo: WAS_Q('Was there {a:place}?') },
+    ],
+    slots: { place: PLACES },
+  },
+  {
+    // past simple, regular verbs: -ed, didn't + base, Did you…?
+    lessonId: L(2, 9),
+    reviewedBy: null,
+    patterns: [
+      { id: 'past', text: '{v:subj} {ed:verb} {v:obj}.', rows: PAST_ROWS, choose: { kind: 'form', slot: 'verb', wrong: 'base' } },
+      { id: 'neg', text: "{v:subj} didn't {v:verb} {v:obj}.", rows: PAST_ROWS, choose: { kind: 'form', slot: 'verb', wrong: 'past' } },
+      { id: 'qy', text: 'Did you visit the {v:place}? Yes, I did.', choose: { kind: 'phrase', right: 'Did', wrong: 'Do' } },
+      { id: 'qn', text: "Did you visit the {v:place}? No, I didn't.", choose: { kind: 'phrase', right: 'Did', wrong: 'Do' } },
+    ],
+    slots: { place: VISIT_PLACES },
+  },
+  {
+    // past simple, irregular verbs
+    lessonId: L(2, 10),
+    reviewedBy: null,
+    patterns: [
+      { id: 'past', text: '{v:subj} {ed:verb} {v:obj}.', rows: IRREGULAR_ROWS, choose: { kind: 'form', slot: 'verb', wrong: 'base' } },
+      { id: 'neg', text: "{v:subj} didn't {v:verb} {v:obj}.", rows: IRREGULAR_ROWS, choose: { kind: 'form', slot: 'verb', wrong: 'past' } },
+      { id: 'qy', text: 'Did you {v:verb} {v:obj}? Yes, I did.', rows: DID_ROWS, choose: { kind: 'phrase', right: 'Did', wrong: 'Do' } },
+      { id: 'qn', text: "Did you {v:verb} {v:obj}? No, I didn't.", rows: DID_ROWS, choose: { kind: 'phrase', right: 'Did', wrong: 'Do' } },
+    ],
+    slots: {},
+  },
 ];
 
 /**
@@ -160,6 +249,26 @@ export const GRAMMAR_UNITS_G4: GrammarUnit[] = [
  * Arabic with English phrases inline; no `"`, `&`, `<` or `>` (the form does not escape runs).
  */
 export const NOT_COVERED_G4: Record<string, string[]> = {
+  [L(2, 7)]: [
+    'لا صور لهذه الوحدة: الهوايات أفعال (sew وknit وkick…).',
+    'جملة I can sew. لا تدل على ما يُختار منها، فلا «اختر الكلمة» لها. يُسأل في Can you…? عن Can مقابل Do، وفي She can sew well. عن well مقابل good.',
+    'ربط كل هواية بظرف (sew مع well وkick مع badly…) ثماني جمل مكتوبة جملة جملة في صفحة البيانات، فتأكدوا أن كلًّا منها معقولة.',
+  ],
+  [L(2, 8)]: [
+    'الصورة تُظهر المكان لا الزمن، فلا صورة لجمل was وwere. تظهر الصورة مع There was وThere wasn\'t وThere were وWas there…? فقط، وتدل ✅ على أنه كان موجودًا.',
+    'clothes shop وshopping centre وsquare بلا صور، فتظهر جملها في «اختر الكلمة» و«رتّب الجملة» دون صورة.',
+    'جملة Where were you yesterday morning? I was at the zoo. تُرتَّب إجابتها فقط، ويظهر السؤال مكتوبًا ومسموعًا فوق الكلمات.',
+  ],
+  [L(2, 9)]: [
+    'لا صور لهذه الوحدة: الماضي لا تدل عليه صورة.',
+    'الفاعل والفعل والمفعول في كل جملة ماضية مكتوبة جملة جملة في صفحة البيانات. تصريف الأفعال بقاعدة -ed، وstop → stopped من الجدول.',
+    'يُسأل في «اختر الكلمة» عن used مقابل use، وبعد didn\'t عن use مقابل used، وعن Did مقابل Do.',
+  ],
+  [L(2, 10)]: [
+    'لا صور لهذه الوحدة: الماضي لا تدل عليه صورة.',
+    'الأفعال الشاذة wore وsaw وgot من أمثلة الكتاب، وwent وate وgave وmade وbought أُضيفت للاحتفال، وكلها في جدول صفحة البيانات لتتأكدوا منها.',
+    'الأعداد الترتيبية (first إلى thirty-first) غير مشمولة: لا يعطي الكتاب لها جملة نموذجية.',
+  ],
   [L(1, 4)]: [
     'لا صور في هذه الوحدة: صورة جبل لا تقول إنه أعلى من تلّ. «صح أم خطأ» و«نعم أم لا» من قائمة المقارنات المكتوبة فقط، وكل زوج فيها مطبوع في صفحة البيانات لتتأكدوا أنه صحيح دون جدال.',
     'جملة A is more exciting than B وجمل أعلى وأعمق (the deepest) في «اختر الكلمة» و«رتّب الجملة» فقط: لا تُسأل صحةً، لأنها رأي لا معلومة.',
