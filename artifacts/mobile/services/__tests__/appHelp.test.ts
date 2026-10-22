@@ -1528,3 +1528,62 @@ describe('families, lesson-plan options, schedule and email (fourteenth live pas
     it(`«${q}» is not app help`, () => assert.equal(isAppHelpQuery(q), false));
   }
 });
+
+describe('chat, homework, results and sign-in (fifteenth live pass)', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string]> = [
+    ['كيف أمسح المحادثة مع إقرأ؟', 'howChatHistory'],
+    ['كيف أبدأ محادثة جديدة مع المساعد؟', 'howChatHistory'],
+    ['how do i start a new chat', 'howChatHistory'],
+    ['هل يمكنني إرسال صورة في المحادثة؟', 'howUploadFile'],
+    ['كيف أنسخ إجابة المساعد؟', 'faqA4'],
+    ['كيف أغير حجم الخط في التطبيق؟', 'howFontSize'],
+    ['how do i use voice input in the chat', 'howChatVoice'],
+    ['هل يقرأ التطبيق النص بصوت عال؟', 'howChatVoice'],
+    ['كيف أعدل خطة التدريس الشهرية؟', 'howEditTeachingPlan'],
+    ['كيف أعدل واجباً بعد نشره؟', 'howHomeworkEdit'],
+    ['كيف أحذف واجباً؟', 'howHomeworkEdit'],
+    ['how do i delete a homework', 'howHomeworkEdit'],
+    ['كيف أرسل واجباً لطالب واحد فقط؟', 'howHomeworkOne'],
+    ['كيف أطبع كشف علامات الشعبة؟', 'howExportMarks'],
+    ['كيف أرى معدل الشعبة في الامتحان؟', 'howClassAverage'],
+    ['كيف أسمح للطالب بإعادة الامتحان؟', 'howExamRetake'],
+    ['how do i let a student retake the exam', 'howExamRetake'],
+    ['how are open-ended answers graded', 'howOpenGrading'],
+    ['كيف تُصحَّح الأسئلة المقالية في التطبيق؟', 'howOpenGrading'],
+    ['كيف أشارك الدرس مع زميل؟', 'howShareMaterial'],
+    ['ما هي اللغات المدعومة في التطبيق؟', 'howLanguages'],
+    ['what languages are supported', 'howLanguages'],
+    ['كيف أسجل الدخول بحساب جوجل؟', 'howGoogleSignIn'],
+    ['how do i sign in with google', 'howGoogleSignIn'],
+    ['كيف أعرف كم ولّدت من مواد هذا الشهر؟', 'howAiUsage'],
+    ['كيف أبدل صورة الغلاف في العرض؟', 'howSlideEdit'],
+  ];
+  for (const [q, key] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text, `<${key}>`);
+    });
+  }
+
+  const stayWithModel = [
+    'how do i grade essays fairly',
+    'كيف أصحح الأسئلة المقالية بعدالة',
+    'what languages should i teach in class',
+    'ما هي اللغات السامية',
+    'كيف أحذف واجباً منزلياً من دفتر الطالب',
+    'how do i use voice acting in a lesson',
+    'كيف أمسح السبورة بعد الحصة',
+    'how do i start a new chapter',
+    'how do i let students retake the test fairly',
+    'كيف أعدل خطة التدريس لتناسب الطلاب الضعاف',
+    'how do i sign in with a pen',
+  ];
+  for (const q of stayWithModel) {
+    it(`«${q}» is not one of these answers`, () => {
+      const ids = new Set(['howChatHistory', 'howChatVoice', 'howFontSize', 'howHomeworkEdit', 'howHomeworkOne', 'howClassAverage', 'howExamRetake', 'howOpenGrading', 'howLanguages', 'howGoogleSignIn', 'howAiUsage', 'howEditTeachingPlan']);
+      const a = answerAppHelp(q, /[a-z]/i.test(q) ? 'en' : 'ar', t).text;
+      assert.equal(ids.has(a.replace(/[<>]/g, '')), false);
+    });
+  }
+});
