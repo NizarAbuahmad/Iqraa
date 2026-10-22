@@ -82,6 +82,7 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
 
 - 2026-10-22 — Teachers' phones open on Today
 - 2026-10-22 — Book-picture slides no longer share one title
+- 2026-10-22 — Grade 3 reading in the English corner — built, shown to nobody yet
 - 2026-10-22 — Grade 3 grammar in the English corner — built, shown to nobody yet
 - 2026-10-21 — Each corner has its own colour and band
 - 2026-10-21 — Cards lift, presses give, screens arrive — 2026-10-21

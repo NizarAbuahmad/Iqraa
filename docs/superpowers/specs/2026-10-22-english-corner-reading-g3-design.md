@@ -1,6 +1,6 @@
 # English corner: reading activities for Grade 3 — design
 
-**Status:** proposed (awaiting review). **Scope:** Grade 3 English reading only (the 8 hub lessons,
+**Status:** implemented (PR #1171). **Scope:** Grade 3 English reading only (the 8 hub lessons,
 `kbl-g3-eng-s{1,2}-nccd-u*_l1`). Builds on the Grade 2 reading activities
 (`2026-10-20-english-corner-reading-g2-design.md`, PR #1158) and the Grade 3 grammar sentences
 (`2026-10-21-english-corner-grammar-g3-design.md`, PR #1171, still a draft when this was written).

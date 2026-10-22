@@ -14,6 +14,54 @@ Sections below are in the order they were written, not strictly by date.
 
 ---
 
+## Grade 3 reading in the English corner — built, shown to nobody yet, 2026-10-22
+
+Reading activities for Grade 3, after Grades 1 and 2: the three word activities on
+the 8 hub lessons and «Read the sentence» on three of them. **Every unit is
+`reviewedBy: null` in `READING_UNITS` (`lib/curriculum/src/englishReading.ts`), so
+nobody sees any of it yet.** Spec:
+`docs/superpowers/specs/2026-10-22-english-corner-reading-g3-design.md`; plan:
+`docs/superpowers/plans/2026-10-22-english-corner-reading-g3.md`.
+
+- **Word activities.** First letter on all 8 lessons; Read and find and Starts with
+  on S1 U3, U5, S2 U7, U9, U10 (the lessons whose words have pictures). S1 U2, S1 U4
+  and S2 U8 get First letter only. The Grade 1 first-sound rule needed no new
+  exception: it leaves out 20 words, all listed on the form with the reason.
+- **Read the sentence** on S1 U3 (26 sentences, round of 8), S1 U5 (22, round of 8;
+  the six transport sentences come as he / she pairs, so the other sex's picture is
+  a wrong answer) and S2 U9 (18, **round of 6**: six pictured words, each as
+  There's / There isn't / There are, so the first other form is the partner). The
+  rule is Grade 2's, on the data: pictured grammar sentences that are not Yes or No,
+  at least 6 distinct picture words. `readSentencePool` now serves Grades 2 and 3;
+  Grade 1 stays excluded. It needs the reading AND the grammar sign-off of the unit.
+- **Code change is curriculum only.** `games.ts`, the screen, the lesson card and
+  the strings are grade-agnostic and needed nothing; tests pin the builder on the
+  Grade 3 pools (`englishReadingG3Games.test.ts`) and the data
+  (`englishReadingG3.test.ts`).
+- **The teacher's form** is `docs/english-reading-g3-review.html` (8 unit pages, 126
+  words, 66 sentences, a «غير مشمول» note for the 7 lessons with a gap), written by
+  the `grammar-sheet` script and pinned by a test. The Grade 1 and 2 reading forms
+  and all grammar sheets and forms are byte-identical.
+- **Verified:** curriculum 544 tests, mobile 6647 pass / 10 skipped / 0 fail,
+  root typecheck. **In a browser** at 390 px in Arabic and English, with sign-offs
+  in the working tree only (restored straight after; never committed): the sentence
+  card shows on S1 U5 and S2 U9 only; S1 U3 with reading but not grammar signed
+  shows the three word cards and no sentence card; S2 U7 shows words only; an
+  unsigned unit shows nothing; no horizontal scroll; a full S2 U9 round is exactly 6
+  questions then «Finished»; S1 U5 rounds are 8; the partner cards (girl's
+  underground against «He goes…», the single ✅ clock against «There are clocks.»)
+  fit and read clearly.
+- **Not verified:** on a device; with real teacher sign-off; the audio — «Read the
+  sentence» plays the grammar recording after the answer and adds none of its own,
+  so it needs the pending `english-audio` run (OpenAI and R2 keys).
+- **Known limit:** S2 U9's round is 6 questions, not 8, because only six of its
+  words have pictures; the form asks the teacher whether that is enough.
+
+**To switch a unit on:** record the audio; sign and set the unit's grammar
+(`englishGrammarG3.ts`); a Grade 3 English teacher signs that unit's page of
+`docs/english-reading-g3-review.html`, printed; then set its `reviewedBy` in
+`englishReading.ts` and merge. Grade 4 is the next grade.
+
 ## Grade 3 grammar in the English corner — built, shown to nobody yet, 2026-10-22
 
 Grammar for Grade 3, after Grades 1 and 2. 8 hub lessons (S1 U2–U5, S2 U7–U10),
