@@ -1589,6 +1589,29 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Lesson games from a lesson's key terms, 2026-10-22
+
+**What changed.** A lesson with at least four key terms (`keywordsAr`) gets
+«العب بمصطلحات الدرس» on its page, opening `/play/lesson/[lessonId]` (public,
+shareable like the rest of `/play`) with up to three games: term memory,
+unscramble a term's letters, and «spot the term» (this lesson's term among
+terms from other lessons of the same book). Logic: `services/lessonGames.ts`;
+the memory and trivia boards are the existing `/play` ones.
+
+**Reach is ~485 of 3,318 lessons (≈15%)**, mostly science, maths, digital
+skills, vocational and social studies. Surveyed 2026-10-22: 1,865 lessons have
+no terms, Arabic-language lessons have none, and `keywords` is the Arabic copied
+in all but 2 lessons — so there is no term↔English or term↔meaning pair to
+match. Matching games need a definitions source (a reviewed glossary) first.
+
+**Also:** every game reports `game_finished` to PostHog (`/play` games via
+`GameShell`, English corner activities, Class Challenge at the podium) — not
+verified live, the local build has no PostHog key. The English corner's daily
+reminder now books tomorrow's reminder on a day already practised (it used to
+book none until the app was reopened). The home tools' «لعبة تعليمية» opens
+Class Challenge instead of the classroom hub, and chat's game reply no longer
+promises a game-type picker that doesn't exist.
+
 ## Each corner has its own colour and band, 2026-10-21
 
 **What changed.** The Math Corner is indigo with graph paper, the Lab violet
