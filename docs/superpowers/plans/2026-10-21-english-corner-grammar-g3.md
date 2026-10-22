@@ -585,7 +585,7 @@ export const GRAMMAR_UNITS_G3: GrammarUnit[] = [
       { id: 'i', text: 'I {v:act}.' },
       { id: 'we', text: 'We {v:act}.' },
       { id: 'dont', text: "I don't {v:act}.", choose: { kind: 'phrase', right: "don't", wrong: "doesn't" } },
-      { id: 'when', text: 'When do you {v:act}? We {v:act} {pre} {time}.', rows: ROUTINE_TIMES, choose: { kind: 'phrase', right: 'do', wrong: 'does' } },
+      { id: 'when', text: 'When do you {v:act}? We {v:act} {v:pre} {time}.', rows: ROUTINE_TIMES, choose: { kind: 'phrase', right: 'do', wrong: 'does' } },
     ],
     slots: { act: ROUTINE },
   },

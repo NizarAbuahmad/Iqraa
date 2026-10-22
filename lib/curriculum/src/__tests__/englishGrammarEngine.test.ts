@@ -95,7 +95,7 @@ test('the grade helpers read the grade off the lesson', () => {
   assert.equal(unitGrade(MATCH_UNIT), 2);
   assert.equal(grammarUnitsForGrade(1).length, 9);
   assert.ok(grammarUnitsForGrade(1).every(u => unitGrade(u) === 1));
-  assert.deepEqual(grammarUnitsForGrade(3), []);
+  assert.deepEqual(grammarUnitsForGrade(4), []);
 });
 
 test('Grade 3 word forms: -es and -ies plurals, plural-form words, uncountables', () => {
