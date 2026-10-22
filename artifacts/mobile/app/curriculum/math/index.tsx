@@ -1,5 +1,6 @@
 /**
- * Math Corner — the hub: one card per tool, plus a link-out to GeoGebra.
+ * Math Corner — the hub: the lesson exercises first, then one card per tool,
+ * plus a link-out to GeoGebra.
  *
  * Reached from the library's «زاوية الرياضيات» tile. Student-reachable with no
  * gating change: `/curriculum` is already on the non-teacher allowlist and
@@ -14,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { MATH_TOOLS, MATH_TOOL_IDS, mathToolPath } from '@/services/mathTools';
+import { EXERCISES_ROUTE } from '@/services/mathExercises';
 import { CornerFrame } from '@/components/corners/CornerFrame';
 import { CornerGrid } from '@/components/corners/CornerGrid';
 import { GeogebraLink } from '@/components/math/GeogebraLink';
@@ -30,6 +32,29 @@ export default function MathCornerScreen() {
   return (
     <CornerFrame title={t('mathTitle')} subtitle={t('mathIntro')}>
       <CornerGrid>
+        <PressableScale
+          key="exercises"
+          onPress={() => {
+            Haptics.selectionAsync();
+            router.push(EXERCISES_ROUTE as never);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={`${t('mathExTitle')}, ${t('mathExHint')}`}
+          style={[styles.row, surface, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+        >
+          <View style={[styles.icon, { backgroundColor: colors.primary }]}>
+            <Ionicons name="school-outline" size={22} color={colors.primaryForeground} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.title, { color: colors.foreground, textAlign: align, fontFamily: 'ReadexPro_600SemiBold' }]}>
+              {t('mathExTitle')}
+            </Text>
+            <Text style={[styles.hint, { color: colors.mutedForeground, textAlign: align, fontFamily: 'Almarai_400Regular' }]}>
+              {t('mathExHint')}
+            </Text>
+          </View>
+          <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
+        </PressableScale>
         {MATH_TOOL_IDS.map(id => {
           const meta = MATH_TOOLS[id];
           return (
