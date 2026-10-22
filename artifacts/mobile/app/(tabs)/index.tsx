@@ -1,24 +1,19 @@
 /**
  * Landing route.
  *
- * On desktop web a teacher gets the lesson workspace: the lesson that is
- * loaded, what is still missing from it, and one line to the assistant. Every
- * other case keeps the old behaviour and forwards.
+ * A teacher lands on Today: the lesson that is loaded, what is still missing
+ * from it, and one line to the assistant. On desktop web that is the two-column
+ * `LessonWorkspace` below; on a phone it is `PhoneToday`
+ * (components/today/PhoneToday.tsx), a one-column version over the same
+ * `useTodayLesson` hook. Every other role keeps the old behaviour and forwards.
  *
- * Why the workspace exists at all: the chat was the landing, and a chat's
- * empty state can only ever ask "what do you want to say?" — while the
- * question a teacher actually arrives with is "what is still missing for third
- * period?". Nothing on the old screen answered it, even though the answer was
- * already in the workspace. The chat is still one click away, and still where
- * the conversation happens; it is no longer the thing you are made to look at
- * before you can see the state of your own lesson.
- *
- * On a phone this route still redirects to the chat. The workspace is a
- * two-column desktop layout, and a phone has no room for a sixth tab to reach
- * a one-column version of it — so the part that answers the question travels
- * instead: the chat's empty state carries the same readiness board
- * (`LessonPrepBoard`, fed by the same `buildPrepBoard`), in the space that was
- * a logo and two chips.
+ * Why Today exists at all: the chat was the landing, and a chat's empty state
+ * can only ever ask "what do you want to say?" — while the question a teacher
+ * actually arrives with is "what is still missing for third period?". Nothing
+ * on the old screen answered it, even though the answer was already in the
+ * workspace. The chat is still one tap away (Today's ask card, and on desktop
+ * the sidebar), and still where the conversation happens; it is no longer the
+ * thing you are made to look at before you can see the state of your own lesson.
  */
 import React, { useState } from 'react';
 import {
@@ -47,6 +42,7 @@ import { periodClassLabel } from '@/services/classSubjects';
 import { className, classNameFor } from '@/services/materialClass';
 import { todayLabel } from '@/services/dateLabels';
 import { palette } from '@/constants/colors';
+import { PhoneToday } from '@/components/today/PhoneToday';
 
 const START_CLASS_COLOR = palette.live;
 const SIDE_PANEL_WIDTH = 356;
@@ -70,7 +66,7 @@ export default function Index() {
   // parent", react-native-screens#4677). One navigation, not two.
   if (!user) return null;
   if (isTeacherRole(user.role)) {
-    return isDesktop ? <LessonWorkspace /> : <Redirect href="/iqra" />;
+    return isDesktop ? <LessonWorkspace /> : <PhoneToday />;
   }
   // Ordered teacher → student → everyone else, so an unknown or absent role
   // still lands on Messages. Same fail-closed reasoning as the `isLoading`

@@ -1,6 +1,9 @@
 // Pins which tabs each user sees on each device, and where the lesson bar shows
 // (docs/superpowers/specs/2026-10-22-phone-today-design.md).
 import { test } from 'node:test';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { isHomePath, showLessonBar, tabVisible, type NavContext, type TabName } from '../tabVisibility.ts';
 
@@ -38,4 +41,20 @@ test('the lesson bar is a teacher thing, and not on Today or the chat, which car
     assert.equal(showLessonBar('/ai-tools', teacher), true);
     assert.equal(showLessonBar('/curriculum', { isTeacher: false, isDesktop }), false);
   }
+});
+
+const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const read = (...p: string[]) => readFileSync(join(root, ...p), 'utf8');
+
+test('a teacher on a phone is shown Today, not forwarded to the chat', () => {
+  const index = read('app', '(tabs)', 'index.tsx');
+  assert.doesNotMatch(index, /<Redirect\s+href="\/iqra"/, 'index.tsx still forwards a phone teacher to /iqra');
+  assert.match(index, /<PhoneToday\b/, 'index.tsx does not render PhoneToday');
+});
+
+test('the tab layout takes visibility and the lesson bar from tabVisibility', () => {
+  const layout = read('app', '(tabs)', '_layout.tsx');
+  assert.match(layout, /from '@\/services\/tabVisibility'/, '_layout.tsx does not import tabVisibility');
+  assert.match(layout, /\btabVisible\(/, 'buildTabEntries does not use tabVisible');
+  assert.match(layout, /\bshowLessonBar\(/, 'the lesson bar does not use showLessonBar');
 });

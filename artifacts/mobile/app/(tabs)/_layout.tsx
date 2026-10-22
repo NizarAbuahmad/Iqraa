@@ -23,6 +23,7 @@ import { TranslationKey } from '@/services/i18n';
 import { HomeLessonPick, loadLessonPick, subscribeLessonPick } from '@/services/lessonContext';
 import { defaultLessonIdFor } from '@/services/lessonCopilot';
 import { lessonPickerParams, resolveLessonPrepContext, scopePickerParams } from '@/services/lessonPrep';
+import { showLessonBar, tabVisible, type TabName } from '@/services/tabVisibility';
 
 /**
  * Ionicons name per tab, for surfaces that need the name rather than the
@@ -53,7 +54,7 @@ type TabIcon = (args: { color: string; focused: boolean; isIOS: boolean }) => Re
  * drift between the two nav renderings.
  */
 export type TabEntry = {
-  name: string;
+  name: TabName;
   titleKey: TranslationKey;
   visible: boolean;
   icon: TabIcon;
@@ -65,14 +66,14 @@ function buildTabEntries(isTeacher: boolean, isDesktop: boolean, unread: number)
   return [
     {
       /*
-        The desktop landing: the lesson and what is still missing from it.
-        Desktop only, and only for a teacher — a phone opens straight into the
-        chat (see index.tsx), where a workspace this wide has nowhere to go,
-        and a sixth item would crush the tab bar.
+        The teacher's landing on both sizes: the lesson and what is still
+        missing from it — the two-column workspace on desktop, PhoneToday on a
+        phone (see index.tsx). A parent or student never sees it; index.tsx
+        forwards them.
       */
       name: 'index',
       titleKey: 'tabToday',
-      visible: isTeacher && isDesktop,
+      visible: tabVisible('index', { isTeacher, isDesktop }),
       icon: ({ color, focused, isIOS }) =>
         isIOS ? (
           <SymbolView name={focused ? 'square.grid.2x2.fill' : 'square.grid.2x2'} tintColor={color} size={22} />
@@ -81,9 +82,11 @@ function buildTabEntries(isTeacher: boolean, isDesktop: boolean, unread: number)
         ),
     },
     {
+      // Desktop sidebar only. On a phone the route stays registered (hidden), so
+      // every push to /iqra still lands, and Today's ask card is the way in.
       name: 'iqra',
       titleKey: 'tabIqra',
-      visible: isTeacher,
+      visible: tabVisible('iqra', { isTeacher, isDesktop }),
       icon: ({ color, focused, isIOS }) =>
         isIOS ? (
           <SymbolView
@@ -100,7 +103,7 @@ function buildTabEntries(isTeacher: boolean, isDesktop: boolean, unread: number)
       // later). A teacher has the timetable under the profile tab already.
       name: 'school',
       titleKey: 'tabSchool',
-      visible: !isTeacher,
+      visible: tabVisible('school', { isTeacher, isDesktop }),
       icon: ({ color, focused, isIOS }) =>
         isIOS ? (
           <SymbolView name={focused ? 'graduationcap.fill' : 'graduationcap'} tintColor={color} size={22} />
@@ -113,7 +116,7 @@ function buildTabEntries(isTeacher: boolean, isDesktop: boolean, unread: number)
       // 2026-09-26, with the curriculum browser one tap inside it.
       name: 'curriculum',
       titleKey: 'resourcesTitle',
-      visible: true,
+      visible: tabVisible('curriculum', { isTeacher, isDesktop }),
       icon: ({ color, focused, isIOS }) =>
         isIOS ? (
           <SymbolView name={focused ? 'books.vertical.fill' : 'books.vertical'} tintColor={color} size={22} />
@@ -124,7 +127,7 @@ function buildTabEntries(isTeacher: boolean, isDesktop: boolean, unread: number)
     {
       name: 'ai-tools',
       titleKey: 'tabTools',
-      visible: isTeacher,
+      visible: tabVisible('ai-tools', { isTeacher, isDesktop }),
       icon: ({ color, focused, isIOS }) =>
         isIOS ? (
           <SymbolView
@@ -141,7 +144,7 @@ function buildTabEntries(isTeacher: boolean, isDesktop: boolean, unread: number)
       // for person-to-person messaging once that shipped.
       name: 'notifications',
       titleKey: 'tabAlerts',
-      visible: true,
+      visible: tabVisible('notifications', { isTeacher, isDesktop }),
       badge: badgeLabel(unread),
       icon: ({ color, focused, isIOS }) =>
         isIOS ? (
@@ -155,7 +158,7 @@ function buildTabEntries(isTeacher: boolean, isDesktop: boolean, unread: number)
     {
       name: 'profile',
       titleKey: 'tabProfile',
-      visible: true,
+      visible: tabVisible('profile', { isTeacher, isDesktop }),
       icon: ({ color, focused, isIOS }) =>
         isIOS ? (
           <SymbolView name={focused ? 'person.circle.fill' : 'person.circle'} tintColor={color} size={22} />
@@ -288,10 +291,10 @@ function ClassicTabLayout() {
     >
       {/*
         ── Landing ──────────────────────────────────────────
-        "index" is the route Expo Router lands on. On desktop web it renders
-        the lesson workspace and appears in the rail as «اليوم»; everywhere
-        else it forwards to the chat (see index.tsx) and stays out of the tab
-        bar — which is why it is an ordinary entry in `tabEntries` now, with
+        "index" is the route Expo Router lands on. For a teacher, on any size,
+        it is Today («اليوم»): the workspace on desktop, PhoneToday on a phone.
+        For a parent or student it forwards (see index.tsx) and stays out of the
+        bar — which is why it is an ordinary entry in `tabEntries`, with
         `visible` doing the deciding, rather than a hard-coded hidden screen.
       */}
       {tabEntries.map((entry) => (
@@ -328,9 +331,9 @@ function ClassicTabLayout() {
   // the two tabs it would drive them toward (iQra, AI Tools) are hidden for
   // them anyway. Not shown on iQra itself either — CurrentLessonCard already
   // does this job there, full-width and with the Start Class action; a second
-  // copy stacked above it would just be the same line twice.
-  const onWorkspaceHome = isDesktop && (pathname === '/' || pathname === '/index');
-  const bar = isTeacher && !pathname.startsWith('/iqra') && !onWorkspaceHome ? (
+  // copy stacked above it would just be the same line twice. Nor on Today, which
+  // carries the lesson itself.
+  const bar = showLessonBar(pathname, { isTeacher, isDesktop }) ? (
     <GlobalLessonBar
       layout="bar"
       pick={shownPick}
@@ -344,16 +347,17 @@ function ClassicTabLayout() {
   ) : null;
 
   if (!isDesktop) {
-    // Not on iQra itself — CurrentLessonCard already does this job there,
-    // full-width and with the Start Class action; a second copy stacked above
-    // it would just be the same line twice.
-    // Teachers get the bell beside the lesson bar; parents and students have
-    // no bar, so they get a slim header carrying just the bell.
+    // Not on iQra or Today — CurrentLessonCard and Today's lesson panel already
+    // do this job there, full-width and with the Start Class action; a second
+    // copy stacked above either would just be the same line twice.
+    // Teachers get the bell beside the lesson bar (on Today it sits in the
+    // band instead); parents and students have no bar, so they get a slim
+    // header carrying just the bell.
     const bell = <NotificationBell />;
     const bar = isTeacher ? (
-      pathname.startsWith('/iqra') ? null : (
+      showLessonBar(pathname, { isTeacher, isDesktop }) ? (
         <GlobalLessonBar layout="bar" topInset={insets.top} trailing={bell} {...lessonProps} />
-      )
+      ) : null
     ) : (
       <View
         style={{
