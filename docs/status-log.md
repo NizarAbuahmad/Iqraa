@@ -46,6 +46,26 @@ Sections below are in the order they were written, not strictly by date.
 
 ---
 
+## Status-bar icons read on the corner bands — 2026-10-22
+
+- **What was wrong.** Every corner screen (`CornerFrame`), every game (`GameShell`'s
+  accent header) and the library opened as a page draw a dark band under the status
+  bar. Nothing set the icon colour there, so the system default applied: dark icons
+  in light mode, on a dark band. Today had the same bug and fixed it for itself in #1174.
+- **Fix.** One hook, `useLightStatusBar()` (`hooks/useLightStatusBar.ts`), called by
+  `CornerFrame`, `GameShell`, the library page and Today. A screen holds a *request*
+  for light icons while focused (`services/statusBarRequests.ts`); the icons are light
+  while any request is held. Today's set-on-focus, reset-on-blur would have failed on a
+  push from one dark screen to another: the new screen's focus effect runs at mount,
+  before the navigator blurs the one it covers, so the reset landed last.
+- **Pinned.** `statusBar.test.ts`: the push order stays light, a release counts once,
+  every `<Band>` that pays `insets.top` calls the hook (code lines only: profile's band
+  sits under the tab header, and says so in a comment), and nothing sets
+  `light-content` by hand.
+- **Verified:** mobile tests and typecheck.
+- **Not verified:** on a device. The status bar exists only on Android and iOS, and
+  the web build is a no-op, so this has not been seen running.
+
 ## Game buttons read in dark mode — 2026-10-22
 
 - **What was wrong.** A game's «العب مرة أخرى» (and the maths drill's «ابدأ», the
