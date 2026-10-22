@@ -30,12 +30,18 @@ const ROUTES = [
   ['play-hub', '/play'],
   ['play-flags', '/play/flags'],
   ['profile', '/profile'],
+  ['today', '/'],
+  ['tools', '/ai-tools'],
+  ['plans', '/teaching-plans'],
+  ['evaluations', '/evaluations'],
 ];
 // ONLY=library,profile shoots a subset. REDUCED=1 emulates prefers-reduced-motion
 // and shoots as soon as the splash is gone: with reduced motion nothing may still
 // be on its way in, so a card caught half-faded there is a bug.
 const ONLY = process.env.ONLY ? new Set(process.env.ONLY.split(',')) : null;
 const REDUCED = process.env.REDUCED === '1';
+// SCROLL=900 wheels the page down that many px before the shot, for what sits below the fold.
+const SCROLL = Number(process.env.SCROLL ?? 0);
 const VIEWPORTS = [
   { name: 'phone', width: 390, height: 844, isMobile: true, hasTouch: true, deviceScaleFactor: 2 },
   { name: 'desktop', width: 1366, height: 860, isMobile: false, hasTouch: false, deviceScaleFactor: 1 },
@@ -64,7 +70,9 @@ for (const colorScheme of ['light', 'dark']) {
       await ctx.route('**/api/**', (route) => {
         const p = new URL(route.request().url()).pathname.replace(/^\/api/, '');
         // /library is a list too (resources.tsx maps it) though its path does not end in s
-        const body = p === '/auth/me' ? teacher : (/s$/.test(p) || p === '/library') ? [] : {};
+        // A few endpoints wrap their list; the rest are bare lists (/…s, /library) or objects.
+        const SHAPED = { '/auth/me': teacher, '/schedule': { periods: [], slots: [] }, '/classes': { classes: [] }, '/evaluations': { evaluations: [] }, '/teaching-plans': { plans: [] } };
+        const body = p in SHAPED ? SHAPED[p] : (/s$/.test(p) || p === '/library') ? [] : {};
         return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
       });
       const page = await ctx.newPage();
@@ -77,7 +85,12 @@ for (const colorScheme of ['light', 'dark']) {
         // Entrance staggers up to 6 × 40ms + 220ms; 500ms covers it. Reduced motion gets no wait.
         if (!REDUCED) await page.waitForTimeout(500);
         const stuck = (await splash.count()) > 0;
-        await page.screenshot({ path: `${OUT}/${REDUCED ? 'reduced-' : ''}${colorScheme}-${vp.name}-${name}.png` });
+        if (SCROLL) {
+          await page.mouse.move(width / 2, height / 2);
+          await page.mouse.wheel(0, SCROLL);
+          await page.waitForTimeout(400);
+        }
+        await page.screenshot({ path: `${OUT}/${REDUCED ? 'reduced-' : ''}${colorScheme}-${vp.name}-${name}${SCROLL ? '-scrolled' : ''}.png` });
         console.log(`${colorScheme} ${vp.name} ${name}${stuck ? ' SPLASH' : ''}`);
       } catch (e) {
         console.log(`${colorScheme} ${vp.name} ${name} FAILED ${String(e.message).slice(0, 80)}`);

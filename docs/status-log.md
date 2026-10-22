@@ -14,6 +14,31 @@ Sections below are in the order they were written, not strictly by date.
 
 ---
 
+## Teachers' phones open on Today — 2026-10-22
+
+- **Today on phones.** A teacher on a phone now lands on Today instead of the
+  chat. It has a navy leaf band with the date, the bell, a greeting and the
+  lesson (amber «ابدأ الحصة», «تغيير الدرس»), then the prep checklist, four
+  quick tools, an ask card that opens the chat with the question already sent,
+  and their classes.
+- **One logic, two layouts.** The desktop workspace and the phone Today share
+  `useTodayLesson()`, so they always name the same lesson.
+- **Tab bar.** The phone tab bar is Today, Library, Tools, Messages, Profile.
+  The chat leaves it, but its route stays, and the desktop sidebar keeps it
+  (`services/tabVisibility.ts`).
+- **No lesson bar on Today.** The lesson bar is hidden on Today (both sizes),
+  as on the chat.
+- **Empty states.** `EmptyState` is a lifted card with the icon on a tinted
+  circle; School's two empties use it.
+- **Tools.** The Tools tab is a two-column grid of coloured, lifted cards on
+  phones, with no section headings.
+- **Verified:** `pnpm test` (mobile, 6633 pass) and `pnpm run typecheck`; screenshots of phone and
+  desktop Today (light, dark, scrolled), Tools, and the teaching-plans and evaluations empty states —
+  the desktop Today and Tools render exactly as before.
+- **Not verified:** on a device — the light status bar over Today's navy band, and the ask card's
+  send with the Android keyboard up. «تغيير الدرس» from Today or the lesson bar now returns there
+  after the picker closes (`returnTo`); the ⌘K palette still opens it in the chat.
+
 ## Original header of STATUS.md (before the split)
 
 > The single source of truth for project state. When something here stops being
@@ -18249,6 +18274,7 @@ populating the field; a list a teacher cannot act on is worse than no list.
 
 - ~~**Home vs chat.**~~ **Decided 2026-08-10: chat is the landing tab, home is
   retired from the tab bar.** `(tabs)/index.tsx` is now a `<Redirect href="/iqra">`
+  (until 2026-10-22, when a phone teacher started landing on Today)
   — `/` stays the entry point so deep links and the post-login
   `router.replace('/(tabs)')` keep working. Start Class moved onto
   `CurrentLessonCard` in chat, and its deck-building orchestration came out of

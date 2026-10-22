@@ -578,5 +578,9 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
     `cornerTheme.test.ts` measures white text on both stops.
   - `designScale.test.ts` counts hand-written `shadowColor`, so new depth
     comes from the tokens.
+  A teacher's phone lands on Today (`components/today/PhoneToday.tsx`), which
+  shares `useTodayLesson()` with the desktop workspace — change the lesson
+  logic there, never in one layout; tab visibility and the lesson-bar rule live
+  in `services/tabVisibility.ts`.
   **Amber (`palette.live`) means *now*** (start class, due today, live) and
   nothing else.

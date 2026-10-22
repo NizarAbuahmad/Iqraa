@@ -66,6 +66,7 @@ import { apiErrorMessage } from '@/services/apiErrorKey';
 import { palette } from '@/constants/colors';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 const ACCENT = palette.primary;
 /** Minimum touch target for the tick box. */
@@ -295,17 +296,12 @@ export default function SchoolScreen() {
           ) : null}
 
           {hwEmpty ? (
-            <View style={styles.hwEmpty}>
-              <View style={[styles.emptyIcon, { backgroundColor: ACCENT + '1F' }]}>
-                <Ionicons name="book-outline" size={30} color={ACCENT} />
-              </View>
-              <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.bodyLg, textAlign: 'center' }}>
-                {t('hwEmptyTitle')}
-              </Text>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.body, lineHeight: 24, textAlign: 'center' }}>
-                {t(isParent ? 'hwEmptyDescParent' : 'hwEmptyDesc')}
-              </Text>
-            </View>
+            <EmptyState
+              icon="book-outline"
+              title={t('hwEmptyTitle')}
+              body={t(isParent ? 'hwEmptyDescParent' : 'hwEmptyDesc')}
+              style={{ paddingTop: 0, paddingHorizontal: 0 }}
+            />
           ) : null}
 
           {hw.sections.map(group => (
@@ -403,17 +399,12 @@ export default function SchoolScreen() {
           ) : null}
 
           {empty ? (
-            <View style={styles.empty}>
-              <View style={[styles.emptyIcon, { backgroundColor: ACCENT + '1F' }]}>
-                <Ionicons name="calendar-outline" size={30} color={ACCENT} />
-              </View>
-              <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 17, textAlign: 'center' }}>
-                {t('schoolEmptyTitle')}
-              </Text>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
-                {t(isParent ? 'schoolEmptyDescParent' : 'schoolEmptyDesc')}
-              </Text>
-            </View>
+            <EmptyState
+              icon="calendar-outline"
+              title={t('schoolEmptyTitle')}
+              body={t(isParent ? 'schoolEmptyDescParent' : 'schoolEmptyDesc')}
+              style={{ paddingTop: 0, paddingHorizontal: 0 }}
+            />
           ) : null}
 
           {child?.schedule.days.map(day => (
@@ -696,13 +687,10 @@ const styles = StyleSheet.create({
   desc: { fontSize: 15, lineHeight: 24, marginTop: 4 },
   errorBanner: { alignItems: 'center', gap: 8, padding: 12, borderWidth: 1 },
   errorText: { flex: 1, fontSize: 15, lineHeight: 24 },
-  empty: { alignItems: 'center', gap: SPACE.md, paddingHorizontal: 24, paddingTop: 40 },
-  emptyIcon: { width: 64, height: 64, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center', marginBottom: SPACE.sm },
   chip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: SPACE.lg, paddingVertical: 8 },
   dayCard: { borderWidth: 1, padding: SPACE.lg },
   todayChip: { borderRadius: 999, paddingHorizontal: SPACE.md, paddingVertical: 2 },
   periodBadge: { width: 34, height: 34, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center' },
-  hwEmpty: { alignItems: 'center', gap: SPACE.md, paddingHorizontal: SPACE.xxl, paddingVertical: SPACE.xl },
   hwRow: { alignItems: 'flex-start', gap: SPACE.md, borderWidth: 1, padding: SPACE.md },
   hwMark: { width: TOUCH, height: TOUCH, alignItems: 'center', justifyContent: 'center' },
   hwBadge: { borderRadius: RADIUS.pill, paddingHorizontal: SPACE.md, paddingVertical: SPACE.xxs },
