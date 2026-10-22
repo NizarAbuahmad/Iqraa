@@ -74,7 +74,7 @@ export function MathDrillGame({ initial }: { initial: DrillConfig }) {
     <GameShell
       titleKey={TITLES[config.op]}
       accent={ACCENT}
-      gameOver={phase === 'over' ? { message: t('playDrillResult', result.correct, result.attempted), perfect: result.attempted > 0 && result.correct === result.attempted } : null}
+      gameOver={phase === 'over' ? { message: t('playDrillResult', result.correct, result.attempted), perfect: result.attempted > 0 && result.correct === result.attempted, score: result.correct, total: result.attempted } : null}
       onReplay={start}
     >
       {phase === 'playing' ? (

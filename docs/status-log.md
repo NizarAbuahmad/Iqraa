@@ -27,8 +27,8 @@ Sections below are in the order they were written, not strictly by date.
   not a moment.
 - **What each one waits for.** Homework celebrates after the save succeeds, only for a tick
   (not an untick), and only when no other homework save is still in flight (that save's
-  optimistic change may yet roll back); two quick taps that both succeed therefore do not
-  celebrate. The prep checklist is judged only when the saved materials came from the
+  optimistic change may yet roll back). The last save to finish judges the list as it is
+  rendered now, so ticking the last two quickly still celebrates, once. The prep checklist is judged only when the saved materials came from the
   server (or nobody is signed in) and the lesson's «غير مطلوب» choices have been read for
   that lesson; `getItems` never rejects and turns a failed or timed-out read into the
   device-only list, so the board reads `getAllItemsChecked()` and a degraded read drops the
@@ -49,6 +49,35 @@ Sections below are in the order they were written, not strictly by date.
   checked by reading the code only.
 - **Not verified:** screenshots of the homework and prep-checklist moments; the haptic and
   the screen-reader announcement, on a device.
+
+## Lesson games from a lesson's key terms — 2026-10-22
+
+**What changed.** A lesson with at least four key terms (`keywordsAr`) gets
+«العب بمصطلحات الدرس» on its page, opening `/play/lesson/[lessonId]` (public,
+shareable like the rest of `/play`) with up to three games: term memory,
+unscramble a term's letters (only a first try without the hint scores), and
+«spot the term» (this lesson's term among terms from other lessons of the same
+book). Logic: `services/lessonGames.ts`; the memory and trivia boards are the
+existing `/play` ones.
+
+**Reach is ~485 of 3,318 lessons (≈15%)**, mostly science, maths, digital
+skills, vocational and social studies. Surveyed 2026-10-22: 1,865 lessons have
+no terms, Arabic-language lessons have none, and `keywords` is the Arabic copied
+in all but 2 lessons — so there is no term↔English or term↔meaning pair to
+match. Matching games need a definitions source (a reviewed glossary) first.
+
+**Also:** every game reports `game_finished` to PostHog (`/play` games via
+`GameShell`, English corner activities, Class Challenge once per game at the
+podium). The English corner's daily reminder now books tomorrow's reminder on a
+day already practised (it used to book none until the app was reopened). The
+home tools' «لعبة تعليمية» opens Class Challenge instead of the classroom hub,
+and chat's game reply no longer promises a game-type picker that doesn't exist.
+
+**Verified:** typecheck; `lessonGames.test.ts` over the real catalog; headless
+Chromium on the web build — memory, spot (6/6) and scramble (5/6, the hinted
+one not scoring) played to the game-over panel. **Not verified:** PostHog
+delivery (no key locally), the lesson-page button (behind teacher login),
+Android.
 
 ## Teachers' phones open on Today — 2026-10-22
 
