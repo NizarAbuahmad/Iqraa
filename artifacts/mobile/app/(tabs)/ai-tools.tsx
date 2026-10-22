@@ -156,7 +156,8 @@ export default function AIToolsScreen() {
         <View
           style={[
             styles.list,
-            isDesktop ? styles.listGrid : [styles.listGridPhone, { flexDirection: isRTL ? 'row-reverse' : 'row' }],
+            isDesktop ? styles.listGrid : styles.listGridPhone,
+            { flexDirection: isRTL ? 'row-reverse' : 'row' },
           ]}
         >
           {TAB_TOOLS.map(tool => (
@@ -191,7 +192,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   list: { paddingHorizontal: 20, gap: 10, paddingBottom: 8 },
-  listGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
+  listGrid: { flexWrap: 'wrap', gap: 14 },
   listGridPhone: { flexWrap: 'wrap', gap: SPACE.md },
   gridCard: {
     flexBasis: '31%',
