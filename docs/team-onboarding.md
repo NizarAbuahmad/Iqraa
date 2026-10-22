@@ -14,6 +14,7 @@ content into an issue, PR, commit, or Claude session.
 | `CLAUDE.md` | Project context and the team rules Claude reads at session start |
 | `.claude/settings.json` | Shared permissions: pnpm, tests, typecheck, read-only `git` and `gh` are pre-approved; reading `.env` files, printing Cloud Run env, force-pushing and pushing to `main` are denied |
 | `.mcp.json` | The Playwright MCP server (pinned version, no credentials). Claude Code asks you to approve a project MCP server the first time |
+| *Limits of the deny list* | The deny rules are prefix matches. They do not cover PowerShell or every shell form, so branch protection and not reading `.env` files remain the real guards. |
 | `.claude/agents/`, `.claude/skills/` | `api-dev`, `mobile-dev`, `test-writer`, `code-reviewer` agents and the vendored Superpowers skills |
 | `.claude/settings.local.json`, `CLAUDE.local.md` | Yours; gitignored. Put personal permissions and preferences here |
 

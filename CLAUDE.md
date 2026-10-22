@@ -117,10 +117,14 @@ and `.claude/skills/` are shared — change them in a PR. Your own tweaks go in
 `.claude/settings.local.json` and `CLAUDE.local.md`, both gitignored.
 
 **Secrets**
-- Never read, `cat`, `grep` or print a `.env` file, and never print Cloud Run env
-  (`gcloud run revisions describe`, or `services describe` without a narrow
-  `--format="value(...)"`). The settings deny the obvious forms; the habit is yours.
-  A key that reached a transcript, a PR or a log is rotated — see *Rotating a secret*
+- Never read, `cat`, `grep` or print a `.env` file, and never print Cloud Run env.
+  The settings deny `gcloud run revisions describe`, `revisions list`,
+  `services describe` and printing an access token. A narrow
+  `--format="value(...)"` read of one field (a traffic split, say) needs a local
+  override in `.claude/settings.local.json`, or the person running it themselves.
+  The deny rules are prefix matches: they do not cover PowerShell or every shell
+  form, so branch protection and not reading `.env` files are the real guards, not
+  the list. A key that reached a transcript, a PR or a log is rotated — see *Rotating a secret*
   in [`docs/deploying.md`](./docs/deploying.md).
 - Credentials are Secret Manager references on Cloud Run. Rotating one is
   `gcloud secrets versions add` plus a new revision, never an env edit.
