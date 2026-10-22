@@ -18,16 +18,22 @@ import { useAuth } from '@/context/AuthContext';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { Button } from '@/components/ui/Button';
 import type { TranslationKey } from '@/services/i18n';
+import { trackEvent } from '@/services/analytics';
 
 export function GameShell({
-  titleKey, accent, scoreLabel, gameOver, onReplay, children,
+  titleKey, accent, scoreLabel, gameOver, onReplay, onBack, analytics, children,
 }: {
+  /** Default: back to the /play menu. */
+  onBack?: () => void;
+  /** Extra fields on the `game_finished` event, e.g. the lesson. */
+  analytics?: Record<string, string>;
   titleKey: TranslationKey;
   accent: string;
   /** Already-formatted, e.g. t('playScoreLabel', score, total) — the shell
    *  has no opinion on what a game's score means. */
   scoreLabel?: string;
-  gameOver?: { message: string } | null;
+  /** `score`/`total` go to analytics only; the message is what's shown. */
+  gameOver?: { message: string; score?: number; total?: number } | null;
   onReplay?: () => void;
   children: React.ReactNode;
 }) {
@@ -37,6 +43,20 @@ export function GameShell({
   const { user } = useAuth();
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
+  const over = !!gameOver;
+  React.useEffect(() => {
+    if (!over) return;
+    trackEvent('game_finished', {
+      game: titleKey,
+      signedIn: !!user,
+      ...analytics,
+      ...(gameOver?.score != null && { score: gameOver.score }),
+      ...(gameOver?.total != null && { total: gameOver.total }),
+    });
+    // Once per game over, not on every re-render of the panel.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [over]);
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={{ width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', flex: 1 }}>
@@ -44,7 +64,7 @@ export function GameShell({
           {/* Cast: '/play' isn't in the generated typed-routes union until the
               dev server regenerates it — same reason other new routes in this
               app are cast (see app/_layout.tsx). */}
-          <Pressable onPress={() => router.replace('/play' as any)} style={styles.backBtn} hitSlop={10}>
+          <Pressable onPress={onBack ?? (() => router.replace('/play' as any))} style={styles.backBtn} hitSlop={10}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
           <Text style={[styles.title, { textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>
