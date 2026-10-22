@@ -228,10 +228,10 @@ Not reviewed yet — shown to nobody.
 | What's the weather like? It's stormy. | — | — | — |
 | What's the weather like? It's sunny. | sunny | **sunny** / windy | windy |
 | What's the weather like? It's windy. | windy | **windy** / cloudy | cloudy |
-| I'm wearing boots. | boots | **boots** / a | coat |
+| I'm wearing boots. | boots | **boots** / a coat | coat |
 | I'm wearing a coat. | coat | **a coat** / shoes | shoes |
 | I'm wearing a jumper. | — | — | — |
-| I'm wearing shoes. | shoes | **shoes** / a | T-shirt |
+| I'm wearing shoes. | shoes | **shoes** / a T-shirt | T-shirt |
 | I'm wearing shorts. | — | — | — |
 | I'm wearing a skirt. | — | — | — |
 | I'm wearing a T-shirt. | T-shirt | **a T-shirt** / boots | boots |

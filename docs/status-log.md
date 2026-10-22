@@ -14,6 +14,29 @@ Sections below are in the order they were written, not strictly by date.
 
 ---
 
+## Grade 1–2 grammar: «boots» is no longer offered against «a» — 2026-10-22
+
+- **What was wrong.** `unitSentences` built the wrong option of a `slot` Choose
+  by realising the sentence with the other word and cutting it with the right
+  word's span. When the right word takes no article and the other does, that
+  span is one token and caught only the article.
+- **Fix.** The other word is measured with its own span
+  (`realise(...).spans[c.slot]`), for every grade.
+- **The printed forms changed in 4 rows.** Grade 1 «I'm wearing boots.» («a» →
+  «a dress») and «socks» («a» → «a T-shirt»); Grade 2 «boots» («a» → «a coat»)
+  and «shoes» («a» → «a T-shirt»), in `docs/english-grammar-g{1,2}-review.html`
+  and `-sheet.md`. Nothing else in them moved. Regenerated with
+  `pnpm --filter @workspace/curriculum run grammar-sheet`.
+- **Verified.** A new test (`englishGrammar.test.ts`) fails on the old code and
+  passes on the new: no Grade 1–2 `slot` Choose has a bare article as its wrong
+  option. The curriculum suite passes except three files that need packages not
+  installed in this environment (`extraction`, `quranCorner`, `r2`), which fail
+  identically without this change.
+- **Not verified.** No one has re-read the four changed rows against a signed
+  form; anyone mid-review of Grade 1 or 2 should be told.
+
+---
+
 ## Teachers' phones open on Today — 2026-10-22
 
 - **Today on phones.** A teacher on a phone now lands on Today instead of the
