@@ -10,6 +10,21 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+**Chat, homework, results and sign-in (2026-10-22, fifteenth live pass).**
+Of 30 questions, 9 were right and 21 went to the model. Checked in code: the chat keeps no
+history (`howChatHistory` existed; «امسح المحادثة» missed it), has no voice input, no
+read-aloud and no image upload (`DOCUMENT_UPLOAD_ENABLED = false`), and its replies carry
+«نسخ»/«تصدير»; there is no font-size setting. Homework is edited or deleted by tapping it in
+the class's «الواجبات» tab, and goes to the whole class. «لوحة النتائج» shows «المتوسط العام»
+and «توزيع المستويات». A teacher cannot reopen an exam: `attempts` is unique per student and
+exam, and the only retake is the student's «أعد المحاولة» on a failed single-lesson quiz
+(`retakeDecision`, `MASTERY_GATE=true`, 3 tries). Open-response types
+(`short_answer`, `open_ended`, `problem_solving`) have no `grade`, so a paper with one stays
+provisional until the teacher enters its mark. Settings shows the monthly AI allowance as a
+percentage with a renewal date, not a count. Google sign-in is on the sign-in and sign-up
+screens. Left with the model, not verified in code: sorting homework by due date.
+«كيف أصحح الأسئلة المقالية؟» stays a teaching question.
+
 Sections below are in the order they were written, not strictly by date.
 
 ---
