@@ -102,6 +102,7 @@ export function GameShell({
       <Celebrate
         visible={celebrate !== null}
         size={celebrate ?? 'small'}
+        showBadge={celebrate === 'big'}
         message={t(celebrate === 'big' ? 'celebrateGamePerfect' : 'celebrateGameOver')}
         onDone={() => setCelebrate(null)}
       />

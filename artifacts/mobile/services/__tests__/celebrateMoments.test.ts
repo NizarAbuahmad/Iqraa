@@ -15,6 +15,7 @@ test('the overlay never blocks a tap and respects reduced motion', () => {
   assert.match(src, /pointerEvents="none"/);
   assert.match(src, /useReduceMotion\(/);
   assert.match(src, /NATIVE_DRIVER/);
+  assert.match(src, /importantForAccessibility="no-hide-descendants"/, 'the message is announced, so the overlay is hidden from the tree');
   assert.doesNotMatch(src, /useNativeDriver:\s*(true|false)/, 'pass NATIVE_DRIVER, never a literal');
 });
 
@@ -29,6 +30,7 @@ test('a finished game is celebrated, louder for a perfect score', () => {
   assert.match(src, /<Celebrate\b/);
   assert.match(src, /justCompleted\(/);
   assert.match(src, /celebrateGamePerfect/);
+  assert.match(src, /showBadge=/, 'the shell has its own heading, so only a perfect score shows the badge');
   assert.match(read('components', 'publicGames', 'TriviaGame.tsx'), /perfect:/);
   assert.match(read('components', 'publicGames', 'MathDrillGame.tsx'), /perfect:/);
 });

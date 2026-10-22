@@ -10,7 +10,11 @@
  *
  * It never blocks input: the root is an absolute fill with
  * `pointerEvents="none"`, on top of the screen, and it removes itself by
- * calling `onDone` after 1.8 s (`small`) or 2.2 s (`big`).
+ * calling `onDone` after 1.8 s (`small`) or 2.2 s (`big`). The badge sits in
+ * the upper part of the screen so it never covers a button below it, and
+ * `showBadge={false}` keeps only the confetti, haptic and announcement for a
+ * screen that already shows its own heading. The overlay is hidden from the
+ * accessibility tree because the message is announced instead.
  *
  * Reduced motion (`useReduceMotion`): no confetti and no scaling — the badge
  * only fades in and out. The message is also announced to screen readers, and
@@ -41,11 +45,13 @@ type Burst = {
 };
 
 export function Celebrate({
-  visible, message, size = 'small', onDone,
+  visible, message, size = 'small', showBadge = true, onDone,
 }: {
   visible: boolean;
   message: string;
   size?: 'small' | 'big';
+  /** False: confetti, haptic and announcement only. */
+  showBadge?: boolean;
   onDone: () => void;
 }) {
   const colors = useColors();
@@ -113,7 +119,12 @@ export function Celebrate({
   if (!visible || !burst) return null;
 
   return (
-    <View style={[StyleSheet.absoluteFill, { zIndex: 1000 }]} pointerEvents="none">
+    <View
+      style={[StyleSheet.absoluteFill, { zIndex: 1000 }]}
+      pointerEvents="none"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
       {burst.pieces.map((p, i) => (
         <Animated.View
           key={i}
@@ -134,20 +145,22 @@ export function Celebrate({
           }}
         />
       ))}
-      <View style={styles.center} pointerEvents="none">
-        <Animated.View style={{ opacity: burst.badgeOpacity, transform: [{ scale: burst.badgeScale }] }}>
-          <Surface style={styles.badge}>
-            <Ionicons name="checkmark-circle" size={44} color={colors.primary} />
-            <Text style={[styles.message, { color: colors.foreground }]}>{message}</Text>
-          </Surface>
-        </Animated.View>
-      </View>
+      {showBadge ? (
+        <View style={[styles.center, { paddingTop: 0.22 * height }]} pointerEvents="none">
+          <Animated.View style={{ opacity: burst.badgeOpacity, transform: [{ scale: burst.badgeScale }] }}>
+            <Surface style={styles.badge}>
+              <Ionicons name="checkmark-circle" size={44} color={colors.primary} />
+              <Text style={[styles.message, { color: colors.foreground }]}>{message}</Text>
+            </Surface>
+          </Animated.View>
+        </View>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  center: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  center: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'flex-start' },
   badge: { padding: SPACE.lg, gap: SPACE.sm, alignItems: 'center', minWidth: 200 },
   message: { fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.title, textAlign: 'center' },
 });
